@@ -355,7 +355,7 @@ spec = describe "grad" $ do
       let models = Torch.Typed.Device.replicate @'[ '( 'D.CPU, 0), '( 'D.CUDA, 0)] @'( 'D.CPU, 0) model
       input <- randn @'[20,10] @'D.Float @'( 'D.CPU, 0)
       let inputs = scatter @0 @'[ '( 'D.CPU, 0), '( 'D.CUDA, 0)] input
-          outputs = hZipWith LinearForward models inputs
+          outputs = hzipWith LinearForward models inputs
           output = gather @0 @'( 'D.CPU, 0) outputs
           loss = mseLoss @D.ReduceMean output zeros
           gradientWeight :. gradientBias :. HNil = grad loss (Torch.Typed.Parameter.flattenParameters model)

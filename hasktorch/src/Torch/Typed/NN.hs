@@ -25,6 +25,7 @@ module Torch.Typed.NN where
 import           Control.Monad.State.Strict
 import           Torch.HList
 import           Data.Kind                    (Type)
+import           Data.Proxy
 import           GHC.TypeLits
 import           GHC.TypeLits.Extra
 import           GHC.Generics
@@ -40,6 +41,8 @@ import           Torch.Typed.Functional
 import           Torch.Typed.Tensor
 import           Torch.Typed.Parameter
 
+class HasForward f a b | f a -> b where
+  forward :: f -> a -> b
 
 data LinearSpec (inputFeatures :: Nat) (outputFeatures :: Nat)
                 (dtype :: D.DType)
@@ -68,6 +71,12 @@ linear
   -> Tensor _ _ _
 linear Linear {..} input =
   Torch.Typed.Functional.linear' (toDependent linearWeight) (toDependent linearBias) input
+
+instance
+  ( shape'' ~ MatMul shape '[inputFeatures, outputFeatures]
+  , shape' ~ Broadcast shape'' shape''
+  ) => HasForward (Linear inputFeatures outputFeatures dtype device) (Tensor device dtype shape) (IO (Tensor device dtype shape')) where
+  forward = (pure .) . Torch.Typed.NN.linear
 
 instance
   ( KnownNat inputFeatures
@@ -102,6 +111,9 @@ dropout
   -> IO (Tensor device dtype shape)
 dropout Dropout {..} dropoutTrain =
   Torch.Typed.Functional.dropout dropoutProb dropoutTrain
+
+instance HasForward Dropout (Bool, Tensor device dtype shape) (IO (Tensor device dtype shape)) where
+  forward dropout (dropoutTrain, input) = Torch.Typed.NN.dropout dropout dropoutTrain input
 
 instance A.Randomizable DropoutSpec Dropout where
   sample DropoutSpec {..} = return $ Dropout dropoutProbSpec 
@@ -164,13 +176,14 @@ instance Generic (Embedding paddingIdx numEmbeds embedSize 'Learned dtype device
   to = LearnedEmbedding . unK1
 
 embed
-  :: forall paddingIdx shape numEmbeds embedSize embeddingType dtype device
+  :: forall paddingIdx shape numEmbeds embedSize embeddingType dtype device shape'
    . ( KnownMaybeNat paddingIdx
      , PaddingIdxCheck paddingIdx numEmbeds
+     , shape' ~ Reverse (embedSize ': (Reverse shape))
      )
   => Embedding paddingIdx numEmbeds embedSize embeddingType dtype device
   -> Tensor device 'D.Int64 shape
-  -> Tensor device dtype    (Reverse (embedSize ': (Reverse shape)))
+  -> Tensor device dtype    shape'
 embed ConstEmbedding {..} input = embedding @paddingIdx
   False
   False
@@ -182,10 +195,15 @@ embed LearnedEmbedding {..} input = embedding @paddingIdx
   (toDependent learnedEmbedWeights)
   input
 
-instance 
-  ( 
-  ) => A.Randomizable (EmbeddingSpec paddingIdx numEmbeds embedSize 'Constant dtype device)
-                      (Embedding     paddingIdx numEmbeds embedSize 'Constant dtype device)
+instance
+  ( KnownMaybeNat paddingIdx
+  , PaddingIdxCheck paddingIdx numEmbeds
+  , shape' ~ Reverse (embedSize ': (Reverse shape))
+  ) => HasForward (Embedding paddingIdx numEmbeds embedSize embeddingType dtype device) (Tensor device 'D.Int64 shape) (Tensor device dtype shape') where
+  forward = embed
+
+instance A.Randomizable (EmbeddingSpec paddingIdx numEmbeds embedSize 'Constant dtype device)
+                        (Embedding     paddingIdx numEmbeds embedSize 'Constant dtype device)
  where
   sample (ConstEmbeddingSpec tensor) = pure (ConstEmbedding tensor)
 
@@ -256,6 +274,19 @@ conv1d Conv1d {..} input = Torch.Typed.Functional.conv1d @stride @padding
   (toDependent conv1dBias)
   input
 
+instance
+  ( All KnownNat '[ stride
+                  , padding
+                  , inputChannelSize, outputChannelSize
+                  , kernelSize
+                  , inputSize
+                  , batchSize
+                  , outputSize
+                  ]
+  , ConvSideCheck inputSize kernelSize stride padding outputSize
+  ) => HasForward (Conv1d inputChannelSize outputChannelSize kernelSize dtype device) (Tensor device dtype '[batchSize, inputChannelSize, inputSize], Proxy stride, Proxy padding) (Tensor device dtype '[batchSize, outputChannelSize, outputSize]) where
+  forward model (input, Proxy, Proxy) = Torch.Typed.NN.conv1d @stride @padding model input
+
 instance ( KnownNat inputChannelSize
          , KnownNat outputChannelSize
          , KnownNat kernelSize
@@ -301,6 +332,20 @@ conv2d Conv2d {..} input = Torch.Typed.Functional.conv2d @stride @padding
   (toDependent conv2dWeight)
   (toDependent conv2dBias)
   input
+
+instance
+  ( All KnownNat '[ Torch.Typed.Aux.Fst stride, Torch.Typed.Aux.Snd stride
+                  , Torch.Typed.Aux.Fst padding, Torch.Typed.Aux.Snd padding
+                  , inputChannelSize, outputChannelSize
+                  , kernelSize0, kernelSize1
+                  , inputSize0, inputSize1
+                  , batchSize
+                  , outputSize0, outputSize1
+                  ]
+  , ConvSideCheck inputSize0 kernelSize0 (Torch.Typed.Aux.Fst stride) (Torch.Typed.Aux.Fst padding) outputSize0
+  , ConvSideCheck inputSize1 kernelSize1 (Torch.Typed.Aux.Snd stride) (Torch.Typed.Aux.Snd padding) outputSize1
+  ) => HasForward (Conv2d inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device) (Tensor device dtype '[batchSize, inputChannelSize, inputSize0, inputSize1], Proxy stride, Proxy padding) (Tensor device dtype '[batchSize, outputChannelSize, outputSize0, outputSize1]) where
+  forward model (input, Proxy, Proxy) = Torch.Typed.NN.conv2d @stride @padding model input
 
 instance ( KnownNat inputChannelSize
          , KnownNat outputChannelSize

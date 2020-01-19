@@ -1834,26 +1834,25 @@ constantPadNd1d value input = unsafePerformIO $ ATen.cast3
 -- convolution :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> [Int] -> [Int] -> [Int] -> Bool -> [Int] -> Int -> Tensor device dtype shape
 -- convolution _input _weight _bias _stride _padding _dilation _transposed _output_padding _groups = unsafePerformIO $ (ATen.cast9 ATen.Managed.convolution_tttlllbll) _input _weight _bias _stride _padding _dilation _transposed _output_padding _groups
 
-type ConvSideCheck h k d (p :: Nat) o =
+type ConvSideCheck (inputSize :: Nat) (kernelSize :: Nat) (stride :: Nat) (padding :: Nat) (outputSize :: Nat) =
   (
-  -- kernel and step size must be > 0
-    k >= 1, d >= 1
-  -- kernel size can't be greater than actual input size
-  , ((h + (2 * p)) + 1) >= k
-  -- output size must be greater than 0
-  , o >= 1
-  -- output forumlation:
-  , o ~ ((Div ((h + (2 * p)) - k) d) + 1)
+    -- kernel size and stride must be > 0
+    kernelSize >= 1, stride >= 1
+    -- kernel size can't be greater than actual input size
+  , ((inputSize + (2 * padding)) + 1) >= kernelSize
+    -- output size must be greater than 0
+  , outputSize >= 1
+    -- output formulation:
+  , outputSize ~ ConvOutputSize inputSize kernelSize stride padding
   )
 
 -- | ConvOutputSize
--- TODO: this doesn't seem to be used, remove? use it above in ConvSideCheck?
 --
--- >>> :kind! ConvOutputSize 1 0 1 4
--- ConvOutputSize 1 0 1 4 :: Nat
+-- >>> :kind! ConvOutputSize 4 1 1 0
+-- ConvOutputSize 4 1 1 0 :: Nat
 -- = 4
-type family ConvOutputSize (stride :: Nat) (padding :: Nat) (kernel_size :: Nat)  (input_size :: Nat) :: Nat where
-    ConvOutputSize s p k i = (Div (i + 2 * p - k) s) + 1
+type family ConvOutputSize (inputSize :: Nat) (kernelSize :: Nat) (stride :: Nat) (padding :: Nat) :: Nat where
+  ConvOutputSize inputSize kernelSize stride padding = (Div ((inputSize + (2 * padding)) - kernelSize) stride) + 1
 
 -- | conv1d
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -2455,23 +2454,9 @@ linear weight bias input = unsafePerformIO $ ATen.cast3 ATen.Managed.linear_ttt 
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[[[Float]]]]) $ t'
 -- (Float,([1,2,5,2],[[[[0.5,-2.25],[-0.25,1.25],[-2.0,0.0],[0.0,0.5],[1.5,2.5]],[[0.5,-2.25],[-0.25,1.25],[-2.0,0.0],[0.0,0.5],[1.5,2.5]]]]))
 linear'
-  :: forall (inputFeatures :: Nat) (outputFeatures :: Nat) (shape :: [Nat]) (shape' :: [Nat]) dtype device
-   . (shape' ~ CheckBroadcast
-                 (CheckMatMul
-                     shape
-                     '[inputFeatures, outputFeatures]
-                     (ComputeMatMul
-                       (ReverseImpl shape '[]) '[outputFeatures, inputFeatures]))
-                 '[outputFeatures]
-                 (ComputeBroadcast
-                     (ReverseImpl
-                       (CheckMatMul
-                           shape
-                           '[inputFeatures, outputFeatures]
-                           (ComputeMatMul
-                             (ReverseImpl shape '[]) '[outputFeatures, inputFeatures]))
-                       '[])
-                     '[outputFeatures])
+  :: forall (inputFeatures :: Nat) (outputFeatures :: Nat) (shape :: [Nat]) (shape' :: [Nat]) dtype device (shape'' :: [Nat])
+   . ( shape'' ~ MatMul shape '[inputFeatures, outputFeatures]
+     , shape' ~ Broadcast shape'' shape''
      )
   => Tensor device dtype '[outputFeatures, inputFeatures] -- ^ weight
   -> Tensor device dtype '[outputFeatures] -- ^ bias
@@ -2663,7 +2648,7 @@ maxPool1d
                      , channelSize
                      , inputSize
                      , batchSize
-                     ]
+                     ]  
      , ConvSideCheck inputSize kernelSize stride padding outputSize
      )
   => Tensor device dtype '[batchSize, channelSize, inputSize] -- ^ input

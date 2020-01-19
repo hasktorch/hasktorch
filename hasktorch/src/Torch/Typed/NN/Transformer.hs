@@ -499,3 +499,19 @@ logits TransformerLM {..} train input = do
             tLayers
             input
   return $ linear tProj hidden
+
+instance
+  ( All KnownNat '[paddingIdx, embedDim, seqLen, batchSize]
+  , paddingIdx + 1 <= numEmbeds
+  , 1 <= seqLen
+  , HFoldrM
+      IO
+      FoldLayers
+      (Tensor device 'D.Bool '[seqLen, batchSize], Tensor device dtype '[seqLen, batchSize, embedDim])
+      (HReplicateR numAttnLayers (TransformerLMLayer embedDim numHeads ffnDim dtype device))
+  , BasicArithmeticDTypeIsValid device dtype
+  , ComparisonDTypeIsValid device dtype
+  , ComparisonDTypeIsValid device 'D.Int64
+  , KnownDevice device
+  ) => HasForward (TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim seqLen dtype device) (Bool, Tensor device 'D.Int64 '[batchSize, seqLen]) (IO (Tensor device dtype '[batchSize, seqLen, seqLen])) where
+  forward model (train, input) = logits model train input

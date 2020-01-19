@@ -134,145 +134,209 @@ data Data
 
 type BatchSize = 1
 
-data CrossEntropyLoss = CrossEntropyLoss Bool
+-- data CrossEntropyLoss = CrossEntropyLoss Bool
 
-instance
-  ( model ~ TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim seqLen dtype device
-  , input ~ Tensor device 'D.Int64 '[batchSize, seqLen]
-  , target ~ Tensor device 'D.Int64 '[batchSize, seqLen]
-  , loss ~ Loss device dtype
-  , (paddingIdx + 1) <= numEmbeds
-  , 1 <= seqLen
-  , BasicArithmeticDTypeIsValid device dtype
-  , ComparisonDTypeIsValid device dtype
-  , ComparisonDTypeIsValid device 'D.Int64
-  , StandardFloatingPointDTypeValidation device dtype
-  , All KnownNat '[paddingIdx, embedDim, seqLen, batchSize]
-  , KnownDType dtype
-  , KnownDevice device
-  , HFoldrM
-      IO
-      FoldLayers
-      (Tensor device 'D.Bool '[seqLen, batchSize], Tensor device dtype '[seqLen, batchSize, embedDim])
-      (HReplicateR numAttnLayers (TransformerLMLayer embedDim numHeads ffnDim dtype device))
-  ) => Apply' CrossEntropyLoss (model, input, target) (IO (Async loss)) where
-  apply' (CrossEntropyLoss train) (modelState, input, target) = async $ do
-    prediction <- logits modelState train input
-    pure . crossEntropyLoss @PaddingIdx prediction $ target
+-- instance
+--   ( model ~ TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim seqLen dtype device
+--   , input ~ Tensor device 'D.Int64 '[batchSize, seqLen]
+--   , target ~ Tensor device 'D.Int64 '[batchSize, seqLen]
+--   , loss ~ Loss device dtype
+--   , (paddingIdx + 1) <= numEmbeds
+--   , 1 <= seqLen
+--   , BasicArithmeticDTypeIsValid device dtype
+--   , ComparisonDTypeIsValid device dtype
+--   , ComparisonDTypeIsValid device 'D.Int64
+--   , StandardFloatingPointDTypeValidation device dtype
+--   , All KnownNat '[paddingIdx, embedDim, seqLen, batchSize]
+--   , KnownDType dtype
+--   , KnownDevice device
+--   , HFoldrM
+--       IO
+--       FoldLayers
+--       (Tensor device 'D.Bool '[seqLen, batchSize], Tensor device dtype '[seqLen, batchSize, embedDim])
+--       (HReplicateR numAttnLayers (TransformerLMLayer embedDim numHeads ffnDim dtype device))
+--   ) => Apply' CrossEntropyLoss (model, input, target) (IO (Async loss)) where
+--   apply' (CrossEntropyLoss train) (modelState, input, target) = async $ do
+--     prediction <- logits modelState train input
+--     pure . crossEntropyLoss @PaddingIdx prediction $ target
 
-data Gradients = Gradients
+-- data Gradients = Gradients
 
-instance
-  ( Parameterized model parameters
-  , loss ~ Loss device dtype
-  , HasGrad (HList parameters) gradients
-  ) => Apply' Gradients (model, Async loss) (IO (Async gradients)) where
-  apply' _ (modelState, asyncLoss) = async $ do
-    loss <- wait asyncLoss
-    let parameters = flattenParameters modelState
-        gradients = grad loss parameters
-    pure $ gradients
+-- instance
+--   ( Parameterized model parameters
+--   , loss ~ Loss device dtype
+--   , HasGrad (HList parameters) gradients
+--   ) => Apply' Gradients (model, Async loss) (IO (Async gradients)) where
+--   apply' _ (modelState, asyncLoss) = async $ do
+--     loss <- wait asyncLoss
+--     let parameters = flattenParameters modelState
+--         gradients = grad loss parameters
+--     pure $ gradients
 
-data ConvertGradients = ConvertGradients
+-- data ConvertGradients = ConvertGradients
 
-data MergeGradients = MergeGradients
+-- data MergeGradients = MergeGradients
 
-instance
-  ( Num gradient
-  ) => Apply' MergeGradients (gradient, gradient) gradient where
-  apply' _ (gradient, gradient') = gradient + gradient
+-- instance
+--   ( Num gradient
+--   ) => Apply' MergeGradients (gradient, gradient) gradient where
+--   apply' _ (gradient, gradient') = gradient + gradient
 
-data FoldGradients = FoldGradients
+-- data FoldGradients = FoldGradients
 
-instance
-  ( HMap' ConvertGradients gradients gradients'
-  , HZipWith MergeGradients gradients' gradients' gradients'
-  ) => Apply FoldGradients (Async (HList gradients)) (Maybe (Async (HList gradients')) -> IO (Maybe (Async (HList gradients')))) where
-  apply _ asyncGradients Nothing = fmap Just $ async $ do
-    gradients <- wait asyncGradients
-    pure $ hmap' ConvertGradients gradients
-  apply _ asyncGradients (Just asyncGradients') = fmap Just $ async $ do
-    gradients <- wait asyncGradients
-    gradients' <- wait asyncGradients'
-    pure $ hZipWith MergeGradients (hmap' ConvertGradients gradients) gradients'
+-- instance
+--   ( HMap' ConvertGradients gradients gradients'
+--   , HZipWith MergeGradients gradients' gradients' gradients'
+--   ) => Apply FoldGradients (Async (HList gradients)) (Maybe (Async (HList gradients')) -> IO (Maybe (Async (HList gradients')))) where
+--   apply _ asyncGradients Nothing = fmap Just $ async $ do
+--     gradients <- wait asyncGradients
+--     pure $ hmap' ConvertGradients gradients
+--   apply _ asyncGradients (Just asyncGradients') = fmap Just $ async $ do
+--     gradients <- wait asyncGradients
+--     gradients' <- wait asyncGradients'
+--     pure $ hZipWith MergeGradients (hmap' ConvertGradients gradients) gradients'
 
-gather
-  :: forall foldedGradients m models inputs targets xs ys losses gradients
+-- gather
+--   :: forall foldedGradients m models inputs targets xs ys losses gradients
+--    . ( Monad m
+--      , HZipList3 models inputs targets xs
+--      , HMapM' m CrossEntropyLoss xs losses
+--      , HZip models losses ys
+--      , HMapM' m Gradients ys gradients
+--      , HFoldrM m FoldGradients (Maybe foldedGradients) gradients
+--      )
+--   => HList models
+--   -> Bool
+--   -> HList inputs
+--   -> HList targets
+--   -> m (Maybe foldedGradients)
+-- gather modelStates train inputs targets = do
+--   losses <- hmapM' (CrossEntropyLoss train) (hZipList3 modelStates inputs targets)
+--   gradients <- hmapM' Gradients (hzip modelStates losses)
+--   foldedGradients <- hfoldrM FoldGradients Nothing gradients
+--   return foldedGradients
+
+-- data ToDevice a = ToDevice a
+
+-- instance
+--   ( HasToDevice device' device f g
+--   ) => Apply' (ToDevice f) (Proxy device, Proxy device') g where
+--   apply' (ToDevice f) (Proxy, Proxy) =
+--     Torch.Typed.Device.toDevice @device' @device f
+
+-- scatter
+--   :: forall device devices model models xs
+--    . ( HAttach (Proxy device) devices xs
+--      , HMap' (ToDevice model) xs models
+--      )
+--   => model
+--   -> HList devices
+--   -> HList models
+-- scatter modelState devices = hmap' (ToDevice modelState) $ hattach (Proxy @device) devices
+
+-- runStep'
+--   :: forall model parameters m tensors gradients1 xs2 losses optim gradients2 dtype device shape chunks tensorChunks modelStates ys devices xs3
+--    . ( Parameterized model parameters
+--      , HMapM' m MakeIndependent tensors parameters
+--      , HMapM' m Gradients ys gradients1
+--      , HMapM' m CrossEntropyLoss xs2 losses
+--      , Optimizer optim gradients2 tensors dtype device
+--      , HFoldrM m FoldGradients (Maybe (HList gradients2)) gradients1
+--      , tensorChunks ~ Chunk chunks 0 shape dtype device
+--      , ATen.Castable (HList tensorChunks) [D.ATenTensor]
+--      , HZip modelStates losses ys
+--      , HZipList3 modelStates tensorChunks tensorChunks xs2
+--      , Monad m
+--      , HAttach (Proxy device) devices xs3
+--      , KnownNat chunks
+--      , HMap' (ToDevice model) xs3 modelStates
+--      , HMap' ToDependent parameters tensors
+--      )
+--   => model
+--   -> optim
+--   -> HList devices
+--   -> LearningRate device dtype
+--   -> Tensor device dtype shape
+--   -> Tensor device dtype shape
+--   -> m (model, optim)
+-- runStep' modelState optimState devices learningRate input target = do
+--   let modelStates = scatter @device modelState devices
+--       inputs = chunk @chunks @0 input
+--       targets = chunk @chunks @0 target
+--   foldedGradients <- gather @(HList gradients2) modelStates True inputs targets
+--   case foldedGradients of
+--     Just gradients -> do
+--                         let parameters = flattenParameters modelState
+--                             tensors = hmap' ToDependent parameters
+--                             (tensors', optimState') = step learningRate gradients tensors optimState
+--                         parameters' <- hmapM' MakeIndependent tensors'
+--                         let modelState' = replaceParameters modelState parameters'
+--                         return (modelState', optimState')
+--     Nothing -> return (modelState, optimState)
+
+
+go'
+  :: forall forward dim dim' devices device dtype shape dtype' shape' model models inputs inputs' predictions predictions' chunks m
    . ( Monad m
-     , HZipList3 models inputs targets xs
-     , HMapM' m CrossEntropyLoss xs losses
-     , HZip models losses ys
-     , HMapM' m Gradients ys gradients
-     , HFoldrM m FoldGradients (Maybe foldedGradients) gradients
-     )
-  => HList models
-  -> Bool
-  -> HList inputs
-  -> HList targets
-  -> m (Maybe foldedGradients)
-gather modelStates train inputs targets = do
-  losses <- hmapM' (CrossEntropyLoss train) (hZipList3 modelStates inputs targets)
-  gradients <- hmapM' Gradients (hzip modelStates losses)
-  foldedGradients <- hfoldrM FoldGradients Nothing gradients
-  return foldedGradients
-
-data ToDevice a = ToDevice a
-
-instance
-  ( HasToDevice device' device f g
-  ) => Apply' (ToDevice f) (Proxy device, Proxy device') g where
-  apply' (ToDevice f) (Proxy, Proxy) =
-    Torch.Typed.Device.toDevice @device' @device f
-
-scatter
-  :: forall device devices model models xs
-   . ( HAttach (Proxy device) devices xs
-     , HMap' (ToDevice model) xs models
+     , All KnownNat '[chunks, dim, dim']
+     , HasReplicate devices device model models
+     , chunks ~ (ListLength devices)
+     , inputs ~ (Chunk chunks dim shape dtype device)
+     , ATen.Castable (HList inputs) [D.ATenTensor]
+     , HasToDevices devices (HReplicateR chunks device) inputs inputs'
+     , HZipWithM m (Proxy forward) models inputs' predictions'
+     , HMap' (ToDevice (Proxy device)) predictions' predictions
+     , Cat dim' predictions ~ '(shape', dtype', device)
+     , ATen.Castable (HList predictions) [D.ATenTensor]
      )
   => model
-  -> HList devices
-  -> HList models
-scatter modelState devices = hmap' (ToDevice modelState) $ hattach (Proxy @device) devices
+  -> Tensor device dtype shape
+  -> m (Tensor device dtype' shape')
+go' model input = do
+  let models = Torch.Typed.Device.replicate @devices @device model
+      inputs = scatter @dim @devices input
+  predictions <- hzipWithM (Proxy @forward) models inputs
+  let prediction = gather @dim' @device predictions
+  return prediction
 
-runStep'
-  :: forall model parameters m tensors gradients1 xs2 losses optim gradients2 dtype device shape chunks tensorChunks modelStates ys devices xs3
-   . ( Parameterized model parameters
-     , HMapM' m MakeIndependent tensors parameters
-     , HMapM' m Gradients ys gradients1
-     , HMapM' m CrossEntropyLoss xs2 losses
-     , Optimizer optim gradients2 tensors dtype device
-     , HFoldrM m FoldGradients (Maybe (HList gradients2)) gradients1
-     , tensorChunks ~ Chunk chunks 0 shape dtype device
-     , ATen.Castable (HList tensorChunks) [D.ATenTensor]
-     , HZip modelStates losses ys
-     , HZipList3 modelStates tensorChunks tensorChunks xs2
-     , Monad m
-     , HAttach (Proxy device) devices xs3
-     , KnownNat chunks
-     , HMap' (ToDevice model) xs3 modelStates
-     , HMap' ToDependent parameters tensors
+data Forward = Forward
+
+go
+  :: forall devices device dtype tensors chunks tensorChunks gs parameters gradients model optim batchSize seqLen xs ys shape
+   . ( chunks ~ ListLength devices
+     , StandardFloatingPointDTypeValidation device dtype,
+      HMap' (Torch.Typed.Device.ToDevice (Proxy device)) tensors gs,
+      HMap' ToDependent parameters gradients,
+      HasGrad (HList parameters) (HList gradients),
+      Parameterized model parameters,
+      KnownDevice device,
+      KnownDType dtype,
+      All KnownNat '[seqLen, batchSize, chunks],
+      tensorChunks ~ (Chunk chunks 0 shape dtype device),
+      HasToDevices devices (HReplicateR chunks device) tensorChunks ys,
+      Torch.Typed.Device.HasReplicate devices device model xs,
+      HZipWithM IO Forward xs ys tensors,
+      ATen.Castable (HList gs) [D.ATenTensor],
+      ATen.Castable (HList tensorChunks) [D.ATenTensor],
+      ATen.Castable (HList gradients) [D.ATenTensor],
+      Optimizer optim gradients gradients dtype device,
+      HMapM' IO MakeIndependent gradients parameters,
+      Cat 0 gs ~ '( '[batchSize, seqLen, seqLen], dtype, device)
      )
   => model
   -> optim
-  -> HList devices
   -> LearningRate device dtype
   -> Tensor device dtype shape
-  -> Tensor device dtype shape
-  -> m (model, optim)
-runStep' modelState optimState devices learningRate input target = do
-  let modelStates = scatter @device modelState devices
-      inputs = chunk @chunks @0 input
-      targets = chunk @chunks @0 target
-  foldedGradients <- gather @(HList gradients2) modelStates True inputs targets
-  case foldedGradients of
-    Just gradients -> do
-                        let parameters = flattenParameters modelState
-                            tensors = hmap' ToDependent parameters
-                            (tensors', optimState') = step learningRate gradients tensors optimState
-                        parameters' <- hmapM' MakeIndependent tensors'
-                        let modelState' = replaceParameters modelState parameters'
-                        return (modelState', optimState')
-    Nothing -> return (modelState, optimState)
+  -> Tensor device 'D.Int64 '[batchSize, seqLen]
+  -> IO (model, optim)
+go model optim learningRate input target = do
+  let models = Torch.Typed.Device.replicate @devices @device model
+      inputs = scatter @0 @devices input
+  predictions <- hzipWithM Forward models inputs
+  let prediction = gather @0 @device predictions
+      loss = crossEntropyLoss @PaddingIdx prediction target
+  runStep model optim loss learningRate
+
 
 train
   :: forall (batchSize :: Nat) (seqLen :: Nat) (device :: (D.DeviceType, Nat)) model optim gradients parameters tensors
@@ -344,8 +408,7 @@ train'
    . _
   => IO ()
 train' = do
-  let dropoutProb  = 0.5
-      learningRate = 0.1
+  let learningRate = 0.1
   -- ATen.manual_seed_L 123
   initModel <- A.sample
     (TransformerLMSpec

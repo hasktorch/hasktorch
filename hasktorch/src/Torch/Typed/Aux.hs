@@ -73,6 +73,10 @@ type family IndexOutOfBound (shape :: [a]) (dim :: Nat) (idx :: Nat) where
 -- Type-level helpers for working with dimension lists
 --------------------------------------------------------------------------------
 
+type family MaybePrepend (mh :: Maybe a) (t :: [a]) :: [a] where
+  MaybePrepend Nothing  t = t
+  MaybePrepend (Just h) t = h : t
+
 type family AppendToMaybe (h :: a) (mt :: Maybe [a]) :: Maybe [a]  where
   AppendToMaybe h Nothing  = Nothing
   AppendToMaybe h (Just t) = Just (h : t)

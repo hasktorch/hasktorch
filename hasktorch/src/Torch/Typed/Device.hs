@@ -13,13 +13,19 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 module Torch.Typed.Device (
-    HasToDevice
-  , HasToDevices
-  , PutDevice
+    ReplaceDevice
+  , ReplaceDevice'
+  , GetDevice
+  , GetDevices
+  , HasToDevice
   , Torch.Typed.Device.toDevice
+  , HasToDevices
   , toDevices
+  , HasReplicate
   , Torch.Typed.Device.replicate
+  , HasScatter
   , scatter
+  , HasGather
   , gather
 ) where
 
@@ -37,9 +43,11 @@ import qualified Torch.Internal.Managed.Autograd as LibTorch
 import qualified Torch.DType                   as D
 import qualified Torch.Device                  as D
 import qualified Torch.Tensor                  as D
+import           Torch.Typed.Aux
 import           Torch.Typed.Tensor
 import           Torch.Typed.Parameter
 import           Torch.Typed.Functional
+import           Torch.Typed.NN
 
 class HasToDevice (device' :: (D.DeviceType, Nat)) (device :: (D.DeviceType, Nat)) f g | device' device f -> g, device' device g -> f where
   -- >>> model <- A.sample (Torch.Typed.NN.LinearSpec @1 @1 @'D.Float @'( 'D.CPU, 0))
@@ -48,17 +56,29 @@ class HasToDevice (device' :: (D.DeviceType, Nat)) (device :: (D.DeviceType, Nat
   -- :: Torch.Typed.NN.Linear 1 1 'Float '( 'CUDA, 0)
   toDevice :: f -> g
 
--- >>> :kind! PutDevice (Torch.Typed.NN.Linear 1 1 'D.Float '( 'D.CPU, 0)) '( 'D.CUDA, 0) '( 'D.CPU, 0)
--- PutDevice (Torch.Typed.NN.Linear 1 1 'D.Float '( 'D.CPU, 0)) '( 'D.CUDA, 0) '( 'D.CPU, 0) :: *
+-- In a data type `f` parameterized by zero or more device type variables, replace the given device type `device` with the device type `device'`.
+--
+-- >>> :kind! ReplaceDevice (Torch.Typed.NN.Linear 1 1 'D.Float '( 'D.CPU, 0)) '( 'D.CUDA, 0) '( 'D.CPU, 0)
+-- ReplaceDevice (Torch.Typed.NN.Linear 1 1 'D.Float '( 'D.CPU, 0)) '( 'D.CUDA, 0) '( 'D.CPU, 0) :: *
 -- = Torch.Typed.NN.Linear 1 1 'Float '( 'CUDA, 0)
-type family PutDevice (f :: k) (device' :: (D.DeviceType, Nat)) (device :: (D.DeviceType, Nat)) :: k where
-  PutDevice (t device) device' device = t device'
-  PutDevice (t a)      device' device = (PutDevice t device' device) a
-  PutDevice t          _       _      = t
+type family ReplaceDevice (f :: k) (device' :: (D.DeviceType, Nat)) (device :: (D.DeviceType, Nat)) :: k where
+  ReplaceDevice (t device) device' device = t device'
+  ReplaceDevice (t a)      device' device = (ReplaceDevice t device' device) a
+  ReplaceDevice t          _       _      = t
+
+-- In a data type `f` parameterized by zero or one device type variables, replace the only occurring device type with the device type `device'`.
+-- 
+-- >>> :kind! ReplaceDevice' (Torch.Typed.NN.Linear 1 1 'D.Float '( 'D.CPU, 0)) '( 'D.CUDA, 0)
+-- ReplaceDevice' (Torch.Typed.NN.Linear 1 1 'D.Float '( 'D.CPU, 0)) '( 'D.CUDA, 0) :: *
+-- = Torch.Typed.NN.Linear 1 1 'Float '( 'CUDA, 0)
+type family ReplaceDevice' (f :: k) (device' :: (D.DeviceType, Nat)) :: k where
+  ReplaceDevice' (t (device :: (D.DeviceType, Nat))) device' = t device'
+  ReplaceDevice' (t a)                               device' = (ReplaceDevice' t device') a
+  ReplaceDevice' t                                   _       = t
 
 instance
-  ( g ~ PutDevice f device' device
-  , f ~ PutDevice g device device'
+  ( g ~ ReplaceDevice f device' device
+  , f ~ ReplaceDevice g device device'
   , Generic f
   , Generic g
   , GHasToDevice device' device (Rep f) (Rep g)
@@ -120,45 +140,59 @@ instance
   ) => HasToDevices (device' ': devices') (device ': devices) (f ': fs) (g ': gs) where
   toDevices (f :. fs) = Torch.Typed.Device.toDevice @device' @device f :. toDevices @devices' @devices @fs @gs fs
 
--- | scatter tensor over devices
+-- >>> :kind! GetDevice (Torch.Typed.NN.Linear 1 1 'D.Float '( 'D.CPU, 0))
+-- GetDevice (Torch.Typed.NN.Linear 1 1 'D.Float '( 'D.CPU, 0)) :: Maybe (D.DeviceType, Nat)
+-- = 'Just '( 'D.CPU, 0)
 --
--- >>> :type scatter @0 @'[ '( 'D.CUDA, 0), '( 'D.CUDA, 1)] (ones @'[2,1] @'D.Float @'( 'D.CPU, 0))
--- scatter @0 @'[ '( 'D.CUDA, 0), '( 'D.CUDA, 1)] (ones @'[2,1] @'D.Float @'( 'D.CPU, 0))
---  :: HList
---       '[Tensor '( 'D.CUDA, 0) 'D.Float '[1, 1],
---         Tensor '( 'D.CUDA, 1) 'D.Float '[1, 1]]
-scatter
-  :: forall (dim :: Nat) (devices :: [(D.DeviceType, Nat)]) device dtype shape gs chunks tensorChunks
-   . ( chunks ~ ListLength devices
-     , tensorChunks ~ Chunk chunks dim shape dtype device
-     , ATen.Castable (HList tensorChunks) [D.ATenTensor]
-     , HasToDevices devices (HReplicateR chunks device) tensorChunks gs
-     , All KnownNat '[dim, chunks]
-     )
-  => Tensor device dtype shape
-  -> HList gs
-scatter = toDevices @devices @(HReplicateR chunks device) . chunk @chunks @dim
+-- >>> :kind! GetDevice (Torch.Typed.Tensor.Tensor '( 'D.CUDA, 0) 'D.Float '[1])
+-- GetDevice (Torch.Typed.Tensor.Tensor '( 'D.CUDA, 0) 'D.Float '[1]) :: Maybe (D.DeviceType, Nat)
+-- = 'Just '( 'D.CUDA, 0)
+type family GetDevice (f :: k) :: Maybe (D.DeviceType, Nat) where
+  GetDevice (t (device :: (D.DeviceType, Nat))) = Just device
+  GetDevice (t a)                               = GetDevice t
+  GetDevice t                                   = Nothing
 
-data ToDevice f = ToDevice f
+-- >>> :kind! GetDevices '[Torch.Typed.Tensor.Tensor '( 'D.CUDA, 0) 'D.Float '[1], Torch.Typed.Tensor.Tensor '( 'D.CUDA, 1) 'D.Float '[1]]
+-- GetDevices '[Torch.Typed.Tensor.Tensor '( 'D.CUDA, 0) 'D.Float '[1], Torch.Typed.Tensor.Tensor '( 'D.CUDA, 1) 'D.Float '[1]] :: [(D.DeviceType, Nat)]
+-- = '[ '( 'D.CUDA, 0), '( 'D.CUDA, 1)]
+type family GetDevices (fs :: [k]) :: [(D.DeviceType, Nat)] where
+  GetDevices '[]       = '[]
+  GetDevices (f ': fs) = MaybePrepend (GetDevice f) (GetDevices fs)
+
+class HasScatter devices' device f gs | devices' device f -> gs where
+  scatter :: f -> HList gs
 
 instance
-  ( KnownDevice device'
-  ) => Apply' (ToDevice (Proxy device')) (Tensor device dtype shape) (Tensor device' dtype shape) where
-  apply' (ToDevice Proxy) t =
-    Torch.Typed.Tensor.toDevice @device' t
+  ( chunks ~ ListLength devices'
+  , tensorChunks ~ Chunk chunks 0 shape dtype device
+  , ATen.Castable (HList tensorChunks) [D.ATenTensor]
+  , devices ~ HReplicateR chunks device
+  , HasToDevices devices' devices tensorChunks gs
+  , KnownNat chunks
+  ) => HasScatter devices' device (Tensor device dtype shape) gs where
+  -- | Scatter a tensor over devices. The tensor will be split along the first dimension.
+  --
+  -- >>> :type scatter @'[ '( 'D.CUDA, 0), '( 'D.CUDA, 1)] (ones @'[2,1] @'D.Float @'( 'D.CPU, 0))
+  -- scatter @'[ '( 'D.CUDA, 0), '( 'D.CUDA, 1)] (ones @'[2,1] @'D.Float @'( 'D.CPU, 0))
+  --  :: HList
+  --       '[Tensor '( 'D.CUDA, 0) 'D.Float '[1, 1],
+  --         Tensor '( 'D.CUDA, 1) 'D.Float '[1, 1]]
+  scatter = toDevices @devices' @devices . chunk @chunks @0
 
--- | gather tensors from devices
---
--- >>> :type gather @0 @'( 'D.CPU, 0) (ones @'[1,1] @'D.Float @'( 'D.CUDA, 0) :. ones @'[1,1] @'D.Float @'( 'D.CUDA, 1) :. HNil)
--- gather @0 @'( 'D.CPU, 0) (ones @'[1,1] @'D.Float @'( 'D.CUDA, 0) :. ones @'[1,1] @'D.Float @'( 'D.CUDA, 1) :. HNil)
---  :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 1]
-gather
-  :: forall dim device devices dtype shape gs tensors
-   . ( HMap' (ToDevice (Proxy device)) tensors gs
-     , '(shape, dtype, device) ~ Cat dim gs
-     , ATen.Castable (HList gs) [D.ATenTensor]
-     , KnownNat dim
-     )
-  => HList tensors
-  -> Tensor device dtype shape
-gather inputs = cat @dim $ hmap' (ToDevice (Proxy @device)) inputs
+class HasGather device' devices fs g | device' devices fs -> g where
+  gather :: HList fs -> g
+
+instance
+  ( chunks ~ ListLength fs
+  , devices ~ GetDevices fs
+  , devices' ~ HReplicateR chunks device'
+  , HasToDevices devices' devices fs tensorChunks
+  , '(shape, dtype, device') ~ Cat 0 tensorChunks
+  , ATen.Castable (HList tensorChunks) [D.ATenTensor]
+  ) => HasGather device' devices fs (Tensor device' dtype shape) where
+  -- | Gather a list of tensors on a device. The tensors will be concatenated along the first dimension.
+  --
+  -- >>> :type gather @'( 'D.CPU, 0) (ones @'[1,1] @'D.Float @'( 'D.CUDA, 0) :. ones @'[1,1] @'D.Float @'( 'D.CUDA, 1) :. HNil)
+  -- gather @'( 'D.CPU, 0) (ones @'[1,1] @'D.Float @'( 'D.CUDA, 0) :. ones @'[1,1] @'D.Float @'( 'D.CUDA, 1) :. HNil)
+  --  :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 1]
+  gather = cat @0 . toDevices @devices' @devices
