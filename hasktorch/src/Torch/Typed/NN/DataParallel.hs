@@ -68,7 +68,7 @@ instance
 -- Tensor Float [2,1] [[ 0.2478   ],
 --                     [ 0.2478   ]]
 forwardConcurrently
-  :: forall devices' device' device model input output models inputs outputs m
+  :: forall devices' device' device model input output models inputs outputs
    . ( 'Just device ~ GetDevice model
      , 'Just device ~ GetDevice input
      , HasScatter devices' device input inputs
