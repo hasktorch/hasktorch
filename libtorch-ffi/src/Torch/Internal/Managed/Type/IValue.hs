@@ -38,11 +38,23 @@ import Torch.Internal.Unmanaged.Type.DimnameList
 import qualified Torch.Internal.Unmanaged.Type.IValue as Unmanaged
 import Torch.Internal.Unmanaged.Type.IValue (IValueLike)
 
-instance (IValueLike a (Ptr IValue)) => IValueLike a (ForeignPtr IValue) where
-  toIValue x = cast1 (Unmanaged.toIValue :: a -> IO (Ptr IValue)) x
-  fromIValue x = cast1 (Unmanaged.fromIValue :: Ptr IValue -> IO a) x
+instance IValueLike Double (ForeignPtr IValue) where
+  toIValue x = cast1 (Unmanaged.toIValue :: CDouble -> IO (Ptr IValue)) x
+  fromIValue x = cast1 (Unmanaged.fromIValue :: Ptr IValue -> IO CDouble) x
 
-instance (CppObject a, IValueLike (Ptr a) (Ptr IValue)) =>  IValueLike (ForeignPtr a) (ForeignPtr IValue) where
+instance IValueLike Int64 (ForeignPtr IValue) where
+  toIValue x = cast1 (Unmanaged.toIValue :: Int64 -> IO (Ptr IValue)) x
+  fromIValue x = cast1 (Unmanaged.fromIValue :: Ptr IValue -> IO Int64) x
+
+instance IValueLike Bool (ForeignPtr IValue) where
+  toIValue x = cast1 (Unmanaged.toIValue :: CBool -> IO (Ptr IValue)) x
+  fromIValue x = cast1 (Unmanaged.fromIValue :: Ptr IValue -> IO CBool) x
+
+--instance IValueLike String (ForeignPtr IValue) where
+--  toIValue x = cast1 (Unmanaged.toIValue :: CBool -> IO (Ptr IValue)) x
+--  fromIValue x = cast1 (Unmanaged.fromIValue :: Ptr IValue -> IO CBool) x
+
+instance (CppObject a, IValueLike (Ptr a) (Ptr IValue)) => IValueLike (ForeignPtr a) (ForeignPtr IValue) where
   toIValue x = cast1 (Unmanaged.toIValue :: Ptr a -> IO (Ptr IValue)) x
   fromIValue x = cast1 (Unmanaged.fromIValue :: Ptr IValue -> IO (Ptr a)) x
 

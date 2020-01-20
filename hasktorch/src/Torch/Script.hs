@@ -39,6 +39,7 @@ import qualified Torch.Internal.Managed.Cast as ATen
 import qualified Torch.Internal.Type as ATen
 import qualified Torch.Internal.Const as ATen
 import Torch.Internal.Unmanaged.Type.IValue (IValueLike(..))
+import Torch.Internal.Managed.Type.IValue
 import qualified Torch.Internal.Managed.Type.Module as LibTorch
 
 import Torch.Device
@@ -47,7 +48,7 @@ import Torch.Tensor (Tensor(..))
 import Torch.TensorOptions
 
 newtype Module = UnsafeModule (ForeignPtr ATen.Module)
-newtype RawIValue = UnsafeIValue (ForeignPtr ATen.IValue)
+type RawIValue = ForeignPtr ATen.IValue
 newtype Blob = UnsafeBlob (ForeignPtr (ATen.C10Ptr ATen.Blob))
 newtype Object = UnsafeObject (ForeignPtr (ATen.C10Ptr ATen.IVObject))
 newtype Future = UnsafeFuture (ForeignPtr (ATen.C10Ptr ATen.IVFuture))
@@ -78,18 +79,6 @@ instance Castable Module (ForeignPtr ATen.Module) where
   cast (UnsafeModule obj) f = f obj
   uncast obj f = f $ UnsafeModule obj
 
-instance Castable RawIValue (ForeignPtr ATen.IValue) where
-  cast (UnsafeIValue obj) f = f obj
-  uncast obj f = f $ UnsafeIValue obj
-
-instance Castable [RawIValue] (ForeignPtr ATen.IValueList) where
-  cast xs f = do
-    ptr_list <- mapM (\x -> (cast x return :: IO (ForeignPtr ATen.IValue))) xs
-    cast ptr_list f
-  uncast xs f = uncast xs $ \ptr_list -> do
-    tensor_list <- mapM (\(x :: ForeignPtr ATen.IValue) -> uncast x return) ptr_list
-    f tensor_list
-
 {-
 instance (IValueLike a (ForeignPtr ATen.IValue))
   => IValueLike a RawIValue where
@@ -113,28 +102,28 @@ forward = cast2 LibTorch.forward
 
 instance Castable IValue RawIValue where
 --  cast (IVNone) f = f "None"
-  cast (IVTensor (Unsafe v)) f = toIValue v >>= f
+  cast (IVTensor (Unsafe v)) f = toIValue v>>= f
   cast (IVDouble v) f = toIValue v >>= f
   cast (IVInt v) f = toIValue v >>= f
   cast (IVBool v) f = toIValue v >>= f
-  cast (IVTuple v) f = toIValue v >>= f
-  cast (IVIntList v) f = toIValue v >>= f
-  cast (IVDoubleList v) f = toIValue v >>= f
-  cast (IVBoolList v) f = toIValue v >>= f
-  cast (IVString v) f = toIValue v >>= f
-  cast (IVTensorList v) f = toIValue v >>= f
-  cast (IVBlob v) f = toIValue v >>= f
-  cast (IVGenericList v) f = toIValue v >>= f
-  cast (IVGenericDict v) f = toIValue v >>= f
-  cast (IVFuture v) f = toIValue v >>= f
-  cast (IVDevice v) f = toIValue v >>= f
-  cast (IVObject v) f = toIValue v >>= f
+--  cast (IVTuple v) f = toIValue v >>= f
+--  cast (IVIntList v) f = toIValue v >>= f
+--  cast (IVDoubleList v) f = toIValue v >>= f
+--  cast (IVBoolList v) f = toIValue v >>= f
+--  cast (IVString v) f = toIValue v >>= f
+--  cast (IVTensorList v) f = toIValue v >>= f
+--  cast (IVBlob v) f = toIValue v >>= f
+--  cast (IVGenericList v) f = toIValue v >>= f
+--  cast (IVGenericDict v) f = toIValue v >>= f
+--  cast (IVFuture v) f = toIValue v >>= f
+--  cast (IVDevice v) f = toIValue v >>= f
+--  cast (IVObject v) f = toIValue v >>= f
   --  cast (IVUninitialized) f = f (toIValue v)
-  cast (IVCapsule v) f = toIValue v >>= f
-  uncast (UnsafeIValue obj) f = do
-    ivalue_isTensor obj >>= \case
-      True -> fromIValue obj >>= f.IVTensor
-      False -> 
-        ivalue_isDouble obj >>= \case
-          True -> fromIValue obj >>= f.IVDouble
-          False -> undefined
+--  cast (IVCapsule v) f = toIValue v >>= f
+  uncast obj f = do
+    iValue_isTensor obj >>= \case
+      1 -> fromIValue obj >>= f.IVTensor . Unsafe
+      _ -> 
+        iValue_isDouble obj >>= \case
+          1 -> fromIValue obj >>= f.IVDouble
+          _ -> undefined

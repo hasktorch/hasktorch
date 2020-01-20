@@ -69,7 +69,6 @@ data Symbol
 data IValue
 type IValueList = StdVector IValue
 
-data C10Ptr a
 data C10Dict a
 data C10List a
 data C10Optional a
@@ -105,7 +104,6 @@ typeTable = Map.fromList [
       , (C.TypeName "at::QScheme", [t|QScheme|])
       , (C.TypeName "at::Dimname", [t|Dimname|])
       , (C.TypeName "at::Symbol", [t|Symbol|])
-      , (C.TypeName "c10::intrusive_ptr", [t|C10Ptr|])
       , (C.TypeName "Quantizer", [t|Quantizer|])
       , (C.TypeName "at::IValue", [t|IValue|])
       , (C.TypeName "c10::intrusive_ptr", [t|C10Ptr|])
