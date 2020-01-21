@@ -17,6 +17,7 @@ module Torch.Typed.NN.DataParallel (
 ) where
 
 import           Torch.HList
+import           Control.Concurrent.Async
 import           GHC.TypeLits
 import           System.IO.Unsafe
 
@@ -28,17 +29,6 @@ import           Torch.Typed.Functional
 import           Torch.Typed.NN
 
 data ForwardConcurrently = ForwardConcurrently
-
-newtype Concurrently a = Concurrently { runConcurrently :: IO a }
-
-instance Functor Concurrently where
-  fmap f (Concurrently a) = Concurrently $ f <$> a
-
-instance Applicative Concurrently where
-  pure = Concurrently . return
-  Concurrently fs <*> Concurrently as =
-    Concurrently $ (\(f, a) -> f a) <$> concurrently fs as
-   where concurrently left right = (,) <$> left <*> right
 
 instance 
   ( HasForward model input (IO output)
@@ -53,7 +43,7 @@ instance
 -- target `device'`
 --
 -- >>> model <- A.sample (LinearSpec @1 @1 @'D.Float @'( 'D.CPU, 0))
--- >>> t = Torch.Typed.Factories.ones @'[2, 1] @'D.Float @'( 'D.CPU, 0)
+-- >>> t = ones @'[2, 1] @'D.Float @'( 'D.CPU, 0)
 --
 -- >>> :t forward model t
 -- forward model t :: IO (Tensor '( 'D.CPU, 0) 'D.Float '[2, 1])

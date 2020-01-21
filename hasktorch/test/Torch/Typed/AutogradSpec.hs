@@ -67,6 +67,7 @@ import           Torch.Typed.Device
 import           Torch.Typed.Functional
 import           Torch.Typed.Factories
 import           Torch.Typed.NN
+import           Torch.Typed.NN.DataParallel
 import           Torch.Typed.Autograd
 import           Torch.Typed.Optim
 import           Torch.Typed.Serialize
@@ -352,15 +353,12 @@ spec = describe "grad" $ do
     it "works in a data-parallel setting" $ do
       let spec = LinearSpec @10 @5 @'D.Float @'( 'D.CPU, 0)
       model <- A.sample spec
-      let models = Torch.Typed.Device.replicate @'[ '( 'D.CPU, 0), '( 'D.CUDA, 0)] @'( 'D.CPU, 0) model
       input <- randn @'[20,10] @'D.Float @'( 'D.CPU, 0)
-      let inputs = scatter @0 @'[ '( 'D.CPU, 0), '( 'D.CUDA, 0)] input
-          outputs = hzipWith LinearForward models inputs
-          output = gather @0 @'( 'D.CPU, 0) outputs
-          loss = mseLoss @D.ReduceMean output zeros
+      output <- forwardConcurrently @'[ '( 'D.CPU, 0), '( 'D.CUDA, 0)] @'( 'D.CPU, 0) model input
+      let loss = mseLoss @D.ReduceMean output zeros
           gradientWeight :. gradientBias :. HNil = grad loss (Torch.Typed.Parameter.flattenParameters model)
-          output' = Torch.Typed.NN.linear model input
-          loss' = mseLoss @D.ReduceMean output' zeros
+      output' <- forward model input
+      let loss' = mseLoss @D.ReduceMean output' zeros
           gradientWeight' :. gradientBias' :. HNil = grad loss' (Torch.Typed.Parameter.flattenParameters model)
       (toInt . all) (isclose 1e-08 1e-05 False gradientWeight gradientWeight') `shouldBe` 1
       (toInt . all) (isclose 1e-08 1e-05 False gradientBias gradientBias') `shouldBe` 1
