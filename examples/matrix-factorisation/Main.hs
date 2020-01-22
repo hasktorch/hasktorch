@@ -3,7 +3,7 @@
 {-# LANGUAGE RecordWildCards #-}
 
 -- In matrix factorization, we aim to write a given matrix R (of size n x m) as
--- a product U * V where U is n x k and R is k x m for some k. This is done in
+-- a product U * V where U is n x k and V is k x m for some k. This is done in
 -- this example by minimizing a loss function which is the mean square of the
 -- difference between U * V and R.
 
@@ -27,7 +27,7 @@ data MatrixFactSpec
   = MatrixFactSpec
       { dim1 :: Int, -- that is n when R has n x m shape
         dim2 :: Int, -- that is m when R has n x m shape
-        common_dim :: Int
+        common_dim :: Int -- that is k when U has n x k shape
       }
   deriving (Show, Eq)
 
@@ -82,9 +82,9 @@ num_iters = 10000
 
 main :: IO ()
 main = do
+  manual_seed_L 123
   -- The rank of r is 2 and we therefore choose k equal to 2.
   -- The gradient descent does not converge for k equal to 1, as expected.
-  manual_seed_L 123
   init <- sample $ (MatrixFactSpec n m k)
   trained <- foldLoop init num_iters gdBlock
   printParams trained
