@@ -10,8 +10,7 @@ methods:
 - storage_offset() -> int64_t
 - defined() -> bool
 - reset() -> void
-- operator=(Tensor x) -> void
-#- operator=(Scalar v) -> void
+- operator=(Tensor x) -> Tensor
 - is_same(Tensor other) -> bool
 - use_count() -> size_t
 - weak_use_count() -> size_t
@@ -22,9 +21,10 @@ methods:
 #- names() -> DimnameList
 - ndimension() -> int64_t
 #- is_contiguous(at::MemoryFormat memory_format=at::MemoryFormat::Contiguous) -> bool
-- is_contiguous() -> bool
+- is_non_overlapping_and_dense() -> bool
 #- suggest_memory_format() -> at::MemoryFormat
 - nbytes() -> size_t
+- numel() -> int64_t
 - itemsize() -> size_t
 - element_size() -> size_t
 #- type() -> DeprecatedTypeProperties
@@ -92,13 +92,19 @@ methods:
 - is_leaf() -> bool
 - output_nr() -> int64_t
 - _version() -> int64_t
+- requires_grad_(bool _requires_grad=true) -> Tensor
 - align_to(DimnameList names) -> Tensor
+- align_to(DimnameList order, int64_t ellipsis_idx) -> Tensor
 - align_as(Tensor  other) -> Tensor
 - refine_names(DimnameList names) -> Tensor
 - unflatten(Dimname dim, IntArrayRef sizes, DimnameList names) -> Tensor
 - unflatten(int64_t dim, IntArrayRef sizes, DimnameList names) -> Tensor
 - abs() -> Tensor
 - abs_() -> Tensor
+- angle() -> Tensor
+- real() -> Tensor
+- imag() -> Tensor
+- conj() -> Tensor
 - acos() -> Tensor
 - acos_() -> Tensor
 - add(Tensor  other, Scalar alpha=1) -> Tensor
@@ -159,6 +165,7 @@ methods:
 - new_empty(IntArrayRef size, TensorOptions  options={}) -> Tensor
 - new_full(IntArrayRef size, Scalar fill_value, TensorOptions  options={}) -> Tensor
 - resize_(IntArrayRef size) -> Tensor
+- new_zeros(IntArrayRef size, TensorOptions  options={}) -> Tensor
 - erf() -> Tensor
 - erf_() -> Tensor
 - erfc() -> Tensor
@@ -339,7 +346,6 @@ methods:
 - _coalesced_(bool coalesced) -> Tensor
 - indices() -> Tensor
 - values() -> Tensor
-- numel() -> int64_t
 - unbind(int64_t dim=0) -> TensorList
 - unbind(Dimname dim) -> TensorList
 - to_sparse(int64_t sparse_dim) -> Tensor
@@ -412,6 +418,10 @@ methods:
 - __or__(Tensor  other) -> Tensor
 - __ior__(Scalar other) -> Tensor
 - __ior__(Tensor  other) -> Tensor
+- bitwise_xor(Scalar other) -> Tensor
+- bitwise_xor(Tensor  other) -> Tensor
+- bitwise_xor_(Scalar other) -> Tensor
+- bitwise_xor_(Tensor  other) -> Tensor
 - __xor__(Scalar other) -> Tensor
 - __xor__(Tensor  other) -> Tensor
 - __ixor__(Scalar other) -> Tensor

@@ -103,7 +103,7 @@ kONLY_FOR_TEST = [C.pure| int16_t { (int16_t) at::DeviceType::ONLY_FOR_TEST } |]
 -- TODO: add all values for at::Reduction
 
 kMean :: Int64
-kMean = [C.pure| int64_t { (int64_t) Reduction::Mean } |]
+kMean = [C.pure| int64_t { (int64_t) at::Reduction::Mean } |]
 
 bCPU :: Backend
 bCPU = [C.pure| int { (int) at::Backend::CPU } |]

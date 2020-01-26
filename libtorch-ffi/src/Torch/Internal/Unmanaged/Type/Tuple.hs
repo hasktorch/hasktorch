@@ -98,27 +98,31 @@ instance CppTuple4 (Ptr (StdTuple '(Tensor,Tensor,Tensor,TensorList))) where
   get3 v = [C.throwBlock| std::vector<at::Tensor>* { return new std::vector<at::Tensor>(std::get<3>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,std::vector<at::Tensor>>* v)));}|]
 
 
------------------StdTuple '(Tensor,Tensor,Tensor,Int64)---------------------
+-----------------StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64)---------------------
 
-deleteTensorTensorTensorInt64 :: Ptr (StdTuple '(Tensor,Tensor,Tensor,Int64)) -> IO ()
-deleteTensorTensorTensorInt64 ptr = [C.throwBlock| void { delete $(std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>* ptr); return; }|]
+deleteTensorTensorTensorTensorInt64 :: Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64)) -> IO ()
+deleteTensorTensorTensorTensorInt64 ptr = [C.throwBlock| void { delete $(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t>* ptr); return; }|]
 
-instance CppObject (StdTuple '(Tensor,Tensor,Tensor,Int64)) where
-  fromPtr ptr = newForeignPtr ptr (deleteTensorTensorTensorInt64 ptr)
+instance CppObject (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64)) where
+  fromPtr ptr = newForeignPtr ptr (deleteTensorTensorTensorTensorInt64 ptr)
 
-instance CppTuple2 (Ptr (StdTuple '(Tensor,Tensor,Tensor,Int64))) where
-  type A (Ptr (StdTuple '(Tensor,Tensor,Tensor,Int64))) = Ptr Tensor
-  type B (Ptr (StdTuple '(Tensor,Tensor,Tensor,Int64))) = Ptr Tensor
-  get0 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<0>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>* v)));}|]
-  get1 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<1>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>* v)));}|]
+instance CppTuple2 (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64))) where
+  type A (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64))) = Ptr Tensor
+  type B (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64))) = Ptr Tensor
+  get0 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<0>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t>* v)));}|]
+  get1 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<1>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t>* v)));}|]
 
-instance CppTuple3 (Ptr (StdTuple '(Tensor,Tensor,Tensor,Int64))) where
-  type C (Ptr (StdTuple '(Tensor,Tensor,Tensor,Int64))) = Ptr Tensor
-  get2 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<2>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>* v)));}|]
+instance CppTuple3 (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64))) where
+  type C (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64))) = Ptr Tensor
+  get2 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<2>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t>* v)));}|]
 
-instance CppTuple4 (Ptr (StdTuple '(Tensor,Tensor,Tensor,Int64))) where
-  type D (Ptr (StdTuple '(Tensor,Tensor,Tensor,Int64))) = Int64
-  get3 v = [C.throwBlock| int64_t { return (std::get<3>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>* v)));}|]
+instance CppTuple4 (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64))) where
+  type D (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64))) = Ptr Tensor
+  get3 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<3>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t>* v)));}|]
+
+instance CppTuple5 (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64))) where
+  type E (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64))) = Int64
+  get4 v = [C.throwBlock| int64_t { return (std::get<4>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t>* v)));}|]
 
 
 -----------------StdTuple '(Tensor,Tensor,Tensor)---------------------

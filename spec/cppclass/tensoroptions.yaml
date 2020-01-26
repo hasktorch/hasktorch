@@ -28,7 +28,7 @@ methods:
 #- requires_grad(c10::optional<bool> requires_grad) -> TensorOptions
 - requires_grad(bool requires_grad) -> TensorOptions
 #- is_variable(c10::optional<bool> is_variable) -> TensorOptions
-- is_variable(bool is_variable) -> TensorOptions
+#- is_variable(bool is_variable) -> TensorOptions
 #- device() -> Device
 - has_device() -> bool
 #- device_opt() -> c10::optional<Device>
@@ -42,7 +42,7 @@ methods:
 - requires_grad() -> bool
 - has_requires_grad() -> bool
 #- requires_grad_opt() -> c10::optional<bool>
-- is_variable() -> bool
-- has_is_variable() -> bool
+#- is_variable() -> bool
+#- has_is_variable() -> bool
 #- is_variable_opt() -> c10::optional<bool>
 - backend() -> Backend

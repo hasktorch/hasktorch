@@ -458,7 +458,7 @@ instance ( TensorOptions shape  dtype device
     let t' = inverse t
     checkDynamicTensorAttributes t'
 
-data SymeigSpec = SymeigSpec
+data SymeigSpec = SymeigSpec | SymeigvaluesSpec
 
 instance ( TensorOptions shape   dtype device
          , TensorOptions shape'  dtype device
@@ -476,12 +476,20 @@ instance ( TensorOptions shape   dtype device
   apply SymeigSpec _ _ = do
     t <- rand @shape @dtype @device
     foldMap
-      (\(eigenvectors, upper) -> do
-        let (t', t'') = symeig eigenvectors upper t
+      (\upper -> do
+        let (t', t'') = symeig upper t
         checkDynamicTensorAttributes t'
         checkDynamicTensorAttributes t''
       )
-      ((,) <$> [True, False] <*> [D.Upper, D.Lower])
+      [D.Upper, D.Lower]
+  apply SymeigvaluesSpec _ _ = do
+    t <- rand @shape @dtype @device
+    foldMap
+      (\upper -> do
+        let t' = symeigvalues upper t
+        checkDynamicTensorAttributes t'
+      )
+      [D.Upper, D.Lower]
 
 data EigSpec = EigSpec
 
@@ -876,11 +884,15 @@ spec' device =
           hfoldrM @IO InverseSpec () (hattach cpu   (hproduct standardFloatingPointDTypes squareShapes))
         D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
           hfoldrM @IO InverseSpec () (hattach cuda0 (hproduct standardFloatingPointDTypes (Proxy @'[1, 1] :. Proxy @'[2, 2] :. Proxy @'[1, 1, 1] :. Proxy @'[2, 2, 2] :. HNil)))
-      it "symeig" $ case device of
-        D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
-          hfoldrM @IO SymeigSpec () (hattach cpu   (hproduct standardFloatingPointDTypes squareShapes))
-        D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-          hfoldrM @IO SymeigSpec () (hattach cuda0 (hproduct standardFloatingPointDTypes squareShapes))
+      let dispatchSymeigSpec symeigSpec = case device of
+            D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+              hfoldrM @IO symeigSpec () (hattach cpu   (hproduct standardFloatingPointDTypes squareShapes))
+            D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+              hfoldrM @IO symeigSpec () (hattach cuda0 (hproduct standardFloatingPointDTypes squareShapes))
+      it "symeig" $ do
+        dispatchSymeigSpec SymeigSpec
+      it "symeigvalues" $ do
+        dispatchSymeigSpec SymeigvaluesSpec
       it "eig" $ do
         let eigenVectors = Proxy @'EnableEigenVectors :. Proxy @'DisableEigenVectors :. HNil
             ns = Proxy @0 :. Proxy @2 :. Proxy @10 :. HNil

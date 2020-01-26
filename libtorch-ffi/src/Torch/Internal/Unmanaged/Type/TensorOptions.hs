@@ -101,15 +101,6 @@ tensorOptions_requires_grad_b _obj _requires_grad =
     $(bool _requires_grad)));
   }|]
 
-tensorOptions_is_variable_b
-  :: Ptr TensorOptions
-  -> CBool
-  -> IO (Ptr TensorOptions)
-tensorOptions_is_variable_b _obj _is_variable =
-  [C.throwBlock| at::TensorOptions* { return new at::TensorOptions((*$(at::TensorOptions* _obj)).is_variable(
-    $(bool _is_variable)));
-  }|]
-
 tensorOptions_has_device
   :: Ptr TensorOptions
   -> IO (CBool)
@@ -163,22 +154,6 @@ tensorOptions_has_requires_grad
   -> IO (CBool)
 tensorOptions_has_requires_grad _obj =
   [C.throwBlock| bool { return (*$(at::TensorOptions* _obj)).has_requires_grad(
-    );
-  }|]
-
-tensorOptions_is_variable
-  :: Ptr TensorOptions
-  -> IO (CBool)
-tensorOptions_is_variable _obj =
-  [C.throwBlock| bool { return (*$(at::TensorOptions* _obj)).is_variable(
-    );
-  }|]
-
-tensorOptions_has_is_variable
-  :: Ptr TensorOptions
-  -> IO (CBool)
-tensorOptions_has_is_variable _obj =
-  [C.throwBlock| bool { return (*$(at::TensorOptions* _obj)).has_is_variable(
     );
   }|]
 

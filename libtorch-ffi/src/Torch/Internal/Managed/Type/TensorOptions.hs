@@ -78,12 +78,6 @@ tensorOptions_requires_grad_b
   -> IO (ForeignPtr TensorOptions)
 tensorOptions_requires_grad_b = cast2 Unmanaged.tensorOptions_requires_grad_b
 
-tensorOptions_is_variable_b
-  :: ForeignPtr TensorOptions
-  -> CBool
-  -> IO (ForeignPtr TensorOptions)
-tensorOptions_is_variable_b = cast2 Unmanaged.tensorOptions_is_variable_b
-
 tensorOptions_has_device
   :: ForeignPtr TensorOptions
   -> IO (CBool)
@@ -118,16 +112,6 @@ tensorOptions_has_requires_grad
   :: ForeignPtr TensorOptions
   -> IO (CBool)
 tensorOptions_has_requires_grad = cast1 Unmanaged.tensorOptions_has_requires_grad
-
-tensorOptions_is_variable
-  :: ForeignPtr TensorOptions
-  -> IO (CBool)
-tensorOptions_is_variable = cast1 Unmanaged.tensorOptions_is_variable
-
-tensorOptions_has_is_variable
-  :: ForeignPtr TensorOptions
-  -> IO (CBool)
-tensorOptions_has_is_variable = cast1 Unmanaged.tensorOptions_has_is_variable
 
 tensorOptions_backend
   :: ForeignPtr TensorOptions
