@@ -1,6 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 
-module Optimizers where
+module Torch.Optim where
 
 import Control.Monad.State
 import Prelude hiding (sqrt)
@@ -11,12 +11,25 @@ import Torch.Autograd
 import Torch.NN
 
 type LearningRate = Tensor
+type Loss = Tensor
 newtype Gradients = Gradients [Tensor] deriving Show
 
 grad' t p = Gradients (grad t p)
 
 class Optimizer o where
     step :: LearningRate -> Gradients -> [Tensor] -> o -> ([Tensor], o)
+
+-- | run a single iteration of an optimizer, returning new parameters and updated optimizer state
+runStep :: (Parameterized p, Optimizer o) =>
+        p -> o -> Loss -> LearningRate -> IO ([Parameter], o)
+runStep paramState optState lossValue lr = do
+    let (flatParameters', optState') = step lr gradients depParameters optState 
+    newFlatParam <- mapM makeIndependent flatParameters'
+    pure (newFlatParam, optState')
+    where
+        flatParameters = flattenParameters paramState
+        gradients = grad' lossValue flatParameters
+        depParameters = fmap toDependent flatParameters
 
 --
 -- Gradient Descent
@@ -36,6 +49,12 @@ gd' lr gradients depParameters dummy = (gd lr gradients depParameters, dummy)
 
 instance Optimizer GD where
     step = gd'
+
+sgd :: LearningRate -> [Parameter] -> [Tensor] -> [Tensor]
+sgd lr parameters gradients = zipWith step depParameters gradients
+  where
+    step p dp = p - (lr * dp)
+    depParameters = map toDependent parameters
 
 --
 -- Gradient Descent with Momentum
@@ -97,3 +116,7 @@ adam lr (Gradients gradients) parameters Adam{..} = (parameters', Adam beta1 bet
 
 instance Optimizer Adam where
     step = adam
+
+-- | syntactic sugar for looping with foldM
+foldLoop :: a -> Int -> (a -> Int -> IO a) -> IO a
+foldLoop x count block = foldM block x [1..count]

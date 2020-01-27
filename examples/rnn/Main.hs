@@ -11,6 +11,7 @@ import Torch.TensorFactories
 import Torch.Functional
 import Torch.TensorOptions
 import Torch.Autograd
+import Torch.Optim
 import Torch.NN
 import GHC.Generics
 
@@ -27,28 +28,18 @@ num_iters = 10
 num_timesteps = 3
 
 run :: (RecurrentCell a, Parameterized a) 
-    => Tensor
-    -> Tensor
-    -> Tensor
-    -> a
-    -> Int 
-    -> IO (a)
+    => Tensor -- ^ input 
+    -> Tensor -- ^ hidden state initial value
+    -> Tensor -- ^ expected output
+    -> a -- ^ model state
+    -> Int -- ^ iteration
+    -> IO (a) -- ^ new model state
 run input_tensor init_hidden expected_output model i = do
-    
     let output = finalState model input_tensor init_hidden
-    let loss = mse_loss output expected_output
-
+        loss = mse_loss output expected_output
     print loss 
-
-    let flat_parameters = flattenParameters model
-    let gradients = grad loss flat_parameters
-        
-
-    -- new parameters returned by the SGD update functions
-    new_flat_parameters <- mapM makeIndependent $ sgd 5e-2 flat_parameters gradients
-
-    -- return the new model state "to" the next iteration of foldLoop
-    return $ replaceParameters model new_flat_parameters
+    (newParam, _) <- runStep model GD loss 5e-2
+    pure $ replaceParameters model newParam
 
 
 main :: IO ()

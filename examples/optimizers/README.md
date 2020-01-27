@@ -3,7 +3,6 @@
 Implementations of optimizers run on simple test functions. This implementation is for untyped tensors.
 
 - `Main.hs` - main training loop execution
-- `Optimizers.hs` - optimizer implementations and typeclass definition (candidate implementation for a library optimizers implementation)
 - `TestFunction.hs` - differentiable implementations of [test functions](https://en.wikipedia.org/wiki/Test_functions_for_optimization)
 
 Optimizers are represented by types encapsulating the state of the optimizer (momentum, moments, etc. or a dummy constructor in the case of a stateless optimizer such as gradient descent).

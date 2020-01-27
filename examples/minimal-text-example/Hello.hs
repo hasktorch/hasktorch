@@ -5,6 +5,8 @@
 
 module Main where
 
+import Control.Monad (when)
+
 import Torch.Tensor
 import Torch.DType
 import Torch.TensorFactories
@@ -12,6 +14,7 @@ import Torch.Functional
 import Torch.TensorOptions
 import Torch.Autograd
 import Torch.NN
+import Torch.Optim
 import GHC.Generics
 
 import Control.Monad.State.Strict
@@ -34,22 +37,12 @@ run :: (RecurrentCell a, Parameterized a)
     -> Int
     -> IO (a)
 run input_tensor init_hidden expected_output model i = do
-
     let output = finalState model input_tensor init_hidden
-    let loss = mse_loss output expected_output
-
-    if i `mod` 100 == 0
-    then print loss
-    else return ()
-
-    let flat_parameters = flattenParameters model
-    let gradients = grad loss flat_parameters
-
-    -- new parameters returned by the SGD update functions
-    new_flat_parameters <- mapM makeIndependent $ sgd 0.05 flat_parameters gradients
-
-    -- return the new model state "to" the next iteration of foldLoop
-    return $ replaceParameters model new_flat_parameters
+        loss = mse_loss output expected_output
+    when (i `mod` 100 == 0) $ do
+        print loss
+    (newParam, _) <- runStep model GD loss 0.05
+    return $ replaceParameters model newParam
 
 
 -- | convert a list to a one-dimensional tensor

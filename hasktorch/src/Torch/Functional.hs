@@ -65,6 +65,15 @@ instance Castable Reduction Int64 where
 isUpper Upper = True
 isUpper Lower = False
 
+mean :: Tensor -> Tensor
+mean t = unsafePerformIO $ (cast1 ATen.mean_t) t
+
+std :: Tensor -> Tensor
+std t = unsafePerformIO $ (cast1 ATen.std_t) t
+
+var :: Tensor -> Tensor
+var t = unsafePerformIO $ (cast1 ATen.var_t) t
+
 sumAll :: Tensor -> Tensor
 sumAll t = unsafePerformIO $ (cast1 ATen.sum_t) t
 
@@ -232,7 +241,6 @@ inverse t = unsafePerformIO $ (cast1 ATen.inverse_t) t
 symeig :: Tensor -> Bool -> Tri -> (Tensor, Tensor)
 symeig t eigenvectors upper = unsafePerformIO $ (cast3 ATen.symeig_tbb) t eigenvectors boolUpper
   where boolUpper = isUpper upper
-
 
 eig :: Tensor -> Bool -> (Tensor, Tensor)
 eig t eigenvectors = unsafePerformIO $ (cast2 ATen.eig_tb) t eigenvectors

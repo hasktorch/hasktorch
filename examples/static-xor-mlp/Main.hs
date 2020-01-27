@@ -42,10 +42,11 @@ import           Torch.Typed.Autograd
 import           Torch.Typed.Optim
 import qualified Torch.Autograd                as A
 import qualified Torch.NN                      as A
+import qualified Torch.Optim                   as A
 import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
 import qualified Torch.Tensor                  as D
-import qualified Torch.Functional               as D
+import qualified Torch.Functional              as D
 import qualified Torch.TensorFactories         as D
 
 
