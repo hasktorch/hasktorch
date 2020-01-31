@@ -173,9 +173,9 @@ executable mnist-mlp
                      , safe-exceptions
                      , static-mnist
 
-executable matrix-factorisation
+executable matrix-factorization
   import:              config
-  hs-source-dirs:      matrix-factorisation
+  hs-source-dirs:      matrix-factorization
   main-is:             SparseRatingMatrix.hs
   other-modules:       MF
   ghc-options:         -fno-warn-partial-type-signatures

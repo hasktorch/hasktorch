@@ -49,6 +49,3 @@ mulMF (MatrixFact u v) = matmul u' v'
   where
     u' = toDependent u
     v' = toDependent v
-
-getEntryByIndex :: Tensor -> Int -> Int -> Tensor
-getEntryByIndex t i j = select (select t 0 i) 0 j

@@ -10,49 +10,13 @@
 module Main where
 
 import Control.Monad (foldM, when)
+import MF
 import Torch.Autograd (grad, makeIndependent, toDependent)
-import Torch.DType (DType (Float))
 import Torch.Functional (matmul, mse_loss)
 import Torch.Internal.Managed.Type.Context (manual_seed_L)
-import Torch.NN
-  ( Parameter,
-    Randomizable,
-    sample,
-    sgd,
-  )
+import Torch.NN (sample)
+import Torch.Optim (sgd)
 import Torch.Tensor (Tensor, asTensor, shape)
-import Torch.TensorFactories (randn')
-
-data MatrixFactSpec
-  = MatrixFactSpec
-      { dim1 :: Int, -- that is n when R has n x m shape
-        dim2 :: Int, -- that is m when R has n x m shape
-        common_dim :: Int
-      }
-  deriving (Show, Eq)
-
-data MatrixFact = MatrixFact {u :: Parameter, v :: Parameter}
-
-instance Randomizable MatrixFactSpec MatrixFact where
-  sample (MatrixFactSpec n m k) = do
-    u <- makeIndependent =<< randn' [n, k]
-    v <- makeIndependent =<< randn' [k, m]
-    pure $ MatrixFact u v
-
-flattenParameters :: MatrixFact -> [Parameter]
-flattenParameters (MatrixFact u v) = [u, v]
-
-replaceParameters :: MatrixFact -> [Parameter] -> MatrixFact
-replaceParameters state params_list = MatrixFact u v
-  where
-    u = params_list !! 0
-    v = params_list !! 1
-
-mulMF :: MatrixFact -> Tensor
-mulMF (MatrixFact u v) = matmul u' v'
-  where
-    u' = toDependent u
-    v' = toDependent v
 
 r =
   asTensor

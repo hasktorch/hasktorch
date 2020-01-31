@@ -14,8 +14,8 @@ import Torch.Internal.Managed.Type.Context (manual_seed_L)
 import Torch.NN
   ( Randomizable,
     sample,
-    sgd,
   )
+import Torch.Optim (sgd)
 import Torch.Tensor ((@@), Tensor, asTensor, indexSelect, reshape, toDouble, toInt)
 import Torch.TensorFactories (randint')
 
@@ -28,7 +28,7 @@ type Users = [Int]
 type RatingValues = [Double]
 
 data RatingsSpec
-  = RatingsSpec {usersNumber :: Int, itemsNumber :: Int, ratingNumber :: Int}
+  = RatingsSpec {usersNumber :: Int, itemsNumber :: Int, ratingsNumber :: Int}
 
 instance Randomizable RatingsSpec RatingBatch where
   sample (RatingsSpec n m l) = do
