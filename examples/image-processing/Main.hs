@@ -17,7 +17,7 @@ import           System.IO                     (FilePath)
 
 -- [batch, channel, height, width] -> [batch, channel, height, width]
 conv :: [[[[Float]]]] -> D.Tensor -> D.Tensor
-conv weight input = D.toType D.UInt8 $ cwh2whc $ (\i -> D.clamp (conv' i) 0 255) $ whc2cwh $ D.toType D.Float $ input
+conv weight input = D.toType D.UInt8 $ chw2hwc $ (\i -> D.clamp (conv' i) 0 255) $ hwc2chw $ D.toType D.Float $ input
   where
     conv' input' = D.conv2d
                    input'

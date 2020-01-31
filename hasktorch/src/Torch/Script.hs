@@ -79,6 +79,10 @@ instance Castable Module (ForeignPtr ATen.Module) where
   cast (UnsafeModule obj) f = f obj
   uncast obj f = f $ UnsafeModule obj
 
+-- instance Castable [IValue] (ForeignPtr (ATen.StdVector ATen.IValue)) where
+--   cast (UnsafeModule obj) f = f obj
+--   uncast obj f = f $ UnsafeModule obj
+
 {-
 instance (IValueLike a (ForeignPtr ATen.IValue))
   => IValueLike a RawIValue where
@@ -97,8 +101,15 @@ save = cast2 LibTorch.save
 load :: FilePath -> IO Module
 load = cast1 LibTorch.load
 
-forward :: Module -> [RawIValue] -> IO RawIValue
-forward = cast2 LibTorch.forward
+forward' :: Module -> [RawIValue] -> IO RawIValue
+forward' = cast2 LibTorch.forward
+
+forward :: Module -> [IValue] -> IO IValue
+forward a b = cast2 forward' a b
+
+instance Castable [IValue] [RawIValue] where
+  cast a f = (forM a $ \v -> cast v return) >>= f
+  uncast a f = (forM a $ \v -> uncast v return) >>= f
 
 instance Castable IValue RawIValue where
 --  cast (IVNone) f = f "None"
@@ -106,7 +117,7 @@ instance Castable IValue RawIValue where
   cast (IVDouble v) f = toIValue v >>= f
   cast (IVInt v) f = toIValue v >>= f
   cast (IVBool v) f = toIValue v >>= f
-  cast (IVTuple v) f = toIValue v >>= f
+--  cast (IVTuple v) f = toIValue v >>= f
 --  cast (IVIntList v) f = toIValue v >>= f
 --  cast (IVDoubleList v) f = toIValue v >>= f
 --  cast (IVBoolList v) f = toIValue v >>= f
