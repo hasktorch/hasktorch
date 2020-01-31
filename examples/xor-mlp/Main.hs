@@ -1,7 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE BlockArguments #-}
 
 module Main where
 
@@ -12,9 +11,10 @@ import Torch.Functional hiding (linear)
 import Torch.TensorOptions
 import Torch.Autograd
 import Torch.NN
+import Torch.Optim
 import GHC.Generics
 
-import Control.Monad (foldM, when)
+import Control.Monad (when)
 import Data.List (foldl', scanl', intersperse)
 
 --------------------------------------------------------------------------------
@@ -37,8 +37,8 @@ instance Randomizable MLPSpec MLP where
           shift (a, b) c = (b, c)
 
 instance Parameterized MLP
--- This instance generates the following code
----------------------------------------------------
+-- This instance automatically generates the following code
+-----------------------------------------------------------
 -- instance Parameterized MLP where
 --   flattenParameters MLP{..} = concat $ map flattenParameters layers
 --   replaceOwnParameters mlp = do
@@ -53,31 +53,24 @@ mlp MLP{..} input = foldl' revApply input $ intersperse nonlinearity $ map linea
 -- Training code
 --------------------------------------------------------------------------------
 
-batch_size = 2
-num_iters = 2000
+batchSize = 2
+numIters = 2000
 
 model :: MLP -> Tensor -> Tensor
 model params t = mlp params t
 
 main :: IO ()
 main = do
-    init <- sample $ MLPSpec { feature_counts = [2, 3, 2, 1], 
+    init <- sample $ MLPSpec { feature_counts = [2, 2, 1], 
                                nonlinearitySpec = Torch.Functional.tanh } 
-    trained <- foldLoop init num_iters $ \state i -> do
-        input <- rand' [batch_size, 2] >>= return . (toDType Float) . (gt 0.5)
-        let expected_output = tensorXOR input
-
-        let output = squeezeAll $ model state input
-        let loss = mse_loss output expected_output
-
-        let flat_parameters = flattenParameters state
-        let gradients = grad loss flat_parameters
-
-        when (i `mod` 100 == 0) do
+    trained <- foldLoop init numIters $ \state i -> do
+        input <- rand' [batchSize, 2] >>= return . (toDType Float) . (gt 0.5)
+        let (y, y') = (tensorXOR input, squeezeAll $ model state input)
+            loss = mse_loss y' y
+        when (i `mod` 100 == 0) $ do
             putStrLn $ "Iteration: " ++ show i ++ " | Loss: " ++ show loss
-
-        new_flat_parameters <- mapM makeIndependent $ sgd 1e-1 flat_parameters gradients
-        return $ replaceParameters state $ new_flat_parameters
+        (newParam, _) <- runStep state optimizer loss 1e-1
+        return $ replaceParameters state $ newParam
     putStrLn "Final Model:"
     putStrLn $ "0, 0 => " ++ (show $ squeezeAll $ model trained (asTensor [0, 0 :: Float]))
     putStrLn $ "0, 1 => " ++ (show $ squeezeAll $ model trained (asTensor [0, 1 :: Float]))
@@ -85,8 +78,7 @@ main = do
     putStrLn $ "1, 1 => " ++ (show $ squeezeAll $ model trained (asTensor [1, 1 :: Float]))
     return ()
   where
-    foldLoop x count block = foldM block x [1..count]
-
+    optimizer = GD
     tensorXOR :: Tensor -> Tensor
     tensorXOR t = (1 - (1 - a) * (1 - b)) * (1 - (a * b))
       where

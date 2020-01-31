@@ -23,6 +23,7 @@ library
                     , Torch.Functional.Internal
                     , Torch.Initializers
                     , Torch.Autograd
+                    , Torch.Optim
                     , Torch.Typed
                     , Torch.Typed.Aux
                     , Torch.Typed.Factories
@@ -72,6 +73,8 @@ test-suite spec
   other-modules:      FactorySpec
                     , FunctionalSpec
                     , GradSpec
+                    , InitializerSpec
+                    , OptimSpec
                     , SparseSpec
                     , TensorSpec
                     , NNSpec
