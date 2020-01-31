@@ -155,11 +155,6 @@ executable image-processing
   ghc-options:         -fno-warn-partial-type-signatures
   build-depends:       base >= 4.7 && < 5
                      , hasktorch
-                     , libtorch-ffi
-                     , JuicyPixels
-                     , vector
-                     , bytestring
-                     , safe-exceptions
 
 executable mnist-mlp
   import:              config
