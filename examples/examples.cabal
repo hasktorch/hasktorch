@@ -173,8 +173,8 @@ executable load-torchscript
   hs-source-dirs:      load-torchscript
   main-is:             Main.hs
   ghc-options:         -fno-warn-partial-type-signatures
---  build-depends:       libtorch-ffi
---                     , bytestring >= 0.10.8
+  build-depends:       inline-c-cpp
+                     , safe-exceptions
 --                     , random >= 1.1
 --                     , safe-exceptions
 --                     , static-mnist
