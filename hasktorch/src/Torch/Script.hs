@@ -106,7 +106,7 @@ instance Castable IValue RawIValue where
   cast (IVDouble v) f = toIValue v >>= f
   cast (IVInt v) f = toIValue v >>= f
   cast (IVBool v) f = toIValue v >>= f
---  cast (IVTuple v) f = toIValue v >>= f
+  cast (IVTuple v) f = toIValue v >>= f
 --  cast (IVIntList v) f = toIValue v >>= f
 --  cast (IVDoubleList v) f = toIValue v >>= f
 --  cast (IVBoolList v) f = toIValue v >>= f
