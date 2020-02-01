@@ -11,6 +11,7 @@ import Torch.Internal.Cast
 import Torch.Internal.Type
 import Torch.Internal.Managed.Type.IntArray
 import Torch.Internal.Managed.Type.TensorList
+import Torch.Internal.Managed.Type.C10ListTensor
 import Torch.Internal.Managed.Type.IValueList
 
 instance Castable Int (ForeignPtr IntArray) where
@@ -43,6 +44,15 @@ instance Castable [ForeignPtr Tensor] (ForeignPtr TensorList) where
   uncast xs f = do
     len <- tensorList_size xs
     f =<< mapM (tensorList_at_s xs) [0..(len - 1)]
+
+instance Castable [ForeignPtr Tensor] (ForeignPtr (C10List Tensor)) where
+  cast xs f = do
+    l <- newC10ListTensor
+    forM_ xs $ (c10ListTensor_push_back_t l)
+    f l
+  uncast xs f = do
+    len <- c10ListTensor_size xs
+    f =<< mapM (c10ListTensor_at_s xs) [0..(len - 1)]
 
 instance Castable [ForeignPtr IValue] (ForeignPtr IValueList) where
   cast xs f = do

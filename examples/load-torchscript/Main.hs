@@ -1,13 +1,17 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Main where
 
+import System.Environment (getArgs)
 import Torch.Script
 import Torch.Utils.Image
 import qualified Torch.DType                   as D
 import qualified Torch.Tensor                  as D
+import qualified Torch.TensorFactories         as D
+import qualified Torch.TensorOptions           as D
 import qualified Torch.Functional              as D
 
 import Control.Exception.Safe (catch,throwIO)
@@ -21,13 +25,24 @@ prettyException func =
 
 main :: IO ()
 main = prettyException $ do
-  model <- load "resnet_model.pt"
-  mimg <- readImage "elephant.jpg"
-  case mimg of
-    Left err -> print err
-    Right img'-> do
+  let opt = \case
+        [] -> ["resnet","resnet_model.pt","elephant.jpg"]
+        a@[mode',model',input'] -> a
+        _ -> error $ "Usage: load-torchscript (resnet or maskrcnn) model-file image-file"
+  [mode,modelfile,inputfile] <- opt <$> getArgs
+  model <- load modelfile
+  mimg <- readImage inputfile
+  case (mimg,mode) of
+    (Left err,_) -> print err
+    (Right img',"resnet")-> do
       let img = IVTensor $ D.toType D.Float $ hwc2chw img'
       v <- forward model [img]
       case v of
         IVTensor v' -> print $ D.argmax (D.Dim 1) D.RemoveDim v'
+        _ -> print "Return value is not tensor."
+    (Right img',"maskrcnn")-> do
+      let img = IVTensorList [D.squeezeAll $ D.toType D.Float $ hwc2chw img']
+      v <- forward model [img]
+      case v of
+        IVTensor v' -> print $ v'
         _ -> print "Return value is not tensor."

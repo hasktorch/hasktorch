@@ -37,6 +37,7 @@ library
                     , Torch.Internal.Unmanaged.Type.Symbol
                     , Torch.Internal.Unmanaged.Type.IValue
                     , Torch.Internal.Unmanaged.Type.IValueList
+                    , Torch.Internal.Unmanaged.Type.C10ListTensor
                     , Torch.Internal.Unmanaged.Type.Module
                     , Torch.Internal.Managed.Cast
                     , Torch.Internal.Managed.Native
@@ -58,6 +59,7 @@ library
                     , Torch.Internal.Managed.Type.Symbol
                     , Torch.Internal.Managed.Type.IValue
                     , Torch.Internal.Managed.Type.IValueList
+                    , Torch.Internal.Managed.Type.C10ListTensor
                     , Torch.Internal.Managed.Type.Module
                     , Torch.Internal.Unmanaged.Autograd
                     , Torch.Internal.Unmanaged.TensorFactories

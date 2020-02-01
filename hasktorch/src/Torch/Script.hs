@@ -122,7 +122,9 @@ instance Castable IValue RawIValue where
 --  cast (IVDoubleList v) f = toIValue v >>= f
 --  cast (IVBoolList v) f = toIValue v >>= f
 --  cast (IVString v) f = toIValue v >>= f
---  cast (IVTensorList v) f = toIValue v >>= f
+  cast (IVTensorList v) f = do
+    v' <- cast v return :: IO (ForeignPtr (ATen.C10List ATen.Tensor))
+    f =<< toIValue v'
 --  cast (IVBlob v) f = toIValue v >>= f
 --  cast (IVGenericList v) f = toIValue v >>= f
 --  cast (IVGenericDict v) f = toIValue v >>= f
