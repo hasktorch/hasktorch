@@ -172,3 +172,13 @@ executable mnist-mlp
                      , random >= 1.1
                      , safe-exceptions
                      , static-mnist
+
+executable matrix-factorization
+  import:              config
+  hs-source-dirs:      matrix-factorization
+  main-is:             SparseRatingMatrix.hs
+  other-modules:       MF
+  ghc-options:         -fno-warn-partial-type-signatures
+  build-depends:       base >= 4.7 && < 5
+                     , hasktorch
+                     , libtorch-ffi
