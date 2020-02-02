@@ -49,19 +49,19 @@ testTransformerLM
             Parameter '( 'D.CPU, 0) 'D.Float '[10],
             Parameter '( 'D.CPU, 0) 'D.Float '[32, 10],
             Parameter '( 'D.CPU, 0) 'D.Float '[32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[128, 32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[128]])
+            Parameter '( 'D.CPU, 0) 'D.Float '[16, 32],
+            Parameter '( 'D.CPU, 0) 'D.Float '[16]])
 testTransformerLM = do
   let spec =
-        TransformerLMSpec @2 @3 @10 @0 @16 @32 @128 @'D.Float @'( 'D.CPU, 0)
+        TransformerLMSpec @2 @3 @10 @0 @16 @32 @'D.Float @'( 'D.CPU, 0)
           (DropoutSpec 0.2)
-          (TransformerLMLayerSpec
+          (TransformerLayerSpec
             (MultiheadAttentionSpec
               (DropoutSpec 0.2)
             )
             (DropoutSpec 0.2)
             0.001
-            (TransformerLMMLPSpec
+            (TransformerMLPSpec
               (DropoutSpec 0.2)
               (DropoutSpec 0.2)
               (Activation Torch.Typed.Functional.relu)

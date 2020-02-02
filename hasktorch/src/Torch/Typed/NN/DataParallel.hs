@@ -28,12 +28,13 @@ import           Torch.Typed.Parameter
 import           Torch.Typed.Functional
 import           Torch.Typed.NN
 
-data ForwardConcurrently = ForwardConcurrently
+data ForwardConcurrently = ForwardConcurrently | ForwardConcurrentlyStoch
 
 instance 
-  ( HasForward model input (IO output)
+  ( HasForward model input output
   ) => Apply' ForwardConcurrently (model, input) (Concurrently output) where
-  apply' _ (model, input) = Concurrently $ forward model input
+  apply' ForwardConcurrently      (model, input) = Concurrently . pure . forward model $ input
+  apply' ForwardConcurrentlyStoch (model, input) = Concurrently . forwardStoch model $ input
 
 -- Run a `model` concurrently on an `input`.
 --
@@ -72,6 +73,6 @@ forwardConcurrently
 forwardConcurrently model input = do
   let models = Torch.Typed.Device.replicate @devices' @device model
       inputs = scatter @devices' @device input
-  outputs <- runConcurrently $ hzipWithM ForwardConcurrently models inputs
+  outputs <- runConcurrently $ hzipWithM ForwardConcurrentlyStoch models inputs
   let output = gather @device' @devices' outputs
   return output

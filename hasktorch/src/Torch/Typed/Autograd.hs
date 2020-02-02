@@ -8,6 +8,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE NoStarIsType #-}
 
 module Torch.Typed.Autograd
   ( Torch.Typed.Autograd.HasGrad
@@ -15,6 +16,7 @@ module Torch.Typed.Autograd
   )
 where
 
+import           Data.Kind
 import           Torch.HList
 import           GHC.TypeLits
 import           System.IO.Unsafe
@@ -47,7 +49,7 @@ instance HasGrad (Parameter device dtype shape) (Tensor device dtype shape) wher
     [Torch.Typed.Autograd.toDependent input]
   toDependent = Torch.Typed.Parameter.toDependent
 
-instance HasGrad (HList '[]) (HList '[])  where
+instance HasGrad (HList ('[] :: [Type])) (HList ('[] :: [Type]))  where
   grad _ = id
   toDependent = id
 

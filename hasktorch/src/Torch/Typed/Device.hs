@@ -49,7 +49,11 @@ import           Torch.Typed.Parameter
 import           Torch.Typed.Functional
 import           Torch.Typed.NN
 
-class HasToDevice (device' :: (D.DeviceType, Nat)) (device :: (D.DeviceType, Nat)) f g | device' device f -> g, device' device g -> f where
+class HasToDevice
+  (device' :: (D.DeviceType, Nat))
+  (device  :: (D.DeviceType, Nat))
+  (f :: Type)
+  (g :: Type) | device' device f -> g, device' device g -> f where
   -- >>> model <- A.sample (Torch.Typed.NN.LinearSpec @1 @1 @'D.Float @'( 'D.CPU, 0))
   -- >>> :type Torch.Typed.Device.toDevice @'( 'D.CUDA, 0) @'( 'D.CPU, 0) model
   -- Torch.Typed.Device.toDevice @'( 'D.CUDA, 0) @'( 'D.CPU, 0) model
@@ -87,7 +91,7 @@ instance
 
 class GHasToDevice
   (device' :: (D.DeviceType, Nat))
-  (device :: (D.DeviceType, Nat))
+  (device  :: (D.DeviceType, Nat))
   (f :: Type -> Type)
   (g :: Type -> Type) where
   gToDevice :: forall a . f a -> g a
@@ -128,7 +132,11 @@ instance
   ) => HasReplicate (device' ': devices') device f (g ': gs) where
   replicate f = Torch.Typed.Device.toDevice @device' @device f :. Torch.Typed.Device.replicate @devices' @device @f @gs f
 
-class HasToDevices (devices' :: [(D.DeviceType, Nat)]) (devices :: [(D.DeviceType, Nat)]) (fs :: [Type]) (gs :: [Type]) | devices' devices fs -> gs, devices' devices gs -> fs where
+class HasToDevices
+  (devices' :: [(D.DeviceType, Nat)])
+  (devices  :: [(D.DeviceType, Nat)])
+  (fs :: [Type])
+  (gs :: [Type]) | devices' devices fs -> gs, devices' devices gs -> fs where
   toDevices :: HList fs -> HList gs
 
 instance HasToDevices '[] '[] '[] '[] where
@@ -159,6 +167,41 @@ type family GetDevices (fs :: [k]) :: [(D.DeviceType, Nat)] where
   GetDevices '[]       = '[]
   GetDevices (f ': fs) = MaybePrepend (GetDevice f) (GetDevices fs)
 
+-- class HasChunk chunks f gs | chunks f -> gs where
+--   chunk :: f -> HList gs
+
+-- class GHasChunk
+--   (chunks :: Nat)
+--   (f :: Type -> Type)
+--   (gs :: [Type]) | chunks f -> gs where
+--   gChunk :: forall a . f a -> HList gs
+
+-- class GZipChunks (gs :: [k]) (gs' :: [k]) (gs'' :: [k]) | gs gs' -> gs'' where
+--   gZipChunks   :: HList gs -> HList gs' -> HList gs''
+--   -- gUnzipChunks :: HList gs'' -> HList gs :*: HList gs'
+
+-- instance GZipChunks '[] '[] '[] where
+--   gZipChunks _ _ = HNil
+--   -- gUnzipChunks _ = HNil :*: HNil
+
+-- instance
+--   ( (g :*: g') ~ g''
+--   , GZipChunks gs gs' gs''
+--   ) => GZipChunks (g ': gs) (g' ': gs') (g'' ': gs'') where
+--   gZipChunks (g :. gs) (g' :. gs') = (g :*: g') :. gZipChunks gs gs'
+  -- gZipChunks x y = _undefined
+  -- gUnzipChunks (~(g :*: g') :. gs'') =
+  --   let ~(gs :*: gs') = gUnzipChunks gs''
+  --   in  (g :. gs') :*: (y :. ys)
+
+-- instance
+--   (
+
+--   ) => 
+
+-- class HasCat fs g | fs -> g where
+--   cat :: HList fs -> g
+
 class HasScatter devices' device f gs | devices' device f -> gs where
   scatter :: f -> HList gs
 
@@ -177,7 +220,7 @@ instance
   --  :: HList
   --       '[Tensor '( 'D.CUDA, 0) 'D.Float '[1, 1],
   --         Tensor '( 'D.CUDA, 1) 'D.Float '[1, 1]]
-  scatter = toDevices @devices' @devices . chunk @chunks @0
+  scatter = toDevices @devices' @devices . Torch.Typed.Functional.chunk @chunks @0
 
 class HasGather device' devices fs g | device' devices fs -> g where
   gather :: HList fs -> g
@@ -195,4 +238,4 @@ instance
   -- >>> :type gather @'( 'D.CPU, 0) (ones @'[1,1] @'D.Float @'( 'D.CUDA, 0) :. ones @'[1,1] @'D.Float @'( 'D.CUDA, 1) :. HNil)
   -- gather @'( 'D.CPU, 0) (ones @'[1,1] @'D.Float @'( 'D.CUDA, 0) :. ones @'[1,1] @'D.Float @'( 'D.CUDA, 1) :. HNil)
   --  :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 1]
-  gather = cat @0 . toDevices @devices' @devices
+  gather = Torch.Typed.Functional.cat @0 . toDevices @devices' @devices

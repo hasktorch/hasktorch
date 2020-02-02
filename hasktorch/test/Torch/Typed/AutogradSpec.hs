@@ -357,8 +357,8 @@ spec = describe "grad" $ do
       output <- forwardConcurrently @'[ '( 'D.CPU, 0), '( 'D.CUDA, 0)] @'( 'D.CPU, 0) model input
       let loss = mseLoss @D.ReduceMean output zeros
           gradientWeight :. gradientBias :. HNil = grad loss (Torch.Typed.Parameter.flattenParameters model)
-      output' <- forward model input
-      let loss' = mseLoss @D.ReduceMean output' zeros
+          output' = forward model input
+          loss' = mseLoss @D.ReduceMean output' zeros
           gradientWeight' :. gradientBias' :. HNil = grad loss' (Torch.Typed.Parameter.flattenParameters model)
       (toInt . all) (isclose 1e-08 1e-05 False gradientWeight gradientWeight') `shouldBe` 1
       (toInt . all) (isclose 1e-08 1e-05 False gradientBias gradientBias') `shouldBe` 1

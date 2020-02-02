@@ -93,8 +93,8 @@ instance
 class GParameterized
   (f :: Type -> Type)
   (as :: [Type]) | f -> as where
-  gFlattenParameters :: f a -> HList as
-  gReplaceParameters :: f a -> HList as -> f a
+  gFlattenParameters :: forall a . f a -> HList as
+  gReplaceParameters :: forall a . f a -> HList as -> f a
 
 instance
   ( GParameterized l as
@@ -156,7 +156,7 @@ instance GParameterized U1 '[] where
   gFlattenParameters _ = HNil
   gReplaceParameters = const
 
-instance A.Randomizable (HList '[]) (HList '[]) where
+instance A.Randomizable (HList ('[] :: [Type])) (HList ('[] :: [Type])) where
   sample = return
 
 instance (A.Randomizable xSpec x, A.Randomizable (HList xsSpec) (HList xs))

@@ -29,6 +29,7 @@ import           Data.Proxy
 import           GHC.TypeLits
 import           GHC.TypeLits.Extra
 import           GHC.Generics
+import           System.IO.Unsafe
 
 import qualified Torch.NN                      as A
 import qualified Torch.Autograd                as A
@@ -43,23 +44,52 @@ import           Torch.Typed.Parameter
 
 class HasForward f a b | f a -> b where
   forward :: f -> a -> b
+  forwardStoch :: f -> a -> IO b
+  forwardStoch = (pure .) . forward
 
-data LinearSpec (inputFeatures :: Nat) (outputFeatures :: Nat)
-                (dtype :: D.DType)
-                (device :: (D.DeviceType, Nat))
+----------------------------------------------
+-- Activation Function
+----------------------------------------------
+
+data Activation (dtype :: D.DType) (device :: (D.DeviceType, Nat)) where
+  Activation
+    :: forall dtype device
+     . { unActivation :: forall shape . Tensor device dtype shape -> Tensor device dtype shape }
+    -> Activation dtype device
+
+instance Show (Activation dtype device) where
+  -- we can't show activation functions :(
+  show _ = mempty
+
+instance {-# OVERLAPS #-} Parameterized (Activation dtype device) '[] where
+  flattenParameters _ = HNil
+  replaceParameters = const
+
+----------------------------------------------
+-- Linear Layer
+----------------------------------------------
+
+data
+  LinearSpec
+    (inputFeatures :: Nat)
+    (outputFeatures :: Nat)
+    (dtype :: D.DType)
+    (device :: (D.DeviceType, Nat))
   = LinearSpec deriving (Show, Eq)
 
-data Linear (inputFeatures :: Nat) (outputFeatures :: Nat)
-            (dtype :: D.DType)
-            (device :: (D.DeviceType, Nat))
- where
+data
+  Linear
+    (inputFeatures :: Nat)
+    (outputFeatures :: Nat)
+    (dtype :: D.DType)
+    (device :: (D.DeviceType, Nat)) where
   Linear
     :: forall inputFeatures outputFeatures dtype device
      . { linearWeight :: Parameter device dtype '[outputFeatures, inputFeatures]
        , linearBias   :: Parameter device dtype '[outputFeatures]
        }
     -> Linear inputFeatures outputFeatures dtype device
- deriving (Show, Generic)
+  deriving (Show, Generic)
 
 -- | linear
 -- The constraints on this one are _very_ involved, so the partial signatures
@@ -75,8 +105,8 @@ linear Linear {..} input =
 instance
   ( shape'' ~ MatMul shape '[inputFeatures, outputFeatures]
   , shape' ~ Broadcast shape'' shape''
-  ) => HasForward (Linear inputFeatures outputFeatures dtype device) (Tensor device dtype shape) (IO (Tensor device dtype shape')) where
-  forward = (pure .) . Torch.Typed.NN.linear
+  ) => HasForward (Linear inputFeatures outputFeatures dtype device) (Tensor device dtype shape) (Tensor device dtype shape') where
+  forward = Torch.Typed.NN.linear
 
 instance
   ( KnownNat inputFeatures
@@ -89,6 +119,10 @@ instance
  where
   sample LinearSpec =
     Linear <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
+
+----------------------------------------------
+-- Dropout Layer
+----------------------------------------------
 
 data DropoutSpec
  where
@@ -112,11 +146,16 @@ dropout
 dropout Dropout {..} dropoutTrain =
   Torch.Typed.Functional.dropout dropoutProb dropoutTrain
 
-instance HasForward Dropout (Bool, Tensor device dtype shape) (IO (Tensor device dtype shape)) where
-  forward dropout (dropoutTrain, input) = Torch.Typed.NN.dropout dropout dropoutTrain input
+instance HasForward Dropout (Tensor device dtype shape) (Tensor device dtype shape) where
+  forward dropout input = unsafePerformIO $ Torch.Typed.NN.dropout dropout False input
+  forwardStoch dropout input = Torch.Typed.NN.dropout dropout True input
 
 instance A.Randomizable DropoutSpec Dropout where
   sample DropoutSpec {..} = return $ Dropout dropoutProbSpec 
+
+----------------------------------------------
+-- Embedding Layer
+----------------------------------------------
 
 data EmbeddingType = Constant | Learned deriving (Show, Generic)
 
@@ -241,6 +280,10 @@ instance
     in  LearnedEmbedding <$> (makeIndependent =<< (maskedFill mask (0 :: Int) <$> (randn @'[numEmbeds, embedSize] @dtype @device)))
   sample (LearnedEmbeddingWithCustomInitSpec tensor) = LearnedEmbedding <$> (makeIndependent =<< (pure tensor))
 
+----------------------------------------------
+-- 1D Convolution Layer
+----------------------------------------------
+
 data Conv1dSpec (inputChannelSize :: Nat) (outputChannelSize :: Nat)
                 (kernelSize :: Nat)
                 (dtype :: D.DType)
@@ -299,6 +342,10 @@ instance ( KnownNat inputChannelSize
  where
   sample Conv1dSpec =
     Conv1d <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
+
+----------------------------------------------
+-- 2D Convolution Layer
+----------------------------------------------
 
 data Conv2dSpec (inputChannelSize :: Nat) (outputChannelSize :: Nat)
                 (kernelSize0 :: Nat) (kernelSize1 :: Nat)
@@ -361,6 +408,10 @@ instance ( KnownNat inputChannelSize
   sample Conv2dSpec =
     Conv2d <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
 
+----------------------------------------------
+-- 3D Convolution Layer
+----------------------------------------------
+
 data Conv3dSpec (inputChannelSize :: Nat) (outputChannelSize :: Nat)
                 (kernelSize0 :: Nat) (kernelSize1 :: Nat) (kernelSize2 :: Nat)
                 (dtype :: D.DType)
@@ -409,6 +460,10 @@ instance
   sample Conv3dSpec =
     Conv3d <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
 
+----------------------------------------------
+-- Layer Norm Layer
+----------------------------------------------
+
 data LayerNormSpec (normalizedShape :: [Nat]) (dtype :: D.DType) (device :: (D.DeviceType, Nat))
  where
   LayerNormSpec
@@ -439,6 +494,12 @@ layerNorm LayerNorm {..} = Torch.Typed.Functional.layerNorm @normalizedShape
   (toDependent layerNormWeight)
   (toDependent layerNormBias)
   layerNormEps
+
+instance
+  ( EndsWith shape normalizedShape
+  , KnownShape normalizedShape
+  ) => HasForward (LayerNorm normalizedShape dtype device) (Tensor device dtype shape) (Tensor device dtype shape) where
+  forward = Torch.Typed.NN.layerNorm
 
 instance
   ( TensorOptions normalizedShape dtype device

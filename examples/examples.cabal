@@ -82,13 +82,13 @@ executable static-mnist-mlp
                      , safe-exceptions
                      , static-mnist
 
-executable static-transformer
+executable typed-transformer
   import:              config
-  hs-source-dirs:      static-transformer
+  hs-source-dirs:      typed-transformer
   main-is:             Main.hs
   ghc-options:         -fno-warn-partial-type-signatures
-  build-depends:       async
-                     , libtorch-ffi
+  build-depends:       libtorch-ffi
+                     , pipes
                      , safe-exceptions
 
 executable rnn
