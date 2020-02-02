@@ -16,6 +16,7 @@ import qualified Torch.Functional              as D
 
 import Control.Exception.Safe (catch,throwIO)
 import Language.C.Inline.Cpp.Exceptions (CppException(..))
+import System.Posix.DynamicLinker
 
 prettyException :: IO a -> IO a
 prettyException func =
@@ -30,6 +31,7 @@ main = prettyException $ do
         a@[mode',model',input'] -> a
         _ -> error $ "Usage: load-torchscript (resnet or maskrcnn) model-file image-file"
   [mode,modelfile,inputfile] <- opt <$> getArgs
+  _ <- dlopen "libtorchvision.so" [RTLD_GLOBAL,RTLD_LAZY]
   model <- load modelfile
   mimg <- readImage inputfile
   case (mimg,mode) of

@@ -175,7 +175,8 @@ executable load-torchscript
   ghc-options:         -fno-warn-partial-type-signatures
   build-depends:       inline-c-cpp
                      , safe-exceptions
-  extra-libraries:     torchvision
+                     , unix
+--  extra-libraries:     torchvision
 --                     , random >= 1.1
 --                     , safe-exceptions
 --                     , static-mnist
