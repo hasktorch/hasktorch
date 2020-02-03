@@ -23,6 +23,7 @@ import Foreign.Concurrent
 import Torch.Internal.Type
 import Torch.Internal.Class
 import Control.Monad (forM)
+import Control.Exception.Safe (bracket)
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
@@ -53,18 +54,23 @@ c10Dict_insert _obj _key _value =
     (*$(c10::Dict<at::IValue,at::IValue>* _obj)).insert(*$(at::IValue* _key),*$(at::IValue* _value));
   }|]
 
-c10Dist_toList :: Ptr (C10Dict '(IValue,IValue)) -> IO [(Ptr IValue,Ptr IValue)]
-c10Dist_toList _obj = do
-  dat <- [C.throwBlock| std::vector<std::array<at::IValue,2>>* {
-    auto obj = *$(c10::Dict<at::IValue,at::IValue>* _obj);
-    auto ret = new std::vector<std::array<at::IValue,2> >();
-    for(auto i = obj.begin() ; i != obj.end() ; i++){
-      ret->push_back({i->key(),i->value()});
-    }
-    return ret;
-  }|]
-  size <- [C.throwBlock| int64_t { return $(std::vector<std::array<at::IValue,2>>* dat)->size();}|]
-  forM [0..(size-1)] $ \i -> do
-    key <- [C.throwBlock| at::IValue* { return new at::IValue($(std::vector<std::array<at::IValue,2>>* dat)->at($(int64_t size))[0]);}|]
-    val <- [C.throwBlock| at::IValue* { return new at::IValue($(std::vector<std::array<at::IValue,2>>* dat)->at(int i)[1]);}|]
-    return (key,val)
+c10Dict_toList :: Ptr (C10Dict '(IValue,IValue)) -> IO [(Ptr IValue,Ptr IValue)]
+c10Dict_toList _obj = do
+  let new = [C.throwBlock| std::vector<std::array<at::IValue,2>>* {
+              auto obj = *$(c10::Dict<at::IValue,at::IValue>* _obj);
+              auto ret = new std::vector<std::array<at::IValue,2> >();
+              for(auto i = obj.begin() ; i != obj.end() ; i++){
+                ret->push_back({i->key(),i->value()});
+              }
+              return ret;
+             }|]
+      free dat = [C.throwBlock| void {
+              delete $(std::vector<std::array<at::IValue,2>>* dat);
+             }|]
+  bracket new free $ \dat -> do
+    size <- [C.throwBlock| int64_t { return $(std::vector<std::array<at::IValue,2>>* dat)->size();}|]
+    ret <- forM [0..(size-1)] $ \i -> do
+      key <- [C.throwBlock| at::IValue* { return new at::IValue($(std::vector<std::array<at::IValue,2>>* dat)->at($(int64_t size))[0]);}|]
+      val <- [C.throwBlock| at::IValue* { return new at::IValue($(std::vector<std::array<at::IValue,2>>* dat)->at($(int64_t i))[1]);}|]
+      return (key,val)
+    return ret

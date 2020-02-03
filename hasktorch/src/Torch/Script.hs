@@ -39,6 +39,7 @@ import qualified Torch.Internal.Managed.Cast as ATen
 import qualified Torch.Internal.Type as ATen
 import qualified Torch.Internal.Const as ATen
 import Torch.Internal.Unmanaged.Type.IValue (IValueLike(..))
+import Torch.Internal.Unmanaged.Type.C10Dict
 import Torch.Internal.Managed.Type.IValue
 import qualified Torch.Internal.Managed.Type.Module as LibTorch
 
@@ -193,9 +194,12 @@ instance Castable IValue RawIValue where
         )
       , (iValue_isGenericDict obj, do
            c10list <- fromIValue obj :: IO (ForeignPtr (ATen.C10Dict '(ATen.IValue,ATen.IValue)))
-           rawIValues <- uncast c10list return :: IO [RawIValue]
-           ts <- uncast rawIValues return :: IO [IValue]
-           f (IVGenericList ts)
+           rawIValues <- uncast c10list return :: IO [(RawIValue,RawIValue)]
+           ts <- forM rawIValues $ \(a,b) -> do
+             a' <- uncast a return
+             b' <- uncast b return
+             return (a',b')
+           f (IVGenericDict ts)
         )
       , (iValue_isFuture obj, f IVFuture)
       , (iValue_isDevice obj, f IVDevice)

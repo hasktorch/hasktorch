@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
@@ -16,6 +17,7 @@ import Torch.Internal.Managed.Type.TensorList
 import Torch.Internal.Managed.Type.C10List
 import Torch.Internal.Managed.Type.IValueList
 import Torch.Internal.Managed.Type.C10Tuple
+import Torch.Internal.Managed.Type.C10Dict
 
 instance Castable Int (ForeignPtr IntArray) where
   cast xs f = do
@@ -107,3 +109,7 @@ instance Castable [ForeignPtr IValue] (ForeignPtr (C10List IValue)) where
   uncast xs f = do
     len <- c10ListIValue_size xs
     f =<< mapM (c10ListIValue_at xs) [0..(len - 1)]
+
+instance Castable [(ForeignPtr IValue,ForeignPtr IValue)] (ForeignPtr (C10Dict '(IValue,IValue))) where
+  cast xs f = undefined
+  uncast xs f = f =<< c10Dict_toList xs

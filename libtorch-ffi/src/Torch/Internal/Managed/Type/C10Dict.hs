@@ -33,6 +33,7 @@ import Torch.Internal.Unmanaged.Type.IValue
 
 import qualified Torch.Internal.Unmanaged.Type.C10Dict as Unmanaged
 
+import Control.Monad (forM)
 
 
 -- newC10Dict :: IO (ForeignPtr (C10Dict '(IValue,IValue)))
@@ -49,3 +50,11 @@ c10Dict_at = cast2 Unmanaged.c10Dict_at
 
 c10Dict_insert :: ForeignPtr (C10Dict '(IValue,IValue)) -> ForeignPtr IValue -> ForeignPtr IValue -> IO ()
 c10Dict_insert = cast3 Unmanaged.c10Dict_insert
+
+c10Dict_toList :: ForeignPtr (C10Dict '(IValue,IValue)) -> IO [(ForeignPtr IValue,ForeignPtr IValue)]
+c10Dict_toList obj = withForeignPtr obj $ \obj' -> do
+  v <- Unmanaged.c10Dict_toList obj' :: IO [(Ptr IValue,Ptr IValue)]
+  forM v $ \(a,b) -> do
+    a' <- uncast a return 
+    b' <- uncast b return
+    return (a',b')
