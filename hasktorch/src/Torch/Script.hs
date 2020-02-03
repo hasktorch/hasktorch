@@ -93,6 +93,9 @@ instance Castable Module (ForeignPtr ATen.Module) where
   cast (UnsafeModule obj) f = f obj
   uncast obj f = f $ UnsafeModule obj
 
+newModule :: String -> IO Module
+newModule = cast1 LibTorch.newModule
+
 save :: Module -> FilePath -> IO ()
 save = cast2 LibTorch.save
 
@@ -104,6 +107,30 @@ forward' = cast2 LibTorch.forward
 
 forward :: Module -> [IValue] -> IO IValue
 forward a b = cast2 forward' a b
+
+register_parameter :: Module -> String -> Tensor -> Bool -> IO ()
+register_parameter = cast4 LibTorch.register_parameter
+
+register_module :: Module -> String -> Module -> IO ()
+register_module = cast3 LibTorch.register_module
+
+train :: Module -> Bool -> IO ()
+train = cast2 LibTorch.train
+
+run_method :: Module -> String -> [IValue] -> IO IValue
+run_method = cast3 run_method'
+  where
+    run_method' :: Module -> String -> [RawIValue] -> IO RawIValue
+    run_method' = cast3 LibTorch.run_method
+
+run_method1 :: Module -> String -> IValue -> IO IValue
+run_method1 = cast3 run_method1'
+  where
+    run_method1' :: Module -> String -> RawIValue -> IO RawIValue
+    run_method1' = cast3 LibTorch.run_method1
+
+define :: Module -> String -> IO ()
+define = cast2 LibTorch.define
 
 instance Castable [IValue] [RawIValue] where
   cast a f = (forM a $ \v -> cast v return) >>= f
@@ -136,15 +163,23 @@ instance Castable IValue RawIValue where
   cast (IVTensorList v) f = do
     v' <- cast v return :: IO (ForeignPtr (ATen.C10List ATen.Tensor))
     f =<< toIValue v'
-  cast a f = throwIO $ userError $ "Unsupported data-type:" ++ show a
+  cast (IVGenericList v) f = do
+    rawIValues <- cast v return :: IO [RawIValue]
+    c10list <- cast rawIValues return :: IO (ForeignPtr (ATen.C10List ATen.IValue))
+    f =<< toIValue c10list
+  cast (IVGenericDict v) f = do
+    keys <- cast (map fst v) return :: IO [RawIValue]
+    values <- cast (map snd v) return :: IO [RawIValue]
+    let rawIValues = zip keys values
+    c10list <- cast rawIValues return :: IO (ForeignPtr (ATen.C10Dict '(ATen.IValue,ATen.IValue)))
+    f =<< toIValue c10list
 --  cast (IVBlob (UnsafeBlob v)) f = toIValue v >>= f
---  cast (IVGenericList v) f = toIValue v >>= f
---  cast (IVGenericDict v) f = toIValue v >>= f
 --  cast (IVFuture (UnsafeFuture v)) f = toIValue v >>= f
 --  cast (IVDevice v) f = toIValue v >>= f
 --  cast (IVObject (UnsafeObject v)) f = toIValue v >>= f
 --  cast (IVUninitialized) f = f (toIValue v)
 --  cast (IVCapsule v) f = toIValue v >>= f
+  cast a f = throwIO $ userError $ "Unsupported data-type:" ++ show a
   uncast obj f =
     select
       [ (iValue_isNone obj, f IVNone)
@@ -185,7 +220,6 @@ instance Castable IValue RawIValue where
            ts <- uncast rawIValues return :: IO [IValue]
            f (IVTuple ts)
         )
-      , (iValue_isBlob obj, f IVBlob)
       , (iValue_isGenericList obj, do
            c10list <- fromIValue obj :: IO (ForeignPtr (ATen.C10List ATen.IValue))
            rawIValues <- uncast c10list return :: IO [RawIValue]
@@ -201,6 +235,7 @@ instance Castable IValue RawIValue where
              return (a',b')
            f (IVGenericDict ts)
         )
+      , (iValue_isBlob obj, f IVBlob)
       , (iValue_isFuture obj, f IVFuture)
       , (iValue_isDevice obj, f IVDevice)
       , (iValue_isObject obj, f IVObject)

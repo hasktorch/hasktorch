@@ -30,8 +30,10 @@ C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 C.include "<ATen/ATen.h>"
 C.include "<vector>"
 
--- newC10Dict :: IO (Ptr (C10Dict '(IValue,IValue)))
--- newC10Dict = [C.throwBlock| c10::Dict<at::IValue,at::IValue>* { return new c10::Dict<at::IValue,at::IValue>(); }|]
+newC10Dict :: Ptr IValue -> Ptr IValue -> IO (Ptr (C10Dict '(IValue,IValue)))
+newC10Dict key value = [C.throwBlock| c10::Dict<at::IValue,at::IValue>* {
+  return new c10::impl::GenericDict($(at::IValue* key)->type(),$(at::IValue* value)->type());
+}|]
 
 deleteC10Dict :: Ptr (C10Dict '(IValue,IValue)) -> IO ()
 deleteC10Dict object = [C.throwBlock| void { delete $(c10::Dict<at::IValue,at::IValue>* object);}|]

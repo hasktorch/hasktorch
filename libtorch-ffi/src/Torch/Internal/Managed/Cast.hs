@@ -4,6 +4,7 @@
 
 module Torch.Internal.Managed.Cast where
 
+import Control.Exception.Safe (throwIO)
 import Foreign.ForeignPtr
 import Foreign.C.Types
 import Data.Int
@@ -105,11 +106,20 @@ instance Castable [ForeignPtr IValue] (ForeignPtr (C10Ptr IVTuple)) where
     f =<< mapM (c10Tuple_at xs) [0..(len - 1)]
 
 instance Castable [ForeignPtr IValue] (ForeignPtr (C10List IValue)) where
-  cast xs f = undefined
+  cast [] _ = throwIO $ userError "[ForeignPtr IValue]'s length must be one or more."
+  cast xs f = do
+    l <- newC10ListIValue (head xs)
+    forM_ xs $ (c10ListIValue_push_back l)
+    f l
   uncast xs f = do
     len <- c10ListIValue_size xs
     f =<< mapM (c10ListIValue_at xs) [0..(len - 1)]
 
 instance Castable [(ForeignPtr IValue,ForeignPtr IValue)] (ForeignPtr (C10Dict '(IValue,IValue))) where
-  cast xs f = undefined
+  cast [] _ = throwIO $ userError "[(ForeignPtr IValue,ForeignPtr IValue)]'s length must be one or more."
+  cast xs f = do
+    let (k,v) = (head xs)
+    l <- newC10Dict k v
+    forM_ xs $ \(k,v) -> (c10Dict_insert l k v)
+    f l
   uncast xs f = f =<< c10Dict_toList xs

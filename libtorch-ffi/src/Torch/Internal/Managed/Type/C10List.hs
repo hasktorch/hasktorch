@@ -35,8 +35,8 @@ import qualified Torch.Internal.Unmanaged.Type.C10List as Unmanaged
 
 
 
--- newC10ListIValue :: IO (ForeignPtr (C10List IValue))
--- newC10ListIValue = cast0 Unmanaged.newC10ListIValue
+newC10ListIValue :: ForeignPtr IValue -> IO (ForeignPtr (C10List IValue))
+newC10ListIValue elem = cast1 Unmanaged.newC10ListIValue elem
 
 newC10ListTensor :: IO (ForeignPtr (C10List Tensor))
 newC10ListTensor = cast0 Unmanaged.newC10ListTensor

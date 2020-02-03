@@ -36,8 +36,8 @@ import qualified Torch.Internal.Unmanaged.Type.C10Dict as Unmanaged
 import Control.Monad (forM)
 
 
--- newC10Dict :: IO (ForeignPtr (C10Dict '(IValue,IValue)))
--- newC10Dict = cast0 Unmanaged.newC10Dict
+newC10Dict :: ForeignPtr IValue -> ForeignPtr IValue -> IO (ForeignPtr (C10Dict '(IValue,IValue)))
+newC10Dict = cast2 Unmanaged.newC10Dict
 
 c10Dict_empty :: ForeignPtr (C10Dict '(IValue,IValue)) -> IO (CBool)
 c10Dict_empty = cast1 Unmanaged.c10Dict_empty

@@ -28,8 +28,8 @@ C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 C.include "<ATen/ATen.h>"
 C.include "<vector>"
 
--- newC10ListIValue :: IO (Ptr (C10List IValue))
--- newC10ListIValue = [C.throwBlock| c10::List<at::IValue>* { return new c10::impl::GenericList(at::IValue::type()); }|]
+newC10ListIValue :: Ptr IValue -> IO (Ptr (C10List IValue))
+newC10ListIValue elem = [C.throwBlock| c10::List<at::IValue>* { return new c10::impl::GenericList($(at::IValue* elem)->type()); }|]
 
 newC10ListTensor :: IO (Ptr (C10List Tensor))
 newC10ListTensor = [C.throwBlock| c10::List<at::Tensor>* { return new c10::List<at::Tensor>(); }|]
