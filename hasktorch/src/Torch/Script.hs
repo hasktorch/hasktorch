@@ -54,6 +54,18 @@ newtype Object = UnsafeObject (ForeignPtr (ATen.C10Ptr ATen.IVObject))
 newtype Future = UnsafeFuture (ForeignPtr (ATen.C10Ptr ATen.IVFuture))
 newtype Capsule = UnsafeCapsule (ForeignPtr (ATen.C10Ptr ATen.Capsule))
 
+instance Show Blob where
+  show _ = "Blob"
+
+instance Show Future where
+  show _ = "Future"
+
+instance Show Object where
+  show _ = "Object"
+
+instance Show Capsule where
+  show _ = "Capsule"
+
 data IValue
   = IVNone
   | IVTensor Tensor
@@ -66,34 +78,19 @@ data IValue
   | IVBoolList [Bool]
   | IVString String
   | IVTensorList [Tensor]
-  | IVBlob Blob
+  | IVBlob -- Blob
   | IVGenericList [IValue]
   | IVGenericDict [(IValue,IValue)]
-  | IVFuture Future
-  | IVDevice Device
-  | IVObject Object
+  | IVFuture -- Future
+  | IVDevice -- Device
+  | IVObject -- Object
   | IVUninitialized
-  | IVCapsule Capsule
+  | IVCapsule -- Capsule
+  deriving (Show)
 
 instance Castable Module (ForeignPtr ATen.Module) where
   cast (UnsafeModule obj) f = f obj
   uncast obj f = f $ UnsafeModule obj
-
--- instance Castable [IValue] (ForeignPtr (ATen.StdVector ATen.IValue)) where
---   cast (UnsafeModule obj) f = f obj
---   uncast obj f = f $ UnsafeModule obj
-
-{-
-instance (IValueLike a (ForeignPtr ATen.IValue))
-  => IValueLike a RawIValue where
-  toIValue x = cast1 (toIValue :: a -> IO (ForeignPtr ATen.IValue)) x
-  fromIValue x = cast1 (fromIValue :: ForeignPtr ATen.IValue -> IO a) x
-
-instance (CppObject a, IValueLike (ForeignPtr a) (ForeignPtr ATen.IValue))
-  =>  IValueLike (ForeignPtr a) RawIValue where
-  toIValue x = cast1 (toIValue :: ForeignPtr a -> IO (ForeignPtr ATen.IValue)) x
-  fromIValue x = cast1 (fromIValue :: ForeignPtr ATen.IValue -> IO (ForeignPtr a)) x
--}
 
 save :: Module -> FilePath -> IO ()
 save = cast2 LibTorch.save
@@ -112,31 +109,104 @@ instance Castable [IValue] [RawIValue] where
   uncast a f = (forM a $ \v -> uncast v return) >>= f
 
 instance Castable IValue RawIValue where
---  cast (IVNone) f = f "None"
+  cast (IVNone) f = newIValue >>= f
   cast (IVTensor (Unsafe v)) f = toIValue v>>= f
   cast (IVDouble v) f = toIValue v >>= f
   cast (IVInt v) f = toIValue v >>= f
   cast (IVBool v) f = toIValue v >>= f
---  cast (IVTuple v) f = toIValue v >>= f
---  cast (IVIntList v) f = toIValue v >>= f
---  cast (IVDoubleList v) f = toIValue v >>= f
---  cast (IVBoolList v) f = toIValue v >>= f
---  cast (IVString v) f = toIValue v >>= f
+  cast (IVTuple v) f = do
+    rawIValues <- cast v return :: IO [RawIValue]
+    c10tuple <- cast rawIValues return :: IO (ForeignPtr (ATen.C10Ptr ATen.IVTuple))
+    f =<< toIValue c10tuple
+  cast (IVIntList v) f = do
+    v' <- cast v return :: IO (ForeignPtr (ATen.C10List Int64))
+    f =<< toIValue v'
+  cast (IVDoubleList v) f = do
+    cdoubles <- forM v (flip cast return) :: IO [CDouble]
+    c10list <- cast cdoubles return :: IO (ForeignPtr (ATen.C10List CDouble))
+    f =<< toIValue c10list
+  cast (IVBoolList v) f = do
+    cbools <- forM v (flip cast return) :: IO [CBool]
+    c10list <- cast cbools return :: IO (ForeignPtr (ATen.C10List CBool))
+    f =<< toIValue c10list
+  cast (IVString v) f = do
+    v' <- cast v return :: IO (ForeignPtr (ATen.StdString))
+    f =<< toIValue v'
   cast (IVTensorList v) f = do
     v' <- cast v return :: IO (ForeignPtr (ATen.C10List ATen.Tensor))
     f =<< toIValue v'
---  cast (IVBlob v) f = toIValue v >>= f
+  cast a f = throwIO $ userError $ "Unsupported data-type:" ++ show a
+--  cast (IVBlob (UnsafeBlob v)) f = toIValue v >>= f
 --  cast (IVGenericList v) f = toIValue v >>= f
 --  cast (IVGenericDict v) f = toIValue v >>= f
---  cast (IVFuture v) f = toIValue v >>= f
+--  cast (IVFuture (UnsafeFuture v)) f = toIValue v >>= f
 --  cast (IVDevice v) f = toIValue v >>= f
---  cast (IVObject v) f = toIValue v >>= f
-  --  cast (IVUninitialized) f = f (toIValue v)
+--  cast (IVObject (UnsafeObject v)) f = toIValue v >>= f
+--  cast (IVUninitialized) f = f (toIValue v)
 --  cast (IVCapsule v) f = toIValue v >>= f
-  uncast obj f = do
-    iValue_isTensor obj >>= \case
-      1 -> fromIValue obj >>= f.IVTensor . Unsafe
-      _ -> 
-        iValue_isDouble obj >>= \case
-          1 -> fromIValue obj >>= f.IVDouble
-          _ -> undefined
+  uncast obj f =
+    select
+      [ (iValue_isNone obj, f IVNone)
+      , (iValue_isTensor obj, fromIValue obj >>= f . IVTensor . Unsafe)
+      , (iValue_isDouble obj, fromIValue obj >>= f . IVDouble)
+      , (iValue_isInt obj, fromIValue obj >>= f . IVInt)
+      , (iValue_isBool obj, fromIValue obj >>= f . IVBool)
+      , (iValue_isString obj, do
+           v <- fromIValue obj :: IO (ForeignPtr ATen.StdString)
+           str <- uncast v return :: IO String
+           f (IVString str)
+        )
+      , (iValue_isTensorList obj, do
+           v' <- fromIValue obj :: IO (ForeignPtr (ATen.C10List ATen.Tensor))
+           ts <- uncast v' return :: IO [Tensor]
+           f (IVTensorList ts)
+        )
+      , (iValue_isDoubleList obj, do
+           v' <- fromIValue obj :: IO (ForeignPtr (ATen.C10List CDouble))
+           cdoubles <- uncast v' return :: IO [CDouble]
+           doubles <- forM cdoubles (flip uncast return) :: IO [Double]
+           f (IVDoubleList doubles)
+        )
+      , (iValue_isIntList obj, do
+           v' <- fromIValue obj :: IO (ForeignPtr (ATen.C10List Int64))
+           ts <- uncast v' return :: IO [Int64]
+           f (IVIntList ts)
+        )
+      , (iValue_isBoolList obj, do
+           v' <- fromIValue obj :: IO (ForeignPtr (ATen.C10List CBool))
+           cbools <- uncast v' return :: IO [CBool]
+           bools <- forM cbools (flip uncast return) :: IO [Bool]
+           f (IVBoolList bools)
+        )
+      , (iValue_isTuple obj, do
+           c10tuple <- fromIValue obj :: IO (ForeignPtr (ATen.C10Ptr ATen.IVTuple))
+           rawIValues <- uncast c10tuple return :: IO [RawIValue]
+           ts <- uncast rawIValues return :: IO [IValue]
+           f (IVTuple ts)
+        )
+      , (iValue_isBlob obj, f IVBlob)
+      , (iValue_isGenericList obj, do
+           c10list <- fromIValue obj :: IO (ForeignPtr (ATen.C10List ATen.IValue))
+           rawIValues <- uncast c10list return :: IO [RawIValue]
+           ts <- uncast rawIValues return :: IO [IValue]
+           f (IVGenericList ts)
+        )
+      , (iValue_isGenericDict obj, do
+           c10list <- fromIValue obj :: IO (ForeignPtr (ATen.C10Dict '(ATen.IValue,ATen.IValue)))
+           rawIValues <- uncast c10list return :: IO [RawIValue]
+           ts <- uncast rawIValues return :: IO [IValue]
+           f (IVGenericList ts)
+        )
+      , (iValue_isFuture obj, f IVFuture)
+      , (iValue_isDevice obj, f IVDevice)
+      , (iValue_isObject obj, f IVObject)
+      , (iValue_isCapsule obj, f IVCapsule)
+      ]
+    where
+      select [] = throwIO $ userError "Unsupported IValue"
+      select ((cond,body):xs) =
+        cond >>= \case
+          1 -> do
+            body
+          _ -> do
+            select xs

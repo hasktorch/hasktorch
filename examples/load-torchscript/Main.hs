@@ -45,6 +45,7 @@ main = prettyException $ do
     (Right img',"maskrcnn")-> do
       let img = IVTensorList [D.squeezeAll $ D.toType D.Float $ hwc2chw img']
       v <- forward model [img]
+      print v
       case v of
         IVTensor v' -> print $ v'
         _ -> print "Return value is not tensor."

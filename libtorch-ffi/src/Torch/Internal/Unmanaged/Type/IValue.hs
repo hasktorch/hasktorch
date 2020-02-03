@@ -74,6 +74,16 @@ instance IValueLike (Ptr (C10Dict '(IValue,IValue))) (Ptr IValue) where
       ));
     }|]
 
+instance IValueLike (Ptr (C10List IValue)) (Ptr IValue) where
+  toIValue _x =
+    [C.throwBlock| at::IValue* { return new at::IValue(
+      *$(c10::List<at::IValue>* _x));
+    }|]
+  fromIValue _obj = 
+    [C.throwBlock| c10::List<at::IValue>* { return new c10::List<at::IValue>((*$(at::IValue* _obj)).toGenericList(
+      ));
+    }|]
+
 instance IValueLike (Ptr (C10List Tensor)) (Ptr IValue) where
   toIValue _x =
     [C.throwBlock| at::IValue* { return new at::IValue(
@@ -141,6 +151,16 @@ instance IValueLike (Ptr (C10Ptr IVConstantString)) (Ptr IValue) where
     }|]
   fromIValue _obj = 
     [C.throwBlock| c10::intrusive_ptr<at::ivalue::ConstantString>* { return new c10::intrusive_ptr<at::ivalue::ConstantString>((*$(at::IValue* _obj)).toString(
+      ));
+    }|]
+
+instance IValueLike (Ptr StdString) (Ptr IValue) where
+  toIValue _x =
+    [C.throwBlock| at::IValue* { return new at::IValue(
+      *$(std::string* _x));
+    }|]
+  fromIValue _obj = 
+    [C.throwBlock| std::string* { return new std::string((*$(at::IValue* _obj)).toStringRef(
       ));
     }|]
 
@@ -224,6 +244,11 @@ instance IValueLike (Ptr Device) (Ptr IValue) where
     [C.throwBlock| c10::Device* { return new c10::Device((*$(at::IValue* _obj)).toDevice(
       ));
     }|]
+
+newIValue
+  :: IO (Ptr IValue)
+newIValue  =
+  [C.throwBlock| at::IValue* { return new at::IValue() ; }|]
 
 deleteIValue :: Ptr IValue -> IO ()
 deleteIValue object = [C.throwBlock| void { delete $(at::IValue* object);}|]
@@ -342,6 +367,22 @@ iValue_isDoubleList
   -> IO (CBool)
 iValue_isDoubleList _obj =
   [C.throwBlock| bool { return (*$(at::IValue* _obj)).isDoubleList(
+    );
+  }|]
+
+iValue_isBool
+  :: Ptr IValue
+  -> IO (CBool)
+iValue_isBool _obj =
+  [C.throwBlock| bool { return (*$(at::IValue* _obj)).isBool(
+    );
+  }|]
+
+iValue_isObject
+  :: Ptr IValue
+  -> IO (CBool)
+iValue_isObject _obj =
+  [C.throwBlock| bool { return (*$(at::IValue* _obj)).isObject(
     );
   }|]
 

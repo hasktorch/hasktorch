@@ -50,6 +50,9 @@ instance IValueLike Bool (ForeignPtr IValue) where
   toIValue x = cast1 (Unmanaged.toIValue :: CBool -> IO (Ptr IValue)) x
   fromIValue x = cast1 (Unmanaged.fromIValue :: Ptr IValue -> IO CBool) x
 
+--instance IValueLike (ForeignPtr StdString) (ForeignPtr IValue) where
+--  toIValue x = cast1 (Unmanaged.toIValue :: Ptr StdString -> IO (Ptr IValue)) x
+--  fromIValue x = cast1 (Unmanaged.fromIValue :: Ptr IValue -> IO (Ptr StdString)) x
 --instance IValueLike String (ForeignPtr IValue) where
 --  toIValue x = cast1 (Unmanaged.toIValue :: CBool -> IO (Ptr IValue)) x
 --  fromIValue x = cast1 (Unmanaged.fromIValue :: Ptr IValue -> IO CBool) x
@@ -57,6 +60,10 @@ instance IValueLike Bool (ForeignPtr IValue) where
 instance (CppObject a, IValueLike (Ptr a) (Ptr IValue)) => IValueLike (ForeignPtr a) (ForeignPtr IValue) where
   toIValue x = cast1 (Unmanaged.toIValue :: Ptr a -> IO (Ptr IValue)) x
   fromIValue x = cast1 (Unmanaged.fromIValue :: Ptr IValue -> IO (Ptr a)) x
+
+newIValue
+  :: IO (ForeignPtr IValue)
+newIValue  = cast0 Unmanaged.newIValue
 
 iValue_isAliasOf_V
   :: ForeignPtr IValue
@@ -129,6 +136,16 @@ iValue_isDoubleList
   :: ForeignPtr IValue
   -> IO (CBool)
 iValue_isDoubleList = cast1 Unmanaged.iValue_isDoubleList
+
+iValue_isBool
+  :: ForeignPtr IValue
+  -> IO (CBool)
+iValue_isBool = cast1 Unmanaged.iValue_isBool
+
+iValue_isObject
+  :: ForeignPtr IValue
+  -> IO (CBool)
+iValue_isObject = cast1 Unmanaged.iValue_isObject
 
 iValue_isBoolList
   :: ForeignPtr IValue
