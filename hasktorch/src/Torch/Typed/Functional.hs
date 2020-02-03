@@ -1676,13 +1676,13 @@ cat tensors = unsafePerformIO $ ATen.cast2 ATen.Managed.cat_ll tensors (natValI 
 -- chain_matmul _matrices = unsafePerformIO $ (ATen.cast1 ATen.Managed.chain_matmul_l) _matrices
 
 type family ChunkImpl (chunkShapes :: Maybe [[Nat]]) (dtype :: D.DType) (device :: (D.DeviceType, Nat)) :: Maybe a where
-  ChunkImpl (Just '[])               _     _     = Just '[]
+  ChunkImpl (Just '[])               _     _      = Just '[]
   ChunkImpl (Just (shape ': shapes)) dtype device = AppendToMaybe (Tensor device dtype shape) (ChunkImpl (Just shapes) dtype device)
-  ChunkImpl Nothing                  _     _     = Nothing
+  ChunkImpl Nothing                  _     _      = Nothing
 
 type family ChunkCheck (shape :: [Nat]) (dim :: Nat) (result :: Maybe a) :: a where
-  ChunkCheck shape dim Nothing = DimOutOfBound shape dim
-  ChunkCheck _ _ (Just result) = result
+  ChunkCheck shape dim Nothing       = DimOutOfBound shape dim
+  ChunkCheck _     _   (Just result) = result
 
 type family ComputeChunksChunkGo (n' :: Nat) (r :: Nat) (cmp :: Ordering) (cmp' :: Ordering) :: [Nat] where
   ComputeChunksChunkGo n' r GT _  = n' ': ComputeChunksChunkGo n' (r - n') (CmpNat (r - n') n') (CmpNat (r - n') 0)
@@ -1713,22 +1713,23 @@ type Chunk chunks dim shape dtype device = ChunkCheck shape dim (ChunkImpl (Chun
 
 -- | chunk
 --
--- >>> :type chunk @3 @1 (ones :: CPUTensor 'D.Float '[2, 2])
--- chunk @3 @1 (ones :: CPUTensor 'D.Float '[2, 2])
---   :: HList
---        '[Tensor '( 'D.CPU, 0) 'D.Float '[2, 1],
---          Tensor '( 'D.CPU, 0) 'D.Float '[2, 1]]
+-- -- >>> :type chunk @3 @1 (ones :: CPUTensor 'D.Float '[2, 2])
+-- -- chunk @3 @1 (ones :: CPUTensor 'D.Float '[2, 2])
+-- --   :: HList
+-- --        '[Tensor '( 'D.CPU, 0) 'D.Float '[2, 1],
+-- --          Tensor '( 'D.CPU, 0) 'D.Float '[2, 1]]
 -- >>> t0 :. t1 :. HNil = chunk @3 @1 (ones :: CPUTensor 'D.Float '[2, 2])
 -- >>> dtype &&& shape $ t0
 -- (Float,[2,1])
 -- >>> dtype &&& shape $ t1
 -- (Float,[2,1])
--- >>> :type chunk @3 @1 (ones :: CPUTensor 'D.Float '[1, 0, 3])
--- chunk @3 @1 (ones :: CPUTensor 'D.Float '[1, 0, 3])
---   :: HList
---        '[Tensor '( 'D.CPU, 0) 'D.Float '[1, 0, 3],
---          Tensor '( 'D.CPU, 0) 'D.Float '[1, 0, 3],
---          Tensor '( 'D.CPU, 0) 'D.Float '[1, 0, 3]]
+--
+-- -- >>> :type chunk @3 @1 (ones :: CPUTensor 'D.Float '[1, 0, 3])
+-- -- chunk @3 @1 (ones :: CPUTensor 'D.Float '[1, 0, 3])
+-- --   :: HList
+-- --        '[Tensor '( 'D.CPU, 0) 'D.Float '[1, 0, 3],
+-- --          Tensor '( 'D.CPU, 0) 'D.Float '[1, 0, 3],
+-- --          Tensor '( 'D.CPU, 0) 'D.Float '[1, 0, 3]]
 -- >>> t0 :. t1 :. t2 :. HNil = chunk @3 @1 (ones :: CPUTensor 'D.Float '[1, 0, 3])
 -- >>> dtype &&& shape $ t0
 -- (Float,[1,0,3])
@@ -1736,14 +1737,15 @@ type Chunk chunks dim shape dtype device = ChunkCheck shape dim (ChunkImpl (Chun
 -- (Float,[1,0,3])
 -- >>> dtype &&& shape $ t2
 -- (Float,[1,0,3])
--- >>> :type chunk @6 @0 (ones :: CPUTensor 'D.Float '[19, 4])
--- chunk @6 @0 (ones :: CPUTensor 'D.Float '[19, 4])
---   :: HList
---        '[Tensor '( 'D.CPU, 0) 'D.Float '[4, 4],
---          Tensor '( 'D.CPU, 0) 'D.Float '[4, 4],
---          Tensor '( 'D.CPU, 0) 'D.Float '[4, 4],
---          Tensor '( 'D.CPU, 0) 'D.Float '[4, 4],
---          Tensor '( 'D.CPU, 0) 'D.Float '[3, 4]]
+--
+-- -- >>> :type chunk @6 @0 (ones :: CPUTensor 'D.Float '[19, 4])
+-- -- chunk @6 @0 (ones :: CPUTensor 'D.Float '[19, 4])
+-- --   :: HList
+-- --        '[Tensor '( 'D.CPU, 0) 'D.Float '[4, 4],
+-- --          Tensor '( 'D.CPU, 0) 'D.Float '[4, 4],
+-- --          Tensor '( 'D.CPU, 0) 'D.Float '[4, 4],
+-- --          Tensor '( 'D.CPU, 0) 'D.Float '[4, 4],
+-- --          Tensor '( 'D.CPU, 0) 'D.Float '[3, 4]]
 -- >>> t0 :. t1 :. t2 :. t3 :. t4 :. HNil = chunk @6 @0 (ones :: CPUTensor 'D.Float '[19, 4])
 -- >>> dtype &&& shape $ t0
 -- (Float,[4,4])
