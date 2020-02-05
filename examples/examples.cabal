@@ -155,11 +155,6 @@ executable image-processing
   ghc-options:         -fno-warn-partial-type-signatures
   build-depends:       base >= 4.7 && < 5
                      , hasktorch
-                     , libtorch-ffi
-                     , JuicyPixels
-                     , vector
-                     , bytestring
-                     , safe-exceptions
 
 executable mnist-mlp
   import:              config
@@ -172,6 +167,15 @@ executable mnist-mlp
                      , random >= 1.1
                      , safe-exceptions
                      , static-mnist
+
+executable load-torchscript
+  import:              config
+  hs-source-dirs:      load-torchscript
+  main-is:             Main.hs
+  ghc-options:         -fno-warn-partial-type-signatures
+  build-depends:       inline-c-cpp
+                     , safe-exceptions
+                     , unix
 
 executable matrix-factorization
   import:              config

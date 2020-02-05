@@ -66,6 +66,23 @@ type DimnameList = StdVector Dimname
 
 data Symbol
 
+data IValue
+type IValueList = StdVector IValue
+
+data C10Dict a
+data C10List a
+data C10Optional a
+
+data IVNone
+data IVObject
+data IVTuple
+data IVFuture
+data IVConstantString
+data Capsule
+data Blob
+
+data Module
+
 typeTable = Map.fromList [
         (C.TypeName "std::array", [t|StdArray|])
       , (C.TypeName "std::vector", [t|StdVector|])
@@ -77,7 +94,7 @@ typeTable = Map.fromList [
       , (C.TypeName "at::ScalarType", [t|ScalarType|])
       , (C.TypeName "at::DeviceType", [t|DeviceType|])
       , (C.TypeName "at::Storage", [t|Storage|])
-      , (C.TypeName "at::Device", [t|Device|])
+      , (C.TypeName "c10::Device", [t|Device|])
       , (C.TypeName "at::Generator", [t|Generator|])
       , (C.TypeName "std::string", [t|StdString|])
       , (C.TypeName "at::Backend", [t|Backend|])
@@ -87,6 +104,17 @@ typeTable = Map.fromList [
       , (C.TypeName "at::QScheme", [t|QScheme|])
       , (C.TypeName "at::Dimname", [t|Dimname|])
       , (C.TypeName "at::Symbol", [t|Symbol|])
-      , (C.TypeName "c10::intrusive_ptr", [t|C10Ptr|])
       , (C.TypeName "Quantizer", [t|Quantizer|])
+      , (C.TypeName "at::IValue", [t|IValue|])
+      , (C.TypeName "c10::intrusive_ptr", [t|C10Ptr|])
+      , (C.TypeName "c10::Dict", [t|C10Dict|])
+      , (C.TypeName "c10::List", [t|C10List|])
+      , (C.TypeName "c10::optional", [t|C10Optional|])
+      , (C.TypeName "at::ivalue::Tuple", [t|IVTuple|])
+      , (C.TypeName "at::ivalue::Future", [t|IVFuture|])
+      , (C.TypeName "at::ivalue::ConstantString", [t|IVConstantString|])
+      , (C.TypeName "at::ivalue::Object", [t|IVObject|])
+      , (C.TypeName "torch::jit::CustomClassHolder", [t|Capsule|])
+      , (C.TypeName "caffe2::Blob", [t|Blob|])
+      , (C.TypeName "torch::jit::script::Module", [t|Module|])
     ]

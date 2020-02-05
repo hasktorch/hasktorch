@@ -35,6 +35,12 @@ library
                     , Torch.Internal.Unmanaged.Type.Dimname
                     , Torch.Internal.Unmanaged.Type.DimnameList
                     , Torch.Internal.Unmanaged.Type.Symbol
+                    , Torch.Internal.Unmanaged.Type.IValue
+                    , Torch.Internal.Unmanaged.Type.IValueList
+                    , Torch.Internal.Unmanaged.Type.C10List
+                    , Torch.Internal.Unmanaged.Type.C10Dict
+                    , Torch.Internal.Unmanaged.Type.C10Tuple
+                    , Torch.Internal.Unmanaged.Type.Module
                     , Torch.Internal.Managed.Cast
                     , Torch.Internal.Managed.Native
                     , Torch.Internal.Managed.Type.Tuple
@@ -53,6 +59,12 @@ library
                     , Torch.Internal.Managed.Type.Dimname
                     , Torch.Internal.Managed.Type.DimnameList
                     , Torch.Internal.Managed.Type.Symbol
+                    , Torch.Internal.Managed.Type.IValue
+                    , Torch.Internal.Managed.Type.IValueList
+                    , Torch.Internal.Managed.Type.C10List
+                    , Torch.Internal.Managed.Type.C10Dict
+                    , Torch.Internal.Managed.Type.C10Tuple
+                    , Torch.Internal.Managed.Type.Module
                     , Torch.Internal.Unmanaged.Autograd
                     , Torch.Internal.Unmanaged.TensorFactories
                     , Torch.Internal.Unmanaged.Serialize

@@ -191,6 +191,7 @@ data ConstQuantizerPtr
 data Dimname
 data DimnameList
 data Symbol
+data IValue
 
 typeTable = Map.fromList [
         (C.TypeName "at::Scalar", #{bra}t|Scalar|#{cket})
@@ -225,5 +226,6 @@ typeTable = Map.fromList [
       , (C.TypeName "at::Dimname", #{bra}t|Dimname|#{cket})
       , (C.TypeName "std::vector<at::Dimname>", #{bra}t|DimnameList|#{cket})
       , (C.TypeName "at::Symbol", #{bra}t|Symbol|#{cket})
+      , (C.TypeName "at::IValue", #{bra}t|IValue|#{cket})
     ]
 |]

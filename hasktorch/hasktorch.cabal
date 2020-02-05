@@ -48,6 +48,8 @@ library
                     , Torch.Dimname
                     , Torch.Serialize
                     , Torch.Random
+                    , Torch.Script
+                    , Torch.Utils.Image
  hs-source-dirs:      src
  default-language:    Haskell2010
  ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
@@ -65,6 +67,10 @@ library
                     , reflection
                     , singletons
                     , stm
+                    , JuicyPixels
+                    , vector
+                    , bytestring
+                    , safe-exceptions
 
 test-suite spec
   type:               exitcode-stdio-1.0
@@ -76,6 +82,7 @@ test-suite spec
                     , InitializerSpec
                     , OptimSpec
                     , SparseSpec
+                    , ScriptSpec
                     , TensorSpec
                     , NNSpec
                     , DimnameSpec
