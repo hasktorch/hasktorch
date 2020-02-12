@@ -48,6 +48,18 @@ zeros = UnsafeMkTensor $ D.zeros
   $ D.defaultOpts
   )
 
+full
+  :: forall shape dtype device a
+   . (TensorOptions shape dtype device, D.Scalar a)
+  => a -> Tensor device dtype shape
+full value = UnsafeMkTensor $ D.full
+  (optionsRuntimeShape @shape @dtype @device)
+  value
+  ( D.withDevice (optionsRuntimeDevice @shape @dtype @device)
+  . D.withDType (optionsRuntimeDType @shape @dtype @device)
+  $ D.defaultOpts
+  )
+
 ones
   :: forall shape dtype device
    . (TensorOptions shape dtype device)

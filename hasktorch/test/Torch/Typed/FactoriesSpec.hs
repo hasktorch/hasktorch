@@ -44,7 +44,7 @@ import           Torch.Typed.Functional
 import           Torch.Typed.Tensor
 import           Torch.Typed.AuxSpec
 
-data SimpleFactoriesSpec = ZerosSpec | OnesSpec
+data SimpleFactoriesSpec = ZerosSpec | OnesSpec | FullSpec
 
 instance (TensorOptions shape dtype device)
   => Apply
@@ -57,6 +57,9 @@ instance (TensorOptions shape dtype device)
     checkDynamicTensorAttributes t
   apply OnesSpec _ _ = do
     let t = ones :: Tensor device dtype shape
+    checkDynamicTensorAttributes t
+  apply FullSpec _ _ = do
+    let t = full (2.0 :: Float) :: Tensor device dtype shape
     checkDynamicTensorAttributes t
 
 
@@ -92,6 +95,7 @@ spec' device =
                 hfoldrM @IO simpleFactoriesSpec () (hattach cuda0 (hproduct allDTypes standardShapes))
       it "ones"  $ dispatch ZerosSpec
       it "zeros" $ dispatch OnesSpec
+      it "full" $ dispatch FullSpec
     describe "random factories" $ do
       let dispatch randomFactoriesSpec = 
             case device of
