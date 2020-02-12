@@ -1,58 +1,59 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE UndecidableSuperClasses #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoStarIsType #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE OverloadedLists #-}
-{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.KnownNat.Solver #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Extra.Solver #-}
 {-# OPTIONS_GHC -fconstraint-solver-iterations=0 #-}
-{-# OPTIONS_GHC -fdefer-typed-holes #-}
-{-# OPTIONS_GHC -Wno-typed-holes #-}
+-- {-# OPTIONS_GHC -fdefer-typed-holes #-}
+-- {-# OPTIONS_GHC -Wno-typed-holes #-}
 
 module Main where
 
 import           Prelude
-import           Control.Exception.Safe         ( try
-                                                , SomeException(..)
-                                                )
-import           Control.Monad                  ( foldM
-                                                , when
-                                                , void
-                                                )
-import           Torch.HList
+import           Control.Concurrent.Async
+import qualified Control.Foldl as L
+import Data.Constraint
+import Data.Kind
+import qualified Data.List as List
+import qualified Data.Maybe as Maybe
 import           Data.Proxy
-import           Foreign.ForeignPtr
-import           GHC.Generics
+import Data.Set.Ordered as OSet
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
+import qualified GHC.Exts as Exts
 import           GHC.TypeLits
-import           GHC.TypeLits.Extra
-import           System.Environment
-import           System.IO.Unsafe
+import qualified GHC.TypeNats as N
+import Lens.Family
+import Unsafe.Coerce (unsafeCoerce)
+import qualified System.IO as IO
+import           System.IO.Unsafe (unsafePerformIO)
 
 import           Pipes
+import           Pipes.Group
 import qualified Pipes.Prelude as P
+import qualified Pipes.Random as Random
+import qualified Pipes.Safe.Prelude as Safe
+import qualified Pipes.Safe as Safe
+import qualified Pipes.Text as Text
+import qualified Pipes.Text.IO as Text
 
 import qualified Torch.Internal.Cast                     as ATen
 import qualified Torch.Internal.Class                    as ATen
 import qualified Torch.Internal.Type                     as ATen
 import qualified Torch.Internal.Managed.Type.Tensor      as ATen
 import qualified Torch.Internal.Managed.Type.Context     as ATen
+import           Torch.HList
 import           Torch.Typed.Aux
 import           Torch.Typed.Tensor
 import           Torch.Typed.Parameter
@@ -73,378 +74,326 @@ import qualified Torch.Tensor                  as D
 import qualified Torch.Functional              as D
 import qualified Torch.TensorFactories         as D
 
-crossEntropyLoss
-  :: forall paddingIdx batchSize seqLen dtype device
-   . ( KnownNat paddingIdx
-     , KnownNat batchSize
-     , KnownNat seqLen
-     , KnownDType dtype
-     , KnownDevice device
-     , StandardFloatingPointDTypeValidation device dtype
-     )
-  => Tensor device dtype '[batchSize, seqLen, seqLen]
-  -> Tensor device 'D.Int64 '[batchSize, seqLen]
-  -> Tensor device dtype '[]
-crossEntropyLoss prediction target =
-  nllLoss @D.ReduceMean @batchSize @seqLen @'[seqLen]
-    ones
-    (natValI @paddingIdx)
-    (logSoftmax @1 prediction)
-    target
+type Devices' = '[ '( 'D.CPU, 0)]
+type Device = '( 'D.CPU, 0)
+type BatchSize = 2
+type SeqLen = 10
 
-foldLoop
-  :: forall a b m . (Num a, Enum a, Monad m) => b -> a -> (b -> a -> m b) -> m b
-foldLoop x count block = foldM block x ([1 .. count] :: [a])
-
-foldLoop_
-  :: forall a b m . (Num a, Enum a, Monad m) => b -> a -> (b -> a -> m b) -> m ()
-foldLoop_ = ((void .) .) . foldLoop
-
-type NumAttnLayers = 1
-type NumHeads = 1
-type FFNDim = 1
+type NumAttnLayers = 3
+type NumHeads = 4
+type FFNDim = 10
 type PaddingIdx = 0
-type NumEmbeds = 16
 type EmbedDim = 8
-type SeqLen = 1
 
-type Model device
+type Model numEmbeds device
   = TransformerLM
       NumAttnLayers
       NumHeads
       FFNDim
       PaddingIdx
-      NumEmbeds
+      numEmbeds
       EmbedDim
-      SeqLen
       'D.Float
       device
 
-type ModelSpec device
+type ModelSpec numEmbeds device
   = TransformerLMSpec
       NumAttnLayers
       NumHeads
       FFNDim
       PaddingIdx
-      NumEmbeds
+      numEmbeds
       EmbedDim
-      SeqLen
       'D.Float
       device
 
-data Data
+main :: IO ()
+main = program "/Users/tscholak/inFile.txt" 2 "/Users/tscholak/inFile2.txt" 3
 
-type BatchSize = 1
-
--- -- data CrossEntropyLoss = CrossEntropyLoss Bool
-
--- -- instance
--- --   ( model ~ TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim seqLen dtype device
--- --   , input ~ Tensor device 'D.Int64 '[batchSize, seqLen]
--- --   , target ~ Tensor device 'D.Int64 '[batchSize, seqLen]
--- --   , loss ~ Loss device dtype
--- --   , (paddingIdx + 1) <= numEmbeds
--- --   , 1 <= seqLen
--- --   , BasicArithmeticDTypeIsValid device dtype
--- --   , ComparisonDTypeIsValid device dtype
--- --   , ComparisonDTypeIsValid device 'D.Int64
--- --   , StandardFloatingPointDTypeValidation device dtype
--- --   , All KnownNat '[paddingIdx, embedDim, seqLen, batchSize]
--- --   , KnownDType dtype
--- --   , KnownDevice device
--- --   , HFoldrM
--- --       IO
--- --       FoldLayers
--- --       (Tensor device 'D.Bool '[seqLen, batchSize], Tensor device dtype '[seqLen, batchSize, embedDim])
--- --       (HReplicateR numAttnLayers (TransformerLMLayer embedDim numHeads ffnDim dtype device))
--- --   ) => Apply' CrossEntropyLoss (model, input, target) (IO (Async loss)) where
--- --   apply' (CrossEntropyLoss train) (modelState, input, target) = async $ do
--- --     prediction <- logits modelState train input
--- --     pure . crossEntropyLoss @PaddingIdx prediction $ target
-
--- -- data Gradients = Gradients
-
--- -- instance
--- --   ( Parameterized model parameters
--- --   , loss ~ Loss device dtype
--- --   , HasGrad (HList parameters) gradients
--- --   ) => Apply' Gradients (model, Async loss) (IO (Async gradients)) where
--- --   apply' _ (modelState, asyncLoss) = async $ do
--- --     loss <- wait asyncLoss
--- --     let parameters = flattenParameters modelState
--- --         gradients = grad loss parameters
--- --     pure $ gradients
-
--- -- data ConvertGradients = ConvertGradients
-
--- -- data MergeGradients = MergeGradients
-
--- -- instance
--- --   ( Num gradient
--- --   ) => Apply' MergeGradients (gradient, gradient) gradient where
--- --   apply' _ (gradient, gradient') = gradient + gradient
-
--- -- data FoldGradients = FoldGradients
-
--- -- instance
--- --   ( HMap' ConvertGradients gradients gradients'
--- --   , HZipWith MergeGradients gradients' gradients' gradients'
--- --   ) => Apply FoldGradients (Async (HList gradients)) (Maybe (Async (HList gradients')) -> IO (Maybe (Async (HList gradients')))) where
--- --   apply _ asyncGradients Nothing = fmap Just $ async $ do
--- --     gradients <- wait asyncGradients
--- --     pure $ hmap' ConvertGradients gradients
--- --   apply _ asyncGradients (Just asyncGradients') = fmap Just $ async $ do
--- --     gradients <- wait asyncGradients
--- --     gradients' <- wait asyncGradients'
--- --     pure $ hZipWith MergeGradients (hmap' ConvertGradients gradients) gradients'
-
--- -- gather
--- --   :: forall foldedGradients m models inputs targets xs ys losses gradients
--- --    . ( Monad m
--- --      , HZipList3 models inputs targets xs
--- --      , HMapM' m CrossEntropyLoss xs losses
--- --      , HZip models losses ys
--- --      , HMapM' m Gradients ys gradients
--- --      , HFoldrM m FoldGradients (Maybe foldedGradients) gradients
--- --      )
--- --   => HList models
--- --   -> Bool
--- --   -> HList inputs
--- --   -> HList targets
--- --   -> m (Maybe foldedGradients)
--- -- gather modelStates train inputs targets = do
--- --   losses <- hmapM' (CrossEntropyLoss train) (hZipList3 modelStates inputs targets)
--- --   gradients <- hmapM' Gradients (hzip modelStates losses)
--- --   foldedGradients <- hfoldrM FoldGradients Nothing gradients
--- --   return foldedGradients
-
--- -- data ToDevice a = ToDevice a
-
--- -- instance
--- --   ( HasToDevice device' device f g
--- --   ) => Apply' (ToDevice f) (Proxy device, Proxy device') g where
--- --   apply' (ToDevice f) (Proxy, Proxy) =
--- --     Torch.Typed.Device.toDevice @device' @device f
-
--- -- scatter
--- --   :: forall device devices model models xs
--- --    . ( HAttach (Proxy device) devices xs
--- --      , HMap' (ToDevice model) xs models
--- --      )
--- --   => model
--- --   -> HList devices
--- --   -> HList models
--- -- scatter modelState devices = hmap' (ToDevice modelState) $ hattach (Proxy @device) devices
-
--- -- runStep'
--- --   :: forall model parameters m tensors gradients1 xs2 losses optim gradients2 dtype device shape chunks tensorChunks modelStates ys devices xs3
--- --    . ( Parameterized model parameters
--- --      , HMapM' m MakeIndependent tensors parameters
--- --      , HMapM' m Gradients ys gradients1
--- --      , HMapM' m CrossEntropyLoss xs2 losses
--- --      , Optimizer optim gradients2 tensors dtype device
--- --      , HFoldrM m FoldGradients (Maybe (HList gradients2)) gradients1
--- --      , tensorChunks ~ Chunk chunks 0 shape dtype device
--- --      , ATen.Castable (HList tensorChunks) [D.ATenTensor]
--- --      , HZip modelStates losses ys
--- --      , HZipList3 modelStates tensorChunks tensorChunks xs2
--- --      , Monad m
--- --      , HAttach (Proxy device) devices xs3
--- --      , KnownNat chunks
--- --      , HMap' (ToDevice model) xs3 modelStates
--- --      , HMap' ToDependent parameters tensors
--- --      )
--- --   => model
--- --   -> optim
--- --   -> HList devices
--- --   -> LearningRate device dtype
--- --   -> Tensor device dtype shape
--- --   -> Tensor device dtype shape
--- --   -> m (model, optim)
--- -- runStep' modelState optimState devices learningRate input target = do
--- --   let modelStates = scatter @device modelState devices
--- --       inputs = chunk @chunks @0 input
--- --       targets = chunk @chunks @0 target
--- --   foldedGradients <- gather @(HList gradients2) modelStates True inputs targets
--- --   case foldedGradients of
--- --     Just gradients -> do
--- --                         let parameters = flattenParameters modelState
--- --                             tensors = hmap' ToDependent parameters
--- --                             (tensors', optimState') = step learningRate gradients tensors optimState
--- --                         parameters' <- hmapM' MakeIndependent tensors'
--- --                         let modelState' = replaceParameters modelState parameters'
--- --                         return (modelState', optimState')
--- --     Nothing -> return (modelState, optimState)
-
-
--- go'
---   :: forall forward dim dim' devices device dtype shape dtype' shape' model models inputs inputs' predictions predictions' chunks m
---    . ( Monad m
---      , All KnownNat '[chunks, dim, dim']
---      , HasReplicate devices device model models
---      , chunks ~ (ListLength devices)
---      , inputs ~ (Chunk chunks dim shape dtype device)
---      , ATen.Castable (HList inputs) [D.ATenTensor]
---      , HasToDevices devices (HReplicateR chunks device) inputs inputs'
---      , HZipWithM m (Proxy forward) models inputs' predictions'
---      , HMap' (ToDevice (Proxy device)) predictions' predictions
---      , Cat dim' predictions ~ '(shape', dtype', device)
---      , ATen.Castable (HList predictions) [D.ATenTensor]
---      )
---   => model
---   -> Tensor device dtype shape
---   -> m (Tensor device dtype' shape')
--- go' model input = do
---   let models = Torch.Typed.Device.replicate @devices @device model
---       inputs = scatter @dim @devices input
---   predictions <- hzipWithM (Proxy @forward) models inputs
---   let prediction = gather @dim' @device predictions
---   return prediction
-
--- data Forward = Forward
-
--- go
---   :: forall devices device dtype tensors chunks tensorChunks gs parameters gradients model optim batchSize seqLen xs ys shape
---    . ( chunks ~ ListLength devices
---      , StandardFloatingPointDTypeValidation device dtype,
---       HMap' (Torch.Typed.Device.ToDevice (Proxy device)) tensors gs,
---       HMap' ToDependent parameters gradients,
---       HasGrad (HList parameters) (HList gradients),
---       Parameterized model parameters,
---       KnownDevice device,
---       KnownDType dtype,
---       All KnownNat '[seqLen, batchSize, chunks],
---       tensorChunks ~ (Chunk chunks 0 shape dtype device),
---       HasToDevices devices (HReplicateR chunks device) tensorChunks ys,
---       Torch.Typed.Device.HasReplicate devices device model xs,
---       HZipWithM IO Forward xs ys tensors,
---       ATen.Castable (HList gs) [D.ATenTensor],
---       ATen.Castable (HList tensorChunks) [D.ATenTensor],
---       ATen.Castable (HList gradients) [D.ATenTensor],
---       Optimizer optim gradients gradients dtype device,
---       HMapM' IO MakeIndependent gradients parameters,
---       Cat 0 gs ~ '( '[batchSize, seqLen, seqLen], dtype, device)
---      )
---   => model
---   -> optim
---   -> LearningRate device dtype
---   -> Tensor device dtype shape
---   -> Tensor device 'D.Int64 '[batchSize, seqLen]
---   -> IO (model, optim)
--- go model optim learningRate input target = do
---   let models = Torch.Typed.Device.replicate @devices @device model
---       inputs = scatter @0 @devices input
---   predictions <- hzipWithM Forward models inputs
---   let prediction = gather @0 @device predictions
---       loss = crossEntropyLoss @PaddingIdx prediction target
---   runStep model optim loss learningRate
-
--- P.scanM :: forall m x a b r . Monad m => (x -> a -> m x) -> m x -> (x -> m b) -> Pipe a b m r
-
-trainingPipe x = P.scanM go (pure x) pure
-  where go (model, optim) (learningRate, input, target) = do
-          prediction <- forwardConcurrently model input
-          let loss = crossEntropyLoss @PaddingIdx prediction target
-          runStep model optim loss learningRate
-
--- evaluationPipe x = 
-
-train
-  :: forall (batchSize :: Nat) (seqLen :: Nat) (device :: (D.DeviceType, Nat)) model optim gradients parameters tensors
-   . ( All KnownNat '[batchSize, seqLen]
-     , StandardFloatingPointDTypeValidation device 'D.Float
-     , SumDTypeIsValid device 'D.Bool
-     , ComparisonDTypeIsValid device 'D.Int64
-     , KnownDevice device
-     , HasGrad (HList parameters) (HList gradients)
-     , tensors ~ gradients
-     , HMap' ToDependent parameters tensors
-     , ATen.Castable (HList gradients) [D.ATenTensor]
-     , Parameterized model parameters
-     , Optimizer optim gradients tensors 'D.Float device
-     , HMapM' IO MakeIndependent tensors parameters
-     )
-  => model
-  -> optim
-  -> (model -> Bool -> Tensor device 'D.Int64 '[batchSize, seqLen] -> IO (Tensor device 'D.Float '[batchSize, seqLen, seqLen]))
-  -> LearningRate device 'D.Float
-  -> String
+program
+  :: FilePath
+  -> Int
+  -> FilePath
+  -> Int
   -> IO ()
-train initModel initOptim forward learningRate ptFile = do
-  let numEpochs = 1000
-  foldLoop_ (initModel, initOptim) numEpochs $ \(epochModel, epochOptim) epoch -> do
-    let numIters = _lengthTrainingData `div` natValI @batchSize
-    (epochModel', epochOptim') <-
-      foldLoop (epochModel, epochOptim) numIters $ \(model, optim) i -> do
-        trainingLoss <- computeLoss @batchSize (forward model True) i
-        (model', optim') <- runStep model optim trainingLoss learningRate
-        return (model', optim')
-    
-    testLoss <- do
-      let numIters = _lengthTestData `div` natValI @batchSize
-      foldLoop 0 numIters $ \aggTestLoss i -> do
-        testLoss' <- computeLoss @batchSize (forward epochModel' False) i
-        return $ aggTestLoss + toFloat testLoss'
-    
-    putStrLn
-      $  "Epoch: "
-      <> show epoch
-      <> ". Test loss: "
-      <> show (testLoss / realToFrac (_lengthTestData))
-    
-    save (hmap' ToDependent . flattenParameters $ epochModel') ptFile
-    return (epochModel', epochOptim')
+program trainingFile trainingLen evaluationFile evaluationLen = Safe.runSafeT . runEffect $ do
+  vocab <- liftIO $ L.fold (L.Fold (OSet.|<>) (OSet.singleton "[PAD]") id) <$> traverse buildVocabFromFile [trainingFile, evaluationFile]
+  let vocabLen = N.someNatVal . fromIntegral . size $ vocab
+  case vocabLen of
+    (SomeNat proxy) -> case mkNumEmbedsProof proxy of
+      Just dict -> go dict vocab
+      Nothing -> pure ()
  where
-  computeLoss
-    :: forall (n :: Nat)
-     . KnownNat n
-    => (Tensor device 'D.Int64 '[n, seqLen] -> IO (Tensor device 'D.Float '[n, seqLen, seqLen]))
-    -> Int
-    -> IO (Tensor device 'D.Float '[])
-  computeLoss forward' index_of_batch = do
-    let from    = (index_of_batch-1) * natValI @n
-        to      = (index_of_batch * natValI @n) - 1
-        indexes = [from .. to]
-        input   = getInput @n indexes
-        target  = getTarget @n indexes
-    prediction <- forward' input
-    return $ crossEntropyLoss @PaddingIdx prediction (Torch.Typed.Tensor.toDevice target)
-  getInput :: forall (n :: Nat) . [Int] -> Tensor device 'D.Int64 '[n, seqLen]
-  getInput = undefined
-  getTarget :: forall (n :: Nat) . [Int] -> Tensor device 'D.Int64 '[n, seqLen]
-  getTarget = undefined
+  go
+    :: forall (numEmbeds :: Nat) . KnownNat numEmbeds
+    => Dict ((1 <=? numEmbeds) ~ 'True)
+    -> OSet.OSet Text.Text
+    -> Effect (Safe.SafeT IO) ()
+  go Dict vocab = 
+    let trainingData   = readData @SeqLen @Device @BatchSize @(Safe.SafeT IO) trainingFile   vocab >-> P.take trainingLen
+        trainingData' = trainingData >-> P.tee P.print
+        evaluationData = readData @SeqLen @Device @BatchSize @(Safe.SafeT IO) evaluationFile vocab >-> P.take evaluationLen
+        l = learning' @Devices' @Device @BatchSize @SeqLen @numEmbeds trainingData' evaluationData
+    in  l >-> P.map (\(loss, _, _) -> loss) >-> P.print
 
-train'
-  :: forall (device :: (D.DeviceType, Nat))
-   . _
-  => IO ()
-train' = do
-  let learningRate = 0.1
+mkNumEmbedsProof
+  :: forall (numEmbeds :: Nat)
+   . KnownNat numEmbeds
+  => Data.Proxy.Proxy numEmbeds
+  -> Maybe (Dict ((1 <=? numEmbeds) ~ 'True))
+mkNumEmbedsProof Proxy =
+  let numEmbeds = natValI@numEmbeds
+   in if numEmbeds > 0
+        then Just (unsafeCoerce (Dict :: Dict ('True ~ 'True)))
+        else Nothing
+
+learning'
+  :: forall devices' device batchSize seqLen numEmbeds model models input output inputs outputs target optim parameters gradients tensors momenta m
+   . ( LearningConstraints devices' device batchSize seqLen numEmbeds model models input output inputs outputs target optim parameters gradients tensors momenta
+     , MonadIO m
+     )
+  => Producer (Tensor device 'D.Int64 '[batchSize, seqLen], Tensor device 'D.Int64 '[batchSize, seqLen]) m ()
+  -> Producer (Tensor device 'D.Int64 '[batchSize, seqLen], Tensor device 'D.Int64 '[batchSize, seqLen]) m ()
+  -> Producer (Float, model, optim) m ()
+learning' trainingData evaluationData = do
+  let numEpochs = 10
+      learningRate = 0.1
   -- ATen.manual_seed_L 123
-  initModel <- A.sample
+  model <- liftIO $ A.sample
     (TransformerLMSpec
           (DropoutSpec 0.2)
-          (TransformerLMLayerSpec
+          (TransformerLayerSpec
             (MultiheadAttentionSpec
               (DropoutSpec 0.2)
             )
             (DropoutSpec 0.2)
             0.001
-            (TransformerLMMLPSpec
+            (TransformerMLPSpec
               (DropoutSpec 0.2)
               (DropoutSpec 0.2)
-              (Activation Torch.Typed.Functional.relu)
-              (Activation Torch.Typed.Functional.relu)
             )
-          ) :: ModelSpec device
+          ) :: ModelSpec numEmbeds device
     )
-  let initOptim = mkAdam 0 0.9 0.999 (flattenParameters initModel)
-  train @BatchSize @SeqLen @device initModel initOptim logits learningRate "transformer.pt"
+  let optim = mkAdam 0 0.9 0.999 (flattenParameters model)
+  learning @devices' @device @numEmbeds @batchSize @seqLen numEpochs learningRate (model, optim) trainingData evaluationData
 
-main :: IO ()
-main = do
-  deviceStr <- try (getEnv "DEVICE") :: IO (Either SomeException String)
-  case deviceStr of
-    Right "cpu"    -> train' @'( 'D.CPU, 0)
-    Right "cuda:0" -> train' @'( 'D.CUDA, 0)
-    _              -> error "Don't know what to do or how."
+type LearningConstraints devices' device batchSize seqLen numEmbeds model models input output inputs outputs target optim parameters gradients tensors momenta =
+  ( 1 <= numEmbeds
+  , 'Just device ~ GetDevice model
+  , HasScatter devices' device input inputs
+  , HasReplicate devices' device model models
+  , HZipWithM Concurrently ForwardConcurrently models inputs outputs
+  , HasGather device devices' outputs output
+  , Parameterized model parameters
+  , HasGrad (HList parameters) (HList gradients)
+  , tensors ~ gradients
+  , HMap' ToDependent parameters tensors
+  , ATen.Castable (HList gradients) [D.ATenTensor]
+  , Optimizer optim gradients tensors 'D.Float device
+  , HMapM' IO MakeIndependent tensors parameters
+  , input ~ Tensor device 'D.Int64 '[batchSize, seqLen]
+  , output ~ Tensor device 'D.Float '[batchSize, seqLen, numEmbeds]
+  , target ~ Tensor device 'D.Int64 '[batchSize, seqLen]
+  , Torch.Typed.Tensor.All KnownNat '[batchSize, seqLen, numEmbeds]
+  , KnownDevice device
+  , model ~ Model numEmbeds device
+  , optim ~ Adam momenta
+  , RandDTypeIsValid device 'D.Float
+  , StandardFloatingPointDTypeValidation device 'D.Float
+  , BasicArithmeticDTypeIsValid device 'D.Float
+  , HMap' ZerosLike parameters momenta
+  , HZipWith AdamMomentum1Update momenta gradients momenta
+  , HZipWith AdamMomentum2Update momenta gradients momenta
+  , HMap' AdamBiasAdjustment momenta momenta
+  , HZipWith3 (AdamParameterUpdate device 'D.Float) gradients momenta momenta gradients
+  )
+
+training
+  :: forall devices' device numEmbeds batchSize seqLen dtype model models input output inputs outputs target optim parameters gradients tensors m
+   . ( 'Just device ~ GetDevice model
+     , HasScatter devices' device input inputs
+     , HasReplicate devices' device model models
+     , HZipWithM Concurrently ForwardConcurrently models inputs outputs
+     , HasGather device devices' outputs output
+     , Parameterized model parameters
+     , HasGrad (HList parameters) (HList gradients)
+     , tensors ~ gradients
+     , HMap' ToDependent parameters tensors
+     , ATen.Castable (HList gradients) [D.ATenTensor]
+     , Optimizer optim gradients tensors dtype device
+     , HMapM' IO MakeIndependent tensors parameters
+     , input ~ Tensor device 'D.Int64 '[batchSize, seqLen]
+     , output ~ Tensor device dtype '[batchSize, seqLen, numEmbeds]
+     , target ~ Tensor device 'D.Int64 '[batchSize, seqLen]
+     , StandardFloatingPointDTypeValidation device dtype
+     , Torch.Typed.Tensor.All KnownNat '[batchSize, seqLen, numEmbeds]
+     , KnownDType dtype
+     , KnownDevice device
+     , MonadIO m
+     )
+  => LearningRate device dtype
+  -> (model, optim)
+  -> Producer (input, target) m ()
+  -> m (model, optim)
+training learningRate (model, optim) = P.foldM step begin done
+  where
+    step (model', optim') (input, target) = do
+      prediction <- liftIO $ forwardConcurrentlyStoch @devices' @device model' input
+      let loss = crossEntropyLoss @PaddingIdx prediction target
+      liftIO $ runStep model' optim' loss learningRate
+    begin = pure (model, optim)
+    done = pure
+
+evaluation
+  :: forall devices' device numEmbeds batchSize seqLen dtype model models input output inputs outputs target m
+   . ( 'Just device ~ GetDevice model
+     , HasScatter devices' device input inputs
+     , HasReplicate devices' device model models
+     , HZipWithM Concurrently ForwardConcurrently models inputs outputs
+     , HasGather device devices' outputs output
+     , input ~ Tensor device 'D.Int64 '[batchSize, seqLen]
+     , output ~ Tensor device dtype '[batchSize, seqLen, numEmbeds]
+     , target ~ Tensor device 'D.Int64 '[batchSize, seqLen]
+     , StandardFloatingPointDTypeValidation device dtype
+     , Torch.Typed.Tensor.All KnownNat '[batchSize, seqLen, numEmbeds]
+     , KnownDType dtype
+     , KnownDevice device
+     , MonadIO m
+     )
+  => model
+  -> Producer (input, target) m ()
+  -> m Float
+evaluation model = P.foldM step begin done
+  where
+    step aggLoss (input, target) = do
+      prediction <- liftIO $ forwardConcurrently @devices' @device model input
+      let loss = crossEntropyLoss @PaddingIdx prediction target
+      pure $ aggLoss + toFloat (Torch.Typed.Tensor.toDType @'D.Float loss)
+    begin = pure 0
+    done = pure
+
+learning
+  :: forall devices' device numEmbeds batchSize seqLen dtype model models input output inputs outputs target optim parameters gradients tensors m
+   . ( 'Just device ~ GetDevice model
+     , HasScatter devices' device input inputs
+     , HasReplicate devices' device model models
+     , HZipWithM Concurrently ForwardConcurrently models inputs outputs
+     , HasGather device devices' outputs output
+     , Parameterized model parameters
+     , HasGrad (HList parameters) (HList gradients)
+     , tensors ~ gradients
+     , HMap' ToDependent parameters tensors
+     , ATen.Castable (HList gradients) [D.ATenTensor]
+     , Optimizer optim gradients tensors dtype device
+     , HMapM' IO MakeIndependent tensors parameters
+     , input ~ Tensor device 'D.Int64 '[batchSize, seqLen]
+     , output ~ Tensor device dtype '[batchSize, seqLen, numEmbeds]
+     , target ~ Tensor device 'D.Int64 '[batchSize, seqLen]
+     , StandardFloatingPointDTypeValidation device dtype
+     , Torch.Typed.Tensor.All KnownNat '[batchSize, seqLen, numEmbeds]
+     , KnownDType dtype
+     , KnownDevice device
+     , MonadIO m
+     )
+  => Int
+  -> LearningRate device dtype
+  -> (model, optim)
+  -> Producer (input, target) m ()
+  -> Producer (input, target) m ()
+  -> Producer (Float, model, optim) m ()
+learning numEpochs learningRate (model, optim) trainingData evaluationData =
+  for (each [1 .. numEpochs]) $ \_epoch -> do
+    (model', optim') <- lift $ training @devices' learningRate (model, optim) trainingData
+    evalLoss' <- lift $ evaluation @devices' model' evaluationData
+    yield (evalLoss', model', optim')
+
+readData
+  :: forall seqLen device batchSize m
+   . (KnownNat seqLen, KnownDevice device, KnownNat batchSize, Safe.MonadSafe m)
+  => FilePath
+  -> OSet.OSet Text.Text
+  -> Producer (Tensor device 'D.Int64 '[batchSize, seqLen], Tensor device 'D.Int64 '[batchSize, seqLen]) m ()
+readData file vocab = raw >-> pipe
+  where
+    raw = Safe.withFile file IO.ReadMode $ \h ->
+      batching . L.purely folds L.list . chain (sequencing . readHandleEndlesslyFromOffset h) $ randomOffsets
+    sequencing = (>-> applyVocab vocab) . joinWords . takeWords (natValI @(seqLen + 1)) . skipWords 1
+    batching = L.purely folds L.list . view (chunksOf (natValI @batchSize))
+    pipe = for Pipes.cat $ \x -> case f x of
+      Nothing -> return ()
+      Just y -> yield y
+    f xs = do
+      let xs' = Maybe.catMaybes <$> xs
+      input <- Exts.fromList $ take (natValI @seqLen) <$> xs'
+      target <- Exts.fromList $ drop 1 <$> xs'
+      pure (Torch.Typed.Device.toDevice @device @'( 'D.CPU, 0) input, Torch.Typed.Device.toDevice @device @'( 'D.CPU, 0) target)
+
+randomOffsets :: MonadIO m => Producer Integer m ()
+randomOffsets = hoist liftIO $ Random.uniform @Int >-> P.map toInteger
+
+chain :: forall a b m r . Monad m => (a -> Producer b m r) -> Producer a m r -> FreeT (Producer b m) m r
+chain f = go
+  where
+    go p = FreeT $ do
+      x <- next p
+      return $ case x of
+        Left r -> Pure r
+        Right (a, p') -> Free $ fmap go (f a >> return p')
+
+readHandleEndlesslyFromOffset :: forall m . MonadIO m => IO.Handle -> Integer -> Producer Text.Text m ()
+readHandleEndlesslyFromOffset h offset = do
+  fileSize <- liftIO $ IO.hFileSize h
+  let offset' = offset `mod` fileSize
+  liftIO $ IO.hSeek h IO.AbsoluteSeek offset'
+  fromHandleEndlessly $ h
+
+fromHandleEndlessly :: forall m . MonadIO m => IO.Handle -> Producer Text.Text m ()
+fromHandleEndlessly h = go
+  where
+    go = do
+      txt <- liftIO (T.hGetChunk h)
+      if T.null txt
+        then liftIO (IO.hSeek h IO.AbsoluteSeek 0)
+        else yield txt
+      go
+
+skipWords :: forall m r . Monad m => Int -> Producer Text.Text m r -> Producer Text.Text m r
+skipWords n = over Text.words (drops n)
+
+takeWords :: forall m r . Monad m => Int -> Producer Text.Text m () -> Producer Text.Text m ()
+takeWords n = over Text.words (takes n)
+
+joinWords :: forall m r . Monad m => Producer Text.Text m r -> Producer Text.Text m r
+joinWords = L.purely folds L.mconcat . view Text.words
+
+buildVocab :: forall a m . (Ord a, Monad m) => Producer a m () -> m (OSet.OSet a)
+buildVocab = L.purely P.fold oSet
+
+oSet :: forall a . Ord a => L.Fold a (OSet.OSet a)
+oSet = L.Fold (\as a -> as |> a) OSet.empty id
+
+buildVocabFromFile :: FilePath -> IO (OSet.OSet Text.Text)
+buildVocabFromFile file = IO.withFile file IO.ReadMode $ buildVocab . joinWords . Text.fromHandle
+
+applyVocab :: forall a m . (Ord a, Functor m) => OSet.OSet a -> Pipe a (Maybe OSet.Index) m ()
+applyVocab = P.map . flip OSet.findIndex
+
+crossEntropyLoss
+  :: forall paddingIdx batchSize seqLen numEmbeds dtype device
+   . ( KnownNat paddingIdx
+     , KnownNat batchSize
+     , KnownNat seqLen
+     , KnownNat numEmbeds
+     , KnownDType dtype
+     , KnownDevice device
+     , StandardFloatingPointDTypeValidation device dtype
+     )
+  => Tensor device dtype '[batchSize, seqLen, numEmbeds]
+  -> Tensor device 'D.Int64 '[batchSize, seqLen]
+  -> Tensor device dtype '[]
+crossEntropyLoss prediction target =
+  nllLoss @D.ReduceMean @batchSize @numEmbeds @'[seqLen]
+    ones
+    (natValI @paddingIdx)
+    (logSoftmax @1 . transpose @1 @2 $ prediction)
+    target

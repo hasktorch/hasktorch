@@ -64,8 +64,6 @@ testTransformerLM = do
             (TransformerMLPSpec
               (DropoutSpec 0.2)
               (DropoutSpec 0.2)
-              (Activation Torch.Typed.Functional.relu)
-              (Activation Torch.Typed.Functional.relu)
             )
           )
   model <- A.sample spec

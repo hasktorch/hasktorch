@@ -12,9 +12,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 
-module Torch.Typed.NN.DataParallel (
-    forwardConcurrently
-) where
+module Torch.Typed.NN.DataParallel where
 
 import           Torch.HList
 import           Control.Concurrent.Async
@@ -58,7 +56,7 @@ instance
 -- >>> forwardConcurrently @'[ '( 'D.CPU, 0), '( 'D.CUDA, 0)] @'( 'D.CPU, 0) model t
 -- Tensor Float [2,1] [[ 0.2478   ],
 --                     [ 0.2478   ]]
-forwardConcurrently
+forwardConcurrently, forwardConcurrentlyStoch
   :: forall devices' device' device model input output models inputs outputs
    . ( 'Just device ~ GetDevice model
      , 'Just device ~ GetDevice input
@@ -71,8 +69,14 @@ forwardConcurrently
   -> input
   -> IO output
 forwardConcurrently model input = do
-  let models = Torch.Typed.Device.replicate @devices' @device model
-      inputs = scatter @devices' @device input
+  let models = Torch.Typed.Device.replicate @devices' @device @model @models model
+      inputs = scatter @devices' @device @input @inputs input
+  outputs <- runConcurrently $ hzipWithM ForwardConcurrently models inputs
+  let output = gather @device' @devices' @outputs @output outputs
+  return output
+forwardConcurrentlyStoch model input = do
+  let models = Torch.Typed.Device.replicate @devices' @device @model @models model
+      inputs = scatter @devices' @device @input @inputs input
   outputs <- runConcurrently $ hzipWithM ForwardConcurrentlyStoch models inputs
-  let output = gather @device' @devices' outputs
+  let output = gather @device' @devices' @outputs @output outputs
   return output

@@ -12,22 +12,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 
-module Torch.Typed.Device (
-    ReplaceDevice
-  , ReplaceDevice'
-  , GetDevice
-  , GetDevices
-  , HasToDevice
-  , Torch.Typed.Device.toDevice
-  , HasToDevices
-  , toDevices
-  , HasReplicate
-  , Torch.Typed.Device.replicate
-  , HasScatter
-  , scatter
-  , HasGather
-  , gather
-) where
+module Torch.Typed.Device where
 
 import           Torch.HList
 import           Data.Kind                    (Type)
@@ -47,7 +32,6 @@ import           Torch.Typed.Aux
 import           Torch.Typed.Tensor
 import           Torch.Typed.Parameter
 import           Torch.Typed.Functional
-import           Torch.Typed.NN
 
 class HasToDevice
   (device' :: (D.DeviceType, Nat))
@@ -105,11 +89,20 @@ instance
         r' = gToDevice @device' @device r
     in  l' :*: r'
 
+instance {-# OVERLAPS #-} HasToDevice device' device Double Double where
+  toDevice = id
+
 instance {-# OVERLAPS #-} (KnownDevice device') => HasToDevice device' device (Tensor device dtype shape) (Tensor device' dtype shape) where
   toDevice = Torch.Typed.Tensor.toDevice
 
 instance {-# OVERLAPS #-} (KnownDevice device') => HasToDevice device' device (Parameter device dtype shape) (Parameter device' dtype shape) where
   toDevice = Torch.Typed.Parameter.toDevice
+
+instance {-# OVERLAPS #-} HasToDevice device' device (HList ('[] :: [Type])) (HList ('[] :: [Type])) where
+  toDevice = id
+
+instance {-# OVERLAPS #-} (HasToDevice device' device x x', HasToDevice device' device (HList xs) (HList xs')) => HasToDevice device' device (HList (x ': xs)) (HList (x' ': xs')) where
+  toDevice (x :. xs)= Torch.Typed.Device.toDevice @device' @device x :. Torch.Typed.Device.toDevice @device' @device xs
 
 instance {-# OVERLAPPABLE #-} (HasToDevice device' device f g) => GHasToDevice device' device (K1 i f) (K1 i g) where
   gToDevice = K1 . Torch.Typed.Device.toDevice @device' @device . unK1

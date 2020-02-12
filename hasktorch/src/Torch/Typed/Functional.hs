@@ -3060,10 +3060,10 @@ type family MaybePair (a' :: Maybe a) (b' ::  Maybe b) :: Maybe (a, b) where
   MaybePair (Just a') (Just b') = Just '(a', b')
 
 type family MaybeTriple (a' :: Maybe a) (b' ::  Maybe b) (c' ::  Maybe c) :: Maybe (a, b, c) where
-  MaybePair Nothing   _         _         = Nothing
-  MaybePair _         Nothing   _         = Nothing
-  MaybePair _         _         Nothing   = Nothing
-  MaybePair (Just a') (Just b') (Just c') = Just '(a', b', c')
+  MaybeTriple Nothing   _         _         = Nothing
+  MaybeTriple _         Nothing   _         = Nothing
+  MaybeTriple _         _         Nothing   = Nothing
+  MaybeTriple (Just a') (Just b') (Just c') = Just '(a', b', c')
 
 type family ComputeStackShape (shape :: [Nat]) (dim  :: Nat) (count :: Nat) :: Maybe [Nat] where
   ComputeStackShape _         _   0     = Nothing

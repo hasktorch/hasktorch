@@ -111,6 +111,23 @@ let
                             }
                           )
                         );
+                    pipes-text =
+                      overrideCabal
+                        (haskellPackagesNew.callHackageDirect
+                          {
+                            pkg = "pipes-text";
+                            ver = "0.0.2.5";
+                            sha256 = "19b3nqbnray12h4lpwg45dshspzz7j2v73gn2fnl334n8611knf8";
+                          }
+                          { }
+                        )
+                        (old: {
+                            preConfigure = (old.preConfigure or "") + ''
+                              sed -i -e 's/streaming-commons >= 0.1     \&\& < 0.2 ,/streaming-commons >= 0.2     \&\& < 0.3 ,/g' pipes-text.cabal;
+                              sed -i -e 's/pipes-safe        >= 2.1     \&\& < 2.3 ,/pipes-safe        >= 2.1     \&\& < 2.4 ,/g' pipes-text.cabal;
+                            '';
+                          }
+                        );
                   };
 
               in

@@ -233,21 +233,21 @@ type family DTypeIsFloatingPoint (device :: (D.DeviceType, Nat)) (dtype :: D.DTy
   DTypeIsFloatingPoint '(deviceType, _) dtype     = UnsupportedDTypeForDevice deviceType dtype
 
 type family DTypeIsIntegral (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
-  DTypeIsIntegral _                     'D.Bool  = ()
-  DTypeIsIntegral _                     'D.UInt8 = ()
-  DTypeIsIntegral _                     'D.Int8  = ()
-  DTypeIsIntegral _                     'D.Int16 = ()
-  DTypeIsIntegral _                     'D.Int32 = ()
-  DTypeIsIntegral _                     'D.Int64 = ()
-  DTypeIsFloatingPoint '(deviceType, _) dtype    = UnsupportedDTypeForDevice deviceType dtype
+  DTypeIsIntegral _                'D.Bool  = ()
+  DTypeIsIntegral _                'D.UInt8 = ()
+  DTypeIsIntegral _                'D.Int8  = ()
+  DTypeIsIntegral _                'D.Int16 = ()
+  DTypeIsIntegral _                'D.Int32 = ()
+  DTypeIsIntegral _                'D.Int64 = ()
+  DTypeIsIntegral '(deviceType, _) dtype    = UnsupportedDTypeForDevice deviceType dtype
 
 type family DTypeIsNotHalf (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
   DTypeIsNotHalf '(deviceType, _) D.Half = UnsupportedDTypeForDevice deviceType D.Half
   DTypeIsNotHalf _                _      = ()
 
 type family DTypeIsNotBool (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
-  DTypeIsNotHalf '(deviceType, _) D.Bool = UnsupportedDTypeForDevice deviceType D.Bool
-  DTypeIsNotHalf _                _      = ()
+  DTypeIsNotBool '(deviceType, _) D.Bool = UnsupportedDTypeForDevice deviceType D.Bool
+  DTypeIsNotBool _                _      = ()
 
 type family UnsupportedDTypeForDevice (deviceType :: D.DeviceType) (dtype :: D.DType) :: Constraint where
   UnsupportedDTypeForDevice deviceType dtype = TypeError (    Text "This operation does not support "

@@ -31,6 +31,7 @@ import Foreign.ForeignPtr
 import GHC.Generics
 import GHC.TypeLits
 import GHC.TypeLits.Extra
+import System.IO.Unsafe (unsafePerformIO)
 import qualified Torch.Autograd as A
 import qualified Torch.DType as D
 import qualified Torch.Device as D
@@ -166,8 +167,6 @@ data
     :: forall embedDim ffnDim dtype device
      . { dropout0Spec :: DropoutSpec
        , dropout1Spec :: DropoutSpec
-       , activation0Spec :: Activation dtype device
-       , activation1Spec :: Activation dtype device
        }
     -> TransformerMLPSpec embedDim ffnDim dtype device
   deriving Show
@@ -184,24 +183,23 @@ data
        , linear1     :: Linear ffnDim embedDim dtype device
        , dropout0    :: Dropout
        , dropout1    :: Dropout
-       , activation0 :: Activation dtype device
-       , activation1 :: Activation dtype device
        }
     -> TransformerMLP embedDim ffnDim dtype device
  deriving (Show, Generic)
 
 transformerMLP
   :: forall embedDim ffnDim seqLen batchSize dtype device
-   . TransformerMLP embedDim ffnDim dtype device
+   . StandardFloatingPointDTypeValidation device dtype
+  => TransformerMLP embedDim ffnDim dtype device
   -> Bool
   -> Tensor device dtype '[seqLen, batchSize, embedDim]
   -> IO (Tensor device dtype '[seqLen, batchSize, embedDim])
 transformerMLP TransformerMLP {..} train input =
   Torch.Typed.NN.dropout dropout1 train
-    .   unActivation activation1
+    .   relu
     .   forward linear1
     =<< Torch.Typed.NN.dropout dropout0 train
-    .   unActivation activation0
+    .   relu
     .   forward linear0
     =<< pure input
 
@@ -219,8 +217,6 @@ instance ( All KnownNat '[embedDim, ffnDim]
       <*> A.sample LinearSpec
       <*> A.sample dropout0Spec
       <*> A.sample dropout1Spec
-      <*> pure activation0Spec
-      <*> pure activation1Spec
 
 --------------------------------------------------------------------------------
 -- Relation-Aware Transformer Layer
@@ -446,8 +442,9 @@ instance
   , ComparisonDTypeIsValid device 'D.Int64
   , KnownDType dtype
   , KnownDevice device
-  ) => HasForward (TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim dtype device) (Bool, Tensor device 'D.Int64 '[batchSize, seqLen]) (IO (Tensor device dtype '[batchSize, seqLen, numEmbeds])) where
-  forward model (train, input) = transformerLM model train input
+  ) => HasForward (TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim dtype device) (Tensor device 'D.Int64 '[batchSize, seqLen]) (Tensor device dtype '[batchSize, seqLen, numEmbeds]) where
+  forward model input = unsafePerformIO $ transformerLM model False input
+  forwardStoch model input = transformerLM model True input
 
 sinusoidal
   :: forall numEmbeds embedDim device

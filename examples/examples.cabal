@@ -87,9 +87,20 @@ executable typed-transformer
   hs-source-dirs:      typed-transformer
   main-is:             Main.hs
   ghc-options:         -fno-warn-partial-type-signatures
-  build-depends:       libtorch-ffi
+  build-depends:       async
+                     , constraints
+                     , containers
+                     , foldl
+                     , lens-family-core
+                     , libtorch-ffi
+                     , oset
                      , pipes
+                     , pipes-group
+                     , pipes-random
+                     , pipes-safe
+                     , pipes-text
                      , safe-exceptions
+                     , text
 
 executable rnn
   import:              config

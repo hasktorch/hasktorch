@@ -41,29 +41,12 @@ import           Torch.Typed.Factories
 import           Torch.Typed.Functional
 import           Torch.Typed.Tensor
 import           Torch.Typed.Parameter
+import           Torch.Typed.Device
 
 class HasForward f a b | f a -> b where
   forward :: f -> a -> b
   forwardStoch :: f -> a -> IO b
   forwardStoch = (pure .) . forward
-
-----------------------------------------------
--- Activation Function
-----------------------------------------------
-
-data Activation (dtype :: D.DType) (device :: (D.DeviceType, Nat)) where
-  Activation
-    :: forall dtype device
-     . { unActivation :: forall shape . Tensor device dtype shape -> Tensor device dtype shape }
-    -> Activation dtype device
-
-instance Show (Activation dtype device) where
-  -- we can't show activation functions :(
-  show _ = mempty
-
-instance {-# OVERLAPS #-} Parameterized (Activation dtype device) '[] where
-  flattenParameters _ = HNil
-  replaceParameters = const
 
 ----------------------------------------------
 -- Linear Layer
