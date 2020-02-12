@@ -142,7 +142,7 @@ mkNumEmbedsProof
   => Data.Proxy.Proxy numEmbeds
   -> Maybe (Dict ((1 <=? numEmbeds) ~ 'True))
 mkNumEmbedsProof Proxy =
-  let numEmbeds = natValI@numEmbeds
+  let numEmbeds = natValI @numEmbeds
    in if numEmbeds > 0
         then Just (unsafeCoerce (Dict :: Dict ('True ~ 'True)))
         else Nothing
