@@ -76,12 +76,12 @@ import qualified Torch.TensorFactories         as D
 
 type Devices' = '[ '( 'D.CPU, 0)]
 type Device = '( 'D.CPU, 0)
-type BatchSize = 2
+type BatchSize = 10
 type SeqLen = 10
 
-type NumAttnLayers = 3
-type NumHeads = 4
-type FFNDim = 10
+type NumAttnLayers = 1
+type NumHeads = 1
+type FFNDim = 8
 type PaddingIdx = 0
 type EmbedDim = 8
 
@@ -108,15 +108,16 @@ type ModelSpec numEmbeds device
       device
 
 main :: IO ()
-main = program "/Users/tscholak/inFile.txt" 2 "/Users/tscholak/inFile2.txt" 3
+main = program 10 "trainingFile.txt" 100 "evaluationFile.txt" 100
 
 program
-  :: FilePath
-  -> Int
-  -> FilePath
-  -> Int
+  :: Int -- ^ number of epochs
+  -> FilePath -- ^ training file path
+  -> Int -- ^ number batches taken from training file per epoch
+  -> FilePath -- ^ evaluation file path
+  -> Int -- ^ number batches taken from evaluation file per epoch
   -> IO ()
-program trainingFile trainingLen evaluationFile evaluationLen = Safe.runSafeT . runEffect $ do
+program numEpochs trainingFile trainingLen evaluationFile evaluationLen = Safe.runSafeT . runEffect $ do
   vocab <- liftIO $ L.fold (L.Fold (OSet.|<>) (OSet.singleton "[PAD]") id) <$> traverse buildVocabFromFile [trainingFile, evaluationFile]
   let vocabLen = N.someNatVal . fromIntegral . size $ vocab
   case vocabLen of
@@ -131,10 +132,28 @@ program trainingFile trainingLen evaluationFile evaluationLen = Safe.runSafeT . 
     -> Effect (Safe.SafeT IO) ()
   go Dict vocab = 
     let trainingData   = readData @SeqLen @Device @BatchSize @(Safe.SafeT IO) trainingFile   vocab >-> P.take trainingLen
-        trainingData' = trainingData >-> P.tee P.print
         evaluationData = readData @SeqLen @Device @BatchSize @(Safe.SafeT IO) evaluationFile vocab >-> P.take evaluationLen
-        l = learning' @Devices' @Device @BatchSize @SeqLen @numEmbeds trainingData' evaluationData
-    in  l >-> P.map (\(loss, _, _) -> loss) >-> P.print
+        learning' = do
+          let learningRate = 0.01
+          -- ATen.manual_seed_L 123
+          model <- liftIO $ A.sample
+            (TransformerLMSpec
+                  (DropoutSpec 0.2)
+                  (TransformerLayerSpec
+                    (MultiheadAttentionSpec
+                      (DropoutSpec 0.2)
+                    )
+                    (DropoutSpec 0.2)
+                    0.001
+                    (TransformerMLPSpec
+                      (DropoutSpec 0.2)
+                      (DropoutSpec 0.2)
+                    )
+                  ) :: ModelSpec numEmbeds device
+            )
+          let optim = mkAdam 0 0.9 0.999 (flattenParameters model)
+          learning @Devices' @Device @numEmbeds @BatchSize @SeqLen numEpochs learningRate (model, optim) trainingData evaluationData
+    in  learning' >-> P.map (\(loss, _, _) -> loss) >-> P.print
 
 mkNumEmbedsProof
   :: forall (numEmbeds :: Nat)
@@ -146,67 +165,6 @@ mkNumEmbedsProof Proxy =
    in if numEmbeds > 0
         then Just (unsafeCoerce (Dict :: Dict ('True ~ 'True)))
         else Nothing
-
-learning'
-  :: forall devices' device batchSize seqLen numEmbeds model models input output inputs outputs target optim parameters gradients tensors momenta m
-   . ( LearningConstraints devices' device batchSize seqLen numEmbeds model models input output inputs outputs target optim parameters gradients tensors momenta
-     , MonadIO m
-     )
-  => Producer (Tensor device 'D.Int64 '[batchSize, seqLen], Tensor device 'D.Int64 '[batchSize, seqLen]) m ()
-  -> Producer (Tensor device 'D.Int64 '[batchSize, seqLen], Tensor device 'D.Int64 '[batchSize, seqLen]) m ()
-  -> Producer (Float, model, optim) m ()
-learning' trainingData evaluationData = do
-  let numEpochs = 10
-      learningRate = 0.1
-  -- ATen.manual_seed_L 123
-  model <- liftIO $ A.sample
-    (TransformerLMSpec
-          (DropoutSpec 0.2)
-          (TransformerLayerSpec
-            (MultiheadAttentionSpec
-              (DropoutSpec 0.2)
-            )
-            (DropoutSpec 0.2)
-            0.001
-            (TransformerMLPSpec
-              (DropoutSpec 0.2)
-              (DropoutSpec 0.2)
-            )
-          ) :: ModelSpec numEmbeds device
-    )
-  let optim = mkAdam 0 0.9 0.999 (flattenParameters model)
-  learning @devices' @device @numEmbeds @batchSize @seqLen numEpochs learningRate (model, optim) trainingData evaluationData
-
-type LearningConstraints devices' device batchSize seqLen numEmbeds model models input output inputs outputs target optim parameters gradients tensors momenta =
-  ( 1 <= numEmbeds
-  , 'Just device ~ GetDevice model
-  , HasScatter devices' device input inputs
-  , HasReplicate devices' device model models
-  , HZipWithM Concurrently ForwardConcurrently models inputs outputs
-  , HasGather device devices' outputs output
-  , Parameterized model parameters
-  , HasGrad (HList parameters) (HList gradients)
-  , tensors ~ gradients
-  , HMap' ToDependent parameters tensors
-  , ATen.Castable (HList gradients) [D.ATenTensor]
-  , Optimizer optim gradients tensors 'D.Float device
-  , HMapM' IO MakeIndependent tensors parameters
-  , input ~ Tensor device 'D.Int64 '[batchSize, seqLen]
-  , output ~ Tensor device 'D.Float '[batchSize, seqLen, numEmbeds]
-  , target ~ Tensor device 'D.Int64 '[batchSize, seqLen]
-  , Torch.Typed.Tensor.All KnownNat '[batchSize, seqLen, numEmbeds]
-  , KnownDevice device
-  , model ~ Model numEmbeds device
-  , optim ~ Adam momenta
-  , RandDTypeIsValid device 'D.Float
-  , StandardFloatingPointDTypeValidation device 'D.Float
-  , BasicArithmeticDTypeIsValid device 'D.Float
-  , HMap' ZerosLike parameters momenta
-  , HZipWith AdamMomentum1Update momenta gradients momenta
-  , HZipWith AdamMomentum2Update momenta gradients momenta
-  , HMap' AdamBiasAdjustment momenta momenta
-  , HZipWith3 (AdamParameterUpdate device 'D.Float) gradients momenta momenta gradients
-  )
 
 training
   :: forall devices' device numEmbeds batchSize seqLen dtype model models input output inputs outputs target optim parameters gradients tensors m
