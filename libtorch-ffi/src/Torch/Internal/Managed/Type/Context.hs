@@ -85,3 +85,8 @@ manual_seed_L
   -> IO (())
 manual_seed_L = cast1 Unmanaged.manual_seed_L
 
+get_manual_seed
+  :: IO (Word64)
+get_manual_seed = do
+  g <- getDefaultCPUGenerator
+  generator_current_seed g

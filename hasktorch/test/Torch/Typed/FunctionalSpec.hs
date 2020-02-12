@@ -68,6 +68,7 @@ import           Torch.Typed.Factories
 import           Torch.Typed.Functional
 import           Torch.Typed.Tensor
 import           Torch.Typed.AuxSpec
+import qualified Torch.Internal.Managed.Type.Context as LibTorch
 
 data UnaryAllDTypesSpec =
     SignSpec
@@ -721,7 +722,13 @@ instance ( TensorOptions shape  'D.Bool device
         t' = all' @dim @keepOrDropDim t
     checkDynamicTensorAttributes t'
 
-spec = foldMap spec' availableDevices
+spec = before_ printSeed $ do
+  foldMap spec' availableDevices
+  where
+    printSeed = do
+      putStr "      seed:"
+      LibTorch.get_manual_seed >>= print
+      
 
 spec' :: D.Device -> Spec
 spec' device =
