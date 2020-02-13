@@ -152,7 +152,7 @@ let
       fromImage = pkgsOld.dockerTools.pullImage {
         imageName = "alpine";
         imageDigest = "sha256:ddba4d27a7ffc3f86dd6c2f92041af252a1f23a8e742c90e6e1297bfa1bc0c45";
-        sha256 = "014b56yixyz6mqli08sh8g0hi00qd0rh9fxcmqz4cdsdcvb4b4sj";
+        sha256 = "1rax1643lfpbx0aw49pj03kkbm69dzmbpfhnw5dn56cnnrfslg1g";
       };
       config.Cmd = [
         "${pkgsNew.hasktorch-examples_cudatoolkit_10_1-static}/bin/typed-transformer"
