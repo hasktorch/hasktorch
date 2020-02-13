@@ -24,6 +24,7 @@ library
                     , Torch.Initializers
                     , Torch.Autograd
                     , Torch.Optim
+                    , Torch.Vision
                     , Torch.Typed
                     , Torch.Typed.Aux
                     , Torch.Typed.Factories
