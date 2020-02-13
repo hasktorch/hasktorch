@@ -41,6 +41,7 @@ library
                     , Torch.Typed.Autograd
                     , Torch.Typed.Optim
                     , Torch.Typed.Serialize
+                    , Torch.Typed.Vision
                     , Torch.NN
                     , Torch.Scalar
                     , Torch.Backend
