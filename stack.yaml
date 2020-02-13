@@ -24,7 +24,8 @@ extra-deps:
 - Chart-cairo-1.9.1
 - cairo-0.13.8.0
 - gtk2hs-buildtools-0.13.8.0
+- git: git://github.com/hasktorch/pipes-text.git
+  commit: 3dd3d9519306ea06f0c15ad71bdf57e1dfd0b747
 
 nix:
   packages: [zlib.dev, zlib.out]
-
