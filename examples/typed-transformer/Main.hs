@@ -74,16 +74,16 @@ import qualified Torch.Tensor                  as D
 import qualified Torch.Functional              as D
 import qualified Torch.TensorFactories         as D
 
-type Devices' = '[ '( 'D.CPU, 0)]
-type Device = '( 'D.CPU, 0)
-type BatchSize = 10
-type SeqLen = 10
+type Devices' = '[ '( 'D.CUDA, 0)]
+type Device = '( 'D.CUDA, 0)
+type BatchSize = 1
+type SeqLen = 512
 
-type NumAttnLayers = 1
-type NumHeads = 1
-type FFNDim = 8
+type NumAttnLayers = 12
+type NumHeads = 12
+type FFNDim = 3072
 type PaddingIdx = 0
-type EmbedDim = 8
+type EmbedDim = 768
 
 type Model numEmbeds device
   = TransformerLM
@@ -108,7 +108,7 @@ type ModelSpec numEmbeds device
       device
 
 main :: IO ()
-main = program 10 "trainingFile.txt" 100 "evaluationFile.txt" 100
+main = program 100 "trainingFile.txt" 1000 "evaluationFile.txt" 1
 
 program
   :: Int -- ^ number of epochs
@@ -119,6 +119,7 @@ program
   -> IO ()
 program numEpochs trainingFile trainingLen evaluationFile evaluationLen = Safe.runSafeT . runEffect $ do
   vocab <- liftIO $ L.fold (L.Fold (OSet.|<>) (OSet.singleton "[PAD]") id) <$> traverse buildVocabFromFile [trainingFile, evaluationFile]
+  liftIO . print . size $ vocab
   let vocabLen = N.someNatVal . fromIntegral . size $ vocab
   case vocabLen of
     (SomeNat proxy) -> case mkNumEmbedsProof proxy of
