@@ -144,6 +144,21 @@ let
         );
       };
     };
+
+    hasktorch-examples_cudatoolkit_10_1-static = pkgsOld.haskell.lib.justStaticExecutables pkgsNew.haskell.packages."${compiler}".hasktorch-examples_cudatoolkit_10_1;
+
+    hasktorch-typed-transformer_cudatoolkit_10_1-image = pkgsOld.dockerTools.buildImage {
+      name = "hasktorch-typed-transformer_cudatoolkit_10_1";
+      fromImage = pkgsOld.dockerTools.pullImage {
+        imageName = "alpine";
+        imageDigest = "sha256:ddba4d27a7ffc3f86dd6c2f92041af252a1f23a8e742c90e6e1297bfa1bc0c45";
+        sha256 = "014b56yixyz6mqli08sh8g0hi00qd0rh9fxcmqz4cdsdcvb4b4sj";
+      };
+      config.Cmd = [
+        "${pkgsNew.hasktorch-examples_cudatoolkit_10_1-static}/bin/typed-transformer"
+      ];
+    };
+
   };
 
   bootstrap = import <nixpkgs> { };
@@ -161,6 +176,10 @@ let
     overlays = [ overlayShared ];
   };
 
+  pkgs-linux = pkgs // {
+    system = "x86_64-linux";
+  };
+
   nullIfDarwin = arg: if pkgs.stdenv.hostPlatform.system == "x86_64-darwin" then null else arg;
 
   fixmkl = old: old // {
@@ -173,6 +192,7 @@ let
         export CPATH=${libtorch}/include/torch/csrc/api/include
       '';
     };
+
   altdev-announce = libtorch: old: with builtins; with pkgs.lib.strings; with pkgs.lib.lists;
     let
       echo = str: "echo \"${str}\"";
@@ -223,6 +243,11 @@ let
 in
   rec {
     inherit nullIfDarwin overlayShared;
+
+    inherit (pkgs-linux)
+      hasktorch-examples_cudatoolkit_10_1-static
+      hasktorch-typed-transformer_cudatoolkit_10_1-image
+    ;
 
     inherit (base-compiler)
       hasktorch-codegen
