@@ -52,7 +52,7 @@ import qualified Torch.Tensor                  as D
 import qualified Torch.Functional              as D
 import qualified Torch.TensorFactories         as D
 import qualified Torch.Serialize               as D
-import qualified Image                         as I
+import qualified Torch.Typed.Vision            as I
 import           Common
 
 --------------------------------------------------------------------------------

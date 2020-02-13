@@ -14,10 +14,10 @@ import Torch.Functional hiding (take)
 import Torch.Tensor
 import Torch.NN
 import Torch.Optim
-import qualified Torch.Vision as I
+import qualified Torch.Typed.Vision as I
+import qualified Torch.Vision as UI
 
 -- import qualified Image as I
-import qualified UntypedImage as UI
 
 data MLPSpec = MLPSpec {
     inputFeatures :: Int,
