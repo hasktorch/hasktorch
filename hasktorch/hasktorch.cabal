@@ -72,6 +72,7 @@ library
                     , vector
                     , bytestring
                     , safe-exceptions
+                    , zlib >= 0.6
 
 test-suite spec
   type:               exitcode-stdio-1.0
