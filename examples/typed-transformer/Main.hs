@@ -155,7 +155,7 @@ program numEpochs trainingFile trainingLen evaluationFile evaluationLen = Safe.r
             )
           let optim = mkAdam 0 0.9 0.999 (flattenParameters model)
           learning @Devices' @Device @numEmbeds @BatchSize @SeqLen numEpochs learningRate (model, optim) trainingData evaluationData
-    in  learning' >-> P.mapM ((liftIO performGC >>) . return) >-> P.map (\(loss, _, _) -> loss) >-> P.print
+    in  learning' >-> P.map (\(loss, _, _) -> loss) >-> P.print
 
 mkNumEmbedsProof
   :: forall (numEmbeds :: Nat)
@@ -200,6 +200,7 @@ training learningRate (model, optim) = P.foldM step begin done
     step (model', optim') (input, target) = do
       prediction <- liftIO $ forwardConcurrentlyStoch @devices' @device model' input
       let loss = crossEntropyLoss @PaddingIdx prediction target
+      liftIO performGC -- force cleanup after every batch
       liftIO $ runStep model' optim' loss learningRate
     begin = pure (model, optim)
     done = pure
@@ -228,6 +229,7 @@ evaluation model = P.foldM step begin done
     step aggLoss (input, target) = do
       prediction <- liftIO $ forwardConcurrently @devices' @device model input
       let loss = crossEntropyLoss @PaddingIdx prediction target
+      liftIO performGC -- force cleanup after every batch
       pure $ aggLoss + toFloat (Torch.Typed.Tensor.toDType @'D.Float loss)
     begin = pure 0
     done = pure
