@@ -155,7 +155,7 @@ program numEpochs trainingFile trainingLen evaluationFile evaluationLen = Safe.r
             )
           let optim = mkAdam 0 0.9 0.999 (flattenParameters model)
           learning @Devices' @Device @numEmbeds @BatchSize @SeqLen numEpochs learningRate (model, optim) trainingData evaluationData
-    in  learning' >-> P.mapM (\x -> do performGC; return x) >-> P.map (\(loss, _, _) -> loss) >-> P.print
+    in  learning' >-> P.mapM ((liftIO performGC >>) . return) >-> P.map (\(loss, _, _) -> loss) >-> P.print
 
 mkNumEmbedsProof
   :: forall (numEmbeds :: Nat)
