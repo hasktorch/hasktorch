@@ -38,6 +38,7 @@ import Lens.Family
 import Unsafe.Coerce (unsafeCoerce)
 import qualified System.IO as IO
 import           System.IO.Unsafe (unsafePerformIO)
+import           System.Mem (performGC)
 
 import           Pipes
 import           Pipes.Group
@@ -154,7 +155,7 @@ program numEpochs trainingFile trainingLen evaluationFile evaluationLen = Safe.r
             )
           let optim = mkAdam 0 0.9 0.999 (flattenParameters model)
           learning @Devices' @Device @numEmbeds @BatchSize @SeqLen numEpochs learningRate (model, optim) trainingData evaluationData
-    in  learning' >-> P.map (\(loss, _, _) -> loss) >-> P.print
+    in  learning' >-> P.mapM (\x -> do performGC; return x) >-> P.map (\(loss, _, _) -> loss) >-> P.print
 
 mkNumEmbedsProof
   :: forall (numEmbeds :: Nat)
