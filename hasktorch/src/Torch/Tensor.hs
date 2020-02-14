@@ -109,11 +109,11 @@ toDevice device' t = unsafePerformIO $ do
         (deviceIndex $ Torch.Tensor.device t')
   pure t'
  where
-  toDevice' dt dt' di di' _ | dt == dt' && di == di' = getOpts t >>= to t -- just copy
-  toDevice' CUDA dt'@CUDA di di' True | di /= di'    = copyTo dt' di' t -- copy from di to di'
-  toDevice' CPU dt'@CUDA 0 di' True | di' >= 0       = copyTo dt' di' t -- copy from cpu:0 to cuda:di'
-  toDevice' CUDA dt'@CPU _ di'@0 True                = copyTo dt' di' t -- copy from cuda:di to cpu:0
-  toDevice' dt dt' di di' _ =
+  toDevice' dt   dt'  di di' _    | dt == dt' && di == di' = getOpts t >>= to t -- just copy
+  toDevice' CUDA CUDA di di' True | di /= di'              = getOpts t >>= withDeviceIndex di' >>= to t -- copy from di to di'
+  toDevice' CPU  CUDA 0  di' True | di' >= 0               = getOpts t >>= withDeviceIndex di' >>= to t -- copy from cpu:0 to cuda:di'
+  toDevice' CUDA CPU  di 0   True | di >= 0                = getOpts t >>= withDeviceType CPU  >>= to t -- copy from cuda:di to cpu:0
+  toDevice' dt   dt'  di di' _                =
     error
       $  "cannot move tensor from \""
       <> show dt
