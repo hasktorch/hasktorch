@@ -149,14 +149,29 @@ let
 
     hasktorch-typed-transformer_cudatoolkit_10_1-image = pkgsOld.dockerTools.buildImage {
       name = "hasktorch-typed-transformer_cudatoolkit_10_1";
+      tag = "latest";
       fromImage = pkgsOld.dockerTools.pullImage {
-        imageName = "alpine";
-        imageDigest = "sha256:ddba4d27a7ffc3f86dd6c2f92041af252a1f23a8e742c90e6e1297bfa1bc0c45";
-        sha256 = "1rax1643lfpbx0aw49pj03kkbm69dzmbpfhnw5dn56cnnrfslg1g";
+        imageName = "nvidia/cuda";
+        imageDigest = "sha256:31e2a1ca7b0e1f678fb1dd0c985b4223273f7c0f3dbde60053b371e2a1aee2cd";
+        sha256 = "1bgw7v6xdi6chjds5qvvn596db56r4hkj7dyds5c7pyfsgl74yf3";
       };
-      config.Cmd = [
-        "${pkgsNew.hasktorch-examples_cudatoolkit_10_1-static}/bin/typed-transformer"
-      ];
+      config = {
+        WorkingDir = "/workingDir";
+        Cmd = [
+          "${pkgsNew.hasktorch-examples_cudatoolkit_10_1-static}/bin/typed-transformer"
+        ];
+        Env = [
+          "LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
+          "NVIDIA_VISIBLE_DEVICES=all"
+          "NCCL_VERSION=2.4.8"
+          "LIBRARY_PATH=/usr/local/cuda/lib64/stubs"
+          "CUDA_PKG_VERSION=10-1=10.1.243-1"
+          "CUDA_VERSION=10.1.243"
+          "NVIDIA_DRIVER_CAPABILITIES=compute,utility"
+          "NVIDIA_REQUIRE_CUDA=cuda>=10.1 brand=tesla,driver>=384,driver<385 brand=tesla,driver>=396,driver<397 brand=tesla,driver>=410,driver<411"
+          "PATH=/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+        ];
+      };
     };
 
   };
