@@ -98,11 +98,16 @@ toDevice :: Device -> Tensor -> Tensor
 toDevice device' t = unsafePerformIO $ do
   hasCUDA <- cast0 ATen.hasCUDA :: IO Bool
   let device = Torch.Tensor.device t
-  toDevice' (deviceType device)
-            (deviceType device')
-            (deviceIndex device)
-            (deviceIndex device')
-            hasCUDA
+  t' <- toDevice' (deviceType device)
+                  (deviceType device')
+                  (deviceIndex device)
+                  (deviceIndex device')
+                  hasCUDA
+  check (deviceType device')
+        (deviceType $ Torch.Tensor.device t')
+        (deviceIndex device')
+        (deviceIndex $ Torch.Tensor.device t')
+  pure t'
  where
   toDevice' dt dt' di di' _ | dt == dt' && di == di' = getOpts t >>= to t -- just copy
   toDevice' CUDA dt'@CUDA di di' True | di /= di'    = copyTo dt' di' t -- copy from di to di'
@@ -132,6 +137,18 @@ toDevice device' t = unsafePerformIO $ do
     copy = False
   copyTo dt di t =
     getOpts t >>= withDeviceIndex di >>= withDeviceType dt >>= to t
+  check dt dt' di di' | dt == dt' && di == di' = pure ()
+  check dt dt' di di' =
+    error
+      $  "moving of tensor failed: device should have been \""
+      <> show dt
+      <> ":"
+      <> show di
+      <> "\" but is \""
+      <> show dt'
+      <> ":"
+      <> show di'
+      <> "\""
 
 select :: Tensor -> Int -> Int -> Tensor
 select t dim idx = unsafePerformIO $ cast3 ATen.tensor_select_ll t dim idx
