@@ -14,7 +14,7 @@ import           Test.Hspec
 import           Control.Exception.Safe
 import           Control.Monad.State.Strict
 
-import qualified Image                         as I
+import qualified Torch.Typed.Vision            as I
 import           Torch.Typed.Tensor
 import qualified Torch.Tensor                  as D
 import           GHC.Generics
