@@ -78,7 +78,7 @@ train trainData = do
 
 main :: IO ()
 main = do
-    (trainData, testData) <- I.initMnist
+    (trainData, testData) <- I.initMnist "datasets/mnist"
     model <- train trainData
 
     -- show test images + labels
