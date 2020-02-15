@@ -63,14 +63,16 @@ let
                             }
                         );
                     "hasktorch-examples_${postfix}" =
-                      # failOnAllWarnings
-                        (haskellPackagesOld.callCabal2nix
-                          "examples"
-                          ../examples
-                          { libtorch-ffi = haskellPackagesNew."libtorch-ffi_${postfix}"
-                          ; hasktorch = haskellPackagesNew."hasktorch_${postfix}"
-                          ; }
-                        );
+                        appendConfigureFlag
+                        # failOnAllWarnings
+                          (haskellPackagesOld.callCabal2nix
+                            "examples"
+                            ../examples
+                            { libtorch-ffi = haskellPackagesNew."libtorch-ffi_${postfix}"
+                            ; hasktorch = haskellPackagesNew."hasktorch_${postfix}"
+                            ; }
+                          )
+                          "-fdev";
                   };
 
                 extension =

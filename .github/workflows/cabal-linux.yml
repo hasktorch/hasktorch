@@ -27,7 +27,7 @@ jobs:
         ./setup-cabal.sh
         cabal v2-update
         cabal v2-install hspec-discover
-        cabal v2-build all --jobs=2 --write-ghc-environment-files=always
+        cabal v2-build all --jobs=2 --write-ghc-environment-files=always -f dev
     - name: Test
       run: |
         export PATH=/opt/ghc/bin:$PATH

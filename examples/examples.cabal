@@ -11,6 +11,10 @@ copyright:           2019 Austin Huang
 category:            Codegen
 build-type:          Simple
 
+Flag dev
+  Description:   Turn on development settings. This flag is used to avoid extra depencencies.
+  Default:       False
+
 common config
   default-language:    Haskell2010
   ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
@@ -188,6 +192,12 @@ executable matrix-factorization
                      , libtorch-ffi
 
 executable gd-field
+  -- Chart-cairo requires installation of OS(ubuntu or macos) package.
+  -- The default value of dev-flag is false for users who do not need it.
+  if flag(dev)
+    Buildable: True
+  else
+    Buildable: False
   import:              config
   hs-source-dirs:      gd-field
   main-is:             Main.hs

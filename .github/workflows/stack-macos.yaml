@@ -24,7 +24,7 @@ jobs:
     - name: Build
       run: |
         . setenv
-        stack build
+        stack build --flag examples:dev
     - name: Test
       run: |
         . setenv
