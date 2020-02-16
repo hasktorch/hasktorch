@@ -48,7 +48,7 @@ import Data.Int
 import Torch.Scalar
 import Torch.Tensor
 import Torch.DType
-import Torch.Functional.Internal hiding (argmax, clamp, conv1d, linear, softmax)
+import Torch.Functional.Internal hiding (argmax, clamp, cosh, conv1d, linear, softmax)
 import Torch.TensorFactories (onesLike, ones')
 
 kOne :: ForeignPtr ATen.Scalar
@@ -181,17 +181,20 @@ sigmoid t = unsafePerformIO $ (cast1 ATen.sigmoid_t) t
 sin :: Tensor -> Tensor
 sin t = unsafePerformIO $ (cast1 ATen.sin_t) t
 
-sinh :: Tensor -> Tensor
-sinh t = unsafePerformIO $ (cast1 ATen.sinh_t) t
-
 cos :: Tensor -> Tensor
 cos t = unsafePerformIO $ (cast1 ATen.cos_t) t
 
-sqrt :: Tensor -> Tensor
-sqrt t = unsafePerformIO $ (cast1 ATen.sqrt_t) t
+sinh :: Tensor -> Tensor
+sinh t = unsafePerformIO $ (cast1 ATen.sinh_t) t
+
+cosh :: Tensor -> Tensor
+cosh t = unsafePerformIO $ (cast1 ATen.cosh_t) t
 
 tanh :: Tensor -> Tensor
 tanh t = unsafePerformIO $ (cast1 ATen.tanh_t) t
+
+sqrt :: Tensor -> Tensor
+sqrt t = unsafePerformIO $ (cast1 ATen.sqrt_t) t
 
 gt :: Tensor -> Tensor -> Tensor
 gt a b = unsafePerformIO $ (cast2 ATen.gt_tt) a b
@@ -244,11 +247,6 @@ nllLoss' t target = unsafePerformIO $ (cast5 ATen.nll_loss_tttll) t target weigh
     where
         nClass = (shape t) !! 1 -- TODO nicer runtime error if input dimensions don't conform
         weight = ones' [nClass]
-
-conv2d :: Tensor -> Tensor -> Tensor -> (Int, Int) -> (Int, Int) -> Tensor
-conv2d input weight bias (dh, dw) (ph, pw) = unsafePerformIO $
-    (cast7 ATen.conv2d_tttllll) input weight bias
-                                ([dh, dw] :: [Int]) ([ph, pw] :: [Int]) ([1, 1] :: [Int]) (1 :: Int)
 
 maxPool2d :: Tensor -> (Int, Int) -> (Int, Int) -> (Int, Int) -> Tensor
 maxPool2d input (kh, kw) (dh, dw) (ph, pw) = unsafePerformIO $
@@ -415,6 +413,31 @@ conv1d weight bias stride padding dilation groups input =
         groups
 
 conv1d' weight bias stride padding input = conv1d weight bias stride padding 1 1 input
+
+
+{-
+conv2d :: Tensor -> Tensor -> Tensor -> (Int, Int) -> (Int, Int) -> Tensor
+conv2d input weight bias (dh, dw) (ph, pw) = unsafePerformIO $
+    (cast7 ATen.conv2d_tttllll) input weight bias
+                                ([dh, dw] :: [Int]) ([ph, pw] :: [Int]) ([1, 1] :: [Int]) (1 :: Int)
+-}
+
+conv2d
+  :: Tensor -- ^ weight
+  -> Tensor -- ^ bias
+  -> (Int, Int) -- ^ strides
+  -> (Int, Int) -- ^ padding
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+conv2d weight bias (stride0, stride1) (padding0, padding1) input = unsafePerformIO $ cast7
+  ATen.conv2d_tttllll
+  input
+  weight
+  bias
+  ([stride0, stride1] :: [Int])
+  ([padding0, padding1] :: [Int])
+  ([1, 1] :: [Int]) -- dilation (TODO - split out a function w/o defaulting)
+  (1 :: Int) -- groups
 
 solve :: Tensor -> Tensor -> (Tensor,Tensor)
 solve b a = unsafePerformIO $ (cast2 ATen.solve_tt) b a

@@ -20,11 +20,11 @@ conv :: [[[[Float]]]] -> D.Tensor -> D.Tensor
 conv weight input = D.toType D.UInt8 $ chw2hwc $ (\i -> D.clamp 0 255 (conv' i)) $ hwc2chw $ D.toType D.Float $ input
   where
     conv' input' = D.conv2d
-                   input'
                    (D.asTensor weight)
                    (D.ones' [3])
                    (1,1)
                    (0,0)
+                   input'
 
 sharpness :: D.Tensor -> D.Tensor
 sharpness input = conv weight input
