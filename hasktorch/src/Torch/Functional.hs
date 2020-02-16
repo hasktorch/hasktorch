@@ -2,9 +2,33 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module Torch.Functional (
-    module Torch.Functional
-  , module Torch.Functional.Internal
+    module Torch.Functional,
+    acos, asin, atan, clamp, dot, mv, slice
 ) where
+
+import          Prelude                 hiding ( all
+                                                , any
+                                                , sin
+                                                , sinh
+                                                , cos
+                                                , cosh
+                                                , tan
+                                                , tanh
+                                                , asin
+                                                , asinh
+                                                , acos
+                                                , acosh
+                                                , atan
+                                                , atanh
+                                                , max
+                                                , min
+                                                , exp
+                                                , log
+                                                , round
+                                                , isNaN
+                                                , floor
+                                                , ceil
+                                                )
 
 import System.IO.Unsafe
 import Foreign.ForeignPtr
@@ -16,6 +40,7 @@ import qualified Torch.Internal.Managed.Type.Tuple as ATen
 import qualified Torch.Internal.Const as ATen
 import qualified Torch.Internal.Type as ATen
 import qualified Torch.Internal.Managed.Cast
+import qualified Torch.Functional.Internal as Internal
 import Torch.Internal.Cast
 import Torch.Internal.Class
 import Data.Int
@@ -255,6 +280,37 @@ cholesky t upper = unsafePerformIO $ (cast2 ATen.cholesky_tb) t boolUpper
 cholesky_solve :: Tensor -> Tensor -> Tri -> Tensor
 cholesky_solve t1 t2 upper = unsafePerformIO $ (cast3 ATen.cholesky_solve_ttb) t1 t2 boolUpper
   where boolUpper = isUpper upper
+
+dropout
+  :: Double -- ^ dropout probability
+  -> Bool -- ^ whether or not to activate dropout
+  -> Tensor -- ^ input
+  -> IO Tensor -- ^ output
+dropout p train input = cast3 ATen.dropout_tdb input p train
+
+featureDropout
+  :: Double -- ^ dropout probability
+  -> Bool -- ^ whether or not to activate dropout
+  -> Tensor -- ^ input
+  -> IO Tensor -- ^ output
+featureDropout p train input =
+  cast3 ATen.feature_dropout_tdb input p train
+
+alphaDropout
+  :: Double -- ^ dropout probability
+  -> Bool -- ^ whether or not to activate dropout
+  -> Tensor -- ^ input
+  -> IO Tensor -- ^ output
+alphaDropout p train input =
+  cast3 ATen.alpha_dropout_tdb input p train
+
+featureAlphaDropout
+  :: Double -- ^ dropout probability
+  -> Bool -- ^ whether or not to activate dropout
+  -> Tensor -- ^ input
+  -> IO Tensor -- ^ output
+featureAlphaDropout p train input =
+  cast3 ATen.feature_alpha_dropout_tdb input p train
 
 solve :: Tensor -> Tensor -> (Tensor,Tensor)
 solve b a = unsafePerformIO $ (cast2 ATen.solve_tt) b a
