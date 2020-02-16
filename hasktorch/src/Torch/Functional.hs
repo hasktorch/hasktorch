@@ -3,7 +3,7 @@
 
 module Torch.Functional (
     module Torch.Functional,
-    acos, asin, atan, clamp, dot, mv, slice
+    addmv, addr, allclose, argmin, baddbmm, bmm, acos, asin, atan, dot, mv, slice
 ) where
 
 import          Prelude                 hiding ( all
@@ -48,7 +48,7 @@ import Data.Int
 import Torch.Scalar
 import Torch.Tensor
 import Torch.DType
-import Torch.Functional.Internal hiding (argmax, linear, softmax)
+import Torch.Functional.Internal hiding (argmax, clamp, conv1d, linear, softmax)
 import Torch.TensorFactories (onesLike, ones')
 
 kOne :: ForeignPtr ATen.Scalar
@@ -311,6 +311,110 @@ featureAlphaDropout
   -> IO Tensor -- ^ output
 featureAlphaDropout p train input =
   cast3 ATen.feature_alpha_dropout_tdb input p train
+
+avgPool1d
+  :: Int -- ^ kernel size
+  -> Int -- ^ stride
+  -> Int -- ^ padding
+  -> Bool -- ^ ceil mode
+  -> Bool -- ^ count include pad
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+avgPool1d kernelSize stride padding ceilMode countIncludePad input =
+    unsafePerformIO $ cast6 ATen.avg_pool1d_tlllbb
+        input
+        kernelSize
+        stride
+        padding
+        ceilMode
+        countIncludePad
+
+avgPool1d'
+  :: Int -- ^ kernel size
+  -> Int -- ^ stride
+  -> Int -- ^ padding
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+avgPool1d' kernelSize stride padding input = avgPool1d kernelSize stride padding False True input
+
+adaptiveAvgPool1d
+  :: Int -- outputSize
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+adaptiveAvgPool1d outputSize input = unsafePerformIO
+  $ cast2 ATen.adaptive_avg_pool1d_tl input outputSize
+
+bitwiseNot :: Tensor -> Tensor
+bitwiseNot input = unsafePerformIO $ cast1 ATen.bitwise_not_t input
+
+cat
+  :: Int -> [Tensor] -> Tensor
+cat dim tensors = unsafePerformIO $ cast2 ATen.cat_ll tensors dim
+
+chunk
+  :: Int -- ^ chunks
+  -> Int -- ^ dim
+  -> Tensor -- ^ input tensor
+  -> [Tensor] -- ^ output list of tensors
+chunk chunks dim input = unsafePerformIO
+  $ cast3 ATen.chunk_tll input chunks dim
+
+clamp
+  :: Float -- ^ minimum value
+  -> Float -- ^ maximum value
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+clamp min max input = unsafePerformIO $ cast3 ATen.clamp_tss input min max
+
+clampMax
+  :: Float -- ^ maximum value
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+clampMax max input = unsafePerformIO $ cast2 ATen.clamp_max_ts input max
+
+clampMin
+  :: Float -- ^ minimum value
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+clampMin min input = unsafePerformIO $ cast2 ATen.clamp_min_ts input min
+
+cudnnIsAcceptable
+  :: Tensor -- ^ input 
+  -> Bool -- ^ output
+cudnnIsAcceptable input =
+  unsafePerformIO $ cast1 ATen.cudnn_is_acceptable_t input
+
+constantPadNd1d
+  :: [Int] -- ^ list of padding per dimension
+  -> Float -- ^ value
+  -> Tensor -- ^ input
+  -> Tensor -- ^ ouptut
+constantPadNd1d padding value input = unsafePerformIO $ cast3
+  ATen.constant_pad_nd_tls
+  input
+  padding
+  value
+
+conv1d
+  :: Tensor -- ^ weight
+  -> Tensor -- ^ bias
+  -> Int -- ^ stride
+  -> Int -- ^ padding
+  -> Int -- ^ dilation
+  -> Int -- ^ groups
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+conv1d weight bias stride padding dilation groups input =
+    unsafePerformIO $ (cast7 ATen.conv1d_tttllll)
+        input
+        weight
+        bias
+        stride
+        padding
+        dilation
+        groups
+
+conv1d' weight bias stride padding input = conv1d weight bias stride padding 1 1 input
 
 solve :: Tensor -> Tensor -> (Tensor,Tensor)
 solve b a = unsafePerformIO $ (cast2 ATen.solve_tt) b a
