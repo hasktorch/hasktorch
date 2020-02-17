@@ -113,7 +113,7 @@ type ModelSpec numEmbeds device
       device
 
 main :: IO ()
-main = pure () -- program 100 "trainingFile.txt" 1000 "evaluationFile.txt" 1
+main = program 100 "trainingFile.txt" 1000 "evaluationFile.txt" 1
 
 program
   :: Int -- ^ number of epochs
