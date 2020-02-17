@@ -66,23 +66,23 @@ onesLike' self = unsafePerformIO $ (cast1 ATen.ones_like_t) self
 zeros :: [Int] -> TensorOptions -> Tensor
 zeros = mkFactoryUnsafe LibTorch.zeros_lo
 
-rand :: [Int] -> TensorOptions -> IO Tensor
-rand = mkFactory LibTorch.rand_lo
+randIO :: [Int] -> TensorOptions -> IO Tensor
+randIO = mkFactory LibTorch.rand_lo
 
-randn :: [Int] -> TensorOptions -> IO Tensor
-randn = mkFactory LibTorch.randn_lo
+randnIO :: [Int] -> TensorOptions -> IO Tensor
+randnIO = mkFactory LibTorch.randn_lo
 
-randint :: Int -> Int -> [Int] -> TensorOptions -> IO Tensor
-randint low high = mkFactory (LibTorch.randint_lllo (fromIntegral low) (fromIntegral high))
+randintIO :: Int -> Int -> [Int] -> TensorOptions -> IO Tensor
+randintIO low high = mkFactory (LibTorch.randint_lllo (fromIntegral low) (fromIntegral high))
 
-randnLike :: Tensor -> IO Tensor
-randnLike = cast1 ATen.randn_like_t
+randnLikeIO :: Tensor -> IO Tensor
+randnLikeIO = cast1 ATen.randn_like_t
+
+randLikeIO :: Tensor -> TensorOptions -> IO Tensor
+randLikeIO input opt = cast2 LibTorch.rand_like_to input opt
 
 fullLike :: Tensor -> Float -> TensorOptions -> IO Tensor
 fullLike input _fill_value opt = cast3 LibTorch.full_like_tso input _fill_value opt
-
-randLike :: Tensor -> TensorOptions -> IO Tensor
-randLike input opt = cast2 LibTorch.rand_like_to input opt
 
 onesWithDimnames :: [(Int,Dimname)] -> TensorOptions -> Tensor
 onesWithDimnames = mkFactoryUnsafeWithDimnames LibTorch.ones_lNo
@@ -131,17 +131,17 @@ ones' = mkDefaultFactory ones
 zeros' :: [Int] -> Tensor
 zeros' = mkDefaultFactory zeros
 
-rand' :: [Int] -> IO Tensor
-rand' = mkDefaultFactory rand
+randIO' :: [Int] -> IO Tensor
+randIO' = mkDefaultFactory randIO
 
-randn' :: [Int] -> IO Tensor
-randn' = mkDefaultFactory randn
+randnIO' :: [Int] -> IO Tensor
+randnIO' = mkDefaultFactory randnIO
 
-randint' :: Int -> Int -> [Int] -> IO Tensor
-randint' low high = mkDefaultFactory (randint low high)
+randintIO' :: Int -> Int -> [Int] -> IO Tensor
+randintIO' low high = mkDefaultFactory (randintIO low high)
 
-randLike' :: Tensor -> IO Tensor
-randLike' t = randLike t defaultOpts
+randLikeIO' :: Tensor -> IO Tensor
+randLikeIO' t = randLikeIO t defaultOpts
 
 onesWithDimnames' :: [(Int,Dimname)] -> Tensor
 onesWithDimnames' = mkDefaultFactoryWithDimnames onesWithDimnames

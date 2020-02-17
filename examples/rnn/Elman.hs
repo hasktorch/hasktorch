@@ -36,9 +36,9 @@ instance RecurrentCell ElmanCell where
 
 instance Randomizable ElmanSpec ElmanCell where
     sample ElmanSpec{..} = do
-      w_ih <- makeIndependent =<< randn' [in_features, hidden_features]
-      w_hh <- makeIndependent =<< randn' [hidden_features, hidden_features]
-      b <- makeIndependent =<< randn' [1, hidden_features]
+      w_ih <- makeIndependent =<< randnIO' [in_features, hidden_features]
+      w_hh <- makeIndependent =<< randnIO' [hidden_features, hidden_features]
+      b <- makeIndependent =<< randnIO' [1, hidden_features]
       return $ ElmanCell w_ih w_hh b
 
 

@@ -13,8 +13,8 @@ import           Control.Monad                  ( foldM )
 import           Torch.Tensor
 import           Torch.DType                    ( DType(Float) )
 import           Torch.TensorFactories          ( ones'
-                                                , rand'
-                                                , randn'
+                                                , randIO'
+                                                , randnIO'
                                                 )
 import           Torch.Functional
 import           Torch.Autograd
@@ -60,7 +60,7 @@ main :: IO ()
 main = do
   init <- sample $ LinearSpec { in_features = num_features, out_features = 1 }
   trained <- foldLoop init num_iters $ \state i -> do
-    input <- randn' [batch_size, num_features]
+    input <- randnIO' [batch_size, num_features]
     let expected_output = groundTruth input
         output          = model state input
         loss            = mse_loss output expected_output

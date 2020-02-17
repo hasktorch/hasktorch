@@ -64,7 +64,7 @@ main = do
     init <- sample $ MLPSpec { feature_counts = [2, 2, 1], 
                                nonlinearitySpec = Torch.Functional.tanh } 
     trained <- foldLoop init numIters $ \state i -> do
-        input <- rand' [batchSize, 2] >>= return . (toDType Float) . (gt 0.5)
+        input <- randIO' [batchSize, 2] >>= return . (toDType Float) . (gt 0.5)
         let (y, y') = (tensorXOR input, squeezeAll $ model state input)
             loss = mse_loss y' y
         when (i `mod` 100 == 0) $ do

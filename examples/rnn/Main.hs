@@ -48,9 +48,9 @@ main = do
     let foldLoop x count block = foldM block x [1..count]
 
     -- randomly initializing training values
-    input_tensor <- randn' [num_timesteps, 2]
-    init_hidden <- randn' [1, 2]
-    expected_output <- randn' [1, 2]
+    input_tensor <- randnIO' [num_timesteps, 2]
+    init_hidden <- randnIO' [1, 2]
+    expected_output <- randnIO' [1, 2]
 
     -- randomly initialize a gate
     rnnLayer <- sample $ ElmanSpec { in_features = 2, hidden_features = 2 }

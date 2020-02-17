@@ -62,23 +62,23 @@ instance RecurrentCell LSTMCell where
 
 instance Randomizable LSTMSpec LSTMCell where
   sample LSTMSpec{..} = do
-      ig_ih <- makeIndependent =<< randn' [inf, hf]
-      ig_hh <- makeIndependent =<< randn' [hf, hf]
-      ig_b <- makeIndependent =<< randn' [1, hf]
-      fg_ih <- makeIndependent =<< randn' [inf, hf]
-      fg_hh <- makeIndependent =<< randn' [hf, hf]
-      fg_b <- makeIndependent =<< randn' [1, hf]
-      og_ih <- makeIndependent =<< randn' [inf, hf]
-      og_hh <- makeIndependent =<< randn' [hf, hf]
-      og_b <- makeIndependent =<< randn' [1, hf]
-      hg_ih <- makeIndependent =<< randn' [inf, hf]
-      hg_hh <- makeIndependent =<< randn' [hf, hf]
-      hg_b <- makeIndependent =<< randn' [1, hf]
+      ig_ih <- makeIndependent =<< randnIO' [inf, hf]
+      ig_hh <- makeIndependent =<< randnIO' [hf, hf]
+      ig_b <- makeIndependent =<< randnIO' [1, hf]
+      fg_ih <- makeIndependent =<< randnIO' [inf, hf]
+      fg_hh <- makeIndependent =<< randnIO' [hf, hf]
+      fg_b <- makeIndependent =<< randnIO' [1, hf]
+      og_ih <- makeIndependent =<< randnIO' [inf, hf]
+      og_hh <- makeIndependent =<< randnIO' [hf, hf]
+      og_b <- makeIndependent =<< randnIO' [1, hf]
+      hg_ih <- makeIndependent =<< randnIO' [inf, hf]
+      hg_hh <- makeIndependent =<< randnIO' [hf, hf]
+      hg_b <- makeIndependent =<< randnIO' [1, hf]
       let ig = [ig_ih, ig_hh, ig_b]
       let fg = [fg_ih, fg_hh, fg_b]
       let og = [og_ih, og_hh, og_b]
       let hg = [hg_ih, hg_hh, hg_b]
-      c <- makeIndependent =<< randn' [hf, hf]
+      c <- makeIndependent =<< randnIO' [hf, hf]
       return $ LSTMCell ig fg og hg c
 
 

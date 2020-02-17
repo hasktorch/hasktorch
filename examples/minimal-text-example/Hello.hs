@@ -90,7 +90,7 @@ main = do
     let input_tensor = fromNestedList $ map repr "hell"
 
     -- randomly initialized hidden state
-    init_hidden <- randn' [1, num_features]
+    init_hidden <- randnIO' [1, num_features]
 
     let expected_output = fromNestedList [repr 'o']
 

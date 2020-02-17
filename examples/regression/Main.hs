@@ -5,7 +5,7 @@ module Main where
 
 import Control.Monad (when)
 
-import Torch hiding (randn')
+import Torch
 import Torch.Random (mkGenerator, randn')
 
 model :: Linear -> Tensor -> Tensor

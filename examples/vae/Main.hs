@@ -11,7 +11,7 @@ import Prelude hiding (exp)
 
 import Torch.Tensor
 import Torch.DType (DType (Float))
-import Torch.TensorFactories (ones', rand', randn', randnLike)
+import Torch.TensorFactories (ones', randIO', randnIO', randnLikeIO)
 import Torch.Functional hiding (linear)
 import Torch.Autograd
 import Torch.NN
@@ -84,13 +84,13 @@ mlp mlpState nonlin input = foldl' revApply input layerFunctionsList
 -- | Reparamaterization trick to sample from latent space while allowing differentiation
 reparamaterize :: Tensor -> Tensor -> IO Tensor
 reparamaterize mu logvar = do
-    eps <- Torch.TensorFactories.randnLike mu
+    eps <- Torch.TensorFactories.randnLikeIO mu
     pure $ mu + eps * exp (0.5 * logvar)
 
 -- | Multivariate 0-mean normal via cholesky decomposition
 mvnCholesky :: Tensor -> Int -> Int -> IO Tensor
 mvnCholesky cov n axisDim = do
-    samples <- randn' [axisDim, n]
+    samples <- randnIO' [axisDim, n]
     pure $ matmul l samples
     where
       l = cholesky cov Upper
