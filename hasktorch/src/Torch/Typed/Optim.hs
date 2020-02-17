@@ -57,14 +57,35 @@ runStep
   -> Loss device dtype
   -> LearningRate device dtype
   -> IO (model, optim)
-runStep modelState optimState loss learningRate = do
-  let parameters              = flattenParameters modelState
+runStep model optim loss learningRate = do
+  let parameters              = flattenParameters model
       gradients               = grad loss parameters
       tensors                 = hmap' ToDependent parameters
-      (tensors', optimState') = step learningRate gradients tensors optimState
+      (tensors', optim') = step learningRate gradients tensors optim
   parameters' <- hmapM' MakeIndependent tensors'
-  let modelState' = replaceParameters modelState parameters'
-  return (modelState', optimState')
+  let model' = replaceParameters model parameters'
+  return (model', optim')
+
+runStep'
+  :: forall model optim parameters gradients tensors dtype device
+   . ( Parameterized model parameters
+     , tensors ~ gradients
+     , HMap' ToDependent parameters tensors
+     , Optimizer optim gradients tensors dtype device
+     , HMapM' IO MakeIndependent tensors parameters
+     )
+  => model
+  -> optim
+  -> LearningRate device dtype
+  -> HList gradients
+  -> IO (model, optim)
+runStep' model optim learningRate gradients = do
+  let parameters         = flattenParameters model
+      tensors            = hmap' ToDependent parameters
+      (tensors', optim') = step learningRate gradients tensors optim
+  parameters' <- hmapM' MakeIndependent tensors'
+  let model' = replaceParameters model parameters'
+  return (model', optim')
 
 --
 -- Gradient Descent (GD)

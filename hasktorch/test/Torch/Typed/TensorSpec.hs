@@ -51,31 +51,28 @@ import           Torch.Typed.AuxSpec
 
 data BinarySpec = AddSpec | SubSpec | MulSpec
 
-instance ( TensorOptions shape   dtype   device
-         , TensorOptions shape'  dtype'  device
-         , TensorOptions shape'' dtype'' device
-         , shape'' ~ Broadcast shape shape'
-         , dtype'' ~ DTypePromotion dtype dtype'
-         , BasicArithmeticDTypeIsValid device dtype
-         , BasicArithmeticDTypeIsValid device dtype'
-         , BasicArithmeticDTypeIsValid device dtype''
-         )
-  => Apply
-       BinarySpec
-       (Proxy device, ((Proxy dtype, Proxy dtype'), (Proxy shape, Proxy shape')))
-       (() -> IO ())
+instance
+  ( TensorOptions shape   dtype   device
+  , TensorOptions shape'  dtype'  device
+  , TensorOptions shape'' dtype'' device
+  , shape'' ~ Broadcast shape shape'
+  , dtype'' ~ DTypePromotion dtype dtype'
+  , BasicArithmeticDTypeIsValid device dtype
+  , BasicArithmeticDTypeIsValid device dtype'
+  , BasicArithmeticDTypeIsValid device dtype''
+  ) => Apply' BinarySpec ((Proxy device, ((Proxy dtype, Proxy dtype'), (Proxy shape, Proxy shape'))), IO ()) (IO ())
  where
-  apply AddSpec _ _ = do
+  apply' AddSpec (_, agg) = agg >> do
     let a = ones @shape  @dtype  @device
     let b = ones @shape' @dtype' @device
     let c = add a b
     checkDynamicTensorAttributes c
-  apply SubSpec _ _ = do
+  apply' SubSpec (_, agg) = agg >> do
     let a = ones @shape  @dtype  @device
     let b = ones @shape' @dtype' @device
     let c = sub a b
     checkDynamicTensorAttributes c
-  apply MulSpec _ _ = do
+  apply' MulSpec (_, agg) = agg >> do
     let a = ones @shape  @dtype  @device
     let b = ones @shape' @dtype' @device
     let c = mul a b
@@ -83,18 +80,14 @@ instance ( TensorOptions shape   dtype   device
 
 data MatMulSpec = MatMulSpec
 
-instance ( TensorOptions shape   dtype device
-         , TensorOptions shape'  dtype device
-         , TensorOptions shape'' dtype device
-         , shape'' ~ MatMul shape shape'
-         , MatMulDTypeIsValid device dtype
-         )
-  => Apply
-       MatMulSpec
-       (Proxy device, (Proxy dtype, (Proxy shape, Proxy shape')))
-       (() -> IO ())
- where
-  apply MatMulSpec _ _ = do
+instance
+  ( TensorOptions shape   dtype device
+  , TensorOptions shape'  dtype device
+  , TensorOptions shape'' dtype device
+  , shape'' ~ MatMul shape shape'
+  , MatMulDTypeIsValid device dtype
+  ) => Apply' MatMulSpec ((Proxy device, (Proxy dtype, (Proxy shape, Proxy shape'))), IO ()) (IO ()) where
+  apply' MatMulSpec (_, agg) = agg >> do
     let a = ones @shape  @dtype @device
     let b = ones @shape' @dtype @device
     let c = matmul a b
@@ -102,44 +95,40 @@ instance ( TensorOptions shape   dtype device
 
 data BinaryCmpSpec = GTSpec | LTSpec | GESpec | LESpec | EQSpec | NESpec
 
-instance ( TensorOptions shape   dtype  device
-         , TensorOptions shape'  dtype' device
-         , TensorOptions shape'' D.Bool device
-         , shape'' ~ Broadcast shape shape'
-         , ComparisonDTypeIsValid device dtype
-         , ComparisonDTypeIsValid device dtype'
-         )
-  => Apply
-       BinaryCmpSpec
-       (Proxy device, ((Proxy dtype, Proxy dtype'), (Proxy shape, Proxy shape')))
-       (() -> IO ())
- where
-  apply GTSpec _ _ = do
+instance
+  ( TensorOptions shape   dtype  device
+  , TensorOptions shape'  dtype' device
+  , TensorOptions shape'' D.Bool device
+  , shape'' ~ Broadcast shape shape'
+  , ComparisonDTypeIsValid device dtype
+  , ComparisonDTypeIsValid device dtype'
+  ) => Apply' BinaryCmpSpec ((Proxy device, ((Proxy dtype, Proxy dtype'), (Proxy shape, Proxy shape'))), IO ()) (IO ()) where
+  apply' GTSpec (_, agg) = agg >> do
     let a = ones @shape  @dtype  @device
     let b = ones @shape' @dtype' @device
     let c = gt a b
     checkDynamicTensorAttributes c
-  apply LTSpec _ _ = do
+  apply' LTSpec (_, agg) = agg >> do
     let a = ones @shape  @dtype  @device
     let b = ones @shape' @dtype' @device
     let c = lt a b
     checkDynamicTensorAttributes c
-  apply GESpec _ _ = do
+  apply' GESpec (_, agg) = agg >> do
     let a = ones @shape  @dtype  @device
     let b = ones @shape' @dtype' @device
     let c = ge a b
     checkDynamicTensorAttributes c
-  apply LESpec _ _ = do
+  apply' LESpec (_, agg) = agg >> do
     let a = ones @shape  @dtype  @device
     let b = ones @shape' @dtype' @device
     let c = le a b
     checkDynamicTensorAttributes c
-  apply EQSpec _ _ = do
+  apply' EQSpec (_, agg) = agg >> do
     let a = ones @shape  @dtype  @device
     let b = ones @shape' @dtype' @device
     let c = eq a b
     checkDynamicTensorAttributes c
-  apply NESpec _ _ = do
+  apply' NESpec (_, agg) = agg >> do
     let a = ones @shape  @dtype  @device
     let b = ones @shape' @dtype' @device
     let c = ne a b
@@ -147,18 +136,14 @@ instance ( TensorOptions shape   dtype  device
 
 data ReshapeSpec = ReshapeSpec
 
-instance ( TensorOptions fromShape dtype device
-         , TensorOptions toShape   dtype device
-         , KnownShape fromShape
-         , KnownShape toShape
-         , Numel fromShape ~ Numel toShape
-         )
-  => Apply
-       ReshapeSpec
-       (Proxy device, (Proxy dtype, (Proxy fromShape, Proxy toShape)))
-       (() -> IO ())
- where
-  apply ReshapeSpec _ _ = do
+instance
+  ( TensorOptions fromShape dtype device
+  , TensorOptions toShape   dtype device
+  , KnownShape fromShape
+  , KnownShape toShape
+  , Numel fromShape ~ Numel toShape
+  ) => Apply' ReshapeSpec ((Proxy device, (Proxy dtype, (Proxy fromShape, Proxy toShape))), IO ()) (IO ()) where
+  apply' ReshapeSpec (_, agg) = agg >> do
     let t = ones @fromShape @dtype @device
     let t' = reshape @toShape t
     checkDynamicTensorAttributes t'
@@ -167,42 +152,33 @@ instance ( TensorOptions fromShape dtype device
 
 data ToTypeSpec = ToTypeSpec
 
-instance ( TensorOptions shape dtype  device
-         , TensorOptions shape dtype' device
-         , KnownDType dtype'
-         )
-  => Apply
-       ToTypeSpec
-       (Proxy device, ((Proxy dtype, Proxy dtype'), Proxy shape))
-       (() -> IO ())
- where
-  apply ToTypeSpec _ _ = do
+instance
+  ( TensorOptions shape dtype  device
+  , TensorOptions shape dtype' device
+  , KnownDType dtype'
+  ) => Apply' ToTypeSpec ((Proxy device, ((Proxy dtype, Proxy dtype'), Proxy shape)), IO ()) (IO ()) where
+  apply' ToTypeSpec (_, agg) = agg >> do
     let t = ones @shape @dtype @device
         t' = Torch.Typed.Tensor.toDType @dtype' t
     checkDynamicTensorAttributes t'
 
 data ToDeviceSpec = ToDeviceSpec
 
-instance ( TensorOptions shape dtype device
-         , KnownDevice device
-         )
-  => Apply
-       ToDeviceSpec
-       (Proxy device, (Proxy dtype, Proxy shape))
-       (() -> IO ())
- where
-  apply ToDeviceSpec _ _ = 
-    foldMap 
-      (\device' -> case someDevice device' of
-        (SomeDevice (Proxy :: Proxy device')) -> do
-          let t = ones @shape @dtype @device
-          checkDynamicTensorAttributes t
-          let t' = toDevice @device' t
-          D.device (toDynamic t') `shouldBe` deviceVal @device'
-          let t'' = toDevice @device t'
-          D.device (toDynamic t'') `shouldBe` deviceVal @device
-      )
-      availableDevices
+instance
+  ( TensorOptions shape dtype device
+  , KnownDevice device
+  ) => Apply' ToDeviceSpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ()) where
+  apply' ToDeviceSpec (_, agg) = agg >> foldMap 
+    (\device' -> case someDevice device' of
+      (SomeDevice (Proxy :: Proxy device')) -> do
+        let t = ones @shape @dtype @device
+        checkDynamicTensorAttributes t
+        let t' = toDevice @device' t
+        D.device (toDynamic t') `shouldBe` deviceVal @device'
+        let t'' = toDevice @device t'
+        D.device (toDynamic t'') `shouldBe` deviceVal @device
+    )
+    availableDevices
 
 spec = foldMap spec' availableDevices
 
@@ -331,7 +307,7 @@ spec' device =
 
 testTensorListFold
   :: forall device dtype shape . Tensor device dtype shape -> IO [D.ATenTensor]
-testTensorListFold t = hfoldrM TensorListFold [] (t :. HNil)
+testTensorListFold t = hfoldrM TensorListFold ([] :: [D.ATenTensor]) (t :. HNil)
 
 testTensorListUnfold
   :: forall device dtype shape device' dtype' shape'

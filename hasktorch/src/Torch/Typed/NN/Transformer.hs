@@ -359,26 +359,22 @@ data
       , flKeyPaddingMask :: Tensor device 'D.Bool '[batchSize, seqLen]
       }
 
-instance ( 1 <= numHeads
-         , embedDim ~ (headDim * numHeads)
-         , Mod (embedDim * 3) 3 ~ 0
-         , Div (embedDim * 3) 3 ~ embedDim
-         , All KnownNat '[embedDim, numHeads, seqLen, batchSize, headDim]
-         , EndsWith '[batchSize, seqLen, embedDim] '[embedDim]
-         , KnownDType dtype
-         , dtype ~ SumDType dtype
-         , StandardFloatingPointDTypeValidation device dtype
-         , MatMulDTypeIsValid device dtype
-         , BasicArithmeticDTypeIsValid device dtype
-         , SumDTypeIsValid device dtype
-         , KnownDevice device
-         )
-    => Apply
-         (FoldLayers batchSize seqLen dtype device)
-         (TransformerLayer embedDim numHeads ffnDim dtype device)
-         (Tensor device dtype '[batchSize, seqLen, embedDim] -> IO (Tensor device dtype '[batchSize, seqLen, embedDim]))
- where
-  apply FoldLayers {..} layer = transformerLayer layer flTrain flAttentionMask flKeyPaddingMask Nothing Nothing
+instance
+  ( 1 <= numHeads
+  , embedDim ~ (headDim * numHeads)
+  , Mod (embedDim * 3) 3 ~ 0
+  , Div (embedDim * 3) 3 ~ embedDim
+  , All KnownNat '[embedDim, numHeads, seqLen, batchSize, headDim]
+  , EndsWith '[batchSize, seqLen, embedDim] '[embedDim]
+  , KnownDType dtype
+  , dtype ~ SumDType dtype
+  , StandardFloatingPointDTypeValidation device dtype
+  , MatMulDTypeIsValid device dtype
+  , BasicArithmeticDTypeIsValid device dtype
+  , SumDTypeIsValid device dtype
+  , KnownDevice device
+  ) => Apply' (FoldLayers batchSize seqLen dtype device) (TransformerLayer embedDim numHeads ffnDim dtype device, IO (Tensor device dtype '[batchSize, seqLen, embedDim])) (IO (Tensor device dtype '[batchSize, seqLen, embedDim])) where
+  apply' FoldLayers {..} (layer, mx) = mx >>= transformerLayer layer flTrain flAttentionMask flKeyPaddingMask Nothing Nothing
 
 transformerLM
   :: forall
@@ -400,6 +396,7 @@ transformerLM
          (FoldLayers batchSize seqLen dtype device)
          (Tensor device dtype '[batchSize, seqLen, embedDim])
          (HReplicateR numAttnLayers (TransformerLayer embedDim numHeads ffnDim dtype device))
+         (Tensor device dtype '[batchSize, seqLen, embedDim])
      , BasicArithmeticDTypeIsValid device dtype
      , ComparisonDTypeIsValid device dtype
      , ComparisonDTypeIsValid device 'D.Int64
@@ -437,6 +434,7 @@ instance
       (FoldLayers batchSize seqLen dtype device)
       (Tensor device dtype '[batchSize, seqLen, embedDim])
       (HReplicateR numAttnLayers (TransformerLayer embedDim numHeads ffnDim dtype device))
+      (Tensor device dtype '[batchSize, seqLen, embedDim])
   , BasicArithmeticDTypeIsValid device dtype
   , ComparisonDTypeIsValid device dtype
   , ComparisonDTypeIsValid device 'D.Int64

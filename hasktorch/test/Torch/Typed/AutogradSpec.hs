@@ -280,8 +280,8 @@ data GradientsTestInner = GradientsTestInner
 
 instance
   ( TensorOptions shape dtype device
-  ) => Apply GradientsTestInner (Tensor device dtype shape, Tensor device dtype shape) (() -> IO ()) where
-  apply _ (a, b) _ = do
+  ) => Apply' GradientsTestInner ((Tensor device dtype shape, Tensor device dtype shape), IO ()) (IO ()) where
+  apply' _ ((a, b), agg) = agg >> do
     checkDynamicTensorAttributes a
     checkDynamicTensorAttributes b
     (toList . Just . Torch.Typed.Tensor.toDevice @'( 'D.CPU, 0) . unsqueeze @0 . all)
@@ -302,9 +302,9 @@ instance
   , DropValue shape 0 ~ '[]
   , HMap' (GradientsRastriginA a) parameters gradients'
   , HZip gradients gradients' zs
-  , HFoldrM IO GradientsTestInner () zs
-  ) => Apply (GradientsTestOuter a) ((Proxy device, Proxy dtype), RastriginSpec num ns dtypes devices) (() -> IO ()) where
-  apply (GradientsTestOuter a) (_, rastriginSpec) _ = do
+  , HFoldrM IO GradientsTestInner () zs ()
+  ) => Apply' (GradientsTestOuter a) (((Proxy device, Proxy dtype), RastriginSpec num ns dtypes devices), IO ()) (IO ()) where
+  apply' (GradientsTestOuter a) ((_, rastriginSpec), agg) = agg >> do
     model <- A.sample rastriginSpec
     let zipped = hzip
           (grad (rastrigin @a @dtype @device @tensors @parameters model a)
@@ -354,7 +354,7 @@ spec = describe "grad" $ do
       let spec = LinearSpec @10 @5 @'D.Float @'( 'D.CPU, 0)
       model <- A.sample spec
       input <- randn @'[20,10] @'D.Float @'( 'D.CPU, 0)
-      output <- forwardConcurrently @'[ '( 'D.CPU, 0), '( 'D.CUDA, 0)] @'( 'D.CPU, 0) model input
+      output <- forwardConcurrently' @'[ '( 'D.CPU, 0), '( 'D.CUDA, 0)] @'( 'D.CPU, 0) model input
       let loss = mseLoss @D.ReduceMean output zeros
           gradientWeight :. gradientBias :. HNil = grad loss (Torch.Typed.Parameter.flattenParameters model)
           output' = forward model input

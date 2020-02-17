@@ -392,8 +392,9 @@ instance Castable [Tensor device dtype shape] (ForeignPtr ATen.TensorList) where
 
 data TensorListFold = TensorListFold
 
-instance (Castable x D.ATenTensor) => Apply TensorListFold x ([D.ATenTensor] -> IO [D.ATenTensor]) where
-  apply _ x = \xs -> do
+instance (Castable x D.ATenTensor) => Apply' TensorListFold (x, IO [D.ATenTensor]) (IO [D.ATenTensor]) where
+  apply' _ (x, mxs) = do
+    xs <- mxs
     x' <- cast x return
     return (x' : xs)
 
@@ -407,7 +408,7 @@ instance (Castable x D.ATenTensor) => Apply TensorListUnfold [D.ATenTensor] (IO 
     x' <- uncast x return
     return $ HJust (x', xs)
 
-instance ( HFoldrM IO TensorListFold [D.ATenTensor] l
+instance ( HFoldrM IO TensorListFold [D.ATenTensor] l [D.ATenTensor]
          , Apply TensorListUnfold [D.ATenTensor] res
          , HUnfoldM IO TensorListUnfold res l
          , res ~ (HUnfoldMRes IO [D.ATenTensor] l)
@@ -417,7 +418,7 @@ instance ( HFoldrM IO TensorListFold [D.ATenTensor] l
   cast xs f = f =<< go xs
    where
     go :: HList l -> IO [D.ATenTensor]
-    go xs = hfoldrM TensorListFold [] xs
+    go xs = hfoldrM TensorListFold ([] :: [D.ATenTensor]) xs
   uncast xs f = f =<< go xs
    where
     go :: [D.ATenTensor] -> IO (HList l)

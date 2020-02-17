@@ -11,6 +11,10 @@
 {-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.KnownNat.Solver #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Extra.Solver #-}
@@ -75,9 +79,9 @@ import qualified Torch.Tensor                  as D
 import qualified Torch.Functional              as D
 import qualified Torch.TensorFactories         as D
 
-type Devices' = '[ '( 'D.CUDA, 0)]
+type Devices' = '[ '( 'D.CUDA, 0), '( 'D.CUDA, 1), '( 'D.CUDA, 2), '( 'D.CUDA, 3)]
 type Device = '( 'D.CUDA, 0)
-type BatchSize = 1
+type BatchSize = 4
 type SeqLen = 512
 
 type NumAttnLayers = 12
@@ -109,7 +113,7 @@ type ModelSpec numEmbeds device
       device
 
 main :: IO ()
-main = program 100 "trainingFile.txt" 1000 "evaluationFile.txt" 1
+main = pure () -- program 100 "trainingFile.txt" 1000 "evaluationFile.txt" 1
 
 program
   :: Int -- ^ number of epochs
@@ -168,25 +172,29 @@ mkNumEmbedsProof Proxy =
         then Just (unsafeCoerce (Dict :: Dict ('True ~ 'True)))
         else Nothing
 
+data FlattenParametersF = FlattenParametersF
+
+instance
+  ( Parameterized model parameters
+  ) => Apply' FlattenParametersF model (HList parameters) where
+  apply' _ = flattenParameters
+
 training
-  :: forall devices' device numEmbeds batchSize seqLen dtype model models input output inputs outputs target optim parameters gradients tensors m
+  :: forall devices' device dtype model models optim input inputs target targets inputTargets losses parameters' gradients parameters tensors m
    . ( 'Just device ~ GetDevice model
+     , 'Just device ~ GetDevice input
      , HasScatter devices' device input inputs
+     , HasScatter devices' device target targets
      , HasReplicate devices' device model models
-     , HZipWithM Concurrently ForwardConcurrently models inputs outputs
-     , HasGather device devices' outputs output
+     , HZip inputs targets inputTargets
+     , HZipWithM Concurrently ForwardConcurrentlyF models inputTargets losses
+     , HMap' FlattenParametersF models parameters'
+     , HasGradConcurrently device devices' parameters' losses gradients
      , Parameterized model parameters
-     , HasGrad (HList parameters) (HList gradients)
      , tensors ~ gradients
      , HMap' ToDependent parameters tensors
-     , ATen.Castable (HList gradients) [D.ATenTensor]
      , Optimizer optim gradients tensors dtype device
      , HMapM' IO MakeIndependent tensors parameters
-     , input ~ Tensor device 'D.Int64 '[batchSize, seqLen]
-     , output ~ Tensor device dtype '[batchSize, seqLen, numEmbeds]
-     , target ~ Tensor device 'D.Int64 '[batchSize, seqLen]
-     , StandardFloatingPointDTypeValidation device dtype
-     , Torch.Typed.Tensor.All KnownNat '[batchSize, seqLen, numEmbeds]
      , KnownDType dtype
      , KnownDevice device
      , MonadIO m
@@ -198,19 +206,23 @@ training
 training learningRate (model, optim) = P.foldM step begin done
   where
     step (model', optim') (input, target) = do
-      prediction <- liftIO $ forwardConcurrentlyStoch @devices' @device model' input
-      let loss = crossEntropyLoss @PaddingIdx prediction target
+      let models' = Torch.Typed.Device.replicate @devices' @device @model @models model'
+          inputs = scatter @devices' @device @input @inputs input
+          targets = scatter @devices' @device @target @targets target
+      losses <- liftIO . runConcurrently . forwardConcurrentlyStoch @models @inputTargets models' $ hzip inputs targets
+      let parameters' = hmap' FlattenParametersF models'
+      gradients <- liftIO . runConcurrently $ gradConcurrently @device @devices' @parameters' @losses @gradients parameters' losses
       liftIO performGC -- force cleanup after every batch
-      liftIO $ runStep model' optim' loss learningRate
+      liftIO $ runStep' model' optim' learningRate gradients
     begin = pure (model, optim)
     done = pure
 
 evaluation
-  :: forall devices' device numEmbeds batchSize seqLen dtype model models input output inputs outputs target m
+  :: forall devices' device numEmbeds batchSize seqLen dtype model models input inputs output outputs target m
    . ( 'Just device ~ GetDevice model
      , HasScatter devices' device input inputs
      , HasReplicate devices' device model models
-     , HZipWithM Concurrently ForwardConcurrently models inputs outputs
+     , HZipWithM Concurrently ForwardConcurrentlyF models inputs outputs
      , HasGather device devices' outputs output
      , input ~ Tensor device 'D.Int64 '[batchSize, seqLen]
      , output ~ Tensor device dtype '[batchSize, seqLen, numEmbeds]
@@ -227,7 +239,7 @@ evaluation
 evaluation model = P.foldM step begin done
   where
     step aggLoss (input, target) = do
-      prediction <- liftIO $ forwardConcurrently @devices' @device model input
+      prediction <- liftIO $ forwardConcurrently' @devices' @device model input
       let loss = crossEntropyLoss @PaddingIdx prediction target
       liftIO performGC -- force cleanup after every batch
       pure $ aggLoss + toFloat (Torch.Typed.Tensor.toDType @'D.Float loss)
@@ -235,11 +247,17 @@ evaluation model = P.foldM step begin done
     done = pure
 
 learning
-  :: forall devices' device numEmbeds batchSize seqLen dtype model models input output inputs outputs target optim parameters gradients tensors m
+  :: forall devices' device numEmbeds batchSize seqLen dtype model models parameters parameters' input inputs target targets inputTargets output outputs losses optim gradients tensors m
    . ( 'Just device ~ GetDevice model
+     , 'Just device ~ GetDevice input
      , HasScatter devices' device input inputs
+     , HasScatter devices' device target targets
      , HasReplicate devices' device model models
-     , HZipWithM Concurrently ForwardConcurrently models inputs outputs
+     , HZip inputs targets inputTargets
+     , HZipWithM Concurrently ForwardConcurrentlyF models inputs outputs
+     , HZipWithM Concurrently ForwardConcurrentlyF models inputTargets losses
+     , HMap' FlattenParametersF models parameters'
+     , HasGradConcurrently device devices' parameters' losses gradients
      , HasGather device devices' outputs output
      , Parameterized model parameters
      , HasGrad (HList parameters) (HList gradients)
@@ -265,8 +283,8 @@ learning
   -> Producer (Float, model, optim) m ()
 learning numEpochs learningRate (model, optim) trainingData evaluationData =
   for (each [1 .. numEpochs]) $ \_epoch -> do
-    (model', optim') <- lift $ training @devices' learningRate (model, optim) trainingData
-    evalLoss' <- lift $ evaluation @devices' model' evaluationData
+    (model', optim') <- lift $ training @devices' @device @dtype @model @models @optim @input @inputs @target @targets @inputTargets @losses @parameters' @gradients @parameters @tensors learningRate (model, optim) trainingData
+    evalLoss' <- lift $ evaluation @devices' @device @numEmbeds @batchSize @seqLen @dtype @model @models @input @inputs @output @outputs @target model' evaluationData
     yield (evalLoss', model', optim')
 
 readData
@@ -359,3 +377,19 @@ crossEntropyLoss prediction target =
     (natValI @paddingIdx)
     (logSoftmax @1 . transpose @1 @2 $ prediction)
     target
+
+instance
+  ( HasForward (TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim dtype device) (Tensor device 'D.Int64 '[batchSize, seqLen]) (Tensor device dtype '[batchSize, seqLen, numEmbeds])
+  , StandardFloatingPointDTypeValidation device dtype
+  , KnownNat batchSize
+  , KnownNat seqLen
+  , KnownNat numEmbeds
+  , KnownDType dtype
+  , KnownDevice device
+  ) => HasForward (TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim dtype device) (Tensor device 'D.Int64 '[batchSize, seqLen], Tensor device 'D.Int64 '[batchSize, seqLen]) (Loss device dtype) where
+  forward model (input, target) =
+    let prediction = forward model input
+    in  crossEntropyLoss @PaddingIdx prediction target
+  forwardStoch model (input, target) = do
+    prediction <- forwardStoch model input
+    return $ crossEntropyLoss @PaddingIdx prediction target
