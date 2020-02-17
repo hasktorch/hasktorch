@@ -9,15 +9,9 @@ import GHC.Generics
 import System.Random (mkStdGen, randoms)
 import Prelude hiding (exp)
 
-import Torch.Autograd as A
-import Torch.Functional hiding (take)
-import Torch.Tensor
-import Torch.NN
-import Torch.Optim
-import qualified Torch.Typed.Vision as I
-import qualified Torch.Vision as UI
-
--- import qualified Image as I
+import Torch
+import qualified Torch.Typed.Vision as V hiding (getImages')
+import qualified Torch.Vision as V
 
 data MLPSpec = MLPSpec {
     inputFeatures :: Int,
@@ -52,16 +46,16 @@ mlp MLP{..} input =
     . linear l0
     $ input
 
-train :: I.MnistData -> IO MLP
+train :: V.MnistData -> IO MLP
 train trainData = do
     init <- sample spec
-    let nImages = I.length trainData
+    let nImages = V.length trainData
         idxList = randomIndexes nImages
     trained <- foldLoop init numIters $
         \state iter -> do
             let idx = take batchSize (drop (iter * batchSize) idxList)
-            input <- UI.getImages' batchSize dataDim trainData idx
-            let label = UI.getLabels' batchSize trainData idx
+            input <- V.getImages' batchSize dataDim trainData idx
+            let label = V.getLabels' batchSize trainData idx
                 loss = nllLoss' (mlp state input) label
             when (iter `mod` 50 == 0) $ do
                 putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
@@ -78,15 +72,15 @@ train trainData = do
 
 main :: IO ()
 main = do
-    (trainData, testData) <- I.initMnist "datasets/mnist"
+    (trainData, testData) <- V.initMnist "datasets/mnist"
     model <- train trainData
 
     -- show test images + labels
     mapM (\idx -> do
-        testImg <- UI.getImages' 1 784 trainData [idx]
-        UI.dispImage testImg
+        testImg <- V.getImages' 1 784 trainData [idx]
+        V.dispImage testImg
         putStrLn $ "Model        : " ++ (show . (argmax (Dim 1) RemoveDim) . exp $ mlp model testImg)
-        putStrLn $ "Ground Truth : " ++ (show $ UI.getLabels' 1 trainData [idx])
+        putStrLn $ "Ground Truth : " ++ (show $ V.getLabels' 1 trainData [idx])
         ) [0..10]
 
     putStrLn "Done"

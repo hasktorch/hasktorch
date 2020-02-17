@@ -19,7 +19,7 @@ import           System.IO                     (FilePath)
 conv :: [[[[Float]]]] -> D.Tensor -> D.Tensor
 conv weight input = D.toType D.UInt8 $ chw2hwc $ (\i -> D.clamp 0 255 (conv' i)) $ hwc2chw $ D.toType D.Float $ input
   where
-    conv' input' = D.conv2d
+    conv' input' = D.conv2d'
                    (D.asTensor weight)
                    (D.ones' [3])
                    (1,1)
