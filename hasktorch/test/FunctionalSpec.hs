@@ -35,11 +35,11 @@ spec = do
     let z = sub x y
     (toDouble $ select z 0 0) `shouldBe` -4.0
   it "ceil" $ do
-    x <- rand' [5]
+    x <- randIO' [5]
     let y = ceil x
     (toDouble $ select y 0 0) `shouldBe` 1.0
   it "floor" $ do
-    x <- rand' [5]
+    x <- randIO' [5]
     let y = floor x
     (toDouble $ select y 0 0) `shouldBe` 0.0
   it "takes the minimum of a linspace" $ do
@@ -98,8 +98,8 @@ spec = do
 
   -- decomposition / solvers
   it "solve" $ do
-    a <- rand' [10,10]
-    b <- rand' [10,3]
+    a <- randIO' [10,10]
+    b <- randIO' [10,3]
     let (x,lu) = solve b a
     shape x `shouldBe` [10,3]
     shape lu `shouldBe` [10,10]

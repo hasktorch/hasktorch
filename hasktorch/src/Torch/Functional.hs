@@ -3,7 +3,8 @@
 
 module Torch.Functional (
     module Torch.Functional,
-    addmv, addr, allclose, argmin, baddbmm, bmm, acos, asin, atan, dot, mv, slice
+    addmv, addr, allclose, argmin, baddbmm, bmm, acos, asin, atan, dot, lstsq, mv, slice
+    , sumWithDimnames
 ) where
 
 import          Prelude                 hiding ( all
