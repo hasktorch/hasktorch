@@ -26,7 +26,7 @@ extra-deps:
 - gtk2hs-buildtools-0.13.8.0
 - git: git://github.com/hasktorch/pipes-text.git
   commit: 3dd3d9519306ea06f0c15ad71bdf57e1dfd0b747
-- show-prettyprint-0.3.0.1@sha256:c2c004bd77a1815b3d75a4cad1ec41a1b3f754ed259593414a195c4b19c02f16,1723
+# - show-prettyprint-0.3.0.1@sha256:c2c004bd77a1815b3d75a4cad1ec41a1b3f754ed259593414a195c4b19c02f16,1723
 
 
 nix:
