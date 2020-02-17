@@ -6,15 +6,16 @@
 
 module Main where
 
-import Graphics.Vega.VegaLite
 import Data.Text (Text, pack)
+import Graphics.Vega.VegaLite
 import Torch.Autograd (grad, makeIndependent, toDependent)
 import qualified Torch.Functional as F
 import Torch.NN
 import Torch.Tensor (Tensor, asTensor, toDouble)
 
 f :: Tensor -> Tensor -> Tensor
-f x y = F.sin (2 * pit * r) where
+f x y = F.sin (2 * pit * r)
+  where
     pit = asTensor (pi :: Double)
     r = F.sqrt (x * x + y * y)
 
@@ -40,10 +41,9 @@ main = do
       ys = (\x -> x / n) <$> [(- b * n :: Double) .. b * n]
       grid = makeAxis xs ys
   gds <- mapM computeGd grid
-  let 
-      xs' = map (\(x,y,gdr)->x) gds
-      ys' = map (\(x,y,gdr)->y) gds
-      gdrs' = map (\(x,y,gdr)->gdr) gds
+  let xs' = map (\(x, y, gdr) -> x) gds
+      ys' = map (\(x, y, gdr) -> y) gds
+      gdrs' = map (\(x, y, gdr) -> gdr) gds
       xDataValue = Numbers xs'
       yDataValue = Numbers ys'
       gdrDataValue = Numbers gdrs'
@@ -52,13 +52,15 @@ main = do
       gdrName = pack "gdr"
       figw = 800
       figh = 800
-      dat = dataFromColumns [Parse [(xName, FoNumber), (yName, FoNumber), (gdrName, FoNumber)]]
-            . dataColumn xName xDataValue
-            . dataColumn yName yDataValue
-            . dataColumn gdrName gdrDataValue
-      enc = encoding
-            . position X [PName xName, PmType Quantitative]
-            . position Y [PName yName, PmType Quantitative]
-            . color [MName gdrName, MmType Quantitative]
+      dat =
+        dataFromColumns [Parse [(xName, FoNumber), (yName, FoNumber), (gdrName, FoNumber)]]
+          . dataColumn xName xDataValue
+          . dataColumn yName yDataValue
+          . dataColumn gdrName gdrDataValue
+      enc =
+        encoding
+          . position X [PName xName, PmType Quantitative]
+          . position Y [PName yName, PmType Quantitative]
+          . color [MName gdrName, MmType Quantitative]
       vegaPlot = toVegaLite [mark Square [], dat [], enc [], width figw, height figh]
   toHtmlFile "gd-field.html" vegaPlot
