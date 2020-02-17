@@ -1,12 +1,13 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE RecordWildCards #-}
 
--- In this example we draw the gradient field of a given function f.
+-- In this example we draw the heatmap of the norm of gradient field
+-- of a given function f.
 
 module Main where
 
-import Graphics.Rendering.Chart.Backend.Cairo
-import Graphics.Rendering.Chart.Easy hiding (makeAxis)
+import Graphics.Vega.VegaLite
+import Data.Text (Text, pack)
 import Torch.Autograd (grad, makeIndependent, toDependent)
 import qualified Torch.Functional as F
 import Torch.NN
@@ -20,7 +21,7 @@ f x y = F.sin (2 * pit * r) where
 makeAxis :: [Double] -> [Double] -> [(Double, Double)]
 makeAxis axis1 axis2 = [(t, t') | t <- axis1, t' <- axis2]
 
-computeGd :: (Double, Double) -> IO (Double, Double)
+computeGd :: (Double, Double) -> IO (Double, Double, Double)
 computeGd (x, y) = do
   tx <- makeIndependent (asTensor x)
   ty <- makeIndependent (asTensor y)
@@ -28,24 +29,36 @@ computeGd (x, y) = do
       gd = grad fxy [tx, ty]
       gdx = toDouble $ gd !! 0
       gdy = toDouble $ gd !! 1
-  return (gdx, gdy)
+      gdr = sqrt (gdx * gdx + gdy * gdy)
+  return (x, y, gdr)
 
 main :: IO ()
 main = do
-  let n = 10
-      xs = (\x -> x / n) <$> [(- 5 * n :: Double) .. 5 * n]
-      ys = (\x -> x / n) <$> [(- 5 * n :: Double) .. 5 * n]
+  let n = 30
+      b = 3
+      xs = (\x -> x / n) <$> [(- b * n :: Double) .. b * n]
+      ys = (\x -> x / n) <$> [(- b * n :: Double) .. b * n]
       grid = makeAxis xs ys
-      fileName = "gd-field.png"
-  vectors <- mapM computeGd grid
-  toFile (FileOptions (1500,1500) PNG) fileName $ do
-    setColors [opaque black]
-    plot $ vectorField grid vectors
-  putStrLn $ "\nCheck out " ++ fileName ++ "\n"
-  where
-    vectorField grid vectors = fmap plotVectorField $ liftEC $ do
-      c <- takeColor
-      plot_vectors_values .= zip grid vectors
-      plot_vectors_style . vector_line_style . line_width .= 1
-      plot_vectors_style . vector_line_style . line_color .= c
-      plot_vectors_style . vector_head_style . point_radius .= 0.0
+  gds <- mapM computeGd grid
+  let 
+      xs' = map (\(x,y,gdr)->x) gds
+      ys' = map (\(x,y,gdr)->y) gds
+      gdrs' = map (\(x,y,gdr)->gdr) gds
+      xDataValue = Numbers xs'
+      yDataValue = Numbers ys'
+      gdrDataValue = Numbers gdrs'
+      xName = pack "x"
+      yName = pack "y"
+      gdrName = pack "gdr"
+      figw = 800
+      figh = 800
+      dat = dataFromColumns [Parse [(xName, FoNumber), (yName, FoNumber), (gdrName, FoNumber)]]
+            . dataColumn xName xDataValue
+            . dataColumn yName yDataValue
+            . dataColumn gdrName gdrDataValue
+      enc = encoding
+            . position X [PName xName, PmType Quantitative]
+            . position Y [PName yName, PmType Quantitative]
+            . color [MName gdrName, MmType Quantitative]
+      vegaPlot = toVegaLite [mark Square [], dat [], enc [], width figw, height figh]
+  toHtmlFile "gd-field.html" vegaPlot
