@@ -24,6 +24,7 @@
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.KnownNat.Solver #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Extra.Solver #-}
+{-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 
 module Torch.Typed.NN.Recurrent.LSTM where
 
@@ -184,28 +185,32 @@ deriving instance Show (LSTMLayerStack inputSize hiddenSize numLayers directiona
 -- deriving instance Generic (LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device)
 
 instance {-# OVERLAPS #-}
-  ( GParameterized (K1 R (LSTMLayer inputSize hiddenSize directionality dtype device)) parameters
+  ( layer ~ (K1 R (LSTMLayer inputSize hiddenSize directionality dtype device))
+  , GParameterized layer parameters
   ) => GParameterized (K1 R (LSTMLayerStack inputSize hiddenSize 1 directionality dtype device)) parameters where
   gFlattenParameters (K1 (LSTMLayer1 lstmLayer))
-    = gFlattenParameters (K1 @R lstmLayer)
+    = gFlattenParameters (K1 lstmLayer :: layer _)
   gReplaceParameters (K1 (LSTMLayer1 lstmLayer)) parameters
-    = K1 (LSTMLayer1 (unK1 (gReplaceParameters (K1 @R lstmLayer) parameters)))
+    = K1 (LSTMLayer1 (unK1 (gReplaceParameters (K1 lstmLayer :: layer _) parameters)))
 
 instance {-# OVERLAPPABLE #-}
   ( 2 <= numLayers
-  , GParameterized (K1 R (LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device)) parameters
-  , GParameterized (K1 R (LSTMLayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)) parameters'
+  , layerStack ~ (K1 R (LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device))
+  , layer ~ (K1 R (LSTMLayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device))
+  , GParameterized layer parameters'
+  , GParameterized layerStack parameters
+  , GParameterized layer parameters'
   , HAppendFD parameters parameters' parameters''
   , parameters'' ~ (parameters ++ parameters')
   ) => GParameterized (K1 R (LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device)) parameters'' where
   gFlattenParameters (K1 (LSTMLayerK lstmLayerStack lstmLayer))
-    = let parameters  = gFlattenParameters (K1 @R lstmLayerStack)
-          parameters' = gFlattenParameters (K1 @R lstmLayer)
+    = let parameters  = gFlattenParameters (K1 lstmLayerStack :: layerStack _)
+          parameters' = gFlattenParameters (K1 lstmLayer :: layer _)
       in  parameters `happendFD` parameters'
   gReplaceParameters (K1 (LSTMLayerK lstmLayerStack lstmLayer)) parameters''
     = let (parameters, parameters') = hunappendFD parameters''
-          lstmLayerStack'           = unK1 (gReplaceParameters (K1 @R lstmLayerStack) parameters)
-          lstmLayer'                = unK1 (gReplaceParameters (K1 @R lstmLayer)      parameters')
+          lstmLayerStack'           = unK1 (gReplaceParameters (K1 lstmLayerStack :: layerStack _) parameters)
+          lstmLayer'                = unK1 (gReplaceParameters (K1 lstmLayer :: layer _)      parameters')
       in  K1 (LSTMLayerK lstmLayerStack' lstmLayer')
 
 instance {-# OVERLAPS #-}
