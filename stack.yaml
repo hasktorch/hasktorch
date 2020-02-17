@@ -26,5 +26,5 @@ extra-deps:
 - gtk2hs-buildtools-0.13.8.0
 
 nix:
-  packages: [zlib.dev, zlib.out]
+  packages: [zlib.dev, zlib.out, cairo.dev, cairo.out]
 
