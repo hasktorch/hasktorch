@@ -6,7 +6,7 @@
 {-# LANGUAGE DataKinds #-}
 
 module Torch.Typed.VisionSpec
-  ( Torch.Typed.VisionSpec
+  ( Torch.Typed.VisionSpec.spec
   )
 where
 

@@ -120,10 +120,10 @@ spec = do
         kernel1 = 1
         input0 = 5
         input1 = 6
-        x = conv2d
-              (ones' [batch, in_channel, input0, input1])
+        x = conv2d'
               (ones' [out_channel, in_channel, kernel0, kernel1])
               (ones' [out_channel])
               (1,1)
               (0,0)
+              (ones' [batch, in_channel, input0, input1])
     shape x `shouldBe` [batch, out_channel, input0, input1]
