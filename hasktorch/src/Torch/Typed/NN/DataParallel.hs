@@ -111,42 +111,30 @@ instance
   apply' GradConcurrentlyF (parameters, loss) = Concurrently . pure  . grad loss $ parameters
 
 instance
-  ( HZipWithM Concurrently GradConcurrentlyF parameters losses ((HList (xs :: [Type])) ': xxs)
-  , HReplicateFD (ListLength xs) (HList ('[] :: [Type])) acc
-  , HFoldr HZipF (HList acc) ((HList xs) ': xxs) res
-  , devices ~ GetDevices losses
-  , res ~ HList res'
-  , HasCoalesce device' devices res' gradients
+  ( HZipWithM Concurrently GradConcurrentlyF parameters losses gradients'
+  , ReduceGradients device' devices gradients' gradients
   ) => HasGradConcurrently device' devices parameters losses gradients where
   gradConcurrently parameters losses = 
     let gradients = hzipWithM GradConcurrentlyF parameters losses
-    in  (coalesce @device' @devices . htranspose) <$> gradients
+    in  reduceGradients @device' @devices <$> gradients
 
-class HasCoalesce (device' :: (D.DeviceType, Nat)) (devices :: [(D.DeviceType, Nat)]) xxs ys | device' devices xxs -> ys where
-  coalesce :: HList xxs -> HList ys
+class ReduceGradients (device' :: (D.DeviceType, Nat)) (devices :: [(D.DeviceType, Nat)]) xxs ys | device' devices xxs -> ys where
+  reduceGradients :: HList xxs -> HList ys
 
-instance HasCoalesce device' devices ('[] :: [Type]) ('[] :: [Type]) where
-  coalesce = const HNil
+instance {-# OVERLAPS #-}
+  ( HasToDevice device' device (HList xs) (HList ys)
+  ) => ReduceGradients device' (device ': '[]) ((HList (xs :: [Type])) ': '[]) ys where
+  reduceGradients (xs :. HNil) = Torch.Typed.Device.toDevice @device' @device xs
 
-instance
-  ( HasCoalesce device' devices xxs ys
-  , HasReduceAdd device' devices xs y
-  ) => HasCoalesce device' devices ((HList xs) ': xxs) (y ': ys) where
-  coalesce (xs :. xxs) = reduceAdd @device' @devices xs :. coalesce @device' @devices xxs
+data SumF = SumF
 
-class HasReduceAdd (device' :: (D.DeviceType, Nat)) (devices :: [(D.DeviceType, Nat)]) fs g | device' devices fs -> g where
-  reduceAdd :: HList fs -> g
-
-instance  {-# OVERLAPS #-}
-  (HasToDevice device' device f g) => HasReduceAdd device' (device ': '[]) (f ': '[]) g where
-  reduceAdd (f :. HNil) = Torch.Typed.Device.toDevice @device' @device f
+instance Num y => Apply' SumF (y, y) y where
+  apply' _ = sum
 
 instance  {-# OVERLAPPABLE #-}
-  ( Num g
-  , 1 <= ListLength devices
-  , HasToDevice device' device f g
-  , HasReduceAdd device' devices fs g
-  ) => HasReduceAdd device' (device ': devices) (f ': fs) g where
-  reduceAdd (f :. fs) = Torch.Typed.Device.toDevice @device' @device f + reduceAdd @device' @devices fs
-
-testReduceAdd = reduceAdd @'( 'D.CPU, 0) @'[ '( 'D.CUDA, 0), '( 'D.CUDA, 1)] (ones @'[1] @'D.Float @'( 'D.CUDA, 0) :. ones @'[1] @'D.Float @'( 'D.CUDA, 1) :. HNil)
+  ( HasToDevice device' device (HList xs) (HList ys)
+  , ReduceGradients device' devices xxs ys
+  , HZipWith SumF ys ys ys
+  , 1 <= ListLength xxs
+  ) => ReduceGradients device' (device ': devices) ((HList (xs :: [Type])) ': xxs) ys where
+  reduceGradients (xs :. xxs) = hzipWith SumF (Torch.Typed.Device.toDevice @device' @device xs) (reduceGradients @device' @devices @xxs xxs)

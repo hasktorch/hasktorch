@@ -79,9 +79,9 @@ import qualified Torch.Tensor                  as D
 import qualified Torch.Functional              as D
 import qualified Torch.TensorFactories         as D
 
-type Devices' = '[ '( 'D.CUDA, 0), '( 'D.CUDA, 1), '( 'D.CUDA, 2), '( 'D.CUDA, 3)]
+type Devices' = '[ '( 'D.CUDA, 0)]
 type Device = '( 'D.CUDA, 0)
-type BatchSize = 4
+type BatchSize = 1
 type SeqLen = 512
 
 type NumAttnLayers = 12
