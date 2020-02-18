@@ -79,8 +79,9 @@ import qualified Torch.Tensor                  as D
 import qualified Torch.Functional              as D
 import qualified Torch.TensorFactories         as D
 
-type Devices' = '[ '( 'D.CUDA, 0)]
-type Device = '( 'D.CUDA, 0)
+type WorkerDevices = '[ '( 'D.CUDA, 0)]
+type ModelDevice = '( 'D.CUDA, 0)
+type DataDevice = '( 'D.CPU, 0)
 type BatchSize = 1
 type SeqLen = 512
 
@@ -90,7 +91,7 @@ type FFNDim = 3072
 type PaddingIdx = 0
 type EmbedDim = 768
 
-type Model numEmbeds device
+type Model numEmbeds modelDevice
   = TransformerLM
       NumAttnLayers
       NumHeads
@@ -99,9 +100,9 @@ type Model numEmbeds device
       numEmbeds
       EmbedDim
       'D.Float
-      device
+      modelDevice
 
-type ModelSpec numEmbeds device
+type ModelSpec numEmbeds modelDevice
   = TransformerLMSpec
       NumAttnLayers
       NumHeads
@@ -110,7 +111,7 @@ type ModelSpec numEmbeds device
       numEmbeds
       EmbedDim
       'D.Float
-      device
+      modelDevice
 
 main :: IO ()
 main = program 100 "trainingFile.txt" 1000 "evaluationFile.txt" 1
@@ -137,8 +138,8 @@ program numEpochs trainingFile trainingLen evaluationFile evaluationLen = Safe.r
     -> OSet.OSet Text.Text
     -> Effect (Safe.SafeT IO) ()
   go Dict vocab = 
-    let trainingData   = readData @SeqLen @Device @BatchSize @(Safe.SafeT IO) trainingFile   vocab >-> P.take trainingLen
-        evaluationData = readData @SeqLen @Device @BatchSize @(Safe.SafeT IO) evaluationFile vocab >-> P.take evaluationLen
+    let trainingData   = readData @SeqLen @DataDevice @BatchSize @(Safe.SafeT IO) trainingFile   vocab >-> P.take trainingLen
+        evaluationData = readData @SeqLen @DataDevice @BatchSize @(Safe.SafeT IO) evaluationFile vocab >-> P.take evaluationLen
         learning' = do
           let learningRate = 0.01
           -- ATen.manual_seed_L 123
@@ -155,10 +156,10 @@ program numEpochs trainingFile trainingLen evaluationFile evaluationLen = Safe.r
                       (DropoutSpec 0.2)
                       (DropoutSpec 0.2)
                     )
-                  ) :: ModelSpec numEmbeds device
+                  ) :: ModelSpec numEmbeds ModelDevice
             )
           let optim = mkAdam 0 0.9 0.999 (flattenParameters model)
-          learning @Devices' @Device @numEmbeds @BatchSize @SeqLen numEpochs learningRate (model, optim) trainingData evaluationData
+          learning @WorkerDevices @ModelDevice @DataDevice @numEmbeds @BatchSize @SeqLen numEpochs learningRate (model, optim) trainingData evaluationData
     in  learning' >-> P.map (\(loss, _, _) -> loss) >-> P.print
 
 mkNumEmbedsProof
@@ -180,57 +181,54 @@ instance
   apply' _ = flattenParameters
 
 training
-  :: forall devices' device dtype model models optim input inputs target targets inputTargets losses parameters' gradients parameters tensors m
-   . ( 'Just device ~ GetDevice model
-     , 'Just device ~ GetDevice input
-     , HasScatter devices' device input inputs
-     , HasScatter devices' device target targets
-     , HasReplicate devices' device model models
+  :: forall workerDevices modelDevice dataDevice dtype model models optim input inputs target targets inputTargets losses parameters' gradients parameters tensors m
+   . ( HasScatter workerDevices dataDevice input inputs
+     , HasScatter workerDevices dataDevice target targets
+     , HasReplicate workerDevices modelDevice model models
      , HZip inputs targets inputTargets
      , HZipWithM Concurrently ForwardConcurrentlyF models inputTargets losses
      , HMap' FlattenParametersF models parameters'
-     , HasGradConcurrently device devices' parameters' losses gradients
+     , HasGradConcurrently modelDevice workerDevices parameters' losses gradients
      , Parameterized model parameters
      , tensors ~ gradients
      , HMap' ToDependent parameters tensors
-     , Optimizer optim gradients tensors dtype device
+     , Optimizer optim gradients tensors dtype modelDevice
      , HMapM' IO MakeIndependent tensors parameters
      , KnownDType dtype
-     , KnownDevice device
+     , KnownDevice modelDevice
      , MonadIO m
      )
-  => LearningRate device dtype
+  => LearningRate modelDevice dtype
   -> (model, optim)
   -> Producer (input, target) m ()
   -> m (model, optim)
 training learningRate (model, optim) = P.foldM step begin done
   where
     step (model', optim') (input, target) = do
-      let models' = Torch.Typed.Device.replicate @devices' @device @model @models model'
-          inputs = scatter @devices' @device @input @inputs input
-          targets = scatter @devices' @device @target @targets target
+      let models' = Torch.Typed.Device.replicate @workerDevices @modelDevice @model @models model'
+          inputs = scatter @workerDevices @dataDevice @input @inputs input
+          targets = scatter @workerDevices @dataDevice @target @targets target
       losses <- liftIO . runConcurrently . forwardConcurrentlyStoch @models @inputTargets models' $ hzip inputs targets
       let parameters' = hmap' FlattenParametersF models'
-      gradients <- liftIO . runConcurrently $ gradConcurrently @device @devices' @parameters' @losses @gradients parameters' losses
+      gradients <- liftIO . runConcurrently $ gradConcurrently @modelDevice @workerDevices @parameters' @losses @gradients parameters' losses
       liftIO performGC -- force cleanup after every batch
       liftIO $ runStep' model' optim' learningRate gradients
     begin = pure (model, optim)
     done = pure
 
 evaluation
-  :: forall devices' device numEmbeds batchSize seqLen dtype model models input inputs output outputs target m
-   . ( 'Just device ~ GetDevice model
-     , HasScatter devices' device input inputs
-     , HasReplicate devices' device model models
+  :: forall workerDevices modelDevice dataDevice numEmbeds batchSize seqLen dtype model models input inputs output outputs target m
+   . ( HasScatter workerDevices dataDevice input inputs
+     , HasReplicate workerDevices modelDevice model models
      , HZipWithM Concurrently ForwardConcurrentlyF models inputs outputs
-     , HasGather device devices' outputs output
-     , input ~ Tensor device 'D.Int64 '[batchSize, seqLen]
-     , output ~ Tensor device dtype '[batchSize, seqLen, numEmbeds]
-     , target ~ Tensor device 'D.Int64 '[batchSize, seqLen]
-     , StandardFloatingPointDTypeValidation device dtype
+     , HasGather dataDevice workerDevices outputs output
+     , input ~ Tensor dataDevice 'D.Int64 '[batchSize, seqLen]
+     , output ~ Tensor dataDevice dtype '[batchSize, seqLen, numEmbeds]
+     , target ~ Tensor dataDevice 'D.Int64 '[batchSize, seqLen]
+     , StandardFloatingPointDTypeValidation dataDevice dtype
      , Torch.Typed.Tensor.All KnownNat '[batchSize, seqLen, numEmbeds]
      , KnownDType dtype
-     , KnownDevice device
+     , KnownDevice dataDevice
      , MonadIO m
      )
   => model
@@ -239,65 +237,73 @@ evaluation
 evaluation model = P.foldM step begin done
   where
     step aggLoss (input, target) = do
-      prediction <- liftIO $ forwardConcurrently' @devices' @device model input
-      let loss = crossEntropyLoss @PaddingIdx prediction target
+      let models = Torch.Typed.Device.replicate @workerDevices @modelDevice @model @models model
+          inputs = scatter @workerDevices @dataDevice @input @inputs input
+      outputs <- liftIO . runConcurrently $ forwardConcurrently @models @inputs models inputs
+      let prediction = gather @dataDevice @workerDevices @outputs @output outputs
+      let loss = crossEntropyLoss @PaddingIdx prediction $ target
       liftIO performGC -- force cleanup after every batch
       pure $ aggLoss + toFloat (Torch.Typed.Tensor.toDType @'D.Float loss)
     begin = pure 0
     done = pure
 
 learning
-  :: forall devices' device numEmbeds batchSize seqLen dtype model models parameters parameters' input inputs target targets inputTargets output outputs losses optim gradients tensors m
-   . ( 'Just device ~ GetDevice model
-     , 'Just device ~ GetDevice input
-     , HasScatter devices' device input inputs
-     , HasScatter devices' device target targets
-     , HasReplicate devices' device model models
+  :: forall workerDevices modelDevice dataDevice numEmbeds batchSize seqLen dtype model models parameters parameters' input inputs target targets inputTargets output outputs losses optim gradients tensors m
+   . ( HasScatter workerDevices dataDevice input inputs
+     , HasScatter workerDevices dataDevice target targets
+     , HasReplicate workerDevices modelDevice model models
      , HZip inputs targets inputTargets
      , HZipWithM Concurrently ForwardConcurrentlyF models inputs outputs
      , HZipWithM Concurrently ForwardConcurrentlyF models inputTargets losses
      , HMap' FlattenParametersF models parameters'
-     , HasGradConcurrently device devices' parameters' losses gradients
-     , HasGather device devices' outputs output
+     , HasGradConcurrently modelDevice workerDevices parameters' losses gradients
+     , HasGather dataDevice workerDevices outputs output
      , Parameterized model parameters
      , HasGrad (HList parameters) (HList gradients)
      , tensors ~ gradients
      , HMap' ToDependent parameters tensors
      , ATen.Castable (HList gradients) [D.ATenTensor]
-     , Optimizer optim gradients tensors dtype device
+     , Optimizer optim gradients tensors dtype modelDevice
      , HMapM' IO MakeIndependent tensors parameters
-     , input ~ Tensor device 'D.Int64 '[batchSize, seqLen]
-     , output ~ Tensor device dtype '[batchSize, seqLen, numEmbeds]
-     , target ~ Tensor device 'D.Int64 '[batchSize, seqLen]
-     , StandardFloatingPointDTypeValidation device dtype
+     , input ~ Tensor dataDevice 'D.Int64 '[batchSize, seqLen]
+     , output ~ Tensor dataDevice dtype '[batchSize, seqLen, numEmbeds]
+     , target ~ Tensor dataDevice 'D.Int64 '[batchSize, seqLen]
+     , StandardFloatingPointDTypeValidation dataDevice dtype
      , Torch.Typed.Tensor.All KnownNat '[batchSize, seqLen, numEmbeds]
      , KnownDType dtype
-     , KnownDevice device
+     , Torch.Typed.Tensor.All KnownDevice '[modelDevice, dataDevice]
      , MonadIO m
      )
   => Int
-  -> LearningRate device dtype
+  -> LearningRate modelDevice dtype
   -> (model, optim)
   -> Producer (input, target) m ()
   -> Producer (input, target) m ()
   -> Producer (Float, model, optim) m ()
 learning numEpochs learningRate (model, optim) trainingData evaluationData =
   for (each [1 .. numEpochs]) $ \_epoch -> do
-    (model', optim') <- lift $ training @devices' @device @dtype @model @models @optim @input @inputs @target @targets @inputTargets @losses @parameters' @gradients @parameters @tensors learningRate (model, optim) trainingData
-    evalLoss' <- lift $ evaluation @devices' @device @numEmbeds @batchSize @seqLen @dtype @model @models @input @inputs @output @outputs @target model' evaluationData
+    (model', optim') <- lift $ training @workerDevices @modelDevice @dataDevice @dtype @model @models @optim @input @inputs @target @targets @inputTargets @losses @parameters' @gradients @parameters @tensors learningRate (model, optim) trainingData
+    evalLoss' <- lift $ evaluation @workerDevices @modelDevice @dataDevice @numEmbeds @batchSize @seqLen @dtype @model @models @input @inputs @output @outputs @target model' evaluationData
     yield (evalLoss', model', optim')
 
 readData
-  :: forall seqLen device batchSize m
-   . (KnownNat seqLen, KnownDevice device, KnownNat batchSize, Safe.MonadSafe m)
+  :: forall seqLen modelDevice batchSize m
+   . (KnownNat seqLen, KnownDevice modelDevice, KnownNat batchSize, Safe.MonadSafe m)
   => FilePath
   -> OSet.OSet Text.Text
-  -> Producer (Tensor device 'D.Int64 '[batchSize, seqLen], Tensor device 'D.Int64 '[batchSize, seqLen]) m ()
+  -> Producer (Tensor modelDevice 'D.Int64 '[batchSize, seqLen], Tensor modelDevice 'D.Int64 '[batchSize, seqLen]) m ()
 readData file vocab = raw >-> pipe
   where
-    raw = Safe.withFile file IO.ReadMode $ \h ->
-      batching . L.purely folds L.list . chain (sequencing . readHandleEndlesslyFromOffset h) $ randomOffsets
-    sequencing = (>-> applyVocab vocab) . joinWords . takeWords (natValI @(seqLen + 1)) . skipWords 1
+    raw = Safe.withFile file IO.ReadMode
+      $ \h -> batching
+      . L.purely folds L.list
+      . chain (sequencing . readHandleEndlesslyFromOffset h)
+      $ randomOffsets
+    sequencing = (>-> applyVocab vocab)
+      . L.purely folds L.mconcat
+      . takes (natValI @(seqLen + 1))
+      . drops 1
+      . view Text.words
     batching = L.purely folds L.list . view (chunksOf (natValI @batchSize))
     pipe = for Pipes.cat $ \x -> case f x of
       Nothing -> return ()
@@ -306,7 +312,7 @@ readData file vocab = raw >-> pipe
       let xs' = Maybe.catMaybes <$> xs
       input <- Exts.fromList $ take (natValI @seqLen) <$> xs'
       target <- Exts.fromList $ drop 1 <$> xs'
-      pure (Torch.Typed.Device.toDevice @device @'( 'D.CPU, 0) input, Torch.Typed.Device.toDevice @device @'( 'D.CPU, 0) target)
+      pure (Torch.Typed.Device.toDevice @modelDevice @'( 'D.CPU, 0) input, Torch.Typed.Device.toDevice @modelDevice @'( 'D.CPU, 0) target)
 
 randomOffsets :: MonadIO m => Producer Integer m ()
 randomOffsets = hoist liftIO $ Random.uniform @Int >-> P.map toInteger
@@ -337,15 +343,6 @@ fromHandleEndlessly h = go
         else yield txt
       go
 
-skipWords :: forall m r . Monad m => Int -> Producer Text.Text m r -> Producer Text.Text m r
-skipWords n = over Text.words (drops n)
-
-takeWords :: forall m r . Monad m => Int -> Producer Text.Text m () -> Producer Text.Text m ()
-takeWords n = over Text.words (takes n)
-
-joinWords :: forall m r . Monad m => Producer Text.Text m r -> Producer Text.Text m r
-joinWords = L.purely folds L.mconcat . view Text.words
-
 buildVocab :: forall a m . (Ord a, Monad m) => Producer a m () -> m (OSet.OSet a)
 buildVocab = L.purely P.fold oSet
 
@@ -353,24 +350,24 @@ oSet :: forall a . Ord a => L.Fold a (OSet.OSet a)
 oSet = L.Fold (\as a -> as |> a) OSet.empty id
 
 buildVocabFromFile :: FilePath -> IO (OSet.OSet Text.Text)
-buildVocabFromFile file = IO.withFile file IO.ReadMode $ buildVocab . joinWords . Text.fromHandle
+buildVocabFromFile file = IO.withFile file IO.ReadMode $ buildVocab . L.purely folds L.mconcat . view Text.words . Text.fromHandle
 
 applyVocab :: forall a m . (Ord a, Functor m) => OSet.OSet a -> Pipe a (Maybe OSet.Index) m ()
 applyVocab = P.map . flip OSet.findIndex
 
 crossEntropyLoss
-  :: forall paddingIdx batchSize seqLen numEmbeds dtype device
+  :: forall paddingIdx batchSize seqLen numEmbeds dtype modelDevice
    . ( KnownNat paddingIdx
      , KnownNat batchSize
      , KnownNat seqLen
      , KnownNat numEmbeds
      , KnownDType dtype
-     , KnownDevice device
-     , StandardFloatingPointDTypeValidation device dtype
+     , KnownDevice modelDevice
+     , StandardFloatingPointDTypeValidation modelDevice dtype
      )
-  => Tensor device dtype '[batchSize, seqLen, numEmbeds]
-  -> Tensor device 'D.Int64 '[batchSize, seqLen]
-  -> Tensor device dtype '[]
+  => Tensor modelDevice dtype '[batchSize, seqLen, numEmbeds]
+  -> Tensor modelDevice 'D.Int64 '[batchSize, seqLen]
+  -> Tensor modelDevice dtype '[]
 crossEntropyLoss prediction target =
   nllLoss @D.ReduceMean @batchSize @numEmbeds @'[seqLen]
     ones
@@ -379,14 +376,14 @@ crossEntropyLoss prediction target =
     target
 
 instance
-  ( HasForward (TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim dtype device) (Tensor device 'D.Int64 '[batchSize, seqLen]) (Tensor device dtype '[batchSize, seqLen, numEmbeds])
-  , StandardFloatingPointDTypeValidation device dtype
+  ( HasForward (TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim dtype modelDevice) (Tensor modelDevice 'D.Int64 '[batchSize, seqLen]) (Tensor modelDevice dtype '[batchSize, seqLen, numEmbeds])
+  , StandardFloatingPointDTypeValidation modelDevice dtype
   , KnownNat batchSize
   , KnownNat seqLen
   , KnownNat numEmbeds
   , KnownDType dtype
-  , KnownDevice device
-  ) => HasForward (TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim dtype device) (Tensor device 'D.Int64 '[batchSize, seqLen], Tensor device 'D.Int64 '[batchSize, seqLen]) (Loss device dtype) where
+  , KnownDevice modelDevice
+  ) => HasForward (TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim dtype modelDevice) (Tensor modelDevice 'D.Int64 '[batchSize, seqLen], Tensor modelDevice 'D.Int64 '[batchSize, seqLen]) (Loss modelDevice dtype) where
   forward model (input, target) =
     let prediction = forward model input
     in  crossEntropyLoss @PaddingIdx prediction target
