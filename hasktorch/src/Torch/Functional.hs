@@ -432,15 +432,15 @@ conv2d
   -> Int -- ^ groups
   -> Tensor -- ^ input
   -> Tensor -- ^ output
-conv2d weight bias stride padding dilation groups input = unsafePerformIO $ cast7
-  ATen.conv2d_tttllll
-  input
-  weight
-  bias
-  stride
-  padding
-  dilation
-  groups
+conv2d weight bias (stride0, stride1) (padding0, padding1) (dilation0, dilation1) groups input =
+    unsafePerformIO $ (cast7 ATen.conv2d_tttllll)
+        input
+        weight
+        bias
+        ([stride0, stride1] :: [Int])
+        ([padding0, padding1] :: [Int])
+        ([dilation0, dilation1] :: [Int])
+        groups
 
 conv2d'
   :: Tensor -- ^ weight
@@ -449,15 +449,11 @@ conv2d'
   -> (Int, Int) -- ^ padding
   -> Tensor -- ^ input
   -> Tensor -- ^ output
-conv2d' weight bias stride padding input = unsafePerformIO $ cast7
-  ATen.conv2d_tttllll
-  input
-  weight
-  bias
-  stride
-  padding
-  ((1, 1) :: (Int, Int)) -- dilation
-  (1 :: Int) -- groups
+conv2d' weight bias stride padding input = 
+    conv2d weight bias stride padding
+        (1, 1) -- dilation
+        (1 :: Int) -- groups
+        input
 
 solve :: Tensor -> Tensor -> (Tensor,Tensor)
 solve b a = unsafePerformIO $ (cast2 ATen.solve_tt) b a
