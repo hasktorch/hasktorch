@@ -193,7 +193,7 @@ executable gd-field
   main-is:             Main.hs
   ghc-options:         -fno-warn-partial-type-signatures
   build-depends:       base >= 4.7 && < 5
-                     , Chart
-                     , Chart-cairo
+                     , text
+                     , hvega
                      , hasktorch
                      , libtorch-ffi
