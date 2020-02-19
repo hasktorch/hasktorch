@@ -6,7 +6,6 @@ module Main where
 import Control.Monad (when)
 
 import Torch
-import Torch.Random (mkGenerator, randn')
 
 model :: Linear -> Tensor -> Tensor
 model state input = squeezeAll $ linear state input
