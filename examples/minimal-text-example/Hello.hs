@@ -7,19 +7,12 @@ module Main where
 
 import Control.Monad (when)
 
-import Torch.Tensor
-import Torch.DType
-import Torch.TensorFactories
-import Torch.Functional
-import Torch.TensorOptions
-import Torch.Autograd
-import Torch.NN
-import Torch.Optim
 import GHC.Generics
 
 import Control.Monad.State.Strict
 import Data.List
 
+import Torch
 import RecurrentLayer
 import Elman
 import LSTM

@@ -5,17 +5,10 @@
 
 module Elman where
 
-import Torch.Tensor
-import Torch.DType
-import Torch.TensorFactories
-import Torch.Functional
-import Torch.TensorOptions
-import Torch.Autograd
-import Torch.NN
-
 import Control.Monad.State.Strict
 import Data.List (foldl', scanl', intersperse)
 
+import Torch
 import RecurrentLayer
 
 
@@ -29,9 +22,8 @@ data ElmanCell = ElmanCell {
 
 
 instance RecurrentCell ElmanCell where
-
     nextState ElmanCell{..} input hidden =
-        gate input hidden Torch.Functional.tanh input_weight hidden_weight bias
+        gate input hidden Torch.tanh input_weight hidden_weight bias
 
 
 instance Randomizable ElmanSpec ElmanCell where

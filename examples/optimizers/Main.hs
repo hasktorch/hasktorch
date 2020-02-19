@@ -9,14 +9,8 @@ import GHC.Generics
 import Prelude hiding (sqrt)
 import Text.Printf (printf)
 
-import Torch.Tensor
-import Torch.TensorFactories (eye', zeros')
-import Torch.Functional
-import Torch.Autograd
-import Torch.NN
-
+import Torch
 import TestFunctions
-import Torch.Optim
 
 -- | show output after n iterations
 showLog :: (Show a) => Int -> Int -> Int -> Tensor -> a -> IO ()

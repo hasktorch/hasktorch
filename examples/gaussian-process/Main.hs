@@ -7,12 +7,7 @@ import Control.Monad (foldM)
 
 import Prelude hiding (exp)
 
-import Torch.Tensor
-import Torch.DType (DType (Float))
-import Torch.TensorFactories (eye', ones', randIO', randnIO', zeros')
-import Torch.Functional
-import Torch.Autograd
-import Torch.NN
+import Torch
 
 newtype MeanVector = MeanVector Tensor deriving Show
 newtype CovMatrix = CovMatrix Tensor deriving Show

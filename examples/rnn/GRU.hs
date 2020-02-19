@@ -5,19 +5,11 @@
 
 module GRU where
 
-import Torch.Tensor
-import Torch.DType
-import Torch.TensorFactories
-import Torch.Functional
-import Torch.TensorOptions
-import Torch.Autograd
-import Torch.NN
-
 import Control.Monad.State.Strict
 import Data.List (foldl', scanl', intersperse)
 
+import Torch
 import RecurrentLayer
-
 
 -- Specifying the shape of the recurrent layer
 data GRUSpec = GRUSpec { in_f :: Int, h_f :: Int}

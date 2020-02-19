@@ -9,31 +9,17 @@
 module Main where
 
 import           Control.Monad                  ( foldM )
-
-import           Torch.Tensor
-import           Torch.DType                    ( DType(Float) )
-import           Torch.TensorFactories          ( ones'
-                                                , randIO'
-                                                , randnIO'
-                                                )
-import           Torch.Functional
-import           Torch.Autograd
-import           Torch.NN
-import           Torch.Optim
 import           Codec.Serialise
 import           GHC.Generics                   ( Generic )
+import           Torch
 
 batch_size = 64
 num_iters = 2000
 num_features = 3
 
-
-
-
 instance Serialise Parameter where
   encode p = encode p' where p' :: [Float] = asValue $ toDependent p
   decode = IndependentTensor . (asTensor :: [Float] -> Tensor) <$> decode
-
 
 deriving instance Serialise Linear
 deriving instance Generic LinearSpec
