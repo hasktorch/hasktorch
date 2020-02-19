@@ -10,7 +10,7 @@ Currently we are prepping development and migration for a major 2nd release (ple
 
 Basic functionality:
 
-- `deps/` - submodules for build dependencies - libtorch, mklml, pytorch
+- `deps/` - submodules and downloads for build dependencies - libtorch, mklml, pytorch
 - `examples/` - high level example models (xor mlp, typed cnn)
 - `hasktorch/` - higher level user-facing library, calls into `ffi/`, used by `examples/`
 

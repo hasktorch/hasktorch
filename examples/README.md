@@ -16,7 +16,8 @@ mechanics of computation and training a model.
 These examples do not attempt to type-check tensor dimensions.
 
 - gaussian_process - basic gaussian process implementation
-- image-processing - small test of convultion operations
+- gd-field - visualize autodiff gradients of a mathematical function
+- image-processing - small test of convolution ops
 - minimal-text-example - "hello" string test of `rnn` modules, uses `rnn` as dependency
 - load-torchscript - load a serialized PyTorch model using torchscript (WIP)
 - matrix-factorization - recommender system example using matrix factorization fitted with stochastic gradient descent
