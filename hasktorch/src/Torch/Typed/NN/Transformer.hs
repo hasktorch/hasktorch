@@ -452,7 +452,7 @@ sinusoidal =
           $ natValI @(numEmbeds - 1)
       scalingFactors =
         exp 
-          . cmul (- log (10000 :: Double) / (fromInteger . natVal $ Proxy @(Div embedDim 2)))
+          . mulScalar (- log (10000 :: Double) / (fromInteger . natVal $ Proxy @(Div embedDim 2)))
           . linspace @(Div embedDim 2) (0 :: Int)
           $ natValI @((Div embedDim 2) - 1)
       radians = mul positions scalingFactors

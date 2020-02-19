@@ -228,61 +228,61 @@ median
   -> Tensor device dtype '[] -- ^ output
 median input = unsafePerformIO $ ATen.cast1 ATen.Managed.median_t input
 
--- | cadd
+-- | addScalar
 -- TODO: what dtypes is this defined for?
 -- TODO: what scalar types is this defined for?
 --
--- >>> dtype &&& shape $ cadd 1 (ones :: CPUTensor 'D.Float '[2,2])
+-- >>> dtype &&& shape $ addScalar 1 (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[2,2])
-cadd
+addScalar
   :: forall a shape dtype device
    . D.Scalar a
   => a -- ^ scalar input
   -> Tensor device dtype shape -- ^ tensor input
   -> Tensor device dtype shape -- ^ output
-cadd a input = unsafePerformIO $ ATen.cast2 ATen.Managed.add_ts input a
+addScalar a input = unsafePerformIO $ ATen.cast2 ATen.Managed.add_ts input a
 
--- | csub
+-- | subScalar
 -- TODO: what dtypes is this defined for?
 -- TODO: what scalar types is this defined for?
 --
--- >>> dtype &&& shape $ csub 1 (ones :: CPUTensor 'D.Float '[2,2])
+-- >>> dtype &&& shape $ subScalar 1 (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[2,2])
-csub
+subScalar
   :: forall a shape dtype device
    . D.Scalar a
   => a -- ^ scalar input
   -> Tensor device dtype shape -- ^ tensor input
   -> Tensor device dtype shape -- ^ output
-csub a input = unsafePerformIO $ ATen.cast2 ATen.Managed.sub_ts input a
+subScalar a input = unsafePerformIO $ ATen.cast2 ATen.Managed.sub_ts input a
 
--- | cmul
+-- | mulScalar
 -- TODO: what dtypes is this defined for?
 -- TODO: what scalar types is this defined for?
 --
--- >>> dtype &&& shape $ cmul 2 (ones :: CPUTensor 'D.Float '[2,2])
+-- >>> dtype &&& shape $ mulScalar 2 (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[2,2])
-cmul
+mulScalar
   :: forall a shape dtype device
    . D.Scalar a
   => a -- ^ scalar input
   -> Tensor device dtype shape -- ^ tensor input
   -> Tensor device dtype shape -- ^ output
-cmul a input = unsafePerformIO $ ATen.cast2 ATen.Managed.mul_ts input a
+mulScalar a input = unsafePerformIO $ ATen.cast2 ATen.Managed.mul_ts input a
 
--- | cdiv
+-- | divScalar
 -- TODO: what dtypes is this defined for?
 -- TODO: what scalar types is this defined for?
 --
--- >>> dtype &&& shape $ cdiv 2 (ones :: CPUTensor 'D.Float '[2,2])
+-- >>> dtype &&& shape $ divScalar 2 (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[2,2])
-cdiv
+divScalar
   :: forall a shape dtype device
    . D.Scalar a
   => a -- ^ scalar input
   -> Tensor device dtype shape -- ^ tensor input
   -> Tensor device dtype shape -- ^ output
-cdiv a input = unsafePerformIO $ ATen.cast2 ATen.Managed.div_ts input a
+divScalar a input = unsafePerformIO $ ATen.cast2 ATen.Managed.div_ts input a
 
 -- | erf
 --

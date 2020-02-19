@@ -109,8 +109,8 @@ rastriginLayer'
   -> a
   -> n
   -> Tensor device (SumDType dtype) '[]
-rastriginLayer' x a n = (cmul a . cmul n $ ones)
-  + sumAll (x * x - (cmul a . cos . cmul (2 * pi :: Double)) x)
+rastriginLayer' x a n = (mulScalar a . mulScalar n $ ones)
+  + sumAll (x * x - (mulScalar a . cos . mulScalar (2 * pi :: Double)) x)
 
 gradientsRastriginLayer'
   :: forall device dtype a shape
@@ -118,9 +118,9 @@ gradientsRastriginLayer'
   => Tensor device dtype shape
   -> a
   -> Tensor device dtype shape
-gradientsRastriginLayer' x a = cmul
+gradientsRastriginLayer' x a = mulScalar
   (2 :: Int)
-  (x + (cmul a . cmul (pi :: Double) . sin . cmul (2 * pi :: Double)) x)
+  (x + (mulScalar a . mulScalar (pi :: Double) . sin . mulScalar (2 * pi :: Double)) x)
 
 data RastriginStackSpec (num :: Nat)
                         (ns :: [Nat])

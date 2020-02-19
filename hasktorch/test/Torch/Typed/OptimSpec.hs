@@ -103,7 +103,7 @@ convQuad
   -> Tensor device dtype '[features]
   -> Tensor device dtype '[]
 convQuad ConvQuad {..} a b =
-  let w' = Torch.Typed.Parameter.toDependent w in cmul (0.5 :: Float) (dot w' (mv a w')) - dot b w'
+  let w' = Torch.Typed.Parameter.toDependent w in mulScalar (0.5 :: Float) (dot w' (mv a w')) - dot b w'
 
 data RosenbrockSpec (dtype :: D.DType)
                     (device :: (D.DeviceType, Nat))
@@ -140,7 +140,7 @@ rosenbrock Rosenbrock {..} a b =
   let x' = Torch.Typed.Parameter.toDependent x
       y' = Torch.Typed.Parameter.toDependent y
       square c = pow (2 :: Int) c
-  in  reshape $ square (csub a x') + cmul b (square (y' - square x'))
+  in  reshape $ square (subScalar a x') + mulScalar b (square (y' - square x'))
 
 data AckleySpec (features :: Nat)
                 (dtype :: D.DType)
@@ -185,9 +185,9 @@ ackley
   -> a
   -> Tensor device dtype '[]
 ackley Ackley {..} a b c =
-  cmul (-a) (exp . cmul (-b) . sqrt . cdiv d . sumAll $ pos' * pos')
-    + cadd a (exp ones)
-    - exp (cdiv d . sumAll . cos . cmul c $ pos')
+  mulScalar (-a) (exp . mulScalar (-b) . sqrt . divScalar d . sumAll $ pos' * pos')
+    + addScalar a (exp ones)
+    - exp (divScalar d . sumAll . cos . mulScalar c $ pos')
  where
   d    = product . shape $ pos'
   pos' = Torch.Typed.Parameter.toDependent pos
