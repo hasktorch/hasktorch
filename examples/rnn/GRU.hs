@@ -25,15 +25,15 @@ instance RecurrentCell GRUCell where
   nextState GRUCell{..} input hidden =
     (ug * hidden) + ((1 - ug) * h')
     where
-      rg = gate input hidden Torch.Functional.sigmoid
+      rg = gate input hidden sigmoid
                 (reset_gate !! 0)
                 (reset_gate !! 1)
                 (reset_gate !! 2)
-      ug = gate input hidden Torch.Functional.sigmoid
+      ug = gate input hidden sigmoid
                 (update_gate !! 0)
                 (update_gate !! 1)
                 (update_gate !! 2)
-      h' = gate input (rg * hidden) Torch.Functional.tanh
+      h' = gate input (rg * hidden) Torch.tanh
                 (gru_hidden_gate !! 0)
                 (gru_hidden_gate !! 1)
                 (gru_hidden_gate !! 2)
