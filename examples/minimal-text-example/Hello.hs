@@ -7,19 +7,12 @@ module Main where
 
 import Control.Monad (when)
 
-import Torch.Tensor
-import Torch.DType
-import Torch.TensorFactories
-import Torch.Functional
-import Torch.TensorOptions
-import Torch.Autograd
-import Torch.NN
-import Torch.Optim
 import GHC.Generics
 
 import Control.Monad.State.Strict
 import Data.List
 
+import Torch
 import RecurrentLayer
 import Elman
 import LSTM
@@ -90,7 +83,7 @@ main = do
     let input_tensor = fromNestedList $ map repr "hell"
 
     -- randomly initialized hidden state
-    init_hidden <- randn' [1, num_features]
+    init_hidden <- randnIO' [1, num_features]
 
     let expected_output = fromNestedList [repr 'o']
 

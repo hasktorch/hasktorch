@@ -17,7 +17,7 @@ import Torch.NN
   )
 import Torch.Optim (sgd)
 import Torch.Tensor ((@@), Tensor, asTensor, indexSelect, reshape, toDouble, toInt)
-import Torch.TensorFactories (randint')
+import Torch.TensorFactories (randintIO')
 
 data RatingBatch = RatingBatch Items Users RatingValues deriving (Show)
 
@@ -32,9 +32,9 @@ data RatingsSpec
 
 instance Randomizable RatingsSpec RatingBatch where
   sample (RatingsSpec n m l) = do
-    items <- randint' 1 n [l]
-    users <- randint' 1 m [l]
-    ratings <- randint' 1 5 [l]
+    items <- randintIO' 1 n [l]
+    users <- randintIO' 1 m [l]
+    ratings <- randintIO' 1 5 [l]
     let list_ratings = toDouble <$> ((@@) ratings) <$> [0 .. (l -1)]
         list_users = toInt <$> ((@@) users) <$> [0 .. (l -1)]
         list_items = toInt <$> ((@@) items) <$> [0 .. (l -1)]
@@ -73,7 +73,7 @@ main = do
   let k = 10
       foldLoop x count block = foldM block x [1 .. count]
       gdBlock state i = do
-        random_start <- randint' 0 (n_ratings - batch_size) [1]
+        random_start <- randintIO' 0 (n_ratings - batch_size) [1]
         let start = toInt $ random_start @@ (0 :: Int)
             items_batch = (!!) items <$> [start .. start + batch_size -1]
             users_batch = (!!) users <$> [start .. start + batch_size -1]

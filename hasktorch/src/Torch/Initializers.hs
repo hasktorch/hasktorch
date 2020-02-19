@@ -38,7 +38,7 @@ calculateFan shape =
 -- | Xavier Initialization - Uniform
 xavierUniform :: Float -> [Int] -> IO Tensor
 xavierUniform gain shape = do
-    init <- rand' shape
+    init <- randIO' shape
     pure $ subScalar (mulScalar init (bound * 2.0)) bound
     where
         (fanIn, fanOut) = calculateFan shape
@@ -48,7 +48,7 @@ xavierUniform gain shape = do
 -- | Xavier Initialization - Normal
 xavierNormal :: Float -> [Int] -> IO Tensor
 xavierNormal gain shape = do
-    init <- randn' shape
+    init <- randnIO' shape
     pure $ mulScalar init std
     where
         (fanIn, fanOut) = calculateFan shape
@@ -62,7 +62,7 @@ getter FanOut = snd
 -- | Kaiming Initialization - Uniform
 kaimingUniform :: FanMode -> NonLinearity -> [Int] -> IO Tensor
 kaimingUniform mode nonlinearity shape = do
-    init <- rand' shape
+    init <- randIO' shape
     pure $ subScalar (mulScalar init (bound * 2.0)) bound
     where 
         gain = calculateGain nonlinearity
@@ -73,7 +73,7 @@ kaimingUniform mode nonlinearity shape = do
 -- | Kaiming Initialization - Normal
 kaimingNormal :: FanMode -> NonLinearity -> [Int] -> IO Tensor
 kaimingNormal mode nonlinearity shape = do
-    init <- (randn' shape)
+    init <- (randnIO' shape)
     pure $ mulScalar init std
     where 
         gain = calculateGain nonlinearity
@@ -85,7 +85,7 @@ kaimingNormal mode nonlinearity shape = do
 kaimingFC :: [Int] -> IO (Tensor, Tensor)
 kaimingFC weightShape = do
     weight <- kaimingUniform' weightShape
-    biasInit <- rand' biasShape
+    biasInit <- randIO' biasShape
     let bias = subScalar (mulScalar biasInit (bound * 2.0)) bound
     pure (weight, bias)
     where

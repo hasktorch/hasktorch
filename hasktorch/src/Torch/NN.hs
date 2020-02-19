@@ -20,7 +20,7 @@ import Torch.Internal.Cast (cast3)
 import Torch.Autograd
 import Torch.Initializers
 import Torch.Tensor
-import Torch.TensorFactories (ones', rand', randn')
+import Torch.TensorFactories (ones', randIO', randnIO')
 import Torch.Functional
 import GHC.Generics
 
@@ -124,7 +124,7 @@ instance Randomizable LinearSpec Linear where
   sample LinearSpec{..} = do
       w <- makeIndependent =<< kaimingUniform' [out_features, in_features]
       -- w <- makeIndependent =<< randn' [out_features, in_features]
-      b <- makeIndependent =<< randn' [out_features]
+      b <- makeIndependent =<< randnIO' [out_features]
       return $ Linear w b
 
 instance Parameterized Linear

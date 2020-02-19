@@ -17,11 +17,11 @@ spec = do
   it "zeros factory" $ do
     let x = zeros' [50]
     shape x `shouldBe` [50]
-  it "rand factory" $ do
-    x <- rand' [50]
+  it "randIO factory" $ do
+    x <- randIO' [50]
     shape x `shouldBe` [50]
-  it "randn factory" $ do
-    x <- randn' [50]
+  it "randnIO factory" $ do
+    x <- randnIO' [50]
     shape x `shouldBe` [50]
   it "linspace factory" $ do
     let start = 5.0 :: Double

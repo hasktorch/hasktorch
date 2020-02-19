@@ -8,7 +8,7 @@ license:             BSD-3-Clause
 author:              Austin Huang
 maintainer:          hasktorch@gmail.com
 copyright:           2019 Austin Huang
-category:            Codegen
+category:            Machine Learning
 build-type:          Simple
 
 common config
@@ -42,10 +42,9 @@ library static-mnist
   import:              config
   hs-source-dirs:      static-mnist
   ghc-options:         -fno-warn-partial-type-signatures
-  exposed-modules:     Image
-                     , Common
+  exposed-modules:   Common  
+                     
   build-depends:       bytestring >= 0.10.8
-                     , zlib >= 0.6
                      , libtorch-ffi
                      , random >= 1.1
 
@@ -54,7 +53,7 @@ test-suite spec
   type:               exitcode-stdio-1.0
   hs-source-dirs:     test
   main-is:            Spec.hs
-  other-modules:      ImageSpec
+  other-modules:      
   build-depends:      base >= 4.7 && < 5
                     , hspec
                     , hspec-discover
@@ -160,7 +159,6 @@ executable mnist-mlp
   import:              config
   hs-source-dirs:      mnist-mlp
   main-is:             Main.hs
-  other-modules:       UntypedImage
   ghc-options:         -fno-warn-partial-type-signatures
   build-depends:       libtorch-ffi
                      , bytestring >= 0.10.8

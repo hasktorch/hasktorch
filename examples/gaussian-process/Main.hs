@@ -7,12 +7,7 @@ import Control.Monad (foldM)
 
 import Prelude hiding (exp)
 
-import Torch.Tensor
-import Torch.DType (DType (Float))
-import Torch.TensorFactories (eye', ones', rand', randn', zeros')
-import Torch.Functional
-import Torch.Autograd
-import Torch.NN
+import Torch
 
 newtype MeanVector = MeanVector Tensor deriving Show
 newtype CovMatrix = CovMatrix Tensor deriving Show
@@ -43,7 +38,7 @@ makeCovmatrix axis1 axis2 =
 -- | Multivariate 0-mean normal via cholesky decomposition
 mvnCholesky :: CovMatrix -> Int -> Int -> IO Tensor
 mvnCholesky (CovMatrix cov) axisDim n = do
-    samples <- randn' [axisDim, n]
+    samples <- randnIO' [axisDim, n]
     pure $ matmul l samples
     where 
       l = cholesky cov Upper

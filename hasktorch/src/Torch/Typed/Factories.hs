@@ -48,6 +48,18 @@ zeros = UnsafeMkTensor $ D.zeros
   $ D.defaultOpts
   )
 
+full
+  :: forall shape dtype device a
+   . (TensorOptions shape dtype device, D.Scalar a)
+  => a -> Tensor device dtype shape
+full value = UnsafeMkTensor $ D.full
+  (optionsRuntimeShape @shape @dtype @device)
+  value
+  ( D.withDevice (optionsRuntimeDevice @shape @dtype @device)
+  . D.withDType (optionsRuntimeDType @shape @dtype @device)
+  $ D.defaultOpts
+  )
+
 ones
   :: forall shape dtype device
    . (TensorOptions shape dtype device)
@@ -72,7 +84,7 @@ rand
      , RandDTypeIsValid device dtype
      )
   => IO (Tensor device dtype shape)
-rand = UnsafeMkTensor <$> D.rand
+rand = UnsafeMkTensor <$> D.randIO
   (optionsRuntimeShape @shape @dtype @device)
   ( D.withDevice (optionsRuntimeDevice @shape @dtype @device)
   . D.withDType (optionsRuntimeDType @shape @dtype @device)
@@ -85,7 +97,7 @@ randn
      , RandDTypeIsValid device dtype
      )
   => IO (Tensor device dtype shape)
-randn = UnsafeMkTensor <$> D.randn
+randn = UnsafeMkTensor <$> D.randnIO
   (optionsRuntimeShape @shape @dtype @device)
   ( D.withDevice (optionsRuntimeDevice @shape @dtype @device)
   . D.withDType (optionsRuntimeDType @shape @dtype @device)
@@ -100,7 +112,7 @@ randint
   => Int
   -> Int
   -> IO (Tensor device dtype shape)
-randint low high = UnsafeMkTensor <$> (D.randint low high)
+randint low high = UnsafeMkTensor <$> (D.randintIO low high)
   (optionsRuntimeShape @shape @dtype @device)
   ( D.withDevice (optionsRuntimeDevice @shape @dtype @device)
   . D.withDType (optionsRuntimeDType @shape @dtype @device)

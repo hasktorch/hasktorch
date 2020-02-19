@@ -5,19 +5,12 @@
 
 module Main where
 
-import Torch.Tensor
-import Torch.DType
-import Torch.TensorFactories
-import Torch.Functional
-import Torch.TensorOptions
-import Torch.Autograd
-import Torch.Optim
-import Torch.NN
 import GHC.Generics
 
 import Control.Monad.State.Strict
 import Data.List (foldl', scanl', intersperse)
 
+import Torch
 import RecurrentLayer
 import Elman
 import LSTM
@@ -48,9 +41,9 @@ main = do
     let foldLoop x count block = foldM block x [1..count]
 
     -- randomly initializing training values
-    input_tensor <- randn' [num_timesteps, 2]
-    init_hidden <- randn' [1, 2]
-    expected_output <- randn' [1, 2]
+    input_tensor <- randnIO' [num_timesteps, 2]
+    init_hidden <- randnIO' [1, 2]
+    expected_output <- randnIO' [1, 2]
 
     -- randomly initialize a gate
     rnnLayer <- sample $ ElmanSpec { in_features = 2, hidden_features = 2 }

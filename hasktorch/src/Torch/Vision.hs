@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module UntypedImage where
+module Torch.Vision where
 
 import Prelude hiding (min, max)
 import qualified Prelude as P
@@ -17,7 +17,7 @@ import qualified Foreign.ForeignPtr            as F
 import qualified Foreign.Ptr                   as F
 import qualified Torch.Internal.Managed.TensorFactories as LibTorch
 
-import qualified Image as I
+import qualified Torch.Typed.Vision as I
 import Torch.Functional hiding (take)
 import Torch.Tensor
 import Torch.NN

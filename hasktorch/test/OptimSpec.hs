@@ -14,7 +14,7 @@ import qualified Prelude as P
 import Text.Printf (printf)
 
 import Torch.Tensor
-import Torch.TensorFactories (eye', ones', rand', randn', zeros')
+import Torch.TensorFactories (eye', ones', randIO', randnIO', zeros')
 import Torch.Functional
 import Torch.Autograd
 import Torch.NN 
@@ -28,7 +28,7 @@ data ConvQuad = ConvQuad { w :: Parameter } deriving (Show, Generic)
 
 instance Randomizable ConvQuadSpec ConvQuad where
   sample (ConvQuadSpec n) = do
-        w <- makeIndependent =<<randn' [n]
+        w <- makeIndependent =<<randnIO' [n]
         pure $ ConvQuad w
 
 instance Parameterized ConvQuad
@@ -54,8 +54,8 @@ instance Show Rosen where
 
 instance Randomizable RosenSpec Rosen where
   sample RosenSpec = do
-      x <- makeIndependent =<< randn' [1]
-      y <- makeIndependent =<< randn' [1]
+      x <- makeIndependent =<< randnIO' [1]
+      y <- makeIndependent =<< randnIO' [1]
       pure $ Rosen x y
 
 -- instance Parameterized Rosen
@@ -81,7 +81,7 @@ data Ackley = Ackley { pos :: Parameter } deriving (Show, Generic)
 
 instance Randomizable AckleySpec Ackley where
   sample AckleySpec = do
-      pos <- makeIndependent =<< randn' [2]
+      pos <- makeIndependent =<< randnIO' [2]
       pure $ Ackley pos
 
 instance Parameterized Ackley
@@ -102,7 +102,7 @@ lossAckley :: Ackley -> Tensor
 lossAckley (Ackley x) = ackley' x'
     where x' = toDependent x
 
--- | show output after n iterations
+-- | show output after n iterations (not used for tests)
 showLog :: (Show a) => Int -> Int -> Int -> Tensor -> a -> IO ()
 showLog n i maxIter lossValue state = 
     when (i == 0 || mod i n == 0 || i == maxIter-1) $ do
@@ -117,10 +117,8 @@ optConvQuad numIter optInit = do
         a = eye' dim dim
         b = zeros' [dim]
     paramInit <- sample $ ConvQuadSpec dim
-    putStrLn ("Initial :" ++ show paramInit)
     trained <- foldLoop (paramInit, optInit) numIter $ \(paramState, optState) i -> do
         let lossValue = (lossConvQuad a b) paramState
-        showLog 1000 i numIter lossValue paramState
         (paramState' , optState') <- runStep paramState optState lossValue 5e-4
         pure (replaceParameters paramState paramState', optState')
     pure ()
@@ -129,10 +127,8 @@ optConvQuad numIter optInit = do
 optRosen :: (Optimizer o) => Int -> o -> IO ()
 optRosen numIter optInit = do
     paramInit <- sample RosenSpec
-    putStrLn ("Initial :" ++ show paramInit)
     trained <- foldLoop (paramInit, optInit) numIter $ \(paramState, optState) i -> do
         let lossValue = lossRosen paramState
-        showLog 1000 i numIter lossValue paramState
         (paramState', optState') <- runStep paramState optState lossValue 5e-4
         pure (replaceParameters paramState paramState', optState')
     pure ()
@@ -141,10 +137,8 @@ optRosen numIter optInit = do
 optAckley :: (Optimizer o) => Int -> o -> IO ()
 optAckley numIter optInit = do
     paramInit <- sample AckleySpec
-    putStrLn ("Initial :" ++ show paramInit)
     trained <- foldLoop (paramInit, optInit) numIter $ \(paramState, optState) i -> do
         let lossValue = lossAckley paramState
-        showLog 1000 i numIter lossValue paramState
         (paramState', optState') <- runStep paramState optState lossValue 5e-4
         pure (replaceParameters paramState paramState', optState')
     pure ()
@@ -221,5 +215,35 @@ main = do
 
 spec :: Spec
 spec = do
-    it "Placeholder" $ do
-        print "Placeholder"
+    it "ConvQuad GD" $ do
+        optConvQuad numIter GD
+    it "ConvQuad GDM" $ do
+        optConvQuad numIter (GDM 0.9 [zeros' [2]])
+    it "ConvQuad Adam" $ do
+        optConvQuad numIter Adam {
+            beta1=0.9, beta2=0.999,
+            m1=[zeros' [1], zeros' [1]], 
+            m2=[zeros' [1], zeros' [1]],
+            iter=0 }
+    it "Rosen GD" $ do
+        optRosen numIter GD
+    it "Rosen GDM" $ do
+        optRosen numIter (GDM 0.9 [zeros' [1], zeros' [1]])
+    it "Rosen Adam" $ do
+        optRosen numIter Adam {
+            beta1=0.9, beta2=0.999,
+            m1=[zeros' [1], zeros' [1]], 
+            m2=[zeros' [1], zeros' [1]],
+            iter=0 }
+    it "Ackley GD" $ do
+        optAckley numIter GD
+    it "Ackley GDM" $ do
+        optAckley numIter (GDM 0.9 [zeros' [1], zeros' [1]])
+    it "Ackley Adam" $ do
+        optAckley numIter Adam {
+            beta1=0.9, beta2=0.999,
+            m1=[zeros' [1], zeros' [1]], 
+            m2=[zeros' [1], zeros' [1]],
+            iter=0 }
+    where
+      numIter=100

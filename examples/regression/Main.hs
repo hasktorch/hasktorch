@@ -4,22 +4,8 @@
 module Main where
 
 import Control.Monad (when)
-import Torch.Autograd (grad, makeIndependent, toDependent)
-import Torch.Device (DeviceType (CPU), Device (Device))
-import Torch.DType (DType (Float))
-import Torch.Functional (squeezeAll, matmul, mse_loss)
-import Torch.NN
-  ( Linear (Linear, bias, weight),
-    LinearSpec (LinearSpec, in_features, out_features),
-    flattenParameters,
-    linear,
-    replaceParameters,
-    sample
-  )
-import Torch.Optim (foldLoop, GD(..), runStep, sgd)
-import Torch.Random (mkGenerator, rand', randn')
-import Torch.Tensor (Tensor, asTensor)
-import Torch.TensorFactories (full', ones')
+
+import Torch
 
 model :: Linear -> Tensor -> Tensor
 model state input = squeezeAll $ linear state input

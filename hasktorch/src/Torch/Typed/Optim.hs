@@ -132,7 +132,7 @@ instance
   , BasicArithmeticDTypeIsValid device dtype
   ) => Apply' (GDMStep device dtype) (parameter, gradient, momentum) (parameter, momentum) where
   apply' (GDMStep beta learningRate) (parameter, gradient, momentum) =
-    let momentum'  = cmul beta momentum + gradient
+    let momentum'  = mulScalar beta momentum + gradient
         parameter' = parameter - mul learningRate momentum'
     in  (parameter', momentum')
 
@@ -195,7 +195,7 @@ instance
   , momentum1 ~ Tensor device dtype shape
   ) => Apply' AdamMomentum1Update (momentum1, gradient) momentum1 where
     apply' (AdamMomentum1Update beta1) (momentum1, gradient) =
-      cmul beta1 momentum1 + cmul (1 - beta1) gradient
+      mulScalar beta1 momentum1 + mulScalar (1 - beta1) gradient
 
 newtype AdamMomentum2Update = AdamMomentum2Update Float
 
@@ -207,7 +207,7 @@ instance
   , BasicArithmeticDTypeIsValid device dtype
   ) => Apply' AdamMomentum2Update (momentum2, gradient) momentum2 where
     apply' (AdamMomentum2Update beta2) (momentum2, gradient) =
-      cmul beta2 momentum2 + cmul (1 - beta2) (mul gradient gradient)
+      mulScalar beta2 momentum2 + mulScalar (1 - beta2) (mul gradient gradient)
 
 data AdamBiasAdjustment = AdamBiasAdjustment Int Float
 
@@ -216,7 +216,7 @@ instance
   ( momentum ~ Tensor device dtype shape
   ) => Apply' AdamBiasAdjustment momentum momentum where
     apply' (AdamBiasAdjustment iter beta) momentum =
-      cdiv (1 - beta ^ (iter + 1)) momentum
+      divScalar (1 - beta ^ (iter + 1)) momentum
 
 data AdamParameterUpdate device dtype = AdamParameterUpdate Float (LearningRate device dtype)
 
@@ -229,7 +229,7 @@ instance
   , StandardFloatingPointDTypeValidation device dtype
   ) => Apply' (AdamParameterUpdate device dtype) (parameter, momentum, momentum) parameter where
   apply' (AdamParameterUpdate eps learningRate) (parameter, biasAdjustedMomentum1, biasAdjustedMomentum2) =
-    parameter - mul learningRate biasAdjustedMomentum1 / cadd eps (sqrt biasAdjustedMomentum2)
+    parameter - mul learningRate biasAdjustedMomentum1 / addScalar eps (sqrt biasAdjustedMomentum2)
 
 -- | Adam step
 adam

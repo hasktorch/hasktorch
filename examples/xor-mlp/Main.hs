@@ -4,18 +4,12 @@
 
 module Main where
 
-import Torch.Tensor
-import Torch.DType
-import Torch.TensorFactories
-import Torch.Functional hiding (linear)
-import Torch.TensorOptions
-import Torch.Autograd
-import Torch.NN
-import Torch.Optim
 import GHC.Generics
 
 import Control.Monad (when)
 import Data.List (foldl', scanl', intersperse)
+
+import Torch
 
 --------------------------------------------------------------------------------
 -- MLP
@@ -62,9 +56,9 @@ model params t = mlp params t
 main :: IO ()
 main = do
     init <- sample $ MLPSpec { feature_counts = [2, 2, 1], 
-                               nonlinearitySpec = Torch.Functional.tanh } 
+                               nonlinearitySpec = Torch.tanh } 
     trained <- foldLoop init numIters $ \state i -> do
-        input <- rand' [batchSize, 2] >>= return . (toDType Float) . (gt 0.5)
+        input <- randIO' [batchSize, 2] >>= return . (toDType Float) . (gt 0.5)
         let (y, y') = (tensorXOR input, squeezeAll $ model state input)
             loss = mse_loss y' y
         when (i `mod` 100 == 0) $ do

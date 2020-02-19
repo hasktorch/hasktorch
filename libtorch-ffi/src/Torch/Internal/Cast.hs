@@ -179,7 +179,7 @@ instance (Castable a a', Castable b b', Castable c c',
 --------------------------------------------------------------------------------
 
 instance (CppTuple2 c, Castable a (A c), Castable b (B c)) => Castable (a,b) c where
-  cast _ _ = undefined
+  cast _ _ = error "Attempted to cast a 2-tuple from Haskell to C++, this is not supported."
   uncast t f = do
     t0 <- get0 t
     t1 <- get1 t
@@ -188,7 +188,7 @@ instance (CppTuple2 c, Castable a (A c), Castable b (B c)) => Castable (a,b) c w
     f (t0',t1')
 
 instance (CppTuple3 d, Castable a (A d), Castable b (B d), Castable c (C d)) => Castable (a,b,c) d where
-  cast _ _ = undefined
+  cast _ _ = error "Attempted to cast a 3-tuple from Haskell to C++, this is not supported."
   uncast t f = do
     t0 <- get0 t
     t1 <- get1 t
@@ -199,7 +199,7 @@ instance (CppTuple3 d, Castable a (A d), Castable b (B d), Castable c (C d)) => 
     f (t0',t1',t2')
 
 instance (CppTuple4 e, Castable a (A e), Castable b (B e), Castable c (C e), Castable d (D e)) => Castable (a,b,c,d) e where
-  cast _ _ = undefined
+  cast _ _ = error "Attempted to cast a 4-tuple from Haskell to C++, this is not supported."
   uncast t f = do
     t0 <- get0 t
     t1 <- get1 t
@@ -212,7 +212,7 @@ instance (CppTuple4 e, Castable a (A e), Castable b (B e), Castable c (C e), Cas
     f (t0',t1',t2',t3')
 
 instance (CppTuple5 f, Castable a (A f), Castable b (B f), Castable c (C f), Castable d (D f), Castable e (E f)) => Castable (a,b,c,d,e) f where
-  cast _ _ = undefined
+  cast _ _ = error "Attempted to cast a 5-tuple from Haskell to C++, this is not supported."
   uncast t f = do
     t0 <- get0 t
     t1 <- get1 t
@@ -229,7 +229,7 @@ instance (CppTuple5 f, Castable a (A f), Castable b (B f), Castable c (C f), Cas
 instance (CppTuple6 g,
           Castable a (A g), Castable b (B g), Castable c (C g),
           Castable d (D g), Castable e (E g), Castable f (F g)) => Castable (a,b,c,d,e,f) g where
-  cast _ _ = undefined
+  cast _ _ = error "Attempted to cast a 6-tuple from Haskell to C++, this is not supported."
   uncast t f = do
     t0 <- get0 t
     t1 <- get1 t

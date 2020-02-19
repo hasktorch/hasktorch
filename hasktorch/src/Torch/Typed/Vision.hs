@@ -4,7 +4,7 @@
 {-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Image where
+module Torch.Typed.Vision where
 
 import           Control.Monad (forM_)
 import           System.IO.Unsafe
@@ -100,9 +100,8 @@ decompressFile path file = decompress' <$> BS.readFile (path <> "/" <> file)
   where
     decompress' = BS.concat . BS.Lazy.toChunks . GZip.decompress . BS.Lazy.fromStrict
 
-initMnist :: IO (MnistData, MnistData)
-initMnist = do
-  let path = "data"
+initMnist :: String -> IO (MnistData, MnistData)
+initMnist path = do
   imagesBS <- decompressFile path "train-images-idx3-ubyte.gz"
   labelsBS <- decompressFile path "train-labels-idx1-ubyte.gz"
   testImagesBS <- decompressFile path "t10k-images-idx3-ubyte.gz"

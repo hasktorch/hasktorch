@@ -2,16 +2,13 @@
 
 This is a simple MLP implementation of an MNIST classifier using untyped tensors.
 
-This example should be run from the `static-mnist/` directory.
+Before running this example, from the linked `datasets/` directory, run:
 
-First, run:
+`./download-mnist.sh` 
 
-`./setup-data.sh` 
-
-This downloads the mnist dataset. Then run:
+This downloads the mnist dataset into `datasets/mnist/`. Then run:
 
 `stack run mnist-mlp`
 
-The code trains a model then prints some example images to the terminal as ascii art, showing model outputs and ground truth.
-
-
+The code trains a model then prints some example images to the terminal as 
+ascii, showing model outputs and ground truth for the number shown.

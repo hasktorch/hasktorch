@@ -45,7 +45,7 @@ import qualified Torch.DType                   as D
 import qualified Torch.Tensor                  as D
 import qualified Torch.Functional               as D
 import qualified Torch.TensorFactories         as D
-import qualified Image                         as I
+import qualified Torch.Typed.Vision as I
 
 foldLoop
   :: forall a b m . (Num a, Enum a, Monad m) => b -> a -> (b -> a -> m b) -> m b
@@ -108,7 +108,7 @@ train
   -> IO ()
 train initModel initOptim forward learningRate ptFile = do
   let numEpochs = 1000
-  (trainingData, testData) <- I.initMnist
+  (trainingData, testData) <- I.initMnist "data"
   foldLoop_ (initModel, initOptim) numEpochs $ \(epochModel, epochOptim) epoch -> do
     let numIters = I.length trainingData `div` natValI @batchSize
     (epochModel', epochOptim') <- foldLoop (epochModel, epochOptim) numIters $ \(model, optim) i -> do

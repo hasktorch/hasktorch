@@ -17,7 +17,7 @@ import Torch.NN
     sample,
   )
 import Torch.Tensor (Tensor, select)
-import Torch.TensorFactories (randn')
+import Torch.TensorFactories (randnIO')
 
 data MatrixFactSpec
   = MatrixFactSpec
@@ -31,8 +31,8 @@ data MatrixFact = MatrixFact {u :: Parameter, v :: Parameter}
 
 instance Randomizable MatrixFactSpec MatrixFact where
   sample (MatrixFactSpec n m k) = do
-    u <- makeIndependent =<< randn' [n, k]
-    v <- makeIndependent =<< randn' [k, m]
+    u <- makeIndependent =<< randnIO' [n, k]
+    v <- makeIndependent =<< randnIO' [k, m]
     pure $ MatrixFact u v
 
 flattenParameters :: MatrixFact -> [Parameter]

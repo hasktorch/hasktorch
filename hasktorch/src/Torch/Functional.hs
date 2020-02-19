@@ -2,9 +2,34 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module Torch.Functional (
-    module Torch.Functional
-  , module Torch.Functional.Internal
+    module Torch.Functional,
+    addmv, addr, allclose, argmin, baddbmm, bmm, acos, asin, atan, dot, lstsq, mv, slice
+    , sumWithDimnames
 ) where
+
+import          Prelude                 hiding ( all
+                                                , any
+                                                , sin
+                                                , sinh
+                                                , cos
+                                                , cosh
+                                                , tan
+                                                , tanh
+                                                , asin
+                                                , asinh
+                                                , acos
+                                                , acosh
+                                                , atan
+                                                , atanh
+                                                , max
+                                                , min
+                                                , exp
+                                                , log
+                                                , round
+                                                , isNaN
+                                                , floor
+                                                , ceil
+                                                )
 
 import System.IO.Unsafe
 import Foreign.ForeignPtr
@@ -16,6 +41,7 @@ import qualified Torch.Internal.Managed.Type.Tuple as ATen
 import qualified Torch.Internal.Const as ATen
 import qualified Torch.Internal.Type as ATen
 import qualified Torch.Internal.Managed.Cast
+import qualified Torch.Functional.Internal as Internal
 import Torch.Internal.Cast
 import Torch.Internal.Class
 import Data.Int
@@ -23,7 +49,7 @@ import Data.Int
 import Torch.Scalar
 import Torch.Tensor
 import Torch.DType
-import Torch.Functional.Internal hiding (argmax, linear, softmax)
+import Torch.Functional.Internal hiding (argmax, clamp, cosh, conv1d, linear, softmax)
 import Torch.TensorFactories (onesLike, ones')
 
 kOne :: ForeignPtr ATen.Scalar
@@ -156,17 +182,20 @@ sigmoid t = unsafePerformIO $ (cast1 ATen.sigmoid_t) t
 sin :: Tensor -> Tensor
 sin t = unsafePerformIO $ (cast1 ATen.sin_t) t
 
-sinh :: Tensor -> Tensor
-sinh t = unsafePerformIO $ (cast1 ATen.sinh_t) t
-
 cos :: Tensor -> Tensor
 cos t = unsafePerformIO $ (cast1 ATen.cos_t) t
 
-sqrt :: Tensor -> Tensor
-sqrt t = unsafePerformIO $ (cast1 ATen.sqrt_t) t
+sinh :: Tensor -> Tensor
+sinh t = unsafePerformIO $ (cast1 ATen.sinh_t) t
+
+cosh :: Tensor -> Tensor
+cosh t = unsafePerformIO $ (cast1 ATen.cosh_t) t
 
 tanh :: Tensor -> Tensor
 tanh t = unsafePerformIO $ (cast1 ATen.tanh_t) t
+
+sqrt :: Tensor -> Tensor
+sqrt t = unsafePerformIO $ (cast1 ATen.sqrt_t) t
 
 gt :: Tensor -> Tensor -> Tensor
 gt a b = unsafePerformIO $ (cast2 ATen.gt_tt) a b
@@ -220,11 +249,6 @@ nllLoss' t target = unsafePerformIO $ (cast5 ATen.nll_loss_tttll) t target weigh
         nClass = (shape t) !! 1 -- TODO nicer runtime error if input dimensions don't conform
         weight = ones' [nClass]
 
-conv2d :: Tensor -> Tensor -> Tensor -> (Int, Int) -> (Int, Int) -> Tensor
-conv2d input weight bias (dh, dw) (ph, pw) = unsafePerformIO $
-    (cast7 ATen.conv2d_tttllll) input weight bias
-                                ([dh, dw] :: [Int]) ([ph, pw] :: [Int]) ([1, 1] :: [Int]) (1 :: Int)
-
 maxPool2d :: Tensor -> (Int, Int) -> (Int, Int) -> (Int, Int) -> Tensor
 maxPool2d input (kh, kw) (dh, dw) (ph, pw) = unsafePerformIO $
     (cast6 ATen.max_pool2d_tllllb) input ([kh, kw] :: [Int]) ([dh, dw] :: [Int]) ([ph, pw] :: [Int]) ([1, 1] :: [Int]) False
@@ -255,6 +279,181 @@ cholesky t upper = unsafePerformIO $ (cast2 ATen.cholesky_tb) t boolUpper
 cholesky_solve :: Tensor -> Tensor -> Tri -> Tensor
 cholesky_solve t1 t2 upper = unsafePerformIO $ (cast3 ATen.cholesky_solve_ttb) t1 t2 boolUpper
   where boolUpper = isUpper upper
+
+dropout
+  :: Double -- ^ dropout probability
+  -> Bool -- ^ whether or not to activate dropout
+  -> Tensor -- ^ input
+  -> IO Tensor -- ^ output
+dropout p train input = cast3 ATen.dropout_tdb input p train
+
+featureDropout
+  :: Double -- ^ dropout probability
+  -> Bool -- ^ whether or not to activate dropout
+  -> Tensor -- ^ input
+  -> IO Tensor -- ^ output
+featureDropout p train input =
+  cast3 ATen.feature_dropout_tdb input p train
+
+alphaDropout
+  :: Double -- ^ dropout probability
+  -> Bool -- ^ whether or not to activate dropout
+  -> Tensor -- ^ input
+  -> IO Tensor -- ^ output
+alphaDropout p train input =
+  cast3 ATen.alpha_dropout_tdb input p train
+
+featureAlphaDropout
+  :: Double -- ^ dropout probability
+  -> Bool -- ^ whether or not to activate dropout
+  -> Tensor -- ^ input
+  -> IO Tensor -- ^ output
+featureAlphaDropout p train input =
+  cast3 ATen.feature_alpha_dropout_tdb input p train
+
+avgPool1d
+  :: Int -- ^ kernel size
+  -> Int -- ^ stride
+  -> Int -- ^ padding
+  -> Bool -- ^ ceil mode
+  -> Bool -- ^ count include pad
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+avgPool1d kernelSize stride padding ceilMode countIncludePad input =
+    unsafePerformIO $ cast6 ATen.avg_pool1d_tlllbb
+        input
+        kernelSize
+        stride
+        padding
+        ceilMode
+        countIncludePad
+
+avgPool1d'
+  :: Int -- ^ kernel size
+  -> Int -- ^ stride
+  -> Int -- ^ padding
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+avgPool1d' kernelSize stride padding input = avgPool1d kernelSize stride padding False True input
+
+adaptiveAvgPool1d
+  :: Int -- outputSize
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+adaptiveAvgPool1d outputSize input = unsafePerformIO
+  $ cast2 ATen.adaptive_avg_pool1d_tl input outputSize
+
+bitwiseNot :: Tensor -> Tensor
+bitwiseNot input = unsafePerformIO $ cast1 ATen.bitwise_not_t input
+
+cat
+  :: Int -> [Tensor] -> Tensor
+cat dim tensors = unsafePerformIO $ cast2 ATen.cat_ll tensors dim
+
+chunk
+  :: Int -- ^ chunks
+  -> Int -- ^ dim
+  -> Tensor -- ^ input tensor
+  -> [Tensor] -- ^ output list of tensors
+chunk chunks dim input = unsafePerformIO
+  $ cast3 ATen.chunk_tll input chunks dim
+
+clamp
+  :: Float -- ^ minimum value
+  -> Float -- ^ maximum value
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+clamp min max input = unsafePerformIO $ cast3 ATen.clamp_tss input min max
+
+clampMax
+  :: Float -- ^ maximum value
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+clampMax max input = unsafePerformIO $ cast2 ATen.clamp_max_ts input max
+
+clampMin
+  :: Float -- ^ minimum value
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+clampMin min input = unsafePerformIO $ cast2 ATen.clamp_min_ts input min
+
+cudnnIsAcceptable
+  :: Tensor -- ^ input 
+  -> Bool -- ^ output
+cudnnIsAcceptable input =
+  unsafePerformIO $ cast1 ATen.cudnn_is_acceptable_t input
+
+constantPadNd1d
+  :: [Int] -- ^ list of padding per dimension
+  -> Float -- ^ value
+  -> Tensor -- ^ input
+  -> Tensor -- ^ ouptut
+constantPadNd1d padding value input = unsafePerformIO $ cast3
+  ATen.constant_pad_nd_tls
+  input
+  padding
+  value
+
+conv1d
+  :: Tensor -- ^ weight
+  -> Tensor -- ^ bias
+  -> Int -- ^ stride
+  -> Int -- ^ padding
+  -> Int -- ^ dilation
+  -> Int -- ^ groups
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+conv1d weight bias stride padding dilation groups input =
+    unsafePerformIO $ (cast7 ATen.conv1d_tttllll)
+        input
+        weight
+        bias
+        stride
+        padding
+        dilation
+        groups
+
+conv1d' weight bias stride padding input = conv1d weight bias stride padding 1 1 input
+
+
+{-
+conv2d :: Tensor -> Tensor -> Tensor -> (Int, Int) -> (Int, Int) -> Tensor
+conv2d input weight bias (dh, dw) (ph, pw) = unsafePerformIO $
+    (cast7 ATen.conv2d_tttllll) input weight bias
+                                ([dh, dw] :: [Int]) ([ph, pw] :: [Int]) ([1, 1] :: [Int]) (1 :: Int)
+-}
+
+conv2d
+  :: Tensor -- ^ weight
+  -> Tensor -- ^ bias
+  -> (Int, Int) -- ^ strides
+  -> (Int, Int) -- ^ padding
+  -> (Int, Int) -- ^ dilation
+  -> Int -- ^ groups
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+conv2d weight bias (stride0, stride1) (padding0, padding1) (dilation0, dilation1) groups input =
+    unsafePerformIO $ (cast7 ATen.conv2d_tttllll)
+        input
+        weight
+        bias
+        ([stride0, stride1] :: [Int])
+        ([padding0, padding1] :: [Int])
+        ([dilation0, dilation1] :: [Int])
+        groups
+
+conv2d'
+  :: Tensor -- ^ weight
+  -> Tensor -- ^ bias
+  -> (Int, Int) -- ^ strides
+  -> (Int, Int) -- ^ padding
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+conv2d' weight bias stride padding input = 
+    conv2d weight bias stride padding
+        (1, 1) -- dilation
+        (1 :: Int) -- groups
+        input
 
 solve :: Tensor -> Tensor -> (Tensor,Tensor)
 solve b a = unsafePerformIO $ (cast2 ATen.solve_tt) b a
