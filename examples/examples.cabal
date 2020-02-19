@@ -185,13 +185,13 @@ executable matrix-factorization
                      , hasktorch
                      , libtorch-ffi
 
--- executable gd-field
---   import:              config
---   hs-source-dirs:      gd-field
---   main-is:             Main.hs
---   ghc-options:         -fno-warn-partial-type-signatures
---   build-depends:       base >= 4.7 && < 5
---                      , Chart
---                      , Chart-cairo
---                      , hasktorch
---                      , libtorch-ffi
+executable gd-field
+  import:              config
+  hs-source-dirs:      gd-field
+  main-is:             Main.hs
+  ghc-options:         -fno-warn-partial-type-signatures
+  build-depends:       base >= 4.7 && < 5
+                     , text
+                     , hvega
+                     , hasktorch
+                     , libtorch-ffi
