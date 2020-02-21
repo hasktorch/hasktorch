@@ -85,7 +85,7 @@ type DataDevice = '( 'D.CPU, 0)
 type BatchSize = 1
 type SeqLen = 512
 
-type NumAttnLayers = 12
+type NumAttnLayers = 2
 type NumHeads = 12
 type FFNDim = 3072
 type PaddingIdx = 0
