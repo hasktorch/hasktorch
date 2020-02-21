@@ -56,10 +56,9 @@ instance
   apply' OnesSpec (_, agg) = agg >> do
     let t = ones :: Tensor device dtype shape
     checkDynamicTensorAttributes t
-  apply FullSpec _ _ = do
+  apply' FullSpec (_, agg) = agg >> do
     let t = full (2.0 :: Float) :: Tensor device dtype shape
     checkDynamicTensorAttributes t
-
 
 data RandomFactoriesSpec = RandSpec | RandnSpec
 

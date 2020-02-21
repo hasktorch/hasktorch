@@ -119,7 +119,7 @@ multiheadAttention MultiheadAttention {..} train attentionMask keyPaddingMask ma
         . softmax @3
         . maskKeyPaddings
         . maskAttention
-        . cdiv scaling
+        . divScalar scaling
         . ap maybe add (matmul q . transpose @2 @3 $ k)
         . fmap (transpose @1 @2 . matmul (transpose @1 @2 q) . transpose @2 @3)
         $ maybeRelationsK
@@ -131,7 +131,7 @@ multiheadAttention MultiheadAttention {..} train attentionMask keyPaddingMask ma
         $ maybeRelationsV
     averageOverHeads =
       let numHeads' = natValI @numHeads
-       in cdiv numHeads' . sumDim @1
+       in divScalar numHeads' . sumDim @1
     maskAttention = add (unsqueeze @1 attentionMask)
     maskKeyPaddings =
       let keyPaddingMask' = unsqueeze @2 . unsqueeze @1 $ keyPaddingMask
