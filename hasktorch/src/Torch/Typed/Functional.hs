@@ -1676,13 +1676,13 @@ cat tensors = unsafePerformIO $ ATen.cast2 ATen.Managed.cat_ll tensors (natValI 
 -- chain_matmul _matrices = unsafePerformIO $ (ATen.cast1 ATen.Managed.chain_matmul_l) _matrices
 
 type family ChunkImpl (chunkShapes :: Maybe [[Nat]]) (dtype :: D.DType) (device :: (D.DeviceType, Nat)) :: Maybe a where
-  ChunkImpl (Just '[])               _     _     = Just '[]
+  ChunkImpl (Just '[])               _     _      = Just '[]
   ChunkImpl (Just (shape ': shapes)) dtype device = AppendToMaybe (Tensor device dtype shape) (ChunkImpl (Just shapes) dtype device)
-  ChunkImpl Nothing                  _     _     = Nothing
+  ChunkImpl Nothing                  _     _      = Nothing
 
 type family ChunkCheck (shape :: [Nat]) (dim :: Nat) (result :: Maybe a) :: a where
-  ChunkCheck shape dim Nothing = DimOutOfBound shape dim
-  ChunkCheck _ _ (Just result) = result
+  ChunkCheck shape dim Nothing       = DimOutOfBound shape dim
+  ChunkCheck _     _   (Just result) = result
 
 type family ComputeChunksChunkGo (n' :: Nat) (r :: Nat) (cmp :: Ordering) (cmp' :: Ordering) :: [Nat] where
   ComputeChunksChunkGo n' r GT _  = n' ': ComputeChunksChunkGo n' (r - n') (CmpNat (r - n') n') (CmpNat (r - n') 0)
@@ -1713,22 +1713,23 @@ type Chunk chunks dim shape dtype device = ChunkCheck shape dim (ChunkImpl (Chun
 
 -- | chunk
 --
--- >>> :type chunk @3 @1 (ones :: CPUTensor 'D.Float '[2, 2])
--- chunk @3 @1 (ones :: CPUTensor 'D.Float '[2, 2])
---   :: HList
---        '[Tensor '( 'D.CPU, 0) 'D.Float '[2, 1],
---          Tensor '( 'D.CPU, 0) 'D.Float '[2, 1]]
+-- -- >>> :type chunk @3 @1 (ones :: CPUTensor 'D.Float '[2, 2])
+-- -- chunk @3 @1 (ones :: CPUTensor 'D.Float '[2, 2])
+-- --   :: HList
+-- --        '[Tensor '( 'D.CPU, 0) 'D.Float '[2, 1],
+-- --          Tensor '( 'D.CPU, 0) 'D.Float '[2, 1]]
 -- >>> t0 :. t1 :. HNil = chunk @3 @1 (ones :: CPUTensor 'D.Float '[2, 2])
 -- >>> dtype &&& shape $ t0
 -- (Float,[2,1])
 -- >>> dtype &&& shape $ t1
 -- (Float,[2,1])
--- >>> :type chunk @3 @1 (ones :: CPUTensor 'D.Float '[1, 0, 3])
--- chunk @3 @1 (ones :: CPUTensor 'D.Float '[1, 0, 3])
---   :: HList
---        '[Tensor '( 'D.CPU, 0) 'D.Float '[1, 0, 3],
---          Tensor '( 'D.CPU, 0) 'D.Float '[1, 0, 3],
---          Tensor '( 'D.CPU, 0) 'D.Float '[1, 0, 3]]
+--
+-- -- >>> :type chunk @3 @1 (ones :: CPUTensor 'D.Float '[1, 0, 3])
+-- -- chunk @3 @1 (ones :: CPUTensor 'D.Float '[1, 0, 3])
+-- --   :: HList
+-- --        '[Tensor '( 'D.CPU, 0) 'D.Float '[1, 0, 3],
+-- --          Tensor '( 'D.CPU, 0) 'D.Float '[1, 0, 3],
+-- --          Tensor '( 'D.CPU, 0) 'D.Float '[1, 0, 3]]
 -- >>> t0 :. t1 :. t2 :. HNil = chunk @3 @1 (ones :: CPUTensor 'D.Float '[1, 0, 3])
 -- >>> dtype &&& shape $ t0
 -- (Float,[1,0,3])
@@ -1736,14 +1737,15 @@ type Chunk chunks dim shape dtype device = ChunkCheck shape dim (ChunkImpl (Chun
 -- (Float,[1,0,3])
 -- >>> dtype &&& shape $ t2
 -- (Float,[1,0,3])
--- >>> :type chunk @6 @0 (ones :: CPUTensor 'D.Float '[19, 4])
--- chunk @6 @0 (ones :: CPUTensor 'D.Float '[19, 4])
---   :: HList
---        '[Tensor '( 'D.CPU, 0) 'D.Float '[4, 4],
---          Tensor '( 'D.CPU, 0) 'D.Float '[4, 4],
---          Tensor '( 'D.CPU, 0) 'D.Float '[4, 4],
---          Tensor '( 'D.CPU, 0) 'D.Float '[4, 4],
---          Tensor '( 'D.CPU, 0) 'D.Float '[3, 4]]
+--
+-- -- >>> :type chunk @6 @0 (ones :: CPUTensor 'D.Float '[19, 4])
+-- -- chunk @6 @0 (ones :: CPUTensor 'D.Float '[19, 4])
+-- --   :: HList
+-- --        '[Tensor '( 'D.CPU, 0) 'D.Float '[4, 4],
+-- --          Tensor '( 'D.CPU, 0) 'D.Float '[4, 4],
+-- --          Tensor '( 'D.CPU, 0) 'D.Float '[4, 4],
+-- --          Tensor '( 'D.CPU, 0) 'D.Float '[4, 4],
+-- --          Tensor '( 'D.CPU, 0) 'D.Float '[3, 4]]
 -- >>> t0 :. t1 :. t2 :. t3 :. t4 :. HNil = chunk @6 @0 (ones :: CPUTensor 'D.Float '[19, 4])
 -- >>> dtype &&& shape $ t0
 -- (Float,[4,4])
@@ -1834,26 +1836,25 @@ constantPadNd1d value input = unsafePerformIO $ ATen.cast3
 -- convolution :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> [Int] -> [Int] -> [Int] -> Bool -> [Int] -> Int -> Tensor device dtype shape
 -- convolution _input _weight _bias _stride _padding _dilation _transposed _output_padding _groups = unsafePerformIO $ (ATen.cast9 ATen.Managed.convolution_tttlllbll) _input _weight _bias _stride _padding _dilation _transposed _output_padding _groups
 
-type ConvSideCheck h k d (p :: Nat) o =
+type ConvSideCheck (inputSize :: Nat) (kernelSize :: Nat) (stride :: Nat) (padding :: Nat) (outputSize :: Nat) =
   (
-  -- kernel and step size must be > 0
-    k >= 1, d >= 1
-  -- kernel size can't be greater than actual input size
-  , ((h + (2 * p)) + 1) >= k
-  -- output size must be greater than 0
-  , o >= 1
-  -- output forumlation:
-  , o ~ ((Div ((h + (2 * p)) - k) d) + 1)
+    -- kernel size and stride must be > 0
+    kernelSize >= 1, stride >= 1
+    -- kernel size can't be greater than actual input size
+  , ((inputSize + (2 * padding)) + 1) >= kernelSize
+    -- output size must be greater than 0
+  , outputSize >= 1
+    -- output formulation:
+  , outputSize ~ ConvOutputSize inputSize kernelSize stride padding
   )
 
 -- | ConvOutputSize
--- TODO: this doesn't seem to be used, remove? use it above in ConvSideCheck?
 --
--- >>> :kind! ConvOutputSize 1 0 1 4
--- ConvOutputSize 1 0 1 4 :: Nat
+-- >>> :kind! ConvOutputSize 4 1 1 0
+-- ConvOutputSize 4 1 1 0 :: Nat
 -- = 4
-type family ConvOutputSize (stride :: Nat) (padding :: Nat) (kernel_size :: Nat)  (input_size :: Nat) :: Nat where
-    ConvOutputSize s p k i = (Div (i + 2 * p - k) s) + 1
+type family ConvOutputSize (inputSize :: Nat) (kernelSize :: Nat) (stride :: Nat) (padding :: Nat) :: Nat where
+  ConvOutputSize inputSize kernelSize stride padding = (Div ((inputSize + (2 * padding)) - kernelSize) stride) + 1
 
 -- | conv1d
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -2455,23 +2456,9 @@ linear weight bias input = unsafePerformIO $ ATen.cast3 ATen.Managed.linear_ttt 
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[[[Float]]]]) $ t'
 -- (Float,([1,2,5,2],[[[[0.5,-2.25],[-0.25,1.25],[-2.0,0.0],[0.0,0.5],[1.5,2.5]],[[0.5,-2.25],[-0.25,1.25],[-2.0,0.0],[0.0,0.5],[1.5,2.5]]]]))
 linear'
-  :: forall (inputFeatures :: Nat) (outputFeatures :: Nat) (shape :: [Nat]) (shape' :: [Nat]) dtype device
-   . (shape' ~ CheckBroadcast
-                 (CheckMatMul
-                     shape
-                     '[inputFeatures, outputFeatures]
-                     (ComputeMatMul
-                       (ReverseImpl shape '[]) '[outputFeatures, inputFeatures]))
-                 '[outputFeatures]
-                 (ComputeBroadcast
-                     (ReverseImpl
-                       (CheckMatMul
-                           shape
-                           '[inputFeatures, outputFeatures]
-                           (ComputeMatMul
-                             (ReverseImpl shape '[]) '[outputFeatures, inputFeatures]))
-                       '[])
-                     '[outputFeatures])
+  :: forall (inputFeatures :: Nat) (outputFeatures :: Nat) (shape :: [Nat]) (shape' :: [Nat]) dtype device (shape'' :: [Nat])
+   . ( shape'' ~ MatMul shape '[inputFeatures, outputFeatures]
+     , shape' ~ Broadcast shape'' shape''
      )
   => Tensor device dtype '[outputFeatures, inputFeatures] -- ^ weight
   -> Tensor device dtype '[outputFeatures] -- ^ bias
@@ -2663,7 +2650,7 @@ maxPool1d
                      , channelSize
                      , inputSize
                      , batchSize
-                     ]
+                     ]  
      , ConvSideCheck inputSize kernelSize stride padding outputSize
      )
   => Tensor device dtype '[batchSize, channelSize, inputSize] -- ^ input
@@ -3073,10 +3060,10 @@ type family MaybePair (a' :: Maybe a) (b' ::  Maybe b) :: Maybe (a, b) where
   MaybePair (Just a') (Just b') = Just '(a', b')
 
 type family MaybeTriple (a' :: Maybe a) (b' ::  Maybe b) (c' ::  Maybe c) :: Maybe (a, b, c) where
-  MaybePair Nothing   _         _         = Nothing
-  MaybePair _         Nothing   _         = Nothing
-  MaybePair _         _         Nothing   = Nothing
-  MaybePair (Just a') (Just b') (Just c') = Just '(a', b', c')
+  MaybeTriple Nothing   _         _         = Nothing
+  MaybeTriple _         Nothing   _         = Nothing
+  MaybeTriple _         _         Nothing   = Nothing
+  MaybeTriple (Just a') (Just b') (Just c') = Just '(a', b', c')
 
 type family ComputeStackShape (shape :: [Nat]) (dim  :: Nat) (count :: Nat) :: Maybe [Nat] where
   ComputeStackShape _         _   0     = Nothing

@@ -63,9 +63,11 @@ import qualified Torch.NN                      as A
 import           Torch.Typed.Aux
 import           Torch.Typed.Tensor
 import           Torch.Typed.Parameter
+import           Torch.Typed.Device
 import           Torch.Typed.Functional
 import           Torch.Typed.Factories
 import           Torch.Typed.NN
+import           Torch.Typed.NN.DataParallel
 import           Torch.Typed.Autograd
 import           Torch.Typed.Optim
 import           Torch.Typed.Serialize
@@ -278,8 +280,8 @@ data GradientsTestInner = GradientsTestInner
 
 instance
   ( TensorOptions shape dtype device
-  ) => Apply GradientsTestInner (Tensor device dtype shape, Tensor device dtype shape) (() -> IO ()) where
-  apply _ (a, b) _ = do
+  ) => Apply' GradientsTestInner ((Tensor device dtype shape, Tensor device dtype shape), IO ()) (IO ()) where
+  apply' _ ((a, b), agg) = agg >> do
     checkDynamicTensorAttributes a
     checkDynamicTensorAttributes b
     (toList . Just . Torch.Typed.Tensor.toDevice @'( 'D.CPU, 0) . unsqueeze @0 . all)
@@ -300,9 +302,9 @@ instance
   , DropValue shape 0 ~ '[]
   , HMap' (GradientsRastriginA a) parameters gradients'
   , HZip gradients gradients' zs
-  , HFoldrM IO GradientsTestInner () zs
-  ) => Apply (GradientsTestOuter a) ((Proxy device, Proxy dtype), RastriginSpec num ns dtypes devices) (() -> IO ()) where
-  apply (GradientsTestOuter a) (_, rastriginSpec) _ = do
+  , HFoldrM IO GradientsTestInner () zs ()
+  ) => Apply' (GradientsTestOuter a) (((Proxy device, Proxy dtype), RastriginSpec num ns dtypes devices), IO ()) (IO ()) where
+  apply' (GradientsTestOuter a) ((_, rastriginSpec), agg) = agg >> do
     model <- A.sample rastriginSpec
     let zipped = hzip
           (grad (rastrigin @a @dtype @device @tensors @parameters model a)
@@ -310,6 +312,11 @@ instance
           )
           (gradientsRastrigin @gradients' model a)
     hfoldrM @IO GradientsTestInner () zipped
+
+data LinearForward = LinearForward
+
+instance Apply' LinearForward (Linear inputFeatures outputFeatures dtype device, Tensor device dtype '[batchSize, inputFeatures]) (Tensor device dtype '[batchSize, outputFeatures]) where
+  apply' _ (model, input) = Torch.Typed.NN.linear model input
 
 spec :: Spec
 spec = describe "grad" $ do
@@ -343,3 +350,15 @@ spec = describe "grad" $ do
         :. RastriginSpec @4 @'[2, 3, 1, 13] @'[ 'D.Float, 'D.Double, 'D.Float, 'D.Double] @'[ '( 'D.CPU, 0), '( 'D.CUDA, 0), '( 'D.CPU, 0), '( 'D.CUDA, 0)]
         :. HNil
         )
+    it "works in a data-parallel setting" $ do
+      let spec = LinearSpec @10 @5 @'D.Float @'( 'D.CPU, 0)
+      model <- A.sample spec
+      input <- randn @'[20,10] @'D.Float @'( 'D.CPU, 0)
+      output <- forwardConcurrently' @'[ '( 'D.CPU, 0), '( 'D.CUDA, 0)] @'( 'D.CPU, 0) model input
+      let loss = mseLoss @D.ReduceMean output zeros
+          gradientWeight :. gradientBias :. HNil = grad loss (Torch.Typed.Parameter.flattenParameters model)
+          output' = forward model input
+          loss' = mseLoss @D.ReduceMean output' zeros
+          gradientWeight' :. gradientBias' :. HNil = grad loss' (Torch.Typed.Parameter.flattenParameters model)
+      (toInt . all) (isclose 1e-08 1e-05 False gradientWeight gradientWeight') `shouldBe` 1
+      (toInt . all) (isclose 1e-08 1e-05 False gradientBias gradientBias') `shouldBe` 1

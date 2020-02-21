@@ -98,17 +98,22 @@ toDevice :: Device -> Tensor -> Tensor
 toDevice device' t = unsafePerformIO $ do
   hasCUDA <- cast0 ATen.hasCUDA :: IO Bool
   let device = Torch.Tensor.device t
-  toDevice' (deviceType device)
-            (deviceType device')
-            (deviceIndex device)
-            (deviceIndex device')
-            hasCUDA
+  t' <- toDevice' (deviceType device)
+                  (deviceType device')
+                  (deviceIndex device)
+                  (deviceIndex device')
+                  hasCUDA
+  check (deviceType device')
+        (deviceType $ Torch.Tensor.device t')
+        (deviceIndex device')
+        (deviceIndex $ Torch.Tensor.device t')
+  pure t'
  where
-  toDevice' dt dt' di di' _ | dt == dt' && di == di' = getOpts t >>= to t -- just copy
-  toDevice' CUDA dt'@CUDA di di' True | di /= di'    = copyTo dt' di' t -- copy from di to di'
-  toDevice' CPU dt'@CUDA 0 di' True | di' >= 0       = copyTo dt' di' t -- copy from cpu:0 to cuda:di'
-  toDevice' CUDA dt'@CPU _ di'@0 True                = copyTo dt' di' t -- copy from cuda:di to cpu:0
-  toDevice' dt dt' di di' _ =
+  toDevice' dt   dt'  di di' _    | dt == dt' && di == di' = pure t -- do nothing
+  toDevice' CUDA CUDA di di' True | di /= di'              = getOpts t >>= withDeviceIndex di' >>= to t -- copy from di to di'
+  toDevice' CPU  CUDA 0  di' True | di' >= 0               = getOpts t >>= withDeviceIndex di' >>= to t -- copy from cpu:0 to cuda:di'
+  toDevice' CUDA CPU  di 0   True | di >= 0                = getOpts t >>= withDeviceType CPU  >>= to t -- copy from cuda:di to cpu:0
+  toDevice' dt   dt'  di di' _                             =
     error
       $  "cannot move tensor from \""
       <> show dt
@@ -130,8 +135,18 @@ toDevice device' t = unsafePerformIO $ do
    where
     nonBlocking = False
     copy = False
-  copyTo dt di t =
-    getOpts t >>= withDeviceIndex di >>= withDeviceType dt >>= to t
+  check dt dt' di di' | dt == dt' && di == di' = pure ()
+  check dt dt' di di' =
+    error
+      $  "moving of tensor failed: device should have been \""
+      <> show dt
+      <> ":"
+      <> show di
+      <> "\" but is \""
+      <> show dt'
+      <> ":"
+      <> show di'
+      <> "\""
 
 select :: Tensor -> Int -> Int -> Tensor
 select t dim idx = unsafePerformIO $ cast3 ATen.tensor_select_ll t dim idx

@@ -37,7 +37,7 @@ import           Torch.Internal.Cast
 import qualified Torch.Internal.Managed.Type.Context     as ATen
 import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
-import qualified Torch.Functional               as D
+import qualified Torch.Functional              as D
 import qualified Torch.Tensor                  as D
 import qualified Torch.TensorFactories         as D
 import qualified Torch.TensorOptions           as D
@@ -94,36 +94,6 @@ cpu = Proxy @'( 'D.CPU, 0)
 
 cuda0 :: _
 cuda0 = Proxy @'( 'D.CUDA, 0)
-
--- data SomeDevices where
---   SomeDevices :: forall (devices :: [(D.DeviceType, Nat)]) deviceList . (All KnownDevice devices, HasDeviceHList devices deviceList) => Proxy devices -> SomeDevices
-
--- someDevices :: [D.Device] -> SomeDevices
--- someDevices [] = SomeDevices $ Proxy @'[]
--- someDevices (h : t) = case someDevice h of
---   (SomeDevice (Proxy :: Proxy ht)) -> case someDevices t of
---       (SomeDevices (Proxy :: Proxy tt)) -> SomeDevices $ Proxy @(ht ': tt)
-
--- class HasDeviceHList (devices :: [(D.DeviceType, Nat)]) deviceList | devices -> deviceList where
---   deviceHList :: HList deviceList
-
--- instance HasDeviceHList '[] '[] where
---   deviceHList = HNil
-
--- instance HasDeviceHList ds ds' => HasDeviceHList (d ': ds) (Proxy d ': ds') where
---   deviceHList = Proxy @d :. deviceHList @ds
-
--- spec' :: [D.Device] -> Spec
--- spec' devices = case someDevices devices of
---   (SomeDevices (Proxy :: Proxy devices)) -> do
---     let devices' = deviceHList @devices
---     return ()
-
--- someDeviceProxies :: [D.Device] -> SomeDeviceProxies
--- someDeviceProxies [] = SomeDeviceProxies $ Proxy @'[]
--- someDeviceProxies (h : t) = case someDevice h of
---   (SomeDevice proxy@(Proxy :: Proxy ht)) -> case someDeviceProxies t of
---       (SomeDeviceProxies (Proxy :: Proxy tt)) -> SomeDeviceProxies $ Proxy @(proxy ': tt)
 
 availableDevices =
   let hasCuda = unsafePerformIO $ cast0 ATen.hasCUDA

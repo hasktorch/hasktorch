@@ -35,7 +35,7 @@ import           Test.QuickCheck
 
 import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
-import qualified Torch.Functional               as D
+import qualified Torch.Functional              as D
 import qualified Torch.Tensor                  as D
 import qualified Torch.TensorFactories         as D
 import qualified Torch.TensorOptions           as D
@@ -46,37 +46,30 @@ import           Torch.Typed.AuxSpec
 
 data SimpleFactoriesSpec = ZerosSpec | OnesSpec | FullSpec
 
-instance (TensorOptions shape dtype device)
-  => Apply
-       SimpleFactoriesSpec
-       (Proxy device, (Proxy dtype, Proxy shape))
-       (() -> IO ())
+instance
+  ( TensorOptions shape dtype device
+  ) => Apply' SimpleFactoriesSpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ())
  where
-  apply ZerosSpec _ _ = do
+  apply' ZerosSpec (_, agg) = agg >> do
     let t = zeros :: Tensor device dtype shape
     checkDynamicTensorAttributes t
-  apply OnesSpec _ _ = do
+  apply' OnesSpec (_, agg) = agg >> do
     let t = ones :: Tensor device dtype shape
     checkDynamicTensorAttributes t
-  apply FullSpec _ _ = do
+  apply' FullSpec (_, agg) = agg >> do
     let t = full (2.0 :: Float) :: Tensor device dtype shape
     checkDynamicTensorAttributes t
 
-
 data RandomFactoriesSpec = RandSpec | RandnSpec
 
-instance ( TensorOptions shape dtype device
-         , RandDTypeIsValid device dtype
-         )
-  => Apply
-       RandomFactoriesSpec
-       (Proxy device, (Proxy dtype, Proxy shape))
-       (() -> IO ())
- where
-  apply RandSpec _ _ = do
+instance
+  ( TensorOptions shape dtype device
+  , RandDTypeIsValid device dtype
+  ) => Apply' RandomFactoriesSpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ()) where
+  apply' RandSpec (_, agg) = agg >> do
     t <- rand :: IO (Tensor device dtype shape)
     checkDynamicTensorAttributes t
-  apply RandnSpec _ _ = do
+  apply' RandnSpec (_, agg) = agg >> do
     t <- randn :: IO (Tensor device dtype shape)
     checkDynamicTensorAttributes t
 

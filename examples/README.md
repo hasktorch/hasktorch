@@ -36,4 +36,4 @@ Some examples demonstrate typed tensor functionality.
 - static-mnist-mlp - a mlp neural network mnist classifier
 - static-mnist - shared mnist functions
 - static-xor-mlp - an XOR multilayer perceptron
-- static-transformer - transformer with attention implementation
+- typed-transformer - transformer with attention implementation

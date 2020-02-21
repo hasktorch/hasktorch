@@ -57,14 +57,35 @@ runStep
   -> Loss device dtype
   -> LearningRate device dtype
   -> IO (model, optim)
-runStep modelState optimState loss learningRate = do
-  let parameters              = flattenParameters modelState
+runStep model optim loss learningRate = do
+  let parameters              = flattenParameters model
       gradients               = grad loss parameters
       tensors                 = hmap' ToDependent parameters
-      (tensors', optimState') = step learningRate gradients tensors optimState
+      (tensors', optim') = step learningRate gradients tensors optim
   parameters' <- hmapM' MakeIndependent tensors'
-  let modelState' = replaceParameters modelState parameters'
-  return (modelState', optimState')
+  let model' = replaceParameters model parameters'
+  return (model', optim')
+
+runStep'
+  :: forall model optim parameters gradients tensors dtype device
+   . ( Parameterized model parameters
+     , tensors ~ gradients
+     , HMap' ToDependent parameters tensors
+     , Optimizer optim gradients tensors dtype device
+     , HMapM' IO MakeIndependent tensors parameters
+     )
+  => model
+  -> optim
+  -> LearningRate device dtype
+  -> HList gradients
+  -> IO (model, optim)
+runStep' model optim learningRate gradients = do
+  let parameters         = flattenParameters model
+      tensors            = hmap' ToDependent parameters
+      (tensors', optim') = step learningRate gradients tensors optim
+  parameters' <- hmapM' MakeIndependent tensors'
+  let model' = replaceParameters model parameters'
+  return (model', optim')
 
 --
 -- Gradient Descent (GD)
@@ -97,7 +118,7 @@ gd
   -> GD
   -> (HList tensors, GD)
 gd learningRate gradients parameters gd =
-  let step = hZipWith (GDStep learningRate) parameters gradients in (step, gd)
+  let step = hzipWith (GDStep learningRate) parameters gradients in (step, gd)
 
 instance
   ( HZipWith (GDStep device dtype) tensors gradients tensors
@@ -149,7 +170,7 @@ gdm
   -> GDM momenta -- ^ beta and model parameter momentum tensors
   -> (HList tensors, GDM momenta) -- ^ returns updated parameters and momenta
 gdm learningRate gradients parameters (GDM beta momenta) =
-  let step = hZipWith3 (GDMStep beta learningRate) parameters gradients momenta
+  let step = hzipWith3 (GDMStep beta learningRate) parameters gradients momenta
   in  (hmap' Fst step, GDM beta (hmap' Snd step))
 
 instance
@@ -247,11 +268,11 @@ adam
 adam learningRate gradients parameters Adam {..} =
   (parameters', Adam (iter + 1) beta1 beta2 momenta1' momenta2')
  where
-  momenta1' = hZipWith (AdamMomentum1Update beta1) momenta1 gradients
-  momenta2' = hZipWith (AdamMomentum2Update beta2) momenta2 gradients
+  momenta1' = hzipWith (AdamMomentum1Update beta1) momenta1 gradients
+  momenta2' = hzipWith (AdamMomentum2Update beta2) momenta2 gradients
   biasAdjustedMomenta1 = hmap' (AdamBiasAdjustment iter beta1) momenta1'
   biasAdjustedMomenta2 = hmap' (AdamBiasAdjustment iter beta2) momenta2'
-  parameters' = hZipWith3 (AdamParameterUpdate 1e-37 learningRate) parameters biasAdjustedMomenta1 biasAdjustedMomenta2
+  parameters' = hzipWith3 (AdamParameterUpdate 1e-37 learningRate) parameters biasAdjustedMomenta1 biasAdjustedMomenta2
 
 instance
   ( HZipWith AdamMomentum1Update momenta gradients momenta

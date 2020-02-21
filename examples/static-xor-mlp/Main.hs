@@ -122,7 +122,7 @@ main = do
       <$> rand @'[256, 2] @'D.Float @'( 'D.CPU, 0)
 
     let expectedOutput = xor input
-    let actualOutput   = squeezeAll . forward model $ input
+    let actualOutput   = squeezeAll . Main.forward model $ input
     let loss           = mseLoss @D.ReduceMean actualOutput expectedOutput
 
     when (i `mod` 2500 == 0) (print loss)

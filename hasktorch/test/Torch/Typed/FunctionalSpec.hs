@@ -77,17 +77,14 @@ data UnaryAllDTypesSpec =
 
 instance
   ( TensorOptions shape dtype device
-  ) => Apply UnaryAllDTypesSpec
-             (Proxy device, (Proxy dtype, Proxy shape))
-             (() -> IO ())
- where
-  apply SignSpec _ _ = do
+  ) => Apply' UnaryAllDTypesSpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ()) where
+  apply' SignSpec (_, agg) = agg >> do
     let t = sign (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply OnesLikeSpec _ _ = do
+  apply' OnesLikeSpec (_, agg) = agg >> do
     let t = onesLike (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply ZerosLikeSpec _ _ = do
+  apply' ZerosLikeSpec (_, agg) = agg >> do
     let t = zerosLike (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
 
@@ -98,11 +95,8 @@ instance
   ( TensorOptions shape dtype device
   , DTypeIsNotHalf device dtype
   , DTypeIsNotBool device dtype
-  ) => Apply UnaryStandardDTypesSpec
-             (Proxy device, (Proxy dtype, Proxy shape))
-             (() -> IO ())
- where
-  apply AbsSpec _ _ = do
+  ) => Apply' UnaryStandardDTypesSpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ()) where
+  apply' AbsSpec (_, agg) = agg >> do
     let t = abs (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
 
@@ -144,185 +138,162 @@ data UnaryStandardFloatingPointDTypesSpec =
 instance
   ( TensorOptions shape dtype device
   , StandardFloatingPointDTypeValidation device dtype
-  ) => Apply UnaryStandardFloatingPointDTypesSpec
-             (Proxy device, (Proxy dtype, Proxy shape))
-             (() -> IO ())
- where
-  apply FracSpec _ _ = do
+  ) => Apply' UnaryStandardFloatingPointDTypesSpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ()) where
+  apply' FracSpec (_, agg) = agg >> do
     let t = frac (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply CeilSpec _ _ = do
+  apply' CeilSpec (_, agg) = agg >> do
     let t = ceil (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply FloorSpec _ _ = do
+  apply' FloorSpec (_, agg) = agg >> do
     let t = floor (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply TruncSpec _ _ = do
+  apply' TruncSpec (_, agg) = agg >> do
     let t = trunc (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply ErfSpec _ _ = do
+  apply' ErfSpec (_, agg) = agg >> do
     let t = erf (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply ErfcSpec _ _ = do
+  apply' ErfcSpec (_, agg) = agg >> do
     let t = erfc (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply ErfinvSpec _ _ = do
+  apply' ErfinvSpec (_, agg) = agg >> do
     let t = erfinv (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply ExpSpec _ _ = do
+  apply' ExpSpec (_, agg) = agg >> do
     let t = exp (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply Expm1Spec _ _ = do
+  apply' Expm1Spec (_, agg) = agg >> do
     let t = expm1 (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply LogSpec _ _ = do
+  apply' LogSpec (_, agg) = agg >> do
     let t = log (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply Log1pSpec _ _ = do
+  apply' Log1pSpec (_, agg) = agg >> do
     let t = log1p (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply Log2Spec _ _ = do
+  apply' Log2Spec (_, agg) = agg >> do
     let t = log2 (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply Log10Spec _ _ = do
+  apply' Log10Spec (_, agg) = agg >> do
     let t = log10 (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply LgammaSpec _ _ = do
+  apply' LgammaSpec (_, agg) = agg >> do
     let t = lgamma (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply DigammaSpec _ _ = do
+  apply' DigammaSpec (_, agg) = agg >> do
     let t = digamma (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply ReluSpec _ _ = do
+  apply' ReluSpec (_, agg) = agg >> do
     let t = relu (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply SeluSpec _ _ = do
+  apply' SeluSpec (_, agg) = agg >> do
     let t = selu (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply SigmoidSpec _ _ = do
+  apply' SigmoidSpec (_, agg) = agg >> do
     let t = sigmoid (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply LogSigmoidSpec _ _ = do
+  apply' LogSigmoidSpec (_, agg) = agg >> do
     let t = logSigmoid (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply SinSpec _ _ = do
+  apply' SinSpec (_, agg) = agg >> do
     let t = sin (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply SinhSpec _ _ = do
+  apply' SinhSpec (_, agg) = agg >> do
     let t = sinh (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply AsinSpec _ _ = do
+  apply' AsinSpec (_, agg) = agg >> do
     let t = asin (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply CosSpec _ _ = do
+  apply' CosSpec (_, agg) = agg >> do
     let t = cos (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply CoshSpec _ _ = do
+  apply' CoshSpec (_, agg) = agg >> do
     let t = cosh (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply AcosSpec _ _ = do
+  apply' AcosSpec (_, agg) = agg >> do
     let t = acos (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply TanSpec _ _ = do
+  apply' TanSpec (_, agg) = agg >> do
     let t = tan (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply TanhSpec _ _ = do
+  apply' TanhSpec (_, agg) = agg >> do
     let t = tanh (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply AtanSpec _ _ = do
+  apply' AtanSpec (_, agg) = agg >> do
     let t = atan (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply SqrtSpec _ _ = do
+  apply' SqrtSpec (_, agg) = agg >> do
     let t = sqrt (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply RsqrtSpec _ _ = do
+  apply' RsqrtSpec (_, agg) = agg >> do
     let t = rsqrt (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply RandLikeSpec _ _ = do
+  apply' RandLikeSpec (_, agg) = agg >> do
     t <- randLike (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-  apply RandnLikeSpec _ _ = do
+  apply' RandnLikeSpec (_, agg) = agg >> do
     t <- randnLike (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
 
 data MishSpec = MishSpec
 
-instance ( TensorOptions shape dtype device
-         , StandardFloatingPointDTypeValidation device dtype
-         , BasicArithmeticDTypeIsValid device dtype
-         , shape ~ Broadcast shape shape
-         )
-  => Apply
-       MishSpec
-       (Proxy device, (Proxy dtype, Proxy shape))
-       (() -> IO ())
- where
-  apply MishSpec _ _ = do
+instance
+  ( TensorOptions shape dtype device
+  , StandardFloatingPointDTypeValidation device dtype
+  , BasicArithmeticDTypeIsValid device dtype
+  , shape ~ Broadcast shape shape
+  ) => Apply' MishSpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ()) where
+  apply' MishSpec (_, agg) = agg >> do
     let t = mish (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
 
 data GeluSpec = GeluSpec
 
-instance ( TensorOptions shape dtype device
-         , GeluDTypeIsValid device dtype
-         )
-  => Apply
-       GeluSpec
-       (Proxy device, (Proxy dtype, Proxy shape))
-       (() -> IO ())
- where
-  apply GeluSpec _ _ = do
+instance
+  ( TensorOptions shape dtype device
+  , GeluDTypeIsValid device dtype
+  ) => Apply' GeluSpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ()) where
+  apply' GeluSpec (_, agg) = agg >> do
     let t = gelu (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
 
 data ToDTypeSpec = ToDTypeSpec
 
-instance ( TensorOptions shape dtype  device
-         , TensorOptions shape dtype' device
-         , KnownDType dtype'
-         )
-  => Apply
-       ToDTypeSpec
-       (Proxy device, ((Proxy dtype, Proxy dtype'), Proxy shape))
-       (() -> IO ())
- where
-  apply ToDTypeSpec _ _ = do
+instance
+  ( TensorOptions shape dtype  device
+  , TensorOptions shape dtype' device
+  , KnownDType dtype'
+  ) => Apply' ToDTypeSpec ((Proxy device, ((Proxy dtype, Proxy dtype'), Proxy shape)), IO ()) (IO ()) where
+  apply' ToDTypeSpec (_, agg) = agg >> do
     let t = ones @shape @dtype @device
         t' = Torch.Typed.Tensor.toDType @dtype' t
     checkDynamicTensorAttributes t'
 
 data SumAllSpec = SumAllSpec
 
-instance ( TensorOptions shape dtype device
-         , SumDTypeIsValid device dtype
-         , KnownDType (SumDType dtype)
-         , KnownDevice device
-         )
-  => Apply
-       SumAllSpec
-       (Proxy device, (Proxy dtype, Proxy shape))
-       (() -> IO ())
- where
-  apply SumAllSpec _ _ = do
+instance
+  ( TensorOptions shape dtype device
+  , SumDTypeIsValid device dtype
+  , KnownDType (SumDType dtype)
+  , KnownDevice device
+  ) => Apply' SumAllSpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ()) where
+  apply' SumAllSpec (_, agg) = agg >> do
     let t = ones @shape @dtype @device
         t' = sumAll t
     checkDynamicTensorAttributes t'
 
 data SumDimSpec = SumDimSpec
 
-instance ( TensorOptions shape  dtype  device
-         , TensorOptions shape' dtype' device
-         , KnownNat d
-         , shape' ~ DropValue shape d
-         , dtype' ~ SumDType dtype
-         , SumDTypeIsValid device dtype
-         )
-  => Apply
-       SumDimSpec
-       (Proxy d, (Proxy device, (Proxy dtype, Proxy shape)))
-       (() -> IO ())
- where
-  apply SumDimSpec _ _ = do
+instance
+  ( TensorOptions shape  dtype  device
+  , TensorOptions shape' dtype' device
+  , KnownNat d
+  , shape' ~ DropValue shape d
+  , dtype' ~ SumDType dtype
+  , SumDTypeIsValid device dtype
+  ) => Apply' SumDimSpec ((Proxy d, (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
+  apply' SumDimSpec (_, agg) = agg >> do
     let t = ones @shape @dtype @device
         t' = sumDim @d t
     checkDynamicTensorAttributes t'
@@ -332,42 +303,34 @@ data AggregationSpec =
   | MaxSpec
   | MedianSpec
 
-instance ( TensorOptions shape dtype device
-         , KnownDType dtype
-         , KnownDevice device
-         , AggregationDTypeIsValid device dtype
-         , AllDimsPositive shape
-         )
-  => Apply
-       AggregationSpec
-       (Proxy device, (Proxy dtype, Proxy shape))
-       (() -> IO ())
- where
-  apply MinSpec _ _ = do
+instance
+  ( TensorOptions shape dtype device
+  , KnownDType dtype
+  , KnownDevice device
+  , AggregationDTypeIsValid device dtype
+  , AllDimsPositive shape
+  ) => Apply' AggregationSpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ()) where
+  apply' MinSpec (_, agg) = agg >> do
     let t = ones @shape @dtype @device
         t' = min t
     checkDynamicTensorAttributes t'
-  apply MaxSpec _ _ = do
+  apply' MaxSpec (_, agg) = agg >> do
     let t = ones @shape @dtype @device
         t' = min t
     checkDynamicTensorAttributes t'
-  apply MedianSpec _ _ = do
+  apply' MedianSpec (_, agg) = agg >> do
     let t = ones @shape @dtype @device
         t' = min t
     checkDynamicTensorAttributes t'
 
 data SqueezeAllSpec = SqueezeAllSpec
 
-instance ( TensorOptions shape  dtype device
-         , TensorOptions shape' dtype device
-         , shape' ~ SqueezeAll shape
-         )
-  => Apply
-       SqueezeAllSpec
-       (Proxy device, (Proxy dtype, Proxy shape))
-       (() -> IO ())
- where
-  apply SqueezeAllSpec _ _ = do
+instance
+  ( TensorOptions shape  dtype device
+  , TensorOptions shape' dtype device
+  , shape' ~ SqueezeAll shape
+  ) => Apply' SqueezeAllSpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ()) where
+  apply' SqueezeAllSpec (_, agg) = agg >> do
     let t = ones @shape @dtype @device
         t' = squeezeAll t
     checkDynamicTensorAttributes t'
@@ -376,24 +339,20 @@ data LossSpec =
     BinaryCrossEntropySpec
   | MSELossSpec
 
-instance ( TensorOptions shape  dtype device
-         , TensorOptions shape' dtype device
-         , KnownReduction reduction
-         , shape' ~ ConditionalReduction shape reduction
-         , StandardFloatingPointDTypeValidation device dtype
-         )
-  => Apply
-       LossSpec
-       (Proxy reduction, (Proxy device, (Proxy dtype, Proxy shape)))
-       (() -> IO ())
- where
-  apply BinaryCrossEntropySpec _ _ = do
+instance
+  ( TensorOptions shape  dtype device
+  , TensorOptions shape' dtype device
+  , KnownReduction reduction
+  , shape' ~ ConditionalReduction shape reduction
+  , StandardFloatingPointDTypeValidation device dtype
+  ) => Apply' LossSpec ((Proxy reduction, (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
+  apply' BinaryCrossEntropySpec (_, agg) = agg >> do
     let weight     = ones @shape @dtype @device
         prediction = ones @shape @dtype @device
         target     = ones @shape @dtype @device
         t = binaryCrossEntropy @reduction weight prediction target
     checkDynamicTensorAttributes t
-  apply MSELossSpec _ _ = do
+  apply' MSELossSpec (_, agg) = agg >> do
     let prediction = ones @shape @dtype @device
         target     = ones @shape @dtype @device
         t = mseLoss @reduction prediction target
@@ -403,22 +362,18 @@ data SoftmaxSpec =
     SoftmaxSpec
   | LogSoftmaxSpec
 
-instance ( TensorOptions shape dtype device
-         , KnownNat dim
-         , DimOutOfBoundCheck shape dim
-         , KnownDType dtype
-         , StandardFloatingPointDTypeValidation device dtype
-         )
-  => Apply
-       SoftmaxSpec
-       (Proxy dim, (Proxy device, (Proxy dtype, Proxy shape)))
-       (() -> IO ())
- where
-  apply SoftmaxSpec _ _ = do
+instance
+  ( TensorOptions shape dtype device
+  , KnownNat dim
+  , DimOutOfBoundCheck shape dim
+  , KnownDType dtype
+  , StandardFloatingPointDTypeValidation device dtype
+  ) => Apply' SoftmaxSpec ((Proxy dim, (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
+  apply' SoftmaxSpec (_, agg) = agg >> do
     let t = ones @shape @dtype @device
         t' = softmax @dim t
     checkDynamicTensorAttributes t'
-  apply LogSoftmaxSpec _ _ = do
+  apply' LogSoftmaxSpec (_, agg) = agg >> do
     let t = ones @shape @dtype @device
         t' = logSoftmax @dim t
     checkDynamicTensorAttributes t'
@@ -430,11 +385,8 @@ instance
   , DotDTypeIsValid device dtype
   , KnownDType dtype
   , KnownDevice device
-  ) => Apply DotSpec
-             (Proxy device, (Proxy dtype, Proxy size))
-             (() -> IO ())
- where
-  apply DotSpec _ _ = do
+  ) => Apply' DotSpec ((Proxy device, (Proxy dtype, Proxy size)), IO ()) (IO ()) where
+  apply' DotSpec (_, agg) = agg >> do
     let a = ones @'[size] @dtype @device
         b = ones @'[size] @dtype @device
         t = dot a b
@@ -442,39 +394,32 @@ instance
 
 data InverseSpec = InverseSpec
 
-instance ( TensorOptions shape  dtype device
-         , TensorOptions shape' dtype device
-         , shape' ~ Square shape
-         , InverseShapeIsValid device shape
-         , InverseDTypeIsValid device dtype
-         , RandDTypeIsValid device dtype
-         )
-  => Apply
-       InverseSpec
-       (Proxy device, (Proxy dtype, Proxy shape))
-       (() -> IO ())
- where
-  apply InverseSpec _ _ = do
+instance
+  ( TensorOptions shape  dtype device
+  , TensorOptions shape' dtype device
+  , shape' ~ Square shape
+  , InverseShapeIsValid device shape
+  , InverseDTypeIsValid device dtype
+  , RandDTypeIsValid device dtype
+  ) => Apply' InverseSpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ()) where
+  apply' InverseSpec (_, agg) = agg >> do
     t <- rand @shape @dtype @device
     let t' = inverse t
     checkDynamicTensorAttributes t'
 
 data SymeigSpec = SymeigSpec | SymeigvaluesSpec
 
-instance ( TensorOptions shape   dtype device
-         , TensorOptions shape'  dtype device
-         , TensorOptions shape'' dtype device
-         , shape' ~ VectorOfSquare shape
-         , shape'' ~ Square shape
-         , SymeigDTypeIsValid device dtype
-         , RandDTypeIsValid device dtype
-         )
-  => Apply
-       SymeigSpec
-       (Proxy device, (Proxy dtype, Proxy shape))
-       (() -> IO ())
+instance
+  ( TensorOptions shape   dtype device
+  , TensorOptions shape'  dtype device
+  , TensorOptions shape'' dtype device
+  , shape' ~ VectorOfSquare shape
+  , shape'' ~ Square shape
+  , SymeigDTypeIsValid device dtype
+  , RandDTypeIsValid device dtype
+  ) => Apply' SymeigSpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ())
  where
-  apply SymeigSpec _ _ = do
+  apply' SymeigSpec (_, agg) = agg >> do
     t <- rand @shape @dtype @device
     foldMap
       (\upper -> do
@@ -483,7 +428,7 @@ instance ( TensorOptions shape   dtype device
         checkDynamicTensorAttributes t''
       )
       [D.Upper, D.Lower]
-  apply SymeigvaluesSpec _ _ = do
+  apply' SymeigvaluesSpec (_, agg) = agg >> do
     t <- rand @shape @dtype @device
     foldMap
       (\upper -> do
@@ -494,23 +439,19 @@ instance ( TensorOptions shape   dtype device
 
 data EigSpec = EigSpec
 
-instance ( TensorOptions shape  dtype device
-         , TensorOptions shape' dtype device
-         , shape  ~ '[n, n]
-         , shape' ~ ConditionalEigenVectors eigenvectors n
-         , KnownNat n
-         , KnownEigenVectors eigenvectors
-         , KnownDType dtype
-         , KnownDevice device
-         , EigDTypeIsValid device dtype
-         , RandDTypeIsValid device dtype
-         )
-  => Apply
-       EigSpec
-       (Proxy eigenvectors, (Proxy device, (Proxy dtype, Proxy n)))
-       (() -> IO ())
- where
-  apply EigSpec _ _ = do
+instance
+  ( TensorOptions shape  dtype device
+  , TensorOptions shape' dtype device
+  , shape  ~ '[n, n]
+  , shape' ~ ConditionalEigenVectors eigenvectors n
+  , KnownNat n
+  , KnownEigenVectors eigenvectors
+  , KnownDType dtype
+  , KnownDevice device
+  , EigDTypeIsValid device dtype
+  , RandDTypeIsValid device dtype
+  ) => Apply' EigSpec ((Proxy eigenvectors, (Proxy device, (Proxy dtype, Proxy n))), IO ()) (IO ()) where
+  apply' EigSpec (_, agg) = agg >> do
     t <- rand @shape @dtype @device
     let (t', t'') = eig @eigenvectors @n @shape' @dtype @device t
     checkDynamicTensorAttributes t'
@@ -518,21 +459,17 @@ instance ( TensorOptions shape  dtype device
 
 data SVDSpec = SVDSpec
 
-instance ( TensorOptions shape  dtype device
-         , TensorOptions shapeU dtype device
-         , TensorOptions shapeS dtype device
-         , TensorOptions shapeV dtype device
-         , KnownReducedSVD reduced
-         , '(shapeU, shapeS, shapeV) ~ SVDShapes shape reduced
-         , RandDTypeIsValid device dtype
-         , SVDDTypeIsValid device dtype
-         )
-  => Apply
-       SVDSpec
-       (Proxy reduced, (Proxy device, (Proxy dtype, Proxy shape)))
-       (() -> IO ())
- where
-  apply SVDSpec _ _ = do
+instance
+  ( TensorOptions shape  dtype device
+  , TensorOptions shapeU dtype device
+  , TensorOptions shapeS dtype device
+  , TensorOptions shapeV dtype device
+  , KnownReducedSVD reduced
+  , '(shapeU, shapeS, shapeV) ~ SVDShapes shape reduced
+  , RandDTypeIsValid device dtype
+  , SVDDTypeIsValid device dtype
+  ) => Apply' SVDSpec ((Proxy reduced, (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
+  apply' SVDSpec (_, agg) = agg >> do
     a <- randn @shape @dtype @device
     let (u, s, v) = svd @reduced a
     checkDynamicTensorAttributes u
@@ -541,24 +478,20 @@ instance ( TensorOptions shape  dtype device
 
 data CholeskySpec = CholeskySpec
 
-instance ( TensorOptions shape   dtype device
-         , TensorOptions shape'  dtype device
-         , TensorOptions shape'' dtype device
-         , shape' ~ Square shape
-         , shape'' ~ Square (MatMul shape (Transpose shape (LastDim shape) (LastDim shape - 1)))
-         , 1 <= LastDim shape
-         , KnownNat (LastDim shape)
-         , KnownNat (LastDim shape - 1)
-         , MatMulDTypeIsValid device dtype
-         , CholeskyDTypeIsValid device dtype
-         , RandDTypeIsValid device dtype
-         )
-  => Apply
-       CholeskySpec
-       (Proxy device, (Proxy dtype, Proxy shape))
-       (() -> IO ())
- where
-  apply CholeskySpec _ _ = do
+instance
+  ( TensorOptions shape   dtype device
+  , TensorOptions shape'  dtype device
+  , TensorOptions shape'' dtype device
+  , shape' ~ Square shape
+  , shape'' ~ Square (MatMul shape (Transpose shape (LastDim shape) (LastDim shape - 1)))
+  , 1 <= LastDim shape
+  , KnownNat (LastDim shape)
+  , KnownNat (LastDim shape - 1)
+  , MatMulDTypeIsValid device dtype
+  , CholeskyDTypeIsValid device dtype
+  , RandDTypeIsValid device dtype
+  ) => Apply' CholeskySpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ()) where
+  apply' CholeskySpec (_, agg) = agg >> do
     t <- rand @shape @dtype @device
     let t' = t `matmul` transpose @(Backwards shape 0) @(Backwards shape 1) t
     foldMap
@@ -570,19 +503,15 @@ instance ( TensorOptions shape   dtype device
 
 data CholeskyInverseSpec = CholeskyInverseSpec
 
-instance ( TensorOptions shape dtype device
-         , shape ~ '[n, n]
-         , 1 <= n
-         , RandDTypeIsValid device dtype
-         , MatMulDTypeIsValid device dtype
-         , CholeskyDTypeIsValid device dtype
-         )
-  => Apply
-       CholeskyInverseSpec
-       (Proxy device, (Proxy dtype, Proxy shape))
-       (() -> IO ())
- where
-  apply CholeskyInverseSpec _ _ = do
+instance
+  ( TensorOptions shape dtype device
+  , shape ~ '[n, n]
+  , 1 <= n
+  , RandDTypeIsValid device dtype
+  , MatMulDTypeIsValid device dtype
+  , CholeskyDTypeIsValid device dtype
+  ) => Apply' CholeskyInverseSpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ()) where
+  apply' CholeskyInverseSpec (_, agg) = agg >> do
     t <- rand @shape @dtype @device
     let t' = t `matmul` transpose @0 @1 t
     foldMap
@@ -595,25 +524,21 @@ instance ( TensorOptions shape dtype device
 
 data CholeskySolveSpec = CholeskySolveSpec
 
-instance ( TensorOptions m_k dtype device
-         , TensorOptions m_m dtype device
-         , Square m_m ~ m_m
-         , MatMul m_m (Transpose m_m (LastDim m_m) (LastDim m_m - 1)) ~ m_m
-         , FstSquareDim m_m ~ FstSquareDim m_k
-         , 1 <= FstSquareDim m_m
-         , 1 <= LastDim m_m
-         , KnownNat (LastDim m_m)
-         , KnownNat (LastDim m_m - 1)
-         , MatMulDTypeIsValid device dtype
-         , CholeskyDTypeIsValid device dtype
-         , RandDTypeIsValid device dtype
-         )
-  => Apply
-       CholeskySolveSpec
-       (Proxy device, (Proxy dtype, (Proxy m_k, Proxy m_m)))
-       (() -> IO ())
- where
-  apply CholeskySolveSpec _ _ = do
+instance
+  ( TensorOptions m_k dtype device
+  , TensorOptions m_m dtype device
+  , Square m_m ~ m_m
+  , MatMul m_m (Transpose m_m (LastDim m_m) (LastDim m_m - 1)) ~ m_m
+  , FstSquareDim m_m ~ FstSquareDim m_k
+  , 1 <= FstSquareDim m_m
+  , 1 <= LastDim m_m
+  , KnownNat (LastDim m_m)
+  , KnownNat (LastDim m_m - 1)
+  , MatMulDTypeIsValid device dtype
+  , CholeskyDTypeIsValid device dtype
+  , RandDTypeIsValid device dtype
+  ) => Apply' CholeskySolveSpec ((Proxy device, (Proxy dtype, (Proxy m_k, Proxy m_m))), IO ()) (IO ()) where
+  apply' CholeskySolveSpec (_, agg) = agg >> do
     t <- rand @m_m @dtype @device
     let a = t `matmul` transpose @(Backwards m_m 0) @(Backwards m_m 1) t
     b <- rand @m_k
@@ -629,20 +554,16 @@ instance ( TensorOptions m_k dtype device
 
 data SolveSpec = SolveSpec
 
-instance ( TensorOptions m_k dtype device
-         , TensorOptions m_m dtype device
-         , Square m_m ~ m_m
-         , FstSquareDim m_m ~ FstSquareDim m_k
-         , 1 <= FstSquareDim m_m
-         , SolveDTypeIsValid device dtype
-         , RandDTypeIsValid device dtype
-         )
-  => Apply
-       SolveSpec
-       (Proxy device, (Proxy dtype, (Proxy m_k, Proxy m_m)))
-       (() -> IO ())
- where
-  apply SolveSpec _ _ = do
+instance
+  ( TensorOptions m_k dtype device
+  , TensorOptions m_m dtype device
+  , Square m_m ~ m_m
+  , FstSquareDim m_m ~ FstSquareDim m_k
+  , 1 <= FstSquareDim m_m
+  , SolveDTypeIsValid device dtype
+  , RandDTypeIsValid device dtype
+  ) => Apply' SolveSpec ((Proxy device, (Proxy dtype, (Proxy m_k, Proxy m_m))), IO ()) (IO ()) where
+  apply' SolveSpec (_, agg) = agg >> do
     b <- rand @m_k @dtype @device
     a <- rand @m_m
     let (c, lu) = solve b a
@@ -651,73 +572,57 @@ instance ( TensorOptions m_k dtype device
 
 data TransposeSpec = TransposeSpec
 
-instance ( TensorOptions shape dtype device
-         , TensorOptions shape' dtype device
-         , shape' ~ Transpose shape n m
-         , KnownNat n, KnownNat m
-         )
-  => Apply
-       TransposeSpec
-       ((Proxy n, Proxy m), (Proxy device, (Proxy dtype, Proxy shape)))
-       (() -> IO ())
- where
-  apply TransposeSpec _ _ = do
+instance
+  ( TensorOptions shape dtype device
+  , TensorOptions shape' dtype device
+  , shape' ~ Transpose shape n m
+  , KnownNat n, KnownNat m
+  ) => Apply' TransposeSpec (((Proxy n, Proxy m), (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
+  apply' TransposeSpec (_, agg) = agg >> do
     let t = ones @shape @dtype @device
         t' = transpose @n @m t
     checkDynamicTensorAttributes t'
 
 data Transpose2DSpec = Transpose2DSpec
 
-instance ( TensorOptions '[i, j] dtype device
-         , TensorOptions '[j, i] dtype device
-         )
-  => Apply
-       Transpose2DSpec
-       (Proxy device, (Proxy dtype, Proxy '[i, j]))
-       (() -> IO ())
- where
-  apply Transpose2DSpec _ _ = do
+instance
+  ( TensorOptions '[i, j] dtype device
+  , TensorOptions '[j, i] dtype device
+  ) => Apply' Transpose2DSpec ((Proxy device, (Proxy dtype, Proxy '[i, j])), IO ()) (IO ()) where
+  apply' Transpose2DSpec (_, agg) = agg >> do
     let t = ones @'[i, j] @dtype @device
         t' = transpose2D t
     checkDynamicTensorAttributes t'
 
 data AnyAllSpec = AnySpec | AllSpec
 
-instance ( TensorOptions shape 'D.Bool device
-         , KnownDevice device
-         )
-  => Apply
-       AnyAllSpec
-       (Proxy device, Proxy shape)
-       (() -> IO ())
- where
-  apply AnySpec _ _ = do
+instance
+  ( TensorOptions shape 'D.Bool device
+  , KnownDevice device
+  ) => Apply' AnyAllSpec ((Proxy device, Proxy shape), IO ()) (IO ()) where
+  apply' AnySpec (_, agg) = agg >> do
     let t = ones @shape @'D.Bool @device
         t' = any t
     checkDynamicTensorAttributes t'
-  apply AllSpec _ _ = do
+  apply' AllSpec (_, agg) = agg >> do
     let t = ones @shape @'D.Bool @device
         t' = all t
     checkDynamicTensorAttributes t'
 
 data AnyPrimeAllPrimeSpec = AnyPrimeSpec | AllPrimeSpec
 
-instance ( TensorOptions shape  'D.Bool device
-         , TensorOptions shape' 'D.Bool device
-         , KnownNat dim
-         , KnownKeepOrDropDim keepOrDropDim
-         , shape' ~ ConditionalDropDimension shape dim keepOrDropDim
-         )
-  => Apply
-       AnyPrimeAllPrimeSpec
-       ((Proxy dim, Proxy keepOrDropDim), (Proxy device, Proxy shape))
-       (() -> IO ())
- where
-  apply AnyPrimeSpec _ _ = do
+instance
+  ( TensorOptions shape  'D.Bool device
+  , TensorOptions shape' 'D.Bool device
+  , KnownNat dim
+  , KnownKeepOrDropDim keepOrDropDim
+  , shape' ~ ConditionalDropDimension shape dim keepOrDropDim
+  ) => Apply' AnyPrimeAllPrimeSpec (((Proxy dim, Proxy keepOrDropDim), (Proxy device, Proxy shape)), IO ()) (IO ()) where
+  apply' AnyPrimeSpec (_, agg) = agg >> do
     let t = ones @shape @'D.Bool @device
         t' = any' @dim @keepOrDropDim t
     checkDynamicTensorAttributes t'
-  apply AllPrimeSpec _ _ = do
+  apply' AllPrimeSpec (_, agg) = agg >> do
     let t = ones @shape @'D.Bool @device
         t' = all' @dim @keepOrDropDim t
     checkDynamicTensorAttributes t'
@@ -727,8 +632,7 @@ spec = before_ printSeed $ do
   where
     printSeed = do
       putStr "      seed:"
-      LibTorch.get_manual_seed >>= print
-      
+      LibTorch.get_manual_seed >>= print  
 
 spec' :: D.Device -> Spec
 spec' device =

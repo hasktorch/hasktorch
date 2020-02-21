@@ -27,11 +27,11 @@ import           Data.Kind                      ( Constraint
 import           Data.Proxy
 import           GHC.TypeLits
 
-type family ListLength (l :: [a]) :: Nat where
-  ListLength '[]      = 0
-  ListLength (_ ': t) = 1 + ListLength t
+type family ListLength (xs :: [k]) :: Nat where
+  ListLength '[]       = 0
+  ListLength (_h ': t) = 1 + ListLength t
 
-data family HList (l :: [Type])
+data family HList (xs :: [k])
 data instance HList '[] = HNil
 newtype instance HList (x ': xs) = HCons (x, HList xs)
 pattern (:.) x xs = HCons (x, xs)
@@ -85,7 +85,7 @@ instance Apply' Snd (a, b) b
   where
     apply' _ (_, b) = b
 
-class HMap f xs ys where
+class HMap f (xs :: [k]) (ys :: [k]) where
   hmap :: f -> HList xs -> HList ys
 
 instance HMap f '[] '[] where
@@ -95,7 +95,7 @@ instance (Apply f x y, HMap f xs ys) => HMap f (x ': xs) (y ': ys) where
   hmap f (x :. xs) = apply f x :. hmap f xs
 
 -- | Alternative version of `HMap` with better type inference based on `Apply'`
-class HMap' f xs ys | f xs -> ys where
+class HMap' f (xs :: [k]) (ys :: [k]) | f xs -> ys where
   hmap' :: f -> HList xs -> HList ys
 
 instance HMap' f '[] '[] where
@@ -104,7 +104,7 @@ instance HMap' f '[] '[] where
 instance (Apply' f x y, HMap' f xs ys) => HMap' f (x ': xs) (y ': ys) where
   hmap' f (x :. xs) = apply' f x :. hmap' f xs
 
-class HMapM m f xs ys where
+class HMapM m f (xs :: [k]) (ys :: [k]) where
   hmapM :: f -> HList xs -> m (HList ys)
 
 instance (Monad m) => HMapM m f '[] '[] where
@@ -113,16 +113,16 @@ instance (Monad m) => HMapM m f '[] '[] where
 instance (Monad m, Apply f x (m y), HMapM m f xs ys) => HMapM m f (x ': xs) (y ': ys) where
   hmapM f (x :. xs) = (:.) <$> apply f x <*> hmapM f xs
 
-class HMapM' m f xs ys | f xs -> ys where
+class HMapM' m f (xs :: [k]) (ys :: [k]) | f xs -> ys where
   hmapM' :: f -> HList xs -> m (HList ys)
 
-instance (Monad m) => HMapM' m f '[] '[] where
+instance (Applicative m) => HMapM' m f '[] '[] where
   hmapM' _ _ = pure HNil
 
-instance (Monad m, Apply' f x (m y), HMapM' m f xs ys) => HMapM' m f (x ': xs) (y ': ys) where
+instance (Applicative m, Apply' f x (m y), HMapM' m f xs ys) => HMapM' m f (x ': xs) (y ': ys) where
   hmapM' f (x :. xs) = (:.) <$> apply' f x <*> hmapM' f xs
 
-class Applicative f => HSequence f xs ys | xs -> ys, ys f -> xs where
+class Applicative f => HSequence f (xs :: [k]) (ys :: [k]) | xs -> ys, ys f -> xs where
   hsequence :: HList xs -> f (HList ys)
 
 instance Applicative f => HSequence f '[] '[] where
@@ -137,32 +137,30 @@ instance ( Applicative g
  where
   hsequence (fx :. fxs) = (:.) <$> fx <*> hsequence fxs
 
-class HFoldr f acc xs where
-  hfoldr :: f -> acc -> HList xs -> acc
+class HFoldr f acc xs res | f acc xs -> res where
+  hfoldr :: f -> acc -> HList xs -> res
 
-instance HFoldr f acc '[] where
+instance (acc ~ res) => HFoldr f acc '[] res where
   hfoldr _ acc _ = acc
 
-instance (Apply f x (acc -> acc), HFoldr f acc xs) => HFoldr f acc (x ': xs) where
-  hfoldr f acc (x :. xs) = apply f x $ hfoldr f acc xs
+instance
+  ( Apply' f (x, res) res'
+  , HFoldr f acc xs res
+  ) => HFoldr f acc (x ': xs) res' where
+  hfoldr f acc (x :. xs) = apply' f (x, hfoldr f acc xs)
 
-class HFoldrM m f acc xs where
-  hfoldrM :: f -> acc -> HList xs -> m acc
+class HFoldrM m f acc xs res | m f acc xs -> res where
+  hfoldrM :: f -> acc -> HList xs -> m res
 
-instance (Monad m) => HFoldrM m f acc '[] where
+instance (Monad m, acc ~ res) => HFoldrM m f acc '[] res where
   hfoldrM _ acc _ = pure acc
 
-instance (Monad m, Apply f x (acc -> m acc), HFoldrM m f acc xs) => HFoldrM m f acc (x ': xs) where
-  hfoldrM f acc (x :. xs) = apply f x =<< hfoldrM f acc xs
-
-class HFoldrM' m f acc xs where
-  hfoldrM' :: f -> HList xs -> Kleisli m acc acc
-
-instance (Monad m) => HFoldrM' m f acc '[] where
-  hfoldrM' _ _ = arr id
-
-instance (Monad m, Apply f x (Kleisli m acc acc), HFoldrM' m f acc xs) => HFoldrM' m f acc (x ': xs) where
-  hfoldrM' f (x :. xs) = hfoldrM' f xs >>> apply f x
+instance
+  ( Monad m
+  , Apply' f (x, m res) (m res')
+  , HFoldrM m f acc xs res
+  ) => HFoldrM m f acc (x ': xs) res' where
+  hfoldrM f acc (x :. xs) = apply' f (x, hfoldrM f acc xs :: (m res))
 
 data HNothing  = HNothing
 data HJust x   = HJust x
@@ -217,13 +215,20 @@ type HReplicate n e = HReplicateFD n e (HReplicateR n e)
 hreplicate :: forall n e . HReplicate n e => e -> HList (HReplicateR n e)
 hreplicate = hreplicateFD @n
 
-class HReplicateFD (n :: Nat) e es | n e -> es where
+class HReplicateFD
+  (n :: Nat)
+  (e :: Type)
+  (es :: [Type]) | n e -> es where
   hreplicateFD :: e -> HList es
 
 instance {-# OVERLAPS #-} HReplicateFD 0 e '[] where
   hreplicateFD _ = HNil
 
-instance {-# OVERLAPPABLE #-} (HReplicateFD (n - 1) e es, es' ~ (e ': es), 1 <= n) => HReplicateFD n e es' where
+instance {-# OVERLAPPABLE #-}
+  ( HReplicateFD (n - 1) e es
+  , es' ~ (e ': es)
+  , 1 <= n
+  ) => HReplicateFD n e es' where
   hreplicateFD e = e :. hreplicateFD @(n - 1) e
 
 type family HReplicateR (n :: Nat) (e :: a) :: [a] where
@@ -242,8 +247,7 @@ type instance HConcatR (x ': xs) = UnHList x ++ HConcatR xs
 type family UnHList a :: [Type]
 type instance UnHList (HList a) = a
 
--- for the benefit of ghc-7.10.1
-class HConcatFD xxs xs | xxs -> xs
+class HConcatFD (xxs :: [k]) (xs :: [k]) | xxs -> xs
   where hconcatFD :: HList xxs -> HList xs
 
 instance HConcatFD '[] '[] where
@@ -260,7 +264,7 @@ happend = happendFD
 hunappend :: (cs ~ (as ++ bs), HAppend as bs) => HList cs -> (HList as, HList bs)
 hunappend = hunappendFD
 
-class HAppendFD a b ab | a b -> ab, a ab -> b where
+class HAppendFD (a :: [k]) (b :: [k]) (ab :: [k]) | a b -> ab, a ab -> b where
   happendFD :: HList a -> HList b -> HList ab
   hunappendFD :: HList ab -> (HList a, HList b)
 
@@ -272,11 +276,13 @@ instance HAppendFD '[] b b where
   happendFD _ b = b
   hunappendFD b = (HNil, b)
 
-instance HAppendFD as bs cs => HAppendFD (a ': as) bs (a ': cs) where
+instance
+  ( HAppendFD as bs cs
+  ) => HAppendFD (a ': as :: [Type]) bs (a ': cs :: [Type]) where
   happendFD (a :. as) bs = a :. happendFD as bs
   hunappendFD (a :. cs) = let (as, bs) = hunappendFD cs in (a :. as, bs)
 
-class HZip xs ys zs | xs ys -> zs, zs -> xs ys where
+class HZip (xs :: [k]) (ys :: [k]) (zs :: [k]) | xs ys -> zs, zs -> xs ys where
   hzip   :: HList xs -> HList ys -> HList zs
   hunzip :: HList zs -> (HList xs, HList ys)
 
@@ -288,44 +294,89 @@ instance ((x, y) ~ z, HZip xs ys zs) => HZip (x ': xs) (y ': ys) (z ': zs) where
   hzip (x :. xs) (y :. ys) = (x, y) :. hzip xs ys
   hunzip (~(x, y) :. zs) = let ~(xs, ys) = hunzip zs in (x :. xs, y :. ys)
 
-class HZipWith f xs ys zs | f xs ys -> zs where
-  hZipWith :: f -> HList xs -> HList ys -> HList zs
+class HZip' (xs :: [k]) (ys :: [k]) (zs :: [k]) | xs ys -> zs where
+  hzip' :: HList xs -> HList ys -> HList zs
+
+instance HZip' '[] '[] '[] where
+  hzip' _ _ = HNil
+
+instance (HList (x ': y) ~ z, HZip' xs ys zs) => HZip' (x ': xs) (HList y ': ys) (z ': zs) where
+  hzip' (x :. xs) (y :. ys) = (x :. y) :. hzip' xs ys
+
+data HZipF = HZipF
+
+instance
+  ( HZip' a b c
+  , x ~ (HList a, HList b)
+  , y ~ HList c
+  ) => Apply' HZipF x y where
+  apply' _ (x, y) = hzip' x y
+
+htranspose
+  :: forall (acc :: [Type]) (xs :: [Type]) (xxs :: [Type]) (res :: Type)
+   . ( HReplicateFD (ListLength xs) (HList ('[] :: [Type])) acc
+     , HFoldr HZipF (HList acc) ((HList xs) ': xxs) res
+     )
+  => HList ((HList xs) ': xxs)
+  -> res
+htranspose (xs :. xxs) = hfoldr HZipF (hreplicateFD @(ListLength xs) (HNil :: HList ('[] :: [Type]))) (xs :. xxs)
+
+class HZipWith f (xs :: [k]) (ys :: [k]) (zs :: [k]) | f xs ys -> zs where
+  hzipWith :: f -> HList xs -> HList ys -> HList zs
 
 instance HZipWith f '[] '[] '[] where
-  hZipWith _ _ _ = HNil
+  hzipWith _ _ _ = HNil
 
 instance (Apply' f (x, y) z, HZipWith f xs ys zs) => HZipWith f (x ': xs) (y ': ys) (z ': zs) where
-  hZipWith f (x :. xs) (y :. ys) = apply' f (x, y) :. hZipWith f xs ys
+  hzipWith f (x :. xs) (y :. ys) = apply' f (x, y) :. hzipWith f xs ys
 
-class HZipList3 as bs cs ds | as bs cs -> ds, ds -> as bs cs where
-  hZipList3   :: HList as -> HList bs -> HList cs -> HList ds
-  hUnzipList3 :: HList ds -> (HList as, HList bs, HList cs)
+class HZipWithM m f (xs :: [k]) (ys :: [k]) (zs :: [k]) | f xs ys -> zs where
+  hzipWithM :: f -> HList xs -> HList ys -> m (HList zs)
 
-instance HZipList3 '[] '[] '[] '[] where
-  hZipList3 _ _ _ = HNil
-  hUnzipList3 _ = (HNil, HNil, HNil)
+instance (Applicative m) => HZipWithM m f '[] '[] '[] where
+  hzipWithM _ _ _ = pure HNil
 
-instance ((a, b, c) ~ d, HZipList3 as bs cs ds) => HZipList3 (a ': as) (b ': bs) (c ': cs) (d ': ds) where
-  hZipList3 (a :. as) (b :. bs) (c :. cs) = (a, b, c) :. hZipList3 as bs cs
-  hUnzipList3 (~(a, b, c) :. ds) =
-    let ~(as, bs, cs) = hUnzipList3 ds in (a :. as, b :. bs, c :. cs)
+instance (Applicative m, Apply' f (x, y) (m z), HZipWithM m f xs ys zs) => HZipWithM m f (x ': xs) (y ': ys) (z ': zs) where
+  hzipWithM f (x :. xs) (y :. ys) = (:.) <$> apply' f (x, y) <*> hzipWithM f xs ys
 
-class HZipWith3 f as bs cs ds | f as bs cs -> ds where
-  hZipWith3 :: f -> HList as -> HList bs -> HList cs -> HList ds
+class HZip3
+  (as :: [k])
+  (bs :: [k])
+  (cs :: [k])
+  (ds :: [k]) | as bs cs -> ds, ds -> as bs cs where
+  hzip3   :: HList as -> HList bs -> HList cs -> HList ds
+  hunzip3 :: HList ds -> (HList as, HList bs, HList cs)
+
+instance HZip3 '[] '[] '[] '[] where
+  hzip3 _ _ _ = HNil
+  hunzip3 _ = (HNil, HNil, HNil)
+
+instance ((a, b, c) ~ d, HZip3 as bs cs ds) => HZip3 (a ': as) (b ': bs) (c ': cs) (d ': ds) where
+  hzip3 (a :. as) (b :. bs) (c :. cs) = (a, b, c) :. hzip3 as bs cs
+  hunzip3 (~(a, b, c) :. ds) =
+    let ~(as, bs, cs) = hunzip3 ds in (a :. as, b :. bs, c :. cs)
+
+class HZipWith3
+  f 
+  (as :: [k])
+  (bs :: [k])
+  (cs :: [k])
+  (ds :: [k]) | f as bs cs -> ds where
+  hzipWith3 :: f -> HList as -> HList bs -> HList cs -> HList ds
 
 instance HZipWith3 f '[] '[] '[] '[] where
-  hZipWith3 _ _ _ _ = HNil
+  hzipWith3 _ _ _ _ = HNil
 
 instance (Apply' f (a, b, c) d, HZipWith3 f as bs cs ds) => HZipWith3 f (a ': as) (b ': bs) (c ': cs) (d ': ds) where
-  hZipWith3 f (a :. as) (b :. bs) (c :. cs) = apply' f (a, b, c) :. hZipWith3 f as bs cs
+  hzipWith3 f (a :. as) (b :. bs) (c :. cs) = apply' f (a, b, c) :. hzipWith3 f as bs cs
 
-class HCartesianProduct xs ys zs | xs ys -> zs where
+class HCartesianProduct (xs :: [k]) (ys :: [k]) (zs :: [k]) | xs ys -> zs where
   hproduct :: HList xs -> HList ys -> HList zs
 
 instance HCartesianProduct '[] ys '[] where
   hproduct _ _ = HNil
 
-class HAttach x ys zs | x ys -> zs where
+class HAttach x (ys :: [k]) (zs :: [k]) | x ys -> zs where
   hattach :: x -> HList ys -> HList zs
 
 instance HAttach x '[] '[] where

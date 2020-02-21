@@ -111,6 +111,23 @@ let
                             }
                           )
                         );
+                    pipes-text =
+                      overrideCabal
+                        (haskellPackagesNew.callHackageDirect
+                          {
+                            pkg = "pipes-text";
+                            ver = "0.0.2.5";
+                            sha256 = "19b3nqbnray12h4lpwg45dshspzz7j2v73gn2fnl334n8611knf8";
+                          }
+                          { }
+                        )
+                        (old: {
+                            preConfigure = (old.preConfigure or "") + ''
+                              sed -i -e 's/streaming-commons >= 0.1     \&\& < 0.2 ,/streaming-commons >= 0.2     \&\& < 0.3 ,/g' pipes-text.cabal;
+                              sed -i -e 's/pipes-safe        >= 2.1     \&\& < 2.3 ,/pipes-safe        >= 2.1     \&\& < 2.4 ,/g' pipes-text.cabal;
+                            '';
+                          }
+                        );
                   };
 
               in
@@ -127,6 +144,36 @@ let
         );
       };
     };
+
+    hasktorch-examples_cudatoolkit_10_1-static = pkgsOld.haskell.lib.justStaticExecutables pkgsNew.haskell.packages."${compiler}".hasktorch-examples_cudatoolkit_10_1;
+
+    hasktorch-typed-transformer_cudatoolkit_10_1-image = pkgsOld.dockerTools.buildImage {
+      name = "hasktorch-typed-transformer_cudatoolkit_10_1";
+      tag = "latest";
+      fromImage = pkgsOld.dockerTools.pullImage {
+        imageName = "nvidia/cuda";
+        imageDigest = "sha256:31e2a1ca7b0e1f678fb1dd0c985b4223273f7c0f3dbde60053b371e2a1aee2cd";
+        sha256 = "1bgw7v6xdi6chjds5qvvn596db56r4hkj7dyds5c7pyfsgl74yf3";
+      };
+      config = {
+        WorkingDir = "/workingDir";
+        Cmd = [
+          "${pkgsNew.hasktorch-examples_cudatoolkit_10_1-static}/bin/typed-transformer"
+        ];
+        Env = [
+          "LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
+          "NVIDIA_VISIBLE_DEVICES=all"
+          "NCCL_VERSION=2.4.8"
+          "LIBRARY_PATH=/usr/local/cuda/lib64/stubs"
+          "CUDA_PKG_VERSION=10-1=10.1.243-1"
+          "CUDA_VERSION=10.1.243"
+          "NVIDIA_DRIVER_CAPABILITIES=compute,utility"
+          "NVIDIA_REQUIRE_CUDA=cuda>=10.1 brand=tesla,driver>=384,driver<385 brand=tesla,driver>=396,driver<397 brand=tesla,driver>=410,driver<411"
+          "PATH=/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+        ];
+      };
+    };
+
   };
 
   bootstrap = import <nixpkgs> { };
@@ -144,6 +191,10 @@ let
     overlays = [ overlayShared ];
   };
 
+  pkgs-linux = pkgs // {
+    system = "x86_64-linux";
+  };
+
   nullIfDarwin = arg: if pkgs.stdenv.hostPlatform.system == "x86_64-darwin" then null else arg;
 
   fixmkl = old: old // {
@@ -156,6 +207,7 @@ let
         export CPATH=${libtorch}/include/torch/csrc/api/include
       '';
     };
+
   altdev-announce = libtorch: old: with builtins; with pkgs.lib.strings; with pkgs.lib.lists;
     let
       echo = str: "echo \"${str}\"";
@@ -206,6 +258,11 @@ let
 in
   rec {
     inherit nullIfDarwin overlayShared;
+
+    inherit (pkgs-linux)
+      hasktorch-examples_cudatoolkit_10_1-static
+      hasktorch-typed-transformer_cudatoolkit_10_1-image
+    ;
 
     inherit (base-compiler)
       hasktorch-codegen
