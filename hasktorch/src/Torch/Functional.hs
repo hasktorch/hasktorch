@@ -129,7 +129,9 @@ abs t = unsafePerformIO $ (cast1 ATen.abs_t) t
 -- | frac
 -- Computes the fractional portion of each element in input.
 -- out_i = input_i - (floor . abs) input_i * (sign input_i)
-frac :: Tensor -> Tensor
+frac 
+ :: Tensor 
+ -> Tensor
 frac _self = unsafePerformIO $ (cast1 ATen.frac_t) _self
 
 keepdim KeepDim = True
@@ -137,7 +139,11 @@ keepdim RemoveDim = False
 
 -- | argmax
 -- Returns the indices of the maximum value of all elements in the input tensor.
-argmax :: Dim -> KeepDim -> Tensor -> Tensor
+argmax 
+ :: Dim 
+ -> KeepDim 
+ -> Tensor 
+ -> Tensor
 argmax (Dim d) k t = unsafePerformIO $ (cast3 ATen.argmax_tlb) t d (keepdim k)
 
 -- | add
@@ -194,19 +200,35 @@ median
 median t = unsafePerformIO $ (cast1 ATen.median_t) t
 
 -- | addScalar
-addScalar :: Scalar a => Tensor -> a -> Tensor
+addScalar 
+ :: Scalar a 
+ => Tensor 
+ -> a 
+ -> Tensor
 addScalar t a = unsafePerformIO $ (cast2 ATen.add_ts) t a
 
 -- | subScalar
-subScalar :: Scalar a => Tensor -> a -> Tensor
+subScalar 
+ :: Scalar a 
+ => Tensor 
+ -> a 
+ -> Tensor
 subScalar t a = unsafePerformIO $ (cast2 ATen.sub_ts) t a
 
 -- | mulScalar
-mulScalar :: Scalar a => Tensor -> a -> Tensor
+mulScalar 
+ :: Scalar a 
+ => Tensor 
+ -> a 
+ -> Tensor
 mulScalar t a = unsafePerformIO $ (cast2 ATen.mul_ts) t a
 
 -- | divScalar
-divScalar :: Scalar a => Tensor -> a -> Tensor
+divScalar 
+ :: Scalar a 
+ => Tensor 
+ -> a 
+ -> Tensor
 divScalar t a = unsafePerformIO $ (cast2 ATen.div_ts) t a
 
 -- | matmul 
@@ -219,7 +241,10 @@ divScalar t a = unsafePerformIO $ (cast2 ATen.div_ts) t a
 -- If the first argument is 1-dimensional and the second argument is 2-dimensional, a 1 is prepended to its dimension for the purpose of the matrix multiply. After the matrix multiply, the prepended dimension is removed.
 -- If the first argument is 2-dimensional and the second argument is 1-dimensional, the matrix-vector product is returned.
 -- If both arguments are at least 1-dimensional and at least one argument is N-dimensional (where N > 2), then a batched matrix multiply is returned. If the first argument is 1-dimensional, a 1 is prepended to its dimension for the purpose of the batched matrix multiply and removed after. If the second argument is 1-dimensional, a 1 is appended to its dimension for the purpose of the batched matrix multiple and removed after. The non-matrix (i.e. batch) dimensions are broadcasted (and thus must be broadcastable). For example, if input is a (j \times 1 \times n \times m)(j×1×n×m) tensor and other is a (k \times m \times p)(k×m×p) tensor, out will be an (j \times k \times n \times p)(j×k×n×p) tensor.
-matmul :: Tensor -> Tensor -> Tensor
+matmul 
+ :: Tensor 
+ -> Tensor 
+ -> Tensor
 matmul a b = unsafePerformIO $ (cast2 ATen.matmul_tt) a b
 
 -- | erf
@@ -458,12 +483,12 @@ squeezeAll
 squeezeAll t = unsafePerformIO $ (cast1 ATen.squeeze_t) t
 
 -- | binary_cross_entropy_loss
-binary_cross_entropy_loss :: Tensor -> Tensor -> Tensor -> Reduction-> Tensor
-binary_cross_entropy_loss t target weight reduction = unsafePerformIO $ (cast4 ATen.binary_cross_entropy_tttl) t target weight reduction
+binaryCrossEntropyLoss :: Tensor -> Tensor -> Tensor -> Reduction-> Tensor
+binaryCrossEntropyLoss t target weight reduction = unsafePerformIO $ (cast4 ATen.binary_cross_entropy_tttl) t target weight reduction
 
 -- | BCE with weights defaulted to 1.0 & reduction defaulted to ReduceMean
-binary_cross_entropy_loss' :: Tensor -> Tensor -> Tensor
-binary_cross_entropy_loss' t target = unsafePerformIO $ (cast4 ATen.binary_cross_entropy_tttl) t target (onesLike target) ReduceMean
+binaryCrossEntropyLoss' :: Tensor -> Tensor -> Tensor
+binaryCrossEntropyLoss' t target = unsafePerformIO $ (cast4 ATen.binary_cross_entropy_tttl) t target (onesLike target) ReduceMean
 
 -- | mse_loss
 mseLoss :: Tensor -> Tensor -> Tensor
@@ -648,13 +673,13 @@ adaptiveAvgPool1d outputSize input = unsafePerformIO
 
 -- | adaptiveAvgPool2d
 -- Applies a 2D adaptive average pooling over an input signal composed of several input planes.
-adaptive_avg_pool2d :: Tensor -> (Int,Int) -> Tensor
-adaptive_avg_pool2d _self _output_size = unsafePerformIO $ (cast2 ATen.adaptive_avg_pool2d_tl) _self _output_size
+adaptiveAvgPool2d :: Tensor -> (Int,Int) -> Tensor
+adaptiveAvgPool2d _self _output_size = unsafePerformIO $ (cast2 ATen.adaptive_avg_pool2d_tl) _self _output_size
 
 -- | adaptiveAvgPool3d
 -- Applies a 3D adaptive average pooling over an input signal composed of several input planes.
-adaptive_avg_pool3d :: Tensor -> (Int,Int,Int) -> Tensor
-adaptive_avg_pool3d _self _output_size = unsafePerformIO $ (cast2 ATen.adaptive_avg_pool3d_tl) _self _output_size
+adaptiveAvgPool3d :: Tensor -> (Int,Int,Int) -> Tensor
+adaptiveAvgPool3d _self _output_size = unsafePerformIO $ (cast2 ATen.adaptive_avg_pool3d_tl) _self _output_size
 
 bitwiseNot 
     :: Tensor -- ^ input
@@ -773,11 +798,11 @@ solve
 solve b a = unsafePerformIO $ (cast2 ATen.solve_tt) b a
 
 -- | Solves a linear system of equations with a positive semidefinite matrix to be inverted given its Cholesky factor matrix uu .
-cholesky_inverse
+choleskyInverse
     :: Tensor -- ^ input
     -> Tri -- ^ upper or lower triangle
     -> Tensor -- ^ solution
-cholesky_inverse t upper = unsafePerformIO $ (cast2 ATen.cholesky_inverse_tb) t boolUpper
+choleskyInverse t upper = unsafePerformIO $ (cast2 ATen.cholesky_inverse_tb) t boolUpper
   where boolUpper = isUpper upper
 
 -- pstrf :: Tensor -> Bool -> Double -> (Tensor, Tensor)
