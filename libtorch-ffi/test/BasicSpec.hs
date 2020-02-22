@@ -433,8 +433,8 @@ spec = forM_ [
 -- void TestDispatch() {
 --   Tensor tensor = randn({20, 20});
 --   Tensor other = randn({20, 20});
---   auto result = tensor.m(relu).m(mse_loss, other, Reduction::Mean);
---   ASSERT_TRUE(result.allclose(mse_loss(relu(tensor), other)));
+--   auto result = tensor.m(relu).m(mseloss, other, Reduction::Mean);
+--   ASSERT_TRUE(result.allclose(mseloss(relu(tensor), other)));
 -- }
 
 -- void TestNegativeDim(Type& type) {
