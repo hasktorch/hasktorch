@@ -487,21 +487,21 @@ transpose2D t = transpose t 0 1
 diag :: Tensor -> Int -> Tensor
 diag t index = unsafePerformIO $ (cast2 ATen.tensor_diag_l) t index
 
--- all
+-- | all
 -- Returns True if all elements in the tensor are True, False otherwise.
 all
  :: Tensor -- ^ input
  -> Bool -- ^ output
 all t = toInt (unsafePerformIO $ (cast1 ATen.all_t) t) == 1
 
--- any
+-- | any
 -- Returns True if any elements in the tensor are True, False otherwise.
 any
  :: Tensor -- ^ input
  -> Bool -- ^ output
 any t = toInt (unsafePerformIO $ (cast1 ATen.any_t) t) == 1
 
--- allrow
+-- | all'
 -- Returns True if all elements in each row of the tensor in the given dimension dim are True, False otherwise.
 -- If keepdim is True, the output tensor is of the same size as input except in the dimension dim where it is of size 1. Otherwise, dim is squeezed, resulting in the output tensor having 1 fewer dimension than input.  
 all' 
@@ -511,7 +511,7 @@ all'
  -> Tensor -- ^ output
 all' t dim keepdim = unsafePerformIO $ (cast3 ATen.all_tlb) t dim keepdim
 
--- anyrow
+-- | any'
 -- Returns True if any elements in each row of the tensor in the given dimension dim are True, False otherwise.
 -- If keepdim is True, the output tensor is of the same size as input except in the dimension dim where it is of size 1. Otherwise, dim is squeezed (see torch.squeeze()), resulting in the output tensor having 1 fewer dimension than input.
 any' 
@@ -521,7 +521,7 @@ any'
  -> Tensor -- output
 any' t dim keepdim = unsafePerformIO $ (cast3 ATen.any_tlb) t dim keepdim
 
---permute
+-- | permute
 -- Permute the dimensions of this tensor.
 permute 
  :: Tensor -- ^ input
