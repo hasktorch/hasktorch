@@ -303,6 +303,8 @@ sigmoid
 sigmoid t = unsafePerformIO $ (cast1 ATen.sigmoid_t) t
 
 -- | softmax
+-- Applies a softmax function. 
+-- It is applied to all slices along dim, and will re-scale them so that the elements lie in the range [0, 1] and sum to 1.
 softmax 
     :: Int -- ^ dimension
     -> Tensor -- ^ input
@@ -311,12 +313,24 @@ softmax dim input = unsafePerformIO $ (cast3 ATen.softmax_tls)
     input dim (dtype input)
 
 -- | logSoftmax
+-- Applies a softmax followed by a logarithm.
+-- While mathematically equivalent to log(softmax(x)), doing these two operations separately is slower, and numerically unstable. This function uses an alternative formulation to compute the output and gradient correctly.
 logSoftmax 
     :: Int -- ^ dimension
     -> Tensor -- ^ input
     -> Tensor -- ^ output
 logSoftmax dim input = unsafePerformIO $ (cast3 ATen.log_softmax_tls) 
     input dim (dtype input)
+
+-- | threshold
+-- Thresholds each element of the input Tensor.
+threshold 
+    :: Float -- ^ threshold
+    -> Float -- ^ value
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
+threshold threshold value self = 
+    unsafePerformIO $ (cast3 ATen.threshold_tss) self threshold value
 
 -- | sin
 -- Returns a new tensor with the sine of the elements of input.
@@ -463,6 +477,7 @@ nllLoss' t target = unsafePerformIO $ (cast5 ATen.nll_loss_tttll) t target weigh
         weight = ones' [nClass]
 
 -- | adaptiveMaxPool1d
+-- Applies a 1D adaptive max pooling over an input signal composed of several input planes.
 adaptiveMaxPool1d 
     :: Int -- ^ output size
     -> Tensor -- ^ input
@@ -470,6 +485,16 @@ adaptiveMaxPool1d
 adaptiveMaxPool1d outputSize self =
     unsafePerformIO $ (cast2 ATen.adaptive_max_pool1d_tl)
         self outputSize
+
+-- | adaptiveMaxPool2d
+-- Applies a 2D adaptive max pooling over an input signal composed of several input planes.
+adaptiveMaxPool2d 
+    :: (Int,Int) 
+    -> Tensor 
+    -> (Tensor,Tensor)
+adaptiveMaxPool2d _output_size _self =
+    unsafePerformIO $ (cast2 ATen.adaptive_max_pool2d_tl)
+        _self _output_size
 
 -- | maxPool1dWithIndices
 maxPool1dWithIndices 
@@ -485,6 +510,7 @@ maxPool1dWithIndices kernelSize stride padding dilation ceilMode self =
         self kernelSize stride padding dilation ceilMode
 
 -- | maxPool1d
+-- Applies a 1D max pooling over an input signal composed of several input planes.
 maxPool1d 
     :: Int -- ^ kernel size
     -> Int -- ^ stride
@@ -498,6 +524,7 @@ maxPool1d kernelSize stride padding dilation ceilMode self =
         self kernelSize stride padding dilation ceilMode
 
 -- | maxPool2d
+-- Applies a 2D max pooling over an input signal composed of several input planes.
 maxPool2d 
     :: (Int,Int) -- ^ kernel size
     -> (Int,Int) -- ^ stride
@@ -511,6 +538,7 @@ maxPool2d kernelSize stride padding dilation ceilMode self =
         self kernelSize stride padding dilation ceilMode
 
 -- | maxPool3d 
+-- Applies a 3D max pooling over an input signal composed of several input planes.
 maxPool3d 
     :: (Int,Int,Int) -- ^ kernel size
     -> (Int,Int,Int) -- ^ stride
@@ -546,6 +574,8 @@ choleskySolve :: Tensor -> Tensor -> Tri -> Tensor
 choleskySolve t1 t2 upper = unsafePerformIO $ (cast3 ATen.cholesky_solve_ttb) t1 t2 boolUpper
   where boolUpper = isUpper upper
 
+-- | dropout
+-- During training, randomly zeroes some of the elements of the input tensor with probability p using samples from a Bernoulli distribution.
 dropout
   :: Double -- ^ dropout probability
   -> Bool -- ^ whether or not to activate dropout
@@ -561,6 +591,8 @@ featureDropout
 featureDropout p train input =
   cast3 ATen.feature_dropout_tdb input p train
 
+-- | alphaDropout
+-- Applies alpha dropout to the input.
 alphaDropout
   :: Double -- ^ dropout probability
   -> Bool -- ^ whether or not to activate dropout
@@ -577,6 +609,8 @@ featureAlphaDropout
 featureAlphaDropout p train input =
   cast3 ATen.feature_alpha_dropout_tdb input p train
 
+-- | avgPool1d
+-- Applies a 1D average pooling over an input signal composed of several input planes.
 avgPool1d
   :: Int -- ^ kernel size
   -> Int -- ^ stride
@@ -600,14 +634,27 @@ avgPool1d'
   -> Int -- ^ padding
   -> Tensor -- ^ input
   -> Tensor -- ^ output
-avgPool1d' kernelSize stride padding input = avgPool1d kernelSize stride padding False True input
+avgPool1d' kernelSize stride padding input =
+    avgPool1d kernelSize stride padding False True input
 
+-- | adaptiveAvgPool1d
+-- Applies a 1D adaptive average pooling over an input signal composed of several input planes.
 adaptiveAvgPool1d
   :: Int -- outputSize
   -> Tensor -- ^ input
   -> Tensor -- ^ output
 adaptiveAvgPool1d outputSize input = unsafePerformIO
   $ cast2 ATen.adaptive_avg_pool1d_tl input outputSize
+
+-- | adaptiveAvgPool2d
+-- Applies a 2D adaptive average pooling over an input signal composed of several input planes.
+adaptive_avg_pool2d :: Tensor -> (Int,Int) -> Tensor
+adaptive_avg_pool2d _self _output_size = unsafePerformIO $ (cast2 ATen.adaptive_avg_pool2d_tl) _self _output_size
+
+-- | adaptiveAvgPool3d
+-- Applies a 3D adaptive average pooling over an input signal composed of several input planes.
+adaptive_avg_pool3d :: Tensor -> (Int,Int,Int) -> Tensor
+adaptive_avg_pool3d _self _output_size = unsafePerformIO $ (cast2 ATen.adaptive_avg_pool3d_tl) _self _output_size
 
 bitwiseNot 
     :: Tensor -- ^ input
@@ -662,6 +709,8 @@ constantPadNd1d padding value input = unsafePerformIO $ cast3
   padding
   value
 
+-- | conv1d
+-- Applies a 1D convolution over an input signal composed of several input planes.
 conv1d
   :: Tensor -- ^ weight
   -> Tensor -- ^ bias
@@ -683,6 +732,8 @@ conv1d weight bias stride padding dilation groups input =
 
 conv1d' weight bias stride padding input = conv1d weight bias stride padding 1 1 input
 
+-- | conv2d
+-- Applies a 2D convolution over an input signal composed of several input planes.
 conv2d
   :: Tensor -- ^ weight
   -> Tensor -- ^ bias
