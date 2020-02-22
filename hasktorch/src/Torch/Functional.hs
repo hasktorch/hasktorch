@@ -99,7 +99,7 @@ mean
 mean t = unsafePerformIO $ (cast1 ATen.mean_t) t
 
 -- | std
--- Returns the standard-deviation of all elements in the input tensor.
+-- Returns the standard deviation of all elements in the input tensor.
 std 
     :: Tensor -- ^ input
     -> Tensor -- ^ output
@@ -473,17 +473,25 @@ maxPool1d
     -> Bool -- ^ ceil mode
     -> Tensor -- ^ input
     -> Tensor -- ^ output
-maxPool1d _kernel_size _stride _padding _dilation _ceil_mode _self = unsafePerformIO $ (cast6 ATen.max_pool1d_tllllb) _self _kernel_size _stride _padding _dilation _ceil_mode
+maxPool1d kernelsize stride padding dilation ceil_mode self =
+    unsafePerformIO $ (cast6 ATen.max_pool1d_tllllb)
+        self kernel_size stride padding dilation ceil_mode
 
-
+-- | maxPool2d 
 maxPool2d :: Tensor -> (Int, Int) -> (Int, Int) -> (Int, Int) -> Tensor
-maxPool2d input (kh, kw) (dh, dw) (ph, pw) = unsafePerformIO $
-    (cast6 ATen.max_pool2d_tllllb) input ([kh, kw] :: [Int]) ([dh, dw] :: [Int]) ([ph, pw] :: [Int]) ([1, 1] :: [Int]) False
+maxPool2d input (kh, kw) (dh, dw) (ph, pw) = unsafePerformIO $ (cast6 ATen.max_pool2d_tllllb)
+    input ([kh, kw] :: [Int]) ([dh, dw] :: [Int]) ([ph, pw] :: [Int]) ([1, 1] :: [Int]) False
 
-max_pool3d :: Tensor -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> Bool -> Tensor
-max_pool3d _self _kernel_size _stride _padding _dilation _ceil_mode = unsafePerformIO $ (cast6 ATen.max_pool3d_tllllb) _self _kernel_size _stride _padding _dilation _ceil_mode
+-- | maxPool3d 
+maxPool3d :: (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> Bool -> Tensor -> Tensor
+maxPool3d kernel_size stride padding dilation ceil_mode self = unsafePerformIO $ (cast6 ATen.max_pool3d_tllllb)
+    self kernel_size stride padding dilation eil_mode
 
-softmax :: Int -> Tensor -> Tensor
+-- | softmax
+softmax 
+    :: Int 
+    -> Tensor 
+    -> Tensor
 softmax dim input = unsafePerformIO $ (cast3 ATen.softmax_tls) input dim (dtype input)
 
 logSoftmax :: Int -> Tensor -> Tensor
