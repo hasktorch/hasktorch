@@ -8,7 +8,7 @@ import Control.Monad (foldM, when)
 import MF
 import Torch.Autograd (grad, makeIndependent, toDependent)
 import Torch.DType (DType (Double))
-import Torch.Functional (mse_loss, toDType)
+import Torch.Functional (mseLoss, toDType)
 import Torch.Functional.Internal (bmm)
 import Torch.Internal.Managed.Type.Context (manual_seed_L)
 import Torch.NN
@@ -54,7 +54,7 @@ lossMF (MatrixFact u v) (RatingBatch items users ratings) = loss
     u''' = reshape [batch_size, 1, -1] u''
     v''' = reshape [batch_size, -1, 1] v''
     uv_ui = toDType (Double :: DType) $ bmm u''' v'''
-    loss = mse_loss uv_ui ratings_tensor
+    loss = mseLoss uv_ui ratings_tensor
 
 n_users = 500
 

@@ -3,7 +3,7 @@
 
 module Torch.Functional (
     module Torch.Functional,
-    addmv, addr, allclose, argmin, baddbmm, bmm, acos, asin, atan, dot, lstsq, mv, slice
+    addmv, addr, allclose, argmin, baddbmm, bmm, acos, asin, atan, dot, einsum, lstsq, mv, slice
     , sumWithDimnames
 ) where
 
@@ -91,148 +91,373 @@ instance Castable Reduction Int64 where
 isUpper Upper = True
 isUpper Lower = False
 
-mean :: Tensor -> Tensor
+-- | mean
+-- Returns the mean value of all elements in the input tensor.
+mean 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 mean t = unsafePerformIO $ (cast1 ATen.mean_t) t
 
-std :: Tensor -> Tensor
+-- | std
+-- Returns the standard deviation of all elements in the input tensor.
+std 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 std t = unsafePerformIO $ (cast1 ATen.std_t) t
 
-var :: Tensor -> Tensor
+-- | var
+-- Returns the variance of all elements in the input tensor.
+var 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 var t = unsafePerformIO $ (cast1 ATen.var_t) t
 
-sumAll :: Tensor -> Tensor
+-- | sumAll
+-- Returns the sum of all elements in the input tensor.
+sumAll 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 sumAll t = unsafePerformIO $ (cast1 ATen.sum_t) t
 
-abs :: Tensor -> Tensor
+-- | abs
+-- Computes the element-wise absolute value of the given input tensor.
+abs 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 abs t = unsafePerformIO $ (cast1 ATen.abs_t) t
+
+-- | frac
+-- Computes the fractional portion of each element in input.
+-- out_i = input_i - (floor . abs) input_i * (sign input_i)
+frac :: Tensor -> Tensor
+frac _self = unsafePerformIO $ (cast1 ATen.frac_t) _self
 
 keepdim KeepDim = True
 keepdim RemoveDim = False
 
--- deprecates Native version
+-- | argmax
+-- Returns the indices of the maximum value of all elements in the input tensor.
 argmax :: Dim -> KeepDim -> Tensor -> Tensor
 argmax (Dim d) k t = unsafePerformIO $ (cast3 ATen.argmax_tlb) t d (keepdim k)
 
-add :: Tensor -> Tensor -> Tensor
+-- | add
+-- Each element of the tensor other added to each element of the tensor input. The resulting tensor is returned.
+add 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ other
+    -> Tensor -- ^ output
 add a b = unsafePerformIO $ (cast3 ATen.add_tts) a b kOne
 
-mul :: Tensor -> Tensor -> Tensor
+-- | mul
+-- Multiplies each element of the input input with the scalar other and returns a new resulting tensor.
+mul
+    :: Tensor -- ^ input
+    -> Tensor -- ^ other
+    -> Tensor -- ^ output
 mul a b = unsafePerformIO $ (cast2 ATen.mul_tt) a b
 
-sub :: Tensor -> Tensor -> Tensor
+-- | sub
+sub 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ other
+    -> Tensor -- ^ output
 sub a b = unsafePerformIO $ (cast3 ATen.sub_tts) a b kOne
 
-ceil :: Tensor -> Tensor
+-- | ceil
+ceil 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 ceil t = unsafePerformIO $ (cast1 ATen.ceil_t) t
 
-floor :: Tensor -> Tensor
+-- | floor
+floor 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 floor t = unsafePerformIO $ (cast1 ATen.floor_t) t
 
-min :: Tensor -> Tensor
+-- | min
+min 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 min t = unsafePerformIO $ (cast1 ATen.min_t) t
 
-max :: Tensor -> Tensor
+-- | max
+max 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 max t = unsafePerformIO $ (cast1 ATen.max_t) t
 
-median :: Tensor -> Tensor
+-- | median
+median 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 median t = unsafePerformIO $ (cast1 ATen.median_t) t
 
+-- | addScalar
 addScalar :: Scalar a => Tensor -> a -> Tensor
 addScalar t a = unsafePerformIO $ (cast2 ATen.add_ts) t a
 
+-- | subScalar
 subScalar :: Scalar a => Tensor -> a -> Tensor
 subScalar t a = unsafePerformIO $ (cast2 ATen.sub_ts) t a
 
+-- | mulScalar
 mulScalar :: Scalar a => Tensor -> a -> Tensor
 mulScalar t a = unsafePerformIO $ (cast2 ATen.mul_ts) t a
 
+-- | divScalar
 divScalar :: Scalar a => Tensor -> a -> Tensor
 divScalar t a = unsafePerformIO $ (cast2 ATen.div_ts) t a
 
+-- | matmul 
+-- Matrix product of two tensors.
+--
+-- The behavior depends on the dimensionality of the tensors as follows:
+-- 
+-- If both tensors are 1-dimensional, the dot product (scalar) is returned.
+-- If both arguments are 2-dimensional, the matrix-matrix product is returned.
+-- If the first argument is 1-dimensional and the second argument is 2-dimensional, a 1 is prepended to its dimension for the purpose of the matrix multiply. After the matrix multiply, the prepended dimension is removed.
+-- If the first argument is 2-dimensional and the second argument is 1-dimensional, the matrix-vector product is returned.
+-- If both arguments are at least 1-dimensional and at least one argument is N-dimensional (where N > 2), then a batched matrix multiply is returned. If the first argument is 1-dimensional, a 1 is prepended to its dimension for the purpose of the batched matrix multiply and removed after. If the second argument is 1-dimensional, a 1 is appended to its dimension for the purpose of the batched matrix multiple and removed after. The non-matrix (i.e. batch) dimensions are broadcasted (and thus must be broadcastable). For example, if input is a (j \times 1 \times n \times m)(j×1×n×m) tensor and other is a (k \times m \times p)(k×m×p) tensor, out will be an (j \times k \times n \times p)(j×k×n×p) tensor.
 matmul :: Tensor -> Tensor -> Tensor
 matmul a b = unsafePerformIO $ (cast2 ATen.matmul_tt) a b
 
-erf :: Tensor -> Tensor
+-- | erf
+-- Computes the error function of each element
+erf 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 erf t = unsafePerformIO $ (cast1 ATen.erf_t) t
 
-exp :: Tensor -> Tensor
+-- | exp
+-- Returns a new tensor with the exponential of the elements of the input tensor input.
+exp 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 exp t = unsafePerformIO $ (cast1 ATen.exp_t) t
 
-log1p :: Tensor -> Tensor
+-- | log1p
+-- Returns a new tensor with the natural logarithm of (1 + input).
+log1p 
+    :: Tensor -> Tensor
 log1p t = unsafePerformIO $ (cast1 ATen.log1p_t) t
 
-log2 :: Tensor -> Tensor
+-- | log2
+-- Returns a new tensor with the logarithm to the base 2 of the elements of input.
+log2 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 log2 t = unsafePerformIO $ (cast1 ATen.log2_t) t
 
-log10 :: Tensor -> Tensor
+-- | log10
+-- Returns a new tensor with the logarithm to the base 10 of the elements of input.
+log10 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 log10 t = unsafePerformIO $ (cast1 ATen.log10_t) t
 
-pow :: Scalar a => Tensor -> a -> Tensor
+-- | pow
+-- Takes the power of each element in input with exponent and returns a tensor with the result.
+pow :: Scalar a 
+    => Tensor -- ^ input
+    -> a -- ^ exponent
+    -> Tensor -- ^ output
 pow t s = unsafePerformIO $ (cast2 ATen.pow_ts) t s
 
-relu :: Tensor -> Tensor
+-- | powt
+-- Takes the power of each element in input with exponent and returns a tensor with the result.
+-- Exponent is a tensor with the same number of elements as input.
+powt
+    :: Tensor -- ^ input
+    -> Tensor -- ^ exponent
+    -> Tensor -- ^ output
+powt t t' = unsafePerformIO $ (cast2 ATen.pow_tt) t t'
+
+-- | relu
+-- Applies the rectified linear unit function element-wise.
+relu 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 relu t = unsafePerformIO $ (cast1 ATen.relu_t) t
 
-selu :: Tensor -> Tensor
+-- | selu
+-- Applies element-wise, \text{SELU}(x) = scale * (\max(0,x) + \min(0, \alpha * (\exp(x) - 1)))SELU(x)=scale∗(max(0,x)+min(0,α∗(exp(x)−1))) , with \alpha=1.6732632423543772848170429916717α=1.6732632423543772848170429916717 and scale=1.0507009873554804934193349852946scale=1.0507009873554804934193349852946 .
+selu 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 selu t = unsafePerformIO $ (cast1 ATen.selu_t) t
 
-sigmoid :: Tensor -> Tensor
+-- | celu
+-- Applies element-wise, \text{CELU}(x) = \max(0,x) + \min(0, \alpha * (\exp(x/\alpha) - 1))CELU(x)=max(0,x)+min(0,α∗(exp(x/α)−1)) .
+celu 
+   :: Float -- ^ alpha
+   -> Tensor -- ^ input
+   -> Tensor -- ^ output
+celu _alpha _self = unsafePerformIO $ (cast2 ATen.celu_ts) _self _alpha
+
+-- | sigmoid
+-- Applies the element-wise function sigmoid.
+sigmoid 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 sigmoid t = unsafePerformIO $ (cast1 ATen.sigmoid_t) t
 
-sin :: Tensor -> Tensor
+-- | softmax
+-- Applies a softmax function. 
+-- It is applied to all slices along dim, and will re-scale them so that the elements lie in the range [0, 1] and sum to 1.
+softmax 
+    :: Int -- ^ dimension
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
+softmax dim input = unsafePerformIO $ (cast3 ATen.softmax_tls) 
+    input dim (dtype input)
+
+-- | logSoftmax
+-- Applies a softmax followed by a logarithm.
+-- While mathematically equivalent to log(softmax(x)), doing these two operations separately is slower, and numerically unstable. This function uses an alternative formulation to compute the output and gradient correctly.
+logSoftmax 
+    :: Int -- ^ dimension
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
+logSoftmax dim input = unsafePerformIO $ (cast3 ATen.log_softmax_tls) 
+    input dim (dtype input)
+
+-- | threshold
+-- Thresholds each element of the input Tensor.
+threshold 
+    :: Float -- ^ threshold
+    -> Float -- ^ value
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
+threshold threshold value self = 
+    unsafePerformIO $ (cast3 ATen.threshold_tss) self threshold value
+
+-- | sin
+-- Returns a new tensor with the sine of the elements of input.
+sin 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 sin t = unsafePerformIO $ (cast1 ATen.sin_t) t
 
-cos :: Tensor -> Tensor
+-- | cos
+-- Returns a new tensor with the cos of the elements of input.
+cos 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 cos t = unsafePerformIO $ (cast1 ATen.cos_t) t
 
-sinh :: Tensor -> Tensor
+-- | tan
+-- Returns a new tensor with the tangent of the elements of input.
+tan 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
+tan t = unsafePerformIO $ (cast1 ATen.tan_t) t
+
+-- | sinh
+-- Returns a new tensor with the hyperbolic sine of the elements of input.
+sinh 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 sinh t = unsafePerformIO $ (cast1 ATen.sinh_t) t
 
-cosh :: Tensor -> Tensor
+-- | cosh
+-- Returns a new tensor with the hyperbolic cosine of the elements of input.
+cosh 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 cosh t = unsafePerformIO $ (cast1 ATen.cosh_t) t
 
-tanh :: Tensor -> Tensor
+-- | tanh
+-- Returns a new tensor with the hyperbolic tangent of the elements of input.
+tanh 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 tanh t = unsafePerformIO $ (cast1 ATen.tanh_t) t
 
-sqrt :: Tensor -> Tensor
+-- | sqrt
+-- Returns a new tensor with the square-root of the elements of input.
+sqrt 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 sqrt t = unsafePerformIO $ (cast1 ATen.sqrt_t) t
 
-gt :: Tensor -> Tensor -> Tensor
+-- | gt
+-- Computes input > other element-wise.
+-- The second argument can be a number or a tensor whose shape is broadcastable with the first argument.
+gt
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
+    -> Tensor -- ^ other
 gt a b = unsafePerformIO $ (cast2 ATen.gt_tt) a b
 
 (>.) = gt
 
-lt :: Tensor -> Tensor -> Tensor
+-- | lt
+-- Computes input < other element-wise.
+-- The second argument can be a number or a tensor whose shape is broadcastable with the first argument.
+lt 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ other
+    -> Tensor -- ^ output
 lt a b = unsafePerformIO $ (cast2 ATen.lt_tt) a b
 
 (<.) = lt
 
-ge :: Tensor -> Tensor -> Tensor
+-- | ge
+-- Computes input >= other element-wise.
+-- The second argument can be a number or a tensor whose shape is broadcastable with the first argument.
+ge 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ other
+    -> Tensor -- ^ output
 ge a b = unsafePerformIO $ (cast2 ATen.ge_tt) a b
 
 (>=.) = ge
 
-le :: Tensor -> Tensor -> Tensor
+-- | le
+-- Computes input <= other element-wise.
+-- The second argument can be a number or a tensor whose shape is broadcastable with the first argument.
+le 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ other
+    -> Tensor -- ^ output
 le a b = unsafePerformIO $ (cast2 ATen.le_tt) a b
 
 (<=.) = le
 
-eq :: Tensor -> Tensor -> Tensor
+-- | eq
+-- Computes input == other element-wise.
+-- The second argument can be a number or a tensor whose shape is broadcastable with the first argument.
+eq 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ other
+    -> Tensor -- ^ output
 eq a b = unsafePerformIO $ (cast2 ATen.eq_tt) a b
 
 (==.) = eq
 
-ne :: Tensor -> Tensor -> Tensor
+-- | ne
+-- Computes input /= other element-wise.
+-- The second argument can be a number or a tensor whose shape is broadcastable with the first argument.
+ne 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ other
+    -> Tensor -- ^ output
 ne a b = unsafePerformIO $ (cast2 ATen.ne_tt) a b
 
 (/=.) = ne
 
+-- | toDType
 toDType :: DType -> Tensor -> Tensor
 toDType dtype t = unsafePerformIO $ (cast4 ATen.tensor_to_sbb) t dtype False False
 
-squeezeAll :: Tensor -> Tensor
+-- | squeezeAll
+squeezeAll 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 squeezeAll t = unsafePerformIO $ (cast1 ATen.squeeze_t) t
 
+-- | binary_cross_entropy_loss
 binary_cross_entropy_loss :: Tensor -> Tensor -> Tensor -> Reduction-> Tensor
 binary_cross_entropy_loss t target weight reduction = unsafePerformIO $ (cast4 ATen.binary_cross_entropy_tttl) t target weight reduction
 
@@ -240,26 +465,95 @@ binary_cross_entropy_loss t target weight reduction = unsafePerformIO $ (cast4 A
 binary_cross_entropy_loss' :: Tensor -> Tensor -> Tensor
 binary_cross_entropy_loss' t target = unsafePerformIO $ (cast4 ATen.binary_cross_entropy_tttl) t target (onesLike target) ReduceMean
 
-mse_loss :: Tensor -> Tensor -> Tensor
-mse_loss a b = unsafePerformIO $ (cast3 ATen.mse_loss_ttl) a b ATen.kMean
+-- | mse_loss
+mseLoss :: Tensor -> Tensor -> Tensor
+mseLoss a b = unsafePerformIO $ (cast3 ATen.mse_loss_ttl) a b ATen.kMean
 
+-- | nllLoss
 nllLoss' :: Tensor -> Tensor -> Tensor
 nllLoss' t target = unsafePerformIO $ (cast5 ATen.nll_loss_tttll) t target weight ReduceMean (-100 :: Int)
     where
         nClass = (shape t) !! 1 -- TODO nicer runtime error if input dimensions don't conform
         weight = ones' [nClass]
 
-maxPool2d :: Tensor -> (Int, Int) -> (Int, Int) -> (Int, Int) -> Tensor
-maxPool2d input (kh, kw) (dh, dw) (ph, pw) = unsafePerformIO $
-    (cast6 ATen.max_pool2d_tllllb) input ([kh, kw] :: [Int]) ([dh, dw] :: [Int]) ([ph, pw] :: [Int]) ([1, 1] :: [Int]) False
+-- | adaptiveMaxPool1d
+-- Applies a 1D adaptive max pooling over an input signal composed of several input planes.
+adaptiveMaxPool1d 
+    :: Int -- ^ output size
+    -> Tensor -- ^ input
+    -> (Tensor,Tensor) -- ^ 
+adaptiveMaxPool1d outputSize self =
+    unsafePerformIO $ (cast2 ATen.adaptive_max_pool1d_tl)
+        self outputSize
 
-softmax :: Int -> Tensor -> Tensor
-softmax dim input = unsafePerformIO $ (cast3 ATen.softmax_tls) input dim (dtype input)
+-- | adaptiveMaxPool2d
+-- Applies a 2D adaptive max pooling over an input signal composed of several input planes.
+adaptiveMaxPool2d 
+    :: (Int,Int) 
+    -> Tensor 
+    -> (Tensor,Tensor)
+adaptiveMaxPool2d _output_size _self =
+    unsafePerformIO $ (cast2 ATen.adaptive_max_pool2d_tl)
+        _self _output_size
 
-logSoftmax :: Int -> Tensor -> Tensor
-logSoftmax dim input = unsafePerformIO $ (cast3 ATen.log_softmax_tls) input dim (dtype input)
+-- | maxPool1dWithIndices
+maxPool1dWithIndices 
+    :: Int -- ^ kernel size
+    -> Int -- ^ stride
+    -> Int -- ^ padding
+    -> Int -- ^ dilation
+    -> Bool -- ^ ceil mode
+    -> Tensor -- ^ input
+    -> (Tensor,Tensor) -- ^ output, indices
+maxPool1dWithIndices kernelSize stride padding dilation ceilMode self =
+    unsafePerformIO $ (cast6 ATen.max_pool1d_with_indices_tllllb)
+        self kernelSize stride padding dilation ceilMode
 
-inverse :: Tensor -> Tensor
+-- | maxPool1d
+-- Applies a 1D max pooling over an input signal composed of several input planes.
+maxPool1d 
+    :: Int -- ^ kernel size
+    -> Int -- ^ stride
+    -> Int -- ^ padding
+    -> Int -- ^ dilation
+    -> Bool -- ^ ceil mode
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
+maxPool1d kernelSize stride padding dilation ceilMode self =
+    unsafePerformIO $ (cast6 ATen.max_pool1d_tllllb)
+        self kernelSize stride padding dilation ceilMode
+
+-- | maxPool2d
+-- Applies a 2D max pooling over an input signal composed of several input planes.
+maxPool2d 
+    :: (Int,Int) -- ^ kernel size
+    -> (Int,Int) -- ^ stride
+    -> (Int,Int) -- ^ padding
+    -> (Int,Int) -- ^ dilation
+    -> Bool -- ^ ceil mode
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
+maxPool2d kernelSize stride padding dilation ceilMode self =
+    unsafePerformIO $ (cast6 ATen.max_pool2d_tllllb)
+        self kernelSize stride padding dilation ceilMode
+
+-- | maxPool3d 
+-- Applies a 3D max pooling over an input signal composed of several input planes.
+maxPool3d 
+    :: (Int,Int,Int) -- ^ kernel size
+    -> (Int,Int,Int) -- ^ stride
+    -> (Int,Int,Int) -- ^ padding
+    -> (Int,Int,Int) -- ^ dilation
+    -> Bool -- ^ ceil mode
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
+maxPool3d kernelSize stride padding dilation ceilMode self =
+    unsafePerformIO $ (cast6 ATen.max_pool3d_tllllb)
+        self kernelSize stride padding dilation ceilMode
+
+inverse 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 inverse t = unsafePerformIO $ (cast1 ATen.inverse_t) t
 
 symeig :: Tensor -> Bool -> Tri -> (Tensor, Tensor)
@@ -276,10 +570,12 @@ cholesky :: Tensor -> Tri -> Tensor
 cholesky t upper = unsafePerformIO $ (cast2 ATen.cholesky_tb) t boolUpper
   where boolUpper = isUpper upper
 
-cholesky_solve :: Tensor -> Tensor -> Tri -> Tensor
-cholesky_solve t1 t2 upper = unsafePerformIO $ (cast3 ATen.cholesky_solve_ttb) t1 t2 boolUpper
+choleskySolve :: Tensor -> Tensor -> Tri -> Tensor
+choleskySolve t1 t2 upper = unsafePerformIO $ (cast3 ATen.cholesky_solve_ttb) t1 t2 boolUpper
   where boolUpper = isUpper upper
 
+-- | dropout
+-- During training, randomly zeroes some of the elements of the input tensor with probability p using samples from a Bernoulli distribution.
 dropout
   :: Double -- ^ dropout probability
   -> Bool -- ^ whether or not to activate dropout
@@ -295,6 +591,8 @@ featureDropout
 featureDropout p train input =
   cast3 ATen.feature_dropout_tdb input p train
 
+-- | alphaDropout
+-- Applies alpha dropout to the input.
 alphaDropout
   :: Double -- ^ dropout probability
   -> Bool -- ^ whether or not to activate dropout
@@ -311,6 +609,8 @@ featureAlphaDropout
 featureAlphaDropout p train input =
   cast3 ATen.feature_alpha_dropout_tdb input p train
 
+-- | avgPool1d
+-- Applies a 1D average pooling over an input signal composed of several input planes.
 avgPool1d
   :: Int -- ^ kernel size
   -> Int -- ^ stride
@@ -334,8 +634,11 @@ avgPool1d'
   -> Int -- ^ padding
   -> Tensor -- ^ input
   -> Tensor -- ^ output
-avgPool1d' kernelSize stride padding input = avgPool1d kernelSize stride padding False True input
+avgPool1d' kernelSize stride padding input =
+    avgPool1d kernelSize stride padding False True input
 
+-- | adaptiveAvgPool1d
+-- Applies a 1D adaptive average pooling over an input signal composed of several input planes.
 adaptiveAvgPool1d
   :: Int -- outputSize
   -> Tensor -- ^ input
@@ -343,7 +646,19 @@ adaptiveAvgPool1d
 adaptiveAvgPool1d outputSize input = unsafePerformIO
   $ cast2 ATen.adaptive_avg_pool1d_tl input outputSize
 
-bitwiseNot :: Tensor -> Tensor
+-- | adaptiveAvgPool2d
+-- Applies a 2D adaptive average pooling over an input signal composed of several input planes.
+adaptive_avg_pool2d :: Tensor -> (Int,Int) -> Tensor
+adaptive_avg_pool2d _self _output_size = unsafePerformIO $ (cast2 ATen.adaptive_avg_pool2d_tl) _self _output_size
+
+-- | adaptiveAvgPool3d
+-- Applies a 3D adaptive average pooling over an input signal composed of several input planes.
+adaptive_avg_pool3d :: Tensor -> (Int,Int,Int) -> Tensor
+adaptive_avg_pool3d _self _output_size = unsafePerformIO $ (cast2 ATen.adaptive_avg_pool3d_tl) _self _output_size
+
+bitwiseNot 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 bitwiseNot input = unsafePerformIO $ cast1 ATen.bitwise_not_t input
 
 cat
@@ -394,6 +709,8 @@ constantPadNd1d padding value input = unsafePerformIO $ cast3
   padding
   value
 
+-- | conv1d
+-- Applies a 1D convolution over an input signal composed of several input planes.
 conv1d
   :: Tensor -- ^ weight
   -> Tensor -- ^ bias
@@ -415,14 +732,8 @@ conv1d weight bias stride padding dilation groups input =
 
 conv1d' weight bias stride padding input = conv1d weight bias stride padding 1 1 input
 
-
-{-
-conv2d :: Tensor -> Tensor -> Tensor -> (Int, Int) -> (Int, Int) -> Tensor
-conv2d input weight bias (dh, dw) (ph, pw) = unsafePerformIO $
-    (cast7 ATen.conv2d_tttllll) input weight bias
-                                ([dh, dw] :: [Int]) ([ph, pw] :: [Int]) ([1, 1] :: [Int]) (1 :: Int)
--}
-
+-- | conv2d
+-- Applies a 2D convolution over an input signal composed of several input planes.
 conv2d
   :: Tensor -- ^ weight
   -> Tensor -- ^ bias
@@ -455,10 +766,17 @@ conv2d' weight bias stride padding input =
         (1 :: Int) -- groups
         input
 
-solve :: Tensor -> Tensor -> (Tensor,Tensor)
+solve 
+    :: Tensor 
+    -> Tensor 
+    -> (Tensor,Tensor)
 solve b a = unsafePerformIO $ (cast2 ATen.solve_tt) b a
 
-cholesky_inverse :: Tensor -> Tri -> Tensor
+-- | Solves a linear system of equations with a positive semidefinite matrix to be inverted given its Cholesky factor matrix uu .
+cholesky_inverse
+    :: Tensor -- ^ input
+    -> Tri -- ^ upper or lower triangle
+    -> Tensor -- ^ solution
 cholesky_inverse t upper = unsafePerformIO $ (cast2 ATen.cholesky_inverse_tb) t boolUpper
   where boolUpper = isUpper upper
 
@@ -468,20 +786,30 @@ cholesky_inverse t upper = unsafePerformIO $ (cast2 ATen.cholesky_inverse_tb) t 
 --qr :: Tensor -> (Tensor, Tensor)
 --qr t = unsafePerformIO $ (cast1 ATen.qr_t) t
 
-geqrf :: Tensor -> (Tensor, Tensor)
+-- | This is a low-level function for calling LAPACK directly. This function returns a namedtuple (a, tau) as defined in LAPACK documentation for geqrf.
+geqrf 
+    :: Tensor -- ^ input
+    -> (Tensor, Tensor) -- ^ a, tau output matrices (see https://software.intel.com/en-us/node/521004)
 geqrf t = unsafePerformIO $ (cast1 ATen.geqrf_t) t
 
+
+-- | Computes the orthogonal matrix Q of a QR factorization, from the (input, input2) tuple returned by torch.geqrf().
+-- This directly calls the underlying LAPACK function ?orgqr. See LAPACK documentation for orgqr for further details.
 orgqr :: Tensor -> Tensor -> Tensor
 orgqr b a = unsafePerformIO $ (cast2 ATen.orgqr_tt) b a
 
-sign :: Tensor -> Tensor
+sign 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 sign t = unsafePerformIO $ (cast1 ATen.sign_t) t
 
 transpose :: Tensor -> Int -> Int -> Tensor
 transpose t a b = unsafePerformIO $ (cast3 ATen.transpose_tll) t a b
 
 -- transpose special case for a 2D tensor
-transpose2D :: Tensor -> Tensor
+transpose2D 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
 transpose2D t = transpose t 0 1
 
 diag :: Tensor -> Int -> Tensor

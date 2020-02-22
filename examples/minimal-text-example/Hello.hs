@@ -31,7 +31,7 @@ run :: (RecurrentCell a, Parameterized a)
     -> IO (a)
 run input_tensor init_hidden expected_output model i = do
     let output = finalState model input_tensor init_hidden
-        loss = mse_loss output expected_output
+        loss = mseLoss output expected_output
     when (i `mod` 100 == 0) $ do
         print loss
     (newParam, _) <- runStep model GD loss 0.05
@@ -70,7 +70,7 @@ getIndex result = case index of
     Nothing -> -1
     Just x  -> x
     where
-        losses = map toDouble (map (mse_loss result) letters)
+        losses = map toDouble (map (mseLoss result) letters)
         min_loss = Prelude.minimum losses
         index = elemIndex min_loss losses
 
