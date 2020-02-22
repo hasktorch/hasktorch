@@ -27,7 +27,7 @@ extra-deps:
 - git: git://github.com/hasktorch/pipes-text.git
   commit: 3dd3d9519306ea06f0c15ad71bdf57e1dfd0b747
 # - show-prettyprint-0.3.0.1@sha256:c2c004bd77a1815b3d75a4cad1ec41a1b3f754ed259593414a195c4b19c02f16,1723
-
+- oset-0.4.0.1@sha256:d29c82accd4f8fe6bff562c6e728d6022ab1fb9e2491b2a6154f7b3783f99ca6,1803
 
 nix:
   packages: [zlib.dev, zlib.out]
