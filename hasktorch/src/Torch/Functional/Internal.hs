@@ -45,39 +45,19 @@ alpha_dropout _input _p _train = unsafePerformIO $ (cast3 ATen.alpha_dropout_tdb
 feature_alpha_dropout :: Tensor -> Double -> Bool -> Tensor
 feature_alpha_dropout _input _p _train = unsafePerformIO $ (cast3 ATen.feature_alpha_dropout_tdb) _input _p _train
 
--- | angle
--- Computes the element-wise angle (in radians) of the given input tensor.
-angle 
-  :: Tensor -- ^ input tensor
-  -> Tensor -- ^ output tensor in radians
+angle :: Tensor -> Tensor
 angle _self = unsafePerformIO $ (cast1 ATen.angle_t) _self
 
--- | real
--- Computes the element-wise real value of the given input tensor.
-real 
-  :: Tensor -- ^ input 
-  -> Tensor -- ^ output
+real :: Tensor -> Tensor
 real _self = unsafePerformIO $ (cast1 ATen.real_t) _self
 
--- | imag
--- Computes the element-wise imag value of the given input tensor.
-imag 
-  :: Tensor -- ^ input
-  -> Tensor -- ^ output
+imag :: Tensor -> Tensor
 imag _self = unsafePerformIO $ (cast1 ATen.imag_t) _self
 
--- | conj
--- Computes the element-wise conjugate of the given input tensor.
-conj 
-  :: Tensor -- ^ input
-  -> Tensor -- ^ output
+conj :: Tensor -> Tensor
 conj _self = unsafePerformIO $ (cast1 ATen.conj_t) _self
 
--- | acos
--- Returns a new tensor with the arccosine of the elements of input.
-acos 
-  :: Tensor -- ^ input
-  -> Tensor -- ^ output
+acos :: Tensor -> Tensor
 acos _self = unsafePerformIO $ (cast1 ATen.acos_t) _self
 
 avg_pool1d :: Tensor -> Int -> Int -> Int -> Bool -> Bool -> Tensor
@@ -89,26 +69,10 @@ adaptive_avg_pool1d _self _output_size = unsafePerformIO $ (cast2 ATen.adaptive_
 adaptive_max_pool1d :: Tensor -> Int -> (Tensor,Tensor)
 adaptive_max_pool1d _self _output_size = unsafePerformIO $ (cast2 ATen.adaptive_max_pool1d_tl) _self _output_size
 
--- | addmv
--- Performs a matrix-vector product of the matrix mat and the vector vec. The vector input is added to the final result.
-addmv 
-  :: Tensor -- | ^ input vector to be added
-  -> Tensor -- | ^ matrix to be multiplied
-  -> Tensor -- | ^ vector to be multiplied 
-  -> Float  -- | ^ multiplier for vector input
-  -> Float  -- | ^ multiplier for product of mat and vec  
-  -> Tensor -- | ^ output tensor
+addmv :: Tensor -> Tensor -> Tensor -> Float -> Float -> Tensor
 addmv _self _mat _vec _beta _alpha = unsafePerformIO $ (cast5 ATen.addmv_tttss) _self _mat _vec _beta _alpha
 
--- | addr
--- Performs the outer-product of vectors vec1 and vec2 and adds it to the matrix input.
-addr 
-  :: Tensor -- | ^ input matrix to be added
-  -> Tensor -- | ^ the first vector of the outer product
-  -> Tensor -- | ^ the second vector of the outer product
-  -> Float  -- | ^ multiplier for input
-  -> Float  -- | ^ multiplier for product of vec1 and vec2
-  -> Tensor -- | ^ the output tensor
+addr :: Tensor -> Tensor -> Tensor -> Float -> Float -> Tensor
 addr _self _vec1 _vec2 _beta _alpha = unsafePerformIO $ (cast5 ATen.addr_tttss) _self _vec1 _vec2 _beta _alpha
 
 affine_grid_generator :: Tensor -> [Int] -> Bool -> Tensor
@@ -126,39 +90,16 @@ allclose _self _other _rtol _atol _equal_nan = unsafePerformIO $ (cast5 ATen.all
 anyWithDimname :: Tensor -> Dimname -> Bool -> Tensor
 anyWithDimname _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.any_tnb) _self _dim _keepdim
 
--- | argmax
--- Returns the indices of the maximum value of all elements in the input tensor.
-argmax 
-  :: Tensor -- | ^ input
-  -> Int    -- | ^ the dimension to reduce
-  -> Bool   -- | ^ whether the output tensor has dim retained or not
-  -> Tensor -- | ^ output
+argmax :: Tensor -> Int -> Bool -> Tensor
 argmax _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.argmax_tlb) _self _dim _keepdim
 
--- | argmin
--- Returns the indices of the minimum value of all elements in the input tensor.
-argmin 
-  :: Tensor -- | ^ input 
-  -> Int    -- | ^ the dimension to reduce
-  -> Bool   -- | ^ whether the output tensor has dim retained or not.
-  -> Tensor -- | ^ output
+argmin :: Tensor -> Int -> Bool -> Tensor
 argmin _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.argmin_tlb) _self _dim _keepdim
 
--- | as_strided
--- Create a view of an tensor input with specified size, stride and storage_offset.
-as_strided 
-  :: Tensor -- | ^ input
-  -> [Int]  -- | ^ shape of the output tensor.
-  -> [Int]  -- | ^ stride of the output tensor.
-  -> Int    -- | ^ offset in the underlying storage of the output tensor.
-  -> Tensor -- | ^ output
+as_strided :: Tensor -> [Int] -> [Int] -> Int -> Tensor
 as_strided _self _size _stride _storage_offset = unsafePerformIO $ (cast4 ATen.as_strided_tlll) _self _size _stride _storage_offset
 
--- | asin
--- Returns a new tensor with the arcsine of the elements of input.
-asin 
-  :: Tensor -- | ^input 
-  -> Tensor -- | ^output
+asin :: Tensor -> Tensor
 asin _self = unsafePerformIO $ (cast1 ATen.asin_t) _self
 
 atan :: Tensor -> Tensor
@@ -1387,4 +1328,3 @@ im2col_backward _grad_output _input_size _kernel_size _dilation _padding _stride
 
 isfinite :: Tensor -> Tensor
 isfinite _self = unsafePerformIO $ (cast1 ATen.isfinite_t) _self
-
