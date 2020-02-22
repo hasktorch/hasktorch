@@ -29,7 +29,7 @@ run :: (RecurrentCell a, Parameterized a)
     -> IO (a) -- ^ new model state
 run input_tensor init_hidden expected_output model i = do
     let output = finalState model input_tensor init_hidden
-        loss = mse_loss output expected_output
+        loss = mseLoss output expected_output
     print loss 
     (newParam, _) <- runStep model GD loss 5e-2
     pure $ replaceParameters model newParam
