@@ -15,6 +15,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoStarIsType #-}
+{-# OPTIONS_GHC -freduction-depth=0 #-}
 
 module Torch.Typed.Functional where
 
