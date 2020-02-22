@@ -12,7 +12,7 @@ module Main where
 import Control.Monad (foldM, when)
 import MF
 import Torch.Autograd (grad, makeIndependent, toDependent)
-import Torch.Functional (matmul, mse_loss)
+import Torch.Functional (matmul, mseloss)
 import Torch.Internal.Managed.Type.Context (manual_seed_L)
 import Torch.NN (sample)
 import Torch.Optim (sgd)
@@ -28,7 +28,7 @@ r =
     )
 
 lossMF :: MatrixFact -> Tensor
-lossMF mf = mse_loss (mulMF mf) r
+lossMF mf = mseloss (mulMF mf) r
 
 printParams :: MatrixFact -> IO ()
 printParams (MatrixFact u v) = do
