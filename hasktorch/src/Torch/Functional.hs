@@ -302,6 +302,22 @@ sigmoid
     -> Tensor -- ^ output
 sigmoid t = unsafePerformIO $ (cast1 ATen.sigmoid_t) t
 
+-- | softmax
+softmax 
+    :: Int -- ^ dimension
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
+softmax dim input = unsafePerformIO $ (cast3 ATen.softmax_tls) 
+    input dim (dtype input)
+
+-- | logSoftmax
+logSoftmax 
+    :: Int -- ^ dimension
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
+logSoftmax dim input = unsafePerformIO $ (cast3 ATen.log_softmax_tls) 
+    input dim (dtype input)
+
 -- | sin
 -- Returns a new tensor with the sine of the elements of input.
 sin 
@@ -451,7 +467,9 @@ adaptiveMaxPool1d
     :: Int -- ^ output size
     -> Tensor -- ^ input
     -> (Tensor,Tensor) -- ^ 
-adaptiveMaxPool1d _output_size _self = unsafePerformIO $ (cast2 ATen.adaptive_max_pool1d_tl) _self _output_size
+adaptiveMaxPool1d outputSize self =
+    unsafePerformIO $ (cast2 ATen.adaptive_max_pool1d_tl)
+        self outputSize
 
 -- | maxPool1dWithIndices
 maxPool1dWithIndices 
@@ -462,7 +480,9 @@ maxPool1dWithIndices
     -> Bool -- ^ ceil mode
     -> Tensor -- ^ input
     -> (Tensor,Tensor) -- ^ output, indices
-maxPool1dWithIndices _kernel_size _stride _padding _dilation _ceil_mode _self = unsafePerformIO $ (cast6 ATen.max_pool1d_with_indices_tllllb) _self _kernel_size _stride _padding _dilation _ceil_mode
+maxPool1dWithIndices kernelSize stride padding dilation ceilMode self =
+    unsafePerformIO $ (cast6 ATen.max_pool1d_with_indices_tllllb)
+        self kernelSize stride padding dilation ceilMode
 
 -- | maxPool1d
 maxPool1d 
@@ -473,29 +493,35 @@ maxPool1d
     -> Bool -- ^ ceil mode
     -> Tensor -- ^ input
     -> Tensor -- ^ output
-maxPool1d kernelsize stride padding dilation ceil_mode self =
+maxPool1d kernelSize stride padding dilation ceilMode self =
     unsafePerformIO $ (cast6 ATen.max_pool1d_tllllb)
-        self kernel_size stride padding dilation ceil_mode
+        self kernelSize stride padding dilation ceilMode
 
--- | maxPool2d 
-maxPool2d :: Tensor -> (Int, Int) -> (Int, Int) -> (Int, Int) -> Tensor
-maxPool2d input (kh, kw) (dh, dw) (ph, pw) = unsafePerformIO $ (cast6 ATen.max_pool2d_tllllb)
-    input ([kh, kw] :: [Int]) ([dh, dw] :: [Int]) ([ph, pw] :: [Int]) ([1, 1] :: [Int]) False
+-- | maxPool2d
+maxPool2d 
+    :: (Int,Int) -- ^ kernel size
+    -> (Int,Int) -- ^ stride
+    -> (Int,Int) -- ^ padding
+    -> (Int,Int) -- ^ dilation
+    -> Bool -- ^ ceil mode
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
+maxPool2d kernelSize stride padding dilation ceilMode self =
+    unsafePerformIO $ (cast6 ATen.max_pool2d_tllllb)
+        self kernelSize stride padding dilation ceilMode
 
 -- | maxPool3d 
-maxPool3d :: (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> Bool -> Tensor -> Tensor
-maxPool3d kernel_size stride padding dilation ceil_mode self = unsafePerformIO $ (cast6 ATen.max_pool3d_tllllb)
-    self kernel_size stride padding dilation eil_mode
-
--- | softmax
-softmax 
-    :: Int 
-    -> Tensor 
-    -> Tensor
-softmax dim input = unsafePerformIO $ (cast3 ATen.softmax_tls) input dim (dtype input)
-
-logSoftmax :: Int -> Tensor -> Tensor
-logSoftmax dim input = unsafePerformIO $ (cast3 ATen.log_softmax_tls) input dim (dtype input)
+maxPool3d 
+    :: (Int,Int,Int) -- ^ kernel size
+    -> (Int,Int,Int) -- ^ stride
+    -> (Int,Int,Int) -- ^ padding
+    -> (Int,Int,Int) -- ^ dilation
+    -> Bool -- ^ ceil mode
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
+maxPool3d kernelSize stride padding dilation ceilMode self =
+    unsafePerformIO $ (cast6 ATen.max_pool3d_tllllb)
+        self kernelSize stride padding dilation ceilMode
 
 inverse 
     :: Tensor -- ^ input
@@ -516,8 +542,8 @@ cholesky :: Tensor -> Tri -> Tensor
 cholesky t upper = unsafePerformIO $ (cast2 ATen.cholesky_tb) t boolUpper
   where boolUpper = isUpper upper
 
-cholesky_solve :: Tensor -> Tensor -> Tri -> Tensor
-cholesky_solve t1 t2 upper = unsafePerformIO $ (cast3 ATen.cholesky_solve_ttb) t1 t2 boolUpper
+choleskySolve :: Tensor -> Tensor -> Tri -> Tensor
+choleskySolve t1 t2 upper = unsafePerformIO $ (cast3 ATen.cholesky_solve_ttb) t1 t2 boolUpper
   where boolUpper = isUpper upper
 
 dropout
