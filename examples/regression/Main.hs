@@ -29,7 +29,7 @@ main = do
     (trained, _) <- foldLoop (init, randGen) numIters $ \(state, randGen) i -> do
         let (input, randGen') = randn' [batchSize, numFeatures] randGen
             (y, y') = (groundTruth input, model state input)
-            loss = mse_loss y' y
+            loss = mseLoss y' y
         when (i `mod` 100 == 0) $ do
             putStrLn $ "Iteration: " ++ show i ++ " | Loss: " ++ show loss
         (newParam, _) <- runStep state optimizer loss 5e-3 
