@@ -478,7 +478,11 @@ ne a b = unsafePerformIO $ (cast2 ATen.ne_tt) a b
 (/=.) = ne
 
 -- | toDType
-toDType :: DType -> Tensor -> Tensor
+-- Casting to given Dtype, where Dtype is an object that represents the data type of a tensor in hasktorch
+toDType 
+ :: DType -- ^ datatype to cast to 
+ -> Tensor -- ^ input
+ -> Tensor -- ^ output
 toDType dtype t = unsafePerformIO $ (cast4 ATen.tensor_to_sbb) t dtype False False
 
 -- | squeezeAll
@@ -505,12 +509,20 @@ binaryCrossEntropyLoss'
  -> Tensor -- ^ output
 binaryCrossEntropyLoss' t target = unsafePerformIO $ (cast4 ATen.binary_cross_entropy_tttl) t target (onesLike target) ReduceMean
 
--- | mse_loss
-mseLoss :: Tensor -> Tensor -> Tensor
+-- | mseLoss
+-- Creates a criterion that measures the mean squared error (squared L2 norm) between each element in the input xx and target yy .
+mseLoss 
+ :: Tensor -- ^ input
+ -> Tensor -- ^ target
+ -> Tensor -- ^ output
 mseLoss a b = unsafePerformIO $ (cast3 ATen.mse_loss_ttl) a b ATen.kMean
 
 -- | nllLoss
-nllLoss' :: Tensor -> Tensor -> Tensor
+-- The negative log likelihood loss.
+nllLoss' 
+ :: Tensor -- ^ input
+ -> Tensor -- ^ target tensor
+ -> Tensor -- ^ output
 nllLoss' t target = unsafePerformIO $ (cast5 ATen.nll_loss_tttll) t target weight ReduceMean (-100 :: Int)
     where
         nClass = (shape t) !! 1 -- TODO nicer runtime error if input dimensions don't conform
@@ -521,7 +533,7 @@ nllLoss' t target = unsafePerformIO $ (cast5 ATen.nll_loss_tttll) t target weigh
 adaptiveMaxPool1d 
     :: Int -- ^ output size
     -> Tensor -- ^ input
-    -> (Tensor,Tensor) -- ^ 
+    -> (Tensor,Tensor) -- ^ output
 adaptiveMaxPool1d outputSize self =
     unsafePerformIO $ (cast2 ATen.adaptive_max_pool1d_tl)
         self outputSize
@@ -529,9 +541,9 @@ adaptiveMaxPool1d outputSize self =
 -- | adaptiveMaxPool2d
 -- Applies a 2D adaptive max pooling over an input signal composed of several input planes.
 adaptiveMaxPool2d 
-    :: (Int,Int) 
-    -> Tensor 
-    -> (Tensor,Tensor)
+    :: (Int,Int) -- ^ output size
+    -> Tensor -- ^ input
+    -> (Tensor,Tensor) -- ^ output 
 adaptiveMaxPool2d _output_size _self =
     unsafePerformIO $ (cast2 ATen.adaptive_max_pool2d_tl)
         _self _output_size
@@ -591,26 +603,57 @@ maxPool3d kernelSize stride padding dilation ceilMode self =
     unsafePerformIO $ (cast6 ATen.max_pool3d_tllllb)
         self kernelSize stride padding dilation ceilMode
 
+-- | inverse
+-- Takes the inverse of the square matrix input. input can be batches of 2D square tensors, in which case this function would return a tensor composed of individual inverses.
 inverse 
     :: Tensor -- ^ input
     -> Tensor -- ^ output
 inverse t = unsafePerformIO $ (cast1 ATen.inverse_t) t
 
-symeig :: Tensor -> Bool -> Tri -> (Tensor, Tensor)
+-- | symeig
+-- This function returns eigenvalues and eigenvectors of a real symmetric matrix input or a batch of real symmetric matrices, represented by a namedtuple (eigenvalues, eigenvectors).
+symeig 
+ :: Tensor -- ^ input tensor  
+ -> Bool -- ^ bool which controls whether eigenvectors have to be computed
+ -> Tri -- ^ controls whether to consider upper-triangular or lower-triangular region
+ -> (Tensor, Tensor) -- ^ output tensors
 symeig t eigenvectors upper = unsafePerformIO $ (cast3 ATen.symeig_tbb) t eigenvectors boolUpper
   where boolUpper = isUpper upper
 
-eig :: Tensor -> Bool -> (Tensor, Tensor)
+-- | eig
+-- Computes the eigenvalues and eigenvectors of a real square matrix
+eig 
+ :: Tensor -- ^ input (square matrix) for which the eigen values and eigen vectors are to be computed
+ -> Bool -- ^ bool to compute both eigenvalues and eigenvectors; otherwise, only eigenvalues will be computed
+ -> (Tensor, Tensor) -- ^ output tensors
 eig t eigenvectors = unsafePerformIO $ (cast2 ATen.eig_tb) t eigenvectors
 
-svd :: Tensor -> Bool -> Bool -> (Tensor, Tensor, Tensor)
+-- | svd
+-- This function returns a namedtuple (U, S, V) which is the singular value decomposition of a input real matrix or batches of real matrices input such that input = U * diag(S) * V^T
+svd 
+ :: Tensor -- ^ input 
+ -> Bool -- ^ controls the shape of returned U and V
+ -> Bool -- ^ option whether to compute U and V or not
+ -> (Tensor, Tensor, Tensor) -- ^ output tuple of tensors
 svd t some compute_uv = unsafePerformIO $ (cast3 ATen.svd_tbb) t some compute_uv
 
-cholesky :: Tensor -> Tri -> Tensor
+-- | cholesky
+-- Computes the Cholesky decomposition of a symmetric positive-definite matrix AA or for batches of symmetric positive-definite matrices.
+cholesky 
+ :: Tensor -- ^ input
+ -> Tri -- ^ flag that indicates whether to return a upper or lower triangular matrix.
+ -> Tensor -- ^ output
 cholesky t upper = unsafePerformIO $ (cast2 ATen.cholesky_tb) t boolUpper
   where boolUpper = isUpper upper
 
-choleskySolve :: Tensor -> Tensor -> Tri -> Tensor
+
+-- | choleskySolve
+-- Solves a linear system of equations with a positive semidefinite matrix to be inverted given its Cholesky factor matrix uu .
+choleskySolve 
+ :: Tensor -- ^ input matrix b 
+ -> Tensor -- ^ input matrix u
+ -> Tri -- ^ bool whether to consider the Cholesky factor as a lower or upper triangular matrix
+ -> Tensor -- ^ output
 choleskySolve t1 t2 upper = unsafePerformIO $ (cast3 ATen.cholesky_solve_ttb) t1 t2 boolUpper
   where boolUpper = isUpper upper
 
@@ -702,13 +745,19 @@ adaptiveAvgPool3d
  -> Tensor -- ^ output
 adaptiveAvgPool3d _self _output_size = unsafePerformIO $ (cast2 ATen.adaptive_avg_pool3d_tl) _self _output_size
 
+-- | bitwiseNot
+-- Computes the bitwise NOT of the given input tensor. The input tensor must be of integral or Boolean types. For bool tensors, it computes the logical NOT.
 bitwiseNot 
     :: Tensor -- ^ input
     -> Tensor -- ^ output
 bitwiseNot input = unsafePerformIO $ cast1 ATen.bitwise_not_t input
 
+-- | cat
+-- Concatenates the given sequence of seq tensors in the given dimension. All tensors must either have the same shape (except in the concatenating dimension) or be empty.
 cat
-  :: Int -> [Tensor] -> Tensor
+  :: Int -- ^ dimension 
+  -> [Tensor] -- ^ list of tensors to concatenate
+  -> Tensor -- ^ output tensor
 cat dim tensors = unsafePerformIO $ cast2 ATen.cat_ll tensors dim
 
 chunk
@@ -811,11 +860,14 @@ conv2d' weight bias stride padding input =
         (1, 1) -- dilation
         (1 :: Int) -- groups
         input
-
+-- | solve
+-- This function returns the solution to the system of linear equations represented by AX = BAX=B and the LU factorization of A, in order as a namedtuple solution, LU.
+-- LU contains L and U factors for LU factorization of A
+-- 
 solve 
-    :: Tensor 
-    -> Tensor 
-    -> (Tensor,Tensor)
+    :: Tensor -- ^ input matrix
+    -> Tensor -- ^ input square matrix
+    -> (Tensor,Tensor) -- ^ output tuple with solution and LU
 solve b a = unsafePerformIO $ (cast2 ATen.solve_tt) b a
 
 -- | Solves a linear system of equations with a positive semidefinite matrix to be inverted given its Cholesky factor matrix uu .
@@ -839,19 +891,31 @@ geqrf
 geqrf t = unsafePerformIO $ (cast1 ATen.geqrf_t) t
 
 
--- | Computes the orthogonal matrix Q of a QR factorization, from the (input, input2) tuple returned by torch.geqrf().
+-- | Computes the orthogonal matrix Q of a QR factorization, from the (input, input2) tuple returned by geqrf function.
 -- This directly calls the underlying LAPACK function ?orgqr. See LAPACK documentation for orgqr for further details.
-orgqr :: Tensor -> Tensor -> Tensor
+orgqr 
+ :: Tensor -- ^ the a from geqrf function
+ -> Tensor -- ^ the tau from geqrf function
+ -> Tensor -- ^ output
 orgqr b a = unsafePerformIO $ (cast2 ATen.orgqr_tt) b a
 
+-- | sign
+-- Returns a new tensor with the signs of the elements of input
 sign 
     :: Tensor -- ^ input
     -> Tensor -- ^ output
 sign t = unsafePerformIO $ (cast1 ATen.sign_t) t
 
-transpose :: Tensor -> Int -> Int -> Tensor
+-- | transpose
+-- Returns a tensor that is a transposed version of input. The given dimensions dim0 and dim1 are swapped.
+transpose 
+ :: Tensor -- ^ input
+ -> Int -- ^ dim1
+ -> Int -- ^ dim2
+ -> Tensor -- ^ 
 transpose t a b = unsafePerformIO $ (cast3 ATen.transpose_tll) t a b
 
+-- | transpose2D
 -- transpose special case for a 2D tensor
 transpose2D 
     :: Tensor -- ^ input
