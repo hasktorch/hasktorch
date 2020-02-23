@@ -812,7 +812,17 @@ transpose2D
     -> Tensor -- ^ output
 transpose2D t = transpose t 0 1
 
-diag :: Tensor -> Int -> Tensor
+-- | diag
+-- | Returns a tensor with the elements of input as the diagonal.
+-- | The second argument controls which diagonal to consider:
+--        If Int = 0, it is the main diagonal.
+--        If Int > 0, it is above the main diagonal.
+--        If Int < 0, it is below the main diagonal.
+
+diag
+    ::  Tensor -- ^ input
+    ->  Int -- ^ diagonal
+    ->  Tensor -- ^ output
 diag t index = unsafePerformIO $ (cast2 ATen.tensor_diag_l) t index
 
 -- | all

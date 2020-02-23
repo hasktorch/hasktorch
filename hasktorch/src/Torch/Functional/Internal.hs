@@ -1328,4 +1328,3 @@ im2col_backward _grad_output _input_size _kernel_size _dilation _padding _stride
 
 isfinite :: Tensor -> Tensor
 isfinite _self = unsafePerformIO $ (cast1 ATen.isfinite_t) _self
-
