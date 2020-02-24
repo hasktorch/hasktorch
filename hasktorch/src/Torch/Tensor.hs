@@ -57,19 +57,31 @@ instance Castable Tensor ATenTensor where
 -- Basic tensor properties
 --------------------------------------------------------------------------------
 
-numel :: Tensor -> Int
+-- | Returns the total number of elements in the input tensor.
+numel 
+ :: Tensor -- ^ input 
+ -> Int -- ^ number of elements in tensor
 numel t = unsafePerformIO $ cast1 ATen.tensor_numel $ t
 
 size :: Tensor -> Int -> Int
 size t dim = unsafePerformIO $ (cast2 ATen.tensor_size_l) t dim
 
-shape :: Tensor -> [Int]
+-- | Returns the shape of the tensor
+shape 
+ :: Tensor -- ^ input
+ -> [Int] -- ^ list of integers representing the shape of the tensor
 shape t = unsafePerformIO $ (cast1 ATen.tensor_sizes) t
 
-dim :: Tensor -> Int
+-- | Returns the dimensions of the input tensor
+dim 
+ :: Tensor -- ^ input 
+ -> Int -- ^ output
 dim t = unsafePerformIO $ (cast1 ATen.tensor_dim) t
 
-device :: Tensor -> Device
+-- | Returns the device on which the tensor is currently allocated
+device 
+ :: Tensor -- ^ input
+ -> Device -- ^ object representing the device
 device t = unsafePerformIO $ do
   hasCUDA <- cast0 ATen.hasCUDA :: IO Bool
   if hasCUDA
@@ -82,19 +94,31 @@ device t = unsafePerformIO $ do
   cuda :: Int -> Device
   cuda di = Device { deviceType = CUDA, deviceIndex = fromIntegral di }
 
-dtype :: Tensor -> DType
+-- | Returns the data type of the input tensor
+dtype 
+ :: Tensor -- ^ input
+ -> DType -- ^ data type of the input tensor
 dtype t = unsafePerformIO $ cast1 ATen.tensor_scalar_type t
 
-toDouble :: Tensor -> Double
+
+toDouble :: Tensor -> Double  
 toDouble t = unsafePerformIO $ cast1 ATen.tensor_item_double t
 
 toInt :: Tensor -> Int
 toInt t = unsafePerformIO $ cast1 ATen.tensor_item_int64_t t
 
-toType :: DType -> Tensor -> Tensor
+-- | Casts the input tensor to the given data type
+toType 
+ :: DType -- ^ data type to cast input to 
+ -> Tensor -- ^ input 
+ -> Tensor -- ^ output
 toType dtype t = unsafePerformIO $ cast2 ATen.tensor_toType_s t dtype
 
-toDevice :: Device -> Tensor -> Tensor
+-- | Casts the input tensor to given device
+toDevice 
+ :: Device -- ^ device to cast input to
+ -> Tensor -- ^ input
+ -> Tensor -- ^ output
 toDevice device' t = unsafePerformIO $ do
   hasCUDA <- cast0 ATen.hasCUDA :: IO Bool
   let device = Torch.Tensor.device t
@@ -148,13 +172,27 @@ toDevice device' t = unsafePerformIO $ do
       <> show di'
       <> "\""
 
-select :: Tensor -> Int -> Int -> Tensor
+-- | Slices the input tensor along the selected dimension at the given index. 
+select 
+ :: Tensor -- ^ input
+ -> Int -- ^ dimension to slice along
+ -> Int -- ^ index in the given dimension 
+ -> Tensor -- ^ output
 select t dim idx = unsafePerformIO $ cast3 ATen.tensor_select_ll t dim idx
 
-indexSelect :: Tensor -> Int -> Tensor -> Tensor
+-- | Returns a new tensor which indexes the input tensor along dimension dim using the entries in index which is a LongTensor.
+indexSelect 
+ :: Tensor 
+ -> Int 
+ -> Tensor 
+ -> Tensor
 indexSelect t dim indexTensor = unsafePerformIO $ (cast3 ATen.index_select_tlt) t dim indexTensor
 
-reshape :: [Int] -> Tensor -> Tensor
+-- | Returns a tensor with the same data and number of elements as input, but with the specified shape.
+reshape 
+ :: [Int] 
+ -> Tensor 
+ -> Tensor
 reshape shape t = unsafePerformIO $ cast2 ATen.reshape_tl t shape
 
 --------------------------------------------------------------------------------
