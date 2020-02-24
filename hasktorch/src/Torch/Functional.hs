@@ -251,6 +251,17 @@ matmul
  -> Tensor -- ^ output
 matmul a b = unsafePerformIO $ (cast2 ATen.matmul_tt) a b
 
+embedding 
+    :: Bool -- ^ whether or not to scale the gradient by the frequencies
+    -> Bool -- ^ whether or not the embedding is sparse
+    -> Tensor -- ^ weights
+    -> Int -- ^ padding
+    -> Tensor -- ^ indices
+    -> Tensor -- ^ output
+embedding scaleByGradFreq sparse weights paddingIdx indices =
+    unsafePerformIO $ (cast5 ATen.embedding_ttlbb)
+        weights indices paddingIdx scaleByGradFreq sparse
+
 -- | erf
 -- Computes the error function of each element
 erf 

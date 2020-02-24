@@ -8,3 +8,4 @@ packages:
     libtorch-ffi/*.cabal
     hasktorch/*.cabal
     examples/*.cabal
+    experimental/*.cabal
