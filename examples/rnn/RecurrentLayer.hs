@@ -5,17 +5,10 @@
 
 module RecurrentLayer where
 
-import Torch.Tensor
-import Torch.DType
-import Torch.TensorFactories
-import Torch.Functions
-import Torch.TensorOptions
-import Torch.Autograd
-import Torch.NN
-
 import Control.Monad.State.Strict
 import Data.List (foldl', scanl', intersperse)
 
+import Torch
 
 class RecurrentCell a where
   -- get the hidden state of the cell at the next timestep
@@ -28,7 +21,7 @@ class RecurrentCell a where
         -- converting matrix into a list of tensors
         -- this hack stays until I can write a Foldable instance
         -- for a tensor
-            inputAsList = [reshape (input @@ x) [1, (size input 1)] | x <- [0.. ((size input 0) - 1)]]
+            inputAsList = [reshape [1, (size input 1)] (input @@ x) | x <- [0.. ((size input 0) - 1)]]
         in
         foldl (nextState layer) hidden inputAsList
 

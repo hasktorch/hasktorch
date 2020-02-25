@@ -7,6 +7,7 @@ main = doctest
   [ "-XOverloadedStrings"
   , "-XOverloadedLists"
   , "-XDataKinds"
+  , "-XScopedTypeVariables"
   , "-XTypeFamilies"
   , "-XTypeApplications"
   , "-fplugin GHC.TypeLits.Normalise"
@@ -14,6 +15,9 @@ main = doctest
   , "-fplugin GHC.TypeLits.Extra.Solver"
   , "-fconstraint-solver-iterations=0"
   , "-isrc"
+  , "src/Torch/Typed/Tensor"
   , "src/Torch/Typed/Factories"
-  , "src/Torch/Typed/Native"
+  , "src/Torch/Typed/Functional"
+  , "src/Torch/Typed/NN/Recurrent/LSTM"
+  , "src/Torch/Typed/NN/Recurrent/GRU"
   ]

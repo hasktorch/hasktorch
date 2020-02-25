@@ -100,6 +100,7 @@ parsableToCppType parsable =
     Dimname -> "at::Dimname"
     DimnameList -> "std::vector<at::Dimname>"
     Symbol -> "at::Symbol"
+    IValue -> "at::IValue"
 
 
 ------ To Haskell Type ------
@@ -158,7 +159,7 @@ tenTypeToHigherHsType tentype =
 stltypeToHsType :: STLType -> Text
 stltypeToHsType t =
   case t of
-    P.Array ct len -> [st|(StdArray #{ctypeToHsType ct} #{len})|]
+    P.Array ct len -> [st|(StdArray '(#{ctypeToHsType ct},#{len}))|]
 
 stltypeToHigherHsType :: STLType -> Text
 stltypeToHigherHsType t =
@@ -220,7 +221,7 @@ parsableToHsType parsable =
     CType ct -> ctypeToHsType ct
     STLType t -> stltypeToHsType t
     CppString -> "StdString"
-    Tuple parsables -> [st|(#{T.intercalate "," (map parsableToHsType parsables)})|]
+    Tuple parsables -> [st|StdTuple '(#{T.intercalate "," (map parsableToHsType parsables)})|]
     P.CppClass _ _ hstype -> fromString hstype
     Backend -> "Backend"
     Layout -> "Layout"
@@ -230,6 +231,7 @@ parsableToHsType parsable =
     Dimname -> "Dimname"
     DimnameList -> "DimnameList"
     Symbol -> "Symbol"
+    IValue -> "IValue"
 
 parsableToHigherHsType :: Parsable -> Text
 parsableToHigherHsType parsable =
@@ -252,6 +254,7 @@ parsableToHigherHsType parsable =
     Dimname -> "Dimname"
     DimnameList -> "[Dimname]"
     Symbol -> "Symbol"
+    IValue -> "IValue"
 
 
 ------ To initial characters ------
@@ -323,6 +326,7 @@ parsableToInitial parsable =
     Dimname -> "n"
     DimnameList -> "N"
     Symbol -> "s"
+    IValue -> "V"
 
 isCType :: Parsable -> Bool
 isCType p =
@@ -364,6 +368,7 @@ retToCppType parsable =
     Dimname -> "at::Dimname"
     DimnameList -> "std::vector<at::Dimname>"
     Symbol -> "at::Symbol"
+    IValue -> "at::IValue"
 
 
 
@@ -446,7 +451,7 @@ functionToCpp is_managed add_type_initials prefix suffix fn =
     ret_hstype =
       if isCType (retType fn)
       then [st|#{parsableToHsType (retType fn)}|]
-      else [st|#{pointer} #{parsableToHsType (retType fn)}|]
+      else [st|#{pointer} #{withParens (parsableToHsType (retType fn))}|]
     ret_wrapper :: Text
     ret_wrapper =
       if isCType (retType fn)
@@ -548,7 +553,7 @@ methodToCpp class' is_constructor is_managed add_type_initials prefix suffix fn 
     ret_hstype =
       if isCType (retType fn)
       then [st|#{parsableToHsType (retType fn)}|]
-      else [st|#{pointer} #{parsableToHsType (retType fn)}|]
+      else [st|#{pointer} #{withParens (parsableToHsType (retType fn))}|]
     isIntArrayRef (TenType (IntList _)) = True
     isIntArrayRef _ = False
     ret_wrapper :: Text -> Text

@@ -9,38 +9,24 @@
 module Main where
 
 import           Control.Monad                  ( foldM )
-
-import           Torch.Tensor
-import           Torch.DType                    ( DType(Float) )
-import           Torch.TensorFactories          ( ones'
-                                                , rand'
-                                                , randn'
-                                                )
-import           Torch.Functions
-import           Torch.Autograd
-import           Torch.NN
 import           Codec.Serialise
 import           GHC.Generics                   ( Generic )
+import           Torch
 
 batch_size = 64
 num_iters = 2000
 num_features = 3
 
-
-
-
 instance Serialise Parameter where
   encode p = encode p' where p' :: [Float] = asValue $ toDependent p
   decode = IndependentTensor . (asTensor :: [Float] -> Tensor) <$> decode
-
 
 deriving instance Serialise Linear
 deriving instance Generic LinearSpec
 deriving instance Serialise LinearSpec
 
 model :: Linear -> Tensor -> Tensor
-model Linear {..} input = squeezeAll $ matmul input depWeight + depBias
-  where (depWeight, depBias) = (toDependent weight, toDependent bias)
+model state input = squeezeAll $ linear state input
 
 groundTruth :: Tensor -> Tensor
 groundTruth t = squeezeAll $ matmul t weight + bias
@@ -60,10 +46,10 @@ main :: IO ()
 main = do
   init <- sample $ LinearSpec { in_features = num_features, out_features = 1 }
   trained <- foldLoop init num_iters $ \state i -> do
-    input <- randn' [batch_size, num_features]
+    input <- randnIO' [batch_size, num_features]
     let expected_output = groundTruth input
         output          = model state input
-        loss            = mse_loss output expected_output
+        loss            = mseLoss output expected_output
         flat_parameters = flattenParameters state
         gradients       = grad loss flat_parameters
     if i `mod` 100 == 0 then putStrLn $ "Loss: " ++ show loss else pure ()

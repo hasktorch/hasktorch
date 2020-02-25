@@ -10,8 +10,8 @@ import Prelude hiding (exp, cos, sqrt)
 import qualified Prelude as P
 
 import Torch.Tensor
-import Torch.TensorFactories (eye', ones', rand', randn', zeros')
-import Torch.Functions
+import Torch.TensorFactories (eye', ones', randIO', randnIO', zeros')
+import Torch.Functional
 import Torch.Autograd
 import Torch.NN hiding (sgd)
 
@@ -22,7 +22,7 @@ data ConvQuad = ConvQuad { w :: Parameter } deriving (Show, Generic)
 
 instance Randomizable ConvQuadSpec ConvQuad where
   sample (ConvQuadSpec n) = do
-        w <- makeIndependent =<<randn' [n]
+        w <- makeIndependent =<<randnIO' [n]
         pure $ ConvQuad w
 
 instance Parameterized ConvQuad
@@ -48,8 +48,8 @@ instance Show Rosen where
 
 instance Randomizable RosenSpec Rosen where
   sample RosenSpec = do
-      x <- makeIndependent =<< randn' [1]
-      y <- makeIndependent =<< randn' [1]
+      x <- makeIndependent =<< randnIO' [1]
+      y <- makeIndependent =<< randnIO' [1]
       pure $ Rosen x y
 
 -- instance Parameterized Rosen
@@ -75,7 +75,7 @@ data Ackley = Ackley { pos :: Parameter } deriving (Show, Generic)
 
 instance Randomizable AckleySpec Ackley where
   sample AckleySpec = do
-      pos <- makeIndependent =<< randn' [2]
+      pos <- makeIndependent =<< randnIO' [2]
       pure $ Ackley pos
 
 instance Parameterized Ackley

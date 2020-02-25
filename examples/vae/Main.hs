@@ -4,17 +4,12 @@
 
 module Main where
 
-import Control.Monad (foldM)
+import Control.Monad (when)
 import Data.List (foldl', scanl', intersperse)
 import GHC.Generics
 import Prelude hiding (exp)
 
-import Torch.Tensor
-import Torch.DType (DType (Float))
-import Torch.TensorFactories (ones', rand', randn', randnLike)
-import Torch.Functions hiding (linear)
-import Torch.Autograd
-import Torch.NN
+import Torch
 
 -- Model Specification
 
@@ -60,7 +55,7 @@ vaeLoss :: Tensor -> Tensor -> Tensor -> Tensor -> Tensor
 vaeLoss recon_x x mu logvar = reconLoss + kld
   where
     -- reconLoss = binary_cross_entropy_loss recon_x x undefined ReduceSum
-    reconLoss = mse_loss recon_x x
+    reconLoss = mseLoss recon_x x
     kld = -0.5 * (sumAll (1 + logvar - pow mu (2 :: Int) - exp logvar))
 
 -- | End-to-end function for VAE model
@@ -83,59 +78,60 @@ mlp mlpState nonlin input = foldl' revApply input layerFunctionsList
 -- | Reparamaterization trick to sample from latent space while allowing differentiation
 reparamaterize :: Tensor -> Tensor -> IO Tensor
 reparamaterize mu logvar = do
-    eps <- Torch.TensorFactories.randnLike mu
+    eps <- randnLikeIO mu
     pure $ mu + eps * exp (0.5 * logvar)
-
--- | Given weights, apply linear layer to an input
-linear :: Linear -> Tensor -> Tensor
-linear Linear{..} input = squeezeAll $ matmul input depWeight + depBias
-  where (depWeight, depBias) = (toDependent weight, toDependent bias)
 
 -- | Multivariate 0-mean normal via cholesky decomposition
 mvnCholesky :: Tensor -> Int -> Int -> IO Tensor
 mvnCholesky cov n axisDim = do
-    samples <- randn' [axisDim, n]
+    samples <- randnIO' [axisDim, n]
     pure $ matmul l samples
     where
       l = cholesky cov Upper
 
-main :: IO ()
-main =
-  let nSamples = 32768
-      dataDim = 4
-      hDim = 2
-      zDim = 2
-      batchSize = 256 -- TODO - crashes for case where any batch is of size n=1
-      numIters = 8000
-  in do
-    init <- sample $ VAESpec {
+-- | Construct and initialize model parameter state
+makeModel :: Int -> Int -> Int -> IO VAEState
+makeModel dataDim hDim zDim = do
+    sample VAESpec { 
         encoderSpec = [LinearSpec dataDim hDim],
         muSpec = LinearSpec hDim zDim,
         logvarSpec = LinearSpec hDim zDim,
         decoderSpec = [LinearSpec zDim hDim, LinearSpec hDim dataDim],
         nonlinearitySpec = relu }
 
-    dat <- transpose2D <$>
+-- | randomly sample a multivariate gaussian as data
+makeData :: Int -> Int -> IO Tensor
+makeData nSamples dataDim = do
+    transpose2D <$>
       mvnCholesky (asTensor ([[1.0, 0.3, 0.1, 0.0],
                               [0.3, 1.0, 0.3, 0.1],
                               [0.1, 0.3, 1.0, 0.3],
                               [0.0, 0.1, 0.3, 1.0]] :: [[Float]]))
                               nSamples dataDim
+
+main :: IO ()
+main = do
+    init <- makeModel dataDim hDim zDim
+    dat <- makeData nSamples dataDim
     trained <- foldLoop init numIters $ \vaeState i -> do
       let startIndex = mod (batchSize * i) nSamples
           endIndex = Prelude.min (startIndex + batchSize) nSamples
           input = slice dat 0 startIndex endIndex 1 -- size should be [batchSize, dataDim]
       output <- model vaeState input
       let (reconX, muVal, logvarVal) = (squeezeAll $ recon output, mu output, logvar output )
-      let loss = vaeLoss reconX input muVal logvarVal
-      let flat_parameters = flattenParameters vaeState
-      let gradients = grad loss flat_parameters
-      if i `mod` 100 == 0
-          then do putStrLn $ show loss
-          else return ()
-
-      new_flat_parameters <- mapM makeIndependent $ sgd 1e-6 flat_parameters gradients
-      pure $ replaceParameters vaeState $ new_flat_parameters
+          loss = vaeLoss reconX input muVal logvarVal
+      when (i `mod` 100 == 0) $ do
+          putStrLn $ show loss
+      (new_flat_parameters, _) <- runStep vaeState optimizer loss 1e-5
+      pure $ replaceParameters vaeState new_flat_parameters
     putStrLn "Done"
   where
-    foldLoop x count block = foldM block x [0..count]
+    -- model parameters
+    dataDim = 4
+    hDim = 2 -- hidden layer dimensions
+    zDim = 2 -- latent space (z) dimensions
+    -- optimization parameters
+    optimizer = GD 
+    nSamples = 32768
+    batchSize = 256 -- TODO - crashes for case where any batch is of size n=1
+    numIters = 6000

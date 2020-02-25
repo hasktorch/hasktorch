@@ -15,3 +15,5 @@ venv/
 *.swp
 *.lock
 examples/static-mnist/data
+**/.DS_Store
+*.pt

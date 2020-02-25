@@ -5,14 +5,23 @@
 
 module Torch.DType where
 
-import ATen.Class (Castable(..))
-import qualified ATen.Const as ATen
-import qualified ATen.Type as ATen
+import Torch.Internal.Class (Castable(..))
+import qualified Torch.Internal.Const as ATen
+import qualified Torch.Internal.Type as ATen
 import Data.Int
 import Data.Word
 import Data.Reflection
 
-data DType = Bool | UInt8 | Int8 | Int16 | Int32 | Int64 | Half | Float | Double
+data DType =
+    Bool   -- ^ Bool
+  | UInt8  -- ^ Byte
+  | Int8   -- ^ Char
+  | Int16  -- ^ Short
+  | Int32  -- ^ Int
+  | Int64  -- ^ Long
+  | Half   -- ^ Half
+  | Float  -- ^ Float
+  | Double -- ^ Double
   deriving (Eq, Show)
 
 instance Reifies Bool DType where

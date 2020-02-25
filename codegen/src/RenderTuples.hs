@@ -28,26 +28,26 @@ import Foreign.C.String
 import Foreign.C.Types
 import Foreign hiding (newForeignPtr)
 import Foreign.Concurrent
-import ATen.Type
-import ATen.Class
-import ATen.Cast
+import Torch.Internal.Type
+import Torch.Internal.Class
+import Torch.Internal.Cast
 
-import qualified ATen.Unmanaged.Type.Tuple as Unmanaged
-import ATen.Unmanaged.Type.Generator
-import ATen.Unmanaged.Type.IntArray
-import ATen.Unmanaged.Type.Scalar
-import ATen.Unmanaged.Type.Storage
-import ATen.Unmanaged.Type.Tensor
-import ATen.Unmanaged.Type.TensorList
-import ATen.Unmanaged.Type.TensorOptions
-import ATen.Unmanaged.Type.Tuple
+import qualified Torch.Internal.Unmanaged.Type.Tuple as Unmanaged
+import Torch.Internal.Unmanaged.Type.Generator
+import Torch.Internal.Unmanaged.Type.IntArray
+import Torch.Internal.Unmanaged.Type.Scalar
+import Torch.Internal.Unmanaged.Type.Storage
+import Torch.Internal.Unmanaged.Type.Tensor
+import Torch.Internal.Unmanaged.Type.TensorList
+import Torch.Internal.Unmanaged.Type.TensorOptions
+import Torch.Internal.Unmanaged.Type.Tuple
 |] else [st|
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign hiding (newForeignPtr)
 import Foreign.Concurrent
-import ATen.Type
-import ATen.Class
+import Torch.Internal.Type
+import Torch.Internal.Class
 
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
@@ -64,7 +64,7 @@ tupleToCpp :: PT.Tuple -> Text
 tupleToCpp (PT.Tuple parsables) = [st|std::tuple<#{T.intercalate "," (map parsableToCppType parsables)}>|]
 
 tupleToHs :: PT.Tuple -> Text
-tupleToHs (PT.Tuple parsables) = [st|(#{T.intercalate "," (map parsableToHsType parsables)})|]
+tupleToHs (PT.Tuple parsables) = [st|StdTuple '(#{T.intercalate "," (map parsableToHsType parsables)})|]
 
 tupleToHs' :: PT.Tuple -> Text
 tupleToHs' (PT.Tuple parsables) = [st|#{T.intercalate "" (map parsableToHsType parsables)}|]
@@ -99,18 +99,18 @@ renderCppObject typ_ = [st|
 
 -----------------#{tupleToHs typ_}---------------------
 
-delete#{tupleToHs' typ_} :: Ptr #{tupleToHs typ_} -> IO ()
+delete#{tupleToHs' typ_} :: Ptr #{withParens $ tupleToHs typ_} -> IO ()
 delete#{tupleToHs' typ_} ptr = #{bra}C.throwBlock| void { delete $(#{tupleToCpp typ_}* ptr); return; }|#{cket}
 
-instance CppObject #{tupleToHs typ_} where
+instance CppObject #{withParens $ tupleToHs typ_} where
   fromPtr ptr = newForeignPtr ptr (delete#{tupleToHs' typ_} ptr)
 |]
 
 renderCppTuple2 :: PT.Tuple -> Text
 renderCppTuple2 typ_@(PT.Tuple (a:b:_)) = [st|
-instance CppTuple2 (Ptr #{tupleToHs typ_}) where
-  type A (Ptr #{tupleToHs typ_}) = #{toHs a}
-  type B (Ptr #{tupleToHs typ_}) = #{toHs b}
+instance CppTuple2 (Ptr #{withParens $ tupleToHs typ_}) where
+  type A (Ptr #{withParens $ tupleToHs typ_}) = #{toHs a}
+  type B (Ptr #{withParens $ tupleToHs typ_}) = #{toHs b}
   get0 v = #{bra}C.throwBlock| #{toCpp a} { return #{toCpp' a}(std::get<0>(*$(#{tupleToCpp typ_}* v)));}|#{cket}
   get1 v = #{bra}C.throwBlock| #{toCpp b} { return #{toCpp' b}(std::get<1>(*$(#{tupleToCpp typ_}* v)));}|#{cket}
 |]
@@ -118,16 +118,16 @@ renderCppTuple2 _ = ""
 
 renderCppTuple3 :: PT.Tuple -> Text
 renderCppTuple3 typ_@(PT.Tuple (_:_:c:_)) = [st|
-instance CppTuple3 (Ptr #{tupleToHs typ_}) where
-  type C (Ptr #{tupleToHs typ_}) = #{toHs c}
+instance CppTuple3 (Ptr #{withParens $ tupleToHs typ_}) where
+  type C (Ptr #{withParens $ tupleToHs typ_}) = #{toHs c}
   get2 v = #{bra}C.throwBlock| #{toCpp c} { return #{toCpp' c}(std::get<2>(*$(#{tupleToCpp typ_}* v)));}|#{cket}
 |]
 renderCppTuple3 _ = ""
 
 renderCppTuple4 :: PT.Tuple -> Text
 renderCppTuple4 typ_@(PT.Tuple (_:_:_:d:_)) = [st|
-instance CppTuple4 (Ptr #{tupleToHs typ_}) where
-  type D (Ptr #{tupleToHs typ_}) = #{toHs d}
+instance CppTuple4 (Ptr #{withParens $ tupleToHs typ_}) where
+  type D (Ptr #{withParens $ tupleToHs typ_}) = #{toHs d}
   get3 v = #{bra}C.throwBlock| #{toCpp d} { return #{toCpp' d}(std::get<3>(*$(#{tupleToCpp typ_}* v)));}|#{cket}
 |]
 renderCppTuple4 _ = ""
@@ -135,44 +135,44 @@ renderCppTuple4 _ = ""
 
 renderCppTuple5 :: PT.Tuple -> Text
 renderCppTuple5 typ_@(PT.Tuple (_:_:_:_:e:_)) = [st|
-instance CppTuple5 (Ptr #{tupleToHs typ_}) where
-  type E (Ptr #{tupleToHs typ_}) = #{toHs e}
+instance CppTuple5 (Ptr #{withParens $ tupleToHs typ_}) where
+  type E (Ptr #{withParens $ tupleToHs typ_}) = #{toHs e}
   get4 v = #{bra}C.throwBlock| #{toCpp e} { return #{toCpp' e}(std::get<4>(*$(#{tupleToCpp typ_}* v)));}|#{cket}
 |]
 renderCppTuple5 _ = ""
 
 renderManagedCppTuple2 :: PT.Tuple -> Text
 renderManagedCppTuple2 typ_@(PT.Tuple (a:b:_)) = [st|
-instance CppTuple2 (ForeignPtr #{tupleToHs typ_}) where
-  type A (ForeignPtr #{tupleToHs typ_}) = #{toManagedHs a}
-  type B (ForeignPtr #{tupleToHs typ_}) = #{toManagedHs b}
-  get0 v = cast1 (get0 :: Ptr #{tupleToHs typ_} -> IO (#{toHs a})) v
-  get1 v = cast1 (get1 :: Ptr #{tupleToHs typ_} -> IO (#{toHs b})) v
+instance CppTuple2 (ForeignPtr #{withParens $ tupleToHs typ_}) where
+  type A (ForeignPtr #{withParens $ tupleToHs typ_}) = #{toManagedHs a}
+  type B (ForeignPtr #{withParens $ tupleToHs typ_}) = #{toManagedHs b}
+  get0 v = cast1 (get0 :: Ptr #{withParens $ tupleToHs typ_} -> IO (#{toHs a})) v
+  get1 v = cast1 (get1 :: Ptr #{withParens $ tupleToHs typ_} -> IO (#{toHs b})) v
 |]
 renderManagedCppTuple2 _ = ""
 
 renderManagedCppTuple3 :: PT.Tuple -> Text
 renderManagedCppTuple3 typ_@(PT.Tuple (_:_:c:_)) = [st|
-instance CppTuple3 (ForeignPtr #{tupleToHs typ_}) where
-  type C (ForeignPtr #{tupleToHs typ_}) = #{toManagedHs c}
-  get2 v = cast1 (get2 :: Ptr #{tupleToHs typ_} -> IO (#{toHs c})) v
+instance CppTuple3 (ForeignPtr #{withParens $ tupleToHs typ_}) where
+  type C (ForeignPtr #{withParens $ tupleToHs typ_}) = #{toManagedHs c}
+  get2 v = cast1 (get2 :: Ptr #{withParens $ tupleToHs typ_} -> IO (#{toHs c})) v
 |]
 renderManagedCppTuple3 _ = ""
 
 renderManagedCppTuple4 :: PT.Tuple -> Text
 renderManagedCppTuple4 typ_@(PT.Tuple (_:_:_:d:_)) = [st|
-instance CppTuple4 (ForeignPtr #{tupleToHs typ_}) where
-  type D (ForeignPtr #{tupleToHs typ_}) = #{toManagedHs d}
-  get3 v = cast1 (get3 :: Ptr #{tupleToHs typ_} -> IO (#{toHs d})) v
+instance CppTuple4 (ForeignPtr #{withParens $ tupleToHs typ_}) where
+  type D (ForeignPtr #{withParens $ tupleToHs typ_}) = #{toManagedHs d}
+  get3 v = cast1 (get3 :: Ptr #{withParens $ tupleToHs typ_} -> IO (#{toHs d})) v
 |]
 renderManagedCppTuple4 _ = ""
 
 
 renderManagedCppTuple5 :: PT.Tuple -> Text
 renderManagedCppTuple5 typ_@(PT.Tuple (_:_:_:_:e:_)) = [st|
-instance CppTuple5 (ForeignPtr #{tupleToHs typ_}) where
-  type E (ForeignPtr #{tupleToHs typ_}) = #{toManagedHs e}
-  get4 v = cast1 (get4 :: Ptr #{tupleToHs typ_} -> IO (#{toHs e})) v
+instance CppTuple5 (ForeignPtr #{withParens $ tupleToHs typ_}) where
+  type E (ForeignPtr #{withParens $ tupleToHs typ_}) = #{toManagedHs e}
+  get4 v = cast1 (get4 :: Ptr #{withParens $ tupleToHs typ_} -> IO (#{toHs e})) v
 |]
 renderManagedCppTuple5 _ = ""
 
@@ -204,12 +204,12 @@ decodeAndCodeGen basedir fileName = do
     Left err' -> print err'
     Right decls -> do
       let tuples = nubBy tupleHsTypeEq $ mapMaybe (getTupleType . D.returns) decls
-      createDirectoryIfMissing True (basedir <> "/ATen/Unmanaged/Type")
-      T.writeFile (basedir <> "/ATen/Unmanaged/Type/Tuple.hs") $
-        template False "ATen.Unmanaged.Type.Tuple" tuples
-      createDirectoryIfMissing True (basedir <> "/ATen/Managed/Type")
-      T.writeFile (basedir <> "/ATen/Managed/Type/Tuple.hs") $
-        template True "ATen.Managed.Type.Tuple" tuples
+      createDirectoryIfMissing True (basedir <> "/Torch/Internal/Unmanaged/Type")
+      T.writeFile (basedir <> "/Torch/Internal/Unmanaged/Type/Tuple.hs") $
+        template False "Torch.Internal.Unmanaged.Type.Tuple" tuples
+      createDirectoryIfMissing True (basedir <> "/Torch/Internal/Managed/Type")
+      T.writeFile (basedir <> "/Torch/Internal/Managed/Type/Tuple.hs") $
+        template True "Torch.Internal.Managed.Type.Tuple" tuples
   where
     getTupleType :: [D.Type] -> Maybe PT.Tuple
     getTupleType [] = Nothing

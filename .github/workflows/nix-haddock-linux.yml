@@ -1,0 +1,35 @@
+name: nix-haddock-linux
+
+# If you need to debug this action, use following action.
+# on: [push, pull_request]
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: cachix/install-nix-action@v6
+    - name: Setup repo
+      run: |
+        git submodule init && git submodule update
+    - name: Build
+      run: |
+        nix-env -i cachix
+        cachix use hasktorch
+        nix-build -A hasktorch-docs
+        pwd
+        find result/ |head
+        mkdir public
+        cp -r ./result/share/doc/* public/
+    - name: Deploy
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      uses: peaceiris/actions-gh-pages@v2.5.0
+      env:
+        ACTIONS_DEPLOY_KEY: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+        # PERSONAL_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+        # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        EXTERNAL_REPOSITORY: hasktorch/hasktorch.github.io
+        PUBLISH_BRANCH: master
+        PUBLISH_DIR: public

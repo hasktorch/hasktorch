@@ -7,6 +7,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Torch.Tensor where
 
@@ -17,26 +18,28 @@ import Foreign.Ptr
 import Foreign.Storable
 import Foreign.C.Types
 import System.IO.Unsafe
-import Data.Int (Int64)
+import Data.Int (Int16, Int64)
 import Data.Word (Word8)
 import Data.List (intercalate)
 import Data.Proxy
 import Data.Reflection
 import Numeric
 
-import ATen.Cast
-import ATen.Class (Castable(..), CppTuple2(..), CppTuple3(..), CppTuple4(..))
-import qualified ATen.Unmanaged.Type.Tensor as Unmanaged (tensor_data_ptr)
-import qualified ATen.Managed.Type.Tensor as ATen
-import qualified ATen.Managed.Type.TensorOptions as ATen
-import qualified ATen.Managed.Type.StdArray as ATen
-import qualified ATen.Managed.Type.StdString as ATen
-import qualified ATen.Managed.Native as ATen
-import qualified ATen.Managed.Cast as ATen
-import qualified ATen.Type as ATen
-import qualified ATen.Const as ATen
-import qualified Torch.Managed.Native as LibTorch
+import Torch.Internal.Cast
+import Torch.Internal.Class (Castable(..), CppTuple2(..), CppTuple3(..), CppTuple4(..))
+import qualified Torch.Internal.Unmanaged.Type.Tensor as Unmanaged (tensor_data_ptr)
+import qualified Torch.Internal.Managed.Type.Context as ATen
+import qualified Torch.Internal.Managed.Type.Tensor as ATen
+import qualified Torch.Internal.Managed.Type.TensorOptions as ATen
+import qualified Torch.Internal.Managed.Type.StdArray as ATen
+import qualified Torch.Internal.Managed.Type.StdString as ATen
+import qualified Torch.Internal.Managed.Native as ATen
+import qualified Torch.Internal.Managed.Cast as ATen
+import qualified Torch.Internal.Type as ATen
+import qualified Torch.Internal.Const as ATen
+import qualified Torch.Internal.Managed.TensorFactories as LibTorch
 
+import Torch.Device
 import Torch.DType
 import Torch.TensorOptions
 
@@ -54,35 +57,143 @@ instance Castable Tensor ATenTensor where
 -- Basic tensor properties
 --------------------------------------------------------------------------------
 
-numel :: Tensor -> Int
+-- | Returns the total number of elements in the input tensor.
+numel 
+ :: Tensor -- ^ input 
+ -> Int -- ^ number of elements in tensor
 numel t = unsafePerformIO $ cast1 ATen.tensor_numel $ t
 
 size :: Tensor -> Int -> Int
 size t dim = unsafePerformIO $ (cast2 ATen.tensor_size_l) t dim
 
-shape :: Tensor -> [Int]
+-- | Returns the shape of the tensor
+shape 
+ :: Tensor -- ^ input
+ -> [Int] -- ^ list of integers representing the shape of the tensor
 shape t = unsafePerformIO $ (cast1 ATen.tensor_sizes) t
 
-dim :: Tensor -> Int
+-- | Returns the dimensions of the input tensor
+dim 
+ :: Tensor -- ^ input 
+ -> Int -- ^ output
 dim t = unsafePerformIO $ (cast1 ATen.tensor_dim) t
 
-dtype :: Tensor -> DType
-dtype t = unsafePerformIO $ (cast1 ATen.tensor_scalar_type) t
+-- | Returns the device on which the tensor is currently allocated
+device 
+ :: Tensor -- ^ input
+ -> Device -- ^ object representing the device
+device t = unsafePerformIO $ do
+  hasCUDA <- cast0 ATen.hasCUDA :: IO Bool
+  if hasCUDA
+    then do
+      isCUDA <- cast1 ATen.tensor_is_cuda t :: IO Bool
+      if isCUDA then cuda <$> cast1 ATen.tensor_get_device t else pure cpu
+    else pure cpu
+ where
+  cpu = Device { deviceType = CPU, deviceIndex = 0 }
+  cuda :: Int -> Device
+  cuda di = Device { deviceType = CUDA, deviceIndex = fromIntegral di }
 
-toDouble :: Tensor -> Double
-toDouble t = unsafePerformIO $ cast1 ATen.tensor_item_double $ t
+-- | Returns the data type of the input tensor
+dtype 
+ :: Tensor -- ^ input
+ -> DType -- ^ data type of the input tensor
+dtype t = unsafePerformIO $ cast1 ATen.tensor_scalar_type t
+
+
+toDouble :: Tensor -> Double  
+toDouble t = unsafePerformIO $ cast1 ATen.tensor_item_double t
 
 toInt :: Tensor -> Int
-toInt t = unsafePerformIO $ cast1 ATen.tensor_item_int64_t $ t
+toInt t = unsafePerformIO $ cast1 ATen.tensor_item_int64_t t
 
-toType :: DType -> Tensor -> Tensor
+-- | Casts the input tensor to the given data type
+toType 
+ :: DType -- ^ data type to cast input to 
+ -> Tensor -- ^ input 
+ -> Tensor -- ^ output
 toType dtype t = unsafePerformIO $ cast2 ATen.tensor_toType_s t dtype
 
-select :: Tensor -> Int -> Int -> Tensor
-select t dim idx = unsafePerformIO $ (cast3 ATen.tensor_select_ll) t dim idx
+-- | Casts the input tensor to given device
+toDevice 
+ :: Device -- ^ device to cast input to
+ -> Tensor -- ^ input
+ -> Tensor -- ^ output
+toDevice device' t = unsafePerformIO $ do
+  hasCUDA <- cast0 ATen.hasCUDA :: IO Bool
+  let device = Torch.Tensor.device t
+  t' <- toDevice' (deviceType device)
+                  (deviceType device')
+                  (deviceIndex device)
+                  (deviceIndex device')
+                  hasCUDA
+  check (deviceType device')
+        (deviceType $ Torch.Tensor.device t')
+        (deviceIndex device')
+        (deviceIndex $ Torch.Tensor.device t')
+  pure t'
+ where
+  toDevice' dt   dt'  di di' _    | dt == dt' && di == di' = pure t -- do nothing
+  toDevice' CUDA CUDA di di' True | di /= di'              = getOpts t >>= withDeviceIndex di' >>= to t -- copy from di to di'
+  toDevice' CPU  CUDA 0  di' True | di' >= 0               = getOpts t >>= withDeviceIndex di' >>= to t -- copy from cpu:0 to cuda:di'
+  toDevice' CUDA CPU  di 0   True | di >= 0                = getOpts t >>= withDeviceType CPU  >>= to t -- copy from cuda:di to cpu:0
+  toDevice' dt   dt'  di di' _                             =
+    error
+      $  "cannot move tensor from \""
+      <> show dt
+      <> ":"
+      <> show di
+      <> "\" to \""
+      <> show dt'
+      <> ":"
+      <> show di'
+      <> "\""
+  getOpts :: Tensor -> IO TensorOptions
+  getOpts = cast1 ATen.tensor_options
+  withDeviceType :: DeviceType -> TensorOptions -> IO TensorOptions
+  withDeviceType dt opts = cast2 ATen.tensorOptions_device_D opts dt
+  withDeviceIndex :: Int16 -> TensorOptions -> IO TensorOptions
+  withDeviceIndex di opts = cast2 ATen.tensorOptions_device_index_s opts di -- careful, setting the device index implies setting the device type to CUDA!
+  to :: Tensor -> TensorOptions -> IO Tensor
+  to t opts = cast4 ATen.tensor_to_obb t opts nonBlocking copy
+   where
+    nonBlocking = False
+    copy = False
+  check dt dt' di di' | dt == dt' && di == di' = pure ()
+  check dt dt' di di' =
+    error
+      $  "moving of tensor failed: device should have been \""
+      <> show dt
+      <> ":"
+      <> show di
+      <> "\" but is \""
+      <> show dt'
+      <> ":"
+      <> show di'
+      <> "\""
 
-reshape :: Tensor -> [Int] -> Tensor
-reshape t shape = unsafePerformIO $ (cast2 ATen.reshape_tl) t shape
+-- | Slices the input tensor along the selected dimension at the given index. 
+select 
+ :: Tensor -- ^ input
+ -> Int -- ^ dimension to slice along
+ -> Int -- ^ index in the given dimension 
+ -> Tensor -- ^ output
+select t dim idx = unsafePerformIO $ cast3 ATen.tensor_select_ll t dim idx
+
+-- | Returns a new tensor which indexes the input tensor along dimension dim using the entries in index which is a LongTensor.
+indexSelect 
+ :: Tensor 
+ -> Int 
+ -> Tensor 
+ -> Tensor
+indexSelect t dim indexTensor = unsafePerformIO $ (cast3 ATen.index_select_tlt) t dim indexTensor
+
+-- | Returns a tensor with the same data and number of elements as input, but with the specified shape.
+reshape 
+ :: [Int] 
+ -> Tensor 
+ -> Tensor
+reshape shape t = unsafePerformIO $ cast2 ATen.reshape_tl t shape
 
 --------------------------------------------------------------------------------
 -- Move backend
@@ -102,7 +213,6 @@ toCPU t = unsafePerformIO $ (cast1 ATen.tensor_cpu) t
 
 toCUDA :: Tensor -> Tensor
 toCUDA t = unsafePerformIO $ (cast1 ATen.tensor_cuda) t
-
 
 --------------------------------------------------------------------------------
 -- Indexing support
@@ -279,6 +389,14 @@ instance Show Tensor where
 
 -- NB: ATen only defines Castable [ForeignPtr ATen.Tensor] (ForeignPtr ATen.TensorList)
 instance Castable [Tensor] (ForeignPtr ATen.TensorList) where
+  cast xs f = do
+    ptr_list <- mapM (\x -> (cast x return :: IO (ForeignPtr ATen.Tensor))) xs
+    cast ptr_list f
+  uncast xs f = uncast xs $ \ptr_list -> do
+    tensor_list <- mapM (\(x :: ForeignPtr ATen.Tensor) -> uncast x return) ptr_list
+    f tensor_list
+
+instance Castable [Tensor] (ForeignPtr (ATen.C10List ATen.Tensor)) where
   cast xs f = do
     ptr_list <- mapM (\x -> (cast x return :: IO (ForeignPtr ATen.Tensor))) xs
     cast ptr_list f

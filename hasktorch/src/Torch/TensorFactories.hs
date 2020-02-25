@@ -5,16 +5,16 @@ module Torch.TensorFactories where
 import System.IO.Unsafe
 import Foreign.ForeignPtr
 
-import qualified ATen.Const as ATen
-import qualified ATen.Managed.Native as ATen
-import qualified ATen.Managed.Type.Tensor as ATen
-import qualified ATen.Managed.Type.TensorOptions as ATen
-import qualified ATen.Type as ATen
-import qualified Torch.Managed.Native as LibTorch
-import qualified Torch.Managed.Autograd as LibTorch
-import ATen.Managed.Cast
-import ATen.Class (Castable(..))
-import ATen.Cast
+import qualified Torch.Internal.Const as ATen
+import qualified Torch.Internal.Managed.Native as ATen
+import qualified Torch.Internal.Managed.Type.Tensor as ATen
+import qualified Torch.Internal.Managed.Type.TensorOptions as ATen
+import qualified Torch.Internal.Type as ATen
+import qualified Torch.Internal.Managed.TensorFactories as LibTorch
+import qualified Torch.Internal.Managed.Autograd as LibTorch
+import Torch.Internal.Managed.Cast
+import Torch.Internal.Class (Castable(..))
+import Torch.Internal.Cast
 
 import Torch.Tensor
 import Torch.TensorOptions
@@ -56,23 +56,33 @@ mkDefaultFactoryWithDimnames non_default shape = non_default shape defaultOpts
 ones :: [Int] -> TensorOptions -> Tensor
 ones = mkFactoryUnsafe LibTorch.ones_lo
 
+-- TODO - ones_like from Native.hs is redundant with this
+onesLike :: Tensor -> Tensor
+onesLike self = unsafePerformIO $ (cast1 ATen.ones_like_t) self
+
+onesLike' :: Tensor -> Tensor
+onesLike' self = unsafePerformIO $ (cast1 ATen.ones_like_t) self
+
 zeros :: [Int] -> TensorOptions -> Tensor
 zeros = mkFactoryUnsafe LibTorch.zeros_lo
 
-rand :: [Int] -> TensorOptions -> IO Tensor
-rand = mkFactory LibTorch.rand_lo
+randIO :: [Int] -> TensorOptions -> IO Tensor
+randIO = mkFactory LibTorch.rand_lo
 
-randn :: [Int] -> TensorOptions -> IO Tensor
-randn = mkFactory LibTorch.randn_lo
+randnIO :: [Int] -> TensorOptions -> IO Tensor
+randnIO = mkFactory LibTorch.randn_lo
 
-randnLike :: Tensor -> IO Tensor
-randnLike = cast1 ATen.randn_like_t
+randintIO :: Int -> Int -> [Int] -> TensorOptions -> IO Tensor
+randintIO low high = mkFactory (LibTorch.randint_lllo (fromIntegral low) (fromIntegral high))
+
+randnLikeIO :: Tensor -> IO Tensor
+randnLikeIO = cast1 ATen.randn_like_t
+
+randLikeIO :: Tensor -> TensorOptions -> IO Tensor
+randLikeIO input opt = cast2 LibTorch.rand_like_to input opt
 
 fullLike :: Tensor -> Float -> TensorOptions -> IO Tensor
-fullLike input _fill_value opt = (cast3 LibTorch.full_like_tso) input _fill_value opt
-
-randLike :: Tensor -> TensorOptions -> IO Tensor
-randLike input opt = (cast2 LibTorch.rand_like_to) input opt
+fullLike input _fill_value opt = cast3 LibTorch.full_like_tso input _fill_value opt
 
 onesWithDimnames :: [(Int,Dimname)] -> TensorOptions -> Tensor
 onesWithDimnames = mkFactoryUnsafeWithDimnames LibTorch.ones_lNo
@@ -121,11 +131,17 @@ ones' = mkDefaultFactory ones
 zeros' :: [Int] -> Tensor
 zeros' = mkDefaultFactory zeros
 
-rand' :: [Int] -> IO Tensor
-rand' = mkDefaultFactory rand
+randIO' :: [Int] -> IO Tensor
+randIO' = mkDefaultFactory randIO
 
-randn' :: [Int] -> IO Tensor
-randn' = mkDefaultFactory randn
+randnIO' :: [Int] -> IO Tensor
+randnIO' = mkDefaultFactory randnIO
+
+randintIO' :: Int -> Int -> [Int] -> IO Tensor
+randintIO' low high = mkDefaultFactory (randintIO low high)
+
+randLikeIO' :: Tensor -> IO Tensor
+randLikeIO' t = randLikeIO t defaultOpts
 
 onesWithDimnames' :: [(Int,Dimname)] -> Tensor
 onesWithDimnames' = mkDefaultFactoryWithDimnames onesWithDimnames

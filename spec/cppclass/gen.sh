@@ -1,10 +1,13 @@
 #!/bin/bash
 
 cat <<EOF > spec/cppclass/tensor.yaml
-class: Tensor
+signature: Tensor
+cppname: at::Tensor
+hsname: Tensor
+functions: []
 constructors:
 - new() -> Tensor
-- new(Tensor) -> Tensor
+- new(Tensor x) -> Tensor
 methods:
 EOF
 

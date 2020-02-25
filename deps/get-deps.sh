@@ -10,7 +10,7 @@ set -eu
 usage_exit() {
     echo "Usage: $0 [-n] [-c] [-a "cpu" or "cu92" or "cu101"] [-s]" 1>&2
     echo " -n # Use nightly libtorch w/  -l" 1>&2
-    echo "    # Use libtorch-1.3.0   w/o -l" 1>&2
+    echo "    # Use libtorch-1.4.0   w/o -l" 1>&2
     echo "" 1>&2
     echo " -c # Download libtorch from hasktorch's site w/ -c" 1>&2
     echo "    # Download libtorch from pytorch's site w/o  -c" 1>&2
@@ -29,7 +29,7 @@ USE_NIGHTLY=0
 USE_BINARY_FOR_CI=0
 COMPUTE_ARCH=cpu
 SKIP_DOWNLOAD=0
-VERSION=1.3.0
+VERSION=1.4.0
 
 while getopts nca:sh OPT
 do
@@ -50,7 +50,10 @@ do
 done
 
 if [ "$SKIP_DOWNLOAD" = 0 ] ; then
-  git submodule update --init --recursive
+  # git submodule update --init --recursive
+  # pytorch v1.3 has unlinked submodule of https://github.com/IvanKobzarev/fbjni.git
+  # For now, we can not update recursively.
+  git submodule update --init
 
   case "$(uname)" in
     "Darwin")

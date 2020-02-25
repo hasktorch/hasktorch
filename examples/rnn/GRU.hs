@@ -5,19 +5,11 @@
 
 module GRU where
 
-import Torch.Tensor
-import Torch.DType
-import Torch.TensorFactories
-import Torch.Functions
-import Torch.TensorOptions
-import Torch.Autograd
-import Torch.NN
-
 import Control.Monad.State.Strict
 import Data.List (foldl', scanl', intersperse)
 
+import Torch
 import RecurrentLayer
-
 
 -- Specifying the shape of the recurrent layer
 data GRUSpec = GRUSpec { in_f :: Int, h_f :: Int}
@@ -33,15 +25,15 @@ instance RecurrentCell GRUCell where
   nextState GRUCell{..} input hidden =
     (ug * hidden) + ((1 - ug) * h')
     where
-      rg = gate input hidden Torch.Functions.sigmoid
+      rg = gate input hidden sigmoid
                 (reset_gate !! 0)
                 (reset_gate !! 1)
                 (reset_gate !! 2)
-      ug = gate input hidden Torch.Functions.sigmoid
+      ug = gate input hidden sigmoid
                 (update_gate !! 0)
                 (update_gate !! 1)
                 (update_gate !! 2)
-      h' = gate input (rg * hidden) Torch.Functions.tanh
+      h' = gate input (rg * hidden) Torch.tanh
                 (gru_hidden_gate !! 0)
                 (gru_hidden_gate !! 1)
                 (gru_hidden_gate !! 2)
@@ -49,15 +41,15 @@ instance RecurrentCell GRUCell where
 
 instance Randomizable GRUSpec GRUCell where
   sample GRUSpec{..} = do
-      rg_ih <- makeIndependent =<< randn' [in_f, h_f]
-      rg_hh <- makeIndependent =<< randn' [h_f, h_f]
-      rg_b <- makeIndependent =<< randn' [1, h_f]
-      ug_ih <- makeIndependent =<< randn' [in_f, h_f]
-      ug_hh <- makeIndependent =<< randn' [h_f, h_f]
-      ug_b <- makeIndependent =<< randn' [1, h_f]
-      hg_ih <- makeIndependent =<< randn' [in_f, h_f]
-      hg_hh <- makeIndependent =<< randn' [h_f, h_f]
-      hg_b <- makeIndependent =<< randn' [1, h_f]
+      rg_ih <- makeIndependent =<< randnIO' [in_f, h_f]
+      rg_hh <- makeIndependent =<< randnIO' [h_f, h_f]
+      rg_b <- makeIndependent =<< randnIO' [1, h_f]
+      ug_ih <- makeIndependent =<< randnIO' [in_f, h_f]
+      ug_hh <- makeIndependent =<< randnIO' [h_f, h_f]
+      ug_b <- makeIndependent =<< randnIO' [1, h_f]
+      hg_ih <- makeIndependent =<< randnIO' [in_f, h_f]
+      hg_hh <- makeIndependent =<< randnIO' [h_f, h_f]
+      hg_b <- makeIndependent =<< randnIO' [1, h_f]
       let rg = [rg_ih, rg_hh, rg_b]
       let ug = [ug_ih, ug_hh, ug_b]
       let hg = [hg_ih, hg_hh, hg_b]

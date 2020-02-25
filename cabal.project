@@ -1,7 +1,10 @@
+source-repository-package
+    type: git
+    location: git://github.com/hasktorch/pipes-text.git
+    tag: 3dd3d9519306ea06f0c15ad71bdf57e1dfd0b747
+
 packages:
     codegen/*.cabal
     libtorch-ffi/*.cabal
     hasktorch/*.cabal
     examples/*.cabal
-    inline-c/inline-c/*.cabal
-    inline-c/inline-c-cpp/*.cabal

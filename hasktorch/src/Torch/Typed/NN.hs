@@ -14,103 +14,105 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE TypeInType #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 
 module Torch.Typed.NN where
 
 import           Control.Monad.State.Strict
+import           Torch.HList
+import           Data.Kind                    (Type)
+import           Data.Proxy
 import           GHC.TypeLits
 import           GHC.TypeLits.Extra
 import           GHC.Generics
+import           System.IO.Unsafe
 
 import qualified Torch.NN                      as A
 import qualified Torch.Autograd                as A
 import qualified Torch.Tensor                  as A
 import qualified Torch.DType                   as D
-import           Torch.Typed
+import qualified Torch.Device                  as D
+import           Torch.Typed.Aux
 import           Torch.Typed.Factories
-import           Torch.Typed.Native
+import           Torch.Typed.Functional
+import           Torch.Typed.Tensor
+import           Torch.Typed.Parameter
+import           Torch.Typed.Device
 
-newtype Parameter dtype shape = Parameter A.IndependentTensor deriving (Show)
+class HasForward f a b | f a -> b where
+  forward :: f -> a -> b
+  forwardStoch :: f -> a -> IO b
+  forwardStoch = (pure .) . forward
 
-toDependent :: Parameter dtype shape -> Tensor dtype shape
-toDependent (Parameter t) = UnsafeMkTensor $ A.toDependent t
+----------------------------------------------
+-- Linear Layer
+----------------------------------------------
 
-makeIndependent :: Tensor dtype shape -> IO (Parameter dtype shape)
-makeIndependent t = Parameter <$> A.makeIndependent (toDynamic t)
-
-instance A.Parameterized (Parameter dtype shape) where
-  flattenParameters (Parameter x) = [x]
-  replaceOwnParameters _ = Parameter <$> A.nextParameter
-
-instance A.Parameterized (HList '[]) where
-  flattenParameters _ = []
-  replaceOwnParameters = return
-
-instance (A.Parameterized x, A.Parameterized (HList xs))
-  => A.Parameterized (HList (x ': xs))
- where
-  flattenParameters (x :. xs) = A.flattenParameters x <> A.flattenParameters xs
-  replaceOwnParameters (x :. xs) = do
-    x' <- A.replaceOwnParameters x
-    xs' <- A.replaceOwnParameters xs
-    return $ x' :. xs'
-
-instance A.Randomizable (HList '[]) (HList '[]) where
-  sample = return
-
-instance (A.Randomizable xSpec x, A.Randomizable (HList xsSpec) (HList xs))
-  => A.Randomizable (HList (xSpec ': xsSpec)) (HList (x ': xs))
- where
-  sample (xSpec :. xsSpec) = do
-    x <- A.sample xSpec
-    xs <- A.sample xsSpec
-    return $ x :. xs
-
-data LinearSpec (dtype :: D.DType)
-                (inputFeatures :: Nat) (outputFeatures :: Nat)
+data
+  LinearSpec
+    (inputFeatures :: Nat)
+    (outputFeatures :: Nat)
+    (dtype :: D.DType)
+    (device :: (D.DeviceType, Nat))
   = LinearSpec deriving (Show, Eq)
 
-data Linear (dtype :: D.DType)
-            (inputFeatures :: Nat) (outputFeatures :: Nat)
- where
+data
   Linear
-    :: forall dtype inputFeatures outputFeatures
-     . { linearWeight :: Parameter dtype '[outputFeatures, inputFeatures]
-       , linearBias   :: Parameter dtype '[outputFeatures]
+    (inputFeatures :: Nat)
+    (outputFeatures :: Nat)
+    (dtype :: D.DType)
+    (device :: (D.DeviceType, Nat)) where
+  Linear
+    :: forall inputFeatures outputFeatures dtype device
+     . { linearWeight :: Parameter device dtype '[outputFeatures, inputFeatures]
+       , linearBias   :: Parameter device dtype '[outputFeatures]
        }
-    -> Linear dtype inputFeatures outputFeatures
- deriving (Show, Generic)
+    -> Linear inputFeatures outputFeatures dtype device
+  deriving (Show, Generic)
 
 -- | linear
 -- The constraints on this one are _very_ involved, so the partial signatures
 -- make the code significantly cleaner.
 linear
   :: _
-  => Linear _ _ _
-  -> Tensor _ _
-  -> Tensor _ _
+  => Linear _ _ _ _
+  -> Tensor _ _ _
+  -> Tensor _ _ _
 linear Linear {..} input =
-  Torch.Typed.Native.linear' (toDependent linearWeight) (toDependent linearBias) input
+  Torch.Typed.Functional.linear' (toDependent linearWeight) (toDependent linearBias) input
 
-instance A.Parameterized (Linear dtype inputFeatures outputFeatures)
+instance
+  ( shape'' ~ MatMul shape '[inputFeatures, outputFeatures]
+  , shape' ~ Broadcast shape'' shape''
+  ) => HasForward (Linear inputFeatures outputFeatures dtype device) (Tensor device dtype shape) (Tensor device dtype shape') where
+  forward = Torch.Typed.NN.linear
 
-instance ( KnownDType dtype
-         , KnownNat inputFeatures
-         , KnownNat outputFeatures
-         )
-  => A.Randomizable (LinearSpec dtype inputFeatures outputFeatures)
-                    (Linear     dtype inputFeatures outputFeatures)
+instance
+  ( KnownNat inputFeatures
+  , KnownNat outputFeatures
+  , KnownDType dtype
+  , KnownDevice device
+  , RandDTypeIsValid device dtype
+  ) => A.Randomizable (LinearSpec inputFeatures outputFeatures dtype device)
+                      (Linear     inputFeatures outputFeatures dtype device)
  where
   sample LinearSpec =
     Linear <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
+
+----------------------------------------------
+-- Dropout Layer
+----------------------------------------------
 
 data DropoutSpec
  where
   DropoutSpec
     :: { dropoutProbSpec :: Double }
     -> DropoutSpec
- deriving (Show, Generic)
+ deriving (Show, Eq)
 
 data Dropout where
   Dropout
@@ -118,94 +120,170 @@ data Dropout where
     -> Dropout
  deriving (Show, Generic)
 
-dropout :: Dropout -> Bool -> Tensor dtype shape -> IO (Tensor dtype shape)
+dropout
+  :: forall shape dtype device
+   . Dropout
+  -> Bool
+  -> Tensor device dtype shape
+  -> IO (Tensor device dtype shape)
 dropout Dropout {..} dropoutTrain =
-  Torch.Typed.Native.dropout dropoutProb dropoutTrain
+  Torch.Typed.Functional.dropout dropoutProb dropoutTrain
 
-instance A.Parameterized Dropout
+instance HasForward Dropout (Tensor device dtype shape) (Tensor device dtype shape) where
+  forward dropout input = unsafePerformIO $ Torch.Typed.NN.dropout dropout False input
+  forwardStoch dropout input = Torch.Typed.NN.dropout dropout True input
 
 instance A.Randomizable DropoutSpec Dropout where
   sample DropoutSpec {..} = return $ Dropout dropoutProbSpec 
 
+----------------------------------------------
+-- Embedding Layer
+----------------------------------------------
+
+data EmbeddingType = Constant | Learned deriving (Show, Generic)
+
 data EmbeddingSpec (paddingIdx :: Maybe Nat)
-                   (dtype :: D.DType)
                    (numEmbeds :: Nat)
-                   (embedDim :: Nat)
-  = EmbeddingSpec deriving (Show, Eq)
+                   (embedSize :: Nat)
+                   (embeddingType :: EmbeddingType)
+                   (dtype :: D.DType)
+                   (device :: (D.DeviceType, Nat))
+ where
+  ConstEmbeddingSpec
+    :: forall paddingIdx numEmbeds embedSize dtype device
+     . Tensor device dtype '[numEmbeds, embedSize]
+    -> EmbeddingSpec paddingIdx numEmbeds embedSize 'Constant dtype device
+  LearnedEmbeddingWithRandomInitSpec
+    :: forall paddingIdx numEmbeds embedSize dtype device
+     . EmbeddingSpec paddingIdx numEmbeds embedSize 'Learned dtype device
+  LearnedEmbeddingWithCustomInitSpec
+    :: forall paddingIdx numEmbeds embedSize dtype device
+     . Tensor device dtype '[numEmbeds, embedSize]
+    -> EmbeddingSpec paddingIdx numEmbeds embedSize 'Learned dtype device
+
+deriving instance Show (EmbeddingSpec paddingIdx numEmbeds embedSize embeddingType dtype device)
 
 data Embedding (paddingIdx :: Maybe Nat)
-               (dtype :: D.DType)
                (numEmbeds :: Nat)
-               (embedDim :: Nat)
+               (embedSize :: Nat)
+               (embeddingType :: EmbeddingType)
+               (dtype :: D.DType)
+               (device :: (D.DeviceType, Nat))
  where
-  Embedding
-    :: forall paddingIdx dtype numEmbeds embedDim
+  ConstEmbedding
+    :: forall paddingIdx numEmbeds embedSize dtype device
     --  . (PaddingIdxCheck paddingIdx numEmbeds)
-     . { embedWeights :: Parameter dtype '[numEmbeds, embedDim] }
-    -> Embedding paddingIdx dtype numEmbeds embedDim
- deriving (Show, Generic)
+     . { constEmbedWeights :: Tensor device dtype '[numEmbeds, embedSize] }
+    -> Embedding paddingIdx numEmbeds embedSize 'Constant dtype device
+  LearnedEmbedding
+    :: forall paddingIdx numEmbeds embedSize dtype device
+    --  . (PaddingIdxCheck paddingIdx numEmbeds)
+     . { learnedEmbedWeights :: Parameter device dtype '[numEmbeds, embedSize] }
+    -> Embedding paddingIdx numEmbeds embedSize 'Learned dtype device
+
+deriving instance Show (Embedding paddingIdx numEmbeds embedSize embeddingType dtype device)
+
+instance Generic (Embedding paddingIdx numEmbeds embedSize 'Constant dtype device) where
+  type Rep (Embedding paddingIdx numEmbeds embedSize 'Constant dtype device) =
+    Rec0 (Tensor device dtype '[numEmbeds, embedSize])
+
+  from (ConstEmbedding {..}) = K1 constEmbedWeights
+  to = ConstEmbedding . unK1
+
+instance Generic (Embedding paddingIdx numEmbeds embedSize 'Learned dtype device) where
+  type Rep (Embedding paddingIdx numEmbeds embedSize 'Learned dtype device) =
+    Rec0 (Parameter device dtype '[numEmbeds, embedSize])
+
+  from (LearnedEmbedding {..}) = K1 learnedEmbedWeights
+  to = LearnedEmbedding . unK1
 
 embed
-  :: forall paddingIdx dtype shape numEmbeds embedDim
+  :: forall paddingIdx shape numEmbeds embedSize embeddingType dtype device shape'
    . ( KnownMaybeNat paddingIdx
      , PaddingIdxCheck paddingIdx numEmbeds
+     , shape' ~ Reverse (embedSize ': (Reverse shape))
      )
-  => Embedding paddingIdx dtype numEmbeds embedDim
-  -> Tensor 'D.Int64 shape
-  -> Tensor dtype (Reverse (embedDim ': (Reverse shape)))
-embed Embedding {..} input = embedding @paddingIdx
+  => Embedding paddingIdx numEmbeds embedSize embeddingType dtype device
+  -> Tensor device 'D.Int64 shape
+  -> Tensor device dtype    shape'
+embed ConstEmbedding {..} input = embedding @paddingIdx
   False
   False
-  (toDependent embedWeights)
+  constEmbedWeights
+  input
+embed LearnedEmbedding {..} input = embedding @paddingIdx
+  False
+  False
+  (toDependent learnedEmbedWeights)
   input
 
-instance A.Parameterized (Embedding paddingIdx dtype numEmbeds embedDim)
+instance
+  ( KnownMaybeNat paddingIdx
+  , PaddingIdxCheck paddingIdx numEmbeds
+  , shape' ~ Reverse (embedSize ': (Reverse shape))
+  ) => HasForward (Embedding paddingIdx numEmbeds embedSize embeddingType dtype device) (Tensor device 'D.Int64 shape) (Tensor device dtype shape') where
+  forward = embed
 
-instance ( KnownDType dtype
-         , KnownNat numEmbeds
-         , KnownNat embedDim
-         )
-  => A.Randomizable (EmbeddingSpec 'Nothing dtype numEmbeds embedDim)
-                    (Embedding     'Nothing dtype numEmbeds embedDim)
+instance A.Randomizable (EmbeddingSpec paddingIdx numEmbeds embedSize 'Constant dtype device)
+                        (Embedding     paddingIdx numEmbeds embedSize 'Constant dtype device)
  where
-  sample EmbeddingSpec = Embedding <$> (makeIndependent =<< randn)
+  sample (ConstEmbeddingSpec tensor) = pure (ConstEmbedding tensor)
 
-instance ( paddingIdx <= numEmbeds
-         , 1 <= numEmbeds - paddingIdx
-         , (((numEmbeds - paddingIdx) - 1) + (1 + paddingIdx)) ~ numEmbeds
-         , KnownNat paddingIdx
-         , KnownDType dtype
-         , KnownNat numEmbeds
-         , KnownNat embedDim
-         )
-  => A.Randomizable (EmbeddingSpec ('Just paddingIdx) dtype numEmbeds embedDim)
-                    (Embedding     ('Just paddingIdx) dtype numEmbeds embedDim)
+instance 
+  ( KnownNat numEmbeds
+  , KnownNat embedSize
+  , KnownDType dtype
+  , KnownDevice device
+  , RandDTypeIsValid device dtype
+  ) => A.Randomizable (EmbeddingSpec 'Nothing numEmbeds embedSize 'Learned dtype device)
+                      (Embedding     'Nothing numEmbeds embedSize 'Learned dtype device)
  where
-  sample EmbeddingSpec =
-    let mask = cat @0 (  zeros @'D.Bool @'[paddingIdx, embedDim]
-                      :. ones  @'D.Bool @'[1, embedDim]
-                      :. zeros @'D.Bool @'[numEmbeds - paddingIdx - 1, embedDim]
+  sample LearnedEmbeddingWithRandomInitSpec = LearnedEmbedding <$> (makeIndependent =<< randn)
+  sample (LearnedEmbeddingWithCustomInitSpec tensor) = LearnedEmbedding <$> (makeIndependent =<< (pure tensor))
+
+instance
+  ( paddingIdx <= numEmbeds
+  , 1 <= numEmbeds - paddingIdx
+  , (((numEmbeds - paddingIdx) - 1) + (1 + paddingIdx)) ~ numEmbeds
+  , KnownNat paddingIdx
+  , KnownNat numEmbeds
+  , KnownNat embedSize
+  , KnownDType dtype
+  , KnownDevice device
+  , RandDTypeIsValid device dtype
+  ) => A.Randomizable (EmbeddingSpec ('Just paddingIdx) numEmbeds embedSize 'Learned dtype device)
+                      (Embedding     ('Just paddingIdx) numEmbeds embedSize 'Learned dtype device)
+ where
+  sample LearnedEmbeddingWithRandomInitSpec =
+    let mask = cat @0 (  zeros @'[paddingIdx, embedSize]                 @'D.Bool @device
+                      :. ones  @'[1, embedSize]                          @'D.Bool @device
+                      :. zeros @'[numEmbeds - paddingIdx - 1, embedSize] @'D.Bool @device
                       :. HNil
                       )
-    in  Embedding <$> (makeIndependent =<< (maskedFill mask (0 :: Int) <$> (randn @dtype @'[numEmbeds, embedDim])))
+    in  LearnedEmbedding <$> (makeIndependent =<< (maskedFill mask (0 :: Int) <$> (randn @'[numEmbeds, embedSize] @dtype @device)))
+  sample (LearnedEmbeddingWithCustomInitSpec tensor) = LearnedEmbedding <$> (makeIndependent =<< (pure tensor))
 
-data Conv1dSpec (dtype :: D.DType)
-                (inputChannelSize :: Nat) (outputChannelSize :: Nat)
+----------------------------------------------
+-- 1D Convolution Layer
+----------------------------------------------
+
+data Conv1dSpec (inputChannelSize :: Nat) (outputChannelSize :: Nat)
                 (kernelSize :: Nat)
+                (dtype :: D.DType)
+                (device :: (D.DeviceType, Nat))
   = Conv1dSpec deriving (Show, Eq)
 
-data Conv1d (dtype :: D.DType)
-            (inputChannelSize :: Nat) (outputChannelSize :: Nat)
+data Conv1d (inputChannelSize :: Nat) (outputChannelSize :: Nat)
             (kernelSize :: Nat)
+            (dtype :: D.DType)
+            (device :: (D.DeviceType, Nat))
  where
   Conv1d
-    :: forall dtype inputChannelSize outputChannelSize kernelSize
-     . { conv1dWeight :: Parameter dtype '[ outputChannelSize, inputChannelSize
-                                          , kernelSize
-                                          ]
-       , conv1dBias   :: Parameter dtype '[outputChannelSize]
+    :: forall inputChannelSize outputChannelSize kernelSize dtype device
+     . { conv1dWeight :: Parameter device dtype '[outputChannelSize, inputChannelSize, kernelSize]
+       , conv1dBias   :: Parameter device dtype '[outputChannelSize]
        }
-    -> Conv1d dtype inputChannelSize outputChannelSize kernelSize
+    -> Conv1d inputChannelSize outputChannelSize kernelSize dtype device
  deriving (Show, Generic)
 
 -- | conv1d
@@ -214,44 +292,61 @@ data Conv1d (dtype :: D.DType)
 conv1d
   :: forall stride padding
    . _
-  => Conv1d _ _ _ _
-  -> Tensor _ _
-  -> Tensor _ _
-conv1d Conv1d {..} input = Torch.Typed.Native.conv1d @stride @padding
+  => Conv1d _ _ _ _ _
+  -> Tensor _ _ _
+  -> Tensor _ _ _
+conv1d Conv1d {..} input = Torch.Typed.Functional.conv1d @stride @padding
   (toDependent conv1dWeight)
   (toDependent conv1dBias)
   input
 
-instance A.Parameterized (Conv1d dtype inputChannelSize outputChannelSize kernelSize)
+instance
+  ( All KnownNat '[ stride
+                  , padding
+                  , inputChannelSize, outputChannelSize
+                  , kernelSize
+                  , inputSize
+                  , batchSize
+                  , outputSize
+                  ]
+  , ConvSideCheck inputSize kernelSize stride padding outputSize
+  ) => HasForward (Conv1d inputChannelSize outputChannelSize kernelSize dtype device) (Tensor device dtype '[batchSize, inputChannelSize, inputSize], Proxy stride, Proxy padding) (Tensor device dtype '[batchSize, outputChannelSize, outputSize]) where
+  forward model (input, Proxy, Proxy) = Torch.Typed.NN.conv1d @stride @padding model input
 
-instance ( KnownDType dtype
-         , KnownNat inputChannelSize
+instance ( KnownNat inputChannelSize
          , KnownNat outputChannelSize
          , KnownNat kernelSize
+         , KnownDType dtype
+         , KnownDevice device
+         , RandDTypeIsValid device dtype
          )
-  => A.Randomizable (Conv1dSpec dtype inputChannelSize outputChannelSize kernelSize)
-                    (Conv1d     dtype inputChannelSize outputChannelSize kernelSize)
+  => A.Randomizable (Conv1dSpec inputChannelSize outputChannelSize kernelSize dtype device)
+                    (Conv1d     inputChannelSize outputChannelSize kernelSize dtype device)
  where
   sample Conv1dSpec =
     Conv1d <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
 
-data Conv2dSpec (dtype :: D.DType)
-                (inputChannelSize :: Nat) (outputChannelSize :: Nat)
+----------------------------------------------
+-- 2D Convolution Layer
+----------------------------------------------
+
+data Conv2dSpec (inputChannelSize :: Nat) (outputChannelSize :: Nat)
                 (kernelSize0 :: Nat) (kernelSize1 :: Nat)
+                (dtype :: D.DType)
+                (device :: (D.DeviceType, Nat))
   = Conv2dSpec deriving (Show, Eq)
 
-data Conv2d (dtype :: D.DType)
-            (inputChannelSize :: Nat) (outputChannelSize :: Nat)
+data Conv2d (inputChannelSize :: Nat) (outputChannelSize :: Nat)
             (kernelSize0 :: Nat) (kernelSize1 :: Nat)
+            (dtype :: D.DType)
+            (device :: (D.DeviceType, Nat))
  where
   Conv2d
-    :: forall dtype inputChannelSize outputChannelSize kernelSize0 kernelSize1
-     . { conv2dWeight :: Parameter dtype '[ outputChannelSize, inputChannelSize
-                                          , kernelSize0, kernelSize1
-                                          ]
-       , conv2dBias   :: Parameter dtype '[outputChannelSize]
+    :: forall inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device
+     . { conv2dWeight :: Parameter device dtype '[outputChannelSize, inputChannelSize, kernelSize0, kernelSize1]
+       , conv2dBias   :: Parameter device dtype '[outputChannelSize]
        }
-    -> Conv2d dtype inputChannelSize outputChannelSize kernelSize0 kernelSize1
+    -> Conv2d inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device
  deriving (Show, Generic)
 
 -- | conv2d
@@ -260,45 +355,63 @@ data Conv2d (dtype :: D.DType)
 conv2d
   :: forall stride padding
    . _
-  => Conv2d _ _ _ _ _
-  -> Tensor _ _
-  -> Tensor _ _
-conv2d Conv2d {..} input = Torch.Typed.Native.conv2d @stride @padding
+  => Conv2d _ _ _ _ _ _
+  -> Tensor _ _ _
+  -> Tensor _ _ _
+conv2d Conv2d {..} input = Torch.Typed.Functional.conv2d @stride @padding
   (toDependent conv2dWeight)
   (toDependent conv2dBias)
   input
 
-instance A.Parameterized (Conv2d dtype inputChannelSize outputChannelSize kernelSize0 kernelSize1)
+instance
+  ( All KnownNat '[ Torch.Typed.Aux.Fst stride, Torch.Typed.Aux.Snd stride
+                  , Torch.Typed.Aux.Fst padding, Torch.Typed.Aux.Snd padding
+                  , inputChannelSize, outputChannelSize
+                  , kernelSize0, kernelSize1
+                  , inputSize0, inputSize1
+                  , batchSize
+                  , outputSize0, outputSize1
+                  ]
+  , ConvSideCheck inputSize0 kernelSize0 (Torch.Typed.Aux.Fst stride) (Torch.Typed.Aux.Fst padding) outputSize0
+  , ConvSideCheck inputSize1 kernelSize1 (Torch.Typed.Aux.Snd stride) (Torch.Typed.Aux.Snd padding) outputSize1
+  ) => HasForward (Conv2d inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device) (Tensor device dtype '[batchSize, inputChannelSize, inputSize0, inputSize1], Proxy stride, Proxy padding) (Tensor device dtype '[batchSize, outputChannelSize, outputSize0, outputSize1]) where
+  forward model (input, Proxy, Proxy) = Torch.Typed.NN.conv2d @stride @padding model input
 
-instance ( KnownDType dtype
-         , KnownNat inputChannelSize
+instance ( KnownNat inputChannelSize
          , KnownNat outputChannelSize
          , KnownNat kernelSize0
          , KnownNat kernelSize1
+         , KnownDType dtype
+         , KnownDevice device
+         , RandDTypeIsValid device dtype
          )
-  => A.Randomizable (Conv2dSpec dtype inputChannelSize outputChannelSize kernelSize0 kernelSize1)
-                    (Conv2d     dtype inputChannelSize outputChannelSize kernelSize0 kernelSize1)
+  => A.Randomizable (Conv2dSpec inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
+                    (Conv2d     inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
  where
   sample Conv2dSpec =
     Conv2d <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
 
-data Conv3dSpec (dtype :: D.DType)
-                (inputChannelSize :: Nat) (outputChannelSize :: Nat)
+----------------------------------------------
+-- 3D Convolution Layer
+----------------------------------------------
+
+data Conv3dSpec (inputChannelSize :: Nat) (outputChannelSize :: Nat)
                 (kernelSize0 :: Nat) (kernelSize1 :: Nat) (kernelSize2 :: Nat)
+                (dtype :: D.DType)
+                (device :: (D.DeviceType, Nat))
   = Conv3dSpec deriving (Show, Eq)
 
-data Conv3d (dtype :: D.DType)
-            (inputChannelSize :: Nat) (outputChannelSize :: Nat)
+data Conv3d (inputChannelSize :: Nat) (outputChannelSize :: Nat)
             (kernelSize0 :: Nat) (kernelSize1 :: Nat) (kernelSize2 :: Nat)
+            (dtype :: D.DType)
+            (device :: (D.DeviceType, Nat))
  where
   Conv3d
-    :: forall dtype inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2
-     . { conv3dWeight :: Parameter dtype '[ outputChannelSize, inputChannelSize
-                                          , kernelSize0, kernelSize1, kernelSize2
-                                          ]
-       , conv3dBias   :: Parameter dtype '[outputChannelSize]
+    :: forall inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device
+     . { conv3dWeight :: Parameter device dtype '[outputChannelSize, inputChannelSize, kernelSize0, kernelSize1, kernelSize2]
+       , conv3dBias   :: Parameter device dtype '[outputChannelSize]
        }
-    -> Conv3d dtype inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2
+    -> Conv3d inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device
  deriving (Show, Generic)
 
 -- | conv3d
@@ -307,71 +420,75 @@ data Conv3d (dtype :: D.DType)
 conv3d
   :: forall stride padding
    . _
-  => Conv3d _ _ _ _ _ _
-  -> Tensor _ _
-  -> Tensor _ _
-conv3d Conv3d {..} input = Torch.Typed.Native.conv3d @stride @padding
+  => Conv3d _ _ _ _ _ _ _
+  -> Tensor _ _ _
+  -> Tensor _ _ _
+conv3d Conv3d {..} input = Torch.Typed.Functional.conv3d @stride @padding
   (toDependent conv3dWeight)
   (toDependent conv3dBias)
   input
 
-instance A.Parameterized (Conv3d dtype inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2)
-
-instance ( KnownDType dtype
-         , KnownNat inputChannelSize
-         , KnownNat outputChannelSize
-         , KnownNat kernelSize0
-         , KnownNat kernelSize1
-         , KnownNat kernelSize2
-         )
-  => A.Randomizable (Conv3dSpec dtype inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2)
-                    (Conv3d     dtype inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2)
+instance
+  ( KnownNat inputChannelSize
+  , KnownNat outputChannelSize
+  , KnownNat kernelSize0
+  , KnownNat kernelSize1
+  , KnownNat kernelSize2
+  , KnownDType dtype
+  , KnownDevice device
+  , RandDTypeIsValid device dtype
+  ) => A.Randomizable (Conv3dSpec inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
+                      (Conv3d     inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
  where
   sample Conv3dSpec =
     Conv3d <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
 
-data LayerNormSpec (dtype :: D.DType) (normalizedShape :: [Nat])
+----------------------------------------------
+-- Layer Norm Layer
+----------------------------------------------
+
+data LayerNormSpec (normalizedShape :: [Nat]) (dtype :: D.DType) (device :: (D.DeviceType, Nat))
  where
   LayerNormSpec
-    :: forall dtype normalizedShape
+    :: forall normalizedShape dtype device
      . { layerNormEpsSpec :: Double}
-    -> LayerNormSpec dtype normalizedShape
+    -> LayerNormSpec normalizedShape dtype device
  deriving (Show, Eq)
 
-data LayerNorm (dtype :: D.DType) (normalizedShape :: [Nat])
+data LayerNorm (normalizedShape :: [Nat]) (dtype :: D.DType) (device :: (D.DeviceType, Nat))
  where
   LayerNorm
-    :: { layerNormWeight :: Parameter dtype normalizedShape
-       , layerNormBias :: Parameter dtype normalizedShape
-       , layerNormEps :: Double
+    :: { layerNormWeight :: Parameter device dtype normalizedShape
+       , layerNormBias   :: Parameter device dtype normalizedShape
+       , layerNormEps    :: Double
        }
-    -> LayerNorm dtype normalizedShape
+    -> LayerNorm normalizedShape dtype device
  deriving (Show, Generic)
 
 layerNorm
-  :: forall normalizedShape dtype shape
+  :: forall normalizedShape shape dtype device
    . ( EndsWith shape normalizedShape
      , KnownShape normalizedShape
      )
-  => LayerNorm dtype normalizedShape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-layerNorm LayerNorm {..} = Torch.Typed.Native.layerNorm @normalizedShape
+  => LayerNorm normalizedShape dtype device
+  -> Tensor device dtype shape
+  -> Tensor device dtype shape
+layerNorm LayerNorm {..} = Torch.Typed.Functional.layerNorm @normalizedShape
   (toDependent layerNormWeight)
   (toDependent layerNormBias)
   layerNormEps
 
-instance A.Parameterized (LayerNorm dtype normalizedShape) where
-  flattenParameters LayerNorm {..} =
-    A.flattenParameters layerNormWeight <> A.flattenParameters layerNormBias
-  replaceOwnParameters LayerNorm {..} = do
-    layerNormWeight <- Parameter <$> A.nextParameter
-    layerNormBias   <- Parameter <$> A.nextParameter
-    return $ LayerNorm { .. }
+instance
+  ( EndsWith shape normalizedShape
+  , KnownShape normalizedShape
+  ) => HasForward (LayerNorm normalizedShape dtype device) (Tensor device dtype shape) (Tensor device dtype shape) where
+  forward = Torch.Typed.NN.layerNorm
 
-instance (TensorOptions dtype normalizedShape)
-  => A.Randomizable (LayerNormSpec dtype normalizedShape)
-                    (LayerNorm     dtype normalizedShape)
+instance
+  ( TensorOptions normalizedShape dtype device
+  , RandDTypeIsValid device dtype
+  ) => A.Randomizable (LayerNormSpec normalizedShape dtype device)
+                      (LayerNorm     normalizedShape dtype device)
  where
   sample LayerNormSpec {..} =
     LayerNorm

@@ -12,18 +12,18 @@ import qualified Language.C.Inline.Cpp.Exceptions as C
 import Control.Monad (forM_,forM,join)
 import Data.Int
 import Foreign
-import ATen.Const
-import ATen.Type
-import ATen.Class
-import ATen.Managed.Type.TensorOptions
-import ATen.Managed.Type.Tensor
-import ATen.Managed.Type.TensorList
-import ATen.Managed.Type.Extra
-import ATen.Managed.Type.IntArray
-import ATen.Managed.Type.Scalar
-import ATen.Managed.Type.Tuple
-import ATen.Managed.Type.Context
-import ATen.Managed.Native
+import Torch.Internal.Const
+import Torch.Internal.Type
+import Torch.Internal.Class
+import Torch.Internal.Managed.Type.TensorOptions
+import Torch.Internal.Managed.Type.Tensor
+import Torch.Internal.Managed.Type.TensorList
+import Torch.Internal.Managed.Type.Extra
+import Torch.Internal.Managed.Type.IntArray
+import Torch.Internal.Managed.Type.Scalar
+import Torch.Internal.Managed.Type.Tuple
+import Torch.Internal.Managed.Type.Context
+import Torch.Internal.Managed.Native
 
 intArray :: [Int64] -> IO (ForeignPtr IntArray)
 intArray dims = do
@@ -119,7 +119,7 @@ spec = forM_ [
 -- }
   it "TestSort" $ do
     b <- new' rand_lo [3,4] dtype
-    z <- tensor_sort_lb b 1 0 :: IO (ForeignPtr (Tensor,Tensor))
+    z <- tensor_sort_lb b 1 0 :: IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
     z_sorted <- get0 z
     z00 <- at2 z_sorted 0 0 >>= tensor_item_float
     z01 <- at2 z_sorted 0 1 >>= tensor_item_float

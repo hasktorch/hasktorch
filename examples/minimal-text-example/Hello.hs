@@ -5,18 +5,14 @@
 
 module Main where
 
-import Torch.Tensor
-import Torch.DType
-import Torch.TensorFactories
-import Torch.Functions
-import Torch.TensorOptions
-import Torch.Autograd
-import Torch.NN
+import Control.Monad (when)
+
 import GHC.Generics
 
 import Control.Monad.State.Strict
 import Data.List
 
+import Torch
 import RecurrentLayer
 import Elman
 import LSTM
@@ -34,22 +30,12 @@ run :: (RecurrentCell a, Parameterized a)
     -> Int
     -> IO (a)
 run input_tensor init_hidden expected_output model i = do
-
     let output = finalState model input_tensor init_hidden
-    let loss = mse_loss output expected_output
-
-    if i `mod` 100 == 0
-    then print loss
-    else return ()
-
-    let flat_parameters = flattenParameters model
-    let gradients = grad loss flat_parameters
-
-    -- new parameters returned by the SGD update functions
-    new_flat_parameters <- mapM makeIndependent $ sgd 0.05 flat_parameters gradients
-
-    -- return the new model state "to" the next iteration of foldLoop
-    return $ replaceParameters model new_flat_parameters
+        loss = mseLoss output expected_output
+    when (i `mod` 100 == 0) $ do
+        print loss
+    (newParam, _) <- runStep model GD loss 0.05
+    return $ replaceParameters model newParam
 
 
 -- | convert a list to a one-dimensional tensor
@@ -77,14 +63,14 @@ letter index = case index of
     3 -> 'o'
 
 letters :: [Tensor]
-letters = map (((Prelude.flip reshape) [1, 4]) . (fromList . repr)) "helo"
+letters = map ((reshape [1, 4]) . (fromList . repr)) "helo"
 
 getIndex :: Tensor -> Int
 getIndex result = case index of
     Nothing -> -1
     Just x  -> x
     where
-        losses = map toDouble (map (mse_loss result) letters)
+        losses = map toDouble (map (mseLoss result) letters)
         min_loss = Prelude.minimum losses
         index = elemIndex min_loss losses
 
@@ -97,7 +83,7 @@ main = do
     let input_tensor = fromNestedList $ map repr "hell"
 
     -- randomly initialized hidden state
-    init_hidden <- randn' [1, num_features]
+    init_hidden <- randnIO' [1, num_features]
 
     let expected_output = fromNestedList [repr 'o']
 

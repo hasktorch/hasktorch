@@ -11,7 +11,7 @@ import Torch.Tensor
 import Torch.DType
 import Torch.Layout
 import Torch.TensorFactories
-import Torch.Functions
+import Torch.Functional
 import Torch.TensorOptions
 
 spec :: Spec

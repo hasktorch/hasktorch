@@ -8,7 +8,7 @@ import Torch.Tensor
 import Torch.DType
 import Torch.Dimname
 import Torch.TensorFactories
-import Torch.Functions
+import Torch.Functional
 import Torch.TensorOptions
 import Torch.Autograd
 
