@@ -12,14 +12,13 @@ let
         "1493r1bdni32j5hyw3ka3kndx3d2ydm5wmprmklfg4lj7v967n5f"; # update the sha256 value to something arbitrary when you bump the revision; nix will complain with the correct value.
     };
 
-    
     all-hies = import (builtins.fetchTarball
       "https://github.com/infinisil/all-hies/tarball/master") { };
   };
 
   nixpkgs =
     builtins.fromJSON (builtins.readFile (srcs.hasktorch + /nix/nixpkgs.json));
-    
+
 in let
   hasktorchShared =
     (import (srcs.hasktorch + /nix/shared.nix) { compiler = ghcVersion; });
@@ -31,10 +30,10 @@ in let
   };
 
   pinnedPkgs = hostPkgs.fetchFromGitHub {
-        owner = "NixOS";
-        repo = "nixpkgs";
-        inherit (nixpkgs) rev sha256;
-    };
+    owner = "NixOS";
+    repo = "nixpkgs";
+    inherit (nixpkgs) rev sha256;
+  };
 
   # an overlay that specifies haskell packages to use for ghc package set specified by ${ghcVersion}.
   haskellOverlay = pkgsNew: pkgsOld: {
@@ -54,9 +53,11 @@ in let
     };
   };
 
+  overlays = [ hasktorchOverlay haskellOverlay ];
+
   # overlay the two overlays onto nixpkgs
   pkgs = import pinnedPkgs {
-    overlays = [ hasktorchOverlay haskellOverlay ];
+    inherit overlays;
     config = { allowUnfree = true; };
   };
 
