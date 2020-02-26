@@ -75,6 +75,11 @@ stack run regression
 For additional examples, see the `examples/` directory.
 
 
+## Using as a library in a project via `nix`
+
+See the example project in `examples/library-example` for a `default.nix` that can be dropped alongside a .cabal file.
+
+
 ## Contributing
 
 We welcome new contributors.
