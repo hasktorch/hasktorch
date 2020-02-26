@@ -63,17 +63,20 @@ in let
 
   compiler = pkgs.haskell.packages."${ghcVersion}";
 
-  # enabling shared libraries caused ld to try to link *.dylibs more than once on Mojave.
-  maybeFixDarwin = drv:
-    if pkgs.stdenv.isDarwin then
-      pkgs.haskell.lib.disableSharedLibraries drv
-    else
-      drv;
+# the following attributes allow:
+# nix-build -A build    <- build the project
+# nix-shell -A shell    <- load a nix shell with the below specified environment.
+# and an `overlays` attribute in case downstream expressions need access to the overlays.
+in {
+  inherit overlays;
 
-in maybeFixDarwin (compiler.developPackage {
-  root = ./.;
-  modifier = drv:
-    # add any shell or build tools we'd like in this environment
-    pkgs.haskell.lib.addBuildTools drv
-    (with pkgs.haskellPackages; [ cabal-install ghcid hies pkgs.llvm ]);
-})
+  build = compiler.callCabal2nix "library-example" ./. { };
+
+  shell = compiler.developPackage {
+    root = ./.;
+    modifier = drv:
+      # add any shell or build tools we'd like in this environment
+      pkgs.haskell.lib.addBuildTools drv
+      (with pkgs.haskellPackages; [ cabal-install ghcid hies pkgs.llvm ]);
+  };
+}
