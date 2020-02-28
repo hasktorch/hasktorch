@@ -12,10 +12,16 @@ jobs:
     - name: Setup repo
       run: |
         git submodule init && git submodule update
-    - name: Build
-      run: |
-        nix-env -i cachix
-        cachix use hasktorch
-        cachix use jupyterwith
-        cd experimental/jupyterlab
-        nix-shell --option sandbox false --command "echo"
+    - uses: cachix/cachix-action@v2
+      with:
+        name: hasktorch
+        signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+        file: experimental/jupyterlab/shell.nix
+        nixBuildArgs: --option sandbox false 
+#    - name: Build
+#      run: |
+#        nix-env -i cachix
+#        cachix use hasktorch
+#        cachix use jupyterwith
+#        cd experimental/jupyterlab
+#        nix-shell --option sandbox false --command "echo"
