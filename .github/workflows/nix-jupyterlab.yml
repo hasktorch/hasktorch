@@ -18,4 +18,4 @@ jobs:
         cachix use hasktorch
         cachix use jupyterwith
         cd experimental/jupyterlab
-        nix-shell --command "echo"
+        nix-shell --option sandbox false --command "echo"

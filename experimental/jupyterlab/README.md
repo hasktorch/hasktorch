@@ -6,7 +6,7 @@ This example should be run from the `experimental/jupyter/` directory.
 
 First, run:
 
-`nix-shell --command "jupyer lab"`
+`nix-shell --option sandbox false --command "jupyer lab"`
 
 The command outputs a url to connect to JupyterLab.
 Then, open your browser with the url.
