@@ -32,7 +32,7 @@ Starting at the top-level directory of the project, go to the `deps/` (dependenc
 
 ```
 pushd deps           # Change to deps directory and save the current directory.
-./get-deps.sh        # Run the sehll script to retrieve the dependency. 
+./get-deps.sh        # Run the shell script to retrieve the dependency. 
 popd                 # Go back to the root directory of the project.
 ```
 
