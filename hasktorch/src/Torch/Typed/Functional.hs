@@ -15,7 +15,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoStarIsType #-}
-{-# OPTIONS_GHC -freduction-depth=0 #-}
 
 module Torch.Typed.Functional where
 
@@ -1855,7 +1854,8 @@ type ConvSideCheck (inputSize :: Nat) (kernelSize :: Nat) (stride :: Nat) (paddi
     -- kernel size and stride must be > 0
     kernelSize >= 1, stride >= 1
     -- kernel size can't be greater than actual input size
-  , ((inputSize + (2 * padding)) + 1) >= kernelSize
+    -- ToDo: Comment out this line to avoid reduction-stack-overflow.
+    -- , ((inputSize + (2 * padding)) + 1) >= kernelSize
     -- output size must be greater than 0
   , outputSize >= 1
     -- output formulation:
