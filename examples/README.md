@@ -7,8 +7,8 @@ dimension invariants of the computation while dynamic tensors
 treat tensors as an opaque type similar to PyTorch.
 
 If you are new to hasktorch, we recommend starting with a
-simple example such as the [regression](examples/regression)
-or [xor-mlp](examples/xor-mlp) to get familiar with basic
+simple example such as the [regression](regression)
+or [xor-mlp](xor-mlp) to get familiar with basic
 mechanics of computation and training a model.
 
 ## Dynamic Tensor Examples
