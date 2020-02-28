@@ -1,12 +1,11 @@
 let
   jupyterLib = builtins.fetchGit {
-#    url = https://github.com/tweag/jupyterWith;
-#    rev = "70f1dddd6446ab0155a5b0ff659153b397419a2d";
-
+    url = https://github.com/tweag/jupyterWith;
+    rev = "70f1dddd6446ab0155a5b0ff659153b397419a2d";
 #   See https://github.com/tweag/jupyterWith/pull/77    
-#   For now, we use private repo of jupyterWith to support for macos.
-    url = https://github.com/junjihashimoto/jupyterWith;
-    rev = "6aa22039e278e59d49bff7cd8cc7addb5b01e76f";
+#   When you use this on macos, use following branch.
+#    url = https://github.com/junjihashimoto/jupyterWith;
+#    rev = "6aa22039e278e59d49bff7cd8cc7addb5b01e76f";
   };
   nixpkgsPath = jupyterLib + "/nix";
   haskTorchSrc = builtins.fetchGit {
