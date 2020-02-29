@@ -6,7 +6,7 @@ jobs:
   build:
     runs-on: macOS-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - name: Setup repo
       run: |
         git submodule init && git submodule update
