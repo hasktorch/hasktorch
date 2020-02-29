@@ -149,6 +149,10 @@ type family ReplaceDim (dim :: Nat) (shape :: [Nat]) (n :: Nat) :: Maybe [Nat] w
   ReplaceDim dim (h ': t) n = AppendToMaybe h (ReplaceDim (dim - 1) t n)
   ReplaceDim _   _        _ = Nothing
 
+type family FromJust (ma :: Maybe k) :: k where 
+  FromJust Nothing = TypeError (Text "FromJust on Nothing!")
+  FromJust (Just a ) = a
+
 --------------------------------------------------------------------------------
 -- Operations
 --------------------------------------------------------------------------------

@@ -3905,8 +3905,24 @@ median' input = unsafePerformIO $ ATen.cast3 ATen.Managed.median_tlb
 -- argsort :: Tensor device dtype shape -> Int -> Bool -> Tensor device dtype shape
 -- argsort _input _dim _descending = unsafePerformIO $ (ATen.cast3 ATen.Managed.argsort_tlb) _input _dim _descending
 
--- topk :: Tensor device dtype shape -> Int -> Int -> Bool -> Bool -> (Tensor device dtype shape,Tensor device dtype shape)
--- topk _input _k _dim _largest _sorted = unsafePerformIO $ (ATen.cast5 ATen.Managed.topk_tllbb) _input _k _dim _largest _sorted
+
+-- | Returns the k largest (if largest is `True`) elements of the given input tensor along a given dimension.
+--
+-- >>> topk @3 @1 (ones :: CPUTensor 'D.Float '[2,3]) True True
+-- (Tensor Float [2,3] [[ 1.0000   ,  1.0000   ,  1.0000   ],
+--                     [ 1.0000   ,  1.0000   ,  1.0000   ]],Tensor Int64 [2,3] [[ 0,  1,  2],
+--                     [ 0,  1,  2]])
+topk 
+  :: forall k dim shape dtype device 
+   . (KnownNat k, KnownNat dim, All KnownNat shape, DimOutOfBoundCheck shape dim, FromJust (ExtractDim dim shape) >= k) 
+   => Tensor device dtype shape 
+   -> Bool -- ^ if we're returning the top k largest (or top k smallest)
+   -> Bool -- ^ if the resulting k elements are themselves sorted
+   -> (Tensor device dtype (FromJust (ReplaceDim dim shape k)), Tensor device dtype (FromJust (ReplaceDim dim shape 1)))
+topk _input _largest _sorted = unsafePerformIO $ (ATen.cast5 ATen.Managed.topk_tllbb) _input _k _dim _largest _sorted
+  where 
+  _k = natValI @k
+  _dim = natValI @dim
 
 -- renorm :: Tensor device dtype shape -> Float -> Int -> Float -> Tensor device dtype shape
 -- renorm _input _p _dim _maxnorm = unsafePerformIO $ (ATen.cast4 ATen.Managed.renorm_tsls) _input _p _dim _maxnorm
