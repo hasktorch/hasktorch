@@ -16,7 +16,7 @@ jobs:
       with:
         name: hasktorch
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-        file: experimental/jupyterlab/shell.nix
+        file: experimental/jupyterlab/default.nix
         nixBuildArgs: --option sandbox false 
 #    - name: Build
 #      run: |
