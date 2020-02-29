@@ -14,5 +14,6 @@ jobs:
         git submodule init && git submodule update
     - uses: cachix/cachix-action@v4
       with:
+        skipNixBuild: false
         name: hasktorch
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'

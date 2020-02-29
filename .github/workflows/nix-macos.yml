@@ -15,4 +15,5 @@ jobs:
     - uses: cachix/cachix-action@v4
       with:
         name: hasktorch
+        skipNixBuild: false
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
