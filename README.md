@@ -24,16 +24,16 @@ Internals (for contributing developers):
 
 ## Getting Started
 
-### on OSX or Ubuntu-like OS's
+### On OSX or Ubuntu-like OSes'
 
 The following steps run a toy linear regression example, assuming the hasktorch repository has just been cloned.
 
 Starting at the top-level directory of the project, go to the `deps/` (dependencies) directory and run the `get-deps.sh` shell script to retrieve project dependencies with the following commands:
 
 ```
-pushd deps
-./get-deps.sh
-popd
+pushd deps           # Change to deps directory and save the current directory.
+./get-deps.sh        # Run the shell script to retrieve the dependency. 
+popd                 # Go back to the root directory of the project.
 ```
 
 If you are using CUDA-9, replace `./get-deps.sh` with `./get-deps.sh -a cu92`. Likewise for CUDA-10, replace `./get-deps.sh` with `./get-deps.sh -a cu101`.
@@ -73,6 +73,23 @@ stack run regression
 ```
 
 For additional examples, see the `examples/` directory.
+
+### Set up development environement in VS Code.
+If you want to develop the project in VS Code and get Haskell Tooling support,
+you will need to install [HIE(Haskell IDE Enginer)](https://github.com/haskell/haskell-ide-engine).
+Since this project uses the resolver version `lts-14.7`, so you will need to 
+install and use the corresponding version of HIE which is `hie-8.6.5`.
+
+And then install the [Haskell Language Server plugin](https://marketplace.visualstudio.com/items?itemName=alanz.vscode-hie-server). If you encounter the `hie executable missing, please make sure it is installed, see github.com/haskell/haskell-ide-engine` when starting VSCode,
+first make sure that when you run:
+```
+which hie
+```
+It should give you an output.
+And the path of the `hie` executable in the `settings.json` by adding:
+```
+"languageServerHaskell.hieExecutablePath": "~/.local/bin/hie-8.6.5",
+``` 
 
 
 ## Using as a library in a project via `nix`
