@@ -4450,8 +4450,8 @@ upsample_bilinear2d :: forall h w shape dtype device .
 upsample_bilinear2d _input _align_corners 
   = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_bilinear2d_tlb) _input [h,w] _align_corners
   where  
-    w = natValI @w 
-    h = natValI @h
+    w = natValI @w :: Int
+    h = natValI @h :: Int
 
 -- | Applies a 2D bicubic upsampling to an input signal composed of several input channels.
 --
@@ -4464,8 +4464,8 @@ upsample_bicubic2d :: forall h w shape dtype device .
   -> Tensor device dtype (Upsample2d shape h w)
 upsample_bicubic2d _input _align_corners = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_bicubic2d_tlb) _input [h,w] _align_corners
   where 
-    w = natValI @w 
-    h = natValI @h
+    w = natValI @w :: Int
+    h = natValI @h :: Int
 
 -- upsample_trilinear3d :: Tensor device dtype shape -> (Int,Int,Int) -> Bool -> Tensor device dtype shape
 -- upsample_trilinear3d _input _output_size _align_corners = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_trilinear3d_tlb) _input _output_size _align_corners
@@ -4483,8 +4483,8 @@ upsample_nearest2d :: forall h w shape dtype device .
   -> Tensor device dtype (Upsample2d shape h w)
 upsample_nearest2d _input = unsafePerformIO $ (ATen.cast2 ATen.Managed.upsample_nearest2d_tl) _input [h,w]
   where
-    w = natValI @w 
-    h = natValI @h
+    w = natValI @w :: Int
+    h = natValI @h :: Int
 
 -- upsample_nearest3d :: Tensor device dtype shape -> (Int,Int,Int) -> Tensor device dtype shape
 -- upsample_nearest3d _input _output_size = unsafePerformIO $ (ATen.cast2 ATen.Managed.upsample_nearest3d_tl) _input _output_size
