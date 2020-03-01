@@ -4416,11 +4416,46 @@ avgPool3d input = unsafePerformIO $ ATen.cast7
 -- upsample_linear1d :: Tensor device dtype shape -> Int -> Bool -> Tensor device dtype shape
 -- upsample_linear1d _input _output_size _align_corners = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_linear1d_tlb) _input _output_size _align_corners
 
--- upsample_bilinear2d :: Tensor device dtype shape -> (Int,Int) -> Bool -> Tensor device dtype shape
--- upsample_bilinear2d _input _output_size _align_corners = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_bilinear2d_tlb) _input _output_size _align_corners
 
--- upsample_bicubic2d :: Tensor device dtype shape -> (Int,Int) -> Bool -> Tensor device dtype shape
--- upsample_bicubic2d _input _output_size _align_corners = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_bicubic2d_tlb) _input _output_size _align_corners
+type family Upsample2dCheck shape h w where 
+  Upsample2dCheck (b : c : w : h : '[]) h' w' = 
+    If ( h <=? h') 
+      (If (w <=? w') (b : c : w' : h' : '[]) 
+        (TypeError (Text "Target width must be greater than current width!"))
+      ) 
+      (TypeError (Text "Target height must be greater than current height!"))
+  Upsample2dCheck _ _ _ = TypeError (Text "Shape must be 4 dimensional!")
+
+type Upsample2d shape h w = Upsample2dCheck shape h w
+
+-- | Applies a 2D bilinear upsampling to an input signal composed of several input channels.
+--
+-- >>> upsample_bilinear2d @5 @3 (ones :: CPUTensor 'D.Float '[2,3,2,2]) False
+-- >>> Tensor Float [2,3,5,3]
+upsample_bilinear2d :: forall h w shape dtype device . 
+  (KnownNat h, KnownNat w, All KnownNat shape) 
+  => Tensor device dtype shape 
+  -> Bool -- ^ if True, the corner pixels of the input and output tensors are aligned, and thus preserving the values at those pixels. 
+  -> Tensor device dtype (Upsample2d shape h w)
+upsample_bilinear2d _input _align_corners 
+  = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_bilinear2d_tlb) _input [h,w] _align_corners
+  where  
+    w = natValI @w 
+    h = natValI @h
+
+-- | Applies a 2D bicubic upsampling to an input signal composed of several input channels.
+--
+-- >>> upsample_bicubic2d @5 @3 (ones :: CPUTensor 'D.Float '[2,3,2,2]) False
+-- >>> Tensor Float [2,3,5,3]
+upsample_bicubic2d :: forall h w shape dtype device . 
+  (KnownNat h, KnownNat w, All KnownNat shape) 
+  => Tensor device dtype shape 
+  -> Bool 
+  -> Tensor device dtype (Upsample2d shape h w)
+upsample_bicubic2d _input _align_corners = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_bicubic2d_tlb) _input [h,w] _align_corners
+  where 
+    w = natValI @w 
+    h = natValI @h
 
 -- upsample_trilinear3d :: Tensor device dtype shape -> (Int,Int,Int) -> Bool -> Tensor device dtype shape
 -- upsample_trilinear3d _input _output_size _align_corners = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_trilinear3d_tlb) _input _output_size _align_corners
@@ -4428,8 +4463,18 @@ avgPool3d input = unsafePerformIO $ ATen.cast7
 -- upsample_nearest1d :: Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- upsample_nearest1d _input _output_size = unsafePerformIO $ (ATen.cast2 ATen.Managed.upsample_nearest1d_tl) _input _output_size
 
--- upsample_nearest2d :: Tensor device dtype shape -> (Int,Int) -> Tensor device dtype shape
--- upsample_nearest2d _input _output_size = unsafePerformIO $ (ATen.cast2 ATen.Managed.upsample_nearest2d_tl) _input _output_size
+-- | Applies a 2D bicubic upsampling to an input signal composed of several input channels.
+--
+-- >>> upsample_nearest2d @5 @3 (ones :: CPUTensor 'D.Float '[2,3,2,2])
+-- >>> Tensor Float [2,3,5,3]
+upsample_nearest2d :: forall h w shape dtype device . 
+  (KnownNat h, KnownNat w, All KnownNat shape) 
+  => Tensor device dtype shape 
+  -> Tensor device dtype (Upsample2d shape h w)
+upsample_nearest2d _input = unsafePerformIO $ (ATen.cast2 ATen.Managed.upsample_nearest2d_tl) _input [h,w]
+  where
+    w = natValI @w 
+    h = natValI @h
 
 -- upsample_nearest3d :: Tensor device dtype shape -> (Int,Int,Int) -> Tensor device dtype shape
 -- upsample_nearest3d _input _output_size = unsafePerformIO $ (ATen.cast2 ATen.Managed.upsample_nearest3d_tl) _input _output_size
