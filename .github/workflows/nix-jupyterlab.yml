@@ -1,4 +1,4 @@
-name: nix-linux
+name: nix-jupyterlab
 
 on: [push, pull_request]
 
@@ -14,6 +14,15 @@ jobs:
         git submodule init && git submodule update
     - uses: cachix/cachix-action@releases/v5
       with:
-        skipNixBuild: false
         name: hasktorch
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+        skipNixBuild: false
+        file: experimental/jupyterlab/default.nix
+        nixBuildArgs: --option sandbox false 
+#    - name: Build
+#      run: |
+#        nix-env -i cachix
+#        cachix use hasktorch
+#        cachix use jupyterwith
+#        cd experimental/jupyterlab
+#        nix-shell --option sandbox false --command "echo"

@@ -12,6 +12,7 @@ Basic functionality:
 
 - `deps/` - submodules and downloads for build dependencies - libtorch, mklml, pytorch
 - `examples/` - high level example models (xor mlp, typed cnn)
+- `experimental/` - experimental projects or tips (jupyterlab)
 - `hasktorch/` - higher level user-facing library, calls into `ffi/`, used by `examples/`
 
 Internals (for contributing developers):
