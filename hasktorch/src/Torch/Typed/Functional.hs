@@ -4438,7 +4438,7 @@ upsample_bilinear2d :: forall h w shape dtype device .
   -> Bool -- ^ if True, the corner pixels of the input and output tensors are aligned, and thus preserving the values at those pixels. 
   -> Tensor device dtype (Upsample2d shape h w)
 upsample_bilinear2d _input _align_corners 
-  = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_bilinear2d_tlb) _input [h,w] _align_corners
+  = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_bilinear2d_tlb) _input ([h,w] :: [Int]) _align_corners
   where  
     w = natValI @w :: Int
     h = natValI @h :: Int
@@ -4452,7 +4452,7 @@ upsample_bicubic2d :: forall h w shape dtype device .
   => Tensor device dtype shape 
   -> Bool 
   -> Tensor device dtype (Upsample2d shape h w)
-upsample_bicubic2d _input _align_corners = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_bicubic2d_tlb) _input [h,w] _align_corners
+upsample_bicubic2d _input _align_corners = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_bicubic2d_tlb) _input ([h,w] :: [Int]) _align_corners
   where 
     w = natValI @w :: Int
     h = natValI @h :: Int
@@ -4471,7 +4471,7 @@ upsample_nearest2d :: forall h w shape dtype device .
   (KnownNat h, KnownNat w, All KnownNat shape) 
   => Tensor device dtype shape 
   -> Tensor device dtype (Upsample2d shape h w)
-upsample_nearest2d _input = unsafePerformIO $ (ATen.cast2 ATen.Managed.upsample_nearest2d_tl) _input [h,w]
+upsample_nearest2d _input = unsafePerformIO $ (ATen.cast2 ATen.Managed.upsample_nearest2d_tl) _input ([h,w] :: [Int])
   where
     w = natValI @w :: Int
     h = natValI @h :: Int
