@@ -12,7 +12,7 @@ jobs:
     - name: Setup repo
       run: |
         git submodule init && git submodule update
-    - uses: cachix/cachix-action@v4
+    - uses: cachix/cachix-action@releases/v5
       with:
         skipNixBuild: false
         name: hasktorch
