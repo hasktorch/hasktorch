@@ -238,6 +238,8 @@ matmul
  -> Tensor -- ^ output
 matmul a b = unsafePerformIO $ (cast2 ATen.matmul_tt) a b
 
+-- | A simple lookup table that looks up embeddings in a fixed dictionary and size.
+-- This module is often used to retrieve word embeddings using indices. The input to the module is a list of indices, and the embedding matrix, and the output is the corresponding word embeddings.
 embedding 
     :: Bool -- ^ whether or not to scale the gradient by the frequencies
     -> Bool -- ^ whether or not the embedding is sparse
@@ -248,6 +250,14 @@ embedding
 embedding scaleByGradFreq sparse weights paddingIdx indices =
     unsafePerformIO $ (cast5 ATen.embedding_ttlbb)
         weights indices paddingIdx scaleByGradFreq sparse
+
+embedding'
+    :: Tensor -- ^ weights
+    -> Tensor -- ^ indices
+    -> Tensor -- ^ output
+embedding' weights indices =
+    unsafePerformIO $ (cast5 ATen.embedding_ttlbb)
+        weights indices (-1 :: Int) False False
 
 -- | Computes the error function of each element
 erf 
@@ -494,6 +504,25 @@ nllLoss' t target = unsafePerformIO $ (cast5 ATen.nll_loss_tttll) t target weigh
     where
         nClass = (shape t) !! 1 -- TODO nicer runtime error if input dimensions don't conform
         weight = ones' [nClass]
+
+-- | Returns cosine similarity between x1 and x2, computed along dim.
+cosineSimilarity 
+    :: Int -- ^ dimension of vectors (default=1)
+    -> Double -- ^ small value to avoid division by 0 (default=1e-8)
+    -> Tensor -- ^ x1
+    -> Tensor -- ^ x2
+    -> Tensor -- ^ output
+cosineSimilarity dim eps x1 x2 = 
+    unsafePerformIO $ (cast4 ATen.cosine_similarity_ttld) x1 x2 dim eps
+
+-- | Returns cosine similarity with defaulted options.
+cosineSimilarity'
+    :: Tensor -- ^ x1
+    -> Tensor -- ^ x2
+    -> Tensor -- ^ output
+cosineSimilarity' x1 x2 = 
+    unsafePerformIO $ 
+        (cast4 ATen.cosine_similarity_ttld) x1 x2 (1 :: Int) (1e-8 :: Double)
 
 -- | Applies a 1D adaptive max pooling over an input signal composed of several input planes.
 adaptiveMaxPool1d 
