@@ -3924,8 +3924,8 @@ type TopKIdx k = If (k <=? 0) 0 1
 --                     [ 0,  1,  2]])
 -- >>> topk @0 @1 (ones :: CPUTensor 'D.Float '[2,3]) True True
 -- (Tensor Float [2,0] [[],
---                  []],Tensor Int64 [2,0] [[],
---                  []])
+--                     []],Tensor Int64 [2,0] [[],
+--                     []])
 --
 topk 
   :: forall k dim shape dtype device 
