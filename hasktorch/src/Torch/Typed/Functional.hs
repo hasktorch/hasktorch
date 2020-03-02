@@ -3915,6 +3915,11 @@ type TopK k shape dim = TopKCheck k shape dim (ExtractDim dim shape) (ReplaceDim
 
 type TopKIdx k = If (k <=? 0) 0 1
 
+type family TopKDeviceAndDTypeCheck dtype (device :: (D.DeviceType, Nat)) :: Constraint where 
+  TopKDeviceAndDTypeCheck D.Bool _           = (TypeError (Text "topk is not defined for Bool tensors."))
+  TopKDeviceAndDTypeCheck D.Half '(D.CPU, _) = (TypeError (Text "topk is not defined for Half types on CPU."))
+  TopKDeviceAndDTypeCheck _ _ = ()
+
 
 -- | Returns the k largest (if largest is `True`) elements of the given input tensor along a given dimension.
 --
@@ -3929,7 +3934,7 @@ type TopKIdx k = If (k <=? 0) 0 1
 --
 topk 
   :: forall k dim shape dtype device 
-   . (KnownNat k, KnownNat dim, All KnownNat shape) 
+   . (KnownNat k, KnownNat dim, All KnownNat shape, TopKDeviceAndDTypeCheck dtype device) 
    => Tensor device dtype shape 
    -> Bool -- ^ if we're returning the top k largest (or, if False, the top k smallest)
    -> Bool -- ^ if the resulting k elements are themselves sorted
