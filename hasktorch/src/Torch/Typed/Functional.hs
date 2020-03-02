@@ -3908,10 +3908,12 @@ median' input = unsafePerformIO $ ATen.cast3 ATen.Managed.median_tlb
 type family TopKCheck (k :: Nat) (shape :: [Nat]) (dim :: Nat) (satd :: Maybe Nat) (result :: Maybe a) :: a where
   TopKCheck _ shape dim _ Nothing       = DimOutOfBound shape dim
   TopKCheck _ shape dim Nothing _       = DimOutOfBound shape dim
-  TopKCheck k shape dim (Just v) (Just result) = If ( k <=? v ) result (TypeError (Text "k must be less than or equal to the number of elements in the requested dimention and greater than or equal to 1"))
+  TopKCheck k shape dim (Just v) (Just result) = If ( k <=? v ) result (TypeError (Text "k must be less than or equal to the number of elements in the requested dimension."))
 
 
 type TopK k shape dim = TopKCheck k shape dim (ExtractDim dim shape) (ReplaceDim dim shape k)
+
+type TopKIdx k = If (k <=? 0) 0 1
 
 
 -- | Returns the k largest (if largest is `True`) elements of the given input tensor along a given dimension.
@@ -3920,13 +3922,18 @@ type TopK k shape dim = TopKCheck k shape dim (ExtractDim dim shape) (ReplaceDim
 -- (Tensor Float [2,3] [[ 1.0000   ,  1.0000   ,  1.0000   ],
 --                     [ 1.0000   ,  1.0000   ,  1.0000   ]],Tensor Int64 [2,3] [[ 0,  1,  2],
 --                     [ 0,  1,  2]])
+-- >>> topk @0 @1 (ones :: CPUTensor 'D.Float '[2,3]) True True
+-- (Tensor Float [2,0] [[],
+--                  []],Tensor Int64 [2,0] [[],
+--                  []])
+--
 topk 
   :: forall k dim shape dtype device 
    . (KnownNat k, KnownNat dim, All KnownNat shape) 
    => Tensor device dtype shape 
    -> Bool -- ^ if we're returning the top k largest (or, if False, the top k smallest)
    -> Bool -- ^ if the resulting k elements are themselves sorted
-   -> (Tensor device dtype (TopK k shape dim), Tensor device dtype (TopK 1 shape dim))
+   -> (Tensor device dtype (TopK k shape dim), Tensor device dtype (TopK (TopKIdx k) shape dim))
 topk _input _largest _sorted = unsafePerformIO $ (ATen.cast5 ATen.Managed.topk_tllbb) _input _k _dim _largest _sorted
   where 
   _k = natValI @k
