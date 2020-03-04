@@ -59,7 +59,8 @@ import           Test.QuickCheck
 
 import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
-import qualified Torch.Functional               as D
+import qualified Torch.Functional              as D
+import qualified Torch.Scalar                  as D
 import qualified Torch.Tensor                  as D
 import qualified Torch.TensorFactories         as D
 import qualified Torch.TensorOptions           as D
@@ -257,6 +258,17 @@ instance
   apply' GeluSpec (_, agg) = agg >> do
     let t = gelu (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
+
+data LeakyReluSpec = LeakyReluSpec
+
+instance
+  ( TensorOptions shape dtype device
+  , D.Scalar a
+  , StandardFloatingPointDTypeValidation device dtype
+  ) => Apply' LeakyReluSpec ((Proxy device, (a, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
+    apply' LeakyReluSpec ((_, (negativeSlope, _)), agg) = agg >> do
+      let t = leakyRelu negativeSlope (ones @shape @dtype @device)
+      checkDynamicTensorAttributes t
 
 data ToDTypeSpec = ToDTypeSpec
 
@@ -658,7 +670,8 @@ spec' device =
       it "zerosLike" $ dispatch ZerosLikeSpec
 
     describe "unary floating-point ops" $ do
-      let dispatch unaryStandardFloatingPointDTypesSpec = case device of
+      let scalarParams = (0.01 :: Double) :. (0.01 :: Float) :. (1 :: Int) :. HNil
+          dispatch unaryStandardFloatingPointDTypesSpec = case device of
             D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
               hfoldrM @IO unaryStandardFloatingPointDTypesSpec () (hattach cpu   (hproduct standardFloatingPointDTypes standardShapes))
             D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
@@ -693,6 +706,13 @@ spec' device =
           hfoldrM @IO GeluSpec () (hattach cpu   (hproduct standardFloatingPointDTypes standardShapes))
         D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
           hfoldrM @IO GeluSpec () (hattach cuda0 (hproduct standardFloatingPointDTypes standardShapes))
+      it "leakyRelu" $ case device of
+        D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+          hfoldrM @IO LeakyReluSpec ()
+            (hattach cpu   (hproduct scalarParams (hproduct standardFloatingPointDTypes standardShapes)))
+        D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+          hfoldrM @IO LeakyReluSpec ()
+            (hattach cuda0 (hproduct scalarParams (hproduct standardFloatingPointDTypes standardShapes)))
       it "sigmoid"    $ dispatch SigmoidSpec
       it "logSigmoid" $ dispatch LogSigmoidSpec
 
