@@ -4079,9 +4079,6 @@ hardTanh
 hardTanh min_val max_val input =
   unsafePerformIO $ ATen.cast3 ATen.Managed.hardtanh_tss input min_val max_val
 
--- leaky_relu :: Tensor device dtype shape -> Float -> Tensor device dtype shape
--- leaky_relu _input _negative_slope = unsafePerformIO $ (ATen.cast2 ATen.Managed.leaky_relu_ts) _input _negative_slope
-
 -- | leaky relu
 --
 -- >>> dtype &&& shape $ leakyRelu (ones :: CPUTensor 'D.Float '[3,2]) 0.01
