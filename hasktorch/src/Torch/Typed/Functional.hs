@@ -4081,15 +4081,15 @@ hardTanh min_val max_val input =
 
 -- | leaky relu
 --
--- >>> dtype &&& shape $ leakyRelu (ones :: CPUTensor 'D.Float '[3,2]) 0.01
+-- >>> dtype &&& shape $ leakyRelu 0.01 (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 leakyRelu
   :: forall a shape dtype device
    . (D.Scalar a, StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> a -- ^ negative slope
+  => a -- ^ negative slope
+  -> Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
-leakyRelu input negativeSlope =
+leakyRelu negativeSlope input =
   unsafePerformIO $ ATen.cast2 ATen.Managed.leaky_relu_ts input negativeSlope
 
 -- | logarithm of the sigmoid
