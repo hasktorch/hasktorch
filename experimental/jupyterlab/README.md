@@ -4,9 +4,13 @@ This provides nix-shell environment with both JupyterLab and hasktorch.
 
 This example should be run from the `experimental/jupyter/` directory.
 
-First, run:
+First, run nix-shell with cachix.
 
-`nix-shell --option sandbox false --command "jupyer lab"`
+```
+nix-env -i cachix
+cachix use hasktorch
+nix-shell --option sandbox false --command "jupyer lab"
+```
 
 The command outputs a url to connect to JupyterLab.
 Then, open your browser with the url.
