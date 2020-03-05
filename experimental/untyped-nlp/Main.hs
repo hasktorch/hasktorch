@@ -17,7 +17,7 @@ convTest = do
     print $ squeezeAll output
 
 convTest' input = do
-    -- width = 3, 3 input channels, 2 output channels
+    -- weights: (2 output channels, 3 input channels, 3 width kernel)
     let weights = asTensor ([[[0, 1, 0], [0, 1, 0], [0, 1, 0]],
                              [[0, 1, 0], [0, 0, 1], [0, 1, 0]]
                             ] :: [[[Float]]])
