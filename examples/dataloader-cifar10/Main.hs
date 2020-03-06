@@ -17,6 +17,7 @@ import Torch.NN
 import Numeric.Dataloader
 import Numeric.Datasets
 import Numeric.Datasets.CIFAR10
+import qualified Streaming as S
 
 import Common (foldLoop)
 
@@ -58,21 +59,21 @@ cnn CNN{..} input = undefined
     -- . conv2d l10
     -- $ input
 
+foldLoop :: a -> Stream (Of [b]) IO () -> (a -> [b] -> IO a) -> IO a
+foldLoop x dat block = S.foldM_ block (pure x) pure dat
+
 train :: Stream (Of [b]) IO () -> IO CNN
 train trainData = do
     init <- sample spec
-    let nImages = I.length trainData
-        idxList = randomIndexes nImages
-    trained <- foldLoop init numIters $
-        \state iter -> do
-            let idx = take batchSize (drop (iter * batchSize) idxList)
-            input <- UI.getImages' batchSize dataDim trainData idx
-            let label = UI.getLabels' batchSize trainData idx
+    trained <- foldLoop init trainData $
+        \state batch -> do
+            inputs <- flip mapM batch $ \(img,_) -> image2tensor' img
+            labels <- flip mapM batch $ \(_,label) -> return (fromEnum label)
+            let input = cat 0 inputs
+                label = asTensor labels
                 loss = nllLoss' (cnn state input) label
                 flatParameters = flattenParameters state
                 gradients = A.grad loss flatParameters
-            when (iter `mod` 50 == 0) do
-                putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
             newParam <- mapM A.makeIndependent
                 $ sgd 1e-3 flatParameters gradients
             pure $ replaceParameters state newParam
