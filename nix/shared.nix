@@ -128,6 +128,24 @@ let
                             '';
                           }
                         );
+                    datasets =
+                      (haskellPackagesNew.callHackageDirect
+                        {
+                          pkg = "datasets";
+                          ver = "0.4.0";
+                          sha256 = "1p0zqqh1n54fywjc0h08rd74pnyb8302j1a4vycz2374zzfrvklv";
+                        }
+                        { }
+                      );
+                    streaming-cassava =
+                      (haskellPackagesNew.callHackageDirect
+                        {
+                          pkg = "streaming-cassava";
+                          ver = "0.1.0.1";
+                          sha256 = "1b9xkbqn1fq0ag8ikkh9wn514rip2k1xxg6jkj1dc80j241nxnby";
+                        }
+                        { }
+                      );
                   };
 
               in

@@ -70,10 +70,6 @@ train numEpoch trainData = do
     pure trained
     where
         spec = MLPSpec (1024*3) 64 32 10
-        dataDim = (1024*3)
-        numIters = 3000
-        batchSize = 256
-
 
 main :: IO ()
 main = do
