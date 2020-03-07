@@ -138,6 +138,7 @@ let
                         { }
                       );
                     streaming-cassava =
+                      dontCheck
                       (haskellPackagesNew.callHackageDirect
                         {
                           pkg = "streaming-cassava";
