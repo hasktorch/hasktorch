@@ -27,20 +27,15 @@ import qualified Foreign.Ptr                   as F
 import qualified Data.ByteString.Internal      as BSI
 
 readImage :: FilePath -> IO (Either String D.Tensor)
-readImage file = I.readImage file >>= image2tensor
-
-image2tensor' :: forall p. I.Pixel p => I.Image p -> IO D.Tensor
-image2tensor' img = do
-  v <- image2tensor img
-  case v of
-    Left err -> throwIO $ userError err
-    Right i -> return i
-
-image2tensor :: forall p. I.Pixel p => I.Image p -> IO (Either String D.Tensor)
-image2tensor dynamic_img =
-  case dynamic_img of
+readImage file =
+  I.readImage file >>= \case
     Left err -> return $ Left err
     Right img' -> fromDynImage img'
+
+image2tensor' :: I.Image I.PixelRGB8 -> IO D.Tensor
+image2tensor' img = fromDynImage (I.ImageRGB8 img) >>= \case
+  Left err -> throwIO $ userError err
+  Right v -> return v
 
 fromDynImage :: I.DynamicImage -> IO (Either String D.Tensor)
 fromDynImage image = case image of

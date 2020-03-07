@@ -10,77 +10,67 @@ import GHC.Generics
 import System.Random (mkStdGen, randoms)
 import Prelude hiding (exp)
 
-import Torch.Autograd as A
-import Torch.Functional hiding (take)
-import Torch.Tensor
-import Torch.NN
+import Torch
+import Torch.Utils.Image
 import Numeric.Dataloader
 import Numeric.Datasets
 import Numeric.Datasets.CIFAR10
 import qualified Streaming as S
+import qualified Streaming.Prelude as S
+import qualified Codec.Picture as I
 
-import Common (foldLoop)
+data MLPSpec = MLPSpec {
+    inputFeatures :: Int,
+    hiddenFeatures0 :: Int,
+    hiddenFeatures1 :: Int,
+    outputFeatures :: Int
+    } deriving (Show, Eq)
 
-data CNNSpec = CNNSpec
-data MaxPool 
-data Conv2d
-
-data CNN = CNN { 
-    l10 :: Conv2d,
-    l11 :: MaxPool,
-    l20 :: Conv2d,
-    l21 :: MaxPool,
-    l31 :: Linear,
-    l32 :: Linear,
-    l33 :: Linear
+data MLP = MLP { 
+    l0 :: Linear,
+    l1 :: Linear,
+    l2 :: Linear
     } deriving (Generic, Show)
 
-instance Parameterized CNN
-instance Randomizable CNNSpec CNN where
-    sample CNNSpec {..} = undefined
-      -- CNN
-      --   <$> sample (LinearSpec inputFeatures hiddenFeatures0)
-      --   <*> sample (LinearSpec hiddenFeatures0 hiddenFeatures1)
-      --   <*> sample (LinearSpec hiddenFeatures1 outputFeatures)
+instance Parameterized MLP
+instance Randomizable MLPSpec MLP where
+    sample MLPSpec {..} = MLP 
+        <$> sample (LinearSpec inputFeatures hiddenFeatures0)
+        <*> sample (LinearSpec hiddenFeatures0 hiddenFeatures1)
+        <*> sample (LinearSpec hiddenFeatures1 outputFeatures)
 
-cnn :: CNN -> Tensor -> Tensor
-cnn CNN{..} input = undefined
-    -- . linear l33
-    -- . relu
-    -- . linear l32
-    -- . relu
-    -- . linear l31
-    -- . reshape [-1,16*5*5]
-    -- . maxpool l21
-    -- . relu
-    -- . conv2d l20
-    -- . maxpool l11
-    -- . relu
-    -- . conv2d l10
-    -- $ input
+mlp :: MLP -> Tensor -> Tensor
+mlp MLP{..} input = 
+    logSoftmax 1
+    . linear l2
+    . relu
+    . linear l1
+    . relu
+    . linear l0
+    $ input
 
-foldLoop :: a -> Stream (Of [b]) IO () -> (a -> [b] -> IO a) -> IO a
-foldLoop x dat block = S.foldM_ block (pure x) pure dat
+foldLoop' :: a -> S.Stream (S.Of [b]) IO () -> (a -> [b] -> IO a) -> IO a
+foldLoop' x dat block = S.foldM_ block (pure x) pure dat
 
-train :: Stream (Of [b]) IO () -> IO CNN
-train trainData = do
-    init <- sample spec
-    trained <- foldLoop init trainData $
-        \state batch -> do
-            inputs <- flip mapM batch $ \(img,_) -> image2tensor' img
-            labels <- flip mapM batch $ \(_,label) -> return (fromEnum label)
-            let input = cat 0 inputs
+train :: Int -> S.Stream (S.Of [CIFARImage]) IO () -> IO MLP
+train numEpoch trainData = do
+    init <- sample spec :: IO MLP
+    trained <- foldLoop init numEpoch $ \state0 iter -> do
+        (trained',trained_loss') <- foldLoop' (state0,0) trainData $ \(state,sumLoss) batch -> do
+            inputs <- flip mapM batch $ \(CIFARImage (img,_)) -> image2tensor' img
+            labels <- flip mapM batch $ \(CIFARImage (_,label)) -> return (fromEnum label)
+            let input = toType Float $ cat 0 (map (reshape [1,1024*3])  inputs)
                 label = asTensor labels
-                loss = nllLoss' (cnn state input) label
+                loss = nllLoss' (mlp state input) label
                 flatParameters = flattenParameters state
-                gradients = A.grad loss flatParameters
-            newParam <- mapM A.makeIndependent
-                $ sgd 1e-3 flatParameters gradients
-            pure $ replaceParameters state newParam
+            (newParam, _) <- runStep state GD loss 1e-3
+            pure $ (replaceParameters state newParam, (toDouble loss)+sumLoss)
+        putStrLn $ "Epoch: " ++ show iter ++ " | Loss: " ++ show trained_loss'
+        pure trained'
     pure trained
     where
-        spec = CNNSpec
-        dataDim = 784
+        spec = MLPSpec (1024*3) 64 32 10
+        dataDim = (1024*3)
         numIters = 3000
         batchSize = 256
 
@@ -94,15 +84,7 @@ main = do
             cifar10 --- ^ datasets
             id      --- ^ transform
         stream = batchStream dataloader
-      
-    model <- train trainData
-
-    -- show test images + labels
-    mapM (\idx -> do
-        testImg <- UI.getImages' 1 784 trainData [idx]
-        UI.dispImage testImg
-        putStrLn $ "Model        : " ++ (show . (argmax (Dim 1) RemoveDim) . exp $ cnn model testImg)
-        putStrLn $ "Ground Truth : " ++ (show $ UI.getLabels' 1 trainData [idx])
-        ) [0..10]
+        numEpoch = 3
+    model <- train numEpoch stream
 
     putStrLn "Done"
