@@ -3936,7 +3936,7 @@ topk
    => Bool -- ^ if we're returning the top k largest (or, if False, the top k smallest)
    -> Bool -- ^ if the resulting k elements are themselves sorted
    -> Tensor device dtype shape 
-   -> (Tensor device dtype (TopK k shape dim), Tensor device dtype (TopK k shape dim))
+   -> (Tensor device dtype (TopK k shape dim), Tensor device 'D.Int64 (TopK k shape dim))
 topk _largest _sorted _input = unsafePerformIO $ (ATen.cast5 ATen.Managed.topk_tllbb) _input _k _dim _largest _sorted
   where 
   _k = natValI @k
