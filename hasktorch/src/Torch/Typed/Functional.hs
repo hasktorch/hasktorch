@@ -4440,7 +4440,7 @@ type Upsample2d shape h w = Upsample2dCheck shape h w
 
 -- | Applies a 2D bilinear upsampling to an input signal composed of several input channels.
 --
--- >>> upsample_bilinear2d @5 @3 (ones :: CPUTensor 'D.Float '[2,3,2,2]) False
+-- >>> upsample_bilinear2d @5 @3 False (ones :: CPUTensor 'D.Float '[2,3,2,2])
 -- Tensor Float [2,3,5,3]
 upsample_bilinear2d :: forall h w shape dtype device . 
   (KnownNat h, KnownNat w, All KnownNat shape) 
@@ -4455,7 +4455,7 @@ upsample_bilinear2d _align_corners _input
 
 -- | Applies a 2D bicubic upsampling to an input signal composed of several input channels.
 --
--- >>> upsample_bicubic2d @5 @3 (ones :: CPUTensor 'D.Float '[2,3,2,2]) False
+-- >>> upsample_bicubic2d @5 @3 False (ones :: CPUTensor 'D.Float '[2,3,2,2])
 -- Tensor Float [2,3,5,3]
 upsample_bicubic2d :: forall h w shape dtype device . 
   (KnownNat h, KnownNat w, All KnownNat shape) 
