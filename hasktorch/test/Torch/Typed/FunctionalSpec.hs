@@ -889,7 +889,7 @@ spec' device =
         checkDynamicTensorAttributes c
         checkDynamicTensorAttributes c'
 
-    describe "upsampling" $
+    describe "upsampling" $ do
       it "upsample_nearest2d" $ do 
         let c = upsample_nearest2d @5 @3 (ones :: CPUTensor 'D.Float '[2,3,2,2]) 
         checkDynamicTensorAttributes c
