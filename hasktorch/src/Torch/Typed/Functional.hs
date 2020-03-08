@@ -3921,11 +3921,11 @@ type family TopKDeviceAndDTypeCheck dtype (device :: (D.DeviceType, Nat)) :: Con
 
 -- | Returns the k largest (if largest is `True`) elements of the given input tensor along a given dimension.
 --
--- >>> topk @3 @1 (ones :: CPUTensor 'D.Float '[2,3]) True True
+-- >>> topk @3 @1 True True (ones :: CPUTensor 'D.Float '[2,3])
 -- (Tensor Float [2,3] [[ 1.0000   ,  1.0000   ,  1.0000   ],
 --                     [ 1.0000   ,  1.0000   ,  1.0000   ]],Tensor Int64 [2,3] [[ 0,  1,  2],
 --                     [ 0,  1,  2]])
--- >>> topk @0 @1 (ones :: CPUTensor 'D.Float '[2,3]) True True
+-- >>> topk @0 @1 True True (ones :: CPUTensor 'D.Float '[2,3])
 -- (Tensor Float [2,0] [[],
 --                     []],Tensor Int64 [2,0] [[],
 --                     []])
