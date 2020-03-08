@@ -909,4 +909,15 @@ spec' device =
         checkDynamicTensorAttributes c
         checkDynamicTensorAttributes c'
 
+    describe "upsampling" $
+      it "upsample_nearest2d" $ do 
+        let c = upsample_nearest2d @5 @3 (ones :: CPUTensor 'D.Float '[2,3,2,2]) 
+        checkDynamicTensorAttributes c
+      it "upsample_bicubic2d" $ do 
+        let c = upsample_bicubic2d @5 @3 (ones :: CPUTensor 'D.Float '[2,3,2,2]) False 
+        checkDynamicTensorAttributes c
+      it "upsample_bilinear2d" $ do 
+        let c = upsample_bilinear2d @5 @3 (ones :: CPUTensor 'D.Float '[2,3,2,2]) False
+        checkDynamicTensorAttributes c
+
     describe "binary native ops" $ return ()
