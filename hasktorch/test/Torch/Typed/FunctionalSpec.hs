@@ -883,4 +883,9 @@ spec' device =
         let c = maxPool2d @'(1,1) @'(1,1) @'(0,0) (ones :: CPUTensor 'D.Float '[1,3,4,5])
         checkDynamicTensorAttributes c
 
+    describe "sorting" $ 
+      it "topk" $ do 
+        let c = topk @3 @1 True True (ones :: CPUTensor 'D.Float '[2,3])
+        checkDynamicTensorAttributes c
+
     describe "binary native ops" $ return ()
