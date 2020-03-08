@@ -905,7 +905,8 @@ spec' device =
 
     describe "sorting" $ 
       it "topk" $ do 
-        let c = topk @3 @1 True True (ones :: CPUTensor 'D.Float '[2,3])
+        let (c,c') = topk @3 @1 True True (ones :: CPUTensor 'D.Float '[2,3])
         checkDynamicTensorAttributes c
+        checkDynamicTensorAttributes c'
 
     describe "binary native ops" $ return ()
