@@ -4430,29 +4430,29 @@ type Upsample2d shape h w = Upsample2dCheck shape h w
 
 -- | Applies a 2D bilinear upsampling to an input signal composed of several input channels.
 --
--- >>> upsample_bilinear2d @5 @3 False (ones :: CPUTensor 'D.Float '[2,3,2,2])
--- Tensor Float [2,3,5,3]
-upsample_bilinear2d :: forall h w shape dtype device . 
+-- >>> upsample_bilinear2d @3 @5 False (ones :: CPUTensor 'D.Float '[2,3,2,2])
+-- Tensor Float [2,3,3,5]
+upsample_bilinear2d :: forall w h shape dtype device . 
   (KnownNat h, KnownNat w, All KnownNat shape) 
   => Bool -- ^ if True, the corner pixels of the input and output tensors are aligned, and thus preserving the values at those pixels. 
   -> Tensor device dtype shape 
   -> Tensor device dtype (Upsample2d shape h w)
 upsample_bilinear2d _align_corners _input
-  = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_bilinear2d_tlb) _input ([h,w] :: [Int]) _align_corners
+  = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_bilinear2d_tlb) _input ([w,h] :: [Int]) _align_corners
   where  
     w = natValI @w :: Int
     h = natValI @h :: Int
 
 -- | Applies a 2D bicubic upsampling to an input signal composed of several input channels.
 --
--- >>> upsample_bicubic2d @5 @3 False (ones :: CPUTensor 'D.Float '[2,3,2,2])
--- Tensor Float [2,3,5,3]
-upsample_bicubic2d :: forall h w shape dtype device . 
+-- >>> upsample_bicubic2d @3 @5 False (ones :: CPUTensor 'D.Float '[2,3,2,2])
+-- Tensor Float [2,3,3,5]
+upsample_bicubic2d :: foral w h shape dtype device . 
   (KnownNat h, KnownNat w, All KnownNat shape) 
   => Bool 
   -> Tensor device dtype shape 
   -> Tensor device dtype (Upsample2d shape h w)
-upsample_bicubic2d _align_corners _input = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_bicubic2d_tlb) _input ([h,w] :: [Int]) _align_corners
+upsample_bicubic2d _align_corners _input = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_bicubic2d_tlb) _input ([w,h] :: [Int]) _align_corners
   where 
     w = natValI @w :: Int
     h = natValI @h :: Int
@@ -4465,13 +4465,13 @@ upsample_bicubic2d _align_corners _input = unsafePerformIO $ (ATen.cast3 ATen.Ma
 
 -- | Applies a 2D bicubic upsampling to an input signal composed of several input channels.
 --
--- >>> upsample_nearest2d @5 @3 (ones :: CPUTensor 'D.Float '[2,3,2,2])
--- Tensor Float [2,3,5,3]
-upsample_nearest2d :: forall h w shape dtype device . 
+-- >>> upsample_nearest2d @3 @5 (ones :: CPUTensor 'D.Float '[2,3,2,2])
+-- Tensor Float [2,3,3,5]
+upsample_nearest2d :: forall w h shape dtype device . 
   (KnownNat h, KnownNat w, All KnownNat shape) 
   => Tensor device dtype shape 
   -> Tensor device dtype (Upsample2d shape h w)
-upsample_nearest2d _input = unsafePerformIO $ (ATen.cast2 ATen.Managed.upsample_nearest2d_tl) _input ([h,w] :: [Int])
+upsample_nearest2d _input = unsafePerformIO $ (ATen.cast2 ATen.Managed.upsample_nearest2d_tl) _input ([w,h] :: [Int])
   where
     w = natValI @w :: Int
     h = natValI @h :: Int
