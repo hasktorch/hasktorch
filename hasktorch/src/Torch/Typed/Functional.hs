@@ -4447,7 +4447,7 @@ upsample_bilinear2d _align_corners _input
 --
 -- >>> upsample_bicubic2d @3 @5 False (ones :: CPUTensor 'D.Float '[2,3,2,2])
 -- Tensor Float [2,3,3,5]
-upsample_bicubic2d :: foral w h shape dtype device . 
+upsample_bicubic2d :: forall w h shape dtype device . 
   (KnownNat h, KnownNat w, All KnownNat shape) 
   => Bool 
   -> Tensor device dtype shape 
