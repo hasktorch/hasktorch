@@ -52,7 +52,12 @@ Note `source setenv` should be run from the top-level directory of the repo.
 
 ### via nix-shell
 
+Always the artifacts of hasktorch's master branch are uploaded to cachix.
+If you setup cachix before using nix-shell, nix-shell will be faster.
+
 ```
+nix-env -i cachix
+cachix use hasktorch
 nix-shell ./hasktorch/shell.nix
 ```
 

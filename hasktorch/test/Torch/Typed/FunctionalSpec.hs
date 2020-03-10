@@ -903,4 +903,21 @@ spec' device =
         let c = maxPool2d @'(1,1) @'(1,1) @'(0,0) (ones :: CPUTensor 'D.Float '[1,3,4,5])
         checkDynamicTensorAttributes c
 
+    describe "sorting" $ 
+      it "topk" $ do 
+        let (c,c') = topk @3 @1 True True (ones :: CPUTensor 'D.Float '[2,3])
+        checkDynamicTensorAttributes c
+        checkDynamicTensorAttributes c'
+
+    describe "upsampling" $ do
+      it "upsample_nearest2d" $ do 
+        let c = upsample_nearest2d @5 @3 (ones :: CPUTensor 'D.Float '[2,3,2,2]) 
+        checkDynamicTensorAttributes c
+      it "upsample_bicubic2d" $ do 
+        let c = upsample_bicubic2d @5 @3 False (ones :: CPUTensor 'D.Float '[2,3,2,2]) 
+        checkDynamicTensorAttributes c
+      it "upsample_bilinear2d" $ do 
+        let c = upsample_bilinear2d @5 @3 False (ones :: CPUTensor 'D.Float '[2,3,2,2])
+        checkDynamicTensorAttributes c
+
     describe "binary native ops" $ return ()
