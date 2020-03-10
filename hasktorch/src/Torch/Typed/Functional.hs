@@ -3905,8 +3905,42 @@ median' input = unsafePerformIO $ ATen.cast3 ATen.Managed.median_tlb
 -- argsort :: Tensor device dtype shape -> Int -> Bool -> Tensor device dtype shape
 -- argsort _input _dim _descending = unsafePerformIO $ (ATen.cast3 ATen.Managed.argsort_tlb) _input _dim _descending
 
--- topk :: Tensor device dtype shape -> Int -> Int -> Bool -> Bool -> (Tensor device dtype shape,Tensor device dtype shape)
--- topk _input _k _dim _largest _sorted = unsafePerformIO $ (ATen.cast5 ATen.Managed.topk_tllbb) _input _k _dim _largest _sorted
+type family TopKCheck (k :: Nat) (shape :: [Nat]) (dim :: Nat) (satd :: Maybe Nat) (result :: Maybe a) :: a where
+  TopKCheck _ shape dim _ Nothing       = DimOutOfBound shape dim
+  TopKCheck _ shape dim Nothing _       = DimOutOfBound shape dim
+  TopKCheck k shape dim (Just v) (Just result) = If ( k <=? v ) result (TypeError (Text "k must be less than or equal to the number of elements in the requested dimension."))
+
+
+type TopK k shape dim = TopKCheck k shape dim (ExtractDim dim shape) (ReplaceDim dim shape k)
+
+type family TopKDeviceAndDTypeCheck dtype (device :: (D.DeviceType, Nat)) :: Constraint where 
+  TopKDeviceAndDTypeCheck D.Bool _           = (TypeError (Text "topk is not defined for Bool tensors."))
+  TopKDeviceAndDTypeCheck D.Half '(D.CPU, _) = (TypeError (Text "topk is not defined for Half types on CPU."))
+  TopKDeviceAndDTypeCheck _ _ = ()
+
+
+-- | Returns the k largest (if largest is `True`) elements of the given input tensor along a given dimension.
+--
+-- >>> topk @3 @1 True True (ones :: CPUTensor 'D.Float '[2,3])
+-- (Tensor Float [2,3] [[ 1.0000   ,  1.0000   ,  1.0000   ],
+--                     [ 1.0000   ,  1.0000   ,  1.0000   ]],Tensor Int64 [2,3] [[ 0,  1,  2],
+--                     [ 0,  1,  2]])
+-- >>> topk @0 @1 True True (ones :: CPUTensor 'D.Float '[2,3])
+-- (Tensor Float [2,0] [[],
+--                     []],Tensor Int64 [2,0] [[],
+--                     []])
+--
+topk 
+  :: forall k dim shape dtype device 
+   . (KnownNat k, KnownNat dim, All KnownNat shape, TopKDeviceAndDTypeCheck dtype device) 
+   => Bool -- ^ if we're returning the top k largest (or, if False, the top k smallest)
+   -> Bool -- ^ if the resulting k elements are themselves sorted
+   -> Tensor device dtype shape 
+   -> (Tensor device dtype (TopK k shape dim), Tensor device 'D.Int64 (TopK k shape dim))
+topk _largest _sorted _input = unsafePerformIO $ (ATen.cast5 ATen.Managed.topk_tllbb) _input _k _dim _largest _sorted
+  where 
+  _k = natValI @k
+  _dim = natValI @dim
 
 -- renorm :: Tensor device dtype shape -> Float -> Int -> Float -> Tensor device dtype shape
 -- renorm _input _p _dim _maxnorm = unsafePerformIO $ (ATen.cast4 ATen.Managed.renorm_tsls) _input _p _dim _maxnorm
@@ -4392,11 +4426,46 @@ avgPool3d input = unsafePerformIO $ ATen.cast7
 -- upsample_linear1d :: Tensor device dtype shape -> Int -> Bool -> Tensor device dtype shape
 -- upsample_linear1d _input _output_size _align_corners = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_linear1d_tlb) _input _output_size _align_corners
 
--- upsample_bilinear2d :: Tensor device dtype shape -> (Int,Int) -> Bool -> Tensor device dtype shape
--- upsample_bilinear2d _input _output_size _align_corners = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_bilinear2d_tlb) _input _output_size _align_corners
 
--- upsample_bicubic2d :: Tensor device dtype shape -> (Int,Int) -> Bool -> Tensor device dtype shape
--- upsample_bicubic2d _input _output_size _align_corners = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_bicubic2d_tlb) _input _output_size _align_corners
+type family Upsample2dCheck shape h w where 
+  Upsample2dCheck (b : c : w : h : '[]) h' w' = 
+    If ( h <=? h') 
+      (If (w <=? w') (b : c : w' : h' : '[]) 
+        (TypeError (Text "Target width must be greater than current width!"))
+      ) 
+      (TypeError (Text "Target height must be greater than current height!"))
+  Upsample2dCheck _ _ _ = TypeError (Text "Shape must be 4 dimensional!")
+
+type Upsample2d shape h w = Upsample2dCheck shape h w
+
+-- | Applies a 2D bilinear upsampling to an input signal composed of several input channels.
+--
+-- >>> upsample_bilinear2d @3 @5 False (ones :: CPUTensor 'D.Float '[2,3,2,2])
+-- Tensor Float [2,3,3,5]
+upsample_bilinear2d :: forall w h shape dtype device . 
+  (KnownNat h, KnownNat w, All KnownNat shape) 
+  => Bool -- ^ if True, the corner pixels of the input and output tensors are aligned, and thus preserving the values at those pixels. 
+  -> Tensor device dtype shape 
+  -> Tensor device dtype (Upsample2d shape h w)
+upsample_bilinear2d _align_corners _input
+  = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_bilinear2d_tlb) _input ([w,h] :: [Int]) _align_corners
+  where  
+    w = natValI @w :: Int
+    h = natValI @h :: Int
+
+-- | Applies a 2D bicubic upsampling to an input signal composed of several input channels.
+--
+-- >>> upsample_bicubic2d @3 @5 False (ones :: CPUTensor 'D.Float '[2,3,2,2])
+-- Tensor Float [2,3,3,5]
+upsample_bicubic2d :: forall w h shape dtype device . 
+  (KnownNat h, KnownNat w, All KnownNat shape) 
+  => Bool 
+  -> Tensor device dtype shape 
+  -> Tensor device dtype (Upsample2d shape h w)
+upsample_bicubic2d _align_corners _input = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_bicubic2d_tlb) _input ([w,h] :: [Int]) _align_corners
+  where 
+    w = natValI @w :: Int
+    h = natValI @h :: Int
 
 -- upsample_trilinear3d :: Tensor device dtype shape -> (Int,Int,Int) -> Bool -> Tensor device dtype shape
 -- upsample_trilinear3d _input _output_size _align_corners = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_trilinear3d_tlb) _input _output_size _align_corners
@@ -4404,8 +4473,18 @@ avgPool3d input = unsafePerformIO $ ATen.cast7
 -- upsample_nearest1d :: Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- upsample_nearest1d _input _output_size = unsafePerformIO $ (ATen.cast2 ATen.Managed.upsample_nearest1d_tl) _input _output_size
 
--- upsample_nearest2d :: Tensor device dtype shape -> (Int,Int) -> Tensor device dtype shape
--- upsample_nearest2d _input _output_size = unsafePerformIO $ (ATen.cast2 ATen.Managed.upsample_nearest2d_tl) _input _output_size
+-- | Applies a 2D bicubic upsampling to an input signal composed of several input channels.
+--
+-- >>> upsample_nearest2d @3 @5 (ones :: CPUTensor 'D.Float '[2,3,2,2])
+-- Tensor Float [2,3,3,5]
+upsample_nearest2d :: forall w h shape dtype device . 
+  (KnownNat h, KnownNat w, All KnownNat shape) 
+  => Tensor device dtype shape 
+  -> Tensor device dtype (Upsample2d shape h w)
+upsample_nearest2d _input = unsafePerformIO $ (ATen.cast2 ATen.Managed.upsample_nearest2d_tl) _input ([w,h] :: [Int])
+  where
+    w = natValI @w :: Int
+    h = natValI @h :: Int
 
 -- upsample_nearest3d :: Tensor device dtype shape -> (Int,Int,Int) -> Tensor device dtype shape
 -- upsample_nearest3d _input _output_size = unsafePerformIO $ (ATen.cast2 ATen.Managed.upsample_nearest3d_tl) _input _output_size
