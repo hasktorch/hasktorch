@@ -31,27 +31,29 @@ readImage file = do
   dynamic_img <- I.readImage file
   case dynamic_img of
     Left err -> return $ Left err
-    Right img' -> do
-      case img' of
-        I.ImageY8 (I.Image width height vec) -> createTensor width height 1 D.UInt8 vec
-        I.ImageYA8 (I.Image width height vec) -> createTensor width height 2 D.UInt8 vec
-        I.ImageRGB8 (I.Image width height vec) -> createTensor width height 3 D.UInt8 vec
-        I.ImageRGBA8 (I.Image width height vec) -> createTensor width height 4 D.UInt8 vec
-        I.ImageYCbCr8 (I.Image width height vec) -> createTensor width height 3 D.UInt8 vec
-        I.ImageCMYK8 (I.Image width height vec) -> createTensor width height 4 D.UInt8 vec
-        _ -> return $ Left "Unsupported format"
+    Right img' -> fromDynImage img'
+
+fromDynImage :: I.DynamicImage -> IO (Either String D.Tensor)
+fromDynImage image = case image of
+  I.ImageY8 (I.Image width height vec) -> createTensor width height 1 D.UInt8 vec
+  I.ImageYA8 (I.Image width height vec) -> createTensor width height 2 D.UInt8 vec
+  I.ImageRGB8 (I.Image width height vec) -> createTensor width height 3 D.UInt8 vec
+  I.ImageRGBA8 (I.Image width height vec) -> createTensor width height 4 D.UInt8 vec
+  I.ImageYCbCr8 (I.Image width height vec) -> createTensor width height 3 D.UInt8 vec
+  I.ImageCMYK8 (I.Image width height vec) -> createTensor width height 4 D.UInt8 vec
+  _ -> return $ Left "Unsupported format, convert to 8 bit Image first"
   where
     createTensor width height channel dtype vec = do
-      t <- ((cast2 LibTorch.empty_lo) :: [Int] -> D.TensorOptions -> IO D.Tensor) [1,height,width,channel] $ D.withDType dtype D.defaultOpts
+      t <- ((cast2 LibTorch.empty_lo) :: [Int] -> D.TensorOptions -> IO D.Tensor) [1, height, width, channel] $ D.withDType dtype D.defaultOpts
       D.withTensor t $ \ptr1 -> do
-        let (fptr,len) = V.unsafeToForeignPtr0 vec
+        let (fptr, len) = V.unsafeToForeignPtr0 vec
             whc = width * height * channel
-        if (len /= whc) then
-          return $ Left "vector's length is not the same as tensor' one."
-        else do
-          F.withForeignPtr fptr $ \ptr2 -> do
-            BSI.memcpy (F.castPtr ptr1) ptr2 len
-            return $ Right t
+        if (len /= whc)
+          then return $ Left "vector's length is not the same as tensor' one."
+          else do
+            F.withForeignPtr fptr $ \ptr2 -> do
+              BSI.memcpy (F.castPtr ptr1) ptr2 len
+              return $ Right t
 
 writeImage :: forall p. I.Pixel p => Int -> Int -> Int -> p -> D.Tensor -> IO (I.Image p)
 writeImage width height channel pixel tensor = do
@@ -65,7 +67,6 @@ writeImage width height channel pixel tensor = do
       F.withForeignPtr fptr $ \ptr2 -> do
         BSI.memcpy (F.castPtr ptr2) (F.castPtr ptr1) len
         return img
-
 
 writeBitmap :: FilePath -> D.Tensor -> IO ()
 writeBitmap file tensor = do
