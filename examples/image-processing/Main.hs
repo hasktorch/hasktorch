@@ -6,7 +6,7 @@
 module Main where
 
 import qualified Torch as T
-import           Torch.Utils.Image
+import           Torch.Vision
 
 import           System.IO                     (FilePath)
 

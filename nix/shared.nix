@@ -71,6 +71,14 @@ let
                           ; hasktorch = haskellPackagesNew."hasktorch_${postfix}"
                           ; }
                         );
+                    "hasktorch-experimental_${postfix}" =
+                      # failOnAllWarnings
+                        (haskellPackagesOld.callCabal2nix
+                          "experimental"
+                          ../experimental
+                          { hasktorch = haskellPackagesNew."hasktorch_${postfix}"
+                          ; }
+                        );
                   };
 
                 extension =
@@ -128,6 +136,25 @@ let
                             '';
                           }
                         );
+                    datasets =
+                      (haskellPackagesNew.callHackageDirect
+                        {
+                          pkg = "datasets";
+                          ver = "0.4.0";
+                          sha256 = "1p0zqqh1n54fywjc0h08rd74pnyb8302j1a4vycz2374zzfrvklv";
+                        }
+                        { }
+                      );
+                    streaming-cassava =
+                      dontCheck
+                      (haskellPackagesNew.callHackageDirect
+                        {
+                          pkg = "streaming-cassava";
+                          ver = "0.1.0.1";
+                          sha256 = "1b9xkbqn1fq0ag8ikkh9wn514rip2k1xxg6jkj1dc80j241nxnby";
+                        }
+                        { }
+                      );
                   };
 
               in
@@ -146,6 +173,7 @@ let
     };
 
     hasktorch-examples_cudatoolkit_10_1-static = pkgsOld.haskell.lib.justStaticExecutables pkgsNew.haskell.packages."${compiler}".hasktorch-examples_cudatoolkit_10_1;
+    hasktorch-experimental_cudatoolkit_10_1-static = pkgsOld.haskell.lib.justStaticExecutables pkgsNew.haskell.packages."${compiler}".hasktorch-experimental_cudatoolkit_10_1;
 
     hasktorch-typed-transformer_cudatoolkit_10_1-image = pkgsOld.dockerTools.buildImage {
       name = "hasktorch-typed-transformer_cudatoolkit_10_1";
@@ -261,6 +289,7 @@ in
 
     inherit (pkgs-linux)
       hasktorch-examples_cudatoolkit_10_1-static
+      hasktorch-experimental_cudatoolkit_10_1-static
       hasktorch-typed-transformer_cudatoolkit_10_1-image
     ;
 
@@ -277,6 +306,9 @@ in
       hasktorch-examples_cpu
       hasktorch-examples_cudatoolkit_9_2
       hasktorch-examples_cudatoolkit_10_1
+      hasktorch-experimental_cpu
+      hasktorch-experimental_cudatoolkit_9_2
+      hasktorch-experimental_cudatoolkit_10_1
     ;
     hasktorch-docs = (
       (import ./haddock-combine.nix {
@@ -301,5 +333,8 @@ in
     shell-hasktorch-examples_cpu              = (doBenchmark base-compiler.hasktorch-examples_cpu             ).env.overrideAttrs(fixmkl);
     shell-hasktorch-examples_cudatoolkit_9_2  = (doBenchmark base-compiler.hasktorch-examples_cudatoolkit_9_2 ).env.overrideAttrs(fixmkl);
     shell-hasktorch-examples_cudatoolkit_10_1 = (doBenchmark base-compiler.hasktorch-examples_cudatoolkit_10_1).env.overrideAttrs(fixmkl);
+    shell-hasktorch-experimental_cpu              = (doBenchmark base-compiler.hasktorch-experimental_cpu             ).env.overrideAttrs(fixmkl);
+    shell-hasktorch-experimental_cudatoolkit_9_2  = (doBenchmark base-compiler.hasktorch-experimental_cudatoolkit_9_2 ).env.overrideAttrs(fixmkl);
+    shell-hasktorch-experimental_cudatoolkit_10_1 = (doBenchmark base-compiler.hasktorch-experimental_cudatoolkit_10_1).env.overrideAttrs(fixmkl);
   }
 
