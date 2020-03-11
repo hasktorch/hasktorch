@@ -10,11 +10,14 @@ import           Control.Exception.Safe         ( try
                                                 )
 import           Foreign.ForeignPtr
 import           System.IO.Unsafe
+import           Control.Monad                  ( forM_
+                                                , when
+                                                )
 
 import qualified Torch.Internal.Managed.TensorFactories          as LibTorch
 import qualified Torch.DType                   as D
 import qualified Torch.Tensor                  as D
-import qualified Torch.Functional               as D
+import qualified Torch.Functional              as D
 import qualified Torch.TensorFactories         as D
 import qualified Torch.TensorOptions           as D
 
@@ -58,6 +61,28 @@ fromDynImage image = case image of
             F.withForeignPtr fptr $ \ptr2 -> do
               BSI.memcpy (F.castPtr ptr1) ptr2 len
               return $ Right t
+
+fromImages :: [I.Image I.PixelRGB8] -> IO D.Tensor
+fromImages imgs = do
+  let num_imgs = length imgs
+      channel = 3
+      (I.Image width height _) = head imgs
+  when (num_imgs == 0) $ do
+    throwIO $ userError "The number of images should be greater than 0."
+  t <- ((cast2 LibTorch.empty_lo) :: [Int] -> D.TensorOptions -> IO D.Tensor) [num_imgs,height,width,channel] $ D.withDType D.UInt8 D.defaultOpts
+  D.withTensor t $ \ptr1 -> do
+    forM_ (zip [0..] imgs) $ \(idx,(I.Image width' height' vec)) -> do
+      let (fptr,len) = V.unsafeToForeignPtr0 vec
+          whc = width * height * channel
+      when (len /= whc) $ do
+        throwIO $ userError "vector's length is not the same as tensor' one."
+      when (width /= width') $ do
+        throwIO $ userError "image's width is not the same as first image's one"
+      when (height /= height') $ do
+        throwIO $ userError "image's height is not the same as first image's one"
+      F.withForeignPtr fptr $ \ptr2 -> do
+        BSI.memcpy (F.plusPtr (F.castPtr ptr1) (whc*idx)) ptr2 len
+  return t
 
 writeImage :: forall p. I.Pixel p => Int -> Int -> Int -> p -> D.Tensor -> IO (I.Image p)
 writeImage width height channel pixel tensor = do
