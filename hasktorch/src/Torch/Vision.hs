@@ -115,7 +115,7 @@ fromDynImage image = unsafePerformIO $ case image of
         let (fptr, len) = V.unsafeToForeignPtr0 vec
             whc = width * height * channel * dtype_size
         F.withForeignPtr fptr $ \ptr2 -> do
-          BSI.memcpy (F.castPtr ptr1) (F.castPtr ptr2) len
+          BSI.memcpy (F.castPtr ptr1) (F.castPtr ptr2) whc
           return t
     createTensorU16to32 width height channel dtype vec = do
       t <- ((cast2 LibTorch.empty_lo) :: [Int] -> D.TensorOptions -> IO D.Tensor) [1, height, width, channel] $ D.withDType dtype D.defaultOpts
