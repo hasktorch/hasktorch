@@ -98,15 +98,15 @@ fromDynImage image = unsafePerformIO $ case image of
   I.ImageYF     (I.Image width height vec) -> createTensor width height 1 D.Float 4 vec
   I.ImageYA8    (I.Image width height vec) -> createTensor width height 2 D.UInt8 1 vec
   I.ImageRGB8   (I.Image width height vec) -> createTensor width height 3 D.UInt8 1 vec
-  I.ImageRGB16  (I.Image width height vec) -> createTensor width height 3 D.Int32 2 vec
   I.ImageRGBF   (I.Image width height vec) -> createTensor width height 3 D.Float 4 vec
   I.ImageRGBA8  (I.Image width height vec) -> createTensor width height 4 D.UInt8 1 vec
   I.ImageYCbCr8 (I.Image width height vec) -> createTensor width height 3 D.UInt8 1 vec
   I.ImageCMYK8  (I.Image width height vec) -> createTensor width height 4 D.UInt8 1 vec
   I.ImageCMYK16 (I.Image width height vec) -> createTensorU16to32 width height 4 D.Int32 vec
   I.ImageRGBA16 (I.Image width height vec) -> createTensorU16to32 width height 4 D.Int32 vec
-  I.ImageY16    (I.Image width height vec) -> createTensorU16to32 width height 2 D.Int32 vec
-  I.ImageYA16   (I.Image width height vec) -> createTensorU16to32 width height 3 D.Int32 vec
+  I.ImageRGB16  (I.Image width height vec) -> createTensorU16to32 width height 3 D.Int32 vec
+  I.ImageY16    (I.Image width height vec) -> createTensorU16to32 width height 1 D.Int32 vec
+  I.ImageYA16   (I.Image width height vec) -> createTensorU16to32 width height 2 D.Int32 vec
   I.ImageY32    (I.Image width height vec) -> createTensorU32to64 width height 1 D.Int64 vec
   where
     createTensor width height channel dtype dtype_size vec = do
