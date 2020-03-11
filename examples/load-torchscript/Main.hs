@@ -7,7 +7,7 @@ module Main where
 
 import System.Environment (getArgs)
 import Torch.Script
-import Torch.Utils.Image
+import Torch.Vision
 import qualified Torch.DType                   as D
 import qualified Torch.Tensor                  as D
 import qualified Torch.TensorFactories         as D
