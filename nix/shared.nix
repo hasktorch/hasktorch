@@ -76,8 +76,7 @@ let
                         (haskellPackagesOld.callCabal2nix
                           "experimental"
                           ../experimental
-                          { libtorch-ffi = haskellPackagesNew."libtorch-ffi_${postfix}"
-                          ; hasktorch = haskellPackagesNew."hasktorch_${postfix}"
+                          { hasktorch = haskellPackagesNew."hasktorch_${postfix}"
                           ; }
                         );
                   };
