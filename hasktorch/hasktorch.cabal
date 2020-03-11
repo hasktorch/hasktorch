@@ -52,7 +52,6 @@ library
                     , Torch.Serialize
                     , Torch.Random
                     , Torch.Script
-                    , Torch.Utils.Image
  hs-source-dirs:      src
  default-language:    Haskell2010
  ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
@@ -76,6 +75,7 @@ library
                     , bytestring
                     , safe-exceptions
                     , zlib >= 0.6
+                    , inline-c
 
 test-suite spec
   type:               exitcode-stdio-1.0

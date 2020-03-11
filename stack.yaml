@@ -5,6 +5,7 @@ packages:
 - libtorch-ffi
 - hasktorch
 - examples
+- experimental
 
 extra-include-dirs:
   - deps/libtorch/include/torch/csrc/api/include

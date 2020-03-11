@@ -11,7 +11,7 @@ import System.Random (mkStdGen, randoms)
 import Prelude hiding (exp)
 
 import Torch
-import Torch.Utils.Image
+import Torch.Vision
 import Numeric.Dataloader
 import Numeric.Datasets
 import Numeric.Datasets.CIFAR10
@@ -57,7 +57,7 @@ train numEpoch trainData = do
     init <- sample spec :: IO MLP
     trained <- foldLoop init numEpoch $ \state0 iter -> do
         (trained',trained_loss') <- foldLoop' (state0,0) trainData $ \(state,sumLoss) batch -> do
-            images <- images2tensor' $ map (fst.getXY) batch
+            images <- fromImages $ map (fst.getXY) batch
             let len = length batch
                 input = toType Float $ reshape [len,1024*3] images
                 label = asTensor $ map (fromEnum.snd.getXY) batch
