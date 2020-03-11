@@ -57,10 +57,10 @@ train numEpoch trainData = do
     init <- sample spec :: IO MLP
     trained <- foldLoop init numEpoch $ \state0 iter -> do
         (trained',trained_loss') <- foldLoop' (state0,0) trainData $ \(state,sumLoss) batch -> do
-            inputs <- flip mapM batch $ \(CIFARImage (img,_)) -> image2tensor' img
-            labels <- flip mapM batch $ \(CIFARImage (_,label)) -> return (fromEnum label)
-            let input = toType Float $ cat 0 (map (reshape [1,1024*3])  inputs)
-                label = asTensor labels
+            images <- images2tensor' $ map (fst.getXY) batch
+            let len = length batch
+                input = toType Float $ reshape [len,1024*3] images
+                label = asTensor $ map (fromEnum.snd.getXY) batch
                 loss = nllLoss' (mlp state input) label
                 flatParameters = flattenParameters state
             (newParam, _) <- runStep state GD loss 1e-3
