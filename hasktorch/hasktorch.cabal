@@ -101,6 +101,8 @@ test-suite spec
                     , Torch.Typed.NNSpec
                     , Torch.Typed.NN.Recurrent.LSTMSpec
                     , Torch.Typed.NN.Recurrent.GRUSpec
+                    , Torch.Typed.NN.Recurrent.Cell.LSTMSpec
+                    , Torch.Typed.NN.Recurrent.Cell.GRUSpec
                     , Torch.Typed.NN.TransformerSpec
                     , Torch.Typed.VisionSpec
                     , SerializeSpec
