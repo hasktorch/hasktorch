@@ -289,13 +289,13 @@ relu
     -> Tensor -- ^ output
 relu t = unsafePerformIO $ (cast1 ATen.relu_t) t
 
--- | Applies element-wise, SELU(x)=scale∗(max(0,x)+min(0,α∗(exp(x)−1))) , with α=1.6732632423543772848170429916717 and scale=1.0507009873554804934193349852946.
+-- | Applies element-wise, \(\text{SELU}(x) = scale * (\max(0,x) + \min(0, \alpha * (\exp(x) - 1))\) , with α=1.6732632423543772848170429916717 and scale=1.0507009873554804934193349852946.
 selu 
     :: Tensor -- ^ input
     -> Tensor -- ^ output
 selu t = unsafePerformIO $ (cast1 ATen.selu_t) t
 
--- | Applies element-wise, CELU(x)=max(0,x)+min(0,α∗(exp(x/α)−1)).
+-- | Applies element-wise, \(\text{CELU}(x) = \max(0,x) + \min(0, \alpha * (\exp(x/\alpha) - 1))\).
 celu 
    :: Float -- ^ alpha
    -> Tensor -- ^ input
