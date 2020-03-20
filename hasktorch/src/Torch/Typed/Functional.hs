@@ -3632,8 +3632,22 @@ gru tensorParameters dropoutProb dropoutOn hc input = unsafePerformIO $ ATen.cas
   numLayers :: I.Int64
   numLayers  = fromIntegral $ natValI @numLayers
 
--- gru_cell :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
--- gru_cell _input _hx _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (ATen.cast6 ATen.Managed.gru_cell_tttttt) _input _hx _w_ih _w_hh _b_ih _b_hh
+-- | gruCell
+--
+-- >>> dtype &&& shape $ gruCell (ones :: CPUTensor 'D.Float '[9,2]) (ones :: CPUTensor 'D.Float '[9,3]) (ones :: CPUTensor 'D.Float '[9]) (ones :: CPUTensor 'D.Float '[9]) (ones :: CPUTensor 'D.Float '[2,3]) (ones :: CPUTensor 'D.Float '[2,2])
+-- (Float,[2,3])
+gruCell
+  :: forall inputSize hiddenSize batchSize dtype device
+   . Tensor device dtype '[3 * hiddenSize, inputSize]
+  -> Tensor device dtype '[3 * hiddenSize, hiddenSize]
+  -> Tensor device dtype '[3 * hiddenSize]
+  -> Tensor device dtype '[3 * hiddenSize]
+  -> Tensor device dtype '[batchSize, hiddenSize]
+  -> Tensor device dtype '[batchSize, inputSize]
+  -> Tensor device dtype '[batchSize, hiddenSize]
+gruCell wi wh bi bh hx input =
+  unsafePerformIO
+    $ ATen.cast6 ATen.Managed.gru_cell_tttttt input hx wi wh bi bh
 
 -- rnn_tanh_cell :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- rnn_tanh_cell _input _hx _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (ATen.cast6 ATen.Managed.rnn_tanh_cell_tttttt) _input _hx _w_ih _w_hh _b_ih _b_hh
