@@ -16,7 +16,7 @@ import Torch.TensorOptions
 import Torch.Script
 
 spec :: Spec
-spec = do
+spec = describe "torchscript" $ do
   it "define and run" $ do
     m <- newModule "m"
     define m $
@@ -37,6 +37,7 @@ spec = do
     save m "self2.pt"
     (IVTensor r0) <- forward m (map IVTensor [v00,v01])
     (asValue r0::Float) `shouldBe` 12
+  it "run" $ do
     m2 <- load "self2.pt"
     let v10 = asTensor (40::Float)
         v11 = asTensor (80::Float)

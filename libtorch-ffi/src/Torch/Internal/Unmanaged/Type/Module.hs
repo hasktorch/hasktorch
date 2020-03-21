@@ -121,10 +121,11 @@ trace func inputs = do
         auto graph = torch::jit::tracer::trace(
           c10::fmap<c10::IValue>(vars_in),
           [&func](c10::Stack in) -> c10::Stack {
-            auto ivalue_inps = c10::fmap(in, [](const c10::IValue& v){
+            std::vector<at::Tensor>* ivalue_inps = new std::vector<at::Tensor>(c10::fmap(in, [](const c10::IValue& v){
               return torch::autograd::Variable(v.toTensor());
-            });
-            return c10::fmap<c10::IValue>(*(func(&ivalue_inps)));
+            }));
+            std::vector<at::Tensor> out = *(func(ivalue_inps));
+            return c10::fmap<c10::IValue>(out);
           },
           [](const torch::autograd::Variable& var) { return "";}
         ).first->graph;
