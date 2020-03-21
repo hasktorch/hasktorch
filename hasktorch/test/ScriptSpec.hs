@@ -8,8 +8,6 @@ module ScriptSpec(spec) where
 import Prelude hiding (abs, exp, floor, log, min, max)
 
 import Test.Hspec
-import Control.Exception.Safe
-import Control.Monad.State.Strict
 
 import Torch
 import Torch.Script
@@ -22,7 +20,7 @@ data MLPSpec = MLPSpec {
     outputFeatures :: Int
     } deriving (Show, Eq)
 
-data MLP = MLP { 
+data MLP = MLP {
     l0 :: Linear,
     l1 :: Linear,
     l2 :: Linear
@@ -49,8 +47,7 @@ params :: Parameterized a => a -> [Tensor]
 params = (map toDependent).flattenParameters
 
 fromParams :: Parameterized a => a -> [Tensor] -> a
-fromParams init ps = replaceParameters init (map IndependentTensor ps)
-
+fromParams init' ps = replaceParameters init' (map IndependentTensor ps)
 
 spec :: Spec
 spec = describe "torchscript" $ do
@@ -76,10 +73,10 @@ spec = describe "torchscript" $ do
     (asValue r0::Float) `shouldBe` 12
   it "trace mlp" $ do
     v00 <- randnIO' [3,784]
-    init <- sample (MLPSpec 784 64 32 10)
-    m <- trace (\(x:p) -> return [(mlp (fromParams init p) x)]) (v00:params init)
+    init' <- sample (MLPSpec 784 64 32 10)
+    m <- trace (\(x:p) -> return [(mlp (fromParams init' p) x)]) (v00:params init')
     save m "mlp.pt"
-    (IVTensor r0) <- forward m (map IVTensor (v00:params init))
+    (IVTensor r0) <- forward m (map IVTensor (v00:params init'))
     (shape r0) `shouldBe` [3,10]
   it "run" $ do
     m2 <- load "self2.pt"
