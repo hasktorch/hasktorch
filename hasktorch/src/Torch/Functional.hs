@@ -310,13 +310,13 @@ relu
     -> Tensor -- ^ output
 relu t = unsafePerformIO $ (cast1 ATen.relu_t) t
 
--- | Applies element-wise, \text{SELU}(x) = scale * (\max(0,x) + \min(0, \alpha * (\exp(x) - 1)))SELU(x)=scale∗(max(0,x)+min(0,α∗(exp(x)−1))) , with \alpha=1.6732632423543772848170429916717α=1.6732632423543772848170429916717 and scale=1.0507009873554804934193349852946scale=1.0507009873554804934193349852946 .
+-- | Applies element-wise, \(\text{SELU}(x) = scale * (\max(0,x) + \min(0, \alpha * (\exp(x) - 1))\) , with α=1.6732632423543772848170429916717 and scale=1.0507009873554804934193349852946.
 selu 
     :: Tensor -- ^ input
     -> Tensor -- ^ output
 selu t = unsafePerformIO $ (cast1 ATen.selu_t) t
 
--- | Applies element-wise, \text{CELU}(x) = \max(0,x) + \min(0, \alpha * (\exp(x/\alpha) - 1))CELU(x)=max(0,x)+min(0,α∗(exp(x/α)−1)) .
+-- | Applies element-wise, \(\text{CELU}(x) = \max(0,x) + \min(0, \alpha * (\exp(x/\alpha) - 1))\).
 celu 
    :: Float -- ^ alpha
    -> Tensor -- ^ input
@@ -902,7 +902,7 @@ transpose2D t = transpose t 0 1
 
 
 -- | Returns a tensor with the elements of input as the diagonal.
--- | The second argument controls which diagonal to consider:
+-- The second argument controls which diagonal to consider:
 --        If Int = 0, it is the main diagonal.
 --        If Int > 0, it is above the main diagonal.
 --        If Int < 0, it is below the main diagonal.
