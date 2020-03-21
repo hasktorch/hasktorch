@@ -41,6 +41,7 @@ import qualified Torch.Internal.Const as ATen
 import Torch.Internal.Unmanaged.Type.IValue (IValueLike(..))
 import Torch.Internal.Unmanaged.Type.C10Dict
 import Torch.Internal.Managed.Type.IValue
+import Torch.Internal.Type (TensorList)
 import qualified Torch.Internal.Managed.Type.Module as LibTorch
 
 import Torch.Device
@@ -131,6 +132,15 @@ run_method1 = cast3 run_method1'
 
 define :: Module -> String -> IO ()
 define = cast2 LibTorch.define
+
+trace :: ([Tensor] -> IO [Tensor]) -> [Tensor] -> IO Module
+trace func inputs = cast1 (LibTorch.trace (trans func)) inputs
+  where
+    trans :: ([Tensor] -> IO [Tensor]) -> ForeignPtr TensorList -> IO (ForeignPtr TensorList)
+    trans func inputs =
+      uncast inputs $ \inputs' -> do
+        ret <- func inputs'
+        cast ret return
 
 instance Castable [IValue] [RawIValue] where
   cast a f = (forM a $ \v -> cast v return) >>= f

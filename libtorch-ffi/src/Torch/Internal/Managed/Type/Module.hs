@@ -20,6 +20,7 @@ import Foreign.C.String
 import Foreign.C.Types
 import Foreign hiding (newForeignPtr)
 import Foreign.Concurrent
+import Foreign.ForeignPtr.Unsafe
 import Torch.Internal.Type
 import Torch.Internal.Class
 import Torch.Internal.Cast
@@ -72,4 +73,12 @@ run_method1 = cast3 Unmanaged.run_method1
 define :: ForeignPtr Module -> ForeignPtr StdString -> IO ()
 define = cast2 Unmanaged.define
 
-
+-- TODO: Not using unsafeForeignPtrToPtr
+trace :: (ForeignPtr TensorList -> IO (ForeignPtr TensorList)) -> ForeignPtr TensorList -> IO (ForeignPtr Module)
+trace func inputs = cast1 (Unmanaged.trace (trans func)) inputs
+  where
+    trans :: (ForeignPtr TensorList -> IO (ForeignPtr TensorList)) -> Ptr TensorList -> IO (Ptr TensorList)
+    trans func inputs = do
+      inputs' <- fromPtr inputs
+      ret <- func inputs'
+      return $ unsafeForeignPtrToPtr ret

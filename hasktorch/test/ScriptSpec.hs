@@ -30,3 +30,15 @@ spec = do
     a `shouldBe` 1
     b `shouldBe` 2
     (asValue c :: Float) `shouldBe` 4.0
+  it "trace" $ do
+    let v00 = asTensor (4::Float)
+        v01 = asTensor (8::Float)
+    m <- trace (\[x,y] -> return [x+y]) [v00,v01]
+    save m "self2.pt"
+    (IVTensor r0) <- forward m (map IVTensor [v00,v01])
+    (asValue r0::Float) `shouldBe` 12
+    m2 <- load "self2.pt"
+    let v10 = asTensor (40::Float)
+        v11 = asTensor (80::Float)
+    (IVTensor r1) <- forward m2 (map IVTensor [v10,v11])
+    (asValue r1::Float) `shouldBe` 120

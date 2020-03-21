@@ -108,4 +108,27 @@ define obj src = [C.throwBlock| void {
     );
   }|]
 
-
+trace :: (Ptr TensorList -> IO (Ptr TensorList)) -> Ptr TensorList -> IO (Ptr Module)
+trace func inputs = do
+  funcPtr <- $(C.mkFunPtr [t| Ptr TensorList -> IO (Ptr TensorList) |]) $ \inputs' -> func inputs'
+  [C.throwBlock| torch::jit::script::Module* {
+    torch::jit::script::Module self("M");
+    auto vars_in = *$(std::vector<at::Tensor>* inputs);
+    auto func = $(std::vector<at::Tensor>* (*funcPtr)(std::vector<at::Tensor>*));
+    auto graph = torch::jit::tracer::trace(
+      c10::fmap<c10::IValue>(vars_in),
+      [&func](c10::Stack in) -> c10::Stack {
+        auto ivalue_inps = c10::fmap(in, [](const c10::IValue& v){
+          return torch::autograd::Variable(v.toTensor());
+        });
+        return c10::fmap<c10::IValue>(*(func(&ivalue_inps)));
+      },
+      [](const torch::autograd::Variable& var) { return "";}
+    ).first->graph;
+    auto v = graph->insertInput(0, "self");
+    v->setType(self._ivalue()->type());
+    const auto name = c10::QualifiedName(*self.type()->name(), "forward");
+    auto fn2 = self._ivalue()->compilation_unit()->create_function(name,graph);
+    self.type()->addMethod(fn2);
+    return new torch::jit::script::Module(self);
+  }|]
