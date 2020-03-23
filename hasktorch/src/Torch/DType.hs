@@ -70,7 +70,7 @@ instance Reifies Double DType where
   reflect _ = Double
 
 instance Reifies 'Double DType where
-  reflect _ = Float
+  reflect _ = Double
 
 instance Castable DType ATen.ScalarType where
   cast Bool   f = f ATen.kBool
