@@ -314,6 +314,7 @@ data AggregationSpec =
     MinSpec
   | MaxSpec
   | MedianSpec
+  | MeanSpec
 
 instance
   ( TensorOptions shape dtype device
@@ -331,6 +332,10 @@ instance
         t' = min t
     checkDynamicTensorAttributes t'
   apply' MedianSpec (_, agg) = agg >> do
+    let t = ones @shape @dtype @device
+        t' = min t
+    checkDynamicTensorAttributes t'
+  apply' MeanSpec (_, agg) = agg >> do
     let t = ones @shape @dtype @device
         t' = min t
     checkDynamicTensorAttributes t'
@@ -761,6 +766,7 @@ spec' device =
       it "min"    $ dispatch MinSpec
       it "max"    $ dispatch MaxSpec
       it "median" $ dispatch MedianSpec
+      it "mean"   $ dispatch MeanSpec
 
     describe "shape ops" $ do
       it "squeezeAll" $ case device of
