@@ -21,11 +21,12 @@ extra-lib-dirs:
 extra-deps:
 - template-0.2.0.10@sha256:f822de4d34c45bc84b33a61bc112c15fedee6fa6dc414c62b10456395a868f85
 - inline-c-cpp-0.4.0.0
-- Chart-cairo-1.9.1
-- cairo-0.13.8.0
-- gtk2hs-buildtools-0.13.8.0
 - git: git://github.com/hasktorch/pipes-text.git
   commit: 3dd3d9519306ea06f0c15ad71bdf57e1dfd0b747
+- ghc-typelits-natnormalise-0.7
+- ghc-typelits-knownnat-0.7
+- ghc-typelits-extra-0.3.2
+
 
 nix:
   packages: [zlib.dev, zlib.out]
