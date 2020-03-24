@@ -650,14 +650,8 @@ instance
   ( TensorOptions '[4 * hiddenSize, inputSize] dtype device
   , TensorOptions '[4 * hiddenSize, hiddenSize] dtype device
   , TensorOptions '[4 * hiddenSize] dtype device
-  , TensorOptions '[4 * hiddenSize] dtype device
-  , ( TensorOptions '[batchSize, hiddenSize] dtype device
-    , TensorOptions '[batchSize, hiddenSize] dtype device
-    )
+  , TensorOptions '[batchSize, hiddenSize] dtype device
   , TensorOptions '[batchSize, inputSize] dtype device
-  , ( TensorOptions '[batchSize, hiddenSize] dtype device
-    , TensorOptions '[batchSize, hiddenSize] dtype device
-    )
   , KnownNat inputSize, KnownNat hiddenSize, KnownNat batchSize
   ) => Apply' LstmCellSpec ((Proxy device, (Proxy dtype, (Proxy hiddenSize, Proxy inputSize, Proxy batchSize))), IO ()) (IO ()) where
   apply' LstmCellSpec (_, agg) = agg >> do
@@ -678,10 +672,8 @@ instance
   ( TensorOptions '[3 * hiddenSize, inputSize] dtype device
   , TensorOptions '[3 * hiddenSize, hiddenSize] dtype device
   , TensorOptions '[3 * hiddenSize] dtype device
-  , TensorOptions '[3 * hiddenSize] dtype device
   , TensorOptions '[batchSize, hiddenSize] dtype device
   , TensorOptions '[batchSize, inputSize] dtype device
-  , TensorOptions '[batchSize, hiddenSize] dtype device
   , KnownNat inputSize, KnownNat hiddenSize, KnownNat batchSize
   ) => Apply' GruCellSpec ((Proxy device, (Proxy dtype, (Proxy hiddenSize, Proxy inputSize, Proxy batchSize))), IO ()) (IO ()) where
   apply' GruCellSpec (_, agg) = agg >> do
