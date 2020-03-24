@@ -19,13 +19,19 @@ extra-lib-dirs:
 # with-gcc: /usr/local/bin/gcc-7
 
 extra-deps:
-- template-0.2.0.10@sha256:f822de4d34c45bc84b33a61bc112c15fedee6fa6dc414c62b10456395a868f85
+# libtorch-ffi
 - inline-c-cpp-0.4.0.0
-- git: git://github.com/hasktorch/pipes-text.git
-  commit: 3dd3d9519306ea06f0c15ad71bdf57e1dfd0b747
+# hasktorch
 - ghc-typelits-natnormalise-0.7
 - ghc-typelits-knownnat-0.7
 - ghc-typelits-extra-0.3.2
+# examples/typed-transformer
+- git: git://github.com/hasktorch/pipes-text.git
+  commit: 3dd3d9519306ea06f0c15ad71bdf57e1dfd0b747
+# experimental/dataloader-cifar10
+- datasets-0.4.0@sha256:9bfd5b54c6c5e1e72384a890cf29bf85a02007e0a31c98753f7d225be3c7fa6a,4929
+- streaming-attoparsec-1.0.0.1@sha256:fe9b878072423d3f075534fe8af24722d9ded1a1129e9a6ed5b71c4a29681b39,1146
+- streaming-cassava-0.1.0.1@sha256:2d1dfeb09af62009e88311fe92f44d06dafb5cdd38879b437ea6adb3bc40acfe,1739
 
 
 nix:
