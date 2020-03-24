@@ -1,4 +1,7 @@
+module Main where
+
 import Torch
+import Torch.NN.Recurrent.Cell.Elman 
 
 convTest = do
     -- input: minibatch, channels, input width

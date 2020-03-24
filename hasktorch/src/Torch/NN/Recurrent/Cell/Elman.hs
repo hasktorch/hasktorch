@@ -1,23 +1,28 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Torch.NN.Recurrent.Cell.Elman where
 
 import Control.Monad.State.Strict
 import Data.List (foldl', scanl', intersperse)
+import GHC.Generics
 
 import Torch
-import RecurrentLayer
+import Torch.NN.Recurrent.Cell.RecurrentLayer
 
-data ElmanSpec = ElmanSpec { in_features :: Int, hidden_features :: Int }
+data ElmanSpec = ElmanSpec { 
+    in_features :: Int,
+    hidden_features :: Int 
+} deriving (Eq, Show)
 
 data ElmanCell = ElmanCell {
     input_weight :: Parameter,
     hidden_weight :: Parameter,
     bias :: Parameter
-}
+} deriving (Generic, Show)
 
 instance RecurrentCell ElmanCell where
     nextState ElmanCell{..} input hidden =
@@ -30,6 +35,7 @@ instance Randomizable ElmanSpec ElmanCell where
       b <- makeIndependent =<< randnIO' [1, hidden_features]
       return $ ElmanCell w_ih w_hh b
 
+{-
 instance Parameterized ElmanCell where
   flattenParameters ElmanCell{..} = [input_weight, hidden_weight, bias]
   replaceOwnParameters _ = do
@@ -37,9 +43,12 @@ instance Parameterized ElmanCell where
     hidden_weight <- nextParameter
     bias   <- nextParameter
     return $ ElmanCell{..}
+-}
 
+{-
 instance Show ElmanCell where
     show ElmanCell{..} =
         (show input_weight) ++ "\n" ++
         (show hidden_weight) ++ "\n" ++
         (show bias) ++ "\n"
+-}

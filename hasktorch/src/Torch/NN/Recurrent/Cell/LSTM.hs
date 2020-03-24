@@ -9,7 +9,7 @@ import Control.Monad.State.Strict
 import Data.List (foldl', scanl', intersperse)
 
 import Torch
-import RecurrentLayer
+import Torch.NN.Recurrent.Cell.RecurrentLayer
 
 data LSTMSpec = LSTMSpec { inf :: Int, hf :: Int}
 
