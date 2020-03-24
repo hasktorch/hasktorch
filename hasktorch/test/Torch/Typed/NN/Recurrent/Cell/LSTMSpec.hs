@@ -13,9 +13,7 @@ import qualified Torch.NN                      as A
 import qualified Torch.DType                   as D
 import qualified Torch.Device                  as D
 import           Torch.Typed.Factories
-import           Torch.Typed.Functional
 import           Torch.Typed.Parameter
-import           Torch.Typed.NN
 import           Torch.Typed.NN.Recurrent.Cell.LSTM
 
 spec :: Spec
