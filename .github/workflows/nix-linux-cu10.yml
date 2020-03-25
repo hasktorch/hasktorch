@@ -1,4 +1,4 @@
-name: nix-linux
+name: nix-linux-cu10
 
 on: [push, pull_request]
 
@@ -18,8 +18,7 @@ jobs:
         name: hasktorch
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
         nixBuildArgs: |
-          -A hasktorch-codegen \
-          -A libtorch-ffi_cpu \
-          -A hasktorch_cpu \
-          -A hasktorch-examples_cpu \
-          -A hasktorch-experimental_cpu
+          -A libtorch-ffi_cudatoolkit_10_1 \
+          -A hasktorch_cudatoolkit_10_1 \
+          -A hasktorch-examples_cudatoolkit_10_1 \
+          -A hasktorch-experimental_cudatoolkit_10_1
