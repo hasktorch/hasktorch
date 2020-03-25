@@ -136,6 +136,15 @@ let
                             '';
                           }
                         );
+                    RSA =
+                      (haskellPackagesNew.callHackageDirect
+                        {
+                          pkg = "RSA";
+                          ver = "2.4.1";
+                          sha256 = "0jcdazh2rsy11kmv3yw9xb2p4z5b1rxskdi79jvcapsdvixcmkzp";
+                        }
+                        { }
+                      );
                     datasets =
                       (haskellPackagesNew.callHackageDirect
                         {
