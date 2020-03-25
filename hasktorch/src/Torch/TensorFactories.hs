@@ -68,15 +68,18 @@ onesLike
   -> Tensor -- ^ output
 onesLike self = unsafePerformIO $ (cast1 ATen.ones_like_t) self
 
-onesLike' :: Tensor -> Tensor
-onesLike' self = unsafePerformIO $ (cast1 ATen.ones_like_t) self
-
 -- | Returns a tensor filled with the scalar value 0, with the shape defined by the variable argument size.
 zeros 
   :: [Int] -- ^ sequence of integers defining the shape of the output tensor.
   -> TensorOptions -- ^ configures the data type, device, layout and other properties of the resulting tensor.
   -> Tensor -- ^ output
 zeros = mkFactoryUnsafe LibTorch.zeros_lo
+
+-- | Returns a tensor filled with the scalar value 0, with the same size as input tensor
+zerosLike 
+  :: Tensor -- ^ input
+  -> Tensor -- ^ output
+zerosLike self = unsafePerformIO $ (cast1 ATen.zeros_like_t) self
 
 -- | Returns a tensor filled with random numbers from a uniform distribution on the interval [0,1)
 randIO 
