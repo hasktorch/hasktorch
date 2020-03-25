@@ -1238,6 +1238,32 @@ logical_not_out_tt
   -> IO (ForeignPtr Tensor)
 logical_not_out_tt = cast2 Unmanaged.logical_not_out_tt
 
+logical_and_tt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+logical_and_tt = cast2 Unmanaged.logical_and_tt
+
+logical_and_out_ttt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+logical_and_out_ttt = cast3 Unmanaged.logical_and_out_ttt
+
+logical_or_tt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+logical_or_tt = cast2 Unmanaged.logical_or_tt
+
+logical_or_out_ttt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+logical_or_out_ttt = cast3 Unmanaged.logical_or_out_ttt
+
 logical_xor_tt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor

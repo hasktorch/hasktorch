@@ -129,6 +129,12 @@ bitwise_not _self = unsafePerformIO $ (cast1 ATen.bitwise_not_t) _self
 logical_not :: Tensor -> Tensor
 logical_not _self = unsafePerformIO $ (cast1 ATen.logical_not_t) _self
 
+logical_and :: Tensor -> Tensor -> Tensor
+logical_and _self _other = unsafePerformIO $ (cast2 ATen.logical_and_tt) _self _other
+
+logical_or :: Tensor -> Tensor -> Tensor
+logical_or _self _other = unsafePerformIO $ (cast2 ATen.logical_or_tt) _self _other
+
 logical_xor :: Tensor -> Tensor -> Tensor
 logical_xor _self _other = unsafePerformIO $ (cast2 ATen.logical_xor_tt) _self _other
 

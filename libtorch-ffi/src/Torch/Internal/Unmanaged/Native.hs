@@ -2103,6 +2103,50 @@ logical_not_out_tt _out _self =
   , *$(at::Tensor* _self)));
   }|]
 
+logical_and_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+logical_and_tt _self _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::logical_and(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _other)));
+  }|]
+
+logical_and_out_ttt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+logical_and_out_ttt _out _self _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::logical_and_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , *$(at::Tensor* _other)));
+  }|]
+
+logical_or_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+logical_or_tt _self _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::logical_or(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _other)));
+  }|]
+
+logical_or_out_ttt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+logical_or_out_ttt _out _self _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::logical_or_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , *$(at::Tensor* _other)));
+  }|]
+
 logical_xor_tt
   :: Ptr Tensor
   -> Ptr Tensor
