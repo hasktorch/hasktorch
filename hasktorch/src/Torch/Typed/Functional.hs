@@ -1123,23 +1123,23 @@ type family ConditionalDropDimension (shape :: [Nat]) (dim :: Nat) (keepOrDropDi
   ConditionalDropDimension (x : xs) 0 DropDim       = xs
   ConditionalDropDimension (x : xs) i keepOrDropDim = x ': ConditionalDropDimension xs (i - 1) keepOrDropDim
 
--- | all'
+-- | allDim
 -- See https://pytorch.org/docs/stable/tensors.html#torch.BoolTensor.all.
 --
 -- >>> t = fromJust [[True, True], [True, False], [True, True], [True, True]] :: CPUTensor 'D.Bool '[4, 2]
 --
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ all' @1 @DropDim t
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ allDim @1 @DropDim t
 -- (Bool,([4],[True,False,True,True]))
 --
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ all' @1 @KeepDim t
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ allDim @1 @KeepDim t
 -- (Bool,([4,1],[[True],[False],[True],[True]]))
 --
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ all' @0 @DropDim t
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ allDim @0 @DropDim t
 -- (Bool,([2],[True,False]))
 --
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ all' @0 @KeepDim t
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ allDim @0 @KeepDim t
 -- (Bool,([1,2],[[True,False]]))
-all'
+allDim
   :: forall dim keepOrDropDim shape' shape device
    . ( KnownNat dim
      , KnownKeepOrDropDim keepOrDropDim
@@ -1147,26 +1147,26 @@ all'
      )
   => Tensor device 'D.Bool shape -- ^ input
   -> Tensor device 'D.Bool shape' -- ^ output
-all' input = unsafePerformIO
+allDim input = unsafePerformIO
   $ ATen.cast3 ATen.Managed.all_tlb input (natValI @dim) (keepOrDropDimVal @keepOrDropDim)
 
--- | any'
+-- | anyDim
 -- See https://pytorch.org/docs/stable/tensors.html#torch.BoolTensor.any.
 --
 -- >>> t = fromJust [[True, True], [True, False], [True, True], [True, True]] :: CPUTensor 'D.Bool '[4, 2]
 --
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ any' @1 @DropDim t
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ anyDim @1 @DropDim t
 -- (Bool,([4],[True,True,True,True]))
 --
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ any' @1 @KeepDim t
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ anyDim @1 @KeepDim t
 -- (Bool,([4,1],[[True],[True],[True],[True]]))
 --
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ any' @0 @DropDim t
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ anyDim @0 @DropDim t
 -- (Bool,([2],[True,True]))
 --
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ any' @0 @KeepDim t
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ anyDim @0 @KeepDim t
 -- (Bool,([1,2],[[True,True]]))
-any'
+anyDim
   :: forall dim keepOrDropDim shape' shape device
    . ( KnownNat dim
      , KnownKeepOrDropDim keepOrDropDim
@@ -1174,7 +1174,7 @@ any'
      )
   => Tensor device 'D.Bool shape -- ^ input
   -> Tensor device 'D.Bool shape' -- ^ output
-any' input = unsafePerformIO $ ATen.cast3 ATen.Managed.any_tlb input (natValI @dim) (keepOrDropDimVal @keepOrDropDim)
+anyDim input = unsafePerformIO $ ATen.cast3 ATen.Managed.any_tlb input (natValI @dim) (keepOrDropDimVal @keepOrDropDim)
 
 -- | dropout
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
