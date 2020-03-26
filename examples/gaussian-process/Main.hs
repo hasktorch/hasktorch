@@ -26,7 +26,7 @@ kernel1d_rbf :: Double -> Double -> Tensor -> Tensor -> Tensor
 kernel1d_rbf sigma length t t' = (sigma'^2) * exp eterm
     where
         sigma' = asTensor sigma
-        eterm = mulScalar (- (pow (t - t') (2 :: Int))) (1 / (2 * length^2) )
+        eterm = mulScalar (1 / (2 * length^2) ) (- (pow (t - t') (2 :: Int)))
 
 -- | derive a covariance matrix from the kernel for points on the axis
 makeCovmatrix :: [Float] -> [Float] -> CovMatrix

@@ -209,8 +209,8 @@ writePng file tensor = do
 
 -- [batch, height, width, channel] -> [batch, channel, height, width]
 hwc2chw :: D.Tensor -> D.Tensor
-hwc2chw input = D.permute input [0,3,1,2]
+hwc2chw = D.permute [0,3,1,2]
 
 -- [batch, channel, height, width] -> [batch, height, width, channel]
 chw2hwc :: D.Tensor -> D.Tensor
-chw2hwc input = D.permute input [0,2,3,1]
+chw2hwc = D.permute [0,2,3,1]
