@@ -117,4 +117,4 @@ Contact Austin Huang or Sam Stites for access to the [hasktorch slack channel][s
 
 ## Developer Information
 
-See [the wiki](https://github.com/hasktorch/ffi-experimental/wiki) for developer information.
+See [the wiki](https://github.com/hasktorch/hasktorch/wiki) for developer information.
