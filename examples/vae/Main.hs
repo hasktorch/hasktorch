@@ -56,7 +56,7 @@ vaeLoss recon_x x mu logvar = reconLoss + kld
   where
     -- reconLoss = binary_cross_entropy_loss recon_x x undefined ReduceSum
     reconLoss = mseLoss recon_x x
-    kld = -0.5 * (sumAll (1 + logvar - pow mu (2 :: Int) - exp logvar))
+    kld = -0.5 * (sumAll (1 + logvar - pow (2 :: Int) mu - exp logvar))
 
 -- | End-to-end function for VAE model
 model :: VAEState -> Tensor -> IO ModelOutput
