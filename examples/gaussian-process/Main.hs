@@ -41,7 +41,7 @@ mvnCholesky (CovMatrix cov) axisDim n = do
     samples <- randnIO' [axisDim, n]
     pure $ matmul l samples
     where 
-      l = cholesky cov Upper
+      l = cholesky Upper cov
 
 -- | Compute posterior mean and covariance parameters based on observed data y
 condition 

@@ -87,7 +87,7 @@ mvnCholesky cov n axisDim = do
     samples <- randnIO' [axisDim, n]
     pure $ matmul l samples
     where
-      l = cholesky cov Upper
+      l = cholesky Upper cov
 
 -- | Construct and initialize model parameter state
 makeModel :: Int -> Int -> Int -> IO VAEState
