@@ -14,36 +14,33 @@ import Torch
 import Torch.NN.Recurrent.Cell.RecurrentLayer
 
 data ElmanSpec = ElmanSpec { 
-    in_features :: Int,
-    hidden_features :: Int 
+    iSize :: Int,
+    hSize :: Int 
 } deriving (Eq, Show)
 
 data ElmanCell = ElmanCell {
-    input_weight :: Parameter,
-    hidden_weight :: Parameter,
-    bias :: Parameter
+    ihWeights :: Parameter,
+    hhWeights :: Parameter,
+    ihBias :: Parameter,
+    hhBias :: Parameter
 } deriving (Generic, Show)
 
 instance RecurrentCell ElmanCell where
     nextState ElmanCell{..} input hidden =
-        gate input hidden Torch.tanh input_weight hidden_weight bias
+        rnnReluCell ihWeights' hhWeights' ihBias' hhBias' hidden input
+        where
+            ihWeights' = toDependent ihWeights
+            hhWeights' = toDependent hhWeights
+            ihBias' = toDependent ihBias
+            hhBias' = toDependent ihBias
 
 instance Randomizable ElmanSpec ElmanCell where
     sample ElmanSpec{..} = do
-      w_ih <- makeIndependent =<< randnIO' [in_features, hidden_features]
-      w_hh <- makeIndependent =<< randnIO' [hidden_features, hidden_features]
-      b <- makeIndependent =<< randnIO' [1, hidden_features]
-      return $ ElmanCell w_ih w_hh b
-
-{-
-instance Parameterized ElmanCell where
-  flattenParameters ElmanCell{..} = [input_weight, hidden_weight, bias]
-  replaceOwnParameters _ = do
-    input_weight <- nextParameter
-    hidden_weight <- nextParameter
-    bias   <- nextParameter
-    return $ ElmanCell{..}
--}
+      ihWeights <- makeIndependent =<< randnIO' [hSize, iSize]
+      hhWeights <- makeIndependent =<< randnIO' [hSize, hSize]
+      ihBias <- makeIndependent =<< randnIO' [hSize]
+      hhBias <- makeIndependent =<< randnIO' [hSize]
+      return $ ElmanCell ihWeights hhWeights ihBias hhBias
 
 {-
 instance Show ElmanCell where

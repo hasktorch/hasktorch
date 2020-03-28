@@ -43,6 +43,20 @@ embedTest = do
     -- 5 = input width, 3 = # channels
     pure x
 
+rnnTest :: IO Tensor
+rnnTest = do
+    let hx = zeros' [hsz]
+    let wih = zeros' [hsz, isz]
+    let whh = zeros' [hsz, hsz]
+    let bih = zeros' [hsz]
+    let bhh = zeros' [hsz]
+    let input = zeros' [isz]
+    pure $ rnnReluCell wih whh bih bhh hx input
+  where
+    hsz = 5 -- hidden dimensions
+    isz = 3 -- input dimensions
+
+
 main = do
     let dic = asTensor ([[1,2,3], [4,5,6]] :: [[Float]])
     putStrLn "Dictionary"
@@ -59,3 +73,6 @@ main = do
     print $ shape x
     outputs <- convTest' x
     print outputs
+
+    rnnOut <- rnnTest
+    print rnnOut
