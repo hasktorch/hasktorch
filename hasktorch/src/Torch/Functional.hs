@@ -950,3 +950,22 @@ permute
  -> [Int] -- ^ list corresponding to ordering of dimensions to permute with 
  -> Tensor -- output
 permute t dims = unsafePerformIO $ (cast2 ATen.tensor_permute_l) t dims
+
+-- | expand
+-- TODO: figure out what the boolean value does
+expand
+  :: Tensor -- ^ input
+  -> Bool -- ^ some boolean value with unknown function
+  -> [Int] -- ^ the desired expanded size
+  -> Tensor -- ^ output
+expand t someBool dims = unsafePerformIO $ (cast3 ATen.tensor_expand_lb) t dims someBool
+
+-- flatten :: Tensor -> Int -> Int -> Tensor
+-- flatten input start_dim end_dim = unsafePerformIO $ (cast3 ATen.flatten_tll) input start_dim end_dim
+
+-- | flattenAll
+flattenAll
+  :: Tensor -- ^ input
+  -> Tensor -- ^ output
+flattenAll t =
+  unsafePerformIO $ (cast3 ATen.flatten_tll) t (0 :: Int) (-1 :: Int)

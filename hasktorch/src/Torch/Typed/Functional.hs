@@ -228,6 +228,19 @@ median
   -> Tensor device dtype '[] -- ^ output
 median input = unsafePerformIO $ ATen.cast1 ATen.Managed.median_t input
 
+-- | mean
+--
+-- >>> dtype &&& shape $ mean (ones :: CPUTensor 'D.Float '[2,2])
+-- (Float,[])
+mean
+  :: forall shape dtype device
+  . ( AggregationDTypeIsValid device dtype
+    , AllDimsPositive shape
+    )
+  => Tensor device dtype shape -- ^ input
+  -> Tensor device dtype '[] -- ^ output
+mean input = unsafePerformIO $ ATen.cast1 ATen.Managed.mean_t input
+
 -- | addScalar
 -- TODO: what dtypes is this defined for?
 -- TODO: what scalar types is this defined for?
@@ -3619,8 +3632,22 @@ gru tensorParameters dropoutProb dropoutOn hc input = unsafePerformIO $ ATen.cas
   numLayers :: I.Int64
   numLayers  = fromIntegral $ natValI @numLayers
 
--- gru_cell :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
--- gru_cell _input _hx _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (ATen.cast6 ATen.Managed.gru_cell_tttttt) _input _hx _w_ih _w_hh _b_ih _b_hh
+-- | gruCell
+--
+-- >>> dtype &&& shape $ gruCell (ones :: CPUTensor 'D.Float '[9,2]) (ones :: CPUTensor 'D.Float '[9,3]) (ones :: CPUTensor 'D.Float '[9]) (ones :: CPUTensor 'D.Float '[9]) (ones :: CPUTensor 'D.Float '[2,3]) (ones :: CPUTensor 'D.Float '[2,2])
+-- (Float,[2,3])
+gruCell
+  :: forall inputSize hiddenSize batchSize dtype device
+   . Tensor device dtype '[3 * hiddenSize, inputSize]
+  -> Tensor device dtype '[3 * hiddenSize, hiddenSize]
+  -> Tensor device dtype '[3 * hiddenSize]
+  -> Tensor device dtype '[3 * hiddenSize]
+  -> Tensor device dtype '[batchSize, hiddenSize]
+  -> Tensor device dtype '[batchSize, inputSize]
+  -> Tensor device dtype '[batchSize, hiddenSize]
+gruCell wi wh bi bh hx input =
+  unsafePerformIO
+    $ ATen.cast6 ATen.Managed.gru_cell_tttttt input hx wi wh bi bh
 
 -- rnn_tanh_cell :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- rnn_tanh_cell _input _hx _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (ATen.cast6 ATen.Managed.rnn_tanh_cell_tttttt) _input _hx _w_ih _w_hh _b_ih _b_hh
@@ -3895,6 +3922,48 @@ median'
      , Tensor device 'D.Int64 (ConditionalDropDimension shape dim keepOrDropDim)
      )
 median' input = unsafePerformIO $ ATen.cast3 ATen.Managed.median_tlb
+                                        input
+                                        (natValI @dim)
+                                        (keepOrDropDimVal @keepOrDropDim)
+
+-- | meanAll
+--
+-- >>> dtype &&& shape $ meanAll (ones :: CPUTensor 'D.Float '[2,2])
+-- (Float,[])
+meanAll
+  :: forall shape dtype device
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype '[] -- ^ output
+meanAll input = unsafePerformIO $ ATen.cast1 ATen.Managed.mean_t input
+
+-- | meanDim
+--
+-- >>> t = ones :: CPUTensor 'D.Float '[3,4,5]
+-- >>> dtype &&& shape $ meanDim @0 t
+-- (Float,[4,5])
+-- >>> dtype &&& shape $ meanDim @1 t
+-- (Float,[3,5])
+-- >>> dtype &&& shape $ meanDim @2 t
+-- (Float,[3,4])
+meanDim
+  :: forall d shape dtype device
+   . (KnownNat d)
+  => Tensor device dtype shape -- ^ input
+  -> Tensor device dtype    (DropValue shape d) -- ^ output
+meanDim input = unsafePerformIO $ ATen.cast2 ATen.Managed.mean_tl input (natValI @d)
+
+-- | mean
+-- See https://pytorch.org/docs/stable/torch.html#torch.mean.
+--
+-- >>> t = fromJust [[5, 1], [3, 2], [4, 1], [2, 7]] :: CPUTensor 'D.Float '[4, 2]
+-- >>> mean' @0 @KeepDim t
+-- Tensor Float [1,2] [[ 3.5000   ,  2.7500   ]]
+mean'
+  :: forall dim keepOrDropDim shape dtype device
+   . (KnownNat dim, KnownKeepOrDropDim keepOrDropDim)
+  => Tensor device dtype shape
+  -> Tensor device dtype (ConditionalDropDimension shape dim keepOrDropDim)
+mean' input = unsafePerformIO $ ATen.cast3 ATen.Managed.mean_tlb
                                         input
                                         (natValI @dim)
                                         (keepOrDropDimVal @keepOrDropDim)
