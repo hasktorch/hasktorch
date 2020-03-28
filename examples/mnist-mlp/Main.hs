@@ -12,6 +12,7 @@ import Prelude hiding (exp)
 import Torch
 import qualified Torch.Typed.Vision as V hiding (getImages')
 import qualified Torch.Vision as V
+import Torch.Serialize
 
 data MLPSpec = MLPSpec {
     inputFeatures :: Int,
@@ -74,13 +75,18 @@ main :: IO ()
 main = do
     (trainData, testData) <- V.initMnist "datasets/mnist"
     model <- train trainData
+    -- saveParams model "mnistTrainedParams.pt"
+
+    -- let spec = MLPSpec 784 64 32 10
+    -- model <- sample spec
+    -- model <-  loadParams model "mnistTrainedParams.pt"
 
     -- show test images + labels
     mapM (\idx -> do
-        testImg <- V.getImages' 1 784 trainData [idx]
+        testImg <- V.getImages' 1 784 testData [idx]
         V.dispImage testImg
         putStrLn $ "Model        : " ++ (show . (argmax (Dim 1) RemoveDim) . exp $ mlp model testImg)
-        putStrLn $ "Ground Truth : " ++ (show $ V.getLabels' 1 trainData [idx])
+        putStrLn $ "Ground Truth : " ++ (show $ V.getLabels' 1 testData [idx])
         ) [0..10]
 
     putStrLn "Done"
