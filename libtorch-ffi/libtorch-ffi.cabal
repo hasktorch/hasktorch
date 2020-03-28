@@ -40,6 +40,7 @@ library
                     , Torch.Internal.Unmanaged.Type.C10List
                     , Torch.Internal.Unmanaged.Type.C10Dict
                     , Torch.Internal.Unmanaged.Type.C10Tuple
+                    , Torch.Internal.Unmanaged.Type.Helper
                     , Torch.Internal.Unmanaged.Type.Module
                     , Torch.Internal.Managed.Cast
                     , Torch.Internal.Managed.Native

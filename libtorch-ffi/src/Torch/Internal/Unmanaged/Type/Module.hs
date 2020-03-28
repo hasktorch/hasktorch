@@ -23,6 +23,7 @@ import Foreign.C.Types
 import Foreign hiding (newForeignPtr)
 import Foreign.Concurrent
 import Torch.Internal.Type
+import Torch.Internal.Unmanaged.Type.Helper
 import Torch.Internal.Class
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
@@ -111,13 +112,15 @@ define obj src = [C.throwBlock| void {
 trace :: (Ptr TensorList -> IO (Ptr TensorList)) -> Ptr TensorList -> IO (Ptr Module)
 trace func inputs = do
   bracket
-    ($(C.mkFunPtr [t| Ptr TensorList -> IO (Ptr TensorList) |]) $ \inputs' -> func inputs')
+    (callbackHelper $ \inputs' -> castPtr <$> func (castPtr inputs'))
     freeHaskellFunPtr
     $ \funcPtr -> do
       [C.throwBlock| torch::jit::script::Module* {
         torch::jit::script::Module self("M");
         auto vars_in = *$(std::vector<at::Tensor>* inputs);
-        auto func = $(std::vector<at::Tensor>* (*funcPtr)(std::vector<at::Tensor>*));
+        auto tfunc = $(void* (*funcPtr)(void*));
+        typedef std::vector<at::Tensor>* (*Func)(std::vector<at::Tensor>*);
+        auto func = (Func)tfunc;
         auto graph = torch::jit::tracer::trace(
           c10::fmap<c10::IValue>(vars_in),
           [&func](c10::Stack in) -> c10::Stack {
