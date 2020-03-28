@@ -912,7 +912,7 @@ permute
 permute t dims = unsafePerformIO $ (cast2 ATen.tensor_permute_l) t dims
 
 -- | expand
--- TODO: figure out what the boolean value does
+-- TODO: figure out what the `implicit` boolean value does
 expand
   :: Tensor -- ^ input
   -> Bool -- ^ some boolean value with unknown function

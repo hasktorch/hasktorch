@@ -2189,7 +2189,7 @@ expm1
 expm1 input = unsafePerformIO $ ATen.cast1 ATen.Managed.expm1_t input
 
 -- | expand
--- TODO: figure out what the boolean value does
+-- TODO: figure out what the `implicit` boolean value does
 --
 -- >>> t = ones :: CPUTensor 'D.Float '[2]
 -- >>> t' = expand @'[3, 1, 2] False t
