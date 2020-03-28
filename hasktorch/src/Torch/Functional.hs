@@ -888,21 +888,21 @@ any t = toInt (unsafePerformIO $ (cast1 ATen.any_t) t) == 1
 
 -- | Returns True if all elements in each row of the tensor in the given dimension dim are True, False otherwise.
 -- If keepdim is True, the output tensor is of the same size as input except in the dimension dim where it is of size 1. Otherwise, dim is squeezed, resulting in the output tensor having 1 fewer dimension than input.  
-all' 
+allDim 
  :: Tensor -- ^ input
  -> Int -- ^ dimension
  -> Bool -- ^ boolean corresponding to keepdim
  -> Tensor -- ^ output
-all' t dim keepdim = unsafePerformIO $ (cast3 ATen.all_tlb) t dim keepdim
+allDim t dim keepdim = unsafePerformIO $ (cast3 ATen.all_tlb) t dim keepdim
 
 -- | Returns True if any elements in each row of the tensor in the given dimension dim are True, False otherwise.
 -- If keepdim is True, the output tensor is of the same size as input except in the dimension dim where it is of size 1. Otherwise, dim is squeezed, resulting in the output tensor having 1 fewer dimension than input.
-any' 
+anyDim 
  :: Tensor -- ^ input 
  -> Int -- ^ dimension 
  -> Bool -- ^ boolean corresponding to keepdim
  -> Tensor -- output
-any' t dim keepdim = unsafePerformIO $ (cast3 ATen.any_tlb) t dim keepdim
+anyDim t dim keepdim = unsafePerformIO $ (cast3 ATen.any_tlb) t dim keepdim
 
 -- | Permute the dimensions of this tensor.
 permute 
