@@ -637,11 +637,11 @@ instance
   ) => Apply' AnyPrimeAllPrimeSpec (((Proxy dim, Proxy keepOrDropDim), (Proxy device, Proxy shape)), IO ()) (IO ()) where
   apply' AnyPrimeSpec (_, agg) = agg >> do
     let t = ones @shape @'D.Bool @device
-        t' = any' @dim @keepOrDropDim t
+        t' = anyDim @dim @keepOrDropDim t
     checkDynamicTensorAttributes t'
   apply' AllPrimeSpec (_, agg) = agg >> do
     let t = ones @shape @'D.Bool @device
-        t' = all' @dim @keepOrDropDim t
+        t' = allDim @dim @keepOrDropDim t
     checkDynamicTensorAttributes t'
 
 data LstmCellSpec = LstmCellSpec
@@ -943,8 +943,8 @@ spec' device =
                 hfoldrM @IO anyPrimeAllPrimeSpec () (hproduct
                                                       (hproduct anyPrimeAllPrimeDims keepOrDropDims)
                                                       (hattach cuda0 anyPrimeAllPrimeShapes))
-        it "all'" $ dispatch AllPrimeSpec
-        it "any'" $ dispatch AnyPrimeSpec
+        it "allDim" $ dispatch AllPrimeSpec
+        it "anyDim" $ dispatch AnyPrimeSpec
 
     describe "pooling" $
       it "maxPool2d" $ do

@@ -95,6 +95,12 @@ spec = do
     let x = ones' [3]
     let y = diag x 2
     shape y `shouldBe` [5, 5]
+  it "expand" $ do
+    let t = asTensor [[1], [2], [3 :: Int]]
+    shape (expand t False [3, 4]) `shouldBe` [3, 4]
+  it "flattenAll" $ do
+    let t = asTensor [[1, 2], [3, 4 :: Int]]
+    shape (flattenAll t) `shouldBe` [4]
 
   -- decomposition / solvers
   it "solve" $ do
