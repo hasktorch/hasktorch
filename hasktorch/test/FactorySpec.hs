@@ -17,6 +17,12 @@ spec = do
   it "zeros factory" $ do
     let x = zeros' [50]
     shape x `shouldBe` [50]
+  it "onesLike factory" $ do
+    let x = onesLike $ zeros' [50]
+    shape x `shouldBe` [50]
+  it "zerosLike factory" $ do
+    let x = zerosLike $ ones' [50]
+    shape x `shouldBe` [50]
   it "randIO factory" $ do
     x <- randIO' [50]
     shape x `shouldBe` [50]
