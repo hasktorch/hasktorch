@@ -25,14 +25,13 @@ data ElmanCell = ElmanCell {
     hhBias :: Parameter
 } deriving (Generic, Show)
 
-instance RecurrentCell ElmanCell where
-    nextState ElmanCell{..} input hidden =
-        rnnReluCell ihWeights' hhWeights' ihBias' hhBias' hidden input
-        where
-            ihWeights' = toDependent ihWeights
-            hhWeights' = toDependent hhWeights
-            ihBias' = toDependent ihBias
-            hhBias' = toDependent ihBias
+elman ElmanCell{..} input hidden =
+    rnnReluCell ihWeights' hhWeights' ihBias' hhBias' hidden input
+    where
+        ihWeights' = toDependent ihWeights
+        hhWeights' = toDependent hhWeights
+        ihBias' = toDependent ihBias
+        hhBias' = toDependent ihBias
 
 instance Randomizable ElmanSpec ElmanCell where
     sample ElmanSpec{..} = do

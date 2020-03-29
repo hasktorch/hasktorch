@@ -149,7 +149,7 @@ data RNNParams = RNNParams {
 } deriving (Show)
 
 -- | A long short-term memory (LSTM) cell.
-stmCell 
+lstmCell 
     :: Tensor -- ^ input-hidden weights (4*hidden_size, input_size)
     -> Tensor -- ^ hidden-hidden weights (4*hidden_size, hidden_size)
     -> Tensor -- ^ input-hidden bias (4*hidden_size)
