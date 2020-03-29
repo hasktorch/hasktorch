@@ -141,19 +141,55 @@ instance Parameterized Linear
 
 instance Parameterized [Linear]
 
-lstmCell ::  Tensor -> Tensor -> Tensor -> Tensor -> [Tensor] -> Tensor -> (Tensor,Tensor)
+-- | A long short-term memory (LSTM) cell.
+lstmCell 
+    :: Tensor -- ^ input-hidden weights (4*hidden_size, input_size)
+    -> Tensor -- ^ hidden-hidden weights (4*hidden_size, hidden_size)
+    -> Tensor -- ^ input-hidden bias (4*hidden_size)
+    -> Tensor -- ^ hidden-hidden bias, of shape (4*hidden_size)
+    -> [Tensor] -- ^ hidden state
+    -> Tensor -- ^ input
+    -> (Tensor, Tensor) -- next hidden state, next cell state
 lstmCell _w_ih _w_hh _b_ih _b_hh _hx _input =
-    unsafePerformIO $ (cast6 ATen.lstm_cell_tltttt) _input _hx _w_ih _w_hh _b_ih _b_hh
+    unsafePerformIO $
+        (cast6 ATen.lstm_cell_tltttt) 
+        _input _hx _w_ih _w_hh _b_ih _b_hh
 
-gruCell :: Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor
+-- | A gated recurrent unit (GRU) cell
+gruCell 
+    :: Tensor -- ^ input-hidden weights
+    -> Tensor -- ^ hidden-hidden weights
+    -> Tensor -- ^ input-hidden bias
+    -> Tensor -- ^ hidden-hidden bias
+    -> Tensor -- ^ hidden state
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
 gruCell _w_ih _w_hh _b_ih _b_hh _hx _input =
-  unsafePerformIO $ (cast6 ATen.gru_cell_tttttt) _input _hx _w_ih _w_hh _b_ih _b_hh
+  unsafePerformIO $
+    (cast6 ATen.gru_cell_tttttt) 
+    _input _hx _w_ih _w_hh _b_ih _b_hh
 
-rnnTanhCell :: Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor
+-- | An Elman RNN cell with tanh non-linearity
+rnnTanhCell 
+    :: Tensor -- ^ input-hidden weights
+    -> Tensor -- ^ hidden-hidden weights
+    -> Tensor -- ^ input-hidden bias
+    -> Tensor -- ^ hidden-hidden bias
+    -> Tensor -- ^ hidden state
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
 rnnTanhCell _w_ih _w_hh _b_ih _b_hh _hx _input =
   unsafePerformIO $ (cast6 ATen.rnn_tanh_cell_tttttt) _input _hx _w_ih _w_hh _b_ih _b_hh
 
-rnnReluCell :: Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor
+-- | An Elman RNN cell with ReLU non-linearity
+rnnReluCell 
+    :: Tensor -- ^ input-hidden weights
+    -> Tensor -- ^ hidden-hidden weights
+    -> Tensor -- ^ input-hidden bias
+    -> Tensor -- ^ hidden-hidden bias
+    -> Tensor -- ^ hidden state
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
 rnnReluCell _w_ih _w_hh _b_ih _b_hh _hx _input =
   unsafePerformIO $ (cast6 ATen.rnn_relu_cell_tttttt) _input _hx _w_ih _w_hh _b_ih _b_hh
 

@@ -50,7 +50,7 @@ rnnTest = do
     let whh = zeros' [hsz, hsz]
     let bih = zeros' [hsz]
     let bhh = zeros' [hsz]
-    let input = zeros' [isz]
+    input <- randnIO' [isz]
     pure $ rnnReluCell wih whh bih bhh hx input
   where
     hsz = 5 -- hidden dimensions
