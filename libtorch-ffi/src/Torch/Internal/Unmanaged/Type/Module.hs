@@ -43,6 +43,7 @@ newModule name =
 
 deleteModule :: Ptr Module -> IO ()
 deleteModule object = [C.throwBlock| void { delete $(torch::jit::script::Module* object);}|]
+
 instance CppObject Module where
   fromPtr ptr = newForeignPtr ptr (deleteModule ptr)
 
@@ -62,8 +63,8 @@ forward obj inputs = [C.throwBlock| at::IValue* {
     return new at::IValue($(torch::jit::script::Module* obj)->forward(*$(std::vector<at::IValue>* inputs)));
   }|]
 
-register_parameter :: Ptr Module -> Ptr StdString -> Ptr Tensor -> CBool -> IO ()
-register_parameter obj name v is_buffer = [C.throwBlock| void {
+registerParameter :: Ptr Module -> Ptr StdString -> Ptr Tensor -> CBool -> IO ()
+registerParameter obj name v is_buffer = [C.throwBlock| void {
     $(torch::jit::script::Module* obj)->register_parameter(
       *$(std::string* name)
     , *$(at::Tensor* v)
@@ -71,8 +72,8 @@ register_parameter obj name v is_buffer = [C.throwBlock| void {
     );
   }|]
 
-register_module :: Ptr Module -> Ptr StdString -> Ptr Module -> IO ()
-register_module obj name v = [C.throwBlock| void {
+registerModule :: Ptr Module -> Ptr StdString -> Ptr Module -> IO ()
+registerModule obj name v = [C.throwBlock| void {
     $(torch::jit::script::Module* obj)->register_module(
       *$(std::string* name)
     , *$(torch::jit::script::Module* v)
@@ -86,20 +87,50 @@ train obj on = [C.throwBlock| void {
     );
   }|]
 
-run_method :: Ptr Module -> Ptr StdString -> Ptr (C10List IValue) -> IO (Ptr IValue)
-run_method obj method_name args = [C.throwBlock| at::IValue* {
+runMethod :: Ptr Module -> Ptr StdString -> Ptr (C10List IValue) -> IO (Ptr IValue)
+runMethod obj method_name args = [C.throwBlock| at::IValue* {
     return new at::IValue($(torch::jit::script::Module* obj)->run_method(
       *$(std::string* method_name)
     , *$(c10::List<at::IValue>* args)
     ));
   }|]
 
-run_method1 :: Ptr Module -> Ptr StdString -> Ptr IValue -> IO (Ptr IValue)
-run_method1 obj method_name args = [C.throwBlock| at::IValue* {
+runMethod1 :: Ptr Module -> Ptr StdString -> Ptr IValue -> IO (Ptr IValue)
+runMethod1 obj method_name args = [C.throwBlock| at::IValue* {
     return new at::IValue($(torch::jit::script::Module* obj)->run_method(
       *$(std::string* method_name)
     , *$(at::IValue* args)
     ));
+  }|]
+
+getParameters :: Ptr Module -> IO (Ptr TensorList)
+getParameters obj = [C.throwBlock| std::vector<at::Tensor>* {
+    std::vector<at::Tensor>* vec_parameters = new std::vector<at::Tensor>();
+    auto parameters = $(torch::jit::script::Module* obj)->parameters();
+    for(auto p : parameters) {
+      vec_parameters->push_back(p);
+    }
+    return vec_parameters;
+  }|]
+
+
+setParameters :: Ptr Module -> Ptr TensorList -> IO ()
+setParameters obj params = [C.throwBlock| void {
+    auto parameters = $(torch::jit::script::Module* obj)->parameters();
+    int i=0; 
+    for(auto p : parameters) {
+      p = (*$(std::vector<at::Tensor>* params))[i++];
+    }
+  }|]
+
+toDevice :: Ptr Module -> DeviceType -> Int16 -> IO ()
+toDevice obj device device_index = [C.throwBlock| void {
+    $(torch::jit::script::Module* obj)->to(torch::Device($(at::DeviceType device), $(int16_t device_index)));
+  }|]
+
+clone :: Ptr Module -> IO (Ptr Module)
+clone obj = [C.throwBlock| torch::jit::script::Module* {
+    return new torch::jit::script::Module($(torch::jit::script::Module* obj)->clone());
   }|]
 
 define :: Ptr Module -> Ptr StdString -> IO ()
@@ -109,14 +140,14 @@ define obj src = [C.throwBlock| void {
     );
   }|]
 
-trace :: (Ptr TensorList -> IO (Ptr TensorList)) -> Ptr TensorList -> IO (Ptr Module)
-trace func inputs = do
+trace :: CString -> CString -> (Ptr TensorList -> IO (Ptr TensorList)) -> Ptr TensorList -> IO (Ptr Module)
+trace moduleName functionName func inputs =
   bracket
     (callbackHelper $ \inputs' -> castPtr <$> func (castPtr inputs'))
     freeHaskellFunPtr
-    $ \funcPtr -> do
+    $ \funcPtr ->
       [C.throwBlock| torch::jit::script::Module* {
-        torch::jit::script::Module self("M");
+        torch::jit::script::Module self($(char* moduleName));
         auto vars_in = *$(std::vector<at::Tensor>* inputs);
         auto tfunc = $(void* (*funcPtr)(void*));
         typedef std::vector<at::Tensor>* (*Func)(std::vector<at::Tensor>*);
@@ -134,7 +165,7 @@ trace func inputs = do
         ).first->graph;
         auto v = graph->insertInput(0, "self");
         v->setType(self._ivalue()->type());
-        const auto name = c10::QualifiedName(*self.type()->name(), "forward");
+        const auto name = c10::QualifiedName(*self.type()->name(), $(char* functionName));
         auto fn2 = self._ivalue()->compilation_unit()->create_function(name,graph);
         self.type()->addMethod(fn2);
         return new torch::jit::script::Module(self);

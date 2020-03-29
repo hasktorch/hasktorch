@@ -12,7 +12,7 @@
 
 module Torch.Script where
 
-import Control.Monad (forM_, forM)
+import Control.Monad (forM_, forM, replicateM)
 import Control.Exception.Safe (throwIO)
 import Foreign.ForeignPtr
 import Foreign.Ptr
@@ -48,8 +48,12 @@ import Torch.Device
 import Torch.DType
 import Torch.Tensor (Tensor(..))
 import Torch.TensorOptions
+import Torch.NN
+import Torch.Autograd
 
-newtype Module = UnsafeModule (ForeignPtr ATen.Module)
+newtype ScriptModule = UnsafeScriptModule (ForeignPtr ATen.Module)
+newtype RawModule = UnsafeRawModule (ForeignPtr ATen.Module)
+
 type RawIValue = ForeignPtr ATen.IValue
 newtype Blob = UnsafeBlob (ForeignPtr (ATen.C10Ptr ATen.Blob))
 newtype Object = UnsafeObject (ForeignPtr (ATen.C10Ptr ATen.IVObject))
@@ -90,57 +94,118 @@ data IValue
   | IVCapsule -- Capsule
   deriving (Show)
 
-instance Castable Module (ForeignPtr ATen.Module) where
-  cast (UnsafeModule obj) f = f obj
-  uncast obj f = f $ UnsafeModule obj
+instance Castable ScriptModule (ForeignPtr ATen.Module) where
+  cast (UnsafeScriptModule obj) f = f obj
+  uncast obj f = f $ UnsafeScriptModule obj
 
-newModule :: String -> IO Module
+instance Castable RawModule (ForeignPtr ATen.Module) where
+  cast (UnsafeRawModule obj) f = f obj
+  uncast obj f = f $ UnsafeRawModule obj
+
+newModule :: String -> IO RawModule
 newModule = cast1 LibTorch.newModule
 
-save :: Module -> FilePath -> IO ()
+save :: ScriptModule -> FilePath -> IO ()
 save = cast2 LibTorch.save
 
-load :: FilePath -> IO Module
+save' :: RawModule -> FilePath -> IO ()
+save' = cast2 LibTorch.save
+
+load :: FilePath -> IO ScriptModule
 load = cast1 LibTorch.load
 
-forward' :: Module -> [RawIValue] -> IO RawIValue
-forward' = cast2 LibTorch.forward
+forward :: ScriptModule -> [IValue] -> IValue
+forward module' inputs' = unsafePerformIO $ cast2 forward' module' inputs'
+  where
+    forward' :: ScriptModule -> [RawIValue] -> IO RawIValue
+    forward' = cast2 LibTorch.forward
 
-forward :: Module -> [IValue] -> IO IValue
-forward a b = cast2 forward' a b
+registerParameter :: RawModule -> String -> Tensor -> Bool -> IO ()
+registerParameter = cast4 LibTorch.registerParameter
 
-register_parameter :: Module -> String -> Tensor -> Bool -> IO ()
-register_parameter = cast4 LibTorch.register_parameter
+registerModule :: RawModule -> String -> RawModule -> IO ()
+registerModule = cast3 LibTorch.registerModule
 
-register_module :: Module -> String -> Module -> IO ()
-register_module = cast3 LibTorch.register_module
+getParameters :: ScriptModule -> [Tensor]
+getParameters module' = unsafePerformIO $ cast1 LibTorch.getParameters module'
 
-train :: Module -> Bool -> IO ()
+setParameters :: RawModule -> [Tensor] -> IO ()
+setParameters = cast2 LibTorch.setParameters
+
+updateParameters :: ScriptModule -> [Tensor] -> ScriptModule
+updateParameters module' inputs = unsafePerformIO $ do
+  r <- clone' module'
+  setParameters' r inputs
+  return r
+  where
+    clone' = cast1 LibTorch.clone
+    setParameters' :: ScriptModule -> [Tensor] -> IO ()
+    setParameters' = cast2 LibTorch.setParameters
+
+toScriptModule :: RawModule -> IO ScriptModule
+toScriptModule rawModule = do
+  (UnsafeRawModule r) <- clone rawModule
+  return $ UnsafeScriptModule r
+
+toRawModule :: ScriptModule -> IO RawModule
+toRawModule scriptModule = do
+  (UnsafeScriptModule r) <- clone' scriptModule
+  return $ UnsafeRawModule r
+  where
+    clone' = cast1 LibTorch.clone
+
+clone :: RawModule -> IO RawModule
+clone = cast1 LibTorch.clone
+
+train :: RawModule -> Bool -> IO ()
 train = cast2 LibTorch.train
 
-run_method :: Module -> String -> [IValue] -> IO IValue
-run_method = cast3 run_method'
-  where
-    run_method' :: Module -> String -> [RawIValue] -> IO RawIValue
-    run_method' = cast3 LibTorch.run_method
-
-run_method1 :: Module -> String -> IValue -> IO IValue
-run_method1 = cast3 run_method1'
-  where
-    run_method1' :: Module -> String -> RawIValue -> IO RawIValue
-    run_method1' = cast3 LibTorch.run_method1
-
-define :: Module -> String -> IO ()
+define :: RawModule -> String -> IO ()
 define = cast2 LibTorch.define
 
-trace :: ([Tensor] -> IO [Tensor]) -> [Tensor] -> IO Module
-trace func inputs = cast1 (LibTorch.trace (trans func)) inputs
+runMethod :: ScriptModule -> String -> [IValue] -> IValue
+runMethod module' func inputs = unsafePerformIO $ cast3 runMethod' module' func inputs 
+  where
+    runMethod' :: ScriptModule -> String -> [RawIValue] -> IO RawIValue
+    runMethod' = cast3 LibTorch.runMethod
+
+runMethod1 :: ScriptModule -> String -> IValue -> IValue
+runMethod1 module' func input = unsafePerformIO $ cast3 runMethod1' module' func input
+  where
+    runMethod1' :: ScriptModule -> String -> RawIValue -> IO RawIValue
+    runMethod1' = cast3 LibTorch.runMethod1
+
+instance Parameterized ScriptModule where
+  flattenParameters module' = map IndependentTensor $ getParameters module'
+  replaceOwnParameters module' = do
+    let len = length (getParameters module')
+    ps' <- replicateM len nextParameter
+    return $ updateParameters module' (map toDependent ps')
+
+trace :: String -> String -> ([Tensor] -> IO [Tensor]) -> [Tensor] -> IO RawModule
+trace moduleName functionName func inputs = cast3 (\m f inps -> LibTorch.trace m f (trans func) inps) moduleName functionName inputs
   where
     trans :: ([Tensor] -> IO [Tensor]) -> ForeignPtr TensorList -> IO (ForeignPtr TensorList)
     trans func inputs =
       uncast inputs $ \inputs' -> do
         ret <- func inputs'
         cast ret return
+
+traceWithParameters :: String -> ([Tensor] -> [Tensor] -> IO [Tensor]) -> [Tensor] -> [Tensor] -> IO RawModule
+traceWithParameters moduleName func parameters inputs = do
+  let plen = length parameters
+      ilen = length inputs
+  r <- trace moduleName "forwardWithParameters"
+         (\parametersAndInputs -> func (take plen parametersAndInputs) (drop plen parametersAndInputs))
+         (parameters++inputs)
+  forM_ (zip [0..] parameters) $ \(i,p) ->
+    registerParameter r ("p" ++ show i) p False
+  let args = intercalate ", " $ map (\i ->  "i" ++ show i) [0..(ilen-1)]
+      params = intercalate ", " $ map (\i ->  "self.p" ++ show i) [0..(plen-1)]
+  define r $
+    "def forward(self, " ++ args ++ "):\n" ++ 
+    "    return self.forwardWithParameters(" ++ params ++ ", " ++ args ++ " )\n"
+  return r
 
 instance Castable [IValue] [RawIValue] where
   cast a f = (forM a $ \v -> cast v return) >>= f
