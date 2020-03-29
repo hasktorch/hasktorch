@@ -4,7 +4,7 @@ This example contains a very simple multi layer model meant to understand how au
 
 For Hasktorch, the autograd function takes the loss along with a list of Independent Tensors (need to be specifically made here) with respect to which the derivative is to found. But for the normal operation, the tensors should be dependent tensors, as would be clear in the code. 
 
-# Derivation of the graidents w.r.t. Loss
+# Derivation of the gradients w.r.t. Loss
 <div align = "center">
 
 ### Output of the model (Sigmoid Activation) : 
