@@ -141,8 +141,15 @@ instance Parameterized Linear
 
 instance Parameterized [Linear]
 
+data RNNParams = RNNParams {
+	weightIH :: Tensor,
+	weightHH :: Tensor,
+	biasIH :: Tensor,
+	biasHH :: Tensor
+} deriving (Show)
+
 -- | A long short-term memory (LSTM) cell.
-lstmCell 
+stmCell 
     :: Tensor -- ^ input-hidden weights (4*hidden_size, input_size)
     -> Tensor -- ^ hidden-hidden weights (4*hidden_size, hidden_size)
     -> Tensor -- ^ input-hidden bias (4*hidden_size)
@@ -193,18 +200,78 @@ rnnReluCell
 rnnReluCell _w_ih _w_hh _b_ih _b_hh _hx _input =
   unsafePerformIO $ (cast6 ATen.rnn_relu_cell_tttttt) _input _hx _w_ih _w_hh _b_ih _b_hh
 
-quantizedLstmCell ::  Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Float -> Float -> Float -> Float -> [Tensor] -> Tensor -> (Tensor,Tensor)
+quantizedLstmCell 
+	:: Tensor 
+	-> Tensor 
+	-> Tensor 
+	-> Tensor 
+	-> Tensor 
+	-> Tensor 
+	-> Tensor 
+	-> Tensor 
+	-> Float 
+	-> Float 
+	-> Float 
+	-> Float 
+	-> [Tensor] 
+	-> Tensor 
+	-> (Tensor,Tensor)
 quantizedLstmCell _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh _hx _input =
   unsafePerformIO $ (cast14 ATen.quantized_lstm_cell_tlttttttttssss) _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh
 
-quantizedGruCell ::  Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Float -> Float -> Float -> Float -> Tensor -> Tensor -> Tensor
+quantizedGruCell 
+    :: Tensor 
+    -> Tensor 
+    -> Tensor 
+    -> Tensor 
+    -> Tensor 
+    -> Tensor 
+    -> Tensor 
+    -> Tensor 
+    -> Float 
+    -> Float 
+    -> Float 
+    -> Float 
+    -> Tensor 
+    -> Tensor 
+    -> Tensor
 quantizedGruCell _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh _hx _input =
   unsafePerformIO $ (cast14 ATen.quantized_gru_cell_ttttttttttssss) _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh
 
-quantizedRnnReluCell ::  Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Float -> Float -> Float -> Float -> Tensor -> Tensor -> Tensor
+quantizedRnnReluCell 
+    :: Tensor 
+    -> Tensor 
+    -> Tensor 
+    -> Tensor 
+    -> Tensor 
+    -> Tensor 
+    -> Tensor 
+    -> Tensor 
+    -> Float 
+    -> Float 
+    -> Float 
+    -> Float 
+    -> Tensor 
+    -> Tensor 
+    -> Tensor
 quantizedRnnReluCell _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh _hx _input =
   unsafePerformIO $ (cast14 ATen.quantized_rnn_relu_cell_ttttttttttssss) _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh
 
-quantizedRnnTanhCell ::  Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Float -> Float -> Float -> Float -> Tensor -> Tensor -> Tensor
+quantizedRnnTanhCell
+    :: Tensor 
+    -> Tensor 
+    -> Tensor 
+    -> Tensor 
+    -> Tensor 
+    -> Tensor 
+    -> Tensor 
+    -> Tensor 
+    -> Float 
+    -> Float 
+    -> Float 
+    -> Float 
+    -> Tensor 
+    -> Tensor 
+    -> Tensor
 quantizedRnnTanhCell _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh _hx _input =
   unsafePerformIO $ (cast14 ATen.quantized_rnn_tanh_cell_ttttttttttssss) _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh

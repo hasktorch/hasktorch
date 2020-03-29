@@ -32,9 +32,10 @@ runLSTMCell LSTMCell{..} input hidden =
 		biasIH' = toDependent biasIH
 		biasHH' = toDependent biasHH
 
+-- LSTMCell doesn't fit RecurrentCell typeclass
+{-
 instance RecurrentCell LSTMCell where
   nextState cell input hidden = undefined
-{-
     matmul og (Torch.tanh cNew)
     where
       og' = output_gate cell
@@ -47,24 +48,12 @@ instance RecurrentCell LSTMCell where
 
 instance Randomizable LSTMSpec LSTMCell where
   sample LSTMSpec{..} = do
-	undefined
-{-
-      ig_ih <- makeIndependent =<< randnIO' [inf, hf]
-      ig_hh <- makeIndependent =<< randnIO' [hf, hf]
-      ig_b <- makeIndependent =<< randnIO' [1, hf]
-      fg_ih <- makeIndependent =<< randnIO' [inf, hf]
-      fg_hh <- makeIndependent =<< randnIO' [hf, hf]
-      fg_b <- makeIndependent =<< randnIO' [1, hf]
-      og_ih <- makeIndependent =<< randnIO' [inf, hf]
-      og_hh <- makeIndependent =<< randnIO' [hf, hf]
-      og_b <- makeIndependent =<< randnIO' [1, hf]
-      hg_ih <- makeIndependent =<< randnIO' [inf, hf]
-      hg_hh <- makeIndependent =<< randnIO' [hf, hf]
-      hg_b <- makeIndependent =<< randnIO' [1, hf]
-      let ig = [ig_ih, ig_hh, ig_b]
-      let fg = [fg_ih, fg_hh, fg_b]
-      let og = [og_ih, og_hh, og_b]
-      let hg = [hg_ih, hg_hh, hg_b]
-      c <- makeIndependent =<< randnIO' [hf, hf]
-      return $ LSTMCell ig fg og hg c
--}
+    weightIH' <- makeIndependent =<< randIO' [inf, hf]
+    weightHH' <- makeIndependent =<< randIO' [hf, hf]
+    biasIH' <- makeIndependent =<< randIO' [hf]
+    biasHH' <- makeIndependent =<< randIO' [hf]
+    pure $ LSTMCell {
+        weightIH=weightIH',
+        weightHH=weightHH',
+        biasIH=biasIH',
+        biasHH=biasHH' }

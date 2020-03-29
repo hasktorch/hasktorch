@@ -41,11 +41,3 @@ instance Randomizable ElmanSpec ElmanCell where
       ihBias <- makeIndependent =<< randnIO' [hSize]
       hhBias <- makeIndependent =<< randnIO' [hSize]
       return $ ElmanCell ihWeights hhWeights ihBias hhBias
-
-{-
-instance Show ElmanCell where
-    show ElmanCell{..} =
-        (show input_weight) ++ "\n" ++
-        (show hidden_weight) ++ "\n" ++
-        (show bias) ++ "\n"
--}
