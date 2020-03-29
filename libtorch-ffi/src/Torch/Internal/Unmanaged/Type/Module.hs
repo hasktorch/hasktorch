@@ -23,7 +23,7 @@ import Foreign.C.Types
 import Foreign hiding (newForeignPtr)
 import Foreign.Concurrent
 import Torch.Internal.Type
-import Torch.Internal.Unmanaged.Type.Helper
+import Torch.Internal.Unmanaged.Helper
 import Torch.Internal.Class
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
