@@ -58,40 +58,42 @@ rnnTest = do
 
 lstmTest :: IO (Tensor, Tensor)
 lstmTest = do
-    let hx = [zeros' [hsz], zeros' [hsz]] -- cell and hidden state
-    let wih = zeros' [hsz, isz]
-    let whh = zeros' [hsz, hsz]
-    let bih = zeros' [hsz]
-    let bhh = zeros' [hsz]
-    input <- randnIO' [isz]
+    let hx = (zeros' [bsz, hsz], zeros' [bsz, hsz])
+    let wih = full' [hsz * 4, isz] (1.0 :: Float)
+    let whh = full' [hsz * 4, hsz] (1.0 :: Float)
+    let bih = full' [hsz * 4] (1.0 :: Float)
+    let bhh = full' [hsz * 4] (1.0 :: Float)
+    let input = full' [bsz, isz] (1.0 :: Float)
     pure $ lstmCell wih whh bih bhh hx input
   where
-    hsz = 5 -- hidden dimensions
-    isz = 3 -- input dimensions
+    bsz = 3 -- batch size
+    hsz = 2 -- hidden dimensions
+    isz = 5 -- input dimensions
 
 main = do
     -- Embeddings
     let dic = asTensor ([[1,2,3], [4,5,6]] :: [[Float]])
-    putStrLn "Dictionary"
+    putStrLn "\nDictionary"
     print dic
     let indices = asTensor ([0,0,1,0,1] :: [Int])
-    putStrLn "Indices"
+    putStrLn "\nIndices"
     print indices
     x' <- embedTest
     let x = reshape [1, 3, 5] $ transpose2D x'
-    putStrLn "Embeddings"
+    putStrLn "\nEmbeddings"
     print x
     putStrLn "Embeddings Shape"
     print $ shape x
 
     -- Convolutions
+    putStrLn "\nConvolution"
     outputs <- convTest' x
     print outputs
 
     -- RNN Cells
-    putStrLn "Elman"
+    putStrLn "\nElman"
     rnnOut <- rnnTest
     print rnnOut
-    putStrLn "LSTM"
+    putStrLn "\nLSTM"
     lstmOut <- lstmTest
     print lstmOut

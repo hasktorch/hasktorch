@@ -23,7 +23,7 @@ data LSTMCell = LSTMCell {
 } deriving (Generic, Show)
 
 
-runLSTMCell :: LSTMCell -> Tensor -> [Tensor] -> (Tensor, Tensor)
+runLSTMCell :: LSTMCell -> Tensor -> (Tensor, Tensor) -> (Tensor, Tensor)
 runLSTMCell LSTMCell{..} input hidden =
 	lstmCell weightIH' weightHH' biasIH' biasHH' hidden input
 	where
