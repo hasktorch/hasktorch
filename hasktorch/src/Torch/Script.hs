@@ -114,11 +114,14 @@ save' = cast2 LibTorch.save
 load :: FilePath -> IO ScriptModule
 load = cast1 LibTorch.load
 
-forward :: ScriptModule -> [IValue] -> IValue
-forward module' inputs' = unsafePerformIO $ cast2 forward' module' inputs'
+forwardIO :: ScriptModule -> [IValue] -> IO IValue
+forwardIO module' inputs' = cast2 forward' module' inputs'
   where
     forward' :: ScriptModule -> [RawIValue] -> IO RawIValue
     forward' = cast2 LibTorch.forward
+
+forward :: ScriptModule -> [IValue] -> IValue
+forward module' inputs' = unsafePerformIO $ forwardIO module' inputs'
 
 registerParameter :: RawModule -> String -> Tensor -> Bool -> IO ()
 registerParameter = cast4 LibTorch.registerParameter

@@ -41,7 +41,7 @@ main = prettyException $ do
           img = IVTensor $ img''
           [[r,g,b]] = D.asValue img'' :: [[[[Float]]]]
       print $ take 10 (head r)
-      v <- forward model [img]
+      let v = forward model [img]
       case v of
         IVTensor v' -> print $ D.argmax (D.Dim 1) D.RemoveDim v'
         _ -> print "Return value is not tensor."
@@ -50,7 +50,7 @@ main = prettyException $ do
           [[r,g,b]] = D.asValue img'' :: [[[[Float]]]]
       print $ take 10 (head r)
       let img = IVTensorList [D.squeezeAll $ img'']
-      v <- forward model [img]
+          v = forward model [img]
       print v
       case v of
         IVTensor v' -> print $ v'

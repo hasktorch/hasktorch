@@ -11,6 +11,8 @@ import Test.Hspec
 
 import Torch
 import Torch.Script
+import Torch.NN
+import Torch.Autograd
 import GHC.Generics
 
 data MLPSpec = MLPSpec {
@@ -52,10 +54,12 @@ fromParams init' ps = replaceParameters init' (map IndependentTensor ps)
 spec :: Spec
 spec = describe "torchscript" $ do
   it "define and run" $ do
+    let v00 = asTensor (4::Float)
     m <- newModule "m"
+    registerParameter m "p0" v00 False
     define m $
       "def foo(self, x):\n" ++ 
-      "    return (1, 2, x + 3)\n" ++ 
+      "    return (1, 2, x + 3 + self.p0)\n" ++ 
       "\n" ++ 
       "def forward(self, x):\n" ++ 
       "    tuple = self.foo(x)\n" ++ 
@@ -64,7 +68,15 @@ spec = describe "torchscript" $ do
     let IVTuple [IVInt a,IVInt b,IVTensor c] = runMethod1 sm "forward" (IVTensor (ones' []))
     a `shouldBe` 1
     b `shouldBe` 2
-    (asValue c :: Float) `shouldBe` 4.0
+    (asValue c :: Float) `shouldBe` 8.0
+    -- save sm "self.pt"
+    -- sm <- load "self.pt"
+    -- let IVTuple [IVInt a,IVInt b,IVTensor c] = runMethod1 sm "forward" (IVTensor (ones' []))
+    -- let [g] =  grad c (flattenParameters sm)
+    -- (asValue g :: Float) `shouldBe` 1.0
+    -- -- This throws 'CppStdException "Exception: Differentiated tensor not require grad; type: std::runtime_error"'.
+    -- -- See libtorch-ffi/src/Torch/Internal/Unmanaged/Autograd.hs
+    
   it "trace" $ do
     let v00 = asTensor (4::Float)
         v01 = asTensor (8::Float)
