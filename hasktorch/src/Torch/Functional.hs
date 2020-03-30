@@ -888,21 +888,21 @@ any t = toInt (unsafePerformIO $ (cast1 ATen.any_t) t) == 1
 
 -- | Returns True if all elements in each row of the tensor in the given dimension dim are True, False otherwise.
 -- If keepdim is True, the output tensor is of the same size as input except in the dimension dim where it is of size 1. Otherwise, dim is squeezed, resulting in the output tensor having 1 fewer dimension than input.  
-all' 
+allDim 
  :: Int -- ^ dimension
  -> Bool -- ^ boolean corresponding to keepdim
  -> Tensor -- ^ input
  -> Tensor -- ^ output
-all' dim keepdim t = unsafePerformIO $ (cast3 ATen.all_tlb) t dim keepdim
+allDim dim keepdim t = unsafePerformIO $ (cast3 ATen.all_tlb) t dim keepdim
 
 -- | Returns True if any elements in each row of the tensor in the given dimension dim are True, False otherwise.
 -- If keepdim is True, the output tensor is of the same size as input except in the dimension dim where it is of size 1. Otherwise, dim is squeezed, resulting in the output tensor having 1 fewer dimension than input.
-any' 
+anyDim 
  :: Int -- ^ dimension 
  -> Bool -- ^ boolean corresponding to keepdim
  -> Tensor -- ^ input 
  -> Tensor -- output
-any' dim keepdim t = unsafePerformIO $ (cast3 ATen.any_tlb) t dim keepdim
+anyDim dim keepdim t = unsafePerformIO $ (cast3 ATen.any_tlb) t dim keepdim
 
 -- | Permute the dimensions of this tensor.
 permute 
@@ -910,3 +910,22 @@ permute
  -> Tensor -- ^ input
  -> Tensor -- output
 permute dims t = unsafePerformIO $ (cast2 ATen.tensor_permute_l) t dims
+
+-- | expand
+-- TODO: figure out what the `implicit` boolean value does
+expand
+  :: Tensor -- ^ input
+  -> Bool -- ^ some boolean value with unknown function
+  -> [Int] -- ^ the desired expanded size
+  -> Tensor -- ^ output
+expand t someBool dims = unsafePerformIO $ (cast3 ATen.tensor_expand_lb) t dims someBool
+
+-- flatten :: Tensor -> Int -> Int -> Tensor
+-- flatten input start_dim end_dim = unsafePerformIO $ (cast3 ATen.flatten_tll) input start_dim end_dim
+
+-- | flattenAll
+flattenAll
+  :: Tensor -- ^ input
+  -> Tensor -- ^ output
+flattenAll t =
+  unsafePerformIO $ (cast3 ATen.flatten_tll) t (0 :: Int) (-1 :: Int)
