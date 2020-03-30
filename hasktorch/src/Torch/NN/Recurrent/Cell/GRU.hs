@@ -7,36 +7,41 @@
 module Torch.NN.Recurrent.Cell.GRU where
 
 import GHC.Generics
-
 import Torch
-import Torch.NN.Recurrent.Cell.RecurrentLayer
 
-data GRUSpec = GRUSpec { inf :: Int, hf :: Int}
+data GRUSpec = GRUSpec {
+    inputSize :: Int, 
+    hiddenSize :: Int
+} deriving (Eq, Show)
 
 data GRUCell = GRUCell {
-	weightIH :: Parameter,
-	weightHH :: Parameter,
+	weightsIH :: Parameter,
+	weightsHH :: Parameter,
 	biasIH :: Parameter,
 	biasHH :: Parameter
 } deriving (Generic, Show)
 
-gruCellForward :: GRUCell -> Tensor -> Tensor -> Tensor
+gruCellForward 
+    :: GRUCell -- ^ cell parameters
+    -> Tensor -- ^ input
+    -> Tensor -- ^ hidden
+    -> Tensor -- ^ output
 gruCellForward GRUCell{..} input hidden =
-	gruCell weightIH' weightHH' biasIH' biasHH' hidden input
+	gruCell weightsIH' weightsHH' biasIH' biasHH' hidden input
 	where
-		weightIH' = toDependent weightIH
-		weightHH' = toDependent weightHH
+		weightsIH' = toDependent weightsIH
+		weightsHH' = toDependent weightsHH
 		biasIH' = toDependent biasIH
 		biasHH' = toDependent biasHH
 
 instance Randomizable GRUSpec GRUCell where
   sample GRUSpec{..} = do
-    weightIH' <- makeIndependent =<< randIO' [inf, hf]
-    weightHH' <- makeIndependent =<< randIO' [hf, hf]
-    biasIH' <- makeIndependent =<< randIO' [hf]
-    biasHH' <- makeIndependent =<< randIO' [hf]
+    weightsIH' <- makeIndependent =<< randIO' [inputSize, hiddenSize]
+    weightsHH' <- makeIndependent =<< randIO' [hiddenSize, hiddenSize]
+    biasIH' <- makeIndependent =<< randIO' [hiddenSize]
+    biasHH' <- makeIndependent =<< randIO' [hiddenSize]
     pure $ GRUCell {
-        weightIH=weightIH',
-        weightHH=weightHH',
+        weightsIH=weightsIH',
+        weightsHH=weightsHH',
         biasIH=biasIH',
         biasHH=biasHH' }

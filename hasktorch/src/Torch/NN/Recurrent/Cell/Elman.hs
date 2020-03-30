@@ -6,37 +6,39 @@
 
 module Torch.NN.Recurrent.Cell.Elman where
 
-import Control.Monad.State.Strict
-import Data.List (foldl', scanl', intersperse)
 import GHC.Generics
 
 import Torch
-import Torch.NN.Recurrent.Cell.RecurrentLayer
 
 data ElmanSpec = ElmanSpec { 
-    iSize :: Int,
-    hSize :: Int 
+    inputSize :: Int,
+    hiddenSize :: Int 
 } deriving (Eq, Show)
 
 data ElmanCell = ElmanCell {
-    ihWeights :: Parameter,
-    hhWeights :: Parameter,
-    ihBias :: Parameter,
-    hhBias :: Parameter
+    weightsIH :: Parameter,
+    weightsHH :: Parameter,
+    biasIH :: Parameter,
+    biasHH :: Parameter
 } deriving (Generic, Show)
 
+elmanCellForward
+    :: ElmanCell -- ^ cell parameters
+    -> Tensor -- ^ input
+    -> Tensor -- ^ hidden
+    -> Tensor -- ^ output
 elmanCellForward ElmanCell{..} input hidden =
-    rnnReluCell ihWeights' hhWeights' ihBias' hhBias' hidden input
+    rnnReluCell weightsIH' weightsHH' biasIH' biasHH' hidden input
     where
-        ihWeights' = toDependent ihWeights
-        hhWeights' = toDependent hhWeights
-        ihBias' = toDependent ihBias
-        hhBias' = toDependent ihBias
+        weightsIH' = toDependent weightsIH
+        weightsHH' = toDependent weightsHH
+        biasIH' = toDependent biasIH
+        biasHH' = toDependent biasIH
 
 instance Randomizable ElmanSpec ElmanCell where
     sample ElmanSpec{..} = do
-      ihWeights <- makeIndependent =<< randnIO' [hSize, iSize]
-      hhWeights <- makeIndependent =<< randnIO' [hSize, hSize]
-      ihBias <- makeIndependent =<< randnIO' [hSize]
-      hhBias <- makeIndependent =<< randnIO' [hSize]
-      return $ ElmanCell ihWeights hhWeights ihBias hhBias
+      weightsIH <- makeIndependent =<< randnIO' [hiddenSize, inputSize]
+      weightsHH <- makeIndependent =<< randnIO' [hiddenSize, hiddenSize]
+      biasIH <- makeIndependent =<< randnIO' [hiddenSize]
+      biasHH <- makeIndependent =<< randnIO' [hiddenSize]
+      return $ ElmanCell weightsIH weightsHH biasIH biasHH

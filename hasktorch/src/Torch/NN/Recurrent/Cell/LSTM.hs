@@ -6,38 +6,42 @@
 
 module Torch.NN.Recurrent.Cell.LSTM where
 
-import Control.Monad.State.Strict
 import GHC.Generics
-
 import Torch
-import Torch.NN.Recurrent.Cell.RecurrentLayer
 
-data LSTMSpec = LSTMSpec { inf :: Int, hf :: Int}
+data LSTMSpec = LSTMSpec {
+    inputSize :: Int,
+    hiddenSize :: Int
+} deriving (Eq, Show)
 
 data LSTMCell = LSTMCell {
-	weightIH :: Parameter,
-	weightHH :: Parameter,
+	weightsIH :: Parameter,
+	weightsHH :: Parameter,
 	biasIH :: Parameter,
 	biasHH :: Parameter
 } deriving (Generic, Show)
 
-lstmCellForward :: LSTMCell -> Tensor -> (Tensor, Tensor) -> (Tensor, Tensor)
+lstmCellForward 
+    :: LSTMCell -- ^ cell parameters
+    -> Tensor -- ^ input
+    -> (Tensor, Tensor) -- ^ (hidden, cell)
+    -> (Tensor, Tensor) -- ^ output (hidden, cell) 
 lstmCellForward LSTMCell{..} input hidden =
-	lstmCell weightIH' weightHH' biasIH' biasHH' hidden input
+	lstmCell weightsIH' weightsHH' biasIH' biasHH' hidden input
 	where
-		weightIH' = toDependent weightIH
-		weightHH' = toDependent weightHH
+		weightsIH' = toDependent weightsIH
+		weightsHH' = toDependent weightsHH
 		biasIH' = toDependent biasIH
 		biasHH' = toDependent biasHH
 
 instance Randomizable LSTMSpec LSTMCell where
   sample LSTMSpec{..} = do
-    weightIH' <- makeIndependent =<< randIO' [inf, hf]
-    weightHH' <- makeIndependent =<< randIO' [hf, hf]
-    biasIH' <- makeIndependent =<< randIO' [hf]
-    biasHH' <- makeIndependent =<< randIO' [hf]
+    weightsIH' <- makeIndependent =<< randIO' [inputSize, hiddenSize]
+    weightsHH' <- makeIndependent =<< randIO' [hiddenSize, hiddenSize]
+    biasIH' <- makeIndependent =<< randIO' [hiddenSize]
+    biasHH' <- makeIndependent =<< randIO' [hiddenSize]
     pure $ LSTMCell {
-        weightIH=weightIH',
-        weightHH=weightHH',
+        weightsIH=weightsIH',
+        weightsHH=weightsHH',
         biasIH=biasIH',
         biasHH=biasHH' }
