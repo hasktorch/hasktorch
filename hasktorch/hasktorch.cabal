@@ -46,6 +46,7 @@ library
                     , Torch.Typed.Vision
                     , Torch.NN
                     , Torch.NN.Recurrent.Cell.Elman
+                    , Torch.NN.Recurrent.Cell.GRU
                     , Torch.NN.Recurrent.Cell.LSTM
                     , Torch.NN.Recurrent.Cell.RecurrentLayer
                     , Torch.Scalar

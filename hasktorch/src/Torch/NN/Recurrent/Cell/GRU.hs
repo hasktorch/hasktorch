@@ -4,39 +4,38 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Torch.NN.Recurrent.Cell.LSTM where
+module Torch.NN.Recurrent.Cell.GRU where
 
-import Control.Monad.State.Strict
 import GHC.Generics
 
 import Torch
 import Torch.NN.Recurrent.Cell.RecurrentLayer
 
-data LSTMSpec = LSTMSpec { inf :: Int, hf :: Int}
+data GRUSpec = GRUSpec { inf :: Int, hf :: Int}
 
-data LSTMCell = LSTMCell {
+data GRUCell = GRUCell {
 	weightIH :: Parameter,
 	weightHH :: Parameter,
 	biasIH :: Parameter,
 	biasHH :: Parameter
 } deriving (Generic, Show)
 
-lstmCellForward :: LSTMCell -> Tensor -> (Tensor, Tensor) -> (Tensor, Tensor)
-lstmCellForward LSTMCell{..} input hidden =
-	lstmCell weightIH' weightHH' biasIH' biasHH' hidden input
+gruCellForward :: GRUCell -> Tensor -> Tensor -> Tensor
+gruCellForward GRUCell{..} input hidden =
+	gruCell weightIH' weightHH' biasIH' biasHH' hidden input
 	where
 		weightIH' = toDependent weightIH
 		weightHH' = toDependent weightHH
 		biasIH' = toDependent biasIH
 		biasHH' = toDependent biasHH
 
-instance Randomizable LSTMSpec LSTMCell where
-  sample LSTMSpec{..} = do
+instance Randomizable GRUSpec GRUCell where
+  sample GRUSpec{..} = do
     weightIH' <- makeIndependent =<< randIO' [inf, hf]
     weightHH' <- makeIndependent =<< randIO' [hf, hf]
     biasIH' <- makeIndependent =<< randIO' [hf]
     biasHH' <- makeIndependent =<< randIO' [hf]
-    pure $ LSTMCell {
+    pure $ GRUCell {
         weightIH=weightIH',
         weightHH=weightHH',
         biasIH=biasIH',

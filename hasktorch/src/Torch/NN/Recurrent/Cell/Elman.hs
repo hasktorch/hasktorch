@@ -25,7 +25,7 @@ data ElmanCell = ElmanCell {
     hhBias :: Parameter
 } deriving (Generic, Show)
 
-elman ElmanCell{..} input hidden =
+elmanCellForward ElmanCell{..} input hidden =
     rnnReluCell ihWeights' hhWeights' ihBias' hhBias' hidden input
     where
         ihWeights' = toDependent ihWeights
