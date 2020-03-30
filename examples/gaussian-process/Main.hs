@@ -26,7 +26,7 @@ kernel1d_rbf :: Double -> Double -> Tensor -> Tensor -> Tensor
 kernel1d_rbf sigma length t t' = (sigma'^2) * exp eterm
     where
         sigma' = asTensor sigma
-        eterm = mulScalar (1 / (2 * length^2) ) (- (pow (t - t') (2 :: Int)))
+        eterm = mulScalar (1 / (2 * length^2) ) (- (pow (2 :: Int) (t - t')))
 
 -- | derive a covariance matrix from the kernel for points on the axis
 makeCovmatrix :: [Float] -> [Float] -> CovMatrix
@@ -41,7 +41,7 @@ mvnCholesky (CovMatrix cov) axisDim n = do
     samples <- randnIO' [axisDim, n]
     pure $ matmul l samples
     where 
-      l = cholesky Upper cov
+      l = cholesky cov Upper
 
 -- | Compute posterior mean and covariance parameters based on observed data y
 condition 

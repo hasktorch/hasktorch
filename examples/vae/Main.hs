@@ -55,7 +55,7 @@ vaeLoss :: Tensor -> Tensor -> Tensor -> Tensor -> Tensor
 vaeLoss recon_x x mu logvar = reconLoss + kld
   where
     -- reconLoss = binary_cross_entropy_loss recon_x x undefined ReduceSum
-    reconLoss = mseLoss recon_x x
+    reconLoss = mseLoss x recon_x
     kld = -0.5 * (sumAll (1 + logvar - pow (2 :: Int) mu - exp logvar))
 
 -- | End-to-end function for VAE model
@@ -87,7 +87,7 @@ mvnCholesky cov n axisDim = do
     samples <- randnIO' [axisDim, n]
     pure $ matmul l samples
     where
-      l = cholesky Upper cov
+      l = cholesky cov Upper
 
 -- | Construct and initialize model parameter state
 makeModel :: Int -> Int -> Int -> IO VAEState
