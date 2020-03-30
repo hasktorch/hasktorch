@@ -45,12 +45,6 @@ mlp MLP{..} input =
     . linear l0
     $ input
 
-params :: Parameterized a => a -> [Tensor]
-params = (map toDependent).flattenParameters
-
-fromParams :: Parameterized a => a -> [Tensor] -> a
-fromParams init' ps = replaceParameters init' (map IndependentTensor ps)
-
 spec :: Spec
 spec = describe "torchscript" $ do
   it "define and run" $ do
@@ -85,20 +79,12 @@ spec = describe "torchscript" $ do
     save sm "self2.pt"
     let (IVTensor r0) = forward sm (map IVTensor [v00,v01])
     (asValue r0::Float) `shouldBe` 12
-  it "trace mlp" $ do
-    v00 <- randnIO' [3,784]
-    init' <- sample (MLPSpec 784 64 32 10)
-    m <- trace "MyModule" "forward" (\(x:p) -> return [(mlp (fromParams init' p) x)]) (v00:params init')
-    sm <- toScriptModule m
-    save sm "mlp.pt"
-    let (IVTensor r0) = forward sm (map IVTensor (v00:params init'))
-    (shape r0) `shouldBe` [3,10]
   it "trace mlp with parameters" $ do
     v00 <- randnIO' [3,784]
     init' <- sample (MLPSpec 784 64 32 10)
-    m <- traceWithParameters "MyModule" (\p [x] -> return [(mlp (fromParams init' p) x)]) (params init') [v00]
+    m <- traceWithParameters "MyModule" (\p [x] -> return [(mlp p x)]) init' [v00]
     sm <- toScriptModule m
-    save sm "mlp2.pt"
+    save sm "mlp.pt"
     let (IVTensor r0) = forward sm (map IVTensor [v00])
     (shape r0) `shouldBe` [3,10]
   it "run" $ do

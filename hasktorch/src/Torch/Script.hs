@@ -194,12 +194,18 @@ trace moduleName functionName func inputs = cast3 (\m f inps -> LibTorch.trace m
         ret <- func inputs'
         cast ret return
 
-traceWithParameters :: String -> ([Tensor] -> [Tensor] -> IO [Tensor]) -> [Tensor] -> [Tensor] -> IO RawModule
-traceWithParameters moduleName func parameters inputs = do
-  let plen = length parameters
+traceWithParameters :: Parameterized f => String -> (f -> [Tensor] -> IO [Tensor]) -> f -> [Tensor] -> IO RawModule
+traceWithParameters moduleName func parameterized_parameters inputs = do
+  let parameters = (map toDependent) (flattenParameters parameterized_parameters)
+      fromParams params = replaceParameters parameterized_parameters (map IndependentTensor params)
+      plen = length parameters
       ilen = length inputs
   r <- trace moduleName "forwardWithParameters"
-         (\parametersAndInputs -> func (take plen parametersAndInputs) (drop plen parametersAndInputs))
+         (\parametersAndInputs ->
+            func
+              (fromParams (take plen parametersAndInputs))
+              (drop plen parametersAndInputs)
+         )
          (parameters++inputs)
   forM_ (zip [0..] parameters) $ \(i,p) ->
     registerParameter r ("p" ++ show i) p False
