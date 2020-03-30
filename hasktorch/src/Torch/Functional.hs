@@ -289,6 +289,20 @@ relu
     -> Tensor -- ^ output
 relu t = unsafePerformIO $ (cast1 ATen.relu_t) t
 
+-- | Applies exponential linear unit function element wise with default alpha value = 1
+elu
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
+elu t = unsafePerformIO $ (cast1 ATen.elu_t) t
+
+-- | Applies Exponential linear unit function element-wise, with alpha input, \(\text{ELU}(x) = \max(0,x) + \min(0, \alpha * (\exp(x) - 1))\)
+elu_a
+    :: Scalar s 
+    => Tensor -- ^ input
+    -> s -- ^ alpha value for ELU formulation
+    -> Tensor -- ^ output
+elu_a t a = unsafePerformIO $ (cast2 ATen.elu_ts) t a
+
 -- | Applies element-wise, \(\text{SELU}(x) = scale * (\max(0,x) + \min(0, \alpha * (\exp(x) - 1))\) , with α=1.6732632423543772848170429916717 and scale=1.0507009873554804934193349852946.
 selu 
     :: Tensor -- ^ input
