@@ -139,3 +139,34 @@ instance Parameterized Linear
 --     return $ Linear{..}
 
 instance Parameterized [Linear]
+
+data Conv2dSpec = 
+  Conv2dSpec {
+    inputChannelSize  :: Int, 
+    outputChannelSize :: Int, 
+    kernelSize0       :: Int, 
+    kernelSize1       :: Int
+    } deriving (Show, Eq)
+
+data Conv2d = 
+  Conv2d { 
+    conv2dWeight :: Parameter, 
+    conv2dBias   :: Parameter
+    } deriving (Show, Generic)
+
+conv2d'' :: Conv2d -> (Int, Int) -> (Int, Int) -> Tensor -> Tensor
+conv2d'' layer stride padding input = 
+  Torch.Functional.conv2d' w b stride padding input
+    where
+        w = toDependent (conv2dWeight layer)
+        b = toDependent (conv2dBias layer)
+
+instance Randomizable Conv2dSpec Conv2d where
+  sample Conv2dSpec{..} = do
+      w <- makeIndependent =<< randnIO' [outputChannelSize, inputChannelSize, kernelSize0, kernelSize1]
+      b <- makeIndependent =<< randnIO' [outputChannelSize]
+      return $ Conv2d w b
+
+instance Parameterized Conv2d
+
+instance Parameterized [Conv2d]

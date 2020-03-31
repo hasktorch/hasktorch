@@ -288,8 +288,8 @@ erfc _self = unsafePerformIO $ (cast1 ATen.erfc_t) _self
 expm1 :: Tensor -> Tensor
 expm1 _self = unsafePerformIO $ (cast1 ATen.expm1_t) _self
 
-flatten :: Tensor -> Int -> Int -> Tensor
-flatten _self _start_dim _end_dim = unsafePerformIO $ (cast3 ATen.flatten_tll) _self _start_dim _end_dim
+flatten :: Int -> Int -> Tensor -> Tensor
+flatten _start_dim _end_dim _self = unsafePerformIO $ (cast3 ATen.flatten_tll) _self _start_dim _end_dim
 
 frac :: Tensor -> Tensor
 frac _self = unsafePerformIO $ (cast1 ATen.frac_t) _self

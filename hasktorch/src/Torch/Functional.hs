@@ -537,9 +537,14 @@ maxPool2d
     -> Bool -- ^ ceil mode
     -> Tensor -- ^ input
     -> Tensor -- ^ output
-maxPool2d kernelSize stride padding dilation ceilMode self =
+maxPool2d (kernelSize0, kernelSize1) (stride0, stride1) (padding0, padding1) (dilation0, dilation1) ceilMode self =
     unsafePerformIO $ (cast6 ATen.max_pool2d_tllllb)
-        self kernelSize stride padding dilation ceilMode
+        self 
+        ([kernelSize0, kernelSize1] :: [Int]) 
+        ([stride0, stride1]         :: [Int]) 
+        ([padding0, padding1]       :: [Int]) 
+        ([dilation0, dilation1]     :: [Int]) 
+        ceilMode
  
 -- | Applies a 3D max pooling over an input signal composed of several input planes.
 maxPool3d 
@@ -673,10 +678,13 @@ adaptiveAvgPool1d outputSize input = unsafePerformIO
 
 -- | Applies a 2D adaptive average pooling over an input signal composed of several input planes.
 adaptiveAvgPool2d 
- :: Tensor -- ^ input 
- -> (Int,Int) -- ^ output size (Height * Width)
+ :: (Int,Int) -- ^ output size (Height * Width)
+ -> Tensor -- ^ input 
  -> Tensor -- ^ output
-adaptiveAvgPool2d _self _output_size = unsafePerformIO $ (cast2 ATen.adaptive_avg_pool2d_tl) _self _output_size
+adaptiveAvgPool2d (outputSize0, outputSize1) input = 
+    unsafePerformIO $ (cast2 ATen.adaptive_avg_pool2d_tl) 
+        input 
+        ([outputSize0, outputSize1] :: [Int])
 
 -- | Applies a 3D adaptive average pooling over an input signal composed of several input planes.
 adaptiveAvgPool3d 
