@@ -53,6 +53,10 @@ library
                     , Torch.Serialize
                     , Torch.Random
                     , Torch.Script
+                    , Torch.Distributions.Constraints
+                    , Torch.Distributions.Distribution
+                    , Torch.Distributions.Bernoulli
+                    , Torch.Distributions.Categorical
  hs-source-dirs:      src
  default-language:    Haskell2010
  ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
@@ -108,6 +112,9 @@ test-suite spec
                     , SerializeSpec
                     , RandomSpec
                     , VisionSpec
+                    , Torch.Distributions.ConstraintsSpec
+                    , Torch.Distributions.BernoulliSpec
+                    , Torch.Distributions.CategoricalSpec
   default-language: Haskell2010
   build-depends:      base >= 4.7 && < 5
                     , hasktorch

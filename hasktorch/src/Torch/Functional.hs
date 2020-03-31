@@ -116,6 +116,13 @@ sumAll
     -> Tensor -- ^ output
 sumAll t = unsafePerformIO $ (cast1 ATen.sum_t) t
 
+-- | sumDim
+sumDim
+  :: Int -- ^ dimension
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+sumDim dim input = unsafePerformIO $ (cast2 ATen.sum_tl) input dim
+
 -- | Computes the element-wise absolute value of the given input tensor.
 abs 
     :: Tensor -- ^ input
@@ -447,9 +454,16 @@ toDType dtype t = unsafePerformIO $ (cast4 ATen.tensor_to_sbb) t dtype False Fal
 
 -- | squeezeAll
 squeezeAll 
-    :: Tensor -- ^ input
-    -> Tensor -- ^ output
+  :: Tensor -- ^ input
+  -> Tensor -- ^ output
 squeezeAll t = unsafePerformIO $ (cast1 ATen.squeeze_t) t
+
+-- | squeezeDim
+squeezeDim 
+  :: Int -- ^ dim
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+squeezeDim dim t = unsafePerformIO $ (cast2 ATen.squeeze_tl) t dim
 
 -- | Function that measures the Binary Cross Entropy between the target and the output.
 binaryCrossEntropyLoss 
@@ -929,3 +943,19 @@ flattenAll
   -> Tensor -- ^ output
 flattenAll t =
   unsafePerformIO $ (cast3 ATen.flatten_tll) t (0 :: Int) (-1 :: Int)
+
+-- TODO: rename
+multinomial_tlb
+  :: Tensor
+  -> Int
+  -> Bool
+  -> IO Tensor
+multinomial_tlb t l b =
+  (cast3 ATen.multinomial_tlb) t l b
+
+-- TODO: rename
+bernoulli_t
+  :: Tensor
+  -> IO Tensor
+bernoulli_t =
+  cast1 ATen.bernoulli_t
