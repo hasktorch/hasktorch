@@ -111,8 +111,12 @@ save = cast2 LibTorch.save
 save' :: RawModule -> FilePath -> IO ()
 save' = cast2 LibTorch.save
 
+
 load :: FilePath -> IO ScriptModule
 load = cast1 LibTorch.load
+  
+load' :: FilePath -> IO RawModule
+load' = cast1 LibTorch.load
 
 forwardIO :: ScriptModule -> [IValue] -> IO IValue
 forwardIO module' inputs' = cast2 forward' module' inputs'
@@ -131,6 +135,9 @@ registerModule = cast3 LibTorch.registerModule
 
 getParameters :: ScriptModule -> [Tensor]
 getParameters module' = unsafePerformIO $ cast1 LibTorch.getParameters module'
+
+getParametersIO :: RawModule -> IO [Tensor]
+getParametersIO module' = cast1 LibTorch.getParameters module'
 
 setParameters :: RawModule -> [Tensor] -> IO ()
 setParameters = cast2 LibTorch.setParameters

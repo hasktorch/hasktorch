@@ -45,12 +45,29 @@ mlp MLP{..} input =
     . linear l0
     $ input
 
+
+data MonoSpec = MonoSpec deriving (Show, Eq)
+
+data MonoP = MonoP {
+  m :: Parameter
+  } deriving (Generic, Show)
+
+instance Parameterized MonoP
+instance Randomizable MonoSpec MonoP where
+  sample MonoSpec  = do
+    m <- makeIndependent (ones' [])
+    return $ MonoP{..}
+
+monop :: MonoP -> Tensor -> Tensor
+monop MonoP{..} input = input * (toDependent m)
+
 spec :: Spec
 spec = describe "torchscript" $ do
   it "define and run" $ do
     let v00 = asTensor (4::Float)
     m <- newModule "m"
-    registerParameter m "p0" v00 False
+    v00' <- makeIndependent v00
+    registerParameter m "p0" (toDependent v00') False
     define m $
       "def foo(self, x):\n" ++ 
       "    return (1, 2, x + 3 + self.p0)\n" ++ 
@@ -63,13 +80,13 @@ spec = describe "torchscript" $ do
     a `shouldBe` 1
     b `shouldBe` 2
     (asValue c :: Float) `shouldBe` 8.0
-    -- save sm "self.pt"
-    -- sm <- load "self.pt"
-    -- let IVTuple [IVInt a,IVInt b,IVTensor c] = runMethod1 sm "forward" (IVTensor (ones' []))
-    -- let [g] =  grad c (flattenParameters sm)
-    -- (asValue g :: Float) `shouldBe` 1.0
-    -- -- This throws 'CppStdException "Exception: Differentiated tensor not require grad; type: std::runtime_error"'.
-    -- -- See libtorch-ffi/src/Torch/Internal/Unmanaged/Autograd.hs
+    sm2@(UnsafeScriptModule sm2') <- load "self.pt"
+    p0 <- makeIndependent (asTensor (3::Float))
+    setParameters (UnsafeRawModule sm2') [(toDependent p0)]
+    let IVTuple [IVInt a,IVInt b,IVTensor c] = runMethod1 sm2 "forward" (IVTensor (ones' []))
+    let [g] =  grad c (flattenParameters sm2)
+    (asValue g :: Float) `shouldBe` 1.0
+    return ()
     
   it "trace" $ do
     let v00 = asTensor (4::Float)
@@ -87,6 +104,25 @@ spec = describe "torchscript" $ do
     save sm "mlp.pt"
     let (IVTensor r0) = forward sm (map IVTensor [v00])
     (shape r0) `shouldBe` [3,10]
+  it "trace monop with parameters" $ do
+    let v00 = asTensor (4::Float)
+    init' <- sample MonoSpec
+    m <- traceWithParameters "MyModule" (\p [x] -> return [(monop p x)]) init' [v00]
+    sm <- toScriptModule m
+    save sm "monop.pt"
+    let (IVTensor r0) = forward sm (map IVTensor [v00])
+    (asValue r0::Float) `shouldBe` 4.0
+    (shape r0) `shouldBe` []
+    let p0 = asTensor (2::Float)
+    rm <- toRawModule sm
+    print $ (map asValue [p0] :: [Float])
+    setParameters rm [p0]
+    ps <- getParametersIO rm
+    print $ (map asValue ps :: [Float])
+    sm2 <- toScriptModule rm
+    let (IVTensor r2) = forward sm2 (map IVTensor [v00])
+    (asValue r2::Float) `shouldBe` 8.0
+    (shape r2) `shouldBe` []
   it "run" $ do
     m2 <- load "self2.pt"
     let v10 = asTensor (40::Float)

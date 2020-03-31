@@ -30,6 +30,7 @@ C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 C.include "<torch/script.h>"
 C.include "<vector>"
+C.include "<iostream>"
 
 -- From libtorch/include/torch/csrc/jit/script/module.h
 
@@ -116,11 +117,23 @@ getParameters obj = [C.throwBlock| std::vector<at::Tensor>* {
 
 setParameters :: Ptr Module -> Ptr TensorList -> IO ()
 setParameters obj params = [C.throwBlock| void {
-    auto parameters = $(torch::jit::script::Module* obj)->parameters();
+    auto module = $(torch::jit::script::Module* obj);
+    auto parameters = module->parameters();
+    auto vec = $(std::vector<at::Tensor>* params);
     int i=0; 
     for(auto p : parameters) {
-      p = (*$(std::vector<at::Tensor>* params))[i++];
+      auto name = module->type()->getAttributeName(i);
+      //std::cout << name << std::endl;
+      //std::cout << "src:"  << p << " " << (long) p.data_ptr() <<std::endl;
+      //std::cout << "dst:"  << (*vec)[i] << " " << (long) (*vec)[i].data_ptr() << std::endl;
+      //p = (*vec)[i++];
+      module->register_parameter(name,(*vec)[i],false);
+      //std::cout << "src2:"  << p << " " << (long) p.data_ptr() <<std::endl;
     }
+    //auto parameters2 = module->parameters();
+    //for(auto p : parameters2) {
+    //  std::cout << "src3:"  << p << " " << (long) p.data_ptr() <<std::endl;
+    //}
   }|]
 
 toDevice :: Ptr Module -> DeviceType -> Int16 -> IO ()
