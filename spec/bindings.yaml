@@ -1,185 +1,150 @@
 # This file controls functions in hasktorch/src/Torch/Functional/Internal.hs.
 # The functions are pure-functions not using IO-monad.
-- rename: {src: where_ttt, dst: where'}
-- rename: {src: min_t, dst: minAll}
-- rename: {src: max_t, dst: maxAll}
-- rename: {src: median_t, dst: medianAll}
-
-# detach needs IO-monad to create new-tensor.
-- remove: {src: detach_t}
-
-# remove already registered functions
-- remove: {src: transpose_tll}
-- remove: {src: select_tll}
-- remove: {src: reshape_tl}
-- remove: {src: erf_t}
-- remove: {src: floor_t}
-- remove: {src: cos_t}
-- remove: {src: exp_t}
-- remove: {src: sin_t}
-- remove: {src: sinh_t}
-- remove: {src: sqrt_t}
-- remove: {src: tanh_t}
-- remove: {src: abs_t}
-- remove: {src: log1p_t}
-- remove: {src: ceil_t}
-- remove: {src: conv2d_tttllll}
-- remove: {src: diag_tl}
-- remove: {src: gels_tt}
-- remove: {src: log10_t}
-- remove: {src: log2_t}
-- remove: {src: matmul_tt}
-- remove: {src: mse_loss_ttl}
-- remove: {src: relu_t}
-- remove: {src: selu_t}
-- remove: {src: sigmoid_t}
-- remove: {src: size_tl}
-- remove: {src: all_t}
-- remove: {src: any_t}
-- remove: {src: qr_t}
-- remove: {src: geqrf_t}
-- remove: {src: orgqr_tt}
-- remove: {src: sign_t}
-- remove: {src: inverse_t}
-- remove: {src: cholesky_tb}
-- remove: {src: cholesky_inverse_tb}
-- remove: {src: cholesky_solve_ttb}
-- remove: {src: eig_tb}
-- remove: {src: solve_tt}
-- remove: {src: svd_tbb}
-- remove: {src: symeig_tbb}
-
-# remove overloaded functions
-- remove: {src: add_tts}
-- remove: {src: add_tss}
-- remove: {src: all_tlb}
-- remove: {src: any_tlb}
-- remove: {src: cumsum_tls}
-- remove: {src: cumsum_tl}
-- remove: {src: cumprod_tls}
-- remove: {src: cumprod_tl}
-- remove: {src: ctc_loss_ttllllb}
-- remove: {src: ctc_loss_ttttllb}
-- remove: {src: div_tt}
-- remove: {src: div_ts}
-- remove: {src: log_softmax_tls}
-- remove: {src: log_softmax_tl}
-- remove: {src: matrix_rank_tdb}
-- remove: {src: matrix_rank_tb}
-- remove: {src: max_tlb}
-- remove: {src: mean_ts}
-- remove: {src: mean_t}
-- remove: {src: mean_tlbs}
-- remove: {src: mean_tlb}
-- remove: {src: mean_tls}
-- remove: {src: median_tlb}
-- remove: {src: min_tlb}
-- remove: {src: mul_tt}
-- remove: {src: mul_ts}
-- remove: {src: randint_like_tl}
-- remove: {src: randint_like_tll}
-- remove: {src: repeat_interleave_t}
-- remove: {src: repeat_interleave_ttl}
-- remove: {src: repeat_interleave_tll}
-- remove: {src: softmax_tl}
-- remove: {src: squeeze_t}
-- remove: {src: squeeze_tl}
-- remove: {src: sum_t}
-- remove: {src: sum_ts}
-- remove: {src: sum_tlbs}
-- remove: {src: sum_tlb}
-- remove: {src: sum_tls}
-- remove: {src: std_tb}
-- remove: {src: std_tlbb}
-- remove: {src: prod_ts}
-- remove: {src: prod_t}
-- remove: {src: prod_tlbs}
-- remove: {src: prod_tlb}
-- remove: {src: prod_tls}
-- remove: {src: var_tb}
-- remove: {src: var_tlbb}
-- remove: {src: norm_tss}
-- remove: {src: norm_ts}
-- remove: {src: norm_tslbs}
-- remove: {src: norm_tslb}
-- remove: {src: frobenius_norm_t}
-- remove: {src: frobenius_norm_tlb}
-- remove: {src: pow_ts}
-- remove: {src: sub_tts}
-- remove: {src: sub_tss}
-- remove: {src: rsub_tts}
-- remove: {src: rsub_tss}
-- remove: {src: lstm_tllbldbbb}
-- remove: {src: lstm_ttllbldbb}
-- remove: {src: gru_ttlbldbbb}
-- remove: {src: gru_tttlbldbb}
-- remove: {src: rnn_tanh_ttlbldbbb}
-- remove: {src: rnn_tanh_tttlbldbb}
-- remove: {src: rnn_relu_ttlbldbbb}
-- remove: {src: rnn_relu_tttlbldbb}
-- remove: {src: masked_fill_tts}
-- remove: {src: masked_fill_ttt}
-- remove: {src: index_fill_tlts}
-- remove: {src: index_fill_tltt}
-- remove: {src: scatter_tltt}
-- remove: {src: scatter_tlts}
-- remove: {src: ne_ts}
-- remove: {src: ne_tt}
-- remove: {src: eq_ts}
-- remove: {src: eq_tt}
-- remove: {src: ge_ts}
-- remove: {src: ge_tt}
-- remove: {src: le_ts}
-- remove: {src: le_tt}
-- remove: {src: gt_ts}
-- remove: {src: gt_tt}
-- remove: {src: lt_ts}
-- remove: {src: lt_tt}
-- remove: {src: lerp_tts}
-- remove: {src: lerp_ttt}
-- remove: {src: fmod_ts}
-- remove: {src: fmod_tt}
-- remove: {src: remainder_ts}
-- remove: {src: remainder_tt}
-- remove: {src: min_tt}
-- remove: {src: max_tt}
-- remove: {src: pow_tt}
-- remove: {src: pow_st}
-- remove: {src: conv_transpose2d_tttlllll}
-- remove: {src: conv_transpose3d_tttlllll}
-- remove: {src: std_mean_tb}
-- remove: {src: std_mean_tlbb}
-- remove: {src: trapz_ttl}
-- remove: {src: trapz_tdl}
-- remove: {src: var_mean_tb}
-- remove: {src: var_mean_tlbb}
-- remove: {src: nuclear_norm_tb}
-- remove: {src: nuclear_norm_tlb}
-- remove: {src: quantized_gru_ttlbldbbb}
-- remove: {src: quantized_gru_tttlbldbb}
-- remove: {src: conv_transpose2d_ttltllll}
-- remove: {src: conv_transpose3d_ttltllll}
-- remove: {src: randint_like_tlM}
-- remove: {src: randint_like_tllM}
-- remove: {src: quantized_lstm_tllbldbbbsb}
-- remove: {src: quantized_lstm_ttllbldbbsb}
-- remove: {src: bitwise_xor_ts}
-- remove: {src: bitwise_xor_tt}
-
-# functions for named tensor
+- rename: {src: all_tlb, dst: all}
+- rename: {src: all_tnb, dst: allWithDimname}
+- rename: {src: any_tlb, dst: any}
+- rename: {src: any_tnb, dst: anyWithDimname}
 - rename: {src: cat_ll, dst: cat}
 - rename: {src: cat_ln, dst: catWithDimname}
-- rename: {src: all_tnb, dst: allWithDimname}
-- rename: {src: any_tnb, dst: anyWithDimname}
+- rename: {src: cumsum_tls, dst: cumsum}
+- rename: {src: cumsum_tns, dst: cumsumWithDimname}
+- rename: {src: cumprod_tls, dst: cumprod}
+- rename: {src: cumprod_tns, dst: cumprodWithDimname}
+- rename: {src: div_tt, dst: div}
+- rename: {src: div_ts, dst: divScalar}
+- rename: {src: log_softmax_tls, dst: log_softmax}
+- rename: {src: max_t, dst: maxAll}
+- rename: {src: max_tlb, dst: maxDim}
 - rename: {src: max_tnb, dst: maxWithDimname}
-- rename: {src: min_tnb, dst: minWithDimname}
+- rename: {src: mean_ts, dst: meanAll}
+- rename: {src: mean_tlbs, dst: meanDim}
 - rename: {src: mean_tNbs, dst: meanWithDimnames}
+- rename: {src: median_t, dst: medianAll}
+- rename: {src: median_tlb, dst: medianDim}
 - rename: {src: median_tnb, dst: medianWithDimname}
-- rename: {src: select_tnl, dst: selectWithDimname}
-- rename: {src: size_tn, dst: sizeWithDimname}
-- rename: {src: transpose_tnn, dst: transposeWithDimname}
+- rename: {src: min_t, dst: minAll}
+- rename: {src: min_tlb, dst: minDim}
+- rename: {src: min_tnb, dst: minWithDimname}
+- rename: {src: mul_tt, dst: mul}
+- rename: {src: mul_ts, dst: mulScalar}
+- rename: {src: norm_ts, dst: normAll}
+- rename: {src: norm_tslb, dst: normDim}
+- rename: {src: norm_tsnb, dst: normWithDimname}
+- rename: {src: norm_tss, dst: normCastAll}
+- rename: {src: norm_tslbs, dst: normCastDim}
+- rename: {src: norm_tsnbs, dst: normCastWithDimname}
+- rename: {src: frobenius_norm_t, dst: frobeniusNormAll}
+- rename: {src: frobenius_norm_tlb, dst: frobeniusNormDim}
+- rename: {src: nuclear_norm_tb, dst: nuclearNormAll}
+- rename: {src: nuclear_norm_tlb, dst: nuclearNormDim}
+- rename: {src: pow_ts, dst: powScalar}
+- rename: {src: sub_tts, dst: sub}
+- rename: {src: sub_tss, dst: subScalar}
+- rename: {src: rsub_tts, dst: rsub}
+- rename: {src: rsub_tss, dst: rsubScalar}
+- rename: {src: prod_ts, dst: prodAll}
+- rename: {src: prod_tlbs, dst: prodDim}
+- rename: {src: prod_tnbs, dst: prodWithDimnames}
+- rename: {src: std_tb, dst: stdAll}
+- rename: {src: std_tlbb, dst: stdDim}
+- rename: {src: std_tNbb, dst: stdWithDimnames}
+- rename: {src: std_mean_tb, dst: stdMeanAll}
+- rename: {src: std_mean_tlbb, dst: stdMeanDim}
+- rename: {src: std_mean_tNbb, dst: stdMeanWithDimnames}
+- rename: {src: squeeze_t, dst: squeezeAll}
+- rename: {src: squeeze_tl, dst: squeezeDim}
+- rename: {src: squeeze_tn, dst: squeezeWithDimname}
+- rename: {src: sum_ts, dst: sumAll}
+- rename: {src: sum_tlbs, dst: sumDim}
+- rename: {src: sum_tNbs, dst: sumWithDimnames}
+- rename: {src: trapz_ttl, dst: trapz}
+- rename: {src: trapz_tdl, dst: trapzScalar}
+- rename: {src: var_tb, dst: var}
+- rename: {src: var_tlbb, dst: varDim}
+- rename: {src: var_tNbb, dst: varWithDimnames}
+- rename: {src: var_mean_tb, dst: varMean}
+- rename: {src: var_mean_tlbb, dst: varMeanDim}
+- rename: {src: var_mean_tNbb, dst: varMeanWithDimnames}
+- rename: {src: where_ttt, dst: where'}
+- rename: {src: where_t, dst: isNonZero}
+- rename: {src: lstm_tllbldbbb, dst: lstm}
+- rename: {src: lstm_ttllbldbb, dst: lstm'}
+- rename: {src: gru_ttlbldbbb, dst: gru}
+- rename: {src: gru_tttlbldbb, dst: gru'}
+- rename: {src: rnn_tanh_ttlbldbbb, dst: rnnTanh}
+- rename: {src: rnn_tanh_tttlbldbb, dst: rnnTanh'}
+- rename: {src: rnn_relu_ttlbldbbb, dst: rnnRelu}
+- rename: {src: rnn_relu_tttlbldbb, dst: rnnRelu'}
+- rename: {src: quantized_lstm_tllbldbbbsb, dst: quantizedLstm}
+- rename: {src: quantized_lstm_ttllbldbbsb, dst: quantizedLstm'}
+- rename: {src: quantized_gru_ttlbldbbb, dst: quantizedGru}
+- rename: {src: quantized_gru_tttlbldbb, dst: quantizedGru'}
+- rename: {src: masked_fill_ttt, dst: maskedFill}
+- rename: {src: masked_fill_tts, dst: maskedFillScalar}
+- rename: {src: index_fill_tltt, dst: indexFill}
+- rename: {src: index_fill_tlts, dst: indexFillScalar}
+- rename: {src: index_fill_tntt, dst: indexFillWithDimname}
+- rename: {src: index_fill_tnts, dst: indexFillScalarWithDimname}
+- rename: {src: scatter_tltt, dst: scatter}
+- rename: {src: scatter_tlts, dst: scatterScalar}
+- rename: {src: scatter_tntt, dst: scatterWithDimname}
+- rename: {src: scatter_tnts, dst: scatterScalarWithDimname}
+- rename: {src: scatter_add_tltt, dst: scatterAdd}
+- rename: {src: scatter_add_tntt, dst: scatterAddWithDimname}
+- rename: {src: index_add_tltt, dst: indexAdd}
+- rename: {src: index_add_tntt, dst: indexAddWithDimname}
+- rename: {src: mode_tlb, dst: mode}
+- rename: {src: mode_tnb, dst: modeWithDimname}
+- rename: {src: stride_tl, dst: stride}
+- rename: {src: stride_tn, dst: strideWithDimname}
+- rename: {src: unbind_tl, dst: unbind}
+- rename: {src: unbind_tn, dst: unbindWithDimname}
+- rename: {src: index_select_tlt, dst: indexSelect}
+- rename: {src: index_select_tnt, dst: indexSelectWithDimname}
+- rename: {src: gather_tltb, dst: gather}
+- rename: {src: gather_tntb, dst: gatherWithDimname}
+- rename: {src: argsort_tlb, dst: argsort}
+- rename: {src: argsort_tnb, dst: argsortWithDimname}
+- rename: {src: softmax_tls, dst: softmax}
+- rename: {src: softmax_tns, dst: softmaxWithDimname}
+- rename: {src: bitwise_xor_tt, dst: bitwiseXor}
+- rename: {src: bitwise_xor_ts, dst: bitwiseXorScalar}
+- rename: {src: ne_ts, dst: neScalar}
+- rename: {src: ne_tt, dst: ne}
+- rename: {src: eq_ts, dst: eqScalar}
+- rename: {src: eq_tt, dst: eq}
+- rename: {src: ge_ts, dst: geScalar}
+- rename: {src: ge_tt, dst: ge}
+- rename: {src: le_ts, dst: leScalar}
+- rename: {src: le_tt, dst: le}
+- rename: {src: gt_ts, dst: gtScalar}
+- rename: {src: gt_tt, dst: gt}
+- rename: {src: lt_ts, dst: ltScalar}
+- rename: {src: lt_tt, dst: lt}
+- rename: {src: lerp_tts, dst: lerpScalar}
+- rename: {src: lerp_ttt, dst: lerp}
+- rename: {src: fmod_ts, dst: fmodScalar}
+- rename: {src: fmod_tt, dst: fmod}
+- rename: {src: remainder_ts, dst: remainderScalar}
+- rename: {src: remainder_tt, dst: remainder}
+- rename: {src: min_tt, dst: min}
+- rename: {src: max_tt, dst: max}
+- rename: {src: pow_tt, dst: pow}
+- rename: {src: pow_st, dst: powScalar'}
+- rename: {src: repeat_interleave_ttl, dst: repeatInterleave}
+- rename: {src: repeat_interleave_tll, dst: repeatInterleaveScalar}
+- rename: {src: repeat_interleave_t, dst: repeatInterleaveRange}
+- rename: {src: matrix_rank_tdb, dst: matrixRank}
+- rename: {src: matrix_rank_tb, dst: matrixRank'}
+- rename: {src: add_tts, dst: add}
+- rename: {src: add_tss, dst: addScalar}
+- rename: {src: ctc_loss_ttttllb, dst: ctcLoss}
+- rename: {src: ctc_loss_ttllllb, dst: ctcLoss'}
 - rename: {src: flatten_tll, dst: flatten}
 - rename: {src: flatten_tnn, dst: flattenWithDimname}
+- rename: {src: flatten_tlln, dst: flattenTo}
+- rename: {src: flatten_tnnn, dst: flattenToWithDimname}
+- rename: {src: flatten_tNn, dst: flattenToWithDimnames}
 - rename: {src: sort_tlb, dst: sort}
 - rename: {src: sort_tnb, dst: sortWithDimname}
 - rename: {src: max_values_tlb, dst: maxValues}
@@ -196,50 +161,58 @@
 - rename: {src: logsumexp_tlb, dst: logsumexp}
 - rename: {src: logsumexp_tnb, dst: logsumexpWithDimname}
 - rename: {src: logsumexp_tNb, dst: logsumexpWithDimnameList}
-- rename: {src: mode_tlb, dst: mode}
-- rename: {src: mode_tnb, dst: modeWithDimname}
-- rename: {src: stride_tl, dst: stride}
-- rename: {src: stride_tn, dst: strideWithDimname}
-- rename: {src: unbind_tl, dst: unbind}
-- rename: {src: unbind_tn, dst: unbindWithDimname}
-- rename: {src: scatter_add_tltt, dst: scatterAdd}
-- rename: {src: scatter_add_tntt, dst: scatterAddWithDimname}
-- rename: {src: index_add_tltt, dst: indexAdd}
-- rename: {src: index_add_tntt, dst: indexAddWithDimname}
-- rename: {src: index_select_tlt, dst: indexSelect}
-- rename: {src: index_select_tnt, dst: indexSelectWithDimname}
-- rename: {src: gather_tltb, dst: gather}
-- rename: {src: gather_tntb, dst: gatherWithDimname}
-- rename: {src: argsort_tlb, dst: argsort}
-- rename: {src: argsort_tnb, dst: argsortWithDimname}
-- rename: {src: squeeze_tn, dst: squeezeWithDimname}
-- rename: {src: sum_tNbs, dst: sumWithDimnames}
-- rename: {src: std_mean_tNbb, dst: stdMeanWithDimnames}
-- rename: {src: std_tNbb, dst: stdWithDimnames}
-- rename: {src: prod_tnbs, dst: prodWithDimnames}
-- rename: {src: var_tNbb, dst: varWithDimnames}
-- rename: {src: var_mean_tNbb, dst: varMeanWithDimnames}
-- rename: {src: softmax_tls, dst: softmax}
-- rename: {src: softmax_tns, dst: softmaxWithDimname}
-  
-# remove overloaded functions of libtorch-1.3 except for the above list
-- remove: {src: where_t}
-- remove: {src: cat_ll}
-- remove: {src: flatten_tlln}
-- remove: {src: flatten_tnnn}
-- remove: {src: flatten_tnn}
-- remove: {src: flatten_tNn}
-- remove: {src: fbgemm_pack_quantized_matrix_t}
-- remove: {src: fbgemm_pack_quantized_matrix_tll}
-- remove: {src: norm_tsnbs}
-- remove: {src: norm_tsnb}
-- remove: {src: norm_tsNbs}
-- remove: {src: norm_tsNb}
-- remove: {src: result_type_tt}
-- remove: {src: result_type_ts}
-- remove: {src: result_type_st}
-- remove: {src: result_type_ss}
-- remove: {src: index_fill_tnts}
-- remove: {src: index_fill_tntt}
-- remove: {src: scatter_tntt}
-- remove: {src: scatter_tnts}
+- rename: {src: transpose_tll, dst: transpose}
+- rename: {src: transpose_tnn, dst: transposeWithDimname}
+- rename: {src: select_tll, dst: select}
+- rename: {src: select_tnl, dst: selectWithDimname}
+- rename: {src: reshape_tl, dst: reshape}
+- rename: {src: erf_t, dst: erf}
+- rename: {src: floor_t, dst: floor}
+- rename: {src: cos_t, dst: cos}
+- rename: {src: exp_t, dst: exp}
+- rename: {src: sin_t, dst: sin}
+- rename: {src: sinh_t, dst: sinh}
+- rename: {src: sqrt_t, dst: sqrt}
+- rename: {src: tanh_t, dst: tanh}
+- rename: {src: abs_t, dst: abs}
+- rename: {src: log1p_t, dst: log1p}
+- rename: {src: ceil_t, dst: ceil}
+- rename: {src: conv2d_tttllll, dst: conv2d}
+- rename: {src: diag_tl, dst: diag}
+- rename: {src: gels_tt, dst: gels}
+- rename: {src: log10_t, dst: log10}
+- rename: {src: log2_t, dst: log2}
+- rename: {src: matmul_tt, dst: matmul}
+- rename: {src: mse_loss_ttl, dst: mse_loss}
+- rename: {src: relu_t, dst: relu}
+- rename: {src: selu_t, dst: selu}
+- rename: {src: sigmoid_t, dst: sigmoid}
+- rename: {src: size_tl, dst: size}
+- rename: {src: size_tn, dst: sizeWithDimname}
+- rename: {src: all_t, dst: all}
+- rename: {src: any_t, dst: any}
+- rename: {src: qr_t, dst: qr}
+- rename: {src: geqrf_t, dst: geqrf}
+- rename: {src: orgqr_tt, dst: orgqr}
+- rename: {src: sign_t, dst: sign}
+- rename: {src: inverse_t, dst: inverse}
+- rename: {src: cholesky_tb, dst: cholesky}
+- rename: {src: cholesky_inverse_tb, dst: cholesky_inverse}
+- rename: {src: cholesky_solve_ttb, dst: cholesky_solve}
+- rename: {src: eig_tb, dst: eig}
+- rename: {src: solve_tt, dst: solve}
+- rename: {src: svd_tbb, dst: svd}
+- rename: {src: symeig_tbb, dst: symeig}
+- rename: {src: fbgemm_pack_quantized_matrix_tll, dst: quantizeFbgemm}
+- rename: {src: fbgemm_pack_quantized_matrix_t, dst: quantizeFbgemm'}
+- rename: {src: result_type_tt, dst: resultType}
+- rename: {src: result_type_ts, dst: resultTypeScalar}
+- rename: {src: result_type_st, dst: resultTypeScalar'}
+- rename: {src: result_type_ss, dst: resultTypeScalars}
+- rename: {src: randint_like_tllM, dst: randintLike}
+- rename: {src: randint_like_tlM, dst: randintLike'}
+# - rename: {src: , dst: }
+
+# detach needs IO-monad to create new-tensor.
+- remove: {src: detach_t}
+
