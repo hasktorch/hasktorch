@@ -270,6 +270,17 @@ instance
       let t = leakyRelu negativeSlope (ones @shape @dtype @device)
       checkDynamicTensorAttributes t
 
+data ELUSpec = ELUSpec
+instance
+  ( TensorOptions shape dtype device
+  , D.Scalar a
+  , StandardFloatingPointDTypeValidation device dtype
+  ) => Apply' ELUSpec ((Proxy device, ((a, a, a), (Proxy dtype, Proxy shape))), IO()) (IO()) 
+ where 
+    apply' ELUSpec ((_, ((alpha, scale, inputScale), _)), agg) = agg >> do
+      let t = elu alpha scale inputScale (ones @shape @dtype @device)
+      checkDynamicTensorAttributes t
+
 data ToDTypeSpec = ToDTypeSpec
 
 instance
@@ -718,6 +729,11 @@ spec' device =
 
     describe "unary floating-point ops" $ do
       let scalarParams = (0.01 :: Double) :. (0.01 :: Float) :. (1 :: Int) :. HNil
+      let scalarParamsELU = 
+          hzip3 
+            ((0.01 :: Double) :. (0.01 :: Float) :. (1 :: Int) :. HNil)
+            ((0.01 :: Double) :. (0.01 :: Float) :. (1 :: Int) :. HNil)
+            ((0.01 :: Double) :. (0.01 :: Float) :. (1 :: Int) :. HNil)
           dispatch unaryStandardFloatingPointDTypesSpec = case device of
             D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
               hfoldrM @IO unaryStandardFloatingPointDTypesSpec () (hattach cpu   (hproduct standardFloatingPointDTypes standardShapes))
@@ -760,6 +776,13 @@ spec' device =
         D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
           hfoldrM @IO LeakyReluSpec ()
             (hattach cuda0 (hproduct scalarParams (hproduct standardFloatingPointDTypes standardShapes)))
+      it "elu" $ case device of
+        D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+          hfoldrM @IO ELUSpec ()
+            (hattach cpu   (hproduct scalarParamsELU (hproduct standardFloatingPointDTypes standardShapes)))
+        D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+          hfoldrM @IO ELUSpec ()
+            (hattach cuda0 (hproduct scalarParamsELU (hproduct standardFloatingPointDTypes standardShapes)))
       it "sigmoid"    $ dispatch SigmoidSpec
       it "logSigmoid" $ dispatch LogSigmoidSpec
 
