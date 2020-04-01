@@ -248,7 +248,7 @@ parsableToHigherHsType parsable =
     P.CppClass _ _ hstype -> fromString hstype
     Backend -> "Backend"
     Layout -> "Layout"
-    MemoryFormat -> "MemoryFormat"
+    MemoryFormat -> "ATen.MemoryFormat"
     QScheme -> "QScheme"
     ConstQuantizerPtr -> "ConstQuantizerPtr"
     Dimname -> "Dimname"

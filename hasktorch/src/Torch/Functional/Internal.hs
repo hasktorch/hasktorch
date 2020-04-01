@@ -330,7 +330,7 @@ embedding_sparse_backward _grad _indices _num_weights _padding_idx _scale_grad_b
 embedding_bag :: Tensor -> Tensor -> Tensor -> Bool -> Int -> Bool -> Tensor -> (Tensor,Tensor,Tensor,Tensor)
 embedding_bag _weight _indices _offsets _scale_grad_by_freq _mode _sparse _per_sample_weights = unsafePerformIO $ (cast7 ATen.embedding_bag_tttblbt) _weight _indices _offsets _scale_grad_by_freq _mode _sparse _per_sample_weights
 
-empty_like_tM :: Tensor -> MemoryFormat -> Tensor
+empty_like_tM :: Tensor -> ATen.MemoryFormat -> Tensor
 empty_like_tM _self _memory_format = unsafePerformIO $ (cast2 ATen.empty_like_tM) _self _memory_format
 
 erf :: Tensor -> Tensor
@@ -363,7 +363,7 @@ floor _self = unsafePerformIO $ (cast1 ATen.floor_t) _self
 frac :: Tensor -> Tensor
 frac _self = unsafePerformIO $ (cast1 ATen.frac_t) _self
 
-full_like_tsM :: Tensor -> Float -> MemoryFormat -> Tensor
+full_like_tsM :: Tensor -> Float -> ATen.MemoryFormat -> Tensor
 full_like_tsM _self _fill_value _memory_format = unsafePerformIO $ (cast3 ATen.full_like_tsM) _self _fill_value _memory_format
 
 grid_sampler :: Tensor -> Tensor -> Int -> Int -> Bool -> Tensor
@@ -708,7 +708,7 @@ batch_norm_backward_elemt _grad_out _input _mean _invstd _weight _mean_dy _mean_
 batch_norm_update_stats :: Tensor -> Tensor -> Tensor -> Double -> (Tensor,Tensor)
 batch_norm_update_stats _input _running_mean _running_var _momentum = unsafePerformIO $ (cast4 ATen.batch_norm_update_stats_tttd) _input _running_mean _running_var _momentum
 
-ones_like_tM :: Tensor -> MemoryFormat -> Tensor
+ones_like_tM :: Tensor -> ATen.MemoryFormat -> Tensor
 ones_like_tM _self _memory_format = unsafePerformIO $ (cast2 ATen.ones_like_tM) _self _memory_format
 
 pairwise_distance :: Tensor -> Tensor -> Double -> Double -> Bool -> Tensor
@@ -732,16 +732,16 @@ pinverse _self _rcond = unsafePerformIO $ (cast2 ATen.pinverse_td) _self _rcond
 poisson_nll_loss :: Tensor -> Tensor -> Bool -> Bool -> Double -> Int -> Tensor
 poisson_nll_loss _input _target _log_input _full _eps _reduction = unsafePerformIO $ (cast6 ATen.poisson_nll_loss_ttbbdl) _input _target _log_input _full _eps _reduction
 
-rand_like_tM :: Tensor -> MemoryFormat -> Tensor
+rand_like_tM :: Tensor -> ATen.MemoryFormat -> Tensor
 rand_like_tM _self _memory_format = unsafePerformIO $ (cast2 ATen.rand_like_tM) _self _memory_format
 
-randintLike' :: Tensor -> Int -> MemoryFormat -> Tensor
+randintLike' :: Tensor -> Int -> ATen.MemoryFormat -> Tensor
 randintLike' _self _high _memory_format = unsafePerformIO $ (cast3 ATen.randint_like_tlM) _self _high _memory_format
 
-randintLike :: Tensor -> Int -> Int -> MemoryFormat -> Tensor
+randintLike :: Tensor -> Int -> Int -> ATen.MemoryFormat -> Tensor
 randintLike _self _low _high _memory_format = unsafePerformIO $ (cast4 ATen.randint_like_tllM) _self _low _high _memory_format
 
-randn_like_tM :: Tensor -> MemoryFormat -> Tensor
+randn_like_tM :: Tensor -> ATen.MemoryFormat -> Tensor
 randn_like_tM _self _memory_format = unsafePerformIO $ (cast2 ATen.randn_like_tM) _self _memory_format
 
 reciprocal :: Tensor -> Tensor
@@ -987,7 +987,7 @@ isNonZero _condition = unsafePerformIO $ (cast1 ATen.where_t) _condition
 norm_except_dim :: Tensor -> Int -> Int -> Tensor
 norm_except_dim _v _pow _dim = unsafePerformIO $ (cast3 ATen.norm_except_dim_tll) _v _pow _dim
 
-zeros_like_tM :: Tensor -> MemoryFormat -> Tensor
+zeros_like_tM :: Tensor -> ATen.MemoryFormat -> Tensor
 zeros_like_tM _self _memory_format = unsafePerformIO $ (cast2 ATen.zeros_like_tM) _self _memory_format
 
 native_norm :: Tensor -> Float -> Tensor
@@ -1023,7 +1023,7 @@ nuclearNormAll _self _keepdim = unsafePerformIO $ (cast2 ATen.nuclear_norm_tb) _
 nuclearNormDim :: Tensor -> (Int,Int) -> Bool -> Tensor
 nuclearNormDim _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.nuclear_norm_tlb) _self _dim _keepdim
 
-clone :: Tensor -> MemoryFormat -> Tensor
+clone :: Tensor -> ATen.MemoryFormat -> Tensor
 clone _self _memory_format = unsafePerformIO $ (cast2 ATen.clone_tM) _self _memory_format
 
 powScalar :: Tensor -> Float -> Tensor
