@@ -90,8 +90,8 @@ affine_grid_generator _theta _size _align_corners = unsafePerformIO $ (cast3 ATe
 affine_grid_generator_backward :: Tensor -> [Int] -> Bool -> Tensor
 affine_grid_generator_backward _grad _size _align_corners = unsafePerformIO $ (cast3 ATen.affine_grid_generator_backward_tlb) _grad _size _align_corners
 
-all :: Tensor -> Int -> Bool -> Tensor
-all _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.all_tlb) _self _dim _keepdim
+allDim :: Tensor -> Int -> Bool -> Tensor
+allDim _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.all_tlb) _self _dim _keepdim
 
 allWithDimname :: Tensor -> Dimname -> Bool -> Tensor
 allWithDimname _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.all_tnb) _self _dim _keepdim
@@ -99,8 +99,8 @@ allWithDimname _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.all_tnb) _sel
 allclose :: Tensor -> Tensor -> Double -> Double -> Bool -> Bool
 allclose _self _other _rtol _atol _equal_nan = unsafePerformIO $ (cast5 ATen.allclose_ttddb) _self _other _rtol _atol _equal_nan
 
-any :: Tensor -> Int -> Bool -> Tensor
-any _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.any_tlb) _self _dim _keepdim
+anyDim :: Tensor -> Int -> Bool -> Tensor
+anyDim _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.any_tlb) _self _dim _keepdim
 
 anyWithDimname :: Tensor -> Dimname -> Bool -> Tensor
 anyWithDimname _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.any_tnb) _self _dim _keepdim
