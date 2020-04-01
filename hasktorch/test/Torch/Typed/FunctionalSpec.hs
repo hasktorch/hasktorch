@@ -275,9 +275,9 @@ instance
   ( TensorOptions shape dtype device
   , D.Scalar a
   , StandardFloatingPointDTypeValidation device dtype
-  ) => Apply' ELUSpec ((Proxy device, ((a, a, a), (Proxy dtype, Proxy shape))), IO()) (IO()) 
+  ) => Apply' ELUSpec ((Proxy device, ((a, (a, a)), (Proxy dtype, Proxy shape))), IO()) (IO()) 
  where 
-    apply' ELUSpec ((_, ((alpha, scale, inputScale), _)), agg) = agg >> do
+    apply' ELUSpec ((_, ((alpha, (scale, inputScale)), _)), agg) = agg >> do
       let t = elu alpha scale inputScale (ones @shape @dtype @device)
       checkDynamicTensorAttributes t
 
@@ -729,11 +729,6 @@ spec' device =
 
     describe "unary floating-point ops" $ do
       let scalarParams = (0.01 :: Double) :. (0.01 :: Float) :. (1 :: Int) :. HNil
-      let scalarParamsELU = 
-          hzip3 
-            ((0.01 :: Double) :. (0.01 :: Float) :. (1 :: Int) :. HNil)
-            ((0.01 :: Double) :. (0.01 :: Float) :. (1 :: Int) :. HNil)
-            ((0.01 :: Double) :. (0.01 :: Float) :. (1 :: Int) :. HNil)
           dispatch unaryStandardFloatingPointDTypesSpec = case device of
             D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
               hfoldrM @IO unaryStandardFloatingPointDTypesSpec () (hattach cpu   (hproduct standardFloatingPointDTypes standardShapes))
@@ -779,10 +774,10 @@ spec' device =
       it "elu" $ case device of
         D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
           hfoldrM @IO ELUSpec ()
-            (hattach cpu   (hproduct scalarParamsELU (hproduct standardFloatingPointDTypes standardShapes)))
+            (hattach cpu   (hproduct (hzip scalarParams (hzip scalarParams scalarParams)) (hproduct standardFloatingPointDTypes standardShapes)))
         D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
           hfoldrM @IO ELUSpec ()
-            (hattach cuda0 (hproduct scalarParamsELU (hproduct standardFloatingPointDTypes standardShapes)))
+            (hattach cuda0 (hproduct (hzip scalarParams (hzip scalarParams scalarParams)) (hproduct standardFloatingPointDTypes standardShapes)))
       it "sigmoid"    $ dispatch SigmoidSpec
       it "logSigmoid" $ dispatch LogSigmoidSpec
 
