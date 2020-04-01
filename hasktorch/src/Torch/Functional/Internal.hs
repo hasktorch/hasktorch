@@ -279,8 +279,8 @@ embedding_sparse_backward _grad _indices _num_weights _padding_idx _scale_grad_b
 embedding_bag :: Tensor -> Tensor -> Tensor -> Bool -> Int -> Bool -> Tensor -> (Tensor,Tensor,Tensor,Tensor)
 embedding_bag _weight _indices _offsets _scale_grad_by_freq _mode _sparse _per_sample_weights = unsafePerformIO $ (cast7 ATen.embedding_bag_tttblbt) _weight _indices _offsets _scale_grad_by_freq _mode _sparse _per_sample_weights
 
-empty_like :: Tensor -> Tensor
-empty_like _self = unsafePerformIO $ (cast1 ATen.empty_like_t) _self
+empty_like :: Tensor -> MemoryFormat -> Tensor
+empty_like _self _memory_format = unsafePerformIO $ (cast2 ATen.empty_like_tM) _self _memory_format
 
 erfc :: Tensor -> Tensor
 erfc _self = unsafePerformIO $ (cast1 ATen.erfc_t) _self
@@ -294,8 +294,8 @@ flatten _self _start_dim _end_dim = unsafePerformIO $ (cast3 ATen.flatten_tll) _
 frac :: Tensor -> Tensor
 frac _self = unsafePerformIO $ (cast1 ATen.frac_t) _self
 
-full_like :: Tensor -> Float -> Tensor
-full_like _self _fill_value = unsafePerformIO $ (cast2 ATen.full_like_ts) _self _fill_value
+full_like :: Tensor -> Float -> MemoryFormat -> Tensor
+full_like _self _fill_value _memory_format = unsafePerformIO $ (cast3 ATen.full_like_tsM) _self _fill_value _memory_format
 
 grid_sampler :: Tensor -> Tensor -> Int -> Int -> Bool -> Tensor
 grid_sampler _input _grid _interpolation_mode _padding_mode _align_corners = unsafePerformIO $ (cast5 ATen.grid_sampler_ttllb) _input _grid _interpolation_mode _padding_mode _align_corners
@@ -588,14 +588,14 @@ batch_norm_backward_elemt _grad_out _input _mean _invstd _weight _mean_dy _mean_
 batch_norm_update_stats :: Tensor -> Tensor -> Tensor -> Double -> (Tensor,Tensor)
 batch_norm_update_stats _input _running_mean _running_var _momentum = unsafePerformIO $ (cast4 ATen.batch_norm_update_stats_tttd) _input _running_mean _running_var _momentum
 
-ones_like :: Tensor -> Tensor
-ones_like _self = unsafePerformIO $ (cast1 ATen.ones_like_t) _self
+ones_like :: Tensor -> MemoryFormat -> Tensor
+ones_like _self _memory_format = unsafePerformIO $ (cast2 ATen.ones_like_tM) _self _memory_format
 
 pairwise_distance :: Tensor -> Tensor -> Double -> Double -> Bool -> Tensor
 pairwise_distance _x1 _x2 _p _eps _keepdim = unsafePerformIO $ (cast5 ATen.pairwise_distance_ttddb) _x1 _x2 _p _eps _keepdim
 
-cdist :: Tensor -> Tensor -> Double -> Tensor
-cdist _x1 _x2 _p = unsafePerformIO $ (cast3 ATen.cdist_ttd) _x1 _x2 _p
+cdist :: Tensor -> Tensor -> Double -> Int -> Tensor
+cdist _x1 _x2 _p _compute_mode = unsafePerformIO $ (cast4 ATen.cdist_ttdl) _x1 _x2 _p _compute_mode
 
 pdist :: Tensor -> Double -> Tensor
 pdist _self _p = unsafePerformIO $ (cast2 ATen.pdist_td) _self _p
@@ -612,11 +612,11 @@ pinverse _self _rcond = unsafePerformIO $ (cast2 ATen.pinverse_td) _self _rcond
 poisson_nll_loss :: Tensor -> Tensor -> Bool -> Bool -> Double -> Int -> Tensor
 poisson_nll_loss _input _target _log_input _full _eps _reduction = unsafePerformIO $ (cast6 ATen.poisson_nll_loss_ttbbdl) _input _target _log_input _full _eps _reduction
 
-rand_like :: Tensor -> Tensor
-rand_like _self = unsafePerformIO $ (cast1 ATen.rand_like_t) _self
+rand_like :: Tensor -> MemoryFormat -> Tensor
+rand_like _self _memory_format = unsafePerformIO $ (cast2 ATen.rand_like_tM) _self _memory_format
 
-randn_like :: Tensor -> Tensor
-randn_like _self = unsafePerformIO $ (cast1 ATen.randn_like_t) _self
+randn_like :: Tensor -> MemoryFormat -> Tensor
+randn_like _self _memory_format = unsafePerformIO $ (cast2 ATen.randn_like_tM) _self _memory_format
 
 reciprocal :: Tensor -> Tensor
 reciprocal _self = unsafePerformIO $ (cast1 ATen.reciprocal_t) _self
@@ -768,14 +768,14 @@ where' _condition _self _other = unsafePerformIO $ (cast3 ATen.where_ttt) _condi
 norm_except_dim :: Tensor -> Int -> Int -> Tensor
 norm_except_dim _v _pow _dim = unsafePerformIO $ (cast3 ATen.norm_except_dim_tll) _v _pow _dim
 
-zeros_like :: Tensor -> Tensor
-zeros_like _self = unsafePerformIO $ (cast1 ATen.zeros_like_t) _self
+zeros_like :: Tensor -> MemoryFormat -> Tensor
+zeros_like _self _memory_format = unsafePerformIO $ (cast2 ATen.zeros_like_tM) _self _memory_format
 
 native_norm :: Tensor -> Float -> Tensor
 native_norm _self _p = unsafePerformIO $ (cast2 ATen.native_norm_ts) _self _p
 
-clone :: Tensor -> Tensor
-clone _self = unsafePerformIO $ (cast1 ATen.clone_t) _self
+clone :: Tensor -> MemoryFormat -> Tensor
+clone _self _memory_format = unsafePerformIO $ (cast2 ATen.clone_tM) _self _memory_format
 
 addmm :: Tensor -> Tensor -> Tensor -> Float -> Float -> Tensor
 addmm _self _mat1 _mat2 _beta _alpha = unsafePerformIO $ (cast5 ATen.addmm_tttss) _self _mat1 _mat2 _beta _alpha
@@ -1328,3 +1328,4 @@ im2col_backward _grad_output _input_size _kernel_size _dilation _padding _stride
 
 isfinite :: Tensor -> Tensor
 isfinite _self = unsafePerformIO $ (cast1 ATen.isfinite_t) _self
+
