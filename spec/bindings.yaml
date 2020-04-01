@@ -1,8 +1,8 @@
 # This file controls functions in hasktorch/src/Torch/Functional/Internal.hs.
 # The functions are pure-functions not using IO-monad.
-- rename: {src: all_tlb, dst: all}
+- rename: {src: all_tlb, dst: allDim}
 - rename: {src: all_tnb, dst: allWithDimname}
-- rename: {src: any_tlb, dst: any}
+- rename: {src: any_tlb, dst: anyDim}
 - rename: {src: any_tnb, dst: anyWithDimname}
 - rename: {src: cat_ll, dst: cat}
 - rename: {src: cat_ln, dst: catWithDimname}
