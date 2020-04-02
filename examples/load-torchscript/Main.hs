@@ -32,7 +32,7 @@ main = prettyException $ do
         _ -> error $ "Usage: load-torchscript (resnet or maskrcnn) model-file image-file"
   [mode,modelfile,inputfile] <- opt <$> getArgs
   _ <- dlopen "libtorchvision.so" [RTLD_GLOBAL,RTLD_LAZY]
-  model <- load modelfile
+  model <- load WithoutRequiredGrad modelfile
   mimg <- readImage inputfile
   case (mimg,mode) of
     (Left err,_) -> print err

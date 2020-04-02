@@ -111,9 +111,19 @@ save = cast2 LibTorch.save
 save' :: RawModule -> FilePath -> IO ()
 save' = cast2 LibTorch.save
 
+data LoadMode
+  = WithoutRequiredGrad
+  | WithRequiredGrad
+  deriving (Show,Eq)
 
-load :: FilePath -> IO ScriptModule
-load = cast1 LibTorch.load
+load :: LoadMode -> FilePath -> IO ScriptModule
+load WithoutRequiredGrad file = cast1 LibTorch.load file
+load WithRequiredGrad file = do
+  module'@(UnsafeRawModule rmodule) <- cast1 LibTorch.load file
+  params <- getParametersIO module'
+  paramsWithRequiredGrad <- forM params makeIndependent
+  setParameters module' (map toDependent paramsWithRequiredGrad)
+  return (UnsafeScriptModule rmodule)
   
 load' :: FilePath -> IO RawModule
 load' = cast1 LibTorch.load
@@ -142,13 +152,16 @@ getParametersIO module' = cast1 LibTorch.getParameters module'
 setParameters :: RawModule -> [Tensor] -> IO ()
 setParameters = cast2 LibTorch.setParameters
 
-updateParameters :: ScriptModule -> [Tensor] -> ScriptModule
-updateParameters module' inputs = unsafePerformIO $ do
-  r <- clone' module'
-  setParameters' r inputs
-  return r
+updateParameters :: LoadMode -> ScriptModule -> [Tensor] -> ScriptModule
+updateParameters mode module' inputs = unsafePerformIO $ do
+  case mode of
+    WithoutRequiredGrad -> cast1 LibTorch.clone module'
+    WithRequiredGrad -> do
+      r <- cast1 LibTorch.clone module'
+      paramsWithRequiredGrad <- forM inputs makeIndependent
+      setParameters' r (map toDependent paramsWithRequiredGrad)
+      return r
   where
-    clone' = cast1 LibTorch.clone
     setParameters' :: ScriptModule -> [Tensor] -> IO ()
     setParameters' = cast2 LibTorch.setParameters
 
@@ -190,7 +203,7 @@ instance Parameterized ScriptModule where
   replaceOwnParameters module' = do
     let len = length (getParameters module')
     ps' <- replicateM len nextParameter
-    return $ updateParameters module' (map toDependent ps')
+    return $ updateParameters WithRequiredGrad module' (map toDependent ps')
 
 trace :: String -> String -> ([Tensor] -> IO [Tensor]) -> [Tensor] -> IO RawModule
 trace moduleName functionName func inputs = cast3 (\m f inps -> LibTorch.trace m f (trans func) inps) moduleName functionName inputs
@@ -336,7 +349,5 @@ instance Castable IValue RawIValue where
       select [] = throwIO $ userError "Unsupported IValue"
       select ((cond,body):xs) =
         cond >>= \case
-          1 -> do
-            body
-          _ -> do
-            select xs
+          1 -> body
+          _ -> select xs

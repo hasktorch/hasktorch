@@ -70,7 +70,7 @@ spec = describe "torchscript" $ do
     registerParameter m "p0" (toDependent v00') False
     define m $
       "def foo(self, x):\n" ++ 
-      "    return (1, 2, x + 3 + self.p0)\n" ++ 
+      "    return (1, 2, x + 3 + 2 * self.p0)\n" ++ 
       "\n" ++ 
       "def forward(self, x):\n" ++ 
       "    tuple = self.foo(x)\n" ++ 
@@ -79,13 +79,12 @@ spec = describe "torchscript" $ do
     let IVTuple [IVInt a,IVInt b,IVTensor c] = runMethod1 sm "forward" (IVTensor (ones' []))
     a `shouldBe` 1
     b `shouldBe` 2
-    (asValue c :: Float) `shouldBe` 8.0
-    sm2@(UnsafeScriptModule sm2') <- load "self.pt"
-    p0 <- makeIndependent (asTensor (3::Float))
-    setParameters (UnsafeRawModule sm2') [(toDependent p0)]
+    (asValue c :: Float) `shouldBe` 12.0
+    save sm "self.pt"
+    sm2 <- load WithRequiredGrad "self.pt"
     let IVTuple [IVInt a,IVInt b,IVTensor c] = runMethod1 sm2 "forward" (IVTensor (ones' []))
     let [g] =  grad c (flattenParameters sm2)
-    (asValue g :: Float) `shouldBe` 1.0
+    (asValue g :: Float) `shouldBe` 2.0
     return ()
     
   it "trace" $ do
@@ -115,16 +114,14 @@ spec = describe "torchscript" $ do
     (shape r0) `shouldBe` []
     let p0 = asTensor (2::Float)
     rm <- toRawModule sm
-    print $ (map asValue [p0] :: [Float])
     setParameters rm [p0]
     ps <- getParametersIO rm
-    print $ (map asValue ps :: [Float])
     sm2 <- toScriptModule rm
     let (IVTensor r2) = forward sm2 (map IVTensor [v00])
     (asValue r2::Float) `shouldBe` 8.0
     (shape r2) `shouldBe` []
   it "run" $ do
-    m2 <- load "self2.pt"
+    m2 <- load WithoutRequiredGrad "self2.pt"
     let v10 = asTensor (40::Float)
         v11 = asTensor (80::Float)
     let (IVTensor r1) = forward m2 (map IVTensor [v10,v11])

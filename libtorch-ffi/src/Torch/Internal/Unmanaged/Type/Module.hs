@@ -114,26 +114,15 @@ getParameters obj = [C.throwBlock| std::vector<at::Tensor>* {
     return vec_parameters;
   }|]
 
-
 setParameters :: Ptr Module -> Ptr TensorList -> IO ()
 setParameters obj params = [C.throwBlock| void {
     auto module = $(torch::jit::script::Module* obj);
-    auto parameters = module->parameters();
+    auto parameters = module->named_parameters();
     auto vec = $(std::vector<at::Tensor>* params);
     int i=0; 
     for(auto p : parameters) {
-      auto name = module->type()->getAttributeName(i);
-      //std::cout << name << std::endl;
-      //std::cout << "src:"  << p << " " << (long) p.data_ptr() <<std::endl;
-      //std::cout << "dst:"  << (*vec)[i] << " " << (long) (*vec)[i].data_ptr() << std::endl;
-      //p = (*vec)[i++];
-      module->register_parameter(name,(*vec)[i],false);
-      //std::cout << "src2:"  << p << " " << (long) p.data_ptr() <<std::endl;
+      module->register_parameter(p.name,(*vec)[i],false);
     }
-    //auto parameters2 = module->parameters();
-    //for(auto p : parameters2) {
-    //  std::cout << "src3:"  << p << " " << (long) p.data_ptr() <<std::endl;
-    //}
   }|]
 
 toDevice :: Ptr Module -> DeviceType -> Int16 -> IO ()
