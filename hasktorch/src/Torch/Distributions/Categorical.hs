@@ -5,12 +5,10 @@ module Torch.Distributions.Categorical (
 ) where
 
 import qualified Torch.Functional.Internal as I
-import Torch.TensorOptions
 import qualified Torch.Tensor as D
 import qualified Torch.DType as D
 import qualified Torch.TensorFactories as D
 import qualified Torch.Functional as F
-import Torch.Scalar
 import qualified Torch.Distributions.Constraints as Constraints
 import Torch.Distributions.Distribution
 
@@ -43,9 +41,9 @@ instance Distribution Categorical where
         if D.numel (probs d) > 1
             then init (D.shape $ probs d)
             else []
-    event_shape d = []
-    expand d batch_shape = fromProbs $ F.expand (probs d) False (param_shape d)
-            where param_shape d = batch_shape <> [num_events d]
+    event_shape _d = []
+    expand d batch_shape' = fromProbs $ F.expand (probs d) False (param_shape d)
+        where param_shape d' = batch_shape' <> [num_events d']
     support d = Constraints.integerInterval 0 $ (num_events d) - 1
     mean d = F.divScalar (D.ones (extended_shape d []) D.float_opts) (0.0 :: Float)  -- all NaN
     variance d = F.divScalar (D.ones (extended_shape d []) D.float_opts) (0.0 :: Float)  -- all NaN
@@ -65,10 +63,10 @@ instance Distribution Categorical where
             values = D.reshape ([-1] <> replicate (length $ batch_shape d) 1) $ D.asTensor [0.0, 1.0 :: Float]
 
 num_events :: Categorical -> Int
-num_events (Categorical probs _logits) = D.size probs (-1)
+num_events (Categorical ps _logits) = D.size ps (-1)
 
 fromProbs :: D.Tensor -> Categorical
-fromProbs probs = Categorical probs $ probs_to_logits False probs
+fromProbs ps = Categorical ps $ probs_to_logits False ps
 
 fromLogits :: D.Tensor -> Categorical
-fromLogits logits = Categorical (probs_to_logits False logits) logits
+fromLogits logits' = Categorical (probs_to_logits False logits') logits'
