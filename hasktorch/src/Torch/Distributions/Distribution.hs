@@ -9,15 +9,9 @@ module Torch.Distributions.Distribution (
     extended_shape,
 ) where
 
-import Torch.Typed.Functional
-import Torch.Functional.Internal (binary_cross_entropy_with_logits, log)
 import Torch.TensorFactories (ones, onesLike)
-import Torch.TensorOptions
 import qualified Torch.Tensor as D
-import qualified Torch.DType as D
-import qualified Torch.TensorFactories as D
 import qualified Torch.Functional as F
-import Torch.Scalar
 import Torch.Distributions.Constraints
 
 data Scale = Probs | Logits

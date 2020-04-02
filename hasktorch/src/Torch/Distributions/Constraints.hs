@@ -23,10 +23,8 @@ module Torch.Distributions.Constraints (
     unitInterval,
 ) where
 
-import Torch.Typed.Functional
 import qualified Torch.Functional.Internal as I
 import qualified Torch.Tensor as D
-import qualified Torch.DType as D
 import qualified Torch.TensorFactories as D
 import qualified Torch.Functional as F
 import Torch.Scalar
@@ -94,9 +92,13 @@ simplex tensor = F.allDim (greaterThanEq 0.0 tensor) (-1) False `logical_and` (l
 -- TODO: cat
 -- TODO: stack
 
+nonNegativeInteger :: Constraint
 nonNegativeInteger = integerGreaterThanEq 0
+positiveInteger    :: Constraint
 positiveInteger    = integerGreaterThanEq 1
+positive           :: Constraint
 positive           = greaterThan 0.0
+unitInterval       :: Constraint
 unitInterval       = interval 0.0 1.0
 
 fullLike' :: (Scalar a) => a -> D.Tensor -> D.Tensor
