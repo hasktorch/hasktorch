@@ -133,3 +133,16 @@ spec = do
               (0,0)
               (ones' [batch, in_channel, input0, input1])
     shape x `shouldBe` [batch, out_channel, input0, input1]
+  it "elu (pos)" $ do
+    let x = elu (0.5::Float) $ 5 * ones' [4]
+    (toDouble $ select x 0 0) `shouldBe` 5.0
+  it "elu (neg)" $ do
+    let x = elu (0.5::Float) $ -5 * ones' [4]
+    (toDouble $ select x 0 0) `shouldBe` (-0.49663102626800537)
+  it "elu' (pos)" $ do
+    let x = elu' $ 5 * ones' [4]
+    (toDouble $ select x 0 0) `shouldBe` 5.0
+  it "elu' (neg)" $ do
+    let x = elu' $ -5 * ones' [4]
+    (toDouble $ select x 0 0) `shouldBe` (-0.9932620525360107)
+
