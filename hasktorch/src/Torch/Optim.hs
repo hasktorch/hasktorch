@@ -72,7 +72,7 @@ gdm
 gdm lr (Gradients gradients) parameters (GDM beta momentum) = 
     (fmap fst runStep, GDM beta (fmap snd runStep))
     where
-        step p dp z = let z' = mulScalar z beta + dp in (p - lr * z', z')
+        step p dp z = let z' = mulScalar beta z + dp in (p - lr * z', z')
         runStep = (zipWith3 step) parameters gradients momentum
 
 instance Optimizer GDM where
@@ -101,12 +101,12 @@ adam
 adam lr (Gradients gradients) parameters Adam{..} = (parameters', Adam beta1 beta2 m1' m2' (iter+1))
     where
         -- decaying averages of 1st & 2nd moments
-        f1 m1 dp = mulScalar m1 beta1 + mulScalar dp (1 - beta1)
-        f2 m2 dp = mulScalar m2 beta2 + mulScalar (dp * dp) (1 - beta2)
+        f1 m1 dp = mulScalar beta1 m1 + mulScalar (1 - beta1) dp
+        f2 m2 dp = mulScalar beta2 m2 + mulScalar (1 - beta2) (dp * dp)
         m1' = zipWith f1 m1 gradients
         m2' = zipWith f2 m2 gradients
         -- bias adjustment
-        a beta m = divScalar m (1 - beta^(iter + 1))
+        a beta m = divScalar (1 - beta^(iter + 1)) m
         a1 = fmap (a beta1) m1'
         a2 = fmap (a beta2) m2'
         -- parameter update

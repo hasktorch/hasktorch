@@ -54,7 +54,7 @@ lossMF (MatrixFact u v) (RatingBatch items users ratings) = loss
     u''' = reshape [batch_size, 1, -1] u''
     v''' = reshape [batch_size, -1, 1] v''
     uv_ui = toDType (Double :: DType) $ bmm u''' v'''
-    loss = mseLoss uv_ui ratings_tensor
+    loss = mseLoss ratings_tensor uv_ui
 
 n_users = 500
 

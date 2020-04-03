@@ -4150,10 +4150,11 @@ softMarginLoss prediciton target = unsafePerformIO $ ATen.cast3
 -- >>> dtype &&& shape $ elu 0.1 0.1 0.3 (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 elu
-  :: forall shape dtype device
-   . Float -- ^ alpha
-  -> Float -- ^ scale
-  -> Float -- ^ input scale
+  :: forall shape dtype a device
+   . (D.Scalar a, StandardFloatingPointDTypeValidation device dtype)
+  => a -- ^ alpha
+  -> a -- ^ scale
+  -> a -- ^ input scale
   -> Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 elu alpha scale inputScale input =

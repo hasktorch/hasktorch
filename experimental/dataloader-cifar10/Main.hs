@@ -61,7 +61,7 @@ train numEpoch trainData = do
             let len = length batch
                 input = toType Float $ reshape [len,1024*3] images
                 label = asTensor $ map (fromEnum.snd.getXY) batch
-                loss = nllLoss' (mlp state input) label
+                loss = nllLoss' label $ mlp state input
                 flatParameters = flattenParameters state
             (newParam, _) <- runStep state GD loss 1e-3
             pure $ (replaceParameters state newParam, (toDouble loss)+sumLoss)
