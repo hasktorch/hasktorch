@@ -148,13 +148,13 @@ spec = do
   it "smoothL1Loss" $ do
     let input = ones' [3]
         target = 3 * input
-        output = smoothL1Loss 0 target input
+        output = smoothL1Loss ReduceNone target input
     (toDouble $ select output 0 0) `shouldBe` (1.5)
   it "softMarginLoss" $ do
     let input = ones' [3]
-        target = input
-        output = softMarginLoss 0 target input
-    (toInt $ select output 0 0 * 1000) `shouldBe` (313)
+        target = 3 * input
+        output = softMarginLoss ReduceSum target input
+    (toDouble output) `shouldBe` (0.14576205611228943)
   it "softShrink" $ do
     let input = 3 * ones' [3]
         output = softShrink 1 input
