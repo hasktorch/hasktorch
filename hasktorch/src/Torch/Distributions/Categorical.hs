@@ -24,49 +24,46 @@ import Torch.Distributions.Distribution
 -- | vectors.
 -- | .. note:: :attr:`probs` must be non-negative, finite and have a non-zero sum,
 -- |             and it will be normalized to sum to 1.
--- | See also: :func:`torch.multinomial`
+-- | See also: `torch.multinomial`
 -- | Example::
--- |     >>> m = Categorical(torch.tensor([ 0.25, 0.25, 0.25, 0.25 ]))
--- |     >>> m.sample()  # equal probability of 0, 1, 2, 3
+-- |     >>> m = Categorical.fromProbs $ D.asTensor [ 0.25, 0.25, 0.25, 0.25 ]
+-- |     >>> Distribution.sample m  -- equal probability of 0, 1, 2, 3
 -- |     tensor(3)
--- | Args:
--- |     probs (Tensor): event probabilities
--- |     logits (Tensor): event log-odds
 data Categorical = Categorical {
     probs :: D.Tensor,
     logits :: D.Tensor
 } deriving (Show)
 instance Distribution Categorical where
-    batch_shape d =
+    batchShape d =
         if D.numel (probs d) > 1
             then init (D.shape $ probs d)
             else []
-    event_shape _d = []
-    expand d batch_shape' = fromProbs $ F.expand (probs d) False (param_shape d)
-        where param_shape d' = batch_shape' <> [num_events d']
-    support d = Constraints.integerInterval 0 $ (num_events d) - 1
-    mean d = F.divScalar (D.ones (extended_shape d []) D.float_opts) (0.0 :: Float)  -- all NaN
-    variance d = F.divScalar (D.ones (extended_shape d []) D.float_opts) (0.0 :: Float)  -- all NaN
-    sample d sample_shape = do
-        let probs_2d = D.reshape [-1, (num_events d)] $ probs d
-        samples_2d <- F.transpose2D <$> F.multinomial_tlb probs_2d (product sample_shape) True
-        return $ D.reshape (extended_shape d sample_shape) samples_2d
-    log_prob d value = let
+    eventShape _d = []
+    expand d batchShape' = fromProbs $ F.expand (probs d) False (paramShape d)
+        where paramShape d' = batchShape' <> [numEvents d']
+    support d = Constraints.integerInterval 0 $ (numEvents d) - 1
+    mean d = F.divScalar (0.0 :: Float) (D.ones (extendedShape d []) D.float_opts)  -- all NaN
+    variance d = F.divScalar (0.0 :: Float) (D.ones (extendedShape d []) D.float_opts)  -- all NaN
+    sample d sampleShape = do
+        let probs2d = D.reshape [-1, (numEvents d)] $ probs d
+        samples2d <- F.transpose2D <$> F.multinomial_tlb probs2d (product sampleShape) True
+        return $ D.reshape (extendedShape d sampleShape) samples2d
+    logProb d value = let
         value' = I.unsqueeze (F.toDType D.Int64 value) (-1 :: Int)
         value'' = D.select value' (-1) 0
         in F.squeezeDim (-1) $ I.gather (logits d) (-1 :: Int) value'' False
-    entropy d = F.mulScalar (F.sumDim (-1) p_log_p) (-1.0 :: Float)
-            where p_log_p = logits d `F.mul` probs d
-    enumerate_support d do_expand = 
-        (if do_expand then \t -> F.expand t False ([-1] <> batch_shape d) else id) values
+    entropy d = F.mulScalar (-1.0 :: Float) (F.sumDim (-1) pLogP)
+            where pLogP = logits d `F.mul` probs d
+    enumerateSupport d doExpand = 
+        (if doExpand then \t -> F.expand t False ([-1] <> batchShape d) else id) values
         where
-            values = D.reshape ([-1] <> replicate (length $ batch_shape d) 1) $ D.asTensor [0.0, 1.0 :: Float]
+            values = D.reshape ([-1] <> replicate (length $ batchShape d) 1) $ D.asTensor [0.0, 1.0 :: Float]
 
-num_events :: Categorical -> Int
-num_events (Categorical ps _logits) = D.size ps (-1)
+numEvents :: Categorical -> Int
+numEvents (Categorical ps _logits) = D.size ps (-1)
 
 fromProbs :: D.Tensor -> Categorical
-fromProbs ps = Categorical ps $ probs_to_logits False ps
+fromProbs ps = Categorical ps $ probsToLogits False ps
 
 fromLogits :: D.Tensor -> Categorical
-fromLogits logits' = Categorical (probs_to_logits False logits') logits'
+fromLogits logits' = Categorical (probsToLogits False logits') logits'

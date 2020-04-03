@@ -23,11 +23,11 @@ spec = do
   let p = D.asTensor ps
   let d = fromProbs p
 
-  it "batch_shape" $ do
-    batch_shape d `shouldBe` []
+  it "batchShape" $ do
+    batchShape d `shouldBe` []
 
-  it "event_shape" $ do
-    event_shape d `shouldBe` []
+  it "eventShape" $ do
+    eventShape d `shouldBe` []
 
   it "probs" $ do
     -- putStrLn . show $ probs d
@@ -60,9 +60,9 @@ spec = do
     t :: Tnsr 'D.Bool '[2] <- UnsafeMkTensor . Constraints.boolean <$> sample d [2]
     toList (Just t) `shouldBe` [True, True]
 
-  it "log_prob" $ do
-    -- putStrLn . show $ log_prob d $ D.asTensor [[0.3, 0.5 :: Float]]
-    let t :: Tnsr 'D.Float '[2] = UnsafeMkTensor $ log_prob d $ D.asTensor [[0.3, 0.5 :: Float]]
+  it "logProb" $ do
+    -- putStrLn . show $ logProb d $ D.asTensor [[0.3, 0.5 :: Float]]
+    let t :: Tnsr 'D.Float '[2] = UnsafeMkTensor $ logProb d $ D.asTensor [[0.3, 0.5 :: Float]]
     toList (Just t) `shouldBe` [-0.6749387]
 
   it "entropy" $ do
@@ -70,7 +70,7 @@ spec = do
     let t :: Tnsr 'D.Float '[2] = UnsafeMkTensor $ entropy d
     toList (Just t) `shouldBe` [0.7233937, 0.5433219]
 
-  it "enumerate_support" $ do
-    -- putStrLn . show $ enumerate_support d False
-    let t :: Tnsr 'D.Float '[2] = UnsafeMkTensor $ enumerate_support d False
+  it "enumerateSupport" $ do
+    -- putStrLn . show $ enumerateSupport d False
+    let t :: Tnsr 'D.Float '[2] = UnsafeMkTensor $ enumerateSupport d False
     toList (Just t) `shouldBe` [0.0, 1.0]
