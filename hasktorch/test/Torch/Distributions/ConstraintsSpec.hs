@@ -39,7 +39,7 @@ spec = do
             toDevice @'( 'D.CPU, 0) . UnsafeMkTensor .
             Constraints.real $ D.asTensor $ [0.0, 1.0, 2.0 :: Float]
     toList (Just t) `shouldBe` [True, True, True]
-    let nans = D.asTensor [0.0, 1.0, 2.0 :: Float] `F.divScalar` (0.0 :: Float)
+    let nans = F.divScalar (0.0 :: Float) $ D.asTensor [0.0, 1.0, 2.0 :: Float]
     let t :: Tensor '( 'D.CPU, 0) 'D.Bool '[3] =
             toDevice @'( 'D.CPU, 0) . UnsafeMkTensor .
             Constraints.real $ nans
