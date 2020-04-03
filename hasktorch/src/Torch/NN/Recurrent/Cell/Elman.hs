@@ -7,7 +7,6 @@
 module Torch.NN.Recurrent.Cell.Elman where
 
 import GHC.Generics
-
 import Torch
 
 data ElmanSpec = ElmanSpec { 
