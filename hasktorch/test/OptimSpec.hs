@@ -35,7 +35,7 @@ instance Parameterized ConvQuad
 
 convexQuadratic :: Tensor -> Tensor -> Tensor -> Tensor
 convexQuadratic a b w =
-    mulScalar (dot w (mv a w)) (0.5 :: Float) - dot b w
+    mulScalar (0.5 :: Float) (dot (mv a w) w) - dot w b
 
 lossConvQuad :: Tensor -> Tensor -> ConvQuad -> Tensor
 lossConvQuad a b (ConvQuad w) = convexQuadratic a b w'
@@ -65,8 +65,8 @@ instance Parameterized Rosen where
   flattenParameters (Rosen x y) = [x, y]
 
 rosenbrock2d :: Float -> Float -> Tensor -> Tensor -> Tensor
-rosenbrock2d a b x y = square (addScalar ((-1.0) * x ) a) + mulScalar (square (y - x*x)) b
-    where square c = pow c (2 :: Int)
+rosenbrock2d a b x y = square (addScalar a $ (-1.0) * x ) + mulScalar b (square (y - x*x))
+    where square = pow (2 :: Int)
 
 rosenbrock' :: Tensor -> Tensor -> Tensor
 rosenbrock' = rosenbrock2d 1.0 100.0
@@ -88,8 +88,8 @@ instance Parameterized Ackley
 
 ackley :: Float -> Float -> Float -> Tensor -> Tensor
 ackley a b c x = 
-    mulScalar (exp (-b' * (sqrt $ (sumAll (x * x)) / d))) (-a)
-    - exp (1.0 / d * sumAll (cos (mulScalar x c))) 
+    mulScalar (-a) (exp (-b' * (sqrt $ (sumAll (x * x)) / d)))
+    - exp (1.0 / d * sumAll (cos (mulScalar c x))) 
     + (asTensor $ a + P.exp 1.0)
     where
         b' = asTensor b

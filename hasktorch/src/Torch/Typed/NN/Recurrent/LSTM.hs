@@ -308,7 +308,7 @@ calculateFan shape
 -- | Xavier Initialization - Uniform
 xavierUniformFIXME :: D.Tensor -> Float -> [Int] -> IO D.Tensor
 xavierUniformFIXME init gain shape = pure
-  $ D.subScalar (D.mulScalar init (bound * 2.0)) bound
+  $ D.subScalar bound $ D.mulScalar (bound * 2.0) init
  where
   (fanIn, fanOut) = calculateFan shape
   std = gain * sqrt (2.0 / (fromIntegral fanIn + fromIntegral fanOut))

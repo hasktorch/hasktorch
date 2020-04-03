@@ -123,7 +123,7 @@ main = do
 
     let expectedOutput = xor input
     let actualOutput   = squeezeAll . Main.forward model $ input
-    let loss           = mseLoss @D.ReduceMean actualOutput expectedOutput
+    let loss           = mseLoss @D.ReduceMean expectedOutput actualOutput
 
     when (i `mod` 2500 == 0) (print loss)
 
