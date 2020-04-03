@@ -93,7 +93,7 @@ spec = do
     shape qr `shouldBe` [5,3]
   it "diag" $ do
     let x = ones' [3]
-    let y = diag x 2
+    let y = diag 2 x
     shape y `shouldBe` [5, 5]
   it "expand" $ do
     let t = asTensor [[1], [2], [3 :: Int]]
@@ -112,7 +112,7 @@ spec = do
 
   it "cholesky decomposes" $ do
     let x = asTensor ([[4.0, 12.0, -16.0], [12.0, 37.0, -43.0], [-16.0, -43.0, 98.0]] :: [[Double]])
-        c = cholesky x Upper
+        c = cholesky Upper x
         c' = asTensor ([[2.0, 6.0, -8.0], [0.0, 1.0, 5.0], [0.0, 0.0, 3.0]] :: [[Double]])
     all (c ==. c') `shouldBe` True
   it "inverse of an identity matrix is an identity matrix" $ do

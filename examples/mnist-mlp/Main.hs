@@ -57,7 +57,7 @@ train trainData = do
             let idx = take batchSize (drop (iter * batchSize) idxList)
             input <- V.getImages' batchSize dataDim trainData idx
             let label = V.getLabels' batchSize trainData idx
-                loss = nllLoss' (mlp state input) label
+                loss = nllLoss' label $ mlp state input
             when (iter `mod` 50 == 0) $ do
                 putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
             (newParam, _) <- runStep state optimizer loss 1e-3

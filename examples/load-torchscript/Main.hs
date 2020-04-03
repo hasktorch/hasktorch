@@ -37,7 +37,7 @@ main = prettyException $ do
   case (mimg,mode) of
     (Left err,_) -> print err
     (Right img',"resnet")-> do
-      let img'' = (D.toType D.Float $ hwc2chw img') `D.divScalar` (255.0::Float)
+      let img'' = D.divScalar (255.0::Float) $ D.toType D.Float $ hwc2chw img'
           img = IVTensor $ img''
           [[r,g,b]] = D.asValue img'' :: [[[[Float]]]]
       print $ take 10 (head r)
@@ -46,7 +46,7 @@ main = prettyException $ do
         IVTensor v' -> print $ D.argmax (D.Dim 1) D.RemoveDim v'
         _ -> print "Return value is not tensor."
     (Right img',"maskrcnn")-> do
-      let img'' = (D.toType D.Float $ hwc2chw img') `D.divScalar` (255.0::Float)
+      let img'' = D.divScalar (255.0::Float) $ D.toType D.Float $ hwc2chw img'
           [[r,g,b]] = D.asValue img'' :: [[[[Float]]]]
       print $ take 10 (head r)
       let img = IVTensorList [D.squeezeAll $ img'']
