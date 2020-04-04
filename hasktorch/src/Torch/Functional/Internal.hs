@@ -330,8 +330,8 @@ embedding_sparse_backward _grad _indices _num_weights _padding_idx _scale_grad_b
 embedding_bag :: Tensor -> Tensor -> Tensor -> Bool -> Int -> Bool -> Tensor -> (Tensor,Tensor,Tensor,Tensor)
 embedding_bag _weight _indices _offsets _scale_grad_by_freq _mode _sparse _per_sample_weights = unsafePerformIO $ (cast7 ATen.embedding_bag_tttblbt) _weight _indices _offsets _scale_grad_by_freq _mode _sparse _per_sample_weights
 
-empty_like_tM :: Tensor -> ATen.MemoryFormat -> Tensor
-empty_like_tM _self _memory_format = unsafePerformIO $ (cast2 ATen.empty_like_tM) _self _memory_format
+emptyLikeWithMemoryFormat :: Tensor -> ATen.MemoryFormat -> Tensor
+emptyLikeWithMemoryFormat _self _memory_format = unsafePerformIO $ (cast2 ATen.empty_like_tM) _self _memory_format
 
 erf :: Tensor -> Tensor
 erf _self = unsafePerformIO $ (cast1 ATen.erf_t) _self
@@ -363,8 +363,8 @@ floor _self = unsafePerformIO $ (cast1 ATen.floor_t) _self
 frac :: Tensor -> Tensor
 frac _self = unsafePerformIO $ (cast1 ATen.frac_t) _self
 
-full_like_tsM :: Tensor -> Float -> ATen.MemoryFormat -> Tensor
-full_like_tsM _self _fill_value _memory_format = unsafePerformIO $ (cast3 ATen.full_like_tsM) _self _fill_value _memory_format
+fullLikeWithMemoryFormat :: Tensor -> Float -> ATen.MemoryFormat -> Tensor
+fullLikeWithMemoryFormat _self _fill_value _memory_format = unsafePerformIO $ (cast3 ATen.full_like_tsM) _self _fill_value _memory_format
 
 grid_sampler :: Tensor -> Tensor -> Int -> Int -> Bool -> Tensor
 grid_sampler _input _grid _interpolation_mode _padding_mode _align_corners = unsafePerformIO $ (cast5 ATen.grid_sampler_ttllb) _input _grid _interpolation_mode _padding_mode _align_corners
@@ -510,8 +510,8 @@ log2 _self = unsafePerformIO $ (cast1 ATen.log2_t) _self
 logdet :: Tensor -> Tensor
 logdet _self = unsafePerformIO $ (cast1 ATen.logdet_t) _self
 
-log_softmax :: Tensor -> Int -> DType -> Tensor
-log_softmax _self _dim _dtype = unsafePerformIO $ (cast3 ATen.log_softmax_tls) _self _dim _dtype
+logSoftmax :: Tensor -> Int -> DType -> Tensor
+logSoftmax _self _dim _dtype = unsafePerformIO $ (cast3 ATen.log_softmax_tls) _self _dim _dtype
 
 logSoftmaxWithDimname :: Tensor -> Dimname -> DType -> Tensor
 logSoftmaxWithDimname _self _dim _dtype = unsafePerformIO $ (cast3 ATen.log_softmax_tns) _self _dim _dtype
@@ -708,8 +708,8 @@ batch_norm_backward_elemt _grad_out _input _mean _invstd _weight _mean_dy _mean_
 batch_norm_update_stats :: Tensor -> Tensor -> Tensor -> Double -> (Tensor,Tensor)
 batch_norm_update_stats _input _running_mean _running_var _momentum = unsafePerformIO $ (cast4 ATen.batch_norm_update_stats_tttd) _input _running_mean _running_var _momentum
 
-ones_like_tM :: Tensor -> ATen.MemoryFormat -> Tensor
-ones_like_tM _self _memory_format = unsafePerformIO $ (cast2 ATen.ones_like_tM) _self _memory_format
+onesLikeWithMemoryFormat :: Tensor -> ATen.MemoryFormat -> Tensor
+onesLikeWithMemoryFormat _self _memory_format = unsafePerformIO $ (cast2 ATen.ones_like_tM) _self _memory_format
 
 pairwise_distance :: Tensor -> Tensor -> Double -> Double -> Bool -> Tensor
 pairwise_distance _x1 _x2 _p _eps _keepdim = unsafePerformIO $ (cast5 ATen.pairwise_distance_ttddb) _x1 _x2 _p _eps _keepdim
@@ -732,8 +732,8 @@ pinverse _self _rcond = unsafePerformIO $ (cast2 ATen.pinverse_td) _self _rcond
 poisson_nll_loss :: Tensor -> Tensor -> Bool -> Bool -> Double -> Int -> Tensor
 poisson_nll_loss _input _target _log_input _full _eps _reduction = unsafePerformIO $ (cast6 ATen.poisson_nll_loss_ttbbdl) _input _target _log_input _full _eps _reduction
 
-rand_like_tM :: Tensor -> ATen.MemoryFormat -> Tensor
-rand_like_tM _self _memory_format = unsafePerformIO $ (cast2 ATen.rand_like_tM) _self _memory_format
+randLikeWithMemoryFormat :: Tensor -> ATen.MemoryFormat -> Tensor
+randLikeWithMemoryFormat _self _memory_format = unsafePerformIO $ (cast2 ATen.rand_like_tM) _self _memory_format
 
 randintLike' :: Tensor -> Int -> ATen.MemoryFormat -> Tensor
 randintLike' _self _high _memory_format = unsafePerformIO $ (cast3 ATen.randint_like_tlM) _self _high _memory_format
@@ -741,8 +741,8 @@ randintLike' _self _high _memory_format = unsafePerformIO $ (cast3 ATen.randint_
 randintLike :: Tensor -> Int -> Int -> ATen.MemoryFormat -> Tensor
 randintLike _self _low _high _memory_format = unsafePerformIO $ (cast4 ATen.randint_like_tllM) _self _low _high _memory_format
 
-randn_like_tM :: Tensor -> ATen.MemoryFormat -> Tensor
-randn_like_tM _self _memory_format = unsafePerformIO $ (cast2 ATen.randn_like_tM) _self _memory_format
+randnLikeWithMemoryFormat :: Tensor -> ATen.MemoryFormat -> Tensor
+randnLikeWithMemoryFormat _self _memory_format = unsafePerformIO $ (cast2 ATen.randn_like_tM) _self _memory_format
 
 reciprocal :: Tensor -> Tensor
 reciprocal _self = unsafePerformIO $ (cast1 ATen.reciprocal_t) _self
@@ -987,8 +987,8 @@ isNonZero _condition = unsafePerformIO $ (cast1 ATen.where_t) _condition
 norm_except_dim :: Tensor -> Int -> Int -> Tensor
 norm_except_dim _v _pow _dim = unsafePerformIO $ (cast3 ATen.norm_except_dim_tll) _v _pow _dim
 
-zeros_like_tM :: Tensor -> ATen.MemoryFormat -> Tensor
-zeros_like_tM _self _memory_format = unsafePerformIO $ (cast2 ATen.zeros_like_tM) _self _memory_format
+zerosLikeWithMemoryFormat :: Tensor -> ATen.MemoryFormat -> Tensor
+zerosLikeWithMemoryFormat _self _memory_format = unsafePerformIO $ (cast2 ATen.zeros_like_tM) _self _memory_format
 
 native_norm :: Tensor -> Float -> Tensor
 native_norm _self _p = unsafePerformIO $ (cast2 ATen.native_norm_ts) _self _p

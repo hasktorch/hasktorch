@@ -12,7 +12,7 @@
 - rename: {src: cumprod_tns, dst: cumprodWithDimname}
 - rename: {src: div_tt, dst: div}
 - rename: {src: div_ts, dst: divScalar}
-- rename: {src: log_softmax_tls, dst: log_softmax}
+- rename: {src: log_softmax_tls, dst: logSoftmax}
 - rename: {src: max_t, dst: maxAll}
 - rename: {src: max_tlb, dst: maxDim}
 - rename: {src: max_tnb, dst: maxWithDimname}
@@ -183,7 +183,7 @@
 - rename: {src: log10_t, dst: log10}
 - rename: {src: log2_t, dst: log2}
 - rename: {src: matmul_tt, dst: matmul}
-- rename: {src: mse_loss_ttl, dst: mse_loss}
+- rename: {src: mse_loss_ttl, dst: mseLoss}
 - rename: {src: relu_t, dst: relu}
 - rename: {src: selu_t, dst: selu}
 - rename: {src: sigmoid_t, dst: sigmoid}
@@ -197,8 +197,8 @@
 - rename: {src: sign_t, dst: sign}
 - rename: {src: inverse_t, dst: inverse}
 - rename: {src: cholesky_tb, dst: cholesky}
-- rename: {src: cholesky_inverse_tb, dst: cholesky_inverse}
-- rename: {src: cholesky_solve_ttb, dst: cholesky_solve}
+- rename: {src: cholesky_inverse_tb, dst: choleskyInverse}
+- rename: {src: cholesky_solve_ttb, dst: choleskySolve}
 - rename: {src: eig_tb, dst: eig}
 - rename: {src: solve_tt, dst: solve}
 - rename: {src: svd_tbb, dst: svd}
@@ -211,6 +211,12 @@
 - rename: {src: result_type_ss, dst: resultTypeScalars}
 - rename: {src: randint_like_tllM, dst: randintLike}
 - rename: {src: randint_like_tlM, dst: randintLike'}
+- rename: {src: empty_like_tM, dst: emptyLikeWithMemoryFormat}
+- rename: {src: full_like_tsM, dst: fullLikeWithMemoryFormat}
+- rename: {src: ones_like_tM, dst: onesLikeWithMemoryFormat}
+- rename: {src: rand_like_tM, dst: randLikeWithMemoryFormat}
+- rename: {src: randn_like_tM, dst: randnLikeWithMemoryFormat}
+- rename: {src: zeros_like_tM, dst: zerosLikeWithMemoryFormat}
 # - rename: {src: , dst: }
 
 # detach needs IO-monad to create new-tensor.
