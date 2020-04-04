@@ -77,6 +77,8 @@ library
                     , safe-exceptions
                     , zlib >= 0.6
                     , inline-c
+                    , data-default
+                    , generic-lens
 
 test-suite spec
   type:               exitcode-stdio-1.0
@@ -120,6 +122,9 @@ test-suite spec
                     , QuickCheck
                     , directory
                     , JuicyPixels
+                    , data-default
+                    , generic-lens
+                    , lens
 
 test-suite doctests
   type:               exitcode-stdio-1.0

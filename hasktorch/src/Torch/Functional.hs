@@ -1,5 +1,11 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Torch.Functional (
     module Torch.Functional,
@@ -45,6 +51,8 @@ import qualified Torch.Functional.Internal as Internal
 import Torch.Internal.Cast
 import Torch.Internal.Class
 import Data.Int
+import Data.Default
+import GHC.Generics
 
 import Torch.Scalar
 import Torch.Tensor
@@ -762,17 +770,29 @@ constantPadNd1d padding value input = unsafePerformIO $ cast3
   padding
   value
 
+data Conv1dSpec = Conv1dSpec
+  { stride :: Int
+  , padding :: Int
+  , dilation :: Int
+  , groups :: Int
+  } deriving Generic
+
+instance Default Conv1dSpec where
+  def = Conv1dSpec
+        { stride = 1
+        , padding = 0
+        , dilation = 1
+        , groups = 1
+        }
+
 -- | Applies a 1D convolution over an input signal composed of several input planes.
 conv1d
-  :: Tensor -- ^ weight
+  :: Conv1dSpec
+  -> Tensor -- ^ weight
   -> Tensor -- ^ bias
-  -> Int -- ^ stride
-  -> Int -- ^ padding
-  -> Int -- ^ dilation
-  -> Int -- ^ groups
   -> Tensor -- ^ input
   -> Tensor -- ^ output
-conv1d weight bias stride padding dilation groups input =
+conv1d Conv1dSpec{..} weight bias input =
     unsafePerformIO $ (cast7 ATen.conv1d_tttllll)
         input
         weight
@@ -782,40 +802,51 @@ conv1d weight bias stride padding dilation groups input =
         dilation
         groups
 
-conv1d' weight bias stride padding input = conv1d weight bias stride padding 1 1 input
+conv1d'
+  :: Tensor -- ^ weight
+  -> Tensor -- ^ bias
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+conv1d' = conv1d def
+
+data Conv2dSpec = Conv2dSpec
+  { stride :: (Int,Int)
+  , padding :: (Int,Int)
+  , dilation :: (Int,Int)
+  , groups :: Int
+  } deriving Generic
+
+instance Default Conv2dSpec where
+  def = Conv2dSpec
+        { stride = (1,1)
+        , padding = (0,0)
+        , dilation = (1,1)
+        , groups = 1
+        }
 
 -- | Applies a 2D convolution over an input signal composed of several input planes.
 conv2d
-  :: Tensor -- ^ weight
+  :: Conv2dSpec
+  -> Tensor -- ^ weight
   -> Tensor -- ^ bias
-  -> (Int, Int) -- ^ strides
-  -> (Int, Int) -- ^ padding
-  -> (Int, Int) -- ^ dilation
-  -> Int -- ^ groups
   -> Tensor -- ^ input
   -> Tensor -- ^ output
-conv2d weight bias (stride0, stride1) (padding0, padding1) (dilation0, dilation1) groups input =
+conv2d Conv2dSpec{..} weight bias input =
     unsafePerformIO $ (cast7 ATen.conv2d_tttllll)
         input
         weight
         bias
-        ([stride0, stride1] :: [Int])
-        ([padding0, padding1] :: [Int])
-        ([dilation0, dilation1] :: [Int])
+        ([fst stride, snd stride] :: [Int])
+        ([fst padding, snd padding] :: [Int])
+        ([fst dilation, snd dilation] :: [Int])
         groups
 
 conv2d'
   :: Tensor -- ^ weight
   -> Tensor -- ^ bias
-  -> (Int, Int) -- ^ strides
-  -> (Int, Int) -- ^ padding
   -> Tensor -- ^ input
   -> Tensor -- ^ output
-conv2d' weight bias stride padding input = 
-    conv2d weight bias stride padding
-        (1, 1) -- dilation
-        (1 :: Int) -- groups
-        input
+conv2d' = conv2d def
 
 -- | This function returns the solution to the system of linear equations represented by AX = BAX=B and the LU factorization of A, in order as a namedtuple solution, LU.
 -- LU contains L and U factors for LU factorization of A

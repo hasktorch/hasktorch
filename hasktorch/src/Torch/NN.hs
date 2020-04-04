@@ -7,6 +7,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 
 module Torch.NN where
 
@@ -114,11 +115,11 @@ data LinearSpec = LinearSpec { in_features :: Int, out_features :: Int }
 data Linear = Linear { weight :: Parameter, bias :: Parameter } deriving (Show, Generic)
 
 linear :: Linear -> Tensor -> Tensor
-linear layer input = linear' input w b
+linear Linear{..} input = linear' input w b
     where
-        linear' input weight bias = unsafePerformIO $ (cast3 ATen.linear_ttt) input weight bias
-        w = toDependent (weight layer)
-        b = toDependent (bias layer)
+        linear' input weight' bias' = unsafePerformIO $ (cast3 ATen.linear_ttt) input weight' bias'
+        w = toDependent weight
+        b = toDependent bias
 
 instance Randomizable LinearSpec Linear where
   sample LinearSpec{..} = do

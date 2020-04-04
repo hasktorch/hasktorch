@@ -1,17 +1,23 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
-
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DeriveGeneric #-}
 module FunctionalSpec(spec) where
 
 import Prelude hiding (all, abs, exp, floor, log, min, max)
 
 import Test.Hspec
 import Control.Exception.Safe
+import Data.Default
 
 import Torch.Tensor
 import Torch.DType
 import Torch.TensorFactories
 import Torch.Functional
 import Torch.TensorOptions
+import Data.Generics.Product
+import Data.Generics.Labels
+import Control.Lens
 
 spec :: Spec
 spec = do
@@ -126,11 +132,11 @@ spec = do
         kernel1 = 1
         input0 = 5
         input1 = 6
-        x = conv2d'
+        x = conv2d
+              ( def & (field @"stride" .~ (1,1))
+              )
               (ones' [out_channel, in_channel, kernel0, kernel1])
               (ones' [out_channel])
-              (1,1)
-              (0,0)
               (ones' [batch, in_channel, input0, input1])
     shape x `shouldBe` [batch, out_channel, input0, input1]
   it "elu (pos)" $ do
