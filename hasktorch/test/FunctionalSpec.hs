@@ -154,7 +154,7 @@ spec = do
     let input = ones' [3]
         target = 3 * input
         output = softMarginLoss ReduceSum target input
-    (toDouble output) `shouldBe` (0.14576205611228943)
+    (toInt $ output*1000) `shouldBe` (145)
   it "softShrink" $ do
     let input = 3 * ones' [3]
         output = softShrink 1 input
