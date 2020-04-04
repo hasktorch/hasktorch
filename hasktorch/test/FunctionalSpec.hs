@@ -7,11 +7,12 @@ import Prelude hiding (all, abs, exp, floor, log, min, max)
 import Test.Hspec
 import Control.Exception.Safe
 
-import Torch.Tensor
-import Torch.DType
-import Torch.TensorFactories
-import Torch.Functional
-import Torch.TensorOptions
+--import Torch.Tensor
+--import Torch.DType
+--import Torch.TensorFactories
+--import Torch.Functional
+--import Torch.TensorOptions
+import Torch
 
 spec :: Spec
 spec = do
@@ -145,4 +146,10 @@ spec = do
   it "elu' (neg)" $ do
     let x = elu' $ -5 * ones' [4]
     (toDouble $ select x 0 0) `shouldBe` (-0.9932620525360107)
-
+  it "embedding" $ do
+    let dic = asTensor ([[1,2,3], [4,5,6]] :: [[Float]])
+        indices = asTensor ([0,1,1] :: [Int])
+        x = embedding' dic indices
+        value = asTensor ([[1.0,2.0,3.0],[4.0,5.0,6.0],[4.0,5.0,6.0]] :: [[Float]])
+    Torch.all (x `eq` value) `shouldBe` True
+    

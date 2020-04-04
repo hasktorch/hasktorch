@@ -41,7 +41,7 @@ embedTest = do
     let x = embedding' dic indices
     -- this results in 5 x 3 where
     -- 5 = input width, 3 = # channels
-    pure x
+    pure $ reshape [1, 3, 5] $ transpose2D x
 
 rnnTest :: IO Tensor
 rnnTest = do
@@ -72,16 +72,7 @@ lstmTest = do
 
 main = do
     -- Embeddings
-    let dic = asTensor ([[1,2,3], [4,5,6]] :: [[Float]])
-    putStrLn "\nDictionary"
-    print dic
-    let indices = asTensor ([0,0,1,0,1] :: [Int])
-    putStrLn "\nIndices"
-    print indices
-    x' <- embedTest
-    let x = reshape [1, 3, 5] $ transpose2D x'
-    putStrLn "\nEmbeddings"
-    print x
+    x <- embedTest
     putStrLn "Embeddings Shape"
     print $ shape x
 
@@ -92,8 +83,8 @@ main = do
 
     -- RNN Cells
     putStrLn "\nElman"
-    rnnOut <- rnnTest
-    print rnnOut
+    print =<< rnnTest
     putStrLn "\nLSTM"
-    lstmOut <- lstmTest
-    print lstmOut
+    print =<< lstmTest
+
+    -- cosineSimilarity 
