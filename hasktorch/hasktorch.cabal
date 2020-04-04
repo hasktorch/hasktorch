@@ -119,8 +119,6 @@ test-suite spec
                     , QuickCheck
                     , directory
                     , JuicyPixels
- default-extensions:  Strict
-                    , StrictData
 
 test-suite doctests
   type:               exitcode-stdio-1.0
