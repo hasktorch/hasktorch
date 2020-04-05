@@ -6,9 +6,6 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 module Torch.Functional (
     module Torch.Functional,
@@ -62,15 +59,6 @@ import Torch.Tensor
 import Torch.DType
 import Torch.Functional.Internal hiding (argmax, clamp, cosh, conv1d, linear, softmax)
 import Torch.TensorFactories (onesLike, ones')
-
-class Optional1 a b r where
-  opt1 :: (a -> b) -> a -> r
-
-instance Optional1 a b b where
-  opt1 = id
-
-instance Optional1 a b (a -> b) where
-  opt1 = const
 
 kOne :: ForeignPtr ATen.Scalar
 kOne = unsafePerformIO $ ATen.newScalar_i 1
@@ -838,33 +826,27 @@ instance Default Conv2dSpec where
 
 -- | Applies a 2D convolution over an input signal composed of several input planes.
 conv2d
-  :: (Optional1
-      Conv2dSpec
-      (  Tensor -- ^ weight
-      -> Tensor -- ^ bias
-      -> Tensor -- ^ input
-      -> Tensor -- ^ output
-      )
-      r)
-  => r
-conv2d = opt1 conv2d' def
-  where
-    conv2d'
-      :: Conv2dSpec
-      -> Tensor -- ^ weight
-      -> Tensor -- ^ bias
-      -> Tensor -- ^ input
-      -> Tensor -- ^ output
-    conv2d' Conv2dSpec{..} weight bias input =
-        unsafePerformIO $ (cast7 ATen.conv2d_tttllll)
-            input
-            weight
-            bias
-            ([fst stride, snd stride] :: [Int])
-            ([fst padding, snd padding] :: [Int])
-            ([fst dilation, snd dilation] :: [Int])
-            groups
+  :: Conv2dSpec
+  -> Tensor -- ^ weight
+  -> Tensor -- ^ bias
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+conv2d Conv2dSpec{..} weight bias input =
+    unsafePerformIO $ (cast7 ATen.conv2d_tttllll)
+        input
+        weight
+        bias
+        ([fst stride, snd stride] :: [Int])
+        ([fst padding, snd padding] :: [Int])
+        ([fst dilation, snd dilation] :: [Int])
+        groups
 
+conv2d'
+  :: Tensor -- ^ weight
+  -> Tensor -- ^ bias
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+conv2d' = conv2d def
 
 -- | This function returns the solution to the system of linear equations represented by AX = BAX=B and the LU factorization of A, in order as a namedtuple solution, LU.
 -- LU contains L and U factors for LU factorization of A
