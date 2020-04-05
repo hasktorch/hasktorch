@@ -18,8 +18,6 @@ conv weight input = T.toType T.UInt8 $ chw2hwc $ (\i -> T.clamp 0 255 (conv' i))
     conv' input' = T.conv2d'
                    (T.asTensor weight)
                    (T.ones' [3])
-                   (1,1)
-                   (0,0)
                    input'
 
 sharpness :: T.Tensor -> T.Tensor
