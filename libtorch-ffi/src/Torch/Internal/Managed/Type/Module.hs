@@ -93,3 +93,12 @@ trace moduleName functionName func inputs = cast3 (\m f inps -> Unmanaged.trace 
       inputs' <- fromPtr inputs
       ret <- func inputs'
       return $ unsafeForeignPtrToPtr ret
+
+dumpToStr
+  :: ForeignPtr Module
+  -> CBool
+  -> CBool
+  -> CBool
+  -> CInt
+  -> IO (ForeignPtr StdString)
+dumpToStr = cast5 Unmanaged.dumpToStr

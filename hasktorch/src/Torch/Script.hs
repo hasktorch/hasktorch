@@ -54,6 +54,9 @@ import Torch.Autograd
 newtype ScriptModule = UnsafeScriptModule (ForeignPtr ATen.Module)
 newtype RawModule = UnsafeRawModule (ForeignPtr ATen.Module)
 
+instance Show ScriptModule where
+  show obj = unsafePerformIO $ dumpToStr' obj
+
 type RawIValue = ForeignPtr ATen.IValue
 newtype Blob = UnsafeBlob (ForeignPtr (ATen.C10Ptr ATen.Blob))
 newtype Object = UnsafeObject (ForeignPtr (ATen.C10Ptr ATen.IVObject))
@@ -185,6 +188,13 @@ train = cast2 LibTorch.train
 
 define :: RawModule -> String -> IO ()
 define = cast2 LibTorch.define
+
+dumpToStr :: ScriptModule -> Bool -> Bool -> Bool -> Int -> IO String
+dumpToStr print_method_bodies print_attr_values print_param_values level =
+  cast5 LibTorch.dumpToStr print_method_bodies print_attr_values print_param_values level
+
+dumpToStr' :: ScriptModule -> IO String
+dumpToStr' obj = dumpToStr obj True True True 0
 
 runMethod :: ScriptModule -> String -> [IValue] -> IValue
 runMethod module' func inputs = unsafePerformIO $ cast3 runMethod' module' func inputs 
