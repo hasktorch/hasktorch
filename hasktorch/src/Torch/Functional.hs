@@ -947,18 +947,18 @@ flattenAll t =
 -- | smoothL1Loss
 smoothL1Loss
   :: Reduction -- ^ reduction
-  -> Tensor -- ^ target
   -> Tensor -- ^ input
+  -> Tensor -- ^ target
   -> Tensor -- ^ output
-smoothL1Loss reduction target input = unsafePerformIO $ (cast3 ATen.smooth_l1_loss_ttl) input target reduction
+smoothL1Loss reduction input target = unsafePerformIO $ (cast3 ATen.smooth_l1_loss_ttl) input target reduction
 
 -- | softMarginLoss
 softMarginLoss 
   :: Reduction -- ^ reduction
+  -> Tensor -- ^ input
   -> Tensor -- ^ target
-  -> Tensor -- ^ self
   -> Tensor -- ^ output
-softMarginLoss reduction target input = unsafePerformIO $ (cast3 ATen.soft_margin_loss_ttl) input target reduction
+softMarginLoss reduction input target = unsafePerformIO $ (cast3 ATen.soft_margin_loss_ttl) input target reduction
 
 -- | softShrink
 softShrink
