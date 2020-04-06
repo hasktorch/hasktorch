@@ -1,35 +1,48 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Torch.Functional (
-    module Torch.Functional,
-    addmv, addr, allclose, argmin, baddbmm, bmm, acos, asin, atan, dot, einsum, lstsq, mv, slice
-    , sumWithDimnames
+module Torch.Functional
+    ( module Torch.Functional
+    , Internal.addmv
+    , Internal.addr
+    , Internal.allclose
+    , Internal.argmin
+    , Internal.baddbmm
+    , Internal.bmm
+    , Internal.acos
+    , Internal.asin
+    , Internal.atan
+    , Internal.dot
+    , Internal.einsum
+    , Internal.lstsq
+    , Internal.mv
+    , Internal.slice
+    , Internal.sumWithDimnames
 ) where
 
-import          Prelude                 hiding ( all
-                                                , any
-                                                , sin
-                                                , sinh
-                                                , cos
-                                                , cosh
-                                                , tan
-                                                , tanh
-                                                , asin
-                                                , asinh
-                                                , acos
-                                                , acosh
-                                                , atan
-                                                , atanh
-                                                , max
-                                                , min
-                                                , exp
-                                                , log
-                                                , round
-                                                , isNaN
-                                                , floor
-                                                , ceil
-                                                )
+import Prelude hiding ( all
+                      , any
+                      , sin
+                      , sinh
+                      , cos
+                      , cosh
+                      , tan
+                      , tanh
+                      , asin
+                      , asinh
+                      , acos
+                      , acosh
+                      , atan
+                      , atanh
+                      , max
+                      , min
+                      , exp
+                      , log
+                      , round
+                      , isNaN
+                      , floor
+                      , ceil
+                      )
 
 import System.IO.Unsafe
 import Foreign.ForeignPtr
@@ -49,7 +62,7 @@ import Data.Int
 import Torch.Scalar
 import Torch.Tensor
 import Torch.DType
-import Torch.Functional.Internal hiding (argmax, clamp, cosh, conv1d, linear, softmax)
+-- import Torch.Functional.Internal hiding (argmax, clamp, cosh, conv1d, linear, softmax)
 import Torch.TensorFactories (onesLike, ones')
 
 kOne :: ForeignPtr ATen.Scalar
