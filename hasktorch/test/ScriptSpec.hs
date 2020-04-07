@@ -14,6 +14,14 @@ import Torch.Script
 import Torch.NN
 import Torch.Autograd
 import GHC.Generics
+import Control.Exception.Safe (catch,throwIO)
+import Language.C.Inline.Cpp.Exceptions (CppException(..))
+
+prettyException :: IO a -> IO a
+prettyException func =
+  func `catch` \a@(CppStdException message) -> do
+    putStrLn message
+    throwIO (CppStdException "")
 
 data MLPSpec = MLPSpec {
     inputFeatures :: Int,
@@ -95,6 +103,9 @@ spec = describe "torchscript" $ do
     save sm "self2.pt"
     let (IVTensor r0) = forward sm (map IVTensor [v00,v01])
     (asValue r0::Float) `shouldBe` 12
+--    m2 <- traceAsGraph (\[x,y] -> return [x+y]) [v00,v01]
+--    prettyException $ printGraph m2 >>= putStr
+--    prettyException $ printOnnx m2 >>= print
   it "trace mlp with parameters" $ do
     v00 <- randnIO' [3,784]
     init' <- sample (MLPSpec 784 64 32 10)

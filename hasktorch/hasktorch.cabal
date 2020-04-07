@@ -119,6 +119,7 @@ test-suite spec
                     , QuickCheck
                     , directory
                     , JuicyPixels
+                    , inline-c-cpp
 
 test-suite doctests
   type:               exitcode-stdio-1.0

@@ -29,6 +29,7 @@ import Torch.Internal.Class
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 C.include "<torch/script.h>"
+C.include "<torch/csrc/jit/export.h>"
 C.include "<vector>"
 C.include "<iostream>"
 
@@ -48,6 +49,23 @@ deleteModule object = [C.throwBlock| void { delete $(torch::jit::script::Module*
 instance CppObject Module where
   fromPtr ptr = newForeignPtr ptr (deleteModule ptr)
 
+deleteJitGraph :: Ptr (SharedPtr JitGraph) -> IO ()
+deleteJitGraph object = [C.throwBlock| void { delete $(std::shared_ptr<torch::jit::Graph>* object);}|]
+
+instance CppObject (SharedPtr JitGraph) where
+  fromPtr ptr = newForeignPtr ptr (deleteJitGraph ptr)
+
+deleteJitNode :: Ptr JitNode -> IO ()
+deleteJitNode object = [C.throwBlock| void { delete $(torch::jit::Node* object);}|]
+
+instance CppObject JitNode where
+  fromPtr ptr = newForeignPtr ptr (deleteJitNode ptr)
+
+deleteJitValue :: Ptr JitValue -> IO ()
+deleteJitValue object = [C.throwBlock| void { delete $(torch::jit::Value* object);}|]
+
+instance CppObject JitValue where
+  fromPtr ptr = newForeignPtr ptr (deleteJitValue ptr)
 
 save :: Ptr Module -> FilePath -> IO ()
 save obj file = withCString file $ \cfile -> [C.throwBlock| void {
@@ -172,6 +190,49 @@ trace moduleName functionName func inputs =
         self.type()->addMethod(fn2);
         return new torch::jit::script::Module(self);
       }|]
+
+traceAsGraph :: (Ptr TensorList -> IO (Ptr TensorList)) -> Ptr TensorList -> IO (Ptr (SharedPtr JitGraph))
+traceAsGraph func inputs =
+  bracket
+    (callbackHelper $ \inputs' -> castPtr <$> func (castPtr inputs'))
+    freeHaskellFunPtr
+    $ \funcPtr ->
+      [C.throwBlock| std::shared_ptr<torch::jit::Graph>* {
+        torch::jit::script::Module self("MyModule");
+        auto vars_in = *$(std::vector<at::Tensor>* inputs);
+        auto tfunc = $(void* (*funcPtr)(void*));
+        typedef std::vector<at::Tensor>* (*Func)(std::vector<at::Tensor>*);
+        auto func = (Func)tfunc;
+        auto graph = torch::jit::tracer::trace(
+          c10::fmap<c10::IValue>(vars_in),
+          [&func](c10::Stack in) -> c10::Stack {
+            std::vector<at::Tensor>* ivalue_inps = new std::vector<at::Tensor>(c10::fmap(in, [](const c10::IValue& v){
+              return torch::autograd::Variable(v.toTensor());
+            }));
+            std::vector<at::Tensor> out = *(func(ivalue_inps));
+            return c10::fmap<c10::IValue>(out);
+          },
+          [](const torch::autograd::Variable& var) { return "";}
+        ).first->graph;
+        return new std::shared_ptr<torch::jit::Graph>(graph);
+      }|]
+
+printGraph :: Ptr (SharedPtr JitGraph) -> IO (Ptr StdString)
+printGraph graph =
+  [C.throwBlock| std::string* {
+    return new std::string((**$(std::shared_ptr<torch::jit::Graph>* graph)).toString());
+  }|]
+
+printOnnx :: Ptr (SharedPtr JitGraph) -> IO (Ptr StdString)
+printOnnx graph =
+  [C.throwBlock| std::string* {
+    auto graph_str = torch::jit::pretty_print_onnx(
+        *$(std::shared_ptr<torch::jit::Graph>* graph),
+        std::map<std::string, at::Tensor>{},
+        9,
+        false);
+    return new std::string(graph_str);
+  }|]
 
 dumpToStr
   :: Ptr Module

@@ -94,6 +94,21 @@ trace moduleName functionName func inputs = cast3 (\m f inps -> Unmanaged.trace 
       ret <- func inputs'
       return $ unsafeForeignPtrToPtr ret
 
+traceAsGraph :: (ForeignPtr TensorList -> IO (ForeignPtr TensorList)) -> ForeignPtr TensorList -> IO (ForeignPtr (SharedPtr JitGraph))
+traceAsGraph func inputs = cast1 (\inps -> Unmanaged.traceAsGraph (trans func) inps) inputs
+  where
+    trans :: (ForeignPtr TensorList -> IO (ForeignPtr TensorList)) -> Ptr TensorList -> IO (Ptr TensorList)
+    trans func inputs = do
+      inputs' <- fromPtr inputs
+      ret <- func inputs'
+      return $ unsafeForeignPtrToPtr ret
+
+printGraph :: ForeignPtr (SharedPtr JitGraph) -> IO (ForeignPtr StdString)
+printGraph graph = cast1 Unmanaged.printGraph graph
+
+printOnnx :: ForeignPtr (SharedPtr JitGraph) -> IO (ForeignPtr StdString)
+printOnnx graph = cast1 Unmanaged.printOnnx graph
+
 dumpToStr
   :: ForeignPtr Module
   -> CBool

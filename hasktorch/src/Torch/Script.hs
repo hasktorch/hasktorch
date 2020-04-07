@@ -63,6 +63,8 @@ newtype Object = UnsafeObject (ForeignPtr (ATen.C10Ptr ATen.IVObject))
 newtype Future = UnsafeFuture (ForeignPtr (ATen.C10Ptr ATen.IVFuture))
 newtype Capsule = UnsafeCapsule (ForeignPtr (ATen.C10Ptr ATen.Capsule))
 
+newtype Graph = UnsafeGraph (ForeignPtr (ATen.SharedPtr ATen.JitGraph))
+
 instance Show Blob where
   show _ = "Blob"
 
@@ -104,6 +106,10 @@ instance Castable ScriptModule (ForeignPtr ATen.Module) where
 instance Castable RawModule (ForeignPtr ATen.Module) where
   cast (UnsafeRawModule obj) f = f obj
   uncast obj f = f $ UnsafeRawModule obj
+
+instance Castable Graph (ForeignPtr (ATen.SharedPtr ATen.JitGraph)) where
+  cast (UnsafeGraph obj) f = f obj
+  uncast obj f = f $ UnsafeGraph obj
 
 newModule :: String -> IO RawModule
 newModule = cast1 LibTorch.newModule
@@ -224,7 +230,23 @@ trace moduleName functionName func inputs = cast3 (\m f inps -> LibTorch.trace m
         ret <- func inputs'
         cast ret return
 
-traceWithParameters :: Parameterized f => String -> (f -> [Tensor] -> IO [Tensor]) -> f -> [Tensor] -> IO RawModule
+-- | This function generates torchscript-module from Parameterized-instance of hasktorch.
+-- Usage is below.
+-- -- >> let example_inputs = asTensor (4::Float)
+-- -- >> init_parameters <- sample MonoSpec
+-- -- >> mutableTorchscript <- traceWithParameters "MyModule"
+-- --                            (\parameters [example_inputs'] -> return [(traced_function parameters example_inputs')])
+-- --                            init_parameters
+-- --                            [example_inputs]
+-- -- >> immutableTorchscript <- toScriptModule mutableTorchscript
+-- -- >> save immutableTorchscript "<your torchscript file>"
+traceWithParameters
+  :: Parameterized f
+  => String       -- ^ module name
+  -> (f -> [Tensor] -> IO [Tensor]) -- ^ traced function
+  -> f            -- ^ initial parameters
+  -> [Tensor]     -- ^ example inputs
+  -> IO RawModule -- ^ torchscript module
 traceWithParameters moduleName func parameterized_parameters inputs = do
   let parameters = (map toDependent) (flattenParameters parameterized_parameters)
       fromParams params = replaceParameters parameterized_parameters (map IndependentTensor params)
@@ -245,6 +267,40 @@ traceWithParameters moduleName func parameterized_parameters inputs = do
     "def forward(self, " ++ args ++ "):\n" ++ 
     "    return self.forwardWithParameters(" ++ params ++ ", " ++ args ++ " )\n"
   return r
+
+traceAsGraph :: ([Tensor] -> IO [Tensor]) -> [Tensor] -> IO Graph
+traceAsGraph func inputs = cast1 (\inps -> LibTorch.traceAsGraph (trans func) inps) inputs
+  where
+    trans :: ([Tensor] -> IO [Tensor]) -> ForeignPtr TensorList -> IO (ForeignPtr TensorList)
+    trans func inputs =
+      uncast inputs $ \inputs' -> do
+        ret <- func inputs'
+        cast ret return
+
+
+printGraph :: Graph -> IO String
+printGraph = cast1 LibTorch.printGraph
+
+-- | Output onnx file from graph. (really experimental implementation)
+-- printOnnx uses export_onnx function of libtorch.
+-- It outputs following error, because prim::Constant symbol using torchscript does not exist.
+-- -- Exception: ONNX export failed: Couldn't export operator prim::Constant
+-- -- Defined at:
+-- --   Graph we tried to export:
+-- --   graph(%0 : Float(),
+-- --               %1 : Float()):
+-- --     %2 : int = prim::Constant[value=1]()
+-- --   %3 : Float() = aten::add(%0, %1, %2)
+-- --   return (%3)
+-- -- ; type: std::runtime_error
+-- On the other hand, torch.onnx.export of python works.
+-- onnx's symbol map is in python code.
+-- https://github.com/pytorch/pytorch/blob/master/torch/onnx/symbolic_opset9.py
+-- 
+-- If you need onnx-file, at first make torchscript by trace , then convert torchscript into onnx by python-code.
+printOnnx :: Graph -> IO String
+printOnnx = cast1 LibTorch.printOnnx
+
 
 instance Castable [IValue] [RawIValue] where
   cast a f = (forM a $ \v -> cast v return) >>= f
