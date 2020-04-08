@@ -103,7 +103,9 @@ spec = describe "torchscript" $ do
     save sm "self2.pt"
     let (IVTensor r0) = forward sm (map IVTensor [v00,v01])
     (asValue r0::Float) `shouldBe` 12
---    m2 <- traceAsGraph (\[x,y] -> return [x+y]) [v00,v01]
+    graph <- traceAsGraph (\[x,y] -> return [x+y]) [v00,v01]
+    graph' <- graphToJitGraph graph
+    print graph'
 --    prettyException $ printGraph m2 >>= putStr
 --    prettyException $ printOnnx m2 >>= print
   it "trace mlp with parameters" $ do

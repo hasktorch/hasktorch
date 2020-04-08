@@ -28,7 +28,7 @@ import Numeric
 
 import Torch.Internal.Cast
 import Torch.Internal.Class (Castable(..), CppTuple2(..), CppTuple3(..), CppTuple4(..), CppObject(..))
-import qualified Torch.Internal.Unmanaged.Type.Tensor as Unmanaged (tensor_data_ptr)
+import qualified Torch.Internal.Unmanaged.Type.Module as Unmanaged
 import qualified Torch.Internal.Managed.Type.Context as ATen
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
 import qualified Torch.Internal.Managed.Type.TensorOptions as ATen
@@ -63,7 +63,28 @@ newtype Object = UnsafeObject (ForeignPtr (ATen.C10Ptr ATen.IVObject))
 newtype Future = UnsafeFuture (ForeignPtr (ATen.C10Ptr ATen.IVFuture))
 newtype Capsule = UnsafeCapsule (ForeignPtr (ATen.C10Ptr ATen.Capsule))
 
+-- | See https://github.com/pytorch/pytorch/wiki/PyTorch-IR
 newtype Graph = UnsafeGraph (ForeignPtr (ATen.SharedPtr ATen.JitGraph))
+
+data JitGraph
+  = JitGraph
+  { graphInputs :: [JitValue]
+  , graphOutputs :: [JitValue]
+  , graphNodes :: [JitNode]
+  } deriving (Show, Eq)
+
+data JitNode
+  = JitNode
+  { nodeInputs :: [JitValue]
+  , nodeOutputs :: [JitValue]
+  , nodeKind :: String
+  } deriving (Show, Eq)
+
+data JitValue
+  = JitValue
+  { valueId :: Int
+  , valueType :: String
+  } deriving (Show, Eq)
 
 instance Show Blob where
   show _ = "Blob"
@@ -301,6 +322,39 @@ printGraph = cast1 LibTorch.printGraph
 printOnnx :: Graph -> IO String
 printOnnx = cast1 LibTorch.printOnnx
 
+graphToJitGraph :: Graph -> IO JitGraph
+graphToJitGraph (UnsafeGraph graph) = do
+  withForeignPtr graph $ \g0 -> Unmanaged.withJitGraph g0 $ \g -> do
+    graphInputs <- do
+      inputs <- Unmanaged.graphInputs g
+      forM inputs $ \i -> do
+        valueId <- cast1 Unmanaged.valueId i
+        valueType <- cast0 (cast1 Unmanaged.valueType i :: IO (ForeignPtr ATen.StdString))
+        return JitValue{..}
+    graphOutputs <- do
+      inputs <- Unmanaged.graphOutputs g
+      forM inputs $ \i -> do
+        valueId <- cast1 Unmanaged.valueId i
+        valueType <- cast0 (cast1 Unmanaged.valueType i :: IO (ForeignPtr ATen.StdString))
+        return JitValue{..}
+    graphNodes <- do
+      nodes <- Unmanaged.graphNodes g
+      forM nodes $ \n -> do
+        nodeInputs <- do
+          inputs <- Unmanaged.nodeInputs n
+          forM inputs $ \i -> do
+            valueId <- cast1 Unmanaged.valueId i
+            valueType <- cast0 (cast1 Unmanaged.valueType i :: IO (ForeignPtr ATen.StdString))
+            return JitValue{..}
+        nodeOutputs <- do
+          inputs <- Unmanaged.nodeOutputs n
+          forM inputs $ \i -> do
+            valueId <- cast1 Unmanaged.valueId i
+            valueType <- cast0 (cast1 Unmanaged.valueType i :: IO (ForeignPtr ATen.StdString))
+            return JitValue{..}
+        nodeKind <- cast0 (cast1 Unmanaged.nodeKind n :: IO (ForeignPtr ATen.StdString))
+        return JitNode{..}
+    return JitGraph{..}
 
 instance Castable [IValue] [RawIValue] where
   cast a f = (forM a $ \v -> cast v return) >>= f

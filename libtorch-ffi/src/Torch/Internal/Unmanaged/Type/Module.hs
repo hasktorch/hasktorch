@@ -25,6 +25,7 @@ import Foreign.Concurrent
 import Torch.Internal.Type
 import Torch.Internal.Unmanaged.Helper
 import Torch.Internal.Class
+import Data.IORef
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
@@ -216,6 +217,137 @@ traceAsGraph func inputs =
         ).first->graph;
         return new std::shared_ptr<torch::jit::Graph>(graph);
       }|]
+
+withJitGraph :: Ptr (SharedPtr JitGraph) -> (Ptr JitGraph -> IO a) -> IO a
+withJitGraph graph callback = do
+  v <- [C.throwBlock| torch::jit::Graph* {
+         return (*$(std::shared_ptr<torch::jit::Graph>* graph)).get();
+       }|]
+  callback v
+
+graphOutputs :: Ptr JitGraph -> IO [Ptr (JitValue)]
+graphOutputs graph = do
+  nodes <- newIORef []
+  let func v = do
+        r <- readIORef nodes
+        writeIORef nodes (v:r)
+        return v
+  bracket
+    (callbackHelper $ \inputs' -> castPtr <$> func (castPtr inputs'))
+    freeHaskellFunPtr
+    $ \funcPtr ->
+      [C.throwBlock| void {
+        auto tfunc = $(void* (*funcPtr)(void*));
+        typedef torch::jit::Value* (*Func)(torch::jit::Value*);
+        auto func = (Func)tfunc;
+        for(auto i : (*$(torch::jit::Graph* graph)).outputs()){
+          func(i);
+        }
+      }|]
+  reverse <$> readIORef nodes
+
+graphInputs :: Ptr JitGraph -> IO [Ptr (JitValue)]
+graphInputs graph = do
+  nodes <- newIORef []
+  let func v = do
+        r <- readIORef nodes
+        writeIORef nodes (v:r)
+        return v
+  bracket
+    (callbackHelper $ \inputs' -> castPtr <$> func (castPtr inputs'))
+    freeHaskellFunPtr
+    $ \funcPtr ->
+      [C.throwBlock| void {
+        auto tfunc = $(void* (*funcPtr)(void*));
+        typedef torch::jit::Value* (*Func)(torch::jit::Value*);
+        auto func = (Func)tfunc;
+        for(auto i : (*$(torch::jit::Graph* graph)).inputs()){
+          func(i);
+        }
+      }|]
+  reverse <$> readIORef nodes
+
+graphNodes :: Ptr JitGraph -> IO [Ptr (JitNode)]
+graphNodes graph = do
+  nodes <- newIORef []
+  let func v = do
+        r <- readIORef nodes
+        writeIORef nodes (v:r)
+        return v
+  bracket
+    (callbackHelper $ \inputs' -> castPtr <$> func (castPtr inputs'))
+    freeHaskellFunPtr
+    $ \funcPtr ->
+      [C.throwBlock| void {
+        auto tfunc = $(void* (*funcPtr)(void*));
+        typedef torch::jit::Node* (*Func)(torch::jit::Node*);
+        auto func = (Func)tfunc;
+        for(auto i : (*$(torch::jit::Graph* graph)).block()->nodes()){
+          func(i);
+        }
+      }|]
+  reverse <$> readIORef nodes
+
+nodeInputs :: Ptr JitNode -> IO [Ptr (JitValue)]
+nodeInputs node = do
+  values <- newIORef []
+  let func v = do
+        r <- readIORef values
+        writeIORef values (v:r)
+        return v
+  bracket
+    (callbackHelper $ \inputs' -> castPtr <$> func (castPtr inputs'))
+    freeHaskellFunPtr
+    $ \funcPtr ->
+      [C.throwBlock| void {
+        auto tfunc = $(void* (*funcPtr)(void*));
+        typedef torch::jit::Value* (*Func)(torch::jit::Value*);
+        auto func = (Func)tfunc;
+        for(auto i : (*$(torch::jit::Node* node)).inputs()){
+          func(i);
+        }
+      }|]
+  reverse <$> readIORef values
+
+nodeOutputs :: Ptr JitNode -> IO [Ptr (JitValue)]
+nodeOutputs node = do
+  values <- newIORef []
+  let func v = do
+        r <- readIORef values
+        writeIORef values (v:r)
+        return v
+  bracket
+    (callbackHelper $ \inputs' -> castPtr <$> func (castPtr inputs'))
+    freeHaskellFunPtr
+    $ \funcPtr ->
+      [C.throwBlock| void {
+        auto tfunc = $(void* (*funcPtr)(void*));
+        typedef torch::jit::Value* (*Func)(torch::jit::Value*);
+        auto func = (Func)tfunc;
+        for(auto i : (*$(torch::jit::Node* node)).outputs()){
+          func(i);
+        }
+      }|]
+  reverse <$> readIORef values
+
+nodeKind :: Ptr JitNode -> IO (Ptr StdString)
+nodeKind node =
+  [C.throwBlock| std::string* {
+    return new std::string((*$(torch::jit::Node* node)).kind().toQualString());
+  }|]
+
+valueId :: Ptr JitValue -> IO CInt
+valueId value =
+  [C.throwBlock| int {
+    return (*$(torch::jit::Value* value)).unique();
+  }|]
+
+valueType :: Ptr JitValue -> IO (Ptr StdString)
+valueType node =
+  [C.throwBlock| std::string* {
+    return new std::string((*$(torch::jit::Value* node)).type()->str());
+  }|]
+
 
 printGraph :: Ptr (SharedPtr JitGraph) -> IO (Ptr StdString)
 printGraph graph =
