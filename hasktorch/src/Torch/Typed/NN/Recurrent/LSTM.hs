@@ -125,8 +125,8 @@ instance
  where
   sample _ =
     LSTMUnidirectionalLayer
-      <$> (makeIndependent =<< xavierUniormLSTM)
-      <*> (makeIndependent =<< xavierUniormLSTM)
+      <$> (makeIndependent =<< xavierUniformLSTM)
+      <*> (makeIndependent =<< xavierUniformLSTM)
       <*> (makeIndependent =<< pure zeros)
       <*> (makeIndependent =<< pure zeros)
 
@@ -141,12 +141,12 @@ instance
  where
   sample _ =
     LSTMBidirectionalLayer
-      <$> (makeIndependent =<< xavierUniormLSTM)
-      <*> (makeIndependent =<< xavierUniormLSTM)
+      <$> (makeIndependent =<< xavierUniformLSTM)
+      <*> (makeIndependent =<< xavierUniformLSTM)
       <*> (makeIndependent =<< pure zeros)
       <*> (makeIndependent =<< pure zeros)
-      <*> (makeIndependent =<< xavierUniormLSTM)
-      <*> (makeIndependent =<< xavierUniormLSTM)
+      <*> (makeIndependent =<< xavierUniformLSTM)
+      <*> (makeIndependent =<< xavierUniformLSTM)
       <*> (makeIndependent =<< pure zeros)
       <*> (makeIndependent =<< pure zeros)
 
@@ -270,7 +270,7 @@ data LSTM
 -- | Helper to do xavier uniform initializations on weight matrices and
 -- orthagonal initializations for the gates. (When implemented.)
 --
-xavierUniormLSTM
+xavierUniformLSTM
   :: forall device dtype hiddenSize featureSize
    . ( KnownDType dtype
      , KnownNat hiddenSize
@@ -279,7 +279,7 @@ xavierUniormLSTM
      , RandDTypeIsValid device dtype
      )
   => IO (Tensor device dtype '[4 * hiddenSize, featureSize])
-xavierUniormLSTM = do
+xavierUniformLSTM = do
   init <- randn :: IO (Tensor device dtype '[4 * hiddenSize, featureSize])
   UnsafeMkTensor <$> xavierUniformFIXME
     (toDynamic init)
