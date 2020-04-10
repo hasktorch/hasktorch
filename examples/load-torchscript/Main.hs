@@ -33,7 +33,7 @@ main = prettyException $ do
   [mode,modelfile,inputfile] <- opt <$> getArgs
   _ <- dlopen "libtorchvision.so" [RTLD_GLOBAL,RTLD_LAZY]
   model <- load WithoutRequiredGrad modelfile
-  mimg <- readImage inputfile
+  mimg <- readImageAsRGB8 inputfile
   case (mimg,mode) of
     (Left err,_) -> print err
     (Right img',"resnet")-> do
