@@ -956,3 +956,142 @@ flattenAll
   -> Tensor -- ^ output
 flattenAll t =
   unsafePerformIO $ (cast3 ATen.flatten_tll) t (0 :: Int) (-1 :: Int)
+
+bernoulli_t
+  :: Tensor
+  -> IO Tensor
+bernoulli_t =
+  cast1 ATen.bernoulli_t
+
+bernoulli_td
+  :: Tensor
+  -> Double
+  -> IO Tensor
+bernoulli_td =
+  cast2 ATen.bernoulli_td
+
+poisson_t
+  :: Tensor
+  -> IO Tensor
+poisson_t =
+  cast1 ATen.poisson_t
+
+multinomial_tl
+  :: Tensor
+  -> Int
+  -> IO Tensor
+multinomial_tl t l =
+  (cast2 ATen.multinomial_tl) t l
+
+multinomial_tlb
+  :: Tensor
+  -> Int
+  -> Bool
+  -> IO Tensor
+multinomial_tlb t l b =
+  (cast3 ATen.multinomial_tlb) t l b
+
+normal_t
+  :: Tensor
+  -> IO Tensor
+normal_t t =
+  (cast1 ATen.normal_t) t
+
+normal_tt
+  :: Tensor
+  -> Tensor
+  -> IO Tensor
+normal_tt t1 t2 =
+  (cast2 ATen.normal_tt) t1 t2
+
+normal_td
+  :: Tensor
+  -> Double
+  -> IO Tensor
+normal_td t d =
+  (cast2 ATen.normal_td) t d
+
+normal_dt
+  :: Double
+  -> Tensor
+  -> IO Tensor
+normal_dt d t =
+  (cast2 ATen.normal_dt) d t
+
+normal_ddl
+  :: Double
+  -> Double
+  -> Int
+  -> IO Tensor
+normal_ddl d1 d2 l =
+  (cast3 ATen.normal_ddl) d1 d2 l
+
+rrelu_t
+  :: Tensor
+  -> IO Tensor
+rrelu_t t =
+  (cast1 ATen.rrelu_t) t
+
+rrelu_ts
+  :: Scalar a 
+  => Tensor
+  -> a
+  -> IO Tensor
+rrelu_ts t s1 =
+  (cast2 ATen.rrelu_ts) t s1
+
+rrelu_tss
+  :: Scalar a 
+  => Tensor
+  -> a
+  -> a
+  -> IO Tensor
+rrelu_tss t s1 s2 =
+  (cast3 ATen.rrelu_tss) t s1 s2
+
+rrelu_tssb
+  :: Scalar a 
+  => Tensor
+  -> a
+  -> a
+  -> Bool
+  -> IO Tensor
+rrelu_tssb t s1 s2 b =
+  (cast4 ATen.rrelu_tssb) t s1 s2 b
+
+rrelu_with_noise_tt
+  :: Tensor
+  -> Tensor
+  -> IO Tensor
+rrelu_with_noise_tt t1 t2 =
+  (cast2 ATen.rrelu_with_noise_tt) t1 t2
+
+rrelu_with_noise_tts
+  :: Scalar a 
+  => Tensor
+  -> Tensor
+  -> a
+  -> IO Tensor
+rrelu_with_noise_tts t1 t2 s1 =
+  (cast3 ATen.rrelu_with_noise_tts) t1 t2 s1
+
+rrelu_with_noise_ttss
+  :: Scalar a 
+  => Tensor
+  -> Tensor
+  -> a
+  -> a
+  -> IO Tensor
+rrelu_with_noise_ttss t1 t2 s1 s2 =
+  (cast4 ATen.rrelu_with_noise_ttss) t1 t2 s1 s2
+
+rrelu_with_noise_ttssb
+  :: Scalar a 
+  => Tensor
+  -> Tensor
+  -> a
+  -> a
+  -> Bool
+  -> IO Tensor
+rrelu_with_noise_ttssb t1 t2 s1 s2 b =
+  (cast5 ATen.rrelu_with_noise_ttssb) t1 t2 s1 s2 b
