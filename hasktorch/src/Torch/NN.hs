@@ -10,6 +10,8 @@
 
 module Torch.NN where
 
+import Data.Foldable (toList)
+import Control.Monad ((=<<))
 import Control.Monad.State.Strict
 import System.IO.Unsafe (unsafePerformIO)
 
@@ -47,13 +49,13 @@ instance Parameterized Parameter where
   flattenParameters = pure
   replaceOwnParameters _ = nextParameter
 
-instance Parameterized Double where
+instance Parameterized Scalar a where
   flattenParameters _ = []
   replaceOwnParameters = return
 
-instance Parameterized [Int] where
-  flattenParameters _ = []
-  replaceOwnParameters = return
+instance (Foldable t, Traversable t, Parameterized a) => Parameterized (t a) where
+  flattenParameters = (=<<) flattenParameters . toList
+  replaceOwnParameters = mapM replaceOwnParameters
 
 instance Parameterized (Tensor -> Tensor) where
   flattenParameters _ = []
