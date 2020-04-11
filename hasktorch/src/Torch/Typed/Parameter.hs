@@ -45,7 +45,7 @@ untypeParam
   :: forall device dtype shape
    . Parameter device dtype shape
   -> A.Parameter
-untypeParam = A.IndependentTensor . toDynamic . toDependent
+untypeParam (UnsafeMkParameter param) = param
 
 toDependent
   :: forall shape dtype device
