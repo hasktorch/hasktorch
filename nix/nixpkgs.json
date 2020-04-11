@@ -1,7 +1,7 @@
 {
   "url": "https://github.com/junjihashimoto/nixpkgs.git",
-  "rev": "e3fb3b0f63794147c42e686400f0a15a0568e385",
-  "date": "2020-04-11T16:01:22+09:00",
-  "sha256": "1ll5f3mas2ma8avqja967xi70vxlm759lkysydrzdajyxjjw1n60",
+  "rev": "ee9da4ffc2643ca623cde9ea1750a8ec8e18717d",
+  "date": "2020-04-11T20:33:48+09:00",
+  "sha256": "1xx9glcjmjcd71hllbfqdw99sxiiplvp7bv2k37vsv5p3gq6lpwq",
   "fetchSubmodules": false
 }
