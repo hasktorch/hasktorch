@@ -126,7 +126,7 @@ instance {-# OVERLAPS #-} Parameterized (Parameter device dtype shape) '[Paramet
   flattenParameters = (:. HNil)
   replaceParameters _ (parameter :. HNil) = parameter
 
-instance {-# OVERLAPS #-} Parameterized Double '[] where
+instance {-# OVERLAPS #-} (Scalar a) => Parameterized a '[] where
   flattenParameters _ = HNil
   replaceParameters = const
 
