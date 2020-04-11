@@ -48,7 +48,7 @@ instance Parameterized Tensor where
   flattenParameters _ = []
   replaceOwnParameters = return
 
-instance Parameterized (Torch.Typed.Tensor device dtype shape) where
+instance Parameterized (Torch.Typed.Tensor.Tensor device dtype shape) where
   flattenParameters _ = []
   replaceOwnParameters = return
 
