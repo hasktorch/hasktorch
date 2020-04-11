@@ -1,35 +1,48 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Torch.Functional (
-    module Torch.Functional,
-    addmv, addr, allclose, argmin, baddbmm, bmm, acos, asin, atan, dot, einsum, lstsq, mv, slice
-    , sumWithDimnames
+module Torch.Functional
+    ( module Torch.Functional
+    , Internal.addmv
+    , Internal.addr
+    , Internal.allclose
+    , Internal.argmin
+    , Internal.baddbmm
+    , Internal.bmm
+    , Internal.acos
+    , Internal.asin
+    , Internal.atan
+    , Internal.dot
+    , Internal.einsum
+    , Internal.lstsq
+    , Internal.mv
+    , Internal.slice
+    , Internal.sumWithDimnames
 ) where
 
-import          Prelude                 hiding ( all
-                                                , any
-                                                , sin
-                                                , sinh
-                                                , cos
-                                                , cosh
-                                                , tan
-                                                , tanh
-                                                , asin
-                                                , asinh
-                                                , acos
-                                                , acosh
-                                                , atan
-                                                , atanh
-                                                , max
-                                                , min
-                                                , exp
-                                                , log
-                                                , round
-                                                , isNaN
-                                                , floor
-                                                , ceil
-                                                )
+import Prelude hiding ( all
+                      , any
+                      , sin
+                      , sinh
+                      , cos
+                      , cosh
+                      , tan
+                      , tanh
+                      , asin
+                      , asinh
+                      , acos
+                      , acosh
+                      , atan
+                      , atanh
+                      , max
+                      , min
+                      , exp
+                      , log
+                      , round
+                      , isNaN
+                      , floor
+                      , ceil
+                      )
 
 import System.IO.Unsafe
 import Foreign.ForeignPtr
@@ -49,7 +62,7 @@ import Data.Int
 import Torch.Scalar
 import Torch.Tensor
 import Torch.DType
-import Torch.Functional.Internal hiding (argmax, clamp, cosh, conv1d, linear, softmax)
+-- import Torch.Functional.Internal hiding (argmax, clamp, cosh, conv1d, linear, softmax)
 import Torch.TensorFactories (onesLike, ones')
 
 kOne :: ForeignPtr ATen.Scalar
@@ -325,20 +338,20 @@ sigmoid t = unsafePerformIO $ (cast1 ATen.sigmoid_t) t
 -- | Applies a softmax function. 
 -- It is applied to all slices along dim, and will re-scale them so that the elements lie in the range [0, 1] and sum to 1.
 softmax 
-    :: Int -- ^ dimension
+    :: Dim -- ^ dimension
     -> Tensor -- ^ input
     -> Tensor -- ^ output
-softmax dim input = unsafePerformIO $ (cast3 ATen.softmax_tls) 
-    input dim (dtype input)
+softmax (Dim d) input = unsafePerformIO $ (cast3 ATen.softmax_tls) 
+    input d (dtype input)
 
 -- | Applies a softmax followed by a logarithm.
 -- While mathematically equivalent to log(softmax(x)), doing these two operations separately is slower, and numerically unstable. This function uses an alternative formulation to compute the output and gradient correctly.
 logSoftmax 
-    :: Int -- ^ dimension
+    :: Dim -- ^ dimension
     -> Tensor -- ^ input
     -> Tensor -- ^ output
-logSoftmax dim input = unsafePerformIO $ (cast3 ATen.log_softmax_tls) 
-    input dim (dtype input)
+logSoftmax (Dim d) input = unsafePerformIO $ (cast3 ATen.log_softmax_tls) 
+    input d (dtype input)
 
 -- | Thresholds each element of the input Tensor.
 threshold 
@@ -718,20 +731,20 @@ bitwiseNot input = unsafePerformIO $ cast1 ATen.bitwise_not_t input
 
 -- | Concatenates the given sequence of seq tensors in the given dimension. All tensors must either have the same shape (except in the concatenating dimension) or be empty.
 cat
-  :: Int -- ^ dimension 
+  :: Dim -- ^ dimension 
   -> [Tensor] -- ^ list of tensors to concatenate
   -> Tensor -- ^ output tensor
-cat dim tensors = unsafePerformIO $ cast2 ATen.cat_ll tensors dim
+cat (Dim d) tensors = unsafePerformIO $ cast2 ATen.cat_ll tensors d
 
 -- | Splits a tensor into a specific number of chunks.
 -- Last chunk will be smaller if the tensor size along the given dimension dim is not divisible by chunks.
 chunk
   :: Int -- ^ chunks
-  -> Int -- ^ dim
+  -> Dim -- ^ dim
   -> Tensor -- ^ input tensor
   -> [Tensor] -- ^ output list of tensors
-chunk chunks dim input = unsafePerformIO
-  $ cast3 ATen.chunk_tll input chunks dim
+chunk chunks (Dim d) input = unsafePerformIO
+  $ cast3 ATen.chunk_tll input chunks d
 
 -- | Clamp all elements in input into the range [ min, max ] and return a resulting tensor.
 clamp
@@ -873,17 +886,17 @@ sign t = unsafePerformIO $ (cast1 ATen.sign_t) t
 
 -- | Returns a tensor that is a transposed version of @input@. The given dimensions @dim0@ and @dim1@ are swapped.
 transpose 
- :: Int -- ^ dim1
- -> Int -- ^ dim2
+ :: Dim -- ^ dim1
+ -> Dim -- ^ dim2
  -> Tensor -- ^ input
  -> Tensor -- ^ output
-transpose a b t = unsafePerformIO $ (cast3 ATen.transpose_tll) t a b
+transpose (Dim d1) (Dim d2) t = unsafePerformIO $ (cast3 ATen.transpose_tll) t d1 d2
 
 -- | transpose special case for a 2D tensor
 transpose2D 
     :: Tensor -- ^ input
     -> Tensor -- ^ output
-transpose2D = transpose 0 1
+transpose2D = transpose (Dim 0) (Dim 1)
 
 
 -- | Returns a tensor with the elements of input as the diagonal.
@@ -914,20 +927,20 @@ any t = toInt (unsafePerformIO $ (cast1 ATen.any_t) t) == 1
 -- | Returns True if all elements in each row of the tensor in the given dimension dim are True, False otherwise.
 -- If keepdim is True, the output tensor is of the same size as input except in the dimension dim where it is of size 1. Otherwise, dim is squeezed, resulting in the output tensor having 1 fewer dimension than input.  
 allDim 
- :: Int -- ^ dimension
+ :: Dim -- ^ dimension
  -> Bool -- ^ boolean corresponding to keepdim
  -> Tensor -- ^ input
  -> Tensor -- ^ output
-allDim dim keepdim t = unsafePerformIO $ (cast3 ATen.all_tlb) t dim keepdim
+allDim (Dim d) keepdim t = unsafePerformIO $ (cast3 ATen.all_tlb) t d keepdim
 
 -- | Returns True if any elements in each row of the tensor in the given dimension dim are True, False otherwise.
 -- If keepdim is True, the output tensor is of the same size as input except in the dimension dim where it is of size 1. Otherwise, dim is squeezed, resulting in the output tensor having 1 fewer dimension than input.
 anyDim 
- :: Int -- ^ dimension 
+ :: Dim -- ^ dimension 
  -> Bool -- ^ boolean corresponding to keepdim
  -> Tensor -- ^ input 
  -> Tensor -- output
-anyDim dim keepdim t = unsafePerformIO $ (cast3 ATen.any_tlb) t dim keepdim
+anyDim (Dim d) keepdim t = unsafePerformIO $ (cast3 ATen.any_tlb) t d keepdim
 
 -- | Permute the dimensions of this tensor.
 permute 

@@ -83,6 +83,13 @@ let
 
                 extension =
                   haskellPackagesNew: haskellPackagesOld: {
+                    libtorch-ffi-helper =
+                      # failOnAllWarnings
+                        (haskellPackagesOld.callCabal2nix
+                          "libtorch-ffi-helper"
+                          ../libtorch-ffi-helper
+                          { }
+                        );
                     hasktorch-codegen =
                       # failOnAllWarnings
                         (haskellPackagesNew.callCabal2nix

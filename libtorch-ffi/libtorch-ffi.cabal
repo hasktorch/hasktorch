@@ -83,6 +83,7 @@ library
                     , safe-exceptions
                     , sysinfo
                     , async
+                    , libtorch-ffi-helper
  if os(darwin)
   extra-libraries:     c++
                      , c10
@@ -97,7 +98,7 @@ library
   ghc-options:       -optc-std=c++11 -optc-xc++
  else
   ghc-options:       -optc-std=c++11
- cc-options:        -std=c++11
+  cc-options:        -std=c++11
  cxx-options:       -std=c++11
  default-extensions:          Strict
                             , StrictData
@@ -128,7 +129,7 @@ test-suite spec
     ghc-options:       -optc-std=c++11 -optc-xc++
   else
     ghc-options:       -optc-std=c++11
-  cc-options:        -std=c++11
+    cc-options:        -std=c++11
   cxx-options:       -std=c++11
   default-extensions:          Strict
                              , StrictData

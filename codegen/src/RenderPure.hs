@@ -14,6 +14,7 @@ import Text.Shakespeare.Text (st)
 import Data.Text (Text)
 import Data.List (isPrefixOf, isSuffixOf, sort)
 import Data.Maybe (isJust)
+import Data.Set (Set, fromList, member)
 import qualified Data.Text.IO as T
 import System.Directory (createDirectoryIfMissing)
 import Data.Aeson.Types -- (defaultOptions, genericParseJSON, constructorTagModifier, sumEncoding(..))
@@ -82,15 +83,18 @@ renameBinding (BindRename n new_name) (hsName, decl) =
 renameBinding _ _ = Nothing
 
 renameBinding' :: [Binding] -> (String, D.Declaration) -> (String, D.Declaration)
-renameBinding' bindings decl@(_,d) =
+renameBinding' bindings decl =
   case foldl (\i b -> let v = (renameBinding b decl) in if isJust v then v else i) Nothing bindings of
     Just v -> v
-    Nothing -> (D.name d,d)
+    Nothing -> decl
 
 renameFilter ::  [Binding] -> [(String, D.Declaration)] -> [(String, D.Declaration)]
-renameFilter bindings fns = map (renameBinding' bindings') fns
+renameFilter bindings fns = unmask <$> renamed
   where
     bindings' = filter isRename bindings
+    renamed = map (renameBinding' bindings') fns
+    dupeSet = fromList . notUniqList $ D.name . snd <$> renamed
+    unmask = \(k,d) -> let k' = D.name d in if member k' dupeSet then (k,d) else (k',d)
 
 nativeFunctionsFilter :: [D.Declaration] -> [Binding] -> [(String, D.Declaration)]
 nativeFunctionsFilter fns bindings =
@@ -116,7 +120,7 @@ notUniqList lst = notUniq (sort lst) []
 
 decodeAndCodeGen :: String -> String -> String -> IO ()
 decodeAndCodeGen basedir yamlSpecFileName bindingsFileName = do
-  funcs <- Y.decodeFileEither yamlSpecFileName :: IO (Either ParseException [D.Declaration])
+  funcs    <- Y.decodeFileEither yamlSpecFileName :: IO (Either ParseException [D.Declaration])
   bindings <- Y.decodeFileEither bindingsFileName :: IO (Either ParseException [Binding])
   case (funcs,bindings) of
     (Left err', _) -> print err'
@@ -124,19 +128,9 @@ decodeAndCodeGen basedir yamlSpecFileName bindingsFileName = do
     (Right fns, Right bnd) -> do
       createDirectoryIfMissing True (basedir <> "/Torch/Functional/")
       let l = nativeFunctionsFilter fns bnd
-
-      case notUniqList (map fst l) of
-        [] -> do 
-          T.writeFile (basedir <> "/Torch/Functional/Internal.hs") $
-            template "Torch.Functional.Internal" $
-            renderFunctions l
-        xs -> do
-          putStrLn "---Duplicated functions are as follows. ----"
-          forM_ xs $ \x -> do
-            putStrLn x
-          putStrLn "---To generate functions, add following commands in spec/bindings.yaml ----"
-          forM_ (filter (\(i,_) -> i `elem` xs) l) $ \(_,x) -> do
-            putStrLn $ "- remove: {src: "<> getSignatures (toFunction x) <>"}"
+      T.writeFile (basedir <> "/Torch/Functional/Internal.hs") $
+        template "Torch.Functional.Internal" $
+        renderFunctions l
             
 
 renderImport :: Text

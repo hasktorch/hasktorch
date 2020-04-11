@@ -125,8 +125,8 @@ instance
  where
   sample _ =
     GRUUnidirectionalLayer
-      <$> (makeIndependent =<< xavierUniormGRU)
-      <*> (makeIndependent =<< xavierUniormGRU)
+      <$> (makeIndependent =<< xavierUniformGRU)
+      <*> (makeIndependent =<< xavierUniformGRU)
       <*> (makeIndependent =<< pure zeros)
       <*> (makeIndependent =<< pure zeros)
 
@@ -141,12 +141,12 @@ instance
  where
   sample _ =
     GRUBidirectionalLayer
-      <$> (makeIndependent =<< xavierUniormGRU)
-      <*> (makeIndependent =<< xavierUniormGRU)
+      <$> (makeIndependent =<< xavierUniformGRU)
+      <*> (makeIndependent =<< xavierUniformGRU)
       <*> (makeIndependent =<< pure zeros)
       <*> (makeIndependent =<< pure zeros)
-      <*> (makeIndependent =<< xavierUniormGRU)
-      <*> (makeIndependent =<< xavierUniormGRU)
+      <*> (makeIndependent =<< xavierUniformGRU)
+      <*> (makeIndependent =<< xavierUniformGRU)
       <*> (makeIndependent =<< pure zeros)
       <*> (makeIndependent =<< pure zeros)
 
@@ -270,7 +270,7 @@ data GRU
 -- | Helper to do xavier uniform initializations on weight matrices and
 -- orthagonal initializations for the gates. (When implemented.)
 --
-xavierUniormGRU
+xavierUniformGRU
   :: forall device dtype hiddenSize featureSize
    . ( KnownDType dtype
      , KnownNat hiddenSize
@@ -279,7 +279,7 @@ xavierUniormGRU
      , RandDTypeIsValid device dtype
      )
   => IO (Tensor device dtype '[3 * hiddenSize, featureSize])
-xavierUniormGRU = do
+xavierUniformGRU = do
   init <- randn :: IO (Tensor device dtype '[3 * hiddenSize, featureSize])
   UnsafeMkTensor <$> xavierUniformFIXME
     (toDynamic init)

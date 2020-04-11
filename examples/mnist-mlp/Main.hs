@@ -39,7 +39,7 @@ randomIndexes size = (`mod` size) <$> randoms seed where seed = mkStdGen 123
 
 mlp :: MLP -> Tensor -> Tensor
 mlp MLP{..} input = 
-    logSoftmax 1
+    logSoftmax (Dim 1)
     . linear l2
     . relu
     . linear l1
