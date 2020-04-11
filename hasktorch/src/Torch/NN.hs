@@ -20,6 +20,7 @@ import Torch.Internal.Cast (cast3)
 import Torch.Autograd
 import Torch.Initializers
 import Torch.Tensor
+import qualified Torch.Typed.Tensor
 import Torch.TensorFactories (ones', randIO', randnIO')
 import Torch.Functional
 import GHC.Generics
@@ -42,6 +43,14 @@ class Parameterized f where
   replaceOwnParameters :: f -> ParamStream f
   default replaceOwnParameters :: (Generic f, Parameterized' (Rep f)) => f -> ParamStream f
   replaceOwnParameters f = to <$> replaceOwnParameters' (from f)
+
+instance Parameterized Tensor where
+  flattenParameters _ = []
+  replaceOwnParameters = return
+
+instance Parameterized (Torch.Typed.Tensor device dtype shape) where
+  flattenParameters _ = []
+  replaceOwnParameters = return
 
 instance Parameterized Parameter where
   flattenParameters = pure
