@@ -14,6 +14,7 @@ import Torch.TensorFactories
 import Torch.TensorOptions
 import Torch.Tensor
 import qualified Torch.DType as D
+import qualified Torch.Functional.Internal as I
 
 data AlexNetSpec = AlexNetSpec { 
     conv1 :: Conv2dSpec,         
@@ -85,7 +86,7 @@ alexnetForward AlexNet{..} input =
     $ input
 
 normalize :: Either String Tensor -> Tensor
-normalize (Right img) = cat 0 [r', g', b']
+normalize (Right img) = cat (Dim 0) [r', g', b']
     where
         img' = divScalar (255.0::Float) $ toType D.Float (hwc2chw img)
         [r, g, b] = I.split (reshape [3, 224, 224] img') 1 0 
@@ -99,7 +100,7 @@ main = do
     model <- loadParams model $ "alexNet/" ++ "alexNet.pt"
     putStrLn "Enter image name with file extension:"
     imgName <- getLine
-    img <- readImage $ "alexNet/" ++ imgName
+    img <- readImageAsRGB8 $ "alexNet/" ++ imgName
     let unNormalizedScores =  alexnetForward model $ reshape [1, 3, 224, 224] $ normalize img
-        predictedLabelIndex = fromIntegral $ toInt $ argmax (Dim 1) KeepDim $ softmax 1 unNormalizedScores
+        predictedLabelIndex = fromIntegral $ toInt $ argmax (Dim 1) KeepDim $ softmax (Dim 1) unNormalizedScores
     print predictedLabelIndex
