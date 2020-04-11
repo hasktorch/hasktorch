@@ -25,6 +25,7 @@ import Torch.Initializers
 import Torch.Tensor
 import Torch.TensorFactories (ones', randIO', randnIO')
 import Torch.Functional
+import Torch.Scalar
 import GHC.Generics
 
 type Parameter = IndependentTensor
