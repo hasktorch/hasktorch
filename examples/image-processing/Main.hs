@@ -59,7 +59,7 @@ lowpass input = conv weight input
                  ]
 
 main = do
-  readImage "input.bmp" >>= \case
+  readImageAsRGB8 "input.bmp" >>= \case
     Right tensor -> do
       writeBitmap "output_sharpness.bmp" $ sharpness tensor
       writeBitmap "output_lowpass.bmp" $ lowpass tensor
