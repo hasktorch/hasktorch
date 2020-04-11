@@ -14,7 +14,6 @@ import Torch.TensorFactories
 import Torch.TensorOptions
 import Torch.Tensor
 import qualified Torch.DType as D
-import qualified Torch.Functional.Internal as I
 
 data AlexNetSpec = AlexNetSpec { 
     conv1 :: Conv2dSpec,         
@@ -68,7 +67,7 @@ alexnetForward AlexNet{..} input =
     . linear l2
     . relu
     . linear l1
-    . I.flatten 1 (-1) 
+    . flatten 1 (-1) 
     . adaptiveAvgPool2d (6, 6)
     . maxPool2d (3, 3) (2, 2) (0, 0) (1, 1) False
     . relu

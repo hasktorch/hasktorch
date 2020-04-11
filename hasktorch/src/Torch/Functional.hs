@@ -958,8 +958,13 @@ expand
   -> Tensor -- ^ output
 expand t someBool dims = unsafePerformIO $ (cast3 ATen.tensor_expand_lb) t dims someBool
 
--- flatten :: Tensor -> Int -> Int -> Tensor
--- flatten input start_dim end_dim = unsafePerformIO $ (cast3 ATen.flatten_tll) input start_dim end_dim
+-- | flatten
+flatten
+  :: Int -- ^ startDim
+  -> Int -- ^ endDim
+  -> Tensor -- ^ self
+  -> Tensor -- ^ output
+flatten startDim endDim t = unsafePerformIO $ (cast3 ATen.flatten_tll) t startDim endDim
 
 -- | flattenAll
 flattenAll
