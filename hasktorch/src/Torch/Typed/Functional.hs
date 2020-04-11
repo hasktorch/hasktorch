@@ -2960,10 +2960,14 @@ randnLike
   -> IO (Tensor device dtype shape) -- ^ output
 randnLike = ATen.cast1 ATen.Managed.randn_like_t
 
+-- | reciprocal
+-- 
+-- >>> dtype &&& shape $ reciprocal (ones :: CPUTensor 'D.Float '[3,2])
+-- (Float,[3,2])
 reciprocal 
   :: forall shape dtype device
    . Tensor device dtype shape -- ^ input 
-  -> Tensor device dtype shape
+  -> Tensor device dtype shape -- ^ output
 reciprocal _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.reciprocal_t) _input
 
 -- | negate
@@ -3738,7 +3742,7 @@ tril diagonal input = unsafePerformIO $ ATen.cast2 ATen.Managed.tril_tl input di
 
 -- | trace
 --
--- dtype &&& shape $ trace (ones :: CPUTensor 'D.Float '[3,2])
+-- >>> dtype &&& shape $ trace (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 trace 
   :: forall shape dtype device
@@ -3757,7 +3761,7 @@ trace _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.trace_t) _input
 
 -- | nonzero
 -- 
--- dtype &&& shape $ nonzero (zeros :: CPUTensor 'D.Float '[3,2])
+-- >>> dtype &&& shape $ nonzero (zeros :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 nonzero 
   :: forall shape dtype device
