@@ -41,6 +41,12 @@ import           Torch.Typed.Tensor
 newtype Parameter (device :: (D.DeviceType, Nat)) (dtype :: D.DType) (shape :: [Nat]) = UnsafeMkParameter A.IndependentTensor
   deriving Show
 
+untypeParam
+  :: forall device dtype shape
+   . Parameter device dtype shape
+  -> A.Parameter
+untypeParam = A.IndependentTensor . toDynamic . toDependent
+
 toDependent
   :: forall shape dtype device
    . Parameter device dtype shape
