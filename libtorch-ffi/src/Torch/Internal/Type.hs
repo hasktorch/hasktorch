@@ -82,6 +82,10 @@ data Capsule
 data Blob
 
 data Module
+data SharedPtr a
+data JitGraph
+data JitNode
+data JitValue
 
 typeTable = Map.fromList [
         (C.TypeName "std::array", [t|StdArray|])
@@ -117,4 +121,8 @@ typeTable = Map.fromList [
       , (C.TypeName "torch::jit::CustomClassHolder", [t|Capsule|])
       , (C.TypeName "caffe2::Blob", [t|Blob|])
       , (C.TypeName "torch::jit::script::Module", [t|Module|])
+      , (C.TypeName "std::shared_ptr", [t|SharedPtr|])
+      , (C.TypeName "torch::jit::Graph", [t|JitGraph|])
+      , (C.TypeName "torch::jit::Node", [t|JitNode|])
+      , (C.TypeName "torch::jit::Value", [t|JitValue|])
     ]

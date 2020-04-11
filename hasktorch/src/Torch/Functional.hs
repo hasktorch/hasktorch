@@ -1,35 +1,48 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Torch.Functional (
-    module Torch.Functional,
-    addmv, addr, allclose, argmin, baddbmm, bmm, acos, asin, atan, dot, einsum, lstsq, mv, slice
-    , sumWithDimnames
+module Torch.Functional
+    ( module Torch.Functional
+    , Internal.addmv
+    , Internal.addr
+    , Internal.allclose
+    , Internal.argmin
+    , Internal.baddbmm
+    , Internal.bmm
+    , Internal.acos
+    , Internal.asin
+    , Internal.atan
+    , Internal.dot
+    , Internal.einsum
+    , Internal.lstsq
+    , Internal.mv
+    , Internal.slice
+    , Internal.sumWithDimnames
 ) where
 
-import          Prelude                 hiding ( all
-                                                , any
-                                                , sin
-                                                , sinh
-                                                , cos
-                                                , cosh
-                                                , tan
-                                                , tanh
-                                                , asin
-                                                , asinh
-                                                , acos
-                                                , acosh
-                                                , atan
-                                                , atanh
-                                                , max
-                                                , min
-                                                , exp
-                                                , log
-                                                , round
-                                                , isNaN
-                                                , floor
-                                                , ceil
-                                                )
+import Prelude hiding ( all
+                      , any
+                      , sin
+                      , sinh
+                      , cos
+                      , cosh
+                      , tan
+                      , tanh
+                      , asin
+                      , asinh
+                      , acos
+                      , acosh
+                      , atan
+                      , atanh
+                      , max
+                      , min
+                      , exp
+                      , log
+                      , round
+                      , isNaN
+                      , floor
+                      , ceil
+                      )
 
 import System.IO.Unsafe
 import Foreign.ForeignPtr
@@ -49,7 +62,7 @@ import Data.Int
 import Torch.Scalar
 import Torch.Tensor
 import Torch.DType
-import Torch.Functional.Internal hiding (argmax, clamp, cosh, conv1d, linear, softmax)
+-- import Torch.Functional.Internal hiding (argmax, clamp, cosh, conv1d, linear, softmax)
 import Torch.TensorFactories (onesLike, ones')
 
 kOne :: ForeignPtr ATen.Scalar
@@ -194,34 +207,34 @@ median t = unsafePerformIO $ (cast1 ATen.median_t) t
 -- | Adds each element of the input input with the scalar and returns a new resulting tensor.
 addScalar 
  :: Scalar a 
- => Tensor -- ^ input
- -> a -- ^ summand
+ => a -- ^ summand
+ -> Tensor -- ^ input
  -> Tensor -- ^ output
-addScalar t a = unsafePerformIO $ (cast2 ATen.add_ts) t a
+addScalar a t = unsafePerformIO $ (cast2 ATen.add_ts) t a
 
 -- | Subtracts each element of the input input with the scalar and returns a new resulting tensor.
 subScalar 
  :: Scalar a 
- => Tensor -- ^ input
- -> a -- ^ subtrahend
+ => a -- ^ subtrahend
+ -> Tensor -- ^ input
  -> Tensor -- ^ output
-subScalar t a = unsafePerformIO $ (cast2 ATen.sub_ts) t a
+subScalar a t = unsafePerformIO $ (cast2 ATen.sub_ts) t a
 
 -- | Multiplies each element of the input input with the scalar and returns a new resulting tensor.
 mulScalar 
  :: Scalar a 
- => Tensor -- ^ input
- -> a -- ^ multiplier
+ => a -- ^ multiplier
+ -> Tensor -- ^ input
  -> Tensor -- ^ output
-mulScalar t a = unsafePerformIO $ (cast2 ATen.mul_ts) t a
+mulScalar a t = unsafePerformIO $ (cast2 ATen.mul_ts) t a
 
 -- | Divides each element of the input input with the scalar and returns a new resulting tensor.
 divScalar 
  :: Scalar a 
- => Tensor -- ^ input
- -> a -- ^ divisor
+ => a -- ^ divisor
+ -> Tensor -- ^ input
  -> Tensor -- ^ output
-divScalar t a = unsafePerformIO $ (cast2 ATen.div_ts) t a
+divScalar a t = unsafePerformIO $ (cast2 ATen.div_ts) t a
 
 -- |  Matrix product of two tensors.
 --
@@ -270,10 +283,10 @@ log10 t = unsafePerformIO $ (cast1 ATen.log10_t) t
 -- | Takes the power of each element in input with exponent and returns a tensor with the result.
 pow 
  :: Scalar a 
- => Tensor -- ^ input
- -> a -- ^ exponent
+ => a -- ^ exponent
+ -> Tensor -- ^ input
  -> Tensor -- ^ output
-pow t s = unsafePerformIO $ (cast2 ATen.pow_ts) t s
+pow s t = unsafePerformIO $ (cast2 ATen.pow_ts) t s
 
 -- | Takes the power of each element in input with exponent and returns a tensor with the result.
 -- Exponent is a tensor with the same number of elements as input.
@@ -288,6 +301,20 @@ relu
     :: Tensor -- ^ input
     -> Tensor -- ^ output
 relu t = unsafePerformIO $ (cast1 ATen.relu_t) t
+
+-- | Applies Exponential linear unit function element-wise, with alpha input, \(\text{ELU}(x) = \max(0,x) + \min(0, \alpha * (\exp(x) - 1))\)
+elu
+    :: Scalar s 
+    => s -- ^ alpha value for ELU formulation
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
+elu a t = unsafePerformIO $ (cast2 ATen.elu_ts) t a
+
+-- | Applies exponential linear unit function element wise with default alpha value = 1
+elu'
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
+elu' t = unsafePerformIO $ (cast1 ATen.elu_t) t
 
 -- | Applies element-wise, \(\text{SELU}(x) = scale * (\max(0,x) + \min(0, \alpha * (\exp(x) - 1))\) , with α=1.6732632423543772848170429916717 and scale=1.0507009873554804934193349852946.
 selu 
@@ -311,20 +338,20 @@ sigmoid t = unsafePerformIO $ (cast1 ATen.sigmoid_t) t
 -- | Applies a softmax function. 
 -- It is applied to all slices along dim, and will re-scale them so that the elements lie in the range [0, 1] and sum to 1.
 softmax 
-    :: Int -- ^ dimension
+    :: Dim -- ^ dimension
     -> Tensor -- ^ input
     -> Tensor -- ^ output
-softmax dim input = unsafePerformIO $ (cast3 ATen.softmax_tls) 
-    input dim (dtype input)
+softmax (Dim d) input = unsafePerformIO $ (cast3 ATen.softmax_tls) 
+    input d (dtype input)
 
 -- | Applies a softmax followed by a logarithm.
 -- While mathematically equivalent to log(softmax(x)), doing these two operations separately is slower, and numerically unstable. This function uses an alternative formulation to compute the output and gradient correctly.
 logSoftmax 
-    :: Int -- ^ dimension
+    :: Dim -- ^ dimension
     -> Tensor -- ^ input
     -> Tensor -- ^ output
-logSoftmax dim input = unsafePerformIO $ (cast3 ATen.log_softmax_tls) 
-    input dim (dtype input)
+logSoftmax (Dim d) input = unsafePerformIO $ (cast3 ATen.log_softmax_tls) 
+    input d (dtype input)
 
 -- | Thresholds each element of the input Tensor.
 threshold 
@@ -453,33 +480,33 @@ squeezeAll t = unsafePerformIO $ (cast1 ATen.squeeze_t) t
 
 -- | Function that measures the Binary Cross Entropy between the target and the output.
 binaryCrossEntropyLoss 
- :: Tensor -- ^ input
+ :: Reduction -- ^ Specifies the reduction to apply to the output
  -> Tensor -- ^ target
  -> Tensor -- ^ weight
- -> Reduction -- ^ Specifies the reduction to apply to the output
+ -> Tensor -- ^ input
  -> Tensor -- ^ output
-binaryCrossEntropyLoss t target weight reduction = unsafePerformIO $ (cast4 ATen.binary_cross_entropy_tttl) t target weight reduction
+binaryCrossEntropyLoss reduction target weight t = unsafePerformIO $ (cast4 ATen.binary_cross_entropy_tttl) t target weight reduction
 
 -- | Binary Cross Entropy with weights defaulted to 1.0 & reduction defaulted to ReduceMean
 binaryCrossEntropyLoss' 
- :: Tensor -- ^ input
- -> Tensor -- ^ target
+ :: Tensor -- ^ target
+ -> Tensor -- ^ input
  -> Tensor -- ^ output
-binaryCrossEntropyLoss' t target = unsafePerformIO $ (cast4 ATen.binary_cross_entropy_tttl) t target (onesLike target) ReduceMean
+binaryCrossEntropyLoss' target t = unsafePerformIO $ (cast4 ATen.binary_cross_entropy_tttl) t target (onesLike target) ReduceMean
 
 -- | Creates a criterion that measures the mean squared error (squared L2 norm) between each element in the @input@ and @target@.
 mseLoss 
- :: Tensor -- ^ input
- -> Tensor -- ^ target
+ :: Tensor -- ^ target
+ -> Tensor -- ^ input
  -> Tensor -- ^ output
-mseLoss input output = unsafePerformIO $ (cast3 ATen.mse_loss_ttl) input output ATen.kMean
+mseLoss output input = unsafePerformIO $ (cast3 ATen.mse_loss_ttl) input output ATen.kMean
 
 -- | The negative log likelihood loss.
 nllLoss' 
- :: Tensor -- ^ input
- -> Tensor -- ^ target tensor
+ :: Tensor -- ^ target tensor
+ -> Tensor -- ^ input
  -> Tensor -- ^ output
-nllLoss' t target = unsafePerformIO $ (cast5 ATen.nll_loss_tttll) t target weight ReduceMean (-100 :: Int)
+nllLoss' target t = unsafePerformIO $ (cast5 ATen.nll_loss_tttll) t target weight ReduceMean (-100 :: Int)
     where
         nClass = (shape t) !! 1 -- TODO nicer runtime error if input dimensions don't conform
         weight = ones' [nClass]
@@ -562,44 +589,44 @@ inverse t = unsafePerformIO $ (cast1 ATen.inverse_t) t
 
 -- | This function returns eigenvalues and eigenvectors of a real symmetric matrix input or a batch of real symmetric matrices, represented by a namedtuple (eigenvalues, eigenvectors).
 symeig 
- :: Tensor -- ^ input tensor  
- -> Bool -- ^ bool which controls whether eigenvectors have to be computed
+ :: Bool -- ^ bool which controls whether eigenvectors have to be computed
  -> Tri -- ^ controls whether to consider upper-triangular or lower-triangular region
+ -> Tensor -- ^ input tensor  
  -> (Tensor, Tensor) -- ^ output tensors
-symeig t eigenvectors upper = unsafePerformIO $ (cast3 ATen.symeig_tbb) t eigenvectors boolUpper
+symeig eigenvectors upper t = unsafePerformIO $ (cast3 ATen.symeig_tbb) t eigenvectors boolUpper
   where boolUpper = isUpper upper
 
 -- | Computes the eigenvalues and eigenvectors of a real square matrix
 eig 
- :: Tensor -- ^ input (square matrix) for which the eigen values and eigen vectors are to be computed
- -> Bool -- ^ bool to compute both eigenvalues and eigenvectors; otherwise, only eigenvalues will be computed
+ :: Bool -- ^ bool to compute both eigenvalues and eigenvectors; otherwise, only eigenvalues will be computed
+ -> Tensor -- ^ input (square matrix) for which the eigen values and eigen vectors are to be computed
  -> (Tensor, Tensor) -- ^ output tensors
-eig t eigenvectors = unsafePerformIO $ (cast2 ATen.eig_tb) t eigenvectors
+eig eigenvectors t = unsafePerformIO $ (cast2 ATen.eig_tb) t eigenvectors
 
 -- | This function returns a namedtuple (U, S, V) which is the singular value decomposition of a input real matrix or batches of real matrices input such that input = U * diag(S) * V^T
 svd 
- :: Tensor -- ^ input 
- -> Bool -- ^ controls the shape of returned U and V
+ :: Bool -- ^ controls the shape of returned U and V
  -> Bool -- ^ option whether to compute U and V or not
+ -> Tensor -- ^ input 
  -> (Tensor, Tensor, Tensor) -- ^ output tuple of tensors
-svd t some compute_uv = unsafePerformIO $ (cast3 ATen.svd_tbb) t some compute_uv
+svd some compute_uv t = unsafePerformIO $ (cast3 ATen.svd_tbb) t some compute_uv
 
 -- | Computes the Cholesky decomposition of a symmetric positive-definite matrix AA or for batches of symmetric positive-definite matrices.
 cholesky 
- :: Tensor -- ^ input
- -> Tri -- ^ flag that indicates whether to return a upper or lower triangular matrix.
+ :: Tri -- ^ flag that indicates whether to return a upper or lower triangular matrix.
+ -> Tensor -- ^ input
  -> Tensor -- ^ output
-cholesky t upper = unsafePerformIO $ (cast2 ATen.cholesky_tb) t boolUpper
+cholesky upper t = unsafePerformIO $ (cast2 ATen.cholesky_tb) t boolUpper
   where boolUpper = isUpper upper
 
 
 -- | Solves a linear system of equations with a positive semidefinite matrix to be inverted given its Cholesky factor matrix uu .
 choleskySolve 
- :: Tensor -- ^ input matrix b 
+ :: Tri -- ^ bool whether to consider the Cholesky factor as a lower or upper triangular matrix
+ -> Tensor -- ^ input matrix b 
  -> Tensor -- ^ input matrix u
- -> Tri -- ^ bool whether to consider the Cholesky factor as a lower or upper triangular matrix
  -> Tensor -- ^ output
-choleskySolve t1 t2 upper = unsafePerformIO $ (cast3 ATen.cholesky_solve_ttb) t1 t2 boolUpper
+choleskySolve upper t1 t2 = unsafePerformIO $ (cast3 ATen.cholesky_solve_ttb) t1 t2 boolUpper
   where boolUpper = isUpper upper
 
 
@@ -673,17 +700,17 @@ adaptiveAvgPool1d outputSize input = unsafePerformIO
 
 -- | Applies a 2D adaptive average pooling over an input signal composed of several input planes.
 adaptiveAvgPool2d 
- :: Tensor -- ^ input 
- -> (Int,Int) -- ^ output size (Height * Width)
+ :: (Int,Int) -- ^ output size (Height * Width)
+ -> Tensor -- ^ input 
  -> Tensor -- ^ output
-adaptiveAvgPool2d _self _output_size = unsafePerformIO $ (cast2 ATen.adaptive_avg_pool2d_tl) _self _output_size
+adaptiveAvgPool2d _output_size _self = unsafePerformIO $ (cast2 ATen.adaptive_avg_pool2d_tl) _self _output_size
 
 -- | Applies a 3D adaptive average pooling over an input signal composed of several input planes.
 adaptiveAvgPool3d 
- :: Tensor -- ^ input
- -> (Int,Int,Int) -- ^ output size (Depth * Height * Width)
+ :: (Int,Int,Int) -- ^ output size (Depth * Height * Width)
+ -> Tensor -- ^ input
  -> Tensor -- ^ output
-adaptiveAvgPool3d _self _output_size = unsafePerformIO $ (cast2 ATen.adaptive_avg_pool3d_tl) _self _output_size
+adaptiveAvgPool3d _output_size _self = unsafePerformIO $ (cast2 ATen.adaptive_avg_pool3d_tl) _self _output_size
 
 -- | Computes the bitwise NOT of the given input tensor. The input tensor must be of integral or Boolean types. For bool tensors, it computes the logical NOT.
 bitwiseNot 
@@ -693,20 +720,20 @@ bitwiseNot input = unsafePerformIO $ cast1 ATen.bitwise_not_t input
 
 -- | Concatenates the given sequence of seq tensors in the given dimension. All tensors must either have the same shape (except in the concatenating dimension) or be empty.
 cat
-  :: Int -- ^ dimension 
+  :: Dim -- ^ dimension 
   -> [Tensor] -- ^ list of tensors to concatenate
   -> Tensor -- ^ output tensor
-cat dim tensors = unsafePerformIO $ cast2 ATen.cat_ll tensors dim
+cat (Dim d) tensors = unsafePerformIO $ cast2 ATen.cat_ll tensors d
 
 -- | Splits a tensor into a specific number of chunks.
 -- Last chunk will be smaller if the tensor size along the given dimension dim is not divisible by chunks.
 chunk
   :: Int -- ^ chunks
-  -> Int -- ^ dim
+  -> Dim -- ^ dim
   -> Tensor -- ^ input tensor
   -> [Tensor] -- ^ output list of tensors
-chunk chunks dim input = unsafePerformIO
-  $ cast3 ATen.chunk_tll input chunks dim
+chunk chunks (Dim d) input = unsafePerformIO
+  $ cast3 ATen.chunk_tll input chunks d
 
 -- | Clamp all elements in input into the range [ min, max ] and return a resulting tensor.
 clamp
@@ -813,14 +840,14 @@ solve b a = unsafePerformIO $ (cast2 ATen.solve_tt) b a
 
 -- | Solves a linear system of equations with a positive semidefinite matrix to be inverted given its Cholesky factor matrix uu .
 choleskyInverse
-    :: Tensor -- ^ input
-    -> Tri -- ^ upper or lower triangle
+    :: Tri -- ^ upper or lower triangle
+    -> Tensor -- ^ input
     -> Tensor -- ^ solution
-choleskyInverse t upper = unsafePerformIO $ (cast2 ATen.cholesky_inverse_tb) t boolUpper
+choleskyInverse upper t = unsafePerformIO $ (cast2 ATen.cholesky_inverse_tb) t boolUpper
   where boolUpper = isUpper upper
 
--- pstrf :: Tensor -> Bool -> Double -> (Tensor, Tensor)
--- pstrf t upper tol = unsafePerformIO $ (cast3 ATen.pstrf_tbs) t upper tol
+-- pstrf :: Bool -> Double -> Tensor -> (Tensor, Tensor)
+-- pstrf upper tol t = unsafePerformIO $ (cast3 ATen.pstrf_tbs) t upper tol
 
 -- qr :: Tensor -> (Tensor, Tensor)
 -- qr t = unsafePerformIO $ (cast1 ATen.qr_t) t
@@ -848,17 +875,17 @@ sign t = unsafePerformIO $ (cast1 ATen.sign_t) t
 
 -- | Returns a tensor that is a transposed version of @input@. The given dimensions @dim0@ and @dim1@ are swapped.
 transpose 
- :: Tensor -- ^ input
- -> Int -- ^ dim1
- -> Int -- ^ dim2
- -> Tensor -- ^ 
-transpose t a b = unsafePerformIO $ (cast3 ATen.transpose_tll) t a b
+ :: Dim -- ^ dim1
+ -> Dim -- ^ dim2
+ -> Tensor -- ^ input
+ -> Tensor -- ^ output
+transpose (Dim d1) (Dim d2) t = unsafePerformIO $ (cast3 ATen.transpose_tll) t d1 d2
 
 -- | transpose special case for a 2D tensor
 transpose2D 
     :: Tensor -- ^ input
     -> Tensor -- ^ output
-transpose2D t = transpose t 0 1
+transpose2D = transpose (Dim 0) (Dim 1)
 
 
 -- | Returns a tensor with the elements of input as the diagonal.
@@ -868,10 +895,10 @@ transpose2D t = transpose t 0 1
 --        If Int < 0, it is below the main diagonal.
 
 diag
-    ::  Tensor -- ^ input
-    ->  Int -- ^ diagonal
+    ::  Int -- ^ diagonal
+    ->  Tensor -- ^ input
     ->  Tensor -- ^ output
-diag t index = unsafePerformIO $ (cast2 ATen.tensor_diag_l) t index
+diag index t = unsafePerformIO $ (cast2 ATen.tensor_diag_l) t index
 
 -- | Returns True if all elements in the tensor are True, False otherwise.
 all
@@ -888,25 +915,44 @@ any t = toInt (unsafePerformIO $ (cast1 ATen.any_t) t) == 1
 
 -- | Returns True if all elements in each row of the tensor in the given dimension dim are True, False otherwise.
 -- If keepdim is True, the output tensor is of the same size as input except in the dimension dim where it is of size 1. Otherwise, dim is squeezed, resulting in the output tensor having 1 fewer dimension than input.  
-all' 
- :: Tensor -- ^ input
- -> Int -- ^ dimension
+allDim 
+ :: Dim -- ^ dimension
  -> Bool -- ^ boolean corresponding to keepdim
+ -> Tensor -- ^ input
  -> Tensor -- ^ output
-all' t dim keepdim = unsafePerformIO $ (cast3 ATen.all_tlb) t dim keepdim
+allDim (Dim d) keepdim t = unsafePerformIO $ (cast3 ATen.all_tlb) t d keepdim
 
 -- | Returns True if any elements in each row of the tensor in the given dimension dim are True, False otherwise.
 -- If keepdim is True, the output tensor is of the same size as input except in the dimension dim where it is of size 1. Otherwise, dim is squeezed, resulting in the output tensor having 1 fewer dimension than input.
-any' 
- :: Tensor -- ^ input 
- -> Int -- ^ dimension 
+anyDim 
+ :: Dim -- ^ dimension 
  -> Bool -- ^ boolean corresponding to keepdim
+ -> Tensor -- ^ input 
  -> Tensor -- output
-any' t dim keepdim = unsafePerformIO $ (cast3 ATen.any_tlb) t dim keepdim
+anyDim (Dim d) keepdim t = unsafePerformIO $ (cast3 ATen.any_tlb) t d keepdim
 
 -- | Permute the dimensions of this tensor.
 permute 
- :: Tensor -- ^ input
- -> [Int] -- ^ list corresponding to ordering of dimensions to permute with 
+ :: [Int] -- ^ list corresponding to ordering of dimensions to permute with 
+ -> Tensor -- ^ input
  -> Tensor -- output
-permute t dims = unsafePerformIO $ (cast2 ATen.tensor_permute_l) t dims
+permute dims t = unsafePerformIO $ (cast2 ATen.tensor_permute_l) t dims
+
+-- | expand
+-- TODO: figure out what the `implicit` boolean value does
+expand
+  :: Tensor -- ^ input
+  -> Bool -- ^ some boolean value with unknown function
+  -> [Int] -- ^ the desired expanded size
+  -> Tensor -- ^ output
+expand t someBool dims = unsafePerformIO $ (cast3 ATen.tensor_expand_lb) t dims someBool
+
+-- flatten :: Tensor -> Int -> Int -> Tensor
+-- flatten input start_dim end_dim = unsafePerformIO $ (cast3 ATen.flatten_tll) input start_dim end_dim
+
+-- | flattenAll
+flattenAll
+  :: Tensor -- ^ input
+  -> Tensor -- ^ output
+flattenAll t =
+  unsafePerformIO $ (cast3 ATen.flatten_tll) t (0 :: Int) (-1 :: Int)

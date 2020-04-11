@@ -126,8 +126,8 @@ instance
  where
   sample _ =
     GRUUnidirectionalLayer
-      <$> (makeIndependent =<< xavierUniormGRU)
-      <*> (makeIndependent =<< xavierUniormGRU)
+      <$> (makeIndependent =<< xavierUniformGRU)
+      <*> (makeIndependent =<< xavierUniformGRU)
       <*> (makeIndependent =<< pure zeros)
       <*> (makeIndependent =<< pure zeros)
 
@@ -142,12 +142,12 @@ instance
  where
   sample _ =
     GRUBidirectionalLayer
-      <$> (makeIndependent =<< xavierUniormGRU)
-      <*> (makeIndependent =<< xavierUniormGRU)
+      <$> (makeIndependent =<< xavierUniformGRU)
+      <*> (makeIndependent =<< xavierUniformGRU)
       <*> (makeIndependent =<< pure zeros)
       <*> (makeIndependent =<< pure zeros)
-      <*> (makeIndependent =<< xavierUniormGRU)
-      <*> (makeIndependent =<< xavierUniormGRU)
+      <*> (makeIndependent =<< xavierUniformGRU)
+      <*> (makeIndependent =<< xavierUniformGRU)
       <*> (makeIndependent =<< pure zeros)
       <*> (makeIndependent =<< pure zeros)
 
@@ -274,7 +274,7 @@ data GRU
 -- | Helper to do xavier uniform initializations on weight matrices and
 -- orthagonal initializations for the gates. (When implemented.)
 --
-xavierUniormGRU
+xavierUniformGRU
   :: forall device dtype hiddenSize featureSize
    . ( KnownDType dtype
      , KnownNat hiddenSize
@@ -283,7 +283,7 @@ xavierUniormGRU
      , RandDTypeIsValid device dtype
      )
   => IO (Tensor device dtype '[3 * hiddenSize, featureSize])
-xavierUniormGRU = do
+xavierUniformGRU = do
   init <- randn :: IO (Tensor device dtype '[3 * hiddenSize, featureSize])
   UnsafeMkTensor <$> xavierUniformFIXME
     (toDynamic init)
@@ -312,7 +312,7 @@ calculateFan shape
 -- | Xavier Initialization - Uniform
 xavierUniformFIXME :: D.Tensor -> Float -> [Int] -> IO D.Tensor
 xavierUniformFIXME init gain shape = pure
-  $ D.subScalar (D.mulScalar init (bound * 2.0)) bound
+  $ D.subScalar bound $ D.mulScalar (bound * 2.0) init
  where
   (fanIn, fanOut) = calculateFan shape
   std = gain * sqrt (2.0 / (fromIntegral fanIn + fromIntegral fanOut))

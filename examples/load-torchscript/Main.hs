@@ -32,25 +32,25 @@ main = prettyException $ do
         _ -> error $ "Usage: load-torchscript (resnet or maskrcnn) model-file image-file"
   [mode,modelfile,inputfile] <- opt <$> getArgs
   _ <- dlopen "libtorchvision.so" [RTLD_GLOBAL,RTLD_LAZY]
-  model <- load modelfile
-  mimg <- readImage inputfile
+  model <- load WithoutRequiredGrad modelfile
+  mimg <- readImageAsRGB8 inputfile
   case (mimg,mode) of
     (Left err,_) -> print err
     (Right img',"resnet")-> do
-      let img'' = (D.toType D.Float $ hwc2chw img') `D.divScalar` (255.0::Float)
+      let img'' = D.divScalar (255.0::Float) $ D.toType D.Float $ hwc2chw img'
           img = IVTensor $ img''
           [[r,g,b]] = D.asValue img'' :: [[[[Float]]]]
       print $ take 10 (head r)
-      v <- forward model [img]
+      let v = forward model [img]
       case v of
         IVTensor v' -> print $ D.argmax (D.Dim 1) D.RemoveDim v'
         _ -> print "Return value is not tensor."
     (Right img',"maskrcnn")-> do
-      let img'' = (D.toType D.Float $ hwc2chw img') `D.divScalar` (255.0::Float)
+      let img'' = D.divScalar (255.0::Float) $ D.toType D.Float $ hwc2chw img'
           [[r,g,b]] = D.asValue img'' :: [[[[Float]]]]
       print $ take 10 (head r)
       let img = IVTensorList [D.squeezeAll $ img'']
-      v <- forward model [img]
+          v = forward model [img]
       print v
       case v of
         IVTensor v' -> print $ v'

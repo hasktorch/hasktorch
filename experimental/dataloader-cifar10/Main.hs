@@ -41,7 +41,7 @@ instance Randomizable MLPSpec MLP where
 
 mlp :: MLP -> Tensor -> Tensor
 mlp MLP{..} input = 
-    logSoftmax 1
+    logSoftmax (Dim 1)
     . linear l2
     . relu
     . linear l1
@@ -61,7 +61,7 @@ train numEpoch trainData = do
             let len = length batch
                 input = toType Float $ reshape [len,1024*3] images
                 label = asTensor $ map (fromEnum.snd.getXY) batch
-                loss = nllLoss' (mlp state input) label
+                loss = nllLoss' label $ mlp state input
                 flatParameters = flattenParameters state
             (newParam, _) <- runStep state GD loss 1e-3
             pure $ (replaceParameters state newParam, (toDouble loss)+sumLoss)

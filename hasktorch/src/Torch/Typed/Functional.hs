@@ -1123,23 +1123,23 @@ type family ConditionalDropDimension (shape :: [Nat]) (dim :: Nat) (keepOrDropDi
   ConditionalDropDimension (x : xs) 0 DropDim       = xs
   ConditionalDropDimension (x : xs) i keepOrDropDim = x ': ConditionalDropDimension xs (i - 1) keepOrDropDim
 
--- | all'
+-- | allDim
 -- See https://pytorch.org/docs/stable/tensors.html#torch.BoolTensor.all.
 --
 -- >>> t = fromJust [[True, True], [True, False], [True, True], [True, True]] :: CPUTensor 'D.Bool '[4, 2]
 --
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ all' @1 @DropDim t
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ allDim @1 @DropDim t
 -- (Bool,([4],[True,False,True,True]))
 --
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ all' @1 @KeepDim t
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ allDim @1 @KeepDim t
 -- (Bool,([4,1],[[True],[False],[True],[True]]))
 --
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ all' @0 @DropDim t
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ allDim @0 @DropDim t
 -- (Bool,([2],[True,False]))
 --
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ all' @0 @KeepDim t
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ allDim @0 @KeepDim t
 -- (Bool,([1,2],[[True,False]]))
-all'
+allDim
   :: forall dim keepOrDropDim shape' shape device
    . ( KnownNat dim
      , KnownKeepOrDropDim keepOrDropDim
@@ -1147,26 +1147,26 @@ all'
      )
   => Tensor device 'D.Bool shape -- ^ input
   -> Tensor device 'D.Bool shape' -- ^ output
-all' input = unsafePerformIO
+allDim input = unsafePerformIO
   $ ATen.cast3 ATen.Managed.all_tlb input (natValI @dim) (keepOrDropDimVal @keepOrDropDim)
 
--- | any'
+-- | anyDim
 -- See https://pytorch.org/docs/stable/tensors.html#torch.BoolTensor.any.
 --
 -- >>> t = fromJust [[True, True], [True, False], [True, True], [True, True]] :: CPUTensor 'D.Bool '[4, 2]
 --
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ any' @1 @DropDim t
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ anyDim @1 @DropDim t
 -- (Bool,([4],[True,True,True,True]))
 --
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ any' @1 @KeepDim t
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ anyDim @1 @KeepDim t
 -- (Bool,([4,1],[[True],[True],[True],[True]]))
 --
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ any' @0 @DropDim t
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ anyDim @0 @DropDim t
 -- (Bool,([2],[True,True]))
 --
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ any' @0 @KeepDim t
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ anyDim @0 @KeepDim t
 -- (Bool,([1,2],[[True,True]]))
-any'
+anyDim
   :: forall dim keepOrDropDim shape' shape device
    . ( KnownNat dim
      , KnownKeepOrDropDim keepOrDropDim
@@ -1174,7 +1174,7 @@ any'
      )
   => Tensor device 'D.Bool shape -- ^ input
   -> Tensor device 'D.Bool shape' -- ^ output
-any' input = unsafePerformIO $ ATen.cast3 ATen.Managed.any_tlb input (natValI @dim) (keepOrDropDimVal @keepOrDropDim)
+anyDim input = unsafePerformIO $ ATen.cast3 ATen.Managed.any_tlb input (natValI @dim) (keepOrDropDimVal @keepOrDropDim)
 
 -- | dropout
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -2190,7 +2190,7 @@ expm1
 expm1 input = unsafePerformIO $ ATen.cast1 ATen.Managed.expm1_t input
 
 -- | expand
--- TODO: figure out what the boolean value does
+-- TODO: figure out what the `implicit` boolean value does
 --
 -- >>> t = ones :: CPUTensor 'D.Float '[2]
 -- >>> t' = expand @'[3, 1, 2] False t
@@ -3633,8 +3633,22 @@ gru tensorParameters dropoutProb dropoutOn hc input = unsafePerformIO $ ATen.cas
   numLayers :: I.Int64
   numLayers  = fromIntegral $ natValI @numLayers
 
--- gru_cell :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
--- gru_cell _input _hx _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (ATen.cast6 ATen.Managed.gru_cell_tttttt) _input _hx _w_ih _w_hh _b_ih _b_hh
+-- | gruCell
+--
+-- >>> dtype &&& shape $ gruCell (ones :: CPUTensor 'D.Float '[9,2]) (ones :: CPUTensor 'D.Float '[9,3]) (ones :: CPUTensor 'D.Float '[9]) (ones :: CPUTensor 'D.Float '[9]) (ones :: CPUTensor 'D.Float '[2,3]) (ones :: CPUTensor 'D.Float '[2,2])
+-- (Float,[2,3])
+gruCell
+  :: forall inputSize hiddenSize batchSize dtype device
+   . Tensor device dtype '[3 * hiddenSize, inputSize]
+  -> Tensor device dtype '[3 * hiddenSize, hiddenSize]
+  -> Tensor device dtype '[3 * hiddenSize]
+  -> Tensor device dtype '[3 * hiddenSize]
+  -> Tensor device dtype '[batchSize, hiddenSize]
+  -> Tensor device dtype '[batchSize, inputSize]
+  -> Tensor device dtype '[batchSize, hiddenSize]
+gruCell wi wh bi bh hx input =
+  unsafePerformIO
+    $ ATen.cast6 ATen.Managed.gru_cell_tttttt input hx wi wh bi bh
 
 -- rnn_tanh_cell :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- rnn_tanh_cell _input _hx _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (ATen.cast6 ATen.Managed.rnn_tanh_cell_tttttt) _input _hx _w_ih _w_hh _b_ih _b_hh
@@ -4137,10 +4151,11 @@ softMarginLoss prediciton target = unsafePerformIO $ ATen.cast3
 -- >>> dtype &&& shape $ elu 0.1 0.1 0.3 (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 elu
-  :: forall shape dtype device
-   . Float -- ^ alpha
-  -> Float -- ^ scale
-  -> Float -- ^ input scale
+  :: forall shape dtype a device
+   . (D.Scalar a, StandardFloatingPointDTypeValidation device dtype)
+  => a -- ^ alpha
+  -> a -- ^ scale
+  -> a -- ^ input scale
   -> Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 elu alpha scale inputScale input =

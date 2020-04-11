@@ -539,3 +539,6 @@ toFloat t = D.asValue . toDynamic . toCPU $ t
 
 toDouble :: forall device . Tensor device 'D.Double '[] -> Double
 toDouble t = D.asValue . toDynamic . toCPU $ t
+
+toBool :: forall device . Tensor device 'D.Bool '[] -> Bool
+toBool t = D.asValue . toDynamic . toCPU $ t

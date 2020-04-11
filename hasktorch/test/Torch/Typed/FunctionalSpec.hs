@@ -270,6 +270,17 @@ instance
       let t = leakyRelu negativeSlope (ones @shape @dtype @device)
       checkDynamicTensorAttributes t
 
+data ELUSpec = ELUSpec
+instance
+  ( TensorOptions shape dtype device
+  , D.Scalar a
+  , StandardFloatingPointDTypeValidation device dtype
+  ) => Apply' ELUSpec ((Proxy device, ((a, (a, a)), (Proxy dtype, Proxy shape))), IO()) (IO()) 
+ where 
+    apply' ELUSpec ((_, ((alpha, (scale, inputScale)), _)), agg) = agg >> do
+      let t = elu alpha scale inputScale (ones @shape @dtype @device)
+      checkDynamicTensorAttributes t
+
 data ToDTypeSpec = ToDTypeSpec
 
 instance
@@ -637,12 +648,54 @@ instance
   ) => Apply' AnyPrimeAllPrimeSpec (((Proxy dim, Proxy keepOrDropDim), (Proxy device, Proxy shape)), IO ()) (IO ()) where
   apply' AnyPrimeSpec (_, agg) = agg >> do
     let t = ones @shape @'D.Bool @device
-        t' = any' @dim @keepOrDropDim t
+        t' = anyDim @dim @keepOrDropDim t
     checkDynamicTensorAttributes t'
   apply' AllPrimeSpec (_, agg) = agg >> do
     let t = ones @shape @'D.Bool @device
-        t' = all' @dim @keepOrDropDim t
+        t' = allDim @dim @keepOrDropDim t
     checkDynamicTensorAttributes t'
+
+data LstmCellSpec = LstmCellSpec
+
+instance
+  ( TensorOptions '[4 * hiddenSize, inputSize] dtype device
+  , TensorOptions '[4 * hiddenSize, hiddenSize] dtype device
+  , TensorOptions '[4 * hiddenSize] dtype device
+  , TensorOptions '[batchSize, hiddenSize] dtype device
+  , TensorOptions '[batchSize, inputSize] dtype device
+  , KnownNat inputSize, KnownNat hiddenSize, KnownNat batchSize
+  ) => Apply' LstmCellSpec ((Proxy device, (Proxy dtype, (Proxy hiddenSize, Proxy inputSize, Proxy batchSize))), IO ()) (IO ()) where
+  apply' LstmCellSpec (_, agg) = agg >> do
+    let wi = ones @'[4 * hiddenSize, inputSize] @dtype @device
+        wh = ones @'[4 * hiddenSize, hiddenSize] @dtype @device
+        bi = ones @'[4 * hiddenSize] @dtype @device
+        bh = ones @'[4 * hiddenSize] @dtype @device
+        cc = ones @'[batchSize, hiddenSize] @dtype @device
+        hc = ones @'[batchSize, hiddenSize] @dtype @device
+        input = ones @'[batchSize, inputSize] @dtype @device
+        (ncc, nhc) = lstmCell wi wh bi bh (cc, hc) input
+    checkDynamicTensorAttributes ncc
+    checkDynamicTensorAttributes nhc
+
+data GruCellSpec = GruCellSpec
+
+instance
+  ( TensorOptions '[3 * hiddenSize, inputSize] dtype device
+  , TensorOptions '[3 * hiddenSize, hiddenSize] dtype device
+  , TensorOptions '[3 * hiddenSize] dtype device
+  , TensorOptions '[batchSize, hiddenSize] dtype device
+  , TensorOptions '[batchSize, inputSize] dtype device
+  , KnownNat inputSize, KnownNat hiddenSize, KnownNat batchSize
+  ) => Apply' GruCellSpec ((Proxy device, (Proxy dtype, (Proxy hiddenSize, Proxy inputSize, Proxy batchSize))), IO ()) (IO ()) where
+  apply' GruCellSpec (_, agg) = agg >> do
+    let wi = ones @'[3 * hiddenSize, inputSize] @dtype @device
+        wh = ones @'[3 * hiddenSize, hiddenSize] @dtype @device
+        bi = ones @'[3 * hiddenSize] @dtype @device
+        bh = ones @'[3 * hiddenSize] @dtype @device
+        hx = ones @'[batchSize, hiddenSize] @dtype @device
+        input = ones @'[batchSize, inputSize] @dtype @device
+        nhx = gruCell wi wh bi bh hx input
+    checkDynamicTensorAttributes nhx
 
 spec = before_ printSeed $ do
   foldMap spec' availableDevices
@@ -718,6 +771,13 @@ spec' device =
         D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
           hfoldrM @IO LeakyReluSpec ()
             (hattach cuda0 (hproduct scalarParams (hproduct standardFloatingPointDTypes standardShapes)))
+      it "elu" $ case device of
+        D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+          hfoldrM @IO ELUSpec ()
+            (hattach cpu   (hproduct (hzip scalarParams (hzip scalarParams scalarParams)) (hproduct standardFloatingPointDTypes standardShapes)))
+        D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+          hfoldrM @IO ELUSpec ()
+            (hattach cuda0 (hproduct (hzip scalarParams (hzip scalarParams scalarParams)) (hproduct standardFloatingPointDTypes standardShapes)))
       it "sigmoid"    $ dispatch SigmoidSpec
       it "logSigmoid" $ dispatch LogSigmoidSpec
 
@@ -901,8 +961,8 @@ spec' device =
                 hfoldrM @IO anyPrimeAllPrimeSpec () (hproduct
                                                       (hproduct anyPrimeAllPrimeDims keepOrDropDims)
                                                       (hattach cuda0 anyPrimeAllPrimeShapes))
-        it "all'" $ dispatch AllPrimeSpec
-        it "any'" $ dispatch AnyPrimeSpec
+        it "allDim" $ dispatch AllPrimeSpec
+        it "anyDim" $ dispatch AnyPrimeSpec
 
     describe "pooling" $
       it "maxPool2d" $ do
@@ -927,3 +987,27 @@ spec' device =
         checkDynamicTensorAttributes c
 
     describe "binary native ops" $ return ()
+
+    describe "RNNCells op" $ do
+      it "lstmCell op" $ do
+        let sizes =
+              hzip3
+                (Proxy @2 :. Proxy @4 :. Proxy @6 :. Proxy @7 :. HNil)
+                (Proxy @7 :. Proxy @6 :. Proxy @5 :. Proxy @4 :. HNil)
+                (Proxy @5 :. Proxy @10 :. Proxy @15 :. Proxy @20 :. HNil)
+        case device of
+          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+            hfoldrM @IO LstmCellSpec () (hattach cpu   (hproduct standardFloatingPointDTypes sizes))
+          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+            hfoldrM @IO LstmCellSpec () (hattach cuda0   (hproduct standardFloatingPointDTypes sizes))
+      it "gruCell op" $ do
+        let sizes =
+              hzip3
+                (Proxy @2 :. Proxy @4 :. Proxy @6 :. Proxy @7 :. HNil)
+                (Proxy @7 :. Proxy @6 :. Proxy @5 :. Proxy @4 :. HNil)
+                (Proxy @5 :. Proxy @10 :. Proxy @15 :. Proxy @20 :. HNil)
+        case device of
+          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+            hfoldrM @IO GruCellSpec () (hattach cpu   (hproduct standardFloatingPointDTypes sizes))
+          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+            hfoldrM @IO GruCellSpec () (hattach cuda0   (hproduct standardFloatingPointDTypes sizes))

@@ -1,0 +1,19 @@
+cabal-version:       2.1
+name:                libtorch-ffi-helper
+version:             1.4.0.0
+-- The prefix(1.4) of this version("1.4.0.0") is the same as libtorch's one.
+synopsis:            ffi-wrapper for macos
+-- description:
+homepage:            https://github.com/hasktorch/hasktorch#readme
+license:             BSD-3-Clause
+author:              Austin Huang
+maintainer:          hasktorch@gmail.com
+copyright:           2018 Austin Huang
+category:            Codegen
+build-type:          Simple
+
+library
+ exposed-modules:     Torch.Internal.Unmanaged.Helper
+ hs-source-dirs: src
+ default-language: Haskell2010
+ build-depends:       base >= 4.7 && < 5

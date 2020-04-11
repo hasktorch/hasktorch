@@ -3,6 +3,7 @@ resolver: lts-15.5
 packages:
 - codegen
 - libtorch-ffi
+- libtorch-ffi-helper
 - hasktorch
 - examples
 - experimental

@@ -36,6 +36,7 @@ library
                     , Torch.Typed.NN
                     , Torch.Typed.NN.DataParallel
                     , Torch.Typed.NN.Recurrent.Cell.LSTM
+                    , Torch.Typed.NN.Recurrent.Cell.GRU
                     , Torch.Typed.NN.Recurrent.LSTM
                     , Torch.Typed.NN.Recurrent.GRU
                     , Torch.Typed.NN.Transformer
@@ -80,6 +81,8 @@ library
                     , safe-exceptions
                     , zlib >= 0.6
                     , inline-c
+ default-extensions:  Strict
+                    , StrictData
 
 test-suite spec
   type:               exitcode-stdio-1.0
@@ -104,6 +107,8 @@ test-suite spec
                     , Torch.Typed.NNSpec
                     , Torch.Typed.NN.Recurrent.LSTMSpec
                     , Torch.Typed.NN.Recurrent.GRUSpec
+                    , Torch.Typed.NN.Recurrent.Cell.LSTMSpec
+                    , Torch.Typed.NN.Recurrent.Cell.GRUSpec
                     , Torch.Typed.NN.TransformerSpec
                     , Torch.Typed.VisionSpec
                     , SerializeSpec
@@ -121,6 +126,7 @@ test-suite spec
                     , QuickCheck
                     , directory
                     , JuicyPixels
+                    , inline-c-cpp
 
 test-suite doctests
   if flag(disable-doctest)

@@ -49,7 +49,7 @@ main = do
     input <- randnIO' [batch_size, num_features]
     let expected_output = groundTruth input
         output          = model state input
-        loss            = mseLoss output expected_output
+        loss            = mseLoss expected_output output
         flat_parameters = flattenParameters state
         gradients       = grad loss flat_parameters
     if i `mod` 100 == 0 then putStrLn $ "Loss: " ++ show loss else pure ()
