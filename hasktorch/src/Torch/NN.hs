@@ -52,11 +52,15 @@ class HasForward f a b | f a -> b where
   forwardStoch :: f -> a -> IO b
   forwardStoch = (pure .) . forward
 
+instance Parameterized Tensor where
+  flattenParameters _ = []
+  replaceOwnParameters = return
+
 instance Parameterized Parameter where
   flattenParameters = pure
   replaceOwnParameters _ = nextParameter
 
-instance Parameterized Scalar a where
+instance (Scalar a) => Parameterized a where
   flattenParameters _ = []
   replaceOwnParameters = return
 
