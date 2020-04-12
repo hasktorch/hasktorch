@@ -7,29 +7,29 @@ module Torch.Functional (
     , sumWithDimnames
 ) where
 
-import          Prelude                 hiding ( all
-                                                , any
-                                                , sin
-                                                , sinh
-                                                , cos
-                                                , cosh
-                                                , tan
-                                                , tanh
-                                                , asin
-                                                , asinh
-                                                , acos
-                                                , acosh
-                                                , atan
-                                                , atanh
-                                                , max
-                                                , min
-                                                , exp
-                                                , log
-                                                , round
-                                                , isNaN
-                                                , floor
-                                                , ceil
-                                                )
+import Prelude hiding ( all
+                        , any
+                        , sin
+                        , sinh
+                        , cos
+                        , cosh
+                        , tan
+                        , tanh
+                        , asin
+                        , asinh
+                        , acos
+                        , acosh
+                        , atan
+                        , atanh
+                        , max
+                        , min
+                        , exp
+                        , log
+                        , round
+                        , isNaN
+                        , floor
+                        , ceil
+                        )
 
 import System.IO.Unsafe
 import Foreign.ForeignPtr
