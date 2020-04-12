@@ -94,6 +94,10 @@ instance Castable [ByteString] (Ptr CString) where
                  withArray ys $ \cptr -> f cptr
   uncast xs f = undefined
 
+instance Castable String CString where
+  cast x f = withCString x f
+  uncast x f = peekCString x >>= f
+
 instance (CppObject a) => Castable (ForeignPtr a) (Ptr a) where
   cast x f = withForeignPtr x f
   uncast x f = fromPtr x >>= f

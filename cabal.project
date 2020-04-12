@@ -6,6 +6,7 @@ source-repository-package
 packages:
     codegen/*.cabal
     libtorch-ffi/*.cabal
+    libtorch-ffi-helper/*.cabal
     hasktorch/*.cabal
     examples/*.cabal
     experimental/*.cabal

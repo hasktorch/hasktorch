@@ -15,6 +15,8 @@ import Torch.Internal.Cast
 
 import Torch.Tensor
 
+-- | Note: to create an `IndependentTensor` use `makeIndependent`;
+-- | otherwise, Torch will complain the parameter does not require a gradient.
 newtype IndependentTensor = IndependentTensor { toDependent :: Tensor }
     deriving (Show)
 

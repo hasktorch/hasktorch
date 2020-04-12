@@ -80,6 +80,8 @@ library
                     , safe-exceptions
                     , zlib >= 0.6
                     , inline-c
+ default-extensions:  Strict
+                    , StrictData
 
 test-suite spec
   type:               exitcode-stdio-1.0
@@ -123,6 +125,7 @@ test-suite spec
                     , QuickCheck
                     , directory
                     , JuicyPixels
+                    , inline-c-cpp
 
 test-suite doctests
   type:               exitcode-stdio-1.0

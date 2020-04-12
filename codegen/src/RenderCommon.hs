@@ -248,7 +248,7 @@ parsableToHigherHsType parsable =
     P.CppClass _ _ hstype -> fromString hstype
     Backend -> "Backend"
     Layout -> "Layout"
-    MemoryFormat -> "MemoryFormat"
+    MemoryFormat -> "ATen.MemoryFormat"
     QScheme -> "QScheme"
     ConstQuantizerPtr -> "ConstQuantizerPtr"
     Dimname -> "Dimname"
@@ -583,7 +583,8 @@ getSignatures fn = hsfuncname <> cs type_initials
 
 pureFunction :: String -> Function -> Text
 pureFunction hsfuncname fn = [st|
-#{hsfuncname} :: #{types}
+#{hsfuncname}
+  :: #{types}
 #{hsfuncname} #{args} = unsafePerformIO $ (cast#{num_args} ATen.#{getSignatures fn}) #{args}
 |]
   where
@@ -593,8 +594,8 @@ pureFunction hsfuncname fn = [st|
     args :: String
     args = L.intercalate " " $ map (\p -> "_" <> pname p) parameters'
     types_list :: [Text]
-    types_list = flip map parameters' $ \p -> [st|#{parsableToHigherHsType (ptype p)}|]
+    types_list = flip map parameters' $ \p -> [st|#{parsableToHigherHsType (ptype p)} -- ^ #{pname p}|]
     types :: Text
-    types = T.intercalate " -> " $ types_list ++ [[st|#{ret_hstype}|]]
+    types = T.intercalate "\n  -> " $ types_list ++ [[st|#{ret_hstype}|]]
     ret_hstype :: Text
     ret_hstype = [st|#{parsableToHigherHsType (retType fn)}|]
