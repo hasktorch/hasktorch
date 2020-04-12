@@ -14,6 +14,6 @@ From the nix-shell present in examples directory run:
 
 `./dist/build/alexNet/alexNet`
 
-The code loads the parameters in a skeleton model and runs inference on a 224 * 224 pixels image.To run inference on an image of your choice place the image in alexNet directory and enter its name alongwith image file extension when prompted during execution. 
+The code loads the pretrained parameters in a skeleton model, runs inference on a 224 * 224 pixels image to produce unnormalized scores for 1000 ImageNet classes, passes them through a softmax layer and prints index of the class with highest probability. The labels corresponding to class indexes can be found [here](https://gist.github.com/yrevar/942d3a0ac09ec9e5eb3a). To run inference on an image of your choice place the image in alexNet directory and enter its name alongwith image file extension when prompted during execution. 
 
 For now images of dimension 224 * 224 and of format PNG, bitmap and JPEG are supported.

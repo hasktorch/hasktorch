@@ -68,7 +68,7 @@ alexnetForward AlexNet{..} input =
     . linear l2
     . relu
     . linear l1
-    . flatten 1 (-1) 
+    . flatten (Dim 1) (Dim (-1)) 
     . adaptiveAvgPool2d (6, 6)
     . maxPool2d (3, 3) (2, 2) (0, 0) (1, 1) False
     . relu
