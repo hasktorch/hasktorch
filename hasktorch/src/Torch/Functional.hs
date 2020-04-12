@@ -956,3 +956,26 @@ flattenAll
   -> Tensor -- ^ output
 flattenAll t =
   unsafePerformIO $ (cast3 ATen.flatten_tll) t (0 :: Int) (-1 :: Int)
+
+-- | smoothL1Loss
+smoothL1Loss
+  :: Reduction -- ^ reduction
+  -> Tensor -- ^ input
+  -> Tensor -- ^ target
+  -> Tensor -- ^ output
+smoothL1Loss reduction input target = unsafePerformIO $ (cast3 ATen.smooth_l1_loss_ttl) input target reduction
+
+-- | softMarginLoss
+softMarginLoss 
+  :: Reduction -- ^ reduction
+  -> Tensor -- ^ input
+  -> Tensor -- ^ target
+  -> Tensor -- ^ output
+softMarginLoss reduction input target = unsafePerformIO $ (cast3 ATen.soft_margin_loss_ttl) input target reduction
+
+-- | softShrink
+softShrink
+  :: Float -- ^ lambda
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+softShrink lambda input = unsafePerformIO $ (cast2 ATen.softshrink_ts) input lambda

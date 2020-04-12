@@ -145,4 +145,19 @@ spec = do
   it "elu' (neg)" $ do
     let x = elu' $ -5 * ones' [4]
     (toDouble $ select x 0 0) `shouldBe` (-0.9932620525360107)
+  it "smoothL1Loss" $ do
+    let input = ones' [3]
+        target = 3 * input
+        output = smoothL1Loss ReduceNone input target
+    (toDouble $ select output 0 0) `shouldBe` (1.5)
+  it "softMarginLoss" $ do
+    let input = ones' [3]
+        target = 3 * input
+        output = softMarginLoss ReduceSum input target
+    (toInt $ output*1000) `shouldBe` (145)
+  it "softShrink" $ do
+    let input = 3 * ones' [3]
+        output = softShrink 1 input
+    (toDouble $ select output 0 0) `shouldBe` (2.0)
+
 
