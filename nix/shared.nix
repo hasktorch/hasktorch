@@ -5,8 +5,8 @@ let
     let src = pkgs.fetchFromGitHub {
           owner  = "stites";
           repo   = "pytorch-world";
-          rev    = "fcef3543f570e87ea1257701bfa9df1ad1145983";
-          sha256 = "1rq3ich00njp527b821r0nny2afggc3sd4bhi9m7ps7hkl8qcv0f";
+          rev    = "90f79111a41158e8004bee4f61d8d7dda1e24525";
+          sha256 = "0haa6l8ar2bmqwbidxzldf1yd5lsb67shsh4rqq6slx7wjp1qxya";
     };
     in (pkgs.callPackage "${src}/libtorch/release.nix" { });
 
