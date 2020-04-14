@@ -2961,8 +2961,15 @@ randnLike
   -> IO (Tensor device dtype shape) -- ^ output
 randnLike = ATen.cast1 ATen.Managed.randn_like_t
 
--- reciprocal :: Tensor device dtype shape -> Tensor device dtype shape
--- reciprocal _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.reciprocal_t) _input
+-- | reciprocal
+-- 
+-- >>> dtype &&& shape $ reciprocal (ones :: CPUTensor 'D.Float '[3,2])
+-- (Float,[3,2])
+reciprocal 
+  :: forall shape dtype device
+   . Tensor device dtype shape -- ^ input 
+  -> Tensor device dtype shape -- ^ output
+reciprocal _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.reciprocal_t) _input
 
 -- | negate
 -- TODO: probably not defined for `D.Bool` tensors
@@ -3158,8 +3165,15 @@ stack tensors = unsafePerformIO $ ATen.cast2 ATen.Managed.stack_ll tensors (natV
 -- stride :: Tensor device dtype shape -> Int -> Int
 -- stride _input _dim = unsafePerformIO $ (ATen.cast2 ATen.Managed.stride_tl) _input _dim
 
--- t :: Tensor device dtype shape -> Tensor device dtype shape
--- t _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.t_t) _input
+-- | t
+-- 
+-- dtype &&& shape $ t ones :: CPUTensor 'D.Float '[3,2]
+-- (Float,[3,2])
+t 
+  :: forall shape dtype device
+   . Tensor device dtype shape -- ^ input 
+  -> Tensor device dtype shape -- ^ output
+t _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.t_t) _input
 
 -- | tan
 --
@@ -3727,8 +3741,15 @@ tril
   -> Tensor device dtype shape -- ^ output
 tril diagonal input = unsafePerformIO $ ATen.cast2 ATen.Managed.tril_tl input diagonal
 
--- trace :: Tensor device dtype shape -> Tensor device dtype shape
--- trace _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.trace_t) _input
+-- | trace
+--
+-- >>> dtype &&& shape $ trace (ones :: CPUTensor 'D.Float '[3,2])
+-- (Float,[3,2])
+trace 
+  :: forall shape dtype device
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
+trace _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.trace_t) _input
 
 -- take :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- take _input _index = unsafePerformIO $ (ATen.cast2 ATen.Managed.take_tt) _input _index
@@ -3739,8 +3760,15 @@ tril diagonal input = unsafePerformIO $ ATen.cast2 ATen.Managed.tril_tl input di
 -- masked_select :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- masked_select _input _mask = unsafePerformIO $ (ATen.cast2 ATen.Managed.masked_select_tt) _input _mask
 
--- nonzero :: Tensor device dtype shape -> Tensor device dtype shape
--- nonzero _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.nonzero_t) _input
+-- | nonzero
+-- 
+-- >>> dtype &&& shape $ nonzero (zeros :: CPUTensor 'D.Float '[3,2])
+-- (Float,[3,2])
+nonzero 
+  :: forall shape dtype device
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
+nonzero _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.nonzero_t) _input
 
 -- nonzero_numpy :: Tensor device dtype shape -> [Tensor device dtype shape]
 -- nonzero_numpy _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.nonzero_numpy_t) _input
@@ -4018,8 +4046,16 @@ topk _largest _sorted _input = unsafePerformIO $ (ATen.cast5 ATen.Managed.topk_t
 -- equal :: Tensor device dtype shape -> Tensor device dtype shape -> Bool
 -- equal _input _other = unsafePerformIO $ (ATen.cast2 ATen.Managed.equal_tt) _input _other
 
--- alias :: Tensor device dtype shape -> Tensor device dtype shape
--- alias _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.alias_t) _input
+-- | alias
+-- 
+-- >>> dtype &&& shape $ alias (ones :: CPUTensor 'D.Float '[3,2])
+-- (Float,[3,2])
+
+alias 
+  :: forall shape dtype device
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
+alias _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.alias_t) _input
 
 -- | L1 loss
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
