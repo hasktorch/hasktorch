@@ -93,7 +93,7 @@ executable typed-transformer
                      , foldl
                      , lens-family-core
                      , libtorch-ffi
-                     , oset
+                     , ordered-containers
                      , pipes
                      , pipes-group
                      , pipes-random

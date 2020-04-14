@@ -11,6 +11,10 @@ category:            Codegen
 build-type:          Simple
 cabal-version:       >=1.10
 
+Flag disable-doctest
+ Description: Disable doctest. ToDo: This flag is to avoid relocation-error of ghci for macos.
+   Default:       os(darwin)
+
 library
  exposed-modules:     Torch
                     , Torch.HList
@@ -125,6 +129,10 @@ test-suite spec
                     , inline-c-cpp
 
 test-suite doctests
+  if flag(disable-doctest)
+    Buildable: False
+  else
+    Buildable: True
   type:               exitcode-stdio-1.0
   hs-source-dirs:     test
   main-is:            doctests.hs

@@ -1,12 +1,12 @@
-{ compiler ? "ghc865" }:
+{ compiler ? "ghc883" }:
 
 let
   libtorch_src = pkgs:
     let src = pkgs.fetchFromGitHub {
           owner  = "stites";
           repo   = "pytorch-world";
-          rev    = "4447758bf67c3370bdb622b19f34348723e3a028";
-          sha256 = "06al1fiqw43d2y658l5vywr1n3sja5basbd0dyhjvjcfj9hm4zi4";
+          rev    = "66de22dadf334bd457c8a596832160d9126e12e1";
+          sha256 = "08w0y5f8x1d2ncv0qmv8a3zymjbzc6ysawldibd1q3h5kgr2aspv";
     };
     in (pkgs.callPackage "${src}/libtorch/release.nix" { });
 
@@ -143,6 +143,15 @@ let
                             '';
                           }
                         );
+                    RSA =
+                      (haskellPackagesNew.callHackageDirect
+                        {
+                          pkg = "RSA";
+                          ver = "2.4.1";
+                          sha256 = "0jcdazh2rsy11kmv3yw9xb2p4z5b1rxskdi79jvcapsdvixcmkzp";
+                        }
+                        { }
+                      );
                     datasets =
                       (haskellPackagesNew.callHackageDirect
                         {

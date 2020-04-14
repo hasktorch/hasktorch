@@ -24,6 +24,7 @@
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.KnownNat.Solver #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Extra.Solver #-}
+{-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 
 module Torch.Typed.NN.Recurrent.GRU where
 
@@ -184,28 +185,31 @@ deriving instance Show (GRULayerStack inputSize hiddenSize numLayers directional
 -- deriving instance Generic (GRULayerStack inputSize hiddenSize numLayers directionality dtype device)
 
 instance {-# OVERLAPS #-}
-  ( GParameterized (K1 R (GRULayer inputSize hiddenSize directionality dtype device)) parameters
+  ( layer ~ (K1 R (GRULayer inputSize hiddenSize directionality dtype device))
+  , GParameterized layer parameters
   ) => GParameterized (K1 R (GRULayerStack inputSize hiddenSize 1 directionality dtype device)) parameters where
   gFlattenParameters (K1 (GRULayer1 gruLayer))
-    = gFlattenParameters (K1 @R gruLayer)
+    = gFlattenParameters (K1 gruLayer :: layer _)
   gReplaceParameters (K1 (GRULayer1 gruLayer)) parameters
-    = K1 (GRULayer1 (unK1 (gReplaceParameters (K1 @R gruLayer) parameters)))
+    = K1 (GRULayer1 (unK1 (gReplaceParameters (K1 gruLayer :: layer _) parameters)))
 
 instance {-# OVERLAPPABLE #-}
   ( 2 <= numLayers
-  , GParameterized (K1 R (GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device)) parameters
-  , GParameterized (K1 R (GRULayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)) parameters'
+  , layerStack ~ (K1 R (GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device))
+  , layer ~ (K1 R (GRULayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device))
+  , GParameterized layerStack parameters
+  , GParameterized layer parameters'
   , HAppendFD parameters parameters' parameters''
   , parameters'' ~ (parameters ++ parameters')
   ) => GParameterized (K1 R (GRULayerStack inputSize hiddenSize numLayers directionality dtype device)) parameters'' where
   gFlattenParameters (K1 (GRULayerK gruLayerStack gruLayer))
-    = let parameters  = gFlattenParameters (K1 @R gruLayerStack)
-          parameters' = gFlattenParameters (K1 @R gruLayer)
+    = let parameters  = gFlattenParameters (K1 gruLayerStack :: layerStack _)
+          parameters' = gFlattenParameters (K1 gruLayer :: layer _)
       in  parameters `happendFD` parameters'
   gReplaceParameters (K1 (GRULayerK gruLayerStack gruLayer)) parameters''
     = let (parameters, parameters') = hunappendFD parameters''
-          gruLayerStack'           = unK1 (gReplaceParameters (K1 @R gruLayerStack) parameters)
-          gruLayer'                = unK1 (gReplaceParameters (K1 @R gruLayer)      parameters')
+          gruLayerStack'           = unK1 (gReplaceParameters (K1 gruLayerStack :: layerStack _) parameters)
+          gruLayer'                = unK1 (gReplaceParameters (K1 gruLayer :: layer _)      parameters')
       in  K1 (GRULayerK gruLayerStack' gruLayer')
 
 instance {-# OVERLAPS #-}

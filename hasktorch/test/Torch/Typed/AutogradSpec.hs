@@ -149,28 +149,31 @@ data RastriginStack (num :: Nat)
 deriving instance Show (RastriginStack num ns dtypes devices)
 
 instance {-# OVERLAPS #-}
-  ( GParameterized (K1 R (RastriginLayer n dtype device)) parameters
+  ( layer ~ (K1 R (RastriginLayer n dtype device))
+  , GParameterized layer parameters
   ) => GParameterized (K1 R (RastriginStack 1 '[n] '[dtype] '[device])) parameters where
   gFlattenParameters (K1 (Rastrigin1 rastrigin))
-    = gFlattenParameters (K1 @R rastrigin)
+    = gFlattenParameters (K1 rastrigin :: layer _)
   gReplaceParameters (K1 (Rastrigin1 rastrigin)) parameters
-    = K1 (Rastrigin1 (unK1 (gReplaceParameters (K1 @R rastrigin) parameters)))
+    = K1 (Rastrigin1 (unK1 (gReplaceParameters (K1 rastrigin :: layer _) parameters)))
 
 instance {-# OVERLAPPABLE #-}
   ( 2 <= num
-  , GParameterized (K1 R (RastriginStack (num - 1) ns dtypes devices)) parameters
-  , GParameterized (K1 R (RastriginLayer n dtype device)) parameters'
+  , layerStack ~ (K1 R (RastriginStack (num - 1) ns dtypes devices))
+  , layer ~ (K1 R (RastriginLayer n dtype device))
+  , GParameterized layerStack parameters
+  , GParameterized layer parameters'
   , HAppendFD parameters parameters' parameters''
   , parameters'' ~ (parameters ++ parameters')
   ) => GParameterized (K1 R (RastriginStack num (n ': ns) (dtype ': dtypes) (device ': devices))) parameters'' where
   gFlattenParameters (K1 (RastriginK rastriginStack rastriginLayer))
-    = let parameters  = gFlattenParameters (K1 @R rastriginStack)
-          parameters' = gFlattenParameters (K1 @R rastriginLayer)
+    = let parameters  = gFlattenParameters (K1 rastriginStack :: layerStack _)
+          parameters' = gFlattenParameters (K1 rastriginLayer :: layer _)
       in  parameters `happendFD` parameters'
   gReplaceParameters (K1 (RastriginK rastriginStack rastriginLayer)) parameters''
     = let (parameters, parameters') = hunappendFD parameters''
-          rastriginStack'           = unK1 (gReplaceParameters (K1 @R rastriginStack) parameters)
-          rastriginLayer'           = unK1 (gReplaceParameters (K1 @R rastriginLayer) parameters')
+          rastriginStack'           = unK1 (gReplaceParameters (K1 rastriginStack :: layerStack _) parameters)
+          rastriginLayer'           = unK1 (gReplaceParameters (K1 rastriginLayer :: layer _) parameters')
       in  K1 (RastriginK rastriginStack' rastriginLayer')
 
 instance {-# OVERLAPS #-}

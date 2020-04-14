@@ -1852,11 +1852,12 @@ constantPadNd1d value input = unsafePerformIO $ ATen.cast3
 type ConvSideCheck (inputSize :: Nat) (kernelSize :: Nat) (stride :: Nat) (padding :: Nat) (outputSize :: Nat) =
   (
     -- kernel size and stride must be > 0
-    kernelSize >= 1, stride >= 1
+    1 <= kernelSize, 1 <= stride
     -- kernel size can't be greater than actual input size
-  , ((inputSize + (2 * padding)) + 1) >= kernelSize
+    -- ToDo: Do not use '>=' on constraint to avoid reduction-stack-overflow.
+  , (kernelSize - 1) <= (inputSize + (2 * padding))
     -- output size must be greater than 0
-  , outputSize >= 1
+  , 1 <= outputSize
     -- output formulation:
   , outputSize ~ ConvOutputSize inputSize kernelSize stride padding
   )
