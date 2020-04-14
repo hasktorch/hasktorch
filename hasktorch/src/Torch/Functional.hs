@@ -566,7 +566,15 @@ maxPool2d
     -> Tensor -- ^ output
 maxPool2d kernelSize stride padding dilation ceilMode self =
     unsafePerformIO $ (cast6 ATen.max_pool2d_tllllb)
-        self kernelSize stride padding dilation ceilMode
+        self 
+        (asList kernelSize)
+        (asList stride)
+        (asList padding)
+        (asList dilation)
+        ceilMode
+        where
+            asList :: (Int, Int) -> [Int]
+            asList (a0, a1) = [a0, a1]
  
 -- | Applies a 3D max pooling over an input signal composed of several input planes.
 maxPool3d 
@@ -703,7 +711,10 @@ adaptiveAvgPool2d
  :: (Int,Int) -- ^ output size (Height * Width)
  -> Tensor -- ^ input 
  -> Tensor -- ^ output
-adaptiveAvgPool2d _output_size _self = unsafePerformIO $ (cast2 ATen.adaptive_avg_pool2d_tl) _self _output_size
+adaptiveAvgPool2d (outputHeight, outputWidth) input = 
+    unsafePerformIO $ (cast2 ATen.adaptive_avg_pool2d_tl) 
+        input 
+        ([outputHeight, outputWidth] :: [Int])
 
 -- | Applies a 3D adaptive average pooling over an input signal composed of several input planes.
 adaptiveAvgPool3d 
@@ -947,8 +958,13 @@ expand
   -> Tensor -- ^ output
 expand t someBool dims = unsafePerformIO $ (cast3 ATen.tensor_expand_lb) t dims someBool
 
--- flatten :: Tensor -> Int -> Int -> Tensor
--- flatten input start_dim end_dim = unsafePerformIO $ (cast3 ATen.flatten_tll) input start_dim end_dim
+-- | flatten
+flatten
+  :: Dim -- ^ startDim
+  -> Dim -- ^ endDim
+  -> Tensor -- ^ self
+  -> Tensor -- ^ output
+flatten (Dim startDim) (Dim endDim) t = unsafePerformIO $ (cast3 ATen.flatten_tll) t startDim endDim
 
 -- | flattenAll
 flattenAll

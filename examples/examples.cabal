@@ -216,3 +216,12 @@ executable autograd
  build-depends:        base >= 4.7 && <5
                      , hasktorch
                      , libtorch-ffi
+
+executable alexNet
+ import:               config
+ hs-source-dirs:       alexNet
+ main-is:              Main.hs
+ ghc-options:          -fno-warn-partial-type-signatures
+ build-depends:        base >= 4.7 && <5
+                     , hasktorch
+                     , libtorch-ffi
