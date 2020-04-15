@@ -112,7 +112,10 @@ instance
         r'       = gReplaceParameters r bs
     in  l' :*: r'
 
--- this instance couldn't be placed in Torch.NN as importing typed Parameter there would create a circular dependency
+instance A.Parameterized (Tensor device dtype shape) where
+  flattenParameters _ = []
+  replaceOwnParameters = return
+
 instance A.Parameterized (Parameter device dtype shape) where
   flattenParameters (UnsafeMkParameter param) = pure param
   replaceOwnParameters _ = UnsafeMkParameter <$> A.nextParameter
