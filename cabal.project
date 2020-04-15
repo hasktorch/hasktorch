@@ -4,7 +4,7 @@ source-repository-package
     tag: 3dd3d9519306ea06f0c15ad71bdf57e1dfd0b747
 
 packages:
-    codegen/*.cabal
+--    codegen/*.cabal
     libtorch-ffi/*.cabal
     libtorch-ffi-helper/*.cabal
     hasktorch/*.cabal
