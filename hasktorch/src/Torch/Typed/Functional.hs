@@ -467,6 +467,8 @@ type family SqueezeAll (shape :: [Nat]) :: [Nat] where
   SqueezeAll (x: xs) = x ': SqueezeAll xs
 
 -- | squeezeAll
+-- | Note: this function is unsafe; dimensions not known statically are retained in the type,
+-- | but may be squeezed out if they turn out 1 at run-time.
 --
 -- >>> dtype &&& shape $ squeezeAll (ones :: CPUTensor 'D.Float '[2,1,2,1,2])
 -- (Float,[2,2,2])
