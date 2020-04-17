@@ -33,5 +33,5 @@ jobs:
         export PATH=/opt/ghc/bin:$PATH
         source setenv
         cabal v2-test all --jobs=2 --write-ghc-environment-files=always
-        #cabal v2-exec codegen-exe
+        cabal v2-exec codegen-exe
         cabal exec xor-mlp
