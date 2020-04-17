@@ -135,8 +135,9 @@ instance Randomizable DarknetSpec Darknet where
         uniform <- randIO' [outputChannelSize]
         let fan_in = fromIntegral (kernelHeight * kernelWidth) :: Float
             bound = Prelude.sqrt $ (1 :: Float) / fan_in
+            pad = (stride - 1) `div` 2
         bias <- makeIndependent =<< pure (mulScalar ((2 :: Float) * bound) (subScalar (0.5 :: Float) uniform))
-        let func = conv2d' (toDependent weight) (toDependent bias) (stride, stride) (1, 1)
+        let func = conv2d' (toDependent weight) (toDependent bias) (stride, stride) (pad, pad)
         return $ Convolution {..}
       sample' MaxPoolSpec {..} _ = do
         let func = maxPool2d (size, size) (stride, stride) (0, 0) (1, 1) False
