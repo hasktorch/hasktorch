@@ -141,13 +141,13 @@ executable vae
   main-is:             Main.hs
   ghc-options:         -fno-warn-partial-type-signatures
 
--- executable serialization
---   import:              config
---   hs-source-dirs:      serialization
---   main-is:             Main.hs
---   ghc-options:         -fno-warn-partial-type-signatures
---   build-depends:       bytestring
---                      , serialise
+executable serialization
+  import:              config
+  hs-source-dirs:      serialization
+  main-is:             Main.hs
+  ghc-options:         -fno-warn-partial-type-signatures
+  build-depends:       bytestring
+                     , serialise
 
 executable optimizers
   hs-source-dirs:      optimizers
