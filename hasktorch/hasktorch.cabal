@@ -48,6 +48,7 @@ library
                     , Torch.Random
                     , Torch.Script
                     , Torch.HList
+                    , Torch.Vision.Darknet
                     , Torch.Typed
                     , Torch.Typed.Aux
                     , Torch.Typed.Factories
@@ -119,6 +120,9 @@ library
                     , array
 
                     , inline-c
+                    , config-ini
+                    , text
+                    , containers
  default-extensions:  Strict
                     , StrictData
 
