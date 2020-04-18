@@ -159,5 +159,10 @@ spec = do
     let input = 3 * ones' [3]
         output = softShrink 1 input
     (toDouble $ select output 0 0) `shouldBe` (2.0)
+  it "stack" $ do
+    let x = ones' [4,3]
+        y = ones' [4,3]
+        output = stack (Dim 1) [x,y]
+    (shape output) `shouldBe` ([4,2,3]) 
 
 

@@ -995,3 +995,10 @@ softShrink
   -> Tensor -- ^ input
   -> Tensor -- ^ output
 softShrink lambda input = unsafePerformIO $ (cast2 ATen.softshrink_ts) input lambda
+
+-- | stack
+stack
+  :: Dim -- ^ dim
+  -> [Tensor] -- ^ input
+  -> Tensor -- ^ output
+stack (Dim d) tensors = unsafePerformIO $ (cast2 ATen.stack_ll) tensors d
