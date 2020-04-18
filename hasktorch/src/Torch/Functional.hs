@@ -1028,3 +1028,10 @@ triu
   -> Tensor -- ^ input
   -> Tensor -- ^ output
 triu diagonal input = unsafePerformIO $ (cast2 ATen.triu_tl) input diagonal
+
+-- | tril
+tril
+  :: Int -- ^ diagonal
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+tril diagonal input = unsafePerformIO $ (cast2 ATen.tril_tl) input diagonal

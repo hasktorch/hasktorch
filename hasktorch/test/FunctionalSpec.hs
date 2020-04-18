@@ -174,6 +174,9 @@ spec = do
     (toDouble $ select output 0 0) `shouldBe` (3.0)
   it "triu" $ do
     let x = asTensor([[1,2,3],[4,5,6],[7,8,9],[10,11,12]]::[[Float]])
-    (toDouble $ sumAll $ triu 0 x) `shouldBe` (26.0)      
+    (toDouble $ sumAll $ triu 0 x) `shouldBe` (26.0)
+  it "tril" $ do
+    let x = asTensor([[1,2,3],[4,5,6],[7,8,9],[10,11,12]]::[[Float]])
+    (toDouble $ sumAll $ tril 0 x) `shouldBe` (67.0)      
 
 
