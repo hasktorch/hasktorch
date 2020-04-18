@@ -86,11 +86,51 @@ dispImage img = do
         scaled :: [[Float]] = let (mn, mx) = (min img', max img')  
             in asValue $ (img' - mn) / (mx - mn) * paletteMax
 
-readImage :: FilePath -> IO (Either String D.Tensor)
+data PixelFormat
+  = Y8
+  | YF
+  | YA8
+  | RGB8
+  | RGBF
+  | RGBA8
+  | YCbCr8
+  | CMYK8
+  | CMYK16
+  | RGBA16
+  | RGB16
+  | Y16
+  | YA16
+  | Y32
+  deriving (Show, Eq)
+
+readImage :: FilePath -> IO (Either String (D.Tensor,PixelFormat))
 readImage file =
   I.readImage file >>= \case
     Left err -> return $ Left err
-    Right img' -> return $ Right $ fromDynImage img'
+    Right img' -> return $ Right $ (fromDynImage img', pixelFormat img')
+
+readImageAsRGB8 :: FilePath -> IO (Either String D.Tensor)
+readImageAsRGB8 file =
+  I.readImage file >>= \case
+    Left err -> return $ Left err
+    Right img' -> return . Right . fromDynImage . I.ImageRGB8 . I.convertRGB8 $ img'
+
+pixelFormat :: I.DynamicImage -> PixelFormat
+pixelFormat image = case image of
+  I.ImageY8     _ -> Y8
+  I.ImageYF     _ -> YF
+  I.ImageYA8    _ -> YA8
+  I.ImageRGB8   _ -> RGB8
+  I.ImageRGBF   _ -> RGBF
+  I.ImageRGBA8  _ -> RGBA8
+  I.ImageYCbCr8 _ -> YCbCr8
+  I.ImageCMYK8  _ -> CMYK8
+  I.ImageCMYK16 _ -> CMYK16
+  I.ImageRGBA16 _ -> RGBA16
+  I.ImageRGB16  _ -> RGB16
+  I.ImageY16    _ -> Y16
+  I.ImageYA16   _ -> YA16
+  I.ImageY32    _ -> Y32
 
 fromDynImage :: I.DynamicImage -> D.Tensor
 fromDynImage image = unsafePerformIO $ case image of

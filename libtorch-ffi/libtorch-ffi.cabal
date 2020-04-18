@@ -116,20 +116,11 @@ test-suite spec
                  , GeneratorSpec
   default-language: Haskell2010
   build-depends:       base >= 4.7 && < 5
-                     , inline-c-cpp >= 0.3.0.1
-                     , inline-c
-                     , optparse-applicative >= 0.14.3.0
-                     , containers
                      , libtorch-ffi
                      , hspec
                      , hspec-discover
                      , safe-exceptions
   if os(darwin)
     ld-options: -Wl,-keep_dwarf_unwind
-    ghc-options:       -optc-std=c++11 -optc-xc++
-  else
-    ghc-options:       -optc-std=c++11
-    cc-options:        -std=c++11
-  cxx-options:       -std=c++11
   default-extensions:          Strict
                              , StrictData

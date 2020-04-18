@@ -251,6 +251,27 @@ matmul
  -> Tensor -- ^ output
 matmul a b = unsafePerformIO $ (cast2 ATen.matmul_tt) a b
 
+-- | A simple lookup table that looks up embeddings in a fixed dictionary and size.
+-- This module is often used to retrieve word embeddings using indices. The input to the module is a list of indices, and the embedding matrix, and the output is the corresponding word embeddings.
+embedding 
+    :: Bool -- ^ whether or not to scale the gradient by the frequencies
+    -> Bool -- ^ whether or not the embedding is sparse
+    -> Tensor -- ^ weights
+    -> Int -- ^ padding
+    -> Tensor -- ^ indices
+    -> Tensor -- ^ output
+embedding scaleByGradFreq sparse weights paddingIdx indices =
+    unsafePerformIO $ (cast5 ATen.embedding_ttlbb)
+        weights indices paddingIdx scaleByGradFreq sparse
+
+embedding'
+    :: Tensor -- ^ weights
+    -> Tensor -- ^ indices
+    -> Tensor -- ^ output
+embedding' weights indices =
+    unsafePerformIO $ (cast5 ATen.embedding_ttlbb)
+        weights indices (-1 :: Int) False False
+
 -- | Computes the error function of each element
 erf 
     :: Tensor -- ^ input
@@ -511,6 +532,25 @@ nllLoss' target t = unsafePerformIO $ (cast5 ATen.nll_loss_tttll) t target weigh
         nClass = (shape t) !! 1 -- TODO nicer runtime error if input dimensions don't conform
         weight = ones' [nClass]
 
+-- | Returns cosine similarity between x1 and x2, computed along dim.
+cosineSimilarity 
+    :: Int -- ^ dimension of vectors (default=1)
+    -> Double -- ^ small value to avoid division by 0 (default=1e-8)
+    -> Tensor -- ^ x1
+    -> Tensor -- ^ x2
+    -> Tensor -- ^ output
+cosineSimilarity dim eps x1 x2 = 
+    unsafePerformIO $ (cast4 ATen.cosine_similarity_ttld) x1 x2 dim eps
+
+-- | Returns cosine similarity with defaulted options.
+cosineSimilarity'
+    :: Tensor -- ^ x1
+    -> Tensor -- ^ x2
+    -> Tensor -- ^ output
+cosineSimilarity' x1 x2 = 
+    unsafePerformIO $ 
+        (cast4 ATen.cosine_similarity_ttld) x1 x2 (1 :: Int) (1e-8 :: Double)
+
 -- | Applies a 1D adaptive max pooling over an input signal composed of several input planes.
 adaptiveMaxPool1d 
     :: Int -- ^ output size
@@ -566,7 +606,15 @@ maxPool2d
     -> Tensor -- ^ output
 maxPool2d kernelSize stride padding dilation ceilMode self =
     unsafePerformIO $ (cast6 ATen.max_pool2d_tllllb)
-        self kernelSize stride padding dilation ceilMode
+        self 
+        (asList kernelSize)
+        (asList stride)
+        (asList padding)
+        (asList dilation)
+        ceilMode
+        where
+            asList :: (Int, Int) -> [Int]
+            asList (a0, a1) = [a0, a1]
  
 -- | Applies a 3D max pooling over an input signal composed of several input planes.
 maxPool3d 
@@ -703,7 +751,10 @@ adaptiveAvgPool2d
  :: (Int,Int) -- ^ output size (Height * Width)
  -> Tensor -- ^ input 
  -> Tensor -- ^ output
-adaptiveAvgPool2d _output_size _self = unsafePerformIO $ (cast2 ATen.adaptive_avg_pool2d_tl) _self _output_size
+adaptiveAvgPool2d (outputHeight, outputWidth) input = 
+    unsafePerformIO $ (cast2 ATen.adaptive_avg_pool2d_tl) 
+        input 
+        ([outputHeight, outputWidth] :: [Int])
 
 -- | Applies a 3D adaptive average pooling over an input signal composed of several input planes.
 adaptiveAvgPool3d 
@@ -947,8 +998,13 @@ expand
   -> Tensor -- ^ output
 expand t someBool dims = unsafePerformIO $ (cast3 ATen.tensor_expand_lb) t dims someBool
 
--- flatten :: Tensor -> Int -> Int -> Tensor
--- flatten input start_dim end_dim = unsafePerformIO $ (cast3 ATen.flatten_tll) input start_dim end_dim
+-- | flatten
+flatten
+  :: Dim -- ^ startDim
+  -> Dim -- ^ endDim
+  -> Tensor -- ^ self
+  -> Tensor -- ^ output
+flatten (Dim startDim) (Dim endDim) t = unsafePerformIO $ (cast3 ATen.flatten_tll) t startDim endDim
 
 -- | flattenAll
 flattenAll
@@ -1095,3 +1151,168 @@ rreluWithNoise
   -> IO Tensor
 rreluWithNoise t _noise _lower _upper _training =
   (cast5 ATen.rrelu_with_noise_ttssb) t _noise _lower _upper _training
+
+-- Not used yet
+data RNNParams = RNNParams {
+    weightIH :: Tensor,
+    weightHH :: Tensor,
+    biasIH :: Tensor,
+    biasHH :: Tensor
+} deriving (Show)
+
+-- | A long short-term memory (LSTM) cell.
+lstmCell 
+    :: Tensor -- ^ input-hidden weights (4*hidden_size, input_size)
+    -> Tensor -- ^ hidden-hidden weights (4*hidden_size, hidden_size)
+    -> Tensor -- ^ input-hidden bias (4*hidden_size)
+    -> Tensor -- ^ hidden-hidden bias, of shape (4*hidden_size)
+    -> (Tensor, Tensor) -- ^ hidden state
+    -> Tensor -- ^ input
+    -> (Tensor, Tensor) -- next hidden state, next cell state
+lstmCell _w_ih _w_hh _b_ih _b_hh (_hx, _cx) _input =
+    unsafePerformIO $
+        (cast6 ATen.lstm_cell_tltttt) 
+        _input ([_hx, _cx] :: [Tensor]) _w_ih _w_hh _b_ih _b_hh -- TODO: make cast work with 2-tuples
+
+-- | A gated recurrent unit (GRU) cell
+gruCell 
+    :: Tensor -- ^ input-hidden weights
+    -> Tensor -- ^ hidden-hidden weights
+    -> Tensor -- ^ input-hidden bias
+    -> Tensor -- ^ hidden-hidden bias
+    -> Tensor -- ^ hidden state
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
+gruCell _w_ih _w_hh _b_ih _b_hh _hx _input =
+  unsafePerformIO $
+    (cast6 ATen.gru_cell_tttttt) 
+    _input _hx _w_ih _w_hh _b_ih _b_hh
+
+-- | An Elman RNN cell with tanh non-linearity
+rnnTanhCell 
+    :: Tensor -- ^ input-hidden weights
+    -> Tensor -- ^ hidden-hidden weights
+    -> Tensor -- ^ input-hidden bias
+    -> Tensor -- ^ hidden-hidden bias
+    -> Tensor -- ^ hidden state
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
+rnnTanhCell _w_ih _w_hh _b_ih _b_hh _hx _input =
+  unsafePerformIO $ (cast6 ATen.rnn_tanh_cell_tttttt) _input _hx _w_ih _w_hh _b_ih _b_hh
+
+-- | An Elman RNN cell with ReLU non-linearity
+rnnReluCell 
+    :: Tensor -- ^ input-hidden weights
+    -> Tensor -- ^ hidden-hidden weights
+    -> Tensor -- ^ input-hidden bias
+    -> Tensor -- ^ hidden-hidden bias
+    -> Tensor -- ^ hidden state
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
+rnnReluCell _w_ih _w_hh _b_ih _b_hh _hx _input =
+  unsafePerformIO $ (cast6 ATen.rnn_relu_cell_tttttt) _input _hx _w_ih _w_hh _b_ih _b_hh
+
+-- | A quantized long short-term memory (LSTM) cell.
+quantizedLstmCell 
+    :: Tensor -- ^ input-hidden weights
+    -> Tensor -- ^ hidden-hidden weights
+    -> Tensor -- ^ input-hidden bias
+    -> Tensor -- ^ hidden-hidden bias
+    -> Tensor -- ^ input-hidden packed
+    -> Tensor -- ^ hidden-hidden packed
+    -> Tensor -- ^ input-hidden column offsets
+    -> Tensor -- ^ hidden-hidden column offsets
+    -> Float -- ^ input-hidden scale
+    -> Float -- ^ hidden-hidden scale
+    -> Float -- ^ input-hidden zero point
+    -> Float -- ^ hidden-hidden zero point
+    -> (Tensor, Tensor) -- ^ hidden state
+    -> Tensor -- ^ input
+    -> (Tensor, Tensor) -- ^ output
+quantizedLstmCell _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh (_hx, _cx) _input =
+  unsafePerformIO $
+    (cast14 ATen.quantized_lstm_cell_tlttttttttssss)
+        _input ([_hx, _cx] :: [Tensor]) _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh
+
+-- | A quantized long gated recurrent unit (GRU) cell.
+quantizedGruCell 
+    :: Tensor -- ^ input-hidden weights
+    -> Tensor -- ^ hidden-hidden weights
+    -> Tensor -- ^ input-hidden bias
+    -> Tensor -- ^ hidden-hidden bias
+    -> Tensor -- ^ input-hidden packed
+    -> Tensor -- ^ hidden-hidden packed
+    -> Tensor -- ^ input-hidden column offsets
+    -> Tensor -- ^ hidden-hidden column offsets
+    -> Float -- ^ input-hidden scale
+    -> Float -- ^ hidden-hidden scale
+    -> Float -- ^ input-hidden zero point
+    -> Float -- ^ hidden-hidden zero point
+    -> Tensor -- ^ hidden state
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
+quantizedGruCell _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh _hx _input =
+  unsafePerformIO $ (cast14 ATen.quantized_gru_cell_ttttttttttssss) _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh
+
+-- | A quantized Elman RNN cell with relu non-linearity
+quantizedRnnReluCell 
+    :: Tensor -- ^ input-hidden weights
+    -> Tensor -- ^ hidden-hidden weights
+    -> Tensor -- ^ input-hidden bias
+    -> Tensor -- ^ hidden-hidden bias
+    -> Tensor -- ^ input-hidden packed
+    -> Tensor -- ^ hidden-hidden packed
+    -> Tensor -- ^ input-hidden column offsets
+    -> Tensor -- ^ hidden-hidden column offsets
+    -> Float -- ^ input-hidden scale
+    -> Float -- ^ hidden-hidden scale
+    -> Float -- ^ input-hidden zero point
+    -> Float -- ^ hidden-hidden zero point
+    -> Tensor -- ^ hidden state
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
+quantizedRnnReluCell _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh _hx _input =
+  unsafePerformIO $ (cast14 ATen.quantized_rnn_relu_cell_ttttttttttssss) _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh
+
+-- | A quantized Elman RNN cell with tanh non-linearity
+quantizedRnnTanhCell
+    :: Tensor -- ^ input-hidden weights
+    -> Tensor -- ^ hidden-hidden weights
+    -> Tensor -- ^ input-hidden bias
+    -> Tensor -- ^ hidden-hidden bias
+    -> Tensor -- ^ input-hidden packed
+    -> Tensor -- ^ hidden-hidden packed
+    -> Tensor -- ^ input-hidden column offsets
+    -> Tensor -- ^ hidden-hidden column offsets
+    -> Float -- ^ input-hidden scale
+    -> Float -- ^ hidden-hidden scale
+    -> Float -- ^ input-hidden zero point
+    -> Float -- ^ hidden-hidden zero point
+    -> Tensor -- ^ hidden state
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
+quantizedRnnTanhCell _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh _hx _input =
+  unsafePerformIO $ (cast14 ATen.quantized_rnn_tanh_cell_ttttttttttssss) _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh
+
+-- | smoothL1Loss
+smoothL1Loss
+  :: Reduction -- ^ reduction
+  -> Tensor -- ^ input
+  -> Tensor -- ^ target
+  -> Tensor -- ^ output
+smoothL1Loss reduction input target = unsafePerformIO $ (cast3 ATen.smooth_l1_loss_ttl) input target reduction
+
+-- | softMarginLoss
+softMarginLoss 
+  :: Reduction -- ^ reduction
+  -> Tensor -- ^ input
+  -> Tensor -- ^ target
+  -> Tensor -- ^ output
+softMarginLoss reduction input target = unsafePerformIO $ (cast3 ATen.soft_margin_loss_ttl) input target reduction
+
+-- | softShrink
+softShrink
+  :: Float -- ^ lambda
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+softShrink lambda input = unsafePerformIO $ (cast2 ATen.softshrink_ts) input lambda
