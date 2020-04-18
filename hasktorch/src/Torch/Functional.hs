@@ -1002,3 +1002,12 @@ stack
   -> [Tensor] -- ^ input
   -> Tensor -- ^ output
 stack (Dim d) tensors = unsafePerformIO $ (cast2 ATen.stack_ll) tensors d
+
+-- | sumDim
+sumDim
+  :: Dim -- ^ dim to sum along
+  -> KeepDim -- ^ whether the output tensor has dim retained or not
+  -> DType -- ^ datatype
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+sumDim (Dim d) k dtype input = unsafePerformIO $ (cast4 ATen.sum_tlbs) input d (keepdim k) dtype
