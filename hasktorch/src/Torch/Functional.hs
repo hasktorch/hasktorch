@@ -1015,10 +1015,10 @@ flattenAll t =
 
 -- Not used yet
 data RNNParams = RNNParams {
-	weightIH :: Tensor,
-	weightHH :: Tensor,
-	biasIH :: Tensor,
-	biasHH :: Tensor
+    weightIH :: Tensor,
+    weightHH :: Tensor,
+    biasIH :: Tensor,
+    biasHH :: Tensor
 } deriving (Show)
 
 -- | A long short-term memory (LSTM) cell.
@@ -1033,7 +1033,7 @@ lstmCell
 lstmCell _w_ih _w_hh _b_ih _b_hh (_hx, _cx) _input =
     unsafePerformIO $
         (cast6 ATen.lstm_cell_tltttt) 
-        _input [_hx, _cx] _w_ih _w_hh _b_ih _b_hh -- TODO: make cast work with 2-tuples
+        _input ([_hx, _cx] :: [Tensor]) _w_ih _w_hh _b_ih _b_hh -- TODO: make cast work with 2-tuples
 
 -- | A gated recurrent unit (GRU) cell
 gruCell 
@@ -1075,83 +1075,83 @@ rnnReluCell _w_ih _w_hh _b_ih _b_hh _hx _input =
 
 -- | A quantized long short-term memory (LSTM) cell.
 quantizedLstmCell 
-	:: Tensor -- ^ input-hidden weights
-	-> Tensor -- ^ hidden-hidden weights
-	-> Tensor -- ^ input-hidden bias
-	-> Tensor -- ^ hidden-hidden bias
-	-> Tensor -- ^ input-hidden packed
-	-> Tensor -- ^ hidden-hidden packed
-	-> Tensor -- ^ input-hidden column offsets
-	-> Tensor -- ^ hidden-hidden column offsets
-	-> Float -- ^ input-hidden scale
-	-> Float -- ^ hidden-hidden scale
-	-> Float -- ^ input-hidden zero point
-	-> Float -- ^ hidden-hidden zero point
-	-> (Tensor, Tensor) -- ^ hidden state
-	-> Tensor -- ^ input
-	-> (Tensor, Tensor) -- ^ output
+    :: Tensor -- ^ input-hidden weights
+    -> Tensor -- ^ hidden-hidden weights
+    -> Tensor -- ^ input-hidden bias
+    -> Tensor -- ^ hidden-hidden bias
+    -> Tensor -- ^ input-hidden packed
+    -> Tensor -- ^ hidden-hidden packed
+    -> Tensor -- ^ input-hidden column offsets
+    -> Tensor -- ^ hidden-hidden column offsets
+    -> Float -- ^ input-hidden scale
+    -> Float -- ^ hidden-hidden scale
+    -> Float -- ^ input-hidden zero point
+    -> Float -- ^ hidden-hidden zero point
+    -> (Tensor, Tensor) -- ^ hidden state
+    -> Tensor -- ^ input
+    -> (Tensor, Tensor) -- ^ output
 quantizedLstmCell _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh (_hx, _cx) _input =
   unsafePerformIO $
     (cast14 ATen.quantized_lstm_cell_tlttttttttssss)
-        _input [_hx, _cx] _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh
+        _input ([_hx, _cx] :: [Tensor]) _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh
 
 -- | A quantized long gated recurrent unit (GRU) cell.
 quantizedGruCell 
-	:: Tensor -- ^ input-hidden weights
-	-> Tensor -- ^ hidden-hidden weights
-	-> Tensor -- ^ input-hidden bias
-	-> Tensor -- ^ hidden-hidden bias
-	-> Tensor -- ^ input-hidden packed
-	-> Tensor -- ^ hidden-hidden packed
-	-> Tensor -- ^ input-hidden column offsets
-	-> Tensor -- ^ hidden-hidden column offsets
-	-> Float -- ^ input-hidden scale
-	-> Float -- ^ hidden-hidden scale
-	-> Float -- ^ input-hidden zero point
-	-> Float -- ^ hidden-hidden zero point
-	-> Tensor -- ^ hidden state
-	-> Tensor -- ^ input
-	-> Tensor -- ^ output
+    :: Tensor -- ^ input-hidden weights
+    -> Tensor -- ^ hidden-hidden weights
+    -> Tensor -- ^ input-hidden bias
+    -> Tensor -- ^ hidden-hidden bias
+    -> Tensor -- ^ input-hidden packed
+    -> Tensor -- ^ hidden-hidden packed
+    -> Tensor -- ^ input-hidden column offsets
+    -> Tensor -- ^ hidden-hidden column offsets
+    -> Float -- ^ input-hidden scale
+    -> Float -- ^ hidden-hidden scale
+    -> Float -- ^ input-hidden zero point
+    -> Float -- ^ hidden-hidden zero point
+    -> Tensor -- ^ hidden state
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
 quantizedGruCell _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh _hx _input =
   unsafePerformIO $ (cast14 ATen.quantized_gru_cell_ttttttttttssss) _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh
 
 -- | A quantized Elman RNN cell with relu non-linearity
 quantizedRnnReluCell 
-	:: Tensor -- ^ input-hidden weights
-	-> Tensor -- ^ hidden-hidden weights
-	-> Tensor -- ^ input-hidden bias
-	-> Tensor -- ^ hidden-hidden bias
-	-> Tensor -- ^ input-hidden packed
-	-> Tensor -- ^ hidden-hidden packed
-	-> Tensor -- ^ input-hidden column offsets
-	-> Tensor -- ^ hidden-hidden column offsets
-	-> Float -- ^ input-hidden scale
-	-> Float -- ^ hidden-hidden scale
-	-> Float -- ^ input-hidden zero point
-	-> Float -- ^ hidden-hidden zero point
-	-> Tensor -- ^ hidden state
-	-> Tensor -- ^ input
-	-> Tensor -- ^ output
+    :: Tensor -- ^ input-hidden weights
+    -> Tensor -- ^ hidden-hidden weights
+    -> Tensor -- ^ input-hidden bias
+    -> Tensor -- ^ hidden-hidden bias
+    -> Tensor -- ^ input-hidden packed
+    -> Tensor -- ^ hidden-hidden packed
+    -> Tensor -- ^ input-hidden column offsets
+    -> Tensor -- ^ hidden-hidden column offsets
+    -> Float -- ^ input-hidden scale
+    -> Float -- ^ hidden-hidden scale
+    -> Float -- ^ input-hidden zero point
+    -> Float -- ^ hidden-hidden zero point
+    -> Tensor -- ^ hidden state
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
 quantizedRnnReluCell _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh _hx _input =
   unsafePerformIO $ (cast14 ATen.quantized_rnn_relu_cell_ttttttttttssss) _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh
 
 -- | A quantized Elman RNN cell with tanh non-linearity
 quantizedRnnTanhCell
-	:: Tensor -- ^ input-hidden weights
-	-> Tensor -- ^ hidden-hidden weights
-	-> Tensor -- ^ input-hidden bias
-	-> Tensor -- ^ hidden-hidden bias
-	-> Tensor -- ^ input-hidden packed
-	-> Tensor -- ^ hidden-hidden packed
-	-> Tensor -- ^ input-hidden column offsets
-	-> Tensor -- ^ hidden-hidden column offsets
-	-> Float -- ^ input-hidden scale
-	-> Float -- ^ hidden-hidden scale
-	-> Float -- ^ input-hidden zero point
-	-> Float -- ^ hidden-hidden zero point
-	-> Tensor -- ^ hidden state
-	-> Tensor -- ^ input
-	-> Tensor -- ^ output
+    :: Tensor -- ^ input-hidden weights
+    -> Tensor -- ^ hidden-hidden weights
+    -> Tensor -- ^ input-hidden bias
+    -> Tensor -- ^ hidden-hidden bias
+    -> Tensor -- ^ input-hidden packed
+    -> Tensor -- ^ hidden-hidden packed
+    -> Tensor -- ^ input-hidden column offsets
+    -> Tensor -- ^ hidden-hidden column offsets
+    -> Float -- ^ input-hidden scale
+    -> Float -- ^ hidden-hidden scale
+    -> Float -- ^ input-hidden zero point
+    -> Float -- ^ hidden-hidden zero point
+    -> Tensor -- ^ hidden state
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
 quantizedRnnTanhCell _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh _hx _input =
   unsafePerformIO $ (cast14 ATen.quantized_rnn_tanh_cell_ttttttttttssss) _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh
 
