@@ -167,5 +167,3 @@ spec = do
         output = softShrink 1 input
     (toDouble $ select output 0 0) `shouldBe` (2.0)
 
-
->>>>>>> master
