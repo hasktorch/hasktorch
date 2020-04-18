@@ -1011,3 +1011,13 @@ sumDim
   -> Tensor -- ^ input
   -> Tensor -- ^ output
 sumDim (Dim d) k dtype input = unsafePerformIO $ (cast4 ATen.sum_tlbs) input d (keepdim k) dtype
+
+-- | topK
+topK 
+  :: Int -- ^ k
+  -> Dim -- ^ dim to find topK along
+  -> Bool -- ^ largest
+  -> Bool -- ^ sorted
+  -> Tensor -- ^ input
+  -> (Tensor,Tensor) -- ^ output
+topK k (Dim d) largest sorted input = unsafePerformIO $ (cast5 ATen.topk_tllbb) input k d largest sorted

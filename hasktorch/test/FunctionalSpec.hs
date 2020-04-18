@@ -167,6 +167,10 @@ spec = do
   it "sumDim" $ do
     let x = asTensor([[1,2,3],[4,5,6],[7,8,9],[10,11,12]]::[[Float]])
         output = sumDim (Dim 0) KeepDim Float x
-    (toDouble $ select output 1 1) `shouldBe` (26.0)  
+    (toDouble $ select output 1 1) `shouldBe` (26.0)
+  it "topK" $ do
+    let x = asTensor([1,2,3] :: [Float])
+        output = fst $ topK 2 (Dim 0) True True x 
+    (toDouble $ select output 0 0) `shouldBe` (3.0)    
 
 
