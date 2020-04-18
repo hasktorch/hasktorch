@@ -1035,3 +1035,10 @@ tril
   -> Tensor -- ^ input
   -> Tensor -- ^ output
 tril diagonal input = unsafePerformIO $ (cast2 ATen.tril_tl) input diagonal
+
+-- | unsqueeze
+unsqueeze
+  :: Dim  -- ^ dim
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+unsqueeze (Dim d) input = unsafePerformIO $ (cast2 ATen.unsqueeze_tl) input d

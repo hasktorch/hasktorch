@@ -177,6 +177,10 @@ spec = do
     (toDouble $ sumAll $ triu 0 x) `shouldBe` (26.0)
   it "tril" $ do
     let x = asTensor([[1,2,3],[4,5,6],[7,8,9],[10,11,12]]::[[Float]])
-    (toDouble $ sumAll $ tril 0 x) `shouldBe` (67.0)      
+    (toDouble $ sumAll $ tril 0 x) `shouldBe` (67.0)
+  it "unsqueeze" $ do
+    let x = asTensor([[1,2,3],[4,5,6],[7,8,9],[10,11,12]]::[[Float]])
+        output = unsqueeze (Dim 0) x
+    (shape output) `shouldBe` ([1,4,3])      
 
 
