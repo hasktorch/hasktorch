@@ -957,135 +957,135 @@ flattenAll
 flattenAll t =
   unsafePerformIO $ (cast3 ATen.flatten_tll) t (0 :: Int) (-1 :: Int)
 
-bernoulli_t
+bernoulli'
   :: Tensor
   -> IO Tensor
-bernoulli_t t =
+bernoulli' t =
   (cast1 ATen.bernoulli_t) t
 
-bernoulli_td
+bernoulli
   :: Tensor
   -> Double
   -> IO Tensor
-bernoulli_td t p =
+bernoulli t p =
   (cast2 ATen.bernoulli_td) t p
 
-poisson_t
+poisson
   :: Tensor
   -> IO Tensor
-poisson_t t =
+poisson t =
   (cast1 ATen.poisson_t) t
 
-multinomial_tl
+multinomial'
   :: Tensor
   -> Int
   -> IO Tensor
-multinomial_tl t num_samples =
+multinomial' t num_samples =
   (cast2 ATen.multinomial_tl) t num_samples
 
-multinomial_tlb
+multinomial
   :: Tensor
   -> Int
   -> Bool
   -> IO Tensor
-multinomial_tlb t num_samples replacement =
+multinomial t num_samples replacement =
   (cast3 ATen.multinomial_tlb) t num_samples replacement
 
-normal_t
+normal'
   :: Tensor
   -> IO Tensor
-normal_t _mean =
+normal' _mean =
   (cast1 ATen.normal_t) _mean
 
-normal_tt
+normal
   :: Tensor
   -> Tensor
   -> IO Tensor
-normal_tt _mean _std =
+normal _mean _std =
   (cast2 ATen.normal_tt) _mean _std
 
-normal_td
+normalScalar
   :: Tensor
   -> Double
   -> IO Tensor
-normal_td _mean _std =
+normalScalar _mean _std =
   (cast2 ATen.normal_td) _mean _std
 
-normal_dt
+normalScalar'
   :: Double
   -> Tensor
   -> IO Tensor
-normal_dt _mean _std =
+normalScalar' _mean _std =
   (cast2 ATen.normal_dt) _mean _std
 
-normal_ddl
+normalWithSize
   :: Double
   -> Double
   -> Int
   -> IO Tensor
-normal_ddl _mean _std _size =
+normalWithSize _mean _std _size =
   (cast3 ATen.normal_ddl) _mean _std _size
 
-rrelu_t
+rrelu'''
   :: Tensor
   -> IO Tensor
-rrelu_t t =
+rrelu''' t =
   (cast1 ATen.rrelu_t) t
 
-rrelu_ts
+rrelu''
   :: Scalar a 
   => Tensor
   -> a
   -> IO Tensor
-rrelu_ts t _upper =
+rrelu'' t _upper =
   (cast2 ATen.rrelu_ts) t _upper
 
-rrelu_tss
+rrelu'
   :: Scalar a 
   => Tensor
   -> a
   -> a
   -> IO Tensor
-rrelu_tss t _lower _upper =
+rrelu' t _lower _upper =
   (cast3 ATen.rrelu_tss) t _lower _upper
 
-rrelu_tssb
+rrelu
   :: Scalar a 
   => Tensor
   -> a
   -> a
   -> Bool
   -> IO Tensor
-rrelu_tssb t _lower _upper _training =
+rrelu t _lower _upper _training =
   (cast4 ATen.rrelu_tssb) t _lower _upper _training
 
-rrelu_with_noise_tt
+rreluWithNoise'''
   :: Tensor
   -> Tensor
   -> IO Tensor
-rrelu_with_noise_tt t _noise =
+rreluWithNoise''' t _noise =
   (cast2 ATen.rrelu_with_noise_tt) t _noise
 
-rrelu_with_noise_tts
+rreluWithNoise''
   :: Scalar a 
   => Tensor
   -> Tensor
   -> a
   -> IO Tensor
-rrelu_with_noise_tts t _noise _upper =
+rreluWithNoise'' t _noise _upper =
   (cast3 ATen.rrelu_with_noise_tts) t _noise _upper
 
-rrelu_with_noise_ttss
+rreluWithNoise'
   :: Scalar a 
   => Tensor
   -> Tensor
   -> a
   -> a
   -> IO Tensor
-rrelu_with_noise_ttss t _noise _lower _upper =
+rreluWithNoise' t _noise _lower _upper =
   (cast4 ATen.rrelu_with_noise_ttss) t _noise _lower _upper
 
-rrelu_with_noise_ttssb
+rreluWithNoise
   :: Scalar a 
   => Tensor
   -> Tensor
@@ -1093,5 +1093,5 @@ rrelu_with_noise_ttssb
   -> a
   -> Bool
   -> IO Tensor
-rrelu_with_noise_ttssb t _noise _lower _upper _training =
+rreluWithNoise t _noise _lower _upper _training =
   (cast5 ATen.rrelu_with_noise_ttssb) t _noise _lower _upper _training
