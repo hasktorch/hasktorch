@@ -8,7 +8,6 @@ module BasicSpec (spec) where
 
 import Test.Hspec
 import Control.Exception.Safe
-import qualified Language.C.Inline.Cpp.Exceptions as C
 import Control.Monad (forM_,forM,join)
 import Data.Int
 import Foreign
