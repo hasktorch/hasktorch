@@ -1013,7 +1013,6 @@ flattenAll
 flattenAll t =
   unsafePerformIO $ (cast3 ATen.flatten_tll) t (0 :: Int) (-1 :: Int)
 
-<<<<<<< HEAD
 -- Not used yet
 data RNNParams = RNNParams {
 	weightIH :: Tensor,
@@ -1155,7 +1154,7 @@ quantizedRnnTanhCell
 	-> Tensor -- ^ output
 quantizedRnnTanhCell _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh _hx _input =
   unsafePerformIO $ (cast14 ATen.quantized_rnn_tanh_cell_ttttttttttssss) _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh
-=======
+
 -- | smoothL1Loss
 smoothL1Loss
   :: Reduction -- ^ reduction
@@ -1178,4 +1177,3 @@ softShrink
   -> Tensor -- ^ input
   -> Tensor -- ^ output
 softShrink lambda input = unsafePerformIO $ (cast2 ATen.softshrink_ts) input lambda
->>>>>>> master
