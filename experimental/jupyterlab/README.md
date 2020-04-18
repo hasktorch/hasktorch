@@ -9,7 +9,7 @@ First, run nix-shell with cachix.
 ```
 nix-env -i cachix
 cachix use hasktorch
-nix-shell --option sandbox false --command "jupyer lab"
+nix-shell --option sandbox false --command "jupyter lab"
 ```
 
 The command outputs a url to connect to JupyterLab.
