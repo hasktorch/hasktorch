@@ -1021,3 +1021,10 @@ topK
   -> Tensor -- ^ input
   -> (Tensor,Tensor) -- ^ output
 topK k (Dim d) largest sorted input = unsafePerformIO $ (cast5 ATen.topk_tllbb) input k d largest sorted
+
+-- | triu
+triu
+  :: Int -- ^ diagonal
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+triu diagonal input = unsafePerformIO $ (cast2 ATen.triu_tl) input diagonal
