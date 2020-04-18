@@ -49,6 +49,9 @@ library
                     , Torch.Typed.Serialize
                     , Torch.Typed.Vision
                     , Torch.NN
+                    , Torch.NN.Recurrent.Cell.Elman
+                    , Torch.NN.Recurrent.Cell.GRU
+                    , Torch.NN.Recurrent.Cell.LSTM
                     , Torch.Scalar
                     , Torch.Backend
                     , Torch.Layout

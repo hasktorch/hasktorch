@@ -15,7 +15,8 @@ import System.IO.Unsafe (unsafePerformIO)
 
 import qualified Torch.Internal.Managed.Native as ATen
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
-import Torch.Internal.Cast (cast3)
+
+import Torch.Internal.Cast (cast3, cast6, cast14)
 
 import Torch.Autograd
 import Torch.Initializers
