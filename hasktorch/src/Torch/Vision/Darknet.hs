@@ -137,10 +137,25 @@ instance Randomizable DarknetSpec Darknet where
             bound = Prelude.sqrt $ (1 :: Float) / fan_in
             pad = (stride - 1) `div` 2
         bias <- makeIndependent =<< pure (mulScalar ((2 :: Float) * bound) (subScalar (0.5 :: Float) uniform))
-        let func = conv2d' (toDependent weight) (toDependent bias) (stride, stride) (pad, pad)
+        let func0 = conv2d' (toDependent weight) (toDependent bias) (stride, stride) (pad, pad)
+            func1 input =
+              if batch_normalize
+                then I.batch_norm
+                       (func0 input)
+                       self.weight
+                       _2
+                       _1
+                       _0
+                       False
+                       0.90000000000000002
+                       1.0000000000000001e-05
+                       True
+                else func0 input
+            func  = if 
         return $ Convolution {..}
       sample' MaxPoolSpec {..} _ = do
-        let func = maxPool2d (size, size) (stride, stride) (0, 0) (1, 1) False
+        let func = maxPool2d (size, size) (stride, stride) (pad, pad) (1, 1) False
+            pad = (stride - 1) `div` 2
         return MaxPool {..}
       sample' UpSampleSpec {..} _ = do
         let func input = I.upsample_nearest2d input (stride, stride)
