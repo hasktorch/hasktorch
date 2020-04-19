@@ -1,18 +1,20 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module TensorSpec (spec) where
+module TensorSpec
+  ( spec,
+  )
+where
 
+import Control.Exception.Safe
+import Data.Int
+import Data.Word
 import Test.Hspec
 import Test.QuickCheck
-import Control.Exception.Safe
-
-import Torch.Tensor
 import Torch.DType
-import Torch.TensorFactories
 import Torch.Functional
+import Torch.Tensor
+import Torch.TensorFactories
 import Torch.TensorOptions
-import Data.Word
-import Data.Int
 
 spec :: Spec
 spec = do
@@ -34,27 +36,25 @@ spec = do
     \x -> asValue (asTensor x) `shouldBe` (x :: Float)
   it "TensorLike Double" $ property $
     \x -> asValue (asTensor x) `shouldBe` (x :: Double)
-
   it "Compare internal expression of c++ with Storable expression of haskell" $ do
-    show (asTensor [True,False,True,False]) `shouldBe`
-      "Tensor Bool [4] [ 1,  0,  1,  0]"
-    show (asTensor ([1,0,1,0]::[Word8])) `shouldBe`
-      "Tensor UInt8 [4] [ 1,  0,  1,  0]"
-    show (asTensor ([1,0,1,0]::[Int8])) `shouldBe`
-      "Tensor Int8 [4] [ 1,  0,  1,  0]"
-    show (asTensor ([1,0,1,0]::[Int16])) `shouldBe`
-      "Tensor Int16 [4] [ 1,  0,  1,  0]"
-    show (asTensor ([1,0,1,0]::[Int32])) `shouldBe`
-      "Tensor Int32 [4] [ 1,  0,  1,  0]"
-    show (asTensor ([1,0,1,0]::[Int])) `shouldBe`
-      "Tensor Int64 [4] [ 1,  0,  1,  0]"
-    show (asTensor ([1,0,1,0]::[Int64])) `shouldBe`
-      "Tensor Int64 [4] [ 1,  0,  1,  0]"
-    show (asTensor ([1,0,1,0]::[Float])) `shouldBe`
-      "Tensor Float [4] [ 1.0000   ,  0.0000,  1.0000   ,  0.0000]"
-    show (asTensor ([1,0,1,0]::[Double])) `shouldBe`
-      "Tensor Double [4] [ 1.0000   ,  0.0000,  1.0000   ,  0.0000]"
-
+    show (asTensor [True, False, True, False])
+      `shouldBe` "Tensor Bool [4] [ 1,  0,  1,  0]"
+    show (asTensor ([1, 0, 1, 0] :: [Word8]))
+      `shouldBe` "Tensor UInt8 [4] [ 1,  0,  1,  0]"
+    show (asTensor ([1, 0, 1, 0] :: [Int8]))
+      `shouldBe` "Tensor Int8 [4] [ 1,  0,  1,  0]"
+    show (asTensor ([1, 0, 1, 0] :: [Int16]))
+      `shouldBe` "Tensor Int16 [4] [ 1,  0,  1,  0]"
+    show (asTensor ([1, 0, 1, 0] :: [Int32]))
+      `shouldBe` "Tensor Int32 [4] [ 1,  0,  1,  0]"
+    show (asTensor ([1, 0, 1, 0] :: [Int]))
+      `shouldBe` "Tensor Int64 [4] [ 1,  0,  1,  0]"
+    show (asTensor ([1, 0, 1, 0] :: [Int64]))
+      `shouldBe` "Tensor Int64 [4] [ 1,  0,  1,  0]"
+    show (asTensor ([1, 0, 1, 0] :: [Float]))
+      `shouldBe` "Tensor Float [4] [ 1.0000   ,  0.0000,  1.0000   ,  0.0000]"
+    show (asTensor ([1, 0, 1, 0] :: [Double]))
+      `shouldBe` "Tensor Double [4] [ 1.0000   ,  0.0000,  1.0000   ,  0.0000]"
   it "TensorLike [Bool]" $ property $
     \(NonEmpty (x :: [Bool])) -> do
       asValue (asTensor x) `shouldBe` x
@@ -136,18 +136,15 @@ spec = do
       asValue (asTensor xx) `shouldBe` xx
       let xxx = replicate 3 xx
       asValue (asTensor xxx) `shouldBe` xxx
-
   it "invalid cast of TensorLike a" $ do
     let x = asTensor (10 :: Int)
     (dtype x) `shouldBe` Int64
     (print (asValue x :: Double)) `shouldThrow` anyException
   it "invalid cast of TensorLike [a]" $ do
-    let x = asTensor ([0..10] :: [Int])
+    let x = asTensor ([0 .. 10] :: [Int])
     (print (asValue x :: [Double])) `shouldThrow` anyException
-
   it "lists having different length" $ do
-    (print (asTensor ([[1],[1,2]] :: [[Double]]))) `shouldThrow` anyException
+    (print (asTensor ([[1], [1, 2]] :: [[Double]]))) `shouldThrow` anyException
   it "cast of Tensor" $ do
-    let x = asTensor ([0..10] :: [Int])
+    let x = asTensor ([0 .. 10] :: [Int])
     (dtype (toType Float x)) `shouldBe` Float
-

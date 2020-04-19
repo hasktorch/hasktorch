@@ -1,66 +1,69 @@
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Torch.Script where
 
-import Control.Monad (forM_, forM, replicateM)
 import Control.Exception.Safe (throwIO)
-import Foreign.ForeignPtr
-import Foreign.Ptr
-import Foreign.Storable
-import Foreign.C.Types
-import System.IO.Unsafe
+import Control.Monad (forM, forM_, replicateM)
 import Data.Int (Int16, Int64)
-import Data.Word (Word8)
 import Data.List (intercalate)
 import Data.Proxy
 import Data.Reflection
+import Data.Word (Word8)
+import Foreign.C.Types
+import Foreign.ForeignPtr
+import Foreign.Ptr
+import Foreign.Storable
 import Numeric
-
+import System.IO.Unsafe
+import Torch.Autograd
+import Torch.DType
+import Torch.Device
 import Torch.Internal.Cast
-import Torch.Internal.Class (Castable(..), CppTuple2(..), CppTuple3(..), CppTuple4(..), CppObject(..))
-import qualified Torch.Internal.Unmanaged.Type.Module as Unmanaged
+import Torch.Internal.Class (Castable (..), CppObject (..), CppTuple2 (..), CppTuple3 (..), CppTuple4 (..))
+import qualified Torch.Internal.Const as ATen
+import qualified Torch.Internal.Managed.Cast as ATen
+import qualified Torch.Internal.Managed.Native as ATen
 import qualified Torch.Internal.Managed.Type.Context as ATen
-import qualified Torch.Internal.Managed.Type.Tensor as ATen
-import qualified Torch.Internal.Managed.Type.TensorOptions as ATen
+import Torch.Internal.Managed.Type.IValue
+import qualified Torch.Internal.Managed.Type.Module as LibTorch
 import qualified Torch.Internal.Managed.Type.StdArray as ATen
 import qualified Torch.Internal.Managed.Type.StdString as ATen
-import qualified Torch.Internal.Managed.Native as ATen
-import qualified Torch.Internal.Managed.Cast as ATen
+import qualified Torch.Internal.Managed.Type.Tensor as ATen
+import qualified Torch.Internal.Managed.Type.TensorOptions as ATen
 import qualified Torch.Internal.Type as ATen
-import qualified Torch.Internal.Const as ATen
-import Torch.Internal.Unmanaged.Type.IValue (IValueLike(..))
-import Torch.Internal.Unmanaged.Type.C10Dict
-import Torch.Internal.Managed.Type.IValue
 import Torch.Internal.Type (TensorList)
-import qualified Torch.Internal.Managed.Type.Module as LibTorch
-
-import Torch.Device
-import Torch.DType
-import Torch.Tensor (Tensor(..))
-import Torch.TensorOptions
+import Torch.Internal.Unmanaged.Type.C10Dict
+import Torch.Internal.Unmanaged.Type.IValue (IValueLike (..))
+import qualified Torch.Internal.Unmanaged.Type.Module as Unmanaged
 import Torch.NN
-import Torch.Autograd
+import Torch.Tensor (Tensor (..))
+import Torch.TensorOptions
 
 newtype ScriptModule = UnsafeScriptModule (ForeignPtr ATen.Module)
+
 newtype RawModule = UnsafeRawModule (ForeignPtr ATen.Module)
 
 instance Show ScriptModule where
   show obj = unsafePerformIO $ dumpToStr' obj
 
 type RawIValue = ForeignPtr ATen.IValue
+
 newtype Blob = UnsafeBlob (ForeignPtr (ATen.C10Ptr ATen.Blob))
+
 newtype Object = UnsafeObject (ForeignPtr (ATen.C10Ptr ATen.IVObject))
+
 newtype Future = UnsafeFuture (ForeignPtr (ATen.C10Ptr ATen.IVFuture))
+
 newtype Capsule = UnsafeCapsule (ForeignPtr (ATen.C10Ptr ATen.Capsule))
 
 -- | See https://github.com/pytorch/pytorch/wiki/PyTorch-IR
@@ -68,23 +71,26 @@ newtype Graph = UnsafeGraph (ForeignPtr (ATen.SharedPtr ATen.JitGraph))
 
 data JitGraph
   = JitGraph
-  { graphInputs :: [JitValue]
-  , graphOutputs :: [JitValue]
-  , graphNodes :: [JitNode]
-  } deriving (Show, Eq)
+      { graphInputs :: [JitValue],
+        graphOutputs :: [JitValue],
+        graphNodes :: [JitNode]
+      }
+  deriving (Show, Eq)
 
 data JitNode
   = JitNode
-  { nodeInputs :: [JitValue]
-  , nodeOutputs :: [JitValue]
-  , nodeKind :: String
-  } deriving (Show, Eq)
+      { nodeInputs :: [JitValue],
+        nodeOutputs :: [JitValue],
+        nodeKind :: String
+      }
+  deriving (Show, Eq)
 
 data JitValue
   = JitValue
-  { valueId :: Int
-  , valueType :: String
-  } deriving (Show, Eq)
+      { valueId :: Int,
+        valueType :: String
+      }
+  deriving (Show, Eq)
 
 instance Show Blob where
   show _ = "Blob"
@@ -112,7 +118,7 @@ data IValue
   | IVTensorList [Tensor]
   | IVBlob -- Blob
   | IVGenericList [IValue]
-  | IVGenericDict [(IValue,IValue)]
+  | IVGenericDict [(IValue, IValue)]
   | IVFuture -- Future
   | IVDevice -- Device
   | IVObject -- Object
@@ -144,7 +150,7 @@ save' = cast2 LibTorch.save
 data LoadMode
   = WithoutRequiredGrad
   | WithRequiredGrad
-  deriving (Show,Eq)
+  deriving (Show, Eq)
 
 load :: LoadMode -> FilePath -> IO ScriptModule
 load WithoutRequiredGrad file = cast1 LibTorch.load file
@@ -154,7 +160,7 @@ load WithRequiredGrad file = do
   paramsWithRequiredGrad <- forM params makeIndependent
   setParameters module' (map toDependent paramsWithRequiredGrad)
   return (UnsafeScriptModule rmodule)
-  
+
 load' :: FilePath -> IO RawModule
 load' = cast1 LibTorch.load
 
@@ -224,7 +230,7 @@ dumpToStr' :: ScriptModule -> IO String
 dumpToStr' obj = dumpToStr obj True True True 0
 
 runMethod :: ScriptModule -> String -> [IValue] -> IValue
-runMethod module' func inputs = unsafePerformIO $ cast3 runMethod' module' func inputs 
+runMethod module' func inputs = unsafePerformIO $ cast3 runMethod' module' func inputs
   where
     runMethod' :: ScriptModule -> String -> [RawIValue] -> IO RawIValue
     runMethod' = cast3 LibTorch.runMethod
@@ -261,32 +267,44 @@ trace moduleName functionName func inputs = cast3 (\m f inps -> LibTorch.trace m
 -- --                            [example_inputs]
 -- -- >> immutableTorchscript <- toScriptModule mutableTorchscript
 -- -- >> save immutableTorchscript "<your torchscript file>"
-traceWithParameters
-  :: Parameterized f
-  => String       -- ^ module name
-  -> (f -> [Tensor] -> IO [Tensor]) -- ^ traced function
-  -> f            -- ^ initial parameters
-  -> [Tensor]     -- ^ example inputs
-  -> IO RawModule -- ^ torchscript module
+traceWithParameters ::
+  Parameterized f =>
+  -- | module name
+  String ->
+  -- | traced function
+  (f -> [Tensor] -> IO [Tensor]) ->
+  -- | initial parameters
+  f ->
+  -- | example inputs
+  [Tensor] ->
+  -- | torchscript module
+  IO RawModule
 traceWithParameters moduleName func parameterized_parameters inputs = do
   let parameters = (map toDependent) (flattenParameters parameterized_parameters)
       fromParams params = replaceParameters parameterized_parameters (map IndependentTensor params)
       plen = length parameters
       ilen = length inputs
-  r <- trace moduleName "forwardWithParameters"
-         (\parametersAndInputs ->
-            func
-              (fromParams (take plen parametersAndInputs))
-              (drop plen parametersAndInputs)
-         )
-         (parameters++inputs)
-  forM_ (zip [0..] parameters) $ \(i,p) ->
+  r <-
+    trace
+      moduleName
+      "forwardWithParameters"
+      ( \parametersAndInputs ->
+          func
+            (fromParams (take plen parametersAndInputs))
+            (drop plen parametersAndInputs)
+      )
+      (parameters ++ inputs)
+  forM_ (zip [0 ..] parameters) $ \(i, p) ->
     registerParameter r ("p" ++ show i) p False
-  let args = intercalate ", " $ map (\i ->  "i" ++ show i) [0..(ilen-1)]
-      params = intercalate ", " $ map (\i ->  "self.p" ++ show i) [0..(plen-1)]
+  let args = intercalate ", " $ map (\i -> "i" ++ show i) [0 .. (ilen -1)]
+      params = intercalate ", " $ map (\i -> "self.p" ++ show i) [0 .. (plen -1)]
   define r $
-    "def forward(self, " ++ args ++ "):\n" ++ 
-    "    return self.forwardWithParameters(" ++ params ++ ", " ++ args ++ " )\n"
+    "def forward(self, " ++ args ++ "):\n"
+      ++ "    return self.forwardWithParameters("
+      ++ params
+      ++ ", "
+      ++ args
+      ++ " )\n"
   return r
 
 traceAsGraph :: ([Tensor] -> IO [Tensor]) -> [Tensor] -> IO Graph
@@ -297,7 +315,6 @@ traceAsGraph func inputs = cast1 (\inps -> LibTorch.traceAsGraph (trans func) in
       uncast inputs $ \inputs' -> do
         ret <- func inputs'
         cast ret return
-
 
 printGraph :: Graph -> IO String
 printGraph = cast1 LibTorch.printGraph
@@ -317,7 +334,7 @@ printGraph = cast1 LibTorch.printGraph
 -- On the other hand, torch.onnx.export of python works.
 -- onnx's symbol map is in python code.
 -- https://github.com/pytorch/pytorch/blob/master/torch/onnx/symbolic_opset9.py
--- 
+--
 -- If you need onnx-file, at first make torchscript by trace , then convert torchscript into onnx by python-code.
 printOnnx :: Graph -> IO String
 printOnnx = cast1 LibTorch.printOnnx
@@ -330,13 +347,13 @@ graphToJitGraph (UnsafeGraph graph) = do
       forM inputs $ \i -> do
         valueId <- cast1 Unmanaged.valueId i
         valueType <- cast0 (cast1 Unmanaged.valueType i :: IO (ForeignPtr ATen.StdString))
-        return JitValue{..}
+        return JitValue {..}
     graphOutputs <- do
       inputs <- Unmanaged.graphOutputs g
       forM inputs $ \i -> do
         valueId <- cast1 Unmanaged.valueId i
         valueType <- cast0 (cast1 Unmanaged.valueType i :: IO (ForeignPtr ATen.StdString))
-        return JitValue{..}
+        return JitValue {..}
     graphNodes <- do
       nodes <- Unmanaged.graphNodes g
       forM nodes $ \n -> do
@@ -345,16 +362,16 @@ graphToJitGraph (UnsafeGraph graph) = do
           forM inputs $ \i -> do
             valueId <- cast1 Unmanaged.valueId i
             valueType <- cast0 (cast1 Unmanaged.valueType i :: IO (ForeignPtr ATen.StdString))
-            return JitValue{..}
+            return JitValue {..}
         nodeOutputs <- do
           inputs <- Unmanaged.nodeOutputs n
           forM inputs $ \i -> do
             valueId <- cast1 Unmanaged.valueId i
             valueType <- cast0 (cast1 Unmanaged.valueType i :: IO (ForeignPtr ATen.StdString))
-            return JitValue{..}
+            return JitValue {..}
         nodeKind <- cast0 (cast1 Unmanaged.nodeKind n :: IO (ForeignPtr ATen.StdString))
-        return JitNode{..}
-    return JitGraph{..}
+        return JitNode {..}
+    return JitGraph {..}
 
 instance Castable [IValue] [RawIValue] where
   cast a f = (forM a $ \v -> cast v return) >>= f
@@ -362,7 +379,7 @@ instance Castable [IValue] [RawIValue] where
 
 instance Castable IValue RawIValue where
   cast (IVNone) f = newIValue >>= f
-  cast (IVTensor (Unsafe v)) f = toIValue v>>= f
+  cast (IVTensor (Unsafe v)) f = toIValue v >>= f
   cast (IVDouble v) f = toIValue v >>= f
   cast (IVInt v) f = toIValue v >>= f
   cast (IVBool v) f = toIValue v >>= f
@@ -395,79 +412,87 @@ instance Castable IValue RawIValue where
     keys <- cast (map fst v) return :: IO [RawIValue]
     values <- cast (map snd v) return :: IO [RawIValue]
     let rawIValues = zip keys values
-    c10list <- cast rawIValues return :: IO (ForeignPtr (ATen.C10Dict '(ATen.IValue,ATen.IValue)))
+    c10list <- cast rawIValues return :: IO (ForeignPtr (ATen.C10Dict '(ATen.IValue, ATen.IValue)))
     f =<< toIValue c10list
---  cast (IVBlob (UnsafeBlob v)) f = toIValue v >>= f
---  cast (IVFuture (UnsafeFuture v)) f = toIValue v >>= f
---  cast (IVDevice v) f = toIValue v >>= f
---  cast (IVObject (UnsafeObject v)) f = toIValue v >>= f
---  cast (IVUninitialized) f = f (toIValue v)
---  cast (IVCapsule v) f = toIValue v >>= f
+  --  cast (IVBlob (UnsafeBlob v)) f = toIValue v >>= f
+  --  cast (IVFuture (UnsafeFuture v)) f = toIValue v >>= f
+  --  cast (IVDevice v) f = toIValue v >>= f
+  --  cast (IVObject (UnsafeObject v)) f = toIValue v >>= f
+  --  cast (IVUninitialized) f = f (toIValue v)
+  --  cast (IVCapsule v) f = toIValue v >>= f
   cast a f = throwIO $ userError $ "Unsupported data-type:" ++ show a
   uncast obj f =
     select
-      [ (iValue_isNone obj, f IVNone)
-      , (iValue_isTensor obj, fromIValue obj >>= f . IVTensor . Unsafe)
-      , (iValue_isDouble obj, fromIValue obj >>= f . IVDouble)
-      , (iValue_isInt obj, fromIValue obj >>= f . IVInt)
-      , (iValue_isBool obj, fromIValue obj >>= f . IVBool)
-      , (iValue_isString obj, do
-           v <- fromIValue obj :: IO (ForeignPtr ATen.StdString)
-           str <- uncast v return :: IO String
-           f (IVString str)
-        )
-      , (iValue_isTensorList obj, do
-           v' <- fromIValue obj :: IO (ForeignPtr (ATen.C10List ATen.Tensor))
-           ts <- uncast v' return :: IO [Tensor]
-           f (IVTensorList ts)
-        )
-      , (iValue_isDoubleList obj, do
-           v' <- fromIValue obj :: IO (ForeignPtr (ATen.C10List CDouble))
-           cdoubles <- uncast v' return :: IO [CDouble]
-           doubles <- forM cdoubles (flip uncast return) :: IO [Double]
-           f (IVDoubleList doubles)
-        )
-      , (iValue_isIntList obj, do
-           v' <- fromIValue obj :: IO (ForeignPtr (ATen.C10List Int64))
-           ts <- uncast v' return :: IO [Int64]
-           f (IVIntList ts)
-        )
-      , (iValue_isBoolList obj, do
-           v' <- fromIValue obj :: IO (ForeignPtr (ATen.C10List CBool))
-           cbools <- uncast v' return :: IO [CBool]
-           bools <- forM cbools (flip uncast return) :: IO [Bool]
-           f (IVBoolList bools)
-        )
-      , (iValue_isTuple obj, do
-           c10tuple <- fromIValue obj :: IO (ForeignPtr (ATen.C10Ptr ATen.IVTuple))
-           rawIValues <- uncast c10tuple return :: IO [RawIValue]
-           ts <- uncast rawIValues return :: IO [IValue]
-           f (IVTuple ts)
-        )
-      , (iValue_isGenericList obj, do
-           c10list <- fromIValue obj :: IO (ForeignPtr (ATen.C10List ATen.IValue))
-           rawIValues <- uncast c10list return :: IO [RawIValue]
-           ts <- uncast rawIValues return :: IO [IValue]
-           f (IVGenericList ts)
-        )
-      , (iValue_isGenericDict obj, do
-           c10list <- fromIValue obj :: IO (ForeignPtr (ATen.C10Dict '(ATen.IValue,ATen.IValue)))
-           rawIValues <- uncast c10list return :: IO [(RawIValue,RawIValue)]
-           ts <- forM rawIValues $ \(a,b) -> do
-             a' <- uncast a return
-             b' <- uncast b return
-             return (a',b')
-           f (IVGenericDict ts)
-        )
-      , (iValue_isBlob obj, f IVBlob)
-      , (iValue_isFuture obj, f IVFuture)
-      , (iValue_isDevice obj, f IVDevice)
-      , (iValue_isObject obj, f IVObject)
-      , (iValue_isCapsule obj, f IVCapsule)
+      [ (iValue_isNone obj, f IVNone),
+        (iValue_isTensor obj, fromIValue obj >>= f . IVTensor . Unsafe),
+        (iValue_isDouble obj, fromIValue obj >>= f . IVDouble),
+        (iValue_isInt obj, fromIValue obj >>= f . IVInt),
+        (iValue_isBool obj, fromIValue obj >>= f . IVBool),
+        ( iValue_isString obj,
+          do
+            v <- fromIValue obj :: IO (ForeignPtr ATen.StdString)
+            str <- uncast v return :: IO String
+            f (IVString str)
+        ),
+        ( iValue_isTensorList obj,
+          do
+            v' <- fromIValue obj :: IO (ForeignPtr (ATen.C10List ATen.Tensor))
+            ts <- uncast v' return :: IO [Tensor]
+            f (IVTensorList ts)
+        ),
+        ( iValue_isDoubleList obj,
+          do
+            v' <- fromIValue obj :: IO (ForeignPtr (ATen.C10List CDouble))
+            cdoubles <- uncast v' return :: IO [CDouble]
+            doubles <- forM cdoubles (flip uncast return) :: IO [Double]
+            f (IVDoubleList doubles)
+        ),
+        ( iValue_isIntList obj,
+          do
+            v' <- fromIValue obj :: IO (ForeignPtr (ATen.C10List Int64))
+            ts <- uncast v' return :: IO [Int64]
+            f (IVIntList ts)
+        ),
+        ( iValue_isBoolList obj,
+          do
+            v' <- fromIValue obj :: IO (ForeignPtr (ATen.C10List CBool))
+            cbools <- uncast v' return :: IO [CBool]
+            bools <- forM cbools (flip uncast return) :: IO [Bool]
+            f (IVBoolList bools)
+        ),
+        ( iValue_isTuple obj,
+          do
+            c10tuple <- fromIValue obj :: IO (ForeignPtr (ATen.C10Ptr ATen.IVTuple))
+            rawIValues <- uncast c10tuple return :: IO [RawIValue]
+            ts <- uncast rawIValues return :: IO [IValue]
+            f (IVTuple ts)
+        ),
+        ( iValue_isGenericList obj,
+          do
+            c10list <- fromIValue obj :: IO (ForeignPtr (ATen.C10List ATen.IValue))
+            rawIValues <- uncast c10list return :: IO [RawIValue]
+            ts <- uncast rawIValues return :: IO [IValue]
+            f (IVGenericList ts)
+        ),
+        ( iValue_isGenericDict obj,
+          do
+            c10list <- fromIValue obj :: IO (ForeignPtr (ATen.C10Dict '(ATen.IValue, ATen.IValue)))
+            rawIValues <- uncast c10list return :: IO [(RawIValue, RawIValue)]
+            ts <- forM rawIValues $ \(a, b) -> do
+              a' <- uncast a return
+              b' <- uncast b return
+              return (a', b')
+            f (IVGenericDict ts)
+        ),
+        (iValue_isBlob obj, f IVBlob),
+        (iValue_isFuture obj, f IVFuture),
+        (iValue_isDevice obj, f IVDevice),
+        (iValue_isObject obj, f IVObject),
+        (iValue_isCapsule obj, f IVCapsule)
       ]
     where
       select [] = throwIO $ userError "Unsupported IValue"
-      select ((cond,body):xs) =
+      select ((cond, body) : xs) =
         cond >>= \case
           1 -> body
           _ -> select xs

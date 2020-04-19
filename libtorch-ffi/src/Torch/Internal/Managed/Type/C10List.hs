@@ -1,39 +1,34 @@
-
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE FlexibleInstances #-}
 
 module Torch.Internal.Managed.Type.C10List where
 
-
+import Foreign hiding (newForeignPtr)
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
 import Foreign.Concurrent
-import Torch.Internal.Type
-import Torch.Internal.Class
 import Torch.Internal.Cast
+import Torch.Internal.Class
+import Torch.Internal.Type
+import qualified Torch.Internal.Unmanaged.Type.C10List as Unmanaged
+import Torch.Internal.Unmanaged.Type.Dimname
+import Torch.Internal.Unmanaged.Type.DimnameList
 import Torch.Internal.Unmanaged.Type.Generator
+import Torch.Internal.Unmanaged.Type.IValue
 import Torch.Internal.Unmanaged.Type.IntArray
 import Torch.Internal.Unmanaged.Type.Scalar
+import Torch.Internal.Unmanaged.Type.StdString
 import Torch.Internal.Unmanaged.Type.Storage
 import Torch.Internal.Unmanaged.Type.Tensor
 import Torch.Internal.Unmanaged.Type.TensorList
 import Torch.Internal.Unmanaged.Type.TensorOptions
 import Torch.Internal.Unmanaged.Type.Tuple
-import Torch.Internal.Unmanaged.Type.StdString
-import Torch.Internal.Unmanaged.Type.Dimname
-import Torch.Internal.Unmanaged.Type.DimnameList
-import Torch.Internal.Unmanaged.Type.IValue
-
-import qualified Torch.Internal.Unmanaged.Type.C10List as Unmanaged
-
-
 
 newC10ListIValue :: ForeignPtr IValue -> IO (ForeignPtr (C10List IValue))
 newC10ListIValue elem = cast1 Unmanaged.newC10ListIValue elem
@@ -49,10 +44,6 @@ newC10ListInt = cast0 Unmanaged.newC10ListInt
 
 newC10ListBool :: IO (ForeignPtr (C10List CBool))
 newC10ListBool = cast0 Unmanaged.newC10ListBool
-
-
-
-
 
 c10ListIValue_empty :: ForeignPtr (C10List IValue) -> IO (CBool)
 c10ListIValue_empty = cast1 Unmanaged.c10ListIValue_empty

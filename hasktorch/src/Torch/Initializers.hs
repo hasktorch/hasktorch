@@ -22,37 +22,39 @@ calculateGain (LeakyRelu param) = sqrt (2.0 / (1.0 + (param) ^^ 2))
 -- | Fan-in / Fan-out scaling calculation
 calculateFan :: [Int] -> (Int, Int)
 calculateFan shape =
-    if dimT < 2 then
-        error "Fan in and fan out can not be computed for tensor with fewer than 2 dimensions"
-    else if dimT == 2 then
-        (shape !! 1, shape !! 0)
-        else 
-            (numInputFmaps * receptiveFieldSize,
-            numOutputFmaps * receptiveFieldSize)
-    where
-        dimT = length shape
-        numInputFmaps = shape !! 1 -- size t 1
-        numOutputFmaps = shape !! 0 -- size t 0
-        receptiveFieldSize = product $ tail shape
+  if dimT < 2
+    then error "Fan in and fan out can not be computed for tensor with fewer than 2 dimensions"
+    else
+      if dimT == 2
+        then (shape !! 1, shape !! 0)
+        else
+          ( numInputFmaps * receptiveFieldSize,
+            numOutputFmaps * receptiveFieldSize
+          )
+  where
+    dimT = length shape
+    numInputFmaps = shape !! 1 -- size t 1
+    numOutputFmaps = shape !! 0 -- size t 0
+    receptiveFieldSize = product $ tail shape
 
 -- | Xavier Initialization - Uniform
 xavierUniform :: Float -> [Int] -> IO Tensor
 xavierUniform gain shape = do
-    init <- randIO' shape
-    pure $ subScalar bound $ mulScalar (bound * 2.0) init
-    where
-        (fanIn, fanOut) = calculateFan shape
-        std = gain * sqrt (2.0 / (fromIntegral fanIn + fromIntegral fanOut))
-        bound = sqrt 3.0 * std
+  init <- randIO' shape
+  pure $ subScalar bound $ mulScalar (bound * 2.0) init
+  where
+    (fanIn, fanOut) = calculateFan shape
+    std = gain * sqrt (2.0 / (fromIntegral fanIn + fromIntegral fanOut))
+    bound = sqrt 3.0 * std
 
 -- | Xavier Initialization - Normal
 xavierNormal :: Float -> [Int] -> IO Tensor
 xavierNormal gain shape = do
-    init <- randnIO' shape
-    pure $ mulScalar std init
-    where
-        (fanIn, fanOut) = calculateFan shape
-        std = gain * sqrt (2.0 / (fromIntegral fanIn + fromIntegral fanOut))
+  init <- randnIO' shape
+  pure $ mulScalar std init
+  where
+    (fanIn, fanOut) = calculateFan shape
+    std = gain * sqrt (2.0 / (fromIntegral fanIn + fromIntegral fanOut))
 
 -- | Get fan in or fan out value depending on selected fan mode, used by Kaiming
 getter :: FanMode -> ((Int, Int) -> Int)
@@ -62,36 +64,36 @@ getter FanOut = snd
 -- | Kaiming Initialization - Uniform
 kaimingUniform :: FanMode -> NonLinearity -> [Int] -> IO Tensor
 kaimingUniform mode nonlinearity shape = do
-    init <- randIO' shape
-    pure $ subScalar bound $ mulScalar (bound * 2.0) init
-    where 
-        gain = calculateGain nonlinearity
-        fanValue = fromIntegral $ (getter mode) (calculateFan shape)
-        std = gain / (sqrt fanValue)
-        bound = (sqrt 3.0) * std
+  init <- randIO' shape
+  pure $ subScalar bound $ mulScalar (bound * 2.0) init
+  where
+    gain = calculateGain nonlinearity
+    fanValue = fromIntegral $ (getter mode) (calculateFan shape)
+    std = gain / (sqrt fanValue)
+    bound = (sqrt 3.0) * std
 
 -- | Kaiming Initialization - Normal
 kaimingNormal :: FanMode -> NonLinearity -> [Int] -> IO Tensor
 kaimingNormal mode nonlinearity shape = do
-    init <- (randnIO' shape)
-    pure $ mulScalar std init
-    where 
-        gain = calculateGain nonlinearity
-        fanValue = fromIntegral $ (getter mode) (calculateFan shape)
-        std = gain / (sqrt fanValue)
+  init <- (randnIO' shape)
+  pure $ mulScalar std init
+  where
+    gain = calculateGain nonlinearity
+    fanValue = fromIntegral $ (getter mode) (calculateFan shape)
+    std = gain / (sqrt fanValue)
 
 -- | Handle weights + bias
 -- based on https://github.com/pytorch/pytorch/blob/master/torch/nn/modules/linear.py#L79
 kaimingFC :: [Int] -> IO (Tensor, Tensor)
 kaimingFC weightShape = do
-    weight <- kaimingUniform' weightShape
-    biasInit <- randIO' biasShape
-    let bias = subScalar bound $ mulScalar (bound * 2.0) biasInit
-    pure (weight, bias)
-    where
-        (fanIn, _) = calculateFan weightShape
-        bound = 1.0 / (sqrt . fromIntegral $ fanIn) :: Float
-        biasShape = [weightShape !! 0]
+  weight <- kaimingUniform' weightShape
+  biasInit <- randIO' biasShape
+  let bias = subScalar bound $ mulScalar (bound * 2.0) biasInit
+  pure (weight, bias)
+  where
+    (fanIn, _) = calculateFan weightShape
+    bound = 1.0 / (sqrt . fromIntegral $ fanIn) :: Float
+    biasShape = [weightShape !! 0]
 
 {- PyTorch defaults -}
 

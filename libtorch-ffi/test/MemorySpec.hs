@@ -1,24 +1,28 @@
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
-module MemorySpec (main, spec) where
+{-# LANGUAGE ScopedTypeVariables #-}
 
-import Test.Hspec
+module MemorySpec
+  ( main,
+    spec,
+  )
+where
+
 import Control.Exception (bracket)
-import Control.Monad (forM_,forM)
+import Control.Monad (forM, forM_)
 import Data.Int
 import Foreign
-import Torch.Internal.Const
-import Torch.Internal.Type
-import Torch.Internal.Managed.Type.TensorOptions
-import Torch.Internal.Managed.Type.Tensor
-import Torch.Internal.Managed.Type.IntArray
-import Torch.Internal.Managed.Type.Context
-import Torch.Internal.Managed.Native
-
 import System.Mem ()
+import Test.Hspec
+import Torch.Internal.Const
+import Torch.Internal.Managed.Native
+import Torch.Internal.Managed.Type.Context
+import Torch.Internal.Managed.Type.IntArray
+import Torch.Internal.Managed.Type.Tensor
+import Torch.Internal.Managed.Type.TensorOptions
+import Torch.Internal.Type
 
--- |Confirm that memory is deallocated (works)
+-- | Confirm that memory is deallocated (works)
 main :: IO ()
 main = hspec spec
 
@@ -28,7 +32,6 @@ spec :: Spec
 spec = do
   describe "MemorySpec" $ do
     it "scenario: memoryTestMinimal" memoryTestMinimal
-
 
 fromList :: [Int64] -> IO (ForeignPtr IntArray)
 fromList dims = do
@@ -46,54 +49,54 @@ newTensor_zeros dims = do
 totalDim :: (ForeignPtr IntArray) -> IO Int64
 totalDim dims = do
   size <- intArray_size dims
-  dims' <- forM [0..(size-1)] $ \i -> intArray_at_s dims i
+  dims' <- forM [0 .. (size -1)] $ \i -> intArray_at_s dims i
   return $ sum dims'
 
 iterator :: (ForeignPtr IntArray) -> Int -> IO ()
 iterator = iteratorBracket
 
--- |Leaks memory
+-- | Leaks memory
 iteratorAssign :: (ForeignPtr IntArray) -> Int -> IO ()
 iteratorAssign d niter = do
   size <- memSizeGB d
   putStrLn $ show size ++ " GB per allocation x " ++ show niter
-  forM_ [1..niter] $ \iter -> do
+  forM_ [1 .. niter] $ \iter -> do
     putStr ("Iteration : " ++ show iter ++ " / ")
     x <- newTensor_zeros d
     v <- tensor_dim x
     putStr $ "Printing dummy value: " ++ show v ++ "\r"
   putStrLn "Done"
 
--- |Releases memory on OSX (but not consistently on linux)
+-- | Releases memory on OSX (but not consistently on linux)
 iteratorMonadic :: (ForeignPtr IntArray) -> Int -> IO ()
 iteratorMonadic d niter = do
   size <- memSizeGB d
   putStrLn $ show size ++ " GB per allocation x " ++ show niter
-  forM_ [1..niter] $ \iter -> do
+  forM_ [1 .. niter] $ \iter -> do
     putStr ("Iteration : " ++ show iter ++ " / ")
     x <- newTensor_zeros d
     v <- tensor_dim x
     putStr $ "Printing dummy value: " ++ show v ++ "\r"
   putStrLn "Done"
 
--- |Releases memory
+-- | Releases memory
 iteratorBracket :: (ForeignPtr IntArray) -> Int -> IO ()
 iteratorBracket d niter = do
   size <- memSizeGB d
   putStrLn $ show size ++ " GB per allocation x " ++ show niter
-  forM_ [1..niter] $ \iter ->
-    bracket (pure iter)
-    (\iter -> do
-       putStr ("Iteration : " ++ show iter ++ " / ")
-       x <- newTensor_zeros d
-       v <- tensor_dim x
-       putStr $ "Printing dummy value: " ++ show v ++ "\r"
-    )
-    (const (pure ()))
+  forM_ [1 .. niter] $ \iter ->
+    bracket
+      (pure iter)
+      ( \iter -> do
+          putStr ("Iteration : " ++ show iter ++ " / ")
+          x <- newTensor_zeros d
+          v <- tensor_dim x
+          putStr $ "Printing dummy value: " ++ show v ++ "\r"
+      )
+      (const (pure ()))
   putStrLn "Done"
 
-
--- |getDim' size per allocation
+-- | getDim' size per allocation
 memSizeGB :: (ForeignPtr IntArray) -> IO Double
 memSizeGB d = do
   td <- totalDim d
@@ -106,7 +109,7 @@ memoryTestLarge = do
 
 memoryTestSmall :: IO ()
 memoryTestSmall = do
-  dims <- fromList [100, 100, 100, 7] 
+  dims <- fromList [100, 100, 100, 7]
   iterator dims 300 -- 50 MB x 300 = 15 GB
 
 memoryTestFast :: IO ()

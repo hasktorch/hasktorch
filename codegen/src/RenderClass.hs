@@ -1,24 +1,27 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE QuasiQuotes #-}
+
 module RenderClass where
 
+import Data.String (fromString)
+import Data.Text (Text)
+import qualified Data.Text.IO as T
 import Data.Yaml (ParseException)
 import qualified Data.Yaml as Y
-import Text.Shakespeare.Text (st)
-import Data.Text (Text)
-import Data.String (fromString)
-import qualified Data.Text.IO as T
-import System.Directory (createDirectoryIfMissing)
-
 import qualified ParseClass as PC
 import RenderCommon
+import System.Directory (createDirectoryIfMissing)
+import Text.Shakespeare.Text (st)
 
 renderImport :: Bool -> PC.CppClassSpec -> Text
-renderImport is_managed typ_ =  if is_managed then  [st|
+renderImport is_managed typ_ =
+  if is_managed
+    then
+      [st|
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign hiding (newForeignPtr)
@@ -39,7 +42,9 @@ import Torch.Internal.Unmanaged.Type.Dimname
 import Torch.Internal.Unmanaged.Type.DimnameList
 
 import qualified #{"Torch.Internal.Unmanaged.Type." <> (PC.hsnameWithoutSpace typ_)} as Unmanaged
-|] else [st|
+|]
+    else
+      [st|
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
 import qualified Language.C.Inline.Context as C
@@ -58,19 +63,21 @@ C.include "<ATen/ATen.h>"
 C.include "<vector>"
 |]
 
-
 renderConstructors :: Bool -> PC.CppClassSpec -> Text
 renderConstructors is_managed typ_ = mconcat $ map (methodToCpp typ_ True is_managed True "" "") (PC.constructors typ_)
 
 renderDestructor :: Bool -> PC.CppClassSpec -> Text
-renderDestructor is_managed typ_ = if is_managed then "" else [st|
+renderDestructor is_managed typ_ =
+  if is_managed
+    then ""
+    else
+      [st|
 delete#{PC.hsnameWithoutSpace typ_} :: Ptr #{PC.hsnameWithParens typ_} -> IO ()
 delete#{PC.hsnameWithoutSpace typ_} object = #{bra}C.throwBlock| void { delete $(#{PC.cppname typ_}* object);}|#{cket}
 
 instance CppObject #{PC.hsnameWithParens typ_} where
   fromPtr ptr = newForeignPtr ptr (delete#{PC.hsnameWithoutSpace typ_} ptr)
 |]
-
 
 renderMethods :: Bool -> PC.CppClassSpec -> Text
 renderMethods is_managed typ_ = mconcat $ map (methodToCpp typ_ False is_managed True "" "") (PC.methods typ_)
@@ -91,9 +98,9 @@ decodeAndCodeGen basedir fileName = do
       T.writeFile (basedir <> "/Torch/Internal/Managed/Type/" <> PC.hsnameWithoutSpace fns <> ".hs") $
         template True ("Torch.Internal.Managed.Type." <> fromString (PC.hsnameWithoutSpace fns)) fns
 
-
 template :: Bool -> Text -> PC.CppClassSpec -> Text
-template is_managed module_name types = [st|
+template is_managed module_name types =
+  [st|
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -115,4 +122,3 @@ module #{module_name} where
 
 #{renderFunctions is_managed types}
 |]
-

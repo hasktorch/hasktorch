@@ -1,31 +1,30 @@
-
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE FlexibleInstances #-}
 
 module Torch.Internal.Unmanaged.Type.C10List where
 
-
-import qualified Language.C.Inline.Cpp as C
-import qualified Language.C.Inline.Cpp.Exceptions as C
-import qualified Language.C.Inline.Context as C
-import qualified Language.C.Types as C
 import qualified Data.Map as Map
+import Foreign hiding (newForeignPtr)
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
 import Foreign.Concurrent
-import Torch.Internal.Type
+import qualified Language.C.Inline.Context as C
+import qualified Language.C.Inline.Cpp as C
+import qualified Language.C.Inline.Cpp.Exceptions as C
+import qualified Language.C.Types as C
 import Torch.Internal.Class
+import Torch.Internal.Type
 
-C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
+C.context $ C.cppCtx <> mempty {C.ctxTypesTable = typeTable}
 
 C.include "<ATen/ATen.h>"
+
 C.include "<vector>"
 
 newC10ListIValue :: Ptr IValue -> IO (Ptr (C10List IValue))
@@ -72,8 +71,6 @@ instance CppObject (C10List Int64) where
 
 instance CppObject (C10List CBool) where
   fromPtr ptr = newForeignPtr ptr (deleteC10ListBool ptr)
-
-
 
 c10ListIValue_empty :: Ptr (C10List IValue) -> IO (CBool)
 c10ListIValue_empty _obj = [C.throwBlock| bool { return (*$(c10::List<at::IValue>* _obj)).empty(); }|]
@@ -134,6 +131,3 @@ c10ListInt_push_back _obj _v = [C.throwBlock| void {  (*$(c10::List<int64_t>* _o
 
 c10ListBool_push_back :: Ptr (C10List CBool) -> CBool -> IO ()
 c10ListBool_push_back _obj _v = [C.throwBlock| void {  (*$(c10::List<bool>* _obj)).push_back($(bool _v)); }|]
-
-
-

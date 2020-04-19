@@ -1,90 +1,90 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoStarIsType #-}
 
 module Torch.Typed.Functional where
 
-import           Prelude                 hiding ( all
-                                                , any
-                                                , sin
-                                                , sinh
-                                                , cos
-                                                , cosh
-                                                , tan
-                                                , tanh
-                                                , asin
-                                                , asinh
-                                                , acos
-                                                , acosh
-                                                , atan
-                                                , atanh
-                                                , abs
-                                                , max
-                                                , min
-                                                , exp
-                                                , log
-                                                , round
-                                                , isNaN
-                                                , floor
-                                                , ceil
-                                                )
-import           Data.Finite
-import qualified Data.Int                      as I
-import           Torch.HList
-import           Data.Kind                      ( Constraint
-                                                , Type
-                                                )
-import           Data.Maybe
-import           Data.Proxy
-import           Data.Reflection
-import           Control.Arrow                  ( (&&&) )
-import           GHC.Generics                   ( Generic )
-import           GHC.Natural                    ( Natural )
-import           GHC.TypeLits
-import           GHC.TypeLits.Extra
-import           System.IO.Unsafe
-import           Data.Singletons.Prelude.List   ( Product )
-
-import           Foreign.ForeignPtr
-import qualified Torch.Internal.Const                    as ATen
-import qualified Torch.Internal.Type                     as ATen
-import qualified Torch.Internal.Cast                     as ATen
-import qualified Torch.Internal.Class                    as ATen
-import qualified Torch.Internal.Managed.Cast             as ATen.Managed
-import qualified Torch.Internal.Managed.Native           as ATen.Managed
-import qualified Torch.Internal.Managed.Type.Tensor      as ATen.Managed
-import qualified Torch.Internal.Managed.Type.Scalar      as ATen.Managed
-import qualified Torch.Internal.Managed.Type.Tuple       as ATen.Managed
-
-import qualified Torch.Tensor                  as D
-import qualified Torch.TensorFactories         as D
-import qualified Torch.TensorOptions           as D
-import qualified Torch.DType                   as D
-import qualified Torch.Device                  as D
-import qualified Torch.Scalar                  as D
-import           Torch.Functional               ( Reduction(..)
-                                                , Tri(..)
-                                                , isUpper
-                                                , kOne
-                                                )
-import           Torch.Typed.Aux
-import           Torch.Typed.Factories
-import           Torch.Typed.Tensor
-
+import Control.Arrow ((&&&))
+import Data.Finite
+import qualified Data.Int as I
+import Data.Kind
+  ( Constraint,
+    Type,
+  )
+import Data.Maybe
+import Data.Proxy
+import Data.Reflection
+import Data.Singletons.Prelude.List (Product)
+import Foreign.ForeignPtr
+import GHC.Generics (Generic)
+import GHC.Natural (Natural)
+import GHC.TypeLits
+import GHC.TypeLits.Extra
+import System.IO.Unsafe
+import qualified Torch.DType as D
+import qualified Torch.Device as D
+import Torch.Functional
+  ( Reduction (..),
+    Tri (..),
+    isUpper,
+    kOne,
+  )
+import Torch.HList
+import qualified Torch.Internal.Cast as ATen
+import qualified Torch.Internal.Class as ATen
+import qualified Torch.Internal.Const as ATen
+import qualified Torch.Internal.Managed.Cast as ATen.Managed
+import qualified Torch.Internal.Managed.Native as ATen.Managed
+import qualified Torch.Internal.Managed.Type.Scalar as ATen.Managed
+import qualified Torch.Internal.Managed.Type.Tensor as ATen.Managed
+import qualified Torch.Internal.Managed.Type.Tuple as ATen.Managed
+import qualified Torch.Internal.Type as ATen
+import qualified Torch.Scalar as D
+import qualified Torch.Tensor as D
+import qualified Torch.TensorFactories as D
+import qualified Torch.TensorOptions as D
+import Torch.Typed.Aux
+import Torch.Typed.Factories
+import Torch.Typed.Tensor
+import Prelude hiding
+  ( abs,
+    acos,
+    acosh,
+    all,
+    any,
+    asin,
+    asinh,
+    atan,
+    atanh,
+    ceil,
+    cos,
+    cosh,
+    exp,
+    floor,
+    isNaN,
+    log,
+    max,
+    min,
+    round,
+    sin,
+    sinh,
+    tan,
+    tanh,
+  )
 
 type family SumDType (dtype :: D.DType) :: D.DType where
   SumDType D.Bool = D.Int64
@@ -98,8 +98,8 @@ type family SumDType (dtype :: D.DType) :: D.DType where
   SumDType D.Double = D.Double
 
 type family SumDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
-  SumDTypeIsValid '( 'D.CPU, 0)    dtype = DTypeIsNotHalf '( 'D.CPU, 0) dtype
-  SumDTypeIsValid '( 'D.CUDA, _)   dtype = ()
+  SumDTypeIsValid '( 'D.CPU, 0) dtype = DTypeIsNotHalf '( 'D.CPU, 0) dtype
+  SumDTypeIsValid '( 'D.CUDA, _) dtype = ()
   SumDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 -- | sumAll
@@ -120,13 +120,15 @@ type family SumDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :
 -- (Float,([],6.0))
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: Double) $ sumAll (ones :: CPUTensor 'D.Double '[2, 3])
 -- (Double,([],6.0))
-sumAll
-  :: forall shape dtype' dtype device
-   . ( SumDTypeIsValid device dtype
-     , dtype' ~ SumDType dtype
-     )
-  => Tensor device dtype  shape -- ^ input
-  -> Tensor device dtype' '[] -- ^ output
+sumAll ::
+  forall shape dtype' dtype device.
+  ( SumDTypeIsValid device dtype,
+    dtype' ~ SumDType dtype
+  ) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype' '[]
 sumAll input = unsafePerformIO $ ATen.cast1 ATen.Managed.sum_t input
 
 -- | sumDim
@@ -135,110 +137,126 @@ sumAll input = unsafePerformIO $ ATen.cast1 ATen.Managed.sum_t input
 -- (Float,[4,5])
 -- >>> sumDim @1 (ones :: CPUTensor 'D.Float '[2,4])
 -- Tensor Float [2] [ 4.0000   ,  4.0000   ]
-sumDim
-  :: forall d shape shape' dtype dtype' device
-   . ( KnownNat d
-     , shape' ~ DropValue shape d
-     , SumDTypeIsValid device dtype
-     , dtype' ~ SumDType dtype
-     )
-  => Tensor device dtype  shape -- ^ input
-  -> Tensor device dtype' shape' -- ^ output
+sumDim ::
+  forall d shape shape' dtype dtype' device.
+  ( KnownNat d,
+    shape' ~ DropValue shape d,
+    SumDTypeIsValid device dtype,
+    dtype' ~ SumDType dtype
+  ) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype' shape'
 sumDim input = unsafePerformIO $ ATen.cast2 ATen.Managed.sum_tl input (natValI @d)
 
 -- | abs
 --
 -- >>> dtype &&& shape $ abs (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[2,2])
-abs
-  :: forall shape dtype device
-   . (DTypeIsNotHalf device dtype, DTypeIsNotBool device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+abs ::
+  forall shape dtype device.
+  (DTypeIsNotHalf device dtype, DTypeIsNotBool device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 abs input = unsafePerformIO $ ATen.cast1 ATen.Managed.abs_t input
 
 -- | ceil
 --
 -- >>> dtype &&& shape $ ceil (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[2,2])
-ceil
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+ceil ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 ceil input = unsafePerformIO $ ATen.cast1 ATen.Managed.ceil_t input
 
 -- | floor
 --
 -- >>> dtype &&& shape $ floor (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[2,2])
-floor
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+floor ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 floor input = unsafePerformIO $ ATen.cast1 ATen.Managed.floor_t input
 
--- TODO: better error messages, "Couldn't match type ‘'False’ with ‘'True’" isn't great
+-- TODO: better error messages, "Couldn't match type 'False with 'True" isn't great
 type family AllDimsPositive (shape :: [Nat]) :: Constraint where
   AllDimsPositive '[] = ()
   AllDimsPositive (x ': xs) = (1 <= x, AllDimsPositive xs)
 
 type family AggregationDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
-  AggregationDTypeIsValid '( 'D.CPU, 0)    dtype = DTypeIsNotHalf '( 'D.CPU, 0) dtype
-  AggregationDTypeIsValid '( 'D.CUDA, _)   dtype = ()
+  AggregationDTypeIsValid '( 'D.CPU, 0) dtype = DTypeIsNotHalf '( 'D.CPU, 0) dtype
+  AggregationDTypeIsValid '( 'D.CUDA, _) dtype = ()
   AggregationDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 -- | min
 --
 -- >>> dtype &&& shape $ min (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[])
-min
-  :: forall shape dtype device
-   . ( AggregationDTypeIsValid device dtype
-     , AllDimsPositive shape
-     )
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype '[] -- ^ output
+min ::
+  forall shape dtype device.
+  ( AggregationDTypeIsValid device dtype,
+    AllDimsPositive shape
+  ) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype '[]
 min input = unsafePerformIO $ ATen.cast1 ATen.Managed.min_t input
 
 -- | max
 --
 -- >>> dtype &&& shape $ max (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[])
-max
-  :: forall shape dtype device
-  . ( AggregationDTypeIsValid device dtype
-    , AllDimsPositive shape
-    )
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype '[] -- ^ output
+max ::
+  forall shape dtype device.
+  ( AggregationDTypeIsValid device dtype,
+    AllDimsPositive shape
+  ) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype '[]
 max input = unsafePerformIO $ ATen.cast1 ATen.Managed.max_t input
 
 -- | median
 --
 -- >>> dtype &&& shape $ median (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[])
-median
-  :: forall shape dtype device
-  . ( AggregationDTypeIsValid device dtype
-    , AllDimsPositive shape
-    )
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype '[] -- ^ output
+median ::
+  forall shape dtype device.
+  ( AggregationDTypeIsValid device dtype,
+    AllDimsPositive shape
+  ) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype '[]
 median input = unsafePerformIO $ ATen.cast1 ATen.Managed.median_t input
 
 -- | mean
 --
 -- >>> dtype &&& shape $ mean (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[])
-mean
-  :: forall shape dtype device
-  . ( AggregationDTypeIsValid device dtype
-    , AllDimsPositive shape
-    )
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype '[] -- ^ output
+mean ::
+  forall shape dtype device.
+  ( AggregationDTypeIsValid device dtype,
+    AllDimsPositive shape
+  ) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype '[]
 mean input = unsafePerformIO $ ATen.cast1 ATen.Managed.mean_t input
 
 -- | addScalar
@@ -247,12 +265,15 @@ mean input = unsafePerformIO $ ATen.cast1 ATen.Managed.mean_t input
 --
 -- >>> dtype &&& shape $ addScalar 1 (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[2,2])
-addScalar
-  :: forall a shape dtype device
-   . D.Scalar a
-  => a -- ^ scalar input
-  -> Tensor device dtype shape -- ^ tensor input
-  -> Tensor device dtype shape -- ^ output
+addScalar ::
+  forall a shape dtype device.
+  D.Scalar a =>
+  -- | scalar input
+  a ->
+  -- | tensor input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 addScalar a input = unsafePerformIO $ ATen.cast2 ATen.Managed.add_ts input a
 
 -- | subScalar
@@ -261,12 +282,15 @@ addScalar a input = unsafePerformIO $ ATen.cast2 ATen.Managed.add_ts input a
 --
 -- >>> dtype &&& shape $ subScalar 1 (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[2,2])
-subScalar
-  :: forall a shape dtype device
-   . D.Scalar a
-  => a -- ^ scalar input
-  -> Tensor device dtype shape -- ^ tensor input
-  -> Tensor device dtype shape -- ^ output
+subScalar ::
+  forall a shape dtype device.
+  D.Scalar a =>
+  -- | scalar input
+  a ->
+  -- | tensor input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 subScalar a input = unsafePerformIO $ ATen.cast2 ATen.Managed.sub_ts input a
 
 -- | mulScalar
@@ -275,12 +299,15 @@ subScalar a input = unsafePerformIO $ ATen.cast2 ATen.Managed.sub_ts input a
 --
 -- >>> dtype &&& shape $ mulScalar 2 (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[2,2])
-mulScalar
-  :: forall a shape dtype device
-   . D.Scalar a
-  => a -- ^ scalar input
-  -> Tensor device dtype shape -- ^ tensor input
-  -> Tensor device dtype shape -- ^ output
+mulScalar ::
+  forall a shape dtype device.
+  D.Scalar a =>
+  -- | scalar input
+  a ->
+  -- | tensor input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 mulScalar a input = unsafePerformIO $ ATen.cast2 ATen.Managed.mul_ts input a
 
 -- | divScalar
@@ -289,66 +316,79 @@ mulScalar a input = unsafePerformIO $ ATen.cast2 ATen.Managed.mul_ts input a
 --
 -- >>> dtype &&& shape $ divScalar 2 (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[2,2])
-divScalar
-  :: forall a shape dtype device
-   . D.Scalar a
-  => a -- ^ scalar input
-  -> Tensor device dtype shape -- ^ tensor input
-  -> Tensor device dtype shape -- ^ output
+divScalar ::
+  forall a shape dtype device.
+  D.Scalar a =>
+  -- | scalar input
+  a ->
+  -- | tensor input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 divScalar a input = unsafePerformIO $ ATen.cast2 ATen.Managed.div_ts input a
 
 -- | erf
 --
 -- >>> dtype &&& shape $ erf (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-erf
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+erf ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 erf input = unsafePerformIO $ ATen.cast1 ATen.Managed.erf_t input
 
 -- | exp
 --
 -- >>> dtype &&& shape $ exp (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-exp
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+exp ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 exp input = unsafePerformIO $ ATen.cast1 ATen.Managed.exp_t input
 
 -- | log1p
 --
 -- >>> dtype &&& shape $ log1p (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-log1p
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+log1p ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 log1p input = unsafePerformIO $ ATen.cast1 ATen.Managed.log1p_t input
 
 -- | log2
 -- >>> dtype &&& shape $ log2 (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-log2
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+log2 ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 log2 input = unsafePerformIO $ ATen.cast1 ATen.Managed.log2_t input
 
 -- | log10
 --
 -- >>> dtype &&& shape $ log10 (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-log10
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+log10 ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 log10 input = unsafePerformIO $ ATen.cast1 ATen.Managed.log10_t input
 
 -- | pow
@@ -356,34 +396,41 @@ log10 input = unsafePerformIO $ ATen.cast1 ATen.Managed.log10_t input
 --
 -- >>> dtype &&& shape $ pow 2 (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-pow
-  :: forall a shape dtype device
-   . D.Scalar a
-  => a -- ^ power
-  -> Tensor device dtype shape -- ^ input tensor
-  -> Tensor device dtype shape -- ^ output tensor
+pow ::
+  forall a shape dtype device.
+  D.Scalar a =>
+  -- | power
+  a ->
+  -- | input tensor
+  Tensor device dtype shape ->
+  -- | output tensor
+  Tensor device dtype shape
 pow a input = unsafePerformIO $ ATen.cast2 ATen.Managed.pow_ts input a
 
 -- | relu activation function
 --
 -- >>> dtype &&& shape $ relu (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-relu
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+relu ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 relu input = unsafePerformIO $ ATen.cast1 ATen.Managed.relu_t input
 
 -- | selu
 --
 -- >>> dtype &&& shape $ selu (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-selu
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+selu ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 selu input = unsafePerformIO $ ATen.cast1 ATen.Managed.selu_t input
 
 -- | mish
@@ -391,80 +438,92 @@ selu input = unsafePerformIO $ ATen.cast1 ATen.Managed.selu_t input
 --
 -- >>> dtype &&& shape &&& (\t -> D.asValue (toDynamic t) :: [[Float]]) $ mish (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,([3,2],[[0.86509836,0.86509836],[0.86509836,0.86509836],[0.86509836,0.86509836]]))
-mish
-  :: forall shape dtype device
-   . ( StandardFloatingPointDTypeValidation device dtype
-     , BasicArithmeticDTypeIsValid device dtype
-     , shape ~ Broadcast shape shape
-     )
-  => Tensor device dtype shape
-  -> Tensor device dtype shape
+mish ::
+  forall shape dtype device.
+  ( StandardFloatingPointDTypeValidation device dtype,
+    BasicArithmeticDTypeIsValid device dtype,
+    shape ~ Broadcast shape shape
+  ) =>
+  Tensor device dtype shape ->
+  Tensor device dtype shape
 mish = mul =<< tanh . softplus (1 :: Float) 20
 
 -- | sigmoid
 --
 -- >>> dtype &&& shape $ sigmoid (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-sigmoid
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+sigmoid ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 sigmoid input = unsafePerformIO $ ATen.cast1 ATen.Managed.sigmoid_t input
 
 -- | sin
 --
 -- >>> dtype &&& shape $ sin (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-sin
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+sin ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 sin input = unsafePerformIO $ ATen.cast1 ATen.Managed.sin_t input
 
 -- | sinh
 --
 -- >>> dtype &&& shape $ sinh (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-sinh
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+sinh ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 sinh input = unsafePerformIO $ ATen.cast1 ATen.Managed.sinh_t input
 
 -- | cos
 --
 -- >>> dtype &&& shape $ cos (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-cos
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+cos ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 cos input = unsafePerformIO $ ATen.cast1 ATen.Managed.cos_t input
 
 -- | sqrt
-sqrt
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+sqrt ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 sqrt input = unsafePerformIO $ ATen.cast1 ATen.Managed.sqrt_t input
 
 -- | tanh
-tanh
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+tanh ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 tanh input = unsafePerformIO $ ATen.cast1 ATen.Managed.tanh_t input
 
 type family SqueezeAll (shape :: [Nat]) :: [Nat] where
   SqueezeAll '[] = '[]
-  SqueezeAll (1: xs) = SqueezeAll xs
-  SqueezeAll (x: xs) = x ': SqueezeAll xs
+  SqueezeAll (1 : xs) = SqueezeAll xs
+  SqueezeAll (x : xs) = x ': SqueezeAll xs
 
 -- | squeezeAll
 -- | Note: this function is unsafe; dimensions not known statically are retained in the type,
@@ -472,11 +531,13 @@ type family SqueezeAll (shape :: [Nat]) :: [Nat] where
 --
 -- >>> dtype &&& shape $ squeezeAll (ones :: CPUTensor 'D.Float '[2,1,2,1,2])
 -- (Float,[2,2,2])
-squeezeAll
-  :: forall shape shape' dtype device
-   . (shape' ~ SqueezeAll shape)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape' -- ^ output
+squeezeAll ::
+  forall shape shape' dtype device.
+  (shape' ~ SqueezeAll shape) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape'
 squeezeAll input = unsafePerformIO $ ATen.cast1 ATen.Managed.squeeze_t input
 
 -- | ConditionalReduction
@@ -488,44 +549,52 @@ squeezeAll input = unsafePerformIO $ ATen.cast1 ATen.Managed.squeeze_t input
 -- ConditionalReduction '[3,2] ReduceMean :: [Nat]
 -- = '[]
 type family ConditionalReduction (shape :: [Nat]) (reduction :: Reduction) :: [Nat] where
-    ConditionalReduction shape ReduceNone = shape
-    ConditionalReduction shape _ = '[]
+  ConditionalReduction shape ReduceNone = shape
+  ConditionalReduction shape _ = '[]
 
 class KnownReduction reduction where
-    reductionVal :: Int
+  reductionVal :: Int
 
 instance KnownReduction ReduceNone where
-    reductionVal = 0
+  reductionVal = 0
+
 instance KnownReduction ReduceMean where
-    reductionVal = 1
+  reductionVal = 1
+
 instance KnownReduction ReduceSum where
-    reductionVal = 2
+  reductionVal = 2
 
 -- | binary cross entropy
 --
 -- >>> t = ones :: CPUTensor 'D.Float '[2,2]
 -- >>> dtype &&& shape $ binaryCrossEntropy @ReduceNone t t t
 -- (Float,[2,2])
--- >>> dtype &&& shape $ binaryCrossEntropy @ReduceMean t t t 
+-- >>> dtype &&& shape $ binaryCrossEntropy @ReduceMean t t t
 -- (Float,[])
 -- >>> dtype &&& shape $ binaryCrossEntropy @ReduceSum t t t
 -- (Float,[])
-binaryCrossEntropy
-  :: forall (reduction :: Reduction) shape shape' dtype device
-   . ( KnownReduction reduction
-     , shape' ~ ConditionalReduction shape reduction
-     , StandardFloatingPointDTypeValidation device dtype
-     )
-  => Tensor device dtype shape -- ^ weight
-  -> Tensor device dtype shape -- ^ prediction
-  -> Tensor device dtype shape -- ^ target
-  -> Tensor device dtype shape' -- ^ output
-binaryCrossEntropy weight prediction target = unsafePerformIO $ ATen.cast4
-  ATen.Managed.binary_cross_entropy_tttl
-  prediction
-  target
-  weight
-  (reductionVal @reduction)
+binaryCrossEntropy ::
+  forall (reduction :: Reduction) shape shape' dtype device.
+  ( KnownReduction reduction,
+    shape' ~ ConditionalReduction shape reduction,
+    StandardFloatingPointDTypeValidation device dtype
+  ) =>
+  -- | weight
+  Tensor device dtype shape ->
+  -- | prediction
+  Tensor device dtype shape ->
+  -- | target
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape'
+binaryCrossEntropy weight prediction target =
+  unsafePerformIO $
+    ATen.cast4
+      ATen.Managed.binary_cross_entropy_tttl
+      prediction
+      target
+      weight
+      (reductionVal @reduction)
 
 -- | mseLoss
 --
@@ -536,20 +605,25 @@ binaryCrossEntropy weight prediction target = unsafePerformIO $ ATen.cast4
 -- (Float,[])
 -- >>> dtype &&& shape $ mseLoss @ReduceSum t t
 -- (Float,[])
-mseLoss
-  :: forall (reduction :: Reduction) shape shape' dtype device
-   . ( KnownReduction reduction
-     , shape' ~ ConditionalReduction shape reduction
-     , StandardFloatingPointDTypeValidation device dtype
-     )
-  => Tensor device dtype shape -- ^ prediction
-  -> Tensor device dtype shape -- ^ target
-  -> Tensor device dtype shape' -- ^ output
-mseLoss prediction target = unsafePerformIO $ ATen.cast3
-  ATen.Managed.mse_loss_ttl
-  prediction
-  target
-  (reductionVal @reduction)
+mseLoss ::
+  forall (reduction :: Reduction) shape shape' dtype device.
+  ( KnownReduction reduction,
+    shape' ~ ConditionalReduction shape reduction,
+    StandardFloatingPointDTypeValidation device dtype
+  ) =>
+  -- | prediction
+  Tensor device dtype shape ->
+  -- | target
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape'
+mseLoss prediction target =
+  unsafePerformIO $
+    ATen.cast3
+      ATen.Managed.mse_loss_ttl
+      prediction
+      target
+      (reductionVal @reduction)
 
 -- | softmax
 --
@@ -558,16 +632,20 @@ mseLoss prediction target = unsafePerformIO $ ATen.cast3
 -- (Float,[2,2])
 -- >>> dtype &&& shape $ softmax @1 t
 -- (Float,[2,2])
-softmax
-  :: forall dim shape dtype device
-   . ( KnownNat dim, DimOutOfBoundCheck shape dim
-     , KnownDType dtype
-     , StandardFloatingPointDTypeValidation device dtype
-     )
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
-softmax input = unsafePerformIO
-  $ ATen.cast3 ATen.Managed.softmax_tls input (natValI @dim) (dtypeVal @dtype)
+softmax ::
+  forall dim shape dtype device.
+  ( KnownNat dim,
+    DimOutOfBoundCheck shape dim,
+    KnownDType dtype,
+    StandardFloatingPointDTypeValidation device dtype
+  ) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
+softmax input =
+  unsafePerformIO $
+    ATen.cast3 ATen.Managed.softmax_tls input (natValI @dim) (dtypeVal @dtype)
 
 -- | logSoftmax
 --
@@ -576,44 +654,50 @@ softmax input = unsafePerformIO
 -- (Float,[2,2])
 -- >>> dtype &&& shape $ logSoftmax @1 t
 -- (Float,[2,2])
-logSoftmax
-  :: forall dim shape dtype device
-   . ( KnownNat dim, DimOutOfBoundCheck shape dim
-     , KnownDType dtype
-     , StandardFloatingPointDTypeValidation device dtype
-     )
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
-logSoftmax input = unsafePerformIO
-  $ ATen.cast3 ATen.Managed.log_softmax_tls input (natValI @dim) (dtypeVal @dtype)
+logSoftmax ::
+  forall dim shape dtype device.
+  ( KnownNat dim,
+    DimOutOfBoundCheck shape dim,
+    KnownDType dtype,
+    StandardFloatingPointDTypeValidation device dtype
+  ) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
+logSoftmax input =
+  unsafePerformIO $
+    ATen.cast3 ATen.Managed.log_softmax_tls input (natValI @dim) (dtypeVal @dtype)
 
 type family Square (shape :: [Nat]) :: [Nat] where
-  Square (n:n:'[])   = '[n,n]
-  Square (b:n:n:'[]) = '[b,n,n]
-  Square _           = TypeError (Text "This shape must be square matrix or batch + square matrix.")
+  Square (n : n : '[]) = '[n, n]
+  Square (b : n : n : '[]) = '[b, n, n]
+  Square _ = TypeError (Text "This shape must be square matrix or batch + square matrix.")
 
 type family VectorOfSquare (shape :: [Nat]) :: [Nat] where
-  VectorOfSquare (n:n:'[])   = '[n]
-  VectorOfSquare (b:n:n:'[]) = '[b,n]
-  VectorOfSquare _           = TypeError (Text "This shape must be square matrix or batch + square matrix.")
+  VectorOfSquare (n : n : '[]) = '[n]
+  VectorOfSquare (b : n : n : '[]) = '[b, n]
+  VectorOfSquare _ = TypeError (Text "This shape must be square matrix or batch + square matrix.")
 
 type family FstSquareDim (shape :: [Nat]) :: Nat where
-  FstSquareDim (n:m:'[])   = n
-  FstSquareDim (b:n:m:'[]) = n
-  FstSquareDim _           = TypeError (Text "Can not get first dimention of matrix or batch + matrix.")
+  FstSquareDim (n : m : '[]) = n
+  FstSquareDim (b : n : m : '[]) = n
+  FstSquareDim _ = TypeError (Text "Can not get first dimention of matrix or batch + matrix.")
 
 type family InverseShapeIsValid (device :: (D.DeviceType, Nat)) (shape :: [Nat]) :: Constraint where
-  InverseShapeIsValid '( 'D.CPU, 0)  _     = ()
+  InverseShapeIsValid '( 'D.CPU, 0) _ = ()
   InverseShapeIsValid '( 'D.CUDA, _) shape = AllDimsPositive shape
 
 type family InverseDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
-  InverseDTypeIsValid '( 'D.CPU, 0)            dtype = ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype
-                                                       , DTypeIsNotHalf '( 'D.CPU, 0) dtype
-                                                       )
-  InverseDTypeIsValid '( 'D.CUDA, deviceIndex) dtype = ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
-                                                       , DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
-                                                       )
-  InverseDTypeIsValid '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
+  InverseDTypeIsValid '( 'D.CPU, 0) dtype =
+    ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype,
+      DTypeIsNotHalf '( 'D.CPU, 0) dtype
+    )
+  InverseDTypeIsValid '( 'D.CUDA, deviceIndex) dtype =
+    ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype,
+      DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
+    )
+  InverseDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 -- | inverse
 -- TODO: if rank < n for any tensors in the batch, then this will not work. we can't decide this statically, but we should prevent runtime errors. therefore, return Maybe?
@@ -624,24 +708,28 @@ type family InverseDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DTyp
 -- >>> t <- randn :: IO (CPUTensor 'D.Float '[2,2])
 -- >>> dtype &&& shape $ inverse t
 -- (Float,[2,2])
-inverse
-  :: forall shape shape' dtype device
-   . ( shape' ~ Square shape
-     , InverseShapeIsValid device shape
-     , InverseDTypeIsValid device dtype
-     )
-  => Tensor device dtype shape -- ^ inverse
-  -> Tensor device dtype shape' -- ^ output
+inverse ::
+  forall shape shape' dtype device.
+  ( shape' ~ Square shape,
+    InverseShapeIsValid device shape,
+    InverseDTypeIsValid device dtype
+  ) =>
+  -- | inverse
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape'
 inverse input = unsafePerformIO $ ATen.cast1 ATen.Managed.inverse_t input
 
 type family SymeigDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
-  SymeigDTypeIsValid '( 'D.CPU, 0)            dtype = ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype
-                                                      , DTypeIsNotHalf '( 'D.CPU, 0) dtype
-                                                      )
-  SymeigDTypeIsValid '( 'D.CUDA, deviceIndex) dtype = ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
-                                                      , DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
-                                                      )
-  SymeigDTypeIsValid '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
+  SymeigDTypeIsValid '( 'D.CPU, 0) dtype =
+    ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype,
+      DTypeIsNotHalf '( 'D.CPU, 0) dtype
+    )
+  SymeigDTypeIsValid '( 'D.CUDA, deviceIndex) dtype =
+    ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype,
+      DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
+    )
+  SymeigDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 -- | symeig
 --
@@ -660,20 +748,25 @@ type family SymeigDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType
 -- (Float,[3,2])
 -- >>> dtype &&& shape $ eigenVecs
 -- (Float,[3,2,2])
-symeig
-  :: forall shape shape' shape'' dtype device
-   . ( shape' ~ VectorOfSquare shape
-     , shape'' ~ Square shape
-     , SymeigDTypeIsValid device dtype
-     )
-  => Tri -- ^ upper or lower triagonal
-  -> Tensor device dtype shape -- ^ input
-  -> ( Tensor device dtype shape'
-     , Tensor device dtype shape''
-     ) -- ^ eigenvalues and eigenvectors
-symeig upper input = unsafePerformIO
-  $ ATen.cast3 ATen.Managed.symeig_tbb input True boolUpper
-  where boolUpper = isUpper upper
+symeig ::
+  forall shape shape' shape'' dtype device.
+  ( shape' ~ VectorOfSquare shape,
+    shape'' ~ Square shape,
+    SymeigDTypeIsValid device dtype
+  ) =>
+  -- | upper or lower triagonal
+  Tri ->
+  -- | input
+  Tensor device dtype shape ->
+  -- | eigenvalues and eigenvectors
+  ( Tensor device dtype shape',
+    Tensor device dtype shape''
+  )
+symeig upper input =
+  unsafePerformIO $
+    ATen.cast3 ATen.Managed.symeig_tbb input True boolUpper
+  where
+    boolUpper = isUpper upper
 
 -- | symeigvalues
 --
@@ -683,18 +776,20 @@ symeig upper input = unsafePerformIO
 -- (Float,[3,2])
 -- >>> :t eigenVals
 -- eigenVals :: Tensor '( 'D.CPU, 0) 'D.Float '[3, 2]
-symeigvalues
-  :: forall shape shape' dtype device
-   . ( shape' ~ VectorOfSquare shape
-     , SymeigDTypeIsValid device dtype
-     )
-  => Tri -- ^ upper or lower triagonal
-  -> Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape'
+symeigvalues ::
+  forall shape shape' dtype device.
+  ( shape' ~ VectorOfSquare shape,
+    SymeigDTypeIsValid device dtype
+  ) =>
+  -- | upper or lower triagonal
+  Tri ->
+  -- | input
+  Tensor device dtype shape ->
+  Tensor device dtype shape'
 symeigvalues upper input = fst symeig'
   where
     boolUpper = isUpper upper
-    symeig' :: ( Tensor device dtype shape', Tensor device dtype shape'')
+    symeig' :: (Tensor device dtype shape', Tensor device dtype shape'')
     symeig' = unsafePerformIO $ ATen.cast3 ATen.Managed.symeig_tbb input False boolUpper
 
 data EigenVectors = EnableEigenVectors | DisableEigenVectors
@@ -704,21 +799,24 @@ class KnownEigenVectors a where
 
 instance KnownEigenVectors EnableEigenVectors where
   enableEigenVectors = True
+
 instance KnownEigenVectors DisableEigenVectors where
   enableEigenVectors = False
 
-type family ConditionalEigenVectors (eigenvectors :: EigenVectors) (n:: Nat) :: [Nat] where
-  ConditionalEigenVectors EnableEigenVectors  n = '[n, n]
+type family ConditionalEigenVectors (eigenvectors :: EigenVectors) (n :: Nat) :: [Nat] where
+  ConditionalEigenVectors EnableEigenVectors n = '[n, n]
   ConditionalEigenVectors DisableEigenVectors _ = '[0]
 
 type family EigDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
-  EigDTypeIsValid '( 'D.CPU, 0)            dtype = ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype
-                                                   , DTypeIsNotHalf '( 'D.CPU, 0) dtype
-                                                   )
-  EigDTypeIsValid '( 'D.CUDA, deviceIndex) dtype = ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
-                                                   , DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
-                                                   )
-  EigDTypeIsValid '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
+  EigDTypeIsValid '( 'D.CPU, 0) dtype =
+    ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype,
+      DTypeIsNotHalf '( 'D.CPU, 0) dtype
+    )
+  EigDTypeIsValid '( 'D.CUDA, deviceIndex) dtype =
+    ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype,
+      DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
+    )
+  EigDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 -- | eig
 -- >>> t <- rand :: IO (CPUTensor 'D.Float '[3,3])
@@ -738,28 +836,30 @@ type family EigDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :
 -- (Float,[0])
 -- >>> :t eigenVecs
 -- eigenVecs :: Tensor '( 'D.CPU, 0) 'D.Float '[0]
-eig
-  :: forall eigenvectors n shape dtype device
-   . ( KnownNat n
-     , KnownEigenVectors eigenvectors
-     , shape ~ ConditionalEigenVectors eigenvectors n
-     , EigDTypeIsValid device dtype
-     )
-  => Tensor device dtype '[n, n] -- ^ input matrix
-  -> ( Tensor device dtype '[n, 2]
-     , Tensor device dtype shape
-     ) -- ^ eigenvalues and eigenvectors
+eig ::
+  forall eigenvectors n shape dtype device.
+  ( KnownNat n,
+    KnownEigenVectors eigenvectors,
+    shape ~ ConditionalEigenVectors eigenvectors n,
+    EigDTypeIsValid device dtype
+  ) =>
+  -- | input matrix
+  Tensor device dtype '[n, n] ->
+  -- | eigenvalues and eigenvectors
+  ( Tensor device dtype '[n, 2],
+    Tensor device dtype shape
+  )
 eig input =
   unsafePerformIO $ ATen.cast2 ATen.Managed.eig_tb input (enableEigenVectors @eigenvectors)
 
 type family SVDShapes (shape :: [Nat]) (reduced :: ReducedSVD) :: ([Nat], [Nat], [Nat]) where
-  SVDShapes '[0, n]    'ThinSVD = '( '[0, 0],          '[0],          '[n, n])
-  SVDShapes '[m, n]    'ThinSVD = '( '[m, Min m n],    '[Min m n],    '[n, Min m n])
-  SVDShapes '[m, n]    'FullSVD = '( '[m, m],          '[Min m n],    '[n, n])
-  SVDShapes '[b, 0, n] 'ThinSVD = '( '[b, 0, 0],       '[b, 0],       '[b, n, n])
+  SVDShapes '[0, n] 'ThinSVD = '( '[0, 0], '[0], '[n, n])
+  SVDShapes '[m, n] 'ThinSVD = '( '[m, Min m n], '[Min m n], '[n, Min m n])
+  SVDShapes '[m, n] 'FullSVD = '( '[m, m], '[Min m n], '[n, n])
+  SVDShapes '[b, 0, n] 'ThinSVD = '( '[b, 0, 0], '[b, 0], '[b, n, n])
   SVDShapes '[b, m, n] 'ThinSVD = '( '[b, m, Min m n], '[b, Min m n], '[b, n, Min m n])
-  SVDShapes '[b, m, n] 'FullSVD = '( '[b, m, m],       '[b, Min m n], '[b, n, n])
-  SVDShapes _          _        = TypeError (Text "A singular value decomposition can only be computed for 2D matrices for at most one batch dimension.")
+  SVDShapes '[b, m, n] 'FullSVD = '( '[b, m, m], '[b, Min m n], '[b, n, n])
+  SVDShapes _ _ = TypeError (Text "A singular value decomposition can only be computed for 2D matrices for at most one batch dimension.")
 
 data ReducedSVD = ThinSVD | FullSVD
 
@@ -768,18 +868,20 @@ class KnownReducedSVD (reduced :: ReducedSVD) where
 
 instance KnownReducedSVD ThinSVD where
   reducedSVD = True
+
 instance KnownReducedSVD FullSVD where
   reducedSVD = False
 
 type family SVDDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
-  SVDDTypeIsValid '( 'D.CPU, 0)            dtype = ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype
-                                                   , DTypeIsNotHalf '( 'D.CPU, 0) dtype
-                                                   )
-  SVDDTypeIsValid '( 'D.CUDA, deviceIndex) dtype = ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
-                                                   , DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
-                                                   )
-  SVDDTypeIsValid '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
-
+  SVDDTypeIsValid '( 'D.CPU, 0) dtype =
+    ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype,
+      DTypeIsNotHalf '( 'D.CPU, 0) dtype
+    )
+  SVDDTypeIsValid '( 'D.CUDA, deviceIndex) dtype =
+    ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype,
+      DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
+    )
+  SVDDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 -- | Singular Value Decomposition
 -- TODO: When `compute_uv` is `False`, backward cannot be performed since `u` and `v` from the forward pass are required for the backward operation. There is no way to encode in the types at this point in time. Thus, only `True` is supported currently.
@@ -787,7 +889,7 @@ type family SVDDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :
 -- This function returns a tuple `(u, s, v)`
 -- which is the singular value decomposition of a input real matrix
 -- or batches of real matrices input such that
--- `input = U×diag(S)×V^T`.
+-- `input = U x diag(S) x V^T`.
 --
 -- >>> a <- randn :: IO (CPUTensor 'D.Float '[3, 5])
 -- >>> (u, s, v) = svd @'ThinSVD a
@@ -819,28 +921,32 @@ type family SVDDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :
 -- (Float,[3])
 -- >>> dtype &&& shape $ v
 -- (Float,[3,3])
-svd
-  :: forall reduced shape shapeU shapeS shapeV dtype device
-   . ( KnownReducedSVD reduced
-     , '(shapeU, shapeS, shapeV) ~ SVDShapes shape reduced
-     , SVDDTypeIsValid device dtype
-     )
-  => Tensor device dtype shape -- ^ (batched) input real matrix
-  -> ( Tensor device dtype shapeU
-     , Tensor device dtype shapeS
-     , Tensor device dtype shapeV
-     ) -- ^ (batched) output tuple of `u`, `s`, and `v`
+svd ::
+  forall reduced shape shapeU shapeS shapeV dtype device.
+  ( KnownReducedSVD reduced,
+    '(shapeU, shapeS, shapeV) ~ SVDShapes shape reduced,
+    SVDDTypeIsValid device dtype
+  ) =>
+  -- | (batched) input real matrix
+  Tensor device dtype shape ->
+  -- | (batched) output tuple of `u`, `s`, and `v`
+  ( Tensor device dtype shapeU,
+    Tensor device dtype shapeS,
+    Tensor device dtype shapeV
+  )
 svd input =
   unsafePerformIO $ ATen.cast3 ATen.Managed.svd_tbb input (reducedSVD @reduced) True
 
 type family CholeskyDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
-  CholeskyDTypeIsValid '( 'D.CPU, 0)            dtype = ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype
-                                                        , DTypeIsNotHalf '( 'D.CPU, 0) dtype
-                                                        )
-  CholeskyDTypeIsValid '( 'D.CUDA, deviceIndex) dtype = ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
-                                                        , DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
-                                                        )
-  CholeskyDTypeIsValid '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
+  CholeskyDTypeIsValid '( 'D.CPU, 0) dtype =
+    ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype,
+      DTypeIsNotHalf '( 'D.CPU, 0) dtype
+    )
+  CholeskyDTypeIsValid '( 'D.CUDA, deviceIndex) dtype =
+    ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype,
+      DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
+    )
+  CholeskyDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 -- | cholesky
 -- TODO: cholesky can throw if the input is not positive-definite.
@@ -853,39 +959,48 @@ type family CholeskyDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DTy
 -- (Float,[2,2])
 -- >>> :t u
 -- u :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 2]
-cholesky
-  :: forall shape shape' dtype device
-   . ( shape' ~ Square shape
-     , CholeskyDTypeIsValid device dtype
-     )
-  => Tri -- ^ indicate whether to return an upper or lower triangular matrix.
-  -> Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape' -- ^ output
+cholesky ::
+  forall shape shape' dtype device.
+  ( shape' ~ Square shape,
+    CholeskyDTypeIsValid device dtype
+  ) =>
+  -- | indicate whether to return an upper or lower triangular matrix.
+  Tri ->
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape'
 cholesky upper input = unsafePerformIO $ ATen.cast2 ATen.Managed.cholesky_tb input boolUpper
-  where boolUpper = isUpper upper
+  where
+    boolUpper = isUpper upper
 
 -- | choleskyInverse
 -- Computes the inverse of a symmetric positive-definite matrix
 -- using its Cholesky factor, returned, e.g., by `cholesky`.
 -- Unlike `cholesky`, this operation does not support batching.
 -- The inverse is computed using the LAPACK routine `?potri`.
--- 
+--
 -- >>> t <- rand :: IO (CPUTensor 'D.Float '[2,2])
 -- >>> tri = Upper
 -- >>> u = cholesky tri (t `matmul` transpose2D t)
 -- >>> dtype &&& shape $ choleskyInverse tri u
 -- (Float,[2,2])
-choleskyInverse
-  :: forall n dtype device
-   . ( 1 <= n
-     , CholeskyDTypeIsValid device dtype
-     )
-  => Tri -- ^ decides whether the upper or the lower triangular part of the input tensor is used
-  -> Tensor device dtype '[n, n] -- ^ the input 2-D tensor `u`, an upper or lower triangular Cholesky factor
-  -> Tensor device dtype '[n, n] -- ^ the output 2-D tensor
-choleskyInverse upper input = unsafePerformIO
-  $ ATen.cast2 ATen.Managed.cholesky_inverse_tb input boolUpper
-  where boolUpper = isUpper upper
+choleskyInverse ::
+  forall n dtype device.
+  ( 1 <= n,
+    CholeskyDTypeIsValid device dtype
+  ) =>
+  -- | decides whether the upper or the lower triangular part of the input tensor is used
+  Tri ->
+  -- | the input 2-D tensor `u`, an upper or lower triangular Cholesky factor
+  Tensor device dtype '[n, n] ->
+  -- | the output 2-D tensor
+  Tensor device dtype '[n, n]
+choleskyInverse upper input =
+  unsafePerformIO $
+    ATen.cast2 ATen.Managed.cholesky_inverse_tb input boolUpper
+  where
+    boolUpper = isUpper upper
 
 -- | choleskySolve
 -- Solves the system of linear equations represented by `a c = b`
@@ -900,29 +1015,37 @@ choleskyInverse upper input = unsafePerformIO
 -- >>> u = cholesky tri a
 -- >>> dtype &&& shape $ choleskySolve tri b u
 -- (Float,[3,2])
-choleskySolve
-  :: forall m_k m_m dtype device
-   . ( Square m_m ~ m_m
-     , FstSquareDim m_m ~ FstSquareDim m_k
-     , 1 <= FstSquareDim m_m
-     , CholeskyDTypeIsValid device dtype
-     )
-  => Tri -- ^ decides whether the upper or the lower triangular part of the input tensor `u` is used
-  -> Tensor device dtype m_k -- ^ the (batched) RHS tensor `b`
-  -> Tensor device dtype m_m -- ^ the (batched) input 2-D tensor `u`, an upper or lower triangular Cholesky factor
-  -> Tensor device dtype m_k -- ^ the (batched) output 2-D tensor
-choleskySolve upper b u = unsafePerformIO
-  $ ATen.cast3 ATen.Managed.cholesky_solve_ttb b u boolUpper
-  where boolUpper = isUpper upper
+choleskySolve ::
+  forall m_k m_m dtype device.
+  ( Square m_m ~ m_m,
+    FstSquareDim m_m ~ FstSquareDim m_k,
+    1 <= FstSquareDim m_m,
+    CholeskyDTypeIsValid device dtype
+  ) =>
+  -- | decides whether the upper or the lower triangular part of the input tensor `u` is used
+  Tri ->
+  -- | the (batched) RHS tensor `b`
+  Tensor device dtype m_k ->
+  -- | the (batched) input 2-D tensor `u`, an upper or lower triangular Cholesky factor
+  Tensor device dtype m_m ->
+  -- | the (batched) output 2-D tensor
+  Tensor device dtype m_k
+choleskySolve upper b u =
+  unsafePerformIO $
+    ATen.cast3 ATen.Managed.cholesky_solve_ttb b u boolUpper
+  where
+    boolUpper = isUpper upper
 
 type family SolveDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
-  SolveDTypeIsValid '( 'D.CPU, 0)            dtype = ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype
-                                                     , DTypeIsNotHalf '( 'D.CPU, 0) dtype
-                                                     )
-  SolveDTypeIsValid '( 'D.CUDA, deviceIndex) dtype = ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
-                                                     , DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
-                                                     )
-  SolveDTypeIsValid '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
+  SolveDTypeIsValid '( 'D.CPU, 0) dtype =
+    ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype,
+      DTypeIsNotHalf '( 'D.CPU, 0) dtype
+    )
+  SolveDTypeIsValid '( 'D.CUDA, deviceIndex) dtype =
+    ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype,
+      DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
+    )
+  SolveDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 -- | solve
 -- Solves the system of linear equations represented by `a c = b` and also returns the LU decomposition of `a`.
@@ -941,18 +1064,21 @@ type family SolveDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType)
 -- c :: Tensor '( 'D.CPU, 0) 'D.Float '[10, 3]
 -- >>> :t lu
 -- lu :: Tensor '( 'D.CPU, 0) 'D.Float '[10, 10]
-solve
-  :: forall m_k m_m dtype device
-   . ( Square m_m ~ m_m
-     , FstSquareDim m_m ~ FstSquareDim m_k
-     , 1 <= FstSquareDim m_m
-     , SolveDTypeIsValid device dtype
-     )
-  => Tensor device dtype m_k -- ^ the (batched) RHS tensor `b`
-  -> Tensor device dtype m_m -- ^ the (batched) positive semidefinite matrix `a`
-  -> ( Tensor device dtype m_k
-     , Tensor device dtype m_m
-     ) -- ^ the (batched) outputs c and lu
+solve ::
+  forall m_k m_m dtype device.
+  ( Square m_m ~ m_m,
+    FstSquareDim m_m ~ FstSquareDim m_k,
+    1 <= FstSquareDim m_m,
+    SolveDTypeIsValid device dtype
+  ) =>
+  -- | the (batched) RHS tensor `b`
+  Tensor device dtype m_k ->
+  -- | the (batched) positive semidefinite matrix `a`
+  Tensor device dtype m_m ->
+  -- | the (batched) outputs c and lu
+  ( Tensor device dtype m_k,
+    Tensor device dtype m_m
+  )
 solve b a = unsafePerformIO $ ATen.cast2 ATen.Managed.solve_tt b a
 
 -- | geqrf
@@ -968,7 +1094,7 @@ solve b a = unsafePerformIO $ ATen.cast2 ATen.Managed.solve_tt b a
 --
 -- See the LAPACK documentation for `?geqrf` for further details,
 -- https://software.intel.com/en-us/node/521004.
--- 
+--
 -- >>> (a, tau) = geqrf (ones :: CPUTensor 'D.Float '[3,4])
 -- >>> dtype &&& shape $ a
 -- (Float,[3,4])
@@ -979,30 +1105,32 @@ solve b a = unsafePerformIO $ ATen.cast2 ATen.Managed.solve_tt b a
 -- (Float,[4,3])
 -- >>> dtype &&& shape $ tau
 -- (Float,[3])
-geqrf
-  :: forall m n dtype device
-   . Tensor device dtype '[m, n] -- ^ input matrix
-  -> ( Tensor device dtype '[m, n]
-     , Tensor device dtype '[Min m n]
-     ) -- ^ tuple `(a, tau)` of output matrices
+geqrf ::
+  forall m n dtype device.
+  -- | input matrix
+  Tensor device dtype '[m, n] ->
+  -- | tuple `(a, tau)` of output matrices
+  ( Tensor device dtype '[m, n],
+    Tensor device dtype '[Min m n]
+  )
 geqrf input = unsafePerformIO $ ATen.cast1 ATen.Managed.geqrf_t input
 
 -- | orgqr
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- Computes the orthogonal matrix `Q` of a QR factorization
 -- from the `(a, tau)` tuple returned by `geqrf`.
--- 
+--
 -- This directly calls the underlying LAPACK function `?orgqr`.
 -- See the LAPACK documentation for `?orgqr` for further details,
 -- https://software.intel.com/en-us/mkl-developer-reference-c-orgqr.
--- 
+--
 -- >>> dtype &&& shape $ orgqr (ones :: CPUTensor 'D.Float '[3,4]) (ones :: CPUTensor 'D.Float '[3])
 -- (Float,[3,4])
-orgqr
-  :: forall m n dtype device
-   . Tensor device dtype '[m, n]
-  -> Tensor device dtype '[Min m n]
-  -> Tensor device dtype '[m, n]
+orgqr ::
+  forall m n dtype device.
+  Tensor device dtype '[m, n] ->
+  Tensor device dtype '[Min m n] ->
+  Tensor device dtype '[m, n]
 orgqr a tau = unsafePerformIO $ ATen.cast2 ATen.Managed.orgqr_tt a tau
 
 -- | sign
@@ -1010,21 +1138,23 @@ orgqr a tau = unsafePerformIO $ ATen.cast2 ATen.Managed.orgqr_tt a tau
 --
 -- >>> dtype &&& shape $ sign (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-sign
-  :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+sign ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 sign input = unsafePerformIO $ ATen.cast1 ATen.Managed.sign_t input
 
-type family SetValue (shape :: [Nat]) (i :: Nat) (j :: Nat)  :: [Nat] where
-  SetValue '[]     _ _ = '[]
-  SetValue (x: xs) 0 j = j: xs
-  SetValue (x: xs) i j = x: SetValue xs (i-1) j
+type family SetValue (shape :: [Nat]) (i :: Nat) (j :: Nat) :: [Nat] where
+  SetValue '[] _ _ = '[]
+  SetValue (x : xs) 0 j = j : xs
+  SetValue (x : xs) i j = x : SetValue xs (i -1) j
 
 type family GetValue (shape :: [Nat]) (i :: Nat) :: Nat where
-  GetValue '[]     _ = TypeError (Text "Can not find a element in the list.")
-  GetValue (x: xs) 0 = x
-  GetValue (x: xs) i = GetValue xs (i-1)
+  GetValue '[] _ = TypeError (Text "Can not find a element in the list.")
+  GetValue (x : xs) 0 = x
+  GetValue (x : xs) i = GetValue xs (i -1)
 
 -- | Transpose
 --
@@ -1046,13 +1176,16 @@ type family Transpose (shape :: [Nat]) (dim0 :: Nat) (dim1 :: Nat) :: [Nat] wher
 -- (Float,[2,3,1])
 -- >>> dtype &&& shape $ transpose @1 @2 (ones :: CPUTensor 'D.Float '[3,2,1])
 -- (Float,[3,1,2])
-transpose
-  :: forall n m shape shape' dtype device
-   . ( KnownNat n, KnownNat m
-     , shape' ~ Transpose shape n m
-     )
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape' -- ^ output
+transpose ::
+  forall n m shape shape' dtype device.
+  ( KnownNat n,
+    KnownNat m,
+    shape' ~ Transpose shape n m
+  ) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape'
 transpose input =
   unsafePerformIO $ ATen.cast3 ATen.Managed.transpose_tll input (natValI @n) (natValI @m)
 
@@ -1060,10 +1193,12 @@ transpose input =
 --
 -- >>> dtype &&& shape $ transpose2D (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[2,3])
-transpose2D
-  :: forall (i :: Nat) (j :: Nat) dtype device
-   . Tensor device dtype '[i, j] -- ^ input
-  -> Tensor device dtype '[j, i] -- ^ output
+transpose2D ::
+  forall (i :: Nat) (j :: Nat) dtype device.
+  -- | input
+  Tensor device dtype '[i, j] ->
+  -- | output
+  Tensor device dtype '[j, i]
 transpose2D = transpose @0 @1
 
 -- diag :: Tensor device dtype shape -> Int -> Tensor device dtype shape
@@ -1083,10 +1218,12 @@ transpose2D = transpose @0 @1
 -- >>> t = all (fromJust [True, True] :: CPUTensor 'D.Bool '[2])
 -- >>> toInt t == 1
 -- True
-all
-  :: forall shape device
-   . Tensor device 'D.Bool shape -- ^ input
-  -> Tensor device 'D.Bool '[] -- ^ output
+all ::
+  forall shape device.
+  -- | input
+  Tensor device 'D.Bool shape ->
+  -- | output
+  Tensor device 'D.Bool '[]
 all input = unsafePerformIO $ ATen.cast1 ATen.Managed.all_t input
 
 -- | any
@@ -1103,10 +1240,12 @@ all input = unsafePerformIO $ ATen.cast1 ATen.Managed.all_t input
 -- >>> t = any (fromJust [True, True] :: CPUTensor 'D.Bool '[2])
 -- >>> toInt t == 1
 -- True
-any
-  :: forall shape device
-   . Tensor device 'D.Bool shape -- ^ input
-  -> Tensor device 'D.Bool '[] -- ^ output
+any ::
+  forall shape device.
+  -- | input
+  Tensor device 'D.Bool shape ->
+  -- | output
+  Tensor device 'D.Bool '[]
 any input = unsafePerformIO $ ATen.cast1 ATen.Managed.any_t input
 
 data KeepOrDropDim = KeepDim | DropDim
@@ -1116,13 +1255,14 @@ class KnownKeepOrDropDim keepOrDropDim where
 
 instance KnownKeepOrDropDim KeepDim where
   keepOrDropDimVal = True
+
 instance KnownKeepOrDropDim DropDim where
   keepOrDropDimVal = False
 
 type family ConditionalDropDimension (shape :: [Nat]) (dim :: Nat) (keepOrDropDim :: KeepOrDropDim) :: [Nat] where
-  ConditionalDropDimension '[]      _ _             = TypeError (Text "The specified dimension is not available.")
-  ConditionalDropDimension (x : xs) 0 KeepDim       = 1 ': xs
-  ConditionalDropDimension (x : xs) 0 DropDim       = xs
+  ConditionalDropDimension '[] _ _ = TypeError (Text "The specified dimension is not available.")
+  ConditionalDropDimension (x : xs) 0 KeepDim = 1 ': xs
+  ConditionalDropDimension (x : xs) 0 DropDim = xs
   ConditionalDropDimension (x : xs) i keepOrDropDim = x ': ConditionalDropDimension xs (i - 1) keepOrDropDim
 
 -- | allDim
@@ -1141,16 +1281,19 @@ type family ConditionalDropDimension (shape :: [Nat]) (dim :: Nat) (keepOrDropDi
 --
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ allDim @0 @KeepDim t
 -- (Bool,([1,2],[[True,False]]))
-allDim
-  :: forall dim keepOrDropDim shape' shape device
-   . ( KnownNat dim
-     , KnownKeepOrDropDim keepOrDropDim
-     , shape' ~ ConditionalDropDimension shape dim keepOrDropDim
-     )
-  => Tensor device 'D.Bool shape -- ^ input
-  -> Tensor device 'D.Bool shape' -- ^ output
-allDim input = unsafePerformIO
-  $ ATen.cast3 ATen.Managed.all_tlb input (natValI @dim) (keepOrDropDimVal @keepOrDropDim)
+allDim ::
+  forall dim keepOrDropDim shape' shape device.
+  ( KnownNat dim,
+    KnownKeepOrDropDim keepOrDropDim,
+    shape' ~ ConditionalDropDimension shape dim keepOrDropDim
+  ) =>
+  -- | input
+  Tensor device 'D.Bool shape ->
+  -- | output
+  Tensor device 'D.Bool shape'
+allDim input =
+  unsafePerformIO $
+    ATen.cast3 ATen.Managed.all_tlb input (natValI @dim) (keepOrDropDimVal @keepOrDropDim)
 
 -- | anyDim
 -- See https://pytorch.org/docs/stable/tensors.html#torch.BoolTensor.any.
@@ -1168,14 +1311,16 @@ allDim input = unsafePerformIO
 --
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ anyDim @0 @KeepDim t
 -- (Bool,([1,2],[[True,True]]))
-anyDim
-  :: forall dim keepOrDropDim shape' shape device
-   . ( KnownNat dim
-     , KnownKeepOrDropDim keepOrDropDim
-     , shape' ~ ConditionalDropDimension shape dim keepOrDropDim
-     )
-  => Tensor device 'D.Bool shape -- ^ input
-  -> Tensor device 'D.Bool shape' -- ^ output
+anyDim ::
+  forall dim keepOrDropDim shape' shape device.
+  ( KnownNat dim,
+    KnownKeepOrDropDim keepOrDropDim,
+    shape' ~ ConditionalDropDimension shape dim keepOrDropDim
+  ) =>
+  -- | input
+  Tensor device 'D.Bool shape ->
+  -- | output
+  Tensor device 'D.Bool shape'
 anyDim input = unsafePerformIO $ ATen.cast3 ATen.Managed.any_tlb input (natValI @dim) (keepOrDropDimVal @keepOrDropDim)
 
 -- | dropout
@@ -1202,12 +1347,16 @@ anyDim input = unsafePerformIO $ ATen.cast3 ATen.Managed.any_tlb input (natValI 
 -- Tensor Float [3,2] [[ 0.0000,  0.0000],
 --                     [ 0.0000,  0.0000],
 --                     [ 0.0000,  0.0000]]
-dropout
-  :: forall shape dtype device
-   . Double -- ^ dropout probability
-  -> Bool -- ^ whether or not to activate dropout
-  -> Tensor device dtype shape -- ^ input
-  -> IO (Tensor device dtype shape) -- ^ output
+dropout ::
+  forall shape dtype device.
+  -- | dropout probability
+  Double ->
+  -- | whether or not to activate dropout
+  Bool ->
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  IO (Tensor device dtype shape)
 dropout p train input = ATen.cast3 ATen.Managed.dropout_tdb input p train
 
 -- | featureDropout
@@ -1218,12 +1367,16 @@ dropout p train input = ATen.cast3 ATen.Managed.dropout_tdb input p train
 -- >>> c = featureDropout 0.1 True (ones :: CPUTensor 'D.Float '[2,2])
 -- >>> dtype &&& shape $ c
 -- (Float,[2,2])
-featureDropout
-  :: forall shape dtype device
-   . Double -- ^ dropout probability
-  -> Bool -- ^ whether or not to activate dropout
-  -> Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+featureDropout ::
+  forall shape dtype device.
+  -- | dropout probability
+  Double ->
+  -- | whether or not to activate dropout
+  Bool ->
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 featureDropout p train input =
   unsafePerformIO $ ATen.cast3 ATen.Managed.feature_dropout_tdb input p train
 
@@ -1235,12 +1388,16 @@ featureDropout p train input =
 -- >>> c = alphaDropout 0.1 True (ones :: CPUTensor 'D.Float '[2,2])
 -- >>> dtype &&& shape $ c
 -- (Float,[2,2])
-alphaDropout
-  :: forall shape dtype device
-   . Double -- ^ dropout probability
-  -> Bool -- ^ whether or not to activate dropout
-  -> Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+alphaDropout ::
+  forall shape dtype device.
+  -- | dropout probability
+  Double ->
+  -- | whether or not to activate dropout
+  Bool ->
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 alphaDropout p train input =
   unsafePerformIO $ ATen.cast3 ATen.Managed.alpha_dropout_tdb input p train
 
@@ -1252,12 +1409,16 @@ alphaDropout p train input =
 -- >>> c = featureAlphaDropout 0.1 True (ones :: CPUTensor 'D.Float '[2,2])
 -- >>> dtype &&& shape $ c
 -- (Float,[2,2])
-featureAlphaDropout
-  :: forall shape dtype device
-   . Double -- ^ dropout probability
-  -> Bool -- ^ whether or not to activate dropout
-  -> Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+featureAlphaDropout ::
+  forall shape dtype device.
+  -- | dropout probability
+  Double ->
+  -- | whether or not to activate dropout
+  Bool ->
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 featureAlphaDropout p train input =
   unsafePerformIO $ ATen.cast3 ATen.Managed.feature_alpha_dropout_tdb input p train
 
@@ -1265,11 +1426,13 @@ featureAlphaDropout p train input =
 --
 -- >>> dtype &&& shape $ acos (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-acos
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+acos ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 acos input = unsafePerformIO $ ATen.cast1 ATen.Managed.acos_t input
 
 -- | avgPool1d
@@ -1280,28 +1443,34 @@ acos input = unsafePerformIO $ ATen.cast1 ATen.Managed.acos_t input
 -- [1,3,4]
 -- >>> :t t
 -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 4]
-avgPool1d
-  :: forall kernelSize
-            stride
-            padding
-            channelSize
-            inputSize
-            batchSize
-            outputSize
-            dtype
-            device
-   . ( All KnownNat '[kernelSize, stride, padding, channelSize, inputSize, batchSize]
-     , ConvSideCheck inputSize kernelSize stride padding outputSize
-     )
-  => Tensor device dtype '[batchSize, channelSize, inputSize] -- ^ input
-  -> Tensor device dtype '[batchSize, channelSize, outputSize] -- ^ output
-avgPool1d input = unsafePerformIO $ ATen.cast6 ATen.Managed.avg_pool1d_tlllbb
-  input
-  (natValI @kernelSize)
-  (natValI @stride)
-  (natValI @padding)
-  False
-  True
+avgPool1d ::
+  forall
+    kernelSize
+    stride
+    padding
+    channelSize
+    inputSize
+    batchSize
+    outputSize
+    dtype
+    device.
+  ( All KnownNat '[kernelSize, stride, padding, channelSize, inputSize, batchSize],
+    ConvSideCheck inputSize kernelSize stride padding outputSize
+  ) =>
+  -- | input
+  Tensor device dtype '[batchSize, channelSize, inputSize] ->
+  -- | output
+  Tensor device dtype '[batchSize, channelSize, outputSize]
+avgPool1d input =
+  unsafePerformIO $
+    ATen.cast6
+      ATen.Managed.avg_pool1d_tlllbb
+      input
+      (natValI @kernelSize)
+      (natValI @stride)
+      (natValI @padding)
+      False
+      True
 
 -- | adaptiveAvgPool1d
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -1311,13 +1480,16 @@ avgPool1d input = unsafePerformIO $ ATen.cast6 ATen.Managed.avg_pool1d_tlllbb
 -- [1,3,8]
 -- >>> :t t
 -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 8]
-adaptiveAvgPool1d
-  :: forall outputSize channelSize inputSize batchSize dtype device
-   . (All KnownNat '[channelSize, inputSize, batchSize, outputSize])
-  => Tensor device dtype '[batchSize, channelSize, inputSize] -- ^ input
-  -> Tensor device dtype '[batchSize, channelSize, outputSize] -- ^ output
-adaptiveAvgPool1d input = unsafePerformIO
-  $ ATen.cast2 ATen.Managed.adaptive_avg_pool1d_tl input (natValI @outputSize)
+adaptiveAvgPool1d ::
+  forall outputSize channelSize inputSize batchSize dtype device.
+  (All KnownNat '[channelSize, inputSize, batchSize, outputSize]) =>
+  -- | input
+  Tensor device dtype '[batchSize, channelSize, inputSize] ->
+  -- | output
+  Tensor device dtype '[batchSize, channelSize, outputSize]
+adaptiveAvgPool1d input =
+  unsafePerformIO $
+    ATen.cast2 ATen.Managed.adaptive_avg_pool1d_tl input (natValI @outputSize)
 
 -- | adaptiveMaxPool1d
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -1326,18 +1498,21 @@ adaptiveAvgPool1d input = unsafePerformIO
 -- >>> shape . fst $ tt
 -- [1,3,8]
 -- >>> :t tt
--- tt 
+-- tt
 --   :: (Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 8],
 --       Tensor '( 'D.CPU, 0) 'D.Int64 '[1, 3, 8])
-adaptiveMaxPool1d
-  :: forall outputSize channelSize inputSize batchSize dtype device
-   . (All KnownNat '[channelSize, inputSize, batchSize, outputSize])
-  => Tensor device dtype '[batchSize, channelSize, inputSize] -- ^ input
-  -> ( Tensor device dtype    '[batchSize, channelSize, outputSize]
-     , Tensor device 'D.Int64 '[batchSize, channelSize, outputSize]
-     ) -- ^ output
-adaptiveMaxPool1d input = unsafePerformIO
-  $ ATen.cast2 ATen.Managed.adaptive_max_pool1d_tl input (natValI @outputSize)
+adaptiveMaxPool1d ::
+  forall outputSize channelSize inputSize batchSize dtype device.
+  (All KnownNat '[channelSize, inputSize, batchSize, outputSize]) =>
+  -- | input
+  Tensor device dtype '[batchSize, channelSize, inputSize] ->
+  -- | output
+  ( Tensor device dtype '[batchSize, channelSize, outputSize],
+    Tensor device 'D.Int64 '[batchSize, channelSize, outputSize]
+  )
+adaptiveMaxPool1d input =
+  unsafePerformIO $
+    ATen.cast2 ATen.Managed.adaptive_max_pool1d_tl input (natValI @outputSize)
 
 -- | addmv
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -1348,18 +1523,24 @@ adaptiveMaxPool1d input = unsafePerformIO
 -- (Float,[3])
 -- >>> :t t
 -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[3]
-addmv
-  :: forall shape' shape n m dtype device
-   . ( KnownNat n
-     , KnownNat m
-     , shape' ~ Broadcast shape '[n]
-     )
-  => Float -- ^ beta
-  -> Float -- ^ alpha
-  -> Tensor device dtype '[n,m] -- ^ matrix
-  -> Tensor device dtype '[m] -- ^ vector
-  -> Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape' -- ^ output
+addmv ::
+  forall shape' shape n m dtype device.
+  ( KnownNat n,
+    KnownNat m,
+    shape' ~ Broadcast shape '[n]
+  ) =>
+  -- | beta
+  Float ->
+  -- | alpha
+  Float ->
+  -- | matrix
+  Tensor device dtype '[n, m] ->
+  -- | vector
+  Tensor device dtype '[m] ->
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape'
 addmv beta alpha mat vec input = unsafePerformIO $ ATen.cast5 ATen.Managed.addmv_tttss input mat vec beta alpha
 
 -- | addr
@@ -1371,18 +1552,24 @@ addmv beta alpha mat vec input = unsafePerformIO $ ATen.cast5 ATen.Managed.addmv
 -- (Float,[3,2])
 -- >>> :t t
 -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[3, 2]
-addr
-  :: forall shape' shape n m dtype device
-   . ( KnownNat n
-     , KnownNat m
-     , shape' ~ Broadcast shape '[n,m]
-     )
-  => Float -- ^ beta
-  -> Float -- ^ alpha
-  -> Tensor device dtype '[n] -- ^ first input vector
-  -> Tensor device dtype '[m] -- ^ second input vector
-  -> Tensor device dtype shape -- ^ input tensor
-  -> Tensor device dtype shape' -- ^ output tensor
+addr ::
+  forall shape' shape n m dtype device.
+  ( KnownNat n,
+    KnownNat m,
+    shape' ~ Broadcast shape '[n, m]
+  ) =>
+  -- | beta
+  Float ->
+  -- | alpha
+  Float ->
+  -- | first input vector
+  Tensor device dtype '[n] ->
+  -- | second input vector
+  Tensor device dtype '[m] ->
+  -- | input tensor
+  Tensor device dtype shape ->
+  -- | output tensor
+  Tensor device dtype shape'
 addr beta alpha vec1 vec2 input = unsafePerformIO $ ATen.cast5 ATen.Managed.addr_tttss input vec1 vec2 beta alpha
 
 -- affine_grid_generator :: Tensor device dtype shape -> [Int] -> Tensor device dtype shape
@@ -1392,14 +1579,20 @@ addr beta alpha vec1 vec2 input = unsafePerformIO $ ATen.cast5 ATen.Managed.addr
 --
 -- >>> allclose 0.1 0.1 True (ones :: CPUTensor 'D.Float '[3,3]) (ones :: CPUTensor 'D.Float '[3,3])
 -- True
-allclose
-  :: forall shape dtype device
-   . Double -- ^ relative tolerance
-  -> Double -- ^ absolute tolerance
-  -> Bool -- ^ whether or not NaN equals NaN
-  -> Tensor device dtype shape -- ^ input tensor
-  -> Tensor device dtype shape -- ^ other input tensor
-  -> Bool -- ^ output
+allclose ::
+  forall shape dtype device.
+  -- | relative tolerance
+  Double ->
+  -- | absolute tolerance
+  Double ->
+  -- | whether or not NaN equals NaN
+  Bool ->
+  -- | input tensor
+  Tensor device dtype shape ->
+  -- | other input tensor
+  Tensor device dtype shape ->
+  -- | output
+  Bool
 allclose rtol atol equalNaN input other =
   unsafePerformIO $ ATen.cast5 ATen.Managed.allclose_ttddb input other rtol atol equalNaN
 
@@ -1419,18 +1612,23 @@ allclose rtol atol equalNaN input other =
 --
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Int]]) $ argmax @0 @KeepDim t
 -- (Int64,([1,2],[[3,1]]))
-argmax
-  :: forall dim keepOrDropDim shape' shape dtype device
-   . ( KnownNat dim
-     , KnownKeepOrDropDim keepOrDropDim
-     , shape' ~ ConditionalDropDimension shape dim keepOrDropDim
-     )
-  => Tensor device dtype    shape -- ^ input
-  -> Tensor device 'D.Int64 shape' -- ^ output
-argmax input = unsafePerformIO $ ATen.cast3 ATen.Managed.argmax_tlb
-                                       input
-                                       (natValI @dim)
-                                       (keepOrDropDimVal @keepOrDropDim)
+argmax ::
+  forall dim keepOrDropDim shape' shape dtype device.
+  ( KnownNat dim,
+    KnownKeepOrDropDim keepOrDropDim,
+    shape' ~ ConditionalDropDimension shape dim keepOrDropDim
+  ) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device 'D.Int64 shape'
+argmax input =
+  unsafePerformIO $
+    ATen.cast3
+      ATen.Managed.argmax_tlb
+      input
+      (natValI @dim)
+      (keepOrDropDimVal @keepOrDropDim)
 
 -- | argmin
 -- See https://pytorch.org/docs/stable/torch.html#torch.argmin.
@@ -1448,18 +1646,23 @@ argmax input = unsafePerformIO $ ATen.cast3 ATen.Managed.argmax_tlb
 --
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Int]]) $ argmin @0 @KeepDim t
 -- (Int64,([1,2],[[1,3]]))
-argmin
-  :: forall dim keepOrDropDim shape' shape dtype device
-  . ( KnownNat dim
-    , KnownKeepOrDropDim keepOrDropDim
-    , shape' ~ ConditionalDropDimension shape dim keepOrDropDim
-    )
-  => Tensor device dtype    shape -- ^ input
-  -> Tensor device 'D.Int64 shape' -- ^ output
-argmin input = unsafePerformIO $ ATen.cast3 ATen.Managed.argmin_tlb
-                                       input
-                                       (natValI @dim)
-                                       (keepOrDropDimVal @keepOrDropDim)
+argmin ::
+  forall dim keepOrDropDim shape' shape dtype device.
+  ( KnownNat dim,
+    KnownKeepOrDropDim keepOrDropDim,
+    shape' ~ ConditionalDropDimension shape dim keepOrDropDim
+  ) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device 'D.Int64 shape'
+argmin input =
+  unsafePerformIO $
+    ATen.cast3
+      ATen.Managed.argmin_tlb
+      input
+      (natValI @dim)
+      (keepOrDropDimVal @keepOrDropDim)
 
 -- as_strided :: Tensor device dtype shape -> [Int] -> [Int] -> Int -> Tensor device dtype shape
 -- as_strided _input _size _stride _storage_offset = unsafePerformIO $ (ATen.cast4 ATen.Managed.as_strided_tlll) _input _size _stride _storage_offset
@@ -1468,22 +1671,22 @@ argmin input = unsafePerformIO $ ATen.cast3 ATen.Managed.argmin_tlb
 --
 -- >>> dtype &&& shape $ asin (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-asin
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape
-  -> Tensor device dtype shape
+asin ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  Tensor device dtype shape ->
+  Tensor device dtype shape
 asin input = unsafePerformIO $ ATen.cast1 ATen.Managed.asin_t input
 
 -- | atan
 --
 -- >>> dtype &&& shape $ atan (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-atan
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape
-  -> Tensor device dtype shape
+atan ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  Tensor device dtype shape ->
+  Tensor device dtype shape
 atan input = unsafePerformIO $ ATen.cast1 ATen.Managed.atan_t input
 
 -- | baddbmm
@@ -1494,19 +1697,25 @@ atan input = unsafePerformIO $ ATen.cast1 ATen.Managed.atan_t input
 -- (Float,[5,3,4])
 -- >>> :t t
 -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[5, 3, 4]
-baddbmm
-  :: forall shape' shape  batchSize n m k dtype device
-   . ( KnownNat n
-     , KnownNat m
-     , KnownNat k
-     , shape' ~ Broadcast shape '[batchSize, n, m]
-     )
-  => Float -- ^ beta
-  -> Float -- ^ alpha
-  -> Tensor device dtype '[batchSize, n, k] -- ^ first batch
-  -> Tensor device dtype '[batchSize, k, m] -- ^ second batch
-  -> Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape' -- ^ output
+baddbmm ::
+  forall shape' shape batchSize n m k dtype device.
+  ( KnownNat n,
+    KnownNat m,
+    KnownNat k,
+    shape' ~ Broadcast shape '[batchSize, n, m]
+  ) =>
+  -- | beta
+  Float ->
+  -- | alpha
+  Float ->
+  -- | first batch
+  Tensor device dtype '[batchSize, n, k] ->
+  -- | second batch
+  Tensor device dtype '[batchSize, k, m] ->
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape'
 baddbmm beta alpha batch1 batch2 input = unsafePerformIO $ ATen.cast5 ATen.Managed.baddbmm_tttss input batch1 batch2 beta alpha
 
 -- batch_norm :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Bool -> Double -> Double -> Bool -> Tensor device dtype shape
@@ -1525,10 +1734,10 @@ baddbmm beta alpha batch1 batch2 input = unsafePerformIO $ ATen.cast5 ATen.Manag
 --
 -- >>> dtype &&& shape $ bitwiseNot (ones :: CPUTensor 'D.Bool [3,3])
 -- (Bool,[3,3])
-bitwiseNot
-  :: forall shape device
-   . Tensor device 'D.Bool shape
-  -> Tensor device 'D.Bool shape
+bitwiseNot ::
+  forall shape device.
+  Tensor device 'D.Bool shape ->
+  Tensor device 'D.Bool shape
 bitwiseNot input = unsafePerformIO $ ATen.cast1 ATen.Managed.bitwise_not_t input
 
 -- | batched matrix multiplication
@@ -1536,11 +1745,14 @@ bitwiseNot input = unsafePerformIO $ ATen.cast1 ATen.Managed.bitwise_not_t input
 --
 -- >>> dtype &&& shape $ bmm (ones :: CPUTensor 'D.Float '[5,3,2]) (zeros :: CPUTensor 'D.Float '[5,2,4])
 -- (Float,[5,3,4])
-bmm
-  :: forall batchSize n m k dtype device
-   . Tensor device dtype '[batchSize, n, k] -- ^ input
-  -> Tensor device dtype '[batchSize, k, m] -- ^ other input
-  -> Tensor device dtype '[batchSize, n, m] -- ^ output
+bmm ::
+  forall batchSize n m k dtype device.
+  -- | input
+  Tensor device dtype '[batchSize, n, k] ->
+  -- | other input
+  Tensor device dtype '[batchSize, k, m] ->
+  -- | output
+  Tensor device dtype '[batchSize, n, m]
 bmm input other = unsafePerformIO $ ATen.cast2 ATen.Managed.bmm_tt input other
 
 -- | BroadcastTensorsImpl
@@ -1562,20 +1774,22 @@ bmm input other = unsafePerformIO $ ATen.cast2 ATen.Managed.bmm_tt input other
 -- Ty :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))
 -- = 'Nothing
 type family BroadcastTensorsImpl (tensors :: [a]) (acc :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: Maybe ([Nat], D.DType, (D.DeviceType, Nat)) where
-  BroadcastTensorsImpl '[]                                    'Nothing                                = 'Nothing
-  BroadcastTensorsImpl '[]                                    ('Just '(reverseShape, dtype, device))  = 'Just '(Reverse reverseShape, dtype, device)
-  BroadcastTensorsImpl (Tensor device dtype shape ': tensors) 'Nothing                                = BroadcastTensorsImpl tensors ('Just '(Reverse shape, dtype, device))
+  BroadcastTensorsImpl '[] 'Nothing = 'Nothing
+  BroadcastTensorsImpl '[] ('Just '(reverseShape, dtype, device)) = 'Just '(Reverse reverseShape, dtype, device)
+  BroadcastTensorsImpl (Tensor device dtype shape ': tensors) 'Nothing = BroadcastTensorsImpl tensors ('Just '(Reverse shape, dtype, device))
   BroadcastTensorsImpl (Tensor device dtype shape ': tensors) ('Just '(reverseShape', dtype, device)) = BroadcastTensorsImpl tensors (MaybeTriple (ComputeBroadcast (Reverse shape) reverseShape') ('Just dtype) ('Just device))
-  BroadcastTensorsImpl (Tensor device dtype shape ': _)       ('Just _)                               = Nothing
+  BroadcastTensorsImpl (Tensor device dtype shape ': _) ('Just _) = Nothing
 
 type family BroadcastTensorsCheck (tensors :: [a]) (result :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: [a] where
-  BroadcastTensorsCheck tensors 'Nothing                        = TypeError (    Text "Cannot broadcast tensors due to incompatible shapes and/or dtypes: "
-                                                                            :<>: ShowType tensors
-                                                                            )
+  BroadcastTensorsCheck tensors 'Nothing =
+    TypeError
+      ( Text "Cannot broadcast tensors due to incompatible shapes and/or dtypes: "
+          :<>: ShowType tensors
+      )
   BroadcastTensorsCheck tensors ('Just '(shape, dtype, device)) = HReplicateR (ListLength tensors) (Tensor device dtype shape)
 
-type BroadcastTensors tensors
-  = BroadcastTensorsCheck tensors (BroadcastTensorsImpl tensors 'Nothing)
+type BroadcastTensors tensors =
+  BroadcastTensorsCheck tensors (BroadcastTensorsImpl tensors 'Nothing)
 
 -- | broadcast tensors
 -- TODO: broadcastTensors returns garbage data and is hence broken
@@ -1584,7 +1798,7 @@ type BroadcastTensors tensors
 -- >>> x = ones :: CPUTensor 'D.Float '[1, 3]
 -- >>> y = ones :: CPUTensor 'D.Float '[2, 1]
 -- >>> z = ones :: CPUTensor 'D.Float '[5, 1, 1]
--- 
+--
 -- -- >>> x' :. y' :. z' :. HNil = broadcastTensors (x :. y :. z :. HNil)
 -- -- >>> :type x'
 -- -- x' :: Tensor '( 'D.CPU, 0) 'D.Float '[5, 2, 3]
@@ -1595,39 +1809,41 @@ type BroadcastTensors tensors
 -- -- >>> :type z'
 -- -- z' :: Tensor '( 'D.CPU, 0) 'D.Float '[5, 2, 3]
 -- -- >>> dtype &&& shape &&& (\t -> D.asValue (toDynamic t) :: [[[Float]]]) $ z'
-broadcastTensors
-  :: forall tensors tensors'
-   . ( tensors' ~ BroadcastTensors tensors
-     , ATen.Castable (HList tensors)  [D.ATenTensor]
-     , ATen.Castable (HList tensors') [D.ATenTensor]
-     )
-  => HList tensors -- ^ input list of tensors
-  -> HList tensors' -- ^ output list of tensors
+broadcastTensors ::
+  forall tensors tensors'.
+  ( tensors' ~ BroadcastTensors tensors,
+    ATen.Castable (HList tensors) [D.ATenTensor],
+    ATen.Castable (HList tensors') [D.ATenTensor]
+  ) =>
+  -- | input list of tensors
+  HList tensors ->
+  -- | output list of tensors
+  HList tensors'
 broadcastTensors tensors = unsafePerformIO $ ATen.cast1 ATen.Managed.broadcast_tensors_l tensors
 
 type family CatImpl (dim :: Nat) (tensors :: [a]) (acc :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: Maybe ([Nat], D.DType, (D.DeviceType, Nat)) where
-  CatImpl _   '[]                                    acc = acc
+  CatImpl _ '[] acc = acc
   CatImpl dim (Tensor device dtype shape ': tensors) acc = CatImpl dim tensors (MaybeTriple (ComputeCatShape dim shape acc) (ComputeCatDType dtype acc) (ComputeCatDevice device acc))
 
 type family ComputeCatShape (dim :: Nat) (shape :: [Nat]) (acc :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: Maybe [Nat] where
-  ComputeCatShape 0   (x ': xs) Nothing                          = Just (x ': xs)
-  ComputeCatShape dim (x ': xs) Nothing                          = AppendToMaybe x (ComputeCatShape (dim - 1) xs Nothing)
-  ComputeCatShape 0   (x ': xs) (Just '(y ': xs, _, _))          = Just ((x + y) ': xs)
+  ComputeCatShape 0 (x ': xs) Nothing = Just (x ': xs)
+  ComputeCatShape dim (x ': xs) Nothing = AppendToMaybe x (ComputeCatShape (dim - 1) xs Nothing)
+  ComputeCatShape 0 (x ': xs) (Just '(y ': xs, _, _)) = Just ((x + y) ': xs)
   ComputeCatShape dim (x ': xs) (Just '(x ': ys, dtype, device)) = AppendToMaybe x (ComputeCatShape (dim - 1) xs (Just '(ys, dtype, device)))
-  ComputeCatShape _   _         _                                = Nothing
+  ComputeCatShape _ _ _ = Nothing
 
 type family ComputeCatDType (dtype :: D.DType) (acc :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: Maybe D.DType where
-  ComputeCatDType dtype Nothing               = Just dtype
+  ComputeCatDType dtype Nothing = Just dtype
   ComputeCatDType dtype (Just '(_, dtype, _)) = Just dtype
-  ComputeCatDType _     _                     = Nothing
+  ComputeCatDType _ _ = Nothing
 
 type family ComputeCatDevice (device :: (D.DeviceType, Nat)) (acc :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: Maybe (D.DeviceType, Nat) where
-  ComputeCatDevice device Nothing                = Just device
+  ComputeCatDevice device Nothing = Just device
   ComputeCatDevice device (Just '(_, _, device)) = Just device
-  ComputeCatDevice _      _                      = Nothing
+  ComputeCatDevice _ _ = Nothing
 
 type family CatCheck (res :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: ([Nat], D.DType, (D.DeviceType, Nat)) where
-  CatCheck 'Nothing                        = TypeError (Text "Concatenation impossible.")
+  CatCheck 'Nothing = TypeError (Text "Concatenation impossible.")
   CatCheck ('Just '(shape, dtype, device)) = '(shape, dtype, device)
 
 -- | Cat
@@ -1677,41 +1893,43 @@ type Cat dim tensors = CatCheck (CatImpl dim tensors Nothing)
 -- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 6]
 -- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[Float]]) $ t'
 -- (Float,([2,6],[[1.0,1.0,1.0,1.0,1.0,1.0],[1.0,1.0,1.0,1.0,1.0,1.0]]))
-cat
-  :: forall dim shape dtype device tensors
-   . ( KnownNat dim
-     , '(shape, dtype, device) ~ Cat dim tensors
-     , ATen.Castable (HList tensors) [D.ATenTensor]
-     )
-  => HList tensors -- ^ input list of tensors
-  -> Tensor device dtype shape -- ^ output tensor
+cat ::
+  forall dim shape dtype device tensors.
+  ( KnownNat dim,
+    '(shape, dtype, device) ~ Cat dim tensors,
+    ATen.Castable (HList tensors) [D.ATenTensor]
+  ) =>
+  -- | input list of tensors
+  HList tensors ->
+  -- | output tensor
+  Tensor device dtype shape
 cat tensors = unsafePerformIO $ ATen.cast2 ATen.Managed.cat_ll tensors (natValI @dim :: Int)
 
 -- chain_matmul :: [Tensor device dtype shape] -> Tensor device dtype shape
 -- chain_matmul _matrices = unsafePerformIO $ (ATen.cast1 ATen.Managed.chain_matmul_l) _matrices
 
 type family ChunkImpl (chunkShapes :: Maybe [[Nat]]) (dtype :: D.DType) (device :: (D.DeviceType, Nat)) :: Maybe a where
-  ChunkImpl (Just '[])               _     _      = Just '[]
+  ChunkImpl (Just '[]) _ _ = Just '[]
   ChunkImpl (Just (shape ': shapes)) dtype device = AppendToMaybe (Tensor device dtype shape) (ChunkImpl (Just shapes) dtype device)
-  ChunkImpl Nothing                  _     _      = Nothing
+  ChunkImpl Nothing _ _ = Nothing
 
 type family ChunkCheck (shape :: [Nat]) (dim :: Nat) (result :: Maybe a) :: a where
-  ChunkCheck shape dim Nothing       = DimOutOfBound shape dim
-  ChunkCheck _     _   (Just result) = result
+  ChunkCheck shape dim Nothing = DimOutOfBound shape dim
+  ChunkCheck _ _ (Just result) = result
 
 type family ComputeChunksChunkGo (n' :: Nat) (r :: Nat) (cmp :: Ordering) (cmp' :: Ordering) :: [Nat] where
-  ComputeChunksChunkGo n' r GT _  = n' ': ComputeChunksChunkGo n' (r - n') (CmpNat (r - n') n') (CmpNat (r - n') 0)
-  ComputeChunksChunkGo n' r EQ _  = n' ': ComputeChunksChunkGo n' (r - n') (CmpNat (r - n') n') (CmpNat (r - n') 0)
-  ComputeChunksChunkGo n' r _  GT = '[r]
-  ComputeChunksChunkGo n' _ _  _  = '[]
+  ComputeChunksChunkGo n' r GT _ = n' ': ComputeChunksChunkGo n' (r - n') (CmpNat (r - n') n') (CmpNat (r - n') 0)
+  ComputeChunksChunkGo n' r EQ _ = n' ': ComputeChunksChunkGo n' (r - n') (CmpNat (r - n') n') (CmpNat (r - n') 0)
+  ComputeChunksChunkGo n' r _ GT = '[r]
+  ComputeChunksChunkGo n' _ _ _ = '[]
 
 type family ComputeChunksChunkGo0 (n' :: Nat) (chunks :: Nat) :: [Nat] where
-  ComputeChunksChunkGo0 _  0      = '[]
+  ComputeChunksChunkGo0 _ 0 = '[]
   ComputeChunksChunkGo0 n' chunks = n' ': (ComputeChunksChunkGo0 n' (chunks - 1))
 
 type family ComputeChunks (n :: Maybe Nat) (chunks :: Nat) :: Maybe [Nat] where
   ComputeChunks (Just n) chunks = Just (ComputeChunks' n chunks (Mod n chunks))
-  ComputeChunks Nothing  _      = Nothing
+  ComputeChunks Nothing _ = Nothing
 
 type family ComputeChunks' (n :: Nat) (chunks :: Nat) (m :: Nat) :: [Nat] where
   ComputeChunks' n chunks 0 = ComputeChunksChunkGo0 (Div n chunks) chunks
@@ -1719,8 +1937,8 @@ type family ComputeChunks' (n :: Nat) (chunks :: Nat) (m :: Nat) :: [Nat] where
 
 type family ChunkShapesImpl (chunks :: Maybe [Nat]) (dim :: Nat) (shape :: [Nat]) :: Maybe [[Nat]] where
   ChunkShapesImpl (Just (n ': ns)) dim shape = AppendToMaybe' (ReplaceDim dim shape n) (ChunkShapesImpl (Just ns) dim shape)
-  ChunkShapesImpl (Just '[])       _   _     = Just '[]
-  ChunkShapesImpl Nothing          _   _     = Nothing
+  ChunkShapesImpl (Just '[]) _ _ = Just '[]
+  ChunkShapesImpl Nothing _ _ = Nothing
 
 type ChunkShapes chunks dim shape = ChunkShapesImpl (ComputeChunks (ExtractDim dim shape) chunks) dim shape
 
@@ -1772,17 +1990,20 @@ type Chunk chunks dim shape dtype device = ChunkCheck shape dim (ChunkImpl (Chun
 -- (Float,[4,4])
 -- >>> dtype &&& shape $ t4
 -- (Float,[3,4])
-chunk
-  :: forall chunks dim shape dtype device tensorChunks
-   . ( KnownNat chunks
-     , KnownNat dim
-     , tensorChunks ~ Chunk chunks dim shape dtype device
-     , ATen.Castable (HList tensorChunks) [D.ATenTensor]
-     )
-  => Tensor device dtype shape -- ^ input tensor
-  -> HList tensorChunks -- ^ output list of tensors
-chunk input = unsafePerformIO
-  $ ATen.cast3 ATen.Managed.chunk_tll input (natValI @chunks :: Int) (natValI @dim :: Int)
+chunk ::
+  forall chunks dim shape dtype device tensorChunks.
+  ( KnownNat chunks,
+    KnownNat dim,
+    tensorChunks ~ Chunk chunks dim shape dtype device,
+    ATen.Castable (HList tensorChunks) [D.ATenTensor]
+  ) =>
+  -- | input tensor
+  Tensor device dtype shape ->
+  -- | output list of tensors
+  HList tensorChunks
+chunk input =
+  unsafePerformIO $
+    ATen.cast3 ATen.Managed.chunk_tll input (natValI @chunks :: Int) (natValI @dim :: Int)
 
 -- | clamp
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -1790,12 +2011,16 @@ chunk input = unsafePerformIO
 --
 -- >>> dtype &&& shape $ clamp 0 1 (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-clamp
-  :: forall shape dtype device
-   . Float -- ^ minimum value
-  -> Float -- ^ maximum value
-  -> Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+clamp ::
+  forall shape dtype device.
+  -- | minimum value
+  Float ->
+  -- | maximum value
+  Float ->
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 clamp min max input = unsafePerformIO $ ATen.cast3 ATen.Managed.clamp_tss input min max
 
 -- | clampMax
@@ -1804,11 +2029,14 @@ clamp min max input = unsafePerformIO $ ATen.cast3 ATen.Managed.clamp_tss input 
 --
 -- >>> dtype &&& shape $ clampMax 1 (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-clampMax
-  :: forall shape dtype device
-   . Float -- ^ maximum value
-  -> Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+clampMax ::
+  forall shape dtype device.
+  -- | maximum value
+  Float ->
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 clampMax max input = unsafePerformIO $ ATen.cast2 ATen.Managed.clamp_max_ts input max
 
 -- | clampMin
@@ -1817,51 +2045,58 @@ clampMax max input = unsafePerformIO $ ATen.cast2 ATen.Managed.clamp_max_ts inpu
 --
 -- >>> dtype &&& shape $ clampMin 0 (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-clampMin
-  :: forall shape dtype device
-   . Float -- ^ minimum value
-  -> Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+clampMin ::
+  forall shape dtype device.
+  -- | minimum value
+  Float ->
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 clampMin min input = unsafePerformIO $ ATen.cast2 ATen.Managed.clamp_min_ts input min
 
 -- | cudnnIsAcceptable
 -- TODO: calling this probably makes only sense when the device is CUDA
-cudnnIsAcceptable
-  :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
-  -> Bool -- ^ output
+cudnnIsAcceptable ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Bool
 cudnnIsAcceptable input =
   unsafePerformIO $ ATen.cast1 ATen.Managed.cudnn_is_acceptable_t input
 
 -- constant_pad_nd :: Tensor device dtype shape -> [Int] -> Float -> Tensor device dtype shape
 -- constant_pad_nd _input _pad _value = unsafePerformIO $ (ATen.cast3 ATen.Managed.constant_pad_nd_tls) _input _pad _value
 
-constantPadNd1d
-  :: forall (pad :: (Nat, Nat)) n dtype device
-   . (All KnownNat '[Torch.Typed.Aux.Fst pad, Torch.Typed.Aux.Snd pad, n])
-  => Float
-  -> Tensor device dtype '[n]
-  -> Tensor device dtype '[n + Torch.Typed.Aux.Fst pad + Torch.Typed.Aux.Snd pad]
-constantPadNd1d value input = unsafePerformIO $ ATen.cast3
-  ATen.Managed.constant_pad_nd_tls
-  input
-  ([natValI @(Torch.Typed.Aux.Fst pad), natValI @(Torch.Typed.Aux.Snd pad)] :: [Int])
-  value
+constantPadNd1d ::
+  forall (pad :: (Nat, Nat)) n dtype device.
+  (All KnownNat '[Torch.Typed.Aux.Fst pad, Torch.Typed.Aux.Snd pad, n]) =>
+  Float ->
+  Tensor device dtype '[n] ->
+  Tensor device dtype '[n + Torch.Typed.Aux.Fst pad + Torch.Typed.Aux.Snd pad]
+constantPadNd1d value input =
+  unsafePerformIO $
+    ATen.cast3
+      ATen.Managed.constant_pad_nd_tls
+      input
+      ([natValI @(Torch.Typed.Aux.Fst pad), natValI @(Torch.Typed.Aux.Snd pad)] :: [Int])
+      value
 
 -- convolution :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> [Int] -> [Int] -> [Int] -> Bool -> [Int] -> Int -> Tensor device dtype shape
 -- convolution _input _weight _bias _stride _padding _dilation _transposed _output_padding _groups = unsafePerformIO $ (ATen.cast9 ATen.Managed.convolution_tttlllbll) _input _weight _bias _stride _padding _dilation _transposed _output_padding _groups
 
 type ConvSideCheck (inputSize :: Nat) (kernelSize :: Nat) (stride :: Nat) (padding :: Nat) (outputSize :: Nat) =
-  (
-    -- kernel size and stride must be > 0
-    1 <= kernelSize, 1 <= stride
+  ( -- kernel size and stride must be > 0
+    1 <= kernelSize,
+    1 <= stride,
     -- kernel size can't be greater than actual input size
     -- ToDo: Do not use '>=' on constraint to avoid reduction-stack-overflow.
-  , (kernelSize - 1) <= (inputSize + (2 * padding))
+    (kernelSize - 1) <= (inputSize + (2 * padding)),
     -- output size must be greater than 0
-  , 1 <= outputSize
+    1 <= outputSize,
     -- output formulation:
-  , outputSize ~ ConvOutputSize inputSize kernelSize stride padding
+    outputSize ~ ConvOutputSize inputSize kernelSize stride padding
   )
 
 -- | ConvOutputSize
@@ -1880,38 +2115,49 @@ type family ConvOutputSize (inputSize :: Nat) (kernelSize :: Nat) (stride :: Nat
 -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 10, 4]
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[[Float]]]) $ t
 -- (Float,([1,10,4],[[[4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0]]]))
-conv1d
-  :: forall (stride :: Nat)
-            (padding :: Nat)
-            inputChannelSize outputChannelSize
-            kernelSize
-            inputSize
-            batchSize
-            outputSize
-            dtype
-            device
-   . ( All KnownNat '[ stride
-                     , padding
-                     , inputChannelSize, outputChannelSize
-                     , kernelSize
-                     , inputSize
-                     , batchSize
-                     , outputSize
-                     ]
-     , ConvSideCheck inputSize kernelSize stride padding outputSize
-     )
-  => Tensor device dtype '[outputChannelSize, inputChannelSize, kernelSize] -- ^ weight
-  -> Tensor device dtype '[outputChannelSize] -- ^ bias
-  -> Tensor device dtype '[batchSize, inputChannelSize, inputSize] -- ^ input
-  -> Tensor device dtype '[batchSize, outputChannelSize, outputSize] -- ^ output
-conv1d weight bias input = unsafePerformIO $ ATen.cast7 ATen.Managed.conv1d_tttllll
-                                                   input
-                                                   weight
-                                                   bias
-                                                   (natValI @stride :: Int)
-                                                   (natValI @padding :: Int)
-                                                   (1 :: Int)
-                                                   (1 :: Int)
+conv1d ::
+  forall
+    (stride :: Nat)
+    (padding :: Nat)
+    inputChannelSize
+    outputChannelSize
+    kernelSize
+    inputSize
+    batchSize
+    outputSize
+    dtype
+    device.
+  ( All KnownNat
+      '[ stride,
+         padding,
+         inputChannelSize,
+         outputChannelSize,
+         kernelSize,
+         inputSize,
+         batchSize,
+         outputSize
+       ],
+    ConvSideCheck inputSize kernelSize stride padding outputSize
+  ) =>
+  -- | weight
+  Tensor device dtype '[outputChannelSize, inputChannelSize, kernelSize] ->
+  -- | bias
+  Tensor device dtype '[outputChannelSize] ->
+  -- | input
+  Tensor device dtype '[batchSize, inputChannelSize, inputSize] ->
+  -- | output
+  Tensor device dtype '[batchSize, outputChannelSize, outputSize]
+conv1d weight bias input =
+  unsafePerformIO $
+    ATen.cast7
+      ATen.Managed.conv1d_tttllll
+      input
+      weight
+      bias
+      (natValI @stride :: Int)
+      (natValI @padding :: Int)
+      (1 :: Int)
+      (1 :: Int)
 
 -- | conv2d
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -1921,40 +2167,58 @@ conv1d weight bias input = unsafePerformIO $ ATen.cast7 ATen.Managed.conv1d_tttl
 -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 10, 4, 5]
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[[[Float]]]]) $ t
 -- (Float,([1,10,4,5],[[[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]]]]))
-conv2d
-  :: forall (stride :: (Nat, Nat))
-            (padding :: (Nat, Nat))
-            inputChannelSize outputChannelSize
-            kernelSize0 kernelSize1
-            inputSize0 inputSize1
-            batchSize
-            outputSize0 outputSize1
-            dtype
-            device
-   . ( All KnownNat '[ Torch.Typed.Aux.Fst stride, Torch.Typed.Aux.Snd stride
-                     , Torch.Typed.Aux.Fst padding, Torch.Typed.Aux.Snd padding
-                     , inputChannelSize, outputChannelSize
-                     , kernelSize0, kernelSize1
-                     , inputSize0, inputSize1
-                     , batchSize
-                     , outputSize0, outputSize1
-                     ]
-     , ConvSideCheck inputSize0 kernelSize0 (Torch.Typed.Aux.Fst stride) (Torch.Typed.Aux.Fst padding) outputSize0
-     , ConvSideCheck inputSize1 kernelSize1 (Torch.Typed.Aux.Snd stride) (Torch.Typed.Aux.Snd padding) outputSize1
-     )
-  => Tensor device dtype '[outputChannelSize, inputChannelSize, kernelSize0, kernelSize1] -- ^ weight
-  -> Tensor device dtype '[outputChannelSize] -- ^ bias
-  -> Tensor device dtype '[batchSize, inputChannelSize, inputSize0, inputSize1] -- ^ input
-  -> Tensor device dtype '[batchSize, outputChannelSize, outputSize0, outputSize1] -- ^ output
-conv2d weight bias input = unsafePerformIO $ ATen.cast7
-  ATen.Managed.conv2d_tttllll
-  input
-  weight
-  bias
-  ([natValI @(Torch.Typed.Aux.Fst stride),  natValI @(Torch.Typed.Aux.Snd stride)]  :: [Int])
-  ([natValI @(Torch.Typed.Aux.Fst padding), natValI @(Torch.Typed.Aux.Snd padding)] :: [Int])
-  ([1, 1] :: [Int])
-  (1 :: Int)
+conv2d ::
+  forall
+    (stride :: (Nat, Nat))
+    (padding :: (Nat, Nat))
+    inputChannelSize
+    outputChannelSize
+    kernelSize0
+    kernelSize1
+    inputSize0
+    inputSize1
+    batchSize
+    outputSize0
+    outputSize1
+    dtype
+    device.
+  ( All KnownNat
+      '[ Torch.Typed.Aux.Fst stride,
+         Torch.Typed.Aux.Snd stride,
+         Torch.Typed.Aux.Fst padding,
+         Torch.Typed.Aux.Snd padding,
+         inputChannelSize,
+         outputChannelSize,
+         kernelSize0,
+         kernelSize1,
+         inputSize0,
+         inputSize1,
+         batchSize,
+         outputSize0,
+         outputSize1
+       ],
+    ConvSideCheck inputSize0 kernelSize0 (Torch.Typed.Aux.Fst stride) (Torch.Typed.Aux.Fst padding) outputSize0,
+    ConvSideCheck inputSize1 kernelSize1 (Torch.Typed.Aux.Snd stride) (Torch.Typed.Aux.Snd padding) outputSize1
+  ) =>
+  -- | weight
+  Tensor device dtype '[outputChannelSize, inputChannelSize, kernelSize0, kernelSize1] ->
+  -- | bias
+  Tensor device dtype '[outputChannelSize] ->
+  -- | input
+  Tensor device dtype '[batchSize, inputChannelSize, inputSize0, inputSize1] ->
+  -- | output
+  Tensor device dtype '[batchSize, outputChannelSize, outputSize0, outputSize1]
+conv2d weight bias input =
+  unsafePerformIO $
+    ATen.cast7
+      ATen.Managed.conv2d_tttllll
+      input
+      weight
+      bias
+      ([natValI @(Torch.Typed.Aux.Fst stride), natValI @(Torch.Typed.Aux.Snd stride)] :: [Int])
+      ([natValI @(Torch.Typed.Aux.Fst padding), natValI @(Torch.Typed.Aux.Snd padding)] :: [Int])
+      ([1, 1] :: [Int])
+      (1 :: Int)
 
 -- | conv3d
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -1964,40 +2228,64 @@ conv2d weight bias input = unsafePerformIO $ ATen.cast7
 -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 10, 4, 5, 6]
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[[[[Float]]]]]) $ t
 -- (Float,([1,10,4,5,6],[[[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]],[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]],[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]],[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]],[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]],[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]],[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]],[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]],[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]],[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]]]]))
-conv3d
-  :: forall (stride :: (Nat, Nat, Nat))
-            (padding :: (Nat, Nat, Nat))
-            inputChannelSize outputChannelSize
-            kernelSize0 kernelSize1 kernelSize2
-            inputSize0 inputSize1 inputSize2
-            batchSize
-            outputSize0 outputSize1 outputSize2
-            dtype
-            device
-   . ( All KnownNat '[ Fst3 stride, Snd3 stride, Trd3 stride
-                     , Fst3 padding, Snd3 padding, Trd3 padding
-                     , inputChannelSize, outputChannelSize
-                     , kernelSize0, kernelSize1, kernelSize2
-                     , inputSize0, inputSize1, inputSize2
-                     , batchSize
-                     ]
-     , ConvSideCheck inputSize0 kernelSize0 (Fst3 stride) (Fst3 padding) outputSize0
-     , ConvSideCheck inputSize1 kernelSize1 (Snd3 stride) (Snd3 padding) outputSize1
-     , ConvSideCheck inputSize2 kernelSize2 (Trd3 stride) (Trd3 padding) outputSize2
-     )
-  => Tensor device dtype '[outputChannelSize, inputChannelSize, kernelSize0, kernelSize1, kernelSize2] -- ^ weight
-  -> Tensor device dtype '[outputChannelSize] -- ^ bias
-  -> Tensor device dtype '[batchSize, inputChannelSize, inputSize0, inputSize1, inputSize2] -- ^ input
-  -> Tensor device dtype '[batchSize, outputChannelSize, outputSize0, outputSize1, outputSize2] -- ^ output
-conv3d weight bias input = unsafePerformIO $ ATen.cast7
-  ATen.Managed.conv3d_tttllll
-  input
-  weight
-  bias
-  ([natValI @(Fst3 stride), natValI @(Snd3 stride), natValI @(Trd3 stride)] :: [Int])
-  ([natValI @(Fst3 padding), natValI @(Snd3 padding), natValI @(Trd3 padding)] :: [Int])
-  ([1, 1, 1] :: [Int])
-  (1 :: Int)
+conv3d ::
+  forall
+    (stride :: (Nat, Nat, Nat))
+    (padding :: (Nat, Nat, Nat))
+    inputChannelSize
+    outputChannelSize
+    kernelSize0
+    kernelSize1
+    kernelSize2
+    inputSize0
+    inputSize1
+    inputSize2
+    batchSize
+    outputSize0
+    outputSize1
+    outputSize2
+    dtype
+    device.
+  ( All KnownNat
+      '[ Fst3 stride,
+         Snd3 stride,
+         Trd3 stride,
+         Fst3 padding,
+         Snd3 padding,
+         Trd3 padding,
+         inputChannelSize,
+         outputChannelSize,
+         kernelSize0,
+         kernelSize1,
+         kernelSize2,
+         inputSize0,
+         inputSize1,
+         inputSize2,
+         batchSize
+       ],
+    ConvSideCheck inputSize0 kernelSize0 (Fst3 stride) (Fst3 padding) outputSize0,
+    ConvSideCheck inputSize1 kernelSize1 (Snd3 stride) (Snd3 padding) outputSize1,
+    ConvSideCheck inputSize2 kernelSize2 (Trd3 stride) (Trd3 padding) outputSize2
+  ) =>
+  -- | weight
+  Tensor device dtype '[outputChannelSize, inputChannelSize, kernelSize0, kernelSize1, kernelSize2] ->
+  -- | bias
+  Tensor device dtype '[outputChannelSize] ->
+  -- | input
+  Tensor device dtype '[batchSize, inputChannelSize, inputSize0, inputSize1, inputSize2] ->
+  -- | output
+  Tensor device dtype '[batchSize, outputChannelSize, outputSize0, outputSize1, outputSize2]
+conv3d weight bias input =
+  unsafePerformIO $
+    ATen.cast7
+      ATen.Managed.conv3d_tttllll
+      input
+      weight
+      bias
+      ([natValI @(Fst3 stride), natValI @(Snd3 stride), natValI @(Trd3 stride)] :: [Int])
+      ([natValI @(Fst3 padding), natValI @(Snd3 padding), natValI @(Trd3 padding)] :: [Int])
+      ([1, 1, 1] :: [Int])
+      (1 :: Int)
 
 -- | convTBC
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -2009,13 +2297,13 @@ conv3d weight bias input = unsafePerformIO $ ATen.cast7
 -- (Float,[3,3,5])
 -- >>> dtype &&& shape $ convTBC @0 (ones :: CPUTensor 'D.Float '[2,4,5]) (ones :: CPUTensor 'D.Float '[5]) (ones :: CPUTensor 'D.Float '[2,3,4])
 -- (Float,[2,3,5])
-convTBC
-  :: forall padding timeSize batchSize kernelSize inputChannels outputChannels dtype device
-   . (KnownNat padding)
-  => Tensor device dtype '[kernelSize, inputChannels, outputChannels]
-  -> Tensor device dtype '[outputChannels]
-  -> Tensor device dtype '[timeSize, batchSize, inputChannels]
-  -> Tensor device dtype '[timeSize+padding*2+1-kernelSize, batchSize, outputChannels]
+convTBC ::
+  forall padding timeSize batchSize kernelSize inputChannels outputChannels dtype device.
+  (KnownNat padding) =>
+  Tensor device dtype '[kernelSize, inputChannels, outputChannels] ->
+  Tensor device dtype '[outputChannels] ->
+  Tensor device dtype '[timeSize, batchSize, inputChannels] ->
+  Tensor device dtype '[timeSize + padding * 2 + 1 - kernelSize, batchSize, outputChannels]
 convTBC weight bias input =
   unsafePerformIO $ ATen.cast4 ATen.Managed.conv_tbc_tttl input weight bias (natValI @padding)
 
@@ -2026,11 +2314,13 @@ convTBC weight bias input =
 --
 -- >>> dtype &&& shape $ cosh (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-cosh
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+cosh ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 cosh input = unsafePerformIO $ ATen.cast1 ATen.Managed.cosh_t input
 
 -- cosine_embedding_loss :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Double -> Int -> Tensor device dtype shape
@@ -2060,9 +2350,9 @@ cosh input = unsafePerformIO $ ATen.cast1 ATen.Managed.cosh_t input
 -- Det '[3,2,2] :: [Nat]
 -- = '[3]
 type family Det (shape :: [Nat]) :: [Nat] where
-  Det (n:n:'[])   = '[]
-  Det (b:n:n:'[]) = '[b]
-  Det _           = TypeError (Text "This shape must be square matrix or batch + squre matrix.")
+  Det (n : n : '[]) = '[]
+  Det (b : n : n : '[]) = '[b]
+  Det _ = TypeError (Text "This shape must be square matrix or batch + squre matrix.")
 
 -- | det
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -2071,10 +2361,12 @@ type family Det (shape :: [Nat]) :: [Nat] where
 -- (Float,[])
 -- >>> dtype &&& shape $ det (ones :: CPUTensor 'D.Float '[3,2,2])
 -- (Float,[3])
-det
-  :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
-  -> Tensor device dtype (Det shape) -- ^ output
+det ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype (Det shape)
 det input = unsafePerformIO $ ATen.cast1 ATen.Managed.det_t input
 
 -- diag_embed :: Tensor device dtype shape -> Int -> Int -> Int -> Tensor device dtype shape
@@ -2087,20 +2379,24 @@ det input = unsafePerformIO $ ATen.cast1 ATen.Managed.det_t input
 -- diagonal _input _offset _dim1 _dim2 = unsafePerformIO $ (ATen.cast4 ATen.Managed.diagonal_tlll) _input _offset _dim1 _dim2
 
 type family DotDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
-  DotDTypeIsValid '( 'D.CPU, 0)            dtype = ( DTypeIsNotBool '( 'D.CPU, 0) dtype
-                                                   , DTypeIsNotHalf '( 'D.CPU, 0) dtype
-                                                   )
+  DotDTypeIsValid '( 'D.CPU, 0) dtype =
+    ( DTypeIsNotBool '( 'D.CPU, 0) dtype,
+      DTypeIsNotHalf '( 'D.CPU, 0) dtype
+    )
   DotDTypeIsValid '( 'D.CUDA, deviceIndex) dtype = DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
-  DotDTypeIsValid '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
+  DotDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 -- | dot product
 -- Note that this function does not broadcast.
-dot
-  :: forall size dtype device
-   . DotDTypeIsValid device dtype
-  => Tensor device dtype '[size] -- ^ input 
-  -> Tensor device dtype '[size] -- ^ other input
-  -> Tensor device dtype '[] -- ^ dot product
+dot ::
+  forall size dtype device.
+  DotDTypeIsValid device dtype =>
+  -- | input
+  Tensor device dtype '[size] ->
+  -- | other input
+  Tensor device dtype '[size] ->
+  -- | dot product
+  Tensor device dtype '[]
 dot input other = unsafePerformIO $ ATen.cast2 ATen.Managed.dot_tt input other
 
 -- einsum :: String -> [Tensor device dtype shape] -> Tensor device dtype shape
@@ -2117,7 +2413,7 @@ instance KnownMaybeNat Nothing where
 
 type family PaddingIdxCheck (idx :: Maybe Nat) (numEmbeds :: Nat) :: Constraint where
   PaddingIdxCheck (Just n) numEmbeds = n + 1 <= numEmbeds
-  PaddingIdxCheck Nothing  _         = ()
+  PaddingIdxCheck Nothing _ = ()
 
 -- | embedding
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -2136,22 +2432,28 @@ type family PaddingIdxCheck (idx :: Maybe Nat) (numEmbeds :: Nat) :: Constraint 
 -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[4, 1, 2]
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[[Float]]]) $ t
 -- (Float,([4,1,2],[[[1.0,1.0]],[[3.0,3.0]],[[1.0,1.0]],[[2.0,2.0]]]))
-embedding
-  :: forall (paddingIdx :: Maybe Nat) numEmbeds embedDim shape dtype device
-   . ( KnownMaybeNat paddingIdx
-     , PaddingIdxCheck paddingIdx numEmbeds
-     )
-  => Bool -- ^ whether or not to scale the gradient by the frequencies
-  -> Bool -- ^ whether or not the embedding is sparse
-  -> Tensor device dtype    '[numEmbeds, embedDim] -- ^ weights
-  -> Tensor device 'D.Int64 shape -- ^ indices
-  -> Tensor device dtype    (Reverse (embedDim ': Reverse shape)) -- ^ output
+embedding ::
+  forall (paddingIdx :: Maybe Nat) numEmbeds embedDim shape dtype device.
+  ( KnownMaybeNat paddingIdx,
+    PaddingIdxCheck paddingIdx numEmbeds
+  ) =>
+  -- | whether or not to scale the gradient by the frequencies
+  Bool ->
+  -- | whether or not the embedding is sparse
+  Bool ->
+  -- | weights
+  Tensor device dtype '[numEmbeds, embedDim] ->
+  -- | indices
+  Tensor device 'D.Int64 shape ->
+  -- | output
+  Tensor device dtype (Reverse (embedDim ': Reverse shape))
 embedding scaleGradByFreq sparse weights indices =
   unsafePerformIO $ ATen.cast5 ATen.Managed.embedding_ttlbb weights indices paddingIdx scaleGradByFreq sparse
- where paddingIdx :: Int
-       paddingIdx = case maybeNatVal @paddingIdx of
-                      Just idx -> fromIntegral idx
-                      Nothing  -> -1
+  where
+    paddingIdx :: Int
+    paddingIdx = case maybeNatVal @paddingIdx of
+      Just idx -> fromIntegral idx
+      Nothing -> -1
 
 -- embedding_bag :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Bool -> Int -> Bool -> Tensor device dtype shape -> (Tensor device dtype shape,Tensor device dtype shape,Tensor device dtype shape,Tensor device dtype shape)
 -- embedding_bag _weight _indices _offsets _scale_grad_by_freq _mode _sparse _per_sample_weights = unsafePerformIO $ (ATen.cast7 ATen.Managed.embedding_bag_tttblbt) _weight _indices _offsets _scale_grad_by_freq _mode _sparse _per_sample_weights
@@ -2162,21 +2464,25 @@ embedding scaleGradByFreq sparse weights indices =
 -- >>> t <- emptyLike (ones :: CPUTensor 'D.Float '[3,4,5])
 -- >>> dtype &&& shape $ t
 -- (Float,[3,4,5])
-emptyLike
-  :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
-  -> IO (Tensor device dtype shape) -- ^ output
+emptyLike ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  IO (Tensor device dtype shape)
 emptyLike input = ATen.cast1 ATen.Managed.empty_like_t input
 
 -- | erfc
 --
 -- >>> dtype &&& shape $ erfc (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-erfc
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+erfc ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 erfc input = unsafePerformIO $ ATen.cast1 ATen.Managed.erfc_t input
 
 -- | expm1
@@ -2184,11 +2490,13 @@ erfc input = unsafePerformIO $ ATen.cast1 ATen.Managed.erfc_t input
 --
 -- >>> dtype &&& shape $ expm1 (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-expm1
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+expm1 ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 expm1 input = unsafePerformIO $ ATen.cast1 ATen.Managed.expm1_t input
 
 -- | expand
@@ -2203,14 +2511,17 @@ expm1 input = unsafePerformIO $ ATen.cast1 ATen.Managed.expm1_t input
 -- (Float,[3,1,2])
 -- >>> toInt (all (t' ==. t'')) == 1
 -- True
-expand
-  :: forall shape' shape dtype device
-   . ( KnownShape shape'
-     , shape' ~ Broadcast shape shape'
-     )
-  => Bool -- ^ some boolean value with unknown function
-  -> Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape' -- ^ output
+expand ::
+  forall shape' shape dtype device.
+  ( KnownShape shape',
+    shape' ~ Broadcast shape shape'
+  ) =>
+  -- | some boolean value with unknown function
+  Bool ->
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape'
 expand someBool input = unsafePerformIO $ ATen.cast3 ATen.Managed.tensor_expand_lb input (shapeVal @shape') someBool
 
 -- flatten :: Tensor device dtype shape -> Int -> Int -> Tensor device dtype shape
@@ -2223,11 +2534,13 @@ expand someBool input = unsafePerformIO $ ATen.cast3 ATen.Managed.tensor_expand_
 -- (Float,[6])
 -- >>> :t t
 -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[6]
-flattenAll
-  :: forall shape dtype device
-   . KnownShape shape
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype '[Product shape] -- ^ output
+flattenAll ::
+  forall shape dtype device.
+  KnownShape shape =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype '[Product shape]
 flattenAll input =
   unsafePerformIO $ ATen.cast3 ATen.Managed.flatten_tll input (0 :: Int) (-1 :: Int)
 
@@ -2235,22 +2548,27 @@ flattenAll input =
 --
 -- >>> dtype &&& shape $ frac (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-frac
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+frac ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 frac input = unsafePerformIO $ ATen.cast1 ATen.Managed.frac_t input
 
 -- | full like
 --
 -- >>> dtype &&& shape $ fullLike 3.0 (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-fullLike
-  :: forall shape dtype device
-   . Float -- ^ fill value
-  -> Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+fullLike ::
+  forall shape dtype device.
+  -- | fill value
+  Float ->
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 fullLike fillValue input =
   unsafePerformIO $ ATen.cast2 ATen.Managed.full_like_ts input fillValue
 
@@ -2301,14 +2619,20 @@ fullLike fillValue input =
 --
 -- >>> dtype &&& shape $ isclose 0.1 0.1 False (ones :: CPUTensor 'D.Float '[3,2]) (ones :: CPUTensor 'D.Float '[3,2])
 -- (Bool,[3,2])
-isclose
-  :: forall shape dtype device
-   . Double -- ^ relative tolerance
-  -> Double -- ^ absolute tolerance
-  -> Bool -- ^ whether or not NaN equals NaN
-  -> Tensor device dtype   shape -- ^ input tensor
-  -> Tensor device dtype   shape -- ^ other input tensor
-  -> Tensor device 'D.Bool shape -- ^ output
+isclose ::
+  forall shape dtype device.
+  -- | relative tolerance
+  Double ->
+  -- | absolute tolerance
+  Double ->
+  -- | whether or not NaN equals NaN
+  Bool ->
+  -- | input tensor
+  Tensor device dtype shape ->
+  -- | other input tensor
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device 'D.Bool shape
 isclose rtol atol equalNaN input other =
   unsafePerformIO $ ATen.cast5 ATen.Managed.isclose_ttddb input other rtol atol equalNaN
 
@@ -2317,57 +2641,72 @@ isclose rtol atol equalNaN input other =
 --
 -- >>> dtype &&& shape $ isNaN (ones :: CPUTensor 'D.Float '[3,2])
 -- (Bool,[3,2])
-isNaN
-  :: forall shape dtype device
-   . Tensor device dtype   shape -- ^ input
-  -> Tensor device 'D.Bool shape -- ^ output
+isNaN ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device 'D.Bool shape
 isNaN input = unsafePerformIO $ ATen.cast1 ATen.Managed.isnan_t input
 
 -- | is distributed
-isDistributed
-  :: forall shape dtype device
-   . Tensor device dtype shape  -- ^ input
-  -> Bool -- ^ output
+isDistributed ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Bool
 isDistributed input = unsafePerformIO $ ATen.cast1 ATen.Managed.is_distributed_t input
 
 -- | is floating point
 -- TODO: this can be decided statically
-isFloatingPoint
-  :: forall shape dtype device
-   . Tensor device dtype shape  -- ^ input
-  -> Bool -- ^ output
+isFloatingPoint ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Bool
 isFloatingPoint input = unsafePerformIO $ ATen.cast1 ATen.Managed.is_floating_point_t input
 
 -- | is complex
-isComplex
-  :: forall shape dtype device
-   . Tensor device dtype shape  -- ^ input
-  -> Bool -- ^ output
+isComplex ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Bool
 isComplex input = unsafePerformIO $ ATen.cast1 ATen.Managed.is_complex_t input
 
 -- | is non-zero
 -- this operation is only defined for tensors with shape '[] or '[1]
-isNonZero
-  :: forall shape dtype device
-   . (Numel shape ~ 1)
-  => Tensor device dtype shape  -- ^ input
-  -> Bool -- ^ output
+isNonZero ::
+  forall shape dtype device.
+  (Numel shape ~ 1) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Bool
 isNonZero input = unsafePerformIO $ ATen.cast1 ATen.Managed.is_nonzero_t input
 
 -- | is same size
 -- TODO: this can be decided statically
-isSameSize
-  :: forall shape shape' dtype device
-   . Tensor device dtype shape -- ^ input tensor
-  -> Tensor device dtype shape' -- ^ other input tensor
-  -> Bool -- ^ output
+isSameSize ::
+  forall shape shape' dtype device.
+  -- | input tensor
+  Tensor device dtype shape ->
+  -- | other input tensor
+  Tensor device dtype shape' ->
+  -- | output
+  Bool
 isSameSize input other =
   unsafePerformIO $ ATen.cast2 ATen.Managed.is_same_size_tt input other
 
-isSigned
-  :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
-  -> Bool -- ^ output
+isSigned ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Bool
 isSigned input = unsafePerformIO $ ATen.cast1 ATen.Managed.is_signed_t input
 
 -- kl_div :: Tensor device dtype shape -> Tensor device dtype shape -> Int -> Tensor device dtype shape
@@ -2394,7 +2733,7 @@ isSigned input = unsafePerformIO $ ATen.cast1 ATen.Managed.is_signed_t input
 -- EndsWith '[2, 1] '[2, 1] :: Constraint
 -- = () :: Constraint
 type family EndsWith (xs :: [a]) (ys :: [a]) :: Constraint where
-  EndsWith '[]      '[]      = ()
+  EndsWith '[] '[] = ()
   EndsWith (x : xs) (x : ys) = EndsWith xs ys
   EndsWith (x : xs) (y : ys) = EndsWith xs (y : ys)
 
@@ -2407,27 +2746,34 @@ type family EndsWith (xs :: [a]) (ys :: [a]) :: Constraint where
 -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 1, 2]
 -- >>> dtype &&& shape $ t
 -- (Float,[2,1,2])
-layerNorm
-  :: forall normalizedShape shape dtype device
-   . ( KnownShape normalizedShape
-     , EndsWith shape normalizedShape
-     )
-  => Tensor device dtype normalizedShape -- ^ weight
-  -> Tensor device dtype normalizedShape -- ^ bias
-  -> Double -- ^ eps
-  -> Tensor device dtype shape -- ^ input tensor
-  -> Tensor device dtype shape -- ^ output tensor
-layerNorm weight bias eps input = unsafePerformIO $ ATen.cast6
-  ATen.Managed.layer_norm_tlttdb
-  input
-  (shapeVal @normalizedShape)
-  weight
-  bias
-  eps
-  (  cudnnIsAcceptable weight
-  && cudnnIsAcceptable bias
-  && cudnnIsAcceptable input
-  )
+layerNorm ::
+  forall normalizedShape shape dtype device.
+  ( KnownShape normalizedShape,
+    EndsWith shape normalizedShape
+  ) =>
+  -- | weight
+  Tensor device dtype normalizedShape ->
+  -- | bias
+  Tensor device dtype normalizedShape ->
+  -- | eps
+  Double ->
+  -- | input tensor
+  Tensor device dtype shape ->
+  -- | output tensor
+  Tensor device dtype shape
+layerNorm weight bias eps input =
+  unsafePerformIO $
+    ATen.cast6
+      ATen.Managed.layer_norm_tlttdb
+      input
+      (shapeVal @normalizedShape)
+      weight
+      bias
+      eps
+      ( cudnnIsAcceptable weight
+          && cudnnIsAcceptable bias
+          && cudnnIsAcceptable input
+      )
 
 -- native_layer_norm :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Int -> Int -> Double -> (Tensor device dtype shape,Tensor device dtype shape,Tensor device dtype shape)
 -- native_layer_norm _input _weight _bias _M _N _eps = unsafePerformIO $ (ATen.cast6 ATen.Managed.native_layer_norm_tttlld) _input _weight _bias _M _N _eps
@@ -2444,12 +2790,12 @@ layerNorm weight bias eps input = unsafePerformIO $ ATen.cast6
 -- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[5, 2]
 -- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[Float]]) $ t'
 -- (Float,([5,2],[[0.5,-2.25],[-0.25,1.25],[-2.0,0.0],[0.0,0.5],[1.5,2.5]]))
-linear
-  :: forall batchSize inputFeatures outputFeatures dtype device
-   . Tensor device dtype '[outputFeatures, inputFeatures]
-  -> Tensor device dtype '[outputFeatures]
-  -> Tensor device dtype '[batchSize, inputFeatures]
-  -> Tensor device dtype '[batchSize, outputFeatures]
+linear ::
+  forall batchSize inputFeatures outputFeatures dtype device.
+  Tensor device dtype '[outputFeatures, inputFeatures] ->
+  Tensor device dtype '[outputFeatures] ->
+  Tensor device dtype '[batchSize, inputFeatures] ->
+  Tensor device dtype '[batchSize, outputFeatures]
 linear weight bias input = unsafePerformIO $ ATen.cast3 ATen.Managed.linear_ttt input weight bias
 
 -- | linear'
@@ -2471,16 +2817,20 @@ linear weight bias input = unsafePerformIO $ ATen.cast3 ATen.Managed.linear_ttt 
 -- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 2, 5, 2]
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[[[Float]]]]) $ t'
 -- (Float,([1,2,5,2],[[[[0.5,-2.25],[-0.25,1.25],[-2.0,0.0],[0.0,0.5],[1.5,2.5]],[[0.5,-2.25],[-0.25,1.25],[-2.0,0.0],[0.0,0.5],[1.5,2.5]]]]))
-linear'
-  :: forall (inputFeatures :: Nat) (outputFeatures :: Nat) (shape :: [Nat]) (shape' :: [Nat]) dtype device (shape'' :: [Nat])
-   . ( shape'' ~ MatMul shape '[inputFeatures, outputFeatures]
-     , shape' ~ Broadcast shape'' shape''
-     )
-  => Tensor device dtype '[outputFeatures, inputFeatures] -- ^ weight
-  -> Tensor device dtype '[outputFeatures] -- ^ bias
-  -> Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape' -- ^ output
--- linear' weight bias input = Torch.Static.add (matmul input $ transpose @0 @1 weight) bias
+linear' ::
+  forall (inputFeatures :: Nat) (outputFeatures :: Nat) (shape :: [Nat]) (shape' :: [Nat]) dtype device (shape'' :: [Nat]).
+  ( shape'' ~ MatMul shape '[inputFeatures, outputFeatures],
+    shape' ~ Broadcast shape'' shape''
+  ) =>
+  -- | weight
+  Tensor device dtype '[outputFeatures, inputFeatures] ->
+  -- | bias
+  Tensor device dtype '[outputFeatures] ->
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  -- linear' weight bias input = Torch.Static.add (matmul input $ transpose @0 @1 weight) bias
+  Tensor device dtype shape'
 linear' weight bias input = unsafePerformIO $ ATen.cast3 ATen.Managed.linear_ttt input weight bias
 
 -- | mkldnnLinear
@@ -2491,18 +2841,22 @@ linear' weight bias input = unsafePerformIO $ ATen.cast3 ATen.Managed.linear_ttt
 -- >>> w = fromJust [[-0.5, -2,  0.5], [1.5, -0.5, 0.5]] :: CPUTensor 'D.Float '[2, 3]
 -- >>> b = fromJust [0, 0.5] :: CPUTensor 'D.Float '[2]
 -- >>> t = fromJust [[-2, 0.5, 1], [0.5, 0, 0], [0, 1, 0], [0, 0, 0], [1, -1, 0]] :: CPUTensor 'D.Float '[5, 3]
--- 
+--
 -- -- >>> t' = mkldnnLinear (toMKLDNN w) (toMKLDNN b) (toMKLDNN t)
 -- -- >>> :type t'
 -- -- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[5, 2]
 -- -- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[Float]]) $ t'
 -- -- (Float,([5,2],[[0.5,-2.25],[-0.25,1.25],[-2.0,0.0],[0.0,0.5],[1.5,2.5]]))
-mkldnnLinear
-  :: forall batchSize inputFeatures outputFeatures dtype device
-   . Tensor device dtype '[outputFeatures, inputFeatures] -- ^ weight
-  -> Tensor device dtype '[outputFeatures] -- ^ bias
-  -> Tensor device dtype '[batchSize, inputFeatures] -- ^ input
-  -> Tensor device dtype '[batchSize, outputFeatures] -- ^ output
+mkldnnLinear ::
+  forall batchSize inputFeatures outputFeatures dtype device.
+  -- | weight
+  Tensor device dtype '[outputFeatures, inputFeatures] ->
+  -- | bias
+  Tensor device dtype '[outputFeatures] ->
+  -- | input
+  Tensor device dtype '[batchSize, inputFeatures] ->
+  -- | output
+  Tensor device dtype '[batchSize, outputFeatures]
 mkldnnLinear weight bias input = unsafePerformIO $ ATen.cast3 ATen.Managed.mkldnn_linear_ttt input weight bias
 
 -- fbgemm_linear_int8_weight :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Float -> Float -> Tensor device dtype shape -> Tensor device dtype shape
@@ -2521,7 +2875,7 @@ mkldnnLinear weight bias input = unsafePerformIO $ ATen.cast3 ATen.Managed.mkldn
 -- fbgemm_pack_quantized_matrix _input _K _N = unsafePerformIO $ (ATen.cast3 ATen.Managed.fbgemm_pack_quantized_matrix_tll) _input _K _N
 
 -- fbgemm_is_cpu_supported :: Bool
--- fbgemm_is_cpu_supported  = unsafePerformIO $ (cast0 ATen.Managed.fbgemm_is_cpu_supported) 
+-- fbgemm_is_cpu_supported  = unsafePerformIO $ (cast0 ATen.Managed.fbgemm_is_cpu_supported)
 
 -- | log
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -2529,10 +2883,12 @@ mkldnnLinear weight bias input = unsafePerformIO $ ATen.cast3 ATen.Managed.mkldn
 --
 -- >>> dtype &&& shape $ log (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-log
-  :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+log ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 log input = unsafePerformIO $ ATen.cast1 ATen.Managed.log_t input
 
 -- | logDet
@@ -2543,11 +2899,13 @@ log input = unsafePerformIO $ ATen.cast1 ATen.Managed.log_t input
 -- (Float,[])
 -- >>> dtype &&& shape $ logDet (ones :: CPUTensor 'D.Float '[3,2,2])
 -- (Float,[3])
-logDet
-  :: forall shape' shape dtype device
-   . (shape' ~ Det shape)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape' -- ^ output
+logDet ::
+  forall shape' shape dtype device.
+  (shape' ~ Det shape) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape'
 logDet input = unsafePerformIO $ ATen.cast1 ATen.Managed.logdet_t input
 
 -- | logarithm of the sum of the exponentials
@@ -2567,20 +2925,25 @@ logDet input = unsafePerformIO $ ATen.cast1 ATen.Managed.logdet_t input
 --
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Float]]) $ logSumExp @0 @KeepDim t
 -- (Float,([1,2],[[5.44019,7.0116277]]))
-logSumExp
-  :: forall dim keepOrDropDim shape' shape dtype device
-   . ( KnownNat dim
-     , KnownKeepOrDropDim keepOrDropDim
-     , Reifies dtype D.DType
-     , DTypeIsFloatingPoint device dtype
-     , shape' ~ ConditionalDropDimension shape dim keepOrDropDim
-     )
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape' -- ^ output
-logSumExp input = unsafePerformIO $ ATen.cast3 ATen.Managed.logsumexp_tlb
-                                          input
-                                          (natValI @dim)
-                                          (keepOrDropDimVal @keepOrDropDim)
+logSumExp ::
+  forall dim keepOrDropDim shape' shape dtype device.
+  ( KnownNat dim,
+    KnownKeepOrDropDim keepOrDropDim,
+    Reifies dtype D.DType,
+    DTypeIsFloatingPoint device dtype,
+    shape' ~ ConditionalDropDimension shape dim keepOrDropDim
+  ) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape'
+logSumExp input =
+  unsafePerformIO $
+    ATen.cast3
+      ATen.Managed.logsumexp_tlb
+      input
+      (natValI @dim)
+      (keepOrDropDimVal @keepOrDropDim)
 
 -- margin_ranking_loss :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Double -> Int -> Tensor device dtype shape
 -- margin_ranking_loss _input1 _input2 _target _margin _reduction = unsafePerformIO $ (ATen.cast5 ATen.Managed.margin_ranking_loss_tttdl) _input1 _input2 _target _margin _reduction
@@ -2592,12 +2955,15 @@ logSumExp input = unsafePerformIO $ ATen.cast3 ATen.Managed.logsumexp_tlb
 --
 -- >>> dtype &&& shape $ matrixPower 2 (ones :: CPUTensor 'D.Float '[3,4,4])
 -- (Float,[3,4,4])
-matrixPower
-  :: forall shape' shape dtype device
-   . (shape' ~ Square shape)
-  => Int -- ^ power
-  -> Tensor device dtype shape -- ^ input matrix
-  -> Tensor device dtype shape' -- ^ output
+matrixPower ::
+  forall shape' shape dtype device.
+  (shape' ~ Square shape) =>
+  -- | power
+  Int ->
+  -- | input matrix
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape'
 matrixPower n input = unsafePerformIO $ ATen.cast2 ATen.Managed.matrix_power_tl input n
 
 -- | maxValues
@@ -2612,18 +2978,23 @@ matrixPower n input = unsafePerformIO $ ATen.cast2 ATen.Managed.matrix_power_tl 
 -- (Float,[3,1,5])
 -- >>> dtype &&& shape $ maxValues @1 @DropDim t
 -- (Float,[3,5])
-maxValues
-  :: forall dim keepOrDropDim shape' shape dtype device
-  . ( KnownNat dim
-    , KnownKeepOrDropDim keepOrDropDim
-    , shape' ~ ConditionalDropDimension shape dim keepOrDropDim
-    )
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape' -- ^ output
-maxValues input = unsafePerformIO $ ATen.cast3 ATen.Managed.max_values_tlb
-                                          input
-                                          (natValI @dim)
-                                          (keepOrDropDimVal @keepOrDropDim)
+maxValues ::
+  forall dim keepOrDropDim shape' shape dtype device.
+  ( KnownNat dim,
+    KnownKeepOrDropDim keepOrDropDim,
+    shape' ~ ConditionalDropDimension shape dim keepOrDropDim
+  ) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape'
+maxValues input =
+  unsafePerformIO $
+    ATen.cast3
+      ATen.Managed.max_values_tlb
+      input
+      (natValI @dim)
+      (keepOrDropDimVal @keepOrDropDim)
 
 -- | minValues
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -2637,18 +3008,23 @@ maxValues input = unsafePerformIO $ ATen.cast3 ATen.Managed.max_values_tlb
 -- (Float,[3,1,5])
 -- >>> dtype &&& shape $ minValues @1 @DropDim t
 -- (Float,[3,5])
-minValues
-  :: forall dim keepOrDropDim shape' shape dtype device
-   . ( KnownNat dim
-     , KnownKeepOrDropDim keepOrDropDim
-     , shape' ~ ConditionalDropDimension shape dim keepOrDropDim
-     )
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape' -- ^ output
-minValues input = unsafePerformIO $ ATen.cast3 ATen.Managed.min_values_tlb
-                                          input
-                                          (natValI @dim)
-                                          (keepOrDropDimVal @keepOrDropDim)
+minValues ::
+  forall dim keepOrDropDim shape' shape dtype device.
+  ( KnownNat dim,
+    KnownKeepOrDropDim keepOrDropDim,
+    shape' ~ ConditionalDropDimension shape dim keepOrDropDim
+  ) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape'
+minValues input =
+  unsafePerformIO $
+    ATen.cast3
+      ATen.Managed.min_values_tlb
+      input
+      (natValI @dim)
+      (keepOrDropDimVal @keepOrDropDim)
 
 -- | maxPool1d
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -2658,26 +3034,32 @@ minValues input = unsafePerformIO $ ATen.cast3 ATen.Managed.min_values_tlb
 -- [1,3,4]
 -- >>> :t t
 -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 4]
-maxPool1d
-  :: forall kernelSize stride padding channelSize inputSize batchSize outputSize dtype device
-   . ( All KnownNat '[ kernelSize
-                     , stride
-                     , padding
-                     , channelSize
-                     , inputSize
-                     , batchSize
-                     ]  
-     , ConvSideCheck inputSize kernelSize stride padding outputSize
-     )
-  => Tensor device dtype '[batchSize, channelSize, inputSize] -- ^ input
-  -> Tensor device dtype '[batchSize, channelSize, outputSize] -- ^ output
-maxPool1d input = unsafePerformIO $ ATen.cast6 ATen.Managed.max_pool1d_tllllb
-                                          input
-                                          (natValI @kernelSize)
-                                          (natValI @stride)
-                                          (natValI @padding)
-                                          (1 :: Int)
-                                          False
+maxPool1d ::
+  forall kernelSize stride padding channelSize inputSize batchSize outputSize dtype device.
+  ( All KnownNat
+      '[ kernelSize,
+         stride,
+         padding,
+         channelSize,
+         inputSize,
+         batchSize
+       ],
+    ConvSideCheck inputSize kernelSize stride padding outputSize
+  ) =>
+  -- | input
+  Tensor device dtype '[batchSize, channelSize, inputSize] ->
+  -- | output
+  Tensor device dtype '[batchSize, channelSize, outputSize]
+maxPool1d input =
+  unsafePerformIO $
+    ATen.cast6
+      ATen.Managed.max_pool1d_tllllb
+      input
+      (natValI @kernelSize)
+      (natValI @stride)
+      (natValI @padding)
+      (1 :: Int)
+      False
 
 -- max_pool1d_with_indices :: Tensor device dtype shape -> Int -> Int -> Int -> Int -> Bool -> (Tensor device dtype shape,Tensor device dtype shape)
 -- max_pool1d_with_indices _input _kernel_size _stride _padding _dilation _ceil_mode = unsafePerformIO $ (ATen.cast6 ATen.Managed.max_pool1d_with_indices_tllllb) _input _kernel_size _stride _padding _dilation _ceil_mode
@@ -2690,28 +3072,37 @@ maxPool1d input = unsafePerformIO $ ATen.cast6 ATen.Managed.max_pool1d_tllllb
 -- [1,3,4,5]
 -- >>> :t t
 -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 4, 5]
-maxPool2d
-  :: forall kernelSize stride padding channelSize inputSize0 inputSize1 batchSize outputSize0 outputSize1 dtype device
-   . ( All KnownNat '[ Torch.Typed.Aux.Fst kernelSize, Torch.Typed.Aux.Snd kernelSize
-                     , Torch.Typed.Aux.Fst stride, Torch.Typed.Aux.Snd stride
-                     , Torch.Typed.Aux.Fst padding, Torch.Typed.Aux.Snd padding
-                     , channelSize
-                     , inputSize0, inputSize1
-                     , batchSize
-                     ]
-     , ConvSideCheck inputSize0 (Torch.Typed.Aux.Fst kernelSize) (Torch.Typed.Aux.Fst stride) (Torch.Typed.Aux.Fst padding) outputSize0
-     , ConvSideCheck inputSize1 (Torch.Typed.Aux.Snd kernelSize) (Torch.Typed.Aux.Snd stride) (Torch.Typed.Aux.Snd padding) outputSize1
-     )
-  => Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] -- ^ input
-  -> Tensor device dtype '[batchSize, channelSize, outputSize0, outputSize1] -- ^ output
-maxPool2d input = unsafePerformIO $ ATen.cast6
-  ATen.Managed.max_pool2d_tllllb
-  input
-  ([natValI @(Torch.Typed.Aux.Fst kernelSize), natValI @(Torch.Typed.Aux.Snd kernelSize)] :: [Int])
-  ([natValI @(Torch.Typed.Aux.Fst stride),     natValI @(Torch.Typed.Aux.Snd stride)]     :: [Int])
-  ([natValI @(Torch.Typed.Aux.Fst padding),    natValI @(Torch.Typed.Aux.Snd padding)]    :: [Int])
-  ([1, 1] :: [Int])
-  False
+maxPool2d ::
+  forall kernelSize stride padding channelSize inputSize0 inputSize1 batchSize outputSize0 outputSize1 dtype device.
+  ( All KnownNat
+      '[ Torch.Typed.Aux.Fst kernelSize,
+         Torch.Typed.Aux.Snd kernelSize,
+         Torch.Typed.Aux.Fst stride,
+         Torch.Typed.Aux.Snd stride,
+         Torch.Typed.Aux.Fst padding,
+         Torch.Typed.Aux.Snd padding,
+         channelSize,
+         inputSize0,
+         inputSize1,
+         batchSize
+       ],
+    ConvSideCheck inputSize0 (Torch.Typed.Aux.Fst kernelSize) (Torch.Typed.Aux.Fst stride) (Torch.Typed.Aux.Fst padding) outputSize0,
+    ConvSideCheck inputSize1 (Torch.Typed.Aux.Snd kernelSize) (Torch.Typed.Aux.Snd stride) (Torch.Typed.Aux.Snd padding) outputSize1
+  ) =>
+  -- | input
+  Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] ->
+  -- | output
+  Tensor device dtype '[batchSize, channelSize, outputSize0, outputSize1]
+maxPool2d input =
+  unsafePerformIO $
+    ATen.cast6
+      ATen.Managed.max_pool2d_tllllb
+      input
+      ([natValI @(Torch.Typed.Aux.Fst kernelSize), natValI @(Torch.Typed.Aux.Snd kernelSize)] :: [Int])
+      ([natValI @(Torch.Typed.Aux.Fst stride), natValI @(Torch.Typed.Aux.Snd stride)] :: [Int])
+      ([natValI @(Torch.Typed.Aux.Fst padding), natValI @(Torch.Typed.Aux.Snd padding)] :: [Int])
+      ([1, 1] :: [Int])
+      False
 
 -- | mkldnnMaxPool2d
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -2722,28 +3113,37 @@ maxPool2d input = unsafePerformIO $ ATen.cast6
 -- -- [1,3,4,5]
 -- -- >>> :t t
 -- -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 4, 5]
-mkldnnMaxPool2d
-  :: forall kernelSize stride padding channelSize inputSize0 inputSize1 batchSize outputSize0 outputSize1 dtype device
-   . ( All KnownNat '[ Torch.Typed.Aux.Fst kernelSize, Torch.Typed.Aux.Snd kernelSize
-                     , Torch.Typed.Aux.Fst stride, Torch.Typed.Aux.Snd stride
-                     , Torch.Typed.Aux.Fst padding, Torch.Typed.Aux.Snd padding
-                     , channelSize
-                     , inputSize0, inputSize1
-                     , batchSize
-                     ]
-     , ConvSideCheck inputSize0 (Torch.Typed.Aux.Fst kernelSize) (Torch.Typed.Aux.Fst stride) (Torch.Typed.Aux.Fst padding) outputSize0
-     , ConvSideCheck inputSize1 (Torch.Typed.Aux.Snd kernelSize) (Torch.Typed.Aux.Snd stride) (Torch.Typed.Aux.Snd padding) outputSize1
-     )
-  => Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] -- ^ input
-  -> Tensor device dtype '[batchSize, channelSize, outputSize0, outputSize1] -- ^ output
-mkldnnMaxPool2d input = unsafePerformIO $ ATen.cast6
-  ATen.Managed.mkldnn_max_pool2d_tllllb
-  input
-  ([natValI @(Torch.Typed.Aux.Fst kernelSize), natValI @(Torch.Typed.Aux.Snd kernelSize)] :: [Int])
-  ([natValI @(Torch.Typed.Aux.Fst stride),     natValI @(Torch.Typed.Aux.Snd stride)]     :: [Int])
-  ([natValI @(Torch.Typed.Aux.Fst padding),    natValI @(Torch.Typed.Aux.Snd padding)]    :: [Int])
-  ([1, 1] :: [Int])
-  False
+mkldnnMaxPool2d ::
+  forall kernelSize stride padding channelSize inputSize0 inputSize1 batchSize outputSize0 outputSize1 dtype device.
+  ( All KnownNat
+      '[ Torch.Typed.Aux.Fst kernelSize,
+         Torch.Typed.Aux.Snd kernelSize,
+         Torch.Typed.Aux.Fst stride,
+         Torch.Typed.Aux.Snd stride,
+         Torch.Typed.Aux.Fst padding,
+         Torch.Typed.Aux.Snd padding,
+         channelSize,
+         inputSize0,
+         inputSize1,
+         batchSize
+       ],
+    ConvSideCheck inputSize0 (Torch.Typed.Aux.Fst kernelSize) (Torch.Typed.Aux.Fst stride) (Torch.Typed.Aux.Fst padding) outputSize0,
+    ConvSideCheck inputSize1 (Torch.Typed.Aux.Snd kernelSize) (Torch.Typed.Aux.Snd stride) (Torch.Typed.Aux.Snd padding) outputSize1
+  ) =>
+  -- | input
+  Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] ->
+  -- | output
+  Tensor device dtype '[batchSize, channelSize, outputSize0, outputSize1]
+mkldnnMaxPool2d input =
+  unsafePerformIO $
+    ATen.cast6
+      ATen.Managed.mkldnn_max_pool2d_tllllb
+      input
+      ([natValI @(Torch.Typed.Aux.Fst kernelSize), natValI @(Torch.Typed.Aux.Snd kernelSize)] :: [Int])
+      ([natValI @(Torch.Typed.Aux.Fst stride), natValI @(Torch.Typed.Aux.Snd stride)] :: [Int])
+      ([natValI @(Torch.Typed.Aux.Fst padding), natValI @(Torch.Typed.Aux.Snd padding)] :: [Int])
+      ([1, 1] :: [Int])
+      False
 
 -- | quantizedMaxPool2d
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -2753,27 +3153,36 @@ mkldnnMaxPool2d input = unsafePerformIO $ ATen.cast6
 -- -- [1,3,4,5]
 -- -- >>> :t t
 -- -- t :: Tensor 'D.Float '[1, 3, 4, 5]
-quantizedMaxPool2d
-  :: forall kernelSize stride padding channelSize inputSize0 inputSize1 batchSize outputSize0 outputSize1 dtype device
-   . ( All KnownNat '[ Torch.Typed.Aux.Fst kernelSize, Torch.Typed.Aux.Snd kernelSize
-                     , Torch.Typed.Aux.Fst stride, Torch.Typed.Aux.Snd stride
-                     , Torch.Typed.Aux.Fst padding, Torch.Typed.Aux.Snd padding
-                     , channelSize
-                     , inputSize0, inputSize1
-                     , batchSize
-                     ]
-     , ConvSideCheck inputSize0 (Torch.Typed.Aux.Fst kernelSize) (Torch.Typed.Aux.Fst stride) (Torch.Typed.Aux.Fst padding) outputSize0
-     , ConvSideCheck inputSize1 (Torch.Typed.Aux.Snd kernelSize) (Torch.Typed.Aux.Snd stride) (Torch.Typed.Aux.Snd padding) outputSize1
-     )
-  => Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] -- ^ input
-  -> Tensor device dtype '[batchSize, channelSize, outputSize0, outputSize1] -- ^ output
-quantizedMaxPool2d input = unsafePerformIO $ ATen.cast5
-  ATen.Managed.quantized_max_pool2d_tllll
-  input
-  ([natValI @(Torch.Typed.Aux.Fst kernelSize), natValI @(Torch.Typed.Aux.Snd kernelSize)] :: [Int])
-  ([natValI @(Torch.Typed.Aux.Fst stride),     natValI @(Torch.Typed.Aux.Snd stride)]     :: [Int])
-  ([natValI @(Torch.Typed.Aux.Fst padding),    natValI @(Torch.Typed.Aux.Snd padding)]    :: [Int])
-  ([1, 1] :: [Int])
+quantizedMaxPool2d ::
+  forall kernelSize stride padding channelSize inputSize0 inputSize1 batchSize outputSize0 outputSize1 dtype device.
+  ( All KnownNat
+      '[ Torch.Typed.Aux.Fst kernelSize,
+         Torch.Typed.Aux.Snd kernelSize,
+         Torch.Typed.Aux.Fst stride,
+         Torch.Typed.Aux.Snd stride,
+         Torch.Typed.Aux.Fst padding,
+         Torch.Typed.Aux.Snd padding,
+         channelSize,
+         inputSize0,
+         inputSize1,
+         batchSize
+       ],
+    ConvSideCheck inputSize0 (Torch.Typed.Aux.Fst kernelSize) (Torch.Typed.Aux.Fst stride) (Torch.Typed.Aux.Fst padding) outputSize0,
+    ConvSideCheck inputSize1 (Torch.Typed.Aux.Snd kernelSize) (Torch.Typed.Aux.Snd stride) (Torch.Typed.Aux.Snd padding) outputSize1
+  ) =>
+  -- | input
+  Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] ->
+  -- | output
+  Tensor device dtype '[batchSize, channelSize, outputSize0, outputSize1]
+quantizedMaxPool2d input =
+  unsafePerformIO $
+    ATen.cast5
+      ATen.Managed.quantized_max_pool2d_tllll
+      input
+      ([natValI @(Torch.Typed.Aux.Fst kernelSize), natValI @(Torch.Typed.Aux.Snd kernelSize)] :: [Int])
+      ([natValI @(Torch.Typed.Aux.Fst stride), natValI @(Torch.Typed.Aux.Snd stride)] :: [Int])
+      ([natValI @(Torch.Typed.Aux.Fst padding), natValI @(Torch.Typed.Aux.Snd padding)] :: [Int])
+      ([1, 1] :: [Int])
 
 -- | maxPool3d
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -2783,38 +3192,60 @@ quantizedMaxPool2d input = unsafePerformIO $ ATen.cast5
 -- [1,3,4,5,6]
 -- >>> :t t
 -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 4, 5, 6]
-maxPool3d
-  :: forall kernelSize stride padding channelSize
-            inputSize0 inputSize1 inputSize2
-            batchSize
-            outputSize0 outputSize1 outputSize2
-            dtype
-            device
-   . ( All KnownNat '[ Fst3 kernelSize, Snd3 kernelSize, Trd3 kernelSize
-                     , Fst3 stride, Snd3 stride, Trd3 stride
-                     , Fst3 padding, Snd3 padding, Trd3 padding
-                     , channelSize
-                     , inputSize0, inputSize1, inputSize2
-                     , batchSize
-                     ]
-     , ConvSideCheck inputSize0 (Fst3 kernelSize) (Fst3 stride) (Fst3 padding) outputSize0
-     , ConvSideCheck inputSize1 (Snd3 kernelSize) (Snd3 stride) (Snd3 padding) outputSize1
-     , ConvSideCheck inputSize2 (Trd3 kernelSize) (Trd3 stride) (Trd3 padding) outputSize2
-     )
-  => Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1, inputSize2] -- ^ input
-  -> Tensor device dtype '[batchSize, channelSize, outputSize0, outputSize1, outputSize2] -- ^ output
-maxPool3d input = unsafePerformIO $ ATen.cast6
-  ATen.Managed.max_pool3d_tllllb
-  input
-  ([ natValI @(Fst3 kernelSize)
-   , natValI @(Snd3 kernelSize)
-   , natValI @(Trd3 kernelSize)
-   ] :: [Int]
-  )
-  ([natValI @(Fst3 stride), natValI @(Snd3 stride), natValI @(Trd3 stride)] :: [Int])
-  ([natValI @(Fst3 padding), natValI @(Snd3 padding), natValI @(Trd3 padding)] :: [Int])
-  ([1, 1, 1] :: [Int])
-  False
+maxPool3d ::
+  forall
+    kernelSize
+    stride
+    padding
+    channelSize
+    inputSize0
+    inputSize1
+    inputSize2
+    batchSize
+    outputSize0
+    outputSize1
+    outputSize2
+    dtype
+    device.
+  ( All KnownNat
+      '[ Fst3 kernelSize,
+         Snd3 kernelSize,
+         Trd3 kernelSize,
+         Fst3 stride,
+         Snd3 stride,
+         Trd3 stride,
+         Fst3 padding,
+         Snd3 padding,
+         Trd3 padding,
+         channelSize,
+         inputSize0,
+         inputSize1,
+         inputSize2,
+         batchSize
+       ],
+    ConvSideCheck inputSize0 (Fst3 kernelSize) (Fst3 stride) (Fst3 padding) outputSize0,
+    ConvSideCheck inputSize1 (Snd3 kernelSize) (Snd3 stride) (Snd3 padding) outputSize1,
+    ConvSideCheck inputSize2 (Trd3 kernelSize) (Trd3 stride) (Trd3 padding) outputSize2
+  ) =>
+  -- | input
+  Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1, inputSize2] ->
+  -- | output
+  Tensor device dtype '[batchSize, channelSize, outputSize0, outputSize1, outputSize2]
+maxPool3d input =
+  unsafePerformIO $
+    ATen.cast6
+      ATen.Managed.max_pool3d_tllllb
+      input
+      ( [ natValI @(Fst3 kernelSize),
+          natValI @(Snd3 kernelSize),
+          natValI @(Trd3 kernelSize)
+        ] ::
+          [Int]
+      )
+      ([natValI @(Fst3 stride), natValI @(Snd3 stride), natValI @(Trd3 stride)] :: [Int])
+      ([natValI @(Fst3 padding), natValI @(Snd3 padding), natValI @(Trd3 padding)] :: [Int])
+      ([1, 1, 1] :: [Int])
+      False
 
 -- | maskedFill
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -2826,13 +3257,17 @@ maxPool3d input = unsafePerformIO $ ATen.cast6
 -- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 3, 3]
 -- >>> dtype &&& shape &&& (\u -> D.asValue (toDynamic u) :: [[[Float]]]) $ t'
 -- (Float,([2,3,3],[[[1.0,1.0,1.0],[0.5,0.5,0.5],[1.0,1.0,1.0]],[[1.0,1.0,1.0],[0.5,0.5,0.5],[1.0,1.0,1.0]]]))
-maskedFill
-  :: forall a shape shape' shape'' dtype device
-   . (D.Scalar a, shape'' ~ Broadcast shape shape')
-  => Tensor device 'D.Bool shape' -- ^ mask
-  -> a -- ^ fill value
-  -> Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape'' -- ^ output
+maskedFill ::
+  forall a shape shape' shape'' dtype device.
+  (D.Scalar a, shape'' ~ Broadcast shape shape') =>
+  -- | mask
+  Tensor device 'D.Bool shape' ->
+  -- | fill value
+  a ->
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape''
 maskedFill mask value input =
   unsafePerformIO $ ATen.cast3 ATen.Managed.masked_fill_tts input mask value
 
@@ -2859,11 +3294,14 @@ maskedFill mask value input =
 --
 -- >>> dtype &&& shape $ mm (ones :: CPUTensor 'D.Float '[3,2]) (zeros :: CPUTensor 'D.Float '[2,4])
 -- (Float,[3,4])
-mm
-  :: forall n k m dtype device
-   . Tensor device dtype '[n, k] -- ^ first input matrix
-  -> Tensor device dtype '[k, m] -- ^ second input matrix
-  -> Tensor device dtype '[n, m] -- ^ output matrix
+mm ::
+  forall n k m dtype device.
+  -- | first input matrix
+  Tensor device dtype '[n, k] ->
+  -- | second input matrix
+  Tensor device dtype '[k, m] ->
+  -- | output matrix
+  Tensor device dtype '[n, m]
 mm a b = unsafePerformIO $ ATen.cast2 ATen.Managed.mm_tt a b
 
 -- mode :: Tensor device dtype shape -> Int -> Bool -> (Tensor device dtype shape,Tensor device dtype shape)
@@ -2874,11 +3312,14 @@ mm a b = unsafePerformIO $ ATen.cast2 ATen.Managed.mm_tt a b
 --
 -- >>> dtype &&& shape $ mv (ones :: CPUTensor 'D.Float '[3,2]) (zeros :: CPUTensor 'D.Float '[2])
 -- (Float,[3])
-mv
-  :: forall n m dtype device
-   . Tensor device dtype '[n, m] -- ^ input matrix
-  -> Tensor device dtype '[m] -- ^ input vector
-  -> Tensor device dtype '[n] -- ^ output vector
+mv ::
+  forall n m dtype device.
+  -- | input matrix
+  Tensor device dtype '[n, m] ->
+  -- | input vector
+  Tensor device dtype '[m] ->
+  -- | output vector
+  Tensor device dtype '[n]
 mv input vec = unsafePerformIO $ ATen.cast2 ATen.Managed.mv_tt input vec
 
 -- mvlgamma :: Tensor device dtype shape -> Int -> Tensor device dtype shape
@@ -2909,10 +3350,12 @@ mv input vec = unsafePerformIO $ ATen.cast2 ATen.Managed.mv_tt input vec
 --
 -- >>> dtype &&& shape $ onesLike (ones :: CPUTensor 'D.Float '[3,4,5])
 -- (Float,[3,4,5])
-onesLike
-  :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+onesLike ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 onesLike input = unsafePerformIO $ ATen.cast1 ATen.Managed.ones_like_t input
 
 -- pairwise_distance :: Tensor device dtype shape -> Tensor device dtype shape -> Double -> Double -> Bool -> Tensor device dtype shape
@@ -2945,10 +3388,12 @@ onesLike input = unsafePerformIO $ ATen.cast1 ATen.Managed.ones_like_t input
 -- >>> t <- randLike (ones :: CPUTensor 'D.Float '[3,4,5])
 -- >>> dtype &&& shape $ t
 -- (Float,[3,4,5])
-randLike
-  :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
-  -> IO (Tensor device dtype shape) -- ^ output
+randLike ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  IO (Tensor device dtype shape)
 randLike = ATen.cast1 ATen.Managed.rand_like_t
 
 -- | randnLike
@@ -2957,20 +3402,24 @@ randLike = ATen.cast1 ATen.Managed.rand_like_t
 -- >>> t <- randnLike (ones :: CPUTensor 'D.Float '[3,4,5])
 -- >>> dtype &&& shape $ t
 -- (Float,[3,4,5])
-randnLike
-  :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
-  -> IO (Tensor device dtype shape) -- ^ output
+randnLike ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  IO (Tensor device dtype shape)
 randnLike = ATen.cast1 ATen.Managed.randn_like_t
 
 -- | reciprocal
--- 
+--
 -- >>> dtype &&& shape $ reciprocal (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-reciprocal 
-  :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input 
-  -> Tensor device dtype shape -- ^ output
+reciprocal ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 reciprocal _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.reciprocal_t) _input
 
 -- | negate
@@ -2978,10 +3427,12 @@ reciprocal _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.reciprocal_t) _in
 --
 -- >>> dtype &&& shape $ neg (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-neg
-  :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+neg ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 neg input = unsafePerformIO $ ATen.cast1 ATen.Managed.neg_t input
 
 -- | round
@@ -2989,10 +3440,12 @@ neg input = unsafePerformIO $ ATen.cast1 ATen.Managed.neg_t input
 --
 -- >>> dtype &&& shape $ round (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-round
-  :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+round ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 round input = unsafePerformIO $ ATen.cast1 ATen.Managed.round_t input
 
 -- | prelu activation function
@@ -3000,31 +3453,38 @@ round input = unsafePerformIO $ ATen.cast1 ATen.Managed.round_t input
 --
 -- >>> dtype &&& shape $ prelu (ones :: CPUTensor 'D.Float '[]) (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-prelu
-  :: forall shape dtype device
-   . Tensor device dtype '[] -- ^ weight
-  -> Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+prelu ::
+  forall shape dtype device.
+  -- | weight
+  Tensor device dtype '[] ->
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 prelu weight input = unsafePerformIO $ ATen.cast2 ATen.Managed.prelu_tt input weight
 
 type family GeluDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
-  GeluDTypeIsValid '( 'D.CPU, 0)            dtype = ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype
-                                                    , DTypeIsNotHalf '( 'D.CPU, 0) dtype
-                                                    )
-  GeluDTypeIsValid '( 'D.CUDA, deviceIndex) dtype = ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
-                                                    , DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
-                                                    )
-  GeluDTypeIsValid '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
+  GeluDTypeIsValid '( 'D.CPU, 0) dtype =
+    ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype,
+      DTypeIsNotHalf '( 'D.CPU, 0) dtype
+    )
+  GeluDTypeIsValid '( 'D.CUDA, deviceIndex) dtype =
+    ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype,
+      DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
+    )
+  GeluDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 -- | gelu activation function
 --
 -- >>> dtype &&& shape $ round (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-gelu
-  :: forall shape dtype device
-   . (GeluDTypeIsValid device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+gelu ::
+  forall shape dtype device.
+  (GeluDTypeIsValid device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 gelu input = unsafePerformIO $ ATen.cast1 ATen.Managed.gelu_t input
 
 -- hardshrink :: Tensor device dtype shape -> Float -> Tensor device dtype shape
@@ -3034,11 +3494,13 @@ gelu input = unsafePerformIO $ ATen.cast1 ATen.Managed.gelu_t input
 --
 -- >>> dtype &&& shape $ rsqrt (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-rsqrt
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+rsqrt ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 rsqrt input = unsafePerformIO $ ATen.cast1 ATen.Managed.rsqrt_t input
 
 -- | celu activation function
@@ -3046,11 +3508,14 @@ rsqrt input = unsafePerformIO $ ATen.cast1 ATen.Managed.rsqrt_t input
 --
 -- >>> dtype &&& shape $ celu 3.0 (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-celu
-  :: forall shape dtype device
-   . Float -- ^ alpha
-  -> Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+celu ::
+  forall shape dtype device.
+  -- | alpha
+  Float ->
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 celu alpha input = unsafePerformIO $ ATen.cast2 ATen.Managed.celu_ts input alpha
 
 -- slice :: Tensor device dtype shape -> Int -> Int -> Int -> Int -> Tensor device dtype shape
@@ -3072,30 +3537,30 @@ celu alpha input = unsafePerformIO $ ATen.cast2 ATen.Managed.celu_ts input alpha
 -- sspaddmm _input _mat1 _mat2 _beta _alpha = unsafePerformIO $ (ATen.cast5 ATen.Managed.sspaddmm_tttss) _input _mat1 _mat2 _beta _alpha
 
 type family StackImpl (dim :: Nat) (tensors :: [a]) (count :: Nat) :: Maybe ([Nat], D.DType, (D.DeviceType, Nat)) where
-  StackImpl dim '[]                                                                 count = Nothing
-  StackImpl dim (Tensor device dtype shape ': '[])                                  count = MaybeTriple (ComputeStackShape shape dim count) (Just dtype) (Just device)
+  StackImpl dim '[] count = Nothing
+  StackImpl dim (Tensor device dtype shape ': '[]) count = MaybeTriple (ComputeStackShape shape dim count) (Just dtype) (Just device)
   StackImpl dim (Tensor device dtype shape ': Tensor device dtype shape ': tensors) count = StackImpl dim (Tensor device dtype shape ': tensors) (count + 1)
-  StackImpl _   _                                                                   _     = Nothing
+  StackImpl _ _ _ = Nothing
 
-type family MaybePair (a' :: Maybe a) (b' ::  Maybe b) :: Maybe (a, b) where
-  MaybePair Nothing   _         = Nothing
-  MaybePair _         Nothing   = Nothing
+type family MaybePair (a' :: Maybe a) (b' :: Maybe b) :: Maybe (a, b) where
+  MaybePair Nothing _ = Nothing
+  MaybePair _ Nothing = Nothing
   MaybePair (Just a') (Just b') = Just '(a', b')
 
-type family MaybeTriple (a' :: Maybe a) (b' ::  Maybe b) (c' ::  Maybe c) :: Maybe (a, b, c) where
-  MaybeTriple Nothing   _         _         = Nothing
-  MaybeTriple _         Nothing   _         = Nothing
-  MaybeTriple _         _         Nothing   = Nothing
+type family MaybeTriple (a' :: Maybe a) (b' :: Maybe b) (c' :: Maybe c) :: Maybe (a, b, c) where
+  MaybeTriple Nothing _ _ = Nothing
+  MaybeTriple _ Nothing _ = Nothing
+  MaybeTriple _ _ Nothing = Nothing
   MaybeTriple (Just a') (Just b') (Just c') = Just '(a', b', c')
 
-type family ComputeStackShape (shape :: [Nat]) (dim  :: Nat) (count :: Nat) :: Maybe [Nat] where
-  ComputeStackShape _         _   0     = Nothing
-  ComputeStackShape xs        0   count = Just (count ': xs)
+type family ComputeStackShape (shape :: [Nat]) (dim :: Nat) (count :: Nat) :: Maybe [Nat] where
+  ComputeStackShape _ _ 0 = Nothing
+  ComputeStackShape xs 0 count = Just (count ': xs)
   ComputeStackShape (x ': xs) dim count = AppendToMaybe x (ComputeStackShape xs (dim - 1) count)
-  ComputeStackShape '[]       _   _     = Nothing
+  ComputeStackShape '[] _ _ = Nothing
 
 type family StackCheck (res :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: ([Nat], D.DType, (D.DeviceType, Nat)) where
-  StackCheck 'Nothing                        = TypeError (Text "Stacking impossible.")
+  StackCheck 'Nothing = TypeError (Text "Stacking impossible.")
   StackCheck ('Just '(shape, dtype, device)) = '(shape, dtype, device)
 
 -- | Stack
@@ -3151,14 +3616,16 @@ type Stack dim tensors = StackCheck (StackImpl dim tensors 1)
 -- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 2, 3]
 -- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[[Float]]]) $ t'
 -- (Float,([2,2,3],[[[1.0,1.0,1.0],[1.0,1.0,1.0]],[[1.0,1.0,1.0],[1.0,1.0,1.0]]]))
-stack
-  :: forall dim shape dtype device tensors
-   . ( KnownNat dim
-     , '(shape, dtype, device) ~ Stack dim tensors
-     , ATen.Castable (HList tensors) [D.ATenTensor]
-     )
-  => HList tensors -- ^ input list of tensors
-  -> Tensor device dtype shape -- ^ output
+stack ::
+  forall dim shape dtype device tensors.
+  ( KnownNat dim,
+    '(shape, dtype, device) ~ Stack dim tensors,
+    ATen.Castable (HList tensors) [D.ATenTensor]
+  ) =>
+  -- | input list of tensors
+  HList tensors ->
+  -- | output
+  Tensor device dtype shape
 stack tensors = unsafePerformIO $ ATen.cast2 ATen.Managed.stack_ll tensors (natValI @dim :: Int)
 
 -- stft :: Tensor device dtype shape -> Int -> Int -> Int -> Tensor device dtype shape -> Bool -> Bool -> Tensor device dtype shape
@@ -3168,24 +3635,28 @@ stack tensors = unsafePerformIO $ ATen.cast2 ATen.Managed.stack_ll tensors (natV
 -- stride _input _dim = unsafePerformIO $ (ATen.cast2 ATen.Managed.stride_tl) _input _dim
 
 -- | t
--- 
+--
 -- dtype &&& shape $ t ones :: CPUTensor 'D.Float '[3,2]
 -- (Float,[3,2])
-t 
-  :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input 
-  -> Tensor device dtype shape -- ^ output
+t ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 t _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.t_t) _input
 
 -- | tan
 --
 -- >>> dtype &&& shape $ tan (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-tan
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+tan ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 tan input = unsafePerformIO $ ATen.cast1 ATen.Managed.tan_t input
 
 -- tensordot :: Tensor device dtype shape -> Tensor device dtype shape -> [Int] -> [Int] -> Tensor device dtype shape
@@ -3214,11 +3685,13 @@ tan input = unsafePerformIO $ ATen.cast1 ATen.Managed.tan_t input
 --
 -- >>> dtype &&& shape $ trunc (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-trunc
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+trunc ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 trunc input = unsafePerformIO $ ATen.cast1 ATen.Managed.trunc_t input
 
 -- unique_dim :: Tensor device dtype shape -> Int -> Bool -> Bool -> Bool -> (Tensor device dtype shape,Tensor device dtype shape,Tensor device dtype shape)
@@ -3242,17 +3715,20 @@ trunc input = unsafePerformIO $ ATen.cast1 ATen.Managed.trunc_t input
 -- UnsqueezeImpl '[4] 2 :: Maybe [Nat]
 -- = 'Nothing
 type family UnsqueezeImpl (shape :: [a]) (dim :: Nat) :: Maybe [a] where
-  UnsqueezeImpl xs        0   = Just (1 ': xs)
+  UnsqueezeImpl xs 0 = Just (1 ': xs)
   UnsqueezeImpl (x ': xs) dim = AppendToMaybe x (UnsqueezeImpl xs (dim - 1))
-  UnsqueezeImpl '[]       _   = Nothing
+  UnsqueezeImpl '[] _ = Nothing
 
 type family UnsqueezeCheck (shape :: [a]) (dim :: Nat) (result :: Maybe [a]) :: [a] where
-  UnsqueezeCheck shape dim Nothing       = TypeError (Text "Cannot unsqueeze the tensor since the specified dimension " :<>:
-                                                      ShowType dim :<>:
-                                                      Text " is too large (the tensor is only " :<>:
-                                                      ShowType (ListLength shape) :<>:
-                                                      Text "D)")
-  UnsqueezeCheck _     _   (Just shape') = shape'
+  UnsqueezeCheck shape dim Nothing =
+    TypeError
+      ( Text "Cannot unsqueeze the tensor since the specified dimension "
+          :<>: ShowType dim
+          :<>: Text " is too large (the tensor is only "
+          :<>: ShowType (ListLength shape)
+          :<>: Text "D)"
+      )
+  UnsqueezeCheck _ _ (Just shape') = shape'
 
 type Unsqueeze shape dim = UnsqueezeCheck shape dim (UnsqueezeImpl shape dim)
 
@@ -3269,11 +3745,13 @@ type Unsqueeze shape dim = UnsqueezeCheck shape dim (UnsqueezeImpl shape dim)
 -- t'' :: Tensor '( 'D.CPU, 0) 'D.Int64 '[4, 1]
 -- >>> dtype &&& shape &&& (\u -> D.asValue (toDynamic u) :: [[Int]]) $ t''
 -- (Int64,([4,1],[[1],[2],[3],[4]]))
-unsqueeze
-  :: forall dim shape shape' dtype device
-   . (KnownNat dim, shape' ~ Unsqueeze shape dim)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape' -- ^ output
+unsqueeze ::
+  forall dim shape shape' dtype device.
+  (KnownNat dim, shape' ~ Unsqueeze shape dim) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape'
 unsqueeze input = unsafePerformIO $ ATen.cast2 ATen.Managed.unsqueeze_tl input (natValI @dim)
 
 -- where' :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
@@ -3289,10 +3767,12 @@ unsqueeze input = unsafePerformIO $ ATen.cast2 ATen.Managed.unsqueeze_tl input (
 --
 -- >>> dtype &&& shape $ zerosLike (ones :: CPUTensor 'D.Float '[3,4,5])
 -- (Float,[3,4,5])
-zerosLike
-  :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+zerosLike ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 zerosLike input = unsafePerformIO $ ATen.cast1 ATen.Managed.zeros_like_t input
 
 -- native_norm :: Tensor device dtype shape -> Float -> Tensor device dtype shape
@@ -3303,10 +3783,10 @@ zerosLike input = unsafePerformIO $ ATen.cast1 ATen.Managed.zeros_like_t input
 -- >>> t <- clone (ones :: CPUTensor 'D.Float '[3,2])
 -- >>> dtype &&& shape $ t
 -- (Float,[3,2])
-clone
-  :: forall shape dtype device
-   . Tensor device dtype shape
-  -> IO (Tensor device dtype shape)
+clone ::
+  forall shape dtype device.
+  Tensor device dtype shape ->
+  IO (Tensor device dtype shape)
 clone input = ATen.cast1 ATen.Managed.clone_t input
 
 -- s_native_addmm :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Float -> Float -> Tensor device dtype shape
@@ -3321,17 +3801,23 @@ clone input = ATen.cast1 ATen.Managed.clone_t input
 -- (Float,[3,4])
 -- >>> :t t
 -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[3, 4]
-addmm
-  :: forall shape' shape n k m dtype device
-   . ( All KnownNat '[n, k, m]
-     , shape' ~ Broadcast shape '[n,m]
-     )
-  => Float -- ^ beta
-  -> Float -- ^ alpha
-  -> Tensor device dtype '[n, k] -- ^ first input matrix
-  -> Tensor device dtype '[k, m] -- ^ second input matrix
-  -> Tensor device dtype shape -- ^ input tensor
-  -> Tensor device dtype shape' -- ^ output tensor
+addmm ::
+  forall shape' shape n k m dtype device.
+  ( All KnownNat '[n, k, m],
+    shape' ~ Broadcast shape '[n, m]
+  ) =>
+  -- | beta
+  Float ->
+  -- | alpha
+  Float ->
+  -- | first input matrix
+  Tensor device dtype '[n, k] ->
+  -- | second input matrix
+  Tensor device dtype '[k, m] ->
+  -- | input tensor
+  Tensor device dtype shape ->
+  -- | output tensor
+  Tensor device dtype shape'
 addmm beta alpha mat1 mat2 input = unsafePerformIO $ ATen.cast5 ATen.Managed.addmm_tttss input mat1 mat2 beta alpha
 
 -- hspmm :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
@@ -3339,10 +3825,12 @@ addmm beta alpha mat1 mat2 input = unsafePerformIO $ ATen.cast5 ATen.Managed.add
 
 -- | numel
 -- TODO: since this is decidable at compile time, this should probably be calculated from the tensor type instead
-numel
-  :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
-  -> Int -- ^ output
+numel ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Int
 numel input = unsafePerformIO $ ATen.cast1 ATen.Managed.tensor_numel input
 
 -- unbind :: Tensor device dtype shape -> Int -> [Tensor device dtype shape]
@@ -3362,18 +3850,22 @@ numel input = unsafePerformIO $ ATen.cast1 ATen.Managed.tensor_numel input
 
 -- | qScale
 -- TODO: are there any restrictions on the dtype?
-qScale
-  :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
-  -> Double -- ^ output
+qScale ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Double
 qScale input = unsafePerformIO $ ATen.cast1 ATen.Managed.q_scale_t input
 
 -- | qZeroPoint
 -- TODO: are there any restrictions on the dtype?
-qZeroPoint
-  :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
-  -> Int -- ^ output
+qZeroPoint ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Int
 qZeroPoint input = unsafePerformIO $ ATen.cast1 ATen.Managed.q_zero_point_t input
 
 -- int_repr :: Tensor device dtype shape -> Tensor device dtype shape
@@ -3392,10 +3884,11 @@ qZeroPoint input = unsafePerformIO $ ATen.cast1 ATen.Managed.q_zero_point_t inpu
 -- combinations _input _r _with_replacement = unsafePerformIO $ (ATen.cast3 ATen.Managed.combinations_tlb) _input _r _with_replacement
 
 -- | The directional specification of a recurrent function
---
-data RNNDirectionality =
-    Bidirectional  -- ^ Forward and backward along the sequential axis using independant parameters for each.
-  | Unidirectional -- ^ Forward along the sequential axis.
+data RNNDirectionality
+  = -- | Forward and backward along the sequential axis using independant parameters for each.
+    Bidirectional
+  | -- | Forward along the sequential axis.
+    Unidirectional
   deriving (Show, Generic) -- TODO:  We could also have BidirectionalTied weights.
 
 type family NumberOfDirections (directionality :: RNNDirectionality) :: Nat where
@@ -3412,9 +3905,11 @@ instance KnownRNNDirectionality Unidirectional where
   rnnBidirectional = False
 
 -- | Specification for the sequential axis of a recurrent function.
-data RNNShapeOrder =
-    BatchFirst    -- ^ Input is of shape (Batch, Sequence, Features)
-  | SequenceFirst -- ^ Input is of shape (Sequence, Batch, Features)
+data RNNShapeOrder
+  = -- | Input is of shape (Batch, Sequence, Features)
+    BatchFirst
+  | -- | Input is of shape (Sequence, Batch, Features)
+    SequenceFirst
   deriving (Show, Generic)
 
 class KnownRNNShapeOrder (shapeOrder :: RNNShapeOrder) where
@@ -3427,48 +3922,55 @@ instance KnownRNNShapeOrder SequenceFirst where
   rnnBatchFirst = False
 
 type family RNNShape (shapeOrder :: RNNShapeOrder) (seqLen :: Nat) (batchSize :: Nat) (featureSize :: Nat) :: [Nat] where
-  RNNShape BatchFirst    seqLen batchSize featureSize = '[batchSize, seqLen, featureSize]
+  RNNShape BatchFirst seqLen batchSize featureSize = '[batchSize, seqLen, featureSize]
   RNNShape SequenceFirst seqLen batchSize featureSize = '[seqLen, batchSize, featureSize]
 
 type LSTMWIShape hiddenSize inputSize = '[4 * hiddenSize, inputSize]
+
 type LSTMWHShape hiddenSize inputSize = '[4 * hiddenSize, hiddenSize]
+
 type LSTMBIShape hiddenSize inputSize = '[4 * hiddenSize]
+
 type LSTMBHShape hiddenSize inputSize = '[4 * hiddenSize]
 
 type family LSTMRImpl (inputSize :: Nat) (hiddenSize :: Nat) (numLayers :: Nat) (directionality :: RNNDirectionality) :: [[Nat]] where
-  LSTMRImpl inputSize hiddenSize 1         'Unidirectional = '[ LSTMWIShape hiddenSize inputSize
-                                                              , LSTMWHShape hiddenSize inputSize
-                                                              , LSTMBIShape hiddenSize inputSize
-                                                              , LSTMBHShape hiddenSize inputSize
-                                                              ]
-  LSTMRImpl inputSize hiddenSize numLayers 'Unidirectional = LSTMRImpl inputSize hiddenSize (numLayers - 1) 'Unidirectional ++
-                                                             '[ LSTMWIShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional)
-                                                              , LSTMWHShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional)
-                                                              , LSTMBIShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional)
-                                                              , LSTMBHShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional)
-                                                              ]
-  LSTMRImpl inputSize hiddenSize 1         'Bidirectional  = '[ LSTMWIShape hiddenSize inputSize
-                                                              , LSTMWHShape hiddenSize inputSize
-                                                              , LSTMBIShape hiddenSize inputSize
-                                                              , LSTMBHShape hiddenSize inputSize
-                                                              , LSTMWIShape hiddenSize inputSize
-                                                              , LSTMWHShape hiddenSize inputSize
-                                                              , LSTMBIShape hiddenSize inputSize
-                                                              , LSTMBHShape hiddenSize inputSize
-                                                              ]
-  LSTMRImpl inputSize hiddenSize numLayers 'Bidirectional  = LSTMRImpl inputSize hiddenSize (numLayers - 1) 'Bidirectional ++
-                                                             '[ LSTMWIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
-                                                              , LSTMWHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
-                                                              , LSTMBIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
-                                                              , LSTMBHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
-                                                              , LSTMWIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
-                                                              , LSTMWHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
-                                                              , LSTMBIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
-                                                              , LSTMBHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
-                                                              ]
+  LSTMRImpl inputSize hiddenSize 1 'Unidirectional =
+    '[ LSTMWIShape hiddenSize inputSize,
+       LSTMWHShape hiddenSize inputSize,
+       LSTMBIShape hiddenSize inputSize,
+       LSTMBHShape hiddenSize inputSize
+     ]
+  LSTMRImpl inputSize hiddenSize numLayers 'Unidirectional =
+    LSTMRImpl inputSize hiddenSize (numLayers - 1) 'Unidirectional
+      ++ '[ LSTMWIShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional),
+            LSTMWHShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional),
+            LSTMBIShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional),
+            LSTMBHShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional)
+          ]
+  LSTMRImpl inputSize hiddenSize 1 'Bidirectional =
+    '[ LSTMWIShape hiddenSize inputSize,
+       LSTMWHShape hiddenSize inputSize,
+       LSTMBIShape hiddenSize inputSize,
+       LSTMBHShape hiddenSize inputSize,
+       LSTMWIShape hiddenSize inputSize,
+       LSTMWHShape hiddenSize inputSize,
+       LSTMBIShape hiddenSize inputSize,
+       LSTMBHShape hiddenSize inputSize
+     ]
+  LSTMRImpl inputSize hiddenSize numLayers 'Bidirectional =
+    LSTMRImpl inputSize hiddenSize (numLayers - 1) 'Bidirectional
+      ++ '[ LSTMWIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional),
+            LSTMWHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional),
+            LSTMBIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional),
+            LSTMBHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional),
+            LSTMWIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional),
+            LSTMWHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional),
+            LSTMBIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional),
+            LSTMBHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
+          ]
 
 type family LSTMR' (shapes :: [[Nat]]) (dtype :: D.DType) (device :: (D.DeviceType, Nat)) :: [a] where
-  LSTMR' '[]               dtype device = '[]
+  LSTMR' '[] dtype device = '[]
   LSTMR' (shape ': shapes) dtype device = Tensor device dtype shape ': LSTMR' shapes dtype device
 
 type LSTMR inputSize hiddenSize numLayers directionality dtype device = LSTMR' (LSTMRImpl inputSize hiddenSize numLayers directionality) dtype device
@@ -3476,121 +3978,130 @@ type LSTMR inputSize hiddenSize numLayers directionality dtype device = LSTMR' (
 -- | lstm
 -- Parameters for this ATen function are non-trivially provided.  See the
 -- `Typed.NN.LSTM` module for doctests.
---
-lstm
-  :: forall
-       shapeOrder
-       directionality
-       numLayers
-       seqLen
-       batchSize
-       inputSize
-       outputSize
-       hiddenSize
-       inputShape
-       outputShape
-       hxShape
-       tensorParameters
-       dtype
-       device
-   . ( KnownNat numLayers
-     , KnownRNNShapeOrder shapeOrder
-     , KnownRNNDirectionality directionality
-     , outputSize ~ (hiddenSize * NumberOfDirections directionality)
-     , inputShape ~ RNNShape shapeOrder seqLen batchSize inputSize
-     , outputShape ~ RNNShape shapeOrder seqLen batchSize outputSize
-     , hxShape ~ '[numLayers * NumberOfDirections directionality, batchSize, hiddenSize]
-     , tensorParameters ~ LSTMR inputSize hiddenSize numLayers directionality dtype device
-     , ATen.Castable (HList tensorParameters) [D.ATenTensor]
-     )
-  => HList tensorParameters
-  -> Double
-  -> Bool
-  -> (Tensor device dtype hxShape, Tensor device dtype hxShape)
-  -> Tensor device dtype inputShape
-  -> ( Tensor device dtype outputShape
-     , Tensor device dtype hxShape
-     , Tensor device dtype hxShape
-     )
-lstm tensorParameters dropoutProb dropoutOn (cc, hc) input = unsafePerformIO $ ATen.cast9
-  ATen.Managed.lstm_tllbldbbb
-  input
-  hx
-  tensorParameters
-  hasBiases
-  numLayers
-  dropoutProb
-  dropoutOn
-  (rnnBidirectional @directionality)
-  (rnnBatchFirst @shapeOrder)
- where
-  hasBiases = True
-  hx :: [Tensor device dtype hxShape]
-  hx = [cc, hc]
-  numLayers :: I.Int64
-  numLayers  = fromIntegral $ natValI @numLayers
+lstm ::
+  forall
+    shapeOrder
+    directionality
+    numLayers
+    seqLen
+    batchSize
+    inputSize
+    outputSize
+    hiddenSize
+    inputShape
+    outputShape
+    hxShape
+    tensorParameters
+    dtype
+    device.
+  ( KnownNat numLayers,
+    KnownRNNShapeOrder shapeOrder,
+    KnownRNNDirectionality directionality,
+    outputSize ~ (hiddenSize * NumberOfDirections directionality),
+    inputShape ~ RNNShape shapeOrder seqLen batchSize inputSize,
+    outputShape ~ RNNShape shapeOrder seqLen batchSize outputSize,
+    hxShape ~ '[numLayers * NumberOfDirections directionality, batchSize, hiddenSize],
+    tensorParameters ~ LSTMR inputSize hiddenSize numLayers directionality dtype device,
+    ATen.Castable (HList tensorParameters) [D.ATenTensor]
+  ) =>
+  HList tensorParameters ->
+  Double ->
+  Bool ->
+  (Tensor device dtype hxShape, Tensor device dtype hxShape) ->
+  Tensor device dtype inputShape ->
+  ( Tensor device dtype outputShape,
+    Tensor device dtype hxShape,
+    Tensor device dtype hxShape
+  )
+lstm tensorParameters dropoutProb dropoutOn (cc, hc) input =
+  unsafePerformIO $
+    ATen.cast9
+      ATen.Managed.lstm_tllbldbbb
+      input
+      hx
+      tensorParameters
+      hasBiases
+      numLayers
+      dropoutProb
+      dropoutOn
+      (rnnBidirectional @directionality)
+      (rnnBatchFirst @shapeOrder)
+  where
+    hasBiases = True
+    hx :: [Tensor device dtype hxShape]
+    hx = [cc, hc]
+    numLayers :: I.Int64
+    numLayers = fromIntegral $ natValI @numLayers
 
 -- | lstmCell
 --
 -- >>> dtype &&& shape $ fst $ lstmCell (ones :: CPUTensor 'D.Float '[12,2]) (ones :: CPUTensor 'D.Float '[12,3]) (ones :: CPUTensor 'D.Float '[12]) (ones :: CPUTensor 'D.Float '[12]) ((ones :: CPUTensor 'D.Float '[2,3]), (ones :: CPUTensor 'D.Float '[2,3])) (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[2,3])
-lstmCell
-  :: forall inputSize hiddenSize batchSize dtype device
-   . Tensor device dtype '[4 * hiddenSize, inputSize]
-  -> Tensor device dtype '[4 * hiddenSize, hiddenSize]
-  -> Tensor device dtype '[4 * hiddenSize]
-  -> Tensor device dtype '[4 * hiddenSize]
-  -> ( Tensor device dtype '[batchSize, hiddenSize]
-     , Tensor device dtype '[batchSize, hiddenSize]
-     )
-  -> Tensor device dtype '[batchSize, inputSize]
-  -> ( Tensor device dtype '[batchSize, hiddenSize]
-     , Tensor device dtype '[batchSize, hiddenSize]
-     )
+lstmCell ::
+  forall inputSize hiddenSize batchSize dtype device.
+  Tensor device dtype '[4 * hiddenSize, inputSize] ->
+  Tensor device dtype '[4 * hiddenSize, hiddenSize] ->
+  Tensor device dtype '[4 * hiddenSize] ->
+  Tensor device dtype '[4 * hiddenSize] ->
+  ( Tensor device dtype '[batchSize, hiddenSize],
+    Tensor device dtype '[batchSize, hiddenSize]
+  ) ->
+  Tensor device dtype '[batchSize, inputSize] ->
+  ( Tensor device dtype '[batchSize, hiddenSize],
+    Tensor device dtype '[batchSize, hiddenSize]
+  )
 lstmCell wi wh bi bh (cc, hc) input =
-  unsafePerformIO
-    $ ATen.cast6 ATen.Managed.lstm_cell_tltttt input hx wi wh bi bh
-  where hx = [cc, hc] :: [Tensor device dtype '[batchSize, hiddenSize]]
+  unsafePerformIO $
+    ATen.cast6 ATen.Managed.lstm_cell_tltttt input hx wi wh bi bh
+  where
+    hx = [cc, hc] :: [Tensor device dtype '[batchSize, hiddenSize]]
 
 type GRUWIShape hiddenSize inputSize = '[3 * hiddenSize, inputSize]
+
 type GRUWHShape hiddenSize inputSize = '[3 * hiddenSize, hiddenSize]
+
 type GRUBIShape hiddenSize inputSize = '[3 * hiddenSize]
+
 type GRUBHShape hiddenSize inputSize = '[3 * hiddenSize]
 
 type family GRURImpl (inputSize :: Nat) (hiddenSize :: Nat) (numLayers :: Nat) (directionality :: RNNDirectionality) :: [[Nat]] where
-  GRURImpl inputSize hiddenSize 1         'Unidirectional = '[ GRUWIShape hiddenSize inputSize
-                                                             , GRUWHShape hiddenSize inputSize
-                                                             , GRUBIShape hiddenSize inputSize
-                                                             , GRUBHShape hiddenSize inputSize
-                                                             ]
-  GRURImpl inputSize hiddenSize numLayers 'Unidirectional = GRURImpl inputSize hiddenSize (numLayers - 1) 'Unidirectional ++
-                                                            '[ GRUWIShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional)
-                                                             , GRUWHShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional)
-                                                             , GRUBIShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional)
-                                                             , GRUBHShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional)
-                                                             ]
-  GRURImpl inputSize hiddenSize 1         'Bidirectional  = '[ GRUWIShape hiddenSize inputSize
-                                                             , GRUWHShape hiddenSize inputSize
-                                                             , GRUBIShape hiddenSize inputSize
-                                                             , GRUBHShape hiddenSize inputSize
-                                                             , GRUWIShape hiddenSize inputSize
-                                                             , GRUWHShape hiddenSize inputSize
-                                                             , GRUBIShape hiddenSize inputSize
-                                                             , GRUBHShape hiddenSize inputSize
-                                                             ]
-  GRURImpl inputSize hiddenSize numLayers 'Bidirectional  = GRURImpl inputSize hiddenSize (numLayers - 1) 'Bidirectional ++
-                                                            '[ GRUWIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
-                                                             , GRUWHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
-                                                             , GRUBIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
-                                                             , GRUBHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
-                                                             , GRUWIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
-                                                             , GRUWHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
-                                                             , GRUBIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
-                                                             , GRUBHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
-                                                             ]
+  GRURImpl inputSize hiddenSize 1 'Unidirectional =
+    '[ GRUWIShape hiddenSize inputSize,
+       GRUWHShape hiddenSize inputSize,
+       GRUBIShape hiddenSize inputSize,
+       GRUBHShape hiddenSize inputSize
+     ]
+  GRURImpl inputSize hiddenSize numLayers 'Unidirectional =
+    GRURImpl inputSize hiddenSize (numLayers - 1) 'Unidirectional
+      ++ '[ GRUWIShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional),
+            GRUWHShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional),
+            GRUBIShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional),
+            GRUBHShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional)
+          ]
+  GRURImpl inputSize hiddenSize 1 'Bidirectional =
+    '[ GRUWIShape hiddenSize inputSize,
+       GRUWHShape hiddenSize inputSize,
+       GRUBIShape hiddenSize inputSize,
+       GRUBHShape hiddenSize inputSize,
+       GRUWIShape hiddenSize inputSize,
+       GRUWHShape hiddenSize inputSize,
+       GRUBIShape hiddenSize inputSize,
+       GRUBHShape hiddenSize inputSize
+     ]
+  GRURImpl inputSize hiddenSize numLayers 'Bidirectional =
+    GRURImpl inputSize hiddenSize (numLayers - 1) 'Bidirectional
+      ++ '[ GRUWIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional),
+            GRUWHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional),
+            GRUBIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional),
+            GRUBHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional),
+            GRUWIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional),
+            GRUWHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional),
+            GRUBIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional),
+            GRUBHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
+          ]
 
 type family GRUR' (shapes :: [[Nat]]) (dtype :: D.DType) (device :: (D.DeviceType, Nat)) :: [a] where
-  GRUR' '[]               dtype device = '[]
+  GRUR' '[] dtype device = '[]
   GRUR' (shape ': shapes) dtype device = Tensor device dtype shape ': GRUR' shapes dtype device
 
 type GRUR inputSize hiddenSize numLayers directionality dtype device = GRUR' (GRURImpl inputSize hiddenSize numLayers directionality) dtype device
@@ -3598,73 +4109,74 @@ type GRUR inputSize hiddenSize numLayers directionality dtype device = GRUR' (GR
 -- | gru
 -- Parameters for this ATen function are non-trivially provided.  See the
 -- `Typed.NN.GRU` module for doctests.
---
-gru
-  :: forall
-       shapeOrder
-       directionality
-       numLayers
-       seqLen
-       batchSize
-       inputSize
-       outputSize
-       hiddenSize
-       inputShape
-       outputShape
-       hcShape
-       tensorParameters
-       dtype
-       device
-   . ( KnownNat numLayers
-     , KnownRNNShapeOrder shapeOrder
-     , KnownRNNDirectionality directionality
-     , outputSize ~ (hiddenSize * NumberOfDirections directionality)
-     , inputShape ~ RNNShape shapeOrder seqLen batchSize inputSize
-     , outputShape ~ RNNShape shapeOrder seqLen batchSize outputSize
-     , hcShape ~ '[numLayers * NumberOfDirections directionality, batchSize, hiddenSize]
-     , tensorParameters ~ GRUR inputSize hiddenSize numLayers directionality dtype device
-     , ATen.Castable (HList tensorParameters) [D.ATenTensor]
-     )
-  => HList tensorParameters
-  -> Double
-  -> Bool
-  -> Tensor device dtype hcShape
-  -> Tensor device dtype inputShape
-  -> ( Tensor device dtype outputShape
-     , Tensor device dtype hcShape
-     )
-gru tensorParameters dropoutProb dropoutOn hc input = unsafePerformIO $ ATen.cast9
-  ATen.Managed.gru_ttlbldbbb
-  input
-  hc
-  tensorParameters
-  hasBiases
-  numLayers
-  dropoutProb
-  dropoutOn
-  (rnnBidirectional @directionality)
-  (rnnBatchFirst @shapeOrder)
- where
-  hasBiases = True
-  numLayers :: I.Int64
-  numLayers  = fromIntegral $ natValI @numLayers
+gru ::
+  forall
+    shapeOrder
+    directionality
+    numLayers
+    seqLen
+    batchSize
+    inputSize
+    outputSize
+    hiddenSize
+    inputShape
+    outputShape
+    hcShape
+    tensorParameters
+    dtype
+    device.
+  ( KnownNat numLayers,
+    KnownRNNShapeOrder shapeOrder,
+    KnownRNNDirectionality directionality,
+    outputSize ~ (hiddenSize * NumberOfDirections directionality),
+    inputShape ~ RNNShape shapeOrder seqLen batchSize inputSize,
+    outputShape ~ RNNShape shapeOrder seqLen batchSize outputSize,
+    hcShape ~ '[numLayers * NumberOfDirections directionality, batchSize, hiddenSize],
+    tensorParameters ~ GRUR inputSize hiddenSize numLayers directionality dtype device,
+    ATen.Castable (HList tensorParameters) [D.ATenTensor]
+  ) =>
+  HList tensorParameters ->
+  Double ->
+  Bool ->
+  Tensor device dtype hcShape ->
+  Tensor device dtype inputShape ->
+  ( Tensor device dtype outputShape,
+    Tensor device dtype hcShape
+  )
+gru tensorParameters dropoutProb dropoutOn hc input =
+  unsafePerformIO $
+    ATen.cast9
+      ATen.Managed.gru_ttlbldbbb
+      input
+      hc
+      tensorParameters
+      hasBiases
+      numLayers
+      dropoutProb
+      dropoutOn
+      (rnnBidirectional @directionality)
+      (rnnBatchFirst @shapeOrder)
+  where
+    hasBiases = True
+    numLayers :: I.Int64
+    numLayers = fromIntegral $ natValI @numLayers
 
 -- | gruCell
 --
 -- >>> dtype &&& shape $ gruCell (ones :: CPUTensor 'D.Float '[9,2]) (ones :: CPUTensor 'D.Float '[9,3]) (ones :: CPUTensor 'D.Float '[9]) (ones :: CPUTensor 'D.Float '[9]) (ones :: CPUTensor 'D.Float '[2,3]) (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[2,3])
-gruCell
-  :: forall inputSize hiddenSize batchSize dtype device
-   . Tensor device dtype '[3 * hiddenSize, inputSize]
-  -> Tensor device dtype '[3 * hiddenSize, hiddenSize]
-  -> Tensor device dtype '[3 * hiddenSize]
-  -> Tensor device dtype '[3 * hiddenSize]
-  -> Tensor device dtype '[batchSize, hiddenSize]
-  -> Tensor device dtype '[batchSize, inputSize]
-  -> Tensor device dtype '[batchSize, hiddenSize]
+gruCell ::
+  forall inputSize hiddenSize batchSize dtype device.
+  Tensor device dtype '[3 * hiddenSize, inputSize] ->
+  Tensor device dtype '[3 * hiddenSize, hiddenSize] ->
+  Tensor device dtype '[3 * hiddenSize] ->
+  Tensor device dtype '[3 * hiddenSize] ->
+  Tensor device dtype '[batchSize, hiddenSize] ->
+  Tensor device dtype '[batchSize, inputSize] ->
+  Tensor device dtype '[batchSize, hiddenSize]
 gruCell wi wh bi bh hx input =
-  unsafePerformIO
-    $ ATen.cast6 ATen.Managed.gru_cell_tttttt input hx wi wh bi bh
+  unsafePerformIO $
+    ATen.cast6 ATen.Managed.gru_cell_tttttt input hx wi wh bi bh
 
 -- rnn_tanh_cell :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- rnn_tanh_cell _input _hx _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (ATen.cast6 ATen.Managed.rnn_tanh_cell_tttttt) _input _hx _w_ih _w_hh _b_ih _b_hh
@@ -3703,9 +4215,9 @@ gruCell wi wh bi bh hx input =
 -- cross _input _other _dim = unsafePerformIO $ (ATen.cast3 ATen.Managed.cross_ttl) _input _other _dim
 
 type family MatrixOrMatrixBatch (shape :: [Nat]) :: [Nat] where
-  MatrixOrMatrixBatch (n : m : '[])     = '[n, m]
+  MatrixOrMatrixBatch (n : m : '[]) = '[n, m]
   MatrixOrMatrixBatch (b : n : m : '[]) = '[b, n, m]
-  MatrixOrMatrixBatch _                 = TypeError (Text "The input must be matrix or a batch of matrices.")
+  MatrixOrMatrixBatch _ = TypeError (Text "The input must be matrix or a batch of matrices.")
 
 -- | triu
 -- TODO: triu is not implemented for D.Bool, or maybe numeric type is lifted?
@@ -3717,12 +4229,15 @@ type family MatrixOrMatrixBatch (shape :: [Nat]) :: [Nat] where
 -- (Float,([3,4],[[0.0,1.0,1.0,1.0],[0.0,0.0,1.0,1.0],[0.0,0.0,0.0,1.0]]))
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Float]]) $ triu (-1) t
 -- (Float,([3,4],[[1.0,1.0,1.0,1.0],[1.0,1.0,1.0,1.0],[0.0,1.0,1.0,1.0]]))
-triu
-  :: forall shape dtype device
-   . (shape ~ MatrixOrMatrixBatch shape)
-  => Int -- ^ diagonal
-  -> Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+triu ::
+  forall shape dtype device.
+  (shape ~ MatrixOrMatrixBatch shape) =>
+  -- | diagonal
+  Int ->
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 triu diagonal input = unsafePerformIO $ ATen.cast2 ATen.Managed.triu_tl input diagonal
 
 -- | tril
@@ -3735,22 +4250,27 @@ triu diagonal input = unsafePerformIO $ ATen.cast2 ATen.Managed.triu_tl input di
 -- (Float,([3,4],[[1.0,1.0,0.0,0.0],[1.0,1.0,1.0,0.0],[1.0,1.0,1.0,1.0]]))
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Float]]) $ tril (-1) t
 -- (Float,([3,4],[[0.0,0.0,0.0,0.0],[1.0,0.0,0.0,0.0],[1.0,1.0,0.0,0.0]]))
-tril
-  :: forall shape dtype device
-   . (shape ~ MatrixOrMatrixBatch shape)
-  => Int -- ^ diagonal
-  -> Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+tril ::
+  forall shape dtype device.
+  (shape ~ MatrixOrMatrixBatch shape) =>
+  -- | diagonal
+  Int ->
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 tril diagonal input = unsafePerformIO $ ATen.cast2 ATen.Managed.tril_tl input diagonal
 
 -- | trace
 --
 -- >>> dtype &&& shape $ trace (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-trace 
-  :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+trace ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 trace _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.trace_t) _input
 
 -- take :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
@@ -3763,13 +4283,15 @@ trace _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.trace_t) _input
 -- masked_select _input _mask = unsafePerformIO $ (ATen.cast2 ATen.Managed.masked_select_tt) _input _mask
 
 -- | nonzero
--- 
+--
 -- >>> dtype &&& shape $ nonzero (zeros :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-nonzero 
-  :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+nonzero ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 nonzero _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.nonzero_t) _input
 
 -- nonzero_numpy :: Tensor device dtype shape -> [Tensor device dtype shape]
@@ -3803,42 +4325,51 @@ nonzero _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.nonzero_t) _input
 --
 -- >>> dtype &&& shape $ lgamma (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-lgamma
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+lgamma ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 lgamma input = unsafePerformIO $ ATen.cast1 ATen.Managed.lgamma_t input
 
 -- | digamma function
 --
 -- >>> dtype &&& shape $ digamma (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-digamma
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+digamma ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 digamma input = unsafePerformIO $ ATen.cast1 ATen.Managed.digamma_t input
 
 -- | polygamma function
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
-polygamma
-  :: forall shape dtype device
-   . Int -- ^ order
-  -> Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+polygamma ::
+  forall shape dtype device.
+  -- | order
+  Int ->
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 polygamma n input = unsafePerformIO $ ATen.cast2 ATen.Managed.polygamma_lt n input
 
 -- | inverse of the error function
 --
 -- >>> dtype &&& shape $ erfinv (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-erfinv
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+erfinv ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 erfinv input = unsafePerformIO $ ATen.cast1 ATen.Managed.erfinv_t input
 
 -- dist :: Tensor device dtype shape -> Tensor device dtype shape -> Float -> Tensor device dtype shape
@@ -3854,16 +4385,18 @@ erfinv input = unsafePerformIO $ ATen.cast1 ATen.Managed.erfinv_t input
 --
 -- >>> dtype &&& shape $ minAll (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[])
-minAll
-  :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
-  -> Tensor device dtype '[] -- ^ output
+minAll ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype '[]
 minAll input = unsafePerformIO $ ATen.cast1 ATen.Managed.min_t input
 
 type family DropValue (shape :: [Nat]) (i :: Nat) :: [Nat] where
-  DropValue '[]     _ = TypeError (Text "Can not find a element in the list.")
-  DropValue (x: xs) 0 = xs
-  DropValue (x: xs) i = x ': DropValue xs (i-1)
+  DropValue '[] _ = TypeError (Text "Can not find a element in the list.")
+  DropValue (x : xs) 0 = xs
+  DropValue (x : xs) i = x ': DropValue xs (i -1)
 
 -- | minDim
 --
@@ -3874,23 +4407,27 @@ type family DropValue (shape :: [Nat]) (i :: Nat) :: [Nat] where
 -- (Float,[3,5])
 -- >>> dtype &&& shape $ fst $ minDim @2 t
 -- (Float,[3,4])
-minDim
-  :: forall d shape dtype device
-   . (KnownNat d)
-  => Tensor device dtype shape -- ^ input
-  -> ( Tensor device dtype    (DropValue shape d)
-     , Tensor device 'D.Int64 (DropValue shape d)
-     ) -- ^ output
+minDim ::
+  forall d shape dtype device.
+  (KnownNat d) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  ( Tensor device dtype (DropValue shape d),
+    Tensor device 'D.Int64 (DropValue shape d)
+  )
 minDim input = unsafePerformIO $ ATen.cast2 ATen.Managed.min_tl input (natValI @d)
 
 -- | maxAll
 --
 -- >>> dtype &&& shape $ maxAll (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[])
-maxAll
-  :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
-  -> Tensor device dtype '[] -- ^ output
+maxAll ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype '[]
 maxAll input = unsafePerformIO $ ATen.cast1 ATen.Managed.max_t input
 
 -- | maxDim
@@ -3902,23 +4439,27 @@ maxAll input = unsafePerformIO $ ATen.cast1 ATen.Managed.max_t input
 -- (Float,[3,5])
 -- >>> dtype &&& shape $ fst $ maxDim @2 t
 -- (Float,[3,4])
-maxDim
-  :: forall d shape dtype device
-   . (KnownNat d)
-  => Tensor device dtype shape -- ^ input
-  -> ( Tensor device dtype    (DropValue shape d)
-     , Tensor device 'D.Int64 (DropValue shape d)
-     ) -- ^ output
+maxDim ::
+  forall d shape dtype device.
+  (KnownNat d) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  ( Tensor device dtype (DropValue shape d),
+    Tensor device 'D.Int64 (DropValue shape d)
+  )
 maxDim input = unsafePerformIO $ ATen.cast2 ATen.Managed.max_tl input (natValI @d)
 
 -- | medianAll
 --
 -- >>> dtype &&& shape $ medianAll (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[])
-medianAll
-  :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
-  -> Tensor device dtype '[] -- ^ output
+medianAll ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype '[]
 medianAll input = unsafePerformIO $ ATen.cast1 ATen.Managed.median_t input
 
 -- | medianDim
@@ -3930,13 +4471,15 @@ medianAll input = unsafePerformIO $ ATen.cast1 ATen.Managed.median_t input
 -- (Float,[3,5])
 -- >>> dtype &&& shape $ fst $ medianDim @2 t
 -- (Float,[3,4])
-medianDim
-  :: forall d shape dtype device
-   . (KnownNat d)
-  => Tensor device dtype shape -- ^ input
-  -> ( Tensor device dtype    (DropValue shape d)
-     , Tensor device 'D.Int64 (DropValue shape d)
-     ) -- ^ output
+medianDim ::
+  forall d shape dtype device.
+  (KnownNat d) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  ( Tensor device dtype (DropValue shape d),
+    Tensor device 'D.Int64 (DropValue shape d)
+  )
 medianDim input = unsafePerformIO $ ATen.cast2 ATen.Managed.median_tl input (natValI @d)
 
 -- | median
@@ -3945,26 +4488,31 @@ medianDim input = unsafePerformIO $ ATen.cast2 ATen.Managed.median_tl input (nat
 -- >>> t = fromJust [[5, 1], [3, 2], [4, 1], [2, 7]] :: CPUTensor 'D.Float '[4, 2]
 -- >>> median' @0 @KeepDim t
 -- (Tensor Float [1,2] [[ 3.0000   ,  1.0000   ]],Tensor Int64 [1,2] [[ 1,  0]])
-median'
-  :: forall dim keepOrDropDim shape dtype device
-   . (KnownNat dim, KnownKeepOrDropDim keepOrDropDim)
-  => Tensor device dtype shape
-  -> ( Tensor device dtype    (ConditionalDropDimension shape dim keepOrDropDim)
-     , Tensor device 'D.Int64 (ConditionalDropDimension shape dim keepOrDropDim)
-     )
-median' input = unsafePerformIO $ ATen.cast3 ATen.Managed.median_tlb
-                                        input
-                                        (natValI @dim)
-                                        (keepOrDropDimVal @keepOrDropDim)
+median' ::
+  forall dim keepOrDropDim shape dtype device.
+  (KnownNat dim, KnownKeepOrDropDim keepOrDropDim) =>
+  Tensor device dtype shape ->
+  ( Tensor device dtype (ConditionalDropDimension shape dim keepOrDropDim),
+    Tensor device 'D.Int64 (ConditionalDropDimension shape dim keepOrDropDim)
+  )
+median' input =
+  unsafePerformIO $
+    ATen.cast3
+      ATen.Managed.median_tlb
+      input
+      (natValI @dim)
+      (keepOrDropDimVal @keepOrDropDim)
 
 -- | meanAll
 --
 -- >>> dtype &&& shape $ meanAll (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[])
-meanAll
-  :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
-  -> Tensor device dtype '[] -- ^ output
+meanAll ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype '[]
 meanAll input = unsafePerformIO $ ATen.cast1 ATen.Managed.mean_t input
 
 -- | meanDim
@@ -3976,11 +4524,13 @@ meanAll input = unsafePerformIO $ ATen.cast1 ATen.Managed.mean_t input
 -- (Float,[3,5])
 -- >>> dtype &&& shape $ meanDim @2 t
 -- (Float,[3,4])
-meanDim
-  :: forall d shape dtype device
-   . (KnownNat d)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype    (DropValue shape d) -- ^ output
+meanDim ::
+  forall d shape dtype device.
+  (KnownNat d) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype (DropValue shape d)
 meanDim input = unsafePerformIO $ ATen.cast2 ATen.Managed.mean_tl input (natValI @d)
 
 -- | mean
@@ -3989,15 +4539,18 @@ meanDim input = unsafePerformIO $ ATen.cast2 ATen.Managed.mean_tl input (natValI
 -- >>> t = fromJust [[5, 1], [3, 2], [4, 1], [2, 7]] :: CPUTensor 'D.Float '[4, 2]
 -- >>> mean' @0 @KeepDim t
 -- Tensor Float [1,2] [[ 3.5000   ,  2.7500   ]]
-mean'
-  :: forall dim keepOrDropDim shape dtype device
-   . (KnownNat dim, KnownKeepOrDropDim keepOrDropDim)
-  => Tensor device dtype shape
-  -> Tensor device dtype (ConditionalDropDimension shape dim keepOrDropDim)
-mean' input = unsafePerformIO $ ATen.cast3 ATen.Managed.mean_tlb
-                                        input
-                                        (natValI @dim)
-                                        (keepOrDropDimVal @keepOrDropDim)
+mean' ::
+  forall dim keepOrDropDim shape dtype device.
+  (KnownNat dim, KnownKeepOrDropDim keepOrDropDim) =>
+  Tensor device dtype shape ->
+  Tensor device dtype (ConditionalDropDimension shape dim keepOrDropDim)
+mean' input =
+  unsafePerformIO $
+    ATen.cast3
+      ATen.Managed.mean_tlb
+      input
+      (natValI @dim)
+      (keepOrDropDimVal @keepOrDropDim)
 
 -- sort :: Tensor device dtype shape -> Int -> Bool -> (Tensor device dtype shape,Tensor device dtype shape)
 -- sort _input _dim _descending = unsafePerformIO $ (ATen.cast3 ATen.Managed.sort_tlb) _input _dim _descending
@@ -4006,18 +4559,16 @@ mean' input = unsafePerformIO $ ATen.cast3 ATen.Managed.mean_tlb
 -- argsort _input _dim _descending = unsafePerformIO $ (ATen.cast3 ATen.Managed.argsort_tlb) _input _dim _descending
 
 type family TopKCheck (k :: Nat) (shape :: [Nat]) (dim :: Nat) (satd :: Maybe Nat) (result :: Maybe a) :: a where
-  TopKCheck _ shape dim _ Nothing       = DimOutOfBound shape dim
-  TopKCheck _ shape dim Nothing _       = DimOutOfBound shape dim
-  TopKCheck k shape dim (Just v) (Just result) = If ( k <=? v ) result (TypeError (Text "k must be less than or equal to the number of elements in the requested dimension."))
-
+  TopKCheck _ shape dim _ Nothing = DimOutOfBound shape dim
+  TopKCheck _ shape dim Nothing _ = DimOutOfBound shape dim
+  TopKCheck k shape dim (Just v) (Just result) = If (k <=? v) result (TypeError (Text "k must be less than or equal to the number of elements in the requested dimension."))
 
 type TopK k shape dim = TopKCheck k shape dim (ExtractDim dim shape) (ReplaceDim dim shape k)
 
-type family TopKDeviceAndDTypeCheck dtype (device :: (D.DeviceType, Nat)) :: Constraint where 
-  TopKDeviceAndDTypeCheck D.Bool _           = (TypeError (Text "topk is not defined for Bool tensors."))
+type family TopKDeviceAndDTypeCheck dtype (device :: (D.DeviceType, Nat)) :: Constraint where
+  TopKDeviceAndDTypeCheck D.Bool _ = (TypeError (Text "topk is not defined for Bool tensors."))
   TopKDeviceAndDTypeCheck D.Half '(D.CPU, _) = (TypeError (Text "topk is not defined for Half types on CPU."))
   TopKDeviceAndDTypeCheck _ _ = ()
-
 
 -- | Returns the k largest (if largest is `True`) elements of the given input tensor along a given dimension.
 --
@@ -4029,18 +4580,19 @@ type family TopKDeviceAndDTypeCheck dtype (device :: (D.DeviceType, Nat)) :: Con
 -- (Tensor Float [2,0] [[],
 --                     []],Tensor Int64 [2,0] [[],
 --                     []])
---
-topk 
-  :: forall k dim shape dtype device 
-   . (KnownNat k, KnownNat dim, All KnownNat shape, TopKDeviceAndDTypeCheck dtype device) 
-   => Bool -- ^ if we're returning the top k largest (or, if False, the top k smallest)
-   -> Bool -- ^ if the resulting k elements are themselves sorted
-   -> Tensor device dtype shape 
-   -> (Tensor device dtype (TopK k shape dim), Tensor device 'D.Int64 (TopK k shape dim))
+topk ::
+  forall k dim shape dtype device.
+  (KnownNat k, KnownNat dim, All KnownNat shape, TopKDeviceAndDTypeCheck dtype device) =>
+  -- | if we're returning the top k largest (or, if False, the top k smallest)
+  Bool ->
+  -- | if the resulting k elements are themselves sorted
+  Bool ->
+  Tensor device dtype shape ->
+  (Tensor device dtype (TopK k shape dim), Tensor device 'D.Int64 (TopK k shape dim))
 topk _largest _sorted _input = unsafePerformIO $ (ATen.cast5 ATen.Managed.topk_tllbb) _input _k _dim _largest _sorted
-  where 
-  _k = natValI @k
-  _dim = natValI @dim
+  where
+    _k = natValI @k
+    _dim = natValI @dim
 
 -- renorm :: Tensor device dtype shape -> Float -> Int -> Float -> Tensor device dtype shape
 -- renorm _input _p _dim _maxnorm = unsafePerformIO $ (ATen.cast4 ATen.Managed.renorm_tsls) _input _p _dim _maxnorm
@@ -4049,14 +4601,15 @@ topk _largest _sorted _input = unsafePerformIO $ (ATen.cast5 ATen.Managed.topk_t
 -- equal _input _other = unsafePerformIO $ (ATen.cast2 ATen.Managed.equal_tt) _input _other
 
 -- | alias
--- 
+--
 -- >>> dtype &&& shape $ alias (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-
-alias 
-  :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+alias ::
+  forall shape dtype device.
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 alias _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.alias_t) _input
 
 -- | L1 loss
@@ -4066,14 +4619,18 @@ alias _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.alias_t) _input
 -- (Float,[2,2])
 -- >>> dtype &&& shape $ l1Loss @ReduceSum (ones :: CPUTensor 'D.Float '[2,2]) (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[])
-l1Loss
-  :: forall reduction shape dtype device
-   . (KnownReduction reduction)
-  => Tensor device dtype shape -- ^ prediciton
-  -> Tensor device dtype shape -- ^ target
-  -> Tensor device dtype (ConditionalReduction shape reduction) -- ^ loss
-l1Loss prediction target = unsafePerformIO
-  $ ATen.cast3 ATen.Managed.l1_loss_ttl prediction target (reductionVal @reduction)
+l1Loss ::
+  forall reduction shape dtype device.
+  (KnownReduction reduction) =>
+  -- | prediciton
+  Tensor device dtype shape ->
+  -- | target
+  Tensor device dtype shape ->
+  -- | loss
+  Tensor device dtype (ConditionalReduction shape reduction)
+l1Loss prediction target =
+  unsafePerformIO $
+    ATen.cast3 ATen.Managed.l1_loss_ttl prediction target (reductionVal @reduction)
 
 -- multi_margin_loss :: Tensor device dtype shape -> Tensor device dtype shape -> Float -> Float -> Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- multi_margin_loss _input _target _p _margin _weight _reduction = unsafePerformIO $ (ATen.cast6 ATen.Managed.multi_margin_loss_ttsstl) _input _target _p _margin _weight _reduction
@@ -4113,40 +4670,54 @@ l1Loss prediction target = unsafePerformIO
 -- (Float,[3,2,1,2])
 -- >>> dtype &&& shape $ nllLoss @ReduceMean @3 @5 @'[2, 1, 2] weight (-100) (logSoftmax @1 input) target
 -- (Float,[])
-nllLoss
-  :: forall reduction n c ds dtype device
-   . (KnownReduction reduction, KnownNat n, KnownNat c, KnownShape ds)
-  => Tensor device dtype '[c] -- ^ weight
-  -> Int -- ^ ignore which index
-  -> Tensor device dtype    (n ': c ': ds) -- ^ prediction
-  -> Tensor device 'D.Int64 (n ': ds) -- ^ target
-  -> Tensor device dtype    (ConditionalReduction (n ': ds) reduction) -- ^ loss
+nllLoss ::
+  forall reduction n c ds dtype device.
+  (KnownReduction reduction, KnownNat n, KnownNat c, KnownShape ds) =>
+  -- | weight
+  Tensor device dtype '[c] ->
+  -- | ignore which index
+  Int ->
+  -- | prediction
+  Tensor device dtype (n ': c ': ds) ->
+  -- | target
+  Tensor device 'D.Int64 (n ': ds) ->
+  -- | loss
+  Tensor device dtype (ConditionalReduction (n ': ds) reduction)
 nllLoss weight ignoreIndex prediction target = case shapeVal @ds of
-  [] -> unsafePerformIO $ ATen.cast5 ATen.Managed.nll_loss_tttll
-                                prediction
-                                target
-                                weight
-                                (reductionVal @reduction)
-                                ignoreIndex
-  [_h, _w] -> unsafePerformIO $ ATen.cast5 ATen.Managed.nll_loss2d_tttll
-                                      prediction
-                                      target
-                                      weight
-                                      (reductionVal @reduction)
-                                      ignoreIndex
+  [] ->
+    unsafePerformIO $
+      ATen.cast5
+        ATen.Managed.nll_loss_tttll
+        prediction
+        target
+        weight
+        (reductionVal @reduction)
+        ignoreIndex
+  [_h, _w] ->
+    unsafePerformIO $
+      ATen.cast5
+        ATen.Managed.nll_loss2d_tttll
+        prediction
+        target
+        weight
+        (reductionVal @reduction)
+        ignoreIndex
   h : t -> case reductionVal @reduction of
     0 -> UnsafeMkTensor . (D.reshape ((natValI @n) : h : t)) $ out
     _ -> UnsafeMkTensor out
-   where
-    t'      = [1, foldl (*) h t]
-    input'  = D.reshape (natValI @n : natValI @c : t') (toDynamic prediction)
-    target' = D.reshape (natValI @n : t') (toDynamic target)
-    out     = unsafePerformIO $ ATen.cast5 ATen.Managed.nll_loss2d_tttll
-                                      input'
-                                      target'
-                                      weight
-                                      (reductionVal @reduction)
-                                      ignoreIndex
+    where
+      t' = [1, foldl (*) h t]
+      input' = D.reshape (natValI @n : natValI @c : t') (toDynamic prediction)
+      target' = D.reshape (natValI @n : t') (toDynamic target)
+      out =
+        unsafePerformIO $
+          ATen.cast5
+            ATen.Managed.nll_loss2d_tttll
+            input'
+            target'
+            weight
+            (reductionVal @reduction)
+            ignoreIndex
 
 -- | smooth L1 loss
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -4155,14 +4726,18 @@ nllLoss weight ignoreIndex prediction target = case shapeVal @ds of
 -- (Float,[2,2])
 -- >>> dtype &&& shape $ smoothL1Loss @ReduceSum (ones :: CPUTensor 'D.Float '[2,2]) (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[])
-smoothL1Loss
-  :: forall reduction shape dtype device
-   . (KnownReduction reduction)
-  => Tensor device dtype shape -- ^ prediction
-  -> Tensor device dtype shape -- ^ target
-  -> Tensor device dtype (ConditionalReduction shape reduction) -- ^ loss
-smoothL1Loss prediction target = unsafePerformIO
-  $ ATen.cast3 ATen.Managed.smooth_l1_loss_ttl prediction target (reductionVal @reduction)
+smoothL1Loss ::
+  forall reduction shape dtype device.
+  (KnownReduction reduction) =>
+  -- | prediction
+  Tensor device dtype shape ->
+  -- | target
+  Tensor device dtype shape ->
+  -- | loss
+  Tensor device dtype (ConditionalReduction shape reduction)
+smoothL1Loss prediction target =
+  unsafePerformIO $
+    ATen.cast3 ATen.Managed.smooth_l1_loss_ttl prediction target (reductionVal @reduction)
 
 -- | soft margin loss
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -4171,31 +4746,41 @@ smoothL1Loss prediction target = unsafePerformIO
 -- (Float,[2,2])
 -- >>> dtype &&& shape $ softMarginLoss @ReduceSum (ones :: CPUTensor 'D.Float '[2,2]) (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[])
-softMarginLoss
-  :: forall reduction shape dtype device
-   . (KnownReduction reduction)
-  => Tensor device dtype shape -- ^ prediction
-  -> Tensor device dtype shape -- ^ target
-  -> Tensor device dtype (ConditionalReduction shape reduction) -- ^ loss
-softMarginLoss prediciton target = unsafePerformIO $ ATen.cast3
-  ATen.Managed.soft_margin_loss_ttl
-  prediciton
-  target
-  (reductionVal @reduction)
+softMarginLoss ::
+  forall reduction shape dtype device.
+  (KnownReduction reduction) =>
+  -- | prediction
+  Tensor device dtype shape ->
+  -- | target
+  Tensor device dtype shape ->
+  -- | loss
+  Tensor device dtype (ConditionalReduction shape reduction)
+softMarginLoss prediciton target =
+  unsafePerformIO $
+    ATen.cast3
+      ATen.Managed.soft_margin_loss_ttl
+      prediciton
+      target
+      (reductionVal @reduction)
 
 -- | elu
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 --
 -- >>> dtype &&& shape $ elu 0.1 0.1 0.3 (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-elu
-  :: forall shape dtype a device
-   . (D.Scalar a, StandardFloatingPointDTypeValidation device dtype)
-  => a -- ^ alpha
-  -> a -- ^ scale
-  -> a -- ^ input scale
-  -> Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+elu ::
+  forall shape dtype a device.
+  (D.Scalar a, StandardFloatingPointDTypeValidation device dtype) =>
+  -- | alpha
+  a ->
+  -- | scale
+  a ->
+  -- | input scale
+  a ->
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 elu alpha scale inputScale input =
   unsafePerformIO $ ATen.cast4 ATen.Managed.elu_tsss input alpha scale inputScale
 
@@ -4207,18 +4792,21 @@ elu alpha scale inputScale input =
 -- glu :: Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- glu _input _dim = unsafePerformIO $ (ATen.cast2 ATen.Managed.glu_tl) _input _dim
 
-
 -- | hard tanh
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 --
 -- >>> dtype &&& shape $ hardTanh 0 1 (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-hardTanh
-  :: forall shape dtype device
-   . Float -- ^ minimum value
-  -> Float -- ^ maximum value
-  -> Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+hardTanh ::
+  forall shape dtype device.
+  -- | minimum value
+  Float ->
+  -- | maximum value
+  Float ->
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 hardTanh min_val max_val input =
   unsafePerformIO $ ATen.cast3 ATen.Managed.hardtanh_tss input min_val max_val
 
@@ -4226,12 +4814,15 @@ hardTanh min_val max_val input =
 --
 -- >>> dtype &&& shape $ leakyRelu 0.01 (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-leakyRelu
-  :: forall a shape dtype device
-   . (D.Scalar a, StandardFloatingPointDTypeValidation device dtype)
-  => a -- ^ negative slope
-  -> Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+leakyRelu ::
+  forall a shape dtype device.
+  (D.Scalar a, StandardFloatingPointDTypeValidation device dtype) =>
+  -- | negative slope
+  a ->
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 leakyRelu negativeSlope input =
   unsafePerformIO $ ATen.cast2 ATen.Managed.leaky_relu_ts input negativeSlope
 
@@ -4239,11 +4830,13 @@ leakyRelu negativeSlope input =
 --
 -- >>> dtype &&& shape $ logSigmoid (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-logSigmoid
-  :: forall shape dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+logSigmoid ::
+  forall shape dtype device.
+  (StandardFloatingPointDTypeValidation device dtype) =>
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 logSigmoid input = unsafePerformIO $ ATen.cast1 ATen.Managed.log_sigmoid_t input
 
 -- | softplus
@@ -4252,13 +4845,13 @@ logSigmoid input = unsafePerformIO $ ATen.cast1 ATen.Managed.log_sigmoid_t input
 --
 -- >>> dtype &&& shape &&& (\t -> D.asValue (toDynamic t) :: [[Float]]) $ softplus 1 20 (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,([3,2],[[1.3132616,1.3132616],[1.3132616,1.3132616],[1.3132616,1.3132616]]))
-softplus
-  :: forall a shape dtype device
-   . D.Scalar a
-  => a
-  -> a
-  -> Tensor device dtype shape
-  -> Tensor device dtype shape
+softplus ::
+  forall a shape dtype device.
+  D.Scalar a =>
+  a ->
+  a ->
+  Tensor device dtype shape ->
+  Tensor device dtype shape
 softplus beta threshold input = unsafePerformIO $ ATen.cast3 ATen.Managed.softplus_tss input beta threshold
 
 -- | soft shrink
@@ -4266,11 +4859,14 @@ softplus beta threshold input = unsafePerformIO $ ATen.cast3 ATen.Managed.softpl
 --
 -- >>> dtype &&& shape $ softShrink 0.2 (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-softShrink
-  :: forall shape dtype device
-   . Float -- ^ lambda
-  -> Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape -- ^ output
+softShrink ::
+  forall shape dtype device.
+  -- | lambda
+  Float ->
+  -- | input
+  Tensor device dtype shape ->
+  -- | output
+  Tensor device dtype shape
 softShrink lambda input =
   unsafePerformIO $ ATen.cast2 ATen.Managed.softshrink_ts input lambda
 
@@ -4282,20 +4878,27 @@ softShrink lambda input =
 -- [1,3,8,16]
 -- >>> :t t
 -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 8, 16]
-adaptiveAvgPool2d
-  :: forall outputSize channelSize inputSize0 inputSize1 batchSize dtype device
-   . ( All KnownNat '[ channelSize
-                     , inputSize0, inputSize1
-                     , batchSize
-                     , Torch.Typed.Aux.Fst outputSize, Torch.Typed.Aux.Snd outputSize
-                     ]
-     )
-  => Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] -- ^ input
-  -> Tensor device dtype '[batchSize, channelSize, Torch.Typed.Aux.Fst outputSize, Torch.Typed.Aux.Snd outputSize] -- ^ output
-adaptiveAvgPool2d input = unsafePerformIO $ ATen.cast2
-  ATen.Managed.adaptive_avg_pool2d_tl
-  input
-  ([natValI @(Torch.Typed.Aux.Fst outputSize), natValI @(Torch.Typed.Aux.Snd outputSize)] :: [Int])
+adaptiveAvgPool2d ::
+  forall outputSize channelSize inputSize0 inputSize1 batchSize dtype device.
+  ( All KnownNat
+      '[ channelSize,
+         inputSize0,
+         inputSize1,
+         batchSize,
+         Torch.Typed.Aux.Fst outputSize,
+         Torch.Typed.Aux.Snd outputSize
+       ]
+  ) =>
+  -- | input
+  Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] ->
+  -- | output
+  Tensor device dtype '[batchSize, channelSize, Torch.Typed.Aux.Fst outputSize, Torch.Typed.Aux.Snd outputSize]
+adaptiveAvgPool2d input =
+  unsafePerformIO $
+    ATen.cast2
+      ATen.Managed.adaptive_avg_pool2d_tl
+      input
+      ([natValI @(Torch.Typed.Aux.Fst outputSize), natValI @(Torch.Typed.Aux.Snd outputSize)] :: [Int])
 
 -- | MKLDNN adaptive averaged 2-D pooling
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -4309,20 +4912,27 @@ adaptiveAvgPool2d input = unsafePerformIO $ ATen.cast2
 -- -- [1,3,8,16]
 -- -- >>> :t t
 -- -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 8, 16]
-mkldnnAdaptiveAvgPool2d
-  :: forall outputSize channelSize inputSize0 inputSize1 batchSize dtype device
-   . ( All KnownNat '[ channelSize
-                     , inputSize0, inputSize1
-                     , batchSize
-                     , Torch.Typed.Aux.Fst outputSize, Torch.Typed.Aux.Snd outputSize
-                     ]
-     )
-  => Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] -- ^ input
-  -> Tensor device dtype '[batchSize, channelSize, Torch.Typed.Aux.Fst outputSize, Torch.Typed.Aux.Snd outputSize] -- ^ output
-mkldnnAdaptiveAvgPool2d input = unsafePerformIO $ ATen.cast2
-  ATen.Managed.adaptive_avg_pool2d_tl
-  input
-  ([natValI @(Torch.Typed.Aux.Fst outputSize), natValI @(Torch.Typed.Aux.Snd outputSize)] :: [Int])
+mkldnnAdaptiveAvgPool2d ::
+  forall outputSize channelSize inputSize0 inputSize1 batchSize dtype device.
+  ( All KnownNat
+      '[ channelSize,
+         inputSize0,
+         inputSize1,
+         batchSize,
+         Torch.Typed.Aux.Fst outputSize,
+         Torch.Typed.Aux.Snd outputSize
+       ]
+  ) =>
+  -- | input
+  Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] ->
+  -- | output
+  Tensor device dtype '[batchSize, channelSize, Torch.Typed.Aux.Fst outputSize, Torch.Typed.Aux.Snd outputSize]
+mkldnnAdaptiveAvgPool2d input =
+  unsafePerformIO $
+    ATen.cast2
+      ATen.Managed.adaptive_avg_pool2d_tl
+      input
+      ([natValI @(Torch.Typed.Aux.Fst outputSize), natValI @(Torch.Typed.Aux.Snd outputSize)] :: [Int])
 
 -- | adaptive averaged 3-D pooling
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -4332,29 +4942,42 @@ mkldnnAdaptiveAvgPool2d input = unsafePerformIO $ ATen.cast2
 -- [1,3,8,16,2]
 -- >>> :t t
 -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 8, 16, 2]
-adaptiveAvgPool3d
-  :: forall outputSize
-            channelSize
-            inputSize0 inputSize1 inputSize2
-            batchSize
-            dtype
-            device
-   . ( All KnownNat '[ channelSize
-                     , inputSize0, inputSize1, inputSize2
-                     , batchSize
-                     , Fst3 outputSize, Snd3 outputSize, Trd3 outputSize
-                     ]
-     )
-  => Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1, inputSize2] -- ^ input
-  -> Tensor device dtype '[batchSize, channelSize, Fst3 outputSize, Snd3 outputSize, Trd3 outputSize] -- ^ output
-adaptiveAvgPool3d input = unsafePerformIO $ ATen.cast2
-  ATen.Managed.adaptive_avg_pool3d_tl
-  input
-  ([ natValI @(Fst3 outputSize)
-   , natValI @(Snd3 outputSize)
-   , natValI @(Trd3 outputSize)
-   ] :: [Int]
-  )
+adaptiveAvgPool3d ::
+  forall
+    outputSize
+    channelSize
+    inputSize0
+    inputSize1
+    inputSize2
+    batchSize
+    dtype
+    device.
+  ( All KnownNat
+      '[ channelSize,
+         inputSize0,
+         inputSize1,
+         inputSize2,
+         batchSize,
+         Fst3 outputSize,
+         Snd3 outputSize,
+         Trd3 outputSize
+       ]
+  ) =>
+  -- | input
+  Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1, inputSize2] ->
+  -- | output
+  Tensor device dtype '[batchSize, channelSize, Fst3 outputSize, Snd3 outputSize, Trd3 outputSize]
+adaptiveAvgPool3d input =
+  unsafePerformIO $
+    ATen.cast2
+      ATen.Managed.adaptive_avg_pool3d_tl
+      input
+      ( [ natValI @(Fst3 outputSize),
+          natValI @(Snd3 outputSize),
+          natValI @(Trd3 outputSize)
+        ] ::
+          [Int]
+      )
 
 -- | adaptive 2-D max-pool
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -4364,22 +4987,29 @@ adaptiveAvgPool3d input = unsafePerformIO $ ATen.cast2
 -- [1,3,8,16]
 -- >>> :t t
 -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 8, 16]
-adaptiveMaxPool2d
-  :: forall outputSize channelSize inputSize0 inputSize1 batchSize dtype device
-   . ( All KnownNat '[ channelSize
-                     , inputSize0, inputSize1
-                     , batchSize
-                     , Torch.Typed.Aux.Fst outputSize, Torch.Typed.Aux.Snd outputSize
-                     ]
-     )
-  => Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] -- ^ input
-  -> ( Tensor device dtype    '[batchSize, channelSize, Torch.Typed.Aux.Fst outputSize, Torch.Typed.Aux.Snd outputSize]
-     , Tensor device 'D.Int64 '[batchSize, channelSize, Torch.Typed.Aux.Fst outputSize, Torch.Typed.Aux.Snd outputSize]
-     ) -- ^ output
-adaptiveMaxPool2d input = unsafePerformIO $ ATen.cast2
-  ATen.Managed.adaptive_max_pool2d_tl
-  input
-  ([natValI @(Torch.Typed.Aux.Fst outputSize), natValI @(Torch.Typed.Aux.Snd outputSize)] :: [Int])
+adaptiveMaxPool2d ::
+  forall outputSize channelSize inputSize0 inputSize1 batchSize dtype device.
+  ( All KnownNat
+      '[ channelSize,
+         inputSize0,
+         inputSize1,
+         batchSize,
+         Torch.Typed.Aux.Fst outputSize,
+         Torch.Typed.Aux.Snd outputSize
+       ]
+  ) =>
+  -- | input
+  Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] ->
+  -- | output
+  ( Tensor device dtype '[batchSize, channelSize, Torch.Typed.Aux.Fst outputSize, Torch.Typed.Aux.Snd outputSize],
+    Tensor device 'D.Int64 '[batchSize, channelSize, Torch.Typed.Aux.Fst outputSize, Torch.Typed.Aux.Snd outputSize]
+  )
+adaptiveMaxPool2d input =
+  unsafePerformIO $
+    ATen.cast2
+      ATen.Managed.adaptive_max_pool2d_tl
+      input
+      ([natValI @(Torch.Typed.Aux.Fst outputSize), natValI @(Torch.Typed.Aux.Snd outputSize)] :: [Int])
 
 -- | adaptive 3-D max-pool
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -4389,30 +5019,43 @@ adaptiveMaxPool2d input = unsafePerformIO $ ATen.cast2
 -- [1,3,8,16,2]
 -- >>> :t t
 -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 8, 16, 2]
-adaptiveMaxPool3d
-  :: forall outputSize
-            channelSize
-            inputSize0 inputSize1 inputSize2
-            batchSize
-            dtype
-            device
-   . ( All KnownNat '[ channelSize
-                     , inputSize0, inputSize1, inputSize2
-                     , batchSize
-                     , Fst3 outputSize, Snd3 outputSize, Trd3 outputSize
-                     ]
-     )
-  => Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1, inputSize2] -- ^ input
-  -> ( Tensor device dtype    '[batchSize, channelSize, Fst3 outputSize, Snd3 outputSize, Trd3 outputSize]
-     , Tensor device 'D.Int64 '[batchSize, channelSize, Fst3 outputSize, Snd3 outputSize, Trd3 outputSize]
-     ) -- ^ output
-adaptiveMaxPool3d input = unsafePerformIO $ (ATen.cast2 ATen.Managed.adaptive_max_pool3d_tl)
-  input
-  ([ natValI @(Fst3 outputSize)
-   , natValI @(Snd3 outputSize)
-   , natValI @(Trd3 outputSize)
-   ] :: [Int]
+adaptiveMaxPool3d ::
+  forall
+    outputSize
+    channelSize
+    inputSize0
+    inputSize1
+    inputSize2
+    batchSize
+    dtype
+    device.
+  ( All KnownNat
+      '[ channelSize,
+         inputSize0,
+         inputSize1,
+         inputSize2,
+         batchSize,
+         Fst3 outputSize,
+         Snd3 outputSize,
+         Trd3 outputSize
+       ]
+  ) =>
+  -- | input
+  Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1, inputSize2] ->
+  -- | output
+  ( Tensor device dtype '[batchSize, channelSize, Fst3 outputSize, Snd3 outputSize, Trd3 outputSize],
+    Tensor device 'D.Int64 '[batchSize, channelSize, Fst3 outputSize, Snd3 outputSize, Trd3 outputSize]
   )
+adaptiveMaxPool3d input =
+  unsafePerformIO $
+    (ATen.cast2 ATen.Managed.adaptive_max_pool3d_tl)
+      input
+      ( [ natValI @(Fst3 outputSize),
+          natValI @(Snd3 outputSize),
+          natValI @(Trd3 outputSize)
+        ] ::
+          [Int]
+      )
 
 -- | averaged 2-D pooling
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -4422,37 +5065,49 @@ adaptiveMaxPool3d input = unsafePerformIO $ (ATen.cast2 ATen.Managed.adaptive_ma
 -- [1,3,4,5]
 -- >>> :t t
 -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 4, 5]
-avgPool2d
-  :: forall kernelSize
-            stride
-            padding
-            channelSize
-            inputSize0 inputSize1
-            batchSize
-            outputSize0 outputSize1
-            dtype
-            device
-   . ( All KnownNat '[ Torch.Typed.Aux.Fst kernelSize, Torch.Typed.Aux.Snd kernelSize
-                     , Torch.Typed.Aux.Fst stride, Torch.Typed.Aux.Snd stride
-                     , Torch.Typed.Aux.Fst padding, Torch.Typed.Aux.Snd padding
-                     , channelSize
-                     , inputSize0, inputSize1
-                     , batchSize
-                     ]
-     , ConvSideCheck inputSize0 (Torch.Typed.Aux.Fst kernelSize) (Torch.Typed.Aux.Fst stride) (Torch.Typed.Aux.Fst padding) outputSize0
-     , ConvSideCheck inputSize1 (Torch.Typed.Aux.Snd kernelSize) (Torch.Typed.Aux.Snd stride) (Torch.Typed.Aux.Snd padding) outputSize1
-     )
-  => Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] -- ^ input
-  -> Tensor device dtype '[batchSize, channelSize, outputSize0, outputSize1] -- ^ output
-avgPool2d input = unsafePerformIO $ ATen.cast7
-  ATen.Managed.avg_pool2d_tlllbbl
-  input
-  ([natValI @(Torch.Typed.Aux.Fst kernelSize), natValI @(Torch.Typed.Aux.Snd kernelSize)] :: [Int])
-  ([natValI @(Torch.Typed.Aux.Fst stride),     natValI @(Torch.Typed.Aux.Snd stride)]     :: [Int])
-  ([natValI @(Torch.Typed.Aux.Fst padding),    natValI @(Torch.Typed.Aux.Snd padding)]    :: [Int])
-  False
-  True
-  (1 :: Int)
+avgPool2d ::
+  forall
+    kernelSize
+    stride
+    padding
+    channelSize
+    inputSize0
+    inputSize1
+    batchSize
+    outputSize0
+    outputSize1
+    dtype
+    device.
+  ( All KnownNat
+      '[ Torch.Typed.Aux.Fst kernelSize,
+         Torch.Typed.Aux.Snd kernelSize,
+         Torch.Typed.Aux.Fst stride,
+         Torch.Typed.Aux.Snd stride,
+         Torch.Typed.Aux.Fst padding,
+         Torch.Typed.Aux.Snd padding,
+         channelSize,
+         inputSize0,
+         inputSize1,
+         batchSize
+       ],
+    ConvSideCheck inputSize0 (Torch.Typed.Aux.Fst kernelSize) (Torch.Typed.Aux.Fst stride) (Torch.Typed.Aux.Fst padding) outputSize0,
+    ConvSideCheck inputSize1 (Torch.Typed.Aux.Snd kernelSize) (Torch.Typed.Aux.Snd stride) (Torch.Typed.Aux.Snd padding) outputSize1
+  ) =>
+  -- | input
+  Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] ->
+  -- | output
+  Tensor device dtype '[batchSize, channelSize, outputSize0, outputSize1]
+avgPool2d input =
+  unsafePerformIO $
+    ATen.cast7
+      ATen.Managed.avg_pool2d_tlllbbl
+      input
+      ([natValI @(Torch.Typed.Aux.Fst kernelSize), natValI @(Torch.Typed.Aux.Snd kernelSize)] :: [Int])
+      ([natValI @(Torch.Typed.Aux.Fst stride), natValI @(Torch.Typed.Aux.Snd stride)] :: [Int])
+      ([natValI @(Torch.Typed.Aux.Fst padding), natValI @(Torch.Typed.Aux.Snd padding)] :: [Int])
+      False
+      True
+      (1 :: Int)
 
 -- | averaged 3-D pooling
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -4462,42 +5117,61 @@ avgPool2d input = unsafePerformIO $ ATen.cast7
 -- [1,3,4,5,6]
 -- >>> :t t
 -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 4, 5, 6]
-avgPool3d
-  :: forall kernelSize
-            stride
-            padding
-            channelSize
-            inputSize0 inputSize1 inputSize2
-            batchSize
-            outputSize0 outputSize1 outputSize2
-            dtype
-            device
-   . ( All KnownNat '[ Fst3 kernelSize, Snd3 kernelSize, Trd3 kernelSize
-                     , Fst3 stride, Snd3 stride, Trd3 stride
-                     , Fst3 padding, Snd3 padding, Trd3 padding
-                     , channelSize
-                     , inputSize0, inputSize1, inputSize2
-                     , batchSize
-                     ]
-     , ConvSideCheck inputSize0 (Fst3 kernelSize) (Fst3 stride) (Fst3 padding) outputSize0
-     , ConvSideCheck inputSize1 (Snd3 kernelSize) (Snd3 stride) (Snd3 padding) outputSize1
-     , ConvSideCheck inputSize2 (Trd3 kernelSize) (Trd3 stride) (Trd3 padding) outputSize2
-     )
-  => Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1, inputSize2] -- ^ input
-  -> Tensor device dtype '[batchSize, channelSize, outputSize0, outputSize1, outputSize2] -- ^ output
-avgPool3d input = unsafePerformIO $ ATen.cast7
-  ATen.Managed.avg_pool3d_tlllbbl
-  input
-  ([ natValI @(Fst3 kernelSize)
-   , natValI @(Snd3 kernelSize)
-   , natValI @(Trd3 kernelSize)
-   ] :: [Int]
-  )
-  ([natValI @(Fst3 stride), natValI @(Snd3 stride), natValI @(Trd3 stride)] :: [Int])
-  ([natValI @(Fst3 padding), natValI @(Snd3 padding), natValI @(Trd3 padding)] :: [Int])
-  False
-  True
-  (1 :: Int)
+avgPool3d ::
+  forall
+    kernelSize
+    stride
+    padding
+    channelSize
+    inputSize0
+    inputSize1
+    inputSize2
+    batchSize
+    outputSize0
+    outputSize1
+    outputSize2
+    dtype
+    device.
+  ( All KnownNat
+      '[ Fst3 kernelSize,
+         Snd3 kernelSize,
+         Trd3 kernelSize,
+         Fst3 stride,
+         Snd3 stride,
+         Trd3 stride,
+         Fst3 padding,
+         Snd3 padding,
+         Trd3 padding,
+         channelSize,
+         inputSize0,
+         inputSize1,
+         inputSize2,
+         batchSize
+       ],
+    ConvSideCheck inputSize0 (Fst3 kernelSize) (Fst3 stride) (Fst3 padding) outputSize0,
+    ConvSideCheck inputSize1 (Snd3 kernelSize) (Snd3 stride) (Snd3 padding) outputSize1,
+    ConvSideCheck inputSize2 (Trd3 kernelSize) (Trd3 stride) (Trd3 padding) outputSize2
+  ) =>
+  -- | input
+  Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1, inputSize2] ->
+  -- | output
+  Tensor device dtype '[batchSize, channelSize, outputSize0, outputSize1, outputSize2]
+avgPool3d input =
+  unsafePerformIO $
+    ATen.cast7
+      ATen.Managed.avg_pool3d_tlllbbl
+      input
+      ( [ natValI @(Fst3 kernelSize),
+          natValI @(Snd3 kernelSize),
+          natValI @(Trd3 kernelSize)
+        ] ::
+          [Int]
+      )
+      ([natValI @(Fst3 stride), natValI @(Snd3 stride), natValI @(Trd3 stride)] :: [Int])
+      ([natValI @(Fst3 padding), natValI @(Snd3 padding), natValI @(Trd3 padding)] :: [Int])
+      False
+      True
+      (1 :: Int)
 
 -- fractional_max_pool2d :: Tensor device dtype shape -> (Int,Int) -> (Int,Int) -> Tensor device dtype shape -> (Tensor device dtype shape,Tensor device dtype shape)
 -- fractional_max_pool2d _input _kernel_size _output_size _random_samples = unsafePerformIO $ (ATen.cast4 ATen.Managed.fractional_max_pool2d_tllt) _input _kernel_size _output_size _random_samples
@@ -4535,13 +5209,12 @@ avgPool3d input = unsafePerformIO $ ATen.cast7
 -- upsample_linear1d :: Tensor device dtype shape -> Int -> Bool -> Tensor device dtype shape
 -- upsample_linear1d _input _output_size _align_corners = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_linear1d_tlb) _input _output_size _align_corners
 
-
-type family Upsample2dCheck shape h w where 
-  Upsample2dCheck (b : c : w : h : '[]) h' w' = 
-    If ( h <=? h') 
-      (If (w <=? w') (b : c : w' : h' : '[]) 
-        (TypeError (Text "Target width must be greater than current width!"))
-      ) 
+type family Upsample2dCheck shape h w where
+  Upsample2dCheck (b : c : w : h : '[]) h' w' =
+    If (h <=? h')
+      ( If (w <=? w') (b : c : w' : h' : '[])
+          (TypeError (Text "Target width must be greater than current width!"))
+      )
       (TypeError (Text "Target height must be greater than current height!"))
   Upsample2dCheck _ _ _ = TypeError (Text "Shape must be 4 dimensional!")
 
@@ -4551,14 +5224,16 @@ type Upsample2d shape h w = Upsample2dCheck shape h w
 --
 -- >>> upsample_bilinear2d @3 @5 False (ones :: CPUTensor 'D.Float '[2,3,2,2])
 -- Tensor Float [2,3,3,5]
-upsample_bilinear2d :: forall w h shape dtype device . 
-  (KnownNat h, KnownNat w, All KnownNat shape) 
-  => Bool -- ^ if True, the corner pixels of the input and output tensors are aligned, and thus preserving the values at those pixels. 
-  -> Tensor device dtype shape 
-  -> Tensor device dtype (Upsample2d shape h w)
-upsample_bilinear2d _align_corners _input
-  = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_bilinear2d_tlb) _input ([w,h] :: [Int]) _align_corners
-  where  
+upsample_bilinear2d ::
+  forall w h shape dtype device.
+  (KnownNat h, KnownNat w, All KnownNat shape) =>
+  -- | if True, the corner pixels of the input and output tensors are aligned, and thus preserving the values at those pixels.
+  Bool ->
+  Tensor device dtype shape ->
+  Tensor device dtype (Upsample2d shape h w)
+upsample_bilinear2d _align_corners _input =
+  unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_bilinear2d_tlb) _input ([w, h] :: [Int]) _align_corners
+  where
     w = natValI @w :: Int
     h = natValI @h :: Int
 
@@ -4566,13 +5241,14 @@ upsample_bilinear2d _align_corners _input
 --
 -- >>> upsample_bicubic2d @3 @5 False (ones :: CPUTensor 'D.Float '[2,3,2,2])
 -- Tensor Float [2,3,3,5]
-upsample_bicubic2d :: forall w h shape dtype device . 
-  (KnownNat h, KnownNat w, All KnownNat shape) 
-  => Bool 
-  -> Tensor device dtype shape 
-  -> Tensor device dtype (Upsample2d shape h w)
-upsample_bicubic2d _align_corners _input = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_bicubic2d_tlb) _input ([w,h] :: [Int]) _align_corners
-  where 
+upsample_bicubic2d ::
+  forall w h shape dtype device.
+  (KnownNat h, KnownNat w, All KnownNat shape) =>
+  Bool ->
+  Tensor device dtype shape ->
+  Tensor device dtype (Upsample2d shape h w)
+upsample_bicubic2d _align_corners _input = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_bicubic2d_tlb) _input ([w, h] :: [Int]) _align_corners
+  where
     w = natValI @w :: Int
     h = natValI @h :: Int
 
@@ -4586,15 +5262,15 @@ upsample_bicubic2d _align_corners _input = unsafePerformIO $ (ATen.cast3 ATen.Ma
 --
 -- >>> upsample_nearest2d @3 @5 (ones :: CPUTensor 'D.Float '[2,3,2,2])
 -- Tensor Float [2,3,3,5]
-upsample_nearest2d :: forall w h shape dtype device . 
-  (KnownNat h, KnownNat w, All KnownNat shape) 
-  => Tensor device dtype shape 
-  -> Tensor device dtype (Upsample2d shape h w)
-upsample_nearest2d _input = unsafePerformIO $ (ATen.cast2 ATen.Managed.upsample_nearest2d_tl) _input ([w,h] :: [Int])
+upsample_nearest2d ::
+  forall w h shape dtype device.
+  (KnownNat h, KnownNat w, All KnownNat shape) =>
+  Tensor device dtype shape ->
+  Tensor device dtype (Upsample2d shape h w)
+upsample_nearest2d _input = unsafePerformIO $ (ATen.cast2 ATen.Managed.upsample_nearest2d_tl) _input ([w, h] :: [Int])
   where
     w = natValI @w :: Int
     h = natValI @h :: Int
-
 -- upsample_nearest3d :: Tensor device dtype shape -> (Int,Int,Int) -> Tensor device dtype shape
 -- upsample_nearest3d _input _output_size = unsafePerformIO $ (ATen.cast2 ATen.Managed.upsample_nearest3d_tl) _input _output_size
 

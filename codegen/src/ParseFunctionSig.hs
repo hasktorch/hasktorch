@@ -1,19 +1,20 @@
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module ParseFunctionSig where
 
-import Data.Void (Void)
-import GHC.Generics
-import Text.Megaparsec as M
 --import Text.Megaparsec.Error as M
-import Text.Megaparsec.Char as M
-import Text.Megaparsec.Char.Lexer as L
-import Data.Yaml hiding (Parser, Array)
+
 import Data.Aeson.Types ()
 import Data.String.Conversions (cs)
+import Data.Void (Void)
+import Data.Yaml hiding (Array, Parser)
+import GHC.Generics
+import Text.Megaparsec as M
+import Text.Megaparsec.Char as M
+import Text.Megaparsec.Char.Lexer as L
 
 -- Examples:
 -- - func: log10_(Tensor self) -> Tensor
@@ -27,110 +28,117 @@ import Data.String.Conversions (cs)
 -- - func: conv3d(Tensor input, Tensor weight, Tensor? bias={}, IntList[3] stride=1, IntList[3] padding=0, IntList[3] dilation=1, int64_t groups=1) -> Tensor
 -- - func: _cudnn_ctc_loss(Tensor log_probs, Tensor targets, IntList input_lengths, IntList target_lengths, int64_t blank, bool deterministic) -> (Tensor, Tensor)
 
-data DefaultValue =
-    ValBool Bool
-    | ValInt Int
-    | ValDouble Double
-    | ValDict
-    | ValArray
-    | AtKLong
-    | ReductionMean
-    | NullPtr -- nullptr 
-    | ValNone
-    deriving (Eq, Show)
-
-data Parameter  = Parameter {
-    ptype :: Parsable
-    , pname :: String
-    , val :: Maybe DefaultValue
-    } | Star  -- , *,
-    deriving (Eq, Show)
-
-data Variants =
-  VFunction |
-  VMethod |
-  VOperator
+data DefaultValue
+  = ValBool Bool
+  | ValInt Int
+  | ValDouble Double
+  | ValDict
+  | ValArray
+  | AtKLong
+  | ReductionMean
+  | NullPtr -- nullptr
+  | ValNone
   deriving (Eq, Show)
 
-data Function  = Function {
-    name :: String
-    , parameters :: [Parameter]
-    , retType :: Parsable
-    , variant :: Variants
-} deriving (Eq, Show)
+data Parameter
+  = Parameter
+      { ptype :: Parsable,
+        pname :: String,
+        val :: Maybe DefaultValue
+      }
+  | Star -- , *,
+  deriving (Eq, Show)
+
+data Variants
+  = VFunction
+  | VMethod
+  | VOperator
+  deriving (Eq, Show)
+
+data Function
+  = Function
+      { name :: String,
+        parameters :: [Parameter],
+        retType :: Parsable,
+        variant :: Variants
+      }
+  deriving (Eq, Show)
 
 type SignatureStr = String
+
 type CppTypeStr = String
+
 type HsTypeStr = String
 
 data Parsable
-    = Ptr Parsable
-    | TenType TenType
-    | DeviceType
-    | GeneratorType
-    | StorageType
-    | CType CType
-    | STLType STLType
-    | CppString
-    | Tuple [Parsable]
-    | CppClass SignatureStr CppTypeStr HsTypeStr
-    | Backend
-    | Layout
-    | MemoryFormat
-    | QScheme
-    | ConstQuantizerPtr
-    | Dimname
-    | DimnameList
-    | Symbol
-    | IValue
-    deriving (Eq, Show, Generic)
+  = Ptr Parsable
+  | TenType TenType
+  | DeviceType
+  | GeneratorType
+  | StorageType
+  | CType CType
+  | STLType STLType
+  | CppString
+  | Tuple [Parsable]
+  | CppClass SignatureStr CppTypeStr HsTypeStr
+  | Backend
+  | Layout
+  | MemoryFormat
+  | QScheme
+  | ConstQuantizerPtr
+  | Dimname
+  | DimnameList
+  | Symbol
+  | IValue
+  deriving (Eq, Show, Generic)
 
 data CType
-    = CBool
-    | CVoid
-    | CFloat
-    | CDouble
-    | CSize
-    | CInt
-    | CUInt8
-    | CUInt16
-    | CUInt32
-    | CUInt64
-    | CInt8
-    | CInt16
-    | CInt32
-    | CInt64
-    | CInt64Q
-    deriving (Eq, Show, Generic, Bounded, Enum)
+  = CBool
+  | CVoid
+  | CFloat
+  | CDouble
+  | CSize
+  | CInt
+  | CUInt8
+  | CUInt16
+  | CUInt32
+  | CUInt64
+  | CInt8
+  | CInt16
+  | CInt32
+  | CInt64
+  | CInt64Q
+  deriving (Eq, Show, Generic, Bounded, Enum)
 
 data STLType
-    = Array CType Int
-    deriving (Eq, Show, Generic)
+  = Array CType Int
+  deriving (Eq, Show, Generic)
 
-data TenType = Scalar
-    | Tensor
-    | TensorA -- Tensor(a)
-    | TensorA' -- Tensor(a!)
-    | TensorAQ -- Tensor(a)?
-    | TensorAQ' -- Tensor(a!)?
-    | TensorQ -- Tensor?
-    | TensorAVector -- Tensor(a)[]
-    | TensorOptions
-    | TensorList
-    | IntegerTensor
-    | IndexTensor
-    | BoolTensor
-    | BoolTensorQ
-    | ByteTensor
-    | LongTensor
-    | IntList { dim :: Maybe [Int] }
-    | ScalarQ
-    | ScalarType
-    deriving (Eq, Show)
+data TenType
+  = Scalar
+  | Tensor
+  | TensorA -- Tensor(a)
+  | TensorA' -- Tensor(a!)
+  | TensorAQ -- Tensor(a)?
+  | TensorAQ' -- Tensor(a!)?
+  | TensorQ -- Tensor?
+  | TensorAVector -- Tensor(a)[]
+  | TensorOptions
+  | TensorList
+  | IntegerTensor
+  | IndexTensor
+  | BoolTensor
+  | BoolTensorQ
+  | ByteTensor
+  | LongTensor
+  | IntList {dim :: Maybe [Int]}
+  | ScalarQ
+  | ScalarType
+  deriving (Eq, Show)
 
 type Parser = Parsec Void String
 
-cppClassList :: [(String,String,String)]
+cppClassList :: [(String, String, String)]
 cppClassList = [("IntArray", "std::vector<int64_t>", "IntArray")]
 
 defBool :: Parser DefaultValue
@@ -159,8 +167,8 @@ parens = between (string "(") (string ")")
 
 pinteger :: Parser Integer
 pinteger =
-  (L.decimal) <|>
-  ((string "-") >> L.decimal >>= \v -> pure (-v))
+  (L.decimal)
+    <|> ((string "-") >> L.decimal >>= \v -> pure (- v))
 
 pfloat :: Parser Float
 pfloat = L.float
@@ -171,13 +179,11 @@ rword w = (lexm . try) (string w *> notFollowedBy alphaNumChar)
 rws :: [String]
 rws = []
 
-
 identStart :: [Char]
-identStart = ['a'..'z'] ++ ['A'..'Z'] ++ ['_']
+identStart = ['a' .. 'z'] ++ ['A' .. 'Z'] ++ ['_']
 
 identLetter :: [Char]
-identLetter = ['a'..'z'] ++ ['A'..'Z'] ++ ['_'] ++ ['0'..'9'] ++ [':', '<', '>']
-
+identLetter = ['a' .. 'z'] ++ ['A' .. 'Z'] ++ ['_'] ++ ['0' .. '9'] ++ [':', '<', '>']
 
 -- | parser of identifier
 --
@@ -187,11 +193,12 @@ identLetter = ['a'..'z'] ++ ['A'..'Z'] ++ ['_'] ++ ['0'..'9'] ++ [':', '<', '>']
 -- "_fft"
 identifier :: Parser String
 identifier = (lexm . try) (p >>= check)
- where
-  p = (:) <$> (oneOf identStart) <*> many (oneOf identLetter)
-  check x = if x `elem` rws
-    then fail $ "keyword " ++ show x ++ " cannot be an identifier"
-    else return x
+  where
+    p = (:) <$> (oneOf identStart) <*> many (oneOf identLetter)
+    check x =
+      if x `elem` rws
+        then fail $ "keyword " ++ show x ++ " cannot be an identifier"
+        else return x
 
 -- | parser of identifier
 --
@@ -295,149 +302,154 @@ identifier = (lexm . try) (p >>= check)
 -- CppString
 typ :: Parser Parsable
 typ =
-  tuple <|>
-  idxtensor <|>
-  booltensorq <|> booltensor <|>
-  bytetensor <|>
-  tensor <|>
-  intlistDim <|> intlistNoDim <|>
-  intpDim <|> intpNoDim <|>
-  try intpDim' <|> try intpNoDim' <|> intpNoDim'' <|>
-  scalar <|>
-  try stlbool <|>
-  ctype <|>
-  stl <|>
-  cppstring <|>
-  cppclass <|>
-  other
- where
-  tuple = do
-    _ <- lexm $ string "("
-    val' <- (sepBy typ (lexm (string ",")))
-    _ <- lexm $ string ")"
-    pure $ Tuple val'
-  other =
-    ((lexm $ string "Backend") >> (pure $ Backend)) <|>
-    ((lexm $ string "Layout") >> (pure $ Layout)) <|>
-    ((lexm $ string "MemoryFormat") >> (pure $ MemoryFormat)) <|>
-    ((lexm $ string "QScheme") >> (pure $ QScheme)) <|>
-    ((lexm $ string "DimnameList") >> (pure $ DimnameList)) <|>
-    try ((lexm $ string "Dimname") >> (pure $ Dimname)) <|>
-    ((lexm $ string "Symbol") >> (pure $ Symbol)) <|>
-    ((lexm $ string "Device") >> (pure $ DeviceType)) <|>
-    ((lexm $ string "Generator *") >> (pure $ Ptr GeneratorType)) <|>
-    ((lexm $ string "Generator*") >> (pure $ Ptr GeneratorType)) <|>
-    ((lexm $ string "Generator?") >> (pure $ Ptr GeneratorType)) <|>
-    ((lexm $ string "Storage") >> (pure $ StorageType)) <|>
-    ((lexm $ string "ConstQuantizerPtr") >> (pure $ ConstQuantizerPtr)) <|>
-    ((lexm $ string "IValue") >> (pure $ IValue))
-  cppclass = foldl (<|>) (fail "Can not parse cpptype.") $ map (\(sig,cpptype,hstype) -> ((lexm $ string sig) >> (pure $ CppClass sig cpptype hstype))) cppClassList
-  scalar =
-    ((lexm $ string "Scalar?") >> (pure $ TenType ScalarQ)) <|>
-    ((lexm $ string "ScalarType") >> (pure $ TenType ScalarType)) <|>
-    ((lexm $ string "Scalar") >> (pure $ TenType Scalar)) <|>
-    ((lexm $ string "real") >> (pure $ TenType Scalar)) <|>
-    ((lexm $ string "accreal") >> (pure $ TenType Scalar))
-  idxtensor = do
-    _ <- lexm $ string "IndexTensor"
-    pure $ TenType IndexTensor
-  booltensor = do
-    _ <- lexm $ string "BoolTensor"
-    pure $ TenType BoolTensor
-  booltensorq = do
-    _ <- lexm $ string "BoolTensor?"
-    pure $ TenType BoolTensorQ
-  bytetensor = do
-    _ <- lexm $ string "ByteTensor"
-    pure $ TenType ByteTensor
-  tensor =
-    ((lexm $ string "IntegerTensor") >> (pure $ TenType IntegerTensor)) <|>
-    ((lexm $ string "TensorOptions") >> (pure $ TenType TensorOptions)) <|>
-    ((lexm $ string "TensorList") >> (pure $ TenType TensorList)) <|>
-    try ((lexm $ string "Tensor[]") >> (pure $ TenType TensorList)) <|>
-    try ((lexm $ string "Tensor?[]") >> (pure $ TenType TensorList)) <|>
-    try ((lexm $ string "Tensor(a)[]") >> (pure $ TenType TensorAVector)) <|>
-    try ((lexm $ string "Tensor(a)") >> (pure $ TenType TensorA)) <|>
-    try ((lexm $ string "Tensor(a!)") >> (pure $ TenType TensorA')) <|>
-    try ((lexm $ string "Tensor(b)") >> (pure $ TenType TensorA)) <|>
-    try ((lexm $ string "Tensor(b!)") >> (pure $ TenType TensorA')) <|>
-    try ((lexm $ string "Tensor(c)") >> (pure $ TenType TensorA)) <|>
-    try ((lexm $ string "Tensor(c!)") >> (pure $ TenType TensorA')) <|>
-    try ((lexm $ string "Tensor(d)") >> (pure $ TenType TensorA)) <|>
-    try ((lexm $ string "Tensor(d!)") >> (pure $ TenType TensorA')) <|>
-    try ((lexm $ string "Tensor?(a)") >> (pure $ TenType TensorAQ)) <|>
-    try ((lexm $ string "Tensor?(a!)") >> (pure $ TenType TensorAQ')) <|>
-    try ((lexm $ string "Tensor?(b)") >> (pure $ TenType TensorAQ)) <|>
-    try ((lexm $ string "Tensor?(b!)") >> (pure $ TenType TensorAQ')) <|>
-    try ((lexm $ string "Tensor?(c)") >> (pure $ TenType TensorAQ)) <|>
-    try ((lexm $ string "Tensor?(c!)") >> (pure $ TenType TensorAQ')) <|>
-    try ((lexm $ string "Tensor?(d)") >> (pure $ TenType TensorAQ)) <|>
-    try ((lexm $ string "Tensor?(d!)") >> (pure $ TenType TensorAQ')) <|>
-    ((lexm $ string "Tensor?") >> (pure $ TenType TensorQ)) <|>
-    ((lexm $ string "Tensor") >> (pure $ TenType Tensor)) <|>
-    ((lexm $ string "LongTensor") >> (pure $ TenType LongTensor))
-  intlistDim = do
-    _ <- lexm $ string "IntList["
-    val' <- (sepBy pinteger (lexm (string ",")))
-    _ <- lexm $ string "]"
-    pure $ TenType $ IntList (Just (map fromIntegral val'))
-  intlistNoDim = do
-    _ <- lexm $ string "IntList"
-    pure $ TenType $ IntList Nothing
-  intpDim = do
-    _ <- lexm $ string "int["
-    val' <- (sepBy pinteger (lexm (string ",")))
-    _ <- lexm $ string "]"
-    pure $ TenType $ IntList (Just (map fromIntegral val'))
-  intpNoDim = do
-    _ <- lexm $ string "int[]"
-    pure $ TenType $ IntList Nothing
-  intpDim' = do
-    _ <- lexm $ string "IntArrayRef["
-    val' <- (sepBy pinteger (lexm (string ",")))
-    _ <- lexm $ string "]"
-    pure $ TenType $ IntList (Just (map fromIntegral val'))
-  intpNoDim' = do
-    _ <- lexm $ string "IntArrayRef[]"
-    pure $ TenType $ IntList Nothing
-  intpNoDim'' = do
-    _ <- lexm $ string "IntArrayRef"
-    pure $ TenType $ IntList Nothing
-  ctype =
-    ((lexm $ string "bool") >> (pure $ CType CBool)) <|>
-    ((lexm $ string "void*") >> (pure $ Ptr (CType CVoid))) <|>
-    ((lexm $ string "void") >> (pure $ CType CVoid)) <|>
-    ((lexm $ string "float") >> (pure $ CType CFloat)) <|>
-    ((lexm $ string "double") >> (pure $ CType CDouble)) <|>
-    ((lexm $ string "size_t") >> (pure $ CType CSize)) <|>
-    try ((lexm $ string "int64_t?") >> (pure $ CType CInt64Q)) <|>
-    try ((lexm $ string "int64_t") >> (pure $ CType CInt64)) <|>
-    try ((lexm $ string "int32_t") >> (pure $ CType CInt32)) <|>
-    try ((lexm $ string "int16_t") >> (pure $ CType CInt16)) <|>
-    try ((lexm $ string "int8_t") >> (pure $ CType CInt8)) <|>
-    try ((lexm $ string "uint64_t") >> (pure $ CType CUInt64)) <|>
-    try ((lexm $ string "uint32_t") >> (pure $ CType CUInt32)) <|>
-    try ((lexm $ string "uint16_t") >> (pure $ CType CUInt16)) <|>
-    try ((lexm $ string "uint8_t") >> (pure $ CType CUInt8)) <|>
-    try ((lexm $ string "int?") >> (pure $ CType CInt)) <|>
-    ((lexm $ string "int") >> (pure $ CType CInt))
-  stl = do
-    _ <- lexm $ string "std::array<"
-    val' <- ctype
-    _ <- lexm $ string ","
-    num <- pinteger
-    _ <- lexm $ string ">"
-    case val' of
-      CType v -> pure $ STLType $ Array v (fromIntegral num)
-      _ -> fail "Can not parse ctype."
-  stlbool = do
-    _ <- lexm $ string "bool["
-    num <- pinteger
-    _ <- lexm $ string "]"
-    pure $ STLType $ Array CBool (fromIntegral num)
-  cppstring =
-    ((lexm $ string "std::string") >> (pure $ CppString)) <|>
-    ((lexm $ string "str") >> (pure $ CppString))
+  tuple
+    <|> idxtensor
+    <|> booltensorq
+    <|> booltensor
+    <|> bytetensor
+    <|> tensor
+    <|> intlistDim
+    <|> intlistNoDim
+    <|> intpDim
+    <|> intpNoDim
+    <|> try intpDim'
+    <|> try intpNoDim'
+    <|> intpNoDim''
+    <|> scalar
+    <|> try stlbool
+    <|> ctype
+    <|> stl
+    <|> cppstring
+    <|> cppclass
+    <|> other
+  where
+    tuple = do
+      _ <- lexm $ string "("
+      val' <- (sepBy typ (lexm (string ",")))
+      _ <- lexm $ string ")"
+      pure $ Tuple val'
+    other =
+      ((lexm $ string "Backend") >> (pure $ Backend))
+        <|> ((lexm $ string "Layout") >> (pure $ Layout))
+        <|> ((lexm $ string "MemoryFormat") >> (pure $ MemoryFormat))
+        <|> ((lexm $ string "QScheme") >> (pure $ QScheme))
+        <|> ((lexm $ string "DimnameList") >> (pure $ DimnameList))
+        <|> try ((lexm $ string "Dimname") >> (pure $ Dimname))
+        <|> ((lexm $ string "Symbol") >> (pure $ Symbol))
+        <|> ((lexm $ string "Device") >> (pure $ DeviceType))
+        <|> ((lexm $ string "Generator *") >> (pure $ Ptr GeneratorType))
+        <|> ((lexm $ string "Generator*") >> (pure $ Ptr GeneratorType))
+        <|> ((lexm $ string "Generator?") >> (pure $ Ptr GeneratorType))
+        <|> ((lexm $ string "Storage") >> (pure $ StorageType))
+        <|> ((lexm $ string "ConstQuantizerPtr") >> (pure $ ConstQuantizerPtr))
+        <|> ((lexm $ string "IValue") >> (pure $ IValue))
+    cppclass = foldl (<|>) (fail "Can not parse cpptype.") $ map (\(sig, cpptype, hstype) -> ((lexm $ string sig) >> (pure $ CppClass sig cpptype hstype))) cppClassList
+    scalar =
+      ((lexm $ string "Scalar?") >> (pure $ TenType ScalarQ))
+        <|> ((lexm $ string "ScalarType") >> (pure $ TenType ScalarType))
+        <|> ((lexm $ string "Scalar") >> (pure $ TenType Scalar))
+        <|> ((lexm $ string "real") >> (pure $ TenType Scalar))
+        <|> ((lexm $ string "accreal") >> (pure $ TenType Scalar))
+    idxtensor = do
+      _ <- lexm $ string "IndexTensor"
+      pure $ TenType IndexTensor
+    booltensor = do
+      _ <- lexm $ string "BoolTensor"
+      pure $ TenType BoolTensor
+    booltensorq = do
+      _ <- lexm $ string "BoolTensor?"
+      pure $ TenType BoolTensorQ
+    bytetensor = do
+      _ <- lexm $ string "ByteTensor"
+      pure $ TenType ByteTensor
+    tensor =
+      ((lexm $ string "IntegerTensor") >> (pure $ TenType IntegerTensor))
+        <|> ((lexm $ string "TensorOptions") >> (pure $ TenType TensorOptions))
+        <|> ((lexm $ string "TensorList") >> (pure $ TenType TensorList))
+        <|> try ((lexm $ string "Tensor[]") >> (pure $ TenType TensorList))
+        <|> try ((lexm $ string "Tensor?[]") >> (pure $ TenType TensorList))
+        <|> try ((lexm $ string "Tensor(a)[]") >> (pure $ TenType TensorAVector))
+        <|> try ((lexm $ string "Tensor(a)") >> (pure $ TenType TensorA))
+        <|> try ((lexm $ string "Tensor(a!)") >> (pure $ TenType TensorA'))
+        <|> try ((lexm $ string "Tensor(b)") >> (pure $ TenType TensorA))
+        <|> try ((lexm $ string "Tensor(b!)") >> (pure $ TenType TensorA'))
+        <|> try ((lexm $ string "Tensor(c)") >> (pure $ TenType TensorA))
+        <|> try ((lexm $ string "Tensor(c!)") >> (pure $ TenType TensorA'))
+        <|> try ((lexm $ string "Tensor(d)") >> (pure $ TenType TensorA))
+        <|> try ((lexm $ string "Tensor(d!)") >> (pure $ TenType TensorA'))
+        <|> try ((lexm $ string "Tensor?(a)") >> (pure $ TenType TensorAQ))
+        <|> try ((lexm $ string "Tensor?(a!)") >> (pure $ TenType TensorAQ'))
+        <|> try ((lexm $ string "Tensor?(b)") >> (pure $ TenType TensorAQ))
+        <|> try ((lexm $ string "Tensor?(b!)") >> (pure $ TenType TensorAQ'))
+        <|> try ((lexm $ string "Tensor?(c)") >> (pure $ TenType TensorAQ))
+        <|> try ((lexm $ string "Tensor?(c!)") >> (pure $ TenType TensorAQ'))
+        <|> try ((lexm $ string "Tensor?(d)") >> (pure $ TenType TensorAQ))
+        <|> try ((lexm $ string "Tensor?(d!)") >> (pure $ TenType TensorAQ'))
+        <|> ((lexm $ string "Tensor?") >> (pure $ TenType TensorQ))
+        <|> ((lexm $ string "Tensor") >> (pure $ TenType Tensor))
+        <|> ((lexm $ string "LongTensor") >> (pure $ TenType LongTensor))
+    intlistDim = do
+      _ <- lexm $ string "IntList["
+      val' <- (sepBy pinteger (lexm (string ",")))
+      _ <- lexm $ string "]"
+      pure $ TenType $ IntList (Just (map fromIntegral val'))
+    intlistNoDim = do
+      _ <- lexm $ string "IntList"
+      pure $ TenType $ IntList Nothing
+    intpDim = do
+      _ <- lexm $ string "int["
+      val' <- (sepBy pinteger (lexm (string ",")))
+      _ <- lexm $ string "]"
+      pure $ TenType $ IntList (Just (map fromIntegral val'))
+    intpNoDim = do
+      _ <- lexm $ string "int[]"
+      pure $ TenType $ IntList Nothing
+    intpDim' = do
+      _ <- lexm $ string "IntArrayRef["
+      val' <- (sepBy pinteger (lexm (string ",")))
+      _ <- lexm $ string "]"
+      pure $ TenType $ IntList (Just (map fromIntegral val'))
+    intpNoDim' = do
+      _ <- lexm $ string "IntArrayRef[]"
+      pure $ TenType $ IntList Nothing
+    intpNoDim'' = do
+      _ <- lexm $ string "IntArrayRef"
+      pure $ TenType $ IntList Nothing
+    ctype =
+      ((lexm $ string "bool") >> (pure $ CType CBool))
+        <|> ((lexm $ string "void*") >> (pure $ Ptr (CType CVoid)))
+        <|> ((lexm $ string "void") >> (pure $ CType CVoid))
+        <|> ((lexm $ string "float") >> (pure $ CType CFloat))
+        <|> ((lexm $ string "double") >> (pure $ CType CDouble))
+        <|> ((lexm $ string "size_t") >> (pure $ CType CSize))
+        <|> try ((lexm $ string "int64_t?") >> (pure $ CType CInt64Q))
+        <|> try ((lexm $ string "int64_t") >> (pure $ CType CInt64))
+        <|> try ((lexm $ string "int32_t") >> (pure $ CType CInt32))
+        <|> try ((lexm $ string "int16_t") >> (pure $ CType CInt16))
+        <|> try ((lexm $ string "int8_t") >> (pure $ CType CInt8))
+        <|> try ((lexm $ string "uint64_t") >> (pure $ CType CUInt64))
+        <|> try ((lexm $ string "uint32_t") >> (pure $ CType CUInt32))
+        <|> try ((lexm $ string "uint16_t") >> (pure $ CType CUInt16))
+        <|> try ((lexm $ string "uint8_t") >> (pure $ CType CUInt8))
+        <|> try ((lexm $ string "int?") >> (pure $ CType CInt))
+        <|> ((lexm $ string "int") >> (pure $ CType CInt))
+    stl = do
+      _ <- lexm $ string "std::array<"
+      val' <- ctype
+      _ <- lexm $ string ","
+      num <- pinteger
+      _ <- lexm $ string ">"
+      case val' of
+        CType v -> pure $ STLType $ Array v (fromIntegral num)
+        _ -> fail "Can not parse ctype."
+    stlbool = do
+      _ <- lexm $ string "bool["
+      num <- pinteger
+      _ <- lexm $ string "]"
+      pure $ STLType $ Array CBool (fromIntegral num)
+    cppstring =
+      ((lexm $ string "std::string") >> (pure $ CppString))
+        <|> ((lexm $ string "str") >> (pure $ CppString))
 
 -- | parser of defaultValue
 --
@@ -477,52 +489,52 @@ typ =
 -- ValArray
 defaultValue :: Parser DefaultValue
 defaultValue =
-  try floatp <|>
-  try intp <|>
-  defBool <|>
-  nullp <|>
-  nonep <|>
-  reductionp <|>
-  reductionp' <|>
-  atklongp <|>
-  try dict01 <|>
-  dict <|>
-  try ary01 <|>
-  ary
- where
-   intp = do
-     val' <- lexm $ pinteger  :: Parser Integer
-     pure $ ValInt (fromIntegral val')
-   floatp = do
-     v <- lexm $ L.float :: Parser Double
-     pure $ ValDouble v
-   nullp = do
-     _ <- lexm $ string "nullptr"
-     pure NullPtr
-   reductionp = do
-     _ <- lexm $ string "Reduction::Mean"
-     pure ReductionMean
-   reductionp' = do
-     _ <- lexm $ string "Mean"
-     pure ReductionMean
-   atklongp = do
-     _ <- lexm $ string "at::kLong"
-     pure AtKLong
-   dict = do
-     _ <- lexm $ string "{}"
-     pure ValDict
-   dict01 = do
-     _ <- lexm $ string "{0,1}"
-     pure ValDict
-   ary01 = do
-     _ <- lexm $ string "[0,1]"
-     pure ValArray
-   ary = do
-     _ <- lexm $ string "[]"
-     pure ValArray
-   nonep = do
-     _ <- lexm $ string "None"
-     pure ValNone
+  try floatp
+    <|> try intp
+    <|> defBool
+    <|> nullp
+    <|> nonep
+    <|> reductionp
+    <|> reductionp'
+    <|> atklongp
+    <|> try dict01
+    <|> dict
+    <|> try ary01
+    <|> ary
+  where
+    intp = do
+      val' <- lexm $ pinteger :: Parser Integer
+      pure $ ValInt (fromIntegral val')
+    floatp = do
+      v <- lexm $ L.float :: Parser Double
+      pure $ ValDouble v
+    nullp = do
+      _ <- lexm $ string "nullptr"
+      pure NullPtr
+    reductionp = do
+      _ <- lexm $ string "Reduction::Mean"
+      pure ReductionMean
+    reductionp' = do
+      _ <- lexm $ string "Mean"
+      pure ReductionMean
+    atklongp = do
+      _ <- lexm $ string "at::kLong"
+      pure AtKLong
+    dict = do
+      _ <- lexm $ string "{}"
+      pure ValDict
+    dict01 = do
+      _ <- lexm $ string "{0,1}"
+      pure ValDict
+    ary01 = do
+      _ <- lexm $ string "[0,1]"
+      pure ValArray
+    ary = do
+      _ <- lexm $ string "[]"
+      pure ValArray
+    nonep = do
+      _ <- lexm $ string "None"
+      pure ValNone
 
 -- | parser of argument
 --
@@ -538,20 +550,20 @@ defaultValue =
 -- [TenType Tensor,TenType TensorQ]
 arg :: Parser Parameter
 arg = star <|> param
- where
-  param = do
-    -- ptype <- lexm $ identifier
-    pt <- typ
-    pn <- lexm $ identifier
-    let withDefault = do
-          _ <- lexm (string "=")
-          v <- defaultValue
-          pure (Just v)
-    val'  <- withDefault <|> (pure Nothing)
-    pure $ Parameter pt pn val'
-  star = do
-    _ <- string "*"
-    pure Star
+  where
+    param = do
+      -- ptype <- lexm $ identifier
+      pt <- typ
+      pn <- lexm $ identifier
+      let withDefault = do
+            _ <- lexm (string "=")
+            v <- defaultValue
+            pure (Just v)
+      val' <- withDefault <|> (pure Nothing)
+      pure $ Parameter pt pn val'
+    star = do
+      _ <- string "*"
+      pure Star
 
 -- | parser of argument
 --
@@ -560,20 +572,19 @@ arg = star <|> param
 -- >>> parseTest rettype "Tensor hoo"
 -- TenType Tensor
 -- >>> parseTest rettype "(Tensor hoo,Tensor bar)"
--- Tuple [TenType Tensor,TenType Tensor] 
+-- Tuple [TenType Tensor,TenType Tensor]
 rettype :: Parser Parsable
 rettype = tuple <|> single'
- where
-  tuple = do
-    _ <- lexm $ string "("
-    val' <- (sepBy rettype (lexm (string ",")))
-    _ <- lexm $ string ")"
-    pure $ Tuple val'
-  single' = do
-    type' <- typ
-    _ <- ((do v <- lexm (identifier) ; pure (Just v)) <|> (pure Nothing))
-    pure type'
-
+  where
+    tuple = do
+      _ <- lexm $ string "("
+      val' <- (sepBy rettype (lexm (string ",")))
+      _ <- lexm $ string ")"
+      pure $ Tuple val'
+    single' = do
+      type' <- typ
+      _ <- ((do v <- lexm (identifier); pure (Just v)) <|> (pure Nothing))
+      pure type'
 
 -- | parser of function
 --
@@ -600,16 +611,16 @@ func = try operator <|> function
     operator = do
       _ <- lexm $ string "operator"
       fName <-
-        try (string "+=") <|>
-        try (string "-=") <|>
-        try (string "*=") <|>
-        try (string "/=") <|>
-        string "=" <|>
-        string "-" <|>
-        string "+" <|>
-        string "*" <|>
-        string "/" <|>
-        string "[]"
+        try (string "+=")
+          <|> try (string "-=")
+          <|> try (string "*=")
+          <|> try (string "/=")
+          <|> string "="
+          <|> string "-"
+          <|> string "+"
+          <|> string "*"
+          <|> string "/"
+          <|> string "[]"
       _ <- lexm $ string "("
       -- parse list of parameters
       args <- (sepBy arg (lexm (string ",")))

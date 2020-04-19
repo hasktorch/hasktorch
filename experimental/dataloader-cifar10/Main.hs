@@ -5,43 +5,48 @@
 
 module Main where
 
+import qualified Codec.Picture as I
 import Control.Monad (when)
 import GHC.Generics
-import System.Random (mkStdGen, randoms)
-import Prelude hiding (exp)
-
-import Torch
-import Torch.Vision
 import Numeric.Dataloader
 import Numeric.Datasets
 import Numeric.Datasets.CIFAR10
 import qualified Streaming as S
 import qualified Streaming.Prelude as S
-import qualified Codec.Picture as I
+import System.Random (mkStdGen, randoms)
+import Torch
+import Torch.Vision
+import Prelude hiding (exp)
 
-data MLPSpec = MLPSpec {
-    inputFeatures :: Int,
-    hiddenFeatures0 :: Int,
-    hiddenFeatures1 :: Int,
-    outputFeatures :: Int
-    } deriving (Show, Eq)
+data MLPSpec
+  = MLPSpec
+      { inputFeatures :: Int,
+        hiddenFeatures0 :: Int,
+        hiddenFeatures1 :: Int,
+        outputFeatures :: Int
+      }
+  deriving (Show, Eq)
 
-data MLP = MLP { 
-    l0 :: Linear,
-    l1 :: Linear,
-    l2 :: Linear
-    } deriving (Generic, Show)
+data MLP
+  = MLP
+      { l0 :: Linear,
+        l1 :: Linear,
+        l2 :: Linear
+      }
+  deriving (Generic, Show)
 
 instance Parameterized MLP
+
 instance Randomizable MLPSpec MLP where
-    sample MLPSpec {..} = MLP 
-        <$> sample (LinearSpec inputFeatures hiddenFeatures0)
-        <*> sample (LinearSpec hiddenFeatures0 hiddenFeatures1)
-        <*> sample (LinearSpec hiddenFeatures1 outputFeatures)
+  sample MLPSpec {..} =
+    MLP
+      <$> sample (LinearSpec inputFeatures hiddenFeatures0)
+      <*> sample (LinearSpec hiddenFeatures0 hiddenFeatures1)
+      <*> sample (LinearSpec hiddenFeatures1 outputFeatures)
 
 mlp :: MLP -> Tensor -> Tensor
-mlp MLP{..} input = 
-    logSoftmax (Dim 1)
+mlp MLP {..} input =
+  logSoftmax (Dim 1)
     . linear l2
     . relu
     . linear l1
@@ -54,33 +59,32 @@ foldLoop' x dat block = S.foldM_ block (pure x) pure dat
 
 train :: Int -> S.Stream (S.Of [CIFARImage]) IO () -> IO MLP
 train numEpoch trainData = do
-    init <- sample spec :: IO MLP
-    trained <- foldLoop init numEpoch $ \state0 iter -> do
-        (trained',trained_loss') <- foldLoop' (state0,0) trainData $ \(state,sumLoss) batch -> do
-            images <- fromImages $ map (fst.getXY) batch
-            let len = length batch
-                input = toType Float $ reshape [len,1024*3] images
-                label = asTensor $ map (fromEnum.snd.getXY) batch
-                loss = nllLoss' label $ mlp state input
-                flatParameters = flattenParameters state
-            (newParam, _) <- runStep state GD loss 1e-3
-            pure $ (replaceParameters state newParam, (toDouble loss)+sumLoss)
-        putStrLn $ "Epoch: " ++ show iter ++ " | Loss: " ++ show trained_loss'
-        pure trained'
-    pure trained
-    where
-        spec = MLPSpec (1024*3) 64 32 10
+  init <- sample spec :: IO MLP
+  trained <- foldLoop init numEpoch $ \state0 iter -> do
+    (trained', trained_loss') <- foldLoop' (state0, 0) trainData $ \(state, sumLoss) batch -> do
+      images <- fromImages $ map (fst . getXY) batch
+      let len = length batch
+          input = toType Float $ reshape [len, 1024 * 3] images
+          label = asTensor $ map (fromEnum . snd . getXY) batch
+          loss = nllLoss' label $ mlp state input
+          flatParameters = flattenParameters state
+      (newParam, _) <- runStep state GD loss 1e-3
+      pure $ (replaceParameters state newParam, (toDouble loss) + sumLoss)
+    putStrLn $ "Epoch: " ++ show iter ++ " | Loss: " ++ show trained_loss'
+    pure trained'
+  pure trained
+  where
+    spec = MLPSpec (1024 * 3) 64 32 10
 
 main :: IO ()
 main = do
-    let dataloader =
-          Dataloader
-            256     --- ^ batch size
-            Nothing --- ^ shuffle
-            cifar10 --- ^ datasets
-            id      --- ^ transform
-        stream = batchStream dataloader
-        numEpoch = 3
-    model <- train numEpoch stream
-
-    putStrLn "Done"
+  let dataloader =
+        Dataloader
+          256 --- ^ batch size
+          Nothing --- ^ shuffle
+          cifar10 --- ^ datasets
+          id --- ^ transform
+      stream = batchStream dataloader
+      numEpoch = 3
+  model <- train numEpoch stream
+  putStrLn "Done"

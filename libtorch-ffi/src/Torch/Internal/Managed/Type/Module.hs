@@ -1,46 +1,41 @@
-
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
-
-
 
 module Torch.Internal.Managed.Type.Module where
 
-
+import Foreign hiding (newForeignPtr)
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
 import Foreign.Concurrent
 import Foreign.ForeignPtr.Unsafe
-import Torch.Internal.Type
-import Torch.Internal.Class
 import Torch.Internal.Cast
+import Torch.Internal.Class
+import Torch.Internal.Type
+import Torch.Internal.Unmanaged.Type.C10List
+import Torch.Internal.Unmanaged.Type.Dimname
+import Torch.Internal.Unmanaged.Type.DimnameList
 import Torch.Internal.Unmanaged.Type.Generator
+import Torch.Internal.Unmanaged.Type.IValue
+import Torch.Internal.Unmanaged.Type.IValueList
 import Torch.Internal.Unmanaged.Type.IntArray
+import Torch.Internal.Unmanaged.Type.Module
+import qualified Torch.Internal.Unmanaged.Type.Module as Unmanaged
 import Torch.Internal.Unmanaged.Type.Scalar
+import Torch.Internal.Unmanaged.Type.StdString
 import Torch.Internal.Unmanaged.Type.Storage
 import Torch.Internal.Unmanaged.Type.Tensor
 import Torch.Internal.Unmanaged.Type.TensorList
 import Torch.Internal.Unmanaged.Type.TensorOptions
 import Torch.Internal.Unmanaged.Type.Tuple
-import Torch.Internal.Unmanaged.Type.StdString
-import Torch.Internal.Unmanaged.Type.Dimname
-import Torch.Internal.Unmanaged.Type.DimnameList
-import Torch.Internal.Unmanaged.Type.IValue
-import Torch.Internal.Unmanaged.Type.IValueList
-import Torch.Internal.Unmanaged.Type.Module
-import Torch.Internal.Unmanaged.Type.C10List
-
-import qualified Torch.Internal.Unmanaged.Type.Module as Unmanaged
 
 newModule :: ForeignPtr StdString -> IO (ForeignPtr Module)
 newModule = cast1 Unmanaged.newModule
@@ -109,11 +104,11 @@ printGraph graph = cast1 Unmanaged.printGraph graph
 printOnnx :: ForeignPtr (SharedPtr JitGraph) -> IO (ForeignPtr StdString)
 printOnnx graph = cast1 Unmanaged.printOnnx graph
 
-dumpToStr
-  :: ForeignPtr Module
-  -> CBool
-  -> CBool
-  -> CBool
-  -> CInt
-  -> IO (ForeignPtr StdString)
+dumpToStr ::
+  ForeignPtr Module ->
+  CBool ->
+  CBool ->
+  CBool ->
+  CInt ->
+  IO (ForeignPtr StdString)
 dumpToStr = cast5 Unmanaged.dumpToStr

@@ -1,31 +1,29 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 module Torch.NN where
 
 import Control.Monad.State.Strict
+import GHC.Generics
 import System.IO.Unsafe (unsafePerformIO)
-
+import Torch.Autograd
+import Torch.Functional
+import Torch.Initializers
+import Torch.Internal.Cast (cast14, cast3, cast6)
 import qualified Torch.Internal.Managed.Native as ATen
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
-
-import Torch.Internal.Cast (cast3, cast6, cast14)
-
-import Torch.Autograd
-import Torch.Initializers
 import Torch.Tensor
 import Torch.TensorFactories (ones', randIO', randnIO')
-import Torch.Functional
-import GHC.Generics
 
 type Parameter = IndependentTensor
+
 type ParamStream a = State [Parameter] a
 
 nextParameter :: ParamStream Parameter
@@ -99,36 +97,37 @@ instance (Parameterized' f) => Parameterized' (M1 i t f) where
 
 replaceParameters :: Parameterized f => f -> [Parameter] -> f
 replaceParameters f params =
-  let (f', remaining) = runState (replaceOwnParameters f) params in
-  if null remaining
-    then f'
-    else error "Some parameters in a call to replaceParameters haven't been consumed!"
+  let (f', remaining) = runState (replaceOwnParameters f) params
+   in if null remaining
+        then f'
+        else error "Some parameters in a call to replaceParameters haven't been consumed!"
 
 class Randomizable spec f | spec -> f where
   sample :: spec -> IO f
 
 class (Randomizable spec f, Parameterized f) => Module spec f
 
-data LinearSpec = LinearSpec { in_features :: Int, out_features :: Int }
+data LinearSpec = LinearSpec {in_features :: Int, out_features :: Int}
   deriving (Show, Eq)
 
-data Linear = Linear { weight :: Parameter, bias :: Parameter } deriving (Show, Generic)
+data Linear = Linear {weight :: Parameter, bias :: Parameter} deriving (Show, Generic)
 
 linear :: Linear -> Tensor -> Tensor
 linear layer input = linear' input w b
-    where
-        linear' input weight bias = unsafePerformIO $ (cast3 ATen.linear_ttt) input weight bias
-        w = toDependent (weight layer)
-        b = toDependent (bias layer)
+  where
+    linear' input weight bias = unsafePerformIO $ (cast3 ATen.linear_ttt) input weight bias
+    w = toDependent (weight layer)
+    b = toDependent (bias layer)
 
 instance Randomizable LinearSpec Linear where
-  sample LinearSpec{..} = do
-      w <- makeIndependent =<< kaimingUniform' [out_features, in_features]
-      -- w <- makeIndependent =<< randn' [out_features, in_features]
-      b <- makeIndependent =<< randnIO' [out_features]
-      return $ Linear w b
+  sample LinearSpec {..} = do
+    w <- makeIndependent =<< kaimingUniform' [out_features, in_features]
+    -- w <- makeIndependent =<< randn' [out_features, in_features]
+    b <- makeIndependent =<< randnIO' [out_features]
+    return $ Linear w b
 
 instance Parameterized Linear
+
 -- This instance generates following codes.
 --
 ---------------------------------------------------
@@ -141,34 +140,36 @@ instance Parameterized Linear
 
 instance Parameterized [Linear]
 
-data Conv2dSpec = 
-  Conv2dSpec {
-    inputChannelSize  :: Int, 
-    outputChannelSize :: Int, 
-    kernelHeight       :: Int, 
-    kernelWidth       :: Int
-    } deriving (Show, Eq)
+data Conv2dSpec
+  = Conv2dSpec
+      { inputChannelSize :: Int,
+        outputChannelSize :: Int,
+        kernelHeight :: Int,
+        kernelWidth :: Int
+      }
+  deriving (Show, Eq)
 
-data Conv2d = 
-  Conv2d { 
-    conv2dWeight :: Parameter, 
-    conv2dBias   :: Parameter
-    } deriving (Show, Generic)
+data Conv2d
+  = Conv2d
+      { conv2dWeight :: Parameter,
+        conv2dBias :: Parameter
+      }
+  deriving (Show, Generic)
 
 conv2dForward :: Conv2d -> (Int, Int) -> (Int, Int) -> Tensor -> Tensor
-conv2dForward layer stride padding input = 
+conv2dForward layer stride padding input =
   Torch.Functional.conv2d' w b stride padding input
-    where
-        w = toDependent (conv2dWeight layer)
-        b = toDependent (conv2dBias layer)
+  where
+    w = toDependent (conv2dWeight layer)
+    b = toDependent (conv2dBias layer)
 
 instance Randomizable Conv2dSpec Conv2d where
-  sample Conv2dSpec{..} = do
-      w <- makeIndependent =<< kaimingUniform FanIn (LeakyRelu $ Prelude.sqrt (5.0 :: Float)) [outputChannelSize, inputChannelSize, kernelHeight, kernelWidth]
-      uniform <- randIO' [outputChannelSize]
-      let fan_in = fromIntegral (kernelHeight * kernelWidth) :: Float
-          bound = Prelude.sqrt $ (1 :: Float) / fan_in
-      b <- makeIndependent =<< pure (mulScalar ((2 :: Float) * bound) (subScalar (0.5 :: Float) uniform))
-      return $ Conv2d w b
+  sample Conv2dSpec {..} = do
+    w <- makeIndependent =<< kaimingUniform FanIn (LeakyRelu $ Prelude.sqrt (5.0 :: Float)) [outputChannelSize, inputChannelSize, kernelHeight, kernelWidth]
+    uniform <- randIO' [outputChannelSize]
+    let fan_in = fromIntegral (kernelHeight * kernelWidth) :: Float
+        bound = Prelude.sqrt $ (1 :: Float) / fan_in
+    b <- makeIndependent =<< pure (mulScalar ((2 :: Float) * bound) (subScalar (0.5 :: Float) uniform))
+    return $ Conv2d w b
 
 instance Parameterized Conv2d

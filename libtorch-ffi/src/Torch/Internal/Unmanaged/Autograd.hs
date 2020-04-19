@@ -1,30 +1,34 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Torch.Internal.Unmanaged.Autograd where
 
 import Foreign.Ptr
+import qualified Language.C.Inline.Context as C
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
-import qualified Language.C.Inline.Context as C
 import qualified Language.C.Types as C
-
 import Torch.Internal.Type
 
-C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
+C.context $ C.cppCtx <> mempty {C.ctxTypesTable = typeTable}
 
 C.include "<vector>"
+
 C.include "<torch/torch.h>"
+
 C.include "<torch/csrc/autograd/variable.h>"
+
 C.include "<torch/csrc/autograd/engine.h>"
+
 C.include "<ATen/core/functional.h>"
 
 grad :: Ptr Tensor -> Ptr TensorList -> IO (Ptr TensorList)
-grad y inputs = [C.throwBlock| std::vector<at::Tensor>* {
+grad y inputs =
+  [C.throwBlock| std::vector<at::Tensor>* {
     torch::autograd::Variable y = *$(at::Tensor* y);
     const auto & inputs = *$(std::vector<at::Tensor>* inputs);
 
@@ -66,12 +70,14 @@ grad y inputs = [C.throwBlock| std::vector<at::Tensor>* {
   }|]
 
 makeIndependent :: Ptr Tensor -> IO (Ptr Tensor)
-makeIndependent t = [C.throwBlock| at::Tensor* {
+makeIndependent t =
+  [C.throwBlock| at::Tensor* {
     return new at::Tensor($(at::Tensor* t)->detach().set_requires_grad(true));
   }|]
 
 dropVariable :: Ptr Tensor -> IO (Ptr Tensor)
-dropVariable t = [C.throwBlock| at::Tensor* {
+dropVariable t =
+  [C.throwBlock| at::Tensor* {
     auto ret = $(at::Tensor* t)->detach();
     ret.unsafeGetTensorImpl()->set_autograd_meta(nullptr);
     return new at::Tensor(ret);

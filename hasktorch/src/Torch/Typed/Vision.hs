@@ -1,43 +1,45 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE NoStarIsType #-}
 
 module Torch.Typed.Vision where
 
-import           Control.Monad (forM_)
-import           System.IO.Unsafe
-import qualified Codec.Compression.GZip        as GZip
-import qualified Data.ByteString               as BS
-import qualified Data.ByteString.Lazy          as BS.Lazy
-import qualified Data.ByteString.Internal      as BSI
-import           GHC.TypeLits
-
-import           Torch.Internal.Cast
-import           Torch.Typed.Aux
-import           Torch.Typed.Tensor
-import           Torch.Typed.Functional
-import qualified Torch.DType                   as D
-import qualified Torch.Tensor                  as D
-import qualified Torch.TensorOptions           as D
-import qualified Foreign.ForeignPtr            as F
-import qualified Foreign.Ptr                   as F
+import qualified Codec.Compression.GZip as GZip
+import Control.Monad (forM_)
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Internal as BSI
+import qualified Data.ByteString.Lazy as BS.Lazy
+import qualified Foreign.ForeignPtr as F
+import qualified Foreign.Ptr as F
+import GHC.TypeLits
+import System.IO.Unsafe
+import qualified Torch.DType as D
+import Torch.Internal.Cast
 import qualified Torch.Internal.Managed.TensorFactories as LibTorch
+import qualified Torch.Tensor as D
+import qualified Torch.TensorOptions as D
+import Torch.Typed.Aux
+import Torch.Typed.Functional
+import Torch.Typed.Tensor
 
-data MnistData =
-  MnistData
-  { images :: BS.ByteString
-  , labels :: BS.ByteString
-  }
+data MnistData
+  = MnistData
+      { images :: BS.ByteString,
+        labels :: BS.ByteString
+      }
 
 type Rows = 28
+
 type Cols = 28
+
 type DataDim = Rows * Cols
+
 type ClassDim = 10
 
-getLabels
-  :: forall n . KnownNat n => MnistData -> [Int] -> CPUTensor 'D.Int64 '[n]
+getLabels ::
+  forall n. KnownNat n => MnistData -> [Int] -> CPUTensor 'D.Int64 '[n]
 getLabels mnist imageIdxs =
   UnsafeMkTensor . D.asTensor . map (getLabel mnist) . take (natValI @n) $ imageIdxs
 
@@ -48,47 +50,54 @@ getLabel mnist imageIdx =
 getImage :: MnistData -> Int -> CPUTensor 'D.Float '[DataDim]
 getImage mnist imageIdx =
   let imageBS =
-          [ fromIntegral $ BS.index (images mnist)
-                                    (fromIntegral imageIdx * 28 ^ 2 + 16 + r)
+        [ fromIntegral $
+            BS.index
+              (images mnist)
+              (fromIntegral imageIdx * 28 ^ 2 + 16 + r)
           | r <- [0 .. 28 ^ 2 - 1]
-          ] :: [Float]
+        ] ::
+          [Float]
       (tensor :: CPUTensor 'D.Float '[DataDim]) =
-          UnsafeMkTensor $ D.asTensor imageBS
-  in  tensor
+        UnsafeMkTensor $ D.asTensor imageBS
+   in tensor
 
-getImages'
-  :: forall n
-   . KnownNat n
-  => MnistData
-  -> [Int]
-  -> CPUTensor 'D.Float '[n, DataDim]
-getImages' mnist imageIdxs = UnsafeMkTensor $ D.asTensor $ map image $ take
-  (natValI @n)
-  imageIdxs
- where
-  image idx =
-    [ fromIntegral
-        $ BS.index (images mnist) (fromIntegral idx * 28 ^ 2 + 16 + r)
-    | r <- [0 .. 28 ^ 2 - 1]
-    ] :: [Float]
+getImages' ::
+  forall n.
+  KnownNat n =>
+  MnistData ->
+  [Int] ->
+  CPUTensor 'D.Float '[n, DataDim]
+getImages' mnist imageIdxs =
+  UnsafeMkTensor $ D.asTensor $ map image $
+    take
+      (natValI @n)
+      imageIdxs
+  where
+    image idx =
+      [ fromIntegral $
+          BS.index (images mnist) (fromIntegral idx * 28 ^ 2 + 16 + r)
+        | r <- [0 .. 28 ^ 2 - 1]
+      ] ::
+        [Float]
 
-getImages
-  :: forall n
-   . KnownNat n
-  => MnistData
-  -> [Int]
-  -> CPUTensor 'D.Float '[n, DataDim]
+getImages ::
+  forall n.
+  KnownNat n =>
+  MnistData ->
+  [Int] ->
+  CPUTensor 'D.Float '[n, DataDim]
 getImages mnist imageIdxs = UnsafeMkTensor $ unsafePerformIO $ do
   let (BSI.PS fptr off len) = images mnist
-  t <- (cast2 LibTorch.empty_lo :: [Int] -> D.TensorOptions -> IO D.Tensor)
-         [natValI @n, natValI @DataDim]
-         (D.withDType D.UInt8 D.defaultOpts)
+  t <-
+    (cast2 LibTorch.empty_lo :: [Int] -> D.TensorOptions -> IO D.Tensor)
+      [natValI @n, natValI @DataDim]
+      (D.withDType D.UInt8 D.defaultOpts)
   D.withTensor t $ \ptr1 -> do
     F.withForeignPtr fptr $ \ptr2 -> do
-      forM_ (zip [0..((natValI @n)-1)] imageIdxs) $ \(i,idx) -> do
+      forM_ (zip [0 .. ((natValI @n) -1)] imageIdxs) $ \(i, idx) -> do
         BSI.memcpy
-          (F.plusPtr ptr1 ((natValI @DataDim)*i))
-          (F.plusPtr ptr2 (off+16+(natValI @DataDim)*idx))
+          (F.plusPtr ptr1 ((natValI @DataDim) * i))
+          (F.plusPtr ptr2 (off + 16 + (natValI @DataDim) * idx))
           (natValI @DataDim)
   return $ D.toType D.Float t
 

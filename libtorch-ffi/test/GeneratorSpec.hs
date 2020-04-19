@@ -1,19 +1,19 @@
 module GeneratorSpec (main, spec) where
 
-import Test.Hspec
 import Control.Exception (bracket)
-import Control.Monad (forM_,forM)
+import Control.Monad (forM, forM_)
 import Data.Int
 import Foreign
+import Test.Hspec
 import Torch.Internal.Const
-import Torch.Internal.Type
-import Torch.Internal.Managed.Type.Generator
-import qualified Torch.Internal.Unmanaged.Type.Generator as U
-import Torch.Internal.Managed.Type.TensorOptions
-import Torch.Internal.Managed.Type.Tensor
-import Torch.Internal.Managed.Type.IntArray
-import Torch.Internal.Managed.Type.Context
 import Torch.Internal.Managed.Native
+import Torch.Internal.Managed.Type.Context
+import Torch.Internal.Managed.Type.Generator
+import Torch.Internal.Managed.Type.IntArray
+import Torch.Internal.Managed.Type.Tensor
+import Torch.Internal.Managed.Type.TensorOptions
+import Torch.Internal.Type
+import qualified Torch.Internal.Unmanaged.Type.Generator as U
 
 main :: IO ()
 main = hspec spec

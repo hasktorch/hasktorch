@@ -1,18 +1,18 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Torch.Internal.Class where
 
-import Foreign (Ptr, ForeignPtr)
+import Foreign (ForeignPtr, Ptr)
 
 class Castable a b where
-  cast   :: a -> (b -> IO r) -> IO r
+  cast :: a -> (b -> IO r) -> IO r
   uncast :: b -> (a -> IO r) -> IO r
 
 class CppObject a where

@@ -1,16 +1,15 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Torch.Cast where
 
 import Foreign.ForeignPtr
-
+import Torch.Internal.Cast
+import Torch.Internal.Class
 import Torch.Internal.Managed.Type.IntArray
 import Torch.Internal.Type
-import Torch.Internal.Class
-import Torch.Internal.Cast
 
 -- define useful casts
 
@@ -35,4 +34,3 @@ instance CppTuple5 (ForeignPtr IntArray) where
 instance CppTuple6 (ForeignPtr IntArray) where
   type F (ForeignPtr IntArray) = Int
   get5 v = cast1 (flip intArray_at_s 5) v
-
