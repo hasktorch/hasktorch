@@ -4299,7 +4299,7 @@ upsample_bilinear2d
   -> (Int,Int) -- ^ output_size
   -> Bool -- ^ align_corners
   -> Tensor
-upsample_bilinear2d _self _output_size _align_corners = unsafePerformIO $ (cast3 ATen.upsample_bilinear2d_tlb) _self _output_size _align_corners
+upsample_bilinear2d _self (height, width) _align_corners = unsafePerformIO $ (cast3 ATen.upsample_bilinear2d_tlb) _self [height, width] _align_corners
 
 upsample_bilinear2d_backward
   :: Tensor -- ^ grad_output
