@@ -1378,6 +1378,36 @@ permute
  -> Tensor -- output
 permute dims t = unsafePerformIO $ (cast2 ATen.tensor_permute_l) t dims
 
+-- | slice
+slice
+  :: Int -- ^ dim
+  -> Int -- ^ start
+  -> Int -- ^ end
+  -> Int -- ^ step
+  -> Tensor -- ^ self
+  -> Tensor
+slice _dim _start _end _step _self = unsafePerformIO $ (cast5 ATen.slice_tllll) _self _dim _start _end _step
+
+-- | view
+view
+ :: [Int] -- ^ list corresponding to size of tensor
+ -> Tensor -- ^ input
+ -> Tensor -- output
+view dims t = unsafePerformIO $ (cast2 ATen.tensor_view_l) t dims
+
+-- | contiguous
+contiguous
+ :: Tensor -- ^ input
+ -> Tensor -- output
+contiguous t = unsafePerformIO $ (cast1 ATen.tensor_contiguous) t
+
+-- | repeat
+repeat
+ :: [Int] -- ^ The number of repetitions for each element. repeats is broadcasted to fit the shape of the given axis.
+ -> Tensor -- ^ input
+ -> Tensor -- output
+repeat a t = unsafePerformIO $ (cast2 ATen.tensor_repeat_l) t a
+
 -- | expand
 -- TODO: figure out what the `implicit` boolean value does
 expand
