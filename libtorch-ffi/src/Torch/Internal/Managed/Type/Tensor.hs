@@ -875,6 +875,12 @@ tensor_new_full_lso
   -> IO (ForeignPtr Tensor)
 tensor_new_full_lso = cast4 Unmanaged.tensor_new_full_lso
 
+tensor_resize__l
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+tensor_resize__l = cast2 Unmanaged.tensor_resize__l
+
 tensor_new_zeros_lo
   :: ForeignPtr Tensor
   -> ForeignPtr IntArray

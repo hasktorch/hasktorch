@@ -177,6 +177,7 @@ methods:
 - dot(Tensor  tensor) -> Tensor
 - new_empty(IntArrayRef size, TensorOptions  options={}) -> Tensor
 - new_full(IntArrayRef size, Scalar fill_value, TensorOptions  options={}) -> Tensor
+- resize_(IntArrayRef size) -> Tensor
 - new_zeros(IntArrayRef size, TensorOptions  options={}) -> Tensor
 - erf() -> Tensor
 - erf_() -> Tensor

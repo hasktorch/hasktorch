@@ -1356,6 +1356,15 @@ tensor_new_full_lso _obj _size _fill_value _options =
   , *$(at::TensorOptions* _options)));
   }|]
 
+tensor_resize__l
+  :: Ptr Tensor
+  -> Ptr IntArray
+  -> IO (Ptr Tensor)
+tensor_resize__l _obj _size =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).resize_(
+    *$(std::vector<int64_t>* _size)));
+  }|]
+
 tensor_new_zeros_lo
   :: Ptr Tensor
   -> Ptr IntArray
