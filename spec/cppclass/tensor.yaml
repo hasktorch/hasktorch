@@ -21,6 +21,7 @@ methods:
 #- names() -> DimnameList
 - ndimension() -> int64_t
 #- is_contiguous(at::MemoryFormat memory_format=at::MemoryFormat::Contiguous) -> bool
+- is_contiguous() -> bool
 - is_non_overlapping_and_dense() -> bool
 - nbytes() -> size_t
 - numel() -> int64_t

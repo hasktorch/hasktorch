@@ -153,6 +153,14 @@ tensor_ndimension _obj =
     );
   }|]
 
+tensor_is_contiguous
+  :: Ptr Tensor
+  -> IO (CBool)
+tensor_is_contiguous _obj =
+  [C.throwBlock| bool { return (*$(at::Tensor* _obj)).is_contiguous(
+    );
+  }|]
+
 tensor_is_non_overlapping_and_dense
   :: Ptr Tensor
   -> IO (CBool)

@@ -109,6 +109,11 @@ tensor_ndimension
   -> IO (Int64)
 tensor_ndimension = cast1 Unmanaged.tensor_ndimension
 
+tensor_is_contiguous
+  :: ForeignPtr Tensor
+  -> IO (CBool)
+tensor_is_contiguous = cast1 Unmanaged.tensor_is_contiguous
+
 tensor_is_non_overlapping_and_dense
   :: ForeignPtr Tensor
   -> IO (CBool)
