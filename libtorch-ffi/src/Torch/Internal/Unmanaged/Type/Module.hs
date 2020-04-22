@@ -30,7 +30,7 @@ import Data.IORef
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 C.include "<torch/script.h>"
-C.include "<torch/csrc/jit/export.h>"
+C.include "<torch/csrc/jit/serialization/export.h>"
 C.include "<vector>"
 C.include "<iostream>"
 

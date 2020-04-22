@@ -8,16 +8,17 @@
 set -eu
 
 usage_exit() {
-    echo "Usage: $0 [-n] [-c] [-a "cpu" or "cu92" or "cu101"] [-s]" 1>&2
+    echo "Usage: $0 [-n] [-c] [-a "cpu" or "cu92" or "cu101" or "cu102"] [-s]" 1>&2
     echo " -n # Use nightly libtorch w/  -l" 1>&2
-    echo "    # Use libtorch-1.4.0   w/o -l" 1>&2
+    echo "    # Use libtorch-1.5.0   w/o -l" 1>&2
     echo "" 1>&2
     echo " -c # Download libtorch from hasktorch's site w/ -c" 1>&2
     echo "    # Download libtorch from pytorch's site w/o  -c" 1>&2
     echo "" 1>&2
     echo " -a cpu   # Use CPU without CUDA" 1>&2
     echo " -a cu92  # Use CUDA-9" 1>&2
-    echo " -a cu101 # Use CUDA-10" 1>&2
+    echo " -a cu101 # Use CUDA-10.1" 1>&2
+    echo " -a cu102 # Use CUDA-10.2" 1>&2
     echo "" 1>&2
     echo " -s # Skip download" 1>&2
     echo "" 1>&2
@@ -29,7 +30,7 @@ USE_NIGHTLY=0
 USE_BINARY_FOR_CI=0
 COMPUTE_ARCH=cpu
 SKIP_DOWNLOAD=0
-VERSION=1.4.0
+VERSION=1.5.0
 
 while getopts nca:sh OPT
 do
@@ -90,7 +91,8 @@ if [ "$SKIP_DOWNLOAD" = 0 ] ; then
 	case "${COMPUTE_ARCH}" in
 	      "cpu" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcpu.zip ;;
 	      "cu92" ) URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcu92.zip ;;
-	      "cu101" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip ;;
+	      "cu101" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcu101.zip ;;
+	      "cu102" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip ;;
 	esac
 	wget -O libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip "$URL"
         unzip libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip
@@ -126,10 +128,10 @@ $PYTHON aten/src/ATen/gen.py \
   -s aten/src/ATen \
   -d build/aten/src/ATen \
   aten/src/ATen/Declarations.cwrap \
-  aten/src/THNN/generic/THNN.h \
   aten/src/THCUNN/generic/THCUNN.h \
   aten/src/ATen/nn.yaml \
   aten/src/ATen/native/native_functions.yaml
+
 
 # Sanitize "name: n" fields to be strings rather than booleans in Declarations.yaml
 
