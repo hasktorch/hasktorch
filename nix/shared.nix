@@ -47,7 +47,7 @@ let
                                 preConfigure = (old.preConfigure or "") + optionalString isDarwin ''
                                   sed -i -e 's/-optc-std=c++11 -optc-xc++/-optc-xc++/g' ../libtorch-ffi/libtorch-ffi.cabal;
                                 '';
-                                configureFlags = ${if postfix == "cpu" then [] else [ "-fcuda" ]};
+                                configureFlags = if postfix == "cpu" then [] else [ "-fcuda" ];
                               }
                             )
                           )
