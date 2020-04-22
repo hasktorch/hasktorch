@@ -8,4 +8,4 @@ if cudaVersion == null
 then shared.shell-hasktorch-examples_cpu
 else if cudaVersion == 9
   then shared.shell-hasktorch-examples_cudatoolkit_9_2
-  else shared.shell-hasktorch-examples_cudatoolkit_10_1
+  else shared.shell-hasktorch-examples_cudatoolkit_10_2

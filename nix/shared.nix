@@ -5,8 +5,8 @@ let
     let src = pkgs.fetchFromGitHub {
           owner  = "stites";
           repo   = "pytorch-world";
-          rev    = "66de22dadf334bd457c8a596832160d9126e12e1";
-          sha256 = "08w0y5f8x1d2ncv0qmv8a3zymjbzc6ysawldibd1q3h5kgr2aspv";
+          rev    = "55d994072893e4ba871100702a45bc3229bc91c0";
+          sha256 = "1fy7h216dz5f0khmqrdi90cpd12vdga7jr707sk7dzg62xf9bd21";
     };
     in (pkgs.callPackage "${src}/libtorch/release.nix" { });
 
@@ -14,7 +14,7 @@ let
     inherit (libtorch_src pkgsOld)
       libtorch_cpu
       libtorch_cudatoolkit_9_2
-      libtorch_cudatoolkit_10_1
+      libtorch_cudatoolkit_10_2
     ;
 
     haskell = pkgsOld.haskell // {
@@ -181,18 +181,18 @@ let
                     extension
                     (mkHasktorchExtension "cpu")
                     (mkHasktorchExtension "cudatoolkit_9_2")
-                    (mkHasktorchExtension "cudatoolkit_10_1")
+                    (mkHasktorchExtension "cudatoolkit_10_2")
                   ];
           }
         );
       };
     };
 
-    hasktorch-examples_cudatoolkit_10_1-static = pkgsOld.haskell.lib.justStaticExecutables pkgsNew.haskell.packages."${compiler}".hasktorch-examples_cudatoolkit_10_1;
-    hasktorch-experimental_cudatoolkit_10_1-static = pkgsOld.haskell.lib.justStaticExecutables pkgsNew.haskell.packages."${compiler}".hasktorch-experimental_cudatoolkit_10_1;
+    hasktorch-examples_cudatoolkit_10_2-static = pkgsOld.haskell.lib.justStaticExecutables pkgsNew.haskell.packages."${compiler}".hasktorch-examples_cudatoolkit_10_2;
+    hasktorch-experimental_cudatoolkit_10_2-static = pkgsOld.haskell.lib.justStaticExecutables pkgsNew.haskell.packages."${compiler}".hasktorch-experimental_cudatoolkit_10_2;
 
-    hasktorch-typed-transformer_cudatoolkit_10_1-image = pkgsOld.dockerTools.buildImage {
-      name = "hasktorch-typed-transformer_cudatoolkit_10_1";
+    hasktorch-typed-transformer_cudatoolkit_10_2-image = pkgsOld.dockerTools.buildImage {
+      name = "hasktorch-typed-transformer_cudatoolkit_10_2";
       tag = "latest";
       fromImage = pkgsOld.dockerTools.pullImage {
         imageName = "nvidia/cuda";
@@ -202,7 +202,7 @@ let
       config = {
         WorkingDir = "/workingDir";
         Cmd = [
-          "${pkgsNew.hasktorch-examples_cudatoolkit_10_1-static}/bin/typed-transformer"
+          "${pkgsNew.hasktorch-examples_cudatoolkit_10_2-static}/bin/typed-transformer"
         ];
         Env = [
           "LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
@@ -304,9 +304,9 @@ in
     inherit nullIfDarwin overlayShared;
 
     inherit (pkgs-linux)
-      hasktorch-examples_cudatoolkit_10_1-static
-      hasktorch-experimental_cudatoolkit_10_1-static
-      hasktorch-typed-transformer_cudatoolkit_10_1-image
+      hasktorch-examples_cudatoolkit_10_2-static
+      hasktorch-experimental_cudatoolkit_10_2-static
+      hasktorch-typed-transformer_cudatoolkit_10_2-image
     ;
 
     inherit (base-compiler)
@@ -315,16 +315,16 @@ in
       inline-c-cpp
       libtorch-ffi_cpu
       libtorch-ffi_cudatoolkit_9_2
-      libtorch-ffi_cudatoolkit_10_1
+      libtorch-ffi_cudatoolkit_10_2
       hasktorch_cpu
       hasktorch_cudatoolkit_9_2
-      hasktorch_cudatoolkit_10_1
+      hasktorch_cudatoolkit_10_2
       hasktorch-examples_cpu
       hasktorch-examples_cudatoolkit_9_2
-      hasktorch-examples_cudatoolkit_10_1
+      hasktorch-examples_cudatoolkit_10_2
       hasktorch-experimental_cpu
       hasktorch-experimental_cudatoolkit_9_2
-      hasktorch-experimental_cudatoolkit_10_1
+      hasktorch-experimental_cudatoolkit_10_2
     ;
     hasktorch-docs = (
       (import ./haddock-combine.nix {
@@ -342,15 +342,15 @@ in
     shell-inline-c-cpp                        = (doBenchmark base-compiler.inline-c-cpp).env;
     shell-libtorch-ffi_cpu                    = (doBenchmark base-compiler.libtorch-ffi_cpu                   ).env.overrideAttrs(fixcpath pkgs.libtorch_cpu);
     shell-libtorch-ffi_cudatoolkit_9_2        = (doBenchmark base-compiler.libtorch-ffi_cudatoolkit_9_2       ).env.overrideAttrs(fixcpath pkgs.libtorch_cudatoolkit_9_2);
-    shell-libtorch-ffi_cudatoolkit_10_1       = (doBenchmark base-compiler.libtorch-ffi_cudatoolkit_10_1      ).env.overrideAttrs(fixcpath pkgs.libtorch_cudatoolkit_10_1);
+    shell-libtorch-ffi_cudatoolkit_10_2       = (doBenchmark base-compiler.libtorch-ffi_cudatoolkit_10_2      ).env.overrideAttrs(fixcpath pkgs.libtorch_cudatoolkit_10_2);
     shell-hasktorch_cpu                       = (doBenchmark base-compiler.hasktorch_cpu                      ).env.overrideAttrs(old: altdev-announce pkgs.libtorch_cpu (fixmkl old));
     shell-hasktorch_cudatoolkit_9_2           = (doBenchmark base-compiler.hasktorch_cudatoolkit_9_2          ).env.overrideAttrs(old: altdev-announce pkgs.libtorch_cudatoolkit_9_2 (fixmkl old));
-    shell-hasktorch_cudatoolkit_10_1          = (doBenchmark base-compiler.hasktorch_cudatoolkit_10_1         ).env.overrideAttrs(old: altdev-announce pkgs.libtorch_cudatoolkit_10_1 (fixmkl old));
+    shell-hasktorch_cudatoolkit_10_2          = (doBenchmark base-compiler.hasktorch_cudatoolkit_10_2         ).env.overrideAttrs(old: altdev-announce pkgs.libtorch_cudatoolkit_10_2 (fixmkl old));
     shell-hasktorch-examples_cpu              = (doBenchmark base-compiler.hasktorch-examples_cpu             ).env.overrideAttrs(fixmkl);
     shell-hasktorch-examples_cudatoolkit_9_2  = (doBenchmark base-compiler.hasktorch-examples_cudatoolkit_9_2 ).env.overrideAttrs(fixmkl);
-    shell-hasktorch-examples_cudatoolkit_10_1 = (doBenchmark base-compiler.hasktorch-examples_cudatoolkit_10_1).env.overrideAttrs(fixmkl);
+    shell-hasktorch-examples_cudatoolkit_10_2 = (doBenchmark base-compiler.hasktorch-examples_cudatoolkit_10_2).env.overrideAttrs(fixmkl);
     shell-hasktorch-experimental_cpu              = (doBenchmark base-compiler.hasktorch-experimental_cpu             ).env.overrideAttrs(fixmkl);
     shell-hasktorch-experimental_cudatoolkit_9_2  = (doBenchmark base-compiler.hasktorch-experimental_cudatoolkit_9_2 ).env.overrideAttrs(fixmkl);
-    shell-hasktorch-experimental_cudatoolkit_10_1 = (doBenchmark base-compiler.hasktorch-experimental_cudatoolkit_10_1).env.overrideAttrs(fixmkl);
+    shell-hasktorch-experimental_cudatoolkit_10_2 = (doBenchmark base-compiler.hasktorch-experimental_cudatoolkit_10_2).env.overrideAttrs(fixmkl);
   }
 
