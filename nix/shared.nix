@@ -196,8 +196,10 @@ let
       tag = "latest";
       fromImage = pkgsOld.dockerTools.pullImage {
         imageName = "nvidia/cuda";
-        imageDigest = "sha256:31e2a1ca7b0e1f678fb1dd0c985b4223273f7c0f3dbde60053b371e2a1aee2cd";
-        sha256 = "1bgw7v6xdi6chjds5qvvn596db56r4hkj7dyds5c7pyfsgl74yf3";
+        imageDigest = "sha256:755981b097e20cc02ae6badcc39a03eb62235412d27236472f3520fa8b9967d3";
+        sha256 = "11zg694nzylv7hyzv1gx59ykgprj3kid4191ykwa0s3mi3mm806c";
+        # finalImageName = "nvidia/cuda";
+        # finalImageTag = "10.2-devel";
       };
       config = {
         WorkingDir = "/workingDir";
@@ -207,12 +209,12 @@ let
         Env = [
           "LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
           "NVIDIA_VISIBLE_DEVICES=all"
-          "NCCL_VERSION=2.4.8"
+          "NCCL_VERSION=2.5.6"
           "LIBRARY_PATH=/usr/local/cuda/lib64/stubs"
-          "CUDA_PKG_VERSION=10-1=10.1.243-1"
-          "CUDA_VERSION=10.1.243"
+          "CUDA_PKG_VERSION=10-2=10.2.89-1"
+          "CUDA_VERSION=10.2.89"
           "NVIDIA_DRIVER_CAPABILITIES=compute,utility"
-          "NVIDIA_REQUIRE_CUDA=cuda>=10.1 brand=tesla,driver>=384,driver<385 brand=tesla,driver>=396,driver<397 brand=tesla,driver>=410,driver<411"
+          "NVIDIA_REQUIRE_CUDA=cuda>=10.2 brand=tesla,driver>=384,driver<385 brand=tesla,driver>=396,driver<397 brand=tesla,driver>=410,driver<411 brand=tesla,driver>=418,driver<419"
           "PATH=/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
         ];
       };
