@@ -341,6 +341,13 @@ isCType p =
     Ptr _ -> True
     _ -> False
 
+isGenerator :: Parsable -> Bool
+isGenerator p =
+  case p of
+    Ptr GeneratorType -> True
+    GeneratorType -> True
+    _ -> False
+
 isNotStar :: Parameter -> Bool
 isNotStar p =
   case p of
@@ -437,7 +444,9 @@ functionToCpp is_managed add_type_initials prefix suffix fn =
       else "Ptr"
     types_list :: [Text]
     types_list = flip map parameters' $ \p ->
-      if isCType (ptype p)
+      if is_managed && isGenerator (ptype p)
+      then [st|#{pointer} #{parsableToHsType GeneratorType}|]
+      else if isCType (ptype p)
       then [st|#{parsableToHsType (ptype p)}|]
       else [st|#{pointer} #{parsableToHsType (ptype p)}|]
     types :: Text
@@ -539,7 +548,9 @@ methodToCpp class' is_constructor is_managed add_type_initials prefix suffix fn 
       else "Ptr"
     types_list :: [Text]
     types_list = flip map parameters' $ \p ->
-      if isCType (ptype p)
+      if is_managed && isGenerator (ptype p)
+      then [st|#{pointer} #{parsableToHsType GeneratorType}|]
+      else if isCType (ptype p)
       then [st|#{parsableToHsType (ptype p)}|]
       else [st|#{pointer} #{parsableToHsType (ptype p)}|]
     types :: Text
