@@ -39,12 +39,15 @@ let
                               ../libtorch-ffi
                               { c10 = pkgsNew."libtorch_${postfix}"
                               ; torch = pkgsNew."libtorch_${postfix}"
+                              ; torch_cpu = pkgsNew."libtorch_${postfix}"
+                              ; ${if postfix == "cpu" then null else "torch_cuda"} = pkgsNew."libtorch_${postfix}"
                               ; }
                             )
                             (old: {
                                 preConfigure = (old.preConfigure or "") + optionalString isDarwin ''
                                   sed -i -e 's/-optc-std=c++11 -optc-xc++/-optc-xc++/g' ../libtorch-ffi/libtorch-ffi.cabal;
                                 '';
+                                configureFlags = ${if postfix == "cpu" then [] else [ "-fcuda" ]};
                               }
                             )
                           )
