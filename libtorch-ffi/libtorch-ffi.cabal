@@ -12,6 +12,11 @@ copyright:           2018 Austin Huang
 category:            Codegen
 build-type:          Simple
 
+Flag cuda
+ Description: A flag to link libtorch_cuda.
+ Default: False
+ Manual: True
+
 library
  exposed-modules:     Torch.Internal.Type
                     , Torch.Internal.Const
@@ -88,10 +93,20 @@ library
   extra-libraries:     c++
                      , c10
                      , torch
+                     , torch_cpu
  else
-  extra-libraries:     stdc++
-                     , c10
-                     , torch
+   if flag(cuda)
+     extra-libraries:     stdc++
+                        , c10
+                        , torch
+                        , torch_cpu
+                        , torch_cuda
+   else
+     extra-libraries:     stdc++
+                        , c10
+                        , torch
+                        , torch_cpu
+
  extra-ghci-libraries: stdc++
  if os(darwin)
   ld-options: -Wl,-keep_dwarf_unwind
