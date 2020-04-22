@@ -166,4 +166,27 @@ spec = do
     let input = 3 * ones' [3]
         output = softShrink 1 input
     (toDouble $ select output 0 0) `shouldBe` (2.0)
+  it "stack" $ do
+    let x = ones' [4,3]
+        y = ones' [4,3]
+        output = stack (Dim 1) [x,y]
+    (shape output) `shouldBe` ([4,2,3]) 
+  it "sumDim" $ do
+    let x = asTensor([[1,2,3],[4,5,6],[7,8,9],[10,11,12]]::[[Float]])
+        output = sumDim (Dim 0) KeepDim Float x
+    (toDouble $ select output 1 1) `shouldBe` (26.0)
+  it "topK" $ do
+    let x = asTensor([1,2,3] :: [Float])
+        output = fst $ topK 2 (Dim 0) True True x 
+    (toDouble $ select output 0 0) `shouldBe` (3.0)
+  it "triu" $ do
+    let x = asTensor([[1,2,3],[4,5,6],[7,8,9],[10,11,12]]::[[Float]])
+    (toDouble $ sumAll $ triu 0 x) `shouldBe` (26.0)
+  it "tril" $ do
+    let x = asTensor([[1,2,3],[4,5,6],[7,8,9],[10,11,12]]::[[Float]])
+    (toDouble $ sumAll $ tril 0 x) `shouldBe` (67.0)
+  it "unsqueeze" $ do
+    let x = asTensor([[1,2,3],[4,5,6],[7,8,9],[10,11,12]]::[[Float]])
+        output = unsqueeze (Dim 0) x
+    (shape output) `shouldBe` ([1,4,3])      
 

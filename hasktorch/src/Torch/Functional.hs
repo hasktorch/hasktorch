@@ -1316,3 +1316,66 @@ softShrink
   -> Tensor -- ^ input
   -> Tensor -- ^ output
 softShrink lambda input = unsafePerformIO $ (cast2 ATen.softshrink_ts) input lambda
+
+-- | Concatenates sequence of tensors along a new dimension.
+-- All tensors need to be of the same size.
+stack
+  :: Dim -- ^ dim
+  -> [Tensor] -- ^ input
+  -> Tensor -- ^ output
+stack (Dim d) tensors = unsafePerformIO $ (cast2 ATen.stack_ll) tensors d
+
+-- | Returns the sum of each row of the input tensor in the given dimension dim.
+-- If keepdim is True, the output tensor is of the same size as input except in the dimension(s) dim where it is of size 1. 
+-- Otherwise, dim is squeezed, resulting in the output tensor having 1 (or len(dim)) fewer dimension(s).
+sumDim
+  :: Dim -- ^ dim to sum along
+  -> KeepDim -- ^ whether the output tensor has dim retained or not
+  -> DType -- ^ datatype
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+sumDim (Dim d) k dtype input = unsafePerformIO $ (cast4 ATen.sum_tlbs) input d (keepdim k) dtype
+
+-- | Returns the k largest elements of the given input tensor along a given dimension.
+-- If largest is False then the k smallest elements are returned.
+-- The boolean option sorted if True, will make sure that the returned k elements are themselves sorted
+-- A tuple of (values, indices) is returned, where the indices are the indices of the elements in the original input tensor.  
+topK 
+  :: Int -- ^ k
+  -> Dim -- ^ dim to find topK along
+  -> Bool -- ^ largest
+  -> Bool -- ^ sorted
+  -> Tensor -- ^ input
+  -> (Tensor,Tensor) -- ^ output
+topK k (Dim d) largest sorted input = unsafePerformIO $ (cast5 ATen.topk_tllbb) input k d largest sorted
+
+-- | Returns the upper triangular part of a matrix (2-D tensor) or batch of matrices input, the other elements of the result tensor out are set to 0.
+-- The upper triangular part of the matrix is defined as the elements on and above the diagonal.
+-- The argument diagonal controls which diagonal to consider. If diagonal = 0, all elements on and above the main diagonal are retained. 
+-- A positive value excludes just as many diagonals above the main diagonal, and similarly a negative value includes just as many diagonals below the main diagonal. 
+-- The main diagonal are the set of indices \((i,i)\) for \(i\) \(\in [0,\min(d_1,d_2)-1]\) where \(d_1\) and \(d_2 \) are the dimensions of the matrix.
+triu
+  :: Int -- ^ diagonal
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+triu diagonal input = unsafePerformIO $ (cast2 ATen.triu_tl) input diagonal
+
+-- | Returns the lower triangular part of the matrix (2-D tensor) or batch of matrices input, the other elements of the result tensor out are set to 0.
+-- The lower triangular part of the matrix is defined as the elements on and below the diagonal.
+-- The argument diagonal controls which diagonal to consider. If diagonal = 0, all elements on and below the main diagonal are retained. 
+-- A positive value includes just as many diagonals above the main diagonal, and similarly a negative value excludes just as many diagonals below the main diagonal. 
+-- The main diagonals are the set of indices \((i,i)\) for \(i\) \(\in [0,\min(d_1,d_2)-1]\) where \(d_1\) and \(d_2 \) are the dimensions of the matrix.
+tril
+  :: Int -- ^ diagonal
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+tril diagonal input = unsafePerformIO $ (cast2 ATen.tril_tl) input diagonal
+
+-- | Returns a new tensor with a dimension of size one inserted at the specified position.
+-- The returned tensor shares the same underlying data with this tensor.
+-- A dim value within the range [(dim input) - 1, (dim input) + 1) can be used. Negative dim will correspond to unsqueeze applied at dim = dim + (dim input) + 1
+unsqueeze
+  :: Dim  -- ^ dim
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+unsqueeze (Dim d) input = unsafePerformIO $ (cast2 ATen.unsqueeze_tl) input d
