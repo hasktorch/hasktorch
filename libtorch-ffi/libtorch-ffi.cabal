@@ -110,11 +110,6 @@ library
  extra-ghci-libraries: stdc++
  if os(darwin)
   ld-options: -Wl,-keep_dwarf_unwind
-  ghc-options:       -optc-std=c++14 -optc-xc++
- else
-  ghc-options:       -optc-std=c++14
-  cc-options:        -std=c++14
- cxx-options:       -std=c++14
  default-extensions:          Strict
                             , StrictData
 
