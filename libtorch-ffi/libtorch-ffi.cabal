@@ -17,6 +17,11 @@ Flag cuda
  Default: False
  Manual: True
 
+Flag gcc
+ Description: A flag to use gcc on macos
+ Default: False
+ Manual: True
+
 library
  exposed-modules:     Torch.Internal.Type
                     , Torch.Internal.Const
@@ -110,7 +115,8 @@ library
  extra-ghci-libraries: stdc++
  if os(darwin)
   ld-options: -Wl,-keep_dwarf_unwind
-  cxx-options:       -std=c++14
+  if !flag(gcc)
+    ghc-options:       -optc-std=c++14 -optc-xc++
  default-extensions:          Strict
                             , StrictData
 
