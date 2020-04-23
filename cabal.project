@@ -5,11 +5,6 @@ source-repository-package
 
 source-repository-package
     type: git
-    location: git://github.com/RyanGlScott/blaze-markup.git
-    tag: 66b7b3106eb35f57939357e7fb1288f503d6f833
-
-source-repository-package
-    type: git
     location: git://github.com/well-typed/cborg.git
     tag: 05983177ccbd073ca4f8724e69b880ee3b6cd1b4
     subdir: serialise

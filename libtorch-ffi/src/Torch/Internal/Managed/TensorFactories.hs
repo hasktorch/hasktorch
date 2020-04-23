@@ -241,6 +241,11 @@ empty_like_to
   -> IO (ForeignPtr Tensor)
 empty_like_to = cast2 Unmanaged.empty_like_to
 
+empty_like_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+empty_like_t = cast1 Unmanaged.empty_like_t
+
 empty_strided_llo
   :: ForeignPtr IntArray
   -> ForeignPtr IntArray
@@ -320,6 +325,12 @@ full_like_tso
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 full_like_tso = cast3 Unmanaged.full_like_tso
+
+full_like_ts
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+full_like_ts = cast2 Unmanaged.full_like_ts
 
 from_file_sblo
   :: ForeignPtr StdString
@@ -515,6 +526,11 @@ ones_like_to
   -> IO (ForeignPtr Tensor)
 ones_like_to = cast2 Unmanaged.ones_like_to
 
+ones_like_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+ones_like_t = cast1 Unmanaged.ones_like_t
+
 scalar_tensor_so
   :: ForeignPtr Scalar
   -> ForeignPtr TensorOptions
@@ -591,6 +607,11 @@ rand_like_to
   -> IO (ForeignPtr Tensor)
 rand_like_to = cast2 Unmanaged.rand_like_to
 
+rand_like_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+rand_like_t = cast1 Unmanaged.rand_like_t
+
 randint_llo
   :: Int64
   -> ForeignPtr IntArray
@@ -666,6 +687,12 @@ randint_like_tlo
   -> IO (ForeignPtr Tensor)
 randint_like_tlo = cast3 Unmanaged.randint_like_tlo
 
+randint_like_tl
+  :: ForeignPtr Tensor
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+randint_like_tl = cast2 Unmanaged.randint_like_tl
+
 randint_like_tlloM
   :: ForeignPtr Tensor
   -> Int64
@@ -682,6 +709,13 @@ randint_like_tllo
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 randint_like_tllo = cast4 Unmanaged.randint_like_tllo
+
+randint_like_tll
+  :: ForeignPtr Tensor
+  -> Int64
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+randint_like_tll = cast3 Unmanaged.randint_like_tll
 
 randn_lo
   :: ForeignPtr IntArray
@@ -747,6 +781,11 @@ randn_like_to
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 randn_like_to = cast2 Unmanaged.randn_like_to
+
+randn_like_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+randn_like_t = cast1 Unmanaged.randn_like_t
 
 randperm_lo
   :: Int64
@@ -836,6 +875,11 @@ zeros_like_to
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 zeros_like_to = cast2 Unmanaged.zeros_like_to
+
+zeros_like_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+zeros_like_t = cast1 Unmanaged.zeros_like_t
 
 sparse_coo_tensor_lo
   :: ForeignPtr IntArray

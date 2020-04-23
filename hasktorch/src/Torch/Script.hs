@@ -444,7 +444,7 @@ instance Castable IValue RawIValue where
            ts <- uncast rawIValues return :: IO [IValue]
            f (IVTuple ts)
         )
-      , (iValue_isGenericList obj, do
+      , (iValue_isList obj, do
            c10list <- fromIValue obj :: IO (ForeignPtr (ATen.C10List ATen.IValue))
            rawIValues <- uncast c10list return :: IO [RawIValue]
            ts <- uncast rawIValues return :: IO [IValue]

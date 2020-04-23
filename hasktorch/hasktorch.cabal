@@ -65,7 +65,7 @@ library
  ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
  build-depends:       async
                     , base >= 4.7 && < 5
-                    , libtorch-ffi == 1.4.*
+                    , libtorch-ffi == 1.5.*
                     , finite-typelits
                     -- , ghc-typelits-extra >= 0.3.1
                     -- , ghc-typelits-knownnat >= 0.7
