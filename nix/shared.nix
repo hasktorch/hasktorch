@@ -33,26 +33,21 @@ let
                   haskellPackagesNew: haskellPackagesOld: {
                     "libtorch-ffi_${postfix}" =
                         appendConfigureFlag
-                          (overrideCabal
-                            (haskellPackagesOld.callCabal2nix
-                              "libtorch-ffi"
-                              ../libtorch-ffi
-                              { c10 = pkgsNew."libtorch_${postfix}"
-                              ; torch = pkgsNew."libtorch_${postfix}"
-                              ; torch_cpu = pkgsNew."libtorch_${postfix}"
-                              ; ${if postfix == "cpu" then null else "torch_cuda"} = pkgsNew."libtorch_${postfix}"
-                              ; }
-                            )
-                            (old: {
-                                preConfigure = (old.preConfigure or "") + optionalString isDarwin ''
-                                  sed -i -e 's/-optc-std=c++11 -optc-xc++/-optc-xc++/g' ../libtorch-ffi/libtorch-ffi.cabal;
-                                '';
-                                configureFlags =
-                                  (if postfix == "cpu" then [] else [ "-fcuda" ])++
-                                  (if isDarwin then [ "-fgcc" ] else [])
-                                  ;
-                              }
-                            )
+                          (haskellPackagesOld.callCabal2nixWithOptions
+                            "libtorch-ffi"
+                            ../libtorch-ffi
+                            (if postfix == "cpu" then
+                              (if isDarwin then
+                                 "-fgcc"
+                               else
+                                 "")
+                             else
+                               "-fcuda")
+                            { c10 = pkgsNew."libtorch_${postfix}"
+                            ; torch = pkgsNew."libtorch_${postfix}"
+                            ; torch_cpu = pkgsNew."libtorch_${postfix}"
+                            ; ${if postfix == "cpu" then null else "torch_cuda"} = pkgsNew."libtorch_${postfix}"
+                            ; }
                           )
                         "--extra-include-dirs=${pkgsNew."libtorch_${postfix}"}/include/torch/csrc/api/include";
                     "hasktorch_${postfix}" =
