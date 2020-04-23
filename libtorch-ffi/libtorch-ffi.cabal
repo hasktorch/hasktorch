@@ -94,23 +94,16 @@ library
                     , sysinfo
                     , async
                     , libtorch-ffi-helper
+ extra-libraries:     c10
+                    , torch
+                    , torch_cpu
  if os(darwin)
   extra-libraries:     c++
-                     , c10
-                     , torch
-                     , torch_cpu
  else
-   if flag(cuda)
-     extra-libraries:     stdc++
-                        , c10
-                        , torch
-                        , torch_cpu
-                        , torch_cuda
-   else
-     extra-libraries:     stdc++
-                        , c10
-                        , torch
-                        , torch_cpu
+  extra-libraries:     stdc++
+
+ if flag(cuda)
+  extra-libraries:     torch_cuda
 
  extra-ghci-libraries: stdc++
  if os(darwin)
