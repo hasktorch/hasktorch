@@ -101,6 +101,8 @@ instance Castable Reduction Int64 where
   uncast 1 f = f ReduceMean
   uncast _ f = f ReduceSum
 
+data Diag = Diag Int
+
 isUpper Upper = True
 isUpper Lower = False
 
@@ -946,10 +948,10 @@ transpose2D = transpose (Dim 0) (Dim 1)
 --        If Int < 0, it is below the main diagonal.
 
 diag
-    ::  Int -- ^ diagonal
+    ::  Diag -- ^ diagonal
     ->  Tensor -- ^ input
     ->  Tensor -- ^ output
-diag index t = unsafePerformIO $ (cast2 ATen.tensor_diag_l) t index
+diag (Diag index) t = unsafePerformIO $ (cast2 ATen.tensor_diag_l) t index
 
 -- | Returns True if all elements in the tensor are True, False otherwise.
 all
@@ -1216,10 +1218,10 @@ topK k (Dim d) largest sorted input = unsafePerformIO $ (cast5 ATen.topk_tllbb) 
 -- A positive value excludes just as many diagonals above the main diagonal, and similarly a negative value includes just as many diagonals below the main diagonal. 
 -- The main diagonal are the set of indices \((i,i)\) for \(i\) \(\in [0,\min(d_1,d_2)-1]\) where \(d_1\) and \(d_2 \) are the dimensions of the matrix.
 triu
-  :: Int -- ^ diagonal
+  :: Diag -- ^ diagonal
   -> Tensor -- ^ input
   -> Tensor -- ^ output
-triu diagonal input = unsafePerformIO $ (cast2 ATen.triu_tl) input diagonal
+triu (Diag diagonal) input = unsafePerformIO $ (cast2 ATen.triu_tl) input diagonal
 
 -- | Returns the lower triangular part of the matrix (2-D tensor) or batch of matrices input, the other elements of the result tensor out are set to 0.
 -- The lower triangular part of the matrix is defined as the elements on and below the diagonal.
@@ -1227,10 +1229,10 @@ triu diagonal input = unsafePerformIO $ (cast2 ATen.triu_tl) input diagonal
 -- A positive value includes just as many diagonals above the main diagonal, and similarly a negative value excludes just as many diagonals below the main diagonal. 
 -- The main diagonals are the set of indices \((i,i)\) for \(i\) \(\in [0,\min(d_1,d_2)-1]\) where \(d_1\) and \(d_2 \) are the dimensions of the matrix.
 tril
-  :: Int -- ^ diagonal
+  :: Diag -- ^ diagonal
   -> Tensor -- ^ input
   -> Tensor -- ^ output
-tril diagonal input = unsafePerformIO $ (cast2 ATen.tril_tl) input diagonal
+tril (Diag diagonal) input = unsafePerformIO $ (cast2 ATen.tril_tl) input diagonal
 
 -- | Returns a new tensor with a dimension of size one inserted at the specified position.
 -- The returned tensor shares the same underlying data with this tensor.

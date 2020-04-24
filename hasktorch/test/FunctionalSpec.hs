@@ -94,7 +94,7 @@ spec = do
     shape qr `shouldBe` [5,3]
   it "diag" $ do
     let x = ones' [3]
-    let y = diag 2 x
+    let y = diag (Diag 2) x
     shape y `shouldBe` [5, 5]
   it "expand" $ do
     let t = asTensor [[1], [2], [3 :: Int]]
@@ -181,10 +181,10 @@ spec = do
     (toDouble $ select output 0 0) `shouldBe` (3.0)
   it "triu" $ do
     let x = asTensor([[1,2,3],[4,5,6],[7,8,9],[10,11,12]]::[[Float]])
-    (toDouble $ sumAll $ triu 0 x) `shouldBe` (26.0)
+    (toDouble $ sumAll $ triu (Diag 0) x) `shouldBe` (26.0)
   it "tril" $ do
     let x = asTensor([[1,2,3],[4,5,6],[7,8,9],[10,11,12]]::[[Float]])
-    (toDouble $ sumAll $ tril 0 x) `shouldBe` (67.0)
+    (toDouble $ sumAll $ tril (Diag 0) x) `shouldBe` (67.0)
   it "unsqueeze" $ do
     let x = asTensor([[1,2,3],[4,5,6],[7,8,9],[10,11,12]]::[[Float]])
         output = unsqueeze (Dim 0) x
