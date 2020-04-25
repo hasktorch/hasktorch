@@ -13,6 +13,7 @@ import System.Directory
 import System.Random
 import Data.List
 import qualified Data.Map.Strict as S
+import qualified GHC.List as G
 
 import Torch.Optim
 import Torch.Autograd
@@ -24,7 +25,6 @@ import Torch.TensorFactories
 import Torch.TensorOptions
 import Torch.Tensor
 import qualified Torch.DType as D
-import qualified Torch.Functional.Internal as I
 
 data DataSet = DataSet {
     images  :: [Tensor],
@@ -51,16 +51,24 @@ extractImagesNLabels (p : ps) (Left err : ts) = extractImagesNLabels ps ts
 extractImagesNLabels (p : ps) (Right t : ts) = (p, t) : extractImagesNLabels ps ts
 
 createLabels :: FilePath -> String
-createLabels = ( =~ ("[A-Z]*[a-z]*" :: String))
+createLabels string = firstMatch
+    where (firstMatch, _, _) = (string =~ "_[0-9]+.jpg" :: (String, String, String))
+
+-- normalize :: Tensor -> Tensor
+-- normalize t = t `sub` (uns mean) `Torch.Functional.div` uns stddev 
+--     where 
+--         mean = asTensor ([0.485, 0.456, 0.406] :: [Float])
+--         stddev = asTensor ([0.229, 0.224, 0.225] :: [Float])
+--         uns t = unsqueeze (Dim 2) $ unsqueeze (Dim 1) t
 
 normalize :: Tensor -> Tensor
-normalize img = I.unsqueeze (cat (Dim 0) [r', g', b']) 0
+normalize img = unsqueeze (Dim 0) (cat (Dim 0) [r', g', b'])
     where
         img' = divScalar (255.0::Float) img
-        [r, g, b] = I.split (reshape [3, 224, 224] img') 1 0 
-        r' = divScalar (0.229::Float) (subScalar(0.485::Float) r) 
-        g' = divScalar (0.224::Float) (subScalar(0.456::Float) g) 
-        b' = divScalar (0.225::Float) (subScalar(0.406::Float) b) 
+        [r, g, b] = Torch.Functional.split 1 (Dim 0) (reshape [3, 224, 224] img')
+        r' = divScalar (0.229::Float) (subScalar (0.485::Float) r) 
+        g' = divScalar (0.224::Float) (subScalar (0.456::Float) g) 
+        b' = divScalar (0.225::Float) (subScalar (0.406::Float) b) 
 
 extract' :: Maybe a -> a
 extract' (Just x) = x          
@@ -70,40 +78,57 @@ labelToTensor :: [String] -> [String] -> [Int]
 labelToTensor unique  = map (extract' . (m S.!?))
     where m = S.fromList $ zip unique [0..(length unique - 1)]
 
--- takes in a D.Float chw image and return images of dimension 224 X 224
-resize :: Tensor -> Tensor
-resize img = reshape [3, 224, 224] $ I.upsample_bilinear2d img (224, 224) True
-
 createDataSet :: [FilePath]  -> IO DataSet
 createDataSet directorylist = do
-    readList <- mapM (readImageAsRGB8 . ("alexNet/images/" ++ )) directorylist -- readList list of tensors
+    readList <- mapM (readImageAsRGB8 . ("alexNet/images/" ++ )) directorylist
     let listIL = extractImagesNLabels directorylist readList
         labelList = map (createLabels . fst) listIL 
         imageList = map (toDType D.Float . hwc2chw . snd) listIL
         unique = nub labelList
         batchSize = 16 :: Int
-        nImages = length labelList
-        nBatches = nImages `div` batchSize
+        rszdImgs =  map (upsampleBilinear2d (224, 224) True) imageList
+        nrmlzdImgs = map normalize rszdImgs
+        prcssdLbls = labelToTensor unique labelList
         
-        processedImages = I.split (cat (Dim 0) $ map (normalize . resize) imageList) batchSize 0
-        processedLabels = I.split (asTensor $ labelToTensor unique labelList) batchSize 0
-        dataset = DataSet processedImages processedLabels unique
+        images = Torch.Functional.split  batchSize (Dim 0) (cat (Dim 0) nrmlzdImgs)
+        labels = Torch.Functional.split  batchSize (Dim 0) (asTensor prcssdLbls)
+        dataset = DataSet images labels unique
+    print $ shape $ head rszdImgs
     return dataset
 
-train :: DataSet -> AlexNetBB -> IO Linear
-train trainDataset pretrainedbb = do
-    let uniqueClasses = classes trainDataset
-    initial <- sample $ LinearSpec 4096 $ length uniqueClasses
-    trained <- foldLoop initial 5000 $
-        \state iter -> do
-            k <- randomRIO (1, length $ images trainDataset)
-            let imageBatch = (images trainDataset) !! (k - 1) 
-                labelBatch = (labels trainDataset) !! (k - 1) 
-                loss = nllLoss' labelBatch $ logSoftmax (Dim 1) $ linear state $ alexnetBBForward pretrainedbb imageBatch
-            when (iter `mod` 100 == 0) $ do
+-- dataset with unique occurence for each class 
+writeDataset :: DataSet -> IO()
+writeDataset ds = do
+    let fnames = map (++".bmp") $ map (\ind -> (classes ds) !! ind) $ G.concat $ map (asValue) $ G.concat $ map (Torch.Functional.split 1 (Dim 0)) $ labels ds
+        imgs = G.concat $ map (Torch.Functional.split 1 (Dim 0) ) $ images ds
+    mapM_ (\(f, i) -> writeBitmap f $ toDType D.UInt8 $  chw2hwc i) $ zip fnames imgs
+
+calcLoss :: [Tensor] -> [Tensor] -> [Tensor]
+calcLoss targets predictions = map (\(t, p)-> nllLoss' t p) $ zip targets predictions
+
+oneEpoch :: DataSet -> AlexNetBB -> Linear -> Adam -> IO (Linear, Adam)
+oneEpoch dataset pretrainedbb model optim = do
+    (newEpochModel, newEpochOptim) <- foldLoop (model, optim) (length $ labels dataset) $
+        \(iterModel, iterOptim) iter -> do
+            let imageBatch = (images dataset) !! (iter - 1) 
+                labelBatch = (labels dataset) !! (iter - 1) 
+                scores = logSoftmax (Dim 1) $ linear iterModel $ alexnetBBForward pretrainedbb imageBatch
+                loss = nllLoss' labelBatch scores
+            when (iter `mod` 30 == 0) $ do
                 putStrLn $ "Iteration: " ++ show iter ++ " | Loss for current mini-batch: " ++ show loss
-            (newParam, _) <- runStep state GD loss 1e-2
-            pure $ replaceParameters state newParam
+            (newParam, newOptim) <- runStep iterModel iterOptim loss 1e-4
+            pure (replaceParameters iterModel newParam, newOptim)
+    return (newEpochModel, newEpochOptim)
+
+train :: DataSet -> DataSet -> AlexNetBB -> IO Linear
+train trainDataset valDataset pretrainedbb = do
+    let uniqueClasses = classes trainDataset
+    initModel <- sample $ LinearSpec 4096 $ length uniqueClasses
+    let initOptim = mkAdam 0 0.9 0.999 (flattenParameters initModel) 
+    (trained, _) <- foldLoop (initModel, initOptim) 5 $
+        \(state, optim) iter -> do
+            print $ calcLoss (labels valDataset) $ map ((logSoftmax (Dim 1)) . (linear state) . (alexnetBBForward pretrainedbb)) $ images valDataset
+            oneEpoch trainDataset pretrainedbb state optim     
     return trained
 
 evaluate :: [Tensor] -> AlexNetBB -> Linear -> [Tensor]
@@ -122,12 +147,12 @@ main = do
         pretrainedbb = replaceParameters alexnetBB bbparams
     
     directoryList <- getDirectoryContents "alexNet/images"
-    (trainList, testList) <- splitList (drop 2 directoryList) 0.9
+    (trainList, testList) <- splitList (filter (\x-> if x=="." || x==".." then False else True) directoryList) 0.9
     
     trainDataSet <- createDataSet trainList
     testDataSet <- createDataSet testList
     
-    trainedFinalLayer <- train trainDataSet pretrainedbb
+    trainedFinalLayer <- train trainDataSet testDataSet pretrainedbb
 
     print $ "Accuracy on train-set: " ++ ( show $ calcAccuracy (labels trainDataSet) $ evaluate (images trainDataSet) pretrainedbb trainedFinalLayer)
     print $ "Accuracy on test-set: " ++ ( show $ calcAccuracy (labels testDataSet) $ evaluate (images testDataSet) pretrainedbb trainedFinalLayer)

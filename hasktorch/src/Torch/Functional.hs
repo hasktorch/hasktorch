@@ -176,6 +176,13 @@ sub
     -> Tensor -- ^ output
 sub a b = unsafePerformIO $ (cast3 ATen.sub_tts) a b kOne
 
+-- | Element wise division of input tensor by other tensor and returns a new resulting tensor
+div
+  :: Tensor -- ^ input
+  -> Tensor -- ^ other
+  -> Tensor
+div a b = unsafePerformIO $ (cast2 ATen.div_tt) a b
+
 -- | ceil
 ceil 
     :: Tensor -- ^ input
@@ -1242,3 +1249,19 @@ unsqueeze
   -> Tensor -- ^ input
   -> Tensor -- ^ output
 unsqueeze (Dim d) input = unsafePerformIO $ (cast2 ATen.unsqueeze_tl) input d
+
+-- | Upsamples the input, using bilinear upsampling. Expected inputs are spatial (4 dimensional).
+upsampleBilinear2d
+  :: (Int,Int) -- ^ output-size
+  -> Bool -- ^ align corners
+  -> Tensor -- ^ self
+  -> Tensor
+upsampleBilinear2d (outputHeight, outputWidth) alignCorners input = unsafePerformIO $ (cast3 ATen.upsample_bilinear2d_tlb) input [outputHeight, outputWidth] alignCorners
+
+-- | Splits the tensor into chunks of given size if possible.
+split
+  :: Int -- ^ split-size
+  -> Dim -- ^ dim
+  -> Tensor -- ^ self
+  -> [Tensor]
+split splitSize (Dim d) input = unsafePerformIO $ (cast3 ATen.split_tll) input splitSize d

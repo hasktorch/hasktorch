@@ -2,7 +2,7 @@
 
 module FunctionalSpec(spec) where
 
-import Prelude hiding (all, abs, exp, floor, log, min, max)
+import Prelude hiding (all, abs, exp, floor, log, min, max, div)
 
 import Test.Hspec
 import Control.Exception.Safe
@@ -35,6 +35,16 @@ spec = do
     let y = abs x
     let z = sub x y
     (toDouble $ select z 0 0) `shouldBe` -4.0
+  it "mul" $ do
+    let x = (-5) * ones'[5]
+    let y = 2 * ones' [5]
+    let z = mul x y
+    (toDouble $ select z 0 0) `shouldBe` -10.0
+  it "div" $ do
+    let x = (-5) * ones'[5]
+    let y = 2 * ones' [5]
+    let z = div x y
+    (toDouble $ select z 0 0) `shouldBe` -2.5
   it "ceil" $ do
     x <- randIO' [5]
     let y = ceil x
