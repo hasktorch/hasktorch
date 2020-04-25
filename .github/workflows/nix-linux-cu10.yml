@@ -29,4 +29,4 @@ jobs:
         skipNixBuild: false
         name: hasktorch
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-        nixBuildArgs: -A libtorch-ffi_cudatoolkit_10_1 -A hasktorch_cudatoolkit_10_1 -A hasktorch-examples_cudatoolkit_10_1 -A hasktorch-experimental_cudatoolkit_10_1
+        nixBuildArgs: -A libtorch-ffi_cudatoolkit_10_2 -A hasktorch_cudatoolkit_10_2 -A hasktorch-examples_cudatoolkit_10_2 -A hasktorch-experimental_cudatoolkit_10_2
