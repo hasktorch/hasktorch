@@ -5,12 +5,13 @@
 module Main where
 
 import AlexNet
-    
+
+import Prelude hiding (div)
 import GHC.Generics
 import Control.Monad (when)
 import Text.Regex.TDFA
 import System.Directory
-import System.Random
+import System.Random hiding (split)
 import Data.List
 import qualified Data.Map.Strict as S
 import qualified GHC.List as G
@@ -18,13 +19,15 @@ import qualified GHC.List as G
 import Torch.Optim
 import Torch.Autograd
 import Torch.Serialize
-import Torch.Vision
+import Torch.Vision as V
 import Torch.NN
 import Torch.Functional
 import Torch.TensorFactories
 import Torch.TensorOptions
 import Torch.Tensor
 import qualified Torch.DType as D
+import qualified Torch.Typed.Vision as V hiding (getImages')
+import qualified Torch.Functional.Internal as I
 
 data DataSet = DataSet {
     images  :: [Tensor],
@@ -54,18 +57,18 @@ createLabels :: FilePath -> String
 createLabels string = firstMatch
     where (firstMatch, _, _) = (string =~ "_[0-9]+.jpg" :: (String, String, String))
 
--- normalize :: Tensor -> Tensor
--- normalize t = t `sub` (uns mean) `Torch.Functional.div` uns stddev 
---     where 
---         mean = asTensor ([0.485, 0.456, 0.406] :: [Float])
---         stddev = asTensor ([0.229, 0.224, 0.225] :: [Float])
---         uns t = unsqueeze (Dim 2) $ unsqueeze (Dim 1) t
+normalizeT :: Tensor -> Tensor
+normalizeT t = (t `sub` (uns mean)) `div` (uns stddev)
+    where 
+        mean = asTensor ([0.485, 0.456, 0.406] :: [Float])
+        stddev = asTensor ([0.229, 0.224, 0.225] :: [Float])
+        uns t = unsqueeze (Dim 2) $ unsqueeze (Dim 1) t
 
 normalize :: Tensor -> Tensor
 normalize img = unsqueeze (Dim 0) (cat (Dim 0) [r', g', b'])
     where
         img' = divScalar (255.0::Float) img
-        [r, g, b] = Torch.Functional.split 1 (Dim 0) (reshape [3, 224, 224] img')
+        [r, g, b] = split 1 (Dim 0) (reshape [3, 224, 224] img')
         r' = divScalar (0.229::Float) (subScalar (0.485::Float) r) 
         g' = divScalar (0.224::Float) (subScalar (0.456::Float) g) 
         b' = divScalar (0.225::Float) (subScalar (0.406::Float) b) 
@@ -87,20 +90,39 @@ createDataSet directorylist = do
         unique = nub labelList
         batchSize = 16 :: Int
         rszdImgs =  map (upsampleBilinear2d (224, 224) True) imageList
-        nrmlzdImgs = map normalize rszdImgs
+        -- nrmlzdImgs = map normalize rszdImgs
+        nrmlzdImgs = normalizeT $ cat (Dim 0) rszdImgs
         prcssdLbls = labelToTensor unique labelList
         
-        images = Torch.Functional.split  batchSize (Dim 0) (cat (Dim 0) nrmlzdImgs)
-        labels = Torch.Functional.split  batchSize (Dim 0) (asTensor prcssdLbls)
+        images = split  batchSize (Dim 0) nrmlzdImgs
+        -- images = split  batchSize (Dim 0) $ cat (Dim 0) nrmlzdImgs
+        labels = split  batchSize (Dim 0) (asTensor prcssdLbls)
         dataset = DataSet images labels unique
     print $ shape $ head rszdImgs
+    return dataset
+
+fromMNIST :: V.MnistData -> IO DataSet
+fromMNIST ds = do
+    let nImages = V.length ds
+        batchSize = 16 :: Int
+        labelT = V.getLabels' nImages ds [0..(nImages-1)]
+    imagesT <- V.getImages' nImages 784 ds [0..(nImages-1)]
+    let rimages = I.repeatInterleaveScalar (reshape [nImages, 1, 28, 28] imagesT) 3 1
+        rszdImgs = upsampleBilinear2d (224, 224) True rimages
+        nrmlzdImgs = normalizeT rszdImgs
+        -- nrmlzdImgs = map normalize $ split 1 (Dim 0) rszdImgs
+
+        images = split batchSize (Dim 0) nrmlzdImgs
+        -- images = split batchSize (Dim 0) (cat (Dim 0) nrmlzdImgs)
+        labels = split batchSize (Dim 0) labelT
+        dataset = DataSet images labels $ map show [0..9]
     return dataset
 
 -- dataset with unique occurence for each class 
 writeDataset :: DataSet -> IO()
 writeDataset ds = do
-    let fnames = map (++".bmp") $ map (\ind -> (classes ds) !! ind) $ G.concat $ map (asValue) $ G.concat $ map (Torch.Functional.split 1 (Dim 0)) $ labels ds
-        imgs = G.concat $ map (Torch.Functional.split 1 (Dim 0) ) $ images ds
+    let fnames = map (++".bmp") $ map (\ind -> (classes ds) !! ind) $ G.concat $ map (asValue) $ G.concat $ map (split 1 (Dim 0)) $ labels ds
+        imgs = G.concat $ map (split 1 (Dim 0) ) $ images ds
     mapM_ (\(f, i) -> writeBitmap f $ toDType D.UInt8 $  chw2hwc i) $ zip fnames imgs
 
 calcLoss :: [Tensor] -> [Tensor] -> [Tensor]
@@ -146,15 +168,24 @@ main = do
     let bbparams = map IndependentTensor $ init $ init pretrainedANParams
         pretrainedbb = replaceParameters alexnetBB bbparams
     
-    directoryList <- getDirectoryContents "alexNet/images"
-    (trainList, testList) <- splitList (filter (\x-> if x=="." || x==".." then False else True) directoryList) 0.9
+    -- directoryList <- getDirectoryContents "alexNet/images"
+    -- (trainList, testList) <- splitList (filter (\x-> if x=="." || x==".." then False else True) directoryList) 0.9
     
-    trainDataSet <- createDataSet trainList
-    testDataSet <- createDataSet testList
+    -- trainDataSet <- createDataSet trainList
+    -- testDataSet <- createDataSet testList
     
-    trainedFinalLayer <- train trainDataSet testDataSet pretrainedbb
+    (trainData, testData) <- V.initMnist "datasets/mnist"
+    mnistTrainDS <- fromMNIST trainData
+    mnistTestDS <- fromMNIST testData
 
-    print $ "Accuracy on train-set: " ++ ( show $ calcAccuracy (labels trainDataSet) $ evaluate (images trainDataSet) pretrainedbb trainedFinalLayer)
-    print $ "Accuracy on test-set: " ++ ( show $ calcAccuracy (labels testDataSet) $ evaluate (images testDataSet) pretrainedbb trainedFinalLayer)
     
+    -- trainedFinalLayer <- train trainDataSet testDataSet pretrainedbb
+    trainedFinalLayer <- train mnistTrainDS mnistTestDS pretrainedbb
+
+    -- print $ "Accuracy on train-set: " ++ ( show $ calcAccuracy (labels trainDataSet) $ evaluate (images trainDataSet) pretrainedbb trainedFinalLayer)
+    -- print $ "Accuracy on test-set: " ++ ( show $ calcAccuracy (labels testDataSet) $ evaluate (images testDataSet) pretrainedbb trainedFinalLayer)
+    
+    print $ "Accuracy on train-set: " ++ ( show $ calcAccuracy (labels mnistTrainDS) $ evaluate (images mnistTrainDS) pretrainedbb trainedFinalLayer)
+    print $ "Accuracy on test-set: " ++ ( show $ calcAccuracy (labels mnistTestDS) $ evaluate (images mnistTestDS) pretrainedbb trainedFinalLayer)
+
     putStrLn "Done"
