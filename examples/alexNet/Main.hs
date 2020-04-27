@@ -6,7 +6,6 @@ module Main where
 
 import AlexNet
 
-import Prelude hiding (div)
 import GHC.Generics
 import Control.Monad (when)
 import Text.Regex.TDFA
@@ -57,12 +56,12 @@ createLabels :: FilePath -> String
 createLabels string = firstMatch
     where (firstMatch, _, _) = (string =~ "_[0-9]+.jpg" :: (String, String, String))
 
-normalizeT :: Tensor -> Tensor
-normalizeT t = (t `sub` (uns mean)) `div` (uns stddev)
-    where 
-        mean = asTensor ([0.485, 0.456, 0.406] :: [Float])
-        stddev = asTensor ([0.229, 0.224, 0.225] :: [Float])
-        uns t = unsqueeze (Dim 2) $ unsqueeze (Dim 1) t
+-- normalizeT :: Tensor -> Tensor
+-- normalizeT t = (t `sub` (uns mean)) `Torch.Functional.div` (uns stddev)
+--     where 
+--         mean = asTensor ([0.485, 0.456, 0.406] :: [Float])
+--         stddev = asTensor ([0.229, 0.224, 0.225] :: [Float])
+--         uns t = unsqueeze (Dim 2) $ unsqueeze (Dim 1) t
 
 normalize :: Tensor -> Tensor
 normalize img = unsqueeze (Dim 0) (cat (Dim 0) [r', g', b'])
@@ -90,35 +89,34 @@ createDataSet directorylist = do
         unique = nub labelList
         batchSize = 16 :: Int
         rszdImgs =  map (upsampleBilinear2d (224, 224) True) imageList
-        -- nrmlzdImgs = map normalize rszdImgs
-        nrmlzdImgs = normalizeT $ cat (Dim 0) rszdImgs
+        nrmlzdImgs = map normalize rszdImgs
+        -- nrmlzdImgs = normalizeT $ cat (Dim 0) rszdImgs
         prcssdLbls = labelToTensor unique labelList
         
-        images = split  batchSize (Dim 0) nrmlzdImgs
-        -- images = split  batchSize (Dim 0) $ cat (Dim 0) nrmlzdImgs
+        -- images = split  batchSize (Dim 0) nrmlzdImgs
+        images = split  batchSize (Dim 0) $ cat (Dim 0) nrmlzdImgs
         labels = split  batchSize (Dim 0) (asTensor prcssdLbls)
         dataset = DataSet images labels unique
-    print $ shape $ head rszdImgs
     return dataset
 
 fromMNIST :: V.MnistData -> IO DataSet
 fromMNIST ds = do
-    let nImages = V.length ds
+    let nImages = V.length ds `Prelude.div` 10
         batchSize = 16 :: Int
         labelT = V.getLabels' nImages ds [0..(nImages-1)]
     imagesT <- V.getImages' nImages 784 ds [0..(nImages-1)]
     let rimages = I.repeatInterleaveScalar (reshape [nImages, 1, 28, 28] imagesT) 3 1
         rszdImgs = upsampleBilinear2d (224, 224) True rimages
-        nrmlzdImgs = normalizeT rszdImgs
-        -- nrmlzdImgs = map normalize $ split 1 (Dim 0) rszdImgs
+        -- nrmlzdImgs = normalizeT rszdImgs
+        nrmlzdImgs = map normalize $ split 1 (Dim 0) rszdImgs
 
-        images = split batchSize (Dim 0) nrmlzdImgs
-        -- images = split batchSize (Dim 0) (cat (Dim 0) nrmlzdImgs)
+        -- images = split batchSize (Dim 0) nrmlzdImgs
+        images = split batchSize (Dim 0) (cat (Dim 0) nrmlzdImgs)
         labels = split batchSize (Dim 0) labelT
         dataset = DataSet images labels $ map show [0..9]
     return dataset
 
--- dataset with unique occurence for each class 
+-- writes one occurence for each class 
 writeDataset :: DataSet -> IO()
 writeDataset ds = do
     let fnames = map (++".bmp") $ map (\ind -> (classes ds) !! ind) $ G.concat $ map (asValue) $ G.concat $ map (split 1 (Dim 0)) $ labels ds
@@ -126,7 +124,7 @@ writeDataset ds = do
     mapM_ (\(f, i) -> writeBitmap f $ toDType D.UInt8 $  chw2hwc i) $ zip fnames imgs
 
 calcLoss :: [Tensor] -> [Tensor] -> [Tensor]
-calcLoss targets predictions = map (\(t, p)-> nllLoss' t p) $ zip targets predictions
+calcLoss targets predictions = take 10 $ map (\(t, p)-> nllLoss' t p) $ zip targets predictions
 
 oneEpoch :: DataSet -> AlexNetBB -> Linear -> Adam -> IO (Linear, Adam)
 oneEpoch dataset pretrainedbb model optim = do
@@ -153,13 +151,25 @@ train trainDataset valDataset pretrainedbb = do
             oneEpoch trainDataset pretrainedbb state optim     
     return trained
 
-evaluate :: [Tensor] -> AlexNetBB -> Linear -> [Tensor]
-evaluate images pretrainedbb trainedFL = map ((argmax (Dim (-1)) KeepDim) . (softmax (Dim (-1)))) unNormalizedScores
-    where
-        unNormalizedScores =  map (linear trainedFL . (alexnetBBForward pretrainedbb)) images
+-- evaluateL :: [Tensor] -> AlexNetBB -> Linear -> [Tensor]
+-- evaluateL images pretrainedbb trainedFL = map ((argmax (Dim (-1)) KeepDim) . (softmax (Dim (-1)))) unNormalizedScores
+--     where
+--         unNormalizedScores =  map (linear trainedFL . (alexnetBBForward pretrainedbb)) images
 
-calcAccuracy :: [Tensor] -> [Tensor] -> Float
-calcAccuracy l m = (fromIntegral( toInt (sum $ map (\t -> sumAll $ fst t ==. (flattenAll $ snd t)) $ zip l m)) :: Float) / (fromIntegral((sum $ map (head . shape) m)) :: Float)
+evaluate :: Tensor -> AlexNetBB -> Linear -> Tensor
+evaluate images pretrainedbb trainedFL = argmax (Dim (-1)) KeepDim $ softmax (Dim (-1)) unNormalizedScores
+    where
+        unNormalizedScores =  linear trainedFL $ alexnetBBForward pretrainedbb images
+
+-- calcAccuracyL :: [Tensor] -> [Tensor] -> Float
+-- calcAccuracyL l m = (fromIntegral( toInt (sum $ map (\t -> sumAll $ fst t ==. (flattenAll $ snd t)) $ zip l m)) :: Float) / (fromIntegral((sum $ map (head . shape) m)) :: Float)
+
+calcAccuracy :: (Tensor, Tensor) -> AlexNetBB -> Linear -> Float
+calcAccuracy (targets, inputs)  pretrainedbb trainedFL = correctPreds / totalPreds
+    where
+        correctPreds = fromIntegral (toInt $ sumAll $ (flattenAll predictions) ==. targets) :: Float
+        totalPreds = fromIntegral (head $ shape targets) :: Float
+        predictions = evaluate inputs pretrainedbb trainedFL
 
 main = do
     pretrainedANParams <- load "alexNet/alexNet.pt"
@@ -182,10 +192,13 @@ main = do
     -- trainedFinalLayer <- train trainDataSet testDataSet pretrainedbb
     trainedFinalLayer <- train mnistTrainDS mnistTestDS pretrainedbb
 
-    -- print $ "Accuracy on train-set: " ++ ( show $ calcAccuracy (labels trainDataSet) $ evaluate (images trainDataSet) pretrainedbb trainedFinalLayer)
-    -- print $ "Accuracy on test-set: " ++ ( show $ calcAccuracy (labels testDataSet) $ evaluate (images testDataSet) pretrainedbb trainedFinalLayer)
+    -- print $ "Accuracy on train-set: " ++ ( show $ calcAccuracyL (labels trainDataSet) $ evaluate (images trainDataSet) pretrainedbb trainedFinalLayer)
+    -- print $ "Accuracy on test-set: " ++ ( show $ calcAccuracyL (labels testDataSet) $ evaluate (images testDataSet) pretrainedbb trainedFinalLayer)
     
-    print $ "Accuracy on train-set: " ++ ( show $ calcAccuracy (labels mnistTrainDS) $ evaluate (images mnistTrainDS) pretrainedbb trainedFinalLayer)
-    print $ "Accuracy on test-set: " ++ ( show $ calcAccuracy (labels mnistTestDS) $ evaluate (images mnistTestDS) pretrainedbb trainedFinalLayer)
+    -- print $ "Accuracy on train-set: " ++ ( show $ calcAccuracyL (labels mnistTrainDS) $ evaluateL (images mnistTrainDS) pretrainedbb trainedFinalLayer)
+    -- print $ "Accuracy on test-set: " ++ ( show $ calcAccuracyL (labels mnistTestDS) $ evaluateL (images mnistTestDS) pretrainedbb trainedFinalLayer)
+
+    print $ "Accuray on train-set:" ++ show ((foldl (\acc t-> acc + (calcAccuracy t pretrainedbb trainedFinalLayer))  0 $ zip (labels mnistTrainDS) (images mnistTrainDS)) / (fromIntegral $  length $ labels mnistTrainDS :: Float))
+    print $ "Accuray on test-set:" ++ show ((foldl (\acc t-> acc + (calcAccuracy t pretrainedbb trainedFinalLayer))  0 $ zip (labels mnistTestDS) (images mnistTestDS)) / (fromIntegral $  length $ labels mnistTestDS :: Float))
 
     putStrLn "Done"
