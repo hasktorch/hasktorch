@@ -1282,14 +1282,6 @@ logSigmoid
   -> Tensor -- ^ output
 logSigmoid input = unsafePerformIO $ (cast1 ATen.log_sigmoid_t) input
 
--- | Applies a linear transformation to the incoming data: \(y = xA^T + b\)
-linear 
-  :: Tensor -- ^ weight
-  -> Tensor -- ^ bias
-  -> Tensor -- ^ input
-  -> Tensor -- ^ output
-linear weight bias input = unsafePerformIO $ (cast3 ATen.linear_ttt) input weight bias
-
 -- | Returns a namedtuple (values, indices) where values is the maximum value of each row of the input tensor in the given dimension dim. 
 -- And indices is the index location of each maximum value found (argmax).
 -- If keepdim is True, the output tensors are of the same size as input except in the dimension dim where they are of size 1. 
