@@ -515,6 +515,16 @@ binaryCrossEntropyLoss'
  -> Tensor -- ^ output
 binaryCrossEntropyLoss' target t = unsafePerformIO $ (cast4 ATen.binary_cross_entropy_tttl) t target (onesLike target) ReduceMean
 
+-- | binaryCrossEntropyWithLogits
+binaryCrossEntropyWithLogits
+  :: Reduction -- ^ Specifies the reduction to apply to the output
+  -> Tensor -- ^ target
+  -> Tensor -- ^ weight
+  -> Tensor -- ^ pos_weight
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+binaryCrossEntropyWithLogits reduction target weight pos_weight input = unsafePerformIO $ (cast5 ATen.binary_cross_entropy_with_logits_tttl) input target weight pos_weight reduction
+
 -- | Creates a criterion that measures the mean squared error (squared L2 norm) between each element in the @input@ and @target@.
 mseLoss 
  :: Tensor -- ^ target
@@ -568,6 +578,14 @@ adaptiveMaxPool2d
 adaptiveMaxPool2d _output_size _self =
     unsafePerformIO $ (cast2 ATen.adaptive_max_pool2d_tl)
         _self _output_size
+
+-- | Applies a 3D adaptive max pooling over an input signal composed of several input planes
+adaptiveMaxPool3d
+    :: (Int, Int) -- ^ output size
+    -> Tensor -- ^ input
+    -> (Tensor, Tensor)
+adaptiveMaxPool3d output_size input = unsafePerformIO $ (cast2 ATen.adaptive_max_pool3d_tl) input output_size
+
 
 -- | maxPool1dWithIndices
 maxPool1dWithIndices 
@@ -1240,3 +1258,138 @@ unsqueeze
   -> Tensor -- ^ input
   -> Tensor -- ^ output
 unsqueeze (Dim d) input = unsafePerformIO $ (cast2 ATen.unsqueeze_tl) input d
+
+-- | leakyRelu
+leakyRelu
+  :: Float -- ^ negative slope
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+leakyRelu negSlope input = unsafePerformIO $ (cast2 ATen.leaku_relu_ts) input negSlope
+
+-- | logSigmoid
+logSigmoid
+  :: Tensor -- ^ input
+  -> Tensor -- ^ output
+logSigmoid input = unsafePerformIO $ (cast1 ATen.log_sigmoid_t) input
+
+-- | l1Loss
+l1Loss
+  ::  Reduction -- ^ reduction
+  -> Tensor -- ^ input
+  -> Tensor -- ^ target
+  -> Tensor -- ^ output
+l1Loss reduction input target = unsafePerformIO $ (cast3 ATen.l1_loss_ttl) input target reduction
+
+-- | linear
+linear 
+  :: Tensor -- ^ weight
+  -> Tensor -- ^ bias
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+linear weight bias input = unsafePerformIO $ (cast3 ATen.linear_ttt) input weight bias
+
+-- | maxDim
+maxDim
+  :: Dim -- ^ dimension
+  -> KeepDim -- ^ keepdim
+  -> Tensor -- ^ input
+  -> (Tensor, Tensor) -- ^ output
+maxDim (Dim d) k input = unsafePerformIO $ (cast3 ATen.max_tlb) input d (keepdim k)
+
+-- | minDim
+minDim
+  :: Dim -- ^ dimension
+  -> KeepDim -- ^ keepdim
+  -> Tensor -- ^ input
+  -> (Tensor, Tensor)
+minDim (Dim d) k input = unsafePerformIO $ (cast3 ATen.min_tlb) input d (keepdim k)
+
+-- | meanDim
+meanDim
+  :: Dim -- ^ dimension
+  -> KeepDim -- ^ keepdim
+  -> Dtype -- ^ dtype
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+meanDim (Dim d) k dtype input = unsafePerformIO $ (cast4 ATen.mean_tlbs) input d (keepdim k) dtype
+
+-- | medianDim
+medianDim
+  :: Dim -- ^ dimension
+  -> KeepDim -- ^ keepdim
+  -> Tensor -- ^ input
+  -> (Tensor, Tensor) -- ^ output
+medianDim (Dim d) k input = unsafePerformIO $ (cast3 ATen.median_tlb) input d (keepdim k)
+
+-- | chainMatmul
+chainMatmul
+  :: [Tensor] -- ^ list of tensors
+  -> Tensor -- ^ output
+chainMatmul tensors = unsafePerformIO $ (cast1 ATen.chain_matmul_l) tensors
+
+-- | gelu
+gelu
+  :: Tensor -- ^ input
+  -> Tensor -- ^ output
+gelu input = unsafePerformIO $ (cast1 ATen.gelu_t) input
+
+-- | glu
+glu
+  :: Dim -- ^ dimension
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+glu (Dim d) input = unsafePerformIO $ (cast2 ATen.glu_tl) input d
+
+-- | stdMeanAll
+stdMeanAll
+  :: Bool -- ^ unbiased
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+stdMeanAll unbiased input = unsafePerformIO $ (cast2 ATen.std_mean_tb) input unbiased
+
+-- | stdMeanDim
+stdMeanDim
+  :: Dim -- ^ dimension
+  -> Bool -- ^ unbiased
+  -> KeepDim -- ^ whether the output tensor has dim retained or not
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+stdMeanDim (Dim d) unbiased k input = unsafePerformIO $ (cast4 ATen.std_mean_tlbb) input d unbiased (keepdim k)
+
+-- | NLLL2D
+nllLoss2D 
+  :: Reduction -- reduction
+  -> Int -- ignore_index
+  -> Tensor -- input
+  -> Tensor -- target
+  -> Tensor -- weight
+  -> Tensor -- output
+nllLoss2D reduction ignoreindex input target weight = unsafePerformIO $ (cast5 ATen.nll_loss2d_tttll) input target weight reduction ignoreindex
+
+-- | multiMarginLoss
+multiMarginLoss
+  :: Reduction -- ^ reduction
+  -> Float -- ^ p
+  -> Float -- ^ margin
+  -> Tensor -- ^ input
+  -> Tensor -- ^ target
+  -> Tensor -- ^ weight
+  -> Tensor -- ^ output
+multiMarginLoss reduction p margin input target weight = unsafePerformIO $ (cast6 ATen.multi_margin_loss_ttsstl) input target p margin weight reduction
+
+-- | multiLabelMarginLoss
+multiLabelMarginLoss
+  :: Reduction -- reduction
+  -> Tensor -- input
+  -> Tensor -- target
+  -> Tensor -- output
+multiLabelMarginLoss reduction input target = unsafePerformIO $ (cast3 ATen.multilabel_margin_loss_ttl) input target reduction
+
+
+
+
+
+
+
+
+
