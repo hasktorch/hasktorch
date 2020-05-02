@@ -123,9 +123,11 @@ linear layer input = linear' input w b
 
 instance Randomizable LinearSpec Linear where
   sample LinearSpec{..} = do
-      w <- makeIndependent =<< kaimingUniform' [out_features, in_features]
-      -- w <- makeIndependent =<< randn' [out_features, in_features]
-      b <- makeIndependent =<< randnIO' [out_features]
+      w <- makeIndependent =<< kaimingUniform FanIn (LeakyRelu $ Prelude.sqrt (5.0 :: Float)) [out_features, in_features]
+      init <- randIO' [out_features]
+      let bound = (1 :: Float) / Prelude.sqrt (fromIntegral (getter FanIn $ calculateFan [out_features, in_features]) :: Float)
+      b <- makeIndependent =<< pure(subScalar bound $ mulScalar (bound * 2.0) init)
+      
       return $ Linear w b
 
 instance Parameterized Linear
@@ -165,10 +167,10 @@ conv2dForward layer stride padding input =
 instance Randomizable Conv2dSpec Conv2d where
   sample Conv2dSpec{..} = do
       w <- makeIndependent =<< kaimingUniform FanIn (LeakyRelu $ Prelude.sqrt (5.0 :: Float)) [outputChannelSize, inputChannelSize, kernelHeight, kernelWidth]
-      uniform <- randIO' [outputChannelSize]
-      let fan_in = fromIntegral (kernelHeight * kernelWidth) :: Float
-          bound = Prelude.sqrt $ (1 :: Float) / fan_in
-      b <- makeIndependent =<< pure (mulScalar ((2 :: Float) * bound) (subScalar (0.5 :: Float) uniform))
+      init <- randIO' [outputChannelSize]
+      let bound = (1 :: Float) / Prelude.sqrt (fromIntegral (getter FanIn $ calculateFan [outputChannelSize, inputChannelSize, kernelHeight, kernelWidth]) :: Float)
+      b <- makeIndependent =<< pure(subScalar bound $ mulScalar (bound * 2.0) init)
+      
       return $ Conv2d w b
 
 instance Parameterized Conv2d
