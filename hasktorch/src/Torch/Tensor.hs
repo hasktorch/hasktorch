@@ -416,8 +416,11 @@ class TensorLike a where
   _peekElemOff :: Ptr () -> Int -> [Int] -> IO a
   _pokeElemOff :: Ptr () -> Int -> a -> IO ()
 
+bool_opts = withDType Bool defaultOpts
+uint8_opts = withDType UInt8 defaultOpts
 int64_opts = withDType Int64 defaultOpts
 float_opts = withDType Float defaultOpts
+double_opts = withDType Double defaultOpts
 
 withTensor :: Tensor -> (Ptr () -> IO a) -> IO a
 withTensor t fn = cast t $ \t' -> withForeignPtr t' $ \tensor_ptr -> Unmanaged.tensor_data_ptr tensor_ptr >>= fn
@@ -469,6 +472,28 @@ instance {-# OVERLAPPING #-} TensorLike Bool where
   _peekElemOff ptr offset _ = (/= 0) <$> (peekElemOff (castPtr ptr) offset :: IO Word8)
   _pokeElemOff ptr offset v = pokeElemOff (castPtr ptr) offset ((if v then 1 else 0) :: Word8)
 
+instance {-# OVERLAPPING #-}TensorLike Tensor where
+  asTensor' = error "Not implemented for Tensor-type"
+  asTensor = id
+  asValue = id
+  _dtype = error "Not implemented for Tensor-type"
+  _dims v = error "Not implemented for Tensor-type"
+  _deepDims v = error "Not implemented for Tensor-type"
+  _peekElemOff = error "Not implemented for Tensor-type"
+  _pokeElemOff = error "Not implemented for Tensor-type"
+
+
+instance {-# OVERLAPPING #-}TensorLike a => TensorLike (a,a) where
+  asTensor' = error "Not implemented for tuple-type"
+  asTensor (a,b) = asTensor [a,b]
+  asValue v =
+    let [a,b] = asValue v
+    in (a,b)
+  _dtype = error "Not implemented for tuple-type"
+  _dims v = error "Not implemented for tuple-type"
+  _deepDims v = error "Not implemented for tuple-type"
+  _peekElemOff = error "Not implemented for tuple-type"
+  _pokeElemOff = error "Not implemented for tuple-type"
 
 instance {-# OVERLAPPING #-} TensorLike a => TensorLike [a] where
   asTensor' v opts = unsafePerformIO $ do

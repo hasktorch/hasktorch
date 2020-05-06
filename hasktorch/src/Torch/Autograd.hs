@@ -28,3 +28,6 @@ requiresGrad t = unsafePerformIO $ (cast1 ATen.tensor_requires_grad) t
 
 makeIndependent :: Tensor -> IO IndependentTensor
 makeIndependent t = (cast1 Torch.Internal.Managed.Autograd.makeIndependent) t >>= return . IndependentTensor
+
+makeIndependentBuffer :: Tensor -> IO IndependentTensor
+makeIndependentBuffer t = (cast1 Torch.Internal.Managed.Autograd.makeIndependentBuffer) t >>= return . IndependentTensor

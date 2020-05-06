@@ -49,6 +49,9 @@ library
                     , Torch.Script
                     , Torch.HList
                     , Torch.Vision.Darknet
+                    , Torch.Vision.Darknet.Config
+                    , Torch.Vision.Darknet.Spec
+                    , Torch.Vision.Darknet.Forward
                     , Torch.Typed
                     , Torch.Typed.Aux
                     , Torch.Typed.Factories
@@ -139,6 +142,7 @@ test-suite spec
                     , ScriptSpec
                     , TensorSpec
                     , NNSpec
+                    , DarknetSpec
                     , DimnameSpec
                     , PipelineSpec
                     , Torch.Typed.AuxSpec

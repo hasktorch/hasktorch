@@ -1218,7 +1218,29 @@ constantPadNd1d padding value input = unsafePerformIO $ cast3
   padding
   value
 
---
+batchNorm
+  :: Tensor -- ^ weight
+  -> Tensor -- ^ bias
+  -> Tensor -- ^ running_mean
+  -> Tensor -- ^ running_var
+  -> Bool -- ^ training
+  -> Double -- ^ momentum
+  -> Double -- ^ eps
+  -> Tensor -- ^ input
+  -> Tensor
+batchNorm weight bias running_mean running_var training momentum eps input = unsafePerformIO $ cast9
+  ATen.batch_norm_tttttbddb
+  input
+  weight
+  bias
+  running_mean
+  running_var
+  training
+  momentum
+  eps
+  True
+
+-- 
 -- convolutions
 --
 
