@@ -149,8 +149,6 @@ instance Parameterized Linear
 --     bias <- nextParameter
 --     return $ Linear{..}
 
-instance Parameterized [Linear]
-
 data Conv2dSpec = 
   Conv2dSpec {
     inputChannelSize  :: Int, 
