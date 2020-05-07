@@ -6,6 +6,7 @@ import Control.Monad.State
 import Prelude hiding (sqrt)
 
 import Torch.Tensor
+import Torch.TensorFactories
 import Torch.Functional
 import Torch.Autograd
 import Torch.NN
@@ -90,6 +91,19 @@ data Adam = Adam {
     m2 :: [Tensor], -- 2nd moment
     iter :: Int -- iteration
     } deriving Show
+
+mkAdam
+  :: Int
+  -> Float
+  -> Float
+  -> [Parameter]
+  -> Adam
+mkAdam iter beta1 beta2 parameters = Adam beta1
+                                          beta2
+                                          (initZeros <$> parameters)
+                                          (initZeros <$> parameters)
+                                          iter
+    where initZeros = zerosLike . toDependent
 
 -- | Adam step
 adam 

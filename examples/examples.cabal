@@ -93,7 +93,7 @@ executable typed-transformer
                      , foldl
                      , lens-family-core
                      , libtorch-ffi
-                     , oset
+                     , ordered-containers
                      , pipes
                      , pipes-group
                      , pipes-random
@@ -211,6 +211,15 @@ executable gd-field
 executable autograd
  import:               config
  hs-source-dirs:       autograd
+ main-is:              Main.hs
+ ghc-options:          -fno-warn-partial-type-signatures
+ build-depends:        base >= 4.7 && <5
+                     , hasktorch
+                     , libtorch-ffi
+
+executable alexNet
+ import:               config
+ hs-source-dirs:       alexNet
  main-is:              Main.hs
  ghc-options:          -fno-warn-partial-type-signatures
  build-depends:        base >= 4.7 && <5

@@ -1,6 +1,9 @@
-name: nix-jupyterlab
+name: nix-linux-cu10
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
 
 jobs:
   build:
@@ -23,15 +26,7 @@ jobs:
         git submodule init && git submodule update
     - uses: cachix/cachix-action@releases/v5
       with:
+        skipNixBuild: false
         name: hasktorch
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-        skipNixBuild: false
-        file: experimental/jupyterlab/default.nix
-        nixBuildArgs: --option sandbox false 
-#    - name: Build
-#      run: |
-#        nix-env -i cachix
-#        cachix use hasktorch
-#        cachix use jupyterwith
-#        cd experimental/jupyterlab
-#        nix-shell --option sandbox false --command "echo"
+        nixBuildArgs: -A libtorch-ffi_cudatoolkit_10_2 -A hasktorch_cudatoolkit_10_2 -A hasktorch-examples_cudatoolkit_10_2 -A hasktorch-experimental_cudatoolkit_10_2

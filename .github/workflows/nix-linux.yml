@@ -8,6 +8,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: free disk space
+      run: |
+        sudo swapoff -a
+        sudo rm -f /swapfile
+        sudo apt -y purge ghc* cabal-install* php* || true
+        sudo apt autoremove -y || true
+        sudo apt autoclean -y || true
+        docker rmi $(docker image ls -aq)
+        df -h
     - uses: cachix/install-nix-action@v7
     - name: Setup repo
       run: |
@@ -17,3 +26,4 @@ jobs:
         skipNixBuild: false
         name: hasktorch
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+        nixBuildArgs: -A hasktorch-codegen -A libtorch-ffi_cpu  -A hasktorch_cpu -A hasktorch-examples_cpu -A hasktorch-experimental_cpu

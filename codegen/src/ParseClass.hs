@@ -9,7 +9,7 @@ import GHC.Generics
 import Data.Yaml
 
 import qualified Data.Yaml as Y
-import Text.Show.Prettyprint (prettyPrint)
+-- import Text.Show.Prettyprint (prettyPrint)
 import qualified ParseFunctionSig as S
 
 data CppClassSpec = CppClassSpec
@@ -24,10 +24,10 @@ data CppClassSpec = CppClassSpec
 instance FromJSON CppClassSpec
 
 
-decodeAndPrint :: String -> IO ()
-decodeAndPrint fileName = do
-  file <- Y.decodeFileEither fileName :: IO (Either ParseException CppClassSpec)
-  prettyPrint file
+-- decodeAndPrint :: String -> IO ()
+-- decodeAndPrint fileName = do
+--   file <- Y.decodeFileEither fileName :: IO (Either ParseException CppClassSpec)
+--   prettyPrint file
 
 trimSpace :: String -> String
 trimSpace [] = []

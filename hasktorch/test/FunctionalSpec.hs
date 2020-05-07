@@ -7,11 +7,12 @@ import Prelude hiding (all, abs, exp, floor, log, min, max)
 import Test.Hspec
 import Control.Exception.Safe
 
-import Torch.Tensor
-import Torch.DType
-import Torch.TensorFactories
-import Torch.Functional
-import Torch.TensorOptions
+--import Torch.Tensor
+--import Torch.DType
+--import Torch.TensorFactories
+--import Torch.Functional
+--import Torch.TensorOptions
+import Torch
 
 spec :: Spec
 spec = do
@@ -93,7 +94,7 @@ spec = do
     shape qr `shouldBe` [5,3]
   it "diag" $ do
     let x = ones' [3]
-    let y = diag 2 x
+    let y = diag (Diag 2) x
     shape y `shouldBe` [5, 5]
   it "expand" $ do
     let t = asTensor [[1], [2], [3 :: Int]]
@@ -145,4 +146,47 @@ spec = do
   it "elu' (neg)" $ do
     let x = elu' $ -5 * ones' [4]
     (toDouble $ select x 0 0) `shouldBe` (-0.9932620525360107)
+  it "embedding" $ do
+    let dic = asTensor ([[1,2,3], [4,5,6]] :: [[Float]])
+        indices = asTensor ([0,1,1] :: [Int])
+        x = embedding' dic indices
+        value = asTensor ([[1.0,2.0,3.0],[4.0,5.0,6.0],[4.0,5.0,6.0]] :: [[Float]])
+    Torch.all (x `eq` value) `shouldBe` True
+  it "smoothL1Loss" $ do
+    let input = ones' [3]
+        target = 3 * input
+        output = smoothL1Loss ReduceNone input target
+    (toDouble $ select output 0 0) `shouldBe` (1.5)
+  it "softMarginLoss" $ do
+    let input = ones' [3]
+        target = 3 * input
+        output = softMarginLoss ReduceSum input target
+    (toInt $ output*1000) `shouldBe` (145)
+  it "softShrink" $ do
+    let input = 3 * ones' [3]
+        output = softShrink 1 input
+    (toDouble $ select output 0 0) `shouldBe` (2.0)
+  it "stack" $ do
+    let x = ones' [4,3]
+        y = ones' [4,3]
+        output = stack (Dim 1) [x,y]
+    (shape output) `shouldBe` ([4,2,3]) 
+  it "sumDim" $ do
+    let x = asTensor([[1,2,3],[4,5,6],[7,8,9],[10,11,12]]::[[Float]])
+        output = sumDim (Dim 0) KeepDim Float x
+    (toDouble $ select output 1 1) `shouldBe` (26.0)
+  it "topK" $ do
+    let x = asTensor([1,2,3] :: [Float])
+        output = fst $ topK 2 (Dim 0) True True x 
+    (toDouble $ select output 0 0) `shouldBe` (3.0)
+  it "triu" $ do
+    let x = asTensor([[1,2,3],[4,5,6],[7,8,9],[10,11,12]]::[[Float]])
+    (toDouble $ sumAll $ triu (Diag 0) x) `shouldBe` (26.0)
+  it "tril" $ do
+    let x = asTensor([[1,2,3],[4,5,6],[7,8,9],[10,11,12]]::[[Float]])
+    (toDouble $ sumAll $ tril (Diag 0) x) `shouldBe` (67.0)
+  it "unsqueeze" $ do
+    let x = asTensor([[1,2,3],[4,5,6],[7,8,9],[10,11,12]]::[[Float]])
+        output = unsqueeze (Dim 0) x
+    (shape output) `shouldBe` ([1,4,3])      
 

@@ -101,6 +101,8 @@ instance Castable Reduction Int64 where
   uncast 1 f = f ReduceMean
   uncast _ f = f ReduceSum
 
+data Diag = Diag Int
+
 isUpper Upper = True
 isUpper Lower = False
 
@@ -250,6 +252,27 @@ matmul
  -> Tensor -- ^ second tensor for matrix multiplication
  -> Tensor -- ^ output
 matmul a b = unsafePerformIO $ (cast2 ATen.matmul_tt) a b
+
+-- | A simple lookup table that looks up embeddings in a fixed dictionary and size.
+-- This module is often used to retrieve word embeddings using indices. The input to the module is a list of indices, and the embedding matrix, and the output is the corresponding word embeddings.
+embedding 
+    :: Bool -- ^ whether or not to scale the gradient by the frequencies
+    -> Bool -- ^ whether or not the embedding is sparse
+    -> Tensor -- ^ weights
+    -> Int -- ^ padding
+    -> Tensor -- ^ indices
+    -> Tensor -- ^ output
+embedding scaleByGradFreq sparse weights paddingIdx indices =
+    unsafePerformIO $ (cast5 ATen.embedding_ttlbb)
+        weights indices paddingIdx scaleByGradFreq sparse
+
+embedding'
+    :: Tensor -- ^ weights
+    -> Tensor -- ^ indices
+    -> Tensor -- ^ output
+embedding' weights indices =
+    unsafePerformIO $ (cast5 ATen.embedding_ttlbb)
+        weights indices (-1 :: Int) False False
 
 -- | Computes the error function of each element
 erf 
@@ -494,6 +517,16 @@ binaryCrossEntropyLoss'
  -> Tensor -- ^ output
 binaryCrossEntropyLoss' target t = unsafePerformIO $ (cast4 ATen.binary_cross_entropy_tttl) t target (onesLike target) ReduceMean
 
+-- | This loss combines a Sigmoid layer and the BCELoss in one single class. This version is more numerically stable than using a plain Sigmoid followed by a BCELoss as, by combining the operations into one layer, we take advantage of the log-sum-exp trick for numerical stability.
+binaryCrossEntropyWithLogits
+  :: Reduction -- ^ Specifies the reduction to apply to the output
+  -> Tensor -- ^ target
+  -> Tensor -- ^ weight
+  -> Tensor -- ^ pos_weight
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+binaryCrossEntropyWithLogits reduction target weight pos_weight input = unsafePerformIO $ (cast5 ATen.binary_cross_entropy_with_logits_ttttl) input target weight pos_weight reduction
+
 -- | Creates a criterion that measures the mean squared error (squared L2 norm) between each element in the @input@ and @target@.
 mseLoss 
  :: Tensor -- ^ target
@@ -509,7 +542,26 @@ nllLoss'
 nllLoss' target t = unsafePerformIO $ (cast5 ATen.nll_loss_tttll) t target weight ReduceMean (-100 :: Int)
     where
         nClass = (shape t) !! 1 -- TODO nicer runtime error if input dimensions don't conform
-        weight = ones' [nClass]
+        weight = toDevice (device target) $ ones' [nClass]
+
+-- | Returns cosine similarity between x1 and x2, computed along dim.
+cosineSimilarity 
+    :: Dim -- ^ dimension of vectors (default=1)
+    -> Double -- ^ small value to avoid division by 0 (default=1e-8)
+    -> Tensor -- ^ x1
+    -> Tensor -- ^ x2
+    -> Tensor -- ^ output
+cosineSimilarity (Dim dim) eps x1 x2 = 
+    unsafePerformIO $ (cast4 ATen.cosine_similarity_ttld) x1 x2 dim eps
+
+-- | Returns cosine similarity with defaulted options.
+cosineSimilarity'
+    :: Tensor -- ^ x1
+    -> Tensor -- ^ x2
+    -> Tensor -- ^ output
+cosineSimilarity' x1 x2 = 
+    unsafePerformIO $ 
+        (cast4 ATen.cosine_similarity_ttld) x1 x2 (1 :: Int) (1e-8 :: Double)
 
 -- | Applies a 1D adaptive max pooling over an input signal composed of several input planes.
 adaptiveMaxPool1d 
@@ -528,6 +580,14 @@ adaptiveMaxPool2d
 adaptiveMaxPool2d _output_size _self =
     unsafePerformIO $ (cast2 ATen.adaptive_max_pool2d_tl)
         _self _output_size
+
+-- | Applies a 3D adaptive max pooling over an input signal composed of several input planes
+adaptiveMaxPool3d
+    :: (Int, Int) -- ^ output size
+    -> Tensor -- ^ input
+    -> (Tensor, Tensor)
+adaptiveMaxPool3d output_size input = unsafePerformIO $ (cast2 ATen.adaptive_max_pool3d_tl) input output_size
+
 
 -- | maxPool1dWithIndices
 maxPool1dWithIndices 
@@ -566,7 +626,15 @@ maxPool2d
     -> Tensor -- ^ output
 maxPool2d kernelSize stride padding dilation ceilMode self =
     unsafePerformIO $ (cast6 ATen.max_pool2d_tllllb)
-        self kernelSize stride padding dilation ceilMode
+        self 
+        (asList kernelSize)
+        (asList stride)
+        (asList padding)
+        (asList dilation)
+        ceilMode
+        where
+            asList :: (Int, Int) -> [Int]
+            asList (a0, a1) = [a0, a1]
  
 -- | Applies a 3D max pooling over an input signal composed of several input planes.
 maxPool3d 
@@ -703,7 +771,10 @@ adaptiveAvgPool2d
  :: (Int,Int) -- ^ output size (Height * Width)
  -> Tensor -- ^ input 
  -> Tensor -- ^ output
-adaptiveAvgPool2d _output_size _self = unsafePerformIO $ (cast2 ATen.adaptive_avg_pool2d_tl) _self _output_size
+adaptiveAvgPool2d (outputHeight, outputWidth) input = 
+    unsafePerformIO $ (cast2 ATen.adaptive_avg_pool2d_tl) 
+        input 
+        ([outputHeight, outputWidth] :: [Int])
 
 -- | Applies a 3D adaptive average pooling over an input signal composed of several input planes.
 adaptiveAvgPool3d 
@@ -895,10 +966,10 @@ transpose2D = transpose (Dim 0) (Dim 1)
 --        If Int < 0, it is below the main diagonal.
 
 diag
-    ::  Int -- ^ diagonal
+    ::  Diag -- ^ diagonal
     ->  Tensor -- ^ input
     ->  Tensor -- ^ output
-diag index t = unsafePerformIO $ (cast2 ATen.tensor_diag_l) t index
+diag (Diag index) t = unsafePerformIO $ (cast2 ATen.tensor_diag_l) t index
 
 -- | Returns True if all elements in the tensor are True, False otherwise.
 all
@@ -947,8 +1018,13 @@ expand
   -> Tensor -- ^ output
 expand t someBool dims = unsafePerformIO $ (cast3 ATen.tensor_expand_lb) t dims someBool
 
--- flatten :: Tensor -> Int -> Int -> Tensor
--- flatten input start_dim end_dim = unsafePerformIO $ (cast3 ATen.flatten_tll) input start_dim end_dim
+-- | flatten
+flatten
+  :: Dim -- ^ startDim
+  -> Dim -- ^ endDim
+  -> Tensor -- ^ self
+  -> Tensor -- ^ output
+flatten (Dim startDim) (Dim endDim) t = unsafePerformIO $ (cast3 ATen.flatten_tll) t startDim endDim
 
 -- | flattenAll
 flattenAll
@@ -956,3 +1032,382 @@ flattenAll
   -> Tensor -- ^ output
 flattenAll t =
   unsafePerformIO $ (cast3 ATen.flatten_tll) t (0 :: Int) (-1 :: Int)
+
+-- Not used yet
+data RNNParams = RNNParams {
+    weightIH :: Tensor,
+    weightHH :: Tensor,
+    biasIH :: Tensor,
+    biasHH :: Tensor
+} deriving (Show)
+
+-- | A long short-term memory (LSTM) cell.
+lstmCell 
+    :: Tensor -- ^ input-hidden weights (4*hidden_size, input_size)
+    -> Tensor -- ^ hidden-hidden weights (4*hidden_size, hidden_size)
+    -> Tensor -- ^ input-hidden bias (4*hidden_size)
+    -> Tensor -- ^ hidden-hidden bias, of shape (4*hidden_size)
+    -> (Tensor, Tensor) -- ^ hidden state
+    -> Tensor -- ^ input
+    -> (Tensor, Tensor) -- next hidden state, next cell state
+lstmCell _w_ih _w_hh _b_ih _b_hh (_hx, _cx) _input =
+    unsafePerformIO $
+        (cast6 ATen.lstm_cell_tltttt) 
+        _input ([_hx, _cx] :: [Tensor]) _w_ih _w_hh _b_ih _b_hh -- TODO: make cast work with 2-tuples
+
+-- | A gated recurrent unit (GRU) cell
+gruCell 
+    :: Tensor -- ^ input-hidden weights
+    -> Tensor -- ^ hidden-hidden weights
+    -> Tensor -- ^ input-hidden bias
+    -> Tensor -- ^ hidden-hidden bias
+    -> Tensor -- ^ hidden state
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
+gruCell _w_ih _w_hh _b_ih _b_hh _hx _input =
+  unsafePerformIO $
+    (cast6 ATen.gru_cell_tttttt) 
+    _input _hx _w_ih _w_hh _b_ih _b_hh
+
+-- | An Elman RNN cell with tanh non-linearity
+rnnTanhCell 
+    :: Tensor -- ^ input-hidden weights
+    -> Tensor -- ^ hidden-hidden weights
+    -> Tensor -- ^ input-hidden bias
+    -> Tensor -- ^ hidden-hidden bias
+    -> Tensor -- ^ hidden state
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
+rnnTanhCell _w_ih _w_hh _b_ih _b_hh _hx _input =
+  unsafePerformIO $ (cast6 ATen.rnn_tanh_cell_tttttt) _input _hx _w_ih _w_hh _b_ih _b_hh
+
+-- | An Elman RNN cell with ReLU non-linearity
+rnnReluCell 
+    :: Tensor -- ^ input-hidden weights
+    -> Tensor -- ^ hidden-hidden weights
+    -> Tensor -- ^ input-hidden bias
+    -> Tensor -- ^ hidden-hidden bias
+    -> Tensor -- ^ hidden state
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
+rnnReluCell _w_ih _w_hh _b_ih _b_hh _hx _input =
+  unsafePerformIO $ (cast6 ATen.rnn_relu_cell_tttttt) _input _hx _w_ih _w_hh _b_ih _b_hh
+
+-- | A quantized long short-term memory (LSTM) cell.
+quantizedLstmCell 
+    :: Tensor -- ^ input-hidden weights
+    -> Tensor -- ^ hidden-hidden weights
+    -> Tensor -- ^ input-hidden bias
+    -> Tensor -- ^ hidden-hidden bias
+    -> Tensor -- ^ input-hidden packed
+    -> Tensor -- ^ hidden-hidden packed
+    -> Tensor -- ^ input-hidden column offsets
+    -> Tensor -- ^ hidden-hidden column offsets
+    -> Float -- ^ input-hidden scale
+    -> Float -- ^ hidden-hidden scale
+    -> Float -- ^ input-hidden zero point
+    -> Float -- ^ hidden-hidden zero point
+    -> (Tensor, Tensor) -- ^ hidden state
+    -> Tensor -- ^ input
+    -> (Tensor, Tensor) -- ^ output
+quantizedLstmCell _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh (_hx, _cx) _input =
+  unsafePerformIO $
+    (cast14 ATen.quantized_lstm_cell_tlttttttttssss)
+        _input ([_hx, _cx] :: [Tensor]) _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh
+
+-- | A quantized long gated recurrent unit (GRU) cell.
+quantizedGruCell 
+    :: Tensor -- ^ input-hidden weights
+    -> Tensor -- ^ hidden-hidden weights
+    -> Tensor -- ^ input-hidden bias
+    -> Tensor -- ^ hidden-hidden bias
+    -> Tensor -- ^ input-hidden packed
+    -> Tensor -- ^ hidden-hidden packed
+    -> Tensor -- ^ input-hidden column offsets
+    -> Tensor -- ^ hidden-hidden column offsets
+    -> Float -- ^ input-hidden scale
+    -> Float -- ^ hidden-hidden scale
+    -> Float -- ^ input-hidden zero point
+    -> Float -- ^ hidden-hidden zero point
+    -> Tensor -- ^ hidden state
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
+quantizedGruCell _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh _hx _input =
+  unsafePerformIO $ (cast14 ATen.quantized_gru_cell_ttttttttttssss) _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh
+
+-- | A quantized Elman RNN cell with relu non-linearity
+quantizedRnnReluCell 
+    :: Tensor -- ^ input-hidden weights
+    -> Tensor -- ^ hidden-hidden weights
+    -> Tensor -- ^ input-hidden bias
+    -> Tensor -- ^ hidden-hidden bias
+    -> Tensor -- ^ input-hidden packed
+    -> Tensor -- ^ hidden-hidden packed
+    -> Tensor -- ^ input-hidden column offsets
+    -> Tensor -- ^ hidden-hidden column offsets
+    -> Float -- ^ input-hidden scale
+    -> Float -- ^ hidden-hidden scale
+    -> Float -- ^ input-hidden zero point
+    -> Float -- ^ hidden-hidden zero point
+    -> Tensor -- ^ hidden state
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
+quantizedRnnReluCell _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh _hx _input =
+  unsafePerformIO $ (cast14 ATen.quantized_rnn_relu_cell_ttttttttttssss) _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh
+
+-- | A quantized Elman RNN cell with tanh non-linearity
+quantizedRnnTanhCell
+    :: Tensor -- ^ input-hidden weights
+    -> Tensor -- ^ hidden-hidden weights
+    -> Tensor -- ^ input-hidden bias
+    -> Tensor -- ^ hidden-hidden bias
+    -> Tensor -- ^ input-hidden packed
+    -> Tensor -- ^ hidden-hidden packed
+    -> Tensor -- ^ input-hidden column offsets
+    -> Tensor -- ^ hidden-hidden column offsets
+    -> Float -- ^ input-hidden scale
+    -> Float -- ^ hidden-hidden scale
+    -> Float -- ^ input-hidden zero point
+    -> Float -- ^ hidden-hidden zero point
+    -> Tensor -- ^ hidden state
+    -> Tensor -- ^ input
+    -> Tensor -- ^ output
+quantizedRnnTanhCell _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh _hx _input =
+  unsafePerformIO $ (cast14 ATen.quantized_rnn_tanh_cell_ttttttttttssss) _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh
+
+-- | Creates a criterion that uses a squared term if the absolute element-wise error falls below 1 and an L1 term otherwise. It is less sensitive to outliers than the MSELoss and in some cases prevents exploding gradients (e.g. see Fast R-CNN paper by Ross Girshick). Also known as the Huber loss
+smoothL1Loss
+  :: Reduction -- ^ reduction
+  -> Tensor -- ^ input
+  -> Tensor -- ^ target
+  -> Tensor -- ^ output
+smoothL1Loss reduction input target = unsafePerformIO $ (cast3 ATen.smooth_l1_loss_ttl) input target reduction
+
+-- | Creates a criterion that optimizes a two-class classification logistic loss between input tensor \(x\) and target tensor \(y\) (containing 1 or -1).
+softMarginLoss 
+  :: Reduction -- ^ reduction
+  -> Tensor -- ^ input
+  -> Tensor -- ^ target
+  -> Tensor -- ^ output
+softMarginLoss reduction input target = unsafePerformIO $ (cast3 ATen.soft_margin_loss_ttl) input target reduction
+
+-- | Applies the soft shrinkage function elementwise
+softShrink
+  :: Float -- ^ lambda
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+softShrink lambda input = unsafePerformIO $ (cast2 ATen.softshrink_ts) input lambda
+
+-- | Concatenates sequence of tensors along a new dimension.
+-- All tensors need to be of the same size.
+stack
+  :: Dim -- ^ dim
+  -> [Tensor] -- ^ input
+  -> Tensor -- ^ output
+stack (Dim d) tensors = unsafePerformIO $ (cast2 ATen.stack_ll) tensors d
+
+-- | Returns the sum of each row of the input tensor in the given dimension dim.
+-- If keepdim is True, the output tensor is of the same size as input except in the dimension(s) dim where it is of size 1. 
+-- Otherwise, dim is squeezed, resulting in the output tensor having 1 (or len(dim)) fewer dimension(s).
+sumDim
+  :: Dim -- ^ dim to sum along
+  -> KeepDim -- ^ whether the output tensor has dim retained or not
+  -> DType -- ^ datatype
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+sumDim (Dim d) k dtype input = unsafePerformIO $ (cast4 ATen.sum_tlbs) input d (keepdim k) dtype
+
+-- | Returns the k largest elements of the given input tensor along a given dimension.
+-- If largest is False then the k smallest elements are returned.
+-- The boolean option sorted if True, will make sure that the returned k elements are themselves sorted
+-- A tuple of (values, indices) is returned, where the indices are the indices of the elements in the original input tensor.  
+topK 
+  :: Int -- ^ k
+  -> Dim -- ^ dim to find topK along
+  -> Bool -- ^ largest
+  -> Bool -- ^ sorted
+  -> Tensor -- ^ input
+  -> (Tensor,Tensor) -- ^ output
+topK k (Dim d) largest sorted input = unsafePerformIO $ (cast5 ATen.topk_tllbb) input k d largest sorted
+
+-- | Returns the upper triangular part of a matrix (2-D tensor) or batch of matrices input, the other elements of the result tensor out are set to 0.
+-- The upper triangular part of the matrix is defined as the elements on and above the diagonal.
+-- The argument diagonal controls which diagonal to consider. If diagonal = 0, all elements on and above the main diagonal are retained. 
+-- A positive value excludes just as many diagonals above the main diagonal, and similarly a negative value includes just as many diagonals below the main diagonal. 
+-- The main diagonal are the set of indices \((i,i)\) for \(i\) \(\in [0,\min(d_1,d_2)-1]\) where \(d_1\) and \(d_2 \) are the dimensions of the matrix.
+triu
+  :: Diag -- ^ diagonal
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+triu (Diag diagonal) input = unsafePerformIO $ (cast2 ATen.triu_tl) input diagonal
+
+-- | Returns the lower triangular part of the matrix (2-D tensor) or batch of matrices input, the other elements of the result tensor out are set to 0.
+-- The lower triangular part of the matrix is defined as the elements on and below the diagonal.
+-- The argument diagonal controls which diagonal to consider. If diagonal = 0, all elements on and below the main diagonal are retained. 
+-- A positive value includes just as many diagonals above the main diagonal, and similarly a negative value excludes just as many diagonals below the main diagonal. 
+-- The main diagonals are the set of indices \((i,i)\) for \(i\) \(\in [0,\min(d_1,d_2)-1]\) where \(d_1\) and \(d_2 \) are the dimensions of the matrix.
+tril
+  :: Diag -- ^ diagonal
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+tril (Diag diagonal) input = unsafePerformIO $ (cast2 ATen.tril_tl) input diagonal
+
+-- | Returns a new tensor with a dimension of size one inserted at the specified position.
+-- The returned tensor shares the same underlying data with this tensor.
+-- A dim value within the range [(dim input) - 1, (dim input) + 1)] can be used. Negative dim will correspond to unsqueeze applied at dim = dim + (dim input) + 1
+unsqueeze
+  :: Dim  -- ^ dim
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+unsqueeze (Dim d) input = unsafePerformIO $ (cast2 ATen.unsqueeze_tl) input d
+
+-- | Creates a criterion that measures the mean absolute error (MAE) between each element in the input \(x\) and target \(y\) .
+l1Loss
+  ::  Reduction -- ^ reduction
+  -> Tensor -- ^ input
+  -> Tensor -- ^ target
+  -> Tensor -- ^ output
+l1Loss reduction input target = unsafePerformIO $ (cast3 ATen.l1_loss_ttl) input target reduction
+
+-- | Applies the element-wise function:
+-- \(\text{LeakyReLU}(x) = \max(0,x) + \text{negative_slope} ∗ \min(0,x)\)
+leakyRelu
+  :: Float -- ^ negative slope
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+leakyRelu negSlope input = unsafePerformIO $ (cast2 ATen.leaky_relu_ts) input negSlope
+
+-- | Applies the element-wise function:
+-- \(\text{LogSigmoid}(x) = \log(\frac{ 1 }{ 1 + \exp(-x)})\)
+logSigmoid
+  :: Tensor -- ^ input
+  -> Tensor -- ^ output
+logSigmoid input = unsafePerformIO $ (cast1 ATen.log_sigmoid_t) input
+
+-- | Returns a namedtuple (values, indices) where values is the maximum value of each row of the input tensor in the given dimension dim. 
+-- And indices is the index location of each maximum value found (argmax).
+-- If keepdim is True, the output tensors are of the same size as input except in the dimension dim where they are of size 1. 
+-- Otherwise, dim is squeezed , resulting in the output tensors having 1 fewer dimension than input.
+maxDim
+  :: Dim -- ^ dimension
+  -> KeepDim -- ^ keepdim
+  -> Tensor -- ^ input
+  -> (Tensor, Tensor) -- ^ output
+maxDim (Dim d) k input = unsafePerformIO $ (cast3 ATen.max_tlb) input d (keepdim k)
+
+-- | Returns a namedtuple (values, indices) where values is the minimum value of each row of the input tensor in the given dimension dim. 
+-- And indices is the index location of each minimum value found (argmin).
+-- If keepdim is True, the output tensors are of the same size as input except in the dimension dim where they are of size 1. 
+-- Otherwise, dim is squeezed, resulting in the output tensors having 1 fewer dimension than input.
+minDim
+  :: Dim -- ^ dimension
+  -> KeepDim -- ^ keepdim
+  -> Tensor -- ^ input
+  -> (Tensor, Tensor)
+minDim (Dim d) k input = unsafePerformIO $ (cast3 ATen.min_tlb) input d (keepdim k)
+
+-- | Returns the mean value of each row of the input tensor in the given dimension dim. If dim is a list of dimensions, reduce over all of them.
+-- If keepdim is True, the output tensor is of the same size as input except in the dimension(s) dim where it is of size 1. 
+-- Otherwise, dim is squeezed (see torch.squeeze()), resulting in the output tensor having 1 (or len(dim)) fewer dimension(s).
+meanDim
+  :: Dim -- ^ dimension
+  -> KeepDim -- ^ keepdim
+  -> DType -- ^ dtype
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+meanDim (Dim d) k dtype input = unsafePerformIO $ (cast4 ATen.mean_tlbs) input d (keepdim k) dtype
+
+-- | Returns a namedtuple (values, indices) where values is the median value of each row of the input tensor in the given dimension dim. 
+-- And indices is the index location of each median value found.
+-- By default, dim is the last dimension of the input tensor.
+-- If keepdim is True, the output tensors are of the same size as input except in the dimension dim where they are of size 1. 
+-- Otherwise, dim is squeezed (see torch.squeeze()), resulting in the outputs tensor having 1 fewer dimension than input.
+medianDim
+  :: Dim -- ^ dimension
+  -> KeepDim -- ^ keepdim
+  -> Tensor -- ^ input
+  -> (Tensor, Tensor) -- ^ output
+medianDim (Dim d) k input = unsafePerformIO $ (cast3 ATen.median_tlb) input d (keepdim k)
+
+-- | Returns the matrix product of the NN 2-D tensors. 
+-- This product is efficiently computed using the matrix chain order algorithm which selects the order in which incurs the lowest cost in terms of arithmetic operations. 
+-- Note that since this is a function to compute the product, NN needs to be greater than or equal to 2; if equal to 2 then a trivial matrix-matrix product is returned. 
+-- If NN is 1, then this is a no-op - the original matrix is returned as is.
+chainMatmul
+  :: [Tensor] -- ^ list of tensors
+  -> Tensor -- ^ output
+chainMatmul tensors = unsafePerformIO $ (cast1 ATen.chain_matmul_l) tensors
+
+-- | Applies element-wise the function \(\text{GELU}(x) = x * \Phi(x)\)
+-- where \(\Phi(x)\) is the Cumulative Distribution Function for Gaussian Distribution.
+gelu
+  :: Tensor -- ^ input
+  -> Tensor -- ^ output
+gelu input = unsafePerformIO $ (cast1 ATen.gelu_t) input
+
+-- | The gated linear unit. Computes:
+-- \(\text{GLU}(a, b) = a \otimes \sigma(b)\)
+-- where input is split in half along dim to form a and b, \(\sigma\) is the sigmoid function and \(\otimes\) is the element-wise product between matrices.
+glu
+  :: Dim -- ^ dimension
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+glu (Dim d) input = unsafePerformIO $ (cast2 ATen.glu_tl) input d
+
+-- | Returns the standard-deviation and mean of all elements in the input tensor.
+-- If unbiased is False, then the standard-deviation will be calculated via the biased estimator. Otherwise, Bessel’s correction will be used.
+stdMean
+  :: Bool -- ^ unbiased
+  -> Tensor -- ^ input
+  -> (Tensor,Tensor) -- ^ output
+stdMean unbiased input = unsafePerformIO $ (cast2 ATen.std_mean_tb) input unbiased
+
+-- | Returns the standard-deviation and mean of each row of the input tensor in the dimension dim. If dim is a list of dimensions, reduce over all of them.
+-- If keepdim is True, the output tensor is of the same size as input except in the dimension(s) dim where it is of size 1. 
+-- Otherwise, dim is squeezed, resulting in the output tensor having 1 (or len(dim)) fewer dimension(s).
+-- If unbiased is False, then the standard-deviation will be calculated via the biased estimator. Otherwise, Bessel’s correction will be used.
+stdMeanDim
+  :: Dim -- ^ dimension
+  -> Bool -- ^ unbiased
+  -> KeepDim -- ^ whether the output tensor has dim retained or not
+  -> Tensor -- ^ input
+  -> (Tensor,Tensor) -- ^ output
+stdMeanDim (Dim d) unbiased k input = unsafePerformIO $ (cast4 ATen.std_mean_tlbb) input d unbiased (keepdim k)
+
+-- | The 2D negative log likelihood loss 
+nllLoss2D 
+  :: Reduction -- reduction
+  -> Int -- ignore_index
+  -> Tensor -- input
+  -> Tensor -- target
+  -> Tensor -- weight
+  -> Tensor -- output
+nllLoss2D reduction ignoreindex input target weight = unsafePerformIO $ (cast5 ATen.nll_loss2d_tttll) input target weight reduction ignoreindex
+
+-- | Creates a criterion that optimizes a multi-class classification hinge loss (margin-based loss) between input \(x\) (a 2D mini-batch Tensor) and output \(y\) (which is a 1D tensor of target class indices)
+multiMarginLoss
+  :: Reduction -- ^ reduction
+  -> Float -- ^ p
+  -> Float -- ^ margin
+  -> Tensor -- ^ input
+  -> Tensor -- ^ target
+  -> Tensor -- ^ weight
+  -> Tensor -- ^ output
+multiMarginLoss reduction p margin input target weight = unsafePerformIO $ (cast6 ATen.multi_margin_loss_ttsstl) input target p margin weight reduction
+
+-- | Creates a criterion that optimizes a multi-label one-versus-all loss based on max-entropy, between input \(x\) and target \(y\) of size \((N,C)\) .
+multiLabelMarginLoss
+  :: Reduction -- reduction
+  -> Tensor -- input
+  -> Tensor -- target
+  -> Tensor -- output
+multiLabelMarginLoss reduction input target = unsafePerformIO $ (cast3 ATen.multilabel_margin_loss_ttl) input target reduction
+
+
+
+
+
+
+
+
+
