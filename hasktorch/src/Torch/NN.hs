@@ -138,7 +138,7 @@ instance Randomizable LinearSpec Linear where
       
       return $ Linear w b
 
-instance Parameterized Linear
+instance {-# OVERLAPS #-} Parameterized Linear
 -- This instance generates following codes.
 --
 ---------------------------------------------------
@@ -179,4 +179,4 @@ instance Randomizable Conv2dSpec Conv2d where
       
       return $ Conv2d w b
 
-instance Parameterized Conv2d
+instance {-# OVERLAPS #-} Parameterized Conv2d
