@@ -56,7 +56,7 @@ instance Parameterized Parameter where
   flattenParameters = pure
   replaceOwnParameters _ = nextParameter
 
-instance (Scalar a) => Parameterized a where
+instance {-# OVERLAPS #-} (Scalar a) => Parameterized a where
   flattenParameters _ = []
   replaceOwnParameters = return
 
@@ -138,7 +138,7 @@ instance Randomizable LinearSpec Linear where
       
       return $ Linear w b
 
-instance {-# OVERLAPS #-} Parameterized Linear
+instance Parameterized Linear
 -- This instance generates following codes.
 --
 ---------------------------------------------------
@@ -179,4 +179,4 @@ instance Randomizable Conv2dSpec Conv2d where
       
       return $ Conv2d w b
 
-instance {-# OVERLAPS #-} Parameterized Conv2d
+instance Parameterized Conv2d
