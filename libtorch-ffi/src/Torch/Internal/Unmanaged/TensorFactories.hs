@@ -387,6 +387,14 @@ empty_like_to _self _options =
   , *$(at::TensorOptions* _options)));
   }|]
 
+empty_like_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+empty_like_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::empty_like(
+    *$(at::Tensor* _self)));
+  }|]
+
 empty_strided_llo
   :: Ptr IntArray
   -> Ptr IntArray
@@ -521,6 +529,16 @@ full_like_tso _self _fill_value _options =
     *$(at::Tensor* _self)
   , *$(at::Scalar* _fill_value)
   , *$(at::TensorOptions* _options)));
+  }|]
+
+full_like_ts
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+full_like_ts _self _fill_value =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::full_like(
+    *$(at::Tensor* _self)
+  , *$(at::Scalar* _fill_value)));
   }|]
 
 from_file_sblo
@@ -853,6 +871,14 @@ ones_like_to _self _options =
   , *$(at::TensorOptions* _options)));
   }|]
 
+ones_like_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+ones_like_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::ones_like(
+    *$(at::Tensor* _self)));
+  }|]
+
 scalar_tensor_so
   :: Ptr Scalar
   -> Ptr TensorOptions
@@ -979,6 +1005,14 @@ rand_like_to _self _options =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::rand_like(
     *$(at::Tensor* _self)
   , *$(at::TensorOptions* _options)));
+  }|]
+
+rand_like_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+rand_like_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::rand_like(
+    *$(at::Tensor* _self)));
   }|]
 
 randint_llo
@@ -1111,6 +1145,16 @@ randint_like_tlo _self _high _options =
   , *$(at::TensorOptions* _options)));
   }|]
 
+randint_like_tl
+  :: Ptr Tensor
+  -> Int64
+  -> IO (Ptr Tensor)
+randint_like_tl _self _high =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::randint_like(
+    *$(at::Tensor* _self)
+  , $(int64_t _high)));
+  }|]
+
 randint_like_tlloM
   :: Ptr Tensor
   -> Int64
@@ -1139,6 +1183,18 @@ randint_like_tllo _self _low _high _options =
   , $(int64_t _low)
   , $(int64_t _high)
   , *$(at::TensorOptions* _options)));
+  }|]
+
+randint_like_tll
+  :: Ptr Tensor
+  -> Int64
+  -> Int64
+  -> IO (Ptr Tensor)
+randint_like_tll _self _low _high =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::randint_like(
+    *$(at::Tensor* _self)
+  , $(int64_t _low)
+  , $(int64_t _high)));
   }|]
 
 randn_lo
@@ -1249,6 +1305,14 @@ randn_like_to _self _options =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::randn_like(
     *$(at::Tensor* _self)
   , *$(at::TensorOptions* _options)));
+  }|]
+
+randn_like_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+randn_like_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::randn_like(
+    *$(at::Tensor* _self)));
   }|]
 
 randperm_lo
@@ -1399,6 +1463,14 @@ zeros_like_to _self _options =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::zeros_like(
     *$(at::Tensor* _self)
   , *$(at::TensorOptions* _options)));
+  }|]
+
+zeros_like_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+zeros_like_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::zeros_like(
+    *$(at::Tensor* _self)));
   }|]
 
 sparse_coo_tensor_lo

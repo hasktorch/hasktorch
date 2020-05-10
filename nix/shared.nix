@@ -5,8 +5,8 @@ let
     let src = pkgs.fetchFromGitHub {
           owner  = "stites";
           repo   = "pytorch-world";
-          rev    = "66de22dadf334bd457c8a596832160d9126e12e1";
-          sha256 = "08w0y5f8x1d2ncv0qmv8a3zymjbzc6ysawldibd1q3h5kgr2aspv";
+          rev    = "6dc929a791918fff065bb40cbc3db8a62beb2a30";
+          sha256 = "140a2l1l1qnf7v2s1lblrr02mc0knsqpi06f25xj3qchpawbjd4c";
     };
     in (pkgs.callPackage "${src}/libtorch/release.nix" { });
 
@@ -14,7 +14,7 @@ let
     inherit (libtorch_src pkgsOld)
       libtorch_cpu
       libtorch_cudatoolkit_9_2
-      libtorch_cudatoolkit_10_1
+      libtorch_cudatoolkit_10_2
     ;
 
     haskell = pkgsOld.haskell // {
@@ -33,20 +33,21 @@ let
                   haskellPackagesNew: haskellPackagesOld: {
                     "libtorch-ffi_${postfix}" =
                         appendConfigureFlag
-                          (overrideCabal
-                            (haskellPackagesOld.callCabal2nix
-                              "libtorch-ffi"
-                              ../libtorch-ffi
-                              { c10 = pkgsNew."libtorch_${postfix}"
-                              ; torch = pkgsNew."libtorch_${postfix}"
-                              ; }
-                            )
-                            (old: {
-                                preConfigure = (old.preConfigure or "") + optionalString isDarwin ''
-                                  sed -i -e 's/-optc-std=c++11 -optc-xc++/-optc-xc++/g' ../libtorch-ffi/libtorch-ffi.cabal;
-                                '';
-                              }
-                            )
+                          (haskellPackagesOld.callCabal2nixWithOptions
+                            "libtorch-ffi"
+                            ../libtorch-ffi
+                            (if postfix == "cpu" then
+                              (if isDarwin then
+                                 "-fgcc"
+                               else
+                                 "")
+                             else
+                               "-fcuda")
+                            { c10 = pkgsNew."libtorch_${postfix}"
+                            ; torch = pkgsNew."libtorch_${postfix}"
+                            ; torch_cpu = pkgsNew."libtorch_${postfix}"
+                            ; ${if postfix == "cpu" then null else "torch_cuda"} = pkgsNew."libtorch_${postfix}"
+                            ; }
                           )
                         "--extra-include-dirs=${pkgsNew."libtorch_${postfix}"}/include/torch/csrc/api/include";
                     "hasktorch_${postfix}" =
@@ -181,38 +182,40 @@ let
                     extension
                     (mkHasktorchExtension "cpu")
                     (mkHasktorchExtension "cudatoolkit_9_2")
-                    (mkHasktorchExtension "cudatoolkit_10_1")
+                    (mkHasktorchExtension "cudatoolkit_10_2")
                   ];
           }
         );
       };
     };
 
-    hasktorch-examples_cudatoolkit_10_1-static = pkgsOld.haskell.lib.justStaticExecutables pkgsNew.haskell.packages."${compiler}".hasktorch-examples_cudatoolkit_10_1;
-    hasktorch-experimental_cudatoolkit_10_1-static = pkgsOld.haskell.lib.justStaticExecutables pkgsNew.haskell.packages."${compiler}".hasktorch-experimental_cudatoolkit_10_1;
+    hasktorch-examples_cudatoolkit_10_2-static = pkgsOld.haskell.lib.justStaticExecutables pkgsNew.haskell.packages."${compiler}".hasktorch-examples_cudatoolkit_10_2;
+    hasktorch-experimental_cudatoolkit_10_2-static = pkgsOld.haskell.lib.justStaticExecutables pkgsNew.haskell.packages."${compiler}".hasktorch-experimental_cudatoolkit_10_2;
 
-    hasktorch-typed-transformer_cudatoolkit_10_1-image = pkgsOld.dockerTools.buildImage {
-      name = "hasktorch-typed-transformer_cudatoolkit_10_1";
+    hasktorch-typed-transformer_cudatoolkit_10_2-image = pkgsOld.dockerTools.buildImage {
+      name = "hasktorch-typed-transformer_cudatoolkit_10_2";
       tag = "latest";
       fromImage = pkgsOld.dockerTools.pullImage {
         imageName = "nvidia/cuda";
-        imageDigest = "sha256:31e2a1ca7b0e1f678fb1dd0c985b4223273f7c0f3dbde60053b371e2a1aee2cd";
-        sha256 = "1bgw7v6xdi6chjds5qvvn596db56r4hkj7dyds5c7pyfsgl74yf3";
+        imageDigest = "sha256:755981b097e20cc02ae6badcc39a03eb62235412d27236472f3520fa8b9967d3";
+        sha256 = "11zg694nzylv7hyzv1gx59ykgprj3kid4191ykwa0s3mi3mm806c";
+        # finalImageName = "nvidia/cuda";
+        # finalImageTag = "10.2-devel";
       };
       config = {
         WorkingDir = "/workingDir";
         Cmd = [
-          "${pkgsNew.hasktorch-examples_cudatoolkit_10_1-static}/bin/typed-transformer"
+          "${pkgsNew.hasktorch-examples_cudatoolkit_10_2-static}/bin/typed-transformer"
         ];
         Env = [
           "LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
           "NVIDIA_VISIBLE_DEVICES=all"
-          "NCCL_VERSION=2.4.8"
+          "NCCL_VERSION=2.5.6"
           "LIBRARY_PATH=/usr/local/cuda/lib64/stubs"
-          "CUDA_PKG_VERSION=10-1=10.1.243-1"
-          "CUDA_VERSION=10.1.243"
+          "CUDA_PKG_VERSION=10-2=10.2.89-1"
+          "CUDA_VERSION=10.2.89"
           "NVIDIA_DRIVER_CAPABILITIES=compute,utility"
-          "NVIDIA_REQUIRE_CUDA=cuda>=10.1 brand=tesla,driver>=384,driver<385 brand=tesla,driver>=396,driver<397 brand=tesla,driver>=410,driver<411"
+          "NVIDIA_REQUIRE_CUDA=cuda>=10.2 brand=tesla,driver>=384,driver<385 brand=tesla,driver>=396,driver<397 brand=tesla,driver>=410,driver<411 brand=tesla,driver>=418,driver<419"
           "PATH=/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
         ];
       };
@@ -304,9 +307,9 @@ in
     inherit nullIfDarwin overlayShared;
 
     inherit (pkgs-linux)
-      hasktorch-examples_cudatoolkit_10_1-static
-      hasktorch-experimental_cudatoolkit_10_1-static
-      hasktorch-typed-transformer_cudatoolkit_10_1-image
+      hasktorch-examples_cudatoolkit_10_2-static
+      hasktorch-experimental_cudatoolkit_10_2-static
+      hasktorch-typed-transformer_cudatoolkit_10_2-image
     ;
 
     inherit (base-compiler)
@@ -315,16 +318,16 @@ in
       inline-c-cpp
       libtorch-ffi_cpu
       libtorch-ffi_cudatoolkit_9_2
-      libtorch-ffi_cudatoolkit_10_1
+      libtorch-ffi_cudatoolkit_10_2
       hasktorch_cpu
       hasktorch_cudatoolkit_9_2
-      hasktorch_cudatoolkit_10_1
+      hasktorch_cudatoolkit_10_2
       hasktorch-examples_cpu
       hasktorch-examples_cudatoolkit_9_2
-      hasktorch-examples_cudatoolkit_10_1
+      hasktorch-examples_cudatoolkit_10_2
       hasktorch-experimental_cpu
       hasktorch-experimental_cudatoolkit_9_2
-      hasktorch-experimental_cudatoolkit_10_1
+      hasktorch-experimental_cudatoolkit_10_2
     ;
     hasktorch-docs = (
       (import ./haddock-combine.nix {
@@ -342,15 +345,15 @@ in
     shell-inline-c-cpp                        = (doBenchmark base-compiler.inline-c-cpp).env;
     shell-libtorch-ffi_cpu                    = (doBenchmark base-compiler.libtorch-ffi_cpu                   ).env.overrideAttrs(fixcpath pkgs.libtorch_cpu);
     shell-libtorch-ffi_cudatoolkit_9_2        = (doBenchmark base-compiler.libtorch-ffi_cudatoolkit_9_2       ).env.overrideAttrs(fixcpath pkgs.libtorch_cudatoolkit_9_2);
-    shell-libtorch-ffi_cudatoolkit_10_1       = (doBenchmark base-compiler.libtorch-ffi_cudatoolkit_10_1      ).env.overrideAttrs(fixcpath pkgs.libtorch_cudatoolkit_10_1);
+    shell-libtorch-ffi_cudatoolkit_10_2       = (doBenchmark base-compiler.libtorch-ffi_cudatoolkit_10_2      ).env.overrideAttrs(fixcpath pkgs.libtorch_cudatoolkit_10_2);
     shell-hasktorch_cpu                       = (doBenchmark base-compiler.hasktorch_cpu                      ).env.overrideAttrs(old: altdev-announce pkgs.libtorch_cpu (fixmkl old));
     shell-hasktorch_cudatoolkit_9_2           = (doBenchmark base-compiler.hasktorch_cudatoolkit_9_2          ).env.overrideAttrs(old: altdev-announce pkgs.libtorch_cudatoolkit_9_2 (fixmkl old));
-    shell-hasktorch_cudatoolkit_10_1          = (doBenchmark base-compiler.hasktorch_cudatoolkit_10_1         ).env.overrideAttrs(old: altdev-announce pkgs.libtorch_cudatoolkit_10_1 (fixmkl old));
+    shell-hasktorch_cudatoolkit_10_2          = (doBenchmark base-compiler.hasktorch_cudatoolkit_10_2         ).env.overrideAttrs(old: altdev-announce pkgs.libtorch_cudatoolkit_10_2 (fixmkl old));
     shell-hasktorch-examples_cpu              = (doBenchmark base-compiler.hasktorch-examples_cpu             ).env.overrideAttrs(fixmkl);
     shell-hasktorch-examples_cudatoolkit_9_2  = (doBenchmark base-compiler.hasktorch-examples_cudatoolkit_9_2 ).env.overrideAttrs(fixmkl);
-    shell-hasktorch-examples_cudatoolkit_10_1 = (doBenchmark base-compiler.hasktorch-examples_cudatoolkit_10_1).env.overrideAttrs(fixmkl);
+    shell-hasktorch-examples_cudatoolkit_10_2 = (doBenchmark base-compiler.hasktorch-examples_cudatoolkit_10_2).env.overrideAttrs(fixmkl);
     shell-hasktorch-experimental_cpu              = (doBenchmark base-compiler.hasktorch-experimental_cpu             ).env.overrideAttrs(fixmkl);
     shell-hasktorch-experimental_cudatoolkit_9_2  = (doBenchmark base-compiler.hasktorch-experimental_cudatoolkit_9_2 ).env.overrideAttrs(fixmkl);
-    shell-hasktorch-experimental_cudatoolkit_10_1 = (doBenchmark base-compiler.hasktorch-experimental_cudatoolkit_10_1).env.overrideAttrs(fixmkl);
+    shell-hasktorch-experimental_cudatoolkit_10_2 = (doBenchmark base-compiler.hasktorch-experimental_cudatoolkit_10_2).env.overrideAttrs(fixmkl);
   }
 

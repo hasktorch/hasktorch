@@ -80,7 +80,7 @@ instance IValueLike (Ptr (C10List IValue)) (Ptr IValue) where
       *$(c10::List<at::IValue>* _x));
     }|]
   fromIValue _obj = 
-    [C.throwBlock| c10::List<at::IValue>* { return new c10::List<at::IValue>((*$(at::IValue* _obj)).toGenericList(
+    [C.throwBlock| c10::List<at::IValue>* { return new c10::List<at::IValue>((*$(at::IValue* _obj)).toList(
       ));
     }|]
 
@@ -402,11 +402,11 @@ iValue_isTensorList _obj =
     );
   }|]
 
-iValue_isGenericList
+iValue_isList
   :: Ptr IValue
   -> IO (CBool)
-iValue_isGenericList _obj =
-  [C.throwBlock| bool { return (*$(at::IValue* _obj)).isGenericList(
+iValue_isList _obj =
+  [C.throwBlock| bool { return (*$(at::IValue* _obj)).isList(
     );
   }|]
 

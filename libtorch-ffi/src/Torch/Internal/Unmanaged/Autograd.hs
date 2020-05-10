@@ -28,7 +28,7 @@ grad y inputs = [C.throwBlock| std::vector<at::Tensor>* {
     torch::autograd::Variable y = *$(at::Tensor* y);
     const auto & inputs = *$(std::vector<at::Tensor>* inputs);
 
-    torch::autograd::edge_list roots { impl::gradient_edge(y) };
+    torch::autograd::edge_list roots { torch::autograd::impl::gradient_edge(y) };
     if (!roots[0].function) {
       throw std::runtime_error("Differentiated tensor not require grad");
     }
@@ -44,7 +44,7 @@ grad y inputs = [C.throwBlock| std::vector<at::Tensor>* {
       const auto output_nr = input.output_nr();
       auto grad_fn = input.grad_fn();
       if (!grad_fn) {
-        grad_fn = impl::try_get_grad_accumulator(input);
+        grad_fn = torch::autograd::impl::try_get_grad_accumulator(input);
       }
       if (!input.requires_grad()) {
         throw std::runtime_error("One of the differentiated Tensors does not require grad");
