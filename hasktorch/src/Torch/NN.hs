@@ -64,26 +64,19 @@ instance Parameterized Parameter where
   flattenParameters = pure
   replaceOwnParameters _ = nextParameter
 
-instance (Scalar a) => Parameterized a where
+instance {-# OVERLAPS #-} (Scalar a) => Parameterized a where
   flattenParameters _ = []
   replaceOwnParameters = return
 
-instance (Foldable t, Traversable t, Parameterized a) => Parameterized (t a) where
+instance {-# OVERLAPS #-} (Foldable t, Traversable t, Parameterized a) => Parameterized (t a) where
   flattenParameters = (=<<) flattenParameters . toList
   replaceOwnParameters = mapM replaceOwnParameters
-
-instance (Parameterized a, Parameterized b) => Parameterized (a,b) where
-  flattenParameters (a,b) = flattenParameters a ++ flattenParameters b
-  replaceOwnParameters (a,b) = do
-    a' <- replaceOwnParameters a
-    b' <- replaceOwnParameters b
-    return (a',b')
 
 instance Parameterized Buffer where
   flattenParameters _ = []
   replaceOwnParameters = return
 
-instance Parameterized (Tensor -> Tensor) where
+instance {-# OVERLAPS #-} Parameterized (Tensor -> Tensor) where
   flattenParameters _ = []
   replaceOwnParameters = return
 

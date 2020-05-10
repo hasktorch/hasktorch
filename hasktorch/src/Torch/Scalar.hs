@@ -48,7 +48,7 @@ instance Castable Word8 (ForeignPtr ATen.Scalar) where
   uncast x f = undefined
 
 instance Castable Bool (ForeignPtr ATen.Scalar) where
-  cast x f = ATen.newScalar_i (fromIntegral x) >>= f
+  cast x f = ATen.newScalar_i (if x then 1 else 0) >>= f
   uncast x f = undefined
 
 class (Castable a (ForeignPtr ATen.Scalar)) => Scalar a
