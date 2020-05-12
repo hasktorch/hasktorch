@@ -28,6 +28,7 @@ These examples do not attempt to type-check tensor dimensions.
 - vae - variational autoencoder
 - xor-mlp - an XOR multilayer perceptron
 - autograd - the dataflow through autograd in Hasktorch
+- alexNet - feature-extraction based on pretrained AlexNet for non-trivial data-sets
 
 ## Typed Tensor Examples
 
