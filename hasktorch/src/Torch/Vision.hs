@@ -33,6 +33,7 @@ import           Data.Int
 import           Data.Word
 import qualified Codec.Picture                 as I
 import qualified Data.Vector.Storable          as V
+import           System.Random (mkStdGen, randoms)
 
 import qualified Torch.Typed.Vision as I
 import Torch.Functional hiding (take)
@@ -254,3 +255,6 @@ hwc2chw = D.permute [0,3,1,2]
 -- [batch, channel, height, width] -> [batch, height, width, channel]
 chw2hwc :: D.Tensor -> D.Tensor
 chw2hwc = D.permute [0,2,3,1]
+
+randomIndexes :: Int -> [Int]
+randomIndexes size = (`mod` size) <$> randoms seed where seed = mkStdGen 123
