@@ -18,6 +18,7 @@ batchSize = 256
 numIters = 500
 teacherSpec = MLPSpec dataDim 300 300 10
 studentSpec = MLPSpec dataDim 30 30 10
+temperature = 20.0
 
 data MLPSpec = MLPSpec {
     inputFeatures :: Int,
@@ -56,7 +57,7 @@ mlp = mlpTemp 1.0
 train :: V.MnistData -> MLP -> IO MLP
 train trainData init = do
     let optimizer = GD
-    let nImages = V.length trainData
+        nImages = V.length trainData
         idxList = V.randomIndexes nImages
     trained <- foldLoop init numIters $
         \state iter -> do
@@ -75,16 +76,16 @@ maxIndex = Torch.argmax (Dim 1) RemoveDim
 distill :: V.MnistData -> MLP -> MLP -> IO MLP
 distill trainData teacher studentInit = do
     let optimizer = GD
-    let nImages = V.length trainData
+        nImages = V.length trainData
         idxList = V.randomIndexes nImages
     trained <- foldLoop studentInit numIters $
         \state iter -> do
             let idx = take batchSize (drop (iter * batchSize) idxList)
             input <- V.getImages' batchSize dataDim trainData idx
-            let tOutput = mlpTemp 20.0 teacher input
+            let tOutput = mlpTemp temperature teacher input
                 sOutput = mlp state input
-            let label = maxIndex tOutput
-            let loss = nllLoss' label sOutput
+                label = maxIndex tOutput
+                loss = nllLoss' label sOutput
             when (iter `mod` 50 == 0) $ do
                 putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
             (newParam, _) <- runStep state optimizer loss 1e-3 -- GD
