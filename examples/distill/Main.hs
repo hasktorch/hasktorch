@@ -60,7 +60,7 @@ train OptimSpec{..} trainData init = do
                 loss = nllLoss' label $ forward state input
             when (iter `mod` 50 == 0) $ do
                 putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
-            (newParam, _) <- runStep state optimizer loss 1e-3
+            (newParam, _) <- runStep state optimizer loss learningRate
             pure $ replaceParameters state newParam
     pure trained
 
@@ -73,7 +73,8 @@ runDistill trainData = do
     let optimSpec = OptimSpec {
         optimizer = GD,
         batchSize = 256,
-        numIters = 500
+        numIters = 500,
+        learningRate = asTensor 1e-3
     }
     teacher <- train optimSpec trainData initTeacher
     -- Distill student

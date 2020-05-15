@@ -27,7 +27,8 @@ data Parameterized p => DistillSpec p = DistillSpec {
 data Optimizer o => OptimSpec o = OptimSpec {
     optimizer :: o,
     batchSize :: Int,
-    numIters :: Int
+    numIters :: Int,
+    learningRate :: Tensor
 }
 
 distill
@@ -48,7 +49,7 @@ distill DistillSpec{..} OptimSpec{..} trainData = do
                 loss = distillLoss tOutput sOutput
             when (iter `mod` 50 == 0) $ do
                 putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
-            (newParam, _) <- runStep state optimizer loss 1e-3 -- GD
+            (newParam, _) <- runStep state optimizer loss learningRate
             pure $ replaceParameters state newParam
     pure trained
 
