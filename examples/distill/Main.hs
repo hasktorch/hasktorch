@@ -7,18 +7,11 @@ module Main where
 import Control.Monad (when)
 import GHC.Generics
 import Prelude hiding (exp, log)
-import System.Random (mkStdGen, randoms)
 
 import Torch
 import qualified Torch.Typed.Vision as V hiding (getImages')
 import qualified Torch.Vision as V
-
-dataDim = 784
-batchSize = 256
-numIters = 500
-teacherSpec = MLPSpec dataDim 300 300 10
-studentSpec = MLPSpec dataDim 30 30 10
-temperature = 20.0
+import Distill
 
 data MLPSpec = MLPSpec {
     inputFeatures :: Int,
@@ -33,13 +26,6 @@ data MLP = MLP {
     l2 :: Linear
     } deriving (Generic, Show)
 
-instance Parameterized MLP
-instance Randomizable MLPSpec MLP where
-    sample MLPSpec {..} = MLP 
-        <$> sample (LinearSpec inputFeatures hiddenFeatures0)
-        <*> sample (LinearSpec hiddenFeatures0 hiddenFeatures1)
-        <*> sample (LinearSpec hiddenFeatures1 outputFeatures)
-
 mlpTemp :: Float -> MLP -> Tensor -> Tensor
 mlpTemp temperature MLP{..} input = 
     logSoftmaxTemp (asTensor temperature)
@@ -49,13 +35,20 @@ mlpTemp temperature MLP{..} input =
     . relu
     . linear l0
     $ input
-    where
-        logSoftmaxTemp t z = (z/t) - log (sumDim (Dim 1) KeepDim Float (exp (z/t)))
+  where
+    logSoftmaxTemp t z = (z/t) - log (sumDim (Dim 1) KeepDim Float (exp (z/t)))
 
-mlp = mlpTemp 1.0
+instance Parameterized MLP where
+    forward = mlpTemp 1.0
 
-train :: V.MnistData -> MLP -> IO MLP
-train trainData init = do
+instance Randomizable MLPSpec MLP where
+    sample MLPSpec {..} = MLP 
+        <$> sample (LinearSpec inputFeatures hiddenFeatures0)
+        <*> sample (LinearSpec hiddenFeatures0 hiddenFeatures1)
+        <*> sample (LinearSpec hiddenFeatures1 outputFeatures)
+
+train :: Optimizer o => OptimSpec o -> Dataset -> MLP -> IO MLP
+train OptimSpec{..} trainData init = do
     let optimizer = GD
         nImages = V.length trainData
         idxList = V.randomIndexes nImages
@@ -64,46 +57,49 @@ train trainData init = do
             let idx = take batchSize (drop (iter * batchSize) idxList)
             input <- V.getImages' batchSize dataDim trainData idx
             let label = V.getLabels' batchSize trainData idx
-                loss = nllLoss' label $ mlp state input
+                loss = nllLoss' label $ forward state input
             when (iter `mod` 50 == 0) $ do
                 putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
-            (newParam, _) <- runStep state optimizer loss 1e-3 -- GD
+            (newParam, _) <- runStep state optimizer loss 1e-3
             pure $ replaceParameters state newParam
     pure trained
 
 maxIndex = Torch.argmax (Dim 1) RemoveDim
 
-distill :: V.MnistData -> MLP -> MLP -> IO MLP
-distill trainData teacher studentInit = do
-    let optimizer = GD
-        nImages = V.length trainData
-        idxList = V.randomIndexes nImages
-    trained <- foldLoop studentInit numIters $
-        \state iter -> do
-            let idx = take batchSize (drop (iter * batchSize) idxList)
-            input <- V.getImages' batchSize dataDim trainData idx
-            let tOutput = mlpTemp temperature teacher input
-                sOutput = mlp state input
-                label = maxIndex tOutput
-                loss = nllLoss' label sOutput
-            when (iter `mod` 50 == 0) $ do
-                putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
-            (newParam, _) <- runStep state optimizer loss 1e-3 -- GD
-            pure $ replaceParameters state newParam
-    pure trained
+runDistill :: Dataset -> IO (MLP, MLP) 
+runDistill trainData = do
+    -- Train teacher
+    initTeacher <- sample teacherSpec
+    let optimSpec = OptimSpec {
+        optimizer = GD,
+        batchSize = 256,
+        numIters = 500
+    }
+    teacher <- train optimSpec trainData initTeacher
+    -- Distill student
+    initStudent <- sample studentSpec
+    let distillSpec = DistillSpec {
+        teacher = teacher,
+        student = initStudent,
+        teacherLens = mlpTemp 20.0,
+        studentLens = mlpTemp 1.0,
+        distillLoss = \tOutput sOutput -> nllLoss' (maxIndex tOutput) sOutput
+    }
+    student <- distill distillSpec optimSpec trainData 
+    pure (teacher, student)
+  where
+    teacherSpec = MLPSpec dataDim 300 300 10
+    studentSpec = MLPSpec dataDim 30 30 10
 
 main = do
     (trainData, testData) <- V.initMnist "datasets/mnist"
-    initTeacher <- sample teacherSpec
-    initStudent <- sample studentSpec
-    teacher <- train trainData initTeacher
-    student <- distill trainData teacher initStudent
+    (teacher, student) <- runDistill trainData
     mapM (\idx -> do
         testImg <- V.getImages' 1 784 testData [idx]
         print $ shape testImg
         V.dispImage testImg
-        putStrLn $ "Teacher      : " ++ (show . maxIndex $ mlp teacher testImg)
-        putStrLn $ "Student      : " ++ (show . maxIndex $ mlp student testImg)
+        putStrLn $ "Teacher      : " ++ (show . maxIndex $ forward teacher testImg)
+        putStrLn $ "Student      : " ++ (show . maxIndex $ forward student testImg)
         putStrLn $ "Ground Truth : " ++ (show $ V.getLabels' 1 testData [idx])
         ) [0..10]
     putStrLn "Done"

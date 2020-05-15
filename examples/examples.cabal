@@ -235,6 +235,7 @@ executable distill
   import:              config
   hs-source-dirs:      distill
   main-is:             Main.hs
+  other-modules:       Distill
   ghc-options:         -fno-warn-partial-type-signatures
   build-depends:       libtorch-ffi
                      , bytestring >= 0.10.8
