@@ -47,7 +47,7 @@ instance Randomizable MLPSpec MLP where
         <*> sample (LinearSpec hiddenFeatures0 hiddenFeatures1)
         <*> sample (LinearSpec hiddenFeatures1 outputFeatures)
 
-train :: Optimizer o => OptimSpec o -> Dataset -> MLP -> IO MLP
+train :: Optimizer o => OptimSpec o -> V.MnistData -> MLP -> IO MLP
 train OptimSpec{..} trainData init = do
     let optimizer = GD
         nImages = V.length trainData
@@ -66,7 +66,7 @@ train OptimSpec{..} trainData init = do
 
 maxIndex = Torch.argmax (Dim 1) RemoveDim
 
-runDistill :: Dataset -> IO (MLP, MLP) 
+runDistill :: V.MnistData -> IO (MLP, MLP) 
 runDistill trainData = do
     -- Train teacher
     initTeacher <- sample teacherSpec
@@ -74,7 +74,7 @@ runDistill trainData = do
         optimizer = GD,
         batchSize = 256,
         numIters = 500,
-        learningRate = asTensor 1e-3
+        learningRate = 1e-3
     }
     teacher <- train optimSpec trainData initTeacher
     -- Distill student
@@ -93,6 +93,7 @@ runDistill trainData = do
     studentSpec = MLPSpec dataDim 30 30 10
 
 main = do
+
     (trainData, testData) <- V.initMnist "datasets/mnist"
     (teacher, student) <- runDistill trainData
     mapM (\idx -> do
