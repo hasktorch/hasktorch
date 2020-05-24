@@ -235,10 +235,11 @@ executable distill
   import:              config
   hs-source-dirs:      distill
   main-is:             Main.hs
-  other-modules:       Distill
+  other-modules:       Distill, Dataset
   ghc-options:         -fno-warn-partial-type-signatures
   build-depends:       libtorch-ffi
                      , bytestring >= 0.10.8
+                     , mtl
                      , random >= 1.1
                      , safe-exceptions
                      , static-mnist

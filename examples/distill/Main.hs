@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Main where
 
@@ -11,7 +12,9 @@ import Prelude hiding (exp, log)
 import Torch
 import qualified Torch.Typed.Vision as V hiding (getImages')
 import qualified Torch.Vision as V
+
 import Distill
+import Dataset
 
 data MLPSpec = MLPSpec {
     inputFeatures :: Int,
@@ -47,21 +50,25 @@ instance Randomizable MLPSpec MLP where
         <*> sample (LinearSpec hiddenFeatures0 hiddenFeatures1)
         <*> sample (LinearSpec hiddenFeatures1 outputFeatures)
 
-train :: Optimizer o => OptimSpec o -> MNIST -> MLP -> IO MLP
-train OptimSpec{..} dataset init = do
-    trained <- foldLoop init numIters $
-        \state iter -> do
-            ((input, label), _) <- get dataset batchSize
-            let loss = nllLoss' label $ forward state input
-            when (iter `mod` 50 == 0) $ do
-                putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
-            (newParam, _) <- runStep state optimizer loss learningRate
-            pure $ replaceParameters state newParam
-    pure trained
-
+-- | Transform probabilities along one-hot-encoding dimensions into the digit value
+maxIndex :: Tensor -> Tensor
 maxIndex = Torch.argmax (Dim 1) RemoveDim
 
-runDistill :: MNIST -> IO (MLP, MLP) 
+-- | Load MNIST data as dataset abstraction
+loadMNIST dataLocation = do
+    (train, test) <- V.initMnist dataLocation
+    let mnistTrain = MNIST {
+        dataset = train,
+        idxList = V.randomIndexes (V.length train)
+    }
+    let mnistTest = MNIST {
+        dataset = test,
+        idxList = V.randomIndexes (V.length train)
+    }
+    pure (mnistTrain, mnistTest)
+
+-- | Setup distillation parameters and run
+runDistill :: (Dataset d) => d -> IO (MLP, MLP) 
 runDistill mnistData = do
     -- Train teacher
     initTeacher <- sample teacherSpec
@@ -77,32 +84,25 @@ runDistill mnistData = do
     let distillSpec = DistillSpec {
         teacher = teacher,
         student = initStudent,
-        teacherLens = mlpTemp 20.0,
-        studentLens = mlpTemp 1.0,
+        teacherView = mlpTemp 20.0,
+        studentView = mlpTemp 1.0,
         distillLoss = \tOutput sOutput -> nllLoss' (maxIndex tOutput) sOutput
     }
     student <- distill distillSpec optimSpec mnistData
     pure (teacher, student)
   where
-    teacherSpec = MLPSpec dataDim 300 300 10
-    studentSpec = MLPSpec dataDim 30 30 10
+    teacherSpec = MLPSpec mnistDataDim 300 300 10
+    studentSpec = MLPSpec mnistDataDim 30 30 10
 
 main = do
-
-    (trainData, testData) <- V.initMnist "datasets/mnist"
-    let mnist = MNIST {
-        trainData = trainData,
-        testData = testData,
-        idxList = V.randomIndexes (V.length trainData),
-        index = 0
-    }
-    (teacher, student) <- runDistill mnist
+    (mnistTrain, mnistTest) <- loadMNIST "datasets/mnist"
+    (teacher :: MLP, student :: MLP) <- runDistill mnistTrain
     mapM (\idx -> do
-        testImg <- V.getImages' 1 784 testData [idx]
+        testImg <- V.getImages' 1 784 (dataset mnistTest) [idx]
         print $ shape testImg
         V.dispImage testImg
         putStrLn $ "Teacher      : " ++ (show . maxIndex $ forward teacher testImg)
         putStrLn $ "Student      : " ++ (show . maxIndex $ forward student testImg)
-        putStrLn $ "Ground Truth : " ++ (show $ V.getLabels' 1 testData [idx])
+        putStrLn $ "Ground Truth : " ++ (show $ V.getLabels' 1 (dataset mnistTest) [idx])
         ) [0..10]
     putStrLn "Done"
