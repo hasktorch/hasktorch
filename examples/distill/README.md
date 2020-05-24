@@ -10,13 +10,18 @@ Distillation module operations are decoupled from details of this example. In pa
 data (Parameterized t, Parameterized s) => DistillSpec t s = DistillSpec {
     teacher :: t,
     student :: s,
-    teacherView :: t -> Tensor -> Tensor,
-    studentView :: s -> Tensor -> Tensor,
-    distillLoss :: Tensor -> Tensor -> Tensor
-}
+    teacherView :: t -> Tensor -> ModelView,
+    studentView :: s -> Tensor -> ModelView,
+    distillLoss :: ModelView -> ModelView -> Tensor
 ```
 
-A generic offline distillation is then a function of the following signature:
+Here `ModelView` is just a newtype wrapper around a tensor to communicate intent:
+
+```
+newtype ModelView = ModelView { view :: Tensor }
+```
+
+A generic offline distillation is then just a function of the following signature:
 
 ```
 distill
@@ -27,4 +32,13 @@ distill
     -> IO s
 ```
 
+Where `OptimSpec` wraps details of the optimizer to be used:
 
+```
+data Optimizer o => OptimSpec o = OptimSpec {
+    optimizer :: o,
+    batchSize :: Int,
+    numIters :: Int,
+    learningRate :: Tensor
+}
+```
