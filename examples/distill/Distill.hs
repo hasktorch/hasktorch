@@ -12,12 +12,14 @@ import Prelude hiding (exp, log)
 import Torch
 import Dataset
 
+newtype ModelView = ModelView { view :: Tensor }
+
 data (Parameterized t, Parameterized s) => DistillSpec t s = DistillSpec {
     teacher :: t,
     student :: s,
-    teacherView :: t -> Tensor -> Tensor,
-    studentView :: s -> Tensor -> Tensor,
-    distillLoss :: Tensor -> Tensor -> Tensor
+    teacherView :: t -> Tensor -> ModelView,
+    studentView :: s -> Tensor -> ModelView,
+    distillLoss :: ModelView -> ModelView -> Tensor
 }
 
 data Optimizer o => OptimSpec o = OptimSpec {

@@ -84,9 +84,9 @@ runDistill mnistData = do
     let distillSpec = DistillSpec {
         teacher = teacher,
         student = initStudent,
-        teacherView = mlpTemp 20.0,
-        studentView = mlpTemp 1.0,
-        distillLoss = \tOutput sOutput -> nllLoss' (maxIndex tOutput) sOutput
+        teacherView = \t inp -> ModelView (mlpTemp 20.0 t inp),
+        studentView = \s inp -> ModelView (mlpTemp 1.0 s inp),
+        distillLoss = \(ModelView tOutput) (ModelView sOutput) -> nllLoss' (maxIndex tOutput) sOutput
     }
     student <- distill distillSpec optimSpec mnistData
     pure (teacher, student)
