@@ -304,6 +304,12 @@ log2
     -> Tensor -- ^ output
 log2 t = unsafePerformIO $ (cast1 ATen.log2_t) t
 
+-- | Returns a new tensor with the natural logarithm of the elements of input.
+log
+  :: Tensor -- ^ input
+  -> Tensor -- ^ output
+log _self = unsafePerformIO $ (cast1 ATen.log_t) _self
+
 -- | Returns a new tensor with the logarithm to the base 10 of the elements of input.
 log10 
     :: Tensor -- ^ input
@@ -536,10 +542,10 @@ binaryCrossEntropyWithLogits reduction target weight pos_weight input = unsafePe
 
 -- | Creates a criterion that measures the mean squared error (squared L2 norm) between each element in the @input@ and @target@.
 mseLoss 
- :: Tensor -- ^ target
+ :: Tensor -- ^ target tensor
  -> Tensor -- ^ input
  -> Tensor -- ^ output
-mseLoss output input = unsafePerformIO $ (cast3 ATen.mse_loss_ttl) input output ATen.kMean
+mseLoss target t = unsafePerformIO $ (cast3 ATen.mse_loss_ttl) t target ATen.kMean
 
 -- | The negative log likelihood loss.
 nllLoss' 

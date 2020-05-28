@@ -44,6 +44,10 @@ class Parameterized f where
   default replaceOwnParameters :: (Generic f, Parameterized' (Rep f)) => f -> ParamStream f
   replaceOwnParameters f = to <$> replaceOwnParameters' (from f)
 
+  forward :: f -> Tensor -> Tensor
+  default forward :: f -> Tensor -> Tensor
+  forward t = undefined
+
 instance Parameterized Parameter where
   flattenParameters = pure
   replaceOwnParameters _ = nextParameter

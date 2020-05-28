@@ -75,6 +75,7 @@ library
                     , ghc-typelits-natnormalise
                     , mtl
                     , safe-exceptions
+                    , random
                     , reflection
                     , singletons
                     , stm
