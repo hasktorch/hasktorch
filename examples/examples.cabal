@@ -51,7 +51,8 @@ library static-mnist
                      , pipes
                      , pipes-concurrency
                      , mtl
-                     , foldl
+                     -- , unliftio >= 0.1
+                     , lifted-async
 
 
 test-suite spec
