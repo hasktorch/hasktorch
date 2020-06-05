@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -39,7 +40,7 @@ import Control.Monad.State.Lazy
 import           GHC.Generics
 import           GHC.TypeLits
 import           GHC.TypeLits.Extra
-import qualified Control.Concurrent.Async.Lifted as U
+import qualified Control.Concurrent.Async.Lifted as U -- can get rid of this dependency if we don't use StateT
 
 import Pipes
 import qualified Pipes.Prelude as P
@@ -51,6 +52,7 @@ import Common
   --TODO: make dtype of tensors polymorphic
 
 type Loader model optim = StateT (model, optim) IO 
+type BatchedTensor device dtype batchSize features = Tensor device dtype (batchSize ': features ': '[])
 
 data Mailboxes tensor tensor' = Mailboxes
   {
@@ -79,26 +81,26 @@ type Device = '(D.CPU, 0)
 readBatch
   :: forall batchSize model optim .
      KnownNat batchSize =>
+     I.MnistData -> 
      Output
        (CPUTensor 'D.Float '[batchSize, 784],
         CPUTensor 'D.Int64 '[batchSize], Int)
      -> Effect (Loader model optim) ()
-readBatch outputBox = do
-  (trainingData, testData) <- liftIO $ I.initMnist "data"
+readBatch dataset outputBox = do
+  -- (trainingData, testData) <- liftIO $ I.initMnist "data"
 
-  let numIters = 100
-  for (each [1..numIters]) (getBatch trainingData) 
-    >-> toOutput outputBox
+  let numIters = 20
+  for (each [1..numIters]) (\iter -> getBatch iter >-> toOutput outputBox)
 
   where
     -- implement inside a dataset typeclass?
-    getBatch ::  I.MnistData -> Int -> Producer _ (Loader model optim) ()
-    getBatch trainingData iter = do
+    getBatch ::  Int -> Producer _ (Loader model optim) ()
+    getBatch iter = do
       let from = (iter-1) * natValI @batchSize
           to = (iter * natValI @batchSize) - 1
           indexes = [from .. to]
-          input  = I.getImages @batchSize trainingData indexes
-          target = I.getLabels @batchSize trainingData indexes
+          input  = I.getImages @batchSize dataset indexes
+          target = I.getLabels @batchSize dataset indexes
       yield (input, target, iter)
   
   -- TODO : try to use model forward function
@@ -142,10 +144,11 @@ runBatch
      -> Effect (Loader model optim) ()
 runBatch lossFn learningRate forward tensorBox evalBox =
   for (each [1..10]) $ \epoch -> do
-    liftIO $ print $ "running epoch"  <> show epoch 
+    liftIO $ print $ "Running epoch "  <> show epoch 
     -- since we are currently using StateT we have no return value in the fold
     -- but we can just get rid of StateT
     lift $ P.foldM' trainFold (pure ()) pure inputs
+    -- liftIO $ print "folded"
     (testLoss, testError) <- lift $ evalModel forward evalBox
     liftIO $ putStrLn
       $  "Epoch: "
@@ -157,7 +160,7 @@ runBatch lossFn learningRate forward tensorBox evalBox =
     liftIO $ performGC
 
   where
-    inputs = fromInput tensorBox >-> (P.take 100)
+    inputs = fromInput tensorBox >-> (P.take 20)
     trainFold accum (trainData, trainLabels, ix) = do 
       (model, optim) <- get 
       let prediction = forward model $ toDevice @device trainData
@@ -168,8 +171,9 @@ runBatch lossFn learningRate forward tensorBox evalBox =
       put newState
 
 evalModel
-  :: forall batchSize device shape model optim c.
+  :: forall batchSize device shape model optim seqLen c.
      (KnownNat batchSize,
+      KnownNat seqLen,
       SumDTypeIsValid device 'D.Bool,
       ComparisonDTypeIsValid device 'D.Int64,
       DTypeIsFloatingPoint device 'D.Float,
@@ -180,7 +184,8 @@ evalModel
       ) =>
      (model
       -> Tensor device 'D.Float shape
-      -> Tensor device 'D.Float '[batchSize, 10])
+      -> BatchedTensor device 'D.Float batchSize seqLen
+     )
      -> Input
           (CPUTensor 'D.Float shape, CPUTensor 'D.Int64 '[batchSize],
            c)
@@ -188,7 +193,7 @@ evalModel
 evalModel forward evalBox =  P.foldM evalError (pure (0,0)) pure inputs 
 
   where
-    inputs = fromInput evalBox >-> P.take 100
+    inputs = fromInput evalBox >-> P.take 20
     evalError (totalLoss, totalError) (testData, testLabels, ix) =
           do
             (model, optim) <- get
@@ -200,7 +205,6 @@ evalModel forward evalBox =  P.foldM evalError (pure (0,0)) pure inputs
 
 runTransforms transforms transformBox batchBox = fromInput transformBox >-> P.map transforms >-> toOutput batchBox
 
-  -- FIXME IMPORTANT: we might only want each effect to deal with one input and output! Then we can use the withBuffer function
 trainingLoop
   :: forall dtype device batchSize gradients parameters model  optim.
      (DTypeIsFloatingPoint device dtype,
@@ -234,16 +238,18 @@ trainingLoop
      -> Loader model optim ()
 trainingLoop forward =  do
   Mailboxes{..} <- liftIO $ makeMailboxes
-  -- (trainingData, testData) <- liftIO $ I.initMnist "data"
-  batchReader <-  U.async $  do runEffect $ forever $ readBatch @batchSize (fst transformBox) 
-                                liftIO $ print "clean batch"
-                                liftIO $ performGC
+  (trainingData, testData) <- liftIO $ I.initMnist "data"
+  batchReader <-  U.async $  do
+    runEffect $ replicateM_ 10 $ readBatch @batchSize trainingData (fst transformBox) 
+    liftIO $ print "clean batch"
+    liftIO $ performGC
   transformer <-  U.async $ do runEffect $ runTransforms id (snd transformBox) (fst tensors)
                                liftIO $ print "clean transf"
                                liftIO $ performGC
-  evalReader <-  U.async $ do runEffect $ forever $ readBatch @batchSize (fst evalTransformBox) 
-                              liftIO $ print "clean eval"
-                              liftIO $ performGC
+  evalReader <-  U.async $ do
+    runEffect $ replicateM_ 10 $ readBatch @batchSize testData (fst evalTransformBox) 
+    liftIO $ print "clean eval"
+    liftIO $ performGC
   evalTransformer <-  U.async $ do runEffect $ runTransforms id (snd evalTransformBox) (fst evalBox)
                                    liftIO $ print "clean evalTransf"
                                    liftIO $ performGC
@@ -258,14 +264,14 @@ trainingLoop forward =  do
 lossAndErrorCount
   :: (SumDTypeIsValid device 'D.Bool,
       ComparisonDTypeIsValid device 'D.Int64,
-      KnownNat n,
+      KnownNat batchSize,
       KnownNat shape,
       KnownDevice device,
       StandardFloatingPointDTypeValidation device 'D.Float
      )
   =>
-  Tensor device 'D.Float '[n, shape]
-  -> Tensor device 'D.Int64 '[n]
+  Tensor device 'D.Float '[batchSize, shape]
+  -> Tensor device 'D.Int64 '[batchSize]
   -> 
   ( Tensor device 'D.Float '[]
   , Tensor device 'D.Float '[]
