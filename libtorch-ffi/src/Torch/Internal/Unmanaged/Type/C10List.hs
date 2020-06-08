@@ -18,8 +18,7 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 
@@ -43,35 +42,35 @@ newC10ListInt = [C.throwBlock| c10::List<int64_t>* { return new c10::List<int64_
 newC10ListBool :: IO (Ptr (C10List CBool))
 newC10ListBool = [C.throwBlock| c10::List<bool>* { return new c10::List<bool>(); }|]
 
-deleteC10ListIValue :: Ptr (C10List IValue) -> IO ()
-deleteC10ListIValue object = [C.throwBlock| void { delete $(c10::List<at::IValue>* object);}|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_c10listivalue"
+  c_delete_c10listivalue :: FunPtr ( Ptr (C10List IValue) -> IO ())
 
-deleteC10ListTensor :: Ptr (C10List Tensor) -> IO ()
-deleteC10ListTensor object = [C.throwBlock| void { delete $(c10::List<at::Tensor>* object);}|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_c10listtensor"
+  c_delete_c10listtensor :: FunPtr ( Ptr (C10List Tensor) -> IO ())
 
-deleteC10ListDouble :: Ptr (C10List CDouble) -> IO ()
-deleteC10ListDouble object = [C.throwBlock| void { delete $(c10::List<double>* object);}|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_c10listdouble"
+  c_delete_c10listdouble :: FunPtr ( Ptr (C10List CDouble) -> IO ())
 
-deleteC10ListInt :: Ptr (C10List Int64) -> IO ()
-deleteC10ListInt object = [C.throwBlock| void { delete $(c10::List<int64_t>* object);}|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_c10listint"
+  c_delete_c10listint :: FunPtr ( Ptr (C10List Int64) -> IO ())
 
-deleteC10ListBool :: Ptr (C10List CBool) -> IO ()
-deleteC10ListBool object = [C.throwBlock| void { delete $(c10::List<bool>* object);}|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_c10listbool"
+  c_delete_c10listbool :: FunPtr ( Ptr (C10List CBool) -> IO ())
 
 instance CppObject (C10List IValue) where
-  fromPtr ptr = newForeignPtr ptr (deleteC10ListIValue ptr)
+  fromPtr ptr = newForeignPtr c_delete_c10listivalue ptr
 
 instance CppObject (C10List Tensor) where
-  fromPtr ptr = newForeignPtr ptr (deleteC10ListTensor ptr)
+  fromPtr ptr = newForeignPtr c_delete_c10listtensor ptr
 
 instance CppObject (C10List CDouble) where
-  fromPtr ptr = newForeignPtr ptr (deleteC10ListDouble ptr)
+  fromPtr ptr = newForeignPtr c_delete_c10listdouble ptr
 
 instance CppObject (C10List Int64) where
-  fromPtr ptr = newForeignPtr ptr (deleteC10ListInt ptr)
+  fromPtr ptr = newForeignPtr c_delete_c10listint ptr
 
 instance CppObject (C10List CBool) where
-  fromPtr ptr = newForeignPtr ptr (deleteC10ListBool ptr)
+  fromPtr ptr = newForeignPtr c_delete_c10listbool ptr
 
 
 

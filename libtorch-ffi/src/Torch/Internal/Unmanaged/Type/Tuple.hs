@@ -15,8 +15,7 @@ module Torch.Internal.Unmanaged.Type.Tuple where
 
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 
@@ -35,11 +34,11 @@ C.include "<ATen/ATen.h>"
 
 -----------------StdTuple '(Tensor,Tensor)---------------------
 
-deleteTensorTensor :: Ptr (StdTuple '(Tensor,Tensor)) -> IO ()
-deleteTensorTensor ptr = [C.throwBlock| void { delete $(std::tuple<at::Tensor,at::Tensor>* ptr); return; }|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_tensortensor"
+  c_delete_tensortensor :: FunPtr ( Ptr (StdTuple '(Tensor,Tensor)) -> IO ())
 
 instance CppObject (StdTuple '(Tensor,Tensor)) where
-  fromPtr ptr = newForeignPtr ptr (deleteTensorTensor ptr)
+  fromPtr ptr = newForeignPtr c_delete_tensortensor ptr
 
 instance CppTuple2 (Ptr (StdTuple '(Tensor,Tensor))) where
   type A (Ptr (StdTuple '(Tensor,Tensor))) = Ptr Tensor
@@ -50,11 +49,11 @@ instance CppTuple2 (Ptr (StdTuple '(Tensor,Tensor))) where
 
 -----------------StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor)---------------------
 
-deleteTensorTensorTensorTensorTensor :: Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor)) -> IO ()
-deleteTensorTensorTensorTensorTensor ptr = [C.throwBlock| void { delete $(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* ptr); return; }|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_tensortensortensortensortensor"
+  c_delete_tensortensortensortensortensor :: FunPtr ( Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor)) -> IO ())
 
 instance CppObject (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor)) where
-  fromPtr ptr = newForeignPtr ptr (deleteTensorTensorTensorTensorTensor ptr)
+  fromPtr ptr = newForeignPtr c_delete_tensortensortensortensortensor ptr
 
 instance CppTuple2 (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor))) where
   type A (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor))) = Ptr Tensor
@@ -77,11 +76,11 @@ instance CppTuple5 (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor))) where
 
 -----------------StdTuple '(Tensor,Tensor,Tensor,TensorList)---------------------
 
-deleteTensorTensorTensorTensorList :: Ptr (StdTuple '(Tensor,Tensor,Tensor,TensorList)) -> IO ()
-deleteTensorTensorTensorTensorList ptr = [C.throwBlock| void { delete $(std::tuple<at::Tensor,at::Tensor,at::Tensor,std::vector<at::Tensor>>* ptr); return; }|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_tensortensortensortensorlist"
+  c_delete_tensortensortensortensorlist :: FunPtr ( Ptr (StdTuple '(Tensor,Tensor,Tensor,TensorList)) -> IO ())
 
 instance CppObject (StdTuple '(Tensor,Tensor,Tensor,TensorList)) where
-  fromPtr ptr = newForeignPtr ptr (deleteTensorTensorTensorTensorList ptr)
+  fromPtr ptr = newForeignPtr c_delete_tensortensortensortensorlist ptr
 
 instance CppTuple2 (Ptr (StdTuple '(Tensor,Tensor,Tensor,TensorList))) where
   type A (Ptr (StdTuple '(Tensor,Tensor,Tensor,TensorList))) = Ptr Tensor
@@ -100,11 +99,11 @@ instance CppTuple4 (Ptr (StdTuple '(Tensor,Tensor,Tensor,TensorList))) where
 
 -----------------StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64)---------------------
 
-deleteTensorTensorTensorTensorInt64 :: Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64)) -> IO ()
-deleteTensorTensorTensorTensorInt64 ptr = [C.throwBlock| void { delete $(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t>* ptr); return; }|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_tensortensortensortensorint64"
+  c_delete_tensortensortensortensorint64 :: FunPtr ( Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64)) -> IO ())
 
 instance CppObject (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64)) where
-  fromPtr ptr = newForeignPtr ptr (deleteTensorTensorTensorTensorInt64 ptr)
+  fromPtr ptr = newForeignPtr c_delete_tensortensortensortensorint64 ptr
 
 instance CppTuple2 (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64))) where
   type A (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64))) = Ptr Tensor
@@ -127,11 +126,11 @@ instance CppTuple5 (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64))) where
 
 -----------------StdTuple '(Tensor,Tensor,Tensor)---------------------
 
-deleteTensorTensorTensor :: Ptr (StdTuple '(Tensor,Tensor,Tensor)) -> IO ()
-deleteTensorTensorTensor ptr = [C.throwBlock| void { delete $(std::tuple<at::Tensor,at::Tensor,at::Tensor>* ptr); return; }|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_tensortensortensor"
+  c_delete_tensortensortensor :: FunPtr ( Ptr (StdTuple '(Tensor,Tensor,Tensor)) -> IO ())
 
 instance CppObject (StdTuple '(Tensor,Tensor,Tensor)) where
-  fromPtr ptr = newForeignPtr ptr (deleteTensorTensorTensor ptr)
+  fromPtr ptr = newForeignPtr c_delete_tensortensortensor ptr
 
 instance CppTuple2 (Ptr (StdTuple '(Tensor,Tensor,Tensor))) where
   type A (Ptr (StdTuple '(Tensor,Tensor,Tensor))) = Ptr Tensor
@@ -146,11 +145,11 @@ instance CppTuple3 (Ptr (StdTuple '(Tensor,Tensor,Tensor))) where
 
 -----------------StdTuple '(Tensor,Tensor,Tensor,Tensor)---------------------
 
-deleteTensorTensorTensorTensor :: Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor)) -> IO ()
-deleteTensorTensorTensorTensor ptr = [C.throwBlock| void { delete $(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor>* ptr); return; }|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_tensortensortensortensor"
+  c_delete_tensortensortensortensor :: FunPtr ( Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor)) -> IO ())
 
 instance CppObject (StdTuple '(Tensor,Tensor,Tensor,Tensor)) where
-  fromPtr ptr = newForeignPtr ptr (deleteTensorTensorTensorTensor ptr)
+  fromPtr ptr = newForeignPtr c_delete_tensortensortensortensor ptr
 
 instance CppTuple2 (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor))) where
   type A (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor))) = Ptr Tensor
@@ -169,11 +168,11 @@ instance CppTuple4 (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor))) where
 
 -----------------StdTuple '(Tensor,Tensor,CDouble,Int64)---------------------
 
-deleteTensorTensorCDoubleInt64 :: Ptr (StdTuple '(Tensor,Tensor,CDouble,Int64)) -> IO ()
-deleteTensorTensorCDoubleInt64 ptr = [C.throwBlock| void { delete $(std::tuple<at::Tensor,at::Tensor,double,int64_t>* ptr); return; }|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_tensortensorcdoubleint64"
+  c_delete_tensortensorcdoubleint64 :: FunPtr ( Ptr (StdTuple '(Tensor,Tensor,CDouble,Int64)) -> IO ())
 
 instance CppObject (StdTuple '(Tensor,Tensor,CDouble,Int64)) where
-  fromPtr ptr = newForeignPtr ptr (deleteTensorTensorCDoubleInt64 ptr)
+  fromPtr ptr = newForeignPtr c_delete_tensortensorcdoubleint64 ptr
 
 instance CppTuple2 (Ptr (StdTuple '(Tensor,Tensor,CDouble,Int64))) where
   type A (Ptr (StdTuple '(Tensor,Tensor,CDouble,Int64))) = Ptr Tensor

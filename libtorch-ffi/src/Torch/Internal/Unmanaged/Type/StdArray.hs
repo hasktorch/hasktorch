@@ -18,8 +18,7 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 
@@ -105,24 +104,23 @@ instance CppTuple4 (Ptr (StdArray '(CBool,4))) where
   type D (Ptr (StdArray '(CBool,4))) = CBool
   get3 v = [C.throwBlock| bool { return std::get<3>(*$(std::array<bool,4>* v));}|]
 
-deleteStdArrayBool2 :: Ptr (StdArray '(CBool,2)) -> IO ()
-deleteStdArrayBool2 object = [C.throwBlock| void { delete $(std::array<bool,2>* object);}|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_stdarraybool2"
+  c_delete_stdarraybool2 :: FunPtr ( Ptr (StdArray '(CBool,2)) -> IO ())
 
-deleteStdArrayBool3 :: Ptr (StdArray '(CBool,3)) -> IO ()
-deleteStdArrayBool3 object = [C.throwBlock| void { delete $(std::array<bool,3>* object);}|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_stdarraybool3"
+  c_delete_stdarraybool3 :: FunPtr ( Ptr (StdArray '(CBool,3)) -> IO ())
 
-deleteStdArrayBool4 :: Ptr (StdArray '(CBool,4)) -> IO ()
-deleteStdArrayBool4 object = [C.throwBlock| void { delete $(std::array<bool,4>* object);}|]
-
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_stdarraybool4"
+  c_delete_stdarraybool4 :: FunPtr ( Ptr (StdArray '(CBool,4)) -> IO ())
 
 instance CppObject (StdArray '(CBool,2)) where
-  fromPtr ptr = newForeignPtr ptr (deleteStdArrayBool2 ptr)
+  fromPtr ptr = newForeignPtr c_delete_stdarraybool2 ptr
 
 instance CppObject (StdArray '(CBool,3)) where
-  fromPtr ptr = newForeignPtr ptr (deleteStdArrayBool3 ptr)
+  fromPtr ptr = newForeignPtr c_delete_stdarraybool3 ptr
 
 instance CppObject (StdArray '(CBool,4)) where
-  fromPtr ptr = newForeignPtr ptr (deleteStdArrayBool4 ptr)
+  fromPtr ptr = newForeignPtr c_delete_stdarraybool4 ptr
 
 
 

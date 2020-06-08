@@ -18,8 +18,7 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 
@@ -43,11 +42,11 @@ newStdString_s
 newStdString_s str =
   withCString str $ \cstr -> [C.throwBlock| std::string* { return new std::string($(char* cstr));}|]
 
-deleteStdString :: Ptr StdString -> IO ()
-deleteStdString object = [C.throwBlock| void { delete $(std::string* object);}|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_stdstring"
+  c_delete_stdstring :: FunPtr ( Ptr StdString -> IO ())
 
 instance CppObject StdString where
-  fromPtr ptr = newForeignPtr ptr (deleteStdString ptr)
+  fromPtr ptr = newForeignPtr c_delete_stdstring ptr
 
 string_c_str
   :: Ptr StdString
