@@ -18,6 +18,7 @@ let
       libtorch_cudatoolkit_9_2
       libtorch_cudatoolkit_10_2
     ;
+    # c10 = pkgsNew.libtorch_cpu;
   };
 
   nixpkgsArgs = haskellNix.nixpkgsArgs // { overlays = haskellNix.overlays ++ [ libtorchOverlay ]; };
@@ -33,7 +34,7 @@ let
   # ghcide = (import sources.ghcide-nix {})."ghcide-${haskellCompiler}";
 
   # 'cabalProject' generates a package set based on a cabal.project (and the corresponding .cabal files)
-  hsPkgs = let pkgsNew = pkgs // { c10 = pkgs.libtorch_cpu; }; in
+  hsPkgs = let pkgsNew = pkgs // { overlays = pkgs.overlays ++ [ (pkgsNew: pkgsOld: { c10 = pkgsOld.libtorch_cpu; }) ]; }; in
     pkgsNew.haskell-nix.cabalProject {
       # 'cleanGit' cleans a source directory based on the files known by git
       src = pkgsNew.haskell-nix.haskellLib.cleanGit { name = "hasktorch"; src = ./.; };
