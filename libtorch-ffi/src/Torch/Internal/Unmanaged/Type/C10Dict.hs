@@ -18,8 +18,7 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 import Control.Monad (forM)
@@ -35,11 +34,11 @@ newC10Dict key value = [C.throwBlock| c10::Dict<at::IValue,at::IValue>* {
   return new c10::impl::GenericDict($(at::IValue* key)->type(),$(at::IValue* value)->type());
 }|]
 
-deleteC10Dict :: Ptr (C10Dict '(IValue,IValue)) -> IO ()
-deleteC10Dict object = [C.throwBlock| void { delete $(c10::Dict<at::IValue,at::IValue>* object);}|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_c10dict"
+  c_delete_c10dict  :: FunPtr( Ptr (C10Dict '(IValue,IValue)) -> IO () )
 
 instance CppObject (C10Dict '(IValue,IValue)) where
-  fromPtr ptr = newForeignPtr ptr (deleteC10Dict ptr)
+  fromPtr ptr = newForeignPtr c_delete_c10dict ptr
 
 c10Dict_empty :: Ptr (C10Dict '(IValue,IValue)) -> IO (CBool)
 c10Dict_empty _obj = [C.throwBlock| bool { return (*$(c10::Dict<at::IValue,at::IValue>* _obj)).empty(); }|]

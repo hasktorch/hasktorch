@@ -18,8 +18,7 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 
@@ -39,11 +38,11 @@ newStorage  =
 
 
 
-deleteStorage :: Ptr Storage -> IO ()
-deleteStorage object = [C.throwBlock| void { delete $(at::Storage* object);}|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_storage"
+  c_delete_storage :: FunPtr ( Ptr Storage -> IO ())
 
 instance CppObject Storage where
-  fromPtr ptr = newForeignPtr ptr (deleteStorage ptr)
+  fromPtr ptr = newForeignPtr c_delete_storage ptr
 
 
 

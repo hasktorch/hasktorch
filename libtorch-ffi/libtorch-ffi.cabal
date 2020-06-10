@@ -110,9 +110,11 @@ library
   ld-options: -Wl,-keep_dwarf_unwind
   if !flag(gcc)
     ghc-options:       -optc-std=c++14 -optc-xc++
+    cxx-options:       -std=c++14
  default-extensions:          Strict
                             , StrictData
-
+ cxx-sources:          csrc/hasktorch_finializer.cpp
+ install-includes:     csrc/hasktorch_finializer.h
 
 test-suite spec
   type:            exitcode-stdio-1.0

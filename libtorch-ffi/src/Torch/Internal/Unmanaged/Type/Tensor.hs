@@ -18,8 +18,7 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 
@@ -28,7 +27,8 @@ C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 C.include "<ATen/ATen.h>"
 C.include "<vector>"
 
-
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_tensor"
+  c_delete_tensor  :: FunPtr( Ptr Tensor -> IO () )
 
 newTensor
   :: IO (Ptr Tensor)
@@ -45,15 +45,8 @@ newTensor_t _x =
     *$(at::Tensor* _x));
   }|]
 
-
-
-deleteTensor :: Ptr Tensor -> IO ()
-deleteTensor object = [C.throwBlock| void { delete $(at::Tensor* object);}|]
-
 instance CppObject Tensor where
-  fromPtr ptr = newForeignPtr ptr (deleteTensor ptr)
-
-
+  fromPtr ptr = newForeignPtr c_delete_tensor ptr
 
 tensor_dim
   :: Ptr Tensor
