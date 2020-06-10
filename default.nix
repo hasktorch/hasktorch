@@ -1,37 +1,81 @@
-let 
-  # Fetch the latest haskell.nix and import its default.nix
+let
   haskellNix = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {};
 
-  # haskell.nix provides access to the nixpkgs pins which are used by our CI, hence
-  # you will be more likely to get cache hits when using these.
-  # But you can also just use your own, e.g. '<nixpkgs>'
   nixpkgsSrc = haskellNix.sources.nixpkgs-2003;
 
-  # haskell.nix provides some arguments to be passed to nixpkgs, including some patches
-  # and also the haskell.nix functionality itself as an overlay.
-  nixpkgsArgs = haskellNix.nixpkgsArgs;
+  libtorchSrc = pkgs:
+    let src = pkgs.fetchFromGitHub {
+          owner  = "stites";
+          repo   = "pytorch-world";
+          rev    = "6dc929a791918fff065bb40cbc3db8a62beb2a30";
+          sha256 = "140a2l1l1qnf7v2s1lblrr02mc0knsqpi06f25xj3qchpawbjd4c";
+    };
+    in (pkgs.callPackage "${src}/libtorch/release.nix" { });
+
+  libtorchOverlay = pkgsNew: pkgsOld: {
+    inherit (libtorchSrc pkgsOld)
+      libtorch_cpu
+      libtorch_cudatoolkit_9_2
+      libtorch_cudatoolkit_10_2
+    ;
+  };
+
+  nixpkgsArgs = haskellNix.nixpkgsArgs // { overlays = haskellNix.overlays ++ [ libtorchOverlay ]; };
+
 in
+
 { pkgs ? import nixpkgsSrc nixpkgsArgs
-, haskellCompiler ? "ghc8101"
+, haskellCompiler ? "ghc883"
 }:
 
-# 'cabalProject' generates a package set based on a cabal.project (and the corresponding .cabal files)
-pkgs.haskell-nix.cabalProject {
-  # 'cleanGit' cleans a source directory based on the files known by git
-  src = pkgs.haskell-nix.haskellLib.cleanGit { name = "hasktorch"; src = ./.; };
-  compiler-nix-name = haskellCompiler;
-  # pkg-def-extras = [
-  #   # Additional packages ontop of all those listed in `cabal.project`
-  # ];
-  # modules = [{
-  #   # Specific package overrides would go here for example:
-  #   packages.cbors.package.ghcOptions = "-Werror";
-  #   packages.cbors.patches = [ ./one.patch ];
-  #   packages.cbors.flags.optimize-gmp = false;
-  #   # It may be better to set flags in `cabal.project` instead
-  #   # (`plan-to-nix` will include them as defaults).
-  # }];
-}
+let
+
+  # ghcide = (import sources.ghcide-nix {})."ghcide-${haskellCompiler}";
+
+  # 'cabalProject' generates a package set based on a cabal.project (and the corresponding .cabal files)
+  hsPkgs = let c10 = pkgs.libtorch_cpu; in
+    pkgs.haskell-nix.cabalProject {
+      # 'cleanGit' cleans a source directory based on the files known by git
+      src = pkgs.haskell-nix.haskellLib.cleanGit { name = "hasktorch"; src = ./.; };
+      compiler-nix-name = haskellCompiler;
+      # pkg-def-extras = [{
+      #   packages = { "c10" = pkgs.libtorch_cpu; };
+      # }];
+      modules = [
+        ({ config, ... }: {
+          packages.libtorch-ffi.configureFlags = [ "--extra-include-dirs=${pkgs."libtorch_cpu"}/include/torch/csrc/api/include" ];
+        })
+      ];
+      # modules = [{
+      #   # Specific package overrides would go here for example:
+      #   packages.cbors.package.ghcOptions = "-Werror";
+      #   packages.cbors.patches = [ ./one.patch ];
+      #   packages.cbors.flags.optimize-gmp = false;
+      #   # It may be better to set flags in `cabal.project` instead
+      #   # (`plan-to-nix` will include them as defaults).
+      # }];
+    };
+
+  shell = hsPkgs.shellFor {
+    withHoogle = true;
+    buildInputs = [
+      pkgs.cabal-install
+      pkgs.haskellPackages.ghcid
+      pkgs.haskellPackages.hpack
+      pkgs.haskellPackages.brittany
+      pkgs.haskellPackages.dhall
+      # ghcide
+    ];
+  };
+
+in
+  rec {
+    inherit hsPkgs;
+
+    codegen = hsPkgs.codegen;
+
+    libtorch-ffi_cpu = hsPkgs.libtorch-ffi;
+  }
 
 
 # let

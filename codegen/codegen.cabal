@@ -51,16 +51,16 @@ executable codegen-exe
     , optparse-applicative >= 0.14.3.0
   extra-libraries:     stdc++
 
-test-suite doctests
-  default-language: Haskell2010
-  type:            exitcode-stdio-1.0
-  hs-source-dirs:  test
-  main-is:         doctests.hs
-  ghc-options:     -Wall -threaded
-  build-depends:
-      base
-    , doctest
-    , megaparsec
+--test-suite doctests
+--  default-language: Haskell2010
+--  type:            exitcode-stdio-1.0
+--  hs-source-dirs:  test
+--  main-is:         doctests.hs
+--  ghc-options:     -Wall -threaded
+--  build-depends:
+--      base
+--    , doctest
+--    , megaparsec
 
 test-suite spec
   default-language: Haskell2010
