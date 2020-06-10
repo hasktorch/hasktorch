@@ -1,0 +1,62 @@
+{
+    "hackage-nix": {
+        "branch": "master",
+        "description": "Automatically generated Nix expressions for Hackage",
+        "homepage": "",
+        "owner": "input-output-hk",
+        "repo": "hackage.nix",
+        "rev": "7cb0aae4dc57b6d83667979c2402d0e5078e8124",
+        "sha256": "1pz6mhhavh71k3pgf56mlckjfdk4xnvd8752c8vqqwnqzxyvi3sa",
+        "type": "tarball",
+        "url": "https://github.com/input-output-hk/hackage.nix/archive/7cb0aae4dc57b6d83667979c2402d0e5078e8124.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "haskell-nix": {
+        "branch": "master",
+        "description": "Alternative Haskell Infrastructure for Nixpkgs",
+        "homepage": "https://input-output-hk.github.io/haskell.nix",
+        "owner": "input-output-hk",
+        "repo": "haskell.nix",
+        "rev": "da9c5b93a983b03ed2c32c081915dda95cc6917c",
+        "sha256": "14cr9rwzn71za2krqagdfd42pwqm2b57x31znbgs00x9mzg114n1",
+        "type": "tarball",
+        "url": "https://github.com/input-output-hk/haskell.nix/archive/da9c5b93a983b03ed2c32c081915dda95cc6917c.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "hls-nix": {
+        "branch": "master",
+        "description": null,
+        "homepage": null,
+        "owner": "korayal",
+        "repo": "hls-nix",
+        "rev": "3ac16995f2cd2b929d9cfb03a1f931a4d9f0030e",
+        "sha256": "14bdw27j0dvkifj3pgjq0ir7lsvs3qrkkykllj1hhfhrzhravrqb",
+        "type": "tarball",
+        "url": "https://github.com/korayal/hls-nix/archive/3ac16995f2cd2b929d9cfb03a1f931a4d9f0030e.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "niv": {
+        "branch": "master",
+        "description": "Easy dependency management for Nix projects",
+        "homepage": "https://github.com/nmattia/niv",
+        "owner": "nmattia",
+        "repo": "niv",
+        "rev": "f73bf8d584148677b01859677a63191c31911eae",
+        "sha256": "0jlmrx633jvqrqlyhlzpvdrnim128gc81q5psz2lpp2af8p8q9qs",
+        "type": "tarball",
+        "url": "https://github.com/nmattia/niv/archive/f73bf8d584148677b01859677a63191c31911eae.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "nixpkgs-2003": {
+        "branch": "nixpkgs-20.03-darwin",
+        "description": "Nix Packages collection",
+        "homepage": null,
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "cac363c661817666e43d047addfaa722610d425f",
+        "sha256": "0fi8hgddy8qh2jrsa40jw7jxnr5lrhq2ji6a2xbndllivhzc31kf",
+        "type": "tarball",
+        "url": "https://github.com/NixOS/nixpkgs/archive/cac363c661817666e43d047addfaa722610d425f.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    }
+}
