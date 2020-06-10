@@ -33,17 +33,17 @@ let
   # ghcide = (import sources.ghcide-nix {})."ghcide-${haskellCompiler}";
 
   # 'cabalProject' generates a package set based on a cabal.project (and the corresponding .cabal files)
-  hsPkgs = let c10 = pkgs.libtorch_cpu; in
-    pkgs.haskell-nix.cabalProject {
+  hsPkgs = let pkgsNew = pkgs // { c10 = pkgs.libtorch_cpu; }; in
+    pkgsNew.haskell-nix.cabalProject {
       # 'cleanGit' cleans a source directory based on the files known by git
-      src = pkgs.haskell-nix.haskellLib.cleanGit { name = "hasktorch"; src = ./.; };
+      src = pkgsNew.haskell-nix.haskellLib.cleanGit { name = "hasktorch"; src = ./.; };
       compiler-nix-name = haskellCompiler;
       # pkg-def-extras = [{
       #   packages = { "c10" = pkgs.libtorch_cpu; };
       # }];
       modules = [
         ({ config, ... }: {
-          packages.libtorch-ffi.configureFlags = [ "--extra-include-dirs=${pkgs."libtorch_cpu"}/include/torch/csrc/api/include" ];
+          packages.libtorch-ffi.configureFlags = [ "--extra-include-dirs=${pkgsNew."libtorch_cpu"}/include/torch/csrc/api/include" ];
         })
       ];
       # modules = [{
