@@ -1,11 +1,17 @@
-args@{ haskellCompiler ? "ghc883", ...}:
+args@{ cudaVersion ? null, ...}:
 
 let
   sources = import ./nix/sources.nix;
   niv = (import sources.niv { }).niv;
   hls = (import sources.hls-nix { }).hpkgs.haskell-language-server;
-  default = (import ./default.nix { inherit (args); shellBuildInputs = [ niv hls ]; }).defaultCuda102;
+  shared = (import ./nix/shared.nix { inherit (args); shellBuildInputs = [ niv hls ]; });
 in
+assert cudaVersion == null || (cudaVersion == 9 && shared.defaultCuda92 != null) || (cudaVersion == 10 && shared.defaultCuda102 != null);
 
-default.shell
-
+if cudaVersion == null
+then if shared.defaultCuda102 == null
+  then shared.defaultCpu.shell
+  else shared.defaultCuda102.shell
+else if cudaVersion == 9
+  then shared.defaultCuda92.shell
+  else shared.defaultCuda102.shell

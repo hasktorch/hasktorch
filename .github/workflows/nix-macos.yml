@@ -14,6 +14,7 @@ jobs:
         git submodule init && git submodule update
     - uses: cachix/cachix-action@releases/v5
       with:
-        name: hasktorch
         skipNixBuild: false
+        name: hasktorch
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+        nixBuildArgs: ./nix/shared.nix -A defaultCpu.hsPkgs
