@@ -3,6 +3,7 @@ let sources = import ./nix/sources.nix; in
 , haskellNixOverlays ? (pkgsNew: pkgsOld: { haskell-nix = pkgsOld.haskell-nix // { hackageSrc = sources.hackage-nix; }; })
 , nixpkgsSrc ? haskellNix.sources.nixpkgs-2003
 , haskellCompiler ? "ghc883"
+, shellBuildInputs ? []
 }:
 let
   libtorchSrc = pkgs:
@@ -40,39 +41,50 @@ let
       torch_cuda = libtorch;
     };
 
-  hsPkgs =
+  default =
     { overlays
     , pkgs ? (import nixpkgsSrc (haskellNix.nixpkgsArgs // { overlays = haskellNix.overlays ++ [ haskellNixOverlays ] ++ overlays; }))
     , USE_CUDA ? false
     , USE_GCC ? !USE_CUDA && pkgs.stdenv.hostPlatform.system == "x86_64-darwin"
-    }: if USE_CUDA && pkgs.stdenv.hostPlatform.system == "x86_64-darwin" then null else
-    pkgs.haskell-nix.cabalProject {
-      src = pkgs.haskell-nix.haskellLib.cleanGit { name = "hasktorch"; src = ./.; };
-      compiler-nix-name = haskellCompiler;
-      modules = [
-        ({ config, ... }: {
-          packages.libtorch-ffi.configureFlags = [
-            "--extra-lib-dirs=${pkgs.torch}/lib"
-            "--extra-include-dirs=${pkgs.torch}/include"
-            "--extra-include-dirs=${pkgs.torch}/include/torch/csrc/api/include"
-          ];
-          packages.libtorch-ffi.flags.cuda = USE_CUDA;
-          packages.libtorch-ffi.flags.gcc = USE_GCC;
-        })
-      ];
+    }: if USE_CUDA && pkgs.stdenv.hostPlatform.system == "x86_64-darwin" then { } else rec {
+      inherit pkgs;
+      hsPkgs = pkgs.haskell-nix.cabalProject {
+        src = pkgs.haskell-nix.haskellLib.cleanGit { name = "hasktorch"; src = ./.; };
+        compiler-nix-name = haskellCompiler;
+        modules = [
+          ({ config, ... }: {
+            packages.libtorch-ffi.configureFlags = [
+              "--extra-lib-dirs=${pkgs.torch}/lib"
+              "--extra-include-dirs=${pkgs.torch}/include"
+              "--extra-include-dirs=${pkgs.torch}/include/torch/csrc/api/include"
+            ];
+            packages.libtorch-ffi.flags.cuda = USE_CUDA;
+            packages.libtorch-ffi.flags.gcc = USE_GCC;
+          })
+        ];
+      };
+      shell = hsPkgs.shellFor {
+        withHoogle = true;
+        tools = { cabal = "3.2.0.0"; };
+        buildInputs = shellBuildInputs;
+        exactDeps = true;
+        shellHook = ''
+          export CPATH=${pkgs.torch}/include/torch/csrc/api/include
+        '';
+      };
     };
 
-  hsPkgsCpu = hsPkgs { overlays = [ libtorchOverlayCpu ]; };
-  hsPkgsCuda92 = hsPkgs { overlays = [ libtorchOverlayCuda92 ]; USE_CUDA = true; };
-  hsPkgsCuda102 = hsPkgs { overlays = [ libtorchOverlayCuda102 ]; USE_CUDA = true; };
+  defaultCpu = default { overlays = [ libtorchOverlayCpu ]; };
+  defaultCuda92 = default { overlays = [ libtorchOverlayCuda92 ]; USE_CUDA = true; };
+  defaultCuda102 = default { overlays = [ libtorchOverlayCuda102 ]; USE_CUDA = true; };
 
   # f = x: y: if x == null then null else y;
   # g = x: y: if x == null then null else x.y;
 in
 {
-  inherit hsPkgsCpu;
-  inherit hsPkgsCuda92;
-  inherit hsPkgsCuda102;
+  inherit defaultCpu;
+  inherit defaultCuda92;
+  inherit defaultCuda102;
 
   # libtorchFFICpu = hsPkgsCpu.libtorch-ffi;
   # ${f hsPkgsCuda92 "libtorchFFICuda92"} = g hsPkgsCuda92 "libtorch-ffi";

@@ -4,16 +4,8 @@ let
   sources = import ./nix/sources.nix;
   niv = (import sources.niv { }).niv;
   hls = (import sources.hls-nix { }).hpkgs.haskell-language-server;
-  defaultHsPkgs = (import ./default.nix args).hsPkgsCuda102;
+  default = (import ./default.nix { inherit (args); shellBuildInputs = [ niv hls ]; }).defaultCuda102;
 in
 
-defaultHsPkgs.shellFor {
-  withHoogle = true;
-  tools = { cabal = "3.2.0.0"; };
-  buildInputs = [
-    niv
-    hls
-  ];
-  exactDeps = true;
-}
+default.shell
 
