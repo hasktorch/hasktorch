@@ -14,10 +14,10 @@ let
     }
   );
 in
-assert cudaVersion == null || (cudaVersion == 9 && shared.defaultCuda92 != null) || (cudaVersion == 10 && shared.defaultCuda102 != null);
+assert cudaVersion == null || (cudaVersion == 9 && shared.defaultCuda92 != { }) || (cudaVersion == 10 && shared.defaultCuda102 != { });
 
 if cudaVersion == null
-then if shared.defaultCuda102 == null
+then if shared.defaultCuda102 == { }
   then shared.defaultCpu.shell
   else shared.defaultCuda102.shell
 else if cudaVersion == 9
