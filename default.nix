@@ -1,7 +1,7 @@
 args@{ cudaVersion ? null, ...}:
 
 let
-  shared = (import ./nix/shared.nix { inherit (args); });
+  shared = (import ./shared.nix { inherit (args); });
 in
 assert cudaVersion == null || (cudaVersion == 9 && shared.defaultCuda92 != null) || (cudaVersion == 10 && shared.defaultCuda102 != null);
 
