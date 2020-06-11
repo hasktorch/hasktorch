@@ -6,6 +6,8 @@ packages:
     examples/*.cabal
     experimental/*.cabal
 
+tests: true
+
 source-repository-package
     type: git
     location: https://github.com/hasktorch/pipes-text

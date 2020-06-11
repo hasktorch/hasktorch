@@ -65,9 +65,9 @@ let
       };
       shell = hsPkgs.shellFor {
         withHoogle = true;
-        tools = { cabal = "3.2.0.0"; };
+        tools = { cabal = "3.3.0.0"; ghcide; };
         buildInputs = shellBuildInputs;
-        exactDeps = true;
+        exactDeps = false; # set to true as soon as haskell.nix issue #231 is resolved
         shellHook = ''
           export CPATH=${pkgs.torch}/include/torch/csrc/api/include
         '';

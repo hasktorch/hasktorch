@@ -123,7 +123,6 @@ test-suite spec
   build-depends:      base >= 4.7 && < 5
                     , hasktorch
                     , hspec
-                    , hspec-discover
                     , libtorch-ffi
                     , mtl
                     , reflection
