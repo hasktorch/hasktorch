@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
 
@@ -30,7 +31,7 @@ data Optimizer o => OptimSpec o = OptimSpec {
 }
 
 -- | Train the teacher model
-train :: (Dataset d, Optimizer o, Parameterized p) => OptimSpec o -> d -> p -> IO p
+train :: (Dataset d, Optimizer o, Parameterized p, HasForward p Tensor Tensor) => OptimSpec o -> d -> p -> IO p
 train OptimSpec{..} dataset init = do
     trained <- foldLoop init numIters $
         \state iter -> do
