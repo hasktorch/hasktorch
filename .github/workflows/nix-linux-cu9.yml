@@ -29,4 +29,4 @@ jobs:
         skipNixBuild: false
         name: hasktorch
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-        nixBuildArgs: ./nix/shared.nix -A defaultCuda92.hsPkgs
+        nixBuildArgs: ./shared.nix -A defaultCuda92.hsPkgs
