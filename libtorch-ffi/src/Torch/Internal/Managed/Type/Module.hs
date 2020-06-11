@@ -18,8 +18,7 @@ module Torch.Internal.Managed.Type.Module where
 
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Foreign.ForeignPtr.Unsafe
 import Torch.Internal.Type
 import Torch.Internal.Class

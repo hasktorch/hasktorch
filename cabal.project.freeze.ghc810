@@ -1,5 +1,4 @@
-constraints: any.Cabal ==3.0.2.0,
-             Cabal -bundled-binary-generic,
+constraints: Cabal -bundled-binary-generic,
              any.HUnit ==1.6.0.0,
              any.JuicyPixels ==3.3.5,
              JuicyPixels -mmap,

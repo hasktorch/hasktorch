@@ -18,8 +18,7 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 
@@ -39,11 +38,11 @@ newSymbol  =
 
 
 
-deleteSymbol :: Ptr Symbol -> IO ()
-deleteSymbol object = [C.throwBlock| void { delete $(at::Symbol* object);}|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_symbol"
+  c_delete_symbol :: FunPtr ( Ptr Symbol -> IO ())
 
 instance CppObject Symbol where
-  fromPtr ptr = newForeignPtr ptr (deleteSymbol ptr)
+  fromPtr ptr = newForeignPtr c_delete_symbol ptr
 
 
 

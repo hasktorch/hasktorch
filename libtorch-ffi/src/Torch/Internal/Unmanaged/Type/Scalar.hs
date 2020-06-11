@@ -18,8 +18,7 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 
@@ -55,11 +54,11 @@ newScalar_d _a =
 
 
 
-deleteScalar :: Ptr Scalar -> IO ()
-deleteScalar object = [C.throwBlock| void { delete $(at::Scalar* object);}|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_scalar"
+  c_delete_scalar :: FunPtr ( Ptr Scalar -> IO ())
 
 instance CppObject Scalar where
-  fromPtr ptr = newForeignPtr ptr (deleteScalar ptr)
+  fromPtr ptr = newForeignPtr c_delete_scalar ptr
 
 
 

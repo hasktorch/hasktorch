@@ -20,8 +20,7 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Unmanaged.Helper
 import Torch.Internal.Class
@@ -44,29 +43,29 @@ newModule name =
     );
   }|]
 
-deleteModule :: Ptr Module -> IO ()
-deleteModule object = [C.throwBlock| void { delete $(torch::jit::script::Module* object);}|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_module"
+  c_delete_module :: FunPtr ( Ptr Module -> IO ())
 
 instance CppObject Module where
-  fromPtr ptr = newForeignPtr ptr (deleteModule ptr)
+  fromPtr ptr = newForeignPtr c_delete_module ptr
 
-deleteJitGraph :: Ptr (SharedPtr JitGraph) -> IO ()
-deleteJitGraph object = [C.throwBlock| void { delete $(std::shared_ptr<torch::jit::Graph>* object);}|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_jitgraph"
+  c_delete_jitgraph :: FunPtr ( Ptr (SharedPtr JitGraph) -> IO ())
 
 instance CppObject (SharedPtr JitGraph) where
-  fromPtr ptr = newForeignPtr ptr (deleteJitGraph ptr)
+  fromPtr ptr = newForeignPtr c_delete_jitgraph ptr
 
-deleteJitNode :: Ptr JitNode -> IO ()
-deleteJitNode object = [C.throwBlock| void { delete $(torch::jit::Node* object);}|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_jitnode"
+  c_delete_jitnode :: FunPtr ( Ptr JitNode -> IO ())
 
 instance CppObject JitNode where
-  fromPtr ptr = newForeignPtr ptr (deleteJitNode ptr)
+  fromPtr ptr = newForeignPtr c_delete_jitnode ptr
 
-deleteJitValue :: Ptr JitValue -> IO ()
-deleteJitValue object = [C.throwBlock| void { delete $(torch::jit::Value* object);}|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_jitvalue"
+  c_delete_jitvalue :: FunPtr ( Ptr JitValue -> IO ())
 
 instance CppObject JitValue where
-  fromPtr ptr = newForeignPtr ptr (deleteJitValue ptr)
+  fromPtr ptr = newForeignPtr c_delete_jitvalue ptr
 
 save :: Ptr Module -> FilePath -> IO ()
 save obj file = withCString file $ \cfile -> [C.throwBlock| void {

@@ -18,8 +18,7 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 
@@ -39,11 +38,11 @@ newIValueList  =
 
 
 
-deleteIValueList :: Ptr IValueList -> IO ()
-deleteIValueList object = [C.throwBlock| void { delete $(std::vector<at::IValue>* object);}|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_ivaluelist"
+  c_delete_ivaluelist :: FunPtr ( Ptr IValueList -> IO ())
 
 instance CppObject IValueList where
-  fromPtr ptr = newForeignPtr ptr (deleteIValueList ptr)
+  fromPtr ptr = newForeignPtr c_delete_ivaluelist ptr
 
 
 

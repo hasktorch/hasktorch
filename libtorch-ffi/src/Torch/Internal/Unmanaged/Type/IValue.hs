@@ -20,8 +20,7 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 
@@ -250,11 +249,12 @@ newIValue
 newIValue  =
   [C.throwBlock| at::IValue* { return new at::IValue() ; }|]
 
-deleteIValue :: Ptr IValue -> IO ()
-deleteIValue object = [C.throwBlock| void { delete $(at::IValue* object);}|]
+
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_ivalue"
+  c_delete_ivalue :: FunPtr ( Ptr IValue -> IO ())
 
 instance CppObject IValue where
-  fromPtr ptr = newForeignPtr ptr (deleteIValue ptr)
+  fromPtr ptr = newForeignPtr c_delete_ivalue ptr
 
 iValue_isAliasOf_V
   :: Ptr IValue

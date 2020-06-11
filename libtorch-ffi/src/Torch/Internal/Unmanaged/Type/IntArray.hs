@@ -18,8 +18,7 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 
@@ -39,11 +38,11 @@ newIntArray  =
 
 
 
-deleteIntArray :: Ptr IntArray -> IO ()
-deleteIntArray object = [C.throwBlock| void { delete $(std::vector<int64_t>* object);}|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_intarray"
+  c_delete_intarray :: FunPtr ( Ptr IntArray -> IO ())
 
 instance CppObject IntArray where
-  fromPtr ptr = newForeignPtr ptr (deleteIntArray ptr)
+  fromPtr ptr = newForeignPtr c_delete_intarray ptr
 
 
 

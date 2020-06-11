@@ -18,8 +18,7 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 
@@ -46,11 +45,11 @@ newCPUGenerator _seed_in =
 
 
 
-deleteGenerator :: Ptr Generator -> IO ()
-deleteGenerator object = [C.throwBlock| void { delete $(at::Generator* object);}|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_generator"
+  c_delete_generator :: FunPtr ( Ptr Generator -> IO ())
 
 instance CppObject Generator where
-  fromPtr ptr = newForeignPtr ptr (deleteGenerator ptr)
+  fromPtr ptr = newForeignPtr c_delete_generator ptr
 
 
 

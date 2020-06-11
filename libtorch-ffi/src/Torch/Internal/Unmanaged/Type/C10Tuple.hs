@@ -18,8 +18,7 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 
@@ -39,11 +38,11 @@ newC10Tuple  =
 
 
 
-deleteC10Tuple :: Ptr (C10Ptr IVTuple) -> IO ()
-deleteC10Tuple object = [C.throwBlock| void { delete $(c10::intrusive_ptr<at::ivalue::Tuple>* object);}|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_c10tuple"
+  c_delete_c10tuple :: FunPtr ( Ptr (C10Ptr IVTuple) -> IO ())
 
 instance CppObject (C10Ptr IVTuple) where
-  fromPtr ptr = newForeignPtr ptr (deleteC10Tuple ptr)
+  fromPtr ptr = newForeignPtr c_delete_c10tuple ptr
 
 
 
