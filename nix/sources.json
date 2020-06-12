@@ -58,5 +58,17 @@
         "type": "tarball",
         "url": "https://github.com/NixOS/nixpkgs/archive/cac363c661817666e43d047addfaa722610d425f.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "pytorch-world": {
+        "branch": "unstable",
+        "description": "nix scripts for pytorch-related libraries",
+        "homepage": "https://pytorch.org/",
+        "owner": "stites",
+        "repo": "pytorch-world",
+        "rev": "5c6f66ec567b72c7ab053b3dbe2daef672d8849d",
+        "sha256": "140a2l1l1qnf7v2s1lblrr02mc0knsqpi06f25xj3qchpawbjd4c",
+        "type": "tarball",
+        "url": "https://github.com/stites/pytorch-world/archive/5c6f66ec567b72c7ab053b3dbe2daef672d8849d.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }

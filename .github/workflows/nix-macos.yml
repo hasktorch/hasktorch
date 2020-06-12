@@ -17,4 +17,3 @@ jobs:
         skipNixBuild: false
         name: hasktorch
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-        nixBuildArgs: ./shared.nix -A defaultCpu.hsPkgs.libtorch-ffi.components.all -A defaultCpu.hsPkgs.hasktorch.components.all -A defaultCpu.hsPkgs.examples.components.all -A defaultCpu.hsPkgs.experimental.components.all

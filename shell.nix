@@ -13,13 +13,13 @@ let
       ];
     }
   );
+  default = (
+    if cudaVersion == null
+    then shared.defaultCpu
+    else if cudaVersion == 9
+      then shared.defaultCuda92
+      else shared.defaultCuda102
+  );
 in
-assert cudaVersion == null || (cudaVersion == 9 && shared.defaultCuda92 != { }) || (cudaVersion == 10 && shared.defaultCuda102 != { });
-
-if cudaVersion == null
-then if shared.defaultCuda102 == { }
-  then shared.defaultCpu.shell
-  else shared.defaultCuda102.shell
-else if cudaVersion == 9
-  then shared.defaultCuda92.shell
-  else shared.defaultCuda102.shell
+  assert cudaVersion == null || (cudaVersion == 9 && shared.defaultCuda92 != { }) || (cudaVersion == 10 && shared.defaultCuda102 != { });
+  default.shell

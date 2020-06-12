@@ -146,7 +146,7 @@ executable serialization
   main-is:             Main.hs
   ghc-options:         -fno-warn-partial-type-signatures
   build-depends:       bytestring
-                     --, serialise
+                     , serialise
 
 executable optimizers
   hs-source-dirs:      optimizers

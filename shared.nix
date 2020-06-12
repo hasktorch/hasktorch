@@ -8,13 +8,7 @@ let sources = import ./nix/sources.nix; in
 }:
 let
   libtorchSrc = pkgs:
-    let src = pkgs.fetchFromGitHub {
-      owner = "stites";
-      repo = "pytorch-world";
-      rev = "6dc929a791918fff065bb40cbc3db8a62beb2a30";
-      sha256 = "140a2l1l1qnf7v2s1lblrr02mc0knsqpi06f25xj3qchpawbjd4c";
-    };
-    in (pkgs.callPackage "${src}/libtorch/release.nix" { });
+    pkgs.callPackage "${sources.pytorch-world}/libtorch/release.nix" { };
 
   libtorchOverlayCpu = pkgsNew: pkgsOld:
     let libtorch = (libtorchSrc pkgsOld).libtorch_cpu; in
@@ -54,6 +48,7 @@ let
         compiler-nix-name = haskellCompiler;
         modules = [
           ({ config, ... }: {
+            # packages.codegen.components.tests.doctests.buildable = false;
             packages.libtorch-ffi.configureFlags = [
               "--extra-lib-dirs=${pkgs.torch}/lib"
               "--extra-include-dirs=${pkgs.torch}/include"
@@ -82,7 +77,8 @@ let
 in
 
 {
-
+  inherit sources;
+  inherit libtorchSrc;
   inherit defaultCpu;
   inherit defaultCuda92;
   inherit defaultCuda102;
