@@ -29,4 +29,4 @@ jobs:
         skipNixBuild: false
         name: hasktorch
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-        nixBuildArgs: ./shared.nix -A defaultCuda102.hsPkgs
+        nixBuildArgs: ./shared.nix -A defaultCuda102.hsPkgs.libtorch-ffi.components.all -A defaultCuda102.hsPkgs.hasktorch.components.all -A defaultCuda102.hsPkgs.examples.components.all -A defaultCuda102.hsPkgs.experimental.components.all
