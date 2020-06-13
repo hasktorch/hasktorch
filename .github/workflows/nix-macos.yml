@@ -4,7 +4,6 @@ on: [push, pull_request]
 
 jobs:
   build-shell-cache:
-    if: github.repository == 'hasktorch/hasktorch'
     runs-on: macOS-latest
     steps:
       - uses: actions/checkout@v2
@@ -16,7 +15,6 @@ jobs:
       - run: cachix use iohk
       - run: nix-build shell.nix
   build-ci-cache:
-    if: github.repository == 'hasktorch/hasktorch'
     runs-on: macOS-latest
     steps:
       - uses: actions/checkout@v2
