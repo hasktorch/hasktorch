@@ -6,6 +6,16 @@ on:
       - master
 
 jobs:
+  tests:
+    runs-on: macOS-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: cachix/install-nix-action@v8
+      - run: cachix use iohk
+      - run: |
+          nix-build shared.nix -A defaultCuda92.hsPkgs.libtorch-ffi.checks.spec
+          nix-build shared.nix -A defaultCuda92.hsPkgs.hasktorch.checks.spec
+          nix-build shared.nix -A defaultCuda92.hsPkgs.examples.checks.spec
   build-shell-cache:
     runs-on: ubuntu-latest
     steps:

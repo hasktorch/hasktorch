@@ -3,6 +3,25 @@ name: nix-linux
 on: [push, pull_request]
 
 jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: free disk space
+        run: |
+          sudo swapoff -a
+          sudo rm -f /swapfile
+          sudo apt -y purge ghc* cabal-install* php* || true
+          sudo apt autoremove -y || true
+          sudo apt autoclean -y || true
+          docker rmi $(docker image ls -aq)
+          df -h
+      - uses: cachix/install-nix-action@v8
+      - run: cachix use iohk
+      - run: |
+          nix-build shared.nix -A defaultCpu.hsPkgs.libtorch-ffi.checks.spec
+          nix-build shared.nix -A defaultCpu.hsPkgs.hasktorch.checks.spec
+          nix-build shared.nix -A defaultCpu.hsPkgs.examples.checks.spec
   build-shell-cache:
     runs-on: ubuntu-latest
     steps:
@@ -24,6 +43,7 @@ jobs:
       - run: cachix use iohk
       - run: nix-build shell.nix
   build-ci-cache:
+    if: github.repository == 'hasktorch/hasktorch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

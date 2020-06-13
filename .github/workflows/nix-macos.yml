@@ -3,6 +3,16 @@ name: nix-macos
 on: [push, pull_request]
 
 jobs:
+  tests:
+    runs-on: macOS-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: cachix/install-nix-action@v8
+      - run: cachix use iohk
+      - run: |
+          nix-build shared.nix -A defaultCpu.hsPkgs.libtorch-ffi.checks.spec
+          nix-build shared.nix -A defaultCpu.hsPkgs.hasktorch.checks.spec
+          nix-build shared.nix -A defaultCpu.hsPkgs.examples.checks.spec
   build-shell-cache:
     runs-on: macOS-latest
     steps:
