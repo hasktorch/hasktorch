@@ -16,10 +16,9 @@ let
 in
   assert cudaVersion == null || (cudaVersion == 9 && shared.defaultCuda92 != { }) || (cudaVersion == 10 && shared.defaultCuda102 != { });
   {
-    inherit getComponents;
-    codegen = getComponents "exes" "codegen";
-    libtorch-ffi = getComponents "library" "libtorch-ffi";
-    hasktorch = getComponents "library" "hasktorch";
-    examples = getComponents "exes" "examples";
-    experimental = getComponents "exes" "experimental";
+    codegen = (getComponents "exes" "codegen").codegen;
+    libtorch-ffi = (getComponents "library" "libtorch-ffi").libtorch-ffi;
+    hasktorch = (getComponents "library" "hasktorch").hasktorch;
+    examples = (getComponents "exes" "examples").examples;
+    experimental = (getComponents "exes" "experimental").experimental;
   }
