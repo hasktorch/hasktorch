@@ -48,7 +48,7 @@ let
         compiler-nix-name = haskellCompiler;
         modules = [
           ({ config, ... }: {
-            # packages.codegen.components.tests.doctests.buildable = false;
+            packages.codegen.components.tests.doctests.doCheck = false;
             packages.libtorch-ffi.configureFlags = [
               "--extra-lib-dirs=${pkgs.torch}/lib"
               "--extra-include-dirs=${pkgs.torch}/include"
@@ -77,8 +77,7 @@ let
 in
 
 {
-  inherit sources;
-  inherit libtorchSrc;
+
   inherit defaultCpu;
   inherit defaultCuda92;
   inherit defaultCuda102;
