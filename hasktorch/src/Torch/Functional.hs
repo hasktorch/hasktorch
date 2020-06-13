@@ -3,17 +3,22 @@
 
 module Torch.Functional
     ( module Torch.Functional
+    , Internal.acos
     , Internal.addmv
     , Internal.addr
     , Internal.allclose
     , Internal.argmin
-    , Internal.baddbmm
-    , Internal.bmm
-    , Internal.acos
     , Internal.asin
     , Internal.atan
+    , Internal.baddbmm
+    , Internal.bmm
+    , Internal.conj
+    , Internal.det
     , Internal.dot
     , Internal.einsum
+    , Internal.expm1
+    , Internal.ger
+    , Internal.logdet
     , Internal.lstsq
     , Internal.mv
     , Internal.slice
@@ -47,6 +52,7 @@ import Prelude hiding ( all
 import System.IO.Unsafe
 import Foreign.ForeignPtr
 
+import Torch.Dimname
 import qualified Torch.Internal.Managed.Native as ATen
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
 import qualified Torch.Internal.Managed.Type.Scalar as ATen
@@ -76,6 +82,9 @@ instance Num Tensor where
   abs t = unsafePerformIO $ (cast1 ATen.abs_t) t
   signum t = unsafePerformIO $ (cast1 ATen.sign_t) t
   fromInteger i = asTensor @Int $ fromInteger @Int i
+
+instance Eq Tensor where
+    (==) t t' = all (t `eq` t')
 
 instance Fractional Tensor where
   a / b = unsafePerformIO $ (cast2 ATen.div_tt) a b
@@ -281,11 +290,53 @@ embedding' weights indices =
     unsafePerformIO $ (cast5 ATen.embedding_ttlbb)
         weights indices (-1 :: Int) False False
 
+-- 
+-- element-wise transformations / non-linearities
+--
+
 -- | Computes the error function of each element
 erf 
     :: Tensor -- ^ input
     -> Tensor -- ^ output
 erf t = unsafePerformIO $ (cast1 ATen.erf_t) t
+
+-- | Computes the complementary error function of each element of input
+erfc
+  :: Tensor -- ^ input
+  -> Tensor -- ^ output
+erfc t = unsafePerformIO $ (cast1 ATen.erfc_t) t
+
+-- | Computes the inverse error function of each element of input. The inverse error function is defined in the range (-1, 1)(−1,1) as: erfinv(erf(x)) = x
+erfinv
+  :: Tensor -- ^ input
+  -> Tensor -- ^ output
+erfinv t = unsafePerformIO $ (cast1 ATen.erfinv_t) t
+
+-- | Computes the logarithm of the gamma function on input.
+lgamma
+  :: Tensor -- ^ input
+  -> Tensor -- ^ output
+lgamma t = unsafePerformIO $ (cast1 ATen.lgamma_t) t
+
+-- | Computes the logarithmic derivative of the gamma function on input.
+digamma
+  :: Tensor -- ^ input
+  -> Tensor -- ^ output
+digamma t = unsafePerformIO $ (cast1 ATen.digamma_t) t
+
+-- | Computes the nth derivative of the digamma function on input. n \geq 0n≥0 is called the order of the polygamma function.
+polygamma
+  :: Int -- ^ n
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+polygamma n t = unsafePerformIO $ (cast2 ATen.polygamma_lt) n t
+
+-- | Computes the multivariate log-gamma function with dimension pp element-wise. All elements must be greater than (p-1)/2, otherwise an error would be thrown.
+mvlgamma
+  :: Int -- ^ p
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+mvlgamma p t = unsafePerformIO $ (cast2 ATen.mvlgamma_tl) t p
 
 -- | Returns a new tensor with the exponential of the elements of the input tensor input.
 exp 
@@ -441,6 +492,10 @@ sqrt
     -> Tensor -- ^ output
 sqrt t = unsafePerformIO $ (cast1 ATen.sqrt_t) t
 
+-- 
+-- infix operators
+--
+
 -- | Computes input > other element-wise.
 -- The second argument can be a number or a tensor whose shape is broadcastable with the first argument.
 gt
@@ -491,6 +546,38 @@ eq a b = unsafePerformIO $ (cast2 ATen.eq_tt) a b
 
 (==.) = eq
 
+isclose
+  :: Tensor -- ^ self
+  -> Tensor -- ^ other
+  -> Double -- ^ rtol
+  -> Double -- ^ atol
+  -> Bool -- ^ equal_nan
+  -> Tensor
+isclose _self _other _rtol _atol _equal_nan = unsafePerformIO $ (cast5 ATen.isclose_ttddb) _self _other _rtol _atol _equal_nan
+
+isnan
+  :: Tensor -- ^ self
+  -> Tensor
+isnan _self = unsafePerformIO $ (cast1 ATen.isnan_t) _self
+
+
+is_nonzero
+  :: Tensor -- ^ self
+  -> Bool
+is_nonzero _self = unsafePerformIO $ (cast1 ATen.is_nonzero_t) _self
+
+is_same_size
+  :: Tensor -- ^ self
+  -> Tensor -- ^ other
+  -> Bool
+is_same_size _self _other = unsafePerformIO $ (cast2 ATen.is_same_size_tt) _self _other
+
+is_signed
+  :: Tensor -- ^ self
+  -> Bool
+is_signed _self = unsafePerformIO $ (cast1 ATen.is_signed_t) _self
+
+
 -- | Computes input /= other element-wise.
 -- The second argument can be a number or a tensor whose shape is broadcastable with the first argument.
 ne 
@@ -513,6 +600,10 @@ squeezeAll
     :: Tensor -- ^ input
     -> Tensor -- ^ output
 squeezeAll t = unsafePerformIO $ (cast1 ATen.squeeze_t) t
+
+-- 
+-- Loss Functions
+--
 
 -- | Function that measures the Binary Cross Entropy between the target and the output.
 binaryCrossEntropyLoss 
@@ -575,6 +666,101 @@ cosineSimilarity'
 cosineSimilarity' x1 x2 = 
     unsafePerformIO $ 
         (cast4 ATen.cosine_similarity_ttld) x1 x2 (1 :: Int) (1e-8 :: Double)
+
+-- | The Connectionist Temporal Classification loss.
+-- Calculates loss between a continuous (unsegmented) time series and a target sequence.
+-- CTCLoss sums over the probability of possible alignments of input to target, 
+-- producing a loss value which is differentiable with respect to each input node.
+-- The alignment of input to target is assumed to be “many-to-one”, which limits
+-- the length of the target sequence such that it must be \leq≤ the input length. 
+ctcLoss
+    :: Bool -- ^ zero_infinity - Whether to zero infinite losses and the associated gradients (False by default). Infinite losses mainly occur when the inputs are too short to be aligned to the targets.
+    -> Int -- ^ blank label
+    -> Reduction -- ^ reduction
+    -> [Int] -- ^ input_lengths 
+    -> [Int] -- ^ target_lengths
+    -> Tensor -- ^ log_probs
+    -> Tensor -- ^ targets
+    -> Tensor -- ^ output
+ctcLoss zeroInfinity blank reduction inputLengths targetLengths logProbs targets  = unsafePerformIO $ (cast7 ATen.ctc_loss_ttllllb) logProbs targets inputLengths targetLengths blank reduction zeroInfinity
+
+-- | Returns CTC loss with defaulted options.
+ctcLoss'
+    :: Reduction -- ^ reduction
+    -> [Int] -- ^ input lengths 
+    -> [Int] -- ^ target lengths
+    -> Tensor -- ^ log probs
+    -> Tensor -- ^ targets
+    -> Tensor -- ^ output
+ctcLoss' reduction inputLengths targetLengths logProbs targets  = unsafePerformIO $ (cast7 ATen.ctc_loss_ttllllb) logProbs targets inputLengths targetLengths blank reduction zeroInfinity
+    where
+        blank = 0 :: Int
+        zeroInfinity = False
+
+-- | Measures the loss given an input tensor xx and a labels tensor yy (containing 1 or -1).
+-- This is usually used for measuring whether two inputs are similar or dissimilar, 
+-- e.g. using the L1 pairwise distance as xx,
+-- and is typically used for learning nonlinear embeddings or semi-supervised learning.
+hingeEmbeddingLoss
+  :: Double -- ^ margin
+  -> Reduction -- ^ reduction
+  -> Tensor -- ^ target
+  -> Tensor -- ^ self
+  -> Tensor -- ^ output
+hingeEmbeddingLoss margin reduction target t = unsafePerformIO $ (cast4 ATen.hinge_embedding_loss_ttdl) t target margin reduction
+
+marginRankingLoss
+  :: Tensor -- ^ input1
+  -> Tensor -- ^ input2
+  -> Tensor -- ^ target
+  -> Double -- ^ margin
+  -> Reduction -- ^ reduction
+  -> Tensor -- ^ output
+marginRankingLoss input1 input2 target margin reduction = unsafePerformIO $ (cast5 ATen.margin_ranking_loss_tttdl) input1 input2 target margin reduction
+
+-- | The 2D negative log likelihood loss 
+nllLoss2D 
+  :: Reduction -- reduction
+  -> Int -- ignore_index
+  -> Tensor -- input
+  -> Tensor -- target
+  -> Tensor -- weight
+  -> Tensor -- output
+nllLoss2D reduction ignoreindex input target weight = unsafePerformIO $ (cast5 ATen.nll_loss2d_tttll) input target weight reduction ignoreindex
+
+-- | Creates a criterion that optimizes a multi-class classification hinge loss (margin-based loss) between input \(x\) (a 2D mini-batch Tensor) and output \(y\) (which is a 1D tensor of target class indices)
+multiMarginLoss
+  :: Reduction -- ^ reduction
+  -> Float -- ^ p
+  -> Float -- ^ margin
+  -> Tensor -- ^ input
+  -> Tensor -- ^ target
+  -> Tensor -- ^ weight
+  -> Tensor -- ^ output
+multiMarginLoss reduction p margin input target weight = unsafePerformIO $ (cast6 ATen.multi_margin_loss_ttsstl) input target p margin weight reduction
+
+-- | Creates a criterion that optimizes a multi-label one-versus-all loss based on max-entropy, between input \(x\) and target \(y\) of size \((N,C)\) .
+multiLabelMarginLoss
+  :: Reduction -- reduction
+  -> Tensor -- input
+  -> Tensor -- target
+  -> Tensor -- output
+multiLabelMarginLoss reduction input target = unsafePerformIO $ (cast3 ATen.multilabel_margin_loss_ttl) input target reduction
+
+-- | The Kullback-Leibler divergence Loss
+-- KL divergence is a useful distance measure for continuous distributions and is often useful when performing direct regression over the space of (discretely sampled) continuous output distributions.
+-- As with NLLLoss, the input given is expected to contain log-probabilities and is not restricted to a 2D Tensor. The targets are interpreted as probabilities by default, but could be considered as log-probabilities with log_target set to True.
+-- This criterion expects a target Tensor of the same size as the input Tensor.
+klDiv
+  :: Reduction
+  -> Tensor -- ^ self
+  -> Tensor -- ^ target
+  -> Tensor -- ^ output
+klDiv reduction self target = unsafePerformIO $ (cast3 ATen.kl_div_ttl) self target reduction
+
+-- 
+-- Pooling
+--
 
 -- | Applies a 1D adaptive max pooling over an input signal composed of several input planes.
 adaptiveMaxPool1d 
@@ -662,88 +848,6 @@ maxPool3d kernelSize stride padding dilation ceilMode self =
     unsafePerformIO $ (cast6 ATen.max_pool3d_tllllb)
         self kernelSize stride padding dilation ceilMode
 
--- | Takes the inverse of the square matrix input. @input@ can be batches of 2D square tensors, in which case this function would return a tensor composed of individual inverses.
-inverse 
-    :: Tensor -- ^ input
-    -> Tensor -- ^ output
-inverse t = unsafePerformIO $ (cast1 ATen.inverse_t) t
-
--- | This function returns eigenvalues and eigenvectors of a real symmetric matrix input or a batch of real symmetric matrices, represented by a namedtuple (eigenvalues, eigenvectors).
-symeig 
- :: Bool -- ^ bool which controls whether eigenvectors have to be computed
- -> Tri -- ^ controls whether to consider upper-triangular or lower-triangular region
- -> Tensor -- ^ input tensor  
- -> (Tensor, Tensor) -- ^ output tensors
-symeig eigenvectors upper t = unsafePerformIO $ (cast3 ATen.symeig_tbb) t eigenvectors boolUpper
-  where boolUpper = isUpper upper
-
--- | Computes the eigenvalues and eigenvectors of a real square matrix
-eig 
- :: Bool -- ^ bool to compute both eigenvalues and eigenvectors; otherwise, only eigenvalues will be computed
- -> Tensor -- ^ input (square matrix) for which the eigen values and eigen vectors are to be computed
- -> (Tensor, Tensor) -- ^ output tensors
-eig eigenvectors t = unsafePerformIO $ (cast2 ATen.eig_tb) t eigenvectors
-
--- | This function returns a namedtuple (U, S, V) which is the singular value decomposition of a input real matrix or batches of real matrices input such that input = U * diag(S) * V^T
-svd 
- :: Bool -- ^ controls the shape of returned U and V
- -> Bool -- ^ option whether to compute U and V or not
- -> Tensor -- ^ input 
- -> (Tensor, Tensor, Tensor) -- ^ output tuple of tensors
-svd some compute_uv t = unsafePerformIO $ (cast3 ATen.svd_tbb) t some compute_uv
-
--- | Computes the Cholesky decomposition of a symmetric positive-definite matrix AA or for batches of symmetric positive-definite matrices.
-cholesky 
- :: Tri -- ^ flag that indicates whether to return a upper or lower triangular matrix.
- -> Tensor -- ^ input
- -> Tensor -- ^ output
-cholesky upper t = unsafePerformIO $ (cast2 ATen.cholesky_tb) t boolUpper
-  where boolUpper = isUpper upper
-
-
--- | Solves a linear system of equations with a positive semidefinite matrix to be inverted given its Cholesky factor matrix uu .
-choleskySolve 
- :: Tri -- ^ bool whether to consider the Cholesky factor as a lower or upper triangular matrix
- -> Tensor -- ^ input matrix b 
- -> Tensor -- ^ input matrix u
- -> Tensor -- ^ output
-choleskySolve upper t1 t2 = unsafePerformIO $ (cast3 ATen.cholesky_solve_ttb) t1 t2 boolUpper
-  where boolUpper = isUpper upper
-
-
--- | During training, randomly zeroes some of the elements of the input tensor with probability p using samples from a Bernoulli distribution.
-dropout
-  :: Double -- ^ dropout probability
-  -> Bool -- ^ whether or not to activate dropout
-  -> Tensor -- ^ input
-  -> IO Tensor -- ^ output
-dropout p train input = cast3 ATen.dropout_tdb input p train
-
-featureDropout
-  :: Double -- ^ dropout probability
-  -> Bool -- ^ whether or not to activate dropout
-  -> Tensor -- ^ input
-  -> IO Tensor -- ^ output
-featureDropout p train input =
-  cast3 ATen.feature_dropout_tdb input p train
-
--- | Applies alpha dropout to the input.
-alphaDropout
-  :: Double -- ^ dropout probability
-  -> Bool -- ^ whether or not to activate dropout
-  -> Tensor -- ^ input
-  -> IO Tensor -- ^ output
-alphaDropout p train input =
-  cast3 ATen.alpha_dropout_tdb input p train
-
-featureAlphaDropout
-  :: Double -- ^ dropout probability
-  -> Bool -- ^ whether or not to activate dropout
-  -> Tensor -- ^ input
-  -> IO Tensor -- ^ output
-featureAlphaDropout p train input =
-  cast3 ATen.feature_alpha_dropout_tdb input p train
-
 -- | Applies a 1D average pooling over an input signal composed of several input planes.
 avgPool1d
   :: Int -- ^ kernel size
@@ -796,11 +900,165 @@ adaptiveAvgPool3d
  -> Tensor -- ^ output
 adaptiveAvgPool3d _output_size _self = unsafePerformIO $ (cast2 ATen.adaptive_avg_pool3d_tl) _self _output_size
 
+-- 
+-- matrix solvers
+--
+
+-- | Takes the inverse of the square matrix input. @input@ can be batches of 2D square tensors, in which case this function would return a tensor composed of individual inverses.
+inverse 
+    :: Tensor -- ^ input
+    -> Tensor -- ^ output
+inverse t = unsafePerformIO $ (cast1 ATen.inverse_t) t
+
+-- | This function returns eigenvalues and eigenvectors of a real symmetric matrix input or a batch of real symmetric matrices, represented by a namedtuple (eigenvalues, eigenvectors).
+symeig 
+ :: Bool -- ^ bool which controls whether eigenvectors have to be computed
+ -> Tri -- ^ controls whether to consider upper-triangular or lower-triangular region
+ -> Tensor -- ^ input tensor  
+ -> (Tensor, Tensor) -- ^ output tensors
+symeig eigenvectors upper t = unsafePerformIO $ (cast3 ATen.symeig_tbb) t eigenvectors boolUpper
+  where boolUpper = isUpper upper
+
+-- | Computes the eigenvalues and eigenvectors of a real square matrix
+eig 
+ :: Bool -- ^ bool to compute both eigenvalues and eigenvectors; otherwise, only eigenvalues will be computed
+ -> Tensor -- ^ input (square matrix) for which the eigen values and eigen vectors are to be computed
+ -> (Tensor, Tensor) -- ^ output tensors
+eig eigenvectors t = unsafePerformIO $ (cast2 ATen.eig_tb) t eigenvectors
+
+-- | This function returns a namedtuple (U, S, V) which is the singular value decomposition of a input real matrix or batches of real matrices input such that input = U * diag(S) * V^T
+svd 
+ :: Bool -- ^ controls the shape of returned U and V
+ -> Bool -- ^ option whether to compute U and V or not
+ -> Tensor -- ^ input 
+ -> (Tensor, Tensor, Tensor) -- ^ output tuple of tensors
+svd some compute_uv t = unsafePerformIO $ (cast3 ATen.svd_tbb) t some compute_uv
+
+-- | Computes the Cholesky decomposition of a symmetric positive-definite matrix AA or for batches of symmetric positive-definite matrices.
+cholesky 
+ :: Tri -- ^ flag that indicates whether to return a upper or lower triangular matrix.
+ -> Tensor -- ^ input
+ -> Tensor -- ^ output
+cholesky upper t = unsafePerformIO $ (cast2 ATen.cholesky_tb) t boolUpper
+  where boolUpper = isUpper upper
+
+
+-- | Solves a linear system of equations with a positive semidefinite matrix to be inverted given its Cholesky factor matrix uu .
+choleskySolve 
+ :: Tri -- ^ bool whether to consider the Cholesky factor as a lower or upper triangular matrix
+ -> Tensor -- ^ input matrix b 
+ -> Tensor -- ^ input matrix u
+ -> Tensor -- ^ output
+choleskySolve upper t1 t2 = unsafePerformIO $ (cast3 ATen.cholesky_solve_ttb) t1 t2 boolUpper
+  where boolUpper = isUpper upper
+
+-- | This function returns the solution to the system of linear equations represented by AX = BAX=B and the LU factorization of A, in order as a namedtuple solution, LU.
+-- LU contains L and U factors for LU factorization of A
+solve 
+    :: Tensor -- ^ input matrix
+    -> Tensor -- ^ input square matrix
+    -> (Tensor,Tensor) -- ^ output tuple with solution and LU
+solve b a = unsafePerformIO $ (cast2 ATen.solve_tt) b a
+
+-- | Solves a linear system of equations with a positive semidefinite matrix to be inverted given its Cholesky factor matrix uu .
+choleskyInverse
+    :: Tri -- ^ upper or lower triangle
+    -> Tensor -- ^ input
+    -> Tensor -- ^ solution
+choleskyInverse upper t = unsafePerformIO $ (cast2 ATen.cholesky_inverse_tb) t boolUpper
+  where boolUpper = isUpper upper
+
+-- pstrf :: Bool -> Double -> Tensor -> (Tensor, Tensor)
+-- pstrf upper tol t = unsafePerformIO $ (cast3 ATen.pstrf_tbs) t upper tol
+
+-- qr :: Tensor -> (Tensor, Tensor)
+-- qr t = unsafePerformIO $ (cast1 ATen.qr_t) t
+
+-- | This is a low-level function for calling LAPACK directly. This function returns a namedtuple (a, tau) as defined in LAPACK documentation for geqrf.
+geqrf 
+    :: Tensor -- ^ input
+    -> (Tensor, Tensor) -- ^ a, tau output matrices (see https://software.intel.com/en-us/node/521004)
+geqrf t = unsafePerformIO $ (cast1 ATen.geqrf_t) t
+
+
+-- | Computes the orthogonal matrix Q of a QR factorization, from the @(input, input2)@ tuple returned by 'geqrf' function.
+-- This directly calls the underlying LAPACK function @?orgqr@. See LAPACK documentation for @orgqr@ for further details.
+orgqr 
+ :: Tensor -- ^ the @a@ from @geqrf@ function
+ -> Tensor -- ^ the @tau@ from @geqrf@ function
+ -> Tensor -- ^ output
+orgqr b a = unsafePerformIO $ (cast2 ATen.orgqr_tt) b a
+
+-- 
+-- dropout
+--
+
+-- | During training, randomly zeroes some of the elements of the input tensor with probability p using samples from a Bernoulli distribution.
+dropout
+  :: Double -- ^ dropout probability
+  -> Bool -- ^ whether or not to activate dropout
+  -> Tensor -- ^ input
+  -> IO Tensor -- ^ output
+dropout p train input = cast3 ATen.dropout_tdb input p train
+
+featureDropout
+  :: Double -- ^ dropout probability
+  -> Bool -- ^ whether or not to activate dropout
+  -> Tensor -- ^ input
+  -> IO Tensor -- ^ output
+featureDropout p train input =
+  cast3 ATen.feature_dropout_tdb input p train
+
+-- | Applies alpha dropout to the input.
+alphaDropout
+  :: Double -- ^ dropout probability
+  -> Bool -- ^ whether or not to activate dropout
+  -> Tensor -- ^ input
+  -> IO Tensor -- ^ output
+alphaDropout p train input =
+  cast3 ATen.alpha_dropout_tdb input p train
+
+featureAlphaDropout
+  :: Double -- ^ dropout probability
+  -> Bool -- ^ whether or not to activate dropout
+  -> Tensor -- ^ input
+  -> IO Tensor -- ^ output
+featureAlphaDropout p train input =
+  cast3 ATen.feature_alpha_dropout_tdb input p train
+
+--
+-- Element-wise logical operators
+--
+
 -- | Computes the bitwise NOT of the given input tensor. The input tensor must be of integral or Boolean types. For bool tensors, it computes the logical NOT.
 bitwiseNot 
     :: Tensor -- ^ input
     -> Tensor -- ^ output
 bitwiseNot input = unsafePerformIO $ cast1 ATen.bitwise_not_t input
+
+-- | Computes the element-wise logical NOT of the given input tensor. If not specified, the output tensor will have the bool dtype. If the input tensor is not a bool tensor, zeros are treated as False and non-zeros are treated as True.
+logicalNot
+  :: Tensor -- ^ input
+  -> Tensor -- ^ output
+logicalNot t = unsafePerformIO $ (cast1 ATen.logical_not_t) t
+
+logicalXor
+  :: Tensor -- ^ self
+  -> Tensor -- ^ other
+  -> Tensor
+logicalXor self other = unsafePerformIO $ (cast2 ATen.logical_xor_tt) self other
+
+logicalAnd
+  :: Tensor -- ^ self
+  -> Tensor -- ^ other
+  -> Tensor
+logicalAnd self other = unsafePerformIO $ (cast2 ATen.logical_and_tt) self other
+
+logicalOr
+  :: Tensor -- ^ self
+  -> Tensor -- ^ other
+  -> Tensor
+logicalOr self other = unsafePerformIO $ (cast2 ATen.logical_or_tt) self other
 
 -- | Concatenates the given sequence of seq tensors in the given dimension. All tensors must either have the same shape (except in the concatenating dimension) or be empty.
 cat
@@ -808,6 +1066,43 @@ cat
   -> [Tensor] -- ^ list of tensors to concatenate
   -> Tensor -- ^ output tensor
 cat (Dim d) tensors = unsafePerformIO $ cast2 ATen.cat_ll tensors d
+
+index
+  :: [Tensor] -- ^ indices
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+index _indices _self = unsafePerformIO $ (cast2 ATen.index_tl) _self _indices
+
+-- Copies the elements of tensor into the self tensor (out-of-place) by selecting the indices in the order given in index.
+-- For example, if dim == 0 and index[i] == j, then the ith row of tensor is copied to the jth row of self.
+-- The dimth dimension of tensor must have the same size as the length of index (which must be a vector), and all other dimensions must match self, or an error will be raised.
+indexCopy
+  :: Int -- ^ dim
+  -> Tensor -- ^ index
+  -> Tensor -- ^ source
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+indexCopy dim index source t = unsafePerformIO $ (cast4 ATen.index_copy_tltt) t dim index source
+
+indexCopyWithDimname
+  :: Dimname -- ^ dim
+  -> Tensor -- ^ index
+  -> Tensor -- ^ source
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+indexCopyWithDimname dim index source t = unsafePerformIO $ (cast4 ATen.index_copy_tntt) t dim index source
+
+-- | Puts values from the tensor value into the input tensor (out-of-place) 
+-- using the indices specified in indices (which is a tuple of Tensors).
+-- The expression tensor.index_put_(indices, value) is equivalent to tensor[indices] = value.
+-- If accumulate is True, the elements in value are added to self. If accumulate is False, the behavior is undefined if indices contain duplicate elements.
+indexPut
+  :: Bool -- ^ accumulate
+  -> [Tensor] -- ^ indices
+  -> Tensor -- ^ values
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+indexPut accumulate indices values self = unsafePerformIO $ (cast4 ATen.index_put_tltb) self indices values accumulate
 
 -- | Splits a tensor into a specific number of chunks.
 -- Last chunk will be smaller if the tensor size along the given dimension dim is not divisible by chunks.
@@ -858,6 +1153,10 @@ constantPadNd1d padding value input = unsafePerformIO $ cast3
   input
   padding
   value
+
+-- 
+-- convolutions
+--
 
 -- | Applies a 1D convolution over an input signal composed of several input planes.
 conv1d
@@ -914,43 +1213,6 @@ conv2d' weight bias stride padding input =
         (1 :: Int) -- groups
         input
 
--- | This function returns the solution to the system of linear equations represented by AX = BAX=B and the LU factorization of A, in order as a namedtuple solution, LU.
--- LU contains L and U factors for LU factorization of A
-solve 
-    :: Tensor -- ^ input matrix
-    -> Tensor -- ^ input square matrix
-    -> (Tensor,Tensor) -- ^ output tuple with solution and LU
-solve b a = unsafePerformIO $ (cast2 ATen.solve_tt) b a
-
--- | Solves a linear system of equations with a positive semidefinite matrix to be inverted given its Cholesky factor matrix uu .
-choleskyInverse
-    :: Tri -- ^ upper or lower triangle
-    -> Tensor -- ^ input
-    -> Tensor -- ^ solution
-choleskyInverse upper t = unsafePerformIO $ (cast2 ATen.cholesky_inverse_tb) t boolUpper
-  where boolUpper = isUpper upper
-
--- pstrf :: Bool -> Double -> Tensor -> (Tensor, Tensor)
--- pstrf upper tol t = unsafePerformIO $ (cast3 ATen.pstrf_tbs) t upper tol
-
--- qr :: Tensor -> (Tensor, Tensor)
--- qr t = unsafePerformIO $ (cast1 ATen.qr_t) t
-
--- | This is a low-level function for calling LAPACK directly. This function returns a namedtuple (a, tau) as defined in LAPACK documentation for geqrf.
-geqrf 
-    :: Tensor -- ^ input
-    -> (Tensor, Tensor) -- ^ a, tau output matrices (see https://software.intel.com/en-us/node/521004)
-geqrf t = unsafePerformIO $ (cast1 ATen.geqrf_t) t
-
-
--- | Computes the orthogonal matrix Q of a QR factorization, from the @(input, input2)@ tuple returned by 'geqrf' function.
--- This directly calls the underlying LAPACK function @?orgqr@. See LAPACK documentation for @orgqr@ for further details.
-orgqr 
- :: Tensor -- ^ the @a@ from @geqrf@ function
- -> Tensor -- ^ the @tau@ from @geqrf@ function
- -> Tensor -- ^ output
-orgqr b a = unsafePerformIO $ (cast2 ATen.orgqr_tt) b a
-
 -- | Returns a new tensor with the signs of the elements of @input@
 sign 
     :: Tensor -- ^ input
@@ -971,18 +1233,59 @@ transpose2D
     -> Tensor -- ^ output
 transpose2D = transpose (Dim 0) (Dim 1)
 
-
 -- | Returns a tensor with the elements of input as the diagonal.
 -- The second argument controls which diagonal to consider:
 --        If Int = 0, it is the main diagonal.
 --        If Int > 0, it is above the main diagonal.
 --        If Int < 0, it is below the main diagonal.
-
 diag
     ::  Diag -- ^ diagonal
     ->  Tensor -- ^ input
     ->  Tensor -- ^ output
 diag (Diag index) t = unsafePerformIO $ (cast2 ATen.tensor_diag_l) t index
+
+-- 
+diagEmbed
+  :: Offset -- ^ offset
+  -> Int -- ^ dim1
+  -> Int -- ^ dim2
+  -> Tensor -- ^ self
+  -> Tensor
+diagEmbed offset dim1 dim2 t = unsafePerformIO $ (cast4 ATen.diag_embed_tlll) t offset dim1 dim2
+
+data Offset = OffsetMain | OffsetAbove | OffsetBelow deriving Show
+
+instance Castable Offset Int64 where
+  cast OffsetMain f = f 0
+  cast OffsetAbove f = f 1
+  cast OffsetBelow f = f (-1)
+  uncast 1 f = f OffsetAbove
+  uncast (-1) f = f OffsetBelow
+  uncast _ f = f OffsetMain
+
+-- | If input is a vector (1-D tensor), then returns a 2-D square tensor with the elements of input as the diagonal.
+-- If input is a tensor with more than one dimension, then returns a 2-D tensor with diagonal elements equal to a flattened input.
+-- The argument offset controls which diagonal to consider:
+--  If offset = 0, it is the main diagonal.
+--  If offset > 0, it is above the main diagonal.
+--  If offset < 0, it is below the main diagonal.
+diagflat
+    :: Offset -- ^ offset
+    -> Tensor -- ^ self
+    -> Tensor -- ^ output
+diagflat offset t = unsafePerformIO $ (cast2 ATen.diagflat_tl) t offset
+
+-- | Returns a partial view of input with the its diagonal elements with respect to dim1 and dim2 appended as a dimension at the end of the shape.
+-- Applying diagEmbed to the output of this function with the same arguments yields a diagonal matrix with the diagonal entries of the input. However, diagEmbed has different default dimensions, so those need to be explicitly specified.
+diagonal
+  :: Offset -- ^ offset
+  -> Dimname -- ^ outdim
+  -> Dimname -- ^ dim1
+  -> Dimname -- ^ dim2
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+diagonal offset outdim dim1 dim2 t = unsafePerformIO $ (cast5 ATen.diagonal_tnnnl) t outdim dim1 dim2 offset
+
 
 -- | Returns True if all elements in the tensor are True, False otherwise.
 all
@@ -1243,6 +1546,14 @@ topK
   -> (Tensor,Tensor) -- ^ output
 topK k (Dim d) largest sorted input = unsafePerformIO $ (cast5 ATen.topk_tllbb) input k d largest sorted
 
+-- | Returns the log of summed exponentials of each row of the input tensor in the given dimension dim. The computation is numerically stabilized.
+logsumexp
+  :: Bool -- ^ keepdim
+  -> Int -- ^ dim
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+logsumexp keepdim dim t = unsafePerformIO $ (cast3 ATen.logsumexp_tlb) t dim keepdim
+
 -- | Returns the upper triangular part of a matrix (2-D tensor) or batch of matrices input, the other elements of the result tensor out are set to 0.
 -- The upper triangular part of the matrix is defined as the elements on and above the diagonal.
 -- The argument diagonal controls which diagonal to consider. If diagonal = 0, all elements on and above the main diagonal are retained. 
@@ -1402,33 +1713,3 @@ stdMeanDim
   -> Tensor -- ^ input
   -> (Tensor,Tensor) -- ^ output
 stdMeanDim (Dim d) unbiased k input = unsafePerformIO $ (cast4 ATen.std_mean_tlbb) input d unbiased (keepdim k)
-
--- | The 2D negative log likelihood loss 
-nllLoss2D 
-  :: Reduction -- reduction
-  -> Int -- ignore_index
-  -> Tensor -- input
-  -> Tensor -- target
-  -> Tensor -- weight
-  -> Tensor -- output
-nllLoss2D reduction ignoreindex input target weight = unsafePerformIO $ (cast5 ATen.nll_loss2d_tttll) input target weight reduction ignoreindex
-
--- | Creates a criterion that optimizes a multi-class classification hinge loss (margin-based loss) between input \(x\) (a 2D mini-batch Tensor) and output \(y\) (which is a 1D tensor of target class indices)
-multiMarginLoss
-  :: Reduction -- ^ reduction
-  -> Float -- ^ p
-  -> Float -- ^ margin
-  -> Tensor -- ^ input
-  -> Tensor -- ^ target
-  -> Tensor -- ^ weight
-  -> Tensor -- ^ output
-multiMarginLoss reduction p margin input target weight = unsafePerformIO $ (cast6 ATen.multi_margin_loss_ttsstl) input target p margin weight reduction
-
--- | Creates a criterion that optimizes a multi-label one-versus-all loss based on max-entropy, between input \(x\) and target \(y\) of size \((N,C)\) .
-multiLabelMarginLoss
-  :: Reduction -- reduction
-  -> Tensor -- input
-  -> Tensor -- target
-  -> Tensor -- output
-multiLabelMarginLoss reduction input target = unsafePerformIO $ (cast3 ATen.multilabel_margin_loss_ttl) input target reduction
-

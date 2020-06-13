@@ -199,4 +199,6 @@ spec = do
     let x = asTensor([[1,2,3],[4,5,6],[7,8,9],[10,11,12]]::[[Float]])
         output = unsqueeze (Dim 0) x
     (shape output) `shouldBe` ([1,4,3])      
-
+  it "ctcLoss" $ do
+    ctcLoss' ReduceMean [1] [1]  (asTensor ([[[0.1, 0.2, 0.7]]] :: [[[Float]]]))
+        (asTensor ([2] :: [Int])) `shouldBe` (-0.7 :: Float)
