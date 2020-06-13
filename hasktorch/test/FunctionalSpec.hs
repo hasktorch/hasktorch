@@ -201,4 +201,4 @@ spec = do
     (shape output) `shouldBe` ([1,4,3])      
   it "ctcLoss" $ do
     ctcLoss' ReduceMean [1] [1]  (asTensor ([[[0.1, 0.2, 0.7]]] :: [[[Float]]]))
-        (asTensor ([2] :: [Int])) `shouldBe` (-0.7 :: Float)
+        (asTensor ([2] :: [Int])) `shouldBe` asTensor (-0.7 :: Float)
