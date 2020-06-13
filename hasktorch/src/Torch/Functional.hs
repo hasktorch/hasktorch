@@ -547,36 +547,34 @@ eq a b = unsafePerformIO $ (cast2 ATen.eq_tt) a b
 (==.) = eq
 
 isclose
-  :: Tensor -- ^ self
-  -> Tensor -- ^ other
-  -> Double -- ^ rtol
+  :: Double -- ^ rtol
   -> Double -- ^ atol
   -> Bool -- ^ equal_nan
+  -> Tensor -- ^ self
+  -> Tensor -- ^ other
   -> Tensor
-isclose _self _other _rtol _atol _equal_nan = unsafePerformIO $ (cast5 ATen.isclose_ttddb) _self _other _rtol _atol _equal_nan
+isclose rtol atol equalNan self other = unsafePerformIO $ (cast5 ATen.isclose_ttddb) self other rtol atol equalNan
 
 isnan
   :: Tensor -- ^ self
-  -> Tensor
-isnan _self = unsafePerformIO $ (cast1 ATen.isnan_t) _self
+  -> Tensor -- a new tensor with boolean elements representing if each element is NaN or not.
+isnan t = unsafePerformIO $ (cast1 ATen.isnan_t) t
 
-
-is_nonzero
+isNonzero
   :: Tensor -- ^ self
   -> Bool
-is_nonzero _self = unsafePerformIO $ (cast1 ATen.is_nonzero_t) _self
+isNonzero _self = unsafePerformIO $ (cast1 ATen.is_nonzero_t) _self
 
-is_same_size
+isSameSize
   :: Tensor -- ^ self
   -> Tensor -- ^ other
   -> Bool
-is_same_size _self _other = unsafePerformIO $ (cast2 ATen.is_same_size_tt) _self _other
+isSameSize self other = unsafePerformIO $ (cast2 ATen.is_same_size_tt) self other
 
-is_signed
-  :: Tensor -- ^ self
-  -> Bool
-is_signed _self = unsafePerformIO $ (cast1 ATen.is_signed_t) _self
-
+isSigned
+  :: Tensor -- ^ input
+  -> Bool -- ^ True if the data type of input is a signed type
+isSigned t = unsafePerformIO $ (cast1 ATen.is_signed_t) t
 
 -- | Computes input /= other element-wise.
 -- The second argument can be a number or a tensor whose shape is broadcastable with the first argument.
