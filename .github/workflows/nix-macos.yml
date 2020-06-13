@@ -8,6 +8,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v8
+      - run: nix-env -iA cachix -f https://cachix.org/api/v1/install
       - run: cachix use iohk
       - run: |
           nix-build shared.nix -A defaultCpu.hsPkgs.libtorch-ffi.checks.spec

@@ -17,6 +17,7 @@ jobs:
           docker rmi $(docker image ls -aq)
           df -h
       - uses: cachix/install-nix-action@v8
+      - run: nix-env -iA cachix -f https://cachix.org/api/v1/install
       - run: cachix use iohk
       - run: |
           nix-build shared.nix -A defaultCpu.hsPkgs.libtorch-ffi.checks.spec
