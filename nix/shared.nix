@@ -17,6 +17,10 @@ let
       libtorch_cudatoolkit_10_2
     ;
 
+    mkl = if pkgs.stdenv.hostPlatform.system == "x86_64-darwin"
+          then pkgsOld.callPackage ./mkl.nix {} # https://github.com/matthewbauer/undmg/issues/4
+          else pkgsOld.mkl;
+
     haskell = pkgsOld.haskell // {
       packages = pkgsOld.haskell.packages // {
         "${compiler}" = pkgsOld.haskell.packages."${compiler}".override (old: {
@@ -59,7 +63,7 @@ let
                         )
                         (old: {
                               preConfigure = (old.preConfigure or "") + optionalString (!isDarwin) ''
-                                export LD_PRELOAD=${pkgs.mkl}/lib/libmkl_rt.so
+                                export LD_PRELOAD=${pkgsNew.mkl}/lib/libmkl_rt.so
                               '';
                             }
                         );
