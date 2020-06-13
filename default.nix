@@ -21,4 +21,20 @@ in
     hasktorch = (getComponents "library" "hasktorch").hasktorch;
     examples = (getComponents "exes" "examples").examples;
     experimental = (getComponents "exes" "experimental").experimental;
+
+    combined-haddock = let
+      haddock-combine = pkgs.callPackage ./nix/haddock-combine.nix {
+        runCommand = pkgs.runCommand;
+        lib = pkgs.lib;
+        ghc = hsPkgs.ghcWithPackages (ps: []);
+      };
+      projectPackages = pkgs.haskell-nix.haskellLib.selectProjectPackages hsPkgs;
+      toHaddock = pkgs.haskell-nix.haskellLib.collectComponents' "library" projectPackages;
+      in haddock-combine {
+        hspkgs = builtins.attrValues toHaddock;
+        prologue = pkgs.writeTextFile {
+          name = "prologue";
+          text = "Documentation for hasktorch and its libraries.";
+        };
+      };
   }

@@ -49,6 +49,7 @@ let
         modules = [
           ({ config, ... }: {
             packages.codegen.components.tests.doctests.doCheck = false;
+            packages.codegen.doHaddock = false;
             packages.libtorch-ffi.configureFlags = [
               "--extra-lib-dirs=${pkgs.torch}/lib"
               "--extra-include-dirs=${pkgs.torch}/include"
@@ -56,6 +57,8 @@ let
             ];
             packages.libtorch-ffi.flags.cuda = USE_CUDA;
             packages.libtorch-ffi.flags.gcc = USE_GCC;
+            packages.examples.doHaddock = false;
+            packages.experimental.doHaddock = false;
           })
         ];
       };
