@@ -115,6 +115,7 @@ library
                             , StrictData
  cxx-sources:          csrc/hasktorch_finializer.cpp
  install-includes:     csrc/hasktorch_finializer.h
+ include-dirs:         csrc
 
 test-suite spec
   type:            exitcode-stdio-1.0
