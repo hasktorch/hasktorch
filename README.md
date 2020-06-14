@@ -31,7 +31,7 @@ Starting at the top-level directory of the project, go to the `deps/` (dependenc
 
 ```
 pushd deps           # Change to deps directory and save the current directory.
-./get-deps.sh        # Run the shell script to retrieve the dependency. 
+./get-deps.sh        # Run the shell script to retrieve the dependency.
 popd                 # Go back to the root directory of the project.
 ```
 
@@ -67,6 +67,23 @@ nix-shell ./hasktorch/shell.nix --arg cudaVersion 9 # or 10
 ```
 
 If you are running cabal or stack to develop hasktorch, there is a shell hook to tell you which `extra-lib-dirs` and `extra-include-dirs` fields to include in your stack.yaml or cabal.project.local. This hook will also explain how to create a cabal.project.freeze file.
+
+### Stack with Nix
+
+It is also possible to compile hasktorch with Stack while getting system
+dependencies with Nix.
+
+First, make sure both Stack and Nix are installed, and then optionally enable
+the hasktorch Cachix, as described above.  After that, just run
+`stack --nix build` to build.
+
+As long as you pass the `--nix` flag to Stack, Stack will use Nix to get into
+an environment with all required system dependencies (mostly just `libtorch`)
+before running builds, tests, etc.
+
+Note that if you are running `stack` with Nix, you want to make sure you have
+_not_ run the `deps/get-deps.sh` script.  In particular, the `deps/libtorch/` and
+`deps/mklml/` directories must not exist.
 
 ### Building examples
 
