@@ -10,7 +10,7 @@ cradle:
     - path: "./libtorch-ffi/src"
       component: "lib:libtorch-ffi"
     - path: "./libtorch-ffi/test"
-      component: "spec:libtorch-ffi"
+      component: "libtorch-ffi:test:spec"
 
     - path: "./libtorch-ffi-helper/src"
       component: "lib:libtorch-ffi-helper"
@@ -18,7 +18,7 @@ cradle:
     - path: "./hasktorch/src"
       component: "lib:hasktorch"
     - path: "./hasktorch/test"
-      component: "spec:hasktorch"
+      component: "hasktorch:test:spec"
 
     - path: "./examples/alexNet"
       component: "exe:alexNet"
