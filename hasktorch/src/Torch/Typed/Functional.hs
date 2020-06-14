@@ -85,6 +85,9 @@ import           Torch.Typed.Aux
 import           Torch.Typed.Factories
 import           Torch.Typed.Tensor
 
+-- $setup
+--
+-- >>> :set -XOverloadedLists
 
 type family SumDType (dtype :: D.DType) :: D.DType where
   SumDType D.Bool = D.Int64

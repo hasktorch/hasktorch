@@ -13,7 +13,8 @@ cabal-version:       >=1.10
 
 Flag disable-doctest
  Description: Disable doctest. ToDo: This flag is to avoid relocation-error of ghci for macos.
-   Default:       os(darwin)
+ Default:     False
+ Manual:      True
 
 library
  exposed-modules:     Torch
@@ -133,7 +134,7 @@ test-suite spec
                     , inline-c-cpp
 
 test-suite doctests
-  if flag(disable-doctest)
+  if os(darwin) || flag(disable-doctest)
     Buildable: False
   else
     Buildable: True
