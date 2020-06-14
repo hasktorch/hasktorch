@@ -26,6 +26,7 @@ jobs:
     - name: Build
       run: |
         nix-env -i cachix
+        cachix use iohk
         cachix use hasktorch
         nix-build -A combined-haddock
         pwd
