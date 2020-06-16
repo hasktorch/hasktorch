@@ -110,20 +110,23 @@ xor t = (1 - (1 - a) * (1 - b)) * (1 - (a * b))
   a = select @1 @0 t
   b = select @1 @1 t
 
+type Device = '( 'D.CUDA, 0)
+
+main :: IO ()
 main = do
   let numIters = 100000
       learningRate = 0.1
-  initModel <- A.sample (MLPSpec :: MLPSpec 2 1 4 'D.Float '( 'D.CPU, 0))
+  initModel <- A.sample (MLPSpec :: MLPSpec 2 1 4 'D.Float Device)
   let initOptim = mkAdam 0 0.9 0.999 (flattenParameters initModel)
   (trained, _) <- foldLoop (initModel, initOptim) numIters $ \(model, optim) i -> do
     input <-
       Torch.Typed.Tensor.toDType @D.Float
-      .   gt (0.5 :: CPUTensor 'D.Float '[])
-      <$> rand @'[256, 2] @'D.Float @'( 'D.CPU, 0)
+      .   gt (Torch.Typed.Tensor.toDevice @Device (0.5 :: CPUTensor 'D.Float '[]))
+      <$> rand @'[256, 2] @'D.Float @Device
 
-    let expectedOutput = xor input
     let actualOutput   = squeezeAll . Main.forward model $ input
-    let loss           = mseLoss @D.ReduceMean expectedOutput actualOutput
+        expectedOutput = xor input
+        loss           = mseLoss @D.ReduceMean actualOutput expectedOutput
 
     when (i `mod` 2500 == 0) (print loss)
 
