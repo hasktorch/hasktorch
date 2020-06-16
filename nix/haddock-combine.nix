@@ -22,6 +22,8 @@ in runCommand "haddock-join" { buildInputs = [ hsdocs ]; } ''
   # so that links point to the appropriate place within our combined output,
   # rather than into the store.
   root=$out/share/doc
+  mv $out/share/doc/hasktorch/ $out/share/doc/hasktorch_doc/
+
   for f in $(find $out -name "*.html"); do
     # Replace all links to the docs we're processing with relative links 
     # to the root of the doc directory we're creating - the rest of the link is
@@ -37,6 +39,7 @@ in runCommand "haddock-join" { buildInputs = [ hsdocs ]; } ''
     # the trailing part of doc-index.html
     sed -i -r "s,\"index\.html\",\"$relpath/share/doc/index.html\",g" "$f"
     sed -i -r "s,\"doc-index\.html\",\"$relpath/share/doc/doc-index.html\",g" "$f"
+    sed -i -r "s,\"/hasktorch/\",\"/hasktorch_doc/\",g" "$f"
   done
 
   # Move to the docdir. We do this so that we can give relative docpaths to
