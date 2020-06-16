@@ -37,13 +37,12 @@ executable static-xor-mlp
                      , hasktorch
                      , mtl
                      , reflection
- 
+
 library static-mnist
   import:              config
   hs-source-dirs:      static-mnist
   ghc-options:         -fno-warn-partial-type-signatures
-  exposed-modules:   Common  
-                     
+  exposed-modules:     Common
   build-depends:       bytestring >= 0.10.8
                      , libtorch-ffi
                      , random >= 1.1
@@ -53,14 +52,14 @@ test-suite spec
   type:               exitcode-stdio-1.0
   hs-source-dirs:     test
   main-is:            Spec.hs
-  other-modules:      
+  other-modules:
   build-depends:      base >= 4.7 && < 5
                     , hspec
-                    , hspec-discover
                     , safe-exceptions
                     , QuickCheck
                     , mtl
                     , static-mnist
+  build-tool-depends: hspec-discover:hspec-discover
 
 executable static-mnist-cnn
   import:              config

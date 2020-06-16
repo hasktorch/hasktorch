@@ -8,16 +8,16 @@ packages:
 - examples
 - experimental
 
-extra-include-dirs:
-  - deps/libtorch/include/torch/csrc/api/include
-  - deps/libtorch/include
-
-extra-lib-dirs:
-  - deps/libtorch/lib
-  - deps/mklml/lib
-
 # see https://github.com/commercialhaskell/stack/issues/4073
 # with-gcc: /usr/local/bin/gcc-7
+
+extra-include-dirs:
+- deps/libtorch/include/torch/csrc/api/include
+- deps/libtorch/include
+
+extra-lib-dirs:
+- deps/libtorch/lib
+- deps/mklml/lib
 
 extra-deps:
 # libtorch-ffi
@@ -34,6 +34,5 @@ extra-deps:
 - streaming-attoparsec-1.0.0.1@sha256:fe9b878072423d3f075534fe8af24722d9ded1a1129e9a6ed5b71c4a29681b39,1146
 - streaming-cassava-0.1.0.1@sha256:2d1dfeb09af62009e88311fe92f44d06dafb5cdd38879b437ea6adb3bc40acfe,1739
 
-
 nix:
-  packages: [zlib.dev, zlib.out]
+  shell-file: nix/stack-shell.nix

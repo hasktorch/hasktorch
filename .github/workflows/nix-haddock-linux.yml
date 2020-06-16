@@ -26,8 +26,9 @@ jobs:
     - name: Build
       run: |
         nix-env -i cachix
+        cachix use iohk
         cachix use hasktorch
-        nix-build -A hasktorch-docs
+        nix-build -A combined-haddock
         pwd
         find result/ |head
         mkdir public

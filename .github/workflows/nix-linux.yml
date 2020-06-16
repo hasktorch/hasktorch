@@ -3,27 +3,64 @@ name: nix-linux
 on: [push, pull_request]
 
 jobs:
-  build:
-
+  tests:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: free disk space
-      run: |
-        sudo swapoff -a
-        sudo rm -f /swapfile
-        sudo apt -y purge ghc* cabal-install* php* || true
-        sudo apt autoremove -y || true
-        sudo apt autoclean -y || true
-        docker rmi $(docker image ls -aq)
-        df -h
-    - uses: cachix/install-nix-action@v7
-    - name: Setup repo
-      run: |
-        git submodule init && git submodule update
-    - uses: cachix/cachix-action@releases/v5
-      with:
-        skipNixBuild: false
-        name: hasktorch
-        signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-        nixBuildArgs: -A hasktorch-codegen -A libtorch-ffi_cpu  -A hasktorch_cpu -A hasktorch-examples_cpu -A hasktorch-experimental_cpu
+      - uses: actions/checkout@v2
+      - name: free disk space
+        run: |
+          sudo swapoff -a
+          sudo rm -f /swapfile
+          sudo apt -y purge ghc* cabal-install* php* || true
+          sudo apt autoremove -y || true
+          sudo apt autoclean -y || true
+          docker rmi $(docker image ls -aq)
+          df -h
+      - uses: cachix/install-nix-action@v8
+      - run: nix-env -iA cachix -f https://cachix.org/api/v1/install
+      - run: cachix use iohk
+      - run: |
+          nix-build shared.nix -A defaultCpu.hsPkgs.libtorch-ffi.checks.spec
+          nix-build shared.nix -A defaultCpu.hsPkgs.hasktorch.checks.spec
+          nix-build shared.nix -A defaultCpu.hsPkgs.examples.checks.spec
+  build-shell-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: free disk space
+        run: |
+          sudo swapoff -a
+          sudo rm -f /swapfile
+          sudo apt -y purge ghc* cabal-install* php* || true
+          sudo apt autoremove -y || true
+          sudo apt autoclean -y || true
+          docker rmi $(docker image ls -aq)
+          df -h
+      - uses: cachix/install-nix-action@v8
+      - uses: cachix/cachix-action@v6
+        with:
+          name: hasktorch
+          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+      - run: cachix use iohk
+      - run: nix-build shell.nix
+  build-ci-cache:
+    if: github.repository == 'hasktorch/hasktorch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: free disk space
+        run: |
+          sudo swapoff -a
+          sudo rm -f /swapfile
+          sudo apt -y purge ghc* cabal-install* php* || true
+          sudo apt autoremove -y || true
+          sudo apt autoclean -y || true
+          docker rmi $(docker image ls -aq)
+          df -h
+      - uses: cachix/install-nix-action@v8
+      - uses: cachix/cachix-action@v6
+        with:
+          name: hasktorch
+          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+      - run: cachix use iohk
+      - run: nix-build
