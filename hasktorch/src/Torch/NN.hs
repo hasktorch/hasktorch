@@ -114,8 +114,15 @@ class Randomizable spec f | spec -> f where
 
 class (Randomizable spec f, Parameterized f) => Module spec f
 
-data LinearSpec = LinearSpec { in_features :: Int, out_features :: Int }
-  deriving (Show, Eq)
+--
+-- Linear FC Layer
+--
+
+data LinearSpec = LinearSpec { 
+    in_features :: Int,
+    out_features :: Int 
+    } deriving (Show, Eq)
+  
 
 data Linear = Linear { weight :: Parameter, bias :: Parameter } deriving (Show, Generic)
 
@@ -125,6 +132,8 @@ linear layer input = linear' input w b
         linear' input weight bias = unsafePerformIO $ (cast3 ATen.linear_ttt) input weight bias
         w = toDependent (weight layer)
         b = toDependent (bias layer)
+
+linearForward = linear -- temporary alias until dependencies are updated
 
 instance Randomizable LinearSpec Linear where
   sample LinearSpec{..} = do
@@ -147,6 +156,10 @@ instance Parameterized Linear
 --     return $ Linear{..}
 
 instance Parameterized [Linear]
+
+--
+-- Conv2d
+--
 
 data Conv2dSpec = 
   Conv2dSpec {

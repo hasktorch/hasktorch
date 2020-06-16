@@ -48,9 +48,11 @@ import Prelude hiding ( all
                       , floor
                       , ceil
                       )
+import qualified Prelude as P
 
 import System.IO.Unsafe
 import Foreign.ForeignPtr
+import Foreign.C.Types (CBool(..))
 
 import Torch.Dimname
 import qualified Torch.Internal.Managed.Native as ATen
@@ -101,6 +103,14 @@ data Reduction = ReduceNone | ReduceMean | ReduceSum deriving (Eq, Show)
 data Dim = Dim Int
 
 data KeepDim = KeepDim | RemoveDim deriving (Eq, Show)
+
+data CeilMode = CeilMode | FloorMode deriving (Eq, Show)
+
+instance Castable CeilMode CBool where -- Word8 == CBool
+  cast CeilMode f = f 1
+  cast FloorMode f = f 0
+  uncast 0 f = f FloorMode
+  uncast 1 f = f CeilMode
 
 instance Castable Reduction Int64 where
   cast ReduceNone f = f 0
@@ -774,16 +784,16 @@ adaptiveMaxPool2d
     :: (Int,Int) -- ^ output size
     -> Tensor -- ^ input
     -> (Tensor,Tensor) -- ^ output 
-adaptiveMaxPool2d _output_size _self =
+adaptiveMaxPool2d outputSize self =
     unsafePerformIO $ (cast2 ATen.adaptive_max_pool2d_tl)
-        _self _output_size
+        self outputSize
 
 -- | Applies a 3D adaptive max pooling over an input signal composed of several input planes
 adaptiveMaxPool3d
     :: (Int, Int) -- ^ output size
     -> Tensor -- ^ input
     -> (Tensor, Tensor)
-adaptiveMaxPool3d output_size input = unsafePerformIO $ (cast2 ATen.adaptive_max_pool3d_tl) input output_size
+adaptiveMaxPool3d outputSize input = unsafePerformIO $ (cast2 ATen.adaptive_max_pool3d_tl) input outputSize
 
 
 -- | maxPool1dWithIndices
@@ -792,7 +802,7 @@ maxPool1dWithIndices
     -> Int -- ^ stride
     -> Int -- ^ padding
     -> Int -- ^ dilation
-    -> Bool -- ^ ceil mode
+    -> CeilMode -- ^ ceil mode
     -> Tensor -- ^ input
     -> (Tensor,Tensor) -- ^ output, indices
 maxPool1dWithIndices kernelSize stride padding dilation ceilMode self =
@@ -805,7 +815,7 @@ maxPool1d
     -> Int -- ^ stride
     -> Int -- ^ padding
     -> Int -- ^ dilation
-    -> Bool -- ^ ceil mode
+    -> CeilMode -- ^ ceil mode
     -> Tensor -- ^ input
     -> Tensor -- ^ output
 maxPool1d kernelSize stride padding dilation ceilMode self =
@@ -818,7 +828,7 @@ maxPool2d
     -> (Int,Int) -- ^ stride
     -> (Int,Int) -- ^ padding
     -> (Int,Int) -- ^ dilation
-    -> Bool -- ^ ceil mode
+    -> CeilMode -- ^ ceil mode
     -> Tensor -- ^ input
     -> Tensor -- ^ output
 maxPool2d kernelSize stride padding dilation ceilMode self =
@@ -832,26 +842,35 @@ maxPool2d kernelSize stride padding dilation ceilMode self =
         where
             asList :: (Int, Int) -> [Int]
             asList (a0, a1) = [a0, a1]
- 
--- | Applies a 3D max pooling over an input signal composed of several input planes.
-maxPool3d 
-    :: (Int,Int,Int) -- ^ kernel size
-    -> (Int,Int,Int) -- ^ stride
-    -> (Int,Int,Int) -- ^ padding
-    -> (Int,Int,Int) -- ^ dilation
-    -> Bool -- ^ ceil mode
-    -> Tensor -- ^ input
-    -> Tensor -- ^ output
-maxPool3d kernelSize stride padding dilation ceilMode self =
-    unsafePerformIO $ (cast6 ATen.max_pool3d_tllllb)
-        self kernelSize stride padding dilation ceilMode
+
+-- | Calculates resulting dimensions from a 2d maxpool operation
+-- see https://pytorch.org/docs/master/generated/torch.nn.MaxPool2d.html#torch.nn.MaxPool2d
+maxPool2dDim 
+    :: (Int, Int) -- ^ kernel size
+    -> (Int, Int) -- ^ stride
+    -> (Int, Int) -- ^ padding
+    -> (Int, Int) -- ^ dilation
+    -> CeilMode   -- ^ Ceiling or Floor
+    -> (Int, Int) -- ^ image dimensions
+    -> (Int, Int) -- ^ height, width after maxPool
+maxPool2dDim kernelSize stride padding dilation ceilMode imgDim 
+    = (calc fst, calc snd) 
+    where
+        trunc CeilMode = P.ceiling
+        trunc FloorMode = P.floor
+        calc f' = 
+            let f = (fromIntegral . f' :: (Int, Int) -> Float) in 
+            (trunc ceilMode) $ (f imgDim 
+            + 2 * f padding 
+            - (f dilation) * ((f kernelSize) - 1)
+            - 1) / (f stride) + 1
 
 -- | Applies a 1D average pooling over an input signal composed of several input planes.
 avgPool1d
   :: Int -- ^ kernel size
   -> Int -- ^ stride
   -> Int -- ^ padding
-  -> Bool -- ^ ceil mode
+  -> CeilMode -- ^ ceil mode
   -> Bool -- ^ count include pad
   -> Tensor -- ^ input
   -> Tensor -- ^ output
@@ -871,7 +890,7 @@ avgPool1d'
   -> Tensor -- ^ input
   -> Tensor -- ^ output
 avgPool1d' kernelSize stride padding input =
-    avgPool1d kernelSize stride padding False True input
+    avgPool1d kernelSize stride padding FloorMode True input
 
 -- | Applies a 1D adaptive average pooling over an input signal composed of several input planes.
 adaptiveAvgPool1d

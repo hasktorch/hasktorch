@@ -4,40 +4,63 @@ module Main where
 
 import Dataset
 import Torch
-import Distill
 import Model
 
 data (Parameterized m) => PruneSpec m = PruneSpec {
     ref :: m,
-    getWeights :: m -> [Tensor],
+    selectWeights :: m -> [Tensor],
     pruneWeights :: Float -> Tensor -> Tensor
 }
 
+selectAllWeights model = 
+    toDependent <$> flattenParameters model
+
+l1Prune :: Float -> Tensor -> Tensor
+l1Prune threshold t =
+    Torch.abs t `lt` (asTensor threshold)
 
 -- | Setup pruning parameters and run
-runPrune :: (Dataset d) => d -> IO (MLP, MLP) 
+runPrune :: (Dataset d) => d -> IO (CNN, CNN) 
 runPrune mnistData = do
-    -- Train teacher
+
+    print "sampling"
+    -- train parent model
     initRef <- sample refSpec
     let optimSpec = OptimSpec {
         optimizer = GD,
         batchSize = 256,
-        numIters = 500,
-        learningRate = 1e-3
+        numIters = 100,
+        learningRate = 1e-6
     }
+    print "training"
     ref <- train optimSpec mnistData initRef
 
-    -- Prune to student
-    -- target <- sample studentSpec
+    -- prune target
     let pruneSpec = PruneSpec {
         ref = ref,
-        getWeights = \teacher -> toDependent <$> flattenParameters teacher
+        selectWeights = selectAllWeights,
+        pruneWeights = l1Prune
     }
+    print "pruning"
     -- student <- distill distillSpec optimSpec mnistData
     let pruned = undefined
     pure (ref, pruned)
   where
-    refSpec = MLPSpec mnistDataDim 300 300 10
+    channels = 4
+    refSpec = 
+        CNNSpec
+            -- input channels, output channels, kernel height, kernel width
+            (Conv2dSpec 1 channels 5 5)
+            -- (LinearSpec (784*channels) 100)
+            (LinearSpec (9*9*channels) 100)
 
 main = do
+    putStrLn "Dim Check"
+    print $ maxPool2dDim (3, 3) (3, 3) (0, 0) (1, 1) FloorMode (28, 28)
+    print $ maxPool2dDim (3, 3) (6, 3) (0, 0) (1, 1) FloorMode (28, 28)
+    print $ maxPool2dDim (3, 3) (6, 6) (0, 0) (1, 1) FloorMode (28, 28)
+    putStrLn "Loading Data"
+    (mnistTrain, mnistTest) <- loadMNIST "datasets/mnist"
+    putStrLn "Running Prune"
+    (original, derived) <- runPrune mnistTrain
     putStrLn "Done"

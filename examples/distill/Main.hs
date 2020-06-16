@@ -18,19 +18,6 @@ import Model
 maxIndex :: Tensor -> Tensor
 maxIndex = Torch.argmax (Dim 1) RemoveDim
 
--- | Load MNIST data as dataset abstraction
-loadMNIST dataLocation = do
-    (train, test) <- V.initMnist dataLocation
-    let mnistTrain = MNIST {
-        dataset = train,
-        idxList = V.randomIndexes (V.length train)
-    }
-    let mnistTest = MNIST {
-        dataset = test,
-        idxList = V.randomIndexes (V.length train)
-    }
-    pure (mnistTrain, mnistTest)
-
 -- | Setup distillation parameters and run
 runDistill :: (Dataset d) => d -> IO (MLP, MLP) 
 runDistill mnistData = do

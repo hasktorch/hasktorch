@@ -27,3 +27,16 @@ instance Dataset MNIST where
 		pure (input, label)
 
 mnistDataDim = 784
+
+-- | Load MNIST data as dataset abstraction
+loadMNIST dataLocation = do
+    (train, test) <- V.initMnist dataLocation
+    let mnistTrain = MNIST {
+        dataset = train,
+        idxList = V.randomIndexes (V.length train)
+    }
+    let mnistTest = MNIST {
+        dataset = test,
+        idxList = V.randomIndexes (V.length train)
+    }
+    pure (mnistTrain, mnistTest)
