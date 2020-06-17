@@ -27,7 +27,8 @@ runDistill mnistData = do
         optimizer = GD,
         batchSize = 256,
         numIters = 500,
-        learningRate = 1e-3
+        learningRate = 1e-3,
+        lossFn = nllLoss' 
     }
     teacher <- train optimSpec mnistData initTeacher
     -- Distill student

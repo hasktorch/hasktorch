@@ -30,10 +30,22 @@ runPrune mnistData = do
         optimizer = GD,
         batchSize = 256,
         numIters = 100,
-        learningRate = 1e-6
+        learningRate = 1e-6, 
+        lossFn = nllLoss' 
     }
     print "training"
     ref <- train optimSpec mnistData initRef
+
+    -- l1 test
+        {-
+    l1 <- train 
+        -- TODO XXX = weights
+        optimSpec {
+            lossFn = \t t' -> nllLoss' t t' + 1.0 * l1Loss ReduceSum XXX zerosLike XXX 
+            }
+        mnistData 
+        initRef
+        -}
 
     -- prune target
     let pruneSpec = PruneSpec {
