@@ -99,9 +99,7 @@ library
                     , zlib >= 0.6
                     , pipes
                     , pipes-concurrency
-                    , lifted-async
-                    , monad-control
-                    , foldl
+                    , async
 
                     , inline-c
  default-extensions:  Strict

@@ -87,7 +87,7 @@ instance ( KnownDType dtype
 -- instance HasForward (CNN dtype device) (Tensor device dtype '[batchSize, I.DataDim]) (Tensor device dtype '[batchSize, I.ClassDim]) where
 --   forward = cnn
   
-type BatchSize = 512
+type BatchSize = 256
 
 train'
   :: forall (device :: (DeviceType, Nat))
@@ -98,8 +98,7 @@ train' = do
   manual_seed_L 123
   initModel <- sample (CNNSpec @ 'Float @device)
   let initOptim = mkAdam 0 0.9 0.999 (flattenParameters initModel)
-  void $ runStateT (trainingLoop @'D.Float @device @500 cnn) (initModel, initOptim)
-  -- train @BatchSize @device initModel initOptim (\model _ input -> return $ cnn model input) learningRate "static-mnist-cnn.pt"
+  newMain @BatchSize @device  cnn initModel initOptim 10 
 
 main :: IO ()
 main = do
