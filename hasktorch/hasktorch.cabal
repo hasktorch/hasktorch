@@ -74,6 +74,7 @@ library
                     , Torch.Typed.Optim
                     , Torch.Typed.Serialize
                     , Torch.Typed.Vision
+                    , Torch.Data.Pipeline
  other-modules:       Paths_hasktorch
  hs-source-dirs:      src
  default-language:    Haskell2010
@@ -96,6 +97,10 @@ library
                     , bytestring
                     , safe-exceptions
                     , zlib >= 0.6
+                    , pipes
+                    , pipes-concurrency
+                    , async
+
                     , inline-c
  default-extensions:  Strict
                     , StrictData
