@@ -116,7 +116,7 @@ rastriginLayer' x a n = (mulScalar a . mulScalar n $ ones)
 
 gradientsRastriginLayer'
   :: forall device dtype a shape
-   . (StandardFloatingPointDTypeValidation device dtype, D.Scalar a)
+   . (KnownDevice device, StandardFloatingPointDTypeValidation device dtype, D.Scalar a)
   => Tensor device dtype shape
   -> a
   -> Tensor device dtype shape
@@ -264,7 +264,8 @@ rastrigin model a =
 data GradientsRastriginA a = GradientsRastriginA a
 
 instance
-  ( StandardFloatingPointDTypeValidation device dtype
+  ( KnownDevice device
+  , StandardFloatingPointDTypeValidation device dtype
   , D.Scalar a
   ) => Apply' (GradientsRastriginA a) (Parameter device dtype '[n]) (Tensor device dtype '[n]) where
   apply' (GradientsRastriginA a) parameter = gradientsRastriginLayer' (toDependent parameter) $ a
