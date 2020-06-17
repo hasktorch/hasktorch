@@ -104,6 +104,7 @@ instance
   , gradient ~ Tensor device dtype shape
   , shape ~ Broadcast '[] shape
   , BasicArithmeticDTypeIsValid device dtype
+  , KnownDevice device
   ) => Apply' (GDStep device dtype) (parameter, gradient) parameter where
   apply' (GDStep learningRate) (parameter, gradient) =
     parameter - mul learningRate gradient
@@ -150,6 +151,7 @@ instance
   , gradient ~ Tensor device dtype shape
   , momentum ~ Tensor device dtype shape
   , shape ~ Broadcast '[] shape
+  , KnownDevice device
   , BasicArithmeticDTypeIsValid device dtype
   ) => Apply' (GDMStep device dtype) (parameter, gradient, momentum) (parameter, momentum) where
   apply' (GDMStep beta learningRate) (parameter, gradient, momentum) =
@@ -214,6 +216,7 @@ newtype AdamMomentum1Update = AdamMomentum1Update Float
 instance
   ( gradient ~ Tensor device dtype shape
   , momentum1 ~ Tensor device dtype shape
+  , KnownDevice device
   ) => Apply' AdamMomentum1Update (momentum1, gradient) momentum1 where
     apply' (AdamMomentum1Update beta1) (momentum1, gradient) =
       mulScalar beta1 momentum1 + mulScalar (1 - beta1) gradient
@@ -225,6 +228,7 @@ instance
   ( gradient ~ Tensor device dtype shape
   , momentum2 ~ Tensor device dtype shape
   , shape ~ Broadcast shape shape
+  , KnownDevice device
   , BasicArithmeticDTypeIsValid device dtype
   ) => Apply' AdamMomentum2Update (momentum2, gradient) momentum2 where
     apply' (AdamMomentum2Update beta2) (momentum2, gradient) =
@@ -246,6 +250,7 @@ instance
   ( parameter ~ Tensor device dtype shape
   , momentum ~ Tensor device dtype shape
   , shape ~ Broadcast '[] shape
+  , KnownDevice device
   , BasicArithmeticDTypeIsValid device dtype
   , StandardFloatingPointDTypeValidation device dtype
   ) => Apply' (AdamParameterUpdate device dtype) (parameter, momentum, momentum) parameter where

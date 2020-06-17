@@ -95,6 +95,7 @@ cpu = Proxy @'( 'D.CPU, 0)
 cuda0 :: _
 cuda0 = Proxy @'( 'D.CUDA, 0)
 
+availableDevices :: [D.Device]
 availableDevices =
   let hasCuda = unsafePerformIO $ cast0 ATen.hasCUDA
   in  [D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 }]

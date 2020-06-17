@@ -128,31 +128,32 @@ type family ComputeItemType (ty :: Type) (shape :: [Nat]) :: Type where
   ComputeItemType ty (_ ': h ': t) = [ComputeItemType ty (h ': t)]
 
 instance ( D.TensorLike [ComputeItemType (ComputeHaskellType dtype) shape]
+         , KnownDevice device
          , KnownShape shape)
-  => IsList (Maybe (Tensor '( 'D.CPU, 0) dtype shape))
+  => IsList (Maybe (Tensor device dtype shape))
  where
-  type Item (Maybe (Tensor '( 'D.CPU, 0) dtype shape)) = ComputeItemType (ComputeHaskellType dtype) shape
+  type Item (Maybe (Tensor device dtype shape)) = ComputeItemType (ComputeHaskellType dtype) shape
   fromList xs = do
     shapeXs <- D._deepDims xs
     if shapeVal @shape == shapeXs
-    then return $ UnsafeMkTensor . D.asTensor $ xs
+    then return $ UnsafeMkTensor . D.toDevice (deviceVal @device) . D.asTensor $ xs
     else Nothing
   toList Nothing = []
-  toList (Just t) = D.asValue . toDynamic $ t
+  toList (Just t) = D.asValue . D.toDevice (D.Device D.CPU 0) . toDynamic $ t
 
-instance Num (Tensor device dtype shape) where
+instance KnownDevice device => Num (Tensor device dtype shape) where
   (+) a b = UnsafeMkTensor $ toDynamic a + toDynamic b
   (-) a b = UnsafeMkTensor $ toDynamic a - toDynamic b
   (*) a b = UnsafeMkTensor $ toDynamic a * toDynamic b
   negate t = UnsafeMkTensor $ negate $ toDynamic t
   abs t = UnsafeMkTensor $ abs $ toDynamic t
   signum t = UnsafeMkTensor $ signum $ toDynamic t
-  fromInteger i = UnsafeMkTensor $ D.asTensor @Int $ fromInteger @Int i
+  fromInteger i = UnsafeMkTensor . D.toDevice (deviceVal @device) . D.asTensor @Int $ fromInteger @Int i
 
-instance Fractional (Tensor device dtype shape) where
+instance KnownDevice device => Fractional (Tensor device dtype shape) where
   a / b = UnsafeMkTensor $ toDynamic a / toDynamic b
   recip t = UnsafeMkTensor $ recip $ toDynamic t
-  fromRational i = UnsafeMkTensor $ D.asTensor @Float $ fromRational @Float i
+  fromRational i = UnsafeMkTensor . D.toDevice (deviceVal @device) . D.asTensor @Float $ fromRational @Float i
 
 instance Show (Tensor device dtype shape) where
     show (UnsafeMkTensor dynamic) = show dynamic

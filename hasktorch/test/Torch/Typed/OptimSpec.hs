@@ -97,7 +97,7 @@ instance
 
 convQuad
   :: forall features dtype device
-   . DotDTypeIsValid device dtype
+   . (KnownDevice device, DotDTypeIsValid device dtype)
   => ConvQuad features dtype device
   -> Tensor device dtype '[features, features]
   -> Tensor device dtype '[features]
@@ -131,7 +131,7 @@ instance
 
 rosenbrock
   :: forall a dtype device
-   . D.Scalar a
+   . (KnownDevice device, D.Scalar a)
   => Rosenbrock dtype device
   -> a
   -> a
