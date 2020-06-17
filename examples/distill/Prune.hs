@@ -24,37 +24,40 @@ runPrune :: (Dataset d) => d -> IO (CNN, CNN)
 runPrune mnistData = do
 
     print "sampling"
-    -- train parent model
+    -- train reference model
     initRef <- sample refSpec
     let optimSpec = OptimSpec {
         optimizer = GD,
         batchSize = 256,
-        numIters = 100,
+        numIters = 50,
         learningRate = 1e-6, 
         lossFn = nllLoss' 
     }
     print "training"
     ref <- train optimSpec mnistData initRef
 
-    -- l1 test
-        {-
+    let pruneSpec = PruneSpec {
+        ref = initRef,
+        selectWeights = (:[]) . toDependent . weight . cnnFC0 
+    }
+
+    -- l1
     l1 <- train 
-        -- TODO XXX = weights
         optimSpec {
-            lossFn = \t t' -> nllLoss' t t' + 1.0 * l1Loss ReduceSum XXX zerosLike XXX 
+            numIters = 200,
+            lossFn = \t t' -> 
+                let regWeights = head (selectWeights pruneSpec $ initRef) in
+                    let regTerm = l1Loss ReduceSum regWeights (zerosLike regWeights) in
+                        nllLoss' t t' + 1 * regTerm 
             }
         mnistData 
         initRef
-        -}
 
-    -- prune target
-    let pruneSpec = PruneSpec {
-        ref = ref,
-        selectWeights = selectAllWeights,
-        pruneWeights = l1Prune
-    }
+    let resultWt = head $ (selectWeights pruneSpec) l1 
+    print $ resultWt
+    print $ shape resultWt
+
     print "pruning"
-    -- student <- distill distillSpec optimSpec mnistData
     let pruned = undefined
     pure (ref, pruned)
   where
