@@ -103,7 +103,8 @@ foldLoop x count block = foldM block x ([1 .. count] :: [a])
 
 xor
   :: forall batchSize dtype device
-   . Tensor device dtype '[batchSize, 2]
+   . KnownDevice device
+  => Tensor device dtype '[batchSize, 2]
   -> Tensor device dtype '[batchSize]
 xor t = (1 - (1 - a) * (1 - b)) * (1 - (a * b))
  where
@@ -121,7 +122,7 @@ main = do
   (trained, _) <- foldLoop (initModel, initOptim) numIters $ \(model, optim) i -> do
     input <-
       Torch.Typed.Tensor.toDType @D.Float
-      .   gt (Torch.Typed.Tensor.toDevice @Device (0.5 :: CPUTensor 'D.Float '[]))
+      .   gt (0.5 :: Tensor Device 'D.Float '[])
       <$> rand @'[256, 2] @'D.Float @Device
 
     let actualOutput   = squeezeAll . Main.forward model $ input
