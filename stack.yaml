@@ -1,4 +1,4 @@
-resolver: lts-15.5
+resolver: nightly-2020-06-18
 
 packages:
 - codegen
