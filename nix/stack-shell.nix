@@ -20,7 +20,7 @@ with pkgs;
 
 haskell.lib.buildStackProject {
   name = "stack-build-hasktorch";
-  ghc = haskell.compiler.ghc883;
+  ghc = haskell.compiler.ghc8101;
   extraArgs = [
     "--extra-include-dirs=${pkgs.torch}/include/torch/csrc/api/include"
   ];
