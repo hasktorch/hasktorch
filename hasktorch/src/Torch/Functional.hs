@@ -104,13 +104,13 @@ data Dim = Dim Int
 
 data KeepDim = KeepDim | RemoveDim deriving (Eq, Show)
 
-data CeilMode = CeilMode | FloorMode deriving (Eq, Show)
+data CeilMode = Ceil | Floor deriving (Eq, Show)
 
 instance Castable CeilMode CBool where -- Word8 == CBool
-  cast CeilMode f = f 1
-  cast FloorMode f = f 0
-  uncast 0 f = f FloorMode
-  uncast 1 f = f CeilMode
+  cast Ceil f = f 1
+  cast Floor f = f 0
+  uncast 0 f = f Floor
+  uncast 1 f = f Ceil
 
 instance Castable Reduction Int64 where
   cast ReduceNone f = f 0
@@ -856,8 +856,8 @@ maxPool2dDim
 maxPool2dDim kernelSize stride padding dilation ceilMode imgDim 
     = (calc fst, calc snd) 
     where
-        trunc CeilMode = P.ceiling
-        trunc FloorMode = P.floor
+        trunc Ceil = P.ceiling
+        trunc Floor = P.floor
         calc f' = 
             let f = (fromIntegral . f' :: (Int, Int) -> Float) in 
             (trunc ceilMode) $ (f imgDim 
@@ -890,7 +890,7 @@ avgPool1d'
   -> Tensor -- ^ input
   -> Tensor -- ^ output
 avgPool1d' kernelSize stride padding input =
-    avgPool1d kernelSize stride padding FloorMode True input
+    avgPool1d kernelSize stride padding Floor True input
 
 -- | Applies a 1D adaptive average pooling over an input signal composed of several input planes.
 adaptiveAvgPool1d

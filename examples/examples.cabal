@@ -238,6 +238,7 @@ executable distill
   ghc-options:         -fno-warn-partial-type-signatures
   build-depends:       libtorch-ffi
                      , bytestring >= 0.10.8
+                     , hvega
                      , mtl
                      , random >= 1.1
                      , safe-exceptions
@@ -251,7 +252,10 @@ executable prune
   ghc-options:         -fno-warn-partial-type-signatures
   build-depends:       libtorch-ffi
                      , bytestring >= 0.10.8
-                     , mtl
+                     , hvega
+                     , mtl 
+                     , process
                      , random >= 1.1
                      , safe-exceptions
                      , static-mnist
+                     , text

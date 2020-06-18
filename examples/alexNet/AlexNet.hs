@@ -59,17 +59,17 @@ alexnetBBForward AlexNetBB{..} input =
     . linear l1
     . flatten (Dim 1) (Dim (-1)) 
     . adaptiveAvgPool2d (6, 6)
-    . maxPool2d (3, 3) (2, 2) (0, 0) (1, 1) False
+    . maxPool2d (3, 3) (2, 2) (0, 0) (1, 1) Floor
     . relu
     . conv2dForward c5 (1, 1) (1, 1)
     . relu
     . conv2dForward c4 (1, 1) (1, 1)
     . relu
     . conv2dForward c3 (1, 1) (1, 1)
-    . maxPool2d (3, 3) (2, 2) (0, 0) (1, 1) False
+    . maxPool2d (3, 3) (2, 2) (0, 0) (1, 1) Floor
     . relu
     . conv2dForward c2 (1, 1) (2, 2)
-    . maxPool2d (3, 3) (2, 2) (0, 0) (1, 1) False
+    . maxPool2d (3, 3) (2, 2) (0, 0) (1, 1) Floor
     . relu
     . conv2dForward c1 (4, 4) (2, 2)
     $ input

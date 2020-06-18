@@ -101,7 +101,7 @@ instance HasForward CNN Tensor Tensor where
         . reshape [batchSize, channels * (9 * 9)]
         -- . reshape [batchSize, -1]
         -- kernel stride padding dilation ceilMode
-        . maxPool2d (3, 3) (3, 3) (0, 0) (1, 1) FloorMode
+        . maxPool2d (3, 3) (3, 3) (0, 0) (1, 1) Floor
         . relu
         . conv2dForward cnnConv0 (1, 1) (2, 2) 
         . reshape [batchSize, 1 , 28, 28]
