@@ -248,7 +248,7 @@ executable prune
   import:              config
   hs-source-dirs:      distill
   main-is:             Prune.hs
-  other-modules:       Distill, Dataset, Model
+  other-modules:       Distill, Dataset, Model, Plot
   ghc-options:         -fno-warn-partial-type-signatures
   build-depends:       libtorch-ffi
                      , bytestring >= 0.10.8

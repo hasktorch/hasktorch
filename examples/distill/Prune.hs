@@ -3,10 +3,8 @@
 module Main where
 
 import System.Cmd (system)
-import Data.Text (Text, pack)
-import Graphics.Vega.VegaLite hiding (sample, shape)
-
 import Dataset
+import Plot (scatter)
 import Torch
 import Model
 
@@ -82,15 +80,7 @@ main = do
     (mnistTrain, mnistTest) <- loadMNIST "datasets/mnist"
     putStrLn "Running Prune"
     (original, derived) <- runPrune mnistTrain
-
-    let dat = dataFromColumns [Parse [(pack "x", FoNumber), (pack "y", FoNumber)]]
-          . dataColumn (pack "x") (Numbers [1, 2, 3])
-          . dataColumn (pack "y") (Numbers [5, 2, 3])
-    let enc = encoding
-          . position X [PName (pack "x"), PmType Quantitative]
-          . position Y [PName (pack "y"), PmType Quantitative]
-    let vegaPlot = toVegaLite [mark Square [MTooltip TTEncoding], dat [], enc [], width 800, height 800]
-    toHtmlFile "plot.html" vegaPlot
+    scatter (asTensor [1 :: Float, 2, 3]) (asTensor [5 :: Float, 2, 3])
 
     system "open plot.html"
     putStrLn "Done"
