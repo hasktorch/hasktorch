@@ -116,14 +116,14 @@ newMain forward model optim numEpochs = do
       trainingData = DatasetMock { getBatchMock = getBatchMnist @batchSize rawTrainingData numTrain
                                    , numIters = numTrain
                                    }
-      testData = DatasetMock { getBatchMock = getBatchMnist  @batchSize rawTestData numTest
+      testData = DatasetMock { getBatchMock = getBatchMnist @batchSize rawTestData numTest
                              , numIters = numTest
                              }
-  trainingInputs <- makeFoldWithTransform id trainingData numEpochs
-  evalInputs <- makeFoldWithTransform id testData numEpochs
+  trainingInputs <- makeFoldWithTransform id trainingData 
+  evalInputs <- makeFoldWithTransform id testData 
 
-  runBatches @batchSize @device model optim
-    crossEntropyLoss 1e-3 forward trainingInputs evalInputs numEpochs (full $ I.length rawTestData)
+  runBatches @batchSize @device
+    model optim crossEntropyLoss 1e-3 forward trainingInputs evalInputs numEpochs (full $ I.length rawTestData)
 
 
 lossAndErrorCount
