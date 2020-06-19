@@ -5,10 +5,10 @@
         "homepage": "",
         "owner": "input-output-hk",
         "repo": "hackage.nix",
-        "rev": "5c74d8440ce1925e6542ab028e27ac93b70a4f59",
+        "rev": "3edc6e64a995955c96b043d7f30e32db56605b52",
         "sha256": "1rfaf8zwciryshyfg02wz0q7phimi37bmp9rl1y6gl13k3pmj812",
         "type": "tarball",
-        "url": "https://github.com/input-output-hk/hackage.nix/archive/5c74d8440ce1925e6542ab028e27ac93b70a4f59.tar.gz",
+        "url": "https://github.com/input-output-hk/hackage.nix/archive/3edc6e64a995955c96b043d7f30e32db56605b52.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "haskell-nix": {
@@ -17,10 +17,10 @@
         "homepage": "https://input-output-hk.github.io/haskell.nix",
         "owner": "input-output-hk",
         "repo": "haskell.nix",
-        "rev": "794acb7b013e8b1508b0ab3aa28ac7c57344f4ea",
-        "sha256": "1lnhmjwil5pc9r674ghh3iljcpa63gysj1shlmn23dnx83ish7v9",
+        "rev": "1383a63ff6005bba577635b9e054375dc7a296d0",
+        "sha256": "0v67kr40wdkz5qifikv93p5bqca5wrw4qda90w5qvyahs1dplgv8",
         "type": "tarball",
-        "url": "https://github.com/input-output-hk/haskell.nix/archive/794acb7b013e8b1508b0ab3aa28ac7c57344f4ea.tar.gz",
+        "url": "https://github.com/input-output-hk/haskell.nix/archive/1383a63ff6005bba577635b9e054375dc7a296d0.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "hls-nix": {
@@ -29,10 +29,10 @@
         "homepage": null,
         "owner": "korayal",
         "repo": "hls-nix",
-        "rev": "3ac16995f2cd2b929d9cfb03a1f931a4d9f0030e",
-        "sha256": "14bdw27j0dvkifj3pgjq0ir7lsvs3qrkkykllj1hhfhrzhravrqb",
+        "rev": "b2a69294b4123a5167ad3789cdbe8d8fc06df5ce",
+        "sha256": "1915a2azmrmb7z8z2ic4gwk2d50pb2z1k1hlkhnpczimrcv0lkzm",
         "type": "tarball",
-        "url": "https://github.com/korayal/hls-nix/archive/3ac16995f2cd2b929d9cfb03a1f931a4d9f0030e.tar.gz",
+        "url": "https://github.com/korayal/hls-nix/archive/b2a69294b4123a5167ad3789cdbe8d8fc06df5ce.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "niv": {
