@@ -10,7 +10,7 @@ sed -e 's/inline-c ==.*,/inline-c ==0.9.0.0,/g' \
     -e 's/inline-c-cpp ==.*,/inline-c-cpp ==0.4.0.0,/g' \
     -e 's/ghc-typelits-natnormalise ==.*,/ghc-typelits-natnormalise ==0.7,/g' \
     -e 's/ghc-typelits-knownnat ==.*,/ghc-typelits-knownnat ==0.7,/g' \
-    -e 's/ghc-typelits-extra ==.*,/ghc-typelits-extra ==0.3.2,/g' \
+    -e 's/ghc-typelits-extra ==.*,/ghc-typelits-extra ==0.4,/g' \
     > cabal.project.freeze
 fi
 
