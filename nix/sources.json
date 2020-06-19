@@ -6,7 +6,7 @@
         "owner": "input-output-hk",
         "repo": "hackage.nix",
         "rev": "3edc6e64a995955c96b043d7f30e32db56605b52",
-        "sha256": "1rfaf8zwciryshyfg02wz0q7phimi37bmp9rl1y6gl13k3pmj812",
+        "sha256": "0y8ir14415y8m5y5y9j8vgv42k0b1zbl4nhp6774w31sm361nd0b",
         "type": "tarball",
         "url": "https://github.com/input-output-hk/hackage.nix/archive/3edc6e64a995955c96b043d7f30e32db56605b52.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
