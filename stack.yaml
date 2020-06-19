@@ -23,8 +23,8 @@ extra-deps:
 # libtorch-ffi
 - inline-c-cpp-0.4.0.0
 # hasktorch
-- ghc-typelits-natnormalise-0.7
-- ghc-typelits-knownnat-0.7
+- ghc-typelits-natnormalise-0.7.2
+- ghc-typelits-knownnat-0.7.2
 - ghc-typelits-extra-0.4
 # examples/typed-transformer
 - git: git://github.com/hasktorch/pipes-text.git
