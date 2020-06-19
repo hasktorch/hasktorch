@@ -28,11 +28,12 @@ data DatasetMock m tensor = DatasetMock { getBatchMock :: Int -> m tensor
                                         , numIters :: Iter
                                         }
 
-class ConcurrentDataset dataset numWorkers where
-  getBatchConcur :: Iter -> WorkerId -> IO tensor
-
 class Dataset dataset tensor where
-  getBatch :: Iter -> IO tensor
+  getBatch :: dataset -> Iter -> IO tensor
+  numItersDataset :: forall batchSize . dataset -> Int
+
+class Dataset dataset tensor => ConcurrentDataset dataset numWorkers tensor where
+  getBatchConcur :: dataset -> Iter -> WorkerId -> IO tensor
 
 data RunBatch = Final | KeepTrain  deriving (Eq, Show)
 
@@ -49,31 +50,28 @@ readBatches DatasetMock{..} transformBox = do
 runTransforms :: MonadIO m => (tensor -> tensor') -> Input (tensor, RunBatch) -> Output (tensor', RunBatch) -> Effect m ()
 runTransforms transforms transformBox trainBox = fromInput transformBox >->  P.map (first transforms) >-> toOutput trainBox
 
-makeFoldWithTransform ::
-  _ => (batch -> batch')
+makeFoldWithTransform :: _
+  => (batch -> batch')
   -> DatasetMock IO (batch, RunBatch)
-  -> Int
   -> IO ((b -> batch' -> m b) -> b -> m b) 
-makeFoldWithTransform transforms dataset numEpochs = createTrainLoop
-  where createTrainLoop  =  do
+makeFoldWithTransform transforms dataset = do
           -- TODO: we can allow different buffer sizes
           -- which would be necessary for data echoing
             (toTransformBox, fromTransformBox, sealTransform) <- spawn' (bounded 1)
             (toBatches, fromBatches, sealBatch) <- spawn' (bounded 1)
-            batchReader <-  async $ do runEffect $ replicateM_ numEpochs $ readBatches dataset toTransformBox 
-            transformer <-  async $ do runEffect $ runTransforms transforms fromTransformBox toBatches
-                                       atomically sealTransform
-                                       atomically sealBatch
-            pure (\foldFn initial -> P.foldM foldFn (pure initial) pure (takeBatch fromBatches))
+            async $ do runEffect $ forever $ readBatches dataset toTransformBox 
+            async $ do runEffect $ runTransforms transforms fromTransformBox toBatches
 
-makeFold :: 
-    _ => DatasetMock IO (batch, RunBatch)
-    -> Int
+            pure (\foldFn initial -> do res <- P.foldM foldFn (pure initial) pure (takeBatch fromBatches)
+                                        pure res
+                 )
+
+makeFold :: _
+    => DatasetMock IO (batch, RunBatch)
     -> IO ((b -> batch -> m b) -> b -> m b)
-makeFold dataset numEpochs = createTrainLoop
+makeFold dataset = createTrainLoop
   where createTrainLoop  =  do
             (toBatches, fromBatches, sealBatch) <- spawn' (bounded 1)
-            batchReader <-  async $ do runEffect $ replicateM_ numEpochs $ readBatches dataset toBatches
-                                       atomically sealBatch
-
+            async $ runEffect $ forever $ readBatches dataset toBatches
             pure (\foldFn initial -> P.foldM foldFn (pure initial) pure (takeBatch fromBatches))
+
