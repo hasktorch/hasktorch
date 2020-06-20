@@ -4,6 +4,7 @@ module Main where
 
 import System.Cmd (system)
 import Dataset
+import Graphics.Vega.VegaLite hiding (sample, shape)
 import Plot (histogram, scatter)
 import Torch
 import Model
@@ -46,7 +47,7 @@ runPrune mnistData = do
     -- l1
     l1 <- train 
         optimSpec {
-            numIters = 200,
+            numIters = 100,
             lossFn = \t t' -> 
                 let regWeights = head (selectWeights pruneSpec $ initRef) in
                     let regTerm = l1Loss ReduceSum regWeights (zerosLike regWeights) in
@@ -55,8 +56,18 @@ runPrune mnistData = do
         mnistData 
         initRef
 
+    print "weights ref"
+    plt <- histogram (toDependent . weight . cnnFC0 $ ref)
+    toHtmlFile "plot0.html" plt
+    system "open plot0.html"
+
+    print "weights l1"
+    plt <- histogram (toDependent . weight . cnnFC0 $ l1)
+    toHtmlFile "plot1.html" plt
+    system "open plot1.html"
+
     let resultWt = head $ (selectWeights pruneSpec) l1 
-    print $ resultWt
+    -- print $ resultWt
     print $ shape resultWt
 
     print "pruning"
@@ -81,7 +92,6 @@ main = do
     putStrLn "Running Prune"
     (original, derived) <- runPrune mnistTrain
     -- scatter (asTensor [1 :: Float, 2, 3]) (asTensor [5 :: Float, 2, 3])
-    histogram (asTensor [5 :: Float, 2, 3])
-
-    system "open plot.html"
+    -- toHtmlFile "plot.html" <$> histogram (asTensor [5 :: Float, 2, 3]) 
+    -- system "open plot.html"
     putStrLn "Done"

@@ -14,12 +14,10 @@ scatter x y = do
     let enc = encoding
           . position X [PName ("x"), PmType Quantitative]
           . position Y [PName ("y"), PmType Quantitative]
-    let vegaPlot = toVegaLite [mark Circle [MTooltip TTEncoding], dat [], enc [], width 400, height 400]
-    toHtmlFile "plot.html" vegaPlot
+    pure $ toVegaLite [mark Circle [MTooltip TTEncoding], dat [], enc [], width 400, height 400]
 
 histogram x = do
     let x' = asValue . toDType Double $ x
     let dat = dataFromColumns [Parse [("x", FoNumber)]] . dataColumn "x" (Numbers x')
-    let enc = (encoding . position X [ PName "x", PmType Quantitative, PBin [] ] . position Y [ PAggregate Count, PmType Quantitative ])
-    let vegaPlot = toVegaLite [ mark Bar [], dat [], enc [] ]
-    toHtmlFile "plot.html" vegaPlot
+    let enc = (encoding . position X [ PName "x", PmType Quantitative, PBin [ Step 0.005 ] ] . position Y [ PAggregate Count, PmType Quantitative ])
+    pure $ toVegaLite [ mark Bar [], dat [], enc [] ]
