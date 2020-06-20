@@ -4,7 +4,7 @@ module Main where
 
 import System.Cmd (system)
 import Dataset
-import Plot (scatter)
+import Plot (histogram, scatter)
 import Torch
 import Model
 
@@ -80,7 +80,8 @@ main = do
     (mnistTrain, mnistTest) <- loadMNIST "datasets/mnist"
     putStrLn "Running Prune"
     (original, derived) <- runPrune mnistTrain
-    scatter (asTensor [1 :: Float, 2, 3]) (asTensor [5 :: Float, 2, 3])
+    -- scatter (asTensor [1 :: Float, 2, 3]) (asTensor [5 :: Float, 2, 3])
+    histogram (asTensor [5 :: Float, 2, 3])
 
     system "open plot.html"
     putStrLn "Done"
