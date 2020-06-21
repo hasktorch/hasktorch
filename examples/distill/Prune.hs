@@ -5,7 +5,7 @@ module Main where
 import System.Cmd (system)
 import Dataset
 import Graphics.Vega.VegaLite hiding (sample, shape)
-import Plot (histogram, scatter)
+import Plot
 import Torch
 import Model
 
@@ -35,7 +35,7 @@ runPrune mnistData = do
     let optimSpec = OptimSpec {
         optimizer = GD,
         batchSize = 256,
-        numIters = 200,
+        numIters = 1500,
         learningRate = 1e-6, 
         lossFn = nllLoss' 
     }
@@ -55,28 +55,33 @@ runPrune mnistData = do
             -- numIters = 1000,
             lossFn = \t t' -> 
                 let regWeights = head (selectWeights pruneSpec $ initRef) in
-                     nllLoss' t t' + 0.01 * l1 regWeights 
+                     nllLoss' t t' + 0.05 * l1 regWeights 
             }
         mnistData 
         initRef
 
+    print "weights0 init"
+    plt <- strip (toDependent . weight . cnnFC0 $ initRef)
+    toHtmlFile "plot0.html" plt
+    system "open plot0.html"
+
     print "weights0 ref"
-    plt <- histogram (toDependent . weight . cnnFC0 $ ref)
+    plt <- strip (toDependent . weight . cnnFC0 $ ref)
     toHtmlFile "plot0.html" plt
     system "open plot0.html"
 
     print "weights1 ref"
-    plt <- histogram (toDependent . weight . cnnFC1 $ ref)
+    plt <- strip (toDependent . weight . cnnFC1 $ ref)
     toHtmlFile "plot0.html" plt
     system "open plot0.html"
 
     print "weights0 l1"
-    plt <- histogram (toDependent . weight . cnnFC0 $ l1Model)
+    plt <- strip (toDependent . weight . cnnFC0 $ l1Model)
     toHtmlFile "plot0l1.html" plt
     system "open plot0l1.html"
 
     print "weights1 l1"
-    plt <- histogram (toDependent . weight . cnnFC1 $ l1Model)
+    plt <- strip (toDependent . weight . cnnFC1 $ l1Model)
     toHtmlFile "plot1l1.html" plt
     system "open plot1l1.html"
 
