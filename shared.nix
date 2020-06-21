@@ -1,9 +1,9 @@
 let sources = import ./nix/sources.nix; in
 { haskellNix ? import sources.haskell-nix { sourcesOverride = sources; }
 , haskellNixOverlays ? (pkgsNew: pkgsOld: { haskell-nix = pkgsOld.haskell-nix // {
-                  hackageSrc = sources.hackage-nix;
-                  # stackageSrc = sources.stackage-nix;
-                }; })
+    hackageSrc = sources.hackage-nix;
+    stackageSrc = sources.stackage-nix;
+  }; })
 , nixpkgsSrc ? haskellNix.sources.nixpkgs-2003
 , haskellCompiler ? "ghc8101"
 , shellBuildInputs ? []
