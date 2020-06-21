@@ -19,5 +19,8 @@ scatter x y = do
 histogram x = do
     let x' = asValue . toDType Double $ x
     let dat = dataFromColumns [Parse [("x", FoNumber)]] . dataColumn "x" (Numbers x')
-    let enc = (encoding . position X [ PName "x", PmType Quantitative, PBin [ Step 0.005 ] ] . position Y [ PAggregate Count, PmType Quantitative ])
+    let enc = (encoding 
+            . position X [ PName "x", PmType Quantitative, PBin [ Step 0.005 ] ] 
+            . position Y [ PAggregate Count, PmType Quantitative ] 
+            . tooltip [ TName "x" ] ) 
     pure $ toVegaLite [ mark Bar [], dat [], enc [] ]

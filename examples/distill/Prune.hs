@@ -22,6 +22,9 @@ l1Prune :: Float -> Tensor -> Tensor
 l1Prune threshold t =
     Torch.abs t `lt` (asTensor threshold)
 
+l1 :: Tensor -> Tensor
+l1 w = l1Loss ReduceSum w (zerosLike w)
+
 -- | Setup pruning parameters and run
 runPrune :: (Dataset d) => d -> IO (CNN, CNN) 
 runPrune mnistData = do
@@ -32,7 +35,7 @@ runPrune mnistData = do
     let optimSpec = OptimSpec {
         optimizer = GD,
         batchSize = 256,
-        numIters = 50,
+        numIters = 200,
         learningRate = 1e-6, 
         lossFn = nllLoss' 
     }
@@ -41,32 +44,43 @@ runPrune mnistData = do
 
     let pruneSpec = PruneSpec {
         ref = initRef,
-        selectWeights = (:[]) . toDependent . weight . cnnFC0 
+        -- selectWeights = (:[]) . toDependent . weight . cnnFC0 
+        selectWeights = \m -> [toDependent . weight . cnnFC0 $ m,
+                               toDependent . weight . cnnFC1 $ m]
     }
 
     -- l1
-    l1 <- train 
+    l1Model <- train 
         optimSpec {
-            numIters = 100,
+            -- numIters = 1000,
             lossFn = \t t' -> 
                 let regWeights = head (selectWeights pruneSpec $ initRef) in
-                    let regTerm = l1Loss ReduceSum regWeights (zerosLike regWeights) in
-                        nllLoss' t t' + 1 * regTerm 
+                     nllLoss' t t' + 0.01 * l1 regWeights 
             }
         mnistData 
         initRef
 
-    print "weights ref"
+    print "weights0 ref"
     plt <- histogram (toDependent . weight . cnnFC0 $ ref)
     toHtmlFile "plot0.html" plt
     system "open plot0.html"
 
-    print "weights l1"
-    plt <- histogram (toDependent . weight . cnnFC0 $ l1)
-    toHtmlFile "plot1.html" plt
-    system "open plot1.html"
+    print "weights1 ref"
+    plt <- histogram (toDependent . weight . cnnFC1 $ ref)
+    toHtmlFile "plot0.html" plt
+    system "open plot0.html"
 
-    let resultWt = head $ (selectWeights pruneSpec) l1 
+    print "weights0 l1"
+    plt <- histogram (toDependent . weight . cnnFC0 $ l1Model)
+    toHtmlFile "plot0l1.html" plt
+    system "open plot0l1.html"
+
+    print "weights1 l1"
+    plt <- histogram (toDependent . weight . cnnFC1 $ l1Model)
+    toHtmlFile "plot1l1.html" plt
+    system "open plot1l1.html"
+
+    let resultWt = head $ (selectWeights pruneSpec) l1Model
     -- print $ resultWt
     print $ shape resultWt
 
@@ -74,24 +88,18 @@ runPrune mnistData = do
     let pruned = undefined
     pure (ref, pruned)
   where
-    channels = 4
+    channels = 3
     refSpec = 
         CNNSpec
             -- input channels, output channels, kernel height, kernel width
             (Conv2dSpec 1 channels 5 5)
-            -- (LinearSpec (784*channels) 100)
+            -- (no ADT : maxPool2d (3, 3) (3, 3) (0, 0) (1, 1) Floor )
             (LinearSpec (9*9*channels) 100)
+            (LinearSpec 100 30)
 
 main = do
-    putStrLn "Dim Check"
-    print $ maxPool2dDim (3, 3) (3, 3) (0, 0) (1, 1) Floor (28, 28)
-    print $ maxPool2dDim (3, 3) (6, 3) (0, 0) (1, 1) Floor (28, 28)
-    print $ maxPool2dDim (3, 3) (6, 6) (0, 0) (1, 1) Floor (28, 28)
     putStrLn "Loading Data"
     (mnistTrain, mnistTest) <- loadMNIST "datasets/mnist"
     putStrLn "Running Prune"
     (original, derived) <- runPrune mnistTrain
-    -- scatter (asTensor [1 :: Float, 2, 3]) (asTensor [5 :: Float, 2, 3])
-    -- toHtmlFile "plot.html" <$> histogram (asTensor [5 :: Float, 2, 3]) 
-    -- system "open plot.html"
     putStrLn "Done"

@@ -52,19 +52,19 @@ data MLPSpec = MLPSpec {
     } deriving (Show, Eq)
 
 data MLP = MLP { 
-    l0 :: Linear,
-    l1 :: Linear,
-    l2 :: Linear
+    mlpFC0 :: Linear,
+    mlpFC1 :: Linear,
+    mlpFC2 :: Linear
     } deriving (Generic, Show)
 
 mlpTemp :: Float -> MLP -> Tensor -> Tensor
 mlpTemp temperature MLP{..} input = 
     logSoftmaxTemp (asTensor temperature)
-    . linearForward l2
+    . linearForward mlpFC2
     . relu
-    . linearForward l1
+    . linearForward mlpFC1
     . relu
-    . linearForward l0
+    . linearForward mlpFC0
     $ input
   where
     logSoftmaxTemp t z = (z/t) - log (sumDim (Dim 1) KeepDim Float (exp (z/t)))
@@ -85,18 +85,22 @@ instance Randomizable MLPSpec MLP where
 
 data CNNSpec = CNNSpec {
     conv0Spec :: Conv2dSpec,
-    fc0Spec :: LinearSpec
+    fc0Spec :: LinearSpec,
+    fc1Spec :: LinearSpec
 } deriving (Show, Eq)
 
 data CNN = CNN {
     cnnConv0 :: Conv2d,
-    cnnFC0 :: Linear
+    cnnFC0 :: Linear,
+    cnnFC1:: Linear
 } deriving (Generic, Show)
 
 instance Parameterized CNN
 instance HasForward CNN Tensor Tensor where
     forward CNN {..} input =
         relu
+        . linearForward cnnFC1
+        . relu
         . linearForward cnnFC0
         . reshape [batchSize, channels * (9 * 9)]
         -- . reshape [batchSize, -1]
@@ -114,3 +118,4 @@ instance Randomizable CNNSpec CNN where
     sample CNNSpec {..} = CNN 
         <$> sample conv0Spec
         <*> sample fc0Spec
+        <*> sample fc1Spec
