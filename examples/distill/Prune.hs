@@ -61,9 +61,10 @@ runPrune mnistData = do
         initRef
 
     print "weights0 init"
+
     plt <- strip (toDependent . weight . cnnFC0 $ initRef)
-    toHtmlFile "plot0.html" plt
-    system "open plot0.html"
+    toHtmlFile "plotInit.html" plt
+    system "open plotInit.html"
 
     print "weights0 ref"
     plt <- strip (toDependent . weight . cnnFC0 $ ref)
@@ -72,8 +73,8 @@ runPrune mnistData = do
 
     print "weights1 ref"
     plt <- strip (toDependent . weight . cnnFC1 $ ref)
-    toHtmlFile "plot0.html" plt
-    system "open plot0.html"
+    toHtmlFile "plot1.html" plt
+    system "open plot1.html"
 
     print "weights0 l1"
     plt <- strip (toDependent . weight . cnnFC0 $ l1Model)
