@@ -5,7 +5,7 @@ set -xe
 if ghc --version | grep 8.10 ; then
 ln -s cabal.project.freeze.ghc810 cabal.project.freeze
 else
-curl https://www.stackage.org/lts-16.1/cabal.config | \
+curl https://www.stackage.org/nightly-2020-06-21/cabal.config | \
 sed -e 's/inline-c ==.*,/inline-c ==0.9.0.0,/g' \
     -e 's/inline-c-cpp ==.*,/inline-c-cpp ==0.4.0.0,/g' \
     -e 's/ghc-typelits-natnormalise ==.*,/ghc-typelits-natnormalise ==0.7.2,/g' \
