@@ -1,6 +1,9 @@
 let sources = import ./nix/sources.nix; in
 { haskellNix ? import sources.haskell-nix { sourcesOverride = sources; }
-, haskellNixOverlays ? (pkgsNew: pkgsOld: { haskell-nix = pkgsOld.haskell-nix // { hackageSrc = sources.hackage-nix; }; })
+, haskellNixOverlays ? (pkgsNew: pkgsOld: { haskell-nix = pkgsOld.haskell-nix // {
+                  hackageSrc = sources.hackage-nix;
+                  # stackageSrc = sources.stackage-nix;
+                }; })
 , nixpkgsSrc ? haskellNix.sources.nixpkgs-2003
 , haskellCompiler ? "ghc8101"
 , shellBuildInputs ? []
@@ -64,7 +67,13 @@ let
       };
       shell = hsPkgs.shellFor {
         withHoogle = true;
-        tools = { cabal = "3.2.0.0"; ghcide = "0.2.0"; };
+        tools = {
+          # cabal = "3.2.0.0";
+          ghcide = "0.2.0";
+        };
+        nativeBuildInputs = [(pkgs.haskell-nix.project {
+          src = sources.cabal;
+        }).cabal-install.components.exes.cabal];  
         buildInputs = shellBuildInputs;
         exactDeps = false; # set to true as soon as haskell.nix issue #231 is resolved
         shellHook = ''
