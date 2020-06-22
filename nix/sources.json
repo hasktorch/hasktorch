@@ -6,7 +6,7 @@
         "owner": "input-output-hk",
         "repo": "hackage.nix",
         "rev": "7d25e265119d93663868b4a92e52d38b735dbda2",
-        "sha256": "0xx3pwnaa4zddl2w8gc3vnrhinj51g1r1fakzp4akmrfwd3r5qk4",
+        "sha256": "0xdchjl15lv5ji7i1wwn271hqwcpp13dihcqjn228mpn1dm9igv1",
         "type": "tarball",
         "url": "https://github.com/input-output-hk/hackage.nix/archive/7d25e265119d93663868b4a92e52d38b735dbda2.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
@@ -18,7 +18,7 @@
         "owner": "input-output-hk",
         "repo": "stackage.nix",
         "rev": "83c88f9212aea0c5f9b925aac2bd16abf2ed1e3a",
-        "sha256": "0xdchjl15lv5ji7i1wwn271hqwcpp13dihcqjn228mpn1dm9igv1",
+        "sha256": "0xx3pwnaa4zddl2w8gc3vnrhinj51g1r1fakzp4akmrfwd3r5qk4",
         "type": "tarball",
         "url": "https://github.com/input-output-hk/stackage.nix/archive/83c88f9212aea0c5f9b925aac2bd16abf2ed1e3a.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
