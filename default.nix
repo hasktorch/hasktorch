@@ -7,21 +7,16 @@
 
 { system ? builtins.currentSystem
 , crossSystem ? null
-# allows to cutomize ghc and profiling (see ./nix/haskell.nix):
+# allows to customize ghc and profiling (see ./nix/haskell.nix):
 , config ? {}
-# allows to override dependencies of the project without modifications,
-# eg. to test build against local checkout of nixpkgs and iohk-nix:
-# nix build -f default.nix hasktorch --arg sourcesOverride '{
-#   pytorch-world = ../pytorch-world;
-#   nixpkgs  = ../nixpkgs;
-# }'
+# allows to override dependencies of the project without modifications
 , sourcesOverride ? {}
 , cudaSupport ? false
 , cudaMajorVersion ? null
 # pinned version of nixpkgs augmented with various overlays.
-, pkgs ? import ./nix/default.nix {
-    inherit system crossSystem config sourcesOverride cudaSupport cudaMajorVersion;
-  }
+, pkgs ? import ./nix/default.nix { inherit system crossSystem config sourcesOverride cudaSupport cudaMajorVersion; }
+# git sha1 hash, to be passed when not building from a git work tree.
+, gitrev ? null
 }:
 
 # commonLib includes util.nix and nixpkgs lib.
@@ -73,7 +68,7 @@ let
       withHoogle = true;
     };
 
-    # Building this doesn't work in the sandbox. Pass `--option sandbox relaxed` or
+    # Building the stack shell doesn't work in the sandbox. Pass `--option sandbox relaxed` or
     # `--option sandbox false` to be able to build this. You have to be root in order to that.
     # stackShell = import ./nix/stack-shell.nix {
     #   inherit pkgs;

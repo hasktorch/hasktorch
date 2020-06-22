@@ -1,7 +1,3 @@
-############################################################################
-# Builds Haskell packages with Haskell.nix
-############################################################################
-
 { lib
 , stdenv
 , pkgs
@@ -38,14 +34,10 @@ let
     # these extras will provide additional packages
     # ontop of the package set derived from cabal resolution.
     pkg-def-extras = [(hackage: {
-      packages = {
-          # Win32 = hackage.Win32."2.8.3.0".revisions.default;
-      };
+      packages = { };
     })];
 
     modules = [
-      # { compiler.nix-name = compiler; }
-
       # TODO: Compile all local packages with -Werror:
       # {
       #   packages = lib.genAttrs projectPackages
