@@ -26,6 +26,7 @@
 
 # commonLib includes util.nix and nixpkgs lib.
 with pkgs; with commonLib;
+
 let
 
   haskellPackages = recRecurseIntoAttrs
@@ -72,25 +73,28 @@ let
       withHoogle = true;
     };
 
-    # TODO: derivation has '__noChroot' set, but that's not allowed when 'sandbox' is 'true'
+    # Building this doesn't work in the sandbox. Pass `--option sandbox relaxed` or
+    # `--option sandbox false` to be able to build this. You have to be root in order to that.
     # stackShell = import ./nix/stack-shell.nix {
     #   inherit pkgs;
     # };
 
     # Build the documentation.
     combined-haddock = let
-      haddock-combine = pkgs.callPackage ./nix/haddock-combine.nix {
-        runCommand = pkgs.runCommand;
-        lib = pkgs.lib;
+      haddock-combine = callPackage ./nix/haddock-combine.nix {
+        runCommand = runCommand;
+        lib = lib;
         ghc = hasktorchHaskellPackages.ghcWithPackages (ps: []);
       };
       in haddock-combine {
         hspkgs = builtins.attrValues libs;
-        prologue = pkgs.writeTextFile {
+        prologue = writeTextFile {
           name = "prologue";
           text = "Documentation for hasktorch and its libraries.";
         };
       };
   };
+
 in
+
   self

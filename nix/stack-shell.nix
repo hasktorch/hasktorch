@@ -1,7 +1,7 @@
 
 # This shell file is specifically to be used with Stack.
 #
-# This file allows using Stack's built-in Nix integration.  This means that you
+# This file allows using Stack's built-in Nix integration. This means that you
 # can compile hasktorch with Stack by using a command like `stack --nix build`.
 # Stack will use Nix to download and build required system libraries (like GHC
 # and libtorch), and then build Haskell libraries like normal.
@@ -12,7 +12,7 @@
 , cudaSupport ? false
 , cudaMajorVersion ? null
 , withHoogle ? false
-, pkgs ? import ./nix/default.nix {
+, pkgs ? import ./default.nix {
     inherit config sourcesOverride cudaSupport cudaMajorVersion;
   }
 }:
@@ -35,7 +35,7 @@ let
 
     phases = ["nobuildPhase"];
     nobuildPhase = "echo '${pkgs.lib.concatStringsSep "\n" ([ghc] ++ buildInputs)}' > $out";
-    # meta.platforms = lib.platforms.unix;
+    meta.platforms = lib.platforms.unix;
     
     inherit withHoogle;
   };
