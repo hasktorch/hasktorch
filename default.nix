@@ -32,6 +32,9 @@ let
     # the Haskell.nix package set, reduced to local packages.
     (selectProjectPackages hasktorchHaskellPackages);
 
+  libs = collectComponents' "library" haskellPackages;
+  exes = collectComponents' "exes" haskellPackages;
+
   self = {
     # Inherit haskellPackages so that you can still access things that are not exposed below.
     inherit haskellPackages;
@@ -44,14 +47,14 @@ let
     benchmarks = collectComponents' "benchmarks" haskellPackages;
 
     # Grab hasktorch's library components.
-    inherit (collectComponents' "library" haskellPackages)
+    inherit (libs)
       libtorch-ffi
       libtorch-ffi-helper
       hasktorch
       ;
 
     # Grab hasktorch's executable components.
-    inherit (collectComponents' "exes" haskellPackages)
+    inherit (exes)
       codegen
       examples
       experimental
@@ -74,8 +77,20 @@ let
     #   inherit pkgs;
     # };
 
-    # TODO: build the documentation.
-    # haddock-combined = ...;
+    # Build the documentation.
+    combined-haddock = let
+      haddock-combine = pkgs.callPackage ./nix/haddock-combine.nix {
+        runCommand = pkgs.runCommand;
+        lib = pkgs.lib;
+        ghc = hasktorchHaskellPackages.ghcWithPackages (ps: []);
+      };
+      in haddock-combine {
+        hspkgs = builtins.attrValues libs;
+        prologue = pkgs.writeTextFile {
+          name = "prologue";
+          text = "Documentation for hasktorch and its libraries.";
+        };
+      };
   };
 in
   self
