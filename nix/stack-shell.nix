@@ -18,13 +18,17 @@
 }:
 with pkgs;
 let
+  ghc = hasktorchHaskellPackages.ghcWithPackages (ps: []);
+
   stack-shell = haskell.lib.buildStackProject rec {
+    inherit ghc;
+
     name = "hasktorch-stack-dev-shell";
 
-    ghc = pkgs.ghc;
+    # ghc = pkgs.ghc;
     
     extraArgs = [
-      "--extra-include-dirs=${pkgs.torch}/include/torch/csrc/api/include"
+      "--extra-include-dirs=${torch}/include/torch/csrc/api/include"
     ];
     
     buildInputs = [
@@ -34,7 +38,7 @@ let
     ];
 
     phases = ["nobuildPhase"];
-    nobuildPhase = "echo '${pkgs.lib.concatStringsSep "\n" ([ghc] ++ buildInputs)}' > $out";
+    nobuildPhase = "echo '${lib.concatStringsSep "\n" ([ghc] ++ buildInputs)}' > $out";
     meta.platforms = lib.platforms.unix;
     
     inherit withHoogle;
