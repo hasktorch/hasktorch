@@ -1,40 +1,80 @@
-args@{ cudaVersion ? null, ... }:
+############################################################################
+# Hasktorch Nix build
+#
+# TODO: document top-level attributes and how to build them
+#
+############################################################################
 
-let
-  shared = (import ./shared.nix { inherit (args); });
-  default = (
-    if cudaVersion == null
-    then shared.defaultCpu
-    else if cudaVersion == 9
-      then shared.defaultCuda92
-      else shared.defaultCuda102
-  );
-  pkgs = default.pkgs;
-  hsPkgs = default.hsPkgs;
-  getComponents = group: name:
-    pkgs.haskell-nix.haskellLib.collectComponents group (package: (builtins.tryEval (package.identifier.name == name)).value) hsPkgs;
-in
-  assert cudaVersion == null || (cudaVersion == 9 && shared.defaultCuda92 != { }) || (cudaVersion == 10 && shared.defaultCuda102 != { });
-  {
-    codegen = (getComponents "exes" "codegen").codegen;
-    libtorch-ffi = (getComponents "library" "libtorch-ffi").libtorch-ffi;
-    hasktorch = (getComponents "library" "hasktorch").hasktorch;
-    examples = (getComponents "exes" "examples").examples;
-    experimental = (getComponents "exes" "experimental").experimental;
-
-    combined-haddock = let
-      haddock-combine = pkgs.callPackage ./nix/haddock-combine.nix {
-        runCommand = pkgs.runCommand;
-        lib = pkgs.lib;
-        ghc = hsPkgs.ghcWithPackages (ps: []);
-      };
-      projectPackages = pkgs.haskell-nix.haskellLib.selectProjectPackages hsPkgs;
-      toHaddock = pkgs.haskell-nix.haskellLib.collectComponents' "library" projectPackages;
-      in haddock-combine {
-        hspkgs = builtins.attrValues toHaddock;
-        prologue = pkgs.writeTextFile {
-          name = "prologue";
-          text = "Documentation for hasktorch and its libraries.";
-        };
-      };
+{ system ? builtins.currentSystem
+, crossSystem ? null
+# allows to cutomize ghc and profiling (see ./nix/haskell.nix):
+, config ? {}
+# allows to override dependencies of the project without modifications,
+# eg. to test build against local checkout of nixpkgs and iohk-nix:
+# nix build -f default.nix hasktorch --arg sourcesOverride '{
+#   pytorch-world = ../pytorch-world;
+#   nixpkgs  = ../nixpkgs;
+# }'
+, sourcesOverride ? {}
+, cudaSupport ? false
+, cudaMajorVersion ? null
+# pinned version of nixpkgs augmented with various overlays.
+, pkgs ? import ./nix/default.nix {
+    inherit system crossSystem config sourcesOverride cudaSupport cudaMajorVersion;
   }
+}:
+
+# commonLib includes util.nix and nixpkgs lib.
+with pkgs; with commonLib;
+let
+
+  haskellPackages = recRecurseIntoAttrs
+    # the Haskell.nix package set, reduced to local packages.
+    (selectProjectPackages hasktorchHaskellPackages);
+
+  self = {
+    # Inherit haskellPackages so that you can still access things that are not exposed below.
+    inherit haskellPackages;
+
+    inherit (haskellPackages.hasktorch.identifier) version;
+
+    # `tests` are the test suites which have been built.
+    tests = collectComponents' "tests" haskellPackages;
+    # `benchmarks` (only built, not run).
+    benchmarks = collectComponents' "benchmarks" haskellPackages;
+
+    # Grab hasktorch's library components.
+    inherit (collectComponents' "library" haskellPackages)
+      libtorch-ffi
+      libtorch-ffi-helper
+      hasktorch
+      ;
+
+    # Grab hasktorch's executable components.
+    inherit (collectComponents' "exes" haskellPackages)
+      codegen
+      examples
+      experimental
+      ;
+
+    checks = recurseIntoAttrs {
+      # `checks.tests` collect results of executing the tests:
+      tests = collectChecks haskellPackages;
+      # Example of a linting script used by Buildkite.
+      # lint-fuzz = callPackage ./nix/check-lint-fuzz.nix {};
+    };
+
+    shell = import ./shell.nix {
+      inherit pkgs;
+      withHoogle = true;
+    };
+
+    stackShell = import ./nix/stack-shell.nix {
+      inherit pkgs;
+    };
+
+    # Attrset of PDF builds of LaTeX documentation.
+    # docs = pkgs.callPackage ./docs/default.nix {};
+  };
+in
+  self

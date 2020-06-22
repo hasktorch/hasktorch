@@ -7,27 +7,39 @@
 # and libtorch), and then build Haskell libraries like normal.
 #
 # This approach allows for more reproducibility than using Stack without Nix.
-
-{ withHoogle ? false
-}@args:
-
+{ config ? {}
+, sourcesOverride ? {}
+, cudaSupport ? false
+, cudaMajorVersion ? null
+, withHoogle ? false
+, pkgs ? import ./nix/default.nix {
+    inherit config sourcesOverride cudaSupport cudaMajorVersion;
+  }
+}:
+with pkgs;
 let
-  shared = import ../shared.nix {};
-  pkgs = shared.defaultCpu.pkgs;
+  stack-shell = haskell.lib.buildStackProject rec {
+    name = "hasktorch-stack-dev-shell";
+
+    ghc = pkgs.ghc;
+    
+    extraArgs = [
+      "--extra-include-dirs=${pkgs.torch}/include/torch/csrc/api/include"
+    ];
+    
+    buildInputs = [
+      git # needed so that stack can get extra-deps from github
+      torch
+      zlib
+    ];
+
+    phases = ["nobuildPhase"];
+    nobuildPhase = "echo '${pkgs.lib.concatStringsSep "\n" ([ghc] ++ buildInputs)}' > $out";
+    # meta.platforms = lib.platforms.unix;
+    
+    inherit withHoogle;
+  };
+
 in
 
-with pkgs;
-
-haskell.lib.buildStackProject {
-  name = "stack-build-hasktorch";
-  ghc = haskell.compiler.ghc883;
-  extraArgs = [
-    "--extra-include-dirs=${pkgs.torch}/include/torch/csrc/api/include"
-  ];
-  buildInputs = [
-    git # needed so that stack can get extra-deps from github
-    torch
-    zlib
-  ];
-  inherit withHoogle;
-}
+  stack-shell
