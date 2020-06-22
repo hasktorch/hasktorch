@@ -4,7 +4,6 @@ on: [push, pull_request]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -18,9 +17,6 @@ jobs:
         docker rmi $(docker image ls -aq)
         df -h
     - uses: cachix/install-nix-action@v10
-    - name: Setup repo
-      run: |
-        git submodule init && git submodule update
     - uses: cachix/cachix-action@releases/v6
       with:
         name: hasktorch
@@ -28,10 +24,3 @@ jobs:
         skipNixBuild: false
         file: experimental/jupyterlab/default.nix
         nixBuildArgs: --option sandbox false 
-#    - name: Build
-#      run: |
-#        nix-env -i cachix
-#        cachix use hasktorch
-#        cachix use jupyterwith
-#        cd experimental/jupyterlab
-#        nix-shell --option sandbox false --command "echo"
