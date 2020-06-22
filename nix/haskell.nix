@@ -79,7 +79,8 @@ let
         packages.cryptonite-openssl.package.identifier.name = "cryptonite-openssl";
 
         # Disable cabal-doctest tests by turning off custom setups
-        # packages.hasktorch.package.buildType = lib.mkForce "Simple";
+        # TODO: Enable cabal-doctest tests
+        packages.hasktorch.package.buildType = lib.mkForce "Simple";
 
         # Some tests don't work on every platform
         # packages.hasktorch.components.all.platforms =
@@ -88,11 +89,22 @@ let
         #   with stdenv.lib.platforms; lib.mkForce [ linux darwin ];
 
         # Turn off doctests
+        # TODO: see if we can turn these on again
         packages.codegen.components.tests.doctests.doCheck = false;
+        packages.hasktorch.components.tests.doctests.doCheck = false;
       }
 
+      # Stamp packages with the git revision
       {
-        packages.examples.components.all.postInstall = setGitRev; # lib.mkForce setGitRev;
+        # packages.codegen.components.exes.codegen.postInstall = setGitRev;
+        # packages.examples.components.exes.examples.postInstall = setGitRev;
+        # Work around Haskell.nix issue when setting postInstall on components
+        packages.codegen.components.all.postInstall = lib.mkForce setGitRev;
+        packages.libtorch-ffi.components.all.postInstall = lib.mkForce setGitRev;
+        packages.libtorch-ffi-helper.components.all.postInstall = lib.mkForce setGitRev;
+        packages.hasktorch.components.all.postInstall = lib.mkForce setGitRev;
+        packages.examples.components.all.postInstall = lib.mkForce setGitRev;
+        packages.experimental.components.all.postInstall = lib.mkForce setGitRev;
       }
     ];
   };

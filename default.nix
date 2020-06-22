@@ -69,12 +69,13 @@ let
       withHoogle = true;
     };
 
-    stackShell = import ./nix/stack-shell.nix {
-      inherit pkgs;
-    };
+    # TODO: derivation has '__noChroot' set, but that's not allowed when 'sandbox' is 'true'
+    # stackShell = import ./nix/stack-shell.nix {
+    #   inherit pkgs;
+    # };
 
-    # Attrset of PDF builds of LaTeX documentation.
-    # docs = pkgs.callPackage ./docs/default.nix {};
+    # TODO: build the documentation.
+    # haddock-combined = ...;
   };
 in
   self

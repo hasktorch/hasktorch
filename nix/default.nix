@@ -10,7 +10,7 @@
 }:
 
 # assert that the correct cuda versions are used
-assert !cudaSupport || (cudaMajorVersion == "9" || cudaMajorVersion == "10.2");
+assert cudaSupport -> (cudaMajorVersion == "9" || cudaMajorVersion == "10");
 
 let
   sources = import ./sources.nix { inherit pkgs; }
