@@ -43,6 +43,8 @@ let
     inherit withHoogle;
   };
 
+  # Use to get a shell with niv to update the sources. Launch with
+  # nix-shell -A devops ./shell.nix
   devops = stdenv.mkDerivation {
     name = "devops-shell";
     buildInputs = [
