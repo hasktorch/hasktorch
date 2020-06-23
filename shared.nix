@@ -71,7 +71,7 @@ let
           # cabal = "3.2.0.0";
           ghcide = "0.2.0";
         };
-        nativeBuildInputs = [(pkgs.haskell-nix.stackProject {
+        nativeBuildInputs = [(pkgs.haskell-nix.cabalProject {
           src = sources.cabal;
         }).cabal-install.components.exes.cabal];  
         buildInputs = shellBuildInputs;
