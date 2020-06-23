@@ -20,6 +20,7 @@ import Pipes.Concurrent
 import Control.Concurrent.Async
 import Control.Monad
 import Control.Arrow (first)
+import qualified Control.Foldl as L
 
 
 type Iter = Int
@@ -63,7 +64,7 @@ runTransforms transforms transformBox trainBox = fromInput transformBox >->  P.m
 makeFoldWithTransform :: _
   => (batch -> batch')
   -> dataset
-  -> IO ((b -> batch' -> m b) -> b -> m b) 
+  -> IO (L.FoldM m batch' b -> m b)
 makeFoldWithTransform transforms dataset = do
           -- TODO: we can allow different buffer sizes
           -- which would be necessary for data echoing
@@ -71,25 +72,26 @@ makeFoldWithTransform transforms dataset = do
             (toBatches, fromBatches, sealBatch) <- spawn' (bounded 1)
             async $ runEffect $ forever $ readBatches dataset toTransformBox 
             async $ runEffect $ runTransforms transforms fromTransformBox toBatches
-
-            pure (\foldFn initial -> P.foldM foldFn (pure initial) pure (takeBatch fromBatches))
+            pure $ foldFromProducer (takeBatch fromBatches)
 
 makeFold :: (Dataset dataset batch, _)
     => dataset
-    -> IO ((b -> batch -> m b) -> b -> m b)
+    -> IO (L.FoldM m batch b -> m b)
 makeFold dataset = do
   (toBatches, fromBatches, sealBatch) <- spawn' (bounded 1)
   async $ runEffect $ forever $ readBatches dataset toBatches
-  pure (\foldFn initial -> P.foldM foldFn (pure initial) pure (takeBatch fromBatches))
+  pure $ foldFromProducer (takeBatch fromBatches)
 
-makeConcurrentFold :: (ConcurrentDataset dataset batch, _)
-  => (batch -> batch')
+makeConcurrentFold :: (ConcurrentDataset dataset batch', _)
+  => (batch' -> batch)
   -> dataset
-  -> Int -> IO ((b -> batch' -> m b) -> b -> m b)
+  -> Int
+  -> IO (L.FoldM m batch b -> m b)
 makeConcurrentFold transforms dataset numWorkers = do
   (toTransformBox, fromTransformBox, sealTransform) <- spawn' (bounded 1)
   (toBatches, fromBatches, sealBatch) <- spawn' (bounded 1)
   forM_ [1..numWorkers] $ \workerId -> async $ runEffect $ readBatchesConcurrently workerId dataset toTransformBox
   async $ runEffect $ runTransforms transforms fromTransformBox toBatches
-  pure (\foldFn initial -> P.foldM foldFn (pure initial) pure (takeBatch fromBatches))
+  pure $ foldFromProducer (takeBatch fromBatches)
   
+foldFromProducer prod fold = (L.impurely P.foldM) fold prod

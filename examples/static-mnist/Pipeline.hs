@@ -44,7 +44,7 @@ import Control.Monad.State.Lazy
 import           GHC.Generics
 import           GHC.TypeLits
 import           GHC.TypeLits.Extra
-import qualified Control.Concurrent.Async.Lifted as U -- can get rid of this dependency if we don't use StateT
+import qualified Control.Foldl as L
 
 import Common
 
@@ -54,7 +54,7 @@ type BatchedTensor device dtype batchSize features = Tensor device dtype (batchS
 instance (KnownNat batchSize) =>
   Dataset I.MnistData (BatchedTensor '( 'D.CPU, 0) 'D.Float batchSize '[784], BatchedTensor '( 'D.CPU, 0) 'D.Int64 batchSize '[]) where
   getBatch dataset iter = getBatchMnist dataset (I.length dataset `div` natValI @batchSize) iter
-  numItersDataset dataset = I.length dataset `div` natValI @batchSize
+  numIters dataset = I.length dataset `div` natValI @batchSize
 
 getBatchMnist :: forall batchSize model optim . _ => I.MnistData -> Int -> Int ->  IO _
 getBatchMnist dataset numIters iter =  
@@ -74,16 +74,16 @@ runBatches :: forall batchSize device model optim . _
   -> (Tensor device 'D.Float '[batchSize, 10] -> Tensor device 'D.Int64 '[batchSize] -> Loss device 'D.Float)
   -> LearningRate device 'D.Float
   -> (model -> Tensor device 'D.Float '[batchSize, 784] -> Tensor device 'D.Float '[batchSize, 10])
-  -> (((model,optim) -> (Tensor '( 'D.CPU, 0) 'D.Float '[batchSize, 784], Tensor '( 'D.CPU, 0) 'D.Int64 '[batchSize]) -> IO (model,optim)) -> (model,optim) -> IO (model,optim))
-  -> ((_ -> (Tensor '( 'D.CPU, 0) 'D.Float '[batchSize, 784], Tensor '( 'D.CPU, 0) 'D.Int64 '[batchSize]) -> IO _) -> _ -> IO _)
+  -> (L.FoldM IO  (Tensor '( 'D.CPU, 0) 'D.Float '[batchSize, 784], Tensor '( 'D.CPU, 0) 'D.Int64 '[batchSize]) (model,optim) -> IO (model,optim) )
+  -> (L.FoldM IO  (Tensor '( 'D.CPU, 0) 'D.Float '[batchSize, 784], Tensor '( 'D.CPU, 0) 'D.Int64 '[batchSize]) _ -> IO _)
   -> Int
   -> Tensor device 'D.Float '[]
   -> IO ()
 runBatches model optim lossFn learningRate forward trainInputs evalInputs numEpochs testSetSize = do
   void $ foldLoop (model,optim) numEpochs  $ \(model,optim) epoch -> do
     liftIO $ print $ "Running epoch " <> show epoch 
-    (newModel, newOptim) <- trainInputs (trainFold lossFn learningRate forward) (model, optim)
-    (testLoss, testError) <- evalInputs (evaluation model forward) (0,0)
+    (newModel, newOptim) <- trainInputs $ L.FoldM (trainFold lossFn learningRate forward) (pure (model, optim)) pure
+    (testLoss, testError) <- evalInputs $ L.FoldM (evaluation model forward) (pure (0,0)) pure
     liftIO $ putStrLn
       $  "Epoch: " <> show epoch
       <> ". Test loss: "
@@ -118,10 +118,10 @@ newMain forward model optim numEpochs = do
   let numTrain = I.length rawTrainingData `div` natValI @batchSize
       numTest = I.length rawTestData `div` natValI @batchSize
       trainingData = DatasetMock { getBatchMock = getBatchMnist @batchSize rawTrainingData numTrain
-                                   , numIters = numTrain
+                                   , numItersMock = numTrain
                                    }
       testData = DatasetMock { getBatchMock = getBatchMnist @batchSize rawTestData numTest
-                             , numIters = numTest
+                             , numItersMock = numTest
                              }
   -- trainingInputs <- makeFoldWithTransform id trainingData 
   -- evalInputs <- makeFoldWithTransform id testData 
