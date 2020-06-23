@@ -23,6 +23,18 @@
         "url": "https://github.com/input-output-hk/haskell.nix/archive/794acb7b013e8b1508b0ab3aa28ac7c57344f4ea.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
+    "hls-nix": {
+        "branch": "master",
+        "description": null,
+        "homepage": null,
+        "owner": "korayal",
+        "repo": "hls-nix",
+        "rev": "3ac16995f2cd2b929d9cfb03a1f931a4d9f0030e",
+        "sha256": "14bdw27j0dvkifj3pgjq0ir7lsvs3qrkkykllj1hhfhrzhravrqb",
+        "type": "tarball",
+        "url": "https://github.com/korayal/hls-nix/archive/3ac16995f2cd2b929d9cfb03a1f931a4d9f0030e.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "iohk-nix": {
         "branch": "master",
         "description": "nix scripts shared across projects",
@@ -35,16 +47,16 @@
         "url": "https://github.com/input-output-hk/iohk-nix/archive/ccad0bf9ceb3a68a837886f8032da0e70529d183.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
-    "hls-nix": {
+    "jupyterWith": {
         "branch": "master",
-        "description": null,
-        "homepage": null,
-        "owner": "korayal",
-        "repo": "hls-nix",
-        "rev": "3ac16995f2cd2b929d9cfb03a1f931a4d9f0030e",
-        "sha256": "14bdw27j0dvkifj3pgjq0ir7lsvs3qrkkykllj1hhfhrzhravrqb",
+        "description": "declarative and reproducible Jupyter environments - powered by Nix",
+        "homepage": "",
+        "owner": "tweag",
+        "repo": "jupyterWith",
+        "rev": "4614c6d4b762375a88362bf1804336fce69bc044",
+        "sha256": "007fp6vip2bfpg6qrp34wcipppjj19lqy2ahwsl9h91ymd70gz2c",
         "type": "tarball",
-        "url": "https://github.com/korayal/hls-nix/archive/3ac16995f2cd2b929d9cfb03a1f931a4d9f0030e.tar.gz",
+        "url": "https://github.com/tweag/jupyterWith/archive/4614c6d4b762375a88362bf1804336fce69bc044.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "niv": {

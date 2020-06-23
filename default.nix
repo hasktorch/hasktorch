@@ -82,7 +82,7 @@ let
       haddock-combine = callPackage ./nix/haddock-combine.nix {
         runCommand = runCommand;
         lib = lib;
-        ghc = hasktorchHaskellPackages.ghcWithPackages (ps: []);
+        ghc = hasktorchHaskellPackages.ghcWithPackages (_: [ ]);
       };
       in haddock-combine {
         hspkgs = builtins.attrValues libs;
