@@ -2,7 +2,10 @@
 # It just takes the shell attribute from default.nix.
 { config ? {}
 , sourcesOverride ? {}
+# If true, activates CUDA support
 , cudaSupport ? false
+# If cudaSupport is true, this needs to be set to a valid CUDA major version number, e.g. 10:
+# nix-shell --arg cudaSupport true --argstr cudaMajorVersion 10
 , cudaMajorVersion ? null
 , withHoogle ? false
 , pkgs ? import ./nix/default.nix {
@@ -34,13 +37,13 @@ let
     exactDeps = false;
 
     shellHook = ''
-      export CPATH=${pkgs.torch}/include/torch/csrc/api/include
+      export CPATH=${torch}/include/torch/csrc/api/include
     '';
 
     inherit withHoogle;
   };
 
-  devops = pkgs.stdenv.mkDerivation {
+  devops = stdenv.mkDerivation {
     name = "devops-shell";
     buildInputs = [
       niv

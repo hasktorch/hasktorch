@@ -9,9 +9,12 @@
 , crossSystem ? null
 # allows to customize ghc and profiling (see ./nix/haskell.nix):
 , config ? {}
-# allows to override dependencies of the project without modifications
+# allows to override dependencies of the hasktorch project without modifications
 , sourcesOverride ? {}
+# if true, activates CUDA support
 , cudaSupport ? false
+# if cudaSupport is true, this needs to be set to a valid CUDA major version number, e.g. 10:
+# nix-build --arg cudaSupport true --argstr cudaMajorVersion 10
 , cudaMajorVersion ? null
 # pinned version of nixpkgs augmented with various overlays.
 , pkgs ? import ./nix/default.nix { inherit system crossSystem config sourcesOverride cudaSupport cudaMajorVersion; }

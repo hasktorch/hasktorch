@@ -74,10 +74,10 @@ let
       (pkgs: _: with pkgs; {
         inherit gitrev cudaSupport;
 
-        # commonLib: mix pkgs.lib with iohk-nix utils and hasktorch:
+        # commonLib: mix pkgs.lib with iohk-nix utils and sources:
         commonLib = lib // iohkNix
           // import ./util.nix { inherit haskell-nix; }
-          # also expose hasktorch sources, nixpkgs and overlays
+          # also expose sources, nixpkgs and overlays
           // { inherit overlays sources nixpkgs; };
       })
       # haskell-nix-ified hasktorch cabal project:
