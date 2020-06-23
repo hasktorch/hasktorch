@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -25,53 +26,70 @@ type Iter = Int
 type WorkerId = Int
 
 data DatasetMock m tensor = DatasetMock { getBatchMock :: Int -> m tensor
-                                        , numIters :: Iter
+                                        , numItersMock :: Iter
                                         }
 
-class Dataset dataset tensor where
-  getBatch :: dataset -> Iter -> IO tensor
-  numItersDataset :: forall batchSize . dataset -> Int
+class Dataset dataset batch  where
+  getBatch :: dataset -> Iter -> IO batch
+  numIters :: dataset -> Int
 
-class Dataset dataset tensor => ConcurrentDataset dataset numWorkers tensor where
-  getBatchConcur :: dataset -> Iter -> WorkerId -> IO tensor
+class Dataset dataset batch => ConcurrentDataset dataset batch where
+  getBatchConcur :: WorkerId -> dataset -> Iter -> IO batch
 
 data RunBatch = Final | KeepTrain  deriving (Eq, Show)
 
 takeBatch :: MonadIO m => Input (batch, RunBatch) -> Producer batch m ()  
 takeBatch input = fromInput input >-> P.takeWhile ((/=) Final . snd) >-> P.map fst
 
-readBatches ::
-  MonadIO m => DatasetMock m (tensor, RunBatch) -> Output (tensor, RunBatch)  -> Effect m () 
-readBatches DatasetMock{..} transformBox = do
-  -- TODO: might want to pair the RunBatch value in this function
-  for (each [1..numIters]) (\iter -> yieldBatch iter >-> toOutput transformBox)
-    where yieldBatch iter = (lift $ getBatchMock iter) >>= yield
+readBatchesConcurrently :: forall dataset batch m .
+  (MonadIO m, Dataset dataset batch, ConcurrentDataset dataset batch) => Int -> dataset -> Output (batch, RunBatch)  -> Effect m () 
+readBatchesConcurrently workerId dataset transformBox = 
+  for (each [1..numIters @dataset @batch dataset ]) (\iter -> yieldBatch iter >-> toOutput transformBox)
+    where yieldBatch iter =
+             (liftIO $ getBatchConcur workerId dataset iter) >>= yield . (, runBatch iter)
+          runBatch iter = if numIters @dataset @batch dataset == iter then Final else KeepTrain
+
+readBatches :: forall dataset batch m.
+  (MonadIO m, Dataset dataset batch) => dataset -> Output (batch, RunBatch)  -> Effect m () 
+readBatches dataset outputBox = 
+  for (each [1..numIters @dataset @batch dataset]) (\iter -> yieldBatch iter >-> toOutput outputBox)
+    where yieldBatch iter = (liftIO $ getBatch dataset iter) >>= yield . (, runBatch iter)
+          runBatch iter = if numIters @dataset @batch dataset == iter then Final else KeepTrain
+
 
 runTransforms :: MonadIO m => (tensor -> tensor') -> Input (tensor, RunBatch) -> Output (tensor', RunBatch) -> Effect m ()
 runTransforms transforms transformBox trainBox = fromInput transformBox >->  P.map (first transforms) >-> toOutput trainBox
 
 makeFoldWithTransform :: _
   => (batch -> batch')
-  -> DatasetMock IO (batch, RunBatch)
+  -> dataset
   -> IO ((b -> batch' -> m b) -> b -> m b) 
 makeFoldWithTransform transforms dataset = do
           -- TODO: we can allow different buffer sizes
           -- which would be necessary for data echoing
             (toTransformBox, fromTransformBox, sealTransform) <- spawn' (bounded 1)
             (toBatches, fromBatches, sealBatch) <- spawn' (bounded 1)
-            async $ do runEffect $ forever $ readBatches dataset toTransformBox 
-            async $ do runEffect $ runTransforms transforms fromTransformBox toBatches
+            async $ runEffect $ forever $ readBatches dataset toTransformBox 
+            async $ runEffect $ runTransforms transforms fromTransformBox toBatches
 
-            pure (\foldFn initial -> do res <- P.foldM foldFn (pure initial) pure (takeBatch fromBatches)
-                                        pure res
-                 )
-
-makeFold :: _
-    => DatasetMock IO (batch, RunBatch)
-    -> IO ((b -> batch -> m b) -> b -> m b)
-makeFold dataset = createTrainLoop
-  where createTrainLoop  =  do
-            (toBatches, fromBatches, sealBatch) <- spawn' (bounded 1)
-            async $ runEffect $ forever $ readBatches dataset toBatches
             pure (\foldFn initial -> P.foldM foldFn (pure initial) pure (takeBatch fromBatches))
 
+makeFold :: (Dataset dataset batch, _)
+    => dataset
+    -> IO ((b -> batch -> m b) -> b -> m b)
+makeFold dataset = do
+  (toBatches, fromBatches, sealBatch) <- spawn' (bounded 1)
+  async $ runEffect $ forever $ readBatches dataset toBatches
+  pure (\foldFn initial -> P.foldM foldFn (pure initial) pure (takeBatch fromBatches))
+
+makeConcurrentFold :: (ConcurrentDataset dataset batch, _)
+  => (batch -> batch')
+  -> dataset
+  -> Int -> IO ((b -> batch' -> m b) -> b -> m b)
+makeConcurrentFold transforms dataset numWorkers = do
+  (toTransformBox, fromTransformBox, sealTransform) <- spawn' (bounded 1)
+  (toBatches, fromBatches, sealBatch) <- spawn' (bounded 1)
+  forM_ [1..numWorkers] $ \workerId -> async $ runEffect $ readBatchesConcurrently workerId dataset toTransformBox
+  async $ runEffect $ runTransforms transforms fromTransformBox toBatches
+  pure (\foldFn initial -> P.foldM foldFn (pure initial) pure (takeBatch fromBatches))
+  
