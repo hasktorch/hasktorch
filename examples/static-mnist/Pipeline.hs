@@ -48,7 +48,13 @@ import qualified Control.Concurrent.Async.Lifted as U -- can get rid of this dep
 
 import Common
 
--- type BatchedTensor device dtype batchSize features = Tensor device dtype (batchSize ': features ': '[])
+type BatchedTensor device dtype batchSize features = Tensor device dtype (batchSize ': features )
+
+
+instance (KnownNat batchSize) =>
+  Dataset I.MnistData (BatchedTensor '( 'D.CPU, 0) 'D.Float batchSize '[784], BatchedTensor '( 'D.CPU, 0) 'D.Int64 batchSize '[]) where
+  getBatch dataset iter = getBatchMnist dataset (I.length dataset `div` natValI @batchSize) iter
+  numItersDataset dataset = I.length dataset `div` natValI @batchSize
 
 getBatchMnist :: forall batchSize model optim . _ => I.MnistData -> Int -> Int ->  IO _
 getBatchMnist dataset numIters iter =  
@@ -59,19 +65,17 @@ getBatchMnist dataset numIters iter =
       target = I.getLabels @batchSize dataset indexes
   in
     if iter == numIters
-    then pure ((input, target), Final)
-    else pure ((input, target), KeepTrain)
+    then pure (input, target)
+    else pure (input, target)
 
-runBatches 
-  :: forall batchSize device model optim shape1 shape2 . 
-     _ 
+runBatches :: forall batchSize device model optim . _ 
   => model 
   -> optim
-  -> (Tensor device 'D.Float '[batchSize, 10] -> Tensor device 'D.Int64 shape1 -> Loss device 'D.Float)
+  -> (Tensor device 'D.Float '[batchSize, 10] -> Tensor device 'D.Int64 '[batchSize] -> Loss device 'D.Float)
   -> LearningRate device 'D.Float
-  -> (model -> Tensor device 'D.Float shape2 -> Tensor device 'D.Float '[batchSize, 10])
-  -> _ 
-  -> _
+  -> (model -> Tensor device 'D.Float '[batchSize, 784] -> Tensor device 'D.Float '[batchSize, 10])
+  -> (((model,optim) -> (Tensor '( 'D.CPU, 0) 'D.Float '[batchSize, 784], Tensor '( 'D.CPU, 0) 'D.Int64 '[batchSize]) -> IO (model,optim)) -> (model,optim) -> IO (model,optim))
+  -> ((_ -> (Tensor '( 'D.CPU, 0) 'D.Float '[batchSize, 784], Tensor '( 'D.CPU, 0) 'D.Int64 '[batchSize]) -> IO _) -> _ -> IO _)
   -> Int
   -> Tensor device 'D.Float '[]
   -> IO ()
@@ -119,8 +123,10 @@ newMain forward model optim numEpochs = do
       testData = DatasetMock { getBatchMock = getBatchMnist @batchSize rawTestData numTest
                              , numIters = numTest
                              }
-  trainingInputs <- makeFoldWithTransform id trainingData 
-  evalInputs <- makeFoldWithTransform id testData 
+  -- trainingInputs <- makeFoldWithTransform id trainingData 
+  -- evalInputs <- makeFoldWithTransform id testData 
+  trainingInputs <- makeFold rawTrainingData 
+  evalInputs <- makeFold rawTestData 
 
   runBatches @batchSize @device
     model optim crossEntropyLoss 1e-3 forward trainingInputs evalInputs numEpochs (full $ I.length rawTestData)
