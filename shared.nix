@@ -75,7 +75,7 @@ let
           src = sources.cabal;
         }).cabal-install.components.exes.cabal];  
         buildInputs = shellBuildInputs;
-        exactDeps = false; # set to true as soon as haskell.nix issue #231 is resolved
+        exactDeps = true; # false; # set to true as soon as haskell.nix issue #231 is resolved
         shellHook = ''
           export CPATH=${pkgs.torch}/include/torch/csrc/api/include
         '';
