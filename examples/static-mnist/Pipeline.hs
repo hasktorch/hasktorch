@@ -15,44 +15,39 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 module Pipeline where
 
-import Torch.Data.Pipeline
-import qualified Torch.Device                  as D
-import qualified Torch.DType                   as D
-import qualified Torch.Tensor                  as D
-import qualified Torch.Functional               as D
-import qualified Torch.TensorFactories         as D
-import Torch.Typed.Tensor
+import           Torch.Data.Pipeline
+import qualified Torch.Device as D
+import qualified Torch.DType as D
+import qualified Torch.Tensor as D
+import qualified Torch.Functional as D
+import qualified Torch.TensorFactories as D
+import           Torch.Typed.Tensor
 import qualified Torch.Typed.Vision as I
-import Torch.Typed.Functional
-import Torch.Typed.Aux
-import Torch.Typed.NN
-import Torch.Typed.Optim
+import           Torch.Typed.Functional
+import           Torch.Typed.Aux
+import           Torch.Typed.NN
+import           Torch.Typed.Optim
 import           Torch.Typed.Factories
 
   -- new
-import Torch.HList
-import Torch.Typed.Parameter hiding (toDevice)
-import Torch.Typed.Autograd
-import qualified Torch.Internal.Cast                     as ATen
-import qualified Torch.Internal.Class                    as ATen
-import qualified Torch.Internal.Type                     as ATen
-import qualified Torch.Internal.Managed.Type.Tensor      as ATen
-  -- new
+import           Torch.HList
+import           Torch.Typed.Parameter hiding (toDevice)
+import           Torch.Typed.Autograd
+import qualified Torch.Internal.Cast as ATen
+import qualified Torch.Internal.Class as ATen
+import qualified Torch.Internal.Type as ATen
+import qualified Torch.Internal.Managed.Type.Tensor as ATen
 
-
-import Control.Monad.State.Lazy
+import           Control.Monad.IO.Class (MonadIO(..))
+import           Control.Monad (void)
 import           GHC.Generics
 import           GHC.TypeLits
 import           GHC.TypeLits.Extra
-import qualified Control.Foldl as L
 
-import Common
-
-type BatchedTensor device dtype batchSize features = Tensor device dtype (batchSize ': features )
-
+import           Common
 
 instance (KnownNat batchSize) =>
-  Dataset I.MnistData (BatchedTensor '( 'D.CPU, 0) 'D.Float batchSize '[784], BatchedTensor '( 'D.CPU, 0) 'D.Int64 batchSize '[]) where
+  Dataset I.MnistData (Tensor '( 'D.CPU, 0) 'D.Float '[batchSize, 784], Tensor '( 'D.CPU, 0) 'D.Int64 '[batchSize]) where
   getBatch dataset iter = getBatchMnist dataset (I.length dataset `div` natValI @batchSize) iter
   numIters dataset = I.length dataset `div` natValI @batchSize
 
@@ -74,16 +69,16 @@ runBatches :: forall batchSize device model optim . _
   -> (Tensor device 'D.Float '[batchSize, 10] -> Tensor device 'D.Int64 '[batchSize] -> Loss device 'D.Float)
   -> LearningRate device 'D.Float
   -> (model -> Tensor device 'D.Float '[batchSize, 784] -> Tensor device 'D.Float '[batchSize, 10])
-  -> (L.FoldM IO  (Tensor '( 'D.CPU, 0) 'D.Float '[batchSize, 784], Tensor '( 'D.CPU, 0) 'D.Int64 '[batchSize]) (model,optim) -> IO (model,optim) )
-  -> (L.FoldM IO  (Tensor '( 'D.CPU, 0) 'D.Float '[batchSize, 784], Tensor '( 'D.CPU, 0) 'D.Int64 '[batchSize]) _ -> IO _)
+  -> (FoldM IO  (Tensor '( 'D.CPU, 0) 'D.Float '[batchSize, 784], Tensor '( 'D.CPU, 0) 'D.Int64 '[batchSize]) (model,optim) -> IO (model,optim) )
+  -> (FoldM IO  (Tensor '( 'D.CPU, 0) 'D.Float '[batchSize, 784], Tensor '( 'D.CPU, 0) 'D.Int64 '[batchSize]) _ -> IO _)
   -> Int
   -> Tensor device 'D.Float '[]
   -> IO ()
 runBatches model optim lossFn learningRate forward trainInputs evalInputs numEpochs testSetSize = do
   void $ foldLoop (model,optim) numEpochs  $ \(model,optim) epoch -> do
     liftIO $ print $ "Running epoch " <> show epoch 
-    (newModel, newOptim) <- trainInputs $ L.FoldM (trainFold lossFn learningRate forward) (pure (model, optim)) pure
-    (testLoss, testError) <- evalInputs $ L.FoldM (evaluation model forward) (pure (0,0)) pure
+    (newModel, newOptim) <- trainInputs $ FoldM (trainFold lossFn learningRate forward) (pure (model, optim)) pure
+    (testLoss, testError) <- evalInputs $ FoldM (evaluation model forward) (pure (0,0)) pure
     liftIO $ putStrLn
       $  "Epoch: " <> show epoch
       <> ". Test loss: "
@@ -114,7 +109,7 @@ evaluation model forward (totalLoss, totalError) (testData, testLabels) = do
 newMain :: forall batchSize device . _ => _ -> _ -> _
 newMain forward model optim numEpochs = do
   (rawTrainingData, rawTestData) <- liftIO $ I.initMnist "data"
-    trainingInputs <- makeFold rawTrainingData 
+  trainingInputs <- makeFold rawTrainingData 
   evalInputs <- makeFold rawTestData 
 
   runBatches @batchSize @device
