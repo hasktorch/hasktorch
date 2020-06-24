@@ -68,7 +68,7 @@ getBatchMnist dataset numIters iter =
     then pure (input, target)
     else pure (input, target)
 
-runBatches :: forall batchSize device model optim . _ 
+runBatches :: forall batchSize device model optim . _
   => model 
   -> optim
   -> (Tensor device 'D.Float '[batchSize, 10] -> Tensor device 'D.Int64 '[batchSize] -> Loss device 'D.Float)
@@ -99,7 +99,6 @@ trainFold lossFn learningRate forward (model, optim) (trainData, trainLabels) = 
   let loss = lossFn prediction target
   liftIO $ runStep  model optim loss learningRate
 
-
 evaluation :: forall device shape batchSize model optim . _
   => _
   -> _
@@ -115,22 +114,11 @@ evaluation model forward (totalLoss, totalError) (testData, testLabels) = do
 newMain :: forall batchSize device . _ => _ -> _ -> _
 newMain forward model optim numEpochs = do
   (rawTrainingData, rawTestData) <- liftIO $ I.initMnist "data"
-  let numTrain = I.length rawTrainingData `div` natValI @batchSize
-      numTest = I.length rawTestData `div` natValI @batchSize
-      trainingData = DatasetMock { getBatchMock = getBatchMnist @batchSize rawTrainingData numTrain
-                                   , numItersMock = numTrain
-                                   }
-      testData = DatasetMock { getBatchMock = getBatchMnist @batchSize rawTestData numTest
-                             , numItersMock = numTest
-                             }
-  -- trainingInputs <- makeFoldWithTransform id trainingData 
-  -- evalInputs <- makeFoldWithTransform id testData 
-  trainingInputs <- makeFold rawTrainingData 
+    trainingInputs <- makeFold rawTrainingData 
   evalInputs <- makeFold rawTestData 
 
   runBatches @batchSize @device
     model optim crossEntropyLoss 1e-3 forward trainingInputs evalInputs numEpochs (full $ I.length rawTestData)
-
 
 lossAndErrorCount
   :: forall batchSize device shape .
