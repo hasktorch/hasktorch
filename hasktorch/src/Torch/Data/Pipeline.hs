@@ -43,7 +43,7 @@ takeBatch :: MonadIO m => Input (batch, RunBatch) -> Producer batch m ()
 takeBatch input = fromInput input >-> P.takeWhile ((/=) Final . snd) >-> P.map fst
 
 readBatchesConcurrently :: forall dataset batch m .
-  (MonadIO m, Dataset dataset batch, ConcurrentDataset dataset batch) => Int -> dataset -> Output (batch, RunBatch)  -> Effect m () 
+  (MonadIO m, ConcurrentDataset dataset batch) => Int -> dataset -> Output (batch, RunBatch)  -> Effect m () 
 readBatchesConcurrently workerId dataset transformBox = 
   for (each [1..numIters @dataset @batch dataset ]) (\iter -> yieldBatch iter >-> toOutput transformBox)
     where yieldBatch iter =
