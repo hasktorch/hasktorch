@@ -131,7 +131,6 @@ test-suite spec
                     , directory
                     , JuicyPixels
                     , inline-c-cpp
-  build-tool-depends:  hspec-discover:hspec-discover
 
 test-suite doctests
   if os(darwin) || flag(disable-doctest)

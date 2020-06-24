@@ -16,5 +16,4 @@ RUN cd deps/ && ./get-deps.sh -a cu101
 ENV LD_LIBRARY_PATH="/hasktorch/deps/libtorch/lib/:/hasktorch/deps/mklml/lib/:${LD_LIBRARY_PATH}"
 RUN ./setup-cabal.sh
 RUN cabal v2-update
-RUN cabal v2-install hspec-discover
 RUN cabal v2-build all --jobs=2 --write-ghc-environment-files=always

@@ -59,7 +59,6 @@ test-suite spec
                     , QuickCheck
                     , mtl
                     , static-mnist
-  build-tool-depends: hspec-discover:hspec-discover
 
 executable static-mnist-cnn
   import:              config
