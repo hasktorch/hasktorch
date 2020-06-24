@@ -48,9 +48,11 @@ let
       inherit pkgs;
       hsPkgs = pkgs.haskell-nix.cabalProject {
         src = pkgs.haskell-nix.haskellLib.cleanGit { name = "hasktorch"; src = ./.; };
+        # ghc = pkgs.buildPackages.pkgs.haskell-nix.compiler.${haskellCompiler};
         compiler-nix-name = haskellCompiler;
         modules = [
           ({ config, ... }: {
+            reinstallableLibGhc = true;
             packages.codegen.components.tests.doctests.doCheck = false;
             packages.codegen.doHaddock = false;
             packages.libtorch-ffi.configureFlags = [
@@ -73,6 +75,7 @@ let
         };
         nativeBuildInputs = [(pkgs.haskell-nix.cabalProject {
           src = sources.cabal;
+          modules = [ { reinstallableLibGhc = true; } ];
         }).cabal-install.components.exes.cabal];  
         buildInputs = shellBuildInputs;
         exactDeps = true; # false; # set to true as soon as haskell.nix issue #231 is resolved
