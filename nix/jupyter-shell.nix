@@ -3,30 +3,36 @@
 , sourcesOverride ? {}
 , cudaSupport ? false
 , cudaMajorVersion ? null
-, withHoogle ? false
 , pkgs ? import ./default.nix {
     inherit config sourcesOverride cudaSupport cudaMajorVersion;
   }
 }:
 with pkgs;
 let
-  sources = import ./sources.nix { inherit pkgs; }
-    // sourcesOverride;
 
-  jupyter = import sources.jupyterWith {};
+  # hsPkgs = {
+  #   ghcWithPackages = packages: (hasktorchHaskellPackages.shellFor {
+  #     # buildInputs =
+  #     #   with haskellPackages; [ ihaskell ];
+  #     packages = _: [];
+  #     additional = p: packages (p // (with haskellPackages; { inherit ihaskell; }));
+  #   }).ghc;
+  # };
 
-  iHaskell = jupyter.kernels.iHaskellWith {
-    haskellPackages = hasktorchHaskellPackages;
+  iHaskell = jupyterWith.kernels.iHaskellWith {
+    # haskellPackages = hasktorchHaskellPackages;
+    # haskellPackages = hsPkgs;
+    inherit haskellPackages;
     name = "haskell";
     packages = p: with p; [
-      hasktorch
+      # hasktorch
       # matrix
       # hmatrix
       # monad-bayes
-      # hvega
+      hvega
       # statistics 
       # vector
-      # ihaskell-hvega
+      ihaskell-hvega
       # aeson
       # aeson-pretty
       # formatting
@@ -37,9 +43,9 @@ let
     ];
   };
 
-  jupyterEnvironment = jupyter.jupyterlabWith {
+  jupyterEnvironment = jupyterWith.jupyterlabWith {
     kernels = [ iHaskell ];
-    directory = jupyter.mkDirectoryWith {
+    directory = jupyterWith.mkDirectoryWith {
       extensions = [
         "jupyterlab-ihaskell"
       ];

@@ -50,7 +50,7 @@ let
         packages.examples.components.all.enableExecutableProfiling = true;
       })
 
-      # Add dependencies
+      # Add non-Haskell dependencies
       {
         packages.libtorch-ffi = {
           configureFlags = [

@@ -82,6 +82,11 @@ let
       })
       # haskell-nix-ified hasktorch cabal project:
       (import ./pkgs.nix)
+    ]
+    # jupyterWith overlays:
+    ++ [
+      (import "${sources.jupyterWith}/nix/python-overlay.nix")
+      (import "${sources.jupyterWith}/nix/overlay.nix")
     ];
 
   pkgs = import nixpkgs {
