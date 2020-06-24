@@ -12,7 +12,14 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-module Torch.Data.Pipeline where
+module Torch.Data.Pipeline ( makeFold
+                           , makeFoldWithTransform
+                           , makeConcurrentFold
+                           , L.FoldM(..)
+                           , Dataset(..)
+                           , DatasetMock(..)
+                           , ConcurrentDataset(..)
+                           ) where
 
 import Pipes
 import qualified Pipes.Prelude as P
@@ -88,8 +95,11 @@ makeConcurrentFold :: (ConcurrentDataset dataset batch', _)
   -> Int
   -> IO (L.FoldM m batch b -> m b)
 makeConcurrentFold transforms dataset numWorkers = do
-  (toTransformBox, fromTransformBox, sealTransform) <- spawn' (bounded 1)
-  (toBatches, fromBatches, sealBatch) <- spawn' (bounded 1)
+  -- Buffer size is equal to numWorkers so that each thread can yield a batch.
+  -- This is not actually the enforced behaviour, one thread may fill the buffer with multiple batches,
+  -- but it should be better than a buffer size of 1 in this multithreaded case.
+  (toTransformBox, fromTransformBox, sealTransform) <- spawn' (bounded numWorkers)
+  (toBatches, fromBatches, sealBatch) <- spawn' (bounded numWorkers)
   forM_ [1..numWorkers] $ \workerId -> async $ runEffect $ readBatchesConcurrently workerId dataset toTransformBox
   async $ runEffect $ runTransforms transforms fromTransformBox toBatches
   pure $ foldFromProducer (takeBatch fromBatches)
