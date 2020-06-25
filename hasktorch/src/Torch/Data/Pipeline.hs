@@ -12,22 +12,26 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-module Torch.Data.Pipeline ( makeFold
+module Torch.Data.Pipeline ( takeBatch
+                           , readBatches
+                           , readBatchesConcurrently
+                           , makeFold
                            , makeFoldWithTransform
                            , makeConcurrentFold
+                           , foldFromProducer
                            , L.FoldM(..)
                            , Dataset(..)
                            , DatasetMock(..)
                            , ConcurrentDataset(..)
                            ) where
 
-import Pipes
-import qualified Pipes.Prelude as P
-import Pipes.Concurrent
-import Control.Concurrent.Async
-import Control.Monad
-import Control.Arrow (first)
+import           Control.Arrow (first)
+import           Control.Concurrent.Async
 import qualified Control.Foldl as L
+import           Control.Monad
+import           Pipes
+import           Pipes.Concurrent
+import qualified Pipes.Prelude as P
 
 
 type Iter = Int
@@ -42,7 +46,7 @@ class Dataset dataset batch  where
   numIters :: dataset -> Int
 
 class Dataset dataset batch => ConcurrentDataset dataset batch where
-  getBatchConcur :: WorkerId -> dataset -> Iter -> IO batch
+  getBatchConcurrently :: WorkerId -> dataset -> Iter -> IO batch
 
 data RunBatch = Final | KeepTrain  deriving (Eq, Show)
 
@@ -54,7 +58,7 @@ readBatchesConcurrently :: forall dataset batch m .
 readBatchesConcurrently workerId dataset transformBox = 
   for (each [1..numIters @dataset @batch dataset ]) (\iter -> yieldBatch iter >-> toOutput transformBox)
     where yieldBatch iter =
-             (liftIO $ getBatchConcur workerId dataset iter) >>= yield . (, runBatch iter)
+             (liftIO $ getBatchConcurrently workerId dataset iter) >>= yield . (, runBatch iter)
           runBatch iter = if numIters @dataset @batch dataset == iter then Final else KeepTrain
 
 readBatches :: forall dataset batch m.
@@ -68,7 +72,7 @@ readBatches dataset outputBox =
 runTransforms :: MonadIO m => (tensor -> tensor') -> Input (tensor, RunBatch) -> Output (tensor', RunBatch) -> Effect m ()
 runTransforms transforms transformBox trainBox = fromInput transformBox >->  P.map (first transforms) >-> toOutput trainBox
 
-makeFoldWithTransform :: _
+makeFoldWithTransform :: (MonadIO m, Dataset dataset batch)  
   => (batch -> batch')
   -> dataset
   -> IO (L.FoldM m batch' b -> m b)
@@ -81,7 +85,7 @@ makeFoldWithTransform transforms dataset = do
             async $ runEffect $ runTransforms transforms fromTransformBox toBatches
             pure $ foldFromProducer (takeBatch fromBatches)
 
-makeFold :: (Dataset dataset batch, _)
+makeFold :: (Dataset dataset batch, MonadIO m)
     => dataset
     -> IO (L.FoldM m batch b -> m b)
 makeFold dataset = do
@@ -89,7 +93,7 @@ makeFold dataset = do
   async $ runEffect $ forever $ readBatches dataset toBatches
   pure $ foldFromProducer (takeBatch fromBatches)
 
-makeConcurrentFold :: (ConcurrentDataset dataset batch', _)
+makeConcurrentFold :: (ConcurrentDataset dataset batch', MonadIO m)
   => (batch' -> batch)
   -> dataset
   -> Int
@@ -100,8 +104,9 @@ makeConcurrentFold transforms dataset numWorkers = do
   -- but it should be better than a buffer size of 1 in this multithreaded case.
   (toTransformBox, fromTransformBox, sealTransform) <- spawn' (bounded numWorkers)
   (toBatches, fromBatches, sealBatch) <- spawn' (bounded numWorkers)
-  forM_ [1..numWorkers] $ \workerId -> async $ runEffect $ readBatchesConcurrently workerId dataset toTransformBox
+  forM_ [1..numWorkers] $ \workerId -> async $ runEffect $ forever $ readBatchesConcurrently workerId dataset toTransformBox
   async $ runEffect $ runTransforms transforms fromTransformBox toBatches
   pure $ foldFromProducer (takeBatch fromBatches)
   
+foldFromProducer :: Producer batch -> L.FoldM m batch b
 foldFromProducer prod fold = (L.impurely P.foldM) fold prod
