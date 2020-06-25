@@ -120,6 +120,7 @@ test-suite spec
                     , TensorSpec
                     , NNSpec
                     , DimnameSpec
+                    , PipelineSpec
                     , Torch.Typed.AuxSpec
                     , Torch.Typed.TensorSpec
                     , Torch.Typed.FactoriesSpec
@@ -148,6 +149,9 @@ test-suite spec
                     , directory
                     , JuicyPixels
                     , inline-c-cpp
+                    , async
+                    , pipes
+                    , pipes-concurrency
   build-tool-depends:  hspec-discover:hspec-discover
 
 test-suite doctests
