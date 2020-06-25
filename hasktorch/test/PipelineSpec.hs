@@ -2,21 +2,21 @@
 {-# LANGUAGE FlexibleContexts #-}
 module PipelineSpec where
 
-import System.IO
-import System.Timeout
-import System.Exit
-import Control.Monad
 import Control.Concurrent
 import Control.Concurrent.Async
+import Control.Monad
 import Pipes
 import Pipes.Concurrent
+import System.Exit
+import System.IO
+import System.Timeout
 import Torch.Data.Pipeline
   
 import Test.Hspec
 
 
 defaultTimeout :: Int
-defaultTimeout = 100000  -- 1 second
+defaultTimeout = 100000  
 
 newtype MockData = MockData Int
 instance Dataset MockData Int where
@@ -32,8 +32,8 @@ testFoldTimeout dataset = do
   thread <- async $ runEffect $ readBatches dataset toBatches
   fold <- pure $ foldFromProducer (takeBatch fromBatches)
   timedOut <- async $ fold $ FoldM takeBatchThenTimeout (pure 0) pure
-  wait thread >> cancel timedOut
-  pure ()
+  wait thread
+  cancel timedOut
 
 
 testConcurrentFoldTimeout :: MockData  -> Int -> IO ()
@@ -42,9 +42,8 @@ testConcurrentFoldTimeout dataset numWorkers = do
   threads <- forM [1..numWorkers] $ \workerId -> async $ runEffect $ readBatchesConcurrently workerId dataset toBatches
   fold <- pure $ foldFromProducer (takeBatch fromBatches)
   timedOut <- async $ fold $  FoldM takeBatchThenTimeout (pure 0) pure
-
-  mapM_ wait threads >> cancel timedOut
-  pure ()
+  mapM_ wait threads
+  cancel timedOut
 
 takeBatchThenTimeout :: Int -> Int -> IO Int
 takeBatchThenTimeout _ input = threadDelay 50000 >> pure input
@@ -59,4 +58,4 @@ spec = do
   it "Tests data is flowing" $
     (runTest (testFoldTimeout $ MockData 2)) `shouldReturn` (Just ())
   it "Tests concurrent datasets yield concurrently" $
-    (runTest (testConcurrentFoldTimeout (MockData 1) 4) "yo") `shouldReturn` (Just ())
+    (runTest (testConcurrentFoldTimeout (MockData 1) 4)) `shouldReturn` (Just ())
