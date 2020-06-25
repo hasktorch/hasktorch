@@ -108,5 +108,5 @@ makeConcurrentFold transforms dataset numWorkers = do
   async $ runEffect $ runTransforms transforms fromTransformBox toBatches
   pure $ foldFromProducer (takeBatch fromBatches)
   
-foldFromProducer :: Producer batch -> L.FoldM m batch b
+foldFromProducer :: Monad m => Producer batch m () -> L.FoldM m batch b -> m b
 foldFromProducer prod fold = (L.impurely P.foldM) fold prod
