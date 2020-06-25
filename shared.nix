@@ -51,6 +51,7 @@ let
         # ghc = pkgs.buildPackages.pkgs.haskell-nix.compiler.${haskellCompiler};
         compiler-nix-name = haskellCompiler;
         modules = [
+          { reinstallableLibGhc = true; }
           ({ config, ... }: {
             reinstallableLibGhc = true;
             packages.codegen.components.tests.doctests.doCheck = false;
