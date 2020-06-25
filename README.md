@@ -97,9 +97,9 @@ For additional examples, see the `examples/` directory.
 
 ### Set up development environement in VS Code.
 If you want to develop the project in VS Code and get Haskell Tooling support,
-you will need to install [HIE(Haskell IDE Enginer)](https://github.com/haskell/haskell-ide-engine).
-Since this project uses the resolver version `lts-14.7`, so you will need to 
-install and use the corresponding version of HIE which is `hie-8.6.5`.
+you will need to install [HIE(Haskell IDE Engine)](https://github.com/haskell/haskell-ide-engine).
+Since this project uses the resolver version `lts-15.5`, so you will need to
+install and use the corresponding version of HIE which is `hie-8.8.3`.
 
 And then install the [Haskell Language Server plugin](https://marketplace.visualstudio.com/items?itemName=alanz.vscode-hie-server). If you encounter the `hie executable missing, please make sure it is installed, see github.com/haskell/haskell-ide-engine` when starting VSCode,
 first make sure that when you run:
@@ -109,7 +109,7 @@ which hie
 It should give you an output.
 And the path of the `hie` executable in the `settings.json` by adding:
 ```
-"languageServerHaskell.hieExecutablePath": "~/.local/bin/hie-8.6.5",
+"languageServerHaskell.hieExecutablePath": "~/.local/bin/hie-8.8.3",
 ``` 
 
 

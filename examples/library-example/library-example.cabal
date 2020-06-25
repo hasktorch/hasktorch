@@ -12,7 +12,7 @@ category:            Games
 build-type:          Simple
 extra-doc-files:     README.md
                    , CHANGELOG.md
-tested-with:         GHC == 8.6.5
+tested-with:         GHC == 8.8.3
 
 library
   hs-source-dirs:      src
