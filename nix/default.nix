@@ -4,9 +4,13 @@
 , config ? {}
 # Lets you override niv dependencies of the project without modifications to the source.
 , sourcesOverride ? {}
+# Version info, to be passed when not building from a git work tree
 , gitrev ? null
+# Enable CUDA support
 , cudaSupport ? false
 , cudaMajorVersion ? null
+# Add packages on top of the package set derived from cabal resolution
+, extras ? (_: {})
 }:
 
 # assert that the correct cuda versions are used
@@ -72,7 +76,7 @@ let
     # hasktorch overlays:
     ++ [
       (pkgs: _: with pkgs; {
-        inherit gitrev cudaSupport;
+        inherit gitrev cudaSupport extras;
 
         # commonLib: mix pkgs.lib with iohk-nix utils and sources:
         commonLib = lib // iohkNix

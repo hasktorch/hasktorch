@@ -9,6 +9,7 @@ pkgs: _: with pkgs; {
       config
       gitrev
       cudaSupport
+      extras
       ;
   };
 }

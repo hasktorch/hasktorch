@@ -12,6 +12,8 @@
 , gitrev ? null
 # Enable CUDA support
 , cudaSupport ? false
+# Add packages on top of the package set derived from cabal resolution
+, extras ? (_: {})
 }:
 
 let
@@ -32,10 +34,10 @@ let
     compiler-nix-name = compiler;
 
     # these extras will provide additional packages
-    # ontop of the package set derived from cabal resolution.
-    pkg-def-extras = [(hackage: {
-      packages = { };
-    })];
+    # on top of the package set derived from cabal resolution.
+    pkg-def-extras = [
+      extras
+    ];
 
     modules = [
       # TODO: Compile all local packages with -Werror:
