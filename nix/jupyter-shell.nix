@@ -53,8 +53,15 @@ with pkgs;
 
 let
 
+  ghcWithPackages = packages: (hasktorchHaskellPackages.shellFor {
+    buildInputs = [ hasktorchHaskellPackages.ihaskell.components.exes.ihaskell ];
+    packages = _: [];
+    additional = packages;
+  }).ghc;
+
   iHaskell = jupyterWith.kernels.iHaskellWith {
-    haskellPackages = hasktorchHaskellPackages;
+    # haskellPackages = hasktorchHaskellPackages;
+    haskellPackages = { inherit ghcWithPackages; };
     name = "haskell";
     packages = p: with p; [
       hasktorch
