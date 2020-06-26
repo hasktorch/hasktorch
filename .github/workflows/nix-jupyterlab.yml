@@ -17,11 +17,11 @@ jobs:
         sudo apt autoclean -y || true
         docker rmi $(docker image ls -aq)
         df -h
-    - uses: cachix/install-nix-action@v7
+    - uses: cachix/install-nix-action@v10
     - name: Setup repo
       run: |
         git submodule init && git submodule update
-    - uses: cachix/cachix-action@releases/v5
+    - uses: cachix/cachix-action@releases/v6
       with:
         name: hasktorch
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
