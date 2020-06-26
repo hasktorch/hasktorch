@@ -90,8 +90,8 @@ let
 
       # Stamp packages with the git revision
       {
-        packages.codegen.components.exes.codegen.postInstall = setGitRev;
-        packages.examples.components.exes.examples.postInstall = setGitRev;
+        # packages.codegen.components.exes.codegen.postInstall = setGitRev;
+        # packages.examples.components.exes.examples.postInstall = setGitRev;
         # Work around Haskell.nix issue when setting postInstall on components
         packages.codegen.components.all.postInstall = lib.mkForce setGitRev;
         packages.libtorch-ffi.components.all.postInstall = lib.mkForce setGitRev;
