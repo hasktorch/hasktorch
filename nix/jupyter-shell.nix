@@ -63,18 +63,12 @@ let
       }).ghc;
       ihaskell = hasktorchHaskellPackages.ihaskell.components.exes.ihaskell;
     in
-      pkgs.stdenv.mkDerivation {
+      symlinkJoin {
         name = "ihaskell-env";
-        buildInputs = [ ghc ihaskell ];
-        postInstall = ''
-          ln -s ${ghc}/bin/ghc $out/bin
-          ln -s ${ghc}/bin/hoogle $out/bin
-          ln -s ${ihaskell}/bin/ihaskell $out/bin
-        '';
+        paths = [ ghc.out ihaskell.out ];
       };
 
   iHaskell = jupyterWith.kernels.iHaskellWith {
-    # haskellPackages = hasktorchHaskellPackages;
     haskellPackages = { inherit ghcWithPackages; };
     name = "haskell";
     packages = p: with p; [
