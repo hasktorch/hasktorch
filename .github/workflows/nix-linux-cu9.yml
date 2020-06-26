@@ -10,14 +10,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: cachix/install-nix-action@v8
+      - name: free disk space
+        run: |
+          sudo swapoff -a
+          sudo rm -f /swapfile
+          sudo apt -y purge ghc* cabal-install* php* || true
+          sudo apt autoremove -y || true
+          sudo apt autoclean -y || true
+          docker rmi $(docker image ls -aq)
+          df -h
+      - uses: cachix/install-nix-action@v10
       - run: nix-env -iA cachix -f https://cachix.org/api/v1/install
       - run: cachix use iohk
       - run: |
-          nix-build shared.nix -A defaultCuda92.hsPkgs.libtorch-ffi.checks.spec
-          nix-build shared.nix -A defaultCuda92.hsPkgs.hasktorch.checks.spec
-          nix-build shared.nix -A defaultCuda92.hsPkgs.examples.checks.spec
-  build-shell-cache:
+          nix-build --arg cudaSupport true --argstr cudaMajorVersion 9 -A haskellPackages.libtorch-ffi.checks.spec
+          nix-build --arg cudaSupport true --argstr cudaMajorVersion 9 -A haskellPackages.hasktorch.checks.spec
+          nix-build --arg cudaSupport true --argstr cudaMajorVersion 9 -A haskellPackages.examples.checks.spec
+  build-cache:
+    if: github.repository == 'hasktorch/hasktorch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -30,30 +40,10 @@ jobs:
           sudo apt autoclean -y || true
           docker rmi $(docker image ls -aq)
           df -h
-      - uses: cachix/install-nix-action@v8
+      - uses: cachix/install-nix-action@v10
       - uses: cachix/cachix-action@v6
         with:
           name: hasktorch
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - run: cachix use iohk
-      - run: nix-build shell.nix --arg cudaVersion 9
-  build-ci-cache:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: free disk space
-        run: |
-          sudo swapoff -a
-          sudo rm -f /swapfile
-          sudo apt -y purge ghc* cabal-install* php* || true
-          sudo apt autoremove -y || true
-          sudo apt autoclean -y || true
-          docker rmi $(docker image ls -aq)
-          df -h
-      - uses: cachix/install-nix-action@v8
-      - uses: cachix/cachix-action@v6
-        with:
-          name: hasktorch
-          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-      - run: cachix use iohk
-      - run: nix-build --arg cudaVersion 9
+      - run: nix-build --arg cudaSupport true --argstr cudaMajorVersion 9
