@@ -134,7 +134,7 @@ depending on whether or not you are using Nix or whether you are using Cabal or 
 For instance, the the MNIST MLP example can be built and run on CPU with
 
 ```sh
-$ export DEVICE=\"cpu"; stack run static-mnist-mlp
+$ export DEVICE="cpu"; stack run static-mnist-mlp
 ```
 
 With Nix, CUDA 10, and cabal, this can be achieved with:
@@ -171,7 +171,7 @@ $ nix-shell --command "code ."
 
 This assumes VS Code is already installed system-wide.
 
-A CUDA-enabled experience is also possible,
+A CUDA-enabled `ghcide` experience is also possible,
 just append `--arg cudaSupport true` and `--argstr cudaMajorVersion 10` to the `nix-shell` command.
 
 All that is needed now is the VS Code [Haskell Language Server plugin](https://marketplace.visualstudio.com/items?itemName=alanz.vscode-hie-server).
