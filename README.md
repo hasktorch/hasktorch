@@ -67,7 +67,9 @@ Note `source setenv` should be run from the top-level directory of the repo.
 These instructions apply both to NixOS and macOS or Ubuntu-like OSes' in which the `nix` package manager can be installed.
 
 The first thing to consider is that the Hasktorch `nix` derivations are large.
-For this reason, it is recommended to install and set up Cachix, e.g. via `nix-env -i cachix` or, on NixOS, in your `configuration.nix`.
+For this reason, it is recommended to install and set up Cachix,
+e.g. via `nix-env -iA cachix -f https://cachix.org/api/v1/install` or, on NixOS, directly in your `configuration.nix`.
+
 There are two relevant caches you want to use:
 
 ```sh
@@ -78,6 +80,8 @@ $ cachix use hasktorch
 The first one is maintained by [IOHK](https://iohk.io/).
 We use it because we depend on [haskell.nix](https://github.com/input-output-hk/haskell.nix),
 an alternative Haskell Nix infrastructure that we prefer over the default one provided by `nixpkgs`.
+The second cache is our own Hasktorch cache.
+Using these caches can speed up your builds tremendously.
 
 You can launch a Nix shell via
 
@@ -85,9 +89,10 @@ You can launch a Nix shell via
 $ nix-shell
 ```
 
-and use `cabal build`, `cabal repl`, `cabal test`, etc. from there. We also support Stack with Nix, see below.
-Note that this shell is configured to use the CPU backend only.
+and use `cabal build`, `cabal repl`, `cabal test`, etc. from within.
+We also support Stack with Nix, see below.
 
+Note that this shell is configured to use the CPU backend only.
 In order to benefit from any CUDA-capable hardware acceleration your computer may provide (sorry macOS users),
 launch the Nix shell instead with:
 
@@ -185,12 +190,7 @@ $ nix-shell ./nix/jupyter-shell.nix --command "jupyter lab"
 
 This will first build various dependencies and then launch Jupyter Lab as well as open it in your default browser.
 
-## References
-
-```
-https://gist.github.com/MMesch/45256a435c9f78158445214a56527f68
-https://github.com/tweag/jupyterWith
-```
+Some example notebooks are found in the `notebooks/` directory.
 
 
 ## Contributing
