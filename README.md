@@ -48,11 +48,11 @@ $ popd                 # Go back to the root directory of the project.
 ```
 
 This will default to CPU-only Torch.
-If you would like to use CUDA 9 and or 10,
+If you would like to use CUDA 9 or 10,
 replace `./get-deps.sh` with `./get-deps.sh -a cu92` or `./get-deps.sh -a cu102`, respectively.
 
-These downloads include various pytorch shared libraries.
-Note `get-deps.sh` only has to be run once when the repo is initially cloned.
+These downloads include various PyTorch shared libraries.
+Note that `get-deps.sh` only has to be run once after the repo is initially cloned.
 It should *not* be run when using Nix, see the following section.
 
 Next, set shell environment to reference the shared library locations:
@@ -101,20 +101,21 @@ launch the Nix shell instead with:
 $ nix-shell --arg cudaSupport true --argstr cudaMajorVersion 10
 ```
 
-If you have run `cabal` in a CPU-only shell before, you need to clean the `dist-newstyle` folder first, `cabal clean`.
+If you have run `cabal` in a CPU-only Hasktorch shell before,
+you need to clean the `dist-newstyle` folder first, `cabal clean`.
 Otherwise, you will not be able to move tensors to CUDA.
 
 In rare cases, you may want to use `--argstr cudaMajorVersion 9`.
-This will pull in the version 9 of the CUDA toolkit instead.
+This will pull in version 9 of the CUDA toolkit instead.
 
 
 ### Stack with Nix
 
-It is also possible to compile hasktorch with Stack while getting system dependencies with Nix.
+It is also possible to compile Hasktorch with Stack while getting system dependencies with Nix.
 
 First, make sure both Stack and Nix are installed, and then optionally enable
-the hasktorch Cachix, as described above. After that, just run
-`stack --nix build` to build.
+the Hasktorch Cachix cache, as described above. After that, just run
+`stack --nix build` to build Hasktorch.
 
 As long as you pass the `--nix` flag to Stack, Stack will use Nix to get into
 an environment with all required system dependencies (mostly just `libtorch`)
@@ -133,13 +134,16 @@ depending on whether or not you are using Nix or whether you are using Cabal or 
 For instance, the the MNIST MLP example can be built and run on CPU with
 
 ```sh
-$ export DEVICE=CUDA; stack run static-mnist-mlp
+$ export DEVICE=\"cpu"; stack run static-mnist-mlp
 ```
 
 With Nix, CUDA 10, and cabal, this can be achieved with:
 
 ```sh
-$ nix-shell --arg cudaSupport true --argstr cudaMajorVersion 10 --command "export DEVICE=\"cuda:0\"; cabal run static-mnist-mlp"
+$ nix-shell \
+  --arg cudaSupport true \
+  --argstr cudaMajorVersion 10 \
+  --command "export DEVICE=\"cuda:0\"; cabal run static-mnist-mlp"
 ```
 
 ### Set up your development environement
@@ -159,13 +163,16 @@ You will then want to install an integration for your preferred editor. `ghcide`
 * [Vim](https://github.com/digital-asset/ghcide#using-with-vimneovim),
 * and [others](https://github.com/digital-asset/ghcide).
 
-In order to get started with VS Code, start it within a Nix shell:
+In order to get started with VS Code, start it from within a Nix shell:
 
 ```sh
 $ nix-shell --command "code ."
 ```
 
 This assumes VS Code is already installed system-wide.
+
+A CUDA-enabled experience is also possible,
+just append `--arg cudaSupport true` and `--argstr cudaMajorVersion 10` to the `nix-shell` command.
 
 All that is needed now is the VS Code [Haskell Language Server plugin](https://marketplace.visualstudio.com/items?itemName=alanz.vscode-hie-server).
 Follow the link to the market place, and install the plugin in VS Code.
@@ -176,7 +183,7 @@ Afterwards, you should be good to go.
 There is a [short YouTube video](https://www.youtube.com/watch?v=WBYWtrKjKcE) made by [Neil Mitchell](https://twitter.com/@ndm_haskell)
 that shows off `ghcide`'s features in VS Code.
 
-## Using as a library in a project via Nix
+## Using Hasktorch as a library in a downstream project via Nix
 
 We have a made a [Hasktorch Skeleton](https://github.com/hasktorch/hasktorch-skeleton) project that people can clone and start working with.
 
