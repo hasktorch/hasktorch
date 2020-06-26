@@ -31,7 +31,8 @@ Internals (for contributing developers):
 
 ## Getting Started
 
-The following steps run a toy linear regression example, assuming the hasktorch repository has just been cloned.
+The following steps will get you started.
+They assume the hasktorch repository has just been cloned.
 
 ### On macOS or Ubuntu-like OSes'
 
