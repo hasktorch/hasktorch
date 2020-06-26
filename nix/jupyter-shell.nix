@@ -53,11 +53,25 @@ with pkgs;
 
 let
 
-  ghcWithPackages = packages: (hasktorchHaskellPackages.shellFor {
-    buildInputs = [ hasktorchHaskellPackages.ihaskell.components.exes.ihaskell ];
-    packages = _: [];
-    additional = packages;
-  }).ghc;
+  ghcWithPackages = packages: 
+    let
+      ghc = (hasktorchHaskellPackages.shellFor {
+        packages = _: [];
+        additional = packages;
+        withHoogle = true;
+        exactDeps = true;
+      }).ghc;
+      ihaskell = hasktorchHaskellPackages.ihaskell.components.exes.ihaskell;
+    in
+      pkgs.stdenv.mkDerivation {
+        name = "ihaskell-env";
+        buildInputs = [ ghc ihaskell ];
+        postInstall = ''
+          ln -s ${ghc}/bin/ghc $out/bin
+          ln -s ${ghc}/bin/hoogle $out/bin
+          ln -s ${ihaskell}/bin/ihaskell $out/bin
+        '';
+      };
 
   iHaskell = jupyterWith.kernels.iHaskellWith {
     # haskellPackages = hasktorchHaskellPackages;
