@@ -495,12 +495,11 @@ instance {-# OVERLAPPING #-}TensorLike a => TensorLike (a,a) where
   _peekElemOff = error "Not implemented for tuple-type"
   _pokeElemOff = error "Not implemented for tuple-type"
 
-instance {-# OVERLAPPING #-}(Foldable t, Traversable t, TensorLike a) => TensorLike (t a) where
+instance {-# OVERLAPPING #-} TensorLike a => TensorLike [a] where
   asTensor' v opts = unsafePerformIO $ do
-    let v' = toList v
-    t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) (_dims v') $ withDType (_dtype @a) opts
+    t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) (_dims v) $ withDType (_dtype @a) opts
     withTensor t $ \ptr -> do
-      _pokeElemOff ptr 0 v'
+      _pokeElemOff ptr 0 v
     return t
 
   asTensor v = asTensor' v defaultOpts
