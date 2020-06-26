@@ -275,7 +275,7 @@ mean input = unsafePerformIO $ ATen.cast3 ATen.Managed.mean_tlb
 
 -- | Computes the median while carrying out a full reduction of all tensor dimensions.
 --
--- >>> dtype &&& shape $ median (ones :: CPUTensor 'D.Float '[2,2])
+-- >>> dtype &&& shape $ medianAll (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[])
 medianAll
   :: forall shape dtype device
