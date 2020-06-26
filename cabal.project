@@ -7,6 +7,7 @@ packages:
     experimental/*.cabal
 
 tests: true
+write-ghc-environment-files: always
 
 documentation: false
 
