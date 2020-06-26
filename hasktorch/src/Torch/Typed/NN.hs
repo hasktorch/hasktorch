@@ -20,7 +20,10 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 
-module Torch.Typed.NN where
+module Torch.Typed.NN
+    ( module Torch.Typed.NN
+    , Torch.NN.HasForward(..)
+) where
 
 import           Control.Monad.State.Strict
 import           Torch.HList
@@ -32,6 +35,7 @@ import           GHC.Generics
 import           System.IO.Unsafe
 
 import qualified Torch.NN                      as A
+import           Torch.NN (HasForward(..))
 import qualified Torch.Autograd                as A
 import qualified Torch.Tensor                  as A
 import qualified Torch.DType                   as D
@@ -42,11 +46,6 @@ import           Torch.Typed.Functional
 import           Torch.Typed.Tensor
 import           Torch.Typed.Parameter
 import           Torch.Typed.Device
-
-class HasForward f a b | f a -> b where
-  forward :: f -> a -> b
-  forwardStoch :: f -> a -> IO b
-  forwardStoch = (pure .) . forward
 
 ----------------------------------------------
 -- Linear Layer

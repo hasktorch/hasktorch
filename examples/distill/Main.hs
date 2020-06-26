@@ -41,7 +41,9 @@ mlpTemp temperature MLP{..} input =
   where
     logSoftmaxTemp t z = (z/t) - log (sumDim (Dim 1) KeepDim Float (exp (z/t)))
 
-instance Parameterized MLP where
+instance Parameterized MLP
+
+instance HasForward MLP Tensor Tensor where
     forward = mlpTemp 1.0
 
 instance Randomizable MLPSpec MLP where
