@@ -95,22 +95,11 @@ stack run regression
 
 For additional examples, see the `examples/` directory.
 
-### Set up development environement in VS Code.
-If you want to develop the project in VS Code and get Haskell Tooling support,
-you will need to install [HIE(Haskell IDE Engine)](https://github.com/haskell/haskell-ide-engine).
-Since this project uses the resolver version `lts-15.5`, so you will need to
-install and use the corresponding version of HIE which is `hie-8.8.3`.
+### Set up development environment
 
-And then install the [Haskell Language Server plugin](https://marketplace.visualstudio.com/items?itemName=alanz.vscode-hie-server). If you encounter the `hie executable missing, please make sure it is installed, see github.com/haskell/haskell-ide-engine` when starting VSCode,
-first make sure that when you run:
-```
-which hie
-```
-It should give you an output.
-And the path of the `hie` executable in the `settings.json` by adding:
-```
-"languageServerHaskell.hieExecutablePath": "~/.local/bin/hie-8.8.3",
-``` 
+[ghcide](https://github.com/digital-asset/ghcide) is currently the preferred language server backend, and is provided by the Nix shell environment. If you are not using Nix, the `ghcide` binary can be installed using `stack` or `cabal`; see instructions [here](https://github.com/digital-asset/ghcide#with-cabal-or-stack).
+
+You will then want to install an integration for your preferred editor. `ghcide` supports [VS Code](https://github.com/digital-asset/ghcide#using-with-vs-code), [Atom](https://github.com/digital-asset/ghcide#using-with-atom), [Sublime Text](https://github.com/digital-asset/ghcide#using-with-sublime-text), [Emacs](https://github.com/digital-asset/ghcide#using-with-emacs), [Vim](https://github.com/digital-asset/ghcide#using-with-vimneovim), and [others](https://github.com/digital-asset/ghcide).
 
 
 ## Using as a library in a project via `nix`
