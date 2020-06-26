@@ -72,20 +72,20 @@ let
         # Some packages are missing identifier.name
         packages.cryptonite-openssl.package.identifier.name = "cryptonite-openssl";
 
-        # Disable cabal-doctest tests by turning off custom setups
-        # TODO: Enable cabal-doctest tests
-        packages.hasktorch.package.buildType = lib.mkForce "Simple";
-
         # Some tests don't work on every platform
         # packages.hasktorch.components.all.platforms =
         #   with stdenv.lib.platforms; lib.mkForce [ linux darwin windows ];
         # packages.hasktorch.components.tests.all.platforms =
         #   with stdenv.lib.platforms; lib.mkForce [ linux darwin ];
 
-        # Turn off doctests
-        # TODO: see if we can turn these on again
+        # Disable doctests for now
+        # TODO: see if we can turn these on again (waiting for https://github.com/input-output-hk/haskell.nix/pull/427)
+        packages.codegen.components.tests.doctests.buildable = lib.mkForce false;
         packages.codegen.components.tests.doctests.doCheck = false;
+        packages.hasktorch.components.tests.doctests.buildable = lib.mkForce false;
         packages.hasktorch.components.tests.doctests.doCheck = false;
+        # Disable cabal-doctest tests by turning off custom setups
+        packages.hasktorch.package.buildType = lib.mkForce "Simple";
       }
 
       # Stamp packages with the git revision

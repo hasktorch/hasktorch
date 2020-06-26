@@ -152,6 +152,11 @@ type family ReplaceDim (dim :: Nat) (shape :: [Nat]) (n :: Nat) :: Maybe [Nat] w
 type family If c t e where
   If 'True  t e = t
   If 'False t e = e
+
+type family AllDimsPositive (shape :: [Nat]) :: Constraint where
+  AllDimsPositive '[] = ()
+  AllDimsPositive (x ': xs) = If (1 <=? x) (AllDimsPositive xs) (TypeError (Text "Expected positive dimension but got " :<>: ShowType x :<>: Text "!"))
+
 --------------------------------------------------------------------------------
 -- Operations
 --------------------------------------------------------------------------------
@@ -266,3 +271,10 @@ type family StandardFloatingPointDTypeValidation (device :: (D.DeviceType, Nat))
                                                                         )
   StandardFloatingPointDTypeValidation '( 'D.CUDA, deviceIndex) dtype = DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
   StandardFloatingPointDTypeValidation '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
+
+type family StandardDTypeValidation (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
+  StandardDTypeValidation '( 'D.CPU, 0)            dtype = ( DTypeIsNotBool '( 'D.CPU, 0) dtype
+                                                           , DTypeIsNotHalf '( 'D.CPU, 0) dtype
+                                                           )
+  StandardDTypeValidation '( 'D.CUDA, deviceIndex) dtype = DTypeIsNotBool '( 'D.CUDA, deviceIndex) dtype
+  StandardDTypeValidation '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype

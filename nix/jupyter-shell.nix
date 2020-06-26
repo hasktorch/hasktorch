@@ -53,14 +53,22 @@ with pkgs;
 
 let
 
-  ghcWithPackages = packages: (hasktorchHaskellPackages.shellFor {
-    buildInputs = [ hasktorchHaskellPackages.ihaskell.components.exes.ihaskell ];
-    packages = _: [];
-    additional = packages;
-  }).ghc;
+  ghcWithPackages = packages: 
+    let
+      ghc = (hasktorchHaskellPackages.shellFor {
+        packages = _: [];
+        additional = packages;
+        withHoogle = true;
+        exactDeps = true;
+      }).ghc;
+      ihaskell = hasktorchHaskellPackages.ihaskell.components.exes.ihaskell;
+    in
+      symlinkJoin {
+        name = "ihaskell-env";
+        paths = [ ghc.out ihaskell.out ];
+      };
 
   iHaskell = jupyterWith.kernels.iHaskellWith {
-    # haskellPackages = hasktorchHaskellPackages;
     haskellPackages = { inherit ghcWithPackages; };
     name = "haskell";
     packages = p: with p; [
