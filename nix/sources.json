@@ -35,6 +35,30 @@
         "url": "https://github.com/korayal/hls-nix/archive/3ac16995f2cd2b929d9cfb03a1f931a4d9f0030e.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
+    "iohk-nix": {
+        "branch": "master",
+        "description": "nix scripts shared across projects",
+        "homepage": null,
+        "owner": "input-output-hk",
+        "repo": "iohk-nix",
+        "rev": "ccad0bf9ceb3a68a837886f8032da0e70529d183",
+        "sha256": "0hyzqbws8j1bvkb4m0ngck7mgs41p2wp9gy6ncvx1pf2svwz9916",
+        "type": "tarball",
+        "url": "https://github.com/input-output-hk/iohk-nix/archive/ccad0bf9ceb3a68a837886f8032da0e70529d183.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "jupyterWith": {
+        "branch": "master",
+        "description": "declarative and reproducible Jupyter environments - powered by Nix",
+        "homepage": "",
+        "owner": "tweag",
+        "repo": "jupyterWith",
+        "rev": "4614c6d4b762375a88362bf1804336fce69bc044",
+        "sha256": "007fp6vip2bfpg6qrp34wcipppjj19lqy2ahwsl9h91ymd70gz2c",
+        "type": "tarball",
+        "url": "https://github.com/tweag/jupyterWith/archive/4614c6d4b762375a88362bf1804336fce69bc044.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "niv": {
         "branch": "master",
         "description": "Easy dependency management for Nix projects",

@@ -20,14 +20,10 @@ jobs:
         docker rmi $(docker image ls -aq)
         df -h
     - uses: cachix/install-nix-action@v10
-    - name: Setup repo
-      run: |
-        git submodule init && git submodule update
-    - name: Build
-      run: |
-        nix-env -i cachix
-        cachix use iohk
-        cachix use hasktorch
+    - run: nix-env -iA cachix -f https://cachix.org/api/v1/install
+    - run: cachix use iohk
+    - run: cachix use hasktorch
+    - run: |
         nix-build -A combined-haddock
         pwd
         find result/ |head
