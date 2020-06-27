@@ -66,10 +66,10 @@ let
       # lint-fuzz = callPackage ./nix/check-lint-fuzz.nix {};
     };
 
-    shell = import ./shell.nix {
-      inherit pkgs;
-      withHoogle = true;
-    };
+    # shell = import ./shell.nix {
+    #   inherit pkgs;
+    #   withHoogle = true;
+    # };
 
     # Building the stack shell doesn't work in the sandbox. Pass `--option sandbox relaxed` or
     # `--option sandbox false` to be able to build this. You have to be root in order to that.
