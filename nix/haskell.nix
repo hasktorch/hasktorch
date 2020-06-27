@@ -5,7 +5,7 @@
 , buildPackages
 , config ? {}
 # GHC attribute name
-, compiler ? config.haskellNix.compiler or "ghc883"
+, compiler ? config.haskellNix.compiler or "ghc8101"
 # Enable profiling
 , profiling ? config.haskellNix.profiling or false
 # Version info, to be passed when not building from a git work tree
@@ -40,6 +40,8 @@ let
     ];
 
     modules = [
+      { reinstallableLibGhc = true; }
+
       # TODO: Compile all local packages with -Werror:
       # {
       #   packages = lib.genAttrs projectPackages

@@ -36,6 +36,7 @@ let
       (pkgsNew: pkgsOld: {
         haskell-nix = pkgsOld.haskell-nix // {
           hackageSrc = sources.hackage-nix;
+          stackageSrc = sources.stackage-nix;
         };
       })
     ]

@@ -23,7 +23,13 @@ let
     # then list all local packages then include source-repository-package that cabal complains about:
     #packages = ps: with ps; [ ];
 
-    tools = { cabal = "3.2.0.0"; ghcide = "0.2.0"; };
+    tools = {
+      # cabal = "3.2.0.0";
+      ghcide = "0.2.0";
+    };
+    nativeBuildInputs = [(pkgs.haskell-nix.cabalProject {
+      src = sources.cabal;
+    }).cabal-install.components.exes.cabal];
 
     # These programs will be available inside the nix-shell.
     buildInputs =
