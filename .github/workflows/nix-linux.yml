@@ -7,8 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - &free_disk
-        name: free disk space
+      - name: free disk space
         run: |
           sudo swapoff -a
           sudo rm -f /swapfile
@@ -29,7 +28,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - *free_disk
+      - name: free disk space
+        run: |
+          sudo swapoff -a
+          sudo rm -f /swapfile
+          sudo apt -y purge ghc* cabal-install* php* || true
+          sudo apt autoremove -y || true
+          sudo apt autoclean -y || true
+          docker rmi $(docker image ls -aq)
+          df -h
       - uses: cachix/install-nix-action@v10
       - uses: cachix/cachix-action@v6
         with:
