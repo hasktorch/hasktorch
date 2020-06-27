@@ -22,6 +22,23 @@ import GHC.Generics
 
 spec :: Spec
 spec = do
+  describe "index accesses" $ do
+    it "index" $ do
+      let v = asTensor ([1,2,3,4]::[Float])
+          r = asValue (index v [2 ::Int]) :: Float
+      r `shouldBe` 3.0
+    it "index" $ do
+      let v = asTensor (replicate 3 [1,2,3,4] :: [[Float]])
+          r = asValue (index v ([Nothing, Just 0]::[Maybe Int])) :: [Float]
+      r `shouldBe` [1.0,1.0,1.0]
+    it "indexPut" $ do
+      let v = asTensor ([1,2,3,4]::[Float])
+          r = asValue (indexPut v [1 ::Int] (5.0::Float)) :: [Float]
+      r `shouldBe` [1.0,5.0,3.0,4.0]
+    it "indexPut" $ do
+      let v = asTensor ([1,2,3,4]::[Float])
+          r = asValue (indexPut v [1 ::Int] (5.0::Float)) :: [Float]
+      r `shouldBe` [1.0,5.0,3.0,4.0]
   describe "DarknetSpec" $ do
     it "Convolution" $ do
       let spec' = ConvolutionSpec {
@@ -54,14 +71,6 @@ spec = do
               length (show spec) > 0 `shouldBe` True
             Left err -> throwIO $ userError err
         Left err -> throwIO $ userError err
-    it "index" $ do
-      let v = asTensor ([1,2,3,4]::[Float])
-          r = asValue (index v [2 ::Int]) :: Float
-      r `shouldBe` 3.0
-    it "indexPut" $ do
-      let v = asTensor ([1,2,3,4]::[Float])
-          r = asValue (indexPut v [1 ::Int] (5.0::Float)) :: [Float]
-      r `shouldBe` [1.0,5.0,3.0,4.0]
     it "Yolo:prediction" $ do
       let yolo = Torch.Vision.Darknet.Forward.Yolo [(23, 27), (37, 58), (81, 82)] 80 418
           pred = toPrediction yolo (ones' [1,255,10,10])
