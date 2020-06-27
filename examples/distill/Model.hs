@@ -16,24 +16,29 @@ import Torch
 -- Model-generic utility functions
 --
 
-data Optimizer o => OptimSpec o = OptimSpec {
+data (Optimizer o, Parameterized p) => OptimSpec o p = OptimSpec {
     optimizer :: o,
     batchSize :: Int,
     numIters :: Int,
     learningRate :: Tensor,
-    lossFn :: Tensor -> Tensor -> Tensor
+    lossFn :: p -> Tensor -> Tensor -> Tensor -- model, input, target
 }
 
 -- | Train a model
 train 
     :: (Dataset d, Optimizer o, Parameterized p, HasForward p Tensor Tensor) 
-    => OptimSpec o -> d -> p -> IO p
+    => OptimSpec o p -> d -> p -> IO p
 train OptimSpec{..} dataset init = do
     trained <- foldLoop init numIters $
         \state iter -> do
             (input, label) <- getItem dataset (iter*batchSize) batchSize
             -- print $ shape input
-            let loss = lossFn label $ forward state input
+            let loss = lossFn state input label
+
+            let flatParameters = flattenParameters state
+            let (Gradients gradients) = grad' loss flatParameters
+            print $ sumAll <$> gradients
+
             when (iter `mod` 50 == 0) $ do
                 putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
             (newParam, _) <- runStep state optimizer loss learningRate
@@ -98,7 +103,7 @@ data CNN = CNN {
 instance Parameterized CNN
 instance HasForward CNN Tensor Tensor where
     forward CNN {..} input =
-        relu
+        logSoftmax (Dim 0)
         . linearForward cnnFC1
         . relu
         . linearForward cnnFC0

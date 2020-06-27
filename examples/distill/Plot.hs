@@ -28,4 +28,24 @@ histogram x = do
 strip x = do
     let x' = asValue . toDType Double $ x
         dat = dataFromColumns [Parse [("x", FoNumber)]] . dataColumn "x" (Numbers x')
-    pure $ toVegaLite [ dat [], mark Tick [], encoding (position X [ PName "x", PmType Quantitative ] []) ]
+        enc = encoding 
+            . position X [ PName "x", PmType Quantitative ]
+            . tooltip [ TName "x" ]
+    pure $ toVegaLite [ dat [], mark Tick [], enc [] ]
+
+{-}
+stripFacet xLst nameLst = do
+        let xLst' = asValue . toDType Double <$> xLst
+        dat = dataFromColumns [Parse [("x", FoNumber)]] . dataColumn "x" (Numbers x')
+        enc = encoding 
+            . position X [ PName "x", PmType Quantitative ]
+            . tooltip [ TName "x" ]
+    pure toVegaLite
+     [ gaiaData
+     , columns 4
+     , facetFlow [ FName "Cluster", FmType Nominal ]
+     , specification (asSpec [ mark Bar [], enc [] ])
+     ]
+
+    pure $ toVegaLite [ dat [], mark Tick [], enc [] ]
+-}

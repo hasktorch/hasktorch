@@ -28,7 +28,7 @@ data (Parameterized t, Parameterized s) => DistillSpec t s = DistillSpec {
 distill
     :: (Parameterized t, Parameterized s, Optimizer o, Dataset d)
     => DistillSpec t s
-    -> OptimSpec o
+    -> OptimSpec o s
     -> d
     -> IO s
 distill DistillSpec{..} OptimSpec{..} dataset = do

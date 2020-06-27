@@ -28,7 +28,7 @@ runDistill mnistData = do
         batchSize = 256,
         numIters = 500,
         learningRate = 1e-3,
-        lossFn = nllLoss' 
+        lossFn = \model input target -> nllLoss' target (forward model input)
     }
     teacher <- train optimSpec mnistData initTeacher
     -- Distill student

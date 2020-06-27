@@ -766,6 +766,26 @@ klDiv
   -> Tensor -- ^ output
 klDiv reduction self target = unsafePerformIO $ (cast3 ATen.kl_div_ttl) self target reduction
 
+-- | Creates a criterion that uses a squared term if the absolute element-wise 
+--  error falls below 1 and an L1 term otherwise. It is less sensitive to 
+-- outliers than the MSELoss and in some cases prevents exploding gradients 
+-- (e.g. see Fast R-CNN paper by Ross Girshick). Also known as the Huber loss.
+smoothL1Loss
+  :: Reduction -- ^ reduction
+  -> Tensor -- ^ self
+  -> Tensor -- ^ target
+  -> Tensor -- ^ output
+smoothL1Loss reduction self target = unsafePerformIO $ (cast3 ATen.smooth_l1_loss_ttl) self target reduction
+
+-- | Creates a criterion that optimizes a two-class classification logistic loss
+--  between input tensor \(x\) and target tensor \(y\) (containing 1 or -1).
+softMarginLoss 
+  :: Reduction -- ^ reduction
+  -> Tensor -- ^ input
+  -> Tensor -- ^ target
+  -> Tensor -- ^ output
+softMarginLoss reduction input target = unsafePerformIO $ (cast3 ATen.soft_margin_loss_ttl) input target reduction
+
 -- 
 -- Pooling
 --
@@ -1507,22 +1527,6 @@ quantizedRnnTanhCell
     -> Tensor -- ^ output
 quantizedRnnTanhCell _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh _hx _input =
   unsafePerformIO $ (cast14 ATen.quantized_rnn_tanh_cell_ttttttttttssss) _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh
-
--- | Creates a criterion that uses a squared term if the absolute element-wise error falls below 1 and an L1 term otherwise. It is less sensitive to outliers than the MSELoss and in some cases prevents exploding gradients (e.g. see Fast R-CNN paper by Ross Girshick). Also known as the Huber loss
-smoothL1Loss
-  :: Reduction -- ^ reduction
-  -> Tensor -- ^ input
-  -> Tensor -- ^ target
-  -> Tensor -- ^ output
-smoothL1Loss reduction input target = unsafePerformIO $ (cast3 ATen.smooth_l1_loss_ttl) input target reduction
-
--- | Creates a criterion that optimizes a two-class classification logistic loss between input tensor \(x\) and target tensor \(y\) (containing 1 or -1).
-softMarginLoss 
-  :: Reduction -- ^ reduction
-  -> Tensor -- ^ input
-  -> Tensor -- ^ target
-  -> Tensor -- ^ output
-softMarginLoss reduction input target = unsafePerformIO $ (cast3 ATen.soft_margin_loss_ttl) input target reduction
 
 -- | Applies the soft shrinkage function elementwise
 softShrink
