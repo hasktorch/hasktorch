@@ -42,10 +42,18 @@ library static-mnist
   import:              config
   hs-source-dirs:      static-mnist
   ghc-options:         -fno-warn-partial-type-signatures
-  exposed-modules:     Common
+  exposed-modules:     Common,
+                       Pipeline 
+                     
   build-depends:       bytestring >= 0.10.8
                      , libtorch-ffi
                      , random >= 1.1
+                     , pipes
+                     , pipes-concurrency
+                     , mtl
+                     -- , unliftio >= 0.1
+                     , lifted-async
+
 
 test-suite spec
   import:             config
