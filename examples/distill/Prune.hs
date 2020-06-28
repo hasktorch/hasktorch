@@ -29,13 +29,6 @@ l1 w = l1Loss ReduceMean w (zerosLike w)
 l2 :: Tensor -> Tensor
 l2 = mean
 
--- combinedLoss :: CNN -> Tensor -> Tensor -> Tensor -- model, input, target
-{-
-combinedLoss model input target =
-    let regWeights = flattenAll $ cat (Dim 0) $ flattenAll <$> (selectWeights pruneSpec $ initRef) 
-        in 0 * (nllLoss' (forward model input) target) + 1000000.0 * l1 regWeights 
--}
-
 -- | Setup pruning parameters and run
 runPrune :: (Dataset d) => d -> IO (CNN, CNN) 
 runPrune mnistData = do
@@ -47,7 +40,7 @@ runPrune mnistData = do
         -- optimizer = GD,
         optimizer = mkAdam 0 0.9 0.999 (flattenParameters initRef),
         batchSize = 128,
-        numIters = 50,
+        numIters = 1000,
         learningRate = 5e-5, 
         lossFn = \model input target -> nllLoss' target (forward model input)
     } :: OptimSpec Adam CNN
@@ -65,16 +58,14 @@ runPrune mnistData = do
     print "l1"
     let combinedL1 = \model input target ->
             let regWeights = flattenAll $ cat (Dim 0) $ flattenAll <$> (selectWeights pruneSpec $ initRef) 
-                in 0 * (nllLoss' (forward model input) target) + 1000000.0 * l1 regWeights 
+                in 0 * (nllLoss' target (forward model input)) + 1000000.0 * l1 regWeights 
     l1Model <- train optimSpec { lossFn = combinedL1 } mnistData =<< sample refSpec
 
     print "l2"
     let combinedL2 = \model input target ->
             let regWeights = flattenAll $ cat (Dim 0) $ flattenAll <$> (selectWeights pruneSpec $ initRef) 
-                in 0 * (nllLoss' (forward model input) target) + 1000000.0 * l2 regWeights 
+                in 0 * (nllLoss' target (forward model input)) + 1000000.0 * l2 regWeights 
     l2Model <- train optimSpec { lossFn = combinedL2} mnistData =<< sample refSpec
-
-    print "weights0 init"
 
     plt <- strip (toDependent . weight . cnnFC0 $ initRef)
     toHtmlFile "plotInit.html" plt
@@ -91,7 +82,6 @@ runPrune mnistData = do
     system "open plot0l2.html"
 
     let resultWt = head $ (selectWeights pruneSpec) l1Model
-    -- print $ resultWt
     print $ shape resultWt
 
     print "pruning"
