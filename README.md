@@ -6,7 +6,7 @@ It is an independent open source community project which leverages the core C++ 
 This project is in active development, so expect changes to the library API as it evolves.
 We would like to invite new users to join our Hasktorch slack space for questions and discussions.
 
-Contributious/PR are encouraged (see Contributing).
+Contributions/PR are encouraged (see Contributing).
 
 Currently we are prepping development and migration for a major 2nd release, Hasktorch 0.2.
 The 1st release, Hasktorch 0.1, that you can find on hackage is outdated and should not be used at this point.
