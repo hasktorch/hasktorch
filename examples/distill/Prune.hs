@@ -27,7 +27,7 @@ l1 :: Tensor -> Tensor
 l1 w = l1Loss ReduceMean w (zerosLike w)
 
 l2 :: Tensor -> Tensor
-l2 = mean
+l2 x = mseLoss x (zerosLike x)
 
 -- | Setup pruning parameters and run
 runPrune :: (Dataset d) => d -> IO (CNN, CNN) 
@@ -37,7 +37,6 @@ runPrune mnistData = do
     -- train reference model
     initRef <- sample refSpec
     let optimSpec = OptimSpec {
-        -- optimizer = GD,
         optimizer = mkAdam 0 0.9 0.999 (flattenParameters initRef),
         batchSize = 128,
         numIters = 1000,
@@ -47,25 +46,37 @@ runPrune mnistData = do
 
     print "training"
     ref <- train optimSpec mnistData =<< sample refSpec
-    
+
+            
+    print "l1"
+    initRefL1 <- sample refSpec
     let pruneSpec = PruneSpec {
-        ref = initRef,
-        -- selectWeights = (:[]) . toDependent . weight . cnnFC0 
+        ref = initRefL1,
         selectWeights = \m -> [toDependent . weight . cnnFC0 $ m,
                                toDependent . weight . cnnFC1 $ m]
     }
-            
-    print "l1"
     let combinedL1 = \model input target ->
-            let regWeights = flattenAll $ cat (Dim 0) $ flattenAll <$> (selectWeights pruneSpec $ initRef) 
+            let regWeights = flattenAll $ cat (Dim 0) $ flattenAll <$> (selectWeights pruneSpec $ model) 
                 in 0 * (nllLoss' target (forward model input)) + 1000000.0 * l1 regWeights 
-    l1Model <- train optimSpec { lossFn = combinedL1 } mnistData =<< sample refSpec
+    l1Model <- train
+            optimSpec { optimizer = mkAdam (0 :: Int) 0.9 0.999 (flattenParameters initRefL1), lossFn = combinedL1 }
+            mnistData 
+            initRefL1
 
     print "l2"
+    initRefL2 <- sample refSpec
+    let pruneSpec = PruneSpec {
+        ref = initRefL2,
+        selectWeights = \m -> [toDependent . weight . cnnFC0 $ m,
+                               toDependent . weight . cnnFC1 $ m]
+    }
     let combinedL2 = \model input target ->
-            let regWeights = flattenAll $ cat (Dim 0) $ flattenAll <$> (selectWeights pruneSpec $ initRef) 
+            let regWeights = flattenAll $ cat (Dim 0) $ flattenAll <$> (selectWeights pruneSpec $ model) 
                 in 0 * (nllLoss' target (forward model input)) + 1000000.0 * l2 regWeights 
-    l2Model <- train optimSpec { lossFn = combinedL2} mnistData =<< sample refSpec
+    l2Model <- train
+        optimSpec { optimizer = mkAdam 0 0.9 0.999 (flattenParameters initRefL2), lossFn = combinedL2 }
+        mnistData 
+        initRefL2
 
     plt <- strip (toDependent . weight . cnnFC0 $ initRef)
     toHtmlFile "plotInit.html" plt
@@ -81,9 +92,6 @@ runPrune mnistData = do
     toHtmlFile "plot0l2.html" plt
     system "open plot0l2.html"
 
-    let resultWt = head $ (selectWeights pruneSpec) l1Model
-    print $ shape resultWt
-
     print "pruning"
     let pruned = undefined
     pure pruned
@@ -97,6 +105,7 @@ runPrune mnistData = do
             -- (no ADT : maxPool2d (3, 3) (3, 3) (0, 0) (1, 1) Floor )
             (LinearSpec (9*9*channels) 80)
             (LinearSpec 80 10)
+    
 
 pruneTest = do
     putStrLn "Loading Data"
