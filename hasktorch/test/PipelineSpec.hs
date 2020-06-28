@@ -59,7 +59,7 @@ runTest time test = do
 -- | 
 -- | The second test tests that with 2 workers and fold processing batches twice as fast
 -- | as they are yielded that workers are never idling. If they are the test must fail.
--- | Diagrammatically, this is how things should work out: 
+-- | This is how things should work out: 
 -- | 
 -- | working = -, idle = .
 -- | Worker 1: |-----|-----|-----|

@@ -100,7 +100,7 @@ makeConcurrentFold' transforms dataset numWorkers = do
   (toBatches, fromBatches, sealBatch) <- liftIO $ spawn' (bounded numWorkers)
   batchThreads <- forM [1..numWorkers] $ \workerId -> async $ void $ runEffect $ readBatchesConcurrently workerId dataset toTransformBox
   async $ runEffect $ runTransforms transforms fromTransformBox toBatches
-  pure  $ (foldFromProducer (takeBatch fromBatches), batchThreads)
+  pure (foldFromProducer (takeBatch fromBatches), batchThreads)
 
   
 makeFoldWithTransform' :: (MonadIO m, MonadIO m2, Dataset m2 dataset batch)  
@@ -127,7 +127,7 @@ makeFoldWithTransform :: (MonadIO m, MonadIO m2, Dataset m2 dataset batch)
   -> m2 (L.FoldM m batch' b -> m b)
 makeFoldWithTransform transf = fmap fst . makeFoldWithTransform' transf 
 
-makeConcurrentFold :: (MonadIO m2, ConcurrentDataset m2 dataset batch', MonadIO m)
+makeConcurrentFold :: (MonadIO m2, MonadIO m, ConcurrentDataset m2 dataset batch')
   => (batch' -> batch)
   -> dataset
   -> Int
