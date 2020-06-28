@@ -31,7 +31,7 @@ strip x = do
         enc = encoding 
             . position X [ PName "x", PmType Quantitative ]
             . tooltip [ TName "x" ]
-    pure $ toVegaLite [ dat [], mark Tick [], enc [] ]
+    pure $ toVegaLite [ dat [], mark Tick [ MOpacity 0.1 ], enc [] ] 
 
 {-}
 stripFacet xLst nameLst = do
