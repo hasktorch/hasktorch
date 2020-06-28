@@ -15,47 +15,58 @@ import Torch.Data.Pipeline
 import Test.Hspec
 
 
-defaultTimeout :: Int
-defaultTimeout = 100000  
+-- defaultTimeout :: Int
+-- defaultTimeout = 50000
+defaultTimeout = 21000
+timeoutConcurrent = 50000
 
 newtype MockData = MockData Int
-instance Dataset MockData Int where
-  getBatch (MockData iters) _ = pure $ iters
+
+instance Dataset IO MockData Int where
+  getBatch (MockData iters) _ = threadDelay 10000 >> pure iters 
   numIters (MockData iters)  = iters
 
-instance ConcurrentDataset MockData Int where
-  getBatchConcurrently _ = getBatch 
+instance ConcurrentDataset IO MockData Int where
+  getBatchConcurrently _ dataset iter = threadDelay 20000 >> pure iter
 
+ 
 testFoldTimeout :: MockData -> IO ()
 testFoldTimeout dataset = do
-  (toBatches, fromBatches, sealBatch) <- spawn' (bounded 1)
-  thread <- async $ runEffect $ readBatches dataset toBatches
-  fold <- pure $ foldFromProducer (takeBatch fromBatches)
-  timedOut <- async $ fold $ FoldM takeBatchThenTimeout (pure 0) pure
+  (fold, thread ) <- makeFold' dataset
+  timedOut <- async $ fold $ FoldM (takeBatchThenTimeout 10000) (pure 0) pure
   wait thread
   cancel timedOut
 
-
 testConcurrentFoldTimeout :: MockData  -> Int -> IO ()
 testConcurrentFoldTimeout dataset numWorkers = do
-  (toBatches, fromBatches, sealBatch) <- spawn' (bounded numWorkers)
-  threads <- forM [1..numWorkers] $ \workerId -> async $ runEffect $ readBatchesConcurrently workerId dataset toBatches
-  fold <- pure $ foldFromProducer (takeBatch fromBatches)
-  timedOut <- async $ fold $  FoldM takeBatchThenTimeout (pure 0) pure
+  (fold, threads) <- makeConcurrentFold' id dataset numWorkers 
+  timedOut <- async $ fold $  FoldM (takeBatchThenTimeout 10000) (pure 0) pure
   mapM_ wait threads
   cancel timedOut
 
-takeBatchThenTimeout :: Int -> Int -> IO Int
-takeBatchThenTimeout _ input = threadDelay 50000 >> pure input
+takeBatchThenTimeout :: Int -> Int -> Int -> IO Int
+takeBatchThenTimeout timeout _ input = print input >> threadDelay timeout >> pure input
 
-runTest :: IO () -> IO (Maybe ())
-runTest test = do
+runTest :: Int -> IO () -> IO (Maybe ())
+runTest time test = do
     hFlush stdout
-    result <- timeout defaultTimeout test
+    result <- timeout time test
     pure result
 
+-- | The first test tests if batches are being streamed ahead of
+-- | the fold function for consumption. A new batch should be processed as soon as 
+-- | the fold consumes a batch.
+-- | 
+-- | The second test tests that with 2 workers and fold processing batches twice as fast
+-- | as they are yielded that workers are never idling. If they are the test must fail.
+-- | Diagrammatically, this is how things should work out: 
+-- | 
+-- | working = -, idle = .
+-- | Worker 1: |-----|-----|-----|
+-- | Worker 2: |-----|-----|-----|
+-- | Fold:     |.....|--|--|--|--|
 spec = do
   it "Tests data is flowing" $
-    (runTest (testFoldTimeout $ MockData 2)) `shouldReturn` (Just ())
+    (runTest defaultTimeout (testFoldTimeout $ MockData 2)) `shouldReturn` (Just ())
   it "Tests concurrent datasets yield concurrently" $
-    (runTest (testConcurrentFoldTimeout (MockData 1) 4)) `shouldReturn` (Just ())
+    (runTest timeoutConcurrent (testConcurrentFoldTimeout (MockData 2) 2)) `shouldReturn` (Just ())
