@@ -99,7 +99,8 @@ library
                     , zlib >= 0.6
                     , pipes
                     , pipes-concurrency
-                    , async
+                    , lifted-async
+                    , monad-control
                     , foldl
 
                     , inline-c
