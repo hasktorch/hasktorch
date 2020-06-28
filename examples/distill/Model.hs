@@ -37,7 +37,7 @@ train OptimSpec{..} dataset init = do
 
             let flatParameters = flattenParameters state
             let (Gradients gradients) = grad' loss flatParameters
-            print $ sumAll <$> gradients
+            -- print $ sumAll <$> gradients
 
             when (iter `mod` 50 == 0) $ do
                 putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
