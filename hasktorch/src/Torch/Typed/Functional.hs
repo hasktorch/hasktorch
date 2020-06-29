@@ -3018,17 +3018,9 @@ type family
     (length :: Nat) ::
     [Nat]
   where
-  NarrowCheck Nothing _ sh d _ _ = DimOutOfBound sh d
-  NarrowCheck (Just c) Nothing _ _ s l =
-    TypeError
-      ( Text "Requested narrow length "
-          :<>: ShowType l
-          :<>: Text " is longer than "
-          :<>: ShowType c
-          :<>: Text " when starting at "
-          :<>: ShowType s
-      )
-  NarrowCheck _ (Just r) _ _ _ _ = r
+  NarrowCheck Nothing _ sh d _ _        = DimOutOfBound sh d
+  NarrowCheck (Just c) Nothing sh d s l = DimOutOfBound sh d
+  NarrowCheck _ (Just r) _ _ _ _        = r
 
 type family Narrow (dim :: Nat) (shape :: [Nat]) (current :: Maybe Nat) (start :: Nat) (length :: Nat) :: Maybe [Nat] where
   Narrow d sh (Just c) s l = ReplaceDim d sh ((c - s) + l)
