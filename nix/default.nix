@@ -30,12 +30,12 @@ let
   overlays =
     # Haskell.nix (https://github.com/input-output-hk/haskell.nix)
     haskellNix.overlays
-    # override Haskell.nix hackage sources
-    # TODO: override also the stackage sources
+    # override Haskell.nix hackage and stackage sources
     ++ [
       (pkgsNew: pkgsOld: {
         haskell-nix = pkgsOld.haskell-nix // {
           hackageSrc = sources.hackage-nix;
+          stackageSrc = sources.stackage-nix;
         };
       })
     ]
