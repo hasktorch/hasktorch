@@ -127,7 +127,7 @@ makeFoldWithTransform :: (MonadIO m, MonadIO m2, Dataset m2 dataset batch)
   -> m2 (L.FoldM m batch' b -> m b)
 makeFoldWithTransform transf = fmap fst . makeFoldWithTransform' transf 
 
-makeConcurrentFold :: (MonadIO m2, ConcurrentDataset m2 dataset batch', MonadIO m)
+makeConcurrentFold :: (MonadIO m2, MonadIO m, ConcurrentDataset m2 dataset batch')
   => (batch' -> batch)
   -> dataset
   -> Int
