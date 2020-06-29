@@ -23,7 +23,12 @@ let
     # then list all local packages then include source-repository-package that cabal complains about:
     #packages = ps: with ps; [ ];
 
-    tools = { cabal = "3.2.0.0"; ghcide = "0.2.0"; };
+    tools = {
+      cabal = "3.2.0.0";
+      ghcide = "0.2.0";
+      ormolu = "0.1.0.0";
+      brittany = "0.12.1.1";
+    };
 
     # These programs will be available inside the nix-shell.
     buildInputs =
@@ -65,4 +70,4 @@ let
 
 in
 
- shell // { inherit devops; }
+  shell // { inherit devops; }

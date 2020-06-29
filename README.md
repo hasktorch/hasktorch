@@ -146,7 +146,7 @@ $ nix-shell \
   --command "export DEVICE=\"cuda:0\"; cabal run static-mnist-mlp"
 ```
 
-### Set up your development environement
+### Set up your development environment
 
 If you want to develop the project with great Haskell IDE integration,
 you should consider using [ghcide](https://github.com/digital-asset/ghcide).
@@ -163,19 +163,26 @@ You will then want to install an integration for your preferred editor. `ghcide`
 * [Vim](https://github.com/digital-asset/ghcide#using-with-vimneovim),
 * and [others](https://github.com/digital-asset/ghcide).
 
-In order to get started with VS Code, start it from within a Nix shell:
+### Getting started with VS Code
+
+This section walks you through the steps of setting up the `ghcide` integration with VS Code.
+It assumes that VS Code is already installed system-wide.
+
+First, open a Nix shell and start VS Code:
 
 ```sh
 $ nix-shell --command "code ."
 ```
 
-This assumes VS Code is already installed system-wide.
+This will work on both macOS and Linux since it is limited to the CPU-only Torch backend.
+On Linux, a CUDA-enabled experience is also possible.
+Just append `--arg cudaSupport true` and `--argstr cudaMajorVersion 10` to the above `nix-shell` command.
 
-A CUDA-enabled `ghcide` experience is also possible,
-just append `--arg cudaSupport true` and `--argstr cudaMajorVersion 10` to the `nix-shell` command.
-
-All that is needed now is the VS Code [Haskell Language Server plugin](https://marketplace.visualstudio.com/items?itemName=alanz.vscode-hie-server).
+Once VS Code is up an running,
+the [Haskell Language Server plugin](https://marketplace.visualstudio.com/items?itemName=alanz.vscode-hie-server)
+needs to be installed.
 Follow the link to the market place, and install the plugin in VS Code.
+
 Lastly, in the settings for the plugin, set the `Hie Variant` to `ghcide`.
 Changing this setting may require a restart of VS Code.
 Afterwards, you should be good to go.
