@@ -3008,8 +3008,60 @@ mv input vec = unsafePerformIO $ ATen.cast2 ATen.Managed.mv_tt input vec
 -- mvlgamma :: Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- mvlgamma _input _p = unsafePerformIO $ (ATen.cast2 ATen.Managed.mvlgamma_tl) _input _p
 
--- narrow :: Tensor device dtype shape -> Int -> Int -> Int -> Tensor device dtype shape
--- narrow _input _dim _start _length = unsafePerformIO $ (ATen.cast4 ATen.Managed.narrow_tlll) _input _dim _start _length
+type family
+  NarrowCheck
+    (mbCurrent :: Maybe Nat)
+    (mbUpdated :: Maybe [Nat])
+    (shape :: [Nat])
+    (dim :: Nat)
+    (start :: Nat)
+    (length :: Nat) ::
+    [Nat]
+  where
+  NarrowCheck Nothing _ sh d _ _ = DimOutOfBound sh d
+  NarrowCheck (Just c) Nothing _ _ s l =
+    TypeError
+      ( Text "Requested narrow length "
+          :<>: ShowType l
+          :<>: Text " is longer than "
+          :<>: ShowType c
+          :<>: Text " when starting at "
+          :<>: ShowType s
+      )
+  NarrowCheck _ (Just r) _ _ _ _ = r
+
+type family Narrow dim shape current start length :: Maybe [Nat] where
+  Narrow d sh (Just c) s l = ReplaceDim d sh ((c - s) + l)
+  Narrow d sh Nothing s l =
+    TypeError
+      ( Text "Requested narrow dimension "
+          :<>: ShowType d
+          :<>: Text " doesnt exist in "
+          :<>: ShowType sh
+      )
+
+type family NarrowInDomain mbCurrent start length :: Constraint where
+  NarrowInDomain (Just c) s l = c >= (s + l)
+
+-- | "Narrow" a tensor by returning a tensor that is a slice from 'start' of length 'length' along 'dim'
+-- 
+-- >>> narrow @0 @0 @2 (ones :: CPUTensor 'D.Float '[3,3,3])
+-- Tensor Float [2,3,3] 
+-- >>> narrow @1 @1 @2 (ones :: CPUTensor 'D.Float '[3,3,3])
+-- Tensor Float [3,2,3] 
+narrow :: forall dim start length shape mbSize mbNewShape dtype device. 
+  (All KnownNat '[dim, start, length]
+  , All KnownNat shape
+  , DimOutOfBoundCheck shape dim
+  , mbSize ~ ExtractDim dim shape
+  , NarrowInDomain mbSize start length
+  , mbNewShape ~ Narrow dim shape mbSize start length) =>
+  Tensor device dtype shape -> Tensor device dtype (NarrowCheck mbSize mbNewShape shape dim start length)
+narrow _input = unsafePerformIO $ (ATen.cast4 ATen.Managed.narrow_tlll) _input _dim _start _length
+  where 
+    _dim = natValI @dim
+    _start = natValI @start
+    _length = natValI @length
 
 -- native_batch_norm :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Bool -> Double -> Double -> (Tensor device dtype shape,Tensor device dtype shape,Tensor device dtype shape)
 -- native_batch_norm _input _weight _bias _running_mean _running_var _training _momentum _eps = unsafePerformIO $ (ATen.cast8 ATen.Managed.native_batch_norm_tttttbdd) _input _weight _bias _running_mean _running_var _training _momentum _eps
