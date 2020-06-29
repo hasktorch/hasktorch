@@ -163,8 +163,8 @@ instance
 gdm
   :: forall gradients tensors momenta gdmStep dtype device
    . ( HZipWith3 (GDMStep device dtype) tensors gradients momenta gdmStep
-     , HMap' Torch.HList.Fst gdmStep tensors
-     , HMap' Torch.HList.Snd gdmStep momenta
+     , HMap' AFst gdmStep tensors
+     , HMap' ASnd gdmStep momenta
      )
   => LearningRate device dtype -- ^ learning rate
   -> HList gradients -- ^ model parameter gradient tensors
@@ -173,12 +173,12 @@ gdm
   -> (HList tensors, GDM momenta) -- ^ returns updated parameters and momenta
 gdm learningRate gradients parameters (GDM beta momenta) =
   let step = hzipWith3 (GDMStep beta learningRate) parameters gradients momenta
-  in  (hmap' Fst step, GDM beta (hmap' Snd step))
+  in  (hmap' AFst step, GDM beta (hmap' ASnd step))
 
 instance
   ( HZipWith3 (GDMStep device dtype) tensors gradients momenta gdmStep
-  , HMap' Torch.HList.Fst gdmStep tensors
-  , HMap' Torch.HList.Snd gdmStep momenta
+  , HMap' AFst gdmStep tensors
+  , HMap' ASnd gdmStep momenta
   ) => Optimizer (GDM momenta) gradients tensors dtype device where
   step = gdm
 

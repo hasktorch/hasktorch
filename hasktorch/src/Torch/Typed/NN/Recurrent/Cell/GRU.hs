@@ -33,7 +33,8 @@ import           Torch.Typed.Tensor
 import           Torch.Typed.Parameter
 import           Torch.Typed.Factories
 import           Torch.Typed.Functional      hiding ( linear )
-import           Torch.Typed.NN
+import           Torch.Typed.NN.Dropout
+
 
 -- | A specification for a gated recurrent unit (GRU) cell.
 --
@@ -74,7 +75,7 @@ instance ( KnownDevice device
 
 -- | A single recurrent step of a `GRUCell`
 --
-forwardStep
+gruCellForward
   :: forall inputDim hiddenDim batchSize dtype device
    . ( KnownDType dtype
      , KnownNat inputDim
@@ -85,14 +86,14 @@ forwardStep
   -> Tensor device dtype '[batchSize, hiddenDim]-- ^ The current Hidden state
   -> Tensor device dtype '[batchSize, inputDim]-- ^ The input
   -> Tensor device dtype '[batchSize, hiddenDim]-- ^ The subsequent Hidden state
-forwardStep GRUCell {..} = gruCell   (toDependent gruCell_w_ih)
-                                     (toDependent gruCell_w_hh)
-                                     (toDependent gruCell_b_ih)
-                                     (toDependent gruCell_b_hh)
+gruCellForward GRUCell {..} = gruCell (toDependent gruCell_w_ih)
+                                      (toDependent gruCell_w_hh)
+                                      (toDependent gruCell_b_ih)
+                                      (toDependent gruCell_b_hh)
 
 -- | foldl' for lists of tensors unsing a `GRUCell`
 --
-forward
+gruFold
   :: forall inputDim hiddenDim batchSize dtype device
    . ( KnownDType dtype
      , KnownNat inputDim
@@ -103,11 +104,11 @@ forward
   -> Tensor device dtype '[batchSize, hiddenDim] -- ^ The initial Hidden state
   -> [Tensor device dtype '[batchSize, inputDim]] -- ^ The list of inputs
   -> Tensor device dtype '[batchSize, hiddenDim] -- ^ The final Hidden state
-forward cell = foldl' (forwardStep cell)
+gruFold cell = foldl' (gruCellForward cell)
 
 -- | scanl' for lists of tensors unsing a `GRUCell`
 --
-forwardScan
+gruCellScan
   :: forall inputDim hiddenDim batchSize dtype device
    . ( KnownDType dtype
      , KnownNat inputDim
@@ -118,4 +119,4 @@ forwardScan
   -> Tensor device dtype '[batchSize, hiddenDim] -- ^ The initial Hidden state
   -> [Tensor device dtype '[batchSize, inputDim]] -- ^ The list of inputs
   -> [Tensor device dtype '[batchSize, hiddenDim]] -- ^ All subsequent Hidden states
-forwardScan cell = scanl' (forwardStep cell)
+gruCellScan cell = scanl' (gruCellForward cell)
