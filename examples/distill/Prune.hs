@@ -57,7 +57,7 @@ runPrune mnistData = do
 
     l1Model <- train
             optimSpec { optimizer = mkAdam (0 :: Int) 0.9 0.999 (flattenParameters initRefL1),  
-                        lossFn = mkReg l1 (selectWeights pruneSpec) 0.0 1.0 }
+                        lossFn = mkReg l1 (selectWeights pruneSpec) 1.0 100.0 }
             mnistData 
             initRefL1
 
@@ -65,7 +65,7 @@ runPrune mnistData = do
     initRefL2 <- sample refSpec
     l2Model <- train
         optimSpec { optimizer = mkAdam 0 0.9 0.999 (flattenParameters initRefL2), 
-                    lossFn = mkReg l2 (selectWeights pruneSpec) 0.0 1.0 }
+                    lossFn = mkReg l2 (selectWeights pruneSpec) 1.0 1000.0 }
         mnistData 
         initRefL2
 
