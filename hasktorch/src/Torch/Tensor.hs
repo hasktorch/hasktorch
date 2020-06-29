@@ -198,6 +198,16 @@ slice
   -> Tensor
 slice _self _dim _start _end _step = unsafePerformIO $ (cast5 ATen.slice_tllll) _self _dim _start _end _step
 
+isContiguous
+  :: Tensor
+  -> Bool
+isContiguous t = unsafePerformIO $ (cast1 ATen.tensor_is_contiguous) t
+
+contiguous
+  :: Tensor
+  -> Tensor
+contiguous t = unsafePerformIO $ (cast1 ATen.tensor_contiguous) t
+
 -- | Returns a tensor with the same data and number of elements as input, but with the specified shape.
 reshape 
  :: [Int] 
@@ -392,7 +402,8 @@ instance {-# OVERLAPPING #-}TensorLike a => TensorLike [a] where
 
   asTensor v = asTensor' v defaultOpts
 
-  asValue t = unsafePerformIO $ do
+  asValue t' = unsafePerformIO $ do
+    let t = if isContiguous t' then t' else contiguous t'
     if _dtype @a == dtype t
     then do
       withTensor t $ \ptr -> do
