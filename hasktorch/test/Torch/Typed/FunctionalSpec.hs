@@ -94,8 +94,7 @@ data UnaryStandardDTypesSpec =
 
 instance
   ( TensorOptions shape dtype device
-  , DTypeIsNotHalf device dtype
-  , DTypeIsNotBool device dtype
+  , StandardDTypeValidation device dtype
   ) => Apply' UnaryStandardDTypesSpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ()) where
   apply' AbsSpec (_, agg) = agg >> do
     let t = abs (ones @shape @dtype @device)
@@ -321,35 +320,137 @@ instance
         t' = sumDim @d t
     checkDynamicTensorAttributes t'
 
-data AggregationSpec =
+data MinMaxSpec =
     MinSpec
   | MaxSpec
-  | MedianSpec
-  | MeanSpec
 
 instance
   ( TensorOptions shape dtype device
   , KnownDType dtype
   , KnownDevice device
-  , AggregationDTypeIsValid device dtype
+  , MinMaxDTypeIsValid device dtype
   , AllDimsPositive shape
-  ) => Apply' AggregationSpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ()) where
+  ) => Apply' MinMaxSpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ()) where
   apply' MinSpec (_, agg) = agg >> do
     let t = ones @shape @dtype @device
         t' = min t
     checkDynamicTensorAttributes t'
   apply' MaxSpec (_, agg) = agg >> do
     let t = ones @shape @dtype @device
-        t' = min t
+        t' = max t
     checkDynamicTensorAttributes t'
-  apply' MedianSpec (_, agg) = agg >> do
+
+data MeanAllSpec = MeanAllSpec
+
+instance
+  ( TensorOptions shape dtype device
+  , KnownDType dtype
+  , KnownDevice device
+  , MeanDTypeValidation device dtype
+  , AllDimsPositive shape
+  ) => Apply' MeanAllSpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ()) where
+  apply' MeanAllSpec (_, agg) = agg >> do
     let t = ones @shape @dtype @device
-        t' = min t
+        t' = meanAll t
     checkDynamicTensorAttributes t'
+
+data MeanDimSpec = MeanDimSpec
+
+instance
+  ( TensorOptions shape dtype device
+  , TensorOptions shape' dtype device
+  , KnownNat dim
+  , shape' ~ DropValue shape dim
+  , MeanDTypeValidation device dtype
+  , AllDimsPositive shape
+  ) => Apply' MeanDimSpec ((Proxy dim, (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
+  apply' MeanDimSpec (_, agg) = agg >> do
+    let t = ones @shape @dtype @device
+        t' = meanDim @dim t
+    checkDynamicTensorAttributes t'
+
+data MeanSpec = MeanSpec
+
+instance
+  ( TensorOptions shape dtype device
+  , TensorOptions shape' dtype device
+  , KnownNat dim
+  , KnownKeepOrDropDim keepOrDropDim
+  , shape' ~ ConditionalDropDimension shape dim keepOrDropDim
+  , MeanDTypeValidation device dtype
+  , AllDimsPositive shape
+  ) => Apply' MeanSpec (((Proxy dim, Proxy keepOrDropDim), (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
   apply' MeanSpec (_, agg) = agg >> do
     let t = ones @shape @dtype @device
-        t' = min t
+        t' = mean @dim @keepOrDropDim t
     checkDynamicTensorAttributes t'
+
+data MedianAllSpec = MedianAllSpec
+
+instance
+  ( TensorOptions shape dtype device
+  , KnownDType dtype
+  , KnownDevice device
+  , StandardDTypeValidation device dtype
+  , AllDimsPositive shape
+  ) => Apply' MedianAllSpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ()) where
+  apply' MedianAllSpec (_, agg) = agg >> do
+    let t = ones @shape @dtype @device
+        t' = medianAll t
+    checkDynamicTensorAttributes t'
+
+data MedianDimSpec = MedianDimSpec
+
+instance
+  ( TensorOptions shape dtype device
+  , TensorOptions shape' dtype device
+  , TensorOptions shape' 'D.Int64 device
+  , KnownNat dim
+  , shape' ~ DropValue shape dim
+  , StandardDTypeValidation device dtype
+  , AllDimsPositive shape
+  ) => Apply' MedianDimSpec ((Proxy dim, (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
+  apply' MedianDimSpec (_, agg) = agg >> do
+    let t = ones @shape @dtype @device
+        (t', t'') = medianDim @dim t
+    checkDynamicTensorAttributes t'
+    checkDynamicTensorAttributes t''
+
+data MedianSpec = MedianSpec
+
+instance
+  ( TensorOptions shape  dtype    device
+  , TensorOptions shape' dtype    device
+  , TensorOptions shape' 'D.Int64 device
+  , KnownNat dim
+  , KnownKeepOrDropDim keepOrDropDim
+  , shape' ~ ConditionalDropDimension shape dim keepOrDropDim
+  , StandardDTypeValidation device dtype
+  , AllDimsPositive shape
+  ) => Apply' MedianSpec (((Proxy dim, Proxy keepOrDropDim), (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
+  apply' MedianSpec (_, agg) = agg >> do
+    let t = ones @shape @dtype @device
+        (t', t'') = median @dim @keepOrDropDim t
+    checkDynamicTensorAttributes t'
+    checkDynamicTensorAttributes t''
+
+data ModeSpec = ModeSpec
+
+instance
+  ( TensorOptions shape  dtype    device
+  , TensorOptions shape' dtype    device
+  , TensorOptions shape' 'D.Int64 device
+  , KnownNat dim
+  , KnownKeepOrDropDim keepOrDropDim
+  , shape' ~ ConditionalDropDimension shape dim keepOrDropDim
+  , StandardDTypeValidation device dtype
+  , AllDimsPositive shape
+  ) => Apply' ModeSpec (((Proxy dim, Proxy keepOrDropDim), (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
+  apply' ModeSpec (_, agg) = agg >> do
+    let t = ones @shape @dtype @device
+        (t', t'') = mode @dim @keepOrDropDim t
+    checkDynamicTensorAttributes t'
+    checkDynamicTensorAttributes t''
 
 data SqueezeAllSpec = SqueezeAllSpec
 
@@ -579,7 +680,6 @@ instance
       )
       [D.Upper, D.Lower]
 
-
 data SolveSpec = SolveSpec
 
 instance
@@ -697,6 +797,7 @@ instance
         nhx = gruCell wi wh bi bh hx input
     checkDynamicTensorAttributes nhx
 
+spec :: Spec
 spec = before_ printSeed $ do
   foldMap spec' availableDevices
   where
@@ -816,17 +917,72 @@ spec' device =
             hfoldrM @IO SumDimSpec () (hproduct sumDimDims (hattach cpu   (hproduct almostAllDTypes sumDimShapes)))
           D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
             hfoldrM @IO SumDimSpec () (hproduct sumDimDims (hattach cuda0 (hproduct allDTypes       sumDimShapes)))
-
-      let aggregationShapes = (Proxy :: Proxy ('[] :: [Nat])) :. Proxy @'[1] :. Proxy @'[2, 3] :. HNil
-          dispatch aggregationSpec = case device of
-            D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
-              hfoldrM @IO aggregationSpec () (hattach cpu   (hproduct almostAllDTypes standardShapes))
-            D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-              hfoldrM @IO aggregationSpec () (hattach cuda0 (hproduct allDTypes       standardShapes))
-      it "min"    $ dispatch MinSpec
-      it "max"    $ dispatch MaxSpec
-      it "median" $ dispatch MedianSpec
-      it "mean"   $ dispatch MeanSpec
+      do
+        let shapes = (Proxy :: Proxy ('[] :: [Nat])) :. Proxy @'[1] :. Proxy @'[2, 3] :. HNil
+            dispatch spec = case device of
+              D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+                hfoldrM @IO spec () (hattach cpu   (hproduct almostAllDTypes shapes))
+              D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+                hfoldrM @IO spec () (hattach cuda0 (hproduct allDTypes       shapes))
+        it "min" $ dispatch MinSpec
+        it "max" $ dispatch MaxSpec
+      it "meanAll"   $ do
+        let shapes = (Proxy :: Proxy ('[] :: [Nat])) :. Proxy @'[1] :. Proxy @'[2, 3] :. HNil
+        case device of
+          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+            hfoldrM @IO MeanAllSpec () (hattach cpu   (hproduct standardFloatingPointDTypes shapes))
+          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+            hfoldrM @IO MeanAllSpec () (hattach cuda0 (hproduct standardFloatingPointDTypes shapes))
+      it "meanDim" $ do
+        let dims = Proxy @0 :. Proxy @1 :. HNil
+            shapes = Proxy @'[1, 3] :. Proxy @'[2, 3] :. HNil
+        case device of
+          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+            hfoldrM @IO MeanDimSpec () (hproduct dims (hattach cpu   (hproduct standardFloatingPointDTypes shapes)))
+          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+            hfoldrM @IO MeanDimSpec () (hproduct dims (hattach cuda0 (hproduct standardFloatingPointDTypes shapes)))
+      it "mean" $ do
+        let dims = Proxy @0 :. Proxy @1 :. HNil
+            keepOrDropDims = Proxy @KeepDim :. Proxy @DropDim :. HNil
+            shapes = Proxy @'[1, 12] :. Proxy @'[2, 3] :. HNil
+        case device of
+          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+            hfoldrM @IO MeanSpec () (hproduct (hproduct dims keepOrDropDims) (hattach cpu   (hproduct standardFloatingPointDTypes shapes)))
+          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+            hfoldrM @IO MeanSpec () (hproduct (hproduct dims keepOrDropDims) (hattach cpu   (hproduct standardFloatingPointDTypes shapes)))
+      it "medianAll" $ do
+        let shapes = (Proxy :: Proxy ('[] :: [Nat])) :. Proxy @'[1] :. Proxy @'[2, 3] :. HNil
+        case device of
+          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+            hfoldrM @IO MedianAllSpec () (hattach cpu   (hproduct standardDTypes            shapes))
+          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+            hfoldrM @IO MedianAllSpec () (hattach cuda0 (hproduct (withHalf standardDTypes) shapes))
+      it "medianDim" $ do
+        let dims = Proxy @0 :. Proxy @1 :. HNil
+            shapes = Proxy @'[1, 17, 1] :. Proxy @'[2, 3] :. HNil
+        case device of
+          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+            hfoldrM @IO MedianDimSpec () (hproduct dims (hattach cpu   (hproduct standardDTypes            shapes)))
+          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+            hfoldrM @IO MedianDimSpec () (hproduct dims (hattach cuda0 (hproduct (withHalf standardDTypes) shapes)))
+      it "median" $ do
+        let dims = Proxy @0 :. Proxy @1 :. HNil
+            keepOrDropDims = Proxy @KeepDim :. Proxy @DropDim :. HNil
+            shapes = Proxy @'[2, 13] :. Proxy @'[2, 3] :. Proxy @'[1, 3, 7] :. HNil
+        case device of
+          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+            hfoldrM @IO MedianSpec () (hproduct (hproduct dims keepOrDropDims) (hattach cpu   (hproduct standardDTypes            shapes)))
+          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+            hfoldrM @IO MedianSpec () (hproduct (hproduct dims keepOrDropDims) (hattach cuda0 (hproduct (withHalf standardDTypes) shapes)))
+      it "mode"   $ do
+        let dims = Proxy @0 :. Proxy @1 :. HNil
+            keepOrDropDims = Proxy @KeepDim :. Proxy @DropDim :. HNil
+            shapes = Proxy @'[2, 13] :. Proxy @'[2, 3] :. Proxy @'[1, 3, 7] :. HNil
+        case device of
+          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+            hfoldrM @IO ModeSpec () (hproduct (hproduct dims keepOrDropDims) (hattach cpu   (hproduct standardDTypes            shapes)))
+          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+            hfoldrM @IO ModeSpec () (hproduct (hproduct dims keepOrDropDims) (hattach cuda0 (hproduct (withHalf standardDTypes) shapes)))
 
     describe "shape ops" $ do
       it "squeezeAll" $ case device of
@@ -835,15 +991,15 @@ spec' device =
         D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
           hfoldrM @IO SqueezeAllSpec () (hattach cuda0 (hproduct allDTypes standardShapes))
       it "transpose" $ do
-        let transposeDims   = hzip
-                                (Proxy @0 :. Proxy @0 :. Proxy @1 :. HNil)
-                                (Proxy @0 :. Proxy @1 :. Proxy @0 :. HNil)
-            transposeShapes = Proxy @'[0, 0] :. Proxy @'[0, 1]  :. Proxy @'[1, 0] :. Proxy @'[2, 3] :. Proxy @'[0, 1, 1]  :. Proxy @'[1, 0, 1] :. HNil
+        let dims   = hzip
+                       (Proxy @0 :. Proxy @0 :. Proxy @1 :. HNil)
+                       (Proxy @0 :. Proxy @1 :. Proxy @0 :. HNil)
+            shapes = Proxy @'[0, 0] :. Proxy @'[0, 1]  :. Proxy @'[1, 0] :. Proxy @'[2, 3] :. Proxy @'[0, 1, 1]  :. Proxy @'[1, 0, 1] :. HNil
         case device of
           D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
-            hfoldrM @IO TransposeSpec () (hproduct transposeDims (hattach cpu   (hproduct allDTypes transposeShapes)))
+            hfoldrM @IO TransposeSpec () (hproduct dims (hattach cpu   (hproduct allDTypes shapes)))
           D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-            hfoldrM @IO TransposeSpec () (hproduct transposeDims (hattach cuda0 (hproduct allDTypes transposeShapes)))
+            hfoldrM @IO TransposeSpec () (hproduct dims (hattach cuda0 (hproduct allDTypes shapes)))
       it "transpose2d" $ case device of
         D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
           hfoldrM @IO Transpose2DSpec () (hattach cpu   (hproduct allDTypes (Proxy @'[2, 3] :. HNil)))

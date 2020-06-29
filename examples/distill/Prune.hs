@@ -1,5 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Main where
 
@@ -15,21 +16,19 @@ data (Parameterized m) => PruneSpec m = PruneSpec {
     pruneWeights :: m -> m
 }
 
-selectAllWeights model = 
-    toDependent <$> flattenParameters model
-
-l1Prune :: Float -> Tensor -> Tensor
-l1Prune threshold t =
-    Torch.abs t `lt` (asTensor threshold)
-
 l1 :: Tensor -> Tensor
 l1 w = l1Loss ReduceMean w (zerosLike w)
 
 l2 :: Tensor -> Tensor
 l2 x = mseLoss (zerosLike x) x
 
+mkReg regFn selectFn a b model input target =
+    a * (nllLoss' target (forward model input)) + b * regFn selectParams
+    where
+        selectParams = flattenAll $ cat (Dim 0) $ flattenAll <$> (selectFn $ model) 
+
 -- | Setup pruning parameters and run
-runPrune :: (Dataset d) => d -> IO (CNN, CNN) 
+runPrune :: (Dataset d) => d -> IO () 
 runPrune mnistData = do
 
     print "sampling"
@@ -55,9 +54,6 @@ runPrune mnistData = do
             
     print "l1"
     initRefL1 <- sample refSpec
-    let mkReg = \regFn selectFn a b model input target ->
-            let regWeights = flattenAll $ cat (Dim 0) $ flattenAll <$> (selectFn $ model) 
-                in a * (nllLoss' target (forward model input)) + b * regFn regWeights 
 
     l1Model <- train
             optimSpec { optimizer = mkAdam (0 :: Int) 0.9 0.999 (flattenParameters initRefL1),  
@@ -73,7 +69,6 @@ runPrune mnistData = do
         mnistData 
         initRefL2
 
-
     plt <- strip (toDependent . weight . cnnFC0 $ initRef)
     toHtmlFile "plotInit.html" plt
     system "open plotInit.html"
@@ -86,10 +81,9 @@ runPrune mnistData = do
     toHtmlFile "plot0l2.html" plt
     system "open plot0l2.html"
 
-    print "pruning"
-    let pruned = undefined
-    pure pruned
-    -- pure (ref, pruned)
+    -- TODO - structured/unstructured pruning test
+
+    pure ()
   where
     channels = 3
     refSpec = 
@@ -105,23 +99,7 @@ pruneTest = do
     putStrLn "Loading Data"
     (mnistTrain, mnistTest) <- loadMNIST "datasets/mnist"
     putStrLn "Running Prune"
-    (original, derived) <- runPrune mnistTrain
+    runPrune mnistTrain
     putStrLn "Done"
-
-gradTest = do
-    let foo = asTensor ([1, 2, 3] :: [Float])
-    bar <- makeIndependent foo
-    let baz = sumAll $ Torch.abs $ toDependent bar
-    let baz' = sumAll $ pow (2 :: Int) $ toDependent bar
-    print "l1"
-    print $ grad baz [bar]
-    print "l2"
-    print $ grad baz' [bar]
-    -- print "no"
-    -- print $ grad (sumAll $ foo) [bar]
-    -- print "no2"
-    -- bar' <- makeIndependent foo
-    -- print $ grad baz [bar, bar']
-    pure ()
 
 main = pruneTest

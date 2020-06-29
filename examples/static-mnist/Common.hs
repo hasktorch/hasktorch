@@ -79,6 +79,7 @@ errorCount
      , KnownNat outputFeatures
      , SumDTypeIsValid device 'D.Bool
      , ComparisonDTypeIsValid device 'D.Int64
+     , StandardDTypeValidation device 'D.Float
      )
   => Tensor device 'D.Float '[batchSize, outputFeatures] -- ^ prediction
   -> Tensor device 'D.Int64 '[batchSize] -- ^ target
@@ -91,6 +92,7 @@ train
      , StandardFloatingPointDTypeValidation device 'D.Float
      , SumDTypeIsValid device 'D.Bool
      , ComparisonDTypeIsValid device 'D.Int64
+     , StandardDTypeValidation device 'D.Float
      , KnownDevice device
      , HasGrad (HList parameters) (HList gradients)
      , tensors ~ gradients
