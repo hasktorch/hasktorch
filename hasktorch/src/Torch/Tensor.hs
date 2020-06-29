@@ -188,6 +188,16 @@ indexSelect
  -> Tensor
 indexSelect t dim indexTensor = unsafePerformIO $ (cast3 ATen.index_select_tlt) t dim indexTensor
 
+-- | Slices the input tensor along the selected dimension at the given range. 
+slice
+  :: Tensor -- ^ input
+  -> Int -- ^ dim
+  -> Int -- ^ start
+  -> Int -- ^ end
+  -> Int -- ^ step
+  -> Tensor
+slice _self _dim _start _end _step = unsafePerformIO $ (cast5 ATen.slice_tllll) _self _dim _start _end _step
+
 -- | Returns a tensor with the same data and number of elements as input, but with the specified shape.
 reshape 
  :: [Int] 
@@ -218,11 +228,70 @@ toCUDA t = unsafePerformIO $ (cast1 ATen.tensor_cuda) t
 -- Indexing support
 --------------------------------------------------------------------------------
 
+-- TensorIndex is the same as slice of pytorch.
+--
+-- There is one-to-one correspondence between Pytorch and Hasktorch tensor index types:
+-- Pytorch                 | Hasktorch
+-- -----------------------------------------------------
+-- `None`                  | `None`
+-- `Ellipsis`              | `Ellipsis`
+-- `...`                   | `Ellipsis`
+-- `123`                   | `123`
+-- `True` / `False`        | `True` / `False`
+-- `:`                     | `Slice ()`
+-- `::`                    | `Slice ()`
+-- `1:`                    | `Slice (1, None)`
+-- `1::`                   | `Slice (1, None)`
+-- `:3`                    | `Slice (None, 3)`
+-- `:3:`                   | `Slice (None, 3)`
+-- `::2`                   | `Slice (None, None, 2)`
+-- `1:3`                   | `Slice (1, 3)`
+-- `1::2`                  | `Slice (1, None, 2)`
+-- `:3:2`                  | `Slice (None, 3, 2)`
+-- `1:3:2`                 | `Slice (1, 3, 2)`
+-- `torch.tensor([1, 2])`) | `asTensor([1, 2 ::Int])`
+
+
 (@@) :: TensorIndex a => Tensor -> a -> Tensor
 t @@ idx = fst $ indexWith (t, 0) idx
 
+data None = None
+  deriving (Show, Eq)
+
+data Ellipsis = Ellipsis
+  deriving (Show, Eq)
+
+data Slice a = Slice a
+  deriving (Show, Eq)
+
 class TensorIndex a where
   indexWith :: (Tensor, Int) -> a -> (Tensor, Int)
+
+
+-- ToDo:
+--   1, offset may have a bug.
+--   2, Implement Ellipsis and Boolean
+
+instance TensorIndex (Slice (Integer,Integer)) where
+  indexWith (t, offset) (Slice (start,end)) = (slice t offset (fromIntegral start) (fromIntegral end) 1, offset+1)
+
+instance TensorIndex (Slice (Integer,Integer,Integer)) where
+  indexWith (t, offset) (Slice (start,end,step)) = (slice t offset (fromIntegral start) (fromIntegral end) (fromIntegral step), offset+1)
+
+instance TensorIndex (Slice (None,None,Integer)) where
+  indexWith (t, offset) (Slice (_,_,step)) = (slice t offset 0 (fromIntegral (maxBound :: Int)) (fromIntegral step), offset+1)
+
+instance TensorIndex (Slice Integer) where
+  indexWith (t, offset) (Slice start) = (slice t offset (fromIntegral start) (fromIntegral (maxBound :: Int)) 1, offset+1)
+
+instance TensorIndex (Slice (Integer,None)) where
+  indexWith (t, offset) (Slice (start,_)) = (slice t offset (fromIntegral start) (fromIntegral (maxBound :: Int)) 1, offset+1)
+
+instance TensorIndex (Slice (None,Integer)) where
+  indexWith (t, offset) (Slice (_,end)) = (slice t offset 0 (fromIntegral end) 1, offset+1)
+
+instance TensorIndex (Slice ()) where
+  indexWith (t, offset) _ = (t, offset + 1)
 
 instance TensorIndex Int where
   indexWith (t, offset) idx = (select t offset idx, offset)
@@ -230,8 +299,11 @@ instance TensorIndex Int where
 instance TensorIndex Integer where
   indexWith (t, offset) idx = (select t offset (fromIntegral idx), offset)
 
+instance TensorIndex Tensor where
+  indexWith (t, offset) idx = (indexSelect t offset idx, offset)
+
 instance TensorIndex () where
-  indexWith (t, offset) idx = (t, offset + 1)
+  indexWith (t, offset) _ = (t, offset + 1)
 
 instance (TensorIndex a, TensorIndex b) => TensorIndex (a,b) where
   indexWith toff (a, b) = indexWith (indexWith toff a) b
