@@ -3030,7 +3030,7 @@ type family
       )
   NarrowCheck _ (Just r) _ _ _ _ = r
 
-type family Narrow dim shape current start length :: Maybe [Nat] where
+type family Narrow (dim :: Nat) (shape :: [Nat]) (current :: Maybe Nat) (start :: Nat) (length :: Nat) :: Maybe [Nat] where
   Narrow d sh (Just c) s l = ReplaceDim d sh ((c - s) + l)
   Narrow d sh Nothing s l =
     TypeError
@@ -3040,7 +3040,7 @@ type family Narrow dim shape current start length :: Maybe [Nat] where
           :<>: ShowType sh
       )
 
-type family NarrowInDomain mbCurrent start length :: Constraint where
+type family NarrowInDomain (mbCurrent :: Maybe Nat) (start :: Nat) (length :: Nat) :: Constraint where
   NarrowInDomain (Just c) s l = c >= (s + l)
 
 -- | "Narrow" a tensor by returning a tensor that is a slice from 'start' of length 'length' along 'dim'
