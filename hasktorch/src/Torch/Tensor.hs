@@ -285,20 +285,50 @@ class TensorIndex a where
 instance TensorIndex (Slice (Integer,Integer)) where
   indexWith (t, offset) (Slice (start,end)) = (slice t offset (fromIntegral start) (fromIntegral end) 1, offset+1)
 
+instance TensorIndex (Slice (Int,Int)) where
+  indexWith (t, offset) (Slice (start,end)) = (slice t offset start end 1, offset+1)
+
 instance TensorIndex (Slice (Integer,Integer,Integer)) where
   indexWith (t, offset) (Slice (start,end,step)) = (slice t offset (fromIntegral start) (fromIntegral end) (fromIntegral step), offset+1)
+
+instance TensorIndex (Slice (Int,Int,Int)) where
+  indexWith (t, offset) (Slice (start,end,step)) = (slice t offset start end step, offset+1)
 
 instance TensorIndex (Slice (None,None,Integer)) where
   indexWith (t, offset) (Slice (_,_,step)) = (slice t offset 0 (fromIntegral (maxBound :: Int)) (fromIntegral step), offset+1)
 
+instance TensorIndex (Slice (None,None,Int)) where
+  indexWith (t, offset) (Slice (_,_,step)) = (slice t offset 0 (maxBound :: Int) step, offset+1)
+
 instance TensorIndex (Slice Integer) where
   indexWith (t, offset) (Slice start) = (slice t offset (fromIntegral start) (fromIntegral (maxBound :: Int)) 1, offset+1)
+
+instance TensorIndex (Slice Int) where
+  indexWith (t, offset) (Slice start) = (slice t offset start (maxBound :: Int) 1, offset+1)
 
 instance TensorIndex (Slice (Integer,None)) where
   indexWith (t, offset) (Slice (start,_)) = (slice t offset (fromIntegral start) (fromIntegral (maxBound :: Int)) 1, offset+1)
 
+instance TensorIndex (Slice (Int,None,Int)) where
+  indexWith (t, offset) (Slice (start,_,step)) = (slice t offset start (maxBound :: Int) step, offset+1)
+
+instance TensorIndex (Slice (Integer,None,Integer)) where
+  indexWith (t, offset) (Slice (start,_,step)) = (slice t offset (fromIntegral start) (fromIntegral (maxBound :: Int)) (fromIntegral step), offset+1)
+
+instance TensorIndex (Slice (None,Int,Int)) where
+  indexWith (t, offset) (Slice (_,end,step)) = (slice t offset 0 end step, offset+1)
+
+instance TensorIndex (Slice (None,Integer,Integer)) where
+  indexWith (t, offset) (Slice (_,end,step)) = (slice t offset 0 (fromIntegral end) (fromIntegral step), offset+1)
+
+instance TensorIndex (Slice (Int,None)) where
+  indexWith (t, offset) (Slice (start,_)) = (slice t offset start (maxBound :: Int) 1, offset+1)
+
 instance TensorIndex (Slice (None,Integer)) where
   indexWith (t, offset) (Slice (_,end)) = (slice t offset 0 (fromIntegral end) 1, offset+1)
+
+instance TensorIndex (Slice (None,Int)) where
+  indexWith (t, offset) (Slice (_,end)) = (slice t offset 0 end 1, offset+1)
 
 instance TensorIndex (Slice ()) where
   indexWith (t, offset) _ = (t, offset + 1)
