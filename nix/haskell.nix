@@ -37,6 +37,12 @@ let
     # on top of the package set derived from cabal resolution.
     pkg-def-extras = [
       extras
+      (hackage: {
+        packages = {
+          # see https://github.com/well-typed/cborg/issues/242
+          "primitive" = (((hackage.primitive)."0.7.0.0").revisions).default;
+        };
+      })
     ];
 
     modules = [
