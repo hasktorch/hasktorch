@@ -30,30 +30,9 @@ import           System.Environment
 import           System.IO.Unsafe
 import           System.Random
 
-import qualified Torch.Internal.Cast                     as ATen
-import qualified Torch.Internal.Class                    as ATen
-import qualified Torch.Internal.Type                     as ATen
-import qualified Torch.Internal.Managed.Type.Tensor      as ATen
-import qualified Torch.Internal.Managed.Type.Context     as ATen
-import           Torch.Typed.Aux
-import           Torch.Typed.Tensor
-import           Torch.Typed.Functional      hiding ( linear
-                                                , dropout
-                                                )
-import           Torch.Typed.Factories
-import           Torch.Typed.NN
-import           Torch.Typed.Optim
-import           Torch.Typed.Parameter
-import qualified Torch.Autograd                as A
-import qualified Torch.NN                      as A
-import qualified Torch.Device                  as D
-import qualified Torch.DType                   as D
-import qualified Torch.Tensor                  as D
-import qualified Torch.Functional              as D
-import qualified Torch.TensorFactories         as D
-import qualified Torch.Serialize               as D
-import qualified Torch.Typed.Vision            as I
-import           Common
+import Torch.Typed
+import Common
+import Torch.Internal.Managed.Type.Context (manual_seed_L)
 
 --------------------------------------------------------------------------------
 -- MLP for MNIST
@@ -61,8 +40,8 @@ import           Common
 
 data MLPSpec (inputFeatures :: Nat) (outputFeatures :: Nat)
              (hiddenFeatures0 :: Nat) (hiddenFeatures1 :: Nat)
-             (dtype :: D.DType)
-             (device :: (D.DeviceType, Nat))
+             (dtype :: DType)
+             (device :: (DeviceType, Nat))
  where
   MLPSpec
     :: forall inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1 dtype device
@@ -72,8 +51,8 @@ data MLPSpec (inputFeatures :: Nat) (outputFeatures :: Nat)
 
 data MLP (inputFeatures :: Nat) (outputFeatures :: Nat)
          (hiddenFeatures0 :: Nat) (hiddenFeatures1 :: Nat)
-         (dtype :: D.DType)
-         (device :: (D.DeviceType, Nat))
+         (dtype :: DType)
+         (device :: (DeviceType, Nat))
  where
   MLP
     :: forall inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1 dtype device
@@ -102,13 +81,13 @@ mlp
   -> IO (Tensor device dtype '[batchSize, outputFeatures])
 mlp MLP {..} train input =
   return
-    .   linear mlpLayer2
-    =<< dropout mlpDropout train
+    .   forward mlpLayer2
+    =<< dropoutForward mlpDropout train
     .   tanh
-    .   linear mlpLayer1
-    =<< dropout mlpDropout train
+    .   forward mlpLayer1
+    =<< dropoutForward mlpDropout train
     .   tanh
-    .   linear mlpLayer0
+    .   forward mlpLayer0
     =<< pure input
 
 instance ( KnownNat inputFeatures
@@ -119,32 +98,32 @@ instance ( KnownNat inputFeatures
          , KnownDevice device
          , RandDTypeIsValid device dtype
          )
-  => A.Randomizable (MLPSpec inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1 dtype device)
-                    (MLP     inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1 dtype device)
+  => Randomizable (MLPSpec inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1 dtype device)
+                  (MLP     inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1 dtype device)
  where
   sample MLPSpec {..} =
     MLP
-      <$> A.sample LinearSpec
-      <*> A.sample LinearSpec
-      <*> A.sample LinearSpec
-      <*> A.sample (DropoutSpec mlpDropoutProbSpec)
+      <$> sample LinearSpec
+      <*> sample LinearSpec
+      <*> sample LinearSpec
+      <*> sample (DropoutSpec mlpDropoutProbSpec)
 
 type BatchSize = 512
 type HiddenFeatures0 = 512
 type HiddenFeatures1 = 256
 
 train'
-  :: forall (device :: (D.DeviceType, Nat))
+  :: forall (device :: (DeviceType, Nat))
    . _
   => IO ()
 train' = do
   let dropoutProb  = 0.5
       learningRate = 0.1
-  ATen.manual_seed_L 123
-  initModel <- A.sample
-    (MLPSpec @I.DataDim @I.ClassDim
+  manual_seed_L 123
+  initModel <- sample
+    (MLPSpec @DataDim @ClassDim
              @HiddenFeatures0 @HiddenFeatures1
-             @D.Float
+             @'Float
              @device
              dropoutProb
     )
@@ -155,6 +134,6 @@ main :: IO ()
 main = do
   deviceStr <- try (getEnv "DEVICE") :: IO (Either SomeException String)
   case deviceStr of
-    Right "cpu"    -> train' @'( 'D.CPU, 0)
-    Right "cuda:0" -> train' @'( 'D.CUDA, 0)
+    Right "cpu"    -> train' @'( 'CPU, 0)
+    Right "cuda:0" -> train' @'( 'CUDA, 0)
     _              -> error "Don't know what to do or how."
