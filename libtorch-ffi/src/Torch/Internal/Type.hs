@@ -42,6 +42,8 @@ data Tensor
 -- std::vector<at::Tensor>
 type TensorList = StdVector Tensor
 
+data TensorIndex
+
 data Scalar
 data TensorOptions
 
@@ -125,4 +127,5 @@ typeTable = Map.fromList [
       , (C.TypeName "torch::jit::Graph", [t|JitGraph|])
       , (C.TypeName "torch::jit::Node", [t|JitNode|])
       , (C.TypeName "torch::jit::Value", [t|JitValue|])
+      , (C.TypeName "at::indexing::TensorIndex", [t|TensorIndex|])
     ]
