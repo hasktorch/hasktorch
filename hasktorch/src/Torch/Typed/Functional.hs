@@ -3046,8 +3046,10 @@ type family NarrowInDomain (shape :: [Nat]) (dim :: Nat) (start :: Nat) (length 
 -- 
 -- >>> narrow @0 @0 @2 (ones :: CPUTensor 'D.Float '[3,3,3])
 -- Tensor Float [2,3,3] 
--- >>> narrow @1 @1 @2 (ones :: CPUTensor 'D.Float '[3,3,3])
--- Tensor Float [3,2,3] 
+-- >>> narrow @1 @1 @2 (ones :: CPUTensor 'D.Half '[3,3,3])
+-- Tensor Half [3,2,3] 
+-- >>> narrow @1 @1 @2 (ones :: CPUTensor 'D.Bool '[3,3,3])
+-- Tensor Bool [3,2,3]
 narrow :: forall dim start length shape mbSize mbNewShape dtype device. 
   (All KnownNat '[dim, start, length]
   , All KnownNat shape
