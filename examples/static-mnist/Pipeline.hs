@@ -123,6 +123,7 @@ newMain forward model optim numEpochs = do
 lossAndErrorCount
   :: forall batchSize device shape .
      (SumDTypeIsValid device 'D.Bool,
+      StandardDTypeValidation device 'D.Float,
       ComparisonDTypeIsValid device 'D.Int64,
       KnownNat batchSize,
       KnownNat shape,
