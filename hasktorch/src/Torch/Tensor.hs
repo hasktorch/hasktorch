@@ -31,6 +31,7 @@ import qualified Torch.Internal.Unmanaged.Type.Tensor as Unmanaged (tensor_data_
 import qualified Torch.Internal.Managed.Type.Context as ATen
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
 import qualified Torch.Internal.Managed.Type.TensorOptions as ATen
+import qualified Torch.Internal.Managed.Type.TensorIndex as ATen
 import qualified Torch.Internal.Managed.Type.StdArray as ATen
 import qualified Torch.Internal.Managed.Type.StdString as ATen
 import qualified Torch.Internal.Managed.Native as ATen
@@ -274,85 +275,113 @@ data Ellipsis = Ellipsis
 data Slice a = Slice a
   deriving (Show, Eq)
 
+newtype RawTensorIndexList = RawTensorIndexList (ForeignPtr (ATen.StdVector ATen.TensorIndex))
+newtype RawTensorIndex = RawTensorIndex (ForeignPtr ATen.TensorIndex)
+
+instance Castable RawTensorIndex (ForeignPtr ATen.TensorIndex) where
+  cast (RawTensorIndex obj) f = f obj
+  uncast obj f = f $ RawTensorIndex obj
+
 class TensorIndex a where
   indexWith :: (Tensor, Int) -> a -> (Tensor, Int)
+  pushIndex :: [RawTensorIndex] -> a -> [RawTensorIndex]
+  pushIndex = undefined
 
 
 -- ToDo:
 --   1, offset may have a bug.
 --   2, Implement Ellipsis and Boolean
 
-instance TensorIndex (Slice (Integer,Integer)) where
+instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (a,a)) where
   indexWith (t, offset) (Slice (start,end)) = (slice t offset (fromIntegral start) (fromIntegral end) 1, offset+1)
-
-instance TensorIndex (Slice (Int,Int)) where
-  indexWith (t, offset) (Slice (start,end)) = (slice t offset start end 1, offset+1)
-
-instance TensorIndex (Slice (Integer,Integer,Integer)) where
+  pushIndex vec (Slice (start,end)) = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithSlice (fromIntegral start :: CInt) (fromIntegral end ::CInt) 1
+    return ((RawTensorIndex idx):vec)
+    
+instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (a,a,a)) where
   indexWith (t, offset) (Slice (start,end,step)) = (slice t offset (fromIntegral start) (fromIntegral end) (fromIntegral step), offset+1)
+  pushIndex vec (Slice (start,end,step)) = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithSlice (fromIntegral start :: CInt) (fromIntegral end ::CInt) (fromIntegral step ::CInt)
+    return ((RawTensorIndex idx):vec)
 
-instance TensorIndex (Slice (Int,Int,Int)) where
-  indexWith (t, offset) (Slice (start,end,step)) = (slice t offset start end step, offset+1)
-
-instance TensorIndex (Slice (None,None,Integer)) where
+instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (None,None,a)) where
   indexWith (t, offset) (Slice (_,_,step)) = (slice t offset 0 (fromIntegral (maxBound :: Int)) (fromIntegral step), offset+1)
+  pushIndex vec (Slice (_,_,step)) = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithSlice 0 (maxBound ::CInt) (fromIntegral step ::CInt)
+    return ((RawTensorIndex idx):vec)
 
-instance TensorIndex (Slice (None,None,Int)) where
-  indexWith (t, offset) (Slice (_,_,step)) = (slice t offset 0 (maxBound :: Int) step, offset+1)
-
-instance TensorIndex (Slice Integer) where
+instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice a) where
   indexWith (t, offset) (Slice start) = (slice t offset (fromIntegral start) (fromIntegral (maxBound :: Int)) 1, offset+1)
+  pushIndex vec (Slice start) = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithSlice (fromIntegral start :: CInt) (maxBound ::CInt) 1
+    return ((RawTensorIndex idx):vec)
 
-instance TensorIndex (Slice Int) where
-  indexWith (t, offset) (Slice start) = (slice t offset start (maxBound :: Int) 1, offset+1)
-
-instance TensorIndex (Slice (Integer,None)) where
+instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (a,None)) where
   indexWith (t, offset) (Slice (start,_)) = (slice t offset (fromIntegral start) (fromIntegral (maxBound :: Int)) 1, offset+1)
+  pushIndex vec (Slice (start,_)) = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithSlice (fromIntegral start :: CInt) (maxBound ::CInt) 1
+    return ((RawTensorIndex idx):vec)
 
-instance TensorIndex (Slice (Int,None,Int)) where
-  indexWith (t, offset) (Slice (start,_,step)) = (slice t offset start (maxBound :: Int) step, offset+1)
-
-instance TensorIndex (Slice (Integer,None,Integer)) where
+instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (a,None,a)) where
   indexWith (t, offset) (Slice (start,_,step)) = (slice t offset (fromIntegral start) (fromIntegral (maxBound :: Int)) (fromIntegral step), offset+1)
+  pushIndex vec (Slice (start,_,step)) = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithSlice (fromIntegral start :: CInt) (maxBound ::CInt) (fromIntegral step :: CInt)
+    return ((RawTensorIndex idx):vec)
 
-instance TensorIndex (Slice (None,Int,Int)) where
-  indexWith (t, offset) (Slice (_,end,step)) = (slice t offset 0 end step, offset+1)
-
-instance TensorIndex (Slice (None,Integer,Integer)) where
+instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (None,a,a)) where
   indexWith (t, offset) (Slice (_,end,step)) = (slice t offset 0 (fromIntegral end) (fromIntegral step), offset+1)
+  pushIndex vec (Slice (_,end,step)) = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithSlice 0 (fromIntegral end :: CInt) (fromIntegral step :: CInt)
+    return ((RawTensorIndex idx):vec)
 
-instance TensorIndex (Slice (Int,None)) where
-  indexWith (t, offset) (Slice (start,_)) = (slice t offset start (maxBound :: Int) 1, offset+1)
-
-instance TensorIndex (Slice (None,Integer)) where
+instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (None,a)) where
   indexWith (t, offset) (Slice (_,end)) = (slice t offset 0 (fromIntegral end) 1, offset+1)
+  pushIndex vec (Slice (_,end)) = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithSlice 0 (fromIntegral end :: CInt) 1
+    return ((RawTensorIndex idx):vec)
 
-instance TensorIndex (Slice (None,Int)) where
-  indexWith (t, offset) (Slice (_,end)) = (slice t offset 0 end 1, offset+1)
-
-instance TensorIndex (Slice ()) where
+instance {-# OVERLAPS #-} TensorIndex (Slice ()) where
   indexWith (t, offset) _ = (t, offset + 1)
+  pushIndex vec (Slice ()) = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithSlice 0 (maxBound :: CInt) 1
+    return ((RawTensorIndex idx):vec)
 
 instance TensorIndex Int where
   indexWith (t, offset) idx = (select t offset idx, offset)
+  pushIndex vec v = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithInt (fromIntegral v::CInt)
+    return ((RawTensorIndex idx):vec)
 
 instance TensorIndex Integer where
   indexWith (t, offset) idx = (select t offset (fromIntegral idx), offset)
+  pushIndex vec v = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithInt (fromIntegral v::CInt)
+    return ((RawTensorIndex idx):vec)
 
 instance TensorIndex Tensor where
   indexWith (t, offset) idx = (indexSelect t offset idx, offset)
+  pushIndex vec v = unsafePerformIO $ do
+    idx <- cast1 ATen.newTensorIndexWithTensor v
+    return (idx:vec)
 
 instance TensorIndex () where
   indexWith (t, offset) _ = (t, offset + 1)
+  pushIndex vec _ = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithSlice 0 (maxBound :: CInt) 1
+    return ((RawTensorIndex idx):vec)
 
 instance (TensorIndex a, TensorIndex b) => TensorIndex (a,b) where
   indexWith toff (a, b) = indexWith (indexWith toff a) b
+  pushIndex vec (a,b) = (flip pushIndex b) . (flip pushIndex a) $ vec
+  
 
 instance (TensorIndex a, TensorIndex b, TensorIndex c) => TensorIndex (a,b,c) where
   indexWith toff (a, b, c) = indexWith (indexWith (indexWith toff a) b) c
+  pushIndex vec (a,b,c) = (flip pushIndex c) . (flip pushIndex b) . (flip pushIndex a) $ vec
 
 instance (TensorIndex a, TensorIndex b, TensorIndex c, TensorIndex d) => TensorIndex (a,b,c,d) where
   indexWith toff (a, b, c, d) = indexWith (indexWith (indexWith (indexWith toff a) b) c) d
+  pushIndex vec (a,b,c,d) = (flip pushIndex d) . (flip pushIndex c) . (flip pushIndex b) . (flip pushIndex a) $ vec
 
 --------------------------------------------------------------------------------
 -- Scalar <-> Tensor promotion
