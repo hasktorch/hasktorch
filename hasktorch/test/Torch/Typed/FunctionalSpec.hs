@@ -698,6 +698,32 @@ instance
         t' = transpose2D t
     checkDynamicTensorAttributes t'
 
+data NarrowSpec = NarrowSpec
+
+
+instance
+  ( TensorOptions shape dtype device,
+    TensorOptions
+      ( NarrowCheck
+          (ExtractDim dim shape)
+          (Narrow' dim shape (ExtractDim dim shape) start length)
+          shape
+          dim
+          start
+          length
+      )
+      dtype
+      device,
+    All KnownNat shape,
+    All KnownNat '[dim, start, length]
+  ) =>
+  Apply' NarrowSpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ())
+  where
+  apply' NarrowSpec (_, agg) = agg >> do
+    let t = ones @shape @dtype @device
+        t' = narrow @dim @start @length t
+    checkDynamicTensorAttributes t'
+
 data AnyAllSpec = AnySpec | AllSpec
 
 instance
