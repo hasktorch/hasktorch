@@ -3023,7 +3023,19 @@ type family
   NarrowCheck _ (Just r) _ _ _ _        = r
 
 type family Narrow' (dim :: Nat) (shape :: [Nat]) (current :: Maybe Nat) (start :: Nat) (length :: Nat) :: Maybe [Nat] where
-  Narrow' d sh (Just c) s l = ReplaceDim d sh ((c - s) + l)
+  Narrow' d sh (Just c) s l =
+    If
+      ((s + l) <=? c)
+      (ReplaceDim d sh ((c - s) + l))
+      ( TypeError
+          ( Text "The end of the requested narrow segment "
+              :<>: ShowType (s + l)
+              :<>: Text " would be larger than current size "
+              :<>: ShowType c
+              :<>: Text " at dimension "
+              :<>: ShowType d
+          )
+      )
   Narrow' d sh Nothing s l =
     TypeError
       ( Text "Requested narrow dimension "
@@ -3031,16 +3043,11 @@ type family Narrow' (dim :: Nat) (shape :: [Nat]) (current :: Maybe Nat) (start 
           :<>: Text " doesnt exist in "
           :<>: ShowType sh
       )
+
+
 type family Narrow (shape :: [Nat]) (dim :: Nat) (start :: Nat) (length :: Nat) :: [Nat] where
   Narrow shape dim start length =
     NarrowCheck (ExtractDim dim shape) (Narrow' dim shape (ExtractDim dim shape) start length) shape dim start length
-
-type family NarrowInDomain' (mbCurrent :: Maybe Nat) (start :: Nat) (length :: Nat) :: Constraint where
-  NarrowInDomain' (Just c) s l = c >= (s + l)
-
-type family NarrowInDomain (shape :: [Nat]) (dim :: Nat) (start :: Nat) (length :: Nat) :: Constraint where
-  NarrowInDomain sh d s l = (NarrowInDomain' (ExtractDim d sh) s l, DimOutOfBoundCheck sh d)
-
 
 -- | "Narrow" a tensor by returning a tensor that is a slice from 'start' of length 'length' along 'dim'
 -- 
@@ -3052,8 +3059,7 @@ type family NarrowInDomain (shape :: [Nat]) (dim :: Nat) (start :: Nat) (length 
 -- Tensor Bool [3,2,3]
 narrow :: forall dim start length shape mbSize mbNewShape dtype device. 
   (All KnownNat '[dim, start, length]
-  , All KnownNat shape
-  , NarrowInDomain shape dim start length) =>
+  , All KnownNat shape) =>
   Tensor device dtype shape -> Tensor device dtype (Narrow shape dim start length)
 narrow _input = unsafePerformIO $ (ATen.cast4 ATen.Managed.narrow_tlll) _input _dim _start _length
   where 
