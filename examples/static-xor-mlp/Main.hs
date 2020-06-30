@@ -85,7 +85,7 @@ instance ( KnownNat batchSize
          , RandDTypeIsValid device 'Float
          , ComparisonDTypeIsValid device 'Float
          ) => Dataset IO Xor (Tensor device 'Float '[batchSize, 2]) where
-  getBatch _ _ =  toDType @Float .
+  getBatch _ _ =  toDType @'Float @'Bool .
                   gt (toDevice @device (0.5 :: CPUTensor 'Float '[]))
                   <$> rand @'[batchSize, 2] @'Float @device
   numIters = iters 
