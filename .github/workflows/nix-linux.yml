@@ -20,9 +20,9 @@ jobs:
       - run: nix-env -iA cachix -f https://cachix.org/api/v1/install
       - run: cachix use iohk
       - run: |
-          nix-build -A haskellPackages.libtorch-ffi.checks.spec
-          nix-build -A haskellPackages.hasktorch.checks.spec
-          nix-build -A haskellPackages.examples.checks.spec
+          nix-build -j 2 -A haskellPackages.libtorch-ffi.checks.spec
+          nix-build -j 2 -A haskellPackages.hasktorch.checks.spec
+          nix-build -j 2 -A haskellPackages.examples.checks.spec
   build-cache:
     if: github.repository == 'hasktorch/hasktorch'
     runs-on: ubuntu-latest
@@ -42,5 +42,6 @@ jobs:
         with:
           name: hasktorch
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+          nixBuildArgs: -j 2
       - run: cachix use iohk
-      - run: nix-build
+      - run: nix-build -j 2

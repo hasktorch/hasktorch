@@ -23,4 +23,4 @@ jobs:
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
         skipNixBuild: false
         file: nix/jupyter-shell.nix
-        nixBuildArgs: --option sandbox false 
+        nixBuildArgs: -j 2 --option sandbox false 
