@@ -3022,18 +3022,25 @@ type family
   NarrowCheck (Just c) Nothing sh d s l = DimOutOfBound sh d
   NarrowCheck _ (Just r) _ _ _ _        = r
 
-type family Narrow (dim :: Nat) (shape :: [Nat]) (current :: Maybe Nat) (start :: Nat) (length :: Nat) :: Maybe [Nat] where
-  Narrow d sh (Just c) s l = ReplaceDim d sh ((c - s) + l)
-  Narrow d sh Nothing s l =
+type family Narrow' (dim :: Nat) (shape :: [Nat]) (current :: Maybe Nat) (start :: Nat) (length :: Nat) :: Maybe [Nat] where
+  Narrow' d sh (Just c) s l = ReplaceDim d sh ((c - s) + l)
+  Narrow' d sh Nothing s l =
     TypeError
       ( Text "Requested narrow dimension "
           :<>: ShowType d
           :<>: Text " doesnt exist in "
           :<>: ShowType sh
       )
+type family Narrow (shape :: [Nat]) (dim :: Nat) (start :: Nat) (length :: Nat) :: [Nat] where
+  Narrow shape dim start length =
+    NarrowCheck (ExtractDim dim shape) (Narrow' dim shape (ExtractDim dim shape) start length) shape dim start length
 
-type family NarrowInDomain (mbCurrent :: Maybe Nat) (start :: Nat) (length :: Nat) :: Constraint where
-  NarrowInDomain (Just c) s l = c >= (s + l)
+type family NarrowInDomain' (mbCurrent :: Maybe Nat) (start :: Nat) (length :: Nat) :: Constraint where
+  NarrowInDomain' (Just c) s l = c >= (s + l)
+
+type family NarrowInDomain (shape :: [Nat]) (dim :: Nat) (start :: Nat) (length :: Nat) :: Constraint where
+  NarrowInDomain sh d s l = (NarrowInDomain' (ExtractDim d sh) s l, DimOutOfBoundCheck sh d)
+
 
 -- | "Narrow" a tensor by returning a tensor that is a slice from 'start' of length 'length' along 'dim'
 -- 
@@ -3044,11 +3051,8 @@ type family NarrowInDomain (mbCurrent :: Maybe Nat) (start :: Nat) (length :: Na
 narrow :: forall dim start length shape mbSize mbNewShape dtype device. 
   (All KnownNat '[dim, start, length]
   , All KnownNat shape
-  , DimOutOfBoundCheck shape dim
-  , mbSize ~ ExtractDim dim shape
-  , NarrowInDomain mbSize start length
-  , mbNewShape ~ Narrow dim shape mbSize start length) =>
-  Tensor device dtype shape -> Tensor device dtype (NarrowCheck mbSize mbNewShape shape dim start length)
+  , NarrowInDomain shape dim start length) =>
+  Tensor device dtype shape -> Tensor device dtype (Narrow shape dim start length)
 narrow _input = unsafePerformIO $ (ATen.cast4 ATen.Managed.narrow_tlll) _input _dim _start _length
   where 
     _dim = natValI @dim
