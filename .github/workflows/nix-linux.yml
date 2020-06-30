@@ -38,6 +38,8 @@ jobs:
           sudo apt autoclean -y || true
           docker rmi $(docker image ls -aq)
           df -h
+          cat /proc/cpuinfo
+          cat /proc/meminfo
       - uses: cachix/install-nix-action@v10
       - uses: cachix/cachix-action@v6
         with:
