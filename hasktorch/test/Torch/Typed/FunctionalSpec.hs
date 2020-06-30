@@ -698,6 +698,18 @@ instance
         t' = transpose2D t
     checkDynamicTensorAttributes t'
 
+data DiagSpec = DiagSpec
+
+instance
+  ( TensorOptions shape dtype device
+  , TensorOptions shape' dtype device
+  , shape' ~ DiagShape index shape
+  , KnownNat index
+  ) => Apply' DiagSpec ((Proxy index, (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
+  apply' DiagSpec (_, agg) = agg >> do
+    let t = ones @shape @dtype @device
+    foldMap (\tri -> checkDynamicTensorAttributes $ diag @index tri t) [Upper, Lower]
+
 data AnyAllSpec = AnySpec | AllSpec
 
 instance
@@ -981,6 +993,21 @@ spec' device =
           hfoldrM @IO Transpose2DSpec () (hattach cpu   (hproduct allDTypes (Proxy @'[2, 3] :. HNil)))
         Device { deviceType = CUDA, deviceIndex = 0 } ->
           hfoldrM @IO Transpose2DSpec () (hattach cuda0 (hproduct allDTypes (Proxy @'[2, 3] :. HNil)))
+      it "diag" $ do
+        let
+          shapes1 = Proxy @'[0] :. Proxy @'[1] :. Proxy @'[3] :. HNil
+          shapes2 = Proxy @'[2, 3] :. HNil
+          shapes2' = Proxy @'[0, 0] :. Proxy @'[0, 1]  :. Proxy @'[1, 0] :. HNil -- only offset 0 has upper and lower defined
+          offsets = Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil
+        case device of
+          Device { deviceType = CPU,  deviceIndex = 0 } -> do
+            hfoldrM @IO DiagSpec () (hproduct offsets            (hattach cpu   (hproduct allDTypes shapes1)))
+            hfoldrM @IO DiagSpec () (hproduct offsets            (hattach cpu   (hproduct allDTypes shapes2)))
+            hfoldrM @IO DiagSpec () (hproduct (Proxy @0 :. HNil) (hattach cpu   (hproduct allDTypes shapes2')))
+          Device { deviceType = CUDA, deviceIndex = 0 } -> do
+            hfoldrM @IO DiagSpec () (hproduct offsets            (hattach cuda0 (hproduct allDTypes shapes1)))
+            hfoldrM @IO DiagSpec () (hproduct offsets            (hattach cuda0 (hproduct allDTypes shapes2)))
+            hfoldrM @IO DiagSpec () (hproduct (Proxy @0 :. HNil) (hattach cuda0 (hproduct allDTypes shapes2')))
 
     describe "loss functions" $ do
       let dispatch lossSpec = case device of
