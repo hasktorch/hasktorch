@@ -5,50 +5,29 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE UndecidableSuperClasses #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE OverloadedLists #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
-{-# OPTIONS_GHC -fplugin GHC.TypeLits.KnownNat.Solver #-}
-{-# OPTIONS_GHC -fplugin GHC.TypeLits.Extra.Solver #-}
 {-# OPTIONS_GHC -fconstraint-solver-iterations=0 #-}
 
 module Torch.Typed.NN.Transformer where
 
 import Control.Monad
 import Data.Proxy
-import Foreign.ForeignPtr
 import GHC.Generics
 import GHC.TypeLits
-import GHC.TypeLits.Extra
 import System.IO.Unsafe (unsafePerformIO)
-import qualified Torch.Autograd as A
 import qualified Torch.DType as D
 import qualified Torch.Device as D
-import qualified Torch.Functional as D
 import Torch.HList
-import qualified Torch.Internal.Cast as ATen
-import qualified Torch.Internal.Class as ATen
-import qualified Torch.Internal.Managed.Type.Tensor as ATen
-import qualified Torch.Internal.Type as ATen
 import qualified Torch.NN as A
-import qualified Torch.Tensor as D
-import qualified Torch.TensorFactories as D
 import Torch.NN (HasForward(..))
 import Torch.Typed.Aux
 import Torch.Typed.Factories
 import Torch.Typed.Functional hiding (linear, log)
-import Torch.Typed.Parameter
 import Torch.Typed.Tensor
 import Torch.Typed.NN.Dropout
 import Torch.Typed.NN.Linear

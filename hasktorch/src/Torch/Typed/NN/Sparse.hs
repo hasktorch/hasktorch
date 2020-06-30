@@ -1,40 +1,24 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE TypeInType #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 
 module Torch.Typed.NN.Sparse where
 
-import           Control.Monad.State.Strict
 import           Torch.HList
-import           Data.Kind                    (Type)
 import           Data.Proxy
 import           GHC.TypeLits
-import           GHC.TypeLits.Extra
 import           GHC.Generics
-import           System.IO.Unsafe
 
-import qualified Torch.NN                      as A
-import           Torch.NN                     (HasForward(..))
-import qualified Torch.Autograd                as A
-import qualified Torch.Tensor                  as A
+import           Torch.NN                     (Randomizable(..), HasForward(..))
 import qualified Torch.DType                   as D
 import qualified Torch.Device                  as D
 import           Torch.Typed.Aux
@@ -42,7 +26,6 @@ import           Torch.Typed.Factories
 import           Torch.Typed.Functional
 import           Torch.Typed.Tensor
 import           Torch.Typed.Parameter
-import           Torch.Typed.Device
 
 data EmbeddingType = Constant | Learned deriving (Show, Generic)
 
@@ -128,8 +111,8 @@ instance
   ) => HasForward (Embedding paddingIdx numEmbeds embedSize embeddingType dtype device) (Tensor device 'D.Int64 shape) (Tensor device dtype shape') where
   forward = embed
 
-instance A.Randomizable (EmbeddingSpec paddingIdx numEmbeds embedSize 'Constant dtype device)
-                        (Embedding     paddingIdx numEmbeds embedSize 'Constant dtype device)
+instance Randomizable (EmbeddingSpec paddingIdx numEmbeds embedSize 'Constant dtype device)
+                      (Embedding     paddingIdx numEmbeds embedSize 'Constant dtype device)
  where
   sample (ConstEmbeddingSpec tensor) = pure (ConstEmbedding tensor)
 
@@ -139,8 +122,8 @@ instance
   , KnownDType dtype
   , KnownDevice device
   , RandDTypeIsValid device dtype
-  ) => A.Randomizable (EmbeddingSpec 'Nothing numEmbeds embedSize 'Learned dtype device)
-                      (Embedding     'Nothing numEmbeds embedSize 'Learned dtype device)
+  ) => Randomizable (EmbeddingSpec 'Nothing numEmbeds embedSize 'Learned dtype device)
+                    (Embedding     'Nothing numEmbeds embedSize 'Learned dtype device)
  where
   sample LearnedEmbeddingWithRandomInitSpec = LearnedEmbedding <$> (makeIndependent =<< randn)
   sample (LearnedEmbeddingWithCustomInitSpec tensor) = LearnedEmbedding <$> (makeIndependent =<< (pure tensor))
@@ -155,8 +138,8 @@ instance
   , KnownDType dtype
   , KnownDevice device
   , RandDTypeIsValid device dtype
-  ) => A.Randomizable (EmbeddingSpec ('Just paddingIdx) numEmbeds embedSize 'Learned dtype device)
-                      (Embedding     ('Just paddingIdx) numEmbeds embedSize 'Learned dtype device)
+  ) => Randomizable (EmbeddingSpec ('Just paddingIdx) numEmbeds embedSize 'Learned dtype device)
+                    (Embedding     ('Just paddingIdx) numEmbeds embedSize 'Learned dtype device)
  where
   sample LearnedEmbeddingWithRandomInitSpec =
     let mask = cat @0 (  zeros @'[paddingIdx, embedSize]                 @'D.Bool @device

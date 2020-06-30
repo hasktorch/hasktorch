@@ -1,40 +1,27 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE TypeInType #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 
 module Torch.Typed.NN.Convolution where
 
-import           Control.Monad.State.Strict
-import           Torch.HList
-import           Data.Kind                    (Type)
 import           Data.Proxy
 import           GHC.TypeLits
-import           GHC.TypeLits.Extra
 import           GHC.Generics
-import           System.IO.Unsafe
 
-import qualified Torch.NN                      as A
-import           Torch.NN                     (HasForward(..))
-import qualified Torch.Autograd                as A
-import qualified Torch.Tensor                  as A
+import           Torch.NN                     (Randomizable(..), HasForward(..))
 import qualified Torch.DType                   as D
 import qualified Torch.Device                  as D
 import           Torch.Typed.Aux
@@ -42,7 +29,6 @@ import           Torch.Typed.Factories
 import           Torch.Typed.Functional
 import           Torch.Typed.Tensor
 import           Torch.Typed.Parameter
-import           Torch.Typed.Device
 
 data Conv1dSpec (inputChannelSize :: Nat) (outputChannelSize :: Nat)
                 (kernelSize :: Nat)
@@ -97,8 +83,8 @@ instance ( KnownNat inputChannelSize
          , KnownDevice device
          , RandDTypeIsValid device dtype
          )
-  => A.Randomizable (Conv1dSpec inputChannelSize outputChannelSize kernelSize dtype device)
-                    (Conv1d     inputChannelSize outputChannelSize kernelSize dtype device)
+  => Randomizable (Conv1dSpec inputChannelSize outputChannelSize kernelSize dtype device)
+                  (Conv1d     inputChannelSize outputChannelSize kernelSize dtype device)
  where
   sample Conv1dSpec =
     Conv1d <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
@@ -158,8 +144,8 @@ instance ( KnownNat inputChannelSize
          , KnownDevice device
          , RandDTypeIsValid device dtype
          )
-  => A.Randomizable (Conv2dSpec inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
-                    (Conv2d     inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
+  => Randomizable (Conv2dSpec inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
+                  (Conv2d     inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
  where
   sample Conv2dSpec =
     Conv2d <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
@@ -220,8 +206,8 @@ instance
   , KnownDType dtype
   , KnownDevice device
   , RandDTypeIsValid device dtype
-  ) => A.Randomizable (Conv3dSpec inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
-                      (Conv3d     inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
+  ) => Randomizable (Conv3dSpec inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
+                    (Conv3d     inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
  where
   sample Conv3dSpec =
     Conv3d <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)

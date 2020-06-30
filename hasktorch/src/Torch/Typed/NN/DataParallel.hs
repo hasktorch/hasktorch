@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -9,7 +8,6 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 
 module Torch.Typed.NN.DataParallel where
@@ -17,22 +15,15 @@ module Torch.Typed.NN.DataParallel where
 import           Data.Kind
 import           Control.Concurrent.Async
 import           GHC.TypeLits
-import           System.IO.Unsafe
 
 import           Torch.HList
 import qualified Torch.Internal.Cast                     as ATen
 import qualified Torch.Internal.Class                    as ATen
 import qualified Torch.Tensor as D
 import qualified Torch.Device as D
-import qualified Torch.DType as D
 import Torch.NN (HasForward(..))
-import           Torch.Typed.Aux
 import           Torch.Typed.Autograd
 import           Torch.Typed.Device
-import           Torch.Typed.Tensor
-import           Torch.Typed.Parameter
-import           Torch.Typed.Functional
-import           Torch.Typed.Factories
 import           Torch.Typed.Optim
 
 data ForwardConcurrentlyF = ForwardConcurrentlyF | ForwardConcurrentlyStochF
