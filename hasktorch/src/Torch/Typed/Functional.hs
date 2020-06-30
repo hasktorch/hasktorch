@@ -1194,7 +1194,7 @@ transpose2D = transpose @0 @1
 type family DiagShape (index :: Nat) (shape :: [Nat]) :: [Nat] where
   DiagShape i '[n] = '[n + i, n + i] -- 1d -> 2d case
   DiagShape i '[m, n] = '[Min m n - i] -- 2d -> 1d case
-  DiagShape _ _ =  TypeError (Text "The input must be matrix or vector.")
+  DiagShape _ _ =  TypeError (Text "The input must be a matrix or a vector.")
 
 -- | diag
 --
