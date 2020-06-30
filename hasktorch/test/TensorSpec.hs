@@ -7,6 +7,7 @@ module TensorSpec (spec) where
 import Test.Hspec
 import Test.QuickCheck
 import Control.Exception.Safe
+import Control.Arrow                  ( (&&&) )
 
 import Torch.Tensor
 import Torch.DType
@@ -157,20 +158,21 @@ spec = do
   describe "indexing" $ do
     it "pick up a value" $ do
       let x = asTensor ([[[0,1,2],[3,4,5]],[[6,7,8],[9,10,11]]] :: [[[Int]]])
-      show (x @@ (1,0,2)) `shouldBe` "Tensor Int64 []  8"
+          r = x @@ (1,0,2)
+      (dtype &&& shape &&& asValue) r `shouldBe` (Int64, ([], 8 :: Int))
     it "pick up a bottom tensor" $ do
       let x = asTensor ([[[0,1,2],[3,4,5]],[[6,7,8],[9,10,11]]] :: [[[Int]]])
-      show (x @@ (1,0)) `shouldBe` "Tensor Int64 [3] [ 6,  7,  8]"
+          r = x @@ (1,0)
+      (dtype &&& shape &&& asValue) r `shouldBe` (Int64, ([3], [6 :: Int, 7, 8]))
     it "make a slice of bottom values" $ do
       let x = asTensor ([[[0,1,2],[3,4,5]],[[6,7,8],[9,10,11]]] :: [[[Int]]])
-      show (x @@ ((),(),1)) `shouldBe` "Tensor Int64 [2,2] [[ 1,  4],\n                    [ 7,  10]]"
+          r = x @@ ((),(),1)
+      (dtype &&& shape &&& asValue) r `shouldBe` (Int64, ([2,2], [[1 :: Int, 4], [7, 10]]))
     it "make a slice via muliple slices" $ do
       let x = asTensor ([[[0,1,2],[3,4,5]],[[6,7,8],[9,10,11]]] :: [[[Int]]])
           r = x @@ ((),(Slice (1,None)))
-      show r `shouldBe` "Tensor Int64 [2,1,3] "
-      (asValue r :: [[[Int]]]) `shouldBe` [[[3,4,5]],[[9,10,11]]]
+      (dtype &&& shape &&& asValue) r `shouldBe` (Int64, ([2,1,3], [[[3::Int,4,5]],[[9,10,11]]]))
     it "make a slice via muliple slices" $ do
       let x = asTensor ([[[0,1,2],[3,4,5]],[[6,7,8],[9,10,11]]] :: [[[Int]]])
           r = x @@ ((),(Slice (1,None)),(Slice (0,1)))
-      show r `shouldBe` "Tensor Int64 [2,1,1] "
-      (asValue r :: [[[Int]]]) `shouldBe` [[[3]],[[9]]]
+      (dtype &&& shape &&& asValue) r `shouldBe` (Int64, ([2,1,1], [[[3::Int]],[[9]]]))
