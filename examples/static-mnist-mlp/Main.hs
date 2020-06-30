@@ -1,11 +1,9 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE GADTs #-}
@@ -21,14 +19,14 @@ import           Control.Exception.Safe         ( try
 import           Control.Monad                  ( foldM
                                                 , when
                                                 )
-import           Data.Proxy
-import           Foreign.ForeignPtr
-import           GHC.Generics
-import           GHC.TypeLits
-import           GHC.TypeLits.Extra
-import           System.Environment
-import           System.IO.Unsafe
-import           System.Random
+import Data.Proxy
+import Foreign.ForeignPtr
+import GHC.Generics
+import GHC.TypeLits
+import GHC.TypeLits.Extra
+import System.Environment
+import System.IO.Unsafe
+import System.Random
 
 import Torch.Typed
 import Common

@@ -40,7 +40,7 @@ data CNN (dtype :: DType) (device :: (DeviceType, Nat))
     :: forall dtype device
      . { conv0 :: Conv2d 1  20 5 5 dtype device
        , conv1 :: Conv2d 20 50 5 5 dtype device
-       , fc0   :: Linear (4*4*50) 500        dtype device
+       , fc0   :: Linear (4*4*50) 500      dtype device
        , fc1   :: Linear 500      ClassDim dtype device
        }
     -> CNN dtype device
