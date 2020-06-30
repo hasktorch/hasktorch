@@ -1191,8 +1191,31 @@ transpose2D
   -> Tensor device dtype '[j, i] -- ^ output
 transpose2D = transpose @0 @1
 
--- diag :: Tensor device dtype shape -> Int -> Tensor device dtype shape
--- diag t index = unsafePerformIO $ (ATen.cast2 ATen.Managed.tensor_diag_l) t index
+-- | diag with positive index (above the main diagonal)
+--
+-- >>> dtype &&& shape $ upperDiag @0 (ones :: CPUTensor 'D.Float '[3,2])
+-- (Float,[2])
+-- >>> dtype &&& shape $ upperDiag @1 (ones :: CPUTensor 'D.Float '[3,2])
+-- (Float,[1])
+upperDiag
+  :: forall (index :: Nat) (i :: Nat) (j :: Nat) device dtype
+   . KnownNat index
+  => Tensor device dtype '[i, j] -- ^ input
+  -> Tensor device dtype '[Min i j - index] -- ^ output
+upperDiag t = unsafePerformIO $ ATen.cast2 ATen.Managed.tensor_diag_l t (natValI @index)
+
+-- | diag with negative index (below the main diagonal)
+--
+-- >>> dtype &&& shape $ lowerDiag @0 (ones :: CPUTensor 'D.Float '[3,2])
+-- (Float,[2])
+-- >>> dtype &&& shape $ lowerDiag @1 (ones :: CPUTensor 'D.Float '[3,2])
+-- (Float,[2])
+lowerDiag
+  :: forall (index :: Nat) (i :: Nat) (j :: Nat) device dtype
+   . KnownNat index
+  => Tensor device dtype '[i, j] -- ^ input
+  -> Tensor device dtype '[Min i j - index] -- ^ output
+lowerDiag t = unsafePerformIO $ ATen.cast2 ATen.Managed.tensor_diag_l t (- natValI @index)
 
 -- | all
 -- See https://pytorch.org/docs/stable/tensors.html#torch.BoolTensor.all.
