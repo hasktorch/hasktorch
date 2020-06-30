@@ -168,6 +168,10 @@ spec = do
       let x = asTensor ([[[0,1,2],[3,4,5]],[[6,7,8],[9,10,11]]] :: [[[Int]]])
           r = x @@ ((),(),1)
       (dtype &&& shape &&& asValue) r `shouldBe` (Int64, ([2,2], [[1 :: Int, 4], [7, 10]]))
+    it "ellipsis" $ do
+      let x = asTensor ([[[0,1,2],[3,4,5]],[[6,7,8],[9,10,11]]] :: [[[Int]]])
+          r = x @@ (Ellipsis,1)
+      (dtype &&& shape &&& asValue) r `shouldBe` (Int64, ([2,2], [[1 :: Int, 4], [7, 10]]))
     it "make a slice via muliple slices" $ do
       let x = asTensor ([[[0,1,2],[3,4,5]],[[6,7,8],[9,10,11]]] :: [[[Int]]])
           r = x @@ ((),(Slice (1,None)))
