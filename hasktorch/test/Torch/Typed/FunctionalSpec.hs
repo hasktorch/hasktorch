@@ -993,9 +993,9 @@ spec' device =
             narrowLengths = Proxy @1 :. Proxy @2 :. HNil
             narrowShapes = Proxy @'[3, 3, 2] :. Proxy @'[13, 5, 0] :. HNil
         case device of
-            D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+            Device { deviceType = CPU,  deviceIndex = 0 } ->
               hfoldrM @IO NarrowSpec () (hproduct dims (hproduct narrowStarts (hproduct narrowLengths (hattach cpu   (hproduct standardFloatingPointDTypes narrowShapes)))))
-            D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+            Device { deviceType = CUDA, deviceIndex = 0 } ->
               hfoldrM @IO NarrowSpec () (hproduct dims (hproduct narrowStarts (hproduct narrowLengths (hattach cuda0 (hproduct allFloatingPointDTypes      narrowShapes)))))
       it "squeezeAll" $ case device of
         Device { deviceType = CPU,  deviceIndex = 0 } ->
