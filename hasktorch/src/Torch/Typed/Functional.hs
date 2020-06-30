@@ -3026,7 +3026,7 @@ type family Narrow' (dim :: Nat) (shape :: [Nat]) (current :: Maybe Nat) (start 
   Narrow' d sh (Just c) s l =
     If
       ((s + l) <=? c)
-      (ReplaceDim d sh ((c - s) + l))
+      (ReplaceDim d sh l)
       ( TypeError
           ( Text "The end of the requested narrow segment "
               :<>: ShowType (s + l)
