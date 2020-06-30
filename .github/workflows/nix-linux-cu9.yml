@@ -21,6 +21,7 @@ jobs:
           df -h
       - uses: cachix/install-nix-action@v10
       - run: nix-env -iA cachix -f https://cachix.org/api/v1/install
+      - run: cachix use hasktorch
       - run: cachix use iohk
       - run: |
           nix-build -j 2 --arg cudaSupport true --argstr cudaMajorVersion 9 -A haskellPackages.libtorch-ffi.checks.spec
@@ -45,6 +46,5 @@ jobs:
         with:
           name: hasktorch
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-          nixBuildArgs: -j 2
       - run: cachix use iohk
       - run: nix-build -j 2 --arg cudaSupport true --argstr cudaMajorVersion 9

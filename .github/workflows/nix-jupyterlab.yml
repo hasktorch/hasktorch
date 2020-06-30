@@ -21,6 +21,6 @@ jobs:
       with:
         name: hasktorch
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-        skipNixBuild: false
-        file: nix/jupyter-shell.nix
-        nixBuildArgs: -j 2 --option sandbox false 
+    - run: |
+        cachix use iohk
+        nix-build nix/jupyter-shell.nix -j 2 --option sandbox false 

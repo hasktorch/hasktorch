@@ -3,17 +3,18 @@ name: nix-macos
 on: [push, pull_request]
 
 jobs:
-  tests:
-    runs-on: macOS-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: cachix/install-nix-action@v10
-      - run: nix-env -iA cachix -f https://cachix.org/api/v1/install
-      - run: cachix use iohk
-      - run: |
-          nix-build -j 2 -A haskellPackages.libtorch-ffi.checks.spec
-          nix-build -j 2 -A haskellPackages.hasktorch.checks.spec
-          nix-build -j 2 -A haskellPackages.examples.checks.spec
+  # tests:
+  #   runs-on: macOS-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - uses: cachix/install-nix-action@v10
+  #     - run: nix-env -iA cachix -f https://cachix.org/api/v1/install
+  #     - run: cachix use hasktorch
+  #     - run: cachix use iohk
+  #     - run: |
+  #         nix-build -j 2 -A haskellPackages.libtorch-ffi.checks.spec
+  #         nix-build -j 2 -A haskellPackages.hasktorch.checks.spec
+  #         nix-build -j 2 -A haskellPackages.examples.checks.spec
   build-cache:
     runs-on: macOS-latest
     steps:
@@ -23,6 +24,9 @@ jobs:
         with:
           name: hasktorch
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-          nixBuildArgs: -j 2
       - run: cachix use iohk
-      - run: nix-build -j 2
+      - run: |
+          nix-build -j 2
+          nix-build -j 2 -A haskellPackages.libtorch-ffi.checks.spec
+          nix-build -j 2 -A haskellPackages.hasktorch.checks.spec
+          nix-build -j 2 -A haskellPackages.examples.checks.spec
