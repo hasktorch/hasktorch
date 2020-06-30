@@ -151,8 +151,7 @@ test-suite spec
                     , JuicyPixels
                     , inline-c-cpp
                     , async
-                    , pipes
-                    , pipes-concurrency
+
   build-tool-depends:  hspec-discover:hspec-discover
 
 test-suite doctests

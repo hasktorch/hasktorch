@@ -33,10 +33,6 @@ import           Torch.Typed.Factories
 import           Torch.HList
 import           Torch.Typed.Parameter hiding (toDevice)
 import           Torch.Typed.Autograd
-import qualified Torch.Internal.Cast as ATen
-import qualified Torch.Internal.Class as ATen
-import qualified Torch.Internal.Type as ATen
-import qualified Torch.Internal.Managed.Type.Tensor as ATen
 
 import           Control.Monad.IO.Class (MonadIO(..))
 import           Control.Monad (void)

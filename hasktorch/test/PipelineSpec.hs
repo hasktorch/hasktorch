@@ -5,8 +5,6 @@ module PipelineSpec where
 import Control.Concurrent
 import Control.Concurrent.Async
 import Control.Monad
-import Pipes
-import Pipes.Concurrent
 import System.Exit
 import System.IO
 import System.Timeout
@@ -18,7 +16,7 @@ import Test.Hspec
 -- defaultTimeout :: Int
 -- defaultTimeout = 50000
 defaultTimeout = 21000
-timeoutConcurrent = 50000
+timeoutConcurrent = 61000
 
 newtype MockData = MockData Int
 
@@ -45,7 +43,7 @@ testConcurrentFoldTimeout dataset numWorkers = do
   cancel timedOut
 
 takeBatchThenTimeout :: Int -> Int -> Int -> IO Int
-takeBatchThenTimeout timeout _ input = print input >> threadDelay timeout >> pure input
+takeBatchThenTimeout timeout _ input =  threadDelay timeout >> pure input
 
 runTest :: Int -> IO () -> IO (Maybe ())
 runTest time test = do
@@ -69,4 +67,4 @@ spec = do
   it "Tests data is flowing" $
     (runTest defaultTimeout (testFoldTimeout $ MockData 2)) `shouldReturn` (Just ())
   it "Tests concurrent datasets yield concurrently" $
-    (runTest timeoutConcurrent (testConcurrentFoldTimeout (MockData 2) 2)) `shouldReturn` (Just ())
+    (runTest timeoutConcurrent (testConcurrentFoldTimeout (MockData 3) 2)) `shouldReturn` (Just ())

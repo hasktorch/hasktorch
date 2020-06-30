@@ -57,23 +57,27 @@ takeBatch input = fromInput input >-> P.takeWhile isJust >-> yieldMore
   where yieldMore = forever $ await >>= \case
           Just batch -> yield batch
           Nothing -> return ()
+readBatches'
+  :: MonadIO m
+  => Int
+  -> (Int -> Producer (Maybe a) m a)
+  -> Output (Maybe a)
+  -> Effect m ()
+readBatches' numIters getBatch outputBox = 
+
+  for (each [1..numIters]) (\iter -> yieldBatch iter >-> toOutput outputBox)
+    where yieldBatch iter =
+             runBatch iter >>= yield
+          runBatch iter = if numIters == iter then pure Nothing else Just <$> getBatch iter
 
 readBatchesConcurrently :: forall dataset batch m .
   (ConcurrentDataset m dataset batch) => Int -> dataset -> Output (Maybe batch)  -> Effect m () 
-readBatchesConcurrently workerId dataset transformBox = 
-  for (each [1..numIters @m @dataset @batch dataset + 1]) (\iter -> yieldBatch iter >-> toOutput transformBox)
-    where yieldBatch iter =
-             runBatch iter >>= yield
-          runBatch iter = if numIters @m @dataset @batch dataset + 1 == iter then pure Nothing else Just <$> getBatch iter
-          getBatch iter = lift $ getBatchConcurrently workerId dataset iter
+readBatchesConcurrently workerId dataset outputBox = 
+  readBatches' (numIters @m @dataset @batch dataset + 1) (lift . getBatchConcurrently workerId dataset) outputBox
 
 readBatches :: forall dataset batch m.
   (Dataset m dataset batch) => dataset -> Output (Maybe batch)  -> Effect m () 
-readBatches dataset outputBox = 
-  for (each [1..numIters @m @dataset @batch dataset + 1]) (\iter -> yieldBatch iter >-> toOutput outputBox)
-    where yieldBatch iter = runBatch iter >>= yield
-          runBatch iter = if numIters @m @dataset @batch dataset + 1 == iter then pure Nothing else Just <$> batch iter
-          batch iter = lift $ getBatch dataset iter
+readBatches dataset outputBox = readBatches' (numIters @m @dataset @batch dataset + 1) (lift . getBatch dataset) outputBox
 
 runTransforms :: MonadIO m => (batch -> batch') -> Input (Maybe batch) -> Output (Maybe batch') -> Effect m ()
 runTransforms transforms transformBox trainBox = fromInput transformBox >->  P.map (fmap transforms) >-> toOutput trainBox
