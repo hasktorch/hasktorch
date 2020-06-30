@@ -1,49 +1,22 @@
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE UndecidableSuperClasses #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE FunctionalDependencies #-}
 {-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 
 module Torch.Typed.AuxSpec where
 
-import           Prelude                 hiding ( sin )
-import           Control.Exception.Safe
-import           Foreign.Storable
-import           Torch.HList
 import           Data.Proxy
-import           Data.Reflection
-import           GHC.TypeLits
 import           System.IO.Unsafe
 
-import           Test.Hspec
-import           Test.QuickCheck
+import           Test.Hspec (Spec, shouldBe)
+import           Test.QuickCheck ()
 
-import           Torch.Internal.Cast
-import qualified Torch.Internal.Managed.Type.Context     as ATen
-import qualified Torch.Device                  as D
-import qualified Torch.DType                   as D
-import qualified Torch.Functional              as D
-import qualified Torch.Tensor                  as D
-import qualified Torch.TensorFactories         as D
-import qualified Torch.TensorOptions           as D
-import           Torch.Typed.Factories
-import           Torch.Typed.Functional
-import           Torch.Typed.Tensor
+import           Torch.Typed
+import Torch.Internal.Managed.Type.Context (hasCUDA)
+import Torch.Internal.Cast (cast0)
+import qualified Torch as Torch (device, dtype, shape)
 
 instance Semigroup Spec where
   (<>) a b = a >> b
@@ -57,50 +30,50 @@ checkDynamicTensorAttributes
   => Tensor device dtype shape
   -> IO ()
 checkDynamicTensorAttributes t = do
-  D.device untyped `shouldBe` optionsRuntimeDevice @shape @dtype @device
-  D.dtype untyped `shouldBe` optionsRuntimeDType @shape @dtype @device
-  D.shape untyped `shouldBe` optionsRuntimeShape @shape @dtype @device
+  Torch.device untyped `shouldBe` optionsRuntimeDevice @shape @dtype @device
+  Torch.dtype untyped `shouldBe` optionsRuntimeDType @shape @dtype @device
+  Torch.shape untyped `shouldBe` optionsRuntimeShape @shape @dtype @device
   where untyped = toDynamic t
 
 allFloatingPointDTypes :: _
 allFloatingPointDTypes = withHalf standardFloatingPointDTypes
 
 standardFloatingPointDTypes :: _
-standardFloatingPointDTypes = Proxy @ 'D.Float :. Proxy @ 'D.Double :. HNil
+standardFloatingPointDTypes = Proxy @ 'Float :. Proxy @ 'Double :. HNil
 
 allDTypes :: _
 allDTypes = withHalf almostAllDTypes
 
 withHalf :: _ -> _
-withHalf dtypes = Proxy @ 'D.Half :. dtypes
+withHalf dtypes = Proxy @ 'Half :. dtypes
 
 almostAllDTypes :: _
 almostAllDTypes = withBool standardDTypes
 
 withBool :: _ -> _
-withBool dtypes = Proxy @ 'D.Bool :. dtypes
+withBool dtypes = Proxy @ 'Bool :. dtypes
 
 standardDTypes :: _
 standardDTypes =
-  Proxy @ 'D.UInt8
-    :. Proxy @ 'D.Int8
-    :. Proxy @ 'D.Int16
-    :. Proxy @ 'D.Int32
-    :. Proxy @ 'D.Int64
+  Proxy @ 'UInt8
+    :. Proxy @ 'Int8
+    :. Proxy @ 'Int16
+    :. Proxy @ 'Int32
+    :. Proxy @ 'Int64
     :. standardFloatingPointDTypes
 
 cpu :: _
-cpu = Proxy @'( 'D.CPU, 0)
+cpu = Proxy @'( 'CPU, 0)
 
 cuda0 :: _
-cuda0 = Proxy @'( 'D.CUDA, 0)
+cuda0 = Proxy @'( 'CUDA, 0)
 
-availableDevices :: [D.Device]
+availableDevices :: [Device]
 availableDevices =
-  let hasCuda = unsafePerformIO $ cast0 ATen.hasCUDA
-  in  [D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 }]
+  let hasCuda = unsafePerformIO $ cast0 hasCUDA
+  in  [Device { deviceType = CPU, deviceIndex = 0 }]
         <> (if hasCuda
-             then [D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 }]
+             then [Device { deviceType = CUDA, deviceIndex = 0 }]
              else mempty
            )
 

@@ -73,7 +73,7 @@ instance {-# OVERLAPS #-} (KnownDType dtype') => HasToDType dtype' dtype (Tensor
   toDType = Torch.Typed.Tensor.toDType
 
 instance {-# OVERLAPS #-} (KnownDType dtype') => HasToDType dtype' dtype (Parameter device dtype shape) (Parameter device dtype' shape) where
-  toDType = Torch.Typed.Parameter.toDType
+  toDType = Torch.Typed.Parameter.parameterToDType
 
 instance {-# OVERLAPPABLE #-} (HasToDType dtype' dtype f g) => GHasToDType dtype' dtype (K1 i f) (K1 i g) where
   gToDType = K1 . Torch.Typed.DType.toDType @dtype' @dtype . unK1
