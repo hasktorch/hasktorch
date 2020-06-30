@@ -1191,6 +1191,10 @@ transpose2D
   -> Tensor device dtype '[j, i] -- ^ output
 transpose2D = transpose @0 @1
 
+type family DiagShape (index :: Nat) (shape :: [Nat]) :: [Nat] where
+  DiagShape i '[n] = '[n + i, n + i] -- 1d -> 2d case
+  DiagShape i '[m, n] = '[Min m n - i] -- 2d -> 1d case
+
 -- | diag
 --
 -- >>> dtype &&& shape $ diag @0 Upper (ones :: CPUTensor 'D.Float '[3,2])
@@ -1200,11 +1204,13 @@ transpose2D = transpose @0 @1
 -- >>> dtype &&& shape $ diag @1 Lower (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[2])
 diag
-  :: forall (index :: Nat) (i :: Nat) (j :: Nat) device dtype
-   . KnownNat index
+  :: forall (index :: Nat) (shape :: [Nat]) (shape' :: [Nat]) device dtype
+   . ( KnownNat index
+     , shape' ~ DiagShape index shape
+     )
   => Tri -- ^ upper or lower
-  -> Tensor device dtype '[i, j] -- ^ input
-  -> Tensor device dtype '[Min i j - index] -- ^ output
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape' -- ^ output
 diag tri t = unsafePerformIO $ ATen.cast2 ATen.Managed.tensor_diag_l t
   $ case tri of
     Upper -> natValI @index
