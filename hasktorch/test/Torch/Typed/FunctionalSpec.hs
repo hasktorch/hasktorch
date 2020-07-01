@@ -729,10 +729,10 @@ data DiagSpec = DiagSpec
 instance
   ( TensorOptions shape dtype device
   , TensorOptions shape' dtype device
-  , shape' ~ DiagShape tri index shape
   , KnownTri tri
   , KnownNat index
   , StandardDTypeValidation device dtype
+  , shape' ~ DiagShape tri index shape
   ) => Apply' DiagSpec (((Proxy tri, Proxy index), (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
   apply' DiagSpec (_, agg) = agg >> do
     let t = ones @shape @dtype @device
