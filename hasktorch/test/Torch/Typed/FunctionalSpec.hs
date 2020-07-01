@@ -698,6 +698,32 @@ instance
         t' = transpose2D t
     checkDynamicTensorAttributes t'
 
+data NarrowSpec = NarrowSpec
+
+
+instance
+  ( TensorOptions shape dtype device,
+    TensorOptions
+      ( NarrowCheck
+          (ExtractDim dim shape)
+          (Narrow' dim shape (ExtractDim dim shape) start length)
+          shape
+          dim
+          start
+          length
+      )
+      dtype
+      device,
+    All KnownNat shape,
+    All KnownNat '[dim, start, length]
+  ) =>
+  Apply' NarrowSpec ((Proxy dim, (Proxy start, (Proxy length, (Proxy device, (Proxy dtype, Proxy shape))))), IO ()) (IO ())
+  where
+  apply' NarrowSpec (_, agg) = agg >> do
+    let t = ones @shape @dtype @device
+        t' = narrow @dim @start @length t
+    checkDynamicTensorAttributes t'
+
 data AnyAllSpec = AnySpec | AllSpec
 
 instance
@@ -961,6 +987,16 @@ spec' device =
             hfoldrM @IO ModeSpec () (hproduct (hproduct dims keepOrDropDims) (hattach cuda0 (hproduct (withHalf standardDTypes) shapes)))
 
     describe "shape ops" $ do
+      it "narrow" $ do 
+        let dims = Proxy @0 :. Proxy @1 :. HNil
+            narrowStarts = Proxy @0 :. Proxy @1 :. HNil
+            narrowLengths = Proxy @1 :. Proxy @2 :. HNil
+            narrowShapes = Proxy @'[3, 3, 2] :. Proxy @'[13, 5, 0] :. HNil
+        case device of
+            Device { deviceType = CPU,  deviceIndex = 0 } ->
+              hfoldrM @IO NarrowSpec () (hproduct dims (hproduct narrowStarts (hproduct narrowLengths (hattach cpu   (hproduct standardFloatingPointDTypes narrowShapes)))))
+            Device { deviceType = CUDA, deviceIndex = 0 } ->
+              hfoldrM @IO NarrowSpec () (hproduct dims (hproduct narrowStarts (hproduct narrowLengths (hattach cuda0 (hproduct allFloatingPointDTypes      narrowShapes)))))
       it "squeezeAll" $ case device of
         Device { deviceType = CPU,  deviceIndex = 0 } ->
           hfoldrM @IO SqueezeAllSpec () (hattach cpu   (hproduct allDTypes standardShapes))
