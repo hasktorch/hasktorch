@@ -37,6 +37,7 @@ library
                     , Torch.Internal.Unmanaged.Type.Tensor
                     , Torch.Internal.Unmanaged.Type.TensorList
                     , Torch.Internal.Unmanaged.Type.TensorOptions
+                    , Torch.Internal.Unmanaged.Type.TensorIndex
                     , Torch.Internal.Unmanaged.Type.StdString
                     , Torch.Internal.Unmanaged.Type.StdArray
                     , Torch.Internal.Unmanaged.Type.Context
@@ -60,6 +61,7 @@ library
                     , Torch.Internal.Managed.Type.Storage
                     , Torch.Internal.Managed.Type.Tensor
                     , Torch.Internal.Managed.Type.TensorList
+                    , Torch.Internal.Managed.Type.TensorIndex
                     , Torch.Internal.Managed.Type.TensorOptions
                     , Torch.Internal.Managed.Type.StdString
                     , Torch.Internal.Managed.Type.StdArray

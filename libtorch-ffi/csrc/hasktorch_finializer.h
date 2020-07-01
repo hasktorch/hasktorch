@@ -10,6 +10,10 @@ extern "C" {
 
   void delete_tensorlist(std::vector<at::Tensor>* tensors);
 
+  void delete_tensorindex(at::indexing::TensorIndex* idx);
+
+  void delete_tensorindexlist(std::vector<at::indexing::TensorIndex>* idxs);
+
   void delete_c10dict(c10::Dict<at::IValue,at::IValue>* object);
 
   void delete_c10listivalue(c10::List<at::IValue>* object);
