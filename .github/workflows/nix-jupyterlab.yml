@@ -23,4 +23,4 @@ jobs:
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
     - run: |
         cachix use iohk
-        nix-build nix/jupyter-shell.nix -j 2 --option sandbox false 
+        nix-build nix/jupyter-shell.nix -j 1 --option sandbox false 

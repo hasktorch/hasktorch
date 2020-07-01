@@ -41,14 +41,12 @@ jobs:
           cat /proc/cpuinfo
           cat /proc/meminfo
       - uses: cachix/install-nix-action@v10
-      - run: nix-env -iA cachix -f https://cachix.org/api/v1/install
-      - run: cachix use iohk
       - uses: cachix/cachix-action@v6
         with:
           name: hasktorch
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+      - run: cachix use iohk
       - run: |
-          cachix use iohk
           ps -aux
           free
           nix-build -j 2 -A haskellPackages.libtorch-ffi.checks.spec
