@@ -8,6 +8,14 @@ void delete_tensorlist(std::vector<at::Tensor>* tensors){
   delete tensors;
 }
 
+void delete_tensorindex(at::indexing::TensorIndex* idx){
+  delete idx;
+}
+
+void delete_tensorindexlist(std::vector<at::indexing::TensorIndex>* idxs){
+  delete idxs;
+}
+
 void delete_c10dict(c10::Dict<at::IValue,at::IValue>* object){
   delete object;
 }

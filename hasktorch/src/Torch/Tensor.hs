@@ -31,6 +31,7 @@ import qualified Torch.Internal.Unmanaged.Type.Tensor as Unmanaged (tensor_data_
 import qualified Torch.Internal.Managed.Type.Context as ATen
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
 import qualified Torch.Internal.Managed.Type.TensorOptions as ATen
+import qualified Torch.Internal.Managed.Type.TensorIndex as ATen
 import qualified Torch.Internal.Managed.Type.StdArray as ATen
 import qualified Torch.Internal.Managed.Type.StdString as ATen
 import qualified Torch.Internal.Managed.Native as ATen
@@ -188,6 +189,26 @@ indexSelect
  -> Tensor
 indexSelect t dim indexTensor = unsafePerformIO $ (cast3 ATen.index_select_tlt) t dim indexTensor
 
+-- | Slices the input tensor along the selected dimension at the given range. 
+slice
+  :: Tensor -- ^ input
+  -> Int -- ^ dim
+  -> Int -- ^ start
+  -> Int -- ^ end
+  -> Int -- ^ step
+  -> Tensor
+slice _self _dim _start _end _step = unsafePerformIO $ (cast5 ATen.slice_tllll) _self _dim _start _end _step
+
+isContiguous
+  :: Tensor
+  -> Bool
+isContiguous t = unsafePerformIO $ (cast1 ATen.tensor_is_contiguous) t
+
+contiguous
+  :: Tensor
+  -> Tensor
+contiguous t = unsafePerformIO $ (cast1 ATen.tensor_contiguous) t
+
 -- | Returns a tensor with the same data and number of elements as input, but with the specified shape.
 reshape 
  :: [Int] 
@@ -218,29 +239,157 @@ toCUDA t = unsafePerformIO $ (cast1 ATen.tensor_cuda) t
 -- Indexing support
 --------------------------------------------------------------------------------
 
+-- TensorIndex is the same as slice of pytorch.
+--
+-- There is one-to-one correspondence between Pytorch and Hasktorch tensor index types:
+-- Pytorch                 | Hasktorch
+-- -----------------------------------------------------
+-- `None`                  | `None`
+-- `Ellipsis`              | `Ellipsis`
+-- `...`                   | `Ellipsis`
+-- `123`                   | `123`
+-- `True` / `False`        | `True` / `False`
+-- `:`                     | `Slice ()`
+-- `::`                    | `Slice ()`
+-- `1:`                    | `Slice (1, None)`
+-- `1::`                   | `Slice (1, None)`
+-- `:3`                    | `Slice (None, 3)`
+-- `:3:`                   | `Slice (None, 3)`
+-- `::2`                   | `Slice (None, None, 2)`
+-- `1:3`                   | `Slice (1, 3)`
+-- `1::2`                  | `Slice (1, None, 2)`
+-- `:3:2`                  | `Slice (None, 3, 2)`
+-- `1:3:2`                 | `Slice (1, 3, 2)`
+-- `torch.tensor([1, 2])`) | `asTensor([1, 2 ::Int])`
+
+newtype RawTensorIndexList = RawTensorIndexList (ForeignPtr (ATen.StdVector ATen.TensorIndex))
+newtype RawTensorIndex = RawTensorIndex (ForeignPtr ATen.TensorIndex)
+
 (@@) :: TensorIndex a => Tensor -> a -> Tensor
-t @@ idx = fst $ indexWith (t, 0) idx
+(Unsafe t) @@ idx = unsafePerformIO $ do
+  let idxs = pushIndex [] idx
+  vec <- ATen.newTensorIndexList
+  forM_ idxs $ \(RawTensorIndex i) -> do
+    ATen.tensorIndexList_push_back vec i
+  ATen.index t vec >>= (return . Unsafe)
+
+(@=) :: TensorIndex a => Tensor -> (a,Tensor) -> Tensor
+(Unsafe t') @= (idx,(Unsafe v)) = unsafePerformIO $ do
+  let idxs = pushIndex [] idx
+  t <- ATen.clone_t t'
+  vec <- ATen.newTensorIndexList
+  forM_ idxs $ \(RawTensorIndex i) -> do
+    ATen.tensorIndexList_push_back vec i
+  ATen.index_put_ t vec v
+  return $ Unsafe t
+
+data None = None
+  deriving (Show, Eq)
+
+data Ellipsis = Ellipsis
+  deriving (Show, Eq)
+
+data Slice a = Slice a
+  deriving (Show, Eq)
+
+instance Castable RawTensorIndex (ForeignPtr ATen.TensorIndex) where
+  cast (RawTensorIndex obj) f = f obj
+  uncast obj f = f $ RawTensorIndex obj
 
 class TensorIndex a where
-  indexWith :: (Tensor, Int) -> a -> (Tensor, Int)
+  pushIndex :: [RawTensorIndex] -> a -> [RawTensorIndex]
+
+instance {-# OVERLAPS #-} TensorIndex None where
+  pushIndex vec _ = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithNone
+    return ((RawTensorIndex idx):vec)
+    
+instance {-# OVERLAPS #-} TensorIndex Ellipsis where
+  pushIndex vec _ = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithEllipsis
+    return ((RawTensorIndex idx):vec)
+    
+instance {-# OVERLAPS #-} TensorIndex Bool where
+  pushIndex vec b = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithBool (if b then 1 else 0)
+    return ((RawTensorIndex idx):vec)
+    
+instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (a,a)) where
+  pushIndex vec (Slice (start,end)) = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithSlice (fromIntegral start :: CInt) (fromIntegral end ::CInt) 1
+    return ((RawTensorIndex idx):vec)
+    
+instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (a,a,a)) where
+  pushIndex vec (Slice (start,end,step)) = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithSlice (fromIntegral start :: CInt) (fromIntegral end ::CInt) (fromIntegral step ::CInt)
+    return ((RawTensorIndex idx):vec)
+
+instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (None,None,a)) where
+  pushIndex vec (Slice (_,_,step)) = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithSlice 0 (maxBound ::CInt) (fromIntegral step ::CInt)
+    return ((RawTensorIndex idx):vec)
+
+instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice a) where
+  pushIndex vec (Slice start) = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithSlice (fromIntegral start :: CInt) (maxBound ::CInt) 1
+    return ((RawTensorIndex idx):vec)
+
+instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (a,None)) where
+  pushIndex vec (Slice (start,_)) = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithSlice (fromIntegral start :: CInt) (maxBound ::CInt) 1
+    return ((RawTensorIndex idx):vec)
+
+instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (a,None,a)) where
+  pushIndex vec (Slice (start,_,step)) = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithSlice (fromIntegral start :: CInt) (maxBound ::CInt) (fromIntegral step :: CInt)
+    return ((RawTensorIndex idx):vec)
+
+instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (None,a,a)) where
+  pushIndex vec (Slice (_,end,step)) = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithSlice 0 (fromIntegral end :: CInt) (fromIntegral step :: CInt)
+    return ((RawTensorIndex idx):vec)
+
+instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (None,a)) where
+  pushIndex vec (Slice (_,end)) = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithSlice 0 (fromIntegral end :: CInt) 1
+    return ((RawTensorIndex idx):vec)
+
+instance {-# OVERLAPS #-} TensorIndex (Slice ()) where
+  pushIndex vec (Slice ()) = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithSlice 0 (maxBound :: CInt) 1
+    return ((RawTensorIndex idx):vec)
 
 instance TensorIndex Int where
-  indexWith (t, offset) idx = (select t offset idx, offset)
+  pushIndex vec v = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithInt (fromIntegral v::CInt)
+    return ((RawTensorIndex idx):vec)
 
 instance TensorIndex Integer where
-  indexWith (t, offset) idx = (select t offset (fromIntegral idx), offset)
+  pushIndex vec v = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithInt (fromIntegral v::CInt)
+    return ((RawTensorIndex idx):vec)
+
+instance TensorIndex Tensor where
+  pushIndex vec v = unsafePerformIO $ do
+    idx <- cast1 ATen.newTensorIndexWithTensor v
+    return (idx:vec)
 
 instance TensorIndex () where
-  indexWith (t, offset) idx = (t, offset + 1)
+  pushIndex vec _ = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithSlice 0 (maxBound :: CInt) 1
+    return ((RawTensorIndex idx):vec)
 
 instance (TensorIndex a, TensorIndex b) => TensorIndex (a,b) where
-  indexWith toff (a, b) = indexWith (indexWith toff a) b
-
+  pushIndex vec (a,b) = (flip pushIndex a) . (flip pushIndex b) $ vec
+  
 instance (TensorIndex a, TensorIndex b, TensorIndex c) => TensorIndex (a,b,c) where
-  indexWith toff (a, b, c) = indexWith (indexWith (indexWith toff a) b) c
+  pushIndex vec (a,b,c) = (flip pushIndex a) . (flip pushIndex b) . (flip pushIndex c) $ vec
 
 instance (TensorIndex a, TensorIndex b, TensorIndex c, TensorIndex d) => TensorIndex (a,b,c,d) where
-  indexWith toff (a, b, c, d) = indexWith (indexWith (indexWith (indexWith toff a) b) c) d
+  pushIndex vec (a,b,c,d) = (flip pushIndex a) . (flip pushIndex b) . (flip pushIndex c) . (flip pushIndex d) $ vec
+
+instance (TensorIndex a, TensorIndex b, TensorIndex c, TensorIndex d, TensorIndex e) => TensorIndex (a,b,c,d,e) where
+  pushIndex vec (a,b,c,d,e) = (flip pushIndex a) . (flip pushIndex b) . (flip pushIndex c) . (flip pushIndex d) . (flip pushIndex e) $ vec
 
 --------------------------------------------------------------------------------
 -- Scalar <-> Tensor promotion
@@ -320,7 +469,8 @@ instance {-# OVERLAPPING #-}TensorLike a => TensorLike [a] where
 
   asTensor v = asTensor' v defaultOpts
 
-  asValue t = unsafePerformIO $ do
+  asValue t' = unsafePerformIO $ do
+    let t = if isContiguous t' then t' else contiguous t'
     if _dtype @a == dtype t
     then do
       withTensor t $ \ptr -> do
