@@ -1247,6 +1247,7 @@ diag
   :: forall (tri :: Tri) (index :: Nat) (shape :: [Nat]) (shape' :: [Nat]) device dtype
    . ( KnownTri tri
      , KnownNat index
+     , StandardDTypeValidation device dtype
      , shape' ~ DiagShape tri index shape
      )
   => Tensor device dtype shape -- ^ input

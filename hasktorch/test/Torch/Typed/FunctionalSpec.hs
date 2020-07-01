@@ -732,6 +732,7 @@ instance
   , shape' ~ DiagShape tri index shape
   , KnownTri tri
   , KnownNat index
+  , StandardDTypeValidation device dtype
   ) => Apply' DiagSpec (((Proxy tri, Proxy index), (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
   apply' DiagSpec (_, agg) = agg >> do
     let t = ones @shape @dtype @device
@@ -1043,9 +1044,9 @@ spec' device =
             hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cpu   (hproduct standardDTypes vectorShapes)))
             hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes') (hattach cpu   (hproduct standardDTypes emptyShapes)))
           Device { deviceType = CUDA, deviceIndex = 0 } -> do
-            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cuda0 (hproduct allDTypes standardShapes)))
-            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cuda0 (hproduct allDTypes vectorShapes)))
-            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes') (hattach cuda0 (hproduct allDTypes emptyShapes)))
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cuda0 (hproduct standardDTypes standardShapes)))
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cuda0 (hproduct standardDTypes vectorShapes)))
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes') (hattach cuda0 (hproduct standardDTypes emptyShapes)))
 
     describe "loss functions" $ do
       let dispatch lossSpec = case device of
