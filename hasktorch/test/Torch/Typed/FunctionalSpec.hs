@@ -1044,9 +1044,9 @@ spec' device =
             hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cpu   (hproduct standardDTypes vectorShapes)))
             hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes') (hattach cpu   (hproduct standardDTypes emptyShapes)))
           Device { deviceType = CUDA, deviceIndex = 0 } -> do
-            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cuda0 (hproduct standardDTypes standardShapes)))
-            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cuda0 (hproduct standardDTypes vectorShapes)))
-            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes') (hattach cuda0 (hproduct standardDTypes emptyShapes)))
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cuda0 (hproduct (withHalf standardDTypes) standardShapes)))
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cuda0 (hproduct (withHalf standardDTypes) vectorShapes)))
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes') (hattach cuda0 (hproduct (withHalf standardDTypes) emptyShapes)))
 
     describe "loss functions" $ do
       let dispatch lossSpec = case device of
