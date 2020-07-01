@@ -1202,8 +1202,32 @@ instance KnownTri Lower where
 
 type family DiagShape (tri :: Tri) (index :: Nat) (shape :: [Nat]) :: [Nat] where
   DiagShape _ i '[n] = '[n + i, n + i]
-  DiagShape 'Upper i '[m, n] = '[Min m (n - i)]
-  DiagShape 'Lower i '[m, n] = '[Min (m - i) n]
+  DiagShape 'Upper i '[m, n] =
+    If
+      (i <=? n)
+      '[Min m (n - i)]
+      ( TypeError
+          ( Text "For a matrix with shape "
+              :<>: ShowType '[m, n]
+              :<>: Text ", the maximum index for an upper diagonal is "
+              :<>: ShowType n
+              :<>: Text ", but asked for index "
+              :<>: ShowType i
+          )
+      )
+  DiagShape 'Lower i '[m, n] =
+    If
+      (i <=? m)
+      '[Min (m - i) n]
+      ( TypeError
+          ( Text "For a matrix with shape "
+              :<>: ShowType '[m, n]
+              :<>: Text ", the maximum index for a lower diagonal is "
+              :<>: ShowType m
+              :<>: Text ", but asked for index "
+              :<>: ShowType i
+          )
+      )
   DiagShape _ _ shape =
     TypeError
       ( Text "The input must be a matrix or a vector, but it has "
