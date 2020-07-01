@@ -1039,9 +1039,9 @@ spec' device =
           indexes' = Proxy @0 :. HNil
         case device of
           Device { deviceType = CPU,  deviceIndex = 0 } -> do
-            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cpu   (hproduct allDTypes standardShapes)))
-            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cpu   (hproduct allDTypes vectorShapes)))
-            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes') (hattach cpu   (hproduct allDTypes emptyShapes)))
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cpu   (hproduct standardDTypes standardShapes)))
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cpu   (hproduct standardDTypes vectorShapes)))
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes') (hattach cpu   (hproduct standardDTypes emptyShapes)))
           Device { deviceType = CUDA, deviceIndex = 0 } -> do
             hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cuda0 (hproduct allDTypes standardShapes)))
             hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cuda0 (hproduct allDTypes vectorShapes)))
