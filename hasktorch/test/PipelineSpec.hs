@@ -13,7 +13,7 @@ import Torch.Data.Pipeline
 import Test.Hspec
 
 
-defaultTimeout = 25000
+defaultTimeout = 30000
 timeoutConcurrent = 70000
 
 newtype MockData = MockData Int
