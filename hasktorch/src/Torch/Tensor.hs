@@ -208,14 +208,16 @@ slice
   -> Tensor
 slice _dim _start _end _step _self = unsafePerformIO $ (cast5 ATen.slice_tllll) _self _dim _start _end _step
 
+-- | Returns True if input tensor is contiguous in memory in the order specified by memory format.
 isContiguous
-  :: Tensor
+  :: Tensor -- ^ input
   -> Bool
 isContiguous t = unsafePerformIO $ (cast1 ATen.tensor_is_contiguous) t
 
+-- | contiguous
 contiguous
-  :: Tensor
-  -> Tensor
+ :: Tensor -- ^ input
+ -> Tensor -- output
 contiguous t = unsafePerformIO $ (cast1 ATen.tensor_contiguous) t
 
 -- | Returns a tensor with the same data and number of elements as input, but with the specified shape.

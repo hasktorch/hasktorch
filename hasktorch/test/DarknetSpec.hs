@@ -2,6 +2,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE ExtendedDefaultRules #-}
 
 module DarknetSpec(spec) where
 
@@ -25,20 +26,20 @@ spec = do
   describe "index accesses" $ do
     it "index" $ do
       let v = asTensor ([1,2,3,4]::[Float])
-          r = asValue (index v [2 ::Int]) :: Float
+          r = asValue (v @@ 2) :: Float
       r `shouldBe` 3.0
     it "index" $ do
       let v = asTensor (replicate 3 [1,2,3,4] :: [[Float]])
-          r = asValue (index v ([Nothing, Just 0]::[Maybe Int])) :: [Float]
-      r `shouldBe` [1.0,1.0,1.0]
+          r = asValue (v @@ (Ellipsis, 0))
+      r `shouldBe` [1.0::Float,1.0,1.0]
     it "indexPut" $ do
       let v = asTensor ([1,2,3,4]::[Float])
-          r = asValue (indexPut v [1 ::Int] (5.0::Float)) :: [Float]
-      r `shouldBe` [1.0,5.0,3.0,4.0]
+          r = asValue (v @= (1,5.0::Float))
+      r `shouldBe` [1.0::Float,5.0,3.0,4.0]
     it "indexPut" $ do
       let v = asTensor ([1,2,3,4]::[Float])
-          r = asValue (indexPut v [1 ::Int] (5.0::Float)) :: [Float]
-      r `shouldBe` [1.0,5.0,3.0,4.0]
+          r = asValue (v @= (1,5.0::Float))
+      r `shouldBe` [1.0::Float,5.0,3.0,4.0]
   describe "DarknetSpec" $ do
     it "Convolution" $ do
       let spec' = ConvolutionSpec {

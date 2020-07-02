@@ -48,7 +48,6 @@ library
                     , Torch.Random
                     , Torch.Script
                     , Torch.HList
-                    , Torch.Vision.Darknet
                     , Torch.Vision.Darknet.Config
                     , Torch.Vision.Darknet.Spec
                     , Torch.Vision.Darknet.Forward

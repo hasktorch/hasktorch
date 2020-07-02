@@ -1400,7 +1400,7 @@ permute
  -> Tensor -- output
 permute dims t = unsafePerformIO $ (cast2 ATen.tensor_permute_l) t dims
 
--- | slice
+-- | Slices the input tensor along the selected dimension at the given range. 
 slice
   :: Int -- ^ dim
   -> Int -- ^ start
@@ -1416,12 +1416,6 @@ view
  -> Tensor -- ^ input
  -> Tensor -- output
 view dims t = unsafePerformIO $ (cast2 ATen.tensor_view_l) t dims
-
--- | contiguous
-contiguous
- :: Tensor -- ^ input
- -> Tensor -- output
-contiguous t = unsafePerformIO $ (cast1 ATen.tensor_contiguous) t
 
 -- | repeat
 repeat
