@@ -724,6 +724,20 @@ instance
         t' = narrow @dim @start @length t
     checkDynamicTensorAttributes t'
 
+data DiagSpec = DiagSpec
+
+instance
+  ( TensorOptions shape dtype device
+  , TensorOptions shape' dtype device
+  , KnownTri tri
+  , KnownNat index
+  , StandardDTypeValidation device dtype
+  , shape' ~ DiagShape tri index shape
+  ) => Apply' DiagSpec (((Proxy tri, Proxy index), (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
+  apply' DiagSpec (_, agg) = agg >> do
+    let t = ones @shape @dtype @device
+    checkDynamicTensorAttributes $ diag @tri @index t
+
 data AnyAllSpec = AnySpec | AllSpec
 
 instance
@@ -1017,6 +1031,22 @@ spec' device =
           hfoldrM @IO Transpose2DSpec () (hattach cpu   (hproduct allDTypes (Proxy @'[2, 3] :. HNil)))
         Device { deviceType = CUDA, deviceIndex = 0 } ->
           hfoldrM @IO Transpose2DSpec () (hattach cuda0 (hproduct allDTypes (Proxy @'[2, 3] :. HNil)))
+      it "diag" $ do
+        let
+          vectorShapes = Proxy @'[0] :. Proxy @'[1] :. Proxy @'[2] :. HNil
+          emptyShapes = Proxy @'[0, 0] :. Proxy @'[0, 1]  :. Proxy @'[1, 0] :. HNil
+          tris = Proxy @'Upper :. Proxy @'Lower :. HNil
+          indexes = Proxy @0 :. Proxy @1 :. HNil
+          indexes' = Proxy @0 :. HNil
+        case device of
+          Device { deviceType = CPU,  deviceIndex = 0 } -> do
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cpu   (hproduct standardDTypes standardShapes)))
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cpu   (hproduct standardDTypes vectorShapes)))
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes') (hattach cpu   (hproduct standardDTypes emptyShapes)))
+          Device { deviceType = CUDA, deviceIndex = 0 } -> do
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cuda0 (hproduct (withHalf standardDTypes) standardShapes)))
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cuda0 (hproduct (withHalf standardDTypes) vectorShapes)))
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes') (hattach cuda0 (hproduct (withHalf standardDTypes) emptyShapes)))
 
     describe "loss functions" $ do
       let dispatch lossSpec = case device of
