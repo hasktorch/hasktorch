@@ -265,22 +265,24 @@ toCUDA t = unsafePerformIO $ (cast1 ATen.tensor_cuda) t
 newtype RawTensorIndexList = RawTensorIndexList (ForeignPtr (ATen.StdVector ATen.TensorIndex))
 newtype RawTensorIndex = RawTensorIndex (ForeignPtr ATen.TensorIndex)
 
-(@@) :: TensorIndex a => Tensor -> a -> Tensor
-(Unsafe t) @@ idx = unsafePerformIO $ do
+(!) :: TensorIndex a => Tensor -> a -> Tensor
+(Unsafe t) ! idx = unsafePerformIO $ do
   let idxs = pushIndex [] idx
   vec <- ATen.newTensorIndexList
   forM_ idxs $ \(RawTensorIndex i) -> do
     ATen.tensorIndexList_push_back vec i
   ATen.index t vec >>= (return . Unsafe)
 
-(@=) :: TensorIndex a => Tensor -> (a,Tensor) -> Tensor
-(Unsafe t') @= (idx,(Unsafe v)) = unsafePerformIO $ do
-  let idxs = pushIndex [] idx
+(//) :: (TensorIndex a, TensorLike b) => Tensor -> [(a,b)] -> Tensor
+(Unsafe t') // index_and_values = unsafePerformIO $ do
   t <- ATen.clone_t t'
-  vec <- ATen.newTensorIndexList
-  forM_ idxs $ \(RawTensorIndex i) -> do
-    ATen.tensorIndexList_push_back vec i
-  ATen.index_put_ t vec v
+  forM_ index_and_values $ \(idx,value) -> do
+    let idxs = pushIndex [] idx
+        (Unsafe v) = asTensor value
+    vec <- ATen.newTensorIndexList
+    forM_ idxs $ \(RawTensorIndex i) -> do
+      ATen.tensorIndexList_push_back vec i
+    ATen.index_put_ t vec v
   return $ Unsafe t
 
 data None = None
@@ -518,7 +520,7 @@ instance Show Tensor where
     where
       -- TODO: this is obviously not the right way to do it,
       -- and will be terribly slow, so please fix it.
-      showElems elemShow sep t = "[" ++ (intercalate sep $ map elemShow [t @@ i | i <- [0..((size t 0) - 1)]]) ++ "]"
+      showElems elemShow sep t = "[" ++ (intercalate sep $ map elemShow [t ! i | i <- [0..((size t 0) - 1)]]) ++ "]"
       padPositive x s = if x >= 0 then " " ++ s else s
       -- TODO: this assumes that scientific notation only uses one-digit exponents, which is not
       --       true in general

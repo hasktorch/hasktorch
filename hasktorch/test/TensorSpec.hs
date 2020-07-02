@@ -158,25 +158,25 @@ spec = do
   describe "indexing" $ do
     it "pick up a value" $ do
       let x = asTensor ([[[0,1,2],[3,4,5]],[[6,7,8],[9,10,11]]] :: [[[Int]]])
-          r = x @@ (1,0,2)
+          r = x ! (1,0,2)
       (dtype &&& shape &&& asValue) r `shouldBe` (Int64, ([], 8 :: Int))
     it "pick up a bottom tensor" $ do
       let x = asTensor ([[[0,1,2],[3,4,5]],[[6,7,8],[9,10,11]]] :: [[[Int]]])
-          r = x @@ (1,0)
+          r = x ! (1,0)
       (dtype &&& shape &&& asValue) r `shouldBe` (Int64, ([3], [6 :: Int, 7, 8]))
     it "make a slice of bottom values" $ do
       let x = asTensor ([[[0,1,2],[3,4,5]],[[6,7,8],[9,10,11]]] :: [[[Int]]])
-          r = x @@ ((),(),1)
+          r = x ! ((),(),1)
       (dtype &&& shape &&& asValue) r `shouldBe` (Int64, ([2,2], [[1 :: Int, 4], [7, 10]]))
     it "ellipsis" $ do
       let x = asTensor ([[[0,1,2],[3,4,5]],[[6,7,8],[9,10,11]]] :: [[[Int]]])
-          r = x @@ (Ellipsis,1)
+          r = x ! (Ellipsis,1)
       (dtype &&& shape &&& asValue) r `shouldBe` (Int64, ([2,2], [[1 :: Int, 4], [7, 10]]))
     it "make a slice via muliple slices" $ do
       let x = asTensor ([[[0,1,2],[3,4,5]],[[6,7,8],[9,10,11]]] :: [[[Int]]])
-          r = x @@ ((),(Slice (1,None)))
+          r = x ! ((),(Slice (1,None)))
       (dtype &&& shape &&& asValue) r `shouldBe` (Int64, ([2,1,3], [[[3::Int,4,5]],[[9,10,11]]]))
     it "make a slice via muliple slices" $ do
       let x = asTensor ([[[0,1,2],[3,4,5]],[[6,7,8],[9,10,11]]] :: [[[Int]]])
-          r = x @@ ((),(Slice (1,None)),(Slice (0,1)))
+          r = x ! ((),(Slice (1,None)),(Slice (0,1)))
       (dtype &&& shape &&& asValue) r `shouldBe` (Int64, ([2,1,1], [[[3::Int]],[[9]]]))
