@@ -13,10 +13,8 @@ import Torch.Data.Pipeline
 import Test.Hspec
 
 
--- defaultTimeout :: Int
--- defaultTimeout = 50000
-defaultTimeout = 21000
-timeoutConcurrent = 61000
+defaultTimeout = 25000
+timeoutConcurrent = 70000
 
 newtype MockData = MockData Int
 
@@ -45,6 +43,8 @@ testConcurrentFoldTimeout dataset numWorkers = do
 takeBatchThenTimeout :: Int -> Int -> Int -> IO Int
 takeBatchThenTimeout timeout _ input =  threadDelay timeout >> pure input
 
+-- | This function returns Nothing if the IO action takes longer than the given
+-- | time, otherwise it returns Just()
 runTest :: Int -> IO () -> IO (Maybe ())
 runTest time test = do
     hFlush stdout
