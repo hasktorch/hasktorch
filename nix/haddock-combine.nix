@@ -1,4 +1,4 @@
-{ runCommand, lib, haskellPackages }:
+{ runCommand, lib, ghc }:
 { hspkgs # Haskell packages to make documentation for. Only those with a "doc" output will be used.
   # Note: we do not provide arbitrary additional Haddock options, as these would not be 
   # applied consistently, since we're reusing the already built Haddock for the packages.
@@ -51,7 +51,7 @@ in runCommand "haddock-join" { buildInputs = [ hsdocs ]; } ''
   done
 
   # Generate the contents and index
-  ${haskellPackages.ghc}/bin/haddock \
+  ${ghc}/bin/haddock \
     --gen-contents \
     --gen-index \
     ${lib.optionalString (prologue != null) "--prologue ${prologue}"} \

@@ -10,26 +10,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: cachix/install-nix-action@v7
-    - name: Setup repo
+    - name: free disk space
       run: |
-        git submodule init && git submodule update
-    - name: Build
-      run: |
-        nix-env -i cachix
-        cachix use hasktorch
-        nix-build -A hasktorch-docs
+        sudo swapoff -a
+        sudo rm -f /swapfile
+        sudo apt -y purge ghc* cabal-install* php* || true
+        sudo apt autoremove -y || true
+        sudo apt autoclean -y || true
+        docker rmi $(docker image ls -aq)
+        df -h
+    - uses: cachix/install-nix-action@v10
+    - run: nix-env -iA cachix -f https://cachix.org/api/v1/install
+    - run: cachix use iohk
+    - run: cachix use hasktorch
+    - run: |
+        nix-build -A combined-haddock
         pwd
         find result/ |head
         mkdir public
         cp -r ./result/share/doc/* public/
     - name: Deploy
       if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      uses: peaceiris/actions-gh-pages@v2.5.0
-      env:
-        ACTIONS_DEPLOY_KEY: ${{ secrets.ACTIONS_DEPLOY_KEY }}
-        # PERSONAL_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
-        # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        EXTERNAL_REPOSITORY: hasktorch/hasktorch.github.io
-        PUBLISH_BRANCH: master
-        PUBLISH_DIR: public
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+        # personal_token: ${{ secrets.PERSONAL_TOKEN }}
+        # github_token: ${{ secrets.GITHUB_TOKEN }}
+        external_repository: hasktorch/hasktorch.github.io
+        publish_branch: master
+        publish_dir: ./public

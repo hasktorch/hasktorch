@@ -96,7 +96,7 @@ instance {-# OVERLAPS #-} (KnownDevice device') => HasToDevice device' device (T
   toDevice = Torch.Typed.Tensor.toDevice
 
 instance {-# OVERLAPS #-} (KnownDevice device') => HasToDevice device' device (Parameter device dtype shape) (Parameter device' dtype shape) where
-  toDevice = Torch.Typed.Parameter.toDevice
+  toDevice = Torch.Typed.Parameter.parameterToDevice
 
 instance {-# OVERLAPS #-} HasToDevice device' device (HList ('[] :: [Type])) (HList ('[] :: [Type])) where
   toDevice = id

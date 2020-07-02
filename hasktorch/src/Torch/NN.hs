@@ -15,7 +15,8 @@ import System.IO.Unsafe (unsafePerformIO)
 
 import qualified Torch.Internal.Managed.Native as ATen
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
-import Torch.Internal.Cast (cast3)
+
+import Torch.Internal.Cast (cast3, cast6, cast14)
 
 import Torch.Autograd
 import Torch.Initializers
@@ -42,6 +43,11 @@ class Parameterized f where
   replaceOwnParameters :: f -> ParamStream f
   default replaceOwnParameters :: (Generic f, Parameterized' (Rep f)) => f -> ParamStream f
   replaceOwnParameters f = to <$> replaceOwnParameters' (from f)
+
+class HasForward f a b | f a -> b where
+  forward :: f -> a -> b
+  forwardStoch :: f -> a -> IO b
+  forwardStoch = (pure .) . forward
 
 instance Parameterized Parameter where
   flattenParameters = pure
@@ -122,9 +128,11 @@ linear layer input = linear' input w b
 
 instance Randomizable LinearSpec Linear where
   sample LinearSpec{..} = do
-      w <- makeIndependent =<< kaimingUniform' [out_features, in_features]
-      -- w <- makeIndependent =<< randn' [out_features, in_features]
-      b <- makeIndependent =<< randnIO' [out_features]
+      w <- makeIndependent =<< kaimingUniform FanIn (LeakyRelu $ Prelude.sqrt (5.0 :: Float)) [out_features, in_features]
+      init <- randIO' [out_features]
+      let bound = (1 :: Float) / Prelude.sqrt (fromIntegral (getter FanIn $ calculateFan [out_features, in_features]) :: Float)
+      b <- makeIndependent =<< pure(subScalar bound $ mulScalar (bound * 2.0) init)
+      
       return $ Linear w b
 
 instance Parameterized Linear
@@ -139,3 +147,35 @@ instance Parameterized Linear
 --     return $ Linear{..}
 
 instance Parameterized [Linear]
+
+data Conv2dSpec = 
+  Conv2dSpec {
+    inputChannelSize  :: Int, 
+    outputChannelSize :: Int, 
+    kernelHeight       :: Int, 
+    kernelWidth       :: Int
+    } deriving (Show, Eq)
+
+data Conv2d = 
+  Conv2d { 
+    conv2dWeight :: Parameter, 
+    conv2dBias   :: Parameter
+    } deriving (Show, Generic)
+
+conv2dForward :: Conv2d -> (Int, Int) -> (Int, Int) -> Tensor -> Tensor
+conv2dForward layer stride padding input = 
+  Torch.Functional.conv2d' w b stride padding input
+    where
+        w = toDependent (conv2dWeight layer)
+        b = toDependent (conv2dBias layer)
+
+instance Randomizable Conv2dSpec Conv2d where
+  sample Conv2dSpec{..} = do
+      w <- makeIndependent =<< kaimingUniform FanIn (LeakyRelu $ Prelude.sqrt (5.0 :: Float)) [outputChannelSize, inputChannelSize, kernelHeight, kernelWidth]
+      init <- randIO' [outputChannelSize]
+      let bound = (1 :: Float) / Prelude.sqrt (fromIntegral (getter FanIn $ calculateFan [outputChannelSize, inputChannelSize, kernelHeight, kernelWidth]) :: Float)
+      b <- makeIndependent =<< pure(subScalar bound $ mulScalar (bound * 2.0) init)
+      
+      return $ Conv2d w b
+
+instance Parameterized Conv2d

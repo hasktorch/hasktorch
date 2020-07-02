@@ -24,6 +24,7 @@
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.KnownNat.Solver #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Extra.Solver #-}
+{-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 
 module Torch.Typed.NN.Recurrent.GRU where
 
@@ -48,12 +49,13 @@ import qualified Torch.Functional              as D
 import qualified Torch.NN                      as A
 import qualified Torch.Tensor                  as D
 import qualified Torch.TensorFactories         as D
-import           Torch.Typed
 import           Torch.Typed.Factories
 import           Torch.Typed.Functional      hiding ( sqrt )
 import           Torch.Typed.Tensor
 import           Torch.Typed.Parameter
-import           Torch.Typed.NN
+import           Torch.Typed.NN.Dropout
+import           Torch.Typed.NN.Recurrent.Aux
+
 
 data GRULayerSpec
   (inputSize :: Nat)
@@ -125,8 +127,8 @@ instance
  where
   sample _ =
     GRUUnidirectionalLayer
-      <$> (makeIndependent =<< xavierUniormGRU)
-      <*> (makeIndependent =<< xavierUniormGRU)
+      <$> (makeIndependent =<< xavierUniformGRU)
+      <*> (makeIndependent =<< xavierUniformGRU)
       <*> (makeIndependent =<< pure zeros)
       <*> (makeIndependent =<< pure zeros)
 
@@ -141,12 +143,12 @@ instance
  where
   sample _ =
     GRUBidirectionalLayer
-      <$> (makeIndependent =<< xavierUniormGRU)
-      <*> (makeIndependent =<< xavierUniormGRU)
+      <$> (makeIndependent =<< xavierUniformGRU)
+      <*> (makeIndependent =<< xavierUniformGRU)
       <*> (makeIndependent =<< pure zeros)
       <*> (makeIndependent =<< pure zeros)
-      <*> (makeIndependent =<< xavierUniormGRU)
-      <*> (makeIndependent =<< xavierUniormGRU)
+      <*> (makeIndependent =<< xavierUniformGRU)
+      <*> (makeIndependent =<< xavierUniformGRU)
       <*> (makeIndependent =<< pure zeros)
       <*> (makeIndependent =<< pure zeros)
 
@@ -184,28 +186,31 @@ deriving instance Show (GRULayerStack inputSize hiddenSize numLayers directional
 -- deriving instance Generic (GRULayerStack inputSize hiddenSize numLayers directionality dtype device)
 
 instance {-# OVERLAPS #-}
-  ( GParameterized (K1 R (GRULayer inputSize hiddenSize directionality dtype device)) parameters
+  ( layer ~ (K1 R (GRULayer inputSize hiddenSize directionality dtype device))
+  , GParameterized layer parameters
   ) => GParameterized (K1 R (GRULayerStack inputSize hiddenSize 1 directionality dtype device)) parameters where
   gFlattenParameters (K1 (GRULayer1 gruLayer))
-    = gFlattenParameters (K1 @R gruLayer)
+    = gFlattenParameters (K1 gruLayer :: layer _)
   gReplaceParameters (K1 (GRULayer1 gruLayer)) parameters
-    = K1 (GRULayer1 (unK1 (gReplaceParameters (K1 @R gruLayer) parameters)))
+    = K1 (GRULayer1 (unK1 (gReplaceParameters (K1 gruLayer :: layer _) parameters)))
 
 instance {-# OVERLAPPABLE #-}
   ( 2 <= numLayers
-  , GParameterized (K1 R (GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device)) parameters
-  , GParameterized (K1 R (GRULayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)) parameters'
+  , layerStack ~ (K1 R (GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device))
+  , layer ~ (K1 R (GRULayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device))
+  , GParameterized layerStack parameters
+  , GParameterized layer parameters'
   , HAppendFD parameters parameters' parameters''
   , parameters'' ~ (parameters ++ parameters')
   ) => GParameterized (K1 R (GRULayerStack inputSize hiddenSize numLayers directionality dtype device)) parameters'' where
   gFlattenParameters (K1 (GRULayerK gruLayerStack gruLayer))
-    = let parameters  = gFlattenParameters (K1 @R gruLayerStack)
-          parameters' = gFlattenParameters (K1 @R gruLayer)
+    = let parameters  = gFlattenParameters (K1 gruLayerStack :: layerStack _)
+          parameters' = gFlattenParameters (K1 gruLayer :: layer _)
       in  parameters `happendFD` parameters'
   gReplaceParameters (K1 (GRULayerK gruLayerStack gruLayer)) parameters''
     = let (parameters, parameters') = hunappendFD parameters''
-          gruLayerStack'           = unK1 (gReplaceParameters (K1 @R gruLayerStack) parameters)
-          gruLayer'                = unK1 (gReplaceParameters (K1 @R gruLayer)      parameters')
+          gruLayerStack'           = unK1 (gReplaceParameters (K1 gruLayerStack :: layerStack _) parameters)
+          gruLayer'                = unK1 (gReplaceParameters (K1 gruLayer :: layer _)      parameters')
       in  K1 (GRULayerK gruLayerStack' gruLayer')
 
 instance {-# OVERLAPS #-}
@@ -270,7 +275,7 @@ data GRU
 -- | Helper to do xavier uniform initializations on weight matrices and
 -- orthagonal initializations for the gates. (When implemented.)
 --
-xavierUniormGRU
+xavierUniformGRU
   :: forall device dtype hiddenSize featureSize
    . ( KnownDType dtype
      , KnownNat hiddenSize
@@ -279,40 +284,12 @@ xavierUniormGRU
      , RandDTypeIsValid device dtype
      )
   => IO (Tensor device dtype '[3 * hiddenSize, featureSize])
-xavierUniormGRU = do
+xavierUniformGRU = do
   init <- randn :: IO (Tensor device dtype '[3 * hiddenSize, featureSize])
   UnsafeMkTensor <$> xavierUniformFIXME
     (toDynamic init)
     (5.0 / 3)
     (shape @device @dtype @'[3 * hiddenSize, featureSize] init)
-
--- TODO: This is taken from the initializers example code and should be replaced with cannonical,
--- tested versions. However, even a potentially incorrect implementation will likely perform
--- better than an ad-hoc random-normal distribution.
--- | Fan-in / Fan-out scaling calculation
-calculateFan :: [Int] -> (Int, Int)
-calculateFan shape
-  | dimT < 2
-  = error
-    "Fan in and fan out can not be computed for tensor with fewer than 2 dimensions"
-  | dimT == 2
-  = (numInputFmaps, numOutputFmaps)
-  | otherwise
-  = (numInputFmaps * receptiveFieldSize, numOutputFmaps * receptiveFieldSize)
- where
-  dimT               = length shape
-  numInputFmaps      = shape !! 1
-  numOutputFmaps     = shape !! 0
-  receptiveFieldSize = product $ tail shape
-
--- | Xavier Initialization - Uniform
-xavierUniformFIXME :: D.Tensor -> Float -> [Int] -> IO D.Tensor
-xavierUniformFIXME init gain shape = pure
-  $ D.subScalar (D.mulScalar init (bound * 2.0)) bound
- where
-  (fanIn, fanOut) = calculateFan shape
-  std = gain * sqrt (2.0 / (fromIntegral fanIn + fromIntegral fanOut))
-  bound = sqrt 3.0 * std
 
 instance
   ( KnownDType dtype
@@ -329,8 +306,6 @@ instance
     GRU
       <$> A.sample (GRULayerStackSpec @inputSize @hiddenSize @numLayers @directionality @dtype @device)
       <*> A.sample dropoutSpec
-
-data RNNInitialization = ConstantInitialization | LearnedInitialization deriving (Show, Generic)
 
 -- | A specification for a long, short-term memory layer.
 --
@@ -450,7 +425,7 @@ instance
       <$> A.sample gruSpec
       <*> (makeIndependent =<< pure h)
 
-gru
+gruForward
   :: forall
        shapeOrder
        batchSize
@@ -496,8 +471,8 @@ gru
   -> ( Tensor device dtype outputShape
      , Tensor device dtype hcShape
      )
-gru dropoutOn (GRUWithConstInit gru@(GRU _ (Dropout dropoutProb)) hc) input
-  = Torch.Typed.Functional.gru
+gruForward dropoutOn (GRUWithConstInit gruModel@(GRU _ (Dropout dropoutProb)) hc) input
+  = gru
     @shapeOrder
     @directionality
     @numLayers
@@ -512,7 +487,7 @@ gru dropoutOn (GRUWithConstInit gru@(GRU _ (Dropout dropoutProb)) hc) input
     @tensorParameters
     @dtype
     @device
-    (hmap' ToDependent . flattenParameters $ gru)
+    (hmap' ToDependent . flattenParameters $ gruModel)
     dropoutProb
     dropoutOn
     hc'
@@ -524,8 +499,8 @@ gru dropoutOn (GRUWithConstInit gru@(GRU _ (Dropout dropoutProb)) hc) input
           @'[batchSize, numLayers * NumberOfDirections directionality, hiddenSize]
           False -- TODO: What does the bool do?
       $ hc
-gru dropoutOn (GRUWithLearnedInit gru@(GRU _ (Dropout dropoutProb)) hc) input
-  = Torch.Typed.Functional.gru
+gruForward dropoutOn (GRUWithLearnedInit gruModel@(GRU _ (Dropout dropoutProb)) hc) input
+  = gru
     @shapeOrder
     @directionality
     @numLayers
@@ -540,7 +515,7 @@ gru dropoutOn (GRUWithLearnedInit gru@(GRU _ (Dropout dropoutProb)) hc) input
     @tensorParameters
     @dtype
     @device
-    (hmap' ToDependent . flattenParameters $ gru)
+    (hmap' ToDependent . flattenParameters $ gruModel)
     dropoutProb
     dropoutOn
     hc'
@@ -554,7 +529,7 @@ gru dropoutOn (GRUWithLearnedInit gru@(GRU _ (Dropout dropoutProb)) hc) input
       . toDependent
       $ hc
 
-gruWithDropout, gruWithoutDropout
+gruForwardWithDropout, gruForwardWithoutDropout
   :: forall
        shapeOrder
        batchSize
@@ -604,14 +579,14 @@ gruWithDropout, gruWithoutDropout
 -- >>> input :: CPUTensor 'D.Float '[5,16,10] <- randn
 -- >>> spec = GRUWithZerosInitSpec @10 @30 @3 @'Bidirectional @'D.Float @'( 'D.CPU, 0) (GRUSpec (DropoutSpec 0.5))
 -- >>> model <- A.sample spec
--- >>> :t gruWithDropout @'BatchFirst model input
--- gruWithDropout @'BatchFirst model input
+-- >>> :t gruForwardWithDropout @'BatchFirst model input
+-- gruForwardWithDropout @'BatchFirst model input
 --   :: (Tensor '( 'D.CPU, 0) 'D.Float '[5, 16, 60],
 --       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30])
--- >>> gruWithDropout @'BatchFirst model input
+-- >>> gruForwardWithDropout @'BatchFirst model input
 -- (Tensor Float [5,16,60] ,Tensor Float [6,5,30] )
-gruWithDropout =
-  Torch.Typed.NN.Recurrent.GRU.gru
+gruForwardWithDropout =
+  gruForward
     @shapeOrder
     @batchSize
     @seqLen
@@ -634,14 +609,14 @@ gruWithDropout =
 -- >>> input :: CPUTensor 'D.Float '[5,16,10] <- randn
 -- >>> spec = GRUWithZerosInitSpec @10 @30 @3 @'Bidirectional @'D.Float @'( 'D.CPU, 0) (GRUSpec (DropoutSpec 0.5))
 -- >>> model <- A.sample spec
--- >>> :t gruWithoutDropout @'BatchFirst model input
--- gruWithoutDropout @'BatchFirst model input
+-- >>> :t gruForwardWithoutDropout @'BatchFirst model input
+-- gruForwardWithoutDropout @'BatchFirst model input
 --   :: (Tensor '( 'D.CPU, 0) 'D.Float '[5, 16, 60],
 --       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30])
--- >>> gruWithoutDropout @'BatchFirst model input
+-- >>> gruForwardWithoutDropout @'BatchFirst model input
 -- (Tensor Float [5,16,60] ,Tensor Float [6,5,30] )
-gruWithoutDropout =
-  Torch.Typed.NN.Recurrent.GRU.gru
+gruForwardWithoutDropout =
+  gruForward
     @shapeOrder
     @batchSize
     @seqLen

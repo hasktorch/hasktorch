@@ -18,8 +18,7 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 
@@ -40,11 +39,11 @@ newTensorOptions_s _d =
 
 
 
-deleteTensorOptions :: Ptr TensorOptions -> IO ()
-deleteTensorOptions object = [C.throwBlock| void { delete $(at::TensorOptions* object);}|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_tensoroptions"
+  c_delete_tensoroptions :: FunPtr ( Ptr TensorOptions -> IO ())
 
 instance CppObject TensorOptions where
-  fromPtr ptr = newForeignPtr ptr (deleteTensorOptions ptr)
+  fromPtr ptr = newForeignPtr c_delete_tensoroptions ptr
 
 
 

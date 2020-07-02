@@ -18,8 +18,7 @@ module Torch.Internal.Managed.Type.IValue where
 
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 import Torch.Internal.Cast
@@ -157,10 +156,10 @@ iValue_isTensorList
   -> IO (CBool)
 iValue_isTensorList = cast1 Unmanaged.iValue_isTensorList
 
-iValue_isGenericList
+iValue_isList
   :: ForeignPtr IValue
   -> IO (CBool)
-iValue_isGenericList = cast1 Unmanaged.iValue_isGenericList
+iValue_isList = cast1 Unmanaged.iValue_isList
 
 iValue_isGenericDict
   :: ForeignPtr IValue

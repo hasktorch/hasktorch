@@ -24,6 +24,7 @@
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.KnownNat.Solver #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Extra.Solver #-}
+{-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 
 module Torch.Typed.NN.Recurrent.LSTM where
 
@@ -48,12 +49,13 @@ import qualified Torch.Functional              as D
 import qualified Torch.NN                      as A
 import qualified Torch.Tensor                  as D
 import qualified Torch.TensorFactories         as D
-import           Torch.Typed
 import           Torch.Typed.Factories
 import           Torch.Typed.Functional      hiding ( sqrt )
 import           Torch.Typed.Tensor
 import           Torch.Typed.Parameter
-import           Torch.Typed.NN
+import           Torch.Typed.NN.Dropout
+import           Torch.Typed.NN.Recurrent.Aux
+
 
 data LSTMLayerSpec
   (inputSize :: Nat)
@@ -125,8 +127,8 @@ instance
  where
   sample _ =
     LSTMUnidirectionalLayer
-      <$> (makeIndependent =<< xavierUniormLSTM)
-      <*> (makeIndependent =<< xavierUniormLSTM)
+      <$> (makeIndependent =<< xavierUniformLSTM)
+      <*> (makeIndependent =<< xavierUniformLSTM)
       <*> (makeIndependent =<< pure zeros)
       <*> (makeIndependent =<< pure zeros)
 
@@ -141,14 +143,62 @@ instance
  where
   sample _ =
     LSTMBidirectionalLayer
-      <$> (makeIndependent =<< xavierUniormLSTM)
-      <*> (makeIndependent =<< xavierUniormLSTM)
+      <$> (makeIndependent =<< xavierUniformLSTM)
+      <*> (makeIndependent =<< xavierUniformLSTM)
       <*> (makeIndependent =<< pure zeros)
       <*> (makeIndependent =<< pure zeros)
-      <*> (makeIndependent =<< xavierUniormLSTM)
-      <*> (makeIndependent =<< xavierUniormLSTM)
+      <*> (makeIndependent =<< xavierUniformLSTM)
+      <*> (makeIndependent =<< xavierUniformLSTM)
       <*> (makeIndependent =<< pure zeros)
       <*> (makeIndependent =<< pure zeros)
+
+instance A.Parameterized (LSTMLayer inputSize hiddenSize directionality dtype device) where
+  flattenParameters (LSTMUnidirectionalLayer wi wh bi bh) =
+      [ untypeParam wi
+      , untypeParam wh
+      , untypeParam bi
+      , untypeParam bh
+      ]
+  flattenParameters (LSTMBidirectionalLayer wi wh bi bh wi' wh' bi' bh') =
+      [ untypeParam wi
+      , untypeParam wh
+      , untypeParam bi
+      , untypeParam bh
+      , untypeParam wi'
+      , untypeParam wh'
+      , untypeParam bi'
+      , untypeParam bh'
+      ]
+  replaceOwnParameters (LSTMUnidirectionalLayer _wi _wh _bi _bh) = do
+    wi <- A.nextParameter
+    wh <- A.nextParameter
+    bi <- A.nextParameter
+    bh <- A.nextParameter
+    return (LSTMUnidirectionalLayer
+            (UnsafeMkParameter wi)
+            (UnsafeMkParameter wh)
+            (UnsafeMkParameter bi)
+            (UnsafeMkParameter bh)
+            )
+  replaceOwnParameters (LSTMBidirectionalLayer _wi _wh _bi _bh _wi' _wh' _bi' _bh') = do
+    wi <- A.nextParameter
+    wh <- A.nextParameter
+    bi <- A.nextParameter
+    bh <- A.nextParameter
+    wi' <- A.nextParameter
+    wh' <- A.nextParameter
+    bi' <- A.nextParameter
+    bh' <- A.nextParameter
+    return (LSTMBidirectionalLayer
+            (UnsafeMkParameter wi)
+            (UnsafeMkParameter wh)
+            (UnsafeMkParameter bi)
+            (UnsafeMkParameter bh)
+            (UnsafeMkParameter wi')
+            (UnsafeMkParameter wh')
+            (UnsafeMkParameter bi')
+            (UnsafeMkParameter bh')
+            )
 
 data LSTMLayerStackSpec
   (inputSize :: Nat)
@@ -184,28 +234,32 @@ deriving instance Show (LSTMLayerStack inputSize hiddenSize numLayers directiona
 -- deriving instance Generic (LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device)
 
 instance {-# OVERLAPS #-}
-  ( GParameterized (K1 R (LSTMLayer inputSize hiddenSize directionality dtype device)) parameters
+  ( layer ~ (K1 R (LSTMLayer inputSize hiddenSize directionality dtype device))
+  , GParameterized layer parameters
   ) => GParameterized (K1 R (LSTMLayerStack inputSize hiddenSize 1 directionality dtype device)) parameters where
   gFlattenParameters (K1 (LSTMLayer1 lstmLayer))
-    = gFlattenParameters (K1 @R lstmLayer)
+    = gFlattenParameters (K1 lstmLayer :: layer _)
   gReplaceParameters (K1 (LSTMLayer1 lstmLayer)) parameters
-    = K1 (LSTMLayer1 (unK1 (gReplaceParameters (K1 @R lstmLayer) parameters)))
+    = K1 (LSTMLayer1 (unK1 (gReplaceParameters (K1 lstmLayer :: layer _) parameters)))
 
 instance {-# OVERLAPPABLE #-}
   ( 2 <= numLayers
-  , GParameterized (K1 R (LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device)) parameters
-  , GParameterized (K1 R (LSTMLayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)) parameters'
+  , layerStack ~ (K1 R (LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device))
+  , layer ~ (K1 R (LSTMLayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device))
+  , GParameterized layer parameters'
+  , GParameterized layerStack parameters
+  , GParameterized layer parameters'
   , HAppendFD parameters parameters' parameters''
   , parameters'' ~ (parameters ++ parameters')
   ) => GParameterized (K1 R (LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device)) parameters'' where
   gFlattenParameters (K1 (LSTMLayerK lstmLayerStack lstmLayer))
-    = let parameters  = gFlattenParameters (K1 @R lstmLayerStack)
-          parameters' = gFlattenParameters (K1 @R lstmLayer)
+    = let parameters  = gFlattenParameters (K1 lstmLayerStack :: layerStack _)
+          parameters' = gFlattenParameters (K1 lstmLayer :: layer _)
       in  parameters `happendFD` parameters'
   gReplaceParameters (K1 (LSTMLayerK lstmLayerStack lstmLayer)) parameters''
     = let (parameters, parameters') = hunappendFD parameters''
-          lstmLayerStack'           = unK1 (gReplaceParameters (K1 @R lstmLayerStack) parameters)
-          lstmLayer'                = unK1 (gReplaceParameters (K1 @R lstmLayer)      parameters')
+          lstmLayerStack'           = unK1 (gReplaceParameters (K1 lstmLayerStack :: layerStack _) parameters)
+          lstmLayer'                = unK1 (gReplaceParameters (K1 lstmLayer :: layer _)      parameters')
       in  K1 (LSTMLayerK lstmLayerStack' lstmLayer')
 
 instance {-# OVERLAPS #-}
@@ -240,6 +294,20 @@ instance {-# OVERLAPPABLE #-}
       <$> (A.sample $ LSTMLayerStackSpec @inputSize @hiddenSize @(numLayers - 1) @directionality @dtype @device)
       <*> (A.sample $ LSTMLayerSpec @(hiddenSize * NumberOfDirections directionality) @hiddenSize @directionality @dtype @device)
 
+instance A.Parameterized (LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device) where
+  flattenParameters (LSTMLayer1 layer) =
+           A.flattenParameters layer
+  flattenParameters (LSTMLayerK stack layer) =
+           A.flattenParameters stack
+        ++ A.flattenParameters layer
+  replaceOwnParameters (LSTMLayer1 layer) = do
+    layer' <- A.replaceOwnParameters layer
+    return $ LSTMLayer1 layer'
+  replaceOwnParameters (LSTMLayerK stack layer) = do
+    stack' <- A.replaceOwnParameters stack
+    layer' <- A.replaceOwnParameters layer
+    return $ LSTMLayerK stack' layer'
+
 newtype LSTMSpec
   (inputSize :: Nat)
   (hiddenSize :: Nat)
@@ -267,10 +335,19 @@ data LSTM
 -- https://github.com/pytorch/pytorch/issues/9221
 -- https://discuss.pytorch.org/t/initializing-rnn-gru-and-lstm-correctly/23605
 
+instance A.Parameterized (LSTM inputSize hiddenSize numLayers directionality dtype device) where
+  flattenParameters LSTM{..} = A.flattenParameters lstm_layer_stack
+  replaceOwnParameters LSTM{..} = do
+    lstm_layer_stack' <- A.replaceOwnParameters lstm_layer_stack
+    return $ LSTM
+                 { lstm_layer_stack = lstm_layer_stack'
+                 , ..
+                 }
+
 -- | Helper to do xavier uniform initializations on weight matrices and
 -- orthagonal initializations for the gates. (When implemented.)
 --
-xavierUniormLSTM
+xavierUniformLSTM
   :: forall device dtype hiddenSize featureSize
    . ( KnownDType dtype
      , KnownNat hiddenSize
@@ -279,40 +356,12 @@ xavierUniormLSTM
      , RandDTypeIsValid device dtype
      )
   => IO (Tensor device dtype '[4 * hiddenSize, featureSize])
-xavierUniormLSTM = do
+xavierUniformLSTM = do
   init <- randn :: IO (Tensor device dtype '[4 * hiddenSize, featureSize])
   UnsafeMkTensor <$> xavierUniformFIXME
     (toDynamic init)
     (5.0 / 3)
     (shape @device @dtype @'[4 * hiddenSize, featureSize] init)
-
--- TODO: This is taken from the initializers example code and should be replaced with cannonical,
--- tested versions. However, even a potentially incorrect implementation will likely perform
--- better than an ad-hoc random-normal distribution.
--- | Fan-in / Fan-out scaling calculation
-calculateFan :: [Int] -> (Int, Int)
-calculateFan shape
-  | dimT < 2
-  = error
-    "Fan in and fan out can not be computed for tensor with fewer than 2 dimensions"
-  | dimT == 2
-  = (numInputFmaps, numOutputFmaps)
-  | otherwise
-  = (numInputFmaps * receptiveFieldSize, numOutputFmaps * receptiveFieldSize)
- where
-  dimT               = length shape
-  numInputFmaps      = shape !! 1
-  numOutputFmaps     = shape !! 0
-  receptiveFieldSize = product $ tail shape
-
--- | Xavier Initialization - Uniform
-xavierUniformFIXME :: D.Tensor -> Float -> [Int] -> IO D.Tensor
-xavierUniformFIXME init gain shape = pure
-  $ D.subScalar (D.mulScalar init (bound * 2.0)) bound
- where
-  (fanIn, fanOut) = calculateFan shape
-  std = gain * sqrt (2.0 / (fromIntegral fanIn + fromIntegral fanOut))
-  bound = sqrt 3.0 * std
 
 instance
   ( KnownDType dtype
@@ -329,8 +378,6 @@ instance
     LSTM
       <$> A.sample (LSTMLayerStackSpec @inputSize @hiddenSize @numLayers @directionality @dtype @device)
       <*> A.sample dropoutSpec
-
-data RNNInitialization = ConstantInitialization | LearnedInitialization deriving (Show, Generic)
 
 -- | A specification for a long, short-term memory layer.
 --
@@ -460,7 +507,29 @@ instance
       <*> (makeIndependent =<< pure c)
       <*> (makeIndependent =<< pure h)
 
-lstm
+instance A.Parameterized (LSTMWithInit inputSize hiddenSize numLayers directionality initialization dtype device) where
+  flattenParameters LSTMWithConstInit{..} =
+           A.flattenParameters lstmWithConstInit_lstm
+  flattenParameters LSTMWithLearnedInit{..} =
+           A.flattenParameters lstmWithLearnedInit_lstm
+        ++ fmap untypeParam [lstmWithLearnedInit_c, lstmWithLearnedInit_h]
+  replaceOwnParameters LSTMWithConstInit{..} = do
+    lstmWithConstInit_lstm' <- A.replaceOwnParameters lstmWithConstInit_lstm
+    return $ LSTMWithConstInit
+                 { lstmWithConstInit_lstm = lstmWithConstInit_lstm'
+                 , ..
+                 }
+  replaceOwnParameters LSTMWithLearnedInit{..} = do
+    lstmWithLearnedInit_lstm' <- A.replaceOwnParameters lstmWithLearnedInit_lstm
+    lstmWithLearnedInit_c'    <- A.nextParameter
+    lstmWithLearnedInit_h'    <- A.nextParameter
+    return $ LSTMWithLearnedInit
+                 { lstmWithLearnedInit_lstm = lstmWithLearnedInit_lstm'
+                 , lstmWithLearnedInit_c    = UnsafeMkParameter lstmWithLearnedInit_c'
+                 , lstmWithLearnedInit_h    = UnsafeMkParameter lstmWithLearnedInit_h'
+                 }
+
+lstmForward
   :: forall
        shapeOrder
        batchSize
@@ -507,8 +576,8 @@ lstm
      , Tensor device dtype hxShape
      , Tensor device dtype hxShape
      )
-lstm dropoutOn (LSTMWithConstInit lstm@(LSTM _ (Dropout dropoutProb)) cc hc) input
-  = Torch.Typed.Functional.lstm
+lstmForward dropoutOn (LSTMWithConstInit lstmModel@(LSTM _ (Dropout dropoutProb)) cc hc) input
+  = lstm
     @shapeOrder
     @directionality
     @numLayers
@@ -523,7 +592,7 @@ lstm dropoutOn (LSTMWithConstInit lstm@(LSTM _ (Dropout dropoutProb)) cc hc) inp
     @tensorParameters
     @dtype
     @device
-    (hmap' ToDependent . flattenParameters $ lstm)
+    (hmap' ToDependent . flattenParameters $ lstmModel)
     dropoutProb
     dropoutOn
     (cc', hc')
@@ -541,8 +610,8 @@ lstm dropoutOn (LSTMWithConstInit lstm@(LSTM _ (Dropout dropoutProb)) cc hc) inp
           @'[batchSize, numLayers * NumberOfDirections directionality, hiddenSize]
           False -- TODO: What does the bool do?
       $ hc
-lstm dropoutOn (LSTMWithLearnedInit lstm@(LSTM _ (Dropout dropoutProb)) cc hc) input
-  = Torch.Typed.Functional.lstm
+lstmForward dropoutOn (LSTMWithLearnedInit lstmModel@(LSTM _ (Dropout dropoutProb)) cc hc) input
+  = lstm
     @shapeOrder
     @directionality
     @numLayers
@@ -557,7 +626,7 @@ lstm dropoutOn (LSTMWithLearnedInit lstm@(LSTM _ (Dropout dropoutProb)) cc hc) i
     @tensorParameters
     @dtype
     @device
-    (hmap' ToDependent . flattenParameters $ lstm)
+    (hmap' ToDependent . flattenParameters $ lstmModel)
     dropoutProb
     dropoutOn
     (cc', hc')
@@ -578,7 +647,7 @@ lstm dropoutOn (LSTMWithLearnedInit lstm@(LSTM _ (Dropout dropoutProb)) cc hc) i
       . toDependent
       $ hc
 
-lstmWithDropout, lstmWithoutDropout
+lstmForwardWithDropout, lstmForwardWithoutDropout
   :: forall
        shapeOrder
        batchSize
@@ -629,15 +698,15 @@ lstmWithDropout, lstmWithoutDropout
 -- >>> input :: CPUTensor 'D.Float '[5,16,10] <- randn
 -- >>> spec = LSTMWithZerosInitSpec @10 @30 @3 @'Bidirectional @'D.Float @'( 'D.CPU, 0) (LSTMSpec (DropoutSpec 0.5))
 -- >>> model <- A.sample spec
--- >>> :t lstmWithDropout @'BatchFirst model input
--- lstmWithDropout @'BatchFirst model input
+-- >>> :t lstmForwardWithDropout @'BatchFirst model input
+-- lstmForwardWithDropout @'BatchFirst model input
 --   :: (Tensor '( 'D.CPU, 0) 'D.Float '[5, 16, 60],
 --       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30],
 --       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30])
--- >>> lstmWithDropout @'BatchFirst model input
+-- >>> lstmForwardWithDropout @'BatchFirst model input
 -- (Tensor Float [5,16,60] ,Tensor Float [6,5,30] ,Tensor Float [6,5,30] )
-lstmWithDropout =
-  Torch.Typed.NN.Recurrent.LSTM.lstm
+lstmForwardWithDropout =
+  lstmForward
     @shapeOrder
     @batchSize
     @seqLen
@@ -660,15 +729,15 @@ lstmWithDropout =
 -- >>> input :: CPUTensor 'D.Float '[5,16,10] <- randn
 -- >>> spec = LSTMWithZerosInitSpec @10 @30 @3 @'Bidirectional @'D.Float @'( 'D.CPU, 0) (LSTMSpec (DropoutSpec 0.5))
 -- >>> model <- A.sample spec
--- >>> :t lstmWithoutDropout @'BatchFirst model input
--- lstmWithoutDropout @'BatchFirst model input
+-- >>> :t lstmForwardWithoutDropout @'BatchFirst model input
+-- lstmForwardWithoutDropout @'BatchFirst model input
 --   :: (Tensor '( 'D.CPU, 0) 'D.Float '[5, 16, 60],
 --       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30],
 --       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30])
--- >>> lstmWithoutDropout @'BatchFirst model input
+-- >>> lstmForwardWithoutDropout @'BatchFirst model input
 -- (Tensor Float [5,16,60] ,Tensor Float [6,5,30] ,Tensor Float [6,5,30] )
-lstmWithoutDropout =
-  Torch.Typed.NN.Recurrent.LSTM.lstm
+lstmForwardWithoutDropout =
+  lstmForward
     @shapeOrder
     @batchSize
     @seqLen

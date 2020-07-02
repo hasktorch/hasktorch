@@ -60,7 +60,7 @@ main = do
     trained <- foldLoop init numIters $ \state i -> do
         input <- randIO' [batchSize, 2] >>= return . (toDType Float) . (gt 0.5)
         let (y, y') = (tensorXOR input, squeezeAll $ model state input)
-            loss = mseLoss y' y
+            loss = mseLoss y y'
         when (i `mod` 100 == 0) $ do
             putStrLn $ "Iteration: " ++ show i ++ " | Loss: " ++ show loss
         (newParam, _) <- runStep state optimizer loss 1e-1

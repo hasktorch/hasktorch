@@ -8,12 +8,22 @@ author:              Austin Huang
 maintainer:          hasktorch@gmail.com
 copyright:           2019 Austin Huang
 category:            Codegen
-build-type:          Simple
-cabal-version:       >=1.10
+build-type:          Custom
+cabal-version:       1.24
+
+custom-setup
+  setup-depends:
+      base >= 4.9 && < 5
+    , Cabal
+    , cabal-doctest >=1.0.6 && <1.1
+
+Flag disable-doctest
+ Description: Disable doctest. ToDo: This flag is to avoid relocation-error of ghci for macos.
+ Default:     False
+ Manual:      True
 
 library
  exposed-modules:     Torch
-                    , Torch.HList
                     , Torch.Tensor
                     , Torch.TensorOptions
                     , Torch.DType
@@ -25,17 +35,37 @@ library
                     , Torch.Autograd
                     , Torch.Optim
                     , Torch.Vision
+                    , Torch.NN
+                    , Torch.NN.Recurrent.Cell.Elman
+                    , Torch.NN.Recurrent.Cell.GRU
+                    , Torch.NN.Recurrent.Cell.LSTM
+                    , Torch.Scalar
+                    , Torch.Backend
+                    , Torch.Layout
+                    , Torch.Cast
+                    , Torch.Dimname
+                    , Torch.Serialize
+                    , Torch.Random
+                    , Torch.Script
+                    , Torch.HList
                     , Torch.Typed
                     , Torch.Typed.Aux
                     , Torch.Typed.Factories
                     , Torch.Typed.Functional
                     , Torch.Typed.NN
-                    , Torch.Typed.NN.DataParallel
+                    , Torch.Typed.NN.Convolution
+                    , Torch.Typed.NN.Normalization
+                    , Torch.Typed.NN.Recurrent
+                    , Torch.Typed.NN.Recurrent.Aux
                     , Torch.Typed.NN.Recurrent.Cell.LSTM
                     , Torch.Typed.NN.Recurrent.Cell.GRU
                     , Torch.Typed.NN.Recurrent.LSTM
                     , Torch.Typed.NN.Recurrent.GRU
                     , Torch.Typed.NN.Transformer
+                    , Torch.Typed.NN.Linear
+                    , Torch.Typed.NN.Dropout
+                    , Torch.Typed.NN.Sparse
+                    , Torch.Typed.NN.DataParallel
                     , Torch.Typed.Tensor
                     , Torch.Typed.Parameter
                     , Torch.Typed.Device
@@ -57,21 +87,20 @@ library
                     , Torch.Distributions.Distribution
                     , Torch.Distributions.Bernoulli
                     , Torch.Distributions.Categorical
+ other-modules:       Paths_hasktorch
  hs-source-dirs:      src
  default-language:    Haskell2010
  ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
  build-depends:       async
                     , base >= 4.7 && < 5
-                    , libtorch-ffi == 1.4.*
+                    , libtorch-ffi == 1.5.*
                     , finite-typelits
-                    -- , ghc-typelits-extra >= 0.3.1
-                    -- , ghc-typelits-knownnat >= 0.7
-                    -- , ghc-typelits-natnormalise >= 0.7
                     , ghc-typelits-extra
                     , ghc-typelits-knownnat
                     , ghc-typelits-natnormalise
                     , mtl
                     , safe-exceptions
+                    , random
                     , reflection
                     , singletons
                     , stm
@@ -81,6 +110,8 @@ library
                     , safe-exceptions
                     , zlib >= 0.6
                     , inline-c
+ default-extensions:  Strict
+                    , StrictData
 
 test-suite spec
   type:               exitcode-stdio-1.0
@@ -119,7 +150,6 @@ test-suite spec
   build-depends:      base >= 4.7 && < 5
                     , hasktorch
                     , hspec
-                    , hspec-discover
                     , libtorch-ffi
                     , mtl
                     , reflection
@@ -127,13 +157,37 @@ test-suite spec
                     , QuickCheck
                     , directory
                     , JuicyPixels
+                    , inline-c-cpp
+  build-tool-depends:  hspec-discover:hspec-discover
 
 test-suite doctests
+  if os(darwin) || flag(disable-doctest)
+    Buildable: False
+  else
+    Buildable: True
   type:               exitcode-stdio-1.0
   hs-source-dirs:     test
   main-is:            doctests.hs
-  ghc-options:        -Wall -threaded
+  ghc-options:        -Wall -threaded -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
   default-language:   Haskell2010
-  build-depends:      base >= 4.7 && < 5
-                    , doctest
-                    , libtorch-ffi
+  build-depends:      doctest >=0.16.0.1 && <0.17
+                    , async
+                    , base >= 4.7 && < 5
+                    , libtorch-ffi == 1.5.*
+                    , finite-typelits
+                    , ghc-typelits-extra
+                    , ghc-typelits-knownnat
+                    , ghc-typelits-natnormalise
+                    , mtl
+                    , safe-exceptions
+                    , random
+                    , reflection
+                    , singletons
+                    , stm
+                    , JuicyPixels
+                    , vector
+                    , bytestring
+                    , safe-exceptions
+                    , zlib >= 0.6
+                    , inline-c
+                    , hasktorch

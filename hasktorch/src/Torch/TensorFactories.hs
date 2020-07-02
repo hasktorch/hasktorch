@@ -68,15 +68,18 @@ onesLike
   -> Tensor -- ^ output
 onesLike self = unsafePerformIO $ (cast1 ATen.ones_like_t) self
 
-onesLike' :: Tensor -> Tensor
-onesLike' self = unsafePerformIO $ (cast1 ATen.ones_like_t) self
-
 -- | Returns a tensor filled with the scalar value 0, with the shape defined by the variable argument size.
 zeros 
   :: [Int] -- ^ sequence of integers defining the shape of the output tensor.
   -> TensorOptions -- ^ configures the data type, device, layout and other properties of the resulting tensor.
   -> Tensor -- ^ output
 zeros = mkFactoryUnsafe LibTorch.zeros_lo
+
+-- | Returns a tensor filled with the scalar value 0, with the same size as input tensor
+zerosLike 
+  :: Tensor -- ^ input
+  -> Tensor -- ^ output
+zerosLike self = unsafePerformIO $ (cast1 ATen.zeros_like_t) self
 
 -- | Returns a tensor filled with random numbers from a uniform distribution on the interval [0,1)
 randIO 
@@ -199,6 +202,145 @@ randintIO' low high = mkDefaultFactory (randintIO low high)
 
 randLikeIO' :: Tensor -> IO Tensor
 randLikeIO' t = randLikeIO t defaultOpts
+
+bernoulliIO'
+  :: Tensor
+  -> IO Tensor
+bernoulliIO' t =
+  (cast1 ATen.bernoulli_t) t
+
+bernoulliIO
+  :: Tensor
+  -> Double
+  -> IO Tensor
+bernoulliIO t p =
+  (cast2 ATen.bernoulli_td) t p
+
+poissonIO
+  :: Tensor
+  -> IO Tensor
+poissonIO t =
+  (cast1 ATen.poisson_t) t
+
+multinomialIO'
+  :: Tensor
+  -> Int
+  -> IO Tensor
+multinomialIO' t num_samples =
+  (cast2 ATen.multinomial_tl) t num_samples
+
+multinomialIO
+  :: Tensor
+  -> Int
+  -> Bool
+  -> IO Tensor
+multinomialIO t num_samples replacement =
+  (cast3 ATen.multinomial_tlb) t num_samples replacement
+
+normalIO'
+  :: Tensor
+  -> IO Tensor
+normalIO' _mean =
+  (cast1 ATen.normal_t) _mean
+
+normalIO
+  :: Tensor
+  -> Tensor
+  -> IO Tensor
+normalIO _mean _std =
+  (cast2 ATen.normal_tt) _mean _std
+
+normalScalarIO
+  :: Tensor
+  -> Double
+  -> IO Tensor
+normalScalarIO _mean _std =
+  (cast2 ATen.normal_td) _mean _std
+
+normalScalarIO'
+  :: Double
+  -> Tensor
+  -> IO Tensor
+normalScalarIO' _mean _std =
+  (cast2 ATen.normal_dt) _mean _std
+
+normalWithSizeIO
+  :: Double
+  -> Double
+  -> Int
+  -> IO Tensor
+normalWithSizeIO _mean _std _size =
+  (cast3 ATen.normal_ddl) _mean _std _size
+
+rreluIO'''
+  :: Tensor
+  -> IO Tensor
+rreluIO''' t =
+  (cast1 ATen.rrelu_t) t
+
+rreluIO''
+  :: Scalar a 
+  => Tensor
+  -> a
+  -> IO Tensor
+rreluIO'' t _upper =
+  (cast2 ATen.rrelu_ts) t _upper
+
+rreluIO'
+  :: Scalar a 
+  => Tensor
+  -> a
+  -> a
+  -> IO Tensor
+rreluIO' t _lower _upper =
+  (cast3 ATen.rrelu_tss) t _lower _upper
+
+rreluIO
+  :: Scalar a 
+  => Tensor
+  -> a
+  -> a
+  -> Bool
+  -> IO Tensor
+rreluIO t _lower _upper _training =
+  (cast4 ATen.rrelu_tssb) t _lower _upper _training
+
+rreluWithNoiseIO'''
+  :: Tensor
+  -> Tensor
+  -> IO Tensor
+rreluWithNoiseIO''' t _noise =
+  (cast2 ATen.rrelu_with_noise_tt) t _noise
+
+rreluWithNoiseIO''
+  :: Scalar a 
+  => Tensor
+  -> Tensor
+  -> a
+  -> IO Tensor
+rreluWithNoiseIO'' t _noise _upper =
+  (cast3 ATen.rrelu_with_noise_tts) t _noise _upper
+
+rreluWithNoiseIO'
+  :: Scalar a 
+  => Tensor
+  -> Tensor
+  -> a
+  -> a
+  -> IO Tensor
+rreluWithNoiseIO' t _noise _lower _upper =
+  (cast4 ATen.rrelu_with_noise_ttss) t _noise _lower _upper
+
+rreluWithNoiseIO
+  :: Scalar a 
+  => Tensor
+  -> Tensor
+  -> a
+  -> a
+  -> Bool
+  -> IO Tensor
+rreluWithNoiseIO t _noise _lower _upper _training =
+  (cast5 ATen.rrelu_with_noise_ttssb) t _noise _lower _upper _training
 
 onesWithDimnames' :: [(Int,Dimname)] -> Tensor
 onesWithDimnames' = mkDefaultFactoryWithDimnames onesWithDimnames

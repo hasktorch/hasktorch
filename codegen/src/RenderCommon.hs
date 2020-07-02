@@ -248,7 +248,7 @@ parsableToHigherHsType parsable =
     P.CppClass _ _ hstype -> fromString hstype
     Backend -> "Backend"
     Layout -> "Layout"
-    MemoryFormat -> "MemoryFormat"
+    MemoryFormat -> "ATen.MemoryFormat"
     QScheme -> "QScheme"
     ConstQuantizerPtr -> "ConstQuantizerPtr"
     Dimname -> "Dimname"
@@ -339,6 +339,13 @@ isCType p =
     QScheme -> True
     CType _ -> True
     Ptr _ -> True
+    _ -> False
+
+isGenerator :: Parsable -> Bool
+isGenerator p =
+  case p of
+    Ptr GeneratorType -> True
+    GeneratorType -> True
     _ -> False
 
 isNotStar :: Parameter -> Bool
@@ -437,7 +444,9 @@ functionToCpp is_managed add_type_initials prefix suffix fn =
       else "Ptr"
     types_list :: [Text]
     types_list = flip map parameters' $ \p ->
-      if isCType (ptype p)
+      if is_managed && isGenerator (ptype p)
+      then [st|#{pointer} #{parsableToHsType GeneratorType}|]
+      else if isCType (ptype p)
       then [st|#{parsableToHsType (ptype p)}|]
       else [st|#{pointer} #{parsableToHsType (ptype p)}|]
     types :: Text
@@ -539,7 +548,9 @@ methodToCpp class' is_constructor is_managed add_type_initials prefix suffix fn 
       else "Ptr"
     types_list :: [Text]
     types_list = flip map parameters' $ \p ->
-      if isCType (ptype p)
+      if is_managed && isGenerator (ptype p)
+      then [st|#{pointer} #{parsableToHsType GeneratorType}|]
+      else if isCType (ptype p)
       then [st|#{parsableToHsType (ptype p)}|]
       else [st|#{pointer} #{parsableToHsType (ptype p)}|]
     types :: Text
@@ -583,7 +594,8 @@ getSignatures fn = hsfuncname <> cs type_initials
 
 pureFunction :: String -> Function -> Text
 pureFunction hsfuncname fn = [st|
-#{hsfuncname} :: #{types}
+#{hsfuncname}
+  :: #{types}
 #{hsfuncname} #{args} = unsafePerformIO $ (cast#{num_args} ATen.#{getSignatures fn}) #{args}
 |]
   where
@@ -593,8 +605,8 @@ pureFunction hsfuncname fn = [st|
     args :: String
     args = L.intercalate " " $ map (\p -> "_" <> pname p) parameters'
     types_list :: [Text]
-    types_list = flip map parameters' $ \p -> [st|#{parsableToHigherHsType (ptype p)}|]
+    types_list = flip map parameters' $ \p -> [st|#{parsableToHigherHsType (ptype p)} -- ^ #{pname p}|]
     types :: Text
-    types = T.intercalate " -> " $ types_list ++ [[st|#{ret_hstype}|]]
+    types = T.intercalate "\n  -> " $ types_list ++ [[st|#{ret_hstype}|]]
     ret_hstype :: Text
     ret_hstype = [st|#{parsableToHigherHsType (retType fn)}|]

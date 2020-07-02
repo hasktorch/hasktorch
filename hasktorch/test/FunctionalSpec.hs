@@ -2,16 +2,17 @@
 
 module FunctionalSpec(spec) where
 
-import Prelude hiding (all, abs, exp, floor, log, min, max)
+import Prelude hiding (all, abs, exp, floor, log, min, max, div)
 
 import Test.Hspec
 import Control.Exception.Safe
 
-import Torch.Tensor
-import Torch.DType
-import Torch.TensorFactories
-import Torch.Functional
-import Torch.TensorOptions
+--import Torch.Tensor
+--import Torch.DType
+--import Torch.TensorFactories
+--import Torch.Functional
+--import Torch.TensorOptions
+import Torch
 
 spec :: Spec
 spec = do
@@ -34,6 +35,16 @@ spec = do
     let y = abs x
     let z = sub x y
     (toDouble $ select z 0 0) `shouldBe` -4.0
+  it "mul" $ do
+    let x = (-5) * ones'[5]
+    let y = 2 * ones' [5]
+    let z = mul x y
+    (toDouble $ select z 0 0) `shouldBe` -10.0
+  it "div" $ do
+    let x = (-5) * ones'[5]
+    let y = 2 * ones' [5]
+    let z = div x y
+    (toDouble $ select z 0 0) `shouldBe` -2.5
   it "ceil" $ do
     x <- randIO' [5]
     let y = ceil x
@@ -93,8 +104,14 @@ spec = do
     shape qr `shouldBe` [5,3]
   it "diag" $ do
     let x = ones' [3]
-    let y = diag x 2
+    let y = diag (Diag 2) x
     shape y `shouldBe` [5, 5]
+  it "expand" $ do
+    let t = asTensor [[1], [2], [3 :: Int]]
+    shape (expand t False [3, 4]) `shouldBe` [3, 4]
+  it "flattenAll" $ do
+    let t = asTensor [[1, 2], [3, 4 :: Int]]
+    shape (flattenAll t) `shouldBe` [4]
 
   -- decomposition / solvers
   it "solve" $ do
@@ -106,7 +123,7 @@ spec = do
 
   it "cholesky decomposes" $ do
     let x = asTensor ([[4.0, 12.0, -16.0], [12.0, 37.0, -43.0], [-16.0, -43.0, 98.0]] :: [[Double]])
-        c = cholesky x Upper
+        c = cholesky Upper x
         c' = asTensor ([[2.0, 6.0, -8.0], [0.0, 1.0, 5.0], [0.0, 0.0, 3.0]] :: [[Double]])
     all (c ==. c') `shouldBe` True
   it "inverse of an identity matrix is an identity matrix" $ do
@@ -127,3 +144,61 @@ spec = do
               (0,0)
               (ones' [batch, in_channel, input0, input1])
     shape x `shouldBe` [batch, out_channel, input0, input1]
+  it "elu (pos)" $ do
+    let x = elu (0.5::Float) $ 5 * ones' [4]
+    (toDouble $ select x 0 0) `shouldBe` 5.0
+  it "elu (neg)" $ do
+    let x = elu (0.5::Float) $ -5 * ones' [4]
+    (toDouble $ select x 0 0) `shouldBe` (-0.49663102626800537)
+  it "elu' (pos)" $ do
+    let x = elu' $ 5 * ones' [4]
+    (toDouble $ select x 0 0) `shouldBe` 5.0
+  it "elu' (neg)" $ do
+    let x = elu' $ -5 * ones' [4]
+    (toDouble $ select x 0 0) `shouldBe` (-0.9932620525360107)
+  it "embedding" $ do
+    let dic = asTensor ([[1,2,3], [4,5,6]] :: [[Float]])
+        indices = asTensor ([0,1,1] :: [Int])
+        x = embedding' dic indices
+        value = asTensor ([[1.0,2.0,3.0],[4.0,5.0,6.0],[4.0,5.0,6.0]] :: [[Float]])
+    Torch.all (x `eq` value) `shouldBe` True
+  it "smoothL1Loss" $ do
+    let input = ones' [3]
+        target = 3 * input
+        output = smoothL1Loss ReduceNone input target
+    (toDouble $ select output 0 0) `shouldBe` (1.5)
+  it "softMarginLoss" $ do
+    let input = ones' [3]
+        target = 3 * input
+        output = softMarginLoss ReduceSum input target
+    (toInt $ output*1000) `shouldBe` (145)
+  it "softShrink" $ do
+    let input = 3 * ones' [3]
+        output = softShrink 1 input
+    (toDouble $ select output 0 0) `shouldBe` (2.0)
+  it "stack" $ do
+    let x = ones' [4,3]
+        y = ones' [4,3]
+        output = stack (Dim 1) [x,y]
+    (shape output) `shouldBe` ([4,2,3]) 
+  it "sumDim" $ do
+    let x = asTensor([[1,2,3],[4,5,6],[7,8,9],[10,11,12]]::[[Float]])
+        output = sumDim (Dim 0) KeepDim Float x
+    (toDouble $ select output 1 1) `shouldBe` (26.0)
+  it "topK" $ do
+    let x = asTensor([1,2,3] :: [Float])
+        output = fst $ topK 2 (Dim 0) True True x 
+    (toDouble $ select output 0 0) `shouldBe` (3.0)
+  it "triu" $ do
+    let x = asTensor([[1,2,3],[4,5,6],[7,8,9],[10,11,12]]::[[Float]])
+    (toDouble $ sumAll $ triu (Diag 0) x) `shouldBe` (26.0)
+  it "tril" $ do
+    let x = asTensor([[1,2,3],[4,5,6],[7,8,9],[10,11,12]]::[[Float]])
+    (toDouble $ sumAll $ tril (Diag 0) x) `shouldBe` (67.0)
+  it "unsqueeze" $ do
+    let x = asTensor([[1,2,3],[4,5,6],[7,8,9],[10,11,12]]::[[Float]])
+        output = unsqueeze (Dim 0) x
+    (shape output) `shouldBe` ([1,4,3])      
+  it "ctcLoss" $ do
+    ctcLoss' ReduceMean [1] [1]  (asTensor ([[[0.1, 0.2, 0.7]]] :: [[[Float]]]))
+        (asTensor ([2] :: [Int])) `shouldBe` asTensor (-0.7 :: Float)

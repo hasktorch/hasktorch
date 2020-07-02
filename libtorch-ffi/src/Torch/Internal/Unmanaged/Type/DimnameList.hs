@@ -18,8 +18,7 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 
@@ -39,11 +38,11 @@ newDimnameList  =
 
 
 
-deleteDimnameList :: Ptr DimnameList -> IO ()
-deleteDimnameList object = [C.throwBlock| void { delete $(std::vector<at::Dimname>* object);}|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_dimnamelist"
+  c_delete_dimnamelist :: FunPtr ( Ptr DimnameList -> IO ())
 
 instance CppObject DimnameList where
-  fromPtr ptr = newForeignPtr ptr (deleteDimnameList ptr)
+  fromPtr ptr = newForeignPtr c_delete_dimnamelist ptr
 
 
 

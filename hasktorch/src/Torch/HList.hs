@@ -73,15 +73,15 @@ class Apply f a b where
 class Apply' f a b | f a -> b where
   apply' :: f -> a -> b
 
-data Fst = Fst
+data AFst = AFst
 
-instance Apply' Fst (a, b) a
+instance Apply' AFst (a, b) a
   where
     apply' _ (a, _) = a
 
-data Snd = Snd
+data ASnd = ASnd
 
-instance Apply' Snd (a, b) b
+instance Apply' ASnd (a, b) b
   where
     apply' _ (_, b) = b
 

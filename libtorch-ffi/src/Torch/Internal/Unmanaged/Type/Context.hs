@@ -18,8 +18,7 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 
@@ -32,11 +31,11 @@ C.include "<vector>"
 
 
 
-deleteContext :: Ptr Context -> IO ()
-deleteContext object = [C.throwBlock| void { delete $(at::Context* object);}|]
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_context"
+  c_delete_context :: FunPtr ( Ptr Context -> IO ())
 
 instance CppObject Context where
-  fromPtr ptr = newForeignPtr ptr (deleteContext ptr)
+  fromPtr ptr = newForeignPtr c_delete_context ptr
 
 
 
