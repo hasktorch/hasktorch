@@ -55,7 +55,25 @@ library
                     , Torch.Typed.NN
                     , Torch.Typed.NN.Convolution
                     , Torch.Typed.NN.Normalization
-                    , Torch.Script
+                    , Torch.Typed.NN.Recurrent
+                    , Torch.Typed.NN.Recurrent.Aux
+                    , Torch.Typed.NN.Recurrent.Cell.LSTM
+                    , Torch.Typed.NN.Recurrent.Cell.GRU
+                    , Torch.Typed.NN.Recurrent.LSTM
+                    , Torch.Typed.NN.Recurrent.GRU
+                    , Torch.Typed.NN.Transformer
+                    , Torch.Typed.NN.Linear
+                    , Torch.Typed.NN.Dropout
+                    , Torch.Typed.NN.Sparse
+                    , Torch.Typed.NN.DataParallel
+                    , Torch.Typed.Tensor
+                    , Torch.Typed.Parameter
+                    , Torch.Typed.Device
+                    , Torch.Typed.DType
+                    , Torch.Typed.Autograd
+                    , Torch.Typed.Optim
+                    , Torch.Typed.Serialize
+                    , Torch.Typed.Vision
                     , Torch.Distributions.Constraints
                     , Torch.Distributions.Distribution
                     , Torch.Distributions.Bernoulli
