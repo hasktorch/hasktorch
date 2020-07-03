@@ -38,40 +38,40 @@ boolean :: Constraint
 boolean tensor = (tensor `F.eq` D.zerosLike tensor) `I.logical_or` (tensor `F.eq` D.onesLike tensor)
 
 integerInterval :: Int -> Int -> Constraint
-integerInterval lower_bound upper_bound tensor = (tensor `F.ge` D.fullLike lower_bound tensor) `I.logical_and` (tensor `F.le` D.fullLike upper_bound tensor)
+integerInterval lower_bound upper_bound tensor = (tensor `F.ge` fullLike' lower_bound tensor) `I.logical_and` (tensor `F.le` fullLike' upper_bound tensor)
 
 integerLessThan :: Int -> Constraint
-integerLessThan upper_bound tensor = tensor `F.lt` D.fullLike upper_bound tensor
+integerLessThan upper_bound tensor = tensor `F.lt` fullLike' upper_bound tensor
 
 integerGreaterThan :: Int -> Constraint
-integerGreaterThan lower_bound tensor = tensor `F.gt` D.fullLike lower_bound tensor
+integerGreaterThan lower_bound tensor = tensor `F.gt` fullLike' lower_bound tensor
 
 integerLessThanEq :: Int -> Constraint
-integerLessThanEq upper_bound tensor = tensor `F.le` D.fullLike upper_bound tensor
+integerLessThanEq upper_bound tensor = tensor `F.le` fullLike' upper_bound tensor
 
 integerGreaterThanEq :: Int -> Constraint
-integerGreaterThanEq lower_bound tensor = tensor `F.ge` D.fullLike lower_bound tensor
+integerGreaterThanEq lower_bound tensor = tensor `F.ge` fullLike' lower_bound tensor
 
 real :: Constraint
 real = I.isfinite
 
 greaterThan :: Float -> Constraint
-greaterThan lower_bound tensor = tensor `F.gt` D.fullLike lower_bound tensor
+greaterThan lower_bound tensor = tensor `F.gt` fullLike' lower_bound tensor
 
 greaterThanEq :: Float -> Constraint
-greaterThanEq lower_bound tensor = tensor `F.ge` D.fullLike lower_bound tensor
+greaterThanEq lower_bound tensor = tensor `F.ge` fullLike' lower_bound tensor
 
 lessThan :: Float -> Constraint
-lessThan upper_bound tensor = tensor `F.lt` D.fullLike upper_bound tensor
+lessThan upper_bound tensor = tensor `F.lt` fullLike' upper_bound tensor
 
 lessThanEq :: Float -> Constraint
-lessThanEq upper_bound tensor = tensor `F.le` D.fullLike upper_bound tensor
+lessThanEq upper_bound tensor = tensor `F.le` fullLike' upper_bound tensor
 
 interval :: Float -> Float -> Constraint
-interval lower_bound upper_bound tensor = (tensor `F.ge` D.fullLike lower_bound tensor) `I.logical_and` (tensor `F.le` D.fullLike upper_bound tensor)
+interval lower_bound upper_bound tensor = (tensor `F.ge` fullLike' lower_bound tensor) `I.logical_and` (tensor `F.le` fullLike' upper_bound tensor)
 
 halfOpenInterval :: Float -> Float -> Constraint
-halfOpenInterval lower_bound upper_bound tensor = (tensor `F.ge` D.fullLike lower_bound tensor) `I.logical_and` (tensor `F.lt` D.fullLike upper_bound tensor)
+halfOpenInterval lower_bound upper_bound tensor = (tensor `F.ge` fullLike' lower_bound tensor) `I.logical_and` (tensor `F.lt` fullLike' upper_bound tensor)
 
 simplex :: Constraint
 simplex tensor = F.allDim (-1) False (greaterThanEq 0.0 tensor) `I.logical_and` (lessThan 1e-6 $ F.abs $ summed `F.sub` D.onesLike summed)
@@ -93,3 +93,6 @@ positive           :: Constraint
 positive           = greaterThan 0.0
 unitInterval       :: Constraint
 unitInterval       = interval 0.0 1.0
+
+fullLike' :: (Scalar a) => a -> D.Tensor -> D.Tensor
+fullLike' i t = F.mulScalar i $ D.onesLike t
