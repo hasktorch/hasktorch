@@ -1250,16 +1250,6 @@ diagEmbed
   -> Tensor
 diagEmbed (Diag offset) dim1 dim2 t = unsafePerformIO $ (cast4 ATen.diag_embed_tlll) t offset dim1 dim2
 
-data Offset = OffsetMain | OffsetAbove | OffsetBelow deriving Show
-
-instance Castable Offset Int64 where
-  cast OffsetMain f = f 0
-  cast OffsetAbove f = f 1
-  cast OffsetBelow f = f (-1)
-  uncast 1 f = f OffsetAbove
-  uncast (-1) f = f OffsetBelow
-  uncast _ f = f OffsetMain
-
 -- | If input is a vector (1-D tensor), then returns a 2-D square tensor with the elements of input as the diagonal.
 -- If input is a tensor with more than one dimension, then returns a 2-D tensor with diagonal elements equal to a flattened input.
 -- The argument offset controls which diagonal to consider:
