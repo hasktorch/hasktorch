@@ -74,7 +74,7 @@ halfOpenInterval :: Float -> Float -> Constraint
 halfOpenInterval lower_bound upper_bound tensor = (tensor `F.ge` fullLike' lower_bound tensor) `I.logical_and` (tensor `F.lt` fullLike' upper_bound tensor)
 
 simplex :: Constraint
-simplex tensor = F.allDim (-1) False (greaterThanEq 0.0 tensor) `I.logical_and` (lessThan 1e-6 $ F.abs $ summed `F.sub` D.onesLike summed)
+simplex tensor = F.allDim (F.Dim $ -1) False (greaterThanEq 0.0 tensor) `I.logical_and` (lessThan 1e-6 $ F.abs $ summed `F.sub` D.onesLike summed)
         where
             summed = F.sumDim (F.Dim $ -1) F.RemoveDim (D.dtype tensor) tensor
 
