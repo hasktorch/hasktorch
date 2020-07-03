@@ -71,12 +71,13 @@ spec = do
   it "logProb" $ do
     -- putStrLn . show $ logProb d $ D.asTensor [0.3, 0.5 :: Float]
     let t :: Tnsr 'D.Float '[2] = UnsafeMkTensor $ logProb d $ D.asTensor [0.3, 0.5 :: Float]
-    toList (Just t) `shouldBe` [-9.691001e-2, -9.691001e-2]
+    F.allclose t (D.asTensor [-9.691001e-2, -9.691001e-2 :: Float]) 0.0001 0.0001 False `shouldBe` True
 
   it "entropy" $ do
     -- putStrLn . show $ entropy d
     let t :: Tnsr 'D.Float '[] = UnsafeMkTensor $ entropy d
     abs (toFloat t - 0.2173) < 0.01 `shouldBe` True
+    F.allclose t (D.asTensor [0.2173 :: Float]) 0.001 0.001 False `shouldBe` True
 
   it "enumerateSupport" $ do
     -- putStrLn . show $ enumerateSupport d False
