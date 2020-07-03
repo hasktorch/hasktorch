@@ -46,13 +46,13 @@ instance Distribution Categorical where
     variance d = F.divScalar (0.0 :: Float) (D.ones (extendedShape d []) D.float_opts)  -- all NaN
     sample d sampleShape = do
         let probs2d = D.reshape [-1, (numEvents d)] $ probs d
-        samples2d <- F.transpose2D <$> F.multinomial_tlb probs2d (product sampleShape) True
+        samples2d <- F.transpose2D <$> D.multinomialIO probs2d (product sampleShape) True
         return $ D.reshape (extendedShape d sampleShape) samples2d
     logProb d value = let
         value' = I.unsqueeze (F.toDType D.Int64 value) (-1 :: Int)
         value'' = D.select value' (-1) 0
         in F.squeezeDim (-1) $ I.gather (logits d) (-1 :: Int) value'' False
-    entropy d = F.mulScalar (-1.0 :: Float) (F.sumDim (-1) pLogP)
+    entropy d = F.mulScalar (-1.0 :: Float) (F.sumDim (F.Dim $ -1) F.RemoveDim (D.dtype pLogP) pLogP)
             where pLogP = logits d `F.mul` probs d
     enumerateSupport d doExpand = 
         (if doExpand then \t -> F.expand t False ([-1] <> batchShape d) else id) values

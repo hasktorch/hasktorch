@@ -30,7 +30,7 @@ instance Distribution Bernoulli where
     mean = probs
     variance d = p `F.mul` (D.onesLike p `F.sub` p)
             where p = probs d
-    sample d = F.bernoulli_t . F.expand (probs d) False . extendedShape d
+    sample d = D.bernoulliIO' . F.expand (probs d) False . extendedShape d
     logProb d value = F.mulScalar (-1 :: Int) (bce' (logits d) value)
     entropy d = bce' (logits d) $ probs d
     enumerateSupport d doExpand = 

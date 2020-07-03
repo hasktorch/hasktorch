@@ -139,13 +139,6 @@ sumAll
     -> Tensor -- ^ output
 sumAll t = unsafePerformIO $ (cast1 ATen.sum_t) t
 
--- | sumDim
-sumDim
-  :: Int -- ^ dimension
-  -> Tensor -- ^ input
-  -> Tensor -- ^ output
-sumDim dim input = unsafePerformIO $ (cast2 ATen.sum_tl) input dim
-
 -- | Computes the element-wise absolute value of the given input tensor.
 abs 
     :: Tensor -- ^ input
@@ -585,18 +578,18 @@ isSigned t = unsafePerformIO $ (cast1 ATen.is_signed_t) t
 -- | Computes input /= other element-wise.
 -- The second argument can be a number or a tensor whose shape is broadcastable with the first argument.
 ne 
-    :: Tensor -- ^ input
-    -> Tensor -- ^ other
-    -> Tensor -- ^ output
+  :: Tensor -- ^ input
+  -> Tensor -- ^ other
+  -> Tensor -- ^ output
 ne a b = unsafePerformIO $ (cast2 ATen.ne_tt) a b
 
 (/=.) = ne
 
 -- | Casting to given 'Dtype', where 'Dtype' is an object that represents the data type of a tensor in hasktorch.
 toDType 
- :: DType -- ^ data type to cast to 
- -> Tensor -- ^ input
- -> Tensor -- ^ output
+  :: DType -- ^ data type to cast to 
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
 toDType dtype t = unsafePerformIO $ (cast4 ATen.tensor_to_sbb) t dtype False False
 
 -- | squeezeAll
