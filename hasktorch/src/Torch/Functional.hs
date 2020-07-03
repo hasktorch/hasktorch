@@ -1266,12 +1266,11 @@ diagflat (Diag offset) t = unsafePerformIO $ (cast2 ATen.diagflat_tl) t offset
 -- Applying diagEmbed to the output of this function with the same arguments yields a diagonal matrix with the diagonal entries of the input. However, diagEmbed has different default dimensions, so those need to be explicitly specified.
 diagonal
   :: Diag -- ^ offset
-  -> Dimname -- ^ outdim
-  -> Dimname -- ^ dim1
-  -> Dimname -- ^ dim2
+  -> Dim -- ^ dim1
+  -> Dim -- ^ dim2
   -> Tensor -- ^ input
   -> Tensor -- ^ output
-diagonal (Diag offset) outdim dim1 dim2 t = unsafePerformIO $ (cast5 ATen.diagonal_tnnnl) t outdim dim1 dim2 offset
+diagonal (Diag offset) (Dim dim1) (Dim dim2) t = unsafePerformIO $ (cast4 ATen.diagonal_tlll) t offset dim1 dim2
 
 
 -- | Returns True if all elements in the tensor are True, False otherwise.
