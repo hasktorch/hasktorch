@@ -41,7 +41,7 @@ perplexity = F.exp . entropy
 -- | the log probabilities (possibly unnormalized) of the events.
 logitsToProbs :: Bool -> D.Tensor -> D.Tensor  -- isBinary=False
 logitsToProbs True = F.sigmoid
-logitsToProbs False = F.softmax (-1)
+logitsToProbs False = F.softmax (F.Dim $ -1)
 
 clampProbs :: D.Tensor -> D.Tensor
 clampProbs probs =
