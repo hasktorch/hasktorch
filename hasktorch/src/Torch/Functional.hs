@@ -1243,12 +1243,12 @@ diag (Diag index) t = unsafePerformIO $ (cast2 ATen.tensor_diag_l) t index
 
 -- 
 diagEmbed
-  :: Offset -- ^ offset
+  :: Diag -- ^ offset
   -> Int -- ^ dim1
   -> Int -- ^ dim2
   -> Tensor -- ^ self
   -> Tensor
-diagEmbed offset dim1 dim2 t = unsafePerformIO $ (cast4 ATen.diag_embed_tlll) t offset dim1 dim2
+diagEmbed (Diag offset) dim1 dim2 t = unsafePerformIO $ (cast4 ATen.diag_embed_tlll) t offset dim1 dim2
 
 data Offset = OffsetMain | OffsetAbove | OffsetBelow deriving Show
 
@@ -1267,21 +1267,21 @@ instance Castable Offset Int64 where
 --  If offset > 0, it is above the main diagonal.
 --  If offset < 0, it is below the main diagonal.
 diagflat
-    :: Offset -- ^ offset
+    :: Diag -- ^ offset
     -> Tensor -- ^ self
     -> Tensor -- ^ output
-diagflat offset t = unsafePerformIO $ (cast2 ATen.diagflat_tl) t offset
+diagflat (Diag offset) t = unsafePerformIO $ (cast2 ATen.diagflat_tl) t offset
 
 -- | Returns a partial view of input with the its diagonal elements with respect to dim1 and dim2 appended as a dimension at the end of the shape.
 -- Applying diagEmbed to the output of this function with the same arguments yields a diagonal matrix with the diagonal entries of the input. However, diagEmbed has different default dimensions, so those need to be explicitly specified.
 diagonal
-  :: Offset -- ^ offset
+  :: Diag -- ^ offset
   -> Dimname -- ^ outdim
   -> Dimname -- ^ dim1
   -> Dimname -- ^ dim2
   -> Tensor -- ^ input
   -> Tensor -- ^ output
-diagonal offset outdim dim1 dim2 t = unsafePerformIO $ (cast5 ATen.diagonal_tnnnl) t outdim dim1 dim2 offset
+diagonal (Diag offset) outdim dim1 dim2 t = unsafePerformIO $ (cast5 ATen.diagonal_tnnnl) t outdim dim1 dim2 offset
 
 
 -- | Returns True if all elements in the tensor are True, False otherwise.
