@@ -1353,22 +1353,6 @@ flattenAll
 flattenAll t =
   unsafePerformIO $ (cast3 ATen.flatten_tll) t (0 :: Int) (-1 :: Int)
 
--- TODO: rename
-multinomial_tlb
-  :: Tensor
-  -> Int
-  -> Bool
-  -> IO Tensor
-multinomial_tlb t l b =
-  (cast3 ATen.multinomial_tlb) t l b
-
--- TODO: rename
-bernoulli_t
-  :: Tensor
-  -> IO Tensor
-bernoulli_t =
-  cast1 ATen.bernoulli_t
-
 -- Not used yet
 data RNNParams = RNNParams {
     weightIH :: Tensor,
