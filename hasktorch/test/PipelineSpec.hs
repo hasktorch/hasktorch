@@ -1,5 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE CPP #-}
 module PipelineSpec where
 
 import Control.Concurrent
@@ -81,10 +82,12 @@ runTestExpectTimeout time test = do
 -- | Worker 2: |-----|-----|-----|
 -- | Fold:     |.....|--|--|--|--|
 spec = do
+#ifndef darwin_HOST_OS
   it "Tests data is flowing" $
     (runTest defaultTimeout (testFoldTimeout $ MockData 2)) `shouldReturn` (Just ())
   it "Tests concurrent datasets yield concurrently" $
     (runTest timeoutConcurrent (testConcurrentFoldTimeout (MockData 3) 2)) `shouldReturn` (Just ())
+#endif
   it "Tests that failures in dataset processing aren't yielded" $
     (runTest 10000 (testFoldTimeout $ FailureDataset 4)) `shouldReturn` (Just ())
   it "Tests batches are still yielded after failures" $
