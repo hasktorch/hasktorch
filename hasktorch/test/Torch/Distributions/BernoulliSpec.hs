@@ -63,6 +63,7 @@ spec = do
   it "logProb" $ do
     -- putStrLn . show $ logProb d $ D.asTensor [[0.3, 0.5 :: Float]]
     let t :: Tnsr 'D.Float '[1] = UnsafeMkTensor $ logProb d $ D.asTensor [[0.3, 0.5 :: Float]]
+    (D.shape $ toDynamic t) `shouldBe` (D.shape $ D.asTensor [-0.6749387 :: Float])
     F.allclose (toDynamic t) (D.asTensor [-0.6749387 :: Float]) 0.001 0.001 False `shouldBe` True
 
   it "entropy" $ do
