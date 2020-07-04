@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeApplications #-}
@@ -22,8 +23,10 @@ import           GHC.TypeLits
 import           System.Environment
 
 import Torch.Typed
-import Common
 import Torch.Internal.Managed.Type.Context (manual_seed_L)
+import           Common
+import Pipeline
+import Control.Monad.State.Lazy
 
 type NoStrides = '(1, 1)
 type NoPadding = '(0, 0)
@@ -80,7 +83,11 @@ instance ( KnownDType dtype
       <*> sample (LinearSpec @(4*4*50) @500)
       <*> sample (LinearSpec @500      @10)
 
-type BatchSize = 512
+  -- TODO: figure out how to write the constraints so we can have CNN implement the HasForward typeclass
+-- instance HasForward (CNN dtype device) (Tensor device dtype '[batchSize, I.DataDim]) (Tensor device dtype '[batchSize, I.ClassDim]) where
+--   forward = cnn
+  
+type BatchSize = 256
 
 train'
   :: forall (device :: (DeviceType, Nat))
@@ -91,7 +98,7 @@ train' = do
   manual_seed_L 123
   initModel <- sample (CNNSpec @ 'Float @device)
   let initOptim = mkAdam 0 0.9 0.999 (flattenParameters initModel)
-  train @BatchSize @device initModel initOptim (\model _ input -> return $ cnn model input) learningRate "static-mnist-cnn.pt"
+  newMain @BatchSize @device  cnn initModel initOptim 10 
 
 main :: IO ()
 main = do

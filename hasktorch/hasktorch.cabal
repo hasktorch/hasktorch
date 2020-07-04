@@ -74,6 +74,7 @@ library
                     , Torch.Typed.Optim
                     , Torch.Typed.Serialize
                     , Torch.Typed.Vision
+                    , Torch.Data.Pipeline
  other-modules:       Paths_hasktorch
  hs-source-dirs:      src
  default-language:    Haskell2010
@@ -96,6 +97,12 @@ library
                     , bytestring
                     , safe-exceptions
                     , zlib >= 0.6
+                    , pipes
+                    , pipes-concurrency
+                    , lifted-async
+                    , monad-control
+                    , foldl
+
                     , inline-c
  default-extensions:  Strict
                     , StrictData
@@ -114,6 +121,7 @@ test-suite spec
                     , TensorSpec
                     , NNSpec
                     , DimnameSpec
+                    , PipelineSpec
                     , Torch.Typed.AuxSpec
                     , Torch.Typed.TensorSpec
                     , Torch.Typed.FactoriesSpec
@@ -142,6 +150,8 @@ test-suite spec
                     , directory
                     , JuicyPixels
                     , inline-c-cpp
+                    , async
+
   build-tool-depends:  hspec-discover:hspec-discover
 
 test-suite doctests
