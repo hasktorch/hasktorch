@@ -1244,7 +1244,7 @@ type family DiagShape (tri :: Tri) (index :: Nat) (shape :: [Nat]) :: [Nat] wher
 -- >>> dtype &&& shape $ diag @'Lower @1 (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[2])
 diag
-  :: forall (tri :: Tri) (index :: Nat) (shape :: [Nat]) (shape' :: [Nat]) device dtype
+  :: forall tri index shape shape' device dtype
    . ( KnownTri tri
      , KnownNat index
      , StandardDTypeValidation device dtype
