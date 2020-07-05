@@ -1,3 +1,4 @@
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeApplications #-}
@@ -19,7 +20,7 @@
 
 module Main where
 
-import           Prelude                 hiding ( tanh )
+import           Prelude hiding ( tanh )
 import           Control.Monad                  ( foldM
                                                 , when
                                                 )
@@ -27,6 +28,7 @@ import           GHC.Generics
 import           GHC.TypeLits
 
 import Torch.Typed hiding (Device)
+import           Torch.Data.Pipeline
 
 
 --------------------------------------------------------------------------------
@@ -76,27 +78,41 @@ xor t = (1 - (1 - a) * (1 - b)) * (1 - (a * b))
   a = select @1 @0 t
   b = select @1 @1 t
 
+newtype Xor = Xor { iters :: Int }
+
+instance ( KnownNat batchSize
+         , KnownDevice device
+         , RandDTypeIsValid device 'Float
+         , ComparisonDTypeIsValid device 'Float
+         ) => Dataset IO Xor (Tensor device 'Float '[batchSize, 2]) where
+  getBatch _ _ =  toDType @'Float @'Bool .
+                  gt (toDevice @device (0.5 :: CPUTensor 'Float '[]))
+                  <$> rand @'[batchSize, 2] @'Float @device
+  numIters = iters 
+
 type Device = '( 'CUDA, 0)
+
+trainIter :: forall device batchSize model optim . (model ~ MLP 2 1 4 'Float device, _)
+  => LearningRate device 'Float
+  -> (model, optim, Int)
+  -> Tensor device 'Float '[batchSize, 2]
+  -> IO (model, optim, Int)
+trainIter learningRate (model,optim, i) input = do
+    let actualOutput   = squeezeAll . ((sigmoid .) . forward) model $ input
+        expectedOutput = xor input
+        loss           = mseLoss @ReduceMean actualOutput expectedOutput
+
+    when (i `mod` 2500 == 0) (print loss)
+
+    (model', optim') <- runStep model optim loss learningRate
+    return (model', optim', i+1)
 
 main :: IO ()
 main = do
-  model <- sample (MLPSpec :: MLPSpec 2 1 4 'Float Device)
-
-  let learningRate = 0.1
-      optim = mkAdam 0 0.9 0.999 (flattenParameters model)
-
-  let step (model, optim) iter = do
-        input <-
-          toDType @'Float @'Bool
-          .   gt (0.5 :: Tensor Device 'Float '[])
-          <$> rand @'[256, 2] @'Float @Device
-        let actualOutput   = squeezeAll . ((sigmoid .) . forward) model $ input
-            expectedOutput = xor input
-            loss           = mseLoss @ReduceMean actualOutput expectedOutput
-        when (iter `mod` 2500 == 0) $
-          putStrLn $ "iter = " <> show iter <> " " <> "loss = " <> show loss
-        runStep model optim loss learningRate
-      numIters = 100000 :: Int
-  (trained, _) <- foldM step (model, optim) [1 .. numIters]
-
+  let numIters = 100000
+      learningRate = 0.1
+  initModel <- sample (MLPSpec :: MLPSpec 2 1 4 'Float Device)
+  let initOptim = mkAdam 0 0.9 0.999 (flattenParameters initModel)
+  trainFold <- makeFold $ Xor { iters = numIters }
+  (trained, _, _) <- trainFold $ FoldM (trainIter @Device @256 learningRate ) (pure (initModel, initOptim, 0)) pure
   print trained
