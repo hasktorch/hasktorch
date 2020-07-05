@@ -74,6 +74,10 @@ library
                     , Torch.Typed.Optim
                     , Torch.Typed.Serialize
                     , Torch.Typed.Vision
+                    , Torch.Distributions.Constraints
+                    , Torch.Distributions.Distribution
+                    , Torch.Distributions.Bernoulli
+                    , Torch.Distributions.Categorical
                     , Torch.Data.Pipeline
  other-modules:       Paths_hasktorch
  hs-source-dirs:      src
@@ -138,6 +142,9 @@ test-suite spec
                     , SerializeSpec
                     , RandomSpec
                     , VisionSpec
+                    , Torch.Distributions.ConstraintsSpec
+                    , Torch.Distributions.BernoulliSpec
+                    , Torch.Distributions.CategoricalSpec
   default-language: Haskell2010
   build-depends:      base >= 4.7 && < 5
                     , hasktorch
