@@ -2267,8 +2267,38 @@ det
   -> Tensor device dtype (Det shape) -- ^ output
 det input = unsafePerformIO $ ATen.cast1 ATen.Managed.det_t input
 
+-- | Type (kind) of dimension indexes that may be positive (forward from 0) or negative (backwards from end)
+data Dim = PDim Nat | NDim Nat
+
+class KnownDim (dim :: Dim) where
+  dimVal :: Int
+
+instance (KnownNat n) => KnownDim (PDim n) where
+  dimVal = natValI @n
+
+instance (KnownNat n) => KnownDim (NDim n) where
+  dimVal = - natValI @n
+
+type family DiagEmbedShape (index :: Nat) (dim1 :: Dim) (dim2 :: Dim) (shape :: [Nat]) :: [Nat] where
+  DiagEmbedShape i d1 d2 shape = shape -- XXX stub
+
 -- diag_embed :: Tensor device dtype shape -> Int -> Int -> Int -> Tensor device dtype shape
 -- diag_embed _input _offset _dim1 _dim2 = unsafePerformIO $ (ATen.cast4 ATen.Managed.diag_embed_tlll) _input _offset _dim1 _dim2
+diagEmbed
+  :: forall index dim1 dim2 shape shape' device dtype
+   . ( KnownNat index
+     , KnownDim dim1
+     , KnownDim dim2
+     , shape' ~ DiagEmbedShape index dim1 dim2 shape
+     )
+  => Tri
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape' -- ^ output
+diagEmbed tri t = unsafePerformIO $
+  ATen.cast4 ATen.Managed.diag_embed_tlll t
+  (if isUpper tri then natValI @index else - natValI @index)
+  (dimVal @dim1)
+  (dimVal @dim2)
 
 -- diagflat :: Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- diagflat _input _offset = unsafePerformIO $ (ATen.cast2 ATen.Managed.diagflat_tl) _input _offset

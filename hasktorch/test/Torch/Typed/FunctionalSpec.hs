@@ -738,6 +738,22 @@ instance
     let t = ones @shape @dtype @device
     checkDynamicTensorAttributes $ diag @tri @index t
 
+data DiagEmbedSpec = DiagEmbedSpec
+
+instance
+  ( TensorOptions shape dtype device
+  , TensorOptions shape' dtype device
+  , KnownNat index
+  , KnownDim dim1
+  , KnownDim dim2
+  , shape' ~ DiagEmbedShape index dim1 dim2 shape
+  ) => Apply' DiagEmbedSpec (((Proxy index, (Proxy dim1, Proxy dim2)), (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
+  apply' DiagEmbedSpec (_, agg) = agg >> do
+    let t = ones @shape @dtype @device
+    foldMap
+      (\tri -> checkDynamicTensorAttributes $ diagEmbed @index @dim1 @dim2 tri t)
+      [Upper, Lower]
+
 data AnyAllSpec = AnySpec | AllSpec
 
 instance
@@ -1047,6 +1063,18 @@ spec' device =
             hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cuda0 (hproduct (withHalf standardDTypes) standardShapes)))
             hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cuda0 (hproduct (withHalf standardDTypes) vectorShapes)))
             hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes') (hattach cuda0 (hproduct (withHalf standardDTypes) emptyShapes)))
+      it "diagEmbed" $ do
+        let
+          indexes = Proxy @0 :. Proxy @1 :. HNil
+          dims =
+            (Proxy @('NDim 2), Proxy @('NDim 1))
+              :. (Proxy @('PDim 0), Proxy @('PDim 2))
+              :. HNil
+        case device of
+          Device { deviceType = CPU,  deviceIndex = 0 } -> do
+            hfoldrM @IO DiagEmbedSpec () (hproduct (hproduct indexes dims) (hattach cpu   (hproduct standardDTypes standardShapes)))
+          Device { deviceType = CUDA, deviceIndex = 0 } -> do
+            hfoldrM @IO DiagEmbedSpec () (hproduct (hproduct indexes dims) (hattach cuda0 (hproduct (withHalf standardDTypes) standardShapes)))
 
     describe "loss functions" $ do
       let dispatch lossSpec = case device of
