@@ -69,3 +69,5 @@ cradle:
       component: "exe:dataloader-cifar10"
     - path: "./experimental/untyped-nlp"
       component: "exe:untyped-nlp"
+    - path: "./experimental/action-transition-system"
+      component: "lib:action-transition-system"

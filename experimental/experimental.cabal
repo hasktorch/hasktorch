@@ -37,3 +37,8 @@ executable dataloader-cifar10
                      , datasets
                      , streaming
                      , JuicyPixels
+
+library action-transition-system
+  import:              config
+  hs-source-dirs:      action-transition-system
+  exposed-modules:     Torch.Data.ActionTransitionSystem
