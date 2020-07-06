@@ -1244,11 +1244,11 @@ diag (Diag index) t = unsafePerformIO $ (cast2 ATen.tensor_diag_l) t index
 -- 
 diagEmbed
   :: Diag -- ^ offset
-  -> Int -- ^ dim1
-  -> Int -- ^ dim2
+  -> Dim -- ^ dim1
+  -> Dim -- ^ dim2
   -> Tensor -- ^ self
   -> Tensor
-diagEmbed (Diag offset) dim1 dim2 t = unsafePerformIO $ (cast4 ATen.diag_embed_tlll) t offset dim1 dim2
+diagEmbed (Diag offset) (Dim dim1) (Dim dim2) t = unsafePerformIO $ (cast4 ATen.diag_embed_tlll) t offset dim1 dim2
 
 -- | If input is a vector (1-D tensor), then returns a 2-D square tensor with the elements of input as the diagonal.
 -- If input is a tensor with more than one dimension, then returns a 2-D tensor with diagonal elements equal to a flattened input.
