@@ -108,8 +108,8 @@ spec = do
     shape y `shouldBe` [5, 5]
   it "diagEmbed" $ do
     let t = ones' [2, 3]
-    shape (diagEmbed (Diag 0) (-2) (-1) t) `shouldBe` [2, 3, 3]
-    shape (diagEmbed (Diag 1) 0 2 t) `shouldBe` [4, 2, 4]
+    shape (diagEmbed (Diag 0) (Dim (-2)) (Dim (-1)) t) `shouldBe` [2, 3, 3]
+    shape (diagEmbed (Diag 1) (Dim 0) (Dim 2) t) `shouldBe` [4, 2, 4]
   it "diagflat" $ do
     let t1 = ones' [3]
     shape (diagflat (Diag 0) t1) `shouldBe` [3, 3]
