@@ -2279,8 +2279,40 @@ instance (KnownNat n) => KnownDim (PDim n) where
 instance (KnownNat n) => KnownDim (NDim n) where
   dimVal = - natValI @n
 
+-- TODO: eliminate or move to 'Torch.Typed.Aux': UnDim, CmpDim, Drop, Take, Last
+type family UnDim (dim :: Dim) (last :: Nat) :: Nat where
+  UnDim (PDim dim) _ = dim
+  UnDim (NDim dim) last = last - dim
+
+type family CmpDim (shape :: [Nat]) (dim :: Dim) (dim' :: Dim) where
+  CmpDim shape dim dim' = CmpNat (UnDim dim (ListLength shape)) (UnDim dim' (ListLength shape))
+
+type family Drop (n :: Nat) (xs :: [a]) :: [a] where
+  Drop 0 xs = xs
+  Drop _ '[] = '[]
+  Drop n (x ': xs) = Drop (n - 1) xs
+
+type family Take (n :: Nat) (xs :: [a]) :: [a] where
+  Take 0 xs = '[]
+  Take _ '[] = '[]
+  Take n (x ': xs) = x ': Take (n - 1) xs
+
+type family Last (xs :: [a]) :: a where
+  Last (x ': '[]) = x
+  Last (x ': xs) = Last xs
+
+type family DiagEmbedShapeImpl' (shape :: [Nat]) (n :: Nat) (dim1 :: Nat) (dim2 :: Nat) :: [Nat] where
+  DiagEmbedShapeImpl' shape n dim1 dim2 =
+    Take dim1 shape
+      ++ (n ': Take (dim2 - dim1 - 1) (Drop dim1 shape))
+      ++ (n ': Drop dim2 shape)
+
+type family DiagEmbedShapeImpl (dim1 :: Dim) (dim2 :: Dim) (shape :: [Nat]) (n :: Nat) (outdims :: Nat) :: [Nat] where
+  DiagEmbedShapeImpl dim1 dim2 shape n outdims = DiagEmbedShapeImpl' shape n (UnDim dim1 outdims) (UnDim dim2 outdims)
+
 type family DiagEmbedShape (index :: Nat) (dim1 :: Dim) (dim2 :: Dim) (shape :: [Nat]) :: [Nat] where
-  DiagEmbedShape i d1 d2 shape = shape -- XXX stub
+  DiagEmbedShape index dim1 dim2 shape =
+    DiagEmbedShapeImpl dim1 dim2 shape (Last shape + index) (ListLength shape + 1)
 
 -- diag_embed :: Tensor device dtype shape -> Int -> Int -> Int -> Tensor device dtype shape
 -- diag_embed _input _offset _dim1 _dim2 = unsafePerformIO $ (ATen.cast4 ATen.Managed.diag_embed_tlll) _input _offset _dim1 _dim2
@@ -2290,15 +2322,21 @@ diagEmbed
      , KnownDim dim1
      , KnownDim dim2
      , shape' ~ DiagEmbedShape index dim1 dim2 shape
+     -- TODO: CmpDim constraint doesn't result in very clear error messages
+     , CmpDim shape' dim1 dim2 ~ 'LT
+     , StandardDTypeValidation device dtype
      )
   => Tri
   -> Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape' -- ^ output
-diagEmbed tri t = unsafePerformIO $
-  ATen.cast4 ATen.Managed.diag_embed_tlll t
-  (if isUpper tri then natValI @index else - natValI @index)
-  (dimVal @dim1)
-  (dimVal @dim2)
+diagEmbed tri t =
+  unsafePerformIO $
+    ATen.cast4
+      ATen.Managed.diag_embed_tlll
+      t
+      (if isUpper tri then natValI @index else - natValI @index)
+      (dimVal @dim1)
+      (dimVal @dim2)
 
 -- diagflat :: Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- diagflat _input _offset = unsafePerformIO $ (ATen.cast2 ATen.Managed.diagflat_tl) _input _offset
