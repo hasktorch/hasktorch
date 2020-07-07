@@ -273,16 +273,15 @@ newtype RawTensorIndex = RawTensorIndex (ForeignPtr ATen.TensorIndex)
     ATen.tensorIndexList_push_back vec i
   ATen.index t vec >>= (return . Unsafe)
 
-(//) :: (TensorIndex a, TensorLike b) => Tensor -> [(a,b)] -> Tensor
-(Unsafe t') // index_and_values = unsafePerformIO $ do
+maskedFill :: (TensorIndex a, TensorLike t) => Tensor -> a -> t -> Tensor
+maskedFill (Unsafe t') idx v' = unsafePerformIO $ do
+  let idxs = pushIndex [] idx
+      (Unsafe v) = asTensor v'
   t <- ATen.clone_t t'
-  forM_ index_and_values $ \(idx,value) -> do
-    let idxs = pushIndex [] idx
-        (Unsafe v) = asTensor value
-    vec <- ATen.newTensorIndexList
-    forM_ idxs $ \(RawTensorIndex i) -> do
-      ATen.tensorIndexList_push_back vec i
-    ATen.index_put_ t vec v
+  vec <- ATen.newTensorIndexList
+  forM_ idxs $ \(RawTensorIndex i) -> do
+    ATen.tensorIndexList_push_back vec i
+  ATen.index_put_ t vec v
   return $ Unsafe t
 
 data None = None

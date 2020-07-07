@@ -180,3 +180,17 @@ spec = do
       let x = asTensor ([[[0,1,2],[3,4,5]],[[6,7,8],[9,10,11]]] :: [[[Int]]])
           r = x ! ((),(Slice (1,None)),(Slice (0,1)))
       (dtype &&& shape &&& asValue) r `shouldBe` (Int64, ([2,1,1], [[[3::Int]],[[9]]]))
+  describe "masked fill" $ do
+    it "Fill a value" $ do
+      let x = asTensor ([[[0,1,2],[3,4,5]],[[6,7,8],[9,10,11]]] :: [[[Int]]])
+          r = maskedFill x (1,0,2) (9::Int)
+      (dtype &&& shape &&& asValue) r `shouldBe` (Int64, ([2,2,3], [[[0,1,2],[3,4,5]],[[6,7,9],[9,10,11]]] :: [[[Int]]]))
+    it "Fill a bottom tensor" $ do
+       let x = asTensor ([[[0,1,2],[3,4,5]],[[6,7,8],[9,10,11]]] :: [[[Int]]])
+           r = maskedFill x (1,0) [8 :: Int, 8, 8]
+       (dtype &&& shape &&& asValue) r `shouldBe` (Int64, ([2,2,3], [[[0,1,2],[3,4,5]],[[8,8,8],[9,10,11]]] :: [[[Int]]]))
+    it "masked fill by boolean" $ do
+       let m = asTensor ([[[True,True,False],[False,False,False]],[[True,False,False],[False,False,False]]] :: [[[Bool]]])
+           x = asTensor ([[[0,1,2],[3,4,5]],[[6,7,8],[9,10,11]]] :: [[[Int]]])
+           r = maskedFill x m [8 :: Int, 8, 8]
+       (dtype &&& shape &&& asValue) r `shouldBe` (Int64, ([2,2,3], [[[8,8,2],[3,4,5]],[[8,7,8],[9,10,11]]] :: [[[Int]]]))
