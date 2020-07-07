@@ -756,6 +756,21 @@ instance
       (\tri -> checkDynamicTensorAttributes $ diagEmbed @index @dim1 @dim2 tri t)
       [Upper, Lower]
 
+data DiagflatSpec = DiagflatSpec
+
+instance
+  ( TensorOptions shape dtype device
+  , TensorOptions shape' dtype device
+  , KnownNat index
+  , shape' ~ DiagflatShape index shape
+  , StandardDTypeValidation device dtype
+  ) => Apply' DiagflatSpec ((Proxy index, (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
+  apply' DiagflatSpec (_, agg) = agg >> do
+    let t = ones @shape @dtype @device
+    foldMap
+      (\tri -> checkDynamicTensorAttributes $ diagflat @index tri t)
+      [Upper, Lower]
+
 data AnyAllSpec = AnySpec | AllSpec
 
 instance
@@ -1085,6 +1100,23 @@ spec' device =
           Device { deviceType = CUDA, deviceIndex = 0 } -> do
             hfoldrM @IO DiagEmbedSpec () (hproduct (hproduct indexes dims)    (hattach cuda0 (hproduct (withHalf standardDTypes) allShapes)))
             hfoldrM @IO DiagEmbedSpec () (hproduct (hproduct indexes allDims) (hattach cuda0 (hproduct (withHalf standardDTypes) standardShapes)))
+      it "diagflat" $ do
+        let shapes =
+              standardShapes
+                `happend` ( Proxy @'[0]
+                              :. Proxy @'[1]
+                              :. Proxy @'[2]
+                              :. Proxy @'[0, 0]
+                              :. Proxy @'[0, 1]
+                              :. Proxy @'[1, 0]
+                              :. HNil
+                          )
+            indexes = Proxy @0 :. Proxy @1 :. HNil
+        case device of
+          Device { deviceType = CPU,  deviceIndex = 0 } -> do
+            hfoldrM @IO DiagflatSpec () (hproduct indexes (hattach cpu   (hproduct standardDTypes shapes)))
+          Device { deviceType = CUDA, deviceIndex = 0 } -> do
+            hfoldrM @IO DiagflatSpec () (hproduct indexes (hattach cuda0 (hproduct (withHalf standardDTypes) shapes)))
 
     describe "loss functions" $ do
       let dispatch lossSpec = case device of

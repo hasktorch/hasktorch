@@ -2338,8 +2338,32 @@ diagEmbed tri t =
       (dimVal @dim1)
       (dimVal @dim2)
 
+-- TODO: elimate or move to 'Torch.Typed.Aux'
+type family NatProd (ns :: [Nat]) :: Nat where
+  NatProd '[] = 1
+  NatProd (n ': ns) = n * NatProd ns
+
+type family DiagflatShapeImpl (d :: Nat) :: [Nat] where
+  DiagflatShapeImpl d = '[d, d]
+
+type family DiagflatShape (index :: Nat) (shape :: [Nat]) :: [Nat] where
+  DiagflatShape index shape = DiagflatShapeImpl (NatProd shape + index)
+
 -- diagflat :: Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- diagflat _input _offset = unsafePerformIO $ (ATen.cast2 ATen.Managed.diagflat_tl) _input _offset
+diagflat
+  :: forall index shape shape' device dtype
+   . ( KnownNat index
+     , shape' ~ DiagflatShape index shape
+     , StandardDTypeValidation device dtype
+     )
+  => Tri
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape' -- ^ output
+diagflat tri t = unsafePerformIO $ ATen.cast2 ATen.Managed.diagflat_tl t $
+  case tri of
+    Upper -> natValI @index
+    Lower -> - natValI @index
 
 -- diagonal :: Tensor device dtype shape -> Int -> Int -> Int -> Tensor device dtype shape
 -- diagonal _input _offset _dim1 _dim2 = unsafePerformIO $ (ATen.cast4 ATen.Managed.diagonal_tlll) _input _offset _dim1 _dim2
