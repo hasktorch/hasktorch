@@ -24,7 +24,7 @@ import Torch.Internal.Class
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
+C.include "<ATen/Tensor.h>"
 C.include "<vector>"
 
 foreign import ccall unsafe "hasktorch_finalizer.h &delete_tensor"

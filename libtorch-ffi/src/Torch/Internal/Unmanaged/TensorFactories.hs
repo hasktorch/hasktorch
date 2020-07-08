@@ -26,9 +26,9 @@ import qualified Data.Map as Map
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 C.include "<vector>"
-C.include "<ATen/ATen.h>"
+-- C.include "<ATen/ATen.h>"
 
-C.include "<torch/torch.h>"
+C.include "<torch/csrc/autograd/generated/variable_factories.h>"
 
 
 _cudnn_init_dropout_state_dblo
