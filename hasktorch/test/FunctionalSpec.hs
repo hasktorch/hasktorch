@@ -106,6 +106,22 @@ spec = do
     let x = ones' [3]
     let y = diag (Diag 2) x
     shape y `shouldBe` [5, 5]
+  it "diagEmbed" $ do
+    let t = ones' [2, 3]
+    shape (diagEmbed (Diag 0) (Dim (-2)) (Dim (-1)) t) `shouldBe` [2, 3, 3]
+    shape (diagEmbed (Diag 1) (Dim 0) (Dim 2) t) `shouldBe` [4, 2, 4]
+  it "diagflat" $ do
+    let t1 = ones' [3]
+    shape (diagflat (Diag 0) t1) `shouldBe` [3, 3]
+    shape (diagflat (Diag 1) t1) `shouldBe` [4, 4]
+    let t2 = ones' [2, 2]
+    shape (diagflat (Diag 0) t2) `shouldBe` [4, 4]
+  it "diagonal" $ do
+    let t1 = ones' [3, 3]
+    shape (diagonal (Diag 0) (Dim 0) (Dim 1) t1) `shouldBe` [3]
+    shape (diagonal (Diag 1) (Dim 0) (Dim 1) t1) `shouldBe` [2]
+    let t2 = ones' [2, 5, 4, 2]
+    shape (diagonal (Diag (-1)) (Dim 1) (Dim 2) t2) `shouldBe` [2, 2, 4]
   it "expand" $ do
     let t = asTensor [[1], [2], [3 :: Int]]
     shape (expand t False [3, 4]) `shouldBe` [3, 4]
