@@ -80,6 +80,8 @@ library
                     , Torch.Distributions.Categorical
                     , Torch.Data.Pipeline
                     , Torch.Data.StreamedPipeline
+                    , Torch.Data.Dataset
+                    , Torch.Data.CsvDataset
  other-modules:       Paths_hasktorch
  hs-source-dirs:      src
  default-language:    Haskell2010
@@ -104,12 +106,17 @@ library
                     , zlib >= 0.6
                     , pipes
                     , pipes-group
-                    , lens-family-core >= 2.1
                     , pipes-concurrency
+                    , pipes-safe
+                    , pipes-bytestring
+                    , pipes-csv
+                    , lens-family-core >= 2.1
                     , lifted-async
                     , monad-control
                     , foldl
                     , transformers-base
+                    , cassava
+                    , ordered-containers >= 0.2
 
                     , inline-c
  default-extensions:  Strict

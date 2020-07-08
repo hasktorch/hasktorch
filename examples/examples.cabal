@@ -107,6 +107,8 @@ executable typed-transformer
                      , pipes-text
                      , safe-exceptions
                      , text
+                     , monad-control
+                     , transformers-base >= 0.4
 
 executable rnn
   import:              config

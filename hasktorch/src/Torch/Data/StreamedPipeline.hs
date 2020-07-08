@@ -33,13 +33,15 @@ import           Control.Monad.Base (MonadBase, liftBase)
 import           Control.Foldl (Fold, FoldM(FoldM))
 import           Control.Concurrent.Async.Lifted
 import           Control.Exception.Safe (MonadMask, finally, bracket)
+import qualified Pipes.Safe as Safe
+import Pipes.Safe (MonadSafe(Base))
 
 type Iter = Int
 type WorkerId = Int
 
 data DataloaderOpts = DataloaderOpts { numWorkers :: Int }
 
-class (MonadPlus m, MonadIO m) => Datastream m dataset batch  where
+class (MonadPlus m, MonadBase IO m) => Datastream m dataset batch  where
   streamBatch :: dataset -> seed -> ListT m batch 
 
 readBatches' :: forall m seed dataset batch .
@@ -49,29 +51,39 @@ readBatches' :: forall m seed dataset batch .
   -> Output batch
   ->  m ()
 readBatches' dataset seeds outputBox =
-  let this = flip $ mappend . Concurrently .  runEffect . (>-> toOutput outputBox) . enumerate . streamBatch @m @dataset  @batch dataset
+  let this = flip $ mappend . Concurrently .  runEffect . (>-> toOutput' outputBox) . enumerate . streamBatch @m @dataset  @batch dataset
   in join . P.fold this mempty runConcurrently $ enumerate seeds
 
-runTransforms :: MonadIO m => (batch -> batch') -> Input (batch) -> Output (batch') -> Effect m ()
-runTransforms transforms transformBox trainBox = fromInput transformBox >-> P.map transforms >-> toOutput trainBox
+runTransforms :: MonadBase IO m => (batch -> batch') -> Input (batch) -> Output (batch') -> Effect m ()
+runTransforms transforms transformBox trainBox = fromInput' transformBox >-> P.map transforms >-> toOutput' trainBox
 
 streamBatches fold inputBox = foldFromProducer inputs fold
-  where inputs = fromInput inputBox
+  where inputs = fromInput' inputBox
                           
+foldOverWith' :: forall m dataset seed batch' batch b. (Datastream m dataset batch', MonadBaseControl IO m)
+  => dataset
+  -> (batch' -> batch) 
+  -- -> seed
+  -> FoldM m batch b
+  -> m b
+foldOverWith' = foldOverWith defaultDataloaderOpts
+
 foldOverWith :: forall m dataset seed batch' batch b. (Datastream m dataset batch', MonadBaseControl IO m)
   => DataloaderOpts
   -> dataset
   -> (batch' -> batch) 
-  -> seed
+  -- -> seed
   -> FoldM m batch b
   -> m b
-foldOverWith DataloaderOpts{..} dataset transforms seed fold = do
+foldOverWith DataloaderOpts{..} dataset transforms fold = do
    fmap snd $ withBufferLifted
-    (bounded 1)
-    (\batchOutput -> withBufferLifted (bounded 1)
+    (bounded numWorkers)
+    (\batchOutput -> withBufferLifted (bounded numWorkers)
       (\transformOutput ->  readBatches' dataset seeds transformOutput)
       (\transformInput -> replicateConcurrently_ numWorkers $ runEffect $ runTransforms transforms transformInput batchOutput))
     (\input -> streamBatches fold input)
+
+defaultDataloaderOpts = DataloaderOpts { numWorkers = 1 }
 
 seeds :: ListT m (Concurrently m ())
 seeds = error "not implemented"
@@ -125,3 +137,4 @@ liftedFinally a sequel = control $ \runInIO ->
                                    (runInIO sequel)
 instance (MonadBase IO m) => MonadBase IO (Proxy a' a b' b m) where
   liftBase = lift . liftBase
+

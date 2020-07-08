@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -43,6 +44,8 @@ import qualified Torch.Internal.Managed.TensorFactories as LibTorch
 import Torch.Device
 import Torch.DType
 import Torch.TensorOptions
+import qualified Data.Vector as V
+import GHC.Generics
 
 
 type ATenTensor = ForeignPtr ATen.Tensor
@@ -509,6 +512,25 @@ instance {-# OVERLAPPING #-}TensorLike a => TensorLike [a] where
          if product (_dims d) == width -- This validation may be slow.
          then (_pokeElemOff @a) ptr (offset+i*width) d
          else throwIO $ userError $ "There are lists having different length."
+
+class AsTensors as where
+  toTensors :: as -> V.Vector tensors
+
+class GAsTensors record where
+  gToTensors :: (TensorLike as) => record as -> V.Vector tensors
+
+instance (GAsTensors ls , GAsTensors rs ) => GAsTensors (ls :*: rs) where
+  gToTensors (g :*: d)= gToTensors  g V.++ gToTensors d
+
+instance (GAsTensors ls , GAsTensors rs ) => GAsTensors (ls :+: rs) where
+  gToTensors (L1 g) = gToTensors g 
+  gToTensors (R1 g) = gToTensors g 
+  
+instance (GAsTensors ls) => GAsTensors (M1 i c ls) where
+  gToTensors (M1 g) = gToTensors g 
+
+instance (AsTensors ls) => GAsTensors (K1 i ls) where
+  gToTensors (K1 g) = toTensors g 
 
 --------------------------------------------------------------------------------
 -- Show
