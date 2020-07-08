@@ -2280,12 +2280,25 @@ instance (KnownNat n) => KnownDim (NDim n) where
   dimVal = - natValI @n
 
 -- TODO: eliminate or move to 'Torch.Typed.Aux': UnDim, CmpDim, Drop, Take, Last
-type family UnDim (dim :: Dim) (last :: Nat) :: Nat where
-  UnDim (PDim dim) _ = dim
-  UnDim (NDim dim) last = last - dim
+-- TODO: maybe generalize 'DimOutOfBound' and use here?
+type family UnDimImpl (dim :: Dim) (last :: Nat) :: Nat where
+  UnDimImpl (PDim dim) _  = dim
+  UnDimImpl (NDim dim) last =
+    If
+      (dim <=? last)
+      (last - dim)
+      (TypeError
+        (Text "Out of bound dimension: -"
+          :<>: ShowType dim
+          :<>: Text " (the tensor is only "
+          :<>: ShowType last
+          :<>: Text "D)"))
+
+type family UnDim (shape :: [Nat]) (dim :: Dim) :: Nat where
+  UnDim shape dim = UnDimImpl dim (ListLength shape)
 
 type family CmpDim (shape :: [Nat]) (dim :: Dim) (dim' :: Dim) where
-  CmpDim shape dim dim' = CmpNat (UnDim dim (ListLength shape)) (UnDim dim' (ListLength shape))
+  CmpDim shape dim dim' = CmpNat (UnDim shape dim) (UnDim shape dim')
 
 type family Drop (n :: Nat) (xs :: [a]) :: [a] where
   Drop 0 xs = xs
@@ -2308,7 +2321,7 @@ type family DiagEmbedShapeImpl' (shape :: [Nat]) (n :: Nat) (dim1 :: Nat) (dim2 
       ++ (n ': Drop dim2 shape)
 
 type family DiagEmbedShapeImpl (dim1 :: Dim) (dim2 :: Dim) (shape :: [Nat]) (n :: Nat) (outdims :: Nat) :: [Nat] where
-  DiagEmbedShapeImpl dim1 dim2 shape n outdims = DiagEmbedShapeImpl' shape n (UnDim dim1 outdims) (UnDim dim2 outdims)
+  DiagEmbedShapeImpl dim1 dim2 shape n outdims = DiagEmbedShapeImpl' shape n (UnDimImpl dim1 outdims) (UnDimImpl dim2 outdims)
 
 type family DiagEmbedShape (index :: Nat) (dim1 :: Dim) (dim2 :: Dim) (shape :: [Nat]) :: [Nat] where
   DiagEmbedShape index dim1 dim2 shape =
@@ -2365,8 +2378,44 @@ diagflat tri t = unsafePerformIO $ ATen.cast2 ATen.Managed.diagflat_tl t $
     Upper -> natValI @index
     Lower -> - natValI @index
 
+type family DropDims2 (dim1 :: Nat) (dim2 :: Nat) (shape :: [Nat]) :: [Nat] where
+  DropDims2 dim1 dim2 shape =
+    Take dim1 shape
+      ++ Take (dim2 - dim1 - 1) (Drop (dim1 + 1) shape)
+      ++ Drop (dim2 + 1) shape
+
+type family DiagonalShapeImpl' (shape :: [Nat]) (diagShape :: [Nat]) :: [Nat] where
+  DiagonalShapeImpl' shape '[d] = shape ++ '[d]
+
+type family DiagonalShapeImpl (tri :: Tri) (index :: Nat) (shape :: [Nat]) (dim1 :: Nat) (dim2 :: Nat) :: [Nat] where
+  DiagonalShapeImpl tri index shape dim1 dim2 =
+    DiagonalShapeImpl' (DropDims2 dim1 dim2 shape) (DiagShape tri index '[Index shape dim1, Index shape dim2])
+
+type family DiagonalShape (tri :: Tri) (index :: Nat) (dim1 :: Dim) (dim2 :: Dim) (shape :: [Nat]) :: [Nat] where
+  DiagonalShape tri index dim1 dim2 shape = DiagonalShapeImpl tri index shape (UnDim shape dim1) (UnDim shape dim2)
+
 -- diagonal :: Tensor device dtype shape -> Int -> Int -> Int -> Tensor device dtype shape
 -- diagonal _input _offset _dim1 _dim2 = unsafePerformIO $ (ATen.cast4 ATen.Managed.diagonal_tlll) _input _offset _dim1 _dim2
+diagonal
+  :: forall tri index dim1 dim2 shape shape' device dtype
+   . ( KnownTri tri
+     , KnownNat index
+     , KnownDim dim1
+     , KnownDim dim2
+     , 2 <= ListLength shape -- TODO: nicer error message here
+     , CmpDim shape dim1 dim2 ~ 'LT
+     , shape' ~ DiagonalShape tri index dim1 dim2 shape
+     , StandardDTypeValidation device dtype
+     )
+  => Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape' -- ^ output
+diagonal t = unsafePerformIO $
+  ATen.cast4
+    ATen.Managed.diagonal_tlll
+    t
+    (if isUpper (triVal @tri) then natValI @index else - natValI @index)
+    (dimVal @dim1)
+    (dimVal @dim2)
 
 type family DotDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
   DotDTypeIsValid '( 'D.CPU, 0)            dtype = ( DTypeIsNotBool '( 'D.CPU, 0) dtype
