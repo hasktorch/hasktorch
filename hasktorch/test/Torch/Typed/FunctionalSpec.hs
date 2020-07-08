@@ -1100,23 +1100,24 @@ spec' device =
             hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes') (hattach cuda0 (hproduct (withHalf standardDTypes) emptyShapes)))
       it "diagEmbed" $ do
         let shapes =
-              Proxy @'[0]
-                :. Proxy @'[1]
-                :. Proxy @'[2]
-                :. Proxy @'[0, 0]
-                :. Proxy @'[0, 1]
-                :. Proxy @'[1, 0]
-                :. HNil
-            allShapes = standardShapes `happend` shapes
+              standardShapes
+                `happend` ( Proxy @'[0]
+                              :. Proxy @'[1]
+                              :. Proxy @'[2]
+                              :. Proxy @'[0, 0]
+                              :. Proxy @'[0, 1]
+                              :. Proxy @'[1, 0]
+                              :. HNil
+                          )
             indexes = Proxy @0 :. Proxy @1 :. HNil
             dims = (Proxy @('NDim 2), Proxy @('NDim 1)) :. HNil
             allDims = (Proxy @('PDim 0), Proxy @('PDim 2)) :. dims
         case device of
-          Device { deviceType = CPU,  deviceIndex = 0 } -> do
-            hfoldrM @IO DiagEmbedSpec () (hproduct (hproduct indexes dims)    (hattach cpu   (hproduct standardDTypes allShapes)))
+          Device {deviceType = CPU, deviceIndex = 0} -> do
+            hfoldrM @IO DiagEmbedSpec () (hproduct (hproduct indexes dims)    (hattach cpu   (hproduct standardDTypes shapes)))
             hfoldrM @IO DiagEmbedSpec () (hproduct (hproduct indexes allDims) (hattach cpu   (hproduct standardDTypes standardShapes)))
-          Device { deviceType = CUDA, deviceIndex = 0 } -> do
-            hfoldrM @IO DiagEmbedSpec () (hproduct (hproduct indexes dims)    (hattach cuda0 (hproduct (withHalf standardDTypes) allShapes)))
+          Device {deviceType = CUDA, deviceIndex = 0} -> do
+            hfoldrM @IO DiagEmbedSpec () (hproduct (hproduct indexes dims)    (hattach cuda0 (hproduct (withHalf standardDTypes) shapes)))
             hfoldrM @IO DiagEmbedSpec () (hproduct (hproduct indexes allDims) (hattach cuda0 (hproduct (withHalf standardDTypes) standardShapes)))
       it "diagflat" $ do
         let shapes =
