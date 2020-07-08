@@ -2284,17 +2284,17 @@ instance (KnownNat n) => KnownDim (NDim n) where
 
 -- TODO: eliminate or move to 'Torch.Typed.Aux': UnDim, CmpDim, Drop, Take, Last
 -- TODO: maybe generalize 'DimOutOfBound' and use here?
-type family UnDimImpl (dim :: Dim) (last :: Nat) :: Nat where
+type family UnDimImpl (dim :: Dim) (ndims :: Nat) :: Nat where
   UnDimImpl (PDim dim) _  = dim
-  UnDimImpl (NDim dim) last =
+  UnDimImpl (NDim dim) ndims =
     If
-      (dim <=? last)
-      (last - dim)
+      (dim <=? ndims)
+      (ndims - dim)
       (TypeError
         (Text "Out of bound dimension: -"
           :<>: ShowType dim
           :<>: Text " (the tensor is only "
-          :<>: ShowType last
+          :<>: ShowType ndims
           :<>: Text "D)"))
 
 type family UnDim (shape :: [Nat]) (dim :: Dim) :: Nat where
