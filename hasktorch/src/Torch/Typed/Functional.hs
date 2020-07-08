@@ -2300,7 +2300,7 @@ type family UnDimImpl (dim :: Dim) (last :: Nat) :: Nat where
 type family UnDim (shape :: [Nat]) (dim :: Dim) :: Nat where
   UnDim shape dim = UnDimImpl dim (ListLength shape)
 
-type family CmpDim (shape :: [Nat]) (dim :: Dim) (dim' :: Dim) where
+type family CmpDim (shape :: [Nat]) (dim :: Dim) (dim' :: Dim) :: Ordering where
   CmpDim shape dim dim' = CmpNat (UnDim shape dim) (UnDim shape dim')
 
 type family Drop (n :: Nat) (xs :: [a]) :: [a] where
