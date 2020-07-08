@@ -2354,16 +2354,11 @@ diagEmbed tri t =
       (dimVal @dim1)
       (dimVal @dim2)
 
--- TODO: elimate or move to 'Torch.Typed.Aux'
-type family NatProd (ns :: [Nat]) :: Nat where
-  NatProd '[] = 1
-  NatProd (n ': ns) = n * NatProd ns
-
 type family DiagflatShapeImpl (d :: Nat) :: [Nat] where
   DiagflatShapeImpl d = '[d, d]
 
 type family DiagflatShape (index :: Nat) (shape :: [Nat]) :: [Nat] where
-  DiagflatShape index shape = DiagflatShapeImpl (NatProd shape + index)
+  DiagflatShape index shape = DiagflatShapeImpl (Numel shape + index)
 
 -- diagflat :: Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- diagflat _input _offset = unsafePerformIO $ (ATen.cast2 ATen.Managed.diagflat_tl) _input _offset
