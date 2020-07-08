@@ -21,7 +21,7 @@ class RecurrentCell a where
         -- converting matrix into a list of tensors
         -- this hack stays until I can write a Foldable instance
         -- for a tensor
-            inputAsList = [reshape [1, (size input 1)] (input @@ x) | x <- [0.. ((size input 0) - 1)]]
+            inputAsList = [reshape [1, (size input 1)] (input ! x) | x <- [0.. ((size input 0) - 1)]]
         in
         foldl (nextState layer) hidden inputAsList
 
