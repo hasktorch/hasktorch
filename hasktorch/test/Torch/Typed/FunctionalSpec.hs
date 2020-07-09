@@ -781,7 +781,7 @@ instance
   , KnownDim dim1
   , KnownDim dim2
   , 2 <= ListLength shape
-  , DimsDistinctAscending shape' dim1 dim2
+  , DimsDistinctAscending shape dim1 dim2
   , shape' ~ DiagonalShape tri index dim1 dim2 shape
   , StandardDTypeValidation device dtype
   ) => Apply' DiagonalSpec (((Proxy tri, (Proxy index, (Proxy dim1, Proxy dim2))), (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
