@@ -2303,15 +2303,16 @@ type family UnDim (shape :: [Nat]) (dim :: Dim) :: Nat where
 type family CmpDim (shape :: [Nat]) (dim :: Dim) (dim' :: Dim) :: Ordering where
   CmpDim shape dim dim' = CmpNat (UnDim shape dim) (UnDim shape dim')
 
-type family DiagEmbedShapeImpl' (shape :: [Nat]) (n :: Nat) (dim1 :: Nat) (dim2 :: Nat) :: [Nat] where
-  DiagEmbedShapeImpl' shape n dim1 dim2 = Insert dim1 n (Insert (dim2 - 1) n (Init shape))
+type family DiagEmbedShapeImpl' (shape :: [Nat]) (dim1 :: Nat) (dim2 :: Nat) (n :: Nat) :: [Nat] where
+  DiagEmbedShapeImpl' shape dim1 dim2 n = Insert dim1 n (Insert (dim2 - 1) n (Init shape))
 
-type family DiagEmbedShapeImpl (dim1 :: Dim) (dim2 :: Dim) (shape :: [Nat]) (n :: Nat) (outdims :: Nat) :: [Nat] where
-  DiagEmbedShapeImpl dim1 dim2 shape n outdims = DiagEmbedShapeImpl' shape n (UnDimImpl dim1 outdims) (UnDimImpl dim2 outdims)
+type family DiagEmbedShapeImpl (index :: Nat) (dim1 :: Dim) (dim2 :: Dim) (shape :: [Nat]) (outdims :: Nat) :: [Nat] where
+  DiagEmbedShapeImpl index dim1 dim2 shape outdims =
+    DiagEmbedShapeImpl' shape (UnDimImpl dim1 outdims) (UnDimImpl dim2 outdims) (Last shape + index)
 
 type family DiagEmbedShape (index :: Nat) (dim1 :: Dim) (dim2 :: Dim) (shape :: [Nat]) :: [Nat] where
   DiagEmbedShape index dim1 dim2 shape =
-    DiagEmbedShapeImpl dim1 dim2 shape (Last shape + index) (ListLength shape + 1)
+    DiagEmbedShapeImpl index dim1 dim2 shape (ListLength shape + 1)
 
 -- diag_embed :: Tensor device dtype shape -> Int -> Int -> Int -> Tensor device dtype shape
 -- diag_embed _input _offset _dim1 _dim2 = unsafePerformIO $ (ATen.cast4 ATen.Managed.diag_embed_tlll) _input _offset _dim1 _dim2
