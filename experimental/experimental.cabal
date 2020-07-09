@@ -45,3 +45,5 @@ library action-transition-system
   build-depends:       attoparsec
                      , foldl
                      , text
+                     , yoctoparsec
+                     , free
