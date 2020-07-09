@@ -82,24 +82,10 @@ instance Show i => MonadFail (Parser i) where
     where msg = "Failed reading: " ++ err
   {-# INLINE fail #-}
 
-plus :: Show i => Parser i a -> Parser i a -> Parser i a
+plus :: Parser i a -> Parser i a -> Parser i a
 plus f g = Parser $ \buf pos lose succ ->
-  let lose' buf' _pos' _ctx _msg = unsafePerformIO $ do
-        -- print (buf, buf')
-        pure $ runParser g buf' pos lose succ
+  let lose' buf' _pos' _ctx _msg = runParser g buf' pos lose succ
   in runParser f buf pos lose' succ
-
--- plus :: Parser i a -> Parser i a -> Parser i a
--- plus f g = Parser $ \pos lose succ ->
---   Partial $ \i ->
---     case runParser f pos lose succ of
---       Fail _ _ ->
---         case runParser g pos lose succ of
---           Fail stack msg -> Fail stack msg
---           Partial h -> h i
---           Done r -> Done r
---       Partial h -> h i
---       Done r -> Done r
 
 instance Show i => MonadPlus (Parser i) where
   mzero = fail "mzero"
@@ -208,6 +194,9 @@ demandInput :: forall i . Parser i ()
 demandInput = Parser $ \_buf pos _lose succ ->
   Partial $ \i -> succ (Just i) pos ()
 
+buffer :: forall i r . Buffer i -> Parser i ()
+buffer buf = Parser $ \_buf' pos _lose succ -> succ buf pos ()
+
 ensureSuspended :: forall i r . Show i => Pos -> Failure i r -> Success i i r -> Result i r
 ensureSuspended pos lose succ =
   runParser (demandInput >> go) Nothing pos lose succ
@@ -221,9 +210,6 @@ ensure = Parser $ \buf pos lose succ ->
   case buf of
     Just i -> succ Nothing pos i
     Nothing -> ensureSuspended pos lose succ
-
-buffer :: forall i r . Buffer i -> Parser i ()
-buffer buf = Parser $ \_buf' pos _lose succ -> succ buf pos ()
 
 satisfy :: forall i . Show i => (i -> Bool) -> Parser i i
 satisfy p = do
@@ -352,11 +338,16 @@ instance ActionTransitionSystem [] Stuff
 instance ActionTransitionSystem [] Foo
 instance ActionTransitionSystem [] BarBaz
 
-test :: ([Action], Result Action Foo)
+test :: ([Action], Bool)
 test =
-  let foo = Foo "a" $ Stuff 1 [Stuff 2 [] Nothing] Nothing
-      actions = toActions foo
-  in (actions, fold (feeds (fromActions @[])) actions)
+  let stuff 0 = []
+      stuff n = Stuff n [] Nothing : stuff (n - 1)
+      foo 0 = Foo "a" $ Stuff 0 [Stuff 2 [] Nothing] Nothing
+      foo n = Foo "a" $ Stuff n [Stuff 2 (stuff n) Nothing] (Just $ foo (n - 1))
+      challenge = foo 15
+      actions = toActions challenge
+      result = fold (feeds (fromActions @[] @Foo)) actions
+  in (actions, case result of Done challenge -> True; _ -> False)
 
 test2 :: ([Action], Result Action (Int, Text))
 test2 =
