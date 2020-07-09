@@ -2282,7 +2282,7 @@ instance (KnownNat n) => KnownDim (PDim n) where
 instance (KnownNat n) => KnownDim (NDim n) where
   dimVal = - natValI @n
 
--- TODO: eliminate or move to 'Torch.Typed.Aux': UnDim, CmpDim, Last
+-- TODO: eliminate or move to 'Torch.Typed.Aux': UnDim, CmpDim
 -- TODO: maybe generalize 'DimOutOfBound' and use here?
 type family UnDimImpl (dim :: Dim) (ndims :: Nat) :: Nat where
   UnDimImpl (PDim dim) _  = dim
