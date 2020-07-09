@@ -114,7 +114,7 @@ type family InsertImpl (n :: Nat) (x :: a) (l :: [a]) :: Maybe [a] where
   InsertImpl n x '[] = Nothing
   InsertImpl n x (h ': t) = AppendToMaybe h (InsertImpl (n - 1) x t)
 
-type family CheckInsert (n :: Nat) (x :: a) (l :: [a]) (result :: Maybe [a]):: [a] where
+type family CheckInsert (n :: Nat) (x :: a) (l :: [a]) (result :: Maybe [a]) :: [a] where
   CheckInsert _ _ _ (Just xs) = xs
   CheckInsert n x l Nothing = DimOutOfBound l n
 

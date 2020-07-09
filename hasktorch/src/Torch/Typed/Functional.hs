@@ -2359,12 +2359,9 @@ diagflat tri t = unsafePerformIO $ ATen.cast2 ATen.Managed.diagflat_tl t $
     Upper -> natValI @index
     Lower -> - natValI @index
 
-type family DiagonalShapeImpl' (shape :: [Nat]) (l :: Nat) :: [Nat] where
-  DiagonalShapeImpl' shape l = shape ++ '[l]
-
 type family DiagonalShapeImpl (tri :: Tri) (index :: Nat) (shape :: [Nat]) (dim1 :: Nat) (dim2 :: Nat) :: [Nat] where
   DiagonalShapeImpl tri index shape dim1 dim2 =
-    DiagonalShapeImpl' (Remove (Remove shape dim2) dim1) (DiagSize tri index (Index shape dim1) (Index shape dim2))
+    Remove (Remove shape dim2) dim1 ++ '[DiagSize tri index (Index shape dim1) (Index shape dim2)]
 
 type family DiagonalShape (tri :: Tri) (index :: Nat) (dim1 :: Dim) (dim2 :: Dim) (shape :: [Nat]) :: [Nat] where
   DiagonalShape tri index dim1 dim2 shape = DiagonalShapeImpl tri index shape (UnDim shape dim1) (UnDim shape dim2)
