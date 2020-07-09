@@ -780,7 +780,7 @@ instance
   , KnownNat index
   , KnownDim dim1
   , KnownDim dim2
-  , 2 <= ListLength shape
+  , NDimAtLeast 2 shape
   , DimsDistinctAscending shape dim1 dim2
   , shape' ~ DiagonalShape tri index dim1 dim2 shape
   , StandardDTypeValidation device dtype
@@ -1139,7 +1139,7 @@ spec' device =
       it "diagonal" $ do
         let shapes1 = Proxy @'[2, 5, 4, 2] :. HNil
             shapes2 = Proxy @'[2, 3] :. shapes1
-            allShapes =  Proxy @'[0, 0] :. Proxy @'[0, 1] :. Proxy @'[1, 0] :. Proxy @'[2, 3] :. shapes2
+            allShapes =  Proxy @'[1, 0] :. Proxy @'[0, 1] :. Proxy @'[1, 0] :. Proxy @'[2, 3] :. shapes2
             tris = Proxy @'Upper :. Proxy @'Lower :. HNil
             indexes = Proxy @0 :. HNil
             allIndexes = Proxy @1 :. indexes

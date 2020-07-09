@@ -2375,6 +2375,19 @@ diagflat tri t = unsafePerformIO $ ATen.cast2 ATen.Managed.diagflat_tl t $
     Upper -> natValI @index
     Lower -> - natValI @index
 
+type family NDimAtLeastCheck (ndim :: Nat) (shape :: [Nat]) (cmp :: Ordering) :: Constraint where
+  NDimAtLeastCheck ndim shape 'GT =
+    TypeError
+      ( Text "Input must have at least "
+          :<>: ShowType ndim
+          :<>: Text " dimensions, but got "
+          :<>: ShowType (ListLength shape)
+      )
+  NDimAtLeastCheck _ _ _ = ()
+
+type family NDimAtLeast (ndim :: Nat) (shape :: [Nat]) :: Constraint where
+  NDimAtLeast ndim shape = NDimAtLeastCheck ndim shape (CmpNat ndim (ListLength shape))
+
 type family DiagonalShapeImpl (tri :: Tri) (index :: Nat) (shape :: [Nat]) (dim1 :: Nat) (dim2 :: Nat) :: [Nat] where
   DiagonalShapeImpl tri index shape dim1 dim2 =
     Remove (Remove shape dim2) dim1 ++ '[DiagSize tri index (Index shape dim1) (Index shape dim2)]
@@ -2390,7 +2403,7 @@ diagonal
      , KnownNat index
      , KnownDim dim1
      , KnownDim dim2
-     , 2 <= ListLength shape -- TODO: nicer error message here
+     , NDimAtLeast 2 shape
      , DimsDistinctAscending shape dim1 dim2
      , shape' ~ DiagonalShape tri index dim1 dim2 shape
      , StandardDTypeValidation device dtype
