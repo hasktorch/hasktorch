@@ -1200,8 +1200,8 @@ instance KnownTri Upper where
 instance KnownTri Lower where
   triVal = Lower
 
-type family DiagLength (tri :: Tri) (index :: Nat) (m :: Nat) (n :: Nat) :: Nat where
-  DiagLength 'Upper i m n =
+type family DiagSize (tri :: Tri) (index :: Nat) (m :: Nat) (n :: Nat) :: Nat where
+  DiagSize 'Upper i m n =
     If
       (i <=? n)
       (Min m (n - i))
@@ -1214,7 +1214,7 @@ type family DiagLength (tri :: Tri) (index :: Nat) (m :: Nat) (n :: Nat) :: Nat 
               :<>: ShowType i
           )
       )
-  DiagLength 'Lower i m n =
+  DiagSize 'Lower i m n =
     If
       (i <=? m)
       (Min (m - i) n)
@@ -1230,7 +1230,7 @@ type family DiagLength (tri :: Tri) (index :: Nat) (m :: Nat) (n :: Nat) :: Nat 
 
 type family DiagShape (tri :: Tri) (index :: Nat) (shape :: [Nat]) :: [Nat] where
   DiagShape _ i '[n] = '[n + i, n + i]
-  DiagShape tri i '[m, n] = '[DiagLength tri i m n]
+  DiagShape tri i '[m, n] = '[DiagSize tri i m n]
   DiagShape _ _ shape =
     TypeError
       ( Text "The input must be a matrix or a vector, but it has "
@@ -2364,7 +2364,7 @@ type family DiagonalShapeImpl' (shape :: [Nat]) (l :: Nat) :: [Nat] where
 
 type family DiagonalShapeImpl (tri :: Tri) (index :: Nat) (shape :: [Nat]) (dim1 :: Nat) (dim2 :: Nat) :: [Nat] where
   DiagonalShapeImpl tri index shape dim1 dim2 =
-    DiagonalShapeImpl' (Remove (Remove shape dim2) dim1) (DiagLength tri index (Index shape dim1) (Index shape dim2))
+    DiagonalShapeImpl' (Remove (Remove shape dim2) dim1) (DiagSize tri index (Index shape dim1) (Index shape dim2))
 
 type family DiagonalShape (tri :: Tri) (index :: Nat) (dim1 :: Dim) (dim2 :: Dim) (shape :: [Nat]) :: [Nat] where
   DiagonalShape tri index dim1 dim2 shape = DiagonalShapeImpl tri index shape (UnDim shape dim1) (UnDim shape dim2)
