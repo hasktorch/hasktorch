@@ -27,6 +27,7 @@ import Control.Applicative (liftA2, pure, Alternative(..), empty, (<|>))
 import Control.Monad (MonadPlus(..))
 import qualified Control.Monad.Fail (MonadFail(..))
 import Data.Text (Text)
+import GHC.IO (unsafePerformIO)
 
 -- https://stackoverflow.com/questions/17675054/deserialising-with-ghc-generics?rq=1
 -- http://hackage.haskell.org/package/cereal-0.5.8.1/docs/Data-Serialize.html
@@ -41,7 +42,7 @@ data Result i r =
   | Done r
 
 instance Show r => Show (Result i r) where
-    show (Fail stack _) = "Fail " ++ show stack
+    show (Fail stack msg) = "Fail " ++ show stack ++ " " ++ show msg
     show (Partial _)  = "Partial _"
     show (Done r)  = "Done " ++ show r
 
@@ -53,55 +54,73 @@ instance Functor (Result i) where
 newtype Parser i a = Parser {
     runParser
       :: forall r
-       . Pos
+       . Buffer i
+      -> Pos
       -> Failure i   r
       -> Success i a r
       -> Result  i   r
   }
 
-type Failure i   r = Pos -> [String] -> String -> Result i r
-type Success i a r = Pos -> a -> Result i r
+type Buffer  i     = Maybe i
+type Failure i   r = Buffer i -> Pos -> [String] -> String -> Result i r
+type Success i a r = Buffer i -> Pos -> a -> Result i r
 
-instance Monad (Parser i) where
+instance Show i => Monad (Parser i) where
   return = Control.Applicative.pure
   {-# INLINE return #-}
-  m >>= k = Parser $ \ !pos lose succ ->
-    let succ' !pos' a = runParser (k a) pos' lose succ
-    in runParser m pos lose succ'
+  m >>= k = Parser $ \buf !pos lose succ ->
+    let succ' buf' !pos' a = unsafePerformIO $ do
+          -- print ((fromPos pos, buf), (fromPos pos', buf'))
+          pure $ runParser (k a) buf' pos' lose succ
+    in runParser m buf pos lose succ'
   {-# INLINE (>>=) #-}
   (>>) = (*>)
   {-# INLINE (>>) #-}
 
-instance MonadFail (Parser i) where
-  fail err = Parser $ \pos lose _succ -> lose pos [] msg
+instance Show i => MonadFail (Parser i) where
+  fail err = Parser $ \buf pos lose _succ -> lose buf pos [] msg
     where msg = "Failed reading: " ++ err
   {-# INLINE fail #-}
 
-plus :: Parser i a -> Parser i a -> Parser i a
-plus f g = Parser $ \pos lose succ ->
-  let lose' _pos' _ctx _msg = runParser g pos lose succ
-  in runParser f pos lose' succ
+plus :: Show i => Parser i a -> Parser i a -> Parser i a
+plus f g = Parser $ \buf pos lose succ ->
+  let lose' buf' _pos' _ctx _msg = unsafePerformIO $ do
+        -- print (buf, buf')
+        pure $ runParser g buf' pos lose succ
+  in runParser f buf pos lose' succ
 
-instance MonadPlus (Parser i) where
+-- plus :: Parser i a -> Parser i a -> Parser i a
+-- plus f g = Parser $ \pos lose succ ->
+--   Partial $ \i ->
+--     case runParser f pos lose succ of
+--       Fail _ _ ->
+--         case runParser g pos lose succ of
+--           Fail stack msg -> Fail stack msg
+--           Partial h -> h i
+--           Done r -> Done r
+--       Partial h -> h i
+--       Done r -> Done r
+
+instance Show i => MonadPlus (Parser i) where
   mzero = fail "mzero"
   {-# INLINE mzero #-}
   mplus = plus
 
 instance Functor (Parser i) where
-  fmap f p = Parser $ \pos lose succ ->
-    let succ' pos' a = succ pos' (f a)
-    in runParser p pos lose succ'
+  fmap f p = Parser $ \buf pos lose succ ->
+    let succ' buf' pos' a = succ buf' pos' (f a)
+    in runParser p buf pos lose succ'
   {-# INLINE fmap #-}
 
-apP :: Parser i (a -> b) -> Parser i a -> Parser i b
+apP :: forall i a b . Show i => Parser i (a -> b) -> Parser i a -> Parser i b
 apP d e = do
   b <- d
   a <- e
   return (b a)
 {-# INLINE apP #-}
 
-instance Applicative (Parser i) where
-  pure v = Parser $ \ !pos _lose succ -> succ pos v
+instance Show i => Applicative (Parser i) where
+  pure v = Parser $ \buf !pos _lose succ -> succ buf pos v
   {-# INLINE pure #-}
   (<*>) = apP
   {-# INLINE (<*>) #-}
@@ -110,17 +129,17 @@ instance Applicative (Parser i) where
   x <* y = x >>= \a -> y >> pure a
   {-# INLINE (<*) #-}
 
-instance Semigroup (Parser i a) where
+instance Show i => Semigroup (Parser i a) where
   (<>) = plus
   {-# INLINE (<>) #-}
 
-instance Monoid (Parser i a) where
+instance Show i => Monoid (Parser i a) where
   mempty = fail "mempty"
   {-# INLINE mempty #-}
   mappend = (<>)
   {-# INLINE mappend #-}
 
-instance Alternative (Parser i) where
+instance Show i => Alternative (Parser i) where
   empty = fail "empty"
   {-# INLINE empty #-}
   (<|>) = plus
@@ -137,13 +156,13 @@ instance Alternative (Parser i) where
   {-# INLINE some #-}
 
 failK :: Failure i a
-failK _pos stack msg = Fail stack msg
+failK _buf _pos stack msg = Fail stack msg
 
 successK :: Success i a a
-successK _pos a = Done a
+successK _buf _pos a = Done a
 
 parse :: forall i a . Parser i a -> Result i a
-parse p = runParser p 0 failK successK
+parse p = runParser p Nothing 0 failK successK
 
 choice :: Alternative f => [f a] -> f a
 choice = foldr (<|>) empty
@@ -183,17 +202,35 @@ feeds p = let step = feed
 --   in runParser p pos lose succ'
 
 advance :: forall i . Pos -> Parser i ()
-advance n = Parser $ \pos _lose succ -> succ (pos + n) ()
+advance n = Parser $ \buf pos _lose succ -> succ buf (pos + n) ()
 
-demandInput :: forall i . Parser i i
-demandInput = Parser $ \pos lose succ -> Partial $ \i -> succ pos i
+demandInput :: forall i . Parser i ()
+demandInput = Parser $ \_buf pos _lose succ ->
+  Partial $ \i -> succ (Just i) pos ()
 
-satisfy :: forall i . (i -> Bool) -> Parser i i
+ensureSuspended :: forall i r . Show i => Pos -> Failure i r -> Success i i r -> Result i r
+ensureSuspended pos lose succ =
+  runParser (demandInput >> go) Nothing pos lose succ
+ where go = Parser $ \buf' pos' lose' succ' ->
+         case buf' of
+           Just i -> succ' Nothing pos' i
+           Nothing -> runParser (demandInput >> go) Nothing pos' lose' succ'
+
+ensure :: forall i . Show i => Parser i i
+ensure = Parser $ \buf pos lose succ ->
+  case buf of
+    Just i -> succ Nothing pos i
+    Nothing -> ensureSuspended pos lose succ
+
+buffer :: forall i r . Buffer i -> Parser i ()
+buffer buf = Parser $ \_buf' pos _lose succ -> succ buf pos ()
+
+satisfy :: forall i . Show i => (i -> Bool) -> Parser i i
 satisfy p = do
-  i <- demandInput
+  i <- ensure
   if p i
     then advance 1 >> return i
-    else fail "satisfy"
+    else buffer (Just i) >> fail "satisfy"
 {-# INLINE satisfy #-}
 
 -- | Match a specific input.
@@ -208,9 +245,9 @@ isNot i = satisfy (/= i) <?> "not " ++ show i
 
 -- | Name the parser, in case failure occurs.
 (<?>) :: Parser i i -> String -> Parser i i
-p <?> name = Parser $ \pos lose succ ->
-  let lose' pos' stack msg = lose pos' (name : stack) msg
-  in runParser p pos lose' succ
+p <?> name = Parser $ \buf pos lose succ ->
+  let lose' buf' pos' stack msg = lose buf' pos' (name : stack) msg
+  in runParser p buf pos lose' succ
 {-# INLINE (<?>) #-}
 infix 0 <?>
 
@@ -282,21 +319,25 @@ instance (GFromActions t f, GFromActions t g) => GFromActions t (f :+: g) where
 --   toActions (Just a) = toActions a
 --   fromActions = (is Reduce >> pure Nothing) <|> fromActions @t
 
+instance (Semigroup (t Action), ActionTransitionSystem t a, ActionTransitionSystem t b) => ActionTransitionSystem t (a, b)
+instance (Applicative t, Monoid (t Action), ActionTransitionSystem t a) => ActionTransitionSystem t [a]
+instance (Applicative t, Monoid (t Action), ActionTransitionSystem t a) => ActionTransitionSystem t (Maybe a)
+
 instance Applicative t => ActionTransitionSystem t Text where
   toActions = pure . SToken
   fromActions = do
-    a <- demandInput
+    a <- ensure
     case a of
-      SToken s -> pure s
-      _ -> fail "text"
+      SToken s -> advance 1 >> pure s
+      _ -> buffer (Just a) >> fail "text"
 
 instance Applicative t => ActionTransitionSystem t Int where
   toActions = pure . IToken
   fromActions = do
-    a <- demandInput
+    a <- ensure
     case a of
-      IToken i -> pure i
-      _ -> fail "int"
+      IToken i -> advance 1 >> pure i
+      _ -> buffer (Just a) >> fail "int"
 
 data Stuff = Stuff { anInt :: Int, moreStuff :: [Stuff], maybeFoo :: Maybe Foo }
   deriving (Eq, Show, Generic)
@@ -304,10 +345,12 @@ data Stuff = Stuff { anInt :: Int, moreStuff :: [Stuff], maybeFoo :: Maybe Foo }
 data Foo = Foo { someText :: Text, stuff :: Stuff }
   deriving (Eq, Show, Generic)
 
-instance ActionTransitionSystem [] a => ActionTransitionSystem [] [a]
-instance ActionTransitionSystem [] (Maybe Foo)
+data BarBaz = Bar | Baz
+  deriving (Eq, Show, Generic)
+
 instance ActionTransitionSystem [] Stuff
 instance ActionTransitionSystem [] Foo
+instance ActionTransitionSystem [] BarBaz
 
 test :: ([Action], Result Action Foo)
 test =
@@ -315,8 +358,26 @@ test =
       actions = toActions foo
   in (actions, fold (feeds (fromActions @[])) actions)
 
-test2 :: ([Action], Result Action [Int])
+test2 :: ([Action], Result Action (Int, Text))
 test2 =
-  let foo = [1] :: [Int]
+  let foo = (1 :: Int, "a" :: Text)
+      actions = toActions foo
+  in (actions, fold (feeds (fromActions @[])) actions)
+
+test3 :: ([Action], Result Action [[Int]])
+test3 =
+  let foo = [[1], []] :: [[Int]]
+      actions = toActions foo
+  in (actions, fold (feeds (fromActions @[])) actions)
+
+test4 :: ([Action], Result Action Int)
+test4 =
+  let foo = 1 :: Int
+      actions = toActions foo
+  in (actions, fold (feeds (fromActions @[])) actions)
+
+test5 :: ([Action], Result Action BarBaz)
+test5 =
+  let foo = Baz
       actions = toActions foo
   in (actions, fold (feeds (fromActions @[])) actions)
