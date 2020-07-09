@@ -15,18 +15,17 @@ import Foreign.C.String
 import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
-import Torch.Internal.Class
 
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
 import qualified Language.C.Inline.Context as C
 import qualified Language.C.Types as C
-import qualified Data.Map as Map
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 C.include "<vector>"
-C.include "<ATen/ATen.h>"
+C.include "<ATen/Tensor.h>"
+C.include "<ATen/Functions.h>"
 
 
 _cast_Byte_tb

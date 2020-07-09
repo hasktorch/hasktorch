@@ -4,6 +4,7 @@ import Control.Monad
 import Data.Char
 import Data.List
 import Text.Regex.TDFA
+import System.Environment
 
 numFuncs :: [String] -> Int
 numFuncs ls =
@@ -20,8 +21,8 @@ getHeader (l:ls) buf rest =
     then getHeader [] (drop 1 buf) (reverse (take 1 buf) <> ls)
     else getHeader ls (l:buf) rest
 
-genHeader :: [String] -> Int -> [String]
-genHeader ls idx = map (\l -> if l =~ "module Torch.Internal.Unmanaged.Native where" then "module Torch.Internal.Unmanaged.Native.Native" <> show idx <> " where" else l) ls
+genHeader :: String -> String -> [String] -> Int -> [String]
+genHeader fullPath modname ls idx = map (\l -> if l =~ ("module " <> fullPath <> " where") then "module " <> fullPath <> "." <> modname <> show idx <> " where" else l) ls
 
 splitFunctions :: [String] -> [String] -> [[String]]
 splitFunctions [] buf = []
@@ -40,19 +41,21 @@ split' num ls =
 
 main :: IO ()
 main = do
+  moduleName:fullPath:num:_ <- getArgs
   inp <- getContents
   let ls = lines inp
       n = numFuncs ls
-      nd = (n+15) `div` 16
+      divNum = read num :: Int
+      nd = (n+divNum-1) `div` divNum
       (header,body) = getHeader ls [] []
       functions = splitFunctions body []
       functions' = split' nd $ splitFunctions body [] :: [[[String]]]
   forM_ (zip [0..] functions') $ \(i,funcs) -> do
     let dat =
-          [ genHeader header i
+          [ genHeader fullPath moduleName header i
           , concat funcs
           ]
-    writeFile ("Native/Native" <> show i <> ".hs") $ (intercalate "\n" $ concat $ dat)
+    writeFile (moduleName <> "/" <> moduleName <> show i <> ".hs") $ (intercalate "\n" $ concat $ dat)
       
   -- print $ header
   -- print $ take 3 body

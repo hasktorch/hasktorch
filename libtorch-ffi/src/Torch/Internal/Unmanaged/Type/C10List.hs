@@ -20,11 +20,11 @@ import Foreign.C.String
 import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
-import Torch.Internal.Class
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
+C.include "<ATen/core/List.h>"
+C.include "<ATen/core/ivalue.h>"
 C.include "<vector>"
 
 newC10ListIValue :: Ptr IValue -> IO (Ptr (C10List IValue))
@@ -42,35 +42,6 @@ newC10ListInt = [C.throwBlock| c10::List<int64_t>* { return new c10::List<int64_
 newC10ListBool :: IO (Ptr (C10List CBool))
 newC10ListBool = [C.throwBlock| c10::List<bool>* { return new c10::List<bool>(); }|]
 
-foreign import ccall unsafe "hasktorch_finalizer.h &delete_c10listivalue"
-  c_delete_c10listivalue :: FunPtr ( Ptr (C10List IValue) -> IO ())
-
-foreign import ccall unsafe "hasktorch_finalizer.h &delete_c10listtensor"
-  c_delete_c10listtensor :: FunPtr ( Ptr (C10List Tensor) -> IO ())
-
-foreign import ccall unsafe "hasktorch_finalizer.h &delete_c10listdouble"
-  c_delete_c10listdouble :: FunPtr ( Ptr (C10List CDouble) -> IO ())
-
-foreign import ccall unsafe "hasktorch_finalizer.h &delete_c10listint"
-  c_delete_c10listint :: FunPtr ( Ptr (C10List Int64) -> IO ())
-
-foreign import ccall unsafe "hasktorch_finalizer.h &delete_c10listbool"
-  c_delete_c10listbool :: FunPtr ( Ptr (C10List CBool) -> IO ())
-
-instance CppObject (C10List IValue) where
-  fromPtr ptr = newForeignPtr c_delete_c10listivalue ptr
-
-instance CppObject (C10List Tensor) where
-  fromPtr ptr = newForeignPtr c_delete_c10listtensor ptr
-
-instance CppObject (C10List CDouble) where
-  fromPtr ptr = newForeignPtr c_delete_c10listdouble ptr
-
-instance CppObject (C10List Int64) where
-  fromPtr ptr = newForeignPtr c_delete_c10listint ptr
-
-instance CppObject (C10List CBool) where
-  fromPtr ptr = newForeignPtr c_delete_c10listbool ptr
 
 
 

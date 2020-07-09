@@ -17,18 +17,7 @@ import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 import Torch.Internal.Cast
-import Torch.Internal.Unmanaged.Type.Generator
-import Torch.Internal.Unmanaged.Type.IntArray
-import Torch.Internal.Unmanaged.Type.Scalar
-import Torch.Internal.Unmanaged.Type.Storage
-import Torch.Internal.Unmanaged.Type.Tensor
-import Torch.Internal.Unmanaged.Type.TensorList
-import Torch.Internal.Unmanaged.Type.TensorOptions
-import Torch.Internal.Unmanaged.Type.Tuple
-import Torch.Internal.Unmanaged.Type.StdString
-import Torch.Internal.Unmanaged.Type.Dimname
-import Torch.Internal.Unmanaged.Type.DimnameList
-import Torch.Internal.Unmanaged.Type.IValue
+import Torch.Internal.Objects
 
 import qualified Torch.Internal.Unmanaged.Type.C10Dict as Unmanaged
 

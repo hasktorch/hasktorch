@@ -20,11 +20,11 @@ import Foreign.C.String
 import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
-import Torch.Internal.Class
+
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
+C.include "<ATen/TensorOptions.h>"
 C.include "<vector>"
 
 
@@ -38,12 +38,6 @@ newTensorOptions_s _d =
   }|]
 
 
-
-foreign import ccall unsafe "hasktorch_finalizer.h &delete_tensoroptions"
-  c_delete_tensoroptions :: FunPtr ( Ptr TensorOptions -> IO ())
-
-instance CppObject TensorOptions where
-  fromPtr ptr = newForeignPtr c_delete_tensoroptions ptr
 
 
 

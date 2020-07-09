@@ -20,11 +20,11 @@ import Foreign.C.String
 import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
-import Torch.Internal.Class
+
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
+C.include "<ATen/Tensor.h>"
 C.include "<vector>"
 
 
@@ -37,12 +37,6 @@ newTensorList  =
   }|]
 
 
-
-foreign import ccall unsafe "hasktorch_finalizer.h &delete_tensorlist"
-  c_delete_tensorlist :: FunPtr ( Ptr TensorList -> IO ())
-
-instance CppObject TensorList where
-  fromPtr ptr = newForeignPtr c_delete_tensorlist ptr
 
 
 

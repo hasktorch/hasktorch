@@ -20,11 +20,11 @@ import Foreign.C.String
 import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
-import Torch.Internal.Class
+
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
+C.include "<ATen/Storage.h>"
 C.include "<vector>"
 
 
@@ -35,16 +35,4 @@ newStorage  =
   [C.throwBlock| at::Storage* { return new at::Storage(
     );
   }|]
-
-
-
-foreign import ccall unsafe "hasktorch_finalizer.h &delete_storage"
-  c_delete_storage :: FunPtr ( Ptr Storage -> IO ())
-
-instance CppObject Storage where
-  fromPtr ptr = newForeignPtr c_delete_storage ptr
-
-
-
-
 

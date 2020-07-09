@@ -27,6 +27,7 @@ library
                     , Torch.Internal.Const
                     , Torch.Internal.Cast
                     , Torch.Internal.Class
+                    , Torch.Internal.Objects
                     , Torch.Internal.GC
                     , Torch.Internal.Unmanaged.Native
                     , Torch.Internal.Unmanaged.Native.Native0
@@ -51,6 +52,10 @@ library
                     , Torch.Internal.Unmanaged.Type.Scalar
                     , Torch.Internal.Unmanaged.Type.Storage
                     , Torch.Internal.Unmanaged.Type.Tensor
+                    , Torch.Internal.Unmanaged.Type.Tensor.Tensor0
+                    , Torch.Internal.Unmanaged.Type.Tensor.Tensor1
+                    , Torch.Internal.Unmanaged.Type.Tensor.Tensor2
+                    , Torch.Internal.Unmanaged.Type.Tensor.Tensor3
                     , Torch.Internal.Unmanaged.Type.TensorList
                     , Torch.Internal.Unmanaged.Type.TensorOptions
                     , Torch.Internal.Unmanaged.Type.TensorIndex
@@ -92,6 +97,10 @@ library
                     , Torch.Internal.Managed.Type.Scalar
                     , Torch.Internal.Managed.Type.Storage
                     , Torch.Internal.Managed.Type.Tensor
+                    , Torch.Internal.Managed.Type.Tensor.Tensor0
+                    , Torch.Internal.Managed.Type.Tensor.Tensor1
+                    , Torch.Internal.Managed.Type.Tensor.Tensor2
+                    , Torch.Internal.Managed.Type.Tensor.Tensor3
                     , Torch.Internal.Managed.Type.TensorList
                     , Torch.Internal.Managed.Type.TensorIndex
                     , Torch.Internal.Managed.Type.TensorOptions

@@ -17,19 +17,8 @@ import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 import Torch.Internal.Cast
-import qualified Torch.Internal.Unmanaged.Native as Unmanaged
-import Torch.Internal.Unmanaged.Type.Generator
-import Torch.Internal.Unmanaged.Type.IntArray
-import Torch.Internal.Unmanaged.Type.Scalar
-import Torch.Internal.Unmanaged.Type.Storage
-import Torch.Internal.Unmanaged.Type.Tensor
-import Torch.Internal.Unmanaged.Type.TensorList
-import Torch.Internal.Unmanaged.Type.TensorOptions
-import Torch.Internal.Unmanaged.Type.Tuple
-import Torch.Internal.Unmanaged.Type.StdString
-import Torch.Internal.Unmanaged.Type.StdArray
-import Torch.Internal.Unmanaged.Type.Dimname
-import Torch.Internal.Unmanaged.Type.DimnameList
+import Torch.Internal.Objects
+import qualified Torch.Internal.Unmanaged.Native.Native3 as Unmanaged
 
 
 _embedding_bag_ttt
