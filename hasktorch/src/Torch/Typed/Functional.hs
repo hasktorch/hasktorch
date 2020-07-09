@@ -2282,7 +2282,7 @@ instance (KnownNat n) => KnownDim (PDim n) where
 instance (KnownNat n) => KnownDim (NDim n) where
   dimVal = - natValI @n
 
--- TODO: eliminate or move to 'Torch.Typed.Aux': UnDim, CmpDim, Drop, Take, Last
+-- TODO: eliminate or move to 'Torch.Typed.Aux': UnDim, CmpDim, Last
 -- TODO: maybe generalize 'DimOutOfBound' and use here?
 type family UnDimImpl (dim :: Dim) (ndims :: Nat) :: Nat where
   UnDimImpl (PDim dim) _  = dim
@@ -2303,25 +2303,18 @@ type family UnDim (shape :: [Nat]) (dim :: Dim) :: Nat where
 type family CmpDim (shape :: [Nat]) (dim :: Dim) (dim' :: Dim) :: Ordering where
   CmpDim shape dim dim' = CmpNat (UnDim shape dim) (UnDim shape dim')
 
-type family Drop (n :: Nat) (xs :: [a]) :: [a] where
-  Drop 0 xs = xs
-  Drop _ '[] = '[]
-  Drop n (x ': xs) = Drop (n - 1) xs
-
-type family Take (n :: Nat) (xs :: [a]) :: [a] where
-  Take 0 xs = '[]
-  Take _ '[] = '[]
-  Take n (x ': xs) = x ': Take (n - 1) xs
+type family Init (xs :: [a]) :: [a] where
+  Init '[] = TypeError (Text "Init of empty list.")
+  Init (x ': '[]) = '[]
+  Init (x ': xs) = x ': Init xs
 
 type family Last (xs :: [a]) :: a where
+  Last '[] = TypeError (Text "Last of empty list.")
   Last (x ': '[]) = x
   Last (x ': xs) = Last xs
 
 type family DiagEmbedShapeImpl' (shape :: [Nat]) (n :: Nat) (dim1 :: Nat) (dim2 :: Nat) :: [Nat] where
-  DiagEmbedShapeImpl' shape n dim1 dim2 =
-    Take dim1 shape
-      ++ (n ': Take (dim2 - dim1 - 1) (Drop dim1 shape))
-      ++ (n ': Drop dim2 shape)
+  DiagEmbedShapeImpl' shape n dim1 dim2 = Insert dim1 n (Insert (dim2 - 1) n (Init shape))
 
 type family DiagEmbedShapeImpl (dim1 :: Dim) (dim2 :: Dim) (shape :: [Nat]) (n :: Nat) (outdims :: Nat) :: [Nat] where
   DiagEmbedShapeImpl dim1 dim2 shape n outdims = DiagEmbedShapeImpl' shape n (UnDimImpl dim1 outdims) (UnDimImpl dim2 outdims)
@@ -2376,18 +2369,12 @@ diagflat tri t = unsafePerformIO $ ATen.cast2 ATen.Managed.diagflat_tl t $
     Upper -> natValI @index
     Lower -> - natValI @index
 
-type family DropDims2 (dim1 :: Nat) (dim2 :: Nat) (shape :: [Nat]) :: [Nat] where
-  DropDims2 dim1 dim2 shape =
-    Take dim1 shape
-      ++ Take (dim2 - dim1 - 1) (Drop (dim1 + 1) shape)
-      ++ Drop (dim2 + 1) shape
-
 type family DiagonalShapeImpl' (shape :: [Nat]) (l :: Nat) :: [Nat] where
   DiagonalShapeImpl' shape l = shape ++ '[l]
 
 type family DiagonalShapeImpl (tri :: Tri) (index :: Nat) (shape :: [Nat]) (dim1 :: Nat) (dim2 :: Nat) :: [Nat] where
   DiagonalShapeImpl tri index shape dim1 dim2 =
-    DiagonalShapeImpl' (DropDims2 dim1 dim2 shape) (DiagLength tri index (Index shape dim1) (Index shape dim2))
+    DiagonalShapeImpl' (Remove (Remove shape dim2) dim1) (DiagLength tri index (Index shape dim1) (Index shape dim2))
 
 type family DiagonalShape (tri :: Tri) (index :: Nat) (dim1 :: Dim) (dim2 :: Dim) (shape :: [Nat]) :: [Nat] where
   DiagonalShape tri index dim1 dim2 shape = DiagonalShapeImpl tri index shape (UnDim shape dim1) (UnDim shape dim2)
