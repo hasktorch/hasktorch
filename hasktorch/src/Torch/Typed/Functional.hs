@@ -2270,40 +2270,7 @@ det
   -> Tensor device dtype (Det shape) -- ^ output
 det input = unsafePerformIO $ ATen.cast1 ATen.Managed.det_t input
 
--- | Type (kind) of dimension indexes that may be positive (forward from 0) or negative (backwards from end)
-data Dim = PDim Nat | NDim Nat
-
-class KnownDim (dim :: Dim) where
-  dimVal :: Int
-
-instance (KnownNat n) => KnownDim (PDim n) where
-  dimVal = natValI @n
-
-instance (KnownNat n) => KnownDim (NDim n) where
-  dimVal = - natValI @n
-
--- TODO: eliminate or move to 'Torch.Typed.Aux': UnDim, CmpDim
--- TODO: maybe generalize 'DimOutOfBound' and use here?
-type family UnDimImpl (dim :: Dim) (ndims :: Nat) :: Nat where
-  UnDimImpl (PDim dim) _  = dim
-  UnDimImpl (NDim dim) ndims =
-    If
-      (dim <=? ndims)
-      (ndims - dim)
-      (TypeError
-        (Text "Out of bound dimension: -"
-          :<>: ShowType dim
-          :<>: Text " (the tensor is only "
-          :<>: ShowType ndims
-          :<>: Text "D)"))
-
-type family UnDim (shape :: [Nat]) (dim :: Dim) :: Nat where
-  UnDim shape dim = UnDimImpl dim (ListLength shape)
-
-type family CmpDim (shape :: [Nat]) (dim :: Dim) (dim' :: Dim) :: Ordering where
-  CmpDim shape dim dim' = CmpNat (UnDim shape dim) (UnDim shape dim')
-
-type family DimsDistinctAscendingCheck (shape :: [Nat]) (dim1 :: Dim) (dim2 :: Dim) (cmp :: Ordering) :: Constraint where
+type family DimsDistinctAscendingCheck (shape :: [Nat]) (dim1 :: Nat) (dim2 :: Nat) (cmp :: Ordering) :: Constraint where
   DimsDistinctAscendingCheck _ _ _ 'LT = ()
   DimsDistinctAscendingCheck shape dim1 dim2 _ =
     TypeError
@@ -2316,31 +2283,26 @@ type family DimsDistinctAscendingCheck (shape :: [Nat]) (dim1 :: Dim) (dim2 :: D
         :<>: Text "D tensor."
     )
 
-type family DimsDistinctAscending (shape :: [Nat]) (dim1 :: Dim) (dim2 :: Dim) :: Constraint where
-  DimsDistinctAscending shape dim1 dim2 = DimsDistinctAscendingCheck shape dim1 dim2 (CmpDim shape dim1 dim2)
+type family DimsDistinctAscending (shape :: [Nat]) (dim1 :: Nat) (dim2 :: Nat) :: Constraint where
+  DimsDistinctAscending shape dim1 dim2 = DimsDistinctAscendingCheck shape dim1 dim2 (CmpNat dim1 dim2)
 
-type family DiagEmbedShapeImpl' (shape :: [Nat]) (dim1 :: Nat) (dim2 :: Nat) (n :: Nat) :: [Nat] where
-  DiagEmbedShapeImpl' shape dim1 dim2 n = Insert dim1 n (Insert (dim2 - 1) n (Init shape))
+type family DiagEmbedShapeImpl (dim1 :: Nat) (dim2 :: Nat) (shape :: [Nat]) (n :: Nat) :: [Nat] where
+  DiagEmbedShapeImpl dim1 dim2 shape n = Insert dim1 n (Insert (dim2 - 1) n (Init shape))
 
-type family DiagEmbedShapeImpl (index :: Nat) (dim1 :: Dim) (dim2 :: Dim) (shape :: [Nat]) (outdims :: Nat) :: [Nat] where
-  DiagEmbedShapeImpl index dim1 dim2 shape outdims =
-    DiagEmbedShapeImpl' shape (UnDimImpl dim1 outdims) (UnDimImpl dim2 outdims) (Last shape + index)
-
-type family DiagEmbedShape (index :: Nat) (dim1 :: Dim) (dim2 :: Dim) (shape :: [Nat]) :: [Nat] where
-  DiagEmbedShape index dim1 dim2 shape =
-    DiagEmbedShapeImpl index dim1 dim2 shape (ListLength shape + 1)
+type family DiagEmbedShape (index :: Nat) (dim1 :: Nat) (dim2 :: Nat) (shape :: [Nat]) :: [Nat] where
+  DiagEmbedShape index dim1 dim2 shape = DiagEmbedShapeImpl dim1 dim2 shape (Last shape + index)
 
 -- | diagEmbed
 --
--- >>> dtype &&& shape $ diagEmbed @0 @('NDim 2) @('NDim 1) Upper (ones :: CPUTensor 'D.Float '[2,3])
+-- >>> dtype &&& shape $ diagEmbed @0 @0 @1 Upper (ones :: CPUTensor 'D.Float '[2,3])
 -- (Float,[2,3,3])
--- >>> dtype &&& shape $ diagEmbed @1 @('PDim 0) @('PDim 2) Upper (ones :: CPUTensor 'D.Float '[2,3])
+-- >>> dtype &&& shape $ diagEmbed @1 @0 @2 Upper (ones :: CPUTensor 'D.Float '[2,3])
 -- (Float,[4,2,4])
 diagEmbed
   :: forall index dim1 dim2 shape shape' device dtype
    . ( KnownNat index
-     , KnownDim dim1
-     , KnownDim dim2
+     , KnownNat dim1
+     , KnownNat dim2
      , shape' ~ DiagEmbedShape index dim1 dim2 shape
      , DimsDistinctAscending shape' dim1 dim2
      , StandardDTypeValidation device dtype
@@ -2354,8 +2316,8 @@ diagEmbed tri t =
       ATen.Managed.diag_embed_tlll
       t
       (if isUpper tri then natValI @index else - natValI @index)
-      (dimVal @dim1)
-      (dimVal @dim2)
+      (natValI @dim1)
+      (natValI @dim2)
 
 type family DiagflatShapeImpl (d :: Nat) :: [Nat] where
   DiagflatShapeImpl d = '[d, d]
@@ -2398,27 +2360,24 @@ type family NDimAtLeastCheck (ndim :: Nat) (shape :: [Nat]) (cmp :: Ordering) ::
 type family NDimAtLeast (ndim :: Nat) (shape :: [Nat]) :: Constraint where
   NDimAtLeast ndim shape = NDimAtLeastCheck ndim shape (CmpNat ndim (ListLength shape))
 
-type family DiagonalShapeImpl (tri :: Tri) (index :: Nat) (shape :: [Nat]) (dim1 :: Nat) (dim2 :: Nat) :: [Nat] where
-  DiagonalShapeImpl tri index shape dim1 dim2 =
+type family DiagonalShape (tri :: Tri) (index :: Nat) (dim1 :: Nat) (dim2 :: Nat) (shape :: [Nat]) :: [Nat] where
+  DiagonalShape tri index dim1 dim2 shape =
     Remove (Remove shape dim2) dim1 ++ '[DiagSize tri index (Index shape dim1) (Index shape dim2)]
-
-type family DiagonalShape (tri :: Tri) (index :: Nat) (dim1 :: Dim) (dim2 :: Dim) (shape :: [Nat]) :: [Nat] where
-  DiagonalShape tri index dim1 dim2 shape = DiagonalShapeImpl tri index shape (UnDim shape dim1) (UnDim shape dim2)
 
 -- | diagonal
 --
--- >>> dtype &&& shape $ diagonal @'Upper @0 @('NDim 2) @('NDim 1) (ones :: CPUTensor 'D.Float '[3,3])
+-- >>> dtype &&& shape $ diagonal @'Upper @0 @0 @1 (ones :: CPUTensor 'D.Float '[3,3])
 -- (Float,[3])
--- >>> dtype &&& shape $ diagonal @'Upper @1 @('NDim 2) @('NDim 1) (ones :: CPUTensor 'D.Float '[3,3])
+-- >>> dtype &&& shape $ diagonal @'Upper @1 @0 @1 (ones :: CPUTensor 'D.Float '[3,3])
 -- (Float,[2])
--- >>> dtype &&& shape $ diagonal @'Lower @1 @('PDim 1) @('PDim 2) (ones :: CPUTensor 'D.Float '[2,5,4,2])
+-- >>> dtype &&& shape $ diagonal @'Lower @1 @1 @2 (ones :: CPUTensor 'D.Float '[2,5,4,2])
 -- (Float,[2,2,4])
 diagonal
   :: forall tri index dim1 dim2 shape shape' device dtype
    . ( KnownTri tri
      , KnownNat index
-     , KnownDim dim1
-     , KnownDim dim2
+     , KnownNat dim1
+     , KnownNat dim2
      , NDimAtLeast 2 shape
      , DimsDistinctAscending shape dim1 dim2
      , shape' ~ DiagonalShape tri index dim1 dim2 shape
@@ -2431,8 +2390,8 @@ diagonal t = unsafePerformIO $
     ATen.Managed.diagonal_tlll
     t
     (if isUpper (triVal @tri) then natValI @index else - natValI @index)
-    (dimVal @dim1)
-    (dimVal @dim2)
+    (natValI @dim1)
+    (natValI @dim2)
 
 type family DotDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
   DotDTypeIsValid '( 'D.CPU, 0)            dtype = ( DTypeIsNotBool '( 'D.CPU, 0) dtype

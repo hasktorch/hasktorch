@@ -744,8 +744,8 @@ instance
   ( TensorOptions shape dtype device
   , TensorOptions shape' dtype device
   , KnownNat index
-  , KnownDim dim1
-  , KnownDim dim2
+  , KnownNat dim1
+  , KnownNat dim2
   , DimsDistinctAscending shape' dim1 dim2
   , shape' ~ DiagEmbedShape index dim1 dim2 shape
   , StandardDTypeValidation device dtype
@@ -778,8 +778,8 @@ instance
   , TensorOptions shape' dtype device
   , KnownTri tri
   , KnownNat index
-  , KnownDim dim1
-  , KnownDim dim2
+  , KnownNat dim1
+  , KnownNat dim2
   , NDimAtLeast 2 shape
   , DimsDistinctAscending shape dim1 dim2
   , shape' ~ DiagonalShape tri index dim1 dim2 shape
@@ -1110,8 +1110,8 @@ spec' device =
                               :. HNil
                           )
             indexes = Proxy @0 :. Proxy @1 :. HNil
-            dims = (Proxy @('NDim 2), Proxy @('NDim 1)) :. HNil
-            allDims = (Proxy @('PDim 0), Proxy @('PDim 2)) :. dims
+            dims = (Proxy @0, Proxy @1) :. HNil
+            allDims = (Proxy @0, Proxy @2) :. dims
         case device of
           Device {deviceType = CPU, deviceIndex = 0} -> do
             hfoldrM @IO DiagEmbedSpec () (hproduct (hproduct indexes dims)    (hattach cpu   (hproduct standardDTypes shapes)))
@@ -1143,8 +1143,8 @@ spec' device =
             tris = Proxy @'Upper :. Proxy @'Lower :. HNil
             indexes = Proxy @0 :. HNil
             allIndexes = Proxy @1 :. indexes
-            dims = (Proxy @('NDim 2), Proxy @('NDim 1)) :. HNil
-            allDims = (Proxy @('PDim 0), Proxy @('PDim 2)) :. dims
+            dims = (Proxy @0, Proxy @1) :. HNil
+            allDims = (Proxy @0, Proxy @2) :. dims
         case device of
           Device { deviceType = CPU,  deviceIndex = 0 } -> do
             hfoldrM @IO DiagonalSpec () (hproduct (hproduct tris (hproduct indexes dims))       (hattach cpu   (hproduct standardDTypes allShapes)))
