@@ -2303,16 +2303,6 @@ type family UnDim (shape :: [Nat]) (dim :: Dim) :: Nat where
 type family CmpDim (shape :: [Nat]) (dim :: Dim) (dim' :: Dim) :: Ordering where
   CmpDim shape dim dim' = CmpNat (UnDim shape dim) (UnDim shape dim')
 
-type family Init (xs :: [a]) :: [a] where
-  Init '[] = TypeError (Text "Init of empty list.")
-  Init (x ': '[]) = '[]
-  Init (x ': xs) = x ': Init xs
-
-type family Last (xs :: [a]) :: a where
-  Last '[] = TypeError (Text "Last of empty list.")
-  Last (x ': '[]) = x
-  Last (x ': xs) = Last xs
-
 type family DiagEmbedShapeImpl' (shape :: [Nat]) (n :: Nat) (dim1 :: Nat) (dim2 :: Nat) :: [Nat] where
   DiagEmbedShapeImpl' shape n dim1 dim2 = Insert dim1 n (Insert (dim2 - 1) n (Init shape))
 
