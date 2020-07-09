@@ -2303,6 +2303,22 @@ type family UnDim (shape :: [Nat]) (dim :: Dim) :: Nat where
 type family CmpDim (shape :: [Nat]) (dim :: Dim) (dim' :: Dim) :: Ordering where
   CmpDim shape dim dim' = CmpNat (UnDim shape dim) (UnDim shape dim')
 
+type family DimsDistinctAscendingCheck (shape :: [Nat]) (dim1 :: Dim) (dim2 :: Dim) (cmp :: Ordering) :: Constraint where
+  DimsDistinctAscendingCheck _ _ _ 'LT = ()
+  DimsDistinctAscendingCheck shape dim1 dim2 _ =
+    TypeError
+    ( Text "Dimensions must be distinct and in ascending order, but got "
+        :<>: ShowType dim1
+        :<>: Text ", "
+        :<>: ShowType dim2
+        :<>: Text " for "
+        :<>: ShowType (ListLength shape)
+        :<>: Text "D tensor."
+    )
+
+type family DimsDistinctAscending (shape :: [Nat]) (dim1 :: Dim) (dim2 :: Dim) :: Constraint where
+  DimsDistinctAscending shape dim1 dim2 = DimsDistinctAscendingCheck shape dim1 dim2 (CmpDim shape dim1 dim2)
+
 type family DiagEmbedShapeImpl' (shape :: [Nat]) (dim1 :: Nat) (dim2 :: Nat) (n :: Nat) :: [Nat] where
   DiagEmbedShapeImpl' shape dim1 dim2 n = Insert dim1 n (Insert (dim2 - 1) n (Init shape))
 
@@ -2322,8 +2338,7 @@ diagEmbed
      , KnownDim dim1
      , KnownDim dim2
      , shape' ~ DiagEmbedShape index dim1 dim2 shape
-     -- TODO: CmpDim constraint doesn't result in very clear error messages
-     , CmpDim shape' dim1 dim2 ~ 'LT
+     , DimsDistinctAscending shape' dim1 dim2
      , StandardDTypeValidation device dtype
      )
   => Tri
@@ -2376,7 +2391,7 @@ diagonal
      , KnownDim dim1
      , KnownDim dim2
      , 2 <= ListLength shape -- TODO: nicer error message here
-     , CmpDim shape dim1 dim2 ~ 'LT
+     , DimsDistinctAscending shape dim1 dim2
      , shape' ~ DiagonalShape tri index dim1 dim2 shape
      , StandardDTypeValidation device dtype
      )

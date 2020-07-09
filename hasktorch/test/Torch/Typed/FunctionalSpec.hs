@@ -746,7 +746,7 @@ instance
   , KnownNat index
   , KnownDim dim1
   , KnownDim dim2
-  , CmpDim shape' dim1 dim2 ~ 'LT
+  , DimsDistinctAscending shape' dim1 dim2
   , shape' ~ DiagEmbedShape index dim1 dim2 shape
   , StandardDTypeValidation device dtype
   ) => Apply' DiagEmbedSpec (((Proxy index, (Proxy dim1, Proxy dim2)), (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
