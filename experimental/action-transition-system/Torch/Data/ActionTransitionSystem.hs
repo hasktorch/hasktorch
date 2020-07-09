@@ -237,7 +237,12 @@ p <?> name = Parser $ \buf pos lose succ ->
 {-# INLINE (<?>) #-}
 infix 0 <?>
 
-data Action = L | R | Grow | Reduce | IToken Int | SToken Text
+-- | Runs the parser on the supplied input and returns whether or not the parse succeeded.
+-- Results are discarded.
+check :: forall i a . Parser i a -> i -> Bool
+check = undefined
+
+data Action = L | R | IToken Int | SToken Text
   deriving (Eq, Ord, Show)
 
 type ToActions t a = a -> t Action
@@ -296,18 +301,33 @@ instance (Applicative t, Semigroup (t Action), GToActions t f, GToActions t g) =
 instance (GFromActions t f, GFromActions t g) => GFromActions t (f :+: g) where
   gFromActions = (is L >> L1 <$> gFromActions @t) <|> (is R >> R1 <$> gFromActions @t)
 
--- instance (Applicative t, Monoid (t Action), ActionTransitionSystem t a) => ActionTransitionSystem t [a] where
+instance (Semigroup (t Action), ActionTransitionSystem t a, ActionTransitionSystem t b) => ActionTransitionSystem t (a, b)
+instance (Semigroup (t Action), ActionTransitionSystem t a, ActionTransitionSystem t b, ActionTransitionSystem t c) => ActionTransitionSystem t (a, b, c)
+instance (Semigroup (t Action), ActionTransitionSystem t a, ActionTransitionSystem t b, ActionTransitionSystem t c, ActionTransitionSystem t d) => ActionTransitionSystem t (a, b, c, d)
+instance (Semigroup (t Action), ActionTransitionSystem t a, ActionTransitionSystem t b, ActionTransitionSystem t c, ActionTransitionSystem t d, ActionTransitionSystem t e) => ActionTransitionSystem t (a, b, c, d, e)
+
+instance (Applicative t, Monoid (t Action), ActionTransitionSystem t a) => ActionTransitionSystem t [a]
 --   toActions as = pure Grow <> foldMap toActions as <> pure Reduce
 --   fromActions = is Grow >> manyTill (fromActions @t) (is Reduce)
 
--- instance (Applicative t, ActionTransitionSystem t a) => ActionTransitionSystem t (Maybe a) where
+instance (Applicative t, Monoid (t Action), ActionTransitionSystem t a) => ActionTransitionSystem t (Maybe a)
 --   toActions Nothing = pure Reduce
 --   toActions (Just a) = toActions a
 --   fromActions = (is Reduce >> pure Nothing) <|> fromActions @t
 
-instance (Semigroup (t Action), ActionTransitionSystem t a, ActionTransitionSystem t b) => ActionTransitionSystem t (a, b)
-instance (Applicative t, Monoid (t Action), ActionTransitionSystem t a) => ActionTransitionSystem t [a]
-instance (Applicative t, Monoid (t Action), ActionTransitionSystem t a) => ActionTransitionSystem t (Maybe a)
+instance (Applicative t, Monoid (t Action), ActionTransitionSystem t a, ActionTransitionSystem t b) => ActionTransitionSystem t (Either a b)
+
+poop :: forall i a . Show i => (i -> Maybe a) -> Parser i a
+poop f = do
+    i <- ensure
+    case f i of
+      Just a -> advance 1 >> pure a
+      Nothing -> buffer (Just i) >> fail "text"
+
+bsss = let f a = case a of
+            SToken s -> Just s
+            _ -> Nothing
+       in poop f 
 
 instance Applicative t => ActionTransitionSystem t Text where
   toActions = pure . SToken
@@ -333,6 +353,8 @@ data Foo = Foo { someText :: Text, stuff :: Stuff }
 
 data BarBaz = Bar | Baz
   deriving (Eq, Show, Generic)
+
+
 
 instance ActionTransitionSystem [] Stuff
 instance ActionTransitionSystem [] Foo
