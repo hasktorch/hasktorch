@@ -2330,8 +2330,12 @@ type family DiagEmbedShape (index :: Nat) (dim1 :: Dim) (dim2 :: Dim) (shape :: 
   DiagEmbedShape index dim1 dim2 shape =
     DiagEmbedShapeImpl index dim1 dim2 shape (ListLength shape + 1)
 
--- diag_embed :: Tensor device dtype shape -> Int -> Int -> Int -> Tensor device dtype shape
--- diag_embed _input _offset _dim1 _dim2 = unsafePerformIO $ (ATen.cast4 ATen.Managed.diag_embed_tlll) _input _offset _dim1 _dim2
+-- | diagEmbed
+--
+-- >>> dtype &&& shape $ diagEmbed @0 @('NDim 2) @('NDim 1) Upper (ones :: CPUTensor 'D.Float '[2,3])
+-- (Float,[2,3,3])
+-- >>> dtype &&& shape $ diagEmbed @1 @('PDim 0) @('PDim 2) Upper (ones :: CPUTensor 'D.Float '[2,3])
+-- (Float,[4,2,4])
 diagEmbed
   :: forall index dim1 dim2 shape shape' device dtype
    . ( KnownNat index
@@ -2359,8 +2363,14 @@ type family DiagflatShapeImpl (d :: Nat) :: [Nat] where
 type family DiagflatShape (index :: Nat) (shape :: [Nat]) :: [Nat] where
   DiagflatShape index shape = DiagflatShapeImpl (Numel shape + index)
 
--- diagflat :: Tensor device dtype shape -> Int -> Tensor device dtype shape
--- diagflat _input _offset = unsafePerformIO $ (ATen.cast2 ATen.Managed.diagflat_tl) _input _offset
+-- | diagflat
+--
+-- >>> dtype &&& shape $ diagflat @0 Upper (ones :: CPUTensor 'D.Float '[3])
+-- (Float,[3,3])
+-- >>> dtype &&& shape $ diagflat @1 Upper (ones :: CPUTensor 'D.Float '[3])
+-- (Float,[4,4])
+-- >>> dtype &&& shape $ diagflat @0 Upper (ones :: CPUTensor 'D.Float '[2,2])
+-- (Float,[4,4])
 diagflat
   :: forall index shape shape' device dtype
    . ( KnownNat index
@@ -2395,8 +2405,14 @@ type family DiagonalShapeImpl (tri :: Tri) (index :: Nat) (shape :: [Nat]) (dim1
 type family DiagonalShape (tri :: Tri) (index :: Nat) (dim1 :: Dim) (dim2 :: Dim) (shape :: [Nat]) :: [Nat] where
   DiagonalShape tri index dim1 dim2 shape = DiagonalShapeImpl tri index shape (UnDim shape dim1) (UnDim shape dim2)
 
--- diagonal :: Tensor device dtype shape -> Int -> Int -> Int -> Tensor device dtype shape
--- diagonal _input _offset _dim1 _dim2 = unsafePerformIO $ (ATen.cast4 ATen.Managed.diagonal_tlll) _input _offset _dim1 _dim2
+-- | diagonal
+--
+-- >>> dtype &&& shape $ diagonal @'Upper @0 @('NDim 2) @('NDim 1) (ones :: CPUTensor 'D.Float '[3,3])
+-- (Float,[3])
+-- >>> dtype &&& shape $ diagonal @'Upper @1 @('NDim 2) @('NDim 1) (ones :: CPUTensor 'D.Float '[3,3])
+-- (Float,[2])
+-- >>> dtype &&& shape $ diagonal @'Lower @1 @('PDim 1) @('PDim 2) (ones :: CPUTensor 'D.Float '[2,5,4,2])
+-- (Float,[2,2,4])
 diagonal
   :: forall tri index dim1 dim2 shape shape' device dtype
    . ( KnownTri tri
