@@ -2291,7 +2291,7 @@ type family DiagEmbedShape (index :: Nat) (dim1 :: Nat) (dim2 :: Nat) (shape :: 
 
 -- | diagEmbed
 --
--- >>> dtype &&& shape $ diagEmbed @0 @0 @1 Upper (ones :: CPUTensor 'D.Float '[2,3])
+-- >>> dtype &&& shape $ diagEmbed @0 @1 @2 Upper (ones :: CPUTensor 'D.Float '[2,3])
 -- (Float,[2,3,3])
 -- >>> dtype &&& shape $ diagEmbed @1 @0 @2 Upper (ones :: CPUTensor 'D.Float '[2,3])
 -- (Float,[4,2,4])
