@@ -23,13 +23,13 @@ jobs:
     - name: Build
       run: |
         . setenv
-        stack build
+        stack build --ghc-options="-j2 +RTS -A128m -n2m -RTS"
     - name: Test
       run: |
         . setenv
-        stack test codegen
-        stack test libtorch-ffi
-        stack test hasktorch
+        stack test codegen --ghc-options="-j2 +RTS -A128m -n2m -RTS"
+        stack test libtorch-ffi --ghc-options="-j2 +RTS -A128m -n2m -RTS"
+        stack test hasktorch --ghc-options="-j2 +RTS -A128m -n2m -RTS"
         stack exec codegen-exe
         stack exec xor-mlp
         stack exec regression

@@ -29,11 +29,11 @@ jobs:
       - run: nix-env -iA cachix -f https://cachix.org/api/v1/install
       - run: cachix use iohk
       - name: Build
-        run: stack --nix build
+        run: stack --nix build --ghc-options="-j2 +RTS -A128m -n2m -RTS"
       - name: Test
         run: |
-          stack --nix test codegen
-          stack --nix test libtorch-ffi
-          stack --nix test hasktorch
+          stack --nix test codegen --ghc-options="-j2 +RTS -A128m -n2m -RTS"
+          stack --nix test libtorch-ffi --ghc-options="-j2 +RTS -A128m -n2m -RTS"
+          stack --nix test hasktorch --ghc-options="-j2 +RTS -A128m -n2m -RTS"
           stack --nix exec codegen-exe
           stack --nix exec xor-mlp
