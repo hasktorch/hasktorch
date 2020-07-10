@@ -6,7 +6,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE FlexibleInstances #-}
 
 module Torch.Internal.Type where
 
@@ -15,7 +14,6 @@ import qualified Data.Map as Map
 
 import Foreign.C.Types (CInt)
 import Data.Int
-
 
 type ScalarType = Int8
 type DeviceType = Int16
@@ -86,7 +84,6 @@ data JitGraph
 data JitNode
 data JitValue
 
-
 typeTable = Map.fromList [
         (C.TypeName "std::array", [t|StdArray|])
       , (C.TypeName "std::vector", [t|StdVector|])
@@ -127,4 +124,3 @@ typeTable = Map.fromList [
       , (C.TypeName "torch::jit::Value", [t|JitValue|])
       , (C.TypeName "at::indexing::TensorIndex", [t|TensorIndex|])
     ]
-
