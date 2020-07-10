@@ -38,6 +38,6 @@ extra-deps:
 nix:
   shell-file: nix/stack-shell.nix
 
-ghc-options:
-  libtorch-ffi: -j +RTS -A128m -n2m -RTS
-  hasktorch: -j +RTS -A128m -n2m -RTS
+# ghc-options:
+#   libtorch-ffi: -j +RTS -A128m -n2m -RTS
+#   hasktorch: -j +RTS -A128m -n2m -RTS
