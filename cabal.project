@@ -1,7 +1,5 @@
 packages:
     codegen/*.cabal
-    inline-c/inline-c/*.cabal
-    inline-c/inline-c-cpp/*.cabal
     libtorch-ffi/*.cabal
     libtorch-ffi-helper/*.cabal
     hasktorch/*.cabal
