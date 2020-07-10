@@ -85,7 +85,7 @@ c10ListDouble_at :: Ptr (C10List CDouble) -> CSize -> IO CDouble
 c10ListDouble_at _obj _s = [C.throwBlock| double { return ((*$(c10::List<double>* _obj))[$(size_t _s)]); }|]
 
 c10ListInt_at :: Ptr (C10List Int64) -> CSize -> IO Int64
-c10ListInt_at _obj _s = [C.throwBlock| int64_t { return ((*$(c10::List<int64_t>* _obj))[$(size_t _s)]); }|]
+c10ListInt_at _obj _s = [C.throwBlock| int64_t { return (int64_t)((*$(c10::List<int64_t>* _obj))[$(size_t _s)]); }|]
 
 c10ListBool_at :: Ptr (C10List CBool) -> CSize -> IO CBool
 c10ListBool_at _obj _s = [C.throwBlock| bool { return ((*$(c10::List<bool>* _obj))[$(size_t _s)]); }|]

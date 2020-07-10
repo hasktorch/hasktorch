@@ -62,7 +62,7 @@ c10Dict_toList _obj = do
               delete $(std::vector<std::array<at::IValue,2>>* dat);
              }|]
   bracket new free $ \dat -> do
-    size <- [C.throwBlock| int64_t { return $(std::vector<std::array<at::IValue,2>>* dat)->size();}|]
+    size <- [C.throwBlock| int64_t { return (long int)$(std::vector<std::array<at::IValue,2>>* dat)->size();}|]
     ret <- forM [0..(size-1)] $ \i -> do
       key <- [C.throwBlock| at::IValue* { return new at::IValue($(std::vector<std::array<at::IValue,2>>* dat)->at($(int64_t i))[0]);}|]
       val <- [C.throwBlock| at::IValue* { return new at::IValue($(std::vector<std::array<at::IValue,2>>* dat)->at($(int64_t i))[1]);}|]
