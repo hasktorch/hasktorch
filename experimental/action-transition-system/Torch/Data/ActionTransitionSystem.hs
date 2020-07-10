@@ -29,9 +29,11 @@ import qualified Control.Monad.Fail (MonadFail(..))
 import Data.Text (Text)
 import GHC.IO (unsafePerformIO)
 import Control.Monad.Yoctoparsec (parseString, token, Parser)
-import Control.Monad.Trans.Free (FreeT)
+import Control.Monad.Trans.Free (iterTM, runFreeT, FreeT, FreeF(..))
 import Data.List (length)
-import Control.Monad.State (runStateT, StateT, get, put, modify)
+import Control.Monad.State (StateT (..), runStateT, get, put, modify)
+import Data.List (uncons)
+import Control.Monad (void)
 
 -- https://stackoverflow.com/questions/17675054/deserialising-with-ghc-generics?rq=1
 -- http://hackage.haskell.org/package/cereal-0.5.8.1/docs/Data-Serialize.html
@@ -386,7 +388,28 @@ instance ActionTransitionSystem [] Maybe BarBaz
 --       actions = toActions @[] @Maybe foo
 --   in (actions, parseString (fromActions @[] @Maybe) actions)
 
-test :: ([Action], [((Foo, [Action]), Pos)])
+-- iterTM :: ((i -> t b a) -> t b a) -> Parser b i a -> t b a
+
+-- FreeT ((->) i) b a ~ StateT (b i) b a ???
+
+parseStream' :: Monad b => (s -> b (i, s)) -> Parser b i a -> s -> b (a, s)
+parseStream' next = runStateT . iterTM (StateT next >>=)
+  -- where iterTM :: ((i -> StateT s b a) -> StateT s b a) -> Parser b i a -> StateT s b a
+
+parseString' :: MonadPlus b => Parser b t a -> [t] -> b (a, [t])
+parseString' = parseStream' (maybe empty pure . uncons)
+
+-- | Runs the parser on the supplied input and returns whether or not the parse succeeded.
+-- Results are discarded.
+-- Parser b i a ~ FreeT ((->) i) b a
+check :: forall b i a . MonadPlus b => Parser b i a -> i -> b ()
+check p i = do
+  val <- runFreeT p
+  case val of
+    Pure a -> mzero
+    Free f -> void . runFreeT $ f i
+
+test :: ([Action], [((Foo, [Action]), Pos)], [((), Pos)])
 test =
   let stuff 0 = []
       stuff n = Stuff n [] Nothing : stuff (n - 1)
@@ -394,8 +417,14 @@ test =
       foo n = Foo "a" $ Stuff n [Stuff 2 (stuff n) Nothing] (Just $ foo (n - 1))
       challenge = foo 15
       actions = toActions @[] @[] challenge
-      result = runStateT (parseString (fromActions @[] @[]) actions) (Pos 0)
-  in (actions, result)
+      parser = fromActions @[] @[]
+      result = runStateT (parseString parser actions) (Pos 0)
+      -- bar = do
+      --   val <- runFreeT parser
+      --   case val of
+      --     Pure a -> pure (Pure a)
+      --     Free f -> undefined
+  in (actions, result, runStateT (check parser (IToken 1)) (Pos 0))
 
 -- test2 :: ([Action], Result Action (Int, Text))
 -- test2 =
