@@ -746,7 +746,7 @@ instance
   , KnownNat index
   , KnownNat dim1
   , KnownNat dim2
-  , DimsDistinctAscending shape' dim1 dim2
+  , DimsDistinctAscending dim1 dim2
   , shape' ~ DiagEmbedShape index dim1 dim2 shape
   , StandardDTypeValidation device dtype
   ) => Apply' DiagEmbedSpec (((Proxy index, (Proxy dim1, Proxy dim2)), (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
@@ -781,7 +781,7 @@ instance
   , KnownNat dim1
   , KnownNat dim2
   , NDimAtLeast 2 shape
-  , DimsDistinctAscending shape dim1 dim2
+  , DimsDistinctAscending dim1 dim2
   , shape' ~ DiagonalShape tri index dim1 dim2 shape
   , StandardDTypeValidation device dtype
   ) => Apply' DiagonalSpec (((Proxy tri, (Proxy index, (Proxy dim1, Proxy dim2))), (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where

@@ -2270,21 +2270,18 @@ det
   -> Tensor device dtype (Det shape) -- ^ output
 det input = unsafePerformIO $ ATen.cast1 ATen.Managed.det_t input
 
-type family DimsDistinctAscendingCheck (shape :: [Nat]) (dim1 :: Nat) (dim2 :: Nat) (cmp :: Ordering) :: Constraint where
-  DimsDistinctAscendingCheck _ _ _ 'LT = ()
-  DimsDistinctAscendingCheck shape dim1 dim2 _ =
+type family DimsDistinctAscendingCheck (dim1 :: Nat) (dim2 :: Nat) (cmp :: Ordering) :: Constraint where
+  DimsDistinctAscendingCheck _ _ 'LT = ()
+  DimsDistinctAscendingCheck dim1 dim2 _ =
     TypeError
     ( Text "Dimensions must be distinct and in ascending order, but got "
         :<>: ShowType dim1
         :<>: Text ", "
         :<>: ShowType dim2
-        :<>: Text " for "
-        :<>: ShowType (ListLength shape)
-        :<>: Text "D tensor."
     )
 
-type family DimsDistinctAscending (shape :: [Nat]) (dim1 :: Nat) (dim2 :: Nat) :: Constraint where
-  DimsDistinctAscending shape dim1 dim2 = DimsDistinctAscendingCheck shape dim1 dim2 (CmpNat dim1 dim2)
+type family DimsDistinctAscending (dim1 :: Nat) (dim2 :: Nat) :: Constraint where
+  DimsDistinctAscending dim1 dim2 = DimsDistinctAscendingCheck dim1 dim2 (CmpNat dim1 dim2)
 
 type family DiagEmbedShapeImpl (dim1 :: Nat) (dim2 :: Nat) (shape :: [Nat]) (n :: Nat) :: [Nat] where
   DiagEmbedShapeImpl dim1 dim2 shape n = Insert dim1 n (Insert (dim2 - 1) n (Init shape))
@@ -2304,7 +2301,7 @@ diagEmbed
      , KnownNat dim1
      , KnownNat dim2
      , shape' ~ DiagEmbedShape index dim1 dim2 shape
-     , DimsDistinctAscending shape' dim1 dim2
+     , DimsDistinctAscending dim1 dim2
      , StandardDTypeValidation device dtype
      )
   => Tri
@@ -2379,7 +2376,7 @@ diagonal
      , KnownNat dim1
      , KnownNat dim2
      , NDimAtLeast 2 shape
-     , DimsDistinctAscending shape dim1 dim2
+     , DimsDistinctAscending dim1 dim2
      , shape' ~ DiagonalShape tri index dim1 dim2 shape
      , StandardDTypeValidation device dtype
      )
