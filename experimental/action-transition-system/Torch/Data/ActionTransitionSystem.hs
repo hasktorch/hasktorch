@@ -1,3 +1,4 @@
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -29,11 +30,14 @@ import qualified Control.Monad.Fail (MonadFail(..))
 import Data.Text (Text)
 import GHC.IO (unsafePerformIO)
 import Control.Monad.Yoctoparsec (parseString, token, Parser)
-import Control.Monad.Trans.Free (iterTM, runFreeT, FreeT, FreeF(..))
+import Control.Monad.Trans.Free (iterTM, runFreeT, FreeT(..), FreeF(..))
 import Data.List (length)
 import Control.Monad.State (StateT (..), runStateT, get, put, modify)
 import Data.List (uncons)
 import Control.Monad (void)
+import Control.Monad.Trans (MonadTrans)
+import Control.Monad.Trans (MonadTrans(lift))
+import Control.Monad.Cont (runContT, ContT(ContT))
 
 -- https://stackoverflow.com/questions/17675054/deserialising-with-ghc-generics?rq=1
 -- http://hackage.haskell.org/package/cereal-0.5.8.1/docs/Data-Serialize.html
@@ -382,22 +386,76 @@ instance ActionTransitionSystem [] [] Stuff
 instance ActionTransitionSystem [] [] Foo
 instance ActionTransitionSystem [] Maybe BarBaz
 
--- test :: ([Action], Maybe ((Int, Text), [Action]))
--- test =
---   let foo = (1 :: Int, "a" :: Text)
---       actions = toActions @[] @Maybe foo
---   in (actions, parseString (fromActions @[] @Maybe) actions)
-
--- iterTM :: ((i -> t b a) -> t b a) -> Parser b i a -> t b a
-
 -- FreeT ((->) i) b a ~ StateT (b i) b a ???
 
-parseStream' :: Monad b => (s -> b (i, s)) -> Parser b i a -> s -> b (a, s)
-parseStream' next = runStateT . iterTM (StateT next >>=)
-  -- where iterTM :: ((i -> StateT s b a) -> StateT s b a) -> Parser b i a -> StateT s b a
+-- iterTM specialized to Parser b i a ~ FreeT ((->) i) b a
+-- iterTM :: (Monad b, MonadTrans t, Monad (t b)) => ((i -> t b a) -> t b a) -> Parser b i a -> t b a
+-- iterTM f p = do
+--   val <- lift . runFreeT $ p
+--   case val of
+--     Pure x -> return x
+--     Free y -> f $ \i -> iterTM f (y i)
 
-parseString' :: MonadPlus b => Parser b t a -> [t] -> b (a, [t])
-parseString' = parseStream' (maybe empty pure . uncons)
+-- this version of @'iterTM'@ exposes the invermediate step
+iterTM' :: (MonadTrans t, Monad b, Monad (t b)) => ((i -> Parser b i a) -> (Parser b i a -> t b a) -> t b a) -> Parser b i a -> t b a
+iterTM' f p = do
+  val <- lift . runFreeT $ p
+  case val of
+    Pure x -> return x
+    Free y -> f y (iterTM' f)
+
+-- | Idea here:
+-- * instead of reducing @s@, we grow it, starting, e.g., from @[]@
+-- * @i -> 'Parser' b i a@ is evaluated against the vocabulary, e.g. @[i]@, and only those @i@'s for which the parser does not fail are considered for continuation. among those, the model decides which to pick
+-- * @s@ is the sequence of actions, @[i]@, and, at each step, we feed all previous actions to the model to get the next one
+-- * in order to support the prediction, information about the parsing step is encoded in @b@
+-- I shall test this idea with a random model.
+-- How do to beam search?
+-- does this work for training? I guess @next@ would build up a loss term. How do handle batching?
+parse :: Monad b => ((i -> Parser b i a) -> s -> b (Parser b i a, s)) -> Parser b i a -> s -> b (a, s)
+parse next =
+  -- let f ip ps = StateT $ \s -> do
+  --                 ~(p, s') <- next ip s
+  --                 runStateT (ps p) s'
+  let f ip ps = StateT (next ip) >>= ps
+  in runStateT . iterTM' f
+
+pures :: [FreeF f a (FreeT f m a)] -> [a]
+pures [] = []
+pures ((Pure a) : xs) = a : pures xs
+pures ((Free _) : xs) = pures xs
+
+frees :: [FreeF f a (FreeT f m a)] -> [f (FreeT f m a)]
+frees [] = []
+frees ((Pure _) : xs) = frees xs
+frees ((Free fb) : xs) = fb : frees xs
+
+-- version of iterTM' for batching
+batchedIterTM :: forall t b a i . (MonadTrans t, Monad b, Monad (t b)) => ([t b a] -> [i -> Parser b i a] -> ([Parser b i a] -> t b [t b a]) -> t b [t b a]) -> [Parser b i a] -> t b [t b a]
+batchedIterTM f ps = do 
+  vals <- traverse (lift @t . runFreeT) ps
+  let pures' = return <$> pures vals
+      frees' = frees vals
+  f pures' frees' (batchedIterTM f)
+
+batchedParse :: Monad b => ([i -> Parser b i a] -> [s] -> b ([Parser b i a], [s])) -> Parser b i a -> [s] -> b ([a], [s])
+batchedParse next =
+  let f as ip ps = StateT $ \s -> do
+                     ~(p, s') <- next ip s
+                     runStateT (ps p) s'
+  in undefined $ runStateT . batchedIterTM f
+
+-- parseStream' :: Monad b => (s -> b (i, s)) -> Parser b i a -> s -> b (a, s)
+-- -- parseStream' next = runStateT . foo (StateT next >>=)
+-- parseStream' next = 
+--   let f k = StateT $ \s -> do
+--               ~(i, s') <- next s
+--               runStateT (k i) s'
+--   in runStateT . foo f
+--   -- where iterTM :: ((i -> StateT s b a) -> StateT s b a) -> Parser b i a -> StateT s b a
+
+-- parseString' :: MonadPlus b => Parser b t a -> [t] -> b (a, [t])
+-- parseString' = parseStream' (maybe empty pure . uncons)
 
 -- | Runs the parser on the supplied input and returns whether or not the parse succeeded.
 -- Results are discarded.
