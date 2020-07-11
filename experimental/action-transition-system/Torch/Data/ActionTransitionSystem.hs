@@ -438,12 +438,15 @@ batchedIterTM f ps = do
       frees' = frees vals
   f pures' frees' (batchedIterTM f)
 
-batchedParse :: Monad b => ([i -> Parser b i a] -> [s] -> b ([Parser b i a], [s])) -> Parser b i a -> [s] -> b ([a], [s])
-batchedParse next =
-  let f as ip ps = StateT $ \s -> do
-                     ~(p, s') <- next ip s
-                     runStateT (ps p) s'
-  in undefined $ runStateT . batchedIterTM f
+batchedParse :: Monad b => ([i -> Parser b i a] -> [s] -> b ([Parser b i a], [s])) -> [Parser b i a] -> [s] -> b ([(a, [s])], [s])
+batchedParse next ps s = do
+  let f as ip ps' = StateT $ \s' -> do
+                     ~(p, s'') <- next ip s'
+                     (x, y) <- runStateT (ps' p) s''
+                     pure (as ++ x, y)
+  (z, q) <- (runStateT . batchedIterTM f) ps s
+  z' <- traverse (\x -> runStateT x s) z
+  pure (z', q)
 
 -- parseStream' :: Monad b => (s -> b (i, s)) -> Parser b i a -> s -> b (a, s)
 -- -- parseStream' next = runStateT . foo (StateT next >>=)
