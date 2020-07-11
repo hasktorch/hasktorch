@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TypeApplications #-}
@@ -20,6 +21,9 @@ module Torch.Data.ActionTransitionSystem where
 
 import Prelude hiding (head, length)
 import GHC.Generics
+import Control.Lens
+import Data.Generics.Product
+import Data.Generics.Sum
 import Data.Kind (Type)
 -- import Data.Attoparsec.Internal.Types (State, Pos(..), Parser(..))
 -- import Data.Attoparsec.Combinator (eitherP)
@@ -46,14 +50,14 @@ import Control.Monad.Cont (runContT, ContT(ContT))
 -- https://vaibhavsagar.com/blog/2018/02/04/revisiting-monadic-parsing-haskell/
 -- https://github.com/alphaHeavy/protobuf/blob/46cda829cf1e7b6bba2ff450e267fb1a9ace4fb3/src/Data/ProtocolBuffers/Ppr.hs
 
-data Env = Env { production :: Maybe Production, pos :: Pos }
-  deriving (Eq, Ord, Show)
+data Env = Env { meta :: Maybe M, pos :: Pos }
+  deriving (Eq, Ord, Show, Generic)
 
-data Production = D Text | C Text | S Text
-  deriving (Eq, Ord, Show)
+data M = D Text | C Text | S Text
+  deriving (Eq, Ord, Show, Generic)
 
 newtype Pos = Pos { fromPos :: Int }
-  deriving (Eq, Ord, Show, Num)
+  deriving (Eq, Ord, Show, Num, Generic)
 
 -- data Result i r =
 --     Fail [String] String
@@ -268,9 +272,7 @@ type ToActions t a = a -> t Action
 type FromActions b a = Parser (StateT Env b) Action a
 
 token' :: forall b t . Monad b => Parser (StateT Env b) t t
--- token' = modify (+1) >> token
--- TODO: use lenses
-token' = modify (\(Env c p) -> Env c (p + 1)) >> token
+token' = modify (field @"pos" %~ (+1)) >> token
 
 is :: (MonadPlus b, Eq t) => t -> Parser (StateT Env b) t t
 is t = mfilter (== t) token'
@@ -280,10 +282,10 @@ class ActionTransitionSystem (t :: Type -> Type) (b :: Type -> Type) (a :: Type)
   fromActions :: FromActions b a
 
   default toActions :: (Generic a, GToActions t b (Rep a)) => ToActions t a
-  toActions = gToActions @t @b . from
+  toActions = gToActions @t @b . GHC.Generics.from
 
   default fromActions :: (Monad b, Generic a, GFromActions t b (Rep a)) => FromActions b a
-  fromActions = to <$> gFromActions @t @b
+  fromActions = GHC.Generics.to <$> gFromActions @t @b
 
 class GToActions (t :: Type -> Type) (b :: Type -> Type) (f :: Type -> Type) where
   gToActions :: forall a . ToActions t (f a)
@@ -298,34 +300,19 @@ instance GToActions t b f => GToActions t b (M1 i c f) where
 --   gFromActions = M1 <$> gFromActions @t @b
 
 instance (Monad b, GFromActions t b f, Datatype d) => GFromActions t b (D1 d f) where
-  -- gFromActions = unsafePerformIO $ do
-  --   print ("datatype " <> datatypeName @d undefined)
-  --   pure (M1 <$> gFromActions @t @b)
   gFromActions = do
-    Env _ pos <- get
-    put (Env (Just . D . pack $ datatypeName @d undefined) pos)
-    p <- gFromActions @t @b
-    pure (M1 p)
+    modify $ field @"meta" .~ (pure . D . pack . datatypeName @d $ undefined)
+    M1 <$> gFromActions @t @b
 
 instance (Monad b, GFromActions t b f, Constructor c) => GFromActions t b (C1 c f) where
-  -- gFromActions = unsafePerformIO $ do
-  --   print ("constructor " <> conName @c undefined)
-  --   pure (M1 <$> gFromActions @t @b)
   gFromActions = do
-    Env _ pos <- get
-    put (Env (Just . C . pack $ conName @c undefined) pos)
-    p <- gFromActions @t @b
-    pure (M1 p)
+    modify $ field @"meta" .~ (pure . D . pack . conName @c $ undefined)
+    M1 <$> gFromActions @t @b
 
 instance (Monad b, GFromActions t b f, Selector s) => GFromActions t b (S1 s f) where
-  -- gFromActions = unsafePerformIO $ do
-  --   print ("selector " <> selName @s undefined)
-  --   pure (M1 <$> gFromActions @t @b)
   gFromActions = do
-    Env _ pos <- get
-    put (Env (Just . S . pack $ selName @s undefined) pos)
-    p <- gFromActions @t @b
-    pure (M1 p)
+    modify $ field @"meta" .~ (pure . D . pack . selName @s $ undefined)
+    M1 <$> gFromActions @t @b
 
 instance ActionTransitionSystem t b a => GToActions t b (K1 i a) where
   gToActions = toActions @t @b . unK1

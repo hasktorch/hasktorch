@@ -47,3 +47,5 @@ library action-transition-system
                      , text
                      , yoctoparsec
                      , free
+                     , generic-lens
+                     , lens
