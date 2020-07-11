@@ -17,6 +17,7 @@ import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 import Torch.Internal.Cast
+import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Type.StdString as Unmanaged
 
 

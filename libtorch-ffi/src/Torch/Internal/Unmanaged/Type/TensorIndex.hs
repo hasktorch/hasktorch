@@ -20,11 +20,11 @@ import Foreign.C.String
 import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
-import Torch.Internal.Class
+
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
+C.include "<ATen/TensorIndexing.h>"
 C.include "<vector>"
 
 newTensorIndexList :: IO (Ptr (StdVector TensorIndex))
@@ -48,17 +48,6 @@ newTensorIndexWithEllipsis = [C.throwBlock| at::indexing::TensorIndex* { return 
 newTensorIndexWithNone :: IO (Ptr TensorIndex)
 newTensorIndexWithNone = [C.throwBlock| at::indexing::TensorIndex* { return new at::indexing::TensorIndex(at::indexing::None); }|]
 
-foreign import ccall unsafe "hasktorch_finalizer.h &delete_tensorindex"
-  c_delete_tensorindex :: FunPtr ( Ptr TensorIndex -> IO ())
-
-foreign import ccall unsafe "hasktorch_finalizer.h &delete_tensorindexlist"
-  c_delete_tensorindexlist :: FunPtr ( Ptr (StdVector TensorIndex) -> IO ())
-
-instance CppObject TensorIndex where
-  fromPtr ptr = newForeignPtr c_delete_tensorindex ptr
-
-instance CppObject (StdVector TensorIndex) where
-  fromPtr ptr = newForeignPtr c_delete_tensorindexlist ptr
 
 tensorIndexList_empty :: Ptr (StdVector TensorIndex) -> IO (CBool)
 tensorIndexList_empty _obj = [C.throwBlock| bool { return (*$(std::vector<at::indexing::TensorIndex>* _obj)).empty(); }|]

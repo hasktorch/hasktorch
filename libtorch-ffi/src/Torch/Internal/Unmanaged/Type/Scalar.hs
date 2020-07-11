@@ -20,11 +20,11 @@ import Foreign.C.String
 import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
-import Torch.Internal.Class
+
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
+C.include "<ATen/Scalar.h>"
 C.include "<vector>"
 
 
@@ -51,16 +51,6 @@ newScalar_d _a =
   [C.throwBlock| at::Scalar* { return new at::Scalar(
     $(double _a));
   }|]
-
-
-
-foreign import ccall unsafe "hasktorch_finalizer.h &delete_scalar"
-  c_delete_scalar :: FunPtr ( Ptr Scalar -> IO ())
-
-instance CppObject Scalar where
-  fromPtr ptr = newForeignPtr c_delete_scalar ptr
-
-
 
 
 

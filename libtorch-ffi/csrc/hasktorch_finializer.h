@@ -1,9 +1,15 @@
-#include <ATen/ATen.h>
-#include <torch/torch.h>
-#include <torch/csrc/autograd/variable.h>
-#include <torch/csrc/autograd/engine.h>
+#include <ATen/Tensor.h>
+#include <ATen/core/Dict.h>
+#include <ATen/core/List.h>
+#include <ATen/core/ivalue.h>
+#include <ATen/core/Dimname.h>
+#include <ATen/Storage.h>
+#include <ATen/TensorIndexing.h>
+#include <torch/csrc/jit/api/module.h>
 #include <array>
 #include <string>
+#include <tuple>
+#include <vector>
 
 extern "C" {
   void delete_tensor(at::Tensor* tensor);
