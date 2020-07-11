@@ -27,7 +27,7 @@ import Control.Foldl (Fold(..), fold, head)
 import Control.Applicative (liftA2, pure, Alternative(..), empty, (<|>))
 import Control.Monad (mfilter, MonadPlus(..))
 import qualified Control.Monad.Fail (MonadFail(..))
-import Data.Text (Text)
+import Data.Text (pack, Text)
 import GHC.IO (unsafePerformIO)
 import Control.Monad.Yoctoparsec (parseString, token, Parser)
 import Control.Monad.Trans.Free (iterTM, runFreeT, FreeT(..), FreeF(..))
@@ -44,6 +44,13 @@ import Control.Monad.Cont (runContT, ContT(ContT))
 -- https://hackage.haskell.org/package/attoparsec-0.13.2.4/docs/src/Data.Attoparsec.Text.Internal.html
 -- https://hackage.haskell.org/package/yoctoparsec-0.1.0.0/docs/src/Control-Monad-Yoctoparsec.html#Parser
 -- https://vaibhavsagar.com/blog/2018/02/04/revisiting-monadic-parsing-haskell/
+-- https://github.com/alphaHeavy/protobuf/blob/46cda829cf1e7b6bba2ff450e267fb1a9ace4fb3/src/Data/ProtocolBuffers/Ppr.hs
+
+data Env = Env { production :: Maybe Production, pos :: Pos }
+  deriving (Eq, Ord, Show)
+
+data Production = D Text | C Text | S Text
+  deriving (Eq, Ord, Show)
 
 newtype Pos = Pos { fromPos :: Int }
   deriving (Eq, Ord, Show, Num)
@@ -258,12 +265,14 @@ data Action = L | R | IToken Int | SToken Text
   deriving (Eq, Ord, Show)
 
 type ToActions t a = a -> t Action
-type FromActions b a = Parser (StateT Pos b) Action a
+type FromActions b a = Parser (StateT Env b) Action a
 
-token' :: forall b t . Monad b => Parser (StateT Pos b) t t
-token' = modify (+1) >> token
+token' :: forall b t . Monad b => Parser (StateT Env b) t t
+-- token' = modify (+1) >> token
+-- TODO: use lenses
+token' = modify (\(Env c p) -> Env c (p + 1)) >> token
 
-is :: (MonadPlus b, Eq t) => t -> Parser (StateT Pos b) t t
+is :: (MonadPlus b, Eq t) => t -> Parser (StateT Env b) t t
 is t = mfilter (== t) token'
 
 class ActionTransitionSystem (t :: Type -> Type) (b :: Type -> Type) (a :: Type) where
@@ -285,8 +294,38 @@ class GFromActions (t :: Type -> Type) (b :: Type -> Type) (f :: Type -> Type) w
 instance GToActions t b f => GToActions t b (M1 i c f) where
   gToActions = gToActions @t @b . unM1
 
-instance (Monad b, GFromActions t b f) => GFromActions t b (M1 i c f) where
-  gFromActions = M1 <$> gFromActions @t @b
+-- instance (Monad b, GFromActions t b f) => GFromActions t b (M1 i c f) where
+--   gFromActions = M1 <$> gFromActions @t @b
+
+instance (Monad b, GFromActions t b f, Datatype d) => GFromActions t b (D1 d f) where
+  -- gFromActions = unsafePerformIO $ do
+  --   print ("datatype " <> datatypeName @d undefined)
+  --   pure (M1 <$> gFromActions @t @b)
+  gFromActions = do
+    Env _ pos <- get
+    put (Env (Just . D . pack $ datatypeName @d undefined) pos)
+    p <- gFromActions @t @b
+    pure (M1 p)
+
+instance (Monad b, GFromActions t b f, Constructor c) => GFromActions t b (C1 c f) where
+  -- gFromActions = unsafePerformIO $ do
+  --   print ("constructor " <> conName @c undefined)
+  --   pure (M1 <$> gFromActions @t @b)
+  gFromActions = do
+    Env _ pos <- get
+    put (Env (Just . C . pack $ conName @c undefined) pos)
+    p <- gFromActions @t @b
+    pure (M1 p)
+
+instance (Monad b, GFromActions t b f, Selector s) => GFromActions t b (S1 s f) where
+  -- gFromActions = unsafePerformIO $ do
+  --   print ("selector " <> selName @s undefined)
+  --   pure (M1 <$> gFromActions @t @b)
+  gFromActions = do
+    Env _ pos <- get
+    put (Env (Just . S . pack $ selName @s undefined) pos)
+    p <- gFromActions @t @b
+    pure (M1 p)
 
 instance ActionTransitionSystem t b a => GToActions t b (K1 i a) where
   gToActions = toActions @t @b . unK1
@@ -470,22 +509,23 @@ check p i = do
     Pure a -> mzero
     Free f -> void . runFreeT $ f i
 
-test :: ([Action], [((Foo, [Action]), Pos)], [((), Pos)])
+test :: ([Action], [((Foo, [Action]), Env)], [((), Env)])
 test =
-  let stuff 0 = []
+  let env = Env Nothing (Pos 0)
+      stuff 0 = []
       stuff n = Stuff n [] Nothing : stuff (n - 1)
       foo 0 = Foo "a" $ Stuff 0 [Stuff 2 [] Nothing] Nothing
       foo n = Foo "a" $ Stuff n [Stuff 2 (stuff n) Nothing] (Just $ foo (n - 1))
-      challenge = foo 15
+      challenge = foo 2
       actions = toActions @[] @[] challenge
       parser = fromActions @[] @[]
-      result = runStateT (parseString parser actions) (Pos 0)
+      result = runStateT (parseString parser actions) env
       -- bar = do
       --   val <- runFreeT parser
       --   case val of
       --     Pure a -> pure (Pure a)
       --     Free f -> undefined
-  in (actions, result, runStateT (check parser (IToken 1)) (Pos 0))
+  in (actions, result, runStateT (check parser (IToken 1)) env)
 
 -- test2 :: ([Action], Result Action (Int, Text))
 -- test2 =
