@@ -320,8 +320,8 @@ instance ActionTransitionSystem t b a => GToActions t b (K1 i a) where
 instance (Monad b, ActionTransitionSystem t b a) => GFromActions t b (K1 i a) where
   gFromActions = K1 <$> fromActions @t @b
 
-instance Monoid (t Action) => GToActions t b U1 where
-  gToActions _ = mempty
+instance Alternative t => GToActions t b U1 where
+  gToActions _ = empty
 
 instance Monad b => GFromActions t b U1 where
   gFromActions = pure U1
@@ -332,34 +332,34 @@ instance GToActions t b V1 where
 instance MonadFail b => GFromActions t b V1 where
   gFromActions = fail "GFromActions.V1"
 
-instance (Semigroup (t Action), GToActions t b f, GToActions t b g) => GToActions t b (f :*: g) where
-  gToActions (f :*: g) = gToActions @t @b f <> gToActions @t @b g
+instance (Alternative t, GToActions t b f, GToActions t b g) => GToActions t b (f :*: g) where
+  gToActions (f :*: g) = gToActions @t @b f <|> gToActions @t @b g
 
 instance (Monad b, GFromActions t b f, GFromActions t b g) => GFromActions t b (f :*: g) where
   gFromActions = (:*:) <$> gFromActions @t @b <*> gFromActions @t @b
 
-instance (Applicative t, Semigroup (t Action), GToActions t b f, GToActions t b g) => GToActions t b (f :+: g) where
-  gToActions (L1 f) = (pure L) <> gToActions @t @b f
-  gToActions (R1 g) = (pure R) <> gToActions @t @b g
+instance (Applicative t, Alternative t, GToActions t b f, GToActions t b g) => GToActions t b (f :+: g) where
+  gToActions (L1 f) = (pure L) <|> gToActions @t @b f
+  gToActions (R1 g) = (pure R) <|> gToActions @t @b g
 
 instance (MonadPlus b, GFromActions t b f, GFromActions t b g) => GFromActions t b (f :+: g) where
   gFromActions = (is L >> L1 <$> gFromActions @t @b) <|> (is R >> R1 <$> gFromActions @t @b)
 
-instance (Semigroup (t Action), Monad b, ActionTransitionSystem t b a, ActionTransitionSystem t b b') => ActionTransitionSystem t b (a, b')
-instance (Semigroup (t Action), Monad b, ActionTransitionSystem t b a, ActionTransitionSystem t b b', ActionTransitionSystem t b c) => ActionTransitionSystem t b (a, b', c)
-instance (Semigroup (t Action), Monad b, ActionTransitionSystem t b a, ActionTransitionSystem t b b', ActionTransitionSystem t b c, ActionTransitionSystem t b d) => ActionTransitionSystem t b (a, b', c, d)
-instance (Semigroup (t Action), Monad b, ActionTransitionSystem t b a, ActionTransitionSystem t b b', ActionTransitionSystem t b c, ActionTransitionSystem t b d, ActionTransitionSystem t b e) => ActionTransitionSystem t b (a, b', c, d, e)
+instance (Alternative t, Monad b, ActionTransitionSystem t b a, ActionTransitionSystem t b b') => ActionTransitionSystem t b (a, b')
+instance (Alternative t, Monad b, ActionTransitionSystem t b a, ActionTransitionSystem t b b', ActionTransitionSystem t b c) => ActionTransitionSystem t b (a, b', c)
+instance (Alternative t, Monad b, ActionTransitionSystem t b a, ActionTransitionSystem t b b', ActionTransitionSystem t b c, ActionTransitionSystem t b d) => ActionTransitionSystem t b (a, b', c, d)
+instance (Alternative t, Monad b, ActionTransitionSystem t b a, ActionTransitionSystem t b b', ActionTransitionSystem t b c, ActionTransitionSystem t b d, ActionTransitionSystem t b e) => ActionTransitionSystem t b (a, b', c, d, e)
 
-instance (Applicative t, Monoid (t Action), MonadPlus b, ActionTransitionSystem t b a) => ActionTransitionSystem t b [a]
+instance (Applicative t, Alternative t, MonadPlus b, ActionTransitionSystem t b a) => ActionTransitionSystem t b [a]
 --   toActions as = pure Grow <> foldMap toActions as <> pure Reduce
 --   fromActions = is Grow >> manyTill (fromActions @t) (is Reduce)
 
-instance (Applicative t, Monoid (t Action), MonadPlus b, ActionTransitionSystem t b a) => ActionTransitionSystem t b (Maybe a)
+instance (Applicative t, Alternative t, MonadPlus b, ActionTransitionSystem t b a) => ActionTransitionSystem t b (Maybe a)
 --   toActions Nothing = pure Reduce
 --   toActions (Just a) = toActions a
 --   fromActions = (is Reduce >> pure Nothing) <|> fromActions @t
 
-instance (Applicative t, Monoid (t Action), MonadPlus b, ActionTransitionSystem t b a, ActionTransitionSystem t b b') => ActionTransitionSystem t b (Either a b')
+instance (Applicative t, Alternative t, MonadPlus b, ActionTransitionSystem t b a, ActionTransitionSystem t b b') => ActionTransitionSystem t b (Either a b')
 
 -- poop :: forall i a . Show i => (i -> Maybe a) -> Parser i a
 -- poop f = do
@@ -399,10 +399,12 @@ instance (Applicative t, MonadFail b) => ActionTransitionSystem t b Int where
   --     IToken i -> advance 1 >> pure i
   --     _ -> buffer (Just a) >> fail "int"
 
-data Stuff = Stuff { anInt :: Int, moreStuff :: [Stuff], maybeFoo :: Maybe Foo }
+data Stuff = SomeStuff { anInt :: Int, moreStuff :: [Stuff], maybeFoo :: Maybe Foo }
+           | NoStuff
   deriving (Eq, Show, Generic)
 
-data Foo = Foo { someText :: Text, stuff :: Stuff }
+data Foo = SomeFoo { someText :: Text, stuff :: Stuff }
+         | NoFoo
   deriving (Eq, Show, Generic)
 
 data BarBaz = Bar | Baz
@@ -438,7 +440,13 @@ iterTM' f p = do
 -- I shall test this idea with a random model.
 -- How do to beam search?
 -- does this work for training? I guess @next@ would build up a loss term. How do handle batching?
-parse :: Monad b => ((i -> Parser b i a) -> s -> b (Parser b i a, s)) -> Parser b i a -> s -> b (a, s)
+parse
+  :: forall s b i a
+   . Monad b
+  => ((i -> Parser b i a) -> s -> b (Parser b i a, s))
+  -> Parser b i a
+  -> s
+  -> b (a, s)
 parse next =
   -- let f ip ps = StateT $ \s -> do
   --                 ~(p, s') <- next ip s
@@ -446,33 +454,32 @@ parse next =
   let f ip ps = StateT (next ip) >>= ps
   in runStateT . iterTM' f
 
-pures :: [FreeF f a (FreeT f m a)] -> [a]
-pures [] = []
-pures ((Pure a) : xs) = a : pures xs
-pures ((Free _) : xs) = pures xs
+pures :: (Foldable g, Alternative g) => g (FreeF f a (FreeT f m a)) -> g a
+pures = foldr (\x xs -> case x of Pure a -> pure a <|> xs; _ -> xs) empty
 
-frees :: [FreeF f a (FreeT f m a)] -> [f (FreeT f m a)]
-frees [] = []
-frees ((Pure _) : xs) = frees xs
-frees ((Free fb) : xs) = fb : frees xs
+frees :: (Foldable g, Alternative g) => g (FreeF f a (FreeT f m a)) -> g (f (FreeT f m a))
+frees = foldr (\x xs -> case x of Free fb -> pure fb <|> xs; _ -> xs) empty
 
--- version of iterTM' for batching
-batchedIterTM :: forall t b a i . (MonadTrans t, Monad b, Monad (t b)) => ([t b a] -> [i -> Parser b i a] -> ([Parser b i a] -> t b [t b a]) -> t b [t b a]) -> [Parser b i a] -> t b [t b a]
+batchedIterTM
+  :: forall f t b a i
+   . (Traversable f, Foldable f, Alternative f, MonadTrans t, Monad b, Monad (t b))
+  => (f a -> f (i -> Parser b i a) -> (f (Parser b i a) -> t b (f a)) -> t b (f a))
+  -> f (Parser b i a)
+  -> t b (f a)
 batchedIterTM f ps = do 
   vals <- traverse (lift @t . runFreeT) ps
-  let pures' = return <$> pures vals
-      frees' = frees vals
-  f pures' frees' (batchedIterTM f)
+  f (pures vals) (frees vals) (batchedIterTM f)
 
-batchedParse :: Monad b => ([i -> Parser b i a] -> [s] -> b ([Parser b i a], [s])) -> [Parser b i a] -> [s] -> b ([(a, [s])], [s])
-batchedParse next ps s = do
-  let f as ip ps' = StateT $ \s' -> do
-                     ~(p, s'') <- next ip s'
-                     (x, y) <- runStateT (ps' p) s''
-                     pure (as ++ x, y)
-  (z, q) <- (runStateT . batchedIterTM f) ps s
-  z' <- traverse (\x -> runStateT x s) z
-  pure (z', q)
+batchedParse
+  :: forall f s b i a
+   . (Traversable f, Foldable f, Alternative f, Monad b)
+  => (f (i -> Parser b i a) -> s -> b (f (Parser b i a), s))
+  -> f (Parser b i a)
+  -> s
+  -> b (f a, s)
+batchedParse next = do
+  let f as ip ps = StateT (next ip) >>= ps >>= (pure . (<|> as))
+  runStateT . batchedIterTM f
 
 -- parseStream' :: Monad b => (s -> b (i, s)) -> Parser b i a -> s -> b (a, s)
 -- -- parseStream' next = runStateT . foo (StateT next >>=)
@@ -488,6 +495,7 @@ batchedParse next ps s = do
 
 -- | Runs the parser on the supplied input and returns whether or not the parse succeeded.
 -- Results are discarded.
+-- TODO: this isn't nice yet. It would be great if there was a stronger signal for failure than just 'mzero'.
 -- Parser b i a ~ FreeT ((->) i) b a
 check :: forall b i a . MonadPlus b => Parser b i a -> i -> b ()
 check p i = do
@@ -500,19 +508,24 @@ test :: ([Action], [((Foo, [Action]), Env)], [((), Env)])
 test =
   let env = Env Nothing (Pos 0)
       stuff 0 = []
-      stuff n = Stuff n [] Nothing : stuff (n - 1)
-      foo 0 = Foo "a" $ Stuff 0 [Stuff 2 [] Nothing] Nothing
-      foo n = Foo "a" $ Stuff n [Stuff 2 (stuff n) Nothing] (Just $ foo (n - 1))
+      stuff n = SomeStuff n [] Nothing : stuff (n - 1)
+      foo 0 = SomeFoo "a" $ SomeStuff 0 [SomeStuff 2 [] Nothing] Nothing
+      foo n = SomeFoo "a" $ SomeStuff n [SomeStuff 2 (stuff n) Nothing] (Just $ foo (n - 1))
       challenge = foo 2
       actions = toActions @[] @[] challenge
       parser = fromActions @[] @[]
-      result = runStateT (parseString parser actions) env
+      -- result = runStateT (parseString parser actions) env
+      result' = let f ap [] = empty
+                    f ap (a : as) = let p = ap a in do
+                      env <- get
+                      pure $ unsafePerformIO $ print (a, env) >> pure (p, as)
+                in runStateT (parse f parser actions) env
       -- bar = do
       --   val <- runFreeT parser
       --   case val of
       --     Pure a -> pure (Pure a)
       --     Free f -> undefined
-  in (actions, result, runStateT (check parser (IToken 1)) env)
+  in (actions, result', runStateT (check parser (IToken 1)) env)
 
 -- test2 :: ([Action], Result Action (Int, Text))
 -- test2 =
