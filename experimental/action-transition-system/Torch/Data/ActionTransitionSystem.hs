@@ -276,7 +276,7 @@ check p i = do
     Free f -> void . runFreeT $ f i
 
 
-data Stuff = SomeStuff { anInt :: Int, moreStuff :: [Stuff], maybeFoo :: Maybe Foo }
+data Stuff = SomeStuff { anInt :: Int, aBool :: Bool, moreStuff :: [Stuff], maybeFoo :: Maybe Foo }
            | NoStuff
   deriving (Eq, Show, Generic)
 
@@ -294,9 +294,9 @@ test :: ([Action], [((Foo, [Action]), Env)], [((), Env)])
 test =
   let env = Env Nothing (Pos 0) mempty mempty mempty mempty
       stuff 0 = []
-      stuff n = SomeStuff n [] Nothing : stuff (n - 1)
-      foo 0 = SomeFoo "a" $ SomeStuff 0 [SomeStuff 2 [] Nothing] Nothing
-      foo n = SomeFoo "a" $ SomeStuff n [SomeStuff 2 (stuff n) Nothing] (Just $ foo (n - 1))
+      stuff n = SomeStuff n True [] Nothing : stuff (n - 1)
+      foo 0 = SomeFoo "a" $ SomeStuff 0 False [SomeStuff 2 True [] Nothing] Nothing
+      foo n = SomeFoo "a" $ SomeStuff n ((==0) . (`rem` 3) $ n) [SomeStuff 2 False (stuff n) Nothing] (Just $ foo (n - 1))
       challenge = foo 2
       actions = toActions @[] challenge
       parser = fromActions @[]
