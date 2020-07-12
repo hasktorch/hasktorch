@@ -49,3 +49,4 @@ library action-transition-system
                      , free
                      , generic-lens
                      , lens
+                     , containers
