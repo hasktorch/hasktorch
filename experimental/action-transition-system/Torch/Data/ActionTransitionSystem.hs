@@ -64,7 +64,7 @@ data M = D Text | C Text | S Text
 newtype Pos = Pos { unPos :: Int }
   deriving (Eq, Ord, Show, Num, Generic)
 
-data Action = L | R | IToken Int | SToken Text
+data Action = L | R | IToken Int | SToken Text | BToken Bool
   deriving (Eq, Ord, Show)
 
 type To t a = a -> t Action
@@ -186,6 +186,16 @@ instance MonadFail b => FromActions b Int where
     case a of
       IToken i -> pure i
       _ -> fail "int"
+
+instance Applicative t => ToActions t Bool where
+  toActions = pure . BToken
+
+instance MonadFail b => FromActions b Bool where
+  fromActions = do
+    a <- token'
+    case a of
+      BToken b -> pure b
+      _ -> fail "bool"
 
 -- FreeT ((->) i) b a ~ StateT (b i) b a ???
 
