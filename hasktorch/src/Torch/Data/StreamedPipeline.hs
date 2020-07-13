@@ -71,23 +71,16 @@ readBatches' dataset seeds outputBox =
 runTransforms :: MonadBase IO m => (batch -> batch') -> Input (batch) -> Output (batch') -> Effect m ()
 runTransforms transforms transformBox trainBox = fromInput' transformBox >-> P.map transforms >-> toOutput' trainBox
 
--- pMap p f n =
-  
---   where firstBuffer = withBufferLifted unbounded (\output -> enumerate p >-> toOutput' output) (\input -> replicateConcurrently_ n $ runEffect $ fromInput' input  >>= yield . f >-> toOutput outputBox )
---         secondBuffer = 
+pMap :: (Monad m, MonadBaseControl IO m) => ListT m a -> (a -> b) -> Int -> m (Producer b m ())
+pMap p f n = withOne unbounded unwrap (\input -> withOne unbounded (mapConcur input) (\input2 -> pure $ fromInput' input2))
 
-   -- >->  do
-  -- val <- await 
-  -- trans <- lift $ liftBase $ forkIO $ f val 
-  -- yield val
-  
+  where unwrap output= runEffect $ enumerate p >-> toOutput' output
+        mapConcur input output = replicateConcurrently_ n $ runEffect $ fromInput' input >-> P.map f >-> toOutput' output
+          
 
 streamBatches fold inputBox = foldFromProducer inputs fold
   where inputs = fromInput' inputBox
                           
-  -- NOTE: TODO: these transformation functions aren't really that functional in spirit
-  -- it would be nicer to be able to just specify a parallel transformation over the ListT produced by makeListT
-  
 foldOverWith' :: forall m dataset seed batch' batch b. (Datastream m seed dataset batch, MonadBaseControl IO m)
   => dataset
   -> ListT m seed
@@ -102,28 +95,24 @@ foldOverWith :: forall m dataset seed batch' batch b. (Datastream m seed dataset
   -> FoldM m batch b
   -> m b
 foldOverWith opts@DataloaderOpts{..} dataset seeds fold = do
-  join $ fmap  (flip foldFromProducer fold . enumerate) $ makeListT @m @dataset @seed opts dataset id seeds
+  join $ fmap  (flip foldFromProducer fold . enumerate) $ makeListT @m @dataset @seed opts dataset seeds
 
 makeListT :: forall m dataset seed batch' batch b. (Datastream m seed dataset batch, MonadBaseControl IO m, MonadBase IO m)
   => DataloaderOpts
   -> dataset
-  -> (batch' -> batch) 
   -> ListT m seed
   -> m (ListT m batch)
-makeListT DataloaderOpts{..} dataset transforms seeds = do
-   -- fmap (Select . snd) $ withBufferLifted (bounded numWorkers)
-   --   (\batchOutput -> readBatches @m @seed dataset seeds batchOutput) (\input -> pure $ fromInput' input)
+makeListT DataloaderOpts{..} dataset seeds = do
    fmap Select $ withOne (bounded numWorkers)
      (\batchOutput -> readBatches @m @seed dataset seeds batchOutput) (\input -> pure $ fromInput' input)
 
 makeListT' :: forall m f dataset seed batch' batch b. (Datastream m seed dataset batch, MonadBaseControl IO m, MonadBase IO m, Foldable f)
   => DataloaderOpts
   -> dataset
-  -> (batch' -> batch) 
   -> f seed
   -> m (ListT m batch)
-makeListT' DataloaderOpts{..} dataset transforms seeds = do
-   fmap (Select . snd) $ withBufferLifted (bounded numWorkers)
+makeListT' DataloaderOpts{..} dataset seeds = do
+   fmap Select  $ withOne (bounded numWorkers)
      (\batchOutput -> readBatches' @m @seed dataset seeds batchOutput) (\input -> (pure $ fromInput' input ))
 
 defaultDataloaderOpts = DataloaderOpts { numWorkers = 1 }
