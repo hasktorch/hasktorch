@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -10,9 +11,14 @@ import System.Random (mkStdGen, randoms)
 import Prelude hiding (exp)
 
 import Torch
+import Pipes
 import qualified Torch.Typed.Vision as V hiding (getImages')
 import qualified Torch.Vision as V
 import Torch.Serialize
+
+import Torch.Data.StreamedPipeline
+import qualified Pipes.Prelude as P
+import Torch.Data.Pipeline (FoldM(FoldM))
 
 data MLPSpec = MLPSpec {
     inputFeatures :: Int,
@@ -47,39 +53,25 @@ mlp MLP{..} input =
     . linear l0
     $ input
 
-train :: V.MnistData -> IO MLP
-train trainData = do
-    init <- sample spec
-    let nImages = V.length trainData
-        idxList = randomIndexes nImages
-    trained <- foldLoop init numIters $
-        \state iter -> do
-            let idx = take batchSize (drop (iter * batchSize) idxList)
-            input <- V.getImages' batchSize dataDim trainData idx
-            let label = V.getLabels' batchSize trainData idx
-                loss = nllLoss' label $ mlp state input
-            when (iter `mod` 50 == 0) $ do
-                putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
-            (newParam, _) <- runStep state optimizer loss 1e-3
-            pure $ replaceParameters state newParam
-    pure trained
-    where
-        spec = MLPSpec 784 64 32 10
-        dataDim = 784
-        numIters = 3000
-        batchSize = 256
-        optimizer = GD
-
+trainLoop model optimizer = FoldM step model done
+  where step :: MLP -> (Tensor, Tensor, Int) -> IO MLP
+        step model (input, label, iter) = do
+          let loss = nllLoss' label $ mlp model input
+          when (iter `mod` 50 == 0) $ do
+            putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
+          (newParam, _) <- runStep model optimizer loss 1e-3
+          pure $ replaceParameters model newParam
+        done = pure
 
 main :: IO ()
 main = do
-    (trainData, testData) <- V.initMnist "datasets/mnist"
-    model <- train trainData
-    -- saveParams model "mnistTrainedParams.pt"
+    (trainData, testData) <- V.initMnist "data"
+    let trainMnist = V.Mnist { batchSize = 256 , mnistData = trainData}
+        testMnist = V.Mnist { batchSize = 256 , mnistData = testData}
+        spec = MLPSpec 784 64 32 10
+        optimizer = GD
+    model <- foldOverWith' trainMnist (Select $ yield (1 :: Int)) (trainLoop (sample spec) optimizer)
 
-    -- let spec = MLPSpec 784 64 32 10
-    -- model <- sample spec
-    -- model <-  loadParams model "mnistTrainedParams.pt"
 
     -- show test images + labels
     mapM (\idx -> do

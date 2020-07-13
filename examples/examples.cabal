@@ -87,6 +87,9 @@ executable static-mnist-mlp
                      , random >= 1.1
                      , safe-exceptions
                      , static-mnist
+                     , pipes
+                     , pipes-safe
+                     , cassava
 
 executable typed-transformer
   import:              config
@@ -185,6 +188,7 @@ executable mnist-mlp
                      , random >= 1.1
                      , safe-exceptions
                      , static-mnist
+                     , pipes
 
 executable load-torchscript
   import:              config
