@@ -37,9 +37,15 @@ import Control.Monad.Trans.Free (wrap, iterTM, runFreeT, Free, FreeT(..), FreeF(
 import Control.Monad.State (StateT (..), runStateT, get, put, modify)
 import Control.Monad (ap, void)
 import Control.Monad.Trans (MonadTrans(lift))
-import Data.Map as Map (singleton, fromList, unionWith, Map, insert, lookup)
-import Data.Set as Set (singleton, union, Set, insert, findIndex)
+import Data.Map as Map (keys, null, insertWith, singleton, fromList, unionWith, Map, insert, lookup)
+import Data.Set as Set (member, singleton, union, Set, insert, findIndex)
 import Data.List as List (nub)
+import Control.Monad.Reader (ask, local, runReaderT, ReaderT)
+import Hedgehog (Gen, MonadGen)
+import qualified Hedgehog.Gen as Gen
+import qualified Hedgehog.Range as Range
+import Control.Monad (guard)
+import Data.Maybe (fromMaybe)
 
 -- https://stackoverflow.com/questions/17675054/deserialising-with-ghc-generics?rq=1
 -- http://hackage.haskell.org/package/cereal-0.5.8.1/docs/Data-Serialize.html
@@ -58,8 +64,7 @@ data Env = Env
   { meta :: Maybe M
   , pos :: Pos
   , rEnv :: REnv
-  , attentionMask :: Set (Pos, Pos)
-  , keyPaddingMask :: Set Pos
+  , aEnv :: AEnv
   , validActionsMask :: Map Pos (Set Action)
   }
   deriving (Eq, Ord, Show, Generic)
@@ -74,8 +79,10 @@ defaultEnv = Env
     , parents = mempty
     , relations = mempty
     }
-  , attentionMask = mempty
-  , keyPaddingMask = mempty
+  , aEnv = AEnv
+    { attentionMask = mempty
+    , keyPaddingMask = mempty
+    }
   , validActionsMask = mempty
   }
 
@@ -83,6 +90,12 @@ data REnv = REnv
   { parentPos :: Maybe Pos
   , parents :: Map Pos (Set Pos)
   , relations :: Map (Pos, Pos) (Set Relation)
+  }
+  deriving (Eq, Ord, Show, Generic)
+
+data AEnv = AEnv
+  { attentionMask :: Set (Pos, Pos)
+  , keyPaddingMask :: Set Pos
   }
   deriving (Eq, Ord, Show, Generic)
 
@@ -146,13 +159,17 @@ siblingRelations pos = get >>= ap (go . view (field @"parentPos")) (view (field 
 updateRelations :: forall f . Monad f => Pos -> StateT REnv f ()
 updateRelations = ancestralRelations @f >> siblingRelations @f
 
+updateAttention :: forall f . Monad f => Pos -> StateT AEnv f ()
+updateAttention pos = do
+  modify (field @"attentionMask" %~ (\mask -> mask))
+  modify (field @"keyPaddingMask" %~ (Set.insert pos))
+
 token :: forall b t . Monad b => Parser (StateT Env b) t t
 token = do
   t <- wrap $ FreeT . pure . Pure
   pos <- (^. field @"pos") <$> get
   zoom (field @"rEnv") . lift . updateRelations $ pos
-  modify (field @"attentionMask" %~ (\mask -> mask))
-  modify (field @"keyPaddingMask" %~ (Set.insert pos))
+  zoom (field @"aEnv") . lift . updateAttention $ pos
   modify (field @"pos" %~ (+1))
   pure t
 
@@ -278,6 +295,17 @@ instance Applicative t => ToActions t Bool where
 instance MonadFail b => FromActions b Bool where
   fromActions = token >>= (\case BToken b -> pure b; _ -> fail "bool")
 
+-- | Runs the parser on the supplied input and returns whether or not the parse succeeded.
+-- Results are discarded.
+-- TODO: this isn't nice yet. It would be great if there was a stronger signal for failure than just 'mzero'.
+-- Parser b i a ~ FreeT ((->) i) b a
+check :: forall b i a . MonadPlus b => Parser b i a -> i -> b ()
+check p i = do
+  val <- runFreeT p
+  case val of
+    Pure a -> mzero
+    Free f -> void . runFreeT $ f i
+
 -- FreeT ((->) i) b a ~ StateT (b i) b a ???
 
 -- iterTM specialized to Parser b i a ~ FreeT ((->) i) b a
@@ -345,17 +373,6 @@ batchedParse next = do
   let f as ip ps = StateT (next ip) >>= ps >>= (pure . (<|> as))
   runStateT . batchedIterTM f
 
--- | Runs the parser on the supplied input and returns whether or not the parse succeeded.
--- Results are discarded.
--- TODO: this isn't nice yet. It would be great if there was a stronger signal for failure than just 'mzero'.
--- Parser b i a ~ FreeT ((->) i) b a
-check :: forall b i a . MonadPlus b => Parser b i a -> i -> b ()
-check p i = do
-  val <- runFreeT p
-  case val of
-    Pure a -> mzero
-    Free f -> void . runFreeT $ f i
-
 
 data Stuff = SomeStuff { anInt :: Int, aBool :: Bool, moreStuff :: [Stuff], maybeFoo :: Maybe Foo }
           --  | NoStuff
@@ -394,27 +411,265 @@ test =
                 in runStateT (parse f parser actions) env
   in (actions, result', runStateT (check parser (IToken 1)) env)
 
-type Name = String
+------------------------------------------------------------------------
+-- A simply-typed lambda calculus with ints, bools, and strings
+-- from https://github.com/hedgehogqa/haskell-hedgehog/blob/master/hedgehog-example/src/Test/Example/STLC.hs
 
-data Expr
-  = Var Name
-  | Lit Lit
-  | App Expr Expr
-  | Lam Name Expr
-  deriving (Eq, Show, Generic)
-
-data Lit
-  = LInt Int
-  | LBool Bool
-  deriving (Show, Eq, Ord, Generic)
-
--- idea: untyped lambda calculus
 -- input: randomly generated lambda calculus terms
 -- output: reduced lambda calculus terms
 -- accuracy based on exact match
 -- variables need to be anonymized, use relations to indicate identical variables
--- https://github.com/slovnicki/pLam/blob/master/src/Reducer.hs
--- https://github.com/sirius94/lambdai/blob/master/src/Reducer.hs
--- https://github.com/hedgehogqa/haskell-hedgehog/blob/master/hedgehog-example/src/Test/Example/STLC.hs
-testLambda :: ()
-testLambda = ()
+-- constrain the production using `guard` on typecheck
+-- backtracking of FreeT ((->) i) [] a will solve it automatically
+
+data TType =
+    TBool
+  | TInt
+  | TString
+  | TArrow TType TType
+    deriving (Eq, Ord, Show)
+
+data Expr =
+    EBool Bool
+  | EInt Int
+  | EString Text
+  | EVar Text
+  | ELam Text TType Expr
+  | EApp Expr Expr
+    deriving (Eq, Ord, Show)
+
+------------------------------------------------------------------------
+
+-- | Evaluate to weak head normal form.
+evaluate :: Expr -> Expr
+evaluate expr =
+  case expr of
+    EBool _ ->
+      expr
+    EInt _ ->
+      expr
+    EString _ ->
+      expr
+    EVar _ ->
+      expr
+    ELam _ _ _ ->
+      expr
+    EApp f g ->
+      case evaluate f of
+        ELam x _t e ->
+          evaluate (subst x g e)
+        h ->
+          EApp h g
+
+subst :: Text -> Expr -> Expr -> Expr
+subst x y expr =
+  case expr of
+    EBool _ ->
+      expr
+    EInt _ ->
+      expr
+    EString _ ->
+      expr
+    EVar z ->
+      if x == z then
+        y
+      else
+        expr
+    ELam n t g ->
+      if n == x then
+        ELam n t g
+      else
+        ELam n t (subst x y g)
+    EApp f g ->
+      EApp (subst x y f) (subst x y g)
+
+-- | Collect all the free variables in an 'Expr'.
+free :: Expr -> Set Text
+free =
+  free' mempty mempty
+
+free' :: Set Text -> Set Text -> Expr -> Set Text
+free' binds frees expr =
+  case expr of
+    EBool _ ->
+      frees
+    EInt _ ->
+      frees
+    EString _ ->
+      frees
+    EVar x ->
+      if Set.member x binds then
+        frees
+      else
+        Set.insert x frees
+    ELam x _t y ->
+      free' (Set.insert x binds) frees y
+    EApp f g ->
+      free' binds frees f <> free' binds frees g
+
+------------------------------------------------------------------------
+
+data TypeError =
+    Mismatch TType TType
+  | FreeVariable Text
+  | ExpectedArrow TType
+  deriving (Eq, Ord, Show)
+
+-- | Typecheck some expression.
+typecheck :: Expr -> Either TypeError TType
+typecheck =
+  typecheck' mempty
+
+typecheck' :: Map Text TType -> Expr -> Either TypeError TType
+typecheck' env expr =
+  case expr of
+    EBool _ ->
+      pure TBool
+
+    EInt _ ->
+      pure TInt
+
+    EString _ ->
+      pure TString
+
+    EVar x ->
+      maybe (Left (FreeVariable x)) pure (Map.lookup x env)
+
+    ELam x t y ->
+      TArrow t <$> typecheck' (Map.insert x t env) y
+
+    EApp f g -> do
+      tf <- typecheck' env f
+      tg <- typecheck' env g
+      case tf of
+        TArrow ta tb ->
+          if ta == tg then
+            pure tb
+--          pure ta {- uncomment for bugs -}
+          else
+            Left (Mismatch ta tg)
+        _ ->
+          Left (ExpectedArrow tf)
+
+------------------------------------------------------------------------
+
+genType :: MonadGen m => m TType
+genType =
+  Gen.recursive Gen.choice [
+      pure TBool
+    , pure TInt
+    , pure TString
+    ] [
+      TArrow <$> genType <*> genType
+    ]
+
+------------------------------------------------------------------------
+
+genWellTypedExpr :: TType -> Gen Expr
+genWellTypedExpr =
+  flip runReaderT mempty . genWellTypedExpr'
+
+genWellTypedExpr' :: TType -> ReaderT (Map TType [Expr]) Gen Expr
+genWellTypedExpr' want =
+  Gen.shrink shrinkExpr $
+  Gen.recursive Gen.choice [
+      genWellTypedExpr'' want
+    ] [
+      genWellTypedPath want <|> genWellTypedApp want
+    , genWellTypedApp want
+    ]
+
+shrinkExpr :: Expr -> [Expr]
+shrinkExpr expr =
+  case expr of
+    EApp f g ->
+      case evaluate f of
+        ELam x _ e ->
+          [evaluate (subst x g e)]
+        _ ->
+          []
+    _ ->
+      []
+
+genWellTypedExpr'' :: TType -> ReaderT (Map TType [Expr]) Gen Expr
+genWellTypedExpr'' want =
+  case want of
+    TBool ->
+      EBool <$> Gen.element [True, False]
+    TInt ->
+      EInt <$> Gen.int (Range.linear 0 10000)
+    TString ->
+      EString <$> Gen.text (Range.linear 0 25) Gen.lower
+    TArrow t1 t2 -> do
+      x <- Gen.text (Range.linear 1 25) Gen.lower
+      ELam x t1 <$> local (insertVar x t1) (genWellTypedExpr' t2)
+
+insertVar :: Text -> TType -> Map TType [Expr] -> Map TType [Expr]
+insertVar n typ =
+  Map.insertWith (<>) typ [EVar n] .
+  fmap (filter (/= EVar n))
+
+genWellTypedApp :: TType -> ReaderT (Map TType [Expr]) Gen Expr
+genWellTypedApp want = do
+  tg <- genKnownTypeMaybe
+  eg <- genWellTypedExpr' tg
+  let tf = TArrow tg want
+  ef <- genWellTypedExpr' tf
+  pure (EApp ef eg)
+
+-- | This tries to look up a known expression of the desired type from the env.
+-- It does not always succeed, throwing `empty` when unavailable.
+genWellTypedPath :: TType -> ReaderT (Map TType [Expr]) Gen Expr
+genWellTypedPath want = do
+  paths <- ask
+  case fromMaybe [] (Map.lookup want paths) of
+    [] ->
+      empty
+    es ->
+      Gen.element es
+
+genKnownTypeMaybe :: ReaderT (Map TType [Expr]) Gen TType
+genKnownTypeMaybe = do
+  known <- ask
+  if Map.null known then
+    genType
+  else
+    Gen.frequency [
+        (2, Gen.element $ Map.keys known)
+      , (1, genType)
+      ]
+
+------------------------------------------------------------------------
+
+-- Generates a term that is ill-typed at some point.
+genIllTypedExpr :: Gen Expr
+genIllTypedExpr = do
+  be <- genIllTypedApp
+  Gen.recursive Gen.choice [
+      -- Don't grow - just dish up the broken expr
+      pure be
+    ] [
+      -- Grow a reasonable app expression around the error
+      do tg <- genType
+         tf <- genType
+         let ta = TArrow tg tf
+         ea <- genWellTypedExpr ta
+         pure (EApp ea be)
+    ]
+
+-- Generates a term that is ill-typed at the very top.
+genIllTypedApp :: Gen Expr
+genIllTypedApp = do
+  t1 <- genType
+  t2 <- genType
+  t3 <- genType
+  guard (t1 /= t2)
+  f <- genWellTypedExpr t3
+  g <- genWellTypedExpr t2
+  x <- Gen.text (Range.linear 1 25) Gen.lower
+  pure $ EApp (ELam x t1 f) g
+
+------------------------------------------------------------------------
+
+testSTLC :: ()
+testSTLC = ()

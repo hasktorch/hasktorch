@@ -50,3 +50,4 @@ library action-transition-system
                      , generic-lens
                      , lens
                      , containers
+                     , hedgehog
