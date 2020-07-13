@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -19,7 +20,7 @@
 
 module Torch.Data.ActionTransitionSystem where
 
-import Prelude hiding ()
+import Prelude hiding (lookup)
 import GHC.Generics
 import Control.Lens
 import Data.Generics.Product
@@ -30,13 +31,14 @@ import Control.Applicative (liftA2, pure, Alternative(..), empty, (<|>))
 import Control.Monad (mfilter, MonadPlus(..))
 import Data.Text (pack, Text)
 import GHC.IO (unsafePerformIO)
-import Control.Monad.Yoctoparsec (token, Parser)
-import Control.Monad.Trans.Free (iterTM, runFreeT, FreeT(..), FreeF(..))
+import Control.Monad.Yoctoparsec (Parser)
+import Control.Monad.Trans.Free (wrap, iterTM, runFreeT, Free, FreeT(..), FreeF(..))
 import Control.Monad.State (StateT (..), runStateT, get, put, modify)
 import Control.Monad (void)
 import Control.Monad.Trans (MonadTrans(lift))
-import Data.Map (Map)
-import Data.Set (Set)
+import Data.Map as Map (Map, insert, lookup)
+import Data.Set as Set (Set, insert, findIndex)
+import Data.List as List (nub)
 
 -- https://stackoverflow.com/questions/17675054/deserialising-with-ghc-generics?rq=1
 -- http://hackage.haskell.org/package/cereal-0.5.8.1/docs/Data-Serialize.html
@@ -45,12 +47,17 @@ import Data.Set (Set)
 -- https://vaibhavsagar.com/blog/2018/02/04/revisiting-monadic-parsing-haskell/
 -- https://github.com/alphaHeavy/protobuf/blob/46cda829cf1e7b6bba2ff450e267fb1a9ace4fb3/src/Data/ProtocolBuffers/Ppr.hs
 
-data Relation = Relation
+data Relation =
+    ChildParentRelation
+  | ParentChildRelation
+  | SiblingDistRelation { siblingDist :: Int }
   deriving (Eq, Ord, Show, Generic)
 
 data Env = Env
   { meta :: Maybe M
   , pos :: Pos
+  , parentPos :: Maybe Pos
+  , parents :: Map Pos (Set Pos)
   , relations :: Map (Pos, Pos) Relation
   , attentionMask :: Set (Pos, Pos)
   , keyPaddingMask :: Set Pos
@@ -64,20 +71,72 @@ data M = D Text | C Text | S Text
 newtype Pos = Pos { unPos :: Int }
   deriving (Eq, Ord, Show, Num, Generic)
 
-data Action = L | R | IToken Int | SToken Text | BToken Bool
+data Action = L | R | Grow | Reduce | IToken Int | SToken Text | BToken Bool
   deriving (Eq, Ord, Show)
 
 type To t a = a -> t Action
 type From b a = Parser (StateT Env b) Action a
 
-token' :: forall b t . Monad b => Parser (StateT Env b) t t
-token' = do
-  t <- token
+choice :: Alternative f => [f a] -> f a
+choice = foldr (<|>) empty
+
+option :: Alternative f => a -> f a -> f a
+option a p = p <|> pure a
+
+many1 :: Alternative f => f a -> f [a]
+many1 p = liftA2 (:) p (many p)
+{-# INLINE many1 #-}
+
+manyTill :: Alternative f => f a -> f b -> f [a]
+manyTill p end = scan
+  where scan = (end *> pure []) <|> liftA2 (:) p scan
+
+skipMany :: Alternative f => f a -> f ()
+skipMany p = scan
+  where scan = (p *> scan) <|> pure ()
+
+skipMany1 :: Alternative f => f a -> f ()
+skipMany1 p = p *> skipMany p
+
+ancestralRelations :: Pos -> Maybe Pos -> [((Pos, Pos), Relation)]
+ancestralRelations _   Nothing          = []
+ancestralRelations pos (Just parentPos) =
+  [ ((pos, parentPos), ChildParentRelation)
+  , ((parentPos, pos), ParentChildRelation)
+  ]
+
+-- TODO: use State (Map Pos (Set Pos))
+-- is this really constructing all sibling distance relations?
+siblingRelations :: Pos -> Maybe Pos -> Map Pos (Set Pos) -> ([((Pos, Pos), Relation)], Map Pos (Set Pos))
+siblingRelations _   Nothing          parents = ([], parents)
+siblingRelations pos (Just parentPos) parents =
+  let siblings = maybe mempty (Set.insert pos) $ lookup parentPos parents
+      sibIndex = findIndex pos siblings
+      step pos' (rels', idx) = 
+        let rels'' = nub [ ((pos, pos'), SiblingDistRelation (sibIndex - idx))
+                         , ((pos', pos), SiblingDistRelation (idx - sibIndex))
+                         ]
+        in  (rels'' <> rels', idx + 1)
+      (rels, _) = foldr step ([], 0) siblings
+      parents' = Map.insert parentPos siblings parents
+  in  (rels, parents')
+
+-- TODO: zoom into the Env, http://hackage.haskell.org/package/lens-4.17/docs/Control-Lens-Zoom.html#v:zoom
+token :: forall b t . Monad b => Parser (StateT Env b) t t
+token = do
+  t <- wrap $ FreeT . pure . Pure
+  pos <- (^. field @"pos") <$> get
+  modify (field @"relations" %~ (\rels -> rels))
+  modify (field @"attentionMask" %~ (\mask -> mask))
+  modify (field @"keyPaddingMask" %~ (Set.insert pos))
   modify (field @"pos" %~ (+1))
   pure t
 
 is :: (MonadPlus b, Eq t) => t -> Parser (StateT Env b) t t
-is t = mfilter (== t) token'
+is t = mfilter (== t) token
+
+isNot :: (MonadPlus b, Eq t) => t -> Parser (StateT Env b) t t
+isNot t = mfilter (/= t) token
 
 class ToActions (t :: Type -> Type) (a :: Type) where
   toActions :: To t a
@@ -103,6 +162,8 @@ instance GToActions t f => GToActions t (M1 i c f) where
 instance (Monad b, GFromActions b f, Datatype d) => GFromActions b (D1 d f) where
   gFromActions = do
     modify $ field @"meta" .~ (pure . D . pack . datatypeName @d $ undefined)
+    pos <- (^. field @"pos") <$> get
+    modify $ field @"parentPos" .~ (pure pos)
     M1 <$> gFromActions @b
 
 instance (Monad b, GFromActions b f, Constructor c) => GFromActions b (C1 c f) where
@@ -158,11 +219,19 @@ instance (Monad b, FromActions b a, FromActions b b',  FromActions b c, FromActi
 instance (Alternative t, ToActions t a, ToActions t b, ToActions t c, ToActions t d, ToActions t e) => ToActions t (a, b, c, d, e)
 instance (Monad b, FromActions b a, FromActions b b',  FromActions b c, FromActions b d, FromActions b e) => FromActions b (a, b', c, d, e)
 
-instance (Applicative t, Alternative t, ToActions t a) => ToActions t [a]
-instance (MonadPlus b, FromActions b a) => FromActions b [a]
+instance (Applicative t, Alternative t, ToActions t a) => ToActions t [a] where
+  toActions as = pure Grow <|> go as
+    where go [] = pure Reduce
+          go (a : as) = toActions a <|> go as
+instance (MonadPlus b, FromActions b a) => FromActions b [a] where
+  fromActions = is Grow >> manyTill (fromActions @b) (is Reduce)
 
-instance (Applicative t, Alternative t, ToActions t a) => ToActions t (Maybe a)
-instance (MonadPlus b, FromActions b a) => FromActions b (Maybe a)
+instance (Applicative t, Alternative t, ToActions t a) => ToActions t (Maybe a) where
+  toActions ma = pure Grow <|> go ma <|> pure Reduce
+    where go Nothing = empty
+          go (Just a) = toActions a
+instance (MonadPlus b, FromActions b a) => FromActions b (Maybe a) where
+  fromActions = is Grow >> option Nothing (Just <$> fromActions) >>= (is Reduce >>) . pure
 
 instance (Applicative t, Alternative t, ToActions t a, ToActions t b) => ToActions t (Either a b)
 instance (MonadPlus b, FromActions b a, FromActions b b') => FromActions b (Either a b')
@@ -171,31 +240,19 @@ instance Applicative t => ToActions t Text where
   toActions = pure . SToken
 
 instance MonadFail b => FromActions b Text where
-  fromActions = do
-    a <- token'
-    case a of
-      SToken s -> pure s
-      _ -> fail "text"
+  fromActions = token >>= (\case SToken s -> pure s; _ -> fail "text")
 
 instance Applicative t => ToActions t Int where
   toActions = pure . IToken
 
 instance MonadFail b => FromActions b Int where
-  fromActions = do
-    a <- token'
-    case a of
-      IToken i -> pure i
-      _ -> fail "int"
+  fromActions = token >>= (\case IToken i -> pure i; _ -> fail "int")
 
 instance Applicative t => ToActions t Bool where
   toActions = pure . BToken
 
 instance MonadFail b => FromActions b Bool where
-  fromActions = do
-    a <- token'
-    case a of
-      BToken b -> pure b
-      _ -> fail "bool"
+  fromActions = token >>= (\case BToken b -> pure b; _ -> fail "bool")
 
 -- FreeT ((->) i) b a ~ StateT (b i) b a ???
 
@@ -277,14 +334,14 @@ check p i = do
 
 
 data Stuff = SomeStuff { anInt :: Int, aBool :: Bool, moreStuff :: [Stuff], maybeFoo :: Maybe Foo }
-           | NoStuff
+          --  | NoStuff
   deriving (Eq, Show, Generic)
 
 instance ToActions [] Stuff
 instance FromActions [] Stuff
 
 data Foo = SomeFoo { someText :: Text, stuff :: Stuff }
-         | NoFoo
+        --  | NoFoo
   deriving (Eq, Show, Generic)
 
 instance ToActions [] Foo
@@ -292,7 +349,16 @@ instance FromActions [] Foo
 
 test :: ([Action], [((Foo, [Action]), Env)], [((), Env)])
 test =
-  let env = Env Nothing (Pos 0) mempty mempty mempty mempty
+  let env = Env
+        { meta = Nothing
+        , pos = Pos 0
+        , parentPos = Nothing
+        , parents = mempty
+        , relations = mempty
+        , attentionMask = mempty
+        , keyPaddingMask = mempty
+        , validActionsMask = mempty
+        }
       stuff 0 = []
       stuff n = SomeStuff n True [] Nothing : stuff (n - 1)
       foo 0 = SomeFoo "a" $ SomeStuff 0 False [SomeStuff 2 True [] Nothing] Nothing
@@ -303,6 +369,6 @@ test =
       result' = let f ap [] = empty
                     f ap (a : as) = let p = ap a in do
                       env' <- get
-                      pure $ unsafePerformIO $ print (a, env') >> pure (p, as)
+                      pure $ unsafePerformIO $ print (a, view (field @"meta") env', view (field @"pos") env', view (field @"parentPos") env') >> pure (p, as)
                 in runStateT (parse f parser actions) env
   in (actions, result', runStateT (check parser (IToken 1)) env)
