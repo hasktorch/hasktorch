@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PartialTypeSignatures #-}
@@ -34,10 +35,10 @@ import GHC.IO (unsafePerformIO)
 import Control.Monad.Yoctoparsec (Parser)
 import Control.Monad.Trans.Free (wrap, iterTM, runFreeT, Free, FreeT(..), FreeF(..))
 import Control.Monad.State (StateT (..), runStateT, get, put, modify)
-import Control.Monad (void)
+import Control.Monad (ap, void)
 import Control.Monad.Trans (MonadTrans(lift))
-import Data.Map as Map (Map, insert, lookup)
-import Data.Set as Set (Set, insert, findIndex)
+import Data.Map as Map (singleton, fromList, unionWith, Map, insert, lookup)
+import Data.Set as Set (singleton, union, Set, insert, findIndex)
 import Data.List as List (nub)
 
 -- https://stackoverflow.com/questions/17675054/deserialising-with-ghc-generics?rq=1
@@ -56,12 +57,32 @@ data Relation =
 data Env = Env
   { meta :: Maybe M
   , pos :: Pos
-  , parentPos :: Maybe Pos
-  , parents :: Map Pos (Set Pos)
-  , relations :: Map (Pos, Pos) Relation
+  , rEnv :: REnv
   , attentionMask :: Set (Pos, Pos)
   , keyPaddingMask :: Set Pos
   , validActionsMask :: Map Pos (Set Action)
+  }
+  deriving (Eq, Ord, Show, Generic)
+
+-- TODO: define monoid
+defaultEnv :: Env
+defaultEnv = Env
+  { meta = Nothing
+  , pos = Pos 0
+  , rEnv = REnv
+    { parentPos = Nothing
+    , parents = mempty
+    , relations = mempty
+    }
+  , attentionMask = mempty
+  , keyPaddingMask = mempty
+  , validActionsMask = mempty
+  }
+
+data REnv = REnv
+  { parentPos :: Maybe Pos
+  , parents :: Map Pos (Set Pos)
+  , relations :: Map (Pos, Pos) (Set Relation)
   }
   deriving (Eq, Ord, Show, Generic)
 
@@ -98,35 +119,38 @@ skipMany p = scan
 skipMany1 :: Alternative f => f a -> f ()
 skipMany1 p = p *> skipMany p
 
-ancestralRelations :: Pos -> Maybe Pos -> [((Pos, Pos), Relation)]
-ancestralRelations _   Nothing          = []
-ancestralRelations pos (Just parentPos) =
-  [ ((pos, parentPos), ChildParentRelation)
-  , ((parentPos, pos), ParentChildRelation)
-  ]
+ancestralRelations :: forall f . Monad f => Pos -> StateT REnv f ()
+ancestralRelations pos = get >>= (go . view (field @"parentPos"))
+ where go Nothing          = pure ()
+       go (Just parentPos) = 
+         let rels' = update (Map.singleton (pos, parentPos) . Set.singleton $ ChildParentRelation)
+                            (Map.singleton (parentPos, pos) . Set.singleton $ ParentChildRelation)
+         in  modify (field @"relations" %~ (update rels'))
+       update rels' rels = Map.unionWith Set.union rels' rels
 
--- TODO: use State (Map Pos (Set Pos))
--- is this really constructing all sibling distance relations?
-siblingRelations :: Pos -> Maybe Pos -> Map Pos (Set Pos) -> ([((Pos, Pos), Relation)], Map Pos (Set Pos))
-siblingRelations _   Nothing          parents = ([], parents)
-siblingRelations pos (Just parentPos) parents =
-  let siblings = maybe mempty (Set.insert pos) $ lookup parentPos parents
-      sibIndex = findIndex pos siblings
-      step pos' (rels', idx) = 
-        let rels'' = nub [ ((pos, pos'), SiblingDistRelation (sibIndex - idx))
-                         , ((pos', pos), SiblingDistRelation (idx - sibIndex))
-                         ]
-        in  (rels'' <> rels', idx + 1)
-      (rels, _) = foldr step ([], 0) siblings
-      parents' = Map.insert parentPos siblings parents
-  in  (rels, parents')
+siblingRelations :: forall f . Monad f => Pos -> StateT REnv f ()
+siblingRelations pos = get >>= ap (go . view (field @"parentPos")) (view (field @"parents"))
+  where go Nothing          parents = pure ()
+        go (Just parentPos) parents = do
+          let siblings = maybe mempty (Set.insert pos) $ lookup parentPos parents
+              sibIndex = findIndex pos siblings
+              step pos' (rels', idx) =
+                let rels'' = update (Map.singleton (pos, pos') . Set.singleton . SiblingDistRelation $ sibIndex - idx)
+                                    (Map.singleton (pos', pos) . Set.singleton . SiblingDistRelation $ idx - sibIndex)
+                in  (update rels'' rels', idx + 1)
+              (rels, _) = foldr step (mempty, 0) siblings
+          modify (field @"relations" %~ (update rels))
+          modify (field @"parents" %~ (Map.insert parentPos siblings))
+        update rels' rels = Map.unionWith Set.union rels' rels
 
--- TODO: zoom into the Env, http://hackage.haskell.org/package/lens-4.17/docs/Control-Lens-Zoom.html#v:zoom
+updateRelations :: forall f . Monad f => Pos -> StateT REnv f ()
+updateRelations = ancestralRelations @f >> siblingRelations @f
+
 token :: forall b t . Monad b => Parser (StateT Env b) t t
 token = do
   t <- wrap $ FreeT . pure . Pure
   pos <- (^. field @"pos") <$> get
-  modify (field @"relations" %~ (\rels -> rels))
+  zoom (field @"rEnv") . lift . updateRelations $ pos
   modify (field @"attentionMask" %~ (\mask -> mask))
   modify (field @"keyPaddingMask" %~ (Set.insert pos))
   modify (field @"pos" %~ (+1))
@@ -163,7 +187,7 @@ instance (Monad b, GFromActions b f, Datatype d) => GFromActions b (D1 d f) wher
   gFromActions = do
     modify $ field @"meta" .~ (pure . D . pack . datatypeName @d $ undefined)
     pos <- (^. field @"pos") <$> get
-    modify $ field @"parentPos" .~ (pure pos)
+    modify $ field @"rEnv" . field @"parentPos" .~ (pure pos)
     M1 <$> gFromActions @b
 
 instance (Monad b, GFromActions b f, Constructor c) => GFromActions b (C1 c f) where
@@ -349,16 +373,7 @@ instance FromActions [] Foo
 
 test :: ([Action], [((Foo, [Action]), Env)], [((), Env)])
 test =
-  let env = Env
-        { meta = Nothing
-        , pos = Pos 0
-        , parentPos = Nothing
-        , parents = mempty
-        , relations = mempty
-        , attentionMask = mempty
-        , keyPaddingMask = mempty
-        , validActionsMask = mempty
-        }
+  let env = defaultEnv
       stuff 0 = []
       stuff n = SomeStuff n True [] Nothing : stuff (n - 1)
       foo 0 = SomeFoo "a" $ SomeStuff 0 False [SomeStuff 2 True [] Nothing] Nothing
@@ -369,6 +384,37 @@ test =
       result' = let f ap [] = empty
                     f ap (a : as) = let p = ap a in do
                       env' <- get
-                      pure $ unsafePerformIO $ print (a, view (field @"meta") env', view (field @"pos") env', view (field @"parentPos") env') >> pure (p, as)
+                      pure $ unsafePerformIO $ print
+                        ( a
+                        , view (field @"meta") env'
+                        , view (field @"pos") env'
+                        , view (field @"rEnv" . field @"parentPos") env'
+                        -- , view (field @"rEnv" . field @"relations") env'
+                        ) >> pure (p, as)
                 in runStateT (parse f parser actions) env
   in (actions, result', runStateT (check parser (IToken 1)) env)
+
+type Name = String
+
+data Expr
+  = Var Name
+  | Lit Lit
+  | App Expr Expr
+  | Lam Name Expr
+  deriving (Eq, Show, Generic)
+
+data Lit
+  = LInt Int
+  | LBool Bool
+  deriving (Show, Eq, Ord, Generic)
+
+-- idea: untyped lambda calculus
+-- input: randomly generated lambda calculus terms
+-- output: reduced lambda calculus terms
+-- accuracy based on exact match
+-- variables need to be anonymized, use relations to indicate identical variables
+-- https://github.com/slovnicki/pLam/blob/master/src/Reducer.hs
+-- https://github.com/sirius94/lambdai/blob/master/src/Reducer.hs
+-- https://github.com/hedgehogqa/haskell-hedgehog/blob/master/hedgehog-example/src/Test/Example/STLC.hs
+testLambda :: ()
+testLambda = ()
