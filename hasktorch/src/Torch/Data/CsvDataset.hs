@@ -37,12 +37,15 @@ import qualified Pipes.Prelude as P
 import qualified Pipes.Safe as Safe
 import qualified Pipes.Safe.Prelude as Safe
 import           System.IO (IOMode(ReadMode))
+import Pipes.Concurrent (unbounded)
+import Control.Monad.Trans.Control (MonadBaseControl)
 
 
 -- instance FromField
-instance FromField [Int] where
-  -- simply wrap a single Int into a list
+instance FromField a => FromField [a] where
+  -- simply wrap a single 'a' into a list
   parseField = fmap pure . parseField 
+
 instance ( KnownNat seqLen
          , KnownDevice device
          , FromField [Int]
@@ -85,15 +88,16 @@ csvDataset filePath  = CsvDataset { filePath = filePath
 
 instance ( MonadPlus m
          , MonadBase IO m
+         , MonadBaseControl IO m
          , Safe.MonadSafe m
          , FromRecord batch -- these constraints make CsvDatasets only able to parse records, might not be the best idea
          , FromNamedRecord batch
          , Monoid batch
          ) => Datastream m () (CsvDataset batch) batch where
-  streamBatch CsvDataset{..} _ = Select $ Safe.withFile filePath ReadMode $
-    \fh -> do
+  streamBatch CsvDataset{..} _ = Select $ Safe.withFile filePath ReadMode $ \fh ->
       -- this quietly discards errors right now, probably would like to log this
       L.purely folds L.mconcat $ view (chunksOf batchSize) $ decodeRecords fh >-> P.concat
+  -- TODO: we could concurrently stream in records, and batch records in another thread
         where
           decodeRecords fh = case byName of
                                Unnamed -> decode hasHeader (produceLine fh)

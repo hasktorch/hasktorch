@@ -29,7 +29,7 @@ import           Control.Monad
 import           Data.Maybe (isJust)
 import           Pipes
 import           Pipes.Concurrent
--- import           Pipes.Group
+
 import qualified Pipes.Prelude as P
 import           Torch.Typed
 
@@ -183,4 +183,3 @@ liftedFinally a sequel = control $ \runInIO ->
                                    (runInIO sequel)
 instance (MonadBase IO m) => MonadBase IO (Proxy a' a b' b m) where
   liftBase = lift . liftBase
-

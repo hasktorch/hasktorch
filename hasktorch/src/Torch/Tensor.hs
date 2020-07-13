@@ -1,3 +1,6 @@
+{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE IncoherentInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -514,13 +517,18 @@ instance {-# OVERLAPPING #-}TensorLike a => TensorLike [a] where
          else throwIO $ userError $ "There are lists having different length."
 
 class AsTensors as where
-  toTensors :: as -> V.Vector tensors
+  toTensors :: as -> V.Vector Tensor
+  default toTensors ::  (Generic as, GAsTensors (Rep as)) => as -> V.Vector Tensor
+  toTensors a = gToTensors $ from a
 
+instance TensorLike a => AsTensors a where
+  toTensors = pure . asTensor
+  
 class GAsTensors record where
-  gToTensors :: (TensorLike as) => record as -> V.Vector tensors
+  gToTensors :: record as -> V.Vector Tensor
 
-instance (GAsTensors ls , GAsTensors rs ) => GAsTensors (ls :*: rs) where
-  gToTensors (g :*: d)= gToTensors  g V.++ gToTensors d
+instance (GAsTensors ls, GAsTensors rs ) => GAsTensors (ls :*: rs) where
+  gToTensors (g :*: d) = gToTensors  g V.++ gToTensors d
 
 instance (GAsTensors ls , GAsTensors rs ) => GAsTensors (ls :+: rs) where
   gToTensors (L1 g) = gToTensors g 
@@ -529,8 +537,9 @@ instance (GAsTensors ls , GAsTensors rs ) => GAsTensors (ls :+: rs) where
 instance (GAsTensors ls) => GAsTensors (M1 i c ls) where
   gToTensors (M1 g) = gToTensors g 
 
-instance (AsTensors ls) => GAsTensors (K1 i ls) where
-  gToTensors (K1 g) = toTensors g 
+instance (TensorLike ls) => GAsTensors (K1 i ls) where
+  -- gToTensors (K1 g) = toTensors g 
+  gToTensors (K1 g) = pure $ asTensor g 
 
 --------------------------------------------------------------------------------
 -- Show

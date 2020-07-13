@@ -16,10 +16,10 @@ import Torch (AsTensors(toTensors))
   -- We've written a FromField instance for [a] that behaves as the FromField instance
   -- of 'a'. This lets us use the monoidal instance for [].
 data CsvRecord = CsvRecord { field1 :: [Int]
-                           , field2 :: [Int]
+                           , field2 :: [Float]
                            , field3 :: [Int]
                            } deriving (Eq, Show, Generic)
--- instance AsTensors CsvRecord where
+instance AsTensors CsvRecord where
   
 instance FromRecord CsvRecord where
 instance FromNamedRecord CsvRecord where
@@ -36,6 +36,6 @@ main = runSafeT $ do
  let dataset :: CsvDataset CsvRecord
      dataset = (csvDataset @CsvRecord "examples.csv") { batchSize = 10 }
  listT <- makeListT @_ @_ @_ @CsvRecord defaultDataloaderOpts dataset (Select $ yield ())
- runEffect $ enumerate listT >-> P.print
+ runEffect $ enumerate listT >-> P.map toTensors >-> P.print
 
   
