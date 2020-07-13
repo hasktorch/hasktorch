@@ -35,7 +35,7 @@ main :: IO ()
 main = runSafeT $ do
  let dataset :: CsvDataset CsvRecord
      dataset = (csvDataset @CsvRecord "examples.csv") { batchSize = 10 }
- listT <- makeListT @_ @_ @_ @CsvRecord defaultDataloaderOpts dataset id (Select $ yield ())
- runEffect $ enumerate listT >->  P.chain (const $ liftIO $ print "here") >-> P.print
+ listT <- makeListT @_ @_ @_ @CsvRecord defaultDataloaderOpts dataset (Select $ yield ())
+ runEffect $ enumerate listT >-> P.print
 
   

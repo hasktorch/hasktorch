@@ -41,7 +41,7 @@ import           Control.Foldl (Fold, FoldM(FoldM))
 import           Control.Concurrent.Async.Lifted
 import           Control.Exception.Safe (MonadMask, finally, bracket)
 import qualified Pipes.Safe as Safe
-import Pipes.Safe (MonadSafe(Base))
+import           Pipes.Safe (MonadSafe(Base))
 
 data DataloaderOpts = DataloaderOpts { numWorkers :: Int }
 
@@ -71,8 +71,8 @@ readBatches' dataset seeds outputBox =
 runTransforms :: MonadBase IO m => (batch -> batch') -> Input (batch) -> Output (batch') -> Effect m ()
 runTransforms transforms transformBox trainBox = fromInput' transformBox >-> P.map transforms >-> toOutput' trainBox
 
-pMap :: (Monad m, MonadBaseControl IO m) => ListT m a -> (a -> b) -> Int -> m (Producer b m ())
-pMap p f n = withOne unbounded unwrap (\input -> withOne unbounded (mapConcur input) (\input2 -> pure $ fromInput' input2))
+pMap :: (Monad m, MonadBaseControl IO m) => ListT m a -> (a -> b) -> Int -> m (ListT m b)
+pMap p f n = Select <$> withOne unbounded unwrap (\input -> withOne unbounded (mapConcur input) (\input2 -> pure $ fromInput' input2))
 
   where unwrap output= runEffect $ enumerate p >-> toOutput' output
         mapConcur input output = replicateConcurrently_ n $ runEffect $ fromInput' input >-> P.map f >-> toOutput' output
@@ -81,14 +81,14 @@ pMap p f n = withOne unbounded unwrap (\input -> withOne unbounded (mapConcur in
 streamBatches fold inputBox = foldFromProducer inputs fold
   where inputs = fromInput' inputBox
                           
-foldOverWith' :: forall m dataset seed batch' batch b. (Datastream m seed dataset batch, MonadBaseControl IO m)
+foldOverWith' :: forall m dataset seed batch b. (Datastream m seed dataset batch, MonadBaseControl IO m)
   => dataset
   -> ListT m seed
   -> FoldM m batch b
   -> m b
 foldOverWith' = foldOverWith @m @dataset @seed defaultDataloaderOpts
 
-foldOverWith :: forall m dataset seed batch' batch b. (Datastream m seed dataset batch, MonadBaseControl IO m)
+foldOverWith :: forall m dataset seed batch b. (Datastream m seed dataset batch, MonadBaseControl IO m)
   => DataloaderOpts
   -> dataset
   -> ListT m seed
@@ -97,7 +97,7 @@ foldOverWith :: forall m dataset seed batch' batch b. (Datastream m seed dataset
 foldOverWith opts@DataloaderOpts{..} dataset seeds fold = do
   join $ fmap  (flip foldFromProducer fold . enumerate) $ makeListT @m @dataset @seed opts dataset seeds
 
-makeListT :: forall m dataset seed batch' batch b. (Datastream m seed dataset batch, MonadBaseControl IO m, MonadBase IO m)
+makeListT :: forall m dataset seed  batch b. (Datastream m seed dataset batch, MonadBaseControl IO m, MonadBase IO m)
   => DataloaderOpts
   -> dataset
   -> ListT m seed
@@ -106,7 +106,7 @@ makeListT DataloaderOpts{..} dataset seeds = do
    fmap Select $ withOne (bounded numWorkers)
      (\batchOutput -> readBatches @m @seed dataset seeds batchOutput) (\input -> pure $ fromInput' input)
 
-makeListT' :: forall m f dataset seed batch' batch b. (Datastream m seed dataset batch, MonadBaseControl IO m, MonadBase IO m, Foldable f)
+makeListT' :: forall m f dataset seed batch b. (Datastream m seed dataset batch, MonadBaseControl IO m, MonadBase IO m, Foldable f)
   => DataloaderOpts
   -> dataset
   -> f seed

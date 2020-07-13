@@ -89,7 +89,6 @@ instance ( MonadPlus m
          , FromRecord batch -- these constraints make CsvDatasets only able to parse records, might not be the best idea
          , FromNamedRecord batch
          , Monoid batch
-         , Show batch
          ) => Datastream m () (CsvDataset batch) batch where
   streamBatch CsvDataset{..} _ = Select $ Safe.withFile filePath ReadMode $
     \fh -> do
