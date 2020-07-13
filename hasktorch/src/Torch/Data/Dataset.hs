@@ -14,18 +14,18 @@ import qualified Control.Foldl as L
 import Pipes.Group (folds, chunksOf)
 import Lens.Family (view)
 import Data.Vector
-data CollatedDataset m dataset batch collatedBatch = CollatedDataset { set  :: dataset
+data CollatedDataset m dataset batch collatedBatch = CollatedDataset { set       :: dataset
                                                                      , chunkSize :: Int
                                                                      , collateFn :: Pipe [batch] collatedBatch m ()
                                                                    } 
 
-instance Datastream m dataset batch => Datastream m (CollatedDataset m dataset batch collatedBatch) collatedBatch where
+instance Datastream m seed dataset batch => Datastream m seed (CollatedDataset m dataset batch collatedBatch) collatedBatch where
   streamBatch CollatedDataset{..} = Select
                                     . (>-> collateFn)
                                     . L.purely folds L.list
                                     . view (chunksOf chunkSize)
                                     . enumerate
-                                    . streamBatch @m @dataset @batch set 
+                                    . streamBatch @m @seed @dataset @batch set 
 
   
   

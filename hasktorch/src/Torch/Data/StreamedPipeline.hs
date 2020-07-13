@@ -11,7 +11,14 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-module Torch.Data.StreamedPipeline where
+module Torch.Data.StreamedPipeline ( makeListT
+                                   , makeListT'
+                                   , foldOverWith
+                                   , foldOverWith'
+                                   , Datastream(..)
+                                   , defaultDataloaderOpts
+                                   , MonadBase(..)
+                                   ) where
 
 
 
@@ -36,57 +43,90 @@ import           Control.Exception.Safe (MonadMask, finally, bracket)
 import qualified Pipes.Safe as Safe
 import Pipes.Safe (MonadSafe(Base))
 
-type Iter = Int
-type WorkerId = Int
-
 data DataloaderOpts = DataloaderOpts { numWorkers :: Int }
 
-class (MonadPlus m, MonadBase IO m) => Datastream m dataset batch  where
+class (MonadPlus m, MonadBase IO m) => Datastream m seed dataset batch  where
   streamBatch :: dataset -> seed -> ListT m batch 
 
-readBatches' :: forall m seed dataset batch .
-  (Datastream m dataset batch, MonadBaseControl IO m)
+readBatches :: forall m seed dataset batch .
+  (Datastream m seed dataset batch, MonadBaseControl IO m)
   => dataset
   -> ListT m seed 
   -> Output batch
-  ->  m ()
-readBatches' dataset seeds outputBox =
-  let this = flip $ mappend . Concurrently .  runEffect . (>-> toOutput' outputBox) . enumerate . streamBatch @m @dataset  @batch dataset
+  -> m ()
+readBatches dataset seeds outputBox =
+  let this = flip $ mappend . Concurrently .  runEffect . (>-> toOutput' outputBox) . enumerate . streamBatch @m @seed @dataset  @batch dataset
   in join . P.fold this mempty runConcurrently $ enumerate seeds
+
+readBatches' :: forall m seed f dataset batch .
+  (Datastream m seed dataset batch, MonadBaseControl IO m, Foldable f)
+  => dataset
+  -> f seed 
+  -> Output batch
+  -> m ()
+readBatches' dataset seeds outputBox =
+  let this = flip $ mappend . Concurrently .  runEffect . (>-> toOutput' outputBox) . enumerate . streamBatch @m @seed @dataset  @batch dataset
+  in L.fold (L.Fold this mempty runConcurrently) seeds 
 
 runTransforms :: MonadBase IO m => (batch -> batch') -> Input (batch) -> Output (batch') -> Effect m ()
 runTransforms transforms transformBox trainBox = fromInput' transformBox >-> P.map transforms >-> toOutput' trainBox
 
+-- pMap p f n =
+  
+--   where firstBuffer = withBufferLifted unbounded (\output -> enumerate p >-> toOutput' output) (\input -> replicateConcurrently_ n $ runEffect $ fromInput' input  >>= yield . f >-> toOutput outputBox )
+--         secondBuffer = 
+
+   -- >->  do
+  -- val <- await 
+  -- trans <- lift $ liftBase $ forkIO $ f val 
+  -- yield val
+  
+
 streamBatches fold inputBox = foldFromProducer inputs fold
   where inputs = fromInput' inputBox
                           
-foldOverWith' :: forall m dataset seed batch' batch b. (Datastream m dataset batch', MonadBaseControl IO m)
+  -- NOTE: TODO: these transformation functions aren't really that functional in spirit
+  -- it would be nicer to be able to just specify a parallel transformation over the ListT produced by makeListT
+  
+foldOverWith' :: forall m dataset seed batch' batch b. (Datastream m seed dataset batch, MonadBaseControl IO m)
   => dataset
-  -> (batch' -> batch) 
-  -- -> seed
+  -> ListT m seed
   -> FoldM m batch b
   -> m b
-foldOverWith' = foldOverWith defaultDataloaderOpts
+foldOverWith' = foldOverWith @m @dataset @seed defaultDataloaderOpts
 
-foldOverWith :: forall m dataset seed batch' batch b. (Datastream m dataset batch', MonadBaseControl IO m)
+foldOverWith :: forall m dataset seed batch' batch b. (Datastream m seed dataset batch, MonadBaseControl IO m)
+  => DataloaderOpts
+  -> dataset
+  -> ListT m seed
+  -> FoldM m batch b
+  -> m b
+foldOverWith opts@DataloaderOpts{..} dataset seeds fold = do
+  join $ fmap  (flip foldFromProducer fold . enumerate) $ makeListT @m @dataset @seed opts dataset id seeds
+
+makeListT :: forall m dataset seed batch' batch b. (Datastream m seed dataset batch, MonadBaseControl IO m, MonadBase IO m)
   => DataloaderOpts
   -> dataset
   -> (batch' -> batch) 
-  -- -> seed
-  -> FoldM m batch b
-  -> m b
-foldOverWith DataloaderOpts{..} dataset transforms fold = do
-   fmap snd $ withBufferLifted
-    (bounded numWorkers)
-    (\batchOutput -> withBufferLifted (bounded numWorkers)
-      (\transformOutput ->  readBatches' dataset seeds transformOutput)
-      (\transformInput -> replicateConcurrently_ numWorkers $ runEffect $ runTransforms transforms transformInput batchOutput))
-    (\input -> streamBatches fold input)
+  -> ListT m seed
+  -> m (ListT m batch)
+makeListT DataloaderOpts{..} dataset transforms seeds = do
+   -- fmap (Select . snd) $ withBufferLifted (bounded numWorkers)
+   --   (\batchOutput -> readBatches @m @seed dataset seeds batchOutput) (\input -> pure $ fromInput' input)
+   fmap Select $ withOne (bounded numWorkers)
+     (\batchOutput -> readBatches @m @seed dataset seeds batchOutput) (\input -> pure $ fromInput' input)
+
+makeListT' :: forall m f dataset seed batch' batch b. (Datastream m seed dataset batch, MonadBaseControl IO m, MonadBase IO m, Foldable f)
+  => DataloaderOpts
+  -> dataset
+  -> (batch' -> batch) 
+  -> f seed
+  -> m (ListT m batch)
+makeListT' DataloaderOpts{..} dataset transforms seeds = do
+   fmap (Select . snd) $ withBufferLifted (bounded numWorkers)
+     (\batchOutput -> readBatches' @m @seed dataset seeds batchOutput) (\input -> (pure $ fromInput' input ))
 
 defaultDataloaderOpts = DataloaderOpts { numWorkers = 1 }
-
-seeds :: ListT m (Concurrently m ())
-seeds = error "not implemented"
 
 
 foldFromProducer :: Monad m => Producer batch m () -> L.FoldM m batch b -> m b
@@ -111,6 +151,23 @@ withBufferLifted buffer fOutput fInput = liftedBracket
     concurrently
       (fOutput output `liftedFinally` (liftBase $ atomically seal))
       (fInput  input  `liftedFinally` (liftBase $ atomically seal))
+  )
+
+-- We need to cleanup exception handling here more, but withBuffer is too restrictive
+-- for how we use input and output as it ends up sealing too quickly
+withOne 
+    :: (MonadBaseControl IO m)
+    => Buffer a
+    -> (Output a -> m l)
+    -> (Input a -> m r)
+    -> m r
+withOne buffer fOutput fInput = liftedBracket
+  (liftBase $ spawn' buffer)
+  (\(_, _, seal) -> do liftBase $ print "here"
+  )
+  (\(output, input, seal) -> do
+      async (fOutput output `liftedFinally` (liftBase $ atomically seal))
+      fInput input
   )
 
 fromInput' :: (MonadBase IO m) => Input a -> Producer' a m ()
