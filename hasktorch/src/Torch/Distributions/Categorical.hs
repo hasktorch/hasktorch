@@ -50,7 +50,7 @@ instance Distribution Categorical where
         return $ D.reshape (extendedShape d sampleShape) samples2d
     logProb d value = let
         value' = I.unsqueeze (F.toDType D.Int64 value) (-1 :: Int)
-        value'' = D.select value' (-1) 0
+        value'' = D.select (-1) 0 value'
         in F.squeezeDim (-1) $ I.gather (logits d) (-1 :: Int) value'' False
     entropy d = F.mulScalar (-1.0 :: Float) (F.sumDim (F.Dim $ -1) F.RemoveDim (D.dtype pLogP) pLogP)
             where pLogP = logits d `F.mul` probs d
@@ -60,7 +60,7 @@ instance Distribution Categorical where
             values = D.reshape ([-1] <> replicate (length $ batchShape d) 1) $ D.asTensor [0.0, 1.0 :: Float]
 
 numEvents :: Categorical -> Int
-numEvents (Categorical ps _logits) = D.size ps (-1)
+numEvents (Categorical ps _logits) = D.size (-1) ps
 
 fromProbs :: D.Tensor -> Categorical
 fromProbs ps = Categorical ps $ probsToLogits False ps

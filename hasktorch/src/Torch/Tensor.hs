@@ -64,8 +64,12 @@ numel
  -> Int -- ^ number of elements in tensor
 numel t = unsafePerformIO $ cast1 ATen.tensor_numel $ t
 
-size :: Tensor -> Int -> Int
-size t dim = unsafePerformIO $ (cast2 ATen.tensor_size_l) t dim
+-- | Returns the size of a given dimension of the input tensor.
+size
+ :: Int -- ^ dimension
+ -> Tensor -- ^ input 
+ -> Int
+size dim t = unsafePerformIO $ (cast2 ATen.tensor_size_l) t dim
 
 -- | Returns the shape of the tensor
 shape 
@@ -175,29 +179,29 @@ toDevice device' t = unsafePerformIO $ do
 
 -- | Slices the input tensor along the selected dimension at the given index. 
 select 
- :: Tensor -- ^ input
- -> Int -- ^ dimension to slice along
+ :: Int -- ^ dimension to slice along
  -> Int -- ^ index in the given dimension 
+ -> Tensor -- ^ input
  -> Tensor -- ^ output
-select t dim idx = unsafePerformIO $ cast3 ATen.tensor_select_ll t dim idx
+select dim idx t = unsafePerformIO $ cast3 ATen.tensor_select_ll t dim idx
 
 -- | Returns a new tensor which indexes the input tensor along dimension dim using the entries in index which is a LongTensor.
 indexSelect 
- :: Tensor 
- -> Int 
- -> Tensor 
+ :: Int -- ^ dim
+ -> Tensor -- ^ indexTensor
+ -> Tensor -- ^ input
  -> Tensor
-indexSelect t dim indexTensor = unsafePerformIO $ (cast3 ATen.index_select_tlt) t dim indexTensor
+indexSelect dim indexTensor t = unsafePerformIO $ (cast3 ATen.index_select_tlt) t dim indexTensor
 
 -- | Slices the input tensor along the selected dimension at the given range. 
 slice
-  :: Tensor -- ^ input
-  -> Int -- ^ dim
+  :: Int -- ^ dim
   -> Int -- ^ start
   -> Int -- ^ end
   -> Int -- ^ step
+  -> Tensor -- ^ input
   -> Tensor
-slice _self _dim _start _end _step = unsafePerformIO $ (cast5 ATen.slice_tllll) _self _dim _start _end _step
+slice _dim _start _end _step _self = unsafePerformIO $ (cast5 ATen.slice_tllll) _self _dim _start _end _step
 
 isContiguous
   :: Tensor
@@ -518,7 +522,7 @@ instance Show Tensor where
     where
       -- TODO: this is obviously not the right way to do it,
       -- and will be terribly slow, so please fix it.
-      showElems elemShow sep t = "[" ++ (intercalate sep $ map elemShow [t @@ i | i <- [0..((size t 0) - 1)]]) ++ "]"
+      showElems elemShow sep t = "[" ++ (intercalate sep $ map elemShow [t @@ i | i <- [0..((size 0 t) - 1)]]) ++ "]"
       padPositive x s = if x >= 0 then " " ++ s else s
       -- TODO: this assumes that scientific notation only uses one-digit exponents, which is not
       --       true in general

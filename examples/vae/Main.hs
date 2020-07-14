@@ -116,7 +116,7 @@ main = do
     trained <- foldLoop init numIters $ \vaeState i -> do
       let startIndex = mod (batchSize * i) nSamples
           endIndex = Prelude.min (startIndex + batchSize) nSamples
-          input = slice dat 0 startIndex endIndex 1 -- size should be [batchSize, dataDim]
+          input = slice 0 startIndex endIndex 1 dat -- size should be [batchSize, dataDim]
       output <- model vaeState input
       let (reconX, muVal, logvarVal) = (squeezeAll $ recon output, mu output, logvar output )
           loss = vaeLoss reconX input muVal logvarVal
