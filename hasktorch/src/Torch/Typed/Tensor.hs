@@ -346,7 +346,7 @@ select
      )
   => Tensor device dtype shape
   -> Tensor device dtype shape'
-select t = UnsafeMkTensor $ D.select (toDynamic t) (natValI @dim) (natValI @idx)
+select t = UnsafeMkTensor $ D.select (natValI @dim) (natValI @idx) (toDynamic t)
 
 selectIdx
   :: forall dim n shape' shape dtype device
@@ -357,7 +357,7 @@ selectIdx
   => Tensor device dtype shape
   -> Finite n
   -> Tensor device dtype shape'
-selectIdx t idx = UnsafeMkTensor $ D.select (toDynamic t) (natValI @dim) (getFiniteI idx)
+selectIdx t idx = UnsafeMkTensor $ D.select (natValI @dim) (getFiniteI idx) (toDynamic t)
 
 type family Numel (shape :: [Nat]) :: Nat where
     Numel '[] = 1

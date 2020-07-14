@@ -40,7 +40,7 @@ instance Distribution Bernoulli where
 
 bce' :: D.Tensor -> D.Tensor -> D.Tensor
 bce' logits probs = I.binary_cross_entropy_with_logits logits probs
-                        (D.onesLike logits) (D.ones [D.size logits (-1)] D.float_opts)
+                        (D.onesLike logits) (D.ones [D.size (-1) logits] D.float_opts)
                         $ reductionVal @(F.ReduceNone)
 
 fromProbs :: D.Tensor -> Bernoulli
