@@ -18,6 +18,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Torch.Data.ActionTransitionSystem where
 
@@ -42,7 +43,7 @@ import Data.Set as Set (filter, cartesianProduct, unions, toList, fromList, memb
 import qualified Data.Set as Set (empty)
 import Data.List as List (filter, sort, nub)
 import Control.Monad.Reader (ask, local, runReaderT, ReaderT)
-import Hedgehog (PropertyT, check, Property, (===), forAll, property, Gen, MonadGen)
+import Hedgehog (discover, checkParallel, PropertyT, check, Property, (===), forAll, property, Gen, MonadGen)
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 import Control.Monad (guard)
@@ -768,8 +769,8 @@ prep = do
   pure (ex, result)
 
 -- test that every position belongs only to at most one attention scope
-propAEnv :: Property
-propAEnv = property $ do
+prop_attentionScope :: Property
+prop_attentionScope = property $ do
   (_, [(_, Env {..})]) <- prep
   let r = Map.elems $ scopePositions <$> knownScopes aEnv
       c = sort . join $ Set.toList <$> r
@@ -777,16 +778,17 @@ propAEnv = property $ do
   c === u
 
 -- test presence of self attention
-propSelfAttention :: Property
-propSelfAttention = property $ do
+prop_selfAttention :: Property
+prop_selfAttention = property $ do
   (_, [(_, Env {..})]) <- prep
   let sa = foldr (\(pos, pos') -> \b -> if pos == pos' then Set.insert pos b else b) Set.empty (attentionMask aEnv)
   sa === keyPaddingMask aEnv
 
-propRoundTrip :: Property
-propRoundTrip = property $ do
-  (ex, result) <- prep
-  [ex] === ((fst . fst) <$> result)
+-- test round trip serialization-deserialization
+prop_roundTrip :: Property
+prop_roundTrip = property $ do
+  (ex, [((reconstructedEx, _), _)]) <- prep
+  ex === reconstructedEx
 
 testSTLC :: IO Bool
-testSTLC = check propRoundTrip
+testSTLC = checkParallel $$(discover)
