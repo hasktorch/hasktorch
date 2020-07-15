@@ -9,7 +9,12 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeApplications #-}
-module Torch.Data.CsvDataset where
+module Torch.Data.CsvDataset ( CsvDataset(..)
+                             , csvDataset
+                             , NamedColumns
+                             , FromField(..)
+                             , FromRecord(..)
+                             ) where
 
 import           Torch.Typed
 import qualified Torch.DType as D
@@ -53,7 +58,7 @@ instance ( KnownNat seqLen
     => FromRecord (Tensor device 'Int64 '[1, seqLen]) where
   parseRecord 
     s | V.length s < natValI @seqLen = mzero
-      | otherwise = fromList <$> (parseRecord  $ V.take (natValI @seqLen) s ) >>= \case
+      | otherwise = fromList <$> (parseRecord $ V.take (natValI @seqLen) s ) >>= \case
             Nothing -> mzero 
             Just s -> pure s
 
@@ -66,7 +71,7 @@ instance ( KnownNat seqLen
     => FromRecord (Tensor device 'D.Float '[1, seqLen]) where
   parseRecord 
     s | V.length s < natValI @seqLen = mzero
-      | otherwise = fromList <$> (parseRecord  $ V.take (natValI @seqLen) s ) >>= \case
+      | otherwise = fromList <$> (parseRecord $ V.take (natValI @seqLen) s ) >>= \case
             Nothing -> mzero 
             Just s -> pure s
 
@@ -76,6 +81,8 @@ data CsvDataset batches = CsvDataset { filePath :: FilePath
                                      , byName :: NamedColumns
                                      , hasHeader :: HasHeader
                                      , batchSize :: Int
+                                     , filter :: Maybe (batches -> Bool)
+                                     , numBatches :: Maybe Int
                                      }
 
 csvDataset :: forall batches . FilePath -> CsvDataset batches
@@ -84,6 +91,8 @@ csvDataset filePath  = CsvDataset { filePath = filePath
                                   , byName = Unnamed
                                   , hasHeader = NoHeader
                                   , batchSize = 1
+                                  , filter = Nothing
+                                  , numBatches = Nothing
                                   }
 
 instance ( MonadPlus m
@@ -92,11 +101,14 @@ instance ( MonadPlus m
          , Safe.MonadSafe m
          , FromRecord batch -- these constraints make CsvDatasets only able to parse records, might not be the best idea
          , FromNamedRecord batch
-         , Monoid batch
-         ) => Datastream m () (CsvDataset batch) batch where
+         -- , Monoid batch
+         ) => Datastream m () (CsvDataset batch) [batch] where
   streamBatch CsvDataset{..} _ = Select $ Safe.withFile filePath ReadMode $ \fh ->
       -- this quietly discards errors right now, probably would like to log this
-      L.purely folds L.mconcat $ view (chunksOf batchSize) $ decodeRecords fh >-> P.concat
+    -- TODO : optionally take a fixed number of batches
+     -- L.purely folds L.mconcat $ view (chunksOf batchSize) $ decodeRecords fh >-> P.concat
+     L.purely folds L.list $ view (chunksOf batchSize) $ decodeRecords fh >-> P.concat
+
   -- TODO: we could concurrently stream in records, and batch records in another thread
         where
           decodeRecords fh = case byName of
@@ -105,3 +117,4 @@ instance ( MonadPlus m
           -- what's a good default chunk size? 
           produceLine fh = B.hGetSome 1000 fh
 
+  -- TODO: add shuffles with a fixed buffer size

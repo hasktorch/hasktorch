@@ -15,6 +15,7 @@ module Torch.Data.StreamedPipeline ( makeListT
                                    , makeListT'
                                    , foldOverWith
                                    , foldOverWith'
+                                   , pMap
                                    , Datastream(..)
                                    , defaultDataloaderOpts
                                    , MonadBase(..)
