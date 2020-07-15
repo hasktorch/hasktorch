@@ -37,15 +37,17 @@ import Control.Monad.Trans.Free (wrap, iterTM, runFreeT, Free, FreeT(..), FreeF(
 import Control.Monad.State (StateT (..), runStateT, get, put, modify)
 import Control.Monad (ap, void)
 import Control.Monad.Trans (MonadTrans(lift))
-import Data.Map as Map (keys, null, insertWith, singleton, fromList, unionWith, Map, insert, lookup)
-import Data.Set as Set (member, singleton, union, Set, insert, findIndex)
-import Data.List as List (nub)
+import Data.Map as Map (elems, toList, (!), adjust, update, keys, null, insertWith, singleton, fromList, unionWith, Map, insert, lookup)
+import Data.Set as Set (filter, cartesianProduct, unions, toList, fromList, member, singleton, union, Set, insert, findIndex)
+import qualified Data.Set as Set (empty)
+import Data.List as List (filter, sort, nub)
 import Control.Monad.Reader (ask, local, runReaderT, ReaderT)
-import Hedgehog (Gen, MonadGen)
+import Hedgehog (PropertyT, check, Property, (===), forAll, property, Gen, MonadGen)
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 import Control.Monad (guard)
 import Data.Maybe (fromMaybe)
+import Control.Monad (join)
 
 -- https://stackoverflow.com/questions/17675054/deserialising-with-ghc-generics?rq=1
 -- http://hackage.haskell.org/package/cereal-0.5.8.1/docs/Data-Serialize.html
@@ -54,59 +56,80 @@ import Data.Maybe (fromMaybe)
 -- https://vaibhavsagar.com/blog/2018/02/04/revisiting-monadic-parsing-haskell/
 -- https://github.com/alphaHeavy/protobuf/blob/46cda829cf1e7b6bba2ff450e267fb1a9ace4fb3/src/Data/ProtocolBuffers/Ppr.hs
 
-data Relation =
-    ChildParentRelation
-  | ParentChildRelation
-  | SiblingDistRelation { siblingDist :: Int }
-  deriving (Eq, Ord, Show, Generic)
-
 data Env = Env
-  { meta :: Maybe M
-  , pos :: Pos
+  { pos :: Pos
+  , meta :: Maybe M
   , rEnv :: REnv
   , aEnv :: AEnv
-  , validActionsMask :: Map Pos (Set Action)
-  }
-  deriving (Eq, Ord, Show, Generic)
+  -- , validActionsMask :: Map Pos (Set Action)
+  } deriving (Eq, Ord, Show, Generic)
 
--- TODO: define monoid
 defaultEnv :: Env
 defaultEnv = Env
-  { meta = Nothing
-  , pos = Pos 0
+  { pos = Pos 0
+  , meta = Nothing
   , rEnv = REnv
     { parentPos = Nothing
     , parents = mempty
     , relations = mempty
     }
   , aEnv = AEnv
-    { attentionMask = mempty
+    { currentScope = Nothing
+    , knownScopes = mempty
+    , attentionMask = mempty
     , keyPaddingMask = mempty
     }
-  , validActionsMask = mempty
+  -- , validActionsMask = mempty
   }
+
+newtype Pos = Pos { unPos :: Int }
+  deriving (Eq, Ord, Show, Num, Generic)
+
+data Relation =
+    ChildParentRelation
+  | ParentChildRelation
+  | SiblingDistRelation { siblingDist :: Int }
+  deriving (Eq, Ord, Show, Generic)
 
 data REnv = REnv
   { parentPos :: Maybe Pos
   , parents :: Map Pos (Set Pos)
   , relations :: Map (Pos, Pos) (Set Relation)
-  }
-  deriving (Eq, Ord, Show, Generic)
+  } deriving (Eq, Ord, Show, Generic)
+
+type ScopeId = Text
+
+data AttentionScope = AttentionScope
+  { scopeKind :: AttentionKind
+  , scopeConnections :: Set ScopeId
+  , scopePositions :: Set Pos
+  } deriving (Eq, Ord, Show, Generic)
+
+data AttentionKind = 
+    BidirectionalAttention
+  | BackwardAttention
+  | ForwardAttention
+    deriving (Eq, Ord, Show, Generic)
 
 data AEnv = AEnv
-  { attentionMask :: Set (Pos, Pos)
+  { currentScope :: Maybe ScopeId
+  , knownScopes :: Map ScopeId AttentionScope
+  , attentionMask :: Set (Pos, Pos)
   , keyPaddingMask :: Set Pos
-  }
-  deriving (Eq, Ord, Show, Generic)
+  } deriving (Eq, Ord, Show, Generic)
 
 data M = D Text | C Text | S Text
   deriving (Eq, Ord, Show, Generic)
 
-newtype Pos = Pos { unPos :: Int }
-  deriving (Eq, Ord, Show, Num, Generic)
-
-data Action = L | R | Grow | Reduce | IToken Int | SToken Text | BToken Bool
-  deriving (Eq, Ord, Show)
+data Action =
+    L
+  | R
+  | Grow
+  | Reduce
+  | IToken Int
+  | SToken Text
+  | BToken Bool
+    deriving (Eq, Ord, Show)
 
 type To t a = a -> t Action
 type From b a = Parser (StateT Env b) Action a
@@ -159,11 +182,36 @@ siblingRelations pos = get >>= ap (go . view (field @"parentPos")) (view (field 
 updateRelations :: forall f . Monad f => Pos -> StateT REnv f ()
 updateRelations = ancestralRelations @f >> siblingRelations @f
 
-updateAttention :: forall f . Monad f => Pos -> StateT AEnv f ()
+updateAttention :: forall f. Monad f => Pos -> StateT AEnv f ()
 updateAttention pos = do
-  modify (field @"attentionMask" %~ (\mask -> mask))
-  modify (field @"keyPaddingMask" %~ (Set.insert pos))
+  mScopeId <- (^. field @"currentScope") <$> get
+  knownScopes <- (^. field @"knownScopes") <$> get
+  case mScopeId of
+    Just scopeId -> do
+      modify (field @"attentionMask" %~ go pos scopeId knownScopes)
+      modify (field @"knownScopes" %~ go' pos scopeId)
+    Nothing -> pure ()
+  modify (field @"keyPaddingMask" %~ Set.insert pos)
+  where
+    go pos thisScopeId knownScopes mask =
+      let constrainAttention BidirectionalAttention = id
+          constrainAttention BackwardAttention = Set.filter (uncurry (>=))
+          constrainAttention ForwardAttention = Set.filter (uncurry (<=))
+          mkMask kind from to = constrainAttention kind $ Set.cartesianProduct from to
+          thisScope = knownScopes ! thisScopeId
+          attendSelf = Set.singleton pos
+          attendTo = Set.unions $ scopePositions . (knownScopes !) <$> Set.toList (scopeConnections $ thisScope)
+          attendFrom = List.filter (member thisScopeId . scopeConnections) $ Map.elems knownScopes
+          mask' =
+            Set.unions
+              [ mkMask (scopeKind thisScope) attendSelf attendTo
+              , Set.unions $ (\thatScope -> mkMask (scopeKind thatScope) (scopePositions thatScope) attendSelf) <$> attendFrom
+              , mkMask (scopeKind thisScope) attendSelf attendSelf
+              ]
+       in Set.union mask' mask
+    go' pos = Map.adjust (field @"scopePositions" %~ (Set.insert pos))
 
+-- TODO: move state updates somewhere else?
 token :: forall b t . Monad b => Parser (StateT Env b) t t
 token = do
   t <- wrap $ FreeT . pure . Pure
@@ -299,8 +347,8 @@ instance MonadFail b => FromActions b Bool where
 -- Results are discarded.
 -- TODO: this isn't nice yet. It would be great if there was a stronger signal for failure than just 'mzero'.
 -- Parser b i a ~ FreeT ((->) i) b a
-check :: forall b i a . MonadPlus b => Parser b i a -> i -> b ()
-check p i = do
+checkParser :: forall b i a . MonadPlus b => Parser b i a -> i -> b ()
+checkParser p i = do
   val <- runFreeT p
   case val of
     Pure a -> mzero
@@ -409,7 +457,7 @@ test =
                         -- , view (field @"rEnv" . field @"relations") env'
                         ) >> pure (p, as)
                 in runStateT (parse f parser actions) env
-  in (actions, result', runStateT (check parser (IToken 1)) env)
+  in (actions, result', runStateT (checkParser parser (IToken 1)) env)
 
 ------------------------------------------------------------------------
 -- A simply-typed lambda calculus with ints, bools, and strings
@@ -420,6 +468,7 @@ test =
 -- accuracy based on exact match
 -- variables need to be anonymized, use relations to indicate identical variables
 -- constrain the production using `guard` on typecheck
+-- how can I typecheck during parsing?
 -- backtracking of FreeT ((->) i) [] a will solve it automatically
 
 data TType =
@@ -427,7 +476,10 @@ data TType =
   | TInt
   | TString
   | TArrow TType TType
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord, Show, Generic)
+
+instance ToActions [] TType
+instance FromActions [] TType
 
 data Expr =
     EBool Bool
@@ -436,7 +488,37 @@ data Expr =
   | EVar Text
   | ELam Text TType Expr
   | EApp Expr Expr
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord, Show, Generic)
+
+instance ToActions [] Expr
+instance FromActions [] Expr
+
+data Example a b = Example
+  { input :: Input a
+  , target :: Target b
+  } deriving (Eq, Ord, Show, Generic)
+
+instance (Alternative t, ToActions t a, ToActions t b) => ToActions t (Example a b)
+instance (Monad b, FromActions b a, FromActions b b') => FromActions b (Example a b')
+
+newtype Input  a = Input  a deriving (Eq, Ord, Show, Generic)
+newtype Target a = Target a deriving (Eq, Ord, Show, Generic)
+
+instance ToActions t a => ToActions t (Input a)
+instance (Monad b, FromActions b a) => FromActions b (Input a) where
+  fromActions = do
+    modify $ field @"aEnv" . field @"currentScope" .~ pure "input"
+    modify $ field @"aEnv" . field @"knownScopes" %~ go "input"
+    Input <$> fromActions
+    where go scopeId = Map.insert scopeId (AttentionScope BidirectionalAttention (Set.singleton "input") mempty)
+
+instance ToActions t a => ToActions t (Target a)
+instance (Monad b, FromActions b a) => FromActions b (Target a) where
+  fromActions = do
+    modify $ field @"aEnv" . field @"currentScope" .~ pure "target"
+    modify $ field @"aEnv" . field @"knownScopes" %~ go "target"
+    Target <$> fromActions
+    where go scopeId = Map.insert scopeId (AttentionScope BackwardAttention (Set.fromList ["input", "target"]) mempty)
 
 ------------------------------------------------------------------------
 
@@ -545,7 +627,6 @@ typecheck' env expr =
         TArrow ta tb ->
           if ta == tg then
             pure tb
---          pure ta {- uncomment for bugs -}
           else
             Left (Mismatch ta tg)
         _ ->
@@ -607,7 +688,7 @@ genWellTypedExpr'' want =
 insertVar :: Text -> TType -> Map TType [Expr] -> Map TType [Expr]
 insertVar n typ =
   Map.insertWith (<>) typ [EVar n] .
-  fmap (filter (/= EVar n))
+  fmap (List.filter (/= EVar n))
 
 genWellTypedApp :: TType -> ReaderT (Map TType [Expr]) Gen Expr
 genWellTypedApp want = do
@@ -671,5 +752,41 @@ genIllTypedApp = do
 
 ------------------------------------------------------------------------
 
-testSTLC :: ()
-testSTLC = ()
+prep :: PropertyT IO (Example Expr Expr, [((Example Expr Expr, [Action]), Env)])
+prep = do
+  ty <- forAll genType
+  input <- forAll (genWellTypedExpr ty)
+  let target = evaluate input
+      ex = Example (Input input) (Target target)
+      env = defaultEnv
+      actions = toActions @[] ex
+  guard (length actions <= 512)
+  let parser = fromActions @[] @(Example Expr Expr)
+      result = let f ap [] = empty
+                   f ap (a : as) = let p = ap a in pure (p, as)
+               in  runStateT (parse f parser actions) env
+  pure (ex, result)
+
+-- test that every position belongs only to at most one attention scope
+propAEnv :: Property
+propAEnv = property $ do
+  (_, [(_, Env {..})]) <- prep
+  let r = Map.elems $ scopePositions <$> knownScopes aEnv
+      c = sort . join $ Set.toList <$> r
+      u = Set.toList . Set.unions $ r
+  c === u
+
+-- test presence of self attention
+propSelfAttention :: Property
+propSelfAttention = property $ do
+  (_, [(_, Env {..})]) <- prep
+  let sa = foldr (\(pos, pos') -> \b -> if pos == pos' then Set.insert pos b else b) Set.empty (attentionMask aEnv)
+  sa === keyPaddingMask aEnv
+
+propRoundTrip :: Property
+propRoundTrip = property $ do
+  (ex, result) <- prep
+  [ex] === ((fst . fst) <$> result)
+
+testSTLC :: IO Bool
+testSTLC = check propRoundTrip
