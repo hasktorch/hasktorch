@@ -7,7 +7,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 module Main where
 
-import           Control.Monad (when)
+import           Control.Monad (foldM, when)
 import           Data.Csv (FromNamedRecord)
 import           GHC.Generics (Generic)
 import           Pipes
@@ -51,12 +51,12 @@ mlp MLP{..} input =
     . linear l0
     $ input
 
-data IrisClass = Setosa | Versicolour | Virginica deriving (Eq, Show, Enum, Generic)
+data IrisClass = Setosa | Versicolor | Virginica deriving (Eq, Show, Enum, Generic)
 
 instance FromField IrisClass where
   parseField b = case b of
     "Iris-setosa"      -> pure Setosa
-    "Iris-versicolour" -> pure Versicolour
+    "Iris-versicolor" -> pure Versicolor
     "Iris-virginica"   -> pure Virginica
     _                  -> mzero
 data Iris = Iris { sepalLength :: Float
@@ -81,27 +81,37 @@ toTensors iris = do
         getClasses = fmap (\x -> fromEnum $ irisClass x)
 
 -- trainLoop :: Optimizer o => model -> o -> Producer [Iris] m  () -> m model
-trainLoop model optimizer = P.foldM step model done
+trainLoop model optimizer = P.foldM step init done
   -- where step :: MonadIO m => MLP -> (Tensor, Tensor) -> m MLP
   where 
-        -- step model (bad, label ) = do
-        step model bad = do
-          let (input, label) = Main.toTensors bad
+        step model (input, label ) = do
+        -- step model bad = do
+          -- let (input, label) = Main.toTensors bad
           let loss = nllLoss' label $ mlp model input
           -- when (iter `mod` 50 == 0) $ do
           liftIO $ putStrLn $ " | Loss: " ++ show loss
+          liftIO $ print label 
           (newParam, _) <- liftIO $ runStep model optimizer loss 1e-3
           pure $ replaceParameters model newParam
         done = pure
+        init = pure model
 
 main :: IO ()
 main = runSafeT $ do
   init <- liftIO $ sample spec 
-  let irisTrain = (csvDataset @Iris "iris.data") { batchSize = 1 }
-  inputs <- makeListT @_ @_ @_ @[Iris] defaultDataloaderOpts irisTrain (Select $ yield ()) 
+  let irisTrain = (csvDataset @Iris "iris.data") { batchSize = 4 , shuffle = Just 500}
+
+  -- inputs <- makeListT @_ @_ @_ @[Iris] defaultDataloaderOpts irisTrain (Select $ yield ()) 
   -- transformed <- pMap inputs Main.toTensors 2
-  -- lift $ trainLoop (sample spec) optimizer $ enumerate transformed
-  trainLoop (liftIO $ sample spec) optimizer $ enumerate inputs
+
+  foldM (\model epoch -> do
+            inputs <- makeListT @_ @_ @_ @[Iris] defaultDataloaderOpts irisTrain (Select $ yield ()) 
+            transformed <- pMap inputs Main.toTensors 2
+            -- liftIO $ print epoch
+            trainLoop model optimizer $ enumerate transformed
+        ) init [1]
+  -- liftIO $ foldM init 1000 $ trainLoop init (optimizer ) $ enumerate transformed 
+  -- trainLoop init (optimizer init) $ enumerate inputs
   pure ()
   -- model <- foldOverWith' irisTrain (Select $ yield ()) (trainLoop (pure init) optimizer)
   where spec = MLPSpec 4 100 100 3

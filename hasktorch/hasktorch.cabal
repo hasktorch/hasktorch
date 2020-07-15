@@ -117,6 +117,7 @@ library
                     , transformers-base
                     , cassava
                     , ordered-containers >= 0.2
+                    , array
 
                     , inline-c
  default-extensions:  Strict

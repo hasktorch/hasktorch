@@ -1,3 +1,5 @@
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -35,7 +37,8 @@ import qualified Pipes.Prelude as P
 import           Torch.Typed
 
 import           Lens.Family
-import           Control.Monad.Trans.Control (MonadBaseControl(..), control)
+-- import           Control.Monad.Trans.Control (MonadBaseControl(..), control)
+import           Control.Monad.Trans.Control 
 import           Control.Monad.Base (MonadBase, liftBase)
 
 import           Control.Foldl (Fold, FoldM(FoldM))
@@ -72,10 +75,10 @@ readBatches' dataset seeds outputBox =
 runTransforms :: MonadBase IO m => (batch -> batch') -> Input (batch) -> Output (batch') -> Effect m ()
 runTransforms transforms transformBox trainBox = fromInput' transformBox >-> P.map transforms >-> toOutput' trainBox
 
+  -- this is a bit of a mess 
 pMap :: (Monad m, MonadBaseControl IO m) => ListT m a -> (a -> b) -> Int -> m (ListT m b)
-pMap p f n = Select <$> withOne unbounded unwrap (\input -> withOne unbounded (mapConcur input) (\input2 -> pure $ fromInput' input2))
-
-  where unwrap output= runEffect $ enumerate p >-> toOutput' output
+pMap prod f n = Select <$> withOne unbounded unwrap (\input -> withOne unbounded (mapConcur input) (\input2 -> pure $ fromInput' input2))
+  where unwrap output = runEffect $ enumerate prod >-> toOutput' output
         mapConcur input output = replicateConcurrently_ n $ runEffect $ fromInput' input >-> P.map f >-> toOutput' output
           
 
@@ -184,3 +187,8 @@ liftedFinally a sequel = control $ \runInIO ->
                                    (runInIO sequel)
 instance (MonadBase IO m) => MonadBase IO (Proxy a' a b' b m) where
   liftBase = lift . liftBase
+
+-- instance (MonadBaseControl IO m) => MonadBaseControl IO (Proxy a' a b' b m) where
+--     type StM (Proxy a' a b' b m) a = ComposeSt (Proxy a' a b' b) m a
+--     liftBaseWith     = defaultLiftBaseWith
+--     restoreM         = defaultRestoreM

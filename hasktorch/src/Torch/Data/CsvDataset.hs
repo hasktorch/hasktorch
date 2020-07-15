@@ -16,6 +16,12 @@ module Torch.Data.CsvDataset ( CsvDataset(..)
                              , FromRecord(..)
                              ) where
 
+import System.Random
+import Data.Array.ST
+import Control.Monad
+import Control.Monad.ST
+import Data.STRef
+
 import           Torch.Typed
 import qualified Torch.DType as D
 import           Data.Reflection (Reifies(reflect))
@@ -76,6 +82,8 @@ instance ( KnownNat seqLen
             Just s -> pure s
 
 data NamedColumns = Unnamed | Named
+type BufferSize = Int
+
 data CsvDataset batches = CsvDataset { filePath :: FilePath
                                      , decDelimiter :: !B.Word8
                                      , byName :: NamedColumns
@@ -83,6 +91,7 @@ data CsvDataset batches = CsvDataset { filePath :: FilePath
                                      , batchSize :: Int
                                      , filter :: Maybe (batches -> Bool)
                                      , numBatches :: Maybe Int
+                                     , shuffle :: Maybe BufferSize
                                      }
 
 csvDataset :: forall batches . FilePath -> CsvDataset batches
@@ -93,6 +102,7 @@ csvDataset filePath  = CsvDataset { filePath = filePath
                                   , batchSize = 1
                                   , filter = Nothing
                                   , numBatches = Nothing
+                                  , shuffle = Nothing
                                   }
 
 instance ( MonadPlus m
@@ -106,15 +116,46 @@ instance ( MonadPlus m
   streamBatch CsvDataset{..} _ = Select $ Safe.withFile filePath ReadMode $ \fh ->
       -- this quietly discards errors right now, probably would like to log this
     -- TODO : optionally take a fixed number of batches
-     -- L.purely folds L.mconcat $ view (chunksOf batchSize) $ decodeRecords fh >-> P.concat
-     L.purely folds L.list $ view (chunksOf batchSize) $ decodeRecords fh >-> P.concat
-
   -- TODO: we could concurrently stream in records, and batch records in another thread
-        where
-          decodeRecords fh = case byName of
-                               Unnamed -> decode hasHeader (produceLine fh)
-                               Named   -> decodeByName (produceLine fh)
+     -- L.purely folds L.mconcat $ view (chunksOf batchSize) $ decodeRecords fh >-> P.concat
+    case shuffle of
+      Nothing -> L.purely folds L.list $ view (chunksOf batchSize) $ decodeRecords fh >-> P.concat
+      Just bufferSize -> L.purely folds L.list $ view (chunksOf batchSize) $
+         (L.purely folds L.list $ view (chunksOf bufferSize) $ decodeRecords fh >-> P.concat) >-> shuffleRecords
+    where
+      decodeRecords fh = case byName of
+                           Unnamed -> decode hasHeader (produceLine fh)
+                           Named   -> decodeByName (produceLine fh)
           -- what's a good default chunk size? 
-          produceLine fh = B.hGetSome 1000 fh
+      produceLine fh = B.hGetSome 1000 fh
 
+    -- probably want a cleaner way of reyielding these chunks
+      shuffleRecords = do
+        chunks <- await 
+        std <- Torch.Data.StreamedPipeline.liftBase getStdGen
+        mapM_ yield $ (fst $  shuffle' chunks std)
+        
   -- TODO: add shuffles with a fixed buffer size
+
+-- | Randomly shuffle a list without the IO Monad
+--   /O(N)/
+shuffle' :: [a] -> StdGen -> ([a],StdGen)
+shuffle' xs gen = runST (do
+        g <- newSTRef gen
+        let randomRST lohi = do
+              (a,s') <- liftM (randomR lohi) (readSTRef g)
+              writeSTRef g s'
+              return a
+        ar <- newArray n xs
+        xs' <- forM [1..n] $ \i -> do
+                j <- randomRST (i,n)
+                vi <- readArray ar i
+                vj <- readArray ar j
+                writeArray ar j vi
+                return vj
+        gen' <- readSTRef g
+        return (xs',gen'))
+  where
+    n = Prelude.length xs
+    newArray :: Int -> [a] -> ST s (STArray s Int a)
+    newArray n xs =  newListArray (1,n) xs
