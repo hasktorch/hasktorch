@@ -381,6 +381,7 @@ iterTM' f p = do
 -- I shall test this idea with a random model.
 -- How do to beam search?
 -- does this work for training? I guess @next@ would build up a loss term. How do handle batching?
+-- fresh values when backtracking: https://hackage.haskell.org/package/monad-gen-0.1.0.0/docs/Control-Monad-Gen.html
 parse
   :: forall s b i a
    . Monad b
@@ -482,6 +483,19 @@ data TType =
 instance ToActions [] TType
 instance FromActions [] TType
 
+-- | Lambda terms.
+-- TODO: use De Bruijn indices https://en.wikipedia.org/wiki/De_Bruijn_index
+-- https://stackoverflow.com/questions/28931477/haskell-convert-de-bruijn-terms-to-lambda-terms-and-vice-versa
+-- https://hackage.haskell.org/package/lambda-sampler-1.1/docs/Data-Lambda.html
+-- https://mroman42.github.io/mikrokosmos/haddock/Stlc-Types.html
+-- https://www.schoolofhaskell.com/user/edwardk/bound
+-- https://github.com/ekmett/bound/blob/master/examples/Simple.hs
+-- http://hackage.haskell.org/package/bound-gen
+-- http://hackage.haskell.org/package/bound-extras
+-- https://github.com/robrix/path/blob/master/src/Path/Term.hs
+-- https://en.wikipedia.org/wiki/Programming_Computable_Functions
+-- https://github.com/jozefg/pcf/blob/master/src/Language/Pcf.hs
+-- https://jozefg.bitbucket.io/posts/2014-12-17-variables.html
 data Expr =
     EBool Bool
   | EInt Int
@@ -493,6 +507,38 @@ data Expr =
 
 instance ToActions [] Expr
 instance FromActions [] Expr
+
+-- | de Bruijn indices in unary notation.
+data BIndex =
+    BZero
+  | BSucc BIndex
+    deriving (Eq, Ord, Show, Generic)
+
+instance ToActions [] BIndex
+instance FromActions [] BIndex
+
+-- | Translates the given index to a corresponding positive integer.
+toInt :: (Num a) => BIndex -> a
+toInt BZero = 0
+toInt (BSucc n) = 1 + toInt n
+
+-- | Translates the given positive integer to a corresponding index.
+toIndex :: (Num a, Eq a) => a -> BIndex
+toIndex 0 = BZero
+toIndex n = BSucc $ toIndex (n-1)
+
+-- | Lambda terms with de Bruijn indices.
+data BExpr =
+    BBool Bool
+  | BInt Int
+  | BString Text
+  | BVar BIndex -- ^ de Bruijn indices.
+  | BLam TType BExpr -- ^ Lambda abstraction.
+  | BApp BExpr BExpr -- ^ Term application.
+    deriving (Eq, Ord, Show, Generic)
+
+instance ToActions [] BExpr
+instance FromActions [] BExpr
 
 data Example a b = Example
   { input :: Input a
