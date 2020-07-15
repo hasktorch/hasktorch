@@ -16,7 +16,7 @@ import Torch.NN
     Randomizable,
     sample,
   )
-import Torch.Tensor (Tensor, select)
+import Torch.Tensor (Tensor)
 import Torch.TensorFactories (randnIO')
 
 data MatrixFactSpec

@@ -22,9 +22,9 @@ import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 
+
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
 C.include "<array>"
 
 
@@ -103,24 +103,6 @@ instance CppTuple3 (Ptr (StdArray '(CBool,4))) where
 instance CppTuple4 (Ptr (StdArray '(CBool,4))) where
   type D (Ptr (StdArray '(CBool,4))) = CBool
   get3 v = [C.throwBlock| bool { return std::get<3>(*$(std::array<bool,4>* v));}|]
-
-foreign import ccall unsafe "hasktorch_finalizer.h &delete_stdarraybool2"
-  c_delete_stdarraybool2 :: FunPtr ( Ptr (StdArray '(CBool,2)) -> IO ())
-
-foreign import ccall unsafe "hasktorch_finalizer.h &delete_stdarraybool3"
-  c_delete_stdarraybool3 :: FunPtr ( Ptr (StdArray '(CBool,3)) -> IO ())
-
-foreign import ccall unsafe "hasktorch_finalizer.h &delete_stdarraybool4"
-  c_delete_stdarraybool4 :: FunPtr ( Ptr (StdArray '(CBool,4)) -> IO ())
-
-instance CppObject (StdArray '(CBool,2)) where
-  fromPtr ptr = newForeignPtr c_delete_stdarraybool2 ptr
-
-instance CppObject (StdArray '(CBool,3)) where
-  fromPtr ptr = newForeignPtr c_delete_stdarraybool3 ptr
-
-instance CppObject (StdArray '(CBool,4)) where
-  fromPtr ptr = newForeignPtr c_delete_stdarraybool4 ptr
 
 
 

@@ -724,6 +724,71 @@ instance
         t' = narrow @dim @start @length t
     checkDynamicTensorAttributes t'
 
+data DiagSpec = DiagSpec
+
+instance
+  ( TensorOptions shape dtype device
+  , TensorOptions shape' dtype device
+  , KnownTri tri
+  , KnownNat index
+  , StandardDTypeValidation device dtype
+  , shape' ~ DiagShape tri index shape
+  ) => Apply' DiagSpec (((Proxy tri, Proxy index), (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
+  apply' DiagSpec (_, agg) = agg >> do
+    let t = ones @shape @dtype @device
+    checkDynamicTensorAttributes $ diag @tri @index t
+
+data DiagEmbedSpec = DiagEmbedSpec
+
+instance
+  ( TensorOptions shape dtype device
+  , TensorOptions shape' dtype device
+  , KnownNat index
+  , KnownNat dim1
+  , KnownNat dim2
+  , DimsDistinctAscending dim1 dim2
+  , shape' ~ DiagEmbedShape index dim1 dim2 shape
+  , StandardDTypeValidation device dtype
+  ) => Apply' DiagEmbedSpec (((Proxy index, (Proxy dim1, Proxy dim2)), (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
+  apply' DiagEmbedSpec (_, agg) = agg >> do
+    let t = ones @shape @dtype @device
+    foldMap
+      (\tri -> checkDynamicTensorAttributes $ diagEmbed @index @dim1 @dim2 tri t)
+      [Upper, Lower]
+
+data DiagflatSpec = DiagflatSpec
+
+instance
+  ( TensorOptions shape dtype device
+  , TensorOptions shape' dtype device
+  , KnownNat index
+  , shape' ~ DiagflatShape index shape
+  , StandardDTypeValidation device dtype
+  ) => Apply' DiagflatSpec ((Proxy index, (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
+  apply' DiagflatSpec (_, agg) = agg >> do
+    let t = ones @shape @dtype @device
+    foldMap
+      (\tri -> checkDynamicTensorAttributes $ diagflat @index tri t)
+      [Upper, Lower]
+
+data DiagonalSpec = DiagonalSpec
+
+instance
+  ( TensorOptions shape dtype device
+  , TensorOptions shape' dtype device
+  , KnownTri tri
+  , KnownNat index
+  , KnownNat dim1
+  , KnownNat dim2
+  , NDimAtLeast 2 shape
+  , DimsDistinctAscending dim1 dim2
+  , shape' ~ DiagonalShape tri index dim1 dim2 shape
+  , StandardDTypeValidation device dtype
+  ) => Apply' DiagonalSpec (((Proxy tri, (Proxy index, (Proxy dim1, Proxy dim2))), (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
+  apply' DiagonalSpec (_, agg) = agg >> do
+    let t = ones @shape @dtype @device
+    checkDynamicTensorAttributes $ diagonal @tri @index @dim1 @dim2 t
+
 data AnyAllSpec = AnySpec | AllSpec
 
 instance
@@ -1017,6 +1082,78 @@ spec' device =
           hfoldrM @IO Transpose2DSpec () (hattach cpu   (hproduct allDTypes (Proxy @'[2, 3] :. HNil)))
         Device { deviceType = CUDA, deviceIndex = 0 } ->
           hfoldrM @IO Transpose2DSpec () (hattach cuda0 (hproduct allDTypes (Proxy @'[2, 3] :. HNil)))
+      it "diag" $ do
+        let
+          vectorShapes = Proxy @'[0] :. Proxy @'[1] :. Proxy @'[2] :. HNil
+          emptyShapes = Proxy @'[0, 0] :. Proxy @'[0, 1]  :. Proxy @'[1, 0] :. HNil
+          tris = Proxy @'Upper :. Proxy @'Lower :. HNil
+          indexes = Proxy @0 :. Proxy @1 :. HNil
+          indexes' = Proxy @0 :. HNil
+        case device of
+          Device { deviceType = CPU,  deviceIndex = 0 } -> do
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cpu   (hproduct standardDTypes standardShapes)))
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cpu   (hproduct standardDTypes vectorShapes)))
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes') (hattach cpu   (hproduct standardDTypes emptyShapes)))
+          Device { deviceType = CUDA, deviceIndex = 0 } -> do
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cuda0 (hproduct (withHalf standardDTypes) standardShapes)))
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cuda0 (hproduct (withHalf standardDTypes) vectorShapes)))
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes') (hattach cuda0 (hproduct (withHalf standardDTypes) emptyShapes)))
+      it "diagEmbed" $ do
+        let shapes =
+              standardShapes
+                `happend` ( Proxy @'[0]
+                              :. Proxy @'[1]
+                              :. Proxy @'[2]
+                              :. Proxy @'[0, 0]
+                              :. Proxy @'[0, 1]
+                              :. Proxy @'[1, 0]
+                              :. HNil
+                          )
+            indexes = Proxy @0 :. Proxy @1 :. HNil
+            dims = (Proxy @0, Proxy @1) :. HNil
+            allDims = (Proxy @0, Proxy @2) :. dims
+        case device of
+          Device {deviceType = CPU, deviceIndex = 0} -> do
+            hfoldrM @IO DiagEmbedSpec () (hproduct (hproduct indexes dims)    (hattach cpu   (hproduct standardDTypes shapes)))
+            hfoldrM @IO DiagEmbedSpec () (hproduct (hproduct indexes allDims) (hattach cpu   (hproduct standardDTypes standardShapes)))
+          Device {deviceType = CUDA, deviceIndex = 0} -> do
+            hfoldrM @IO DiagEmbedSpec () (hproduct (hproduct indexes dims)    (hattach cuda0 (hproduct (withHalf standardDTypes) shapes)))
+            hfoldrM @IO DiagEmbedSpec () (hproduct (hproduct indexes allDims) (hattach cuda0 (hproduct (withHalf standardDTypes) standardShapes)))
+      it "diagflat" $ do
+        let shapes =
+              standardShapes
+                `happend` ( Proxy @'[0]
+                              :. Proxy @'[1]
+                              :. Proxy @'[2]
+                              :. Proxy @'[0, 0]
+                              :. Proxy @'[0, 1]
+                              :. Proxy @'[1, 0]
+                              :. HNil
+                          )
+            indexes = Proxy @0 :. Proxy @1 :. HNil
+        case device of
+          Device { deviceType = CPU,  deviceIndex = 0 } -> do
+            hfoldrM @IO DiagflatSpec () (hproduct indexes (hattach cpu   (hproduct standardDTypes shapes)))
+          Device { deviceType = CUDA, deviceIndex = 0 } -> do
+            hfoldrM @IO DiagflatSpec () (hproduct indexes (hattach cuda0 (hproduct (withHalf standardDTypes) shapes)))
+      it "diagonal" $ do
+        let shapes1 = Proxy @'[2, 5, 4, 2] :. HNil
+            shapes2 = Proxy @'[2, 3] :. shapes1
+            allShapes =  Proxy @'[1, 0] :. Proxy @'[0, 1] :. Proxy @'[1, 0] :. Proxy @'[2, 3] :. shapes2
+            tris = Proxy @'Upper :. Proxy @'Lower :. HNil
+            indexes = Proxy @0 :. HNil
+            allIndexes = Proxy @1 :. indexes
+            dims = (Proxy @0, Proxy @1) :. HNil
+            allDims = (Proxy @0, Proxy @2) :. dims
+        case device of
+          Device { deviceType = CPU,  deviceIndex = 0 } -> do
+            hfoldrM @IO DiagonalSpec () (hproduct (hproduct tris (hproduct indexes dims))       (hattach cpu   (hproduct standardDTypes allShapes)))
+            hfoldrM @IO DiagonalSpec () (hproduct (hproduct tris (hproduct allIndexes allDims)) (hattach cpu   (hproduct standardDTypes shapes1)))
+            hfoldrM @IO DiagonalSpec () (hproduct (hproduct tris (hproduct allIndexes dims))    (hattach cpu   (hproduct standardDTypes shapes2)))
+          Device { deviceType = CUDA, deviceIndex = 0 } -> do
+            hfoldrM @IO DiagonalSpec () (hproduct (hproduct tris (hproduct indexes dims))       (hattach cuda0 (hproduct (withHalf standardDTypes) allShapes)))
+            hfoldrM @IO DiagonalSpec () (hproduct (hproduct tris (hproduct allIndexes allDims)) (hattach cuda0 (hproduct (withHalf standardDTypes) shapes1)))
+            hfoldrM @IO DiagonalSpec () (hproduct (hproduct tris (hproduct allIndexes dims))    (hattach cuda0 (hproduct (withHalf standardDTypes) shapes2)))
 
     describe "loss functions" $ do
       let dispatch lossSpec = case device of

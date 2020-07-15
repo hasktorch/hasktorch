@@ -22,11 +22,11 @@ import Foreign.C.String
 import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
-import Torch.Internal.Class
+
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
+C.include "<ATen/core/ivalue.h>"
 C.include "<vector>"
 
 class IValueLike a b where
@@ -249,12 +249,6 @@ newIValue
 newIValue  =
   [C.throwBlock| at::IValue* { return new at::IValue() ; }|]
 
-
-foreign import ccall unsafe "hasktorch_finalizer.h &delete_ivalue"
-  c_delete_ivalue :: FunPtr ( Ptr IValue -> IO ())
-
-instance CppObject IValue where
-  fromPtr ptr = newForeignPtr c_delete_ivalue ptr
 
 iValue_isAliasOf_V
   :: Ptr IValue

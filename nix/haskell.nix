@@ -65,6 +65,7 @@ let
             "--extra-lib-dirs=${pkgs.torch}/lib"
             "--extra-include-dirs=${pkgs.torch}/include"
             "--extra-include-dirs=${pkgs.torch}/include/torch/csrc/api/include"
+            "--ghc-options='-j +RTS -A128m -n2m -RTS'"
           ];
           flags = {
             cuda = cudaSupport;

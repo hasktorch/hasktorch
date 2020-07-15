@@ -76,5 +76,5 @@ main = do
     tensorXOR :: Tensor -> Tensor
     tensorXOR t = (1 - (1 - a) * (1 - b)) * (1 - (a * b))
       where
-        a = select t 1 0
-        b = select t 1 1
+        a = select 1 0 t
+        b = select 1 1 t

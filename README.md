@@ -101,9 +101,46 @@ launch the Nix shell instead with:
 $ nix-shell --arg cudaSupport true --argstr cudaMajorVersion 10
 ```
 
-If you have run `cabal` in a CPU-only Hasktorch shell before,
-you need to clean the `dist-newstyle` folder first, `cabal clean`.
-Otherwise, you will not be able to move tensors to CUDA.
+#### Known Nix Shell Issues
+
+##### Tensors Cannot Be Moved to CUDA
+
+In rare cases, you may see errors like
+
+```
+cannot move tensor to "CUDA:0"
+```
+
+although you have CUDA capable hardware in your machine and
+have started the Nix shell with CUDA support.
+
+If that happens, check if you have `/run/opengl-driver/lib`
+in your `LD_LIBRARY_PATH` in the Nix shell.
+If not, run
+
+```
+$ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/run/opengl-driver/lib
+```
+
+to add it.
+
+##### Weird Behaviour When Switching from CPU-Only to CUDA-Enabled Nix Shell
+
+If you have run `cabal` in a CPU-only Hasktorch Nix shell before,
+you may need to:
+
+* Clean the `dist-newstyle` folder using `cabal clean`.
+* Delete the `.ghc.environment*` file in the Hasktorch root folder.
+
+Otherwise, at best, you will not be able to move tensors to CUDA,
+and, at worst, you will see weird linker errors like
+
+```
+gcc: error: hasktorch/dist-newstyle/build/x86_64-linux/ghc-8.8.3/libtorch-ffi-1.5.0.0/build/Torch/Internal/Unmanaged/Autograd.dyn_o: No such file or directory
+`cc' failed in phase `Linker'. (Exit code: 1)
+```
+
+##### CUDA 9
 
 In rare cases, you may want to use `--argstr cudaMajorVersion 9`.
 This will pull in version 9 of the CUDA toolkit instead.

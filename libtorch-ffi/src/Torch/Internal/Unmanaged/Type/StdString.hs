@@ -20,11 +20,10 @@ import Foreign.C.String
 import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
-import Torch.Internal.Class
+
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
 C.include "<string>"
 
 
@@ -41,12 +40,6 @@ newStdString_s
   -> IO (Ptr StdString)
 newStdString_s str =
   withCString str $ \cstr -> [C.throwBlock| std::string* { return new std::string($(char* cstr));}|]
-
-foreign import ccall unsafe "hasktorch_finalizer.h &delete_stdstring"
-  c_delete_stdstring :: FunPtr ( Ptr StdString -> IO ())
-
-instance CppObject StdString where
-  fromPtr ptr = newForeignPtr c_delete_stdstring ptr
 
 string_c_str
   :: Ptr StdString

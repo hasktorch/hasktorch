@@ -20,11 +20,11 @@ import Foreign.C.String
 import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
-import Torch.Internal.Class
+
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
+C.include "<ATen/core/ivalue.h>"
 C.include "<vector>"
 
 
@@ -35,14 +35,6 @@ newC10Tuple  =
   [C.throwBlock| c10::intrusive_ptr<at::ivalue::Tuple>* { return new c10::intrusive_ptr<at::ivalue::Tuple>(
     );
   }|]
-
-
-
-foreign import ccall unsafe "hasktorch_finalizer.h &delete_c10tuple"
-  c_delete_c10tuple :: FunPtr ( Ptr (C10Ptr IVTuple) -> IO ())
-
-instance CppObject (C10Ptr IVTuple) where
-  fromPtr ptr = newForeignPtr c_delete_c10tuple ptr
 
 
 

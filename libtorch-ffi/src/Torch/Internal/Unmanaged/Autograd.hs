@@ -18,7 +18,7 @@ import Torch.Internal.Type
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 C.include "<vector>"
-C.include "<torch/torch.h>"
+C.include "<torch/types.h>"
 C.include "<torch/csrc/autograd/variable.h>"
 C.include "<torch/csrc/autograd/engine.h>"
 C.include "<ATen/core/functional.h>"

@@ -15,10 +15,10 @@ data LSTMSpec = LSTMSpec {
 } deriving (Eq, Show)
 
 data LSTMCell = LSTMCell {
-	weightsIH :: Parameter,
-	weightsHH :: Parameter,
-	biasIH :: Parameter,
-	biasHH :: Parameter
+    weightsIH :: Parameter,
+    weightsHH :: Parameter,
+    biasIH :: Parameter,
+    biasHH :: Parameter
 } deriving (Generic, Show)
 
 lstmCellForward 
@@ -27,12 +27,12 @@ lstmCellForward
     -> (Tensor, Tensor) -- ^ (hidden, cell)
     -> (Tensor, Tensor) -- ^ output (hidden, cell) 
 lstmCellForward LSTMCell{..} input hidden =
-	lstmCell weightsIH' weightsHH' biasIH' biasHH' hidden input
-	where
-		weightsIH' = toDependent weightsIH
-		weightsHH' = toDependent weightsHH
-		biasIH' = toDependent biasIH
-		biasHH' = toDependent biasHH
+    lstmCell weightsIH' weightsHH' biasIH' biasHH' hidden input
+    where
+        weightsIH' = toDependent weightsIH
+        weightsHH' = toDependent weightsHH
+        biasIH' = toDependent biasIH
+        biasHH' = toDependent biasHH
 
 instance Randomizable LSTMSpec LSTMCell where
   sample LSTMSpec{..} = do
