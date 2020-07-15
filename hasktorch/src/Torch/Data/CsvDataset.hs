@@ -114,10 +114,10 @@ instance ( MonadPlus m
          -- , Monoid batch
          ) => Datastream m () (CsvDataset batch) [batch] where
   streamBatch CsvDataset{..} _ = Select $ Safe.withFile filePath ReadMode $ \fh ->
-      -- this quietly discards errors right now, probably would like to log this
-    -- TODO : optionally take a fixed number of batches
-  -- TODO: we could concurrently stream in records, and batch records in another thread
-     -- L.purely folds L.mconcat $ view (chunksOf batchSize) $ decodeRecords fh >-> P.concat
+    -- this quietly discards errors right now, probably would like to log this
+    -- TODO: optionally drop last chunk if it's less than batchSize (would want to use vectors for O(1) length) 
+    -- TODO: optionally take a fixed number of batches
+    -- TODO: we could concurrently stream in records, and batch records in another thread
     case shuffle of
       Nothing -> L.purely folds L.list $ view (chunksOf batchSize) $ decodeRecords fh >-> P.concat
       Just bufferSize -> L.purely folds L.list $ view (chunksOf batchSize) $
@@ -126,19 +126,15 @@ instance ( MonadPlus m
       decodeRecords fh = case byName of
                            Unnamed -> decode hasHeader (produceLine fh)
                            Named   -> decodeByName (produceLine fh)
-          -- what's a good default chunk size? 
+      -- what's a good default chunk size? 
       produceLine fh = B.hGetSome 1000 fh
-
-    -- probably want a cleaner way of reyielding these chunks
+      -- probably want a cleaner way of reyielding these chunks
       shuffleRecords = do
         chunks <- await 
         std <- Torch.Data.StreamedPipeline.liftBase getStdGen
-        mapM_ yield $ (fst $  shuffle' chunks std)
+        mapM_ yield  $ (fst $  shuffle' chunks std)
         
-  -- TODO: add shuffles with a fixed buffer size
-
--- | Randomly shuffle a list without the IO Monad
---   /O(N)/
+--  https://wiki.haskell.org/Random_shuffle
 shuffle' :: [a] -> StdGen -> ([a],StdGen)
 shuffle' xs gen = runST (do
         g <- newSTRef gen

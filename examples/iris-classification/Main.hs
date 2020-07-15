@@ -105,7 +105,7 @@ main = runSafeT $ do
   -- transformed <- pMap inputs Main.toTensors 2
 
   foldM (\model epoch -> do
-            inputs <- makeListT @_ @_ @_ @[Iris] defaultDataloaderOpts irisTrain (Select $ yield ()) 
+            inputs <- makeListT @[Iris] defaultDataloaderOpts irisTrain (Select $ yield ()) 
             transformed <- pMap inputs Main.toTensors 2
             -- liftIO $ print epoch
             trainLoop model optimizer $ enumerate transformed
