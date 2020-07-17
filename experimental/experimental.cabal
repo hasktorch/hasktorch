@@ -51,3 +51,6 @@ library action-transition-system
                      , lens
                      , containers
                      , hedgehog
+                     , bound
+                     , transformers
+                     , monad-gen

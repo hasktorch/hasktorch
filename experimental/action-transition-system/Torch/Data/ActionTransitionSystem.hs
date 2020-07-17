@@ -1,3 +1,6 @@
+{-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE DeriveFoldable #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DataKinds #-}
@@ -33,7 +36,9 @@ import Control.Applicative (liftA2, pure, Alternative(..), empty, (<|>))
 import Control.Monad (mfilter, MonadPlus(..))
 import Data.Text (pack, Text)
 import GHC.IO (unsafePerformIO)
+import qualified Control.Monad.Gen as MGen (runGen, runGenT, gen, Gen)
 import Control.Monad.Yoctoparsec (Parser)
+import Control.Monad.Trans.Maybe (MaybeT(..))
 import Control.Monad.Trans.Free (wrap, iterTM, runFreeT, Free, FreeT(..), FreeF(..))
 import Control.Monad.State (StateT (..), runStateT, get, put, modify)
 import Control.Monad (ap, void)
@@ -41,6 +46,7 @@ import Control.Monad.Trans (MonadTrans(lift))
 import Data.Map as Map (elems, toList, (!), adjust, update, keys, null, insertWith, singleton, fromList, unionWith, Map, insert, lookup)
 import Data.Set as Set (filter, cartesianProduct, unions, toList, fromList, member, singleton, union, Set, insert, findIndex)
 import qualified Data.Set as Set (empty)
+import qualified Data.Map as Map (empty)
 import Data.List as List (filter, sort, nub)
 import Control.Monad.Reader (ask, local, runReaderT, ReaderT)
 import Hedgehog (discover, checkParallel, PropertyT, check, Property, (===), forAll, property, Gen, MonadGen)
@@ -49,6 +55,9 @@ import qualified Hedgehog.Range as Range
 import Control.Monad (guard)
 import Data.Maybe (fromMaybe)
 import Control.Monad (join)
+import Bound (fromScope, toScope, instantiate1, abstract1, (>>>=), Scope)
+import Data.Functor.Classes (Eq1(..), Show1(..))
+import Bound (Var)
 
 -- https://stackoverflow.com/questions/17675054/deserialising-with-ghc-generics?rq=1
 -- http://hackage.haskell.org/package/cereal-0.5.8.1/docs/Data-Serialize.html
@@ -344,6 +353,12 @@ instance Applicative t => ToActions t Bool where
 instance MonadFail b => FromActions b Bool where
   fromActions = token >>= (\case BToken b -> pure b; _ -> fail "bool")
 
+instance Alternative t => ToActions t () where
+  toActions = const empty
+
+instance Monad b => FromActions b () where
+  fromActions = pure ()
+
 -- | Runs the parser on the supplied input and returns whether or not the parse succeeded.
 -- Results are discarded.
 -- TODO: this isn't nice yet. It would be great if there was a stronger signal for failure than just 'mzero'.
@@ -496,6 +511,7 @@ instance FromActions [] TType
 -- https://en.wikipedia.org/wiki/Programming_Computable_Functions
 -- https://github.com/jozefg/pcf/blob/master/src/Language/Pcf.hs
 -- https://jozefg.bitbucket.io/posts/2014-12-17-variables.html
+-- http://blog.ielliott.io/topsy-turvy-reverse-state/
 data Expr =
     EBool Bool
   | EInt Int
@@ -508,37 +524,140 @@ data Expr =
 instance ToActions [] Expr
 instance FromActions [] Expr
 
--- | de Bruijn indices in unary notation.
-data BIndex =
-    BZero
-  | BSucc BIndex
-    deriving (Eq, Ord, Show, Generic)
+------------------------------------------------------------------------
 
-instance ToActions [] BIndex
-instance FromActions [] BIndex
+-- | de Bruijn indices in unary notation.
+-- data BIndex =
+--     BZero
+--   | BSucc BIndex
+--     deriving (Eq, Ord, Show, Generic)
+
+-- instance ToActions [] BIndex
+-- instance FromActions [] BIndex
 
 -- | Translates the given index to a corresponding positive integer.
-toInt :: (Num a) => BIndex -> a
-toInt BZero = 0
-toInt (BSucc n) = 1 + toInt n
+-- toInt :: (Num a) => BIndex -> a
+-- toInt BZero = 0
+-- toInt (BSucc n) = 1 + toInt n
 
 -- | Translates the given positive integer to a corresponding index.
-toIndex :: (Num a, Eq a) => a -> BIndex
-toIndex 0 = BZero
-toIndex n = BSucc $ toIndex (n-1)
+-- toIndex :: (Num a, Eq a) => a -> BIndex
+-- toIndex 0 = BZero
+-- toIndex n = BSucc $ toIndex (n-1)
 
 -- | Lambda terms with de Bruijn indices.
-data BExpr =
-    BBool Bool
-  | BInt Int
-  | BString Text
-  | BVar BIndex -- ^ de Bruijn indices.
-  | BLam TType BExpr -- ^ Lambda abstraction.
-  | BApp BExpr BExpr -- ^ Term application.
-    deriving (Eq, Ord, Show, Generic)
+-- data BExpr =
+--     BBool Bool
+--   | BInt Int
+--   | BString Text
+--   | BVar BIndex -- ^ de Bruijn indices.
+--   | BLam TType BExpr -- ^ Lambda abstraction.
+--   | BApp BExpr BExpr -- ^ Term application.
+--     deriving (Eq, Ord, Show, Generic)
 
-instance ToActions [] BExpr
-instance FromActions [] BExpr
+-- instance ToActions [] BExpr
+-- instance FromActions [] BExpr
+
+------------------------------------------------------------------------
+
+data Ty =
+    Arr Ty Ty
+  | Nat
+  deriving (Eq, Show, Generic)
+
+instance ToActions [] Ty
+instance FromActions [] Ty
+
+infixl 9 :@
+data Exp a =
+    Var a -- ^ Variable.
+  | Lam Ty (Scope () Exp a) -- ^ Lambda abstraction.
+  | Exp a :@ Exp a -- ^ Term application.
+  | Suc (Exp a)
+  | Zero
+  deriving (Eq, Show, Functor, Foldable, Traversable, Generic)
+
+-- https://github.com/ekmett/bound/commit/6ab44d9a84a24e376bf29548ea61c1baf9ce3063
+instance Eq1 Exp where
+  liftEq eq (Var a) (Var b) = eq a b
+  liftEq eq (Lam ty b) (Lam ty' b') = liftEq eq b b' && ty == ty'
+  liftEq eq (a :@ a') (b :@ b') = liftEq eq a b && liftEq eq a' b'
+  liftEq eq (Suc a) (Suc b) = liftEq eq a b
+  liftEq _ Zero Zero = True
+  liftEq _ _ _ = False
+
+instance Show1 Exp where
+  liftShowsPrec s _ d (Var a) = showParen (d > 10) $ showString "Var " . s 11 a
+  liftShowsPrec s sl d (a :@ b) = showParen (d > 9) $ liftShowsPrec s sl 9 a . showString " :@ " . liftShowsPrec s sl 10 b
+  liftShowsPrec s sl d (Lam _ b) = showParen (d > 10) $ showString "Lam " . liftShowsPrec s sl 11 b
+  liftShowsPrec s sl d (Suc b) = showParen (d > 10) $ showString "Suc " . liftShowsPrec s sl 11 b
+  liftShowsPrec _ _ d Zero = showParen (d > 10) $ showString "Zero"
+
+instance Applicative Exp where
+  pure = Var
+  (<*>) = ap
+
+instance Monad Exp where
+  return = Var
+  Var a >>= f = f a
+  (x :@ y) >>= f = (x >>= f) :@ (y >>= f)
+  Lam ty e >>= f = Lam ty (e >>>= f)
+  Suc e >>= f = Suc (e >>= f)
+  Zero >>= _ = Zero
+
+instance ToActions [] a => ToActions [] (Var () (Exp a))
+instance ToActions [] a => ToActions [] (Scope () Exp a)
+instance ToActions [] a => ToActions [] (Exp a)
+
+lam :: Eq a => Ty -> a -> Exp a -> Exp a
+lam ty v b = Lam ty (abstract1 v b)
+
+-- | Compute the normal form of an expression.
+nf :: Exp a -> Exp a
+nf e@Var{} = e
+nf (Lam ty b) = Lam ty (toScope . nf . fromScope $ b)
+nf (f :@ a) = case whnf f of
+  Lam ty b -> nf (instantiate1 a b)
+  f'    -> nf f' :@ nf a
+nf e@Suc{} = e
+nf e@Zero = e
+
+-- | Reduce a term to weak head normal form.
+whnf :: Exp a -> Exp a
+whnf e@Var{} = e
+whnf e@Lam{} = e
+whnf (f :@ a) = case whnf f of
+  Lam ty b -> whnf (instantiate1 a b)
+  f'    -> f' :@ a
+whnf e@Suc{} = e
+whnf e@Zero = e
+
+type TyM a = MaybeT (MGen.Gen a)
+
+assertTy :: Ord a => Map a Ty -> Exp a -> Ty -> TyM a ()
+assertTy env e t = (== t) <$> typeCheck env e >>= guard
+
+typeCheck :: Ord a => Map a Ty -> Exp a -> TyM a Ty
+typeCheck _ Zero = return Nat
+typeCheck env (Suc e) = assertTy env e Nat >> return Nat
+typeCheck env (Var a) = MaybeT . return $ Map.lookup a env
+typeCheck env (f :@ a) = typeCheck env f >>= \case
+  Arr fTy tTy -> assertTy env a fTy >> return tTy
+  _ -> mzero
+typeCheck env (Lam ty bind) = do
+  v <- MGen.gen
+  Arr ty <$> typeCheck (Map.insert v ty env) (instantiate1 (Var v) bind)
+
+testBound :: IO ()
+testBound = do
+  let term :: Exp Int = (lam (Nat) 0 (Var 0)) :@ Zero
+  print term -- Lam Nat (Scope (Var (B ()))) :@ Zero
+  print $ MGen.runGen . runMaybeT . typeCheck Map.empty $ term -- Just Nat
+  print $ toActions @[] $ term -- [R,L,L,R,R,L,L,L,R,R,R]
+  print $ nf term  -- Zero
+  print $ toActions @[] $ nf term -- [R,R,R]
+
+------------------------------------------------------------------------
 
 data Example a b = Example
   { input :: Input a
