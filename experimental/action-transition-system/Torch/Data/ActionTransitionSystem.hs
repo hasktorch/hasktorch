@@ -652,6 +652,10 @@ instance ToActions [] a => ToActions [] (Var () (Exp a))
 instance ToActions [] a => ToActions [] (Scope () Exp a)
 instance ToActions [] a => ToActions [] (Exp a)
 
+instance FromActions [] a => FromActions [] (Var () (Exp a))
+instance FromActions [] a => FromActions [] (Scope () Exp a)
+instance FromActions [] a => FromActions [] (Exp a)
+
 lam :: Eq a => Ty -> a -> Exp a -> Exp a
 lam ty varName b = Lam ty (abstract1 varName b)
 
@@ -811,255 +815,264 @@ instance (Monad b, FromActions b a) => FromActions b (Target a) where
 
 ------------------------------------------------------------------------
 
--- | Evaluate to weak head normal form.
-evaluate :: Expr -> Expr
-evaluate expr =
-  case expr of
-    EBool _ ->
-      expr
-    EInt _ ->
-      expr
-    EString _ ->
-      expr
-    EVar _ ->
-      expr
-    ELam _ _ _ ->
-      expr
-    EApp f g ->
-      case evaluate f of
-        ELam x _t e ->
-          evaluate (subst x g e)
-        h ->
-          EApp h g
+-- -- | Evaluate to weak head normal form.
+-- evaluate :: Expr -> Expr
+-- evaluate expr =
+--   case expr of
+--     EBool _ ->
+--       expr
+--     EInt _ ->
+--       expr
+--     EString _ ->
+--       expr
+--     EVar _ ->
+--       expr
+--     ELam _ _ _ ->
+--       expr
+--     EApp f g ->
+--       case evaluate f of
+--         ELam x _t e ->
+--           evaluate (subst x g e)
+--         h ->
+--           EApp h g
 
-subst :: Text -> Expr -> Expr -> Expr
-subst x y expr =
-  case expr of
-    EBool _ ->
-      expr
-    EInt _ ->
-      expr
-    EString _ ->
-      expr
-    EVar z ->
-      if x == z then
-        y
-      else
-        expr
-    ELam n t g ->
-      if n == x then
-        ELam n t g
-      else
-        ELam n t (subst x y g)
-    EApp f g ->
-      EApp (subst x y f) (subst x y g)
+-- subst :: Text -> Expr -> Expr -> Expr
+-- subst x y expr =
+--   case expr of
+--     EBool _ ->
+--       expr
+--     EInt _ ->
+--       expr
+--     EString _ ->
+--       expr
+--     EVar z ->
+--       if x == z then
+--         y
+--       else
+--         expr
+--     ELam n t g ->
+--       if n == x then
+--         ELam n t g
+--       else
+--         ELam n t (subst x y g)
+--     EApp f g ->
+--       EApp (subst x y f) (subst x y g)
 
--- | Collect all the free variables in an 'Expr'.
-free :: Expr -> Set Text
-free =
-  free' mempty mempty
+-- -- | Collect all the free variables in an 'Expr'.
+-- free :: Expr -> Set Text
+-- free =
+--   free' mempty mempty
 
-free' :: Set Text -> Set Text -> Expr -> Set Text
-free' binds frees expr =
-  case expr of
-    EBool _ ->
-      frees
-    EInt _ ->
-      frees
-    EString _ ->
-      frees
-    EVar x ->
-      if Set.member x binds then
-        frees
-      else
-        Set.insert x frees
-    ELam x _t y ->
-      free' (Set.insert x binds) frees y
-    EApp f g ->
-      free' binds frees f <> free' binds frees g
+-- free' :: Set Text -> Set Text -> Expr -> Set Text
+-- free' binds frees expr =
+--   case expr of
+--     EBool _ ->
+--       frees
+--     EInt _ ->
+--       frees
+--     EString _ ->
+--       frees
+--     EVar x ->
+--       if Set.member x binds then
+--         frees
+--       else
+--         Set.insert x frees
+--     ELam x _t y ->
+--       free' (Set.insert x binds) frees y
+--     EApp f g ->
+--       free' binds frees f <> free' binds frees g
+
+-- ------------------------------------------------------------------------
+
+-- data TypeError =
+--     Mismatch TType TType
+--   | FreeVariable Text
+--   | ExpectedArrow TType
+--   deriving (Eq, Ord, Show)
+
+-- -- | Typecheck some expression.
+-- typecheck :: Expr -> Either TypeError TType
+-- typecheck =
+--   typecheck' mempty
+
+-- typecheck' :: Map Text TType -> Expr -> Either TypeError TType
+-- typecheck' env expr =
+--   case expr of
+--     EBool _ ->
+--       pure TBool
+
+--     EInt _ ->
+--       pure TInt
+
+--     EString _ ->
+--       pure TString
+
+--     EVar x ->
+--       maybe (Left (FreeVariable x)) pure (Map.lookup x env)
+
+--     ELam x t y ->
+--       TArrow t <$> typecheck' (Map.insert x t env) y
+
+--     EApp f g -> do
+--       tf <- typecheck' env f
+--       tg <- typecheck' env g
+--       case tf of
+--         TArrow ta tb ->
+--           if ta == tg then
+--             pure tb
+--           else
+--             Left (Mismatch ta tg)
+--         _ ->
+--           Left (ExpectedArrow tf)
+
+-- ------------------------------------------------------------------------
+
+-- genType :: MonadGen m => m TType
+-- genType =
+--   Gen.recursive Gen.choice [
+--       pure TBool
+--     , pure TInt
+--     , pure TString
+--     ] [
+--       TArrow <$> genType <*> genType
+--     ]
+
+-- ------------------------------------------------------------------------
+
+-- genWellTypedExpr :: TType -> Gen Expr
+-- genWellTypedExpr =
+--   flip runReaderT mempty . genWellTypedExpr'
+
+-- genWellTypedExpr' :: TType -> ReaderT (Map TType [Expr]) Gen Expr
+-- genWellTypedExpr' want =
+--   Gen.shrink shrinkExpr $
+--   Gen.recursive Gen.choice [
+--       genWellTypedExpr'' want
+--     ] [
+--       genWellTypedPath want <|> genWellTypedApp want
+--     , genWellTypedApp want
+--     ]
+
+-- shrinkExpr :: Expr -> [Expr]
+-- shrinkExpr expr =
+--   case expr of
+--     EApp f g ->
+--       case evaluate f of
+--         ELam x _ e ->
+--           [evaluate (subst x g e)]
+--         _ ->
+--           []
+--     _ ->
+--       []
+
+-- genWellTypedExpr'' :: TType -> ReaderT (Map TType [Expr]) Gen Expr
+-- genWellTypedExpr'' want =
+--   case want of
+--     TBool ->
+--       EBool <$> Gen.element [True, False]
+--     TInt ->
+--       EInt <$> Gen.int (Range.linear 0 10000)
+--     TString ->
+--       EString <$> Gen.text (Range.linear 0 25) Gen.lower
+--     TArrow t1 t2 -> do
+--       x <- Gen.text (Range.linear 1 25) Gen.lower
+--       ELam x t1 <$> local (insertVar x t1) (genWellTypedExpr' t2)
+
+-- insertVar :: Text -> TType -> Map TType [Expr] -> Map TType [Expr]
+-- insertVar n typ =
+--   Map.insertWith (<>) typ [EVar n] .
+--   fmap (List.filter (/= EVar n))
+
+-- genWellTypedApp :: TType -> ReaderT (Map TType [Expr]) Gen Expr
+-- genWellTypedApp want = do
+--   tg <- genKnownTypeMaybe
+--   eg <- genWellTypedExpr' tg
+--   let tf = TArrow tg want
+--   ef <- genWellTypedExpr' tf
+--   pure (EApp ef eg)
+
+-- -- | This tries to look up a known expression of the desired type from the env.
+-- -- It does not always succeed, throwing `empty` when unavailable.
+-- genWellTypedPath :: TType -> ReaderT (Map TType [Expr]) Gen Expr
+-- genWellTypedPath want = do
+--   paths <- ask
+--   case fromMaybe [] (Map.lookup want paths) of
+--     [] ->
+--       empty
+--     es ->
+--       Gen.element es
+
+-- genKnownTypeMaybe :: ReaderT (Map TType [Expr]) Gen TType
+-- genKnownTypeMaybe = do
+--   known <- ask
+--   if Map.null known then
+--     genType
+--   else
+--     Gen.frequency [
+--         (2, Gen.element $ Map.keys known)
+--       , (1, genType)
+--       ]
+
+-- ------------------------------------------------------------------------
+
+-- -- Generates a term that is ill-typed at some point.
+-- genIllTypedExpr :: Gen Expr
+-- genIllTypedExpr = do
+--   be <- genIllTypedApp
+--   Gen.recursive Gen.choice [
+--       -- Don't grow - just dish up the broken expr
+--       pure be
+--     ] [
+--       -- Grow a reasonable app expression around the error
+--       do tg <- genType
+--          tf <- genType
+--          let ta = TArrow tg tf
+--          ea <- genWellTypedExpr ta
+--          pure (EApp ea be)
+--     ]
+
+-- -- Generates a term that is ill-typed at the very top.
+-- genIllTypedApp :: Gen Expr
+-- genIllTypedApp = do
+--   t1 <- genType
+--   t2 <- genType
+--   t3 <- genType
+--   guard (t1 /= t2)
+--   f <- genWellTypedExpr t3
+--   g <- genWellTypedExpr t2
+--   x <- Gen.text (Range.linear 1 25) Gen.lower
+--   pure $ EApp (ELam x t1 f) g
 
 ------------------------------------------------------------------------
 
-data TypeError =
-    Mismatch TType TType
-  | FreeVariable Text
-  | ExpectedArrow TType
-  deriving (Eq, Ord, Show)
-
--- | Typecheck some expression.
-typecheck :: Expr -> Either TypeError TType
-typecheck =
-  typecheck' mempty
-
-typecheck' :: Map Text TType -> Expr -> Either TypeError TType
-typecheck' env expr =
-  case expr of
-    EBool _ ->
-      pure TBool
-
-    EInt _ ->
-      pure TInt
-
-    EString _ ->
-      pure TString
-
-    EVar x ->
-      maybe (Left (FreeVariable x)) pure (Map.lookup x env)
-
-    ELam x t y ->
-      TArrow t <$> typecheck' (Map.insert x t env) y
-
-    EApp f g -> do
-      tf <- typecheck' env f
-      tg <- typecheck' env g
-      case tf of
-        TArrow ta tb ->
-          if ta == tg then
-            pure tb
-          else
-            Left (Mismatch ta tg)
-        _ ->
-          Left (ExpectedArrow tf)
-
-------------------------------------------------------------------------
-
-genType :: MonadGen m => m TType
-genType =
-  Gen.recursive Gen.choice [
-      pure TBool
-    , pure TInt
-    , pure TString
-    ] [
-      TArrow <$> genType <*> genType
-    ]
-
-------------------------------------------------------------------------
-
-genWellTypedExpr :: TType -> Gen Expr
-genWellTypedExpr =
-  flip runReaderT mempty . genWellTypedExpr'
-
-genWellTypedExpr' :: TType -> ReaderT (Map TType [Expr]) Gen Expr
-genWellTypedExpr' want =
-  Gen.shrink shrinkExpr $
-  Gen.recursive Gen.choice [
-      genWellTypedExpr'' want
-    ] [
-      genWellTypedPath want <|> genWellTypedApp want
-    , genWellTypedApp want
-    ]
-
-shrinkExpr :: Expr -> [Expr]
-shrinkExpr expr =
-  case expr of
-    EApp f g ->
-      case evaluate f of
-        ELam x _ e ->
-          [evaluate (subst x g e)]
-        _ ->
-          []
-    _ ->
-      []
-
-genWellTypedExpr'' :: TType -> ReaderT (Map TType [Expr]) Gen Expr
-genWellTypedExpr'' want =
-  case want of
-    TBool ->
-      EBool <$> Gen.element [True, False]
-    TInt ->
-      EInt <$> Gen.int (Range.linear 0 10000)
-    TString ->
-      EString <$> Gen.text (Range.linear 0 25) Gen.lower
-    TArrow t1 t2 -> do
-      x <- Gen.text (Range.linear 1 25) Gen.lower
-      ELam x t1 <$> local (insertVar x t1) (genWellTypedExpr' t2)
-
-insertVar :: Text -> TType -> Map TType [Expr] -> Map TType [Expr]
-insertVar n typ =
-  Map.insertWith (<>) typ [EVar n] .
-  fmap (List.filter (/= EVar n))
-
-genWellTypedApp :: TType -> ReaderT (Map TType [Expr]) Gen Expr
-genWellTypedApp want = do
-  tg <- genKnownTypeMaybe
-  eg <- genWellTypedExpr' tg
-  let tf = TArrow tg want
-  ef <- genWellTypedExpr' tf
-  pure (EApp ef eg)
-
--- | This tries to look up a known expression of the desired type from the env.
--- It does not always succeed, throwing `empty` when unavailable.
-genWellTypedPath :: TType -> ReaderT (Map TType [Expr]) Gen Expr
-genWellTypedPath want = do
-  paths <- ask
-  case fromMaybe [] (Map.lookup want paths) of
-    [] ->
-      empty
-    es ->
-      Gen.element es
-
-genKnownTypeMaybe :: ReaderT (Map TType [Expr]) Gen TType
-genKnownTypeMaybe = do
-  known <- ask
-  if Map.null known then
-    genType
-  else
-    Gen.frequency [
-        (2, Gen.element $ Map.keys known)
-      , (1, genType)
-      ]
-
-------------------------------------------------------------------------
-
--- Generates a term that is ill-typed at some point.
-genIllTypedExpr :: Gen Expr
-genIllTypedExpr = do
-  be <- genIllTypedApp
-  Gen.recursive Gen.choice [
-      -- Don't grow - just dish up the broken expr
-      pure be
-    ] [
-      -- Grow a reasonable app expression around the error
-      do tg <- genType
-         tf <- genType
-         let ta = TArrow tg tf
-         ea <- genWellTypedExpr ta
-         pure (EApp ea be)
-    ]
-
--- Generates a term that is ill-typed at the very top.
-genIllTypedApp :: Gen Expr
-genIllTypedApp = do
-  t1 <- genType
-  t2 <- genType
-  t3 <- genType
-  guard (t1 /= t2)
-  f <- genWellTypedExpr t3
-  g <- genWellTypedExpr t2
-  x <- Gen.text (Range.linear 1 25) Gen.lower
-  pure $ EApp (ELam x t1 f) g
-
-------------------------------------------------------------------------
-
-prep :: PropertyT IO (Example Expr Expr, [((Example Expr Expr, [Action]), Env)])
+prep :: PropertyT IO (Ty, Example (Exp Int) (Exp Int), [((Example (Exp Int) (Exp Int), [Action]), Env)])
 prep = do
-  ty <- forAll genType
-  input <- forAll (genWellTypedExpr ty)
-  let target = evaluate input
+  ty <- forAll genTy
+  input <- forAll (genWellTypedExp ty)
+  let target = nf input
       ex = Example (Input input) (Target target)
       env = defaultEnv
       actions = toActions @[] ex
   guard (length actions <= 512)
-  let parser = fromActions @[] @(Example Expr Expr)
+  let parser = fromActions @[] @(Example (Exp Int) (Exp Int))
       result = let f ap [] = empty
                    f ap (a : as) = let p = ap a in pure (p, as)
                in  runStateT (parse f parser actions) env
-  pure (ex, result)
+  pure (ty, ex, result)
+
+prop_welltyped :: Property
+prop_welltyped =
+  property $ do
+    (ty, Example (Input input) (Target target), _) <- prep
+    let (Just ty') = runFresh . runMaybeT . typeCheck Map.empty $ input
+    let (Just ty'') = runFresh . runMaybeT . typeCheck Map.empty $ target
+    ty === ty'
+    ty === ty''
 
 -- test that every position belongs only to at most one attention scope
 prop_attentionScope :: Property
 prop_attentionScope = property $ do
-  (_, [(_, Env {..})]) <- prep
+  (_, _, [(_, Env {..})]) <- prep
   let r = Map.elems $ scopePositions <$> knownScopes aEnv
       c = sort . join $ Set.toList <$> r
       u = Set.toList . Set.unions $ r
@@ -1068,14 +1081,14 @@ prop_attentionScope = property $ do
 -- test presence of self attention
 prop_selfAttention :: Property
 prop_selfAttention = property $ do
-  (_, [(_, Env {..})]) <- prep
+  (_, _, [(_, Env {..})]) <- prep
   let sa = foldr (\(pos, pos') -> \b -> if pos == pos' then Set.insert pos b else b) Set.empty (attentionMask aEnv)
   sa === keyPaddingMask aEnv
 
 -- test round trip serialization-deserialization
 prop_roundTrip :: Property
 prop_roundTrip = property $ do
-  (ex, [((reconstructedEx, _), _)]) <- prep
+  (_, ex, [((reconstructedEx, _), _)]) <- prep
   ex === reconstructedEx
 
 testSTLC :: IO Bool
