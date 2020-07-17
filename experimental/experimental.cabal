@@ -54,3 +54,6 @@ library action-transition-system
                      , bound
                      , transformers
                      , monad-gen
+                     , deriving-compat
+                     , mmorph
+
