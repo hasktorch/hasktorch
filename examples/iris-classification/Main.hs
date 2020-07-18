@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -7,7 +8,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 module Main where
 
-import           Control.Monad (foldM, when)
+import           Control.Monad (foldM, when, (>=>))
 import           Data.Csv (FromNamedRecord)
 import           GHC.Generics (Generic)
 import           Pipes
@@ -22,10 +23,10 @@ import           Torch.Data.StreamedPipeline (pMap, defaultDataloaderOpts, makeL
 
 
 data MLPSpec = MLPSpec {
-    inputFeatures :: Int,
+    inputFeatures   :: Int,
     hiddenFeatures0 :: Int,
     hiddenFeatures1 :: Int,
-    outputFeatures :: Int
+    outputFeatures  :: Int
     } deriving (Show, Eq)
 
 data MLP = MLP { 
@@ -59,6 +60,7 @@ instance FromField IrisClass where
     "Iris-versicolor" -> pure Versicolor
     "Iris-virginica"   -> pure Virginica
     _                  -> mzero
+
 data Iris = Iris { sepalLength :: Float
                  , sepalWidth  :: Float
                  , petalLength :: Float
@@ -66,29 +68,19 @@ data Iris = Iris { sepalLength :: Float
                  , irisClass   :: IrisClass
                  } deriving (Generic, Show, FromRecord, FromNamedRecord)
 
--- without this explicit type signature it can't find the right overlapping instance!
 toTensors :: [Iris] -> (Tensor, Tensor)
 toTensors iris = do
-  -- Iris{..} <- iris 
-  -- let features = [sepalLength , sepalWidth , petalLength , petalWidth]
-  --     classes = fromEnum irisClass 
-  -- pure (asTensor features, asTensor classes)
-
-  -- yucky
+  -- want to only traverse this list once 
   (asTensor $ getFeatures iris, asTensor $ getClasses iris)
   where 
         getFeatures = fmap (\x -> [sepalLength x, sepalWidth x, petalLength x, petalWidth x])
         getClasses = fmap (\x -> fromEnum $ irisClass x)
 
--- trainLoop :: Optimizer o => model -> o -> Producer [Iris] m  () -> m model
+trainLoop :: (Optimizer o, MonadIO m) => MLP -> o -> Producer (Tensor, Tensor) m  () -> m MLP
 trainLoop model optimizer = P.foldM step init done
-  -- where step :: MonadIO m => MLP -> (Tensor, Tensor) -> m MLP
   where 
-        step model (input, label ) = do
-        -- step model bad = do
-          -- let (input, label) = Main.toTensors bad
+        step model (input, label) = do
           let loss = nllLoss' label $ mlp model input
-          -- when (iter `mod` 50 == 0) $ do
           liftIO $ putStrLn $ " | Loss: " ++ show loss
           liftIO $ print label 
           (newParam, _) <- liftIO $ runStep model optimizer loss 1e-3
@@ -96,24 +88,19 @@ trainLoop model optimizer = P.foldM step init done
         done = pure
         init = pure model
 
+listTPipeline dataset = makeListT @[Iris] defaultDataloaderOpts dataset >=> pMap Main.toTensors 2
+
 main :: IO ()
 main = runSafeT $ do
   init <- liftIO $ sample spec 
   let irisTrain = (csvDataset @Iris "iris.data") { batchSize = 4 , shuffle = Just 500}
 
-  -- inputs <- makeListT @_ @_ @_ @[Iris] defaultDataloaderOpts irisTrain (Select $ yield ()) 
-  -- transformed <- pMap inputs Main.toTensors 2
-
   foldM (\model epoch -> do
-            inputs <- makeListT @[Iris] defaultDataloaderOpts irisTrain (Select $ yield ()) 
-            transformed <- pMap inputs Main.toTensors 2
-            -- liftIO $ print epoch
-            trainLoop model optimizer $ enumerate transformed
+            (inputs :: ListT m (Tensor, Tensor)) <- listTPipeline irisTrain (Select $ yield ())
+            trainLoop model optimizer $ enumerate inputs
         ) init [1]
-  -- liftIO $ foldM init 1000 $ trainLoop init (optimizer ) $ enumerate transformed 
-  -- trainLoop init (optimizer init) $ enumerate inputs
+
   pure ()
-  -- model <- foldOverWith' irisTrain (Select $ yield ()) (trainLoop (pure init) optimizer)
   where spec = MLPSpec 4 100 100 3
         optimizer = GD
   

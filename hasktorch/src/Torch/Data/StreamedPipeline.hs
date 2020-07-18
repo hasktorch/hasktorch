@@ -76,17 +76,16 @@ runTransforms :: MonadBase IO m => (batch -> batch') -> Input (batch) -> Output 
 runTransforms transforms transformBox trainBox = fromInput' transformBox >-> P.map transforms >-> toOutput' trainBox
 
 -- this is a bit of a mess
-pMap :: (Monad m, MonadBaseControl IO m) => ListT m a -> (a -> b) -> Int -> m (ListT m b)
-pMap prod f n = Select <$> withOne unbounded unwrap (\input -> withOne unbounded (mapConcur input) (\input2 -> pure $ fromInput' input2))
+pMap :: (Monad m, MonadBaseControl IO m) =>  (a -> b) -> Int -> ListT m a -> m (ListT m b)
+pMap f n prod  = Select <$> withOne unbounded unwrap (\input -> withOne unbounded (mapConcur input) (\input2 -> pure $ fromInput' input2))
   where
     unwrap output = runEffect $ enumerate prod >-> toOutput' output
     mapConcur input output = replicateConcurrently_ n $ runEffect $ fromInput' input >-> P.map f >-> toOutput' output
 
 -- can we get rid of this m?
-pMapProper :: (Monad m, MonadBaseControl IO m) => ListT m a -> (ListT m a -> ListT m b) -> Int -> m (ListT m b)
-pMapProper prod func n = withOne unbounded unwrap (\input -> pure $ func $ (Select $ fromInput' input))
-  where
-    unwrap output = runEffect $ enumerate prod >-> toOutput' output
+pMapProper :: (Monad m, MonadBaseControl IO m) =>  (ListT m a -> ListT m b) -> Int -> ListT m a -> m (ListT m b)
+pMapProper func n prod  = withOne unbounded unwrap (\input -> pure $ func $ (Select $ fromInput' input))
+  where unwrap output = runEffect $ enumerate prod >-> toOutput' output
 
 streamBatches fold inputBox = foldFromProducer inputs fold
   where

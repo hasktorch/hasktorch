@@ -38,7 +38,7 @@ import qualified Control.Foldl as L
 import           Control.Foldl.Text (Text)
 import           Control.Monad.Base (MonadBase)
 import           Data.ByteString (hGetLine, hGetContents)
-import           Data.Set.Ordered as OSet hiding (fromList)
+-- import           Data.Set.Ordered as OSet hiding (fromList)
 import           Lens.Family (view)
 import           Pipes (liftIO, ListT(Select), yield, (>->), await)
 import qualified Pipes.ByteString as B

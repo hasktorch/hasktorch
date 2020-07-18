@@ -110,13 +110,14 @@ library
                     , pipes-safe
                     , pipes-bytestring
                     , pipes-csv
-                    , lens-family-core >= 2.1
+                    -- , lens-family-core >= 2.1
+                    , lens-family-core
                     , lifted-async
                     , monad-control
                     , foldl
                     , transformers-base
                     , cassava
-                    , ordered-containers >= 0.2
+                    -- , ordered-containers >= 0.2
                     , array
 
                     , inline-c
