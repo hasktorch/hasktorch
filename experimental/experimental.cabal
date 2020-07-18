@@ -41,7 +41,8 @@ executable dataloader-cifar10
 library action-transition-system
   import:              config
   hs-source-dirs:      action-transition-system
-  exposed-modules:     Torch.Data.ActionTransitionSystem
+  exposed-modules:     Control.Monad.Fresh
+                     , Torch.Data.ActionTransitionSystem
   build-depends:       attoparsec
                      , foldl
                      , text
