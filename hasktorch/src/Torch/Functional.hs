@@ -1400,16 +1400,6 @@ permute
  -> Tensor -- output
 permute dims t = unsafePerformIO $ (cast2 ATen.tensor_permute_l) t dims
 
--- | Slices the input tensor along the selected dimension at the given range. 
-slice
-  :: Int -- ^ dim
-  -> Int -- ^ start
-  -> Int -- ^ end
-  -> Int -- ^ step
-  -> Tensor -- ^ self
-  -> Tensor
-slice _dim _start _end _step _self = unsafePerformIO $ (cast5 ATen.slice_tllll) _self _dim _start _end _step
-
 -- | view
 view
  :: [Int] -- ^ list corresponding to size of tensor

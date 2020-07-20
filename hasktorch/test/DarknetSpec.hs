@@ -26,19 +26,19 @@ spec = do
   describe "index accesses" $ do
     it "index" $ do
       let v = asTensor ([1,2,3,4]::[Float])
-          r = asValue (v @@ 2) :: Float
+          r = asValue (v ! 2) :: Float
       r `shouldBe` 3.0
     it "index" $ do
       let v = asTensor (replicate 3 [1,2,3,4] :: [[Float]])
-          r = asValue (v @@ (Ellipsis, 0))
+          r = asValue (v ! (Ellipsis, 0))
       r `shouldBe` [1.0::Float,1.0,1.0]
     it "indexPut" $ do
       let v = asTensor ([1,2,3,4]::[Float])
-          r = asValue (v @= (1,5.0::Float))
+          r = asValue (maskedFill v (1::Int) (5.0::Float))
       r `shouldBe` [1.0::Float,5.0,3.0,4.0]
     it "indexPut" $ do
       let v = asTensor ([1,2,3,4]::[Float])
-          r = asValue (v @= (1,5.0::Float))
+          r = asValue (maskedFill v (1::Int) (5.0::Float))
       r `shouldBe` [1.0::Float,5.0,3.0,4.0]
   describe "DarknetSpec" $ do
     it "Convolution" $ do

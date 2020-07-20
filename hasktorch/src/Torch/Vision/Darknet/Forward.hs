@@ -10,7 +10,8 @@ module Torch.Vision.Darknet.Forward where
 
 import Control.Monad (forM, mapM)
 import Data.List ((!!))
-import Data.Map ((!), Map, empty, insert)
+import Data.Map (Map, empty, insert)
+import qualified Data.Map as M
 import Data.Maybe (isJust)
 import GHC.Exts
 import GHC.Generics
@@ -141,7 +142,7 @@ instance Randomizable S.RouteSpec Route where
 
 instance HasForward Route (Map Int Tensor) Tensor where
   forward Route {..} inputs =
-    D.cat (D.Dim 1) (map (inputs !) layers)
+    D.cat (D.Dim 1) (map (inputs M.!) layers)
 
 data ShortCut
   = ShortCut
@@ -155,7 +156,7 @@ instance Randomizable S.ShortCutSpec ShortCut where
       <$> pure from
 
 instance HasForward ShortCut (Map Int Tensor) Tensor where
-  forward ShortCut {..} inputs = inputs ! from
+  forward ShortCut {..} inputs = inputs M.! from
 
 type Anchors = [(Float,Float)]
 type ScaledAnchors = [(Float,Float)]
@@ -179,8 +180,8 @@ newtype Prediction = Prediction {fromPrediction :: Tensor} deriving (Show)
 
 toPrediction :: Yolo -> Tensor -> Prediction
 toPrediction Yolo {..} input =
-  let num_samples = D.size input 0
-      grid_size = D.size input 2
+  let num_samples = D.size 0 input
+      grid_size = D.size 2 input
       num_anchors = length anchors
    in Prediction $ D.contiguous $ D.permute [0, 1, 3, 4, 2] $ D.view [num_samples, num_anchors, classes + 5, grid_size, grid_size] input
 
@@ -229,7 +230,7 @@ toPredClass ::
   Tensor
 toPredClass prediction =
   let input = fromPrediction prediction
-      num_features = D.size input (-1)
+      num_features = D.size (-1) input
    in D.sigmoid $ squeezeLastDim (D.slice (-1) 5 num_features 1 input)
 
 gridX ::
@@ -262,7 +263,7 @@ toPredBox ::
   (Tensor,Tensor,Tensor,Tensor)
 toPredBox Yolo {..} prediction =
   let input = fromPrediction prediction
-      grid_size = D.size input 2
+      grid_size = D.size 2 input
       stride = fromIntegral img_size / fromIntegral grid_size :: Float
       scaled_anchors = toScaledAnchors anchors stride
       anchor_w = toAnchorW scaled_anchors
@@ -304,10 +305,10 @@ toBuildTargets
   -> Float
   -> Target
 toBuildTargets (pred_boxes_x,pred_boxes_y,pred_boxes_w,pred_boxes_h) pred_cls target anchors ignore_thres =
-  let nB = D.size pred_boxes_x 0
-      nA = D.size pred_boxes_x 1
-      nC = D.size pred_cls (-1)
-      nG = D.size pred_boxes_x 2
+  let nB = D.size 0 pred_boxes_x
+      nA = D.size 1 pred_boxes_x
+      nC = D.size (-1) pred_cls
+      nG = D.size 2 pred_boxes_x
       obj_mask_init = zeros [nB,nA,nG,nG] bool_opts
       noobj_mask_init = ones [nB,nA,nG,nG] bool_opts
       class_mask_init = zeros' [nB,nA,nG,nG]
@@ -410,8 +411,8 @@ data YoloOutput
 
 instance HasForward Yolo (Maybe Tensor, Tensor) Tensor where
   forward yolo@Yolo {..} (train, input) =
-    let num_samples = D.size input 0
-        grid_size = D.size input 2
+    let num_samples = D.size 0 input
+        grid_size = D.size 2 input
         g = grid_size
         num_anchors = length anchors
         img_dim = shape input !! 2
@@ -465,7 +466,7 @@ instance HasForward Darknet (Maybe Tensor, Tensor) Tensor where
     let loop :: [(Index, Layer)] -> (Map Index Tensor) -> [Tensor] -> Tensor
         loop [] _ tensors = D.cat (D.Dim 1) tensors
         loop ((idx, layer) : next) layerOutputs yoloOutputs =
-          let input' = (if idx == 0 then input else layerOutputs ! (idx -1))
+          let input' = (if idx == 0 then input else layerOutputs M.! (idx -1))
            in case layer of
                 LConvolution s ->
                   let out = forward s input'
