@@ -19,9 +19,10 @@ module Torch.Data.StreamedPipeline
     makeListT',
     foldOverWith,
     foldOverWith',
-    pMap,
+    pmap,
+    pmapProper,
     Datastream (..),
-    defaultDataloaderOpts,
+    -- defaultDataloaderOpts,
     MonadBase (..),
   )
 where
@@ -30,7 +31,7 @@ import Control.Applicative (Alternative, (<|>))
 -- import           Control.Monad.Trans.Control (MonadBaseControl(..), control)
 
 import Control.Concurrent.Async.Lifted
-import Control.Exception.Safe (MonadMask, bracket, finally)
+import Control.Exception.Safe (MonadMask, bracket, finally, bracketOnError)
 import Control.Foldl (Fold, FoldM (FoldM))
 import qualified Control.Foldl as L
 import Control.Monad
@@ -45,7 +46,7 @@ import Pipes.Safe (MonadSafe (Base))
 import qualified Pipes.Safe as Safe
 import Torch.Typed
 
-data DataloaderOpts = DataloaderOpts {numWorkers :: Int}
+-- data DataloaderOpts = DataloaderOpts {numWorkers :: Int}
 
 class (MonadPlus m, MonadBase IO m) => Datastream m seed dataset batch where
   streamBatch :: dataset -> seed -> ListT m batch
@@ -76,15 +77,15 @@ runTransforms :: MonadBase IO m => (batch -> batch') -> Input (batch) -> Output 
 runTransforms transforms transformBox trainBox = fromInput' transformBox >-> P.map transforms >-> toOutput' trainBox
 
 -- this is a bit of a mess
-pMap :: (Monad m, MonadBaseControl IO m) =>  (a -> b) -> Int -> ListT m a -> m (ListT m b)
-pMap f n prod  = Select <$> withOne unbounded unwrap (\input -> withOne unbounded (mapConcur input) (\input2 -> pure $ fromInput' input2))
+pmap :: (Monad m, MonadBaseControl IO m) =>  (a -> b) -> Int -> ListT m a -> m (ListT m b)
+pmap f n prod  = Select <$> withBufferInput unbounded unwrap (\input -> withBufferInput unbounded (mapConcur input) (\input2 -> pure $ fromInput' input2))
   where
     unwrap output = runEffect $ enumerate prod >-> toOutput' output
     mapConcur input output = replicateConcurrently_ n $ runEffect $ fromInput' input >-> P.map f >-> toOutput' output
 
 -- can we get rid of this m?
-pMapProper :: (Monad m, MonadBaseControl IO m) =>  (ListT m a -> ListT m b) -> Int -> ListT m a -> m (ListT m b)
-pMapProper func n prod  = withOne unbounded unwrap (\input -> pure $ func $ (Select $ fromInput' input))
+pmapProper :: (Monad m, MonadBaseControl IO m) =>  (ListT m a -> ListT m b) -> Int -> ListT m a -> m (ListT m b)
+pmapProper func n prod  = withBufferInput unbounded unwrap (\input -> pure $ func $ (Select $ fromInput' input))
   where unwrap output = runEffect $ enumerate prod >-> toOutput' output
 
 streamBatches fold inputBox = foldFromProducer inputs fold
@@ -92,54 +93,60 @@ streamBatches fold inputBox = foldFromProducer inputs fold
     inputs = fromInput' inputBox
 
 foldOverWith' ::
-  forall m dataset seed batch b.
-  (Datastream m seed dataset batch, MonadBaseControl IO m) =>
+  forall m dataset seed batch f b.
+  (Datastream m seed dataset batch, MonadBaseControl IO m, Foldable f) =>
   dataset ->
-  ListT m seed ->
-  FoldM m batch b ->
+  f seed ->
+  FoldM m (batch, Int) b ->
   m b
-foldOverWith' = foldOverWith defaultDataloaderOpts
+foldOverWith' dataset seeds fold = join $ fmap (flip foldFromProducer fold . enumerate) $ makeListT' dataset seeds
 
 foldOverWith ::
   forall m dataset seed batch b.
   (Datastream m seed dataset batch, MonadBaseControl IO m) =>
-  DataloaderOpts ->
+  -- DataloaderOpts ->
   dataset ->
   ListT m seed ->
-  FoldM m batch b ->
+  FoldM m (batch, Int) b ->
   m b
-foldOverWith opts@DataloaderOpts {..} dataset seeds fold = do
-  join $ fmap (flip foldFromProducer fold . enumerate) $ makeListT opts dataset seeds
+foldOverWith  dataset seeds fold = do
+  join $ fmap (flip foldFromProducer fold . enumerate) $ makeListT dataset seeds
 
 makeListT ::
   forall batch m dataset seed b.
   (Datastream m seed dataset batch, MonadBaseControl IO m, MonadBase IO m) =>
-  DataloaderOpts ->
+  -- DataloaderOpts ->
   dataset ->
   ListT m seed ->
-  m (ListT m batch)
-makeListT DataloaderOpts {..} dataset seeds = do
-  fmap Select $
-    withOne
-      (bounded numWorkers)
+  m (ListT m (batch, Int))
+makeListT  dataset seeds = do
+  Select <$>
+    withBufferInput
+      unbounded 
       (\batchOutput -> readBatches dataset seeds batchOutput)
-      (\input -> pure $ fromInput' input)
+      (\input -> pure $ P.zip (fromInput' input) iters)
+    where
+      iters ::  Producer Int m ()
+      iters = each [0..]
 
 makeListT' ::
   forall batch m f dataset seed b.
   (Datastream m seed dataset batch, MonadBaseControl IO m, MonadBase IO m, Foldable f) =>
-  DataloaderOpts ->
   dataset ->
   f seed ->
-  m (ListT m batch)
-makeListT' DataloaderOpts {..} dataset seeds = do
-  fmap Select $
-    withOne
-      (bounded numWorkers)
-      (\batchOutput -> readBatches' dataset seeds batchOutput)
-      (\input -> (pure $ fromInput' input))
+  m (ListT m (batch, Int))
+makeListT'  dataset seeds = do
+  Select <$>
+    withBufferInput
+      unbounded
+      (\batchOutput ->  readBatches' dataset seeds batchOutput)
+      (\input -> pure $ P.zip (fromInput' input) iters)
+    where
+      iters ::  Producer Int m ()
+      iters = each [0..]
+      -- iters = undefined
 
-defaultDataloaderOpts = DataloaderOpts {numWorkers = 1}
+-- defaultDataloaderOpts = DataloaderOpts {numWorkers = 1}
 
 foldFromProducer :: Monad m => Producer batch m () -> L.FoldM m batch b -> m b
 foldFromProducer prod fold = (L.impurely P.foldM) fold prod
@@ -151,34 +158,27 @@ liftedBracket acquire release action = control $ \runInIO ->
     (\saved -> runInIO (restoreM saved >>= release))
     (\saved -> runInIO (restoreM saved >>= action))
 
-withBufferLifted ::
-  (MonadBaseControl IO m) =>
-  Buffer a ->
-  (Output a -> m l) ->
-  (Input a -> m r) ->
-  m (l, r)
-withBufferLifted buffer fOutput fInput =
-  liftedBracket
-    (liftBase $ spawn' buffer)
-    (\(_, _, seal) -> liftBase $ atomically seal)
-    ( \(output, input, seal) ->
-        concurrently
-          (fOutput output `liftedFinally` (liftBase $ atomically seal))
-          (fInput input `liftedFinally` (liftBase $ atomically seal))
-    )
+liftedBracketOnError :: MonadBaseControl IO m => m a -> (a -> m b) -> (a -> m c) -> m c
+liftedBracketOnError acquire release action = control $ \runInIO ->
+  bracketOnError
+    (runInIO acquire)
+    (\saved -> runInIO (restoreM saved >>= release))
+    (\saved -> runInIO (restoreM saved >>= action))
 
 -- We need to cleanup exception handling here more, but withBuffer is too restrictive
 -- for how we use input and output as it ends up sealing too quickly
-withOne ::
+-- | Forks a thread for the output producing function and returns
+-- | the value of the input consuming function.  
+withBufferInput ::
   (MonadBaseControl IO m) =>
   Buffer a ->
   (Output a -> m l) ->
   (Input a -> m r) ->
   m r
-withOne buffer fOutput fInput =
-  liftedBracket
+withBufferInput buffer fOutput fInput =
+  liftedBracketOnError
     (liftBase $ spawn' buffer)
-    ( \(_, _, seal) -> do liftBase $ print "here"
+    ( \(_, _, seal) -> do liftBase $ atomically seal
     )
     ( \(output, input, seal) -> do
         async (fOutput output `liftedFinally` (liftBase $ atomically seal))

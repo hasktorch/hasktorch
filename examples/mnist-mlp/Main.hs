@@ -53,15 +53,17 @@ mlp MLP{..} input =
     . linear l0
     $ input
 
-trainLoop model optimizer = FoldM step model done
-  where step :: MLP -> (Tensor, Tensor, Int) -> IO MLP
-        step model (input, label, iter) = do
+trainLoop :: Optimizer o => MLP -> o -> FoldM IO  ((Tensor, Tensor), Int) MLP
+trainLoop model optimizer = FoldM step begin done
+  where step :: MLP -> ((Tensor, Tensor), Int) -> IO MLP
+        step model ((input, label), iter) = do
           let loss = nllLoss' label $ mlp model input
           when (iter `mod` 50 == 0) $ do
             putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
           (newParam, _) <- runStep model optimizer loss 1e-3
           pure $ replaceParameters model newParam
         done = pure
+        begin = pure model
 
 main :: IO ()
 main = do
@@ -70,7 +72,8 @@ main = do
         testMnist = V.Mnist { batchSize = 256 , mnistData = testData}
         spec = MLPSpec 784 64 32 10
         optimizer = GD
-    model <- foldOverWith' trainMnist (Select $ yield (1 :: Int)) (trainLoop (sample spec) optimizer)
+    init <- sample spec
+    model <- foldOverWith' trainMnist [1 :: Int] (trainLoop init optimizer)
 
 
     -- show test images + labels

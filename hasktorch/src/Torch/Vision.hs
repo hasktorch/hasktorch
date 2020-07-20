@@ -55,7 +55,7 @@ data Mnist = Mnist { batchSize :: Int
                    , mnistData :: I.MnistData
                    }
 
-instance (MonadPlus m, MonadBase IO m) => Datastream m Int Mnist (Tensor, Tensor, Int) where
+instance (MonadPlus m, MonadBase IO m) => Datastream m Int Mnist (Tensor, Tensor) where
   streamBatch Mnist{..} seed = Select $ 
     for (each [1..numIters]) $ \iter -> do 
       let from = (iter-1) * batchSize
@@ -63,7 +63,7 @@ instance (MonadPlus m, MonadBase IO m) => Datastream m Int Mnist (Tensor, Tensor
           indexes = [from .. to]
           target = getLabels' batchSize  mnistData indexes
       input  <- liftBase $ getImages' batchSize 784 mnistData indexes
-      yield (input, target, iter)
+      yield (input, target)
 
       where numIters = I.length mnistData `Prelude.div` batchSize 
             

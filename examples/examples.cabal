@@ -282,3 +282,4 @@ executable iris-classification
                      , cassava
                      , pipes
                      , pipes-safe
+                     , vector

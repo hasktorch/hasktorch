@@ -50,9 +50,11 @@ import qualified Pipes.Safe.Prelude as Safe
 import           System.IO (IOMode(ReadMode))
 import Pipes.Concurrent (unbounded)
 import Control.Monad.Trans.Control (MonadBaseControl)
+import Data.Vector (Vector)
 
 
--- instance FromField
+
+  
 instance FromField a => FromField [a] where
   -- simply wrap a single 'a' into a list
   parseField = fmap pure . parseField 
@@ -84,14 +86,16 @@ instance ( KnownNat seqLen
 data NamedColumns = Unnamed | Named
 type BufferSize = Int
 
+
 data CsvDataset batches = CsvDataset { filePath :: FilePath
                                      , decDelimiter :: !B.Word8
-                                     , byName :: NamedColumns
-                                     , hasHeader :: HasHeader
-                                     , batchSize :: Int
-                                     , filter :: Maybe (batches -> Bool)
+                                     , byName       :: NamedColumns
+                                     , hasHeader  :: HasHeader
+                                     , batchSize  :: Int
+                                     , filter     :: Maybe (batches -> Bool)
                                      , numBatches :: Maybe Int
-                                     , shuffle :: Maybe BufferSize
+                                     , shuffle    :: Maybe BufferSize
+                                     , dropLast   :: Bool
                                      }
 
 csvDataset :: forall batches . FilePath -> CsvDataset batches
@@ -103,6 +107,7 @@ csvDataset filePath  = CsvDataset { filePath = filePath
                                   , filter = Nothing
                                   , numBatches = Nothing
                                   , shuffle = Nothing
+                                  , dropLast = True
                                   }
 
 instance ( MonadPlus m
@@ -112,17 +117,31 @@ instance ( MonadPlus m
          , FromRecord batch -- these constraints make CsvDatasets only able to parse records, might not be the best idea
          , FromNamedRecord batch
          -- , Monoid batch
-         ) => Datastream m () (CsvDataset batch) [batch] where
+         -- ) => Datastream m () (CsvDataset batch) [batch] where
+         ) => Datastream m () (CsvDataset batch) (Vector batch) where
   streamBatch CsvDataset{..} _ = Select $ Safe.withFile filePath ReadMode $ \fh ->
     -- this quietly discards errors right now, probably would like to log this
     -- TODO: optionally drop last chunk if it's less than batchSize (would want to use vectors for O(1) length) 
-    -- TODO: optionally take a fixed number of batches
-    -- TODO: we could concurrently stream in records, and batch records in another thread
-    case shuffle of
-      Nothing -> L.purely folds L.list $ view (chunksOf batchSize) $ decodeRecords fh >-> P.concat
-      Just bufferSize -> L.purely folds L.list $ view (chunksOf batchSize) $
-         (L.purely folds L.list $ view (chunksOf bufferSize) $ decodeRecords fh >-> P.concat) >-> shuffleRecords
+    -- TODO: we could concurrently stream in records, and batch records in another thread 
+
+    if dropLast
+    then streamRecords fh >-> P.filter (\v -> V.length v == batchSize)
+    else streamRecords fh
+    -- case shuffle of
+    --   Nothing -> L.purely folds L.list $ view (chunksOf batchSize) $ decodeRecords fh >-> P.concat
+    --   Just bufferSize -> L.purely folds L.list $ view (chunksOf batchSize) $
+    --      (L.purely folds L.list $ view (chunksOf bufferSize) $ decodeRecords fh >-> P.concat) >-> shuffleRecords
     where
+      streamRecords fh = case shuffle of
+        Nothing -> L.purely folds L.vector $ view (chunksOf batchSize) $ decodeRecords fh >-> P.concat
+        Just bufferSize -> L.purely folds L.vector
+                         $ view (chunksOf batchSize)
+                         $ ( L.purely folds L.list
+                            $ view (chunksOf bufferSize)
+                            $ decodeRecords fh >-> P.concat
+                           )
+                         >-> shuffleRecords
+
       decodeRecords fh = case byName of
                            Unnamed -> decode hasHeader (produceLine fh)
                            Named   -> decodeByName (produceLine fh)
