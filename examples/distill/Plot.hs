@@ -32,21 +32,3 @@ strip x = do
             . position X [ PName "x", PmType Quantitative ]
             . tooltip [ TName "x" ]
     pure $ toVegaLite [ dat [], mark Tick [ MOpacity 0.1 ], enc [] ] 
-
-{-
-stripFacet xLst nameLst = do
-        let xLst' = asValue . toDType Double <$> xLst
-        dat = dataFromColumns [Parse [("x", FoNumber, "category", Fo)]] . dataColumn "x" (Numbers x')
-        enc = encoding 
-            . position X [ PName "x", PmType Quantitative ]
-            . row [ FName "", ]
-            . tooltip [ TName "x" ]
-    pure toVegaLite
-     [ gaiaData
-     , columns 4
-     , facetFlow [ FName "Cluster", FmType Nominal ]
-     , specification (asSpec [ mark Bar [], enc [] ])
-     ]
-
-    pure $ toVegaLite [ dat [], mark Tick [], enc [] ]
--}

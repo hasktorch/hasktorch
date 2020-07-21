@@ -44,4 +44,3 @@ distill DistillSpec{..} OptimSpec{..} dataset = do
             (newParam, _) <- runStep state optimizer loss learningRate
             pure $ replaceParameters state newParam
     pure trained
-
