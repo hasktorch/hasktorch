@@ -18,9 +18,10 @@ import           Torch
 import           Torch.Tensor
 import           Torch.Data.CsvDataset
 import           Torch.Data.Pipeline (FoldM(FoldM))
-import           Torch.Data.StreamedPipeline (pmap, makeListT)
+import           Torch.Data.StreamedPipeline (MonadBaseControl, makeListTCont, pmapCont, pmap, makeListT)
 import Data.Vector (Vector, toList)
 import Control.Arrow (Arrow(first))
+import Control.Monad.Cont (runContT, runCont, ContT(ContT))
 
 
 data MLPSpec = MLPSpec {
@@ -77,31 +78,32 @@ irisToTensor iris = do
         getFeatures = fmap (\x -> [sepalLength x, sepalWidth x, petalLength x, petalWidth x])
         getClasses = fmap (\x -> fromEnum $ irisClass x)
 
-trainLoop :: (Optimizer o, MonadIO m) => MLP -> o -> Producer ((Tensor, Tensor), Int) m () -> m MLP
-trainLoop model optimizer = P.foldM step init done
+trainLoop :: (Optimizer o, MonadIO m) => MLP -> o -> ListT m ((Tensor, Tensor), Int)  -> m MLP
+trainLoop model optimizer inputs = P.foldM step init done $ enumerate inputs
   where 
         step model ((input, label), iter) = do
           let loss = nllLoss' label $ mlp model input
-          when (iter `mod` 100 == 0) $ do
+          when (iter == 0) $ do
             liftIO $ putStrLn $ " | Loss: " ++ show loss
-            -- liftIO $ print label
-            -- liftIO $ print $ mlp model input
+            liftIO $ print label
           (newParam, _) <- liftIO $ runStep model optimizer loss 1e-3
           pure $ replaceParameters model newParam
         done = pure
         init = pure model
 
-pipeline dataset = makeListT @(Vector Iris) dataset >=> pmap (first irisToTensor ) 1
+-- pipeline :: (MonadIO m, MonadBaseControl IO m , Optimizer o) => MLP -> o -> ListT m (Vector Iris, Int) -> m MLP
+-- pipeline model optim inputs =  pmapCont (first irisToTensor) 2 inputs $ trainLoop model optim
+-- pipeline :: (MonadIO m, MonadBaseControl IO m) => ListT m (Vector Iris, Int) -> ContT MLP m (ListT m ((Tensor, Tensor), Int))
+-- pipeline =  pmapCont (first irisToTensor) 2
+  -- trainLoop model optim
 
 main :: IO ()
 main = runSafeT $ do
   init <- liftIO $ sample spec 
-  let irisTrain = (csvDataset @Iris "iris.data") { batchSize = 4 , shuffle = Just 500}
+  let irisTrain = (csvDataset @Iris "iris.data") { batchSize = 4 , shuffle = Just 100}
   foldM (\model epoch -> do
-            (inputs :: ListT m ((Tensor, Tensor), Int)) <- pipeline irisTrain (Select $ yield ())
-            trainLoop model optimizer $ enumerate inputs
-            
-
+            flip runContT (trainLoop model optimizer) $ do listT <- makeListTCont irisTrain (Select $ yield ())
+                                                           pmapCont (first irisToTensor) 2 listT
         ) init [1..50]
 
   pure ()

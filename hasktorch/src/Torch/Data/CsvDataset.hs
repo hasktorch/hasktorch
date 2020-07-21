@@ -87,16 +87,19 @@ data NamedColumns = Unnamed | Named
 type BufferSize = Int
 
 
+  -- TODO: maybe we use a type family to specify if we want to decode using named or unnamed!
 data CsvDataset batches = CsvDataset { filePath :: FilePath
                                      , decDelimiter :: !B.Word8
                                      , byName       :: NamedColumns
                                      , hasHeader  :: HasHeader
                                      , batchSize  :: Int
                                      , filter     :: Maybe (batches -> Bool)
-                                     , numBatches :: Maybe Int
+                                     -- , numBatches :: Maybe Int
                                      , shuffle    :: Maybe BufferSize
                                      , dropLast   :: Bool
                                      }
+tsvDataset :: forall batches . FilePath -> CsvDataset batches
+tsvDataset filePath = (csvDataset filePath) { decDelimiter = 9 }
 
 csvDataset :: forall batches . FilePath -> CsvDataset batches
 csvDataset filePath  = CsvDataset { filePath = filePath
@@ -105,7 +108,7 @@ csvDataset filePath  = CsvDataset { filePath = filePath
                                   , hasHeader = NoHeader
                                   , batchSize = 1
                                   , filter = Nothing
-                                  , numBatches = Nothing
+                                  -- , numBatches = Nothing
                                   , shuffle = Nothing
                                   , dropLast = True
                                   }
@@ -150,8 +153,8 @@ instance ( MonadPlus m
       -- probably want a cleaner way of reyielding these chunks
       shuffleRecords = do
         chunks <- await 
-        std <- Torch.Data.StreamedPipeline.liftBase getStdGen
-        mapM_ yield  $ (fst $  shuffle' chunks std)
+        std <- Torch.Data.StreamedPipeline.liftBase newStdGen
+        mapM_ yield  $ fst $  shuffle' chunks std
         
 --  https://wiki.haskell.org/Random_shuffle
 shuffle' :: [a] -> StdGen -> ([a],StdGen)
