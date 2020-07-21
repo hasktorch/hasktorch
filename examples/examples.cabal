@@ -251,10 +251,10 @@ executable distill
                      , safe-exceptions
                      , static-mnist
 
-executable prune
+executable regularization
   import:              config
   hs-source-dirs:      distill
-  main-is:             Prune.hs
+  main-is:             Regularization.hs
   other-modules:       Distill, Dataset, Model, Plot
   ghc-options:         -fno-warn-partial-type-signatures
   build-depends:       libtorch-ffi

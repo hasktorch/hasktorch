@@ -28,8 +28,8 @@ mkReg regFn selectFn a b model input target =
         selectParams = flattenAll $ cat (Dim 0) $ flattenAll <$> (selectFn $ model) 
 
 -- | Setup pruning parameters and run
-runPrune :: (Dataset d) => d -> IO () 
-runPrune mnistData = do
+regularizationTest :: (Dataset d) => d -> IO () 
+regularizationTest mnistData = do
 
     print "sampling"
     -- train reference model
@@ -57,7 +57,7 @@ runPrune mnistData = do
 
     l1Model <- train
             optimSpec { optimizer = mkAdam (0 :: Int) 0.9 0.999 (flattenParameters initRefL1),  
-                        lossFn = mkReg l1 (selectWeights pruneSpec) 1.0 100.0 }
+                        lossFn = mkReg l1 (selectWeights pruneSpec) 1.0 10.0 }
             mnistData 
             initRefL1
 
@@ -65,7 +65,7 @@ runPrune mnistData = do
     initRefL2 <- sample refSpec
     l2Model <- train
         optimSpec { optimizer = mkAdam 0 0.9 0.999 (flattenParameters initRefL2), 
-                    lossFn = mkReg l2 (selectWeights pruneSpec) 1.0 1000.0 }
+                    lossFn = mkReg l2 (selectWeights pruneSpec) 1.0 1.0 }
         mnistData 
         initRefL2
 
@@ -98,8 +98,7 @@ runPrune mnistData = do
 pruneTest = do
     putStrLn "Loading Data"
     (mnistTrain, mnistTest) <- loadMNIST "datasets/mnist"
-    putStrLn "Running Prune"
-    runPrune mnistTrain
+    regularizationTest mnistTrain
     putStrLn "Done"
 
 main = pruneTest
