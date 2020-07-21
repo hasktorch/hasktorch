@@ -1191,8 +1191,74 @@ transpose2D
   -> Tensor device dtype '[j, i] -- ^ output
 transpose2D = transpose @0 @1
 
--- diag :: Tensor device dtype shape -> Int -> Tensor device dtype shape
--- diag t index = unsafePerformIO $ (ATen.cast2 ATen.Managed.tensor_diag_l) t index
+class KnownTri (tri :: Tri) where
+  triVal :: Tri
+
+instance KnownTri Upper where
+  triVal = Upper
+
+instance KnownTri Lower where
+  triVal = Lower
+
+type family DiagSize (tri :: Tri) (index :: Nat) (m :: Nat) (n :: Nat) :: Nat where
+  DiagSize 'Upper i m n =
+    If
+      (i <=? n)
+      (Min m (n - i))
+      ( TypeError
+          ( Text "For a matrix with shape "
+              :<>: ShowType '[m, n]
+              :<>: Text ", the maximum index for an upper diagonal is "
+              :<>: ShowType n
+              :<>: Text ", but asked for index "
+              :<>: ShowType i
+          )
+      )
+  DiagSize 'Lower i m n =
+    If
+      (i <=? m)
+      (Min (m - i) n)
+      ( TypeError
+          ( Text "For a matrix with shape "
+              :<>: ShowType '[m, n]
+              :<>: Text ", the maximum index for a lower diagonal is "
+              :<>: ShowType m
+              :<>: Text ", but asked for index "
+              :<>: ShowType i
+          )
+      )
+
+type family DiagShape (tri :: Tri) (index :: Nat) (shape :: [Nat]) :: [Nat] where
+  DiagShape _ i '[n] = '[n + i, n + i]
+  DiagShape tri i '[m, n] = '[DiagSize tri i m n]
+  DiagShape _ _ shape =
+    TypeError
+      ( Text "The input must be a matrix or a vector, but it has "
+          :<>: ShowType (ListLength shape)
+          :<>: Text " dimensions."
+      )
+
+-- | diag
+--
+-- >>> dtype &&& shape $ diag @'Upper @0 (ones :: CPUTensor 'D.Float '[3,2])
+-- (Float,[2])
+-- >>> dtype &&& shape $ diag @'Upper @1 (ones :: CPUTensor 'D.Float '[3,2])
+-- (Float,[1])
+-- >>> dtype &&& shape $ diag @'Lower @1 (ones :: CPUTensor 'D.Float '[3,2])
+-- (Float,[2])
+diag
+  :: forall tri index shape shape' device dtype
+   . ( KnownTri tri
+     , KnownNat index
+     , StandardDTypeValidation device dtype
+     , shape' ~ DiagShape tri index shape
+     )
+  => Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape' -- ^ output
+diag t = unsafePerformIO $ ATen.cast2 ATen.Managed.tensor_diag_l t
+  $ case triVal @tri of
+    Upper -> natValI @index
+    Lower -> - natValI @index
 
 -- | all
 -- See https://pytorch.org/docs/stable/tensors.html#torch.BoolTensor.all.
@@ -2204,14 +2270,125 @@ det
   -> Tensor device dtype (Det shape) -- ^ output
 det input = unsafePerformIO $ ATen.cast1 ATen.Managed.det_t input
 
--- diag_embed :: Tensor device dtype shape -> Int -> Int -> Int -> Tensor device dtype shape
--- diag_embed _input _offset _dim1 _dim2 = unsafePerformIO $ (ATen.cast4 ATen.Managed.diag_embed_tlll) _input _offset _dim1 _dim2
+type family DimsDistinctAscendingCheck (dim1 :: Nat) (dim2 :: Nat) (cmp :: Ordering) :: Constraint where
+  DimsDistinctAscendingCheck _ _ 'LT = ()
+  DimsDistinctAscendingCheck dim1 dim2 _ =
+    TypeError
+    ( Text "Dimensions must be distinct and in ascending order, but got "
+        :<>: ShowType dim1
+        :<>: Text ", "
+        :<>: ShowType dim2
+    )
 
--- diagflat :: Tensor device dtype shape -> Int -> Tensor device dtype shape
--- diagflat _input _offset = unsafePerformIO $ (ATen.cast2 ATen.Managed.diagflat_tl) _input _offset
+type family DimsDistinctAscending (dim1 :: Nat) (dim2 :: Nat) :: Constraint where
+  DimsDistinctAscending dim1 dim2 = DimsDistinctAscendingCheck dim1 dim2 (CmpNat dim1 dim2)
 
--- diagonal :: Tensor device dtype shape -> Int -> Int -> Int -> Tensor device dtype shape
--- diagonal _input _offset _dim1 _dim2 = unsafePerformIO $ (ATen.cast4 ATen.Managed.diagonal_tlll) _input _offset _dim1 _dim2
+type family DiagEmbedShapeImpl (dim1 :: Nat) (dim2 :: Nat) (shape :: [Nat]) (n :: Nat) :: [Nat] where
+  DiagEmbedShapeImpl dim1 dim2 shape n = Insert dim1 n (Insert (dim2 - 1) n (Init shape))
+
+type family DiagEmbedShape (index :: Nat) (dim1 :: Nat) (dim2 :: Nat) (shape :: [Nat]) :: [Nat] where
+  DiagEmbedShape index dim1 dim2 shape = DiagEmbedShapeImpl dim1 dim2 shape (Last shape + index)
+
+-- | diagEmbed
+--
+-- >>> dtype &&& shape $ diagEmbed @0 @1 @2 Upper (ones :: CPUTensor 'D.Float '[2,3])
+-- (Float,[2,3,3])
+-- >>> dtype &&& shape $ diagEmbed @1 @0 @2 Upper (ones :: CPUTensor 'D.Float '[2,3])
+-- (Float,[4,2,4])
+diagEmbed
+  :: forall index dim1 dim2 shape shape' device dtype
+   . ( KnownNat index
+     , KnownNat dim1
+     , KnownNat dim2
+     , shape' ~ DiagEmbedShape index dim1 dim2 shape
+     , DimsDistinctAscending dim1 dim2
+     , StandardDTypeValidation device dtype
+     )
+  => Tri
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape' -- ^ output
+diagEmbed tri t =
+  unsafePerformIO $
+    ATen.cast4
+      ATen.Managed.diag_embed_tlll
+      t
+      (if isUpper tri then natValI @index else - natValI @index)
+      (natValI @dim1)
+      (natValI @dim2)
+
+type family DiagflatShapeImpl (d :: Nat) :: [Nat] where
+  DiagflatShapeImpl d = '[d, d]
+
+type family DiagflatShape (index :: Nat) (shape :: [Nat]) :: [Nat] where
+  DiagflatShape index shape = DiagflatShapeImpl (Numel shape + index)
+
+-- | diagflat
+--
+-- >>> dtype &&& shape $ diagflat @0 Upper (ones :: CPUTensor 'D.Float '[3])
+-- (Float,[3,3])
+-- >>> dtype &&& shape $ diagflat @1 Upper (ones :: CPUTensor 'D.Float '[3])
+-- (Float,[4,4])
+-- >>> dtype &&& shape $ diagflat @0 Upper (ones :: CPUTensor 'D.Float '[2,2])
+-- (Float,[4,4])
+diagflat
+  :: forall index shape shape' device dtype
+   . ( KnownNat index
+     , shape' ~ DiagflatShape index shape
+     , StandardDTypeValidation device dtype
+     )
+  => Tri
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape' -- ^ output
+diagflat tri t = unsafePerformIO $ ATen.cast2 ATen.Managed.diagflat_tl t $
+  case tri of
+    Upper -> natValI @index
+    Lower -> - natValI @index
+
+type family NDimAtLeastCheck (ndim :: Nat) (shape :: [Nat]) (cmp :: Ordering) :: Constraint where
+  NDimAtLeastCheck ndim shape 'GT =
+    TypeError
+      ( Text "Input must have at least "
+          :<>: ShowType ndim
+          :<>: Text " dimensions, but got "
+          :<>: ShowType (ListLength shape)
+      )
+  NDimAtLeastCheck _ _ _ = ()
+
+type family NDimAtLeast (ndim :: Nat) (shape :: [Nat]) :: Constraint where
+  NDimAtLeast ndim shape = NDimAtLeastCheck ndim shape (CmpNat ndim (ListLength shape))
+
+type family DiagonalShape (tri :: Tri) (index :: Nat) (dim1 :: Nat) (dim2 :: Nat) (shape :: [Nat]) :: [Nat] where
+  DiagonalShape tri index dim1 dim2 shape =
+    Remove (Remove shape dim2) dim1 ++ '[DiagSize tri index (Index shape dim1) (Index shape dim2)]
+
+-- | diagonal
+--
+-- >>> dtype &&& shape $ diagonal @'Upper @0 @0 @1 (ones :: CPUTensor 'D.Float '[3,3])
+-- (Float,[3])
+-- >>> dtype &&& shape $ diagonal @'Upper @1 @0 @1 (ones :: CPUTensor 'D.Float '[3,3])
+-- (Float,[2])
+-- >>> dtype &&& shape $ diagonal @'Lower @1 @1 @2 (ones :: CPUTensor 'D.Float '[2,5,4,2])
+-- (Float,[2,2,4])
+diagonal
+  :: forall tri index dim1 dim2 shape shape' device dtype
+   . ( KnownTri tri
+     , KnownNat index
+     , KnownNat dim1
+     , KnownNat dim2
+     , NDimAtLeast 2 shape
+     , DimsDistinctAscending dim1 dim2
+     , shape' ~ DiagonalShape tri index dim1 dim2 shape
+     , StandardDTypeValidation device dtype
+     )
+  => Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape' -- ^ output
+diagonal t = unsafePerformIO $
+  ATen.cast4
+    ATen.Managed.diagonal_tlll
+    t
+    (if isUpper (triVal @tri) then natValI @index else - natValI @index)
+    (natValI @dim1)
+    (natValI @dim2)
 
 type family DotDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
   DotDTypeIsValid '( 'D.CPU, 0)            dtype = ( DTypeIsNotBool '( 'D.CPU, 0) dtype
@@ -3008,8 +3185,64 @@ mv input vec = unsafePerformIO $ ATen.cast2 ATen.Managed.mv_tt input vec
 -- mvlgamma :: Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- mvlgamma _input _p = unsafePerformIO $ (ATen.cast2 ATen.Managed.mvlgamma_tl) _input _p
 
--- narrow :: Tensor device dtype shape -> Int -> Int -> Int -> Tensor device dtype shape
--- narrow _input _dim _start _length = unsafePerformIO $ (ATen.cast4 ATen.Managed.narrow_tlll) _input _dim _start _length
+type family
+  NarrowCheck
+    (mbCurrent :: Maybe Nat)
+    (mbUpdated :: Maybe [Nat])
+    (shape :: [Nat])
+    (dim :: Nat)
+    (start :: Nat)
+    (length :: Nat) ::
+    [Nat]
+  where
+  NarrowCheck Nothing _ sh d _ _        = DimOutOfBound sh d
+  NarrowCheck (Just c) Nothing sh d s l = DimOutOfBound sh d
+  NarrowCheck _ (Just r) _ _ _ _        = r
+
+type family Narrow' (dim :: Nat) (shape :: [Nat]) (current :: Maybe Nat) (start :: Nat) (length :: Nat) :: Maybe [Nat] where
+  Narrow' d sh (Just c) s l =
+    If
+      ((s + l) <=? c)
+      (ReplaceDim d sh l)
+      ( TypeError
+          ( Text "The end of the requested narrow segment "
+              :<>: ShowType (s + l)
+              :<>: Text " would be larger than current size "
+              :<>: ShowType c
+              :<>: Text " at dimension "
+              :<>: ShowType d
+          )
+      )
+  Narrow' d sh Nothing s l =
+    TypeError
+      ( Text "Requested narrow dimension "
+          :<>: ShowType d
+          :<>: Text " doesnt exist in "
+          :<>: ShowType sh
+      )
+
+
+type family Narrow (shape :: [Nat]) (dim :: Nat) (start :: Nat) (length :: Nat) :: [Nat] where
+  Narrow shape dim start length =
+    NarrowCheck (ExtractDim dim shape) (Narrow' dim shape (ExtractDim dim shape) start length) shape dim start length
+
+-- | "Narrow" a tensor by returning a tensor that is a slice from 'start' of length 'length' along 'dim'
+-- 
+-- >>> narrow @0 @0 @2 (ones :: CPUTensor 'D.Float '[3,3,3])
+-- Tensor Float [2,3,3] 
+-- >>> narrow @1 @1 @2 (ones :: CPUTensor 'D.Half '[3,3,3])
+-- Tensor Half [3,2,3] 
+-- >>> narrow @1 @1 @2 (ones :: CPUTensor 'D.Bool '[3,3,3])
+-- Tensor Bool [3,2,3]
+narrow :: forall dim start length shape mbSize mbNewShape dtype device. 
+  (All KnownNat '[dim, start, length]
+  , All KnownNat shape) =>
+  Tensor device dtype shape -> Tensor device dtype (Narrow shape dim start length)
+narrow _input = unsafePerformIO $ (ATen.cast4 ATen.Managed.narrow_tlll) _input _dim _start _length
+  where 
+    _dim = natValI @dim
+    _start = natValI @start
+    _length = natValI @length
 
 -- native_batch_norm :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Bool -> Double -> Double -> (Tensor device dtype shape,Tensor device dtype shape,Tensor device dtype shape)
 -- native_batch_norm _input _weight _bias _running_mean _running_var _training _momentum _eps = unsafePerformIO $ (ATen.cast8 ATen.Managed.native_batch_norm_tttttbdd) _input _weight _bias _running_mean _running_var _training _momentum _eps

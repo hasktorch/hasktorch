@@ -20,11 +20,11 @@ import Foreign.C.String
 import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
-import Torch.Internal.Class
+
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
+C.include "<ATen/core/Dimname.h>"
 C.include "<vector>"
 
 
@@ -37,13 +37,6 @@ newDimname_n _x =
     *$(at::Dimname* _x));
   }|]
 
-
-
-foreign import ccall unsafe "hasktorch_finalizer.h &delete_dimname"
-  c_delete_dimname :: FunPtr ( Ptr Dimname -> IO ())
-
-instance CppObject Dimname where
-  fromPtr ptr = newForeignPtr c_delete_dimname ptr
 
 
 

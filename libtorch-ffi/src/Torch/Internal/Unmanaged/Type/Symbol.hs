@@ -20,12 +20,11 @@ import Foreign.C.String
 import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
-import Torch.Internal.Class
+
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
-C.include "<vector>"
+C.include "<ATen/core/interned_strings.h>"
 
 
 
@@ -35,14 +34,6 @@ newSymbol  =
   [C.throwBlock| at::Symbol* { return new at::Symbol(
     );
   }|]
-
-
-
-foreign import ccall unsafe "hasktorch_finalizer.h &delete_symbol"
-  c_delete_symbol :: FunPtr ( Ptr Symbol -> IO ())
-
-instance CppObject Symbol where
-  fromPtr ptr = newForeignPtr c_delete_symbol ptr
 
 
 

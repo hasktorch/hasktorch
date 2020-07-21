@@ -49,12 +49,13 @@ import qualified Torch.Functional              as D
 import qualified Torch.NN                      as A
 import qualified Torch.Tensor                  as D
 import qualified Torch.TensorFactories         as D
-import           Torch.Typed
 import           Torch.Typed.Factories
 import           Torch.Typed.Functional      hiding ( sqrt )
 import           Torch.Typed.Tensor
 import           Torch.Typed.Parameter
-import           Torch.Typed.NN
+import           Torch.Typed.NN.Dropout
+import           Torch.Typed.NN.Recurrent.Aux
+
 
 data GRULayerSpec
   (inputSize :: Nat)
@@ -290,34 +291,6 @@ xavierUniformGRU = do
     (5.0 / 3)
     (shape @device @dtype @'[3 * hiddenSize, featureSize] init)
 
--- TODO: This is taken from the initializers example code and should be replaced with cannonical,
--- tested versions. However, even a potentially incorrect implementation will likely perform
--- better than an ad-hoc random-normal distribution.
--- | Fan-in / Fan-out scaling calculation
-calculateFan :: [Int] -> (Int, Int)
-calculateFan shape
-  | dimT < 2
-  = error
-    "Fan in and fan out can not be computed for tensor with fewer than 2 dimensions"
-  | dimT == 2
-  = (numInputFmaps, numOutputFmaps)
-  | otherwise
-  = (numInputFmaps * receptiveFieldSize, numOutputFmaps * receptiveFieldSize)
- where
-  dimT               = length shape
-  numInputFmaps      = shape !! 1
-  numOutputFmaps     = shape !! 0
-  receptiveFieldSize = product $ tail shape
-
--- | Xavier Initialization - Uniform
-xavierUniformFIXME :: D.Tensor -> Float -> [Int] -> IO D.Tensor
-xavierUniformFIXME init gain shape = pure
-  $ D.subScalar bound $ D.mulScalar (bound * 2.0) init
- where
-  (fanIn, fanOut) = calculateFan shape
-  std = gain * sqrt (2.0 / (fromIntegral fanIn + fromIntegral fanOut))
-  bound = sqrt 3.0 * std
-
 instance
   ( KnownDType dtype
   , KnownDevice device
@@ -333,8 +306,6 @@ instance
     GRU
       <$> A.sample (GRULayerStackSpec @inputSize @hiddenSize @numLayers @directionality @dtype @device)
       <*> A.sample dropoutSpec
-
-data RNNInitialization = ConstantInitialization | LearnedInitialization deriving (Show, Generic)
 
 -- | A specification for a long, short-term memory layer.
 --
@@ -454,7 +425,7 @@ instance
       <$> A.sample gruSpec
       <*> (makeIndependent =<< pure h)
 
-gru
+gruForward
   :: forall
        shapeOrder
        batchSize
@@ -500,8 +471,8 @@ gru
   -> ( Tensor device dtype outputShape
      , Tensor device dtype hcShape
      )
-gru dropoutOn (GRUWithConstInit gru@(GRU _ (Dropout dropoutProb)) hc) input
-  = Torch.Typed.Functional.gru
+gruForward dropoutOn (GRUWithConstInit gruModel@(GRU _ (Dropout dropoutProb)) hc) input
+  = gru
     @shapeOrder
     @directionality
     @numLayers
@@ -516,7 +487,7 @@ gru dropoutOn (GRUWithConstInit gru@(GRU _ (Dropout dropoutProb)) hc) input
     @tensorParameters
     @dtype
     @device
-    (hmap' ToDependent . flattenParameters $ gru)
+    (hmap' ToDependent . flattenParameters $ gruModel)
     dropoutProb
     dropoutOn
     hc'
@@ -528,8 +499,8 @@ gru dropoutOn (GRUWithConstInit gru@(GRU _ (Dropout dropoutProb)) hc) input
           @'[batchSize, numLayers * NumberOfDirections directionality, hiddenSize]
           False -- TODO: What does the bool do?
       $ hc
-gru dropoutOn (GRUWithLearnedInit gru@(GRU _ (Dropout dropoutProb)) hc) input
-  = Torch.Typed.Functional.gru
+gruForward dropoutOn (GRUWithLearnedInit gruModel@(GRU _ (Dropout dropoutProb)) hc) input
+  = gru
     @shapeOrder
     @directionality
     @numLayers
@@ -544,7 +515,7 @@ gru dropoutOn (GRUWithLearnedInit gru@(GRU _ (Dropout dropoutProb)) hc) input
     @tensorParameters
     @dtype
     @device
-    (hmap' ToDependent . flattenParameters $ gru)
+    (hmap' ToDependent . flattenParameters $ gruModel)
     dropoutProb
     dropoutOn
     hc'
@@ -558,7 +529,7 @@ gru dropoutOn (GRUWithLearnedInit gru@(GRU _ (Dropout dropoutProb)) hc) input
       . toDependent
       $ hc
 
-gruWithDropout, gruWithoutDropout
+gruForwardWithDropout, gruForwardWithoutDropout
   :: forall
        shapeOrder
        batchSize
@@ -608,14 +579,14 @@ gruWithDropout, gruWithoutDropout
 -- >>> input :: CPUTensor 'D.Float '[5,16,10] <- randn
 -- >>> spec = GRUWithZerosInitSpec @10 @30 @3 @'Bidirectional @'D.Float @'( 'D.CPU, 0) (GRUSpec (DropoutSpec 0.5))
 -- >>> model <- A.sample spec
--- >>> :t gruWithDropout @'BatchFirst model input
--- gruWithDropout @'BatchFirst model input
+-- >>> :t gruForwardWithDropout @'BatchFirst model input
+-- gruForwardWithDropout @'BatchFirst model input
 --   :: (Tensor '( 'D.CPU, 0) 'D.Float '[5, 16, 60],
 --       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30])
--- >>> gruWithDropout @'BatchFirst model input
+-- >>> gruForwardWithDropout @'BatchFirst model input
 -- (Tensor Float [5,16,60] ,Tensor Float [6,5,30] )
-gruWithDropout =
-  Torch.Typed.NN.Recurrent.GRU.gru
+gruForwardWithDropout =
+  gruForward
     @shapeOrder
     @batchSize
     @seqLen
@@ -638,14 +609,14 @@ gruWithDropout =
 -- >>> input :: CPUTensor 'D.Float '[5,16,10] <- randn
 -- >>> spec = GRUWithZerosInitSpec @10 @30 @3 @'Bidirectional @'D.Float @'( 'D.CPU, 0) (GRUSpec (DropoutSpec 0.5))
 -- >>> model <- A.sample spec
--- >>> :t gruWithoutDropout @'BatchFirst model input
--- gruWithoutDropout @'BatchFirst model input
+-- >>> :t gruForwardWithoutDropout @'BatchFirst model input
+-- gruForwardWithoutDropout @'BatchFirst model input
 --   :: (Tensor '( 'D.CPU, 0) 'D.Float '[5, 16, 60],
 --       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30])
--- >>> gruWithoutDropout @'BatchFirst model input
+-- >>> gruForwardWithoutDropout @'BatchFirst model input
 -- (Tensor Float [5,16,60] ,Tensor Float [6,5,30] )
-gruWithoutDropout =
-  Torch.Typed.NN.Recurrent.GRU.gru
+gruForwardWithoutDropout =
+  gruForward
     @shapeOrder
     @batchSize
     @seqLen

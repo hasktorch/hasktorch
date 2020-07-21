@@ -21,7 +21,6 @@ module Torch.Functional
     , Internal.logdet
     , Internal.lstsq
     , Internal.mv
-    , Internal.slice
     , Internal.sumWithDimnames
 ) where
 
@@ -589,25 +588,32 @@ isSigned t = unsafePerformIO $ (cast1 ATen.is_signed_t) t
 -- | Computes input /= other element-wise.
 -- The second argument can be a number or a tensor whose shape is broadcastable with the first argument.
 ne 
-    :: Tensor -- ^ input
-    -> Tensor -- ^ other
-    -> Tensor -- ^ output
+  :: Tensor -- ^ input
+  -> Tensor -- ^ other
+  -> Tensor -- ^ output
 ne a b = unsafePerformIO $ (cast2 ATen.ne_tt) a b
 
 (/=.) = ne
 
 -- | Casting to given 'Dtype', where 'Dtype' is an object that represents the data type of a tensor in hasktorch.
 toDType 
- :: DType -- ^ data type to cast to 
- -> Tensor -- ^ input
- -> Tensor -- ^ output
+  :: DType -- ^ data type to cast to 
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
 toDType dtype t = unsafePerformIO $ (cast4 ATen.tensor_to_sbb) t dtype False False
 
 -- | squeezeAll
 squeezeAll 
-    :: Tensor -- ^ input
-    -> Tensor -- ^ output
+  :: Tensor -- ^ input
+  -> Tensor -- ^ output
 squeezeAll t = unsafePerformIO $ (cast1 ATen.squeeze_t) t
+
+-- | squeezeDim
+squeezeDim 
+  :: Int -- ^ dim
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+squeezeDim dim t = unsafePerformIO $ (cast2 ATen.squeeze_tl) t dim
 
 -- 
 -- Loss Functions
@@ -1283,22 +1289,12 @@ diag (Diag index) t = unsafePerformIO $ (cast2 ATen.tensor_diag_l) t index
 
 -- 
 diagEmbed
-  :: Offset -- ^ offset
-  -> Int -- ^ dim1
-  -> Int -- ^ dim2
+  :: Diag -- ^ offset
+  -> Dim -- ^ dim1
+  -> Dim -- ^ dim2
   -> Tensor -- ^ self
   -> Tensor
-diagEmbed offset dim1 dim2 t = unsafePerformIO $ (cast4 ATen.diag_embed_tlll) t offset dim1 dim2
-
-data Offset = OffsetMain | OffsetAbove | OffsetBelow deriving Show
-
-instance Castable Offset Int64 where
-  cast OffsetMain f = f 0
-  cast OffsetAbove f = f 1
-  cast OffsetBelow f = f (-1)
-  uncast 1 f = f OffsetAbove
-  uncast (-1) f = f OffsetBelow
-  uncast _ f = f OffsetMain
+diagEmbed (Diag offset) (Dim dim1) (Dim dim2) t = unsafePerformIO $ (cast4 ATen.diag_embed_tlll) t offset dim1 dim2
 
 -- | If input is a vector (1-D tensor), then returns a 2-D square tensor with the elements of input as the diagonal.
 -- If input is a tensor with more than one dimension, then returns a 2-D tensor with diagonal elements equal to a flattened input.
@@ -1307,21 +1303,20 @@ instance Castable Offset Int64 where
 --  If offset > 0, it is above the main diagonal.
 --  If offset < 0, it is below the main diagonal.
 diagflat
-    :: Offset -- ^ offset
+    :: Diag -- ^ offset
     -> Tensor -- ^ self
     -> Tensor -- ^ output
-diagflat offset t = unsafePerformIO $ (cast2 ATen.diagflat_tl) t offset
+diagflat (Diag offset) t = unsafePerformIO $ (cast2 ATen.diagflat_tl) t offset
 
 -- | Returns a partial view of input with the its diagonal elements with respect to dim1 and dim2 appended as a dimension at the end of the shape.
 -- Applying diagEmbed to the output of this function with the same arguments yields a diagonal matrix with the diagonal entries of the input. However, diagEmbed has different default dimensions, so those need to be explicitly specified.
 diagonal
-  :: Offset -- ^ offset
-  -> Dimname -- ^ outdim
-  -> Dimname -- ^ dim1
-  -> Dimname -- ^ dim2
+  :: Diag -- ^ offset
+  -> Dim -- ^ dim1
+  -> Dim -- ^ dim2
   -> Tensor -- ^ input
   -> Tensor -- ^ output
-diagonal offset outdim dim1 dim2 t = unsafePerformIO $ (cast5 ATen.diagonal_tnnnl) t outdim dim1 dim2 offset
+diagonal (Diag offset) (Dim dim1) (Dim dim2) t = unsafePerformIO $ (cast4 ATen.diagonal_tlll) t offset dim1 dim2
 
 
 -- | Returns True if all elements in the tensor are True, False otherwise.

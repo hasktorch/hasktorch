@@ -19,12 +19,12 @@ data MNIST = MNIST {
 }
 
 instance Dataset MNIST where
-	getItem mnistData index n = do
-		let currIndex = index
-		let idx = take n (drop (currIndex + n) (idxList mnistData))
-		input <- V.getImages' n mnistDataDim (dataset mnistData) idx
-		let label = V.getLabels' n (dataset mnistData) idx
-		pure (input, label)
+    getItem mnistData index n = do
+        let currIndex = index
+        let idx = take n (drop (currIndex + n) (idxList mnistData))
+        input <- V.getImages' n mnistDataDim (dataset mnistData) idx
+        let label = V.getLabels' n (dataset mnistData) idx
+        pure (input, label)
 
 mnistDataDim = 784
 

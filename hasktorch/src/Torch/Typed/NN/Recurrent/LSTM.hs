@@ -49,12 +49,13 @@ import qualified Torch.Functional              as D
 import qualified Torch.NN                      as A
 import qualified Torch.Tensor                  as D
 import qualified Torch.TensorFactories         as D
-import           Torch.Typed
 import           Torch.Typed.Factories
 import           Torch.Typed.Functional      hiding ( sqrt )
 import           Torch.Typed.Tensor
 import           Torch.Typed.Parameter
-import           Torch.Typed.NN
+import           Torch.Typed.NN.Dropout
+import           Torch.Typed.NN.Recurrent.Aux
+
 
 data LSTMLayerSpec
   (inputSize :: Nat)
@@ -362,34 +363,6 @@ xavierUniformLSTM = do
     (5.0 / 3)
     (shape @device @dtype @'[4 * hiddenSize, featureSize] init)
 
--- TODO: This is taken from the initializers example code and should be replaced with cannonical,
--- tested versions. However, even a potentially incorrect implementation will likely perform
--- better than an ad-hoc random-normal distribution.
--- | Fan-in / Fan-out scaling calculation
-calculateFan :: [Int] -> (Int, Int)
-calculateFan shape
-  | dimT < 2
-  = error
-    "Fan in and fan out can not be computed for tensor with fewer than 2 dimensions"
-  | dimT == 2
-  = (numInputFmaps, numOutputFmaps)
-  | otherwise
-  = (numInputFmaps * receptiveFieldSize, numOutputFmaps * receptiveFieldSize)
- where
-  dimT               = length shape
-  numInputFmaps      = shape !! 1
-  numOutputFmaps     = shape !! 0
-  receptiveFieldSize = product $ tail shape
-
--- | Xavier Initialization - Uniform
-xavierUniformFIXME :: D.Tensor -> Float -> [Int] -> IO D.Tensor
-xavierUniformFIXME init gain shape = pure
-  $ D.subScalar bound $ D.mulScalar (bound * 2.0) init
- where
-  (fanIn, fanOut) = calculateFan shape
-  std = gain * sqrt (2.0 / (fromIntegral fanIn + fromIntegral fanOut))
-  bound = sqrt 3.0 * std
-
 instance
   ( KnownDType dtype
   , KnownDevice device
@@ -405,8 +378,6 @@ instance
     LSTM
       <$> A.sample (LSTMLayerStackSpec @inputSize @hiddenSize @numLayers @directionality @dtype @device)
       <*> A.sample dropoutSpec
-
-data RNNInitialization = ConstantInitialization | LearnedInitialization deriving (Show, Generic)
 
 -- | A specification for a long, short-term memory layer.
 --
@@ -558,7 +529,7 @@ instance A.Parameterized (LSTMWithInit inputSize hiddenSize numLayers directiona
                  , lstmWithLearnedInit_h    = UnsafeMkParameter lstmWithLearnedInit_h'
                  }
 
-lstm
+lstmForward
   :: forall
        shapeOrder
        batchSize
@@ -605,8 +576,8 @@ lstm
      , Tensor device dtype hxShape
      , Tensor device dtype hxShape
      )
-lstm dropoutOn (LSTMWithConstInit lstm@(LSTM _ (Dropout dropoutProb)) cc hc) input
-  = Torch.Typed.Functional.lstm
+lstmForward dropoutOn (LSTMWithConstInit lstmModel@(LSTM _ (Dropout dropoutProb)) cc hc) input
+  = lstm
     @shapeOrder
     @directionality
     @numLayers
@@ -621,7 +592,7 @@ lstm dropoutOn (LSTMWithConstInit lstm@(LSTM _ (Dropout dropoutProb)) cc hc) inp
     @tensorParameters
     @dtype
     @device
-    (hmap' ToDependent . flattenParameters $ lstm)
+    (hmap' ToDependent . flattenParameters $ lstmModel)
     dropoutProb
     dropoutOn
     (cc', hc')
@@ -639,8 +610,8 @@ lstm dropoutOn (LSTMWithConstInit lstm@(LSTM _ (Dropout dropoutProb)) cc hc) inp
           @'[batchSize, numLayers * NumberOfDirections directionality, hiddenSize]
           False -- TODO: What does the bool do?
       $ hc
-lstm dropoutOn (LSTMWithLearnedInit lstm@(LSTM _ (Dropout dropoutProb)) cc hc) input
-  = Torch.Typed.Functional.lstm
+lstmForward dropoutOn (LSTMWithLearnedInit lstmModel@(LSTM _ (Dropout dropoutProb)) cc hc) input
+  = lstm
     @shapeOrder
     @directionality
     @numLayers
@@ -655,7 +626,7 @@ lstm dropoutOn (LSTMWithLearnedInit lstm@(LSTM _ (Dropout dropoutProb)) cc hc) i
     @tensorParameters
     @dtype
     @device
-    (hmap' ToDependent . flattenParameters $ lstm)
+    (hmap' ToDependent . flattenParameters $ lstmModel)
     dropoutProb
     dropoutOn
     (cc', hc')
@@ -676,7 +647,7 @@ lstm dropoutOn (LSTMWithLearnedInit lstm@(LSTM _ (Dropout dropoutProb)) cc hc) i
       . toDependent
       $ hc
 
-lstmWithDropout, lstmWithoutDropout
+lstmForwardWithDropout, lstmForwardWithoutDropout
   :: forall
        shapeOrder
        batchSize
@@ -727,15 +698,15 @@ lstmWithDropout, lstmWithoutDropout
 -- >>> input :: CPUTensor 'D.Float '[5,16,10] <- randn
 -- >>> spec = LSTMWithZerosInitSpec @10 @30 @3 @'Bidirectional @'D.Float @'( 'D.CPU, 0) (LSTMSpec (DropoutSpec 0.5))
 -- >>> model <- A.sample spec
--- >>> :t lstmWithDropout @'BatchFirst model input
--- lstmWithDropout @'BatchFirst model input
+-- >>> :t lstmForwardWithDropout @'BatchFirst model input
+-- lstmForwardWithDropout @'BatchFirst model input
 --   :: (Tensor '( 'D.CPU, 0) 'D.Float '[5, 16, 60],
 --       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30],
 --       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30])
--- >>> lstmWithDropout @'BatchFirst model input
+-- >>> lstmForwardWithDropout @'BatchFirst model input
 -- (Tensor Float [5,16,60] ,Tensor Float [6,5,30] ,Tensor Float [6,5,30] )
-lstmWithDropout =
-  Torch.Typed.NN.Recurrent.LSTM.lstm
+lstmForwardWithDropout =
+  lstmForward
     @shapeOrder
     @batchSize
     @seqLen
@@ -758,15 +729,15 @@ lstmWithDropout =
 -- >>> input :: CPUTensor 'D.Float '[5,16,10] <- randn
 -- >>> spec = LSTMWithZerosInitSpec @10 @30 @3 @'Bidirectional @'D.Float @'( 'D.CPU, 0) (LSTMSpec (DropoutSpec 0.5))
 -- >>> model <- A.sample spec
--- >>> :t lstmWithoutDropout @'BatchFirst model input
--- lstmWithoutDropout @'BatchFirst model input
+-- >>> :t lstmForwardWithoutDropout @'BatchFirst model input
+-- lstmForwardWithoutDropout @'BatchFirst model input
 --   :: (Tensor '( 'D.CPU, 0) 'D.Float '[5, 16, 60],
 --       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30],
 --       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30])
--- >>> lstmWithoutDropout @'BatchFirst model input
+-- >>> lstmForwardWithoutDropout @'BatchFirst model input
 -- (Tensor Float [5,16,60] ,Tensor Float [6,5,30] ,Tensor Float [6,5,30] )
-lstmWithoutDropout =
-  Torch.Typed.NN.Recurrent.LSTM.lstm
+lstmForwardWithoutDropout =
+  lstmForward
     @shapeOrder
     @batchSize
     @seqLen

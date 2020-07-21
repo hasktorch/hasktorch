@@ -20,13 +20,14 @@ import Foreign.C.String
 import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
-import Torch.Internal.Class
+
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
+C.include "<ATen/detail/CUDAHooksInterface.h>"
 C.include "<ATen/CPUGenerator.h>"
 C.include "<ATen/CUDAGenerator.h>"
+
 C.include "<vector>"
 
 
@@ -42,14 +43,6 @@ newCPUGenerator _seed_in =
   [C.throwBlock| at::Generator* { return new at::CPUGenerator(
     $(uint64_t _seed_in));
   }|]
-
-
-
-foreign import ccall unsafe "hasktorch_finalizer.h &delete_generator"
-  c_delete_generator :: FunPtr ( Ptr Generator -> IO ())
-
-instance CppObject Generator where
-  fromPtr ptr = newForeignPtr c_delete_generator ptr
 
 
 

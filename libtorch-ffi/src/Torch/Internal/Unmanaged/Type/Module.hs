@@ -23,7 +23,7 @@ import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Unmanaged.Helper
-import Torch.Internal.Class
+
 import Data.IORef
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
@@ -42,30 +42,6 @@ newModule name =
      *$(std::string* name)
     );
   }|]
-
-foreign import ccall unsafe "hasktorch_finalizer.h &delete_module"
-  c_delete_module :: FunPtr ( Ptr Module -> IO ())
-
-instance CppObject Module where
-  fromPtr ptr = newForeignPtr c_delete_module ptr
-
-foreign import ccall unsafe "hasktorch_finalizer.h &delete_jitgraph"
-  c_delete_jitgraph :: FunPtr ( Ptr (SharedPtr JitGraph) -> IO ())
-
-instance CppObject (SharedPtr JitGraph) where
-  fromPtr ptr = newForeignPtr c_delete_jitgraph ptr
-
-foreign import ccall unsafe "hasktorch_finalizer.h &delete_jitnode"
-  c_delete_jitnode :: FunPtr ( Ptr JitNode -> IO ())
-
-instance CppObject JitNode where
-  fromPtr ptr = newForeignPtr c_delete_jitnode ptr
-
-foreign import ccall unsafe "hasktorch_finalizer.h &delete_jitvalue"
-  c_delete_jitvalue :: FunPtr ( Ptr JitValue -> IO ())
-
-instance CppObject JitValue where
-  fromPtr ptr = newForeignPtr c_delete_jitvalue ptr
 
 save :: Ptr Module -> FilePath -> IO ()
 save obj file = withCString file $ \cfile -> [C.throwBlock| void {

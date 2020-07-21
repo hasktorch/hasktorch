@@ -29,4 +29,3 @@ class (Castable a (ForeignPtr ATen.Scalar)) => Scalar a
 instance Scalar Float
 instance Scalar Double
 instance Scalar Int
-

@@ -1,3 +1,4 @@
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeApplications #-}
@@ -16,38 +17,18 @@
 {-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE OverloadedLists #-}
 
 module Main where
 
-import           Prelude                 hiding ( tanh )
+import           Prelude hiding ( tanh )
 import           Control.Monad                  ( foldM
                                                 , when
                                                 )
-import           Data.List                      ( foldl'
-                                                , scanl'
-                                                , intersperse
-                                                )
-import           Data.Reflection
 import           GHC.Generics
 import           GHC.TypeLits
 
-import           Torch.Typed.Aux
-import           Torch.Typed.Tensor
-import           Torch.Typed.Parameter
-import           Torch.Typed.Functional     hiding ( linear )
-import           Torch.Typed.Factories
-import           Torch.Typed.NN
-import           Torch.Typed.Autograd
-import           Torch.Typed.Optim
-import qualified Torch.Autograd                as A
-import qualified Torch.NN                      as A
-import qualified Torch.Optim                   as A
-import qualified Torch.Device                  as D
-import qualified Torch.DType                   as D
-import qualified Torch.Tensor                  as D
-import qualified Torch.Functional              as D
-import qualified Torch.TensorFactories         as D
+import Torch.Typed hiding (Device)
+import           Torch.Data.Pipeline
 
 
 --------------------------------------------------------------------------------
@@ -55,51 +36,37 @@ import qualified Torch.TensorFactories         as D
 --------------------------------------------------------------------------------
 
 data MLPSpec (inputFeatures :: Nat) (outputFeatures :: Nat) (hiddenFeatures :: Nat)
-             (dtype :: D.DType)
-             (device :: (D.DeviceType, Nat))
+             (dtype :: DType)
+             (device :: (DeviceType, Nat))
   = MLPSpec
 
 data MLP (inputFeatures :: Nat) (outputFeatures :: Nat) (hiddenFeatures :: Nat)
-         (dtype :: D.DType) 
-         (device :: (D.DeviceType, Nat))
+         (dtype :: DType)
+         (device :: (DeviceType, Nat))
   = MLP { layer0 :: Linear inputFeatures  hiddenFeatures dtype device
         , layer1 :: Linear hiddenFeatures hiddenFeatures dtype device
         , layer2 :: Linear hiddenFeatures outputFeatures dtype device
         } deriving (Show, Generic)
 
-instance ( KnownDevice device
-         , KnownDType dtype
-         , KnownNat inputFeatures
-         , KnownNat outputFeatures
-         , KnownNat hiddenFeatures
-         , RandDTypeIsValid device dtype
-         )
-  => A.Randomizable
-       (MLPSpec inputFeatures outputFeatures hiddenFeatures dtype device)
-       (MLP     inputFeatures outputFeatures hiddenFeatures dtype device)
+instance
+  (StandardFloatingPointDTypeValidation device dtype) => HasForward
+    (MLP inputFeatures outputFeatures hiddenFeatures dtype device)
+    (Tensor device dtype '[batchSize, inputFeatures])
+    (Tensor device dtype '[batchSize, outputFeatures])
+ where
+  forward MLP {..} = forward layer2 . tanh . forward layer1 . tanh . forward layer0
+
+instance
+  ( KnownDevice device
+  , KnownDType dtype
+  , All KnownNat '[inputFeatures, outputFeatures, hiddenFeatures]
+  , RandDTypeIsValid device dtype
+  ) => Randomizable
+    (MLPSpec inputFeatures outputFeatures hiddenFeatures dtype device)
+    (MLP     inputFeatures outputFeatures hiddenFeatures dtype device)
  where
   sample MLPSpec =
-    MLP <$> A.sample LinearSpec <*> A.sample LinearSpec <*> A.sample LinearSpec
-
-mlp
-  :: forall batchSize inputFeatures outputFeatures hiddenFeatures dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => MLP inputFeatures outputFeatures hiddenFeatures dtype device
-  -> Tensor device dtype '[batchSize, inputFeatures]
-  -> Tensor device dtype '[batchSize, outputFeatures]
-mlp MLP {..} = linear layer2 . tanh . linear layer1 . tanh . linear layer0
-
-forward
-  :: forall batchSize inputFeatures outputFeatures hiddenFeatures dtype device
-   . (StandardFloatingPointDTypeValidation device dtype)
-  => MLP inputFeatures outputFeatures hiddenFeatures dtype device
-  -> Tensor device dtype '[batchSize, inputFeatures]
-  -> Tensor device dtype '[batchSize, outputFeatures]
-forward = (sigmoid .) . mlp
-
-foldLoop
-  :: forall a b m . (Num a, Enum a, Monad m) => b -> a -> (b -> a -> m b) -> m b
-foldLoop x count block = foldM block x ([1 .. count] :: [a])
+    MLP <$> sample LinearSpec <*> sample LinearSpec <*> sample LinearSpec
 
 xor
   :: forall batchSize dtype device
@@ -111,26 +78,41 @@ xor t = (1 - (1 - a) * (1 - b)) * (1 - (a * b))
   a = select @1 @0 t
   b = select @1 @1 t
 
-type Device = '( 'D.CUDA, 0)
+newtype Xor = Xor { iters :: Int }
+
+instance ( KnownNat batchSize
+         , KnownDevice device
+         , RandDTypeIsValid device 'Float
+         , ComparisonDTypeIsValid device 'Float
+         ) => Dataset IO Xor (Tensor device 'Float '[batchSize, 2]) where
+  getBatch _ _ =  toDType @'Float @'Bool .
+                  gt (toDevice @device (0.5 :: CPUTensor 'Float '[]))
+                  <$> rand @'[batchSize, 2] @'Float @device
+  numIters = iters 
+
+type Device = '( 'CUDA, 0)
+
+trainIter :: forall device batchSize model optim . (model ~ MLP 2 1 4 'Float device, _)
+  => LearningRate device 'Float
+  -> (model, optim, Int)
+  -> Tensor device 'Float '[batchSize, 2]
+  -> IO (model, optim, Int)
+trainIter learningRate (model,optim, i) input = do
+    let actualOutput   = squeezeAll . ((sigmoid .) . forward) model $ input
+        expectedOutput = xor input
+        loss           = mseLoss @ReduceMean actualOutput expectedOutput
+
+    when (i `mod` 2500 == 0) (print loss)
+
+    (model', optim') <- runStep model optim loss learningRate
+    return (model', optim', i+1)
 
 main :: IO ()
 main = do
   let numIters = 100000
       learningRate = 0.1
-  initModel <- A.sample (MLPSpec :: MLPSpec 2 1 4 'D.Float Device)
+  initModel <- sample (MLPSpec :: MLPSpec 2 1 4 'Float Device)
   let initOptim = mkAdam 0 0.9 0.999 (flattenParameters initModel)
-  (trained, _) <- foldLoop (initModel, initOptim) numIters $ \(model, optim) i -> do
-    input <-
-      Torch.Typed.Tensor.toDType @D.Float
-      .   gt (0.5 :: Tensor Device 'D.Float '[])
-      <$> rand @'[256, 2] @'D.Float @Device
-
-    let actualOutput   = squeezeAll . Main.forward model $ input
-        expectedOutput = xor input
-        loss           = mseLoss @D.ReduceMean actualOutput expectedOutput
-
-    when (i `mod` 2500 == 0) (print loss)
-
-    (model', optim') <- runStep model optim loss learningRate
-    return (model', optim')
+  trainFold <- makeFold $ Xor { iters = numIters }
+  (trained, _, _) <- trainFold $ FoldM (trainIter @Device @256 learningRate ) (pure (initModel, initOptim, 0)) pure
   print trained

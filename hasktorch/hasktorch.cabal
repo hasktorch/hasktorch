@@ -24,7 +24,6 @@ Flag disable-doctest
 
 library
  exposed-modules:     Torch
-                    , Torch.HList
                     , Torch.Tensor
                     , Torch.TensorOptions
                     , Torch.DType
@@ -36,25 +35,6 @@ library
                     , Torch.Autograd
                     , Torch.Optim
                     , Torch.Vision
-                    , Torch.Typed
-                    , Torch.Typed.Aux
-                    , Torch.Typed.Factories
-                    , Torch.Typed.Functional
-                    , Torch.Typed.NN
-                    , Torch.Typed.NN.DataParallel
-                    , Torch.Typed.NN.Recurrent.Cell.LSTM
-                    , Torch.Typed.NN.Recurrent.Cell.GRU
-                    , Torch.Typed.NN.Recurrent.LSTM
-                    , Torch.Typed.NN.Recurrent.GRU
-                    , Torch.Typed.NN.Transformer
-                    , Torch.Typed.Tensor
-                    , Torch.Typed.Parameter
-                    , Torch.Typed.Device
-                    , Torch.Typed.DType
-                    , Torch.Typed.Autograd
-                    , Torch.Typed.Optim
-                    , Torch.Typed.Serialize
-                    , Torch.Typed.Vision
                     , Torch.NN
                     , Torch.NN.Recurrent.Cell.Elman
                     , Torch.NN.Recurrent.Cell.GRU
@@ -67,6 +47,38 @@ library
                     , Torch.Serialize
                     , Torch.Random
                     , Torch.Script
+                    , Torch.HList
+                    , Torch.Typed
+                    , Torch.Typed.Aux
+                    , Torch.Typed.Factories
+                    , Torch.Typed.Functional
+                    , Torch.Typed.NN
+                    , Torch.Typed.NN.Convolution
+                    , Torch.Typed.NN.Normalization
+                    , Torch.Typed.NN.Recurrent
+                    , Torch.Typed.NN.Recurrent.Aux
+                    , Torch.Typed.NN.Recurrent.Cell.LSTM
+                    , Torch.Typed.NN.Recurrent.Cell.GRU
+                    , Torch.Typed.NN.Recurrent.LSTM
+                    , Torch.Typed.NN.Recurrent.GRU
+                    , Torch.Typed.NN.Transformer
+                    , Torch.Typed.NN.Linear
+                    , Torch.Typed.NN.Dropout
+                    , Torch.Typed.NN.Sparse
+                    , Torch.Typed.NN.DataParallel
+                    , Torch.Typed.Tensor
+                    , Torch.Typed.Parameter
+                    , Torch.Typed.Device
+                    , Torch.Typed.DType
+                    , Torch.Typed.Autograd
+                    , Torch.Typed.Optim
+                    , Torch.Typed.Serialize
+                    , Torch.Typed.Vision
+                    , Torch.Distributions.Constraints
+                    , Torch.Distributions.Distribution
+                    , Torch.Distributions.Bernoulli
+                    , Torch.Distributions.Categorical
+                    , Torch.Data.Pipeline
  other-modules:       Paths_hasktorch
  hs-source-dirs:      src
  default-language:    Haskell2010
@@ -89,6 +101,12 @@ library
                     , bytestring
                     , safe-exceptions
                     , zlib >= 0.6
+                    , pipes
+                    , pipes-concurrency
+                    , lifted-async
+                    , monad-control
+                    , foldl
+
                     , inline-c
  default-extensions:  Strict
                     , StrictData
@@ -107,6 +125,7 @@ test-suite spec
                     , TensorSpec
                     , NNSpec
                     , DimnameSpec
+                    , PipelineSpec
                     , Torch.Typed.AuxSpec
                     , Torch.Typed.TensorSpec
                     , Torch.Typed.FactoriesSpec
@@ -123,6 +142,9 @@ test-suite spec
                     , SerializeSpec
                     , RandomSpec
                     , VisionSpec
+                    , Torch.Distributions.ConstraintsSpec
+                    , Torch.Distributions.BernoulliSpec
+                    , Torch.Distributions.CategoricalSpec
   default-language: Haskell2010
   build-depends:      base >= 4.7 && < 5
                     , hasktorch
@@ -135,6 +157,8 @@ test-suite spec
                     , directory
                     , JuicyPixels
                     , inline-c-cpp
+                    , async
+
   build-tool-depends:  hspec-discover:hspec-discover
 
 test-suite doctests

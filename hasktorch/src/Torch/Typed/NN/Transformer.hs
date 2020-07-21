@@ -5,51 +5,34 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE UndecidableSuperClasses #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE OverloadedLists #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
-{-# OPTIONS_GHC -fplugin GHC.TypeLits.KnownNat.Solver #-}
-{-# OPTIONS_GHC -fplugin GHC.TypeLits.Extra.Solver #-}
 {-# OPTIONS_GHC -fconstraint-solver-iterations=0 #-}
 
 module Torch.Typed.NN.Transformer where
 
 import Control.Monad
 import Data.Proxy
-import Foreign.ForeignPtr
 import GHC.Generics
 import GHC.TypeLits
-import GHC.TypeLits.Extra
 import System.IO.Unsafe (unsafePerformIO)
-import qualified Torch.Autograd as A
 import qualified Torch.DType as D
 import qualified Torch.Device as D
-import qualified Torch.Functional as D
 import Torch.HList
-import qualified Torch.Internal.Cast as ATen
-import qualified Torch.Internal.Class as ATen
-import qualified Torch.Internal.Managed.Type.Tensor as ATen
-import qualified Torch.Internal.Type as ATen
 import qualified Torch.NN as A
-import qualified Torch.Tensor as D
-import qualified Torch.TensorFactories as D
+import Torch.NN (HasForward(..))
 import Torch.Typed.Aux
 import Torch.Typed.Factories
 import Torch.Typed.Functional hiding (linear, log)
-import Torch.Typed.NN
-import Torch.Typed.Parameter
 import Torch.Typed.Tensor
+import Torch.Typed.NN.Dropout
+import Torch.Typed.NN.Linear
+import Torch.Typed.NN.Normalization
+import Torch.Typed.NN.Sparse
 import Prelude hiding (cos, exp, sin)
 
 --------------------------------------------------------------------------------
@@ -107,7 +90,7 @@ multiheadAttention
         , Tensor device dtype '[batchSize, seqLen, seqLen]
         )
 multiheadAttention MultiheadAttention {..} train attentionMask keyPaddingMask maybeRelationsK maybeRelationsV x = do
-  let q :. k :. v :. HNil = chunk @3 @2 . linear mhaInProj $ x
+  let q :. k :. v :. HNil = chunk @3 @2 . forward mhaInProj $ x
       q' = reshape' q
       k' = reshape' k
       v' = reshape' v
@@ -115,7 +98,7 @@ multiheadAttention MultiheadAttention {..} train attentionMask keyPaddingMask ma
   return (attention coefficients v', averageOverHeads coefficients)
   where
     weightCoefficients q k =
-      Torch.Typed.NN.dropout mhaDropout train
+      dropoutForward mhaDropout train
         . softmax @3
         . maskKeyPaddings
         . maskAttention
@@ -195,10 +178,10 @@ transformerMLP
   -> Tensor device dtype '[seqLen, batchSize, embedDim]
   -> IO (Tensor device dtype '[seqLen, batchSize, embedDim])
 transformerMLP TransformerMLP {..} train input =
-  Torch.Typed.NN.dropout dropout1 train
+  dropoutForward dropout1 train
     .   relu
     .   forward linear1
-    =<< Torch.Typed.NN.dropout dropout0 train
+    =<< dropoutForward dropout0 train
     .   relu
     .   forward linear0
     =<< pure input
@@ -248,11 +231,11 @@ data
     (device :: (D.DeviceType, Nat)) where
   TransformerLayer
     :: forall embedDim numHeads ffnDim dtype device
-     . { mha         :: MultiheadAttention embedDim numHeads dtype device
-       , attnDropout :: Dropout
-       , ln0         :: LayerNorm '[embedDim] dtype device
-       , ln1         :: LayerNorm '[embedDim] dtype device
-       , mlp         :: TransformerMLP embedDim ffnDim dtype device
+     . { transformerLayer_mha         :: MultiheadAttention embedDim numHeads dtype device
+       , transformerLayer_attnDropout :: Dropout
+       , transformerLayer_ln0         :: LayerNorm '[embedDim] dtype device
+       , transformerLayer_ln1         :: LayerNorm '[embedDim] dtype device
+       , transformerLayer_mlp         :: TransformerMLP embedDim ffnDim dtype device
        }
     -> TransformerLayer embedDim numHeads ffnDim dtype device
   deriving (Show, Generic)
@@ -282,11 +265,11 @@ transformerLayer
   -> Tensor device dtype '[batchSize, seqLen, embedDim]
   -> IO (Tensor device dtype '[batchSize, seqLen, embedDim])
 transformerLayer TransformerLayer {..} train attentionMask keyPaddingMask maybeRelationsK maybeRelationsV x = do
-  (z, _) <- multiheadAttention mha train attentionMask keyPaddingMask maybeRelationsK maybeRelationsV x
-  z' <- Torch.Typed.NN.dropout attnDropout train z
-  let y = forward ln0 (x `add` z')
-  y' <- transformerMLP mlp train y
-  return $ forward ln1 (y `add` y')
+  (z, _) <- multiheadAttention transformerLayer_mha train attentionMask keyPaddingMask maybeRelationsK maybeRelationsV x
+  z' <- dropoutForward transformerLayer_attnDropout train z
+  let y = forward transformerLayer_ln0 (x `add` z')
+  y' <- transformerMLP transformerLayer_mlp train y
+  return $ forward transformerLayer_ln1 (y `add` y')
 
 instance ( All KnownNat '[embedDim, numHeads, ffnDim]
          , KnownDType dtype
@@ -414,7 +397,7 @@ transformerLM TransformerLM {..} train xTokens = do
                     . Torch.Typed.Tensor.toDType @D.Int64
                     . linspace @seqLen (0 :: Int)
                     $ natValI @(seqLen - 1)
-  x' <- Torch.Typed.NN.dropout tDropout train (x `add` positions)
+  x' <- dropoutForward tDropout train (x `add` positions)
   let attentionMask = unsqueeze @0
                         . Torch.Typed.Tensor.toDType @D.Bool
                         . triu 1

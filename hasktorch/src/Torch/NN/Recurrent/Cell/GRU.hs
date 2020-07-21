@@ -15,10 +15,10 @@ data GRUSpec = GRUSpec {
 } deriving (Eq, Show)
 
 data GRUCell = GRUCell {
-	weightsIH :: Parameter,
-	weightsHH :: Parameter,
-	biasIH :: Parameter,
-	biasHH :: Parameter
+    weightsIH :: Parameter,
+    weightsHH :: Parameter,
+    biasIH :: Parameter,
+    biasHH :: Parameter
 } deriving (Generic, Show)
 
 gruCellForward 
@@ -27,12 +27,12 @@ gruCellForward
     -> Tensor -- ^ hidden
     -> Tensor -- ^ output
 gruCellForward GRUCell{..} input hidden =
-	gruCell weightsIH' weightsHH' biasIH' biasHH' hidden input
-	where
-		weightsIH' = toDependent weightsIH
-		weightsHH' = toDependent weightsHH
-		biasIH' = toDependent biasIH
-		biasHH' = toDependent biasHH
+    gruCell weightsIH' weightsHH' biasIH' biasHH' hidden input
+    where
+        weightsIH' = toDependent weightsIH
+        weightsHH' = toDependent weightsHH
+        biasIH' = toDependent biasIH
+        biasHH' = toDependent biasHH
 
 instance Randomizable GRUSpec GRUCell where
   sample GRUSpec{..} = do
