@@ -60,6 +60,9 @@ type BufferSize = Int
 
 
   -- TODO: maybe we use a type family to specify if we want to decode using named or unnamed!
+
+
+  
 data CsvDataset batches = CsvDataset { filePath :: FilePath
                                      , delimiter :: !B.Word8
                                      , byName       :: NamedColumns

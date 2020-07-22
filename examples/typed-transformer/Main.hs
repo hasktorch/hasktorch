@@ -122,7 +122,7 @@ program numEpochs trainingFile trainingLen evaluationFile evaluationLen = Safe.r
     :: forall (numEmbeds :: Nat) . KnownNat numEmbeds
     => Dict ((1 <=? numEmbeds) ~ 'True)
     -> OSet.OSet Text.Text
-    -> Effect (Safe.SafeT IO) ()
+    -> Effect (Safe.SafeT IO) () 
   go Dict vocab = 
     let trainingData   = TransformerData { length = trainingLen , filePath = trainingFile, vocab = vocab }
         evaluationData   = TransformerData { length = evaluationLen , filePath = evaluationFile, vocab = vocab }
@@ -260,7 +260,6 @@ learning
      , All KnownDevice '[modelDevice, dataDevice]
      , MonadIO m
      , MonadBaseControl IO m
-     , MonadPlus m
      , Safe.MonadSafe m
      )
   => Int
@@ -274,12 +273,17 @@ learning numEpochs learningRate (model, optim) trainingData evaluationData =
       collatedTrain = CollatedDataset { set = trainingData, chunkSize = natValI @batchSize, collateFn = collation }
       collatedEval :: CollatedDataset m (TransformerData seqLen) [Maybe Int] (input, target)
       collatedEval = CollatedDataset { set = evaluationData, chunkSize = natValI @batchSize, collateFn = collation }
-  in for (each [1 .. numEpochs]) $ \_epoch -> do
-    (model', optim') <- lift $ runContT (makeListT'  collatedTrain [()])
+  in void $ P.foldM (step collatedTrain collatedEval) begin done $ each [1 .. numEpochs]
+
+  where step trainSet testSet (model, optim) epoch = do
+          (model', optim') <- lift $ runContT (makeListT' trainSet [()])
                         $ training @workerDevices @modelDevice @dataDevice @dtype @model @models @optim @input @inputs @target @targets @inputTargets @losses @parameters' @gradients @parameters @tensors learningRate (model, optim) 
-    evalLoss' <- lift $ runContT (makeListT' collatedTrain [()])
+          evalLoss' <- lift $ runContT (makeListT' testSet [()])
                  $ evaluation @workerDevices @modelDevice @dataDevice @numEmbeds @batchSize @seqLen @dtype @model @models @input @inputs @output @outputs @target model' 
-    yield (evalLoss', model', optim')
+          yield (evalLoss', model', optim')
+          pure (model', optim')
+        begin = pure (model, optim)
+        done = pure
 
 readData
   :: forall seqLen m
