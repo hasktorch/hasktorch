@@ -57,4 +57,5 @@ library action-transition-system
                      , monad-gen
                      , deriving-compat
                      , mmorph
+                     , ordered-containers
 

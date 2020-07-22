@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE DeriveFoldable #-}
@@ -23,63 +24,56 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE NoStarIsType #-}
 
 module Torch.Data.ActionTransitionSystem where
 
 import Prelude hiding (lookup)
+
 import GHC.Generics
-import Control.Lens
-import Data.Generics.Product
-import Data.Generics.Sum
-import Data.Kind (Type)
-import Control.Foldl (Fold(..), fold, head)
-import Control.Applicative (liftA2, pure, Alternative(..), empty, (<|>))
-import Control.Monad (mfilter, MonadPlus(..))
-import Data.Text (pack, Text)
 import GHC.IO (unsafePerformIO)
+import GHC.TypeLits
+import qualified GHC.Exts as Exts
+
+import Bound (fromScope, toScope, instantiate1, abstract1, (>>>=), Scope, Var)
+
+import Control.Lens
+import Control.Foldl (Fold(..), fold, head)
+import qualified Control.Foldl as L
+import Control.Applicative (liftA2, pure, Alternative(..), empty, (<|>))
 import Control.Monad.Fresh
--- import qualified Control.Monad.Gen as Fresh (GenT(..), runGen, runGenT, gen, Gen)
 import Control.Monad.Yoctoparsec (Parser)
 import Control.Monad.Trans.Maybe (MaybeT(..))
+import Control.Monad.Trans.RWS (RWST)
 import Control.Monad.Trans.Free (wrap, iterTM, runFreeT, Free, FreeT(..), FreeF(..))
-import Control.Monad.State (evalStateT, MonadState(..), StateT (..), runStateT, get, put, modify)
-import Control.Monad (ap, void)
+import Control.Monad.State (evalStateT, StateT (..), runStateT, get, put, modify)
+import Control.Monad (guard, join, ap, void, mfilter, MonadPlus(..))
 import Control.Monad.Trans (MonadTrans(lift))
-import Data.Map as Map (elems, toList, (!), adjust, update, keys, null, insertWith, singleton, fromList, unionWith, Map, insert, lookup)
-import Data.Set as Set (filter, cartesianProduct, unions, toList, fromList, member, singleton, union, Set, insert, findIndex)
+import Control.Monad.Reader (ask, local, runReaderT, ReaderT)
+
+import Data.Generics.Product
+import Data.Generics.Sum
+import Data.Functor.Classes (Eq1(..), Ord1(..), Show1(..), eq1, compare1, showsPrec1)
+import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
+import Data.Kind (Type)
+import Data.Text (pack, Text)
+import Data.Maybe (fromJust, fromMaybe)
+import Data.List as List (replicate, length, filter, sort, nub)
+import Data.Map as Map (delete, elems, toList, (!), adjust, update, keys, null, insertWith, singleton, fromList, unionWith, Map, insert, lookup)
+import Data.Set as Set (elems, filter, cartesianProduct, unions, toList, fromList, member, singleton, union, Set, insert, findIndex)
+import qualified Data.Set.Ordered as OSet
 import qualified Data.Set as Set (empty)
 import qualified Data.Map as Map (empty)
-import Data.List as List (filter, sort, nub)
-import Control.Monad.Reader (MonadReader(..), ask, local, runReaderT, ReaderT)
+
 import Hedgehog (distributeT, discover, checkParallel, PropertyT, check, Property, (===), forAll, property, Gen, MonadGen(..))
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
-import Control.Monad (guard)
-import Data.Maybe (fromMaybe)
-import Control.Monad (join)
-import Bound (fromScope, toScope, instantiate1, abstract1, (>>>=), Scope)
-import Data.Functor.Classes (Eq1(..), Ord1(..), Show1(..))
-import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
-import Bound (Var)
-import Data.Functor.Classes (eq1)
-import Data.Functor.Classes (compare1)
-import Data.Functor.Classes (showsPrec1)
-import Control.Monad.Morph (MFunctor, hoist)
-import Hedgehog.Internal.Distributive (Transformer, MonadTransDistributive)
--- import Control.Monad.Gen (Successor)
-import Control.Monad.Writer.Class (MonadWriter(..))
-import Control.Monad.IO.Class (MonadIO(..))
-import Control.Monad.Cont.Class (MonadCont(..))
-import Control.Monad.Error.Class (MonadError(..))
-import Control.Monad.Fix (MonadFix(..))
-import Control.Monad.Trans.Identity (IdentityT)
-import Control.Monad.Trans.Cont (ContT)
-import Control.Monad.Trans.RWS (RWST)
-import Control.Monad.Trans.Except (ExceptT)
-import Control.Monad.Trans.Writer (WriterT)
-import qualified Control.Monad.Writer.Strict as SW
-import qualified Control.Monad.State.Strict as SS
-import Control.Monad.Trans.Reader (asks)
+
+import Torch.Typed
+import Torch (logicalNot, toType, toDense, asTensor', withDevice, withDType, defaultOpts, sparseCooTensor)
+import qualified Torch (ones)
+import Torch.Distributions.Bernoulli (fromProbs)
+import Torch.Distributions.Distribution (sample)
 
 -- https://stackoverflow.com/questions/17675054/deserialising-with-ghc-generics?rq=1
 -- http://hackage.haskell.org/package/cereal-0.5.8.1/docs/Data-Serialize.html
@@ -88,18 +82,25 @@ import Control.Monad.Trans.Reader (asks)
 -- https://vaibhavsagar.com/blog/2018/02/04/revisiting-monadic-parsing-haskell/
 -- https://github.com/alphaHeavy/protobuf/blob/46cda829cf1e7b6bba2ff450e267fb1a9ace4fb3/src/Data/ProtocolBuffers/Ppr.hs
 
-data Env = Env
-  { pos :: Pos
-  , meta :: Maybe M
+data Env t = Env
+  { pos :: Pos -- state
+  , tEnv :: TEnv t
+  , mEnv :: MEnv
   , rEnv :: REnv
   , aEnv :: AEnv
   -- , validActionsMask :: Map Pos (Set Action)
   } deriving (Eq, Ord, Show, Generic)
 
-defaultEnv :: Env
+defaultEnv :: Env t
 defaultEnv = Env
   { pos = Pos 0
-  , meta = Nothing
+  , tEnv = TEnv
+    { tokens = mempty
+    }
+  , mEnv = MEnv
+    { meta = Nothing
+    , metas = mempty
+    }
   , rEnv = REnv
     { parentPos = Nothing
     , parents = mempty
@@ -115,7 +116,16 @@ defaultEnv = Env
   }
 
 newtype Pos = Pos { unPos :: Int }
-  deriving (Eq, Ord, Show, Num, Generic)
+  deriving (Eq, Ord, Show, Num, Enum, Generic)
+
+data TEnv t = TEnv
+  { tokens :: Map Pos t
+  } deriving (Eq, Ord, Show, Generic)
+
+data MEnv = MEnv
+  { meta :: Maybe M -- state
+  , metas :: Map Pos M -- writer
+  } deriving (Eq, Ord, Show, Generic)
 
 data Relation =
     ChildParentRelation
@@ -124,9 +134,9 @@ data Relation =
   deriving (Eq, Ord, Show, Generic)
 
 data REnv = REnv
-  { parentPos :: Maybe Pos
-  , parents :: Map Pos (Set Pos)
-  , relations :: Map (Pos, Pos) (Set Relation)
+  { parentPos :: Maybe Pos -- state
+  , parents :: Map Pos (Set Pos) -- writer
+  , relations :: Map (Pos, Pos) (Set Relation) -- writer
   } deriving (Eq, Ord, Show, Generic)
 
 type ScopeId = Text
@@ -144,11 +154,14 @@ data AttentionKind =
     deriving (Eq, Ord, Show, Generic)
 
 data AEnv = AEnv
-  { currentScope :: Maybe ScopeId
-  , knownScopes :: Map ScopeId AttentionScope
-  , attentionMask :: Set (Pos, Pos)
-  , keyPaddingMask :: Set Pos
+  { currentScope :: Maybe ScopeId -- state
+  , knownScopes :: Map ScopeId AttentionScope -- writer
+  , attentionMask :: Set (Pos, Pos) -- writer
+  , keyPaddingMask :: Set Pos -- writer
   } deriving (Eq, Ord, Show, Generic)
+
+data Token a = Pad | Unk | Mask | Token a
+  deriving (Eq, Ord, Show, Generic, Functor)
 
 data M = D Text | C Text | S Text
   deriving (Eq, Ord, Show, Generic)
@@ -164,7 +177,7 @@ data Action =
     deriving (Eq, Ord, Show)
 
 type To t a = a -> t Action
-type From b a = Parser (StateT Env b) Action a
+type From b a = Parser (StateT (Env Action) b) Action a
 
 choice :: Alternative f => [f a] -> f a
 choice = foldr (<|>) empty
@@ -243,20 +256,33 @@ updateAttention pos = do
        in Set.union mask' mask
     go' pos = Map.adjust (field @"scopePositions" %~ (Set.insert pos))
 
--- TODO: move state updates somewhere else?
-token :: forall b t . Monad b => Parser (StateT Env b) t t
+updateMeta :: forall f . Monad f => Pos -> StateT MEnv f ()
+updateMeta pos = do
+  mMeta <- (^. field @"meta") <$> get
+  case mMeta of
+    Just meta -> modify (field @"metas" %~ Map.insert pos meta)
+    Nothing -> pure ()
+
+updateTokens :: forall f t . Monad f => t -> Pos -> StateT (TEnv t) f ()
+updateTokens t pos =
+  modify (field @"tokens" %~ Map.insert pos t)
+
+-- TODO: move writes somewhere else
+token :: forall b t . Monad b => Parser (StateT (Env t) b) t t
 token = do
   t <- wrap $ FreeT . pure . Pure
   pos <- (^. field @"pos") <$> get
+  zoom (field @"tEnv") . lift . updateTokens t $ pos
+  zoom (field @"mEnv") . lift . updateMeta $ pos
   zoom (field @"rEnv") . lift . updateRelations $ pos
   zoom (field @"aEnv") . lift . updateAttention $ pos
   modify (field @"pos" %~ (+1))
   pure t
 
-is :: (MonadPlus b, Eq t) => t -> Parser (StateT Env b) t t
+is :: (MonadPlus b, Eq t) => t -> Parser (StateT (Env t) b) t t
 is t = mfilter (== t) token
 
-isNot :: (MonadPlus b, Eq t) => t -> Parser (StateT Env b) t t
+isNot :: (MonadPlus b, Eq t) => t -> Parser (StateT (Env t) b) t t
 isNot t = mfilter (/= t) token
 
 class ToActions (t :: Type -> Type) (a :: Type) where
@@ -282,19 +308,19 @@ instance GToActions t f => GToActions t (M1 i c f) where
 
 instance (Monad b, GFromActions b f, Datatype d) => GFromActions b (D1 d f) where
   gFromActions = do
-    modify $ field @"meta" .~ (pure . D . pack . datatypeName @d $ undefined)
+    modify $ field @"mEnv" . field @"meta" .~ (pure . D . pack . datatypeName @d $ undefined)
     pos <- (^. field @"pos") <$> get
     modify $ field @"rEnv" . field @"parentPos" .~ (pure pos)
     M1 <$> gFromActions @b
 
 instance (Monad b, GFromActions b f, Constructor c) => GFromActions b (C1 c f) where
   gFromActions = do
-    modify $ field @"meta" .~ (pure . C . pack . conName @c $ undefined)
+    modify $ field @"mEnv" . field @"meta" .~ (pure . C . pack . conName @c $ undefined)
     M1 <$> gFromActions @b
 
 instance (Monad b, GFromActions b f, Selector s) => GFromActions b (S1 s f) where
   gFromActions = do
-    modify $ field @"meta" .~ (pure . S . pack . selName @s $ undefined)
+    modify $ field @"mEnv" . field @"meta" .~ (pure . S . pack . selName @s $ undefined)
     M1 <$> gFromActions @b
 
 instance ToActions t a => GToActions t (K1 i a) where
@@ -475,7 +501,7 @@ data Foo = SomeFoo { someText :: Text, stuff :: Stuff }
 instance ToActions [] Foo
 instance FromActions [] Foo
 
-test :: ([Action], [((Foo, [Action]), Env)], [((), Env)])
+test :: ([Action], [((Foo, [Action]), Env Action)], [((), Env Action)])
 test =
   let env = defaultEnv
       stuff 0 = []
@@ -490,7 +516,7 @@ test =
                       env' <- get
                       pure $ unsafePerformIO $ print
                         ( a
-                        , view (field @"meta") env'
+                        , view (field @"mEnv" . field @"meta") env'
                         , view (field @"pos") env'
                         , view (field @"rEnv" . field @"parentPos") env'
                         -- , view (field @"rEnv" . field @"relations") env'
@@ -532,6 +558,7 @@ instance FromActions [] Ty
 -- https://github.com/jozefg/pcf/blob/master/src/Language/Pcf.hs
 -- https://jozefg.bitbucket.io/posts/2014-12-17-variables.html
 -- http://blog.ielliott.io/topsy-turvy-reverse-state/
+-- http://www.a-rx.info/pire/ref/src/Syntax.html
 data Exp a =
     Var a -- ^ Variable.
   | Lam Ty (Scope () Exp a) -- ^ Lambda abstraction.
@@ -742,7 +769,7 @@ instance (Monad b, FromActions b a) => FromActions b (Target a) where
 
 ------------------------------------------------------------------------
 
-prep :: PropertyT IO (Ty, Example (Exp Int) (Exp Int), [((Example (Exp Int) (Exp Int), [Action]), Env)])
+prep :: PropertyT IO (Ty, Example (Exp Int) (Exp Int), [((Example (Exp Int) (Exp Int), [Action]), Env Action)])
 prep = do
   ty <- forAll genTy
   input <- forAll (genWellTypedExp ty)
@@ -750,7 +777,7 @@ prep = do
       ex = Example (Input input) (Target target)
       env = defaultEnv
       actions = toActions @[] ex
-  guard (length actions <= 512)
+  guard (Prelude.length actions <= 512)
   let parser = fromActions @[] @(Example (Exp Int) (Exp Int))
       result = let f ap [] = empty
                    f ap (a : as) = let p = ap a in pure (p, as)
@@ -791,4 +818,405 @@ prop_roundTrip = property $ do
 testSTLC :: IO Bool
 testSTLC = checkParallel $$(discover)
 
--------------------------
+--------------------------------------------------------------------------------
+-- Relation-Aware Transformer Masked Language Model
+--------------------------------------------------------------------------------
+
+data
+  RATransformerMLMSpec
+    (numAttnLayers :: Nat)
+    (numHeads :: Nat)
+    (headDim :: Nat)
+    (ffnDim :: Nat)
+    (tokenPaddingIdx :: Nat)
+    (tokenNumEmbeds :: Nat)
+    (metaPaddingIdx :: Nat)
+    (metaNumEmbeds :: Nat)
+    (relPaddingIdx :: Nat)
+    (relNumEmbeds :: Nat)
+    (dtype :: DType)
+    (device :: (DeviceType, Nat)) where
+  RATransformerMLMSpec
+    :: forall numAttnLayers numHeads headDim ffnDim tokenPaddingIdx tokenNumEmbeds metaPaddingIdx metaNumEmbeds relPaddingIdx relNumEmbeds dtype device
+     . { ratDropoutSpec :: DropoutSpec
+       , ratLayerSpec   :: TransformerLayerSpec (headDim * numHeads) numHeads ffnDim dtype device
+       }
+    -> RATransformerMLMSpec numAttnLayers numHeads headDim ffnDim tokenPaddingIdx tokenNumEmbeds metaPaddingIdx metaNumEmbeds relPaddingIdx relNumEmbeds dtype device
+  deriving (Show)
+
+data
+  RATransformerMLM
+    (numAttnLayers :: Nat)
+    (numHeads :: Nat)
+    (headDim :: Nat)
+    (ffnDim :: Nat)
+    (tokenPaddingIdx :: Nat)
+    (tokenNumEmbeds :: Nat)
+    (metaPaddingIdx :: Nat)
+    (metaNumEmbeds :: Nat)
+    (relPaddingIdx :: Nat)
+    (relNumEmbeds :: Nat)
+    (dtype :: DType)
+    (device :: (DeviceType, Nat)) where
+  RATransformerMLM
+    :: forall numAttnLayers numHeads headDim ffnDim tokenPaddingIdx tokenNumEmbeds metaPaddingIdx metaNumEmbeds relPaddingIdx relNumEmbeds dtype device
+     . { ratEmbedding     :: Embedding ('Just tokenPaddingIdx) tokenNumEmbeds (headDim * numHeads) 'Learned dtype device
+       , ratMetaEmbedding :: Embedding ('Just metaPaddingIdx) metaNumEmbeds (headDim * numHeads) 'Learned dtype device
+       , ratRelEmbedding  :: Embedding ('Just relPaddingIdx) relNumEmbeds headDim 'Learned dtype device
+       , ratDropout       :: Dropout
+       , ratLayers        :: HList (HReplicateR numAttnLayers (TransformerLayer (headDim * numHeads) numHeads ffnDim dtype device))
+       , ratProj          :: Linear (headDim * numHeads) tokenNumEmbeds dtype device
+       }
+    -> RATransformerMLM numAttnLayers numHeads headDim ffnDim tokenPaddingIdx tokenNumEmbeds metaPaddingIdx metaNumEmbeds relPaddingIdx relNumEmbeds dtype device
+  deriving (Generic)
+
+instance
+  ( All KnownNat '[headDim, numHeads, tokenPaddingIdx, tokenNumEmbeds, metaPaddingIdx, metaNumEmbeds, relPaddingIdx, relNumEmbeds]
+  , tokenPaddingIdx <= tokenNumEmbeds
+  , 1 <= (tokenNumEmbeds - tokenPaddingIdx)
+  , metaPaddingIdx <= metaNumEmbeds
+  , 1 <= (metaNumEmbeds - metaPaddingIdx)
+  , relPaddingIdx <= relNumEmbeds
+  , 1 <= (relNumEmbeds - relPaddingIdx)
+  , HReplicate numAttnLayers (TransformerLayerSpec (headDim * numHeads) numHeads ffnDim dtype device)
+  , Randomizable (HList (HReplicateR numAttnLayers (TransformerLayerSpec (headDim * numHeads) numHeads ffnDim dtype device)))
+                 (HList (HReplicateR numAttnLayers (TransformerLayer     (headDim * numHeads) numHeads ffnDim dtype device)))
+  , KnownDType dtype
+  , RandDTypeIsValid device dtype
+  , KnownDevice device
+  ) => Randomizable (RATransformerMLMSpec numAttnLayers numHeads headDim ffnDim tokenPaddingIdx tokenNumEmbeds metaPaddingIdx metaNumEmbeds relPaddingIdx relNumEmbeds dtype device)
+                    (RATransformerMLM numAttnLayers numHeads headDim ffnDim tokenPaddingIdx tokenNumEmbeds metaPaddingIdx metaNumEmbeds relPaddingIdx relNumEmbeds dtype device)
+ where
+  sample RATransformerMLMSpec {..} =
+    RATransformerMLM
+      <$> Torch.Typed.sample (LearnedEmbeddingWithRandomInitSpec @( 'Just tokenPaddingIdx))
+      <*> Torch.Typed.sample (LearnedEmbeddingWithRandomInitSpec @( 'Just metaPaddingIdx))
+      <*> Torch.Typed.sample (LearnedEmbeddingWithRandomInitSpec @( 'Just relPaddingIdx))
+      <*> Torch.Typed.sample ratDropoutSpec
+      <*> Torch.Typed.sample (hreplicate @numAttnLayers ratLayerSpec)
+      <*> Torch.Typed.sample LinearSpec
+
+data
+  RAFoldLayers
+    (batchSize :: Nat)
+    (headDim :: Nat)
+    (seqLen :: Nat)
+    (dtype :: DType)
+    (device :: (DeviceType, Nat))
+  = RAFoldLayers
+      { raflTrain :: Bool
+      , raflAttentionMask :: Tensor device dtype '[batchSize, seqLen, seqLen]
+      , raflKeyPaddingMask :: Tensor device 'Bool '[batchSize, seqLen]
+      , raflRelationsK :: Tensor device dtype '[batchSize, seqLen, seqLen, headDim]
+      , raflRelationsV :: Tensor device dtype '[batchSize, seqLen, seqLen, headDim]
+      }
+
+instance
+  ( 1 <= numHeads
+  , embedDim ~ (headDim * numHeads)
+  , Mod (embedDim * 3) 3 ~ 0
+  , Div (embedDim * 3) 3 ~ embedDim
+  , All KnownNat '[embedDim, numHeads, seqLen, batchSize, headDim]
+  , EndsWith '[batchSize, seqLen, embedDim] '[embedDim]
+  , KnownDType dtype
+  , dtype ~ SumDType dtype
+  , StandardFloatingPointDTypeValidation device dtype
+  , MatMulDTypeIsValid device dtype
+  , BasicArithmeticDTypeIsValid device dtype
+  , SumDTypeIsValid device dtype
+  , KnownDevice device
+  ) => Apply' (RAFoldLayers batchSize headDim seqLen dtype device)
+              ( TransformerLayer embedDim numHeads ffnDim dtype device
+              , IO (Tensor device dtype '[batchSize, seqLen, embedDim])
+              )
+              (IO (Tensor device dtype '[batchSize, seqLen, embedDim])) where
+  apply' RAFoldLayers {..} (layer, mx) = mx >>= transformerLayer layer raflTrain raflAttentionMask raflKeyPaddingMask (Just raflRelationsK) (Just raflRelationsV)
+
+raTransformerMLM
+  :: forall
+       numAttnLayers
+       numHeads
+       headDim
+       ffnDim
+       tokenPaddingIdx
+       tokenNumEmbeds
+       metaPaddingIdx
+       metaNumEmbeds
+       relPaddingIdx
+       relNumEmbeds
+       relDim
+       embedDim
+       seqLen
+       batchSize
+       dtype
+       device
+   . ( All KnownNat '[tokenPaddingIdx, metaPaddingIdx, relPaddingIdx, seqLen, batchSize]
+     , tokenPaddingIdx + 1 <= tokenNumEmbeds
+     , metaPaddingIdx + 1 <= metaNumEmbeds
+     , relPaddingIdx + 1 <= relNumEmbeds
+     , embedDim ~ (headDim * numHeads)
+     , 1 <= seqLen
+     , HFoldrM
+         IO
+         (RAFoldLayers batchSize headDim seqLen dtype device)
+         (Tensor device dtype '[batchSize, seqLen, embedDim])
+         (HReplicateR numAttnLayers (TransformerLayer embedDim numHeads ffnDim dtype device))
+         (Tensor device dtype '[batchSize, seqLen, embedDim])
+     , BasicArithmeticDTypeIsValid device dtype
+     , ComparisonDTypeIsValid device dtype
+     , ComparisonDTypeIsValid device 'Int64
+     , SumDType dtype ~ dtype
+     , SumDTypeIsValid device dtype
+     , KnownDType dtype
+     , KnownDevice device
+     )
+  => RATransformerMLM numAttnLayers numHeads headDim ffnDim tokenPaddingIdx tokenNumEmbeds metaPaddingIdx metaNumEmbeds relPaddingIdx relNumEmbeds dtype device
+  -> Bool -- ^ training flag
+  -> RATransformerMLMInput batchSize seqLen relDim dtype device
+  -> IO (Tensor device dtype '[batchSize, seqLen, tokenNumEmbeds])
+raTransformerMLM RATransformerMLM {..} train RATransformerMLMInput {..} = do
+  let maskedTokens = embed ratEmbedding ratMaskedTokens
+      meta = embed ratMetaEmbedding ratMeta
+      input = maskedTokens + meta
+      relations = sumDim @3 $ embed ratRelEmbedding ratRelations
+  forward ratProj <$> hfoldrM (RAFoldLayers train ratAttentionMask ratKeyPaddingMask relations relations) input ratLayers
+
+data RATransformerMLMInput batchSize seqLen relDim dtype device = RATransformerMLMInput
+  { ratMaskedTokens :: Tensor device 'Int64 '[batchSize, seqLen] -- ^ tokens
+  , ratMeta :: Tensor device 'Int64 '[batchSize, seqLen] -- ^ meta
+  , ratRelations :: Tensor device 'Int64 '[batchSize, seqLen, seqLen, relDim] -- ^ relations
+  , ratAttentionMask :: Tensor device dtype '[batchSize, seqLen, seqLen] -- ^ attention mask
+  , ratKeyPaddingMask :: Tensor device 'Bool '[batchSize, seqLen] -- ^ key padding mask
+  } deriving (Show)
+
+crossEntropyLoss
+  :: forall paddingIdx batchSize seqLen numEmbeds dtype modelDevice
+   . ( All KnownNat '[paddingIdx, batchSize, seqLen, numEmbeds]
+     , KnownDType dtype
+     , KnownDevice modelDevice
+     , StandardFloatingPointDTypeValidation modelDevice dtype
+     )
+  => Tensor modelDevice dtype '[batchSize, seqLen, numEmbeds]
+  -> Tensor modelDevice 'Int64 '[batchSize, seqLen]
+  -> Tensor modelDevice dtype '[]
+crossEntropyLoss prediction target =
+  nllLoss @ReduceMean @batchSize @numEmbeds @'[seqLen]
+    ones
+    (natValI @paddingIdx)
+    (logSoftmax @1 . transpose @1 @2 $ prediction)
+    target
+
+------------------------------------------------------------------------
+
+-- TODO: this is horribly unsafe
+-- TODO: batching
+mkRATransformerMLMInput
+  :: forall seqLen relDim dtype device a
+   . (All KnownNat '[seqLen, relDim], KnownDType dtype, KnownDevice device, Scalar a)
+  => a
+  -> [Action]
+  -> IO ( Tensor device 'Int64 '[1, seqLen]
+        , RATransformerMLMInput 1 seqLen relDim dtype device
+        )
+mkRATransformerMLMInput pMask actions = do
+  let parser = fromActions @[] @(Example (Exp Int) (Exp Int))
+      [(_, env)] =
+        let f ap [] = empty
+            f ap (a : as) = let p = ap a in pure (p, as)
+        in  runStateT (parse f parser actions) defaultEnv
+  let tokenVocab = OSet.fromList [Pad, Unk, Mask, Token L, Token R]
+      Just tokens = mkSeq @seqLen @device tokenVocab $ view (field @"tEnv" . field @"tokens") env
+      metaVocab = OSet.fromList [Pad, Unk, Token (D "Exp"), Token (D "Ty"), Token (D "Var")]
+      Just meta = mkSeq metaVocab $ view (field @"mEnv" . field @"metas") env
+      relationsVocab = OSet.fromList [Pad, Unk, Token ChildParentRelation, Token ParentChildRelation, Token (SiblingDistRelation $ -1), Token (SiblingDistRelation 0), Token (SiblingDistRelation 1)]
+      Just relations = mkMultiGrid relationsVocab $ view (field @"rEnv" . field @"relations") env
+      Just attentionMask = mkGridMask $ view (field @"aEnv" . field @"attentionMask") env
+      Just keyPaddingMask = mkSeqMask $ view (field @"aEnv" . field @"keyPaddingMask") env
+  tokenMask <- bernoulliMask pMask keyPaddingMask
+  let maskedTokens = maskedFill tokenMask (fromJust $ OSet.findIndex Mask tokenVocab) tokens
+  pure ( unsqueeze @0 tokens
+       , RATransformerMLMInput
+           (unsqueeze @0 maskedTokens)
+           (unsqueeze @0 meta)
+           (unsqueeze @0 relations)
+           (unsqueeze @0 . toDType @dtype @'Bool $ attentionMask)
+           (unsqueeze @0 keyPaddingMask)
+       )
+
+testMkRATransformerMLMInput = do
+  let input :: Exp Int = (lam (Nat) 0 (Var 0)) :@ Zero
+      target = nf input
+      ex = Example (Input input) (Target target)
+      actions = toActions @[] $ ex -- [R,L,L,R,R,L,L,L,R,R,R,R,R,R]
+  mkRATransformerMLMInput @16 @2 @'Float @'( 'CPU, 0) (0.25 :: Float) actions
+
+type TestSeqLen = 16
+
+type TestNumAttnLayers = 2
+type TestNumHeads = 1
+type TestHeadDim = 8
+type TestFFNDim = 8
+type TestPaddingIdx = 0
+type TestTokenNumEmbeds = 5
+type TestMetaNumEmbeds = 5
+type TestRelNumEmbeds = 7
+type TestDType = 'Float
+type TestDevice = '( 'CPU, 0)
+
+type TestRATransformerMLMSpec
+  = RATransformerMLMSpec
+      TestNumAttnLayers
+      TestNumHeads
+      TestHeadDim
+      TestFFNDim
+      TestPaddingIdx
+      TestTokenNumEmbeds
+      TestPaddingIdx
+      TestMetaNumEmbeds
+      TestPaddingIdx
+      TestRelNumEmbeds
+      TestDType
+      TestDevice
+
+testRATransformerMLM = do
+  (target, input) <- testMkRATransformerMLMInput
+  let spec = RATransformerMLMSpec
+               (DropoutSpec 0.2)
+               (TransformerLayerSpec
+                 (MultiheadAttentionSpec
+                   (DropoutSpec 0.2)
+                 )
+                 (DropoutSpec 0.2)
+                 0.001
+                 (TransformerMLPSpec
+                   (DropoutSpec 0.2)
+                   (DropoutSpec 0.2)
+                 )
+              ) :: TestRATransformerMLMSpec
+  model <- Torch.Typed.sample spec
+  prediction <- raTransformerMLM model True input
+  let cre = crossEntropyLoss @TestPaddingIdx prediction target
+  pure cre
+
+bernoulliMask
+  :: forall shape dtype device a
+   . (Scalar a, KnownShape shape, shape ~ Broadcast shape shape)
+  => a
+  -> Tensor device 'Bool shape
+  -> IO (Tensor device 'Bool shape)
+bernoulliMask p keyPaddingMask = do
+  let bernoulli = fromProbs . toDynamic . mulScalar p . toDType @'Float @'Bool . onesLike $ keyPaddingMask
+  samples <- UnsafeMkTensor @device @'Bool @shape . toType Bool <$> Torch.Distributions.Distribution.sample bernoulli (shapeVal @shape)
+  let invertedKeyPaddingMask = UnsafeMkTensor @device @'Bool @shape . logicalNot . toDynamic $ keyPaddingMask
+  pure $ maskedFill invertedKeyPaddingMask (0 :: Int) samples
+
+testBernoulliMask :: IO (Tensor '( 'CPU, 0) 'Bool '[2, 3])
+testBernoulliMask = bernoulliMask (0.25 :: Float) $ ones @'[2, 3] @'Bool @'( 'CPU, 0)
+
+mkSeq
+  :: forall seqLen device a
+   . (Ord a, KnownNat seqLen, KnownDevice device)
+  => OSet.OSet (Token a) -> Map Pos a -> Maybe (Tensor device 'Int64 '[seqLen])
+mkSeq vocab m = do
+  unkIndex <- OSet.findIndex Unk vocab
+  let keys = unPos <$> Map.keys m
+      elems = (fromMaybe unkIndex . flip OSet.findIndex vocab . Token) <$> Map.elems m
+  guard $ Prelude.all (< natValI @seqLen) keys
+  let tensorOptions = withDevice (deviceVal @device) $ withDType Int64 $ defaultOpts
+      i = asTensor' [keys] tensorOptions
+      v = asTensor' elems tensorOptions
+      shape = [natValI @seqLen]
+  pure . UnsafeMkTensor . Torch.toDense $ sparseCooTensor i v shape tensorOptions
+
+testMkSeq :: Maybe (Tensor '( 'CPU, 0) 'Int64 '[3])
+testMkSeq =
+  let vocab = OSet.fromList [Pad, Unk, Token "a"]
+      m = Map.fromList [(Pos 0, "a"), (Pos 1, "b"), (Pos 2, "a")]
+  in mkSeq vocab m
+
+mkSeqMask
+  :: forall seqLen device
+   . (KnownNat seqLen, KnownDevice device)
+  => Set Pos -> Maybe (Tensor device 'Bool '[seqLen])
+mkSeqMask s = do
+  let elems = unPos <$> Set.elems s
+  guard $ Prelude.all (< natValI @seqLen) elems
+  let tensorOptions = withDevice (deviceVal @device) $ withDType Int64 $ defaultOpts
+      i = asTensor' [elems] tensorOptions
+      v = Torch.ones [List.length elems] tensorOptions
+      shape = [natValI @seqLen]
+  pure . UnsafeMkTensor . Torch.toType Bool . Torch.toDense $ sparseCooTensor i v shape tensorOptions
+
+testMkSeqMask :: Maybe (Tensor '( 'CPU, 0) 'Bool '[3])
+testMkSeqMask =
+  let s = Set.fromList [Pos 0, Pos 2]
+  in mkSeqMask s
+
+mkGrid
+  :: forall seqLen seqLen' device a
+   . (Show a, Ord a, All KnownNat '[seqLen, seqLen'], KnownDevice device)
+  => OSet.OSet (Token a) -> Map (Pos, Pos) a -> Maybe (Tensor device 'Int64 '[seqLen, seqLen'])
+mkGrid vocab m = do
+  unkIndex <- OSet.findIndex Unk vocab
+  let keys = Map.keys m
+      fstKeys = unPos . fst <$> keys
+      sndKeys = unPos . snd <$> keys
+      elems = (fromMaybe unkIndex . flip OSet.findIndex vocab . Token) <$> Map.elems m
+  guard $ Prelude.all (< natValI @seqLen) fstKeys
+  guard $ Prelude.all (< natValI @seqLen') sndKeys
+  let tensorOptions = withDevice (deviceVal @device) $ withDType Int64 $ defaultOpts
+      i = asTensor' [fstKeys, sndKeys] tensorOptions
+      v = asTensor' elems tensorOptions
+      shape = [natValI @seqLen, natValI @seqLen']
+  pure . UnsafeMkTensor . Torch.toDense $ sparseCooTensor i v shape tensorOptions
+
+testMkGrid :: Maybe (Tensor '( 'CPU, 0) 'Int64 '[2, 3])
+testMkGrid =
+  let vocab = OSet.fromList [Pad, Unk, Token "a", Token "b"]
+      m = Map.fromList [((Pos 0, Pos 0), "a"), ((Pos 0, Pos 1), "b"), ((Pos 1, Pos 2), "a")]
+  in mkGrid vocab m
+
+mkMultiGrid
+  :: forall seqLen seqLen' dim device a
+   . (Ord a, All KnownNat '[seqLen, seqLen', dim], KnownDevice device)
+  => OSet.OSet (Token a) -> Map (Pos, Pos) (Set a) -> Maybe (Tensor device 'Int64 '[seqLen, seqLen', dim])
+mkMultiGrid vocab m = do
+  unkIndex <- OSet.findIndex Unk vocab
+  let m' = Map.fromList $ do 
+        ((pos, pos'), s) <- Map.toList m
+        (i, a) <- zip [(0 :: Int)..] $ Set.toList s
+        pure ((pos, pos', i), a)
+      keys = Map.keys m'
+      fstKeys = unPos . (\(pos, _, _) -> pos) <$> keys
+      sndKeys = unPos . (\(_, pos, _) -> pos) <$> keys
+      trdKeys = (\(_, _, i) -> i) <$> keys
+      elems = (fromMaybe unkIndex . flip OSet.findIndex vocab . Token) <$> Map.elems m'
+  guard $ Prelude.all (< natValI @seqLen) fstKeys
+  guard $ Prelude.all (< natValI @seqLen') sndKeys
+  guard $ Prelude.all (< natValI @dim) trdKeys
+  let tensorOptions = withDevice (deviceVal @device) $ withDType Int64 $ defaultOpts
+      i = asTensor' [fstKeys, sndKeys, trdKeys] tensorOptions
+      v = asTensor' elems tensorOptions
+      shape = [natValI @seqLen, natValI @seqLen', natValI @dim]
+  pure . UnsafeMkTensor . Torch.toDense $ sparseCooTensor i v shape tensorOptions
+
+mkGridMask
+  :: forall seqLen seqLen' device
+   . (All KnownNat '[seqLen, seqLen'], KnownDevice device)
+  => Set (Pos, Pos) -> Maybe (Tensor device 'Bool '[seqLen, seqLen'])
+mkGridMask s = do
+  let elems = Set.elems s
+      fstElems = unPos . fst <$> elems
+      sndElems = unPos . snd <$> elems
+  guard $ Prelude.all (< natValI @seqLen) fstElems
+  guard $ Prelude.all (< natValI @seqLen') sndElems
+  let tensorOptions = withDevice (deviceVal @device) $ withDType Int64 $ defaultOpts
+      i = asTensor' [fstElems, sndElems] tensorOptions
+      v = Torch.ones [List.length elems] tensorOptions
+      shape = [natValI @seqLen, natValI @seqLen']
+  pure . UnsafeMkTensor . Torch.toType Bool . Torch.toDense $ sparseCooTensor i v shape tensorOptions
+
+testMkGridMask :: Maybe (Tensor '( 'CPU, 0) 'Bool '[2, 3])
+testMkGridMask =
+  let s = Set.fromList [(Pos 0, Pos 0), (Pos 0, Pos 1), (Pos 1, Pos 2)]
+  in mkGridMask s

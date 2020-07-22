@@ -241,7 +241,7 @@ data
   deriving (Show, Generic)
 
 transformerLayer
-  :: forall numHeads ffnDim embedDim headDim seqLen batchSize dtype device
+  :: forall (numHeads :: Nat) (ffnDim :: Nat) (embedDim :: Nat) (headDim :: Nat) (seqLen :: Nat) (batchSize :: Nat) dtype device
    . ( 1 <= numHeads
      , embedDim ~ (headDim * numHeads)
      , Mod (embedDim * 3) 3 ~ 0
