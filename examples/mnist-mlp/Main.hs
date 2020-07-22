@@ -19,6 +19,7 @@ import Torch.Serialize
 import Torch.Data.StreamedPipeline
 import qualified Pipes.Prelude as P
 import Torch.Data.Pipeline (FoldM(FoldM))
+import Control.Monad.Cont (ContT(runContT))
 
 data MLPSpec = MLPSpec {
     inputFeatures :: Int,
@@ -53,8 +54,8 @@ mlp MLP{..} input =
     . linear l0
     $ input
 
-trainLoop :: Optimizer o => MLP -> o -> FoldM IO  ((Tensor, Tensor), Int) MLP
-trainLoop model optimizer = FoldM step begin done
+trainLoop :: Optimizer o => MLP -> o -> ListT IO ((Tensor, Tensor), Int) -> IO  MLP
+trainLoop model optimizer = P.foldM  step begin done . enumerate
   where step :: MLP -> ((Tensor, Tensor), Int) -> IO MLP
         step model ((input, label), iter) = do
           let loss = nllLoss' label $ mlp model input
@@ -73,8 +74,7 @@ main = do
         spec = MLPSpec 784 64 32 10
         optimizer = GD
     init <- sample spec
-    model <- foldOverWith' trainMnist [1 :: Int] (trainLoop init optimizer)
-
+    model <- flip runContT (trainLoop init optimizer) $ makeListT' trainMnist [1 :: Int]
 
     -- show test images + labels
     mapM (\idx -> do

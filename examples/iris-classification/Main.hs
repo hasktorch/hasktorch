@@ -8,20 +8,20 @@
 {-# LANGUAGE DeriveGeneric #-}
 module Main where
 
+import           Control.Arrow (Arrow(first))
 import           Control.Monad (foldM, when, (>=>))
+import           Control.Monad.Cont (runContT, runCont, ContT(ContT))
 import           Data.Csv (FromNamedRecord)
+import           Data.Vector (Vector, toList)
 import           GHC.Generics (Generic)
 import           Pipes
 import qualified Pipes.Prelude as P
 import           Pipes.Safe (runSafeT)
 import           Torch
-import           Torch.Tensor
 import           Torch.Data.CsvDataset
 import           Torch.Data.Pipeline (FoldM(FoldM))
 import           Torch.Data.StreamedPipeline (MonadBaseControl, pmap, makeListT)
-import Data.Vector (Vector, toList)
-import Control.Arrow (Arrow(first))
-import Control.Monad.Cont (runContT, runCont, ContT(ContT))
+import           Torch.Tensor
 
 
 data MLPSpec = MLPSpec {
@@ -99,7 +99,7 @@ main = runSafeT $ do
 
   foldM (\model epoch -> do
             flip runContT (trainLoop model optimizer) $ do raw <- makeListT irisTrain (Select $ yield ())
-                                                           pmap (first irisToTensor) 2 raw
+                                                           pmap 2 (first irisToTensor) raw
         ) init [1..50]
 
   pure ()
