@@ -74,6 +74,11 @@ import Torch (logicalNot, toType, toDense, asTensor', withDevice, withDType, def
 import qualified Torch (ones)
 import Torch.Distributions.Bernoulli (fromProbs)
 import Torch.Distributions.Distribution (sample)
+import Pipes (enumerate, yield, (>->), each, for, ListT, runEffect, Effect)
+import qualified Pipes.Safe as Safe
+import Pipes (MonadIO(liftIO))
+import Pipes.Prelude (drain)
+import Pipes.Prelude (foldM)
 
 -- https://stackoverflow.com/questions/17675054/deserialising-with-ghc-generics?rq=1
 -- http://hackage.haskell.org/package/cereal-0.5.8.1/docs/Data-Serialize.html
@@ -1048,9 +1053,11 @@ testMkRATransformerMLMInput = do
       target = nf input
       ex = Example (Input input) (Target target)
       actions = toActions @[] $ ex -- [R,L,L,R,R,L,L,L,R,R,R,R,R,R]
-  mkRATransformerMLMInput @16 @2 @'Float @'( 'CPU, 0) (0.25 :: Float) actions
+  mkRATransformerMLMInput @TestSeqLen @TestRelDim @TestDType @TestDevice (0.25 :: Float) actions
 
+type TestBatchSize = 4
 type TestSeqLen = 16
+type TestRelDim = 2
 
 type TestNumAttnLayers = 2
 type TestNumHeads = 1
@@ -1220,3 +1227,60 @@ testMkGridMask :: Maybe (Tensor '( 'CPU, 0) 'Bool '[2, 3])
 testMkGridMask =
   let s = Set.fromList [(Pos 0, Pos 0), (Pos 0, Pos 1), (Pos 1, Pos 2)]
   in mkGridMask s
+
+------------------------------------------------------------------------
+
+testProgram
+  :: Int -- ^ number of epochs
+  -> Int -- ^ number batches taken from training file per epoch
+  -> Int -- ^ number batches taken from evaluation file per epoch
+  -> IO ()
+testProgram numEpochs trainingLen evaluationLen = Safe.runSafeT . runEffect $ go
+  where
+    go :: Effect (Safe.SafeT IO) ()
+    go = do
+      let
+        trainingData = undefined :: ListT (Safe.SafeT IO) (Tensor TestDevice 'Int64 '[TestBatchSize, TestSeqLen], RATransformerMLMInput TestBatchSize TestSeqLen TestRelDim TestDType TestDevice)
+        evaluationData = undefined :: ListT (Safe.SafeT IO) (Tensor TestDevice 'Int64 '[TestBatchSize, TestSeqLen], RATransformerMLMInput TestBatchSize TestSeqLen TestRelDim TestDType TestDevice)
+        learningRate = 0.01
+      model <- liftIO . Torch.Typed.sample $
+                  (RATransformerMLMSpec 
+                    (DropoutSpec 0.2)
+                    (TransformerLayerSpec
+                      (MultiheadAttentionSpec
+                        (DropoutSpec 0.2)
+                      )
+                      (DropoutSpec 0.2)
+                      0.001
+                      (TransformerMLPSpec
+                        (DropoutSpec 0.2)
+                        (DropoutSpec 0.2)
+                      )
+                    ) :: TestRATransformerMLMSpec
+                  )
+      let optim = mkAdam 0 0.9 0.999 (flattenParameters model)
+          training (model', optim') =
+            let step (model'', optim'') (target, input) = do
+                  prediction <- lift $ raTransformerMLM model'' True input
+                  let cre = crossEntropyLoss @TestPaddingIdx prediction target
+                  lift $ runStep model'' optim'' cre learningRate
+                begin = pure (model', optim')
+                done = pure
+            in foldM step begin done (enumerate trainingData)
+          evaluation model' =
+            let step totalLoss (target, input) = do
+                  prediction <- lift $ raTransformerMLM model' False input
+                  let cre = crossEntropyLoss @TestPaddingIdx prediction target
+                  pure (totalLoss + toFloat cre)
+                begin = pure (0 :: Float)
+                done totalLoss = pure (totalLoss / (fromInteger . toInteger $ natValI @TestBatchSize))
+            in foldM step begin done (enumerate evaluationData)
+          begin = pure (model, optim)
+          done = pure
+          step (model', optim') _epoch = do
+            (model'', optim'') <- training (model', optim')
+            avgLoss <- evaluation model''
+            lift . print $ avgLoss
+            pure (model'', optim'')
+      _ <- lift $ foldM step begin done (Pipes.each [1 .. numEpochs])
+      pure ()

@@ -58,4 +58,6 @@ library action-transition-system
                      , deriving-compat
                      , mmorph
                      , ordered-containers
+                     , pipes
+                     , pipes-safe
 
