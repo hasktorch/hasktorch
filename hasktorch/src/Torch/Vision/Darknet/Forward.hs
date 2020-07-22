@@ -15,6 +15,7 @@ import qualified Data.Map as M
 import Data.Maybe (isJust)
 import GHC.Exts
 import GHC.Generics
+import Codec.Serialise
 import Torch.Autograd
 import qualified Torch.Functional as D
 import qualified Torch.Functional.Internal as I
@@ -24,6 +25,8 @@ import Torch.DType as D
 import Torch.TensorFactories
 import Torch.Typed.NN (HasForward (..))
 import qualified Torch.Vision.Darknet.Spec as S
+import qualified Data.ByteString.Lazy as B
+import qualified System.IO
 
 type Index = Int
 
@@ -447,6 +450,20 @@ data Layer
   deriving (Show, Generic, Parameterized)
 
 data Darknet = Darknet [(Index, Layer)] deriving (Show, Generic, Parameterized)
+
+instance Serialise Parameter where
+  encode p = encode p' where p' :: [Float] = asValue $ toDependent p
+  decode = IndependentTensor . (asTensor :: [Float] -> Tensor) <$> decode
+
+loadWeights :: Darknet -> String -> IO Darknet
+loadWeights (Darknet layers) weights_file = do
+  System.IO.withFile weights_file System.IO.ReadMode $ \handle -> do
+    _ <- B.hGet handle (5 * 4) -- skip header
+    layers' <- forM layers $ \(i,layer) -> do
+      let cur_params = flattenParameters layer
+      v <- B.hGet handle (4 * length cur_params)
+      return $ (i,replaceParameters layer $ deserialise v)
+    return $ Darknet layers'
 
 instance Randomizable S.DarknetSpec Darknet where
   sample (S.DarknetSpec layers) = do
