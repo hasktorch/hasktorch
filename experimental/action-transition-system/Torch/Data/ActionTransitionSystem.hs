@@ -58,7 +58,7 @@ import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
 import Data.Kind (Type)
 import Data.Text (pack, Text)
 import Data.Maybe (fromJust, fromMaybe)
-import Data.List as List (replicate, length, filter, sort, nub)
+import Data.List as List (isInfixOf, replicate, length, filter, sort, nub)
 import Data.Map as Map (delete, elems, toList, (!), adjust, update, keys, null, insertWith, singleton, fromList, unionWith, Map, insert, lookup)
 import Data.Set as Set (elems, filter, cartesianProduct, unions, toList, fromList, member, singleton, union, Set, insert, findIndex)
 import qualified Data.Set.Ordered as OSet
@@ -74,11 +74,16 @@ import Torch (logicalNot, toType, toDense, asTensor', withDevice, withDType, def
 import qualified Torch (ones)
 import Torch.Distributions.Bernoulli (fromProbs)
 import Torch.Distributions.Distribution (sample)
-import Pipes (enumerate, yield, (>->), each, for, ListT, runEffect, Effect)
+import Pipes (enumerate, yield, (>->), each, for, ListT(Select), runEffect, Effect)
 import qualified Pipes.Safe as Safe
 import Pipes (MonadIO(liftIO))
-import Pipes.Prelude (drain)
+import Pipes.Prelude (repeatM, drain)
 import Pipes.Prelude (foldM)
+import Control.Exception (tryJust, Exception, try)
+import System.IO.Error (ioeGetErrorString)
+import qualified Hedgehog.Internal.Seed as Seed
+import qualified Hedgehog.Internal.Tree as Tree
+import Hedgehog.Internal.Gen (evalGen)
 
 -- https://stackoverflow.com/questions/17675054/deserialising-with-ghc-generics?rq=1
 -- http://hackage.haskell.org/package/cereal-0.5.8.1/docs/Data-Serialize.html
@@ -1014,13 +1019,13 @@ crossEntropyLoss prediction target =
 ------------------------------------------------------------------------
 
 mkRATransformerMLMInput
-  :: forall batchSize seqLen relDim dtype device a
-   . (All KnownNat '[batchSize, seqLen, relDim], KnownDType dtype, KnownDevice device, Scalar a)
+  :: forall batchSize seqLen relDim dtype device a m
+   . (All KnownNat '[batchSize, seqLen, relDim], KnownDType dtype, KnownDevice device, Scalar a, MonadIO m, Alternative m)
   => a
   -> [[Action]]
-  -> IO ( Tensor device 'Int64 '[batchSize, seqLen]
-        , RATransformerMLMInput batchSize seqLen relDim dtype device
-        )
+  -> m ( Tensor device 'Int64 '[batchSize, seqLen]
+       , RATransformerMLMInput batchSize seqLen relDim dtype device
+       )
 mkRATransformerMLMInput pMask actions = do
   let fromJust' = maybe empty pure
       envs =
@@ -1063,7 +1068,7 @@ testMkRATransformerMLMInput = do
 ------------------------------------------------------------------------
 
 type TestBatchSize = 4
-type TestSeqLen = 256
+type TestSeqLen = 64
 type TestRelDim = 2
 
 type TestNumAttnLayers = 2
@@ -1113,40 +1118,19 @@ testRATransformerMLM = do
   pure cre
 
 bernoulliMask
-  :: forall shape dtype device a
-   . (Scalar a, KnownShape shape, shape ~ Broadcast shape shape)
+  :: forall shape dtype device a m
+   . (Scalar a, KnownShape shape, shape ~ Broadcast shape shape, MonadIO m)
   => a
   -> Tensor device 'Bool shape
-  -> IO (Tensor device 'Bool shape)
+  -> m (Tensor device 'Bool shape)
 bernoulliMask p keyPaddingMask = do
   let bernoulli = fromProbs . toDynamic . mulScalar p . toDType @'Float @'Bool . onesLike $ keyPaddingMask
-  samples <- UnsafeMkTensor @device @'Bool @shape . toType Bool <$> Torch.Distributions.Distribution.sample bernoulli (shapeVal @shape)
+  samples <- liftIO $ UnsafeMkTensor @device @'Bool @shape . toType Bool <$> Torch.Distributions.Distribution.sample bernoulli (shapeVal @shape)
   let invertedKeyPaddingMask = UnsafeMkTensor @device @'Bool @shape . logicalNot . toDynamic $ keyPaddingMask
   pure $ maskedFill invertedKeyPaddingMask (0 :: Int) samples
 
 testBernoulliMask :: IO (Tensor '( 'CPU, 0) 'Bool '[2, 3])
 testBernoulliMask = bernoulliMask (0.25 :: Float) $ ones @'[2, 3] @'Bool @'( 'CPU, 0)
-
-mkSeq
-  :: forall seqLen device a
-   . (Ord a, KnownNat seqLen, KnownDevice device)
-  => OSet.OSet (Token a) -> Map Pos a -> Maybe (Tensor device 'Int64 '[seqLen])
-mkSeq vocab m = do
-  unkIndex <- OSet.findIndex Unk vocab
-  let keys = unPos <$> Map.keys m
-      elems = (fromMaybe unkIndex . flip OSet.findIndex vocab . Token) <$> Map.elems m
-  guard $ Prelude.all (< natValI @seqLen) keys
-  let tensorOptions = withDevice (deviceVal @device) $ withDType Int64 $ defaultOpts
-      i = asTensor' [keys] tensorOptions
-      v = asTensor' elems tensorOptions
-      shape = [natValI @seqLen]
-  pure . UnsafeMkTensor . Torch.toDense $ sparseCooTensor i v shape tensorOptions
-
-testMkSeq :: Maybe (Tensor '( 'CPU, 0) 'Int64 '[3])
-testMkSeq =
-  let vocab = OSet.fromList [Pad, Unk, Token "a"]
-      m = Map.fromList [(Pos 0, "a"), (Pos 1, "b"), (Pos 2, "a")]
-  in mkSeq vocab m
 
 mkSeq'
   :: forall batchSize seqLen device a
@@ -1178,24 +1162,6 @@ testMkSeq' =
            ]
   in mkSeq' vocab ms
 
-mkSeqMask
-  :: forall seqLen device
-   . (KnownNat seqLen, KnownDevice device)
-  => Set Pos -> Maybe (Tensor device 'Bool '[seqLen])
-mkSeqMask s = do
-  let elems = unPos <$> Set.elems s
-  guard $ Prelude.all (< natValI @seqLen) elems
-  let tensorOptions = withDevice (deviceVal @device) $ withDType Int64 $ defaultOpts
-      i = asTensor' [elems] tensorOptions
-      v = Torch.ones [List.length elems] tensorOptions
-      shape = [natValI @seqLen]
-  pure . UnsafeMkTensor . Torch.toType Bool . Torch.toDense $ sparseCooTensor i v shape tensorOptions
-
-testMkSeqMask :: Maybe (Tensor '( 'CPU, 0) 'Bool '[3])
-testMkSeqMask =
-  let s = Set.fromList [Pos 0, Pos 2]
-  in mkSeqMask s
-
 mkSeqMask'
   :: forall batchSize seqLen device
    . (All KnownNat '[batchSize, seqLen], KnownDevice device)
@@ -1222,30 +1188,6 @@ testMkSeqMask' =
            , Set.fromList [Pos 0, Pos 2]
            ]
   in mkSeqMask' ss
-
-mkGrid
-  :: forall seqLen seqLen' device a
-   . (Show a, Ord a, All KnownNat '[seqLen, seqLen'], KnownDevice device)
-  => OSet.OSet (Token a) -> Map (Pos, Pos) a -> Maybe (Tensor device 'Int64 '[seqLen, seqLen'])
-mkGrid vocab m = do
-  unkIndex <- OSet.findIndex Unk vocab
-  let keys = Map.keys m
-      fstKeys = unPos . fst <$> keys
-      sndKeys = unPos . snd <$> keys
-      elems = (fromMaybe unkIndex . flip OSet.findIndex vocab . Token) <$> Map.elems m
-  guard $ Prelude.all (< natValI @seqLen) fstKeys
-  guard $ Prelude.all (< natValI @seqLen') sndKeys
-  let tensorOptions = withDevice (deviceVal @device) $ withDType Int64 $ defaultOpts
-      i = asTensor' [fstKeys, sndKeys] tensorOptions
-      v = asTensor' elems tensorOptions
-      shape = [natValI @seqLen, natValI @seqLen']
-  pure . UnsafeMkTensor . Torch.toDense $ sparseCooTensor i v shape tensorOptions
-
-testMkGrid :: Maybe (Tensor '( 'CPU, 0) 'Int64 '[2, 3])
-testMkGrid =
-  let vocab = OSet.fromList [Pad, Unk, Token "a", Token "b"]
-      m = Map.fromList [((Pos 0, Pos 0), "a"), ((Pos 0, Pos 1), "b"), ((Pos 1, Pos 2), "a")]
-  in mkGrid vocab m
 
 mkGrid'
   :: forall batchSize seqLen seqLen' device a
@@ -1279,30 +1221,6 @@ testMkGrid' =
            ]
   in mkGrid' vocab ms
 
-mkMultiGrid
-  :: forall seqLen seqLen' dim device a
-   . (Ord a, All KnownNat '[seqLen, seqLen', dim], KnownDevice device)
-  => OSet.OSet (Token a) -> Map (Pos, Pos) (Set a) -> Maybe (Tensor device 'Int64 '[seqLen, seqLen', dim])
-mkMultiGrid vocab m = do
-  unkIndex <- OSet.findIndex Unk vocab
-  let m' = Map.fromList $ do 
-        ((pos, pos'), s) <- Map.toList m
-        (i, a) <- zip [(0 :: Int)..] $ Set.toList s
-        pure ((pos, pos', i), a)
-      keys = Map.keys m'
-      fstKeys = unPos . (\(pos, _, _) -> pos) <$> keys
-      sndKeys = unPos . (\(_, pos, _) -> pos) <$> keys
-      trdKeys = (\(_, _, i) -> i) <$> keys
-      elems = (fromMaybe unkIndex . flip OSet.findIndex vocab . Token) <$> Map.elems m'
-  guard $ Prelude.all (< natValI @seqLen) fstKeys
-  guard $ Prelude.all (< natValI @seqLen') sndKeys
-  guard $ Prelude.all (< natValI @dim) trdKeys
-  let tensorOptions = withDevice (deviceVal @device) $ withDType Int64 $ defaultOpts
-      i = asTensor' [fstKeys, sndKeys, trdKeys] tensorOptions
-      v = asTensor' elems tensorOptions
-      shape = [natValI @seqLen, natValI @seqLen', natValI @dim]
-  pure . UnsafeMkTensor . Torch.toDense $ sparseCooTensor i v shape tensorOptions
-
 mkMultiGrid'
   :: forall batchSize seqLen seqLen' dim device a
    . (Ord a, All KnownNat '[batchSize, seqLen, seqLen', dim], KnownDevice device)
@@ -1332,27 +1250,6 @@ mkMultiGrid' vocab ms = do
       v = asTensor' elems tensorOptions
       shape = [natValI @batchSize, natValI @seqLen, natValI @seqLen', natValI @dim]
   pure . UnsafeMkTensor . Torch.toDense $ sparseCooTensor i v shape tensorOptions
-
-mkGridMask
-  :: forall seqLen seqLen' device
-   . (All KnownNat '[seqLen, seqLen'], KnownDevice device)
-  => Set (Pos, Pos) -> Maybe (Tensor device 'Bool '[seqLen, seqLen'])
-mkGridMask s = do
-  let elems = Set.elems s
-      fstElems = unPos . fst <$> elems
-      sndElems = unPos . snd <$> elems
-  guard $ Prelude.all (< natValI @seqLen) fstElems
-  guard $ Prelude.all (< natValI @seqLen') sndElems
-  let tensorOptions = withDevice (deviceVal @device) $ withDType Int64 $ defaultOpts
-      i = asTensor' [fstElems, sndElems] tensorOptions
-      v = Torch.ones [List.length elems] tensorOptions
-      shape = [natValI @seqLen, natValI @seqLen']
-  pure . UnsafeMkTensor . Torch.toType Bool . Torch.toDense $ sparseCooTensor i v shape tensorOptions
-
-testMkGridMask :: Maybe (Tensor '( 'CPU, 0) 'Bool '[2, 3])
-testMkGridMask =
-  let s = Set.fromList [(Pos 0, Pos 0), (Pos 0, Pos 1), (Pos 1, Pos 2)]
-  in mkGridMask s
 
 mkGridMask'
   :: forall batchSize seqLen seqLen' device
@@ -1386,18 +1283,20 @@ testMkGridMask' =
 ------------------------------------------------------------------------
 
 mkBatch
-  :: forall batchSize seqLen relDim dtype device a
+  :: forall batchSize seqLen relDim dtype device a m
    . ( All KnownNat '[batchSize, seqLen, relDim]
      , KnownDType dtype
      , KnownDevice device
      , Scalar a
+     , MonadIO m
+     , Alternative m
      )
   => a
-  -> IO ( Tensor device 'Int64 '[batchSize, seqLen]
-        , RATransformerMLMInput batchSize seqLen relDim dtype device
-        )
+  -> m ( Tensor device 'Int64 '[batchSize, seqLen]
+       , RATransformerMLMInput batchSize seqLen relDim dtype device
+       )
 mkBatch pMask = do
-  actions <- Gen.sample . Gen.list (Range.singleton $ natValI @batchSize) $ do
+  actions <- sample' . Gen.list (Range.singleton $ natValI @batchSize) $ do
     ty <- genTy
     input <- genWellTypedExp @Int ty
     let target = nf input
@@ -1407,6 +1306,21 @@ mkBatch pMask = do
     pure actions
   mkRATransformerMLMInput pMask actions
 
+sample' :: MonadIO m => Gen a -> m a
+sample' gen =
+  liftIO $
+    let
+      go = do
+        seed <- Seed.random
+        case evalGen 10 seed gen of
+          Nothing ->
+            go
+          Just x ->
+            pure $ Tree.treeValue x
+    in
+      go
+
+testMkBatch :: IO _
 testMkBatch = mkBatch @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDevice @Float 0.25
 
 testProgram
@@ -1419,8 +1333,9 @@ testProgram numEpochs trainingLen evaluationLen = Safe.runSafeT . runEffect $ go
     go :: Effect (Safe.SafeT IO) ()
     go = do
       let
-        trainingData = undefined :: ListT (Safe.SafeT IO) (Tensor TestDevice 'Int64 '[TestBatchSize, TestSeqLen], RATransformerMLMInput TestBatchSize TestSeqLen TestRelDim TestDType TestDevice)
-        evaluationData = undefined :: ListT (Safe.SafeT IO) (Tensor TestDevice 'Int64 '[TestBatchSize, TestSeqLen], RATransformerMLMInput TestBatchSize TestSeqLen TestRelDim TestDType TestDevice)
+        pMask = 0.25 :: Float
+        trainingData = Select (repeatM (mkBatch @TestBatchSize @TestSeqLen @TestRelDim pMask))
+        evaluationData = Select (repeatM (mkBatch @TestBatchSize @TestSeqLen @TestRelDim pMask))
         learningRate = 0.01
       model <- liftIO . Torch.Typed.sample $
                   (RATransformerMLMSpec 
