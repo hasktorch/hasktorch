@@ -58,6 +58,7 @@ import           Control.Monad.Base (MonadBase, liftBase)
 
 import Torch.Data.StreamedPipeline
 import Torch.Data.Dataset
+import Control.Monad.Cont (ContT(runContT))
 
 type WorkerDevices = '[ '( 'CPU, 0)]
 type ModelDevice = '( 'CPU, 0)
@@ -92,10 +93,11 @@ type ModelSpec numEmbeds modelDevice
       EmbedDim
       'Float
       modelDevice
+
 data TransformerData seqLen = TransformerData { length :: Int, filePath :: FilePath, vocab :: OSet.OSet Text.Text}
 
-instance (KnownNat seqLen, MonadPlus m, Safe.MonadSafe m,  MonadBase IO m) => Datastream m (TransformerData seqLen) [Maybe Int] where
-  streamBatch TransformerData{..} seed = Select $ readData @seqLen filePath length vocab 
+instance (KnownNat seqLen, Safe.MonadSafe m,  MonadBase IO m) => Datastream m () (TransformerData seqLen) [Maybe Int] where
+  streamBatch TransformerData{..} _ = Select $ readData @seqLen filePath length vocab 
   
 main :: IO ()
 main = program 100 "trainingFile.txt" 1000 "evaluationFile.txt" 1
@@ -124,7 +126,6 @@ program numEpochs trainingFile trainingLen evaluationFile evaluationLen = Safe.r
   go Dict vocab = 
     let trainingData   = TransformerData { length = trainingLen , filePath = trainingFile, vocab = vocab }
         evaluationData   = TransformerData { length = evaluationLen , filePath = evaluationFile, vocab = vocab }
-        -- evaluationData = readData @SeqLen @DataDevice @BatchSize @(Safe.SafeT IO) evaluationFile vocab >-> P.take evaluationLen
         learning' = do
           let learningRate = 0.01
           -- manual_seed_L 123
@@ -185,12 +186,11 @@ training
      )
   => LearningRate modelDevice dtype
   -> (model, optim)
-  -- -> Producer (input, target) m ()
-  -- -> m (model, optim)
-  -> L.FoldM m _ _
-training learningRate (model, optim) = L.FoldM step begin done
+  -> ListT m ((input, target), Int)  
+  -> m (model, optim)
+training learningRate (model, optim) = P.foldM step begin done . enumerate
   where
-    step (model', optim') (input, target) = do
+    step (model', optim') ((input, target), iter) = do
       let models' = replicate @workerDevices @modelDevice @model @models model'
           inputs = scatter @workerDevices @dataDevice @input @inputs input
           targets = scatter @workerDevices @dataDevice @target @targets target
@@ -218,11 +218,11 @@ evaluation
      , MonadIO m
      )
   => model
-  -- -> Producer (input, target) m ()
-  -> L.FoldM m _ _
-evaluation model = L.FoldM step begin done
+  -> ListT m ((input, target), Int)  
+  -> m _
+evaluation model = P.foldM step begin done . enumerate
   where
-    step aggLoss (input, target) = do
+    step aggLoss ((input, target), iter) = do
       let models = replicate @workerDevices @modelDevice @model @models model
           inputs = scatter @workerDevices @dataDevice @input @inputs input
       outputs <- liftIO . runConcurrently $ forwardConcurrently @models @inputs models inputs
@@ -266,21 +266,19 @@ learning
   => Int
   -> LearningRate modelDevice dtype
   -> (model, optim)
-  -- -> Producer (input, target) m ()
-  -- -> Producer (input, target) m ()
   -> TransformerData seqLen
   -> TransformerData seqLen
   -> Producer (Float, model, optim) m ()
 learning numEpochs learningRate (model, optim) trainingData evaluationData =
-  -- let trainingData = TransformerData { length = trainingLen , }
-  -- let trainingData = 
   let collatedTrain :: CollatedDataset m (TransformerData seqLen) [Maybe Int] (input, target)
       collatedTrain = CollatedDataset { set = trainingData, chunkSize = natValI @batchSize, collateFn = collation }
       collatedEval :: CollatedDataset m (TransformerData seqLen) [Maybe Int] (input, target)
       collatedEval = CollatedDataset { set = evaluationData, chunkSize = natValI @batchSize, collateFn = collation }
   in for (each [1 .. numEpochs]) $ \_epoch -> do
-    (model', optim') <- lift $ foldOverWith' collatedTrain id $ training @workerDevices @modelDevice @dataDevice @dtype @model @models @optim @input @inputs @target @targets @inputTargets @losses @parameters' @gradients @parameters @tensors learningRate (model, optim) 
-    evalLoss' <- lift $ foldOverWith' collatedEval id $ evaluation @workerDevices @modelDevice @dataDevice @numEmbeds @batchSize @seqLen @dtype @model @models @input @inputs @output @outputs @target model' 
+    (model', optim') <- lift $ runContT (makeListT'  collatedTrain [()])
+                        $ training @workerDevices @modelDevice @dataDevice @dtype @model @models @optim @input @inputs @target @targets @inputTargets @losses @parameters' @gradients @parameters @tensors learningRate (model, optim) 
+    evalLoss' <- lift $ runContT (makeListT' collatedTrain [()])
+                 $ evaluation @workerDevices @modelDevice @dataDevice @numEmbeds @batchSize @seqLen @dtype @model @models @input @inputs @output @outputs @target model' 
     yield (evalLoss', model', optim')
 
 readData
