@@ -65,7 +65,7 @@ import qualified Data.Set.Ordered as OSet
 import qualified Data.Set as Set (empty)
 import qualified Data.Map as Map (empty)
 
-import Hedgehog (distributeT, discover, checkParallel, PropertyT, check, Property, (===), forAll, property, Gen, MonadGen(..))
+import Hedgehog (GenT, distributeT, discover, checkParallel, PropertyT, check, Property, (===), forAll, property, Gen, MonadGen(..))
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 
@@ -782,7 +782,7 @@ prep = do
       ex = Example (Input input) (Target target)
       env = defaultEnv
       actions = toActions @[] ex
-  guard (Prelude.length actions <= 512)
+  guard (List.length actions <= 512)
   let parser = fromActions @[] @(Example (Exp Int) (Exp Int))
       result = let f ap [] = empty
                    f ap (a : as) = let p = ap a in pure (p, as)
@@ -1013,39 +1013,44 @@ crossEntropyLoss prediction target =
 
 ------------------------------------------------------------------------
 
--- TODO: this is horribly unsafe
--- TODO: batching
 mkRATransformerMLMInput
-  :: forall seqLen relDim dtype device a
-   . (All KnownNat '[seqLen, relDim], KnownDType dtype, KnownDevice device, Scalar a)
+  :: forall batchSize seqLen relDim dtype device a
+   . (All KnownNat '[batchSize, seqLen, relDim], KnownDType dtype, KnownDevice device, Scalar a)
   => a
-  -> [Action]
-  -> IO ( Tensor device 'Int64 '[1, seqLen]
-        , RATransformerMLMInput 1 seqLen relDim dtype device
+  -> [[Action]]
+  -> IO ( Tensor device 'Int64 '[batchSize, seqLen]
+        , RATransformerMLMInput batchSize seqLen relDim dtype device
         )
 mkRATransformerMLMInput pMask actions = do
-  let parser = fromActions @[] @(Example (Exp Int) (Exp Int))
-      [(_, env)] =
-        let f ap [] = empty
-            f ap (a : as) = let p = ap a in pure (p, as)
-        in  runStateT (parse f parser actions) defaultEnv
-  let tokenVocab = OSet.fromList [Pad, Unk, Mask, Token L, Token R]
-      Just tokens = mkSeq @seqLen @device tokenVocab $ view (field @"tEnv" . field @"tokens") env
+  let fromJust' = maybe empty pure
+      envs =
+        let step actions =
+              let parser = fromActions @[] @(Example (Exp Int) (Exp Int))
+                  results =
+                    let f ap [] = empty
+                        f ap (a : as) = let p = ap a in pure (p, as)
+                    in  runStateT (parse f parser actions) defaultEnv
+              in snd <$> results
+        in foldMap step actions
+      tokenVocab = OSet.fromList [Pad, Unk, Mask, Token L, Token R]
       metaVocab = OSet.fromList [Pad, Unk, Token (D "Exp"), Token (D "Ty"), Token (D "Var")]
-      Just meta = mkSeq metaVocab $ view (field @"mEnv" . field @"metas") env
       relationsVocab = OSet.fromList [Pad, Unk, Token ChildParentRelation, Token ParentChildRelation, Token (SiblingDistRelation $ -1), Token (SiblingDistRelation 0), Token (SiblingDistRelation 1)]
-      Just relations = mkMultiGrid relationsVocab $ view (field @"rEnv" . field @"relations") env
-      Just attentionMask = mkGridMask $ view (field @"aEnv" . field @"attentionMask") env
-      Just keyPaddingMask = mkSeqMask $ view (field @"aEnv" . field @"keyPaddingMask") env
+  tokens <- fromJust' . mkSeq' @batchSize @seqLen tokenVocab $ view (field @"tEnv" . field @"tokens") <$> envs
+  meta <- fromJust' . mkSeq' metaVocab $ view (field @"mEnv" . field @"metas") <$> envs
+  relations <- fromJust' . mkMultiGrid' relationsVocab $ view (field @"rEnv" . field @"relations") <$> envs
+  attentionMask <- fromJust' . mkGridMask' @batchSize @seqLen @seqLen $ view (field @"aEnv" . field @"attentionMask") <$> envs
+  keyPaddingMask <- fromJust' . mkSeqMask' $ view (field @"aEnv" . field @"keyPaddingMask") <$> envs
+  let invertedKeyPaddingMask = UnsafeMkTensor @device @'Bool @'[batchSize, seqLen] . logicalNot . toDynamic $ keyPaddingMask
+      attentionMask' = toDType @dtype @'Bool $ maskedFill (unsqueeze @1 invertedKeyPaddingMask) (0 :: Int) attentionMask
   tokenMask <- bernoulliMask pMask keyPaddingMask
   let maskedTokens = maskedFill tokenMask (fromJust $ OSet.findIndex Mask tokenVocab) tokens
-  pure ( unsqueeze @0 tokens
+  pure ( tokens
        , RATransformerMLMInput
-           (unsqueeze @0 maskedTokens)
-           (unsqueeze @0 meta)
-           (unsqueeze @0 relations)
-           (unsqueeze @0 . toDType @dtype @'Bool $ attentionMask)
-           (unsqueeze @0 keyPaddingMask)
+           maskedTokens
+           meta
+           relations
+           attentionMask'
+           keyPaddingMask
        )
 
 testMkRATransformerMLMInput = do
@@ -1053,10 +1058,12 @@ testMkRATransformerMLMInput = do
       target = nf input
       ex = Example (Input input) (Target target)
       actions = toActions @[] $ ex -- [R,L,L,R,R,L,L,L,R,R,R,R,R,R]
-  mkRATransformerMLMInput @TestSeqLen @TestRelDim @TestDType @TestDevice (0.25 :: Float) actions
+  mkRATransformerMLMInput @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDevice (0.25 :: Float) [actions]
+
+------------------------------------------------------------------------
 
 type TestBatchSize = 4
-type TestSeqLen = 16
+type TestSeqLen = 256
 type TestRelDim = 2
 
 type TestNumAttnLayers = 2
@@ -1141,6 +1148,36 @@ testMkSeq =
       m = Map.fromList [(Pos 0, "a"), (Pos 1, "b"), (Pos 2, "a")]
   in mkSeq vocab m
 
+mkSeq'
+  :: forall batchSize seqLen device a
+   . (Ord a, All KnownNat '[batchSize, seqLen], KnownDevice device)
+  => OSet.OSet (Token a) -> [Map Pos a] -> Maybe (Tensor device 'Int64 '[batchSize, seqLen])
+mkSeq' vocab ms = do
+  unkIndex <- OSet.findIndex Unk vocab
+  guard $ List.length ms <= natValI @batchSize
+  (fstKeys, sndKeys, elems) <- 
+    let step (i, m) = do
+          let keys = Map.keys m
+              fstKeys = const i <$> keys
+              sndKeys = unPos <$> keys
+              elems = (fromMaybe unkIndex . flip OSet.findIndex vocab . Token) <$> Map.elems m
+          guard $ Prelude.all (< natValI @seqLen) sndKeys
+          pure (fstKeys, sndKeys, elems)
+    in foldMap step $ zip [(0 :: Int)..] ms
+  let tensorOptions = withDevice (deviceVal @device) $ withDType Int64 $ defaultOpts
+      i = asTensor' [fstKeys, sndKeys] tensorOptions
+      v = asTensor' elems tensorOptions
+      shape = [natValI @batchSize, natValI @seqLen]
+  pure . UnsafeMkTensor . Torch.toDense $ sparseCooTensor i v shape tensorOptions
+
+testMkSeq' :: Maybe (Tensor '( 'CPU, 0) 'Int64 '[2, 3])
+testMkSeq' =
+  let vocab = OSet.fromList [Pad, Unk, Token "a"]
+      ms = [ Map.fromList [(Pos 0, "a"), (Pos 1, "b"), (Pos 2, "a")]
+           , Map.fromList [(Pos 1, "a"), (Pos 2, "b")]
+           ]
+  in mkSeq' vocab ms
+
 mkSeqMask
   :: forall seqLen device
    . (KnownNat seqLen, KnownDevice device)
@@ -1158,6 +1195,33 @@ testMkSeqMask :: Maybe (Tensor '( 'CPU, 0) 'Bool '[3])
 testMkSeqMask =
   let s = Set.fromList [Pos 0, Pos 2]
   in mkSeqMask s
+
+mkSeqMask'
+  :: forall batchSize seqLen device
+   . (All KnownNat '[batchSize, seqLen], KnownDevice device)
+  => [Set Pos] -> Maybe (Tensor device 'Bool '[batchSize, seqLen])
+mkSeqMask' ss = do
+  guard $ List.length ss <= natValI @batchSize
+  (fstElems, sndElems) <-
+    let step (i, s) = do
+          let elems = Set.elems s
+              fstElems = const i <$> elems
+              sndElems = unPos <$> elems
+          guard $ Prelude.all (< natValI @seqLen) sndElems
+          pure (fstElems, sndElems)
+    in foldMap step $ zip [(0 :: Int)..] ss
+  let tensorOptions = withDevice (deviceVal @device) $ withDType Int64 $ defaultOpts
+      i = asTensor' [fstElems, sndElems] tensorOptions
+      v = Torch.ones [List.length fstElems] tensorOptions
+      shape = [natValI @batchSize, natValI @seqLen]
+  pure . UnsafeMkTensor . Torch.toType Bool . Torch.toDense $ sparseCooTensor i v shape tensorOptions
+
+testMkSeqMask' :: Maybe (Tensor '( 'CPU, 0) 'Bool '[2, 3])
+testMkSeqMask' =
+  let ss = [ Set.fromList [Pos 1]
+           , Set.fromList [Pos 0, Pos 2]
+           ]
+  in mkSeqMask' ss
 
 mkGrid
   :: forall seqLen seqLen' device a
@@ -1183,6 +1247,38 @@ testMkGrid =
       m = Map.fromList [((Pos 0, Pos 0), "a"), ((Pos 0, Pos 1), "b"), ((Pos 1, Pos 2), "a")]
   in mkGrid vocab m
 
+mkGrid'
+  :: forall batchSize seqLen seqLen' device a
+   . (Show a, Ord a, All KnownNat '[batchSize, seqLen, seqLen'], KnownDevice device)
+  => OSet.OSet (Token a) -> [Map (Pos, Pos) a] -> Maybe (Tensor device 'Int64 '[batchSize, seqLen, seqLen'])
+mkGrid' vocab ms = do
+  unkIndex <- OSet.findIndex Unk vocab
+  guard $ List.length ms <= natValI @batchSize
+  (fstKeys, sndKeys, trdKeys, elems) <-
+    let step (i, m) = do
+          let keys = Map.keys m
+              fstKeys = const i <$> keys
+              sndKeys = unPos . fst <$> keys
+              trdKeys = unPos . snd <$> keys
+              elems = (fromMaybe unkIndex . flip OSet.findIndex vocab . Token) <$> Map.elems m
+          guard $ Prelude.all (< natValI @seqLen) sndKeys
+          guard $ Prelude.all (< natValI @seqLen') trdKeys
+          pure (fstKeys, sndKeys, trdKeys, elems)
+    in foldMap step $ zip [(0 :: Int)..] ms
+  let tensorOptions = withDevice (deviceVal @device) $ withDType Int64 $ defaultOpts
+      i = asTensor' [fstKeys, sndKeys, trdKeys] tensorOptions
+      v = asTensor' elems tensorOptions
+      shape = [natValI @batchSize, natValI @seqLen, natValI @seqLen']
+  pure . UnsafeMkTensor . Torch.toDense $ sparseCooTensor i v shape tensorOptions
+
+testMkGrid' :: Maybe (Tensor '( 'CPU, 0) 'Int64 '[2, 2, 3])
+testMkGrid' =
+  let vocab = OSet.fromList [Pad, Unk, Token "a", Token "b"]
+      ms = [ Map.fromList [((Pos 0, Pos 0), "a"), ((Pos 0, Pos 1), "b"), ((Pos 1, Pos 2), "a")]
+           , Map.fromList [((Pos 0, Pos 1), "b"), ((Pos 0, Pos 2), "c")]
+           ]
+  in mkGrid' vocab ms
+
 mkMultiGrid
   :: forall seqLen seqLen' dim device a
    . (Ord a, All KnownNat '[seqLen, seqLen', dim], KnownDevice device)
@@ -1207,6 +1303,36 @@ mkMultiGrid vocab m = do
       shape = [natValI @seqLen, natValI @seqLen', natValI @dim]
   pure . UnsafeMkTensor . Torch.toDense $ sparseCooTensor i v shape tensorOptions
 
+mkMultiGrid'
+  :: forall batchSize seqLen seqLen' dim device a
+   . (Ord a, All KnownNat '[batchSize, seqLen, seqLen', dim], KnownDevice device)
+  => OSet.OSet (Token a) -> [Map (Pos, Pos) (Set a)] -> Maybe (Tensor device 'Int64 '[batchSize, seqLen, seqLen', dim])
+mkMultiGrid' vocab ms = do
+  unkIndex <- OSet.findIndex Unk vocab
+  guard $ List.length ms <= natValI @batchSize
+  (fstKeys, sndKeys, trdKeys, fthKeys, elems) <-
+    let step (i, m) = do
+          let m' = Map.fromList $ do 
+                ((pos, pos'), s) <- Map.toList m
+                (i, a) <- zip [(0 :: Int)..] $ Set.toList s
+                pure ((pos, pos', i), a)
+              keys = Map.keys m'
+              fstKeys = const i <$> keys
+              sndKeys = unPos . (\(pos, _, _) -> pos) <$> keys
+              trdKeys = unPos . (\(_, pos, _) -> pos) <$> keys
+              fthKeys = (\(_, _, i) -> i) <$> keys
+              elems = (fromMaybe unkIndex . flip OSet.findIndex vocab . Token) <$> Map.elems m'
+          guard $ Prelude.all (< natValI @seqLen) sndKeys
+          guard $ Prelude.all (< natValI @seqLen') trdKeys
+          guard $ Prelude.all (< natValI @dim) fthKeys
+          pure (fstKeys, sndKeys, trdKeys, fthKeys, elems)
+    in foldMap step $ zip [(0 :: Int)..] ms
+  let tensorOptions = withDevice (deviceVal @device) $ withDType Int64 $ defaultOpts
+      i = asTensor' [fstKeys, sndKeys, trdKeys, fthKeys] tensorOptions
+      v = asTensor' elems tensorOptions
+      shape = [natValI @batchSize, natValI @seqLen, natValI @seqLen', natValI @dim]
+  pure . UnsafeMkTensor . Torch.toDense $ sparseCooTensor i v shape tensorOptions
+
 mkGridMask
   :: forall seqLen seqLen' device
    . (All KnownNat '[seqLen, seqLen'], KnownDevice device)
@@ -1228,7 +1354,60 @@ testMkGridMask =
   let s = Set.fromList [(Pos 0, Pos 0), (Pos 0, Pos 1), (Pos 1, Pos 2)]
   in mkGridMask s
 
+mkGridMask'
+  :: forall batchSize seqLen seqLen' device
+   . (All KnownNat '[batchSize, seqLen, seqLen'], KnownDevice device)
+  => [Set (Pos, Pos)] -> Maybe (Tensor device 'Bool '[batchSize, seqLen, seqLen'])
+mkGridMask' ss = do
+  guard $ List.length ss <= natValI @batchSize
+  (fstElems, sndElems, trdElems) <-
+    let step (i, s) = do
+          let elems = Set.elems s
+              fstElems = const i <$> elems
+              sndElems = unPos . fst <$> elems
+              trdElems = unPos . snd <$> elems
+          guard $ Prelude.all (< natValI @seqLen) sndElems
+          guard $ Prelude.all (< natValI @seqLen') trdElems
+          pure (fstElems, sndElems, trdElems)
+    in foldMap step $ zip [(0 :: Int)..] ss
+  let tensorOptions = withDevice (deviceVal @device) $ withDType Int64 $ defaultOpts
+      i = asTensor' [fstElems, sndElems, trdElems] tensorOptions
+      v = Torch.ones [List.length fstElems] tensorOptions
+      shape = [natValI @batchSize, natValI @seqLen, natValI @seqLen']
+  pure . UnsafeMkTensor . Torch.toType Bool . Torch.toDense $ sparseCooTensor i v shape tensorOptions
+
+testMkGridMask' :: Maybe (Tensor '( 'CPU, 0) 'Bool '[2, 2, 3])
+testMkGridMask' =
+  let ss = [ Set.fromList [(Pos 0, Pos 0), (Pos 0, Pos 1), (Pos 1, Pos 2)]
+           , Set.fromList [(Pos 0, Pos 2)]
+           ]
+  in mkGridMask' ss
+
 ------------------------------------------------------------------------
+
+mkBatch
+  :: forall batchSize seqLen relDim dtype device a
+   . ( All KnownNat '[batchSize, seqLen, relDim]
+     , KnownDType dtype
+     , KnownDevice device
+     , Scalar a
+     )
+  => a
+  -> IO ( Tensor device 'Int64 '[batchSize, seqLen]
+        , RATransformerMLMInput batchSize seqLen relDim dtype device
+        )
+mkBatch pMask = do
+  actions <- Gen.sample . Gen.list (Range.singleton $ natValI @batchSize) $ do
+    ty <- genTy
+    input <- genWellTypedExp @Int ty
+    let target = nf input
+        ex = Example (Input input) (Target target)
+        actions = toActions @[] ex
+    guard (List.length actions <= natValI @seqLen)
+    pure actions
+  mkRATransformerMLMInput pMask actions
+
+testMkBatch = mkBatch @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDevice @Float 0.25
 
 testProgram
   :: Int -- ^ number of epochs
@@ -1275,12 +1454,12 @@ testProgram numEpochs trainingLen evaluationLen = Safe.runSafeT . runEffect $ go
                 begin = pure (0 :: Float)
                 done totalLoss = pure (totalLoss / (fromInteger . toInteger $ natValI @TestBatchSize))
             in foldM step begin done (enumerate evaluationData)
-          begin = pure (model, optim)
-          done = pure
           step (model', optim') _epoch = do
             (model'', optim'') <- training (model', optim')
             avgLoss <- evaluation model''
             lift . print $ avgLoss
             pure (model'', optim'')
+          begin = pure (model, optim)
+          done = pure
       _ <- lift $ foldM step begin done (Pipes.each [1 .. numEpochs])
       pure ()

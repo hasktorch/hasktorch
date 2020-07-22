@@ -128,12 +128,12 @@ class Applicative f => HSequence f (xs :: [k]) (ys :: [k]) | xs -> ys, ys f -> x
 instance Applicative f => HSequence f '[] '[] where
   hsequence = pure
 
-instance ( Applicative g
-         , HSequence f xs ys
-         , y ~ x
-         , f ~ g
-         )
-  => HSequence g (f x ': xs) (y ': ys)
+instance
+  ( Applicative g
+  , HSequence f xs ys
+  , y ~ x
+  , f ~ g
+  ) => HSequence g (f x ': xs) (y ': ys)
  where
   hsequence (fx :. fxs) = (:.) <$> fx <*> hsequence fxs
 
