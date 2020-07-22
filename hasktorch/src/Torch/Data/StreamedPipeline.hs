@@ -17,12 +17,10 @@
 module Torch.Data.StreamedPipeline
   ( makeListT,
     makeListT',
-    makeListTCont,
-    foldOverWith,
-    foldOverWith',
+    -- foldOverWith,
+    -- foldOverWith',
     pmap,
     pmap',
-    pmapCont,
     Datastream (..),
     -- defaultDataloaderOpts,
     MonadBase (..),
@@ -30,8 +28,6 @@ module Torch.Data.StreamedPipeline
   )
 where
 
-import Control.Applicative (Alternative, (<|>))
--- import           Control.Monad.Trans.Control (MonadBaseControl(..), control)
 
 import Control.Concurrent.Async.Lifted
 import Control.Exception.Safe (MonadMask, bracket, finally, bracketOnError)
@@ -50,9 +46,11 @@ import qualified Pipes.Safe as Safe
 import Torch.Typed
 import Control.Monad.Cont (ContT(..), runContT )
 
--- data DataloaderOpts = DataloaderOpts {numWorkers :: Int}
+data DataloaderOpts = DataloaderOpts { echoData :: Bool
+                                     , bufferSize :: Int
+                                     }
 
-class (MonadPlus m, MonadBase IO m) => Datastream m seed dataset batch where
+class (MonadBase IO m) => Datastream m seed dataset batch where
   streamBatch :: dataset -> seed -> ListT m batch
 
 readBatches ::
@@ -77,60 +75,50 @@ readBatches' dataset seeds outputBox =
   let this = flip $ mappend . Concurrently . runEffect . (>-> toOutput' outputBox) . enumerate . streamBatch @m @seed @dataset @batch dataset
    in L.fold (L.Fold this mempty runConcurrently) seeds
 
-pmapCont :: (MonadIO m, MonadBaseControl IO m) =>  (a -> b) -> Int -> ListT m a -> ContT r m (ListT m b)
-pmapCont f n prod = ContT $ \cont -> snd <$> withBufferLifted
+pmap :: (MonadIO m, MonadBaseControl IO m) =>  (a -> b) -> Int -> ListT m a -> ContT r m (ListT m b)
+pmap f n prod = ContT $ \cont -> snd <$> withBufferLifted
   (bounded 10)
-  (\output -> runEffect $ enumerate prod >-> P.map f >-> toOutput  output)
+  (\output -> runEffect $ enumerate prod >-> P.map f >-> toOutput output)
   (\input -> cont . Select $ fromInput input )
 
+-- | Create an exception safe pipe which operates in parallel
+pmap' :: (MonadIO m, MonadBaseControl IO m) =>  Pipe a b m () -> Int -> ListT m a -> ContT r m (ListT m b)
+pmap' f n prod  = ContT $ \cont -> snd <$> withBufferLifted
+  (bounded 10)
+  (\output -> runEffect $  enumerate prod  >-> f >-> toOutput  output)
+  (\input -> cont . Select $ fromInput input )
+
+-- streamBatches fold inputBox = foldFromProducer inputs fold
+--   where
+--     inputs = fromInput' inputBox
+
+-- foldOverWith' ::
+--   forall m dataset seed batch f b.
+--   (Datastream m seed dataset batch, MonadBaseControl IO m, Foldable f) =>
+--   dataset ->
+--   f seed ->
+--   FoldM m (batch, Int) b ->
+--   m b
+-- foldOverWith' dataset seeds fold = join $ fmap (flip foldFromProducer fold . enumerate) $ makeListT' dataset seeds
+
+-- foldOverWith ::
+--   forall m dataset seed batch b.
+--   (Datastream m seed dataset batch, MonadBaseControl IO m) =>
+--   dataset ->
+--   ListT m seed ->
+--   FoldM m (batch, Int) b ->
+--   m b
+-- foldOverWith  dataset seeds fold = do
+--   join $ fmap (flip foldFromProducer fold . enumerate) $ makeListT dataset seeds
 
 
-pmap :: (Monad m, MonadBaseControl IO m) =>  (a -> b) -> Int -> ListT m a -> m (ListT m b)
-pmap f n prod  = Select <$> withBufferInput unbounded unwrap
-                 (\input -> withBufferInput unbounded (mapConcur input)
-                   (\input2 -> pure $ fromInput' input2)
-                 )
-  where
-    unwrap output = runEffect $ enumerate prod >-> toOutput' output
-    mapConcur input output = replicateConcurrently_ n $ runEffect $ fromInput' input >-> P.map f >-> toOutput' output
-
--- can we get rid of this m?
-pmap' :: (Monad m, MonadBaseControl IO m) =>  (ListT m a -> ListT m b) -> Int -> ListT m a -> m (ListT m b)
-pmap' func n prod  = withBufferInput unbounded unwrap (\input -> pure $ func $ (Select $ fromInput' input))
-  where unwrap output = runEffect $ enumerate prod >-> toOutput' output
-
-streamBatches fold inputBox = foldFromProducer inputs fold
-  where
-    inputs = fromInput' inputBox
-
-foldOverWith' ::
-  forall m dataset seed batch f b.
-  (Datastream m seed dataset batch, MonadBaseControl IO m, Foldable f) =>
-  dataset ->
-  f seed ->
-  FoldM m (batch, Int) b ->
-  m b
-foldOverWith' dataset seeds fold = join $ fmap (flip foldFromProducer fold . enumerate) $ makeListT' dataset seeds
-
-foldOverWith ::
-  forall m dataset seed batch b.
-  (Datastream m seed dataset batch, MonadBaseControl IO m) =>
-  -- DataloaderOpts ->
-  dataset ->
-  ListT m seed ->
-  FoldM m (batch, Int) b ->
-  m b
-foldOverWith  dataset seeds fold = do
-  join $ fmap (flip foldFromProducer fold . enumerate) $ makeListT dataset seeds
-
-
-makeListTCont ::
+makeListT ::
   forall batch m dataset seed b r.
   (Datastream m seed dataset batch, MonadBaseControl IO m, MonadBase IO m) =>
   dataset ->
   ListT m seed ->
   ContT b m (ListT m (batch, Int))
-makeListTCont  dataset seeds  = ContT $ \f ->  snd <$> withBufferLifted
+makeListT dataset seeds  = ContT $ \f ->  snd <$> withBufferLifted
       (bounded 10) 
       (\batchOutput -> readBatches dataset seeds batchOutput)
       (\input ->  f . Select $ P.zip (fromInput' input) iters )
@@ -138,35 +126,17 @@ makeListTCont  dataset seeds  = ContT $ \f ->  snd <$> withBufferLifted
       iters ::  Producer Int m ()
       iters = each [0..]
 
-makeListT ::
-  forall batch m dataset seed b.
-  (Datastream m seed dataset batch, MonadBaseControl IO m, MonadBase IO m) =>
-  -- DataloaderOpts ->
-  dataset ->
-  ListT m seed ->
-  m (ListT m (batch, Int))
-makeListT  dataset seeds = do
-  Select <$>
-    withBufferInput
-      (bounded 10) -- FIXME : what bound
-      (\batchOutput -> readBatches dataset seeds batchOutput)
-      (\input -> pure $ P.zip (fromInput' input) iters)
-    where
-      iters ::  Producer Int m ()
-      iters = each [0..]
 
 makeListT' ::
   forall batch m f dataset seed b.
   (Datastream m seed dataset batch, MonadBaseControl IO m, MonadBase IO m, Foldable f) =>
   dataset ->
   f seed ->
-  m (ListT m (batch, Int))
-makeListT'  dataset seeds = do
-  Select <$>
-    withBufferInput
-      (bounded 10)
-      (\batchOutput ->  readBatches' dataset seeds batchOutput)
-      (\input -> pure $ P.zip (fromInput' input) iters)
+  ContT b m (ListT m (batch, Int))
+makeListT' dataset seeds = ContT $ \f ->  snd <$> withBufferLifted
+      (bounded 10) 
+      (\batchOutput -> readBatches' dataset seeds batchOutput)
+      (\input ->  f . Select $ P.zip (fromInput' input) iters )
     where
       iters ::  Producer Int m ()
       iters = each [0..]
