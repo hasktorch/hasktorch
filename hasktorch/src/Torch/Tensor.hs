@@ -538,7 +538,6 @@ instance (GAsTensors ls) => GAsTensors (M1 i c ls) where
   gToTensors (M1 g) = gToTensors g 
 
 instance (TensorLike ls) => GAsTensors (K1 i ls) where
-  -- gToTensors (K1 g) = toTensors g 
   gToTensors (K1 g) = pure $ asTensor g 
 
 --------------------------------------------------------------------------------
