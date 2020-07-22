@@ -105,6 +105,7 @@ library
                     , JuicyPixels
                     , vector
                     , bytestring
+                    , serialise
                     , safe-exceptions
                     , zlib >= 0.6
                     , pipes
