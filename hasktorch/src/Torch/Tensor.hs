@@ -574,7 +574,9 @@ instance Show Tensor where
   show t = case (dim t) of
       0 -> details ++ show0d t
       1 -> details ++ show1d t
-      2 -> details ++ show2d t
+      2 -> details ++ show2d 0 t
+      3 -> details ++ show3d 0 t
+      4 -> details ++ show4d 0 t
       _ -> details
     where
       -- TODO: this is obviously not the right way to do it,
@@ -588,7 +590,9 @@ instance Show Tensor where
                   then padPositive (toInt x) $ show $ toInt x
                   else padLarge (toDouble x) $ padPositive (toDouble x) $ showGFloat (Just 4) (toDouble x) ""
       show1d = showElems show0d ", "
-      show2d = showElems show1d (",\n " ++ padding)
+      show2d offset = showElems show1d (",\n " ++ padding ++ replicate offset ' ')
+      show3d offset = showElems (show2d (offset + 1)) (",\n " ++ padding ++ replicate offset ' ')
+      show4d offset = showElems (show3d (offset + 1)) (",\n " ++ padding ++ replicate offset ' ')
       details = "Tensor " ++ (show $ dtype t) ++ " " ++ (show $ shape t) ++ " "
       padding = map (const ' ') details
 
