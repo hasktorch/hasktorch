@@ -19,6 +19,7 @@ import           Torch.Typed.Factories
 import           Torch.Typed.Functional
 import           Torch.Typed.Tensor
 import           Torch.Typed.Parameter
+import           Torch.Typed.Aux
 
 data LayerNormSpec (normalizedShape :: [Nat]) (dtype :: D.DType) (device :: (D.DeviceType, Nat))
  where
@@ -40,7 +41,7 @@ data LayerNorm (normalizedShape :: [Nat]) (dtype :: D.DType) (device :: (D.Devic
 
 layerNormForward
   :: forall normalizedShape shape dtype device
-   . ( EndsWith shape normalizedShape
+   . ( IsSuffixOf normalizedShape shape
      , KnownShape normalizedShape
      )
   => LayerNorm normalizedShape dtype device
@@ -52,7 +53,7 @@ layerNormForward LayerNorm {..} = layerNorm @normalizedShape
   layerNormEps
 
 instance
-  ( EndsWith shape normalizedShape
+  ( IsSuffixOf normalizedShape shape
   , KnownShape normalizedShape
   ) => HasForward (LayerNorm normalizedShape dtype device) (Tensor device dtype shape) (Tensor device dtype shape) where
   forward = layerNormForward

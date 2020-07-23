@@ -247,7 +247,7 @@ transformerLayer
      , Mod (embedDim * 3) 3 ~ 0
      , Div (embedDim * 3) 3 ~ embedDim
      , All KnownNat '[embedDim, numHeads, seqLen, batchSize, headDim]
-     , EndsWith '[batchSize, seqLen, embedDim] '[embedDim]
+     , IsSuffixOf '[embedDim] '[batchSize, seqLen, embedDim]
      , KnownDType dtype
      , dtype ~ SumDType dtype
      , StandardFloatingPointDTypeValidation device dtype
@@ -348,7 +348,7 @@ instance
   , Mod (embedDim * 3) 3 ~ 0
   , Div (embedDim * 3) 3 ~ embedDim
   , All KnownNat '[embedDim, numHeads, seqLen, batchSize, headDim]
-  , EndsWith '[batchSize, seqLen, embedDim] '[embedDim]
+  , IsSuffixOf '[embedDim] '[batchSize, seqLen, embedDim]
   , KnownDType dtype
   , dtype ~ SumDType dtype
   , StandardFloatingPointDTypeValidation device dtype

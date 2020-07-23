@@ -38,10 +38,11 @@ executable dataloader-cifar10
                      , streaming
                      , JuicyPixels
 
-library action-transition-system
+executable action-transition-system
   import:              config
   hs-source-dirs:      action-transition-system
-  exposed-modules:     Control.Monad.Fresh
+  main-is:             Main.hs
+  other-modules:       Control.Monad.Fresh
                      , Torch.Data.ActionTransitionSystem
   build-depends:       attoparsec
                      , foldl

@@ -77,7 +77,7 @@ import Torch.Distributions.Distribution (sample)
 import Pipes (enumerate, yield, (>->), each, for, ListT(Select), runEffect, Effect)
 import qualified Pipes.Safe as Safe
 import Pipes (MonadIO(liftIO))
-import Pipes.Prelude (repeatM, drain)
+import Pipes.Prelude (take, repeatM, drain)
 import Pipes.Prelude (foldM)
 import Control.Exception (tryJust, Exception, try)
 import System.IO.Error (ioeGetErrorString)
@@ -927,7 +927,7 @@ instance
   , Mod (embedDim * 3) 3 ~ 0
   , Div (embedDim * 3) 3 ~ embedDim
   , All KnownNat '[embedDim, numHeads, seqLen, batchSize, headDim]
-  , EndsWith '[batchSize, seqLen, embedDim] '[embedDim]
+  , IsSuffixOf '[embedDim] '[batchSize, seqLen, embedDim]
   , KnownDType dtype
   , dtype ~ SumDType dtype
   , StandardFloatingPointDTypeValidation device dtype
@@ -1067,14 +1067,14 @@ testMkRATransformerMLMInput = do
 
 ------------------------------------------------------------------------
 
-type TestBatchSize = 4
+type TestBatchSize = 8
 type TestSeqLen = 64
 type TestRelDim = 2
 
 type TestNumAttnLayers = 2
-type TestNumHeads = 1
+type TestNumHeads = 3
 type TestHeadDim = 8
-type TestFFNDim = 8
+type TestFFNDim = 64
 type TestPaddingIdx = 0
 type TestTokenNumEmbeds = 5
 type TestMetaNumEmbeds = 5
@@ -1324,19 +1324,19 @@ testMkBatch :: IO _
 testMkBatch = mkBatch @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDevice @Float 0.25
 
 testProgram
-  :: Int -- ^ number of epochs
+  :: LearningRate TestDevice TestDType -- ^ learning rate
+  -> Int -- ^ number of epochs
   -> Int -- ^ number batches taken from training file per epoch
   -> Int -- ^ number batches taken from evaluation file per epoch
   -> IO ()
-testProgram numEpochs trainingLen evaluationLen = Safe.runSafeT . runEffect $ go
+testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . runEffect $ go
   where
     go :: Effect (Safe.SafeT IO) ()
     go = do
       let
         pMask = 0.25 :: Float
-        trainingData = Select (repeatM (mkBatch @TestBatchSize @TestSeqLen @TestRelDim pMask))
-        evaluationData = Select (repeatM (mkBatch @TestBatchSize @TestSeqLen @TestRelDim pMask))
-        learningRate = 0.01
+        trainingData = Select (repeatM (mkBatch @TestBatchSize @TestSeqLen @TestRelDim pMask) >-> Pipes.Prelude.take trainingLen)
+        evaluationData = Select (repeatM (mkBatch @TestBatchSize @TestSeqLen @TestRelDim pMask) >-> Pipes.Prelude.take evaluationLen)
       model <- liftIO . Torch.Typed.sample $
                   (RATransformerMLMSpec 
                     (DropoutSpec 0.2)
@@ -1353,6 +1353,7 @@ testProgram numEpochs trainingLen evaluationLen = Safe.runSafeT . runEffect $ go
                     ) :: TestRATransformerMLMSpec
                   )
       let optim = mkAdam 0 0.9 0.999 (flattenParameters model)
+          -- optim = mkGDM 0.9 (flattenParameters model)
           training (model', optim') =
             let step (model'', optim'') (target, input) = do
                   prediction <- lift $ raTransformerMLM model'' True input

@@ -70,4 +70,4 @@ cradle:
     - path: "./experimental/untyped-nlp"
       component: "exe:untyped-nlp"
     - path: "./experimental/action-transition-system"
-      component: "lib:action-transition-system"
+      component: "exe:action-transition-system"

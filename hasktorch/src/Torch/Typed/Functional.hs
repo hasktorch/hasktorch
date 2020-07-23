@@ -2680,28 +2680,6 @@ isSigned input = unsafePerformIO $ ATen.cast1 ATen.Managed.is_signed_t input
 -- kthvalue :: Tensor device dtype shape -> Int -> Int -> Bool -> (Tensor device dtype shape,Tensor device dtype shape)
 -- kthvalue _input _k _dim _keepdim = unsafePerformIO $ (ATen.cast4 ATen.Managed.kthvalue_tllb) _input _k _dim _keepdim
 
--- | EndsWith
---
--- >>> :kind! EndsWith '[1] '[1]
--- EndsWith '[1] '[1] :: Constraint
--- = () :: Constraint
--- >>> :kind! EndsWith '[2, 1] '[1]
--- EndsWith '[2, 1] '[1] :: Constraint
--- = () :: Constraint
--- >>> :kind! EndsWith '[2, 1] '[2]
--- EndsWith '[2, 1] '[2] :: Constraint
--- = EndsWith '[1] '[]
--- >>> :kind! EndsWith '[2, 1] '[1, 1]
--- EndsWith '[2, 1] '[1, 1] :: Constraint
--- = EndsWith '[] '[1]
--- >>> :kind! EndsWith '[2, 1] '[2, 1]
--- EndsWith '[2, 1] '[2, 1] :: Constraint
--- = () :: Constraint
-type family EndsWith (xs :: [a]) (ys :: [a]) :: Constraint where
-  EndsWith '[]      '[]      = ()
-  EndsWith (x : xs) (x : ys) = EndsWith xs ys
-  EndsWith (x : xs) (y : ys) = EndsWith xs (y : ys)
-
 -- | layerNorm
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- TODO: figure out if and when CUDNN works here, tie it also to the `device`
@@ -2714,7 +2692,7 @@ type family EndsWith (xs :: [a]) (ys :: [a]) :: Constraint where
 layerNorm
   :: forall normalizedShape shape dtype device
    . ( KnownShape normalizedShape
-     , EndsWith shape normalizedShape
+     , IsSuffixOf normalizedShape shape
      )
   => Tensor device dtype normalizedShape -- ^ weight
   -> Tensor device dtype normalizedShape -- ^ bias
