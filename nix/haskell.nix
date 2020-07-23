@@ -26,6 +26,24 @@ let
   projectPackages = lib.attrNames (haskell-nix.haskellLib.selectProjectPackages
     (haskell-nix.cabalProject { inherit src; }));
 
+  setupNumCores = ''
+      case "$(uname)" in
+        "Darwin")
+            TOTAL_MEM_GB=`sysctl hw.physmem | awk '{print int($2/1024/1024/1024)}'`
+            NUM_CPU=$(sysctl -n hw.ncpu)
+          ;;
+        "Linux")
+            TOTAL_MEM_GB=`grep MemTotal /proc/meminfo | awk '{print int($2/1024/1024)}'`
+            NUM_CPU=$(nproc --all)
+          ;;
+      esac
+      
+      USED_MEM_GB=`echo $TOTAL_MEM_GB | awk '{print int(($1 + 1) / 2)}'`
+      USED_NUM_CPU=`echo $NUM_CPU | awk '{print int(($1 + 1) / 2)}'`
+      export USED_NUM_CPU=`echo $USED_MEM_GB $USED_NUM_CPU | awk '{if($1<x$2) {print $1} else {print $2}}'`
+      export USED_MEM_GB=`echo $USED_NUM_CPU | awk '{print int($1 * 4 / 3)"G"}'`
+    '';
+
   # This creates the Haskell package set.
   # https://input-output-hk.github.io/haskell.nix/user-guide/projects/
   pkgSet = haskell-nix.cabalProject {
@@ -61,16 +79,23 @@ let
       # Add non-Haskell dependencies
       {
         packages.libtorch-ffi = {
+          preConfigure = setupNumCores;
           configureFlags = [
             "--extra-lib-dirs=${pkgs.torch}/lib"
             "--extra-include-dirs=${pkgs.torch}/include"
             "--extra-include-dirs=${pkgs.torch}/include/torch/csrc/api/include"
-            "--ghc-options='-j +RTS -A128m -n2m -RTS'"
+            "--ghc-options='-j$USED_NUM_CPU +RTS -A128m -n2m -M$USED_MEM_GB -RTS'"
           ];
           flags = {
             cuda = cudaSupport;
             gcc = !cudaSupport && pkgs.stdenv.hostPlatform.isDarwin;
           };
+        };
+        packages.hasktorch = {
+          preConfigure = setupNumCores;
+          configureFlags = [
+            "--ghc-options='-j$USED_NUM_CPU +RTS -A128m -n2m -M$USED_MEM_GB -RTS'"
+          ];
         };
       }
 
