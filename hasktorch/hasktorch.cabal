@@ -180,7 +180,9 @@ test-suite spec
                     , JuicyPixels
                     , inline-c-cpp
                     , async
-
+                    , bytestring
+                    , serialise
+                    , containers
   build-tool-depends:  hspec-discover:hspec-discover
 
 test-suite doctests

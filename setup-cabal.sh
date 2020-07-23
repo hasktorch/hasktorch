@@ -31,7 +31,6 @@ USED_NUM_CPU=`echo $USED_MEM_GB $USED_NUM_CPU | awk '{if($1<x$2) {print $1} else
 USED_MEM_GB=`echo $USED_NUM_CPU | awk '{print ($1)"G"}'`
 USED_MEMX2_GB=`echo $USED_NUM_CPU | awk '{print ($1 * 2)"G"}'`
 
-
 cat <<EOF > cabal.project.local
 
 package libtorch-ffi

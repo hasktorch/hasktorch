@@ -455,6 +455,10 @@ instance Serialise Parameter where
   encode p = encode p' where p' :: [Float] = asValue $ toDependent p
   decode = IndependentTensor . (asTensor :: [Float] -> Tensor) <$> decode
 
+instance Serialise Tensor where
+  encode p = encode p' where p' :: [Float] = asValue $ p
+  decode = (asTensor :: [Float] -> Tensor) <$> decode
+
 loadWeights :: Darknet -> String -> IO Darknet
 loadWeights (Darknet layers) weights_file = do
   System.IO.withFile weights_file System.IO.ReadMode $ \handle -> do
@@ -478,32 +482,35 @@ instance Randomizable S.DarknetSpec Darknet where
         S.LYoloSpec s -> (\s -> (idx, (LYolo s))) <$> sample s
     pure $ Darknet (fromList layers)
 
+forwardDarknet :: Darknet -> (Maybe Tensor, Tensor) -> ((Map Index Tensor),Tensor)
+forwardDarknet (Darknet layers) (train, input) = loop layers empty []
+  where
+    loop :: [(Index, Layer)] -> (Map Index Tensor) -> [Tensor] -> ((Map Index Tensor),Tensor)
+    loop [] maps tensors = (maps,D.cat (D.Dim 1) tensors)
+    loop ((idx, layer) : next) layerOutputs yoloOutputs =
+      let input' = (if idx == 0 then input else layerOutputs M.! (idx -1))
+       in case layer of
+            LConvolution s ->
+              let out = forward s input'
+               in loop next (insert idx out layerOutputs) yoloOutputs
+            LConvolutionWithBatchNorm s ->
+              let out = forward s (isJust train, input')
+               in loop next (insert idx out layerOutputs) yoloOutputs
+            LMaxPool s ->
+              let out = forward s input'
+               in loop next (insert idx out layerOutputs) yoloOutputs
+            LUpSample s ->
+              let out = forward s input'
+               in loop next (insert idx out layerOutputs) yoloOutputs
+            LRoute s ->
+              let out = forward s layerOutputs
+               in loop next (insert idx out layerOutputs) yoloOutputs
+            LShortCut s ->
+              let out = forward s layerOutputs
+               in loop next (insert idx out layerOutputs) yoloOutputs
+            LYolo s ->
+              let out = forward s (train, input')
+               in loop next layerOutputs (out : yoloOutputs)
+
 instance HasForward Darknet (Maybe Tensor, Tensor) Tensor where
-  forward (Darknet layers) (train, input) =
-    let loop :: [(Index, Layer)] -> (Map Index Tensor) -> [Tensor] -> Tensor
-        loop [] _ tensors = D.cat (D.Dim 1) tensors
-        loop ((idx, layer) : next) layerOutputs yoloOutputs =
-          let input' = (if idx == 0 then input else layerOutputs M.! (idx -1))
-           in case layer of
-                LConvolution s ->
-                  let out = forward s input'
-                   in loop next (insert idx out layerOutputs) yoloOutputs
-                LConvolutionWithBatchNorm s ->
-                  let out = forward s (isJust train, input')
-                   in loop next (insert idx out layerOutputs) yoloOutputs
-                LMaxPool s ->
-                  let out = forward s input'
-                   in loop next (insert idx out layerOutputs) yoloOutputs
-                LUpSample s ->
-                  let out = forward s input'
-                   in loop next (insert idx out layerOutputs) yoloOutputs
-                LRoute s ->
-                  let out = forward s layerOutputs
-                   in loop next (insert idx out layerOutputs) yoloOutputs
-                LShortCut s ->
-                  let out = forward s layerOutputs
-                   in loop next (insert idx out layerOutputs) yoloOutputs
-                LYolo s ->
-                  let out = forward s (train, input')
-                   in loop next layerOutputs (out : yoloOutputs)
-     in loop layers empty []
+  forward net input = snd $ forwardDarknet net input

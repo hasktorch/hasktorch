@@ -35,7 +35,7 @@ addChannels cfg@(DarknetConfig' global layer_configs) = do
 outputChannels :: DarknetConfig' -> Int -> Either String Int
 outputChannels cfg@(DarknetConfig' global layer_configs) idx =
   case lookup idx layer_configs of
-    Nothing -> Left $ "Not found index:" ++ show idx ++ " in darnet"
+    Nothing -> Left $ "Not found index of output:" ++ show idx ++ " in darnet"
     Just x ->
       case x of
         Convolution {..} -> pure filters
@@ -47,7 +47,7 @@ inputChannels :: DarknetConfig' -> Int -> Either String Int
 inputChannels (DarknetConfig' global _) 0 = pure $ channels global
 inputChannels cfg@(DarknetConfig' global layer_configs) idx =
   case lookup idx layer_configs of
-    Nothing -> Left $ "Not found index:" ++ show idx ++ " in darnet"
+    Nothing -> Left $ "Not found index of input:" ++ show idx ++ " in darnet"
     Just x ->
       case x of
         Route {..} -> outputChannels cfg idx
@@ -154,4 +154,6 @@ readIniFile filepath = do
         else
           if length globalconfigs > 1
             then return $ Left "net section is duplicated."
-            else return $ addChannels $ DarknetConfig' (head globalconfigs) (fromList $ zip [0 ..] configs)
+            else do
+              print $ DarknetConfig' (head globalconfigs) (fromList $ zip [0 ..] configs)
+              return $ addChannels $ DarknetConfig' (head globalconfigs) (fromList $ zip [0 ..] configs)
