@@ -115,6 +115,8 @@ data Tensor (device :: (D.DeviceType, Nat)) (dtype :: D.DType) (shape :: [Nat]) 
 type CPUTensor = Tensor '( 'D.CPU, 0)
 type CUDATensor deviceIndex = Tensor '( 'D.CUDA, deviceIndex)
 
+data UnknownShapeTensor device dtype = forall shape . UnknownShapeTensor (Tensor device dtype shape)
+
 type family ComputeHaskellType (dtype :: D.DType) :: Type where
   ComputeHaskellType D.Bool = Bool
   ComputeHaskellType D.Int64 = Int

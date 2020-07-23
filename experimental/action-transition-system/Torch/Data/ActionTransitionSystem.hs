@@ -70,7 +70,7 @@ import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 
 import Torch.Typed
-import Torch (logicalNot, toType, toDense, asTensor', withDevice, withDType, defaultOpts, sparseCooTensor)
+import Torch (toType, toDense, asTensor', withDevice, withDType, defaultOpts, sparseCooTensor)
 import qualified Torch (ones)
 import Torch.Distributions.Bernoulli (fromProbs)
 import Torch.Distributions.Distribution (sample)
@@ -999,22 +999,25 @@ data RATransformerMLMInput batchSize seqLen relDim dtype device = RATransformerM
   , ratKeyPaddingMask :: Tensor device 'Bool '[batchSize, seqLen] -- ^ key padding mask
   } deriving (Show)
 
-crossEntropyLoss
-  :: forall paddingIdx batchSize seqLen numEmbeds dtype modelDevice
-   . ( All KnownNat '[paddingIdx, batchSize, seqLen, numEmbeds]
+loss
+  :: forall batchSize seqLen numEmbeds device dtype
+   . ( 1 <= numEmbeds
+     , StandardFloatingPointDTypeValidation device dtype
+     , MeanDTypeValidation device dtype
      , KnownDType dtype
-     , KnownDevice modelDevice
-     , StandardFloatingPointDTypeValidation modelDevice dtype
+     , KnownDevice device
      )
-  => Tensor modelDevice dtype '[batchSize, seqLen, numEmbeds]
-  -> Tensor modelDevice 'Int64 '[batchSize, seqLen]
-  -> Tensor modelDevice dtype '[]
-crossEntropyLoss prediction target =
-  nllLoss @ReduceMean @batchSize @numEmbeds @'[seqLen]
-    ones
-    (natValI @paddingIdx)
-    (logSoftmax @1 . transpose @1 @2 $ prediction)
-    target
+  => Tensor device 'Bool '[batchSize, seqLen, numEmbeds]
+  -> Tensor device 'Bool '[batchSize, seqLen]
+  -> Tensor device dtype '[batchSize, seqLen, numEmbeds]
+  -> Tensor device 'Int64 '[batchSize, seqLen]
+  -> Tensor device dtype '[]
+loss validActionsMask keyPaddingMask logits target =
+  let logProbs = logSoftmax @2 . maskedFill (logicalNot validActionsMask) (-1 / 0 :: Double) $ logits
+      logLikelihood = squeezeDim @2 $ gatherDim @2 (unsqueeze @2 target) logProbs
+      meanLogLikelihood = case maskedSelect keyPaddingMask logLikelihood of
+        UnknownShapeTensor t -> unsafeMeanAll t
+  in (-meanLogLikelihood)
 
 ------------------------------------------------------------------------
 
@@ -1045,8 +1048,8 @@ mkRATransformerMLMInput pMask actions = do
   relations <- fromJust' . mkMultiGrid' relationsVocab $ view (field @"rEnv" . field @"relations") <$> envs
   attentionMask <- fromJust' . mkGridMask' @batchSize @seqLen @seqLen $ view (field @"aEnv" . field @"attentionMask") <$> envs
   keyPaddingMask <- fromJust' . mkSeqMask' $ view (field @"aEnv" . field @"keyPaddingMask") <$> envs
-  let invertedKeyPaddingMask = UnsafeMkTensor @device @'Bool @'[batchSize, seqLen] . logicalNot . toDynamic $ keyPaddingMask
-      attentionMask' = toDType @dtype @'Bool $ maskedFill (unsqueeze @1 invertedKeyPaddingMask) (0 :: Int) attentionMask
+  let attentionMask' = maskedFill (unsqueeze @1 $ logicalNot keyPaddingMask) (0 :: Int) attentionMask
+      attentionMask'' = maskedFill attentionMask' (-1 / 0 :: Double) $ zeros @'[batchSize, seqLen, seqLen] @dtype @device
   tokenMask <- bernoulliMask pMask keyPaddingMask
   let maskedTokens = maskedFill tokenMask (fromJust $ OSet.findIndex Mask tokenVocab) tokens
   pure ( tokens
@@ -1054,7 +1057,7 @@ mkRATransformerMLMInput pMask actions = do
            maskedTokens
            meta
            relations
-           attentionMask'
+           attentionMask''
            keyPaddingMask
        )
 
@@ -1063,18 +1066,18 @@ testMkRATransformerMLMInput = do
       target = nf input
       ex = Example (Input input) (Target target)
       actions = toActions @[] $ ex -- [R,L,L,R,R,L,L,L,R,R,R,R,R,R]
-  mkRATransformerMLMInput @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDevice (0.25 :: Float) [actions]
+  mkRATransformerMLMInput @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDevice @Float @IO 0.25 [actions]
 
 ------------------------------------------------------------------------
 
-type TestBatchSize = 8
-type TestSeqLen = 64
+type TestBatchSize = 32
+type TestSeqLen = 256
 type TestRelDim = 2
 
-type TestNumAttnLayers = 2
+type TestNumAttnLayers = 3
 type TestNumHeads = 3
 type TestHeadDim = 8
-type TestFFNDim = 64
+type TestFFNDim = 32
 type TestPaddingIdx = 0
 type TestTokenNumEmbeds = 5
 type TestMetaNumEmbeds = 5
@@ -1097,26 +1100,6 @@ type TestRATransformerMLMSpec
       TestDType
       TestDevice
 
-testRATransformerMLM = do
-  (target, input) <- testMkRATransformerMLMInput
-  let spec = RATransformerMLMSpec
-               (DropoutSpec 0.2)
-               (TransformerLayerSpec
-                 (MultiheadAttentionSpec
-                   (DropoutSpec 0.2)
-                 )
-                 (DropoutSpec 0.2)
-                 0.001
-                 (TransformerMLPSpec
-                   (DropoutSpec 0.2)
-                   (DropoutSpec 0.2)
-                 )
-              ) :: TestRATransformerMLMSpec
-  model <- Torch.Typed.sample spec
-  prediction <- raTransformerMLM model True input
-  let cre = crossEntropyLoss @TestPaddingIdx prediction target
-  pure cre
-
 bernoulliMask
   :: forall shape dtype device a m
    . (Scalar a, KnownShape shape, shape ~ Broadcast shape shape, MonadIO m)
@@ -1126,8 +1109,7 @@ bernoulliMask
 bernoulliMask p keyPaddingMask = do
   let bernoulli = fromProbs . toDynamic . mulScalar p . toDType @'Float @'Bool . onesLike $ keyPaddingMask
   samples <- liftIO $ UnsafeMkTensor @device @'Bool @shape . toType Bool <$> Torch.Distributions.Distribution.sample bernoulli (shapeVal @shape)
-  let invertedKeyPaddingMask = UnsafeMkTensor @device @'Bool @shape . logicalNot . toDynamic $ keyPaddingMask
-  pure $ maskedFill invertedKeyPaddingMask (0 :: Int) samples
+  pure $ maskedFill (logicalNot keyPaddingMask) (0 :: Int) samples
 
 testBernoulliMask :: IO (Tensor '( 'CPU, 0) 'Bool '[2, 3])
 testBernoulliMask = bernoulliMask (0.25 :: Float) $ ones @'[2, 3] @'Bool @'( 'CPU, 0)
@@ -1320,8 +1302,21 @@ sample' gen =
     in
       go
 
-testMkBatch :: IO _
+testMkBatch :: IO ( Tensor TestDevice 'Int64 '[TestBatchSize, TestSeqLen]
+                  , RATransformerMLMInput TestBatchSize TestSeqLen TestRelDim TestDType TestDevice
+                  )
 testMkBatch = mkBatch @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDevice @Float 0.25
+
+data ClipGradValue a = ClipGradValue a
+
+instance
+  (Scalar a, Num a) => Apply' (ClipGradValue a) (Tensor device dtype shape) (Tensor device dtype shape) where
+  apply' (ClipGradValue a) = clamp (-a) a
+
+data GuardGradAgainstNaN = GuardGradAgainstNaN
+
+instance Apply' GuardGradAgainstNaN (Tensor device dtype shape, Maybe ()) (Maybe ()) where
+  apply' _ (t, acc) = acc >> (guard . not . toBool . Torch.Typed.any . Torch.Typed.isNaN $ t)
 
 testProgram
   :: LearningRate TestDevice TestDType -- ^ learning rate
@@ -1357,15 +1352,21 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
           training (model', optim') =
             let step (model'', optim'') (target, input) = do
                   prediction <- lift $ raTransformerMLM model'' True input
-                  let cre = crossEntropyLoss @TestPaddingIdx prediction target
-                  lift $ runStep model'' optim'' cre learningRate
+                  let cre = loss ones (ratKeyPaddingMask input) prediction target
+                      parameters = flattenParameters model''
+                      gradients = grad cre parameters
+                      clippedGradients = hmap' (ClipGradValue (1e1 :: Float)) gradients
+                  maybe
+                    (lift (print "encountered NaN in gradients, skipping batch") >> pure (model'', optim''))
+                    (const (lift (runStep' model'' optim'' learningRate clippedGradients)))
+                    (hfoldrM GuardGradAgainstNaN () clippedGradients)
                 begin = pure (model', optim')
                 done = pure
             in foldM step begin done (enumerate trainingData)
           evaluation model' =
             let step totalLoss (target, input) = do
                   prediction <- lift $ raTransformerMLM model' False input
-                  let cre = crossEntropyLoss @TestPaddingIdx prediction target
+                  let cre = loss ones (ratKeyPaddingMask input) prediction target
                   pure (totalLoss + toFloat cre)
                 begin = pure (0 :: Float)
                 done totalLoss = pure (totalLoss / (fromInteger . toInteger $ natValI @TestBatchSize))
