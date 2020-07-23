@@ -26,7 +26,7 @@ let
   projectPackages = lib.attrNames (haskell-nix.haskellLib.selectProjectPackages
     (haskell-nix.cabalProject { inherit src; }));
 
-  setupNumCores = ''
+  setupNumCores = libname: ''
       case "$(uname)" in
         "Darwin")
             TOTAL_MEM_GB=`sysctl hw.physmem | awk '{print int($2/1024/1024/1024)}'`
@@ -40,8 +40,9 @@ let
       
       USED_MEM_GB=`echo $TOTAL_MEM_GB | awk '{print int(($1 + 1) / 2)}'`
       USED_NUM_CPU=`echo $NUM_CPU | awk '{print int(($1 + 1) / 2)}'`
-      export USED_NUM_CPU=`echo $USED_MEM_GB $USED_NUM_CPU | awk '{if($1<x$2) {print $1} else {print $2}}'`
-      export USED_MEM_GB=`echo $USED_NUM_CPU | awk '{print int($1 * 4 / 3)"G"}'`
+      USED_NUM_CPU=`echo $USED_MEM_GB $USED_NUM_CPU | awk '{if($1<x$2) {print $1} else {print $2}}'`
+      USED_MEM_GB=`echo $USED_NUM_CPU | awk '{print int($1 * 4 / 3)"G"}'`
+      sed -i -e 's/\(^\(.*\)default-extension\)/\2ghc-options: -j'$USED_NUM_CPU' +RTS -A128m -n2m -M'$USED_MEM_GB' -RTS\n\1/g' ${libname}.cabal
     '';
 
   # This creates the Haskell package set.
@@ -79,12 +80,11 @@ let
       # Add non-Haskell dependencies
       {
         packages.libtorch-ffi = {
-          preConfigure = setupNumCores;
+          preConfigure = setupNumCores "libtorch-ffi";
           configureFlags = [
             "--extra-lib-dirs=${pkgs.torch}/lib"
             "--extra-include-dirs=${pkgs.torch}/include"
             "--extra-include-dirs=${pkgs.torch}/include/torch/csrc/api/include"
-            "--ghc-options='-j$USED_NUM_CPU +RTS -A128m -n2m -M$USED_MEM_GB -RTS'"
           ];
           flags = {
             cuda = cudaSupport;
@@ -92,10 +92,7 @@ let
           };
         };
         packages.hasktorch = {
-          preConfigure = setupNumCores;
-          configureFlags = [
-            "--ghc-options='-j$USED_NUM_CPU +RTS -A128m -n2m -M$USED_MEM_GB -RTS'"
-          ];
+          preConfigure = setupNumCores "hasktorch";
         };
       }
 
