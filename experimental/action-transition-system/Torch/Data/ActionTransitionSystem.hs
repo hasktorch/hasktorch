@@ -70,7 +70,7 @@ import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 
 import Torch.Typed
-import Torch (toType, toDense, asTensor', withDevice, withDType, defaultOpts, sparseCooTensor)
+import Torch (asValue, ATenTensor, toType, toDense, asTensor', withDevice, withDType, defaultOpts, sparseCooTensor)
 import qualified Torch (ones)
 import Torch.Distributions.Bernoulli (fromProbs)
 import Torch.Distributions.Distribution (sample)
@@ -84,6 +84,9 @@ import System.IO.Error (ioeGetErrorString)
 import qualified Hedgehog.Internal.Seed as Seed
 import qualified Hedgehog.Internal.Tree as Tree
 import Hedgehog.Internal.Gen (evalGen)
+import Torch.Internal.Class (Castable)
+import Torch.Vision (grayScale10)
+import Text.Printf (printf)
 
 -- https://stackoverflow.com/questions/17675054/deserialising-with-ghc-generics?rq=1
 -- http://hackage.haskell.org/package/cereal-0.5.8.1/docs/Data-Serialize.html
@@ -579,10 +582,12 @@ data Exp a =
 
 infixl 9 :@
 
+-- TODO: test using https://github.com/hedgehogqa/haskell-hedgehog-classes
 instance Applicative Exp where
   pure = Var
   (<*>) = ap
 
+-- TODO: test using https://github.com/hedgehogqa/haskell-hedgehog-classes
 instance Monad Exp where
   return = Var
   Var a >>= f = f a
@@ -595,6 +600,7 @@ deriveEq1 ''Exp
 deriveOrd1 ''Exp
 deriveShow1 ''Exp
 
+-- TODO: test using https://github.com/hedgehogqa/haskell-hedgehog-classes
 instance Eq a => Eq (Exp a) where (==) = eq1
 instance Ord a => Ord (Exp a) where compare = compare1
 instance Show a => Show (Exp a) where showsPrec = showsPrec1
@@ -995,8 +1001,8 @@ data RATransformerMLMInput batchSize seqLen relDim dtype device = RATransformerM
   { ratMaskedTokens :: Tensor device 'Int64 '[batchSize, seqLen] -- ^ tokens
   , ratMeta :: Tensor device 'Int64 '[batchSize, seqLen] -- ^ meta
   , ratRelations :: Tensor device 'Int64 '[batchSize, seqLen, seqLen, relDim] -- ^ relations
-  , ratAttentionMask :: Tensor device dtype '[batchSize, seqLen, seqLen] -- ^ attention mask
-  , ratKeyPaddingMask :: Tensor device 'Bool '[batchSize, seqLen] -- ^ key padding mask
+  , ratAttentionMask :: Tensor device dtype '[batchSize, seqLen, seqLen] -- ^ attention mask (0 where attention is allowed, -inf everywhere else)
+  , ratKeyPaddingMask :: Tensor device 'Bool '[batchSize, seqLen] -- ^ key padding mask (True for padding, False everywhere else)
   } deriving (Show)
 
 loss
@@ -1015,15 +1021,26 @@ loss
 loss validActionsMask keyPaddingMask logits target =
   let logProbs = logSoftmax @2 . maskedFill (logicalNot validActionsMask) (-1 / 0 :: Double) $ logits
       logLikelihood = squeezeDim @2 $ gatherDim @2 (unsqueeze @2 target) logProbs
-      meanLogLikelihood = case maskedSelect keyPaddingMask logLikelihood of
+      meanLogLikelihood = case maskedSelect (logicalNot keyPaddingMask) logLikelihood of
         UnknownShapeTensor t -> unsafeMeanAll t
   in (-meanLogLikelihood)
 
 ------------------------------------------------------------------------
 
 mkRATransformerMLMInput
-  :: forall batchSize seqLen relDim dtype device a m
-   . (All KnownNat '[batchSize, seqLen, relDim], KnownDType dtype, KnownDevice device, Scalar a, MonadIO m, Alternative m)
+  :: forall batchSize seqLen relDim dtype device a m tensorChunks ys
+   . ( All KnownNat '[batchSize, seqLen, relDim]
+     , SumDTypeIsValid device 'Int64
+     , ComparisonDTypeIsValid device 'Int64
+     , tensorChunks ~ Chunk batchSize 0 '[batchSize, seqLen, seqLen] 'Int64 device
+     , Castable (HList tensorChunks) [ATenTensor]
+     , HMapM' IO DisplayAttentionMask tensorChunks ys
+     , KnownDType dtype
+     , KnownDevice device
+     , Scalar a
+     , MonadIO m
+     , Alternative m
+     )
   => a
   -> [[Action]]
   -> m ( Tensor device 'Int64 '[batchSize, seqLen]
@@ -1047,9 +1064,11 @@ mkRATransformerMLMInput pMask actions = do
   meta <- fromJust' . mkSeq' metaVocab $ view (field @"mEnv" . field @"metas") <$> envs
   relations <- fromJust' . mkMultiGrid' relationsVocab $ view (field @"rEnv" . field @"relations") <$> envs
   attentionMask <- fromJust' . mkGridMask' @batchSize @seqLen @seqLen $ view (field @"aEnv" . field @"attentionMask") <$> envs
-  keyPaddingMask <- fromJust' . mkSeqMask' $ view (field @"aEnv" . field @"keyPaddingMask") <$> envs
-  let attentionMask' = maskedFill (unsqueeze @1 $ logicalNot keyPaddingMask) (0 :: Int) attentionMask
-      attentionMask'' = maskedFill attentionMask' (-1 / 0 :: Double) $ zeros @'[batchSize, seqLen, seqLen] @dtype @device
+  keyPaddingMask <- logicalNot <$> (fromJust' . mkSeqMask' $ view (field @"aEnv" . field @"keyPaddingMask") <$> envs)
+  let attentionMask' = maskedFill (unsqueeze @2 keyPaddingMask) (1 :: Int) attentionMask
+  -- liftIO . displayAttentionMask $ attentionMask'
+  guard (attentionMaskIsProper attentionMask')
+  let attentionMask'' = maskedFill (logicalNot attentionMask') (-1 / 0 :: Double) $ zeros @'[batchSize, seqLen, seqLen] @dtype @device
   tokenMask <- bernoulliMask pMask keyPaddingMask
   let maskedTokens = maskedFill tokenMask (fromJust $ OSet.findIndex Mask tokenVocab) tokens
   pure ( tokens
@@ -1061,6 +1080,80 @@ mkRATransformerMLMInput pMask actions = do
            keyPaddingMask
        )
 
+attentionMaskIsProper
+  :: forall batchSize seqLen device
+   . ( SumDTypeIsValid device 'Int64
+     , KnownDevice device
+     , ComparisonDTypeIsValid device 'Int64
+     )
+  => Tensor device 'Bool '[batchSize, seqLen, seqLen]
+  -> Bool
+attentionMaskIsProper t =
+  let t' = toDType @'Int64 @'Bool t
+      t'' = sumDim @2 t'
+      t''' = t'' `gt` (0 :: Tensor device 'Int64 '[])
+      t'''' = Torch.Typed.all t'''
+  in toBool t''''
+
+data DisplayAttentionMask = DisplayAttentionMask
+
+displayTensor
+  :: forall dim device shape
+   . ( KnownNat dim
+     , shape ~ '[dim, dim]
+     , AllDimsPositive shape
+     , BasicArithmeticDTypeIsValid device 'Int64
+     , MinMaxDTypeIsValid device 'Int64
+     , KnownDevice device
+     )
+  => Tensor device 'Int64 shape
+  -> IO ()
+displayTensor t = do
+  mapM
+    ( \row ->
+        Text.Printf.printf "%02d" row
+          >> mapM
+            ( \col ->
+                putChar $ grayScale !! (Prelude.floor $ scaled !! row !! col)
+            )
+            [0, downSamp .. natValI @dim - 1]
+          >> putStrLn ""
+    )
+    [0, downSamp .. natValI @dim - 1]
+  pure ()
+  where
+    downSamp = 1
+    grayScale = grayScale10
+    paletteMax = (fromIntegral $ List.length grayScale) - 1.0
+    scaled :: [[Float]] =
+      let (mn, mx) = (Torch.Typed.min t, Torch.Typed.max t)
+       in asValue . toDynamic $ paletteMax * ((t `sub` mn) `Torch.Typed.div` (mx `sub` mn))
+
+instance
+  ( BasicArithmeticDTypeIsValid device 'Int64
+  , MinMaxDTypeIsValid device 'Int64
+  , KnownNat seqLen
+  , shape ~ '[1, seqLen, seqLen]
+  , AllDimsPositive shape
+  , KnownDevice device
+  ) => Apply' DisplayAttentionMask (Tensor device 'Int64 shape) (IO ()) where
+  apply' _ = displayTensor . squeezeDim @0
+
+displayAttentionMask
+  :: forall batchSize seqLen device shape (tensorChunks :: [Type]) ys
+   . ( KnownNat batchSize
+     , shape ~ '[batchSize, seqLen, seqLen]
+     , tensorChunks ~ Chunk batchSize 0 shape 'Int64 device
+     , Castable (HList tensorChunks) [ATenTensor]
+     , HMapM' IO DisplayAttentionMask tensorChunks ys
+     )
+  => Tensor device 'Bool shape
+  -> IO ()
+displayAttentionMask t =
+  let t' = toDType @'Int64 @'Bool t
+      ts = chunk @batchSize @0 @shape @'Int64 @device @tensorChunks t'
+  in void . hmapM' DisplayAttentionMask $ ts
+
 testMkRATransformerMLMInput = do
   let input :: Exp Int = (lam (Nat) 0 (Var 0)) :@ Zero
       target = nf input
@@ -1070,14 +1163,14 @@ testMkRATransformerMLMInput = do
 
 ------------------------------------------------------------------------
 
-type TestBatchSize = 32
-type TestSeqLen = 256
+type TestBatchSize = 4
+type TestSeqLen = 16
 type TestRelDim = 2
 
-type TestNumAttnLayers = 3
-type TestNumHeads = 4
-type TestHeadDim = 16
-type TestFFNDim = 64
+type TestNumAttnLayers = 1
+type TestNumHeads = 1
+type TestHeadDim = 2
+type TestFFNDim = 2
 type TestPaddingIdx = 0
 type TestTokenNumEmbeds = 5
 type TestMetaNumEmbeds = 5
@@ -1109,7 +1202,7 @@ bernoulliMask
 bernoulliMask p keyPaddingMask = do
   let bernoulli = fromProbs . toDynamic . mulScalar p . toDType @'Float @'Bool . onesLike $ keyPaddingMask
   samples <- liftIO $ UnsafeMkTensor @device @'Bool @shape . toType Bool <$> Torch.Distributions.Distribution.sample bernoulli (shapeVal @shape)
-  pure $ maskedFill (logicalNot keyPaddingMask) (0 :: Int) samples
+  pure $ maskedFill keyPaddingMask (0 :: Int) samples
 
 testBernoulliMask :: IO (Tensor '( 'CPU, 0) 'Bool '[2, 3])
 testBernoulliMask = bernoulliMask (0.25 :: Float) $ ones @'[2, 3] @'Bool @'( 'CPU, 0)
@@ -1265,8 +1358,13 @@ testMkGridMask' =
 ------------------------------------------------------------------------
 
 mkBatch
-  :: forall batchSize seqLen relDim dtype device a m
+  :: forall batchSize seqLen relDim dtype device a m tensorChunks ys
    . ( All KnownNat '[batchSize, seqLen, relDim]
+     , SumDTypeIsValid device 'Int64
+     , ComparisonDTypeIsValid device 'Int64
+     , tensorChunks ~ Chunk batchSize 0 '[batchSize, seqLen, seqLen] 'Int64 device
+     , Castable (HList tensorChunks) [ATenTensor]
+     , HMapM' IO DisplayAttentionMask tensorChunks ys
      , KnownDType dtype
      , KnownDevice device
      , Scalar a
@@ -1390,7 +1488,9 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
       pure ()
 
 -- what is the cause of NaNs in the evaluation?
--- when there are NaNs in the gradients, is the loss NaN, too?
+-- > the loss is NaN if the length of at least one item is the seqLen, i.e. if there is no padding in one row
+-- when there are NaNs in the loss gradients, is the loss NaN, too?
+-- > it is likely that the loss gradients are NaN iff the loss is NaN
 -- test that there is no position that attends to nothing
 -- test that there are no empty sequences
 -- test that there are no unks

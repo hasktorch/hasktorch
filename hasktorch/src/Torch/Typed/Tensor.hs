@@ -260,7 +260,7 @@ type family BasicArithmeticDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :
   BasicArithmeticDTypeIsValid '( 'D.CUDA, _)   dtype = ()
   BasicArithmeticDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
-add, sub, mul
+add, sub, mul, div
   :: forall shape'' shape shape' dtype dtype' dtype'' device
    . ( dtype'' ~ DTypePromotion dtype dtype'
      , shape'' ~ Broadcast shape shape'
@@ -274,6 +274,7 @@ add, sub, mul
 add a b = UnsafeMkTensor $ D.add (toDynamic a) (toDynamic b)
 sub a b = UnsafeMkTensor $ D.sub (toDynamic a) (toDynamic b)
 mul a b = UnsafeMkTensor $ D.mul (toDynamic a) (toDynamic b)
+div a b = UnsafeMkTensor $ D.div (toDynamic a) (toDynamic b)
 
 type family ComparisonDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
   ComparisonDTypeIsValid '( 'D.CPU, 0)    dtype = ( DTypeIsNotBool '( 'D.CPU, 0) dtype

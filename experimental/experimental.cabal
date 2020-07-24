@@ -61,4 +61,4 @@ executable action-transition-system
                      , ordered-containers
                      , pipes
                      , pipes-safe
-
+                     , libtorch-ffi
