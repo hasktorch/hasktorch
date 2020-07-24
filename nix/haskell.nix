@@ -29,8 +29,8 @@ let
   setupNumCores = libname: ''
       case "$(uname)" in
         "Darwin")
-            TOTAL_MEM_GB=`sysctl hw.physmem | awk '{print int($2/1024/1024/1024)}'`
-            NUM_CPU=$(sysctl -n hw.ncpu)
+            TOTAL_MEM_GB=`${pkgs.procps}/bin/sysctl hw.physmem | awk '{print int($2/1024/1024/1024)}'`
+            NUM_CPU=$(${pkgs.procps}/bin/sysctl -n hw.ncpu)
           ;;
         "Linux")
             TOTAL_MEM_GB=`grep MemTotal /proc/meminfo | awk '{print int($2/1024/1024)}'`
