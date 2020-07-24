@@ -44,6 +44,7 @@ let
       USED_MEM_GB=`echo $USED_NUM_CPU | awk '{print ($1)"G"}'`
       USED_MEMX2_GB=`echo $USED_NUM_CPU | awk '{print ($1 * 2)"G"}'`
       if [ "${libname}" = "hasktorch " ] ; then
+        export NIX_BUILD_CORES=$USED_NUM_CPU
         sed -i -e 's/\(^\(.*\)default-extension\)/\2ghc-options: -j'$USED_NUM_CPU' +RTS -A128m -n2m -M'$USED_MEMX2_GB' -RTS\n\1/g' ${libname}.cabal
       else
         sed -i -e 's/\(^\(.*\)default-extension\)/\2ghc-options: -j'$USED_NUM_CPU' +RTS -A128m -n2m -M'$USED_MEM_GB' -RTS\n\1/g' ${libname}.cabal
