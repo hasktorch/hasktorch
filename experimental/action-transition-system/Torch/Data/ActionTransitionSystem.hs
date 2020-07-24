@@ -1163,14 +1163,14 @@ testMkRATransformerMLMInput = do
 
 ------------------------------------------------------------------------
 
-type TestBatchSize = 4
-type TestSeqLen = 16
+type TestBatchSize = 32
+type TestSeqLen = 256
 type TestRelDim = 2
 
-type TestNumAttnLayers = 1
-type TestNumHeads = 1
-type TestHeadDim = 2
-type TestFFNDim = 2
+type TestNumAttnLayers = 3
+type TestNumHeads = 4
+type TestHeadDim = 16
+type TestFFNDim = 64
 type TestPaddingIdx = 0
 type TestTokenNumEmbeds = 5
 type TestMetaNumEmbeds = 5
@@ -1487,14 +1487,15 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
       _ <- lift $ foldM step begin done (Pipes.each [1 .. numEpochs])
       pure ()
 
--- what is the cause of NaNs in the evaluation?
--- > the loss is NaN if the length of at least one item is the seqLen, i.e. if there is no padding in one row
--- when there are NaNs in the loss gradients, is the loss NaN, too?
--- > it is likely that the loss gradients are NaN iff the loss is NaN
--- test that there is no position that attends to nothing
+-- ~what is the cause of NaNs in the evaluation?~
+-- ~ > the loss is NaN if the length of at least one item is the seqLen, i.e. if there is no padding in one row~
+-- ~when there are NaNs in the loss gradients, is the loss NaN, too?~
+-- ~ > it is likely that the loss gradients are NaN iff the loss is NaN~
+-- ~test that there is no position that attends to nothing~
 -- test that there are no empty sequences
 -- test that there are no unks
 -- implement valid actions mask
 -- implement inference
 -- split training and evaluation data
 -- why does it segfault on cuda?
+-- add simple ^-shaped learning rate schedule
