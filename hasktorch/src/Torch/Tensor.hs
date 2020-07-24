@@ -1,3 +1,7 @@
+{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE IncoherentInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -13,6 +17,7 @@ module Torch.Tensor where
 
 import Control.Monad (forM_, forM)
 import Control.Exception.Safe (throwIO)
+import GHC.Generics
 import Foreign.ForeignPtr
 import Foreign.Ptr
 import Foreign.Storable
@@ -23,6 +28,7 @@ import Data.Word (Word8)
 import Data.List (intercalate)
 import Data.Proxy
 import Data.Reflection
+import qualified Data.Vector as V
 import Numeric
 
 import Torch.Internal.Cast
@@ -509,6 +515,30 @@ instance {-# OVERLAPPING #-}TensorLike a => TensorLike [a] where
          if product (_dims d) == width -- This validation may be slow.
          then (_pokeElemOff @a) ptr (offset+i*width) d
          else throwIO $ userError $ "There are lists having different length."
+
+class AsTensors as where
+  toTensors :: as -> V.Vector Tensor
+  default toTensors ::  (Generic as, GAsTensors (Rep as)) => as -> V.Vector Tensor
+  toTensors a = gToTensors $ from a
+
+instance TensorLike a => AsTensors a where
+  toTensors = pure . asTensor
+  
+class GAsTensors record where
+  gToTensors :: record as -> V.Vector Tensor
+
+instance (GAsTensors ls, GAsTensors rs ) => GAsTensors (ls :*: rs) where
+  gToTensors (g :*: d) = gToTensors  g V.++ gToTensors d
+
+instance (GAsTensors ls , GAsTensors rs ) => GAsTensors (ls :+: rs) where
+  gToTensors (L1 g) = gToTensors g 
+  gToTensors (R1 g) = gToTensors g 
+  
+instance (GAsTensors ls) => GAsTensors (M1 i c ls) where
+  gToTensors (M1 g) = gToTensors g 
+
+instance (TensorLike ls) => GAsTensors (K1 i ls) where
+  gToTensors (K1 g) = pure $ asTensor g 
 
 --------------------------------------------------------------------------------
 -- Show

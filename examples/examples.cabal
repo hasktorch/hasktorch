@@ -107,6 +107,8 @@ executable typed-transformer
                      , pipes-text
                      , safe-exceptions
                      , text
+                     , monad-control
+                     , transformers-base >= 0.4
 
 executable rnn
   import:              config
@@ -183,6 +185,7 @@ executable mnist-mlp
                      , random >= 1.1
                      , safe-exceptions
                      , static-mnist
+                     , pipes
 
 executable load-torchscript
   import:              config
@@ -249,3 +252,18 @@ executable distill
                      , random >= 1.1
                      , safe-exceptions
                      , static-mnist
+
+executable iris-classification
+  import:              config
+  hs-source-dirs:      iris-classification
+  main-is:             Main.hs
+  ghc-options:         -fno-warn-partial-type-signatures
+  build-depends:       libtorch-ffi
+                     , bytestring >= 0.10.8
+                     , mtl
+                     , random >= 1.1
+                     , safe-exceptions
+                     , cassava
+                     , pipes
+                     , pipes-safe
+                     , vector
