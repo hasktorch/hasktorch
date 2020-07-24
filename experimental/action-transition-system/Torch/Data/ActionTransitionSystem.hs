@@ -1066,7 +1066,7 @@ mkRATransformerMLMInput pMask actions = do
   attentionMask <- fromJust' . mkGridMask' @batchSize @seqLen @seqLen $ view (field @"aEnv" . field @"attentionMask") <$> envs
   keyPaddingMask <- logicalNot <$> (fromJust' . mkSeqMask' $ view (field @"aEnv" . field @"keyPaddingMask") <$> envs)
   let attentionMask' = maskedFill (unsqueeze @2 keyPaddingMask) (1 :: Int) attentionMask
-  -- liftIO . displayAttentionMask $ attentionMask'
+  liftIO . displayAttentionMask $ attentionMask'
   guard (attentionMaskIsProper attentionMask')
   let attentionMask'' = maskedFill (logicalNot attentionMask') (-1 / 0 :: Double) $ zeros @'[batchSize, seqLen, seqLen] @dtype @device
   tokenMask <- bernoulliMask pMask keyPaddingMask
@@ -1176,7 +1176,7 @@ type TestTokenNumEmbeds = 5
 type TestMetaNumEmbeds = 5
 type TestRelNumEmbeds = 7
 type TestDType = 'Float
-type TestDevice = '( 'CPU, 0)
+type TestDevice = '( 'CUDA, 0)
 
 type TestRATransformerMLMSpec
   = RATransformerMLMSpec
@@ -1204,8 +1204,8 @@ bernoulliMask p keyPaddingMask = do
   samples <- liftIO $ UnsafeMkTensor @device @'Bool @shape . toType Bool <$> Torch.Distributions.Distribution.sample bernoulli (shapeVal @shape)
   pure $ maskedFill keyPaddingMask (0 :: Int) samples
 
-testBernoulliMask :: IO (Tensor '( 'CPU, 0) 'Bool '[2, 3])
-testBernoulliMask = bernoulliMask (0.25 :: Float) $ ones @'[2, 3] @'Bool @'( 'CPU, 0)
+testBernoulliMask :: IO (Tensor TestDevice 'Bool '[2, 3])
+testBernoulliMask = bernoulliMask (0.25 :: Float) $ zeros @'[2, 3] @'Bool @TestDevice
 
 mkSeq'
   :: forall batchSize seqLen device a
@@ -1223,13 +1223,13 @@ mkSeq' vocab ms = do
           guard $ Prelude.all (< natValI @seqLen) sndKeys
           pure (fstKeys, sndKeys, elems)
     in foldMap step $ zip [(0 :: Int)..] ms
-  let tensorOptions = withDevice (deviceVal @device) $ withDType Int64 $ defaultOpts
+  let tensorOptions = withDType Int64 defaultOpts
       i = asTensor' [fstKeys, sndKeys] tensorOptions
       v = asTensor' elems tensorOptions
       shape = [natValI @batchSize, natValI @seqLen]
-  pure . UnsafeMkTensor . Torch.toDense $ sparseCooTensor i v shape tensorOptions
+  pure . toDevice @device @'( 'CPU, 0) . UnsafeMkTensor @'( 'CPU, 0) . Torch.toDense $ sparseCooTensor i v shape tensorOptions
 
-testMkSeq' :: Maybe (Tensor '( 'CPU, 0) 'Int64 '[2, 3])
+testMkSeq' :: Maybe (Tensor TestDevice 'Int64 '[2, 3])
 testMkSeq' =
   let vocab = OSet.fromList [Pad, Unk, Token "a"]
       ms = [ Map.fromList [(Pos 0, "a"), (Pos 1, "b"), (Pos 2, "a")]
@@ -1251,13 +1251,13 @@ mkSeqMask' ss = do
           guard $ Prelude.all (< natValI @seqLen) sndElems
           pure (fstElems, sndElems)
     in foldMap step $ zip [(0 :: Int)..] ss
-  let tensorOptions = withDevice (deviceVal @device) $ withDType Int64 $ defaultOpts
+  let tensorOptions = withDType Int64 defaultOpts
       i = asTensor' [fstElems, sndElems] tensorOptions
       v = Torch.ones [List.length fstElems] tensorOptions
       shape = [natValI @batchSize, natValI @seqLen]
-  pure . UnsafeMkTensor . Torch.toType Bool . Torch.toDense $ sparseCooTensor i v shape tensorOptions
+  pure . toDevice @device @'( 'CPU, 0) . UnsafeMkTensor @'( 'CPU, 0) . Torch.toType Bool . Torch.toDense $ sparseCooTensor i v shape tensorOptions
 
-testMkSeqMask' :: Maybe (Tensor '( 'CPU, 0) 'Bool '[2, 3])
+testMkSeqMask' :: Maybe (Tensor TestDevice 'Bool '[2, 3])
 testMkSeqMask' =
   let ss = [ Set.fromList [Pos 1]
            , Set.fromList [Pos 0, Pos 2]
@@ -1282,13 +1282,13 @@ mkGrid' vocab ms = do
           guard $ Prelude.all (< natValI @seqLen') trdKeys
           pure (fstKeys, sndKeys, trdKeys, elems)
     in foldMap step $ zip [(0 :: Int)..] ms
-  let tensorOptions = withDevice (deviceVal @device) $ withDType Int64 $ defaultOpts
+  let tensorOptions = withDType Int64 defaultOpts
       i = asTensor' [fstKeys, sndKeys, trdKeys] tensorOptions
       v = asTensor' elems tensorOptions
       shape = [natValI @batchSize, natValI @seqLen, natValI @seqLen']
-  pure . UnsafeMkTensor . Torch.toDense $ sparseCooTensor i v shape tensorOptions
+  pure . toDevice @device @'( 'CPU, 0) . UnsafeMkTensor @'( 'CPU, 0) . Torch.toDense $ sparseCooTensor i v shape tensorOptions
 
-testMkGrid' :: Maybe (Tensor '( 'CPU, 0) 'Int64 '[2, 2, 3])
+testMkGrid' :: Maybe (Tensor TestDevice 'Int64 '[2, 2, 3])
 testMkGrid' =
   let vocab = OSet.fromList [Pad, Unk, Token "a", Token "b"]
       ms = [ Map.fromList [((Pos 0, Pos 0), "a"), ((Pos 0, Pos 1), "b"), ((Pos 1, Pos 2), "a")]
@@ -1320,11 +1320,11 @@ mkMultiGrid' vocab ms = do
           guard $ Prelude.all (< natValI @dim) fthKeys
           pure (fstKeys, sndKeys, trdKeys, fthKeys, elems)
     in foldMap step $ zip [(0 :: Int)..] ms
-  let tensorOptions = withDevice (deviceVal @device) $ withDType Int64 $ defaultOpts
+  let tensorOptions = withDType Int64 defaultOpts
       i = asTensor' [fstKeys, sndKeys, trdKeys, fthKeys] tensorOptions
       v = asTensor' elems tensorOptions
       shape = [natValI @batchSize, natValI @seqLen, natValI @seqLen', natValI @dim]
-  pure . UnsafeMkTensor . Torch.toDense $ sparseCooTensor i v shape tensorOptions
+  pure . toDevice @device @'( 'CPU, 0) . UnsafeMkTensor @'( 'CPU, 0) . Torch.toDense $ sparseCooTensor i v shape tensorOptions
 
 mkGridMask'
   :: forall batchSize seqLen seqLen' device
@@ -1342,13 +1342,13 @@ mkGridMask' ss = do
           guard $ Prelude.all (< natValI @seqLen') trdElems
           pure (fstElems, sndElems, trdElems)
     in foldMap step $ zip [(0 :: Int)..] ss
-  let tensorOptions = withDevice (deviceVal @device) $ withDType Int64 $ defaultOpts
+  let tensorOptions = withDType Int64 defaultOpts
       i = asTensor' [fstElems, sndElems, trdElems] tensorOptions
       v = Torch.ones [List.length fstElems] tensorOptions
       shape = [natValI @batchSize, natValI @seqLen, natValI @seqLen']
-  pure . UnsafeMkTensor . Torch.toType Bool . Torch.toDense $ sparseCooTensor i v shape tensorOptions
+  pure . toDevice @device @'( 'CPU, 0) . UnsafeMkTensor @'( 'CPU, 0) . Torch.toType Bool . Torch.toDense $ sparseCooTensor i v shape tensorOptions
 
-testMkGridMask' :: Maybe (Tensor '( 'CPU, 0) 'Bool '[2, 2, 3])
+testMkGridMask' :: Maybe (Tensor TestDevice 'Bool '[2, 2, 3])
 testMkGridMask' =
   let ss = [ Set.fromList [(Pos 0, Pos 0), (Pos 0, Pos 1), (Pos 1, Pos 2)]
            , Set.fromList [(Pos 0, Pos 2)]
@@ -1450,6 +1450,7 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
           -- optim = mkGDM 0.9 (flattenParameters model)
           training (model', optim') =
             let step (model'', optim'') (target, input) = do
+                  liftIO $ print "Hello Training Step!"
                   prediction <- lift $ raTransformerMLM model'' True input
                   let cre = loss ones (ratKeyPaddingMask input) prediction target
                       parameters = flattenParameters model''
@@ -1478,6 +1479,7 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
                 done totalLoss = pure (totalLoss / (fromInteger . toInteger $ natValI @TestBatchSize))
             in foldM step begin done (enumerate evaluationData)
           step (model', optim') _epoch = do
+            liftIO $ print "Hello Epoch!"
             (model'', optim'') <- training (model', optim')
             avgLoss <- evaluation model''
             lift . print $ avgLoss
