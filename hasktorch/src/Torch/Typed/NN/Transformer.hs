@@ -34,6 +34,9 @@ import Torch.Typed.NN.Linear
 import Torch.Typed.NN.Normalization
 import Torch.Typed.NN.Sparse
 import Prelude hiding (cos, exp, sin)
+import Control.Arrow ((<<<))
+
+residual f g x = f x >>= (\x' -> g (x `add` x'))
 
 --------------------------------------------------------------------------------
 -- Relation-Aware Multi-Headed Attention Layer
@@ -150,6 +153,7 @@ data
     :: forall embedDim ffnDim dtype device
      . { dropout0Spec :: DropoutSpec
        , dropout1Spec :: DropoutSpec
+       , epsSpec      :: Double
        }
     -> TransformerMLPSpec embedDim ffnDim dtype device
   deriving Show
@@ -162,29 +166,34 @@ data
     (device :: (D.DeviceType, Nat)) where
   TransformerMLP
     :: forall embedDim ffnDim dtype device
-     . { linear0     :: Linear embedDim ffnDim dtype device
-       , linear1     :: Linear ffnDim embedDim dtype device
-       , dropout0    :: Dropout
-       , dropout1    :: Dropout
+     . { linear0  :: Linear embedDim ffnDim dtype device
+       , linear1  :: Linear ffnDim embedDim dtype device
+       , dropout0 :: Dropout
+       , dropout1 :: Dropout
+       , ln       :: LayerNorm '[embedDim] dtype device
        }
     -> TransformerMLP embedDim ffnDim dtype device
  deriving (Show, Generic)
 
 transformerMLP
   :: forall embedDim ffnDim seqLen batchSize dtype device
-   . StandardFloatingPointDTypeValidation device dtype
+   . ( BasicArithmeticDTypeIsValid device dtype
+     , StandardFloatingPointDTypeValidation device dtype
+     , KnownNat embedDim
+     , IsSuffixOf '[embedDim] '[seqLen, batchSize, embedDim]
+     )
   => TransformerMLP embedDim ffnDim dtype device
   -> Bool
   -> Tensor device dtype '[seqLen, batchSize, embedDim]
   -> IO (Tensor device dtype '[seqLen, batchSize, embedDim])
 transformerMLP TransformerMLP {..} train input =
-  dropoutForward dropout1 train
-    .   relu
-    .   forward linear1
-    =<< dropoutForward dropout0 train
-    .   relu
-    .   forward linear0
-    =<< pure input
+  residual f (pure . forward ln) input
+  where f x = dropoutForward dropout1 train
+                .   forward linear1
+                =<< dropoutForward dropout0 train
+                .   relu
+                .   forward linear0
+                =<< pure x
 
 instance ( All KnownNat '[embedDim, ffnDim]
          , KnownDType dtype
@@ -200,6 +209,7 @@ instance ( All KnownNat '[embedDim, ffnDim]
       <*> A.sample LinearSpec
       <*> A.sample dropout0Spec
       <*> A.sample dropout1Spec
+      <*> A.sample (LayerNormSpec epsSpec)
 
 --------------------------------------------------------------------------------
 -- Relation-Aware Transformer Layer
@@ -216,7 +226,7 @@ data
     :: forall embedDim numHeads ffnDim dtype device
      . { mhaSpec         :: MultiheadAttentionSpec embedDim numHeads dtype device
        , attnDropoutSpec :: DropoutSpec
-       , epsSpec         :: Double
+       , epsSpec'        :: Double
        , mlpSpec         :: TransformerMLPSpec embedDim ffnDim dtype device
        }
     -> TransformerLayerSpec embedDim numHeads ffnDim dtype device
@@ -233,8 +243,7 @@ data
     :: forall embedDim numHeads ffnDim dtype device
      . { transformerLayer_mha         :: MultiheadAttention embedDim numHeads dtype device
        , transformerLayer_attnDropout :: Dropout
-       , transformerLayer_ln0         :: LayerNorm '[embedDim] dtype device
-       , transformerLayer_ln1         :: LayerNorm '[embedDim] dtype device
+       , transformerLayer_ln          :: LayerNorm '[embedDim] dtype device
        , transformerLayer_mlp         :: TransformerMLP embedDim ffnDim dtype device
        }
     -> TransformerLayer embedDim numHeads ffnDim dtype device
@@ -265,11 +274,11 @@ transformerLayer
   -> Tensor device dtype '[batchSize, seqLen, embedDim]
   -> IO (Tensor device dtype '[batchSize, seqLen, embedDim])
 transformerLayer TransformerLayer {..} train attentionMask keyPaddingMask maybeRelationsK maybeRelationsV x = do
-  (z, _) <- multiheadAttention transformerLayer_mha train attentionMask keyPaddingMask maybeRelationsK maybeRelationsV x
-  z' <- dropoutForward transformerLayer_attnDropout train z
-  let y = forward transformerLayer_ln0 (x `add` z')
-  y' <- transformerMLP transformerLayer_mlp train y
-  return $ forward transformerLayer_ln1 (y `add` y')
+  y <- residual f (pure . forward transformerLayer_ln) x
+  transformerMLP transformerLayer_mlp train y
+  where f x' = do
+          (z, _) <- multiheadAttention transformerLayer_mha train attentionMask keyPaddingMask maybeRelationsK maybeRelationsV x'
+          dropoutForward transformerLayer_attnDropout train z
 
 instance ( All KnownNat '[embedDim, numHeads, ffnDim]
          , KnownDType dtype
@@ -283,8 +292,7 @@ instance ( All KnownNat '[embedDim, numHeads, ffnDim]
     TransformerLayer
       <$> A.sample mhaSpec
       <*> A.sample attnDropoutSpec
-      <*> A.sample (LayerNormSpec epsSpec)
-      <*> A.sample (LayerNormSpec epsSpec)
+      <*> A.sample (LayerNormSpec epsSpec')
       <*> A.sample mlpSpec
 
 --------------------------------------------------------------------------------

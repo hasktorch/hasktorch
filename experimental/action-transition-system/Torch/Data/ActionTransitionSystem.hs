@@ -1075,9 +1075,9 @@ type TestSeqLen = 256
 type TestRelDim = 2
 
 type TestNumAttnLayers = 3
-type TestNumHeads = 3
-type TestHeadDim = 8
-type TestFFNDim = 32
+type TestNumHeads = 4
+type TestHeadDim = 16
+type TestFFNDim = 64
 type TestPaddingIdx = 0
 type TestTokenNumEmbeds = 5
 type TestMetaNumEmbeds = 5
@@ -1344,6 +1344,7 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
                       (TransformerMLPSpec
                         (DropoutSpec 0.2)
                         (DropoutSpec 0.2)
+                        0.001
                       )
                     ) :: TestRATransformerMLMSpec
                   )
@@ -1367,6 +1368,13 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
             let step totalLoss (target, input) = do
                   prediction <- lift $ raTransformerMLM model' False input
                   let cre = loss ones (ratKeyPaddingMask input) prediction target
+                  if (toBool . Torch.Typed.isNaN $ cre) then
+                    lift $ do
+                      print input
+                      print prediction
+                      print target
+                  else
+                    pure ()
                   pure (totalLoss + toFloat cre)
                 begin = pure (0 :: Float)
                 done totalLoss = pure (totalLoss / (fromInteger . toInteger $ natValI @TestBatchSize))
@@ -1380,3 +1388,13 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
           done = pure
       _ <- lift $ foldM step begin done (Pipes.each [1 .. numEpochs])
       pure ()
+
+-- what is the cause of NaNs in the evaluation?
+-- when there are NaNs in the gradients, is the loss NaN, too?
+-- test that there is no position that attends to nothing
+-- test that there are no empty sequences
+-- test that there are no unks
+-- implement valid actions mask
+-- implement inference
+-- split training and evaluation data
+-- why does it segfault on cuda?
