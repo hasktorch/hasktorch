@@ -17,6 +17,7 @@ module Torch.Tensor where
 
 import Control.Monad (forM_, forM)
 import Control.Exception.Safe (throwIO)
+import GHC.Generics
 import Foreign.ForeignPtr
 import Foreign.Ptr
 import Foreign.Storable
@@ -27,6 +28,7 @@ import Data.Word (Word8)
 import Data.List (intercalate)
 import Data.Proxy
 import Data.Reflection
+import qualified Data.Vector as V
 import Numeric
 
 import Torch.Internal.Cast
@@ -47,8 +49,6 @@ import qualified Torch.Internal.Managed.TensorFactories as LibTorch
 import Torch.Device
 import Torch.DType
 import Torch.TensorOptions
-import qualified Data.Vector as V
-import GHC.Generics
 
 
 type ATenTensor = ForeignPtr ATen.Tensor

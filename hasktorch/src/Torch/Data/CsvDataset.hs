@@ -17,59 +17,46 @@ module Torch.Data.CsvDataset ( CsvDataset(..)
                              , FromRecord(..)
                              ) where
 
-import System.Random
-import Data.Array.ST
-import Control.Monad
-import Control.Monad.ST
-import Data.STRef
 
-import           Torch.Typed
-import qualified Torch.DType as D
-import           Data.Reflection (Reifies(reflect))
-import           Data.Proxy (Proxy(Proxy))
-import           GHC.Exts (IsList(fromList))
-import           Control.Monad 
+import           System.Random
+import           Data.Array.ST
+import           Control.Monad
+import           Control.Monad.ST
+import           Data.STRef
+
 import qualified Data.Vector as V
-import qualified Torch.Tensor as D
 import           GHC.TypeLits (KnownNat)
 import           Torch.Data.StreamedPipeline
-import           Pipes.Safe
 
 import qualified Control.Foldl as L
-import           Control.Foldl.Text (Text)
 import           Control.Monad.Base (MonadBase)
+import           Control.Monad.Trans.Control (MonadBaseControl)
 import           Data.ByteString (hGetLine, hGetContents)
--- import           Data.Set.Ordered as OSet hiding (fromList)
+import           Data.Char (ord)
+import           Data.Csv (DecodeOptions(decDelimiter))
+import           Data.Vector (Vector)
 import           Lens.Family (view)
 import           Pipes (liftIO, ListT(Select), yield, (>->), await)
 import qualified Pipes.ByteString as B
 import           Pipes.Csv
 import           Pipes.Group (takes, folds, chunksOf)
+import           Pipes.Safe
 import qualified Pipes.Prelude as P
 import qualified Pipes.Safe as Safe
 import qualified Pipes.Safe.Prelude as Safe
 import           System.IO (IOMode(ReadMode))
-import Pipes.Concurrent (unbounded)
-import Control.Monad.Trans.Control (MonadBaseControl)
-import Data.Vector (Vector)
-import Data.Csv (DecodeOptions(decDelimiter))
-import Data.Char (ord)
 
 data NamedColumns = Unnamed | Named
 type BufferSize = Int
 
-
-  -- TODO: maybe we use a type family to specify if we want to decode using named or unnamed!
-
-
-  
-data CsvDataset batches = CsvDataset { filePath :: FilePath
-                                     , delimiter :: !B.Word8
-                                     , byName       :: NamedColumns
-                                     , hasHeader    :: HasHeader
+-- TODO: maybe we use a type family to specify if we want to decode using named or unnamed!
+-- TODO: implement more options
+data CsvDataset batches = CsvDataset { filePath   :: FilePath
+                                     , delimiter  :: !B.Word8
+                                     , byName     :: NamedColumns
+                                     , hasHeader  :: HasHeader
                                      , batchSize  :: Int
                                      , filter     :: Maybe (batches -> Bool)
-                                     -- , numBatches :: Maybe Int
                                      , shuffle    :: Maybe BufferSize
                                      , dropLast   :: Bool
                                      }
@@ -78,12 +65,11 @@ tsvDataset filePath = (csvDataset filePath) { delimiter = fromIntegral $ ord '\t
 
 csvDataset :: forall batches . FilePath -> CsvDataset batches
 csvDataset filePath  = CsvDataset { filePath = filePath
-                                  , delimiter = 44 -- comma
+                                  , delimiter = fromIntegral $ ord ','
                                   , byName = Unnamed
                                   , hasHeader = NoHeader
                                   , batchSize = 1
                                   , filter = Nothing
-                                  -- , numBatches = Nothing
                                   , shuffle = Nothing
                                   , dropLast = True
                                   }
@@ -92,7 +78,8 @@ instance ( MonadPlus m
          , MonadBase IO m
          , MonadBaseControl IO m
          , Safe.MonadSafe m
-         , FromRecord batch -- these constraints make CsvDatasets only able to parse records, might not be the best idea
+         -- these constraints make CsvDatasets only able to parse records, might not be the best idea
+         , FromRecord batch 
          , FromNamedRecord batch
          ) => Datastream m () (CsvDataset batch) (Vector batch) where
   streamBatch CsvDataset{..} _ = Select $ Safe.withFile filePath ReadMode $ \fh ->

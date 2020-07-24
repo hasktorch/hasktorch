@@ -42,6 +42,11 @@ import           Pipes.Safe (MonadSafe (Base))
 import qualified Pipes.Safe as Safe
 import           Torch.Typed
 
+
+class (MonadBase IO m) => Datastream m seed dataset batch where
+  streamBatch :: dataset -> seed -> ListT m batch
+
+-- TODO : incorporate these options
 data DataloaderOpts = DataloaderOpts
   { echoData :: Bool,
     bufferSize :: Int
@@ -49,31 +54,7 @@ data DataloaderOpts = DataloaderOpts
 
 dataloaderOpts = DataloaderOpts {echoData = False, bufferSize = 4} -- 4 is relatively arbitrary
 
-class (MonadBase IO m) => Datastream m seed dataset batch where
-  streamBatch :: dataset -> seed -> ListT m batch
-
-readBatches ::
-  forall m seed dataset batch.
-  (Datastream m seed dataset batch, MonadBaseControl IO m) =>
-  dataset ->
-  ListT m seed ->
-  Output batch ->
-  m ()
-readBatches dataset seeds outputBox =
-  let this = flip $ mappend . Concurrently . runEffect . (>-> toOutput' outputBox) . enumerate . streamBatch @m @seed @dataset @batch dataset
-   in join . P.fold this mempty runConcurrently $ enumerate seeds
-
-readBatches' ::
-  forall m seed f dataset batch.
-  (Datastream m seed dataset batch, MonadBaseControl IO m, Foldable f) =>
-  dataset ->
-  f seed ->
-  Output batch ->
-  m ()
-readBatches' dataset seeds outputBox =
-  let this = flip $ mappend . Concurrently . runEffect . (>-> toOutput' outputBox) . enumerate . streamBatch @m @seed @dataset @batch dataset
-   in L.fold (L.Fold this mempty runConcurrently) seeds
-
+-- | Run a parallel map over the given ListT (TODO: with the given number of workers)
 pmap :: (MonadIO m, MonadBaseControl IO m) => Int -> (a -> b) -> ListT m a -> ContT r m (ListT m b)
 pmap n f prod = ContT $ \cont ->
   snd
@@ -82,7 +63,7 @@ pmap n f prod = ContT $ \cont ->
       (\output -> runEffect $ enumerate prod >-> P.map f >-> toOutput output)
       (\input -> cont . Select $ fromInput input)
 
--- | Create an exception safe pipe which operates in parallel
+-- | Run a parallel pipe over the given ListT. (TODO: with the given number of workers)
 pmap' :: (MonadIO m, MonadBaseControl IO m) => Int -> Pipe a b m () ->  ListT m a -> ContT r m (ListT m b)
 pmap' n f  prod = ContT $ \cont ->
   snd
@@ -123,8 +104,30 @@ makeListT' dataset seeds = ContT $ \f ->
     iters :: Producer Int m ()
     iters = each [0 ..]
 
-foldFromProducer :: Monad m => Producer batch m () -> L.FoldM m batch b -> m b
-foldFromProducer prod fold = (L.impurely P.foldM) fold prod
+readBatches ::
+  forall m seed dataset batch.
+  (Datastream m seed dataset batch, MonadBaseControl IO m) =>
+  dataset ->
+  ListT m seed ->
+  Output batch ->
+  m ()
+readBatches dataset seeds outputBox =
+  let this = flip $ mappend . Concurrently . runEffect . (>-> toOutput' outputBox) . enumerate . streamBatch @m @seed @dataset @batch dataset
+   in join . P.fold this mempty runConcurrently $ enumerate seeds
+
+readBatches' ::
+  forall m seed f dataset batch.
+  (Datastream m seed dataset batch, MonadBaseControl IO m, Foldable f) =>
+  dataset ->
+  f seed ->
+  Output batch ->
+  m ()
+readBatches' dataset seeds outputBox =
+  let this = flip $ mappend . Concurrently . runEffect . (>-> toOutput' outputBox) . enumerate . streamBatch @m @seed @dataset @batch dataset
+   in L.fold (L.Fold this mempty runConcurrently) seeds
+
+-- foldFromProducer :: Monad m => Producer batch m () -> L.FoldM m batch b -> m b
+-- foldFromProducer prod fold = (L.impurely P.foldM) fold prod
 
 liftedBracket :: MonadBaseControl IO m => m a -> (a -> m b) -> (a -> m c) -> m c
 liftedBracket acquire release action = control $ \runInIO ->

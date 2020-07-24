@@ -5,21 +5,20 @@
 
 module Main where
 
-import Control.Monad (when)
-import GHC.Generics
-import System.Random (mkStdGen, randoms)
-import Prelude hiding (exp)
+import           Control.Monad (when)
+import           GHC.Generics
+import           Prelude hiding (exp)
 
-import Torch
-import Pipes
+import           Torch
 import qualified Torch.Typed.Vision as V hiding (getImages')
 import qualified Torch.Vision as V
-import Torch.Serialize
+import           Torch.Serialize
 
-import Torch.Data.StreamedPipeline
+import           Control.Monad (forever)
+import           Control.Monad.Cont (ContT(runContT))
+import           Pipes
 import qualified Pipes.Prelude as P
-import Torch.Data.Pipeline (FoldM(FoldM))
-import Control.Monad.Cont (ContT(runContT))
+import           Torch.Data.StreamedPipeline
 
 data MLPSpec = MLPSpec {
     inputFeatures :: Int,
@@ -40,9 +39,6 @@ instance Randomizable MLPSpec MLP where
         <$> sample (LinearSpec inputFeatures hiddenFeatures0)
         <*> sample (LinearSpec hiddenFeatures0 hiddenFeatures1)
         <*> sample (LinearSpec hiddenFeatures1 outputFeatures)
-
-randomIndexes :: Int -> [Int]
-randomIndexes size = (`mod` size) <$> randoms seed where seed = mkStdGen 123
 
 mlp :: MLP -> Tensor -> Tensor
 mlp MLP{..} input = 
@@ -66,22 +62,25 @@ trainLoop model optimizer = P.foldM  step begin done . enumerate
         done = pure
         begin = pure model
 
+displayImages :: MLP -> Consumer ((Tensor, Tensor), Int) IO ()
+displayImages model =  forever $ do
+  ((testImg, testLabel), _) <- await
+  liftIO $ V.dispImage testImg
+  liftIO $ putStrLn $ "Model        : " ++ (show . (argmax (Dim 1) RemoveDim) . exp $ mlp model testImg)
+  liftIO $ putStrLn $ "Ground Truth : " ++ (show $ testLabel)
+
 main :: IO ()
 main = do
     (trainData, testData) <- V.initMnist "data"
     let trainMnist = V.Mnist { batchSize = 256 , mnistData = trainData}
-        testMnist = V.Mnist { batchSize = 256 , mnistData = testData}
+        testMnist = V.Mnist { batchSize = 1 , mnistData = testData}
         spec = MLPSpec 784 64 32 10
         optimizer = GD
     init <- sample spec
-    model <- flip runContT (trainLoop init optimizer) $ makeListT' trainMnist [1 :: Int]
-
+    -- TODO: train for more epochs to get a good model
+    model <- runContT (makeListT' trainMnist [1 :: Int]) (trainLoop init optimizer)
     -- show test images + labels
-    mapM (\idx -> do
-        testImg <- V.getImages' 1 784 testData [idx]
-        V.dispImage testImg
-        putStrLn $ "Model        : " ++ (show . (argmax (Dim 1) RemoveDim) . exp $ mlp model testImg)
-        putStrLn $ "Ground Truth : " ++ (show $ V.getLabels' 1 testData [idx])
-        ) [0..10]
+    runContT (makeListT' testMnist [1 :: Int]) $
+      \inputs -> runEffect $ enumerate inputs >-> P.take 10 >-> displayImages model 
 
     putStrLn "Done"
