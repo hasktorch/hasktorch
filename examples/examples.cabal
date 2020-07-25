@@ -244,14 +244,31 @@ executable distill
   import:              config
   hs-source-dirs:      distill
   main-is:             Main.hs
-  other-modules:       Distill, Dataset
+  other-modules:       Distill, Dataset, Model
   ghc-options:         -fno-warn-partial-type-signatures
   build-depends:       libtorch-ffi
                      , bytestring >= 0.10.8
+                     , hvega
                      , mtl
                      , random >= 1.1
                      , safe-exceptions
                      , static-mnist
+
+executable regularization
+  import:              config
+  hs-source-dirs:      distill
+  main-is:             Regularization.hs
+  other-modules:       Distill, Dataset, Model, Plot
+  ghc-options:         -fno-warn-partial-type-signatures
+  build-depends:       libtorch-ffi
+                     , bytestring >= 0.10.8
+                     , hvega
+                     , mtl 
+                     , process
+                     , random >= 1.1
+                     , safe-exceptions
+                     , static-mnist
+                     , text
 
 executable iris-classification
   import:              config
