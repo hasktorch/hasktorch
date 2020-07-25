@@ -1504,7 +1504,7 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
                   -- prediction <- lift $ raTransformerMLM model' False input'
                   -- let target' = toDevice @TestDevice @TestDataDevice target
                   --     cre = loss ones (ratKeyPaddingMask input') prediction target'
-                  let cre = 0
+                  let cre = (0 :: Float)
                   -- if (toBool . Torch.Typed.isNaN $ cre) then
                   --   lift $ do
                   --     print input
@@ -1512,7 +1512,7 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
                   --     print target
                   -- else
                   --   pure ()
-                  lift performGC -- force GC cleanup after every batch
+                  -- lift performGC -- force GC cleanup after every batch
                   pure (totalLoss + toFloat cre, _step + 1)
                 begin = pure (0 :: Float, 0 :: Int)
                 done (_, 0) = pure 1
