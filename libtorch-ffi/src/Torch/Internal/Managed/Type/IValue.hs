@@ -18,22 +18,11 @@ module Torch.Internal.Managed.Type.IValue where
 
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 import Torch.Internal.Cast
-import Torch.Internal.Unmanaged.Type.Generator
-import Torch.Internal.Unmanaged.Type.IntArray
-import Torch.Internal.Unmanaged.Type.Scalar
-import Torch.Internal.Unmanaged.Type.Storage
-import Torch.Internal.Unmanaged.Type.Tensor
-import Torch.Internal.Unmanaged.Type.TensorList
-import Torch.Internal.Unmanaged.Type.TensorOptions
-import Torch.Internal.Unmanaged.Type.Tuple
-import Torch.Internal.Unmanaged.Type.StdString
-import Torch.Internal.Unmanaged.Type.Dimname
-import Torch.Internal.Unmanaged.Type.DimnameList
+import Torch.Internal.Objects
 
 import qualified Torch.Internal.Unmanaged.Type.IValue as Unmanaged
 import Torch.Internal.Unmanaged.Type.IValue (IValueLike)
@@ -157,10 +146,10 @@ iValue_isTensorList
   -> IO (CBool)
 iValue_isTensorList = cast1 Unmanaged.iValue_isTensorList
 
-iValue_isGenericList
+iValue_isList
   :: ForeignPtr IValue
   -> IO (CBool)
-iValue_isGenericList = cast1 Unmanaged.iValue_isGenericList
+iValue_isList = cast1 Unmanaged.iValue_isList
 
 iValue_isGenericDict
   :: ForeignPtr IValue

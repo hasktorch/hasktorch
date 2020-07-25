@@ -18,14 +18,13 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
-import Torch.Internal.Class
+
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
+C.include "<ATen/ScalarType.h>"
 C.include "<vector>"
 
 
@@ -38,12 +37,6 @@ newIntArray  =
   }|]
 
 
-
-deleteIntArray :: Ptr IntArray -> IO ()
-deleteIntArray object = [C.throwBlock| void { delete $(std::vector<int64_t>* object);}|]
-
-instance CppObject IntArray where
-  fromPtr ptr = newForeignPtr ptr (deleteIntArray ptr)
 
 
 

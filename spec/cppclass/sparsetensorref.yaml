@@ -1,7 +1,0 @@
-signature: SparseTensorRef
-cppname: at::SparseTensorRef
-hsname: SparseTensorRef
-functions: []
-constructors:
-- new(Tensor x) -> SparseTensorRef
-methods: []

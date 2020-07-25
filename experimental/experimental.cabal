@@ -21,6 +21,11 @@ common config
                      , ghc-typelits-natnormalise
                      , mtl
 
+executable untyped-nlp
+  import:              config
+  hs-source-dirs:      untyped-nlp
+  main-is:             Main.hs
+
 executable dataloader-cifar10
   import:              config
   hs-source-dirs:      dataloader-cifar10

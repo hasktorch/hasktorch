@@ -21,14 +21,14 @@ methods:
 #- names() -> DimnameList
 - ndimension() -> int64_t
 #- is_contiguous(at::MemoryFormat memory_format=at::MemoryFormat::Contiguous) -> bool
+- is_contiguous() -> bool
 - is_non_overlapping_and_dense() -> bool
-#- suggest_memory_format() -> at::MemoryFormat
 - nbytes() -> size_t
 - numel() -> int64_t
 - itemsize() -> size_t
-- element_size() -> size_t
+- element_size() -> int64_t
 #- type() -> DeprecatedTypeProperties
-#- type_set() -> TensorTypeSet
+#- key_set() -> DispatchKeySet
 - scalar_type() -> ScalarType
 - has_storage() -> bool
 - storage() -> Storage
@@ -80,6 +80,12 @@ methods:
 - operator[](Scalar index) -> Tensor
 - operator[](Tensor index) -> Tensor
 - operator[](int64_t index) -> Tensor
+# - index(ArrayRef<at::indexing::TensorIndex> indices) -> Tensor
+# - index(std::initializer_list<at::indexing::TensorIndex> indices) -> Tensor
+# - index_put_(ArrayRef<at::indexing::TensorIndex> indices, Tensor  rhs) -> Tensor
+# - index_put_(ArrayRef<at::indexing::TensorIndex> indices, Scalar v) -> Tensor
+# - index_put_(std::initializer_list<at::indexing::TensorIndex> indices, Tensor  rhs) -> Tensor
+# - index_put_(std::initializer_list<at::indexing::TensorIndex> indices, Scalar v) -> Tensor
 - cpu() -> Tensor
 - cuda() -> Tensor
 - hip() -> Tensor
@@ -93,6 +99,7 @@ methods:
 - output_nr() -> int64_t
 - _version() -> int64_t
 - requires_grad_(bool _requires_grad=true) -> Tensor
+- retain_grad() -> void
 - align_to(DimnameList names) -> Tensor
 - align_to(DimnameList order, int64_t ellipsis_idx) -> Tensor
 - align_as(Tensor  other) -> Tensor
@@ -102,8 +109,6 @@ methods:
 - abs() -> Tensor
 - abs_() -> Tensor
 - angle() -> Tensor
-- real() -> Tensor
-- imag() -> Tensor
 - conj() -> Tensor
 - acos() -> Tensor
 - acos_() -> Tensor
@@ -137,6 +142,10 @@ methods:
 - logical_not_() -> Tensor
 - logical_xor(Tensor  other) -> Tensor
 - logical_xor_(Tensor  other) -> Tensor
+- logical_and(Tensor  other) -> Tensor
+- logical_and_(Tensor  other) -> Tensor
+- logical_or(Tensor  other) -> Tensor
+- logical_or_(Tensor  other) -> Tensor
 - bmm(Tensor  mat2) -> Tensor
 - ceil() -> Tensor
 - ceil_() -> Tensor
@@ -152,10 +161,15 @@ methods:
 - cos_() -> Tensor
 - cosh() -> Tensor
 - cosh_() -> Tensor
+- cummax(int64_t dim) -> (Tensor,Tensor)
+- cummax(Dimname dim) -> (Tensor,Tensor)
+- cummin(int64_t dim) -> (Tensor,Tensor)
+- cummin(Dimname dim) -> (Tensor,Tensor)
 - det() -> Tensor
 - diag_embed(int64_t offset=0, int64_t dim1=-2, int64_t dim2=-1) -> Tensor
 - diagflat(int64_t offset=0) -> Tensor
 - diagonal(int64_t offset=0, int64_t dim1=0, int64_t dim2=1) -> Tensor
+- diagonal(Dimname outdim, Dimname dim1, Dimname dim2, int64_t offset=0) -> Tensor
 - fill_diagonal_(Scalar fill_value, bool wrap=false) -> Tensor
 - div(Tensor  other) -> Tensor
 - div_(Tensor  other) -> Tensor
@@ -184,6 +198,10 @@ methods:
 - fill_(Tensor  value) -> Tensor
 - floor() -> Tensor
 - floor_() -> Tensor
+- floor_divide(Tensor  other) -> Tensor
+- floor_divide_(Tensor  other) -> Tensor
+- floor_divide(Scalar other) -> Tensor
+- floor_divide_(Scalar other) -> Tensor
 - frac() -> Tensor
 - frac_() -> Tensor
 - ger(Tensor  vec2) -> Tensor
@@ -243,6 +261,7 @@ methods:
 - mvlgamma_(int64_t p) -> Tensor
 - narrow_copy(int64_t dim, int64_t start, int64_t length) -> Tensor
 - narrow(int64_t dim, int64_t start, int64_t length) -> Tensor
+- narrow(int64_t dim, Tensor  start, int64_t length) -> Tensor
 - permute(IntArrayRef dims) -> Tensor
 - numpy_T() -> Tensor
 - is_pinned() -> bool
@@ -294,6 +313,8 @@ methods:
 - sum_to_size(IntArrayRef size) -> Tensor
 - sqrt() -> Tensor
 - sqrt_() -> Tensor
+- square() -> Tensor
+- square_() -> Tensor
 - std(bool unbiased=true) -> Tensor
 - std(IntArrayRef dim, bool unbiased=true, bool keepdim=false) -> Tensor
 - std(DimnameList dim, bool unbiased=true, bool keepdim=false) -> Tensor
@@ -309,6 +330,10 @@ methods:
 - flip(IntArrayRef dims) -> Tensor
 - roll(IntArrayRef shifts, IntArrayRef dims={}) -> Tensor
 - rot90(int64_t k=1, IntArrayRef dims={0,1}) -> Tensor
+- true_divide(Tensor  other) -> Tensor
+- true_divide_(Tensor  other) -> Tensor
+- true_divide(Scalar other) -> Tensor
+- true_divide_(Scalar other) -> Tensor
 - trunc() -> Tensor
 - trunc_() -> Tensor
 - type_as(Tensor  other) -> Tensor
@@ -410,10 +435,18 @@ methods:
 - eq_(Tensor  other) -> Tensor
 - ne_(Scalar other) -> Tensor
 - ne_(Tensor  other) -> Tensor
+- bitwise_and(Scalar other) -> Tensor
+- bitwise_and(Tensor  other) -> Tensor
+- bitwise_and_(Scalar other) -> Tensor
+- bitwise_and_(Tensor  other) -> Tensor
 - __and__(Scalar other) -> Tensor
 - __and__(Tensor  other) -> Tensor
 - __iand__(Scalar other) -> Tensor
 - __iand__(Tensor  other) -> Tensor
+- bitwise_or(Scalar other) -> Tensor
+- bitwise_or(Tensor  other) -> Tensor
+- bitwise_or_(Scalar other) -> Tensor
+- bitwise_or_(Tensor  other) -> Tensor
 - __or__(Scalar other) -> Tensor
 - __or__(Tensor  other) -> Tensor
 - __ior__(Scalar other) -> Tensor

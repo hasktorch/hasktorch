@@ -1,3 +1,7 @@
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -8,13 +12,13 @@ module Torch.Vision where
 import Prelude hiding (min, max)
 import qualified Prelude as P
 
-import Control.Monad (forM_)
 
 import           Control.Exception.Safe         ( try
                                                 , SomeException(..)
                                                 , throwIO
                                                 )
-import           Control.Monad                  ( forM_
+import           Control.Monad                  ( MonadPlus 
+                                                , forM_
                                                 , when
                                                 )
 import           Torch.Internal.Cast
@@ -33,13 +37,36 @@ import           Data.Int
 import           Data.Word
 import qualified Codec.Picture                 as I
 import qualified Data.Vector.Storable          as V
+import           System.Random (mkStdGen, randoms)
+
+import Pipes
 
 import qualified Torch.Typed.Vision as I
 import Torch.Functional hiding (take)
 import Torch.Tensor
 import Torch.NN
 
+import Torch.Data.StreamedPipeline 
+import Pipes.Prelude (repeatM)
+
 C.include "<stdint.h>"
+
+data Mnist = Mnist { batchSize :: Int
+                   , mnistData :: I.MnistData
+                   }
+
+instance (MonadPlus m, MonadBase IO m) => Datastream m Int Mnist (Tensor, Tensor) where
+  streamBatch Mnist{..} seed = Select $ 
+    for (each [1..numIters]) $ \iter -> do 
+      let from = (iter-1) * batchSize
+          to = (iter * batchSize) - 1
+          indexes = [from .. to]
+          target = getLabels' batchSize  mnistData indexes
+      input  <- liftBase $ getImages' batchSize 784 mnistData indexes
+      yield (input, target)
+
+      where numIters = I.length mnistData `Prelude.div` batchSize 
+            
 
 getLabels' :: Int -> I.MnistData -> [Int] -> Tensor
 getLabels' n mnist imageIdxs =
@@ -254,3 +281,6 @@ hwc2chw = D.permute [0,3,1,2]
 -- [batch, channel, height, width] -> [batch, height, width, channel]
 chw2hwc :: D.Tensor -> D.Tensor
 chw2hwc = D.permute [0,2,3,1]
+
+randomIndexes :: Int -> [Int]
+randomIndexes size = (`mod` size) <$> randoms seed where seed = mkStdGen 123

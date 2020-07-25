@@ -18,28 +18,20 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
-import Torch.Internal.Class
 import Control.Monad (forM)
 import Control.Exception.Safe (bracket)
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
+C.include "<ATen/core/Dict.h>"
 C.include "<vector>"
 
 newC10Dict :: Ptr IValue -> Ptr IValue -> IO (Ptr (C10Dict '(IValue,IValue)))
 newC10Dict key value = [C.throwBlock| c10::Dict<at::IValue,at::IValue>* {
   return new c10::impl::GenericDict($(at::IValue* key)->type(),$(at::IValue* value)->type());
 }|]
-
-deleteC10Dict :: Ptr (C10Dict '(IValue,IValue)) -> IO ()
-deleteC10Dict object = [C.throwBlock| void { delete $(c10::Dict<at::IValue,at::IValue>* object);}|]
-
-instance CppObject (C10Dict '(IValue,IValue)) where
-  fromPtr ptr = newForeignPtr ptr (deleteC10Dict ptr)
 
 c10Dict_empty :: Ptr (C10Dict '(IValue,IValue)) -> IO (CBool)
 c10Dict_empty _obj = [C.throwBlock| bool { return (*$(c10::Dict<at::IValue,at::IValue>* _obj)).empty(); }|]
@@ -70,7 +62,7 @@ c10Dict_toList _obj = do
               delete $(std::vector<std::array<at::IValue,2>>* dat);
              }|]
   bracket new free $ \dat -> do
-    size <- [C.throwBlock| int64_t { return $(std::vector<std::array<at::IValue,2>>* dat)->size();}|]
+    size <- [C.throwBlock| int64_t { return (long int)$(std::vector<std::array<at::IValue,2>>* dat)->size();}|]
     ret <- forM [0..(size-1)] $ \i -> do
       key <- [C.throwBlock| at::IValue* { return new at::IValue($(std::vector<std::array<at::IValue,2>>* dat)->at($(int64_t i))[0]);}|]
       val <- [C.throwBlock| at::IValue* { return new at::IValue($(std::vector<std::array<at::IValue,2>>* dat)->at($(int64_t i))[1]);}|]

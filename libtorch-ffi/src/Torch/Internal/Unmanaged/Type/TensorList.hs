@@ -18,14 +18,13 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
-import Torch.Internal.Class
+
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
+C.include "<ATen/Tensor.h>"
 C.include "<vector>"
 
 
@@ -38,12 +37,6 @@ newTensorList  =
   }|]
 
 
-
-deleteTensorList :: Ptr TensorList -> IO ()
-deleteTensorList object = [C.throwBlock| void { delete $(std::vector<at::Tensor>* object);}|]
-
-instance CppObject TensorList where
-  fromPtr ptr = newForeignPtr ptr (deleteTensorList ptr)
 
 
 

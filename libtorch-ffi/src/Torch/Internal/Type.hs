@@ -5,20 +5,15 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Torch.Internal.Type where
 
-import qualified Language.C.Inline.Cpp as C
-import qualified Language.C.Inline.Cpp.Exceptions as C
-import qualified Language.C.Inline.Context as C
 import qualified Language.C.Types as C
 import qualified Data.Map as Map
 
-import Foreign.C.String
-import Foreign.C.Types
-import Foreign
+import Foreign.C.Types (CInt)
+import Data.Int
 
 type ScalarType = Int8
 type DeviceType = Int16
@@ -41,6 +36,8 @@ data Tensor
 
 -- std::vector<at::Tensor>
 type TensorList = StdVector Tensor
+
+data TensorIndex
 
 data Scalar
 data TensorOptions
@@ -125,4 +122,5 @@ typeTable = Map.fromList [
       , (C.TypeName "torch::jit::Graph", [t|JitGraph|])
       , (C.TypeName "torch::jit::Node", [t|JitNode|])
       , (C.TypeName "torch::jit::Value", [t|JitValue|])
+      , (C.TypeName "at::indexing::TensorIndex", [t|TensorIndex|])
     ]

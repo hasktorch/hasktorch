@@ -36,17 +36,29 @@ class HasToDType dtype' dtype f g | dtype' dtype f -> g, dtype' dtype g -> f whe
   -- :: Torch.Typed.NN.Linear 1 1 'Double '( 'CPU, 0)
   toDType :: f -> g
 
--- >>> :kind! PutDType (Torch.Typed.NN.Linear 1 1 'D.Float '( 'D.CPU, 0)) 'D.Double 'D.Float
--- PutDType (Torch.Typed.NN.Linear 1 1 'D.Float '( 'D.CPU, 0)) 'D.Double 'D.Float :: *
+-- In a data type `f` parameterized by zero or more data type variables, replace the given data type `dtype` with the data type `dtype'`.
+--
+-- >>> :kind! ReplaceDType (Torch.Typed.NN.Linear 1 1 'D.Float '( 'D.CPU, 0)) 'D.Double 'D.Float
+-- ReplaceDType (Torch.Typed.NN.Linear 1 1 'D.Float '( 'D.CPU, 0)) 'D.Double 'D.Float :: *
 -- = Torch.Typed.NN.Linear 1 1 'Double '( 'CPU, 0)
-type family PutDType (f :: k) (dtype' :: D.DType) (dtype :: D.DType) :: k where
-  PutDType (t dtype) dtype' dtype = t dtype'
-  PutDType (t a)     dtype' dtype = (PutDType t dtype' dtype) a
-  PutDType t         _      _     = t
+type family ReplaceDType (f :: k) (dtype' :: D.DType) (dtype :: D.DType) :: k where
+  ReplaceDType (t dtype) dtype' dtype = t dtype'
+  ReplaceDType (t a)     dtype' dtype = (ReplaceDType t dtype' dtype) a
+  ReplaceDType t         _      _     = t
+
+-- In a data type `f` parameterized by zero or one data type variables, replace the only occurring data type with the data type `dtype'`.
+-- 
+-- >>> :kind! ReplaceDType' (Torch.Typed.NN.Linear 1 1 'D.Float '( 'D.CPU, 0)) 'D.Double
+-- ReplaceDType' (Torch.Typed.NN.Linear 1 1 'D.Float '( 'D.CPU, 0)) 'D.Double :: *
+-- = Torch.Typed.NN.Linear 1 1 'Double '( 'CPU, 0)
+type family ReplaceDType' (f :: k) (dtype' :: D.DType) :: k where
+  ReplaceDType' (t (dtype :: D.DType)) dtype' = t dtype'
+  ReplaceDType' (t a)                  dtype' = (ReplaceDType' t dtype') a
+  ReplaceDType' t                      _      = t
 
 instance
-  ( g ~ PutDType f dtype' dtype
-  , f ~ PutDType g dtype dtype'
+  ( g ~ ReplaceDType f dtype' dtype
+  , f ~ ReplaceDType g dtype dtype'
   , Generic f
   , Generic g
   , GHasToDType dtype' dtype (Rep f) (Rep g)
@@ -73,7 +85,7 @@ instance {-# OVERLAPS #-} (KnownDType dtype') => HasToDType dtype' dtype (Tensor
   toDType = Torch.Typed.Tensor.toDType
 
 instance {-# OVERLAPS #-} (KnownDType dtype') => HasToDType dtype' dtype (Parameter device dtype shape) (Parameter device dtype' shape) where
-  toDType = Torch.Typed.Parameter.toDType
+  toDType = Torch.Typed.Parameter.parameterToDType
 
 instance {-# OVERLAPPABLE #-} (HasToDType dtype' dtype f g) => GHasToDType dtype' dtype (K1 i f) (K1 i g) where
   gToDType = K1 . Torch.Typed.DType.toDType @dtype' @dtype . unK1
@@ -83,3 +95,15 @@ instance (GHasToDType dtype' dtype f g) => GHasToDType dtype' dtype (M1 i t f) (
 
 instance GHasToDType dtype' dtype U1 U1 where
   gToDType = id
+
+-- >>> :kind! GetDType (Torch.Typed.NN.Linear 1 1 'D.Float '( 'D.CPU, 0))
+-- GetDType (Torch.Typed.NN.Linear 1 1 'D.Float '( 'D.CPU, 0)) :: Maybe D.DType
+-- = 'Just 'D.Float
+--
+-- >>> :kind! GetDType (Torch.Typed.Tensor.Tensor '( 'D.CUDA, 0) 'D.Float '[1])
+-- GetDType (Torch.Typed.Tensor.Tensor '( 'D.CUDA, 0) 'D.Float '[1]) :: Maybe D.DType
+-- = 'Just 'D.Float
+type family GetDType (f :: k) :: Maybe D.DType where
+  GetDType (t (dtype :: D.DType)) = Just dtype
+  GetDType (t a)                  = GetDType t
+  GetDType t                      = Nothing

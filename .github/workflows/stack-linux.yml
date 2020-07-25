@@ -8,6 +8,15 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
+    - name: free disk space
+      run: |
+        sudo swapoff -a
+        sudo rm -f /swapfile
+        sudo apt -y purge ghc* cabal-install* php* || true
+        sudo apt autoremove -y || true
+        sudo apt autoclean -y || true
+        docker rmi $(docker image ls -aq)
+        df -h
     - name: Setup packages
       run: |
         sudo apt update -qq

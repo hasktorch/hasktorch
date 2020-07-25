@@ -1,7 +1,7 @@
 cabal-version:       2.1
 name:                libtorch-ffi
-version:             1.4.0.0
--- The prefix(1.4) of this version("1.4.0.0") is the same as libtorch's one.
+version:             1.5.0.0
+-- The prefix(1.5) of this version("1.5.0.0") is the same as libtorch's one.
 synopsis:            test out alternative options for ffi interface to libtorch 1.x
 -- description:
 homepage:            https://github.com/hasktorch/hasktorch#readme
@@ -12,21 +12,53 @@ copyright:           2018 Austin Huang
 category:            Codegen
 build-type:          Simple
 
+Flag cuda
+ Description: A flag to link libtorch_cuda.
+ Default: False
+ Manual: True
+
+Flag gcc
+ Description: A flag to use gcc on macos
+ Default: False
+ Manual: True
+
 library
  exposed-modules:     Torch.Internal.Type
                     , Torch.Internal.Const
                     , Torch.Internal.Cast
                     , Torch.Internal.Class
+                    , Torch.Internal.Objects
                     , Torch.Internal.GC
                     , Torch.Internal.Unmanaged.Native
+                    , Torch.Internal.Unmanaged.Native.Native0
+                    , Torch.Internal.Unmanaged.Native.Native1
+                    , Torch.Internal.Unmanaged.Native.Native2
+                    , Torch.Internal.Unmanaged.Native.Native3
+                    , Torch.Internal.Unmanaged.Native.Native4
+                    , Torch.Internal.Unmanaged.Native.Native5
+                    , Torch.Internal.Unmanaged.Native.Native6
+                    , Torch.Internal.Unmanaged.Native.Native7
+                    , Torch.Internal.Unmanaged.Native.Native8
+                    , Torch.Internal.Unmanaged.Native.Native9
+                    , Torch.Internal.Unmanaged.Native.Native10
+                    , Torch.Internal.Unmanaged.Native.Native11
+                    , Torch.Internal.Unmanaged.Native.Native12
+                    , Torch.Internal.Unmanaged.Native.Native13
+                    , Torch.Internal.Unmanaged.Native.Native14
+                    , Torch.Internal.Unmanaged.Native.Native15
                     , Torch.Internal.Unmanaged.Type.Tuple
                     , Torch.Internal.Unmanaged.Type.Generator
                     , Torch.Internal.Unmanaged.Type.IntArray
                     , Torch.Internal.Unmanaged.Type.Scalar
                     , Torch.Internal.Unmanaged.Type.Storage
                     , Torch.Internal.Unmanaged.Type.Tensor
+                    , Torch.Internal.Unmanaged.Type.Tensor.Tensor0
+                    , Torch.Internal.Unmanaged.Type.Tensor.Tensor1
+                    , Torch.Internal.Unmanaged.Type.Tensor.Tensor2
+                    , Torch.Internal.Unmanaged.Type.Tensor.Tensor3
                     , Torch.Internal.Unmanaged.Type.TensorList
                     , Torch.Internal.Unmanaged.Type.TensorOptions
+                    , Torch.Internal.Unmanaged.Type.TensorIndex
                     , Torch.Internal.Unmanaged.Type.StdString
                     , Torch.Internal.Unmanaged.Type.StdArray
                     , Torch.Internal.Unmanaged.Type.Context
@@ -43,13 +75,34 @@ library
                     , Torch.Internal.Unmanaged.Type.Module
                     , Torch.Internal.Managed.Cast
                     , Torch.Internal.Managed.Native
+                    , Torch.Internal.Managed.Native.Native0
+                    , Torch.Internal.Managed.Native.Native1
+                    , Torch.Internal.Managed.Native.Native2
+                    , Torch.Internal.Managed.Native.Native3
+                    , Torch.Internal.Managed.Native.Native4
+                    , Torch.Internal.Managed.Native.Native5
+                    , Torch.Internal.Managed.Native.Native6
+                    , Torch.Internal.Managed.Native.Native7
+                    , Torch.Internal.Managed.Native.Native8
+                    , Torch.Internal.Managed.Native.Native9
+                    , Torch.Internal.Managed.Native.Native10
+                    , Torch.Internal.Managed.Native.Native11
+                    , Torch.Internal.Managed.Native.Native12
+                    , Torch.Internal.Managed.Native.Native13
+                    , Torch.Internal.Managed.Native.Native14
+                    , Torch.Internal.Managed.Native.Native15
                     , Torch.Internal.Managed.Type.Tuple
                     , Torch.Internal.Managed.Type.Generator
                     , Torch.Internal.Managed.Type.IntArray
                     , Torch.Internal.Managed.Type.Scalar
                     , Torch.Internal.Managed.Type.Storage
                     , Torch.Internal.Managed.Type.Tensor
+                    , Torch.Internal.Managed.Type.Tensor.Tensor0
+                    , Torch.Internal.Managed.Type.Tensor.Tensor1
+                    , Torch.Internal.Managed.Type.Tensor.Tensor2
+                    , Torch.Internal.Managed.Type.Tensor.Tensor3
                     , Torch.Internal.Managed.Type.TensorList
+                    , Torch.Internal.Managed.Type.TensorIndex
                     , Torch.Internal.Managed.Type.TensorOptions
                     , Torch.Internal.Managed.Type.StdString
                     , Torch.Internal.Managed.Type.StdArray
@@ -84,25 +137,28 @@ library
                     , sysinfo
                     , async
                     , libtorch-ffi-helper
+ extra-libraries:     c10
+                    , torch
+                    , torch_cpu
  if os(darwin)
   extra-libraries:     c++
-                     , c10
-                     , torch
  else
   extra-libraries:     stdc++
-                     , c10
-                     , torch
+
+ if flag(cuda)
+  extra-libraries:     torch_cuda
+
  extra-ghci-libraries: stdc++
  if os(darwin)
   ld-options: -Wl,-keep_dwarf_unwind
-  ghc-options:       -optc-std=c++11 -optc-xc++
- else
-  ghc-options:       -optc-std=c++11
-  cc-options:        -std=c++11
- cxx-options:       -std=c++11
+  if !flag(gcc)
+    ghc-options:       -optc-std=c++14 -optc-xc++
+    cxx-options:       -std=c++14
  default-extensions:          Strict
                             , StrictData
-
+ cxx-sources:          csrc/hasktorch_finializer.cpp
+ install-includes:     csrc/hasktorch_finializer.h
+ include-dirs:         csrc
 
 test-suite spec
   type:            exitcode-stdio-1.0
@@ -116,20 +172,11 @@ test-suite spec
                  , GeneratorSpec
   default-language: Haskell2010
   build-depends:       base >= 4.7 && < 5
-                     , inline-c-cpp >= 0.3.0.1
-                     , inline-c
-                     , optparse-applicative >= 0.14.3.0
-                     , containers
                      , libtorch-ffi
                      , hspec
-                     , hspec-discover
                      , safe-exceptions
+  build-tool-depends:  hspec-discover:hspec-discover
   if os(darwin)
     ld-options: -Wl,-keep_dwarf_unwind
-    ghc-options:       -optc-std=c++11 -optc-xc++
-  else
-    ghc-options:       -optc-std=c++11
-    cc-options:        -std=c++11
-  cxx-options:       -std=c++11
   default-extensions:          Strict
                              , StrictData

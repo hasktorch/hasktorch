@@ -16,7 +16,7 @@ import Torch.NN
     sample,
   )
 import Torch.Optim (sgd)
-import Torch.Tensor ((@@), Tensor, asTensor, indexSelect, reshape, toDouble, toInt)
+import Torch.Tensor ((!), Tensor, asTensor, indexSelect, reshape, toDouble, toInt)
 import Torch.TensorFactories (randintIO')
 
 data RatingBatch = RatingBatch Items Users RatingValues deriving (Show)
@@ -35,9 +35,9 @@ instance Randomizable RatingsSpec RatingBatch where
     items <- randintIO' 1 n [l]
     users <- randintIO' 1 m [l]
     ratings <- randintIO' 1 5 [l]
-    let list_ratings = toDouble <$> ((@@) ratings) <$> [0 .. (l -1)]
-        list_users = toInt <$> ((@@) users) <$> [0 .. (l -1)]
-        list_items = toInt <$> ((@@) items) <$> [0 .. (l -1)]
+    let list_ratings = toDouble <$> ((!) ratings) <$> [0 .. (l -1)]
+        list_users = toInt <$> ((!) users) <$> [0 .. (l -1)]
+        list_items = toInt <$> ((!) items) <$> [0 .. (l -1)]
     pure $ RatingBatch list_items list_users list_ratings
 
 lossMF :: MatrixFact -> RatingBatch -> Tensor
@@ -49,8 +49,8 @@ lossMF (MatrixFact u v) (RatingBatch items users ratings) = loss
     users_ids = (\x -> x -1) <$> users
     u' = toDependent u
     v' = toDependent v
-    u'' = indexSelect u' (0 :: Int) (asTensor (items_ids :: [Int]))
-    v'' = indexSelect v' (1 :: Int) (asTensor (users_ids :: [Int]))
+    u'' = indexSelect (0 :: Int) (asTensor (items_ids :: [Int])) u'
+    v'' = indexSelect (1 :: Int) (asTensor (users_ids :: [Int])) v'
     u''' = reshape [batch_size, 1, -1] u''
     v''' = reshape [batch_size, -1, 1] v''
     uv_ui = toDType (Double :: DType) $ bmm u''' v'''
@@ -74,7 +74,7 @@ main = do
       foldLoop x count block = foldM block x [1 .. count]
       gdBlock state i = do
         random_start <- randintIO' 0 (n_ratings - batch_size) [1]
-        let start = toInt $ random_start @@ (0 :: Int)
+        let start = toInt $ random_start ! (0 :: Int)
             items_batch = (!!) items <$> [start .. start + batch_size -1]
             users_batch = (!!) users <$> [start .. start + batch_size -1]
             ratings_batch = (!!) ratings <$> [start .. start + batch_size -1]

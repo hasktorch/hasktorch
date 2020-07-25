@@ -20,17 +20,16 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Unmanaged.Helper
-import Torch.Internal.Class
+
 import Data.IORef
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 C.include "<torch/script.h>"
-C.include "<torch/csrc/jit/export.h>"
+C.include "<torch/csrc/jit/serialization/export.h>"
 C.include "<vector>"
 C.include "<iostream>"
 
@@ -43,30 +42,6 @@ newModule name =
      *$(std::string* name)
     );
   }|]
-
-deleteModule :: Ptr Module -> IO ()
-deleteModule object = [C.throwBlock| void { delete $(torch::jit::script::Module* object);}|]
-
-instance CppObject Module where
-  fromPtr ptr = newForeignPtr ptr (deleteModule ptr)
-
-deleteJitGraph :: Ptr (SharedPtr JitGraph) -> IO ()
-deleteJitGraph object = [C.throwBlock| void { delete $(std::shared_ptr<torch::jit::Graph>* object);}|]
-
-instance CppObject (SharedPtr JitGraph) where
-  fromPtr ptr = newForeignPtr ptr (deleteJitGraph ptr)
-
-deleteJitNode :: Ptr JitNode -> IO ()
-deleteJitNode object = [C.throwBlock| void { delete $(torch::jit::Node* object);}|]
-
-instance CppObject JitNode where
-  fromPtr ptr = newForeignPtr ptr (deleteJitNode ptr)
-
-deleteJitValue :: Ptr JitValue -> IO ()
-deleteJitValue object = [C.throwBlock| void { delete $(torch::jit::Value* object);}|]
-
-instance CppObject JitValue where
-  fromPtr ptr = newForeignPtr ptr (deleteJitValue ptr)
 
 save :: Ptr Module -> FilePath -> IO ()
 save obj file = withCString file $ \cfile -> [C.throwBlock| void {

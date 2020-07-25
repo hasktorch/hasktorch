@@ -18,14 +18,13 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 
+
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
 C.include "<array>"
 
 
@@ -104,25 +103,6 @@ instance CppTuple3 (Ptr (StdArray '(CBool,4))) where
 instance CppTuple4 (Ptr (StdArray '(CBool,4))) where
   type D (Ptr (StdArray '(CBool,4))) = CBool
   get3 v = [C.throwBlock| bool { return std::get<3>(*$(std::array<bool,4>* v));}|]
-
-deleteStdArrayBool2 :: Ptr (StdArray '(CBool,2)) -> IO ()
-deleteStdArrayBool2 object = [C.throwBlock| void { delete $(std::array<bool,2>* object);}|]
-
-deleteStdArrayBool3 :: Ptr (StdArray '(CBool,3)) -> IO ()
-deleteStdArrayBool3 object = [C.throwBlock| void { delete $(std::array<bool,3>* object);}|]
-
-deleteStdArrayBool4 :: Ptr (StdArray '(CBool,4)) -> IO ()
-deleteStdArrayBool4 object = [C.throwBlock| void { delete $(std::array<bool,4>* object);}|]
-
-
-instance CppObject (StdArray '(CBool,2)) where
-  fromPtr ptr = newForeignPtr ptr (deleteStdArrayBool2 ptr)
-
-instance CppObject (StdArray '(CBool,3)) where
-  fromPtr ptr = newForeignPtr ptr (deleteStdArrayBool3 ptr)
-
-instance CppObject (StdArray '(CBool,4)) where
-  fromPtr ptr = newForeignPtr ptr (deleteStdArrayBool4 ptr)
 
 
 

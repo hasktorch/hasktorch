@@ -9,9 +9,8 @@ import Prelude hiding (abs, exp, floor, log, min, max)
 
 import Test.Hspec
 
-import Torch
+import Torch hiding (forward)
 import Torch.Script
-import Torch.NN
 import Torch.Autograd
 import GHC.Generics
 import Control.Exception.Safe (catch,throwIO)

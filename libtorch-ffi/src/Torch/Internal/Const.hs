@@ -23,7 +23,11 @@ import Torch.Internal.Type
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
+C.include "<ATen/ScalarType.h>"
+C.include "<ATen/core/Reduction.h>"
+C.include "<c10/core/Layout.h>"
+
+
 
 kByte :: ScalarType
 kByte = [C.pure| int8_t { (int8_t) at::ScalarType::Byte } |]

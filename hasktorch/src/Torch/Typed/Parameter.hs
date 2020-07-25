@@ -19,7 +19,10 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 
-module Torch.Typed.Parameter where
+module Torch.Typed.Parameter
+  ( module Torch.Typed.Parameter
+  , Torch.NN.Randomizable(..)
+  ) where
 
 import           Control.Monad.State.Strict
 import           Torch.HList
@@ -28,24 +31,27 @@ import           GHC.TypeLits
 import           GHC.TypeLits.Extra
 import           GHC.Generics
 
-import qualified Torch.NN                      as A
-import qualified Torch.Autograd                as A
-import qualified Torch.Tensor                  as D
-import qualified Torch.DType                   as D
-import qualified Torch.Device                  as D
+import qualified Torch.NN (Randomizable(..), Parameter, sample)
+import qualified Torch.Tensor (toDevice, toType)
+import qualified Torch.Autograd (IndependentTensor(..), makeIndependent)
+import           Torch.Device (DeviceType)
+import           Torch.DType (DType)
 import           Torch.Typed.Aux
 import           Torch.Typed.Factories
 import           Torch.Typed.Functional
 import           Torch.Typed.Tensor
 
-newtype Parameter (device :: (D.DeviceType, Nat)) (dtype :: D.DType) (shape :: [Nat]) = UnsafeMkParameter A.IndependentTensor
+newtype Parameter (device :: (DeviceType, Nat)) (dtype :: DType) (shape :: [Nat]) = UnsafeMkParameter Torch.Autograd.IndependentTensor
   deriving Show
+
+untypeParam :: Parameter device dtype shape -> Torch.NN.Parameter
+untypeParam (UnsafeMkParameter param) = param
 
 toDependent
   :: forall shape dtype device
    . Parameter device dtype shape
   -> Tensor device dtype shape
-toDependent (UnsafeMkParameter t) = UnsafeMkTensor $ A.toDependent t
+toDependent (UnsafeMkParameter t) = UnsafeMkTensor $ Torch.Autograd.toDependent t
 
 data ToDependent = ToDependent
 
@@ -56,26 +62,26 @@ makeIndependent
   :: forall shape dtype device
    . Tensor device dtype shape
   -> IO (Parameter device dtype shape)
-makeIndependent t = UnsafeMkParameter <$> A.makeIndependent (toDynamic t)
+makeIndependent t = UnsafeMkParameter <$> Torch.Autograd.makeIndependent (toDynamic t)
 
 data MakeIndependent = MakeIndependent
 
 instance Apply' MakeIndependent (Tensor device dtype shape) (IO (Parameter device dtype shape)) where
   apply' _ = makeIndependent
 
-toDevice
+parameterToDevice
   :: forall device' device dtype shape
    . KnownDevice device'
   => Parameter device  dtype shape
   -> Parameter device' dtype shape
-toDevice (UnsafeMkParameter t) = UnsafeMkParameter . A.IndependentTensor . D.toDevice (deviceVal @device') . A.toDependent $ t
+parameterToDevice (UnsafeMkParameter t) = UnsafeMkParameter . Torch.Autograd.IndependentTensor . Torch.Tensor.toDevice (deviceVal @device') . Torch.Autograd.toDependent $ t
 
-toDType
+parameterToDType
   :: forall dtype' dtype device shape
    . KnownDType dtype'
   => Parameter device dtype  shape
   -> Parameter device dtype' shape
-toDType (UnsafeMkParameter t) = UnsafeMkParameter . A.IndependentTensor . D.toType (dtypeVal @dtype') . A.toDependent $ t
+parameterToDType (UnsafeMkParameter t) = UnsafeMkParameter . Torch.Autograd.IndependentTensor . Torch.Tensor.toType (dtypeVal @dtype') . Torch.Autograd.toDependent $ t
 
 class Parameterized
   (f :: Type)
@@ -164,13 +170,13 @@ instance GParameterized U1 '[] where
   gFlattenParameters _ = HNil
   gReplaceParameters = const
 
-instance A.Randomizable (HList ('[] :: [Type])) (HList ('[] :: [Type])) where
+instance Torch.NN.Randomizable (HList ('[] :: [Type])) (HList ('[] :: [Type])) where
   sample = return
 
-instance (A.Randomizable xSpec x, A.Randomizable (HList xsSpec) (HList xs))
-  => A.Randomizable (HList (xSpec ': xsSpec)) (HList (x ': xs))
+instance (Torch.NN.Randomizable xSpec x, Torch.NN.Randomizable (HList xsSpec) (HList xs))
+  => Torch.NN.Randomizable (HList (xSpec ': xsSpec)) (HList (x ': xs))
  where
   sample (xSpec :. xsSpec) = do
-    x <- A.sample xSpec
-    xs <- A.sample xsSpec
+    x <- Torch.NN.sample xSpec
+    xs <- Torch.NN.sample xsSpec
     return $ x :. xs

@@ -18,25 +18,18 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
-import Torch.Internal.Class
+
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
+C.include "<ATen/Context.h>"
 C.include "<vector>"
 
 
 
 
-
-deleteContext :: Ptr Context -> IO ()
-deleteContext object = [C.throwBlock| void { delete $(at::Context* object);}|]
-
-instance CppObject Context where
-  fromPtr ptr = newForeignPtr ptr (deleteContext ptr)
 
 
 

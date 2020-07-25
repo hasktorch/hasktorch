@@ -20,14 +20,13 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
-import Torch.Internal.Class
+
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
+C.include "<ATen/core/ivalue.h>"
 C.include "<vector>"
 
 class IValueLike a b where
@@ -80,7 +79,7 @@ instance IValueLike (Ptr (C10List IValue)) (Ptr IValue) where
       *$(c10::List<at::IValue>* _x));
     }|]
   fromIValue _obj = 
-    [C.throwBlock| c10::List<at::IValue>* { return new c10::List<at::IValue>((*$(at::IValue* _obj)).toGenericList(
+    [C.throwBlock| c10::List<at::IValue>* { return new c10::List<at::IValue>((*$(at::IValue* _obj)).toList(
       ));
     }|]
 
@@ -250,11 +249,6 @@ newIValue
 newIValue  =
   [C.throwBlock| at::IValue* { return new at::IValue() ; }|]
 
-deleteIValue :: Ptr IValue -> IO ()
-deleteIValue object = [C.throwBlock| void { delete $(at::IValue* object);}|]
-
-instance CppObject IValue where
-  fromPtr ptr = newForeignPtr ptr (deleteIValue ptr)
 
 iValue_isAliasOf_V
   :: Ptr IValue
@@ -402,11 +396,11 @@ iValue_isTensorList _obj =
     );
   }|]
 
-iValue_isGenericList
+iValue_isList
   :: Ptr IValue
   -> IO (CBool)
-iValue_isGenericList _obj =
-  [C.throwBlock| bool { return (*$(at::IValue* _obj)).isGenericList(
+iValue_isList _obj =
+  [C.throwBlock| bool { return (*$(at::IValue* _obj)).isList(
     );
   }|]
 

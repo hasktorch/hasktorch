@@ -1,22 +1,12 @@
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE UndecidableSuperClasses #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoStarIsType #-}
-{-# LANGUAGE PartialTypeSignatures #-}
-{-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 {-# OPTIONS_GHC -freduction-depth=0 #-}
 
 module Torch.Typed.FunctionalSpec
@@ -47,29 +37,15 @@ import           Prelude                 hiding ( all
                                                 , floor
                                                 , sqrt
                                                 )
-import           Control.Exception.Safe
-import           Foreign.Storable
-import           Torch.HList
 import           Data.Proxy
-import           Data.Reflection
 import           GHC.TypeLits
 
-import           Test.Hspec
-import           Test.QuickCheck
+import           Test.Hspec (Spec, before_, describe, it)
+import           Test.QuickCheck ()
 
-import qualified Torch.Device                  as D
-import qualified Torch.DType                   as D
-import qualified Torch.Functional              as D
-import qualified Torch.Scalar                  as D
-import qualified Torch.Tensor                  as D
-import qualified Torch.TensorFactories         as D
-import qualified Torch.TensorOptions           as D
-import           Torch.Typed.Aux
-import           Torch.Typed.Factories
-import           Torch.Typed.Functional
-import           Torch.Typed.Tensor
-import           Torch.Typed.AuxSpec
-import qualified Torch.Internal.Managed.Type.Context as LibTorch
+import Torch.Internal.Managed.Type.Context (get_manual_seed)
+import Torch.Typed
+import Torch.Typed.AuxSpec
 
 data UnaryAllDTypesSpec =
     SignSpec
@@ -94,8 +70,7 @@ data UnaryStandardDTypesSpec =
 
 instance
   ( TensorOptions shape dtype device
-  , DTypeIsNotHalf device dtype
-  , DTypeIsNotBool device dtype
+  , StandardDTypeValidation device dtype
   ) => Apply' UnaryStandardDTypesSpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ()) where
   apply' AbsSpec (_, agg) = agg >> do
     let t = abs (ones @shape @dtype @device)
@@ -263,7 +238,7 @@ data LeakyReluSpec = LeakyReluSpec
 
 instance
   ( TensorOptions shape dtype device
-  , D.Scalar a
+  , Scalar a
   , StandardFloatingPointDTypeValidation device dtype
   ) => Apply' LeakyReluSpec ((Proxy device, (a, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
     apply' LeakyReluSpec ((_, (negativeSlope, _)), agg) = agg >> do
@@ -273,7 +248,7 @@ instance
 data ELUSpec = ELUSpec
 instance
   ( TensorOptions shape dtype device
-  , D.Scalar a
+  , Scalar a
   , StandardFloatingPointDTypeValidation device dtype
   ) => Apply' ELUSpec ((Proxy device, ((a, (a, a)), (Proxy dtype, Proxy shape))), IO()) (IO()) 
  where 
@@ -290,7 +265,7 @@ instance
   ) => Apply' ToDTypeSpec ((Proxy device, ((Proxy dtype, Proxy dtype'), Proxy shape)), IO ()) (IO ()) where
   apply' ToDTypeSpec (_, agg) = agg >> do
     let t = ones @shape @dtype @device
-        t' = Torch.Typed.Tensor.toDType @dtype' t
+        t' = toDType @dtype' @dtype t
     checkDynamicTensorAttributes t'
 
 data SumAllSpec = SumAllSpec
@@ -321,35 +296,137 @@ instance
         t' = sumDim @d t
     checkDynamicTensorAttributes t'
 
-data AggregationSpec =
+data MinMaxSpec =
     MinSpec
   | MaxSpec
-  | MedianSpec
-  | MeanSpec
 
 instance
   ( TensorOptions shape dtype device
   , KnownDType dtype
   , KnownDevice device
-  , AggregationDTypeIsValid device dtype
+  , MinMaxDTypeIsValid device dtype
   , AllDimsPositive shape
-  ) => Apply' AggregationSpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ()) where
+  ) => Apply' MinMaxSpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ()) where
   apply' MinSpec (_, agg) = agg >> do
     let t = ones @shape @dtype @device
         t' = min t
     checkDynamicTensorAttributes t'
   apply' MaxSpec (_, agg) = agg >> do
     let t = ones @shape @dtype @device
-        t' = min t
+        t' = max t
     checkDynamicTensorAttributes t'
-  apply' MedianSpec (_, agg) = agg >> do
+
+data MeanAllSpec = MeanAllSpec
+
+instance
+  ( TensorOptions shape dtype device
+  , KnownDType dtype
+  , KnownDevice device
+  , MeanDTypeValidation device dtype
+  , AllDimsPositive shape
+  ) => Apply' MeanAllSpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ()) where
+  apply' MeanAllSpec (_, agg) = agg >> do
     let t = ones @shape @dtype @device
-        t' = min t
+        t' = meanAll t
     checkDynamicTensorAttributes t'
+
+data MeanDimSpec = MeanDimSpec
+
+instance
+  ( TensorOptions shape dtype device
+  , TensorOptions shape' dtype device
+  , KnownNat dim
+  , shape' ~ DropValue shape dim
+  , MeanDTypeValidation device dtype
+  , AllDimsPositive shape
+  ) => Apply' MeanDimSpec ((Proxy dim, (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
+  apply' MeanDimSpec (_, agg) = agg >> do
+    let t = ones @shape @dtype @device
+        t' = meanDim @dim t
+    checkDynamicTensorAttributes t'
+
+data MeanSpec = MeanSpec
+
+instance
+  ( TensorOptions shape dtype device
+  , TensorOptions shape' dtype device
+  , KnownNat dim
+  , KnownKeepOrDropDim keepOrDropDim
+  , shape' ~ ConditionalDropDimension shape dim keepOrDropDim
+  , MeanDTypeValidation device dtype
+  , AllDimsPositive shape
+  ) => Apply' MeanSpec (((Proxy dim, Proxy keepOrDropDim), (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
   apply' MeanSpec (_, agg) = agg >> do
     let t = ones @shape @dtype @device
-        t' = min t
+        t' = mean @dim @keepOrDropDim t
     checkDynamicTensorAttributes t'
+
+data MedianAllSpec = MedianAllSpec
+
+instance
+  ( TensorOptions shape dtype device
+  , KnownDType dtype
+  , KnownDevice device
+  , StandardDTypeValidation device dtype
+  , AllDimsPositive shape
+  ) => Apply' MedianAllSpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ()) where
+  apply' MedianAllSpec (_, agg) = agg >> do
+    let t = ones @shape @dtype @device
+        t' = medianAll t
+    checkDynamicTensorAttributes t'
+
+data MedianDimSpec = MedianDimSpec
+
+instance
+  ( TensorOptions shape dtype device
+  , TensorOptions shape' dtype device
+  , TensorOptions shape' 'Int64 device
+  , KnownNat dim
+  , shape' ~ DropValue shape dim
+  , StandardDTypeValidation device dtype
+  , AllDimsPositive shape
+  ) => Apply' MedianDimSpec ((Proxy dim, (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
+  apply' MedianDimSpec (_, agg) = agg >> do
+    let t = ones @shape @dtype @device
+        (t', t'') = medianDim @dim t
+    checkDynamicTensorAttributes t'
+    checkDynamicTensorAttributes t''
+
+data MedianSpec = MedianSpec
+
+instance
+  ( TensorOptions shape  dtype    device
+  , TensorOptions shape' dtype    device
+  , TensorOptions shape' 'Int64 device
+  , KnownNat dim
+  , KnownKeepOrDropDim keepOrDropDim
+  , shape' ~ ConditionalDropDimension shape dim keepOrDropDim
+  , StandardDTypeValidation device dtype
+  , AllDimsPositive shape
+  ) => Apply' MedianSpec (((Proxy dim, Proxy keepOrDropDim), (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
+  apply' MedianSpec (_, agg) = agg >> do
+    let t = ones @shape @dtype @device
+        (t', t'') = median @dim @keepOrDropDim t
+    checkDynamicTensorAttributes t'
+    checkDynamicTensorAttributes t''
+
+data ModeSpec = ModeSpec
+
+instance
+  ( TensorOptions shape  dtype    device
+  , TensorOptions shape' dtype    device
+  , TensorOptions shape'  'Int64 device
+  , KnownNat dim
+  , KnownKeepOrDropDim keepOrDropDim
+  , shape' ~ ConditionalDropDimension shape dim keepOrDropDim
+  , StandardDTypeValidation device dtype
+  , AllDimsPositive shape
+  ) => Apply' ModeSpec (((Proxy dim, Proxy keepOrDropDim), (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
+  apply' ModeSpec (_, agg) = agg >> do
+    let t = ones @shape @dtype @device
+        (t', t'') = mode @dim @keepOrDropDim t
+    checkDynamicTensorAttributes t'
+    checkDynamicTensorAttributes t''
 
 data SqueezeAllSpec = SqueezeAllSpec
 
@@ -455,7 +532,7 @@ instance
         checkDynamicTensorAttributes t'
         checkDynamicTensorAttributes t''
       )
-      [D.Upper, D.Lower]
+      [Upper, Lower]
   apply' SymeigvaluesSpec (_, agg) = agg >> do
     t <- rand @shape @dtype @device
     foldMap
@@ -463,7 +540,7 @@ instance
         let t' = symeigvalues upper t
         checkDynamicTensorAttributes t'
       )
-      [D.Upper, D.Lower]
+      [Upper, Lower]
 
 data EigSpec = EigSpec
 
@@ -527,7 +604,7 @@ instance
         let t'' = cholesky tri t'
         checkDynamicTensorAttributes t''
       )
-      [D.Upper, D.Lower]
+      [Upper, Lower]
 
 data CholeskyInverseSpec = CholeskyInverseSpec
 
@@ -548,7 +625,7 @@ instance
         let t''' = choleskyInverse tri t''
         checkDynamicTensorAttributes t'''
       )
-      [D.Upper, D.Lower]
+      [Upper, Lower]
 
 data CholeskySolveSpec = CholeskySolveSpec
 
@@ -577,8 +654,7 @@ instance
         let c = choleskySolve tri b u
         checkDynamicTensorAttributes c
       )
-      [D.Upper, D.Lower]
-
+      [Upper, Lower]
 
 data SolveSpec = SolveSpec
 
@@ -622,36 +698,127 @@ instance
         t' = transpose2D t
     checkDynamicTensorAttributes t'
 
+data NarrowSpec = NarrowSpec
+
+
+instance
+  ( TensorOptions shape dtype device,
+    TensorOptions
+      ( NarrowCheck
+          (ExtractDim dim shape)
+          (Narrow' dim shape (ExtractDim dim shape) start length)
+          shape
+          dim
+          start
+          length
+      )
+      dtype
+      device,
+    All KnownNat shape,
+    All KnownNat '[dim, start, length]
+  ) =>
+  Apply' NarrowSpec ((Proxy dim, (Proxy start, (Proxy length, (Proxy device, (Proxy dtype, Proxy shape))))), IO ()) (IO ())
+  where
+  apply' NarrowSpec (_, agg) = agg >> do
+    let t = ones @shape @dtype @device
+        t' = narrow @dim @start @length t
+    checkDynamicTensorAttributes t'
+
+data DiagSpec = DiagSpec
+
+instance
+  ( TensorOptions shape dtype device
+  , TensorOptions shape' dtype device
+  , KnownTri tri
+  , KnownNat index
+  , StandardDTypeValidation device dtype
+  , shape' ~ DiagShape tri index shape
+  ) => Apply' DiagSpec (((Proxy tri, Proxy index), (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
+  apply' DiagSpec (_, agg) = agg >> do
+    let t = ones @shape @dtype @device
+    checkDynamicTensorAttributes $ diag @tri @index t
+
+data DiagEmbedSpec = DiagEmbedSpec
+
+instance
+  ( TensorOptions shape dtype device
+  , TensorOptions shape' dtype device
+  , KnownNat index
+  , KnownNat dim1
+  , KnownNat dim2
+  , DimsDistinctAscending dim1 dim2
+  , shape' ~ DiagEmbedShape index dim1 dim2 shape
+  , StandardDTypeValidation device dtype
+  ) => Apply' DiagEmbedSpec (((Proxy index, (Proxy dim1, Proxy dim2)), (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
+  apply' DiagEmbedSpec (_, agg) = agg >> do
+    let t = ones @shape @dtype @device
+    foldMap
+      (\tri -> checkDynamicTensorAttributes $ diagEmbed @index @dim1 @dim2 tri t)
+      [Upper, Lower]
+
+data DiagflatSpec = DiagflatSpec
+
+instance
+  ( TensorOptions shape dtype device
+  , TensorOptions shape' dtype device
+  , KnownNat index
+  , shape' ~ DiagflatShape index shape
+  , StandardDTypeValidation device dtype
+  ) => Apply' DiagflatSpec ((Proxy index, (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
+  apply' DiagflatSpec (_, agg) = agg >> do
+    let t = ones @shape @dtype @device
+    foldMap
+      (\tri -> checkDynamicTensorAttributes $ diagflat @index tri t)
+      [Upper, Lower]
+
+data DiagonalSpec = DiagonalSpec
+
+instance
+  ( TensorOptions shape dtype device
+  , TensorOptions shape' dtype device
+  , KnownTri tri
+  , KnownNat index
+  , KnownNat dim1
+  , KnownNat dim2
+  , NDimAtLeast 2 shape
+  , DimsDistinctAscending dim1 dim2
+  , shape' ~ DiagonalShape tri index dim1 dim2 shape
+  , StandardDTypeValidation device dtype
+  ) => Apply' DiagonalSpec (((Proxy tri, (Proxy index, (Proxy dim1, Proxy dim2))), (Proxy device, (Proxy dtype, Proxy shape))), IO ()) (IO ()) where
+  apply' DiagonalSpec (_, agg) = agg >> do
+    let t = ones @shape @dtype @device
+    checkDynamicTensorAttributes $ diagonal @tri @index @dim1 @dim2 t
+
 data AnyAllSpec = AnySpec | AllSpec
 
 instance
-  ( TensorOptions shape 'D.Bool device
+  ( TensorOptions shape  'Bool device
   , KnownDevice device
   ) => Apply' AnyAllSpec ((Proxy device, Proxy shape), IO ()) (IO ()) where
   apply' AnySpec (_, agg) = agg >> do
-    let t = ones @shape @'D.Bool @device
+    let t = ones @shape @ 'Bool @device
         t' = any t
     checkDynamicTensorAttributes t'
   apply' AllSpec (_, agg) = agg >> do
-    let t = ones @shape @'D.Bool @device
+    let t = ones @shape @ 'Bool @device
         t' = all t
     checkDynamicTensorAttributes t'
 
 data AnyPrimeAllPrimeSpec = AnyPrimeSpec | AllPrimeSpec
 
 instance
-  ( TensorOptions shape  'D.Bool device
-  , TensorOptions shape' 'D.Bool device
+  ( TensorOptions shape   'Bool device
+  , TensorOptions shape'  'Bool device
   , KnownNat dim
   , KnownKeepOrDropDim keepOrDropDim
   , shape' ~ ConditionalDropDimension shape dim keepOrDropDim
   ) => Apply' AnyPrimeAllPrimeSpec (((Proxy dim, Proxy keepOrDropDim), (Proxy device, Proxy shape)), IO ()) (IO ()) where
   apply' AnyPrimeSpec (_, agg) = agg >> do
-    let t = ones @shape @'D.Bool @device
+    let t = ones @shape @ 'Bool @device
         t' = anyDim @dim @keepOrDropDim t
     checkDynamicTensorAttributes t'
   apply' AllPrimeSpec (_, agg) = agg >> do
-    let t = ones @shape @'D.Bool @device
+    let t = ones @shape @ 'Bool @device
         t' = allDim @dim @keepOrDropDim t
     checkDynamicTensorAttributes t'
 
@@ -697,31 +864,32 @@ instance
         nhx = gruCell wi wh bi bh hx input
     checkDynamicTensorAttributes nhx
 
+spec :: Spec
 spec = before_ printSeed $ do
   foldMap spec' availableDevices
   where
     printSeed = do
       putStr "      seed:"
-      LibTorch.get_manual_seed >>= print  
+      get_manual_seed >>= print  
 
-spec' :: D.Device -> Spec
+spec' :: Device -> Spec
 spec' device =
   describe ("for " <> show device) $ do
     let standardShapes               = Proxy @'[2, 3] :. HNil -- (Proxy :: Proxy ('[] :: [Nat])) :. Proxy @'[0]  :. Proxy @'[0, 1] :. Proxy @'[1, 0] :. Proxy @'[2, 3] :. HNil
         squareShapes                 = Proxy @'[0, 0] :. Proxy @'[1, 1] :. Proxy @'[2, 2] :. Proxy @'[0, 0, 0] :. Proxy @'[0, 1, 1] :. Proxy @'[1, 0, 0] :. Proxy @'[3, 2, 2] :. HNil
-        reductions                   = Proxy @D.ReduceNone :. Proxy @D.ReduceMean :. Proxy @D.ReduceSum :. HNil
+        reductions                   = Proxy @ReduceNone :. Proxy @ReduceMean :. Proxy @ReduceSum :. HNil
 
     describe "unary ops" $ do
       let dispatch unaryAllDTypesSpec = case device of
-            D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+            Device { deviceType = CPU,  deviceIndex = 0 } ->
               hfoldrM @IO unaryAllDTypesSpec () (hattach cpu   (hproduct allDTypes standardShapes))
-            D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+            Device { deviceType = CUDA, deviceIndex = 0 } ->
               hfoldrM @IO unaryAllDTypesSpec () (hattach cuda0 (hproduct allDTypes standardShapes))
 
       it "abs" $ case device of
-        D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+        Device { deviceType = CPU,  deviceIndex = 0 } ->
           hfoldrM @IO AbsSpec () (hattach cpu   (hproduct standardDTypes standardShapes))
-        D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+        Device { deviceType = CUDA, deviceIndex = 0 } ->
           hfoldrM @IO AbsSpec () (hattach cuda0 (hproduct standardDTypes standardShapes))
       it "sign"      $ dispatch SignSpec
       it "onesLike"  $ dispatch OnesLikeSpec
@@ -730,9 +898,9 @@ spec' device =
     describe "unary floating-point ops" $ do
       let scalarParams = (0.01 :: Double) :. (0.01 :: Float) :. (1 :: Int) :. HNil
           dispatch unaryStandardFloatingPointDTypesSpec = case device of
-            D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+            Device { deviceType = CPU,  deviceIndex = 0 } ->
               hfoldrM @IO unaryStandardFloatingPointDTypesSpec () (hattach cpu   (hproduct standardFloatingPointDTypes standardShapes))
-            D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+            Device { deviceType = CUDA, deviceIndex = 0 } ->
               hfoldrM @IO unaryStandardFloatingPointDTypesSpec () (hattach cuda0 (hproduct allFloatingPointDTypes      standardShapes))
 
       it "frac"       $ dispatch FracSpec
@@ -755,27 +923,27 @@ spec' device =
       it "relu"       $ dispatch ReluSpec
       it "selu"       $ dispatch SeluSpec
       it "mish" $ case device of
-        D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+        Device { deviceType = CPU,  deviceIndex = 0 } ->
           hfoldrM @IO MishSpec () (hattach cpu   (hproduct standardFloatingPointDTypes standardShapes))
-        D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+        Device { deviceType = CUDA, deviceIndex = 0 } ->
           hfoldrM @IO MishSpec () (hattach cuda0 (hproduct allFloatingPointDTypes      standardShapes))
       it "gelu" $ case device of
-        D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+        Device { deviceType = CPU,  deviceIndex = 0 } ->
           hfoldrM @IO GeluSpec () (hattach cpu   (hproduct standardFloatingPointDTypes standardShapes))
-        D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+        Device { deviceType = CUDA, deviceIndex = 0 } ->
           hfoldrM @IO GeluSpec () (hattach cuda0 (hproduct standardFloatingPointDTypes standardShapes))
       it "leakyRelu" $ case device of
-        D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+        Device { deviceType = CPU,  deviceIndex = 0 } ->
           hfoldrM @IO LeakyReluSpec ()
             (hattach cpu   (hproduct scalarParams (hproduct standardFloatingPointDTypes standardShapes)))
-        D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+        Device { deviceType = CUDA, deviceIndex = 0 } ->
           hfoldrM @IO LeakyReluSpec ()
             (hattach cuda0 (hproduct scalarParams (hproduct standardFloatingPointDTypes standardShapes)))
       it "elu" $ case device of
-        D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+        Device { deviceType = CPU,  deviceIndex = 0 } ->
           hfoldrM @IO ELUSpec ()
             (hattach cpu   (hproduct (hzip scalarParams (hzip scalarParams scalarParams)) (hproduct standardFloatingPointDTypes standardShapes)))
-        D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+        Device { deviceType = CUDA, deviceIndex = 0 } ->
           hfoldrM @IO ELUSpec ()
             (hattach cuda0 (hproduct (hzip scalarParams (hzip scalarParams scalarParams)) (hproduct standardFloatingPointDTypes standardShapes)))
       it "sigmoid"    $ dispatch SigmoidSpec
@@ -797,64 +965,201 @@ spec' device =
       it "randnLike"  $ dispatch RandnLikeSpec
 
       it "toDType" $ case device of
-        D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+        Device { deviceType = CPU,  deviceIndex = 0 } ->
           hfoldrM @IO ToDTypeSpec () (hattach cpu   (hproduct (hproduct allDTypes allDTypes) standardShapes))
-        D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+        Device { deviceType = CUDA, deviceIndex = 0 } ->
           hfoldrM @IO ToDTypeSpec () (hattach cuda0 (hproduct (hproduct allDTypes allDTypes) standardShapes))
 
     describe "aggregation" $ do
       it "sumAll" $ case device of
-        D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+        Device { deviceType = CPU,  deviceIndex = 0 } ->
           hfoldrM @IO SumAllSpec () (hattach cpu   (hproduct almostAllDTypes standardShapes))
-        D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+        Device { deviceType = CUDA, deviceIndex = 0 } ->
           hfoldrM @IO SumAllSpec () (hattach cuda0 (hproduct allDTypes standardShapes))
       it "sumDim" $ do
         let sumDimDims = Proxy @0 :. Proxy @1 :. HNil
             sumDimShapes = Proxy @'[1, 0] :. Proxy @'[2, 3] :. HNil
         case device of
-          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+          Device { deviceType = CPU,  deviceIndex = 0 } ->
             hfoldrM @IO SumDimSpec () (hproduct sumDimDims (hattach cpu   (hproduct almostAllDTypes sumDimShapes)))
-          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+          Device { deviceType = CUDA, deviceIndex = 0 } ->
             hfoldrM @IO SumDimSpec () (hproduct sumDimDims (hattach cuda0 (hproduct allDTypes       sumDimShapes)))
-
-      let aggregationShapes = (Proxy :: Proxy ('[] :: [Nat])) :. Proxy @'[1] :. Proxy @'[2, 3] :. HNil
-          dispatch aggregationSpec = case device of
-            D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
-              hfoldrM @IO aggregationSpec () (hattach cpu   (hproduct almostAllDTypes standardShapes))
-            D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-              hfoldrM @IO aggregationSpec () (hattach cuda0 (hproduct allDTypes       standardShapes))
-      it "min"    $ dispatch MinSpec
-      it "max"    $ dispatch MaxSpec
-      it "median" $ dispatch MedianSpec
-      it "mean"   $ dispatch MeanSpec
+      do
+        let shapes = (Proxy :: Proxy ('[] :: [Nat])) :. Proxy @'[1] :. Proxy @'[2, 3] :. HNil
+            dispatch spec = case device of
+              Device { deviceType = CPU,  deviceIndex = 0 } ->
+                hfoldrM @IO spec () (hattach cpu   (hproduct almostAllDTypes shapes))
+              Device { deviceType = CUDA, deviceIndex = 0 } ->
+                hfoldrM @IO spec () (hattach cuda0 (hproduct allDTypes       shapes))
+        it "min" $ dispatch MinSpec
+        it "max" $ dispatch MaxSpec
+      it "meanAll"   $ do
+        let shapes = (Proxy :: Proxy ('[] :: [Nat])) :. Proxy @'[1] :. Proxy @'[2, 3] :. HNil
+        case device of
+          Device { deviceType = CPU,  deviceIndex = 0 } ->
+            hfoldrM @IO MeanAllSpec () (hattach cpu   (hproduct standardFloatingPointDTypes shapes))
+          Device { deviceType = CUDA, deviceIndex = 0 } ->
+            hfoldrM @IO MeanAllSpec () (hattach cuda0 (hproduct standardFloatingPointDTypes shapes))
+      it "meanDim" $ do
+        let dims = Proxy @0 :. Proxy @1 :. HNil
+            shapes = Proxy @'[1, 3] :. Proxy @'[2, 3] :. HNil
+        case device of
+          Device { deviceType = CPU,  deviceIndex = 0 } ->
+            hfoldrM @IO MeanDimSpec () (hproduct dims (hattach cpu   (hproduct standardFloatingPointDTypes shapes)))
+          Device { deviceType = CUDA, deviceIndex = 0 } ->
+            hfoldrM @IO MeanDimSpec () (hproduct dims (hattach cuda0 (hproduct standardFloatingPointDTypes shapes)))
+      it "mean" $ do
+        let dims = Proxy @0 :. Proxy @1 :. HNil
+            keepOrDropDims = Proxy @KeepDim :. Proxy @DropDim :. HNil
+            shapes = Proxy @'[1, 12] :. Proxy @'[2, 3] :. HNil
+        case device of
+          Device { deviceType = CPU,  deviceIndex = 0 } ->
+            hfoldrM @IO MeanSpec () (hproduct (hproduct dims keepOrDropDims) (hattach cpu   (hproduct standardFloatingPointDTypes shapes)))
+          Device { deviceType = CUDA, deviceIndex = 0 } ->
+            hfoldrM @IO MeanSpec () (hproduct (hproduct dims keepOrDropDims) (hattach cpu   (hproduct standardFloatingPointDTypes shapes)))
+      it "medianAll" $ do
+        let shapes = (Proxy :: Proxy ('[] :: [Nat])) :. Proxy @'[1] :. Proxy @'[2, 3] :. HNil
+        case device of
+          Device { deviceType = CPU,  deviceIndex = 0 } ->
+            hfoldrM @IO MedianAllSpec () (hattach cpu   (hproduct standardDTypes            shapes))
+          Device { deviceType = CUDA, deviceIndex = 0 } ->
+            hfoldrM @IO MedianAllSpec () (hattach cuda0 (hproduct (withHalf standardDTypes) shapes))
+      it "medianDim" $ do
+        let dims = Proxy @0 :. Proxy @1 :. HNil
+            shapes = Proxy @'[1, 17, 1] :. Proxy @'[2, 3] :. HNil
+        case device of
+          Device { deviceType = CPU,  deviceIndex = 0 } ->
+            hfoldrM @IO MedianDimSpec () (hproduct dims (hattach cpu   (hproduct standardDTypes            shapes)))
+          Device { deviceType = CUDA, deviceIndex = 0 } ->
+            hfoldrM @IO MedianDimSpec () (hproduct dims (hattach cuda0 (hproduct (withHalf standardDTypes) shapes)))
+      it "median" $ do
+        let dims = Proxy @0 :. Proxy @1 :. HNil
+            keepOrDropDims = Proxy @KeepDim :. Proxy @DropDim :. HNil
+            shapes = Proxy @'[2, 13] :. Proxy @'[2, 3] :. Proxy @'[1, 3, 7] :. HNil
+        case device of
+          Device { deviceType = CPU,  deviceIndex = 0 } ->
+            hfoldrM @IO MedianSpec () (hproduct (hproduct dims keepOrDropDims) (hattach cpu   (hproduct standardDTypes            shapes)))
+          Device { deviceType = CUDA, deviceIndex = 0 } ->
+            hfoldrM @IO MedianSpec () (hproduct (hproduct dims keepOrDropDims) (hattach cuda0 (hproduct (withHalf standardDTypes) shapes)))
+      it "mode"   $ do
+        let dims = Proxy @0 :. Proxy @1 :. HNil
+            keepOrDropDims = Proxy @KeepDim :. Proxy @DropDim :. HNil
+            shapes = Proxy @'[2, 13] :. Proxy @'[2, 3] :. Proxy @'[1, 3, 7] :. HNil
+        case device of
+          Device { deviceType = CPU,  deviceIndex = 0 } ->
+            hfoldrM @IO ModeSpec () (hproduct (hproduct dims keepOrDropDims) (hattach cpu   (hproduct standardDTypes            shapes)))
+          Device { deviceType = CUDA, deviceIndex = 0 } ->
+            hfoldrM @IO ModeSpec () (hproduct (hproduct dims keepOrDropDims) (hattach cuda0 (hproduct (withHalf standardDTypes) shapes)))
 
     describe "shape ops" $ do
+      it "narrow" $ do 
+        let dims = Proxy @0 :. Proxy @1 :. HNil
+            narrowStarts = Proxy @0 :. Proxy @1 :. HNil
+            narrowLengths = Proxy @1 :. Proxy @2 :. HNil
+            narrowShapes = Proxy @'[3, 3, 2] :. Proxy @'[13, 5, 0] :. HNil
+        case device of
+            Device { deviceType = CPU,  deviceIndex = 0 } ->
+              hfoldrM @IO NarrowSpec () (hproduct dims (hproduct narrowStarts (hproduct narrowLengths (hattach cpu   (hproduct standardFloatingPointDTypes narrowShapes)))))
+            Device { deviceType = CUDA, deviceIndex = 0 } ->
+              hfoldrM @IO NarrowSpec () (hproduct dims (hproduct narrowStarts (hproduct narrowLengths (hattach cuda0 (hproduct allFloatingPointDTypes      narrowShapes)))))
       it "squeezeAll" $ case device of
-        D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+        Device { deviceType = CPU,  deviceIndex = 0 } ->
           hfoldrM @IO SqueezeAllSpec () (hattach cpu   (hproduct allDTypes standardShapes))
-        D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+        Device { deviceType = CUDA, deviceIndex = 0 } ->
           hfoldrM @IO SqueezeAllSpec () (hattach cuda0 (hproduct allDTypes standardShapes))
       it "transpose" $ do
-        let transposeDims   = hzip
-                                (Proxy @0 :. Proxy @0 :. Proxy @1 :. HNil)
-                                (Proxy @0 :. Proxy @1 :. Proxy @0 :. HNil)
-            transposeShapes = Proxy @'[0, 0] :. Proxy @'[0, 1]  :. Proxy @'[1, 0] :. Proxy @'[2, 3] :. Proxy @'[0, 1, 1]  :. Proxy @'[1, 0, 1] :. HNil
+        let dims   = hzip
+                       (Proxy @0 :. Proxy @0 :. Proxy @1 :. HNil)
+                       (Proxy @0 :. Proxy @1 :. Proxy @0 :. HNil)
+            shapes = Proxy @'[0, 0] :. Proxy @'[0, 1]  :. Proxy @'[1, 0] :. Proxy @'[2, 3] :. Proxy @'[0, 1, 1]  :. Proxy @'[1, 0, 1] :. HNil
         case device of
-          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
-            hfoldrM @IO TransposeSpec () (hproduct transposeDims (hattach cpu   (hproduct allDTypes transposeShapes)))
-          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-            hfoldrM @IO TransposeSpec () (hproduct transposeDims (hattach cuda0 (hproduct allDTypes transposeShapes)))
+          Device { deviceType = CPU,  deviceIndex = 0 } ->
+            hfoldrM @IO TransposeSpec () (hproduct dims (hattach cpu   (hproduct allDTypes shapes)))
+          Device { deviceType = CUDA, deviceIndex = 0 } ->
+            hfoldrM @IO TransposeSpec () (hproduct dims (hattach cuda0 (hproduct allDTypes shapes)))
       it "transpose2d" $ case device of
-        D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+        Device { deviceType = CPU,  deviceIndex = 0 } ->
           hfoldrM @IO Transpose2DSpec () (hattach cpu   (hproduct allDTypes (Proxy @'[2, 3] :. HNil)))
-        D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+        Device { deviceType = CUDA, deviceIndex = 0 } ->
           hfoldrM @IO Transpose2DSpec () (hattach cuda0 (hproduct allDTypes (Proxy @'[2, 3] :. HNil)))
+      it "diag" $ do
+        let
+          vectorShapes = Proxy @'[0] :. Proxy @'[1] :. Proxy @'[2] :. HNil
+          emptyShapes = Proxy @'[0, 0] :. Proxy @'[0, 1]  :. Proxy @'[1, 0] :. HNil
+          tris = Proxy @'Upper :. Proxy @'Lower :. HNil
+          indexes = Proxy @0 :. Proxy @1 :. HNil
+          indexes' = Proxy @0 :. HNil
+        case device of
+          Device { deviceType = CPU,  deviceIndex = 0 } -> do
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cpu   (hproduct standardDTypes standardShapes)))
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cpu   (hproduct standardDTypes vectorShapes)))
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes') (hattach cpu   (hproduct standardDTypes emptyShapes)))
+          Device { deviceType = CUDA, deviceIndex = 0 } -> do
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cuda0 (hproduct (withHalf standardDTypes) standardShapes)))
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes)  (hattach cuda0 (hproduct (withHalf standardDTypes) vectorShapes)))
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes') (hattach cuda0 (hproduct (withHalf standardDTypes) emptyShapes)))
+      it "diagEmbed" $ do
+        let shapes =
+              standardShapes
+                `happend` ( Proxy @'[0]
+                              :. Proxy @'[1]
+                              :. Proxy @'[2]
+                              :. Proxy @'[0, 0]
+                              :. Proxy @'[0, 1]
+                              :. Proxy @'[1, 0]
+                              :. HNil
+                          )
+            indexes = Proxy @0 :. Proxy @1 :. HNil
+            dims = (Proxy @0, Proxy @1) :. HNil
+            allDims = (Proxy @0, Proxy @2) :. dims
+        case device of
+          Device {deviceType = CPU, deviceIndex = 0} -> do
+            hfoldrM @IO DiagEmbedSpec () (hproduct (hproduct indexes dims)    (hattach cpu   (hproduct standardDTypes shapes)))
+            hfoldrM @IO DiagEmbedSpec () (hproduct (hproduct indexes allDims) (hattach cpu   (hproduct standardDTypes standardShapes)))
+          Device {deviceType = CUDA, deviceIndex = 0} -> do
+            hfoldrM @IO DiagEmbedSpec () (hproduct (hproduct indexes dims)    (hattach cuda0 (hproduct (withHalf standardDTypes) shapes)))
+            hfoldrM @IO DiagEmbedSpec () (hproduct (hproduct indexes allDims) (hattach cuda0 (hproduct (withHalf standardDTypes) standardShapes)))
+      it "diagflat" $ do
+        let shapes =
+              standardShapes
+                `happend` ( Proxy @'[0]
+                              :. Proxy @'[1]
+                              :. Proxy @'[2]
+                              :. Proxy @'[0, 0]
+                              :. Proxy @'[0, 1]
+                              :. Proxy @'[1, 0]
+                              :. HNil
+                          )
+            indexes = Proxy @0 :. Proxy @1 :. HNil
+        case device of
+          Device { deviceType = CPU,  deviceIndex = 0 } -> do
+            hfoldrM @IO DiagflatSpec () (hproduct indexes (hattach cpu   (hproduct standardDTypes shapes)))
+          Device { deviceType = CUDA, deviceIndex = 0 } -> do
+            hfoldrM @IO DiagflatSpec () (hproduct indexes (hattach cuda0 (hproduct (withHalf standardDTypes) shapes)))
+      it "diagonal" $ do
+        let shapes1 = Proxy @'[2, 5, 4, 2] :. HNil
+            shapes2 = Proxy @'[2, 3] :. shapes1
+            allShapes =  Proxy @'[1, 0] :. Proxy @'[0, 1] :. Proxy @'[1, 0] :. Proxy @'[2, 3] :. shapes2
+            tris = Proxy @'Upper :. Proxy @'Lower :. HNil
+            indexes = Proxy @0 :. HNil
+            allIndexes = Proxy @1 :. indexes
+            dims = (Proxy @0, Proxy @1) :. HNil
+            allDims = (Proxy @0, Proxy @2) :. dims
+        case device of
+          Device { deviceType = CPU,  deviceIndex = 0 } -> do
+            hfoldrM @IO DiagonalSpec () (hproduct (hproduct tris (hproduct indexes dims))       (hattach cpu   (hproduct standardDTypes allShapes)))
+            hfoldrM @IO DiagonalSpec () (hproduct (hproduct tris (hproduct allIndexes allDims)) (hattach cpu   (hproduct standardDTypes shapes1)))
+            hfoldrM @IO DiagonalSpec () (hproduct (hproduct tris (hproduct allIndexes dims))    (hattach cpu   (hproduct standardDTypes shapes2)))
+          Device { deviceType = CUDA, deviceIndex = 0 } -> do
+            hfoldrM @IO DiagonalSpec () (hproduct (hproduct tris (hproduct indexes dims))       (hattach cuda0 (hproduct (withHalf standardDTypes) allShapes)))
+            hfoldrM @IO DiagonalSpec () (hproduct (hproduct tris (hproduct allIndexes allDims)) (hattach cuda0 (hproduct (withHalf standardDTypes) shapes1)))
+            hfoldrM @IO DiagonalSpec () (hproduct (hproduct tris (hproduct allIndexes dims))    (hattach cuda0 (hproduct (withHalf standardDTypes) shapes2)))
 
     describe "loss functions" $ do
       let dispatch lossSpec = case device of
-            D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+            Device { deviceType = CPU,  deviceIndex = 0 } ->
               hfoldrM @IO lossSpec () (hproduct reductions (hattach cpu   (hproduct standardFloatingPointDTypes standardShapes)))
-            D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+            Device { deviceType = CUDA, deviceIndex = 0 } ->
               hfoldrM @IO lossSpec () (hproduct reductions (hattach cuda0 (hproduct allFloatingPointDTypes      standardShapes)))
       it "binaryCrossEntropy" $ dispatch BinaryCrossEntropySpec
       it "mseLoss"            $ dispatch MSELossSpec
@@ -863,28 +1168,28 @@ spec' device =
       let softmaxDims = Proxy @0 :. Proxy @1 :. HNil
           softmaxShapes = Proxy @'[1, 0] :. Proxy @'[2, 3] :. HNil
           dispatch softmaxSpec = case device of
-            D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+            Device { deviceType = CPU,  deviceIndex = 0 } ->
               hfoldrM @IO softmaxSpec () (hproduct softmaxDims (hattach cpu   (hproduct standardFloatingPointDTypes standardShapes)))
-            D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+            Device { deviceType = CUDA, deviceIndex = 0 } ->
               hfoldrM @IO softmaxSpec () (hproduct softmaxDims (hattach cuda0 (hproduct allFloatingPointDTypes      standardShapes)))
       it "softmax"    $ dispatch SoftmaxSpec
       it "logSoftmax" $ dispatch LogSoftmaxSpec
 
     describe "linear algrebra" $ do
       it "dot" $ case device of
-        D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+        Device { deviceType = CPU,  deviceIndex = 0 } ->
           hfoldrM @IO DotSpec () (hattach cpu   (hproduct standardDTypes         (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
-        D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+        Device { deviceType = CUDA, deviceIndex = 0 } ->
           hfoldrM @IO DotSpec () (hattach cuda0 (hproduct allFloatingPointDTypes (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
       it "inverse" $ case device of
-        D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+        Device { deviceType = CPU,  deviceIndex = 0 } ->
           hfoldrM @IO InverseSpec () (hattach cpu   (hproduct standardFloatingPointDTypes squareShapes))
-        D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+        Device { deviceType = CUDA, deviceIndex = 0 } ->
           hfoldrM @IO InverseSpec () (hattach cuda0 (hproduct standardFloatingPointDTypes (Proxy @'[1, 1] :. Proxy @'[2, 2] :. Proxy @'[1, 1, 1] :. Proxy @'[2, 2, 2] :. HNil)))
       let dispatchSymeigSpec symeigSpec = case device of
-            D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+            Device { deviceType = CPU,  deviceIndex = 0 } ->
               hfoldrM @IO symeigSpec () (hattach cpu   (hproduct standardFloatingPointDTypes squareShapes))
-            D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+            Device { deviceType = CUDA, deviceIndex = 0 } ->
               hfoldrM @IO symeigSpec () (hattach cuda0 (hproduct standardFloatingPointDTypes squareShapes))
       it "symeig" $ do
         dispatchSymeigSpec SymeigSpec
@@ -894,29 +1199,29 @@ spec' device =
         let eigenVectors = Proxy @'EnableEigenVectors :. Proxy @'DisableEigenVectors :. HNil
             ns = Proxy @0 :. Proxy @2 :. Proxy @10 :. HNil
         case device of
-          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+          Device { deviceType = CPU,  deviceIndex = 0 } ->
             hfoldrM @IO EigSpec () (hproduct eigenVectors (hattach cpu   (hproduct standardFloatingPointDTypes ns)))
-          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+          Device { deviceType = CUDA, deviceIndex = 0 } ->
             hfoldrM @IO EigSpec () (hproduct eigenVectors (hattach cuda0 (hproduct standardFloatingPointDTypes ns)))
       it "svd" $ do
         let svdShapes = Proxy @'[0, 0] :. Proxy @'[0, 1] :. Proxy @'[1, 0] :. Proxy @'[1, 1] :. Proxy @'[1, 2] :. Proxy @'[2, 1] :. Proxy @'[0, 0, 0] :. Proxy @'[0, 0, 1] :. Proxy @'[0, 1, 0] :. Proxy @'[0, 1, 1] :. Proxy @'[1, 0, 0] :. Proxy @'[1, 0, 1] :. Proxy @'[1, 1, 0] :. Proxy @'[1, 1, 1] :. Proxy @'[3, 2, 3] :. Proxy @'[3, 3, 2] :. HNil
             reducedSVD = Proxy @'ThinSVD :. Proxy @'FullSVD :. HNil
         case device of
-          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+          Device { deviceType = CPU,  deviceIndex = 0 } ->
             hfoldrM @IO SVDSpec () (hproduct reducedSVD (hattach cpu   (hproduct standardFloatingPointDTypes svdShapes)))
-          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+          Device { deviceType = CUDA, deviceIndex = 0 } ->
             hfoldrM @IO SVDSpec () (hproduct reducedSVD (hattach cuda0 (hproduct standardFloatingPointDTypes svdShapes)))
       it "cholesky" $ case device of
-        D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+        Device { deviceType = CPU,  deviceIndex = 0 } ->
           hfoldrM @IO CholeskySpec () (hattach cpu   (hproduct standardFloatingPointDTypes squareShapes))
-        D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+        Device { deviceType = CUDA, deviceIndex = 0 } ->
           hfoldrM @IO CholeskySpec () (hattach cuda0 (hproduct standardFloatingPointDTypes squareShapes))
       it "choleskyInverse" $ do
         let choleskyInverseShapes = Proxy @'[1, 1] :. Proxy @'[2, 2] :. HNil
         case device of
-          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+          Device { deviceType = CPU,  deviceIndex = 0 } ->
             hfoldrM @IO CholeskyInverseSpec () (hattach cpu   (hproduct standardFloatingPointDTypes choleskyInverseShapes))
-          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+          Device { deviceType = CUDA, deviceIndex = 0 } ->
             hfoldrM @IO CholeskyInverseSpec () (hattach cuda0 (hproduct standardFloatingPointDTypes choleskyInverseShapes))
       it "choleskySolve" $ do
         let choleskySolveShapes =
@@ -924,9 +1229,9 @@ spec' device =
                 (Proxy @'[1, 0] :. Proxy @'[1, 2] :. Proxy @'[2, 1] :. Proxy @'[3, 1, 2] :. HNil)
                 (Proxy @'[1, 1] :. Proxy @'[1, 1] :. Proxy @'[2, 2] :. Proxy @'[3, 1, 1] :. HNil)
         case device of
-          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+          Device { deviceType = CPU,  deviceIndex = 0 } ->
             hfoldrM @IO CholeskySolveSpec () (hattach cpu   (hproduct standardFloatingPointDTypes choleskySolveShapes))
-          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+          Device { deviceType = CUDA, deviceIndex = 0 } ->
             hfoldrM @IO CholeskySolveSpec () (hattach cuda0 (hproduct standardFloatingPointDTypes choleskySolveShapes))
       it "solve" $ do
         let solveShapes =
@@ -934,17 +1239,17 @@ spec' device =
                 (Proxy @'[1, 0] :. Proxy @'[1, 2] :. Proxy @'[2, 1] :. Proxy @'[3, 1, 2] :. HNil)
                 (Proxy @'[1, 1] :. Proxy @'[1, 1] :. Proxy @'[2, 2] :. Proxy @'[3, 1, 1] :. HNil)
         case device of
-          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+          Device { deviceType = CPU,  deviceIndex = 0 } ->
             hfoldrM @IO SolveSpec () (hattach cpu   (hproduct standardFloatingPointDTypes solveShapes))
-          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+          Device { deviceType = CUDA, deviceIndex = 0 } ->
             hfoldrM @IO SolveSpec () (hattach cuda0 (hproduct standardFloatingPointDTypes solveShapes)) 
 
     describe "boolean algebra" $ do
       do
         let dispatch anyAllSpec = case device of
-              D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+              Device { deviceType = CPU,  deviceIndex = 0 } ->
                 hfoldrM @IO anyAllSpec () (hattach cpu   standardShapes)
-              D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+              Device { deviceType = CUDA, deviceIndex = 0 } ->
                 hfoldrM @IO anyAllSpec () (hattach cuda0 standardShapes)
         it "all" $ dispatch AllSpec
         it "any" $ dispatch AnySpec
@@ -953,11 +1258,11 @@ spec' device =
             keepOrDropDims = Proxy @KeepDim :. Proxy @DropDim :. HNil
             anyPrimeAllPrimeShapes = Proxy @'[0, 0] :. Proxy @'[0, 1]  :. Proxy @'[1, 0] :. Proxy @'[2, 3] :. Proxy @'[0, 1, 1]  :. Proxy @'[1, 0, 1] :. HNil
             dispatch anyPrimeAllPrimeSpec = case device of
-              D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+              Device { deviceType = CPU,  deviceIndex = 0 } ->
                 hfoldrM @IO anyPrimeAllPrimeSpec () (hproduct
                                                       (hproduct anyPrimeAllPrimeDims keepOrDropDims)
                                                       (hattach cpu   anyPrimeAllPrimeShapes))
-              D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+              Device { deviceType = CUDA, deviceIndex = 0 } ->
                 hfoldrM @IO anyPrimeAllPrimeSpec () (hproduct
                                                       (hproduct anyPrimeAllPrimeDims keepOrDropDims)
                                                       (hattach cuda0 anyPrimeAllPrimeShapes))
@@ -966,24 +1271,24 @@ spec' device =
 
     describe "pooling" $
       it "maxPool2d" $ do
-        let c = maxPool2d @'(1,1) @'(1,1) @'(0,0) (ones :: CPUTensor 'D.Float '[1,3,4,5])
+        let c = maxPool2d @'(1,1) @'(1,1) @'(0,0) (ones :: CPUTensor  'Float '[1,3,4,5])
         checkDynamicTensorAttributes c
 
     describe "sorting" $ 
       it "topk" $ do 
-        let (c,c') = topk @3 @1 True True (ones :: CPUTensor 'D.Float '[2,3])
+        let (c,c') = topk @3 @1 True True (ones :: CPUTensor  'Float '[2,3])
         checkDynamicTensorAttributes c
         checkDynamicTensorAttributes c'
 
     describe "upsampling" $ do
       it "upsample_nearest2d" $ do 
-        let c = upsample_nearest2d @5 @3 (ones :: CPUTensor 'D.Float '[2,3,2,2]) 
+        let c = upsample_nearest2d @5 @3 (ones :: CPUTensor  'Float '[2,3,2,2]) 
         checkDynamicTensorAttributes c
       it "upsample_bicubic2d" $ do 
-        let c = upsample_bicubic2d @5 @3 False (ones :: CPUTensor 'D.Float '[2,3,2,2]) 
+        let c = upsample_bicubic2d @5 @3 False (ones :: CPUTensor  'Float '[2,3,2,2]) 
         checkDynamicTensorAttributes c
       it "upsample_bilinear2d" $ do 
-        let c = upsample_bilinear2d @5 @3 False (ones :: CPUTensor 'D.Float '[2,3,2,2])
+        let c = upsample_bilinear2d @5 @3 False (ones :: CPUTensor  'Float '[2,3,2,2])
         checkDynamicTensorAttributes c
 
     describe "binary native ops" $ return ()
@@ -996,9 +1301,9 @@ spec' device =
                 (Proxy @7 :. Proxy @6 :. Proxy @5 :. Proxy @4 :. HNil)
                 (Proxy @5 :. Proxy @10 :. Proxy @15 :. Proxy @20 :. HNil)
         case device of
-          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+          Device { deviceType = CPU,  deviceIndex = 0 } ->
             hfoldrM @IO LstmCellSpec () (hattach cpu   (hproduct standardFloatingPointDTypes sizes))
-          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+          Device { deviceType = CUDA, deviceIndex = 0 } ->
             hfoldrM @IO LstmCellSpec () (hattach cuda0   (hproduct standardFloatingPointDTypes sizes))
       it "gruCell op" $ do
         let sizes =
@@ -1007,7 +1312,7 @@ spec' device =
                 (Proxy @7 :. Proxy @6 :. Proxy @5 :. Proxy @4 :. HNil)
                 (Proxy @5 :. Proxy @10 :. Proxy @15 :. Proxy @20 :. HNil)
         case device of
-          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+          Device { deviceType = CPU,  deviceIndex = 0 } ->
             hfoldrM @IO GruCellSpec () (hattach cpu   (hproduct standardFloatingPointDTypes sizes))
-          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+          Device { deviceType = CUDA, deviceIndex = 0 } ->
             hfoldrM @IO GruCellSpec () (hattach cuda0   (hproduct standardFloatingPointDTypes sizes))
