@@ -1066,7 +1066,7 @@ mkRATransformerMLMInput pMask actions = do
   attentionMask <- fromJust' . mkGridMask' @batchSize @seqLen @seqLen $ view (field @"aEnv" . field @"attentionMask") <$> envs
   keyPaddingMask <- logicalNot <$> (fromJust' . mkSeqMask' $ view (field @"aEnv" . field @"keyPaddingMask") <$> envs)
   let attentionMask' = maskedFill (unsqueeze @2 keyPaddingMask) (1 :: Int) attentionMask
-  liftIO . displayAttentionMask $ attentionMask'
+  -- liftIO . displayAttentionMask $ attentionMask'
   guard (attentionMaskIsProper attentionMask')
   let attentionMask'' = maskedFill (logicalNot attentionMask') (-1 / 0 :: Double) $ zeros @'[batchSize, seqLen, seqLen] @dtype @device
   tokenMask <- bernoulliMask pMask keyPaddingMask
@@ -1097,18 +1097,18 @@ attentionMaskIsProper t =
 
 data DisplayAttentionMask = DisplayAttentionMask
 
-displayTensor
-  :: forall dim device shape
-   . ( KnownNat dim
-     , shape ~ '[dim, dim]
+display2dTensor
+  :: forall dim dim' device dtype shape
+   . ( All KnownNat '[dim, dim']
+     , shape ~ '[dim, dim']
      , AllDimsPositive shape
-     , BasicArithmeticDTypeIsValid device 'Int64
-     , MinMaxDTypeIsValid device 'Int64
+     , BasicArithmeticDTypeIsValid device 'Float
+     , MinMaxDTypeIsValid device 'Float
      , KnownDevice device
      )
-  => Tensor device 'Int64 shape
+  => Tensor device dtype shape
   -> IO ()
-displayTensor t = do
+display2dTensor t = do
   mapM
     ( \row ->
         Text.Printf.printf "%02d" row
@@ -1124,20 +1124,21 @@ displayTensor t = do
   where
     downSamp = 1
     grayScale = grayScale10
-    paletteMax = (fromIntegral $ List.length grayScale) - 1.0
-    scaled :: [[Float]] =
-      let (mn, mx) = (Torch.Typed.min t, Torch.Typed.max t)
-       in asValue . toDynamic $ paletteMax * ((t `sub` mn) `Torch.Typed.div` (mx `sub` mn))
+    paletteMax = List.length grayScale - 1
+    t' = toDType @'Float @dtype t
+    scaled =
+      let (mn, mx) = (Torch.Typed.min t', Torch.Typed.max t')
+       in Exts.toList . Just . mulScalar paletteMax $ (t' `sub` mn) `Torch.Typed.div` (mx `sub` mn)
 
 instance
-  ( BasicArithmeticDTypeIsValid device 'Int64
-  , MinMaxDTypeIsValid device 'Int64
+  ( BasicArithmeticDTypeIsValid device 'Float
+  , MinMaxDTypeIsValid device 'Float
   , KnownNat seqLen
   , shape ~ '[1, seqLen, seqLen]
   , AllDimsPositive shape
   , KnownDevice device
   ) => Apply' DisplayAttentionMask (Tensor device 'Int64 shape) (IO ()) where
-  apply' _ = displayTensor . squeezeDim @0
+  apply' _ = display2dTensor . squeezeDim @0
 
 displayAttentionMask
   :: forall batchSize seqLen device shape (tensorChunks :: [Type]) ys
