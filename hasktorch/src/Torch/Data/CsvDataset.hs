@@ -10,11 +10,13 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeApplications #-}
-module Torch.Data.CsvDataset ( CsvDataset(..)
+module Torch.Data.CsvDataset ( tsvDataset 
                              , csvDataset
-                             , NamedColumns
+                             , CsvDataset
+                             , CsvDatasetNamed
                              , FromField(..)
                              , FromRecord(..)
+                             , FromNamedRecord(..)
                              ) where
 
 
@@ -36,11 +38,9 @@ import           Data.Char (ord)
 import           Data.Csv (DecodeOptions(decDelimiter))
 import           Data.Vector (Vector)
 import           Lens.Family (view)
-import           Pipes (liftIO, ListT(Select), yield, (>->), await)
 import qualified Pipes.ByteString as B
 import           Pipes.Csv
 import           Pipes.Group (takes, folds, chunksOf)
-import           Pipes.Safe
 import qualified Pipes.Prelude as P
 import qualified Pipes.Safe as Safe
 import qualified Pipes.Safe.Prelude as Safe
@@ -49,27 +49,35 @@ import           System.IO (IOMode(ReadMode))
 data NamedColumns = Unnamed | Named
 type BufferSize = Int
 
--- TODO: maybe we use a type family to specify if we want to decode using named or unnamed!
 -- TODO: implement more options
-data CsvDataset batches = CsvDataset { filePath   :: FilePath
-                                     , delimiter  :: !B.Word8
-                                     , byName     :: NamedColumns
-                                     , hasHeader  :: HasHeader
-                                     , batchSize  :: Int
-                                     , filter     :: Maybe (batches -> Bool)
-                                     , shuffle    :: Maybe BufferSize
-                                     , dropLast   :: Bool
-                                     }
+data CsvDataset' batches (named :: NamedColumns) = CsvDataset { filePath   :: FilePath
+                                                              , delimiter  :: !B.Word8
+                                                              , hasHeader  :: HasHeader
+                                                              , batchSize  :: Int
+                                                              -- , filter     :: Maybe (batches -> Bool)
+                                                              , shuffle    :: Maybe BufferSize
+                                                              , dropLast   :: Bool
+                                                              }
+-- | use if you want to decode with a normal record
+type CsvDataset batches = CsvDataset' batches Unnamed
+
+-- | use if you want to decode from a named record
+type CsvDatasetNamed batches = CsvDataset' batches Named
+
+type family IsNamed (named :: NamedColumns) where
+  IsNamed Unnamed = FromRecord 
+  IsNamed Named = FromNamedRecord 
+  
+
 tsvDataset :: forall batches . FilePath -> CsvDataset batches
 tsvDataset filePath = (csvDataset filePath) { delimiter = fromIntegral $ ord '\t' }
 
 csvDataset :: forall batches . FilePath -> CsvDataset batches
 csvDataset filePath  = CsvDataset { filePath = filePath
                                   , delimiter = fromIntegral $ ord ','
-                                  , byName = Unnamed
                                   , hasHeader = NoHeader
                                   , batchSize = 1
-                                  , filter = Nothing
+                                  -- , filter = Nothing
                                   , shuffle = Nothing
                                   , dropLast = True
                                   }
@@ -78,33 +86,34 @@ instance ( MonadPlus m
          , MonadBase IO m
          , MonadBaseControl IO m
          , Safe.MonadSafe m
-         -- these constraints make CsvDatasets only able to parse records, might not be the best idea
          , FromRecord batch 
+         ) => Datastream m () (CsvDataset' batch Unnamed) (Vector batch) where
+  streamBatch csv@CsvDataset{..} _ = readCsv csv (decodeWith (defaultDecodeOptions { decDelimiter = delimiter }) hasHeader)
+
+instance ( MonadPlus m
+         , MonadBase IO m
+         , MonadBaseControl IO m
+         , Safe.MonadSafe m
          , FromNamedRecord batch
-         ) => Datastream m () (CsvDataset batch) (Vector batch) where
-  streamBatch CsvDataset{..} _ = Select $ Safe.withFile filePath ReadMode $ \fh ->
-    -- this quietly discards errors right now, probably would like to log this
-    -- TODO:  we could concurrently stream in records, and batch records in another thread
-    -- actually this ^ isn't possible since this is in the Proxy monad, instead we should
-    -- be able to define a transform which collates in parallel, and yield batch size 1 here
+         ) => Datastream m () (CsvDataset' batch Named) (Vector batch) where
+  streamBatch csv@CsvDataset{..} _ = readCsv csv (decodeByNameWith (defaultDecodeOptions { decDelimiter = delimiter }))
+
+readCsv CsvDataset{..} decode = Select $ Safe.withFile filePath ReadMode $ \fh ->
+    -- this quietly discards errors in decoding right now, probably would like to log this
     if dropLast
     then streamRecords fh >-> P.filter (\v -> V.length v == batchSize)
     else streamRecords fh
 
     where
       streamRecords fh = case shuffle of
-        Nothing -> L.purely folds L.vector $ view (chunksOf batchSize) $ decodeRecords fh >-> P.concat
+        Nothing -> L.purely folds L.vector $ view (chunksOf batchSize) $ decode (produceLine fh) >-> P.concat
         Just bufferSize -> L.purely folds L.vector
                          $ view (chunksOf batchSize)
                          $ ( L.purely folds L.list
                             $ view (chunksOf bufferSize)
-                            $ decodeRecords fh >-> P.concat
+                            $ decode (produceLine fh) >-> P.concat
                            )
                          >-> shuffleRecords
-
-      decodeRecords fh = case byName of
-                           Unnamed -> decodeWith (defaultDecodeOptions { decDelimiter = delimiter }) hasHeader (produceLine fh)
-                           Named   -> decodeByName (produceLine fh)
       -- what's a good default chunk size? 
       produceLine fh = B.hGetSome 1000 fh
       -- probably want a cleaner way of reyielding these chunks
