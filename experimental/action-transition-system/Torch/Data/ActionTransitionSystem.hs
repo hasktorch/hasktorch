@@ -1177,7 +1177,7 @@ type TestTokenNumEmbeds = 5
 type TestMetaNumEmbeds = 5
 type TestRelNumEmbeds = 7
 type TestDType = 'Float
-type TestDevice = '( 'CUDA, 0)
+type TestDevice = '( 'CPU, 0)
 
 type TestRATransformerMLMSpec
   = RATransformerMLMSpec
@@ -1450,19 +1450,19 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
       let optim = mkAdam 0 0.9 0.999 (flattenParameters model)
           -- optim = mkGDM 0.9 (flattenParameters model)
           training (model', optim') =
-            let step (model'', optim'') (target, input) = do
-                  liftIO $ print "Hello Training Step!"
+            let step (model'', optim'', _step) (target, input) = do
+                  liftIO . putStrLn $ "Training step " <> show _step
                   prediction <- lift $ raTransformerMLM model'' True input
                   let cre = loss ones (ratKeyPaddingMask input) prediction target
                       parameters = flattenParameters model''
                       gradients = grad cre parameters
                       clippedGradients = hmap' (ClipGradValue (1e1 :: Float)) gradients
                   maybe
-                    (lift (print "encountered NaN in gradients, skipping batch") >> pure (model'', optim''))
-                    (const (lift (runStep' model'' optim'' learningRate clippedGradients)))
+                    (lift (putStrLn $ "encountered NaN in gradients, repeating training step " <> show _step) >> pure (model'', optim'', _step))
+                    (const $ lift (runStep' model'' optim'' learningRate clippedGradients) >>= \(model''', optim''') -> pure (model''', optim''', _step + 1))
                     (hfoldrM GuardGradAgainstNaN () clippedGradients)
-                begin = pure (model', optim')
-                done = pure
+                begin = pure (model', optim', 0 :: Int)
+                done (model'', optim'', _) = pure (model'', optim'')
             in foldM step begin done (enumerate trainingData)
           evaluation model' =
             let step totalLoss (target, input) = do
@@ -1479,11 +1479,11 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
                 begin = pure (0 :: Float)
                 done totalLoss = pure (totalLoss / (fromInteger . toInteger $ natValI @TestBatchSize))
             in foldM step begin done (enumerate evaluationData)
-          step (model', optim') _epoch = do
-            liftIO $ print "Hello Epoch!"
+          step (model', optim') epoch = do
+            liftIO . putStrLn $ "Epoch " <> show epoch
             (model'', optim'') <- training (model', optim')
             avgLoss <- evaluation model''
-            lift . print $ avgLoss
+            lift . putStrLn $ "Average evaluation loss " <> show avgLoss
             pure (model'', optim'')
           begin = pure (model, optim)
           done = pure
@@ -1500,5 +1500,6 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
 -- implement valid actions mask
 -- implement inference
 -- split training and evaluation data
--- why does it segfault on cuda?
+-- use Andre's new streaming data pipeline
+-- ~why does it segfault on cuda?~
 -- add simple ^-shaped learning rate schedule
