@@ -1500,10 +1500,11 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
           evaluation model' =
             let step (totalLoss, _step) ((target, input), batch) = do
                   lift . putStrLn $ "Evaluation batch " <> show batch
-                  let input' = toDevice @TestDevice @TestDataDevice input
-                  prediction <- lift $ raTransformerMLM model' False input'
-                  let target' = toDevice @TestDevice @TestDataDevice target
-                      cre = loss ones (ratKeyPaddingMask input') prediction target'
+                  -- let input' = toDevice @TestDevice @TestDataDevice input
+                  -- prediction <- lift $ raTransformerMLM model' False input'
+                  -- let target' = toDevice @TestDevice @TestDataDevice target
+                  --     cre = loss ones (ratKeyPaddingMask input') prediction target'
+                  let cre = 0
                   -- if (toBool . Torch.Typed.isNaN $ cre) then
                   --   lift $ do
                   --     print input
