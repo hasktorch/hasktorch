@@ -87,6 +87,9 @@ import Hedgehog.Internal.Gen (evalGen)
 import Torch.Internal.Class (Castable)
 import Torch.Vision (grayScale10)
 import Text.Printf (printf)
+import Torch.Data.StreamedPipeline (makeListT', Datastream(..))
+import Control.Monad.Trans.Cont (ContT(runContT))
+import Control.Concurrent (threadDelay)
 
 -- https://stackoverflow.com/questions/17675054/deserialising-with-ghc-generics?rq=1
 -- http://hackage.haskell.org/package/cereal-0.5.8.1/docs/Data-Serialize.html
@@ -1028,13 +1031,13 @@ loss validActionsMask keyPaddingMask logits target =
 ------------------------------------------------------------------------
 
 mkRATransformerMLMInput
-  :: forall batchSize seqLen relDim dtype device a m tensorChunks ys
+  :: forall batchSize seqLen relDim dtype device a m -- tensorChunks ys
    . ( All KnownNat '[batchSize, seqLen, relDim]
      , SumDTypeIsValid device 'Int64
      , ComparisonDTypeIsValid device 'Int64
-     , tensorChunks ~ Chunk batchSize 0 '[batchSize, seqLen, seqLen] 'Int64 device
-     , Castable (HList tensorChunks) [ATenTensor]
-     , HMapM' IO DisplayAttentionMask tensorChunks ys
+    --  , tensorChunks ~ Chunk batchSize 0 '[batchSize, seqLen, seqLen] 'Int64 device
+    --  , Castable (HList tensorChunks) [ATenTensor]
+    --  , HMapM' IO DisplayAttentionMask tensorChunks ys
      , KnownDType dtype
      , KnownDevice device
      , Scalar a
@@ -1083,8 +1086,8 @@ mkRATransformerMLMInput pMask actions = do
 attentionMaskIsProper
   :: forall batchSize seqLen device
    . ( SumDTypeIsValid device 'Int64
-     , KnownDevice device
      , ComparisonDTypeIsValid device 'Int64
+     , KnownDevice device
      )
   => Tensor device 'Bool '[batchSize, seqLen, seqLen]
   -> Bool
@@ -1359,13 +1362,13 @@ testMkGridMask' =
 ------------------------------------------------------------------------
 
 mkBatch
-  :: forall batchSize seqLen relDim dtype device a m tensorChunks ys
+  :: forall batchSize seqLen relDim dtype device a m -- tensorChunks ys
    . ( All KnownNat '[batchSize, seqLen, relDim]
      , SumDTypeIsValid device 'Int64
      , ComparisonDTypeIsValid device 'Int64
-     , tensorChunks ~ Chunk batchSize 0 '[batchSize, seqLen, seqLen] 'Int64 device
-     , Castable (HList tensorChunks) [ATenTensor]
-     , HMapM' IO DisplayAttentionMask tensorChunks ys
+    --  , tensorChunks ~ Chunk batchSize 0 '[batchSize, seqLen, seqLen] 'Int64 device
+    --  , Castable (HList tensorChunks) [ATenTensor]
+    --  , HMapM' IO DisplayAttentionMask tensorChunks ys
      , KnownDType dtype
      , KnownDevice device
      , Scalar a
@@ -1377,6 +1380,7 @@ mkBatch
        , RATransformerMLMInput batchSize seqLen relDim dtype device
        )
 mkBatch pMask = do
+  -- liftIO . putStrLn $ "Make batch"
   actions <- sample' . Gen.list (Range.singleton $ natValI @batchSize) $ do
     ty <- genTy
     input <- genWellTypedExp @Int ty
@@ -1385,7 +1389,9 @@ mkBatch pMask = do
         actions = toActions @[] ex
     guard (List.length actions <= natValI @seqLen)
     pure actions
-  mkRATransformerMLMInput pMask actions
+  res <- mkRATransformerMLMInput pMask actions
+  -- liftIO . putStrLn $ "Made batch"
+  pure res
 
 sample' :: MonadIO m => Gen a -> m a
 sample' gen =
@@ -1417,6 +1423,25 @@ data GuardGradAgainstNaN = GuardGradAgainstNaN
 instance Apply' GuardGradAgainstNaN (Tensor device dtype shape, Maybe ()) (Maybe ()) where
   apply' _ (t, acc) = acc >> (guard . not . toBool . Torch.Typed.any . Torch.Typed.isNaN $ t)
 
+data RATransformerMLMData (batchSize :: Nat) (seqLen :: Nat) (relDim :: Nat) (dtype :: DType) (device :: (DeviceType, Nat)) a = RATransformerMLMData a Int
+
+instance
+  ( SumDTypeIsValid device 'Int64
+  , ComparisonDTypeIsValid device 'Int64
+  , All KnownNat '[batchSize, seqLen, relDim]
+  , KnownDType dtype
+  , KnownDevice device
+  , Scalar a
+  ) => Datastream
+    (Safe.SafeT IO)
+    ()
+    (RATransformerMLMData batchSize seqLen relDim dtype device a)
+    ( Tensor device 'Int64 '[batchSize, seqLen]
+    , RATransformerMLMInput batchSize seqLen relDim dtype device
+    ) where
+  -- streamBatch :: dataset -> seed -> ListT m batch
+  streamBatch (RATransformerMLMData pMask len) _ = Select $ (repeatM $ mkBatch pMask) >-> Pipes.Prelude.take len
+
 testProgram
   :: LearningRate TestDevice TestDType -- ^ learning rate
   -> Int -- ^ number of epochs
@@ -1429,8 +1454,9 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
     go = do
       let
         pMask = 0.25 :: Float
-        trainingData = Select (repeatM (mkBatch @TestBatchSize @TestSeqLen @TestRelDim pMask) >-> Pipes.Prelude.take trainingLen)
-        evaluationData = Select (repeatM (mkBatch @TestBatchSize @TestSeqLen @TestRelDim pMask) >-> Pipes.Prelude.take evaluationLen)
+        seeds = [(), (), ()]
+        trainingData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim pMask trainingLen) seeds
+        evaluationData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim pMask evaluationLen) seeds
       model <- liftIO . Torch.Typed.sample $
                   (RATransformerMLMSpec 
                     (DropoutSpec 0.2)
@@ -1450,37 +1476,40 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
       let optim = mkAdam 0 0.9 0.999 (flattenParameters model)
           -- optim = mkGDM 0.9 (flattenParameters model)
           training (model', optim') =
-            let step (model'', optim'', _step) (target, input) = do
-                  liftIO . putStrLn $ "Training step " <> show _step
+            let step (model'', optim'') ((target, input), batch) = do
+                  lift . putStrLn $ "Training batch " <> show batch
+                  -- lift . threadDelay $ 10000000 -- delay by 10 seconds
                   prediction <- lift $ raTransformerMLM model'' True input
                   let cre = loss ones (ratKeyPaddingMask input) prediction target
                       parameters = flattenParameters model''
                       gradients = grad cre parameters
                       clippedGradients = hmap' (ClipGradValue (1e1 :: Float)) gradients
                   maybe
-                    (lift (putStrLn $ "encountered NaN in gradients, repeating training step " <> show _step) >> pure (model'', optim'', _step))
-                    (const $ lift (runStep' model'' optim'' learningRate clippedGradients) >>= \(model''', optim''') -> pure (model''', optim''', _step + 1))
+                    (lift (print "encountered NaN in gradients, repeating training step") >> pure (model'', optim''))
+                    (const $ lift (runStep' model'' optim'' learningRate clippedGradients))
                     (hfoldrM GuardGradAgainstNaN () clippedGradients)
-                begin = pure (model', optim', 0 :: Int)
-                done (model'', optim'', _) = pure (model'', optim'')
-            in foldM step begin done (enumerate trainingData)
+                begin = pure (model', optim')
+                done = pure
+            in runContT trainingData (foldM step begin done . enumerate)
           evaluation model' =
-            let step totalLoss (target, input) = do
+            let step (totalLoss, _step) ((target, input), batch) = do
+                  lift . putStrLn $ "Evaluation batch " <> show batch
                   prediction <- lift $ raTransformerMLM model' False input
                   let cre = loss ones (ratKeyPaddingMask input) prediction target
-                  if (toBool . Torch.Typed.isNaN $ cre) then
-                    lift $ do
-                      print input
-                      print prediction
-                      print target
-                  else
-                    pure ()
-                  pure (totalLoss + toFloat cre)
-                begin = pure (0 :: Float)
-                done totalLoss = pure (totalLoss / (fromInteger . toInteger $ natValI @TestBatchSize))
-            in foldM step begin done (enumerate evaluationData)
+                  -- if (toBool . Torch.Typed.isNaN $ cre) then
+                  --   lift $ do
+                  --     print input
+                  --     print prediction
+                  --     print target
+                  -- else
+                  --   pure ()
+                  pure (totalLoss + toFloat cre, _step + 1)
+                begin = pure (0 :: Float, 0 :: Int)
+                done (_, 0) = pure 1
+                done (totalLoss, _step) = pure (totalLoss / (fromInteger . toInteger $ _step))
+            in runContT evaluationData (foldM step begin done . enumerate)
           step (model', optim') epoch = do
-            liftIO . putStrLn $ "Epoch " <> show epoch
+            lift . putStrLn $ "Epoch " <> show epoch
             (model'', optim'') <- training (model', optim')
             avgLoss <- evaluation model''
             lift . putStrLn $ "Average evaluation loss " <> show avgLoss
@@ -1503,3 +1532,4 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
 -- use Andre's new streaming data pipeline
 -- ~why does it segfault on cuda?~
 -- add simple ^-shaped learning rate schedule
+-- generalize multi-headed attention: use query, key, value as inputs, use seqLen and seqLen', make attentionMask and keyPaddingMask both optional

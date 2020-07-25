@@ -141,6 +141,7 @@ program numEpochs trainingFile trainingLen evaluationFile evaluationLen = Safe.r
                 (TransformerMLPSpec
                   (DropoutSpec 0.2)
                   (DropoutSpec 0.2)
+                  0.001
                 )
               ) :: ModelSpec numEmbeds ModelDevice
             )
