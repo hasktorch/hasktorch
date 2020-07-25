@@ -1513,7 +1513,8 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
                   -- else
                   --   pure ()
                   -- lift performGC -- force GC cleanup after every batch
-                  pure (totalLoss + toFloat cre, _step + 1)
+                  -- pure (totalLoss + toFloat cre, _step + 1)
+                  pure (totalLoss + cre, _step + 1)
                 begin = pure (0 :: Float, 0 :: Int)
                 done (_, 0) = pure 1
                 done (totalLoss, _step) = pure (totalLoss / (fromInteger . toInteger $ _step))
