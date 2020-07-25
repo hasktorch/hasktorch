@@ -58,7 +58,7 @@ import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
 import Data.Kind (Type)
 import Data.Text (pack, Text)
 import Data.Maybe (fromJust, fromMaybe)
-import Data.List as List (isInfixOf, replicate, length, filter, sort, nub)
+import Data.List as List (iterate, isInfixOf, replicate, length, filter, sort, nub)
 import Data.Map as Map (delete, elems, toList, (!), adjust, update, keys, null, insertWith, singleton, fromList, unionWith, Map, insert, lookup)
 import Data.Set as Set (elems, filter, cartesianProduct, unions, toList, fromList, member, singleton, union, Set, insert, findIndex)
 import qualified Data.Set.Ordered as OSet
@@ -1376,12 +1376,13 @@ mkBatch
      , MonadIO m
      , Alternative m
      )
-  => a
+  => Int
+  -> a
   -> m ( Tensor device 'Int64 '[batchSize, seqLen]
        , RATransformerMLMInput batchSize seqLen relDim dtype device
        )
-mkBatch pMask = do
-  -- liftIO . putStrLn $ "Make batch"
+mkBatch seed pMask = do
+  liftIO . putStrLn $ "Start making batch for seed " <> show seed
   actions <- sample' . Gen.list (Range.singleton $ natValI @batchSize) $ do
     ty <- genTy
     input <- genWellTypedExp @Int ty
@@ -1391,7 +1392,7 @@ mkBatch pMask = do
     guard (List.length actions <= natValI @seqLen)
     pure actions
   res <- mkRATransformerMLMInput pMask actions
-  liftIO . putStrLn $ "Made batch"
+  liftIO . putStrLn $ "Finished making batch for seed " <> show seed
   pure res
 
 sample' :: MonadIO m => Gen a -> m a
@@ -1411,7 +1412,7 @@ sample' gen =
 testMkBatch :: IO ( Tensor TestDevice 'Int64 '[TestBatchSize, TestSeqLen]
                   , RATransformerMLMInput TestBatchSize TestSeqLen TestRelDim TestDType TestDevice
                   )
-testMkBatch = mkBatch @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDevice @Float 0.25
+testMkBatch = mkBatch @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDevice @Float 0 0.25
 
 data ClipGradValue a = ClipGradValue a
 
@@ -1435,13 +1436,13 @@ instance
   , Scalar a
   ) => Datastream
     (Safe.SafeT IO)
-    ()
+    Int
     (RATransformerMLMData batchSize seqLen relDim dtype device a)
     ( Tensor device 'Int64 '[batchSize, seqLen]
     , RATransformerMLMInput batchSize seqLen relDim dtype device
     ) where
   -- streamBatch :: dataset -> seed -> ListT m batch
-  streamBatch (RATransformerMLMData pMask len) _ = Select $ (repeatM $ mkBatch pMask) >-> Pipes.Prelude.take len
+  streamBatch (RATransformerMLMData pMask len) seed = Select $ (repeatM $ mkBatch seed pMask) >-> Pipes.Prelude.take len
 
 testProgram
   :: LearningRate TestDevice TestDType -- ^ learning rate
@@ -1455,7 +1456,7 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
     go = do
       let
         pMask = 0.2 :: Float
-        seeds = List.replicate 10 ()
+        seeds = List.iterate (+ 1) (0 :: Int)
         trainingData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMask trainingLen) seeds
         evaluationData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMask evaluationLen) seeds
       model <- liftIO . Torch.Typed.sample $
