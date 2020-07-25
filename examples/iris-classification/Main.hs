@@ -20,9 +20,8 @@ import           Pipes.Safe (runSafeT)
 import           Torch
 import           Torch.Data.CsvDataset
 import           Torch.Data.Pipeline (FoldM(FoldM))
-import           Torch.Data.StreamedPipeline (MonadBaseControl, pmap, makeListT)
+import           Torch.Data.StreamedPipeline (pmap, makeListT)
 import           Torch.Tensor
-
 
 data MLPSpec = MLPSpec {
     inputFeatures   :: Int,
@@ -95,7 +94,11 @@ trainLoop model optimizer inputs = P.foldM step init done $ enumerate inputs
 main :: IO ()
 main = runSafeT $ do
   init <- liftIO $ sample spec 
-  let irisTrain = (csvDataset @Iris "iris.data") { batchSize = 4 , shuffle = Just 100}
+  let (irisTrain :: CsvDataset Iris) = (csvDataset  "iris.data") { batchSize = 4
+                                                                 -- need to bring whole dataset into memory to get a good shuffle
+                                                                 -- since iris.data is sorted
+                                                                 , shuffle = Just 150 
+                                                                 }
 
   foldM (\model epoch -> do
             flip runContT (trainLoop model optimizer) $ do raw <- makeListT irisTrain (Select $ yield ())

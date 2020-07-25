@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -14,6 +15,7 @@ module Torch.Data.CsvDataset ( tsvDataset
                              , csvDataset
                              , CsvDataset
                              , CsvDatasetNamed
+                             , CsvDataset'(..)
                              , FromField(..)
                              , FromRecord(..)
                              , FromNamedRecord(..)
@@ -50,51 +52,49 @@ data NamedColumns = Unnamed | Named
 type BufferSize = Int
 
 -- TODO: implement more options
-data CsvDataset' batches (named :: NamedColumns) = CsvDataset { filePath   :: FilePath
-                                                              , delimiter  :: !B.Word8
-                                                              , hasHeader  :: HasHeader
-                                                              , batchSize  :: Int
-                                                              -- , filter     :: Maybe (batches -> Bool)
-                                                              , shuffle    :: Maybe BufferSize
-                                                              , dropLast   :: Bool
-                                                              }
--- | use if you want to decode with a normal record
+data CsvDataset' batches (named :: NamedColumns) = CsvDataset' { filePath   :: FilePath
+                                                               , delimiter  :: !B.Word8
+                                                               , hasHeader  :: HasHeader
+                                                               , batchSize  :: Int
+                                                               -- , filter     :: Maybe (batches -> Bool)
+                                                               , shuffle    :: Maybe BufferSize
+                                                               , dropLast   :: Bool
+                                                               }
+
+-- | Use if you want to decode with a record that has a FromRecord instance.
 type CsvDataset batches = CsvDataset' batches Unnamed
 
--- | use if you want to decode from a named record
+-- | Use CsvDatasetNamed if you want to decode with a record that has FromNamedRecord instance,
+-- | decoding fields of a given name from a csv file,
 type CsvDatasetNamed batches = CsvDataset' batches Named
 
-type family IsNamed (named :: NamedColumns) where
-  IsNamed Unnamed = FromRecord 
-  IsNamed Named = FromNamedRecord 
-  
-
-tsvDataset :: forall batches . FilePath -> CsvDataset batches
+tsvDataset :: forall (isNamed :: NamedColumns) batches . FilePath -> CsvDataset' batches isNamed 
 tsvDataset filePath = (csvDataset filePath) { delimiter = fromIntegral $ ord '\t' }
 
-csvDataset :: forall batches . FilePath -> CsvDataset batches
-csvDataset filePath  = CsvDataset { filePath = filePath
+csvDataset :: forall (isNamed :: NamedColumns) batches . FilePath -> CsvDataset' batches isNamed
+csvDataset filePath = CsvDataset' { filePath = filePath
                                   , delimiter = fromIntegral $ ord ','
                                   , hasHeader = NoHeader
                                   , batchSize = 1
-                                  -- , filter = Nothing
+                                    -- , filter = Nothing
                                   , shuffle = Nothing
                                   , dropLast = True
                                   }
+                       
 
 instance ( MonadBaseControl IO m
          , Safe.MonadSafe m
          , FromRecord batch 
-         ) => Datastream m () (CsvDataset' batch Unnamed) (Vector batch) where
-  streamBatch csv@CsvDataset{..} _ = readCsv csv (decodeWith (defaultDecodeOptions { decDelimiter = delimiter }) hasHeader)
+         ) => Datastream m () (CsvDataset batch) (Vector batch) where
+  streamBatch csv@CsvDataset'{..} _ = readCsv csv (decodeWith (defaultDecodeOptions { decDelimiter = delimiter }) hasHeader)
 
 instance ( MonadBaseControl IO m
          , Safe.MonadSafe m
          , FromNamedRecord batch
-         ) => Datastream m () (CsvDataset' batch Named) (Vector batch) where
-  streamBatch csv@CsvDataset{..} _ = readCsv csv (decodeByNameWith (defaultDecodeOptions { decDelimiter = delimiter }))
+         ) => Datastream m () (CsvDatasetNamed batch) (Vector batch) where
+  streamBatch csv@CsvDataset'{..} _ = readCsv csv (decodeByNameWith (defaultDecodeOptions { decDelimiter = delimiter }))
 
-readCsv CsvDataset{..} decode = Select $ Safe.withFile filePath ReadMode $ \fh ->
+readCsv CsvDataset'{..} decode = Select $ Safe.withFile filePath ReadMode $ \fh ->
     -- this quietly discards errors in decoding right now, probably would like to log this
     if dropLast
     then streamRecords fh >-> P.filter (\v -> V.length v == batchSize)
@@ -105,14 +105,11 @@ readCsv CsvDataset{..} decode = Select $ Safe.withFile filePath ReadMode $ \fh -
         Nothing -> L.purely folds L.vector $ view (chunksOf batchSize) $ decode (produceLine fh) >-> P.concat
         Just bufferSize -> L.purely folds L.vector
                          $ view (chunksOf batchSize)
-                         $ ( L.purely folds L.list
-                            $ view (chunksOf bufferSize)
-                            $ decode (produceLine fh) >-> P.concat
-                           )
-                         >-> shuffleRecords
+                         $ (L.purely folds L.list $ view (chunksOf bufferSize) $ decode (produceLine fh) >-> P.concat) >-> shuffleRecords
       -- what's a good default chunk size? 
       produceLine fh = B.hGetSome 1000 fh
       -- probably want a cleaner way of reyielding these chunks
+      
       shuffleRecords = do
         chunks <- await 
         std <- Torch.Data.StreamedPipeline.liftBase newStdGen
@@ -139,4 +136,3 @@ shuffle' xs gen = runST (do
     n = Prelude.length xs
     newArray :: Int -> [a] -> ST s (STArray s Int a)
     newArray n xs =  newListArray (1,n) xs
-
