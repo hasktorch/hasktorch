@@ -1167,20 +1167,20 @@ testMkRATransformerMLMInput = do
 
 ------------------------------------------------------------------------
 
-type TestBatchSize = 32
-type TestSeqLen = 256
+type TestBatchSize = 64
+type TestSeqLen = 512
 type TestRelDim = 2
 
 type TestNumAttnLayers = 3
-type TestNumHeads = 4
-type TestHeadDim = 16
-type TestFFNDim = 64
+type TestNumHeads = 8
+type TestHeadDim = 32
+type TestFFNDim = 256
 type TestPaddingIdx = 0
 type TestTokenNumEmbeds = 5
 type TestMetaNumEmbeds = 5
 type TestRelNumEmbeds = 7
 type TestDType = 'Float
-type TestDevice = '( 'CPU, 0)
+type TestDevice = '( 'CUDA, 0)
 
 type TestRATransformerMLMSpec
   = RATransformerMLMSpec
@@ -1453,8 +1453,8 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
     go :: Effect (Safe.SafeT IO) ()
     go = do
       let
-        pMask = 0.25 :: Float
-        seeds = [(), (), ()]
+        pMask = 0.2 :: Float
+        seeds = List.replicate 10 ()
         trainingData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim pMask trainingLen) seeds
         evaluationData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim pMask evaluationLen) seeds
       model <- liftIO . Torch.Typed.sample $
@@ -1519,17 +1519,17 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
       _ <- lift $ foldM step begin done (Pipes.each [1 .. numEpochs])
       pure ()
 
+-- implement inference
+-- implement valid actions mask
+-- add simple ^-shaped learning rate schedule
+-- test that there are no empty sequences
+-- test that there are no unks
+-- split training and evaluation data
+-- generalize multi-headed attention: use query, key, value as inputs, use seqLen and seqLen', make attentionMask and keyPaddingMask both optional
+-- ~use Andre's new streaming data pipeline~
+-- ~why does it segfault on cuda?~
 -- ~what is the cause of NaNs in the evaluation?~
 -- ~ > the loss is NaN if the length of at least one item is the seqLen, i.e. if there is no padding in one row~
 -- ~when there are NaNs in the loss gradients, is the loss NaN, too?~
 -- ~ > it is likely that the loss gradients are NaN iff the loss is NaN~
 -- ~test that there is no position that attends to nothing~
--- test that there are no empty sequences
--- test that there are no unks
--- implement valid actions mask
--- implement inference
--- split training and evaluation data
--- use Andre's new streaming data pipeline
--- ~why does it segfault on cuda?~
--- add simple ^-shaped learning rate schedule
--- generalize multi-headed attention: use query, key, value as inputs, use seqLen and seqLen', make attentionMask and keyPaddingMask both optional
