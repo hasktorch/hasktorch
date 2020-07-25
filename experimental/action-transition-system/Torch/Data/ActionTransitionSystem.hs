@@ -1391,7 +1391,7 @@ mkBatch pMask = do
     guard (List.length actions <= natValI @seqLen)
     pure actions
   res <- mkRATransformerMLMInput pMask actions
-  -- liftIO . putStrLn $ "Made batch"
+  liftIO . putStrLn $ "Made batch"
   pure res
 
 sample' :: MonadIO m => Gen a -> m a
