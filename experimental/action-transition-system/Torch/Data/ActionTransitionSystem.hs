@@ -58,7 +58,7 @@ import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
 import Data.Kind (Type)
 import Data.Text (pack, Text)
 import Data.Maybe (fromJust, fromMaybe)
-import Data.List as List (iterate, isInfixOf, replicate, length, filter, sort, nub)
+import Data.List as List (take, iterate, isInfixOf, replicate, length, filter, sort, nub)
 import Data.Map as Map (delete, elems, toList, (!), adjust, update, keys, null, insertWith, singleton, fromList, unionWith, Map, insert, lookup)
 import Data.Set as Set (elems, filter, cartesianProduct, unions, toList, fromList, member, singleton, union, Set, insert, findIndex)
 import qualified Data.Set.Ordered as OSet
@@ -1456,7 +1456,7 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
     go = do
       let
         pMask = 0.2 :: Float
-        seeds = List.iterate (+ 1) (0 :: Int)
+        seeds = List.take 10 $ List.iterate (+ 1) (0 :: Int)
         trainingData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMask trainingLen) seeds
         evaluationData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMask evaluationLen) seeds
       model <- liftIO . Torch.Typed.sample $
