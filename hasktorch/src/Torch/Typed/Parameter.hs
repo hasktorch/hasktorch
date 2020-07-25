@@ -123,7 +123,7 @@ instance A.Parameterized (Tensor device dtype shape) where
   replaceOwnParameters = return
 
 instance A.Parameterized (Parameter device dtype shape) where
-  flattenParameters (UnsafeMkParameter param) = pure param
+  flattenParameters (UnsafeMkParameter param) = return param
   replaceOwnParameters _ = UnsafeMkParameter <$> A.nextParameter
 
 instance {-# OVERLAPS #-} Parameterized (Tensor device dtype shape) '[] where
