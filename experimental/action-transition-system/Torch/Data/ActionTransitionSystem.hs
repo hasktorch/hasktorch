@@ -90,6 +90,7 @@ import Text.Printf (printf)
 import Torch.Data.StreamedPipeline (makeListT', Datastream(..))
 import Control.Monad.Trans.Cont (ContT(runContT))
 import Control.Concurrent (threadDelay)
+import System.Mem (performGC)
 
 -- https://stackoverflow.com/questions/17675054/deserialising-with-ghc-generics?rq=1
 -- http://hackage.haskell.org/package/cereal-0.5.8.1/docs/Data-Serialize.html
@@ -1488,6 +1489,7 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
                       parameters = flattenParameters model''
                       gradients = grad cre parameters
                       clippedGradients = hmap' (ClipGradValue (1e1 :: Float)) gradients
+                  lift performGC -- force GC cleanup after every batch
                   maybe
                     (lift (print "encountered NaN in gradients, repeating training step") >> pure (model'', optim''))
                     (const $ lift (runStep' model'' optim'' learningRate clippedGradients))
@@ -1509,6 +1511,7 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
                   --     print target
                   -- else
                   --   pure ()
+                  lift performGC -- force GC cleanup after every batch
                   pure (totalLoss + toFloat cre, _step + 1)
                 begin = pure (0 :: Float, 0 :: Int)
                 done (_, 0) = pure 1
