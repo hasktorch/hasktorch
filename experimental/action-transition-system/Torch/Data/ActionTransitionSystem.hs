@@ -1457,9 +1457,10 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
     go = do
       let
         pMask = 0.2 :: Float
-        seeds = List.take 10 $ List.iterate (+ 1) (0 :: Int)
-        trainingData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMask trainingLen) seeds
-        evaluationData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMask evaluationLen) seeds
+        trainingSeeds = List.take 10 $ List.iterate (+ 1) (0 :: Int)
+        trainingData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMask trainingLen) trainingSeeds
+        evaluationsSeeds = List.take 1 $ List.iterate (+ 1) (0 :: Int)
+        evaluationData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMask evaluationLen) evaluationsSeeds
       model <- liftIO . Torch.Typed.sample $
                   (RATransformerMLMSpec 
                     (DropoutSpec 0.2)
@@ -1500,11 +1501,11 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
           evaluation model' =
             let step (totalLoss, _step) ((target, input), batch) = do
                   lift . putStrLn $ "Evaluation batch " <> show batch
-                  -- let input' = toDevice @TestDevice @TestDataDevice input
-                  -- prediction <- lift $ raTransformerMLM model' False input'
-                  -- let target' = toDevice @TestDevice @TestDataDevice target
-                  --     cre = loss ones (ratKeyPaddingMask input') prediction target'
-                  let cre = (0 :: Float)
+                  let input' = toDevice @TestDevice @TestDataDevice input
+                  prediction <- lift $ raTransformerMLM model' False input'
+                  let target' = toDevice @TestDevice @TestDataDevice target
+                      cre = loss ones (ratKeyPaddingMask input') prediction target'
+                  -- let cre = (0 :: Float)
                   -- if (toBool . Torch.Typed.isNaN $ cre) then
                   --   lift $ do
                   --     print input
@@ -1512,9 +1513,9 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
                   --     print target
                   -- else
                   --   pure ()
-                  -- lift performGC -- force GC cleanup after every batch
-                  -- pure (totalLoss + toFloat cre, _step + 1)
-                  pure (totalLoss + cre, _step + 1)
+                  lift performGC -- force GC cleanup after every batch
+                  pure (totalLoss + toFloat cre, _step + 1)
+                  -- pure (totalLoss + cre, _step + 1)
                 begin = pure (0 :: Float, 0 :: Int)
                 done (_, 0) = pure 1
                 done (totalLoss, _step) = pure (totalLoss / (fromInteger . toInteger $ _step))
