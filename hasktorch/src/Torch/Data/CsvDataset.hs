@@ -82,17 +82,13 @@ csvDataset filePath  = CsvDataset { filePath = filePath
                                   , dropLast = True
                                   }
 
-instance ( MonadPlus m
-         , MonadBase IO m
-         , MonadBaseControl IO m
+instance ( MonadBaseControl IO m
          , Safe.MonadSafe m
          , FromRecord batch 
          ) => Datastream m () (CsvDataset' batch Unnamed) (Vector batch) where
   streamBatch csv@CsvDataset{..} _ = readCsv csv (decodeWith (defaultDecodeOptions { decDelimiter = delimiter }) hasHeader)
 
-instance ( MonadPlus m
-         , MonadBase IO m
-         , MonadBaseControl IO m
+instance ( MonadBaseControl IO m
          , Safe.MonadSafe m
          , FromNamedRecord batch
          ) => Datastream m () (CsvDataset' batch Named) (Vector batch) where
