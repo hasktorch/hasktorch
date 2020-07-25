@@ -44,7 +44,7 @@ executable action-transition-system
   main-is:             Main.hs
   other-modules:       Control.Monad.Fresh
                      , Torch.Data.ActionTransitionSystem
-  ghc-options:         -rtsopts
+  ghc-options:         -rtsopts -threaded
   build-depends:       attoparsec
                      , foldl
                      , text
