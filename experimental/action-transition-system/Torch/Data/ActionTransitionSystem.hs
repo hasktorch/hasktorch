@@ -1006,7 +1006,7 @@ data RATransformerMLMInput batchSize seqLen relDim dtype device = RATransformerM
   , ratRelations :: Tensor device 'Int64 '[batchSize, seqLen, seqLen, relDim] -- ^ relations
   , ratAttentionMask :: Tensor device dtype '[batchSize, seqLen, seqLen] -- ^ attention mask (0 where attention is allowed, -inf everywhere else)
   , ratKeyPaddingMask :: Tensor device 'Bool '[batchSize, seqLen] -- ^ key padding mask (True for padding, False everywhere else)
-  } deriving (Show)
+  } deriving (Show, Generic)
 
 loss
   :: forall batchSize seqLen numEmbeds device dtype
@@ -1180,6 +1180,7 @@ type TestTokenNumEmbeds = 5
 type TestMetaNumEmbeds = 5
 type TestRelNumEmbeds = 7
 type TestDType = 'Float
+type TestDataDevice = '( 'CPU, 0)
 type TestDevice = '( 'CUDA, 0)
 
 type TestRATransformerMLMSpec
@@ -1455,8 +1456,8 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
       let
         pMask = 0.2 :: Float
         seeds = List.replicate 10 ()
-        trainingData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim pMask trainingLen) seeds
-        evaluationData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim pMask evaluationLen) seeds
+        trainingData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMask trainingLen) seeds
+        evaluationData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMask evaluationLen) seeds
       model <- liftIO . Torch.Typed.sample $
                   (RATransformerMLMSpec 
                     (DropoutSpec 0.2)
@@ -1478,9 +1479,11 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
           training (model', optim') =
             let step (model'', optim'') ((target, input), batch) = do
                   lift . putStrLn $ "Training batch " <> show batch
+                  let input' = toDevice @TestDevice @TestDataDevice input
                   -- lift . threadDelay $ 10000000 -- delay by 10 seconds
-                  prediction <- lift $ raTransformerMLM model'' True input
-                  let cre = loss ones (ratKeyPaddingMask input) prediction target
+                  prediction <- lift $ raTransformerMLM model'' True input'
+                  let target' = toDevice @TestDevice @TestDataDevice target
+                      cre = loss ones (ratKeyPaddingMask input') prediction target'
                       parameters = flattenParameters model''
                       gradients = grad cre parameters
                       clippedGradients = hmap' (ClipGradValue (1e1 :: Float)) gradients
@@ -1494,8 +1497,10 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
           evaluation model' =
             let step (totalLoss, _step) ((target, input), batch) = do
                   lift . putStrLn $ "Evaluation batch " <> show batch
-                  prediction <- lift $ raTransformerMLM model' False input
-                  let cre = loss ones (ratKeyPaddingMask input) prediction target
+                  let input' = toDevice @TestDevice @TestDataDevice input
+                  prediction <- lift $ raTransformerMLM model' False input'
+                  let target' = toDevice @TestDevice @TestDataDevice target
+                      cre = loss ones (ratKeyPaddingMask input') prediction target'
                   -- if (toBool . Torch.Typed.isNaN $ cre) then
                   --   lift $ do
                   --     print input
