@@ -1168,12 +1168,12 @@ testMkRATransformerMLMInput = do
 ------------------------------------------------------------------------
 
 type TestBatchSize = 64
-type TestSeqLen = 512
+type TestSeqLen = 256
 type TestRelDim = 2
 
 type TestNumAttnLayers = 3
 type TestNumHeads = 8
-type TestHeadDim = 32
+type TestHeadDim = 16
 type TestFFNDim = 256
 type TestPaddingIdx = 0
 type TestTokenNumEmbeds = 5
