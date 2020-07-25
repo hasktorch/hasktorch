@@ -107,6 +107,8 @@ executable typed-transformer
                      , pipes-text
                      , safe-exceptions
                      , text
+                     , monad-control
+                     , transformers-base >= 0.4
 
 executable rnn
   import:              config
@@ -183,6 +185,7 @@ executable mnist-mlp
                      , random >= 1.1
                      , safe-exceptions
                      , static-mnist
+                     , pipes
 
 executable load-torchscript
   import:              config
@@ -241,11 +244,43 @@ executable distill
   import:              config
   hs-source-dirs:      distill
   main-is:             Main.hs
-  other-modules:       Distill, Dataset
+  other-modules:       Distill, Dataset, Model
+  ghc-options:         -fno-warn-partial-type-signatures
+  build-depends:       libtorch-ffi
+                     , bytestring >= 0.10.8
+                     , hvega
+                     , mtl
+                     , random >= 1.1
+                     , safe-exceptions
+                     , static-mnist
+
+executable regularization
+  import:              config
+  hs-source-dirs:      distill
+  main-is:             Regularization.hs
+  other-modules:       Distill, Dataset, Model, Plot
+  ghc-options:         -fno-warn-partial-type-signatures
+  build-depends:       libtorch-ffi
+                     , bytestring >= 0.10.8
+                     , hvega
+                     , mtl 
+                     , process
+                     , random >= 1.1
+                     , safe-exceptions
+                     , static-mnist
+                     , text
+
+executable iris-classification
+  import:              config
+  hs-source-dirs:      iris-classification
+  main-is:             Main.hs
   ghc-options:         -fno-warn-partial-type-signatures
   build-depends:       libtorch-ffi
                      , bytestring >= 0.10.8
                      , mtl
                      , random >= 1.1
                      , safe-exceptions
-                     , static-mnist
+                     , cassava
+                     , pipes
+                     , pipes-safe
+                     , vector

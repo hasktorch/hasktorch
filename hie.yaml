@@ -64,6 +64,10 @@ cradle:
       component: "exe:vae"
     - path: "./examples/xor-mlp"
       component: "exe:xor-mlp"
+    - path: "./examples/csv-test"
+      component: "exe:csv-test"
+    - path: "./examples/iris-classification"
+      component: "exe:iris-classification"
 
     - path: "./experimental/dataloader-cifar10"
       component: "exe:dataloader-cifar10"
