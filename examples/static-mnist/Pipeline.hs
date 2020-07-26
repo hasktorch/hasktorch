@@ -44,8 +44,8 @@ import           Common
 
 instance (KnownNat batchSize) =>
   Dataset IO I.MnistData (Tensor '( 'D.CPU, 0) 'D.Float '[batchSize, 784], Tensor '( 'D.CPU, 0) 'D.Int64 '[batchSize]) where
-  getBatch dataset iter = getBatchMnist dataset (I.length dataset `div` natValI @batchSize) iter
-  numIters dataset = I.length dataset `div` natValI @batchSize
+  getBatch dataset iter = getBatchMnist dataset (I.length dataset `Prelude.div` natValI @batchSize) iter
+  numIters dataset = I.length dataset `Prelude.div` natValI @batchSize
 
 getBatchMnist :: forall batchSize model optim . _ => I.MnistData -> Int -> Int ->  IO _
 getBatchMnist dataset numIters iter =  

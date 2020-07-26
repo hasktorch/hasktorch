@@ -83,7 +83,7 @@ train initModel initOptim forward learningRate ptFile = do
   let numEpochs = 1000
   (trainingData, testData) <- initMnist "data"
   foldLoop_ (initModel, initOptim) numEpochs $ \(epochModel, epochOptim) epoch -> do
-    let numIters = length trainingData `div` natValI @batchSize
+    let numIters = length trainingData `Prelude.div` natValI @batchSize
     (epochModel', epochOptim') <- foldLoop (epochModel, epochOptim) numIters $ \(model, optim) i -> do
       (trainingLoss,_) <- computeLossAndErrorCount @batchSize (forward model True) 
                                                               i
@@ -92,7 +92,7 @@ train initModel initOptim forward learningRate ptFile = do
       return (model', optim')
 
     (testLoss, testError) <- do
-      let numIters = length testData `div` natValI @batchSize
+      let numIters = length testData `Prelude.div` natValI @batchSize
       foldLoop (0,0) numIters $ \(org_loss,org_err) i -> do
         (loss,err) <- computeLossAndErrorCount @batchSize (forward epochModel' False)
                                                           i

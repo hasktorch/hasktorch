@@ -1450,8 +1450,9 @@ testProgram
   -> Int -- ^ number of epochs
   -> Int -- ^ number batches taken from training file per epoch
   -> Int -- ^ number batches taken from evaluation file per epoch
+  -> FilePath -- ^^ file name
   -> IO ()
-testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . runEffect $ go
+testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSafeT . runEffect $ go
   where
     go :: Effect (Safe.SafeT IO) ()
     go = do
@@ -1525,19 +1526,30 @@ testProgram learningRate numEpochs trainingLen evaluationLen = Safe.runSafeT . r
             (model'', optim'') <- training (model', optim')
             avgLoss <- evaluation model''
             lift . putStrLn $ "Average evaluation loss " <> show avgLoss
+            lift . save (hmap' ToDependent . flattenParameters $ model'') $ ptFile
             pure (model'', optim'')
           begin = pure (model, optim)
           done = pure
       _ <- lift $ foldM step begin done (Pipes.each [1 .. numEpochs])
       pure ()
 
+-- add lambda calculus pretty printing
+-- access variability of generated lambda expressions, calculate mean number of samples until repetition
+-- calculate sample statistics: expression depth, type depth, number of lambda abstractions, applications, Nat tower depth
 -- implement inference
+-- add type checking to inference
 -- implement valid actions mask
 -- add simple ^-shaped learning rate schedule
+-- add optimizer checkpointing, save both weights and iteration number
+-- make it possible to resume training from a model and an optimizer checkpoint
+-- add rolling model checkpointing based on best observed performance
+-- make an existentially quantified model checkpoint that carries all constraints
 -- test that there are no empty sequences
 -- test that there are no unks
--- split training and evaluation data
+-- split training and evaluation data in non-overlapping sets (based on predefined expression and/or type properties or hash parity)
+-- compute and the report the loss on the masked tokens and the unmasked tokens individually
 -- generalize multi-headed attention: use query, key, value as inputs, use seqLen and seqLen', make attentionMask and keyPaddingMask both optional
+-- ~add simple model checkpointing~
 -- ~use Andre's new streaming data pipeline~
 -- ~why does it segfault on cuda?~
 -- ~what is the cause of NaNs in the evaluation?~

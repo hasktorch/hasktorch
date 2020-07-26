@@ -3,4 +3,4 @@ module Main where
 import Torch.Data.ActionTransitionSystem (testProgram)
 
 main :: IO ()
-main = testProgram 0.001 1000 10 1
+main = testProgram 0.001 1000 10 1 "model.pt"
