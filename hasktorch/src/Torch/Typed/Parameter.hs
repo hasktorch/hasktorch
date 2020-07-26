@@ -31,7 +31,7 @@ import           GHC.TypeLits
 import           GHC.TypeLits.Extra
 import           GHC.Generics
 
-import qualified Torch.NN (Randomizable(..), Parameter, sample)
+import qualified Torch.NN (Randomizable(..), Parameter, Parameterized, sample)
 import qualified Torch.Tensor (toDevice, toType)
 import qualified Torch.Autograd (IndependentTensor(..), makeIndependent)
 import           Torch.Device (DeviceType)
