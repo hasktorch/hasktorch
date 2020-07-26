@@ -119,12 +119,12 @@ instance
     in  l' :*: r'
 
 instance Torch.NN.Parameterized (Tensor device dtype shape) where
-  flattenParameters _ = []
-  replaceOwnParameters = return
+  Torch.NN.flattenParameters _ = []
+  Torch.NN.replaceOwnParameters = return
 
 instance Torch.NN.Parameterized (Parameter device dtype shape) where
-  flattenParameters (UnsafeMkParameter param) = return param
-  replaceOwnParameters _ = UnsafeMkParameter <$> Torch.NN.nextParameter
+  Torch.NN.flattenParameters (UnsafeMkParameter param) = return param
+  Torch.NN.replaceOwnParameters _ = UnsafeMkParameter <$> Torch.NN.nextParameter
 
 instance {-# OVERLAPS #-} Parameterized (Tensor device dtype shape) '[] where
   flattenParameters _ = HNil
