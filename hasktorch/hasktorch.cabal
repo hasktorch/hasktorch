@@ -138,9 +138,12 @@ test-suite spec
                     , DimnameSpec
                     , PipelineSpec
                     , Torch.Typed.AuxSpec
-                    , Torch.Typed.TensorSpec
+                    , Torch.Typed.TensorSpec0
+                    , Torch.Typed.TensorSpec1
                     , Torch.Typed.FactoriesSpec
-                    , Torch.Typed.FunctionalSpec
+                    , Torch.Typed.FunctionalSpec0
+                    , Torch.Typed.FunctionalSpec1
+                    , Torch.Typed.FunctionalSpec2
                     , Torch.Typed.AutogradSpec
                     , Torch.Typed.OptimSpec
                     , Torch.Typed.NNSpec
