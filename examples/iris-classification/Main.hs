@@ -22,7 +22,6 @@ import           Torch.Data.CsvDataset
 import           Torch.Data.Pipeline (FoldM(FoldM))
 import           Torch.Data.StreamedPipeline (pmap, makeListT)
 import           Torch.Tensor
-import Torch.Functional.Internal (one_hot)
 
 data MLPSpec = MLPSpec {
     inputFeatures   :: Int,
@@ -68,12 +67,12 @@ data Iris = Iris { sepalLength :: Float
                  , petalLength :: Float
                  , petalWidth  :: Float
                  , irisClass   :: IrisClass
-                 } deriving (Generic, Show, FromRecord, FromNamedRecord)
+                 } deriving (Generic, Show, FromRecord)
 
 irisToTensor :: Vector Iris -> (Tensor, Tensor)
 irisToTensor iris = do
   -- want to only traverse this list once 
-  (asTensor . toList $ getFeatures iris, toType Float $ one_hot (asTensor . toList $ getClasses iris) 3)
+  (asTensor . toList $ getFeatures iris, toType Float $ oneHot 3 (asTensor . toList $ getClasses iris) )
   where 
         getFeatures = fmap (\x -> [sepalLength x, sepalWidth x, petalLength x, petalWidth x])
         getClasses = fmap (\x -> fromEnum $ irisClass x)
@@ -85,7 +84,6 @@ trainLoop model optimizer inputs = P.foldM step init done $ enumerate inputs
           let loss = binaryCrossEntropyLoss' label $ mlp model input
           when (iter == 5) $ do
             liftIO $ putStrLn $ " | Loss: " ++ show loss
-            -- liftIO $ print label
           (newParam, _) <- liftIO $ runStep model optimizer loss 1e-2
           pure $ replaceParameters model newParam
 
