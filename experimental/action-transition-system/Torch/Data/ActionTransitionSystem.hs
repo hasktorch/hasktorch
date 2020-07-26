@@ -1383,7 +1383,7 @@ mkBatch
        , RATransformerMLMInput batchSize seqLen relDim dtype device
        )
 mkBatch seed pMask = do
-  liftIO . putStrLn $ "Start making batch for seed " <> show seed
+  -- liftIO . putStrLn $ "Start making batch for seed " <> show seed
   actions <- sample' . Gen.list (Range.singleton $ natValI @batchSize) $ do
     ty <- genTy
     input <- genWellTypedExp @Int ty
@@ -1393,7 +1393,7 @@ mkBatch seed pMask = do
     guard (List.length actions <= natValI @seqLen)
     pure actions
   res <- mkRATransformerMLMInput pMask actions
-  liftIO . putStrLn $ "Finished making batch for seed " <> show seed
+  -- liftIO . putStrLn $ "Finished making batch for seed " <> show seed
   pure res
 
 sample' :: MonadIO m => Gen a -> m a
