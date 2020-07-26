@@ -118,13 +118,13 @@ instance
         r'       = gReplaceParameters r bs
     in  l' :*: r'
 
-instance A.Parameterized (Tensor device dtype shape) where
+instance Torch.NN.Parameterized (Tensor device dtype shape) where
   flattenParameters _ = []
   replaceOwnParameters = return
 
-instance A.Parameterized (Parameter device dtype shape) where
+instance Torch.NN.Parameterized (Parameter device dtype shape) where
   flattenParameters (UnsafeMkParameter param) = return param
-  replaceOwnParameters _ = UnsafeMkParameter <$> A.nextParameter
+  replaceOwnParameters _ = UnsafeMkParameter <$> Torch.NN.nextParameter
 
 instance {-# OVERLAPS #-} Parameterized (Tensor device dtype shape) '[] where
   flattenParameters _ = HNil
