@@ -284,3 +284,17 @@ executable iris-classification
                      , pipes
                      , pipes-safe
                      , vector
+
+executable covid
+  import:              config
+  hs-source-dirs:      covid
+  main-is:             Main.hs
+  other-modules:       
+  ghc-options:         -fno-warn-partial-type-signatures
+  build-depends:       libtorch-ffi
+                     , bytestring
+                     , hvega
+                     , cassava
+                     , pipes
+                     , pipes-safe
+                     , vector
