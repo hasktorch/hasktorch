@@ -1252,6 +1252,7 @@ displayAttentionMask t =
       ts = chunk @batchSize @0 @shape @'Int64 @device @tensorChunks t'
   in void . hmapM' DisplayAttentionMask $ ts
 
+testMkRATransformerMLMInput :: IO (RATransformerMLMBatch TestBatchSize TestSeqLen TestRelDim TestDType TestDevice)
 testMkRATransformerMLMInput = do
   let input :: Exp Int = (lam Nat 0 (Var 0)) :@ Zero
       target = nf input
@@ -1607,8 +1608,8 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
                   let target = toDevice @TestDevice @TestDataDevice ratTarget
                       loss' mask = loss ones mask prediction (ratTargetTokens target)
                       cre = loss' $ ratKeyPaddingMask input
-                      creMask = loss' $ ratTokenMask target `logicalOr` ratKeyPaddingMask input
-                      creNonMask = loss' $ (logicalNot $ ratTokenMask target) `logicalOr` ratKeyPaddingMask input
+                      creMask = loss' $ (logicalNot $ ratTokenMask target) `logicalOr` ratKeyPaddingMask input
+                      creNonMask = loss' $ ratTokenMask target `logicalOr` ratKeyPaddingMask input
                   -- guard (not . toBool . Torch.Typed.isNaN $ cre)
                   let res = (totalLoss + toFloat cre, totalMaskLoss + toFloat creMask, totalNonMaskLoss + toFloat creNonMask, _step + 1)
                   lift performGC -- force GC cleanup after every batch
