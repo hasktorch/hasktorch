@@ -1243,6 +1243,7 @@ displayAttentionMask t =
       ts = chunk @batchSize @0 @shape @'Int64 @device @tensorChunks t'
   in void . hmapM' DisplayAttentionMask $ ts
 
+testMkRATransformerMLMInput :: IO (Tensor TestDevice 'Int64 '[TestBatchSize, TestSeqLen], RATransformerMLMInput TestBatchSize TestSeqLen TestRelDim TestDType TestDevice)
 testMkRATransformerMLMInput = do
   let input :: Exp Int = (lam Nat 0 (Var 0)) :@ Zero
       target = nf input
@@ -1498,7 +1499,7 @@ sample' gen =
     let
       go = do
         seed <- Seed.random
-        case evalGen 30 seed gen of
+        case evalGen 20 seed gen of
           Nothing ->
             go
           Just x ->
