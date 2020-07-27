@@ -1607,8 +1607,8 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
                   let target = toDevice @TestDevice @TestDataDevice ratTarget
                       loss' mask = loss ones mask prediction (ratTargetTokens target)
                       cre = loss' $ ratKeyPaddingMask input
-                      creMask = loss' $ ratTokenMask target `logicalAnd` ratKeyPaddingMask input
-                      creNonMask = loss' $ (logicalNot $ ratTokenMask target) `logicalAnd` ratKeyPaddingMask input
+                      creMask = loss' $ ratTokenMask target `logicalOr` ratKeyPaddingMask input
+                      creNonMask = loss' $ (logicalNot $ ratTokenMask target) `logicalOr` ratKeyPaddingMask input
                   -- guard (not . toBool . Torch.Typed.isNaN $ cre)
                   let res = (totalLoss + toFloat cre, totalMaskLoss + toFloat creMask, totalNonMaskLoss + toFloat creNonMask, _step + 1)
                   lift performGC -- force GC cleanup after every batch
