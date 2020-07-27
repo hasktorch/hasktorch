@@ -1141,9 +1141,10 @@ mkRATransformerMLMInput
      , Alternative m
      )
   => a
+  -> a
   -> [[Action]]
   -> m (RATransformerMLMBatch batchSize seqLen relDim dtype device)
-mkRATransformerMLMInput pMask actions = do
+mkRATransformerMLMInput pMaskInput pMaskTarget actions = do
   let fromJust' = maybe empty pure
       envs =
         let step actions =
@@ -1169,7 +1170,10 @@ mkRATransformerMLMInput pMask actions = do
   -- liftIO . displayAttentionMask $ attentionMask'
   guard (attentionMaskIsProper attentionMask')
   let attentionMask'' = maskedFill (logicalNot attentionMask') (-1 / 0 :: Double) $ zeros @'[batchSize, seqLen, seqLen] @dtype @device
-  tokenMask <- bernoulliMask pMask keyPaddingMask
+  tokenMask <- do
+    tokenMaskInput <- bernoulliMask pMaskInput (keyPaddingMask `logicalOr` (logicalNot inputScopeMask))
+    tokenMaskTarget <- bernoulliMask pMaskTarget (keyPaddingMask `logicalOr` (logicalNot targetScopeMask))
+    pure (tokenMaskInput `logicalOr` tokenMaskTarget)
   let maskedTokens = maskedFill tokenMask (fromJust $ OSet.findIndex Mask tokenVocab) tokens
   pure $ RATransformerMLMBatch
            (RATransformerMLMInput
@@ -1265,7 +1269,7 @@ testMkRATransformerMLMInput = do
       target = nf input
       ex = Example (Input input) (Target target)
       actions = toActions @[] $ ex -- [R,L,L,R,R,L,L,L,R,R,R,R,R,R]
-  mkRATransformerMLMInput @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDevice @Float @IO 0.25 [actions]
+  mkRATransformerMLMInput @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDevice @Float @IO 0.15 0.25 [actions]
 
 ------------------------------------------------------------------------
 
@@ -1480,8 +1484,9 @@ mkBatch
      )
   => Int
   -> a
+  -> a
   -> m (RATransformerMLMBatch batchSize seqLen relDim dtype device)
-mkBatch seed pMask = do
+mkBatch seed pMaskInput pMaskTarget = do
   -- liftIO . putStrLn $ "Start making batch for seed " <> show seed
   actions <- sample' . Gen.list (Range.singleton $ natValI @batchSize) $ do
     ty <- genTy
@@ -1491,7 +1496,7 @@ mkBatch seed pMask = do
         actions = toActions @[] ex
     guard (List.length actions <= natValI @seqLen)
     pure actions
-  res <- mkRATransformerMLMInput pMask actions
+  res <- mkRATransformerMLMInput pMaskInput pMaskTarget actions
   -- liftIO . putStrLn $ "Finished making batch for seed " <> show seed
   pure res
 
@@ -1522,7 +1527,7 @@ sample' gen =
       go
 
 testMkBatch :: IO (RATransformerMLMBatch TestBatchSize TestSeqLen TestRelDim TestDType TestDevice)
-testMkBatch = mkBatch @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDevice @Float 0 0.25
+testMkBatch = mkBatch @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDevice @Float 0 0.15 0.25
 
 data ClipGradValue a = ClipGradValue a
 
@@ -1535,7 +1540,7 @@ data GuardGradAgainstNaN = GuardGradAgainstNaN
 instance Apply' GuardGradAgainstNaN (Tensor device dtype shape, Maybe ()) (Maybe ()) where
   apply' _ (t, acc) = acc >> (guard . not . toBool . Torch.Typed.any . Torch.Typed.isNaN $ t)
 
-data RATransformerMLMData (batchSize :: Nat) (seqLen :: Nat) (relDim :: Nat) (dtype :: DType) (device :: (DeviceType, Nat)) a = RATransformerMLMData a Int
+data RATransformerMLMData (batchSize :: Nat) (seqLen :: Nat) (relDim :: Nat) (dtype :: DType) (device :: (DeviceType, Nat)) a = RATransformerMLMData a a Int
 
 instance
   ( SumDTypeIsValid device 'Int64
@@ -1551,7 +1556,7 @@ instance
     (RATransformerMLMBatch batchSize seqLen relDim dtype device) 
   where
   -- streamBatch :: dataset -> seed -> ListT m batch
-  streamBatch (RATransformerMLMData pMask len) seed = Select $ (repeatM $ mkBatch seed pMask) >-> Pipes.Prelude.take len
+  streamBatch (RATransformerMLMData pMaskInput pMaskTarget len) seed = Select $ (repeatM $ mkBatch seed pMaskInput pMaskTarget) >-> Pipes.Prelude.take len
 
 testProgram
   :: LearningRate TestDevice TestDType -- ^ learning rate
@@ -1565,11 +1570,12 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
     go :: Effect (Safe.SafeT IO) ()
     go = do
       let
-        pMask = 0.2 :: Float
+        pMaskInput = 0.2 :: Float
+        pMaskTarget = 0.2 :: Float
         trainingSeeds = List.take 10 $ List.iterate (+ 1) (0 :: Int)
-        trainingData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMask trainingLen) trainingSeeds
+        trainingData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMaskInput pMaskTarget trainingLen) trainingSeeds
         evaluationsSeeds = List.take 2 $ List.iterate (+ 1) (0 :: Int)
-        evaluationData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMask evaluationLen) evaluationsSeeds
+        evaluationData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMaskInput pMaskTarget evaluationLen) evaluationsSeeds
       model <- liftIO . Torch.Typed.sample $
                   (RATransformerMLMSpec 
                     (DropoutSpec 0.2)
@@ -1698,7 +1704,6 @@ instance Num a => Monoid (CRE a) where
     , creNonMaskedTarget = 0
     }
 
--- distinguish between loss on input and target reconstruction
 -- access variability of generated lambda expressions, calculate mean number of samples until repetition
 -- calculate sample statistics: expression depth, type depth, number of lambda abstractions, applications, Nat tower depth
 -- implement inference
@@ -1714,6 +1719,8 @@ instance Num a => Monoid (CRE a) where
 -- split training and evaluation data in non-overlapping sets (based on predefined expression and/or type properties or hash parity)
 -- generalize multi-headed attention: use query, key, value as inputs, use seqLen and seqLen', make attentionMask and keyPaddingMask both optional
 -- improve lambda calculus pretty printing: parentheses are not always good
+-- ~make it possible to use different pMask values for input and target sections~
+-- ~distinguish between loss on input and target reconstruction~
 -- ~compute and the report the loss on the masked tokens and the unmasked tokens individually~
 -- ~add lambda calculus pretty printing~
 -- ~add simple model checkpointing~
