@@ -1100,6 +1100,8 @@ data RATransformerMLMInput batchSize seqLen relDim dtype device = RATransformerM
 data RATransformerMLMTarget batchSize seqLen device = RATransformerMLMTarget
   { ratTargetTokens :: Tensor device 'Int64 '[batchSize, seqLen] -- ^ target tokens
   , ratTokenMask :: Tensor device 'Bool '[batchSize, seqLen] -- ^ token mask
+  , ratInputScopeMask :: Tensor device 'Bool '[batchSize, seqLen] -- ^ input scope mask
+  , ratTargetScopeMask :: Tensor device 'Bool '[batchSize, seqLen] -- ^ target scope mask
   } deriving (Show, Generic)
 
 loss
@@ -1155,9 +1157,12 @@ mkRATransformerMLMInput pMask actions = do
       tokenVocab = OSet.fromList [Pad, Unk, Mask, Token L, Token R]
       metaVocab = OSet.fromList [Pad, Unk, Token (D "Exp"), Token (D "Ty"), Token (D "Var")]
       relationsVocab = OSet.fromList [Pad, Unk, Token ChildParentRelation, Token ParentChildRelation, Token (SiblingDistRelation $ -1), Token (SiblingDistRelation 0), Token (SiblingDistRelation 1)]
-  tokens <- fromJust' . mkSeq' @batchSize @seqLen tokenVocab $ view (field @"tEnv" . field @"tokens") <$> envs
+  tokens <- fromJust' . mkSeq' tokenVocab $ view (field @"tEnv" . field @"tokens") <$> envs
   meta <- fromJust' . mkSeq' metaVocab $ view (field @"mEnv" . field @"metas") <$> envs
   relations <- fromJust' . mkMultiGrid' relationsVocab $ view (field @"rEnv" . field @"relations") <$> envs
+  let scopeMask scopeId = fromJust' $ mkSeqMask' =<< traverse ((scopePositions <$>) . Map.lookup scopeId . view (field @"aEnv" . field @"knownScopes")) envs
+  inputScopeMask <- scopeMask "input"
+  targetScopeMask <- scopeMask "target"
   attentionMask <- fromJust' . mkGridMask' @batchSize @seqLen @seqLen $ view (field @"aEnv" . field @"attentionMask") <$> envs
   keyPaddingMask <- logicalNot <$> (fromJust' . mkSeqMask' $ view (field @"aEnv" . field @"keyPaddingMask") <$> envs)
   let attentionMask' = maskedFill (unsqueeze @2 keyPaddingMask) (1 :: Int) attentionMask
@@ -1175,7 +1180,9 @@ mkRATransformerMLMInput pMask actions = do
              keyPaddingMask)
            (RATransformerMLMTarget
              tokens
-             tokenMask)
+             tokenMask
+             inputScopeMask
+             targetScopeMask)
 
 attentionMaskIsProper
   :: forall batchSize seqLen device
@@ -1601,39 +1608,95 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
                 done = pure
             in runContT trainingData (foldM step begin done . enumerate)
           evaluation model' =
-            let step (totalLoss, totalMaskLoss, totalNonMaskLoss, _step) (RATransformerMLMBatch {..}, batch) = do
+            let step (cre, _step) (RATransformerMLMBatch {..}, batch) = do
                   lift . putStrLn $ "Evaluation batch " <> show batch
                   let input = toDevice @TestDevice @TestDataDevice ratInput
                   prediction <- lift $ raTransformerMLM model' False input
                   let target = toDevice @TestDevice @TestDataDevice ratTarget
                       loss' mask = loss ones mask prediction (ratTargetTokens target)
-                      cre = loss' $ ratKeyPaddingMask input
-                      creMask = loss' $ (logicalNot $ ratTokenMask target) `logicalOr` ratKeyPaddingMask input
-                      creNonMask = loss' $ ratTokenMask target `logicalOr` ratKeyPaddingMask input
+                      cre' = CRE
+                        { cre = toFloat . loss' $ ratKeyPaddingMask input
+                        , creInput = toFloat . loss' $ ratKeyPaddingMask input `logicalOr` (logicalNot $ ratInputScopeMask target)
+                        , creTarget = toFloat . loss' $ ratKeyPaddingMask input `logicalOr` (logicalNot $ ratTargetScopeMask target)
+                        , creMasked = toFloat . loss' $ (logicalNot $ ratTokenMask target) `logicalOr` ratKeyPaddingMask input
+                        , creMaskedInput = toFloat . loss' $ (logicalNot $ ratTokenMask target) `logicalOr` ratKeyPaddingMask input `logicalOr` (logicalNot $ ratInputScopeMask target)
+                        , creMaskedTarget = toFloat . loss' $ (logicalNot $ ratTokenMask target) `logicalOr` ratKeyPaddingMask input `logicalOr` (logicalNot $ ratTargetScopeMask target)
+                        , creNonMasked = toFloat . loss' $ ratTokenMask target `logicalOr` ratKeyPaddingMask input
+                        , creNonMaskedInput = toFloat . loss' $ ratTokenMask target `logicalOr` ratKeyPaddingMask input `logicalOr` (logicalNot $ ratInputScopeMask target)
+                        , creNonMaskedTarget = toFloat . loss' $ ratTokenMask target `logicalOr` ratKeyPaddingMask input `logicalOr` (logicalNot $ ratTargetScopeMask target)
+                        }
                   -- guard (not . toBool . Torch.Typed.isNaN $ cre)
-                  let res = (totalLoss + toFloat cre, totalMaskLoss + toFloat creMask, totalNonMaskLoss + toFloat creNonMask, _step + 1)
+                  let res = (cre <> cre', _step + 1)
                   lift performGC -- force GC cleanup after every batch
                   pure res
-                begin = pure (0 :: Float, 0 :: Float, 0 :: Float, 0 :: Int)
-                done (_, _, _, 0) = pure (1, 1, 1)
-                done (totalLoss, totalMaskLoss, totalNonMaskLoss, _step) =
+                begin = pure (mempty, 0 :: Int)
+                done (_, 0) = pure CRE
+                  { cre = 1
+                  , creInput = 1
+                  , creTarget = 1
+                  , creMasked = 1
+                  , creMaskedInput = 1
+                  , creMaskedTarget = 1
+                  , creNonMasked = 1
+                  , creNonMaskedInput = 1
+                  , creNonMaskedTarget = 1
+                  }
+                done (cre, _step) =
                   let scale x = x / (fromInteger . toInteger $ _step)
-                  in pure (scale totalLoss, scale totalMaskLoss, scale totalNonMaskLoss)
+                  in pure (scale <$> cre)
             in runContT evaluationData (foldM step begin done . enumerate)
           step (model', optim') epoch = do
             lift . putStrLn $ "Epoch " <> show epoch
             (model'', optim'') <- training (model', optim')
-            (avgLoss, avgMaskLoss, avgNonMaskLoss) <- evaluation model''
-            lift . putStrLn $ "Average evaluation loss " <> show avgLoss <> " (masked " <> show avgMaskLoss <> ", non-masked " <> show avgNonMaskLoss <> ")"
+            cre <- evaluation model''
+            lift . putStrLn $ "Average evaluation loss " <> show cre
             lift . save (hmap' ToDependent . flattenParameters $ model'') $ ptFile
             pure (model'', optim'')
           begin = do
-            (avgLoss, avgMaskLoss, avgNonMaskLoss) <- evaluation model
-            lift . putStrLn $ "Average evaluation loss " <> show avgLoss <> " (masked " <> show avgMaskLoss <> ", non-masked " <> show avgNonMaskLoss <> ")"
+            cre <- evaluation model
+            lift . putStrLn $ "Average evaluation loss " <> show cre
             pure (model, optim)
           done = pure
       _ <- lift $ foldM step begin done (Pipes.each [1 .. numEpochs])
       pure ()
+
+data CRE a = CRE
+  { cre :: a
+  , creInput :: a
+  , creTarget :: a
+  , creMasked :: a
+  , creMaskedInput :: a
+  , creMaskedTarget :: a
+  , creNonMasked :: a
+  , creNonMaskedInput :: a
+  , creNonMaskedTarget :: a
+  } deriving (Show, Functor)
+
+instance Num a => Semigroup (CRE a) where
+  a <> b = CRE
+    { cre = cre a + cre b
+    , creInput = creInput a + creInput b
+    , creTarget = creTarget a + creTarget b
+    , creMasked = creMasked a + creMasked b
+    , creMaskedInput = creMaskedInput a + creMaskedInput b
+    , creMaskedTarget = creMaskedTarget a + creMaskedTarget b
+    , creNonMasked = creNonMasked a + creNonMasked b
+    , creNonMaskedInput = creNonMaskedInput a + creNonMaskedInput b
+    , creNonMaskedTarget = creNonMaskedTarget a + creNonMaskedTarget b
+    }
+
+instance Num a => Monoid (CRE a) where
+  mempty = CRE
+    { cre = 0
+    , creInput = 0
+    , creTarget = 0
+    , creMasked = 0
+    , creMaskedInput = 0
+    , creMaskedTarget = 0
+    , creNonMasked = 0
+    , creNonMaskedInput = 0
+    , creNonMaskedTarget = 0
+    }
 
 -- distinguish between loss on input and target reconstruction
 -- access variability of generated lambda expressions, calculate mean number of samples until repetition
