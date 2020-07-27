@@ -1561,7 +1561,7 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
         pMask = 0.2 :: Float
         trainingSeeds = List.take 10 $ List.iterate (+ 1) (0 :: Int)
         trainingData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMask trainingLen) trainingSeeds
-        evaluationsSeeds = List.take 5 $ List.iterate (+ 1) (0 :: Int)
+        evaluationsSeeds = List.take 2 $ List.iterate (+ 1) (0 :: Int)
         evaluationData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMask evaluationLen) evaluationsSeeds
       model <- liftIO . Torch.Typed.sample $
                   (RATransformerMLMSpec 
