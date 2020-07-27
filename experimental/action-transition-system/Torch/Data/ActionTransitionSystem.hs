@@ -1570,7 +1570,7 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
     go :: Effect (Safe.SafeT IO) ()
     go = do
       let
-        pMaskInput = 0.2 :: Float
+        pMaskInput = 0.0 :: Float
         pMaskTarget = 0.2 :: Float
         trainingSeeds = List.take 10 $ List.iterate (+ 1) (0 :: Int)
         trainingData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMaskInput pMaskTarget trainingLen) trainingSeeds
@@ -1704,8 +1704,10 @@ instance Num a => Monoid (CRE a) where
     , creNonMaskedTarget = 0
     }
 
+-- implement hash function for expressions?
 -- access variability of generated lambda expressions, calculate mean number of samples until repetition
 -- calculate sample statistics: expression depth, type depth, number of lambda abstractions, applications, Nat tower depth
+-- how many expressions are part of other expressions?
 -- implement inference
 -- add type checking to inference
 -- implement valid actions mask
