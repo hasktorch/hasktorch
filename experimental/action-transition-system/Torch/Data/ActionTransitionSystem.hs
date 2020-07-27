@@ -775,13 +775,12 @@ genWellTypedExp ty = runFreshT $ runReaderT (genWellTypedExp' ty) mempty
 genWellTypedExp' :: forall a . Eq a => Ty -> GTyM a (Exp a)
 genWellTypedExp' ty =
   Gen.shrink shrinkExp $
-  Gen.recursive Gen.choice [
+  genWellTypedPath ty <|> Gen.recursive Gen.choice [
       -- non-recursive generators
       genWellTypedExp'' ty
     ] [
       -- recursive generators
-      genWellTypedPath ty <|> genWellTypedApp ty
-    , genWellTypedApp ty
+      genWellTypedApp ty
     , genWellTypedExp''' ty
     ]
 
@@ -1085,12 +1084,22 @@ raTransformerMLM RATransformerMLM {..} train RATransformerMLMInput {..} = do
       relations = sumDim @3 $ embed ratRelEmbedding ratRelations
   forward ratProj <$> hfoldrM (RAFoldLayers train ratAttentionMask ratKeyPaddingMask relations relations) input ratLayers
 
+data RATransformerMLMBatch batchSize seqLen relDim dtype device = RATransformerMLMBatch
+  { ratInput :: RATransformerMLMInput batchSize seqLen relDim dtype device
+  , ratTarget :: RATransformerMLMTarget batchSize seqLen device
+  } deriving (Show, Generic)
+
 data RATransformerMLMInput batchSize seqLen relDim dtype device = RATransformerMLMInput
-  { ratMaskedTokens :: Tensor device 'Int64 '[batchSize, seqLen] -- ^ tokens
+  { ratMaskedTokens :: Tensor device 'Int64 '[batchSize, seqLen] -- ^ masked tokens
   , ratMeta :: Tensor device 'Int64 '[batchSize, seqLen] -- ^ meta
   , ratRelations :: Tensor device 'Int64 '[batchSize, seqLen, seqLen, relDim] -- ^ relations
   , ratAttentionMask :: Tensor device dtype '[batchSize, seqLen, seqLen] -- ^ attention mask (0 where attention is allowed, -inf everywhere else)
   , ratKeyPaddingMask :: Tensor device 'Bool '[batchSize, seqLen] -- ^ key padding mask (True for padding, False everywhere else)
+  } deriving (Show, Generic)
+
+data RATransformerMLMTarget batchSize seqLen device = RATransformerMLMTarget
+  { ratTargetTokens :: Tensor device 'Int64 '[batchSize, seqLen] -- ^ target tokens
+  , ratTokenMask :: Tensor device 'Bool '[batchSize, seqLen] -- ^ token mask
   } deriving (Show, Generic)
 
 loss
@@ -1131,9 +1140,7 @@ mkRATransformerMLMInput
      )
   => a
   -> [[Action]]
-  -> m ( Tensor device 'Int64 '[batchSize, seqLen]
-       , RATransformerMLMInput batchSize seqLen relDim dtype device
-       )
+  -> m (RATransformerMLMBatch batchSize seqLen relDim dtype device)
 mkRATransformerMLMInput pMask actions = do
   let fromJust' = maybe empty pure
       envs =
@@ -1159,14 +1166,16 @@ mkRATransformerMLMInput pMask actions = do
   let attentionMask'' = maskedFill (logicalNot attentionMask') (-1 / 0 :: Double) $ zeros @'[batchSize, seqLen, seqLen] @dtype @device
   tokenMask <- bernoulliMask pMask keyPaddingMask
   let maskedTokens = maskedFill tokenMask (fromJust $ OSet.findIndex Mask tokenVocab) tokens
-  pure ( tokens
-       , RATransformerMLMInput
-           maskedTokens
-           meta
-           relations
-           attentionMask''
-           keyPaddingMask
-       )
+  pure $ RATransformerMLMBatch
+           (RATransformerMLMInput
+             maskedTokens
+             meta
+             relations
+             attentionMask''
+             keyPaddingMask)
+           (RATransformerMLMTarget
+             tokens
+             tokenMask)
 
 attentionMaskIsProper
   :: forall batchSize seqLen device
@@ -1243,7 +1252,6 @@ displayAttentionMask t =
       ts = chunk @batchSize @0 @shape @'Int64 @device @tensorChunks t'
   in void . hmapM' DisplayAttentionMask $ ts
 
-testMkRATransformerMLMInput :: IO (Tensor TestDevice 'Int64 '[TestBatchSize, TestSeqLen], RATransformerMLMInput TestBatchSize TestSeqLen TestRelDim TestDType TestDevice)
 testMkRATransformerMLMInput = do
   let input :: Exp Int = (lam Nat 0 (Var 0)) :@ Zero
       target = nf input
@@ -1464,9 +1472,7 @@ mkBatch
      )
   => Int
   -> a
-  -> m ( Tensor device 'Int64 '[batchSize, seqLen]
-       , RATransformerMLMInput batchSize seqLen relDim dtype device
-       )
+  -> m (RATransformerMLMBatch batchSize seqLen relDim dtype device)
 mkBatch seed pMask = do
   -- liftIO . putStrLn $ "Start making batch for seed " <> show seed
   actions <- sample' . Gen.list (Range.singleton $ natValI @batchSize) $ do
@@ -1507,9 +1513,7 @@ sample' gen =
     in
       go
 
-testMkBatch :: IO ( Tensor TestDevice 'Int64 '[TestBatchSize, TestSeqLen]
-                  , RATransformerMLMInput TestBatchSize TestSeqLen TestRelDim TestDType TestDevice
-                  )
+testMkBatch :: IO (RATransformerMLMBatch TestBatchSize TestSeqLen TestRelDim TestDType TestDevice)
 testMkBatch = mkBatch @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDevice @Float 0 0.25
 
 data ClipGradValue a = ClipGradValue a
@@ -1536,9 +1540,8 @@ instance
     (Safe.SafeT IO)
     Int
     (RATransformerMLMData batchSize seqLen relDim dtype device a)
-    ( Tensor device 'Int64 '[batchSize, seqLen]
-    , RATransformerMLMInput batchSize seqLen relDim dtype device
-    ) where
+    (RATransformerMLMBatch batchSize seqLen relDim dtype device) 
+  where
   -- streamBatch :: dataset -> seed -> ListT m batch
   streamBatch (RATransformerMLMData pMask len) seed = Select $ (repeatM $ mkBatch seed pMask) >-> Pipes.Prelude.take len
 
@@ -1578,13 +1581,13 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
       let optim = mkAdam 0 0.9 0.999 (flattenParameters model)
           -- optim = mkGDM 0.9 (flattenParameters model)
           training (model', optim') =
-            let step (model'', optim'') ((target, input), batch) = do
+            let step (model'', optim'') (RATransformerMLMBatch {..}, batch) = do
                   lift . putStrLn $ "Training batch " <> show batch
-                  let input' = toDevice @TestDevice @TestDataDevice input
+                  let input = toDevice @TestDevice @TestDataDevice ratInput
                   -- lift . threadDelay $ 10000000 -- delay by 10 seconds
-                  prediction <- lift $ raTransformerMLM model'' True input'
-                  let target' = toDevice @TestDevice @TestDataDevice target
-                      cre = loss ones (ratKeyPaddingMask input') prediction target'
+                  prediction <- lift $ raTransformerMLM model'' True input
+                  let targetTokens = toDevice @TestDevice @TestDataDevice . ratTargetTokens $ ratTarget
+                      cre = loss ones (ratKeyPaddingMask input) prediction targetTokens
                       parameters = flattenParameters model''
                       gradients = grad cre parameters
                       clippedGradients = hmap' (ClipGradValue (1e1 :: Float)) gradients
@@ -1597,32 +1600,30 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
                 done = pure
             in runContT trainingData (foldM step begin done . enumerate)
           evaluation model' =
-            let step (totalLoss, _step) ((target, input), batch) = do
+            let step (totalLoss, totalMaskLoss, totalNonMaskLoss, _step) (RATransformerMLMBatch {..}, batch) = do
                   lift . putStrLn $ "Evaluation batch " <> show batch
-                  let input' = toDevice @TestDevice @TestDataDevice input
-                  prediction <- lift $ raTransformerMLM model' False input'
-                  let target' = toDevice @TestDevice @TestDataDevice target
-                      cre = loss ones (ratKeyPaddingMask input') prediction target'
-                  -- let cre = (0 :: Float)
-                  -- if (toBool . Torch.Typed.isNaN $ cre) then
-                  --   lift $ do
-                  --     print input
-                  --     print prediction
-                  --     print target
-                  -- else
-                  --   pure ()
+                  let input = toDevice @TestDevice @TestDataDevice ratInput
+                  prediction <- lift $ raTransformerMLM model' False input
+                  let target = toDevice @TestDevice @TestDataDevice ratTarget
+                      loss' mask = loss ones mask prediction (ratTargetTokens target)
+                      cre = loss' $ ratKeyPaddingMask input
+                      creMask = loss' $ ratTokenMask target `logicalAnd` ratKeyPaddingMask input
+                      creNonMask = loss' $ (logicalNot $ ratTokenMask target) `logicalAnd` ratKeyPaddingMask input
+                  -- guard (not . toBool . Torch.Typed.isNaN $ cre)
+                  let res = (totalLoss + toFloat cre, totalMaskLoss + toFloat creMask, totalNonMaskLoss + toFloat creNonMask, _step + 1)
                   lift performGC -- force GC cleanup after every batch
-                  pure (totalLoss + toFloat cre, _step + 1)
-                  -- pure (totalLoss + cre, _step + 1)
-                begin = pure (0 :: Float, 0 :: Int)
-                done (_, 0) = pure 1
-                done (totalLoss, _step) = pure (totalLoss / (fromInteger . toInteger $ _step))
+                  pure res
+                begin = pure (0 :: Float, 0 :: Float, 0 :: Float, 0 :: Int)
+                done (_, _, _, 0) = pure (1, 1, 1)
+                done (totalLoss, totalMaskLoss, totalNonMaskLoss, _step) =
+                  let scale x = x / (fromInteger . toInteger $ _step)
+                  in pure (scale totalLoss, scale totalMaskLoss, scale totalNonMaskLoss)
             in runContT evaluationData (foldM step begin done . enumerate)
           step (model', optim') epoch = do
             lift . putStrLn $ "Epoch " <> show epoch
             (model'', optim'') <- training (model', optim')
-            avgLoss <- evaluation model''
-            lift . putStrLn $ "Average evaluation loss " <> show avgLoss
+            (avgLoss, avgMaskLoss, avgNonMaskLoss) <- evaluation model''
+            lift . putStrLn $ "Average evaluation loss " <> show avgLoss <> " (masked " <> show avgMaskLoss <> ", non-masked " <> show avgNonMaskLoss <> ")"
             lift . save (hmap' ToDependent . flattenParameters $ model'') $ ptFile
             pure (model'', optim'')
           begin = pure (model, optim)
@@ -1630,7 +1631,7 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
       _ <- lift $ foldM step begin done (Pipes.each [1 .. numEpochs])
       pure ()
 
--- add lambda calculus pretty printing
+-- distinguish between loss on input and target reconstruction
 -- access variability of generated lambda expressions, calculate mean number of samples until repetition
 -- calculate sample statistics: expression depth, type depth, number of lambda abstractions, applications, Nat tower depth
 -- implement inference
@@ -1644,8 +1645,10 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
 -- test that there are no empty sequences
 -- test that there are no unks
 -- split training and evaluation data in non-overlapping sets (based on predefined expression and/or type properties or hash parity)
--- compute and the report the loss on the masked tokens and the unmasked tokens individually
 -- generalize multi-headed attention: use query, key, value as inputs, use seqLen and seqLen', make attentionMask and keyPaddingMask both optional
+-- improve lambda calculus pretty printing: parentheses are not always good
+-- ~compute and the report the loss on the masked tokens and the unmasked tokens individually~
+-- ~add lambda calculus pretty printing~
 -- ~add simple model checkpointing~
 -- ~use Andre's new streaming data pipeline~
 -- ~why does it segfault on cuda?~
