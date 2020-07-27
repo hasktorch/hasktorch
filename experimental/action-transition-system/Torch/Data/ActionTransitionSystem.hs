@@ -1627,7 +1627,10 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
             lift . putStrLn $ "Average evaluation loss " <> show avgLoss <> " (masked " <> show avgMaskLoss <> ", non-masked " <> show avgNonMaskLoss <> ")"
             lift . save (hmap' ToDependent . flattenParameters $ model'') $ ptFile
             pure (model'', optim'')
-          begin = pure (model, optim)
+          begin = do
+            (avgLoss, avgMaskLoss, avgNonMaskLoss) <- evaluation model
+            lift . putStrLn $ "Average evaluation loss " <> show avgLoss <> " (masked " <> show avgMaskLoss <> ", non-masked " <> show avgNonMaskLoss <> ")"
+            pure (model, optim)
           done = pure
       _ <- lift $ foldM step begin done (Pipes.each [1 .. numEpochs])
       pure ()
