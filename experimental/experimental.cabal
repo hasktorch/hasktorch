@@ -63,3 +63,5 @@ executable action-transition-system
                      , pipes
                      , pipes-safe
                      , libtorch-ffi
+                     , prettyprinter
+                     , prettyprinter-ansi-terminal

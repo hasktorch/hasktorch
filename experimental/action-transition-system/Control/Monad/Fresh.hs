@@ -1,3 +1,5 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -31,9 +33,10 @@ data FreshT e m a = FreshT {unFreshT :: ReaderT (Successor e) (StateT e m) a}
 
 instance Monad m => MonadFresh e (FreshT e m) where
   fresh = FreshT $ do
+    e <- get
     s <- asks suc
     modify s
-    get
+    pure e
 
 instance Monad m => Monad (FreshT e m) where
   return = FreshT . return
@@ -90,33 +93,33 @@ instance MonadGen m => MonadGen (FreshT e m) where
   toGenT = hoist FreshT . distributeT . hoist distributeT . unFreshT . hoist toGenT
   fromGenT = hoist fromGenT . distributeT
 
-successor :: (e -> e) -> Successor e
+successor :: forall e . (e -> e) -> Successor e
 successor = Successor
 
-enumSucc :: Enum e => Successor e
+enumSucc :: forall e . Enum e => Successor e
 enumSucc = Successor succ
 
 -- | Run a @FreshT@ computation starting from the value
 -- @toEnum 0@
-runFreshT :: (Enum e, Monad m) => FreshT e m a -> m a
+runFreshT :: forall e m a . (Enum e, Monad m) => FreshT e m a -> m a
 runFreshT = runFreshTFrom (toEnum 0)
 
 -- | Run a @Fresh@ computation starting from the value
 -- @toEnum 0@
-runFresh :: Enum e => Fresh e a -> a
+runFresh :: forall e a . Enum e => Fresh e a -> a
 runFresh = runFreshFrom (toEnum 0)
 
 -- | Run a @FreshT@ computation starting from a specific value @e@.
-runFreshTFrom :: (Monad m, Enum e) => e -> FreshT e m a -> m a
+runFreshTFrom :: forall e m a . (Monad m, Enum e) => e -> FreshT e m a -> m a
 runFreshTFrom e = runFreshTWith enumSucc e
 
 -- | Run a @Fresh@ computation starting from a specific value @e@.
-runFreshFrom :: Enum e => e -> Fresh e a -> a
+runFreshFrom :: forall e a . Enum e => e -> Fresh e a -> a
 runFreshFrom e = runFreshWith enumSucc e
 
 -- | Run a @FreshT@ computation starting from a specific value @e@ with
 -- a the next fresh value determined by @Successor e@.
-runFreshTWith :: Monad m => Successor e -> e -> FreshT e m a -> m a
+runFreshTWith :: forall e m a . Monad m => Successor e -> e -> FreshT e m a -> m a
 runFreshTWith s e =
   flip evalStateT e
     . flip runReaderT s
@@ -124,7 +127,7 @@ runFreshTWith s e =
 
 -- | Run a @FreshT@ computation starting from a specific value @e@ with
 -- a the next fresh value determined by @Successor e@.
-runFreshWith :: Successor e -> e -> Fresh e a -> a
+runFreshWith :: forall e a . Successor e -> e -> Fresh e a -> a
 runFreshWith s e = runIdentity . runFreshTWith s e
 
 ---------------------------

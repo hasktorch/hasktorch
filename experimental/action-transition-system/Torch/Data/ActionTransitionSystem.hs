@@ -57,7 +57,7 @@ import Data.Functor.Classes (Eq1(..), Ord1(..), Show1(..), eq1, compare1, showsP
 import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
 import Data.Kind (Type)
 import Data.Text (pack, Text)
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Maybe (isJust, fromJust, fromMaybe)
 import Data.List as List (take, iterate, isInfixOf, replicate, length, filter, sort, nub)
 import Data.Map as Map (delete, elems, toList, (!), adjust, update, keys, null, insertWith, singleton, fromList, unionWith, Map, insert, lookup)
 import Data.Set as Set (elems, filter, cartesianProduct, unions, toList, fromList, member, singleton, union, Set, insert, findIndex)
@@ -91,6 +91,8 @@ import Torch.Data.StreamedPipeline (makeListT', Datastream(..))
 import Control.Monad.Trans.Cont (ContT(runContT))
 import Control.Concurrent (threadDelay)
 import System.Mem (performGC)
+import Data.Text.Prettyprint.Doc (vsep, hcat, hsep, (<+>), sep, pretty, parens, Doc)
+import Data.Text.Prettyprint.Doc.Render.Terminal
 
 -- https://stackoverflow.com/questions/17675054/deserialising-with-ghc-generics?rq=1
 -- http://hackage.haskell.org/package/cereal-0.5.8.1/docs/Data-Serialize.html
@@ -191,6 +193,7 @@ data Action =
   | IToken Int
   | SToken Text
   | BToken Bool
+  | CToken Char
     deriving (Eq, Ord, Show)
 
 type To t a = a -> t Action
@@ -406,6 +409,12 @@ instance Applicative t => ToActions t Text where
 instance MonadFail b => FromActions b Text where
   fromActions = token >>= (\case SToken s -> pure s; _ -> fail "text")
 
+instance Applicative t => ToActions t Char where
+  toActions = pure . CToken
+
+instance MonadFail b => FromActions b Char where
+  fromActions = token >>= (\case CToken c -> pure c; _ -> fail "char")
+
 instance Applicative t => ToActions t Int where
   toActions = pure . IToken
 
@@ -617,26 +626,26 @@ instance FromActions [] a => FromActions [] (Var () (Exp a))
 instance FromActions [] a => FromActions [] (Scope () Exp a)
 instance FromActions [] a => FromActions [] (Exp a)
 
-lam :: Eq a => Ty -> a -> Exp a -> Exp a
-lam ty uname b = Lam ty (abstract1 uname b)
+lam :: forall a . Eq a => Ty -> a -> Exp a -> Exp a
+lam ty uname bind = Lam ty (abstract1 uname bind)
 
 -- | Smart constructor that converts the given positive integer to a corresponding Nat.
-nat :: (Num n, Eq n) => n -> Exp a
+nat :: forall a n . (Num n, Eq n) => n -> Exp a
 nat 0 = Zero
 nat n = Suc $ nat (n-1)
 
 -- | Compute the normal form of an expression.
-nf :: Exp a -> Exp a
+nf :: forall a . Exp a -> Exp a
 nf e@Var{} = e
 nf (Lam ty b) = Lam ty (toScope . nf . fromScope $ b)
 nf (f :@ a) = case whnf f of
   Lam ty b -> nf (instantiate1 a b)
   f' -> nf f' :@ nf a
-nf e@Suc{} = e
+nf (Suc e) = Suc (nf e)
 nf e@Zero = e
 
 -- | Reduce a term to weak head normal form.
-whnf :: Exp a -> Exp a
+whnf :: forall a . Exp a -> Exp a
 whnf e@Var{} = e
 whnf e@Lam{} = e
 whnf (f :@ a) = case whnf f of
@@ -661,12 +670,82 @@ typeCheck env (Lam ty bind) = do
   uname <- fresh
   Arr ty <$> typeCheck (Map.insert uname ty env) (instantiate1 (Var uname) bind)
 
+type TyP a = Fresh a (Doc AnsiStyle)
+
+class Pretty a p where
+  pprint :: a -> p -> Doc AnsiStyle
+  ppr :: Int -> p -> TyP a
+
+  default pprint :: (Enum a) => a -> p -> Doc AnsiStyle
+  pprint a p = runFreshFrom @a a $ ppr 0 p
+
+instance Pretty Int Int where
+  ppr _ = pure . pretty
+
+instance Pretty Char Char where
+  ppr _ = pure . pretty
+
+-- instance Pretty a String where
+--   ppr _ = pure . pretty
+
+-- instance Pretty a (Doc AnsiStyle) where
+--   ppr _ = pure . id
+
+instance (Enum a, Ord a, Pretty a a) => Pretty a (Exp a) where
+  ppr p Zero = parensIf (p > 0) (pure . pretty $ 'Z')
+  ppr p (Suc e) = parensIf (p > 0) $ do
+    ps <- pure . pretty $ 'S'
+    pe <- ppr (p + 1) e
+    pure $ ps <> pe
+  ppr p (Var uname) = ppr p uname
+  ppr p e@(_ :@ _) =
+    let (f, xs) = viewApp e
+    in parensIf (p > 0) $ do
+        pf <- ppr (p + 1) f
+        args <- sep <$> (traverse (ppr (p + 1)) xs)
+        pure $ pf <+> args
+  ppr p e@(Lam _ty bind) = do
+    (vars, body) <- viewBody e
+    pb <- ppr 0 body
+    pl <- pure . pretty $ 'λ'
+    pd <- pure . pretty $ '.'
+    pvs <- traverse (ppr 0) $ reverse vars
+    let pvs' = hcat $ (\pv -> pl <> pv <> pd) <$> pvs
+    parensIf (p > 0) $ do
+      pure $ pvs' <+> pb
+
+parensIf :: Bool -> TyP a -> TyP a
+parensIf True = fmap parens
+parensIf False = id
+
+viewApp :: Exp a -> (Exp a, [Exp a])
+viewApp (e1 :@ e2) = go e1 [e2]
+  where
+    go (a :@ b) xs = go a (b : xs)
+    go f xs = (f, xs)
+
+viewBody :: Ord a => Exp a -> Fresh a ([a], Exp a)
+viewBody e = go [] e
+  where
+    go env (Lam _ bind) = do
+      uname <- fresh
+      go (uname : env) (instantiate1 (Var uname) bind)
+    go env x = pure (env, x)
+
+render :: forall a . (Ord a, Enum a, Pretty a a) => Exp a -> IO ()
+render = render' (toEnum 0)
+
+render' :: forall a . (Ord a, Enum a, Pretty a a) => a -> Exp a -> IO ()
+render' a e = putDoc $ pprint a e
+
 testBound :: IO ()
 testBound = do
-  let term :: Exp Int = (lam (Nat) 0 (Var 0)) :@ Zero
+  let term :: Exp Char = (lam Nat 'a' (Var 'a')) :@ Zero
   print term -- Lam Nat (Scope (Var (B ()))) :@ Zero
+  render' 'x' term -- (λx. x) Z
   print $ runFresh . runMaybeT . typeCheck Map.empty $ term -- Just Nat
   print $ toActions @[] $ term -- [R,L,L,R,R,L,L,L,R,R,R]
+  print $ whnf term -- Zero
   print $ nf term -- Zero
   print $ toActions @[] $ nf term -- [R,R,R]
 
@@ -677,7 +756,7 @@ type GTyM a = ReaderT (Map Ty [Exp a]) (FreshT a Gen)
 
 -- | Generate a type.
 -- We cannot generate an expression without generating a type for it first.
-genTy :: MonadGen m => m Ty
+genTy :: forall m . MonadGen m => m Ty
 genTy =
   Gen.recursive Gen.choice [
       -- non-recursive generators
@@ -689,11 +768,11 @@ genTy =
 
 -- | Finalize generation by running the monad transformers for the environment
 -- and the fresh variable name computation.
-genWellTypedExp :: (Eq a, Enum a) => Ty -> Gen (Exp a)
+genWellTypedExp :: forall a . (Eq a, Enum a) => Ty -> Gen (Exp a)
 genWellTypedExp ty = runFreshT $ runReaderT (genWellTypedExp' ty) mempty
 
 -- | Main recursive mechanism for genersating expressions for a given type.
-genWellTypedExp' :: Eq a => Ty -> GTyM a (Exp a)
+genWellTypedExp' :: forall a . Eq a => Ty -> GTyM a (Exp a)
 genWellTypedExp' ty =
   Gen.shrink shrinkExp $
   Gen.recursive Gen.choice [
@@ -703,9 +782,10 @@ genWellTypedExp' ty =
       -- recursive generators
       genWellTypedPath ty <|> genWellTypedApp ty
     , genWellTypedApp ty
+    , genWellTypedExp''' ty
     ]
 
-shrinkExp :: Exp a -> [Exp a]
+shrinkExp :: forall a . Exp a -> [Exp a]
 shrinkExp (f :@ a) = case whnf f of
   Lam _ b -> [whnf (instantiate1 a b)]
   _ -> []
@@ -716,20 +796,24 @@ shrinkExp _ = []
 -- then calling the @lam@ smart constructor on an expression that
 -- was produced for an environment to which @Var@ was added.
 -- A term of type @Nat@ is generated by converting a random integer through induction.
-genWellTypedExp'' :: Eq a => Ty -> GTyM a (Exp a)
+genWellTypedExp'' :: forall a . Eq a => Ty -> GTyM a (Exp a)
 genWellTypedExp'' (Arr ty ty') = do
   uname <- fresh
   lam ty uname <$> local (insertVar uname ty) (genWellTypedExp' ty')
 genWellTypedExp'' Nat = nat <$> Gen.int (Range.linear 0 10)
 
+genWellTypedExp''' :: forall a . Eq a => Ty -> GTyM a (Exp a)
+genWellTypedExp''' Nat = Suc <$> genWellTypedExp' Nat
+genWellTypedExp''' ty = genWellTypedExp' ty
+
 -- | Add @Var@ of given type to the given env so that it can be used for sampling later.
-insertVar :: Eq a => a -> Ty -> Map Ty [Exp a] -> Map Ty [Exp a]
+insertVar :: forall a . Eq a => a -> Ty -> Map Ty [Exp a] -> Map Ty [Exp a]
 insertVar uname ty =
   Map.insertWith (<>) ty [Var uname] . fmap (List.filter (/= Var uname))
 
 -- | Generate app by first producing type and value of the argument
 -- and then generating a compatible @Lam@. 
-genWellTypedApp :: Eq a => Ty -> GTyM a (Exp a)
+genWellTypedApp :: forall a . Eq a => Ty -> GTyM a (Exp a)
 genWellTypedApp ty = do
   tg <- genKnownTypeMaybe
   eg <- genWellTypedExp' tg
@@ -739,7 +823,7 @@ genWellTypedApp ty = do
 
 -- | Try to look up a known expression of the desired type from the environment.
 -- This does not always succeed, throwing `empty` when unavailable.
-genWellTypedPath :: Ty -> GTyM a (Exp a)
+genWellTypedPath :: forall a . Ty -> GTyM a (Exp a)
 genWellTypedPath ty = do
   paths <- ask
   case fromMaybe [] (Map.lookup ty paths) of
@@ -747,7 +831,7 @@ genWellTypedPath ty = do
     es -> Gen.element es
 
 -- | Generate either known types from the environment or new types.
-genKnownTypeMaybe :: GTyM a Ty
+genKnownTypeMaybe :: forall a . GTyM a Ty
 genKnownTypeMaybe = do
   known <- ask
   if Map.null known then
@@ -1160,7 +1244,7 @@ displayAttentionMask t =
   in void . hmapM' DisplayAttentionMask $ ts
 
 testMkRATransformerMLMInput = do
-  let input :: Exp Int = (lam (Nat) 0 (Var 0)) :@ Zero
+  let input :: Exp Int = (lam Nat 0 (Var 0)) :@ Zero
       target = nf input
       ex = Example (Input input) (Target target)
       actions = toActions @[] $ ex -- [R,L,L,R,R,L,L,L,R,R,R,R,R,R]
@@ -1396,13 +1480,25 @@ mkBatch seed pMask = do
   -- liftIO . putStrLn $ "Finished making batch for seed " <> show seed
   pure res
 
+testGen :: IO ()
+testGen = do
+  (e, actions) <- sample' $ do
+    ty <- genTy
+    e <- genWellTypedExp @Int ty
+    guard (isJust . runFresh . runMaybeT . assertTy Map.empty e $ ty)
+    let actions = toActions @[] e
+    guard (List.length actions <= 256)
+    pure (e, actions)
+  print actions
+  putDoc . vsep $ [mempty, pprint (0 :: Int) e, mempty, pprint (0 :: Int) (nf e), mempty]
+
 sample' :: MonadIO m => Gen a -> m a
 sample' gen =
   liftIO $
     let
       go = do
         seed <- Seed.random
-        case evalGen 10 seed gen of
+        case evalGen 30 seed gen of
           Nothing ->
             go
           Just x ->
