@@ -1605,6 +1605,42 @@ tril
   -> Tensor -- ^ output
 tril (Diag diagonal) input = unsafePerformIO $ (cast2 ATen.tril_tl) input diagonal
 
+-- | Returns a new tensor with the truncated integer values of the elements of input.
+trunc
+  :: Tensor -- ^ input
+  -> Tensor -- ^ output
+trunc input = unsafePerformIO $ (cast1 ATen.trunc_t) input
+
+-- | Returns the unique elements of the input tensor along a dimension.
+uniqueDim
+  :: Int -- ^ dim
+  -> Bool -- ^ sorted
+  -> Bool -- ^ return_inverse
+  -> Bool -- ^ return_counts
+  -> Tensor -- ^ input
+  -> (Tensor,Tensor,Tensor) -- ^ output
+uniqueDim dim sorted returnInverse returnCounts self = unsafePerformIO $ (cast5 ATen.unique_dim_tlbbb) self dim sorted returnInverse returnCounts
+
+-- | Eliminates all but the first element from every consecutive group of equivalent elements.
+-- This function is different from uniqueDim in the sense that this function only eliminates consecutive duplicate values. 
+uniqueConsecutive
+  :: Bool -- ^ return_inverse
+  -> Bool -- ^ return_counts
+  -> Int -- ^ dim
+  -> Tensor -- ^ input
+  -> (Tensor,Tensor,Tensor) -- ^ output
+uniqueConsecutive returnInverse returnCounts dim self = unsafePerformIO $ (cast4 ATen.unique_consecutive_tbbl) self returnInverse returnCounts dim
+
+-- | Eliminates all but the first element from every consecutive group of equivalent elements along a dimension.
+-- This function is different from uniqueDim in the sense that this function only eliminates consecutive duplicate values. 
+uniqueDimConsecutive
+  :: Int -- ^ dim
+  -> Bool -- ^ return_inverse
+  -> Bool -- ^ return_counts
+  -> Tensor -- ^ input
+  -> (Tensor,Tensor,Tensor) -- ^ output
+uniqueDimConsecutive dim returnInverse returnCounts self = unsafePerformIO $ (cast4 ATen.unique_dim_consecutive_tlbb) self dim returnInverse returnCounts
+
 -- | Returns a new tensor with a dimension of size one inserted at the specified position.
 -- The returned tensor shares the same underlying data with this tensor.
 -- A dim value within the range [(dim input) - 1, (dim input) + 1)] can be used. Negative dim will correspond to unsqueeze applied at dim = dim + (dim input) + 1

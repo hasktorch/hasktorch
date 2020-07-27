@@ -295,6 +295,9 @@ executable covid
                      , bytestring
                      , hvega
                      , cassava
+                     , containers
                      , pipes
                      , pipes-safe
+                     , pretty-simple
+                     , time
                      , vector
