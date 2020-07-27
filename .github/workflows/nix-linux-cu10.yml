@@ -49,5 +49,5 @@ jobs:
       - run: cachix use iohk
       - run: |
           nix-build -j 2 --arg cudaSupport true --argstr cudaMajorVersion 10 -A haskellPackages.libtorch-ffi.checks.spec
-          nix-build -j 2 --arg cudaSupport true --argstr cudaMajorVersion 10 -A haskellPackages.hasktorch.checks.spec
-          nix-build -j 2 --arg cudaSupport true --argstr cudaMajorVersion 10 -A haskellPackages.examples.checks.spec
+          nix-build -j 1 --arg cudaSupport true --argstr cudaMajorVersion 10 -A haskellPackages.hasktorch.checks.spec
+          nix-build -j 1 --arg cudaSupport true --argstr cudaMajorVersion 10 -A haskellPackages.examples.checks.spec

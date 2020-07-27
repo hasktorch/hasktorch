@@ -423,7 +423,7 @@ float_opts = withDType Float defaultOpts
 withTensor :: Tensor -> (Ptr () -> IO a) -> IO a
 withTensor t fn = cast t $ \t' -> withForeignPtr t' $ \tensor_ptr -> Unmanaged.tensor_data_ptr tensor_ptr >>= fn
 
-instance (Reifies a DType, Storable a) => TensorLike a where
+instance {-# OVERLAPPING #-} (Reifies a DType, Storable a) => TensorLike a where
   asTensor' v opts = unsafePerformIO $ do
     t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) [] $ withDType (_dtype @a) opts
     withTensor t $ \ptr -> do
@@ -447,7 +447,7 @@ instance (Reifies a DType, Storable a) => TensorLike a where
   _pokeElemOff ptr offset v = pokeElemOff (castPtr ptr) offset v
 
 
-instance {-# OVERLAPPING #-}TensorLike Bool where
+instance {-# OVERLAPPING #-} TensorLike Bool where
   asTensor' v opts = unsafePerformIO $ do
     t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) [] $ withDType (_dtype @Bool) opts
     withTensor t $ \ptr -> do
@@ -471,7 +471,7 @@ instance {-# OVERLAPPING #-}TensorLike Bool where
   _pokeElemOff ptr offset v = pokeElemOff (castPtr ptr) offset ((if v then 1 else 0) :: Word8)
 
 
-instance {-# OVERLAPPING #-}TensorLike a => TensorLike [a] where
+instance {-# OVERLAPPING #-} TensorLike a => TensorLike [a] where
   asTensor' v opts = unsafePerformIO $ do
     t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) (_dims v) $ withDType (_dtype @a) opts
     withTensor t $ \ptr -> do
