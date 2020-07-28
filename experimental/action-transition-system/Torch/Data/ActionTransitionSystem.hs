@@ -1650,8 +1650,8 @@ mkBatch pMaskInput pMaskTarget = do
     pure (input, actions)
   let inputs = fst <$> xs
       actions = snd <$> xs
-  liftIO $ putDoc . vsep $ (List.intersperse mempty $ (pprint (0 :: Int)) <$> inputs) <> [mempty]
-  liftIO $ print actions
+  -- liftIO $ putDoc . vsep $ (List.intersperse mempty $ (pprint (0 :: Int)) <$> inputs) <> [mempty]
+  -- liftIO $ print actions
   res <- lift $ mkRATransformerMLMBatch pMaskInput pMaskTarget actions
   -- liftIO . putStrLn $ "Finished making batch for " <> show seed
   pure res
