@@ -93,6 +93,7 @@ import Control.Concurrent (threadDelay)
 import System.Mem (performGC)
 import Data.Text.Prettyprint.Doc (vsep, hcat, hsep, (<+>), sep, pretty, parens, Doc)
 import Data.Text.Prettyprint.Doc.Render.Terminal
+import Data.Word (Word64)
 
 -- https://stackoverflow.com/questions/17675054/deserialising-with-ghc-generics?rq=1
 -- http://hackage.haskell.org/package/cereal-0.5.8.1/docs/Data-Serialize.html
@@ -1126,7 +1127,7 @@ loss validActionsMask keyPaddingMask logits target =
 
 ------------------------------------------------------------------------
 
-mkRATransformerMLMInput
+mkRATransformerMLMBatch
   :: forall batchSize seqLen relDim dtype device a m -- tensorChunks ys
    . ( All KnownNat '[batchSize, seqLen, relDim]
      , SumDTypeIsValid device 'Int64
@@ -1144,7 +1145,7 @@ mkRATransformerMLMInput
   -> a
   -> [[Action]]
   -> m (RATransformerMLMBatch batchSize seqLen relDim dtype device)
-mkRATransformerMLMInput pMaskInput pMaskTarget actions = do
+mkRATransformerMLMBatch pMaskInput pMaskTarget actions = do
   let fromJust' = maybe empty pure
       envs =
         let step actions =
@@ -1263,13 +1264,13 @@ displayAttentionMask t =
       ts = chunk @batchSize @0 @shape @'Int64 @device @tensorChunks t'
   in void . hmapM' DisplayAttentionMask $ ts
 
-testMkRATransformerMLMInput :: IO (RATransformerMLMBatch TestBatchSize TestSeqLen TestRelDim TestDType TestDevice)
-testMkRATransformerMLMInput = do
+testMkRATransformerMLMBatch :: IO (RATransformerMLMBatch TestBatchSize TestSeqLen TestRelDim TestDType TestDevice)
+testMkRATransformerMLMBatch = do
   let input :: Exp Int = (lam Nat 0 (Var 0)) :@ Zero
       target = nf input
       ex = Example (Input input) (Target target)
       actions = toActions @[] $ ex -- [R,L,L,R,R,L,L,L,R,R,R,R,R,R]
-  mkRATransformerMLMInput @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDevice @Float @IO 0.15 0.25 [actions]
+  mkRATransformerMLMBatch @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDevice @Float @IO 0.15 0.25 [actions]
 
 ------------------------------------------------------------------------
 
@@ -1482,12 +1483,12 @@ mkBatch
      , MonadIO m
      , Alternative m
      )
-  => Int
+  => a
   -> a
-  -> a
-  -> m (RATransformerMLMBatch batchSize seqLen relDim dtype device)
-mkBatch seed pMaskInput pMaskTarget = do
-  -- liftIO . putStrLn $ "Start making batch for seed " <> show seed
+  -> StateT Seed.Seed m (RATransformerMLMBatch batchSize seqLen relDim dtype device)
+mkBatch pMaskInput pMaskTarget = do
+  seed <- get
+  liftIO . putStrLn $ "Start making batch for seed " <> show seed
   actions <- sample' . Gen.list (Range.singleton $ natValI @batchSize) $ do
     ty <- genTy
     input <- genWellTypedExp @Int ty
@@ -1496,38 +1497,43 @@ mkBatch seed pMaskInput pMaskTarget = do
         actions = toActions @[] ex
     guard (List.length actions <= natValI @seqLen)
     pure actions
-  res <- mkRATransformerMLMInput pMaskInput pMaskTarget actions
-  -- liftIO . putStrLn $ "Finished making batch for seed " <> show seed
+  res <- lift $ mkRATransformerMLMBatch pMaskInput pMaskTarget actions
+  liftIO . putStrLn $ "Finished making batch for seed " <> show seed
   pure res
 
 testGen :: IO ()
 testGen = do
-  (e, actions) <- sample' $ do
+  seed <- Seed.random
+  ((e, actions), _) <- runStateT (sample' $ do
     ty <- genTy
     e <- genWellTypedExp @Int ty
     guard (isJust . runFresh . runMaybeT . assertTy Map.empty e $ ty)
     let actions = toActions @[] e
     guard (List.length actions <= 256)
-    pure (e, actions)
+    pure (e, actions)) seed
   print actions
   putDoc . vsep $ [mempty, pprint (0 :: Int) e, mempty, pprint (0 :: Int) (nf e), mempty]
 
-sample' :: MonadIO m => Gen a -> m a
+sample' :: MonadIO m => Gen a -> StateT Seed.Seed m a
 sample' gen =
-  liftIO $
-    let
-      go = do
-        seed <- Seed.random
-        case evalGen 20 seed gen of
-          Nothing ->
-            go
-          Just x ->
-            pure $ Tree.treeValue x
-    in
-      go
+  let
+    go = do
+      seed <- get
+      let (seed', seed'') = Seed.split seed
+      put seed''
+      case evalGen 20 seed' gen of
+        Nothing ->
+          go
+        Just x ->
+          pure $ Tree.treeValue x
+  in
+    go
 
 testMkBatch :: IO (RATransformerMLMBatch TestBatchSize TestSeqLen TestRelDim TestDType TestDevice)
-testMkBatch = mkBatch @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDevice @Float 0 0.15 0.25
+testMkBatch = do
+  seed <- Seed.random
+  (batch, _) <- runStateT (mkBatch @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDevice @Float 0.15 0.25) seed
+  pure batch
 
 data ClipGradValue a = ClipGradValue a
 
@@ -1551,12 +1557,17 @@ instance
   , Scalar a
   ) => Datastream
     (Safe.SafeT IO)
-    Int
+    Seed.Seed
     (RATransformerMLMData batchSize seqLen relDim dtype device a)
     (RATransformerMLMBatch batchSize seqLen relDim dtype device) 
   where
   -- streamBatch :: dataset -> seed -> ListT m batch
-  streamBatch (RATransformerMLMData pMaskInput pMaskTarget len) seed = Select $ (repeatM $ mkBatch seed pMaskInput pMaskTarget) >-> Pipes.Prelude.take len
+  streamBatch (RATransformerMLMData pMaskInput pMaskTarget len) seed = 
+    let go s = do
+          (b, s') <- lift $ runStateT (mkBatch pMaskInput pMaskTarget) s
+          yield b
+          go s'
+    in Select $ go seed >-> Pipes.Prelude.take len
 
 testProgram
   :: LearningRate TestDevice TestDType -- ^ learning rate
@@ -1570,11 +1581,11 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
     go :: Effect (Safe.SafeT IO) ()
     go = do
       let
-        pMaskInput = 0.0 :: Float
+        pMaskInput = 0 :: Float
         pMaskTarget = 0.2 :: Float
-        trainingSeeds = List.take 10 $ List.iterate (+ 1) (0 :: Int)
+        trainingSeeds = List.take 10 $ Seed.from <$> List.iterate (+ 1) (0 :: Word64)
         trainingData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMaskInput pMaskTarget trainingLen) trainingSeeds
-        evaluationsSeeds = List.take 2 $ List.iterate (+ 1) (0 :: Int)
+        evaluationsSeeds = List.take 2 $ Seed.from <$> List.iterate (+ 1) (0 :: Word64)
         evaluationData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMaskInput pMaskTarget evaluationLen) evaluationsSeeds
       model <- liftIO . Torch.Typed.sample $
                   (RATransformerMLMSpec 
