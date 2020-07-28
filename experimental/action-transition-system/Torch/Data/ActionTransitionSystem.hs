@@ -58,7 +58,7 @@ import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
 import Data.Kind (Type)
 import Data.Text (pack, Text)
 import Data.Maybe (isJust, fromJust, fromMaybe)
-import Data.List as List (take, iterate, isInfixOf, replicate, length, filter, sort, nub)
+import Data.List as List (intersperse, intercalate, elem, take, iterate, isInfixOf, replicate, length, filter, sort, nub)
 import Data.Map as Map (delete, elems, toList, (!), adjust, update, keys, null, insertWith, singleton, fromList, unionWith, Map, insert, lookup)
 import Data.Set as Set (elems, filter, cartesianProduct, unions, toList, fromList, member, singleton, union, Set, insert, findIndex)
 import qualified Data.Set.Ordered as OSet
@@ -588,9 +588,9 @@ instance FromActions [] Ty
 -- http://www.a-rx.info/pire/ref/src/Syntax.html
 data Exp a =
     Var a -- ^ Variable.
-  | Lam Ty (Scope () Exp a) -- ^ Lambda abstraction.
-  | Exp a :@ Exp a -- ^ Term application.
-  | Suc (Exp a)
+  | Lam { ty :: Ty, lambdaTerm :: (Scope () Exp a) } -- ^ Lambda abstraction.
+  | (:@) { function :: Exp a, argument :: Exp a } -- ^ Term application.
+  | Succ (Exp a)
   | Zero
   deriving (Functor, Foldable, Traversable, Generic)
 
@@ -607,7 +607,7 @@ instance Monad Exp where
   Var a >>= f = f a
   (x :@ y) >>= f = (x >>= f) :@ (y >>= f)
   Lam ty e >>= f = Lam ty (e >>>= f)
-  Suc e >>= f = Suc (e >>= f)
+  Succ e >>= f = Succ (e >>= f)
   Zero >>= _ = Zero
 
 deriveEq1 ''Exp
@@ -633,7 +633,7 @@ lam ty uname bind = Lam ty (abstract1 uname bind)
 -- | Smart constructor that converts the given positive integer to a corresponding Nat.
 nat :: forall a n . (Num n, Eq n) => n -> Exp a
 nat 0 = Zero
-nat n = Suc $ nat (n-1)
+nat n = Succ $ nat (n-1)
 
 -- | Compute the normal form of an expression.
 nf :: forall a . Exp a -> Exp a
@@ -642,7 +642,7 @@ nf (Lam ty b) = Lam ty (toScope . nf . fromScope $ b)
 nf (f :@ a) = case whnf f of
   Lam ty b -> nf (instantiate1 a b)
   f' -> nf f' :@ nf a
-nf (Suc e) = Suc (nf e)
+nf (Succ e) = Succ (nf e)
 nf e@Zero = e
 
 -- | Reduce a term to weak head normal form.
@@ -652,7 +652,7 @@ whnf e@Lam{} = e
 whnf (f :@ a) = case whnf f of
   Lam _ b -> whnf (instantiate1 a b)
   f' -> f' :@ a
-whnf e@Suc{} = e
+whnf e@Succ{} = e
 whnf e@Zero = e
 
 type TyM a = MaybeT (Fresh a)
@@ -662,7 +662,7 @@ assertTy env e t = (== t) <$> typeCheck env e >>= guard
 
 typeCheck :: Ord a => Map a Ty -> Exp a -> TyM a Ty
 typeCheck _ Zero = return Nat
-typeCheck env (Suc e) = assertTy env e Nat >> return Nat
+typeCheck env (Succ e) = assertTy env e Nat >> return Nat
 typeCheck env (Var a) = MaybeT . return $ Map.lookup a env
 typeCheck env (f :@ a) = typeCheck env f >>= \case
   Arr fTy tTy -> assertTy env a fTy >> return tTy
@@ -694,7 +694,7 @@ instance Pretty Char Char where
 
 instance (Enum a, Ord a, Pretty a a) => Pretty a (Exp a) where
   ppr p Zero = parensIf (p > 0) (pure . pretty $ 'Z')
-  ppr p (Suc e) = parensIf (p > 0) $ do
+  ppr p (Succ e) = parensIf (p > 0) $ do
     ps <- pure . pretty $ 'S'
     pe <- ppr (p + 1) e
     pure $ ps <> pe
@@ -803,7 +803,7 @@ genWellTypedExp'' (Arr ty ty') = do
 genWellTypedExp'' Nat = nat <$> Gen.int (Range.linear 0 10)
 
 genWellTypedExp''' :: forall a . Eq a => Ty -> GTyM a (Exp a)
-genWellTypedExp''' Nat = Suc <$> genWellTypedExp' Nat
+genWellTypedExp''' Nat = Succ <$> genWellTypedExp' Nat
 genWellTypedExp''' ty = genWellTypedExp' ty
 
 -- | Add @Var@ of given type to the given env so that it can be used for sampling later.
@@ -822,7 +822,7 @@ genWellTypedApp ty = do
   pure (ef :@ eg)
 
 -- | Try to look up a known expression of the desired type from the environment.
--- This does not always succeed, throwing `empty` when unavailable.
+-- This does not always succceed, throwing `empty` when unavailable.
 genWellTypedPath :: forall a . Ty -> GTyM a (Exp a)
 genWellTypedPath ty = do
   paths <- ask
@@ -1134,7 +1134,7 @@ mkRATransformerMLMBatch
      , ComparisonDTypeIsValid device 'Int64
     --  , tensorChunks ~ Chunk batchSize 0 '[batchSize, seqLen, seqLen] 'Int64 device
     --  , Castable (HList tensorChunks) [ATenTensor]
-    --  , HMapM' IO DisplayAttentionMask tensorChunks ys
+    --  , HMapM' IO Display2dTensorBatch tensorChunks ys
      , KnownDType dtype
      , KnownDevice device
      , Scalar a
@@ -1168,7 +1168,7 @@ mkRATransformerMLMBatch pMaskInput pMaskTarget actions = do
   attentionMask <- fromJust' . mkGridMask' @batchSize @seqLen @seqLen $ view (field @"aEnv" . field @"attentionMask") <$> envs
   keyPaddingMask <- logicalNot <$> (fromJust' . mkSeqMask' $ view (field @"aEnv" . field @"keyPaddingMask") <$> envs)
   let attentionMask' = maskedFill (unsqueeze @2 keyPaddingMask) (1 :: Int) attentionMask
-  -- liftIO . displayAttentionMask $ attentionMask'
+  -- liftIO . display2dTensorBatch $ attentionMask'
   guard (attentionMaskIsProper attentionMask')
   let attentionMask'' = maskedFill (logicalNot attentionMask') (-1 / 0 :: Double) $ zeros @'[batchSize, seqLen, seqLen] @dtype @device
   tokenMask <- do
@@ -1204,8 +1204,6 @@ attentionMaskIsProper t =
       t'''' = Torch.Typed.all t'''
   in toBool t''''
 
-data DisplayAttentionMask = DisplayAttentionMask
-
 display2dTensor
   :: forall dim dim' device dtype shape
    . ( All KnownNat '[dim, dim']
@@ -1225,7 +1223,7 @@ display2dTensor t = do
             ( \col ->
                 putChar $ grayScale !! (Prelude.floor $ scaled !! row !! col)
             )
-            [0, downSamp .. natValI @dim - 1]
+            [0, downSamp .. natValI @dim' - 1]
           >> putStrLn ""
     )
     [0, downSamp .. natValI @dim - 1]
@@ -1239,30 +1237,96 @@ display2dTensor t = do
       let (mn, mx) = (Torch.Typed.min t', Torch.Typed.max t')
        in Exts.toList . Just . mulScalar paletteMax $ (t' `sub` mn) `Torch.Typed.div` (mx `sub` mn)
 
+display3dTensor
+  :: forall dim dim' dim'' device dtype shape
+   . ( All KnownNat '[dim, dim', dim'']
+     , shape ~ '[dim, dim', dim'']
+     , AllDimsPositive shape
+     , BasicArithmeticDTypeIsValid device 'Float
+     , MinMaxDTypeIsValid device 'Float
+     , KnownDevice device
+     )
+  => Tensor device dtype shape
+  -> IO ()
+display3dTensor t = do
+  mapM
+    ( \row ->
+        Text.Printf.printf "%02d" row
+          >> mapM
+            ( \col ->
+                mapM
+                  ( \col' ->
+                    putChar $ grayScale !! (Prelude.floor $ scaled !! row !! col !! col')
+                  )
+                  [0, downSamp .. natValI @dim'' - 1]
+            )
+            [0, downSamp .. natValI @dim' - 1]
+          >> putStrLn ""
+    )
+    [0, downSamp .. natValI @dim - 1]
+  pure ()
+  where
+    downSamp = 1
+    grayScale = grayScale10
+    paletteMax = List.length grayScale - 1
+    t' = toDType @'Float @dtype t
+    scaled =
+      let (mn, mx) = (Torch.Typed.min t', Torch.Typed.max t')
+       in Exts.toList . Just . mulScalar paletteMax $ (t' `sub` mn) `Torch.Typed.div` (mx `sub` mn)
+
+data Display2dTensorBatch = Display2dTensorBatch
+
 instance
   ( BasicArithmeticDTypeIsValid device 'Float
   , MinMaxDTypeIsValid device 'Float
-  , KnownNat seqLen
-  , shape ~ '[1, seqLen, seqLen]
+  , All KnownNat '[dim, dim']
+  , shape ~ '[1, dim, dim']
   , AllDimsPositive shape
   , KnownDevice device
-  ) => Apply' DisplayAttentionMask (Tensor device 'Int64 shape) (IO ()) where
+  ) => Apply' Display2dTensorBatch (Tensor device 'Int64 shape) (IO ()) where
   apply' _ = display2dTensor . squeezeDim @0
 
-displayAttentionMask
-  :: forall batchSize seqLen device shape (tensorChunks :: [Type]) ys
+display2dTensorBatch
+  :: forall batchSize dim dim' device dtype shape (tensorChunks :: [Type]) ys
    . ( KnownNat batchSize
-     , shape ~ '[batchSize, seqLen, seqLen]
+     , shape ~ '[batchSize, dim, dim']
      , tensorChunks ~ Chunk batchSize 0 shape 'Int64 device
      , Castable (HList tensorChunks) [ATenTensor]
-     , HMapM' IO DisplayAttentionMask tensorChunks ys
+     , HMapM' IO Display2dTensorBatch tensorChunks ys
      )
-  => Tensor device 'Bool shape
+  => Tensor device dtype shape
   -> IO ()
-displayAttentionMask t =
-  let t' = toDType @'Int64 @'Bool t
+display2dTensorBatch t =
+  let t' = toDType @'Int64 @dtype t
       ts = chunk @batchSize @0 @shape @'Int64 @device @tensorChunks t'
-  in void . hmapM' DisplayAttentionMask $ ts
+  in void . hmapM' Display2dTensorBatch $ ts
+
+data Display3dTensorBatch = Display3dTensorBatch
+
+instance
+  ( BasicArithmeticDTypeIsValid device 'Float
+  , MinMaxDTypeIsValid device 'Float
+  , All KnownNat '[dim, dim', dim'']
+  , shape ~ '[1, dim, dim', dim'']
+  , AllDimsPositive shape
+  , KnownDevice device
+  ) => Apply' Display3dTensorBatch (Tensor device 'Int64 shape) (IO ()) where
+  apply' _ = display3dTensor . squeezeDim @0
+
+display3dTensorBatch
+  :: forall batchSize dim dim' dim'' device dtype shape (tensorChunks :: [Type]) ys
+   . ( KnownNat batchSize
+     , shape ~ '[batchSize, dim, dim', dim'']
+     , tensorChunks ~ Chunk batchSize 0 shape 'Int64 device
+     , Castable (HList tensorChunks) [ATenTensor]
+     , HMapM' IO Display3dTensorBatch tensorChunks ys
+     )
+  => Tensor device dtype shape
+  -> IO ()
+display3dTensorBatch t =
+  let t' = toDType @'Int64 @dtype t
+      ts = chunk @batchSize @0 @shape @'Int64 @device @tensorChunks t'
+  in void . hmapM' Display3dTensorBatch $ ts
 
 testMkRATransformerMLMBatch :: IO (RATransformerMLMBatch TestBatchSize TestSeqLen TestRelDim TestDType TestDevice)
 testMkRATransformerMLMBatch = do
@@ -1321,8 +1385,10 @@ testBernoulliMask = bernoulliMask (0.25 :: Float) $ zeros @'[2, 3] @'Bool @TestD
 
 mkSeq'
   :: forall batchSize seqLen device a
-   . (Ord a, All KnownNat '[batchSize, seqLen], KnownDevice device)
-  => OSet.OSet (Token a) -> [Map Pos a] -> Maybe (Tensor device 'Int64 '[batchSize, seqLen])
+   . (Show a, Ord a, All KnownNat '[batchSize, seqLen], KnownDevice device)
+  => OSet.OSet (Token a)
+  -> [Map Pos a]
+  -> Maybe (Tensor device 'Int64 '[batchSize, seqLen])
 mkSeq' vocab ms = do
   unkIndex <- OSet.findIndex Unk vocab
   guard $ List.length ms <= natValI @batchSize
@@ -1332,6 +1398,7 @@ mkSeq' vocab ms = do
               fstKeys = const i <$> keys
               sndKeys = unPos <$> keys
               elems = (fromMaybe unkIndex . flip OSet.findIndex vocab . Token) <$> Map.elems m
+          -- if List.elem unkIndex elems then error $ show $ Map.elems m else pure ()
           guard $ Prelude.all (< natValI @seqLen) sndKeys
           pure (fstKeys, sndKeys, elems)
     in foldMap step $ zip [(0 :: Int)..] ms
@@ -1352,7 +1419,8 @@ testMkSeq' =
 mkSeqMask'
   :: forall batchSize seqLen device
    . (All KnownNat '[batchSize, seqLen], KnownDevice device)
-  => [Set Pos] -> Maybe (Tensor device 'Bool '[batchSize, seqLen])
+  => [Set Pos]
+  -> Maybe (Tensor device 'Bool '[batchSize, seqLen])
 mkSeqMask' ss = do
   guard $ List.length ss <= natValI @batchSize
   (fstElems, sndElems) <-
@@ -1379,7 +1447,9 @@ testMkSeqMask' =
 mkGrid'
   :: forall batchSize seqLen seqLen' device a
    . (Show a, Ord a, All KnownNat '[batchSize, seqLen, seqLen'], KnownDevice device)
-  => OSet.OSet (Token a) -> [Map (Pos, Pos) a] -> Maybe (Tensor device 'Int64 '[batchSize, seqLen, seqLen'])
+  => OSet.OSet (Token a)
+  -> [Map (Pos, Pos) a]
+  -> Maybe (Tensor device 'Int64 '[batchSize, seqLen, seqLen'])
 mkGrid' vocab ms = do
   unkIndex <- OSet.findIndex Unk vocab
   guard $ List.length ms <= natValI @batchSize
@@ -1411,7 +1481,9 @@ testMkGrid' =
 mkMultiGrid'
   :: forall batchSize seqLen seqLen' dim device a
    . (Ord a, All KnownNat '[batchSize, seqLen, seqLen', dim], KnownDevice device)
-  => OSet.OSet (Token a) -> [Map (Pos, Pos) (Set a)] -> Maybe (Tensor device 'Int64 '[batchSize, seqLen, seqLen', dim])
+  => OSet.OSet (Token a)
+  -> [Map (Pos, Pos) (Set a)]
+  -> Maybe (Tensor device 'Int64 '[batchSize, seqLen, seqLen', dim])
 mkMultiGrid' vocab ms = do
   unkIndex <- OSet.findIndex Unk vocab
   guard $ List.length ms <= natValI @batchSize
@@ -1441,7 +1513,8 @@ mkMultiGrid' vocab ms = do
 mkGridMask'
   :: forall batchSize seqLen seqLen' device
    . (All KnownNat '[batchSize, seqLen, seqLen'], KnownDevice device)
-  => [Set (Pos, Pos)] -> Maybe (Tensor device 'Bool '[batchSize, seqLen, seqLen'])
+  => [Set (Pos, Pos)]
+  -> Maybe (Tensor device 'Bool '[batchSize, seqLen, seqLen'])
 mkGridMask' ss = do
   guard $ List.length ss <= natValI @batchSize
   (fstElems, sndElems, trdElems) <-
@@ -1476,7 +1549,7 @@ mkBatch
      , ComparisonDTypeIsValid device 'Int64
     --  , tensorChunks ~ Chunk batchSize 0 '[batchSize, seqLen, seqLen] 'Int64 device
     --  , Castable (HList tensorChunks) [ATenTensor]
-    --  , HMapM' IO DisplayAttentionMask tensorChunks ys
+    --  , HMapM' IO Display2dTensorBatch tensorChunks ys
      , KnownDType dtype
      , KnownDevice device
      , Scalar a
@@ -1489,14 +1562,18 @@ mkBatch
 mkBatch pMaskInput pMaskTarget = do
   -- seed <- get
   -- liftIO . putStrLn $ "Start making batch for " <> show seed
-  actions <- sample' . Gen.list (Range.singleton $ natValI @batchSize) $ do
+  xs <- sample' . Gen.list (Range.singleton $ natValI @batchSize) $ do
     ty <- genTy
     input <- genWellTypedExp @Int ty
     let target = nf input
         ex = Example (Input input) (Target target)
         actions = toActions @[] ex
     guard (List.length actions <= natValI @seqLen)
-    pure actions
+    pure (input, actions)
+  let inputs = fst <$> xs
+      actions = snd <$> xs
+  liftIO $ putDoc . vsep $ (List.intersperse mempty $ (pprint (0 :: Int)) <$> inputs) <> [mempty]
+  liftIO $ print actions
   res <- lift $ mkRATransformerMLMBatch pMaskInput pMaskTarget actions
   -- liftIO . putStrLn $ "Finished making batch for " <> show seed
   pure res
@@ -1514,7 +1591,7 @@ testGen = do
   print actions
   putDoc . vsep $ [mempty, pprint (0 :: Int) e, mempty, pprint (0 :: Int) (nf e), mempty]
 
-sample' :: MonadIO m => Gen a -> StateT Seed.Seed m a
+sample' :: Monad m => Gen a -> StateT Seed.Seed m a
 sample' gen =
   let
     go = do
@@ -1529,10 +1606,11 @@ sample' gen =
   in
     go
 
-testMkBatch :: IO (RATransformerMLMBatch TestBatchSize TestSeqLen TestRelDim TestDType TestDevice)
+testMkBatch :: IO (RATransformerMLMBatch 1 32 TestRelDim TestDType TestDataDevice)
 testMkBatch = do
   seed <- Seed.random
-  (batch, _) <- runStateT (mkBatch @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDevice @Float 0.15 0.25) seed
+  (batch, _) <- runStateT (mkBatch @1 @32 @TestRelDim @TestDType @TestDataDevice @Float 0.15 0.25) seed
+  display3dTensorBatch . ratRelations . ratInput $ batch
   pure batch
 
 data ClipGradValue a = ClipGradValue a
@@ -1647,17 +1725,7 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
                   lift performGC -- force GC cleanup after every batch
                   pure res
                 begin = pure (mempty, 0 :: Int)
-                done (_, 0) = pure CRE
-                  { cre = 1
-                  , creInput = 1
-                  , creTarget = 1
-                  , creMasked = 1
-                  , creMaskedInput = 1
-                  , creMaskedTarget = 1
-                  , creNonMasked = 1
-                  , creNonMaskedInput = 1
-                  , creNonMaskedTarget = 1
-                  }
+                done (_, 0) = pure $ (const 1) <$> mempty
                 done (cre, _step) =
                   let scale x = x / (fromInteger . toInteger $ _step)
                   in pure (scale <$> cre)
