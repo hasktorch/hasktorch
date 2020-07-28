@@ -242,17 +242,21 @@ testAncestralRelations =
         }
   in runStateT (ancestralRelations @Identity (Pos 1)) rEnv
 
-siblingRelations :: forall f . Monad f => Pos -> StateT REnv f ()
-siblingRelations pos = get >>= ap (go . view (field @"parentPos")) (view (field @"parents"))
+siblingRelations :: forall f . Monad f => Int -> Pos -> StateT REnv f ()
+siblingRelations maxDist pos = get >>= ap (go . view (field @"parentPos")) (view (field @"parents"))
   where go Nothing          parents = pure ()
         go (Just parentPos) parents = do
           let siblings = Set.insert pos $ maybe mempty id $ lookup parentPos parents
               idx = findIndex pos siblings
               step pos' rels' =
                 let idx' = findIndex pos' siblings
-                    rels'' = update (Map.singleton (pos, pos') . Set.singleton . SiblingDistRelation $ idx' - idx)
-                                    (Map.singleton (pos', pos) . Set.singleton . SiblingDistRelation $ idx - idx')
-                in  (update rels'' rels')
+                    dist = idx' - idx
+                in if (Prelude.abs dist <= maxDist) then
+                     let rels'' = update (Map.singleton (pos, pos') . Set.singleton . SiblingDistRelation $ dist)
+                                         (Map.singleton (pos', pos) . Set.singleton . SiblingDistRelation $ -dist)
+                     in  (update rels'' rels')
+                   else
+                     rels'
               rels = foldr step mempty siblings
           modify (field @"relations" %~ (update rels))
           modify (field @"parents" %~ (Map.insert parentPos siblings))
@@ -266,18 +270,22 @@ testSiblingRelations =
         , otherPositions = Set.fromList [Pos 0]
         , relations = mempty
         }
-  in runStateT (siblingRelations @Identity (Pos 1)) rEnv
+  in runStateT (siblingRelations @Identity 2 (Pos 1)) rEnv
 
-distRelations :: forall f . Monad f => Pos -> StateT REnv f ()
-distRelations pos = get >>= (go . view (field @"otherPositions"))
+distRelations :: forall f . Monad f => Int -> Pos -> StateT REnv f ()
+distRelations maxDist pos = get >>= (go . view (field @"otherPositions"))
   where go otherPositions = do
           let otherPositions' = Set.insert pos otherPositions
               idx = findIndex pos otherPositions'
               step pos' rels' =
                 let idx' = findIndex pos' otherPositions'
-                    rels'' = update (Map.singleton (pos, pos') . Set.singleton . DistRelation $ idx' - idx)
-                                    (Map.singleton (pos', pos) . Set.singleton . DistRelation $ idx - idx')
-                in  (update rels'' rels')
+                    dist = idx' - idx
+                in if (Prelude.abs dist <= maxDist) then
+                     let rels'' = update (Map.singleton (pos, pos') . Set.singleton . DistRelation $ dist)
+                                         (Map.singleton (pos', pos) . Set.singleton . DistRelation $ -dist)
+                     in  (update rels'' rels')
+                   else
+                     rels'
               rels = foldr step mempty otherPositions'
           modify (field @"relations" %~ (update rels))
           modify (field @"otherPositions" %~ (const otherPositions'))
@@ -290,13 +298,13 @@ testDistRelations =
         , otherPositions = Set.fromList [Pos 0]
         , relations = mempty
         }
-  in runStateT (distRelations @Identity (Pos 1)) rEnv
+  in runStateT (distRelations @Identity 2 (Pos 1)) rEnv
 
-updateRelations :: forall f . Monad f => Pos -> StateT REnv f ()
-updateRelations pos = do
-  ancestralRelations @f pos
-  siblingRelations @f pos
-  distRelations @f pos
+updateRelations :: forall f . Monad f => Int -> Pos -> StateT REnv f ()
+updateRelations maxDist pos = do
+  ancestralRelations pos
+  siblingRelations maxDist pos
+  distRelations maxDist pos
 
 testUpdateRelations =
   let rEnv = REnv
@@ -305,7 +313,7 @@ testUpdateRelations =
         , otherPositions = Set.fromList [Pos 0]
         , relations = mempty
         }
-  in runStateT (updateRelations @Identity (Pos 1)) rEnv
+  in runStateT (updateRelations @Identity 2 (Pos 1)) rEnv
 
 updateAttention :: forall f. Monad f => Pos -> StateT AEnv f ()
 updateAttention pos = do
@@ -354,7 +362,7 @@ token = do
   pos <- (^. field @"pos") <$> get
   zoom (field @"tEnv") . lift . updateTokens t $ pos
   zoom (field @"mEnv") . lift . updateMeta $ pos
-  zoom (field @"rEnv") . lift . updateRelations $ pos
+  zoom (field @"rEnv") . lift . updateRelations 3 $ pos
   zoom (field @"aEnv") . lift . updateAttention $ pos
   modify (field @"pos" %~ (+1))
   pure t
