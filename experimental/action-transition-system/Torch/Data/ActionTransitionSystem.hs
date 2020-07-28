@@ -85,7 +85,7 @@ import qualified Hedgehog.Internal.Seed as Seed
 import qualified Hedgehog.Internal.Tree as Tree
 import Hedgehog.Internal.Gen (evalGen)
 import Torch.Internal.Class (Castable)
-import Torch.Vision (grayScale10)
+import Torch.Vision (grayScale10, grayScale70)
 import Text.Printf (printf)
 import Torch.Data.StreamedPipeline (makeListT', Datastream(..))
 import Control.Monad.Trans.Cont (ContT(runContT))
@@ -124,6 +124,7 @@ defaultEnv = Env
   , rEnv = REnv
     { parentPos = Nothing
     , parents = mempty
+    , otherPositions = mempty
     , relations = mempty
     }
   , aEnv = AEnv
@@ -151,11 +152,13 @@ data Relation =
     ChildParentRelation
   | ParentChildRelation
   | SiblingDistRelation { siblingDist :: Int }
+  | DistRelation { dist :: Int }
   deriving (Eq, Ord, Show, Generic)
 
 data REnv = REnv
   { parentPos :: Maybe Pos -- state
   , parents :: Map Pos (Set Pos) -- writer
+  , otherPositions :: Set Pos -- writer
   , relations :: Map (Pos, Pos) (Set Relation) -- writer
   } deriving (Eq, Ord, Show, Generic)
 
@@ -230,23 +233,79 @@ ancestralRelations pos = get >>= (go . view (field @"parentPos"))
          in  modify (field @"relations" %~ (update rels'))
        update rels' rels = Map.unionWith Set.union rels' rels
 
+testAncestralRelations =
+  let rEnv = REnv
+        { parentPos = Just $ Pos 0
+        , parents = mempty
+        , otherPositions = Set.fromList [Pos 0]
+        , relations = mempty
+        }
+  in runStateT (ancestralRelations @Identity (Pos 1)) rEnv
+
 siblingRelations :: forall f . Monad f => Pos -> StateT REnv f ()
 siblingRelations pos = get >>= ap (go . view (field @"parentPos")) (view (field @"parents"))
   where go Nothing          parents = pure ()
         go (Just parentPos) parents = do
-          let siblings = maybe mempty (Set.insert pos) $ lookup parentPos parents
-              sibIndex = findIndex pos siblings
-              step pos' (rels', idx) =
-                let rels'' = update (Map.singleton (pos, pos') . Set.singleton . SiblingDistRelation $ sibIndex - idx)
-                                    (Map.singleton (pos', pos) . Set.singleton . SiblingDistRelation $ idx - sibIndex)
-                in  (update rels'' rels', idx + 1)
-              (rels, _) = foldr step (mempty, 0) siblings
+          let siblings = Set.insert pos $ maybe mempty id $ lookup parentPos parents
+              idx = findIndex pos siblings
+              step pos' rels' =
+                let idx' = findIndex pos' siblings
+                    rels'' = update (Map.singleton (pos, pos') . Set.singleton . SiblingDistRelation $ idx' - idx)
+                                    (Map.singleton (pos', pos) . Set.singleton . SiblingDistRelation $ idx - idx')
+                in  (update rels'' rels')
+              rels = foldr step mempty siblings
           modify (field @"relations" %~ (update rels))
           modify (field @"parents" %~ (Map.insert parentPos siblings))
         update rels' rels = Map.unionWith Set.union rels' rels
 
+testSiblingRelations :: Identity ((), REnv)
+testSiblingRelations =
+  let rEnv = REnv
+        { parentPos = Just $ Pos 0
+        , parents = mempty
+        , otherPositions = Set.fromList [Pos 0]
+        , relations = mempty
+        }
+  in runStateT (siblingRelations @Identity (Pos 1)) rEnv
+
+distRelations :: forall f . Monad f => Pos -> StateT REnv f ()
+distRelations pos = get >>= (go . view (field @"otherPositions"))
+  where go otherPositions = do
+          let otherPositions' = Set.insert pos otherPositions
+              idx = findIndex pos otherPositions'
+              step pos' rels' =
+                let idx' = findIndex pos' otherPositions'
+                    rels'' = update (Map.singleton (pos, pos') . Set.singleton . DistRelation $ idx' - idx)
+                                    (Map.singleton (pos', pos) . Set.singleton . DistRelation $ idx - idx')
+                in  (update rels'' rels')
+              rels = foldr step mempty otherPositions'
+          modify (field @"relations" %~ (update rels))
+          modify (field @"otherPositions" %~ (const otherPositions'))
+        update rels' rels = Map.unionWith Set.union rels' rels
+
+testDistRelations =
+  let rEnv = REnv
+        { parentPos = Just $ Pos 0
+        , parents = mempty
+        , otherPositions = Set.fromList [Pos 0]
+        , relations = mempty
+        }
+  in runStateT (distRelations @Identity (Pos 1)) rEnv
+
 updateRelations :: forall f . Monad f => Pos -> StateT REnv f ()
-updateRelations = ancestralRelations @f >> siblingRelations @f
+updateRelations pos = do
+  ancestralRelations @f pos
+  siblingRelations @f pos
+  distRelations @f pos
+
+testUpdateRelations =
+  let rEnv = REnv
+        { parentPos = Just $ Pos 0
+        , parents = mempty
+        , otherPositions = Set.fromList [Pos 0]
+        , relations = mempty
+        }
+  in runStateT (updateRelations @Identity (Pos 1)) rEnv
 
 updateAttention :: forall f. Monad f => Pos -> StateT AEnv f ()
 updateAttention pos = do
@@ -1158,7 +1217,26 @@ mkRATransformerMLMBatch pMaskInput pMaskTarget actions = do
         in foldMap step actions
       tokenVocab = OSet.fromList [Pad, Unk, Mask, Token L, Token R]
       metaVocab = OSet.fromList [Pad, Unk, Token (D "Exp"), Token (D "Ty"), Token (D "Var")]
-      relationsVocab = OSet.fromList [Pad, Unk, Token ChildParentRelation, Token ParentChildRelation, Token (SiblingDistRelation $ -1), Token (SiblingDistRelation 0), Token (SiblingDistRelation 1)]
+      relationsVocab = OSet.fromList
+        [ Pad
+        , Unk
+        , Token ChildParentRelation
+        , Token ParentChildRelation
+        , Token (SiblingDistRelation $ -3)
+        , Token (SiblingDistRelation $ -2)
+        , Token (SiblingDistRelation $ -1)
+        , Token (SiblingDistRelation 0)
+        , Token (SiblingDistRelation 1)
+        , Token (SiblingDistRelation 2)
+        , Token (SiblingDistRelation 3)
+        , Token (DistRelation $ -3)
+        , Token (DistRelation $ -2)
+        , Token (DistRelation $ -1)
+        , Token (DistRelation 0)
+        , Token (DistRelation 1)
+        , Token (DistRelation 2)
+        , Token (DistRelation 3)
+        ]
   tokens <- fromJust' . mkSeq' tokenVocab $ view (field @"tEnv" . field @"tokens") <$> envs
   meta <- fromJust' . mkSeq' metaVocab $ view (field @"mEnv" . field @"metas") <$> envs
   relations <- fromJust' . mkMultiGrid' relationsVocab $ view (field @"rEnv" . field @"relations") <$> envs
@@ -1230,7 +1308,7 @@ display2dTensor t = do
   pure ()
   where
     downSamp = 1
-    grayScale = grayScale10
+    grayScale = grayScale70
     paletteMax = List.length grayScale - 1
     t' = toDType @'Float @dtype t
     scaled =
@@ -1267,7 +1345,7 @@ display3dTensor t = do
   pure ()
   where
     downSamp = 1
-    grayScale = grayScale10
+    grayScale = grayScale70
     paletteMax = List.length grayScale - 1
     t' = toDType @'Float @dtype t
     scaled =
@@ -1340,7 +1418,7 @@ testMkRATransformerMLMBatch = do
 
 type TestBatchSize = 64
 type TestSeqLen = 256
-type TestRelDim = 2
+type TestRelDim = 4
 
 type TestNumAttnLayers = 3
 type TestNumHeads = 8
@@ -1349,7 +1427,7 @@ type TestFFNDim = 256
 type TestPaddingIdx = 0
 type TestTokenNumEmbeds = 5
 type TestMetaNumEmbeds = 5
-type TestRelNumEmbeds = 7
+type TestRelNumEmbeds = 18
 type TestDType = 'Float
 type TestDataDevice = '( 'CPU, 0)
 type TestDevice = '( 'CUDA, 0)
