@@ -1278,7 +1278,7 @@ type TestBatchSize = 64
 type TestSeqLen = 256
 type TestRelDim = 2
 
-type TestNumAttnLayers = 5
+type TestNumAttnLayers = 4
 type TestNumHeads = 8
 type TestHeadDim = 16
 type TestFFNDim = 256
