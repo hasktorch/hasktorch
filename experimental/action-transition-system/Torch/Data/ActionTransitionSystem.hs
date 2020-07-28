@@ -1278,7 +1278,7 @@ type TestBatchSize = 64
 type TestSeqLen = 256
 type TestRelDim = 2
 
-type TestNumAttnLayers = 6
+type TestNumAttnLayers = 5
 type TestNumHeads = 8
 type TestHeadDim = 16
 type TestFFNDim = 256
@@ -1585,7 +1585,7 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
         pMaskTarget = 0.2 :: Float
         trainingSeeds = List.take 10 $ Seed.from <$> List.iterate (+ 1) (0 :: Word64)
         trainingData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMaskInput pMaskTarget trainingLen) trainingSeeds
-        evaluationsSeeds = List.take 2 $ Seed.from <$> List.iterate (+ 1) (0 :: Word64)
+        evaluationsSeeds = List.take 1 $ Seed.from <$> List.iterate (+ 1) (0 :: Word64)
         evaluationData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMaskInput pMaskTarget evaluationLen) evaluationsSeeds
       model <- liftIO . Torch.Typed.sample $
                   (RATransformerMLMSpec 
