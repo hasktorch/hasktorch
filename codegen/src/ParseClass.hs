@@ -8,7 +8,6 @@ module ParseClass where
 import GHC.Generics
 import Data.Yaml
 
-import qualified Data.Yaml as Y
 -- import Text.Show.Prettyprint (prettyPrint)
 import qualified ParseFunctionSig as S
 

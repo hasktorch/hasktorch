@@ -6,15 +6,13 @@
 {-# LANGUAGE QuasiQuotes #-}
 module RenderPure where
 
-import Control.Monad (forM_)
 import GHC.Generics
-import Data.Yaml (ParseException,FromJSON(..))
 import qualified Data.Yaml as Y
 import Text.Shakespeare.Text (st)
 import Data.Text (Text)
 import Data.List (isPrefixOf, isSuffixOf, sort)
 import Data.Maybe (isJust)
-import Data.Set (Set, fromList, member)
+import Data.Set (fromList, member)
 import qualified Data.Text.IO as T
 import System.Directory (createDirectoryIfMissing)
 import Data.Aeson.Types -- (defaultOptions, genericParseJSON, constructorTagModifier, sumEncoding(..))
@@ -120,8 +118,8 @@ notUniqList lst = notUniq (sort lst) []
 
 decodeAndCodeGen :: String -> String -> String -> IO ()
 decodeAndCodeGen basedir yamlSpecFileName bindingsFileName = do
-  funcs    <- Y.decodeFileEither yamlSpecFileName :: IO (Either ParseException [D.Declaration])
-  bindings <- Y.decodeFileEither bindingsFileName :: IO (Either ParseException [Binding])
+  funcs    <- Y.decodeFileEither yamlSpecFileName :: IO (Either Y.ParseException [D.Declaration])
+  bindings <- Y.decodeFileEither bindingsFileName :: IO (Either Y.ParseException [Binding])
   case (funcs,bindings) of
     (Left err', _) -> print err'
     (Right _  , Left err') -> print err'
