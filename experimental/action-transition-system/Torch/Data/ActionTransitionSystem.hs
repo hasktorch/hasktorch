@@ -1877,7 +1877,7 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
                       cre = loss ones (ratKeyPaddingMask input) prediction targetTokens
                       parameters = flattenParameters model''
                       gradients = grad cre parameters
-                      clippedGradients = hmap' (ClipGradValue (1e1 :: Float)) gradients
+                      clippedGradients = gradients -- hmap' (ClipGradValue (1e1 :: Float)) gradients
                   lift performGC -- force GC cleanup after every batch
                   maybe
                     (lift (print "encountered NaN in gradients, repeating training step") >> pure (model'', optim''))
