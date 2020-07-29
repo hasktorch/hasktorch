@@ -1057,10 +1057,10 @@ data
     (device :: (DeviceType, Nat)) where
   RATransformerMLM
     :: forall numAttnLayers numHeads headDim ffnDim tokenPaddingIdx tokenNumEmbeds dataTypePaddingIdx dataTypeNumEmbeds constructorPaddingIdx constructorNumEmbeds selectorPaddingIdx selectorNumEmbeds relationPaddingIdx relationNumEmbeds dtype device
-     . { ratEmbedding            :: Embedding ('Just tokenPaddingIdx) tokenNumEmbeds (headDim * numHeads) 'Learned dtype device
-       , ratDataTypeEmbedding    :: Embedding ('Just dataTypePaddingIdx) dataTypeNumEmbeds (headDim * numHeads) 'Learned dtype device
-       , ratConstructorEmbedding :: Embedding ('Just constructorPaddingIdx) constructorNumEmbeds (headDim * numHeads) 'Learned dtype device
-       , ratSelectorEmbedding    :: Embedding ('Just selectorPaddingIdx) selectorNumEmbeds (headDim * numHeads) 'Learned dtype device
+     . { ratEmbedding            :: Embedding ('Just tokenPaddingIdx) tokenNumEmbeds (Div (headDim * numHeads) 4) 'Learned dtype device
+       , ratDataTypeEmbedding    :: Embedding ('Just dataTypePaddingIdx) dataTypeNumEmbeds (Div (headDim * numHeads) 4) 'Learned dtype device
+       , ratConstructorEmbedding :: Embedding ('Just constructorPaddingIdx) constructorNumEmbeds (Div (headDim * numHeads) 4) 'Learned dtype device
+       , ratSelectorEmbedding    :: Embedding ('Just selectorPaddingIdx) selectorNumEmbeds (Div (headDim * numHeads) 4) 'Learned dtype device
        , ratRelationEmbedding    :: Embedding ('Just relationPaddingIdx) relationNumEmbeds headDim 'Learned dtype device
        , ratDropout              :: Dropout
        , ratLayers               :: HList (HReplicateR numAttnLayers (TransformerLayer (headDim * numHeads) numHeads ffnDim dtype device))
@@ -1166,6 +1166,7 @@ raTransformerMLM
      , selectorPaddingIdx + 1 <= selectorNumEmbeds
      , relationPaddingIdx + 1 <= relationNumEmbeds
      , embedDim ~ (headDim * numHeads)
+     , embedDim ~ (Div embedDim 4 + (Div embedDim 4 + (Div embedDim 4 + Div embedDim 4)))
      , 1 <= seqLen
      , HFoldrM
          IO
@@ -1190,7 +1191,7 @@ raTransformerMLM RATransformerMLM {..} train RATransformerMLMInput {..} = do
       dataTypes = embed ratDataTypeEmbedding . dataType $ ratMeta
       constructors = embed ratConstructorEmbedding . constructor $ ratMeta
       selectors = embed ratSelectorEmbedding . selector $ ratMeta
-      input = maskedTokens + dataTypes + constructors + selectors
+      input = cat @2 $ maskedTokens :. dataTypes :. constructors :. selectors :. HNil
       relations = sumDim @3 $ embed ratRelationEmbedding ratRelations
   forward ratProj <$> hfoldrM (RAFoldLayers train ratAttentionMask ratKeyPaddingMask relations relations) input ratLayers
 
