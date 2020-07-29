@@ -43,7 +43,7 @@ class HasToDType dtype' dtype f g | dtype' dtype f -> g, dtype' dtype g -> f whe
 -- = Torch.Typed.NN.Linear 1 1 'Double '( 'CPU, 0)
 type family ReplaceDType (f :: k) (dtype' :: D.DType) (dtype :: D.DType) :: k where
   ReplaceDType (t dtype) dtype' dtype = t dtype'
-  ReplaceDType (t a)     dtype' dtype = (ReplaceDType t dtype' dtype) a
+  ReplaceDType (t a)     dtype' dtype = (ReplaceDType t dtype' dtype) (ReplaceDType a dtype' dtype)
   ReplaceDType t         _      _     = t
 
 -- In a data type `f` parameterized by zero or one data type variables, replace the only occurring data type with the data type `dtype'`.
@@ -53,7 +53,7 @@ type family ReplaceDType (f :: k) (dtype' :: D.DType) (dtype :: D.DType) :: k wh
 -- = Torch.Typed.NN.Linear 1 1 'Double '( 'CPU, 0)
 type family ReplaceDType' (f :: k) (dtype' :: D.DType) :: k where
   ReplaceDType' (t (dtype :: D.DType)) dtype' = t dtype'
-  ReplaceDType' (t a)                  dtype' = (ReplaceDType' t dtype') a
+  ReplaceDType' (t a)                  dtype' = (ReplaceDType' t dtype') (ReplaceDType' a dtype')
   ReplaceDType' t                      _      = t
 
 instance
