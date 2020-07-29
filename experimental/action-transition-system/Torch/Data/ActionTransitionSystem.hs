@@ -122,7 +122,7 @@ defaultEnv = Env
     , metas = mempty
     }
   , rEnv = REnv
-    { parentPos = Nothing
+    { parentPos = mempty
     , parents = mempty
     , otherPositions = mempty
     , relations = mempty
@@ -156,7 +156,7 @@ data Relation =
   deriving (Eq, Ord, Show, Generic)
 
 data REnv = REnv
-  { parentPos :: Maybe Pos -- state
+  { parentPos :: [Pos] -- state
   , parents :: Map Pos (Set Pos) -- writer
   , otherPositions :: Set Pos -- writer
   , relations :: Map (Pos, Pos) (Set Relation) -- writer
@@ -244,8 +244,8 @@ skipMany1 p = p *> skipMany p
 
 ancestralRelations :: forall f . Monad f => Pos -> StateT REnv f ()
 ancestralRelations pos = get >>= (go . view (field @"parentPos"))
- where go Nothing          = pure ()
-       go (Just parentPos) = 
+ where go []              = pure ()
+       go (parentPos : _) =
          let rels' = update (Map.singleton (pos, parentPos) . Set.singleton $ ChildParentRelation)
                             (Map.singleton (parentPos, pos) . Set.singleton $ ParentChildRelation)
          in  modify (field @"relations" %~ (update rels'))
@@ -253,7 +253,7 @@ ancestralRelations pos = get >>= (go . view (field @"parentPos"))
 
 testAncestralRelations =
   let rEnv = REnv
-        { parentPos = Just $ Pos 0
+        { parentPos = [Pos 0]
         , parents = mempty
         , otherPositions = Set.fromList [Pos 0]
         , relations = mempty
@@ -262,8 +262,8 @@ testAncestralRelations =
 
 siblingRelations :: forall f . Monad f => Int -> Pos -> StateT REnv f ()
 siblingRelations maxDist pos = get >>= ap (go . view (field @"parentPos")) (view (field @"parents"))
-  where go Nothing          parents = pure ()
-        go (Just parentPos) parents = do
+  where go []              parents = pure ()
+        go (parentPos : _) parents = do
           let siblings = Set.insert pos $ maybe mempty id $ lookup parentPos parents
               idx = findIndex pos siblings
               step pos' rels' =
@@ -283,7 +283,7 @@ siblingRelations maxDist pos = get >>= ap (go . view (field @"parentPos")) (view
 testSiblingRelations :: Identity ((), REnv)
 testSiblingRelations =
   let rEnv = REnv
-        { parentPos = Just $ Pos 0
+        { parentPos = [Pos 0]
         , parents = mempty
         , otherPositions = Set.fromList [Pos 0]
         , relations = mempty
@@ -311,7 +311,7 @@ distRelations maxDist pos = get >>= (go . view (field @"otherPositions"))
 
 testDistRelations =
   let rEnv = REnv
-        { parentPos = Just $ Pos 0
+        { parentPos = [Pos 0]
         , parents = mempty
         , otherPositions = Set.fromList [Pos 0]
         , relations = mempty
@@ -326,7 +326,7 @@ updateRelations maxDist pos = do
 
 testUpdateRelations =
   let rEnv = REnv
-        { parentPos = Just $ Pos 0
+        { parentPos = [Pos 0]
         , parents = mempty
         , otherPositions = Set.fromList [Pos 0]
         , relations = mempty
@@ -413,14 +413,16 @@ instance GToActions t f => GToActions t (M1 i c f) where
 instance (Monad b, GFromActions b f, Datatype d) => GFromActions b (D1 d f) where
   gFromActions = do
     modify $ field @"mEnv" . field @"meta" . field @"dataType" .~ (pure . pack . datatypeName @d $ undefined)
-    pos <- (^. field @"pos") <$> get
-    modify $ field @"rEnv" . field @"parentPos" .~ (pure pos)
     M1 <$> gFromActions @b
 
 instance (Monad b, GFromActions b f, Constructor c) => GFromActions b (C1 c f) where
   gFromActions = do
     modify $ field @"mEnv" . field @"meta" . field @"constructor" .~ (pure . pack . conName @c $ undefined)
-    M1 <$> gFromActions @b
+    pos <- (^. field @"pos") <$> get
+    modify $ field @"rEnv" . field @"parentPos" %~ (pos :)
+    res <- M1 <$> gFromActions @b
+    modify $ field @"rEnv" . field @"parentPos" %~ tail
+    pure res
 
 instance (Monad b, GFromActions b f, Selector s) => GFromActions b (S1 s f) where
   gFromActions = do
