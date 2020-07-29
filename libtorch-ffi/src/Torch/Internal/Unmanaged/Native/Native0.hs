@@ -1541,3 +1541,4 @@ asin__t _self =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::asin_(
     *$(at::Tensor* _self)));
   }|]
+

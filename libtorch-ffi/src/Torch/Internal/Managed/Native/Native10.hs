@@ -21,6 +21,29 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native10 as Unmanaged
 
 
+index_fill_tntt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Dimname
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+index_fill_tntt = cast4 Unmanaged.index_fill_tntt
+
+scatter_tltt
+  :: ForeignPtr Tensor
+  -> Int64
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+scatter_tltt = cast4 Unmanaged.scatter_tltt
+
+scatter_tlts
+  :: ForeignPtr Tensor
+  -> Int64
+  -> ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+scatter_tlts = cast4 Unmanaged.scatter_tlts
 
 scatter_tntt
   :: ForeignPtr Tensor
@@ -876,20 +899,3 @@ symeig_tbb
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
 symeig_tbb = cast3 Unmanaged.symeig_tbb
 
-symeig_tb
-  :: ForeignPtr Tensor
-  -> CBool
-  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-symeig_tb = cast2 Unmanaged.symeig_tb
-
-symeig_t
-  :: ForeignPtr Tensor
-  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-symeig_t = cast1 Unmanaged.symeig_t
-
-_symeig_helper_tbb
-  :: ForeignPtr Tensor
-  -> CBool
-  -> CBool
-  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-_symeig_helper_tbb = cast3 Unmanaged._symeig_helper_tbb

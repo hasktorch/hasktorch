@@ -21,6 +21,34 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native8 as Unmanaged
 
 
+trapz_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+trapz_t = cast1 Unmanaged.trapz_t
+
+_trilinear_tttlllll
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+_trilinear_tttlllll = cast8 Unmanaged._trilinear_tttlllll
+
+_trilinear_tttllll
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+_trilinear_tttllll = cast7 Unmanaged._trilinear_tttllll
+
 triplet_margin_loss_tttdddbl
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -852,20 +880,3 @@ resize_as__tt
   -> IO (ForeignPtr Tensor)
 resize_as__tt = cast2 Unmanaged.resize_as__tt
 
-pow_out_tts
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Scalar
-  -> IO (ForeignPtr Tensor)
-pow_out_tts = cast3 Unmanaged.pow_out_tts
-
-pow_ts
-  :: ForeignPtr Tensor
-  -> ForeignPtr Scalar
-  -> IO (ForeignPtr Tensor)
-pow_ts = cast2 Unmanaged.pow_ts
-
-zero__t
-  :: ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-zero__t = cast1 Unmanaged.zero__t

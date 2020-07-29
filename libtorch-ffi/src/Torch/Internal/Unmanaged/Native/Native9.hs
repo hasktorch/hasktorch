@@ -16,18 +16,47 @@ import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
 
-
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
 import qualified Language.C.Inline.Context as C
 import qualified Language.C.Types as C
-import qualified Data.Map as Map
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 C.include "<vector>"
 C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
+
+
+pow_out_tts
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+pow_out_tts _out _self _exponent =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::pow_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , *$(at::Scalar* _exponent)));
+  }|]
+
+pow_ts
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+pow_ts _self _exponent =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::pow(
+    *$(at::Tensor* _self)
+  , *$(at::Scalar* _exponent)));
+  }|]
+
+zero__t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+zero__t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::zero_(
+    *$(at::Tensor* _self)));
+  }|]
 
 sub_out_ttts
   :: Ptr Tensor
@@ -1867,44 +1896,3 @@ index_fill_tnts _self _dim _index _value =
   , *$(at::Scalar* _value)));
   }|]
 
-index_fill_tntt
-  :: Ptr Tensor
-  -> Ptr Dimname
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-index_fill_tntt _self _dim _index _value =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::index_fill(
-    *$(at::Tensor* _self)
-  , *$(at::Dimname* _dim)
-  , *$(at::Tensor* _index)
-  , *$(at::Tensor* _value)));
-  }|]
-
-scatter_tltt
-  :: Ptr Tensor
-  -> Int64
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-scatter_tltt _self _dim _index _src =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::scatter(
-    *$(at::Tensor* _self)
-  , $(int64_t _dim)
-  , *$(at::Tensor* _index)
-  , *$(at::Tensor* _src)));
-  }|]
-
-scatter_tlts
-  :: Ptr Tensor
-  -> Int64
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
-scatter_tlts _self _dim _index _value =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::scatter(
-    *$(at::Tensor* _self)
-  , $(int64_t _dim)
-  , *$(at::Tensor* _index)
-  , *$(at::Scalar* _value)));
-  }|]

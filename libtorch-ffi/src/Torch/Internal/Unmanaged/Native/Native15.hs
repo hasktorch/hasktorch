@@ -16,12 +16,10 @@ import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
 
-
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
 import qualified Language.C.Inline.Context as C
 import qualified Language.C.Types as C
-import qualified Data.Map as Map
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
@@ -29,6 +27,46 @@ C.include "<vector>"
 C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
 
+
+upsample_nearest1d_backward_out_ttll
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> IO (Ptr Tensor)
+upsample_nearest1d_backward_out_ttll _grad_input _grad_output _output_size _input_size =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::upsample_nearest1d_backward_out(
+    *$(at::Tensor* _grad_input)
+  , *$(at::Tensor* _grad_output)
+  , *$(std::vector<int64_t>* _output_size)
+  , *$(std::vector<int64_t>* _input_size)));
+  }|]
+
+upsample_nearest1d_backward_tlld
+  :: Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> CDouble
+  -> IO (Ptr Tensor)
+upsample_nearest1d_backward_tlld _grad_output _output_size _input_size _scales =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::upsample_nearest1d_backward(
+    *$(at::Tensor* _grad_output)
+  , *$(std::vector<int64_t>* _output_size)
+  , *$(std::vector<int64_t>* _input_size)
+  , $(double _scales)));
+  }|]
+
+upsample_nearest1d_backward_tll
+  :: Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> IO (Ptr Tensor)
+upsample_nearest1d_backward_tll _grad_output _output_size _input_size =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::upsample_nearest1d_backward(
+    *$(at::Tensor* _grad_output)
+  , *$(std::vector<int64_t>* _output_size)
+  , *$(std::vector<int64_t>* _input_size)));
+  }|]
 
 upsample_nearest2d_out_ttldd
   :: Ptr Tensor
@@ -2099,3 +2137,4 @@ isinf_t _self =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::isinf(
     *$(at::Tensor* _self)));
   }|]
+

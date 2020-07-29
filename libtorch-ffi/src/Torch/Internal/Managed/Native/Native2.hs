@@ -1074,3 +1074,4 @@ _embedding_bag_tttb
   -> CBool
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor)))
 _embedding_bag_tttb = cast4 Unmanaged._embedding_bag_tttb
+

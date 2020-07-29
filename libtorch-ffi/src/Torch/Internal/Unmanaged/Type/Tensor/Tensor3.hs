@@ -23,8 +23,57 @@ import Torch.Internal.Type
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
+
+
 C.include "<ATen/Tensor.h>"
 C.include "<vector>"
+
+
+
+tensor_eq__s
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+tensor_eq__s _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).eq_(
+    *$(at::Scalar* _other)));
+  }|]
+
+tensor_eq__t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_eq__t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).eq_(
+    *$(at::Tensor* _other)));
+  }|]
+
+tensor_ne__s
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+tensor_ne__s _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).ne_(
+    *$(at::Scalar* _other)));
+  }|]
+
+tensor_ne__t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_ne__t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).ne_(
+    *$(at::Tensor* _other)));
+  }|]
+
+tensor_bitwise_and_s
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+tensor_bitwise_and_s _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).bitwise_and(
+    *$(at::Scalar* _other)));
+  }|]
 
 tensor_bitwise_and_t
   :: Ptr Tensor
@@ -1326,3 +1375,12 @@ tensor_pow_t _obj _exponent =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).pow(
     *$(at::Tensor* _exponent)));
   }|]
+
+tensor_alias
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_alias _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).alias(
+    ));
+  }|]
+

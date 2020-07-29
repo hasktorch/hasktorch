@@ -21,6 +21,22 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native7 as Unmanaged
 
 
+detach_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+detach_t = cast1 Unmanaged.detach_t
+
+detach__t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+detach__t = cast1 Unmanaged.detach__t
+
+size_tl
+  :: ForeignPtr Tensor
+  -> Int64
+  -> IO (Int64)
+size_tl = cast2 Unmanaged.size_tl
+
 size_tn
   :: ForeignPtr Tensor
   -> ForeignPtr Dimname
@@ -853,30 +869,3 @@ trapz_td
   -> IO (ForeignPtr Tensor)
 trapz_td = cast2 Unmanaged.trapz_td
 
-trapz_t
-  :: ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-trapz_t = cast1 Unmanaged.trapz_t
-
-_trilinear_tttlllll
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> ForeignPtr IntArray
-  -> ForeignPtr IntArray
-  -> ForeignPtr IntArray
-  -> Int64
-  -> IO (ForeignPtr Tensor)
-_trilinear_tttlllll = cast8 Unmanaged._trilinear_tttlllll
-
-_trilinear_tttllll
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> ForeignPtr IntArray
-  -> ForeignPtr IntArray
-  -> ForeignPtr IntArray
-  -> IO (ForeignPtr Tensor)
-_trilinear_tttllll = cast7 Unmanaged._trilinear_tttllll

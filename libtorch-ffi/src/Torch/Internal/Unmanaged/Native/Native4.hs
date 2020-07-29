@@ -16,12 +16,10 @@ import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
 
-
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
 import qualified Language.C.Inline.Context as C
 import qualified Language.C.Types as C
-import qualified Data.Map as Map
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
@@ -1553,3 +1551,4 @@ max_pool2d_tl _self _kernel_size =
     *$(at::Tensor* _self)
   , *$(std::vector<int64_t>* _kernel_size)));
   }|]
+

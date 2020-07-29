@@ -21,6 +21,37 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native13 as Unmanaged
 
 
+nll_loss2d_backward_out_tttttllt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> Int64
+  -> Int64
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+nll_loss2d_backward_out_tttttllt = cast8 Unmanaged.nll_loss2d_backward_out_tttttllt
+
+nll_loss2d_backward_ttttllt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> Int64
+  -> Int64
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+nll_loss2d_backward_ttttllt = cast7 Unmanaged.nll_loss2d_backward_ttttllt
+
+smooth_l1_loss_out_tttl
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+smooth_l1_loss_out_tttl = cast4 Unmanaged.smooth_l1_loss_out_tttl
+
 smooth_l1_loss_out_ttt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -924,29 +955,3 @@ avg_pool3d_out_ttlllbb
   -> IO (ForeignPtr Tensor)
 avg_pool3d_out_ttlllbb = cast7 Unmanaged.avg_pool3d_out_ttlllbb
 
-avg_pool3d_out_ttlllb
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> ForeignPtr IntArray
-  -> ForeignPtr IntArray
-  -> CBool
-  -> IO (ForeignPtr Tensor)
-avg_pool3d_out_ttlllb = cast6 Unmanaged.avg_pool3d_out_ttlllb
-
-avg_pool3d_out_ttlll
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> ForeignPtr IntArray
-  -> ForeignPtr IntArray
-  -> IO (ForeignPtr Tensor)
-avg_pool3d_out_ttlll = cast5 Unmanaged.avg_pool3d_out_ttlll
-
-avg_pool3d_out_ttll
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> ForeignPtr IntArray
-  -> IO (ForeignPtr Tensor)
-avg_pool3d_out_ttll = cast4 Unmanaged.avg_pool3d_out_ttll

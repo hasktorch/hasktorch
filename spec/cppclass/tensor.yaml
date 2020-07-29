@@ -1,6 +1,9 @@
 signature: Tensor
 cppname: at::Tensor
 hsname: Tensor
+headers:
+- ATen/Tensor.h
+- vector
 functions: []
 constructors:
 - new() -> Tensor
@@ -18,7 +21,7 @@ methods:
 - sizes() -> IntArrayRef
 - strides() -> IntArrayRef
 #- opt_names() -> optional<DimnameList>
-#- names() -> DimnameList
+- names() -> DimnameList
 - ndimension() -> int64_t
 #- is_contiguous(at::MemoryFormat memory_format=at::MemoryFormat::Contiguous) -> bool
 - is_contiguous() -> bool
@@ -44,7 +47,9 @@ methods:
 - is_hip() -> bool
 - is_sparse() -> bool
 - is_mkldnn() -> bool
+- is_vulkan() -> bool
 - is_quantized() -> bool
+- is_meta() -> bool
 #- quantizer() -> QuantizerPtr
 - has_names() -> bool
 #- get_named_tensor_meta() -> NamedTensorMeta*
@@ -89,6 +94,7 @@ methods:
 - cpu() -> Tensor
 - cuda() -> Tensor
 - hip() -> Tensor
+- vulkan() -> Tensor
 - set_requires_grad(bool requires_grad) -> Tensor
 - requires_grad() -> bool
 - grad() -> Tensor
@@ -98,7 +104,7 @@ methods:
 - is_leaf() -> bool
 - output_nr() -> int64_t
 - _version() -> int64_t
-- requires_grad_(bool _requires_grad=true) -> Tensor
+- requires_grad_(bool requires_grad=true) -> Tensor
 - retain_grad() -> void
 - align_to(DimnameList names) -> Tensor
 - align_to(DimnameList order, int64_t ellipsis_idx) -> Tensor
@@ -108,6 +114,8 @@ methods:
 - unflatten(int64_t dim, IntArrayRef sizes, DimnameList names) -> Tensor
 - abs() -> Tensor
 - abs_() -> Tensor
+- absolute() -> Tensor
+- absolute_() -> Tensor
 - angle() -> Tensor
 - conj() -> Tensor
 - acos() -> Tensor
@@ -125,6 +133,12 @@ methods:
 - allclose(Tensor  other, double rtol=1e-05, double atol=1e-08, bool equal_nan=false) -> bool
 - any(int64_t dim, bool keepdim=false) -> Tensor
 - any(Dimname dim, bool keepdim=false) -> Tensor
+- acosh() -> Tensor
+- acosh_() -> Tensor
+- asinh() -> Tensor
+- asinh_() -> Tensor
+- atanh() -> Tensor
+- atanh_() -> Tensor
 - asin() -> Tensor
 - asin_() -> Tensor
 - atan() -> Tensor
@@ -218,6 +232,7 @@ methods:
 - index_put(TensorList indices, Tensor  values, bool accumulate=false) -> Tensor
 - inverse() -> Tensor
 - isclose(Tensor  other, double rtol=1e-05, double atol=1e-08, bool equal_nan=false) -> Tensor
+- isnan() -> Tensor
 - is_distributed() -> bool
 - is_floating_point() -> bool
 - is_complex() -> bool
@@ -234,7 +249,11 @@ methods:
 - log1p_() -> Tensor
 - log2() -> Tensor
 - log2_() -> Tensor
+- logaddexp(Tensor  other) -> Tensor
+- logaddexp2(Tensor  other) -> Tensor
 - logdet() -> Tensor
+- logcumsumexp(int64_t dim) -> Tensor
+- logcumsumexp(Dimname dim) -> Tensor
 - logsumexp(IntArrayRef dim, bool keepdim=false) -> Tensor
 - logsumexp(DimnameList dim, bool keepdim=false) -> Tensor
 - matmul(Tensor  other) -> Tensor
@@ -267,6 +286,10 @@ methods:
 - is_pinned() -> bool
 - pin_memory() -> Tensor
 - pinverse(double rcond=1e-15) -> Tensor
+- rad2deg() -> Tensor
+- rad2deg_() -> Tensor
+- deg2rad() -> Tensor
+- deg2rad_() -> Tensor
 - reciprocal() -> Tensor
 - reciprocal_() -> Tensor
 - neg() -> Tensor
@@ -328,6 +351,8 @@ methods:
 - transpose(Dimname dim0, Dimname dim1) -> Tensor
 - transpose_(int64_t dim0, int64_t dim1) -> Tensor
 - flip(IntArrayRef dims) -> Tensor
+- fliplr() -> Tensor
+- flipud() -> Tensor
 - roll(IntArrayRef shifts, IntArrayRef dims={}) -> Tensor
 - rot90(int64_t k=1, IntArrayRef dims={0,1}) -> Tensor
 - true_divide(Tensor  other) -> Tensor

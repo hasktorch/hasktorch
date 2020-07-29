@@ -14,6 +14,7 @@ import qualified ParseFunctionSig as S
 data CppClassSpec = CppClassSpec
   { signature :: String
   , cppname :: String
+  , headers :: [String]
   , hsname :: String
   , constructors :: [S.Function]
   , methods :: [S.Function]

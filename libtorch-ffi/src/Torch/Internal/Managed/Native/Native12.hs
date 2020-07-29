@@ -21,6 +21,25 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native12 as Unmanaged
 
 
+all_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+all_t = cast1 Unmanaged.all_t
+
+any_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+any_t = cast1 Unmanaged.any_t
+
+renorm_out_ttsls
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> Int64
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+renorm_out_ttsls = cast5 Unmanaged.renorm_out_ttsls
+
 renorm_tsls
   :: ForeignPtr Tensor
   -> ForeignPtr Scalar
@@ -968,33 +987,3 @@ nll_loss2d_forward_tttll
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
 nll_loss2d_forward_tttll = cast5 Unmanaged.nll_loss2d_forward_tttll
 
-nll_loss2d_backward_out_tttttllt
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> Int64
-  -> Int64
-  -> ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-nll_loss2d_backward_out_tttttllt = cast8 Unmanaged.nll_loss2d_backward_out_tttttllt
-
-nll_loss2d_backward_ttttllt
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> Int64
-  -> Int64
-  -> ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-nll_loss2d_backward_ttttllt = cast7 Unmanaged.nll_loss2d_backward_ttttllt
-
-smooth_l1_loss_out_tttl
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> Int64
-  -> IO (ForeignPtr Tensor)
-smooth_l1_loss_out_tttl = cast4 Unmanaged.smooth_l1_loss_out_tttl

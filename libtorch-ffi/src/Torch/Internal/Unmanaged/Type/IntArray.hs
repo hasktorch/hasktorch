@@ -21,8 +21,9 @@ import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
 
-
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
+
+
 
 C.include "<ATen/ScalarType.h>"
 C.include "<vector>"
@@ -35,10 +36,6 @@ newIntArray  =
   [C.throwBlock| std::vector<int64_t>* { return new std::vector<int64_t>(
     );
   }|]
-
-
-
-
 
 intArray_empty
   :: Ptr IntArray
@@ -73,6 +70,4 @@ intArray_push_back_l _obj _v =
   [C.throwBlock| void {  (*$(std::vector<int64_t>* _obj)).push_back(
     $(int64_t _v));
   }|]
-
-
 

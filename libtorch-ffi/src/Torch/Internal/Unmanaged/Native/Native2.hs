@@ -16,12 +16,10 @@ import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
 
-
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
 import qualified Language.C.Inline.Context as C
 import qualified Language.C.Types as C
-import qualified Data.Map as Map
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
@@ -1887,3 +1885,4 @@ _embedding_bag_tttb _weight _indices _offsets _scale_grad_by_freq =
   , *$(at::Tensor* _offsets)
   , $(bool _scale_grad_by_freq)));
   }|]
+

@@ -20,7 +20,6 @@ import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
 import qualified Language.C.Inline.Context as C
 import qualified Language.C.Types as C
-import qualified Data.Map as Map
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
@@ -28,6 +27,36 @@ C.include "<vector>"
 C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
 
+
+symeig_tb
+  :: Ptr Tensor
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+symeig_tb _self _eigenvectors =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::symeig(
+    *$(at::Tensor* _self)
+  , $(bool _eigenvectors)));
+  }|]
+
+symeig_t
+  :: Ptr Tensor
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+symeig_t _self =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::symeig(
+    *$(at::Tensor* _self)));
+  }|]
+
+_symeig_helper_tbb
+  :: Ptr Tensor
+  -> CBool
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+_symeig_helper_tbb _self _eigenvectors _upper =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_symeig_helper(
+    *$(at::Tensor* _self)
+  , $(bool _eigenvectors)
+  , $(bool _upper)));
+  }|]
 
 eig_out_tttb
   :: Ptr Tensor
@@ -1451,34 +1480,3 @@ topk_tl _self _k =
   , $(int64_t _k)));
   }|]
 
-all_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
-all_t _self =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::all(
-    *$(at::Tensor* _self)));
-  }|]
-
-any_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
-any_t _self =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::any(
-    *$(at::Tensor* _self)));
-  }|]
-
-renorm_out_ttsls
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> Int64
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
-renorm_out_ttsls _out _self _p _dim _maxnorm =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::renorm_out(
-    *$(at::Tensor* _out)
-  , *$(at::Tensor* _self)
-  , *$(at::Scalar* _p)
-  , $(int64_t _dim)
-  , *$(at::Scalar* _maxnorm)));
-  }|]

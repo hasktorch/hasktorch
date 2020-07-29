@@ -21,7 +21,6 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native6 as Unmanaged
 
 
-
 pdist_t
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
@@ -460,19 +459,6 @@ range_sss
   -> IO (ForeignPtr Tensor)
 range_sss = cast3 Unmanaged.range_sss
 
--- range_ss
---   :: ForeignPtr Scalar
---   -> ForeignPtr Scalar
---   -> IO (ForeignPtr Tensor)
--- range_ss = cast2 Unmanaged.range_ss
-
--- range_sso
---   :: ForeignPtr Scalar
---   -> ForeignPtr Scalar
---   -> ForeignPtr TensorOptions
---   -> IO (ForeignPtr Tensor)
--- range_sso = cast3 Unmanaged.range_sso
-
 range_out_tsss
   :: ForeignPtr Tensor
   -> ForeignPtr Scalar
@@ -811,18 +797,3 @@ sinh_out_tt
   -> IO (ForeignPtr Tensor)
 sinh_out_tt = cast2 Unmanaged.sinh_out_tt
 
-detach_t
-  :: ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-detach_t = cast1 Unmanaged.detach_t
-
-detach__t
-  :: ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-detach__t = cast1 Unmanaged.detach__t
-
-size_tl
-  :: ForeignPtr Tensor
-  -> Int64
-  -> IO (Int64)
-size_tl = cast2 Unmanaged.size_tl

@@ -21,6 +21,29 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native15 as Unmanaged
 
 
+upsample_nearest1d_backward_out_ttll
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+upsample_nearest1d_backward_out_ttll = cast4 Unmanaged.upsample_nearest1d_backward_out_ttll
+
+upsample_nearest1d_backward_tlld
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> CDouble
+  -> IO (ForeignPtr Tensor)
+upsample_nearest1d_backward_tlld = cast4 Unmanaged.upsample_nearest1d_backward_tlld
+
+upsample_nearest1d_backward_tll
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+upsample_nearest1d_backward_tll = cast3 Unmanaged.upsample_nearest1d_backward_tll
+
 upsample_nearest2d_out_ttldd
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -1175,3 +1198,4 @@ isinf_t
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 isinf_t = cast1 Unmanaged.isinf_t
+

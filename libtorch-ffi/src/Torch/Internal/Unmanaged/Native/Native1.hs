@@ -20,7 +20,6 @@ import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
 import qualified Language.C.Inline.Context as C
 import qualified Language.C.Types as C
-import qualified Data.Map as Map
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
@@ -1678,3 +1677,4 @@ conv_tbc_backward_ttttl _self _input _weight _bias _pad =
   , *$(at::Tensor* _bias)
   , $(int64_t _pad)));
   }|]
+

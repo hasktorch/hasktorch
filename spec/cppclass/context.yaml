@@ -1,6 +1,9 @@
 signature: Context
 cppname: at::Context
 hsname: Context
+headers:
+- ATen/Context.h
+- vector
 functions:
 - init() -> void
 - hasCUDA() -> bool

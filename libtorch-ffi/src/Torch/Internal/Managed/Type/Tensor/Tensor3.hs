@@ -18,10 +18,41 @@ import Torch.Internal.Type
 import Torch.Internal.Class
 import Torch.Internal.Cast
 import Torch.Internal.Objects
-
 import qualified Torch.Internal.Unmanaged.Type.Tensor.Tensor3 as Unmanaged
 
 
+
+
+
+tensor_eq__s
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+tensor_eq__s = cast2 Unmanaged.tensor_eq__s
+
+tensor_eq__t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_eq__t = cast2 Unmanaged.tensor_eq__t
+
+tensor_ne__s
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+tensor_ne__s = cast2 Unmanaged.tensor_ne__s
+
+tensor_ne__t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_ne__t = cast2 Unmanaged.tensor_ne__t
+
+tensor_bitwise_and_s
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+tensor_bitwise_and_s = cast2 Unmanaged.tensor_bitwise_and_s
 
 tensor_bitwise_and_t
   :: ForeignPtr Tensor
@@ -862,3 +893,9 @@ tensor_pow_t
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 tensor_pow_t = cast2 Unmanaged.tensor_pow_t
+
+tensor_alias
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_alias = cast1 Unmanaged.tensor_alias
+

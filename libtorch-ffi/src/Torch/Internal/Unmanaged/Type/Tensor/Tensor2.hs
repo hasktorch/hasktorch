@@ -23,8 +23,100 @@ import Torch.Internal.Type
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
+
+
 C.include "<ATen/Tensor.h>"
 C.include "<vector>"
+
+
+
+tensor_detach
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_detach _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).detach(
+    ));
+  }|]
+
+tensor_detach_
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_detach_ _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).detach_(
+    ));
+  }|]
+
+tensor_size_l
+  :: Ptr Tensor
+  -> Int64
+  -> IO (Int64)
+tensor_size_l _obj _dim =
+  [C.throwBlock| int64_t { return (*$(at::Tensor* _obj)).size(
+    $(int64_t _dim));
+  }|]
+
+tensor_size_n
+  :: Ptr Tensor
+  -> Ptr Dimname
+  -> IO (Int64)
+tensor_size_n _obj _dim =
+  [C.throwBlock| int64_t { return (*$(at::Tensor* _obj)).size(
+    *$(at::Dimname* _dim));
+  }|]
+
+tensor_slice_llll
+  :: Ptr Tensor
+  -> Int64
+  -> Int64
+  -> Int64
+  -> Int64
+  -> IO (Ptr Tensor)
+tensor_slice_llll _obj _dim _start _end _step =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).slice(
+    $(int64_t _dim)
+  , $(int64_t _start)
+  , $(int64_t _end)
+  , $(int64_t _step)));
+  }|]
+
+tensor_slogdet
+  :: Ptr Tensor
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+tensor_slogdet _obj =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).slogdet(
+    ));
+  }|]
+
+tensor_smm_t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_smm_t _obj _mat2 =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).smm(
+    *$(at::Tensor* _mat2)));
+  }|]
+
+tensor_split_ll
+  :: Ptr Tensor
+  -> Int64
+  -> Int64
+  -> IO (Ptr TensorList)
+tensor_split_ll _obj _split_size _dim =
+  [C.throwBlock| std::vector<at::Tensor>* { return new std::vector<at::Tensor>((*$(at::Tensor* _obj)).split(
+    $(int64_t _split_size)
+  , $(int64_t _dim)));
+  }|]
+
+tensor_split_with_sizes_ll
+  :: Ptr Tensor
+  -> Ptr IntArray
+  -> Int64
+  -> IO (Ptr TensorList)
+tensor_split_with_sizes_ll _obj _split_sizes _dim =
+  [C.throwBlock| std::vector<at::Tensor>* { return new std::vector<at::Tensor>((*$(at::Tensor* _obj)).split_with_sizes(
+    *$(std::vector<int64_t>* _split_sizes)
+  , $(int64_t _dim)));
+  }|]
 
 tensor_squeeze
   :: Ptr Tensor
@@ -275,6 +367,22 @@ tensor_flip_l
 tensor_flip_l _obj _dims =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).flip(
     *$(std::vector<int64_t>* _dims)));
+  }|]
+
+tensor_fliplr
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_fliplr _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).fliplr(
+    ));
+  }|]
+
+tensor_flipud
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_flipud _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).flipud(
+    ));
   }|]
 
 tensor_roll_ll
@@ -1321,47 +1429,3 @@ tensor_ge__t _obj _other =
     *$(at::Tensor* _other)));
   }|]
 
-tensor_eq__s
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
-tensor_eq__s _obj _other =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).eq_(
-    *$(at::Scalar* _other)));
-  }|]
-
-tensor_eq__t
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-tensor_eq__t _obj _other =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).eq_(
-    *$(at::Tensor* _other)));
-  }|]
-
-tensor_ne__s
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
-tensor_ne__s _obj _other =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).ne_(
-    *$(at::Scalar* _other)));
-  }|]
-
-tensor_ne__t
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-tensor_ne__t _obj _other =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).ne_(
-    *$(at::Tensor* _other)));
-  }|]
-
-tensor_bitwise_and_s
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
-tensor_bitwise_and_s _obj _other =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).bitwise_and(
-    *$(at::Scalar* _other)));
-  }|]

@@ -16,12 +16,10 @@ import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
 
-
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
 import qualified Language.C.Inline.Context as C
 import qualified Language.C.Types as C
-import qualified Data.Map as Map
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
@@ -29,6 +27,32 @@ C.include "<vector>"
 C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
 
+
+detach_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+detach_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::detach(
+    *$(at::Tensor* _self)));
+  }|]
+
+detach__t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+detach__t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::detach_(
+    *$(at::Tensor* _self)));
+  }|]
+
+size_tl
+  :: Ptr Tensor
+  -> Int64
+  -> IO (Int64)
+size_tl _self _dim =
+  [C.throwBlock| int64_t { return (at::size(
+    *$(at::Tensor* _self)
+  , $(int64_t _dim)));
+  }|]
 
 size_tn
   :: Ptr Tensor
@@ -1450,52 +1474,3 @@ trapz_td _y _dx =
   , $(double _dx)));
   }|]
 
-trapz_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
-trapz_t _y =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::trapz(
-    *$(at::Tensor* _y)));
-  }|]
-
-_trilinear_tttlllll
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> Int64
-  -> IO (Ptr Tensor)
-_trilinear_tttlllll _i1 _i2 _i3 _expand1 _expand2 _expand3 _sumdim _unroll_dim =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_trilinear(
-    *$(at::Tensor* _i1)
-  , *$(at::Tensor* _i2)
-  , *$(at::Tensor* _i3)
-  , *$(std::vector<int64_t>* _expand1)
-  , *$(std::vector<int64_t>* _expand2)
-  , *$(std::vector<int64_t>* _expand3)
-  , *$(std::vector<int64_t>* _sumdim)
-  , $(int64_t _unroll_dim)));
-  }|]
-
-_trilinear_tttllll
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> IO (Ptr Tensor)
-_trilinear_tttllll _i1 _i2 _i3 _expand1 _expand2 _expand3 _sumdim =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_trilinear(
-    *$(at::Tensor* _i1)
-  , *$(at::Tensor* _i2)
-  , *$(at::Tensor* _i3)
-  , *$(std::vector<int64_t>* _expand1)
-  , *$(std::vector<int64_t>* _expand2)
-  , *$(std::vector<int64_t>* _expand3)
-  , *$(std::vector<int64_t>* _sumdim)));
-  }|]

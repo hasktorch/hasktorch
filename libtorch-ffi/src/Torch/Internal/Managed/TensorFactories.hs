@@ -815,19 +815,6 @@ range_sss
   -> IO (ForeignPtr Tensor)
 range_sss = cast3 Unmanaged.range_sss
 
--- range_ss
---   :: ForeignPtr Scalar
---   -> ForeignPtr Scalar
---   -> IO (ForeignPtr Tensor)
--- range_ss = cast2 Unmanaged.range_ss
-
--- range_sso
---   :: ForeignPtr Scalar
---   -> ForeignPtr Scalar
---   -> ForeignPtr TensorOptions
---   -> IO (ForeignPtr Tensor)
--- range_sso = cast3 Unmanaged.range_sso
-
 zeros_lNo
   :: ForeignPtr IntArray
   -> ForeignPtr DimnameList

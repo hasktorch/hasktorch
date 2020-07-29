@@ -902,3 +902,4 @@ asin__t
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 asin__t = cast1 Unmanaged.asin__t
+

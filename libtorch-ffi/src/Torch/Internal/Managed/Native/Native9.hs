@@ -21,6 +21,24 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native9 as Unmanaged
 
 
+pow_out_tts
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+pow_out_tts = cast3 Unmanaged.pow_out_tts
+
+pow_ts
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+pow_ts = cast2 Unmanaged.pow_ts
+
+zero__t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+zero__t = cast1 Unmanaged.zero__t
+
 sub_out_ttts
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -1062,26 +1080,3 @@ index_fill_tnts
   -> IO (ForeignPtr Tensor)
 index_fill_tnts = cast4 Unmanaged.index_fill_tnts
 
-index_fill_tntt
-  :: ForeignPtr Tensor
-  -> ForeignPtr Dimname
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-index_fill_tntt = cast4 Unmanaged.index_fill_tntt
-
-scatter_tltt
-  :: ForeignPtr Tensor
-  -> Int64
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-scatter_tltt = cast4 Unmanaged.scatter_tltt
-
-scatter_tlts
-  :: ForeignPtr Tensor
-  -> Int64
-  -> ForeignPtr Tensor
-  -> ForeignPtr Scalar
-  -> IO (ForeignPtr Tensor)
-scatter_tlts = cast4 Unmanaged.scatter_tlts

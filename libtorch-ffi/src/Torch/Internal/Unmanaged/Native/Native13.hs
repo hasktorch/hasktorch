@@ -16,18 +16,73 @@ import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
 
-
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
 import qualified Language.C.Inline.Context as C
 import qualified Language.C.Types as C
-import qualified Data.Map as Map
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 C.include "<vector>"
 C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
+
+
+nll_loss2d_backward_out_tttttllt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> Int64
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+nll_loss2d_backward_out_tttttllt _grad_input _grad_output _self _target _weight _reduction _ignore_index _total_weight =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::nll_loss2d_backward_out(
+    *$(at::Tensor* _grad_input)
+  , *$(at::Tensor* _grad_output)
+  , *$(at::Tensor* _self)
+  , *$(at::Tensor* _target)
+  , *$(at::Tensor* _weight)
+  , $(int64_t _reduction)
+  , $(int64_t _ignore_index)
+  , *$(at::Tensor* _total_weight)));
+  }|]
+
+nll_loss2d_backward_ttttllt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> Int64
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+nll_loss2d_backward_ttttllt _grad_output _self _target _weight _reduction _ignore_index _total_weight =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::nll_loss2d_backward(
+    *$(at::Tensor* _grad_output)
+  , *$(at::Tensor* _self)
+  , *$(at::Tensor* _target)
+  , *$(at::Tensor* _weight)
+  , $(int64_t _reduction)
+  , $(int64_t _ignore_index)
+  , *$(at::Tensor* _total_weight)));
+  }|]
+
+smooth_l1_loss_out_tttl
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> IO (Ptr Tensor)
+smooth_l1_loss_out_tttl _out _self _target _reduction =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::smooth_l1_loss_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , *$(at::Tensor* _target)
+  , $(int64_t _reduction)));
+  }|]
 
 smooth_l1_loss_out_ttt
   :: Ptr Tensor
@@ -1591,50 +1646,3 @@ avg_pool3d_out_ttlllbb _out _self _kernel_size _stride _padding _ceil_mode _coun
   , $(bool _count_include_pad)));
   }|]
 
-avg_pool3d_out_ttlllb
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> CBool
-  -> IO (Ptr Tensor)
-avg_pool3d_out_ttlllb _out _self _kernel_size _stride _padding _ceil_mode =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::avg_pool3d_out(
-    *$(at::Tensor* _out)
-  , *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _kernel_size)
-  , *$(std::vector<int64_t>* _stride)
-  , *$(std::vector<int64_t>* _padding)
-  , $(bool _ceil_mode)));
-  }|]
-
-avg_pool3d_out_ttlll
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> IO (Ptr Tensor)
-avg_pool3d_out_ttlll _out _self _kernel_size _stride _padding =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::avg_pool3d_out(
-    *$(at::Tensor* _out)
-  , *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _kernel_size)
-  , *$(std::vector<int64_t>* _stride)
-  , *$(std::vector<int64_t>* _padding)));
-  }|]
-
-avg_pool3d_out_ttll
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> IO (Ptr Tensor)
-avg_pool3d_out_ttll _out _self _kernel_size _stride =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::avg_pool3d_out(
-    *$(at::Tensor* _out)
-  , *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _kernel_size)
-  , *$(std::vector<int64_t>* _stride)));
-  }|]

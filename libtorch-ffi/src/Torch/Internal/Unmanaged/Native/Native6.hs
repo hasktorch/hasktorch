@@ -16,18 +16,17 @@ import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
 
-
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
 import qualified Language.C.Inline.Context as C
 import qualified Language.C.Types as C
-import qualified Data.Map as Map
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 C.include "<vector>"
 C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
+
 
 pdist_t
   :: Ptr Tensor
@@ -775,28 +774,6 @@ range_sss _start _end _step =
   , *$(at::Scalar* _step)));
   }|]
 
--- range_ss
---   :: Ptr Scalar
---   -> Ptr Scalar
---   -> IO (Ptr Tensor)
--- range_ss _start _end =
---   [C.throwBlock| at::Tensor* { return new at::Tensor(at::range(
---     *$(at::Scalar* _start)
---   , *$(at::Scalar* _end)));
---   }|]
-
--- range_sso
---   :: Ptr Scalar
---   -> Ptr Scalar
---   -> Ptr TensorOptions
---   -> IO (Ptr Tensor)
--- range_sso _start _end _options =
---   [C.throwBlock| at::Tensor* { return new at::Tensor(at::range(
---     *$(at::Scalar* _start)
---   , *$(at::Scalar* _end)
---   , *$(at::TensorOptions* _options)));
---   }|]
-
 range_out_tsss
   :: Ptr Tensor
   -> Ptr Scalar
@@ -1359,28 +1336,3 @@ sinh_out_tt _out _self =
   , *$(at::Tensor* _self)));
   }|]
 
-detach_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
-detach_t _self =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::detach(
-    *$(at::Tensor* _self)));
-  }|]
-
-detach__t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
-detach__t _self =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::detach_(
-    *$(at::Tensor* _self)));
-  }|]
-
-size_tl
-  :: Ptr Tensor
-  -> Int64
-  -> IO (Int64)
-size_tl _self _dim =
-  [C.throwBlock| int64_t { return (at::size(
-    *$(at::Tensor* _self)
-  , $(int64_t _dim)));
-  }|]

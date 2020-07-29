@@ -26,26 +26,16 @@ renderImport :: Bool -> Text
 renderImport is_managed =  if is_managed then  [st|
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 import Torch.Internal.Cast
-
+import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Type.Tuple as Unmanaged
-import Torch.Internal.Unmanaged.Type.Generator
-import Torch.Internal.Unmanaged.Type.IntArray
-import Torch.Internal.Unmanaged.Type.Scalar
-import Torch.Internal.Unmanaged.Type.Storage
-import Torch.Internal.Unmanaged.Type.Tensor
-import Torch.Internal.Unmanaged.Type.TensorList
-import Torch.Internal.Unmanaged.Type.TensorOptions
-import Torch.Internal.Unmanaged.Type.Tuple
 |] else [st|
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 
@@ -57,7 +47,8 @@ import qualified Data.Map as Map
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
+C.include "<ATen/Tensor.h>"
+C.include "<tuple>"
 |]
 
 tupleToCpp :: PT.Tuple -> Text
@@ -98,12 +89,6 @@ renderCppObject :: PT.Tuple -> Text
 renderCppObject typ_ = [st|
 
 -----------------#{tupleToHs typ_}---------------------
-
-delete#{tupleToHs' typ_} :: Ptr #{withParens $ tupleToHs typ_} -> IO ()
-delete#{tupleToHs' typ_} ptr = #{bra}C.throwBlock| void { delete $(#{tupleToCpp typ_}* ptr); return; }|#{cket}
-
-instance CppObject #{withParens $ tupleToHs typ_} where
-  fromPtr ptr = newForeignPtr ptr (delete#{tupleToHs' typ_} ptr)
 |]
 
 renderCppTuple2 :: PT.Tuple -> Text

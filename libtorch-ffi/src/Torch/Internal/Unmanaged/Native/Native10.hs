@@ -20,7 +20,6 @@ import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
 import qualified Language.C.Inline.Context as C
 import qualified Language.C.Types as C
-import qualified Data.Map as Map
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
@@ -28,6 +27,48 @@ C.include "<vector>"
 C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
 
+
+index_fill_tntt
+  :: Ptr Tensor
+  -> Ptr Dimname
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+index_fill_tntt _self _dim _index _value =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::index_fill(
+    *$(at::Tensor* _self)
+  , *$(at::Dimname* _dim)
+  , *$(at::Tensor* _index)
+  , *$(at::Tensor* _value)));
+  }|]
+
+scatter_tltt
+  :: Ptr Tensor
+  -> Int64
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+scatter_tltt _self _dim _index _src =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::scatter(
+    *$(at::Tensor* _self)
+  , $(int64_t _dim)
+  , *$(at::Tensor* _index)
+  , *$(at::Tensor* _src)));
+  }|]
+
+scatter_tlts
+  :: Ptr Tensor
+  -> Int64
+  -> Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+scatter_tlts _self _dim _index _value =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::scatter(
+    *$(at::Tensor* _self)
+  , $(int64_t _dim)
+  , *$(at::Tensor* _index)
+  , *$(at::Scalar* _value)));
+  }|]
 
 scatter_tntt
   :: Ptr Tensor
@@ -1493,32 +1534,3 @@ symeig_tbb _self _eigenvectors _upper =
   , $(bool _upper)));
   }|]
 
-symeig_tb
-  :: Ptr Tensor
-  -> CBool
-  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-symeig_tb _self _eigenvectors =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::symeig(
-    *$(at::Tensor* _self)
-  , $(bool _eigenvectors)));
-  }|]
-
-symeig_t
-  :: Ptr Tensor
-  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-symeig_t _self =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::symeig(
-    *$(at::Tensor* _self)));
-  }|]
-
-_symeig_helper_tbb
-  :: Ptr Tensor
-  -> CBool
-  -> CBool
-  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-_symeig_helper_tbb _self _eigenvectors _upper =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_symeig_helper(
-    *$(at::Tensor* _self)
-  , $(bool _eigenvectors)
-  , $(bool _upper)));
-  }|]

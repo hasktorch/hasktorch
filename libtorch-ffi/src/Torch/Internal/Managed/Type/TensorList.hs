@@ -18,18 +18,15 @@ import Torch.Internal.Type
 import Torch.Internal.Class
 import Torch.Internal.Cast
 import Torch.Internal.Objects
-
 import qualified Torch.Internal.Unmanaged.Type.TensorList as Unmanaged
+
+
 
 
 
 newTensorList
   :: IO (ForeignPtr TensorList)
 newTensorList = cast0 Unmanaged.newTensorList
-
-
-
-
 
 tensorList_empty
   :: ForeignPtr TensorList
@@ -52,6 +49,4 @@ tensorList_push_back_t
   -> ForeignPtr Tensor
   -> IO (())
 tensorList_push_back_t = cast2 Unmanaged.tensorList_push_back_t
-
-
 
