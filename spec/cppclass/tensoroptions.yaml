@@ -1,6 +1,9 @@
 signature: TensorOptions
 cppname: at::TensorOptions
 hsname: TensorOptions
+headers:
+- ATen/TensorOptions.h
+- vector
 functions:
 - dtype(ScalarType dtype) -> TensorOptions
 - layout(Layout layout) -> TensorOptions

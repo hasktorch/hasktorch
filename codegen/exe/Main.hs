@@ -50,19 +50,19 @@ main :: IO ()
 main = do
   opts <- O.execParser optsParser
 --  RT.tensorBuilder
-  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/tensor.yaml"
-  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/intarray.yaml"
-  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/tensoroptions.yaml"
-  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/generator.yaml"
-  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/scalar.yaml"
-  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/storage.yaml"
-  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/tensorlist.yaml"
-  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/context.yaml"
-  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/constquantizerptr.yaml"
-  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/dimname.yaml"
-  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/dimnamelist.yaml"
-  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/symbol.yaml"
-  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/ivalue.yaml"
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/tensor.yaml" 4
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/intarray.yaml" 1
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/tensoroptions.yaml" 1
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/generator.yaml" 1
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/scalar.yaml" 1
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/storage.yaml" 1
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/tensorlist.yaml" 1
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/context.yaml" 1
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/constquantizerptr.yaml" 1
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/dimname.yaml" 1
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/dimnamelist.yaml" 1
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/symbol.yaml" 1
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/ivalue.yaml" 1
   RTL.decodeAndCodeGen (outputDir opts) (specFileDL opts)
   RD.decodeAndCodeGen (outputDir opts) (specFileDL opts)
   RP.decodeAndCodeGen (outputDir opts) (specFileDL opts) "spec/bindings.yaml"

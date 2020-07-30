@@ -1,6 +1,9 @@
 signature: Storage
 cppname: at::Storage
 hsname: Storage
+headers:
+- ATen/Storage.h
+- vector
 functions: []
 constructors:
 - new() -> Storage

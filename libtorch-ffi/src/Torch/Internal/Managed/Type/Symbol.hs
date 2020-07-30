@@ -18,18 +18,15 @@ import Torch.Internal.Type
 import Torch.Internal.Class
 import Torch.Internal.Cast
 import Torch.Internal.Objects
-
 import qualified Torch.Internal.Unmanaged.Type.Symbol as Unmanaged
+
+
 
 
 
 newSymbol
   :: IO (ForeignPtr Symbol)
 newSymbol = cast0 Unmanaged.newSymbol
-
-
-
-
 
 symbol_is_attr
   :: ForeignPtr Symbol
@@ -65,8 +62,6 @@ symbol_is_dimname
   :: ForeignPtr Symbol
   -> IO (CBool)
 symbol_is_dimname = cast1 Unmanaged.symbol_is_dimname
-
-
 
 attr_s
   :: ForeignPtr StdString

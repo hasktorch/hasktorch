@@ -83,25 +83,25 @@ generatorFactory func size options Generator{..} =
 
 
 randn :: [Int] -> TensorOptions -> Generator -> (Tensor,Generator)
-randn size opts gen = generatorFactory LibTorch.randn_lpo size opts gen
+randn size opts gen = generatorFactory LibTorch.randn_lGo size opts gen
 
 randn' :: [Int] -> Generator -> (Tensor,Generator)
 randn' size gen = randn size defaultOpts gen
 
 rand :: [Int] -> TensorOptions -> Generator -> (Tensor,Generator)
-rand size opts gen = generatorFactory LibTorch.rand_lpo size opts gen
+rand size opts gen = generatorFactory LibTorch.rand_lGo size opts gen
 
 rand' :: [Int] -> Generator -> (Tensor,Generator)
 rand' size gen = rand size defaultOpts gen
 
 randint :: Int -> Int -> [Int] -> TensorOptions -> Generator -> (Tensor,Generator)
-randint low high size opts gen = generatorFactory (LibTorch.randint_lllpo (fromIntegral low) (fromIntegral high)) size opts gen
+randint low high size opts gen = generatorFactory (LibTorch.randint_lllGo (fromIntegral low) (fromIntegral high)) size opts gen
 
 randint' :: Int -> Int -> [Int] -> Generator -> (Tensor,Generator)
 randint' low high size gen = randint low high size defaultOpts gen
 
 normal :: Double -> Double -> [Int] -> TensorOptions -> Generator -> (Tensor,Generator)
-normal mean std size opts gen = generatorFactory (LibTorch.normal_ddlpo (realToFrac mean) (realToFrac std)) size opts gen
+normal mean std size opts gen = generatorFactory (LibTorch.normal_ddlGo (realToFrac mean) (realToFrac std)) size opts gen
 
 normal' :: Double -> Double -> [Int] -> Generator -> (Tensor,Generator)
 normal' mean std size gen = normal mean std size defaultOpts gen

@@ -1,6 +1,8 @@
 signature: Symbol
 cppname: at::Symbol
 hsname: Symbol
+headers:
+- ATen/core/interned_strings.h
 functions:
 - attr(std::string s) -> Symbol
 - aten(std::string s) -> Symbol

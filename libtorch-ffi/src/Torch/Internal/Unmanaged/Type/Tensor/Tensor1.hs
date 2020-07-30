@@ -23,8 +23,53 @@ import Torch.Internal.Type
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
+
+
 C.include "<ATen/Tensor.h>"
+C.include "<ATen/Functions.h>"
+C.include "<ATen/TensorOperators.h>"
 C.include "<vector>"
+
+
+
+tensor_cummin_n
+  :: Ptr Tensor
+  -> Ptr Dimname
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+tensor_cummin_n _obj _dim =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).cummin(
+    *$(at::Dimname* _dim)));
+  }|]
+
+tensor_det
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_det _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).det(
+    ));
+  }|]
+
+tensor_diag_embed_lll
+  :: Ptr Tensor
+  -> Int64
+  -> Int64
+  -> Int64
+  -> IO (Ptr Tensor)
+tensor_diag_embed_lll _obj _offset _dim1 _dim2 =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).diag_embed(
+    $(int64_t _offset)
+  , $(int64_t _dim1)
+  , $(int64_t _dim2)));
+  }|]
+
+tensor_diagflat_l
+  :: Ptr Tensor
+  -> Int64
+  -> IO (Ptr Tensor)
+tensor_diagflat_l _obj _offset =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).diagflat(
+    $(int64_t _offset)));
+  }|]
 
 tensor_diagonal_lll
   :: Ptr Tensor
@@ -541,6 +586,14 @@ tensor_isclose_tddb _obj _other _rtol _atol _equal_nan =
   , $(bool _equal_nan)));
   }|]
 
+tensor_isnan
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_isnan _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).isnan(
+    ));
+  }|]
+
 tensor_is_distributed
   :: Ptr Tensor
   -> IO (CBool)
@@ -680,12 +733,48 @@ tensor_log2_ _obj =
     ));
   }|]
 
+tensor_logaddexp_t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_logaddexp_t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).logaddexp(
+    *$(at::Tensor* _other)));
+  }|]
+
+tensor_logaddexp2_t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_logaddexp2_t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).logaddexp2(
+    *$(at::Tensor* _other)));
+  }|]
+
 tensor_logdet
   :: Ptr Tensor
   -> IO (Ptr Tensor)
 tensor_logdet _obj =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).logdet(
     ));
+  }|]
+
+tensor_logcumsumexp_l
+  :: Ptr Tensor
+  -> Int64
+  -> IO (Ptr Tensor)
+tensor_logcumsumexp_l _obj _dim =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).logcumsumexp(
+    $(int64_t _dim)));
+  }|]
+
+tensor_logcumsumexp_n
+  :: Ptr Tensor
+  -> Ptr Dimname
+  -> IO (Ptr Tensor)
+tensor_logcumsumexp_n _obj _dim =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).logcumsumexp(
+    *$(at::Dimname* _dim)));
   }|]
 
 tensor_logsumexp_lb
@@ -1013,6 +1102,38 @@ tensor_pinverse_d _obj _rcond =
     $(double _rcond)));
   }|]
 
+tensor_rad2deg
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_rad2deg _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).rad2deg(
+    ));
+  }|]
+
+tensor_rad2deg_
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_rad2deg_ _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).rad2deg_(
+    ));
+  }|]
+
+tensor_deg2rad
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_deg2rad _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).deg2rad(
+    ));
+  }|]
+
+tensor_deg2rad_
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_deg2rad_ _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).deg2rad_(
+    ));
+  }|]
+
 tensor_reciprocal
   :: Ptr Tensor
   -> IO (Ptr Tensor)
@@ -1246,74 +1367,3 @@ tensor_detach_ _obj =
     ));
   }|]
 
-tensor_size_l
-  :: Ptr Tensor
-  -> Int64
-  -> IO (Int64)
-tensor_size_l _obj _dim =
-  [C.throwBlock| int64_t { return (*$(at::Tensor* _obj)).size(
-    $(int64_t _dim));
-  }|]
-
-tensor_size_n
-  :: Ptr Tensor
-  -> Ptr Dimname
-  -> IO (Int64)
-tensor_size_n _obj _dim =
-  [C.throwBlock| int64_t { return (*$(at::Tensor* _obj)).size(
-    *$(at::Dimname* _dim));
-  }|]
-
-tensor_slice_llll
-  :: Ptr Tensor
-  -> Int64
-  -> Int64
-  -> Int64
-  -> Int64
-  -> IO (Ptr Tensor)
-tensor_slice_llll _obj _dim _start _end _step =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).slice(
-    $(int64_t _dim)
-  , $(int64_t _start)
-  , $(int64_t _end)
-  , $(int64_t _step)));
-  }|]
-
-tensor_slogdet
-  :: Ptr Tensor
-  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-tensor_slogdet _obj =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).slogdet(
-    ));
-  }|]
-
-tensor_smm_t
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-tensor_smm_t _obj _mat2 =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).smm(
-    *$(at::Tensor* _mat2)));
-  }|]
-
-tensor_split_ll
-  :: Ptr Tensor
-  -> Int64
-  -> Int64
-  -> IO (Ptr TensorList)
-tensor_split_ll _obj _split_size _dim =
-  [C.throwBlock| std::vector<at::Tensor>* { return new std::vector<at::Tensor>((*$(at::Tensor* _obj)).split(
-    $(int64_t _split_size)
-  , $(int64_t _dim)));
-  }|]
-
-tensor_split_with_sizes_ll
-  :: Ptr Tensor
-  -> Ptr IntArray
-  -> Int64
-  -> IO (Ptr TensorList)
-tensor_split_with_sizes_ll _obj _split_sizes _dim =
-  [C.throwBlock| std::vector<at::Tensor>* { return new std::vector<at::Tensor>((*$(at::Tensor* _obj)).split_with_sizes(
-    *$(std::vector<int64_t>* _split_sizes)
-  , $(int64_t _dim)));
-  }|]

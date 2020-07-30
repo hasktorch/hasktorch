@@ -21,8 +21,9 @@ import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
 
-
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
+
+
 
 C.include "<ATen/Scalar.h>"
 C.include "<vector>"
@@ -51,6 +52,4 @@ newScalar_d _a =
   [C.throwBlock| at::Scalar* { return new at::Scalar(
     $(double _a));
   }|]
-
-
 
