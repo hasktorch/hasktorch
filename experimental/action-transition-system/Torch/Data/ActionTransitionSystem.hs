@@ -1032,7 +1032,7 @@ data
   RATransformerMLMSpec
     :: forall numAttnLayers numHeads headDim ffnDim tokenPaddingIdx tokenNumEmbeds dataTypePaddingIdx dataTypeNumEmbeds constructorPaddingIdx constructorNumEmbeds selectorPaddingIdx selectorNumEmbeds relationPaddingIdx relationNumEmbeds dtype device
      . { ratDropoutSpec :: DropoutSpec
-       , ratLayerSpec   :: TransformerLayerSpec (headDim * numHeads) numHeads ffnDim dtype device
+       , ratLayerSpec   :: TransformerLayerSpec (headDim * numHeads) (headDim * numHeads) (headDim * numHeads) numHeads ffnDim dtype device
        }
     -> RATransformerMLMSpec numAttnLayers numHeads headDim ffnDim tokenPaddingIdx tokenNumEmbeds dataTypePaddingIdx dataTypeNumEmbeds constructorPaddingIdx constructorNumEmbeds selectorPaddingIdx selectorNumEmbeds relationPaddingIdx relationNumEmbeds dtype device
   deriving (Show)
@@ -1063,7 +1063,7 @@ data
        , ratSelectorEmbedding    :: Embedding ('Just selectorPaddingIdx) selectorNumEmbeds (Div (headDim * numHeads) 4) 'Learned dtype device
        , ratRelationEmbedding    :: Embedding ('Just relationPaddingIdx) relationNumEmbeds headDim 'Learned dtype device
        , ratDropout              :: Dropout
-       , ratLayers               :: HList (HReplicateR numAttnLayers (TransformerLayer (headDim * numHeads) numHeads ffnDim dtype device))
+       , ratLayers               :: HList (HReplicateR numAttnLayers (TransformerLayer (headDim * numHeads) (headDim * numHeads) (headDim * numHeads) numHeads ffnDim dtype device))
        , ratProj                 :: Linear (headDim * numHeads) tokenNumEmbeds dtype device
        }
     -> RATransformerMLM numAttnLayers numHeads headDim ffnDim tokenPaddingIdx tokenNumEmbeds dataTypePaddingIdx dataTypeNumEmbeds constructorPaddingIdx constructorNumEmbeds selectorPaddingIdx selectorNumEmbeds relationPaddingIdx relationNumEmbeds dtype device
@@ -1081,9 +1081,9 @@ instance
   , 1 <= (selectorNumEmbeds - selectorPaddingIdx)
   , relationPaddingIdx <= relationNumEmbeds
   , 1 <= (relationNumEmbeds - relationPaddingIdx)
-  , HReplicate numAttnLayers (TransformerLayerSpec (headDim * numHeads) numHeads ffnDim dtype device)
-  , Randomizable (HList (HReplicateR numAttnLayers (TransformerLayerSpec (headDim * numHeads) numHeads ffnDim dtype device)))
-                 (HList (HReplicateR numAttnLayers (TransformerLayer     (headDim * numHeads) numHeads ffnDim dtype device)))
+  , HReplicate numAttnLayers (TransformerLayerSpec (headDim * numHeads) (headDim * numHeads) (headDim * numHeads) numHeads ffnDim dtype device)
+  , Randomizable (HList (HReplicateR numAttnLayers (TransformerLayerSpec (headDim * numHeads) (headDim * numHeads) (headDim * numHeads) numHeads ffnDim dtype device)))
+                 (HList (HReplicateR numAttnLayers (TransformerLayer     (headDim * numHeads) (headDim * numHeads) (headDim * numHeads) numHeads ffnDim dtype device)))
   , KnownDType dtype
   , RandDTypeIsValid device dtype
   , KnownDevice device
@@ -1112,30 +1112,28 @@ data
       { raflTrain :: Bool
       , raflAttentionMask :: Tensor device dtype '[batchSize, seqLen, seqLen]
       , raflKeyPaddingMask :: Tensor device 'Bool '[batchSize, seqLen]
-      , raflRelationsK :: Tensor device dtype '[batchSize, seqLen, seqLen, headDim]
-      , raflRelationsV :: Tensor device dtype '[batchSize, seqLen, seqLen, headDim]
+      , raflKeyRelations :: Tensor device dtype '[batchSize, seqLen, seqLen, headDim]
+      , raflValueRelations :: Tensor device dtype '[batchSize, seqLen, seqLen, headDim]
       }
 
 instance
   ( 1 <= numHeads
   , embedDim ~ (headDim * numHeads)
-  , Mod (embedDim * 3) 3 ~ 0
-  , Div (embedDim * 3) 3 ~ embedDim
   , All KnownNat '[embedDim, numHeads, seqLen, batchSize, headDim]
   , IsSuffixOf '[embedDim] '[batchSize, seqLen, embedDim]
   , KnownDType dtype
-  , dtype ~ SumDType dtype
   , StandardFloatingPointDTypeValidation device dtype
   , MatMulDTypeIsValid device dtype
   , BasicArithmeticDTypeIsValid device dtype
+  , dtype ~ SumDType dtype
   , SumDTypeIsValid device dtype
   , KnownDevice device
   ) => Apply' (RAFoldLayers batchSize headDim seqLen dtype device)
-              ( TransformerLayer embedDim numHeads ffnDim dtype device
+              ( TransformerLayer embedDim embedDim embedDim numHeads ffnDim dtype device
               , IO (Tensor device dtype '[batchSize, seqLen, embedDim])
               )
               (IO (Tensor device dtype '[batchSize, seqLen, embedDim])) where
-  apply' RAFoldLayers {..} (layer, mx) = mx >>= transformerLayer layer raflTrain raflAttentionMask raflKeyPaddingMask (Just raflRelationsK) (Just raflRelationsV)
+  apply' RAFoldLayers {..} (layer, mx) = mx >>= \x -> transformerLayer layer raflTrain (Just raflAttentionMask) (Just raflKeyPaddingMask) (Just raflKeyRelations) (Just raflValueRelations) x x x
 
 raTransformerMLM
   :: forall
@@ -1172,7 +1170,7 @@ raTransformerMLM
          IO
          (RAFoldLayers batchSize headDim seqLen dtype device)
          (Tensor device dtype '[batchSize, seqLen, embedDim])
-         (HReplicateR numAttnLayers (TransformerLayer embedDim numHeads ffnDim dtype device))
+         (HReplicateR numAttnLayers (TransformerLayer embedDim embedDim embedDim numHeads ffnDim dtype device))
          (Tensor device dtype '[batchSize, seqLen, embedDim])
      , BasicArithmeticDTypeIsValid device dtype
      , ComparisonDTypeIsValid device dtype
