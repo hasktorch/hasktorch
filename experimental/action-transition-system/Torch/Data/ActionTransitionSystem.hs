@@ -1228,10 +1228,10 @@ loss
   -> Tensor device dtype '[batchSize, seqLen, numEmbeds]
   -> Tensor device 'Int64 '[batchSize, seqLen]
   -> Tensor device dtype '[]
-loss validActionsMask keyPaddingMask logits target =
+loss validActionsMask selectionMask logits target =
   let logProbs = logSoftmax @2 . maskedFill (logicalNot validActionsMask) (-1 / 0 :: Double) $ logits
       logLikelihood = squeezeDim @2 $ gatherDim @2 (unsqueeze @2 target) logProbs
-      meanLogLikelihood = case maskedSelect (logicalNot keyPaddingMask) logLikelihood of
+      meanLogLikelihood = case maskedSelect selectionMask logLikelihood of
         UnknownShapeTensor t -> unsafeMeanAll t
   in (-meanLogLikelihood)
 
@@ -1846,7 +1846,7 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
       let
         pMaskInput = 0.02 :: Float
         pMaskTarget = 0.2 :: Float
-        trainingSeeds = List.take 10 $ Seed.from <$> List.iterate (+ 1) (0 :: Word64)
+        trainingSeeds = List.take 1 $ Seed.from <$> List.iterate (+ 1) (0 :: Word64)
         trainingData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMaskInput pMaskTarget trainingLen) trainingSeeds
         evaluationsSeeds = List.take 1 $ Seed.from <$> List.iterate (+ 1) (0 :: Word64)
         evaluationData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMaskInput pMaskTarget evaluationLen) evaluationsSeeds
@@ -1875,15 +1875,16 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
                   -- lift . threadDelay $ 10000000 -- delay by 10 seconds
                   prediction <- lift $ raTransformerMLM model'' True input
                   let targetTokens = toDevice @TestDevice @TestDataDevice . ratTargetTokens $ ratTarget
-                      cre = loss ones (ratKeyPaddingMask input) prediction targetTokens
+                      cre = loss ones (logicalNot . ratKeyPaddingMask $ input) prediction targetTokens
                       parameters = flattenParameters model''
                       gradients = grad cre parameters
                       clippedGradients = gradients -- hmap' (ClipGradValue (1e1 :: Float)) gradients
                   lift performGC -- force GC cleanup after every batch
-                  maybe
-                    (lift (print "encountered NaN in gradients, repeating training step") >> pure (model'', optim''))
-                    (const $ lift (runStep' model'' optim'' learningRate clippedGradients))
-                    (hfoldrM GuardGradAgainstNaN () clippedGradients)
+                  -- maybe
+                  --   (lift (print "encountered NaN in gradients, repeating training step") >> pure (model'', optim''))
+                  --   (const $ lift (runStep' model'' optim'' learningRate clippedGradients))
+                  --   (hfoldrM GuardGradAgainstNaN () clippedGradients)
+                  pure (model'', optim'')
                 begin = pure (model', optim')
                 done = pure
             in runContT trainingData (foldM step begin done . enumerate)
@@ -1893,17 +1894,17 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
                   let input = toDevice @TestDevice @TestDataDevice ratInput
                   prediction <- lift $ raTransformerMLM model' False input
                   let target = toDevice @TestDevice @TestDataDevice ratTarget
-                      loss' mask = loss ones mask prediction (ratTargetTokens target)
+                      loss' mask = toFloat . loss ones (mask `logicalAnd` (logicalNot . ratKeyPaddingMask $ input)) prediction . ratTargetTokens $ target
                       cre' = CRE
-                        { cre = toFloat . loss' $ ratKeyPaddingMask input
-                        , creInput = toFloat . loss' $ ratKeyPaddingMask input `logicalOr` (logicalNot $ ratInputScopeMask target)
-                        , creTarget = toFloat . loss' $ ratKeyPaddingMask input `logicalOr` (logicalNot $ ratTargetScopeMask target)
-                        , creMasked = toFloat . loss' $ (logicalNot $ ratTokenMask target) `logicalOr` ratKeyPaddingMask input
-                        , creMaskedInput = toFloat . loss' $ (logicalNot $ ratTokenMask target) `logicalOr` ratKeyPaddingMask input `logicalOr` (logicalNot $ ratInputScopeMask target)
-                        , creMaskedTarget = toFloat . loss' $ (logicalNot $ ratTokenMask target) `logicalOr` ratKeyPaddingMask input `logicalOr` (logicalNot $ ratTargetScopeMask target)
-                        , creNonMasked = toFloat . loss' $ ratTokenMask target `logicalOr` ratKeyPaddingMask input
-                        , creNonMaskedInput = toFloat . loss' $ ratTokenMask target `logicalOr` ratKeyPaddingMask input `logicalOr` (logicalNot $ ratInputScopeMask target)
-                        , creNonMaskedTarget = toFloat . loss' $ ratTokenMask target `logicalOr` ratKeyPaddingMask input `logicalOr` (logicalNot $ ratTargetScopeMask target)
+                        { cre = loss' ones
+                        , creInput = loss' $ ratInputScopeMask target
+                        , creTarget = loss' $ ratTargetScopeMask target
+                        , creMasked = loss' $ ratTokenMask target
+                        , creMaskedInput = loss' $ (ratTokenMask target) `logicalAnd` (ratInputScopeMask target)
+                        , creMaskedTarget = loss' $ (ratTokenMask target) `logicalAnd` (ratTargetScopeMask target)
+                        , creNonMasked = loss' $ (logicalNot . ratTokenMask $ target)
+                        , creNonMaskedInput = loss' $ (logicalNot . ratTokenMask $ target) `logicalAnd` (ratInputScopeMask target)
+                        , creNonMaskedTarget = loss' $ (logicalNot . ratTokenMask $ target) `logicalAnd` (ratTargetScopeMask target)
                         }
                   -- guard (not . toBool . Torch.Typed.isNaN $ cre)
                   let res = (cre <> cre', _step + 1)
