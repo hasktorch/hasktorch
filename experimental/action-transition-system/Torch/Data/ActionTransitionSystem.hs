@@ -1872,10 +1872,10 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
             let step (model'', optim'') (RATransformerMLMBatch {..}, batch) = do
                   lift . putStrLn $ "Training batch " <> show batch
                   let input = toDevice @TestDevice @TestDataDevice ratInput
-                  -- lift . threadDelay $ 10000000 -- delay by 10 seconds
                   prediction <- lift $ raTransformerMLM model'' True input
                   let targetTokens = toDevice @TestDevice @TestDataDevice . ratTargetTokens $ ratTarget
-                      cre = loss ones (logicalNot . ratKeyPaddingMask $ input) prediction targetTokens
+                      tokenMask = toDevice @TestDevice @TestDataDevice . ratTokenMask $ ratTarget
+                      cre = loss ones (tokenMask `logicalAnd` (logicalNot . ratKeyPaddingMask $ input)) prediction targetTokens
                       parameters = flattenParameters model''
                       gradients = grad cre parameters
                       clippedGradients = gradients -- hmap' (ClipGradValue (1e1 :: Float)) gradients
@@ -1899,8 +1899,8 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
                         , creInput = loss' $ ratInputScopeMask target
                         , creTarget = loss' $ ratTargetScopeMask target
                         , creMasked = loss' $ ratTokenMask target
-                        , creMaskedInput = loss' $ (ratTokenMask target) `logicalAnd` (ratInputScopeMask target)
-                        , creMaskedTarget = loss' $ (ratTokenMask target) `logicalAnd` (ratTargetScopeMask target)
+                        , creMaskedInput = loss' $ ratTokenMask target `logicalAnd` ratInputScopeMask target
+                        , creMaskedTarget = loss' $ ratTokenMask target `logicalAnd` ratTargetScopeMask target
                         , creNonMasked = loss' $ (logicalNot . ratTokenMask $ target)
                         , creNonMaskedInput = loss' $ (logicalNot . ratTokenMask $ target) `logicalAnd` (ratInputScopeMask target)
                         , creNonMaskedTarget = loss' $ (logicalNot . ratTokenMask $ target) `logicalAnd` (ratTargetScopeMask target)
