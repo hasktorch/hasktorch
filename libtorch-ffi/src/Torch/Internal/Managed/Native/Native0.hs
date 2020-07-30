@@ -203,12 +203,12 @@ _debug_has_internal_overlap_t
   -> IO (Int64)
 _debug_has_internal_overlap_t = cast1 Unmanaged._debug_has_internal_overlap_t
 
-_fused_dropout_tdp
+_fused_dropout_tdG
   :: ForeignPtr Tensor
   -> CDouble
   -> ForeignPtr Generator
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-_fused_dropout_tdp = cast3 Unmanaged._fused_dropout_tdp
+_fused_dropout_tdG = cast3 Unmanaged._fused_dropout_tdG
 
 _fused_dropout_td
   :: ForeignPtr Tensor
@@ -338,6 +338,22 @@ abs_out_tt
   -> IO (ForeignPtr Tensor)
 abs_out_tt = cast2 Unmanaged.abs_out_tt
 
+absolute_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+absolute_t = cast1 Unmanaged.absolute_t
+
+absolute__t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+absolute__t = cast1 Unmanaged.absolute__t
+
+absolute_out_tt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+absolute_out_tt = cast2 Unmanaged.absolute_out_tt
+
 angle_t
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
@@ -348,6 +364,16 @@ angle_out_tt
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 angle_out_tt = cast2 Unmanaged.angle_out_tt
+
+view_as_real_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+view_as_real_t = cast1 Unmanaged.view_as_real_t
+
+view_as_complex_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+view_as_complex_t = cast1 Unmanaged.view_as_complex_t
 
 real_t
   :: ForeignPtr Tensor
@@ -553,6 +579,33 @@ addmv_out_tttt
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 addmv_out_tttt = cast4 Unmanaged.addmv_out_tttt
+
+_addmv_impl__ttttss
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+_addmv_impl__ttttss = cast6 Unmanaged._addmv_impl__ttttss
+
+_addmv_impl__tttts
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+_addmv_impl__tttts = cast5 Unmanaged._addmv_impl__tttts
+
+_addmv_impl__tttt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+_addmv_impl__tttt = cast4 Unmanaged._addmv_impl__tttt
 
 addr_tttss
   :: ForeignPtr Tensor
@@ -863,43 +916,24 @@ argmin_t
   -> IO (ForeignPtr Tensor)
 argmin_t = cast1 Unmanaged.argmin_t
 
-as_strided_tlll
+acosh_t
   :: ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> ForeignPtr IntArray
-  -> Int64
   -> IO (ForeignPtr Tensor)
-as_strided_tlll = cast4 Unmanaged.as_strided_tlll
+acosh_t = cast1 Unmanaged.acosh_t
 
-as_strided_tll
+acosh__t
   :: ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> ForeignPtr IntArray
   -> IO (ForeignPtr Tensor)
-as_strided_tll = cast3 Unmanaged.as_strided_tll
+acosh__t = cast1 Unmanaged.acosh__t
 
-as_strided__tlll
+acosh_out_tt
   :: ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> ForeignPtr IntArray
-  -> Int64
+  -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-as_strided__tlll = cast4 Unmanaged.as_strided__tlll
+acosh_out_tt = cast2 Unmanaged.acosh_out_tt
 
-as_strided__tll
-  :: ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> ForeignPtr IntArray
-  -> IO (ForeignPtr Tensor)
-as_strided__tll = cast3 Unmanaged.as_strided__tll
-
-asin_t
+asinh_t
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-asin_t = cast1 Unmanaged.asin_t
-
-asin__t
-  :: ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-asin__t = cast1 Unmanaged.asin__t
+asinh_t = cast1 Unmanaged.asinh_t
 

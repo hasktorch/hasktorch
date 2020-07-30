@@ -28,6 +28,66 @@ C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
 
 
+cdist_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+cdist_tt _x1 _x2 =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::cdist(
+    *$(at::Tensor* _x1)
+  , *$(at::Tensor* _x2)));
+  }|]
+
+_euclidean_dist_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+_euclidean_dist_tt _x1 _x2 =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_euclidean_dist(
+    *$(at::Tensor* _x1)
+  , *$(at::Tensor* _x2)));
+  }|]
+
+_cdist_forward_ttdl
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> CDouble
+  -> Int64
+  -> IO (Ptr Tensor)
+_cdist_forward_ttdl _x1 _x2 _p _compute_mode =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_cdist_forward(
+    *$(at::Tensor* _x1)
+  , *$(at::Tensor* _x2)
+  , $(double _p)
+  , $(int64_t _compute_mode)));
+  }|]
+
+_cdist_backward_tttdt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> CDouble
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+_cdist_backward_tttdt _grad _x1 _x2 _p _cdist =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_cdist_backward(
+    *$(at::Tensor* _grad)
+  , *$(at::Tensor* _x1)
+  , *$(at::Tensor* _x2)
+  , $(double _p)
+  , *$(at::Tensor* _cdist)));
+  }|]
+
+pdist_td
+  :: Ptr Tensor
+  -> CDouble
+  -> IO (Ptr Tensor)
+pdist_td _self _p =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::pdist(
+    *$(at::Tensor* _self)
+  , $(double _p)));
+  }|]
+
 pdist_t
   :: Ptr Tensor
   -> IO (Ptr Tensor)
@@ -114,6 +174,16 @@ pixel_shuffle_tl _self _upscale_factor =
   , $(int64_t _upscale_factor)));
   }|]
 
+channel_shuffle_tl
+  :: Ptr Tensor
+  -> Int64
+  -> IO (Ptr Tensor)
+channel_shuffle_tl _self _groups =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::channel_shuffle(
+    *$(at::Tensor* _self)
+  , $(int64_t _groups)));
+  }|]
+
 pinverse_td
   :: Ptr Tensor
   -> CDouble
@@ -148,6 +218,58 @@ poisson_nll_loss_ttbbdl _input _target _log_input _full _eps _reduction =
   , $(bool _full)
   , $(double _eps)
   , $(int64_t _reduction)));
+  }|]
+
+rad2deg_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+rad2deg_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::rad2deg(
+    *$(at::Tensor* _self)));
+  }|]
+
+rad2deg__t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+rad2deg__t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::rad2deg_(
+    *$(at::Tensor* _self)));
+  }|]
+
+rad2deg_out_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+rad2deg_out_tt _out _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::rad2deg_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)));
+  }|]
+
+deg2rad_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+deg2rad_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::deg2rad(
+    *$(at::Tensor* _self)));
+  }|]
+
+deg2rad__t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+deg2rad__t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::deg2rad_(
+    *$(at::Tensor* _self)));
+  }|]
+
+deg2rad_out_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+deg2rad_out_tt _out _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::deg2rad_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)));
   }|]
 
 scalar_tensor_so
@@ -190,29 +312,29 @@ rand_lN _size _names =
   , *$(std::vector<at::Dimname>* _names)));
   }|]
 
-rand_lpNo
+rand_lGNo
   :: Ptr IntArray
   -> Ptr Generator
   -> Ptr DimnameList
   -> Ptr TensorOptions
   -> IO (Ptr Tensor)
-rand_lpNo _size _generator _names _options =
+rand_lGNo _size _generator _names _options =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::rand(
     *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)
+  , *$(at::Generator* _generator)
   , *$(std::vector<at::Dimname>* _names)
   , *$(at::TensorOptions* _options)));
   }|]
 
-rand_lpN
+rand_lGN
   :: Ptr IntArray
   -> Ptr Generator
   -> Ptr DimnameList
   -> IO (Ptr Tensor)
-rand_lpN _size _generator _names =
+rand_lGN _size _generator _names =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::rand(
     *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)
+  , *$(at::Generator* _generator)
   , *$(std::vector<at::Dimname>* _names)));
   }|]
 
@@ -234,26 +356,26 @@ rand_l _size =
     *$(std::vector<int64_t>* _size)));
   }|]
 
-rand_lpo
+rand_lGo
   :: Ptr IntArray
   -> Ptr Generator
   -> Ptr TensorOptions
   -> IO (Ptr Tensor)
-rand_lpo _size _generator _options =
+rand_lGo _size _generator _options =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::rand(
     *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)
+  , *$(at::Generator* _generator)
   , *$(at::TensorOptions* _options)));
   }|]
 
-rand_lp
+rand_lG
   :: Ptr IntArray
   -> Ptr Generator
   -> IO (Ptr Tensor)
-rand_lp _size _generator =
+rand_lG _size _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::rand(
     *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 rand_out_tl
@@ -266,16 +388,16 @@ rand_out_tl _out _size =
   , *$(std::vector<int64_t>* _size)));
   }|]
 
-rand_out_tlp
+rand_out_tlG
   :: Ptr Tensor
   -> Ptr IntArray
   -> Ptr Generator
   -> IO (Ptr Tensor)
-rand_out_tlp _out _size _generator =
+rand_out_tlG _out _size _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::rand_out(
     *$(at::Tensor* _out)
   , *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 rand_like_toM
@@ -330,30 +452,30 @@ randint_ll _high _size =
   , *$(std::vector<int64_t>* _size)));
   }|]
 
-randint_llpo
+randint_llGo
   :: Int64
   -> Ptr IntArray
   -> Ptr Generator
   -> Ptr TensorOptions
   -> IO (Ptr Tensor)
-randint_llpo _high _size _generator _options =
+randint_llGo _high _size _generator _options =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::randint(
     $(int64_t _high)
   , *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)
+  , *$(at::Generator* _generator)
   , *$(at::TensorOptions* _options)));
   }|]
 
-randint_llp
+randint_llG
   :: Int64
   -> Ptr IntArray
   -> Ptr Generator
   -> IO (Ptr Tensor)
-randint_llp _high _size _generator =
+randint_llG _high _size _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::randint(
     $(int64_t _high)
   , *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 randint_lllo
@@ -382,34 +504,34 @@ randint_lll _low _high _size =
   , *$(std::vector<int64_t>* _size)));
   }|]
 
-randint_lllpo
+randint_lllGo
   :: Int64
   -> Int64
   -> Ptr IntArray
   -> Ptr Generator
   -> Ptr TensorOptions
   -> IO (Ptr Tensor)
-randint_lllpo _low _high _size _generator _options =
+randint_lllGo _low _high _size _generator _options =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::randint(
     $(int64_t _low)
   , $(int64_t _high)
   , *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)
+  , *$(at::Generator* _generator)
   , *$(at::TensorOptions* _options)));
   }|]
 
-randint_lllp
+randint_lllG
   :: Int64
   -> Int64
   -> Ptr IntArray
   -> Ptr Generator
   -> IO (Ptr Tensor)
-randint_lllp _low _high _size _generator =
+randint_lllG _low _high _size _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::randint(
     $(int64_t _low)
   , $(int64_t _high)
   , *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 randint_out_tll
@@ -424,18 +546,18 @@ randint_out_tll _out _high _size =
   , *$(std::vector<int64_t>* _size)));
   }|]
 
-randint_out_tllp
+randint_out_tllG
   :: Ptr Tensor
   -> Int64
   -> Ptr IntArray
   -> Ptr Generator
   -> IO (Ptr Tensor)
-randint_out_tllp _out _high _size _generator =
+randint_out_tllG _out _high _size _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::randint_out(
     *$(at::Tensor* _out)
   , $(int64_t _high)
   , *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 randint_out_tlll
@@ -452,20 +574,20 @@ randint_out_tlll _out _low _high _size =
   , *$(std::vector<int64_t>* _size)));
   }|]
 
-randint_out_tlllp
+randint_out_tlllG
   :: Ptr Tensor
   -> Int64
   -> Int64
   -> Ptr IntArray
   -> Ptr Generator
   -> IO (Ptr Tensor)
-randint_out_tlllp _out _low _high _size _generator =
+randint_out_tlllG _out _low _high _size _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::randint_out(
     *$(at::Tensor* _out)
   , $(int64_t _low)
   , $(int64_t _high)
   , *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 randint_like_tloM
@@ -564,26 +686,26 @@ randn_l _size =
     *$(std::vector<int64_t>* _size)));
   }|]
 
-randn_lpo
+randn_lGo
   :: Ptr IntArray
   -> Ptr Generator
   -> Ptr TensorOptions
   -> IO (Ptr Tensor)
-randn_lpo _size _generator _options =
+randn_lGo _size _generator _options =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::randn(
     *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)
+  , *$(at::Generator* _generator)
   , *$(at::TensorOptions* _options)));
   }|]
 
-randn_lp
+randn_lG
   :: Ptr IntArray
   -> Ptr Generator
   -> IO (Ptr Tensor)
-randn_lp _size _generator =
+randn_lG _size _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::randn(
     *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 randn_lNo
@@ -608,29 +730,29 @@ randn_lN _size _names =
   , *$(std::vector<at::Dimname>* _names)));
   }|]
 
-randn_lpNo
+randn_lGNo
   :: Ptr IntArray
   -> Ptr Generator
   -> Ptr DimnameList
   -> Ptr TensorOptions
   -> IO (Ptr Tensor)
-randn_lpNo _size _generator _names _options =
+randn_lGNo _size _generator _names _options =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::randn(
     *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)
+  , *$(at::Generator* _generator)
   , *$(std::vector<at::Dimname>* _names)
   , *$(at::TensorOptions* _options)));
   }|]
 
-randn_lpN
+randn_lGN
   :: Ptr IntArray
   -> Ptr Generator
   -> Ptr DimnameList
   -> IO (Ptr Tensor)
-randn_lpN _size _generator _names =
+randn_lGN _size _generator _names =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::randn(
     *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)
+  , *$(at::Generator* _generator)
   , *$(std::vector<at::Dimname>* _names)));
   }|]
 
@@ -644,16 +766,16 @@ randn_out_tl _out _size =
   , *$(std::vector<int64_t>* _size)));
   }|]
 
-randn_out_tlp
+randn_out_tlG
   :: Ptr Tensor
   -> Ptr IntArray
   -> Ptr Generator
   -> IO (Ptr Tensor)
-randn_out_tlp _out _size _generator =
+randn_out_tlG _out _size _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::randn_out(
     *$(at::Tensor* _out)
   , *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 randn_like_toM
@@ -704,26 +826,26 @@ randperm_l _n =
     $(int64_t _n)));
   }|]
 
-randperm_lpo
+randperm_lGo
   :: Int64
   -> Ptr Generator
   -> Ptr TensorOptions
   -> IO (Ptr Tensor)
-randperm_lpo _n _generator _options =
+randperm_lGo _n _generator _options =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::randperm(
     $(int64_t _n)
-  , $(at::Generator * _generator)
+  , *$(at::Generator* _generator)
   , *$(at::TensorOptions* _options)));
   }|]
 
-randperm_lp
+randperm_lG
   :: Int64
   -> Ptr Generator
   -> IO (Ptr Tensor)
-randperm_lp _n _generator =
+randperm_lG _n _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::randperm(
     $(int64_t _n)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 randperm_out_tl
@@ -736,16 +858,16 @@ randperm_out_tl _out _n =
   , $(int64_t _n)));
   }|]
 
-randperm_out_tlp
+randperm_out_tlG
   :: Ptr Tensor
   -> Int64
   -> Ptr Generator
   -> IO (Ptr Tensor)
-randperm_out_tlp _out _n _generator =
+randperm_out_tlG _out _n _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::randperm_out(
     *$(at::Tensor* _out)
   , $(int64_t _n)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 range_ssso
@@ -950,20 +1072,20 @@ round_out_tt _out _self =
   , *$(at::Tensor* _self)));
   }|]
 
-rrelu_tssbp
+rrelu_tssbG
   :: Ptr Tensor
   -> Ptr Scalar
   -> Ptr Scalar
   -> CBool
   -> Ptr Generator
   -> IO (Ptr Tensor)
-rrelu_tssbp _self _lower _upper _training _generator =
+rrelu_tssbG _self _lower _upper _training _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::rrelu(
     *$(at::Tensor* _self)
   , *$(at::Scalar* _lower)
   , *$(at::Scalar* _upper)
   , $(bool _training)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 rrelu_tssb
@@ -1010,20 +1132,20 @@ rrelu_t _self =
     *$(at::Tensor* _self)));
   }|]
 
-rrelu__tssbp
+rrelu__tssbG
   :: Ptr Tensor
   -> Ptr Scalar
   -> Ptr Scalar
   -> CBool
   -> Ptr Generator
   -> IO (Ptr Tensor)
-rrelu__tssbp _self _lower _upper _training _generator =
+rrelu__tssbG _self _lower _upper _training _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::rrelu_(
     *$(at::Tensor* _self)
   , *$(at::Scalar* _lower)
   , *$(at::Scalar* _upper)
   , $(bool _training)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 rrelu__tssb
@@ -1280,58 +1402,6 @@ sigmoid_out_tt
   -> IO (Ptr Tensor)
 sigmoid_out_tt _out _self =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::sigmoid_out(
-    *$(at::Tensor* _out)
-  , *$(at::Tensor* _self)));
-  }|]
-
-sin_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
-sin_t _self =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::sin(
-    *$(at::Tensor* _self)));
-  }|]
-
-sin__t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
-sin__t _self =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::sin_(
-    *$(at::Tensor* _self)));
-  }|]
-
-sin_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-sin_out_tt _out _self =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::sin_out(
-    *$(at::Tensor* _out)
-  , *$(at::Tensor* _self)));
-  }|]
-
-sinh_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
-sinh_t _self =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::sinh(
-    *$(at::Tensor* _self)));
-  }|]
-
-sinh__t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
-sinh__t _self =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::sinh_(
-    *$(at::Tensor* _self)));
-  }|]
-
-sinh_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-sinh_out_tt _out _self =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::sinh_out(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)));
   }|]

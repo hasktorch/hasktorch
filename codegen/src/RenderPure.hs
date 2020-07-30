@@ -99,11 +99,11 @@ nativeFunctionsFilter fns bindings =
   filter (\(_,a) ->
             D.mode a == D.Native &&
             "namespace" `elem` (D.method_of a) &&
-            D.is_factory_method a == Nothing &&
+            D.is_factory_method a == Just False &&
             not (isPrefixOf "_" (D.name a)) &&
             not (isSuffixOf "_" (D.name a)) &&
             not (isSuffixOf "_out" (D.name a)) &&
-            all (/= P.Ptr P.GeneratorType) (map D.dynamic_type' (D.arguments a))
+            all (/= P.GeneratorType) (map D.dynamic_type' (D.arguments a))
          ) $
   renameFilter bindings $
   removeFilter bindings $

@@ -26,25 +26,11 @@ C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 
 C.include "<ATen/Tensor.h>"
+C.include "<ATen/Functions.h>"
+C.include "<ATen/TensorOperators.h>"
 C.include "<vector>"
 
 
-
-tensor_detach
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
-tensor_detach _obj =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).detach(
-    ));
-  }|]
-
-tensor_detach_
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
-tensor_detach_ _obj =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).detach_(
-    ));
-  }|]
 
 tensor_size_l
   :: Ptr Tensor
@@ -1426,6 +1412,24 @@ tensor_ge__t
   -> IO (Ptr Tensor)
 tensor_ge__t _obj _other =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).ge_(
+    *$(at::Tensor* _other)));
+  }|]
+
+tensor_eq__s
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+tensor_eq__s _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).eq_(
+    *$(at::Scalar* _other)));
+  }|]
+
+tensor_eq__t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_eq__t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).eq_(
     *$(at::Tensor* _other)));
   }|]
 

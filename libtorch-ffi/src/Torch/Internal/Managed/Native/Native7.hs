@@ -21,6 +21,38 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native7 as Unmanaged
 
 
+sin_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+sin_t = cast1 Unmanaged.sin_t
+
+sin__t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+sin__t = cast1 Unmanaged.sin__t
+
+sin_out_tt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+sin_out_tt = cast2 Unmanaged.sin_out_tt
+
+sinh_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+sinh_t = cast1 Unmanaged.sinh_t
+
+sinh__t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+sinh__t = cast1 Unmanaged.sinh__t
+
+sinh_out_tt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+sinh_out_tt = cast2 Unmanaged.sinh_out_tt
+
 detach_t
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
@@ -298,6 +330,82 @@ stft_tl
   -> Int64
   -> IO (ForeignPtr Tensor)
 stft_tl = cast2 Unmanaged.stft_tl
+
+istft_tllltbbbl
+  :: ForeignPtr Tensor
+  -> Int64
+  -> Int64
+  -> Int64
+  -> ForeignPtr Tensor
+  -> CBool
+  -> CBool
+  -> CBool
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+istft_tllltbbbl = cast9 Unmanaged.istft_tllltbbbl
+
+istft_tllltbbb
+  :: ForeignPtr Tensor
+  -> Int64
+  -> Int64
+  -> Int64
+  -> ForeignPtr Tensor
+  -> CBool
+  -> CBool
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+istft_tllltbbb = cast8 Unmanaged.istft_tllltbbb
+
+istft_tllltbb
+  :: ForeignPtr Tensor
+  -> Int64
+  -> Int64
+  -> Int64
+  -> ForeignPtr Tensor
+  -> CBool
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+istft_tllltbb = cast7 Unmanaged.istft_tllltbb
+
+istft_tllltb
+  :: ForeignPtr Tensor
+  -> Int64
+  -> Int64
+  -> Int64
+  -> ForeignPtr Tensor
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+istft_tllltb = cast6 Unmanaged.istft_tllltb
+
+istft_tlllt
+  :: ForeignPtr Tensor
+  -> Int64
+  -> Int64
+  -> Int64
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+istft_tlllt = cast5 Unmanaged.istft_tlllt
+
+istft_tlll
+  :: ForeignPtr Tensor
+  -> Int64
+  -> Int64
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+istft_tlll = cast4 Unmanaged.istft_tlll
+
+istft_tll
+  :: ForeignPtr Tensor
+  -> Int64
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+istft_tll = cast3 Unmanaged.istft_tll
+
+istft_tl
+  :: ForeignPtr Tensor
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+istft_tl = cast2 Unmanaged.istft_tl
 
 stride_tl
   :: ForeignPtr Tensor
@@ -812,60 +920,8 @@ flip_tl
   -> IO (ForeignPtr Tensor)
 flip_tl = cast2 Unmanaged.flip_tl
 
-roll_tll
-  :: ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> ForeignPtr IntArray
-  -> IO (ForeignPtr Tensor)
-roll_tll = cast3 Unmanaged.roll_tll
-
-roll_tl
-  :: ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> IO (ForeignPtr Tensor)
-roll_tl = cast2 Unmanaged.roll_tl
-
-rot90_tll
-  :: ForeignPtr Tensor
-  -> Int64
-  -> ForeignPtr IntArray
-  -> IO (ForeignPtr Tensor)
-rot90_tll = cast3 Unmanaged.rot90_tll
-
-rot90_tl
-  :: ForeignPtr Tensor
-  -> Int64
-  -> IO (ForeignPtr Tensor)
-rot90_tl = cast2 Unmanaged.rot90_tl
-
-rot90_t
+fliplr_t
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-rot90_t = cast1 Unmanaged.rot90_t
-
-trapz_ttl
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> Int64
-  -> IO (ForeignPtr Tensor)
-trapz_ttl = cast3 Unmanaged.trapz_ttl
-
-trapz_tt
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-trapz_tt = cast2 Unmanaged.trapz_tt
-
-trapz_tdl
-  :: ForeignPtr Tensor
-  -> CDouble
-  -> Int64
-  -> IO (ForeignPtr Tensor)
-trapz_tdl = cast3 Unmanaged.trapz_tdl
-
-trapz_td
-  :: ForeignPtr Tensor
-  -> CDouble
-  -> IO (ForeignPtr Tensor)
-trapz_td = cast2 Unmanaged.trapz_td
+fliplr_t = cast1 Unmanaged.fliplr_t
 

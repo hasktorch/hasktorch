@@ -24,18 +24,6 @@ import qualified Torch.Internal.Unmanaged.Type.Tensor.Tensor1 as Unmanaged
 
 
 
-tensor_cummax_n
-  :: ForeignPtr Tensor
-  -> ForeignPtr Dimname
-  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-tensor_cummax_n = cast2 Unmanaged.tensor_cummax_n
-
-tensor_cummin_l
-  :: ForeignPtr Tensor
-  -> Int64
-  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-tensor_cummin_l = cast2 Unmanaged.tensor_cummin_l
-
 tensor_cummin_n
   :: ForeignPtr Tensor
   -> ForeignPtr Dimname
@@ -874,4 +862,14 @@ tensor_sinh_
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 tensor_sinh_ = cast1 Unmanaged.tensor_sinh_
+
+tensor_detach
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_detach = cast1 Unmanaged.tensor_detach
+
+tensor_detach_
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_detach_ = cast1 Unmanaged.tensor_detach_
 

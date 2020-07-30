@@ -21,6 +21,46 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native11 as Unmanaged
 
 
+_triangular_solve_helper_ttbbb
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> CBool
+  -> CBool
+  -> CBool
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
+_triangular_solve_helper_ttbbb = cast5 Unmanaged._triangular_solve_helper_ttbbb
+
+symeig_out_tttbb
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> CBool
+  -> CBool
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
+symeig_out_tttbb = cast5 Unmanaged.symeig_out_tttbb
+
+symeig_out_tttb
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> CBool
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
+symeig_out_tttb = cast4 Unmanaged.symeig_out_tttb
+
+symeig_out_ttt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
+symeig_out_ttt = cast3 Unmanaged.symeig_out_ttt
+
+symeig_tbb
+  :: ForeignPtr Tensor
+  -> CBool
+  -> CBool
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
+symeig_tbb = cast3 Unmanaged.symeig_tbb
+
 symeig_tb
   :: ForeignPtr Tensor
   -> CBool
@@ -374,14 +414,14 @@ _lu_solve_helper_ttt
   -> IO (ForeignPtr Tensor)
 _lu_solve_helper_ttt = cast3 Unmanaged._lu_solve_helper_ttt
 
-multinomial_out_ttlbp
+multinomial_out_ttlbG
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> Int64
   -> CBool
   -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
-multinomial_out_ttlbp = cast5 Unmanaged.multinomial_out_ttlbp
+multinomial_out_ttlbG = cast5 Unmanaged.multinomial_out_ttlbG
 
 multinomial_out_ttlb
   :: ForeignPtr Tensor
@@ -398,13 +438,13 @@ multinomial_out_ttl
   -> IO (ForeignPtr Tensor)
 multinomial_out_ttl = cast3 Unmanaged.multinomial_out_ttl
 
-multinomial_tlbp
+multinomial_tlbG
   :: ForeignPtr Tensor
   -> Int64
   -> CBool
   -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
-multinomial_tlbp = cast4 Unmanaged.multinomial_tlbp
+multinomial_tlbG = cast4 Unmanaged.multinomial_tlbG
 
 multinomial_tlb
   :: ForeignPtr Tensor
@@ -424,13 +464,13 @@ _multinomial_alias_setup_t
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
 _multinomial_alias_setup_t = cast1 Unmanaged._multinomial_alias_setup_t
 
-_multinomial_alias_draw_ttlp
+_multinomial_alias_draw_ttlG
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> Int64
   -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
-_multinomial_alias_draw_ttlp = cast4 Unmanaged._multinomial_alias_draw_ttlp
+_multinomial_alias_draw_ttlG = cast4 Unmanaged._multinomial_alias_draw_ttlG
 
 _multinomial_alias_draw_ttl
   :: ForeignPtr Tensor
@@ -871,4 +911,9 @@ topk_tl
   -> Int64
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
 topk_tl = cast2 Unmanaged.topk_tl
+
+all_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+all_t = cast1 Unmanaged.all_t
 

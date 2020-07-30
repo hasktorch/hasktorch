@@ -90,11 +90,6 @@ tensor_strides
   -> IO (ForeignPtr IntArray)
 tensor_strides = cast1 Unmanaged.tensor_strides
 
-tensor_names
-  :: ForeignPtr Tensor
-  -> IO (ForeignPtr DimnameList)
-tensor_names = cast1 Unmanaged.tensor_names
-
 tensor_ndimension
   :: ForeignPtr Tensor
   -> IO (Int64)
@@ -162,11 +157,6 @@ tensor_toBackend_B
   -> Backend
   -> IO (ForeignPtr Tensor)
 tensor_toBackend_B = cast2 Unmanaged.tensor_toBackend_B
-
-tensor_is_variable
-  :: ForeignPtr Tensor
-  -> IO (CBool)
-tensor_is_variable = cast1 Unmanaged.tensor_is_variable
 
 tensor_layout
   :: ForeignPtr Tensor
@@ -645,32 +635,32 @@ tensor_baddbmm__ttss
   -> IO (ForeignPtr Tensor)
 tensor_baddbmm__ttss = cast5 Unmanaged.tensor_baddbmm__ttss
 
-tensor_bernoulli_p
+tensor_bernoulli_G
   :: ForeignPtr Tensor
   -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
-tensor_bernoulli_p = cast2 Unmanaged.tensor_bernoulli_p
+tensor_bernoulli_G = cast2 Unmanaged.tensor_bernoulli_G
 
-tensor_bernoulli__tp
+tensor_bernoulli__tG
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
-tensor_bernoulli__tp = cast3 Unmanaged.tensor_bernoulli__tp
+tensor_bernoulli__tG = cast3 Unmanaged.tensor_bernoulli__tG
 
-tensor_bernoulli__dp
+tensor_bernoulli__dG
   :: ForeignPtr Tensor
   -> CDouble
   -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
-tensor_bernoulli__dp = cast3 Unmanaged.tensor_bernoulli__dp
+tensor_bernoulli__dG = cast3 Unmanaged.tensor_bernoulli__dG
 
-tensor_bernoulli_dp
+tensor_bernoulli_dG
   :: ForeignPtr Tensor
   -> CDouble
   -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
-tensor_bernoulli_dp = cast3 Unmanaged.tensor_bernoulli_dp
+tensor_bernoulli_dG = cast3 Unmanaged.tensor_bernoulli_dG
 
 tensor_bincount_tl
   :: ForeignPtr Tensor
@@ -819,4 +809,16 @@ tensor_cummax_l
   -> Int64
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
 tensor_cummax_l = cast2 Unmanaged.tensor_cummax_l
+
+tensor_cummax_n
+  :: ForeignPtr Tensor
+  -> ForeignPtr Dimname
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
+tensor_cummax_n = cast2 Unmanaged.tensor_cummax_n
+
+tensor_cummin_l
+  :: ForeignPtr Tensor
+  -> Int64
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
+tensor_cummin_l = cast2 Unmanaged.tensor_cummin_l
 

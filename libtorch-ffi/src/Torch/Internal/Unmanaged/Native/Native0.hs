@@ -344,16 +344,16 @@ _debug_has_internal_overlap_t _self =
     *$(at::Tensor* _self)));
   }|]
 
-_fused_dropout_tdp
+_fused_dropout_tdG
   :: Ptr Tensor
   -> CDouble
   -> Ptr Generator
   -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-_fused_dropout_tdp _self _p _generator =
+_fused_dropout_tdG _self _p _generator =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_fused_dropout(
     *$(at::Tensor* _self)
   , $(double _p)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 _fused_dropout_td
@@ -574,6 +574,32 @@ abs_out_tt _out _self =
   , *$(at::Tensor* _self)));
   }|]
 
+absolute_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+absolute_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::absolute(
+    *$(at::Tensor* _self)));
+  }|]
+
+absolute__t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+absolute__t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::absolute_(
+    *$(at::Tensor* _self)));
+  }|]
+
+absolute_out_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+absolute_out_tt _out _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::absolute_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)));
+  }|]
+
 angle_t
   :: Ptr Tensor
   -> IO (Ptr Tensor)
@@ -590,6 +616,22 @@ angle_out_tt _out _self =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::angle_out(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)));
+  }|]
+
+view_as_real_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+view_as_real_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::view_as_real(
+    *$(at::Tensor* _self)));
+  }|]
+
+view_as_complex_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+view_as_complex_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::view_as_complex(
+    *$(at::Tensor* _self)));
   }|]
 
 real_t
@@ -940,6 +982,54 @@ addmv_out_tttt _out _self _mat _vec =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::addmv_out(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
+  , *$(at::Tensor* _mat)
+  , *$(at::Tensor* _vec)));
+  }|]
+
+_addmv_impl__ttttss
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Scalar
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+_addmv_impl__ttttss _self _self2 _mat _vec _beta _alpha =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_addmv_impl_(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _self2)
+  , *$(at::Tensor* _mat)
+  , *$(at::Tensor* _vec)
+  , *$(at::Scalar* _beta)
+  , *$(at::Scalar* _alpha)));
+  }|]
+
+_addmv_impl__tttts
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+_addmv_impl__tttts _self _self2 _mat _vec _beta =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_addmv_impl_(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _self2)
+  , *$(at::Tensor* _mat)
+  , *$(at::Tensor* _vec)
+  , *$(at::Scalar* _beta)));
+  }|]
+
+_addmv_impl__tttt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+_addmv_impl__tttt _self _self2 _mat _vec =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_addmv_impl_(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _self2)
   , *$(at::Tensor* _mat)
   , *$(at::Tensor* _vec)));
   }|]
@@ -1474,71 +1564,37 @@ argmin_t _self =
     *$(at::Tensor* _self)));
   }|]
 
-as_strided_tlll
-  :: Ptr Tensor
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> Int64
-  -> IO (Ptr Tensor)
-as_strided_tlll _self _size _stride _storage_offset =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::as_strided(
-    *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _size)
-  , *$(std::vector<int64_t>* _stride)
-  , $(int64_t _storage_offset)));
-  }|]
-
-as_strided_tll
-  :: Ptr Tensor
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> IO (Ptr Tensor)
-as_strided_tll _self _size _stride =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::as_strided(
-    *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _size)
-  , *$(std::vector<int64_t>* _stride)));
-  }|]
-
-as_strided__tlll
-  :: Ptr Tensor
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> Int64
-  -> IO (Ptr Tensor)
-as_strided__tlll _self _size _stride _storage_offset =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::as_strided_(
-    *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _size)
-  , *$(std::vector<int64_t>* _stride)
-  , $(int64_t _storage_offset)));
-  }|]
-
-as_strided__tll
-  :: Ptr Tensor
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> IO (Ptr Tensor)
-as_strided__tll _self _size _stride =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::as_strided_(
-    *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _size)
-  , *$(std::vector<int64_t>* _stride)));
-  }|]
-
-asin_t
+acosh_t
   :: Ptr Tensor
   -> IO (Ptr Tensor)
-asin_t _self =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::asin(
+acosh_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::acosh(
     *$(at::Tensor* _self)));
   }|]
 
-asin__t
+acosh__t
   :: Ptr Tensor
   -> IO (Ptr Tensor)
-asin__t _self =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::asin_(
+acosh__t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::acosh_(
+    *$(at::Tensor* _self)));
+  }|]
+
+acosh_out_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+acosh_out_tt _out _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::acosh_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)));
+  }|]
+
+asinh_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+asinh_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::asinh(
     *$(at::Tensor* _self)));
   }|]
 

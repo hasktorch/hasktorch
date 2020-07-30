@@ -26,6 +26,8 @@ C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 
 C.include "<ATen/Tensor.h>"
+C.include "<ATen/Functions.h>"
+C.include "<ATen/TensorOperators.h>"
 C.include "<vector>"
 
 
@@ -135,14 +137,6 @@ tensor_strides _obj =
     ).vec());
   }|]
 
-tensor_names
-  :: Ptr Tensor
-  -> IO (Ptr DimnameList)
-tensor_names _obj =
-  [C.throwBlock| std::vector<at::Dimname>* { return new std::vector<at::Dimname>((*$(at::Tensor* _obj)).names(
-    ));
-  }|]
-
 tensor_ndimension
   :: Ptr Tensor
   -> IO (Int64)
@@ -248,14 +242,6 @@ tensor_toBackend_B
 tensor_toBackend_B _obj _b =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).toBackend(
     $(at::Backend _b)));
-  }|]
-
-tensor_is_variable
-  :: Ptr Tensor
-  -> IO (CBool)
-tensor_is_variable _obj =
-  [C.throwBlock| bool { return (*$(at::Tensor* _obj)).is_variable(
-    );
   }|]
 
 tensor_layout
@@ -1014,46 +1000,46 @@ tensor_baddbmm__ttss _obj _batch1 _batch2 _beta _alpha =
   , *$(at::Scalar* _alpha)));
   }|]
 
-tensor_bernoulli_p
+tensor_bernoulli_G
   :: Ptr Tensor
   -> Ptr Generator
   -> IO (Ptr Tensor)
-tensor_bernoulli_p _obj _generator =
+tensor_bernoulli_G _obj _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).bernoulli(
-    $(at::Generator * _generator)));
+    *$(at::Generator* _generator)));
   }|]
 
-tensor_bernoulli__tp
+tensor_bernoulli__tG
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Generator
   -> IO (Ptr Tensor)
-tensor_bernoulli__tp _obj _p _generator =
+tensor_bernoulli__tG _obj _p _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).bernoulli_(
     *$(at::Tensor* _p)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
-tensor_bernoulli__dp
+tensor_bernoulli__dG
   :: Ptr Tensor
   -> CDouble
   -> Ptr Generator
   -> IO (Ptr Tensor)
-tensor_bernoulli__dp _obj _p _generator =
+tensor_bernoulli__dG _obj _p _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).bernoulli_(
     $(double _p)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
-tensor_bernoulli_dp
+tensor_bernoulli_dG
   :: Ptr Tensor
   -> CDouble
   -> Ptr Generator
   -> IO (Ptr Tensor)
-tensor_bernoulli_dp _obj _p _generator =
+tensor_bernoulli_dG _obj _p _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).bernoulli(
     $(double _p)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 tensor_bincount_tl
@@ -1282,6 +1268,24 @@ tensor_cummax_l
   -> IO (Ptr (StdTuple '(Tensor,Tensor)))
 tensor_cummax_l _obj _dim =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).cummax(
+    $(int64_t _dim)));
+  }|]
+
+tensor_cummax_n
+  :: Ptr Tensor
+  -> Ptr Dimname
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+tensor_cummax_n _obj _dim =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).cummax(
+    *$(at::Dimname* _dim)));
+  }|]
+
+tensor_cummin_l
+  :: Ptr Tensor
+  -> Int64
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+tensor_cummin_l _obj _dim =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).cummin(
     $(int64_t _dim)));
   }|]
 

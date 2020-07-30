@@ -21,6 +21,91 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native10 as Unmanaged
 
 
+_pack_padded_sequence_ttb
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> CBool
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
+_pack_padded_sequence_ttb = cast3 Unmanaged._pack_padded_sequence_ttb
+
+_pack_padded_sequence_backward_tltb
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr Tensor
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+_pack_padded_sequence_backward_tltb = cast4 Unmanaged._pack_padded_sequence_backward_tltb
+
+_pad_packed_sequence_ttbsl
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> CBool
+  -> ForeignPtr Scalar
+  -> Int64
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
+_pad_packed_sequence_ttbsl = cast5 Unmanaged._pad_packed_sequence_ttbsl
+
+masked_fill_tts
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+masked_fill_tts = cast3 Unmanaged.masked_fill_tts
+
+masked_fill_ttt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+masked_fill_ttt = cast3 Unmanaged.masked_fill_ttt
+
+masked_scatter_ttt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+masked_scatter_ttt = cast3 Unmanaged.masked_scatter_ttt
+
+index_add_tltt
+  :: ForeignPtr Tensor
+  -> Int64
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+index_add_tltt = cast4 Unmanaged.index_add_tltt
+
+index_add_tntt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Dimname
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+index_add_tntt = cast4 Unmanaged.index_add_tntt
+
+index_fill_tlts
+  :: ForeignPtr Tensor
+  -> Int64
+  -> ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+index_fill_tlts = cast4 Unmanaged.index_fill_tlts
+
+index_fill_tltt
+  :: ForeignPtr Tensor
+  -> Int64
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+index_fill_tltt = cast4 Unmanaged.index_fill_tltt
+
+index_fill_tnts
+  :: ForeignPtr Tensor
+  -> ForeignPtr Dimname
+  -> ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+index_fill_tnts = cast4 Unmanaged.index_fill_tnts
+
 index_fill_tntt
   :: ForeignPtr Tensor
   -> ForeignPtr Dimname
@@ -858,44 +943,4 @@ triangular_solve_tt
   -> ForeignPtr Tensor
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
 triangular_solve_tt = cast2 Unmanaged.triangular_solve_tt
-
-_triangular_solve_helper_ttbbb
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> CBool
-  -> CBool
-  -> CBool
-  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-_triangular_solve_helper_ttbbb = cast5 Unmanaged._triangular_solve_helper_ttbbb
-
-symeig_out_tttbb
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> CBool
-  -> CBool
-  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-symeig_out_tttbb = cast5 Unmanaged.symeig_out_tttbb
-
-symeig_out_tttb
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> CBool
-  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-symeig_out_tttb = cast4 Unmanaged.symeig_out_tttb
-
-symeig_out_ttt
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-symeig_out_ttt = cast3 Unmanaged.symeig_out_ttt
-
-symeig_tbb
-  :: ForeignPtr Tensor
-  -> CBool
-  -> CBool
-  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-symeig_tbb = cast3 Unmanaged.symeig_tbb
 

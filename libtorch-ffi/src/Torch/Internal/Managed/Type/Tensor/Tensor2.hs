@@ -24,16 +24,6 @@ import qualified Torch.Internal.Unmanaged.Type.Tensor.Tensor2 as Unmanaged
 
 
 
-tensor_detach
-  :: ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-tensor_detach = cast1 Unmanaged.tensor_detach
-
-tensor_detach_
-  :: ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-tensor_detach_ = cast1 Unmanaged.tensor_detach_
-
 tensor_size_l
   :: ForeignPtr Tensor
   -> Int64
@@ -909,4 +899,16 @@ tensor_ge__t
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 tensor_ge__t = cast2 Unmanaged.tensor_ge__t
+
+tensor_eq__s
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+tensor_eq__s = cast2 Unmanaged.tensor_eq__s
+
+tensor_eq__t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_eq__t = cast2 Unmanaged.tensor_eq__t
 

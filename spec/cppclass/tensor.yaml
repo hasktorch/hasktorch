@@ -3,6 +3,8 @@ cppname: at::Tensor
 hsname: Tensor
 headers:
 - ATen/Tensor.h
+- ATen/Functions.h
+- ATen/TensorOperators.h
 - vector
 functions: []
 constructors:
@@ -21,7 +23,7 @@ methods:
 - sizes() -> IntArrayRef
 - strides() -> IntArrayRef
 #- opt_names() -> optional<DimnameList>
-- names() -> DimnameList
+#- names() -> DimnameList
 - ndimension() -> int64_t
 #- is_contiguous(at::MemoryFormat memory_format=at::MemoryFormat::Contiguous) -> bool
 - is_contiguous() -> bool
@@ -38,7 +40,7 @@ methods:
 - is_alias_of(Tensor other) -> bool
 - toType(ScalarType t) -> Tensor
 - toBackend(Backend b) -> Tensor
-- is_variable() -> bool
+#- is_variable() -> bool
 - layout() -> Layout
 #- dtype() -> caffe2::TypeMeta
 #- device() -> Device
@@ -145,10 +147,10 @@ methods:
 - atan_() -> Tensor
 - baddbmm(Tensor  batch1, Tensor  batch2, Scalar beta=1, Scalar alpha=1) -> Tensor
 - baddbmm_(Tensor  batch1, Tensor  batch2, Scalar beta=1, Scalar alpha=1) -> Tensor
-- bernoulli(Generator * generator=nullptr) -> Tensor
-- bernoulli_(Tensor  p, Generator * generator=nullptr) -> Tensor
-- bernoulli_(double p=0.5, Generator * generator=nullptr) -> Tensor
-- bernoulli(double p, Generator * generator=nullptr) -> Tensor
+- bernoulli(Generator generator=nullptr) -> Tensor
+- bernoulli_(Tensor  p, Generator generator=nullptr) -> Tensor
+- bernoulli_(double p=0.5, Generator generator=nullptr) -> Tensor
+- bernoulli(double p, Generator generator=nullptr) -> Tensor
 - bincount(Tensor  weights={}, int64_t minlength=0) -> Tensor
 - bitwise_not() -> Tensor
 - bitwise_not_() -> Tensor
@@ -510,15 +512,15 @@ methods:
 - addbmm_(Tensor  batch1, Tensor  batch2, Scalar beta=1, Scalar alpha=1) -> Tensor
 - addbmm(Tensor  batch1, Tensor  batch2, Scalar beta=1, Scalar alpha=1) -> Tensor
 - addcdiv_(Tensor  tensor1, Tensor  tensor2, Scalar value=1) -> Tensor
-- random_(int64_t from, int64_t to, Generator * generator=nullptr) -> Tensor
-- random_(int64_t to, Generator * generator=nullptr) -> Tensor
-- random_(Generator * generator=nullptr) -> Tensor
-- uniform_(double from=0, double to=1, Generator * generator=nullptr) -> Tensor
-- normal_(double mean=0, double std=1, Generator * generator=nullptr) -> Tensor
-- cauchy_(double median=0, double sigma=1, Generator * generator=nullptr) -> Tensor
-- log_normal_(double mean=1, double std=2, Generator * generator=nullptr) -> Tensor
-- exponential_(double lambd=1, Generator * generator=nullptr) -> Tensor
-- geometric_(double p, Generator * generator=nullptr) -> Tensor
+- random_(int64_t from, int64_t to, Generator generator=nullptr) -> Tensor
+- random_(int64_t to, Generator generator=nullptr) -> Tensor
+- random_(Generator generator=nullptr) -> Tensor
+- uniform_(double from=0, double to=1, Generator generator=nullptr) -> Tensor
+- normal_(double mean=0, double std=1, Generator generator=nullptr) -> Tensor
+- cauchy_(double median=0, double sigma=1, Generator generator=nullptr) -> Tensor
+- log_normal_(double mean=1, double std=2, Generator generator=nullptr) -> Tensor
+- exponential_(double lambd=1, Generator generator=nullptr) -> Tensor
+- geometric_(double p, Generator generator=nullptr) -> Tensor
 - diag(int64_t diagonal=0) -> Tensor
 - triu(int64_t diagonal=0) -> Tensor
 - tril(int64_t diagonal=0) -> Tensor
@@ -560,7 +562,7 @@ methods:
 - orgqr(Tensor  input2) -> Tensor
 - ormqr(Tensor  input2, Tensor  input3, bool left=true, bool transpose=false) -> Tensor
 - lu_solve(Tensor  LU_data, Tensor  LU_pivots) -> Tensor
-- multinomial(int64_t num_samples, bool replacement=false, Generator * generator=nullptr) -> Tensor
+- multinomial(int64_t num_samples, bool replacement=false, Generator generator=nullptr) -> Tensor
 - lgamma() -> Tensor
 - digamma() -> Tensor
 - polygamma(int64_t n) -> Tensor

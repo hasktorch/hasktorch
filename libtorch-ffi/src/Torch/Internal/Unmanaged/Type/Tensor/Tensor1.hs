@@ -26,27 +26,11 @@ C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 
 C.include "<ATen/Tensor.h>"
+C.include "<ATen/Functions.h>"
+C.include "<ATen/TensorOperators.h>"
 C.include "<vector>"
 
 
-
-tensor_cummax_n
-  :: Ptr Tensor
-  -> Ptr Dimname
-  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-tensor_cummax_n _obj _dim =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).cummax(
-    *$(at::Dimname* _dim)));
-  }|]
-
-tensor_cummin_l
-  :: Ptr Tensor
-  -> Int64
-  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-tensor_cummin_l _obj _dim =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).cummin(
-    $(int64_t _dim)));
-  }|]
 
 tensor_cummin_n
   :: Ptr Tensor
@@ -1364,6 +1348,22 @@ tensor_sinh_
   -> IO (Ptr Tensor)
 tensor_sinh_ _obj =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).sinh_(
+    ));
+  }|]
+
+tensor_detach
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_detach _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).detach(
+    ));
+  }|]
+
+tensor_detach_
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_detach_ _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).detach_(
     ));
   }|]
 

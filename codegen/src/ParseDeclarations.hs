@@ -72,7 +72,7 @@ data Declaration = Declaration
   { name :: String
   , matches_jit_signature :: Bool
   , schema_string :: String
-  , method_prefix_derived :: String
+--  , method_prefix_derived :: String
   , arguments :: [Type]
   , method_of :: [String]
   , mode :: Mode

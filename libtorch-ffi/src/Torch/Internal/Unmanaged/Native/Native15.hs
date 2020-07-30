@@ -28,114 +28,6 @@ C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
 
 
-upsample_nearest1d_backward_out_ttll
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> IO (Ptr Tensor)
-upsample_nearest1d_backward_out_ttll _grad_input _grad_output _output_size _input_size =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::upsample_nearest1d_backward_out(
-    *$(at::Tensor* _grad_input)
-  , *$(at::Tensor* _grad_output)
-  , *$(std::vector<int64_t>* _output_size)
-  , *$(std::vector<int64_t>* _input_size)));
-  }|]
-
-upsample_nearest1d_backward_tlld
-  :: Ptr Tensor
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> CDouble
-  -> IO (Ptr Tensor)
-upsample_nearest1d_backward_tlld _grad_output _output_size _input_size _scales =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::upsample_nearest1d_backward(
-    *$(at::Tensor* _grad_output)
-  , *$(std::vector<int64_t>* _output_size)
-  , *$(std::vector<int64_t>* _input_size)
-  , $(double _scales)));
-  }|]
-
-upsample_nearest1d_backward_tll
-  :: Ptr Tensor
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> IO (Ptr Tensor)
-upsample_nearest1d_backward_tll _grad_output _output_size _input_size =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::upsample_nearest1d_backward(
-    *$(at::Tensor* _grad_output)
-  , *$(std::vector<int64_t>* _output_size)
-  , *$(std::vector<int64_t>* _input_size)));
-  }|]
-
-upsample_nearest2d_out_ttldd
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr IntArray
-  -> CDouble
-  -> CDouble
-  -> IO (Ptr Tensor)
-upsample_nearest2d_out_ttldd _out _self _output_size _scales_h _scales_w =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::upsample_nearest2d_out(
-    *$(at::Tensor* _out)
-  , *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _output_size)
-  , $(double _scales_h)
-  , $(double _scales_w)));
-  }|]
-
-upsample_nearest2d_out_ttld
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr IntArray
-  -> CDouble
-  -> IO (Ptr Tensor)
-upsample_nearest2d_out_ttld _out _self _output_size _scales_h =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::upsample_nearest2d_out(
-    *$(at::Tensor* _out)
-  , *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _output_size)
-  , $(double _scales_h)));
-  }|]
-
-upsample_nearest2d_out_ttl
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr IntArray
-  -> IO (Ptr Tensor)
-upsample_nearest2d_out_ttl _out _self _output_size =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::upsample_nearest2d_out(
-    *$(at::Tensor* _out)
-  , *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _output_size)));
-  }|]
-
-upsample_nearest2d_tldd
-  :: Ptr Tensor
-  -> Ptr IntArray
-  -> CDouble
-  -> CDouble
-  -> IO (Ptr Tensor)
-upsample_nearest2d_tldd _self _output_size _scales_h _scales_w =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::upsample_nearest2d(
-    *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _output_size)
-  , $(double _scales_h)
-  , $(double _scales_w)));
-  }|]
-
-upsample_nearest2d_tld
-  :: Ptr Tensor
-  -> Ptr IntArray
-  -> CDouble
-  -> IO (Ptr Tensor)
-upsample_nearest2d_tld _self _output_size _scales_h =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::upsample_nearest2d(
-    *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _output_size)
-  , $(double _scales_h)));
-  }|]
-
 upsample_nearest2d_tl
   :: Ptr Tensor
   -> Ptr IntArray
@@ -2136,5 +2028,27 @@ isinf_t
 isinf_t _self =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::isinf(
     *$(at::Tensor* _self)));
+  }|]
+
+_test_serialization_subcmul_tts
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+_test_serialization_subcmul_tts _self _other _alpha =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_test_serialization_subcmul(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _other)
+  , *$(at::Scalar* _alpha)));
+  }|]
+
+_test_serialization_subcmul_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+_test_serialization_subcmul_tt _self _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_test_serialization_subcmul(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _other)));
   }|]
 

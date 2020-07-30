@@ -28,6 +28,76 @@ C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
 
 
+_triangular_solve_helper_ttbbb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> CBool
+  -> CBool
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+_triangular_solve_helper_ttbbb _self _A _upper _transpose _unitriangular =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_triangular_solve_helper(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _A)
+  , $(bool _upper)
+  , $(bool _transpose)
+  , $(bool _unitriangular)));
+  }|]
+
+symeig_out_tttbb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> CBool
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+symeig_out_tttbb _e _V _self _eigenvectors _upper =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::symeig_out(
+    *$(at::Tensor* _e)
+  , *$(at::Tensor* _V)
+  , *$(at::Tensor* _self)
+  , $(bool _eigenvectors)
+  , $(bool _upper)));
+  }|]
+
+symeig_out_tttb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+symeig_out_tttb _e _V _self _eigenvectors =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::symeig_out(
+    *$(at::Tensor* _e)
+  , *$(at::Tensor* _V)
+  , *$(at::Tensor* _self)
+  , $(bool _eigenvectors)));
+  }|]
+
+symeig_out_ttt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+symeig_out_ttt _e _V _self =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::symeig_out(
+    *$(at::Tensor* _e)
+  , *$(at::Tensor* _V)
+  , *$(at::Tensor* _self)));
+  }|]
+
+symeig_tbb
+  :: Ptr Tensor
+  -> CBool
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+symeig_tbb _self _eigenvectors _upper =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::symeig(
+    *$(at::Tensor* _self)
+  , $(bool _eigenvectors)
+  , $(bool _upper)));
+  }|]
+
 symeig_tb
   :: Ptr Tensor
   -> CBool
@@ -630,20 +700,20 @@ _lu_solve_helper_ttt _self _LU_data _LU_pivots =
   , *$(at::Tensor* _LU_pivots)));
   }|]
 
-multinomial_out_ttlbp
+multinomial_out_ttlbG
   :: Ptr Tensor
   -> Ptr Tensor
   -> Int64
   -> CBool
   -> Ptr Generator
   -> IO (Ptr Tensor)
-multinomial_out_ttlbp _out _self _num_samples _replacement _generator =
+multinomial_out_ttlbG _out _self _num_samples _replacement _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::multinomial_out(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
   , $(int64_t _num_samples)
   , $(bool _replacement)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 multinomial_out_ttlb
@@ -672,18 +742,18 @@ multinomial_out_ttl _out _self _num_samples =
   , $(int64_t _num_samples)));
   }|]
 
-multinomial_tlbp
+multinomial_tlbG
   :: Ptr Tensor
   -> Int64
   -> CBool
   -> Ptr Generator
   -> IO (Ptr Tensor)
-multinomial_tlbp _self _num_samples _replacement _generator =
+multinomial_tlbG _self _num_samples _replacement _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::multinomial(
     *$(at::Tensor* _self)
   , $(int64_t _num_samples)
   , $(bool _replacement)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 multinomial_tlb
@@ -716,18 +786,18 @@ _multinomial_alias_setup_t _probs =
     *$(at::Tensor* _probs)));
   }|]
 
-_multinomial_alias_draw_ttlp
+_multinomial_alias_draw_ttlG
   :: Ptr Tensor
   -> Ptr Tensor
   -> Int64
   -> Ptr Generator
   -> IO (Ptr Tensor)
-_multinomial_alias_draw_ttlp _J _q _num_samples _generator =
+_multinomial_alias_draw_ttlG _J _q _num_samples _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::_multinomial_alias_draw(
     *$(at::Tensor* _J)
   , *$(at::Tensor* _q)
   , $(int64_t _num_samples)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 _multinomial_alias_draw_ttl
@@ -1478,5 +1548,13 @@ topk_tl _self _k =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::topk(
     *$(at::Tensor* _self)
   , $(int64_t _k)));
+  }|]
+
+all_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+all_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::all(
+    *$(at::Tensor* _self)));
   }|]
 

@@ -628,6 +628,42 @@ hardtanh__t _self =
     *$(at::Tensor* _self)));
   }|]
 
+hardswish_out_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+hardswish_out_tt _out _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::hardswish_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)));
+  }|]
+
+hardswish_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+hardswish_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::hardswish(
+    *$(at::Tensor* _self)));
+  }|]
+
+hardswish__t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+hardswish__t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::hardswish_(
+    *$(at::Tensor* _self)));
+  }|]
+
+hardswish_backward_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+hardswish_backward_tt _grad_output _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::hardswish_backward(
+    *$(at::Tensor* _grad_output)
+  , *$(at::Tensor* _self)));
+  }|]
+
 leaky_relu_out_tts
   :: Ptr Tensor
   -> Ptr Tensor
@@ -764,7 +800,7 @@ log_sigmoid_backward_ttt _grad_output _self _buffer =
   , *$(at::Tensor* _buffer)));
   }|]
 
-rrelu_with_noise_out_tttssbp
+rrelu_with_noise_out_tttssbG
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
@@ -773,7 +809,7 @@ rrelu_with_noise_out_tttssbp
   -> CBool
   -> Ptr Generator
   -> IO (Ptr Tensor)
-rrelu_with_noise_out_tttssbp _out _self _noise _lower _upper _training _generator =
+rrelu_with_noise_out_tttssbG _out _self _noise _lower _upper _training _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::rrelu_with_noise_out(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
@@ -781,7 +817,7 @@ rrelu_with_noise_out_tttssbp _out _self _noise _lower _upper _training _generato
   , *$(at::Scalar* _lower)
   , *$(at::Scalar* _upper)
   , $(bool _training)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 rrelu_with_noise_out_tttssb
@@ -844,7 +880,7 @@ rrelu_with_noise_out_ttt _out _self _noise =
   , *$(at::Tensor* _noise)));
   }|]
 
-rrelu_with_noise_ttssbp
+rrelu_with_noise_ttssbG
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Scalar
@@ -852,14 +888,14 @@ rrelu_with_noise_ttssbp
   -> CBool
   -> Ptr Generator
   -> IO (Ptr Tensor)
-rrelu_with_noise_ttssbp _self _noise _lower _upper _training _generator =
+rrelu_with_noise_ttssbG _self _noise _lower _upper _training _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::rrelu_with_noise(
     *$(at::Tensor* _self)
   , *$(at::Tensor* _noise)
   , *$(at::Scalar* _lower)
   , *$(at::Scalar* _upper)
   , $(bool _training)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 rrelu_with_noise_ttssb
@@ -934,7 +970,7 @@ rrelu_with_noise_backward_tttssbb _grad_output _self _noise _lower _upper _train
   , $(bool _self_is_result)));
   }|]
 
-rrelu_with_noise__ttssbp
+rrelu_with_noise__ttssbG
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Scalar
@@ -942,14 +978,14 @@ rrelu_with_noise__ttssbp
   -> CBool
   -> Ptr Generator
   -> IO (Ptr Tensor)
-rrelu_with_noise__ttssbp _self _noise _lower _upper _training _generator =
+rrelu_with_noise__ttssbG _self _noise _lower _upper _training _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::rrelu_with_noise_(
     *$(at::Tensor* _self)
   , *$(at::Tensor* _noise)
   , *$(at::Scalar* _lower)
   , *$(at::Scalar* _upper)
   , $(bool _training)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 rrelu_with_noise__ttssb
@@ -1644,5 +1680,39 @@ avg_pool3d_out_ttlllbb _out _self _kernel_size _stride _padding _ceil_mode _coun
   , *$(std::vector<int64_t>* _padding)
   , $(bool _ceil_mode)
   , $(bool _count_include_pad)));
+  }|]
+
+avg_pool3d_out_ttlllb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> CBool
+  -> IO (Ptr Tensor)
+avg_pool3d_out_ttlllb _out _self _kernel_size _stride _padding _ceil_mode =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::avg_pool3d_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , *$(std::vector<int64_t>* _kernel_size)
+  , *$(std::vector<int64_t>* _stride)
+  , *$(std::vector<int64_t>* _padding)
+  , $(bool _ceil_mode)));
+  }|]
+
+avg_pool3d_out_ttlll
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> IO (Ptr Tensor)
+avg_pool3d_out_ttlll _out _self _kernel_size _stride _padding =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::avg_pool3d_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , *$(std::vector<int64_t>* _kernel_size)
+  , *$(std::vector<int64_t>* _stride)
+  , *$(std::vector<int64_t>* _padding)));
   }|]
 

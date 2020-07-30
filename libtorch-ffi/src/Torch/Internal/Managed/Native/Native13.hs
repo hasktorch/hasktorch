@@ -370,6 +370,28 @@ hardtanh__t
   -> IO (ForeignPtr Tensor)
 hardtanh__t = cast1 Unmanaged.hardtanh__t
 
+hardswish_out_tt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+hardswish_out_tt = cast2 Unmanaged.hardswish_out_tt
+
+hardswish_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+hardswish_t = cast1 Unmanaged.hardswish_t
+
+hardswish__t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+hardswish__t = cast1 Unmanaged.hardswish__t
+
+hardswish_backward_tt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+hardswish_backward_tt = cast2 Unmanaged.hardswish_backward_tt
+
 leaky_relu_out_tts
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -451,7 +473,7 @@ log_sigmoid_backward_ttt
   -> IO (ForeignPtr Tensor)
 log_sigmoid_backward_ttt = cast3 Unmanaged.log_sigmoid_backward_ttt
 
-rrelu_with_noise_out_tttssbp
+rrelu_with_noise_out_tttssbG
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -460,7 +482,7 @@ rrelu_with_noise_out_tttssbp
   -> CBool
   -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
-rrelu_with_noise_out_tttssbp = cast7 Unmanaged.rrelu_with_noise_out_tttssbp
+rrelu_with_noise_out_tttssbG = cast7 Unmanaged.rrelu_with_noise_out_tttssbG
 
 rrelu_with_noise_out_tttssb
   :: ForeignPtr Tensor
@@ -496,7 +518,7 @@ rrelu_with_noise_out_ttt
   -> IO (ForeignPtr Tensor)
 rrelu_with_noise_out_ttt = cast3 Unmanaged.rrelu_with_noise_out_ttt
 
-rrelu_with_noise_ttssbp
+rrelu_with_noise_ttssbG
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Scalar
@@ -504,7 +526,7 @@ rrelu_with_noise_ttssbp
   -> CBool
   -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
-rrelu_with_noise_ttssbp = cast6 Unmanaged.rrelu_with_noise_ttssbp
+rrelu_with_noise_ttssbG = cast6 Unmanaged.rrelu_with_noise_ttssbG
 
 rrelu_with_noise_ttssb
   :: ForeignPtr Tensor
@@ -547,7 +569,7 @@ rrelu_with_noise_backward_tttssbb
   -> IO (ForeignPtr Tensor)
 rrelu_with_noise_backward_tttssbb = cast7 Unmanaged.rrelu_with_noise_backward_tttssbb
 
-rrelu_with_noise__ttssbp
+rrelu_with_noise__ttssbG
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Scalar
@@ -555,7 +577,7 @@ rrelu_with_noise__ttssbp
   -> CBool
   -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
-rrelu_with_noise__ttssbp = cast6 Unmanaged.rrelu_with_noise__ttssbp
+rrelu_with_noise__ttssbG = cast6 Unmanaged.rrelu_with_noise__ttssbG
 
 rrelu_with_noise__ttssb
   :: ForeignPtr Tensor
@@ -954,4 +976,23 @@ avg_pool3d_out_ttlllbb
   -> CBool
   -> IO (ForeignPtr Tensor)
 avg_pool3d_out_ttlllbb = cast7 Unmanaged.avg_pool3d_out_ttlllbb
+
+avg_pool3d_out_ttlllb
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+avg_pool3d_out_ttlllb = cast6 Unmanaged.avg_pool3d_out_ttlllb
+
+avg_pool3d_out_ttlll
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+avg_pool3d_out_ttlll = cast5 Unmanaged.avg_pool3d_out_ttlll
 

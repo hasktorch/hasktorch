@@ -28,6 +28,62 @@ C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
 
 
+index_put_tltb
+  :: Ptr Tensor
+  -> Ptr TensorList
+  -> Ptr Tensor
+  -> CBool
+  -> IO (Ptr Tensor)
+index_put_tltb _self _indices _values _accumulate =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::index_put(
+    *$(at::Tensor* _self)
+  , *$(std::vector<at::Tensor>* _indices)
+  , *$(at::Tensor* _values)
+  , $(bool _accumulate)));
+  }|]
+
+index_put_tlt
+  :: Ptr Tensor
+  -> Ptr TensorList
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+index_put_tlt _self _indices _values =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::index_put(
+    *$(at::Tensor* _self)
+  , *$(std::vector<at::Tensor>* _indices)
+  , *$(at::Tensor* _values)));
+  }|]
+
+_index_put_impl__tltbb
+  :: Ptr Tensor
+  -> Ptr TensorList
+  -> Ptr Tensor
+  -> CBool
+  -> CBool
+  -> IO (Ptr Tensor)
+_index_put_impl__tltbb _self _indices _values _accumulate _unsafe =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_index_put_impl_(
+    *$(at::Tensor* _self)
+  , *$(std::vector<at::Tensor>* _indices)
+  , *$(at::Tensor* _values)
+  , $(bool _accumulate)
+  , $(bool _unsafe)));
+  }|]
+
+_index_put_impl__tltb
+  :: Ptr Tensor
+  -> Ptr TensorList
+  -> Ptr Tensor
+  -> CBool
+  -> IO (Ptr Tensor)
+_index_put_impl__tltb _self _indices _values _accumulate =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_index_put_impl_(
+    *$(at::Tensor* _self)
+  , *$(std::vector<at::Tensor>* _indices)
+  , *$(at::Tensor* _values)
+  , $(bool _accumulate)));
+  }|]
+
 _index_put_impl__tlt
   :: Ptr Tensor
   -> Ptr TensorList
@@ -200,6 +256,20 @@ is_signed_t _self =
     *$(at::Tensor* _self)));
   }|]
 
+kl_div_ttlb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> CBool
+  -> IO (Ptr Tensor)
+kl_div_ttlb _self _target _reduction _log_target =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::kl_div(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _target)
+  , $(int64_t _reduction)
+  , $(bool _log_target)));
+  }|]
+
 kl_div_ttl
   :: Ptr Tensor
   -> Ptr Tensor
@@ -220,6 +290,22 @@ kl_div_tt _self _target =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::kl_div(
     *$(at::Tensor* _self)
   , *$(at::Tensor* _target)));
+  }|]
+
+kl_div_backward_tttlb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> CBool
+  -> IO (Ptr Tensor)
+kl_div_backward_tttlb _grad_output _self _target _reduction _log_target =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::kl_div_backward(
+    *$(at::Tensor* _grad_output)
+  , *$(at::Tensor* _self)
+  , *$(at::Tensor* _target)
+  , $(int64_t _reduction)
+  , $(bool _log_target)));
   }|]
 
 kl_div_backward_tttl
@@ -812,6 +898,50 @@ log2_out_tt _out _self =
   , *$(at::Tensor* _self)));
   }|]
 
+logaddexp_out_ttt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+logaddexp_out_ttt _out _self _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::logaddexp_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , *$(at::Tensor* _other)));
+  }|]
+
+logaddexp_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+logaddexp_tt _self _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::logaddexp(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _other)));
+  }|]
+
+logaddexp2_out_ttt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+logaddexp2_out_ttt _out _self _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::logaddexp2_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , *$(at::Tensor* _other)));
+  }|]
+
+logaddexp2_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+logaddexp2_tt _self _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::logaddexp2(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _other)));
+  }|]
+
 logdet_t
   :: Ptr Tensor
   -> IO (Ptr Tensor)
@@ -982,6 +1112,72 @@ _log_softmax_backward_data_ttlt _grad_output _output _dim _self =
   , *$(at::Tensor* _output)
   , $(int64_t _dim)
   , *$(at::Tensor* _self)));
+  }|]
+
+_logcumsumexp_tl
+  :: Ptr Tensor
+  -> Int64
+  -> IO (Ptr Tensor)
+_logcumsumexp_tl _self _dim =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_logcumsumexp(
+    *$(at::Tensor* _self)
+  , $(int64_t _dim)));
+  }|]
+
+_logcumsumexp_out_ttl
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> IO (Ptr Tensor)
+_logcumsumexp_out_ttl _out _self _dim =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_logcumsumexp_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , $(int64_t _dim)));
+  }|]
+
+logcumsumexp_tl
+  :: Ptr Tensor
+  -> Int64
+  -> IO (Ptr Tensor)
+logcumsumexp_tl _self _dim =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::logcumsumexp(
+    *$(at::Tensor* _self)
+  , $(int64_t _dim)));
+  }|]
+
+logcumsumexp_out_ttl
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> IO (Ptr Tensor)
+logcumsumexp_out_ttl _out _self _dim =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::logcumsumexp_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , $(int64_t _dim)));
+  }|]
+
+logcumsumexp_tn
+  :: Ptr Tensor
+  -> Ptr Dimname
+  -> IO (Ptr Tensor)
+logcumsumexp_tn _self _dim =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::logcumsumexp(
+    *$(at::Tensor* _self)
+  , *$(at::Dimname* _dim)));
+  }|]
+
+logcumsumexp_out_ttn
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Dimname
+  -> IO (Ptr Tensor)
+logcumsumexp_out_ttn _out _self _dim =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::logcumsumexp_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , *$(at::Dimname* _dim)));
   }|]
 
 logsumexp_tlb
@@ -1408,146 +1604,6 @@ max_pool1d_with_indices_tl
   -> IO (Ptr (StdTuple '(Tensor,Tensor)))
 max_pool1d_with_indices_tl _self _kernel_size =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::max_pool1d_with_indices(
-    *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _kernel_size)));
-  }|]
-
-max_pool1d_tllllb
-  :: Ptr Tensor
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> CBool
-  -> IO (Ptr Tensor)
-max_pool1d_tllllb _self _kernel_size _stride _padding _dilation _ceil_mode =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::max_pool1d(
-    *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _kernel_size)
-  , *$(std::vector<int64_t>* _stride)
-  , *$(std::vector<int64_t>* _padding)
-  , *$(std::vector<int64_t>* _dilation)
-  , $(bool _ceil_mode)));
-  }|]
-
-max_pool1d_tllll
-  :: Ptr Tensor
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> IO (Ptr Tensor)
-max_pool1d_tllll _self _kernel_size _stride _padding _dilation =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::max_pool1d(
-    *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _kernel_size)
-  , *$(std::vector<int64_t>* _stride)
-  , *$(std::vector<int64_t>* _padding)
-  , *$(std::vector<int64_t>* _dilation)));
-  }|]
-
-max_pool1d_tlll
-  :: Ptr Tensor
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> IO (Ptr Tensor)
-max_pool1d_tlll _self _kernel_size _stride _padding =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::max_pool1d(
-    *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _kernel_size)
-  , *$(std::vector<int64_t>* _stride)
-  , *$(std::vector<int64_t>* _padding)));
-  }|]
-
-max_pool1d_tll
-  :: Ptr Tensor
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> IO (Ptr Tensor)
-max_pool1d_tll _self _kernel_size _stride =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::max_pool1d(
-    *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _kernel_size)
-  , *$(std::vector<int64_t>* _stride)));
-  }|]
-
-max_pool1d_tl
-  :: Ptr Tensor
-  -> Ptr IntArray
-  -> IO (Ptr Tensor)
-max_pool1d_tl _self _kernel_size =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::max_pool1d(
-    *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _kernel_size)));
-  }|]
-
-max_pool2d_tllllb
-  :: Ptr Tensor
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> CBool
-  -> IO (Ptr Tensor)
-max_pool2d_tllllb _self _kernel_size _stride _padding _dilation _ceil_mode =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::max_pool2d(
-    *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _kernel_size)
-  , *$(std::vector<int64_t>* _stride)
-  , *$(std::vector<int64_t>* _padding)
-  , *$(std::vector<int64_t>* _dilation)
-  , $(bool _ceil_mode)));
-  }|]
-
-max_pool2d_tllll
-  :: Ptr Tensor
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> IO (Ptr Tensor)
-max_pool2d_tllll _self _kernel_size _stride _padding _dilation =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::max_pool2d(
-    *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _kernel_size)
-  , *$(std::vector<int64_t>* _stride)
-  , *$(std::vector<int64_t>* _padding)
-  , *$(std::vector<int64_t>* _dilation)));
-  }|]
-
-max_pool2d_tlll
-  :: Ptr Tensor
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> IO (Ptr Tensor)
-max_pool2d_tlll _self _kernel_size _stride _padding =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::max_pool2d(
-    *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _kernel_size)
-  , *$(std::vector<int64_t>* _stride)
-  , *$(std::vector<int64_t>* _padding)));
-  }|]
-
-max_pool2d_tll
-  :: Ptr Tensor
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> IO (Ptr Tensor)
-max_pool2d_tll _self _kernel_size _stride =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::max_pool2d(
-    *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _kernel_size)
-  , *$(std::vector<int64_t>* _stride)));
-  }|]
-
-max_pool2d_tl
-  :: Ptr Tensor
-  -> Ptr IntArray
-  -> IO (Ptr Tensor)
-max_pool2d_tl _self _kernel_size =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::max_pool2d(
     *$(at::Tensor* _self)
   , *$(std::vector<int64_t>* _kernel_size)));
   }|]

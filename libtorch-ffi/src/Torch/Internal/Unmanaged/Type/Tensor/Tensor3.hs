@@ -26,27 +26,11 @@ C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 
 C.include "<ATen/Tensor.h>"
+C.include "<ATen/Functions.h>"
+C.include "<ATen/TensorOperators.h>"
 C.include "<vector>"
 
 
-
-tensor_eq__s
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
-tensor_eq__s _obj _other =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).eq_(
-    *$(at::Scalar* _other)));
-  }|]
-
-tensor_eq__t
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-tensor_eq__t _obj _other =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).eq_(
-    *$(at::Tensor* _other)));
-  }|]
 
 tensor_ne__s
   :: Ptr Tensor
@@ -538,111 +522,111 @@ tensor_addcdiv__tts _obj _tensor1 _tensor2 _value =
   , *$(at::Scalar* _value)));
   }|]
 
-tensor_random__llp
+tensor_random__llG
   :: Ptr Tensor
   -> Int64
   -> Int64
   -> Ptr Generator
   -> IO (Ptr Tensor)
-tensor_random__llp _obj _from _to _generator =
+tensor_random__llG _obj _from _to _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).random_(
     $(int64_t _from)
   , $(int64_t _to)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
-tensor_random__lp
+tensor_random__lG
   :: Ptr Tensor
   -> Int64
   -> Ptr Generator
   -> IO (Ptr Tensor)
-tensor_random__lp _obj _to _generator =
+tensor_random__lG _obj _to _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).random_(
     $(int64_t _to)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
-tensor_random__p
+tensor_random__G
   :: Ptr Tensor
   -> Ptr Generator
   -> IO (Ptr Tensor)
-tensor_random__p _obj _generator =
+tensor_random__G _obj _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).random_(
-    $(at::Generator * _generator)));
+    *$(at::Generator* _generator)));
   }|]
 
-tensor_uniform__ddp
+tensor_uniform__ddG
   :: Ptr Tensor
   -> CDouble
   -> CDouble
   -> Ptr Generator
   -> IO (Ptr Tensor)
-tensor_uniform__ddp _obj _from _to _generator =
+tensor_uniform__ddG _obj _from _to _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).uniform_(
     $(double _from)
   , $(double _to)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
-tensor_normal__ddp
+tensor_normal__ddG
   :: Ptr Tensor
   -> CDouble
   -> CDouble
   -> Ptr Generator
   -> IO (Ptr Tensor)
-tensor_normal__ddp _obj _mean _std _generator =
+tensor_normal__ddG _obj _mean _std _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).normal_(
     $(double _mean)
   , $(double _std)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
-tensor_cauchy__ddp
+tensor_cauchy__ddG
   :: Ptr Tensor
   -> CDouble
   -> CDouble
   -> Ptr Generator
   -> IO (Ptr Tensor)
-tensor_cauchy__ddp _obj _median _sigma _generator =
+tensor_cauchy__ddG _obj _median _sigma _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).cauchy_(
     $(double _median)
   , $(double _sigma)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
-tensor_log_normal__ddp
+tensor_log_normal__ddG
   :: Ptr Tensor
   -> CDouble
   -> CDouble
   -> Ptr Generator
   -> IO (Ptr Tensor)
-tensor_log_normal__ddp _obj _mean _std _generator =
+tensor_log_normal__ddG _obj _mean _std _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).log_normal_(
     $(double _mean)
   , $(double _std)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
-tensor_exponential__dp
+tensor_exponential__dG
   :: Ptr Tensor
   -> CDouble
   -> Ptr Generator
   -> IO (Ptr Tensor)
-tensor_exponential__dp _obj _lambd _generator =
+tensor_exponential__dG _obj _lambd _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).exponential_(
     $(double _lambd)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
-tensor_geometric__dp
+tensor_geometric__dG
   :: Ptr Tensor
   -> CDouble
   -> Ptr Generator
   -> IO (Ptr Tensor)
-tensor_geometric__dp _obj _p _generator =
+tensor_geometric__dG _obj _p _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).geometric_(
     $(double _p)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 tensor_diag_l
@@ -1054,17 +1038,17 @@ tensor_lu_solve_tt _obj _LU_data _LU_pivots =
   , *$(at::Tensor* _LU_pivots)));
   }|]
 
-tensor_multinomial_lbp
+tensor_multinomial_lbG
   :: Ptr Tensor
   -> Int64
   -> CBool
   -> Ptr Generator
   -> IO (Ptr Tensor)
-tensor_multinomial_lbp _obj _num_samples _replacement _generator =
+tensor_multinomial_lbG _obj _num_samples _replacement _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).multinomial(
     $(int64_t _num_samples)
   , $(bool _replacement)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 tensor_lgamma

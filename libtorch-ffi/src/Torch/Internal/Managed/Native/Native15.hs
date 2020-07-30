@@ -21,68 +21,6 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native15 as Unmanaged
 
 
-upsample_nearest1d_backward_out_ttll
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> ForeignPtr IntArray
-  -> IO (ForeignPtr Tensor)
-upsample_nearest1d_backward_out_ttll = cast4 Unmanaged.upsample_nearest1d_backward_out_ttll
-
-upsample_nearest1d_backward_tlld
-  :: ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> ForeignPtr IntArray
-  -> CDouble
-  -> IO (ForeignPtr Tensor)
-upsample_nearest1d_backward_tlld = cast4 Unmanaged.upsample_nearest1d_backward_tlld
-
-upsample_nearest1d_backward_tll
-  :: ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> ForeignPtr IntArray
-  -> IO (ForeignPtr Tensor)
-upsample_nearest1d_backward_tll = cast3 Unmanaged.upsample_nearest1d_backward_tll
-
-upsample_nearest2d_out_ttldd
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> CDouble
-  -> CDouble
-  -> IO (ForeignPtr Tensor)
-upsample_nearest2d_out_ttldd = cast5 Unmanaged.upsample_nearest2d_out_ttldd
-
-upsample_nearest2d_out_ttld
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> CDouble
-  -> IO (ForeignPtr Tensor)
-upsample_nearest2d_out_ttld = cast4 Unmanaged.upsample_nearest2d_out_ttld
-
-upsample_nearest2d_out_ttl
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> IO (ForeignPtr Tensor)
-upsample_nearest2d_out_ttl = cast3 Unmanaged.upsample_nearest2d_out_ttl
-
-upsample_nearest2d_tldd
-  :: ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> CDouble
-  -> CDouble
-  -> IO (ForeignPtr Tensor)
-upsample_nearest2d_tldd = cast4 Unmanaged.upsample_nearest2d_tldd
-
-upsample_nearest2d_tld
-  :: ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> CDouble
-  -> IO (ForeignPtr Tensor)
-upsample_nearest2d_tld = cast3 Unmanaged.upsample_nearest2d_tld
-
 upsample_nearest2d_tl
   :: ForeignPtr Tensor
   -> ForeignPtr IntArray
@@ -1198,4 +1136,17 @@ isinf_t
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 isinf_t = cast1 Unmanaged.isinf_t
+
+_test_serialization_subcmul_tts
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+_test_serialization_subcmul_tts = cast3 Unmanaged._test_serialization_subcmul_tts
+
+_test_serialization_subcmul_tt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+_test_serialization_subcmul_tt = cast2 Unmanaged._test_serialization_subcmul_tt
 

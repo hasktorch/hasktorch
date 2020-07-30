@@ -164,8 +164,8 @@ test-suite spec
   type:            exitcode-stdio-1.0
   hs-source-dirs:  test
   main-is:         Spec.hs
-  other-modules:   BasicSpec
-                 , MemorySpec
+  other-modules:   MemorySpec
+                 , BasicSpec
 --  libtorch-1.3 does not work this grad-function. But grad of higher level api works.
 --                 , BackwardSpec
                  , CudaSpec
