@@ -1846,7 +1846,7 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
       let
         pMaskInput = 0.15 :: Float
         pMaskTarget = 0.15 :: Float
-        trainingSeeds = List.take 1 $ Seed.from <$> List.iterate (+ 1) (0 :: Word64)
+        trainingSeeds = List.take 10 $ Seed.from <$> List.iterate (+ 1) (0 :: Word64)
         trainingData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMaskInput pMaskTarget trainingLen) trainingSeeds
         evaluationsSeeds = List.take 1 $ Seed.from <$> List.iterate (+ 1) (0 :: Word64)
         evaluationData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMaskInput pMaskTarget evaluationLen) evaluationsSeeds
@@ -1868,7 +1868,7 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
                   )
       let optim = mkAdam 0 0.9 0.999 (flattenParameters model)
           -- optim = mkGDM 0.9 (flattenParameters model)
-          training (model', optim') =
+          training model' optim' learningRate' =
             let step (model'', optim'') (RATransformerMLMBatch {..}, batch) = do
                   lift . putStrLn $ "Training batch " <> show batch
                   let input = toDevice @TestDevice @TestDataDevice ratInput
@@ -1882,7 +1882,7 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
                   lift performGC -- force GC cleanup after every batch
                   maybe
                     (lift (print "encountered NaN in gradients, repeating training step") >> pure (model'', optim''))
-                    (const $ lift (runStep' model'' optim'' learningRate clippedGradients))
+                    (const $ lift (runStep' model'' optim'' learningRate' clippedGradients))
                     (hfoldrM GuardGradAgainstNaN () clippedGradients)
                 begin = pure (model', optim')
                 done = pure
@@ -1915,9 +1915,14 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
                   let scale x = x / (fromInteger . toInteger $ _step)
                   in pure (scale <$> cre)
             in runContT evaluationData (foldM step begin done . enumerate)
+          numWarmupEpochs = 100
+          learningRateSchedule epoch
+            | 0 <= epoch && epoch < numWarmupEpochs = mulScalar (fromIntegral (epoch + 1) / fromIntegral numWarmupEpochs :: Float) learningRate
+            | numWarmupEpochs <= epoch && epoch < numEpochs = mulScalar (fromIntegral (numEpochs - epoch - 1) / fromIntegral (numEpochs - numWarmupEpochs) :: Float) learningRate
+            | otherwise = 0
           step (model', optim') epoch = do
             lift . putStrLn $ "Epoch " <> show epoch
-            (model'', optim'') <- training (model', optim')
+            (model'', optim'') <- training model' optim' (learningRateSchedule epoch)
             cre <- evaluation model''
             lift . putStrLn $ "Average evaluation loss " <> show cre
             lift . save (hmap' ToDependent . flattenParameters $ model'') $ ptFile
