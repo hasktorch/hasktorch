@@ -1844,8 +1844,8 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
     go :: Effect (Safe.SafeT IO) ()
     go = do
       let
-        pMaskInput = 0.02 :: Float
-        pMaskTarget = 0.2 :: Float
+        pMaskInput = 0 :: Float -- 0.02 :: Float
+        pMaskTarget = 0 :: Float -- 0.2 :: Float
         trainingSeeds = List.take 1 $ Seed.from <$> List.iterate (+ 1) (0 :: Word64)
         trainingData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMaskInput pMaskTarget trainingLen) trainingSeeds
         evaluationsSeeds = List.take 1 $ Seed.from <$> List.iterate (+ 1) (0 :: Word64)
