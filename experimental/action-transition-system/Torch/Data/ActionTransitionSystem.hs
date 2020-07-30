@@ -1844,8 +1844,8 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
     go :: Effect (Safe.SafeT IO) ()
     go = do
       let
-        pMaskInput = 0 :: Float -- 0.02 :: Float
-        pMaskTarget = 0 :: Float -- 0.2 :: Float
+        pMaskInput = 0.15 :: Float
+        pMaskTarget = 0.15 :: Float
         trainingSeeds = List.take 1 $ Seed.from <$> List.iterate (+ 1) (0 :: Word64)
         trainingData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMaskInput pMaskTarget trainingLen) trainingSeeds
         evaluationsSeeds = List.take 1 $ Seed.from <$> List.iterate (+ 1) (0 :: Word64)
@@ -1880,11 +1880,10 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
                       gradients = grad cre parameters
                       clippedGradients = gradients -- hmap' (ClipGradValue (1e1 :: Float)) gradients
                   lift performGC -- force GC cleanup after every batch
-                  -- maybe
-                  --   (lift (print "encountered NaN in gradients, repeating training step") >> pure (model'', optim''))
-                  --   (const $ lift (runStep' model'' optim'' learningRate clippedGradients))
-                  --   (hfoldrM GuardGradAgainstNaN () clippedGradients)
-                  pure (model'', optim'')
+                  maybe
+                    (lift (print "encountered NaN in gradients, repeating training step") >> pure (model'', optim''))
+                    (const $ lift (runStep' model'' optim'' learningRate clippedGradients))
+                    (hfoldrM GuardGradAgainstNaN () clippedGradients)
                 begin = pure (model', optim')
                 done = pure
             in runContT trainingData (foldM step begin done . enumerate)
