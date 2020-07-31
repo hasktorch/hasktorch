@@ -1057,7 +1057,7 @@ data
     (device :: (DeviceType, Nat)) where
   RATransformerMLM
     :: forall numAttnLayers numHeads headDim ffnDim tokenPaddingIdx tokenNumEmbeds dataTypePaddingIdx dataTypeNumEmbeds constructorPaddingIdx constructorNumEmbeds selectorPaddingIdx selectorNumEmbeds relationPaddingIdx relationNumEmbeds dtype device
-     . { ratEmbedding            :: Embedding ('Just tokenPaddingIdx) tokenNumEmbeds (Div (headDim * numHeads) 4) 'Learned dtype device
+     . { ratTokenEmbedding       :: Embedding ('Just tokenPaddingIdx) tokenNumEmbeds (Div (headDim * numHeads) 4) 'Learned dtype device
        , ratDataTypeEmbedding    :: Embedding ('Just dataTypePaddingIdx) dataTypeNumEmbeds (Div (headDim * numHeads) 4) 'Learned dtype device
        , ratConstructorEmbedding :: Embedding ('Just constructorPaddingIdx) constructorNumEmbeds (Div (headDim * numHeads) 4) 'Learned dtype device
        , ratSelectorEmbedding    :: Embedding ('Just selectorPaddingIdx) selectorNumEmbeds (Div (headDim * numHeads) 4) 'Learned dtype device
@@ -1185,7 +1185,7 @@ raTransformerMLM
   -> RATransformerMLMInput batchSize seqLen relDim dtype device
   -> IO (Tensor device dtype '[batchSize, seqLen, tokenNumEmbeds])
 raTransformerMLM RATransformerMLM {..} train RATransformerMLMInput {..} = do
-  let maskedTokens = embed ratEmbedding ratMaskedTokens
+  let maskedTokens = embed ratTokenEmbedding ratMaskedTokens
       dataTypes = embed ratDataTypeEmbedding . dataType $ ratMeta
       constructors = embed ratConstructorEmbedding . constructor $ ratMeta
       selectors = embed ratSelectorEmbedding . selector $ ratMeta
@@ -1220,6 +1220,7 @@ loss
      , MeanDTypeValidation device dtype
      , KnownDType dtype
      , KnownDevice device
+     , KnownShape '[batchSize, seqLen, numEmbeds]
      )
   => Tensor device 'Bool '[batchSize, seqLen, numEmbeds]
   -> Tensor device 'Bool '[batchSize, seqLen]
@@ -1228,10 +1229,15 @@ loss
   -> Tensor device dtype '[]
 loss validActionsMask selectionMask logits target =
   let logProbs = logSoftmax @2 . maskedFill (logicalNot validActionsMask) (-1 / 0 :: Double) $ logits
+      selectionMask' = expand @'[batchSize, seqLen, numEmbeds] True . unsqueeze @2 $ selectionMask
+      poop = maskedSelect selectionMask' logProbs
       logLikelihood = squeezeDim @2 $ gatherDim @2 (unsqueeze @2 target) logProbs
       meanLogLikelihood = case maskedSelect selectionMask logLikelihood of
         UnknownShapeTensor t -> unsafeMeanAll t
-  in (-meanLogLikelihood)
+  in unsafePerformIO $ do
+    case poop of
+      UnknownShapeTensor t -> print t
+    pure (-meanLogLikelihood)
 
 ------------------------------------------------------------------------
 
