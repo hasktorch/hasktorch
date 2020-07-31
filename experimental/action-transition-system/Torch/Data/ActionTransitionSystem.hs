@@ -371,16 +371,38 @@ updateTokens :: forall f t . Monad f => t -> Pos -> StateT (TEnv t) f ()
 updateTokens t pos =
   modify (field @"tokens" %~ Map.insert pos t)
 
+next
+  :: forall s f t a
+   . ( HasField "aEnv" s s AEnv AEnv
+     , HasField "mEnv" s s MEnv MEnv
+     , HasField "pos" s s Pos Pos
+     , HasField "rEnv" s s REnv REnv
+     , HasField "tEnv" s s (TEnv t) (TEnv t)
+     , MonadPlus f
+     )
+  => (t -> a)
+  -> [t]
+  -> StateT s f (a, [t])
+next ap [] = empty
+next ap (a : as) = let p = ap a in do
+  pos <- (^. field @"pos") <$> get
+  zoom (field @"tEnv") . updateTokens a $ pos
+  zoom (field @"mEnv") . updateMeta $ pos
+  zoom (field @"rEnv") . updateRelations 3 $ pos
+  zoom (field @"aEnv") . updateAttention $ pos
+  modify (field @"pos" %~ (+1))
+  pure (p, as)
+
 -- TODO: move writes somewhere else
 token :: forall b t . Monad b => Parser (StateT (Env t) b) t t
 token = do
   t <- wrap $ FreeT . pure . Pure
-  pos <- (^. field @"pos") <$> get
-  zoom (field @"tEnv") . lift . updateTokens t $ pos
-  zoom (field @"mEnv") . lift . updateMeta $ pos
-  zoom (field @"rEnv") . lift . updateRelations 3 $ pos
-  zoom (field @"aEnv") . lift . updateAttention $ pos
-  modify (field @"pos" %~ (+1))
+  -- pos <- (^. field @"pos") <$> get
+  -- zoom (field @"tEnv") . lift . updateTokens t $ pos
+  -- zoom (field @"mEnv") . lift . updateMeta $ pos
+  -- zoom (field @"rEnv") . lift . updateRelations 3 $ pos
+  -- zoom (field @"aEnv") . lift . updateAttention $ pos
+  -- modify (field @"pos" %~ (+1))
   pure t
 
 is :: (MonadPlus b, Eq t) => t -> Parser (StateT (Env t) b) t t
@@ -623,17 +645,18 @@ test =
       challenge = foo 2
       actions = toActions @[] challenge
       parser = fromActions @[]
-      result' = let f ap [] = empty
-                    f ap (a : as) = let p = ap a in do
-                      env' <- get
-                      pure $ unsafePerformIO $ print
-                        ( a
-                        , view (field @"mEnv" . field @"meta") env'
-                        , view (field @"pos") env'
-                        , view (field @"rEnv" . field @"parentPos") env'
-                        -- , view (field @"rEnv" . field @"relations") env'
-                        ) >> pure (p, as)
-                in runStateT (parse f parser actions) env
+      result' = -- let f ap [] = empty
+                --     f ap (a : as) = let p = ap a in do
+                --       env' <- get
+                --       pure $ unsafePerformIO $ print
+                --         ( a
+                --         , view (field @"mEnv" . field @"meta") env'
+                --         , view (field @"pos") env'
+                --         , view (field @"rEnv" . field @"parentPos") env'
+                --         -- , view (field @"rEnv" . field @"relations") env'
+                --         ) >> pure (p, as)
+                -- in runStateT (parse f parser actions) env
+                runStateT (parse next parser actions) env
   in (actions, result', runStateT (checkParser parser (IToken 1)) env)
 
 ------------------------------------------------------------------------
@@ -968,9 +991,10 @@ prep = do
       actions = toActions @[] ex
   guard (List.length actions <= 512)
   let parser = fromActions @[] @(Example (Exp Int) (Exp Int))
-      result = let f ap [] = empty
-                   f ap (a : as) = let p = ap a in pure (p, as)
-               in  runStateT (parse f parser actions) env
+      result = -- let f ap [] = empty
+               --     f ap (a : as) = let p = ap a in pure (p, as)
+               -- in  runStateT (parse f parser actions) env
+               runStateT (parse next parser actions) env
   pure (ty, ex, result)
 
 prop_welltyped :: Property
@@ -1268,9 +1292,10 @@ mkRATransformerMLMBatch pMaskInput pMaskTarget actions = do
         let step actions =
               let parser = fromActions @[] @(Example (Exp Int) (Exp Int))
                   results =
-                    let f ap [] = empty
-                        f ap (a : as) = let p = ap a in pure (p, as)
-                    in  runStateT (parse f parser actions) defaultEnv
+                    -- let f ap [] = empty
+                    --     f ap (a : as) = let p = ap a in pure (p, as)
+                    -- in  runStateT (parse f parser actions) defaultEnv
+                    runStateT (parse next parser actions) defaultEnv
               in snd <$> results
         in foldMap step actions
       tokenVocab = OSet.fromList
@@ -1524,7 +1549,7 @@ testMkRATransformerMLMBatch = do
 
 ------------------------------------------------------------------------
 
-type TestBatchSize = 8
+type TestBatchSize = 1
 type TestSeqLen = 32
 type TestRelDim = 4
 
@@ -1764,8 +1789,8 @@ mkBatch pMaskInput pMaskTarget = do
     pure (input, actions)
   let inputs = fst <$> xs
       actions = snd <$> xs
-  -- liftIO $ putDoc . vsep $ (List.intersperse mempty $ (pprint (0 :: Int)) <$> inputs) <> [mempty]
-  -- liftIO $ print actions
+  liftIO $ putDoc . vsep $ (List.intersperse mempty $ (pprint (0 :: Int)) <$> inputs) <> [mempty]
+  liftIO $ print actions
   res <- lift $ mkRATransformerMLMBatch pMaskInput pMaskTarget actions
   -- liftIO . putStrLn $ "Finished making batch for " <> show seed
   pure res
