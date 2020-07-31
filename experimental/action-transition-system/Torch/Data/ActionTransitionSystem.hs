@@ -1232,10 +1232,13 @@ loss validActionsMask selectionMask logits target =
       selectionMask' = expand @'[batchSize, seqLen, numEmbeds] True . unsqueeze @2 $ selectionMask
       poop = maskedSelect selectionMask' logProbs
       logLikelihood = squeezeDim @2 $ gatherDim @2 (unsqueeze @2 target) logProbs
-      meanLogLikelihood = case maskedSelect selectionMask logLikelihood of
+      selected = maskedSelect selectionMask logLikelihood
+      meanLogLikelihood = case selected of
         UnknownShapeTensor t -> unsafeMeanAll t
   in unsafePerformIO $ do
     case poop of
+      UnknownShapeTensor t -> print t
+    case selected of
       UnknownShapeTensor t -> print t
     pure (-meanLogLikelihood)
 
