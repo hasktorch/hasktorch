@@ -1253,18 +1253,18 @@ loss
   -> Tensor device dtype '[]
 loss validActionsMask selectionMask logits target =
   let logProbs = logSoftmax @2 . maskedFill (logicalNot validActionsMask) (-1 / 0 :: Double) $ logits
-      selectionMask' = expand @'[batchSize, seqLen, numEmbeds] True . unsqueeze @2 $ selectionMask
-      poop = maskedSelect selectionMask' logProbs
+      -- selectionMask' = expand @'[batchSize, seqLen, numEmbeds] True . unsqueeze @2 $ selectionMask
+      -- poop = maskedSelect selectionMask' logProbs
       logLikelihood = squeezeDim @2 $ gatherDim @2 (unsqueeze @2 target) logProbs
       selected = maskedSelect selectionMask logLikelihood
       meanLogLikelihood = case selected of
         UnknownShapeTensor t -> unsafeMeanAll t
   in unsafePerformIO $ do
-    case poop of
-      UnknownShapeTensor t -> print t
-    print selectionMask
-    case selected of
-      UnknownShapeTensor t -> print t
+    -- case poop of
+    --   UnknownShapeTensor t -> print t
+    -- print selectionMask
+    -- case selected of
+    --   UnknownShapeTensor t -> print t
     pure (-meanLogLikelihood)
 
 ------------------------------------------------------------------------
@@ -1550,11 +1550,11 @@ testMkRATransformerMLMBatch = do
 
 ------------------------------------------------------------------------
 
-type TestBatchSize = 1
-type TestSeqLen = 32
+type TestBatchSize = 64
+type TestSeqLen = 64
 type TestRelDim = 4
 
-type TestNumAttnLayers = 3
+type TestNumAttnLayers = 6
 type TestNumHeads = 8
 type TestHeadDim = 16
 type TestFFNDim = 256
@@ -1790,8 +1790,8 @@ mkBatch pMaskInput pMaskTarget = do
     pure (input, actions)
   let inputs = fst <$> xs
       actions = snd <$> xs
-  liftIO $ putDoc . vsep $ (List.intersperse mempty $ (pprint (0 :: Int)) <$> inputs) <> [mempty]
-  liftIO $ print actions
+  -- liftIO $ putDoc . vsep $ (List.intersperse mempty $ (pprint (0 :: Int)) <$> inputs) <> [mempty]
+  -- liftIO $ print actions
   res <- lift $ mkRATransformerMLMBatch pMaskInput pMaskTarget actions
   -- liftIO . putStrLn $ "Finished making batch for " <> show seed
   pure res
@@ -1879,9 +1879,9 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
       let
         pMaskInput = 0.15 :: Float
         pMaskTarget = 0.15 :: Float
-        trainingSeeds = List.take 1 $ Seed.from <$> List.iterate (+ 1) (0 :: Word64)
+        trainingSeeds = List.take 10 $ Seed.from <$> List.iterate (+ 1) (0 :: Word64)
         trainingData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMaskInput pMaskTarget trainingLen) trainingSeeds
-        evaluationsSeeds = List.take 1 $ Seed.from <$> List.iterate (+ 1) (0 :: Word64)
+        evaluationsSeeds = List.take 1 $ Seed.from <$> List.iterate (+ 1) (10 :: Word64)
         evaluationData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMaskInput pMaskTarget evaluationLen) evaluationsSeeds
       model <- liftIO . Torch.Typed.sample $
                   (RATransformerMLMSpec 
