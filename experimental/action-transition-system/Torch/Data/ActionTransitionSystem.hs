@@ -1550,8 +1550,8 @@ testMkRATransformerMLMBatch = do
 
 ------------------------------------------------------------------------
 
-type TestBatchSize = 64
-type TestSeqLen = 64
+type TestBatchSize = 32
+type TestSeqLen = 128
 type TestRelDim = 4
 
 type TestNumAttnLayers = 6
@@ -1899,8 +1899,8 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
                       )
                     ) :: TestRATransformerMLMSpec
                   )
-      let -- optim = mkAdam 0 0.9 0.999 (flattenParameters model)
-          optim = mkGDM 0.9 (flattenParameters model)
+      let optim = mkAdam 0 0.9 0.999 (flattenParameters model)
+          -- optim = mkGDM 0.9 (flattenParameters model)
           training model' optim' learningRate' =
             let step (model'', optim'') (RATransformerMLMBatch {..}, batch) = do
                   lift . putStrLn $ "Training batch " <> show batch
