@@ -157,3 +157,7 @@ case "$(uname)" in
 esac
 
 popd
+
+pushd ../spec
+  ln -fs ../deps/pytorch/build/aten/src/ATen/Declarations.yaml
+popd
