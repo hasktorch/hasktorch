@@ -1864,8 +1864,8 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
                       )
                     ) :: TestRATransformerMLMSpec
                   )
-      let optim = mkAdam 0 0.9 0.999 (flattenParameters model)
-          -- optim = mkGDM 0.9 (flattenParameters model)
+      let -- optim = mkAdam 0 0.9 0.999 (flattenParameters model)
+          optim = mkGDM 0.9 (flattenParameters model)
           training model' optim' learningRate' =
             let step (model'', optim'') (RATransformerMLMBatch {..}, batch) = do
                   lift . putStrLn $ "Training batch " <> show batch
@@ -1876,7 +1876,7 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
                       cre = loss ones (tokenMask `logicalAnd` (logicalNot . ratKeyPaddingMask $ input)) prediction targetTokens
                       parameters = flattenParameters model''
                       gradients = grad cre parameters
-                      clippedGradients = gradients -- hmap' (ClipGradValue (1e1 :: Float)) gradients
+                      clippedGradients = hmap' (ClipGradValue (1e1 :: Float)) gradients
                   lift performGC -- force GC cleanup after every batch
                   maybe
                     (lift (print "encountered NaN in gradients, repeating training step") >> pure (model'', optim''))

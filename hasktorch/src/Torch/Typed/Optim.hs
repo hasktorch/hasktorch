@@ -58,9 +58,9 @@ runStep
   -> LearningRate device dtype
   -> IO (model, optim)
 runStep model optim loss learningRate = do
-  let parameters              = flattenParameters model
-      gradients               = grad loss parameters
-      tensors                 = hmap' ToDependent parameters
+  let parameters         = flattenParameters model
+      gradients          = grad loss parameters
+      tensors            = hmap' ToDependent parameters
       (tensors', optim') = step learningRate gradients tensors optim
   parameters' <- hmapM' MakeIndependent tensors'
   let model' = replaceParameters model parameters'
