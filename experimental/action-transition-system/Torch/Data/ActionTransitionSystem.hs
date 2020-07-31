@@ -1521,8 +1521,8 @@ testMkRATransformerMLMBatch = do
 
 ------------------------------------------------------------------------
 
-type TestBatchSize = 64
-type TestSeqLen = 256
+type TestBatchSize = 8
+type TestSeqLen = 32
 type TestRelDim = 4
 
 type TestNumAttnLayers = 3
