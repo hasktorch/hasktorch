@@ -1262,6 +1262,7 @@ loss validActionsMask selectionMask logits target =
   in unsafePerformIO $ do
     case poop of
       UnknownShapeTensor t -> print t
+    print selectionMask
     case selected of
       UnknownShapeTensor t -> print t
     pure (-meanLogLikelihood)
