@@ -34,7 +34,7 @@ runStep paramState optState lossValue lr = do
 
 -- | run a single iteration of an optimizer, returning new parameters and updated optimizer state
 runStep' :: (Parameterized p, Optimizer o) =>
-        p -> o -> LearningRate -> [Tensor] -> IO ([Parameter], o)
+        p -> o -> LearningRate -> Gradients -> IO ([Parameter], o)
 runStep' paramState optState lr gradients = do
     let (flatParameters', optState') = step lr gradients depParameters optState 
     newFlatParam <- mapM makeIndependent flatParameters'
