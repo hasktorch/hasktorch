@@ -18,18 +18,13 @@ import Torch.Internal.Type
 import Torch.Internal.Class
 import Torch.Internal.Cast
 import Torch.Internal.Objects
-
 import qualified Torch.Internal.Unmanaged.Type.Storage as Unmanaged
+
+
 
 
 
 newStorage
   :: IO (ForeignPtr Storage)
 newStorage = cast0 Unmanaged.newStorage
-
-
-
-
-
-
 

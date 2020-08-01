@@ -203,10 +203,8 @@ identifier = (lexm . try) (p >>= check)
 -- TenType ByteTensor
 -- >>> parseTest typ "Device"
 -- DeviceType
--- >>> parseTest typ "Generator*"
--- Ptr GeneratorType
--- >>> parseTest typ "Generator *"
--- Ptr GeneratorType
+-- >>> parseTest typ "Generator"
+-- GeneratorType
 -- >>> parseTest typ "IndexTensor"
 -- TenType IndexTensor
 -- >>> parseTest typ "IntegerTensor"
@@ -325,9 +323,7 @@ typ =
     try ((lexm $ string "Dimname") >> (pure $ Dimname)) <|>
     ((lexm $ string "Symbol") >> (pure $ Symbol)) <|>
     ((lexm $ string "Device") >> (pure $ DeviceType)) <|>
-    ((lexm $ string "Generator *") >> (pure $ Ptr GeneratorType)) <|>
-    ((lexm $ string "Generator*") >> (pure $ Ptr GeneratorType)) <|>
-    ((lexm $ string "Generator?") >> (pure $ Ptr GeneratorType)) <|>
+    ((lexm $ string "Generator") >> (pure $ GeneratorType)) <|>
     ((lexm $ string "Storage") >> (pure $ StorageType)) <|>
     ((lexm $ string "ConstQuantizerPtr") >> (pure $ ConstQuantizerPtr)) <|>
     ((lexm $ string "IValue") >> (pure $ IValue))

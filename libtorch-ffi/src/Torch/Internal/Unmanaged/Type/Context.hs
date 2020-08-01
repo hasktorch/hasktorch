@@ -21,17 +21,12 @@ import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
 
-
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
+
+
 
 C.include "<ATen/Context.h>"
 C.include "<vector>"
-
-
-
-
-
-
 
 
 

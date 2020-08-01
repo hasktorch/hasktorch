@@ -8,8 +8,8 @@
 {-# LANGUAGE GADTs #-}
 {-# OPTIONS_GHC -freduction-depth=0 #-}
 
-module Torch.Typed.TensorSpec
-  ( Torch.Typed.TensorSpec.spec
+module Torch.Typed.TensorSpec0
+  ( Torch.Typed.TensorSpec0.spec
   )
 where
 
@@ -69,92 +69,6 @@ instance
     let c = matmul a b
     checkDynamicTensorAttributes c
 
-data BinaryCmpSpec = GTSpec | LTSpec | GESpec | LESpec | EQSpec | NESpec
-
-instance
-  ( TensorOptions shape   dtype  device
-  , TensorOptions shape'  dtype' device
-  , TensorOptions shape'' 'Bool device
-  , shape'' ~ Broadcast shape shape'
-  , ComparisonDTypeIsValid device dtype
-  , ComparisonDTypeIsValid device dtype'
-  ) => Apply' BinaryCmpSpec ((Proxy device, ((Proxy dtype, Proxy dtype'), (Proxy shape, Proxy shape'))), IO ()) (IO ()) where
-  apply' GTSpec (_, agg) = agg >> do
-    let a = ones @shape  @dtype  @device
-    let b = ones @shape' @dtype' @device
-    let c = gt a b
-    checkDynamicTensorAttributes c
-  apply' LTSpec (_, agg) = agg >> do
-    let a = ones @shape  @dtype  @device
-    let b = ones @shape' @dtype' @device
-    let c = lt a b
-    checkDynamicTensorAttributes c
-  apply' GESpec (_, agg) = agg >> do
-    let a = ones @shape  @dtype  @device
-    let b = ones @shape' @dtype' @device
-    let c = ge a b
-    checkDynamicTensorAttributes c
-  apply' LESpec (_, agg) = agg >> do
-    let a = ones @shape  @dtype  @device
-    let b = ones @shape' @dtype' @device
-    let c = le a b
-    checkDynamicTensorAttributes c
-  apply' EQSpec (_, agg) = agg >> do
-    let a = ones @shape  @dtype  @device
-    let b = ones @shape' @dtype' @device
-    let c = eq a b
-    checkDynamicTensorAttributes c
-  apply' NESpec (_, agg) = agg >> do
-    let a = ones @shape  @dtype  @device
-    let b = ones @shape' @dtype' @device
-    let c = ne a b
-    checkDynamicTensorAttributes c
-
-data ReshapeSpec = ReshapeSpec
-
-instance
-  ( TensorOptions fromShape dtype device
-  , TensorOptions toShape   dtype device
-  , KnownShape fromShape
-  , KnownShape toShape
-  , Numel fromShape ~ Numel toShape
-  ) => Apply' ReshapeSpec ((Proxy device, (Proxy dtype, (Proxy fromShape, Proxy toShape))), IO ()) (IO ()) where
-  apply' ReshapeSpec (_, agg) = agg >> do
-    let t = ones @fromShape @dtype @device
-    let t' = reshape @toShape t
-    checkDynamicTensorAttributes t'
-    let t'' = reshape @fromShape t'
-    checkDynamicTensorAttributes t''
-
-data ToTypeSpec = ToTypeSpec
-
-instance
-  ( TensorOptions shape dtype  device
-  , TensorOptions shape dtype' device
-  , KnownDType dtype'
-  ) => Apply' ToTypeSpec ((Proxy device, ((Proxy dtype, Proxy dtype'), Proxy shape)), IO ()) (IO ()) where
-  apply' ToTypeSpec (_, agg) = agg >> do
-    let t = ones @shape @dtype @device
-        t' = toDType @dtype' @dtype t
-    checkDynamicTensorAttributes t'
-
-data ToDeviceSpec = ToDeviceSpec
-
-instance
-  ( TensorOptions shape dtype device
-  , KnownDevice device
-  ) => Apply' ToDeviceSpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ()) where
-  apply' ToDeviceSpec (_, agg) = agg >> foldMap 
-    (\device' -> case someDevice device' of
-      (SomeDevice (Proxy :: Proxy device')) -> do
-        let t = ones @shape @dtype @device
-        checkDynamicTensorAttributes t
-        let t' = toDevice @device' @device t
-        Torch.device (toDynamic t') `shouldBe` deviceVal @device'
-        let t'' = toDevice @device @device' t'
-        Torch.device (toDynamic t'') `shouldBe` deviceVal @device
-    )
-    availableDevices
 
 spec = foldMap spec' availableDevices
 
@@ -237,49 +151,6 @@ spec' device =
             hfoldrM @IO MatMulSpec () (hattach cpu   (hproduct standardDTypes shapes))
           Device { deviceType = CUDA, deviceIndex = 0 } ->
             hfoldrM @IO MatMulSpec () (hattach cuda0 (hproduct allFloatingPointDTypes shapes))
-
-    describe "binary comparison" $ do
-      let dispatch binaryCmpSpec = do
-            it "works on tensors of identical shapes" $
-              case device of
-                Device { deviceType = CPU,  deviceIndex = 0 } ->
-                  hfoldrM @IO binaryCmpSpec () (hattach cpu   (hproduct standardDTypes2  identicalShapes))
-                Device { deviceType = CUDA, deviceIndex = 0 } ->
-                  hfoldrM @IO binaryCmpSpec () (hattach cuda0 (hproduct almostAllDTypes2 identicalShapes))
-            it "works on broadcastable tensors of different shapes" $
-              case device of
-                Device { deviceType = CPU,  deviceIndex = 0 } ->
-                  hfoldrM @IO binaryCmpSpec () (hattach cpu   (hproduct standardDTypes2  broadcastableShapes))
-                Device { deviceType = CUDA, deviceIndex = 0 } ->
-                  hfoldrM @IO binaryCmpSpec () (hattach cuda0 (hproduct almostAllDTypes2 broadcastableShapes))
-      describe "greater than" $ dispatch GTSpec
-      describe "lower than" $ dispatch LTSpec
-      describe "greater or equal than" $ dispatch GESpec
-      describe "lower or equal than" $ dispatch LESpec
-      describe "equal to" $ dispatch EQSpec
-      describe "not equal to" $ dispatch NESpec
-
-    describe "tensor conversion" $ do
-      it "reshape" $ do
-        let fromShapes = Proxy @'[0]    :. Proxy @'[0, 0] :. Proxy @'[0, 1] :. Proxy @'[1, 0] :. (Proxy :: Proxy ('[] :: [Nat])) :. Proxy @'[1]       :. Proxy @'[1, 1] :. Proxy @'[1, 1, 1]               :. Proxy @'[1, 2]    :. Proxy @'[2, 1] :. Proxy @'[1, 4, 2] :. Proxy @'[1, 1, 8] :. Proxy @'[8]       :. Proxy @'[2, 2, 2] :. HNil
-            toShapes   = Proxy @'[1, 0] :. Proxy @'[0, 1] :. Proxy @'[0]    :. Proxy @'[0, 0] :. Proxy @'[1, 1]                  :. Proxy @'[1, 1, 1] :. Proxy @'[1]    :. (Proxy :: Proxy ('[] :: [Nat])) :. Proxy @'[1, 2, 1] :. Proxy @'[2]    :. Proxy @'[8]       :. Proxy @'[1, 1, 8] :. Proxy @'[2, 2, 2] :. Proxy @'[1, 1, 8] :. HNil
-            shapes     = hzip fromShapes toShapes
-        case device of
-          Device { deviceType = CPU,  deviceIndex = 0 } ->
-            hfoldrM @IO ReshapeSpec () (hattach cpu   (hproduct allDTypes shapes))
-          Device { deviceType = CUDA, deviceIndex = 0 } ->
-            hfoldrM @IO ReshapeSpec () (hattach cuda0 (hproduct allDTypes shapes))
-
-      it "toDevice" $ case device of
-        Device { deviceType = CPU,  deviceIndex = 0 } ->
-          hfoldrM @IO ToDeviceSpec () (hattach cpu   (hproduct allDTypes standardShapes))
-        Device { deviceType = CUDA, deviceIndex = 0 } ->
-          hfoldrM @IO ToDeviceSpec () (hattach cuda0 (hproduct allDTypes standardShapes))
-      it "toType" $ case device of
-        Device { deviceType = CPU,  deviceIndex = 0 } ->
-          hfoldrM @IO ToTypeSpec () (hattach cpu   (hproduct (hproduct allDTypes allDTypes) standardShapes))
-        Device { deviceType = CUDA, deviceIndex = 0 } ->
-          hfoldrM @IO ToTypeSpec () (hattach cuda0 (hproduct (hproduct allDTypes allDTypes) standardShapes))
 
 testTensorListFold
   :: forall device dtype shape . Tensor device dtype shape -> IO [Torch.ATenTensor]

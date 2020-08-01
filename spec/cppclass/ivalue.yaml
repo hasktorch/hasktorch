@@ -1,6 +1,9 @@
 signature: IValue
 cppname: at::IValue
 hsname: IValue
+headers:
+- ATen/core/ivalue.h
+- vector
 functions: []
 constructors:
 #- new() -> IValue

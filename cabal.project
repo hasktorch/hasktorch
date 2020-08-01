@@ -16,8 +16,3 @@ source-repository-package
     tag: 3dd3d9519306ea06f0c15ad71bdf57e1dfd0b747
     --sha256: 1vp2jzn3yrwiwmy2ji859gbd788snygflnbyvyvp3d09x4p2xx2b
 
-package libtorch-ffi
-    ghc-options: -j +RTS -A128m -n2m -RTS
-
-package hasktorch
-    ghc-options: -j +RTS -A128m -n2m -RTS

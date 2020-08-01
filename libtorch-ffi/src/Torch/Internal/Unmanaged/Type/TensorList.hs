@@ -21,8 +21,9 @@ import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
 
-
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
+
+
 
 C.include "<ATen/Tensor.h>"
 C.include "<vector>"
@@ -35,10 +36,6 @@ newTensorList  =
   [C.throwBlock| std::vector<at::Tensor>* { return new std::vector<at::Tensor>(
     );
   }|]
-
-
-
-
 
 tensorList_empty
   :: Ptr TensorList
@@ -73,6 +70,4 @@ tensorList_push_back_t _obj _v =
   [C.throwBlock| void {  (*$(std::vector<at::Tensor>* _obj)).push_back(
     *$(at::Tensor* _v));
   }|]
-
-
 

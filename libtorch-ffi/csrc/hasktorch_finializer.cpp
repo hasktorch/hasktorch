@@ -147,3 +147,7 @@ void delete_tensortensortensortensor(std::tuple<at::Tensor,at::Tensor,at::Tensor
 void delete_tensortensorcdoubleint64(std::tuple<at::Tensor,at::Tensor,double,int64_t>* object){
   delete object;
 }
+
+void delete_cdoubleint64(std::tuple<double,int64_t>* object){
+  delete object;
+}

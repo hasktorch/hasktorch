@@ -16,12 +16,10 @@ import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
 
-
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
 import qualified Language.C.Inline.Context as C
 import qualified Language.C.Types as C
-import qualified Data.Map as Map
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
@@ -29,6 +27,20 @@ C.include "<vector>"
 C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
 
+
+avg_pool3d_out_ttll
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> IO (Ptr Tensor)
+avg_pool3d_out_ttll _out _self _kernel_size _stride =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::avg_pool3d_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , *$(std::vector<int64_t>* _kernel_size)
+  , *$(std::vector<int64_t>* _stride)));
+  }|]
 
 avg_pool3d_out_ttl
   :: Ptr Tensor
@@ -1969,3 +1981,72 @@ upsample_nearest1d_backward_tll _grad_output _output_size _input_size =
   , *$(std::vector<int64_t>* _output_size)
   , *$(std::vector<int64_t>* _input_size)));
   }|]
+
+upsample_nearest2d_out_ttldd
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr IntArray
+  -> CDouble
+  -> CDouble
+  -> IO (Ptr Tensor)
+upsample_nearest2d_out_ttldd _out _self _output_size _scales_h _scales_w =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::upsample_nearest2d_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , *$(std::vector<int64_t>* _output_size)
+  , $(double _scales_h)
+  , $(double _scales_w)));
+  }|]
+
+upsample_nearest2d_out_ttld
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr IntArray
+  -> CDouble
+  -> IO (Ptr Tensor)
+upsample_nearest2d_out_ttld _out _self _output_size _scales_h =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::upsample_nearest2d_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , *$(std::vector<int64_t>* _output_size)
+  , $(double _scales_h)));
+  }|]
+
+upsample_nearest2d_out_ttl
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr IntArray
+  -> IO (Ptr Tensor)
+upsample_nearest2d_out_ttl _out _self _output_size =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::upsample_nearest2d_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , *$(std::vector<int64_t>* _output_size)));
+  }|]
+
+upsample_nearest2d_tldd
+  :: Ptr Tensor
+  -> Ptr IntArray
+  -> CDouble
+  -> CDouble
+  -> IO (Ptr Tensor)
+upsample_nearest2d_tldd _self _output_size _scales_h _scales_w =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::upsample_nearest2d(
+    *$(at::Tensor* _self)
+  , *$(std::vector<int64_t>* _output_size)
+  , $(double _scales_h)
+  , $(double _scales_w)));
+  }|]
+
+upsample_nearest2d_tld
+  :: Ptr Tensor
+  -> Ptr IntArray
+  -> CDouble
+  -> IO (Ptr Tensor)
+upsample_nearest2d_tld _self _output_size _scales_h =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::upsample_nearest2d(
+    *$(at::Tensor* _self)
+  , *$(std::vector<int64_t>* _output_size)
+  , $(double _scales_h)));
+  }|]
+

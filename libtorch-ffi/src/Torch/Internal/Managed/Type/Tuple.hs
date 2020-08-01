@@ -20,7 +20,6 @@ import Torch.Internal.Type
 import Torch.Internal.Class
 import Torch.Internal.Cast
 import Torch.Internal.Objects
-
 import qualified Torch.Internal.Unmanaged.Type.Tuple as Unmanaged
 
 
@@ -118,4 +117,10 @@ instance CppTuple3 (ForeignPtr (StdTuple '(Tensor,Tensor,CDouble,Int64))) where
 instance CppTuple4 (ForeignPtr (StdTuple '(Tensor,Tensor,CDouble,Int64))) where
   type D (ForeignPtr (StdTuple '(Tensor,Tensor,CDouble,Int64))) = Int64
   get3 v = cast1 (get3 :: Ptr (StdTuple '(Tensor,Tensor,CDouble,Int64)) -> IO (Int64)) v
+
+instance CppTuple2 (ForeignPtr (StdTuple '(CDouble,Int64))) where
+  type A (ForeignPtr (StdTuple '(CDouble,Int64))) = CDouble
+  type B (ForeignPtr (StdTuple '(CDouble,Int64))) = Int64
+  get0 v = cast1 (get0 :: Ptr (StdTuple '(CDouble,Int64)) -> IO (CDouble)) v
+  get1 v = cast1 (get1 :: Ptr (StdTuple '(CDouble,Int64)) -> IO (Int64)) v
 
