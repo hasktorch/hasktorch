@@ -15,6 +15,9 @@ type LearningRate = Tensor
 type Loss = Tensor
 newtype Gradients = Gradients [Tensor] deriving Show
 
+instance Functor Gradients where
+    fmap f (Gradients gradients) = Gradients $ fmap f gradients
+
 grad' t p = Gradients (grad t p)
 
 class Optimizer o where
