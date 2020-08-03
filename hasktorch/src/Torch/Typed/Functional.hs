@@ -4170,10 +4170,10 @@ trace _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.trace_t) _input
 -- index_select _input _dim _index = unsafePerformIO $ (ATen.cast3 ATen.Managed.index_select_tlt) _input _dim _index
 
 maskedSelect
-  :: forall shape shape' dtype device
-   . (shape' ~ Broadcast shape shape')
-  => Tensor device 'D.Bool shape'
-  -> Tensor device dtype shape
+  :: forall shape shape' shape'' dtype device
+   . (shape'' ~ Broadcast shape shape')
+  => Tensor device 'D.Bool shape
+  -> Tensor device dtype shape'
   -> UnknownShapeTensor device dtype
 maskedSelect mask input = UnknownShapeTensor $ unsafePerformIO $ ATen.cast2 ATen.Managed.masked_select_tt input mask
 

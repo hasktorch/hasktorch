@@ -54,6 +54,7 @@ executable action-transition-system
                      , lens
                      , containers
                      , hedgehog
+                     , hspec
                      , bound
                      , transformers
                      , monad-gen

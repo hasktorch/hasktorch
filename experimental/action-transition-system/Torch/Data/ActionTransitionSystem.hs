@@ -46,10 +46,10 @@ import Control.Monad.Yoctoparsec (Parser)
 import Control.Monad.Trans.Maybe (MaybeT(..))
 import Control.Monad.Trans.RWS (RWST)
 import Control.Monad.Trans.Free (wrap, iterTM, runFreeT, Free, FreeT(..), FreeF(..))
-import Control.Monad.State (evalStateT, StateT (..), runStateT, get, put, modify)
+import Control.Monad.Trans.State.Strict (evalStateT, StateT (..), runStateT, get, put, modify)
 import Control.Monad (guard, join, ap, void, mfilter, MonadPlus(..))
 import Control.Monad.Trans (MonadTrans(lift))
-import Control.Monad.Reader (ask, local, runReaderT, ReaderT)
+import Control.Monad.Trans.Reader (ask, local, runReaderT, ReaderT)
 
 import Data.Generics.Product
 import Data.Generics.Sum
@@ -57,7 +57,7 @@ import Data.Functor.Classes (Eq1(..), Ord1(..), Show1(..), eq1, compare1, showsP
 import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
 import Data.Kind (Type)
 import Data.Text (pack, Text)
-import Data.Maybe (isJust, fromJust, fromMaybe)
+import Data.Maybe (catMaybes, isJust, fromJust, fromMaybe)
 import Data.List as List (intersperse, intercalate, elem, take, iterate, isInfixOf, replicate, length, filter, sort, nub)
 import Data.Map as Map (mapMaybe, delete, elems, toList, (!), adjust, update, keys, null, insertWith, singleton, fromList, unionWith, Map, insert, lookup)
 import Data.Set as Set (elems, filter, cartesianProduct, unions, toList, fromList, member, singleton, union, Set, insert, findIndex)
@@ -94,6 +94,7 @@ import System.Mem (performGC)
 import Data.Text.Prettyprint.Doc (vsep, hcat, hsep, (<+>), sep, pretty, parens, Doc)
 import Data.Text.Prettyprint.Doc.Render.Terminal
 import Data.Word (Word64)
+import Test.Hspec (it, hspec, shouldBe)
 
 -- https://stackoverflow.com/questions/17675054/deserialising-with-ghc-generics?rq=1
 -- http://hackage.haskell.org/package/cereal-0.5.8.1/docs/Data-Serialize.html
@@ -108,7 +109,6 @@ data Env t = Env
   , mEnv :: MEnv
   , rEnv :: REnv
   , aEnv :: AEnv
-  -- , validActionsMask :: Map Pos (Set Action)
   } deriving (Eq, Ord, Show, Generic)
 
 defaultEnv :: Env t
@@ -116,6 +116,7 @@ defaultEnv = Env
   { pos = Pos 0
   , tEnv = TEnv
     { tokens = mempty
+    , validContinuationsMask = mempty
     }
   , mEnv = MEnv
     { meta = mempty
@@ -133,7 +134,6 @@ defaultEnv = Env
     , attentionMask = mempty
     , keyPaddingMask = mempty
     }
-  -- , validActionsMask = mempty
   }
 
 newtype Pos = Pos { unPos :: Int }
@@ -141,6 +141,7 @@ newtype Pos = Pos { unPos :: Int }
 
 data TEnv t = TEnv
   { tokens :: Map Pos t
+  , validContinuationsMask :: Map Pos (Set t)
   } deriving (Eq, Ord, Show, Generic)
 
 data MEnv = MEnv
@@ -367,31 +368,76 @@ updateMeta pos = do
   meta <- (^. field @"meta") <$> get
   modify (field @"metas" %~ Map.insert pos meta)
 
-updateTokens :: forall f t . Monad f => t -> Pos -> StateT (TEnv t) f ()
-updateTokens t pos =
+updateTokens :: forall f t . (Monad f, Ord t) => t -> [t] -> Pos -> StateT (TEnv t) f ()
+updateTokens t continuations pos = do
+  modify (field @"validContinuationsMask" %~ Map.insert pos (Set.fromList continuations))
   modify (field @"tokens" %~ Map.insert pos t)
 
 next
-  :: forall s f t a
-   . ( HasField "aEnv" s s AEnv AEnv
+  :: forall s t a
+   . ( HasField "pos" s s Pos Pos
+     , HasField "aEnv" s s AEnv AEnv
      , HasField "mEnv" s s MEnv MEnv
-     , HasField "pos" s s Pos Pos
      , HasField "rEnv" s s REnv REnv
      , HasField "tEnv" s s (TEnv t) (TEnv t)
-     , MonadPlus f
+     , Ord t, Show t
      )
-  => (t -> a)
+  => [t]
+  -> (t -> Parser (StateT s []) t a)
   -> [t]
-  -> StateT s f (a, [t])
-next ap [] = empty
-next ap (a : as) = let p = ap a in do
+  -> StateT s [] (Parser (StateT s []) t a, [t])
+next _ tp [] = empty
+next ts tp (t' : ts') = let p = tp t' in do
   pos <- (^. field @"pos") <$> get
-  zoom (field @"tEnv") . updateTokens a $ pos
+  continuations <- validContinuations tp ts <$> get
+  zoom (field @"tEnv") . updateTokens t' continuations $ pos
   zoom (field @"mEnv") . updateMeta $ pos
   zoom (field @"rEnv") . updateRelations 3 $ pos
   zoom (field @"aEnv") . updateAttention $ pos
   modify (field @"pos" %~ (+1))
-  pure (p, as)
+  pure (p, ts')
+
+validContinuations
+  :: forall s t a
+   . Show t
+  => (t -> Parser (StateT s []) t a)
+  -> [t]
+  -> s
+  -> [t]
+validContinuations tp ts s =
+    let f t =
+          let val = runFreeT . tp $ t
+          in case runStateT val s of
+            [] -> Nothing
+            _ -> Just t
+    in catMaybes $ f <$> ts
+      
+
+-- validContinuations'
+--   :: forall s t a
+--    . (t -> Parser (StateT s []) t a)
+--   -> [t]
+--   -> s
+--   -> _
+-- validContinuations' tp ts s = 
+--     let f t = do
+--           val <- runFreeT . tp $ t
+--           case val of
+--             _ -> pure Nothing
+--             _ -> pure $ Just t
+--     in f <$> ts
+
+-- not sure if useful yet
+mergeAlternatives
+  :: forall s t a
+   . (t -> Parser (StateT s []) t a)
+  -> [t]
+  -> Parser (StateT s []) t a
+mergeAlternatives tp ts = FreeT $ do
+  x <- StateT (\s ->
+    let f t = runStateT (runFreeT . tp $ t) s
+    in f =<< ts)
+  pure x
 
 -- TODO: move writes somewhere else
 token :: forall b t . Monad b => Parser (StateT (Env t) b) t t
@@ -434,21 +480,21 @@ instance GToActions t f => GToActions t (M1 i c f) where
 
 instance (Monad b, GFromActions b f, Datatype d) => GFromActions b (D1 d f) where
   gFromActions = do
-    modify $ field @"mEnv" . field @"meta" . field @"dataType" .~ (pure . pack . datatypeName @d $ undefined)
+    lift . modify $ field @"mEnv" . field @"meta" . field @"dataType" .~ (pure . pack . datatypeName @d $ undefined)
     M1 <$> gFromActions @b
 
 instance (Monad b, GFromActions b f, Constructor c) => GFromActions b (C1 c f) where
   gFromActions = do
-    modify $ field @"mEnv" . field @"meta" . field @"constructor" .~ (pure . pack . conName @c $ undefined)
-    pos <- (^. field @"pos") <$> get
-    modify $ field @"rEnv" . field @"parentPos" %~ (pos :)
+    lift . modify $ field @"mEnv" . field @"meta" . field @"constructor" .~ (pure . pack . conName @c $ undefined)
+    pos <- (^. field @"pos") <$> lift get
+    lift . modify $ field @"rEnv" . field @"parentPos" %~ (pos :)
     res <- M1 <$> gFromActions @b
-    modify $ field @"rEnv" . field @"parentPos" %~ tail
+    lift . modify $ field @"rEnv" . field @"parentPos" %~ tail
     pure res
 
 instance (Monad b, GFromActions b f, Selector s) => GFromActions b (S1 s f) where
   gFromActions = do
-    modify $ field @"mEnv" . field @"meta" . field @"selector" .~ (pure . pack . selName @s $ undefined)
+    lift . modify $ field @"mEnv" . field @"meta" . field @"selector" .~ (pure . pack . selName @s $ undefined)
     M1 <$> gFromActions @b
 
 instance ToActions t a => GToActions t (K1 i a) where
@@ -562,10 +608,28 @@ checkParser p i = do
 --     Pure x -> return x
 --     Free y -> f $ \i -> iterTM f (y i)
 
--- this version of @'iterTM'@ exposes the invermediate step
-iterTM' :: (MonadTrans t, Monad b, Monad (t b)) => ((i -> Parser b i a) -> (Parser b i a -> t b a) -> t b a) -> Parser b i a -> t b a
+-- this version of @'iterTM'@ exposes the intermediate step
+iterTM'
+  :: (MonadTrans t, Monad b, Monad (t b))
+  => ((i -> Parser b i a) -> (Parser b i a -> t b a) -> t b a)
+  -> Parser b i a
+  -> t b a
 iterTM' f p = do
   val <- lift . runFreeT $ p
+  case val of
+    Pure x -> return x
+    Free y -> f y (iterTM' f)
+
+iterTM''
+  :: (MonadTrans t, Monad b, Foldable b, Alternative b, Monad (t b))
+  => ((i -> Parser b i a) -> (Parser b i a -> t b a) -> t b a)
+  -> Parser b i a
+  -> t b a
+iterTM'' f p =
+  let vals = runFreeT p
+      frees' = frees vals
+  in do
+  val <- lift vals
   case val of
     Pure x -> return x
     Free y -> f y (iterTM' f)
@@ -581,7 +645,8 @@ iterTM' f p = do
 -- fresh values when backtracking: https://hackage.haskell.org/package/monad-gen-0.1.0.0/docs/Control-Monad-Gen.html
 parse
   :: forall s b i a
-   . Monad b
+  --  . (Monad b, Foldable b, Alternative b)
+   . (Monad b)
   => ((i -> Parser b i a) -> s -> b (Parser b i a, s))
   -> Parser b i a
   -> s
@@ -592,6 +657,11 @@ parse next =
   --                 runStateT (ps p) s'
   let f ip ps = StateT (next ip) >>= ps
   in runStateT . iterTM' f
+
+-- Can this be done?
+instance Foldable (StateT a []) where
+  foldr f z t = do
+    undefined
 
 pures :: (Foldable g, Alternative g) => g (FreeF f a (FreeT f m a)) -> g a
 pures = foldr (\x xs -> case x of Pure a -> pure a <|> xs; _ -> xs) empty
@@ -656,7 +726,7 @@ test =
                 --         -- , view (field @"rEnv" . field @"relations") env'
                 --         ) >> pure (p, as)
                 -- in runStateT (parse f parser actions) env
-                runStateT (parse next parser actions) env
+                runStateT (parse (next []) parser actions) env
   in (actions, result', runStateT (checkParser parser (IToken 1)) env)
 
 ------------------------------------------------------------------------
@@ -849,14 +919,17 @@ render' a e = putDoc $ pprint a e
 
 testBound :: IO ()
 testBound = do
-  let term :: Exp Char = (lam Nat 'a' (Var 'a')) :@ Zero
-  print term -- Lam Nat (Scope (Var (B ()))) :@ Zero
-  render' 'x' term -- (λx. x) Z
+  let term :: Exp Char = (lam Nat 'a' (Succ $ Var 'a')) :@ Zero
+      term' :: Exp Char = (lam Nat 'b' (Succ $ Var 'b')) :@ Zero
+  print term -- (:@) {function = Lam {ty = Nat, lambdaTerm = Scope (Succ (Var (B ())))}, argument = Zero}
+  print term' -- (:@) {function = Lam {ty = Nat, lambdaTerm = Scope (Succ (Var (B ())))}, argument = Zero}
+  putDoc . vsep $ ((pprint ('x' :: Char)) <$> [term, term']) <> [mempty] -- (λx. Sx) Z, (λx. Sx) Z
+  print $ term == term' -- True
   print $ runFresh . runMaybeT . typeCheck Map.empty $ term -- Just Nat
-  print $ toActions @[] $ term -- [R,L,L,R,R,L,L,L,R,R,R]
-  print $ whnf term -- Zero
-  print $ nf term -- Zero
-  print $ toActions @[] $ nf term -- [R,R,R]
+  print $ toActions @[] $ term -- [R,L,L,R,R,R,R,L,L,L,L,R,R,R]
+  print $ whnf term -- Succ Zero
+  print $ nf term -- Succ Zero
+  print $ toActions @[] $ nf term -- [R,R,L,R,R,R]
 
 -- | Monad transformer stack for term and type generation.
 -- Notably, contains the @FreshT@ transformer for generating fresh variable names
@@ -966,16 +1039,16 @@ newtype Target a = Target a deriving (Eq, Ord, Show, Generic)
 instance ToActions t a => ToActions t (Input a)
 instance (Monad b, FromActions b a) => FromActions b (Input a) where
   fromActions = do
-    modify $ field @"aEnv" . field @"currentScope" .~ pure "input"
-    modify $ field @"aEnv" . field @"knownScopes" %~ go "input"
+    lift . modify $ field @"aEnv" . field @"currentScope" .~ pure "input"
+    lift . modify $ field @"aEnv" . field @"knownScopes" %~ go "input"
     Input <$> fromActions
     where go scopeId = Map.insert scopeId (AttentionScope BidirectionalAttention (Set.singleton "input") mempty)
 
 instance ToActions t a => ToActions t (Target a)
 instance (Monad b, FromActions b a) => FromActions b (Target a) where
   fromActions = do
-    modify $ field @"aEnv" . field @"currentScope" .~ pure "target"
-    modify $ field @"aEnv" . field @"knownScopes" %~ go "target"
+    lift . modify $ field @"aEnv" . field @"currentScope" .~ pure "target"
+    lift . modify $ field @"aEnv" . field @"knownScopes" %~ go "target"
     Target <$> fromActions
     where go scopeId = Map.insert scopeId (AttentionScope BackwardAttention (Set.fromList ["input", "target"]) mempty)
 
@@ -994,7 +1067,7 @@ prep = do
       result = -- let f ap [] = empty
                --     f ap (a : as) = let p = ap a in pure (p, as)
                -- in  runStateT (parse f parser actions) env
-               runStateT (parse next parser actions) env
+               runStateT (parse (next []) parser actions) env
   pure (ty, ex, result)
 
 prop_welltyped :: Property
@@ -1296,7 +1369,7 @@ mkRATransformerMLMBatch pMaskInput pMaskTarget actions = do
                     -- let f ap [] = empty
                     --     f ap (a : as) = let p = ap a in pure (p, as)
                     -- in  runStateT (parse f parser actions) defaultEnv
-                    runStateT (parse next parser actions) defaultEnv
+                    runStateT (parse (next [L, R]) parser actions) defaultEnv
               in snd <$> results
         in foldMap step actions
       tokenVocab = OSet.fromList
@@ -1360,6 +1433,7 @@ mkRATransformerMLMBatch pMaskInput pMaskTarget actions = do
         , Token (DistRelation 3)
         ]
   tokens <- fromJust' . mkSeq' tokenVocab $ view (field @"tEnv" . field @"tokens") <$> envs
+  -- liftIO . print $ view (field @"tEnv" . field @"validContinuationsMask") <$> envs
   meta <- do
     let f vocab g = fromJust' . mkSeq' vocab $ (Map.mapMaybe g . view (field @"mEnv" . field @"metas")) <$> envs
     dataTypes <- f dataTypeVocab dataType
@@ -1550,14 +1624,14 @@ testMkRATransformerMLMBatch = do
 
 ------------------------------------------------------------------------
 
-type TestBatchSize = 32
-type TestSeqLen = 128
+type TestBatchSize = 2
+type TestSeqLen = 32
 type TestRelDim = 4
 
-type TestNumAttnLayers = 6
-type TestNumHeads = 8
-type TestHeadDim = 16
-type TestFFNDim = 256
+type TestNumAttnLayers = 2
+type TestNumHeads = 3
+type TestHeadDim = 8
+type TestFFNDim = 16
 type TestPaddingIdx = 0
 type TestTokenNumEmbeds = 5
 type TestDataTypeNumEmbeds = 5
@@ -1566,7 +1640,7 @@ type TestSelectorNumEmbeds = 9
 type TestRelationNumEmbeds = 18
 type TestDType = 'Float
 type TestDataDevice = '( 'CPU, 0)
-type TestDevice = '( 'CUDA, 0)
+type TestDevice = '( 'CPU, 0)
 
 type TestRATransformerMLMSpec
   = RATransformerMLMSpec
@@ -1790,8 +1864,8 @@ mkBatch pMaskInput pMaskTarget = do
     pure (input, actions)
   let inputs = fst <$> xs
       actions = snd <$> xs
-  -- liftIO $ putDoc . vsep $ (List.intersperse mempty $ (pprint (0 :: Int)) <$> inputs) <> [mempty]
-  -- liftIO $ print actions
+  liftIO $ putDoc . vsep $ (List.intersperse mempty $ (pprint (0 :: Int)) <$> inputs) <> [mempty]
+  liftIO $ print actions
   res <- lift $ mkRATransformerMLMBatch pMaskInput pMaskTarget actions
   -- liftIO . putStrLn $ "Finished making batch for " <> show seed
   pure res
@@ -2005,6 +2079,74 @@ instance Num a => Monoid (CRE a) where
     , creNonMaskedInput = 0
     , creNonMaskedTarget = 0
     }
+
+-- | checks
+-- * for a random model, changing a token at a random position should change the outputs of all positions as permitted by the attention mask
+-- * for a random model, changing a relation at a random position should change the outputs of all positions as permitted by the attention mask
+testTheModel :: IO ()
+testTheModel = do
+  model <- liftIO . Torch.Typed.sample $
+                  (RATransformerMLMSpec 
+                    (DropoutSpec 0.2)
+                    (TransformerLayerSpec
+                      (MultiheadAttentionSpec
+                        (DropoutSpec 0.2)
+                      )
+                      (DropoutSpec 0.2)
+                      0.001
+                      (TransformerMLPSpec
+                        (DropoutSpec 0.2)
+                        (DropoutSpec 0.2)
+                        0.001
+                      )
+                    ) :: TestRATransformerMLMSpec
+                  )
+  let pMaskInput = 0 :: Float
+      pMaskTarget = 0 :: Float
+      seed = Seed.from (0 :: Word64)
+  (batch, _) <- runStateT (mkBatch @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMaskInput pMaskTarget) seed
+  let batch' = toDevice @TestDevice @TestDataDevice batch
+  prediction <- raTransformerMLM model False . ratInput $ batch'
+  randomMask <- bernoulliMask (0.25 :: Float) (zerosLike . ratKeyPaddingMask . ratInput $ batch')
+  let maskOnlyPadding = maskedFill (logicalNot . ratKeyPaddingMask . ratInput $ batch') (0 :: Int) randomMask
+      maskOnlyInput = maskedFill (logicalNot . ratInputScopeMask . ratTarget $ batch') (0 :: Int) randomMask
+      maskOnlyTarget = maskedFill (logicalNot . ratTargetScopeMask . ratTarget $ batch') (0 :: Int) randomMask
+      flippedAt m (maskedTokens :: Tensor TestDevice Int64 '[TestBatchSize, TestSeqLen]) = 
+        let test v = maskedTokens `eq` (v :: Tensor TestDevice Int64 '[])
+            m' v = m `logicalAnd` test v
+        in maskedFill (m' 0) (1 :: Int) . maskedFill (m' 3) (4 :: Int) . maskedFill (m' 4) (3 :: Int) $ maskedTokens
+  let intervene flipMask comparisonMask = do
+        let batch'' = field @"ratInput" . field @"ratMaskedTokens" %~ (flippedAt flipMask) $ batch'
+        prediction' <- raTransformerMLM model False . ratInput $ batch''
+        let comparison = isclose 1e-03 1e-04 False prediction prediction'
+        case maskedSelect (unsqueeze @2 comparisonMask) comparison of
+          UnknownShapeTensor t -> pure . toBool . Torch.Typed.all $ t
+  intervention0 <- intervene maskOnlyPadding (logicalNot . ratKeyPaddingMask . ratInput $ batch')
+  intervention1 <- intervene maskOnlyPadding (ratKeyPaddingMask . ratInput $ batch')
+  intervention2 <- intervene maskOnlyInput maskOnlyInput
+  intervention3 <- intervene maskOnlyInput (logicalNot maskOnlyInput)
+  intervention4 <- intervene maskOnlyTarget (ratTargetScopeMask . ratTarget $ batch')
+  intervention5 <- intervene maskOnlyTarget (ratInputScopeMask . ratTarget $ batch')
+  intervention6 <- do
+    let batch'' = field @"ratInput" . field @"ratRelations" %~ (\x -> zerosLike x) $ batch'
+    prediction' <- raTransformerMLM model False . ratInput $ batch''
+    pure . toBool . Torch.Typed.all $ isclose 1e-03 1e-04 False prediction prediction'
+  hspec $ do
+    it "flipped padding tokens should not affect non-padding outputs" $ do
+      intervention0 `shouldBe` True
+    it "flipped padding tokens should affect padding outputs" $ do
+      intervention1 `shouldBe` False
+    it "flipped input tokens should affect the outputs for those input tokens" $ do
+      intervention2 `shouldBe` False
+    it "flipped input tokens should affect the outputs for other non-flipped tokens" $ do
+      intervention3 `shouldBe` False
+    it "flipped target tokens should affect the outputs for target tokens" $ do
+      intervention4 `shouldBe` False
+    it "flipped target tokens should not affect the outputs for input tokens" $ do
+      intervention5 `shouldBe` True
+    it "setting all relations to zero should change outputs" $ do
+      intervention6 `shouldBe` False
+
 
 -- implement hash function for expressions?
 -- access variability of generated lambda expressions, calculate mean number of samples until repetition
