@@ -39,6 +39,7 @@ import           Torch.Scalar
 import           Torch.Typed.Factories
 import           Torch.Typed.Functional
 import           Torch.Typed.Tensor
+import qualified Torch.NN
 
 newtype Parameter (device :: (DeviceType, Nat)) (dtype :: DType) (shape :: [Nat]) = UnsafeMkParameter Torch.Autograd.IndependentTensor
   deriving Show
