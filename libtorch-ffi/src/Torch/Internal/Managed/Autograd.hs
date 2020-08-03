@@ -4,11 +4,10 @@ module Torch.Internal.Managed.Autograd where
 import Foreign.ForeignPtr
 
 import qualified Torch.Internal.Unmanaged.Autograd as Unmanaged
-import qualified Torch.Internal.Unmanaged.Type.Tensor
-import qualified Torch.Internal.Unmanaged.Type.TensorList
 import Torch.Internal.Type
 import Torch.Internal.Class
 import Torch.Internal.Cast
+import Torch.Internal.Objects
 
 
 grad :: ForeignPtr Tensor -> ForeignPtr TensorList -> IO (ForeignPtr TensorList)

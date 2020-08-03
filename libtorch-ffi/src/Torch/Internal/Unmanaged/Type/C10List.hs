@@ -18,14 +18,13 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
-import Torch.Internal.Class
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
+C.include "<ATen/core/List.h>"
+C.include "<ATen/core/ivalue.h>"
 C.include "<vector>"
 
 newC10ListIValue :: Ptr IValue -> IO (Ptr (C10List IValue))
@@ -43,35 +42,6 @@ newC10ListInt = [C.throwBlock| c10::List<int64_t>* { return new c10::List<int64_
 newC10ListBool :: IO (Ptr (C10List CBool))
 newC10ListBool = [C.throwBlock| c10::List<bool>* { return new c10::List<bool>(); }|]
 
-deleteC10ListIValue :: Ptr (C10List IValue) -> IO ()
-deleteC10ListIValue object = [C.throwBlock| void { delete $(c10::List<at::IValue>* object);}|]
-
-deleteC10ListTensor :: Ptr (C10List Tensor) -> IO ()
-deleteC10ListTensor object = [C.throwBlock| void { delete $(c10::List<at::Tensor>* object);}|]
-
-deleteC10ListDouble :: Ptr (C10List CDouble) -> IO ()
-deleteC10ListDouble object = [C.throwBlock| void { delete $(c10::List<double>* object);}|]
-
-deleteC10ListInt :: Ptr (C10List Int64) -> IO ()
-deleteC10ListInt object = [C.throwBlock| void { delete $(c10::List<int64_t>* object);}|]
-
-deleteC10ListBool :: Ptr (C10List CBool) -> IO ()
-deleteC10ListBool object = [C.throwBlock| void { delete $(c10::List<bool>* object);}|]
-
-instance CppObject (C10List IValue) where
-  fromPtr ptr = newForeignPtr ptr (deleteC10ListIValue ptr)
-
-instance CppObject (C10List Tensor) where
-  fromPtr ptr = newForeignPtr ptr (deleteC10ListTensor ptr)
-
-instance CppObject (C10List CDouble) where
-  fromPtr ptr = newForeignPtr ptr (deleteC10ListDouble ptr)
-
-instance CppObject (C10List Int64) where
-  fromPtr ptr = newForeignPtr ptr (deleteC10ListInt ptr)
-
-instance CppObject (C10List CBool) where
-  fromPtr ptr = newForeignPtr ptr (deleteC10ListBool ptr)
 
 
 
@@ -115,7 +85,7 @@ c10ListDouble_at :: Ptr (C10List CDouble) -> CSize -> IO CDouble
 c10ListDouble_at _obj _s = [C.throwBlock| double { return ((*$(c10::List<double>* _obj))[$(size_t _s)]); }|]
 
 c10ListInt_at :: Ptr (C10List Int64) -> CSize -> IO Int64
-c10ListInt_at _obj _s = [C.throwBlock| int64_t { return ((*$(c10::List<int64_t>* _obj))[$(size_t _s)]); }|]
+c10ListInt_at _obj _s = [C.throwBlock| int64_t { return (int64_t)((*$(c10::List<int64_t>* _obj))[$(size_t _s)]); }|]
 
 c10ListBool_at :: Ptr (C10List CBool) -> CSize -> IO CBool
 c10ListBool_at _obj _s = [C.throwBlock| bool { return ((*$(c10::List<bool>* _obj))[$(size_t _s)]); }|]

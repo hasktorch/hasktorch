@@ -20,7 +20,7 @@ C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 C.include "<vector>"
 C.include "<torch/serialize.h>"
-C.include "<ATen/ATen.h>"
+C.include "<ATen/Tensor.h>"
 
 save :: Ptr TensorList -> FilePath -> IO ()
 save inputs file = withCString file $ \cfile -> [C.throwBlock| void {

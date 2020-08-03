@@ -15,20 +15,19 @@ import Foreign.C.String
 import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
-import Torch.Internal.Class
 
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
 import qualified Language.C.Inline.Context as C
 import qualified Language.C.Types as C
-import qualified Data.Map as Map
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 C.include "<vector>"
-C.include "<ATen/ATen.h>"
+--C.include "<ATen/Tensor.h>"
+--C.include "<ATen/Functions.h>"
 
-C.include "<torch/torch.h>"
+C.include "<torch/csrc/autograd/generated/variable_factories.h>"
 
 
 _cudnn_init_dropout_state_dblo
@@ -189,6 +188,36 @@ blackman_window_lb _window_length _periodic =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::blackman_window(
     $(int64_t _window_length)
   , $(bool _periodic)));
+  }|]
+
+empty_meta_loM
+  :: Ptr IntArray
+  -> Ptr TensorOptions
+  -> MemoryFormat
+  -> IO (Ptr Tensor)
+empty_meta_loM _size _options _memory_format =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::empty_meta(
+    *$(std::vector<int64_t>* _size)
+  , *$(at::TensorOptions* _options)
+  , $(at::MemoryFormat _memory_format)));
+  }|]
+
+empty_meta_lo
+  :: Ptr IntArray
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+empty_meta_lo _size _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::empty_meta(
+    *$(std::vector<int64_t>* _size)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+empty_meta_l
+  :: Ptr IntArray
+  -> IO (Ptr Tensor)
+empty_meta_l _size =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::empty_meta(
+    *$(std::vector<int64_t>* _size)));
   }|]
 
 empty_lNoM
@@ -919,29 +948,29 @@ rand_lN _size _names =
   , *$(std::vector<at::Dimname>* _names)));
   }|]
 
-rand_lpNo
+rand_lGNo
   :: Ptr IntArray
   -> Ptr Generator
   -> Ptr DimnameList
   -> Ptr TensorOptions
   -> IO (Ptr Tensor)
-rand_lpNo _size _generator _names _options =
+rand_lGNo _size _generator _names _options =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::rand(
     *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)
+  , *$(at::Generator* _generator)
   , *$(std::vector<at::Dimname>* _names)
   , *$(at::TensorOptions* _options)));
   }|]
 
-rand_lpN
+rand_lGN
   :: Ptr IntArray
   -> Ptr Generator
   -> Ptr DimnameList
   -> IO (Ptr Tensor)
-rand_lpN _size _generator _names =
+rand_lGN _size _generator _names =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::rand(
     *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)
+  , *$(at::Generator* _generator)
   , *$(std::vector<at::Dimname>* _names)));
   }|]
 
@@ -963,26 +992,26 @@ rand_l _size =
     *$(std::vector<int64_t>* _size)));
   }|]
 
-rand_lpo
+rand_lGo
   :: Ptr IntArray
   -> Ptr Generator
   -> Ptr TensorOptions
   -> IO (Ptr Tensor)
-rand_lpo _size _generator _options =
+rand_lGo _size _generator _options =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::rand(
     *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)
+  , *$(at::Generator* _generator)
   , *$(at::TensorOptions* _options)));
   }|]
 
-rand_lp
+rand_lG
   :: Ptr IntArray
   -> Ptr Generator
   -> IO (Ptr Tensor)
-rand_lp _size _generator =
+rand_lG _size _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::rand(
     *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 rand_like_toM
@@ -1037,30 +1066,30 @@ randint_ll _high _size =
   , *$(std::vector<int64_t>* _size)));
   }|]
 
-randint_llpo
+randint_llGo
   :: Int64
   -> Ptr IntArray
   -> Ptr Generator
   -> Ptr TensorOptions
   -> IO (Ptr Tensor)
-randint_llpo _high _size _generator _options =
+randint_llGo _high _size _generator _options =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::randint(
     $(int64_t _high)
   , *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)
+  , *$(at::Generator* _generator)
   , *$(at::TensorOptions* _options)));
   }|]
 
-randint_llp
+randint_llG
   :: Int64
   -> Ptr IntArray
   -> Ptr Generator
   -> IO (Ptr Tensor)
-randint_llp _high _size _generator =
+randint_llG _high _size _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::randint(
     $(int64_t _high)
   , *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 randint_lllo
@@ -1089,34 +1118,34 @@ randint_lll _low _high _size =
   , *$(std::vector<int64_t>* _size)));
   }|]
 
-randint_lllpo
+randint_lllGo
   :: Int64
   -> Int64
   -> Ptr IntArray
   -> Ptr Generator
   -> Ptr TensorOptions
   -> IO (Ptr Tensor)
-randint_lllpo _low _high _size _generator _options =
+randint_lllGo _low _high _size _generator _options =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::randint(
     $(int64_t _low)
   , $(int64_t _high)
   , *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)
+  , *$(at::Generator* _generator)
   , *$(at::TensorOptions* _options)));
   }|]
 
-randint_lllp
+randint_lllG
   :: Int64
   -> Int64
   -> Ptr IntArray
   -> Ptr Generator
   -> IO (Ptr Tensor)
-randint_lllp _low _high _size _generator =
+randint_lllG _low _high _size _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::randint(
     $(int64_t _low)
   , $(int64_t _high)
   , *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 randint_like_tloM
@@ -1215,26 +1244,26 @@ randn_l _size =
     *$(std::vector<int64_t>* _size)));
   }|]
 
-randn_lpo
+randn_lGo
   :: Ptr IntArray
   -> Ptr Generator
   -> Ptr TensorOptions
   -> IO (Ptr Tensor)
-randn_lpo _size _generator _options =
+randn_lGo _size _generator _options =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::randn(
     *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)
+  , *$(at::Generator* _generator)
   , *$(at::TensorOptions* _options)));
   }|]
 
-randn_lp
+randn_lG
   :: Ptr IntArray
   -> Ptr Generator
   -> IO (Ptr Tensor)
-randn_lp _size _generator =
+randn_lG _size _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::randn(
     *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 randn_lNo
@@ -1259,29 +1288,29 @@ randn_lN _size _names =
   , *$(std::vector<at::Dimname>* _names)));
   }|]
 
-randn_lpNo
+randn_lGNo
   :: Ptr IntArray
   -> Ptr Generator
   -> Ptr DimnameList
   -> Ptr TensorOptions
   -> IO (Ptr Tensor)
-randn_lpNo _size _generator _names _options =
+randn_lGNo _size _generator _names _options =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::randn(
     *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)
+  , *$(at::Generator* _generator)
   , *$(std::vector<at::Dimname>* _names)
   , *$(at::TensorOptions* _options)));
   }|]
 
-randn_lpN
+randn_lGN
   :: Ptr IntArray
   -> Ptr Generator
   -> Ptr DimnameList
   -> IO (Ptr Tensor)
-randn_lpN _size _generator _names =
+randn_lGN _size _generator _names =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::randn(
     *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)
+  , *$(at::Generator* _generator)
   , *$(std::vector<at::Dimname>* _names)));
   }|]
 
@@ -1333,26 +1362,26 @@ randperm_l _n =
     $(int64_t _n)));
   }|]
 
-randperm_lpo
+randperm_lGo
   :: Int64
   -> Ptr Generator
   -> Ptr TensorOptions
   -> IO (Ptr Tensor)
-randperm_lpo _n _generator _options =
+randperm_lGo _n _generator _options =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::randperm(
     $(int64_t _n)
-  , $(at::Generator * _generator)
+  , *$(at::Generator* _generator)
   , *$(at::TensorOptions* _options)));
   }|]
 
-randperm_lp
+randperm_lG
   :: Int64
   -> Ptr Generator
   -> IO (Ptr Tensor)
-randperm_lp _n _generator =
+randperm_lG _n _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::randperm(
     $(int64_t _n)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 range_ssso
@@ -1380,28 +1409,6 @@ range_sss _start _end _step =
   , *$(at::Scalar* _end)
   , *$(at::Scalar* _step)));
   }|]
-
--- range_ss
---   :: Ptr Scalar
---   -> Ptr Scalar
---   -> IO (Ptr Tensor)
--- range_ss _start _end =
---   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::range(
---     *$(at::Scalar* _start)
---   , *$(at::Scalar* _end)));
---   }|]
-
--- range_sso
---   :: Ptr Scalar
---   -> Ptr Scalar
---   -> Ptr TensorOptions
---   -> IO (Ptr Tensor)
--- range_sso _start _end _options =
---   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::range(
---     *$(at::Scalar* _start)
---   , *$(at::Scalar* _end)
---   , *$(at::TensorOptions* _options)));
---   }|]
 
 zeros_lNo
   :: Ptr IntArray
@@ -1661,34 +1668,34 @@ triu_indices_ll _row _col =
   , $(int64_t _col)));
   }|]
 
-normal_ddlpo
+normal_ddlGo
   :: CDouble
   -> CDouble
   -> Ptr IntArray
   -> Ptr Generator
   -> Ptr TensorOptions
   -> IO (Ptr Tensor)
-normal_ddlpo _mean _std _size _generator _options =
+normal_ddlGo _mean _std _size _generator _options =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::normal(
     $(double _mean)
   , $(double _std)
   , *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)
+  , *$(at::Generator* _generator)
   , *$(at::TensorOptions* _options)));
   }|]
 
-normal_ddlp
+normal_ddlG
   :: CDouble
   -> CDouble
   -> Ptr IntArray
   -> Ptr Generator
   -> IO (Ptr Tensor)
-normal_ddlp _mean _std _size _generator =
+normal_ddlG _mean _std _size _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::normal(
     $(double _mean)
   , $(double _std)
   , *$(std::vector<int64_t>* _size)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 normal_ddl

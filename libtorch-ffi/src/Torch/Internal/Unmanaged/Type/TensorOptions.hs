@@ -18,14 +18,14 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
-import Torch.Internal.Class
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
+
+
+C.include "<ATen/TensorOptions.h>"
 C.include "<vector>"
 
 
@@ -37,16 +37,6 @@ newTensorOptions_s _d =
   [C.throwBlock| at::TensorOptions* { return new at::TensorOptions(
     $(at::ScalarType _d));
   }|]
-
-
-
-deleteTensorOptions :: Ptr TensorOptions -> IO ()
-deleteTensorOptions object = [C.throwBlock| void { delete $(at::TensorOptions* object);}|]
-
-instance CppObject TensorOptions where
-  fromPtr ptr = newForeignPtr ptr (deleteTensorOptions ptr)
-
-
 
 tensorOptions_device_D
   :: Ptr TensorOptions
@@ -164,8 +154,6 @@ tensorOptions_backend _obj =
   [C.throwBlock| at::Backend { return (*$(at::TensorOptions* _obj)).backend(
     );
   }|]
-
-
 
 dtype_s
   :: ScalarType

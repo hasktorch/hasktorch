@@ -18,14 +18,12 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
-import Torch.Internal.Class
+
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
 C.include "<string>"
 
 
@@ -42,12 +40,6 @@ newStdString_s
   -> IO (Ptr StdString)
 newStdString_s str =
   withCString str $ \cstr -> [C.throwBlock| std::string* { return new std::string($(char* cstr));}|]
-
-deleteStdString :: Ptr StdString -> IO ()
-deleteStdString object = [C.throwBlock| void { delete $(std::string* object);}|]
-
-instance CppObject StdString where
-  fromPtr ptr = newForeignPtr ptr (deleteStdString ptr)
 
 string_c_str
   :: Ptr StdString

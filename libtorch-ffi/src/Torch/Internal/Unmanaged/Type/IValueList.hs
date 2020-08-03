@@ -18,14 +18,13 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
-import Torch.Internal.Class
+
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
+C.include "<ATen/core/ivalue.h>"
 C.include "<vector>"
 
 
@@ -37,13 +36,6 @@ newIValueList  =
     );
   }|]
 
-
-
-deleteIValueList :: Ptr IValueList -> IO ()
-deleteIValueList object = [C.throwBlock| void { delete $(std::vector<at::IValue>* object);}|]
-
-instance CppObject IValueList where
-  fromPtr ptr = newForeignPtr ptr (deleteIValueList ptr)
 
 
 

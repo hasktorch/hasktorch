@@ -18,14 +18,13 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
-import Torch.Internal.Class
+
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
+C.include "<ATen/core/ivalue.h>"
 C.include "<vector>"
 
 
@@ -36,14 +35,6 @@ newC10Tuple  =
   [C.throwBlock| c10::intrusive_ptr<at::ivalue::Tuple>* { return new c10::intrusive_ptr<at::ivalue::Tuple>(
     );
   }|]
-
-
-
-deleteC10Tuple :: Ptr (C10Ptr IVTuple) -> IO ()
-deleteC10Tuple object = [C.throwBlock| void { delete $(c10::intrusive_ptr<at::ivalue::Tuple>* object);}|]
-
-instance CppObject (C10Ptr IVTuple) where
-  fromPtr ptr = newForeignPtr ptr (deleteC10Tuple ptr)
 
 
 

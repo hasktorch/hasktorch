@@ -33,10 +33,10 @@ import           Torch.Typed.Tensor
 import           Torch.Typed.Parameter
 import           Torch.Typed.Factories
 import           Torch.Typed.Functional      hiding ( linear )
-import           Torch.Typed.NN
+import           Torch.Typed.NN.Dropout
 
 
--- | A specification for a long, short-term memory cell.
+-- | A specification for a long, short-term memory (LSTM) cell.
 --
 data LSTMCellSpec (inputDim :: Nat) (hiddenDim :: Nat)
                   (dtype :: D.DType)
@@ -75,7 +75,7 @@ instance ( KnownDevice device
 
 -- | A single recurrent step of an `LSTMCell`
 --
-forwardStep
+lstmCellForward
   :: forall inputDim hiddenDim batchSize dtype device
    . ( KnownDType dtype
      , KnownNat inputDim
@@ -90,14 +90,14 @@ forwardStep
   -> ( Tensor device dtype '[batchSize, hiddenDim]
      , Tensor device dtype '[batchSize, hiddenDim]
      ) -- ^ The subsequent (Hidden, Cell) state
-forwardStep LSTMCell {..} = lstmCell (toDependent lstmCell_w_ih)
-                                     (toDependent lstmCell_w_hh)
-                                     (toDependent lstmCell_b_ih)
-                                     (toDependent lstmCell_b_hh)
+lstmCellForward LSTMCell {..} = lstmCell (toDependent lstmCell_w_ih)
+                                         (toDependent lstmCell_w_hh)
+                                         (toDependent lstmCell_b_ih)
+                                         (toDependent lstmCell_b_hh)
 
 -- | foldl' for lists of tensors unsing an `LSTMCell`
 --
-forward
+lstmCellFold
   :: forall inputDim hiddenDim batchSize dtype device
    . ( KnownDType dtype
      , KnownNat inputDim
@@ -112,11 +112,11 @@ forward
   -> ( Tensor device dtype '[batchSize, hiddenDim]
      , Tensor device dtype '[batchSize, hiddenDim]
      ) -- ^ The final (Hidden, Cell) state
-forward cell = foldl' (forwardStep cell)
+lstmCellFold cell = foldl' (lstmCellForward cell)
 
 -- | scanl' for lists of tensors unsing an `LSTMCell`
 --
-forwardScan
+lstmCellScan
   :: forall inputDim hiddenDim batchSize dtype device
    . ( KnownDType dtype
      , KnownNat inputDim
@@ -132,4 +132,4 @@ forwardScan
        , Tensor device dtype '[batchSize, hiddenDim]
        )
      ] -- ^ All subsequent (Hidden, Cell) states
-forwardScan cell = scanl' (forwardStep cell)
+lstmCellScan cell = scanl' (lstmCellForward cell)

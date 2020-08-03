@@ -13,11 +13,11 @@ module Torch.Internal.Managed.Type.StdString where
 
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 import Torch.Internal.Cast
+import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Type.StdString as Unmanaged
 
 

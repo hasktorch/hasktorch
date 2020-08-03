@@ -18,14 +18,14 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
-import Torch.Internal.Class
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
+
+
+C.include "<ATen/Storage.h>"
 C.include "<vector>"
 
 
@@ -36,16 +36,4 @@ newStorage  =
   [C.throwBlock| at::Storage* { return new at::Storage(
     );
   }|]
-
-
-
-deleteStorage :: Ptr Storage -> IO ()
-deleteStorage object = [C.throwBlock| void { delete $(at::Storage* object);}|]
-
-instance CppObject Storage where
-  fromPtr ptr = newForeignPtr ptr (deleteStorage ptr)
-
-
-
-
 

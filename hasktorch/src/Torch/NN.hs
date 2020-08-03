@@ -52,6 +52,11 @@ instance Parameterized Tensor where
   flattenParameters _ = []
   replaceOwnParameters = return
 
+class HasForward f a b | f a -> b where
+  forward :: f -> a -> b
+  forwardStoch :: f -> a -> IO b
+  forwardStoch = (pure .) . forward
+
 instance Parameterized Parameter where
   flattenParameters = pure
   replaceOwnParameters _ = nextParameter
@@ -117,8 +122,15 @@ class Randomizable spec f | spec -> f where
 
 class (Randomizable spec f, Parameterized f) => Module spec f
 
-data LinearSpec = LinearSpec { in_features :: Int, out_features :: Int }
-  deriving (Show, Eq)
+--
+-- Linear FC Layer
+--
+
+data LinearSpec = LinearSpec { 
+    in_features :: Int,
+    out_features :: Int 
+    } deriving (Show, Eq)
+  
 
 data Linear = Linear { weight :: Parameter, bias :: Parameter } deriving (Show, Generic)
 
@@ -128,6 +140,8 @@ linear layer input = linear' input w b
         linear' input weight bias = unsafePerformIO $ (cast3 ATen.linear_ttt) input weight bias
         w = toDependent (weight layer)
         b = toDependent (bias layer)
+
+linearForward = linear -- temporary alias until dependencies are updated
 
 instance Randomizable LinearSpec Linear where
   sample LinearSpec{..} = do
@@ -148,6 +162,10 @@ instance Parameterized Linear
 --     weight <- nextParameter
 --     bias <- nextParameter
 --     return $ Linear{..}
+
+--
+-- Conv2d
+--
 
 data Conv2dSpec = 
   Conv2dSpec {

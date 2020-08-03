@@ -27,11 +27,11 @@ jobs:
         ./setup-cabal.sh
         cabal v2-update
         cabal v2-install hspec-discover
-        cabal v2-build all --jobs=2 --write-ghc-environment-files=always
+        cabal v2-build all --jobs=2
     - name: Test
       run: |
         export PATH=/opt/ghc/bin:$PATH
         source setenv
-        cabal v2-test all --jobs=2 --write-ghc-environment-files=always
+        cabal v2-test all --jobs=2
         cabal v2-exec codegen-exe
         cabal exec xor-mlp

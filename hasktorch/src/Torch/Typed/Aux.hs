@@ -99,6 +99,28 @@ type Backwards l n = BackwardsImpl (LastDim l) n
 
                     ----------------------------------------
 
+type family Init (xs :: [a]) :: [a] where
+  Init '[] = TypeError (Text "Init of empty list.")
+  Init (x ': '[]) = '[]
+  Init (x ': xs) = x ': Init xs
+
+type family Last (xs :: [a]) :: a where
+  Last '[] = TypeError (Text "Last of empty list.")
+  Last (x ': '[]) = x
+  Last (x ': xs) = Last xs
+
+type family InsertImpl (n :: Nat) (x :: a) (l :: [a]) :: Maybe [a] where
+  InsertImpl 0 x l = Just (x ': l)
+  InsertImpl n x '[] = Nothing
+  InsertImpl n x (h ': t) = AppendToMaybe h (InsertImpl (n - 1) x t)
+
+type family CheckInsert (n :: Nat) (x :: a) (l :: [a]) (result :: Maybe [a]) :: [a] where
+  CheckInsert _ _ _ (Just xs) = xs
+  CheckInsert n x l Nothing = DimOutOfBound l n
+
+type family Insert (n :: Nat) (x :: a) (l :: [a]) :: [a] where
+  Insert n x l = CheckInsert n x l (InsertImpl n x l)
+
 type family RemoveImpl (l :: [a]) (n :: Nat) :: Maybe [a] where
   RemoveImpl (h ': t) 0 = Just t
   RemoveImpl (h ': t) n = AppendToMaybe h (RemoveImpl t (n - 1))
@@ -152,6 +174,11 @@ type family ReplaceDim (dim :: Nat) (shape :: [Nat]) (n :: Nat) :: Maybe [Nat] w
 type family If c t e where
   If 'True  t e = t
   If 'False t e = e
+
+type family AllDimsPositive (shape :: [Nat]) :: Constraint where
+  AllDimsPositive '[] = ()
+  AllDimsPositive (x ': xs) = If (1 <=? x) (AllDimsPositive xs) (TypeError (Text "Expected positive dimension but got " :<>: ShowType x :<>: Text "!"))
+
 --------------------------------------------------------------------------------
 -- Operations
 --------------------------------------------------------------------------------
@@ -266,3 +293,10 @@ type family StandardFloatingPointDTypeValidation (device :: (D.DeviceType, Nat))
                                                                         )
   StandardFloatingPointDTypeValidation '( 'D.CUDA, deviceIndex) dtype = DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
   StandardFloatingPointDTypeValidation '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
+
+type family StandardDTypeValidation (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
+  StandardDTypeValidation '( 'D.CPU, 0)            dtype = ( DTypeIsNotBool '( 'D.CPU, 0) dtype
+                                                           , DTypeIsNotHalf '( 'D.CPU, 0) dtype
+                                                           )
+  StandardDTypeValidation '( 'D.CUDA, deviceIndex) dtype = DTypeIsNotBool '( 'D.CUDA, deviceIndex) dtype
+  StandardDTypeValidation '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
