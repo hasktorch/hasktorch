@@ -13,7 +13,6 @@ import Torch.NN
 
 type LearningRate = Tensor
 type Loss = Tensor
-newtype Gradients = Gradients [Tensor] deriving Show
 
 grad' t p = Gradients (grad t p)
 
