@@ -20,6 +20,9 @@ spec = do
     init2 <- sample $ LinearSpec { in_features = 3, out_features = 1 }
     length (flattenParameters init) `shouldBe` 2
     length (flattenParameters (fst (flip runState (flattenParameters init2) (replaceOwnParameters init)))) `shouldBe` 2
+  it "create flatten-parameters of Tensor" $ do
+    let t = asTensor [0.0, 1.0 :: Float]
+    length (flattenParameters t) `shouldBe` 0
   it "create flatten-parameters of [Linear]" $ do
     i0 <- sample $ LinearSpec { in_features = 3, out_features = 1 }
     i1 <- sample $ LinearSpec { in_features = 3, out_features = 1 }

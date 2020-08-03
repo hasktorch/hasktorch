@@ -31,7 +31,7 @@ import           GHC.TypeLits
 import           GHC.TypeLits.Extra
 import           GHC.Generics
 
-import qualified Torch.NN (Randomizable(..), Parameter, sample)
+import qualified Torch.NN (Randomizable(..), Parameter, Parameterized(..), sample, nextParameter)
 import qualified Torch.Tensor (toDevice, toType)
 import qualified Torch.Autograd (IndependentTensor(..), makeIndependent)
 import           Torch.Device (DeviceType)
@@ -117,6 +117,14 @@ instance
         l'       = gReplaceParameters l as
         r'       = gReplaceParameters r bs
     in  l' :*: r'
+
+instance Torch.NN.Parameterized (Tensor device dtype shape) where
+  flattenParameters _ = []
+  replaceOwnParameters = return
+
+instance Torch.NN.Parameterized (Parameter device dtype shape) where
+  flattenParameters (UnsafeMkParameter param) = return param
+  replaceOwnParameters _ = UnsafeMkParameter <$> Torch.NN.nextParameter
 
 instance {-# OVERLAPS #-} Parameterized (Tensor device dtype shape) '[] where
   flattenParameters _ = HNil
