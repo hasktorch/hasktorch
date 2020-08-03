@@ -31,15 +31,15 @@ import           GHC.TypeLits
 import           GHC.TypeLits.Extra
 import           GHC.Generics
 
-import qualified Torch.NN (Randomizable(..), Parameter, sample)
 import qualified Torch.Tensor (toDevice, toType)
 import qualified Torch.Autograd (IndependentTensor(..), makeIndependent)
 import           Torch.Device (DeviceType)
 import           Torch.DType (DType)
-import           Torch.Typed.Aux
+import           Torch.Scalar
 import           Torch.Typed.Factories
 import           Torch.Typed.Functional
 import           Torch.Typed.Tensor
+import qualified Torch.NN
 
 newtype Parameter (device :: (DeviceType, Nat)) (dtype :: DType) (shape :: [Nat]) = UnsafeMkParameter Torch.Autograd.IndependentTensor
   deriving Show
@@ -118,19 +118,19 @@ instance
         r'       = gReplaceParameters r bs
     in  l' :*: r'
 
-instance {-# OVERLAPS #-} Parameterized (Tensor device dtype shape) '[] where
+instance Parameterized (Tensor device dtype shape) '[] where
   flattenParameters _ = HNil
   replaceParameters = const
 
-instance {-# OVERLAPS #-} Parameterized (Parameter device dtype shape) '[Parameter device dtype shape] where
+instance Parameterized (Parameter device dtype shape) '[Parameter device dtype shape] where
   flattenParameters = (:. HNil)
   replaceParameters _ (parameter :. HNil) = parameter
 
-instance {-# OVERLAPS #-} Parameterized Double '[] where
+instance {-# OVERLAPS #-} (Scalar a) => Parameterized a '[] where
   flattenParameters _ = HNil
   replaceParameters = const
 
-instance {-# OVERLAPS #-} Parameterized (HList '[]) '[] where
+instance Parameterized (HList '[]) '[] where
   flattenParameters _ = HNil
   replaceParameters = const
 

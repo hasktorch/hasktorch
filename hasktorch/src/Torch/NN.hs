@@ -7,9 +7,12 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Torch.NN where
 
+import Data.Foldable (toList)
+import Control.Monad ((=<<))
 import Control.Monad.State.Strict
 import System.IO.Unsafe (unsafePerformIO)
 
@@ -23,6 +26,7 @@ import Torch.Initializers
 import Torch.Tensor
 import Torch.TensorFactories (ones', randIO', randnIO')
 import Torch.Functional
+import Torch.Scalar
 import GHC.Generics
 
 type Parameter = IndependentTensor
@@ -44,6 +48,10 @@ class Parameterized f where
   default replaceOwnParameters :: (Generic f, Parameterized' (Rep f)) => f -> ParamStream f
   replaceOwnParameters f = to <$> replaceOwnParameters' (from f)
 
+instance Parameterized Tensor where
+  flattenParameters _ = []
+  replaceOwnParameters = return
+
 class HasForward f a b | f a -> b where
   forward :: f -> a -> b
   forwardStoch :: f -> a -> IO b
@@ -53,13 +61,13 @@ instance Parameterized Parameter where
   flattenParameters = pure
   replaceOwnParameters _ = nextParameter
 
-instance Parameterized Double where
+instance {-# OVERLAPS #-} (Scalar a) => Parameterized a where
   flattenParameters _ = []
   replaceOwnParameters = return
 
-instance Parameterized [Int] where
-  flattenParameters _ = []
-  replaceOwnParameters = return
+instance (Foldable t, Traversable t, Parameterized a) => Parameterized (t a) where
+  flattenParameters = (=<<) flattenParameters . toList
+  replaceOwnParameters = mapM replaceOwnParameters
 
 instance Parameterized (Tensor -> Tensor) where
   flattenParameters _ = []
@@ -154,8 +162,6 @@ instance Parameterized Linear
 --     weight <- nextParameter
 --     bias <- nextParameter
 --     return $ Linear{..}
-
-instance Parameterized [Linear]
 
 --
 -- Conv2d
