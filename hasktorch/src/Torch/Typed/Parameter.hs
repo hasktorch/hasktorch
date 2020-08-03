@@ -117,11 +117,11 @@ instance
         r'       = gReplaceParameters r bs
     in  l' :*: r'
 
-instance {-# OVERLAPS #-} Parameterized (Tensor device dtype shape) '[] where
+instance Parameterized (Tensor device dtype shape) '[] where
   flattenParameters _ = HNil
   replaceParameters = const
 
-instance {-# OVERLAPS #-} Parameterized (Parameter device dtype shape) '[Parameter device dtype shape] where
+instance Parameterized (Parameter device dtype shape) '[Parameter device dtype shape] where
   flattenParameters = (:. HNil)
   replaceParameters _ (parameter :. HNil) = parameter
 
@@ -129,7 +129,7 @@ instance {-# OVERLAPS #-} (Scalar a) => Parameterized a '[] where
   flattenParameters _ = HNil
   replaceParameters = const
 
-instance {-# OVERLAPS #-} Parameterized (HList '[]) '[] where
+instance Parameterized (HList '[]) '[] where
   flattenParameters _ = HNil
   replaceParameters = const
 
