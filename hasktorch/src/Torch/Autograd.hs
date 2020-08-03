@@ -20,8 +20,11 @@ import Torch.Tensor
 newtype IndependentTensor = IndependentTensor { toDependent :: Tensor }
     deriving (Show)
 
-grad :: Tensor -> [IndependentTensor] -> [Tensor]
-grad y inputs = unsafePerformIO $ (cast2 Torch.Internal.Managed.Autograd.grad) y (map toDependent inputs)
+newtype Gradients = Gradients [Tensor]
+    deriving (Show)
+
+grad :: Tensor -> [IndependentTensor] -> Gradients
+grad y inputs = Gradients . unsafePerformIO $ (cast2 Torch.Internal.Managed.Autograd.grad) y (map toDependent inputs)
 
 requiresGrad :: Tensor -> Bool
 requiresGrad t = unsafePerformIO $ (cast1 ATen.tensor_requires_grad) t
