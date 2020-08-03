@@ -48,38 +48,17 @@ data ModelData = ModelData
   }
   deriving (Eq, Generic, Show)
 
+data TensorData = TensorData
+  { tTimes :: Tensor,
+    tFips :: Tensor,
+    tCases :: Tensor,
+    tDeaths :: Tensor
+  }
+  deriving (Eq, Generic, Show)
+
 instance FromRecord UsCounties
 
 -- instance FromNamedRecord UsCounties
-
-data Observations = Observations
-  { time :: Tensor, -- date to a time point (integral values)
-    location :: Tensor, -- fips indices representation -> embedding
-    casesCount :: Tensor,
-    deathCount :: Tensor
-  }
-  deriving (Eq, Show)
-
-dat2Tensor :: V.Vector UsCounties -> IO Observations
-dat2Tensor dataset = do
-  day :: Day <- parseTimeM True defaultTimeLocale "%F" "2020-02-23"
-  -- let x = (parseTimeM True defaultTimeLocale "%F") <$>  (V.map date dataset) -- TODO implement
-  -- let ordinalDate = V.map toOrdinalDate day
-  pure
-    Observations
-      { time = undefined,
-        location = locEmbed,
-        casesCount = undefined,
-        deathCount = undefined
-      }
-  where
-    idxFips = let fipsList = (V.uniq $ fmap fips dataset) in V.toList $ V.zip fipsList (V.fromList [1 .. (length fipsList)])
-    idxMap = M.fromList idxFips
-    indices = fmap ((M.!) idxMap) (fmap fips dataset)
-    tIndices = asTensor . V.toList $ indices
-    locEmbed = embedding' (onesLike tIndices) tIndices
-
---
 
 modelTrain = undefined
 
@@ -115,6 +94,32 @@ prepData dataset = do
     deathCounts=V.toList $ deaths <$> dataset
   }
 
+prepTensors :: ModelData -> TensorData
+prepTensors modelData =
+  TensorData {
+    tTimes = (asTensor . timePoints $ modelData),
+    tFips = (asTensor . fipsIdxs $ modelData),
+    tCases = (asTensor . caseCounts $ modelData),
+    tDeaths = (asTensor . deathCounts $ modelData)
+    }
+
+filterOn 
+  :: (TensorData -> Tensor) -- getter
+  -> (Tensor -> Tensor) -- predicate
+  -> TensorData -- input data
+  -> TensorData -- filtered data
+filterOn getter pred tData =
+  TensorData {
+    tTimes = selector (tTimes tData),
+    tFips = selector (tFips tData),
+    tCases = selector (tCases tData),
+    tDeaths = selector (tDeaths tData)
+    }
+  where
+    selector :: Tensor -> Tensor
+    selector = indexSelect 0 (squeezeAll . nonzero . pred . getter $ tData)
+  
+
 datesToTimepoints :: [String] -> IO [Int]
 datesToTimepoints dateStrings = do
   firstDay :: Day <- parseTimeM False defaultTimeLocale "%F" "2020-01-21"
@@ -130,6 +135,7 @@ main = do
   dataset <- loadDataset "data/us-counties.csv"
   putStrLn "Preprocessing Data"
   modelData <- prepData dataset
+  let tensorData = prepTensors modelData
 
   let tIndices = asTensor (fipsIdxs modelData)
   let embedDim = 2
@@ -142,6 +148,10 @@ main = do
 
   print $ length $ Prelude.filter (\x -> x ==2102) (fipsIdxs modelData)
   print $ length $ Prelude.filter (\x -> x == 739) (fipsIdxs modelData)
+
+  pPrint $ filterOn tTimes (eq $ asTensor (20 :: Int)) tensorData 
+  pPrint $ filterOn tFips (eq $ asTensor (1 :: Int)) tensorData
+
 
   -- pPrint $ dataset V.! 1
   putStrLn "Done"

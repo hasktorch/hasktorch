@@ -563,6 +563,28 @@ eq a b = unsafePerformIO $ (cast2 ATen.eq_tt) a b
 
 (==.) = eq
 
+-- | Returns a new tensor with the elements of input at the given indices. The input tensor is treated as if it were viewed as a 1-D tensor. The result takes the same shape as the indices. 
+take
+  :: Tensor -- ^ index
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+take _index _self = unsafePerformIO $ (cast2 ATen.take_tt) _self _index
+
+-- | Returns a new 1-D tensor which indexes the input tensor according to the boolean mask mask which is a BoolTensor.
+-- The shapes of the mask tensor and the input tensor don’t need to match, but they must be broadcastable.
+maskedSelect
+  :: Tensor -- ^ mask
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+maskedSelect _mask _self = unsafePerformIO $ (cast2 ATen.masked_select_tt) _self _mask
+
+-- | Returns a tuple of 1-D tensors, one for each dimension in input, each containing the indices (in that dimension) of all non-zero elements of input .
+nonzero
+  :: Tensor -- ^ input
+  -> Tensor -- ^ output
+nonzero _self = unsafePerformIO $ (cast1 ATen.nonzero_t) _self
+
+
 isclose
   :: Double -- ^ rtol
   -> Double -- ^ atol
@@ -718,6 +740,16 @@ ctcLoss' reduction inputLengths targetLengths logProbs targets  = unsafePerformI
     where
         blank = 0 :: Int
         zeroInfinity = False
+
+-- | Returns the p-norm of (input - other)
+-- The shapes of input and other must be broadcastable.
+dist
+  :: Float -- ^ p
+  -> Tensor -- ^ other
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+dist _p _other _self = unsafePerformIO $ (cast3 ATen.dist_tts) _self _other _p
+
 
 -- | Measures the loss given an input tensor xx and a labels tensor yy (containing 1 or -1).
 -- This is usually used for measuring whether two inputs are similar or dissimilar,
@@ -974,6 +1006,16 @@ inverse
     -> Tensor -- ^ output
 inverse t = unsafePerformIO $ (cast1 ATen.inverse_t) t
 
+-- | Solves a system of equations with a triangular coefficient matrix AA and multiple right-hand sides bb
+triangularSolve
+  :: Tensor -- ^ A
+  -> Bool -- ^ upper
+  -> Bool -- ^ transpose
+  -> Bool -- ^ unitriangular
+  -> Tensor -- ^ input
+  -> (Tensor,Tensor) -- ^ output
+triangularSolve _A _upper _transpose _unitriangular _self = unsafePerformIO $ (cast5 ATen.triangular_solve_ttbbb) _self _A _upper _transpose _unitriangular
+
 -- | This function returns eigenvalues and eigenvectors of a real symmetric matrix input or a batch of real symmetric matrices, represented by a namedtuple (eigenvalues, eigenvectors).
 symeig
  :: Bool -- ^ bool which controls whether eigenvectors have to be computed
@@ -1052,6 +1094,25 @@ orgqr
  -> Tensor -- ^ the @tau@ from @geqrf@ function
  -> Tensor -- ^ output
 orgqr b a = unsafePerformIO $ (cast2 ATen.orgqr_tt) b a
+
+-- | Multiplies mat (given by input3) by the orthogonal Q matrix of the QR factorization formed by torch.geqrf() that is represented by (a, tau) (given by (input, input2)).
+-- This directly calls the underlying LAPACK function ?ormqr. See LAPACK documentation for ormqr for further details.
+ormqr
+  :: Tensor -- ^ input2
+  -> Tensor -- ^ input3
+  -> Bool -- ^ left
+  -> Bool -- ^ transpose
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+ormqr _input2 _input3 _left _transpose _self = unsafePerformIO $ (cast5 ATen.ormqr_tttbb) _self _input2 _input3 _left _transpose
+
+-- | Returns the LU solve of the linear system Ax = bAx=b using the partially pivoted LU factorization of A from torch.lu().
+luSolve
+  :: Tensor -- ^ LU_data
+  -> Tensor -- ^ LU_pivots
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+luSolve _LU_data _LU_pivots _self = unsafePerformIO $ (cast3 ATen.lu_solve_ttt) _self _LU_data _LU_pivots
 
 --
 -- dropout
