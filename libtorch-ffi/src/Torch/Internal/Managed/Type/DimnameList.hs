@@ -18,18 +18,15 @@ import Torch.Internal.Type
 import Torch.Internal.Class
 import Torch.Internal.Cast
 import Torch.Internal.Objects
-
 import qualified Torch.Internal.Unmanaged.Type.DimnameList as Unmanaged
+
+
 
 
 
 newDimnameList
   :: IO (ForeignPtr DimnameList)
 newDimnameList = cast0 Unmanaged.newDimnameList
-
-
-
-
 
 dimnameList_empty
   :: ForeignPtr DimnameList
@@ -52,6 +49,4 @@ dimnameList_push_back_n
   -> ForeignPtr Dimname
   -> IO (())
 dimnameList_push_back_n = cast2 Unmanaged.dimnameList_push_back_n
-
-
 

@@ -88,7 +88,7 @@ library
  ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
  build-depends:       async
                     , base >= 4.7 && < 5
-                    , libtorch-ffi == 1.5.*
+                    , libtorch-ffi == 1.6.*
                     , finite-typelits
                     , ghc-typelits-extra
                     , ghc-typelits-knownnat
@@ -138,9 +138,12 @@ test-suite spec
                     , DimnameSpec
                     , PipelineSpec
                     , Torch.Typed.AuxSpec
-                    , Torch.Typed.TensorSpec
+                    , Torch.Typed.TensorSpec0
+                    , Torch.Typed.TensorSpec1
                     , Torch.Typed.FactoriesSpec
-                    , Torch.Typed.FunctionalSpec
+                    , Torch.Typed.FunctionalSpec0
+                    , Torch.Typed.FunctionalSpec1
+                    , Torch.Typed.FunctionalSpec2
                     , Torch.Typed.AutogradSpec
                     , Torch.Typed.OptimSpec
                     , Torch.Typed.NNSpec
@@ -185,7 +188,7 @@ test-suite doctests
   build-depends:      doctest >=0.16.0.1 && <0.17
                     , async
                     , base >= 4.7 && < 5
-                    , libtorch-ffi == 1.5.*
+                    , libtorch-ffi == 1.6.*
                     , finite-typelits
                     , ghc-typelits-extra
                     , ghc-typelits-knownnat

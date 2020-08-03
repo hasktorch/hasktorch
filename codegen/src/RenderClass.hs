@@ -6,10 +6,11 @@
 {-# LANGUAGE QuasiQuotes #-}
 module RenderClass where
 
+import Control.Monad (forM_)
 import Data.Yaml (ParseException)
 import qualified Data.Yaml as Y
 import Text.Shakespeare.Text (st)
-import Data.Text (Text)
+import Data.Text (Text, unpack)
 import Data.String (fromString)
 import qualified Data.Text.IO as T
 import System.Directory (createDirectoryIfMissing)
@@ -17,28 +18,16 @@ import System.Directory (createDirectoryIfMissing)
 import qualified ParseClass as PC
 import RenderCommon
 
-renderImport :: Bool -> PC.CppClassSpec -> Text
-renderImport is_managed typ_ =  if is_managed then  [st|
+renderImport :: Bool -> PC.CppClassSpec -> Text -> Text
+renderImport is_managed typ_ unmanagedModuleName =  if is_managed then  [st|
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 import Torch.Internal.Cast
-import Torch.Internal.Unmanaged.Type.Generator
-import Torch.Internal.Unmanaged.Type.IntArray
-import Torch.Internal.Unmanaged.Type.Scalar
-import Torch.Internal.Unmanaged.Type.Storage
-import Torch.Internal.Unmanaged.Type.Tensor
-import Torch.Internal.Unmanaged.Type.TensorList
-import Torch.Internal.Unmanaged.Type.TensorOptions
-import Torch.Internal.Unmanaged.Type.Tuple
-import Torch.Internal.Unmanaged.Type.StdString
-import Torch.Internal.Unmanaged.Type.Dimname
-import Torch.Internal.Unmanaged.Type.DimnameList
-
-import qualified #{"Torch.Internal.Unmanaged.Type." <> (PC.hsnameWithoutSpace typ_)} as Unmanaged
+import Torch.Internal.Objects
+import qualified #{unmanagedModuleName} as Unmanaged
 |] else [st|
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
@@ -47,53 +36,89 @@ import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign hiding (newForeignPtr)
-import Foreign.Concurrent
+import Foreign
 import Torch.Internal.Type
-import Torch.Internal.Class
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
-C.include "<vector>"
 |]
 
 
-renderConstructors :: Bool -> PC.CppClassSpec -> Text
-renderConstructors is_managed typ_ = mconcat $ map (methodToCpp typ_ True is_managed True "" "") (PC.constructors typ_)
+renderConstructors :: Bool -> PC.CppClassSpec -> [Text]
+renderConstructors is_managed typ_ = map (methodToCpp typ_ True is_managed True "" "") (PC.constructors typ_)
 
-renderDestructor :: Bool -> PC.CppClassSpec -> Text
-renderDestructor is_managed typ_ = if is_managed then "" else [st|
-delete#{PC.hsnameWithoutSpace typ_} :: Ptr #{PC.hsnameWithParens typ_} -> IO ()
-delete#{PC.hsnameWithoutSpace typ_} object = #{bra}C.throwBlock| void { delete $(#{PC.cppname typ_}* object);}|#{cket}
+renderHeaders :: Bool -> PC.CppClassSpec -> Text
+renderHeaders True _ = ""
+renderHeaders False typ_ = mconcat $ map (\s -> [st|C.include "<#{s}>"
+|]) (PC.headers typ_)
 
-instance CppObject #{PC.hsnameWithParens typ_} where
-  fromPtr ptr = newForeignPtr ptr (delete#{PC.hsnameWithoutSpace typ_} ptr)
-|]
+renderMethods :: Bool -> PC.CppClassSpec -> [Text]
+renderMethods is_managed typ_ = map (methodToCpp typ_ False is_managed True "" "") (PC.methods typ_)
 
+renderFunctions :: Bool -> PC.CppClassSpec -> [Text]
+renderFunctions is_managed typ_ = map (functionToCpp is_managed True "at::" "") (PC.functions typ_)
 
-renderMethods :: Bool -> PC.CppClassSpec -> Text
-renderMethods is_managed typ_ = mconcat $ map (methodToCpp typ_ False is_managed True "" "") (PC.methods typ_)
-
-renderFunctions :: Bool -> PC.CppClassSpec -> Text
-renderFunctions is_managed typ_ = mconcat $ map (functionToCpp is_managed True "at::" "") (PC.functions typ_)
-
-decodeAndCodeGen :: String -> String -> IO ()
-decodeAndCodeGen basedir fileName = do
+decodeAndCodeGen :: String -> String -> Int -> IO ()
+decodeAndCodeGen basedir fileName 1 = do
   funcs <- Y.decodeFileEither fileName :: IO (Either ParseException PC.CppClassSpec)
   case funcs of
     Left err' -> print err'
-    Right fns -> do
+    Right spec -> do
+      let moduleName = PC.hsnameWithoutSpace spec
+          fns is_managed =
+            renderConstructors is_managed spec ++
+            renderMethods is_managed spec ++
+            renderFunctions is_managed spec
       createDirectoryIfMissing True (basedir <> "/Torch/Internal/Unmanaged/Type")
-      T.writeFile (basedir <> "/Torch/Internal/Unmanaged/Type/" <> PC.hsnameWithoutSpace fns <> ".hs") $
-        template False ("Torch.Internal.Unmanaged.Type." <> fromString (PC.hsnameWithoutSpace fns)) fns
+      T.writeFile (basedir <> "/Torch/Internal/Unmanaged/Type/" <> moduleName <> ".hs") $
+        template
+          False
+          ("Torch.Internal.Unmanaged.Type." <> fromString (moduleName))
+          ""
+          spec
+          (fns False)
       createDirectoryIfMissing True (basedir <> "/Torch/Internal/Managed/Type")
-      T.writeFile (basedir <> "/Torch/Internal/Managed/Type/" <> PC.hsnameWithoutSpace fns <> ".hs") $
-        template True ("Torch.Internal.Managed.Type." <> fromString (PC.hsnameWithoutSpace fns)) fns
+      T.writeFile (basedir <> "/Torch/Internal/Managed/Type/" <> moduleName <> ".hs") $
+        template
+          True
+          ("Torch.Internal.Managed.Type." <> fromString (moduleName))
+          ("Torch.Internal.Unmanaged.Type." <> fromString (moduleName))
+          spec
+          (fns True)
+decodeAndCodeGen basedir fileName num = do
+  funcs <- Y.decodeFileEither fileName :: IO (Either ParseException PC.CppClassSpec)
+  case funcs of
+    Left err' -> print err'
+    Right spec -> do
+      let moduleName = PC.hsnameWithoutSpace spec
+          fns is_managed =
+            renderConstructors is_managed spec ++
+            renderMethods is_managed spec ++
+            renderFunctions is_managed spec
+          unmanagedFuncs = split' num (fns False)
+          managedFuncs = split' num (fns True)
+      createDirectoryIfMissing True (unpack [st|#{basedir}/Torch/Internal/Unmanaged/Type/#{moduleName}|])
+      forM_ (zip [0..] unmanagedFuncs) $ \(i::Int,fns') -> do
+        T.writeFile (unpack [st|#{basedir}/Torch/Internal/Unmanaged/Type/#{moduleName}/#{moduleName}#{i}.hs|]) $
+          template
+            False
+            [st|Torch.Internal.Unmanaged.Type.#{moduleName}.#{moduleName}#{i}|]
+            ""
+            spec
+            fns'
+        createDirectoryIfMissing True (unpack [st|#{basedir}/Torch/Internal/Managed/Type/#{moduleName}|])
+      forM_ (zip [0..] managedFuncs) $ \(i::Int,fns') -> do
+        T.writeFile (unpack [st|#{basedir}/Torch/Internal/Managed/Type/#{moduleName}/#{moduleName}#{i}.hs|]) $
+          template
+            True
+            [st|Torch.Internal.Managed.Type.#{moduleName}.#{moduleName}#{i}|]
+            [st|Torch.Internal.Unmanaged.Type.#{moduleName}.#{moduleName}#{i}|]
+            spec
+            fns'
 
 
-template :: Bool -> Text -> PC.CppClassSpec -> Text
-template is_managed module_name types = [st|
+template :: Bool -> Text -> Text -> PC.CppClassSpec -> [Text] -> Text
+template is_managed module_name unamagedModuleName types funcs = [st|
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -105,14 +130,9 @@ template is_managed module_name types = [st|
 
 module #{module_name} where
 
-#{renderImport is_managed types}
+#{renderImport is_managed types unamagedModuleName}
 
-#{renderConstructors is_managed types}
+#{renderHeaders is_managed types}
 
-#{renderDestructor is_managed types}
-
-#{renderMethods is_managed types}
-
-#{renderFunctions is_managed types}
+#{mconcat funcs}
 |]
-

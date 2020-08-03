@@ -1,6 +1,11 @@
 signature: Tensor
 cppname: at::Tensor
 hsname: Tensor
+headers:
+- ATen/Tensor.h
+- ATen/Functions.h
+- ATen/TensorOperators.h
+- vector
 functions: []
 constructors:
 - new() -> Tensor
@@ -35,7 +40,7 @@ methods:
 - is_alias_of(Tensor other) -> bool
 - toType(ScalarType t) -> Tensor
 - toBackend(Backend b) -> Tensor
-- is_variable() -> bool
+#- is_variable() -> bool
 - layout() -> Layout
 #- dtype() -> caffe2::TypeMeta
 #- device() -> Device
@@ -44,7 +49,9 @@ methods:
 - is_hip() -> bool
 - is_sparse() -> bool
 - is_mkldnn() -> bool
+- is_vulkan() -> bool
 - is_quantized() -> bool
+- is_meta() -> bool
 #- quantizer() -> QuantizerPtr
 - has_names() -> bool
 #- get_named_tensor_meta() -> NamedTensorMeta*
@@ -89,6 +96,7 @@ methods:
 - cpu() -> Tensor
 - cuda() -> Tensor
 - hip() -> Tensor
+- vulkan() -> Tensor
 - set_requires_grad(bool requires_grad) -> Tensor
 - requires_grad() -> bool
 - grad() -> Tensor
@@ -98,7 +106,7 @@ methods:
 - is_leaf() -> bool
 - output_nr() -> int64_t
 - _version() -> int64_t
-- requires_grad_(bool _requires_grad=true) -> Tensor
+- requires_grad_(bool requires_grad=true) -> Tensor
 - retain_grad() -> void
 - align_to(DimnameList names) -> Tensor
 - align_to(DimnameList order, int64_t ellipsis_idx) -> Tensor
@@ -108,6 +116,8 @@ methods:
 - unflatten(int64_t dim, IntArrayRef sizes, DimnameList names) -> Tensor
 - abs() -> Tensor
 - abs_() -> Tensor
+- absolute() -> Tensor
+- absolute_() -> Tensor
 - angle() -> Tensor
 - conj() -> Tensor
 - acos() -> Tensor
@@ -125,16 +135,22 @@ methods:
 - allclose(Tensor  other, double rtol=1e-05, double atol=1e-08, bool equal_nan=false) -> bool
 - any(int64_t dim, bool keepdim=false) -> Tensor
 - any(Dimname dim, bool keepdim=false) -> Tensor
+- acosh() -> Tensor
+- acosh_() -> Tensor
+- asinh() -> Tensor
+- asinh_() -> Tensor
+- atanh() -> Tensor
+- atanh_() -> Tensor
 - asin() -> Tensor
 - asin_() -> Tensor
 - atan() -> Tensor
 - atan_() -> Tensor
 - baddbmm(Tensor  batch1, Tensor  batch2, Scalar beta=1, Scalar alpha=1) -> Tensor
 - baddbmm_(Tensor  batch1, Tensor  batch2, Scalar beta=1, Scalar alpha=1) -> Tensor
-- bernoulli(Generator * generator=nullptr) -> Tensor
-- bernoulli_(Tensor  p, Generator * generator=nullptr) -> Tensor
-- bernoulli_(double p=0.5, Generator * generator=nullptr) -> Tensor
-- bernoulli(double p, Generator * generator=nullptr) -> Tensor
+- bernoulli(Generator generator=nullptr) -> Tensor
+- bernoulli_(Tensor  p, Generator generator=nullptr) -> Tensor
+- bernoulli_(double p=0.5, Generator generator=nullptr) -> Tensor
+- bernoulli(double p, Generator generator=nullptr) -> Tensor
 - bincount(Tensor  weights={}, int64_t minlength=0) -> Tensor
 - bitwise_not() -> Tensor
 - bitwise_not_() -> Tensor
@@ -218,6 +234,7 @@ methods:
 - index_put(TensorList indices, Tensor  values, bool accumulate=false) -> Tensor
 - inverse() -> Tensor
 - isclose(Tensor  other, double rtol=1e-05, double atol=1e-08, bool equal_nan=false) -> Tensor
+- isnan() -> Tensor
 - is_distributed() -> bool
 - is_floating_point() -> bool
 - is_complex() -> bool
@@ -234,7 +251,11 @@ methods:
 - log1p_() -> Tensor
 - log2() -> Tensor
 - log2_() -> Tensor
+- logaddexp(Tensor  other) -> Tensor
+- logaddexp2(Tensor  other) -> Tensor
 - logdet() -> Tensor
+- logcumsumexp(int64_t dim) -> Tensor
+- logcumsumexp(Dimname dim) -> Tensor
 - logsumexp(IntArrayRef dim, bool keepdim=false) -> Tensor
 - logsumexp(DimnameList dim, bool keepdim=false) -> Tensor
 - matmul(Tensor  other) -> Tensor
@@ -267,6 +288,10 @@ methods:
 - is_pinned() -> bool
 - pin_memory() -> Tensor
 - pinverse(double rcond=1e-15) -> Tensor
+- rad2deg() -> Tensor
+- rad2deg_() -> Tensor
+- deg2rad() -> Tensor
+- deg2rad_() -> Tensor
 - reciprocal() -> Tensor
 - reciprocal_() -> Tensor
 - neg() -> Tensor
@@ -328,6 +353,8 @@ methods:
 - transpose(Dimname dim0, Dimname dim1) -> Tensor
 - transpose_(int64_t dim0, int64_t dim1) -> Tensor
 - flip(IntArrayRef dims) -> Tensor
+- fliplr() -> Tensor
+- flipud() -> Tensor
 - roll(IntArrayRef shifts, IntArrayRef dims={}) -> Tensor
 - rot90(int64_t k=1, IntArrayRef dims={0,1}) -> Tensor
 - true_divide(Tensor  other) -> Tensor
@@ -485,15 +512,15 @@ methods:
 - addbmm_(Tensor  batch1, Tensor  batch2, Scalar beta=1, Scalar alpha=1) -> Tensor
 - addbmm(Tensor  batch1, Tensor  batch2, Scalar beta=1, Scalar alpha=1) -> Tensor
 - addcdiv_(Tensor  tensor1, Tensor  tensor2, Scalar value=1) -> Tensor
-- random_(int64_t from, int64_t to, Generator * generator=nullptr) -> Tensor
-- random_(int64_t to, Generator * generator=nullptr) -> Tensor
-- random_(Generator * generator=nullptr) -> Tensor
-- uniform_(double from=0, double to=1, Generator * generator=nullptr) -> Tensor
-- normal_(double mean=0, double std=1, Generator * generator=nullptr) -> Tensor
-- cauchy_(double median=0, double sigma=1, Generator * generator=nullptr) -> Tensor
-- log_normal_(double mean=1, double std=2, Generator * generator=nullptr) -> Tensor
-- exponential_(double lambd=1, Generator * generator=nullptr) -> Tensor
-- geometric_(double p, Generator * generator=nullptr) -> Tensor
+- random_(int64_t from, int64_t to, Generator generator=nullptr) -> Tensor
+- random_(int64_t to, Generator generator=nullptr) -> Tensor
+- random_(Generator generator=nullptr) -> Tensor
+- uniform_(double from=0, double to=1, Generator generator=nullptr) -> Tensor
+- normal_(double mean=0, double std=1, Generator generator=nullptr) -> Tensor
+- cauchy_(double median=0, double sigma=1, Generator generator=nullptr) -> Tensor
+- log_normal_(double mean=1, double std=2, Generator generator=nullptr) -> Tensor
+- exponential_(double lambd=1, Generator generator=nullptr) -> Tensor
+- geometric_(double p, Generator generator=nullptr) -> Tensor
 - diag(int64_t diagonal=0) -> Tensor
 - triu(int64_t diagonal=0) -> Tensor
 - tril(int64_t diagonal=0) -> Tensor
@@ -535,7 +562,7 @@ methods:
 - orgqr(Tensor  input2) -> Tensor
 - ormqr(Tensor  input2, Tensor  input3, bool left=true, bool transpose=false) -> Tensor
 - lu_solve(Tensor  LU_data, Tensor  LU_pivots) -> Tensor
-- multinomial(int64_t num_samples, bool replacement=false, Generator * generator=nullptr) -> Tensor
+- multinomial(int64_t num_samples, bool replacement=false, Generator generator=nullptr) -> Tensor
 - lgamma() -> Tensor
 - digamma() -> Tensor
 - polygamma(int64_t n) -> Tensor

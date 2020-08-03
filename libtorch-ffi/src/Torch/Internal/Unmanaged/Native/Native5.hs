@@ -16,12 +16,10 @@ import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
 
-
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
 import qualified Language.C.Inline.Context as C
 import qualified Language.C.Types as C
-import qualified Data.Map as Map
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
@@ -29,6 +27,146 @@ C.include "<vector>"
 C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
 
+
+max_pool1d_tllllb
+  :: Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> CBool
+  -> IO (Ptr Tensor)
+max_pool1d_tllllb _self _kernel_size _stride _padding _dilation _ceil_mode =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::max_pool1d(
+    *$(at::Tensor* _self)
+  , *$(std::vector<int64_t>* _kernel_size)
+  , *$(std::vector<int64_t>* _stride)
+  , *$(std::vector<int64_t>* _padding)
+  , *$(std::vector<int64_t>* _dilation)
+  , $(bool _ceil_mode)));
+  }|]
+
+max_pool1d_tllll
+  :: Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> IO (Ptr Tensor)
+max_pool1d_tllll _self _kernel_size _stride _padding _dilation =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::max_pool1d(
+    *$(at::Tensor* _self)
+  , *$(std::vector<int64_t>* _kernel_size)
+  , *$(std::vector<int64_t>* _stride)
+  , *$(std::vector<int64_t>* _padding)
+  , *$(std::vector<int64_t>* _dilation)));
+  }|]
+
+max_pool1d_tlll
+  :: Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> IO (Ptr Tensor)
+max_pool1d_tlll _self _kernel_size _stride _padding =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::max_pool1d(
+    *$(at::Tensor* _self)
+  , *$(std::vector<int64_t>* _kernel_size)
+  , *$(std::vector<int64_t>* _stride)
+  , *$(std::vector<int64_t>* _padding)));
+  }|]
+
+max_pool1d_tll
+  :: Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> IO (Ptr Tensor)
+max_pool1d_tll _self _kernel_size _stride =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::max_pool1d(
+    *$(at::Tensor* _self)
+  , *$(std::vector<int64_t>* _kernel_size)
+  , *$(std::vector<int64_t>* _stride)));
+  }|]
+
+max_pool1d_tl
+  :: Ptr Tensor
+  -> Ptr IntArray
+  -> IO (Ptr Tensor)
+max_pool1d_tl _self _kernel_size =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::max_pool1d(
+    *$(at::Tensor* _self)
+  , *$(std::vector<int64_t>* _kernel_size)));
+  }|]
+
+max_pool2d_tllllb
+  :: Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> CBool
+  -> IO (Ptr Tensor)
+max_pool2d_tllllb _self _kernel_size _stride _padding _dilation _ceil_mode =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::max_pool2d(
+    *$(at::Tensor* _self)
+  , *$(std::vector<int64_t>* _kernel_size)
+  , *$(std::vector<int64_t>* _stride)
+  , *$(std::vector<int64_t>* _padding)
+  , *$(std::vector<int64_t>* _dilation)
+  , $(bool _ceil_mode)));
+  }|]
+
+max_pool2d_tllll
+  :: Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> IO (Ptr Tensor)
+max_pool2d_tllll _self _kernel_size _stride _padding _dilation =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::max_pool2d(
+    *$(at::Tensor* _self)
+  , *$(std::vector<int64_t>* _kernel_size)
+  , *$(std::vector<int64_t>* _stride)
+  , *$(std::vector<int64_t>* _padding)
+  , *$(std::vector<int64_t>* _dilation)));
+  }|]
+
+max_pool2d_tlll
+  :: Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> IO (Ptr Tensor)
+max_pool2d_tlll _self _kernel_size _stride _padding =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::max_pool2d(
+    *$(at::Tensor* _self)
+  , *$(std::vector<int64_t>* _kernel_size)
+  , *$(std::vector<int64_t>* _stride)
+  , *$(std::vector<int64_t>* _padding)));
+  }|]
+
+max_pool2d_tll
+  :: Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> IO (Ptr Tensor)
+max_pool2d_tll _self _kernel_size _stride =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::max_pool2d(
+    *$(at::Tensor* _self)
+  , *$(std::vector<int64_t>* _kernel_size)
+  , *$(std::vector<int64_t>* _stride)));
+  }|]
+
+max_pool2d_tl
+  :: Ptr Tensor
+  -> Ptr IntArray
+  -> IO (Ptr Tensor)
+max_pool2d_tl _self _kernel_size =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::max_pool2d(
+    *$(at::Tensor* _self)
+  , *$(std::vector<int64_t>* _kernel_size)));
+  }|]
 
 mkldnn_max_pool2d_tllllb
   :: Ptr Tensor
@@ -1550,7 +1688,7 @@ batch_norm_gather_stats_tttttddl _input _mean _invstd _running_mean _running_var
   , $(int64_t _count)));
   }|]
 
-batch_norm_gather_stats_with_counts_tttttddl
+batch_norm_gather_stats_with_counts_tttttddt
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
@@ -1558,9 +1696,9 @@ batch_norm_gather_stats_with_counts_tttttddl
   -> Ptr Tensor
   -> CDouble
   -> CDouble
-  -> Ptr IntArray
+  -> Ptr Tensor
   -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-batch_norm_gather_stats_with_counts_tttttddl _input _mean _invstd _running_mean _running_var _momentum _eps _counts =
+batch_norm_gather_stats_with_counts_tttttddt _input _mean _invstd _running_mean _running_var _momentum _eps _counts =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::batch_norm_gather_stats_with_counts(
     *$(at::Tensor* _input)
   , *$(at::Tensor* _mean)
@@ -1569,7 +1707,7 @@ batch_norm_gather_stats_with_counts_tttttddl _input _mean _invstd _running_mean 
   , *$(at::Tensor* _running_var)
   , $(double _momentum)
   , $(double _eps)
-  , *$(std::vector<int64_t>* _counts)));
+  , *$(at::Tensor* _counts)));
   }|]
 
 native_batch_norm_backward_tttttttbda
@@ -1886,52 +2024,3 @@ cdist_ttd _x1 _x2 _p =
   , $(double _p)));
   }|]
 
-cdist_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-cdist_tt _x1 _x2 =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::cdist(
-    *$(at::Tensor* _x1)
-  , *$(at::Tensor* _x2)));
-  }|]
-
-_cdist_forward_ttdl
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> CDouble
-  -> Int64
-  -> IO (Ptr Tensor)
-_cdist_forward_ttdl _x1 _x2 _p _compute_mode =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_cdist_forward(
-    *$(at::Tensor* _x1)
-  , *$(at::Tensor* _x2)
-  , $(double _p)
-  , $(int64_t _compute_mode)));
-  }|]
-
-_cdist_backward_tttdt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> CDouble
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-_cdist_backward_tttdt _grad _x1 _x2 _p _cdist =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_cdist_backward(
-    *$(at::Tensor* _grad)
-  , *$(at::Tensor* _x1)
-  , *$(at::Tensor* _x2)
-  , $(double _p)
-  , *$(at::Tensor* _cdist)));
-  }|]
-
-pdist_td
-  :: Ptr Tensor
-  -> CDouble
-  -> IO (Ptr Tensor)
-pdist_td _self _p =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::pdist(
-    *$(at::Tensor* _self)
-  , $(double _p)));
-  }|]

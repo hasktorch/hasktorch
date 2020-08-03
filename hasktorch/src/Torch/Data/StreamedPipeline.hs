@@ -1,3 +1,4 @@
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -22,6 +23,8 @@ module Torch.Data.StreamedPipeline
     Datastream (..),
     MonadBase (..),
     MonadBaseControl (..),
+    module Pipes,
+    module Pipes.Safe
   )
 where
 
@@ -43,7 +46,7 @@ import qualified Pipes.Safe as Safe
 import           Torch.Typed
 
 
-class (MonadBase IO m) => Datastream m seed dataset batch where
+class (MonadBase IO m) => Datastream m seed dataset batch | dataset -> batch where
   streamBatch :: dataset -> seed -> ListT m batch
 
 -- TODO : incorporate these options

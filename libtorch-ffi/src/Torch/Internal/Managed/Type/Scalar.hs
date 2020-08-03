@@ -18,8 +18,9 @@ import Torch.Internal.Type
 import Torch.Internal.Class
 import Torch.Internal.Cast
 import Torch.Internal.Objects
-
 import qualified Torch.Internal.Unmanaged.Type.Scalar as Unmanaged
+
+
 
 
 
@@ -36,10 +37,4 @@ newScalar_d
   :: CDouble
   -> IO (ForeignPtr Scalar)
 newScalar_d = cast1 Unmanaged.newScalar_d
-
-
-
-
-
-
 

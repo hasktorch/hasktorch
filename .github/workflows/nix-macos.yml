@@ -27,8 +27,8 @@ jobs:
       - run: cachix use iohk
       - run: |
           nix-build -j 2 -A haskellPackages.libtorch-ffi.checks.spec
-          nix-build -j 2 -A haskellPackages.hasktorch.checks.spec
-          nix-build -j 2 -A haskellPackages.examples.checks.spec
+          nix-build -j 1 -A haskellPackages.hasktorch.checks.spec
+          nix-build -j 1 -A haskellPackages.examples.checks.spec
   macos_perf_test:
     runs-on: macOS-latest
     steps:
@@ -45,5 +45,5 @@ jobs:
       - run: cachix use iohk
       - run: |
           nix-build -j 2 -A haskellPackages.libtorch-ffi.checks.spec
-          nix-build -j 2 -A haskellPackages.hasktorch.checks.spec
-          nix-build -j 2 -A haskellPackages.examples.checks.spec
+          nix-build -j 1 -A haskellPackages.hasktorch.checks.spec
+          nix-build -j 1 -A haskellPackages.examples.checks.spec

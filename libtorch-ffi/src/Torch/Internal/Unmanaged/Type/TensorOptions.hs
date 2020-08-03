@@ -21,8 +21,9 @@ import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
 
-
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
+
+
 
 C.include "<ATen/TensorOptions.h>"
 C.include "<vector>"
@@ -36,10 +37,6 @@ newTensorOptions_s _d =
   [C.throwBlock| at::TensorOptions* { return new at::TensorOptions(
     $(at::ScalarType _d));
   }|]
-
-
-
-
 
 tensorOptions_device_D
   :: Ptr TensorOptions
@@ -157,8 +154,6 @@ tensorOptions_backend _obj =
   [C.throwBlock| at::Backend { return (*$(at::TensorOptions* _obj)).backend(
     );
   }|]
-
-
 
 dtype_s
   :: ScalarType

@@ -1,6 +1,11 @@
 signature: Generator
 cppname: at::Generator*
 hsname: Generator
+headers:
+- ATen/detail/CUDAHooksInterface.h
+- ATen/CPUGenerator.h
+- ATen/CUDAGenerator.h
+- vector
 functions:
 - getDefaultCUDAGenerator(uint16_t device_index) -> Generator*
 - getDefaultCPUGenerator() -> Generator*

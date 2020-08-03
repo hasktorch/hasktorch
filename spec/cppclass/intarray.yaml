@@ -1,6 +1,9 @@
 signature: IntArray
 cppname: std::vector<int64_t>
 hsname: IntArray
+headers:
+- ATen/ScalarType.h
+- vector
 functions: []
 constructors:
 - new() -> IntArray

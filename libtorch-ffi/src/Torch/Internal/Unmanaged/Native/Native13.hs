@@ -16,18 +16,73 @@ import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
 
-
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
 import qualified Language.C.Inline.Context as C
 import qualified Language.C.Types as C
-import qualified Data.Map as Map
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 C.include "<vector>"
 C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
+
+
+nll_loss2d_backward_out_tttttllt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> Int64
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+nll_loss2d_backward_out_tttttllt _grad_input _grad_output _self _target _weight _reduction _ignore_index _total_weight =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::nll_loss2d_backward_out(
+    *$(at::Tensor* _grad_input)
+  , *$(at::Tensor* _grad_output)
+  , *$(at::Tensor* _self)
+  , *$(at::Tensor* _target)
+  , *$(at::Tensor* _weight)
+  , $(int64_t _reduction)
+  , $(int64_t _ignore_index)
+  , *$(at::Tensor* _total_weight)));
+  }|]
+
+nll_loss2d_backward_ttttllt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> Int64
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+nll_loss2d_backward_ttttllt _grad_output _self _target _weight _reduction _ignore_index _total_weight =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::nll_loss2d_backward(
+    *$(at::Tensor* _grad_output)
+  , *$(at::Tensor* _self)
+  , *$(at::Tensor* _target)
+  , *$(at::Tensor* _weight)
+  , $(int64_t _reduction)
+  , $(int64_t _ignore_index)
+  , *$(at::Tensor* _total_weight)));
+  }|]
+
+smooth_l1_loss_out_tttl
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> IO (Ptr Tensor)
+smooth_l1_loss_out_tttl _out _self _target _reduction =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::smooth_l1_loss_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , *$(at::Tensor* _target)
+  , $(int64_t _reduction)));
+  }|]
 
 smooth_l1_loss_out_ttt
   :: Ptr Tensor
@@ -573,6 +628,42 @@ hardtanh__t _self =
     *$(at::Tensor* _self)));
   }|]
 
+hardswish_out_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+hardswish_out_tt _out _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::hardswish_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)));
+  }|]
+
+hardswish_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+hardswish_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::hardswish(
+    *$(at::Tensor* _self)));
+  }|]
+
+hardswish__t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+hardswish__t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::hardswish_(
+    *$(at::Tensor* _self)));
+  }|]
+
+hardswish_backward_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+hardswish_backward_tt _grad_output _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::hardswish_backward(
+    *$(at::Tensor* _grad_output)
+  , *$(at::Tensor* _self)));
+  }|]
+
 leaky_relu_out_tts
   :: Ptr Tensor
   -> Ptr Tensor
@@ -709,7 +800,7 @@ log_sigmoid_backward_ttt _grad_output _self _buffer =
   , *$(at::Tensor* _buffer)));
   }|]
 
-rrelu_with_noise_out_tttssbp
+rrelu_with_noise_out_tttssbG
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
@@ -718,7 +809,7 @@ rrelu_with_noise_out_tttssbp
   -> CBool
   -> Ptr Generator
   -> IO (Ptr Tensor)
-rrelu_with_noise_out_tttssbp _out _self _noise _lower _upper _training _generator =
+rrelu_with_noise_out_tttssbG _out _self _noise _lower _upper _training _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::rrelu_with_noise_out(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
@@ -726,7 +817,7 @@ rrelu_with_noise_out_tttssbp _out _self _noise _lower _upper _training _generato
   , *$(at::Scalar* _lower)
   , *$(at::Scalar* _upper)
   , $(bool _training)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 rrelu_with_noise_out_tttssb
@@ -789,7 +880,7 @@ rrelu_with_noise_out_ttt _out _self _noise =
   , *$(at::Tensor* _noise)));
   }|]
 
-rrelu_with_noise_ttssbp
+rrelu_with_noise_ttssbG
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Scalar
@@ -797,14 +888,14 @@ rrelu_with_noise_ttssbp
   -> CBool
   -> Ptr Generator
   -> IO (Ptr Tensor)
-rrelu_with_noise_ttssbp _self _noise _lower _upper _training _generator =
+rrelu_with_noise_ttssbG _self _noise _lower _upper _training _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::rrelu_with_noise(
     *$(at::Tensor* _self)
   , *$(at::Tensor* _noise)
   , *$(at::Scalar* _lower)
   , *$(at::Scalar* _upper)
   , $(bool _training)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 rrelu_with_noise_ttssb
@@ -879,7 +970,7 @@ rrelu_with_noise_backward_tttssbb _grad_output _self _noise _lower _upper _train
   , $(bool _self_is_result)));
   }|]
 
-rrelu_with_noise__ttssbp
+rrelu_with_noise__ttssbG
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Scalar
@@ -887,14 +978,14 @@ rrelu_with_noise__ttssbp
   -> CBool
   -> Ptr Generator
   -> IO (Ptr Tensor)
-rrelu_with_noise__ttssbp _self _noise _lower _upper _training _generator =
+rrelu_with_noise__ttssbG _self _noise _lower _upper _training _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::rrelu_with_noise_(
     *$(at::Tensor* _self)
   , *$(at::Tensor* _noise)
   , *$(at::Scalar* _lower)
   , *$(at::Scalar* _upper)
   , $(bool _training)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 rrelu_with_noise__ttssb
@@ -1625,16 +1716,3 @@ avg_pool3d_out_ttlll _out _self _kernel_size _stride _padding =
   , *$(std::vector<int64_t>* _padding)));
   }|]
 
-avg_pool3d_out_ttll
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> IO (Ptr Tensor)
-avg_pool3d_out_ttll _out _self _kernel_size _stride =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::avg_pool3d_out(
-    *$(at::Tensor* _out)
-  , *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _kernel_size)
-  , *$(std::vector<int64_t>* _stride)));
-  }|]

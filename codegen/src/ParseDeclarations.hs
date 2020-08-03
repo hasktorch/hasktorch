@@ -7,7 +7,6 @@ module ParseDeclarations where
 
 import GHC.Generics
 import Data.Yaml
-import qualified Data.Yaml as Y
 import Data.Aeson.Types (defaultOptions, fieldLabelModifier, genericParseJSON)
 -- import Text.Show.Prettyprint (prettyPrint)
 import qualified ParseFunctionSig as S
@@ -73,7 +72,7 @@ data Declaration = Declaration
   { name :: String
   , matches_jit_signature :: Bool
   , schema_string :: String
-  , method_prefix_derived :: String
+--  , method_prefix_derived :: String
   , arguments :: [Type]
   , method_of :: [String]
   , mode :: Mode

@@ -20,9 +20,8 @@ import           Pipes.Safe (runSafeT)
 import           Torch
 import           Torch.Data.CsvDataset
 import           Torch.Data.Pipeline (FoldM(FoldM))
-import           Torch.Data.StreamedPipeline (MonadBaseControl, pmap, makeListT)
+import           Torch.Data.StreamedPipeline (pmap, makeListT)
 import           Torch.Tensor
-
 
 data MLPSpec = MLPSpec {
     inputFeatures   :: Int,
@@ -46,7 +45,7 @@ instance Randomizable MLPSpec MLP where
 
 mlp :: MLP -> Tensor -> Tensor
 mlp MLP{..} input = 
-    logSoftmax (Dim 1)
+    softmax (Dim 1)
     . linear l2
     . relu
     . linear l1
@@ -68,12 +67,12 @@ data Iris = Iris { sepalLength :: Float
                  , petalLength :: Float
                  , petalWidth  :: Float
                  , irisClass   :: IrisClass
-                 } deriving (Generic, Show, FromRecord, FromNamedRecord)
+                 } deriving (Generic, Show, FromRecord)
 
 irisToTensor :: Vector Iris -> (Tensor, Tensor)
 irisToTensor iris = do
   -- want to only traverse this list once 
-  (asTensor . toList $ getFeatures iris, asTensor . toList $ getClasses iris)
+  (asTensor . toList $ getFeatures iris, toType Float $ oneHot 3 (asTensor . toList $ getClasses iris) )
   where 
         getFeatures = fmap (\x -> [sepalLength x, sepalWidth x, petalLength x, petalWidth x])
         getClasses = fmap (\x -> fromEnum $ irisClass x)
@@ -82,11 +81,10 @@ trainLoop :: (Optimizer o, MonadIO m) => MLP -> o -> ListT m ((Tensor, Tensor), 
 trainLoop model optimizer inputs = P.foldM step init done $ enumerate inputs
   where 
         step model ((input, label), iter) = do
-          let loss = nllLoss' label $ mlp model input
-          when (iter == 0) $ do
+          let loss = binaryCrossEntropyLoss' label $ mlp model input
+          when (iter == 5) $ do
             liftIO $ putStrLn $ " | Loss: " ++ show loss
-            liftIO $ print label
-          (newParam, _) <- liftIO $ runStep model optimizer loss 1e-3
+          (newParam, _) <- liftIO $ runStep model optimizer loss 1e-2
           pure $ replaceParameters model newParam
 
         done = pure
@@ -95,14 +93,17 @@ trainLoop model optimizer inputs = P.foldM step init done $ enumerate inputs
 main :: IO ()
 main = runSafeT $ do
   init <- liftIO $ sample spec 
-  let irisTrain = (csvDataset @Iris "iris.data") { batchSize = 4 , shuffle = Just 100}
-
+  let (irisTrain :: CsvDataset Iris) = (csvDataset  "data/iris.data") { batchSize = 4 
+                                                                      -- need to bring whole dataset into memory to get a good shuffle
+                                                                      -- since iris.data is sorted
+                                                                      , shuffle = Just 150 
+                                                                      }
   foldM (\model epoch -> do
             flip runContT (trainLoop model optimizer) $ do raw <- makeListT irisTrain (Select $ yield ())
                                                            pmap 2 (first irisToTensor) raw
-        ) init [1..50]
+        ) init [1..500]
 
   pure ()
-  where spec = MLPSpec 4 100 100 3
+  where spec = MLPSpec 4 10 10 3
         optimizer = GD
   
