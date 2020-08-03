@@ -9,9 +9,38 @@ where
 import Test.Hspec
 
 import Torch.Typed
+import qualified Torch.NN
 
 spec :: Spec
 spec = return ()
+
+testTensor
+  :: IO
+       (Tensor '( 'CPU, 0) 'Float '[1] )
+testTensor = do
+  let t = ones @'[1] @'D.Float @'( 'D.CPU, 0)
+  pure . flattenParameters $ t
+
+testParameter
+  :: IO
+       (Parameter '( 'CPU, 0) 'Float '[1] )
+testParameter = do
+  p <- makeIndependent <$> ones @'[1] @'D.Float @'( 'D.CPU, 0)
+  pure . flattenParameters $ p
+
+testTensor'
+  :: IO
+       (Tensor '( 'CPU, 0) 'Float '[1] )
+testTensor' = do
+  let t = ones @'[1] @'D.Float @'( 'D.CPU, 0)
+  pure . Torch.NN.flattenParameters $ t
+
+testParameter'
+  :: IO
+       (Parameter '( 'CPU, 0) 'Float '[1] )
+testParameter' = do
+  p <- makeIndependent <$> ones @'[1] @'D.Float @'( 'D.CPU, 0)
+  pure . Torch.NN.flattenParameters $ p
 
 testLinear
   :: IO
