@@ -46,7 +46,7 @@ import Control.Monad.Yoctoparsec (Parser)
 import Control.Monad.Trans.Maybe (MaybeT(..))
 import Control.Monad.Trans.RWS (RWST)
 import Control.Monad.Trans.Free (wrap, iterTM, runFreeT, Free, FreeT(..), FreeF(..))
-import Control.Monad.Trans.State.Strict (evalStateT, StateT (..), runStateT, get, put, modify)
+import Control.Monad.Trans.State.Strict (State, evalStateT, StateT (..), runStateT, get, put, modify)
 import Control.Monad (guard, join, ap, void, mfilter, MonadPlus(..))
 import Control.Monad.Trans (MonadTrans(lift))
 import Control.Monad.Trans.Reader (ask, local, runReaderT, ReaderT)
@@ -220,7 +220,7 @@ data Action =
     deriving (Eq, Ord, Show)
 
 type To t a = a -> t Action
-type From b a = Parser (StateT (Env Action) b) Action a
+type From b a = Parser (BS b (Env Action)) Action a
 
 choice :: Alternative f => [f a] -> f a
 choice = foldr (<|>) empty
@@ -620,19 +620,18 @@ iterTM' f p = do
     Pure x -> return x
     Free y -> f y (iterTM' f)
 
-iterTM''
-  :: (MonadTrans t, Monad b, Foldable b, Alternative b, Monad (t b))
-  => ((i -> Parser b i a) -> (Parser b i a -> t b a) -> t b a)
-  -> Parser b i a
-  -> t b a
-iterTM'' f p =
-  let vals = runFreeT p
-      frees' = frees vals
-  in do
-  val <- lift vals
+iterTM'' :: (Monad b, MonadTrans t, Monad (t b)) => (Parser b i a -> (i -> t b a) -> t b a) -> Parser b i a -> t b a
+iterTM'' f p = do
+  val <- lift . runFreeT $ p
   case val of
     Pure x -> return x
-    Free y -> f y (iterTM' f)
+    Free y -> f p $ \i -> iterTM'' f (y i)
+
+iterTM'''
+  :: (Parser b i a -> (Parser b i a -> t b a) -> t b a)
+  -> Parser b i a
+  -> t b a
+iterTM''' f p = f p (iterTM''' f)
 
 -- | Idea here:
 -- * instead of reducing @s@, we grow it, starting, e.g., from @[]@
@@ -645,8 +644,7 @@ iterTM'' f p =
 -- fresh values when backtracking: https://hackage.haskell.org/package/monad-gen-0.1.0.0/docs/Control-Monad-Gen.html
 parse
   :: forall s b i a
-  --  . (Monad b, Foldable b, Alternative b)
-   . (Monad b)
+   . Monad b
   => ((i -> Parser b i a) -> s -> b (Parser b i a, s))
   -> Parser b i a
   -> s
@@ -658,10 +656,54 @@ parse next =
   let f ip ps = StateT (next ip) >>= ps
   in runStateT . iterTM' f
 
--- Can this be done?
-instance Foldable (StateT a []) where
-  foldr f z t = do
-    undefined
+-- parse'
+--   :: forall s b i a
+--    . Monad b
+--   => (Parser b i a -> s -> b (i, s))
+--   -> Parser b i a
+--   -> s
+--   -> b (a, s)
+-- parse' next =
+--   let f p is = StateT (next p) >>= is
+--   in runStateT . iterTM'' f
+
+parse'
+  :: Monad b
+  => (Parser b i a -> s -> b (Parser b i a, s))
+  -> Parser b i a
+  -> s
+  -> b (a, s)
+parse' next =
+  let f p cont = StateT (next p) >>= cont
+  in runStateT . iterTM''' f
+
+newtype BS b s a = BS (b (State s a))
+
+-- instance Functor b => Functor (BS b s) where
+--   fmap f (BS a) = BS $ fmap (fmap f) a
+
+-- instance Applicative b => Applicative (BS b s) where
+--   pure = BS . pure . pure
+--   (BS a) <*> (BS b) = BS $ (undefined a) <*> b
+
+-- instance Monad b => Monad (BS b s) where
+
+-- instance Alternative b => Alternative (BS b s) where
+--   empty = BS empty
+--   (BS a) <|> (BS b) = BS $ a <|> b
+
+-- instance Foldable b => Foldable (BS b s) where
+--   foldMap f (BS a) = foldMap undefined a
+
+-- parse''
+--   :: (Monad (BS b s'), Foldable (BS b s'), Alternative (BS b s'))
+--   => (BS b s' a -> BS b s' (i -> Parser (BS b s') i a) -> s -> BS b s' (Parser (BS b s') i a, s))
+--   -> Parser (BS b s') i a
+--   -> s
+--   -> BS b s' (a, s)
+-- parse'' next =
+--   let f pures frees cont = StateT (next pures frees) >>= cont
+--   in runStateT . iterTM''' f
 
 pures :: (Foldable g, Alternative g) => g (FreeF f a (FreeT f m a)) -> g a
 pures = foldr (\x xs -> case x of Pure a -> pure a <|> xs; _ -> xs) empty
