@@ -21,7 +21,6 @@ import Torch.Vision.Darknet.Forward
 import qualified Torch.Functional.Internal as I
 import GHC.Generics
 import qualified System.IO
-import Codec.Serialise
 import qualified Data.ByteString.Lazy as B
 import qualified Data.Map as M
 
@@ -101,7 +100,7 @@ spec = do
       mconfig <- readIniFile "test/yolov3_config/yolov3.cfg"
       spec <- case mconfig of
                 Right cfg@(DarknetConfig global layers) -> do
-                  length (toList layers) `shouldBe` 24
+                  length (toList layers) `shouldBe` 107
                   case toDarknetSpec cfg of
                     Right spec -> return spec
                     Left err -> throwIO $ userError err
@@ -109,10 +108,10 @@ spec = do
       net <- sample spec
       net' <- loadWeights net "test/yolov3_config/yolov3.weights"
       input_data <- System.IO.withFile "test/yolov3_config/input_data" System.IO.ReadMode $ \h -> do
-        v <- B.hGet h (4 * (3*416*416))
-        return $ deserialise v :: IO Tensor
+        loadFloats h (zeros' [1,3,416,416])
+      shape (input_data) `shouldBe` [1,3,416,416]
       output_data0 <- System.IO.withFile "test/yolov3_config/output_data0" System.IO.ReadMode $ \h -> do
-        v <- B.hGet h (4 * (32*416*416))
-        return $ deserialise v :: IO Tensor
+        loadFloats h (zeros' [1,32,416,416])
+      shape (output_data0) `shouldBe` [1,32,416,416]
       let output = fst (forwardDarknet net' (Nothing, input_data))
       shape (output M.! 0) `shouldBe` [1,32,416,416]

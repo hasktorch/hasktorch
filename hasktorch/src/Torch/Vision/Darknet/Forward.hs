@@ -25,8 +25,11 @@ import Torch.DType as D
 import Torch.TensorFactories
 import Torch.Typed.NN (HasForward (..))
 import qualified Torch.Vision.Darknet.Spec as S
-import qualified Data.ByteString.Lazy as B
 import qualified System.IO
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Internal as BSI
+import qualified Foreign.ForeignPtr            as F
+import qualified Foreign.Ptr                   as F
 
 type Index = Int
 
@@ -115,7 +118,7 @@ instance Randomizable S.MaxPoolSpec MaxPool where
 instance HasForward MaxPool Tensor Tensor where
   forward MaxPool {..} input =
     let pad = (layerSize - 1) `div` 2
-     in D.maxPool2d (layerSize, layerSize) (stride, stride) (pad, pad) (1, 1) False input
+     in D.maxPool2d (layerSize, layerSize) (stride, stride) (pad, pad) (1, 1) D.Floor input
 
 data UpSample
   = UpSample
@@ -459,14 +462,25 @@ instance Serialise Tensor where
   encode p = encode p' where p' :: [Float] = asValue $ p
   decode = (asTensor :: [Float] -> Tensor) <$> decode
 
+loadFloats :: System.IO.Handle -> Tensor -> IO Tensor
+loadFloats handle tensor = do
+  let len = 4 * product (shape tensor)
+  v <- BS.hGet handle len
+  t <- D.clone tensor
+  D.withTensor t $ \ptr1 -> do
+    let (BSI.PS fptr _ len') = v
+    F.withForeignPtr fptr $ \ptr2 -> do
+      BSI.memcpy (F.castPtr ptr1) (F.castPtr ptr2) (min len len')
+      return t
+
 loadWeights :: Darknet -> String -> IO Darknet
 loadWeights (Darknet layers) weights_file = do
   System.IO.withFile weights_file System.IO.ReadMode $ \handle -> do
-    _ <- B.hGet handle (5 * 4) -- skip header
+    _ <- BS.hGet handle (5 * 4) -- skip header
     layers' <- forM layers $ \(i,layer) -> do
       let cur_params = flattenParameters layer
-      v <- B.hGet handle (4 * length cur_params)
-      return $ (i,replaceParameters layer $ deserialise v)
+      new_params <- forM cur_params $ \param -> loadFloats handle (toDependent param) >>= makeIndependent
+      return $ (i,replaceParameters layer new_params)
     return $ Darknet layers'
 
 instance Randomizable S.DarknetSpec Darknet where

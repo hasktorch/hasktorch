@@ -124,6 +124,13 @@ data Diag = Diag Int
 isUpper Upper = True
 isUpper Lower = False
 
+
+-- | clone
+clone
+    :: Tensor -- ^ input
+    -> IO Tensor -- ^ output
+clone input = (cast1 ATen.clone_t) input
+
 -- | Returns the mean value of all elements in the input tensor.
 mean
     :: Tensor -- ^ input

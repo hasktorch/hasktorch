@@ -39,9 +39,11 @@ outputChannels cfg@(DarknetConfig' global layer_configs) idx =
     Just x ->
       case x of
         Convolution {..} -> pure filters
-        Route {..} -> foldM (\a b -> (+ b) <$> outputChannels cfg a) 0 layers
-        ShortCut {..} -> outputChannels cfg from
+        Route {..} -> foldM (\a b -> (+ b) <$> outputChannels cfg (positive_idx a)) 0 layers
+        ShortCut {..} -> outputChannels cfg (positive_idx from)
         _ -> inputChannels cfg idx
+  where
+    positive_idx idx' = if idx' >= 0 then idx' else idx' +  idx
 
 inputChannels :: DarknetConfig' -> Int -> Either String Int
 inputChannels (DarknetConfig' global _) 0 = pure $ channels global
@@ -155,5 +157,5 @@ readIniFile filepath = do
           if length globalconfigs > 1
             then return $ Left "net section is duplicated."
             else do
-              print $ DarknetConfig' (head globalconfigs) (fromList $ zip [0 ..] configs)
+              -- print $ DarknetConfig' (head globalconfigs) (fromList $ zip [0 ..] configs)
               return $ addChannels $ DarknetConfig' (head globalconfigs) (fromList $ zip [0 ..] configs)
