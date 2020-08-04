@@ -8,18 +8,19 @@ import Control.Arrow (Arrow (first))
 import Control.Monad ((>=>), foldM, when)
 import Control.Monad.Cont (ContT (ContT), runCont, runContT)
 import qualified Data.ByteString.Lazy as BL
+
 import Data.Csv
-import Data.List (nub)
 import qualified Data.Map as M
 import qualified Data.Set as S
 import Data.Time
 import Data.Time.Calendar.OrdinalDate (toOrdinalDate)
 import qualified Data.Vector as V
 import GHC.Generics (Generic)
-import Graphics.Vega.VegaLite hiding (sample, shape)
+import qualified Graphics.Vega.VegaLite as VL hiding (sample, shape)
 import Pipes
 import Pipes.Prelude (drain, toListM)
 import Text.Pretty.Simple (pPrint)
+
 import Torch
 import Torch as T
 import Torch.Data.CsvDataset
@@ -126,6 +127,37 @@ datesToTimepoints dateStrings = do
   days :: [Day] <- sequence $ parseTimeM False defaultTimeLocale "%F" <$> dateStrings
   pure $ fromIntegral <$> flip diffDays firstDay <$> days
 
+-- | Convert a series into a sparkline string (from clisparkline library)
+series2sparkline :: RealFrac a => [a] -> String
+series2sparkline vs =
+  let maxv = if null vs then 0 else maximum vs
+  in map (num2sparkchar maxv) vs
+  where
+    sparkchars = "_▁▂▃▄▅▆▇█" 
+    num2sparkchar maxv curv =
+      sparkchars !!
+        (Prelude.floor $ (curv / maxv) * (fromIntegral (length sparkchars - 1)))
+  
+
+tensorSparkline :: Tensor -> IO ()
+tensorSparkline t = putStrLn $ (series2sparkline (asValue t' :: [Float])) ++ (" | Max: " ++ show (asValue maxValue :: Float))
+  where 
+    t' = toDType Float t
+    maxValue = T.max t'
+
+diff t = (indexSelect' 0 [1..len-1] t) - (indexSelect' 0 [0..len-2] t)
+  where len = shape t !! 0
+
+trim t = 
+  if hasVal then
+    let firstNonzero = asValue $ nz ! (0 :: Int)
+      in indexSelect' 0 [firstNonzero..len-1] t
+  else t
+  where 
+    len = shape t !! 0
+    nz = squeezeAll . nonzero $ t 
+    hasVal = T.all $ toDType Bool nz
+
 main :: IO ()
 main = do
   -- let counties = (csvDataset @UsCounties "data/us-counties.csv") { batchSize = 4 , shuffle = Nothing}
@@ -146,11 +178,22 @@ main = do
   -- Autoencoder define fipsSpace
   let fipsList = M.keys . fipsMap $ modelData
 
-  print $ length $ Prelude.filter (\x -> x ==2102) (fipsIdxs modelData)
+  print $ length $ Prelude.filter (\x -> x == 2102) (fipsIdxs modelData)
   print $ length $ Prelude.filter (\x -> x == 739) (fipsIdxs modelData)
 
   pPrint $ filterOn tTimes (eq $ asTensor (20 :: Int)) tensorData 
   pPrint $ filterOn tFips (eq $ asTensor (1 :: Int)) tensorData
+
+  -- index 1222 = FIPS 25025
+  let newCases = trim
+        . clampMin 0.0 
+        . diff 
+        . tCases 
+        . filterOn tTimes ((flip lt) $ asTensor (120 :: Int))
+        . filterOn tFips (eq $ asTensor (1222 :: Int)) $ tensorData 
+
+  tensorSparkline newCases
+  -- clamping - see https://github.com/nytimes/covid-19-data/issues/425
 
 
   -- pPrint $ dataset V.! 1

@@ -646,6 +646,43 @@ squeezeDim
 squeezeDim dim t = unsafePerformIO $ (cast2 ATen.squeeze_tl) t dim
 
 --
+-- Cumulative operations
+--
+
+-- | Returns a tuple (values, indices) where values is the cumulative maximum of elements of input in the dimension dim. And indices is the index location of each maximum value found in the dimension dim.
+cummax
+  :: Int -- ^ dim
+  -> Tensor -- ^ input
+  -> (Tensor,Tensor) -- ^ output (values, indices)
+cummax _dim _self = unsafePerformIO $ (cast2 ATen.cummax_tl) _self _dim
+
+-- | Returns a tuple (values, indices) where values is the cumulative minimum of elements of input in the dimension dim. And indices is the index location of each maximum value found in the dimension dim.
+cummin
+  :: Int -- ^ dim
+  -> Tensor -- ^ input
+  -> (Tensor,Tensor) -- ^ output (values, indices)
+cummin _dim _self = unsafePerformIO $ (cast2 ATen.cummin_tl) _self _dim
+
+-- | Returns the cumulative product of elements of input in the dimension dim.
+-- For example, if input is a vector of size N, the result will also be a vector of size N, with elements.
+cumprod
+  :: Int -- ^ dim
+  -> DType -- ^ dtype
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+cumprod _dim _dtype _self = unsafePerformIO $ (cast3 ATen.cumprod_tls) _self _dim _dtype
+
+-- | Returns the cumulative sum of elements of input in the dimension dim.
+-- For example, if input is a vector of size N, the result will also be a vector of size N, with elements.
+cumsum
+  :: Int -- ^ dim
+  -> DType -- ^ dtype
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+cumsum _dim _dtype _self = unsafePerformIO $ (cast3 ATen.cumsum_tls) _self _dim _dtype
+
+
+--
 -- Loss Functions
 --
 
