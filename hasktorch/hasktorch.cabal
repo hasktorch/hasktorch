@@ -48,6 +48,9 @@ library
                     , Torch.Random
                     , Torch.Script
                     , Torch.HList
+                    , Torch.Vision.Darknet.Config
+                    , Torch.Vision.Darknet.Spec
+                    , Torch.Vision.Darknet.Forward
                     , Torch.Typed
                     , Torch.Typed.Aux
                     , Torch.Typed.Factories
@@ -102,6 +105,7 @@ library
                     , JuicyPixels
                     , vector
                     , bytestring
+                    , serialise
                     , safe-exceptions
                     , zlib >= 0.6
                     , pipes
@@ -119,6 +123,9 @@ library
                     , array
 
                     , inline-c
+                    , config-ini
+                    , text
+                    , containers
  default-extensions:  Strict
                     , StrictData
 
@@ -135,6 +142,7 @@ test-suite spec
                     , ScriptSpec
                     , TensorSpec
                     , NNSpec
+                    , DarknetSpec
                     , DimnameSpec
                     , PipelineSpec
                     , Torch.Typed.AuxSpec
@@ -172,7 +180,9 @@ test-suite spec
                     , JuicyPixels
                     , inline-c-cpp
                     , async
-
+                    , bytestring
+                    , serialise
+                    , containers
   build-tool-depends:  hspec-discover:hspec-discover
 
 test-suite doctests

@@ -70,6 +70,11 @@ makeIndependent t = [C.throwBlock| at::Tensor* {
     return new at::Tensor($(at::Tensor* t)->detach().set_requires_grad(true));
   }|]
 
+makeIndependentBuffer :: Ptr Tensor -> IO (Ptr Tensor)
+makeIndependentBuffer t = [C.throwBlock| at::Tensor* {
+    return new at::Tensor($(at::Tensor* t)->detach().set_requires_grad(false));
+  }|]
+
 dropVariable :: Ptr Tensor -> IO (Ptr Tensor)
 dropVariable t = [C.throwBlock| at::Tensor* {
     auto ret = $(at::Tensor* t)->detach();

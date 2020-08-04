@@ -183,6 +183,25 @@ sparseCooTensor indices values size opts =  unsafePerformIO $ (cast4 sparse_coo_
       v' <- LibTorch.dropVariable values'
       LibTorch.sparse_coo_tensor_ttlo i' v' size' opts'
 
+-- | Returns evenly spaced values within a given interval.
+arange
+  :: (Scalar a, Scalar b, Scalar c)
+  => a -- ^ @start@
+  -> b -- ^ @end@ 
+  -> c -- ^ @step@ 
+  -> TensorOptions -- ^ configures the data type, device, layout and other properties of the resulting tensor. 
+  -> Tensor -- ^ output
+arange start end step opts = unsafePerformIO $ (cast4 LibTorch.arange_ssso) start end step opts
+
+arange'
+  :: (Scalar a, Scalar b, Scalar c)
+  => a -- ^ @start@
+  -> b -- ^ @end@ 
+  -> c -- ^ @step@ 
+  -> Tensor -- ^ output
+arange' start end step = arange start end step defaultOpts
+
+
 -------------------- Factories with default type --------------------
 
 ones' :: [Int] -> Tensor

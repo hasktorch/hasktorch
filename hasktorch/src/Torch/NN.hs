@@ -7,9 +7,13 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Torch.NN where
 
+import Data.Foldable (toList)
+import Control.Monad ((=<<))
 import Control.Monad.State.Strict
 import System.IO.Unsafe (unsafePerformIO)
 
@@ -21,12 +25,15 @@ import Torch.Internal.Cast (cast3, cast6, cast14)
 import Torch.Autograd
 import Torch.Initializers
 import Torch.Tensor
-import Torch.TensorFactories (ones', randIO', randnIO')
+import Torch.TensorFactories (ones', zeros', randIO', randnIO')
 import Torch.Functional
+import Torch.Scalar
 import GHC.Generics
 
 type Parameter = IndependentTensor
 type ParamStream a = State [Parameter] a
+
+newtype Buffer = Buffer { fromBuffer :: Parameter } deriving (Show)
 
 nextParameter :: ParamStream Parameter
 nextParameter = do
@@ -49,19 +56,27 @@ class HasForward f a b | f a -> b where
   forwardStoch :: f -> a -> IO b
   forwardStoch = (pure .) . forward
 
+instance Parameterized Tensor where
+  flattenParameters _ = []
+  replaceOwnParameters = return
+
 instance Parameterized Parameter where
   flattenParameters = pure
   replaceOwnParameters _ = nextParameter
 
-instance Parameterized Double where
+instance {-# OVERLAPS #-} (Scalar a) => Parameterized a where
   flattenParameters _ = []
   replaceOwnParameters = return
 
-instance Parameterized [Int] where
+instance {-# OVERLAPS #-} (Foldable t, Traversable t, Parameterized a) => Parameterized (t a) where
+  flattenParameters = (=<<) flattenParameters . toList
+  replaceOwnParameters = mapM replaceOwnParameters
+
+instance Parameterized Buffer where
   flattenParameters _ = []
   replaceOwnParameters = return
 
-instance Parameterized (Tensor -> Tensor) where
+instance {-# OVERLAPS #-} Parameterized (Tensor -> Tensor) where
   flattenParameters _ = []
   replaceOwnParameters = return
 
@@ -124,7 +139,17 @@ data LinearSpec = LinearSpec {
     } deriving (Show, Eq)
   
 
-data Linear = Linear { weight :: Parameter, bias :: Parameter } deriving (Show, Generic)
+data Linear = Linear { weight :: Parameter, bias :: Parameter } deriving (Show, Generic, Parameterized)
+
+-- This instance generates following codes.
+--
+---------------------------------------------------
+-- instance Parameterized Linear where
+--   flattenParameters Linear{..} = [weight, bias]
+--   replaceOwnParameters _ = do
+--     weight <- nextParameter
+--     bias <- nextParameter
+--     return $ Linear{..}
 
 linear :: Linear -> Tensor -> Tensor
 linear layer input = linear' input w b
@@ -144,19 +169,6 @@ instance Randomizable LinearSpec Linear where
       
       return $ Linear w b
 
-instance Parameterized Linear
--- This instance generates following codes.
---
----------------------------------------------------
--- instance Parameterized Linear where
---   flattenParameters Linear{..} = [weight, bias]
---   replaceOwnParameters _ = do
---     weight <- nextParameter
---     bias <- nextParameter
---     return $ Linear{..}
-
-instance Parameterized [Linear]
-
 --
 -- Conv2d
 --
@@ -173,7 +185,7 @@ data Conv2d =
   Conv2d { 
     conv2dWeight :: Parameter, 
     conv2dBias   :: Parameter
-    } deriving (Show, Generic)
+    } deriving (Show, Generic, Parameterized)
 
 conv2dForward :: Conv2d -> (Int, Int) -> (Int, Int) -> Tensor -> Tensor
 conv2dForward layer stride padding input = 
@@ -191,4 +203,35 @@ instance Randomizable Conv2dSpec Conv2d where
       
       return $ Conv2d w b
 
-instance Parameterized Conv2d
+data BatchNormSpec = 
+  BatchNormSpec {
+    numFeatures  :: Int
+  } deriving (Show, Eq)
+
+data BatchNorm = 
+  BatchNorm { 
+    batchNormWeight :: Parameter, 
+    batchNormBias   :: Parameter,
+    runningMean     :: Buffer,
+    runningVar      :: Buffer
+  } deriving (Show, Generic, Parameterized)
+
+batchNormForward :: BatchNorm -> Bool -> Double -> Double -> Tensor -> Tensor
+batchNormForward BatchNorm {..} train momentum eps input = 
+  Torch.Functional.batchNorm
+                  (toDependent batchNormWeight)
+                  (toDependent batchNormBias)
+                  (toDependent (fromBuffer runningMean))
+                  (toDependent (fromBuffer runningVar))
+                  train
+                  momentum
+                  eps
+                  input
+
+instance Randomizable BatchNormSpec BatchNorm where
+  sample BatchNormSpec{..} = do
+    w <- makeIndependent (ones' [numFeatures])
+    b <- makeIndependent (zeros' [numFeatures])
+    mean <- Buffer <$> makeIndependentBuffer (zeros' [numFeatures])
+    var <- Buffer <$> makeIndependentBuffer (ones' [numFeatures])
+    return $ BatchNorm w b mean var

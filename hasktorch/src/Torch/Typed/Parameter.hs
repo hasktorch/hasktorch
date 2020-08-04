@@ -27,6 +27,8 @@ module Torch.Typed.Parameter
 import           Control.Monad.State.Strict
 import           Torch.HList
 import           Data.Kind                    (Type)
+import           Data.Int
+import           Data.Word
 import           GHC.TypeLits
 import           GHC.TypeLits.Extra
 import           GHC.Generics
@@ -126,7 +128,37 @@ instance {-# OVERLAPS #-} Parameterized (Parameter device dtype shape) '[Paramet
   flattenParameters = (:. HNil)
   replaceParameters _ (parameter :. HNil) = parameter
 
+-- ToDo: A following scalar-instance conflicts "Parameterized (Parameter device dtype shape) '[Parameter device dtype shape]".
+--       Even if we use OVERLAPS pragma, the confliction occurs.
+-- instance {-# OVERLAPS #-} (Scalar a) => Parameterized a '[] where
+--   flattenParameters _ = HNil
+--   replaceParameters = const
+
 instance {-# OVERLAPS #-} Parameterized Double '[] where
+  flattenParameters _ = HNil
+  replaceParameters = const
+
+instance {-# OVERLAPS #-} Parameterized Int '[] where
+  flattenParameters _ = HNil
+  replaceParameters = const
+
+instance {-# OVERLAPS #-} Parameterized Int32 '[] where
+  flattenParameters _ = HNil
+  replaceParameters = const
+
+instance {-# OVERLAPS #-} Parameterized Int16 '[] where
+  flattenParameters _ = HNil
+  replaceParameters = const
+
+instance {-# OVERLAPS #-} Parameterized Int8 '[] where
+  flattenParameters _ = HNil
+  replaceParameters = const
+
+instance {-# OVERLAPS #-} Parameterized Word8 '[] where
+  flattenParameters _ = HNil
+  replaceParameters = const
+
+instance {-# OVERLAPS #-} Parameterized Bool '[] where
   flattenParameters _ = HNil
   replaceParameters = const
 

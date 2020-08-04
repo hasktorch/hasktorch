@@ -124,6 +124,13 @@ data Diag = Diag Int
 isUpper Upper = True
 isUpper Lower = False
 
+
+-- | clone
+clone
+    :: Tensor -- ^ input
+    -> IO Tensor -- ^ output
+clone input = (cast1 ATen.clone_t) input
+
 -- | Returns the mean value of all elements in the input tensor.
 mean
     :: Tensor -- ^ input
@@ -1218,7 +1225,29 @@ constantPadNd1d padding value input = unsafePerformIO $ cast3
   padding
   value
 
---
+batchNorm
+  :: Tensor -- ^ weight
+  -> Tensor -- ^ bias
+  -> Tensor -- ^ running_mean
+  -> Tensor -- ^ running_var
+  -> Bool -- ^ training
+  -> Double -- ^ momentum
+  -> Double -- ^ eps
+  -> Tensor -- ^ input
+  -> Tensor
+batchNorm weight bias running_mean running_var training momentum eps input = unsafePerformIO $ cast9
+  ATen.batch_norm_tttttbddb
+  input
+  weight
+  bias
+  running_mean
+  running_var
+  training
+  momentum
+  eps
+  True
+
+-- 
 -- convolutions
 --
 
@@ -1377,6 +1406,20 @@ permute
  -> Tensor -- ^ input
  -> Tensor -- output
 permute dims t = unsafePerformIO $ (cast2 ATen.tensor_permute_l) t dims
+
+-- | view
+view
+ :: [Int] -- ^ list corresponding to size of tensor
+ -> Tensor -- ^ input
+ -> Tensor -- output
+view dims t = unsafePerformIO $ (cast2 ATen.tensor_view_l) t dims
+
+-- | repeat
+repeat
+ :: [Int] -- ^ The number of repetitions for each element. repeats is broadcasted to fit the shape of the given axis.
+ -> Tensor -- ^ input
+ -> Tensor -- output
+repeat a t = unsafePerformIO $ (cast2 ATen.tensor_repeat_l) t a
 
 -- | expand
 -- TODO: figure out what the `implicit` boolean value does
