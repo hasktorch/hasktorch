@@ -289,7 +289,7 @@ executable covid
   import:              config
   hs-source-dirs:      covid
   main-is:             Main.hs
-  other-modules:       CovidData
+  other-modules:       CovidData, CovidUtil, TimeSeriesModel
   ghc-options:         -fno-warn-partial-type-signatures
   build-depends:       libtorch-ffi
                      , bytestring
