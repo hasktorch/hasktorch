@@ -1,6 +1,6 @@
 module Dataset where
 
-import Torch
+import Torch hiding (take)
 import qualified Torch.Typed.Vision as V hiding (getImages')
 import qualified Torch.Vision as V
 

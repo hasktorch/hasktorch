@@ -20,7 +20,7 @@ import           Torch.Serialize                                (load)
 import           Torch.Tensor                                   (Tensor, reshape, asTensor, toInt, shape)
 import           Torch.Functional.Internal                      (repeatInterleaveScalar)
 import           Torch.NN                            as N
-import           Torch.Functional                    as F
+import           Torch.Functional                    as F       hiding (take)
 import qualified Torch.DType                         as D
 import qualified Torch.Vision                        as V
 import qualified Torch.Typed.Vision                  as V       hiding (getImages')
