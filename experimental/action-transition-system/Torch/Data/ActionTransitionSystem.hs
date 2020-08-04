@@ -208,6 +208,8 @@ instance Monoid a => Monoid (M a) where
     , selector = mempty
     }
 
+-- add Universe instance?
+-- https://hackage.haskell.org/package/universe-base-1.1.1/docs/Data-Universe-Class.html#t:Finite
 data Action =
     L
   | R
@@ -220,7 +222,7 @@ data Action =
     deriving (Eq, Ord, Show)
 
 type To t a = a -> t Action
-type From b a = Parser (BS b (Env Action)) Action a
+type From b a = Parser (StateT (Env Action) b) Action a
 
 choice :: Alternative f => [f a] -> f a
 choice = foldr (<|>) empty
@@ -389,7 +391,7 @@ next
 next _ tp [] = empty
 next ts tp (t' : ts') = let p = tp t' in do
   pos <- (^. field @"pos") <$> get
-  continuations <- validContinuations tp ts <$> get
+  continuations <- validContinuations ts tp <$> get
   zoom (field @"tEnv") . updateTokens t' continuations $ pos
   zoom (field @"mEnv") . updateMeta $ pos
   zoom (field @"rEnv") . updateRelations 3 $ pos
@@ -397,64 +399,64 @@ next ts tp (t' : ts') = let p = tp t' in do
   modify (field @"pos" %~ (+1))
   pure (p, ts')
 
+next'
+  :: forall s t a
+   . ( HasField "pos" s s Pos Pos
+     , HasField "aEnv" s s AEnv AEnv
+     , HasField "mEnv" s s MEnv MEnv
+     , HasField "rEnv" s s REnv REnv
+     , HasField "tEnv" s s (TEnv t) (TEnv t)
+     , Ord t, Show a
+     )
+  => [t]
+  -> Parser (StateT s []) t a
+  -> (Parser (StateT s []) t a -> StateT [t] (StateT s []) a)
+  -> StateT [t] (StateT s []) a
+next' availableContinuations p c = do
+  continuations <- lift $ do
+    s <- get
+    let vals = runStateT (runFreeT p) s
+        f (Pure _, _) = []
+        f (Free tp, s) = validContinuations availableContinuations tp s
+    pure $ vals >>= f
+  val <- lift . runFreeT $ p
+  case val of
+    Pure a -> pure a
+    Free tp -> do
+      s <- get
+      case s of
+        [] -> empty
+        t : ts -> do
+          pos <- (^. field @"pos") <$> (lift get)
+          lift . zoom (field @"tEnv") . updateTokens t continuations $ pos
+          lift . zoom (field @"mEnv") . updateMeta $ pos
+          lift . zoom (field @"rEnv") . updateRelations 3 $ pos
+          lift . zoom (field @"aEnv") . updateAttention $ pos
+          lift $ modify (field @"pos" %~ (+1))
+          put ts
+          c (tp t)
+
 validContinuations
   :: forall s t a
-   . Show t
-  => (t -> Parser (StateT s []) t a)
-  -> [t]
+   . [t]
+  -> (t -> Parser (StateT s []) t a)
   -> s
   -> [t]
-validContinuations tp ts s =
+validContinuations availableContinuations tp s =
     let f t =
           let val = runFreeT . tp $ t
           in case runStateT val s of
             [] -> Nothing
             _ -> Just t
-    in catMaybes $ f <$> ts
-      
+    in catMaybes $ f <$> availableContinuations
 
--- validContinuations'
---   :: forall s t a
---    . (t -> Parser (StateT s []) t a)
---   -> [t]
---   -> s
---   -> _
--- validContinuations' tp ts s = 
---     let f t = do
---           val <- runFreeT . tp $ t
---           case val of
---             _ -> pure Nothing
---             _ -> pure $ Just t
---     in f <$> ts
+token :: forall b t . Monad b => Parser b t t
+token = wrap $ FreeT . pure . Pure
 
--- not sure if useful yet
-mergeAlternatives
-  :: forall s t a
-   . (t -> Parser (StateT s []) t a)
-  -> [t]
-  -> Parser (StateT s []) t a
-mergeAlternatives tp ts = FreeT $ do
-  x <- StateT (\s ->
-    let f t = runStateT (runFreeT . tp $ t) s
-    in f =<< ts)
-  pure x
-
--- TODO: move writes somewhere else
-token :: forall b t . Monad b => Parser (StateT (Env t) b) t t
-token = do
-  t <- wrap $ FreeT . pure . Pure
-  -- pos <- (^. field @"pos") <$> get
-  -- zoom (field @"tEnv") . lift . updateTokens t $ pos
-  -- zoom (field @"mEnv") . lift . updateMeta $ pos
-  -- zoom (field @"rEnv") . lift . updateRelations 3 $ pos
-  -- zoom (field @"aEnv") . lift . updateAttention $ pos
-  -- modify (field @"pos" %~ (+1))
-  pure t
-
-is :: (MonadPlus b, Eq t) => t -> Parser (StateT (Env t) b) t t
+is :: (MonadPlus b, Eq t) => t -> Parser b t t
 is t = mfilter (== t) token
 
-isNot :: (MonadPlus b, Eq t) => t -> Parser (StateT (Env t) b) t t
+isNot :: (MonadPlus b, Eq t) => t -> Parser b t t
 isNot t = mfilter (/= t) token
 
 class ToActions (t :: Type -> Type) (a :: Type) where
@@ -620,13 +622,7 @@ iterTM' f p = do
     Pure x -> return x
     Free y -> f y (iterTM' f)
 
-iterTM'' :: (Monad b, MonadTrans t, Monad (t b)) => (Parser b i a -> (i -> t b a) -> t b a) -> Parser b i a -> t b a
-iterTM'' f p = do
-  val <- lift . runFreeT $ p
-  case val of
-    Pure x -> return x
-    Free y -> f p $ \i -> iterTM'' f (y i)
-
+-- just recursing...
 iterTM'''
   :: (Parser b i a -> (Parser b i a -> t b a) -> t b a)
   -> Parser b i a
@@ -656,54 +652,13 @@ parse next =
   let f ip ps = StateT (next ip) >>= ps
   in runStateT . iterTM' f
 
--- parse'
---   :: forall s b i a
---    . Monad b
---   => (Parser b i a -> s -> b (i, s))
---   -> Parser b i a
---   -> s
---   -> b (a, s)
--- parse' next =
---   let f p is = StateT (next p) >>= is
---   in runStateT . iterTM'' f
-
 parse'
   :: Monad b
-  => (Parser b i a -> s -> b (Parser b i a, s))
+  => (Parser b i a -> (Parser b i a -> StateT s b a) -> StateT s b a)
   -> Parser b i a
   -> s
   -> b (a, s)
-parse' next =
-  let f p cont = StateT (next p) >>= cont
-  in runStateT . iterTM''' f
-
-newtype BS b s a = BS (b (State s a))
-
--- instance Functor b => Functor (BS b s) where
---   fmap f (BS a) = BS $ fmap (fmap f) a
-
--- instance Applicative b => Applicative (BS b s) where
---   pure = BS . pure . pure
---   (BS a) <*> (BS b) = BS $ (undefined a) <*> b
-
--- instance Monad b => Monad (BS b s) where
-
--- instance Alternative b => Alternative (BS b s) where
---   empty = BS empty
---   (BS a) <|> (BS b) = BS $ a <|> b
-
--- instance Foldable b => Foldable (BS b s) where
---   foldMap f (BS a) = foldMap undefined a
-
--- parse''
---   :: (Monad (BS b s'), Foldable (BS b s'), Alternative (BS b s'))
---   => (BS b s' a -> BS b s' (i -> Parser (BS b s') i a) -> s -> BS b s' (Parser (BS b s') i a, s))
---   -> Parser (BS b s') i a
---   -> s
---   -> BS b s' (a, s)
--- parse'' next =
---   let f pures frees cont = StateT (next pures frees) >>= cont
---   in runStateT . iterTM''' f
+parse' next = runStateT . iterTM''' next
 
 pures :: (Foldable g, Alternative g) => g (FreeF f a (FreeT f m a)) -> g a
 pures = foldr (\x xs -> case x of Pure a -> pure a <|> xs; _ -> xs) empty
@@ -1109,7 +1064,8 @@ prep = do
       result = -- let f ap [] = empty
                --     f ap (a : as) = let p = ap a in pure (p, as)
                -- in  runStateT (parse f parser actions) env
-               runStateT (parse (next []) parser actions) env
+               -- runStateT (parse (next []) parser actions) env
+               runStateT (parse' (next' []) parser actions) env
   pure (ty, ex, result)
 
 prop_welltyped :: Property
@@ -1368,19 +1324,11 @@ loss
   -> Tensor device dtype '[]
 loss validActionsMask selectionMask logits target =
   let logProbs = logSoftmax @2 . maskedFill (logicalNot validActionsMask) (-1 / 0 :: Double) $ logits
-      -- selectionMask' = expand @'[batchSize, seqLen, numEmbeds] True . unsqueeze @2 $ selectionMask
-      -- poop = maskedSelect selectionMask' logProbs
       logLikelihood = squeezeDim @2 $ gatherDim @2 (unsqueeze @2 target) logProbs
       selected = maskedSelect selectionMask logLikelihood
       meanLogLikelihood = case selected of
         UnknownShapeTensor t -> unsafeMeanAll t
-  in unsafePerformIO $ do
-    -- case poop of
-    --   UnknownShapeTensor t -> print t
-    -- print selectionMask
-    -- case selected of
-    --   UnknownShapeTensor t -> print t
-    pure (-meanLogLikelihood)
+  in (-meanLogLikelihood)
 
 ------------------------------------------------------------------------
 
@@ -1408,10 +1356,7 @@ mkRATransformerMLMBatch pMaskInput pMaskTarget actions = do
         let step actions =
               let parser = fromActions @[] @(Example (Exp Int) (Exp Int))
                   results =
-                    -- let f ap [] = empty
-                    --     f ap (a : as) = let p = ap a in pure (p, as)
-                    -- in  runStateT (parse f parser actions) defaultEnv
-                    runStateT (parse (next [L, R]) parser actions) defaultEnv
+                    runStateT (parse' (next' [L, R, Grow, Reduce]) parser actions) defaultEnv
               in snd <$> results
         in foldMap step actions
       tokenVocab = OSet.fromList
