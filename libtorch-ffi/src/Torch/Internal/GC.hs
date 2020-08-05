@@ -1,21 +1,21 @@
-{-# LANGUAGE EmptyDataDecls #-}
+{-# LANGUAGE EmptyDataDecls            #-}
 {-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE ForeignFunctionInterface #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances         #-}
+{-# LANGUAGE ForeignFunctionInterface  #-}
+{-# LANGUAGE GADTs                     #-}
+{-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE ScopedTypeVariables       #-}
+{-# LANGUAGE TypeFamilies              #-}
+{-# LANGUAGE TypeSynonymInstances      #-}
 
 module Torch.Internal.GC where
 
-import Control.Exception.Safe (catch,throwIO)
-import Data.List (isPrefixOf)
-import Language.C.Inline.Cpp.Exceptions (CppException(..))
-import System.Mem (performGC)
-import Control.Concurrent (threadDelay)
+import Control.Concurrent               (threadDelay)
 import Control.Concurrent.Async
+import Control.Exception.Safe           (catch, throwIO)
+import Data.List                        (isPrefixOf)
+import Language.C.Inline.Cpp.Exceptions (CppException (..))
+import System.Mem                       (performGC)
 import System.SysInfo
 
 retryWithGC' :: Int -> IO a -> IO a

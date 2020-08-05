@@ -1,15 +1,15 @@
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE FlexibleInstances #-}
 
 module Torch.Internal.Objects where
 
+import Foreign
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign
 
 
-import Torch.Internal.Type
 import Torch.Internal.Class
+import Torch.Internal.Type
 
 foreign import ccall unsafe "hasktorch_finalizer.h &delete_c10dict"
   c_delete_c10dict  :: FunPtr( Ptr (C10Dict '(IValue,IValue)) -> IO () )

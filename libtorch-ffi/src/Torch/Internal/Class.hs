@@ -1,11 +1,11 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PolyKinds             #-}
+{-# LANGUAGE TypeFamilies          #-}
 
 module Torch.Internal.Class where
 
-import Foreign (Ptr, ForeignPtr)
+import Foreign (ForeignPtr, Ptr)
 
 class Castable a b where
   cast   :: a -> (b -> IO r) -> IO r

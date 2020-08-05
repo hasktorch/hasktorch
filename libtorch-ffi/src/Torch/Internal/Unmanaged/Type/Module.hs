@@ -1,28 +1,27 @@
-
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE PolyKinds             #-}
+{-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeFamilies          #-}
 
 
 module Torch.Internal.Unmanaged.Type.Module where
 
-import Control.Exception.Safe (bracket)
-import qualified Language.C.Inline.Cpp as C
+import           Control.Exception.Safe           (bracket)
+import qualified Data.Map                         as Map
+import           Foreign
+import           Foreign.C.String
+import           Foreign.C.Types
+import qualified Language.C.Inline.Context        as C
+import qualified Language.C.Inline.Cpp            as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
-import qualified Language.C.Inline.Context as C
-import qualified Language.C.Types as C
-import qualified Data.Map as Map
-import Foreign.C.String
-import Foreign.C.Types
-import Foreign
-import Torch.Internal.Type
-import Torch.Internal.Unmanaged.Helper
+import qualified Language.C.Types                 as C
+import           Torch.Internal.Type
+import           Torch.Internal.Unmanaged.Helper
 
 import Data.IORef
 
@@ -113,7 +112,7 @@ setParameters obj params = [C.throwBlock| void {
     auto module = $(torch::jit::script::Module* obj);
     auto parameters = module->named_parameters();
     auto vec = $(std::vector<at::Tensor>* params);
-    int i=0; 
+    int i=0;
     for(auto p : parameters) {
       module->register_parameter(p.name,(*vec)[i],false);
     }

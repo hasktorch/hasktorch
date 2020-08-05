@@ -1,17 +1,17 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE PolyKinds           #-}
+{-# LANGUAGE QuasiQuotes         #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell     #-}
 
 module Torch.Internal.Unmanaged.Autograd where
 
-import Foreign.Ptr
-import qualified Language.C.Inline.Cpp as C
+import           Foreign.Ptr
+import qualified Language.C.Inline.Context        as C
+import qualified Language.C.Inline.Cpp            as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
-import qualified Language.C.Inline.Context as C
-import qualified Language.C.Types as C
+import qualified Language.C.Types                 as C
 
 import Torch.Internal.Type
 

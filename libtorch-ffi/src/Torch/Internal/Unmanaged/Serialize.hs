@@ -1,18 +1,18 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE PolyKinds           #-}
+{-# LANGUAGE QuasiQuotes         #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell     #-}
 
 module Torch.Internal.Unmanaged.Serialize where
 
-import Foreign.Ptr
-import Foreign.C.String
-import qualified Language.C.Inline.Cpp as C
+import           Foreign.C.String
+import           Foreign.Ptr
+import qualified Language.C.Inline.Context        as C
+import qualified Language.C.Inline.Cpp            as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
-import qualified Language.C.Inline.Context as C
-import qualified Language.C.Types as C
+import qualified Language.C.Types                 as C
 
 import Torch.Internal.Type
 
@@ -29,7 +29,7 @@ save inputs file = withCString file $ \cfile -> [C.throwBlock| void {
 
 load :: FilePath -> IO (Ptr TensorList)
 load file = withCString file $ \cfile -> [C.throwBlock| std::vector<at::Tensor>* {
-    std::vector<at::Tensor> tensor_vec;                                                
+    std::vector<at::Tensor> tensor_vec;
     torch::load(tensor_vec,$(char* cfile));
     return new std::vector<at::Tensor>(tensor_vec);
   }|]

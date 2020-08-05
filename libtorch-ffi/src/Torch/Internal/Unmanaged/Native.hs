@@ -1,4 +1,3 @@
-
 module Torch.Internal.Unmanaged.Native
  ( module Torch.Internal.Unmanaged.Native.Native0
  , module Torch.Internal.Unmanaged.Native.Native1
@@ -17,6 +16,7 @@ module Torch.Internal.Unmanaged.Native
  , module Torch.Internal.Unmanaged.Native.Native14
  , module Torch.Internal.Unmanaged.Native.Native15
  ) where
+
 import Torch.Internal.Unmanaged.Native.Native0
 import Torch.Internal.Unmanaged.Native.Native1
 import Torch.Internal.Unmanaged.Native.Native2

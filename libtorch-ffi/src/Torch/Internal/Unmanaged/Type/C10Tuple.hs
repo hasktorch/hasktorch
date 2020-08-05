@@ -1,25 +1,24 @@
-
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE PolyKinds           #-}
+{-# LANGUAGE QuasiQuotes         #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE TypeFamilies        #-}
 
 module Torch.Internal.Unmanaged.Type.C10Tuple where
 
 
-import qualified Language.C.Inline.Cpp as C
+import qualified Data.Map                         as Map
+import           Foreign
+import           Foreign.C.String
+import           Foreign.C.Types
+import qualified Language.C.Inline.Context        as C
+import qualified Language.C.Inline.Cpp            as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
-import qualified Language.C.Inline.Context as C
-import qualified Language.C.Types as C
-import qualified Data.Map as Map
-import Foreign.C.String
-import Foreign.C.Types
-import Foreign
-import Torch.Internal.Type
+import qualified Language.C.Types                 as C
+import           Torch.Internal.Type
 
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
