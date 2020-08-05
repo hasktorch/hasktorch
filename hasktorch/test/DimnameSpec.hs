@@ -1,16 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 module DimnameSpec (spec) where
 
-import Test.Hspec
 import Control.Exception.Safe
+import Test.Hspec
 
-import Torch.Tensor
-import Torch.DType
-import Torch.Dimname
-import Torch.TensorFactories
-import Torch.Functional
-import Torch.TensorOptions
 import Torch.Autograd
+import Torch.Dimname
+import Torch.DType
+import Torch.Functional
+import Torch.Tensor
+import Torch.TensorFactories
+import Torch.TensorOptions
 
 spec :: Spec
 spec = do

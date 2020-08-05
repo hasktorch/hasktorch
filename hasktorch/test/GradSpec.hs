@@ -1,14 +1,14 @@
 module GradSpec (spec) where
 
-import Test.Hspec
 import Control.Exception.Safe
+import Test.Hspec
 
-import Torch.Tensor
-import Torch.DType
-import Torch.TensorFactories
-import Torch.Functional
-import Torch.TensorOptions
 import Torch.Autograd
+import Torch.DType
+import Torch.Functional
+import Torch.Tensor
+import Torch.TensorFactories
+import Torch.TensorOptions
 
 spec :: Spec
 spec = do

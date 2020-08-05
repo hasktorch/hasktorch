@@ -1,22 +1,22 @@
+{-# LANGUAGE DataKinds        #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE DataKinds #-}
 
 module Torch.Typed.NN.TransformerSpec
   ( Torch.Typed.NN.TransformerSpec.spec
   )
 where
 
-import           Test.Hspec
+import Test.Hspec
 
+import qualified Torch.Device               as D
+import qualified Torch.DType                as D
 import           Torch.HList
-import qualified Torch.NN                      as A
-import qualified Torch.DType                   as D
-import qualified Torch.Device                  as D
+import qualified Torch.NN                   as A
 import           Torch.Typed.Factories
 import           Torch.Typed.Functional
-import           Torch.Typed.Parameter
 import           Torch.Typed.NN
 import           Torch.Typed.NN.Transformer
+import           Torch.Typed.Parameter
 
 spec :: Spec
 spec = return ()

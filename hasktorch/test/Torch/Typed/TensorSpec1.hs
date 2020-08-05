@@ -1,11 +1,11 @@
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS_GHC -freduction-depth=0 #-}
 
 module Torch.Typed.TensorSpec1
@@ -13,19 +13,24 @@ module Torch.Typed.TensorSpec1
   )
 where
 
-import           Data.Kind
-import           Data.Proxy
-import           GHC.TypeLits
+import Data.Kind
+import Data.Proxy
+import GHC.TypeLits
 
-import           Test.Hspec (Spec, shouldBe, describe, it)
-import           Test.QuickCheck ()
+import Test.Hspec      (Spec, describe, it, shouldBe)
+import Test.QuickCheck ()
 
-import Torch.Typed
-import Torch.Typed.AuxSpec
-import qualified Torch as Torch
-import Torch.Internal.Class (uncast, Castable(cast))
+import qualified Torch                as Torch
+import           Torch.Internal.Class (Castable (cast), uncast)
+import           Torch.Typed
+import           Torch.Typed.AuxSpec
 
-data BinaryCmpSpec = GTSpec | LTSpec | GESpec | LESpec | EQSpec | NESpec
+data BinaryCmpSpec = GTSpec
+    | LTSpec
+    | GESpec
+    | LESpec
+    | EQSpec
+    | NESpec
 
 instance
   ( TensorOptions shape   dtype  device
@@ -100,7 +105,7 @@ instance
   ( TensorOptions shape dtype device
   , KnownDevice device
   ) => Apply' ToDeviceSpec ((Proxy device, (Proxy dtype, Proxy shape)), IO ()) (IO ()) where
-  apply' ToDeviceSpec (_, agg) = agg >> foldMap 
+  apply' ToDeviceSpec (_, agg) = agg >> foldMap
     (\device' -> case someDevice device' of
       (SomeDevice (Proxy :: Proxy device')) -> do
         let t = ones @shape @dtype @device

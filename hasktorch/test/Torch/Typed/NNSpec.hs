@@ -1,5 +1,5 @@
+{-# LANGUAGE DataKinds        #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE DataKinds #-}
 
 module Torch.Typed.NNSpec
   ( Torch.Typed.NNSpec.spec

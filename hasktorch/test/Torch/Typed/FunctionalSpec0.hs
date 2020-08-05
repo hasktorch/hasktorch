@@ -1,12 +1,12 @@
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE NoStarIsType #-}
+{-# LANGUAGE NoStarIsType          #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS_GHC -freduction-depth=0 #-}
 
 module Torch.Typed.FunctionalSpec0
@@ -14,43 +14,43 @@ module Torch.Typed.FunctionalSpec0
   )
 where
 
-import           Prelude                 hiding ( all
-                                                , any
-                                                , sin
-                                                , sinh
-                                                , cos
-                                                , cosh
-                                                , tan
-                                                , tanh
-                                                , asin
-                                                , asinh
-                                                , acos
-                                                , acosh
-                                                , atan
-                                                , atanh
-                                                , abs
-                                                , max
-                                                , min
-                                                , exp
-                                                , log
-                                                , round
-                                                , floor
-                                                , sqrt
-                                                )
-import           Data.Proxy
-import           GHC.TypeLits
+import Data.Proxy
+import GHC.TypeLits
+import Prelude      hiding
+       ( abs
+       , acos
+       , acosh
+       , all
+       , any
+       , asin
+       , asinh
+       , atan
+       , atanh
+       , cos
+       , cosh
+       , exp
+       , floor
+       , log
+       , max
+       , min
+       , round
+       , sin
+       , sinh
+       , sqrt
+       , tan
+       , tanh
+       )
 
-import           Test.Hspec (Spec, before_, describe, it)
-import           Test.QuickCheck ()
+import Test.Hspec      (Spec, before_, describe, it)
+import Test.QuickCheck ()
 
 import Torch.Internal.Managed.Type.Context (get_manual_seed)
 import Torch.Typed
 import Torch.Typed.AuxSpec
 
-data UnaryAllDTypesSpec =
-    SignSpec
-  | OnesLikeSpec
-  | ZerosLikeSpec
+data UnaryAllDTypesSpec = SignSpec
+    | OnesLikeSpec
+    | ZerosLikeSpec
 
 instance
   ( TensorOptions shape dtype device
@@ -65,8 +65,7 @@ instance
     let t = zerosLike (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
 
-data UnaryStandardDTypesSpec =
-    AbsSpec
+data UnaryStandardDTypesSpec = AbsSpec
 
 instance
   ( TensorOptions shape dtype device
@@ -76,40 +75,39 @@ instance
     let t = abs (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
 
-data UnaryStandardFloatingPointDTypesSpec =
-    FracSpec
-  | CeilSpec
-  | FloorSpec
-  | RoundSpec
-  | TruncSpec
-  | ErfSpec
-  | ErfcSpec
-  | ErfinvSpec
-  | ExpSpec
-  | Expm1Spec
-  | LogSpec
-  | Log1pSpec
-  | Log2Spec
-  | Log10Spec
-  | LgammaSpec
-  | DigammaSpec
-  | ReluSpec
-  | SeluSpec
-  | SigmoidSpec
-  | LogSigmoidSpec
-  | SinSpec
-  | SinhSpec
-  | AsinSpec
-  | CosSpec
-  | CoshSpec
-  | AcosSpec
-  | TanSpec
-  | TanhSpec
-  | AtanSpec
-  | SqrtSpec
-  | RsqrtSpec
-  | RandLikeSpec
-  | RandnLikeSpec
+data UnaryStandardFloatingPointDTypesSpec = FracSpec
+    | CeilSpec
+    | FloorSpec
+    | RoundSpec
+    | TruncSpec
+    | ErfSpec
+    | ErfcSpec
+    | ErfinvSpec
+    | ExpSpec
+    | Expm1Spec
+    | LogSpec
+    | Log1pSpec
+    | Log2Spec
+    | Log10Spec
+    | LgammaSpec
+    | DigammaSpec
+    | ReluSpec
+    | SeluSpec
+    | SigmoidSpec
+    | LogSigmoidSpec
+    | SinSpec
+    | SinhSpec
+    | AsinSpec
+    | CosSpec
+    | CoshSpec
+    | AcosSpec
+    | TanSpec
+    | TanhSpec
+    | AtanSpec
+    | SqrtSpec
+    | RsqrtSpec
+    | RandLikeSpec
+    | RandnLikeSpec
 
 instance
   ( TensorOptions shape dtype device
@@ -250,8 +248,8 @@ instance
   ( TensorOptions shape dtype device
   , Scalar a
   , StandardFloatingPointDTypeValidation device dtype
-  ) => Apply' ELUSpec ((Proxy device, ((a, (a, a)), (Proxy dtype, Proxy shape))), IO()) (IO()) 
- where 
+  ) => Apply' ELUSpec ((Proxy device, ((a, (a, a)), (Proxy dtype, Proxy shape))), IO()) (IO())
+ where
     apply' ELUSpec ((_, ((alpha, (scale, inputScale)), _)), agg) = agg >> do
       let t = elu alpha scale inputScale (ones @shape @dtype @device)
       checkDynamicTensorAttributes t
@@ -296,9 +294,8 @@ instance
         t' = sumDim @d t
     checkDynamicTensorAttributes t'
 
-data MinMaxSpec =
-    MinSpec
-  | MaxSpec
+data MinMaxSpec = MinSpec
+    | MaxSpec
 
 instance
   ( TensorOptions shape dtype device
@@ -434,7 +431,7 @@ spec = before_ printSeed $ do
   where
     printSeed = do
       putStr "      seed:"
-      get_manual_seed >>= print  
+      get_manual_seed >>= print
 
 spec' :: Device -> Spec
 spec' device =

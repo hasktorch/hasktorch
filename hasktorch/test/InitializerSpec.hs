@@ -1,10 +1,10 @@
 module InitializerSpec where
 
-import Prelude hiding (abs, mean, var)
+import Prelude            hiding (abs, mean, var)
 import Test.Hspec
 import Torch.Functional
 import Torch.Initializers
-import Torch.Tensor (asValue)
+import Torch.Tensor       (asValue)
 
 spec :: Spec
 spec = do

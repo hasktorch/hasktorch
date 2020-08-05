@@ -1,11 +1,11 @@
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS_GHC -freduction-depth=0 #-}
 
 module Torch.Typed.TensorSpec0
@@ -13,19 +13,21 @@ module Torch.Typed.TensorSpec0
   )
 where
 
-import           Data.Kind
-import           Data.Proxy
-import           GHC.TypeLits
+import Data.Kind
+import Data.Proxy
+import GHC.TypeLits
 
-import           Test.Hspec (Spec, shouldBe, describe, it)
-import           Test.QuickCheck ()
+import Test.Hspec      (Spec, describe, it, shouldBe)
+import Test.QuickCheck ()
 
-import Torch.Typed
-import Torch.Typed.AuxSpec
-import qualified Torch as Torch
-import Torch.Internal.Class (uncast, Castable(cast))
+import qualified Torch                as Torch
+import           Torch.Internal.Class (Castable (cast), uncast)
+import           Torch.Typed
+import           Torch.Typed.AuxSpec
 
-data BinarySpec = AddSpec | SubSpec | MulSpec
+data BinarySpec = AddSpec
+    | SubSpec
+    | MulSpec
 
 instance
   ( TensorOptions shape   dtype   device

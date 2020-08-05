@@ -1,17 +1,16 @@
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE KindSignatures        #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE StandaloneDeriving    #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 
 module Torch.Typed.AutogradSpec
@@ -19,42 +18,38 @@ module Torch.Typed.AutogradSpec
   )
 where
 
-import           Prelude                 hiding ( all
-                                                , cos
-                                                , sin
-                                                )
-import           Control.Monad                  ( when )
-import           Data.Kind ()
-import           Data.Proxy
-import           Data.Maybe ()
-import           Data.Reflection ()
-import           GHC.Generics
-import           GHC.TypeLits
-import           GHC.Exts (toList)
-import           System.IO.Unsafe ()
+import Control.Monad    (when)
+import Data.Kind        ()
+import Data.Maybe       ()
+import Data.Proxy
+import Data.Reflection  ()
+import GHC.Exts         (toList)
+import GHC.Generics
+import GHC.TypeLits
+import Prelude          hiding (all, cos, sin)
+import System.IO.Unsafe ()
 
-import           Test.Hspec (Spec, shouldBe, describe, it)
-import           Test.QuickCheck ()
+import Test.Hspec      (Spec, describe, it, shouldBe)
+import Test.QuickCheck ()
 
-import Torch.Typed
+import Torch                (ATenTensor)
 import Torch.Internal.Class (Castable)
-import Torch (ATenTensor)
+import Torch.Typed
 import Torch.Typed.AuxSpec
 
-data RastriginLayerSpec (n :: Nat)
-                        (dtype :: DType)
-                        (device :: (DeviceType, Nat))
-  = RastriginLayerSpec deriving (Show, Eq)
+data RastriginLayerSpec (n :: Nat) (dtype :: DType) (device ::
+                                                  (DeviceType, Nat)) = RastriginLayerSpec
+    deriving (Show, Eq)
 
 data RastriginLayer (n :: Nat)
                     (dtype :: DType)
                     (device :: (DeviceType, Nat))
- where
-  RastriginLayer
-    :: forall n dtype device
-     . { x :: Parameter device dtype '[n] }
-    -> RastriginLayer n dtype device
- deriving (Show, Generic)
+  where
+    RastriginLayer
+      :: forall n dtype device
+       . { x :: Parameter device dtype '[n] }
+      -> RastriginLayer n dtype device
+  deriving (Show, Generic)
 
 instance
   ( RandDTypeIsValid device dtype
@@ -91,11 +86,9 @@ gradientsRastriginLayer' x a = mulScalar
   (2 :: Int)
   (x + (mulScalar a . mulScalar (pi :: Double) . sin . mulScalar (2 * pi :: Double)) x)
 
-data RastriginStackSpec (num :: Nat)
-                        (ns :: [Nat])
-                        (dtypes :: [DType])
-                        (devices :: [(DeviceType, Nat)])
-  = RastriginStackSpec deriving (Show, Eq)
+data RastriginStackSpec (num :: Nat) (ns :: [Nat]) (dtypes ::
+                                                 [DType]) (devices :: [(DeviceType, Nat)]) = RastriginStackSpec
+    deriving (Show, Eq)
 
 data RastriginStack (num :: Nat)
                     (ns :: [Nat])
@@ -169,20 +162,15 @@ instance {-# OVERLAPPABLE #-}
       <$> (sample $ RastriginStackSpec @(num - 1) @ns @dtypes @devices)
       <*> (sample $ RastriginLayerSpec @n @dtype @device)
 
-data RastriginSpec (num :: Nat)
-                   (ns :: [Nat])
-                   (dtypes :: [DType])
-                   (devices :: [(DeviceType, Nat)])
-  = RastriginSpec deriving (Show, Eq)
+data RastriginSpec (num :: Nat) (ns :: [Nat]) (dtypes ::
+                                            [DType]) (devices :: [(DeviceType, Nat)]) = RastriginSpec
+    deriving (Show, Eq)
 
-data Rastrigin (num :: Nat)
-               (ns :: [Nat])
-               (dtypes :: [DType])
-               (devices :: [(DeviceType, Nat)])
-  = Rastrigin
-      { rastriginStack :: RastriginStack num ns dtypes devices
-      }
-  deriving (Show, Generic)
+data Rastrigin (num :: Nat) (ns :: [Nat]) (dtypes :: [DType]) (devices
+                                                            :: [(DeviceType, Nat)]) = Rastrigin
+    { rastriginStack :: RastriginStack num ns dtypes devices
+    }
+    deriving (Show, Generic)
 
 instance
   ( Randomizable (RastriginStackSpec num ns dtypes devices)

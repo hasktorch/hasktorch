@@ -2,16 +2,16 @@
 
 module SparseSpec(spec) where
 
-import Prelude hiding (abs, exp, floor, log, min, max)
+import Prelude hiding (abs, exp, floor, log, max, min)
 
-import Test.Hspec
 import Control.Exception.Safe
+import Test.Hspec
 
-import Torch.Tensor
 import Torch.DType
-import Torch.Layout
-import Torch.TensorFactories
 import Torch.Functional
+import Torch.Layout
+import Torch.Tensor
+import Torch.TensorFactories
 import Torch.TensorOptions
 
 spec :: Spec

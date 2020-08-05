@@ -2,10 +2,10 @@
 
 module FunctionalSpec(spec) where
 
-import Prelude hiding (all, abs, exp, floor, log, min, max, div)
+import Prelude hiding (abs, all, div, exp, floor, log, max, min)
 
-import Test.Hspec
 import Control.Exception.Safe
+import Test.Hspec
 
 --import Torch.Tensor
 --import Torch.DType
@@ -196,14 +196,14 @@ spec = do
     let x = ones' [4,3]
         y = ones' [4,3]
         output = stack (Dim 1) [x,y]
-    (shape output) `shouldBe` ([4,2,3]) 
+    (shape output) `shouldBe` ([4,2,3])
   it "sumDim" $ do
     let x = asTensor([[1,2,3],[4,5,6],[7,8,9],[10,11,12]]::[[Float]])
         output = sumDim (Dim 0) KeepDim Float x
     (toDouble $ select 1 1 output) `shouldBe` (26.0)
   it "topK" $ do
     let x = asTensor([1,2,3] :: [Float])
-        output = fst $ topK 2 (Dim 0) True True x 
+        output = fst $ topK 2 (Dim 0) True True x
     (toDouble $ select 0 0 output) `shouldBe` (3.0)
   it "triu" $ do
     let x = asTensor([[1,2,3],[4,5,6],[7,8,9],[10,11,12]]::[[Float]])
@@ -214,7 +214,7 @@ spec = do
   it "unsqueeze" $ do
     let x = asTensor([[1,2,3],[4,5,6],[7,8,9],[10,11,12]]::[[Float]])
         output = unsqueeze (Dim 0) x
-    (shape output) `shouldBe` ([1,4,3])      
+    (shape output) `shouldBe` ([1,4,3])
   it "ctcLoss" $ do
     ctcLoss' ReduceMean [1] [1]  (asTensor ([[[0.1, 0.2, 0.7]]] :: [[[Float]]]))
         (asTensor ([2] :: [Int])) `shouldBe` asTensor (-0.7 :: Float)

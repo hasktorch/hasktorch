@@ -1,54 +1,50 @@
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE KindSignatures        #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module Torch.Typed.OptimSpec
   ( Torch.Typed.OptimSpec.spec
   )
 where
 
-import           Prelude                 hiding ( exp
-                                                , cos
-                                                , sqrt
-                                                )
-import           Control.Monad                  ( foldM )
-import           Data.Kind
-import           Data.Proxy
-import           Data.Maybe
-import           GHC.Generics
-import           GHC.TypeLits
-import           GHC.Exts (toList)
+import Control.Monad (foldM)
+import Data.Kind
+import Data.Maybe
+import Data.Proxy
+import GHC.Exts      (toList)
+import GHC.Generics
+import GHC.TypeLits
+import Prelude       hiding (cos, exp, sqrt)
 
-import           Test.Hspec (Spec, describe, it, shouldBe)
-import           Test.QuickCheck ()
+import Test.Hspec      (Spec, describe, it, shouldBe)
+import Test.QuickCheck ()
 
+import Torch                               (ATenTensor)
+import Torch.Internal.Class                (Castable)
+import Torch.Internal.Managed.Type.Context (manual_seed_L)
 import Torch.Typed
 import Torch.Typed.AuxSpec
-import Torch.Internal.Class (Castable)
-import Torch (ATenTensor)
-import Torch.Internal.Managed.Type.Context (manual_seed_L)
 
-data ConvQuadSpec (features :: Nat)
-                  (dtype :: DType)
-                  (device :: (DeviceType, Nat))
-  = ConvQuadSpec deriving (Show, Eq)
+data ConvQuadSpec (features :: Nat) (dtype :: DType) (device ::
+                                                   (DeviceType, Nat)) = ConvQuadSpec
+    deriving (Show, Eq)
 
 data ConvQuad (features :: Nat)
               (dtype :: DType)
               (device :: (DeviceType, Nat))
- where
-  ConvQuad
-    :: forall features dtype device
-     . { w :: Parameter device dtype '[features] }
-    -> ConvQuad features dtype device
+  where
+    ConvQuad
+      :: forall features dtype device
+       . { w :: Parameter device dtype '[features] }
+      -> ConvQuad features dtype device
  deriving (Show, Generic)
 
 instance
@@ -71,20 +67,19 @@ convQuad
 convQuad ConvQuad {..} a b =
   let w' = toDependent w in mulScalar (0.5 :: Float) (dot w' (mv a w')) - dot b w'
 
-data RosenbrockSpec (dtype :: DType)
-                    (device :: (DeviceType, Nat))
-  = RosenbrockSpec deriving (Show, Eq)
+data RosenbrockSpec (dtype :: DType) (device :: (DeviceType, Nat)) = RosenbrockSpec
+    deriving (Show, Eq)
 
 data Rosenbrock (dtype :: DType)
                 (device :: (DeviceType, Nat))
- where
-  Rosenbrock
-    :: forall dtype device
-     . { x :: Parameter device dtype '[1]
-       , y :: Parameter device dtype '[1]
-       }
-    -> Rosenbrock dtype device
- deriving (Show, Generic)
+  where
+    Rosenbrock
+      :: forall dtype device
+       . { x :: Parameter device dtype '[1]
+         , y :: Parameter device dtype '[1]
+         }
+      -> Rosenbrock dtype device
+  deriving (Show, Generic)
 
 instance
   ( RandDTypeIsValid device dtype
@@ -108,20 +103,19 @@ rosenbrock Rosenbrock {..} a b =
       square c = pow (2 :: Int) c
   in  reshape $ square (subScalar a x') + mulScalar b (square (y' - square x'))
 
-data AckleySpec (features :: Nat)
-                (dtype :: DType)
-                (device :: (DeviceType, Nat))
-  = AckleySpec deriving (Show, Eq)
+data AckleySpec (features :: Nat) (dtype :: DType) (device ::
+                                                 (DeviceType, Nat)) = AckleySpec
+    deriving (Show, Eq)
 
 data Ackley (features :: Nat)
             (dtype :: DType)
             (device :: (DeviceType, Nat))
- where
-  Ackley
-    :: forall features dtype device
-     . { pos :: Parameter device dtype '[features] }
-    -> Ackley features dtype device
- deriving (Show, Generic)
+  where
+    Ackley
+      :: forall features dtype device
+       . { pos :: Parameter device dtype '[features] }
+      -> Ackley features dtype device
+  deriving (Show, Generic)
 
 instance
   ( RandDTypeIsValid device dtype
@@ -129,7 +123,7 @@ instance
   , KnownDType dtype
   , KnownDevice device
   ) => Randomizable (AckleySpec features dtype device)
-                      (Ackley     features dtype device)
+                    (Ackley     features dtype device)
  where
   sample _ =
     Ackley <$> (makeIndependent =<< randn)
@@ -183,7 +177,7 @@ optimize
 optimize initModel initOptim loss learningRate numIters =
   foldLoop (initModel, initOptim) numIters
     $ \(model, optim) _ -> runStep model optim (loss model) learningRate
-  
+
 -- optimize initModel initOptim loss learningRate numIters = do
 --   print $ "initial model: " <> show initModel
 --   print $ "initial loss:" <> show (loss initModel)
@@ -193,7 +187,9 @@ optimize initModel initOptim loss learningRate numIters =
 --   print $ "final loss:" <> show (loss finalModel)
 --   pure (finalModel, finalOptim)
 
-data OptimConvQuadSpec = GDConvQuadSpec | GDMConvQuadSpec | AdamConvQuadSpec
+data OptimConvQuadSpec = GDConvQuadSpec
+    | GDMConvQuadSpec
+    | AdamConvQuadSpec
 
 instance
   ( KnownNat features
@@ -240,7 +236,9 @@ instance
     (model, _optim) <- optimize initModel' initOptim loss learningRate numIter
     isNonZero (isclose 1e-03 1e-04 False (loss model) zeros) `shouldBe` True
 
-data OptimRosenbrockSpec = GDRosenbrockSpec | GDMRosenbrockSpec | AdamRosenbrockSpec
+data OptimRosenbrockSpec = GDRosenbrockSpec
+    | GDMRosenbrockSpec
+    | AdamRosenbrockSpec
 
 instance
   ( KnownDType dtype
@@ -291,7 +289,9 @@ instance
     (toList . Just) close `shouldBe` [True, True]
     isNonZero (isclose 1e-04 1e-04 False (loss model) zeros) `shouldBe` True
 
-data OptimAckleySpec = GDAckleySpec | GDMAckleySpec | AdamAckleySpec
+data OptimAckleySpec = GDAckleySpec
+    | GDMAckleySpec
+    | AdamAckleySpec
 
 instance
   ( KnownDType dtype

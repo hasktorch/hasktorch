@@ -1,17 +1,17 @@
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric             #-}
+{-# LANGUAGE FunctionalDependencies    #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE RecordWildCards           #-}
 
 module NNSpec(spec) where
 
-import Test.Hspec
 import Control.Exception.Safe
 import Control.Monad.State.Strict
+import Test.Hspec
 
-import Torch.Tensor
-import Torch.NN
 import GHC.Generics
+import Torch.NN
+import Torch.Tensor
 
 spec :: Spec
 spec = do

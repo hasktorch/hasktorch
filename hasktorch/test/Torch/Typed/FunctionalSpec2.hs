@@ -1,12 +1,12 @@
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE NoStarIsType #-}
+{-# LANGUAGE NoStarIsType          #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS_GHC -freduction-depth=0 #-}
 
 module Torch.Typed.FunctionalSpec2
@@ -14,43 +14,43 @@ module Torch.Typed.FunctionalSpec2
   )
 where
 
-import           Prelude                 hiding ( all
-                                                , any
-                                                , sin
-                                                , sinh
-                                                , cos
-                                                , cosh
-                                                , tan
-                                                , tanh
-                                                , asin
-                                                , asinh
-                                                , acos
-                                                , acosh
-                                                , atan
-                                                , atanh
-                                                , abs
-                                                , max
-                                                , min
-                                                , exp
-                                                , log
-                                                , round
-                                                , floor
-                                                , sqrt
-                                                )
-import           Data.Proxy
-import           GHC.TypeLits
+import Data.Proxy
+import GHC.TypeLits
+import Prelude      hiding
+       ( abs
+       , acos
+       , acosh
+       , all
+       , any
+       , asin
+       , asinh
+       , atan
+       , atanh
+       , cos
+       , cosh
+       , exp
+       , floor
+       , log
+       , max
+       , min
+       , round
+       , sin
+       , sinh
+       , sqrt
+       , tan
+       , tanh
+       )
 
-import           Test.Hspec (Spec, before_, describe, it)
-import           Test.QuickCheck ()
+import Test.Hspec      (Spec, before_, describe, it)
+import Test.QuickCheck ()
 
 import Torch.Internal.Managed.Type.Context (get_manual_seed)
 import Torch.Typed
 import Torch.Typed.AuxSpec
 
 
-data LossSpec =
-    BinaryCrossEntropySpec
-  | MSELossSpec
+data LossSpec = BinaryCrossEntropySpec
+    | MSELossSpec
 
 instance
   ( TensorOptions shape  dtype device
@@ -71,9 +71,8 @@ instance
         t = mseLoss @reduction prediction target
     checkDynamicTensorAttributes t
 
-data SoftmaxSpec =
-    SoftmaxSpec
-  | LogSoftmaxSpec
+data SoftmaxSpec = SoftmaxSpec
+    | LogSoftmaxSpec
 
 instance
   ( TensorOptions shape dtype device
@@ -120,7 +119,8 @@ instance
     let t' = inverse t
     checkDynamicTensorAttributes t'
 
-data SymeigSpec = SymeigSpec | SymeigvaluesSpec
+data SymeigSpec = SymeigSpec
+    | SymeigvaluesSpec
 
 instance
   ( TensorOptions shape   dtype device
@@ -371,7 +371,8 @@ instance
     let t = ones @shape @dtype @device
     checkDynamicTensorAttributes $ diagonal @tri @index @dim1 @dim2 t
 
-data AnyAllSpec = AnySpec | AllSpec
+data AnyAllSpec = AnySpec
+    | AllSpec
 
 instance
   ( TensorOptions shape  'Bool device
@@ -386,7 +387,8 @@ instance
         t' = all t
     checkDynamicTensorAttributes t'
 
-data AnyPrimeAllPrimeSpec = AnyPrimeSpec | AllPrimeSpec
+data AnyPrimeAllPrimeSpec = AnyPrimeSpec
+    | AllPrimeSpec
 
 instance
   ( TensorOptions shape   'Bool device
@@ -452,7 +454,7 @@ spec = before_ printSeed $ do
   where
     printSeed = do
       putStr "      seed:"
-      get_manual_seed >>= print  
+      get_manual_seed >>= print
 
 spec' :: Device -> Spec
 spec' device =
@@ -548,7 +550,7 @@ spec' device =
           Device { deviceType = CPU,  deviceIndex = 0 } ->
             hfoldrM @IO SolveSpec () (hattach cpu   (hproduct standardFloatingPointDTypes solveShapes))
           Device { deviceType = CUDA, deviceIndex = 0 } ->
-            hfoldrM @IO SolveSpec () (hattach cuda0 (hproduct standardFloatingPointDTypes solveShapes)) 
+            hfoldrM @IO SolveSpec () (hattach cuda0 (hproduct standardFloatingPointDTypes solveShapes))
 
     describe "boolean algebra" $ do
       do
@@ -580,20 +582,20 @@ spec' device =
         let c = maxPool2d @'(1,1) @'(1,1) @'(0,0) (ones :: CPUTensor  'Float '[1,3,4,5])
         checkDynamicTensorAttributes c
 
-    describe "sorting" $ 
-      it "topk" $ do 
+    describe "sorting" $
+      it "topk" $ do
         let (c,c') = topk @3 @1 True True (ones :: CPUTensor  'Float '[2,3])
         checkDynamicTensorAttributes c
         checkDynamicTensorAttributes c'
 
     describe "upsampling" $ do
-      it "upsample_nearest2d" $ do 
-        let c = upsample_nearest2d @5 @3 (ones :: CPUTensor  'Float '[2,3,2,2]) 
+      it "upsample_nearest2d" $ do
+        let c = upsample_nearest2d @5 @3 (ones :: CPUTensor  'Float '[2,3,2,2])
         checkDynamicTensorAttributes c
-      it "upsample_bicubic2d" $ do 
-        let c = upsample_bicubic2d @5 @3 False (ones :: CPUTensor  'Float '[2,3,2,2]) 
+      it "upsample_bicubic2d" $ do
+        let c = upsample_bicubic2d @5 @3 False (ones :: CPUTensor  'Float '[2,3,2,2])
         checkDynamicTensorAttributes c
-      it "upsample_bilinear2d" $ do 
+      it "upsample_bilinear2d" $ do
         let c = upsample_bilinear2d @5 @3 False (ones :: CPUTensor  'Float '[2,3,2,2])
         checkDynamicTensorAttributes c
 

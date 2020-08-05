@@ -1,6 +1,6 @@
+{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE RecordWildCards       #-}
 
 module OptimSpec where
 
@@ -8,23 +8,28 @@ import Test.Hspec
 
 import GHC.Generics
 
-import Control.Monad (when)
-import Prelude hiding (exp, cos, sqrt)
-import qualified Prelude as P
-import Text.Printf (printf)
+import           Control.Monad (when)
+import           Prelude       hiding (cos, exp, sqrt)
+import qualified Prelude       as P
+import           Text.Printf   (printf)
 
+import Torch.Autograd
+import Torch.Functional
+import Torch.NN
 import Torch.Tensor
 import Torch.TensorFactories (eye', ones', randIO', randnIO', zeros')
-import Torch.Functional
-import Torch.Autograd
-import Torch.NN 
 
 import Torch.Optim
 
 -- Convex Quadratic
 
-data ConvQuadSpec = ConvQuadSpec { n :: Int }
-data ConvQuad = ConvQuad { w :: Parameter } deriving (Show, Generic)
+data ConvQuadSpec = ConvQuadSpec
+    { n :: Int
+    }
+data ConvQuad = ConvQuad
+    { w :: Parameter
+    }
+    deriving (Show, Generic)
 
 instance Randomizable ConvQuadSpec ConvQuad where
   sample (ConvQuadSpec n) = do
@@ -43,8 +48,13 @@ lossConvQuad a b (ConvQuad w) = convexQuadratic a b w'
 
 -- 2D Rosenbrock
 
-data RosenSpec = RosenSpec deriving (Show, Eq)
-data Rosen = Rosen { x :: Parameter, y :: Parameter } deriving (Generic)
+data RosenSpec = RosenSpec
+    deriving (Show, Eq)
+data Rosen = Rosen
+    { x :: Parameter
+    , y :: Parameter
+    }
+    deriving (Generic)
 
 instance Show Rosen where
     show (Rosen x y) = show (extract x :: Float, extract y :: Float)
@@ -76,8 +86,12 @@ lossRosen  Rosen{..} = rosenbrock' (toDependent x) (toDependent y)
 
 -- Ackley function
 
-data AckleySpec = AckleySpec deriving (Show, Eq)
-data Ackley = Ackley { pos :: Parameter } deriving (Show, Generic)
+data AckleySpec = AckleySpec
+    deriving (Show, Eq)
+data Ackley = Ackley
+    { pos :: Parameter
+    }
+    deriving (Show, Generic)
 
 instance Randomizable AckleySpec Ackley where
   sample AckleySpec = do
@@ -87,9 +101,9 @@ instance Randomizable AckleySpec Ackley where
 instance Parameterized Ackley
 
 ackley :: Float -> Float -> Float -> Tensor -> Tensor
-ackley a b c x = 
+ackley a b c x =
     mulScalar (-a) (exp (-b' * (sqrt $ (sumAll (x * x)) / d)))
-    - exp (1.0 / d * sumAll (cos (mulScalar c x))) 
+    - exp (1.0 / d * sumAll (cos (mulScalar c x)))
     + (asTensor $ a + P.exp 1.0)
     where
         b' = asTensor b
@@ -104,7 +118,7 @@ lossAckley (Ackley x) = ackley' x'
 
 -- | show output after n iterations (not used for tests)
 showLog :: (Show a) => Int -> Int -> Int -> Tensor -> a -> IO ()
-showLog n i maxIter lossValue state = 
+showLog n i maxIter lossValue state =
     when (i == 0 || mod i n == 0 || i == maxIter-1) $ do
         putStrLn ("Iter: " ++ printf "%6d" i
             ++ " | Loss:" ++ printf "%05.4f" (asValue lossValue :: Float)
@@ -177,7 +191,7 @@ main = do
     putStrLn "\nAdam"
     optConvQuad numIter Adam {
         beta1=0.9, beta2=0.999,
-        m1=[zeros' [1], zeros' [1]], 
+        m1=[zeros' [1], zeros' [1]],
         m2=[zeros' [1], zeros' [1]],
         iter=0
     }
@@ -192,7 +206,7 @@ main = do
     putStrLn "\nAdam"
     optRosen numIter Adam {
         beta1=0.9, beta2=0.999,
-        m1=[zeros' [1], zeros' [1]], 
+        m1=[zeros' [1], zeros' [1]],
         m2=[zeros' [1], zeros' [1]],
         iter=0
     }
@@ -207,7 +221,7 @@ main = do
     putStrLn "\nAdam"
     optAckley numIter Adam {
         beta1=0.9, beta2=0.999,
-        m1=[zeros' [1], zeros' [1]], 
+        m1=[zeros' [1], zeros' [1]],
         m2=[zeros' [1], zeros' [1]],
         iter=0
     }
@@ -222,7 +236,7 @@ spec = do
     it "ConvQuad Adam" $ do
         optConvQuad numIter Adam {
             beta1=0.9, beta2=0.999,
-            m1=[zeros' [1], zeros' [1]], 
+            m1=[zeros' [1], zeros' [1]],
             m2=[zeros' [1], zeros' [1]],
             iter=0 }
     it "Rosen GD" $ do
@@ -232,7 +246,7 @@ spec = do
     it "Rosen Adam" $ do
         optRosen numIter Adam {
             beta1=0.9, beta2=0.999,
-            m1=[zeros' [1], zeros' [1]], 
+            m1=[zeros' [1], zeros' [1]],
             m2=[zeros' [1], zeros' [1]],
             iter=0 }
     it "Ackley GD" $ do
@@ -242,7 +256,7 @@ spec = do
     it "Ackley Adam" $ do
         optAckley numIter Adam {
             beta1=0.9, beta2=0.999,
-            m1=[zeros' [1], zeros' [1]], 
+            m1=[zeros' [1], zeros' [1]],
             m2=[zeros' [1], zeros' [1]],
             iter=0 }
     where

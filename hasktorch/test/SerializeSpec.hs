@@ -1,11 +1,10 @@
-
 module SerializeSpec(spec) where
 
-import Test.Hspec
 import System.Directory (removeFile)
+import Test.Hspec
 
-import Torch.Tensor
 import Torch.Serialize
+import Torch.Tensor
 
 spec :: Spec
 spec = do

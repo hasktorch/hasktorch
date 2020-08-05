@@ -1,21 +1,21 @@
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ExtendedDefaultRules #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
 
 
 module TensorSpec (spec) where
 
+import Control.Arrow          ((&&&))
+import Control.Exception.Safe
 import Test.Hspec
 import Test.QuickCheck
-import Control.Exception.Safe
-import Control.Arrow                  ( (&&&) )
 
-import Torch.Tensor
-import Torch.DType
-import Torch.TensorFactories
-import Torch.Functional
-import Torch.TensorOptions
-import Data.Word
 import Data.Int
+import Data.Word
+import Torch.DType
+import Torch.Functional
+import Torch.Tensor
+import Torch.TensorFactories
+import Torch.TensorOptions
 
 spec :: Spec
 spec = do
@@ -38,7 +38,7 @@ spec = do
       \x -> asValue (asTensor x) `shouldBe` (x :: Float)
     it "TensorLike Double" $ property $
       \x -> asValue (asTensor x) `shouldBe` (x :: Double)
-  
+
     it "Compare internal expression of c++ with Storable expression of haskell" $ do
       show (asTensor [True,False,True,False]) `shouldBe`
         "Tensor Bool [4] [ 1,  0,  1,  0]"
@@ -58,7 +58,7 @@ spec = do
         "Tensor Float [4] [ 1.0000   ,  0.0000,  1.0000   ,  0.0000]"
       show (asTensor ([1,0,1,0]::[Double])) `shouldBe`
         "Tensor Double [4] [ 1.0000   ,  0.0000,  1.0000   ,  0.0000]"
-  
+
     it "TensorLike [Bool]" $ property $
       \(NonEmpty (x :: [Bool])) -> do
         asValue (asTensor x) `shouldBe` x
@@ -140,7 +140,7 @@ spec = do
         asValue (asTensor xx) `shouldBe` xx
         let xxx = replicate 3 xx
         asValue (asTensor xxx) `shouldBe` xxx
-  
+
     it "invalid cast of TensorLike a" $ do
       let x = asTensor (10 :: Int)
       (dtype x) `shouldBe` Int64
@@ -148,7 +148,7 @@ spec = do
     it "invalid cast of TensorLike [a]" $ do
       let x = asTensor ([0..10] :: [Int])
       (print (asValue x :: [Double])) `shouldThrow` anyException
-  
+
     it "lists having different length" $ do
       (print (asTensor ([[1],[1,2]] :: [[Double]]))) `shouldThrow` anyException
     it "cast of Tensor" $ do

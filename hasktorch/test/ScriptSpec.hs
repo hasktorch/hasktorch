@@ -1,20 +1,20 @@
+{-# LANGUAGE DeriveGeneric             #-}
+{-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE RecordWildCards           #-}
 
 module ScriptSpec(spec) where
 
-import Prelude hiding (abs, exp, floor, log, min, max)
+import Prelude hiding (abs, exp, floor, log, max, min)
 
 import Test.Hspec
 
-import Torch hiding (forward)
-import Torch.Script
-import Torch.Autograd
+import Control.Exception.Safe           (catch, throwIO)
 import GHC.Generics
-import Control.Exception.Safe (catch,throwIO)
-import Language.C.Inline.Cpp.Exceptions (CppException(..))
+import Language.C.Inline.Cpp.Exceptions (CppException (..))
+import Torch                            hiding (forward)
+import Torch.Autograd
+import Torch.Script
 
 prettyException :: IO a -> IO a
 prettyException func =
@@ -22,28 +22,30 @@ prettyException func =
     putStrLn message
     throwIO (CppStdException "")
 
-data MLPSpec = MLPSpec {
-    inputFeatures :: Int,
-    hiddenFeatures0 :: Int,
-    hiddenFeatures1 :: Int,
-    outputFeatures :: Int
-    } deriving (Show, Eq)
+data MLPSpec = MLPSpec
+    { inputFeatures :: Int
+    , hiddenFeatures0 :: Int
+    , hiddenFeatures1 :: Int
+    , outputFeatures :: Int
+    }
+    deriving (Show, Eq)
 
-data MLP = MLP {
-    l0 :: Linear,
-    l1 :: Linear,
-    l2 :: Linear
-    } deriving (Generic, Show)
+data MLP = MLP
+    { l0 :: Linear
+    , l1 :: Linear
+    , l2 :: Linear
+    }
+    deriving (Generic, Show)
 
 instance Parameterized MLP
 instance Randomizable MLPSpec MLP where
-    sample MLPSpec {..} = MLP 
+    sample MLPSpec {..} = MLP
         <$> sample (LinearSpec inputFeatures hiddenFeatures0)
         <*> sample (LinearSpec hiddenFeatures0 hiddenFeatures1)
         <*> sample (LinearSpec hiddenFeatures1 outputFeatures)
 
 mlp :: MLP -> Tensor -> Tensor
-mlp MLP{..} input = 
+mlp MLP{..} input =
     logSoftmax (Dim 1)
     . linear l2
     . relu
@@ -53,11 +55,13 @@ mlp MLP{..} input =
     $ input
 
 
-data MonoSpec = MonoSpec deriving (Show, Eq)
+data MonoSpec = MonoSpec
+    deriving (Show, Eq)
 
-data MonoP = MonoP {
-  m :: Parameter
-  } deriving (Generic, Show)
+data MonoP = MonoP
+    { m :: Parameter
+    }
+    deriving (Generic, Show)
 
 instance Parameterized MonoP
 instance Randomizable MonoSpec MonoP where
@@ -76,11 +80,11 @@ spec = describe "torchscript" $ do
     v00' <- makeIndependent v00
     registerParameter m "p0" (toDependent v00') False
     define m $
-      "def foo(self, x):\n" ++ 
-      "    return (1, 2, x + 3 + 2 * self.p0)\n" ++ 
-      "\n" ++ 
-      "def forward(self, x):\n" ++ 
-      "    tuple = self.foo(x)\n" ++ 
+      "def foo(self, x):\n" ++
+      "    return (1, 2, x + 3 + 2 * self.p0)\n" ++
+      "\n" ++
+      "def forward(self, x):\n" ++
+      "    tuple = self.foo(x)\n" ++
       "    return tuple\n"
     sm <- toScriptModule m
     let IVTuple [IVInt a,IVInt b,IVTensor c] = runMethod1 sm "forward" (IVTensor (ones' []))
@@ -93,7 +97,7 @@ spec = describe "torchscript" $ do
     let [g] =  grad c (flattenParameters sm2)
     (asValue g :: Float) `shouldBe` 2.0
     return ()
-    
+
   it "trace" $ do
     let v00 = asTensor (4::Float)
         v01 = asTensor (8::Float)

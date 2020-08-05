@@ -2,7 +2,7 @@ module Main where
 
 import Test.DocTest
 
-import Build_doctests (flags, pkgs, module_sources)
+import Build_doctests (flags, module_sources, pkgs)
 
 main :: IO ()
 main = do

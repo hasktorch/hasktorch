@@ -2,20 +2,20 @@
 
 module VisionSpec(spec) where
 
-import Test.Hspec
 import Control.Exception.Safe
+import Test.Hspec
 
-import Torch.Tensor
+import Codec.Picture
+import Codec.Picture.Types   (freezeImage, newMutableImage)
+import Control.Monad.ST
+import Data.Int
+import Data.Word
 import Torch.DType
 import Torch.Layout
+import Torch.Tensor
 import Torch.TensorFactories
 import Torch.TensorOptions
 import Torch.Vision
-import Codec.Picture
-import Codec.Picture.Types (newMutableImage, freezeImage)
-import Control.Monad.ST
-import Data.Word
-import Data.Int
 
 
 newImage :: Pixel a => Int -> Int -> [((Int, Int), a)] -> Image a

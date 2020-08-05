@@ -1,22 +1,26 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
 {-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 
 module Torch.Typed.AuxSpec where
 
-import           Data.Proxy
-import           System.IO.Unsafe
+import Data.Proxy
+import System.IO.Unsafe
 
-import           Test.Hspec (Spec, shouldBe)
-import           Test.QuickCheck ()
+import Test.Hspec      (Spec, shouldBe)
+import Test.QuickCheck ()
 
+import qualified Torch                               as Torch
+                 ( device
+                 , dtype
+                 , shape
+                 )
+import           Torch.Internal.Cast                 (cast0)
+import           Torch.Internal.Managed.Type.Context (hasCUDA)
 import           Torch.Typed
-import Torch.Internal.Managed.Type.Context (hasCUDA)
-import Torch.Internal.Cast (cast0)
-import qualified Torch as Torch (device, dtype, shape)
 
 instance Semigroup Spec where
   (<>) a b = a >> b

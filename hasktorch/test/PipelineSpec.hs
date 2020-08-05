@@ -1,6 +1,6 @@
+{-# LANGUAGE CPP                   #-}
+{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE CPP #-}
 module PipelineSpec where
 
 import Control.Concurrent
@@ -10,7 +10,7 @@ import System.Exit
 import System.IO
 import System.Timeout
 import Torch.Data.Pipeline
-  
+
 import Test.Hspec
 
 
@@ -26,11 +26,11 @@ newtype FailureDataset = FailureDataset Int
 instance Dataset IO  FailureDataset Int where
   getBatch (FailureDataset iters) _ = if iters < 5
     then mzero
-    else threadDelay 10000 >> pure iters 
+    else threadDelay 10000 >> pure iters
   numIters (FailureDataset iters)  = iters
 
 instance Dataset IO MockData Int where
-  getBatch (MockData iters) _ = threadDelay 10000 >> pure iters 
+  getBatch (MockData iters) _ = threadDelay 10000 >> pure iters
   numIters (MockData iters)  = iters
 
 instance ConcurrentDataset IO MockData Int where
@@ -45,7 +45,7 @@ testFoldTimeout dataset = do
 
 testConcurrentFoldTimeout :: MockData  -> Int -> IO ()
 testConcurrentFoldTimeout dataset numWorkers = do
-  (fold, threads) <- makeConcurrentFold' id dataset numWorkers 
+  (fold, threads) <- makeConcurrentFold' id dataset numWorkers
   timedOut <- async $ fold $  FoldM (takeBatchThenTimeout 10000) (pure 0) pure
   mapM_ wait threads
   cancel timedOut
@@ -70,13 +70,13 @@ runTestExpectTimeout time test = do
         Just _  -> pure Nothing
 
 -- | The first test tests if batches are being streamed ahead of
--- | the fold function for consumption. A new batch should be processed as soon as 
+-- | the fold function for consumption. A new batch should be processed as soon as
 -- | the fold consumes a batch.
--- | 
+-- |
 -- | The second test tests that with 2 workers and fold processing batches twice as fast
 -- | as they are yielded that workers are never idling. If they are the test must fail.
--- | Diagrammatically, this is how things should work out: 
--- | 
+-- | Diagrammatically, this is how things should work out:
+-- |
 -- | working = -, idle = .
 -- | Worker 1: |-----|-----|-----|
 -- | Worker 2: |-----|-----|-----|

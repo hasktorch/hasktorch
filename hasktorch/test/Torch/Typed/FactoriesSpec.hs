@@ -1,25 +1,27 @@
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module Torch.Typed.FactoriesSpec
   ( Torch.Typed.FactoriesSpec.spec
   )
 where
 
-import           Data.Proxy
+import Data.Proxy
 
-import           Test.Hspec (Spec, describe, it)
-import           Test.QuickCheck ()
+import Test.Hspec      (Spec, describe, it)
+import Test.QuickCheck ()
 
 import Torch.Typed
 import Torch.Typed.AuxSpec
 
-data SimpleFactoriesSpec = ZerosSpec | OnesSpec | FullSpec
+data SimpleFactoriesSpec = ZerosSpec
+    | OnesSpec
+    | FullSpec
 
 instance
   ( TensorOptions shape dtype device
@@ -35,7 +37,8 @@ instance
     let t = full (2.0 :: Float) :: Tensor device dtype shape
     checkDynamicTensorAttributes t
 
-data RandomFactoriesSpec = RandSpec | RandnSpec
+data RandomFactoriesSpec = RandSpec
+    | RandnSpec
 
 instance
   ( TensorOptions shape dtype device
@@ -56,7 +59,7 @@ spec' device =
   describe ("for " <> show device) $ do
     let standardShapes = Proxy @'[2, 3] :. HNil -- (Proxy :: Proxy ('[] :: [Nat])) :. Proxy @'[0]  :. Proxy @'[0, 1] :. Proxy @'[1, 0] :. Proxy @'[2, 3] :. HNil
     describe "simple factories" $ do
-      let dispatch simpleFactoriesSpec = 
+      let dispatch simpleFactoriesSpec =
             case device of
               Device { deviceType = CPU,  deviceIndex = 0 } ->
                 hfoldrM @IO simpleFactoriesSpec () (hattach cpu   (hproduct allDTypes standardShapes))
@@ -66,7 +69,7 @@ spec' device =
       it "zeros" $ dispatch OnesSpec
       it "full" $ dispatch FullSpec
     describe "random factories" $ do
-      let dispatch randomFactoriesSpec = 
+      let dispatch randomFactoriesSpec =
             case device of
               Device { deviceType = CPU,  deviceIndex = 0 } ->
                 hfoldrM @IO randomFactoriesSpec () (hattach cpu   (hproduct standardFloatingPointDTypes standardShapes))

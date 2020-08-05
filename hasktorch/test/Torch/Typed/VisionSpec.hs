@@ -1,5 +1,5 @@
+{-# LANGUAGE DataKinds        #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE DataKinds #-}
 
 module Torch.Typed.VisionSpec
   ( Torch.Typed.VisionSpec.spec
@@ -10,8 +10,8 @@ import Prelude hiding (length)
 
 import Test.Hspec (Spec, describe, it, shouldBe)
 
+import Torch       (TensorLike (asValue))
 import Torch.Typed
-import Torch (TensorLike(asValue))
 
 
 checkAsTensor :: IO ()

@@ -1,12 +1,12 @@
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE NoStarIsType #-}
+{-# LANGUAGE NoStarIsType          #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS_GHC -freduction-depth=0 #-}
 
 module Torch.Typed.FunctionalSpec1
@@ -14,34 +14,35 @@ module Torch.Typed.FunctionalSpec1
   )
 where
 
-import           Prelude                 hiding ( all
-                                                , any
-                                                , sin
-                                                , sinh
-                                                , cos
-                                                , cosh
-                                                , tan
-                                                , tanh
-                                                , asin
-                                                , asinh
-                                                , acos
-                                                , acosh
-                                                , atan
-                                                , atanh
-                                                , abs
-                                                , max
-                                                , min
-                                                , exp
-                                                , log
-                                                , round
-                                                , floor
-                                                , sqrt
-                                                )
-import           Data.Proxy
-import           GHC.TypeLits
+import Data.Proxy
+import GHC.TypeLits
+import Prelude      hiding
+       ( abs
+       , acos
+       , acosh
+       , all
+       , any
+       , asin
+       , asinh
+       , atan
+       , atanh
+       , cos
+       , cosh
+       , exp
+       , floor
+       , log
+       , max
+       , min
+       , round
+       , sin
+       , sinh
+       , sqrt
+       , tan
+       , tanh
+       )
 
-import           Test.Hspec (Spec, before_, describe, it)
-import           Test.QuickCheck ()
+import Test.Hspec      (Spec, before_, describe, it)
+import Test.QuickCheck ()
 
 import Torch.Internal.Managed.Type.Context (get_manual_seed)
 import Torch.Typed
@@ -180,7 +181,7 @@ spec = before_ printSeed $ do
   where
     printSeed = do
       putStr "      seed:"
-      get_manual_seed >>= print  
+      get_manual_seed >>= print
 
 spec' :: Device -> Spec
 spec' device =
@@ -190,7 +191,7 @@ spec' device =
         reductions                   = Proxy @ReduceNone :. Proxy @ReduceMean :. Proxy @ReduceSum :. HNil
 
     describe "shape ops" $ do
-      it "narrow" $ do 
+      it "narrow" $ do
         let dims = Proxy @0 :. Proxy @1 :. HNil
             narrowStarts = Proxy @0 :. Proxy @1 :. HNil
             narrowLengths = Proxy @1 :. Proxy @2 :. HNil

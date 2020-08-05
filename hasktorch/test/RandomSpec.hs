@@ -1,12 +1,12 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module RandomSpec (spec) where
 
-import Test.Hspec
 import Control.Exception.Safe
+import Test.Hspec
 
-import Torch.Tensor
 import Torch.Device
 import Torch.Random
+import Torch.Tensor
 import Torch.TensorOptions
 
 spec :: Spec
