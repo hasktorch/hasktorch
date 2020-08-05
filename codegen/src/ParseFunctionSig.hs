@@ -1,19 +1,19 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass     #-}
 {-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric      #-}
+{-# LANGUAGE OverloadedStrings  #-}
 
 module ParseFunctionSig where
 
-import Data.Void (Void)
+import Data.Void       (Void)
 import GHC.Generics
 import Text.Megaparsec as M
 --import Text.Megaparsec.Error as M
-import Text.Megaparsec.Char as M
+import Data.Aeson.Types           ()
+import Data.String.Conversions    (cs)
+import Data.Yaml                  hiding (Array, Parser)
+import Text.Megaparsec.Char       as M
 import Text.Megaparsec.Char.Lexer as L
-import Data.Yaml hiding (Parser, Array)
-import Data.Aeson.Types ()
-import Data.String.Conversions (cs)
 
 -- Examples:
 -- - func: log10_(Tensor self) -> Tensor
@@ -35,14 +35,14 @@ data DefaultValue =
     | ValArray
     | AtKLong
     | ReductionMean
-    | NullPtr -- nullptr 
+    | NullPtr -- nullptr
     | ValNone
     deriving (Eq, Show)
 
 data Parameter  = Parameter {
-    ptype :: Parsable
+    ptype   :: Parsable
     , pname :: String
-    , val :: Maybe DefaultValue
+    , val   :: Maybe DefaultValue
     } | Star  -- , *,
     deriving (Eq, Show)
 
@@ -53,10 +53,10 @@ data Variants =
   deriving (Eq, Show)
 
 data Function  = Function {
-    name :: String
+    name         :: String
     , parameters :: [Parameter]
-    , retType :: Parsable
-    , variant :: Variants
+    , retType    :: Parsable
+    , variant    :: Variants
 } deriving (Eq, Show)
 
 type SignatureStr = String
@@ -425,7 +425,7 @@ typ =
     _ <- lexm $ string ">"
     case val' of
       CType v -> pure $ STLType $ Array v (fromIntegral num)
-      _ -> fail "Can not parse ctype."
+      _       -> fail "Can not parse ctype."
   stlbool = do
     _ <- lexm $ string "bool["
     num <- pinteger
@@ -556,7 +556,7 @@ arg = star <|> param
 -- >>> parseTest rettype "Tensor hoo"
 -- TenType Tensor
 -- >>> parseTest rettype "(Tensor hoo,Tensor bar)"
--- Tuple [TenType Tensor,TenType Tensor] 
+-- Tuple [TenType Tensor,TenType Tensor]
 rettype :: Parser Parsable
 rettype = tuple <|> single'
  where
@@ -629,12 +629,12 @@ instance FromJSON Parsable where
   parseJSON (String v) = do
     case parse typ "" (cs v) of
       Left err -> fail (errorBundlePretty err)
-      Right p -> pure p
+      Right p  -> pure p
   parseJSON _ = fail "This type is not string-type."
 
 instance FromJSON Function where
   parseJSON (String v) = do
     case parse func "" (cs v) of
       Left err -> fail (errorBundlePretty err)
-      Right p -> pure p
+      Right p  -> pure p
   parseJSON _ = fail "This type is not function-type."

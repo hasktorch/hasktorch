@@ -1,13 +1,12 @@
-
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass    #-}
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module ParseDeclarations where
 
-import GHC.Generics
-import Data.Yaml
 import Data.Aeson.Types (defaultOptions, fieldLabelModifier, genericParseJSON)
+import Data.Yaml
+import GHC.Generics
 -- import Text.Show.Prettyprint (prettyPrint)
 import qualified ParseFunctionSig as S
 
@@ -44,11 +43,11 @@ import qualified ParseFunctionSig as S
 -}
 
 data Type = Type
-  { name' :: String
+  { name'         :: String
   , dynamic_type' :: S.Parsable
-  , type' :: String
-  , size' :: Maybe Int
-  , default' :: Maybe String
+  , type'         :: String
+  , size'         :: Maybe Int
+  , default'      :: Maybe String
 } deriving (Show, Eq, Generic)
 
 type2type :: Type -> S.Parsable
@@ -69,23 +68,23 @@ data Mode
   deriving (Show, Eq, Generic)
 
 data Declaration = Declaration
-  { name :: String
+  { name                  :: String
   , matches_jit_signature :: Bool
-  , schema_string :: String
+  , schema_string         :: String
 --  , method_prefix_derived :: String
-  , arguments :: [Type]
-  , method_of :: [String]
-  , mode :: Mode
-  , python_module :: String
+  , arguments             :: [Type]
+  , method_of             :: [String]
+  , mode                  :: Mode
+  , python_module         :: String
 --  , buffers :: [String]
-  , returns :: [Type]
-  , inplace :: Bool
-  , is_factory_method :: Maybe Bool
-  , abstract :: Bool
-  , requires_tensor :: Bool
-  , device_guard :: Maybe Bool
-  , with_gil :: Maybe Bool
-  , deprecated :: Maybe Bool
+  , returns               :: [Type]
+  , inplace               :: Bool
+  , is_factory_method     :: Maybe Bool
+  , abstract              :: Bool
+  , requires_tensor       :: Bool
+  , device_guard          :: Maybe Bool
+  , with_gil              :: Maybe Bool
+  , deprecated            :: Maybe Bool
 } deriving (Show, Eq, Generic)
 
 
@@ -93,11 +92,11 @@ instance FromJSON Type where
     parseJSON = genericParseJSON defaultOptions{ fieldLabelModifier = reverse.(drop 1).reverse }
 
 instance FromJSON Mode where
-    parseJSON (String "TH") = pure TH
-    parseJSON (String "THC") = pure THC
-    parseJSON (String "NN") = pure NN
+    parseJSON (String "TH")     = pure TH
+    parseJSON (String "THC")    = pure THC
+    parseJSON (String "NN")     = pure NN
     parseJSON (String "native") = pure Native
-    parseJSON v = fail $ show v <> " is not a string of Mode."
+    parseJSON v                 = fail $ show v <> " is not a string of Mode."
 
 instance FromJSON Declaration
 

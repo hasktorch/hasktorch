@@ -1,23 +1,24 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DeriveAnyClass      #-}
+{-# LANGUAGE DeriveGeneric       #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE QuasiQuotes         #-}
+{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE QuasiQuotes #-}
+
 module RenderDeclarations where
 
-import Control.Monad (forM_)
-import Data.Yaml (ParseException)
-import qualified Data.Yaml as Y
-import Text.Shakespeare.Text (st)
-import Data.Text (Text, replace, unpack)
-import qualified Data.Text.IO as T
-import qualified Data.Set as S
-import System.Directory (createDirectoryIfMissing)
+import           Control.Monad         (forM_)
+import qualified Data.Set              as S
+import           Data.Text             (Text, replace, unpack)
+import qualified Data.Text.IO          as T
+import           Data.Yaml             (ParseException)
+import qualified Data.Yaml             as Y
+import           System.Directory      (createDirectoryIfMissing)
+import           Text.Shakespeare.Text (st)
 
 import qualified ParseDeclarations as D
-import ParseFunctionSig as P
-import RenderCommon
+import           ParseFunctionSig  as P
+import           RenderCommon
 
 dropGenerator :: [Parameter] -> [Parameter]
 dropGenerator params = filter (\v' -> ptype v' /= Ptr GeneratorType) params
@@ -37,8 +38,8 @@ toFunction dl = P.Function
   , P.parameters = map (\a -> P.Parameter (D.type2type a) (D.name' a) Nothing) $ D.arguments dl
   , P.retType = case D.returns dl of
       [a] -> D.type2type a
-      [] -> P.CType P.CVoid
-      ax -> P.Tuple $ map D.type2type ax
+      []  -> P.CType P.CVoid
+      ax  -> P.Tuple $ map D.type2type ax
   , P.variant = P.VFunction
   }
 
@@ -61,7 +62,7 @@ decodeAndCodeGen basedir fileName = do
   case funcs of
     Left err' -> print err'
     Right fns' -> do
-      let fns = concat $ map addFunctionWithDefaultArguments fns' 
+      let fns = concat $ map addFunctionWithDefaultArguments fns'
       createDirectoryIfMissing True (basedir <> "/Torch")
       createDirectoryIfMissing True (basedir <> "/Torch/Internal")
       --T.writeFile (basedir <> "/Torch/Internal/Type.hs") $

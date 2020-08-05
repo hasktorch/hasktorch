@@ -1,20 +1,20 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass    #-}
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
 import qualified Options.Applicative as O
-import qualified RenderDeclarations as RD
-import qualified RenderTuples as RTL
-import qualified RenderClass as RC
-import qualified RenderPure as RP
+import qualified RenderClass         as RC
+import qualified RenderDeclarations  as RD
+import qualified RenderPure          as RP
+import qualified RenderTuples        as RTL
 
 {- CLI options -}
 
 data Options = Options
     { specFileDL :: !String
-    , outputDir :: !String
+    , outputDir  :: !String
     } deriving Show
 
 optsParser :: O.ParserInfo Options

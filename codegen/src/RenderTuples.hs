@@ -1,26 +1,26 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DeriveAnyClass      #-}
+{-# LANGUAGE DeriveGeneric       #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE QuasiQuotes         #-}
+{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE QuasiQuotes #-}
+
 module RenderTuples where
 
-import Data.Yaml (ParseException)
-import qualified Data.Yaml as Y
-import Text.Shakespeare.Text (st)
-import Data.Text (Text)
-import Data.Maybe (mapMaybe)
-import Data.List (nubBy)
-import qualified Data.Text.IO as T
-import qualified Data.Text as T
-import System.Directory (createDirectoryIfMissing)
+import           Data.List             (nubBy)
+import           Data.Maybe            (mapMaybe)
+import           Data.Text             (Text)
+import qualified Data.Text             as T
+import qualified Data.Text.IO          as T
+import           Data.Yaml             (ParseException)
+import qualified Data.Yaml             as Y
+import           System.Directory      (createDirectoryIfMissing)
+import           Text.Shakespeare.Text (st)
 
-import qualified ParseTuples as PT
 import qualified ParseDeclarations as D
-import ParseFunctionSig as P
-import RenderCommon
-
+import           ParseFunctionSig  as P
+import qualified ParseTuples       as PT
+import           RenderCommon
 
 renderImport :: Bool -> Text
 renderImport is_managed =  if is_managed then  [st|
@@ -197,8 +197,8 @@ decodeAndCodeGen basedir fileName = do
         template True "Torch.Internal.Managed.Type.Tuple" tuples
   where
     getTupleType :: [D.Type] -> Maybe PT.Tuple
-    getTupleType [] = Nothing
-    getTupleType [_] = Nothing
+    getTupleType []   = Nothing
+    getTupleType [_]  = Nothing
     getTupleType rets = Just $ PT.Tuple $ map D.type2type rets
 
     tupleHsTypeEq :: PT.Tuple -> PT.Tuple -> Bool

@@ -1,22 +1,23 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DeriveAnyClass      #-}
+{-# LANGUAGE DeriveGeneric       #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE QuasiQuotes         #-}
+{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE QuasiQuotes #-}
+
 module RenderClass where
 
-import Control.Monad (forM_)
-import Data.Yaml (ParseException)
-import qualified Data.Yaml as Y
-import Text.Shakespeare.Text (st)
-import Data.Text (Text, unpack)
-import Data.String (fromString)
-import qualified Data.Text.IO as T
-import System.Directory (createDirectoryIfMissing)
+import           Control.Monad         (forM_)
+import           Data.String           (fromString)
+import           Data.Text             (Text, unpack)
+import qualified Data.Text.IO          as T
+import           Data.Yaml             (ParseException)
+import qualified Data.Yaml             as Y
+import           System.Directory      (createDirectoryIfMissing)
+import           Text.Shakespeare.Text (st)
 
-import qualified ParseClass as PC
-import RenderCommon
+import qualified ParseClass   as PC
+import           RenderCommon
 
 renderImport :: Bool -> PC.CppClassSpec -> Text -> Text
 renderImport is_managed typ_ unmanagedModuleName =  if is_managed then  [st|

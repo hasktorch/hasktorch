@@ -1,14 +1,15 @@
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeApplications    #-}
+
 module Main where
 
-import Control.Exception.Safe (throwString, throw)
-import Data.Proxy
-import ParseDeclarations (Declaration)
-import System.Directory (doesFileExist)
-import Test.Hspec
-import qualified Data.Yaml as Y
+import           Control.Exception.Safe (throw, throwString)
+import           Data.Proxy
+import qualified Data.Yaml              as Y
+import           ParseDeclarations      (Declaration)
+import           System.Directory       (doesFileExist)
+import           Test.Hspec
 
 main :: IO ()
 main = hspec $ do

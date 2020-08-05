@@ -1,11 +1,11 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass    #-}
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module ParseTuples where
 
-import GHC.Generics
 import Data.Yaml
+import GHC.Generics
 
 import qualified ParseFunctionSig as S
 

@@ -1,23 +1,22 @@
-
-
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DeriveAnyClass      #-}
+{-# LANGUAGE DeriveGeneric       #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE QuasiQuotes         #-}
+{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE QuasiQuotes #-}
+
 module RenderCommon where
 
-import Data.String.Conversions (cs)
-import Text.Shakespeare.Text (st)
-import Data.Char (toLower)
-import Data.Text (Text)
-import Data.String (fromString)
-import qualified Data.Text as T
-import qualified Data.List as L
+import           Data.Char               (toLower)
+import qualified Data.List               as L
+import           Data.String             (fromString)
+import           Data.String.Conversions (cs)
+import           Data.Text               (Text)
+import qualified Data.Text               as T
+import           Text.Shakespeare.Text   (st)
 
+import ParseClass       as PC
 import ParseFunctionSig as P
-import ParseClass as PC
 
 bra :: Text
 bra = "["
@@ -29,48 +28,48 @@ cket = "]"
 tenTypeToCppType :: TenType -> Text
 tenTypeToCppType tentype =
   case tentype of
-    Scalar -> "at::Scalar"
-    Tensor -> "at::Tensor"
-    TensorA -> "at::Tensor"
-    TensorA' -> "at::Tensor"
-    TensorAQ -> "at::Tensor"
-    TensorAQ' -> "at::Tensor"
-    TensorQ -> "at::Tensor"
+    Scalar        -> "at::Scalar"
+    Tensor        -> "at::Tensor"
+    TensorA       -> "at::Tensor"
+    TensorA'      -> "at::Tensor"
+    TensorAQ      -> "at::Tensor"
+    TensorAQ'     -> "at::Tensor"
+    TensorQ       -> "at::Tensor"
     TensorAVector -> "std::vector<at::Tensor>"
     TensorOptions -> "at::TensorOptions"
-    TensorList -> "std::vector<at::Tensor>"
-    IndexTensor -> "at::Tensor"
+    TensorList    -> "std::vector<at::Tensor>"
+    IndexTensor   -> "at::Tensor"
     IntegerTensor -> "at::Tensor"
-    BoolTensor -> "at::Tensor"
-    BoolTensorQ -> "at::Tensor"
-    ByteTensor -> "at::Tensor"
-    LongTensor -> "at::Tensor"
+    BoolTensor    -> "at::Tensor"
+    BoolTensorQ   -> "at::Tensor"
+    ByteTensor    -> "at::Tensor"
+    LongTensor    -> "at::Tensor"
 -- In libtorch, IntList is at::IntArrayRef. at::IntArrayRef is refernece-type supporting various array-types.
 -- When we use at::IntArrayRef directly, it is diffcult to manage memory by GHC.
 -- Because at::IntArrayRef do not managae refering memory.
 -- For now, this codes uses std::vector<int64_t> instead of at::IntArrayRef.
 --    IntList _ -> "at::IntArrayRef"
-    IntList _ -> "std::vector<int64_t>"
-    ScalarQ -> "at::Scalar"
-    ScalarType -> "at::ScalarType"
+    IntList _     -> "std::vector<int64_t>"
+    ScalarQ       -> "at::Scalar"
+    ScalarType    -> "at::ScalarType"
 
 ctypeToCppType :: CType -> Text
 ctypeToCppType ct =
   case ct of
-    CBool -> "bool"
-    CVoid -> "void"
-    CFloat -> "float"
+    CBool   -> "bool"
+    CVoid   -> "void"
+    CFloat  -> "float"
     CDouble -> "double"
-    CSize -> "size_t"
-    CInt -> "int"
-    CUInt8 -> "uint8_t"
+    CSize   -> "size_t"
+    CInt    -> "int"
+    CUInt8  -> "uint8_t"
     CUInt16 -> "uint16_t"
     CUInt32 -> "uint32_t"
     CUInt64 -> "uint64_t"
-    CInt8 -> "int8_t"
-    CInt16 -> "int16_t"
-    CInt32 -> "int32_t"
-    CInt64 -> "int64_t"
+    CInt8   -> "int8_t"
+    CInt16  -> "int16_t"
+    CInt32  -> "int32_t"
+    CInt64  -> "int64_t"
     CInt64Q -> "int64_t"
 
 stltypeToCppType :: STLType -> Text
@@ -107,26 +106,26 @@ parsableToCppType parsable =
 tenTypeToHsType :: TenType -> Text
 tenTypeToHsType tentype =
   case tentype of
-    Scalar -> "Scalar"
-    Tensor -> "Tensor"
-    TensorA -> "Tensor"
-    TensorA' -> "Tensor"
-    TensorAQ -> "Tensor"
-    TensorAQ' -> "Tensor"
-    TensorQ -> "Tensor"
+    Scalar        -> "Scalar"
+    Tensor        -> "Tensor"
+    TensorA       -> "Tensor"
+    TensorA'      -> "Tensor"
+    TensorAQ      -> "Tensor"
+    TensorAQ'     -> "Tensor"
+    TensorQ       -> "Tensor"
     TensorAVector -> "TensorAVector"
     TensorOptions -> "TensorOptions"
-    TensorList -> "TensorList"
+    TensorList    -> "TensorList"
     IntegerTensor -> "Tensor"
-    IndexTensor -> "Tensor"
-    BoolTensor -> "Tensor"
-    BoolTensorQ -> "Tensor"
-    ByteTensor -> "Tensor"
-    LongTensor -> "Tensor"
+    IndexTensor   -> "Tensor"
+    BoolTensor    -> "Tensor"
+    BoolTensorQ   -> "Tensor"
+    ByteTensor    -> "Tensor"
+    LongTensor    -> "Tensor"
 --    IntList _ -> "IntArrayRef"
-    IntList _ -> "IntArray"
-    ScalarQ -> "Scalar"
-    ScalarType -> "ScalarType"
+    IntList _     -> "IntArray"
+    ScalarQ       -> "Scalar"
+    ScalarType    -> "ScalarType"
 
 
 
@@ -169,39 +168,39 @@ stltypeToHigherHsType t =
 ctypeToHsType :: CType -> Text
 ctypeToHsType ct =
   case ct of
-    CBool -> "CBool"
-    CVoid -> "()"
-    CFloat -> "CFloat"
+    CBool   -> "CBool"
+    CVoid   -> "()"
+    CFloat  -> "CFloat"
     CDouble -> "CDouble"
-    CSize -> "CSize"
-    CInt -> "CInt"
-    CUInt8 -> "Word8"
+    CSize   -> "CSize"
+    CInt    -> "CInt"
+    CUInt8  -> "Word8"
     CUInt16 -> "Word16"
     CUInt32 -> "Word32"
     CUInt64 -> "Word64"
-    CInt8 -> "Int8"
-    CInt16 -> "Int16"
-    CInt32 -> "Int32"
-    CInt64 -> "Int64"
+    CInt8   -> "Int8"
+    CInt16  -> "Int16"
+    CInt32  -> "Int32"
+    CInt64  -> "Int64"
     CInt64Q -> "Int64"
 
 ctypeToHigherHsType :: CType -> Text
 ctypeToHigherHsType ct =
   case ct of
-    CBool -> "Bool"
-    CVoid -> "()"
-    CFloat -> "Float"
+    CBool   -> "Bool"
+    CVoid   -> "()"
+    CFloat  -> "Float"
     CDouble -> "Double"
-    CSize -> "Int"
-    CInt -> "Int"
-    CUInt8 -> "Word8"
+    CSize   -> "Int"
+    CInt    -> "Int"
+    CUInt8  -> "Word8"
     CUInt16 -> "Word16"
     CUInt32 -> "Word32"
     CUInt64 -> "Word64"
-    CInt8 -> "Int8"
-    CInt16 -> "Int16"
-    CInt32 -> "Int32"
-    CInt64 -> "Int"
+    CInt8   -> "Int8"
+    CInt16  -> "Int16"
+    CInt32  -> "Int32"
+    CInt64  -> "Int"
     CInt64Q -> "Int"
 
 withParens :: Text -> Text
@@ -261,25 +260,25 @@ parsableToHigherHsType parsable =
 tenTypeToInitial :: TenType -> Text
 tenTypeToInitial tentype =
   case tentype of
-    Scalar -> "s"
-    Tensor -> "t"
-    TensorA -> "t"
-    TensorA' -> "T"
-    TensorAQ -> "t"
-    TensorAQ' -> "T"
-    TensorQ -> "t"
+    Scalar        -> "s"
+    Tensor        -> "t"
+    TensorA       -> "t"
+    TensorA'      -> "T"
+    TensorAQ      -> "t"
+    TensorAQ'     -> "T"
+    TensorQ       -> "t"
     TensorAVector -> "v"
     TensorOptions -> "o"
-    TensorList -> "l"
-    IndexTensor -> "t"
+    TensorList    -> "l"
+    IndexTensor   -> "t"
     IntegerTensor -> "t"
-    BoolTensor -> "t"
-    BoolTensorQ -> "t"
-    ByteTensor -> "t"
-    LongTensor -> "L"
-    IntList _ -> "l"
-    ScalarQ -> "s"
-    ScalarType -> "s"
+    BoolTensor    -> "t"
+    BoolTensorQ   -> "t"
+    ByteTensor    -> "t"
+    LongTensor    -> "L"
+    IntList _     -> "l"
+    ScalarQ       -> "s"
+    ScalarType    -> "s"
 
 stltypeToInitial :: STLType -> Text
 stltypeToInitial t =
@@ -289,69 +288,69 @@ stltypeToInitial t =
 ctypeToInitial :: CType -> Text
 ctypeToInitial ct =
   case ct of
-    CBool -> "b"
-    CVoid -> "v"
-    CFloat -> "f"
+    CBool   -> "b"
+    CVoid   -> "v"
+    CFloat  -> "f"
     CDouble -> "d"
-    CSize -> "s"
-    CInt -> "i"
-    CUInt8 -> "B"
+    CSize   -> "s"
+    CInt    -> "i"
+    CUInt8  -> "B"
     CUInt16 -> "S"
     CUInt32 -> "I"
     CUInt64 -> "L"
-    CInt8 -> "b"
-    CInt16 -> "s"
-    CInt32 -> "i"
-    CInt64 -> "l"
+    CInt8   -> "b"
+    CInt16  -> "s"
+    CInt32  -> "i"
+    CInt64  -> "l"
     CInt64Q -> "l"
 
 parsableToInitial :: Parsable -> Text
 parsableToInitial parsable =
   case parsable of
-    Ptr _ -> "p"
-    TenType t -> tenTypeToInitial t
-    DeviceType -> "D"
-    GeneratorType -> "G"
-    StorageType -> "S"
-    CType ct -> ctypeToInitial ct
-    STLType t -> stltypeToInitial t
-    CppString -> "s"
-    Tuple _ -> "t"
-    P.CppClass _ _ _ -> "c"
-    Backend -> "B"
-    Layout -> "L"
-    MemoryFormat -> "M"
-    QScheme -> "S"
+    Ptr _             -> "p"
+    TenType t         -> tenTypeToInitial t
+    DeviceType        -> "D"
+    GeneratorType     -> "G"
+    StorageType       -> "S"
+    CType ct          -> ctypeToInitial ct
+    STLType t         -> stltypeToInitial t
+    CppString         -> "s"
+    Tuple _           -> "t"
+    P.CppClass _ _ _  -> "c"
+    Backend           -> "B"
+    Layout            -> "L"
+    MemoryFormat      -> "M"
+    QScheme           -> "S"
     ConstQuantizerPtr -> "Q"
-    Dimname -> "n"
-    DimnameList -> "N"
-    Symbol -> "s"
-    IValue -> "V"
+    Dimname           -> "n"
+    DimnameList       -> "N"
+    Symbol            -> "s"
+    IValue            -> "V"
 
 isCType :: Parsable -> Bool
 isCType p =
   case p of
     TenType ScalarType -> True
-    DeviceType -> True
-    Backend -> True
-    Layout -> True
-    MemoryFormat -> True
-    QScheme -> True
-    CType _ -> True
-    Ptr _ -> True
-    _ -> False
+    DeviceType         -> True
+    Backend            -> True
+    Layout             -> True
+    MemoryFormat       -> True
+    QScheme            -> True
+    CType _            -> True
+    Ptr _              -> True
+    _                  -> False
 
 isGenerator :: Parsable -> Bool
 isGenerator p =
   case p of
     Ptr GeneratorType -> True
-    GeneratorType -> True
-    _ -> False
+    GeneratorType     -> True
+    _                 -> False
 
 isNotStar :: Parameter -> Bool
 isNotStar p =
   case p of
-    Star -> False
+    Star            -> False
     Parameter _ _ _ -> True
 
 retToCppType :: Parsable -> Text
@@ -384,24 +383,24 @@ toHsFuncName is_constructor cpp_function_name = hsfuncname
   where
     hsfuncname' =
       if is_constructor
-      then drop 3 $ toHsFuncName' cpp_function_name -- To drop the prefix string of 'new' 
+      then drop 3 $ toHsFuncName' cpp_function_name -- To drop the prefix string of 'new'
       else toHsFuncName' cpp_function_name
     hsfuncname =
       case hsfuncname' of
-        "=" -> "_assign_"
+        "="  -> "_assign_"
         "+=" -> "_iadd_"
         "-=" -> "_isub_"
         "*=" -> "_imul_"
         "/=" -> "_idiv_"
         "[]" -> "_at_"
-        _ -> hsfuncname'
-    replace [] = []
+        _    -> hsfuncname'
+    replace []        = []
     replace ('<':xs') = '_':replace xs'
     replace ('>':xs') = replace xs'
     replace (',':xs') = '_':replace xs'
-    replace (x':xs') = x':replace xs'
+    replace (x':xs')  = x':replace xs'
     toHsFuncName' :: String -> String
-    toHsFuncName' [] = []
+    toHsFuncName' []     = []
     toHsFuncName' (x:xs) = toLower x : replace xs
 
 
@@ -476,7 +475,7 @@ functionToCpp is_managed add_type_initials prefix suffix fn =
     call_return =
       case (retType fn) of
         CType CVoid -> ""
-        _ -> "return"
+        _           -> "return"
 
 methodToCpp :: PC.CppClassSpec -> Bool -> Bool -> Bool -> String -> String -> Function -> Text
 methodToCpp class' is_constructor is_managed add_type_initials prefix suffix fn =
@@ -514,13 +513,13 @@ methodToCpp class' is_constructor is_managed add_type_initials prefix suffix fn 
     op :: Text -> Text -> Text
     op fn' args' =
       case fn' of
-        "=" -> "=" <> args'
+        "="  -> "=" <> args'
         "+=" -> "+=" <> args'
         "-=" -> "-=" <> args'
         "*=" -> "*=" <> args'
         "/=" -> "/=" <> args'
         "[]" -> "[" <> args' <> "]"
-        _ -> "." <> fn' <> args'
+        _    -> "." <> fn' <> args'
     cargs_with_obj = type_object_str <> op (fromString (prefix <> P.name fn <> suffix)) cargs
     parameters' =
       if is_constructor
@@ -572,7 +571,7 @@ methodToCpp class' is_constructor is_managed add_type_initials prefix suffix fn 
       then [st|#{parsableToHsType (retType fn)}|]
       else [st|#{pointer} #{withParens (parsableToHsType (retType fn))}|]
     isIntArrayRef (TenType (IntList _)) = True
-    isIntArrayRef _ = False
+    isIntArrayRef _                     = False
     ret_wrapper :: Text -> Text
     ret_wrapper statement =
       if isCType (retType fn)
@@ -584,7 +583,7 @@ methodToCpp class' is_constructor is_managed add_type_initials prefix suffix fn 
     call_return =
       case (retType fn) of
         CType CVoid -> ""
-        _ -> "return"
+        _           -> "return"
 
 getSignatures :: Function -> String
 getSignatures fn = hsfuncname <> cs type_initials
@@ -625,5 +624,3 @@ split' num ls =
         let (x,xs) = splitAt num_per_file dat
         in x : loop xs
   in loop ls
-
-                                                    

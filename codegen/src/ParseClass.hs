@@ -1,28 +1,26 @@
-
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass    #-}
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module ParseClass where
 
-import GHC.Generics
 import Data.Yaml
+import GHC.Generics
 
 -- import Text.Show.Prettyprint (prettyPrint)
 import qualified ParseFunctionSig as S
 
 data CppClassSpec = CppClassSpec
-  { signature :: String
-  , cppname :: String
-  , headers :: [String]
-  , hsname :: String
+  { signature    :: String
+  , cppname      :: String
+  , headers      :: [String]
+  , hsname       :: String
   , constructors :: [S.Function]
-  , methods :: [S.Function]
-  , functions :: [S.Function]
+  , methods      :: [S.Function]
+  , functions    :: [S.Function]
 } deriving (Show, Eq, Generic)
 
 instance FromJSON CppClassSpec
-
 
 -- decodeAndPrint :: String -> IO ()
 -- decodeAndPrint fileName = do
@@ -30,14 +28,14 @@ instance FromJSON CppClassSpec
 --   prettyPrint file
 
 trimSpace :: String -> String
-trimSpace [] = []
+trimSpace []       = []
 trimSpace (' ':xs) = trimSpace xs
-trimSpace (x:xs) = x:trimSpace xs
+trimSpace (x:xs)   = x:trimSpace xs
 
 hasSpace :: String -> Bool
-hasSpace [] = False
+hasSpace []      = False
 hasSpace (' ':_) = True
-hasSpace (_:xs) = hasSpace xs
+hasSpace (_:xs)  = hasSpace xs
 
 hsnameWithoutSpace :: CppClassSpec -> String
 hsnameWithoutSpace typ_ = trimSpace $ hsname typ_

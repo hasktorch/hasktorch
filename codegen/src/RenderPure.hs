@@ -1,25 +1,26 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DeriveAnyClass      #-}
+{-# LANGUAGE DeriveGeneric       #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE QuasiQuotes         #-}
+{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE QuasiQuotes #-}
+
 module RenderPure where
 
-import GHC.Generics
-import qualified Data.Yaml as Y
-import Text.Shakespeare.Text (st)
-import Data.Text (Text)
-import Data.List (isPrefixOf, isSuffixOf, sort)
-import Data.Maybe (isJust)
-import Data.Set (fromList, member)
-import qualified Data.Text.IO as T
-import System.Directory (createDirectoryIfMissing)
-import Data.Aeson.Types -- (defaultOptions, genericParseJSON, constructorTagModifier, sumEncoding(..))
+import           Data.Aeson.Types
+import           Data.List             (isPrefixOf, isSuffixOf, sort)
+import           Data.Maybe            (isJust)
+import           Data.Set              (fromList, member)
+import           Data.Text             (Text)
+import qualified Data.Text.IO          as T
+import qualified Data.Yaml             as Y
+import           GHC.Generics
+import           System.Directory      (createDirectoryIfMissing)
+import           Text.Shakespeare.Text (st)
 
 import qualified ParseDeclarations as D
-import ParseFunctionSig as P
-import RenderCommon
+import           ParseFunctionSig  as P
+import           RenderCommon
 
 
 data Binding
@@ -37,7 +38,7 @@ instance FromJSON Binding where
         "BindRename" -> "rename"
         "Bind"       -> "bind"
         "BindRemove" -> "remove"
-        a -> a
+        a            -> a
     }
 
 
@@ -48,7 +49,7 @@ toFunction dl = P.Function
   , P.parameters = map (\a -> P.Parameter (D.type2type a) (D.name' a) Nothing) $ D.arguments dl
   , P.retType = case D.returns dl of
       [a] -> D.type2type a
-      ax -> P.Tuple $ map D.type2type ax
+      ax  -> P.Tuple $ map D.type2type ax
   , P.variant = P.VFunction
   }
 
@@ -57,15 +58,15 @@ renderFunctions nfs = mconcat $ flip map nfs $ \(n,nf) -> pureFunction n (toFunc
 
 isRemove :: Binding ->  Bool
 isRemove (BindRemove _) = True
-isRemove _ = False
+isRemove _              = False
 
 isRename :: Binding ->  Bool
 isRename (BindRename _ _) = True
-isRename _ = False
+isRename _                = False
 
 removeBinding :: Binding -> (String, D.Declaration) -> Bool
 removeBinding (BindRemove n) (hsName, _) = n == hsName
-removeBinding _ _ = False
+removeBinding _ _                        = False
 
 removeBinding' :: [Binding] -> (String, D.Declaration) -> Bool
 removeBinding' bindings decl = any (\b -> removeBinding b decl) bindings
@@ -83,7 +84,7 @@ renameBinding _ _ = Nothing
 renameBinding' :: [Binding] -> (String, D.Declaration) -> (String, D.Declaration)
 renameBinding' bindings decl =
   case foldl (\i b -> let v = (renameBinding b decl) in if isJust v then v else i) Nothing bindings of
-    Just v -> v
+    Just v  -> v
     Nothing -> decl
 
 renameFilter ::  [Binding] -> [(String, D.Declaration)] -> [(String, D.Declaration)]
@@ -129,7 +130,7 @@ decodeAndCodeGen basedir yamlSpecFileName bindingsFileName = do
       T.writeFile (basedir <> "/Torch/Functional/Internal.hs") $
         template "Torch.Functional.Internal" $
         renderFunctions l
-            
+
 
 renderImport :: Text
 renderImport = [st|
