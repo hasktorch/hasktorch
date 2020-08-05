@@ -1,22 +1,27 @@
 module Torch.Initializers where
 
-import Torch.Functional hiding (sqrt)
+import Torch.Functional      hiding (sqrt)
 import Torch.Tensor
 import Torch.TensorFactories
 
 -- Note: Identity = linear w/o activation
-data NonLinearity = Identity | Sigmoid | Tanh | Relu | LeakyRelu Float
+data NonLinearity = Identity
+    | Sigmoid
+    | Tanh
+    | Relu
+    | LeakyRelu Float
 
-data FanMode = FanIn | FanOut
+data FanMode = FanIn
+    | FanOut
 
 newtype Shape = Shape [Int]
 
 -- | Gain scaling value for He initialization
 calculateGain :: NonLinearity -> Float
-calculateGain Identity = 1.0
-calculateGain Sigmoid = 1.0
-calculateGain Tanh = 5.0 / 3
-calculateGain Relu = sqrt 2.0
+calculateGain Identity          = 1.0
+calculateGain Sigmoid           = 1.0
+calculateGain Tanh              = 5.0 / 3
+calculateGain Relu              = sqrt 2.0
 calculateGain (LeakyRelu param) = sqrt (2.0 / (1.0 + (param) ^^ 2))
 
 -- | Fan-in / Fan-out scaling calculation
@@ -26,7 +31,7 @@ calculateFan shape =
         error "Fan in and fan out can not be computed for tensor with fewer than 2 dimensions"
     else if dimT == 2 then
         (shape !! 1, shape !! 0)
-        else 
+        else
             (numInputFmaps * receptiveFieldSize,
             numOutputFmaps * receptiveFieldSize)
     where
@@ -56,7 +61,7 @@ xavierNormal gain shape = do
 
 -- | Get fan in or fan out value depending on selected fan mode, used by Kaiming
 getter :: FanMode -> ((Int, Int) -> Int)
-getter FanIn = fst
+getter FanIn  = fst
 getter FanOut = snd
 
 -- | Kaiming Initialization - Uniform
@@ -64,7 +69,7 @@ kaimingUniform :: FanMode -> NonLinearity -> [Int] -> IO Tensor
 kaimingUniform mode nonlinearity shape = do
     init <- randIO' shape
     pure $ subScalar bound $ mulScalar (bound * 2.0) init
-    where 
+    where
         gain = calculateGain nonlinearity
         fanValue = fromIntegral $ (getter mode) (calculateFan shape)
         std = gain / (sqrt fanValue)
@@ -75,7 +80,7 @@ kaimingNormal :: FanMode -> NonLinearity -> [Int] -> IO Tensor
 kaimingNormal mode nonlinearity shape = do
     init <- (randnIO' shape)
     pure $ mulScalar std init
-    where 
+    where
         gain = calculateGain nonlinearity
         fanValue = fromIntegral $ (getter mode) (calculateFan shape)
         std = gain / (sqrt fanValue)

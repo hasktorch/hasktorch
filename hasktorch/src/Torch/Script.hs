@@ -1,55 +1,61 @@
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module Torch.Script where
 
-import Control.Monad (forM_, forM, replicateM)
 import Control.Exception.Safe (throwIO)
+import Control.Monad          (forM, forM_, replicateM)
+import Data.Int               (Int16, Int64)
+import Data.List              (intercalate)
+import Data.Proxy
+import Data.Reflection
+import Data.Word              (Word8)
+import Foreign.C.Types
 import Foreign.ForeignPtr
 import Foreign.Ptr
 import Foreign.Storable
-import Foreign.C.Types
-import System.IO.Unsafe
-import Data.Int (Int16, Int64)
-import Data.Word (Word8)
-import Data.List (intercalate)
-import Data.Proxy
-import Data.Reflection
 import Numeric
+import System.IO.Unsafe
 
-import Torch.Internal.Cast
-import Torch.Internal.Class (Castable(..), CppTuple2(..), CppTuple3(..), CppTuple4(..), CppObject(..))
-import qualified Torch.Internal.Unmanaged.Type.Module as Unmanaged
-import qualified Torch.Internal.Managed.Type.Context as ATen
-import qualified Torch.Internal.Managed.Type.Tensor as ATen
+import           Torch.Internal.Cast
+import           Torch.Internal.Class
+                 ( Castable (..)
+                 , CppObject (..)
+                 , CppTuple2 (..)
+                 , CppTuple3 (..)
+                 , CppTuple4 (..)
+                 )
+import qualified Torch.Internal.Const                      as ATen
+import qualified Torch.Internal.Managed.Cast               as ATen
+import qualified Torch.Internal.Managed.Native             as ATen
+import qualified Torch.Internal.Managed.Type.Context       as ATen
+import           Torch.Internal.Managed.Type.IValue
+import qualified Torch.Internal.Managed.Type.Module        as LibTorch
+import qualified Torch.Internal.Managed.Type.StdArray      as ATen
+import qualified Torch.Internal.Managed.Type.StdString     as ATen
+import qualified Torch.Internal.Managed.Type.Tensor        as ATen
 import qualified Torch.Internal.Managed.Type.TensorOptions as ATen
-import qualified Torch.Internal.Managed.Type.StdArray as ATen
-import qualified Torch.Internal.Managed.Type.StdString as ATen
-import qualified Torch.Internal.Managed.Native as ATen
-import qualified Torch.Internal.Managed.Cast as ATen
-import qualified Torch.Internal.Type as ATen
-import qualified Torch.Internal.Const as ATen
-import Torch.Internal.Unmanaged.Type.IValue (IValueLike(..))
-import Torch.Internal.Unmanaged.Type.C10Dict
-import Torch.Internal.Managed.Type.IValue
-import Torch.Internal.Type (TensorList)
-import qualified Torch.Internal.Managed.Type.Module as LibTorch
+import           Torch.Internal.Type                       (TensorList)
+import qualified Torch.Internal.Type                       as ATen
+import           Torch.Internal.Unmanaged.Type.C10Dict
+import           Torch.Internal.Unmanaged.Type.IValue      (IValueLike (..))
+import qualified Torch.Internal.Unmanaged.Type.Module      as Unmanaged
 
+import Torch.Autograd
 import Torch.Device
 import Torch.DType
-import Torch.Tensor (Tensor(..))
-import Torch.TensorOptions
 import Torch.NN
-import Torch.Autograd
+import Torch.Tensor        (Tensor (..))
+import Torch.TensorOptions
 
 newtype ScriptModule = UnsafeScriptModule (ForeignPtr ATen.Module)
 newtype RawModule = UnsafeRawModule (ForeignPtr ATen.Module)
@@ -66,25 +72,25 @@ newtype Capsule = UnsafeCapsule (ForeignPtr (ATen.C10Ptr ATen.Capsule))
 -- | See https://github.com/pytorch/pytorch/wiki/PyTorch-IR
 newtype Graph = UnsafeGraph (ForeignPtr (ATen.SharedPtr ATen.JitGraph))
 
-data JitGraph
-  = JitGraph
-  { graphInputs :: [JitValue]
-  , graphOutputs :: [JitValue]
-  , graphNodes :: [JitNode]
-  } deriving (Show, Eq)
+data JitGraph = JitGraph
+    { graphInputs :: [JitValue]
+    , graphOutputs :: [JitValue]
+    , graphNodes :: [JitNode]
+    }
+    deriving (Show, Eq)
 
-data JitNode
-  = JitNode
-  { nodeInputs :: [JitValue]
-  , nodeOutputs :: [JitValue]
-  , nodeKind :: String
-  } deriving (Show, Eq)
+data JitNode = JitNode
+    { nodeInputs :: [JitValue]
+    , nodeOutputs :: [JitValue]
+    , nodeKind :: String
+    }
+    deriving (Show, Eq)
 
-data JitValue
-  = JitValue
-  { valueId :: Int
-  , valueType :: String
-  } deriving (Show, Eq)
+data JitValue = JitValue
+    { valueId :: Int
+    , valueType :: String
+    }
+    deriving (Show, Eq)
 
 instance Show Blob where
   show _ = "Blob"
@@ -98,27 +104,26 @@ instance Show Object where
 instance Show Capsule where
   show _ = "Capsule"
 
-data IValue
-  = IVNone
-  | IVTensor Tensor
-  | IVDouble Double
-  | IVInt Int64
-  | IVBool Bool
-  | IVTuple [IValue]
-  | IVIntList [Int64]
-  | IVDoubleList [Double]
-  | IVBoolList [Bool]
-  | IVString String
-  | IVTensorList [Tensor]
-  | IVBlob -- Blob
-  | IVGenericList [IValue]
-  | IVGenericDict [(IValue,IValue)]
-  | IVFuture -- Future
-  | IVDevice -- Device
-  | IVObject -- Object
-  | IVUninitialized
-  | IVCapsule -- Capsule
-  deriving (Show)
+data IValue = IVNone
+    | IVTensor Tensor
+    | IVDouble Double
+    | IVInt Int64
+    | IVBool Bool
+    | IVTuple [IValue]
+    | IVIntList [Int64]
+    | IVDoubleList [Double]
+    | IVBoolList [Bool]
+    | IVString String
+    | IVTensorList [Tensor]
+    | IVBlob
+    | IVGenericList [IValue]
+    | IVGenericDict [(IValue, IValue)]
+    | IVFuture
+    | IVDevice
+    | IVObject
+    | IVUninitialized
+    | IVCapsule
+    deriving (Show)
 
 instance Castable ScriptModule (ForeignPtr ATen.Module) where
   cast (UnsafeScriptModule obj) f = f obj
@@ -141,10 +146,9 @@ save = cast2 LibTorch.save
 save' :: RawModule -> FilePath -> IO ()
 save' = cast2 LibTorch.save
 
-data LoadMode
-  = WithoutRequiredGrad
-  | WithRequiredGrad
-  deriving (Show,Eq)
+data LoadMode = WithoutRequiredGrad
+    | WithRequiredGrad
+    deriving (Show, Eq)
 
 load :: LoadMode -> FilePath -> IO ScriptModule
 load WithoutRequiredGrad file = cast1 LibTorch.load file
@@ -154,7 +158,7 @@ load WithRequiredGrad file = do
   paramsWithRequiredGrad <- forM params makeIndependent
   setParameters module' (map toDependent paramsWithRequiredGrad)
   return (UnsafeScriptModule rmodule)
-  
+
 load' :: FilePath -> IO RawModule
 load' = cast1 LibTorch.load
 
@@ -224,7 +228,7 @@ dumpToStr' :: ScriptModule -> IO String
 dumpToStr' obj = dumpToStr obj True True True 0
 
 runMethod :: ScriptModule -> String -> [IValue] -> IValue
-runMethod module' func inputs = unsafePerformIO $ cast3 runMethod' module' func inputs 
+runMethod module' func inputs = unsafePerformIO $ cast3 runMethod' module' func inputs
   where
     runMethod' :: ScriptModule -> String -> [RawIValue] -> IO RawIValue
     runMethod' = cast3 LibTorch.runMethod
@@ -285,7 +289,7 @@ traceWithParameters moduleName func parameterized_parameters inputs = do
   let args = intercalate ", " $ map (\i ->  "i" ++ show i) [0..(ilen-1)]
       params = intercalate ", " $ map (\i ->  "self.p" ++ show i) [0..(plen-1)]
   define r $
-    "def forward(self, " ++ args ++ "):\n" ++ 
+    "def forward(self, " ++ args ++ "):\n" ++
     "    return self.forwardWithParameters(" ++ params ++ ", " ++ args ++ " )\n"
   return r
 
@@ -317,7 +321,7 @@ printGraph = cast1 LibTorch.printGraph
 -- On the other hand, torch.onnx.export of python works.
 -- onnx's symbol map is in python code.
 -- https://github.com/pytorch/pytorch/blob/master/torch/onnx/symbolic_opset9.py
--- 
+--
 -- If you need onnx-file, at first make torchscript by trace , then convert torchscript into onnx by python-code.
 printOnnx :: Graph -> IO String
 printOnnx = cast1 LibTorch.printOnnx

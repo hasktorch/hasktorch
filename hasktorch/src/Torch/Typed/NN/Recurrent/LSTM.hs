@@ -1,26 +1,26 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NoStarIsType #-}
-{-# LANGUAGE OverloadedLists #-}
-{-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE QuantifiedConstraints #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StrictData #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes     #-}
+{-# LANGUAGE ConstraintKinds         #-}
+{-# LANGUAGE DataKinds               #-}
+{-# LANGUAGE DeriveGeneric           #-}
+{-# LANGUAGE FlexibleContexts        #-}
+{-# LANGUAGE FlexibleInstances       #-}
+{-# LANGUAGE GADTs                   #-}
+{-# LANGUAGE MultiParamTypeClasses   #-}
+{-# LANGUAGE NoStarIsType            #-}
+{-# LANGUAGE OverloadedLists         #-}
+{-# LANGUAGE PartialTypeSignatures   #-}
+{-# LANGUAGE PolyKinds               #-}
+{-# LANGUAGE QuantifiedConstraints   #-}
+{-# LANGUAGE RankNTypes              #-}
+{-# LANGUAGE RecordWildCards         #-}
+{-# LANGUAGE ScopedTypeVariables     #-}
+{-# LANGUAGE StandaloneDeriving      #-}
+{-# LANGUAGE StrictData              #-}
+{-# LANGUAGE TypeApplications        #-}
+{-# LANGUAGE TypeFamilies            #-}
+{-# LANGUAGE TypeOperators           #-}
+{-# LANGUAGE UndecidableInstances    #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.KnownNat.Solver #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Extra.Solver #-}
@@ -200,14 +200,14 @@ instance A.Parameterized (LSTMLayer inputSize hiddenSize directionality dtype de
             (UnsafeMkParameter bh')
             )
 
-data LSTMLayerStackSpec
-  (inputSize :: Nat)
-  (hiddenSize :: Nat)
-  (numLayers :: Nat)
-  (directionality :: RNNDirectionality)
-  (dtype :: D.DType)
-  (device :: (D.DeviceType, Nat))
-  = LSTMLayerStackSpec deriving (Show, Eq)
+data LSTMLayerStackSpec (inputSize :: Nat) (hiddenSize ::
+                                         Nat) (numLayers :: Nat) (directionality ::
+                                                                    RNNDirectionality) (dtype ::
+                                                                                          D.DType) (device
+                                                                                                      ::
+                                                                                                      (D.DeviceType,
+                                                                                                       Nat)) = LSTMLayerStackSpec
+    deriving (Show, Eq)
 
 -- Input-to-hidden, hidden-to-hidden, and bias parameters for a mulilayered
 -- (and optionally) bidirectional LSTM.
@@ -318,18 +318,17 @@ newtype LSTMSpec
   = LSTMSpec DropoutSpec
   deriving (Show, Generic)
 
-data LSTM
-  (inputSize :: Nat)
-  (hiddenSize :: Nat)
-  (numLayers :: Nat)
-  (directionality :: RNNDirectionality)
-  (dtype :: D.DType)
-  (device :: (D.DeviceType, Nat))
-  = LSTM
-      { lstm_layer_stack :: LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device
-      , lstm_dropout     :: Dropout
-      }
-  deriving (Show, Generic)
+data LSTM (inputSize :: Nat) (hiddenSize :: Nat) (numLayers ::
+                                               Nat) (directionality :: RNNDirectionality) (dtype ::
+                                                                                             D.DType) (device
+                                                                                                         ::
+                                                                                                         (D.DeviceType,
+                                                                                                          Nat)) = LSTM
+    { lstm_layer_stack :: LSTMLayerStack inputSize hiddenSize numLayers directionality dtype
+  device
+    , lstm_dropout :: Dropout
+    }
+    deriving (Show, Generic)
 
 -- TODO: when we have cannonical initializers do this correctly:
 -- https://github.com/pytorch/pytorch/issues/9221

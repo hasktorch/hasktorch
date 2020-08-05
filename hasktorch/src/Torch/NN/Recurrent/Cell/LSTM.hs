@@ -1,31 +1,33 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DeriveGeneric          #-}
+{-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE RecordWildCards        #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
 
 module Torch.NN.Recurrent.Cell.LSTM where
 
 import GHC.Generics
 import Torch
 
-data LSTMSpec = LSTMSpec {
-    inputSize :: Int,
-    hiddenSize :: Int
-} deriving (Eq, Show)
+data LSTMSpec = LSTMSpec
+    { inputSize :: Int
+    , hiddenSize :: Int
+    }
+    deriving (Eq, Show)
 
-data LSTMCell = LSTMCell {
-    weightsIH :: Parameter,
-    weightsHH :: Parameter,
-    biasIH :: Parameter,
-    biasHH :: Parameter
-} deriving (Generic, Show)
+data LSTMCell = LSTMCell
+    { weightsIH :: Parameter
+    , weightsHH :: Parameter
+    , biasIH :: Parameter
+    , biasHH :: Parameter
+    }
+    deriving (Generic, Show)
 
-lstmCellForward 
+lstmCellForward
     :: LSTMCell -- ^ cell parameters
     -> Tensor -- ^ input
     -> (Tensor, Tensor) -- ^ (hidden, cell)
-    -> (Tensor, Tensor) -- ^ output (hidden, cell) 
+    -> (Tensor, Tensor) -- ^ output (hidden, cell)
 lstmCellForward LSTMCell{..} input hidden =
     lstmCell weightsIH' weightsHH' biasIH' biasHH' hidden input
     where

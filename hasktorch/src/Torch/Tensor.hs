@@ -1,49 +1,56 @@
-{-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DefaultSignatures     #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module Torch.Tensor where
 
-import Control.Monad (forM_, forM)
-import Control.Exception.Safe (throwIO)
-import GHC.Generics
-import Foreign.ForeignPtr
-import Foreign.Ptr
-import Foreign.Storable
-import Foreign.C.Types
-import System.IO.Unsafe
-import Data.Int (Int16, Int64)
-import Data.Word (Word8)
-import Data.List (intercalate)
-import Data.Proxy
-import Data.Reflection
-import qualified Data.Vector as V
-import Numeric
+import           Control.Exception.Safe (throwIO)
+import           Control.Monad          (forM, forM_)
+import           Data.Int               (Int16, Int64)
+import           Data.List              (intercalate)
+import           Data.Proxy
+import           Data.Reflection
+import qualified Data.Vector            as V
+import           Data.Word              (Word8)
+import           Foreign.C.Types
+import           Foreign.ForeignPtr
+import           Foreign.Ptr
+import           Foreign.Storable
+import           GHC.Generics
+import           Numeric
+import           System.IO.Unsafe
 
-import Torch.Internal.Cast
-import Torch.Internal.Class (Castable(..), CppTuple2(..), CppTuple3(..), CppTuple4(..))
-import qualified Torch.Internal.Unmanaged.Type.Tensor as Unmanaged (tensor_data_ptr)
-import qualified Torch.Internal.Managed.Type.Context as ATen
-import qualified Torch.Internal.Managed.Type.Tensor as ATen
+import           Torch.Internal.Cast
+import           Torch.Internal.Class
+                 ( Castable (..)
+                 , CppTuple2 (..)
+                 , CppTuple3 (..)
+                 , CppTuple4 (..)
+                 )
+import qualified Torch.Internal.Const                      as ATen
+import qualified Torch.Internal.Managed.Cast               as ATen
+import qualified Torch.Internal.Managed.Native             as ATen
+import qualified Torch.Internal.Managed.TensorFactories    as LibTorch
+import qualified Torch.Internal.Managed.Type.Context       as ATen
+import qualified Torch.Internal.Managed.Type.StdArray      as ATen
+import qualified Torch.Internal.Managed.Type.StdString     as ATen
+import qualified Torch.Internal.Managed.Type.Tensor        as ATen
+import qualified Torch.Internal.Managed.Type.TensorIndex   as ATen
 import qualified Torch.Internal.Managed.Type.TensorOptions as ATen
-import qualified Torch.Internal.Managed.Type.TensorIndex as ATen
-import qualified Torch.Internal.Managed.Type.StdArray as ATen
-import qualified Torch.Internal.Managed.Type.StdString as ATen
-import qualified Torch.Internal.Managed.Native as ATen
-import qualified Torch.Internal.Managed.Cast as ATen
-import qualified Torch.Internal.Type as ATen
-import qualified Torch.Internal.Const as ATen
-import qualified Torch.Internal.Managed.TensorFactories as LibTorch
+import qualified Torch.Internal.Type                       as ATen
+import qualified Torch.Internal.Unmanaged.Type.Tensor      as Unmanaged
+                 ( tensor_data_ptr
+                 )
 
 import Torch.Device
 import Torch.DType
@@ -64,32 +71,32 @@ instance Castable Tensor ATenTensor where
 --------------------------------------------------------------------------------
 
 -- | Returns the total number of elements in the input tensor.
-numel 
- :: Tensor -- ^ input 
+numel
+ :: Tensor -- ^ input
  -> Int -- ^ number of elements in tensor
 numel t = unsafePerformIO $ cast1 ATen.tensor_numel $ t
 
 -- | Returns the size of a given dimension of the input tensor.
 size
  :: Int -- ^ dimension
- -> Tensor -- ^ input 
+ -> Tensor -- ^ input
  -> Int
 size dim t = unsafePerformIO $ (cast2 ATen.tensor_size_l) t dim
 
 -- | Returns the shape of the tensor
-shape 
+shape
  :: Tensor -- ^ input
  -> [Int] -- ^ list of integers representing the shape of the tensor
 shape t = unsafePerformIO $ (cast1 ATen.tensor_sizes) t
 
 -- | Returns the dimensions of the input tensor
-dim 
- :: Tensor -- ^ input 
+dim
+ :: Tensor -- ^ input
  -> Int -- ^ output
 dim t = unsafePerformIO $ (cast1 ATen.tensor_dim) t
 
 -- | Returns the device on which the tensor is currently allocated
-device 
+device
  :: Tensor -- ^ input
  -> Device -- ^ object representing the device
 device t = unsafePerformIO $ do
@@ -105,27 +112,27 @@ device t = unsafePerformIO $ do
   cuda di = Device { deviceType = CUDA, deviceIndex = fromIntegral di }
 
 -- | Returns the data type of the input tensor
-dtype 
+dtype
  :: Tensor -- ^ input
  -> DType -- ^ data type of the input tensor
 dtype t = unsafePerformIO $ cast1 ATen.tensor_scalar_type t
 
 
-toDouble :: Tensor -> Double  
+toDouble :: Tensor -> Double
 toDouble t = unsafePerformIO $ cast1 ATen.tensor_item_double t
 
 toInt :: Tensor -> Int
 toInt t = unsafePerformIO $ cast1 ATen.tensor_item_int64_t t
 
 -- | Casts the input tensor to the given data type
-toType 
- :: DType -- ^ data type to cast input to 
- -> Tensor -- ^ input 
+toType
+ :: DType -- ^ data type to cast input to
+ -> Tensor -- ^ input
  -> Tensor -- ^ output
 toType dtype t = unsafePerformIO $ cast2 ATen.tensor_toType_s t dtype
 
 -- | Casts the input tensor to given device
-toDevice 
+toDevice
  :: Device -- ^ device to cast input to
  -> Tensor -- ^ input
  -> Tensor -- ^ output
@@ -182,23 +189,23 @@ toDevice device' t = unsafePerformIO $ do
       <> show di'
       <> "\""
 
--- | Slices the input tensor along the selected dimension at the given index. 
-select 
+-- | Slices the input tensor along the selected dimension at the given index.
+select
  :: Int -- ^ dimension to slice along
- -> Int -- ^ index in the given dimension 
+ -> Int -- ^ index in the given dimension
  -> Tensor -- ^ input
  -> Tensor -- ^ output
 select dim idx t = unsafePerformIO $ cast3 ATen.tensor_select_ll t dim idx
 
 -- | Returns a new tensor which indexes the input tensor along dimension dim using the entries in index which is a LongTensor.
-indexSelect 
+indexSelect
  :: Int -- ^ dim
  -> Tensor -- ^ indexTensor
  -> Tensor -- ^ input
  -> Tensor
 indexSelect dim indexTensor t = unsafePerformIO $ (cast3 ATen.index_select_tlt) t dim indexTensor
 
--- | Slices the input tensor along the selected dimension at the given range. 
+-- | Slices the input tensor along the selected dimension at the given range.
 slice
   :: Int -- ^ dim
   -> Int -- ^ start
@@ -219,9 +226,9 @@ contiguous
 contiguous t = unsafePerformIO $ (cast1 ATen.tensor_contiguous) t
 
 -- | Returns a tensor with the same data and number of elements as input, but with the specified shape.
-reshape 
- :: [Int] 
- -> Tensor 
+reshape
+ :: [Int]
+ -> Tensor
  -> Tensor
 reshape shape t = unsafePerformIO $ cast2 ATen.reshape_tl t shape
 
@@ -294,13 +301,13 @@ maskedFill (Unsafe t') idx v' = unsafePerformIO $ do
   return $ Unsafe t
 
 data None = None
-  deriving (Show, Eq)
+    deriving (Show, Eq)
 
 data Ellipsis = Ellipsis
-  deriving (Show, Eq)
+    deriving (Show, Eq)
 
 data Slice a = Slice a
-  deriving (Show, Eq)
+    deriving (Show, Eq)
 
 instance Castable RawTensorIndex (ForeignPtr ATen.TensorIndex) where
   cast (RawTensorIndex obj) f = f obj
@@ -313,22 +320,22 @@ instance {-# OVERLAPS #-} TensorIndex None where
   pushIndex vec _ = unsafePerformIO $ do
     idx <- ATen.newTensorIndexWithNone
     return ((RawTensorIndex idx):vec)
-    
+
 instance {-# OVERLAPS #-} TensorIndex Ellipsis where
   pushIndex vec _ = unsafePerformIO $ do
     idx <- ATen.newTensorIndexWithEllipsis
     return ((RawTensorIndex idx):vec)
-    
+
 instance {-# OVERLAPS #-} TensorIndex Bool where
   pushIndex vec b = unsafePerformIO $ do
     idx <- ATen.newTensorIndexWithBool (if b then 1 else 0)
     return ((RawTensorIndex idx):vec)
-    
+
 instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (a,a)) where
   pushIndex vec (Slice (start,end)) = unsafePerformIO $ do
     idx <- ATen.newTensorIndexWithSlice (fromIntegral start :: CInt) (fromIntegral end ::CInt) 1
     return ((RawTensorIndex idx):vec)
-    
+
 instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (a,a,a)) where
   pushIndex vec (Slice (start,end,step)) = unsafePerformIO $ do
     idx <- ATen.newTensorIndexWithSlice (fromIntegral start :: CInt) (fromIntegral end ::CInt) (fromIntegral step ::CInt)
@@ -391,7 +398,7 @@ instance TensorIndex () where
 
 instance (TensorIndex a, TensorIndex b) => TensorIndex (a,b) where
   pushIndex vec (a,b) = (flip pushIndex a) . (flip pushIndex b) $ vec
-  
+
 instance (TensorIndex a, TensorIndex b, TensorIndex c) => TensorIndex (a,b,c) where
   pushIndex vec (a,b,c) = (flip pushIndex a) . (flip pushIndex b) . (flip pushIndex c) $ vec
 
@@ -490,7 +497,7 @@ instance {-# OVERLAPPING #-} TensorLike a => TensorLike [a] where
 
   _dtype = _dtype @a
 
-  _dims [] = []
+  _dims []      = []
   _dims v@(x:_) = (length v):(_dims x)
 
   _deepDims [] = Just []
@@ -522,7 +529,7 @@ class AsTensors as where
 
 instance TensorLike a => AsTensors a where
   toTensors = pure . asTensor
-  
+
 class GAsTensors record where
   gToTensors :: record as -> V.Vector Tensor
 
@@ -530,14 +537,14 @@ instance (GAsTensors ls, GAsTensors rs ) => GAsTensors (ls :*: rs) where
   gToTensors (g :*: d) = gToTensors  g V.++ gToTensors d
 
 instance (GAsTensors ls , GAsTensors rs ) => GAsTensors (ls :+: rs) where
-  gToTensors (L1 g) = gToTensors g 
-  gToTensors (R1 g) = gToTensors g 
-  
+  gToTensors (L1 g) = gToTensors g
+  gToTensors (R1 g) = gToTensors g
+
 instance (GAsTensors ls) => GAsTensors (M1 i c ls) where
-  gToTensors (M1 g) = gToTensors g 
+  gToTensors (M1 g) = gToTensors g
 
 instance (TensorLike ls) => GAsTensors (K1 i ls) where
-  gToTensors (K1 g) = pure $ asTensor g 
+  gToTensors (K1 g) = pure $ asTensor g
 
 --------------------------------------------------------------------------------
 -- Show

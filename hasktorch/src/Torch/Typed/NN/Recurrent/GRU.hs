@@ -1,26 +1,26 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NoStarIsType #-}
-{-# LANGUAGE OverloadedLists #-}
-{-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE QuantifiedConstraints #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StrictData #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes     #-}
+{-# LANGUAGE ConstraintKinds         #-}
+{-# LANGUAGE DataKinds               #-}
+{-# LANGUAGE DeriveGeneric           #-}
+{-# LANGUAGE FlexibleContexts        #-}
+{-# LANGUAGE FlexibleInstances       #-}
+{-# LANGUAGE GADTs                   #-}
+{-# LANGUAGE MultiParamTypeClasses   #-}
+{-# LANGUAGE NoStarIsType            #-}
+{-# LANGUAGE OverloadedLists         #-}
+{-# LANGUAGE PartialTypeSignatures   #-}
+{-# LANGUAGE PolyKinds               #-}
+{-# LANGUAGE QuantifiedConstraints   #-}
+{-# LANGUAGE RankNTypes              #-}
+{-# LANGUAGE RecordWildCards         #-}
+{-# LANGUAGE ScopedTypeVariables     #-}
+{-# LANGUAGE StandaloneDeriving      #-}
+{-# LANGUAGE StrictData              #-}
+{-# LANGUAGE TypeApplications        #-}
+{-# LANGUAGE TypeFamilies            #-}
+{-# LANGUAGE TypeOperators           #-}
+{-# LANGUAGE UndecidableInstances    #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.KnownNat.Solver #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Extra.Solver #-}
@@ -152,14 +152,14 @@ instance
       <*> (makeIndependent =<< pure zeros)
       <*> (makeIndependent =<< pure zeros)
 
-data GRULayerStackSpec
-  (inputSize :: Nat)
-  (hiddenSize :: Nat)
-  (numLayers :: Nat)
-  (directionality :: RNNDirectionality)
-  (dtype :: D.DType)
-  (device :: (D.DeviceType, Nat))
-  = GRULayerStackSpec deriving (Show, Eq)
+data GRULayerStackSpec (inputSize :: Nat) (hiddenSize :: Nat) (numLayers
+                                                            :: Nat) (directionality ::
+                                                                       RNNDirectionality) (dtype ::
+                                                                                             D.DType) (device
+                                                                                                         ::
+                                                                                                         (D.DeviceType,
+                                                                                                          Nat)) = GRULayerStackSpec
+    deriving (Show, Eq)
 
 -- Input-to-hidden, hidden-to-hidden, and bias parameters for a mulilayered
 -- (and optionally) bidirectional GRU.
@@ -255,18 +255,17 @@ newtype GRUSpec
   = GRUSpec DropoutSpec
   deriving (Show, Generic)
 
-data GRU
-  (inputSize :: Nat)
-  (hiddenSize :: Nat)
-  (numLayers :: Nat)
-  (directionality :: RNNDirectionality)
-  (dtype :: D.DType)
-  (device :: (D.DeviceType, Nat))
-  = GRU
-      { gru_layer_stack :: GRULayerStack inputSize hiddenSize numLayers directionality dtype device
-      , gru_dropout     :: Dropout
-      }
-  deriving (Show, Generic)
+data GRU (inputSize :: Nat) (hiddenSize :: Nat) (numLayers ::
+                                              Nat) (directionality :: RNNDirectionality) (dtype ::
+                                                                                            D.DType) (device
+                                                                                                        ::
+                                                                                                        (D.DeviceType,
+                                                                                                         Nat)) = GRU
+    { gru_layer_stack :: GRULayerStack inputSize hiddenSize numLayers directionality dtype
+  device
+    , gru_dropout :: Dropout
+    }
+    deriving (Show, Generic)
 
 -- TODO: when we have cannonical initializers do this correctly:
 -- https://github.com/pytorch/pytorch/issues/9221

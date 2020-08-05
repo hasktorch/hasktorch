@@ -444,7 +444,7 @@ sinusoidal =
           . linspace @numEmbeds (0 :: Int)
           $ natValI @(numEmbeds - 1)
       scalingFactors =
-        exp 
+        exp
           . mulScalar (- log (10000 :: Double) / (fromInteger . natVal $ Proxy @(Div embedDim 2)))
           . linspace @(Div embedDim 2) (0 :: Int)
           $ natValI @((Div embedDim 2) - 1)

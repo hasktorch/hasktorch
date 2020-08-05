@@ -1,22 +1,22 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE TypeInType #-}
+{-# LANGUAGE AllowAmbiguousTypes    #-}
+{-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE DefaultSignatures      #-}
+{-# LANGUAGE DeriveGeneric          #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE GADTs                  #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE PartialTypeSignatures  #-}
+{-# LANGUAGE PolyKinds              #-}
+{-# LANGUAGE RankNTypes             #-}
+{-# LANGUAGE RecordWildCards        #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE TypeApplications       #-}
+{-# LANGUAGE TypeFamilies           #-}
+{-# LANGUAGE TypeInType             #-}
+{-# LANGUAGE TypeOperators          #-}
+{-# LANGUAGE UndecidableInstances   #-}
 {-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 
 module Torch.Typed.Parameter
@@ -24,18 +24,21 @@ module Torch.Typed.Parameter
   , Torch.NN.Randomizable(..)
   ) where
 
-import           Control.Monad.State.Strict
-import           Torch.HList
-import           Data.Kind                    (Type)
-import           GHC.TypeLits
-import           GHC.TypeLits.Extra
-import           GHC.Generics
+import Control.Monad.State.Strict
+import Data.Kind                  (Type)
+import GHC.Generics
+import GHC.TypeLits
+import GHC.TypeLits.Extra
+import Torch.HList
 
-import qualified Torch.NN (Randomizable(..), Parameter, sample)
-import qualified Torch.Tensor (toDevice, toType)
-import qualified Torch.Autograd (IndependentTensor(..), makeIndependent)
-import           Torch.Device (DeviceType)
-import           Torch.DType (DType)
+import qualified Torch.Autograd
+                 ( IndependentTensor (..)
+                 , makeIndependent
+                 )
+import           Torch.Device           (DeviceType)
+import           Torch.DType            (DType)
+import qualified Torch.NN               (Parameter, Randomizable (..), sample)
+import qualified Torch.Tensor           (toDevice, toType)
 import           Torch.Typed.Aux
 import           Torch.Typed.Factories
 import           Torch.Typed.Functional

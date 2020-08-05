@@ -1,5 +1,5 @@
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeApplications      #-}
 
 module Torch.Functional
     ( module Torch.Functional
@@ -24,53 +24,54 @@ module Torch.Functional
     , Internal.sumWithDimnames
 ) where
 
-import Prelude hiding ( all
-                      , any
-                      , sin
-                      , sinh
-                      , cos
-                      , cosh
-                      , tan
-                      , tanh
-                      , asin
-                      , asinh
-                      , acos
-                      , acosh
-                      , atan
-                      , atanh
-                      , max
-                      , min
-                      , exp
-                      , log
-                      , round
-                      , isNaN
-                      , floor
-                      , ceil
-                      )
+import           Prelude hiding
+                 ( acos
+                 , acosh
+                 , all
+                 , any
+                 , asin
+                 , asinh
+                 , atan
+                 , atanh
+                 , ceil
+                 , cos
+                 , cosh
+                 , exp
+                 , floor
+                 , isNaN
+                 , log
+                 , max
+                 , min
+                 , round
+                 , sin
+                 , sinh
+                 , tan
+                 , tanh
+                 )
 import qualified Prelude as P
 
-import System.IO.Unsafe
+import Foreign.C.Types    (CBool (..))
 import Foreign.ForeignPtr
-import Foreign.C.Types (CBool(..))
+import System.IO.Unsafe
 
-import Torch.Dimname
-import qualified Torch.Internal.Managed.Native as ATen
-import qualified Torch.Internal.Managed.Type.Tensor as ATen
-import qualified Torch.Internal.Managed.Type.Scalar as ATen
-import qualified Torch.Internal.Managed.Type.Tuple as ATen
-import qualified Torch.Internal.Const as ATen
-import qualified Torch.Internal.Type as ATen
+import           Data.Int
+import           Torch.Dimname
+import qualified Torch.Functional.Internal          as Internal
+import           Torch.Internal.Cast
+import           Torch.Internal.Class
+import qualified Torch.Internal.Const               as ATen
 import qualified Torch.Internal.Managed.Cast
-import qualified Torch.Functional.Internal as Internal
-import Torch.Internal.Cast
-import Torch.Internal.Class
-import Data.Int
+import qualified Torch.Internal.Managed.Native      as ATen
+import qualified Torch.Internal.Managed.Type.Scalar as ATen
+import qualified Torch.Internal.Managed.Type.Tensor as ATen
+import qualified Torch.Internal.Managed.Type.Tuple  as ATen
+import qualified Torch.Internal.Type                as ATen
 
+import Torch.DType
 import Torch.Scalar
 import Torch.Tensor
-import Torch.DType
 -- import Torch.Functional.Internal hiding (argmax, clamp, cosh, conv1d, linear, softmax)
-import Torch.TensorFactories (onesLike, ones')
+import Torch.TensorFactories (ones', onesLike)
 
 kOne :: ForeignPtr ATen.Scalar
 kOne = unsafePerformIO $ ATen.newScalar_i 1
@@ -93,20 +94,29 @@ instance Fractional Tensor where
   fromRational i = asTensor @Float $ fromRational @Float i
 
 -- Return upper or lower triangular matrices
-data Tri = Upper | Lower deriving (Eq, Show)
+data Tri = Upper
+    | Lower
+    deriving (Eq, Show)
 
 -- Reductions, used by BCE loss, see -
 -- https://github.com/pytorch/pytorch/blob/3762cf9cc63e2032410d50f218c1406668177c23/aten/src/ATen/core/Reduction.h
-data Reduction = ReduceNone | ReduceMean | ReduceSum deriving (Eq, Show)
+data Reduction = ReduceNone
+    | ReduceMean
+    | ReduceSum
+    deriving (Eq, Show)
 
 data Dim = Dim Int
 
-data KeepDim = KeepDim | RemoveDim deriving (Eq, Show)
+data KeepDim = KeepDim
+    | RemoveDim
+    deriving (Eq, Show)
 
-data CeilMode = Ceil | Floor deriving (Eq, Show)
+data CeilMode = Ceil
+    | Floor
+    deriving (Eq, Show)
 
 instance Castable CeilMode CBool where -- Word8 == CBool
-  cast Ceil f = f 1
+  cast Ceil f  = f 1
   cast Floor f = f 0
   uncast 0 f = f Floor
   uncast 1 f = f Ceil
@@ -114,7 +124,7 @@ instance Castable CeilMode CBool where -- Word8 == CBool
 instance Castable Reduction Int64 where
   cast ReduceNone f = f 0
   cast ReduceMean f = f 1
-  cast ReduceSum f = f 2
+  cast ReduceSum f  = f 2
   uncast 0 f = f ReduceNone
   uncast 1 f = f ReduceMean
   uncast _ f = f ReduceSum
@@ -162,7 +172,7 @@ frac
  -> Tensor -- ^ output
 frac _self = unsafePerformIO $ (cast1 ATen.frac_t) _self
 
-keepdim KeepDim = True
+keepdim KeepDim   = True
 keepdim RemoveDim = False
 
 -- | Returns the indices of the maximum value of all elements in the input tensor.
@@ -304,7 +314,7 @@ embedding' weights indices =
 oneHot
   :: Int -- ^ number of classes
   -> Tensor -- ^ input
-  -> Tensor -- ^ 
+  -> Tensor -- ^
 oneHot numClasses t = unsafePerformIO $ (cast2 ATen.one_hot_tl) t numClasses
 
 --
@@ -903,7 +913,7 @@ maxPool2dDim
 maxPool2dDim kernelSize stride padding dilation ceilMode imgDim
     = (calc fst, calc snd)
     where
-        trunc Ceil = P.ceiling
+        trunc Ceil  = P.ceiling
         trunc Floor = P.floor
         calc f' =
             let f = (fromIntegral . f' :: (Int, Int) -> Float) in
@@ -1403,12 +1413,13 @@ flattenAll t =
   unsafePerformIO $ (cast3 ATen.flatten_tll) t (0 :: Int) (-1 :: Int)
 
 -- Not used yet
-data RNNParams = RNNParams {
-    weightIH :: Tensor,
-    weightHH :: Tensor,
-    biasIH :: Tensor,
-    biasHH :: Tensor
-} deriving (Show)
+data RNNParams = RNNParams
+    { weightIH :: Tensor
+    , weightHH :: Tensor
+    , biasIH :: Tensor
+    , biasHH :: Tensor
+    }
+    deriving (Show)
 
 -- | A long short-term memory (LSTM) cell.
 lstmCell

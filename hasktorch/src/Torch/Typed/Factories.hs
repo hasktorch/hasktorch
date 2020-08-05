@@ -1,39 +1,39 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes     #-}
+{-# LANGUAGE ConstraintKinds         #-}
+{-# LANGUAGE DataKinds               #-}
+{-# LANGUAGE FlexibleContexts        #-}
+{-# LANGUAGE FlexibleInstances       #-}
+{-# LANGUAGE GADTs                   #-}
+{-# LANGUAGE MultiParamTypeClasses   #-}
+{-# LANGUAGE NoStarIsType            #-}
+{-# LANGUAGE PolyKinds               #-}
+{-# LANGUAGE RankNTypes              #-}
+{-# LANGUAGE ScopedTypeVariables     #-}
+{-# LANGUAGE TypeApplications        #-}
+{-# LANGUAGE TypeFamilies            #-}
+{-# LANGUAGE TypeOperators           #-}
+{-# LANGUAGE UndecidableInstances    #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE NoStarIsType #-}
 
 module Torch.Typed.Factories where
 
-import           Prelude                 hiding ( sin )
-import           Control.Arrow                  ( (&&&) )
-import           Data.Proxy
-import           Data.Finite
-import           Data.Kind                      ( Constraint )
-import           Data.Reflection
-import           GHC.TypeLits
-import           System.IO.Unsafe
+import Control.Arrow    ((&&&))
+import Data.Finite
+import Data.Kind        (Constraint)
+import Data.Proxy
+import Data.Reflection
+import GHC.TypeLits
+import Prelude          hiding (sin)
+import System.IO.Unsafe
 
+import qualified Torch.Device          as D
+import qualified Torch.DType           as D
+import qualified Torch.Functional      as D
 import           Torch.Internal.Cast
-import qualified Torch.Scalar                  as D
-import qualified Torch.Tensor                  as D
-import qualified Torch.TensorFactories         as D
-import qualified Torch.Functional              as D
-import qualified Torch.DType                   as D
-import qualified Torch.Device                  as D
-import qualified Torch.TensorOptions           as D
+import qualified Torch.Scalar          as D
+import qualified Torch.Tensor          as D
+import qualified Torch.TensorFactories as D
+import qualified Torch.TensorOptions   as D
 import           Torch.Typed.Aux
 import           Torch.Typed.Tensor
 

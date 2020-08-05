@@ -1,17 +1,17 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 
 module Torch.Autograd where
 
-import System.IO.Unsafe
 import Foreign.ForeignPtr
+import System.IO.Unsafe
 
+import           Torch.Internal.Cast
+import           Torch.Internal.Class
 import qualified Torch.Internal.Managed.Autograd
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
-import qualified Torch.Internal.Type as ATen
-import Torch.Internal.Class
-import Torch.Internal.Cast
+import qualified Torch.Internal.Type                as ATen
 
 import Torch.Tensor
 

@@ -1,16 +1,16 @@
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilies        #-}
 
 module Torch.Typed.Serialize where
 
-import           Torch.HList
+import Torch.HList
 
-import qualified Torch.Internal.Class             as ATen
 import qualified Torch.Internal.Cast              as ATen
-import qualified Torch.Internal.Type              as ATen
+import qualified Torch.Internal.Class             as ATen
 import qualified Torch.Internal.Managed.Serialize as S
+import qualified Torch.Internal.Type              as ATen
 import qualified Torch.Tensor                     as D
 import           Torch.Typed.Tensor
 

@@ -1,31 +1,31 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE PolyKinds             #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module Torch.Typed.Optim where
 
-import           Prelude                 hiding ( sqrt )
-import           Control.Monad.State
-import           Torch.HList
+import Control.Monad.State
+import Prelude             hiding (sqrt)
+import Torch.HList
 
-import qualified Torch.Internal.Cast                     as ATen
-import qualified Torch.Internal.Class                    as ATen
-import qualified Torch.Tensor                  as D
-import           Torch.Typed.Aux
-import           Torch.Typed.Tensor
+import qualified Torch.Internal.Cast    as ATen
+import qualified Torch.Internal.Class   as ATen
+import qualified Torch.Tensor           as D
 import           Torch.Typed.Autograd
-import           Torch.Typed.Parameter
-import           Torch.Typed.Functional
+import           Torch.Typed.Aux
 import           Torch.Typed.Factories
+import           Torch.Typed.Functional
+import           Torch.Typed.Parameter
+import           Torch.Typed.Tensor
 
 type LearningRate device dtype = Tensor device dtype '[]
 type Loss device dtype = Tensor device dtype '[]
@@ -132,9 +132,10 @@ instance
 
 -- | State representation for GDM Optimizer
 data GDM momenta = GDM
-  { beta :: Float -- moment forgetting factor
-  , momenta :: HList momenta -- momenta
-  }
+    { beta :: Float -- moment forgetting factor
+    -- momenta
+    , momenta :: HList momenta -- momenta
+    }
 
 mkGDM
   :: forall parameters momenta
@@ -189,12 +190,16 @@ instance
 
 -- | State representation for Adam Optimizer
 data Adam momenta = Adam
-  { iter :: Int -- iteration
-  , beta1 :: Float -- 1st moment forgetting factor
-  , beta2 :: Float -- 2nd moment forgetting factor
-  , momenta1 :: HList momenta -- 1st momenta
-  , momenta2 :: HList momenta -- 2nd momenta
-  }
+    { iter :: Int -- iteration
+    -- 1st moment forgetting factor
+    , beta1 :: Float -- 1st moment forgetting factor
+    -- 2nd moment forgetting factor
+    , beta2 :: Float -- 2nd moment forgetting factor
+    -- 1st momenta
+    , momenta1 :: HList momenta -- 1st momenta
+    -- 2nd momenta
+    , momenta2 :: HList momenta -- 2nd momenta
+    }
 
 mkAdam
   :: forall parameters momenta

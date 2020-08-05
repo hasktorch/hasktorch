@@ -1,6 +1,6 @@
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RecordWildCards       #-}
 
 module Torch.Random
   ( mkGenerator
@@ -15,33 +15,32 @@ module Torch.Random
   , normal'
   ) where
 
-import Torch.Internal.Cast
-import Torch.Internal.Class (Castable(..))
-import qualified Torch.Internal.Const as ATen
-import qualified Torch.Internal.Type as ATen
-import Data.Word
-import qualified Torch.Internal.Managed.Type.Generator as ATen
-import qualified Torch.Internal.Managed.TensorFactories as LibTorch
-import Torch.Device
-import Torch.TensorOptions
-import Torch.Tensor
-import Foreign.ForeignPtr
-import System.IO.Unsafe
 import           Control.Concurrent
 import           Control.Concurrent.STM
 import           Control.Monad.IO.Class
 import           Control.Monad.STM
+import           Data.Word
+import           Foreign.ForeignPtr
+import           System.IO.Unsafe
+import           Torch.Device
+import           Torch.Internal.Cast
+import           Torch.Internal.Class                   (Castable (..))
+import qualified Torch.Internal.Const                   as ATen
+import qualified Torch.Internal.Managed.TensorFactories as LibTorch
+import qualified Torch.Internal.Managed.Type.Generator  as ATen
+import qualified Torch.Internal.Type                    as ATen
+import           Torch.Tensor
+import           Torch.TensorOptions
 
 instance Show (TVar (Maybe (ForeignPtr ATen.Generator))) where
   show _ = "_"
 
-data Generator
-  = Generator
-  { device :: Device
-  , seed :: Word64
-  , generator :: TVar (Maybe (ForeignPtr ATen.Generator))
-  }
-  deriving (Eq,Show)
+data Generator = Generator
+    { device :: Device
+    , seed :: Word64
+    , generator :: TVar (Maybe (ForeignPtr ATen.Generator))
+    }
+    deriving (Eq, Show)
 
 mkGenerator :: Device -> Word64 -> IO Generator
 mkGenerator device seed =

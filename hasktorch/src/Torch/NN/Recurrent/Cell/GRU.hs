@@ -1,27 +1,29 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DeriveGeneric          #-}
+{-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE RecordWildCards        #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
 
 module Torch.NN.Recurrent.Cell.GRU where
 
 import GHC.Generics
 import Torch
 
-data GRUSpec = GRUSpec {
-    inputSize :: Int, 
-    hiddenSize :: Int
-} deriving (Eq, Show)
+data GRUSpec = GRUSpec
+    { inputSize :: Int
+    , hiddenSize :: Int
+    }
+    deriving (Eq, Show)
 
-data GRUCell = GRUCell {
-    weightsIH :: Parameter,
-    weightsHH :: Parameter,
-    biasIH :: Parameter,
-    biasHH :: Parameter
-} deriving (Generic, Show)
+data GRUCell = GRUCell
+    { weightsIH :: Parameter
+    , weightsHH :: Parameter
+    , biasIH :: Parameter
+    , biasHH :: Parameter
+    }
+    deriving (Generic, Show)
 
-gruCellForward 
+gruCellForward
     :: GRUCell -- ^ cell parameters
     -> Tensor -- ^ input
     -> Tensor -- ^ hidden

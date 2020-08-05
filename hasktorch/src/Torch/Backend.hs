@@ -1,15 +1,21 @@
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
 
 module Torch.Backend where
 
-import Torch.Internal.Class (Castable(..))
+import           Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Const as ATen
-import qualified Torch.Internal.Type as ATen
+import qualified Torch.Internal.Type  as ATen
 
-data Backend = CPU | CUDA | HIP | SparseCPU | SparseCUDA | MSNPU | XLA
-  deriving (Eq, Show)
+data Backend = CPU
+    | CUDA
+    | HIP
+    | SparseCPU
+    | SparseCUDA
+    | MSNPU
+    | XLA
+    deriving (Eq, Show)
 
 instance Castable Backend ATen.Backend where
   cast CPU f        = f ATen.bCPU

@@ -1,63 +1,62 @@
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TemplateHaskell       #-}
 
 module Torch.Vision where
 
-import Prelude hiding (min, max)
+import           Prelude hiding (max, min)
 import qualified Prelude as P
 
 
-import           Control.Exception.Safe         ( try
-                                                , SomeException(..)
-                                                , throwIO
-                                                )
-import           Control.Monad                  ( MonadPlus 
-                                                , forM_
-                                                , when
-                                                )
-import           Torch.Internal.Cast
-import qualified Data.ByteString as BS
-import qualified Data.ByteString.Internal as BSI
-import qualified Torch.DType as D
-import qualified Torch.Tensor                  as D
-import qualified Torch.TensorOptions           as D
-import qualified Torch.Functional              as D
-import qualified Foreign.ForeignPtr            as F
-import qualified Foreign.Ptr                   as F
-import qualified Torch.Internal.Managed.TensorFactories as LibTorch
-import qualified Language.C.Inline as C
-import           System.IO.Unsafe
+import qualified Codec.Picture                          as I
+import           Control.Exception.Safe
+                 ( SomeException (..)
+                 , throwIO
+                 , try
+                 )
+import           Control.Monad                          (MonadPlus, forM_, when)
+import qualified Data.ByteString                        as BS
+import qualified Data.ByteString.Internal               as BSI
 import           Data.Int
+import qualified Data.Vector.Storable                   as V
 import           Data.Word
-import qualified Codec.Picture                 as I
-import qualified Data.Vector.Storable          as V
-import           System.Random (mkStdGen, randoms)
+import qualified Foreign.ForeignPtr                     as F
+import qualified Foreign.Ptr                            as F
+import qualified Language.C.Inline                      as C
+import           System.IO.Unsafe
+import           System.Random                          (mkStdGen, randoms)
+import qualified Torch.DType                            as D
+import qualified Torch.Functional                       as D
+import           Torch.Internal.Cast
+import qualified Torch.Internal.Managed.TensorFactories as LibTorch
+import qualified Torch.Tensor                           as D
+import qualified Torch.TensorOptions                    as D
 
 import Pipes
 
+import           Torch.Functional   hiding (take)
+import           Torch.NN
+import           Torch.Tensor
 import qualified Torch.Typed.Vision as I
-import Torch.Functional hiding (take)
-import Torch.Tensor
-import Torch.NN
 
-import Torch.Data.StreamedPipeline 
-import Pipes.Prelude (repeatM)
+import Pipes.Prelude               (repeatM)
+import Torch.Data.StreamedPipeline
 
 C.include "<stdint.h>"
 
-data Mnist = Mnist { batchSize :: Int
-                   , mnistData :: I.MnistData
-                   }
+data Mnist = Mnist
+    { batchSize :: Int
+    , mnistData :: I.MnistData
+    }
 
 instance (MonadPlus m, MonadBase IO m) => Datastream m Int Mnist (Tensor, Tensor) where
-  streamBatch Mnist{..} seed = Select $ 
-    for (each [1..numIters]) $ \iter -> do 
+  streamBatch Mnist{..} seed = Select $
+    for (each [1..numIters]) $ \iter -> do
       let from = (iter-1) * batchSize
           to = (iter * batchSize) - 1
           indexes = [from .. to]
@@ -65,8 +64,8 @@ instance (MonadPlus m, MonadBase IO m) => Datastream m Int Mnist (Tensor, Tensor
       input  <- liftBase $ getImages' batchSize 784 mnistData indexes
       yield (input, target)
 
-      where numIters = I.length mnistData `Prelude.div` batchSize 
-            
+      where numIters = I.length mnistData `Prelude.div` batchSize
+
 
 getLabels' :: Int -> I.MnistData -> [Int] -> Tensor
 getLabels' n mnist imageIdxs =
@@ -100,35 +99,34 @@ grayScale70 = reverse "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<
 dispImage :: Tensor -> IO ()
 dispImage img = do
     mapM (\row ->
-        mapM (\col -> 
+        mapM (\col ->
             putChar $ grayScale !! (P.floor $ scaled !! row !! col)
             ) [0,downSamp..27] >>  putStrLn ""
         ) [0,downSamp..27]
     pure ()
-    where 
+    where
         downSamp = 2
         grayScale = grayScale10
         paletteMax = (fromIntegral $ length grayScale) - 1.0
         img' = reshape [28, 28] img
-        scaled :: [[Float]] = let (mn, mx) = (min img', max img')  
+        scaled :: [[Float]] = let (mn, mx) = (min img', max img')
             in asValue $ (img' - mn) / (mx - mn) * paletteMax
 
-data PixelFormat
-  = Y8
-  | YF
-  | YA8
-  | RGB8
-  | RGBF
-  | RGBA8
-  | YCbCr8
-  | CMYK8
-  | CMYK16
-  | RGBA16
-  | RGB16
-  | Y16
-  | YA16
-  | Y32
-  deriving (Show, Eq)
+data PixelFormat = Y8
+    | YF
+    | YA8
+    | RGB8
+    | RGBF
+    | RGBA8
+    | YCbCr8
+    | CMYK8
+    | CMYK16
+    | RGBA16
+    | RGB16
+    | Y16
+    | YA16
+    | Y32
+    deriving (Show, Eq)
 
 readImage :: FilePath -> IO (Either String (D.Tensor,PixelFormat))
 readImage file =

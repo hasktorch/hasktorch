@@ -9,10 +9,10 @@ module Torch.Distributions.Distribution (
     extendedShape,
 ) where
 
-import Torch.TensorFactories (ones, onesLike)
-import qualified Torch.Tensor as D
-import qualified Torch.Functional as F
-import Torch.Distributions.Constraints
+import           Torch.Distributions.Constraints
+import qualified Torch.Functional                as F
+import qualified Torch.Tensor                    as D
+import           Torch.TensorFactories           (ones, onesLike)
 
 data Scale = Probs | Logits
 
@@ -40,7 +40,7 @@ perplexity = F.exp . entropy
 -- | multi-dimensional case, the values along the last dimension denote
 -- | the log probabilities (possibly unnormalized) of the events.
 logitsToProbs :: Bool -> D.Tensor -> D.Tensor  -- isBinary=False
-logitsToProbs True = F.sigmoid
+logitsToProbs True  = F.sigmoid
 logitsToProbs False = F.softmax (F.Dim $ -1)
 
 clampProbs :: D.Tensor -> D.Tensor

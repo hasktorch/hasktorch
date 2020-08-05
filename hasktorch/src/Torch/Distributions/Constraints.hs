@@ -23,11 +23,11 @@ module Torch.Distributions.Constraints (
     unitInterval,
 ) where
 
+import qualified Torch.Functional          as F
 import qualified Torch.Functional.Internal as I
-import qualified Torch.Tensor as D
-import qualified Torch.TensorFactories as D
-import qualified Torch.Functional as F
-import Torch.Scalar
+import           Torch.Scalar
+import qualified Torch.Tensor              as D
+import qualified Torch.TensorFactories     as D
 
 type Constraint = D.Tensor -> D.Tensor
 

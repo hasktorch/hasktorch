@@ -1,14 +1,14 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE NoStarIsType #-}
+{-# LANGUAGE NoStarIsType           #-}
+{-# LANGUAGE PolyKinds              #-}
+{-# LANGUAGE RankNTypes             #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE TypeFamilies           #-}
+{-# LANGUAGE TypeOperators          #-}
+{-# LANGUAGE UndecidableInstances   #-}
 
 module Torch.Typed.Autograd
   ( Torch.Typed.Autograd.HasGrad
@@ -16,19 +16,19 @@ module Torch.Typed.Autograd
   )
 where
 
-import           Data.Kind
-import           Torch.HList
-import           GHC.TypeLits
-import           System.IO.Unsafe
+import Data.Kind
+import GHC.TypeLits
+import System.IO.Unsafe
+import Torch.HList
 
-import qualified Torch.Internal.Cast as ATen
-import qualified Torch.Internal.Class as ATen
+import qualified Torch.Device                    as D
+import qualified Torch.DType                     as D
+import qualified Torch.Internal.Cast             as ATen
+import qualified Torch.Internal.Class            as ATen
 import qualified Torch.Internal.Managed.Autograd as LibTorch
-import qualified Torch.DType                   as D
-import qualified Torch.Device                  as D
-import qualified Torch.Tensor                  as D
-import           Torch.Typed.Tensor
+import qualified Torch.Tensor                    as D
 import           Torch.Typed.Parameter
+import           Torch.Typed.Tensor
 
 class HasGrad a b | a -> b where
   -- | calculate gradients of a zero-dimensional tensor with respect to a list of parameters

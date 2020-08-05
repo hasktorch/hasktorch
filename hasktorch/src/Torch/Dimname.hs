@@ -1,20 +1,20 @@
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
 
 module Torch.Dimname where
 
 
-import Foreign.ForeignPtr
-import Torch.Internal.Class (Castable(..))
-import qualified Torch.Internal.Const as ATen
-import qualified Torch.Internal.Type as ATen
-import qualified Torch.Internal.Managed.Type.Symbol as ATen
-import qualified Torch.Internal.Managed.Type.Dimname as ATen
+import           Data.String
+import           Foreign.ForeignPtr
+import           System.IO.Unsafe
+import           Torch.Internal.Class                  (Castable (..))
+import qualified Torch.Internal.Const                  as ATen
+import qualified Torch.Internal.Managed.Type.Dimname   as ATen
 import qualified Torch.Internal.Managed.Type.StdString as ATen
-import Data.String
-import System.IO.Unsafe
+import qualified Torch.Internal.Managed.Type.Symbol    as ATen
+import qualified Torch.Internal.Type                   as ATen
 
 newtype Dimname = Dimname (ForeignPtr ATen.Dimname)
 

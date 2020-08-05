@@ -1,19 +1,19 @@
+{-# LANGUAGE AllowAmbiguousTypes    #-}
+{-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE GADTs                  #-}
+{-# LANGUAGE LambdaCase             #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE PartialTypeSignatures  #-}
+{-# LANGUAGE PolyKinds              #-}
+{-# LANGUAGE RankNTypes             #-}
+{-# LANGUAGE RecordWildCards        #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE TypeApplications       #-}
+{-# LANGUAGE TypeFamilies           #-}
+{-# LANGUAGE TypeOperators          #-}
+{-# LANGUAGE UndecidableInstances   #-}
 
 module Torch.Data.StreamedPipeline
   ( makeListT,
@@ -29,20 +29,20 @@ module Torch.Data.StreamedPipeline
 where
 
 import           Control.Concurrent.Async.Lifted
-import           Control.Exception.Safe (bracket, finally)
-import           Control.Foldl (Fold, FoldM (FoldM))
-import qualified Control.Foldl as L
+import           Control.Exception.Safe          (bracket, finally)
+import           Control.Foldl                   (Fold, FoldM (FoldM))
+import qualified Control.Foldl                   as L
 import           Control.Monad
-import           Control.Monad.Base (MonadBase, liftBase)
-import           Control.Monad.Cont (ContT (..), runContT)
+import           Control.Monad.Base              (MonadBase, liftBase)
+import           Control.Monad.Cont              (ContT (..), runContT)
 import           Control.Monad.Trans.Control
-import           Data.Maybe (isJust)
+import           Data.Maybe                      (isJust)
 import           Lens.Family
 import           Pipes
 import           Pipes.Concurrent
-import qualified Pipes.Prelude as P
-import           Pipes.Safe (MonadSafe (Base))
-import qualified Pipes.Safe as Safe
+import qualified Pipes.Prelude                   as P
+import           Pipes.Safe                      (MonadSafe (Base))
+import qualified Pipes.Safe                      as Safe
 import           Torch.Typed
 
 
@@ -51,9 +51,9 @@ class (MonadBase IO m) => Datastream m seed dataset batch | dataset -> batch whe
 
 -- TODO : incorporate these options
 data DataloaderOpts = DataloaderOpts
-  { echoData :: Bool,
-    bufferSize :: Int
-  }
+    { echoData :: Bool
+    , bufferSize :: Int
+    }
 
 dataloaderOpts = DataloaderOpts {echoData = False, bufferSize = 4} -- 4 is relatively arbitrary
 

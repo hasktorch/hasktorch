@@ -1,37 +1,37 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE AllowAmbiguousTypes    #-}
+{-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE DeriveGeneric          #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE PolyKinds              #-}
+{-# LANGUAGE RankNTypes             #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE TypeApplications       #-}
+{-# LANGUAGE TypeFamilies           #-}
+{-# LANGUAGE TypeOperators          #-}
+{-# LANGUAGE UndecidableInstances   #-}
 
 module Torch.Typed.Device where
 
-import           Torch.HList
-import           Data.Kind                    (Type)
-import           Data.Proxy                   (Proxy (..))
-import           GHC.TypeLits
-import           GHC.TypeLits.Extra
-import           GHC.Generics
-import           System.IO.Unsafe
+import Data.Kind          (Type)
+import Data.Proxy         (Proxy (..))
+import GHC.Generics
+import GHC.TypeLits
+import GHC.TypeLits.Extra
+import System.IO.Unsafe
+import Torch.HList
 
-import qualified Torch.Internal.Cast as ATen
-import qualified Torch.Internal.Class as ATen
+import qualified Torch.Device                    as D
+import qualified Torch.DType                     as D
+import qualified Torch.Internal.Cast             as ATen
+import qualified Torch.Internal.Class            as ATen
 import qualified Torch.Internal.Managed.Autograd as LibTorch
-import qualified Torch.DType                   as D
-import qualified Torch.Device                  as D
-import qualified Torch.Tensor                  as D
+import qualified Torch.Tensor                    as D
 import           Torch.Typed.Aux
-import           Torch.Typed.Tensor
-import           Torch.Typed.Parameter
 import           Torch.Typed.Functional
+import           Torch.Typed.Parameter
+import           Torch.Typed.Tensor
 
 class HasToDevice
   (device' :: (D.DeviceType, Nat))
@@ -55,7 +55,7 @@ type family ReplaceDevice (f :: k) (device' :: (D.DeviceType, Nat)) (device :: (
   ReplaceDevice t          _       _      = t
 
 -- In a data type `f` parameterized by zero or one device type variables, replace the only occurring device type with the device type `device'`.
--- 
+--
 -- >>> :kind! ReplaceDevice' (Torch.Typed.NN.Linear 1 1 'D.Float '( 'D.CPU, 0)) '( 'D.CUDA, 0)
 -- ReplaceDevice' (Torch.Typed.NN.Linear 1 1 'D.Float '( 'D.CPU, 0)) '( 'D.CUDA, 0) :: *
 -- = Torch.Typed.NN.Linear 1 1 'Float '( 'CUDA, 0)
@@ -190,7 +190,7 @@ type family GetDevices (fs :: [k]) :: [(D.DeviceType, Nat)] where
 -- instance
 --   (
 
---   ) => 
+--   ) =>
 
 -- class HasCat fs g | fs -> g where
 --   cat :: HList fs -> g

@@ -1,16 +1,17 @@
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE PolyKinds             #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeOperators         #-}
+
 module Torch.Data.Pipeline ( takeBatch
                            , readBatches
                            , readBatchesConcurrently
@@ -27,24 +28,25 @@ module Torch.Data.Pipeline ( takeBatch
                            , ConcurrentDataset(..)
                            ) where
 
+import           Control.Applicative             (Alternative, (<|>))
 import           Control.Concurrent.Async.Lifted
-import qualified Control.Foldl as L
+import qualified Control.Foldl                   as L
 import           Control.Monad
-import Control.Applicative (Alternative, (<|>))
-import           Data.Maybe (isJust)
+import           Data.Maybe                      (isJust)
 import           Pipes
 import           Pipes.Concurrent
-import qualified Pipes.Prelude as P
+import qualified Pipes.Prelude                   as P
 
-import           Control.Monad.Trans.Control (MonadBaseControl(..))
+import Control.Monad.Trans.Control (MonadBaseControl (..))
 
 
 type Iter = Int
 type WorkerId = Int
 
-data DatasetMock m tensor = DatasetMock { getBatchMock :: Int -> m tensor
-                                        , numItersMock :: Iter
-                                        }
+data DatasetMock m tensor = DatasetMock
+    { getBatchMock :: Int -> m tensor
+    , numItersMock :: Iter
+    }
 
 class (MonadPlus m, MonadIO m, MonadBaseControl IO m) => Dataset m dataset batch  where
   getBatch :: dataset -> Iter -> m batch
@@ -53,7 +55,7 @@ class (MonadPlus m, MonadIO m, MonadBaseControl IO m) => Dataset m dataset batch
 class Dataset m dataset batch => ConcurrentDataset m dataset batch where
   getBatchConcurrently :: WorkerId -> dataset -> Iter -> m batch
 
-takeBatch :: MonadIO m => Input (Maybe batch) -> Producer batch m ()  
+takeBatch :: MonadIO m => Input (Maybe batch) -> Producer batch m ()
 takeBatch input = fromInput input >-> P.takeWhile isJust >-> yieldMore
   where yieldMore = forever $ await >>= \case
           Just batch -> yield batch
@@ -64,7 +66,7 @@ readBatches'
   -> (Int -> m (Maybe batch))
   -> Output (Maybe batch)
   -> Effect m ()
-readBatches' numIters getBatch outputBox = 
+readBatches' numIters getBatch outputBox =
   for (each [0..numIters]) (\iter -> yieldBatch iter >-> toOutput outputBox)
     where yieldBatch iter = do
             -- this is a workaround to using MonadPlus in the Proxy monad, since
@@ -73,21 +75,21 @@ readBatches' numIters getBatch outputBox =
             -- which marks failure here
             thing <- lift $ runBatch iter
             case thing of
-              Nothing -> yield Nothing
+              Nothing           -> yield Nothing
               Just (Just batch) -> yield (Just batch)
-              Just Nothing -> return ()
+              Just Nothing      -> return ()
           runBatch iter = if numIters == iter
                           then pure Nothing
                           else Just <$> getBatch iter
 
 readBatchesConcurrently :: forall dataset batch m .
-  (MonadPlus m, ConcurrentDataset m dataset batch) => Int -> dataset -> Output (Maybe batch)  -> Effect m () 
+  (MonadPlus m, ConcurrentDataset m dataset batch) => Int -> dataset -> Output (Maybe batch)  -> Effect m ()
 readBatchesConcurrently workerId dataset outputBox = readBatches' iter getBatchOrFail outputBox
   where iter = numIters @m @dataset @batch dataset
         getBatchOrFail = (\iter -> (Just <$> (getBatchConcurrently workerId dataset iter)) <|> (pure Nothing))
 
 readBatches :: forall dataset batch m.
-  (Dataset m dataset batch) => dataset -> Output (Maybe batch)  -> Effect m () 
+  (Dataset m dataset batch) => dataset -> Output (Maybe batch)  -> Effect m ()
 readBatches dataset outputBox = readBatches' iter getBatchOrFail outputBox
   where iter = (numIters @m @dataset @batch dataset)
         getBatchOrFail = (\iter -> (Just <$> getBatch dataset iter) <|> (pure Nothing))
@@ -119,8 +121,8 @@ makeConcurrentFold' transforms dataset numWorkers = do
   async $ runEffect $ runTransforms transforms fromTransformBox toBatches
   pure  $ (foldFromProducer (takeBatch fromBatches), batchThreads)
 
-  
-makeFoldWithTransform' :: (MonadIO m, Dataset m dataset batch)  
+
+makeFoldWithTransform' :: (MonadIO m, Dataset m dataset batch)
   => (batch -> batch')
   -> dataset
   -> m (L.FoldM m batch' b -> m b, Async (StM m ()))
@@ -129,20 +131,20 @@ makeFoldWithTransform' transforms dataset = do
           -- which would be necessary for data echoing
             (toTransformBox, fromTransformBox, sealTransform) <- liftIO $ spawn' (bounded 1)
             (toBatches, fromBatches, sealBatch) <- liftIO $ spawn' (bounded 1)
-            batchThread <- async $ void $ runEffect $ forever $ readBatches dataset toTransformBox 
+            batchThread <- async $ void $ runEffect $ forever $ readBatches dataset toTransformBox
             async $ runEffect $ runTransforms transforms fromTransformBox toBatches
             pure $ (foldFromProducer (takeBatch fromBatches), batchThread)
 
 makeFold :: (Dataset m dataset batch, MonadIO m)
     => dataset
     -> m (L.FoldM m batch b -> m b)
-makeFold = fmap fst . makeFold' 
+makeFold = fmap fst . makeFold'
 
-makeFoldWithTransform :: (MonadIO m, Dataset m dataset batch)  
+makeFoldWithTransform :: (MonadIO m, Dataset m dataset batch)
   => (batch -> batch')
   -> dataset
   -> m (L.FoldM m batch' b -> m b)
-makeFoldWithTransform transf = fmap fst . makeFoldWithTransform' transf 
+makeFoldWithTransform transf = fmap fst . makeFoldWithTransform' transf
 
 makeConcurrentFold :: (MonadIO m, ConcurrentDataset m dataset batch')
   => (batch' -> batch)
@@ -150,6 +152,6 @@ makeConcurrentFold :: (MonadIO m, ConcurrentDataset m dataset batch')
   -> Int
   -> m (L.FoldM m batch b -> m b)
 makeConcurrentFold transforms dataset = fmap fst . makeConcurrentFold' transforms dataset
-  
+
 foldFromProducer :: Monad m => Producer batch m () -> L.FoldM m batch b -> m b
 foldFromProducer prod fold = (L.impurely P.foldM) fold prod

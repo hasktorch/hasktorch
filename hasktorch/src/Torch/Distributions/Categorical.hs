@@ -4,13 +4,13 @@ module Torch.Distributions.Categorical (
     fromLogits,
 ) where
 
-import qualified Torch.Functional.Internal as I
-import qualified Torch.Tensor as D
-import qualified Torch.DType as D
-import qualified Torch.TensorFactories as D
-import qualified Torch.Functional as F
-import qualified Torch.Distributions.Constraints as Constraints
-import Torch.Distributions.Distribution
+import qualified Torch.Distributions.Constraints  as Constraints
+import           Torch.Distributions.Distribution
+import qualified Torch.DType                      as D
+import qualified Torch.Functional                 as F
+import qualified Torch.Functional.Internal        as I
+import qualified Torch.Tensor                     as D
+import qualified Torch.TensorFactories            as D
 
 -- | Creates a categorical distribution parameterized by either :attr:`probs` or
 -- | :attr:`logits` (but not both).
@@ -29,10 +29,12 @@ import Torch.Distributions.Distribution
 -- |     >>> m = Categorical.fromProbs $ D.asTensor [ 0.25, 0.25, 0.25, 0.25 ]
 -- |     >>> Distribution.sample m  -- equal probability of 0, 1, 2, 3
 -- |     tensor(3)
-data Categorical = Categorical {
-    probs :: D.Tensor,
-    logits :: D.Tensor
-} deriving (Show)
+
+data Categorical = Categorical
+    { probs :: D.Tensor
+    , logits :: D.Tensor
+    }
+    deriving (Show)
 instance Distribution Categorical where
     batchShape d =
         if D.numel (probs d) > 1
@@ -54,7 +56,7 @@ instance Distribution Categorical where
         in F.squeezeDim (-1) $ I.gather (logits d) (-1 :: Int) value'' False
     entropy d = F.mulScalar (-1.0 :: Float) (F.sumDim (F.Dim $ -1) F.RemoveDim (D.dtype pLogP) pLogP)
             where pLogP = logits d `F.mul` probs d
-    enumerateSupport d doExpand = 
+    enumerateSupport d doExpand =
         (if doExpand then \t -> F.expand t False ([-1] <> batchShape d) else id) values
         where
             values = D.reshape ([-1] <> replicate (length $ batchShape d) 1) $ D.asTensor [0.0, 1.0 :: Float]

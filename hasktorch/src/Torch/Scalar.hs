@@ -1,17 +1,17 @@
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 
 module Torch.Scalar where
 
 import Foreign.ForeignPtr
 
-import qualified Torch.Internal.Const as ATen
+import           Torch.Internal.Cast
+import           Torch.Internal.Class               (Castable (..))
+import qualified Torch.Internal.Const               as ATen
+import           Torch.Internal.Managed.Cast
 import qualified Torch.Internal.Managed.Type.Scalar as ATen
-import qualified Torch.Internal.Type as ATen
-import Torch.Internal.Managed.Cast
-import Torch.Internal.Class (Castable(..))
-import Torch.Internal.Cast
+import qualified Torch.Internal.Type                as ATen
 
 instance Castable Float (ForeignPtr ATen.Scalar) where
   cast x f = ATen.newScalar_d (realToFrac x) >>= f

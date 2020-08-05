@@ -1,25 +1,25 @@
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE ConstraintKinds      #-}
+{-# LANGUAGE DataKinds            #-}
+{-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE KindSignatures       #-}
+{-# LANGUAGE PolyKinds            #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
 
 module Torch.Typed.Aux where
 
-import qualified Data.Int                      as I
-import           Torch.HList
-import           Data.Kind                      ( Constraint )
+import qualified Data.Int     as I
+import           Data.Kind    (Constraint)
 import           Data.Proxy
 import           GHC.TypeLits
+import           Torch.HList
 
-import qualified Torch.Device                  as D
-import qualified Torch.DType                   as D
+import qualified Torch.Device as D
+import qualified Torch.DType  as D
 
 natValI :: forall n . KnownNat n => Int
 natValI = fromIntegral $ natVal $ Proxy @n

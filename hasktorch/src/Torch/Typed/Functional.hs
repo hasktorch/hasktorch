@@ -1,86 +1,81 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes     #-}
+{-# LANGUAGE ConstraintKinds         #-}
+{-# LANGUAGE DataKinds               #-}
+{-# LANGUAGE DeriveGeneric           #-}
+{-# LANGUAGE FlexibleContexts        #-}
+{-# LANGUAGE FlexibleInstances       #-}
+{-# LANGUAGE GADTs                   #-}
+{-# LANGUAGE MultiParamTypeClasses   #-}
+{-# LANGUAGE NoStarIsType            #-}
+{-# LANGUAGE PolyKinds               #-}
+{-# LANGUAGE RankNTypes              #-}
+{-# LANGUAGE ScopedTypeVariables     #-}
+{-# LANGUAGE TypeApplications        #-}
+{-# LANGUAGE TypeFamilies            #-}
+{-# LANGUAGE TypeOperators           #-}
+{-# LANGUAGE UndecidableInstances    #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE NoStarIsType #-}
 
 module Torch.Typed.Functional where
 
-import           Prelude                 hiding ( all
-                                                , any
-                                                , sin
-                                                , sinh
-                                                , cos
-                                                , cosh
-                                                , tan
-                                                , tanh
-                                                , asin
-                                                , asinh
-                                                , acos
-                                                , acosh
-                                                , atan
-                                                , atanh
-                                                , abs
-                                                , max
-                                                , min
-                                                , exp
-                                                , log
-                                                , round
-                                                , isNaN
-                                                , floor
-                                                , ceil
-                                                )
+import           Control.Arrow                ((&&&))
 import           Data.Finite
-import qualified Data.Int                      as I
-import           Torch.HList
-import           Data.Kind                      ( Constraint
-                                                , Type
-                                                )
+import qualified Data.Int                     as I
+import           Data.Kind                    (Constraint, Type)
 import           Data.Maybe
 import           Data.Proxy
 import           Data.Reflection
-import           Control.Arrow                  ( (&&&) )
-import           GHC.Generics                   ( Generic )
-import           GHC.Natural                    ( Natural )
+import           Data.Singletons.Prelude.List (Product)
+import           GHC.Generics                 (Generic)
+import           GHC.Natural                  (Natural)
 import           GHC.TypeLits
 import           GHC.TypeLits.Extra
+import           Prelude                      hiding
+                 ( abs
+                 , acos
+                 , acosh
+                 , all
+                 , any
+                 , asin
+                 , asinh
+                 , atan
+                 , atanh
+                 , ceil
+                 , cos
+                 , cosh
+                 , exp
+                 , floor
+                 , isNaN
+                 , log
+                 , max
+                 , min
+                 , round
+                 , sin
+                 , sinh
+                 , tan
+                 , tanh
+                 )
 import           System.IO.Unsafe
-import           Data.Singletons.Prelude.List   ( Product )
+import           Torch.HList
 
 import           Foreign.ForeignPtr
-import qualified Torch.Internal.Const                    as ATen
-import qualified Torch.Internal.Type                     as ATen
-import qualified Torch.Internal.Cast                     as ATen
-import qualified Torch.Internal.Class                    as ATen
-import qualified Torch.Internal.Managed.Cast             as ATen.Managed
-import qualified Torch.Internal.Managed.Native           as ATen.Managed
-import qualified Torch.Internal.Managed.Type.Tensor      as ATen.Managed
-import qualified Torch.Internal.Managed.Type.Scalar      as ATen.Managed
-import qualified Torch.Internal.Managed.Type.Tuple       as ATen.Managed
+import qualified Torch.Internal.Cast                as ATen
+import qualified Torch.Internal.Class               as ATen
+import qualified Torch.Internal.Const               as ATen
+import qualified Torch.Internal.Managed.Cast        as ATen.Managed
+import qualified Torch.Internal.Managed.Native      as ATen.Managed
+import qualified Torch.Internal.Managed.Type.Scalar as ATen.Managed
+import qualified Torch.Internal.Managed.Type.Tensor as ATen.Managed
+import qualified Torch.Internal.Managed.Type.Tuple  as ATen.Managed
+import qualified Torch.Internal.Type                as ATen
 
-import qualified Torch.Tensor                  as D
-import qualified Torch.TensorFactories         as D
-import qualified Torch.TensorOptions           as D
-import qualified Torch.DType                   as D
-import qualified Torch.Device                  as D
-import qualified Torch.Scalar                  as D
-import           Torch.Functional               ( Reduction(..)
-                                                , Tri(..)
-                                                , isUpper
-                                                , kOne
-                                                )
+import qualified Torch.Device          as D
+import qualified Torch.DType           as D
+import           Torch.Functional      (Reduction (..), Tri (..), isUpper, kOne)
+import qualified Torch.Scalar          as D
+import qualified Torch.Tensor          as D
+import qualified Torch.TensorFactories as D
+import qualified Torch.TensorOptions   as D
 import           Torch.Typed.Aux
 import           Torch.Typed.Factories
 import           Torch.Typed.Tensor
@@ -631,7 +626,7 @@ instance KnownReduction ReduceSum where
 -- >>> t = ones :: CPUTensor 'D.Float '[2,2]
 -- >>> dtype &&& shape $ binaryCrossEntropy @ReduceNone t t t
 -- (Float,[2,2])
--- >>> dtype &&& shape $ binaryCrossEntropy @ReduceMean t t t 
+-- >>> dtype &&& shape $ binaryCrossEntropy @ReduceMean t t t
 -- (Float,[])
 -- >>> dtype &&& shape $ binaryCrossEntropy @ReduceSum t t t
 -- (Float,[])
@@ -822,7 +817,8 @@ symeigvalues upper input = fst symeig'
     symeig' :: ( Tensor device dtype shape', Tensor device dtype shape'')
     symeig' = unsafePerformIO $ ATen.cast3 ATen.Managed.symeig_tbb input False boolUpper
 
-data EigenVectors = EnableEigenVectors | DisableEigenVectors
+data EigenVectors = EnableEigenVectors
+    | DisableEigenVectors
 
 class KnownEigenVectors a where
   enableEigenVectors :: Bool
@@ -886,7 +882,8 @@ type family SVDShapes (shape :: [Nat]) (reduced :: ReducedSVD) :: ([Nat], [Nat],
   SVDShapes '[b, m, n] 'FullSVD = '( '[b, m, m],       '[b, Min m n], '[b, n, n])
   SVDShapes _          _        = TypeError (Text "A singular value decomposition can only be computed for 2D matrices for at most one batch dimension.")
 
-data ReducedSVD = ThinSVD | FullSVD
+data ReducedSVD = ThinSVD
+    | FullSVD
 
 class KnownReducedSVD (reduced :: ReducedSVD) where
   reducedSVD :: Bool
@@ -994,7 +991,7 @@ cholesky upper input = unsafePerformIO $ ATen.cast2 ATen.Managed.cholesky_tb inp
 -- using its Cholesky factor, returned, e.g., by `cholesky`.
 -- Unlike `cholesky`, this operation does not support batching.
 -- The inverse is computed using the LAPACK routine `?potri`.
--- 
+--
 -- >>> t <- rand :: IO (CPUTensor 'D.Float '[2,2])
 -- >>> tri = Upper
 -- >>> u = cholesky tri (t `matmul` transpose2D t)
@@ -1093,7 +1090,7 @@ solve b a = unsafePerformIO $ ATen.cast2 ATen.Managed.solve_tt b a
 --
 -- See the LAPACK documentation for `?geqrf` for further details,
 -- https://software.intel.com/en-us/node/521004.
--- 
+--
 -- >>> (a, tau) = geqrf (ones :: CPUTensor 'D.Float '[3,4])
 -- >>> dtype &&& shape $ a
 -- (Float,[3,4])
@@ -1116,11 +1113,11 @@ geqrf input = unsafePerformIO $ ATen.cast1 ATen.Managed.geqrf_t input
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- Computes the orthogonal matrix `Q` of a QR factorization
 -- from the `(a, tau)` tuple returned by `geqrf`.
--- 
+--
 -- This directly calls the underlying LAPACK function `?orgqr`.
 -- See the LAPACK documentation for `?orgqr` for further details,
 -- https://software.intel.com/en-us/mkl-developer-reference-c-orgqr.
--- 
+--
 -- >>> dtype &&& shape $ orgqr (ones :: CPUTensor 'D.Float '[3,4]) (ones :: CPUTensor 'D.Float '[3])
 -- (Float,[3,4])
 orgqr
@@ -1300,7 +1297,8 @@ any
   -> Tensor device 'D.Bool '[] -- ^ output
 any input = unsafePerformIO $ ATen.cast1 ATen.Managed.any_t input
 
-data KeepOrDropDim = KeepDim | DropDim
+data KeepOrDropDim = KeepDim
+    | DropDim
 
 class KnownKeepOrDropDim keepOrDropDim where
   keepOrDropDimVal :: Bool
@@ -1517,7 +1515,7 @@ adaptiveAvgPool1d input = unsafePerformIO
 -- >>> shape . fst $ tt
 -- [1,3,8]
 -- >>> :t tt
--- tt 
+-- tt
 --   :: (Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 8],
 --       Tensor '( 'D.CPU, 0) 'D.Int64 '[1, 3, 8])
 adaptiveMaxPool1d
@@ -1777,7 +1775,7 @@ type BroadcastTensors tensors
 -- >>> x = ones :: CPUTensor 'D.Float '[1, 3]
 -- >>> y = ones :: CPUTensor 'D.Float '[2, 1]
 -- >>> z = ones :: CPUTensor 'D.Float '[5, 1, 1]
--- 
+--
 -- -- >>> x' :. y' :. z' :. HNil = broadcastTensors (x :. y :. z :. HNil)
 -- -- >>> :type x'
 -- -- x' :: Tensor '( 'D.CPU, 0) 'D.Float '[5, 2, 3]
@@ -2402,7 +2400,7 @@ type family DotDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :
 dot
   :: forall size dtype device
    . DotDTypeIsValid device dtype
-  => Tensor device dtype '[size] -- ^ input 
+  => Tensor device dtype '[size] -- ^ input
   -> Tensor device dtype '[size] -- ^ other input
   -> Tensor device dtype '[] -- ^ dot product
 dot input other = unsafePerformIO $ ATen.cast2 ATen.Managed.dot_tt input other
@@ -2795,7 +2793,7 @@ linear' weight bias input = unsafePerformIO $ ATen.cast3 ATen.Managed.linear_ttt
 -- >>> w = fromJust [[-0.5, -2,  0.5], [1.5, -0.5, 0.5]] :: CPUTensor 'D.Float '[2, 3]
 -- >>> b = fromJust [0, 0.5] :: CPUTensor 'D.Float '[2]
 -- >>> t = fromJust [[-2, 0.5, 1], [0.5, 0, 0], [0, 1, 0], [0, 0, 0], [1, -1, 0]] :: CPUTensor 'D.Float '[5, 3]
--- 
+--
 -- -- >>> t' = mkldnnLinear (toMKLDNN w) (toMKLDNN b) (toMKLDNN t)
 -- -- >>> :type t'
 -- -- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[5, 2]
@@ -2825,7 +2823,7 @@ mkldnnLinear weight bias input = unsafePerformIO $ ATen.cast3 ATen.Managed.mkldn
 -- fbgemm_pack_quantized_matrix _input _K _N = unsafePerformIO $ (ATen.cast3 ATen.Managed.fbgemm_pack_quantized_matrix_tll) _input _K _N
 
 -- fbgemm_is_cpu_supported :: Bool
--- fbgemm_is_cpu_supported  = unsafePerformIO $ (cast0 ATen.Managed.fbgemm_is_cpu_supported) 
+-- fbgemm_is_cpu_supported  = unsafePerformIO $ (cast0 ATen.Managed.fbgemm_is_cpu_supported)
 
 -- | log
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -2970,7 +2968,7 @@ maxPool1d
                      , channelSize
                      , inputSize
                      , batchSize
-                     ]  
+                     ]
      , ConvSideCheck inputSize kernelSize stride padding outputSize
      )
   => Tensor device dtype '[batchSize, channelSize, inputSize] -- ^ input
@@ -3227,19 +3225,19 @@ type family Narrow (shape :: [Nat]) (dim :: Nat) (start :: Nat) (length :: Nat) 
     NarrowCheck (ExtractDim dim shape) (Narrow' dim shape (ExtractDim dim shape) start length) shape dim start length
 
 -- | "Narrow" a tensor by returning a tensor that is a slice from 'start' of length 'length' along 'dim'
--- 
+--
 -- >>> narrow @0 @0 @2 (ones :: CPUTensor 'D.Float '[3,3,3])
--- Tensor Float [2,3,3] 
+-- Tensor Float [2,3,3]
 -- >>> narrow @1 @1 @2 (ones :: CPUTensor 'D.Half '[3,3,3])
--- Tensor Half [3,2,3] 
+-- Tensor Half [3,2,3]
 -- >>> narrow @1 @1 @2 (ones :: CPUTensor 'D.Bool '[3,3,3])
 -- Tensor Bool [3,2,3]
-narrow :: forall dim start length shape mbSize mbNewShape dtype device. 
+narrow :: forall dim start length shape mbSize mbNewShape dtype device.
   (All KnownNat '[dim, start, length]
   , All KnownNat shape) =>
   Tensor device dtype shape -> Tensor device dtype (Narrow shape dim start length)
 narrow _input = unsafePerformIO $ (ATen.cast4 ATen.Managed.narrow_tlll) _input _dim _start _length
-  where 
+  where
     _dim = natValI @dim
     _start = natValI @start
     _length = natValI @length
@@ -3321,12 +3319,12 @@ randnLike
 randnLike = ATen.cast1 ATen.Managed.randn_like_t
 
 -- | reciprocal
--- 
+--
 -- >>> dtype &&& shape $ reciprocal (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-reciprocal 
+reciprocal
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input 
+   . Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 reciprocal _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.reciprocal_t) _input
 
@@ -3525,12 +3523,12 @@ stack tensors = unsafePerformIO $ ATen.cast2 ATen.Managed.stack_ll tensors (natV
 -- stride _input _dim = unsafePerformIO $ (ATen.cast2 ATen.Managed.stride_tl) _input _dim
 
 -- | t
--- 
+--
 -- dtype &&& shape $ t ones :: CPUTensor 'D.Float '[3,2]
 -- (Float,[3,2])
-t 
+t
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input 
+   . Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 t _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.t_t) _input
 
@@ -3750,10 +3748,9 @@ qZeroPoint input = unsafePerformIO $ ATen.cast1 ATen.Managed.q_zero_point_t inpu
 
 -- | The directional specification of a recurrent function
 --
-data RNNDirectionality =
-    Bidirectional  -- ^ Forward and backward along the sequential axis using independant parameters for each.
-  | Unidirectional -- ^ Forward along the sequential axis.
-  deriving (Show, Generic) -- TODO:  We could also have BidirectionalTied weights.
+data RNNDirectionality = Bidirectional
+    | Unidirectional
+    deriving (Show, Generic)
 
 type family NumberOfDirections (directionality :: RNNDirectionality) :: Nat where
   NumberOfDirections Bidirectional = 2
@@ -3769,10 +3766,9 @@ instance KnownRNNDirectionality Unidirectional where
   rnnBidirectional = False
 
 -- | Specification for the sequential axis of a recurrent function.
-data RNNShapeOrder =
-    BatchFirst    -- ^ Input is of shape (Batch, Sequence, Features)
-  | SequenceFirst -- ^ Input is of shape (Sequence, Batch, Features)
-  deriving (Show, Generic)
+data RNNShapeOrder = BatchFirst
+    | SequenceFirst
+    deriving (Show, Generic)
 
 class KnownRNNShapeOrder (shapeOrder :: RNNShapeOrder) where
   rnnBatchFirst :: Bool
@@ -4104,7 +4100,7 @@ tril diagonal input = unsafePerformIO $ ATen.cast2 ATen.Managed.tril_tl input di
 --
 -- >>> dtype &&& shape $ trace (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-trace 
+trace
   :: forall shape dtype device
    . Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
@@ -4120,10 +4116,10 @@ trace _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.trace_t) _input
 -- masked_select _input _mask = unsafePerformIO $ (ATen.cast2 ATen.Managed.masked_select_tt) _input _mask
 
 -- | nonzero
--- 
+--
 -- >>> dtype &&& shape $ nonzero (zeros :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
-nonzero 
+nonzero
   :: forall shape dtype device
    . Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
@@ -4281,7 +4277,7 @@ type family TopKCheck (k :: Nat) (shape :: [Nat]) (dim :: Nat) (satd :: Maybe Na
 
 type TopK k shape dim = TopKCheck k shape dim (ExtractDim dim shape) (ReplaceDim dim shape k)
 
-type family TopKDeviceAndDTypeCheck dtype (device :: (D.DeviceType, Nat)) :: Constraint where 
+type family TopKDeviceAndDTypeCheck dtype (device :: (D.DeviceType, Nat)) :: Constraint where
   TopKDeviceAndDTypeCheck D.Bool _           = (TypeError (Text "topk is not defined for Bool tensors."))
   TopKDeviceAndDTypeCheck D.Half '(D.CPU, _) = (TypeError (Text "topk is not defined for Half types on CPU."))
   TopKDeviceAndDTypeCheck _ _ = ()
@@ -4297,7 +4293,7 @@ type family TopKDeviceAndDTypeCheck dtype (device :: (D.DeviceType, Nat)) :: Con
 --                     []],Tensor Int64 [2,0] [[],
 --                     []])
 --
-topk 
+topk
   :: forall k dim shape' shape dtype device
    . ( KnownNat k
      , KnownNat dim
@@ -4310,7 +4306,7 @@ topk
    -> Tensor device dtype shape -- ^ input
    -> (Tensor device dtype shape', Tensor device 'D.Int64 shape') -- ^ output
 topk _largest _sorted _input = unsafePerformIO $ (ATen.cast5 ATen.Managed.topk_tllbb) _input _k _dim _largest _sorted
-  where 
+  where
   _k = natValI @k
   _dim = natValI @dim
 
@@ -4321,11 +4317,11 @@ topk _largest _sorted _input = unsafePerformIO $ (ATen.cast5 ATen.Managed.topk_t
 -- equal _input _other = unsafePerformIO $ (ATen.cast2 ATen.Managed.equal_tt) _input _other
 
 -- | alias
--- 
+--
 -- >>> dtype &&& shape $ alias (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 
-alias 
+alias
   :: forall shape dtype device
    . Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
@@ -4808,12 +4804,12 @@ avgPool3d input = unsafePerformIO $ ATen.cast7
 -- upsample_linear1d _input _output_size _align_corners = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_linear1d_tlb) _input _output_size _align_corners
 
 
-type family Upsample2dCheck shape h w where 
-  Upsample2dCheck (b : c : w : h : '[]) h' w' = 
-    If ( h <=? h') 
-      (If (w <=? w') (b : c : w' : h' : '[]) 
+type family Upsample2dCheck shape h w where
+  Upsample2dCheck (b : c : w : h : '[]) h' w' =
+    If ( h <=? h')
+      (If (w <=? w') (b : c : w' : h' : '[])
         (TypeError (Text "Target width must be greater than current width!"))
-      ) 
+      )
       (TypeError (Text "Target height must be greater than current height!"))
   Upsample2dCheck _ _ _ = TypeError (Text "Shape must be 4 dimensional!")
 
@@ -4823,14 +4819,14 @@ type Upsample2d shape h w = Upsample2dCheck shape h w
 --
 -- >>> upsample_bilinear2d @3 @5 False (ones :: CPUTensor 'D.Float '[2,3,2,2])
 -- Tensor Float [2,3,3,5]
-upsample_bilinear2d :: forall w h shape dtype device . 
-  (KnownNat h, KnownNat w, All KnownNat shape) 
-  => Bool -- ^ if True, the corner pixels of the input and output tensors are aligned, and thus preserving the values at those pixels. 
-  -> Tensor device dtype shape 
+upsample_bilinear2d :: forall w h shape dtype device .
+  (KnownNat h, KnownNat w, All KnownNat shape)
+  => Bool -- ^ if True, the corner pixels of the input and output tensors are aligned, and thus preserving the values at those pixels.
+  -> Tensor device dtype shape
   -> Tensor device dtype (Upsample2d shape h w)
 upsample_bilinear2d _align_corners _input
   = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_bilinear2d_tlb) _input ([w,h] :: [Int]) _align_corners
-  where  
+  where
     w = natValI @w :: Int
     h = natValI @h :: Int
 
@@ -4838,13 +4834,13 @@ upsample_bilinear2d _align_corners _input
 --
 -- >>> upsample_bicubic2d @3 @5 False (ones :: CPUTensor 'D.Float '[2,3,2,2])
 -- Tensor Float [2,3,3,5]
-upsample_bicubic2d :: forall w h shape dtype device . 
-  (KnownNat h, KnownNat w, All KnownNat shape) 
-  => Bool 
-  -> Tensor device dtype shape 
+upsample_bicubic2d :: forall w h shape dtype device .
+  (KnownNat h, KnownNat w, All KnownNat shape)
+  => Bool
+  -> Tensor device dtype shape
   -> Tensor device dtype (Upsample2d shape h w)
 upsample_bicubic2d _align_corners _input = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_bicubic2d_tlb) _input ([w,h] :: [Int]) _align_corners
-  where 
+  where
     w = natValI @w :: Int
     h = natValI @h :: Int
 
@@ -4858,9 +4854,9 @@ upsample_bicubic2d _align_corners _input = unsafePerformIO $ (ATen.cast3 ATen.Ma
 --
 -- >>> upsample_nearest2d @3 @5 (ones :: CPUTensor 'D.Float '[2,3,2,2])
 -- Tensor Float [2,3,3,5]
-upsample_nearest2d :: forall w h shape dtype device . 
-  (KnownNat h, KnownNat w, All KnownNat shape) 
-  => Tensor device dtype shape 
+upsample_nearest2d :: forall w h shape dtype device .
+  (KnownNat h, KnownNat w, All KnownNat shape)
+  => Tensor device dtype shape
   -> Tensor device dtype (Upsample2d shape h w)
 upsample_nearest2d _input = unsafePerformIO $ (ATen.cast2 ATen.Managed.upsample_nearest2d_tl) _input ([w,h] :: [Int])
   where

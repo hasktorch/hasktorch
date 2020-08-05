@@ -1,16 +1,16 @@
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilies          #-}
 
 module Torch.Cast where
 
 import Foreign.ForeignPtr
 
+import Torch.Internal.Cast
+import Torch.Internal.Class
 import Torch.Internal.Managed.Type.IntArray
 import Torch.Internal.Type
-import Torch.Internal.Class
-import Torch.Internal.Cast
 
 -- define useful casts
 

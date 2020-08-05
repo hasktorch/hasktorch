@@ -18,10 +18,11 @@ import qualified Torch.TensorFactories            as D
 import           Torch.TensorOptions
 import           Torch.Typed.Functional           (reductionVal)
 
-data Bernoulli = Bernoulli {
-    probs  :: D.Tensor,
-    logits :: D.Tensor
-} deriving (Show)
+data Bernoulli = Bernoulli
+    { probs :: D.Tensor
+    , logits :: D.Tensor
+    }
+    deriving (Show)
 instance Distribution Bernoulli where
     batchShape d = []
     eventShape _d = []

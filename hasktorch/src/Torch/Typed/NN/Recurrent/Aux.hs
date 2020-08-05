@@ -2,13 +2,15 @@
 
 module Torch.Typed.NN.Recurrent.Aux where
 
-import           GHC.Generics
+import GHC.Generics
 
-import           Torch.Tensor
-import           Torch.Functional (subScalar, mulScalar)
+import Torch.Functional (mulScalar, subScalar)
+import Torch.Tensor
 
 
-data RNNInitialization = ConstantInitialization | LearnedInitialization deriving (Show, Generic)
+data RNNInitialization = ConstantInitialization
+    | LearnedInitialization
+    deriving (Show, Generic)
 
 -- TODO: This is taken from the initializers example code and should be replaced with cannonical,
 -- tested versions. However, even a potentially incorrect implementation will likely perform

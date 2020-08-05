@@ -1,29 +1,29 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE DefaultSignatures      #-}
+{-# LANGUAGE DeriveGeneric          #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE RecordWildCards        #-}
+{-# LANGUAGE TypeOperators          #-}
+{-# LANGUAGE TypeSynonymInstances   #-}
 
 module Torch.NN where
 
 import Control.Monad.State.Strict
-import System.IO.Unsafe (unsafePerformIO)
+import System.IO.Unsafe           (unsafePerformIO)
 
-import qualified Torch.Internal.Managed.Native as ATen
+import qualified Torch.Internal.Managed.Native      as ATen
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
 
-import Torch.Internal.Cast (cast3, cast6, cast14)
+import Torch.Internal.Cast (cast14, cast3, cast6)
 
+import GHC.Generics
 import Torch.Autograd
+import Torch.Functional
 import Torch.Initializers
 import Torch.Tensor
 import Torch.TensorFactories (ones', randIO', randnIO')
-import Torch.Functional
-import GHC.Generics
 
 type Parameter = IndependentTensor
 type ParamStream a = State [Parameter] a
@@ -32,7 +32,7 @@ nextParameter :: ParamStream Parameter
 nextParameter = do
   params <- get
   case params of
-    [] -> error "Not enough parameters supplied to replaceParameters"
+    []      -> error "Not enough parameters supplied to replaceParameters"
     (p : t) -> do put t; return p
 
 class Parameterized f where
@@ -118,13 +118,18 @@ class (Randomizable spec f, Parameterized f) => Module spec f
 -- Linear FC Layer
 --
 
-data LinearSpec = LinearSpec { 
-    in_features :: Int,
-    out_features :: Int 
-    } deriving (Show, Eq)
-  
+data LinearSpec = LinearSpec
+    { in_features :: Int
+    , out_features :: Int
+    }
+    deriving (Show, Eq)
 
-data Linear = Linear { weight :: Parameter, bias :: Parameter } deriving (Show, Generic)
+
+data Linear = Linear
+    { weight :: Parameter
+    , bias :: Parameter
+    }
+    deriving (Show, Generic)
 
 linear :: Linear -> Tensor -> Tensor
 linear layer input = linear' input w b
@@ -141,7 +146,7 @@ instance Randomizable LinearSpec Linear where
       init <- randIO' [out_features]
       let bound = (1 :: Float) / Prelude.sqrt (fromIntegral (getter FanIn $ calculateFan [out_features, in_features]) :: Float)
       b <- makeIndependent =<< pure(subScalar bound $ mulScalar (bound * 2.0) init)
-      
+
       return $ Linear w b
 
 instance Parameterized Linear
@@ -161,22 +166,22 @@ instance Parameterized [Linear]
 -- Conv2d
 --
 
-data Conv2dSpec = 
-  Conv2dSpec {
-    inputChannelSize  :: Int, 
-    outputChannelSize :: Int, 
-    kernelHeight       :: Int, 
-    kernelWidth       :: Int
-    } deriving (Show, Eq)
+data Conv2dSpec = Conv2dSpec
+    { inputChannelSize :: Int
+    , outputChannelSize :: Int
+    , kernelHeight :: Int
+    , kernelWidth :: Int
+    }
+    deriving (Show, Eq)
 
-data Conv2d = 
-  Conv2d { 
-    conv2dWeight :: Parameter, 
-    conv2dBias   :: Parameter
-    } deriving (Show, Generic)
+data Conv2d = Conv2d
+    { conv2dWeight :: Parameter
+    , conv2dBias :: Parameter
+    }
+    deriving (Show, Generic)
 
 conv2dForward :: Conv2d -> (Int, Int) -> (Int, Int) -> Tensor -> Tensor
-conv2dForward layer stride padding input = 
+conv2dForward layer stride padding input =
   Torch.Functional.conv2d' w b stride padding input
     where
         w = toDependent (conv2dWeight layer)
@@ -188,7 +193,7 @@ instance Randomizable Conv2dSpec Conv2d where
       init <- randIO' [outputChannelSize]
       let bound = (1 :: Float) / Prelude.sqrt (fromIntegral (getter FanIn $ calculateFan [outputChannelSize, inputChannelSize, kernelHeight, kernelWidth]) :: Float)
       b <- makeIndependent =<< pure(subScalar bound $ mulScalar (bound * 2.0) init)
-      
+
       return $ Conv2d w b
 
 instance Parameterized Conv2d

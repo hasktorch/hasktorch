@@ -1,25 +1,27 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric          #-}
+{-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE RecordWildCards        #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
 
 module Torch.NN.Recurrent.Cell.Elman where
 
 import GHC.Generics
 import Torch
 
-data ElmanSpec = ElmanSpec { 
-    inputSize :: Int,
-    hiddenSize :: Int 
-} deriving (Eq, Show)
+data ElmanSpec = ElmanSpec
+    { inputSize :: Int
+    , hiddenSize :: Int
+    }
+    deriving (Eq, Show)
 
-data ElmanCell = ElmanCell {
-    weightsIH :: Parameter,
-    weightsHH :: Parameter,
-    biasIH :: Parameter,
-    biasHH :: Parameter
-} deriving (Generic, Show)
+data ElmanCell = ElmanCell
+    { weightsIH :: Parameter
+    , weightsHH :: Parameter
+    , biasIH :: Parameter
+    , biasHH :: Parameter
+    }
+    deriving (Generic, Show)
 
 elmanCellForward
     :: ElmanCell -- ^ cell parameters

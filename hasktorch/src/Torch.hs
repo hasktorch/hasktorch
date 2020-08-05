@@ -20,5 +20,5 @@ import Torch.NN
 import Torch.Optim
 import Torch.Random
 import Torch.Tensor
-import Torch.TensorOptions
 import Torch.TensorFactories
+import Torch.TensorOptions

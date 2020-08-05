@@ -1,24 +1,23 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards       #-}
 
 module Torch.TensorOptions where
 
 import Data.Int
-import           Foreign.ForeignPtr
-import           System.IO.Unsafe
+import Foreign.ForeignPtr
+import System.IO.Unsafe
 
 import           Torch.Internal.Cast
-import           Torch.Internal.Class                     ( Castable(..) )
-import qualified Torch.Internal.Type                     as ATen
-import qualified Torch.Internal.Const                    as ATen
-import qualified Torch.Internal.Managed.Type.Context     as ATen
-import qualified Torch.Internal.Managed.Type.TensorOptions
-                                               as ATen
+import           Torch.Internal.Class                      (Castable (..))
+import qualified Torch.Internal.Const                      as ATen
+import qualified Torch.Internal.Managed.Type.Context       as ATen
+import qualified Torch.Internal.Managed.Type.TensorOptions as ATen
+import qualified Torch.Internal.Type                       as ATen
 
-import           Torch.DType
-import           Torch.Device
-import           Torch.Layout
+import Torch.Device
+import Torch.DType
+import Torch.Layout
 
 type ATenTensorOptions = ForeignPtr ATen.TensorOptions
 

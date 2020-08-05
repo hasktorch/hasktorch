@@ -1,28 +1,27 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DataKinds #-}
 
 module Torch.DType where
 
-import Torch.Internal.Class (Castable(..))
+import           Data.Int
+import           Data.Reflection
+import           Data.Word
+import           Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Const as ATen
-import qualified Torch.Internal.Type as ATen
-import Data.Int
-import Data.Word
-import Data.Reflection
+import qualified Torch.Internal.Type  as ATen
 
-data DType =
-    Bool   -- ^ Bool
-  | UInt8  -- ^ Byte
-  | Int8   -- ^ Char
-  | Int16  -- ^ Short
-  | Int32  -- ^ Int
-  | Int64  -- ^ Long
-  | Half   -- ^ Half
-  | Float  -- ^ Float
-  | Double -- ^ Double
-  deriving (Eq, Show)
+data DType = Bool
+    | UInt8
+    | Int8
+    | Int16
+    | Int32
+    | Int64
+    | Half
+    | Float
+    | Double
+    deriving (Eq, Show)
 
 instance Reifies Bool DType where
   reflect _ = Bool

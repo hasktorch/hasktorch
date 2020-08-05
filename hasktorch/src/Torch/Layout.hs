@@ -1,15 +1,17 @@
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
 
 module Torch.Layout where
 
-import Torch.Internal.Class (Castable(..))
+import           Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Const as ATen
-import qualified Torch.Internal.Type as ATen
+import qualified Torch.Internal.Type  as ATen
 
-data Layout = Strided | Sparse | Mkldnn
-  deriving (Eq, Show)
+data Layout = Strided
+    | Sparse
+    | Mkldnn
+    deriving (Eq, Show)
 
 instance Castable Layout ATen.Layout where
   cast Strided f = f ATen.kStrided

@@ -38,17 +38,17 @@ import           GHC.TypeLits
 import           GHC.Exts
 
 import           Torch.Internal.Cast
-import           Torch.Internal.Class                     ( Castable(..)
+import           Torch.Internal.Class           ( Castable(..)
                                                 , CppTuple2(..)
                                                 , CppTuple3(..)
                                                 , CppTuple4(..)
                                                 )
-import qualified Torch.Internal.Type                     as ATen
-import qualified Torch.Tensor                  as D
-import qualified Torch.TensorFactories         as D
+import qualified Torch.Internal.Type            as ATen
+import qualified Torch.Tensor                   as D
+import qualified Torch.TensorFactories          as D
 import qualified Torch.Functional               as D hiding (select)
-import qualified Torch.DType                   as D
-import qualified Torch.Device                  as D
+import qualified Torch.DType                    as D
+import qualified Torch.Device                   as D
 import           Torch.Typed.Aux
 
 class KnownShape (shape :: [Nat]) where

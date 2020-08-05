@@ -1,35 +1,34 @@
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE NoStarIsType        #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE NoStarIsType #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module Torch.Typed.Vision where
 
-import           Control.Monad (forM_)
-import           System.IO.Unsafe
-import qualified Codec.Compression.GZip        as GZip
-import qualified Data.ByteString               as BS
-import qualified Data.ByteString.Lazy          as BS.Lazy
-import qualified Data.ByteString.Internal      as BSI
+import qualified Codec.Compression.GZip   as GZip
+import           Control.Monad            (forM_)
+import qualified Data.ByteString          as BS
+import qualified Data.ByteString.Internal as BSI
+import qualified Data.ByteString.Lazy     as BS.Lazy
 import           GHC.TypeLits
+import           System.IO.Unsafe
 
+import qualified Foreign.ForeignPtr                     as F
+import qualified Foreign.Ptr                            as F
+import qualified Torch.DType                            as D
 import           Torch.Internal.Cast
-import           Torch.Typed.Aux
-import           Torch.Typed.Tensor
-import           Torch.Typed.Functional
-import qualified Torch.DType                   as D
-import qualified Torch.Tensor                  as D
-import qualified Torch.TensorOptions           as D
-import qualified Foreign.ForeignPtr            as F
-import qualified Foreign.Ptr                   as F
 import qualified Torch.Internal.Managed.TensorFactories as LibTorch
+import qualified Torch.Tensor                           as D
+import qualified Torch.TensorOptions                    as D
+import           Torch.Typed.Aux
+import           Torch.Typed.Functional
+import           Torch.Typed.Tensor
 
-data MnistData =
-  MnistData
-  { images :: BS.ByteString
-  , labels :: BS.ByteString
-  }
+data MnistData = MnistData
+    { images :: BS.ByteString
+    , labels :: BS.ByteString
+    }
 
 type Rows = 28
 type Cols = 28

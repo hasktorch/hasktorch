@@ -1,31 +1,29 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes     #-}
+{-# LANGUAGE ConstraintKinds         #-}
+{-# LANGUAGE DataKinds               #-}
+{-# LANGUAGE FlexibleContexts        #-}
+{-# LANGUAGE FlexibleInstances       #-}
+{-# LANGUAGE FunctionalDependencies  #-}
+{-# LANGUAGE GADTs                   #-}
+{-# LANGUAGE NoStarIsType            #-}
+{-# LANGUAGE PatternSynonyms         #-}
+{-# LANGUAGE PolyKinds               #-}
+{-# LANGUAGE RankNTypes              #-}
+{-# LANGUAGE ScopedTypeVariables     #-}
+{-# LANGUAGE TypeApplications        #-}
+{-# LANGUAGE TypeFamilies            #-}
+{-# LANGUAGE TypeOperators           #-}
+{-# LANGUAGE UndecidableInstances    #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE NoStarIsType #-}
-{-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE FunctionalDependencies #-}
 
 module Torch.HList where
 
-import           Prelude                 hiding ( (.), id )
-import           Control.Arrow
-import           Control.Category
-import           Data.Kind                      ( Constraint
-                                                , Type
-                                                )
-import           Data.Proxy
-import           GHC.TypeLits
+import Control.Arrow
+import Control.Category
+import Data.Kind        (Constraint, Type)
+import Data.Proxy
+import GHC.TypeLits
+import Prelude          hiding (id, (.))
 
 type family ListLength (xs :: [k]) :: Nat where
   ListLength '[]       = 0
@@ -162,8 +160,8 @@ instance
   ) => HFoldrM m f acc (x ': xs) res' where
   hfoldrM f acc (x :. xs) = apply' f (x, hfoldrM f acc xs :: (m res))
 
-data HNothing  = HNothing
-data HJust x   = HJust x
+data HNothing = HNothing
+data HJust x = HJust x
 
 class HUnfold f res xs where
   hunfoldr' :: f -> res -> HList xs
@@ -357,7 +355,7 @@ instance ((a, b, c) ~ d, HZip3 as bs cs ds) => HZip3 (a ': as) (b ': bs) (c ': c
     let ~(as, bs, cs) = hunzip3 ds in (a :. as, b :. bs, c :. cs)
 
 class HZipWith3
-  f 
+  f
   (as :: [k])
   (bs :: [k])
   (cs :: [k])

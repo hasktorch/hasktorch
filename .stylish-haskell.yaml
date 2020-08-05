@@ -108,7 +108,7 @@ steps:
       #   >     )
       #
       # Default: inline
-      long_list_align: inline
+      long_list_align: multiline
 
       # Align empty list (importing instances)
       #
@@ -198,7 +198,7 @@ steps:
 
   - records:
       deriving: 2
-      equals: 'same_line'
+      equals: 'indent 2'
       field_comment: 2
       first_field: 'same_line'
 
