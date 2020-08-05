@@ -1,46 +1,48 @@
-{-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE BlockArguments        #-}
+{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards       #-}
 
 module Main where
 
 import Control.Monad (when)
 import GHC.Generics
+import Prelude       hiding (exp)
 import System.Random (mkStdGen, randoms)
-import Prelude hiding (exp)
 
-import Torch
-import Torch.Vision
-import Numeric.Dataloader
-import Numeric.Datasets
-import Numeric.Datasets.CIFAR10
-import qualified Streaming as S
-import qualified Streaming.Prelude as S
-import qualified Codec.Picture as I
+import qualified Codec.Picture            as I
+import           Numeric.Dataloader
+import           Numeric.Datasets
+import           Numeric.Datasets.CIFAR10
+import qualified Streaming                as S
+import qualified Streaming.Prelude        as S
+import           Torch
+import           Torch.Vision
 
-data MLPSpec = MLPSpec {
-    inputFeatures :: Int,
-    hiddenFeatures0 :: Int,
-    hiddenFeatures1 :: Int,
-    outputFeatures :: Int
-    } deriving (Show, Eq)
+data MLPSpec = MLPSpec
+    { inputFeatures :: Int
+    , hiddenFeatures0 :: Int
+    , hiddenFeatures1 :: Int
+    , outputFeatures :: Int
+    }
+    deriving (Show, Eq)
 
-data MLP = MLP { 
-    l0 :: Linear,
-    l1 :: Linear,
-    l2 :: Linear
-    } deriving (Generic, Show)
+data MLP = MLP
+    { l0 :: Linear
+    , l1 :: Linear
+    , l2 :: Linear
+    }
+    deriving (Generic, Show)
 
 instance Parameterized MLP
 instance Randomizable MLPSpec MLP where
-    sample MLPSpec {..} = MLP 
+    sample MLPSpec {..} = MLP
         <$> sample (LinearSpec inputFeatures hiddenFeatures0)
         <*> sample (LinearSpec hiddenFeatures0 hiddenFeatures1)
         <*> sample (LinearSpec hiddenFeatures1 outputFeatures)
 
 mlp :: MLP -> Tensor -> Tensor
-mlp MLP{..} input = 
+mlp MLP{..} input =
     logSoftmax (Dim 1)
     . linear l2
     . relu

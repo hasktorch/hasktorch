@@ -198,7 +198,7 @@ steps:
 
   - records:
       deriving: 2
-      equals: 'indent 2'
+      equals: 'same_line'
       field_comment: 2
       first_field: 'same_line'
 

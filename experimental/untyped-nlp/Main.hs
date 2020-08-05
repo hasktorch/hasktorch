@@ -1,11 +1,11 @@
 module Main where
 
 import Torch
-import Torch.NN.Recurrent.Cell.Elman 
+import Torch.NN.Recurrent.Cell.Elman
 
 convTest = do
     -- input: minibatch, channels, input width
-    input <- randnIO' [1, 2, 5] 
+    input <- randnIO' [1, 2, 5]
     -- weights: out channels, in channels, kernel width
     let weights = asTensor ([[[0, 1, 0], [0, 1, 0]],
                              [[0, 1, 0], [0, 0, 1]]
@@ -87,4 +87,4 @@ main = do
     putStrLn "\nLSTM"
     print =<< lstmTest
 
-    -- cosineSimilarity 
+    -- cosineSimilarity
