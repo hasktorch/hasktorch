@@ -1,19 +1,19 @@
+{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE RecordWildCards       #-}
 
 module TestFunctions where
 
 import GHC.Generics
 
-import Prelude hiding (exp, cos, sqrt)
+import           Prelude hiding (cos, exp, sqrt)
 import qualified Prelude as P
 
+import Torch.Autograd
+import Torch.Functional
+import Torch.NN              hiding (sgd)
 import Torch.Tensor
 import Torch.TensorFactories (eye', ones', randIO', randnIO', zeros')
-import Torch.Functional
-import Torch.Autograd
-import Torch.NN hiding (sgd)
 
 -- Convex Quadratic
 
@@ -81,9 +81,9 @@ instance Randomizable AckleySpec Ackley where
 instance Parameterized Ackley
 
 ackley :: Float -> Float -> Float -> Tensor -> Tensor
-ackley a b c x = 
+ackley a b c x =
     mulScalar (-a) (exp (-b' * (sqrt $ (sumAll (x * x)) / d)))
-    - exp (1.0 / d * sumAll (cos (mulScalar c x))) 
+    - exp (1.0 / d * sumAll (cos (mulScalar c x)))
     + (asTensor $ a + P.exp 1.0)
     where
         b' = asTensor b

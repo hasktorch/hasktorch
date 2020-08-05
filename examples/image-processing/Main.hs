@@ -1,14 +1,14 @@
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 
 module Main where
 
-import qualified Torch as T
+import qualified Torch        as T
 import           Torch.Vision
 
-import           System.IO                     (FilePath)
+import System.IO (FilePath)
 
 
 -- [batch, channel, height, width] -> [batch, channel, height, width]

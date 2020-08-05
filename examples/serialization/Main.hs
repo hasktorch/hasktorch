@@ -1,17 +1,17 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DeriveAnyClass         #-}
+{-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE RecordWildCards        #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE StandaloneDeriving     #-}
+{-# LANGUAGE TypeSynonymInstances   #-}
 
 module Main where
 
-import           Control.Monad                  ( foldM )
-import           Codec.Serialise
-import           GHC.Generics                   ( Generic )
-import           Torch
+import Codec.Serialise
+import Control.Monad   (foldM)
+import GHC.Generics    (Generic)
+import Torch
 
 batch_size = 64
 num_iters = 2000

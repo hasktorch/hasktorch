@@ -1,24 +1,23 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE RecordWildCards        #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
 
 module Elman where
 
 import Control.Monad.State.Strict
-import Data.List (foldl', scanl', intersperse)
+import Data.List                  (foldl', intersperse, scanl')
 
-import Torch
 import RecurrentLayer
+import Torch
 
 
 data ElmanSpec = ElmanSpec { in_features :: Int, hidden_features :: Int }
 
-data ElmanCell = ElmanCell {
-    input_weight :: Parameter,
-    hidden_weight :: Parameter,
-    bias :: Parameter
-}
+data ElmanCell = ElmanCell { input_weight  :: Parameter
+                           , hidden_weight :: Parameter
+                           , bias          :: Parameter
+                           }
 
 
 instance RecurrentCell ElmanCell where

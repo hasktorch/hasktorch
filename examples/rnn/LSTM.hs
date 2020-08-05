@@ -1,24 +1,24 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE RecordWildCards        #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
 
 module LSTM where
 
 import Control.Monad.State.Strict
-import Data.List (foldl', scanl', intersperse)
+import Data.List                  (foldl', intersperse, scanl')
 
-import Torch
 import RecurrentLayer
+import Torch
 
 data LSTMSpec = LSTMSpec { inf :: Int, hf :: Int}
 
 data LSTMCell = LSTMCell {
-  input_gate   :: [Parameter],
-  forget_gate  :: [Parameter],
-  output_gate  :: [Parameter],
-  hidden_gate  :: [Parameter],
-  cell_state   :: Parameter
+  input_gate  :: [Parameter],
+  forget_gate :: [Parameter],
+  output_gate :: [Parameter],
+  hidden_gate :: [Parameter],
+  cell_state  :: Parameter
 }
 
 

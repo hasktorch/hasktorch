@@ -1,27 +1,27 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE RecordWildCards        #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
 
 module Main where
 
 import GHC.Generics
 
 import Control.Monad.State.Strict
-import Data.List (foldl', scanl', intersperse)
+import Data.List                  (foldl', intersperse, scanl')
 
-import Torch
-import RecurrentLayer
 import Elman
-import LSTM
 import GRU
+import LSTM
+import RecurrentLayer
+import Torch
 
 
 num_iters = 10
 num_timesteps = 3
 
-run :: (RecurrentCell a, Parameterized a) 
-    => Tensor -- ^ input 
+run :: (RecurrentCell a, Parameterized a)
+    => Tensor -- ^ input
     -> Tensor -- ^ hidden state initial value
     -> Tensor -- ^ expected output
     -> a -- ^ model state
@@ -30,7 +30,7 @@ run :: (RecurrentCell a, Parameterized a)
 run input_tensor init_hidden expected_output model i = do
     let output = finalState model input_tensor init_hidden
         loss = mseLoss expected_output output
-    print loss 
+    print loss
     (newParam, _) <- runStep model GD loss 5e-2
     pure $ replaceParameters model newParam
 
@@ -52,7 +52,7 @@ main = do
 
     putStrLn "\nElman Cell Training Loop"
     -- training loop for elman cell
-    foldLoop rnnLayer num_iters (run input_tensor init_hidden expected_output) 
+    foldLoop rnnLayer num_iters (run input_tensor init_hidden expected_output)
 
     putStrLn "\nLSTM Training Loop"
     -- training loop for LSTM cell

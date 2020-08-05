@@ -1,22 +1,22 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE RecordWildCards        #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
 
 module GRU where
 
 import Control.Monad.State.Strict
-import Data.List (foldl', scanl', intersperse)
+import Data.List                  (foldl', intersperse, scanl')
 
-import Torch
 import RecurrentLayer
+import Torch
 
 -- Specifying the shape of the recurrent layer
 data GRUSpec = GRUSpec { in_f :: Int, h_f :: Int}
 
 data GRUCell = GRUCell {
-  reset_gate :: [Parameter],
-  update_gate :: [Parameter],
+  reset_gate      :: [Parameter],
+  update_gate     :: [Parameter],
   gru_hidden_gate :: [Parameter]
 }
 

@@ -1,17 +1,17 @@
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards        #-}
 
 -- In this example we draw the heatmap of the norm of gradient field
 -- of a given function f.
 
 module Main where
 
-import Data.Text (Text, pack)
-import Graphics.Vega.VegaLite
-import Torch.Autograd (grad, makeIndependent, toDependent)
-import qualified Torch.Functional as F
-import Torch.NN
-import Torch.Tensor (Tensor, asTensor, toDouble)
+import           Data.Text              (Text, pack)
+import           Graphics.Vega.VegaLite
+import           Torch.Autograd         (grad, makeIndependent, toDependent)
+import qualified Torch.Functional       as F
+import           Torch.NN
+import           Torch.Tensor           (Tensor, asTensor, toDouble)
 
 f :: Tensor -> Tensor -> Tensor
 f x y = F.sin (2 * pit * r)

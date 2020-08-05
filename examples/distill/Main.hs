@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Main where
@@ -6,12 +6,12 @@ module Main where
 import Control.Monad (when)
 import GHC.Generics
 
-import Torch
+import           Torch
 import qualified Torch.Typed.Vision as V hiding (getImages')
-import qualified Torch.Vision as V
+import qualified Torch.Vision       as V
 
-import Distill
 import Dataset
+import Distill
 import Model
 
 -- | Transform probabilities along one-hot-encoding dimensions into the digit value
@@ -19,7 +19,7 @@ maxIndex :: Tensor -> Tensor
 maxIndex = Torch.argmax (Dim 1) RemoveDim
 
 -- | Setup distillation parameters and run
-runDistill :: (Dataset d) => d -> IO (MLP, MLP) 
+runDistill :: (Dataset d) => d -> IO (MLP, MLP)
 runDistill mnistData = do
     -- Train teacher
     initTeacher <- sample teacherSpec

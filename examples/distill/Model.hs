@@ -1,7 +1,7 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards       #-}
 
 module Model where
 
@@ -25,8 +25,8 @@ data (Optimizer o, Parameterized p) => OptimSpec o p = OptimSpec {
 }
 
 -- | Train a model
-train 
-    :: (Dataset d, Optimizer o, Parameterized p, HasForward p Tensor Tensor) 
+train
+    :: (Dataset d, Optimizer o, Parameterized p, HasForward p Tensor Tensor)
     => OptimSpec o p -> d -> p -> IO p
 train OptimSpec{..} dataset init = do
     trained <- foldLoop init numIters $
@@ -56,14 +56,14 @@ data MLPSpec = MLPSpec {
     outputFeatures :: Int
     } deriving (Show, Eq)
 
-data MLP = MLP { 
+data MLP = MLP {
     mlpFC0 :: Linear,
     mlpFC1 :: Linear,
     mlpFC2 :: Linear
     } deriving (Generic, Show)
 
 mlpTemp :: Float -> MLP -> Tensor -> Tensor
-mlpTemp temperature MLP{..} input = 
+mlpTemp temperature MLP{..} input =
     logSoftmaxTemp (asTensor temperature)
     . linearForward mlpFC2
     . relu
@@ -79,11 +79,11 @@ instance HasForward MLP Tensor Tensor where
     forward = mlpTemp 1.0
 
 instance Randomizable MLPSpec MLP where
-    sample MLPSpec {..} = MLP 
+    sample MLPSpec {..} = MLP
         <$> sample (LinearSpec inputFeatures hiddenFeatures0)
         <*> sample (LinearSpec hiddenFeatures0 hiddenFeatures1)
         <*> sample (LinearSpec hiddenFeatures1 outputFeatures)
-        
+
 --
 -- CNN Implementation
 --
@@ -112,15 +112,15 @@ instance HasForward CNN Tensor Tensor where
         -- kernel stride padding dilation ceilMode
         . maxPool2d (3, 3) (3, 3) (0, 0) (1, 1) Floor
         . relu
-        . conv2dForward cnnConv0 (1, 1) (2, 2) 
+        . conv2dForward cnnConv0 (1, 1) (2, 2)
         . reshape [batchSize, 1 , 28, 28]
         $ input
       where
         channels = (shape (toDependent . conv2dWeight $ cnnConv0)) !! 0
         batchSize = Prelude.div (product (shape input)) 784
-        
+
 instance Randomizable CNNSpec CNN where
-    sample CNNSpec {..} = CNN 
+    sample CNNSpec {..} = CNN
         <$> sample conv0Spec
         <*> sample fc0Spec
         <*> sample fc1Spec

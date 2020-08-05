@@ -1,8 +1,8 @@
 module Main where
 
 import Torch
-import Torch.Functional
 import Torch.Autograd
+import Torch.Functional
 import Torch.TensorFactories
 
 printTensor :: String -> Tensor -> IO()

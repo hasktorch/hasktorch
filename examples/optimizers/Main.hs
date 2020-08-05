@@ -6,16 +6,16 @@ module Main where
 
 import Control.Monad (foldM, when)
 import GHC.Generics
-import Prelude hiding (sqrt)
-import Text.Printf (printf)
+import Prelude       hiding (sqrt)
+import Text.Printf   (printf)
 
-import Torch
 import TestFunctions
+import Torch
 
 -- | show output after n iterations
 showLog :: (Show a) => Int -> Int -> Int -> Tensor -> a -> IO ()
-showLog n i maxIter lossValue state = 
-    when (i == 0 || mod i n == 0 || i == maxIter-1) do
+showLog n i maxIter lossValue state =
+    when (i == 0 || mod i n == 0 || i == maxIter-1) $ do
         putStrLn ("Iter: " ++ printf "%6d" i
             ++ " | Loss:" ++ printf "%05.4f" (asValue lossValue :: Float)
             ++ " | Parameters: " ++ show state)
@@ -93,7 +93,7 @@ main = do
     putStrLn "\nAdam"
     optConvQuad numIter Adam {
         beta1=0.9, beta2=0.999,
-        m1=[zeros' [1], zeros' [1]], 
+        m1=[zeros' [1], zeros' [1]],
         m2=[zeros' [1], zeros' [1]],
         iter=0
     }
@@ -108,7 +108,7 @@ main = do
     putStrLn "\nAdam"
     optRosen numIter Adam {
         beta1=0.9, beta2=0.999,
-        m1=[zeros' [1], zeros' [1]], 
+        m1=[zeros' [1], zeros' [1]],
         m2=[zeros' [1], zeros' [1]],
         iter=0
     }
@@ -123,7 +123,7 @@ main = do
     putStrLn "\nAdam"
     optAckley numIter Adam {
         beta1=0.9, beta2=0.999,
-        m1=[zeros' [1], zeros' [1]], 
+        m1=[zeros' [1], zeros' [1]],
         m2=[zeros' [1], zeros' [1]],
         iter=0
     }

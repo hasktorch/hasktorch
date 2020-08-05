@@ -1,12 +1,12 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE RecordWildCards        #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
 
 module RecurrentLayer where
 
 import Control.Monad.State.Strict
-import Data.List (foldl', scanl', intersperse)
+import Data.List                  (foldl', intersperse, scanl')
 
 import Torch
 

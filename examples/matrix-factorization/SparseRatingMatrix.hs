@@ -1,23 +1,21 @@
-{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE BlockArguments         #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards        #-}
 
 module Main where
 
-import Control.Monad (foldM, when)
+import Control.Monad                       (foldM, when)
 import MF
-import Torch.Autograd (grad, makeIndependent, toDependent)
-import Torch.DType (DType (Double))
-import Torch.Functional (mseLoss, toDType)
-import Torch.Functional.Internal (bmm)
+import Torch.Autograd                      (grad, makeIndependent, toDependent)
+import Torch.DType                         (DType (Double))
+import Torch.Functional                    (mseLoss, toDType)
+import Torch.Functional.Internal           (bmm)
 import Torch.Internal.Managed.Type.Context (manual_seed_L)
-import Torch.NN
-  ( Randomizable,
-    sample,
-  )
-import Torch.Optim (sgd)
-import Torch.Tensor ((!), Tensor, asTensor, indexSelect, reshape, toDouble, toInt)
-import Torch.TensorFactories (randintIO')
+import Torch.NN                            (Randomizable, sample)
+import Torch.Optim                         (sgd)
+import Torch.Tensor                        (Tensor, asTensor, indexSelect,
+                                            reshape, toDouble, toInt, (!))
+import Torch.TensorFactories               (randintIO')
 
 data RatingBatch = RatingBatch Items Users RatingValues deriving (Show)
 
@@ -81,11 +79,12 @@ main = do
             loss = lossMF state (RatingBatch items_batch users_batch ratings_batch)
             flat_parameters = flattenParameters state
             gradients = grad loss flat_parameters
-        when (i `mod` 100 == 0) do
+        when (i `mod` 100 == 0) $ do
           putStrLn $
             "Iteration: " ++ show i
               ++ " | Mean Squared Loss: "
               ++ show ((toDouble $ lossMF state ratingBatch))
+          pure ()
         new_flat_parameters <- mapM makeIndependent $ sgd 5e-3 flat_parameters gradients
         return $ replaceParameters state new_flat_parameters
   putStrLn $ "No. Users: " ++ (show n_users)

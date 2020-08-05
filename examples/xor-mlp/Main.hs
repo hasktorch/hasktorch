@@ -1,13 +1,13 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE RecordWildCards        #-}
 
 module Main where
 
 import GHC.Generics
 
 import Control.Monad (when)
-import Data.List (foldl', scanl', intersperse)
+import Data.List     (foldl', intersperse, scanl')
 
 import Torch
 
@@ -55,8 +55,8 @@ model params t = mlp params t
 
 main :: IO ()
 main = do
-    init <- sample $ MLPSpec { feature_counts = [2, 2, 1], 
-                               nonlinearitySpec = Torch.tanh } 
+    init <- sample $ MLPSpec { feature_counts = [2, 2, 1],
+                               nonlinearitySpec = Torch.tanh }
     trained <- foldLoop init numIters $ \state i -> do
         input <- randIO' [batchSize, 2] >>= return . (toDType Float) . (gt 0.5)
         let (y, y') = (tensorXOR input, squeezeAll $ model state input)

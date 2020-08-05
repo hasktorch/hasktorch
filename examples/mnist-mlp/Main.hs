@@ -1,33 +1,33 @@
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 
 module Main where
 
-import           Control.Monad (when)
-import           GHC.Generics
-import           Prelude hiding (exp)
+import Control.Monad (when)
+import GHC.Generics
+import Prelude       hiding (exp)
 
 import           Torch
-import qualified Torch.Typed.Vision as V hiding (getImages')
-import qualified Torch.Vision as V
 import           Torch.Serialize
+import qualified Torch.Typed.Vision as V hiding (getImages')
+import qualified Torch.Vision       as V
 
-import           Control.Monad (forever)
-import           Control.Monad.Cont (ContT(runContT))
+import           Control.Monad               (forever)
+import           Control.Monad.Cont          (ContT (runContT))
 import           Pipes
-import qualified Pipes.Prelude as P
+import qualified Pipes.Prelude               as P
 import           Torch.Data.StreamedPipeline
 
 data MLPSpec = MLPSpec {
-    inputFeatures :: Int,
+    inputFeatures   :: Int,
     hiddenFeatures0 :: Int,
     hiddenFeatures1 :: Int,
-    outputFeatures :: Int
+    outputFeatures  :: Int
     } deriving (Show, Eq)
 
-data MLP = MLP { 
+data MLP = MLP {
     l0 :: Linear,
     l1 :: Linear,
     l2 :: Linear
@@ -35,13 +35,13 @@ data MLP = MLP {
 
 instance Parameterized MLP
 instance Randomizable MLPSpec MLP where
-    sample MLPSpec {..} = MLP 
+    sample MLPSpec {..} = MLP
         <$> sample (LinearSpec inputFeatures hiddenFeatures0)
         <*> sample (LinearSpec hiddenFeatures0 hiddenFeatures1)
         <*> sample (LinearSpec hiddenFeatures1 outputFeatures)
 
 mlp :: MLP -> Tensor -> Tensor
-mlp MLP{..} input = 
+mlp MLP{..} input =
     logSoftmax (Dim 1)
     . linear l2
     . relu
@@ -81,6 +81,6 @@ main = do
     model <- runContT (makeListT' trainMnist [1 :: Int]) (trainLoop init optimizer)
     -- show test images + labels
     runContT (makeListT' testMnist [1 :: Int]) $
-      \inputs -> runEffect $ enumerate inputs >-> P.take 10 >-> displayImages model 
+      \inputs -> runEffect $ enumerate inputs >-> P.take 10 >-> displayImages model
 
     putStrLn "Done"

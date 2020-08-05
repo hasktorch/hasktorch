@@ -1,64 +1,64 @@
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE PolyKinds             #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS_GHC -fconstraint-solver-iterations=0 #-}
 -- {-# OPTIONS_GHC -fdefer-typed-holes #-}
 -- {-# OPTIONS_GHC -Wno-typed-holes #-}
 
 module Main where
 
-import Prelude hiding (replicate)
-import Control.Concurrent.Async
-import qualified Control.Foldl as L
-import Data.Constraint
-import Data.Kind
-import qualified Data.List as List
-import qualified Data.Maybe as Maybe
-import Data.Proxy
-import Data.Set.Ordered as OSet
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
-import qualified GHC.Exts as Exts
-import GHC.TypeLits
+import           Control.Concurrent.Async
+import qualified Control.Foldl            as L
+import           Data.Constraint
+import           Data.Kind
+import qualified Data.List                as List
+import qualified Data.Maybe               as Maybe
+import           Data.Proxy
+import           Data.Set.Ordered         as OSet
+import qualified Data.Text                as T
+import qualified Data.Text.IO             as T
+import qualified GHC.Exts                 as Exts
+import           GHC.TypeLits
 import qualified GHC.TypeNats
-import Lens.Family hiding (All)
-import Unsafe.Coerce (unsafeCoerce)
-import qualified System.IO as IO
-import System.IO.Unsafe (unsafePerformIO)
-import System.Mem (performGC)
+import           Lens.Family              hiding (All)
+import           Prelude                  hiding (replicate)
+import qualified System.IO                as IO
+import           System.IO.Unsafe         (unsafePerformIO)
+import           System.Mem               (performGC)
+import           Unsafe.Coerce            (unsafeCoerce)
 
-import Pipes
-import Pipes.Group
-import qualified Pipes.Prelude as P
-import qualified Pipes.Random as Random
+import           Pipes
+import           Pipes.Group
+import qualified Pipes.Prelude      as P
+import qualified Pipes.Random       as Random
+import qualified Pipes.Safe         as Safe
 import qualified Pipes.Safe.Prelude as Safe
-import qualified Pipes.Safe as Safe
-import qualified Pipes.Text as Text
-import qualified Pipes.Text.IO as Text
+import qualified Pipes.Text         as Text
+import qualified Pipes.Text.IO      as Text
 
-import Torch.Typed
-import Torch (ATenTensor)
-import Torch.Internal.Class (Castable)
+import Torch                               (ATenTensor)
+import Torch.Internal.Class                (Castable)
 import Torch.Internal.Managed.Type.Context (manual_seed_L)
+import Torch.Typed
 
-import           Control.Monad.Trans.Control (MonadBaseControl(..), control)
-import           Control.Monad.Base (MonadBase, liftBase)
+import Control.Monad.Base          (MonadBase, liftBase)
+import Control.Monad.Trans.Control (MonadBaseControl (..), control)
 
 
-import Torch.Data.StreamedPipeline
+import Control.Monad.Cont          (ContT (runContT))
 import Torch.Data.Dataset
-import Control.Monad.Cont (ContT(runContT))
+import Torch.Data.StreamedPipeline
 
 type WorkerDevices = '[ '( 'CPU, 0)]
 type ModelDevice = '( 'CPU, 0)
@@ -97,8 +97,8 @@ type ModelSpec numEmbeds modelDevice
 data TransformerData seqLen = TransformerData { length :: Int, filePath :: FilePath, vocab :: OSet.OSet Text.Text}
 
 instance (KnownNat seqLen, Safe.MonadSafe m,  MonadBase IO m) => Datastream m () (TransformerData seqLen) [Maybe Int] where
-  streamBatch TransformerData{..} _ = Select $ readData @seqLen filePath length vocab 
-  
+  streamBatch TransformerData{..} _ = Select $ readData @seqLen filePath length vocab
+
 main :: IO ()
 main = program 100 "trainingFile.txt" 1000 "evaluationFile.txt" 1
 
@@ -116,14 +116,14 @@ program numEpochs trainingFile trainingLen evaluationFile evaluationLen = Safe.r
   case vocabLen of
     (SomeNat proxy) -> case mkNumEmbedsProof proxy of
       Just dict -> go dict vocab
-      Nothing -> pure ()
+      Nothing   -> pure ()
  where
   go
     :: forall (numEmbeds :: Nat) . KnownNat numEmbeds
     => Dict ((1 <=? numEmbeds) ~ 'True)
     -> OSet.OSet Text.Text
-    -> Effect (Safe.SafeT IO) () 
-  go Dict vocab = 
+    -> Effect (Safe.SafeT IO) ()
+  go Dict vocab =
     let trainingData   = TransformerData { length = trainingLen , filePath = trainingFile, vocab = vocab }
         evaluationData   = TransformerData { length = evaluationLen , filePath = evaluationFile, vocab = vocab }
         learning' = do
@@ -186,7 +186,7 @@ training
      )
   => LearningRate modelDevice dtype
   -> (model, optim)
-  -> ListT m ((input, target), Int)  
+  -> ListT m ((input, target), Int)
   -> m (model, optim)
 training learningRate (model, optim) = P.foldM step begin done . enumerate
   where
@@ -218,7 +218,7 @@ evaluation
      , MonadIO m
      )
   => model
-  -> ListT m ((input, target), Int)  
+  -> ListT m ((input, target), Int)
   -> m _
 evaluation model = P.foldM step begin done . enumerate
   where
@@ -277,9 +277,9 @@ learning numEpochs learningRate (model, optim) trainingData evaluationData =
 
   where step trainSet testSet (model, optim) epoch = do
           (model', optim') <- lift $ runContT (makeListT' trainSet [()])
-                        $ training @workerDevices @modelDevice @dataDevice @dtype @model @models @optim @input @inputs @target @targets @inputTargets @losses @parameters' @gradients @parameters @tensors learningRate (model, optim) 
+                        $ training @workerDevices @modelDevice @dataDevice @dtype @model @models @optim @input @inputs @target @targets @inputTargets @losses @parameters' @gradients @parameters @tensors learningRate (model, optim)
           evalLoss' <- lift $ runContT (makeListT' testSet [()])
-                 $ evaluation @workerDevices @modelDevice @dataDevice @numEmbeds @batchSize @seqLen @dtype @model @models @input @inputs @output @outputs @target model' 
+                 $ evaluation @workerDevices @modelDevice @dataDevice @numEmbeds @batchSize @seqLen @dtype @model @models @input @inputs @output @outputs @target model'
           yield (evalLoss', model', optim')
           pure (model', optim')
         begin = pure (model, optim)
@@ -291,8 +291,8 @@ readData
   => FilePath
   -> Int
   -> OSet.OSet Text.Text
-  -> Producer [Maybe Int] m () 
-readData file length vocab = raw >-> P.take length 
+  -> Producer [Maybe Int] m ()
+readData file length vocab = raw >-> P.take length
   where
     raw = Safe.withFile file IO.ReadMode
       $ \h -> L.purely folds L.list
@@ -308,7 +308,7 @@ collation :: forall modelDevice batchSize seqLen m . (KnownNat seqLen, KnownDevi
   Pipe [[Maybe Int]] (Tensor modelDevice 'Int64 '[batchSize, seqLen], Tensor modelDevice 'Int64 '[batchSize, seqLen]) m ()
 collation = for Pipes.cat $ \x -> case f x of
                                     Nothing -> return ()
-                                    Just y -> yield y
+                                    Just y  -> yield y
     where f xs = do
             let xs' = Maybe.catMaybes <$> xs
             input <- Exts.fromList $ take (natValI @seqLen) <$> xs'
@@ -324,7 +324,7 @@ chain f = go
     go p = FreeT $ do
       x <- next p
       return $ case x of
-        Left r -> Pure r
+        Left r        -> Pure r
         Right (a, p') -> Free $ fmap go (f a >> return p')
 
 readHandleEndlesslyFromOffset :: forall m . MonadIO m => IO.Handle -> Integer -> Producer Text.Text m ()

@@ -1,5 +1,5 @@
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE RecordWildCards        #-}
 
 module Main where
 
@@ -15,7 +15,7 @@ newtype CovMatrix = CovMatrix Tensor deriving Show
 -- | construct pairs of points on the axis
 makeAxis :: [Float] -> [Float] -> (Tensor, Tensor)
 makeAxis axis1 axis2 = (t, t')
-    where 
+    where
         t = asTensor (fst <$> rngPairs)
         t' = asTensor (snd <$> rngPairs)
         pairs axis1' axis2' = [(t, t') | t <- axis1', t' <- axis2']
@@ -30,7 +30,7 @@ kernel1d_rbf sigma length t t' = (sigma'^2) * exp eterm
 
 -- | derive a covariance matrix from the kernel for points on the axis
 makeCovmatrix :: [Float] -> [Float] -> CovMatrix
-makeCovmatrix axis1 axis2 = 
+makeCovmatrix axis1 axis2 =
     CovMatrix (reshape [length axis1, length axis2] (kernel1d_rbf 1.0 1.0 t t'))
     where
       (t, t') = makeAxis axis1 axis2
@@ -40,11 +40,11 @@ mvnCholesky :: CovMatrix -> Int -> Int -> IO Tensor
 mvnCholesky (CovMatrix cov) axisDim n = do
     samples <- randnIO' [axisDim, n]
     pure $ matmul l samples
-    where 
+    where
       l = cholesky Upper cov
 
 -- | Compute posterior mean and covariance parameters based on observed data y
-condition 
+condition
     :: MeanVector -- ^ mean of unobserved points X
     -> MeanVector -- ^ mean of observed points Y
     -> CovMatrix -- ^ covariance of unobserved points X
@@ -63,9 +63,9 @@ condition (MeanVector muX) (MeanVector muY) (CovMatrix covXX) (CovMatrix covXY) 
 -- | Add small values on the diagonal of a covariance matrix
 regularize :: CovMatrix -> CovMatrix
 regularize (CovMatrix cov) = CovMatrix (cov + reg)
-    where 
+    where
         axisDim = shape cov !! 0
-        reg = 0.01 * (eye'  axisDim axisDim) -- regularization 
+        reg = 0.01 * (eye'  axisDim axisDim) -- regularization
 
 -- | Given observations + points of interest derive covariance terms and condition on observation
 computePosterior :: [Float] -> [Float] -> [Float] -> IO (MeanVector, CovMatrix)
@@ -88,9 +88,9 @@ computePosterior dataPredictors dataValues tRange = do
 
     -- conditional distribution
     let obsVals = reshape [dataDim, 1] (asTensor dataValues)
-    let (postMu, postCov) = 
+    let (postMu, postCov) =
             condition
-                priorMuAxis priorMuData 
+                priorMuAxis priorMuData
                 priorCov crossCov obsCov
                 obsVals
     pure $ (postMu, regularize postCov)
@@ -123,7 +123,7 @@ main = do
     putStrLn "\nGP Conditional Samples (posterior, rows = values, cols = realizations)"
     print $ addMean postMu mvnSampPost
 
-    where 
+    where
       -- Axis points
       scale = 0.1
       axisDim = 7

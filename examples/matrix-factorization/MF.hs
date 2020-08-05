@@ -1,6 +1,6 @@
-{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE BlockArguments         #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards        #-}
 
 -- In matrix factorization, we aim to write a given matrix R (of size n x m) as
 -- a product U * V where U is n x k and V is k x m for some k. This is done in
@@ -9,20 +9,16 @@
 
 module MF where
 
-import Torch.Autograd (makeIndependent, toDependent)
-import Torch.Functional (matmul)
-import Torch.NN
-  ( Parameter,
-    Randomizable,
-    sample,
-  )
-import Torch.Tensor (Tensor)
+import Torch.Autograd        (makeIndependent, toDependent)
+import Torch.Functional      (matmul)
+import Torch.NN              (Parameter, Randomizable, sample)
+import Torch.Tensor          (Tensor)
 import Torch.TensorFactories (randnIO')
 
 data MatrixFactSpec
   = MatrixFactSpec
-      { dim1 :: Int, -- that is n when R has n x m shape
-        dim2 :: Int, -- that is m when R has n x m shape
+      { dim1       :: Int, -- that is n when R has n x m shape
+        dim2       :: Int, -- that is m when R has n x m shape
         common_dim :: Int -- that is k when U has n x k shape
       }
   deriving (Show, Eq)

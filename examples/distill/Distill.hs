@@ -1,25 +1,24 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE RecordWildCards       #-}
 
 module Distill where
 
+import           Control.Monad       (when)
 import qualified Control.Monad.State as S
-import Control.Monad (when)
-import GHC.Generics
-import Prelude hiding (exp, log)
+import           GHC.Generics
+import           Prelude             hiding (exp, log)
 
-import Torch
 import Dataset
-import Model (OptimSpec(..))
+import Model   (OptimSpec (..))
+import Torch
 
 newtype ModelView = ModelView { view :: Tensor }
 
 data (Parameterized t, Parameterized s) => DistillSpec t s = DistillSpec {
-    teacher :: t,
-    student :: s,
+    teacher     :: t,
+    student     :: s,
     teacherView :: t -> Tensor -> ModelView,
     studentView :: s -> Tensor -> ModelView,
     distillLoss :: ModelView -> ModelView -> Tensor

@@ -1,6 +1,6 @@
-{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE BlockArguments         #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards        #-}
 
 -- In matrix factorization, we aim to write a given matrix R (of size n x m) as
 -- a product U * V where U is n x k and R is k x m for some k. This is done in
@@ -9,14 +9,14 @@
 
 module Main where
 
-import Control.Monad (foldM, when)
+import Control.Monad                       (foldM, when)
 import MF
-import Torch.Autograd (grad, makeIndependent, toDependent)
-import Torch.Functional (matmul, mse_loss)
+import Torch.Autograd                      (grad, makeIndependent, toDependent)
+import Torch.Functional                    (matmul, mse_loss)
 import Torch.Internal.Managed.Type.Context (manual_seed_L)
-import Torch.NN (sample)
-import Torch.Optim (sgd)
-import Torch.Tensor (Tensor, asTensor, shape)
+import Torch.NN                            (sample)
+import Torch.Optim                         (sgd)
+import Torch.Tensor                        (Tensor, asTensor, shape)
 
 r =
   asTensor
@@ -61,7 +61,8 @@ main = do
       let loss = lossMF state
           flat_parameters = flattenParameters state
           gradients = grad loss flat_parameters
-      when (i `mod` 500 == 0) do
+      when (i `mod` 500 == 0) $ do
         putStrLn $ "Iteration: " ++ show i ++ " | Loss: " ++ show loss
+        pure ()
       new_flat_parameters <- mapM makeIndependent $ sgd 5e-3 flat_parameters gradients
       return $ replaceParameters state $ new_flat_parameters

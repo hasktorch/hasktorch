@@ -1,8 +1,8 @@
 module Dataset where
 
-import Torch
+import           Torch
 import qualified Torch.Typed.Vision as V hiding (getImages')
-import qualified Torch.Vision as V
+import qualified Torch.Vision       as V
 
 -- This is a placeholder for this example until we have a more formal data loader abstraction
 --

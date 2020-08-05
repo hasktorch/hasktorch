@@ -1,7 +1,7 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE RecordWildCards        #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
 
 module Main where
 
@@ -12,11 +12,11 @@ import GHC.Generics
 import Control.Monad.State.Strict
 import Data.List
 
-import Torch
-import RecurrentLayer
 import Elman
-import LSTM
 import GRU
+import LSTM
+import RecurrentLayer
+import Torch
 
 
 num_iters = 1000
@@ -57,10 +57,10 @@ repr c = case c of
 letter :: Int -> Char
 letter index = case index of
     -1 -> '0'
-    0 -> 'h'
-    1 -> 'e'
-    2 -> 'l'
-    3 -> 'o'
+    0  -> 'h'
+    1  -> 'e'
+    2  -> 'l'
+    3  -> 'o'
 
 letters :: [Tensor]
 letters = map ((reshape [1, 4]) . (fromList . repr)) "helo"
@@ -77,7 +77,7 @@ getIndex result = case index of
 main :: IO ()
 main = do
 
---    let input_tensor = fromNestedList $ map representation "hello"
+    -- let input_tensor = fromNestedList $ map representation "hello"
     let foldLoop x count block = foldM block x [1..count]
 
     let input_tensor = fromNestedList $ map repr "hell"

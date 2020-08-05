@@ -196,11 +196,17 @@ steps:
       # pragmas are set at the project level.
       remove_redundant: false
 
+  - records:
+      deriving: 2
+      equals: 'indent 2'
+      field_comment: 2
+      first_field: 'same_line'
+
   # Replace tabs by spaces. This is disabled by default.
   - tabs:
        # Number of spaces to use for each tab. Default: 8, as specified by the
        # Haskell report.
-       spaces: 2
+      spaces: 2
 
   # Remove trailing whitespace
   - trailing_whitespace: {}

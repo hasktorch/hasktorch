@@ -1,46 +1,46 @@
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE PolyKinds             #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
 module Pipeline where
 
 import           Torch.Data.Pipeline
-import qualified Torch.Device as D
-import qualified Torch.DType as D
-import qualified Torch.Tensor as D
-import qualified Torch.Functional as D
-import qualified Torch.TensorFactories as D
-import           Torch.Typed.Tensor
-import qualified Torch.Typed.Vision as I
-import           Torch.Typed.Functional
+import qualified Torch.Device           as D
+import qualified Torch.DType            as D
+import qualified Torch.Functional       as D
+import qualified Torch.Tensor           as D
+import qualified Torch.TensorFactories  as D
 import           Torch.Typed.Aux
+import           Torch.Typed.Factories
+import           Torch.Typed.Functional
 import           Torch.Typed.NN
 import           Torch.Typed.Optim
-import           Torch.Typed.Factories
+import           Torch.Typed.Tensor
+import qualified Torch.Typed.Vision     as I
 
   -- new
-import           Torch.HList
-import           Torch.Typed.Parameter hiding (toDevice)
-import           Torch.Typed.Autograd
+import Torch.HList
+import Torch.Typed.Autograd
+import Torch.Typed.Parameter hiding (toDevice)
 
-import           Control.Monad.IO.Class (MonadIO(..))
-import           Control.Monad (void)
-import           GHC.Generics
-import           GHC.TypeLits
-import           GHC.TypeLits.Extra
+import Control.Monad          (void)
+import Control.Monad.IO.Class (MonadIO (..))
+import GHC.Generics
+import GHC.TypeLits
+import GHC.TypeLits.Extra
 
-import           Common
+import Common
 
 instance (KnownNat batchSize) =>
   Dataset IO I.MnistData (Tensor '( 'D.CPU, 0) 'D.Float '[batchSize, 784], Tensor '( 'D.CPU, 0) 'D.Int64 '[batchSize]) where
@@ -48,7 +48,7 @@ instance (KnownNat batchSize) =>
   numIters dataset = I.length dataset `div` natValI @batchSize
 
 getBatchMnist :: forall batchSize model optim . _ => I.MnistData -> Int -> Int ->  IO _
-getBatchMnist dataset numIters iter =  
+getBatchMnist dataset numIters iter =
   let from = (iter-1) * natValI @batchSize
       to = (iter * natValI @batchSize) - 1
       indexes = [from .. to]
@@ -57,12 +57,12 @@ getBatchMnist dataset numIters iter =
   in pure (input, target)
 
 runBatches :: forall batchSize device model optim . _
-  => model 
+  => model
   -> optim
   -> (Tensor device 'D.Float '[batchSize, 10] -> Tensor device 'D.Int64 '[batchSize] -> Loss device 'D.Float)
   -> LearningRate device 'D.Float
   -> (model -> Tensor device 'D.Float '[batchSize, 784] -> Tensor device 'D.Float '[batchSize, 10])
-  -> I.MnistData 
+  -> I.MnistData
   -> I.MnistData
   -> Int
   -> Tensor device 'D.Float '[]
@@ -70,15 +70,15 @@ runBatches :: forall batchSize device model optim . _
 -- runBatches model optim lossFn learningRate forward trainInputs evalInputs numEpochs testSetSize = do
 runBatches model optim lossFn learningRate forward rawTrainingData rawTestData numEpochs testSetSize = do
   void $ foldLoop (model,optim) numEpochs  $ \(model,optim) epoch -> do
-    liftIO $ print $ "Running epoch " <> show epoch 
-    (trainInputs) <- makeMnistFold rawTrainingData 
-    evalInputs <- makeMnistFold rawTestData 
+    liftIO $ print $ "Running epoch " <> show epoch
+    (trainInputs) <- makeMnistFold rawTrainingData
+    evalInputs <- makeMnistFold rawTestData
     (newModel, newOptim) <- trainInputs $ FoldM (trainFold lossFn learningRate forward) (pure (model, optim)) pure
     (testLoss, testError) <- evalInputs $ FoldM (evaluation model forward) (pure (0,0)) pure
     liftIO $ putStrLn
       $  "Epoch: " <> show epoch
       <> ". Test loss: "
-      <> show (testLoss / testSetSize)  
+      <> show (testLoss / testSetSize)
       <> ". Test error-rate: "
       <> show (testError / testSetSize)
     pure (newModel, newOptim)
@@ -89,7 +89,7 @@ runBatches model optim lossFn learningRate forward rawTrainingData rawTestData n
         makeMnistFold = makeFold
 
 trainFold :: forall device . _ => _ -> _ -> _ -> _ -> _
-trainFold lossFn learningRate forward (model, optim) (trainData, trainLabels) = do 
+trainFold lossFn learningRate forward (model, optim) (trainData, trainLabels) = do
   let prediction = forward model $ toDevice @device trainData
   let target = toDevice @device trainLabels
   let loss = lossFn prediction target
@@ -105,7 +105,7 @@ evaluation model forward (totalLoss, totalError) (testData, testLabels) = do
             let prediction = forward model $ toDevice @device testData
             let target = toDevice @device testLabels
             let (testLoss, testError) = lossAndErrorCount prediction target
-            pure (testLoss + totalLoss, testError + totalError) 
+            pure (testLoss + totalLoss, testError + totalError)
 
 newMain :: forall batchSize device . _ => _ -> _ -> _
 newMain forward model optim numEpochs = do
@@ -131,6 +131,6 @@ lossAndErrorCount
   -> ( Tensor device 'D.Float '[]
      , Tensor device 'D.Float '[]
      )
-lossAndErrorCount input target = 
+lossAndErrorCount input target =
     (crossEntropyLoss input target, errorCount input target)
 

@@ -1,22 +1,20 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE PolyKinds             #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
 
 module Common where
 
-import Prelude hiding (length)
-import           Control.Monad                  ( foldM
-                                                , void
-                                                )
-import           GHC.TypeLits
+import Control.Monad (foldM, void)
+import GHC.TypeLits
+import Prelude       hiding (length)
 
-import Torch.Typed
-import Torch (ATenTensor)
+import Torch                (ATenTensor)
 import Torch.Internal.Class (Castable)
+import Torch.Typed
 
 foldLoop
   :: forall a b m . (Num a, Enum a, Monad m) => b -> a -> (b -> a -> m b) -> m b
@@ -85,7 +83,7 @@ train initModel initOptim forward learningRate ptFile = do
   foldLoop_ (initModel, initOptim) numEpochs $ \(epochModel, epochOptim) epoch -> do
     let numIters = length trainingData `div` natValI @batchSize
     (epochModel', epochOptim') <- foldLoop (epochModel, epochOptim) numIters $ \(model, optim) i -> do
-      (trainingLoss,_) <- computeLossAndErrorCount @batchSize (forward model True) 
+      (trainingLoss,_) <- computeLossAndErrorCount @batchSize (forward model True)
                                                               i
                                                               trainingData
       (model', optim') <- runStep model optim trainingLoss learningRate
@@ -105,10 +103,10 @@ train initModel initOptim forward learningRate ptFile = do
       <> show (testLoss / realToFrac (length testData))
       <> ". Test error-rate: "
       <> show (testError / realToFrac (length testData))
-    
+
     save (hmap' ToDependent . flattenParameters $ epochModel') ptFile
     return (epochModel', epochOptim')
-    
+
  where
   computeLossAndErrorCount
     :: forall n (device :: (DeviceType, Nat))

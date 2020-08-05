@@ -1,23 +1,23 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE RecordWildCards        #-}
 
 module Main where
 
 import Control.Monad (when)
-import Data.List (foldl', scanl', intersperse)
+import Data.List     (foldl', intersperse, scanl')
 import GHC.Generics
-import Prelude hiding (exp)
+import Prelude       hiding (exp)
 
 import Torch
 
 -- Model Specification
 
 data VAESpec = VAESpec {
-  encoderSpec :: [LinearSpec],
-  muSpec :: LinearSpec,
-  logvarSpec :: LinearSpec,
-  decoderSpec :: [LinearSpec],
+  encoderSpec      :: [LinearSpec],
+  muSpec           :: LinearSpec,
+  logvarSpec       :: LinearSpec,
+  decoderSpec      :: [LinearSpec],
   nonlinearitySpec :: Tensor -> Tensor
 } deriving (Generic)
 
@@ -25,8 +25,8 @@ data VAESpec = VAESpec {
 
 data VAEState = VAEState {
   encoderState :: [Linear],
-  muFC :: Linear,
-  logvarFC :: Linear,
+  muFC         :: Linear,
+  logvarFC     :: Linear,
   decoderState :: [Linear],
   nonlinearity :: Tensor -> Tensor
 } deriving (Generic)
@@ -45,8 +45,8 @@ instance Parameterized VAEState
 -- Output including latent mu and logvar used for VAE loss
 
 data ModelOutput = ModelOutput {
-  recon :: Tensor,
-  mu :: Tensor,
+  recon  :: Tensor,
+  mu     :: Tensor,
   logvar :: Tensor
 } deriving (Show)
 
@@ -92,7 +92,7 @@ mvnCholesky cov n axisDim = do
 -- | Construct and initialize model parameter state
 makeModel :: Int -> Int -> Int -> IO VAEState
 makeModel dataDim hDim zDim = do
-    sample VAESpec { 
+    sample VAESpec {
         encoderSpec = [LinearSpec dataDim hDim],
         muSpec = LinearSpec hDim zDim,
         logvarSpec = LinearSpec hDim zDim,
@@ -131,7 +131,7 @@ main = do
     hDim = 2 -- hidden layer dimensions
     zDim = 2 -- latent space (z) dimensions
     -- optimization parameters
-    optimizer = GD 
+    optimizer = GD
     nSamples = 32768
     batchSize = 256 -- TODO - crashes for case where any batch is of size n=1
     numIters = 6000

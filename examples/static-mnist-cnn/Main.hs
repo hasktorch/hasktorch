@@ -1,30 +1,30 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE NoStarIsType #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE NoStarIsType          #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module Main where
 
-import           Control.Exception.Safe         ( try
-                                                , SomeException(..)
-                                                )
-import           GHC.Generics
-import           GHC.TypeLits
-import           System.Environment
+import Control.Exception.Safe               ( try
+                                            , SomeException(..)
+                                            )
+import GHC.Generics
+import GHC.TypeLits
+import System.Environment
 
 import Torch.Typed
 import Torch.Internal.Managed.Type.Context (manual_seed_L)
-import           Common
+import Common
 import Pipeline
 import Control.Monad.State.Lazy
 
