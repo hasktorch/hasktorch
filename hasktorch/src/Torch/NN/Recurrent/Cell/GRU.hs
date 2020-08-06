@@ -34,6 +34,8 @@ gruCellForward GRUCell{..} input hidden =
         biasIH' = toDependent biasIH
         biasHH' = toDependent biasHH
 
+instance Parameterized GRUCell
+
 instance Randomizable GRUSpec GRUCell where
   sample GRUSpec{..} = do
     weightsIH' <- makeIndependent =<< randIO' [inputSize, hiddenSize]

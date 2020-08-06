@@ -34,6 +34,8 @@ lstmCellForward LSTMCell{..} input hidden =
         biasIH' = toDependent biasIH
         biasHH' = toDependent biasHH
 
+instance Parameterized LSTMCell
+
 instance Randomizable LSTMSpec LSTMCell where
   sample LSTMSpec{..} = do
     weightsIH' <- makeIndependent =<< randIO' [inputSize, hiddenSize]

@@ -34,6 +34,8 @@ elmanCellForward ElmanCell{..} input hidden =
         biasIH' = toDependent biasIH
         biasHH' = toDependent biasIH
 
+instance Parameterized ElmanCell
+
 instance Randomizable ElmanSpec ElmanCell where
     sample ElmanSpec{..} = do
       weightsIH <- makeIndependent =<< randnIO' [hiddenSize, inputSize]
