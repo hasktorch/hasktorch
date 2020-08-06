@@ -48,6 +48,8 @@ library
                     , Torch.Random
                     , Torch.Script
                     , Torch.HList
+                    , Torch.Internal.CRC32C
+                    , Torch.Tensorboard
                     , Torch.Typed
                     , Torch.Typed.Aux
                     , Torch.Typed.Factories
@@ -89,6 +91,7 @@ library
  build-depends:       async
                     , base >= 4.7 && < 5
                     , libtorch-ffi == 1.6.*
+                    , haskell-torch-tensorboard-proto
                     , finite-typelits
                     , ghc-typelits-extra
                     , ghc-typelits-knownnat
@@ -117,6 +120,20 @@ library
                     , foldl
                     , transformers-base
                     , array
+
+                    -- tensorboard
+                    , hostname
+                    , matplotlib
+                    , monad-logger
+                    , statistics
+                    , binary
+                    , containers
+                    , proto-lens
+                    , text
+                    , time
+                    , microlens
+                    , directory
+                    , filepath
 
                     , inline-c
  default-extensions:  Strict
@@ -164,6 +181,7 @@ test-suite spec
                     , hasktorch
                     , hspec
                     , libtorch-ffi
+                    , haskell-torch-tensorboard-proto
                     , mtl
                     , reflection
                     , safe-exceptions
@@ -189,6 +207,7 @@ test-suite doctests
                     , async
                     , base >= 4.7 && < 5
                     , libtorch-ffi == 1.6.*
+                    , haskell-torch-tensorboard-proto
                     , finite-typelits
                     , ghc-typelits-extra
                     , ghc-typelits-knownnat

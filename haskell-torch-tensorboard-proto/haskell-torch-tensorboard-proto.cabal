@@ -1,0 +1,103 @@
+cabal-version: 2.2
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 91dedeff7000f3e67a63d1cc7c489afede377a7a8c27970e63a4d319561a2542
+
+name:           haskell-torch-tensorboard-proto
+version:        0.1.0.0
+synopsis:       Talk to tensorboard from Haskell; the protobuf bindings
+description:    Please see the README on Github at <https://github.com/abarbu/haskell-torch#readme>
+category:       AI
+homepage:       https://github.com/abarbu/haskell-torch
+bug-reports:    https://github.com/abarbu/haskell-torch/issues
+author:         Andrei Barbu
+maintainer:     andrei@0xab.com
+copyright:      2018 Andrei Barbu
+license:        BSD-3-Clause
+build-type:     Custom
+extra-source-files:
+    proto/tensorboard/src/attr_value.proto
+    proto/tensorboard/src/event.proto
+    proto/tensorboard/src/graph.proto
+    proto/tensorboard/src/node_def.proto
+    proto/tensorboard/src/onnx.proto
+    proto/tensorboard/src/resource_handle.proto
+    proto/tensorboard/src/summary.proto
+    proto/tensorboard/src/tensor.proto
+    proto/tensorboard/src/tensor_shape.proto
+    proto/tensorboard/src/types.proto
+    proto/tensorboard/src/versions.proto
+
+source-repository head
+  type: git
+  location: https://github.com/abarbu/haskell-torch
+
+custom-setup
+  setup-depends:
+      Cabal
+    , base
+    , proto-lens-setup
+
+library
+  exposed-modules:
+      Tensorboard.Proto.Attributes
+      Tensorboard.Proto.Event
+      Tensorboard.Proto.Graph
+      Tensorboard.Proto.Summary
+      Tensorboard.Proto.Tensor
+  autogen-modules:
+      Proto.Tensorboard.Src.Summary
+      Proto.Tensorboard.Src.Summary_Fields
+      Proto.Tensorboard.Src.Tensor
+      Proto.Tensorboard.Src.Tensor_Fields
+      Proto.Tensorboard.Src.Types
+      Proto.Tensorboard.Src.Types_Fields
+      Proto.Tensorboard.Src.ResourceHandle
+      Proto.Tensorboard.Src.ResourceHandle_Fields
+      Proto.Tensorboard.Src.TensorShape
+      Proto.Tensorboard.Src.TensorShape_Fields
+      Proto.Tensorboard.Src.Event
+      Proto.Tensorboard.Src.Event_Fields
+      Proto.Tensorboard.Src.Graph
+      Proto.Tensorboard.Src.Graph_Fields
+      Proto.Tensorboard.Src.NodeDef
+      Proto.Tensorboard.Src.NodeDef_Fields
+      Proto.Tensorboard.Src.Versions
+      Proto.Tensorboard.Src.Versions_Fields
+      Proto.Tensorboard.Src.AttrValue
+      Proto.Tensorboard.Src.AttrValue_Fields
+  other-modules:
+      Proto.Tensorboard.Src.Summary
+      Proto.Tensorboard.Src.Summary_Fields
+      Proto.Tensorboard.Src.Tensor
+      Proto.Tensorboard.Src.Tensor_Fields
+      Proto.Tensorboard.Src.Types
+      Proto.Tensorboard.Src.Types_Fields
+      Proto.Tensorboard.Src.ResourceHandle
+      Proto.Tensorboard.Src.ResourceHandle_Fields
+      Proto.Tensorboard.Src.TensorShape
+      Proto.Tensorboard.Src.TensorShape_Fields
+      Proto.Tensorboard.Src.Event
+      Proto.Tensorboard.Src.Event_Fields
+      Proto.Tensorboard.Src.Graph
+      Proto.Tensorboard.Src.Graph_Fields
+      Proto.Tensorboard.Src.NodeDef
+      Proto.Tensorboard.Src.NodeDef_Fields
+      Proto.Tensorboard.Src.Versions
+      Proto.Tensorboard.Src.Versions_Fields
+      Proto.Tensorboard.Src.AttrValue
+      Proto.Tensorboard.Src.AttrValue_Fields
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.7 && <5
+    , data-default
+    , microlens
+    , proto-lens
+    , proto-lens-protoc
+    , proto-lens-runtime
+    , text
+  default-language: Haskell2010

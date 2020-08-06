@@ -7,6 +7,7 @@ packages:
 - hasktorch
 - examples
 - experimental
+- haskell-torch-tensorboard-proto
 
 # see https://github.com/commercialhaskell/stack/issues/4073
 # with-gcc: /usr/local/bin/gcc-7
