@@ -71,14 +71,19 @@ t2vForward t Time2Vec{..} =
                               toDependent w, toDependent b)
 
 checkModel = do
+  -- check time2vec
   t2v <- sample $ Time2VecSpec 10
   lstmLayer <- sample $ LSTMSpec (10 + 1) 2
   let result = t2vForward 3.0 t2v
+  print result
 
+  -- check end-to-end
+  let inputDim = 3193 + 1 + 1 -- # counties + t2vDim + county of interest count
   model <- sample TSModelSpec {
-    nCounties = undefined,
+    nCounties = 3193,
     countyEmbedDim = 6,
     t2vSpec = Time2VecSpec { t2vDim=6 },
-    lstmSpec = LSTMSpec { inputSize=undefined, hiddenSize=12 } 
+    lstmSpec = LSTMSpec { inputSize=inputDim, hiddenSize=12 } 
     }
+  let result = tsmodelForward 10.0 model (ones' [inputDim], ones' [inputDim]) (ones' [3193]) 15.0
   print result

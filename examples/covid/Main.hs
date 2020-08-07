@@ -50,6 +50,7 @@ main = do
 
   -- define fipsSpace
   let fipsList = M.keys . fipsMap $ modelData
+  putStrLn "Number of counties:"
   print $ length fipsList 
   
   plotTS (fipsMap modelData) tensorData "25025"
