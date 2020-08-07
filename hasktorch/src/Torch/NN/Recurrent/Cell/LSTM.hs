@@ -23,10 +23,10 @@ data LSTMCell = LSTMCell {
 
 lstmCellForward 
     :: LSTMCell -- ^ cell parameters
-    -> Tensor -- ^ input
     -> (Tensor, Tensor) -- ^ (hidden, cell)
+    -> Tensor -- ^ input
     -> (Tensor, Tensor) -- ^ output (hidden, cell) 
-lstmCellForward LSTMCell{..} input hidden =
+lstmCellForward LSTMCell{..} hidden input =
     lstmCell weightsIH' weightsHH' biasIH' biasHH' hidden input
     where
         weightsIH' = toDependent weightsIH

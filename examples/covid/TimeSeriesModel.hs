@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -19,38 +20,37 @@ data TSModel = TSModel {
   countyEmbed :: Linear,
   t2v :: Time2Vec,
   lstm :: LSTMCell
-} deriving (Generic, Show)
+} deriving (Generic, Show, Parameterized)
 
-instance Parameterized TSModel
 instance Randomizable TSModelSpec TSModel where
     sample TSModelSpec {..} = TSModel
         <$> sample (LinearSpec nCounties countyEmbedDim)
         <*> sample t2vSpec
         <*> sample lstmSpec
 
+tsmodelForward 
+  :: Float 
+  -> TSModel -- ^ model state
+  -> (Tensor, Tensor) -- ^ (hidden state, cell state)
+  -> Tensor  -- ^ all counties context
+  -> Tensor -- ^ input
+  -> (Tensor, Tensor)
+tsmodelForward t TSModel{..} (hiddenState, cellState) allCounties countyCount = 
+  lstmCellForward lstm
+    (hiddenState, cellState)    
+    (T.cat (Dim 0) [linearForward countyEmbed allCounties, t2vForward t t2v, countyCount])
+
 data Time2VecSpec = Time2VecSpec {
   t2vDim :: Int -- note output dimensions is +1 of this value due to non-periodic term
 } deriving (Eq, Show)
-
-tsmodelForward :: Float -> TSModel -> Tensor -> Tensor -> Tensor
-tsmodelForward t TSModel{..} allCounties = 
-  lstmCellForward lstm
-    (T.cat [linearForward countyEmbed allCounties, t2vForward t t2v])
-    (undefined, undefined) -- hidden, cell
-  where
-    t2v' = toDependent t2v
-
-
-
 
 data Time2Vec  = Time2Vec {
   w0 :: Parameter, -- 0 dim
   b0 :: Parameter, -- 0 dim
   w :: Parameter,
   b :: Parameter
-} deriving (Generic, Show)
+} deriving (Generic, Show, Parameterized)
 
-instance Parameterized Time2Vec
 instance Randomizable Time2VecSpec Time2Vec where
   sample Time2VecSpec{..} = do
     w0' <- makeIndependent =<< randIO' [1]
@@ -73,5 +73,12 @@ t2vForward t Time2Vec{..} =
 checkModel = do
   t2v <- sample $ Time2VecSpec 10
   lstmLayer <- sample $ LSTMSpec (10 + 1) 2
-  let result = t2vForward t2v 3.0
+  let result = t2vForward 3.0 t2v
+
+  model <- sample TSModelSpec {
+    nCounties = undefined,
+    countyEmbedDim = 6,
+    t2vSpec = Time2VecSpec { t2vDim=6 },
+    lstmSpec = LSTMSpec { inputSize=undefined, hiddenSize=12 } 
+    }
   print result

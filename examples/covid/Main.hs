@@ -4,10 +4,6 @@
 
 module Main where
 
-import Control.Arrow (Arrow (first))
-import Control.Monad ((>=>), foldM, when)
-import Control.Monad.Cont (ContT (ContT), runCont, runContT)
-
 import Data.Csv
 import qualified Data.Map as M
 import qualified Data.Set as S
@@ -21,24 +17,24 @@ import Text.Pretty.Simple (pPrint)
 
 import Torch
 import Torch as T
-import Torch.Data.CsvDataset
-import Torch.Data.Pipeline (FoldM (FoldM))
--- import Torch.Data.StreamedPipeline (MonadBaseControl, pmap, makeListT)
-import Torch.Data.StreamedPipeline
 
 import CovidData
 import CovidUtil
 import TimeSeriesModel
 
-modelTrain = undefined
-
--- TODO - use this
--- counties = (csvDataset @UsCounties "data/us-counties.csv") {batchSize = 4, shuffle = Nothing}
+-- | Plot time series
+-- Clamping is done since data artifacts can cause total changes to go negative - see https://github.com/nytimes/covid-19-data/issues/425
+plotTS fips2idx tensorData fips = do
+  let fipsIdx = fips2idx M.! fips 
+  let newCases = trim
+        . clampMin 0.0 
+        . diff 
+        . tCases 
+        . filterOn tFips (eq $ asTensor fipsIdx) $ tensorData 
+  tensorSparkline newCases
 
 main :: IO ()
 main = do
-  -- let counties = (csvDataset @UsCounties "data/us-counties.csv") { batchSize = 4 , shuffle = Nothing}
-  -- (countiesList) <- makeListT counties (Select $ yield ())
 
   putStrLn "Loading Data"
   dataset <- loadDataset "data/us-counties.csv"
@@ -54,25 +50,13 @@ main = do
 
   -- define fipsSpace
   let fipsList = M.keys . fipsMap $ modelData
-
-  -- check are there different numbers of points for different fips? yes
-  print $ length $ Prelude.filter (\x -> x == 2102) (fipsIdxs modelData)
-  print $ length $ Prelude.filter (\x -> x == 739) (fipsIdxs modelData)
-
-  -- pPrint $ filterOn tTimes (eq $ asTensor (20 :: Int)) tensorData 
-  -- pPrint $ filterOn tFips (eq $ asTensor (1 :: Int)) tensorData
-
-  -- index 1222 = FIPS 25025
-  let newCases = trim
-        . clampMin 0.0 
-        . diff 
-        . tCases 
-        . filterOn tTimes ((flip lt) $ asTensor (120 :: Int))
-        . filterOn tFips (eq $ asTensor (1222 :: Int)) $ tensorData 
-
-  tensorSparkline newCases
-  -- clamping - see https://github.com/nytimes/covid-19-data/issues/425
-
+  print $ length fipsList 
+  
+  plotTS (fipsMap modelData) tensorData "25025"
+  plotTS (fipsMap modelData) tensorData "51059"
+  plotTS (fipsMap modelData) tensorData "48113"
+  plotTS (fipsMap modelData) tensorData "06037"
+  plotTS (fipsMap modelData) tensorData "06075"
 
   -- pPrint $ dataset V.! 1
   putStrLn "Done"
