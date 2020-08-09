@@ -20,6 +20,7 @@ module Torch.Data.StreamedPipeline
     makeListT',
     pmap,
     pmap',
+    dataloaderOpts,
     Datastream (..),
     MonadBase (..),
     MonadBaseControl (..),

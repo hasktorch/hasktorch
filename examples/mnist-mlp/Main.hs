@@ -19,6 +19,8 @@ import           Control.Monad.Cont (ContT(runContT))
 import           Pipes
 import qualified Pipes.Prelude as P
 import           Torch.Data.StreamedPipeline
+import           Torch.Data.Pipeline
+import Control.Monad (forM_)
 
 data MLPSpec = MLPSpec {
     inputFeatures :: Int,
@@ -62,25 +64,25 @@ trainLoop model optimizer = P.foldM  step begin done . enumerate
         done = pure
         begin = pure model
 
-displayImages :: MLP -> Consumer ((Tensor, Tensor), Int) IO ()
-displayImages model =  forever $ do
-  ((testImg, testLabel), _) <- await
-  liftIO $ V.dispImage testImg
-  liftIO $ putStrLn $ "Model        : " ++ (show . (argmax (Dim 1) RemoveDim) . exp $ mlp model testImg)
-  liftIO $ putStrLn $ "Ground Truth : " ++ (show $ testLabel)
+displayImages :: MLP -> (Tensor, Tensor) -> IO ()
+displayImages model (testImg, testLabel) =  do
+  -- ((testImg, testLabel), _) <- await
+  V.dispImage testImg
+  putStrLn $ "Model        : " ++ (show . (argmax (Dim 1) RemoveDim) . exp $ mlp model testImg)
+  putStrLn $ "Ground Truth : " ++ (show $ testLabel)
 
 main :: IO ()
 main = do
     (trainData, testData) <- V.initMnist "data"
-    let trainMnist = V.Mnist { batchSize = 256 , mnistData = trainData}
+    let trainMnist = V.Mnist { batchSize = 64 , mnistData = trainData}
         testMnist = V.Mnist { batchSize = 1 , mnistData = testData}
         spec = MLPSpec 784 64 32 10
         optimizer = GD
     init <- sample spec
-    -- TODO: train for more epochs to get a good model
-    model <- runContT (makeListT' trainMnist [1 :: Int]) (trainLoop init optimizer)
+    model <- foldLoop init 5 $ \model _ ->
+      runContT (readBatches (mapStyleOpts 1) trainMnist sequentialSampler Torch.Data.StreamedPipeline.cat) (trainLoop model optimizer)
+
     -- show test images + labels
-    runContT (makeListT' testMnist [1 :: Int]) $
-      \inputs -> runEffect $ enumerate inputs >-> P.take 10 >-> displayImages model 
+    forM_ [0..10]  (displayImages model . getItem testMnist)
 
     putStrLn "Done"

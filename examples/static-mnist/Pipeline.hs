@@ -42,95 +42,95 @@ import           GHC.TypeLits.Extra
 
 import           Common
 
-instance (KnownNat batchSize) =>
-  Dataset IO I.MnistData (Tensor '( 'D.CPU, 0) 'D.Float '[batchSize, 784], Tensor '( 'D.CPU, 0) 'D.Int64 '[batchSize]) where
-  getBatch dataset iter = getBatchMnist dataset (I.length dataset `div` natValI @batchSize) iter
-  numIters dataset = I.length dataset `div` natValI @batchSize
+-- instance (KnownNat batchSize) =>
+--   Dataset IO I.MnistData (Tensor '( 'D.CPU, 0) 'D.Float '[batchSize, 784], Tensor '( 'D.CPU, 0) 'D.Int64 '[batchSize]) where
+--   getBatch dataset iter = getBatchMnist dataset (I.length dataset `div` natValI @batchSize) iter
+--   numIters dataset = I.length dataset `div` natValI @batchSize
 
-getBatchMnist :: forall batchSize model optim . _ => I.MnistData -> Int -> Int ->  IO _
-getBatchMnist dataset numIters iter =  
-  let from = (iter-1) * natValI @batchSize
-      to = (iter * natValI @batchSize) - 1
-      indexes = [from .. to]
-      input  = I.getImages @batchSize dataset indexes
-      target = I.getLabels @batchSize dataset indexes
-  in pure (input, target)
+-- getBatchMnist :: forall batchSize model optim . _ => I.MnistData -> Int -> Int ->  IO _
+-- getBatchMnist dataset numIters iter =  
+--   let from = (iter-1) * natValI @batchSize
+--       to = (iter * natValI @batchSize) - 1
+--       indexes = [from .. to]
+--       input  = I.getImages @batchSize dataset indexes
+--       target = I.getLabels @batchSize dataset indexes
+--   in pure (input, target)
 
-runBatches :: forall batchSize device model optim . _
-  => model 
-  -> optim
-  -> (Tensor device 'D.Float '[batchSize, 10] -> Tensor device 'D.Int64 '[batchSize] -> Loss device 'D.Float)
-  -> LearningRate device 'D.Float
-  -> (model -> Tensor device 'D.Float '[batchSize, 784] -> Tensor device 'D.Float '[batchSize, 10])
-  -> I.MnistData 
-  -> I.MnistData
-  -> Int
-  -> Tensor device 'D.Float '[]
-  -> IO ()
--- runBatches model optim lossFn learningRate forward trainInputs evalInputs numEpochs testSetSize = do
-runBatches model optim lossFn learningRate forward rawTrainingData rawTestData numEpochs testSetSize = do
-  void $ foldLoop (model,optim) numEpochs  $ \(model,optim) epoch -> do
-    liftIO $ print $ "Running epoch " <> show epoch 
-    (trainInputs) <- makeMnistFold rawTrainingData 
-    evalInputs <- makeMnistFold rawTestData 
-    (newModel, newOptim) <- trainInputs $ FoldM (trainFold lossFn learningRate forward) (pure (model, optim)) pure
-    (testLoss, testError) <- evalInputs $ FoldM (evaluation model forward) (pure (0,0)) pure
-    liftIO $ putStrLn
-      $  "Epoch: " <> show epoch
-      <> ". Test loss: "
-      <> show (testLoss / testSetSize)  
-      <> ". Test error-rate: "
-      <> show (testError / testSetSize)
-    pure (newModel, newOptim)
+-- runBatches :: forall batchSize device model optim . _
+--   => model 
+--   -> optim
+--   -> (Tensor device 'D.Float '[batchSize, 10] -> Tensor device 'D.Int64 '[batchSize] -> Loss device 'D.Float)
+--   -> LearningRate device 'D.Float
+--   -> (model -> Tensor device 'D.Float '[batchSize, 784] -> Tensor device 'D.Float '[batchSize, 10])
+--   -> I.MnistData 
+--   -> I.MnistData
+--   -> Int
+--   -> Tensor device 'D.Float '[]
+--   -> IO ()
+-- -- runBatches model optim lossFn learningRate forward trainInputs evalInputs numEpochs testSetSize = do
+-- runBatches model optim lossFn learningRate forward rawTrainingData rawTestData numEpochs testSetSize = do
+--   void $ foldLoop (model,optim) numEpochs  $ \(model,optim) epoch -> do
+--     liftIO $ print $ "Running epoch " <> show epoch 
+--     (trainInputs) <- makeMnistFold rawTrainingData 
+--     evalInputs <- makeMnistFold rawTestData 
+--     (newModel, newOptim) <- trainInputs $ FoldM (trainFold lossFn learningRate forward) (pure (model, optim)) pure
+--     (testLoss, testError) <- evalInputs $ FoldM (evaluation model forward) (pure (0,0)) pure
+--     liftIO $ putStrLn
+--       $  "Epoch: " <> show epoch
+--       <> ". Test loss: "
+--       <> show (testLoss / testSetSize)  
+--       <> ". Test error-rate: "
+--       <> show (testError / testSetSize)
+--     pure (newModel, newOptim)
 
-  -- necessary for type inference
-  where makeMnistFold ::
-          I.MnistData -> IO (FoldM IO (Tensor '( 'D.CPU, 0) 'D.Float '[batchSize, 784], Tensor '( 'D.CPU, 0) 'D.Int64 '[batchSize]) b -> IO b)
-        makeMnistFold = makeFold
+--   -- necessary for type inference
+--   where makeMnistFold ::
+--           I.MnistData -> IO (FoldM IO (Tensor '( 'D.CPU, 0) 'D.Float '[batchSize, 784], Tensor '( 'D.CPU, 0) 'D.Int64 '[batchSize]) b -> IO b)
+--         makeMnistFold = makeFold
 
-trainFold :: forall device . _ => _ -> _ -> _ -> _ -> _
-trainFold lossFn learningRate forward (model, optim) (trainData, trainLabels) = do 
-  let prediction = forward model $ toDevice @device trainData
-  let target = toDevice @device trainLabels
-  let loss = lossFn prediction target
-  liftIO $ runStep  model optim loss learningRate
+-- trainFold :: forall device . _ => _ -> _ -> _ -> _ -> _
+-- trainFold lossFn learningRate forward (model, optim) (trainData, trainLabels) = do 
+--   let prediction = forward model $ toDevice @device trainData
+--   let target = toDevice @device trainLabels
+--   let loss = lossFn prediction target
+--   liftIO $ runStep  model optim loss learningRate
 
-evaluation :: forall device shape batchSize model optim . _
-  => _
-  -> _
-  -> (Tensor device 'D.Float '[], Tensor device 'D.Float '[])
-  -> (CPUTensor 'D.Float shape, CPUTensor 'D.Int64 '[batchSize])
-  -> IO (Tensor device 'D.Float '[], Tensor device 'D.Float '[])
-evaluation model forward (totalLoss, totalError) (testData, testLabels) = do
-            let prediction = forward model $ toDevice @device testData
-            let target = toDevice @device testLabels
-            let (testLoss, testError) = lossAndErrorCount prediction target
-            pure (testLoss + totalLoss, testError + totalError) 
+-- evaluation :: forall device shape batchSize model optim . _
+--   => _
+--   -> _
+--   -> (Tensor device 'D.Float '[], Tensor device 'D.Float '[])
+--   -> (CPUTensor 'D.Float shape, CPUTensor 'D.Int64 '[batchSize])
+--   -> IO (Tensor device 'D.Float '[], Tensor device 'D.Float '[])
+-- evaluation model forward (totalLoss, totalError) (testData, testLabels) = do
+--             let prediction = forward model $ toDevice @device testData
+--             let target = toDevice @device testLabels
+--             let (testLoss, testError) = lossAndErrorCount prediction target
+--             pure (testLoss + totalLoss, testError + totalError) 
 
-newMain :: forall batchSize device . _ => _ -> _ -> _
-newMain forward model optim numEpochs = do
-  (rawTrainingData, rawTestData) <- liftIO $ I.initMnist "data"
+-- newMain :: forall batchSize device . _ => _ -> _ -> _
+-- newMain forward model optim numEpochs = do
+--   (rawTrainingData, rawTestData) <- liftIO $ I.initMnist "data"
 
-  -- runBatches @batchSize @device
-  --   model optim crossEntropyLoss 1e-3 forward trainingInputs evalInputs numEpochs (full $ I.length rawTestData)
-  runBatches @batchSize @device
-    model optim crossEntropyLoss 1e-3 forward rawTrainingData rawTestData numEpochs (full $ I.length rawTestData)
+--   -- runBatches @batchSize @device
+--   --   model optim crossEntropyLoss 1e-3 forward trainingInputs evalInputs numEpochs (full $ I.length rawTestData)
+--   runBatches @batchSize @device
+--     model optim crossEntropyLoss 1e-3 forward rawTrainingData rawTestData numEpochs (full $ I.length rawTestData)
 
-lossAndErrorCount
-  :: forall batchSize device shape .
-     (SumDTypeIsValid device 'D.Bool,
-      StandardDTypeValidation device 'D.Float,
-      ComparisonDTypeIsValid device 'D.Int64,
-      KnownNat batchSize,
-      KnownNat shape,
-      KnownDevice device,
-      StandardFloatingPointDTypeValidation device 'D.Float
-     )
-  => Tensor device 'D.Float '[batchSize, shape]
-  -> Tensor device 'D.Int64 '[batchSize]
-  -> ( Tensor device 'D.Float '[]
-     , Tensor device 'D.Float '[]
-     )
-lossAndErrorCount input target = 
-    (crossEntropyLoss input target, errorCount input target)
+-- lossAndErrorCount
+--   :: forall batchSize device shape .
+--      (SumDTypeIsValid device 'D.Bool,
+--       StandardDTypeValidation device 'D.Float,
+--       ComparisonDTypeIsValid device 'D.Int64,
+--       KnownNat batchSize,
+--       KnownNat shape,
+--       KnownDevice device,
+--       StandardFloatingPointDTypeValidation device 'D.Float
+--      )
+--   => Tensor device 'D.Float '[batchSize, shape]
+--   -> Tensor device 'D.Int64 '[batchSize]
+--   -> ( Tensor device 'D.Float '[]
+--      , Tensor device 'D.Float '[]
+--      )
+-- lossAndErrorCount input target = 
+--     (crossEntropyLoss input target, errorCount input target)
 

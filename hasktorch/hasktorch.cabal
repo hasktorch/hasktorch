@@ -80,6 +80,7 @@ library
                     , Torch.Distributions.Categorical
                     , Torch.Data.Pipeline
                     , Torch.Data.StreamedPipeline
+                    , Torch.Data.Internal
                     , Torch.Data.Dataset
                     , Torch.Data.CsvDataset
  other-modules:       Paths_hasktorch
