@@ -44,25 +44,33 @@ type Iter = Int
 --                                         , numItersMock :: Iter
 --                                         }
 
-data MapStyleOptions = MapStyleOptions { dropLast :: Bool
-                                       , bufferSize :: Int
+data MapStyleOptions = MapStyleOptions {
+  -- dropLast :: Bool
+                                        bufferSize :: Int
+                                       , numWorkers :: Int
                                        }
 class Dataset dataset batch | dataset -> batch  where
   getItem :: dataset -> Int -> batch
   size :: dataset -> Int
 
-class Sampler (sampler :: * -> *) where
-  generateIx :: Int -> Int
+-- class Sampler (sampler :: * -> *) where
+--   generateIx :: Int -> Int
 
+type Sampler m = (Int, Int) -> Producer Int m ()
 type CollateFn sample batch m = Pipe sample batch m ()
 
-readBatches :: forall sampler dataset sample batch m b. (Sampler sampler, Dataset dataset sample, MonadBaseControl IO m) =>
-  MapStyleOptions -> dataset -> sampler dataset -> CollateFn sample batch m -> ContT b m (ListT m (batch, Int))
-readBatches MapStyleOptions{..} dataset sampler collateFn = runWithBuffer bufferSize stuff
+readBatches :: forall sampler dataset sample batch m b. (Dataset dataset sample, MonadBaseControl IO m) =>
+  MapStyleOptions -> dataset -> Sampler m -> CollateFn sample batch m -> ContT b m (ListT m (batch, Int))
+readBatches MapStyleOptions{..} dataset sampler collateFn = runWithBuffer bufferSize streamBatches
   where
-    -- stuff :: Output batch -> Effect m ()
-    stuff output = runEffect $ for (each [0..size dataset]) $ \ix ->
-      yield (getItem dataset (generateIx @sampler 1)) >-> collateFn >->  toOutput' output
+    streamBatches output = forConcurrently_ [0..numWorkers - 1]  (runWorker output)
+    -- runWorker output workerId = runEffect $ for (each $ indices workerId) $ yieldItem output
+    runWorker output = runEffect . yieldItem output
+    -- yieldItem output ix = yield (getItem dataset (generateIx @sampler ix)) >-> collateFn >->  toOutput' output
+    yieldItem output workerId = sampler (indices workerId) >-> pipeItems  >-> collateFn >->  toOutput' output
+    pipeItems = for cat (yield . getItem dataset)
+    -- indices workerId = [workerId * size dataset `div` numWorkers .. (workerId + 1) * size dataset `div` numWorkers]
+    indices workerId = (workerId * size dataset `div` numWorkers, (workerId + 1) * size dataset `div` numWorkers)
   
 
 -- class Dataset m dataset batch => ConcurrentDataset m dataset batch where
@@ -168,3 +176,6 @@ readBatches MapStyleOptions{..} dataset sampler collateFn = runWithBuffer buffer
   
 -- foldFromProducer :: Monad m => Producer batch m () -> L.FoldM m batch b -> m b
 -- foldFromProducer prod fold = (L.impurely P.foldM) fold prod
+
+
+-- sequentialSampler = 

@@ -47,6 +47,7 @@ import Torch.Tensor
 import Torch.NN
 
 import Torch.Data.StreamedPipeline 
+import Torch.Data.Pipeline
 import Pipes.Prelude (repeatM)
 
 C.include "<stdint.h>"
@@ -62,11 +63,26 @@ instance (MonadPlus m, MonadBase IO m) => Datastream m Int Mnist (Tensor, Tensor
           to = (iter * batchSize) - 1
           indexes = [from .. to]
           target = getLabels' batchSize  mnistData indexes
-      input  <- liftBase $ getImages' batchSize 784 mnistData indexes
+      let input = getImages' batchSize 784 mnistData indexes
       yield (input, target)
 
       where numIters = I.length mnistData `Prelude.div` batchSize 
             
+instance Dataset Mnist (Tensor, Tensor) where
+  getItem Mnist{..} ix =  
+    -- for (each [1..numIters]) $ \iter -> do 
+      -- let from = (iter-1) * batchSize
+      --     to = (iter * batchSize) - 1
+      --     indexes = [from .. to]
+      --     target = getLabels' batchSize  mnistData indexes
+    let
+      indexes = [ix * batchSize, (ix+1) * batchSize]
+      imgs = getImages' batchSize 784 mnistData  indexes
+      labels = getLabels' batchSize  mnistData indexes
+      -- input  <- liftBase $ getImages' batchSize 784 mnistData indexes
+    in (imgs, labels)
+
+      where 
 
 getLabels' :: Int -> I.MnistData -> [Int] -> Tensor
 getLabels' n mnist imageIdxs =
@@ -77,8 +93,8 @@ getImages' ::
   -> Int -- dimensionality of the data
   -> I.MnistData -- mnist data representation
   -> [Int] -- indices of the dataset
-  -> IO Tensor
-getImages' n dataDim mnist imageIdxs = do
+  -> Tensor
+getImages' n dataDim mnist imageIdxs = unsafePerformIO $ do
   let (BSI.PS fptr off len) = I.images mnist
   t <- (cast2 LibTorch.empty_lo :: [Int] -> D.TensorOptions -> IO D.Tensor)
          [n, dataDim]
