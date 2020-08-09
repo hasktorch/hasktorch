@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module CovidData where
@@ -11,6 +12,15 @@ import Data.Time
 import GHC.Generics (Generic)
 import Data.Csv
 import Torch as T
+
+-- This is a placeholder for this example until we have a more formal data loader abstraction
+--
+class Dataset d a where
+    getItem
+        :: d
+        -> Int -- index
+        -> Int -- batchSize
+        -> a
 
 data UsCounties = UsCounties
   { date :: String,

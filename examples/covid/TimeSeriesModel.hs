@@ -1,13 +1,29 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module TimeSeriesModel where
 
+import Control.Monad (when)
 import GHC.Generics
 import Torch as T
 import Torch.NN.Recurrent.Cell.LSTM
+
+import CovidData
+
+data OptimSpec o p where
+    OptimSpec :: (Optimizer o, Parameterized p) => {
+    optimizer :: o,
+    batchSize :: Int,
+    numIters :: Int,
+    learningRate :: Tensor,
+    lossFn :: p -> Tensor -> Tensor -> Tensor -- model, input, target
+    } -> OptimSpec o p
 
 data TSModelSpec = TSModelSpec {
   nCounties :: Int,
@@ -28,6 +44,13 @@ instance Randomizable TSModelSpec TSModel where
         <*> sample t2vSpec
         <*> sample lstmSpec
 
+data ModelInputs = ModelInputs {
+    time :: Float,
+    lstmState :: (Tensor, Tensor),
+    allCounties :: Tensor,
+    input :: Tensor
+} deriving (Eq, Show)
+
 tsmodelForward 
   :: Float 
   -> TSModel -- ^ model state
@@ -39,6 +62,10 @@ tsmodelForward t TSModel{..} (hiddenState, cellState) allCounties countyCount =
   lstmCellForward lstm
     (hiddenState, cellState)    
     (T.cat (Dim 0) [linearForward countyEmbed allCounties, t2vForward t t2v, countyCount])
+
+instance HasForward TSModel ModelInputs Tensor where
+    forward:: TSModel -> ModelInputs -> Tensor
+    forward model modelInputs = undefined
 
 data Time2VecSpec = Time2VecSpec {
   t2vDim :: Int -- note output dimensions is +1 of this value due to non-periodic term
@@ -70,6 +97,26 @@ t2vForward t Time2Vec{..} =
   where (w0', b0', w', b') = (toDependent w0, toDependent b0, 
                               toDependent w, toDependent b)
 
+{-
+train 
+    :: (Dataset d (Tensor, Tensor), Optimizer o, Parameterized p, HasForward p Tensor Tensor) 
+    => OptimSpec o p -> d -> p -> IO p
+train OptimSpec{..} dataset init = do
+    trained <- foldLoop init numIters $
+        \state iter -> do
+            (input, dep) <- getItem dataset (iter*batchSize) batchSize -- TODO adapt this
+            let loss = lossFn state input dep
+
+            let flatParameters = flattenParameters state
+            let (Gradients gradients) = grad' loss flatParameters
+
+            when (iter `mod` 50 == 0) $ do
+                putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
+            (newParam, _) <- runStep state optimizer loss learningRate
+            pure $ replaceParameters state newParam
+    pure trained
+-}
+
 checkModel = do
   -- check time2vec
   t2v <- sample $ Time2VecSpec 10
@@ -87,3 +134,13 @@ checkModel = do
     }
   let result = tsmodelForward 10.0 model (ones' [inputDim], ones' [inputDim]) (ones' [3193]) 15.0
   print result
+
+trainModel = do
+  model <- sample TSModelSpec {
+    nCounties = 3193,
+    countyEmbedDim = 6,
+    t2vSpec = Time2VecSpec { t2vDim=6 },
+    lstmSpec = LSTMSpec { inputSize=undefined, hiddenSize=12 } 
+    }
+  -- trained <- train 
+  pure ()

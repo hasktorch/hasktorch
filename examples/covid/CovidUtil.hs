@@ -18,7 +18,7 @@ series2sparkline vs =
     sparkchars = "_▁▂▃▄▅▆▇█" 
     num2sparkchar maxv curv =
       sparkchars !!
-        (Prelude.floor $ (curv / maxv) * (fromIntegral (length sparkchars - 1)))
+        (Prelude.floor $ (curv / maxv) * (fromIntegral (length sparkchars - 2)))
   
 
 tensorSparkline :: Tensor -> IO ()
