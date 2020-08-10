@@ -39,6 +39,9 @@ import           Control.Monad.Trans.Control (MonadBaseControl(..))
 import           Control.Monad.Cont (ContT)
 import           Torch.Data.Internal
 import qualified Torch as Torch
+import Lens.Family (view)
+import Pipes.Group
+import Data.Vector (Vector)
 
 data MapStyleOptions = MapStyleOptions { bufferSize :: Int
                                        , numWorkers :: Int
@@ -71,12 +74,17 @@ makeListT MapStyleOptions{..} dataset sampler collateFn = runWithBuffer bufferSi
     -- yieldItem output workerId = sampler (indices workerId) (size dataset) >-> pipeItems  >-> collateFn >->  toOutput' output
     yieldItem output workerId = collateFn (sampler (indices workerId) (size dataset) >-> pipeItems) >->  toOutput' output
     pipeItems = for cat (yield . getItem dataset)
-    indices workerId = (workerId * (size dataset `div` numWorkers), (workerId + 1) * ((size dataset `div` numWorkers) - 1))
+    indices workerId = (workerId * (size dataset `div` numWorkers), (workerId + 1) * (size dataset `div` numWorkers) - 1)
 
--- identityCollate p = 
+vectorBatch :: Monad m => Int -> CollateFn sample (Vector sample) m
+vectorBatch batchSize =  L.purely folds L.vector . view (chunksOf batchSize)
 
 sequentialSampler :: Functor m => Sampler m 
 sequentialSampler (low, high) _ = each [low .. high]
 
 randomSampler :: MonadIO m => Sampler m 
 randomSampler (low, high) size = for (each [low..high]) $ \_ -> (liftIO $ (Torch.toInt <$> Torch.randintIO' 0 size [])) >>= yield 
+
+-- (workerId + 1) * ((size dataset `div` numWorkers) - 1)
+
+--   2 * 
