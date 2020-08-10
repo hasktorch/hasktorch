@@ -20,15 +20,19 @@
 
 module Main where
 
-import           Prelude hiding ( tanh )
 import           Control.Monad                  ( foldM
                                                 , when
                                                 )
+import           Control.Monad.Cont (ContT(runContT))
 import           GHC.Generics
 import           GHC.TypeLits
-
-import Torch.Typed hiding (Device)
+import           Pipes
+import           Pipes (ListT(enumerate))
+import qualified Pipes.Prelude as P
+import           Prelude hiding ( tanh )
 import           Torch.Data.Pipeline
+import           Torch.Data.StreamedPipeline
+import           Torch.Typed hiding (Device)
 
 
 --------------------------------------------------------------------------------
@@ -78,34 +82,37 @@ xor t = (1 - (1 - a) * (1 - b)) * (1 - (a * b))
   a = select @1 @0 t
   b = select @1 @1 t
 
-newtype Xor = Xor { iters :: Int }
+newtype Xor device batchSize = Xor { iters :: Int }
 
 instance ( KnownNat batchSize
          , KnownDevice device
          , RandDTypeIsValid device 'Float
          , ComparisonDTypeIsValid device 'Float
-         ) => Dataset IO Xor (Tensor device 'Float '[batchSize, 2]) where
-  getBatch _ _ =  toDType @'Float @'Bool .
-                  gt (toDevice @device (0.5 :: CPUTensor 'Float '[]))
-                  <$> rand @'[batchSize, 2] @'Float @device
-  numIters = iters 
-
+         ) => Datastream IO () (Xor device batchSize) (Tensor device 'Float '[batchSize, 2]) where
+  --TODO: has to be datastream because getItem is an IO action
+  streamBatch Xor{..} _  = Select $ P.replicateM iters randBool
+    where randBool = toDType @'Float @'Bool .
+                           gt (toDevice @device (0.5 :: CPUTensor 'Float '[]))
+                           <$> rand @'[batchSize, 2] @'Float @device
+                                          
 type Device = '( 'CUDA, 0)
 
-trainIter :: forall device batchSize model optim . (model ~ MLP 2 1 4 'Float device, _)
+train :: forall device batchSize model optim . (model ~ MLP 2 1 4 'Float device, _)
   => LearningRate device 'Float
-  -> (model, optim, Int)
-  -> Tensor device 'Float '[batchSize, 2]
-  -> IO (model, optim, Int)
-trainIter learningRate (model,optim, i) input = do
-    let actualOutput   = squeezeAll . ((sigmoid .) . forward) model $ input
-        expectedOutput = xor input
-        loss           = mseLoss @ReduceMean actualOutput expectedOutput
+  -> (model, optim)
+  -> ListT IO (Tensor device 'Float '[batchSize, 2], Int) 
+  -> IO (model, optim)
+train learningRate (model,optim) = P.foldM step begin done . enumerate 
+  where step (model,optim) (input, i)=  do
+          let actualOutput   = squeezeAll . ((sigmoid .) . forward) model $ input
+              expectedOutput = xor input
+              loss           = mseLoss @ReduceMean actualOutput expectedOutput
 
-    when (i `mod` 2500 == 0) (print loss)
+          when (i `mod` 2500 == 0) (print loss)
 
-    (model', optim') <- runStep model optim loss learningRate
-    return (model', optim', i+1)
+          runStep model optim loss learningRate
+        begin = pure (model, optim)
+        done = pure
 
 main :: IO ()
 main = do
@@ -113,6 +120,7 @@ main = do
       learningRate = 0.1
   initModel <- sample (MLPSpec :: MLPSpec 2 1 4 'Float Device)
   let initOptim = mkAdam 0 0.9 0.999 (flattenParameters initModel)
-  trainFold <- makeFold $ Xor { iters = numIters }
-  (trained, _, _) <- trainFold $ FoldM (trainIter @Device @256 learningRate ) (pure (initModel, initOptim, 0)) pure
+      dataset = Xor @Device @256 numIters
+      dataSource = makeListT' dataloaderOpts dataset [()]
+  (trained, _) <- runContT dataSource $ train learningRate (initModel, initOptim)
   print trained

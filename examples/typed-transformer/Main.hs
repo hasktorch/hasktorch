@@ -276,9 +276,9 @@ learning numEpochs learningRate (model, optim) trainingData evaluationData =
   in void $ P.foldM (step collatedTrain collatedEval) begin done $ each [1 .. numEpochs]
 
   where step trainSet testSet (model, optim) epoch = do
-          (model', optim') <- lift $ runContT (makeListT' trainSet [()])
+          (model', optim') <- lift $ runContT (makeListT' dataloaderOpts trainSet [()])
                         $ training @workerDevices @modelDevice @dataDevice @dtype @model @models @optim @input @inputs @target @targets @inputTargets @losses @parameters' @gradients @parameters @tensors learningRate (model, optim) 
-          evalLoss' <- lift $ runContT (makeListT' testSet [()])
+          evalLoss' <- lift $ runContT (makeListT' dataloaderOpts testSet [()])
                  $ evaluation @workerDevices @modelDevice @dataDevice @numEmbeds @batchSize @seqLen @dtype @model @models @input @inputs @output @outputs @target model' 
           yield (evalLoss', model', optim')
           pure (model', optim')

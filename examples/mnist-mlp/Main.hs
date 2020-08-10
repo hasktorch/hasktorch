@@ -81,7 +81,7 @@ main = do
     init <- sample spec
     model <- foldLoop init 5 $ \model _ ->
       runContT (readBatches (mapStyleOpts 1) trainMnist sequentialSampler Torch.Data.StreamedPipeline.cat) (trainLoop model optimizer)
-
+  
     -- show test images + labels
     forM_ [0..10]  (displayImages model . getItem testMnist)
 

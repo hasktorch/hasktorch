@@ -85,15 +85,6 @@ makeListT ::
   ListT m seed ->
   ContT b m (ListT m (batch, Int))
 makeListT DataloaderOptions{..} dataset seeds = runWithBuffer bufferSize $ readBatches dataset seeds
--- makeListT dataset seeds = ContT $ \f ->
---   snd
---     <$> withBufferLifted
---       (bounded 10)
---       (\batchOutput -> readBatches dataset seeds batchOutput)
---       (\input -> f . Select $ P.zip (fromInput' input) iters)
---   where
---     iters :: Producer Int m ()
---     iters = each [0 ..]
 
 makeListT' ::
   forall batch m f dataset seed b.
@@ -103,16 +94,6 @@ makeListT' ::
   f seed ->
   ContT b m (ListT m (batch, Int))
 makeListT' DataloaderOptions{..} dataset seeds = runWithBuffer bufferSize $ readBatches' dataset seeds
-
--- makeListT' dataset seeds = ContT $ \f ->
---   snd
---     <$> withBufferLifted
---       (bounded 10)
---       (\batchOutput -> readBatches' dataset seeds batchOutput)
---       (\input -> f . Select $ P.zip (fromInput' input) iters)
---   where
---     iters :: Producer Int m ()
---     iters = each [0 ..]
 
 readBatches ::
   forall m seed dataset batch.
@@ -135,7 +116,4 @@ readBatches' ::
 readBatches' dataset seeds outputBox =
   let this = flip $ mappend . Concurrently . runEffect . (>-> toOutput' outputBox) . enumerate . streamBatch @m @seed @dataset @batch dataset
    in L.fold (L.Fold this mempty runConcurrently) seeds
-
--- foldFromProducer :: Monad m => Producer batch m () -> L.FoldM m batch b -> m b
--- foldFromProducer prod fold = (L.impurely P.foldM) fold prod
 
