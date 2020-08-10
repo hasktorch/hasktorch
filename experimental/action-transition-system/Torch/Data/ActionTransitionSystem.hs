@@ -103,20 +103,21 @@ import Test.Hspec (it, hspec, shouldBe)
 -- https://vaibhavsagar.com/blog/2018/02/04/revisiting-monadic-parsing-haskell/
 -- https://github.com/alphaHeavy/protobuf/blob/46cda829cf1e7b6bba2ff450e267fb1a9ace4fb3/src/Data/ProtocolBuffers/Ppr.hs
 
-data Env t = Env
+data Env action a = Env
   { pos :: Pos -- state
-  , tEnv :: TEnv t
+  , tEnv :: TEnv action a
   , mEnv :: MEnv
   , rEnv :: REnv
   , aEnv :: AEnv
   } deriving (Eq, Ord, Show, Generic)
 
-defaultEnv :: Env t
+defaultEnv :: Ord a => Env action a
 defaultEnv = Env
   { pos = Pos 0
   , tEnv = TEnv
     { tokens = mempty
-    , validContinuationsMask = mempty
+    , validNextActionMask = mempty
+    , types = mempty
     }
   , mEnv = MEnv
     { meta = mempty
@@ -139,9 +140,10 @@ defaultEnv = Env
 newtype Pos = Pos { unPos :: Int }
   deriving (Eq, Ord, Show, Num, Enum, Generic)
 
-data TEnv t = TEnv
-  { tokens :: Map Pos t
-  , validContinuationsMask :: Map Pos (Set t)
+data TEnv action a = TEnv
+  { tokens :: Map Pos action -- writer
+  , validNextActionMask :: Map Pos (Set action) -- writer
+  , types :: Map a Ty -- writer
   } deriving (Eq, Ord, Show, Generic)
 
 data MEnv = MEnv
@@ -184,7 +186,7 @@ data AEnv = AEnv
   , keyPaddingMask :: Set Pos -- writer
   } deriving (Eq, Ord, Show, Generic)
 
-data Token a = Pad | Unk | Mask | Token a
+data Token action = Pad | Unk | Mask | Token action
   deriving (Eq, Ord, Show, Generic, Functor)
 
 data M a = M
@@ -210,7 +212,7 @@ instance Monoid a => Monoid (M a) where
 
 -- add Universe instance?
 -- https://hackage.haskell.org/package/universe-base-1.1.1/docs/Data-Universe-Class.html#t:Finite
-data Action =
+data BaseA =
     L
   | R
   | Grow
@@ -219,10 +221,10 @@ data Action =
   | SToken Text
   | BToken Bool
   | CToken Char
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord, Show, Generic)
 
-type To t a = a -> t Action
-type From b a = Parser (StateT (Env Action) b) Action a
+type To t action a = a -> t action
+type From env b action a = Parser (StateT env b) action a
 
 choice :: Alternative f => [f a] -> f a
 choice = foldr (<|>) empty
@@ -370,54 +372,32 @@ updateMeta pos = do
   meta <- (^. field @"meta") <$> get
   modify (field @"metas" %~ Map.insert pos meta)
 
-updateTokens :: forall f t . (Monad f, Ord t) => t -> [t] -> Pos -> StateT (TEnv t) f ()
+updateTokens :: forall f action a . (Monad f, Ord action) => action -> [action] -> Pos -> StateT (TEnv action a) f ()
 updateTokens t continuations pos = do
-  modify (field @"validContinuationsMask" %~ Map.insert pos (Set.fromList continuations))
+  modify (field @"validNextActionMask" %~ Map.insert pos (Set.fromList continuations))
   modify (field @"tokens" %~ Map.insert pos t)
 
 next
-  :: forall s t a
-   . ( HasField "pos" s s Pos Pos
-     , HasField "aEnv" s s AEnv AEnv
-     , HasField "mEnv" s s MEnv MEnv
-     , HasField "rEnv" s s REnv REnv
-     , HasField "tEnv" s s (TEnv t) (TEnv t)
-     , Ord t, Show t
+  :: forall env action b a
+   . ( b ~ []
+     , HasType Pos env
+     , HasType AEnv env
+     , HasType MEnv env
+     , HasType REnv env
+     , HasType (TEnv action Int) env
+     , Ord action
+     , Show a
      )
-  => [t]
-  -> (t -> Parser (StateT s []) t a)
-  -> [t]
-  -> StateT s [] (Parser (StateT s []) t a, [t])
-next _ tp [] = empty
-next ts tp (t' : ts') = let p = tp t' in do
-  pos <- (^. field @"pos") <$> get
-  continuations <- validContinuations ts tp <$> get
-  zoom (field @"tEnv") . updateTokens t' continuations $ pos
-  zoom (field @"mEnv") . updateMeta $ pos
-  zoom (field @"rEnv") . updateRelations 3 $ pos
-  zoom (field @"aEnv") . updateAttention $ pos
-  modify (field @"pos" %~ (+1))
-  pure (p, ts')
-
-next'
-  :: forall s t a
-   . ( HasField "pos" s s Pos Pos
-     , HasField "aEnv" s s AEnv AEnv
-     , HasField "mEnv" s s MEnv MEnv
-     , HasField "rEnv" s s REnv REnv
-     , HasField "tEnv" s s (TEnv t) (TEnv t)
-     , Ord t, Show a
-     )
-  => [t]
-  -> Parser (StateT s []) t a
-  -> (Parser (StateT s []) t a -> StateT [t] (StateT s []) a)
-  -> StateT [t] (StateT s []) a
-next' availableContinuations p c = do
+  => [action] -- ^ available next actions
+  -> Parser (StateT env b) action a -- ^ parser
+  -> (Parser (StateT env b) action a -> StateT [action] (StateT env b) a) -- ^ continuation
+  -> StateT [action] (StateT env b) a -- ^ returned stateful computation
+next availableActions p c = do
   continuations <- lift $ do
     s <- get
     let vals = runStateT (runFreeT p) s
         f (Pure _, _) = []
-        f (Free tp, s) = validContinuations availableContinuations tp s
+        f (Free tp, s) = validNextActions availableActions tp s
     pure $ vals >>= f
   val <- lift . runFreeT $ p
   case val of
@@ -427,166 +407,181 @@ next' availableContinuations p c = do
       case s of
         [] -> empty
         t : ts -> do
-          pos <- (^. field @"pos") <$> (lift get)
-          lift . zoom (field @"tEnv") . updateTokens t continuations $ pos
-          lift . zoom (field @"mEnv") . updateMeta $ pos
-          lift . zoom (field @"rEnv") . updateRelations 3 $ pos
-          lift . zoom (field @"aEnv") . updateAttention $ pos
-          lift $ modify (field @"pos" %~ (+1))
+          pos <- (^. typed @Pos) <$> (lift get)
+          lift . zoom (typed @(TEnv action Int)) . updateTokens t continuations $ pos
+          lift . zoom (typed @MEnv) . updateMeta $ pos
+          lift . zoom (typed @REnv) . updateRelations 3 $ pos
+          lift . zoom (typed @AEnv) . updateAttention $ pos
+          lift $ modify (typed @Pos %~ (+1))
           put ts
           c (tp t)
 
-validContinuations
-  :: forall s t a
-   . [t]
-  -> (t -> Parser (StateT s []) t a)
-  -> s
-  -> [t]
-validContinuations availableContinuations tp s =
+validNextActions
+  :: forall s action a
+   . [action] -- ^ available next actions
+  -> (action -> Parser (StateT s []) action a) -- ^ parsing continuation
+  -> s -- ^ state
+  -> [action] -- ^ valid next actions
+validNextActions availableActions tp s =
     let f t =
           let val = runFreeT . tp $ t
           in case runStateT val s of
             [] -> Nothing
             _ -> Just t
-    in catMaybes $ f <$> availableContinuations
+    in catMaybes $ f <$> availableActions
 
-token :: forall b t . Monad b => Parser b t t
+token :: forall b action . Monad b => Parser b action action
 token = wrap $ FreeT . pure . Pure
 
-is :: (MonadPlus b, Eq t) => t -> Parser b t t
-is t = mfilter (== t) token
+token' :: forall b t action . (MonadPlus b, AsType t action) => Parser b action t
+token' = do
+  action <- token
+  case projectTyped action of
+    Nothing -> empty
+    Just t -> pure t
 
-isNot :: (MonadPlus b, Eq t) => t -> Parser b t t
-isNot t = mfilter (/= t) token
+is :: forall b action . (MonadPlus b, Eq action) => action -> Parser b action action
+is action = mfilter (== action) token
 
-class ToActions (t :: Type -> Type) (a :: Type) where
-  toActions :: To t a
+is' :: forall b t action . (MonadPlus b, Eq t, AsType t action) => t -> Parser b action t
+is' t = mfilter (== t) token'
 
-  default toActions :: (Generic a, GToActions t (Rep a)) => To t a
-  toActions = gToActions @t . GHC.Generics.from
+isNot :: forall b action . (MonadPlus b, Eq action) => action -> Parser b action action
+isNot action = mfilter (/= action) token
 
-class FromActions (b :: Type -> Type) (a :: Type) where
-  fromActions :: From b a
+isNot' :: forall b t action . (MonadPlus b, Eq t, AsType t action) => t -> Parser b action t
+isNot' t = mfilter (/= t) token'
 
-  default fromActions :: (Monad b, Generic a, GFromActions b (Rep a)) => From b a
-  fromActions = GHC.Generics.to <$> gFromActions @b
+class ToActions (t :: Type -> Type) (action :: Type) (a :: Type) where
+  toActions :: To t action a
 
-class GToActions (t :: Type -> Type) (f :: Type -> Type) where
-  gToActions :: forall a . To t (f a)
+  default toActions :: (Generic a, GToActions t action (Rep a)) => To t action a
+  toActions = gToActions @t @action . GHC.Generics.from
 
-class GFromActions (b :: Type -> Type) (f :: Type -> Type) where
-  gFromActions :: forall a . From b (f a)
+class FromActions (env :: Type) (b :: Type -> Type) (action :: Type) (a :: Type) where
+  fromActions :: From env b action a
 
-instance GToActions t f => GToActions t (M1 i c f) where
-  gToActions = gToActions @t . unM1
+  default fromActions :: (Monad b, Generic a, GFromActions env b action (Rep a)) => From env b action a
+  fromActions = GHC.Generics.to <$> gFromActions @env @b @action
 
-instance (Monad b, GFromActions b f, Datatype d) => GFromActions b (D1 d f) where
+class GToActions (t :: Type -> Type) (action :: Type) (f :: Type -> Type) where
+  gToActions :: forall a . To t action (f a)
+
+class GFromActions (env :: Type) (b :: Type -> Type) (action :: Type) (f :: Type -> Type) where
+  gFromActions :: forall a . From env b action (f a)
+
+instance GToActions t action f => GToActions t action (M1 i c f) where
+  gToActions = gToActions @t @action . unM1
+
+instance (Monad b, HasType MEnv env, GFromActions env b action f, Datatype d) => GFromActions env b action (D1 d f) where
   gFromActions = do
-    lift . modify $ field @"mEnv" . field @"meta" . field @"dataType" .~ (pure . pack . datatypeName @d $ undefined)
-    M1 <$> gFromActions @b
+    lift . modify $ typed @MEnv . field @"meta" . field @"dataType" .~ (pure . pack . datatypeName @d $ undefined)
+    M1 <$> gFromActions @env @b @action
 
-instance (Monad b, GFromActions b f, Constructor c) => GFromActions b (C1 c f) where
+instance (Monad b, HasType Pos env, HasType MEnv env, HasType REnv env, GFromActions env b action f, Constructor c) => GFromActions env b action (C1 c f) where
   gFromActions = do
-    lift . modify $ field @"mEnv" . field @"meta" . field @"constructor" .~ (pure . pack . conName @c $ undefined)
-    pos <- (^. field @"pos") <$> lift get
-    lift . modify $ field @"rEnv" . field @"parentPos" %~ (pos :)
-    res <- M1 <$> gFromActions @b
-    lift . modify $ field @"rEnv" . field @"parentPos" %~ tail
+    lift . modify $ typed @MEnv . field @"meta" . field @"constructor" .~ (pure . pack . conName @c $ undefined)
+    pos <- (^. typed @Pos) <$> lift get
+    lift . modify $ typed @REnv . field @"parentPos" %~ (pos :)
+    res <- M1 <$> gFromActions @env @b @action
+    lift . modify $ typed @REnv . field @"parentPos" %~ tail
     pure res
 
-instance (Monad b, GFromActions b f, Selector s) => GFromActions b (S1 s f) where
+instance (Monad b, HasType MEnv env, GFromActions env b action f, Selector s) => GFromActions env b action (S1 s f) where
   gFromActions = do
-    lift . modify $ field @"mEnv" . field @"meta" . field @"selector" .~ (pure . pack . selName @s $ undefined)
-    M1 <$> gFromActions @b
+    lift . modify $ typed @MEnv . field @"meta" . field @"selector" .~ (pure . pack . selName @s $ undefined)
+    M1 <$> gFromActions @env @b @action
 
-instance ToActions t a => GToActions t (K1 i a) where
-  gToActions = toActions @t . unK1
+instance ToActions t action a => GToActions t action (K1 i a) where
+  gToActions = toActions @t @action . unK1
 
-instance (Monad b, FromActions b a) => GFromActions b (K1 i a) where
-  gFromActions = K1 <$> fromActions @b
+instance (Monad b, FromActions env b action a) => GFromActions env b action (K1 i a) where
+  gFromActions = K1 <$> fromActions @env @b @action
 
-instance Alternative t => GToActions t U1 where
+instance Alternative t => GToActions t action U1 where
   gToActions _ = empty
 
-instance Monad b => GFromActions b U1 where
+instance Monad b => GFromActions env b action U1 where
   gFromActions = pure U1
 
-instance GToActions t V1 where
+instance GToActions t action V1 where
   gToActions v = v `seq` error "GToActions.V1"
 
-instance MonadFail b => GFromActions b V1 where
+instance MonadFail b => GFromActions env b action V1 where
   gFromActions = fail "GFromActions.V1"
 
-instance (Alternative t, GToActions t f, GToActions t g) => GToActions t (f :*: g) where
-  gToActions (f :*: g) = gToActions @t f <|> gToActions @t g
+instance (Alternative t, GToActions t action f, GToActions t action g) => GToActions t action (f :*: g) where
+  gToActions (f :*: g) = gToActions @t @action f <|> gToActions @t @action g
 
-instance (Monad b, GFromActions b f, GFromActions b g) => GFromActions b (f :*: g) where
-  gFromActions = (:*:) <$> gFromActions @b <*> gFromActions @b
+instance (Monad b, GFromActions env b action f, GFromActions env b action g) => GFromActions env b action (f :*: g) where
+  gFromActions = (:*:) <$> gFromActions @env @b @action <*> gFromActions @env @b @action
 
-instance (Applicative t, Alternative t, GToActions t f, GToActions t g) => GToActions t (f :+: g) where
-  gToActions (L1 f) = (pure L) <|> gToActions @t f
-  gToActions (R1 g) = (pure R) <|> gToActions @t g
+instance (Applicative t, Alternative t, AsType BaseA action, GToActions t action f, GToActions t action g) => GToActions t action (f :+: g) where
+  gToActions (L1 f) = (pure . injectTyped $ L) <|> gToActions @t @action f
+  gToActions (R1 g) = (pure . injectTyped $ R) <|> gToActions @t @action g
 
-instance (MonadPlus b, GFromActions b f, GFromActions b g) => GFromActions b (f :+: g) where
-  gFromActions = (is L >> L1 <$> gFromActions @b) <|> (is R >> R1 <$> gFromActions @b)
+instance (MonadPlus b, AsType BaseA action, GFromActions env b action f, GFromActions env b action g) => GFromActions env b action (f :+: g) where
+  gFromActions =
+        (is' L >> L1 <$> gFromActions @env @b @action)
+    <|> (is' R >> R1 <$> gFromActions @env @b @action)
 
-instance (Alternative t, ToActions t a, ToActions t b) => ToActions t (a, b)
-instance (Monad b, FromActions b a, FromActions b b') => FromActions b (a, b')
+instance (Alternative t, ToActions t action a, ToActions t action b) => ToActions t action (a, b)
+instance (Monad b, HasType Pos env, HasType MEnv env, HasType REnv env, FromActions env b action a, FromActions env b action b') => FromActions env b action (a, b')
 
-instance (Alternative t, ToActions t a, ToActions t b, ToActions t c) => ToActions t (a, b, c)
-instance (Monad b, FromActions b a, FromActions b b',  FromActions b c) => FromActions b (a, b', c)
+instance (Alternative t, ToActions t action a, ToActions t action b, ToActions t action c) => ToActions t action (a, b, c)
+instance (Monad b, HasType Pos env, HasType MEnv env, HasType REnv env, FromActions env b action a, FromActions env b action b',  FromActions env b action c) => FromActions env b action (a, b', c)
 
-instance (Alternative t, ToActions t a, ToActions t b, ToActions t c, ToActions t d) => ToActions t (a, b, c, d)
-instance (Monad b, FromActions b a, FromActions b b',  FromActions b c, FromActions b d) => FromActions b (a, b', c, d)
+instance (Alternative t, ToActions t action a, ToActions t action b, ToActions t action c, ToActions t action d) => ToActions t action (a, b, c, d)
+instance (Monad b, HasType Pos env, HasType MEnv env, HasType REnv env, FromActions env b action a, FromActions env b action b',  FromActions env b action c, FromActions env b action d) => FromActions env b action (a, b', c, d)
 
-instance (Alternative t, ToActions t a, ToActions t b, ToActions t c, ToActions t d, ToActions t e) => ToActions t (a, b, c, d, e)
-instance (Monad b, FromActions b a, FromActions b b',  FromActions b c, FromActions b d, FromActions b e) => FromActions b (a, b', c, d, e)
+instance (Alternative t, ToActions t action a, ToActions t action b, ToActions t action c, ToActions t action d, ToActions t action e) => ToActions t action (a, b, c, d, e) 
+instance (Monad b, HasType Pos env, HasType MEnv env, HasType REnv env, FromActions env b action a, FromActions env b action b',  FromActions env b action c, FromActions env b action d, FromActions env b action e) => FromActions env b action (a, b', c, d, e)
 
-instance (Applicative t, Alternative t, ToActions t a) => ToActions t [a] where
-  toActions as = pure Grow <|> go as
-    where go [] = pure Reduce
+instance (Applicative t, Alternative t, AsType BaseA action, ToActions t action a) => ToActions t action [a] where
+  toActions as = (pure . injectTyped $ Grow) <|> go as
+    where go [] = pure . injectTyped $ Reduce
           go (a : as) = toActions a <|> go as
-instance (MonadPlus b, FromActions b a) => FromActions b [a] where
-  fromActions = is Grow >> manyTill (fromActions @b) (is Reduce)
+instance (MonadPlus b, AsType BaseA action, FromActions env b action a) => FromActions env b action [a] where
+  fromActions = is' Grow >> manyTill (fromActions @env @b @action) (is' Reduce)
 
-instance (Applicative t, Alternative t, ToActions t a) => ToActions t (Maybe a) where
-  toActions ma = pure Grow <|> go ma <|> pure Reduce
+instance (Applicative t, Alternative t, AsType BaseA action, ToActions t action a) => ToActions t action (Maybe a) where
+  toActions ma = (pure . injectTyped $ Grow) <|> go ma <|> (pure . injectTyped $ Reduce)
     where go Nothing = empty
           go (Just a) = toActions a
-instance (MonadPlus b, FromActions b a) => FromActions b (Maybe a) where
-  fromActions = is Grow >> option Nothing (Just <$> fromActions) >>= (is Reduce >>) . pure
+instance (MonadPlus b, AsType BaseA action, FromActions env b action a) => FromActions env b action (Maybe a) where
+  fromActions = is' Grow >> option Nothing (Just <$> fromActions @env @b @action) >>= (is' Reduce >>) . pure
 
-instance (Applicative t, Alternative t, ToActions t a, ToActions t b) => ToActions t (Either a b)
-instance (MonadPlus b, FromActions b a, FromActions b b') => FromActions b (Either a b')
+instance (Applicative t, Alternative t, AsType BaseA action, ToActions t action a, ToActions t action b) => ToActions t action (Either a b)
+instance (MonadPlus b, HasType Pos env, HasType MEnv env, HasType REnv env, AsType BaseA action, FromActions env b action a, FromActions env b action b') => FromActions env b action (Either a b')
 
-instance Applicative t => ToActions t Text where
-  toActions = pure . SToken
+instance (Applicative t, AsType BaseA action) => ToActions t action Text where
+  toActions = pure . injectTyped . SToken
 
-instance MonadFail b => FromActions b Text where
-  fromActions = token >>= (\case SToken s -> pure s; _ -> fail "text")
+instance (MonadFail b, MonadPlus b, AsType BaseA action) => FromActions env b action Text where
+  fromActions = token' >>= (\case SToken s -> pure s; _ -> fail "text")
 
-instance Applicative t => ToActions t Char where
-  toActions = pure . CToken
+instance (Applicative t, AsType BaseA action) => ToActions t action Char where
+  toActions = pure . injectTyped . CToken
 
-instance MonadFail b => FromActions b Char where
-  fromActions = token >>= (\case CToken c -> pure c; _ -> fail "char")
+instance (MonadFail b, MonadPlus b, AsType BaseA action) => FromActions env b action Char where
+  fromActions = token' >>= (\case CToken c -> pure c; _ -> fail "char")
 
-instance Applicative t => ToActions t Int where
-  toActions = pure . IToken
+instance (Applicative t, AsType BaseA action) => ToActions t action Int where
+  toActions = pure . injectTyped . IToken
 
-instance MonadFail b => FromActions b Int where
-  fromActions = token >>= (\case IToken i -> pure i; _ -> fail "int")
+instance (MonadFail b, MonadPlus b, AsType BaseA action) => FromActions env b action Int where
+  fromActions = token' >>= (\case IToken i -> pure i; _ -> fail "int")
 
-instance Applicative t => ToActions t Bool where
-  toActions = pure . BToken
+instance (Applicative t, AsType BaseA action) => ToActions t action Bool where
+  toActions = pure . injectTyped . BToken
 
-instance MonadFail b => FromActions b Bool where
-  fromActions = token >>= (\case BToken b -> pure b; _ -> fail "bool")
+instance (MonadFail b, MonadPlus b, AsType BaseA action) => FromActions env b action Bool where
+  fromActions = token' >>= (\case BToken b -> pure b; _ -> fail "bool")
 
-instance Alternative t => ToActions t () where
+instance Alternative t => ToActions t action () where
   toActions = const empty
 
-instance Monad b => FromActions b () where
+instance Monad b => FromActions env b action () where
   fromActions = pure ()
 
 -- | Runs the parser on the supplied input and returns whether or not the parse succeeded.
@@ -638,93 +633,93 @@ iterTM''' f p = f p (iterTM''' f)
 -- How do to beam search?
 -- does this work for training? I guess @next@ would build up a loss term. How do handle batching?
 -- fresh values when backtracking: https://hackage.haskell.org/package/monad-gen-0.1.0.0/docs/Control-Monad-Gen.html
-parse
-  :: forall s b i a
-   . Monad b
-  => ((i -> Parser b i a) -> s -> b (Parser b i a, s))
-  -> Parser b i a
-  -> s
-  -> b (a, s)
-parse next =
-  -- let f ip ps = StateT $ \s -> do
-  --                 ~(p, s') <- next ip s
-  --                 runStateT (ps p) s'
-  let f ip ps = StateT (next ip) >>= ps
-  in runStateT . iterTM' f
+-- parse
+--   :: forall s b i a
+--    . Monad b
+--   => ((i -> Parser b i a) -> s -> b (Parser b i a, s))
+--   -> Parser b i a
+--   -> s
+--   -> b (a, s)
+-- parse next =
+--   -- let f ip ps = StateT $ \s -> do
+--   --                 ~(p, s') <- next ip s
+--   --                 runStateT (ps p) s'
+--   let f ip ps = StateT (next ip) >>= ps
+--   in runStateT . iterTM' f
 
-parse'
+parse
   :: Monad b
   => (Parser b i a -> (Parser b i a -> StateT s b a) -> StateT s b a)
   -> Parser b i a
   -> s
   -> b (a, s)
-parse' next = runStateT . iterTM''' next
+parse next = runStateT . iterTM''' next
 
-pures :: (Foldable g, Alternative g) => g (FreeF f a (FreeT f m a)) -> g a
-pures = foldr (\x xs -> case x of Pure a -> pure a <|> xs; _ -> xs) empty
+-- pures :: (Foldable g, Alternative g) => g (FreeF f a (FreeT f m a)) -> g a
+-- pures = foldr (\x xs -> case x of Pure a -> pure a <|> xs; _ -> xs) empty
 
-frees :: (Foldable g, Alternative g) => g (FreeF f a (FreeT f m a)) -> g (f (FreeT f m a))
-frees = foldr (\x xs -> case x of Free fb -> pure fb <|> xs; _ -> xs) empty
+-- frees :: (Foldable g, Alternative g) => g (FreeF f a (FreeT f m a)) -> g (f (FreeT f m a))
+-- frees = foldr (\x xs -> case x of Free fb -> pure fb <|> xs; _ -> xs) empty
 
-batchedIterTM
-  :: forall f t b a i
-   . (Traversable f, Foldable f, Alternative f, MonadTrans t, Monad b, Monad (t b))
-  => (f a -> f (i -> Parser b i a) -> (f (Parser b i a) -> t b (f a)) -> t b (f a))
-  -> f (Parser b i a)
-  -> t b (f a)
-batchedIterTM f ps = do 
-  vals <- traverse (lift @t . runFreeT) ps
-  f (pures vals) (frees vals) (batchedIterTM f)
+-- batchedIterTM
+--   :: forall f t b a i
+--    . (Traversable f, Foldable f, Alternative f, MonadTrans t, Monad b, Monad (t b))
+--   => (f a -> f (i -> Parser b i a) -> (f (Parser b i a) -> t b (f a)) -> t b (f a))
+--   -> f (Parser b i a)
+--   -> t b (f a)
+-- batchedIterTM f ps = do 
+--   vals <- traverse (lift @t . runFreeT) ps
+--   f (pures vals) (frees vals) (batchedIterTM f)
 
-batchedParse
-  :: forall f s b i a
-   . (Traversable f, Foldable f, Alternative f, Monad b)
-  => (f (i -> Parser b i a) -> s -> b (f (Parser b i a), s))
-  -> f (Parser b i a)
-  -> s
-  -> b (f a, s)
-batchedParse next = do
-  let f as ip ps = StateT (next ip) >>= ps >>= (pure . (<|> as))
-  runStateT . batchedIterTM f
+-- batchedParse
+--   :: forall f s b i a
+--    . (Traversable f, Foldable f, Alternative f, Monad b)
+--   => (f (i -> Parser b i a) -> s -> b (f (Parser b i a), s))
+--   -> f (Parser b i a)
+--   -> s
+--   -> b (f a, s)
+-- batchedParse next = do
+--   let f as ip ps = StateT (next ip) >>= ps >>= (pure . (<|> as))
+--   runStateT . batchedIterTM f
 
 
-data Stuff = SomeStuff { anInt :: Int, aBool :: Bool, moreStuff :: [Stuff], maybeFoo :: Maybe Foo }
-          --  | NoStuff
-  deriving (Eq, Show, Generic)
+-- data Stuff = SomeStuff { anInt :: Int, aBool :: Bool, moreStuff :: [Stuff], maybeFoo :: Maybe Foo }
+--           --  | NoStuff
+--   deriving (Eq, Show, Generic)
 
-instance ToActions [] Stuff
-instance FromActions [] Stuff
+-- instance (Alternative t, AsType BaseA action) => ToActions t action Stuff
+-- instance (MonadFail b, MonadPlus b, HasType Pos env, HasType MEnv env, HasType REnv env, AsType BaseA action) => FromActions env b action Stuff
 
-data Foo = SomeFoo { someText :: Text, stuff :: Stuff }
-        --  | NoFoo
-  deriving (Eq, Show, Generic)
+-- data Foo = SomeFoo { someText :: Text, stuff :: Stuff }
+--         --  | NoFoo
+--   deriving (Eq, Show, Generic)
 
-instance ToActions [] Foo
-instance FromActions [] Foo
+-- instance (Alternative t, AsType BaseA action) => ToActions t action Foo
+-- instance (MonadFail b, MonadPlus b, HasType Pos env, HasType MEnv env, HasType REnv env, AsType BaseA action) => FromActions env b action Foo
 
-test :: ([Action], [((Foo, [Action]), Env Action)], [((), Env Action)])
-test =
-  let env = defaultEnv
-      stuff 0 = []
-      stuff n = SomeStuff n True [] Nothing : stuff (n - 1)
-      foo 0 = SomeFoo "a" $ SomeStuff 0 False [SomeStuff 2 True [] Nothing] Nothing
-      foo n = SomeFoo "a" $ SomeStuff n ((==0) . (`rem` 3) $ n) [SomeStuff 2 False (stuff n) Nothing] (Just $ foo (n - 1))
-      challenge = foo 2
-      actions = toActions @[] challenge
-      parser = fromActions @[]
-      result' = -- let f ap [] = empty
-                --     f ap (a : as) = let p = ap a in do
-                --       env' <- get
-                --       pure $ unsafePerformIO $ print
-                --         ( a
-                --         , view (field @"mEnv" . field @"meta") env'
-                --         , view (field @"pos") env'
-                --         , view (field @"rEnv" . field @"parentPos") env'
-                --         -- , view (field @"rEnv" . field @"relations") env'
-                --         ) >> pure (p, as)
-                -- in runStateT (parse f parser actions) env
-                runStateT (parse (next []) parser actions) env
-  in (actions, result', runStateT (checkParser parser (IToken 1)) env)
+-- test :: ([Action], [((Foo, [Action]), Env Action)], [((), Env Action)])
+-- test =
+--   let env = defaultEnv
+--       stuff 0 = []
+--       stuff n = SomeStuff n True [] Nothing : stuff (n - 1)
+--       foo 0 = SomeFoo "a" $ SomeStuff 0 False [SomeStuff 2 True [] Nothing] Nothing
+--       foo n = SomeFoo "a" $ SomeStuff n ((==0) . (`rem` 3) $ n) [SomeStuff 2 False (stuff n) Nothing] (Just $ foo (n - 1))
+--       challenge = foo 2
+--       actions = toActions @[] challenge
+--       parser = fromActions @(Env Action) @[]
+--       result' = -- let f ap [] = empty
+--                 --     f ap (a : as) = let p = ap a in do
+--                 --       env' <- get
+--                 --       pure $ unsafePerformIO $ print
+--                 --         ( a
+--                 --         , view (field @"mEnv" . field @"meta") env'
+--                 --         , view (field @"pos") env'
+--                 --         , view (field @"rEnv" . field @"parentPos") env'
+--                 --         -- , view (field @"rEnv" . field @"relations") env'
+--                 --         ) >> pure (p, as)
+--                 -- in runStateT (parse f parser actions) env
+--                 runStateT (parse (next []) parser actions) env
+--   in (actions, result', runStateT (checkParser parser (IToken 1)) env)
 
 ------------------------------------------------------------------------
 -- A simply-typed lambda calculus with ints, bools, and strings
@@ -743,8 +738,18 @@ data Ty =
   | Nat
   deriving (Eq, Ord, Show, Generic)
 
-instance ToActions [] Ty
-instance FromActions [] Ty
+data TyA =
+    ArrA
+  | NatA
+  deriving (Eq, Ord, Show, Generic)
+
+instance (Alternative t, AsType TyA action) => ToActions t action Ty where
+  toActions (Arr ty ty') = (pure . injectTyped $ ArrA) <|> toActions ty <|> toActions ty'
+  toActions Nat = pure . injectTyped $ NatA
+instance (MonadFail b, MonadPlus b, HasType Pos env, HasType MEnv env, HasType REnv env, AsType TyA action) => FromActions env b action Ty where
+  fromActions =
+        (is' ArrA >> Arr <$> fromActions <*> fromActions)
+    <|> (is' NatA >> pure Nat)
 
 -- | Lambda terms.
 -- TODO: use De Bruijn indices https://en.wikipedia.org/wiki/De_Bruijn_index
@@ -771,6 +776,14 @@ data Exp a =
 
 infixl 9 :@
 
+data ExpA =
+    VarA
+  | LamA
+  | AppA
+  | SuccA
+  | ZeroA
+  deriving (Eq, Ord, Show, Generic)
+
 -- TODO: test using https://github.com/hedgehogqa/haskell-hedgehog-classes
 instance Applicative Exp where
   pure = Var
@@ -794,13 +807,30 @@ instance Eq a => Eq (Exp a) where (==) = eq1
 instance Ord a => Ord (Exp a) where compare = compare1
 instance Show a => Show (Exp a) where showsPrec = showsPrec1
 
-instance ToActions [] a => ToActions [] (Var () (Exp a))
-instance ToActions [] a => ToActions [] (Scope () Exp a)
-instance ToActions [] a => ToActions [] (Exp a)
+instance (Alternative t, AsType BaseA action, AsType ExpA action, AsType TyA action, ToActions t action a) => ToActions t action (Var () (Exp a))
+instance (Alternative t, AsType BaseA action, AsType ExpA action, AsType TyA action, ToActions t action a) => ToActions t action (Scope () Exp a)
+instance (Alternative t, AsType BaseA action, AsType ExpA action, AsType TyA action, ToActions t action a) => ToActions t action (Exp a) where
+  toActions (Var a) = (pure . injectTyped $ VarA) <|> toActions a
+  toActions (Lam ty e) = (pure . injectTyped $ LamA) <|> toActions ty <|> toActions e
+  toActions ((:@) f e) = (pure . injectTyped $ AppA) <|> toActions f <|> toActions e
+  toActions (Succ e) = (pure . injectTyped $ SuccA) <|> toActions e
+  toActions Zero = pure . injectTyped $ ZeroA
 
-instance FromActions [] a => FromActions [] (Var () (Exp a))
-instance FromActions [] a => FromActions [] (Scope () Exp a)
-instance FromActions [] a => FromActions [] (Exp a)
+instance (Ord a, MonadFail b, MonadPlus b, HasType Pos env, HasType MEnv env, HasType REnv env, HasType (TEnv action Int) env, AsType BaseA action, AsType ExpA action, AsType TyA action, FromActions env b action a) => FromActions env b action (Var () (Exp a))
+instance (Ord a, MonadFail b, MonadPlus b, HasType Pos env, HasType MEnv env, HasType REnv env, HasType (TEnv action Int) env, AsType BaseA action, AsType ExpA action, AsType TyA action, FromActions env b action a) => FromActions env b action (Scope () Exp a)
+instance (Ord a, MonadFail b, MonadPlus b, HasType Pos env, HasType MEnv env, HasType REnv env, HasType (TEnv action Int) env, AsType BaseA action, AsType ExpA action, AsType TyA action, FromActions env b action a) => FromActions env b action (Exp a) where
+  fromActions = do
+    e <-    (is' VarA >> Var <$> fromActions)
+        <|> (is' LamA >> Lam <$> fromActions <*> fromActions)
+        <|> (is' AppA >> (:@) <$> fromActions <*> fromActions)
+        <|> (is' SuccA >> Succ <$> fromActions)
+        <|> (is' ZeroA >> pure Zero)
+    -- types <- (^. typed @(TEnv action Int) . field @"types") <$> (lift get)
+    -- let _ = typeCheck types e
+    pure e
+  -- fromActions = do
+  --   s <- lift get
+  --   GHC.Generics.to <$> gFromActions @[]
 
 lam :: forall a . Eq a => Ty -> a -> Exp a -> Exp a
 lam ty uname bind = Lam ty (abstract1 uname bind)
@@ -835,7 +865,7 @@ type TyM a = MaybeT (Fresh a)
 assertTy :: Ord a => Map a Ty -> Exp a -> Ty -> TyM a ()
 assertTy env e t = (== t) <$> typeCheck env e >>= guard
 
-typeCheck :: Ord a => Map a Ty -> Exp a -> TyM a Ty
+typeCheck :: forall a . Ord a => Map a Ty -> Exp a -> TyM a Ty
 typeCheck _ Zero = return Nat
 typeCheck env (Succ e) = assertTy env e Nat >> return Nat
 typeCheck env (Var a) = MaybeT . return $ Map.lookup a env
@@ -923,10 +953,10 @@ testBound = do
   putDoc . vsep $ ((pprint ('x' :: Char)) <$> [term, term']) <> [mempty] -- (λx. Sx) Z, (λx. Sx) Z
   print $ term == term' -- True
   print $ runFresh . runMaybeT . typeCheck Map.empty $ term -- Just Nat
-  print $ toActions @[] $ term -- [R,L,L,R,R,R,R,L,L,L,L,R,R,R]
+  print $ toActions @[] @Action $ term -- [R,L,L,R,R,R,R,L,L,L,L,R,R,R]
   print $ whnf term -- Succ Zero
   print $ nf term -- Succ Zero
-  print $ toActions @[] $ nf term -- [R,R,L,R,R,R]
+  print $ toActions @[] @Action $ nf term -- [R,R,L,R,R,R]
 
 -- | Monad transformer stack for term and type generation.
 -- Notably, contains the @FreshT@ transformer for generating fresh variable names
@@ -1027,31 +1057,37 @@ data Example a b = Example
   , target :: Target b
   } deriving (Eq, Ord, Show, Generic)
 
-instance (Alternative t, ToActions t a, ToActions t b) => ToActions t (Example a b)
-instance (Monad b, FromActions b a, FromActions b b') => FromActions b (Example a b')
+instance (Alternative t, ToActions t action a, ToActions t action b) => ToActions t action (Example a b)
+instance (Monad b, HasType Pos env, HasType MEnv env, HasType REnv env, HasType AEnv env, FromActions env b action a, FromActions env b action b') => FromActions env b action (Example a b')
 
 newtype Input  a = Input  a deriving (Eq, Ord, Show, Generic)
 newtype Target a = Target a deriving (Eq, Ord, Show, Generic)
 
-instance ToActions t a => ToActions t (Input a)
-instance (Monad b, FromActions b a) => FromActions b (Input a) where
+instance ToActions t action a => ToActions t action (Input a)
+instance (Monad b, HasType AEnv env, FromActions env b action a) => FromActions env b action (Input a) where
   fromActions = do
-    lift . modify $ field @"aEnv" . field @"currentScope" .~ pure "input"
-    lift . modify $ field @"aEnv" . field @"knownScopes" %~ go "input"
+    lift . modify $ typed @AEnv . field @"currentScope" .~ pure "input"
+    lift . modify $ typed @AEnv . field @"knownScopes" %~ go "input"
     Input <$> fromActions
     where go scopeId = Map.insert scopeId (AttentionScope BidirectionalAttention (Set.singleton "input") mempty)
 
-instance ToActions t a => ToActions t (Target a)
-instance (Monad b, FromActions b a) => FromActions b (Target a) where
+instance ToActions t action a => ToActions t action (Target a)
+instance (Monad b, HasType AEnv env, FromActions env b action a) => FromActions env b action (Target a) where
   fromActions = do
-    lift . modify $ field @"aEnv" . field @"currentScope" .~ pure "target"
-    lift . modify $ field @"aEnv" . field @"knownScopes" %~ go "target"
+    lift . modify $ typed @AEnv . field @"currentScope" .~ pure "target"
+    lift . modify $ typed @AEnv . field @"knownScopes" %~ go "target"
     Target <$> fromActions
     where go scopeId = Map.insert scopeId (AttentionScope BackwardAttention (Set.fromList ["input", "target"]) mempty)
 
 ------------------------------------------------------------------------
 
-prep :: PropertyT IO (Ty, Example (Exp Int) (Exp Int), [((Example (Exp Int) (Exp Int), [Action]), Env Action)])
+data Action =
+    BaseAction BaseA
+  | ExpAction ExpA
+  | TyAction TyA
+  deriving (Eq, Ord, Show, Generic)
+
+prep :: PropertyT IO (Ty, Example (Exp Int) (Exp Int), [((Example (Exp Int) (Exp Int), [Action]), Env Action Int)])
 prep = do
   ty <- forAll genTy
   input <- forAll (genWellTypedExp ty)
@@ -1060,12 +1096,8 @@ prep = do
       env = defaultEnv
       actions = toActions @[] ex
   guard (List.length actions <= 512)
-  let parser = fromActions @[] @(Example (Exp Int) (Exp Int))
-      result = -- let f ap [] = empty
-               --     f ap (a : as) = let p = ap a in pure (p, as)
-               -- in  runStateT (parse f parser actions) env
-               -- runStateT (parse (next []) parser actions) env
-               runStateT (parse' (next' []) parser actions) env
+  let parser = fromActions @(Env Action Int) @[] @Action @(Example (Exp Int) (Exp Int))
+      result = runStateT (parse (next []) parser actions) env
   pure (ty, ex, result)
 
 prop_welltyped :: Property
@@ -1354,23 +1386,42 @@ mkRATransformerMLMBatch pMaskInput pMaskTarget actions = do
   let fromJust' = maybe empty pure
       envs =
         let step actions =
-              let parser = fromActions @[] @(Example (Exp Int) (Exp Int))
-                  results =
-                    runStateT (parse' (next' [L, R, Grow, Reduce]) parser actions) defaultEnv
+              let parser = fromActions @(Env Action Int) @[] @Action @(Example (Exp Int) (Exp Int))
+                  availableActions =
+                    [ injectTyped L
+                    , injectTyped R
+                    , injectTyped Grow
+                    , injectTyped Reduce
+                    , injectTyped VarA
+                    , injectTyped LamA
+                    , injectTyped AppA
+                    , injectTyped SuccA
+                    , injectTyped ZeroA
+                    ]
+                  results = runStateT (parse (next availableActions) parser actions) defaultEnv
               in snd <$> results
         in foldMap step actions
       tokenVocab = OSet.fromList
         [ Pad
         , Unk
         , Mask
-        , Token L
-        , Token R
+        , Token . injectTyped $ L
+        , Token . injectTyped $ R
+        , Token . injectTyped $ VarA
+        , Token . injectTyped $ LamA
+        , Token . injectTyped $ AppA
+        , Token . injectTyped $ SuccA
+        , Token . injectTyped $ ZeroA
+        , Token . injectTyped $ ArrA
+        , Token . injectTyped $ NatA
         ]
       dataTypeVocab :: OSet.OSet (Token Text) = OSet.fromList
         [ Pad
         , Unk
+        , Token "Example"
         , Token "Exp"
         , Token "Ty"
+        , Token "Scope"
         , Token "Var"
         ]
       constructorVocab :: OSet.OSet (Token Text) = OSet.fromList
@@ -1420,7 +1471,7 @@ mkRATransformerMLMBatch pMaskInput pMaskTarget actions = do
         , Token (DistRelation 3)
         ]
   tokens <- fromJust' . mkSeq' tokenVocab $ view (field @"tEnv" . field @"tokens") <$> envs
-  -- liftIO . print $ view (field @"tEnv" . field @"validContinuationsMask") <$> envs
+  liftIO . print $ view (field @"tEnv" . field @"validNextActionMask") <$> envs
   meta <- do
     let f vocab g = fromJust' . mkSeq' vocab $ (Map.mapMaybe g . view (field @"mEnv" . field @"metas")) <$> envs
     dataTypes <- f dataTypeVocab dataType
@@ -1620,8 +1671,8 @@ type TestNumHeads = 3
 type TestHeadDim = 8
 type TestFFNDim = 16
 type TestPaddingIdx = 0
-type TestTokenNumEmbeds = 5
-type TestDataTypeNumEmbeds = 5
+type TestTokenNumEmbeds = 12
+type TestDataTypeNumEmbeds = 7
 type TestConstructorNumEmbeds = 13
 type TestSelectorNumEmbeds = 9
 type TestRelationNumEmbeds = 18
@@ -1677,7 +1728,7 @@ mkSeq' vocab ms = do
               fstKeys = const i <$> keys
               sndKeys = unPos <$> keys
               elems = (fromMaybe unkIndex . flip OSet.findIndex vocab . Token) <$> Map.elems m
-          if List.elem unkIndex elems then error $ show $ Map.elems m else pure ()
+          if List.elem unkIndex elems then error $ show $ (vocab, m) else pure ()
           guard $ Prelude.all (< natValI @seqLen) sndKeys
           pure (fstKeys, sndKeys, elems)
     in foldMap step $ zip [(0 :: Int)..] ms
@@ -1864,7 +1915,7 @@ testGen = do
     ty <- genTy
     e <- genWellTypedExp @Int ty
     guard (isJust . runFresh . runMaybeT . assertTy Map.empty e $ ty)
-    let actions = toActions @[] e
+    let actions = toActions @[] @Action e
     guard (List.length actions <= 256)
     pure (e, actions)) seed
   print actions
