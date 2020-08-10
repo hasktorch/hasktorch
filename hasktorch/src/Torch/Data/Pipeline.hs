@@ -39,9 +39,11 @@ import           Control.Monad.Trans.Control (MonadBaseControl(..))
 import           Control.Monad.Cont (ContT)
 import           Torch.Data.Internal
 import qualified Torch as Torch
+
 data MapStyleOptions = MapStyleOptions { bufferSize :: Int
                                        , numWorkers :: Int
                                        }
+
 mapStyleOpts numWorkers = MapStyleOptions { bufferSize = numWorkers
                                           , numWorkers = numWorkers
                                           }

@@ -49,7 +49,6 @@ import Torch.NN
 import Torch.Data.StreamedPipeline 
 import Torch.Data.Pipeline
 import Pipes.Prelude (repeatM)
-import Debug.Trace (traceShowId, trace)
 
 C.include "<stdint.h>"
 
@@ -68,20 +67,13 @@ instance (MonadPlus m, MonadBase IO m) => Datastream m Int Mnist (Tensor, Tensor
       yield (input, target)
 
       where numIters = I.length mnistData `Prelude.div` batchSize
-            -- size = I.length
             
 instance Dataset Mnist (Tensor, Tensor) where
   getItem Mnist{..} ix =  
-    -- for (each [1..numIters]) $ \iter -> do 
-      -- let from = (iter-1) * batchSize
-      --     to = (iter * batchSize) - 1
-      --     indexes = [from .. to]
-      --     target = getLabels' batchSize  mnistData indexes
     let
-      indexes = [ix * batchSize .. (ix+1) * batchSize]
+      indexes = [ix * batchSize .. (ix+1) * batchSize - 1]
       imgs = getImages' batchSize 784 mnistData indexes
       labels = getLabels' batchSize mnistData indexes
-      -- input  <- liftBase $ getImages' batchSize 784 mnistData indexes
     in (imgs, labels)
   size Mnist{..} = I.length mnistData `Prelude.div` batchSize
 
