@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -63,8 +64,8 @@ tsmodelForward t TSModel{..} (hiddenState, cellState) allCounties countyCount =
     (hiddenState, cellState)    
     (T.cat (Dim 0) [linearForward countyEmbed allCounties, t2vForward t t2v, countyCount])
 
-instance HasForward TSModel ModelInputs Tensor where
-    forward:: TSModel -> ModelInputs -> Tensor
+instance HasForward TSModel ModelInputs (Tensor, Tensor) where
+    -- forward:: TSModel -> ModelInputs -> (Tensor, Tensor)
     forward model modelInputs = undefined
 
 data Time2VecSpec = Time2VecSpec {
@@ -97,16 +98,15 @@ t2vForward t Time2Vec{..} =
   where (w0', b0', w', b') = (toDependent w0, toDependent b0, 
                               toDependent w, toDependent b)
 
-{-
+
 train 
     :: (Dataset d (Tensor, Tensor), Optimizer o, Parameterized p, HasForward p Tensor Tensor) 
     => OptimSpec o p -> d -> p -> IO p
 train OptimSpec{..} dataset init = do
     trained <- foldLoop init numIters $
         \state iter -> do
-            (input, dep) <- getItem dataset (iter*batchSize) batchSize -- TODO adapt this
+            let (input, dep) = getItem dataset (iter*batchSize) batchSize
             let loss = lossFn state input dep
-
             let flatParameters = flattenParameters state
             let (Gradients gradients) = grad' loss flatParameters
 
@@ -115,9 +115,8 @@ train OptimSpec{..} dataset init = do
             (newParam, _) <- runStep state optimizer loss learningRate
             pure $ replaceParameters state newParam
     pure trained
--}
 
-checkModel = do
+checkOutputs = do
   -- check time2vec
   t2v <- sample $ Time2VecSpec 10
   lstmLayer <- sample $ LSTMSpec (10 + 1) 2
@@ -135,12 +134,23 @@ checkModel = do
   let result = tsmodelForward 10.0 model (ones' [inputDim], ones' [inputDim]) (ones' [3193]) 15.0
   print result
 
-trainModel = do
-  model <- sample TSModelSpec {
+testModel = do
+  let inputDim = 3193 + 1 + 1 -- # counties + t2vDim + county of interest count
+  initializedModel <- sample TSModelSpec {
     nCounties = 3193,
     countyEmbedDim = 6,
     t2vSpec = Time2VecSpec { t2vDim=6 },
-    lstmSpec = LSTMSpec { inputSize=undefined, hiddenSize=12 } 
+    lstmSpec = LSTMSpec { inputSize=3195, hiddenSize=12 }  -- 3195=3193 + t2vDim + count
     }
-  -- trained <- train 
+  let optimSpec = OptimSpec {
+        optimizer = mkAdam 0 0.9 0.999 (flattenParameters initializedModel),
+        batchSize = 128,
+        numIters = 500,
+        learningRate = 5e-5, 
+        lossFn = undefined -- \model input target -> 
+            -- let (h, c) = forward model input 
+            -- in mseLoss target c
+    } :: OptimSpec Adam TSModel
+
+  -- model <- train optimSpec undefined initializedModel
   pure ()
