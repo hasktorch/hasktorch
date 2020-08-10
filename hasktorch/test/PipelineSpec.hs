@@ -78,6 +78,7 @@ runTest time test = do
 -- | Worker 1: |-----|-----|-----|
 -- | Worker 2: |-----|-----|-----|
 -- | Fold:     |.....|--|--|--|--|--|--|
+spec :: Spec
 spec = do
 #ifndef darwin_HOST_OS
   it "Tests data is flowing" $
@@ -85,3 +86,4 @@ spec = do
   it "Tests concurrent datasets yield concurrently" $
     (runTest timeoutConcurrent (testConcurrentFoldTimeout ConcurrentData 2) `shouldReturn` (Just ()))
 #endif
+  return () -- no empty do block on macos
