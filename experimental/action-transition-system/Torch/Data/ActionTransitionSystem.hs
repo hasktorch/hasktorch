@@ -373,10 +373,11 @@ updateMeta pos = do
   modify (field @"metas" %~ Map.insert pos meta)
 
 updateTokens :: forall f action a . (Monad f, Ord action) => action -> [action] -> Pos -> StateT (TEnv action a) f ()
-updateTokens t continuations pos = do
-  modify (field @"validNextActionMask" %~ Map.insert pos (Set.fromList continuations))
+updateTokens t validNextActions pos = do
+  modify (field @"validNextActionMask" %~ Map.insert pos (Set.fromList validNextActions))
   modify (field @"tokens" %~ Map.insert pos t)
 
+-- | pull an action from the state, feed the parser, and update the environment
 next
   :: forall env action b a
    . ( b ~ []
@@ -392,42 +393,43 @@ next
   -> Parser (StateT env b) action a -- ^ parser
   -> (Parser (StateT env b) action a -> StateT [action] (StateT env b) a) -- ^ continuation
   -> StateT [action] (StateT env b) a -- ^ returned stateful computation
-next availableActions p c = do
-  continuations <- lift $ do
+next availableActions parser cont = do
+  validNextActions <- lift $ do
     s <- get
-    let vals = runStateT (runFreeT p) s
+    let vals = runStateT (runFreeT parser) s
         f (Pure _, _) = []
-        f (Free tp, s) = validNextActions availableActions tp s
+        f (Free feed, s) = validateActions availableActions feed s
     pure $ vals >>= f
-  val <- lift . runFreeT $ p
+  val <- lift . runFreeT $ parser
   case val of
     Pure a -> pure a
-    Free tp -> do
+    Free feed -> do
       s <- get
       case s of
         [] -> empty
-        t : ts -> do
+        action : actions -> do
           pos <- (^. typed @Pos) <$> (lift get)
-          lift . zoom (typed @(TEnv action Int)) . updateTokens t continuations $ pos
+          lift . zoom (typed @(TEnv action Int)) . updateTokens action validNextActions $ pos
           lift . zoom (typed @MEnv) . updateMeta $ pos
           lift . zoom (typed @REnv) . updateRelations 3 $ pos
           lift . zoom (typed @AEnv) . updateAttention $ pos
           lift $ modify (typed @Pos %~ (+1))
-          put ts
-          c (tp t)
+          put actions
+          cont (feed action)
 
-validNextActions
+-- | given a list of available next actions, return only those that do not end in an empty parsing result
+validateActions
   :: forall s action a
    . [action] -- ^ available next actions
-  -> (action -> Parser (StateT s []) action a) -- ^ parsing continuation
-  -> s -- ^ state
+  -> (action -> Parser (StateT s []) action a) -- ^ parsing feed
+  -> s -- ^ input state
   -> [action] -- ^ valid next actions
-validNextActions availableActions tp s =
-    let f t =
-          let val = runFreeT . tp $ t
+validateActions availableActions feed s =
+    let f action =
+          let val = runFreeT . feed $ action
           in case runStateT val s of
             [] -> Nothing
-            _ -> Just t
+            _ -> Just action
     in catMaybes $ f <$> availableActions
 
 token :: forall b action . Monad b => Parser b action action
@@ -593,7 +595,7 @@ checkParser p i = do
   val <- runFreeT p
   case val of
     Pure a -> mzero
-    Free f -> void . runFreeT $ f i
+    Free feed -> void . runFreeT $ feed i
 
 -- FreeT ((->) i) b a ~ StateT (b i) b a ???
 
