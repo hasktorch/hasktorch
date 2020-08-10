@@ -387,7 +387,6 @@ next
      , HasType REnv env
      , HasType (TEnv action Int) env
      , Ord action
-     , Show a
      )
   => [action] -- ^ available next actions
   -> Parser (StateT env b) action a -- ^ parser
@@ -408,6 +407,7 @@ next availableActions parser cont = do
       case s of
         [] -> empty
         action : actions -> do
+          guard (List.elem action validNextActions)
           pos <- (^. typed @Pos) <$> (lift get)
           lift . zoom (typed @(TEnv action Int)) . updateTokens action validNextActions $ pos
           lift . zoom (typed @MEnv) . updateMeta $ pos
@@ -1399,6 +1399,8 @@ mkRATransformerMLMBatch pMaskInput pMaskTarget actions = do
                     , injectTyped AppA
                     , injectTyped SuccA
                     , injectTyped ZeroA
+                    , injectTyped ArrA
+                    , injectTyped NatA
                     ]
                   results = runStateT (parse (next availableActions) parser actions) defaultEnv
               in snd <$> results
