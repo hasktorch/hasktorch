@@ -60,7 +60,7 @@ import Data.Text (pack, Text)
 import Data.Maybe (catMaybes, isJust, fromJust, fromMaybe)
 import Data.List as List (intersperse, intercalate, elem, take, iterate, isInfixOf, replicate, length, filter, sort, nub)
 import Data.Map as Map (mapMaybe, delete, elems, toList, (!), adjust, update, keys, null, insertWith, singleton, fromList, unionWith, Map, insert, lookup)
-import Data.Set as Set (elems, filter, cartesianProduct, unions, toList, fromList, member, singleton, union, Set, insert, findIndex)
+import Data.Set as Set (notMember, elems, filter, cartesianProduct, unions, toList, fromList, member, singleton, union, Set, insert, findIndex)
 import qualified Data.Set.Ordered as OSet
 import qualified Data.Set as Set (empty)
 import qualified Data.Map as Map (empty)
@@ -116,7 +116,7 @@ defaultEnv = Env
   { pos = Pos 0
   , tEnv = TEnv
     { tokens = mempty
-    , validNextActionMask = mempty
+    , validActionMask = mempty
     , types = mempty
     }
   , mEnv = MEnv
@@ -142,7 +142,7 @@ newtype Pos = Pos { unPos :: Int }
 
 data TEnv action a = TEnv
   { tokens :: Map Pos action -- writer
-  , validNextActionMask :: Map Pos (Set action) -- writer
+  , validActionMask :: Map Pos (Set action) -- writer
   , types :: Map a Ty -- writer
   } deriving (Eq, Ord, Show, Generic)
 
@@ -374,7 +374,7 @@ updateMeta pos = do
 
 updateTokens :: forall f action a . (Monad f, Ord action) => action -> [action] -> Pos -> StateT (TEnv action a) f ()
 updateTokens t validNextActions pos = do
-  modify (field @"validNextActionMask" %~ Map.insert pos (Set.fromList validNextActions))
+  modify (field @"validActionMask" %~ Map.insert pos (Set.fromList validNextActions))
   modify (field @"tokens" %~ Map.insert pos t)
 
 -- | pull an action from the state, feed the parser, and update the environment
@@ -1322,9 +1322,9 @@ raTransformerMLM RATransformerMLM {..} train RATransformerMLMInput {..} = do
       relations = sumDim @3 $ embed ratRelationEmbedding ratRelations
   forward ratProj <$> hfoldrM (RAFoldLayers train ratAttentionMask ratKeyPaddingMask relations relations) input ratLayers
 
-data RATransformerMLMBatch batchSize seqLen relDim dtype device = RATransformerMLMBatch
+data RATransformerMLMBatch batchSize seqLen numEmbeds relDim dtype device = RATransformerMLMBatch
   { ratInput :: RATransformerMLMInput batchSize seqLen relDim dtype device
-  , ratTarget :: RATransformerMLMTarget batchSize seqLen device
+  , ratTarget :: RATransformerMLMTarget batchSize seqLen numEmbeds device
   } deriving (Show, Generic)
 
 data RATransformerMLMInput batchSize seqLen relDim dtype device = RATransformerMLMInput
@@ -1335,11 +1335,12 @@ data RATransformerMLMInput batchSize seqLen relDim dtype device = RATransformerM
   , ratKeyPaddingMask :: Tensor device 'Bool '[batchSize, seqLen] -- ^ key padding mask (True for padding, False everywhere else)
   } deriving (Show, Generic)
 
-data RATransformerMLMTarget batchSize seqLen device = RATransformerMLMTarget
+data RATransformerMLMTarget batchSize seqLen numEmbeds device = RATransformerMLMTarget
   { ratTargetTokens :: Tensor device 'Int64 '[batchSize, seqLen] -- ^ target tokens
   , ratTokenMask :: Tensor device 'Bool '[batchSize, seqLen] -- ^ token mask
   , ratInputScopeMask :: Tensor device 'Bool '[batchSize, seqLen] -- ^ input scope mask
   , ratTargetScopeMask :: Tensor device 'Bool '[batchSize, seqLen] -- ^ target scope mask
+  , ratInvalidTokenMask :: Tensor device 'Bool '[batchSize, seqLen, numEmbeds] -- ^ valid next action mask
   } deriving (Show, Generic)
 
 loss
@@ -1356,8 +1357,8 @@ loss
   -> Tensor device dtype '[batchSize, seqLen, numEmbeds]
   -> Tensor device 'Int64 '[batchSize, seqLen]
   -> Tensor device dtype '[]
-loss validActionsMask selectionMask logits target =
-  let logProbs = logSoftmax @2 . maskedFill (logicalNot validActionsMask) (-1 / 0 :: Double) $ logits
+loss invalidTokenMask selectionMask logits target =
+  let logProbs = logSoftmax @2 . maskedFill invalidTokenMask (-1 / 0 :: Double) $ logits
       logLikelihood = squeezeDim @2 $ gatherDim @2 (unsqueeze @2 target) logProbs
       selected = maskedSelect selectionMask logLikelihood
       meanLogLikelihood = case selected of
@@ -1367,8 +1368,8 @@ loss validActionsMask selectionMask logits target =
 ------------------------------------------------------------------------
 
 mkRATransformerMLMBatch
-  :: forall batchSize seqLen relDim dtype device a m -- tensorChunks ys
-   . ( All KnownNat '[batchSize, seqLen, relDim]
+  :: forall batchSize seqLen numEmbeds relDim dtype device a m -- tensorChunks ys
+   . ( All KnownNat '[batchSize, seqLen, numEmbeds, relDim]
      , SumDTypeIsValid device 'Int64
      , ComparisonDTypeIsValid device 'Int64
     --  , tensorChunks ~ Chunk batchSize 0 '[batchSize, seqLen, seqLen] 'Int64 device
@@ -1383,42 +1384,30 @@ mkRATransformerMLMBatch
   => a
   -> a
   -> [[Action]]
-  -> m (RATransformerMLMBatch batchSize seqLen relDim dtype device)
+  -> m (RATransformerMLMBatch batchSize seqLen numEmbeds relDim dtype device)
 mkRATransformerMLMBatch pMaskInput pMaskTarget actions = do
   let fromJust' = maybe empty pure
+      availableActions =
+        [ injectTyped L
+        , injectTyped R
+        , injectTyped VarA
+        , injectTyped LamA
+        , injectTyped AppA
+        , injectTyped SuccA
+        , injectTyped ZeroA
+        , injectTyped ArrA
+        , injectTyped NatA
+        ]
       envs =
         let step actions =
               let parser = fromActions @(Env Action Int) @[] @Action @(Example (Exp Int) (Exp Int))
-                  availableActions =
-                    [ injectTyped L
-                    , injectTyped R
-                    , injectTyped Grow
-                    , injectTyped Reduce
-                    , injectTyped VarA
-                    , injectTyped LamA
-                    , injectTyped AppA
-                    , injectTyped SuccA
-                    , injectTyped ZeroA
-                    , injectTyped ArrA
-                    , injectTyped NatA
-                    ]
                   results = runStateT (parse (next availableActions) parser actions) defaultEnv
               in snd <$> results
         in foldMap step actions
       tokenVocab = OSet.fromList
-        [ Pad
-        , Unk
-        , Mask
-        , Token . injectTyped $ L
-        , Token . injectTyped $ R
-        , Token . injectTyped $ VarA
-        , Token . injectTyped $ LamA
-        , Token . injectTyped $ AppA
-        , Token . injectTyped $ SuccA
-        , Token . injectTyped $ ZeroA
-        , Token . injectTyped $ ArrA
-        , Token . injectTyped $ NatA
-        ]
+        (  [Pad, Unk, Mask]
+        <> (Token <$> availableActions)
+        )
       dataTypeVocab :: OSet.OSet (Token Text) = OSet.fromList
         [ Pad
         , Unk
@@ -1474,10 +1463,11 @@ mkRATransformerMLMBatch pMaskInput pMaskTarget actions = do
         , Token (DistRelation 2)
         , Token (DistRelation 3)
         ]
-  tokens <- fromJust' . mkSeq' tokenVocab $ view (field @"tEnv" . field @"tokens") <$> envs
-  liftIO . print $ view (field @"tEnv" . field @"validNextActionMask") <$> envs
+  tokens <- fromJust' . mkSeq tokenVocab $ view (field @"tEnv" . field @"tokens") <$> envs
+  -- liftIO . print $ view (field @"tEnv" . field @"validActionMask") <$> envs
+  invalidTokenMask <- fromJust' . mkInvalidTokenMask tokenVocab $ view (field @"tEnv" . field @"validActionMask") <$> envs
   meta <- do
-    let f vocab g = fromJust' . mkSeq' vocab $ (Map.mapMaybe g . view (field @"mEnv" . field @"metas")) <$> envs
+    let f vocab g = fromJust' . mkSeq vocab $ (Map.mapMaybe g . view (field @"mEnv" . field @"metas")) <$> envs
     dataTypes <- f dataTypeVocab dataType
     constructors <- f constructorVocab constructor
     selectors <- f selectorVocab selector
@@ -1486,12 +1476,12 @@ mkRATransformerMLMBatch pMaskInput pMaskTarget actions = do
       , constructor = constructors
       , selector = selectors
       }
-  relations <- fromJust' . mkMultiGrid' relationsVocab $ view (field @"rEnv" . field @"relations") <$> envs
-  let scopeMask scopeId = fromJust' $ mkSeqMask' =<< traverse ((scopePositions <$>) . Map.lookup scopeId . view (field @"aEnv" . field @"knownScopes")) envs
+  relations <- fromJust' . mkMultiGrid relationsVocab $ view (field @"rEnv" . field @"relations") <$> envs
+  let scopeMask scopeId = fromJust' $ mkSeqMask =<< traverse ((scopePositions <$>) . Map.lookup scopeId . view (field @"aEnv" . field @"knownScopes")) envs
   inputScopeMask <- scopeMask "input"
   targetScopeMask <- scopeMask "target"
-  attentionMask <- fromJust' . mkGridMask' @batchSize @seqLen @seqLen $ view (field @"aEnv" . field @"attentionMask") <$> envs
-  keyPaddingMask <- logicalNot <$> (fromJust' . mkSeqMask' $ view (field @"aEnv" . field @"keyPaddingMask") <$> envs)
+  attentionMask <- fromJust' . mkGridMask @batchSize @seqLen @seqLen $ view (field @"aEnv" . field @"attentionMask") <$> envs
+  keyPaddingMask <- logicalNot <$> (fromJust' . mkSeqMask $ view (field @"aEnv" . field @"keyPaddingMask") <$> envs)
   let attentionMask' = maskedFill (unsqueeze @2 keyPaddingMask) (1 :: Int) attentionMask
   -- liftIO . display2dTensorBatch $ attentionMask'
   guard (attentionMaskIsProper attentionMask')
@@ -1514,6 +1504,7 @@ mkRATransformerMLMBatch pMaskInput pMaskTarget actions = do
         , ratTokenMask = tokenMask
         , ratInputScopeMask = inputScopeMask
         , ratTargetScopeMask = targetScopeMask
+        , ratInvalidTokenMask = invalidTokenMask
         }
     }
 
@@ -1656,13 +1647,13 @@ display3dTensorBatch t =
       ts = chunk @batchSize @0 @shape @'Int64 @device @tensorChunks t'
   in void . hmapM' Display3dTensorBatch $ ts
 
-testMkRATransformerMLMBatch :: IO (RATransformerMLMBatch TestBatchSize TestSeqLen TestRelDim TestDType TestDevice)
+testMkRATransformerMLMBatch :: IO (RATransformerMLMBatch TestBatchSize TestSeqLen TestTokenNumEmbeds TestRelDim TestDType TestDevice)
 testMkRATransformerMLMBatch = do
   let input :: Exp Int = (lam Nat 0 (Var 0)) :@ Zero
       target = nf input
       ex = Example (Input input) (Target target)
       actions = toActions @[] $ ex -- [R,L,L,R,R,L,L,L,R,R,R,R,R,R]
-  mkRATransformerMLMBatch @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDevice @Float @IO 0.15 0.25 [actions]
+  mkRATransformerMLMBatch @TestBatchSize @TestSeqLen @TestTokenNumEmbeds @TestRelDim @TestDType @TestDevice @Float @IO 0.15 0.25 [actions]
 
 ------------------------------------------------------------------------
 
@@ -1717,13 +1708,13 @@ bernoulliMask p keyPaddingMask = do
 testBernoulliMask :: IO (Tensor TestDevice 'Bool '[2, 3])
 testBernoulliMask = bernoulliMask (0.25 :: Float) $ zeros @'[2, 3] @'Bool @TestDevice
 
-mkSeq'
+mkSeq
   :: forall batchSize seqLen device a
    . (Show a, Ord a, All KnownNat '[batchSize, seqLen], KnownDevice device)
   => OSet.OSet (Token a)
   -> [Map Pos a]
   -> Maybe (Tensor device 'Int64 '[batchSize, seqLen])
-mkSeq' vocab ms = do
+mkSeq vocab ms = do
   unkIndex <- OSet.findIndex Unk vocab
   guard $ List.length ms <= natValI @batchSize
   (fstKeys, sndKeys, elems) <- 
@@ -1742,20 +1733,20 @@ mkSeq' vocab ms = do
       shape = [natValI @batchSize, natValI @seqLen]
   pure . toDevice @device @'( 'CPU, 0) . UnsafeMkTensor @'( 'CPU, 0) . Torch.toDense $ sparseCooTensor i v shape tensorOptions
 
-testMkSeq' :: Maybe (Tensor TestDevice 'Int64 '[2, 3])
-testMkSeq' =
+testMkSeq :: Maybe (Tensor TestDevice 'Int64 '[2, 3])
+testMkSeq =
   let vocab = OSet.fromList [Pad, Unk, Token "a"]
       ms = [ Map.fromList [(Pos 0, "a"), (Pos 1, "b"), (Pos 2, "a")]
            , Map.fromList [(Pos 1, "a"), (Pos 2, "b")]
            ]
-  in mkSeq' vocab ms
+  in mkSeq vocab ms
 
-mkSeqMask'
+mkSeqMask
   :: forall batchSize seqLen device
    . (All KnownNat '[batchSize, seqLen], KnownDevice device)
   => [Set Pos]
   -> Maybe (Tensor device 'Bool '[batchSize, seqLen])
-mkSeqMask' ss = do
+mkSeqMask ss = do
   guard $ List.length ss <= natValI @batchSize
   (fstElems, sndElems) <-
     let step (i, s) = do
@@ -1771,20 +1762,20 @@ mkSeqMask' ss = do
       shape = [natValI @batchSize, natValI @seqLen]
   pure . toDevice @device @'( 'CPU, 0) . UnsafeMkTensor @'( 'CPU, 0) . Torch.toType Bool . Torch.toDense $ sparseCooTensor i v shape tensorOptions
 
-testMkSeqMask' :: Maybe (Tensor TestDevice 'Bool '[2, 3])
-testMkSeqMask' =
+testMkSeqMask :: Maybe (Tensor TestDevice 'Bool '[2, 3])
+testMkSeqMask =
   let ss = [ Set.fromList [Pos 1]
            , Set.fromList [Pos 0, Pos 2]
            ]
-  in mkSeqMask' ss
+  in mkSeqMask ss
 
-mkGrid'
+mkGrid
   :: forall batchSize seqLen seqLen' device a
    . (Show a, Ord a, All KnownNat '[batchSize, seqLen, seqLen'], KnownDevice device)
   => OSet.OSet (Token a)
   -> [Map (Pos, Pos) a]
   -> Maybe (Tensor device 'Int64 '[batchSize, seqLen, seqLen'])
-mkGrid' vocab ms = do
+mkGrid vocab ms = do
   unkIndex <- OSet.findIndex Unk vocab
   guard $ List.length ms <= natValI @batchSize
   (fstKeys, sndKeys, trdKeys, elems) <-
@@ -1804,21 +1795,21 @@ mkGrid' vocab ms = do
       shape = [natValI @batchSize, natValI @seqLen, natValI @seqLen']
   pure . toDevice @device @'( 'CPU, 0) . UnsafeMkTensor @'( 'CPU, 0) . Torch.toDense $ sparseCooTensor i v shape tensorOptions
 
-testMkGrid' :: Maybe (Tensor TestDevice 'Int64 '[2, 2, 3])
-testMkGrid' =
+testMkGrid :: Maybe (Tensor TestDevice 'Int64 '[2, 2, 3])
+testMkGrid =
   let vocab = OSet.fromList [Pad, Unk, Token "a", Token "b"]
       ms = [ Map.fromList [((Pos 0, Pos 0), "a"), ((Pos 0, Pos 1), "b"), ((Pos 1, Pos 2), "a")]
            , Map.fromList [((Pos 0, Pos 1), "b"), ((Pos 0, Pos 2), "c")]
            ]
-  in mkGrid' vocab ms
+  in mkGrid vocab ms
 
-mkMultiGrid'
+mkMultiGrid
   :: forall batchSize seqLen seqLen' dim device a
    . (Ord a, All KnownNat '[batchSize, seqLen, seqLen', dim], KnownDevice device)
   => OSet.OSet (Token a)
   -> [Map (Pos, Pos) (Set a)]
   -> Maybe (Tensor device 'Int64 '[batchSize, seqLen, seqLen', dim])
-mkMultiGrid' vocab ms = do
+mkMultiGrid vocab ms = do
   unkIndex <- OSet.findIndex Unk vocab
   guard $ List.length ms <= natValI @batchSize
   (fstKeys, sndKeys, trdKeys, fthKeys, elems) <-
@@ -1844,12 +1835,14 @@ mkMultiGrid' vocab ms = do
       shape = [natValI @batchSize, natValI @seqLen, natValI @seqLen', natValI @dim]
   pure . toDevice @device @'( 'CPU, 0) . UnsafeMkTensor @'( 'CPU, 0) . Torch.toDense $ sparseCooTensor i v shape tensorOptions
 
-mkGridMask'
+mkGridMask
   :: forall batchSize seqLen seqLen' device
-   . (All KnownNat '[batchSize, seqLen, seqLen'], KnownDevice device)
+   . ( All KnownNat '[batchSize, seqLen, seqLen']
+     , KnownDevice device
+     )
   => [Set (Pos, Pos)]
   -> Maybe (Tensor device 'Bool '[batchSize, seqLen, seqLen'])
-mkGridMask' ss = do
+mkGridMask ss = do
   guard $ List.length ss <= natValI @batchSize
   (fstElems, sndElems, trdElems) <-
     let step (i, s) = do
@@ -1867,18 +1860,61 @@ mkGridMask' ss = do
       shape = [natValI @batchSize, natValI @seqLen, natValI @seqLen']
   pure . toDevice @device @'( 'CPU, 0) . UnsafeMkTensor @'( 'CPU, 0) . Torch.toType Bool . Torch.toDense $ sparseCooTensor i v shape tensorOptions
 
-testMkGridMask' :: Maybe (Tensor TestDevice 'Bool '[2, 2, 3])
-testMkGridMask' =
+testMkGridMask :: Maybe (Tensor TestDevice 'Bool '[2, 2, 3])
+testMkGridMask =
   let ss = [ Set.fromList [(Pos 0, Pos 0), (Pos 0, Pos 1), (Pos 1, Pos 2)]
            , Set.fromList [(Pos 0, Pos 2)]
            ]
-  in mkGridMask' ss
+  in mkGridMask ss
+
+mkInvalidTokenMask
+  :: forall batchSize seqLen numEmbeds device action
+   . ( All KnownNat '[batchSize, seqLen, numEmbeds]
+     , KnownDevice device
+     , Ord action
+     )
+  => OSet.OSet (Token action)
+  -> [Map Pos (Set action)]
+  -> Maybe (Tensor device 'Bool '[batchSize, seqLen, numEmbeds])
+mkInvalidTokenMask vocab ms = do
+  guard $ List.length ms <= natValI @batchSize
+  (fstElems, sndElems, trdElems) <-
+    let step (i, m) = do
+          let s :: Set (Pos, Int) = Set.fromList $ do
+                (pos, validActions) <- Map.toList m
+                (i, token) <- zip [(0 :: Int)..] $ OSet.toAscList vocab
+                case token of
+                  Token action -> guard $ Set.notMember action validActions
+                  _ -> pure () -- Pad, Unk, Mask, etc. are invalid tokens
+                pure (pos, i)
+              elems = Set.elems s
+              fstElems = const i <$> elems
+              sndElems = unPos . fst <$> elems
+              trdElems = snd <$> elems
+          guard $ Prelude.all (< natValI @seqLen) sndElems
+          guard $ Prelude.all (< natValI @numEmbeds) trdElems
+          pure (fstElems, sndElems, trdElems)
+    in foldMap step $ zip [(0 :: Int)..] ms
+  let tensorOptions = withDType Int64 defaultOpts
+      i = asTensor' [fstElems, sndElems, trdElems] tensorOptions
+      v = Torch.ones [List.length fstElems] tensorOptions
+      shape = [natValI @batchSize, natValI @seqLen, natValI @numEmbeds]
+  pure . toDevice @device @'( 'CPU, 0) . UnsafeMkTensor @'( 'CPU, 0) . Torch.toType Bool . Torch.toDense $ sparseCooTensor i v shape tensorOptions
+
+testMkInvalidTokenMask :: Maybe (Tensor TestDevice 'Bool '[2, 3, 5])
+testMkInvalidTokenMask =
+  let vocab = OSet.fromList [Pad, Unk, Mask, Token L, Token R]
+      ms = [ Map.fromList [(Pos 0, Set.fromList [L, R]), (Pos 1, Set.fromList [R]), (Pos 1, Set.fromList [R])]
+           , Map.fromList [(Pos 0, Set.fromList [L]), (Pos 1, Set.empty)]
+           ]
+  in mkInvalidTokenMask vocab ms
+
 
 ------------------------------------------------------------------------
 
 mkBatch
-  :: forall batchSize seqLen relDim dtype device a m -- tensorChunks ys
-   . ( All KnownNat '[batchSize, seqLen, relDim]
+  :: forall batchSize seqLen numEmbeds relDim dtype device a m -- tensorChunks ys
+   . ( All KnownNat '[batchSize, seqLen, numEmbeds, relDim]
      , SumDTypeIsValid device 'Int64
      , ComparisonDTypeIsValid device 'Int64
     --  , tensorChunks ~ Chunk batchSize 0 '[batchSize, seqLen, seqLen] 'Int64 device
@@ -1892,7 +1928,7 @@ mkBatch
      )
   => a
   -> a
-  -> StateT Seed.Seed m (RATransformerMLMBatch batchSize seqLen relDim dtype device)
+  -> StateT Seed.Seed m (RATransformerMLMBatch batchSize seqLen numEmbeds relDim dtype device)
 mkBatch pMaskInput pMaskTarget = do
   -- seed <- get
   -- liftIO . putStrLn $ "Start making batch for " <> show seed
@@ -1940,10 +1976,10 @@ sample' gen =
   in
     go
 
-testMkBatch :: IO (RATransformerMLMBatch 1 32 TestRelDim TestDType TestDataDevice)
+testMkBatch :: IO (RATransformerMLMBatch 1 32 TestTokenNumEmbeds TestRelDim TestDType TestDataDevice)
 testMkBatch = do
   seed <- Seed.random
-  (batch, _) <- runStateT (mkBatch @1 @32 @TestRelDim @TestDType @TestDataDevice @Float 0.15 0.25) seed
+  (batch, _) <- runStateT (mkBatch @1 @32 @TestTokenNumEmbeds @TestRelDim @TestDType @TestDataDevice @Float 0.15 0.25) seed
   display3dTensorBatch . ratRelations . ratInput $ batch
   pure batch
 
@@ -1958,20 +1994,20 @@ data GuardGradAgainstNaN = GuardGradAgainstNaN
 instance Apply' GuardGradAgainstNaN (Tensor device dtype shape, Maybe ()) (Maybe ()) where
   apply' _ (t, acc) = acc >> (guard . not . toBool . Torch.Typed.any . Torch.Typed.isNaN $ t)
 
-data RATransformerMLMData (batchSize :: Nat) (seqLen :: Nat) (relDim :: Nat) (dtype :: DType) (device :: (DeviceType, Nat)) a = RATransformerMLMData a a Int
+data RATransformerMLMData (batchSize :: Nat) (seqLen :: Nat) (numEmbeds :: Nat) (relDim :: Nat) (dtype :: DType) (device :: (DeviceType, Nat)) a = RATransformerMLMData a a Int
 
 instance
   ( SumDTypeIsValid device 'Int64
   , ComparisonDTypeIsValid device 'Int64
-  , All KnownNat '[batchSize, seqLen, relDim]
+  , All KnownNat '[batchSize, seqLen, numEmbeds, relDim]
   , KnownDType dtype
   , KnownDevice device
-  , Scalar a
+  , Scalar pMask
   ) => Datastream
     (Safe.SafeT IO)
     Seed.Seed
-    (RATransformerMLMData batchSize seqLen relDim dtype device a)
-    (RATransformerMLMBatch batchSize seqLen relDim dtype device) 
+    (RATransformerMLMData batchSize seqLen numEmbeds relDim dtype device pMask)
+    (RATransformerMLMBatch batchSize seqLen numEmbeds relDim dtype device) 
   where
   -- streamBatch :: dataset -> seed -> ListT m batch
   streamBatch (RATransformerMLMData pMaskInput pMaskTarget len) seed = 
@@ -1996,9 +2032,9 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
         pMaskInput = 0.15 :: Float
         pMaskTarget = 0.15 :: Float
         trainingSeeds = List.take 10 $ Seed.from <$> List.iterate (+ 1) (0 :: Word64)
-        trainingData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMaskInput pMaskTarget trainingLen) trainingSeeds
+        trainingData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestTokenNumEmbeds @TestRelDim @TestDType @TestDataDevice pMaskInput pMaskTarget trainingLen) trainingSeeds
         evaluationsSeeds = List.take 1 $ Seed.from <$> List.iterate (+ 1) (10 :: Word64)
-        evaluationData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMaskInput pMaskTarget evaluationLen) evaluationsSeeds
+        evaluationData = makeListT' (RATransformerMLMData @TestBatchSize @TestSeqLen @TestTokenNumEmbeds @TestRelDim @TestDType @TestDataDevice pMaskInput pMaskTarget evaluationLen) evaluationsSeeds
       model <- liftIO . Torch.Typed.sample $
                   (RATransformerMLMSpec 
                     (DropoutSpec 0.2)
@@ -2024,7 +2060,12 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
                   prediction <- lift $ raTransformerMLM model'' True input
                   let targetTokens = toDevice @TestDevice @TestDataDevice . ratTargetTokens $ ratTarget
                       tokenMask = toDevice @TestDevice @TestDataDevice . ratTokenMask $ ratTarget
-                      cre = loss ones (tokenMask `logicalAnd` (logicalNot . ratKeyPaddingMask $ input)) prediction targetTokens
+                      invalidTokenMask = toDevice @TestDevice @TestDataDevice . ratInvalidTokenMask $ ratTarget
+                      cre = loss
+                        invalidTokenMask
+                        (tokenMask `logicalAnd` (logicalNot . ratKeyPaddingMask $ input))
+                        prediction
+                        targetTokens
                       parameters = flattenParameters model''
                       gradients = grad cre parameters
                       clippedGradients = hmap' (ClipGradValue (1e1 :: Float)) gradients
@@ -2042,7 +2083,11 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = Safe.runSa
                   let input = toDevice @TestDevice @TestDataDevice ratInput
                   prediction <- lift $ raTransformerMLM model' False input
                   let target = toDevice @TestDevice @TestDataDevice ratTarget
-                      loss' mask = toFloat . loss ones (mask `logicalAnd` (logicalNot . ratKeyPaddingMask $ input)) prediction . ratTargetTokens $ target
+                      loss' mask = toFloat $ loss
+                        (ratInvalidTokenMask target)
+                        (mask `logicalAnd` (logicalNot . ratKeyPaddingMask $ input))
+                        prediction
+                        (ratTargetTokens target)
                       cre' = CRE
                         { cre = loss' ones
                         , creInput = loss' $ ratInputScopeMask target
@@ -2146,7 +2191,7 @@ testTheModel = do
   let pMaskInput = 0 :: Float
       pMaskTarget = 0 :: Float
       seed = Seed.from (0 :: Word64)
-  (batch, _) <- runStateT (mkBatch @TestBatchSize @TestSeqLen @TestRelDim @TestDType @TestDataDevice pMaskInput pMaskTarget) seed
+  (batch, _) <- runStateT (mkBatch @TestBatchSize @TestSeqLen @TestTokenNumEmbeds @TestRelDim @TestDType @TestDataDevice pMaskInput pMaskTarget) seed
   let batch' = toDevice @TestDevice @TestDataDevice batch
   prediction <- raTransformerMLM model False . ratInput $ batch'
   randomMask <- bernoulliMask (0.25 :: Float) (zerosLike . ratKeyPaddingMask . ratInput $ batch')
