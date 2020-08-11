@@ -394,10 +394,10 @@ next
   -> StateT [action] (StateT env b) a -- ^ returned stateful computation
 next availableActions parser cont = do
   validNextActions <- lift $ do
-    s <- get
-    let vals = runStateT (runFreeT parser) s
+    env <- get
+    let vals = runStateT (runFreeT parser) env
         f (Pure _, _) = []
-        f (Free feed, s) = validateActions availableActions feed s
+        f (Free feed, env') = validateActions availableActions feed env'
     pure $ vals >>= f
   val <- lift . runFreeT $ parser
   case val of
