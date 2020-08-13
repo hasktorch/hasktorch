@@ -14,14 +14,9 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-module Torch.Data.Pipeline (
-  -- takeBatch
-                           -- , readBatches
-                           -- , makeFoldWithTransform'
-                           -- , makeFold
-                           -- , makeFoldWithTransform
-                           -- , L.FoldM(..)
-                            Dataset(..)
+module Torch.Data.Pipeline ( Dataset(..)
+                           , MapStyleOptions(..)
+                           , Sample(..)
                            , makeListT
                            , mapStyleOpts
                            , runContT
@@ -48,18 +43,23 @@ import Data.Set
 import Control.Concurrent.STM
 import qualified Data.Vector as V
 import Control.Monad.Base (MonadBase)
+import System.Random
+import qualified Data.IntMap as I
+import Data.IntMap (IntMap)
+import Control.Arrow (Arrow(first))
 
 data MapStyleOptions = MapStyleOptions { bufferSize :: Int
                                        , numWorkers :: Int
+                                       , shuffled :: Sample
                                        }
 
 mapStyleOpts numWorkers = MapStyleOptions { bufferSize = numWorkers
                                           , numWorkers = numWorkers
+                                          , shuffled = Sequential
                                           }
 
+data Sample = Sequential | Shuffle StdGen
 
-
-  
 class (Ord k) => Dataset m dataset k sample | dataset -> sample, dataset -> k  where
   getItem :: dataset -> k -> m sample
   keys :: dataset -> Set k
@@ -67,9 +67,9 @@ class (Ord k) => Dataset m dataset k sample | dataset -> sample, dataset -> k  w
 ---------------------- Workflow --------------------
 -- - make a new map of keys to TVars of samples, possibly shuffled keys, tracking which keys have been sampled
 -- - create a TQueue of keys (using pipes-concurrency wrapper)
--- - fork off workers which pull from all pull from the TQueue and sample that key,
---   then update the map of TVars with the sample
--- have a worker waiting for each successive key to be updated in the map of TVars
+-- - fork off workers which all pull from the TQueue and sample that key using the dataset,
+--   then update the TVar associated with that key
+-- have a worker waiting for each successive key to be updated in the list of (key, TVar)
 
 makeListT :: forall m dataset k sample r .
   (MonadIO m, MonadBaseControl IO m,  Dataset m dataset k sample) =>
@@ -78,33 +78,36 @@ makeListT :: forall m dataset k sample r .
   ContT r m  (ListT m (sample, Int))
 makeListT MapStyleOptions{..} dataset = do
   (keyOutput, keyInput, seal) <- liftIO $ spawn' unbounded
-  -- TODO optionally permute set before creating queue and TVar map
-  (runEffect $ keyQueue keyOutput $ keys @m dataset) 
+
+  let retreiveSet = liftIO $ keyTVarSet $ keys @m dataset
+  keyTVarSet <- case shuffled of
+    Sequential -> retreiveSet
+    Shuffle g -> fst . fisherYates g <$> retreiveSet
+   
+  -- fill the queue with each key and associated TVar then seal it
+  keyQueue keyOutput $ keyTVarSet
   liftIO $ atomically seal
-  tvars <- liftIO $ newTVarMap (keys @m dataset) 
-  lift $ runWorkers numWorkers dataset tvars keyInput
-  runWithBuffer bufferSize $ (awaitNextItem tvars)
+
+  lift $ runWorkers numWorkers dataset keyInput
+  runWithBuffer bufferSize $ awaitNextItem keyTVarSet
 
 runWorkers ::
   (Dataset m dataset k sample, MonadIO m, MonadBaseControl IO m) =>
   Int ->
   dataset ->
-  M.Map k (TVar (Maybe sample)) ->
-  Input k -> 
+  Input (k, TVar (Maybe sample)) ->
   m ()
-runWorkers numWorkers dataset tvars keyInput = replicateConcurrently_ numWorkers (runEffect $ fromInput' keyInput >-> runWorker)
+runWorkers numWorkers dataset keyInput = replicateConcurrently_ numWorkers (runEffect $ fromInput' keyInput >-> runWorker)
     where 
-      runWorker = forever $ do key <- await
-                               -- liftIO $ print key
-                               let tvar = fromJust $ M.lookup key tvars 
+      runWorker = forever $ do (key, tvar) <- await
                                item <- lift $ getItem dataset key
                                liftIO $ atomically $ writeTVar tvar (Just item) 
 awaitNextItem ::
   (MonadBase IO m, MonadIO m) =>
-  M.Map k (TVar (Maybe sample)) ->
+  [(k, TVar (Maybe sample))] ->
   Output sample ->
   m ()
-awaitNextItem tvars output  = runEffect $ each (M.toList tvars) >-> readNextItem >-> toOutput' output
+awaitNextItem tvars output  = runEffect $ each tvars >-> readNextItem >-> toOutput' output
   where readNextItem  = forever $ do
           (key, tvar) <- await
           item <- liftIO $ atomically $ do
@@ -114,51 +117,23 @@ awaitNextItem tvars output  = runEffect $ each (M.toList tvars) >-> readNextItem
               Just item -> writeTVar tvar Nothing >> pure item -- reset the tvar once we get the sample out of it to save memory
           yield item 
 
-newTVarMap :: Set k -> IO (M.Map k (TVar (Maybe sample)))
-newTVarMap = atomically . sequence . M.fromSet (\_ -> newTVar Nothing)
+keyTVarSet :: Set k -> IO [(k, TVar (Maybe sample))]
+keyTVarSet = atomically . mapM (\k -> newTVar Nothing >>= pure . (,) k)  . toList 
 
-keyQueue keyOutput set = each (toList set) >-> toOutput' keyOutput
+keyQueue :: MonadBase IO m => Output (k, TVar (Maybe sample)) ->  [(k, TVar (Maybe sample))] -> m ()
+keyQueue keyOutput keyTVarSet = runEffect $ each keyTVarSet >-> toOutput' keyOutput
 
-  
+fisherYatesStep :: RandomGen g => (IntMap a, g) -> (Int, a) -> (IntMap a, g)
+fisherYatesStep (m, gen) (i, x) = ((I.insert j x . I.insert i (m I.! j)) m, gen')
+  where
+    (j, gen') = randomR (0, i) gen
 
-
--- makeListT :: forall k sampler dataset sample batch m b. (Dataset k dataset sample, MonadBaseControl IO m) =>
---   MapStyleOptions -> dataset -> Sampler k m -> ContT b m (ListT m (batch, Int))
--- makeListT MapStyleOptions{..} dataset sampler = runWithBuffer bufferSize streamBatches
---   where
---     streamBatches output = forConcurrently_ [0..numWorkers - 1]  (runWorker output)
---     runWorker output = runEffect . yieldItem output
---     -- yieldItem output workerId = collateFn (sampler (indices workerId) (size dataset) >-> pipeItems) >->  toOutput' output
---     yieldItem output workerId = sampler (indices workerId) (size dataset) >-> pipeItems >->  toOutput' output
---     pipeItems = for cat (yield . getItem dataset)
---     -- indices workerId = (workerId * (size dataset `div` numWorkers), (workerId + 1) * (size dataset `div` numWorkers) - 1)
-
--- -- | A sampler takes the range of indexes it needs to produce,
--- -- and the size of the dataset it is processing, and returns
--- -- indexes to process. The range of indexes is determined by
--- -- the number of workers, so with 1 worker the range is the entire dataset,
--- -- with 2 each workers range is half the size of the dataset.
--- -- type Sampler k m = (Int, Int) -> Int -> Producer Int m ()
--- -- type Sampler k m = (Int, Int) -> Int -> Producer Int m ()
--- type Sampler k m = Int -> Producer k m ()
-
--- -- | A collation pipe that batches a sequence of processed samples.
--- type CollateFn sample batch m = Producer sample m () -> Producer batch m ()
-
--- vectorBatch :: Monad m => Int -> CollateFn sample (Vector sample) m
--- vectorBatch batchSize =  L.purely folds L.vector . view (chunksOf batchSize)
-
--- sequentialSampler :: Functor m => Sampler k m 
--- sequentialSampler _ = each [low .. high]
-
--- randomSampler :: MonadIO m => Int -> Sampler k m 
--- randomSampler seed size =
---   for (each [0..size]) $ \_ -> (liftIO $ (Torch.toInt <$> Torch.randintIO' 0 size [])) >>= yield 
-
-
---  fold the set, and build a set for each worker!
--- splitSet = L.fold
-
--- toWorker = workerId % numWorkers
-
+fisherYates :: RandomGen g => g -> [a] -> ([a], g)
+fisherYates gen [] = ([], gen)
+fisherYates gen l = 
+  toElems $ Prelude.foldl fisherYatesStep (initial (head l) gen) (numerate (tail l))
+  where
+    toElems (x, y) = (I.elems x, y)
+    numerate = zip [1..]
+    initial x gen = (I.singleton 0 x, gen)
 
