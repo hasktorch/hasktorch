@@ -49,6 +49,7 @@ import Torch.NN
 import Torch.Data.StreamedPipeline 
 import Torch.Data.Pipeline
 import Pipes.Prelude (repeatM)
+import GHC.Exts (IsList(fromList))
 
 C.include "<stdint.h>"
 
@@ -68,14 +69,15 @@ instance (MonadPlus m, MonadBase IO m) => Datastream m Int Mnist (Tensor, Tensor
 
       where numIters = I.length mnistData `Prelude.div` batchSize
             
-instance Dataset Mnist (Tensor, Tensor) where
+instance Applicative m => Dataset m Mnist Int (Tensor, Tensor) where
   getItem Mnist{..} ix =  
     let
       indexes = [ix * batchSize .. (ix+1) * batchSize - 1]
       imgs = getImages' batchSize 784 mnistData indexes
       labels = getLabels' batchSize mnistData indexes
-    in (imgs, labels)
-  size Mnist{..} = I.length mnistData `Prelude.div` batchSize
+    in pure (imgs, labels)
+  -- size Mnist{..} = I.length mnistData `Prelude.div` batchSize
+  keys Mnist{..} = fromList [ 0 .. I.length mnistData `Prelude.div` batchSize - 1 ]
 
 
 getLabels' :: Int -> I.MnistData -> [Int] -> Tensor

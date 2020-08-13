@@ -22,6 +22,7 @@ import qualified Pipes.Prelude as P
 import           Torch.Data.Pipeline
 import Control.Monad (forM_)
 import Torch.Typed.Vision (initMnist)
+import Control.Monad ((<=<))
 
 data MLPSpec = MLPSpec {
     inputFeatures :: Int,
@@ -80,9 +81,9 @@ main = do
         optimizer = GD
     init <- sample spec
     model <- foldLoop init 5 $ \model _ ->
-      runContT (makeListT (mapStyleOpts 1) trainMnist sequentialSampler id) (trainLoop model optimizer)
+      runContT (makeListT (mapStyleOpts 2) trainMnist) (trainLoop model optimizer)
   
     -- show test images + labels
-    forM_ [0..10]  (displayImages model . getItem testMnist)
+    forM_ [0..10]  $ displayImages model <=< getItem testMnist
 
     putStrLn "Done"

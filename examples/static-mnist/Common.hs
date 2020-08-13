@@ -89,9 +89,9 @@ train initModel initOptim forward learningRate ptFile = do
   let numEpochs = 1000
   (trainingData, testData) <- mkMnist @device @batchSize
   foldLoop_ (initModel, initOptim) numEpochs $ \(epochModel, epochOptim) epoch -> do
-    (epochModel', epochOptim') <- runContT (makeListT (mapStyleOpts 1) trainingData sequentialSampler id) $
+    (epochModel', epochOptim') <- runContT (makeListT (mapStyleOpts 1) trainingData ) $
                                   trainStep learningRate forward  (epochModel, epochOptim)
-    (testLoss, testError) <- runContT (makeListT (mapStyleOpts 1) testData sequentialSampler id) $
+    (testLoss, testError) <- runContT (makeListT (mapStyleOpts 1) testData ) $
                                   evalStep (forward epochModel' False)
     putStrLn
       $  "Epoch: "

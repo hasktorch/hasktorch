@@ -30,23 +30,24 @@ import qualified Torch.TensorOptions           as D
 import qualified Foreign.ForeignPtr            as F
 import qualified Foreign.Ptr                   as F
 import qualified Torch.Internal.Managed.TensorFactories as LibTorch
+import GHC.Exts (IsList(fromList))
 
 
 data Mnist (device :: (D.DeviceType, Nat) ) (batchSize :: Nat) = Mnist { mnistData :: MnistData }
 
-instance (KnownNat batchSize, KnownDevice device) =>
-  Dataset (Mnist device batchSize) (Tensor device 'D.Float '[batchSize, 784], Tensor device 'D.Int64 '[batchSize]) where
+instance (KnownNat batchSize, KnownDevice device, Applicative m ) =>
+  Dataset m (Mnist device batchSize) Int (Tensor device 'D.Float '[batchSize, 784], Tensor device 'D.Int64 '[batchSize]) where
 
   getItem Mnist{..} ix =  
     let
       batchSize = natValI @batchSize
       -- indexes = [ix * batchSize .. (ix+1) * batchSize - 1]
-      indexes = [0 * batchSize .. (0+1) * batchSize - 1]
+      indexes = [ix * batchSize .. (ix+1) * batchSize - 1]
       imgs =  getImages @batchSize mnistData indexes
       labels =  getLabels @batchSize mnistData indexes
-    in (toDevice @device imgs, toDevice @device labels)
+    in pure (toDevice @device imgs, toDevice @device labels)
 
-  size Mnist{..} = Torch.Typed.Vision.length mnistData `Prelude.div` (natValI @batchSize)
+  keys Mnist{..} = fromList [ 0 .. Torch.Typed.Vision.length mnistData `Prelude.div` (natValI @batchSize) - 1]
 
 data MnistData =
   MnistData

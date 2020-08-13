@@ -118,6 +118,7 @@ library
                     , foldl
                     , transformers-base
                     , array
+                    , containers
 
                     , inline-c
  default-extensions:  Strict
