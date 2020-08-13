@@ -11,7 +11,7 @@
         "url": "https://github.com/input-output-hk/hackage.nix/archive/87a7f34d55775a45df821e8690d9122444a907d8.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
-    "haskell-nix": {
+    "haskell.nix": {
         "branch": "master",
         "description": "Alternative Haskell Infrastructure for Nixpkgs",
         "homepage": "https://input-output-hk.github.io/haskell.nix",
