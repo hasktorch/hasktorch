@@ -9,20 +9,20 @@ import           Control.Monad (when)
 import           GHC.Generics
 import           Prelude hiding (exp)
 
-import           Torch
--- import qualified Torch.Typed.Vision as V hiding (getImages')
-import qualified Torch.Vision as V
-import           Torch.Serialize
 
+import           Control.Monad ((<=<))
+import           Control.Monad (forM_)
 import           Control.Monad (forever)
 import           Control.Monad.Cont (ContT(runContT))
+
 import           Pipes
 import qualified Pipes.Prelude as P
--- import           Torch.Data.StreamedPipeline
+
+import           Torch
+import qualified Torch.Vision as V
+import           Torch.Serialize
 import           Torch.Data.Pipeline
-import Control.Monad (forM_)
-import Torch.Typed.Vision (initMnist)
-import Control.Monad ((<=<))
+import           Torch.Typed.Vision (initMnist)
 
 data MLPSpec = MLPSpec {
     inputFeatures :: Int,
@@ -81,7 +81,7 @@ main = do
         optimizer = GD
     init <- sample spec
     model <- foldLoop init 5 $ \model _ ->
-      runContT (makeListT (mapStyleOpts 2) trainMnist) (trainLoop model optimizer)
+      runContT (makeListT (mapStyleOpts 2) trainMnist) $ trainLoop model optimizer . fst
   
     -- show test images + labels
     forM_ [0..10]  $ displayImages model <=< getItem testMnist

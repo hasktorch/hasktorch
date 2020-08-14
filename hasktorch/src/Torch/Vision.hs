@@ -76,7 +76,7 @@ instance Applicative m => Dataset m Mnist Int (Tensor, Tensor) where
       imgs = getImages' batchSize 784 mnistData indexes
       labels = getLabels' batchSize mnistData indexes
     in pure (imgs, labels)
-  -- size Mnist{..} = I.length mnistData `Prelude.div` batchSize
+
   keys Mnist{..} = fromList [ 0 .. I.length mnistData `Prelude.div` batchSize - 1 ]
 
 

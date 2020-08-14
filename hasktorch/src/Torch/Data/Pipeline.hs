@@ -28,25 +28,25 @@ import qualified Control.Foldl as L
 import           Control.Monad
 import           Data.Maybe (fromJust, isJust)
 import           Pipes
-import           Pipes.Concurrent
+import           Pipes.Concurrent hiding (atomically)
 import qualified Pipes.Prelude as P
 
-import           Control.Monad.Trans.Control (MonadBaseControl(..))
+import           Control.Arrow (Arrow(first))
+import           Control.Concurrent.STM hiding (atomically)
+import           Control.Monad.Base (MonadBase)
 import           Control.Monad.Cont (runContT, ContT)
-import           Torch.Data.Internal
-import qualified Torch as Torch
-import Lens.Family (view)
-import Pipes.Group
-import Data.Vector (Vector)
-import qualified Data.Map.Strict as M
-import Data.Set
-import Control.Concurrent.STM
-import qualified Data.Vector as V
-import Control.Monad.Base (MonadBase)
-import System.Random
+import           Control.Monad.Trans.Control (MonadBaseControl(..))
+import           Data.IntMap (IntMap)
 import qualified Data.IntMap as I
-import Data.IntMap (IntMap)
-import Control.Arrow (Arrow(first))
+import qualified Data.Map.Strict as M
+import           Data.Set
+import           Data.Vector (Vector)
+import qualified Data.Vector as V
+import           Lens.Family (view)
+import           Pipes.Group
+import           System.Random
+import qualified Torch as Torch
+import           Torch.Data.Internal
 
 data MapStyleOptions = MapStyleOptions { bufferSize :: Int
                                        , numWorkers :: Int
@@ -58,7 +58,9 @@ mapStyleOpts numWorkers = MapStyleOptions { bufferSize = numWorkers
                                           , shuffle = Sequential
                                           }
 
-data Sample = Sequential | Shuffle StdGen
+data Sample where
+   Sequential :: Sample
+   Shuffle ::  RandomGen g => g -> Sample 
 
 class (Ord k) => Dataset m dataset k sample | dataset -> sample, dataset -> k  where
   getItem :: dataset -> k -> m sample
@@ -75,22 +77,24 @@ makeListT :: forall m dataset k sample r .
   (MonadIO m, MonadBaseControl IO m,  Dataset m dataset k sample) =>
   MapStyleOptions ->
   dataset ->
-  ContT r m  (ListT m (sample, Int))
+  ContT r m  (ListT m (sample, Int), Sample)
 makeListT MapStyleOptions{..} dataset = do
   (keyOutput, keyInput, seal) <- liftIO $ spawn' unbounded
 
-  let retreiveSet = liftIO $ keyTVarSet $ keys @m dataset
-  keyTVarSet <- case shuffle of
-    Sequential -> retreiveSet
-    Shuffle g -> fst . fisherYates g <$> retreiveSet
-   
+  let retrieveSet = liftIO $ keyTVarSet $ keys @m dataset
+  (keyTVarSet, updatedSample) <- case shuffle of
+    Sequential -> (, Sequential) <$> retrieveSet
+    Shuffle g -> (fmap Shuffle  . fisherYates g) <$> retrieveSet
+
   -- fill the queue with each key and associated TVar then seal it
   keyQueue keyOutput $ keyTVarSet
   liftIO $ atomically seal
 
   let workers = runWorkers numWorkers dataset keyInput
       datastream = awaitNextItem keyTVarSet
-  runWithBuffer bufferSize $ \output -> concurrently_ workers (datastream output)
+  listT <- runWithBuffer bufferSize $ \output -> concurrently_ workers (datastream output)
+  pure (listT, updatedSample)
+
 
 runWorkers ::
   (Dataset m dataset k sample, MonadIO m, MonadBaseControl IO m) =>
@@ -102,7 +106,7 @@ runWorkers numWorkers dataset keyInput = replicateConcurrently_ numWorkers (runE
     where 
       runWorker = forever $ do (key, tvar) <- await
                                item <- lift $ getItem dataset key
-                               liftIO $ atomically $ writeTVar tvar (Just item) 
+                               atomically $ writeTVar tvar (Just item) 
 awaitNextItem ::
   (MonadBase IO m, MonadIO m) =>
   [(k, TVar (Maybe sample))] ->
@@ -111,14 +115,14 @@ awaitNextItem ::
 awaitNextItem tvars output  = runEffect $ each tvars >-> readNextItem >-> toOutput' output
   where readNextItem  = forever $ do
           (key, tvar) <- await
-          item <- liftIO $ atomically $ do
+          item <- atomically $ do
             val <- readTVar tvar 
             case val of
               Nothing -> retry
               Just item -> writeTVar tvar Nothing >> pure item -- reset the tvar once we get the sample out of it to save memory
           yield item 
 
-keyTVarSet :: Set k -> IO [(k, TVar (Maybe sample))]
+keyTVarSet :: MonadIO m => Set k -> m [(k, TVar (Maybe sample))]
 keyTVarSet = atomically . mapM (\k -> newTVar Nothing >>= pure . (,) k)  . toList 
 
 keyQueue :: MonadBase IO m => Output (k, TVar (Maybe sample)) ->  [(k, TVar (Maybe sample))] -> m ()

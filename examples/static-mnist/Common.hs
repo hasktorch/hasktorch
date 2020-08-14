@@ -89,10 +89,10 @@ train initModel initOptim forward learningRate ptFile = do
   let numEpochs = 1000
   (trainingData, testData) <- mkMnist @device @batchSize
   foldLoop_ (initModel, initOptim) numEpochs $ \(epochModel, epochOptim) epoch -> do
-    (epochModel', epochOptim') <- runContT (makeListT (mapStyleOpts 1) trainingData ) $
-                                  trainStep learningRate forward  (epochModel, epochOptim)
+    (epochModel', epochOptim') <- runContT (makeListT (mapStyleOpts 1) trainingData) $
+                                  trainStep learningRate forward  (epochModel, epochOptim) . fst
     (testLoss, testError) <- runContT (makeListT (mapStyleOpts 1) testData ) $
-                                  evalStep (forward epochModel' False)
+                                  evalStep (forward epochModel' False) . fst
     putStrLn
       $  "Epoch: "
       <> show epoch
@@ -111,7 +111,6 @@ train initModel initOptim forward learningRate ptFile = do
               prediction <- forward' model True input
               let trainingLoss =  crossEntropyLoss prediction target
               runStep model optim trainingLoss lr
-              -- pure (model, optim)
             begin = pure init
             done = pure
         

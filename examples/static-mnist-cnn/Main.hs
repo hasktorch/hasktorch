@@ -24,10 +24,8 @@ import           System.Environment
 
 import Torch.Typed
 import Torch.Internal.Managed.Type.Context (manual_seed_L)
+
 import           Common
--- impor-- t
---   Pipeline
--- import Control.Monad.State.Lazy
 
 type NoStrides = '(1, 1)
 type NoPadding = '(0, 0)

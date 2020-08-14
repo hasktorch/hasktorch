@@ -89,7 +89,6 @@ instance ( KnownNat batchSize
          , RandDTypeIsValid device 'Float
          , ComparisonDTypeIsValid device 'Float
          ) => Datastream IO () (Xor device batchSize) (Tensor device 'Float '[batchSize, 2]) where
-  --TODO: has to be datastream because getItem is an IO action
   streamBatch Xor{..} _  = Select $ P.replicateM iters randBool
     where randBool = toDType @'Float @'Bool .
                            gt (toDevice @device (0.5 :: CPUTensor 'Float '[]))

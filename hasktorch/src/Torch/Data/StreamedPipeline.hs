@@ -47,8 +47,8 @@ import qualified Pipes.Safe as Safe
 import Torch.Data.Internal
 
 
-class (MonadBase IO m) => Datastream m seed dataset batch | dataset -> batch where
-  streamBatch :: dataset -> seed -> ListT m batch
+class Monad m => Datastream m seed dataset sample | dataset -> sample where
+  streamBatch :: dataset -> seed -> ListT m sample 
 
 data DataloaderOptions = DataloaderOptions
   { bufferSize :: Int -- ^ Number of inputs stored in a buffer.
@@ -77,42 +77,42 @@ pmap' n f  prod = ContT $ \cont ->
 
 
 makeListT ::
-  forall batch m dataset seed b r.
-  (Datastream m seed dataset batch, MonadBaseControl IO m, MonadBase IO m) =>
+  forall sample m dataset seed b r.
+  (Datastream m seed dataset sample, MonadBaseControl IO m, MonadBase IO m) =>
   DataloaderOptions -> 
   dataset ->
   ListT m seed ->
-  ContT b m (ListT m (batch, Int))
-makeListT DataloaderOptions{..} dataset seeds = runWithBuffer bufferSize $ readBatches dataset seeds
+  ContT b m (ListT m (sample, Int))
+makeListT DataloaderOptions{..} dataset seeds = runWithBuffer bufferSize $ readSamples dataset seeds
 
 makeListT' ::
-  forall batch m f dataset seed b.
-  (Datastream m seed dataset batch, MonadBaseControl IO m, MonadBase IO m, Foldable f) =>
+  forall sample m f dataset seed b.
+  (Datastream m seed dataset sample, MonadBaseControl IO m, MonadBase IO m, Foldable f) =>
   DataloaderOptions -> 
   dataset ->
   f seed ->
-  ContT b m (ListT m (batch, Int))
-makeListT' DataloaderOptions{..} dataset seeds = runWithBuffer bufferSize $ readBatches' dataset seeds
+  ContT b m (ListT m (sample, Int))
+makeListT' DataloaderOptions{..} dataset seeds = runWithBuffer bufferSize $ readSamples' dataset seeds
 
-readBatches ::
-  forall m seed dataset batch.
-  (Datastream m seed dataset batch, MonadBaseControl IO m) =>
+readSamples ::
+  forall m seed dataset sample.
+  (Datastream m seed dataset sample, MonadBaseControl IO m) =>
   dataset ->
   ListT m seed ->
-  Output batch ->
+  Output sample ->
   m ()
-readBatches dataset seeds outputBox =
-  let this = flip $ mappend . Concurrently . runEffect . (>-> toOutput' outputBox) . enumerate . streamBatch @m @seed @dataset @batch dataset
+readSamples dataset seeds outputBox =
+  let this = flip $ mappend . Concurrently . runEffect . (>-> toOutput' outputBox) . enumerate . streamBatch @m @seed @dataset @sample dataset
    in join . P.fold this mempty runConcurrently $ enumerate seeds
 
-readBatches' ::
-  forall m seed f dataset batch.
-  (Datastream m seed dataset batch, MonadBaseControl IO m, Foldable f) =>
+readSamples' ::
+  forall m seed f dataset sample.
+  (Datastream m seed dataset sample, MonadBaseControl IO m, Foldable f) =>
   dataset ->
   f seed ->
-  Output batch ->
+  Output sample ->
   m ()
-readBatches' dataset seeds outputBox =
-  let this = flip $ mappend . Concurrently . runEffect . (>-> toOutput' outputBox) . enumerate . streamBatch @m @seed @dataset @batch dataset
+readSamples' dataset seeds outputBox =
+  let this = flip $ mappend . Concurrently . runEffect . (>-> toOutput' outputBox) . enumerate . streamBatch @m @seed @dataset @sample dataset
    in L.fold (L.Fold this mempty runConcurrently) seeds
 

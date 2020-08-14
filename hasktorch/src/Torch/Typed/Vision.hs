@@ -37,11 +37,9 @@ data Mnist (device :: (D.DeviceType, Nat) ) (batchSize :: Nat) = Mnist { mnistDa
 
 instance (KnownNat batchSize, KnownDevice device, Applicative m ) =>
   Dataset m (Mnist device batchSize) Int (Tensor device 'D.Float '[batchSize, 784], Tensor device 'D.Int64 '[batchSize]) where
-
   getItem Mnist{..} ix =  
     let
       batchSize = natValI @batchSize
-      -- indexes = [ix * batchSize .. (ix+1) * batchSize - 1]
       indexes = [ix * batchSize .. (ix+1) * batchSize - 1]
       imgs =  getImages @batchSize mnistData indexes
       labels =  getLabels @batchSize mnistData indexes
