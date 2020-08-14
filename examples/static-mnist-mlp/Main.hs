@@ -106,7 +106,7 @@ instance ( KnownNat inputFeatures
       <*> sample LinearSpec
       <*> sample (DropoutSpec mlpDropoutProbSpec)
 
-type BatchSize = 512
+type BatchSize = 64
 type HiddenFeatures0 = 512
 type HiddenFeatures1 = 256
 

@@ -8,15 +8,20 @@
 
 module Common where
 
-import Prelude hiding (length)
 import           Control.Monad                  ( foldM
                                                 , void
                                                 )
 import           GHC.TypeLits
+import           Prelude hiding (length)
+import qualified Pipes.Prelude as P
+import           Pipes (ListT(enumerate))
+import           Control.Monad.Cont (ContT(runContT))
 
-import Torch.Typed
-import Torch (ATenTensor)
-import Torch.Internal.Class (Castable)
+import           Torch.Typed
+import           Torch (ATenTensor)
+import           Torch.Internal.Class (Castable)
+import           Torch.Data.Pipeline
+import           Torch.Typed.Vision (mnistData, Mnist(Mnist))
 
 foldLoop
   :: forall a b m . (Num a, Enum a, Monad m) => b -> a -> (b -> a -> m b) -> m b
@@ -72,6 +77,7 @@ train
      , Parameterized model parameters
      , Optimizer optim gradients tensors 'Float device
      , HMapM' IO MakeIndependent tensors parameters
+     , _
      )
   => model
   -> optim
@@ -81,50 +87,42 @@ train
   -> IO ()
 train initModel initOptim forward learningRate ptFile = do
   let numEpochs = 1000
-  (trainingData, testData) <- initMnist "data"
+  (trainingData, testData) <- mkMnist @device @batchSize
   foldLoop_ (initModel, initOptim) numEpochs $ \(epochModel, epochOptim) epoch -> do
-    let numIters = length trainingData `div` natValI @batchSize
-    (epochModel', epochOptim') <- foldLoop (epochModel, epochOptim) numIters $ \(model, optim) i -> do
-      (trainingLoss,_) <- computeLossAndErrorCount @batchSize (forward model True) 
-                                                              i
-                                                              trainingData
-      (model', optim') <- runStep model optim trainingLoss learningRate
-      return (model', optim')
-
-    (testLoss, testError) <- do
-      let numIters = length testData `div` natValI @batchSize
-      foldLoop (0,0) numIters $ \(org_loss,org_err) i -> do
-        (loss,err) <- computeLossAndErrorCount @batchSize (forward epochModel' False)
-                                                          i
-                                                          testData
-        return (org_loss + toFloat loss,org_err + toFloat err)
+    (epochModel', epochOptim') <- runContT (makeListT (mapStyleOpts 1) trainingData) $
+                                  trainStep learningRate forward  (epochModel, epochOptim) . fst
+    (testLoss, testError) <- runContT (makeListT (mapStyleOpts 1) testData ) $
+                                  evalStep (forward epochModel' False) . fst
     putStrLn
       $  "Epoch: "
       <> show epoch
       <> ". Test loss: "
-      <> show (testLoss / realToFrac (length testData))
+      <> show (testLoss / realToFrac (length $ mnistData testData))
       <> ". Test error-rate: "
-      <> show (testError / realToFrac (length testData))
+      <> show (testError / realToFrac (length $ mnistData testData))
     
     save (hmap' ToDependent . flattenParameters $ epochModel') ptFile
     return (epochModel', epochOptim')
     
- where
-  computeLossAndErrorCount
-    :: forall n (device :: (DeviceType, Nat))
-    . _
-    => (Tensor device 'Float '[n, DataDim] -> IO (Tensor device 'Float '[n, ClassDim]))
-    -> Int
-    -> MnistData
-    -> IO
-         ( Tensor device 'Float '[]
-         , Tensor device 'Float '[]
-         )
-  computeLossAndErrorCount forward' index_of_batch data' = do
-    let from = (index_of_batch-1) * natValI @n
-        to = (index_of_batch * natValI @n) - 1
-        indexes = [from .. to]
-        input  = toDevice @device $ getImages @n data' indexes
-        target = toDevice @device $ getLabels @n data' indexes
-    prediction <- forward' input
-    return (crossEntropyLoss prediction target, errorCount prediction target)
+  where     
+
+    trainStep lr forward' init  = P.foldM step begin done . enumerate
+      where step (model, optim) ((input, target), iter) = do 
+              prediction <- forward' model True input
+              let trainingLoss =  crossEntropyLoss prediction target
+              runStep model optim trainingLoss lr
+            begin = pure init
+            done = pure
+        
+    evalStep forward' = P.foldM step begin done . enumerate
+      where step (org_loss, org_err) ((input, target), _) = do 
+              prediction <- forward' input
+              let (loss, err) = (crossEntropyLoss prediction target, errorCount prediction target)
+              return (org_loss + toFloat loss, org_err + toFloat err)
+            begin = pure (0,0)
+            done = pure 
+
+mkMnist :: IO (Mnist device batchSize, Mnist device batchSize)
+mkMnist = do
+  (train, test) <- initMnist "data"
+  return (Mnist train, Mnist test)
