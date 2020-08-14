@@ -36,16 +36,6 @@ let
         haskell-nix = pkgsOld.haskell-nix // {
           hackageSrc = sources.hackage-nix;
           stackageSrc = sources.stackage-nix;
-          # tool = compiler-nix-name: name: versionOrArgs:
-          #   let
-          #     args' = pkgsNew.haskell-nix.haskellLib.versionOrArgsToArgs versionOrArgs;
-          #     args = { inherit compiler-nix-name; } // args';
-          #   in
-          #     (if pkgsNew.haskell-nix.custom-tools ? "${name}"
-          #         && pkgsNew.haskell-nix.custom-tools."${name}" ? "${args.version}"
-          #       then pkgsNew.haskell-nix.custom-tools."${name}"."${args.version}"
-          #       else builtins.trace (pkgsNew.haskell-nix.custom-tools."${name}" ? "${args.version}") pkgsNew.haskell-nix.hackage-tool) (args // { inherit name; });
-          # tools = compiler-nix-name: lib.mapAttrs (pkgsNew.haskell-nix.tool compiler-nix-name);
           custom-tools = pkgsOld.haskell-nix.custom-tools // {
             haskell-language-server."0.3.0" = args:
               (pkgsOld.haskell-nix.cabalProject (args // {
