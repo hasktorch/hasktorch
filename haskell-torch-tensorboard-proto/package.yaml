@@ -1,0 +1,83 @@
+name:                haskell-torch-tensorboard-proto
+version:             0.1.0.0
+github:              "abarbu/haskell-torch"
+license:             BSD-3-Clause
+author:              "Andrei Barbu"
+maintainer:          "andrei@0xab.com"
+copyright:           "2018 Andrei Barbu"
+homepage:            https://github.com/abarbu/haskell-torch
+bug-reports:         https://github.com/abarbu/haskell-torch/issues
+category:            AI
+synopsis:            Talk to tensorboard from Haskell; the protobuf bindings
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on Github at <https://github.com/abarbu/haskell-torch#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+
+# _config: !include "../config.yaml"
+
+extra-source-files: proto/**/*.proto
+
+custom-setup:
+  dependencies:
+    - base
+    - Cabal
+    - proto-lens-setup
+  # build-tools: proto-lens-protoc:proto-lens-protoc
+
+library:
+  # <<: *pytorchdefaults
+  source-dirs: src
+  dependencies:
+  - data-default
+  - microlens
+  - proto-lens
+  - proto-lens-runtime
+  - proto-lens-protoc
+  - text
+  autogen-modules:
+    - Proto.Tensorboard.Src.Summary
+    - Proto.Tensorboard.Src.Summary_Fields
+    - Proto.Tensorboard.Src.Tensor
+    - Proto.Tensorboard.Src.Tensor_Fields
+    - Proto.Tensorboard.Src.Types
+    - Proto.Tensorboard.Src.Types_Fields
+    - Proto.Tensorboard.Src.ResourceHandle
+    - Proto.Tensorboard.Src.ResourceHandle_Fields
+    - Proto.Tensorboard.Src.TensorShape
+    - Proto.Tensorboard.Src.TensorShape_Fields
+    - Proto.Tensorboard.Src.Event
+    - Proto.Tensorboard.Src.Event_Fields
+    - Proto.Tensorboard.Src.Graph
+    - Proto.Tensorboard.Src.Graph_Fields
+    - Proto.Tensorboard.Src.NodeDef
+    - Proto.Tensorboard.Src.NodeDef_Fields
+    - Proto.Tensorboard.Src.Versions
+    - Proto.Tensorboard.Src.Versions_Fields
+    - Proto.Tensorboard.Src.AttrValue
+    - Proto.Tensorboard.Src.AttrValue_Fields
+  other-modules:
+    - Proto.Tensorboard.Src.Summary
+    - Proto.Tensorboard.Src.Summary_Fields
+    - Proto.Tensorboard.Src.Tensor
+    - Proto.Tensorboard.Src.Tensor_Fields
+    - Proto.Tensorboard.Src.Types
+    - Proto.Tensorboard.Src.Types_Fields
+    - Proto.Tensorboard.Src.ResourceHandle
+    - Proto.Tensorboard.Src.ResourceHandle_Fields
+    - Proto.Tensorboard.Src.TensorShape
+    - Proto.Tensorboard.Src.TensorShape_Fields
+    - Proto.Tensorboard.Src.Event
+    - Proto.Tensorboard.Src.Event_Fields
+    - Proto.Tensorboard.Src.Graph
+    - Proto.Tensorboard.Src.Graph_Fields
+    - Proto.Tensorboard.Src.NodeDef
+    - Proto.Tensorboard.Src.NodeDef_Fields
+    - Proto.Tensorboard.Src.Versions
+    - Proto.Tensorboard.Src.Versions_Fields
+    - Proto.Tensorboard.Src.AttrValue
+    - Proto.Tensorboard.Src.AttrValue_Fields

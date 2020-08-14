@@ -5,6 +5,7 @@ packages:
     hasktorch/*.cabal
     examples/*.cabal
     experimental/*.cabal
+    haskell-torch-tensorboard-proto/*.cabal
 
 write-ghc-environment-files: always
 tests: true
