@@ -186,7 +186,7 @@ data AEnv = AEnv
   , keyPaddingMask :: Set Pos -- writer
   } deriving (Eq, Ord, Show, Generic)
 
-data Token action = Pad | Unk | Mask | Token action
+data Token action = Pad | Unk | Token action
   deriving (Eq, Ord, Show, Generic, Functor)
 
 data M a = M
@@ -213,14 +213,15 @@ instance Monoid a => Monoid (M a) where
 -- add Universe instance?
 -- https://hackage.haskell.org/package/universe-base-1.1.1/docs/Data-Universe-Class.html#t:Finite
 data BaseA =
-    L
+    MaskA
+  | L
   | R
   | Grow
   | Reduce
-  | IToken Int
-  | SToken Text
-  | BToken Bool
-  | CToken Char
+  | IntA Int
+  | TextA Text
+  | BoolA Bool
+  | CharA Char
     deriving (Eq, Ord, Show, Generic)
 
 type To t action a = a -> t action
@@ -377,6 +378,26 @@ updateTokens t validNextActions pos = do
   modify (field @"validActionMask" %~ Map.insert pos (Set.fromList validNextActions))
   modify (field @"tokens" %~ Map.insert pos t)
 
+updateEnv
+  :: forall m env action
+   . ( Monad m
+     , HasType Pos env
+     , HasType AEnv env
+     , HasType MEnv env
+     , HasType REnv env
+     , HasType (TEnv action Int) env
+     , Ord action
+     )
+  => [action]
+  -> action
+  -> StateT env m ()
+updateEnv validNextActions action = do
+  pos <- (^. typed @Pos) <$> get
+  zoom (typed @(TEnv action Int)) . updateTokens action validNextActions $ pos
+  zoom (typed @MEnv) . updateMeta $ pos
+  zoom (typed @REnv) . updateRelations 3 $ pos
+  zoom (typed @AEnv) . updateAttention $ pos
+
 -- | pull an action from the state, feed the parser, and update the environment
 next
   :: forall env action b a
@@ -408,14 +429,31 @@ next availableActions parser cont = do
         [] -> empty
         action : actions -> do
           guard (List.elem action validNextActions)
-          pos <- (^. typed @Pos) <$> (lift get)
-          lift . zoom (typed @(TEnv action Int)) . updateTokens action validNextActions $ pos
-          lift . zoom (typed @MEnv) . updateMeta $ pos
-          lift . zoom (typed @REnv) . updateRelations 3 $ pos
-          lift . zoom (typed @AEnv) . updateAttention $ pos
+          lift $ updateEnv validNextActions action
           lift $ modify (typed @Pos %~ (+1))
           put actions
           cont (feed action)
+
+next'
+  :: forall env action b a
+   . ( b ~ []
+     )
+  => [action] -- ^ available next actions
+  -> Parser (StateT env b) action a -- ^ parser
+  -> (Parser (StateT env b) action a -> StateT [action] (StateT env b) a) -- ^ continuation
+  -> StateT () (StateT env b) a -- ^ returned stateful computation
+next' availableActions parser cont = do
+  validNextActions <- lift $ do
+    env <- get
+    let vals = runStateT (runFreeT parser) env
+        f (Pure _, _) = []
+        f (Free feed, env') = validateActions availableActions feed env'
+    pure $ vals >>= f
+  val <- lift . runFreeT $ parser
+  case val of
+    Pure a -> pure a
+    Free feed -> undefined
+
 
 -- | given a list of available next actions, return only those that do not end in an empty parsing result
 validateActions
@@ -557,28 +595,28 @@ instance (Applicative t, Alternative t, AsType BaseA action, ToActions t action 
 instance (MonadPlus b, HasType Pos env, HasType MEnv env, HasType REnv env, AsType BaseA action, FromActions env b action a, FromActions env b action b') => FromActions env b action (Either a b')
 
 instance (Applicative t, AsType BaseA action) => ToActions t action Text where
-  toActions = pure . injectTyped . SToken
+  toActions = pure . injectTyped . TextA
 
 instance (MonadFail b, MonadPlus b, AsType BaseA action) => FromActions env b action Text where
-  fromActions = token' >>= (\case SToken s -> pure s; _ -> fail "text")
+  fromActions = token' >>= (\case TextA s -> pure s; _ -> fail "text")
 
 instance (Applicative t, AsType BaseA action) => ToActions t action Char where
-  toActions = pure . injectTyped . CToken
+  toActions = pure . injectTyped . CharA
 
 instance (MonadFail b, MonadPlus b, AsType BaseA action) => FromActions env b action Char where
-  fromActions = token' >>= (\case CToken c -> pure c; _ -> fail "char")
+  fromActions = token' >>= (\case CharA c -> pure c; _ -> fail "char")
 
 instance (Applicative t, AsType BaseA action) => ToActions t action Int where
-  toActions = pure . injectTyped . IToken
+  toActions = pure . injectTyped . IntA
 
 instance (MonadFail b, MonadPlus b, AsType BaseA action) => FromActions env b action Int where
-  fromActions = token' >>= (\case IToken i -> pure i; _ -> fail "int")
+  fromActions = token' >>= (\case IntA i -> pure i; _ -> fail "int")
 
 instance (Applicative t, AsType BaseA action) => ToActions t action Bool where
-  toActions = pure . injectTyped . BToken
+  toActions = pure . injectTyped . BoolA
 
 instance (MonadFail b, MonadPlus b, AsType BaseA action) => FromActions env b action Bool where
-  fromActions = token' >>= (\case BToken b -> pure b; _ -> fail "bool")
+  fromActions = token' >>= (\case BoolA b -> pure b; _ -> fail "bool")
 
 instance Alternative t => ToActions t action () where
   toActions = const empty
@@ -721,7 +759,7 @@ parse next = runStateT . iterTM''' next
 --                 --         ) >> pure (p, as)
 --                 -- in runStateT (parse f parser actions) env
 --                 runStateT (parse (next []) parser actions) env
---   in (actions, result', runStateT (checkParser parser (IToken 1)) env)
+--   in (actions, result', runStateT (checkParser parser (IntA 1)) env)
 
 ------------------------------------------------------------------------
 -- A simply-typed lambda calculus with ints, bools, and strings
@@ -1388,7 +1426,8 @@ mkRATransformerMLMBatch
 mkRATransformerMLMBatch pMaskInput pMaskTarget actions = do
   let fromJust' = maybe empty pure
       availableActions =
-        [ injectTyped L
+        [ injectTyped MaskA
+        , injectTyped L
         , injectTyped R
         , injectTyped VarA
         , injectTyped LamA
@@ -1405,7 +1444,7 @@ mkRATransformerMLMBatch pMaskInput pMaskTarget actions = do
               in snd <$> results
         in foldMap step actions
       tokenVocab = OSet.fromList
-        (  [Pad, Unk, Mask]
+        (  [Pad, Unk]
         <> (Token <$> availableActions)
         )
       dataTypeVocab :: OSet.OSet (Token Text) = OSet.fromList
@@ -1490,7 +1529,7 @@ mkRATransformerMLMBatch pMaskInput pMaskTarget actions = do
     tokenMaskInput <- bernoulliMask pMaskInput (keyPaddingMask `logicalOr` (logicalNot inputScopeMask))
     tokenMaskTarget <- bernoulliMask pMaskTarget (keyPaddingMask `logicalOr` (logicalNot targetScopeMask))
     pure (tokenMaskInput `logicalOr` tokenMaskTarget)
-  let maskedTokens = maskedFill tokenMask (fromJust $ OSet.findIndex Mask tokenVocab) tokens
+  let maskedTokens = maskedFill tokenMask (fromJust $ OSet.findIndex (Token . injectTyped $ MaskA) tokenVocab) tokens
   pure $ RATransformerMLMBatch
     { ratInput = RATransformerMLMInput
         { ratMaskedTokens = maskedTokens
@@ -1903,7 +1942,7 @@ mkInvalidTokenMask vocab ms = do
 
 testMkInvalidTokenMask :: Maybe (Tensor TestDevice 'Bool '[2, 3, 5])
 testMkInvalidTokenMask =
-  let vocab = OSet.fromList [Pad, Unk, Mask, Token L, Token R]
+  let vocab = OSet.fromList [Pad, Unk, Token MaskA, Token L, Token R]
       ms = [ Map.fromList [(Pos 0, Set.fromList [L, R]), (Pos 1, Set.fromList [R]), (Pos 1, Set.fromList [R])]
            , Map.fromList [(Pos 0, Set.fromList [L]), (Pos 1, Set.empty)]
            ]
