@@ -80,6 +80,7 @@ library
                     , Torch.Distributions.Categorical
                     , Torch.Data.Pipeline
                     , Torch.Data.StreamedPipeline
+                    , Torch.Data.Internal
                     , Torch.Data.Dataset
                     , Torch.Data.CsvDataset
  other-modules:       Paths_hasktorch
@@ -117,8 +118,9 @@ library
                     , foldl
                     , transformers-base
                     , array
-
+                    , containers
                     , inline-c
+
  default-extensions:  Strict
                     , StrictData
 
@@ -172,6 +174,8 @@ test-suite spec
                     , JuicyPixels
                     , inline-c-cpp
                     , async
+                    , pipes
+                    , random
 
   build-tool-depends:  hspec-discover:hspec-discover
 
