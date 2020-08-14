@@ -50,12 +50,12 @@ import Control.Arrow (Arrow(first))
 
 data MapStyleOptions = MapStyleOptions { bufferSize :: Int
                                        , numWorkers :: Int
-                                       , shuffled :: Sample
+                                       , shuffle :: Sample
                                        }
 
 mapStyleOpts numWorkers = MapStyleOptions { bufferSize = numWorkers
                                           , numWorkers = numWorkers
-                                          , shuffled = Sequential
+                                          , shuffle = Sequential
                                           }
 
 data Sample = Sequential | Shuffle StdGen
@@ -80,7 +80,7 @@ makeListT MapStyleOptions{..} dataset = do
   (keyOutput, keyInput, seal) <- liftIO $ spawn' unbounded
 
   let retreiveSet = liftIO $ keyTVarSet $ keys @m dataset
-  keyTVarSet <- case shuffled of
+  keyTVarSet <- case shuffle of
     Sequential -> retreiveSet
     Shuffle g -> fst . fisherYates g <$> retreiveSet
    

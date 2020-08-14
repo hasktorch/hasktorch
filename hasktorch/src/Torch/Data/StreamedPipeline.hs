@@ -50,7 +50,6 @@ import Torch.Data.Internal
 class (MonadBase IO m) => Datastream m seed dataset batch | dataset -> batch where
   streamBatch :: dataset -> seed -> ListT m batch
 
--- TODO : incorporate these options
 data DataloaderOptions = DataloaderOptions
   { bufferSize :: Int -- ^ Number of inputs stored in a buffer.
   }

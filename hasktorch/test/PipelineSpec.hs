@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE CPP #-}
@@ -9,46 +10,54 @@ import Control.Monad
 import System.Exit
 import System.IO
 import System.Timeout
-import Torch.Data.Pipeline
+import System.Random
 import Pipes
 
 import Test.Hspec
 import GHC.IO (unsafePerformIO)
 import Control.Monad.Cont (ContT(runContT))
 import Pipes.Prelude (drain)
+import GHC.Exts (IsList(fromList))
+
+import Torch.Data.Pipeline
+import qualified Pipes.Prelude as P
 
 
-streamAheadTimeout = 20000
+streamAheadTimeout = 30000
 timeoutConcurrent = 100000
 
 data MockData = MockData 
 data ConcurrentData = ConcurrentData 
+data ShuffleSet = ShuffleSet
 
 -- | Yields 4 items, each item taking 10000 milliseconds to compute
-instance Dataset ConcurrentData Int where
-  getItem ConcurrentData  _ = unsafePerformIO $ threadDelay 10000 >> pure 0
-  size ConcurrentData = 8 
+instance Dataset IO ConcurrentData Int Int where
+  getItem ConcurrentData  _ = threadDelay 10000 >> pure 0
+  keys ConcurrentData = fromList [0 .. 7]
   
 -- | Yields 2 items, each taking 5000 milliseconds to compute
-instance Dataset MockData Int where
-  getItem (MockData ) _ = unsafePerformIO $ threadDelay 5000 >> pure 0
-  size (MockData) = 2
+instance Dataset IO MockData Int Int where
+  getItem (MockData ) _ = threadDelay 10000 >> pure 0
+  keys (MockData) = fromList [0 .. 1]
 
+instance Applicative m => Dataset m ShuffleSet Int Int where
+  getItem ShuffleSet k = pure k
+  keys _ = fromList [0 .. 100]
 
 testFoldTimeout :: MockData -> IO ()
 testFoldTimeout dataset = do
-   runContT (makeListT (mapStyleOpts 1) dataset sequentialSampler id) $
+   runContT (makeListT (mapStyleOpts 1) dataset) $
      (\l -> runEffect $ enumerate l >-> takeThenTimeout)
   where takeThenTimeout = forever $ do
           (_, iter) <- await
-          lift $ when (iter == 0 ) $ threadDelay 10000
+          lift $ when (iter == 0) $ threadDelay 5000 
           
           
           
 
 testConcurrentFoldTimeout :: ConcurrentData -> Int -> IO ()
 testConcurrentFoldTimeout dataset numWorkers = do
-   runContT (makeListT (mapStyleOpts numWorkers) dataset sequentialSampler id) $
+   runContT (makeListT (mapStyleOpts numWorkers) dataset ) $
      (\l -> runEffect $ enumerate l >-> takeThenTimeout)
   where takeThenTimeout = forever $ do
           (_, iter) <- await
@@ -56,6 +65,16 @@ testConcurrentFoldTimeout dataset numWorkers = do
           -- getting yielded anymore
           lift $ when (iter < 7) $ threadDelay 5000
 
+testShuffle :: IO ()
+testShuffle = do
+  let options = (mapStyleOpts 4) { shuffle = Shuffle $ mkStdGen 123 }
+  let optionsDiff = (mapStyleOpts 4) { shuffle = Shuffle $ mkStdGen 50 }
+
+  datasets <- replicateM 100 $ runContT (makeListT options ShuffleSet) $ P.toListM . enumerate 
+  differentOrder <- runContT (makeListT optionsDiff ShuffleSet) $ P.toListM . enumerate 
+
+  all (\elems -> elems == head datasets) datasets `shouldBe` True
+  head datasets == differentOrder `shouldBe` False
 
 -- | This function returns Nothing if the IO action takes longer than the given
 -- | time, otherwise it returns Just ()
@@ -81,9 +100,9 @@ runTest time test = do
 spec :: Spec
 spec = do
 #ifndef darwin_HOST_OS
-  it "Tests data is flowing" $
+  it "Test data is flowing" $
     (runTest streamAheadTimeout (testFoldTimeout MockData)) `shouldReturn` (Just ())
-  it "Tests concurrent datasets yield concurrently" $
+  it "Test concurrent datasets yield concurrently" $
     (runTest timeoutConcurrent (testConcurrentFoldTimeout ConcurrentData 2) `shouldReturn` (Just ()))
 #endif
-  return () -- no empty do block on macos
+  it "Test shuffle is deterministic with seed" $ testShuffle

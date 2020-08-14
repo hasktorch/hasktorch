@@ -119,8 +119,8 @@ library
                     , transformers-base
                     , array
                     , containers
-
                     , inline-c
+
  default-extensions:  Strict
                     , StrictData
 
@@ -175,6 +175,7 @@ test-suite spec
                     , inline-c-cpp
                     , async
                     , pipes
+                    , random
 
   build-tool-depends:  hspec-discover:hspec-discover
 
