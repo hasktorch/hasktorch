@@ -6,10 +6,11 @@
 {-# LANGUAGE QuasiQuotes #-}
 module RenderDeclarations where
 
+import Control.Monad (forM_)
 import Data.Yaml (ParseException)
 import qualified Data.Yaml as Y
 import Text.Shakespeare.Text (st)
-import Data.Text (Text, replace)
+import Data.Text (Text, replace, unpack)
 import qualified Data.Text.IO as T
 import qualified Data.Set as S
 import System.Directory (createDirectoryIfMissing)
@@ -53,7 +54,7 @@ renderFunctions is_managed enb_type_initials namespace nfs =
   map (\nf -> functionToCpp is_managed enb_type_initials namespace "" nf) $
   uniqFilter getSignatures $
   map toFunction nfs
-  
+
 decodeAndCodeGen :: String -> String -> IO ()
 decodeAndCodeGen basedir fileName = do
   funcs <- Y.decodeFileEither fileName :: IO (Either ParseException [D.Declaration])
@@ -65,12 +66,18 @@ decodeAndCodeGen basedir fileName = do
       createDirectoryIfMissing True (basedir <> "/Torch/Internal")
       --T.writeFile (basedir <> "/Torch/Internal/Type.hs") $
       --  typeTemplate
-      T.writeFile (basedir <> "/Torch/Internal/Managed/Native.hs") $
-        template False True "Torch.Internal.Managed.Native" $
-        renderFunctions True True "at::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a)) fns)
-      T.writeFile (basedir <> "/Torch/Internal/Unmanaged/Native.hs") $
-        template False False "Torch.Internal.Unmanaged.Native" $
-        renderFunctions False True "at::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a)) fns)
+
+      let nativeFunctions = filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a)) fns
+          nativeFunctions' = split' 16 nativeFunctions
+      forM_ (zip [0..] nativeFunctions') $ \(i::Int,funcs') -> do
+        createDirectoryIfMissing True (basedir <> "/Torch/Internal/Unmanaged/Native")
+        createDirectoryIfMissing True (basedir <> "/Torch/Internal/Managed/Native")
+        T.writeFile (unpack [st|#{basedir}/Torch/Internal/Managed/Native/Native#{i}.hs|]) $
+          template False True [st|Torch.Internal.Managed.Native.Native#{i}|] $
+          renderFunctions True True "at::" funcs'
+        T.writeFile (unpack [st|#{basedir}/Torch/Internal/Unmanaged/Native/Native#{i}.hs|]) $
+          template False False [st|Torch.Internal.Unmanaged.Native.Native#{i}|] $
+          renderFunctions False True "at::" funcs'
 
       createDirectoryIfMissing True (basedir <> "/Torch/Internal/Managed")
       createDirectoryIfMissing True (basedir <> "/Torch/Internal/Unmanaged")
@@ -92,38 +99,26 @@ import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 import Torch.Internal.Cast
+import Torch.Internal.Objects
 import qualified #{replace "Managed" "Unmanaged" module_name} as Unmanaged
-import Torch.Internal.Unmanaged.Type.Generator
-import Torch.Internal.Unmanaged.Type.IntArray
-import Torch.Internal.Unmanaged.Type.Scalar
-import Torch.Internal.Unmanaged.Type.Storage
-import Torch.Internal.Unmanaged.Type.Tensor
-import Torch.Internal.Unmanaged.Type.TensorList
-import Torch.Internal.Unmanaged.Type.TensorOptions
-import Torch.Internal.Unmanaged.Type.Tuple
-import Torch.Internal.Unmanaged.Type.StdString
-import Torch.Internal.Unmanaged.Type.StdArray
-import Torch.Internal.Unmanaged.Type.Dimname
-import Torch.Internal.Unmanaged.Type.DimnameList
 |] else [st|
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
-import Torch.Internal.Class
 
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
 import qualified Language.C.Inline.Context as C
 import qualified Language.C.Types as C
-import qualified Data.Map as Map
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 C.include "<vector>"
-C.include "<ATen/ATen.h>"
+C.include "<ATen/Tensor.h>"
+C.include "<ATen/Functions.h>"
 |] <> if is_torch_factory_method then [st|
-C.include "<torch/torch.h>"
+C.include "<torch/csrc/autograd/generated/variable_factories.h>"
 |] else ""
 
 

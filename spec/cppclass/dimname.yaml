@@ -1,10 +1,11 @@
 signature: Dimname
 cppname: at::Dimname
 hsname: Dimname
+headers: []
 functions:
-- Dimname::fromSymbol(Symbol name) -> Dimname
-- Dimname::wildcard() -> Dimname
-- Dimname::isValidName(std::string name) -> bool
+- fromSymbol(Symbol name) -> Dimname
+- wildcard() -> Dimname
+- isValidName(std::string name) -> bool
 constructors:
 - new(Dimname x) -> Dimname
 methods:

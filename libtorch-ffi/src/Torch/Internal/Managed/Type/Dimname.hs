@@ -18,8 +18,9 @@ import Torch.Internal.Type
 import Torch.Internal.Class
 import Torch.Internal.Cast
 import Torch.Internal.Objects
-
 import qualified Torch.Internal.Unmanaged.Type.Dimname as Unmanaged
+
+
 
 
 
@@ -27,10 +28,6 @@ newDimname_n
   :: ForeignPtr Dimname
   -> IO (ForeignPtr Dimname)
 newDimname_n = cast1 Unmanaged.newDimname_n
-
-
-
-
 
 dimname_symbol
   :: ForeignPtr Dimname
@@ -52,8 +49,6 @@ dimname_matches_n
   -> ForeignPtr Dimname
   -> IO (CBool)
 dimname_matches_n = cast2 Unmanaged.dimname_matches_n
-
-
 
 fromSymbol_s
   :: ForeignPtr Symbol

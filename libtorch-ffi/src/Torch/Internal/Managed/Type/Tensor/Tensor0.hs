@@ -18,8 +18,9 @@ import Torch.Internal.Type
 import Torch.Internal.Class
 import Torch.Internal.Cast
 import Torch.Internal.Objects
-
 import qualified Torch.Internal.Unmanaged.Type.Tensor.Tensor0 as Unmanaged
+
+
 
 
 
@@ -27,15 +28,10 @@ newTensor
   :: IO (ForeignPtr Tensor)
 newTensor = cast0 Unmanaged.newTensor
 
-
 newTensor_t
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 newTensor_t = cast1 Unmanaged.newTensor_t
-
-
-
-
 
 tensor_dim
   :: ForeignPtr Tensor
@@ -162,11 +158,6 @@ tensor_toBackend_B
   -> IO (ForeignPtr Tensor)
 tensor_toBackend_B = cast2 Unmanaged.tensor_toBackend_B
 
-tensor_is_variable
-  :: ForeignPtr Tensor
-  -> IO (CBool)
-tensor_is_variable = cast1 Unmanaged.tensor_is_variable
-
 tensor_layout
   :: ForeignPtr Tensor
   -> IO (Layout)
@@ -197,10 +188,20 @@ tensor_is_mkldnn
   -> IO (CBool)
 tensor_is_mkldnn = cast1 Unmanaged.tensor_is_mkldnn
 
+tensor_is_vulkan
+  :: ForeignPtr Tensor
+  -> IO (CBool)
+tensor_is_vulkan = cast1 Unmanaged.tensor_is_vulkan
+
 tensor_is_quantized
   :: ForeignPtr Tensor
   -> IO (CBool)
 tensor_is_quantized = cast1 Unmanaged.tensor_is_quantized
+
+tensor_is_meta
+  :: ForeignPtr Tensor
+  -> IO (CBool)
+tensor_is_meta = cast1 Unmanaged.tensor_is_meta
 
 tensor_has_names
   :: ForeignPtr Tensor
@@ -318,6 +319,11 @@ tensor_hip
   -> IO (ForeignPtr Tensor)
 tensor_hip = cast1 Unmanaged.tensor_hip
 
+tensor_vulkan
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_vulkan = cast1 Unmanaged.tensor_vulkan
+
 tensor_set_requires_grad_b
   :: ForeignPtr Tensor
   -> CBool
@@ -429,6 +435,16 @@ tensor_abs_
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 tensor_abs_ = cast1 Unmanaged.tensor_abs_
+
+tensor_absolute
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_absolute = cast1 Unmanaged.tensor_absolute
+
+tensor_absolute_
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_absolute_ = cast1 Unmanaged.tensor_absolute_
 
 tensor_angle
   :: ForeignPtr Tensor
@@ -551,6 +567,36 @@ tensor_any_nb
   -> IO (ForeignPtr Tensor)
 tensor_any_nb = cast3 Unmanaged.tensor_any_nb
 
+tensor_acosh
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_acosh = cast1 Unmanaged.tensor_acosh
+
+tensor_acosh_
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_acosh_ = cast1 Unmanaged.tensor_acosh_
+
+tensor_asinh
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_asinh = cast1 Unmanaged.tensor_asinh
+
+tensor_asinh_
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_asinh_ = cast1 Unmanaged.tensor_asinh_
+
+tensor_atanh
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_atanh = cast1 Unmanaged.tensor_atanh
+
+tensor_atanh_
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_atanh_ = cast1 Unmanaged.tensor_atanh_
+
 tensor_asin
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
@@ -589,32 +635,32 @@ tensor_baddbmm__ttss
   -> IO (ForeignPtr Tensor)
 tensor_baddbmm__ttss = cast5 Unmanaged.tensor_baddbmm__ttss
 
-tensor_bernoulli_p
+tensor_bernoulli_G
   :: ForeignPtr Tensor
   -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
-tensor_bernoulli_p = cast2 Unmanaged.tensor_bernoulli_p
+tensor_bernoulli_G = cast2 Unmanaged.tensor_bernoulli_G
 
-tensor_bernoulli__tp
+tensor_bernoulli__tG
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
-tensor_bernoulli__tp = cast3 Unmanaged.tensor_bernoulli__tp
+tensor_bernoulli__tG = cast3 Unmanaged.tensor_bernoulli__tG
 
-tensor_bernoulli__dp
+tensor_bernoulli__dG
   :: ForeignPtr Tensor
   -> CDouble
   -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
-tensor_bernoulli__dp = cast3 Unmanaged.tensor_bernoulli__dp
+tensor_bernoulli__dG = cast3 Unmanaged.tensor_bernoulli__dG
 
-tensor_bernoulli_dp
+tensor_bernoulli_dG
   :: ForeignPtr Tensor
   -> CDouble
   -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
-tensor_bernoulli_dp = cast3 Unmanaged.tensor_bernoulli_dp
+tensor_bernoulli_dG = cast3 Unmanaged.tensor_bernoulli_dG
 
 tensor_bincount_tl
   :: ForeignPtr Tensor
@@ -776,27 +822,3 @@ tensor_cummin_l
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
 tensor_cummin_l = cast2 Unmanaged.tensor_cummin_l
 
-tensor_cummin_n
-  :: ForeignPtr Tensor
-  -> ForeignPtr Dimname
-  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-tensor_cummin_n = cast2 Unmanaged.tensor_cummin_n
-
-tensor_det
-  :: ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-tensor_det = cast1 Unmanaged.tensor_det
-
-tensor_diag_embed_lll
-  :: ForeignPtr Tensor
-  -> Int64
-  -> Int64
-  -> Int64
-  -> IO (ForeignPtr Tensor)
-tensor_diag_embed_lll = cast4 Unmanaged.tensor_diag_embed_lll
-
-tensor_diagflat_l
-  :: ForeignPtr Tensor
-  -> Int64
-  -> IO (ForeignPtr Tensor)
-tensor_diagflat_l = cast2 Unmanaged.tensor_diagflat_l

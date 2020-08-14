@@ -20,7 +20,6 @@ import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
 import qualified Language.C.Inline.Context as C
 import qualified Language.C.Types as C
-import qualified Data.Map as Map
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
@@ -28,6 +27,118 @@ C.include "<vector>"
 C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
 
+
+asinh__t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+asinh__t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::asinh_(
+    *$(at::Tensor* _self)));
+  }|]
+
+asinh_out_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+asinh_out_tt _out _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::asinh_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)));
+  }|]
+
+atanh_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+atanh_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::atanh(
+    *$(at::Tensor* _self)));
+  }|]
+
+atanh__t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+atanh__t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::atanh_(
+    *$(at::Tensor* _self)));
+  }|]
+
+atanh_out_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+atanh_out_tt _out _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::atanh_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)));
+  }|]
+
+as_strided_tlll
+  :: Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> Int64
+  -> IO (Ptr Tensor)
+as_strided_tlll _self _size _stride _storage_offset =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::as_strided(
+    *$(at::Tensor* _self)
+  , *$(std::vector<int64_t>* _size)
+  , *$(std::vector<int64_t>* _stride)
+  , $(int64_t _storage_offset)));
+  }|]
+
+as_strided_tll
+  :: Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> IO (Ptr Tensor)
+as_strided_tll _self _size _stride =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::as_strided(
+    *$(at::Tensor* _self)
+  , *$(std::vector<int64_t>* _size)
+  , *$(std::vector<int64_t>* _stride)));
+  }|]
+
+as_strided__tlll
+  :: Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> Int64
+  -> IO (Ptr Tensor)
+as_strided__tlll _self _size _stride _storage_offset =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::as_strided_(
+    *$(at::Tensor* _self)
+  , *$(std::vector<int64_t>* _size)
+  , *$(std::vector<int64_t>* _stride)
+  , $(int64_t _storage_offset)));
+  }|]
+
+as_strided__tll
+  :: Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> IO (Ptr Tensor)
+as_strided__tll _self _size _stride =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::as_strided_(
+    *$(at::Tensor* _self)
+  , *$(std::vector<int64_t>* _size)
+  , *$(std::vector<int64_t>* _stride)));
+  }|]
+
+asin_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+asin_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::asin(
+    *$(at::Tensor* _self)));
+  }|]
+
+asin__t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+asin__t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::asin_(
+    *$(at::Tensor* _self)));
+  }|]
 
 asin_out_tt
   :: Ptr Tensor
@@ -337,14 +448,14 @@ _batch_norm_impl_index_backward_ltttttttbdat _impl_index _input _grad_output _we
   , *$(at::Tensor* _reservedSpace)));
   }|]
 
-bernoulli_tp
+bernoulli_tG
   :: Ptr Tensor
   -> Ptr Generator
   -> IO (Ptr Tensor)
-bernoulli_tp _self _generator =
+bernoulli_tG _self _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::bernoulli(
     *$(at::Tensor* _self)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 bernoulli_t
@@ -355,16 +466,16 @@ bernoulli_t _self =
     *$(at::Tensor* _self)));
   }|]
 
-bernoulli_out_ttp
+bernoulli_out_ttG
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Generator
   -> IO (Ptr Tensor)
-bernoulli_out_ttp _out _self _generator =
+bernoulli_out_ttG _out _self _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::bernoulli_out(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 bernoulli_out_tt
@@ -377,16 +488,16 @@ bernoulli_out_tt _out _self =
   , *$(at::Tensor* _self)));
   }|]
 
-bernoulli_tdp
+bernoulli_tdG
   :: Ptr Tensor
   -> CDouble
   -> Ptr Generator
   -> IO (Ptr Tensor)
-bernoulli_tdp _self _p _generator =
+bernoulli_tdG _self _p _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::bernoulli(
     *$(at::Tensor* _self)
   , $(double _p)
-  , $(at::Generator * _generator)));
+  , *$(at::Generator* _generator)));
   }|]
 
 bernoulli_td
@@ -875,6 +986,28 @@ bmm_tt _self _mat2 =
   , *$(at::Tensor* _mat2)));
   }|]
 
+_bmm_ttb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> CBool
+  -> IO (Ptr Tensor)
+_bmm_ttb _self _mat2 _deterministic =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_bmm(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _mat2)
+  , $(bool _deterministic)));
+  }|]
+
+_bmm_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+_bmm_tt _self _mat2 =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_bmm(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _mat2)));
+  }|]
+
 bmm_out_ttt
   :: Ptr Tensor
   -> Ptr Tensor
@@ -882,6 +1015,32 @@ bmm_out_ttt
   -> IO (Ptr Tensor)
 bmm_out_ttt _out _self _mat2 =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::bmm_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , *$(at::Tensor* _mat2)));
+  }|]
+
+_bmm_out_tttb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> CBool
+  -> IO (Ptr Tensor)
+_bmm_out_tttb _out _self _mat2 _deterministic =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_bmm_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , *$(at::Tensor* _mat2)
+  , $(bool _deterministic)));
+  }|]
+
+_bmm_out_ttt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+_bmm_out_ttt _out _self _mat2 =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_bmm_out(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
   , *$(at::Tensor* _mat2)));
@@ -955,6 +1114,14 @@ cat_out_tln _out _tensors _dim =
     *$(at::Tensor* _out)
   , *$(std::vector<at::Tensor>* _tensors)
   , *$(at::Dimname* _dim)));
+  }|]
+
+block_diag_l
+  :: Ptr TensorList
+  -> IO (Ptr Tensor)
+block_diag_l _tensors =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::block_diag(
+    *$(std::vector<at::Tensor>* _tensors)));
   }|]
 
 ceil_t
@@ -1537,144 +1704,3 @@ conv2d_ttt _input _weight _bias =
   , *$(at::Tensor* _bias)));
   }|]
 
-conv2d_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-conv2d_tt _input _weight =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::conv2d(
-    *$(at::Tensor* _input)
-  , *$(at::Tensor* _weight)));
-  }|]
-
-conv3d_tttllll
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> Int64
-  -> IO (Ptr Tensor)
-conv3d_tttllll _input _weight _bias _stride _padding _dilation _groups =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::conv3d(
-    *$(at::Tensor* _input)
-  , *$(at::Tensor* _weight)
-  , *$(at::Tensor* _bias)
-  , *$(std::vector<int64_t>* _stride)
-  , *$(std::vector<int64_t>* _padding)
-  , *$(std::vector<int64_t>* _dilation)
-  , $(int64_t _groups)));
-  }|]
-
-conv3d_tttlll
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> IO (Ptr Tensor)
-conv3d_tttlll _input _weight _bias _stride _padding _dilation =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::conv3d(
-    *$(at::Tensor* _input)
-  , *$(at::Tensor* _weight)
-  , *$(at::Tensor* _bias)
-  , *$(std::vector<int64_t>* _stride)
-  , *$(std::vector<int64_t>* _padding)
-  , *$(std::vector<int64_t>* _dilation)));
-  }|]
-
-conv3d_tttll
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> IO (Ptr Tensor)
-conv3d_tttll _input _weight _bias _stride _padding =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::conv3d(
-    *$(at::Tensor* _input)
-  , *$(at::Tensor* _weight)
-  , *$(at::Tensor* _bias)
-  , *$(std::vector<int64_t>* _stride)
-  , *$(std::vector<int64_t>* _padding)));
-  }|]
-
-conv3d_tttl
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr IntArray
-  -> IO (Ptr Tensor)
-conv3d_tttl _input _weight _bias _stride =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::conv3d(
-    *$(at::Tensor* _input)
-  , *$(at::Tensor* _weight)
-  , *$(at::Tensor* _bias)
-  , *$(std::vector<int64_t>* _stride)));
-  }|]
-
-conv3d_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-conv3d_ttt _input _weight _bias =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::conv3d(
-    *$(at::Tensor* _input)
-  , *$(at::Tensor* _weight)
-  , *$(at::Tensor* _bias)));
-  }|]
-
-conv3d_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-conv3d_tt _input _weight =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::conv3d(
-    *$(at::Tensor* _input)
-  , *$(at::Tensor* _weight)));
-  }|]
-
-conv_tbc_tttl
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Int64
-  -> IO (Ptr Tensor)
-conv_tbc_tttl _self _weight _bias _pad =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::conv_tbc(
-    *$(at::Tensor* _self)
-  , *$(at::Tensor* _weight)
-  , *$(at::Tensor* _bias)
-  , $(int64_t _pad)));
-  }|]
-
-conv_tbc_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-conv_tbc_ttt _self _weight _bias =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::conv_tbc(
-    *$(at::Tensor* _self)
-  , *$(at::Tensor* _weight)
-  , *$(at::Tensor* _bias)));
-  }|]
-
-conv_tbc_backward_ttttl
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Int64
-  -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor)))
-conv_tbc_backward_ttttl _self _input _weight _bias _pad =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::conv_tbc_backward(
-    *$(at::Tensor* _self)
-  , *$(at::Tensor* _input)
-  , *$(at::Tensor* _weight)
-  , *$(at::Tensor* _bias)
-  , $(int64_t _pad)));
-  }|]

@@ -1,6 +1,9 @@
 signature: Scalar
 cppname: at::Scalar
 hsname: Scalar
+headers:
+- ATen/Scalar.h
+- vector
 functions: []
 constructors:
 - new() -> Scalar

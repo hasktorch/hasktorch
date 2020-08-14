@@ -299,6 +299,14 @@ embedding' weights indices =
     unsafePerformIO $ (cast5 ATen.embedding_ttlbb)
         weights indices (-1 :: Int) False False
 
+-- | A one hot encoding of the given input. The encoding is based on the given number of
+-- classes.
+oneHot
+  :: Int -- ^ number of classes
+  -> Tensor -- ^ input
+  -> Tensor -- ^ 
+oneHot numClasses t = unsafePerformIO $ (cast2 ATen.one_hot_tl) t numClasses
+
 --
 -- element-wise transformations / non-linearities
 --

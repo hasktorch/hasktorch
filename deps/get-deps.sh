@@ -10,7 +10,7 @@ set -eu
 usage_exit() {
     echo "Usage: $0 [-n] [-c] [-a "cpu" or "cu92" or "cu101" or "cu102"] [-s]" 1>&2
     echo " -n # Use nightly libtorch w/  -l" 1>&2
-    echo "    # Use libtorch-1.5.0   w/o -l" 1>&2
+    echo "    # Use libtorch-1.6.0   w/o -l" 1>&2
     echo "" 1>&2
     echo " -c # Download libtorch from hasktorch's site w/ -c" 1>&2
     echo "    # Download libtorch from pytorch's site w/o  -c" 1>&2
@@ -30,7 +30,7 @@ USE_NIGHTLY=0
 USE_BINARY_FOR_CI=0
 COMPUTE_ARCH=cpu
 SKIP_DOWNLOAD=0
-VERSION=1.5.0
+VERSION=1.6.0
 
 while getopts nca:sh OPT
 do
@@ -156,4 +156,8 @@ case "$(uname)" in
     ;;
 esac
 
+popd
+
+pushd ../spec
+  ln -fs ../deps/pytorch/build/aten/src/ATen/Declarations.yaml
 popd

@@ -19,7 +19,6 @@ import Foreign
 import Torch.Internal.Type
 import Torch.Internal.Class
 
-
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
 import qualified Language.C.Inline.Context as C
@@ -147,4 +146,13 @@ instance CppTuple3 (Ptr (StdTuple '(Tensor,Tensor,CDouble,Int64))) where
 instance CppTuple4 (Ptr (StdTuple '(Tensor,Tensor,CDouble,Int64))) where
   type D (Ptr (StdTuple '(Tensor,Tensor,CDouble,Int64))) = Int64
   get3 v = [C.throwBlock| int64_t { return (std::get<3>(*$(std::tuple<at::Tensor,at::Tensor,double,int64_t>* v)));}|]
+
+
+-----------------StdTuple '(CDouble,Int64)---------------------
+
+instance CppTuple2 (Ptr (StdTuple '(CDouble,Int64))) where
+  type A (Ptr (StdTuple '(CDouble,Int64))) = CDouble
+  type B (Ptr (StdTuple '(CDouble,Int64))) = Int64
+  get0 v = [C.throwBlock| double { return (std::get<0>(*$(std::tuple<double,int64_t>* v)));}|]
+  get1 v = [C.throwBlock| int64_t { return (std::get<1>(*$(std::tuple<double,int64_t>* v)));}|]
 

@@ -21,6 +21,14 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native14 as Unmanaged
 
 
+avg_pool3d_out_ttll
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+avg_pool3d_out_ttll = cast4 Unmanaged.avg_pool3d_out_ttll
+
 avg_pool3d_out_ttl
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -1115,3 +1123,43 @@ upsample_nearest1d_backward_tll
   -> ForeignPtr IntArray
   -> IO (ForeignPtr Tensor)
 upsample_nearest1d_backward_tll = cast3 Unmanaged.upsample_nearest1d_backward_tll
+
+upsample_nearest2d_out_ttldd
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> CDouble
+  -> CDouble
+  -> IO (ForeignPtr Tensor)
+upsample_nearest2d_out_ttldd = cast5 Unmanaged.upsample_nearest2d_out_ttldd
+
+upsample_nearest2d_out_ttld
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> CDouble
+  -> IO (ForeignPtr Tensor)
+upsample_nearest2d_out_ttld = cast4 Unmanaged.upsample_nearest2d_out_ttld
+
+upsample_nearest2d_out_ttl
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+upsample_nearest2d_out_ttl = cast3 Unmanaged.upsample_nearest2d_out_ttl
+
+upsample_nearest2d_tldd
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> CDouble
+  -> CDouble
+  -> IO (ForeignPtr Tensor)
+upsample_nearest2d_tldd = cast4 Unmanaged.upsample_nearest2d_tldd
+
+upsample_nearest2d_tld
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> CDouble
+  -> IO (ForeignPtr Tensor)
+upsample_nearest2d_tld = cast3 Unmanaged.upsample_nearest2d_tld
+

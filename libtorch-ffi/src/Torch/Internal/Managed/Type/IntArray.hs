@@ -18,18 +18,15 @@ import Torch.Internal.Type
 import Torch.Internal.Class
 import Torch.Internal.Cast
 import Torch.Internal.Objects
-
 import qualified Torch.Internal.Unmanaged.Type.IntArray as Unmanaged
+
+
 
 
 
 newIntArray
   :: IO (ForeignPtr IntArray)
 newIntArray = cast0 Unmanaged.newIntArray
-
-
-
-
 
 intArray_empty
   :: ForeignPtr IntArray
@@ -52,6 +49,4 @@ intArray_push_back_l
   -> Int64
   -> IO (())
 intArray_push_back_l = cast2 Unmanaged.intArray_push_back_l
-
-
 

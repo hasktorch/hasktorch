@@ -21,6 +21,86 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native5 as Unmanaged
 
 
+max_pool1d_tllllb
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+max_pool1d_tllllb = cast6 Unmanaged.max_pool1d_tllllb
+
+max_pool1d_tllll
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+max_pool1d_tllll = cast5 Unmanaged.max_pool1d_tllll
+
+max_pool1d_tlll
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+max_pool1d_tlll = cast4 Unmanaged.max_pool1d_tlll
+
+max_pool1d_tll
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+max_pool1d_tll = cast3 Unmanaged.max_pool1d_tll
+
+max_pool1d_tl
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+max_pool1d_tl = cast2 Unmanaged.max_pool1d_tl
+
+max_pool2d_tllllb
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+max_pool2d_tllllb = cast6 Unmanaged.max_pool2d_tllllb
+
+max_pool2d_tllll
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+max_pool2d_tllll = cast5 Unmanaged.max_pool2d_tllll
+
+max_pool2d_tlll
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+max_pool2d_tlll = cast4 Unmanaged.max_pool2d_tlll
+
+max_pool2d_tll
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+max_pool2d_tll = cast3 Unmanaged.max_pool2d_tll
+
+max_pool2d_tl
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+max_pool2d_tl = cast2 Unmanaged.max_pool2d_tl
+
 mkldnn_max_pool2d_tllllb
   :: ForeignPtr Tensor
   -> ForeignPtr IntArray
@@ -878,7 +958,7 @@ batch_norm_gather_stats_tttttddl
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
 batch_norm_gather_stats_tttttddl = cast8 Unmanaged.batch_norm_gather_stats_tttttddl
 
-batch_norm_gather_stats_with_counts_tttttddl
+batch_norm_gather_stats_with_counts_tttttddt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -886,9 +966,9 @@ batch_norm_gather_stats_with_counts_tttttddl
   -> ForeignPtr Tensor
   -> CDouble
   -> CDouble
-  -> ForeignPtr IntArray
+  -> ForeignPtr Tensor
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-batch_norm_gather_stats_with_counts_tttttddl = cast8 Unmanaged.batch_norm_gather_stats_with_counts_tttttddl
+batch_norm_gather_stats_with_counts_tttttddt = cast8 Unmanaged.batch_norm_gather_stats_with_counts_tttttddt
 
 native_batch_norm_backward_tttttttbda
   :: ForeignPtr Tensor
@@ -1070,31 +1150,3 @@ cdist_ttd
   -> IO (ForeignPtr Tensor)
 cdist_ttd = cast3 Unmanaged.cdist_ttd
 
-cdist_tt
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-cdist_tt = cast2 Unmanaged.cdist_tt
-
-_cdist_forward_ttdl
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> CDouble
-  -> Int64
-  -> IO (ForeignPtr Tensor)
-_cdist_forward_ttdl = cast4 Unmanaged._cdist_forward_ttdl
-
-_cdist_backward_tttdt
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> CDouble
-  -> ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-_cdist_backward_tttdt = cast5 Unmanaged._cdist_backward_tttdt
-
-pdist_td
-  :: ForeignPtr Tensor
-  -> CDouble
-  -> IO (ForeignPtr Tensor)
-pdist_td = cast2 Unmanaged.pdist_td

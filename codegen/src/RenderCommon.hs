@@ -407,12 +407,15 @@ toHsFuncName is_constructor cpp_function_name = hsfuncname
 
 functionToCpp :: Bool -> Bool -> String -> String -> Function -> Text
 functionToCpp is_managed add_type_initials prefix suffix fn =
-  if is_managed then [st|
+  if elem [st|#{hsfuncname}#{type_initials}|] blacklist
+  then ""
+  else
+    if is_managed then [st|
 #{hsfuncname}#{type_initials}
   :: #{types}
 #{hsfuncname}#{type_initials} = cast#{num_args} Unmanaged.#{hsfuncname}#{type_initials}
 |]
-  else [st|
+    else [st|
 #{hsfuncname}#{type_initials}
   :: #{types}
 #{hsfuncname}#{type_initials} #{args} =
@@ -421,6 +424,9 @@ functionToCpp is_managed add_type_initials prefix suffix fn =
   }|#{cket}
 |]
   where
+    blacklist = [ "range_ss"
+                , "range_sso"
+                ]
     hsfuncname = toHsFuncName False (P.name fn)
     parameters' = filter isNotStar $ parameters fn
     num_args :: Int
@@ -610,3 +616,14 @@ pureFunction hsfuncname fn = [st|
     types = T.intercalate "\n  -> " $ types_list ++ [[st|#{ret_hstype}|]]
     ret_hstype :: Text
     ret_hstype = [st|#{parsableToHigherHsType (retType fn)}|]
+
+split' :: Int -> [a] -> [[a]]
+split' num ls =
+  let num_per_file = (length ls + num - 1) `div` num
+      loop [] = []
+      loop dat =
+        let (x,xs) = splitAt num_per_file dat
+        in x : loop xs
+  in loop ls
+
+                                                    

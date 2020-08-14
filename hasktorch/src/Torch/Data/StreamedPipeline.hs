@@ -23,6 +23,8 @@ module Torch.Data.StreamedPipeline
     Datastream (..),
     MonadBase (..),
     MonadBaseControl (..),
+    module Pipes,
+    module Pipes.Safe
   )
 where
 

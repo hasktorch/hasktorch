@@ -1,6 +1,7 @@
 signature: ConstQuantizerPtr
 cppname: c10::intrusive_ptr<Quantizer>
 hsname: ConstQuantizerPtr
+headers: []
 functions: []
 constructors: []
 methods: []

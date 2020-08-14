@@ -18,8 +18,9 @@ import Torch.Internal.Type
 import Torch.Internal.Class
 import Torch.Internal.Cast
 import Torch.Internal.Objects
-
 import qualified Torch.Internal.Unmanaged.Type.TensorOptions as Unmanaged
+
+
 
 
 
@@ -27,10 +28,6 @@ newTensorOptions_s
   :: ScalarType
   -> IO (ForeignPtr TensorOptions)
 newTensorOptions_s = cast1 Unmanaged.newTensorOptions_s
-
-
-
-
 
 tensorOptions_device_D
   :: ForeignPtr TensorOptions
@@ -106,8 +103,6 @@ tensorOptions_backend
   :: ForeignPtr TensorOptions
   -> IO (Backend)
 tensorOptions_backend = cast1 Unmanaged.tensorOptions_backend
-
-
 
 dtype_s
   :: ScalarType
