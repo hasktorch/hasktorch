@@ -23,8 +23,8 @@ import Torch.Data.Pipeline
 import qualified Pipes.Prelude as P
 
 
-streamAheadTimeout = 30000
-timeoutConcurrent = 100000
+streamAheadTimeout = 25000
+timeoutConcurrent = 85000
 
 data MockData = MockData 
 data ConcurrentData = ConcurrentData 

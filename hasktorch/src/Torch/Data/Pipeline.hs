@@ -88,8 +88,9 @@ makeListT MapStyleOptions{..} dataset = do
   keyQueue keyOutput $ keyTVarSet
   liftIO $ atomically seal
 
-  lift $ runWorkers numWorkers dataset keyInput
-  runWithBuffer bufferSize $ awaitNextItem keyTVarSet
+  let workers = runWorkers numWorkers dataset keyInput
+      datastream = awaitNextItem keyTVarSet
+  runWithBuffer bufferSize $ \output -> concurrently_ workers (datastream output)
 
 runWorkers ::
   (Dataset m dataset k sample, MonadIO m, MonadBaseControl IO m) =>
