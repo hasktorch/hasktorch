@@ -162,18 +162,16 @@ makeListT' DataloaderOptions{..} dataset seeds = do
     snd3 (a,b,c) = b
     third (a,b,c) = c
 
-
-
 pairSeedWithBuffer :: MonadIO m => FoldM m seed (V.Vector (seed, (Output a, Input a, STM ()) ) ) 
 pairSeedWithBuffer = L.premapM (\a -> (a, ) <$> makeMailbox) $ L.generalize L.vector
   where makeMailbox = liftIO $ spawn' (bounded 1)
 
--- | So long as there exists one input which isn't exhausted we keep looping
-data Iterate = Loop | Exhausted
 fromInputOnce workerTracker input = do
   ma <- atomically $ recv input
   case ma of
-    Nothing -> (atomically $ readTVar workerTracker >>= writeTVar workerTracker. (+) 1) >> return ()
+    Nothing -> do
+      atomically $ readTVar workerTracker >>= writeTVar workerTracker. (+) 1
+      return ()
     Just a  -> do
       yield a
       return ()
