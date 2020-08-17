@@ -19,7 +19,7 @@ import qualified Pipes.Prelude as P
 import           Pipes.Safe (runSafeT)
 import           Torch
 import           Torch.Data.CsvDataset
-import           Torch.Data.StreamedPipeline (dataloaderOpts, pmap, makeListT)
+import           Torch.Data.StreamedPipeline 
 import           Torch.Tensor
 
 data MLPSpec = MLPSpec {
@@ -81,7 +81,8 @@ trainLoop model optimizer inputs = P.foldM step init done $ enumerate inputs
   where 
         step model ((input, label), iter) = do
           let loss = binaryCrossEntropyLoss' label $ mlp model input
-          when (iter == 5) $ do
+          when ((iter `mod` 5) == 0) $ do
+            liftIO $ print iter
             liftIO $ putStrLn $ " | Loss: " ++ show loss
           (newParam, _) <- liftIO $ runStep model optimizer loss 1e-2
           pure $ replaceParameters model newParam
@@ -92,15 +93,15 @@ trainLoop model optimizer inputs = P.foldM step init done $ enumerate inputs
 main :: IO ()
 main = runSafeT $ do
   init <- liftIO $ sample spec 
-  let (irisTrain :: CsvDataset Iris) = (csvDataset  "data/iris.data") { batchSize = 4 
+  let (irisTrain :: CsvDataset Iris) = (csvDataset  "data/iris.data") { batchSize = 1
                                                                       -- need to bring whole dataset into memory to get a good shuffle
                                                                       -- since iris.data is sorted
                                                                       , shuffle = Just 150 
                                                                       }
   foldM (\model epoch -> do
-            flip runContT (trainLoop model optimizer) $ do raw <- makeListT dataloaderOpts irisTrain (Select $ yield ())
-                                                           pmap 2 (first irisToTensor) raw
-        ) init [1..500]
+            flip runContT (trainLoop model optimizer) $ do raw <- makeListT' dataloaderOpts irisTrain [()]
+                                                           pmap 1 (first irisToTensor) raw
+        ) init [1..10]
 
   pure ()
   where spec = MLPSpec 4 10 10 3
