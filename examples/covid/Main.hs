@@ -33,6 +33,8 @@ plotTS fips2idx tensorData fips = do
         . filterOn tFips (eq $ asTensor fipsIdx) $ tensorData 
   tensorSparkline newCases
 
+
+
 main :: IO ()
 main = do
 
@@ -58,6 +60,16 @@ main = do
   plotTS (fipsMap modelData) tensorData "48113"
   plotTS (fipsMap modelData) tensorData "06037"
   plotTS (fipsMap modelData) tensorData "06075"
+
+
+
+  let regionData = filterOn tFips (eq (1183) tensorData
+  let t2vd = 6
+  let inputDim = 3193 + t2vd + 1 -- # counties + t2vDim + county of interest count
+
+  initializedModel <- initModel
+
+  let optimSpec = optimSpec
 
   -- pPrint $ dataset V.! 1
   putStrLn "Done"

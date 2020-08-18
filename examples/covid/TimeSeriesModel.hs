@@ -134,14 +134,27 @@ checkOutputs = do
   let result = tsmodelForward 10.0 model (ones' [inputDim], ones' [inputDim]) (ones' [3193]) 15.0
   print result
 
-testModel = do
-  let inputDim = 3193 + 1 + 1 -- # counties + t2vDim + county of interest count
-  initializedModel <- sample TSModelSpec {
-    nCounties = 3193,
-    countyEmbedDim = 6,
-    t2vSpec = Time2VecSpec { t2vDim=6 },
-    lstmSpec = LSTMSpec { inputSize=3195, hiddenSize=12 }  -- 3195=3193 + t2vDim + count
+initModel nRegions t2vDim lstmHDim = sample TSModelSpec {
+    nCounties = nRegions,
+    countyEmbedDim = t2vDim,
+    t2vSpec = Time2VecSpec { t2vDim=t2vDim },
+    lstmSpec = LSTMSpec { inputSize=t2vDim + 1, hiddenSize=lstmHDim }  -- t2vDim + this region's count (1D for now)
     }
+
+optimSpec = OptimSpec {
+        optimizer = mkAdam 0 0.9 0.999 (flattenParameters initializedModel),
+        batchSize = 128,
+        numIters = 500,
+        learningRate = 5e-5, 
+        lossFn = undefined -- \model input target -> 
+            -- let (h, c) = forward model input 
+            -- in mseLoss target c
+    } :: OptimSpec Adam TSModel
+
+testModel = do
+  let t2vd = 6
+  let inputDim = 3193 + t2vd + 1 -- # counties + t2vDim + county of interest count
+  initializedModel <- initModel 3193 t2vd 6
   let optimSpec = OptimSpec {
         optimizer = mkAdam 0 0.9 0.999 (flattenParameters initializedModel),
         batchSize = 128,
