@@ -1,3 +1,6 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -11,145 +14,131 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-module Torch.Data.Pipeline ( takeBatch
-                           , readBatches
-                           , readBatchesConcurrently
-                           , makeFold'
-                           , makeFoldWithTransform'
-                           , makeConcurrentFold'
-                           , makeFold
-                           , makeFoldWithTransform
-                           , makeConcurrentFold
-                           , foldFromProducer
-                           , L.FoldM(..)
-                           , Dataset(..)
-                           , DatasetMock(..)
-                           , ConcurrentDataset(..)
+module Torch.Data.Pipeline ( Dataset(..)
+                           , MapStyleOptions(..)
+                           , Sample(..)
+                           , makeListT
+                           , mapStyleOpts
+                           , runContT
                            ) where
 
+import           Control.Applicative (Alternative, (<|>))
 import           Control.Concurrent.Async.Lifted
 import qualified Control.Foldl as L
 import           Control.Monad
-import Control.Applicative (Alternative, (<|>))
-import           Data.Maybe (isJust)
+import           Data.Maybe (fromJust, isJust)
 import           Pipes
-import           Pipes.Concurrent
+import           Pipes.Concurrent hiding (atomically)
 import qualified Pipes.Prelude as P
 
+import           Control.Arrow (Arrow(first))
+import           Control.Concurrent.STM hiding (atomically)
+import           Control.Monad.Base (MonadBase)
+import           Control.Monad.Cont (runContT, ContT)
 import           Control.Monad.Trans.Control (MonadBaseControl(..))
+import           Data.IntMap (IntMap)
+import qualified Data.IntMap as I
+import qualified Data.Map.Strict as M
+import           Data.Set
+import           Data.Vector (Vector)
+import qualified Data.Vector as V
+import           Lens.Family (view)
+import           Pipes.Group
+import           System.Random
+import qualified Torch as Torch
+import           Torch.Data.Internal
+
+data MapStyleOptions = MapStyleOptions { bufferSize :: Int
+                                       , numWorkers :: Int
+                                       , shuffle :: Sample
+                                       }
+
+mapStyleOpts numWorkers = MapStyleOptions { bufferSize = numWorkers
+                                          , numWorkers = numWorkers
+                                          , shuffle = Sequential
+                                          }
+
+data Sample where
+   Sequential :: Sample
+   Shuffle ::  RandomGen g => g -> Sample 
+
+class (Ord k) => Dataset m dataset k sample | dataset -> sample, dataset -> k  where
+  getItem :: dataset -> k -> m sample
+  keys :: dataset -> Set k
+
+---------------------- Workflow --------------------
+-- - make a new map of keys to TVars of samples, possibly shuffled keys, tracking which keys have been sampled
+-- - create a TQueue of keys (using pipes-concurrency wrapper)
+-- - fork off workers which all pull from the TQueue and sample that key using the dataset,
+--   then update the TVar associated with that key
+-- have a worker waiting for each successive key to be updated in the list of (key, TVar)
+
+makeListT :: forall m dataset k sample r .
+  (MonadIO m, MonadBaseControl IO m,  Dataset m dataset k sample) =>
+  MapStyleOptions ->
+  dataset ->
+  ContT r m  (ListT m (sample, Int), Sample)
+makeListT MapStyleOptions{..} dataset = do
+  (keyOutput, keyInput, seal) <- liftIO $ spawn' unbounded
+
+  let retrieveSet = liftIO $ keyTVarSet $ keys @m dataset
+  (keyTVarSet, updatedSample) <- case shuffle of
+    Sequential -> (, Sequential) <$> retrieveSet
+    Shuffle g -> (fmap Shuffle  . fisherYates g) <$> retrieveSet
+
+  -- fill the queue with each key and associated TVar then seal it
+  keyQueue keyOutput $ keyTVarSet
+  liftIO $ atomically seal
+
+  let workers = runWorkers numWorkers dataset keyInput
+      datastream = awaitNextItem keyTVarSet
+  listT <- runWithBuffer bufferSize $ \output -> concurrently_ workers (datastream output)
+  pure (listT, updatedSample)
 
 
-type Iter = Int
-type WorkerId = Int
+runWorkers ::
+  (Dataset m dataset k sample, MonadIO m, MonadBaseControl IO m) =>
+  Int ->
+  dataset ->
+  Input (k, TVar (Maybe sample)) ->
+  m ()
+runWorkers numWorkers dataset keyInput = replicateConcurrently_ numWorkers (runEffect $ fromInput' keyInput >-> runWorker)
+    where 
+      runWorker = forever $ do (key, tvar) <- await
+                               item <- lift $ getItem dataset key
+                               atomically $ writeTVar tvar (Just item) 
+awaitNextItem ::
+  (MonadBase IO m, MonadIO m) =>
+  [(k, TVar (Maybe sample))] ->
+  Output sample ->
+  m ()
+awaitNextItem tvars output  = runEffect $ each tvars >-> readNextItem >-> toOutput' output
+  where readNextItem  = forever $ do
+          (key, tvar) <- await
+          item <- atomically $ do
+            val <- readTVar tvar 
+            case val of
+              Nothing -> retry
+              Just item -> writeTVar tvar Nothing >> pure item -- reset the tvar once we get the sample out of it to save memory
+          yield item 
 
-data DatasetMock m tensor = DatasetMock { getBatchMock :: Int -> m tensor
-                                        , numItersMock :: Iter
-                                        }
+keyTVarSet :: MonadIO m => Set k -> m [(k, TVar (Maybe sample))]
+keyTVarSet = atomically . mapM (\k -> newTVar Nothing >>= pure . (,) k)  . toList 
 
-class (MonadPlus m, MonadIO m, MonadBaseControl IO m) => Dataset m dataset batch  where
-  getBatch :: dataset -> Iter -> m batch
-  numIters :: dataset -> Int
+keyQueue :: MonadBase IO m => Output (k, TVar (Maybe sample)) ->  [(k, TVar (Maybe sample))] -> m ()
+keyQueue keyOutput keyTVarSet = runEffect $ each keyTVarSet >-> toOutput' keyOutput
 
-class Dataset m dataset batch => ConcurrentDataset m dataset batch where
-  getBatchConcurrently :: WorkerId -> dataset -> Iter -> m batch
+fisherYatesStep :: RandomGen g => (IntMap a, g) -> (Int, a) -> (IntMap a, g)
+fisherYatesStep (m, gen) (i, x) = ((I.insert j x . I.insert i (m I.! j)) m, gen')
+  where
+    (j, gen') = randomR (0, i) gen
 
-takeBatch :: MonadIO m => Input (Maybe batch) -> Producer batch m ()  
-takeBatch input = fromInput input >-> P.takeWhile isJust >-> yieldMore
-  where yieldMore = forever $ await >>= \case
-          Just batch -> yield batch
-          Nothing -> return ()
-readBatches'
-  :: (MonadIO m)
-  => Int
-  -> (Int -> m (Maybe batch))
-  -> Output (Maybe batch)
-  -> Effect m ()
-readBatches' numIters getBatch outputBox = 
-  for (each [0..numIters]) (\iter -> yieldBatch iter >-> toOutput outputBox)
-    where yieldBatch iter = do
-            -- this is a workaround to using MonadPlus in the Proxy monad, since
-            -- it doesn't have an instance. Instead we implement failure with
-            -- MonadPlus in the getBatch function, and have it yield Maybe values
-            -- which marks failure here
-            thing <- lift $ runBatch iter
-            case thing of
-              Nothing -> yield Nothing
-              Just (Just batch) -> yield (Just batch)
-              Just Nothing -> return ()
-          runBatch iter = if numIters == iter
-                          then pure Nothing
-                          else Just <$> getBatch iter
+fisherYates :: RandomGen g => g -> [a] -> ([a], g)
+fisherYates gen [] = ([], gen)
+fisherYates gen l = 
+  toElems $ Prelude.foldl fisherYatesStep (initial (head l) gen) (numerate (tail l))
+  where
+    toElems (x, y) = (I.elems x, y)
+    numerate = zip [1..]
+    initial x gen = (I.singleton 0 x, gen)
 
-readBatchesConcurrently :: forall dataset batch m .
-  (MonadPlus m, ConcurrentDataset m dataset batch) => Int -> dataset -> Output (Maybe batch)  -> Effect m () 
-readBatchesConcurrently workerId dataset outputBox = readBatches' iter getBatchOrFail outputBox
-  where iter = numIters @m @dataset @batch dataset
-        getBatchOrFail = (\iter -> (Just <$> (getBatchConcurrently workerId dataset iter)) <|> (pure Nothing))
-
-readBatches :: forall dataset batch m.
-  (Dataset m dataset batch) => dataset -> Output (Maybe batch)  -> Effect m () 
-readBatches dataset outputBox = readBatches' iter getBatchOrFail outputBox
-  where iter = (numIters @m @dataset @batch dataset)
-        getBatchOrFail = (\iter -> (Just <$> getBatch dataset iter) <|> (pure Nothing))
-
-runTransforms :: MonadIO m => (batch -> batch') -> Input (Maybe batch) -> Output (Maybe batch') -> Effect m ()
-runTransforms transforms transformBox trainBox = fromInput transformBox >->  P.map (fmap transforms) >-> toOutput trainBox
-
-makeFold' :: (Dataset m dataset batch, MonadIO m)
-    => dataset
-    -> m (L.FoldM m batch b -> m b, Async (StM m ()))
-makeFold' dataset = do
-  (toBatches, fromBatches, sealBatch) <- liftIO $ spawn' (bounded 1)
-  batchThread <- async $ void $ runEffect $ readBatches dataset toBatches
-  pure (foldFromProducer (takeBatch fromBatches), batchThread)
-
-
-makeConcurrentFold' :: (MonadIO m, ConcurrentDataset m dataset batch')
-  => (batch' -> batch)
-  -> dataset
-  -> Int
-  -> m (L.FoldM m batch b -> m b, [Async (StM m ())])
-makeConcurrentFold' transforms dataset numWorkers = do
-  -- Buffer size is equal to numWorkers so that each thread can yield a batch.
-  -- This is not actually the enforced behaviour, one thread may fill the buffer with multiple batches,
-  -- but it should be better than a buffer size of 1 in this multithreaded case.
-  (toTransformBox, fromTransformBox, sealTransform) <- liftIO $ spawn' (bounded numWorkers)
-  (toBatches, fromBatches, sealBatch) <- liftIO $ spawn' (bounded numWorkers)
-  batchThreads <- forM [1..numWorkers] $ \workerId -> async $ void $ runEffect $ readBatchesConcurrently workerId dataset toTransformBox
-  async $ runEffect $ runTransforms transforms fromTransformBox toBatches
-  pure  $ (foldFromProducer (takeBatch fromBatches), batchThreads)
-
-  
-makeFoldWithTransform' :: (MonadIO m, Dataset m dataset batch)  
-  => (batch -> batch')
-  -> dataset
-  -> m (L.FoldM m batch' b -> m b, Async (StM m ()))
-makeFoldWithTransform' transforms dataset = do
-          -- TODO: we can allow different buffer sizes
-          -- which would be necessary for data echoing
-            (toTransformBox, fromTransformBox, sealTransform) <- liftIO $ spawn' (bounded 1)
-            (toBatches, fromBatches, sealBatch) <- liftIO $ spawn' (bounded 1)
-            batchThread <- async $ void $ runEffect $ forever $ readBatches dataset toTransformBox 
-            async $ runEffect $ runTransforms transforms fromTransformBox toBatches
-            pure $ (foldFromProducer (takeBatch fromBatches), batchThread)
-
-makeFold :: (Dataset m dataset batch, MonadIO m)
-    => dataset
-    -> m (L.FoldM m batch b -> m b)
-makeFold = fmap fst . makeFold' 
-
-makeFoldWithTransform :: (MonadIO m, Dataset m dataset batch)  
-  => (batch -> batch')
-  -> dataset
-  -> m (L.FoldM m batch' b -> m b)
-makeFoldWithTransform transf = fmap fst . makeFoldWithTransform' transf 
-
-makeConcurrentFold :: (MonadIO m, ConcurrentDataset m dataset batch')
-  => (batch' -> batch)
-  -> dataset
-  -> Int
-  -> m (L.FoldM m batch b -> m b)
-makeConcurrentFold transforms dataset = fmap fst . makeConcurrentFold' transforms dataset
-  
-foldFromProducer :: Monad m => Producer batch m () -> L.FoldM m batch b -> m b
-foldFromProducer prod fold = (L.impurely P.foldM) fold prod

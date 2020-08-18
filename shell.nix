@@ -25,9 +25,7 @@ let
 
     tools = {
       cabal = "3.2.0.0";
-      ghcide = "0.2.0";
-      ormolu = "0.1.2.0";
-      brittany = "0.12.1.1";
+      haskell-language-server = "0.3.0";
     };
 
     # These programs will be available inside the nix-shell.

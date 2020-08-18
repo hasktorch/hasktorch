@@ -1,3 +1,7 @@
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -14,16 +18,34 @@ import qualified Data.ByteString.Lazy          as BS.Lazy
 import qualified Data.ByteString.Internal      as BSI
 import           GHC.TypeLits
 
+import           Torch.Data.Pipeline
 import           Torch.Internal.Cast
 import           Torch.Typed.Aux
 import           Torch.Typed.Tensor
 import           Torch.Typed.Functional
 import qualified Torch.DType                   as D
+import qualified Torch.Device                  as D
 import qualified Torch.Tensor                  as D
 import qualified Torch.TensorOptions           as D
 import qualified Foreign.ForeignPtr            as F
 import qualified Foreign.Ptr                   as F
 import qualified Torch.Internal.Managed.TensorFactories as LibTorch
+import GHC.Exts (IsList(fromList))
+
+
+data Mnist (device :: (D.DeviceType, Nat) ) (batchSize :: Nat) = Mnist { mnistData :: MnistData }
+
+instance (KnownNat batchSize, KnownDevice device, Applicative m ) =>
+  Dataset m (Mnist device batchSize) Int (Tensor device 'D.Float '[batchSize, 784], Tensor device 'D.Int64 '[batchSize]) where
+  getItem Mnist{..} ix =  
+    let
+      batchSize = natValI @batchSize
+      indexes = [ix * batchSize .. (ix+1) * batchSize - 1]
+      imgs =  getImages @batchSize mnistData indexes
+      labels =  getLabels @batchSize mnistData indexes
+    in pure (toDevice @device imgs, toDevice @device labels)
+
+  keys Mnist{..} = fromList [ 0 .. Torch.Typed.Vision.length mnistData `Prelude.div` (natValI @batchSize) - 1]
 
 data MnistData =
   MnistData

@@ -50,7 +50,7 @@ main = do
     (mnistTrain, mnistTest) <- loadMNIST "datasets/mnist"
     (teacher :: MLP, student :: MLP) <- runDistill mnistTrain
     mapM (\idx -> do
-        testImg <- V.getImages' 1 784 (dataset mnistTest) [idx]
+        let testImg = V.getImages' 1 784 (dataset mnistTest) [idx]
         print $ shape testImg
         V.dispImage testImg
         putStrLn $ "Teacher      : " ++ (show . maxIndex $ forward teacher testImg)
