@@ -15,11 +15,10 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 module Torch.Data.Pipeline ( Dataset(..)
-                           , MapStyleOptions(..)
+                           , DatasetOptions(..)
                            , Sample(..)
-                           , makeListT
-                           , mapStyleOpts
-                           , runContT
+                           , streamFromMap
+                           , datasetOpts
                            ) where
 
 import           Control.Applicative (Alternative, (<|>))
@@ -48,15 +47,15 @@ import           System.Random
 import qualified Torch as Torch
 import           Torch.Data.Internal
 
-data MapStyleOptions = MapStyleOptions { bufferSize :: Int
-                                       , numWorkers :: Int
-                                       , shuffle :: Sample
-                                       }
+data DatasetOptions = DatasetOptions { bufferSize :: Int
+                               , numWorkers :: Int
+                               , shuffle :: Sample
+                               }
 
-mapStyleOpts numWorkers = MapStyleOptions { bufferSize = numWorkers
-                                          , numWorkers = numWorkers
-                                          , shuffle = Sequential
-                                          }
+datasetOpts numWorkers = DatasetOptions { bufferSize = numWorkers
+                                         , numWorkers = numWorkers
+                                         , shuffle = Sequential
+                                         }
 
 data Sample where
    Sequential :: Sample
@@ -73,12 +72,12 @@ class (Ord k) => Dataset m dataset k sample | dataset -> sample, dataset -> k  w
 --   then update the TVar associated with that key
 -- have a worker waiting for each successive key to be updated in the list of (key, TVar)
 
-makeListT :: forall m dataset k sample r .
+streamFromMap :: forall m dataset k sample r .
   (MonadIO m, MonadBaseControl IO m,  Dataset m dataset k sample) =>
-  MapStyleOptions ->
+  DatasetOptions ->
   dataset ->
-  ContT r m  (ListT m (sample, Int), Sample)
-makeListT MapStyleOptions{..} dataset = do
+  ContT r m  (ListT m sample, Sample)
+streamFromMap DatasetOptions{..} dataset = do
   (keyOutput, keyInput, seal) <- liftIO $ spawn' unbounded
 
   let retrieveSet = liftIO $ keyTVarSet $ keys @m dataset

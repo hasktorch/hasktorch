@@ -18,12 +18,9 @@
 
 module Torch.Data.StreamedPipeline
   (
-    runMockData,
-    makeListT,
-    makeListT',
-    pmap,
-    pmap',
-    dataloaderOpts,
+    streamFrom,
+    streamFrom',
+    datastreamOpts,
     Datastream (..),
     MonadBase (..),
     MonadBaseControl (..),
@@ -60,44 +57,17 @@ data DataloaderOptions = DataloaderOptions
   }
 
 -- | Default dataloader options, you should override the fields in this record.
-dataloaderOpts = DataloaderOptions { bufferSize = 4 } -- 4 is relatively arbitrary
+datastreamOpts = DataloaderOptions { bufferSize = 4 } -- 4 is relatively arbitrary
 
--- | Run a parallel map over the given ListT (TODO: with the given number of workers)
-pmap :: (MonadIO m, MonadBaseControl IO m) => Int -> (a -> b) -> ListT m a -> ContT r m (ListT m b)
-pmap n f prod = ContT $ \cont ->
-  snd
-    <$> withBufferLifted
-      (bounded n)
-      (\output -> runEffect $ enumerate prod >-> P.map f >-> toOutput output)
-      (\input -> cont . Select $ fromInput input)
-
--- | Run a parallel pipe over the given ListT. (TODO: with the given number of workers)
-pmap' :: (MonadIO m, MonadBaseControl IO m) => Int -> Pipe a b m () ->  ListT m a -> ContT r m (ListT m b)
-pmap' n f  prod = ContT $ \cont ->
-  snd
-    <$> withBufferLifted
-      (bounded n)
-      (\output -> runEffect $ enumerate prod >-> f >-> toOutput output)
-      (\input -> cont . Select $ fromInput input)
-
-
-makeListT ::
+streamFrom ::
   forall sample m dataset seed b r.
   (Datastream m seed dataset sample, MonadBaseControl IO m, MonadBase IO m) =>
   DataloaderOptions -> 
   dataset ->
   ListT m seed ->
-  ContT b m (ListT m (sample, Int))
-makeListT DataloaderOptions{..} dataset seeds = runWithBuffer bufferSize $ readSamples dataset seeds
+  ContT b m (ListT m sample)
+streamFrom DataloaderOptions{..} dataset seeds = runWithBuffer bufferSize $ readSamples dataset seeds
 
--- makeListT' ::
---   forall sample m f dataset seed b.
---   (Datastream m seed dataset sample, MonadBaseControl IO m, MonadBase IO m, Foldable f) =>
---   DataloaderOptions -> 
---   dataset ->
---   f seed ->
---   ContT b m (ListT m (sample, Int))
--- makeListT' DataloaderOptions{..} dataset seeds = runWithBuffer bufferSize $ readSamples' dataset seeds
 
 readSamples ::
   forall m seed dataset sample.
@@ -110,16 +80,6 @@ readSamples dataset seeds outputBox =
   let this = flip $ mappend . Concurrently . runEffect . (>-> toOutput' outputBox) . enumerate . streamBatch @m @seed @dataset @sample dataset
    in join . P.fold this mempty runConcurrently $ enumerate seeds
 
--- readSamples' ::
---   forall m seed f dataset sample.
---   (Datastream m seed dataset sample, MonadBaseControl IO m, Foldable f) =>
---   dataset ->
---   f seed ->
---   Output sample ->
---   m ()
--- readSamples' dataset seeds outputBox =
---   let this = flip $ mappend . Concurrently . runEffect . (>-> toOutput' outputBox) . enumerate . streamBatch @m @seed @dataset @sample dataset
---    in L.fold (L.Fold this mempty runConcurrently) seeds
 
 readSamplesDeterministic :: 
   forall m seed f dataset sample.
@@ -132,14 +92,14 @@ readSamplesDeterministic dataset seeds =
         mappend c . Concurrently . runEffect .  (>-> toOutput' outputBox) . enumerate $ streamBatch @m @seed @dataset @sample dataset seed
    in L.fold (L.Fold this mempty runConcurrently) seeds
   
-makeListT' ::
+streamFrom' ::
   forall sample m f dataset seed b.
   (Show sample, Datastream m seed dataset sample, MonadBaseControl IO m, MonadBase IO m, MonadIO m, Foldable f) =>
   DataloaderOptions -> 
   dataset ->
   f seed ->
-  ContT b m (ListT m (sample, Int))
-makeListT' DataloaderOptions{..} dataset seeds = do
+  ContT b m (ListT m sample)
+streamFrom' DataloaderOptions{..} dataset seeds = do
   workerTracker <- atomically $ newTVar 0
   let
       consumeSeeds mailboxes o = do
@@ -175,13 +135,4 @@ fromInputOnce workerTracker input = do
     Just a  -> do
       yield a
       return ()
-
-
-data MockData = MockData 
-instance Datastream IO Int MockData Int where
-  streamBatch _ seed = Select $ P.replicateM 100 (pure seed)
-
-runMockData :: IO ()
-runMockData = runContT (makeListT' dataloaderOpts MockData [1 :: Int,2,3,4,5])
-  (\x -> runEffect $ enumerate x >-> P.chain (liftIO . print) >-> P.drain)
 

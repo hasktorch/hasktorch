@@ -80,9 +80,11 @@ library
                     , Torch.Distributions.Categorical
                     , Torch.Data.Pipeline
                     , Torch.Data.StreamedPipeline
+                    , Torch.Data.Utils
                     , Torch.Data.Internal
                     , Torch.Data.Dataset
                     , Torch.Data.CsvDataset
+
  other-modules:       Paths_hasktorch
  hs-source-dirs:      src
  default-language:    Haskell2010
