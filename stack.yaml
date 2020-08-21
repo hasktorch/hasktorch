@@ -1,5 +1,7 @@
 resolver: lts-15.5
 
+compiler: ghc-8.8.4
+
 packages:
 - codegen
 - libtorch-ffi
