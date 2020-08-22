@@ -1,33 +1,32 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DeriveGeneric #-}
 
 module Torch.Typed.DType where
 
-import           Torch.HList
-import           Data.Kind                    (Type)
-import           GHC.TypeLits
-import           GHC.TypeLits.Extra
-import           GHC.Generics
-import           System.IO.Unsafe
-
+import Data.Kind (Type)
+import GHC.Generics
+import GHC.TypeLits
+import GHC.TypeLits.Extra
+import System.IO.Unsafe
+import qualified Torch.DType as D
+import qualified Torch.Device as D
+import Torch.HList
 import qualified Torch.Internal.Cast as ATen
 import qualified Torch.Internal.Class as ATen
 import qualified Torch.Internal.Managed.Autograd as LibTorch
-import qualified Torch.DType                   as D
-import qualified Torch.Device                  as D
-import qualified Torch.Tensor                  as D
-import           Torch.Typed.Tensor
-import           Torch.Typed.Parameter
+import qualified Torch.Tensor as D
+import Torch.Typed.Parameter
+import Torch.Typed.Tensor
 
 class HasToDType dtype' dtype f g | dtype' dtype f -> g, dtype' dtype g -> f where
   -- >>> model <- A.sample (Torch.Typed.NN.LinearSpec @1 @1 @'D.Float @'( 'D.CPU, 0))
@@ -43,43 +42,49 @@ class HasToDType dtype' dtype f g | dtype' dtype f -> g, dtype' dtype g -> f whe
 -- = Torch.Typed.NN.Linear 1 1 'Double '( 'CPU, 0)
 type family ReplaceDType (f :: k) (dtype' :: D.DType) (dtype :: D.DType) :: k where
   ReplaceDType (t dtype) dtype' dtype = t dtype'
-  ReplaceDType (t a)     dtype' dtype = (ReplaceDType t dtype' dtype) (ReplaceDType a dtype' dtype)
-  ReplaceDType t         _      _     = t
+  ReplaceDType (t a) dtype' dtype = (ReplaceDType t dtype' dtype) (ReplaceDType a dtype' dtype)
+  ReplaceDType t _ _ = t
 
 -- In a data type `f` parameterized by zero or one data type variables, replace the only occurring data type with the data type `dtype'`.
--- 
+--
 -- >>> :kind! ReplaceDType' (Torch.Typed.NN.Linear 1 1 'D.Float '( 'D.CPU, 0)) 'D.Double
 -- ReplaceDType' (Torch.Typed.NN.Linear 1 1 'D.Float '( 'D.CPU, 0)) 'D.Double :: *
 -- = Torch.Typed.NN.Linear 1 1 'Double '( 'CPU, 0)
 type family ReplaceDType' (f :: k) (dtype' :: D.DType) :: k where
   ReplaceDType' (t (dtype :: D.DType)) dtype' = t dtype'
-  ReplaceDType' (t a)                  dtype' = (ReplaceDType' t dtype') (ReplaceDType' a dtype')
-  ReplaceDType' t                      _      = t
+  ReplaceDType' (t a) dtype' = (ReplaceDType' t dtype') (ReplaceDType' a dtype')
+  ReplaceDType' t _ = t
 
 instance
-  ( g ~ ReplaceDType f dtype' dtype
-  , f ~ ReplaceDType g dtype dtype'
-  , Generic f
-  , Generic g
-  , GHasToDType dtype' dtype (Rep f) (Rep g)
-  ) => HasToDType dtype' dtype f g where
+  ( g ~ ReplaceDType f dtype' dtype,
+    f ~ ReplaceDType g dtype dtype',
+    Generic f,
+    Generic g,
+    GHasToDType dtype' dtype (Rep f) (Rep g)
+  ) =>
+  HasToDType dtype' dtype f g
+  where
   toDType = to . gToDType @dtype' @dtype . from
 
-class GHasToDType
-  (dtype' :: D.DType)
-  (dtype :: D.DType)
-  (f :: Type -> Type)
-  (g :: Type -> Type) where
-  gToDType :: forall a . f a -> g a
+class
+  GHasToDType
+    (dtype' :: D.DType)
+    (dtype :: D.DType)
+    (f :: Type -> Type)
+    (g :: Type -> Type)
+  where
+  gToDType :: forall a. f a -> g a
 
 instance
-  ( GHasToDType dtype' dtype l l'
-  , GHasToDType dtype' dtype r r'
-  ) => GHasToDType dtype' dtype (l :*: r) (l' :*: r') where
+  ( GHasToDType dtype' dtype l l',
+    GHasToDType dtype' dtype r r'
+  ) =>
+  GHasToDType dtype' dtype (l :*: r) (l' :*: r')
+  where
   gToDType (l :*: r) =
     let l' = gToDType @dtype' @dtype l
         r' = gToDType @dtype' @dtype r
-    in  l' :*: r'
+     in l' :*: r'
 
 instance {-# OVERLAPS #-} (KnownDType dtype') => HasToDType dtype' dtype (Tensor device dtype shape) (Tensor device dtype' shape) where
   toDType = Torch.Typed.Tensor.toDType
@@ -105,5 +110,5 @@ instance GHasToDType dtype' dtype U1 U1 where
 -- = 'Just 'D.Float
 type family GetDType (f :: k) :: Maybe D.DType where
   GetDType (t (dtype :: D.DType)) = Just dtype
-  GetDType (t a)                  = GetDType t
-  GetDType t                      = Nothing
+  GetDType (t a) = GetDType t
+  GetDType t = Nothing
