@@ -13,7 +13,7 @@
 module Torch.Typed.Aux where
 
 import qualified Data.Int as I
-import Data.Kind (Constraint)
+import Data.Kind
 import Data.Proxy
 import Data.Type.Equality
 import GHC.TypeLits
