@@ -63,9 +63,11 @@ import Data.Text.Prettyprint.Doc (Doc, hcat, hsep, parens, pretty, sep, vsep, (<
 import Data.Text.Prettyprint.Doc.Render.Terminal
 import Data.Word (Word64)
 import qualified GHC.Exts as Exts
+import GHC.Float (float2Double)
 import GHC.Generics
 import GHC.IO (unsafePerformIO)
 import GHC.TypeLits
+import qualified Graphics.Vega.VegaLite as Vega
 import Hedgehog (Gen, GenT, MonadGen (..), Property, PropertyT, check, checkParallel, discover, distributeT, forAll, property, (===))
 import qualified Hedgehog.Gen as Gen hiding (shuffle)
 import Hedgehog.Internal.Gen (evalGen)
@@ -2723,19 +2725,33 @@ data
   }
   deriving (Eq, Ord, Show, Functor, Generic)
 
-testProgram ::
-  -- | learning rate
-  LearningRate TestDevice TestDType ->
-  -- | number of epochs
-  Int ->
-  -- | number batches taken from training file per epoch
-  Int ->
-  -- | number batches taken from evaluation file per epoch
-  Int ->
-  -- | ^ file name
-  FilePath ->
-  IO ()
-testProgram learningRate numEpochs trainingLen evaluationLen ptFile = do
+data Config = Config
+  { -- | number training examples
+    trainingLen :: Int,
+    -- | number evaluation examples
+    evaluationLen :: Int,
+    -- | input masking probability
+    probMaskInput :: Float,
+    -- | target masking probability
+    probMaskTarget :: Float,
+    -- | maximum learning rate
+    maxLearningRate :: LearningRate TestDevice TestDType,
+    -- | final learning rate
+    finalLearningRate :: LearningRate TestDevice TestDType,
+    -- | total number of epochs
+    numEpochs :: Int,
+    -- | number of warm-up epochs
+    numWarmupEpochs :: Int,
+    -- | number of cool-down epochs
+    numCooldownEpochs :: Int,
+    -- | model checkpoint file name
+    ptFile :: FilePath,
+    -- | plot file name
+    plotFile :: FilePath
+  }
+
+testProgram :: Config -> IO ()
+testProgram Config {..} = do
   model <-
     -- initialize the model
     liftIO . Torch.Typed.sample $
@@ -2761,16 +2777,7 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = do
   let -- use the Adam optimization algorithm, see https://arxiv.org/abs/1412.6980
       optim = mkAdam 0 0.9 0.999 (flattenParameters model)
 
-  let -- learning rate(s)
-      maxLearningRate = 1e-2
-      finalLearningRate = 1e-4
-
-      -- total number of epochs
-      numEpochs = 100
-      numWarmupEpochs = 10
-      numCooldownEpochs = 10
-
-      -- learning rate schedule
+  let -- learning rate schedule
       learningRateSchedule epoch
         | epoch <= 0 = 0.0
         | 0 < epoch && epoch <= numWarmupEpochs =
@@ -2785,11 +2792,11 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = do
 
   options <- getStdGen >>= (\g -> pure (mapStyleOpts 1) {shuffle = Shuffle g})
 
-  let pMaskInput = 0.15 :: Float
-      pMaskTarget = 0.15 :: Float
-
-      -- create a dataset of 10000 unique training examples
-      trainingSeeds = Set.fromList . List.take 10000 $ Seed.from <$> List.iterate (+ 1) (0 :: Word64)
+  let -- create a dataset unique training examples
+      trainingSeeds =
+        Set.fromList
+          . List.take trainingLen
+          $ Seed.from <$> List.iterate (+ 1) (0 :: Word64)
       trainingData =
         RATransformerMLMData
           @TestSeqLen
@@ -2798,12 +2805,15 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = do
           @TestDType
           @TestDataDevice
           "training"
-          pMaskInput
-          pMaskTarget
+          probMaskInput
+          probMaskTarget
           trainingSeeds
 
-      -- create a dataset of 500 unique evaluation examples
-      evaluationsSeeds = Set.fromList . List.take 500 $ Seed.from <$> List.iterate (+ 1) (10000 :: Word64)
+      -- create a dataset of unique evaluation examples
+      evaluationsSeeds =
+        Set.fromList
+          . List.take evaluationLen
+          $ Seed.from <$> List.iterate (+ 1) (fromInteger . toInteger $ trainingLen :: Word64)
       evaluationData =
         RATransformerMLMData
           @TestSeqLen
@@ -2812,8 +2822,8 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = do
           @TestDType
           @TestDataDevice
           "evaluation"
-          pMaskInput
-          pMaskTarget
+          probMaskInput
+          probMaskTarget
           evaluationsSeeds
 
   let -- generate statistics and plots for each epoch
@@ -2823,7 +2833,7 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = do
         trainingCREs <- pure $ trainingCRE : trainingCREs
         (evaluationCRE, options) <- evaluate model options evaluationData
         evaluationCREs <- pure $ evaluationCRE : evaluationCREs
-        -- plot "plot.html" (infer model) trainingCREs evaluationCREs learningRates evaluationData
+        plot "plot.html" trainingCREs evaluationCREs learningRates
         pure (trainingCREs, evaluationCREs, learningRates, options)
       -- program step function
       step (model, optim, trainingCREs, evaluationCREs, learningRates, options) epoch = do
@@ -2835,7 +2845,7 @@ testProgram learningRate numEpochs trainingLen evaluationLen ptFile = do
           -- calculate epoch statistics
           stats model learningRate trainingCREs evaluationCREs learningRates options
         -- save the model weights to a file and end program
-        -- save (hmap' ToDependent . flattenParameters $ model) ptFile
+        lift $ save (hmap' ToDependent . flattenParameters $ model) ptFile
         pure (model, optim, trainingCREs, evaluationCREs, learningRates, options)
       -- initial program state
       init = do
@@ -2904,55 +2914,6 @@ train model optim learningRate options dataset =
             =<< collate @TestBatchSize 1 examples
         pure (model, optim, options {shuffle = shuffle})
 
-evaluate ::
-  _ =>
-  model ->
-  MapStyleOptions ->
-  RATransformerMLMData seqLen numEmbeds relDim dtype device pMask ->
-  ContT r IO (CRE Float, MapStyleOptions)
-evaluate model options dataset =
-  let step (cre, _step) (RATransformerMLMBatch {..}, batch) = do
-        putStrLn $ "Evaluation batch " <> show batch
-        let input = toDevice @TestDevice @TestDataDevice ratInput
-            prediction = forward model input
-        let target = toDevice @TestDevice @TestDataDevice ratTarget
-            loss' mask =
-              toFloat $
-                loss
-                  (ratInvalidTokenMask target)
-                  (mask `logicalAnd` (logicalNot . ratKeyPaddingMask $ input))
-                  prediction
-                  (ratTargetTokens target)
-            cre' =
-              CRE
-                { cre = loss' ones,
-                  creInput = loss' $ ratInputScopeMask target,
-                  creTarget = loss' $ ratTargetScopeMask target,
-                  creMasked = loss' $ ratTokenMask target,
-                  creMaskedInput = loss' $ ratTokenMask target `logicalAnd` ratInputScopeMask target,
-                  creMaskedTarget = loss' $ ratTokenMask target `logicalAnd` ratTargetScopeMask target,
-                  creNonMasked = loss' $ (logicalNot . ratTokenMask $ target),
-                  creNonMaskedInput = loss' $ (logicalNot . ratTokenMask $ target) `logicalAnd` (ratInputScopeMask target),
-                  creNonMaskedTarget = loss' $ (logicalNot . ratTokenMask $ target) `logicalAnd` (ratTargetScopeMask target)
-                }
-        -- guard (not . toBool . Torch.Typed.isNaN $ cre)
-        let res = (cre <> cre', _step + 1)
-        -- force GC cleanup after every batch
-        performGC
-        pure res
-      init = pure (mempty, 0 :: Int)
-      done (_, 0) = pure $ (const 1) <$> mempty
-      done (cre, _step) =
-        let scale x = x / (fromInteger . toInteger $ _step)
-         in pure (scale <$> cre)
-   in do
-        (examples, shuffle) <- makeListT options dataset
-        cre <-
-          lift . P.foldM step init done . enumerate
-            =<< collate @TestBatchSize 1 examples
-        -- lift . putStrLn $ "Average " <> unpack (name dataset) <> " losses: " <> show cre
-        pure (cre, options {shuffle = shuffle})
-
 data CRE a = CRE
   { cre :: a,
     creInput :: a,
@@ -2993,6 +2954,177 @@ instance Num a => Monoid (CRE a) where
         creNonMaskedInput = 0,
         creNonMaskedTarget = 0
       }
+
+evaluate ::
+  _ =>
+  model ->
+  MapStyleOptions ->
+  RATransformerMLMData seqLen numEmbeds relDim dtype device pMask ->
+  ContT r IO (CRE Float, MapStyleOptions)
+evaluate model options dataset =
+  let step (cre, _) (RATransformerMLMBatch {..}, iter) = do
+        let input = toDevice @TestDevice @TestDataDevice ratInput
+            prediction = forward model input
+        let target = toDevice @TestDevice @TestDataDevice ratTarget
+            loss' mask =
+              toFloat $
+                loss
+                  (ratInvalidTokenMask target)
+                  (mask `logicalAnd` (logicalNot . ratKeyPaddingMask $ input))
+                  prediction
+                  (ratTargetTokens target)
+            cre' =
+              CRE
+                { cre = loss' ones,
+                  creInput = loss' $ ratInputScopeMask target,
+                  creTarget = loss' $ ratTargetScopeMask target,
+                  creMasked = loss' $ ratTokenMask target,
+                  creMaskedInput = loss' $ ratTokenMask target `logicalAnd` ratInputScopeMask target,
+                  creMaskedTarget = loss' $ ratTokenMask target `logicalAnd` ratTargetScopeMask target,
+                  creNonMasked = loss' $ (logicalNot . ratTokenMask $ target),
+                  creNonMaskedInput = loss' $ (logicalNot . ratTokenMask $ target) `logicalAnd` (ratInputScopeMask target),
+                  creNonMaskedTarget = loss' $ (logicalNot . ratTokenMask $ target) `logicalAnd` (ratTargetScopeMask target)
+                }
+        -- guard (not . toBool . Torch.Typed.isNaN $ cre)
+        let res = (cre <> cre', iter)
+        -- force GC cleanup after every batch
+        performGC
+        pure res
+      init = pure (mempty, 0)
+      done (_, 0) = pure $ const 0 <$> mempty
+      done (cre, iter) =
+        let scale x = x / (fromInteger . toInteger $ iter + natValI @TestBatchSize)
+         in pure (scale <$> cre)
+   in do
+        (examples, shuffle) <- makeListT options dataset
+        cre <-
+          lift . P.foldM step init done . enumerate
+            =<< collate @TestBatchSize 1 examples
+        lift . putStrLn $ "Average " <> unpack (name dataset) <> " losses: " <> show cre
+        pure (cre, options {shuffle = shuffle})
+
+plot ::
+  _ =>
+  -- | output file path
+  FilePath ->
+  -- | training losses
+  [CRE Float] ->
+  -- | evaluation losses
+  [CRE Float] ->
+  -- | learning rates
+  [Float] ->
+  -- | returned continuation
+  ContT r IO ()
+plot file trainingCREs evaluationCREs learningRates = do
+  let epochs = [0, 1 ..]
+      lossData =
+        let mkDataRows name cres =
+              join
+                . zipWith
+                  ( \epoch CRE {..} ->
+                      let f loss title =
+                            Vega.dataRow
+                              [ ("epoch", Vega.Number . fromInteger $ epoch),
+                                ("title", Vega.Str $ name <> " " <> title),
+                                ("loss", Vega.Number . float2Double $ loss)
+                              ]
+                       in [ f cre "loss",
+                            f creInput "loss input",
+                            f creTarget "loss target",
+                            f creMasked "loss masked",
+                            f creMaskedInput "loss masked input",
+                            f creMaskedTarget "loss masked target",
+                            f creNonMasked "loss non-masked",
+                            f creNonMaskedInput "loss non-masked input",
+                            f creNonMaskedTarget "loss non-masked target"
+                          ]
+                  )
+                  epochs
+                $ reverse cres
+         in Vega.dataFromRows [] . foldr id [] $
+              mkDataRows "training" trainingCREs
+                <> mkDataRows "evaluation" evaluationCREs
+      learningRateData =
+        let dataRows =
+              zipWith
+                ( \epoch learningRate ->
+                    Vega.dataRow
+                      [ ("epoch", Vega.Number . fromInteger $ epoch),
+                        ("learning_rate", Vega.Number . float2Double $ learningRate)
+                      ]
+                )
+                epochs
+                (reverse learningRates)
+         in Vega.dataFromRows [] . foldr id [] $ dataRows
+  lift . Vega.toHtmlFile file . mkVegaLite . Vega.datasets $
+    [ ("losses", lossData),
+      ("learning_rates", learningRateData)
+    ]
+
+mkVegaLite :: Vega.Data -> Vega.VegaLite
+mkVegaLite dataset =
+  let -- width and height of the individual plots (in pixels)
+      w = Vega.width 700
+      h = Vega.height 350
+
+      encLosses =
+        Vega.encoding
+          . Vega.position
+            Vega.X
+            [ Vega.PName "epoch",
+              Vega.PmType Vega.Quantitative,
+              Vega.PScale scaleOptsEpoch
+            ]
+          . Vega.position
+            Vega.Y
+            [ Vega.PName "loss",
+              Vega.PmType Vega.Quantitative,
+              Vega.PScale [Vega.SType Vega.ScLog]
+            ]
+          . Vega.color
+            [ Vega.MName "title",
+              Vega.MmType Vega.Nominal,
+              Vega.MLegend [Vega.LTitle "", Vega.LOrient Vega.LOBottom]
+            ]
+      scaleOptsEpoch =
+        [ Vega.SDomain (Vega.DNumbers [0, 100]),
+          Vega.SNice (Vega.IsNice False)
+        ]
+      losses =
+        Vega.asSpec
+          [ Vega.dataFromSource "losses" [],
+            encLosses [],
+            Vega.mark Vega.Line [],
+            w,
+            h
+          ]
+
+      encLearningRate =
+        Vega.encoding
+          . Vega.position
+            Vega.X
+            [ Vega.PName "epoch",
+              Vega.PmType Vega.Quantitative,
+              Vega.PScale scaleOptsEpoch
+            ]
+          . Vega.position
+            Vega.Y
+            [ Vega.PName "learning_rate",
+              Vega.PTitle "learning rate",
+              Vega.PmType Vega.Quantitative
+            ]
+      learningRates =
+        Vega.asSpec
+          [ Vega.dataFromSource "learning_rates" [],
+            encLearningRate [],
+            Vega.mark Vega.Line [],
+            w,
+            h
+          ]
+   in Vega.toVegaLite
+        [ dataset,
+          Vega.vConcat [losses, learningRates]
+        ]
 
 -- | checks
 -- * for a random model, changing a token at a random position should change the outputs of all positions as permitted by the attention mask

@@ -69,3 +69,4 @@ executable action-transition-system
                      , prettyprinter
                      , prettyprinter-ansi-terminal
                      , random
+                     , hvega
