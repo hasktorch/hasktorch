@@ -2341,19 +2341,19 @@ display3dTensorBatch t =
 
 ------------------------------------------------------------------------
 
-type TestBatchSize = 2
+type TestBatchSize = 64
 
-type TestSeqLen = 32
+type TestSeqLen = 64
 
 type TestRelDim = 4
 
-type TestNumAttnLayers = 2
+type TestNumAttnLayers = 6
 
-type TestNumHeads = 3
+type TestNumHeads = 8
 
-type TestHeadDim = 8
+type TestHeadDim = 16
 
-type TestFFNDim = 16
+type TestFFNDim = 256
 
 type TestPaddingIdx = 0
 
@@ -2371,7 +2371,7 @@ type TestDType = 'Float
 
 type TestDataDevice = '( 'CPU, 0)
 
-type TestDevice = '( 'CPU, 0)
+type TestDevice = '( 'CUDA, 0)
 
 type TestRATransformerMLMSpec =
   RATransformerMLMSpec
@@ -3064,8 +3064,8 @@ plot file trainingCREs evaluationCREs learningRates = do
 mkVegaLite :: Vega.Data -> Vega.VegaLite
 mkVegaLite dataset =
   let -- width and height of the individual plots (in pixels)
-      w = Vega.width 700
-      h = Vega.height 350
+      w = Vega.width 1400
+      h = Vega.height 700
 
       encLosses =
         Vega.encoding
@@ -3087,7 +3087,7 @@ mkVegaLite dataset =
               Vega.MLegend [Vega.LTitle "", Vega.LOrient Vega.LOBottom]
             ]
       scaleOptsEpoch =
-        [ Vega.SDomain (Vega.DNumbers [0, 100]),
+        [ Vega.SDomain (Vega.DNumbers [0, 1000]),
           Vega.SNice (Vega.IsNice False)
         ]
       losses =
