@@ -2091,7 +2091,7 @@ testDataset ::
             TestTokenNumEmbeds
             TestRelDim
             TestDType
-            TestDevice
+            TestDataDevice
         )
     )
 testDataset pMaskInput pMaskTarget = do
@@ -2102,7 +2102,7 @@ testDataset pMaskInput pMaskTarget = do
           @TestTokenNumEmbeds
           @TestRelDim
           @TestDType
-          @TestDevice
+          @TestDataDevice
           @Float
           "test"
           pMaskInput
@@ -2341,9 +2341,9 @@ display3dTensorBatch t =
 
 ------------------------------------------------------------------------
 
-type TestBatchSize = 64
+type TestBatchSize = 16
 
-type TestSeqLen = 64
+type TestSeqLen = 256
 
 type TestRelDim = 4
 
