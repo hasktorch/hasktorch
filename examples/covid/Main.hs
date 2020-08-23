@@ -54,9 +54,17 @@ main = do
 
   let smallData = filterOn tFips (eq 1223) tensorData
   let cases = clampMin 0.0 . diff . tCases $ smallData
-  let tensorList = asTensor <$> (:[]) <$> (fromIntegral <$> (asValue cases :: [Int]) :: [Float])
-  model <- sample Simple1dSpec { lstm1dSpec = LSTMSpec {inputSize = 1, hiddenSize = 3} }
-  let result = forward model tensorList
-  let check = lstmCellForward (lstm1d model)  (zeros' [1], zeros' [3]) (asTensor [[1.0 :: Float]])
+  let casesList = reshape [1, 1] <$> asTensor <$> (fromIntegral <$> (asValue cases :: [Int]) :: [Float])
+  model <- sample Simple1dSpec { lstm1dSpec = LSTMSpec {inputSize = 1, hiddenSize = 6} }
+  let input = ones' [1, 1]
+  let check = lstmCellForward (lstm1d model)  (zeros' [1, 6], zeros' [1, 6]) input
+
+
+  print "check"
+  print check
+
+  -- let result = forward model tensorList
+  print "result"
+  -- print result
 
   putStrLn "Done"

@@ -38,12 +38,16 @@ instance Parameterized LSTMCell
 
 instance Randomizable LSTMSpec LSTMCell where
   sample LSTMSpec{..} = do
-    weightsIH' <- makeIndependent =<< randIO' [inputSize, hiddenSize]
-    weightsHH' <- makeIndependent =<< randIO' [hiddenSize, hiddenSize]
-    biasIH' <- makeIndependent =<< randIO' [hiddenSize]
-    biasHH' <- makeIndependent =<< randIO' [hiddenSize]
+    -- x4 dimension calculations - see https://pytorch.org/docs/master/generated/torch.nn.LSTMCell.html
+    weightsIH' <- makeIndependent =<< initScale <$> randIO' [4 * hiddenSize, inputSize]
+    weightsHH' <- makeIndependent =<< initScale <$> randIO' [4 * hiddenSize, hiddenSize]
+    biasIH' <- makeIndependent =<< initScale <$> randIO' [4 * hiddenSize]
+    biasHH' <- makeIndependent =<< initScale <$> randIO' [4 * hiddenSize]
     pure $ LSTMCell {
         weightsIH=weightsIH',
         weightsHH=weightsHH',
         biasIH=biasIH',
         biasHH=biasHH' }
+    where
+      scale = Prelude.sqrt $ 1.0 / fromIntegral hiddenSize :: Float
+      initScale =  subScalar scale . mulScalar scale 
