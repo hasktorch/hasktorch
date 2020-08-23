@@ -62,7 +62,10 @@ executable action-transition-system
                      , mmorph
                      , ordered-containers
                      , pipes
+                     , pipes-concurrency
+                     , pipes-group
                      , pipes-safe
                      , libtorch-ffi
                      , prettyprinter
                      , prettyprinter-ansi-terminal
+                     , random
