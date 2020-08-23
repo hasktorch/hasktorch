@@ -14,6 +14,8 @@ import qualified Data.Vector as V
 import GHC.Generics (Generic)
 import Torch as T
 
+import CovidUtil
+
 -- This is a placeholder for this example until we have a more formal data loader abstraction
 --
 class Dataset d a where
@@ -55,8 +57,14 @@ data TensorData = TensorData
   }
   deriving (Eq, Generic, Show)
 
-instance Dataset TensorData (Tensor, Tensor) where
-  getItem dataset index batchSize = undefined
+instance Dataset TensorData TensorData where
+  getItem dataset index batchSize = 
+    filterOn tTimes timeFilter2
+    . filterOn tTimes timeFilter1 
+    $ dataset
+    where
+      timeFilter1 = \t -> ge t (asTensor (fromIntegral index :: Float))
+      timeFilter2 = \t -> lt t (asTensor (fromIntegral (index + batchSize) :: Float))
 
 -- | Parse a CSV file of county level data
 loadDataset :: String -> IO (V.Vector UsCounties)
@@ -96,10 +104,10 @@ prepTensors modelData =
 -- | Treat TensorData as a pseudo-dataframe, filter the field specified by `getter` using
 -- the predicate function
 filterOn ::
-  (TensorData -> Tensor) -> -- ^ getter
-  (Tensor -> Tensor) -> -- ^ predicate
-  TensorData -> -- ^ input data
-  TensorData -- ^ filtered data
+  (TensorData -> Tensor) -> -- getter
+  (Tensor -> Tensor) -> -- predicate
+  TensorData -> -- input data
+  TensorData -- filtered data
 filterOn getter pred tData =
   TensorData
     { tTimes = selector (tTimes tData),
@@ -136,3 +144,16 @@ trim t =
     len = shape t !! 0
     nz = squeezeAll . nonzero $ t
     hasVal = T.all $ toDType Bool nz
+
+-- | Plot time series
+-- Clamping is done since data artifacts can cause total changes to go negative - see https://github.com/nytimes/covid-19-data/issues/425
+plotTS fips2idx tensorData fips = do
+  let fipsIdx = fips2idx M.! fips
+  let newCases =
+        trim
+          . clampMin 0.0
+          . diff
+          . tCases
+          . filterOn tFips (eq $ asTensor fipsIdx)
+          $ tensorData
+  tensorSparkline newCases

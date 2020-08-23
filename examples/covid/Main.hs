@@ -5,7 +5,6 @@
 module Main where
 
 import CovidData
-import CovidUtil
 import Data.Csv
 import qualified Data.Map as M
 import qualified Data.Set as S
@@ -20,18 +19,14 @@ import TimeSeriesModel
 import Torch
 import Torch as T
 
--- | Plot time series
--- Clamping is done since data artifacts can cause total changes to go negative - see https://github.com/nytimes/covid-19-data/issues/425
-plotTS fips2idx tensorData fips = do
-  let fipsIdx = fips2idx M.! fips
-  let newCases =
-        trim
-          . clampMin 0.0
-          . diff
-          . tCases
-          . filterOn tFips (eq $ asTensor fipsIdx)
-          $ tensorData
-  tensorSparkline newCases
+import Torch.NN.Recurrent.Cell.LSTM
+
+plotExampleData modelData tensorData = do
+  plotTS (fipsMap modelData) tensorData "25025"
+  plotTS (fipsMap modelData) tensorData "51059"
+  plotTS (fipsMap modelData) tensorData "48113"
+  plotTS (fipsMap modelData) tensorData "06037"
+  plotTS (fipsMap modelData) tensorData "06075"
 
 main :: IO ()
 main = do
@@ -40,6 +35,8 @@ main = do
   putStrLn "Preprocessing Data"
   modelData <- prepData dataset
   let tensorData = prepTensors modelData
+
+  plotExampleData modelData tensorData
 
   let tIndices = asTensor (fipsIdxs modelData)
   let embedDim = 2
@@ -52,20 +49,14 @@ main = do
   putStrLn "Number of counties:"
   print $ length fipsList
 
-  plotTS (fipsMap modelData) tensorData "25025"
-  plotTS (fipsMap modelData) tensorData "51059"
-  plotTS (fipsMap modelData) tensorData "48113"
-  plotTS (fipsMap modelData) tensorData "06037"
-  plotTS (fipsMap modelData) tensorData "06075"
+  initializedModel <- sample Simple1dSpec { lstm1dSpec = LSTMSpec {inputSize = 1, hiddenSize = 2} }
+  -- let spec = optimSpec initializedModel undefined
 
-{-
-  let regionData = filterOn tFips (eq (1183) tensorData)
-  let t2vd = 6
-  let inputDim = 3193 + t2vd + 1 -- # counties + t2vDim + county of interest count
-  initializedModel <- initModel 3193 t2vd 12
-  -}
+  let smallData = filterOn tFips (eq 1223) tensorData
+  let cases = clampMin 0.0 . diff . tCases $ smallData
+  let tensorList = asTensor <$> (:[]) <$> (fromIntegral <$> (asValue cases :: [Int]) :: [Float])
+  model <- sample Simple1dSpec { lstm1dSpec = LSTMSpec {inputSize = 1, hiddenSize = 3} }
+  let result = forward model tensorList
+  let check = lstmCellForward (lstm1d model)  (zeros' [1], zeros' [3]) (asTensor [[1.0 :: Float]])
 
-  let optimSpec = optimSpec
-
-  -- pPrint $ dataset V.! 1
   putStrLn "Done"

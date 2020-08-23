@@ -26,6 +26,35 @@ data OptimSpec o p where
     } ->
     OptimSpec o p
 
+{- Trivial 1D baseline -} 
+
+data Simple1dSpec = Simple1dSpec
+  { lstm1dSpec :: LSTMSpec
+  } deriving (Eq, Show)
+
+data Simple1dModel = Simple1dModel {
+  lstm1d :: LSTMCell
+  }
+  deriving (Generic, Show, Parameterized)
+
+instance Randomizable Simple1dSpec Simple1dModel where
+  sample Simple1dSpec{..} =
+    Simple1dModel
+      <$> sample lstm1dSpec
+
+instance HasForward Simple1dModel [Tensor] (Tensor, Tensor) where
+  forward model inputs  = foldl (lstmCellForward cell) stateInit inputs
+    where 
+      cell = lstm1d model
+      hSize = (shape . toDependent . weightsIH $ cell) !! 1
+      iSize = (shape . toDependent . weightsIH $ cell) !! 0
+      cellInit = zeros' [hSize]
+      hiddenInit = zeros' [hSize]
+      stateInit = (hiddenInit, cellInit)
+      -- stateInit = (cellInit, hiddenInit)
+
+{- Attempt to model cross-correlations -} 
+
 data TSModelSpec = TSModelSpec
   { nCounties :: Int,
     countyEmbedDim :: Int,
@@ -48,25 +77,20 @@ instance Randomizable TSModelSpec TSModel where
       <*> sample t2vSpec
       <*> sample lstmSpec
 
-data ModelInputs = ModelInputs
-  { time :: Float,
-    lstmState :: (Tensor, Tensor),
-    allCounties :: Tensor,
-    input :: Tensor
-  }
-  deriving (Eq, Show)
+data ModelInputs = ModelInputs {
+    time :: Float,
+    tensorData :: TensorData,
+    lstmState :: (Tensor, Tensor)
+  } deriving (Eq, Show)
+  
 
 tsmodelForward ::
-  Float ->
-  -- | model state
-  TSModel ->
-  -- | (hidden state, cell state)
-  (Tensor, Tensor) ->
-  -- | all counties context
-  Tensor ->
-  -- | input
-  Tensor ->
-  (Tensor, Tensor)
+  Float -> -- time
+  TSModel -> -- model state
+  (Tensor, Tensor) -> -- lstm (hidden state, cell state)
+  Tensor -> -- all counties context
+  Tensor -> -- input
+  (Tensor, Tensor) -- output
 tsmodelForward t TSModel {..} (hiddenState, cellState) allCounties countyCount =
   lstmCellForward
     lstm
@@ -74,8 +98,8 @@ tsmodelForward t TSModel {..} (hiddenState, cellState) allCounties countyCount =
     (T.cat (Dim 0) [linearForward countyEmbed allCounties, t2vForward t t2v, countyCount])
 
 instance HasForward TSModel Tensor Tensor where
-  -- forward:: TSModel -> ModelInputs -> (Tensor, Tensor)
   forward model modelInputs = undefined
+  -- forward:: TSModel -> ModelInputs -> (Tensor, Tensor)
 
 data Time2VecSpec = Time2VecSpec
   { t2vDim :: Int -- note output dimensions is +1 of this value due to non-periodic term
@@ -119,33 +143,15 @@ t2vForward t Time2Vec {..} =
         toDependent b
       )
 
-train ::
-  (Dataset TensorData (Tensor, Tensor), Optimizer o, Parameterized p, HasForward p Tensor Tensor) =>
-  OptimSpec o p ->
-  TensorData ->
-  p ->
-  IO p
-train OptimSpec {..} dataset init = do
-  trained <- foldLoop init numIters $
-    \state iter -> do
-      let (input, dep) = getItem dataset (iter * batchSize) batchSize
-      let loss = lossFn state input dep
-      let flatParameters = flattenParameters state
-      let (Gradients gradients) = grad' loss flatParameters
+{- Computation Setups for Time Series -} 
 
-      when (iter `mod` 50 == 0) $ do
-        putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
-      (newParam, _) <- runStep state optimizer loss learningRate
-      pure $ replaceParameters state newParam
-  pure trained
-
+-- | Check forward computation
 checkOutputs = do
   -- check time2vec
   t2v <- sample $ Time2VecSpec 10
   lstmLayer <- sample $ LSTMSpec (10 + 1) 2
   let result = t2vForward 3.0 t2v
   print result
-
   -- check end-to-end
   let inputDim = 3193 + 1 + 1 -- # counties + t2vDim + county of interest count
   model <-
@@ -159,6 +165,27 @@ checkOutputs = do
   let result = tsmodelForward 10.0 model (ones' [inputDim], ones' [inputDim]) (ones' [3193]) 15.0
   print result
 
+train ::
+  (Dataset TensorData TensorData, Optimizer o, Parameterized p, HasForward p Tensor Tensor) =>
+  OptimSpec o p ->
+  TensorData ->
+  p ->
+  IO p
+train OptimSpec {..} dataset init = do
+  trained <- foldLoop init numIters $
+    \state iter -> do
+      -- let (input, dep) = getItem dataset (iter * batchSize) batchSize
+      -- let timeSlices = getItem dataset iter batchSize
+      -- let loss = lossFn state input dep
+      let loss = undefined
+      let flatParameters = flattenParameters state
+      let (Gradients gradients) = grad' loss flatParameters
+      -- when (iter `mod` 50 == 0) $ do
+        -- putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
+      (newParam, _) <- runStep state optimizer loss learningRate
+      pure $ replaceParameters state newParam
+  pure trained
+
 initModel nRegions t2vDim lstmHDim =
   sample
     TSModelSpec
@@ -168,15 +195,13 @@ initModel nRegions t2vDim lstmHDim =
         lstmSpec = LSTMSpec {inputSize = t2vDim + 1, hiddenSize = lstmHDim} -- t2vDim + this region's count (1D for now)
       }
 
-optimSpec initializedModel =
+optimSpec initializedModel lossFn =
   OptimSpec
     { optimizer = mkAdam 0 0.9 0.999 (flattenParameters initializedModel),
       batchSize = 128,
       numIters = 500,
       learningRate = 5e-5,
-      lossFn = undefined -- \model input target ->
-      -- let (h, c) = forward model input
-      -- in mseLoss target c
+      lossFn = lossFn
     } ::
     OptimSpec Adam TSModel
 
@@ -184,6 +209,13 @@ testModel = do
   let t2vd = 6
   let inputDim = 3193 + t2vd + 1 -- # counties + t2vDim + county of interest count
   initializedModel <- initModel 3193 t2vd 6
-  let spec = optimSpec initializedModel
+  let spec = optimSpec initializedModel undefined
   model <- train spec undefined initializedModel
+  pure ()
+
+{- Computation Setups for 1D baseline -} 
+
+test1d = do
+  initializedModel <- sample Simple1dSpec { lstm1dSpec = LSTMSpec {inputSize = 1, hiddenSize = 2} }
+  let spec = optimSpec initializedModel undefined
   pure ()
