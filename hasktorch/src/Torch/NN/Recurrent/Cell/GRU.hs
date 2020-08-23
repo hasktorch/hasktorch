@@ -38,12 +38,15 @@ instance Parameterized GRUCell
 
 instance Randomizable GRUSpec GRUCell where
   sample GRUSpec{..} = do
-    weightsIH' <- makeIndependent =<< randIO' [inputSize, hiddenSize]
-    weightsHH' <- makeIndependent =<< randIO' [hiddenSize, hiddenSize]
-    biasIH' <- makeIndependent =<< randIO' [hiddenSize]
-    biasHH' <- makeIndependent =<< randIO' [hiddenSize]
+    weightsIH' <- makeIndependent =<< randIO' [3 * hiddenSize, inputSize]
+    weightsHH' <- makeIndependent =<< randIO' [3 * hiddenSize, hiddenSize]
+    biasIH' <- makeIndependent =<< randIO' [3 * hiddenSize]
+    biasHH' <- makeIndependent =<< randIO' [3 * hiddenSize]
     pure $ GRUCell {
         weightsIH=weightsIH',
         weightsHH=weightsHH',
         biasIH=biasIH',
         biasHH=biasHH' }
+    where
+      scale = Prelude.sqrt $ 1.0 / fromIntegral hiddenSize :: Float
+      initScale =  subScalar scale . mulScalar scale 
