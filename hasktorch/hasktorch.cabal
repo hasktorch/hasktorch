@@ -108,7 +108,7 @@ library
                     , bytestring
                     , safe-exceptions
                     , zlib >= 0.6
-                    , pipes
+                    , pipes >= 4.3
                     , pipes-group
                     , pipes-concurrency
                     , pipes-safe
