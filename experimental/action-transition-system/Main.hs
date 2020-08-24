@@ -1,6 +1,7 @@
 module Main where
 
 import Torch.Data.ActionTransitionSystem (Config (..), testProgram)
+import Torch.Data.Pipeline (mapStyleOpts)
 
 main :: IO ()
 main =
@@ -16,6 +17,7 @@ main =
             numWarmupEpochs = 10,
             numCooldownEpochs = 10,
             ptFile = "model.pt",
-            plotFile = "plot.html"
+            plotFile = "plot.html",
+            options = mapStyleOpts 8
           }
    in testProgram config

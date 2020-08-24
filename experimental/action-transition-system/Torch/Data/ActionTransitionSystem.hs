@@ -2830,7 +2830,9 @@ data Config = Config
     -- | model checkpoint file name
     ptFile :: FilePath,
     -- | plot file name
-    plotFile :: FilePath
+    plotFile :: FilePath,
+    -- | data loading options
+    options :: MapStyleOptions
   }
 
 testProgram :: Config -> IO ()
@@ -2873,7 +2875,8 @@ testProgram Config {..} = do
            in mulScalar a maxLearningRate + mulScalar (1 - a) finalLearningRate
         | otherwise = finalLearningRate
 
-  options <- getStdGen >>= (\g -> pure (mapStyleOpts 1) {shuffle = Shuffle g})
+  -- use shuffling when loading the data
+  options <- getStdGen >>= (\g -> pure options {shuffle = Shuffle g})
 
   let -- create a dataset unique training examples
       trainingSeeds =
@@ -2994,7 +2997,7 @@ train model optim learningRate options dataset =
         (examples, shuffle) <- makeListT options dataset
         (model, optim) <-
           lift . P.foldM step init done . enumerate
-            =<< collate @TestBatchSize 1 examples
+            =<< collate @TestBatchSize 10 examples
         pure (model, optim, options {shuffle = shuffle})
 
 data CRE a = CRE
@@ -3082,7 +3085,7 @@ evaluate model options dataset =
         (examples, shuffle) <- makeListT options dataset
         cre <-
           lift . P.foldM step init done . enumerate
-            =<< collate @TestBatchSize 1 examples
+            =<< collate @TestBatchSize 10 examples
         lift . putStrLn $ "Average " <> unpack (name dataset) <> " losses: " <> show cre
         pure (cre, options {shuffle = shuffle})
 
