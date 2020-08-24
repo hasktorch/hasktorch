@@ -26,34 +26,38 @@ data OptimSpec o p where
     } ->
     OptimSpec o p
 
-{- Trivial 1D baseline -} 
+{- Trivial 1D baseline -}
 
 data Simple1dSpec = Simple1dSpec
-  { lstm1dSpec :: LSTMSpec
-  } deriving (Eq, Show)
+  { lstm1dSpec :: LSTMSpec,
+    mlp1dSpec :: LinearSpec
+  }
+  deriving (Eq, Show)
 
-data Simple1dModel = Simple1dModel {
-  lstm1d :: LSTMCell
+data Simple1dModel = Simple1dModel
+  { lstm1d :: LSTMCell,
+    mlp1d :: Linear
   }
   deriving (Generic, Show, Parameterized)
 
 instance Randomizable Simple1dSpec Simple1dModel where
-  sample Simple1dSpec{..} =
+  sample Simple1dSpec {..} =
     Simple1dModel
       <$> sample lstm1dSpec
+      <*> sample mlp1dSpec
 
-instance HasForward Simple1dModel [Tensor] (Tensor, Tensor) where
-  forward model inputs  = foldl (lstmCellForward cell) stateInit inputs
-    where 
+instance HasForward Simple1dModel [Tensor] ((Tensor, Tensor), Tensor) where
+  forward model inputs = (lstmOutput, (forward (mlp1d model)) (fst lstmOutput))
+    where
       cell = lstm1d model
-      hSize = (shape . toDependent . weightsIH $ cell) !! 1
-      iSize = (shape . toDependent . weightsIH $ cell) !! 0
-      cellInit = zeros' [hSize]
-      hiddenInit = zeros' [hSize]
+      hSize = Prelude.div ((shape . toDependent . weightsIH $ cell) !! 0) 4
+      iSize = (shape . toDependent . weightsIH $ cell) !! 1
+      cellInit = zeros' [1, hSize]
+      hiddenInit = zeros' [1, hSize]
       stateInit = (hiddenInit, cellInit)
-      -- stateInit = (cellInit, hiddenInit)
+      lstmOutput = foldl (lstmCellForward cell) stateInit inputs
 
-{- Attempt to model cross-correlations -} 
+{- Attempt to model cross-correlations -}
 
 data TSModelSpec = TSModelSpec
   { nCounties :: Int,
@@ -77,12 +81,12 @@ instance Randomizable TSModelSpec TSModel where
       <*> sample t2vSpec
       <*> sample lstmSpec
 
-data ModelInputs = ModelInputs {
-    time :: Float,
+data ModelInputs = ModelInputs
+  { time :: Float,
     tensorData :: TensorData,
     lstmState :: (Tensor, Tensor)
-  } deriving (Eq, Show)
-  
+  }
+  deriving (Eq, Show)
 
 tsmodelForward ::
   Float -> -- time
@@ -99,7 +103,8 @@ tsmodelForward t TSModel {..} (hiddenState, cellState) allCounties countyCount =
 
 instance HasForward TSModel Tensor Tensor where
   forward model modelInputs = undefined
-  -- forward:: TSModel -> ModelInputs -> (Tensor, Tensor)
+
+-- forward:: TSModel -> ModelInputs -> (Tensor, Tensor)
 
 data Time2VecSpec = Time2VecSpec
   { t2vDim :: Int -- note output dimensions is +1 of this value due to non-periodic term
@@ -143,7 +148,7 @@ t2vForward t Time2Vec {..} =
         toDependent b
       )
 
-{- Computation Setups for Time Series -} 
+{- Computation Setups for Time Series -}
 
 -- | Check forward computation
 checkOutputs = do
@@ -181,7 +186,7 @@ train OptimSpec {..} dataset init = do
       let flatParameters = flattenParameters state
       let (Gradients gradients) = grad' loss flatParameters
       -- when (iter `mod` 50 == 0) $ do
-        -- putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
+      -- putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
       (newParam, _) <- runStep state optimizer loss learningRate
       pure $ replaceParameters state newParam
   pure trained
@@ -213,9 +218,4 @@ testModel = do
   model <- train spec undefined initializedModel
   pure ()
 
-{- Computation Setups for 1D baseline -} 
-
-test1d = do
-  initializedModel <- sample Simple1dSpec { lstm1dSpec = LSTMSpec {inputSize = 1, hiddenSize = 2} }
-  let spec = optimSpec initializedModel undefined
-  pure ()
+{- Computation Setups for 1D baseline -}

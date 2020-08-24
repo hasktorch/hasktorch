@@ -135,6 +135,9 @@ linear layer input = linear' input w b
 
 linearForward = linear -- temporary alias until dependencies are updated
 
+instance HasForward Linear Tensor Tensor where
+  forward = linearForward
+
 instance Randomizable LinearSpec Linear where
   sample LinearSpec{..} = do
       w <- makeIndependent =<< kaimingUniform FanIn (LeakyRelu $ Prelude.sqrt (5.0 :: Float)) [out_features, in_features]

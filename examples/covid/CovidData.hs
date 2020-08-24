@@ -5,6 +5,7 @@
 
 module CovidData where
 
+import CovidUtil
 import qualified Data.ByteString.Lazy as BL
 import Data.Csv
 import qualified Data.Map as M
@@ -13,8 +14,6 @@ import Data.Time
 import qualified Data.Vector as V
 import GHC.Generics (Generic)
 import Torch as T
-
-import CovidUtil
 
 -- This is a placeholder for this example until we have a more formal data loader abstraction
 --
@@ -58,10 +57,10 @@ data TensorData = TensorData
   deriving (Eq, Generic, Show)
 
 instance Dataset TensorData TensorData where
-  getItem dataset index batchSize = 
+  getItem dataset index batchSize =
     filterOn tTimes timeFilter2
-    . filterOn tTimes timeFilter1 
-    $ dataset
+      . filterOn tTimes timeFilter1
+      $ dataset
     where
       timeFilter1 = \t -> ge t (asTensor (fromIntegral index :: Float))
       timeFilter2 = \t -> lt t (asTensor (fromIntegral (index + batchSize) :: Float))
