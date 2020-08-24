@@ -19,7 +19,7 @@ maxIndex :: Tensor -> Tensor
 maxIndex = Torch.argmax (Dim 1) RemoveDim
 
 -- | Setup distillation parameters and run
-runDistill :: (Dataset d) => d -> IO (MLP, MLP) 
+runDistill :: (MockDataset d) => d -> IO (MLP, MLP) 
 runDistill mnistData = do
     -- Train teacher
     initTeacher <- sample teacherSpec

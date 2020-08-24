@@ -78,12 +78,13 @@ library
                     , Torch.Distributions.Distribution
                     , Torch.Distributions.Bernoulli
                     , Torch.Distributions.Categorical
+                    , Torch.Data
                     , Torch.Data.Pipeline
                     , Torch.Data.StreamedPipeline
                     , Torch.Data.Utils
                     , Torch.Data.Internal
                     , Torch.Data.Dataset
-                    , Torch.Data.CsvDataset
+                    , Torch.Data.CsvDatastream
 
  other-modules:       Paths_hasktorch
  hs-source-dirs:      src

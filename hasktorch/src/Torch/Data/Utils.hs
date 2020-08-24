@@ -1,3 +1,4 @@
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -15,7 +16,11 @@ import           Control.Monad.Cont
 import           Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap.Strict as M
 import qualified Data.Set as S
+import Lens.Family
+import qualified Control.Foldl as L
 import           Pipes
+import Pipes.Group
+
 import qualified Pipes.Prelude as P
 import           Pipes.Concurrent
 
@@ -44,30 +49,33 @@ pmap' f prod = ContT $ \cont ->
 
 -- | Map a ListT transform over the given the stream in parallel. This should be useful
 -- for using functions which groups elements of a stream and yields them downstream. 
-pmapGroup :: (MonadIO m, MonadBaseControl IO m) => Int -> (ListT m a -> ListT m b) -> ListT m a -> ContT r m (ListT m b)
-pmapGroup n f prod = ContT $ \cont ->
+pmapGroup :: (MonadIO m, MonadBaseControl IO m) => (ListT m a -> ListT m b) -> ListT m a -> ContT r m (ListT m b)
+pmapGroup f prod = ContT $ \cont ->
   snd
     <$> withBufferLifted
       unbounded 
       (\output -> runEffect $ enumerate (f prod) >-> toOutput' output )
       (\input -> cont . Select $ fromInput' input)
 
-enumerateData :: Monad m => ListT m a -> Producer  (a, Int) m ()
+
+-- | Enumerate the given stream, zipping each element with an index.
+enumerateData :: Monad m => ListT m a -> Producer (a, Int) m ()
 enumerateData input = P.zip (enumerate input) (each [0..])  
 
 
--- bufferedCollate :: Int ->  
--- bufferedCollate = pmapGroup 
+bufferedCollate :: (MonadIO m, MonadBaseControl IO m) => Int -> ([sample] -> Maybe batch) -> ListT m sample -> ContT r m (ListT m batch)
+bufferedCollate batchSize collateFn = pmapGroup (collate batchSize collateFn) 
 
--- collate = 
+collate :: Monad m => Int -> ([sample] -> Maybe batch) -> ListT m sample -> ListT m batch
+collate batchSize collateFn  = Select . (>-> P.mapMaybe collateFn) . L.purely folds L.list . view (chunksOf batchSize) . enumerate
 
-newtype CachedDataset sample = CachedDataset { cached :: IntMap sample }
+newtype CachedDataset (m :: * -> *) sample = CachedDataset { cached :: IntMap sample }
 
 cache datastream = P.fold step begin done . enumerate
   where step (cacheMap, ix) sample = (M.insert ix sample cacheMap, ix + 1) 
         begin = (M.empty, 0)
         done = id
 
-instance Monad m => Dataset m (CachedDataset sample) Int sample where
+instance Applicative m => Dataset m (CachedDataset m sample) Int sample where
   getItem CachedDataset{..} key = pure $ cached M.! key
   keys CachedDataset{..} = S.fromAscList [0..M.size cached]

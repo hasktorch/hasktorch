@@ -14,13 +14,10 @@ import           Control.Monad.Cont (runContT, runCont, ContT(ContT))
 import           Data.Csv (FromNamedRecord)
 import           Data.Vector (Vector, toList)
 import           GHC.Generics (Generic)
-import           Pipes
 import qualified Pipes.Prelude as P
 import           Pipes.Safe (runSafeT)
 import           Torch
-import           Torch.Data.CsvDataset
-import           Torch.Data.StreamedPipeline 
-import           Torch.Tensor
+import           Torch.Data.CsvDatastream
 
 data MLPSpec = MLPSpec {
     inputFeatures   :: Int,
@@ -57,7 +54,7 @@ data IrisClass = Setosa | Versicolor | Virginica deriving (Eq, Show, Enum, Gener
 instance FromField IrisClass where
   parseField b = case b of
     "Iris-setosa"      -> pure Setosa
-    "Iris-versicolor" -> pure Versicolor
+    "Iris-versicolor"  -> pure Versicolor
     "Iris-virginica"   -> pure Virginica
     _                  -> mzero
 
@@ -76,8 +73,8 @@ irisToTensor iris = do
         getFeatures = fmap (\x -> [sepalLength x, sepalWidth x, petalLength x, petalWidth x])
         getClasses = fmap (\x -> fromEnum $ irisClass x)
 
-trainLoop :: (Optimizer o, MonadIO m) => MLP -> o -> ListT m ((Tensor, Tensor), Int)  -> m MLP
-trainLoop model optimizer inputs = P.foldM step init done $ enumerate inputs
+trainLoop :: (Optimizer o, MonadIO m) => MLP -> o -> ListT m (Tensor, Tensor)  -> m MLP
+trainLoop model optimizer inputs = P.foldM step init done $ enumerateData inputs
   where 
         step model ((input, label), iter) = do
           let loss = binaryCrossEntropyLoss' label $ mlp model input
@@ -93,14 +90,13 @@ trainLoop model optimizer inputs = P.foldM step init done $ enumerate inputs
 main :: IO ()
 main = runSafeT $ do
   init <- liftIO $ sample spec 
-  let (irisTrain :: CsvDataset Iris) = (csvDataset  "data/iris.data") { batchSize = 1
-                                                                      -- need to bring whole dataset into memory to get a good shuffle
-                                                                      -- since iris.data is sorted
-                                                                      , shuffle = Just 150 
-                                                                      }
+  let (irisTrain :: CsvDatastream Iris) = (csvDatastream  "data/iris.data") { batchSize = 1
+                                                                            -- need to bring whole dataset into memory to get a good shuffle
+                                                                            -- since iris.data is sorted
+                                                                            , bufferedShuffle = Just 150 
+                                                                            }
   foldM (\model epoch -> do
-            flip runContT (trainLoop model optimizer) $ do raw <- makeListT' dataloaderOpts irisTrain [()]
-                                                           pmap 1 (first irisToTensor) raw
+            flip runContT (trainLoop model optimizer) $ (streamFrom' datastreamOpts irisTrain [()] >>= pmap  irisToTensor)
         ) init [1..10]
 
   pure ()

@@ -44,7 +44,6 @@ import qualified Data.Vector as V
 import           Lens.Family (view)
 import           Pipes.Group
 import           System.Random
-import qualified Torch as Torch
 import           Torch.Data.Internal
 
 data DatasetOptions = DatasetOptions { bufferSize :: Int
@@ -61,7 +60,7 @@ data Sample where
    Sequential :: Sample
    Shuffle ::  RandomGen g => g -> Sample 
 
-class (Ord k) => Dataset m dataset k sample | dataset -> sample, dataset -> k  where
+class (Ord k) => Dataset m dataset k sample | dataset -> m, dataset -> sample, dataset -> k  where
   getItem :: dataset -> k -> m sample
   keys :: dataset -> Set k
 
@@ -73,14 +72,14 @@ class (Ord k) => Dataset m dataset k sample | dataset -> sample, dataset -> k  w
 -- have a worker waiting for each successive key to be updated in the list of (key, TVar)
 
 streamFromMap :: forall m dataset k sample r .
-  (MonadIO m, MonadBaseControl IO m,  Dataset m dataset k sample) =>
+  (Dataset m dataset k sample, MonadIO m, MonadBaseControl IO m) =>
   DatasetOptions ->
   dataset ->
   ContT r m  (ListT m sample, Sample)
 streamFromMap DatasetOptions{..} dataset = do
   (keyOutput, keyInput, seal) <- liftIO $ spawn' unbounded
 
-  let retrieveSet = liftIO $ keyTVarSet $ keys @m dataset
+  let retrieveSet = liftIO $ keyTVarSet $ keys dataset
   (keyTVarSet, updatedSample) <- case shuffle of
     Sequential -> (, Sequential) <$> retrieveSet
     Shuffle g -> (fmap Shuffle  . fisherYates g) <$> retrieveSet

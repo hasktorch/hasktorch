@@ -24,8 +24,6 @@ module Torch.Data.StreamedPipeline
     Datastream (..),
     MonadBase (..),
     MonadBaseControl (..),
-    module Pipes,
-    module Pipes.Safe
   )
 where
 
@@ -52,22 +50,50 @@ import           Torch.Data.Internal
 class Monad m => Datastream m seed dataset sample | dataset -> sample where
   streamBatch :: dataset -> seed -> ListT m sample 
 
-data DataloaderOptions = DataloaderOptions
-  { bufferSize :: Int -- ^ Number of inputs stored in a buffer.
-  }
+data DatastreamOptions = DatastreamOptions
+  { bufferSize :: Int } -- ^ Number of inputs stored in a buffer.
 
 -- | Default dataloader options, you should override the fields in this record.
-datastreamOpts = DataloaderOptions { bufferSize = 4 } -- 4 is relatively arbitrary
+datastreamOpts = DatastreamOptions { bufferSize = 4 } -- 4 is relatively arbitrary
 
 streamFrom ::
   forall sample m dataset seed b r.
   (Datastream m seed dataset sample, MonadBaseControl IO m, MonadBase IO m) =>
-  DataloaderOptions -> 
+  DatastreamOptions -> 
   dataset ->
   ListT m seed ->
   ContT b m (ListT m sample)
-streamFrom DataloaderOptions{..} dataset seeds = runWithBuffer bufferSize $ readSamples dataset seeds
+streamFrom DatastreamOptions{..} dataset seeds = runWithBuffer bufferSize $ readSamples dataset seeds
 
+streamFrom' ::
+  forall sample m f dataset seed b.
+  (Show sample, Datastream m seed dataset sample, MonadBaseControl IO m, MonadBase IO m, MonadIO m, Foldable f) =>
+  DatastreamOptions -> 
+  dataset ->
+  f seed ->
+  ContT b m (ListT m sample)
+streamFrom' DatastreamOptions{..} dataset seeds = do
+  workerTracker <- atomically $ newTVar 0
+  let
+      consumeSeeds mailboxes o = do
+        for (each mailboxes) $ \(output, input, _) -> fromInputOnce workerTracker input >->  toOutput' o
+        keepReading <- lift $ atomically $ (\x -> x < V.length mailboxes) <$> readTVar workerTracker
+        when keepReading $ consumeSeeds mailboxes o
+  runWithBuffer bufferSize $ \o -> do
+    liftedBracket 
+      (L.foldM pairSeedWithBuffer seeds)
+      (mapM_ (atomically . third . snd))
+      (\a ->
+         let mailboxes = snd <$> a
+             seedAndOutput = second fst3 <$> a
+         in concurrently_
+            (readSamplesDeterministic dataset seedAndOutput `liftedFinally` (mapM_ (atomically . third) mailboxes))
+            ((runEffect $ consumeSeeds mailboxes o) `liftedFinally` (mapM_ (atomically . third) mailboxes))
+      )
+  where
+    fst3 (a,b,c) = a
+    snd3 (a,b,c) = b
+    third (a,b,c) = c
 
 readSamples ::
   forall m seed dataset sample.
@@ -92,35 +118,6 @@ readSamplesDeterministic dataset seeds =
         mappend c . Concurrently . runEffect .  (>-> toOutput' outputBox) . enumerate $ streamBatch @m @seed @dataset @sample dataset seed
    in L.fold (L.Fold this mempty runConcurrently) seeds
   
-streamFrom' ::
-  forall sample m f dataset seed b.
-  (Show sample, Datastream m seed dataset sample, MonadBaseControl IO m, MonadBase IO m, MonadIO m, Foldable f) =>
-  DataloaderOptions -> 
-  dataset ->
-  f seed ->
-  ContT b m (ListT m sample)
-streamFrom' DataloaderOptions{..} dataset seeds = do
-  workerTracker <- atomically $ newTVar 0
-  let
-      consumeSeeds mailboxes o = do
-        for (each mailboxes) $ \(output, input, _) -> fromInputOnce workerTracker input >->  toOutput' o
-        keepReading <- lift $ atomically $ (\x -> x < V.length mailboxes) <$> readTVar workerTracker
-        when keepReading $ consumeSeeds mailboxes o
-  runWithBuffer bufferSize $ \o -> do
-    liftedBracket 
-      (L.foldM pairSeedWithBuffer seeds)
-      (mapM_ (atomically . third . snd))
-      (\a ->
-         let mailboxes = snd <$> a
-             seedAndOutput = second fst3 <$> a
-         in concurrently_
-            (readSamplesDeterministic dataset seedAndOutput `liftedFinally` (mapM_ (atomically . third) mailboxes))
-            ((runEffect $ consumeSeeds mailboxes o) `liftedFinally` (mapM_ (atomically . third) mailboxes))
-      )
-  where
-    fst3 (a,b,c) = a
-    snd3 (a,b,c) = b
-    third (a,b,c) = c
 
 pairSeedWithBuffer :: MonadIO m => FoldM m seed (V.Vector (seed, (Output a, Input a, STM ()) ) ) 
 pairSeedWithBuffer = L.premapM (\a -> (a, ) <$> makeMailbox) $ L.generalize L.vector

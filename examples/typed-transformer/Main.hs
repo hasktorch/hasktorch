@@ -250,9 +250,9 @@ training ::
   ) =>
   LearningRate modelDevice dtype ->
   (model, optim) ->
-  ListT m ((input, target), Int) ->
+  ListT m (input, target) ->
   m (model, optim)
-training learningRate (model, optim) = P.foldM step begin done . enumerate
+training learningRate (model, optim) = P.foldM step begin done . enumerateData
   where
     step (model', optim') ((input, target), iter) = do
       let models' = replicate @workerDevices @modelDevice @model @models model'
@@ -305,9 +305,9 @@ evaluation ::
     MonadIO m
   ) =>
   model ->
-  ListT m ((input, target), Int) ->
+  ListT m (input, target) ->
   m _
-evaluation model = P.foldM step begin done . enumerate
+evaluation model = P.foldM step begin done . enumerateData
   where
     step aggLoss ((input, target), iter) = do
       let models = replicate @workerDevices @modelDevice @model @models model
@@ -409,7 +409,7 @@ learning numEpochs learningRate (model, optim) trainingData evaluationData =
     step trainSet testSet (model, optim) epoch = do
       (model', optim') <-
         lift $
-          runContT (makeListT' dataloaderOpts trainSet [()]) $
+          runContT (streamFrom' datastreamOpts trainSet [()]) $
             training
               @workerDevices
               @modelDevice
@@ -432,7 +432,7 @@ learning numEpochs learningRate (model, optim) trainingData evaluationData =
               (model, optim)
       evalLoss' <-
         lift $
-          runContT (makeListT' dataloaderOpts testSet [()]) $
+          runContT (streamFrom' datastreamOpts testSet [()]) $
             evaluation
               @workerDevices
               @modelDevice

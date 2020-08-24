@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -53,12 +54,12 @@ import GHC.Exts (IsList(fromList))
 
 C.include "<stdint.h>"
 
-data Mnist = Mnist { batchSize :: Int
-                   , mnistData :: I.MnistData
-                   }
+data MNIST (m :: * -> *) = MNIST { batchSize :: Int
+                                 , mnistData :: I.MnistData
+                                 }
 
-instance (MonadPlus m, MonadBase IO m) => Datastream m Int Mnist (Tensor, Tensor) where
-  streamBatch Mnist{..} seed = Select $ 
+instance Monad m => Datastream m Int (MNIST m) (Tensor, Tensor) where
+  streamBatch MNIST{..} seed = Select $ 
     for (each [1..numIters]) $ \iter -> do 
       let from = (iter-1) * batchSize
           to = (iter * batchSize) - 1
@@ -69,15 +70,15 @@ instance (MonadPlus m, MonadBase IO m) => Datastream m Int Mnist (Tensor, Tensor
 
       where numIters = I.length mnistData `Prelude.div` batchSize
             
-instance Applicative m => Dataset m Mnist Int (Tensor, Tensor) where
-  getItem Mnist{..} ix =  
+instance Applicative m => Dataset m (MNIST m) Int (Tensor, Tensor) where
+  getItem MNIST{..} ix =  
     let
       indexes = [ix * batchSize .. (ix+1) * batchSize - 1]
       imgs = getImages' batchSize 784 mnistData indexes
       labels = getLabels' batchSize mnistData indexes
     in pure (imgs, labels)
 
-  keys Mnist{..} = fromList [ 0 .. I.length mnistData `Prelude.div` batchSize - 1 ]
+  keys MNIST{..} = fromList [ 0 .. I.length mnistData `Prelude.div` batchSize - 1 ]
 
 
 getLabels' :: Int -> I.MnistData -> [Int] -> Tensor

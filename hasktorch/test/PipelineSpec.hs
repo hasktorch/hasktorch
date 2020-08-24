@@ -40,7 +40,7 @@ instance Dataset IO MockData Int Int where
   getItem MockData _ = threadDelay 10000 >> pure 0
   keys (MockData) = fromList [0 .. 1]
 
-instance Applicative m => Dataset m ShuffleSet Int Int where
+instance  Dataset IO ShuffleSet Int Int where
   getItem ShuffleSet k = pure k
   keys _ = fromList [0 .. 100]
 
