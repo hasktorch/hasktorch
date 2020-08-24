@@ -35,7 +35,7 @@ import Control.Concurrent (threadDelay)
 import Control.Exception (Exception, try, tryJust)
 import Control.Foldl (Fold (..), fold, head)
 import qualified Control.Foldl as L
-import Control.Lens
+import Control.Lens hiding (cons, uncons)
 import Control.Monad (MonadPlus (..), ap, guard, join, mfilter, replicateM, void)
 import Control.Monad.Fresh
 import Control.Monad.Trans (MonadTrans (lift))
@@ -55,6 +55,7 @@ import Data.List as List (elem, filter, intercalate, intersperse, isInfixOf, ite
 import Data.Map as Map (Map, (!))
 import qualified Data.Map as Map (adjust, delete, elems, empty, fromList, insert, insertWith, keys, lookup, mapMaybe, null, singleton, toList, unionWith, update)
 import Data.Maybe (catMaybes, fromJust, fromMaybe, isJust, listToMaybe)
+import Data.Proxy (Proxy (..))
 import Data.Set (Set)
 import qualified Data.Set as Set (cartesianProduct, elems, empty, filter, findIndex, fromList, insert, member, notMember, singleton, toList, union, unions)
 import qualified Data.Set.Ordered as OSet
@@ -93,7 +94,9 @@ import Torch.Data.Pipeline (Dataset (..), MapStyleOptions (..), Sample (..), mak
 import Torch.Data.StreamedPipeline (MonadBaseControl)
 import Torch.Distributions.Bernoulli (fromProbs)
 import Torch.Distributions.Distribution (sample)
+import qualified Torch.Internal.Cast as ATen
 import Torch.Internal.Class (Castable)
+import qualified Torch.Internal.Managed.Native as ATen.Managed
 import Torch.Typed
 import Torch.Vision (grayScale10, grayScale70)
 import Prelude hiding (lookup)
@@ -2128,13 +2131,76 @@ type MkBatchR batchSize shape dtype device tensors =
     Exts.Item (Maybe (HList tensors)) ~ Tensor device dtype (1 ': shape)
   )
 
+data Vect (n :: Nat) a where
+  VNil :: Vect 0 a
+  VCons :: a -> Vect n a -> Vect (n + 1) a
+
+instance Functor (Vect n) where
+  fmap _ VNil = VNil
+  fmap f (VCons a as) = VCons (f a) (fmap f as)
+
+cons :: forall n a. a -> Vect n a -> Vect (n + 1) a
+cons a as = VCons a as
+
+uncons :: forall n a. Vect (n + 1) a -> (a, Vect n a)
+uncons VNil = error "cannot conjure up a value from nothing"
+uncons (VCons a as) = (a, as)
+
+class VectIsList (flag :: Bool) n a where
+  vectFromList :: Proxy flag -> [a] -> Maybe (Vect n a)
+  vectToList :: Proxy flag -> Maybe (Vect n a) -> [a]
+
+instance VectIsList 'False 0 a where
+  vectFromList _ [] = Just VNil
+  vectFromList _ _ = Nothing
+  vectToList _ (Just VNil) = []
+  vectToList _ _ = []
+
+instance
+  Exts.IsList (Maybe (Vect (n - 1) a)) =>
+  VectIsList 'True n a
+  where
+  vectFromList _ (a : as) = liftA2 (cons @(n - 1)) (Just a) (Exts.fromList as)
+  vectFromList _ _ = Nothing
+  vectToList _ (Just (VCons a as)) = a : Exts.toList @(Maybe (Vect (n - 1) a)) (Just as)
+  vectToList _ _ = []
+
+instance
+  ( (1 <=? n) ~ flag,
+    VectIsList flag n a
+  ) =>
+  Exts.IsList (Maybe (Vect n a))
+  where
+  type Item (Maybe (Vect n a)) = a
+  fromList = vectFromList (Proxy :: Proxy flag)
+  toList = vectToList (Proxy :: Proxy flag)
+
+class HasBatch a b | a -> b where
+  batch :: a -> b
+
+instance
+  (Exts.IsList (Maybe (Vect batchSize (Tensor device dtype (1 ': shape))))) =>
+  HasBatch
+    (Vect batchSize (Tensor device dtype (1 ': shape)))
+    (Tensor device dtype (batchSize ': shape))
+  where
+  batch v =
+    let tensors = Exts.toList . Just $ v
+     in unsafePerformIO $ ATen.cast2 ATen.Managed.cat_ll tensors (0 :: Int)
+
 mkBatch ::
   forall batchSize seqLen numEmbeds relDim dtype device tensors tensors' tensors'' tensors''' tensors''''.
-  ( MkBatchR batchSize '[seqLen] 'Int64 device tensors,
-    MkBatchR batchSize '[seqLen, seqLen, relDim] 'Int64 device tensors',
-    MkBatchR batchSize '[seqLen, seqLen] dtype device tensors'',
-    MkBatchR batchSize '[seqLen] 'Bool device tensors''',
-    MkBatchR batchSize '[seqLen, numEmbeds] 'Bool device tensors''''
+  -- ( MkBatchR batchSize '[seqLen] 'Int64 device tensors,
+  --   MkBatchR batchSize '[seqLen, seqLen, relDim] 'Int64 device tensors',
+  --   MkBatchR batchSize '[seqLen, seqLen] dtype device tensors'',
+  --   MkBatchR batchSize '[seqLen] 'Bool device tensors''',
+  --   MkBatchR batchSize '[seqLen, numEmbeds] 'Bool device tensors''''
+  -- ) =>
+  ( Exts.IsList (Maybe (Vect batchSize (Tensor device 'Int64 [1, seqLen]))),
+    Exts.IsList (Maybe (Vect batchSize (Tensor device 'Int64 [1, seqLen, seqLen, relDim]))),
+    Exts.IsList (Maybe (Vect batchSize (Tensor device dtype [1, seqLen, seqLen]))),
+    Exts.IsList (Maybe (Vect batchSize (Tensor device 'Bool [1, seqLen]))),
+    Exts.IsList (Maybe (Vect batchSize (Tensor device 'Bool [1, seqLen, numEmbeds])))
   ) =>
   [RATransformerMLMBatch 1 seqLen numEmbeds relDim dtype device] ->
   Maybe
@@ -2150,22 +2216,39 @@ mkBatch items = RATransformerMLMBatch <$> inputs <*> targets
   where
     inputs =
       RATransformerMLMInput
-        <$> (cat @0 <$> (Exts.fromList $ ratMaskedTokens . ratInput <$> items :: Maybe (HList tensors)))
+        <$> (batch <$> (Exts.fromList $ ratMaskedTokens . ratInput <$> items :: Maybe (Vect batchSize (Tensor device 'Int64 [1, seqLen]))))
         <*> ( M
-                <$> (cat @0 <$> (Exts.fromList $ dataType . ratMeta . ratInput <$> items :: Maybe (HList tensors)))
-                <*> (cat @0 <$> (Exts.fromList $ constructor . ratMeta . ratInput <$> items :: Maybe (HList tensors)))
-                <*> (cat @0 <$> (Exts.fromList $ selector . ratMeta . ratInput <$> items :: Maybe (HList tensors)))
+                <$> (batch <$> (Exts.fromList $ dataType . ratMeta . ratInput <$> items :: Maybe (Vect batchSize (Tensor device 'Int64 [1, seqLen]))))
+                <*> (batch <$> (Exts.fromList $ constructor . ratMeta . ratInput <$> items :: Maybe (Vect batchSize (Tensor device 'Int64 [1, seqLen]))))
+                <*> (batch <$> (Exts.fromList $ selector . ratMeta . ratInput <$> items :: Maybe (Vect batchSize (Tensor device 'Int64 [1, seqLen]))))
             )
-        <*> (cat @0 <$> (Exts.fromList $ ratRelations . ratInput <$> items :: Maybe (HList tensors')))
-        <*> (cat @0 <$> (Exts.fromList $ ratAttentionMask . ratInput <$> items :: Maybe (HList tensors'')))
-        <*> (cat @0 <$> (Exts.fromList $ ratKeyPaddingMask . ratInput <$> items :: Maybe (HList tensors''')))
+        <*> (batch <$> (Exts.fromList $ ratRelations . ratInput <$> items :: Maybe (Vect batchSize (Tensor device 'Int64 [1, seqLen, seqLen, relDim]))))
+        <*> (batch <$> (Exts.fromList $ ratAttentionMask . ratInput <$> items :: Maybe (Vect batchSize (Tensor device dtype [1, seqLen, seqLen]))))
+        <*> (batch <$> (Exts.fromList $ ratKeyPaddingMask . ratInput <$> items :: Maybe (Vect batchSize (Tensor device 'Bool [1, seqLen]))))
+    -- RATransformerMLMInput
+    --   <$> (cat @0 <$> (Exts.fromList $ ratMaskedTokens . ratInput <$> items :: Maybe (HList tensors)))
+    --   <*> ( M
+    --           <$> (cat @0 <$> (Exts.fromList $ dataType . ratMeta . ratInput <$> items :: Maybe (HList tensors)))
+    --           <*> (cat @0 <$> (Exts.fromList $ constructor . ratMeta . ratInput <$> items :: Maybe (HList tensors)))
+    --           <*> (cat @0 <$> (Exts.fromList $ selector . ratMeta . ratInput <$> items :: Maybe (HList tensors)))
+    --       )
+    --   <*> (cat @0 <$> (Exts.fromList $ ratRelations . ratInput <$> items :: Maybe (HList tensors')))
+    --   <*> (cat @0 <$> (Exts.fromList $ ratAttentionMask . ratInput <$> items :: Maybe (HList tensors'')))
+    --   <*> (cat @0 <$> (Exts.fromList $ ratKeyPaddingMask . ratInput <$> items :: Maybe (HList tensors''')))
     targets =
       RATransformerMLMTarget
-        <$> (cat @0 <$> (Exts.fromList $ ratTargetTokens . ratTarget <$> items :: Maybe (HList tensors)))
-        <*> (cat @0 <$> (Exts.fromList $ ratTokenMask . ratTarget <$> items :: Maybe (HList tensors''')))
-        <*> (cat @0 <$> (Exts.fromList $ ratInputScopeMask . ratTarget <$> items :: Maybe (HList tensors''')))
-        <*> (cat @0 <$> (Exts.fromList $ ratTargetScopeMask . ratTarget <$> items :: Maybe (HList tensors''')))
-        <*> (cat @0 <$> (Exts.fromList $ ratInvalidTokenMask . ratTarget <$> items :: Maybe (HList tensors'''')))
+        <$> (batch <$> (Exts.fromList $ ratTargetTokens . ratTarget <$> items :: Maybe (Vect batchSize (Tensor device 'Int64 [1, seqLen]))))
+        <*> (batch <$> (Exts.fromList $ ratTokenMask . ratTarget <$> items :: Maybe (Vect batchSize (Tensor device 'Bool [1, seqLen]))))
+        <*> (batch <$> (Exts.fromList $ ratInputScopeMask . ratTarget <$> items :: Maybe (Vect batchSize (Tensor device 'Bool [1, seqLen]))))
+        <*> (batch <$> (Exts.fromList $ ratTargetScopeMask . ratTarget <$> items :: Maybe (Vect batchSize (Tensor device 'Bool [1, seqLen]))))
+        <*> (batch <$> (Exts.fromList $ ratInvalidTokenMask . ratTarget <$> items :: Maybe (Vect batchSize (Tensor device 'Bool [1, seqLen, numEmbeds]))))
+
+-- RATransformerMLMTarget
+--   <$> (cat @0 <$> (Exts.fromList $ ratTargetTokens . ratTarget <$> items :: Maybe (HList tensors)))
+--   <*> (cat @0 <$> (Exts.fromList $ ratTokenMask . ratTarget <$> items :: Maybe (HList tensors''')))
+--   <*> (cat @0 <$> (Exts.fromList $ ratInputScopeMask . ratTarget <$> items :: Maybe (HList tensors''')))
+--   <*> (cat @0 <$> (Exts.fromList $ ratTargetScopeMask . ratTarget <$> items :: Maybe (HList tensors''')))
+--   <*> (cat @0 <$> (Exts.fromList $ ratInvalidTokenMask . ratTarget <$> items :: Maybe (HList tensors'''')))
 
 collate ::
   forall batchSize seqLen numEmbeds relDim dtype device r m.
@@ -2341,7 +2424,7 @@ display3dTensorBatch t =
 
 ------------------------------------------------------------------------
 
-type TestBatchSize = 16
+type TestBatchSize = 64
 
 type TestSeqLen = 256
 
