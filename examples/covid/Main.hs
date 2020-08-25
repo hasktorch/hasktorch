@@ -32,6 +32,16 @@ plotExampleData modelData tensorData = do
   plotTS (fipsMap modelData) tensorData "06037"
   plotTS (fipsMap modelData) tensorData "06075"
 
+optimSpec initializedModel lossFn =
+  OptimSpec
+    { optimizer = mkAdam 0 0.9 0.999 (flattenParameters initializedModel),
+      batchSize = 128,
+      numIters = 2000,
+      learningRate = 1e-7,
+      lossFn = lossFn
+    } ::
+    OptimSpec Adam Simple1dModel
+
 main :: IO ()
 main = do
   putStrLn "Loading Data"
@@ -56,18 +66,16 @@ main = do
   let smallData = filterOn tFips (eq 1223) tensorData
       cases = newCases (tCases smallData)
       tsData = expandToSplits 1 cases
-  model <- sample Simple1dSpec {lstm1dSpec = LSTMSpec {inputSize = 1, hiddenSize = 6}, mlp1dSpec = LinearSpec 6 1}
+  print (shape cases )
+  (model :: Simple1dModel) <- sample Simple1dSpec {lstm1dSpec = LSTMSpec {inputSize = 1, hiddenSize = 64}, mlp1dSpec = LinearSpec 64 1}
   let input = ones' [1, 1]
 
-  -- manual retrieval
-  let ((hidden, cell), output) = forward model (getObs' 100 (pastObs tsData))
-  print output
-  print $ mseLoss (getTime' 100 0 (nextObs tsData)) output
-
-  -- use data loading mechanism
+  -- test data loading and inference
   let (past, future) = getItem tsData 100 1
-  let ((hidden, cell), output) = forward model (getObs' 0 past)
+  let output = forward model (getObs' 0 past)
   print output
   print $ mseLoss (getTime' 0 0 future) output
+
+  trained <- train (optimSpec model mseLoss) tsData model 
 
   putStrLn "Done"

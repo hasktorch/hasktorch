@@ -22,7 +22,7 @@ data OptimSpec o p where
       batchSize :: Int,
       numIters :: Int,
       learningRate :: Tensor,
-      lossFn :: p -> Tensor -> Tensor -> Tensor -- model, input, target
+      lossFn :: Tensor -> Tensor -> Tensor -- model, input, target
     } ->
     OptimSpec o p
 
@@ -46,16 +46,16 @@ instance Randomizable Simple1dSpec Simple1dModel where
       <$> sample lstm1dSpec
       <*> sample mlp1dSpec
 
-instance HasForward Simple1dModel [Tensor] ((Tensor, Tensor), Tensor) where
-  forward model inputs = (lstmOutput, (forward (mlp1d model)) (fst lstmOutput))
+instance HasForward Simple1dModel [Tensor] Tensor where
+  forward Simple1dModel{..} inputs = forward mlp1d lstmOutput
     where
-      cell = lstm1d model
+      cell = lstm1d
       hSize = Prelude.div ((shape . toDependent . weightsIH $ cell) !! 0) 4
       iSize = (shape . toDependent . weightsIH $ cell) !! 1
       cellInit = zeros' [1, hSize]
       hiddenInit = zeros' [1, hSize]
       stateInit = (hiddenInit, cellInit)
-      lstmOutput = foldl (lstmCellForward cell) stateInit inputs
+      (lstmOutput, cellState) = foldl (lstmCellForward cell) stateInit inputs
 
 {- Attempt to model cross-correlations -}
 
@@ -179,16 +179,6 @@ initModel nRegions t2vDim lstmHDim =
         lstmSpec = LSTMSpec {inputSize = t2vDim + 1, hiddenSize = lstmHDim} -- t2vDim + this region's count (1D for now)
       }
 
-optimSpec initializedModel lossFn =
-  OptimSpec
-    { optimizer = mkAdam 0 0.9 0.999 (flattenParameters initializedModel),
-      batchSize = 128,
-      numIters = 500,
-      learningRate = 5e-5,
-      lossFn = lossFn
-    } ::
-    OptimSpec Adam TSModel
-
 {-
 testModel = do
   let t2vd = 6
@@ -201,22 +191,21 @@ testModel = do
 {- Computation Setups for 1D baseline -}
 
 train ::
-  (Dataset TimeSeriesData (Series, Series), Optimizer o, Parameterized p, HasForward p Tensor Tensor) =>
+  (Optimizer o, Parameterized p, HasForward p [Tensor] Tensor) =>
   OptimSpec o p ->
-  TensorData ->
+  TimeSeriesData ->
   p ->
   IO p
 train OptimSpec {..} dataset init = do
   trained <- foldLoop init numIters $
     \state iter -> do
-      -- let (input, dep) = getItem dataset (iter * batchSize) batchSize
-      -- let timeSlices = getItem dataset iter batchSize
-      -- let loss = lossFn state input dep
-      let loss = undefined
+      let (past, future) = getItem dataset (mod iter 190) 1 -- TODO clean up mod hack
+      let output = forward state (getObs' 0 past)
+      let loss = lossFn (getTime' 0 0 future) output
       let flatParameters = flattenParameters state
       let (Gradients gradients) = grad' loss flatParameters
-      -- when (iter `mod` 50 == 0) $ do
-      -- putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
+      when (iter `mod` 10 == 0) $ do
+        putStrLn $ "Iteration: " ++ show iter ++ " | Time: " ++ show (mod iter 190) ++ " | Model Output: " ++ show output ++ " | Loss: " ++ show loss
       (newParam, _) <- runStep state optimizer loss learningRate
       pure $ replaceParameters state newParam
   pure trained
