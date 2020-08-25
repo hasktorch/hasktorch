@@ -297,6 +297,7 @@ executable covid
                      , pipes
                      , pipes-safe
                      , pretty-simple
+                     , safe
                      , text
                      , time
                      , vector

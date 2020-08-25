@@ -1,10 +1,13 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
 module Main where
 
+import Data.Maybe (fromJust)
 import CovidData
 import Data.Csv
 import qualified Data.Map as M
@@ -29,40 +32,6 @@ plotExampleData modelData tensorData = do
   plotTS (fipsMap modelData) tensorData "06037"
   plotTS (fipsMap modelData) tensorData "06075"
 
--- | Transform total cases tensor to new case counts, clamp at 0 for data abnormalities
-newCases totalCases = clampMin 0.0 . diff $ totalCases
-
-data TimeSeries = TimeSeries
-  { -- 1st list dimension = observation #
-    -- 2nd  list dimension = time point
-    -- Tensor = 1x1 value
-    pastObs :: [[Tensor]], -- all observations before split point
-    futureObs :: [[Tensor]], -- all observations after split point
-    nextObs :: [[Tensor]] -- next window
-  }
-  deriving (Eq)
-
-instance Show TimeSeries where
-  show = unpack . pShow
-
--- | Given a 1D time series tensor, create lists of tensors from time point 1..t
-expandToSplits ::
-  Int -> -- Size of future window
-  Tensor ->
-  TimeSeries -- Example Index, Time Index, 1x1 Tensor
-expandToSplits futureWindow timeseries =
-  TimeSeries
-    [Prelude.take i casesList | i <- [1 .. length casesList - futureWindow]]
-    [Prelude.drop i casesList | i <- [1 .. length casesList - futureWindow]]
-    [ Prelude.take futureWindow (Prelude.drop i casesList)
-      | i <- [1 .. length casesList - futureWindow]
-    ]
-  where
-    casesList =
-      reshape [1, 1]
-        . asTensor
-        <$> (fromIntegral <$> (asValue timeseries :: [Int]) :: [Float])
-
 main :: IO ()
 main = do
   putStrLn "Loading Data"
@@ -74,7 +43,7 @@ main = do
   plotExampleData modelData tensorData
 
   let tIndices = asTensor (fipsIdxs modelData)
-  let embedDim = 2
+      embedDim = 2
   weights <- randnIO' [M.size $ fipsMap modelData, 2]
   let locEmbed = embedding' weights tIndices
   print $ indexSelect' 0 [0 .. 10] locEmbed
@@ -85,17 +54,20 @@ main = do
   print $ length fipsList
 
   let smallData = filterOn tFips (eq 1223) tensorData
-  let cases = newCases (tCases smallData)
-  let tsData = expandToSplits 1 cases
+      cases = newCases (tCases smallData)
+      tsData = expandToSplits 1 cases
   model <- sample Simple1dSpec {lstm1dSpec = LSTMSpec {inputSize = 1, hiddenSize = 6}, mlp1dSpec = LinearSpec 6 1}
   let input = ones' [1, 1]
 
-  let ((hidden, cell), output) = forward model ((pastObs tsData) !! 100)
-  let actual = (nextObs tsData !! 100) !! 0
-  print "output"
+  -- manual retrieval
+  let ((hidden, cell), output) = forward model (getObs' 100 (pastObs tsData))
   print output
+  print $ mseLoss (getTime' 100 0 (nextObs tsData)) output
 
-  print "loss"
-  print $ mseLoss actual output
+  -- use data loading mechanism
+  let (past, future) = getItem tsData 100 1
+  let ((hidden, cell), output) = forward model (getObs' 0 past)
+  print output
+  print $ mseLoss (getTime' 0 0 future) output
 
   putStrLn "Done"

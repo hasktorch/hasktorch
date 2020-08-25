@@ -1,10 +1,15 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module CovidData where
 
+import Data.Maybe (fromJust)
+import Safe (atMay)
+import Safe.Exact (dropExactMay, takeExactMay)
 import CovidUtil
 import qualified Data.ByteString.Lazy as BL
 import Data.Csv
@@ -13,17 +18,18 @@ import qualified Data.Set as S
 import Data.Time
 import qualified Data.Vector as V
 import GHC.Generics (Generic)
+import Prelude as P
 import Torch as T
 
--- This is a placeholder for this example until we have a more formal data loader abstraction
---
-class Dataset d a where
+-- | This is a placeholder for this example until we have a more formal data loader abstraction
+class Dataset d a | d -> a where
   getItem ::
-    d ->
+    d -> -- dataset
     Int -> -- index
     Int -> -- batchSize
-    a
+    a -- a container type for dataset itemsitem type
 
+-- | Single record used to parse CSV
 data UsCounties = UsCounties
   { date :: String,
     county :: String,
@@ -36,8 +42,7 @@ data UsCounties = UsCounties
 
 instance FromRecord UsCounties
 
--- instance FromNamedRecord UsCounties
-
+-- | Records aggregated into lists + fips -> ID mapping
 data ModelData = ModelData
   { timePoints :: [Int],
     fipsStrs :: [String],
@@ -48,6 +53,7 @@ data ModelData = ModelData
   }
   deriving (Eq, Generic, Show)
 
+-- | Records packaged into tensors
 data TensorData = TensorData
   { tTimes :: Tensor,
     tFips :: Tensor,
@@ -65,6 +71,49 @@ instance Dataset TensorData TensorData where
       timeFilter1 = \t -> ge t (asTensor (fromIntegral index :: Float))
       timeFilter2 = \t -> lt t (asTensor (fromIntegral (index + batchSize) :: Float))
 
+-- | Representation of a 1D time series as observations and lists of time points
+data TimeSeriesData = TimeSeriesData
+  { -- 1st list dimension = observation #
+    -- 2nd  list dimension = time point
+    -- Tensor = 1x1 value
+    pastObs :: Series, -- all observations before split point
+    futureObs :: Series, -- all observations after split point
+    nextObs :: Series -- next window
+  }
+  deriving Show
+
+newtype Series = Series [[Tensor]] deriving Show
+newtype Obs = Obs Int deriving Show
+newtype Time = Time Int deriving Show
+
+-- | Get an observation window
+getObsBatch :: Obs -> Obs -> Series -> Maybe Series
+getObsBatch (Obs obsIdx) (Obs obsNum) (Series series) =
+  pure series >>= dropExactMay obsIdx >>= takeExactMay obsNum >>= pure . Series 
+
+-- | Get an observation window
+getObs :: Obs -> Series -> Maybe [Tensor]
+getObs (Obs obsIdx) (Series series) = atMay series obsIdx
+
+-- | Get an observation window, unsafe convenience function
+getObs' :: Int -> Series -> [Tensor]
+getObs' obs = fromJust . getObs (Obs obs)
+
+-- | Get a time point from an observation window
+getTime :: Obs -> Time -> Series -> Maybe Tensor
+getTime (Obs obsIdx) (Time timeIdx) (Series series) =
+  atMay series obsIdx >>= atMay' timeIdx >>= pure
+  where atMay' = flip atMay
+
+-- | Get a time point from an observation window, unsafe convenience function
+getTime' :: Int -> Int -> Series -> Tensor
+getTime' obsIdx timeIdx (Series series) = series !! obsIdx !! timeIdx
+  
+instance Dataset TimeSeriesData (Series, Series) where
+  getItem TimeSeriesData{..} index batchSize = (slice pastObs, slice nextObs)
+    where
+      slice series = fromJust $ getObsBatch (Obs index) (Obs batchSize) series
+  
 -- | Parse a CSV file of county level data
 loadDataset :: String -> IO (V.Vector UsCounties)
 loadDataset fileName = do
@@ -126,10 +175,14 @@ datesToTimepoints day0 dateStrings = do
   pure $ fromIntegral <$> flip diffDays firstDay <$> days
 
 -- | calculate first differences of a tensor
-diff :: Tensor -> Tensor
-diff t = (indexSelect' 0 [1 .. len -1] t) - (indexSelect' 0 [0 .. len -2] t)
+firstDiff :: Tensor -> Tensor
+firstDiff t = (indexSelect' 0 [1 .. len -1] t) - (indexSelect' 0 [0 .. len -2] t)
   where
     len = shape t !! 0
+
+-- | Transform total cases tensor to new case counts, clamp at 0 for data abnormalities
+newCases :: Tensor -> Tensor
+newCases totalCases = clampMin 0.0 . firstDiff $ totalCases
 
 -- | trim leading zeros from a tensor
 trim :: Tensor -> Tensor
@@ -151,8 +204,28 @@ plotTS fips2idx tensorData fips = do
   let newCases =
         trim
           . clampMin 0.0
-          . diff
+          . firstDiff
           . tCases
           . filterOn tFips (eq $ asTensor fipsIdx)
           $ tensorData
   tensorSparkline newCases
+
+{- TimeSeries Type Operations -}
+
+-- | Given a 1D time series tensor, create lists of tensors from time point 1..t
+expandToSplits ::
+  Int -> -- Size of future window
+  Tensor ->
+  TimeSeriesData -- Example Index, Time Index, 1x1 Tensor
+expandToSplits futureWindow timeseries =
+  TimeSeriesData
+    (Series [P.take i casesList | i <- [1 .. length casesList - futureWindow]])
+    (Series [P.drop i casesList | i <- [1 .. length casesList - futureWindow]])
+    (Series [ P.take futureWindow (P.drop i casesList)
+      | i <- [1 .. length casesList - futureWindow]
+    ])
+  where
+    casesList =
+      reshape [1, 1]
+        . asTensor
+        <$> (fromIntegral <$> (asValue timeseries :: [Int]) :: [Float])
