@@ -2080,6 +2080,7 @@ instance
   getItem RATransformerMLMData {..} seed = do
     guard $ Set.member seed seeds
     actions <- mkActions @seqLen seed
+    -- liftIO . putStrLn $ "Sampled actions of length " <> show (List.length actions) <> " for " <> show seed
     mkRATransformerMLMItem pMaskInput pMaskTarget actions
   keys RATransformerMLMData {..} = seeds
 
@@ -2424,7 +2425,7 @@ display3dTensorBatch t =
 
 ------------------------------------------------------------------------
 
-type TestBatchSize = 64
+type TestBatchSize = 32
 
 type TestSeqLen = 256
 
@@ -2770,7 +2771,7 @@ sample' gen =
         seed <- get
         let (seed', seed'') = Seed.split seed
         put seed''
-        case evalGen 20 seed' gen of
+        case evalGen 30 seed' gen of
           Nothing ->
             go
           Just x ->
@@ -2915,8 +2916,8 @@ testProgram Config {..} = do
   let -- generate statistics and plots for each epoch
       stats model learningRate trainingCREs evaluationCREs learningRates options = do
         learningRates <- pure $ toFloat learningRate : learningRates
-        (trainingCRE, options) <- evaluate model options trainingData
-        trainingCREs <- pure $ trainingCRE : trainingCREs
+        -- (trainingCRE, options) <- evaluate model options trainingData
+        -- trainingCREs <- pure $ trainingCRE : trainingCREs
         (evaluationCRE, options) <- evaluate model options evaluationData
         evaluationCREs <- pure $ evaluationCRE : evaluationCREs
         plot "plot.html" trainingCREs evaluationCREs learningRates
@@ -2968,7 +2969,8 @@ train ::
   ContT r IO (model, optim, MapStyleOptions)
 train model optim learningRate options dataset =
   let -- training step function
-      step (model, optim) (RATransformerMLMBatch {..}, _iter) = do
+      step (model, optim) (RATransformerMLMBatch {..}, iter) = do
+        putStrLn $ "Training iteration " <> show iter
         let input = toDevice @TestDevice @TestDataDevice ratInput
         prediction <- forwardStoch model input
         let targetTokens = toDevice @TestDevice @TestDataDevice . ratTargetTokens $ ratTarget
@@ -2986,7 +2988,7 @@ train model optim learningRate options dataset =
         -- force GC cleanup after every batch
         performGC
         maybe
-          (print "encountered NaN in gradients, repeating training step" >> pure (model, optim))
+          (putStrLn "encountered NaN in gradients, repeating training step" >> pure (model, optim))
           (const $ (runStep' model optim learningRate clippedGradients))
           (hfoldrM GuardGradAgainstNaN () clippedGradients)
       -- initial training state
@@ -3049,6 +3051,7 @@ evaluate ::
   ContT r IO (CRE Float, MapStyleOptions)
 evaluate model options dataset =
   let step (cre, _) (RATransformerMLMBatch {..}, iter) = do
+        putStrLn $ "Evaluating iteration " <> show iter
         let input = toDevice @TestDevice @TestDataDevice ratInput
             prediction = forward model input
         let target = toDevice @TestDevice @TestDataDevice ratTarget
@@ -3158,8 +3161,8 @@ mkVegaLite dataset =
           . Vega.position
             Vega.X
             [ Vega.PName "epoch",
-              Vega.PmType Vega.Quantitative,
-              Vega.PScale scaleOptsEpoch
+              Vega.PmType Vega.Quantitative
+              -- Vega.PScale scaleOptsEpoch
             ]
           . Vega.position
             Vega.Y
