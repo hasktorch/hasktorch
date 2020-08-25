@@ -20,6 +20,7 @@ series2sparkline vs =
       sparkchars
         !! (Prelude.floor $ (curv / maxv) * (fromIntegral (length sparkchars - 2)))
 
+-- | Render a 1D tensor as a sparkline
 tensorSparkline :: Tensor -> IO ()
 tensorSparkline t = putStrLn $ (series2sparkline (asValue t' :: [Float])) ++ (" | Max: " ++ show (asValue maxValue :: Float))
   where

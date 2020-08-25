@@ -5,15 +5,19 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module TimeSeriesModel where
 
+import Prelude as P
 import Control.Monad (when)
 import CovidData
 import GHC.Generics
 import Torch as T
-import Torch.NN.Recurrent.Cell.LSTM
+-- import Torch.NN.Recurrent.Cell.LSTM
+import Torch.NN.Recurrent.Cell.GRU
+import Text.Printf
 
 data OptimSpec o p where
   OptimSpec ::
@@ -26,17 +30,55 @@ data OptimSpec o p where
     } ->
     OptimSpec o p
 
+{- MLP Module -}
+
+data MLPSpec = MLPSpec {
+    inputFeatures :: Int,
+    hiddenFeatures0 :: Int,
+    hiddenFeatures1 :: Int,
+    outputFeatures :: Int
+    } deriving (Show, Eq)
+
+data MLP = MLP { 
+    l0 :: Linear,
+    l1 :: Linear,
+    l2 :: Linear
+    } deriving (Generic, Show)
+
+instance Parameterized MLP
+instance Randomizable MLPSpec MLP where
+    sample MLPSpec {..} = MLP 
+        <$> sample (LinearSpec inputFeatures hiddenFeatures0)
+        <*> sample (LinearSpec hiddenFeatures0 hiddenFeatures1)
+        <*> sample (LinearSpec hiddenFeatures1 outputFeatures)
+
+mlp :: MLP -> Tensor -> Tensor
+mlp MLP{..} input = 
+    linear l2
+    . relu
+    . linear l1
+    . relu
+    . linear l0
+    $ input
+
+instance HasForward MLP Tensor Tensor where
+  forward = mlp
+
 {- Trivial 1D baseline -}
 
 data Simple1dSpec = Simple1dSpec
-  { lstm1dSpec :: LSTMSpec,
-    mlp1dSpec :: LinearSpec
+  -- { lstm1dSpec :: LSTMSpec,
+  { lstm1dSpec :: GRUSpec,
+    mlp1dSpec :: MLPSpec
+    -- mlp1dSpec :: LinearSpec
   }
   deriving (Eq, Show)
 
 data Simple1dModel = Simple1dModel
-  { lstm1d :: LSTMCell,
-    mlp1d :: Linear
+  -- { lstm1d :: LSTMCell,
+  { lstm1d :: GRUCell,
+    mlp1d :: MLP
+    -- mlp1d :: Linear
   }
   deriving (Generic, Show, Parameterized)
 
@@ -46,19 +88,31 @@ instance Randomizable Simple1dSpec Simple1dModel where
       <$> sample lstm1dSpec
       <*> sample mlp1dSpec
 
+swish x = T.mul x (sigmoid x)
+
 instance HasForward Simple1dModel [Tensor] Tensor where
-  forward Simple1dModel{..} inputs = forward mlp1d lstmOutput
+  forward Simple1dModel {..} inputs = 
+    swish . forward mlp1d $ lstmOutput
     where
       cell = lstm1d
-      hSize = Prelude.div ((shape . toDependent . weightsIH $ cell) !! 0) 4
+      -- hSize = P.div ((shape . toDependent . weightsIH $ cell) !! 0) 4 -- 4 for LSTM
+      hSize = P.div ((shape . toDependent . weightsIH $ cell) !! 0) 3 -- 3 for GRU
       iSize = (shape . toDependent . weightsIH $ cell) !! 1
-      cellInit = zeros' [1, hSize]
-      hiddenInit = zeros' [1, hSize]
-      stateInit = (hiddenInit, cellInit)
-      (lstmOutput, cellState) = foldl (lstmCellForward cell) stateInit inputs
+      -- LSTM
+      -- cellInit = zeros' [1, hSize]
+      -- hiddenInit = zeros' [1, hSize]
+      -- stateInit = (hiddenInit, cellInit)
+      -- GRU
+      -- hiddenInit = zeros' [1, 1, 3 * hSize] -- what should this be for GRU
+      -- hiddenInit = zeros' [1, hSize] -- what should this be for GRU
+      hiddenInit = zeros' [1, hSize] -- what should this be for GRU
+      stateInit = hiddenInit
+      -- (lstmOutput, cellState) = foldl (lstmCellForward cell) stateInit inputs
+      lstmOutput = foldl (gruCellForward cell) stateInit inputs
 
 {- Attempt to model cross-correlations -}
 
+{-
 data TSModelSpec = TSModelSpec
   { nCounties :: Int,
     countyEmbedDim :: Int,
@@ -179,6 +233,7 @@ initModel nRegions t2vDim lstmHDim =
         lstmSpec = LSTMSpec {inputSize = t2vDim + 1, hiddenSize = lstmHDim} -- t2vDim + this region's count (1D for now)
       }
 
+-}
 {-
 testModel = do
   let t2vd = 6
@@ -190,6 +245,17 @@ testModel = do
 -}
 {- Computation Setups for 1D baseline -}
 
+{-
+clipGradient :: T.Scalar a => a -> Gradients -> Gradients
+clipGradient maxScale (Gradients gradients) =  
+  if scale > maxScale then
+    Gradients TODO - zipWith (mulScalar (scale / maxScale) <$> gradients)
+  else
+    Gradients gradients
+  where
+    scales = (asValue . T.sumAll . T.abs <$> gradients)
+-}
+
 train ::
   (Optimizer o, Parameterized p, HasForward p [Tensor] Tensor) =>
   OptimSpec o p ->
@@ -199,13 +265,21 @@ train ::
 train OptimSpec {..} dataset init = do
   trained <- foldLoop init numIters $
     \state iter -> do
-      let (past, future) = getItem dataset (mod iter 190) 1 -- TODO clean up mod hack
-      let output = forward state (getObs' 0 past)
-      let loss = lossFn (getTime' 0 0 future) output
-      let flatParameters = flattenParameters state
-      let (Gradients gradients) = grad' loss flatParameters
+      obs <- randintIO' 0 190 []
+      let startTime = 0 :: Int
+          obs' = asValue obs :: Float
+          time = round obs'
+          (past, future) = getItem dataset time 1 -- TODO clean up mod hack
+          output = forward state (getObs' 0 past)
+          output' = asValue output :: Float
+          actual = (getTime' 0 0 future)
+          actual' = P.round (asValue actual :: Float) :: Int
+          loss = T.sqrt $ lossFn actual output -- get absolute value of error
+          loss' = asValue loss :: Float
+          flatParameters = flattenParameters state
+          (Gradients gradients) = grad' loss flatParameters
       when (iter `mod` 10 == 0) $ do
-        putStrLn $ "Iteration: " ++ show iter ++ " | Time: " ++ show (mod iter 190) ++ " | Model Output: " ++ show output ++ " | Loss: " ++ show loss
+        putStrLn $ printf "it %6d | seqlen (t) %4d | pred %6.1f | actual %4d | error %5.1f" iter time output' actual' loss'
       (newParam, _) <- runStep state optimizer loss learningRate
       pure $ replaceParameters state newParam
   pure trained

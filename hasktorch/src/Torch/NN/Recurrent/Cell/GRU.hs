@@ -38,10 +38,11 @@ instance Parameterized GRUCell
 
 instance Randomizable GRUSpec GRUCell where
   sample GRUSpec{..} = do
-    weightsIH' <- makeIndependent =<< randIO' [3 * hiddenSize, inputSize]
-    weightsHH' <- makeIndependent =<< randIO' [3 * hiddenSize, hiddenSize]
-    biasIH' <- makeIndependent =<< randIO' [3 * hiddenSize]
-    biasHH' <- makeIndependent =<< randIO' [3 * hiddenSize]
+    -- https://pytorch.org/docs/stable/generated/torch.nn.GRU.html
+    weightsIH' <- makeIndependent =<< initScale <$> randIO' [3 * hiddenSize, inputSize]
+    weightsHH' <- makeIndependent =<< initScale <$> randIO' [3 * hiddenSize, hiddenSize]
+    biasIH' <- makeIndependent =<< initScale <$> randIO' [3 * hiddenSize]
+    biasHH' <- makeIndependent =<< initScale <$> randIO' [3 * hiddenSize]
     pure $ GRUCell {
         weightsIH=weightsIH',
         weightsHH=weightsHH',

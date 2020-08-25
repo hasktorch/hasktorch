@@ -7,19 +7,19 @@
 
 module CovidData where
 
-import Data.Maybe (fromJust)
-import Safe (atMay)
-import Safe.Exact (dropExactMay, takeExactMay)
 import CovidUtil
 import qualified Data.ByteString.Lazy as BL
 import Data.Csv
 import qualified Data.Map as M
+import Data.Maybe (fromJust)
 import qualified Data.Set as S
 import Data.Time
 import qualified Data.Vector as V
 import GHC.Generics (Generic)
-import Prelude as P
+import Safe (atMay)
+import Safe.Exact (dropExactMay, takeExactMay)
 import Torch as T
+import Prelude as P
 
 -- | This is a placeholder for this example until we have a more formal data loader abstraction
 class Dataset d a | d -> a where
@@ -76,20 +76,21 @@ instance Dataset TensorData TensorData where
 -- 2nd list dimension = time point
 -- Tensor = 1x1 value
 data TimeSeriesData = TimeSeriesData
-  { 
-    pastObs :: Series, -- all observations before split point
+  { pastObs :: Series, -- all observations before split point
     nextObs :: Series -- next window
   }
-  deriving Show
+  deriving (Show)
 
-newtype Series = Series [[Tensor]] deriving Show
-newtype Obs = Obs Int deriving Show
-newtype Time = Time Int deriving Show
+newtype Series = Series [[Tensor]] deriving (Show)
+
+newtype Obs = Obs Int deriving (Show)
+
+newtype Time = Time Int deriving (Show)
 
 -- | Get an observation window
 getObsBatch :: Obs -> Obs -> Series -> Maybe Series
 getObsBatch (Obs obsIdx) (Obs obsNum) (Series series) =
-  pure series >>= dropExactMay obsIdx >>= takeExactMay obsNum >>= pure . Series 
+  pure series >>= dropExactMay obsIdx >>= takeExactMay obsNum >>= pure . Series
 
 -- | Get an observation window
 getObs :: Obs -> Series -> Maybe [Tensor]
@@ -103,17 +104,18 @@ getObs' obs = fromJust . getObs (Obs obs)
 getTime :: Obs -> Time -> Series -> Maybe Tensor
 getTime (Obs obsIdx) (Time timeIdx) (Series series) =
   atMay series obsIdx >>= atMay' timeIdx >>= pure
-  where atMay' = flip atMay
+  where
+    atMay' = flip atMay
 
 -- | Get a time point from an observation window, unsafe convenience function
 getTime' :: Int -> Int -> Series -> Tensor
 getTime' obsIdx timeIdx (Series series) = series !! obsIdx !! timeIdx
-  
+
 instance Dataset TimeSeriesData (Series, Series) where
-  getItem TimeSeriesData{..} index batchSize = (slice pastObs, slice nextObs)
+  getItem TimeSeriesData {..} index batchSize = (slice pastObs, slice nextObs)
     where
       slice series = fromJust $ getObsBatch (Obs index) (Obs batchSize) series
-  
+
 -- | Parse a CSV file of county level data
 loadDataset :: String -> IO (V.Vector UsCounties)
 loadDataset fileName = do
@@ -198,7 +200,8 @@ trim t =
     hasVal = T.all $ toDType Bool nz
 
 -- | Plot time series
--- Clamping is done since data artifacts can cause total changes to go negative - see https://github.com/nytimes/covid-19-data/issues/425
+-- Clamping is done since data artifacts can cause total changes to go negative 
+-- see https://github.com/nytimes/covid-19-data/issues/425
 plotTS fips2idx tensorData fips = do
   let fipsIdx = fips2idx M.! fips
   let newCases =
@@ -222,9 +225,11 @@ expandToSplits ::
 expandToSplits futureWindow timeseries =
   TimeSeriesData
     (Series [P.take i casesList | i <- [1 .. length casesList - futureWindow]])
-    (Series [ P.take futureWindow (P.drop i casesList)
-      | i <- [1 .. length casesList - futureWindow]
-    ])
+    ( Series
+        [ P.take futureWindow (P.drop i casesList)
+          | i <- [1 .. length casesList - futureWindow]
+        ]
+    )
   where
     casesList =
       reshape [1, 1]

@@ -7,10 +7,10 @@
 
 module Main where
 
-import Data.Maybe (fromJust)
 import CovidData
 import Data.Csv
 import qualified Data.Map as M
+import Data.Maybe (fromJust)
 import qualified Data.Set as S
 import Data.Text.Lazy (unpack)
 import Data.Time
@@ -24,6 +24,7 @@ import TimeSeriesModel
 import Torch
 import Torch as T
 import Torch.NN.Recurrent.Cell.LSTM
+import Torch.NN.Recurrent.Cell.GRU
 
 plotExampleData modelData tensorData = do
   plotTS (fipsMap modelData) tensorData "25025"
@@ -35,12 +36,19 @@ plotExampleData modelData tensorData = do
 optimSpec initializedModel lossFn =
   OptimSpec
     { optimizer = mkAdam 0 0.9 0.999 (flattenParameters initializedModel),
-      batchSize = 128,
-      numIters = 2000,
-      learningRate = 1e-7,
+      batchSize = 1, -- note used ATM
+      numIters = 100000,
+      -- learningRate = 1e-11, -- LSTM
+      learningRate = 1e-3, -- GRU
       lossFn = lossFn
     } ::
     OptimSpec Adam Simple1dModel
+
+modelSpec = Simple1dSpec {
+  -- lstm1dSpec = LSTMSpec {inputSize = 1, hiddenSize = 32},
+  lstm1dSpec = GRUSpec {inputSize = 1, hiddenSize = 1},
+  mlp1dSpec = MLPSpec 1 32 16 1
+}
 
 main :: IO ()
 main = do
@@ -66,8 +74,9 @@ main = do
   let smallData = filterOn tFips (eq 1223) tensorData
       cases = newCases (tCases smallData)
       tsData = expandToSplits 1 cases
-  print (shape cases )
-  (model :: Simple1dModel) <- sample Simple1dSpec {lstm1dSpec = LSTMSpec {inputSize = 1, hiddenSize = 64}, mlp1dSpec = LinearSpec 64 1}
+  print (shape cases)
+  -- (model :: Simple1dModel) <- sample Simple1dSpec {lstm1dSpec = LSTMSpec {inputSize = 1, hiddenSize = 64}, mlp1dSpec = LinearSpec 64 1}
+  (model :: Simple1dModel) <- sample modelSpec
   let input = ones' [1, 1]
 
   -- test data loading and inference
@@ -76,6 +85,6 @@ main = do
   print output
   print $ mseLoss (getTime' 0 0 future) output
 
-  trained <- train (optimSpec model mseLoss) tsData model 
+  trained <- train (optimSpec model mseLoss) tsData model
 
   putStrLn "Done"

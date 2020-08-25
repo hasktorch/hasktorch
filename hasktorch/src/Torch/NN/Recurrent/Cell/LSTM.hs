@@ -50,4 +50,4 @@ instance Randomizable LSTMSpec LSTMCell where
         biasHH=biasHH' }
     where
       scale = Prelude.sqrt $ 1.0 / fromIntegral hiddenSize :: Float
-      initScale =  subScalar scale . mulScalar scale . mulScalar 2.0
+      initScale =  subScalar scale . mulScalar scale . mulScalar (2.0 :: Float)
