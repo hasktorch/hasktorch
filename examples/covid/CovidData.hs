@@ -72,12 +72,12 @@ instance Dataset TensorData TensorData where
       timeFilter2 = \t -> lt t (asTensor (fromIntegral (index + batchSize) :: Float))
 
 -- | Representation of a 1D time series as observations and lists of time points
+-- 1st list dimension = observation #
+-- 2nd list dimension = time point
+-- Tensor = 1x1 value
 data TimeSeriesData = TimeSeriesData
-  { -- 1st list dimension = observation #
-    -- 2nd  list dimension = time point
-    -- Tensor = 1x1 value
+  { 
     pastObs :: Series, -- all observations before split point
-    futureObs :: Series, -- all observations after split point
     nextObs :: Series -- next window
   }
   deriving Show
@@ -212,7 +212,9 @@ plotTS fips2idx tensorData fips = do
 
 {- TimeSeries Type Operations -}
 
--- | Given a 1D time series tensor, create lists of tensors from time point 1..t
+-- | Given a 1D time series tensor
+-- create lists of tensors from time point 1..t
+-- and prospective windows of a fixed size
 expandToSplits ::
   Int -> -- Size of future window
   Tensor ->
@@ -220,10 +222,25 @@ expandToSplits ::
 expandToSplits futureWindow timeseries =
   TimeSeriesData
     (Series [P.take i casesList | i <- [1 .. length casesList - futureWindow]])
-    (Series [P.drop i casesList | i <- [1 .. length casesList - futureWindow]])
     (Series [ P.take futureWindow (P.drop i casesList)
       | i <- [1 .. length casesList - futureWindow]
     ])
+  where
+    casesList =
+      reshape [1, 1]
+        . asTensor
+        <$> (fromIntegral <$> (asValue timeseries :: [Int]) :: [Float])
+
+-- | Given a 1D time series tensor
+-- create lists of tensors from time point 1..t
+-- and prospective windows for the remainder of the series
+expandToSplitsAll ::
+  Tensor ->
+  TimeSeriesData -- Example Index, Time Index, 1x1 Tensor
+expandToSplitsAll timeseries =
+  TimeSeriesData
+    (Series [P.take i casesList | i <- [1 .. length casesList - 1]])
+    (Series [P.drop i casesList | i <- [1 .. length casesList - 1]])
   where
     casesList =
       reshape [1, 1]

@@ -201,7 +201,7 @@ testModel = do
 {- Computation Setups for 1D baseline -}
 
 train ::
-  (Dataset TensorData TensorData, Optimizer o, Parameterized p, HasForward p Tensor Tensor) =>
+  (Dataset TimeSeriesData (Series, Series), Optimizer o, Parameterized p, HasForward p Tensor Tensor) =>
   OptimSpec o p ->
   TensorData ->
   p ->
