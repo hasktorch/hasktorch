@@ -67,7 +67,7 @@ bufferedCollate :: (MonadIO m, MonadBaseControl IO m) => Int -> ([sample] -> May
 bufferedCollate batchSize collateFn = pmapGroup (collate batchSize collateFn) 
 
 collate :: Monad m => Int -> ([sample] -> Maybe batch) -> ListT m sample -> ListT m batch
-collate batchSize collateFn  = Select . (>-> P.mapMaybe collateFn) . L.purely folds L.list . view (chunksOf batchSize) . enumerate
+collate batchSize collateFn  = Select . (>-> P.mapFoldable collateFn) . L.purely folds L.list . view (chunksOf batchSize) . enumerate
 
 newtype CachedDataset (m :: * -> *) sample = CachedDataset { cached :: IntMap sample }
 
