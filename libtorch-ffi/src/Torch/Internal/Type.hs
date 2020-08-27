@@ -84,6 +84,9 @@ data JitGraph
 data JitNode
 data JitValue
 
+data Adam
+
+
 typeTable = Map.fromList [
         (C.TypeName "std::array", [t|StdArray|])
       , (C.TypeName "std::vector", [t|StdVector|])
