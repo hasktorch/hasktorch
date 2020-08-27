@@ -2505,7 +2505,7 @@ type TestDType = 'Float
 
 type TestDataDevice = '( 'CPU, 0)
 
-type TestDevice = '( 'CPU, 0)
+type TestDevice = '( 'CUDA, 0)
 
 type TestRATransformerMLMSpec =
   RATransformerMLMSpec
