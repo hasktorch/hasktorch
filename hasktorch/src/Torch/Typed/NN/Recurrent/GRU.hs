@@ -263,46 +263,53 @@ instance
   flattenParameters = gruLayerStackFlattenParameters (Proxy :: Proxy flag)
   replaceParameters = gruLayerStackReplaceParameters (Proxy :: Proxy flag)
 
--- instance
---   {-# OVERLAPS #-}
---   ( RandDTypeIsValid device dtype,
---     KnownNat inputSize,
---     KnownNat hiddenSize,
---     KnownDType dtype,
---     KnownDevice device,
---     A.Randomizable
---       (GRULayerSpec inputSize hiddenSize directionality dtype device)
---       (GRULayer inputSize hiddenSize directionality dtype device)
---   ) =>
---   A.Randomizable
---     (GRULayerStackSpec inputSize hiddenSize 1 directionality dtype device)
---     (GRULayerStack inputSize hiddenSize 1 directionality dtype device)
---   where
---   sample _ = GRULayer1 <$> (A.sample $ GRULayerSpec @inputSize @hiddenSize @directionality @dtype @device)
+class GRULayerStackRandomizable (flag :: Bool) inputSize hiddenSize numLayers directionality dtype device where
+  gruLayerStackSample ::
+    Proxy flag ->
+    GRULayerStackSpec inputSize hiddenSize numLayers directionality dtype device ->
+    IO (GRULayerStack inputSize hiddenSize numLayers directionality dtype device)
 
--- instance
---   {-# OVERLAPPABLE #-}
---   ( 2 <= numLayers,
---     RandDTypeIsValid device dtype,
---     KnownNat inputSize,
---     KnownNat hiddenSize,
---     KnownDType dtype,
---     KnownDevice device,
---     A.Randomizable
---       (GRULayerStackSpec inputSize hiddenSize (numLayers - 1) directionality dtype device)
---       (GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device),
---     A.Randomizable
---       (GRULayerSpec (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)
---       (GRULayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)
---   ) =>
---   A.Randomizable
---     (GRULayerStackSpec inputSize hiddenSize numLayers directionality dtype device)
---     (GRULayerStack inputSize hiddenSize numLayers directionality dtype device)
---   where
---   sample _ =
---     GRULayerK
---       <$> (A.sample $ GRULayerStackSpec @inputSize @hiddenSize @(numLayers - 1) @directionality @dtype @device)
---       <*> (A.sample $ GRULayerSpec @(hiddenSize * NumberOfDirections directionality) @hiddenSize @directionality @dtype @device)
+instance
+  ( A.Randomizable
+      (GRULayerSpec inputSize hiddenSize directionality dtype device)
+      (GRULayer inputSize hiddenSize directionality dtype device)
+  ) =>
+  GRULayerStackRandomizable 'False inputSize hiddenSize 1 directionality dtype device
+  where
+  gruLayerStackSample _ _ = GRULayer1 <$> (sample $ GRULayerSpec @inputSize @hiddenSize @directionality @dtype @device)
+
+instance
+  ( A.Randomizable
+      (GRULayerSpec (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)
+      (GRULayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device),
+    A.Randomizable
+      (GRULayerStackSpec inputSize hiddenSize (numLayers - 1) directionality dtype device)
+      (GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device)
+  ) =>
+  GRULayerStackRandomizable 'True inputSize hiddenSize numLayers directionality dtype device
+  where
+  gruLayerStackSample _ _ =
+    GRULayerK
+      <$> (sample $ GRULayerSpec @(hiddenSize * NumberOfDirections directionality) @hiddenSize @directionality @dtype @device)
+      <*> ( sample
+              @(GRULayerStackSpec inputSize hiddenSize (numLayers - 1) directionality dtype device)
+              @(GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device)
+              $ GRULayerStackSpec
+          )
+
+instance
+  ( 1 <= numLayers,
+    (2 <=? numLayers) ~ flag,
+    RandDTypeIsValid device dtype,
+    KnownDType dtype,
+    KnownDevice device,
+    GRULayerStackRandomizable flag inputSize hiddenSize numLayers directionality dtype device
+  ) =>
+  Randomizable
+    (GRULayerStackSpec inputSize hiddenSize numLayers directionality dtype device)
+    (GRULayerStack inputSize hiddenSize numLayers directionality dtype device)
+  where
+  sample = gruLayerStackSample (Proxy :: Proxy flag)
 
 newtype
   GRUSpec

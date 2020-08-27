@@ -544,6 +544,22 @@ divScalar ::
   Tensor device dtype shape
 divScalar a input = unsafePerformIO $ ATen.cast2 ATen.Managed.div_ts input a
 
+-- | powScalar
+-- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
+--
+-- >>> dtype &&& shape $ powScalar 2 (ones :: CPUTensor 'D.Float '[3,2])
+-- (Float,[3,2])
+powScalar ::
+  forall a shape dtype device.
+  D.Scalar a =>
+  -- | power
+  a ->
+  -- | input tensor
+  Tensor device dtype shape ->
+  -- | output tensor
+  Tensor device dtype shape
+powScalar a input = unsafePerformIO $ ATen.cast2 ATen.Managed.pow_ts input a
+
 -- | erf
 --
 -- >>> dtype &&& shape $ erf (ones :: CPUTensor 'D.Float '[3,2])
@@ -609,20 +625,23 @@ log10 ::
 log10 input = unsafePerformIO $ ATen.cast1 ATen.Managed.log10_t input
 
 -- | pow
+-- this operation supports broadcasting
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 --
 -- >>> dtype &&& shape $ pow 2 (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 pow ::
-  forall a shape dtype device.
-  D.Scalar a =>
+  forall shape'' shape shape' dtype device.
+  ( BasicArithmeticDTypeIsValid device dtype,
+    shape'' ~ Broadcast shape shape'
+  ) =>
   -- | power
-  a ->
-  -- | input tensor
   Tensor device dtype shape ->
+  -- | input tensor
+  Tensor device dtype shape' ->
   -- | output tensor
-  Tensor device dtype shape
-pow a input = unsafePerformIO $ ATen.cast2 ATen.Managed.pow_ts input a
+  Tensor device dtype shape''
+pow exponent input = unsafePerformIO $ ATen.cast2 ATen.Managed.pow_tt input exponent
 
 -- | relu activation function
 --

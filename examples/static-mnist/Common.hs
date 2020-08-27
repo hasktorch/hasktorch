@@ -74,7 +74,8 @@ train
      , tensors ~ gradients
      , HMap' ToDependent parameters tensors
      , Castable (HList gradients) [ATenTensor]
-     , Parameterized model parameters
+     , parameters ~ Parameters model
+     , Parameterized model
      , Optimizer optim gradients tensors 'Float device
      , HMapM' IO MakeIndependent tensors parameters
      , _

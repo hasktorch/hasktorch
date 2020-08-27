@@ -3,7 +3,6 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -21,13 +20,13 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoStarIsType #-}
-{-# LANGUAGE StandaloneDeriving #-}
 {-# OPTIONS_GHC -freduction-depth=0 #-}
 
 module Torch.Data.ActionTransitionSystem where
@@ -85,6 +84,7 @@ import qualified Pipes.Group as P
 import Pipes.Prelude (drain, foldM, repeatM, take)
 import qualified Pipes.Prelude as P
 import qualified Pipes.Safe as Safe
+import System.Directory (doesFileExist)
 import System.IO.Error (ioeGetErrorString)
 import System.Mem (performGC)
 import System.Random (getStdGen)
@@ -1560,12 +1560,15 @@ instance
         ),
     Parameterized (HList layers),
     HAppendFD
-                          (Parameters (HList layers))
-                          '[Parameter device dtype '[tokenNumEmbeds, headDim * numHeads],
-                            Parameter device dtype '[tokenNumEmbeds]]
-                          (Parameters (HList layers)
-                           ++ '[Parameter device dtype '[tokenNumEmbeds, headDim * numHeads],
-                                Parameter device dtype '[tokenNumEmbeds]])
+      (Parameters (HList layers))
+      '[ Parameter device dtype '[tokenNumEmbeds, headDim * numHeads],
+         Parameter device dtype '[tokenNumEmbeds]
+       ]
+      ( Parameters (HList layers)
+          ++ '[ Parameter device dtype '[tokenNumEmbeds, headDim * numHeads],
+                Parameter device dtype '[tokenNumEmbeds]
+              ]
+      )
   ) =>
   Parameterized (RATransformerMLM numAttnLayers numHeads headDim ffnDim tokenPaddingIdx tokenNumEmbeds dataTypePaddingIdx dataTypeNumEmbeds constructorPaddingIdx constructorNumEmbeds selectorPaddingIdx selectorNumEmbeds relationPaddingIdx relationNumEmbeds dtype device)
 
@@ -2923,9 +2926,8 @@ testProgram Config {..} = do
           let f filePath = filePath <> "-" <> show epoch
            in (epoch, f modelCheckpointFile, f optimCheckpointFile)
         testFilePaths :: (Int, FilePath, FilePath) -> IO Bool
-        testFilePaths (_, modelCheckpointFile, optimCheckpointFile) = do
-          -- check if files exist
-          pure True
+        testFilePaths (_, modelCheckpointFile, optimCheckpointFile) =
+          liftA2 ((&&)) (doesFileExist modelCheckpointFile) (doesFileExist optimCheckpointFile)
         loadFilePaths ::
           forall model modelTensors modelParameters optim optimTensors.
           ( Castable (HList modelTensors) [ATenTensor],

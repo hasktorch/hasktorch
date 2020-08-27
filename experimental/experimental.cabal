@@ -70,3 +70,4 @@ executable action-transition-system
                      , prettyprinter-ansi-terminal
                      , random
                      , hvega
+                     , directory
