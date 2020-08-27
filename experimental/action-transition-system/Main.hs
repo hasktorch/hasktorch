@@ -18,7 +18,8 @@ main =
             numEpochs = 1000,
             numWarmupEpochs = 10,
             numCooldownEpochs = 10,
-            ptFile = "model.pt",
+            modelCheckpointFile = "modelCheckpoint",
+            optimCheckpointFile = "optimCheckpoint",
             plotFile = "plot.html",
             options =
               MapStyleOptions

@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -35,15 +36,15 @@ data
     (inputFeatures :: Nat)
     (outputFeatures :: Nat)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   Linear ::
     forall inputFeatures outputFeatures dtype device.
     { linearWeight :: Parameter device dtype '[outputFeatures, inputFeatures],
       linearBias :: Parameter device dtype '[outputFeatures]
     } ->
-    Linear inputFeatures outputFeatures dtype
-      device
-  deriving (Show, Generic)
+    Linear inputFeatures outputFeatures dtype device
+  deriving (Show, Generic, Parameterized)
 
 -- | linear
 -- The constraints on this one are _very_ involved, so the partial signatures
@@ -70,7 +71,8 @@ instance
     KnownDevice device,
     RandDTypeIsValid device dtype
   ) =>
-  Randomizable (LinearSpec inputFeatures outputFeatures dtype device)
+  Randomizable
+    (LinearSpec inputFeatures outputFeatures dtype device)
     (Linear inputFeatures outputFeatures dtype device)
   where
   sample LinearSpec =

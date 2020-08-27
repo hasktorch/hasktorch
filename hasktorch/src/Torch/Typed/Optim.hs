@@ -10,9 +10,11 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE NoStarIsType #-}
 
 module Torch.Typed.Optim where
 
+import Data.Kind
 import Control.Monad.State
 import Torch.HList
 import qualified Torch.Internal.Cast as ATen
@@ -46,7 +48,8 @@ class Optimizer optim gradients tensors dtype device where
 
 runStep ::
   forall model optim parameters gradients tensors dtype device.
-  ( Parameterized model parameters,
+  ( Parameterized model,
+    parameters ~ Parameters model,
     HasGrad (HList parameters) (HList gradients),
     tensors ~ gradients,
     HMap' ToDependent parameters tensors,
@@ -70,7 +73,8 @@ runStep model optim loss learningRate = do
 
 runStep' ::
   forall model optim parameters gradients tensors dtype device.
-  ( Parameterized model parameters,
+  ( Parameterized model,
+    parameters ~ Parameters model,
     tensors ~ gradients,
     HMap' ToDependent parameters tensors,
     Optimizer optim gradients tensors dtype device,
@@ -132,12 +136,17 @@ instance
   where
   step = gd
 
+instance Parameterized GD where
+  type Parameters GD = '[]
+  flattenParameters _ = HNil
+  replaceParameters = const
+
 --
 -- Gradient Descent with Momentum (GDM)
 --
 
 -- | State representation for GDM Optimizer
-data GDM momenta = GDM
+data GDM (momenta :: [Type]) = GDM
   { beta :: Float, -- moment forgetting factor
     momenta :: HList momenta -- momenta
   }
@@ -197,13 +206,18 @@ instance
   where
   step = gdm
 
+instance Parameterized (GDM momenta) where
+  type Parameters (GDM momenta) = momenta
+  flattenParameters GDM {..} = momenta
+  replaceParameters gdm momenta = gdm {momenta = momenta}
+
 --
 -- Adam
 -- https://arxiv.org/pdf/1412.6980.pdf
 --
 
 -- | State representation for Adam Optimizer
-data Adam momenta = Adam
+data Adam (momenta :: [Type]) = Adam
   { iter :: Int, -- iteration
     beta1 :: Float, -- 1st moment forgetting factor
     beta2 :: Float, -- 2nd moment forgetting factor
@@ -318,3 +332,13 @@ instance
   Optimizer (Adam momenta) gradients tensors dtype device
   where
   step = adam
+
+instance
+  HAppendFD momenta momenta (momenta ++ momenta) =>
+  Parameterized (Adam momenta)
+  where
+  type Parameters (Adam momenta) = momenta ++ momenta
+  flattenParameters Adam {..} = momenta1 `happendFD` momenta2
+  replaceParameters adam momenta =
+    let (momenta1, momenta2) = hunappendFD momenta
+     in adam {momenta1 = momenta1, momenta2 = momenta2}

@@ -6,6 +6,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeInType #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module Torch.Typed.NN.Normalization where
 
@@ -34,7 +35,7 @@ data LayerNorm (normalizedShape :: [Nat]) (dtype :: D.DType) (device :: (D.Devic
       layerNormEps :: Double
     } ->
     LayerNorm normalizedShape dtype device
-  deriving (Show, Generic)
+  deriving (Show, Generic, Parameterized)
 
 layerNormForward ::
   forall normalizedShape shape dtype device.

@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -6,6 +7,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -15,7 +17,6 @@
 
 module Torch.Typed.NN.Transformer where
 
-import Control.Arrow ((<<<))
 import Control.Monad
 import Data.Proxy
 import GHC.Generics
@@ -33,6 +34,7 @@ import Torch.Typed.NN.Dropout
 import Torch.Typed.NN.Linear
 import Torch.Typed.NN.Normalization
 import Torch.Typed.NN.Sparse
+import Torch.Typed.Parameter
 import Torch.Typed.Tensor
 import Prelude hiding (cos, exp, sin)
 
@@ -79,7 +81,7 @@ data
       mhaDropout :: Dropout
     } ->
     MultiheadAttention embedDim kEmbedDim vEmbedDim numHeads dtype device
-  deriving (Show, Generic)
+  deriving (Show, Generic, Parameterized)
 
 multiheadAttention ::
   forall embedDim kEmbedDim vEmbedDim numHeads seqLen seqLen' batchSize headDim dtype device.
@@ -201,7 +203,7 @@ data
       epsSpec :: Double
     } ->
     TransformerMLPSpec embedDim ffnDim dtype device
-  deriving (Show)
+  deriving (Show, Eq)
 
 data
   TransformerMLP
@@ -224,7 +226,7 @@ data
       ln :: LayerNorm '[embedDim] dtype device
     } ->
     TransformerMLP embedDim ffnDim dtype device
-  deriving (Show, Generic)
+  deriving (Show, Generic, Parameterized)
 
 transformerMLP ::
   forall embedDim ffnDim seqLen batchSize dtype device.
@@ -290,7 +292,7 @@ data
       mlpSpec :: TransformerMLPSpec embedDim ffnDim dtype device
     } ->
     TransformerLayerSpec embedDim kEmbedDim vEmbedDim numHeads ffnDim dtype device
-  deriving (Show)
+  deriving (Show, Eq)
 
 data
   TransformerLayer
@@ -314,7 +316,7 @@ data
       transformerLayer_mlp :: TransformerMLP embedDim ffnDim dtype device
     } ->
     TransformerLayer embedDim kEmbedDim vEmbedDim numHeads ffnDim dtype device
-  deriving (Show, Generic)
+  deriving (Show, Generic, Parameterized)
 
 transformerLayer ::
   forall (numHeads :: Nat) (ffnDim :: Nat) (embedDim :: Nat) (kEmbedDim :: Nat) (vEmbedDim :: Nat) (headDim :: Nat) (seqLen :: Nat) (seqLen' :: Nat) (batchSize :: Nat) dtype device.
@@ -396,7 +398,7 @@ data
       lmLayerSpec :: TransformerLayerSpec embedDim embedDim embedDim numHeads ffnDim dtype device
     } ->
     TransformerLMSpec numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim dtype device
-  deriving (Show)
+  deriving (Show, Eq)
 
 data
   TransformerLM
@@ -424,6 +426,56 @@ data
     } ->
     TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim dtype device
   deriving (Generic)
+
+deriving instance
+  ( Show
+      ( HList
+          ( HReplicateR
+              numAttnLayers
+              ( TransformerLayer
+                  embedDim
+                  embedDim
+                  embedDim
+                  numHeads
+                  ffnDim
+                  dtype
+                  device
+              )
+          )
+      )
+  ) =>
+  Show (TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim dtype device)
+
+instance
+  ( layers
+      ~ ( HReplicateR
+            numAttnLayers
+            ( TransformerLayer
+                embedDim
+                embedDim
+                embedDim
+                numHeads
+                ffnDim
+                dtype
+                device
+            )
+        ),
+    Parameterized
+      ( HList
+          layers
+      ),
+    HAppendFD
+      (Parameters (HList layers))
+      '[ Parameter device dtype '[numEmbeds, embedDim],
+         Parameter device dtype '[numEmbeds]
+       ]
+      ( Parameters (HList layers)
+          ++ '[ Parameter device dtype '[numEmbeds, embedDim],
+                Parameter device dtype '[numEmbeds]
+              ]
+      )
+  ) =>
+  Parameterized (TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim dtype device)
 
 data
   FoldLayers

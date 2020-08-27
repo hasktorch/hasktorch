@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -29,6 +30,7 @@
 module Torch.Typed.NN.Recurrent.GRU where
 
 import Data.Kind
+import Data.Proxy (Proxy (..))
 import Foreign.ForeignPtr
 import GHC.Generics
 import GHC.TypeLits
@@ -71,7 +73,8 @@ data
     (hiddenSize :: Nat)
     (directionality :: RNNDirectionality)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   GRUUnidirectionalLayer ::
     Parameter device dtype (GRUWIShape hiddenSize inputSize) ->
     Parameter device dtype (GRUWHShape hiddenSize inputSize) ->
@@ -91,35 +94,35 @@ data
 
 deriving instance Show (GRULayer inputSize hiddenSize directionality dtype device)
 
--- deriving instance Generic (GRULayer inputSize hiddenSize directionality dtype device)
-
-instance
-  ( wiShape ~ (GRUWIShape hiddenSize inputSize),
-    whShape ~ (GRUWHShape hiddenSize inputSize),
-    biShape ~ (GRUBIShape hiddenSize inputSize),
-    bhShape ~ (GRUBHShape hiddenSize inputSize),
-    parameters ~ '[Parameter device dtype wiShape, Parameter device dtype whShape, Parameter device dtype biShape, Parameter device dtype bhShape]
-  ) =>
-  GParameterized (K1 R (GRULayer inputSize hiddenSize 'Unidirectional dtype device)) parameters
-  where
-  gFlattenParameters (K1 (GRUUnidirectionalLayer wi wh bi bh)) =
+instance Parameterized (GRULayer inputSize hiddenSize 'Unidirectional dtype device) where
+  type
+    Parameters (GRULayer inputSize hiddenSize 'Unidirectional dtype device) =
+      '[ Parameter device dtype (GRUWIShape hiddenSize inputSize),
+         Parameter device dtype (GRUWHShape hiddenSize inputSize),
+         Parameter device dtype (GRUBIShape hiddenSize inputSize),
+         Parameter device dtype (GRUBHShape hiddenSize inputSize)
+       ]
+  flattenParameters (GRUUnidirectionalLayer wi wh bi bh) =
     wi :. wh :. bi :. bh :. HNil
-  gReplaceParameters _ (wi :. wh :. bi :. bh :. HNil) =
-    K1 (GRUUnidirectionalLayer wi wh bi bh)
+  replaceParameters _ (wi :. wh :. bi :. bh :. HNil) =
+    GRUUnidirectionalLayer wi wh bi bh
 
-instance
-  ( wiShape ~ (GRUWIShape hiddenSize inputSize),
-    whShape ~ (GRUWHShape hiddenSize inputSize),
-    biShape ~ (GRUBIShape hiddenSize inputSize),
-    bhShape ~ (GRUBHShape hiddenSize inputSize),
-    parameters ~ '[Parameter device dtype wiShape, Parameter device dtype whShape, Parameter device dtype biShape, Parameter device dtype bhShape, Parameter device dtype wiShape, Parameter device dtype whShape, Parameter device dtype biShape, Parameter device dtype bhShape]
-  ) =>
-  GParameterized (K1 R (GRULayer inputSize hiddenSize 'Bidirectional dtype device)) parameters
-  where
-  gFlattenParameters (K1 (GRUBidirectionalLayer wi wh bi bh wi' wh' bi' bh')) =
+instance Parameterized (GRULayer inputSize hiddenSize 'Bidirectional dtype device) where
+  type
+    Parameters (GRULayer inputSize hiddenSize 'Bidirectional dtype device) =
+      '[ Parameter device dtype (GRUWIShape hiddenSize inputSize),
+         Parameter device dtype (GRUWHShape hiddenSize inputSize),
+         Parameter device dtype (GRUBIShape hiddenSize inputSize),
+         Parameter device dtype (GRUBHShape hiddenSize inputSize),
+         Parameter device dtype (GRUWIShape hiddenSize inputSize),
+         Parameter device dtype (GRUWHShape hiddenSize inputSize),
+         Parameter device dtype (GRUBIShape hiddenSize inputSize),
+         Parameter device dtype (GRUBHShape hiddenSize inputSize)
+       ]
+  flattenParameters (GRUBidirectionalLayer wi wh bi bh wi' wh' bi' bh') =
     wi :. wh :. bi :. bh :. wi' :. wh' :. bi' :. bh' :. HNil
-  gReplaceParameters _ (wi :. wh :. bi :. bh :. wi' :. wh' :. bi' :. bh' :. HNil) =
-    K1 (GRUBidirectionalLayer wi wh bi bh wi' wh' bi' bh')
+  replaceParameters _ (wi :. wh :. bi :. bh :. wi' :. wh' :. bi' :. bh' :. HNil) =
+    GRUBidirectionalLayer wi wh bi bh wi' wh' bi' bh'
 
 instance
   ( RandDTypeIsValid device dtype,
@@ -128,7 +131,8 @@ instance
     KnownDType dtype,
     KnownDevice device
   ) =>
-  A.Randomizable (GRULayerSpec inputSize hiddenSize 'Unidirectional dtype device)
+  A.Randomizable
+    (GRULayerSpec inputSize hiddenSize 'Unidirectional dtype device)
     (GRULayer inputSize hiddenSize 'Unidirectional dtype device)
   where
   sample _ =
@@ -145,7 +149,8 @@ instance
     KnownDType dtype,
     KnownDevice device
   ) =>
-  A.Randomizable (GRULayerSpec inputSize hiddenSize 'Bidirectional dtype device)
+  A.Randomizable
+    (GRULayerSpec inputSize hiddenSize 'Bidirectional dtype device)
     (GRULayer inputSize hiddenSize 'Bidirectional dtype device)
   where
   sample _ =
@@ -180,90 +185,124 @@ data
     (numLayers :: Nat)
     (directionality :: RNNDirectionality)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   GRULayer1 ::
     GRULayer inputSize hiddenSize directionality dtype device ->
     GRULayerStack inputSize hiddenSize 1 directionality dtype device
   GRULayerK ::
-    (2 <= numLayers) =>
-    GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device ->
     GRULayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device ->
-    GRULayerStack inputSize hiddenSize numLayers directionality dtype device
+    GRULayerStack inputSize hiddenSize numLayers directionality dtype device ->
+    GRULayerStack inputSize hiddenSize (numLayers + 1) directionality dtype device
 
 deriving instance Show (GRULayerStack inputSize hiddenSize numLayers directionality dtype device)
 
---  TODO: Generics? see https://gist.github.com/RyanGlScott/71d9f933e823b4a03f99de54d4b94d51
--- deriving instance Generic (GRULayerStack inputSize hiddenSize numLayers directionality dtype device)
+class GRULayerStackParameterized (flag :: Bool) inputSize hiddenSize numLayers directionality dtype device where
+  type GRULayerStackParameters flag inputSize hiddenSize numLayers directionality dtype device :: [Type]
+  gruLayerStackFlattenParameters ::
+    Proxy flag ->
+    GRULayerStack inputSize hiddenSize numLayers directionality dtype device ->
+    HList (GRULayerStackParameters flag inputSize hiddenSize numLayers directionality dtype device)
+  gruLayerStackReplaceParameters ::
+    Proxy flag ->
+    GRULayerStack inputSize hiddenSize numLayers directionality dtype device ->
+    HList (GRULayerStackParameters flag inputSize hiddenSize numLayers directionality dtype device) ->
+    GRULayerStack inputSize hiddenSize numLayers directionality dtype device
 
 instance
-  {-# OVERLAPS #-}
-  ( layer ~ (K1 R (GRULayer inputSize hiddenSize directionality dtype device)),
-    GParameterized layer parameters
-  ) =>
-  GParameterized (K1 R (GRULayerStack inputSize hiddenSize 1 directionality dtype device)) parameters
+  Parameterized (GRULayer inputSize hiddenSize directionality dtype device) =>
+  GRULayerStackParameterized 'False inputSize hiddenSize 1 directionality dtype device
   where
-  gFlattenParameters (K1 (GRULayer1 gruLayer)) =
-    gFlattenParameters (K1 gruLayer :: layer _)
-  gReplaceParameters (K1 (GRULayer1 gruLayer)) parameters =
-    K1 (GRULayer1 (unK1 (gReplaceParameters (K1 gruLayer :: layer _) parameters)))
+  type
+    GRULayerStackParameters 'False inputSize hiddenSize 1 directionality dtype device =
+      Parameters (GRULayer inputSize hiddenSize directionality dtype device)
+  gruLayerStackFlattenParameters _ (GRULayer1 gruLayer) = flattenParameters gruLayer
+  gruLayerStackReplaceParameters _ (GRULayer1 gruLayer) parameters = GRULayer1 $ replaceParameters gruLayer parameters
 
 instance
-  {-# OVERLAPPABLE #-}
-  ( 2 <= numLayers,
-    layerStack ~ (K1 R (GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device)),
-    layer ~ (K1 R (GRULayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)),
-    GParameterized layerStack parameters,
-    GParameterized layer parameters',
-    HAppendFD parameters parameters' parameters'',
-    parameters'' ~ (parameters ++ parameters')
+  ( Parameterized
+      ( GRULayer
+          (hiddenSize * NumberOfDirections directionality)
+          hiddenSize
+          directionality
+          dtype
+          device
+      ),
+    Parameterized (GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device),
+    HAppendFD
+      (Parameters (GRULayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device))
+      (Parameters (GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device))
+      (Parameters (GRULayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device) ++ Parameters (GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device))
   ) =>
-  GParameterized (K1 R (GRULayerStack inputSize hiddenSize numLayers directionality dtype device)) parameters''
+  GRULayerStackParameterized 'True inputSize hiddenSize numLayers directionality dtype device
   where
-  gFlattenParameters (K1 (GRULayerK gruLayerStack gruLayer)) =
-    let parameters = gFlattenParameters (K1 gruLayerStack :: layerStack _)
-        parameters' = gFlattenParameters (K1 gruLayer :: layer _)
+  type
+    GRULayerStackParameters 'True inputSize hiddenSize numLayers directionality dtype device =
+      Parameters (GRULayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)
+        ++ Parameters (GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device)
+  gruLayerStackFlattenParameters _ (GRULayerK gruLayer gruLayerStack) =
+    let parameters = flattenParameters gruLayer
+        parameters' = flattenParameters @(GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device) gruLayerStack
      in parameters `happendFD` parameters'
-  gReplaceParameters (K1 (GRULayerK gruLayerStack gruLayer)) parameters'' =
+  gruLayerStackReplaceParameters _ (GRULayerK gruLayer gruLayerStack) parameters'' =
     let (parameters, parameters') = hunappendFD parameters''
-        gruLayerStack' = unK1 (gReplaceParameters (K1 gruLayerStack :: layerStack _) parameters)
-        gruLayer' = unK1 (gReplaceParameters (K1 gruLayer :: layer _) parameters')
-     in K1 (GRULayerK gruLayerStack' gruLayer')
+        gruLayer' = replaceParameters gruLayer parameters
+        gruLayerStack' = replaceParameters @(GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device) gruLayerStack parameters'
+     in GRULayerK gruLayer' gruLayerStack'
 
 instance
-  {-# OVERLAPS #-}
-  ( RandDTypeIsValid device dtype,
-    KnownNat inputSize,
-    KnownNat hiddenSize,
-    KnownDType dtype,
-    KnownDevice device,
-    A.Randomizable (GRULayerSpec inputSize hiddenSize directionality dtype device)
-      (GRULayer inputSize hiddenSize directionality dtype device)
+  ( 1 <= numLayers,
+    (2 <=? numLayers) ~ flag,
+    GRULayerStackParameterized flag inputSize hiddenSize numLayers directionality dtype device
   ) =>
-  A.Randomizable (GRULayerStackSpec inputSize hiddenSize 1 directionality dtype device)
-    (GRULayerStack inputSize hiddenSize 1 directionality dtype device)
+  Parameterized (GRULayerStack inputSize hiddenSize numLayers directionality dtype device)
   where
-  sample _ = GRULayer1 <$> (A.sample $ GRULayerSpec @inputSize @hiddenSize @directionality @dtype @device)
+  type
+    Parameters (GRULayerStack inputSize hiddenSize numLayers directionality dtype device) =
+      GRULayerStackParameters (2 <=? numLayers) inputSize hiddenSize numLayers directionality dtype device
+  flattenParameters = gruLayerStackFlattenParameters (Proxy :: Proxy flag)
+  replaceParameters = gruLayerStackReplaceParameters (Proxy :: Proxy flag)
 
-instance
-  {-# OVERLAPPABLE #-}
-  ( 2 <= numLayers,
-    RandDTypeIsValid device dtype,
-    KnownNat inputSize,
-    KnownNat hiddenSize,
-    KnownDType dtype,
-    KnownDevice device,
-    A.Randomizable (GRULayerStackSpec inputSize hiddenSize (numLayers - 1) directionality dtype device)
-      (GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device),
-    A.Randomizable (GRULayerSpec (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)
-      (GRULayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)
-  ) =>
-  A.Randomizable (GRULayerStackSpec inputSize hiddenSize numLayers directionality dtype device)
-    (GRULayerStack inputSize hiddenSize numLayers directionality dtype device)
-  where
-  sample _ =
-    GRULayerK
-      <$> (A.sample $ GRULayerStackSpec @inputSize @hiddenSize @(numLayers - 1) @directionality @dtype @device)
-      <*> (A.sample $ GRULayerSpec @(hiddenSize * NumberOfDirections directionality) @hiddenSize @directionality @dtype @device)
+-- instance
+--   {-# OVERLAPS #-}
+--   ( RandDTypeIsValid device dtype,
+--     KnownNat inputSize,
+--     KnownNat hiddenSize,
+--     KnownDType dtype,
+--     KnownDevice device,
+--     A.Randomizable
+--       (GRULayerSpec inputSize hiddenSize directionality dtype device)
+--       (GRULayer inputSize hiddenSize directionality dtype device)
+--   ) =>
+--   A.Randomizable
+--     (GRULayerStackSpec inputSize hiddenSize 1 directionality dtype device)
+--     (GRULayerStack inputSize hiddenSize 1 directionality dtype device)
+--   where
+--   sample _ = GRULayer1 <$> (A.sample $ GRULayerSpec @inputSize @hiddenSize @directionality @dtype @device)
+
+-- instance
+--   {-# OVERLAPPABLE #-}
+--   ( 2 <= numLayers,
+--     RandDTypeIsValid device dtype,
+--     KnownNat inputSize,
+--     KnownNat hiddenSize,
+--     KnownDType dtype,
+--     KnownDevice device,
+--     A.Randomizable
+--       (GRULayerStackSpec inputSize hiddenSize (numLayers - 1) directionality dtype device)
+--       (GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device),
+--     A.Randomizable
+--       (GRULayerSpec (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)
+--       (GRULayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)
+--   ) =>
+--   A.Randomizable
+--     (GRULayerStackSpec inputSize hiddenSize numLayers directionality dtype device)
+--     (GRULayerStack inputSize hiddenSize numLayers directionality dtype device)
+--   where
+--   sample _ =
+--     GRULayerK
+--       <$> (A.sample $ GRULayerStackSpec @inputSize @hiddenSize @(numLayers - 1) @directionality @dtype @device)
+--       <*> (A.sample $ GRULayerSpec @(hiddenSize * NumberOfDirections directionality) @hiddenSize @directionality @dtype @device)
 
 newtype
   GRUSpec
@@ -284,11 +323,38 @@ data
     (directionality :: RNNDirectionality)
     (dtype :: D.DType)
     (device :: (D.DeviceType, Nat))
-  = GRU
-      { gru_layer_stack :: GRULayerStack inputSize hiddenSize numLayers directionality dtype device,
-        gru_dropout :: Dropout
-      }
-  deriving (Show, Generic)
+  where
+  GRU ::
+    (1 <= numLayers) =>
+    { gru_layer_stack :: GRULayerStack inputSize hiddenSize numLayers directionality dtype device,
+      gru_dropout :: Dropout
+    } ->
+    GRU inputSize hiddenSize numLayers directionality dtype device
+
+deriving instance Show (GRU inputSize hiddenSize numLayers directionality dtype device)
+
+instance
+  (1 <= numLayers) =>
+  Generic (GRU inputSize hiddenSize numLayers directionality dtype device)
+  where
+  type
+    Rep (GRU inputSize hiddenSize numLayers directionality dtype device) =
+      Rec0 (GRULayerStack inputSize hiddenSize numLayers directionality dtype device)
+        :*: Rec0 Dropout
+  from (GRU {..}) = K1 gru_layer_stack :*: K1 gru_dropout
+  to (K1 layerStack :*: K1 dropout) = GRU layerStack dropout
+
+instance
+  ( 1 <= numLayers,
+    Parameterized (GRULayerStack inputSize hiddenSize numLayers directionality dtype device),
+    HAppendFD
+      (Parameters (GRULayerStack inputSize hiddenSize numLayers directionality dtype device))
+      (Parameters Dropout)
+      ( Parameters (GRULayerStack inputSize hiddenSize numLayers directionality dtype device)
+          ++ Parameters Dropout
+      )
+  ) =>
+  Parameterized (GRU inputSize hiddenSize numLayers directionality dtype device)
 
 -- TODO: when we have cannonical initializers do this correctly:
 -- https://github.com/pytorch/pytorch/issues/9221
@@ -320,10 +386,13 @@ instance
     KnownNat hiddenSize,
     KnownNat (NumberOfDirections directionality),
     RandDTypeIsValid device dtype,
-    A.Randomizable (GRULayerStackSpec inputSize hiddenSize numLayers directionality dtype device)
-      (GRULayerStack inputSize hiddenSize numLayers directionality dtype device)
+    A.Randomizable
+      (GRULayerStackSpec inputSize hiddenSize numLayers directionality dtype device)
+      (GRULayerStack inputSize hiddenSize numLayers directionality dtype device),
+    1 <= numLayers
   ) =>
-  A.Randomizable (GRUSpec inputSize hiddenSize numLayers directionality dtype device)
+  A.Randomizable
+    (GRUSpec inputSize hiddenSize numLayers directionality dtype device)
     (GRU inputSize hiddenSize numLayers directionality dtype device)
   where
   sample (GRUSpec dropoutSpec) =
@@ -340,7 +409,8 @@ data
     (directionality :: RNNDirectionality)
     (initialization :: RNNInitialization)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   -- | Weights drawn from Xavier-Uniform
   --   with zeros-value initialized biases and cell states.
   GRUWithZerosInitSpec ::
@@ -369,8 +439,6 @@ data
 
 deriving instance Show (GRUWithInitSpec inputSize hiddenSize numLayers directionality initialization dtype device)
 
--- deriving instance Generic (GRUWithInitSpec inputSize hiddenSize numLayers directionality initialization dtype device)
-
 -- | A long, short-term memory layer with either fixed initial
 -- states for the memory cells and hidden state or learnable
 -- inital states for the memory cells and hidden state.
@@ -382,33 +450,42 @@ data
     (directionality :: RNNDirectionality)
     (initialization :: RNNInitialization)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   GRUWithConstInit ::
     forall inputSize hiddenSize numLayers directionality dtype device.
     { gruWithConstInit_gru :: GRU inputSize hiddenSize numLayers directionality dtype device,
       gruWithConstInit_h :: Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize]
     } ->
-    GRUWithInit inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype
+    GRUWithInit
+      inputSize
+      hiddenSize
+      numLayers
+      directionality
+      'ConstantInitialization
+      dtype
       device
   GRUWithLearnedInit ::
     forall inputSize hiddenSize numLayers directionality dtype device.
     { gruWithLearnedInit_gru :: GRU inputSize hiddenSize numLayers directionality dtype device,
       gruWithLearnedInit_h :: Parameter device dtype '[numLayers * NumberOfDirections directionality, hiddenSize]
     } ->
-    GRUWithInit inputSize hiddenSize numLayers directionality 'LearnedInitialization dtype
+    GRUWithInit
+      inputSize
+      hiddenSize
+      numLayers
+      directionality
+      'LearnedInitialization
+      dtype
       device
 
 deriving instance Show (GRUWithInit inputSize hiddenSize numLayers directionality initialization dtype device)
-
--- TODO: https://ryanglscott.github.io/2018/02/11/how-to-derive-generic-for-some-gadts/
--- deriving instance Generic (GRUWithInit inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype device)
 
 instance Generic (GRUWithInit inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype device) where
   type
     Rep (GRUWithInit inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype device) =
       Rec0 (GRU inputSize hiddenSize numLayers directionality dtype device)
         :*: Rec0 (Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize])
-
   from (GRUWithConstInit {..}) = K1 gruWithConstInit_gru :*: K1 gruWithConstInit_h
   to (K1 gru :*: K1 h) = GRUWithConstInit gru h
 
@@ -417,9 +494,29 @@ instance Generic (GRUWithInit inputSize hiddenSize numLayers directionality 'Lea
     Rep (GRUWithInit inputSize hiddenSize numLayers directionality 'LearnedInitialization dtype device) =
       Rec0 (GRU inputSize hiddenSize numLayers directionality dtype device)
         :*: Rec0 (Parameter device dtype '[numLayers * NumberOfDirections directionality, hiddenSize])
-
   from (GRUWithLearnedInit {..}) = K1 gruWithLearnedInit_gru :*: K1 gruWithLearnedInit_h
   to (K1 gru :*: K1 h) = GRUWithLearnedInit gru h
+
+instance
+  ( Parameterized (GRU inputSize hiddenSize numLayers directionality dtype device),
+    HAppendFD
+      (Parameters (GRU inputSize hiddenSize numLayers directionality dtype device))
+      '[]
+      ( Parameters (GRU inputSize hiddenSize numLayers directionality dtype device) ++ '[]
+      )
+  ) =>
+  Parameterized (GRUWithInit inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype device)
+
+instance
+  ( Parameterized (GRU inputSize hiddenSize numLayers directionality dtype device),
+    HAppendFD
+      (Parameters (GRU inputSize hiddenSize numLayers directionality dtype device))
+      '[Parameter device dtype '[numLayers * NumberOfDirections directionality, hiddenSize]]
+      ( Parameters (GRU inputSize hiddenSize numLayers directionality dtype device)
+          ++ '[Parameter device dtype '[numLayers * NumberOfDirections directionality, hiddenSize]]
+      )
+  ) =>
+  Parameterized (GRUWithInit inputSize hiddenSize numLayers directionality 'LearnedInitialization dtype device)
 
 instance
   ( KnownNat hiddenSize,
@@ -427,10 +524,12 @@ instance
     KnownNat (NumberOfDirections directionality),
     KnownDType dtype,
     KnownDevice device,
-    A.Randomizable (GRUSpec inputSize hiddenSize numLayers directionality dtype device)
+    A.Randomizable
+      (GRUSpec inputSize hiddenSize numLayers directionality dtype device)
       (GRU inputSize hiddenSize numLayers directionality dtype device)
   ) =>
-  A.Randomizable (GRUWithInitSpec inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype device)
+  A.Randomizable
+    (GRUWithInitSpec inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype device)
     (GRUWithInit inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype device)
   where
   sample (GRUWithZerosInitSpec gruSpec) =
@@ -448,10 +547,12 @@ instance
     KnownNat (NumberOfDirections directionality),
     KnownDType dtype,
     KnownDevice device,
-    A.Randomizable (GRUSpec inputSize hiddenSize numLayers directionality dtype device)
+    A.Randomizable
+      (GRUSpec inputSize hiddenSize numLayers directionality dtype device)
       (GRU inputSize hiddenSize numLayers directionality dtype device)
   ) =>
-  A.Randomizable (GRUWithInitSpec inputSize hiddenSize numLayers directionality 'LearnedInitialization dtype device)
+  A.Randomizable
+    (GRUWithInitSpec inputSize hiddenSize numLayers directionality 'LearnedInitialization dtype device)
     (GRUWithInit inputSize hiddenSize numLayers directionality 'LearnedInitialization dtype device)
   where
   sample s@(GRUWithLearnedInitSpec gruSpec h) =
@@ -487,7 +588,8 @@ gruForward ::
     inputShape ~ RNNShape shapeOrder seqLen batchSize inputSize,
     outputShape ~ RNNShape shapeOrder seqLen batchSize outputSize,
     hcShape ~ '[numLayers * NumberOfDirections directionality, batchSize, hiddenSize],
-    Parameterized (GRU inputSize hiddenSize numLayers directionality dtype device) parameters,
+    parameters ~ Parameters (GRU inputSize hiddenSize numLayers directionality dtype device),
+    Parameterized (GRU inputSize hiddenSize numLayers directionality dtype device),
     tensorParameters ~ GRUR inputSize hiddenSize numLayers directionality dtype device,
     ATen.Castable (HList tensorParameters) [D.ATenTensor],
     HMap' ToDependent parameters tensorParameters
@@ -592,7 +694,8 @@ gruForwardWithDropout,
       inputShape ~ RNNShape shapeOrder seqLen batchSize inputSize,
       outputShape ~ RNNShape shapeOrder seqLen batchSize outputSize,
       hcShape ~ '[numLayers * NumberOfDirections directionality, batchSize, hiddenSize],
-      Parameterized (GRU inputSize hiddenSize numLayers directionality dtype device) parameters,
+      parameters ~ Parameters (GRU inputSize hiddenSize numLayers directionality dtype device),
+      Parameterized (GRU inputSize hiddenSize numLayers directionality dtype device),
       tensorParameters ~ GRUR inputSize hiddenSize numLayers directionality dtype device,
       ATen.Castable (HList tensorParameters) [D.ATenTensor],
       HMap' ToDependent parameters tensorParameters

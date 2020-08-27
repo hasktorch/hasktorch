@@ -13,6 +13,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeInType #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 
 module Torch.Typed.NN.Convolution where
@@ -53,7 +54,7 @@ data
     } ->
     Conv1d inputChannelSize outputChannelSize kernelSize dtype
       device
-  deriving (Show, Generic)
+  deriving (Show, Generic, Parameterized)
 
 -- | conv1d
 -- The constraints on this one are _very_ involved, so the partial signatures
@@ -127,7 +128,7 @@ data
     } ->
     Conv2d inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype
       device
-  deriving (Show, Generic)
+  deriving (Show, Generic, Parameterized)
 
 -- | conv2d
 -- The constraints on this one are _very_ involved, so the partial signatures
@@ -210,7 +211,7 @@ data
     } ->
     Conv3d inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype
       device
-  deriving (Show, Generic)
+  deriving (Show, Generic, Parameterized)
 
 -- | conv3d
 -- The constraints on this one are _very_ involved, so the partial signatures

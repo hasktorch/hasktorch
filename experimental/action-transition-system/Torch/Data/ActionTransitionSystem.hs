@@ -3,6 +3,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -26,6 +27,8 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoStarIsType #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# OPTIONS_GHC -freduction-depth=0 #-}
 
 module Torch.Data.ActionTransitionSystem where
 
@@ -1522,6 +1525,50 @@ data
     RATransformerMLM numAttnLayers numHeads headDim ffnDim tokenPaddingIdx tokenNumEmbeds dataTypePaddingIdx dataTypeNumEmbeds constructorPaddingIdx constructorNumEmbeds selectorPaddingIdx selectorNumEmbeds relationPaddingIdx relationNumEmbeds dtype device
   deriving (Generic)
 
+deriving instance
+  ( Show
+      ( HList
+          ( HReplicateR
+              numAttnLayers
+              ( TransformerLayer
+                  (headDim * numHeads)
+                  (headDim * numHeads)
+                  (headDim * numHeads)
+                  numHeads
+                  ffnDim
+                  dtype
+                  device
+              )
+          )
+      )
+  ) =>
+  Show (RATransformerMLM numAttnLayers numHeads headDim ffnDim tokenPaddingIdx tokenNumEmbeds dataTypePaddingIdx dataTypeNumEmbeds constructorPaddingIdx constructorNumEmbeds selectorPaddingIdx selectorNumEmbeds relationPaddingIdx relationNumEmbeds dtype device)
+
+instance
+  ( layers
+      ~ ( HReplicateR
+            numAttnLayers
+            ( TransformerLayer
+                (headDim * numHeads)
+                (headDim * numHeads)
+                (headDim * numHeads)
+                numHeads
+                ffnDim
+                dtype
+                device
+            )
+        ),
+    Parameterized (HList layers),
+    HAppendFD
+                          (Parameters (HList layers))
+                          '[Parameter device dtype '[tokenNumEmbeds, headDim * numHeads],
+                            Parameter device dtype '[tokenNumEmbeds]]
+                          (Parameters (HList layers)
+                           ++ '[Parameter device dtype '[tokenNumEmbeds, headDim * numHeads],
+                                Parameter device dtype '[tokenNumEmbeds]])
+  ) =>
+  Parameterized (RATransformerMLM numAttnLayers numHeads headDim ffnDim tokenPaddingIdx tokenNumEmbeds dataTypePaddingIdx dataTypeNumEmbeds constructorPaddingIdx constructorNumEmbeds selectorPaddingIdx selectorNumEmbeds relationPaddingIdx relationNumEmbeds dtype device)
+
 instance
   ( All KnownNat '[headDim, numHeads, tokenPaddingIdx, tokenNumEmbeds, dataTypePaddingIdx, dataTypeNumEmbeds, constructorPaddingIdx, constructorNumEmbeds, selectorPaddingIdx, selectorNumEmbeds, relationPaddingIdx, relationNumEmbeds],
     tokenPaddingIdx <= tokenNumEmbeds,
@@ -2455,7 +2502,7 @@ type TestDType = 'Float
 
 type TestDataDevice = '( 'CPU, 0)
 
-type TestDevice = '( 'CUDA, 0)
+type TestDevice = '( 'CPU, 0)
 
 type TestRATransformerMLMSpec =
   RATransformerMLMSpec
@@ -2829,7 +2876,9 @@ data Config = Config
     -- | number of cool-down epochs
     numCooldownEpochs :: Int,
     -- | model checkpoint file name
-    ptFile :: FilePath,
+    modelCheckpointFile :: FilePath,
+    -- | optimizer checkpoint file name
+    optimCheckpointFile :: FilePath,
     -- | plot file name
     plotFile :: FilePath,
     -- | data loading options
@@ -2838,6 +2887,8 @@ data Config = Config
 
 testProgram :: Config -> IO ()
 testProgram Config {..} = do
+  let epochs = [1 .. numEpochs]
+
   model <-
     -- initialize the model
     liftIO . Torch.Typed.sample $
@@ -2862,6 +2913,44 @@ testProgram Config {..} = do
 
   let -- use the Adam optimization algorithm, see https://arxiv.org/abs/1412.6980
       optim = mkAdam 0 0.9 0.999 (flattenParameters model)
+      _ = flattenParameters optim
+
+  -- try to load model and optimizer from checkpoints if they exist
+  (epochs, model, optim) <-
+    let fold = L.prefilterM testFilePaths (L.generalize L.head)
+        epochToFilePaths :: Int -> (Int, FilePath, FilePath)
+        epochToFilePaths epoch =
+          let f filePath = filePath <> "-" <> show epoch
+           in (epoch, f modelCheckpointFile, f optimCheckpointFile)
+        testFilePaths :: (Int, FilePath, FilePath) -> IO Bool
+        testFilePaths (_, modelCheckpointFile, optimCheckpointFile) = do
+          -- check if files exist
+          pure True
+        loadFilePaths ::
+          forall model modelTensors modelParameters optim optimTensors.
+          ( Castable (HList modelTensors) [ATenTensor],
+            HMap' ToDependent modelParameters modelTensors,
+            HMapM' IO MakeIndependent modelTensors modelParameters,
+            modelParameters ~ Parameters model,
+            Parameterized model,
+            Castable (HList optimTensors) [ATenTensor],
+            optimTensors ~ Parameters optim,
+            Parameterized optim
+          ) =>
+          model ->
+          optim ->
+          Maybe (Int, FilePath, FilePath) ->
+          IO ([Int], model, optim)
+        loadFilePaths model optim Nothing = pure (epochs, model, optim)
+        loadFilePaths model optim (Just (epoch, modelCheckpointFile, optimCheckpointFile)) = do
+          epochs <- pure [epoch + 1 .. numEpochs]
+          modelTensors :: HList modelTensors <- load modelCheckpointFile
+          modelParameters <- hmapM' MakeIndependent modelTensors
+          model <- pure $ replaceParameters model modelParameters
+          optimTensors :: HList optimTensors <- load optimCheckpointFile
+          optim <- pure $ replaceParameters optim optimTensors
+          pure (epochs, model, optim)
+     in loadFilePaths model optim =<< L.foldM fold (epochToFilePaths <$> reverse epochs)
 
   let -- learning rate schedule
       learningRateSchedule epoch
@@ -2932,7 +3021,7 @@ testProgram Config {..} = do
           -- calculate epoch statistics
           stats model learningRate trainingCREs evaluationCREs learningRates options
         -- save the model weights to a file and end program
-        lift $ save (hmap' ToDependent . flattenParameters $ model) ptFile
+        lift $ save (hmap' ToDependent . flattenParameters $ model) modelCheckpointFile
         pure (model, optim, trainingCREs, evaluationCREs, learningRates, options)
       -- initial program state
       init = do
@@ -2944,7 +3033,7 @@ testProgram Config {..} = do
       -- just keep the final model
       done (model, _, _, _, _, _) = pure model
   -- the whole program is a fold over epochs
-  void . evalContT . P.foldM step init done . P.each $ [1 .. numEpochs]
+  void . evalContT . P.foldM step init done . P.each $ epochs
 
 -- | Train the model for one epoch
 train ::
