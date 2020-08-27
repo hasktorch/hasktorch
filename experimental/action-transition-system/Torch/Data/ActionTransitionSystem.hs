@@ -2919,12 +2919,12 @@ testProgram Config {..} = do
       _ = flattenParameters optim
 
   -- try to load model and optimizer from checkpoints if they exist
+  let epochToFilePaths :: Int -> (Int, FilePath, FilePath)
+      epochToFilePaths epoch =
+        let f filePath = filePath <> "-" <> show epoch
+          in (epoch, f modelCheckpointFile, f optimCheckpointFile)
   (epochs, model, optim) <-
     let fold = L.prefilterM testFilePaths (L.generalize L.head)
-        epochToFilePaths :: Int -> (Int, FilePath, FilePath)
-        epochToFilePaths epoch =
-          let f filePath = filePath <> "-" <> show epoch
-           in (epoch, f modelCheckpointFile, f optimCheckpointFile)
         testFilePaths :: (Int, FilePath, FilePath) -> IO Bool
         testFilePaths (_, modelCheckpointFile, optimCheckpointFile) =
           liftA2 ((&&)) (doesFileExist modelCheckpointFile) (doesFileExist optimCheckpointFile)
@@ -3023,7 +3023,9 @@ testProgram Config {..} = do
           -- calculate epoch statistics
           stats model learningRate trainingCREs evaluationCREs learningRates options
         -- save the model weights to a file and end program
+        (_, modelCheckpointFile, optimCheckpointFile) <- pure $ epochToFilePaths epoch
         lift $ save (hmap' ToDependent . flattenParameters $ model) modelCheckpointFile
+        lift $ save (flattenParameters optim) optimCheckpointFile
         pure (model, optim, trainingCREs, evaluationCREs, learningRates, options)
       -- initial program state
       init = do
