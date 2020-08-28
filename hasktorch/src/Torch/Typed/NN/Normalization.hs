@@ -58,6 +58,7 @@ instance
   HasForward (LayerNorm normalizedShape dtype device) (Tensor device dtype shape) (Tensor device dtype shape)
   where
   forward = layerNormForward
+  forwardStoch = (pure .) . forward
 
 instance
   ( TensorOptions normalizedShape dtype device,

@@ -122,6 +122,7 @@ instance
   HasForward (Embedding paddingIdx numEmbeds embedSize embeddingType dtype device) (Tensor device 'D.Int64 shape) (Tensor device dtype shape')
   where
   forward = embed
+  forwardStoch = (pure .) . forward
 
 instance
   Randomizable (EmbeddingSpec paddingIdx numEmbeds embedSize 'Constant dtype device)
