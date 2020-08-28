@@ -103,20 +103,20 @@ type family BackwardsImpl (last :: Nat) (n :: Nat) :: Nat where
 
 type Backwards l n = BackwardsImpl (LastDim l) n
 
--- | IsSuffixOf
+-- | Evaluate a type-level constraint for whether or not the former shape is a suffix of the latter shape
 --
 -- >>> :kind! IsSuffixOf '[1] '[1]
 -- IsSuffixOf '[1] '[1] :: Constraint
 -- = () :: Constraint
 -- >>> :kind! IsSuffixOf '[1] '[2, 1]
--- IsSuffixOf '[2, 1] '[1] :: Constraint
+-- IsSuffixOf '[1] '[2, 1] :: Constraint
 -- = () :: Constraint
 -- >>> :kind! IsSuffixOf '[2] '[2, 1]
--- IsSuffixOf '[2, 1] '[2] :: Constraint
--- = IsSuffixOf '[1] '[]
+-- IsSuffixOf '[2] '[2, 1] :: Constraint
+-- = (TypeError ...)
 -- >>> :kind! IsSuffixOf '[1, 1] '[2, 1]
--- IsSuffixOf '[2, 1] '[1, 1] :: Constraint
--- = IsSuffixOf '[] '[1]
+-- IsSuffixOf '[1, 1] '[2, 1] :: Constraint
+-- = (TypeError ...)
 -- >>> :kind! IsSuffixOf '[2, 1] '[2, 1]
 -- IsSuffixOf '[2, 1] '[2, 1] :: Constraint
 -- = () :: Constraint

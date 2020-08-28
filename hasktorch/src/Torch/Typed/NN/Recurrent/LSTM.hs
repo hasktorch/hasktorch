@@ -279,22 +279,24 @@ instance
       ),
     Parameterized (LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device),
     HAppendFD
-      (Parameters (LSTMLayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device))
       (Parameters (LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device))
-      (Parameters (LSTMLayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device) ++ Parameters (LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device))
+      (Parameters (LSTMLayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device))
+      ( Parameters (LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device)
+          ++ Parameters (LSTMLayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)
+      )
   ) =>
   LSTMLayerStackParameterized 'True inputSize hiddenSize numLayers directionality dtype device
   where
   type
     LSTMLayerStackParameters 'True inputSize hiddenSize numLayers directionality dtype device =
-      Parameters (LSTMLayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)
-        ++ Parameters (LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device)
+      Parameters (LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device)
+        ++ Parameters (LSTMLayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)
   lstmLayerStackFlattenParameters _ (LSTMLayerK lstmLayer lstmLayerStack) =
     let parameters = flattenParameters lstmLayer
         parameters' = flattenParameters @(LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device) lstmLayerStack
-     in parameters `happendFD` parameters'
+     in parameters' `happendFD` parameters
   lstmLayerStackReplaceParameters _ (LSTMLayerK lstmLayer lstmLayerStack) parameters'' =
-    let (parameters, parameters') = hunappendFD parameters''
+    let (parameters', parameters) = hunappendFD parameters''
         lstmLayer' = replaceParameters lstmLayer parameters
         lstmLayerStack' = replaceParameters @(LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device) lstmLayerStack parameters'
      in LSTMLayerK lstmLayer' lstmLayerStack'
