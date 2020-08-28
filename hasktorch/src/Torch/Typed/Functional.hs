@@ -4203,7 +4203,7 @@ type family SqueezeAll (shape :: [Nat]) :: [Nat] where
 --
 -- >>> dtype &&& shape $ squeezeAll (ones :: CPUTensor 'D.Float '[2,1,2,1,2])
 -- (Float,[2,2,2])
--- >>> squeezeAll (ones :: CPUTensor 'Float '[2,1,2,1,2])
+-- >>> squeezeAll (ones :: CPUTensor 'D.Float '[2,1,2,1,2])
 -- Tensor Float [2,2,2]
 squeezeAll ::
   forall shape shape' dtype device.
@@ -4235,11 +4235,11 @@ type SqueezeDim shape dim = SqueezeDimCheck shape dim (SqueezeDimImpl shape dim)
 --
 -- >>> dtype &&& shape $ squeezeDim @1 (ones :: CPUTensor 'D.Float '[2,1,2,1,2])
 -- (Float,[2,2,1,2])
--- >>> squeezeDim @1 (ones :: CPUTensor 'Float '[2,1,2,1,2])
+-- >>> squeezeDim @1 (ones :: CPUTensor 'D.Float '[2,1,2,1,2])
 -- Tensor Float [2,2,1,2]
 -- >>> dtype &&& shape $ squeezeDim @3 (ones :: CPUTensor 'D.Float '[2,1,2,1,2])
 -- (Float,[2,1,2,2])
--- >>> squeezeDim @3 (ones :: CPUTensor 'Float '[2,1,2,1,2])
+-- >>> squeezeDim @3 (ones :: CPUTensor 'D.Float '[2,1,2,1,2])
 -- Tensor Float [2,1,2,2]
 squeezeDim ::
   forall dim shape shape' dtype device.
