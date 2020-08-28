@@ -13,8 +13,9 @@
 module Torch.Typed.Aux where
 
 import qualified Data.Int as I
-import Data.Kind (Constraint)
+import Data.Kind
 import Data.Proxy
+import Data.Type.Equality
 import GHC.TypeLits
 import qualified Torch.DType as D
 import qualified Torch.Device as D
@@ -101,6 +102,43 @@ type family BackwardsImpl (last :: Nat) (n :: Nat) :: Nat where
   BackwardsImpl last n = last - n
 
 type Backwards l n = BackwardsImpl (LastDim l) n
+
+-- | IsSuffixOf
+--
+-- >>> :kind! IsSuffixOf '[1] '[1]
+-- IsSuffixOf '[1] '[1] :: Constraint
+-- = () :: Constraint
+-- >>> :kind! IsSuffixOf '[1] '[2, 1]
+-- IsSuffixOf '[2, 1] '[1] :: Constraint
+-- = () :: Constraint
+-- >>> :kind! IsSuffixOf '[2] '[2, 1]
+-- IsSuffixOf '[2, 1] '[2] :: Constraint
+-- = IsSuffixOf '[1] '[]
+-- >>> :kind! IsSuffixOf '[1, 1] '[2, 1]
+-- IsSuffixOf '[2, 1] '[1, 1] :: Constraint
+-- = IsSuffixOf '[] '[1]
+-- >>> :kind! IsSuffixOf '[2, 1] '[2, 1]
+-- IsSuffixOf '[2, 1] '[2, 1] :: Constraint
+-- = () :: Constraint
+type IsSuffixOf xs ys = CheckIsSuffixOf xs ys (IsSuffixOfImpl xs ys (DropLengthMaybe xs ys))
+
+type family CheckIsSuffixOf (xs :: [a]) (ys :: [a]) (result :: Bool) :: Constraint where
+  CheckIsSuffixOf _ _ 'True = ()
+  CheckIsSuffixOf xs ys 'False = TypeError (ShowType xs :<>: Text " is not a suffix of " :<>: ShowType ys)
+
+type family IsSuffixOfImpl (xs :: [a]) (ys :: [a]) (mDelta :: Maybe [b]) :: Bool where
+  IsSuffixOfImpl xs ys ('Just delta) = xs == DropLength delta ys
+  IsSuffixOfImpl _ _ 'Nothing = 'False
+
+type family DropLengthMaybe (xs :: [a]) (ys :: [b]) :: Maybe [b] where
+  DropLengthMaybe '[] ys = 'Just ys
+  DropLengthMaybe _ '[] = 'Nothing
+  DropLengthMaybe (_ : xs) (_ : ys) = DropLengthMaybe xs ys
+
+type family DropLength (xs :: [a]) (ys :: [b]) :: [b] where
+  DropLength '[] ys = ys
+  DropLength _ '[] = '[]
+  DropLength (_ : xs) (_ : ys) = DropLength xs ys
 
 ----------------------------------------
 

@@ -17,7 +17,6 @@
 {-# LANGUAGE TypeInType #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 
 module Torch.Typed.Parameter
   ( module Torch.Typed.Parameter,
@@ -41,7 +40,12 @@ import Torch.Typed.Factories
 import Torch.Typed.Functional
 import Torch.Typed.Tensor
 
-newtype Parameter (device :: (DeviceType, Nat)) (dtype :: DType) (shape :: [Nat]) = UnsafeMkParameter Torch.Autograd.IndependentTensor
+newtype
+  Parameter
+    (device :: (DeviceType, Nat))
+    (dtype :: DType)
+    (shape :: [Nat])
+  = UnsafeMkParameter Torch.Autograd.IndependentTensor
   deriving (Show)
 
 untypeParam :: Parameter device dtype shape -> Torch.NN.Parameter
@@ -66,7 +70,12 @@ makeIndependent t = UnsafeMkParameter <$> Torch.Autograd.makeIndependent (toDyna
 
 data MakeIndependent = MakeIndependent
 
-instance Apply' MakeIndependent (Tensor device dtype shape) (IO (Parameter device dtype shape)) where
+instance
+  Apply'
+    MakeIndependent
+    (Tensor device dtype shape)
+    (IO (Parameter device dtype shape))
+  where
   apply' _ = makeIndependent
 
 parameterToDevice ::
@@ -74,48 +83,59 @@ parameterToDevice ::
   KnownDevice device' =>
   Parameter device dtype shape ->
   Parameter device' dtype shape
-parameterToDevice (UnsafeMkParameter t) = UnsafeMkParameter . Torch.Autograd.IndependentTensor . Torch.Tensor.toDevice (deviceVal @device') . Torch.Autograd.toDependent $ t
+parameterToDevice (UnsafeMkParameter t) =
+  UnsafeMkParameter
+    . Torch.Autograd.IndependentTensor
+    . Torch.Tensor.toDevice (deviceVal @device')
+    . Torch.Autograd.toDependent
+    $ t
 
 parameterToDType ::
   forall dtype' dtype device shape.
   KnownDType dtype' =>
   Parameter device dtype shape ->
   Parameter device dtype' shape
-parameterToDType (UnsafeMkParameter t) = UnsafeMkParameter . Torch.Autograd.IndependentTensor . Torch.Tensor.toType (dtypeVal @dtype') . Torch.Autograd.toDependent $ t
+parameterToDType (UnsafeMkParameter t) =
+  UnsafeMkParameter
+    . Torch.Autograd.IndependentTensor
+    . Torch.Tensor.toType (dtypeVal @dtype')
+    . Torch.Autograd.toDependent
+    $ t
 
 class
-  Parameterized
-    (f :: Type)
-    (as :: [Type])
-    | f -> as where
-  flattenParameters :: f -> HList as
-  replaceParameters :: f -> HList as -> f
-
-instance
-  ( Generic f,
-    GParameterized (Rep f) as
-  ) =>
-  Parameterized f as
+  Parameterized (f :: Type)
   where
+  type Parameters f :: [Type]
+  type Parameters f = GParameters (Rep f)
+  flattenParameters :: f -> HList (Parameters f)
+  default flattenParameters ::
+    (Generic f, GParameterized (Rep f), Parameters f ~ GParameters (Rep f)) =>
+    f ->
+    HList (Parameters f)
   flattenParameters f = gFlattenParameters (from f)
+  replaceParameters :: f -> HList (Parameters f) -> f
+  default replaceParameters ::
+    (Generic f, GParameterized (Rep f), Parameters f ~ GParameters (Rep f)) =>
+    f ->
+    HList (Parameters f) ->
+    f
   replaceParameters f as = to (gReplaceParameters (from f) as)
 
 class
-  GParameterized
-    (f :: Type -> Type)
-    (as :: [Type])
-    | f -> as where
-  gFlattenParameters :: forall a. f a -> HList as
-  gReplaceParameters :: forall a. f a -> HList as -> f a
+  GParameterized (f :: Type -> Type)
+  where
+  type GParameters f :: [Type]
+  gFlattenParameters :: forall a. f a -> HList (GParameters f)
+  gReplaceParameters :: forall a. f a -> HList (GParameters f) -> f a
 
 instance
-  ( GParameterized l as,
-    GParameterized r bs,
-    HAppendFD as bs cs,
-    cs ~ (as ++ bs)
+  ( GParameterized l,
+    GParameterized r,
+    HAppendFD (GParameters l) (GParameters r) (GParameters l ++ GParameters r)
   ) =>
-  GParameterized (l :*: r) cs
+  GParameterized (l :*: r)
   where
+  type GParameters (l :*: r) = (GParameters l) ++ (GParameters r)
   gFlattenParameters (l :*: r) =
     let as = gFlattenParameters l
         bs = gFlattenParameters r
@@ -126,31 +146,64 @@ instance
         r' = gReplaceParameters r bs
      in l' :*: r'
 
-instance {-# OVERLAPS #-} Parameterized (Tensor device dtype shape) '[] where
-  flattenParameters _ = HNil
-  replaceParameters = const
+instance
+  Parameterized f =>
+  GParameterized (K1 i f)
+  where
+  type GParameters (K1 i f) = Parameters f
+  gFlattenParameters = flattenParameters . unK1
+  gReplaceParameters (K1 f) = K1 . replaceParameters f
 
-instance {-# OVERLAPS #-} Parameterized (Parameter device dtype shape) '[Parameter device dtype shape] where
-  flattenParameters = (:. HNil)
-  replaceParameters _ (parameter :. HNil) = parameter
+instance GParameterized f => GParameterized (M1 i t f) where
+  type GParameters (M1 i t f) = GParameters f
+  gFlattenParameters = gFlattenParameters . unM1
+  gReplaceParameters (M1 f) = M1 . gReplaceParameters f
 
-instance {-# OVERLAPS #-} Parameterized Double '[] where
-  flattenParameters _ = HNil
-  replaceParameters = const
+instance GParameterized U1 where
+  type GParameters U1 = '[]
+  gFlattenParameters _ = HNil
+  gReplaceParameters = const
 
-instance {-# OVERLAPS #-} Parameterized (HList '[]) '[] where
+instance Parameterized (Tensor device dtype shape) where
+  type Parameters (Tensor device dtype shape) = '[]
   flattenParameters _ = HNil
   replaceParameters = const
 
 instance
-  {-# OVERLAPS #-}
-  ( Parameterized f as,
-    Parameterized (HList fs) bs,
-    HAppendFD as bs cs,
-    cs ~ (as ++ bs)
-  ) =>
-  Parameterized (HList (f ': fs)) cs
+  Parameterized (Parameter device dtype shape)
   where
+  type Parameters (Parameter device dtype shape) = '[Parameter device dtype shape]
+  flattenParameters = (:. HNil)
+  replaceParameters _ (parameter :. HNil) = parameter
+
+instance Parameterized Int where
+  type Parameters Int = '[]
+  flattenParameters _ = HNil
+  replaceParameters = const
+
+instance Parameterized Float where
+  type Parameters Float = '[]
+  flattenParameters _ = HNil
+  replaceParameters = const
+
+instance Parameterized Double where
+  type Parameters Double = '[]
+  flattenParameters _ = HNil
+  replaceParameters = const
+
+instance Parameterized (HList '[]) where
+  type Parameters (HList '[]) = '[]
+  flattenParameters _ = HNil
+  replaceParameters = const
+
+instance
+  ( Parameterized f,
+    Parameterized (HList fs),
+    HAppendFD (Parameters f) (Parameters (HList fs)) (Parameters f ++ Parameters (HList fs))
+  ) =>
+  Parameterized (HList (f ': fs))
+  where
+  type Parameters (HList (f ': fs)) = Parameters f ++ Parameters (HList fs)
   flattenParameters (f :. fs) = flattenParameters f `happendFD` flattenParameters fs
   replaceParameters (f :. fs) cs =
     let (as, bs) = hunappendFD cs
@@ -158,28 +211,13 @@ instance
         fs' = replaceParameters fs bs
      in f' :. fs'
 
-instance
-  {-# OVERLAPPABLE #-}
-  ( Parameterized f as
-  ) =>
-  GParameterized (K1 i f) as
-  where
-  gFlattenParameters = flattenParameters . unK1
-  gReplaceParameters (K1 f) = K1 . replaceParameters f
-
-instance (GParameterized f as) => GParameterized (M1 i t f) as where
-  gFlattenParameters = gFlattenParameters . unM1
-  gReplaceParameters (M1 f) = M1 . gReplaceParameters f
-
-instance GParameterized U1 '[] where
-  gFlattenParameters _ = HNil
-  gReplaceParameters = const
-
 instance Torch.NN.Randomizable (HList ('[] :: [Type])) (HList ('[] :: [Type])) where
   sample = return
 
 instance
-  (Torch.NN.Randomizable xSpec x, Torch.NN.Randomizable (HList xsSpec) (HList xs)) =>
+  ( Torch.NN.Randomizable xSpec x,
+    Torch.NN.Randomizable (HList xsSpec) (HList xs)
+  ) =>
   Torch.NN.Randomizable (HList (xSpec ': xsSpec)) (HList (x ': xs))
   where
   sample (xSpec :. xsSpec) = do

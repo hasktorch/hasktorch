@@ -78,7 +78,6 @@ instance Generic (Embedding paddingIdx numEmbeds embedSize 'Constant dtype devic
   type
     Rep (Embedding paddingIdx numEmbeds embedSize 'Constant dtype device) =
       Rec0 (Tensor device dtype '[numEmbeds, embedSize])
-
   from (ConstEmbedding {..}) = K1 constEmbedWeights
   to = ConstEmbedding . unK1
 
@@ -86,9 +85,12 @@ instance Generic (Embedding paddingIdx numEmbeds embedSize 'Learned dtype device
   type
     Rep (Embedding paddingIdx numEmbeds embedSize 'Learned dtype device) =
       Rec0 (Parameter device dtype '[numEmbeds, embedSize])
-
   from (LearnedEmbedding {..}) = K1 learnedEmbedWeights
   to = LearnedEmbedding . unK1
+
+instance Parameterized (Embedding paddingIdx numEmbeds embedSize 'Constant dtype device)
+
+instance Parameterized (Embedding paddingIdx numEmbeds embedSize 'Learned dtype device)
 
 embed ::
   forall paddingIdx shape numEmbeds embedSize embeddingType dtype device shape'.

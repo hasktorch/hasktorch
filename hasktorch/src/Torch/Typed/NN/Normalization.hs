@@ -6,6 +6,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeInType #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module Torch.Typed.NN.Normalization where
 
@@ -14,6 +15,7 @@ import GHC.TypeLits
 import qualified Torch.DType as D
 import qualified Torch.Device as D
 import Torch.NN (HasForward (..), Randomizable (..))
+import Torch.Typed.Aux
 import Torch.Typed.Factories
 import Torch.Typed.Functional
 import Torch.Typed.Parameter
@@ -23,8 +25,7 @@ data LayerNormSpec (normalizedShape :: [Nat]) (dtype :: D.DType) (device :: (D.D
   LayerNormSpec ::
     forall normalizedShape dtype device.
     {layerNormEpsSpec :: Double} ->
-    LayerNormSpec normalizedShape dtype
-      device
+    LayerNormSpec normalizedShape dtype device
   deriving (Show, Eq)
 
 data LayerNorm (normalizedShape :: [Nat]) (dtype :: D.DType) (device :: (D.DeviceType, Nat)) where
@@ -33,13 +34,12 @@ data LayerNorm (normalizedShape :: [Nat]) (dtype :: D.DType) (device :: (D.Devic
       layerNormBias :: Parameter device dtype normalizedShape,
       layerNormEps :: Double
     } ->
-    LayerNorm normalizedShape dtype
-      device
-  deriving (Show, Generic)
+    LayerNorm normalizedShape dtype device
+  deriving (Show, Generic, Parameterized)
 
 layerNormForward ::
   forall normalizedShape shape dtype device.
-  ( EndsWith shape normalizedShape,
+  ( IsSuffixOf normalizedShape shape,
     KnownShape normalizedShape
   ) =>
   LayerNorm normalizedShape dtype device ->
@@ -52,7 +52,7 @@ layerNormForward LayerNorm {..} =
     layerNormEps
 
 instance
-  ( EndsWith shape normalizedShape,
+  ( IsSuffixOf normalizedShape shape,
     KnownShape normalizedShape
   ) =>
   HasForward (LayerNorm normalizedShape dtype device) (Tensor device dtype shape) (Tensor device dtype shape)
@@ -63,7 +63,8 @@ instance
   ( TensorOptions normalizedShape dtype device,
     RandDTypeIsValid device dtype
   ) =>
-  Randomizable (LayerNormSpec normalizedShape dtype device)
+  Randomizable
+    (LayerNormSpec normalizedShape dtype device)
     (LayerNorm normalizedShape dtype device)
   where
   sample LayerNormSpec {..} =

@@ -3,6 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module Torch.Typed.NN.Dropout where
 
@@ -11,6 +12,7 @@ import System.IO.Unsafe
 import Torch.NN (HasForward (..), Randomizable (..))
 import Torch.Typed.Functional
 import Torch.Typed.Tensor
+import Torch.Typed.Parameter
 
 data DropoutSpec where
   DropoutSpec ::
@@ -22,7 +24,7 @@ data Dropout where
   Dropout ::
     {dropoutProb :: Double} ->
     Dropout
-  deriving (Show, Generic)
+  deriving (Show, Generic, Parameterized)
 
 dropoutForward ::
   forall shape dtype device.

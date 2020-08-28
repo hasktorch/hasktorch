@@ -14,6 +14,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 {-# LANGUAGE NoStarIsType #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# OPTIONS_GHC -fconstraint-solver-iterations=0 #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Extra.Solver #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.KnownNat.Solver #-}
@@ -64,7 +65,7 @@ data
         -- | hidden-to-hidden bias
         gruCell_b_hh :: Parameter device dtype '[3 * hiddenDim]
       }
-  deriving (Generic)
+  deriving (Show, Generic, Parameterized)
 
 instance
   ( KnownDevice device,

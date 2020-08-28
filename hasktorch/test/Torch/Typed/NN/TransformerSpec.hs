@@ -24,33 +24,43 @@ spec = return ()
 testTransformerLM
   :: IO
        (HList
-          '[Parameter '( 'D.CPU, 0) 'D.Float '[16, 32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[96, 32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[96],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32, 32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[10, 32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[10],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32, 10],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[96, 32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[96],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32, 32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[10, 32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[10],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32, 10],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[16, 32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[16]])
+          '[ Parameter '( 'D.CPU, 0) 'D.Float '[16, 32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32, 32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32, 32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32, 32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32, 32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[10, 32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[10]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32, 10]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32, 32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32, 32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32, 32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32, 32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[10, 32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[10]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32, 10]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[16, 32]
+           , Parameter '( 'D.CPU, 0) 'D.Float '[16]
+           ]
+       )
 testTransformerLM = do
   let spec =
         TransformerLMSpec @2 @3 @10 @0 @16 @32 @'D.Float @'( 'D.CPU, 0)
@@ -64,6 +74,7 @@ testTransformerLM = do
             (TransformerMLPSpec
               (DropoutSpec 0.2)
               (DropoutSpec 0.2)
+              0.001
             )
           )
   model <- A.sample spec
