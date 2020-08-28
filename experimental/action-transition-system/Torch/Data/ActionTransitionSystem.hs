@@ -2945,6 +2945,7 @@ testProgram Config {..} = do
           IO ([Int], model, optim)
         loadFilePaths model optim Nothing = pure (epochs, model, optim)
         loadFilePaths model optim (Just (epoch, modelCheckpointFile, optimCheckpointFile)) = do
+          putStrLn $ "Loading " <> show modelCheckpointFile <> " and " <> show optimCheckpointFile
           epochs <- pure [epoch + 1 .. numEpochs]
           modelTensors :: HList modelTensors <- load modelCheckpointFile
           modelParameters <- hmapM' MakeIndependent modelTensors
@@ -3024,6 +3025,7 @@ testProgram Config {..} = do
           stats model learningRate trainingCREs evaluationCREs learningRates options
         -- save the model weights to a file and end program
         (_, modelCheckpointFile, optimCheckpointFile) <- pure $ epochToFilePaths epoch
+        lift . putStrLn $ "Saving " <> show modelCheckpointFile <> " and " <> show optimCheckpointFile
         lift $ save (hmap' ToDependent . flattenParameters $ model) modelCheckpointFile
         lift $ save (flattenParameters optim) optimCheckpointFile
         pure (model, optim, trainingCREs, evaluationCREs, learningRates, options)
