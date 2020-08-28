@@ -262,7 +262,7 @@ data Conv2d = Conv2d
   { conv2dWeight :: Parameter,
     conv2dBias :: Parameter
   }
-  deriving (Show, Generic)
+  deriving (Show, Generic, Parameterized)
 
 conv2dForward :: Conv2d -> (Int, Int) -> (Int, Int) -> Tensor -> Tensor
 conv2dForward layer stride padding input =
