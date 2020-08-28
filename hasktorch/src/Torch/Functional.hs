@@ -1500,13 +1500,110 @@ flattenAll
 flattenAll t =
   unsafePerformIO $ (cast3 ATen.flatten_tll) t (0 :: Int) (-1 :: Int)
 
--- Not used yet
-data RNNParams = RNNParams {
-    weightIH :: Tensor,
-    weightHH :: Tensor,
-    biasIH :: Tensor,
-    biasHH :: Tensor
-} deriving (Show)
+lstm
+  :: Tensor -- ^ input
+  -> [Tensor] -- ^ hx
+  -> [Tensor] -- ^ params
+  -> Bool -- ^ has_biases
+  -> Int -- ^ num_layers
+  -> Double -- ^ dropout
+  -> Bool -- ^ train
+  -> Bool -- ^ bidirectional
+  -> Bool -- ^ batch_first
+  -> (Tensor,Tensor,Tensor)
+lstm _input _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first = unsafePerformIO $ (cast9 ATen.lstm_tllbldbbb) _input _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first
+
+lstm'
+  :: Tensor -- ^ batch_sizes
+  -> [Tensor] -- ^ hx
+  -> [Tensor] -- ^ params
+  -> Bool -- ^ has_biases
+  -> Int -- ^ num_layers
+  -> Double -- ^ dropout
+  -> Bool -- ^ train
+  -> Bool -- ^ bidirectional
+  -> Tensor -- ^ data
+  -> (Tensor,Tensor,Tensor)
+lstm' _batch_sizes _hx _params _has_biases _num_layers _dropout _train _bidirectional _data = unsafePerformIO $ (cast9 ATen.lstm_ttllbldbb) _data _batch_sizes _hx _params _has_biases _num_layers _dropout _train _bidirectional
+
+gru
+  :: Tensor -- ^ hx
+  -> [Tensor] -- ^ params
+  -> Bool -- ^ has_biases
+  -> Int -- ^ num_layers
+  -> Double -- ^ dropout
+  -> Bool -- ^ train
+  -> Bool -- ^ bidirectional
+  -> Bool -- ^ batch_first
+  -> Tensor -- ^ input
+  -> (Tensor,Tensor)
+gru _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first _input = unsafePerformIO $ (cast9 ATen.gru_ttlbldbbb) _input _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first
+
+gru'
+  :: Tensor -- ^ batch_sizes
+  -> Tensor -- ^ hx
+  -> [Tensor] -- ^ params
+  -> Bool -- ^ has_biases
+  -> Int -- ^ num_layers
+  -> Double -- ^ dropout
+  -> Bool -- ^ train
+  -> Bool -- ^ bidirectional
+  -> Tensor -- ^ data
+  -> (Tensor,Tensor)
+gru' _batch_sizes _hx _params _has_biases _num_layers _dropout _train _bidirectional _data = unsafePerformIO $ (cast9 ATen.gru_tttlbldbb) _data _batch_sizes _hx _params _has_biases _num_layers _dropout _train _bidirectional
+
+rnnTanh
+  :: Tensor -- ^ hx
+  -> [Tensor] -- ^ params
+  -> Bool -- ^ has_biases
+  -> Int -- ^ num_layers
+  -> Double -- ^ dropout
+  -> Bool -- ^ train
+  -> Bool -- ^ bidirectional
+  -> Bool -- ^ batch_first
+  -> Tensor -- ^ input
+  -> (Tensor,Tensor)
+rnnTanh _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first _input = unsafePerformIO $ (cast9 ATen.rnn_tanh_ttlbldbbb) _input _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first
+
+rnnTanh'
+  :: Tensor -- ^ batch_sizes
+  -> Tensor -- ^ hx
+  -> [Tensor] -- ^ params
+  -> Bool -- ^ has_biases
+  -> Int -- ^ num_layers
+  -> Double -- ^ dropout
+  -> Bool -- ^ train
+  -> Bool -- ^ bidirectional
+  -> Tensor -- ^ data
+  -> (Tensor,Tensor)
+rnnTanh' _batch_sizes _hx _params _has_biases _num_layers _dropout _train _bidirectional _data = unsafePerformIO $ (cast9 ATen.rnn_tanh_tttlbldbb) _data _batch_sizes _hx _params _has_biases _num_layers _dropout _train _bidirectional
+
+rnnRelu
+  :: Tensor -- ^ hx
+  -> [Tensor] -- ^ params
+  -> Bool -- ^ has_biases
+  -> Int -- ^ num_layers
+  -> Double -- ^ dropout
+  -> Bool -- ^ train
+  -> Bool -- ^ bidirectional
+  -> Bool -- ^ batch_first
+  -> Tensor -- ^ input
+  -> (Tensor,Tensor)
+rnnRelu _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first _input = unsafePerformIO $ (cast9 ATen.rnn_relu_ttlbldbbb) _input _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first
+
+
+rnnRelu'
+  :: Tensor -- ^ data
+  -> Tensor -- ^ batch_sizes
+  -> Tensor -- ^ hx
+  -> [Tensor] -- ^ params
+  -> Bool -- ^ has_biases
+  -> Int -- ^ num_layers
+  -> Double -- ^ dropout
+  -> Bool -- ^ train
+  -> Bool -- ^ bidirectional
+  -> (Tensor,Tensor)
+rnnRelu' _data _batch_sizes _hx _params _has_biases _num_layers _dropout _train _bidirectional = unsafePerformIO $ (cast9 ATen.rnn_relu_tttlbldbb) _data _batch_sizes _hx _params _has_biases _num_layers _dropout _train _bidirectional
 
 -- | A long short-term memory (LSTM) cell.
 lstmCell

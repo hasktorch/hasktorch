@@ -38,7 +38,7 @@ instance Parameterized GRUCell
 
 instance Randomizable GRUSpec GRUCell where
   sample GRUSpec{..} = do
-    -- https://pytorch.org/docs/stable/generated/torch.nn.GRU.html
+    -- https://pytorch.org/docs/stable/generated/torch.nn.GRUCell.html
     weightsIH' <- makeIndependent =<< initScale <$> randIO' [3 * hiddenSize, inputSize]
     weightsHH' <- makeIndependent =<< initScale <$> randIO' [3 * hiddenSize, hiddenSize]
     biasIH' <- makeIndependent =<< initScale <$> randIO' [3 * hiddenSize]
@@ -50,4 +50,4 @@ instance Randomizable GRUSpec GRUCell where
         biasHH=biasHH' }
     where
       scale = Prelude.sqrt $ 1.0 / fromIntegral hiddenSize :: Float
-      initScale =  subScalar scale . mulScalar scale 
+      initScale =  subScalar scale . mulScalar scale . mulScalar (2.0 :: Float)

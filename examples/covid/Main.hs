@@ -46,7 +46,8 @@ optimSpec initializedModel lossFn =
 
 modelSpec = Simple1dSpec {
   -- lstm1dSpec = LSTMSpec {inputSize = 1, hiddenSize = 32},
-  lstm1dSpec = GRUSpec {inputSize = 1, hiddenSize = 1},
+  mlp1dSpec0 = MLPSpec 1 16 8 1,
+  gru1dSpec = GRUSpec {inputSize = 1, hiddenSize = 1},
   mlp1dSpec = MLPSpec 1 32 16 1
 }
 
@@ -58,24 +59,24 @@ main = do
   modelData <- prepData dataset
   let tensorData = prepTensors modelData
 
-  plotExampleData modelData tensorData
+  -- plotExampleData modelData tensorData
 
   let tIndices = asTensor (fipsIdxs modelData)
       embedDim = 2
   weights <- randnIO' [M.size $ fipsMap modelData, 2]
   let locEmbed = embedding' weights tIndices
-  print $ indexSelect' 0 [0 .. 10] locEmbed
+  -- print $ indexSelect' 0 [0 .. 10] locEmbed
 
   -- define fipsSpace
   let fipsList = M.keys . fipsMap $ modelData
   putStrLn "Number of counties:"
   print $ length fipsList
 
-  let smallData = filterOn tFips (eq 1223) tensorData
+  -- let smallData = filterOn tFips (eq 1223) tensorData
+  let smallData = filterOn tFips (eq 0) tensorData
       cases = newCases (tCases smallData)
       tsData = expandToSplits 1 cases
   print (shape cases)
-  -- (model :: Simple1dModel) <- sample Simple1dSpec {lstm1dSpec = LSTMSpec {inputSize = 1, hiddenSize = 64}, mlp1dSpec = LinearSpec 64 1}
   (model :: Simple1dModel) <- sample modelSpec
   let input = ones' [1, 1]
 
@@ -85,6 +86,7 @@ main = do
   print output
   print $ mseLoss (getTime' 0 0 future) output
 
+  -- train model
   trained <- train (optimSpec model mseLoss) tsData model
 
   putStrLn "Done"

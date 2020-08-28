@@ -15,8 +15,8 @@ import Control.Monad (when)
 import CovidData
 import GHC.Generics
 import Torch as T
--- import Torch.NN.Recurrent.Cell.LSTM
-import Torch.NN.Recurrent.Cell.GRU
+import Torch.NN.Recurrent.Cell.LSTM as L
+import Torch.NN.Recurrent.Cell.GRU as G
 import Text.Printf
 
 data OptimSpec o p where
@@ -64,102 +64,6 @@ mlp MLP{..} input =
 instance HasForward MLP Tensor Tensor where
   forward = mlp
 
-{- Trivial 1D baseline -}
-
-data Simple1dSpec = Simple1dSpec
-  -- { lstm1dSpec :: LSTMSpec,
-  { lstm1dSpec :: GRUSpec,
-    mlp1dSpec :: MLPSpec
-    -- mlp1dSpec :: LinearSpec
-  }
-  deriving (Eq, Show)
-
-data Simple1dModel = Simple1dModel
-  -- { lstm1d :: LSTMCell,
-  { lstm1d :: GRUCell,
-    mlp1d :: MLP
-    -- mlp1d :: Linear
-  }
-  deriving (Generic, Show, Parameterized)
-
-instance Randomizable Simple1dSpec Simple1dModel where
-  sample Simple1dSpec {..} =
-    Simple1dModel
-      <$> sample lstm1dSpec
-      <*> sample mlp1dSpec
-
-swish x = T.mul x (sigmoid x)
-
-instance HasForward Simple1dModel [Tensor] Tensor where
-  forward Simple1dModel {..} inputs = 
-    swish . forward mlp1d $ lstmOutput
-    where
-      cell = lstm1d
-      -- hSize = P.div ((shape . toDependent . weightsIH $ cell) !! 0) 4 -- 4 for LSTM
-      hSize = P.div ((shape . toDependent . weightsIH $ cell) !! 0) 3 -- 3 for GRU
-      iSize = (shape . toDependent . weightsIH $ cell) !! 1
-      -- LSTM
-      -- cellInit = zeros' [1, hSize]
-      -- hiddenInit = zeros' [1, hSize]
-      -- stateInit = (hiddenInit, cellInit)
-      -- GRU
-      -- hiddenInit = zeros' [1, 1, 3 * hSize] -- what should this be for GRU
-      -- hiddenInit = zeros' [1, hSize] -- what should this be for GRU
-      hiddenInit = zeros' [1, hSize] -- what should this be for GRU
-      stateInit = hiddenInit
-      -- (lstmOutput, cellState) = foldl (lstmCellForward cell) stateInit inputs
-      lstmOutput = foldl (gruCellForward cell) stateInit inputs
-
-{- Attempt to model cross-correlations -}
-
-{-
-data TSModelSpec = TSModelSpec
-  { nCounties :: Int,
-    countyEmbedDim :: Int,
-    t2vSpec :: Time2VecSpec,
-    lstmSpec :: LSTMSpec
-  }
-  deriving (Eq, Show)
-
-data TSModel = TSModel
-  { countyEmbed :: Linear,
-    t2v :: Time2Vec,
-    lstm :: LSTMCell
-  }
-  deriving (Generic, Show, Parameterized)
-
-instance Randomizable TSModelSpec TSModel where
-  sample TSModelSpec {..} =
-    TSModel
-      <$> sample (LinearSpec nCounties countyEmbedDim)
-      <*> sample t2vSpec
-      <*> sample lstmSpec
-
-data ModelInputs = ModelInputs
-  { time :: Float,
-    tensorData :: TensorData,
-    lstmState :: (Tensor, Tensor)
-  }
-  deriving (Eq, Show)
-
-tsmodelForward ::
-  Float -> -- time
-  TSModel -> -- model state
-  (Tensor, Tensor) -> -- lstm (hidden state, cell state)
-  Tensor -> -- all counties context
-  Tensor -> -- input
-  (Tensor, Tensor) -- output
-tsmodelForward t TSModel {..} (hiddenState, cellState) allCounties countyCount =
-  lstmCellForward
-    lstm
-    (hiddenState, cellState)
-    (T.cat (Dim 0) [linearForward countyEmbed allCounties, t2vForward t t2v, countyCount])
-
-instance HasForward TSModel Tensor Tensor where
-  forward model modelInputs = undefined
-
--- forward:: TSModel -> ModelInputs -> (Tensor, Tensor)
-
 data Time2VecSpec = Time2VecSpec
   { t2vDim :: Int -- note output dimensions is +1 of this value due to non-periodic term
   }
@@ -201,6 +105,113 @@ t2vForward t Time2Vec {..} =
         toDependent w,
         toDependent b
       )
+
+{- Trivial 1D baseline -}
+
+data Simple1dSpec = Simple1dSpec
+  -- { lstm1dSpec :: LSTMSpec,
+  { 
+    mlp1dSpec0 :: MLPSpec,
+    gru1dSpec :: GRUSpec,
+    mlp1dSpec :: MLPSpec
+  }
+  deriving (Eq, Show)
+
+data PreNet = PreMLP MLP | PreLinear Linear
+data SeqNet = SeqGRU GRUCell | SeqLSTM LSTMCell
+data PostNet = PostMLP MLP | PostLinear Linear
+
+instance HasForward PreNet Tensor Tensor where
+  forward (PreMLP m) = forward m
+  forward (PreLinear m) = forward m
+
+data Simple1dModel = Simple1dModel
+  -- { lstm1d :: LSTMCell,
+  { 
+    mlp1d0 :: MLP,
+    gru1d :: GRUCell,
+    mlp1d :: MLP
+    -- mlp1d :: Linear
+  }
+  deriving (Generic, Show, Parameterized)
+
+instance Randomizable Simple1dSpec Simple1dModel where
+  sample Simple1dSpec {..} =
+    Simple1dModel
+      <$> sample mlp1dSpec
+      <*> sample gru1dSpec
+      <*> sample mlp1dSpec
+
+swish x = T.mul x (sigmoid x)
+
+instance HasForward Simple1dModel [Tensor] Tensor where
+  forward Simple1dModel {..} inputs = 
+    swish . forward mlp1d $ lstmOutput
+    where
+      cell = gru1d
+      -- hSize = P.div ((shape . toDependent . weightsIH $ cell) !! 0) 4 -- 4 for LSTM
+      hSize = P.div ((shape . toDependent . G.weightsIH $ cell) !! 0) 3 -- 3 for GRU
+      -- iSize = (shape . toDependent . weightsIH $ cell) !! 1
+      -- LSTM
+      -- cellInit = zeros' [1, hSize]
+      -- hiddenInit = zeros' [1, hSize]
+      -- stateInit = (hiddenInit, cellInit)
+      -- GRU
+      hiddenInit = zeros' [1, hSize ] -- what should this be for GRU
+      -- (lstmOutput, cellState) = foldl (lstmCellForward cell) stateInit inputs
+      -- inputs' = forward mlp1d0 inputs -- TODO - get this working
+      lstmOutput = foldl (gruCellForward cell . forward mlp1d0) hiddenInit inputs
+
+{- Attempt to model cross-correlations -}
+
+{-
+data TSModelSpec = TSModelSpec
+  { nCounties :: Int,
+    countyEmbedDim :: Int,
+    t2vSpec :: Time2VecSpec,
+    lstmSpec :: LSTMSpec
+  }
+  deriving (Eq, Show)
+
+data TSModel = TSModel
+  { countyEmbed :: Linear,
+    t2v :: Time2Vec,
+    lstm :: LSTMCell
+  }
+  deriving (Generic, Show, Parameterized)
+
+instance Randomizable TSModelSpec TSModel where
+  sample TSModelSpec {..} =
+    TSModel
+      <$> sample (LinearSpec nCounties countyEmbedDim)
+      <*> sample t2vSpec
+      <*> sample lstmSpec
+
+
+data ModelInputs = ModelInputs
+  { time :: Float,
+    tensorData :: TensorData,
+    lstmState :: (Tensor, Tensor)
+  }
+  deriving (Eq, Show)
+
+tsmodelForward ::
+  Float -> -- time
+  TSModel -> -- model state
+  (Tensor, Tensor) -> -- lstm (hidden state, cell state)
+  Tensor -> -- all counties context
+  Tensor -> -- input
+  (Tensor, Tensor) -- output
+tsmodelForward t TSModel {..} (hiddenState, cellState) allCounties countyCount =
+  lstmCellForward
+    lstm
+    (hiddenState, cellState)
+    (T.cat (Dim 0) [linearForward countyEmbed allCounties, t2vForward t t2v, countyCount])
+
+instance HasForward TSModel Tensor Tensor where
+  forward model modelInputs = undefined
+
+-- forward:: TSModel -> ModelInputs -> (Tensor, Tensor)
 
 {- Computation Setups for Time Series -}
 
