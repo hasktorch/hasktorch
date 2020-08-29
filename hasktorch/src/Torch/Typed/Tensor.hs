@@ -50,7 +50,7 @@ import qualified Torch.Internal.Type as ATen
 import qualified Torch.Tensor as D
 import qualified Torch.TensorFactories as D
 import Torch.Typed.Aux
-import Prelude hiding ((.), id)
+import Prelude hiding (id, (.))
 
 class KnownShape (shape :: [Nat]) where
   shapeVal :: [Int]
@@ -124,6 +124,8 @@ data Tensor (device :: (D.DeviceType, Nat)) (dtype :: D.DType) (shape :: [Nat]) 
 type CPUTensor = Tensor '( 'D.CPU, 0)
 
 type CUDATensor deviceIndex = Tensor '( 'D.CUDA, deviceIndex)
+
+data UnknownShapeTensor device dtype = forall shape. UnknownShapeTensor (Tensor device dtype shape)
 
 type family ComputeHaskellType (dtype :: D.DType) :: Type where
   ComputeHaskellType D.Bool = Bool
@@ -264,8 +266,11 @@ type family CheckBroadcast (shape :: [Nat]) (shape' :: [Nat]) (result :: Maybe [
   CheckBroadcast _ _ (Just result) = (Reverse result)
 
 type Broadcast shape shape' =
-  CheckBroadcast shape shape'
-    ( ComputeBroadcast (Reverse shape)
+  CheckBroadcast
+    shape
+    shape'
+    ( ComputeBroadcast
+        (Reverse shape)
         (Reverse shape')
     )
 
@@ -279,7 +284,8 @@ type family BasicArithmeticDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :
 
 add,
   sub,
-  mul ::
+  mul,
+  div ::
     forall shape'' shape shape' dtype dtype' dtype'' device.
     ( dtype'' ~ DTypePromotion dtype dtype',
       shape'' ~ Broadcast shape shape',
@@ -293,6 +299,7 @@ add,
 add a b = UnsafeMkTensor $ D.add (toDynamic a) (toDynamic b)
 sub a b = UnsafeMkTensor $ D.sub (toDynamic a) (toDynamic b)
 mul a b = UnsafeMkTensor $ D.mul (toDynamic a) (toDynamic b)
+div a b = UnsafeMkTensor $ D.div (toDynamic a) (toDynamic b)
 
 type family ComparisonDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
   ComparisonDTypeIsValid '( 'D.CPU, 0) dtype =

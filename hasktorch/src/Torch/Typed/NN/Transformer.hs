@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -6,6 +7,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -23,8 +25,8 @@ import System.IO.Unsafe (unsafePerformIO)
 import qualified Torch.DType as D
 import qualified Torch.Device as D
 import Torch.HList
-import qualified Torch.NN as A
 import Torch.NN (HasForward (..))
+import qualified Torch.NN as A
 import Torch.Typed.Aux
 import Torch.Typed.Factories
 import Torch.Typed.Functional hiding (linear, log)
@@ -32,8 +34,11 @@ import Torch.Typed.NN.Dropout
 import Torch.Typed.NN.Linear
 import Torch.Typed.NN.Normalization
 import Torch.Typed.NN.Sparse
+import Torch.Typed.Parameter
 import Torch.Typed.Tensor
 import Prelude hiding (cos, exp, sin)
+
+residual f g x = f x >>= (\x' -> g (x `add` x'))
 
 --------------------------------------------------------------------------------
 -- Relation-Aware Multi-Headed Attention Layer
@@ -42,37 +47,47 @@ import Prelude hiding (cos, exp, sin)
 data
   MultiheadAttentionSpec
     (embedDim :: Nat)
+    (kEmbedDim :: Nat)
+    (vEmbedDim :: Nat)
     (numHeads :: Nat)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   MultiheadAttentionSpec ::
-    {mhaDropoutSpec :: DropoutSpec} ->
-    MultiheadAttentionSpec embedDim numHeads dtype
-      device
+    -- | spec for dropout
+    DropoutSpec ->
+    MultiheadAttentionSpec embedDim kEmbedDim vEmbedDim numHeads dtype device
   deriving (Show, Eq)
 
 data
   MultiheadAttention
     (embedDim :: Nat)
+    (kEmbedDim :: Nat)
+    (vEmbedDim :: Nat)
     (numHeads :: Nat)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   MultiheadAttention ::
-    { mhaInProj :: Linear embedDim (embedDim * 3) dtype device,
+    { -- | in-projection for query
+      mhaQInProj :: Linear embedDim embedDim dtype device,
+      -- | in-projection for key
+      mhaKInProj :: Linear kEmbedDim embedDim dtype device,
+      -- | in-projection for value
+      mhaVInProj :: Linear vEmbedDim embedDim dtype device,
+      -- | out-projection
       mhaOutProj :: Linear embedDim embedDim dtype device,
+      -- | dropout
       mhaDropout :: Dropout
     } ->
-    MultiheadAttention embedDim numHeads dtype
-      device
-  deriving (Show, Generic)
+    MultiheadAttention embedDim kEmbedDim vEmbedDim numHeads dtype device
+  deriving (Show, Generic, Parameterized)
 
 multiheadAttention ::
-  forall embedDim numHeads seqLen batchSize headDim dtype device.
+  forall embedDim kEmbedDim vEmbedDim numHeads seqLen seqLen' batchSize headDim dtype device.
   ( 1 <= numHeads,
     embedDim ~ (headDim * numHeads),
-    Mod (embedDim * 3) 3 ~ 0,
-    Div (embedDim * 3) 3 ~ embedDim,
-    All KnownNat '[embedDim, numHeads, seqLen, batchSize, headDim],
+    All KnownNat '[embedDim, kEmbedDim, vEmbedDim, numHeads, seqLen, seqLen', batchSize, headDim],
     KnownDType dtype,
     StandardFloatingPointDTypeValidation device dtype,
     MatMulDTypeIsValid device dtype,
@@ -81,62 +96,89 @@ multiheadAttention ::
     SumDTypeIsValid device dtype,
     KnownDevice device
   ) =>
-  MultiheadAttention embedDim numHeads dtype device ->
+  -- | multi-head attention model ADT
+  MultiheadAttention embedDim kEmbedDim vEmbedDim numHeads dtype device ->
+  -- | switch between training mode and evaluation mode (turns random dropout on and off)
   Bool ->
-  Tensor device dtype '[batchSize, seqLen, seqLen] ->
-  Tensor device 'D.Bool '[batchSize, seqLen] ->
-  Maybe (Tensor device dtype '[batchSize, seqLen, seqLen, headDim]) ->
-  Maybe (Tensor device dtype '[batchSize, seqLen, seqLen, headDim]) ->
-  Tensor device dtype '[batchSize, seqLen, embedDim] ->
+  -- | optional attention mask
+  Maybe (Tensor device dtype '[batchSize, seqLen', seqLen]) ->
+  -- | optional key padding mask
+  Maybe (Tensor device 'D.Bool '[batchSize, seqLen]) ->
+  -- | optional key relations
+  Maybe (Tensor device dtype '[batchSize, seqLen', seqLen, headDim]) ->
+  -- | optional value relations
+  Maybe (Tensor device dtype '[batchSize, seqLen', seqLen, headDim]) ->
+  -- | query representation
+  Tensor device dtype '[batchSize, seqLen', embedDim] ->
+  -- | key representation
+  Tensor device dtype '[batchSize, seqLen, kEmbedDim] ->
+  -- | value representation
+  Tensor device dtype '[batchSize, seqLen, vEmbedDim] ->
+  -- | attention and attention averaged over heads
   IO
-    ( Tensor device dtype '[batchSize, seqLen, embedDim],
-      Tensor device dtype '[batchSize, seqLen, seqLen]
+    ( Tensor device dtype '[batchSize, seqLen', embedDim],
+      Tensor device dtype '[batchSize, seqLen', seqLen]
     )
-multiheadAttention MultiheadAttention {..} train attentionMask keyPaddingMask maybeRelationsK maybeRelationsV x = do
-  let q :. k :. v :. HNil = chunk @3 @2 . forward mhaInProj $ x
-      q' = reshape' q
-      k' = reshape' k
-      v' = reshape' v
-  coefficients <- weightCoefficients q' k'
-  return (attention coefficients v', averageOverHeads coefficients)
+multiheadAttention MultiheadAttention {..} train attentionMask keyPaddingMask keyRelations valueRelations query key value = do
+  weights <-
+    dropoutForward mhaDropout train
+      . softmax @3
+      . _maskKeyPaddings
+      . _maskAttention
+      $ _attentionWeights
+  pure (_attention weights, averageOverHeads weights)
   where
-    weightCoefficients q k =
-      dropoutForward mhaDropout train
-        . softmax @3
-        . maskKeyPaddings
-        . maskAttention
-        . divScalar scaling
-        . ap maybe add (matmul q . transpose @2 @3 $ k)
-        . fmap (transpose @1 @2 . matmul (transpose @1 @2 q) . transpose @2 @3)
-        $ maybeRelationsK
-    attention coefficients v =
-      forward mhaOutProj
-        . reshape @'[batchSize, seqLen, embedDim]
-        . ap maybe add (transpose @1 @2 . matmul coefficients $ v)
-        . fmap (matmul (transpose @1 @2 coefficients))
-        $ maybeRelationsV
+    _attentionWeights =
+      let scaling = Prelude.sqrt . fromIntegral $ natValI @headDim :: Double
+          q = reshape' . divScalar scaling . forward mhaQInProj $ query
+          k = reshape' . forward mhaKInProj $ key
+          weights = matmul q (transpose @2 @3 k)
+          weights' = case keyRelations of
+            Nothing -> weights
+            Just kr -> weights `add` transpose @1 @2 ((transpose @1 @2 q) `matmul` (transpose @2 @3 kr))
+       in weights'
+    _maskAttention attentionWeights =
+      case attentionMask of
+        Nothing -> attentionWeights
+        Just am -> attentionWeights `add` unsqueeze @1 am
+    _maskKeyPaddings attentionWeights =
+      case keyPaddingMask of
+        Nothing -> attentionWeights
+        Just kpm ->
+          let keyPaddingMask' = unsqueeze @2 . unsqueeze @1 $ kpm
+           in maskedFill keyPaddingMask' (-1 / 0 :: Double) attentionWeights
+    _attention attentionWeights =
+      let v = reshape' . forward mhaVInProj $ value
+          attention = transpose @1 @2 $ matmul attentionWeights v
+          attention' = case valueRelations of
+            Nothing -> attention
+            Just vr -> attention `add` (matmul (transpose @1 @2 attentionWeights) vr)
+       in forward mhaOutProj . reshape @'[batchSize, seqLen', embedDim] $ attention'
     averageOverHeads =
       let numHeads' = natValI @numHeads
        in divScalar numHeads' . sumDim @1
-    maskAttention = add (unsqueeze @1 attentionMask)
-    maskKeyPaddings =
-      let keyPaddingMask' = unsqueeze @2 . unsqueeze @1 $ keyPaddingMask
-       in maskedFill keyPaddingMask' (-1 / 0 :: Double)
-    reshape' = transpose @1 @2 . reshape @'[batchSize, seqLen, numHeads, headDim]
-    scaling = Prelude.sqrt . fromIntegral $ natValI @headDim :: Double
+    reshape' ::
+      forall seqLen''.
+      KnownNat seqLen'' =>
+      Tensor device dtype '[batchSize, seqLen'', embedDim] ->
+      Tensor device dtype '[batchSize, numHeads, seqLen'', headDim]
+    reshape' = transpose @1 @2 . reshape @'[batchSize, seqLen'', numHeads, headDim]
 
 instance
-  ( All KnownNat '[embedDim, numHeads],
+  ( All KnownNat '[embedDim, kEmbedDim, vEmbedDim, numHeads],
     KnownDType dtype,
     KnownDevice device,
     RandDTypeIsValid device dtype
   ) =>
-  A.Randomizable (MultiheadAttentionSpec embedDim numHeads dtype device)
-    (MultiheadAttention embedDim numHeads dtype device)
+  A.Randomizable
+    (MultiheadAttentionSpec embedDim kEmbedDim vEmbedDim numHeads dtype device)
+    (MultiheadAttention embedDim kEmbedDim vEmbedDim numHeads dtype device)
   where
-  sample MultiheadAttentionSpec {..} =
+  sample (MultiheadAttentionSpec mhaDropoutSpec) =
     MultiheadAttention
       <$> A.sample LinearSpec
+      <*> A.sample LinearSpec
+      <*> A.sample LinearSpec
       <*> A.sample LinearSpec
       <*> A.sample mhaDropoutSpec
 
@@ -149,48 +191,66 @@ data
     (embedDim :: Nat)
     (ffnDim :: Nat)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   TransformerMLPSpec ::
     forall embedDim ffnDim dtype device.
-    { dropout0Spec :: DropoutSpec,
-      dropout1Spec :: DropoutSpec
+    { -- | spec for relu dropout
+      dropout0Spec :: DropoutSpec,
+      -- | spec for other dropout
+      dropout1Spec :: DropoutSpec,
+      -- | epsilon for layer norm
+      epsSpec :: Double
     } ->
-    TransformerMLPSpec embedDim ffnDim dtype
-      device
-  deriving (Show)
+    TransformerMLPSpec embedDim ffnDim dtype device
+  deriving (Show, Eq)
 
 data
   TransformerMLP
     (embedDim :: Nat)
     (ffnDim :: Nat)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   TransformerMLP ::
     forall embedDim ffnDim dtype device.
-    { linear0 :: Linear embedDim ffnDim dtype device,
+    { -- | first fully connected layer
+      linear0 :: Linear embedDim ffnDim dtype device,
+      -- | second fully connected layer
       linear1 :: Linear ffnDim embedDim dtype device,
+      -- | relu dropout
       dropout0 :: Dropout,
-      dropout1 :: Dropout
+      -- | other dropout
+      dropout1 :: Dropout,
+      -- | layer norm
+      ln :: LayerNorm '[embedDim] dtype device
     } ->
-    TransformerMLP embedDim ffnDim dtype
-      device
-  deriving (Show, Generic)
+    TransformerMLP embedDim ffnDim dtype device
+  deriving (Show, Generic, Parameterized)
 
 transformerMLP ::
   forall embedDim ffnDim seqLen batchSize dtype device.
-  StandardFloatingPointDTypeValidation device dtype =>
+  ( BasicArithmeticDTypeIsValid device dtype,
+    StandardFloatingPointDTypeValidation device dtype,
+    KnownNat embedDim,
+    IsSuffixOf '[embedDim] '[seqLen, batchSize, embedDim]
+  ) =>
+  -- | MLP model ADT for transformer
   TransformerMLP embedDim ffnDim dtype device ->
+  -- | switch between training mode and evaluation mode (turns random dropout on and off)
   Bool ->
-  Tensor device dtype '[seqLen, batchSize, embedDim] ->
-  IO (Tensor device dtype '[seqLen, batchSize, embedDim])
+  Tensor device dtype '[seqLen, batchSize, embedDim] -> -- input
+  IO (Tensor device dtype '[seqLen, batchSize, embedDim]) -- output
 transformerMLP TransformerMLP {..} train input =
-  dropoutForward dropout1 train
-    . relu
-    . forward linear1
-    =<< dropoutForward dropout0 train
-    . relu
-    . forward linear0
-    =<< pure input
+  residual f (pure . forward ln) input
+  where
+    f x =
+      dropoutForward dropout1 train
+        . forward linear1
+        =<< dropoutForward dropout0 train
+          . relu
+          . forward linear0
+        =<< pure x
 
 instance
   ( All KnownNat '[embedDim, ffnDim],
@@ -198,7 +258,8 @@ instance
     KnownDevice device,
     RandDTypeIsValid device dtype
   ) =>
-  A.Randomizable (TransformerMLPSpec embedDim ffnDim dtype device)
+  A.Randomizable
+    (TransformerMLPSpec embedDim ffnDim dtype device)
     (TransformerMLP embedDim ffnDim dtype device)
   where
   sample TransformerMLPSpec {..} =
@@ -207,6 +268,7 @@ instance
       <*> A.sample LinearSpec
       <*> A.sample dropout0Spec
       <*> A.sample dropout1Spec
+      <*> A.sample (LayerNormSpec epsSpec)
 
 --------------------------------------------------------------------------------
 -- Relation-Aware Transformer Layer
@@ -215,48 +277,53 @@ instance
 data
   TransformerLayerSpec
     (embedDim :: Nat)
+    (kEmbedDim :: Nat)
+    (vEmbedDim :: Nat)
     (numHeads :: Nat)
     (ffnDim :: Nat)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   TransformerLayerSpec ::
-    forall embedDim numHeads ffnDim dtype device.
-    { mhaSpec :: MultiheadAttentionSpec embedDim numHeads dtype device,
+    forall embedDim kEmbedDim vEmbedDim numHeads ffnDim dtype device.
+    { mhaSpec :: MultiheadAttentionSpec embedDim kEmbedDim vEmbedDim numHeads dtype device,
       attnDropoutSpec :: DropoutSpec,
-      epsSpec :: Double,
+      epsSpec' :: Double,
       mlpSpec :: TransformerMLPSpec embedDim ffnDim dtype device
     } ->
-    TransformerLayerSpec embedDim numHeads ffnDim dtype
-      device
-  deriving (Show)
+    TransformerLayerSpec embedDim kEmbedDim vEmbedDim numHeads ffnDim dtype device
+  deriving (Show, Eq)
 
 data
   TransformerLayer
     (embedDim :: Nat)
+    (kEmbedDim :: Nat)
+    (vEmbedDim :: Nat)
     (numHeads :: Nat)
     (ffnDim :: Nat)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   TransformerLayer ::
-    forall embedDim numHeads ffnDim dtype device.
-    { transformerLayer_mha :: MultiheadAttention embedDim numHeads dtype device,
+    forall embedDim kEmbedDim vEmbedDim numHeads ffnDim dtype device.
+    { -- | multi-head attention
+      transformerLayer_mha :: MultiheadAttention embedDim kEmbedDim vEmbedDim numHeads dtype device,
+      -- | dropout
       transformerLayer_attnDropout :: Dropout,
-      transformerLayer_ln0 :: LayerNorm '[embedDim] dtype device,
-      transformerLayer_ln1 :: LayerNorm '[embedDim] dtype device,
+      -- | layer norm
+      transformerLayer_ln :: LayerNorm '[embedDim] dtype device,
+      -- | MLP
       transformerLayer_mlp :: TransformerMLP embedDim ffnDim dtype device
     } ->
-    TransformerLayer embedDim numHeads ffnDim dtype
-      device
-  deriving (Show, Generic)
+    TransformerLayer embedDim kEmbedDim vEmbedDim numHeads ffnDim dtype device
+  deriving (Show, Generic, Parameterized)
 
 transformerLayer ::
-  forall numHeads ffnDim embedDim headDim seqLen batchSize dtype device.
+  forall (numHeads :: Nat) (ffnDim :: Nat) (embedDim :: Nat) (kEmbedDim :: Nat) (vEmbedDim :: Nat) (headDim :: Nat) (seqLen :: Nat) (seqLen' :: Nat) (batchSize :: Nat) dtype device.
   ( 1 <= numHeads,
     embedDim ~ (headDim * numHeads),
-    Mod (embedDim * 3) 3 ~ 0,
-    Div (embedDim * 3) 3 ~ embedDim,
-    All KnownNat '[embedDim, numHeads, seqLen, batchSize, headDim],
-    EndsWith '[batchSize, seqLen, embedDim] '[embedDim],
+    All KnownNat '[embedDim, kEmbedDim, vEmbedDim, numHeads, seqLen, seqLen', batchSize, headDim],
+    IsSuffixOf '[embedDim] '[batchSize, seqLen', embedDim],
     KnownDType dtype,
     dtype ~ SumDType dtype,
     StandardFloatingPointDTypeValidation device dtype,
@@ -265,36 +332,47 @@ transformerLayer ::
     SumDTypeIsValid device dtype,
     KnownDevice device
   ) =>
-  TransformerLayer embedDim numHeads ffnDim dtype device ->
+  -- | transformer layer model ADT
+  TransformerLayer embedDim kEmbedDim vEmbedDim numHeads ffnDim dtype device ->
+  -- | switch between training mode and evaluation mode (turns random dropout on and off)
   Bool ->
-  Tensor device dtype '[batchSize, seqLen, seqLen] ->
-  Tensor device 'D.Bool '[batchSize, seqLen] ->
-  Maybe (Tensor device dtype '[batchSize, seqLen, seqLen, headDim]) ->
-  Maybe (Tensor device dtype '[batchSize, seqLen, seqLen, headDim]) ->
-  Tensor device dtype '[batchSize, seqLen, embedDim] ->
-  IO (Tensor device dtype '[batchSize, seqLen, embedDim])
-transformerLayer TransformerLayer {..} train attentionMask keyPaddingMask maybeRelationsK maybeRelationsV x = do
-  (z, _) <- multiheadAttention transformerLayer_mha train attentionMask keyPaddingMask maybeRelationsK maybeRelationsV x
-  z' <- dropoutForward transformerLayer_attnDropout train z
-  let y = forward transformerLayer_ln0 (x `add` z')
-  y' <- transformerMLP transformerLayer_mlp train y
-  return $ forward transformerLayer_ln1 (y `add` y')
+  -- | optional attention mask
+  Maybe (Tensor device dtype '[batchSize, seqLen', seqLen]) ->
+  -- | optional key padding mask
+  Maybe (Tensor device 'D.Bool '[batchSize, seqLen]) ->
+  -- | optional key relations
+  Maybe (Tensor device dtype '[batchSize, seqLen', seqLen, headDim]) ->
+  -- | optional value relations
+  Maybe (Tensor device dtype '[batchSize, seqLen', seqLen, headDim]) ->
+  -- | query representation
+  Tensor device dtype '[batchSize, seqLen', embedDim] ->
+  -- | key representation
+  Tensor device dtype '[batchSize, seqLen, kEmbedDim] ->
+  -- | value representation
+  Tensor device dtype '[batchSize, seqLen, vEmbedDim] ->
+  -- | transformer layer output representation
+  IO (Tensor device dtype '[batchSize, seqLen', embedDim])
+transformerLayer TransformerLayer {..} train attentionMask keyPaddingMask keyRelations valueRelations query key value =
+  let f query' =
+        multiheadAttention transformerLayer_mha train attentionMask keyPaddingMask keyRelations valueRelations query' key value
+          >>= dropoutForward transformerLayer_attnDropout train . fst
+   in residual f (pure . forward transformerLayer_ln) query >>= transformerMLP transformerLayer_mlp train
 
 instance
-  ( All KnownNat '[embedDim, numHeads, ffnDim],
+  ( All KnownNat '[embedDim, kEmbedDim, vEmbedDim, numHeads, ffnDim],
     KnownDType dtype,
     KnownDevice device,
     RandDTypeIsValid device dtype
   ) =>
-  A.Randomizable (TransformerLayerSpec embedDim numHeads ffnDim dtype device)
-    (TransformerLayer embedDim numHeads ffnDim dtype device)
+  A.Randomizable
+    (TransformerLayerSpec embedDim kEmbedDim vEmbedDim numHeads ffnDim dtype device)
+    (TransformerLayer embedDim kEmbedDim vEmbedDim numHeads ffnDim dtype device)
   where
   sample TransformerLayerSpec {..} =
     TransformerLayer
       <$> A.sample mhaSpec
       <*> A.sample attnDropoutSpec
-      <*> A.sample (LayerNormSpec epsSpec)
-      <*> A.sample (LayerNormSpec epsSpec)
+      <*> A.sample (LayerNormSpec epsSpec')
       <*> A.sample mlpSpec
 
 --------------------------------------------------------------------------------
@@ -310,15 +388,17 @@ data
     (numEmbeds :: Nat)
     (embedDim :: Nat)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   TransformerLMSpec ::
     forall numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim dtype device.
-    { lmDropoutSpec :: DropoutSpec,
-      lmLayerSpec :: TransformerLayerSpec embedDim numHeads ffnDim dtype device
+    { -- | dropout spec
+      lmDropoutSpec :: DropoutSpec,
+      -- | spec for each and every transformer layer
+      lmLayerSpec :: TransformerLayerSpec embedDim embedDim embedDim numHeads ffnDim dtype device
     } ->
-    TransformerLMSpec numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim dtype
-      device
-  deriving (Show)
+    TransformerLMSpec numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim dtype device
+  deriving (Show, Eq)
 
 data
   TransformerLM
@@ -329,49 +409,109 @@ data
     (numEmbeds :: Nat)
     (embedDim :: Nat)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   TransformerLM ::
     forall numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim dtype device.
-    { tEmbedding :: Embedding ('Just paddingIdx) numEmbeds embedDim 'Learned dtype device,
+    { -- | token embedding
+      tEmbedding :: Embedding ('Just paddingIdx) numEmbeds embedDim 'Learned dtype device,
+      -- | positional embedding
       tPosEmbedding :: Embedding 'Nothing 2048 embedDim 'Constant dtype device,
+      -- | transformer dropout
       tDropout :: Dropout,
-      tLayers :: HList (HReplicateR numAttnLayers (TransformerLayer embedDim numHeads ffnDim dtype device)),
+      -- | transformer layers
+      tLayers :: HList (HReplicateR numAttnLayers (TransformerLayer embedDim embedDim embedDim numHeads ffnDim dtype device)),
+      -- | final output projection
       tProj :: Linear embedDim numEmbeds dtype device
     } ->
-    TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim dtype
-      device
+    TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim dtype device
   deriving (Generic)
+
+deriving instance
+  ( Show
+      ( HList
+          ( HReplicateR
+              numAttnLayers
+              ( TransformerLayer
+                  embedDim
+                  embedDim
+                  embedDim
+                  numHeads
+                  ffnDim
+                  dtype
+                  device
+              )
+          )
+      )
+  ) =>
+  Show (TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim dtype device)
+
+instance
+  ( layers
+      ~ ( HReplicateR
+            numAttnLayers
+            ( TransformerLayer
+                embedDim
+                embedDim
+                embedDim
+                numHeads
+                ffnDim
+                dtype
+                device
+            )
+        ),
+    Parameterized
+      ( HList
+          layers
+      ),
+    HAppendFD
+      (Parameters (HList layers))
+      '[ Parameter device dtype '[numEmbeds, embedDim],
+         Parameter device dtype '[numEmbeds]
+       ]
+      ( Parameters (HList layers)
+          ++ '[ Parameter device dtype '[numEmbeds, embedDim],
+                Parameter device dtype '[numEmbeds]
+              ]
+      )
+  ) =>
+  Parameterized (TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim dtype device)
 
 data
   FoldLayers
     (batchSize :: Nat)
     (seqLen :: Nat)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat))
-  = FoldLayers
-      { flTrain :: Bool,
-        flAttentionMask :: Tensor device dtype '[batchSize, seqLen, seqLen],
-        flKeyPaddingMask :: Tensor device 'D.Bool '[batchSize, seqLen]
-      }
+    (device :: (D.DeviceType, Nat)) = FoldLayers
+  { -- | switch between training mode and evaluation mode (turns random dropout on and off)
+    flTrain :: Bool,
+    -- | optional attention mask
+    flAttentionMask :: Maybe (Tensor device dtype '[batchSize, seqLen, seqLen]),
+    -- | optional key padding mask
+    flKeyPaddingMask :: Maybe (Tensor device 'D.Bool '[batchSize, seqLen])
+  }
 
 instance
   ( 1 <= numHeads,
     embedDim ~ (headDim * numHeads),
-    Mod (embedDim * 3) 3 ~ 0,
-    Div (embedDim * 3) 3 ~ embedDim,
     All KnownNat '[embedDim, numHeads, seqLen, batchSize, headDim],
-    EndsWith '[batchSize, seqLen, embedDim] '[embedDim],
+    IsSuffixOf '[embedDim] '[batchSize, seqLen, embedDim],
     KnownDType dtype,
-    dtype ~ SumDType dtype,
     StandardFloatingPointDTypeValidation device dtype,
     MatMulDTypeIsValid device dtype,
     BasicArithmeticDTypeIsValid device dtype,
+    dtype ~ SumDType dtype,
     SumDTypeIsValid device dtype,
     KnownDevice device
   ) =>
-  Apply' (FoldLayers batchSize seqLen dtype device) (TransformerLayer embedDim numHeads ffnDim dtype device, IO (Tensor device dtype '[batchSize, seqLen, embedDim])) (IO (Tensor device dtype '[batchSize, seqLen, embedDim]))
+  Apply'
+    (FoldLayers batchSize seqLen dtype device)
+    ( TransformerLayer embedDim embedDim embedDim numHeads ffnDim dtype device,
+      IO (Tensor device dtype '[batchSize, seqLen, embedDim])
+    )
+    (IO (Tensor device dtype '[batchSize, seqLen, embedDim]))
   where
-  apply' FoldLayers {..} (layer, mx) = mx >>= transformerLayer layer flTrain flAttentionMask flKeyPaddingMask Nothing Nothing
+  apply' FoldLayers {..} (layer, mx) = mx >>= \x -> transformerLayer layer flTrain flAttentionMask flKeyPaddingMask Nothing Nothing x x x
 
 transformerLM ::
   forall
@@ -392,7 +532,7 @@ transformerLM ::
       IO
       (FoldLayers batchSize seqLen dtype device)
       (Tensor device dtype '[batchSize, seqLen, embedDim])
-      (HReplicateR numAttnLayers (TransformerLayer embedDim numHeads ffnDim dtype device))
+      (HReplicateR numAttnLayers (TransformerLayer embedDim embedDim embedDim numHeads ffnDim dtype device))
       (Tensor device dtype '[batchSize, seqLen, embedDim]),
     BasicArithmeticDTypeIsValid device dtype,
     ComparisonDTypeIsValid device dtype,
@@ -419,9 +559,9 @@ transformerLM TransformerLM {..} train xTokens = do
           . triu 1
           $ ones @'[seqLen, seqLen] @D.Int8 @device
       attentionMask' =
-        maskedFill attentionMask (-1 / 0 :: Double) $
+        pure . maskedFill attentionMask (-1 / 0 :: Double) $
           zeros @'[batchSize, seqLen, seqLen] @dtype @device
-  let keyPaddingMask = xTokens ==. (fromInteger . natVal $ Proxy @paddingIdx :: Tensor device 'D.Int64 '[])
+  let keyPaddingMask = pure $ xTokens ==. (fromInteger . natVal $ Proxy @paddingIdx :: Tensor device 'D.Int64 '[])
   y <- hfoldrM (FoldLayers train attentionMask' keyPaddingMask) x' tLayers
   return $ forward tProj y
 
@@ -433,7 +573,7 @@ instance
       IO
       (FoldLayers batchSize seqLen dtype device)
       (Tensor device dtype '[batchSize, seqLen, embedDim])
-      (HReplicateR numAttnLayers (TransformerLayer embedDim numHeads ffnDim dtype device))
+      (HReplicateR numAttnLayers (TransformerLayer embedDim embedDim embedDim numHeads ffnDim dtype device))
       (Tensor device dtype '[batchSize, seqLen, embedDim]),
     BasicArithmeticDTypeIsValid device dtype,
     ComparisonDTypeIsValid device dtype,
@@ -477,16 +617,18 @@ instance
     (((numEmbeds - paddingIdx) - 1) + (1 + paddingIdx)) ~ numEmbeds,
     (Div embedDim 2 * 2) ~ embedDim,
     All KnownNat '[ffnDim, paddingIdx, numEmbeds, embedDim],
-    HReplicate numAttnLayers (TransformerLayerSpec embedDim numHeads ffnDim dtype device),
-    A.Randomizable (HList (HReplicateR numAttnLayers (TransformerLayerSpec embedDim numHeads ffnDim dtype device)))
-      (HList (HReplicateR numAttnLayers (TransformerLayer embedDim numHeads ffnDim dtype device))),
+    HReplicate numAttnLayers (TransformerLayerSpec embedDim embedDim embedDim numHeads ffnDim dtype device),
+    A.Randomizable
+      (HList (HReplicateR numAttnLayers (TransformerLayerSpec embedDim embedDim embedDim numHeads ffnDim dtype device)))
+      (HList (HReplicateR numAttnLayers (TransformerLayer embedDim embedDim embedDim numHeads ffnDim dtype device))),
     KnownDType dtype,
     RandDTypeIsValid device dtype,
     StandardFloatingPointDTypeValidation device 'D.Float,
     BasicArithmeticDTypeIsValid device 'D.Float,
     KnownDevice device
   ) =>
-  A.Randomizable (TransformerLMSpec numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim dtype device)
+  A.Randomizable
+    (TransformerLMSpec numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim dtype device)
     (TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim dtype device)
   where
   sample TransformerLMSpec {..} =

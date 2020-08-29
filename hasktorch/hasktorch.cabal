@@ -162,7 +162,11 @@ test-suite spec
                     , Torch.Distributions.BernoulliSpec
                     , Torch.Distributions.CategoricalSpec
   default-language: Haskell2010
+  ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
   build-depends:      base >= 4.7 && < 5
+                    , ghc-typelits-extra
+                    , ghc-typelits-knownnat
+                    , ghc-typelits-natnormalise
                     , hasktorch
                     , hspec
                     , libtorch-ffi

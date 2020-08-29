@@ -36,7 +36,7 @@ instance Randomizable ElmanSpec ElmanCell where
 
 instance Parameterized ElmanCell where
   flattenParameters ElmanCell{..} = [input_weight, hidden_weight, bias]
-  replaceOwnParameters _ = do
+  _replaceParameters _ = do
     input_weight <- nextParameter
     hidden_weight <- nextParameter
     bias   <- nextParameter
