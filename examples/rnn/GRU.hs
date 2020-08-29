@@ -59,7 +59,7 @@ instance Randomizable GRUSpec GRUCell where
 instance Parameterized GRUCell where
   flattenParameters GRUCell{..} =
     reset_gate ++ update_gate ++ gru_hidden_gate
-  replaceOwnParameters _ = do
+  _replaceParameters _ = do
     rg_ih <- nextParameter
     rg_hh <- nextParameter
     rg_b  <- nextParameter

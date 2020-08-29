@@ -29,6 +29,7 @@
 module Torch.Typed.NN.Recurrent.LSTM where
 
 import Data.Kind
+import Data.Proxy (Proxy (..))
 import Foreign.ForeignPtr
 import GHC.Generics
 import GHC.TypeLits
@@ -71,7 +72,8 @@ data
     (hiddenSize :: Nat)
     (directionality :: RNNDirectionality)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   LSTMUnidirectionalLayer ::
     Parameter device dtype (LSTMWIShape hiddenSize inputSize) ->
     Parameter device dtype (LSTMWHShape hiddenSize inputSize) ->
@@ -91,35 +93,35 @@ data
 
 deriving instance Show (LSTMLayer inputSize hiddenSize directionality dtype device)
 
--- deriving instance Generic (LSTMLayer inputSize hiddenSize directionality dtype device)
-
-instance
-  ( wiShape ~ (LSTMWIShape hiddenSize inputSize),
-    whShape ~ (LSTMWHShape hiddenSize inputSize),
-    biShape ~ (LSTMBIShape hiddenSize inputSize),
-    bhShape ~ (LSTMBHShape hiddenSize inputSize),
-    parameters ~ '[Parameter device dtype wiShape, Parameter device dtype whShape, Parameter device dtype biShape, Parameter device dtype bhShape]
-  ) =>
-  GParameterized (K1 R (LSTMLayer inputSize hiddenSize 'Unidirectional dtype device)) parameters
-  where
-  gFlattenParameters (K1 (LSTMUnidirectionalLayer wi wh bi bh)) =
+instance Parameterized (LSTMLayer inputSize hiddenSize 'Unidirectional dtype device) where
+  type
+    Parameters (LSTMLayer inputSize hiddenSize 'Unidirectional dtype device) =
+      '[ Parameter device dtype (LSTMWIShape hiddenSize inputSize),
+         Parameter device dtype (LSTMWHShape hiddenSize inputSize),
+         Parameter device dtype (LSTMBIShape hiddenSize inputSize),
+         Parameter device dtype (LSTMBHShape hiddenSize inputSize)
+       ]
+  flattenParameters (LSTMUnidirectionalLayer wi wh bi bh) =
     wi :. wh :. bi :. bh :. HNil
-  gReplaceParameters _ (wi :. wh :. bi :. bh :. HNil) =
-    K1 (LSTMUnidirectionalLayer wi wh bi bh)
+  replaceParameters _ (wi :. wh :. bi :. bh :. HNil) =
+    LSTMUnidirectionalLayer wi wh bi bh
 
-instance
-  ( wiShape ~ (LSTMWIShape hiddenSize inputSize),
-    whShape ~ (LSTMWHShape hiddenSize inputSize),
-    biShape ~ (LSTMBIShape hiddenSize inputSize),
-    bhShape ~ (LSTMBHShape hiddenSize inputSize),
-    parameters ~ '[Parameter device dtype wiShape, Parameter device dtype whShape, Parameter device dtype biShape, Parameter device dtype bhShape, Parameter device dtype wiShape, Parameter device dtype whShape, Parameter device dtype biShape, Parameter device dtype bhShape]
-  ) =>
-  GParameterized (K1 R (LSTMLayer inputSize hiddenSize 'Bidirectional dtype device)) parameters
-  where
-  gFlattenParameters (K1 (LSTMBidirectionalLayer wi wh bi bh wi' wh' bi' bh')) =
+instance Parameterized (LSTMLayer inputSize hiddenSize 'Bidirectional dtype device) where
+  type
+    Parameters (LSTMLayer inputSize hiddenSize 'Bidirectional dtype device) =
+      '[ Parameter device dtype (LSTMWIShape hiddenSize inputSize),
+         Parameter device dtype (LSTMWHShape hiddenSize inputSize),
+         Parameter device dtype (LSTMBIShape hiddenSize inputSize),
+         Parameter device dtype (LSTMBHShape hiddenSize inputSize),
+         Parameter device dtype (LSTMWIShape hiddenSize inputSize),
+         Parameter device dtype (LSTMWHShape hiddenSize inputSize),
+         Parameter device dtype (LSTMBIShape hiddenSize inputSize),
+         Parameter device dtype (LSTMBHShape hiddenSize inputSize)
+       ]
+  flattenParameters (LSTMBidirectionalLayer wi wh bi bh wi' wh' bi' bh') =
     wi :. wh :. bi :. bh :. wi' :. wh' :. bi' :. bh' :. HNil
-  gReplaceParameters _ (wi :. wh :. bi :. bh :. wi' :. wh' :. bi' :. bh' :. HNil) =
-    K1 (LSTMBidirectionalLayer wi wh bi bh wi' wh' bi' bh')
+  replaceParameters _ (wi :. wh :. bi :. bh :. wi' :. wh' :. bi' :. bh' :. HNil) =
+    LSTMBidirectionalLayer wi wh bi bh wi' wh' bi' bh'
 
 instance
   ( RandDTypeIsValid device dtype,
@@ -128,7 +130,8 @@ instance
     KnownDType dtype,
     KnownDevice device
   ) =>
-  A.Randomizable (LSTMLayerSpec inputSize hiddenSize 'Unidirectional dtype device)
+  A.Randomizable
+    (LSTMLayerSpec inputSize hiddenSize 'Unidirectional dtype device)
     (LSTMLayer inputSize hiddenSize 'Unidirectional dtype device)
   where
   sample _ =
@@ -145,7 +148,8 @@ instance
     KnownDType dtype,
     KnownDevice device
   ) =>
-  A.Randomizable (LSTMLayerSpec inputSize hiddenSize 'Bidirectional dtype device)
+  A.Randomizable
+    (LSTMLayerSpec inputSize hiddenSize 'Bidirectional dtype device)
     (LSTMLayer inputSize hiddenSize 'Bidirectional dtype device)
   where
   sample _ =
@@ -176,7 +180,7 @@ instance A.Parameterized (LSTMLayer inputSize hiddenSize directionality dtype de
       untypeParam bi',
       untypeParam bh'
     ]
-  replaceOwnParameters (LSTMUnidirectionalLayer _wi _wh _bi _bh) = do
+  _replaceParameters (LSTMUnidirectionalLayer _wi _wh _bi _bh) = do
     wi <- A.nextParameter
     wh <- A.nextParameter
     bi <- A.nextParameter
@@ -188,7 +192,7 @@ instance A.Parameterized (LSTMLayer inputSize hiddenSize directionality dtype de
           (UnsafeMkParameter bi)
           (UnsafeMkParameter bh)
       )
-  replaceOwnParameters (LSTMBidirectionalLayer _wi _wh _bi _bh _wi' _wh' _bi' _bh') = do
+  _replaceParameters (LSTMBidirectionalLayer _wi _wh _bi _bh _wi' _wh' _bi' _bh') = do
     wi <- A.nextParameter
     wh <- A.nextParameter
     bi <- A.nextParameter
@@ -230,91 +234,133 @@ data
     (numLayers :: Nat)
     (directionality :: RNNDirectionality)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   LSTMLayer1 ::
     LSTMLayer inputSize hiddenSize directionality dtype device ->
     LSTMLayerStack inputSize hiddenSize 1 directionality dtype device
   LSTMLayerK ::
-    (2 <= numLayers) =>
-    LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device ->
     LSTMLayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device ->
-    LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device
+    LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device ->
+    LSTMLayerStack inputSize hiddenSize (numLayers + 1) directionality dtype device
 
 deriving instance Show (LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device)
 
---  TODO: Generics? see https://gist.github.com/RyanGlScott/71d9f933e823b4a03f99de54d4b94d51
--- deriving instance Generic (LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device)
+class LSTMLayerStackParameterized (flag :: Bool) inputSize hiddenSize numLayers directionality dtype device where
+  type LSTMLayerStackParameters flag inputSize hiddenSize numLayers directionality dtype device :: [Type]
+  lstmLayerStackFlattenParameters ::
+    Proxy flag ->
+    LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device ->
+    HList (LSTMLayerStackParameters flag inputSize hiddenSize numLayers directionality dtype device)
+  lstmLayerStackReplaceParameters ::
+    Proxy flag ->
+    LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device ->
+    HList (LSTMLayerStackParameters flag inputSize hiddenSize numLayers directionality dtype device) ->
+    LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device
 
 instance
-  {-# OVERLAPS #-}
-  ( layer ~ (K1 R (LSTMLayer inputSize hiddenSize directionality dtype device)),
-    GParameterized layer parameters
-  ) =>
-  GParameterized (K1 R (LSTMLayerStack inputSize hiddenSize 1 directionality dtype device)) parameters
+  Parameterized (LSTMLayer inputSize hiddenSize directionality dtype device) =>
+  LSTMLayerStackParameterized 'False inputSize hiddenSize 1 directionality dtype device
   where
-  gFlattenParameters (K1 (LSTMLayer1 lstmLayer)) =
-    gFlattenParameters (K1 lstmLayer :: layer _)
-  gReplaceParameters (K1 (LSTMLayer1 lstmLayer)) parameters =
-    K1 (LSTMLayer1 (unK1 (gReplaceParameters (K1 lstmLayer :: layer _) parameters)))
+  type
+    LSTMLayerStackParameters 'False inputSize hiddenSize 1 directionality dtype device =
+      Parameters (LSTMLayer inputSize hiddenSize directionality dtype device)
+  lstmLayerStackFlattenParameters _ (LSTMLayer1 lstmLayer) = flattenParameters lstmLayer
+  lstmLayerStackReplaceParameters _ (LSTMLayer1 lstmLayer) parameters = LSTMLayer1 $ replaceParameters lstmLayer parameters
 
 instance
-  {-# OVERLAPPABLE #-}
-  ( 2 <= numLayers,
-    layerStack ~ (K1 R (LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device)),
-    layer ~ (K1 R (LSTMLayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)),
-    GParameterized layer parameters',
-    GParameterized layerStack parameters,
-    GParameterized layer parameters',
-    HAppendFD parameters parameters' parameters'',
-    parameters'' ~ (parameters ++ parameters')
+  ( Parameterized
+      ( LSTMLayer
+          (hiddenSize * NumberOfDirections directionality)
+          hiddenSize
+          directionality
+          dtype
+          device
+      ),
+    Parameterized (LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device),
+    HAppendFD
+      (Parameters (LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device))
+      (Parameters (LSTMLayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device))
+      ( Parameters (LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device)
+          ++ Parameters (LSTMLayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)
+      )
   ) =>
-  GParameterized (K1 R (LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device)) parameters''
+  LSTMLayerStackParameterized 'True inputSize hiddenSize numLayers directionality dtype device
   where
-  gFlattenParameters (K1 (LSTMLayerK lstmLayerStack lstmLayer)) =
-    let parameters = gFlattenParameters (K1 lstmLayerStack :: layerStack _)
-        parameters' = gFlattenParameters (K1 lstmLayer :: layer _)
-     in parameters `happendFD` parameters'
-  gReplaceParameters (K1 (LSTMLayerK lstmLayerStack lstmLayer)) parameters'' =
-    let (parameters, parameters') = hunappendFD parameters''
-        lstmLayerStack' = unK1 (gReplaceParameters (K1 lstmLayerStack :: layerStack _) parameters)
-        lstmLayer' = unK1 (gReplaceParameters (K1 lstmLayer :: layer _) parameters')
-     in K1 (LSTMLayerK lstmLayerStack' lstmLayer')
+  type
+    LSTMLayerStackParameters 'True inputSize hiddenSize numLayers directionality dtype device =
+      Parameters (LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device)
+        ++ Parameters (LSTMLayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)
+  lstmLayerStackFlattenParameters _ (LSTMLayerK lstmLayer lstmLayerStack) =
+    let parameters = flattenParameters lstmLayer
+        parameters' = flattenParameters @(LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device) lstmLayerStack
+     in parameters' `happendFD` parameters
+  lstmLayerStackReplaceParameters _ (LSTMLayerK lstmLayer lstmLayerStack) parameters'' =
+    let (parameters', parameters) = hunappendFD parameters''
+        lstmLayer' = replaceParameters lstmLayer parameters
+        lstmLayerStack' = replaceParameters @(LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device) lstmLayerStack parameters'
+     in LSTMLayerK lstmLayer' lstmLayerStack'
 
 instance
-  {-# OVERLAPS #-}
-  ( RandDTypeIsValid device dtype,
-    KnownNat inputSize,
-    KnownNat hiddenSize,
-    KnownDType dtype,
-    KnownDevice device,
-    A.Randomizable (LSTMLayerSpec inputSize hiddenSize directionality dtype device)
+  ( 1 <= numLayers,
+    (2 <=? numLayers) ~ flag,
+    LSTMLayerStackParameterized flag inputSize hiddenSize numLayers directionality dtype device
+  ) =>
+  Parameterized (LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device)
+  where
+  type
+    Parameters (LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device) =
+      LSTMLayerStackParameters (2 <=? numLayers) inputSize hiddenSize numLayers directionality dtype device
+  flattenParameters = lstmLayerStackFlattenParameters (Proxy :: Proxy flag)
+  replaceParameters = lstmLayerStackReplaceParameters (Proxy :: Proxy flag)
+
+class LSTMLayerStackRandomizable (flag :: Bool) inputSize hiddenSize numLayers directionality dtype device where
+  lstmLayerStackSample ::
+    Proxy flag ->
+    LSTMLayerStackSpec inputSize hiddenSize numLayers directionality dtype device ->
+    IO (LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device)
+
+instance
+  ( A.Randomizable
+      (LSTMLayerSpec inputSize hiddenSize directionality dtype device)
       (LSTMLayer inputSize hiddenSize directionality dtype device)
   ) =>
-  A.Randomizable (LSTMLayerStackSpec inputSize hiddenSize 1 directionality dtype device)
-    (LSTMLayerStack inputSize hiddenSize 1 directionality dtype device)
+  LSTMLayerStackRandomizable 'False inputSize hiddenSize 1 directionality dtype device
   where
-  sample _ = LSTMLayer1 <$> (A.sample $ LSTMLayerSpec @inputSize @hiddenSize @directionality @dtype @device)
+  lstmLayerStackSample _ _ = LSTMLayer1 <$> (sample $ LSTMLayerSpec @inputSize @hiddenSize @directionality @dtype @device)
 
 instance
-  {-# OVERLAPPABLE #-}
-  ( 2 <= numLayers,
+  ( A.Randomizable
+      (LSTMLayerSpec (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)
+      (LSTMLayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device),
+    A.Randomizable
+      (LSTMLayerStackSpec inputSize hiddenSize (numLayers - 1) directionality dtype device)
+      (LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device)
+  ) =>
+  LSTMLayerStackRandomizable 'True inputSize hiddenSize numLayers directionality dtype device
+  where
+  lstmLayerStackSample _ _ =
+    LSTMLayerK
+      <$> (sample $ LSTMLayerSpec @(hiddenSize * NumberOfDirections directionality) @hiddenSize @directionality @dtype @device)
+      <*> ( sample
+              @(LSTMLayerStackSpec inputSize hiddenSize (numLayers - 1) directionality dtype device)
+              @(LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device)
+              $ LSTMLayerStackSpec
+          )
+
+instance
+  ( 1 <= numLayers,
+    (2 <=? numLayers) ~ flag,
     RandDTypeIsValid device dtype,
-    KnownNat inputSize,
-    KnownNat hiddenSize,
     KnownDType dtype,
     KnownDevice device,
-    A.Randomizable (LSTMLayerStackSpec inputSize hiddenSize (numLayers - 1) directionality dtype device)
-      (LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device),
-    A.Randomizable (LSTMLayerSpec (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)
-      (LSTMLayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)
+    LSTMLayerStackRandomizable flag inputSize hiddenSize numLayers directionality dtype device
   ) =>
-  A.Randomizable (LSTMLayerStackSpec inputSize hiddenSize numLayers directionality dtype device)
+  Randomizable
+    (LSTMLayerStackSpec inputSize hiddenSize numLayers directionality dtype device)
     (LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device)
   where
-  sample _ =
-    LSTMLayerK
-      <$> (A.sample $ LSTMLayerStackSpec @inputSize @hiddenSize @(numLayers - 1) @directionality @dtype @device)
-      <*> (A.sample $ LSTMLayerSpec @(hiddenSize * NumberOfDirections directionality) @hiddenSize @directionality @dtype @device)
+  sample = lstmLayerStackSample (Proxy :: Proxy flag)
 
 instance A.Parameterized (LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device) where
   flattenParameters (LSTMLayer1 layer) =
@@ -322,12 +368,12 @@ instance A.Parameterized (LSTMLayerStack inputSize hiddenSize numLayers directio
   flattenParameters (LSTMLayerK stack layer) =
     A.flattenParameters stack
       ++ A.flattenParameters layer
-  replaceOwnParameters (LSTMLayer1 layer) = do
-    layer' <- A.replaceOwnParameters layer
+  _replaceParameters (LSTMLayer1 layer) = do
+    layer' <- A._replaceParameters layer
     return $ LSTMLayer1 layer'
-  replaceOwnParameters (LSTMLayerK stack layer) = do
-    stack' <- A.replaceOwnParameters stack
-    layer' <- A.replaceOwnParameters layer
+  _replaceParameters (LSTMLayerK stack layer) = do
+    stack' <- A._replaceParameters stack
+    layer' <- A._replaceParameters layer
     return $ LSTMLayerK stack' layer'
 
 newtype
@@ -349,11 +395,38 @@ data
     (directionality :: RNNDirectionality)
     (dtype :: D.DType)
     (device :: (D.DeviceType, Nat))
-  = LSTM
-      { lstm_layer_stack :: LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device,
-        lstm_dropout :: Dropout
-      }
-  deriving (Show, Generic)
+  where
+  LSTM ::
+    (1 <= numLayers) =>
+    { lstm_layer_stack :: LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device,
+      lstm_dropout :: Dropout
+    } ->
+    LSTM inputSize hiddenSize numLayers directionality dtype device
+
+deriving instance Show (LSTM inputSize hiddenSize numLayers directionality dtype device)
+
+instance
+  (1 <= numLayers) =>
+  Generic (LSTM inputSize hiddenSize numLayers directionality dtype device)
+  where
+  type
+    Rep (LSTM inputSize hiddenSize numLayers directionality dtype device) =
+      Rec0 (LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device)
+        :*: Rec0 Dropout
+  from (LSTM {..}) = K1 lstm_layer_stack :*: K1 lstm_dropout
+  to (K1 layerStack :*: K1 dropout) = LSTM layerStack dropout
+
+instance
+  ( 1 <= numLayers,
+    Parameterized (LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device),
+    HAppendFD
+      (Parameters (LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device))
+      (Parameters Dropout)
+      ( Parameters (LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device)
+          ++ Parameters Dropout
+      )
+  ) =>
+  Parameterized (LSTM inputSize hiddenSize numLayers directionality dtype device)
 
 -- TODO: when we have cannonical initializers do this correctly:
 -- https://github.com/pytorch/pytorch/issues/9221
@@ -361,8 +434,8 @@ data
 
 instance A.Parameterized (LSTM inputSize hiddenSize numLayers directionality dtype device) where
   flattenParameters LSTM {..} = A.flattenParameters lstm_layer_stack
-  replaceOwnParameters LSTM {..} = do
-    lstm_layer_stack' <- A.replaceOwnParameters lstm_layer_stack
+  _replaceParameters LSTM {..} = do
+    lstm_layer_stack' <- A._replaceParameters lstm_layer_stack
     return $
       LSTM
         { lstm_layer_stack = lstm_layer_stack',
@@ -395,10 +468,13 @@ instance
     KnownNat hiddenSize,
     KnownNat (NumberOfDirections directionality),
     RandDTypeIsValid device dtype,
-    A.Randomizable (LSTMLayerStackSpec inputSize hiddenSize numLayers directionality dtype device)
-      (LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device)
+    A.Randomizable
+      (LSTMLayerStackSpec inputSize hiddenSize numLayers directionality dtype device)
+      (LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device),
+    1 <= numLayers
   ) =>
-  A.Randomizable (LSTMSpec inputSize hiddenSize numLayers directionality dtype device)
+  A.Randomizable
+    (LSTMSpec inputSize hiddenSize numLayers directionality dtype device)
     (LSTM inputSize hiddenSize numLayers directionality dtype device)
   where
   sample (LSTMSpec dropoutSpec) =
@@ -415,7 +491,8 @@ data
     (directionality :: RNNDirectionality)
     (initialization :: RNNInitialization)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   -- | Weights drawn from Xavier-Uniform
   --   with zeros-value initialized biases and cell states.
   LSTMWithZerosInitSpec ::
@@ -449,8 +526,6 @@ data
 
 deriving instance Show (LSTMWithInitSpec inputSize hiddenSize numLayers directionality initialization dtype device)
 
--- deriving instance Generic (LSTMWithInitSpec inputSize hiddenSize numLayers directionality initialization dtype device)
-
 -- | A long, short-term memory layer with either fixed initial
 -- states for the memory cells and hidden state or learnable
 -- inital states for the memory cells and hidden state.
@@ -462,14 +537,21 @@ data
     (directionality :: RNNDirectionality)
     (initialization :: RNNInitialization)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   LSTMWithConstInit ::
     forall inputSize hiddenSize numLayers directionality dtype device.
     { lstmWithConstInit_lstm :: LSTM inputSize hiddenSize numLayers directionality dtype device,
       lstmWithConstInit_c :: Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize],
       lstmWithConstInit_h :: Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize]
     } ->
-    LSTMWithInit inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype
+    LSTMWithInit
+      inputSize
+      hiddenSize
+      numLayers
+      directionality
+      'ConstantInitialization
+      dtype
       device
   LSTMWithLearnedInit ::
     forall inputSize hiddenSize numLayers directionality dtype device.
@@ -477,13 +559,16 @@ data
       lstmWithLearnedInit_c :: Parameter device dtype '[numLayers * NumberOfDirections directionality, hiddenSize],
       lstmWithLearnedInit_h :: Parameter device dtype '[numLayers * NumberOfDirections directionality, hiddenSize]
     } ->
-    LSTMWithInit inputSize hiddenSize numLayers directionality 'LearnedInitialization dtype
+    LSTMWithInit
+      inputSize
+      hiddenSize
+      numLayers
+      directionality
+      'LearnedInitialization
+      dtype
       device
 
 deriving instance Show (LSTMWithInit inputSize hiddenSize numLayers directionality initialization dtype device)
-
--- TODO: https://ryanglscott.github.io/2018/02/11/how-to-derive-generic-for-some-gadts/
--- deriving instance Generic (LSTMWithInit inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype device)
 
 instance Generic (LSTMWithInit inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype device) where
   type
@@ -491,7 +576,6 @@ instance Generic (LSTMWithInit inputSize hiddenSize numLayers directionality 'Co
       Rec0 (LSTM inputSize hiddenSize numLayers directionality dtype device)
         :*: Rec0 (Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize])
         :*: Rec0 (Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize])
-
   from (LSTMWithConstInit {..}) = K1 lstmWithConstInit_lstm :*: K1 lstmWithConstInit_c :*: K1 lstmWithConstInit_h
   to (K1 lstm :*: K1 c :*: K1 h) = LSTMWithConstInit lstm c h
 
@@ -501,9 +585,44 @@ instance Generic (LSTMWithInit inputSize hiddenSize numLayers directionality 'Le
       Rec0 (LSTM inputSize hiddenSize numLayers directionality dtype device)
         :*: Rec0 (Parameter device dtype '[numLayers * NumberOfDirections directionality, hiddenSize])
         :*: Rec0 (Parameter device dtype '[numLayers * NumberOfDirections directionality, hiddenSize])
-
   from (LSTMWithLearnedInit {..}) = K1 lstmWithLearnedInit_lstm :*: K1 lstmWithLearnedInit_c :*: K1 lstmWithLearnedInit_h
   to (K1 lstm :*: K1 c :*: K1 h) = LSTMWithLearnedInit lstm c h
+
+instance
+  ( Parameterized (LSTM inputSize hiddenSize numLayers directionality dtype device),
+    HAppendFD
+      (Parameters (LSTM inputSize hiddenSize numLayers directionality dtype device))
+      '[]
+      (Parameters (LSTM inputSize hiddenSize numLayers directionality dtype device) ++ '[])
+  ) =>
+  Parameterized (LSTMWithInit inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype device)
+
+instance
+  ( Parameterized (LSTM inputSize hiddenSize numLayers directionality dtype device),
+    HAppendFD
+      (Parameters (LSTM inputSize hiddenSize numLayers directionality dtype device))
+      '[ Parameter
+           device
+           dtype
+           '[numLayers * NumberOfDirections directionality, hiddenSize],
+         Parameter
+           device
+           dtype
+           '[numLayers * NumberOfDirections directionality, hiddenSize]
+       ]
+      ( Parameters (LSTM inputSize hiddenSize numLayers directionality dtype device)
+          ++ '[ Parameter
+                  device
+                  dtype
+                  '[numLayers * NumberOfDirections directionality, hiddenSize],
+                Parameter
+                  device
+                  dtype
+                  '[numLayers * NumberOfDirections directionality, hiddenSize]
+              ]
+      )
+  ) =>
+  Parameterized (LSTMWithInit inputSize hiddenSize numLayers directionality 'LearnedInitialization dtype device)
 
 instance
   ( KnownNat hiddenSize,
@@ -511,10 +630,12 @@ instance
     KnownNat (NumberOfDirections directionality),
     KnownDType dtype,
     KnownDevice device,
-    A.Randomizable (LSTMSpec inputSize hiddenSize numLayers directionality dtype device)
+    A.Randomizable
+      (LSTMSpec inputSize hiddenSize numLayers directionality dtype device)
       (LSTM inputSize hiddenSize numLayers directionality dtype device)
   ) =>
-  A.Randomizable (LSTMWithInitSpec inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype device)
+  A.Randomizable
+    (LSTMWithInitSpec inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype device)
     (LSTMWithInit inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype device)
   where
   sample (LSTMWithZerosInitSpec lstmSpec) =
@@ -534,10 +655,12 @@ instance
     KnownNat (NumberOfDirections directionality),
     KnownDType dtype,
     KnownDevice device,
-    A.Randomizable (LSTMSpec inputSize hiddenSize numLayers directionality dtype device)
+    A.Randomizable
+      (LSTMSpec inputSize hiddenSize numLayers directionality dtype device)
       (LSTM inputSize hiddenSize numLayers directionality dtype device)
   ) =>
-  A.Randomizable (LSTMWithInitSpec inputSize hiddenSize numLayers directionality 'LearnedInitialization dtype device)
+  A.Randomizable
+    (LSTMWithInitSpec inputSize hiddenSize numLayers directionality 'LearnedInitialization dtype device)
     (LSTMWithInit inputSize hiddenSize numLayers directionality 'LearnedInitialization dtype device)
   where
   sample s@(LSTMWithLearnedInitSpec lstmSpec c h) =
@@ -552,15 +675,15 @@ instance A.Parameterized (LSTMWithInit inputSize hiddenSize numLayers directiona
   flattenParameters LSTMWithLearnedInit {..} =
     A.flattenParameters lstmWithLearnedInit_lstm
       ++ fmap untypeParam [lstmWithLearnedInit_c, lstmWithLearnedInit_h]
-  replaceOwnParameters LSTMWithConstInit {..} = do
-    lstmWithConstInit_lstm' <- A.replaceOwnParameters lstmWithConstInit_lstm
+  _replaceParameters LSTMWithConstInit {..} = do
+    lstmWithConstInit_lstm' <- A._replaceParameters lstmWithConstInit_lstm
     return $
       LSTMWithConstInit
         { lstmWithConstInit_lstm = lstmWithConstInit_lstm',
           ..
         }
-  replaceOwnParameters LSTMWithLearnedInit {..} = do
-    lstmWithLearnedInit_lstm' <- A.replaceOwnParameters lstmWithLearnedInit_lstm
+  _replaceParameters LSTMWithLearnedInit {..} = do
+    lstmWithLearnedInit_lstm' <- A._replaceParameters lstmWithLearnedInit_lstm
     lstmWithLearnedInit_c' <- A.nextParameter
     lstmWithLearnedInit_h' <- A.nextParameter
     return $
@@ -598,7 +721,8 @@ lstmForward ::
     inputShape ~ RNNShape shapeOrder seqLen batchSize inputSize,
     outputShape ~ RNNShape shapeOrder seqLen batchSize outputSize,
     hxShape ~ '[numLayers * NumberOfDirections directionality, batchSize, hiddenSize],
-    Parameterized (LSTM inputSize hiddenSize numLayers directionality dtype device) parameters,
+    parameters ~ Parameters (LSTM inputSize hiddenSize numLayers directionality dtype device),
+    Parameterized (LSTM inputSize hiddenSize numLayers directionality dtype device),
     tensorParameters ~ LSTMR inputSize hiddenSize numLayers directionality dtype device,
     ATen.Castable (HList tensorParameters) [D.ATenTensor],
     HMap' ToDependent parameters tensorParameters
@@ -717,7 +841,8 @@ lstmForwardWithDropout,
       inputShape ~ RNNShape shapeOrder seqLen batchSize inputSize,
       outputShape ~ RNNShape shapeOrder seqLen batchSize outputSize,
       hxShape ~ '[numLayers * NumberOfDirections directionality, batchSize, hiddenSize],
-      Parameterized (LSTM inputSize hiddenSize numLayers directionality dtype device) parameters,
+      parameters ~ Parameters (LSTM inputSize hiddenSize numLayers directionality dtype device),
+      Parameterized (LSTM inputSize hiddenSize numLayers directionality dtype device),
       tensorParameters ~ LSTMR inputSize hiddenSize numLayers directionality dtype device,
       ATen.Castable (HList tensorParameters) [D.ATenTensor],
       HMap' ToDependent parameters tensorParameters

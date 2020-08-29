@@ -39,7 +39,8 @@ class
     (f :: Type)
     (g :: Type)
     | device' device f -> g,
-      device' device g -> f where
+      device' device g -> f
+  where
   -- >>> model <- A.sample (Torch.Typed.NN.LinearSpec @1 @1 @'D.Float @'( 'D.CPU, 0))
   -- >>> :type Torch.Typed.Device.toDevice @'( 'D.CUDA, 0) @'( 'D.CPU, 0) model
   -- Torch.Typed.Device.toDevice @'( 'D.CUDA, 0) @'( 'D.CPU, 0) model
@@ -53,7 +54,7 @@ class
 -- = Torch.Typed.NN.Linear 1 1 'Float '( 'CUDA, 0)
 type family ReplaceDevice (f :: k) (device' :: (D.DeviceType, Nat)) (device :: (D.DeviceType, Nat)) :: k where
   ReplaceDevice (t device) device' device = t device'
-  ReplaceDevice (t a) device' device = (ReplaceDevice t device' device) a
+  ReplaceDevice (t a) device' device = (ReplaceDevice t device' device) (ReplaceDevice a device' device)
   ReplaceDevice t _ _ = t
 
 -- In a data type `f` parameterized by zero or one device type variables, replace the only occurring device type with the device type `device'`.
@@ -63,7 +64,7 @@ type family ReplaceDevice (f :: k) (device' :: (D.DeviceType, Nat)) (device :: (
 -- = Torch.Typed.NN.Linear 1 1 'Float '( 'CUDA, 0)
 type family ReplaceDevice' (f :: k) (device' :: (D.DeviceType, Nat)) :: k where
   ReplaceDevice' (t (device :: (D.DeviceType, Nat))) device' = t device'
-  ReplaceDevice' (t a) device' = (ReplaceDevice' t device') a
+  ReplaceDevice' (t a) device' = (ReplaceDevice' t device') (ReplaceDevice' a device')
   ReplaceDevice' t _ = t
 
 instance
@@ -82,7 +83,8 @@ class
     (device' :: (D.DeviceType, Nat))
     (device :: (D.DeviceType, Nat))
     (f :: Type -> Type)
-    (g :: Type -> Type) where
+    (g :: Type -> Type)
+  where
   gToDevice :: forall a. f a -> g a
 
 instance
@@ -141,7 +143,8 @@ class
     (fs :: [Type])
     (gs :: [Type])
     | devices' devices fs -> gs,
-      devices' devices gs -> fs where
+      devices' devices gs -> fs
+  where
   toDevices :: HList fs -> HList gs
 
 instance HasToDevices '[] '[] '[] '[] where

@@ -7,13 +7,18 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE NoStarIsType #-}
 
 module Torch.Typed.Optim where
 
 import Control.Monad.State
+import Data.Kind
+import qualified Torch.DType as D
+import qualified Torch.Device as D
 import Torch.HList
 import qualified Torch.Internal.Cast as ATen
 import qualified Torch.Internal.Class as ATen
@@ -24,7 +29,7 @@ import Torch.Typed.Factories
 import Torch.Typed.Functional
 import Torch.Typed.Parameter
 import Torch.Typed.Tensor
-import Prelude hiding (sqrt)
+import Prelude hiding (div, sqrt)
 
 type LearningRate device dtype = Tensor device dtype '[]
 
@@ -42,11 +47,17 @@ instance
   apply' _ _ = zeros
 
 class Optimizer optim gradients tensors dtype device where
-  step :: LearningRate device dtype -> HList gradients -> HList tensors -> optim -> (HList tensors, optim)
+  step ::
+    LearningRate device dtype ->
+    HList gradients ->
+    HList tensors ->
+    optim ->
+    (HList tensors, optim)
 
 runStep ::
   forall model optim parameters gradients tensors dtype device.
-  ( Parameterized model parameters,
+  ( Parameterized model,
+    parameters ~ Parameters model,
     HasGrad (HList parameters) (HList gradients),
     tensors ~ gradients,
     HMap' ToDependent parameters tensors,
@@ -70,7 +81,8 @@ runStep model optim loss learningRate = do
 
 runStep' ::
   forall model optim parameters gradients tensors dtype device.
-  ( Parameterized model parameters,
+  ( Parameterized model,
+    parameters ~ Parameters model,
     tensors ~ gradients,
     HMap' ToDependent parameters tensors,
     Optimizer optim gradients tensors dtype device,
@@ -132,16 +144,20 @@ instance
   where
   step = gd
 
+instance Parameterized GD where
+  type Parameters GD = '[]
+  flattenParameters _ = HNil
+  replaceParameters = const
+
 --
 -- Gradient Descent with Momentum (GDM)
 --
 
 -- | State representation for GDM Optimizer
-data GDM momenta
-  = GDM
-      { beta :: Float, -- moment forgetting factor
-        momenta :: HList momenta -- momenta
-      }
+data GDM (momenta :: [Type]) = GDM
+  { beta :: Float, -- moment forgetting factor
+    momenta :: HList momenta -- momenta
+  }
 
 mkGDM ::
   forall parameters momenta.
@@ -198,25 +214,31 @@ instance
   where
   step = gdm
 
+instance Parameterized (GDM momenta) where
+  type Parameters (GDM momenta) = momenta
+  flattenParameters GDM {..} = momenta
+  replaceParameters gdm momenta = gdm {momenta = momenta}
+
 --
 -- Adam
 -- https://arxiv.org/pdf/1412.6980.pdf
 --
 
+type AdamIter = Tensor '( 'D.CPU, 0) 'D.Int64 '[]
+
 -- | State representation for Adam Optimizer
-data Adam momenta
-  = Adam
-      { iter :: Int, -- iteration
-        beta1 :: Float, -- 1st moment forgetting factor
-        beta2 :: Float, -- 2nd moment forgetting factor
-        momenta1 :: HList momenta, -- 1st momenta
-        momenta2 :: HList momenta -- 2nd momenta
-      }
+data Adam (momenta :: [Type]) = Adam
+  { iter :: AdamIter, -- iteration
+    beta1 :: Float, -- 1st moment forgetting factor
+    beta2 :: Float, -- 2nd moment forgetting factor
+    momenta1 :: HList momenta, -- 1st momenta
+    momenta2 :: HList momenta -- 2nd momenta
+  }
 
 mkAdam ::
   forall parameters momenta.
   (HMap' ZerosLike parameters momenta) =>
-  Int ->
+  AdamIter ->
   Float ->
   Float ->
   HList parameters ->
@@ -257,16 +279,22 @@ instance
   apply' (AdamMomentum2Update beta2) (momentum2, gradient) =
     mulScalar beta2 momentum2 + mulScalar (1 - beta2) (mul gradient gradient)
 
-data AdamBiasAdjustment = AdamBiasAdjustment Int Float
+data AdamBiasAdjustment = AdamBiasAdjustment AdamIter Float
 
 -- | bias adjustment
 instance
-  ( momentum ~ Tensor device dtype shape
+  ( momentum ~ Tensor device dtype shape,
+    KnownDevice device,
+    KnownDType dtype,
+    shape ~ Reverse (Reverse shape),
+    BasicArithmeticDTypeIsValid device dtype
   ) =>
   Apply' AdamBiasAdjustment momentum momentum
   where
   apply' (AdamBiasAdjustment iter beta) momentum =
-    divScalar (1 - beta ^ (iter + 1)) momentum
+    let iter' = toDevice @device @'( 'D.CPU, 0) . toDType @dtype @'D.Int64 $ iter + 1
+        beta' = full @'[] @dtype @device beta
+     in momentum `div` (1 - pow iter' beta')
 
 data AdamParameterUpdate device dtype = AdamParameterUpdate Float (LearningRate device dtype)
 
@@ -279,10 +307,16 @@ instance
     BasicArithmeticDTypeIsValid device dtype,
     StandardFloatingPointDTypeValidation device dtype
   ) =>
-  Apply' (AdamParameterUpdate device dtype) (parameter, momentum, momentum) parameter
+  Apply'
+    (AdamParameterUpdate device dtype)
+    (parameter, momentum, momentum)
+    parameter
   where
-  apply' (AdamParameterUpdate eps learningRate) (parameter, biasAdjustedMomentum1, biasAdjustedMomentum2) =
-    parameter - mul learningRate biasAdjustedMomentum1 / addScalar eps (sqrt biasAdjustedMomentum2)
+  apply'
+    (AdamParameterUpdate eps learningRate)
+    (parameter, biasAdjustedMomentum1, biasAdjustedMomentum2) =
+      parameter - mul learningRate biasAdjustedMomentum1
+        / addScalar eps (sqrt biasAdjustedMomentum2)
 
 -- | Adam step
 adam ::
@@ -309,7 +343,12 @@ adam learningRate gradients parameters Adam {..} =
     momenta2' = hzipWith (AdamMomentum2Update beta2) momenta2 gradients
     biasAdjustedMomenta1 = hmap' (AdamBiasAdjustment iter beta1) momenta1'
     biasAdjustedMomenta2 = hmap' (AdamBiasAdjustment iter beta2) momenta2'
-    parameters' = hzipWith3 (AdamParameterUpdate 1e-37 learningRate) parameters biasAdjustedMomenta1 biasAdjustedMomenta2
+    parameters' =
+      hzipWith3
+        (AdamParameterUpdate 1e-37 learningRate)
+        parameters
+        biasAdjustedMomenta1
+        biasAdjustedMomenta2
 
 instance
   ( HZipWith AdamMomentum1Update momenta gradients momenta,
@@ -320,3 +359,13 @@ instance
   Optimizer (Adam momenta) gradients tensors dtype device
   where
   step = adam
+
+instance
+  HAppendFD momenta momenta (momenta ++ momenta) =>
+  Parameterized (Adam momenta)
+  where
+  type Parameters (Adam momenta) = AdamIter ': (momenta ++ momenta)
+  flattenParameters Adam {..} = iter :. (momenta1 `happendFD` momenta2)
+  replaceParameters adam (iter :. momenta) =
+    let (momenta1, momenta2) = hunappendFD momenta
+     in adam {iter = iter, momenta1 = momenta1, momenta2 = momenta2}
