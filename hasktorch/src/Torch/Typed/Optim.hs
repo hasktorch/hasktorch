@@ -30,6 +30,7 @@ import Torch.Typed.Functional
 import Torch.Typed.Parameter
 import Torch.Typed.Tensor
 import Prelude hiding (div, sqrt)
+import System.Mem (performGC)
 
 type LearningRate device dtype = Tensor device dtype '[]
 
@@ -71,6 +72,7 @@ runStep ::
   LearningRate device dtype ->
   IO (model, optim)
 runStep model optim loss learningRate = do
+  performGC
   let parameters = flattenParameters model
       gradients = grad loss parameters
       tensors = hmap' ToDependent parameters
@@ -94,6 +96,7 @@ runStep' ::
   HList gradients ->
   IO (model, optim)
 runStep' model optim learningRate gradients = do
+  performGC
   let parameters = flattenParameters model
       tensors = hmap' ToDependent parameters
       (tensors', optim') = step learningRate gradients tensors optim
