@@ -47,7 +47,7 @@ let
         nproc = ''
           case "$(uname)" in
             "Linux")
-                taskset -pc 0-1000 $$
+                ${pkgs.utillinux}/bin/taskset -pc 0-1000 $$
             ;;
           esac
         '';
