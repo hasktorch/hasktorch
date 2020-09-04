@@ -1,12 +1,9 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -14,55 +11,67 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-module Torch.Data.Pipeline ( Dataset(..)
-                           , DatasetOptions(..)
-                           , Sample(..)
-                           , streamFromMap
-                           , datasetOpts
-                           ) where
+module Torch.Data.Pipeline (
+  -- * Defining a Dataset
+  -- $dataset
 
-import           Control.Applicative (Alternative, (<|>))
+  -- * Dataset
+    Dataset(..)
+  , DatasetOptions(..)
+  , datasetOpts
+  , Sample(..)
+  -- * Dataloading
+  , streamFromMap
+  ) where
+
 import           Control.Concurrent.Async.Lifted
-import qualified Control.Foldl as L
 import           Control.Monad
-import           Data.Maybe (fromJust, isJust)
 import           Pipes
 import           Pipes.Concurrent hiding (atomically)
-import qualified Pipes.Prelude as P
 
-import           Control.Arrow (Arrow(first))
 import           Control.Concurrent.STM hiding (atomically)
 import           Control.Monad.Base (MonadBase)
-import           Control.Monad.Cont (runContT, ContT)
+import           Control.Monad.Cont (ContT)
 import           Control.Monad.Trans.Control (MonadBaseControl(..))
 import           Data.IntMap (IntMap)
 import qualified Data.IntMap as I
-import qualified Data.Map.Strict as M
 import           Data.Set
-import           Data.Vector (Vector)
-import qualified Data.Vector as V
-import           Lens.Family (view)
-import           Pipes.Group
 import           System.Random
 import           Torch.Data.Internal
 
-data DatasetOptions = DatasetOptions { bufferSize :: Int
-                               , numWorkers :: Int
-                               , shuffle :: Sample
-                               }
 
-datasetOpts numWorkers = DatasetOptions { bufferSize = numWorkers
-                                         , numWorkers = numWorkers
-                                         , shuffle = Sequential
-                                         }
+{- $dataset
+ See the 'Torch.Vision' module which implements the MNIST dataset for a good example of how to define a dataset. 
+-}
 
+-- | The base dataset class. A dataset is capable of returning a sample
+-- for a given key, and every 'Dataset' has a known set of keys.
+class (Ord k) => Dataset m dataset k sample | dataset -> m, dataset -> sample, dataset -> k  where
+  getItem :: dataset -> k -> m sample
+  keys :: dataset -> Set k
+
+-- | Dataset options used when loading datasets. Specify shuffling behavior, the number of
+-- threads to use, and the buffer size used to store retrieved samples in each thread.
+data DatasetOptions = DatasetOptions { dataBufferSize :: Int -- ^ Max number of samples stored in each buffer at a given time.
+                                     , numWorkers :: Int -- ^ Number of threads retrieving samples. 
+                                     , shuffle :: Sample -- ^ The ordering of samples streamed.
+                                     }
+
+-- | Default 'DatasetOptions'. The 'Int' parameter specifies the
+-- number of workers, and sets the buffer size equal to the number of workers.
+-- Sampling is sequential.
+datasetOpts :: Int -> DatasetOptions
+datasetOpts numWorkers = DatasetOptions { dataBufferSize = numWorkers
+                                        , numWorkers = numWorkers
+                                        , shuffle = Sequential
+                                        }
+
+-- | A 'Sample' determines the ordering of samples streamed out of a dataset.
+-- You can either order sequentially, or supply a random generator to shuffle samples.
 data Sample where
    Sequential :: Sample
    Shuffle ::  RandomGen g => g -> Sample 
 
-class (Ord k) => Dataset m dataset k sample | dataset -> m, dataset -> sample, dataset -> k  where
-  getItem :: dataset -> k -> m sample
-  keys :: dataset -> Set k
 
 ---------------------- Workflow --------------------
 -- - make a new map of keys to TVars of samples, possibly shuffled keys, tracking which keys have been sampled
@@ -70,7 +79,11 @@ class (Ord k) => Dataset m dataset k sample | dataset -> m, dataset -> sample, d
 -- - fork off workers which all pull from the TQueue and sample that key using the dataset,
 --   then update the TVar associated with that key
 -- have a worker waiting for each successive key to be updated in the list of (key, TVar)
-
+-- | Return a stream of samples from the given dataset, along with a new 'Sample' value.
+-- The returned stream contains every sample returned by @'getItem'@ for every key in the set of keys
+-- associated with the given dataset. The returned 'Sample' value returns an updated 'Sample' value,
+-- this will be identical to the original 'Sample' value if sampling is 'Sequential' but will return a new random number generator
+-- if sampling is 'Shuffle'.
 streamFromMap :: forall m dataset k sample r .
   (Dataset m dataset k sample, MonadIO m, MonadBaseControl IO m) =>
   DatasetOptions ->
@@ -82,15 +95,15 @@ streamFromMap DatasetOptions{..} dataset = do
   let retrieveSet = liftIO $ keyTVarSet $ keys dataset
   (keyTVarSet, updatedSample) <- case shuffle of
     Sequential -> (, Sequential) <$> retrieveSet
-    Shuffle g -> (fmap Shuffle  . fisherYates g) <$> retrieveSet
+    Shuffle g -> fmap Shuffle  . fisherYates g <$> retrieveSet
 
   -- fill the queue with each key and associated TVar then seal it
-  keyQueue keyOutput $ keyTVarSet
+  keyQueue keyOutput keyTVarSet
   liftIO $ atomically seal
 
   let workers = runWorkers numWorkers dataset keyInput
       datastream = awaitNextItem keyTVarSet
-  listT <- runWithBuffer bufferSize $ \output -> concurrently_ workers (datastream output)
+  listT <- runWithBuffer dataBufferSize $ \output -> concurrently_ workers (datastream output)
   pure (listT, updatedSample)
 
 
@@ -112,7 +125,7 @@ awaitNextItem ::
   m ()
 awaitNextItem tvars output  = runEffect $ each tvars >-> readNextItem >-> toOutput' output
   where readNextItem  = forever $ do
-          (key, tvar) <- await
+          (_, tvar) <- await
           item <- atomically $ do
             val <- readTVar tvar 
             case val of
@@ -121,7 +134,7 @@ awaitNextItem tvars output  = runEffect $ each tvars >-> readNextItem >-> toOutp
           yield item 
 
 keyTVarSet :: MonadIO m => Set k -> m [(k, TVar (Maybe sample))]
-keyTVarSet = atomically . mapM (\k -> newTVar Nothing >>= pure . (,) k)  . toList 
+keyTVarSet = atomically . mapM (\k -> (,) k <$> newTVar Nothing)  . toList 
 
 keyQueue :: MonadBase IO m => Output (k, TVar (Maybe sample)) ->  [(k, TVar (Maybe sample))] -> m ()
 keyQueue keyOutput keyTVarSet = runEffect $ each keyTVarSet >-> toOutput' keyOutput

@@ -106,7 +106,7 @@ instance
   ) =>
   Datastream IO () (Xor device batchSize) (Tensor device 'Float '[batchSize, 2])
   where
-  streamBatch Xor {..} _ = Select $ P.replicateM iters randBool
+  streamSamples Xor {..} _ = Select $ P.replicateM iters randBool
     where
       randBool =
         toDType @'Float @'Bool

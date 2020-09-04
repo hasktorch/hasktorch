@@ -108,7 +108,7 @@ instance
   (KnownNat seqLen, Safe.MonadSafe m, MonadBase IO m) =>
   Datastream m () (TransformerData seqLen) [Maybe Int]
   where
-  streamBatch TransformerData {..} _ =
+  streamSamples TransformerData {..} _ =
     Select $
       readData @seqLen filePath length vocab
 

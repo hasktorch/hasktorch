@@ -14,6 +14,7 @@ import           Control.Monad ((<=<), forM_)
 import           Control.Monad.Cont (ContT(..))
 
 import qualified Pipes.Prelude as P
+import           Pipes
 
 import           Torch
 import qualified Torch.Vision as V

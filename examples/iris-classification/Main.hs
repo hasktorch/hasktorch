@@ -1,20 +1,18 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DeriveGeneric #-}
 module Main where
 
-import           Control.Arrow (Arrow(first))
-import           Control.Monad (foldM, when, (>=>))
-import           Control.Monad.Cont (runContT, runCont, ContT(ContT))
-import           Data.Csv (FromNamedRecord)
+import           Control.Monad (foldM, when)
+import           Control.Monad.Cont (runContT)
 import           Data.Vector (Vector, toList)
 import           GHC.Generics (Generic)
 import qualified Pipes.Prelude as P
+import           Pipes
 import           Pipes.Safe (runSafeT)
 import           Torch
 import           Torch.Data.CsvDatastream
@@ -95,8 +93,9 @@ main = runSafeT $ do
                                                                             -- since iris.data is sorted
                                                                             , bufferedShuffle = Just 150 
                                                                             }
-  foldM (\model epoch -> do
-            flip runContT (trainLoop model optimizer) $ (streamFrom' datastreamOpts irisTrain [()] >>= pmap  irisToTensor)
+  foldM (\model epoch -> 
+            runContT  (streamFrom' datastreamOpts irisTrain [()] >>= pmap  irisToTensor) $
+              trainLoop model optimizer
         ) init [1..10]
 
   pure ()

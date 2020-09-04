@@ -49,7 +49,6 @@ import Torch.NN
 
 import Torch.Data.StreamedPipeline 
 import Torch.Data.Pipeline
-import Pipes.Prelude (repeatM)
 import GHC.Exts (IsList(fromList))
 
 C.include "<stdint.h>"
@@ -59,7 +58,7 @@ data MNIST (m :: * -> *) = MNIST { batchSize :: Int
                                  }
 
 instance Monad m => Datastream m Int (MNIST m) (Tensor, Tensor) where
-  streamBatch MNIST{..} seed = Select $ 
+  streamSamples MNIST{..} seed = Select $ 
     for (each [1..numIters]) $ \iter -> do 
       let from = (iter-1) * batchSize
           to = (iter * batchSize) - 1
