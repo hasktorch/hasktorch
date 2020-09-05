@@ -34,6 +34,7 @@ library
                     , Torch.Initializers
                     , Torch.Autograd
                     , Torch.Optim
+                    , Torch.Optim.Internal
                     , Torch.Vision
                     , Torch.NN
                     , Torch.NN.Recurrent.Cell.Elman
@@ -117,8 +118,8 @@ library
                     , foldl
                     , transformers-base
                     , array
-
                     , inline-c
+                    , data-default-class
  default-extensions:  Strict
                     , StrictData
 

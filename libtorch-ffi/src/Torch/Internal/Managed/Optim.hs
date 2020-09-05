@@ -1,24 +1,27 @@
-
 module Torch.Internal.Managed.Optim where
 
-import qualified Torch.Internal.Unmanaged.Optim as Unmanaged
-
+import Foreign
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign
 import Foreign.ForeignPtr.Unsafe
-import Torch.Internal.Type
-import Torch.Internal.Class
 import Torch.Internal.Cast
+import Torch.Internal.Class
 import Torch.Internal.Objects
+import Torch.Internal.Type
+import qualified Torch.Internal.Unmanaged.Optim as Unmanaged
 
 optimizerWithAdam
-  :: Unmanaged.AdamParams
+  :: CDouble
+  -> CDouble
+  -> CDouble
+  -> CDouble
+  -> CDouble
+  -> CBool
   -> ForeignPtr TensorList
   -> (ForeignPtr TensorList -> IO (ForeignPtr Tensor))
   -> Int
   -> IO (ForeignPtr TensorList)
-optimizerWithAdam optimizerParams initParams loss numIter = cast2 (\i n -> Unmanaged.optimizerWithAdam optimizerParams i (trans loss) n) initParams numIter 
+optimizerWithAdam adamLr adamBetas0 adamBetas1 adamEps adamWeightDecay adamAmsgrad initParams loss numIter = cast2 (\i n -> Unmanaged.optimizerWithAdam adamLr adamBetas0 adamBetas1 adamEps adamWeightDecay adamAmsgrad i (trans loss) n) initParams numIter
   where
     trans :: (ForeignPtr TensorList -> IO (ForeignPtr Tensor)) -> Ptr TensorList -> IO (Ptr Tensor)
     trans func inputs = do

@@ -84,9 +84,6 @@ data JitGraph
 data JitNode
 data JitValue
 
-data Adam
-
-
 typeTable = Map.fromList [
         (C.TypeName "std::array", [t|StdArray|])
       , (C.TypeName "std::vector", [t|StdVector|])
@@ -127,3 +124,4 @@ typeTable = Map.fromList [
       , (C.TypeName "torch::jit::Value", [t|JitValue|])
       , (C.TypeName "at::indexing::TensorIndex", [t|TensorIndex|])
     ]
+
