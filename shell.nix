@@ -25,9 +25,7 @@ let
 
     tools = {
       cabal = "3.2.0.0";
-      ghcide = "0.2.0";
-      ormolu = "0.1.2.0";
-      brittany = "0.12.1.1";
+      haskell-language-server = "0.3.0";
     };
 
     # These programs will be available inside the nix-shell.
@@ -41,9 +39,23 @@ let
     # TODO: Set to true as soon as haskell.nix issue #231 is resolved.
     exactDeps = false;
 
-    shellHook = ''
-      export CPATH=${torch}/include/torch/csrc/api/include
-    '';
+    shellHook =
+      let
+        cpath = ''
+          export CPATH=${torch}/include/torch/csrc/api/include
+        '';
+        nproc = ''
+          case "$(uname)" in
+            "Linux")
+                ${pkgs.utillinux}/bin/taskset -pc 0-1000 $$
+            ;;
+          esac
+        '';
+        libraryPath = stdenv.lib.optionalString cudaSupport ''
+          export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/run/opengl-driver/lib"
+        '';
+      in
+        cpath + nproc + libraryPath;
 
     inherit withHoogle;
   };

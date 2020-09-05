@@ -79,7 +79,7 @@ instance Parameterized LSTMCell where
   flattenParameters LSTMCell{..} =
     input_gate ++ forget_gate ++ hidden_gate ++
     output_gate ++ [cell_state]
-  replaceOwnParameters _ = do
+  _replaceParameters _ = do
     ig_ih <- nextParameter
     ig_hh <- nextParameter
     ig_b  <- nextParameter

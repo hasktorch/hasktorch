@@ -81,6 +81,7 @@ library
                     , Torch.Distributions.Categorical
                     , Torch.Data.Pipeline
                     , Torch.Data.StreamedPipeline
+                    , Torch.Data.Internal
                     , Torch.Data.Dataset
                     , Torch.Data.CsvDataset
  other-modules:       Paths_hasktorch
@@ -118,8 +119,10 @@ library
                     , foldl
                     , transformers-base
                     , array
-                    , inline-c
                     , data-default-class
+                    , containers
+                    , inline-c
+
  default-extensions:  Strict
                     , StrictData
 
@@ -161,7 +164,11 @@ test-suite spec
                     , Torch.Distributions.BernoulliSpec
                     , Torch.Distributions.CategoricalSpec
   default-language: Haskell2010
+  ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
   build-depends:      base >= 4.7 && < 5
+                    , ghc-typelits-extra
+                    , ghc-typelits-knownnat
+                    , ghc-typelits-natnormalise
                     , hasktorch
                     , hspec
                     , libtorch-ffi
@@ -173,6 +180,8 @@ test-suite spec
                     , JuicyPixels
                     , inline-c-cpp
                     , async
+                    , pipes
+                    , random
 
   build-tool-depends:  hspec-discover:hspec-discover
 

@@ -10,6 +10,7 @@ import Torch.TensorFactories
 import Torch.Functional
 import Torch.Autograd
 import Torch.NN
+import System.Mem (performGC)
 
 type LearningRate = Tensor
 type Loss = Tensor
@@ -24,12 +25,25 @@ class Optimizer o where
 runStep :: (Parameterized p, Optimizer o) =>
         p -> o -> Loss -> LearningRate -> IO ([Parameter], o)
 runStep paramState optState lossValue lr = do
+    performGC
     let (flatParameters', optState') = step lr gradients depParameters optState 
     newFlatParam <- mapM makeIndependent flatParameters'
     pure (newFlatParam, optState')
     where
         flatParameters = flattenParameters paramState
         gradients = grad' lossValue flatParameters
+        depParameters = fmap toDependent flatParameters
+
+-- | run a single iteration of an optimizer, returning new parameters and updated optimizer state
+runStep' :: (Parameterized p, Optimizer o) =>
+        p -> o -> LearningRate -> Gradients -> IO ([Parameter], o)
+runStep' paramState optState lr gradients = do
+    performGC
+    let (flatParameters', optState') = step lr gradients depParameters optState 
+    newFlatParam <- mapM makeIndependent flatParameters'
+    pure (newFlatParam, optState')
+    where
+        flatParameters = flattenParameters paramState
         depParameters = fmap toDependent flatParameters
 
 --

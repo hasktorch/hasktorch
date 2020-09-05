@@ -9,6 +9,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module Main where
 
@@ -60,7 +61,7 @@ data MLP (inputFeatures :: Nat) (outputFeatures :: Nat)
        , mlpDropout :: Dropout
        }
     -> MLP inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1 dtype device
- deriving (Show, Generic)
+ deriving (Show, Generic, Parameterized)
 
 mlp
   :: forall
@@ -106,7 +107,7 @@ instance ( KnownNat inputFeatures
       <*> sample LinearSpec
       <*> sample (DropoutSpec mlpDropoutProbSpec)
 
-type BatchSize = 512
+type BatchSize = 64
 type HiddenFeatures0 = 512
 type HiddenFeatures1 = 256
 

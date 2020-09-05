@@ -113,7 +113,13 @@ fi
 # Generate ATen files.
 
 echo "Generate ATen files."
+
+if [ ! -e pytorch ] ; then
+    git clone https://github.com/pytorch/pytorch.git
+fi
+
 pushd pytorch
+git checkout v1.6.0
 
 if [[ ! -d build ]]; then
 mkdir build

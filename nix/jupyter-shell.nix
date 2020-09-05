@@ -1,7 +1,7 @@
 let
   extras = (hackage: {
     packages = {
-      "ihaskell" = (((hackage.ihaskell)."0.10.1.1").revisions).default;
+      "ihaskell" = (((hackage.ihaskell)."0.10.1.2").revisions).default;
       "ihaskell-hvega" = (((hackage.ihaskell-hvega)."0.3.1.0").revisions).default;
       "cmdargs" = (((hackage.cmdargs)."0.10.20").revisions).default;
       "ghc-parser" = (((hackage.ghc-parser)."0.2.2.0").revisions).default;
@@ -10,7 +10,7 @@ let
       "haskell-src-exts" = (((hackage.haskell-src-exts)."1.23.1").revisions).default;
       "shelly" = (((hackage.shelly)."1.9.0").revisions).default;
       "strict" = (((hackage.strict)."0.3.2").revisions).default;
-      "ipython-kernel" = (((hackage.ipython-kernel)."0.10.2.0").revisions).default;
+      "ipython-kernel" = (((hackage.ipython-kernel)."0.10.2.1").revisions).default;
       "cpphs" = (((hackage.cpphs)."1.20.9.1").revisions).default;
       "uniplate" = (((hackage.uniplate)."1.6.12").revisions).default;
       "extra" = (((hackage.extra)."1.7.3").revisions).default;
@@ -33,6 +33,7 @@ let
       "cryptohash-sha1" = (((hackage.cryptohash-sha1)."0.11.100.1").revisions).default;
       "cryptohash-md5" = (((hackage.cryptohash-md5)."0.11.100.1").revisions).default;
       "network-info" = (((hackage.network-info)."0.2.0.10").revisions).default;
+      "aeson" = (((hackage.aeson)."1.4.7.1").revisions).default;
     };
   });
 in
@@ -53,7 +54,7 @@ with pkgs;
 
 let
 
-  ghcWithPackages = packages: 
+  ghcWithPackages = packages:
     let
       ghc = (hasktorchHaskellPackages.shellFor {
         packages = _: [];

@@ -5,7 +5,7 @@
 , buildPackages
 , config ? {}
 # GHC attribute name
-, compiler ? config.haskellNix.compiler or "ghc883"
+, compiler ? config.haskellNix.compiler or "ghc884"
 # Enable profiling
 , profiling ? config.haskellNix.profiling or false
 # Version info, to be passed when not building from a git work tree
@@ -24,7 +24,10 @@ let
   };
 
   projectPackages = lib.attrNames (haskell-nix.haskellLib.selectProjectPackages
-    (haskell-nix.cabalProject { inherit src; }));
+    (haskell-nix.cabalProject {
+      inherit src;
+      compiler-nix-name = compiler;
+    }));
 
   setupNumCores = libname: ''
       case "$(uname)" in
@@ -71,6 +74,8 @@ let
     ];
 
     modules = [
+      { compiler.nix-name = compiler; }
+
       # TODO: Compile all local packages with -Werror:
       # {
       #   packages = lib.genAttrs projectPackages
@@ -80,7 +85,8 @@ let
       # Enable profiling
       (lib.optionalAttrs profiling {
         enableLibraryProfiling = true;
-        packages.examples.components.all.enableExecutableProfiling = true;
+        packages.examples.enableExecutableProfiling = true;
+        packages.experimental.enableExecutableProfiling = true;
       })
 
       # Add non-Haskell dependencies
@@ -123,17 +129,15 @@ let
         packages.hasktorch.package.buildType = lib.mkForce "Simple";
       }
 
-      # Stamp packages with the git revision
       {
-        # packages.codegen.components.exes.codegen.postInstall = setGitRev;
-        # packages.examples.components.exes.examples.postInstall = setGitRev;
-        # Work around Haskell.nix issue when setting postInstall on components
-        packages.codegen.components.all.postInstall = lib.mkForce setGitRev;
-        packages.libtorch-ffi.components.all.postInstall = lib.mkForce setGitRev;
-        packages.libtorch-ffi-helper.components.all.postInstall = lib.mkForce setGitRev;
-        packages.hasktorch.components.all.postInstall = lib.mkForce setGitRev;
-        packages.examples.components.all.postInstall = lib.mkForce setGitRev;
-        packages.experimental.components.all.postInstall = lib.mkForce setGitRev;
+        # Stamp executables with the git revision
+        packages = lib.genAttrs projectPackages (name: {
+            postInstall = ''
+              if [ -d $out/bin ]; then
+                ${setGitRev}
+              fi
+            '';
+          });
       }
     ];
   };

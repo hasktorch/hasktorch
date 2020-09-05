@@ -93,20 +93,20 @@ createDataSet directorylist classes = do
         dataset = DataSet images labels classes
     return dataset
 
-fromMNIST :: V.MnistData -> IO DataSet
-fromMNIST ds = do
+fromMNIST :: V.MnistData -> DataSet
+fromMNIST ds = 
     let nImages = V.length ds `Prelude.div` 10
         batchSize = 16 :: Int
         labelT = V.getLabels' nImages ds [0..(nImages-1)]
-    imagesT <- V.getImages' nImages 784 ds [0..(nImages-1)]
-    let rimages = repeatInterleaveScalar (reshape [nImages, 1, 28, 28] imagesT) 3 1
+        imagesT = V.getImages' nImages 784 ds [0..(nImages-1)]
+        rimages = repeatInterleaveScalar (reshape [nImages, 1, 28, 28] imagesT) 3 1
         rszdImgs = F.upsampleBilinear2d (224, 224) True rimages
         nrmlzdImgs = map normalize $ F.split 1 (F.Dim 0) rszdImgs
 
         images = F.split batchSize (F.Dim 0) (F.cat (F.Dim 0) nrmlzdImgs)
         labels = F.split batchSize (F.Dim 0) labelT
         dataset = DataSet images labels $ map show [0..9]
-    return dataset
+    in dataset
 
 calcLoss :: [Tensor] -> [Tensor] -> [Tensor]
 calcLoss targets predictions = take 10 $ map (\(t, p)-> F.nllLoss' t p) $ zip targets predictions

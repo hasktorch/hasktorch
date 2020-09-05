@@ -109,7 +109,6 @@ readCsv CsvDataset'{..} decode = Select $ Safe.withFile filePath ReadMode $ \fh 
       -- what's a good default chunk size? 
       produceLine fh = B.hGetSome 1000 fh
       -- probably want a cleaner way of reyielding these chunks
-      
       shuffleRecords = do
         chunks <- await 
         std <- Torch.Data.StreamedPipeline.liftBase newStdGen

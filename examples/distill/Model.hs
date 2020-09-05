@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module Model where
 
@@ -60,7 +61,7 @@ data MLP = MLP {
     mlpFC0 :: Linear,
     mlpFC1 :: Linear,
     mlpFC2 :: Linear
-    } deriving (Generic, Show)
+    } deriving (Generic, Show, Parameterized)
 
 mlpTemp :: Float -> MLP -> Tensor -> Tensor
 mlpTemp temperature MLP{..} input = 
@@ -74,9 +75,9 @@ mlpTemp temperature MLP{..} input =
   where
     logSoftmaxTemp t z = (z/t) - log (sumDim (Dim 1) KeepDim Float (exp (z/t)))
 
-instance Parameterized MLP
 instance HasForward MLP Tensor Tensor where
     forward = mlpTemp 1.0
+    forwardStoch = (pure .) . forward
 
 instance Randomizable MLPSpec MLP where
     sample MLPSpec {..} = MLP 
@@ -98,9 +99,8 @@ data CNN = CNN {
     cnnConv0 :: Conv2d,
     cnnFC0 :: Linear,
     cnnFC1:: Linear
-} deriving (Generic, Show)
+} deriving (Generic, Show, Parameterized)
 
-instance Parameterized CNN
 instance HasForward CNN Tensor Tensor where
     forward CNN {..} input =
         logSoftmax (Dim 0)
@@ -118,6 +118,7 @@ instance HasForward CNN Tensor Tensor where
       where
         channels = (shape (toDependent . conv2dWeight $ cnnConv0)) !! 0
         batchSize = Prelude.div (product (shape input)) 784
+    forwardStoch = (pure .) . forward
         
 instance Randomizable CNNSpec CNN where
     sample CNNSpec {..} = CNN 
