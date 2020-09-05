@@ -14,7 +14,7 @@ import Torch hiding (Optimizer(..), runStep, Adam(..))
 import TestFunctions
 import Torch.Optim.Internal
 
-import Data.IORef
+-- import Data.IORef
 
 -- | show output after n iterations
 showLog :: (Show a) => Int -> Int -> Int -> Tensor -> a -> IO ()
@@ -33,18 +33,18 @@ optConvQuad numIter optInit = do
     paramInit <- sample $ ConvQuadSpec dim
     putStrLn ("Initial :" ++ show paramInit)
     optimizer <- initOptimizer optInit paramInit
-    -- forM_ [1..numIter] \i -> do
-    --   step optimizer $ \paramState -> do
-    --     let lossValue = (lossConvQuad a b) paramState
-    --     showLog 1000 i numIter lossValue paramState
-    --     return lossValue
-    -- trained <- getParams optimizer :: IO ConvQuad
-    ref <- newIORef 0
-    steps numIter optInit paramInit $ \paramState -> do
+    forM_ [1..numIter] \i -> do
+      step optimizer $ \paramState -> do
         let lossValue = (lossConvQuad a b) paramState
-        i <- atomicModifyIORef ref $ \v -> (v+1,v)
         showLog 1000 i numIter lossValue paramState
         return lossValue
+    trained <- getParams optimizer :: IO ConvQuad
+    -- ref <- newIORef 0
+    -- steps numIter optInit paramInit $ \paramState -> do
+    --     let lossValue = (lossConvQuad a b) paramState
+    --     i <- atomicModifyIORef ref $ \v -> (v+1,v)
+    --     showLog 1000 i numIter lossValue paramState
+    --     return lossValue
     pure ()
 
 -- | Optimize Rosenbrock function with specified optimizer

@@ -59,12 +59,13 @@ optimizerWithAdam adamLr adamBetas0 adamBetas1 adamEps adamWeightDecay adamAmsgr
           .weight_decay($(double adamWeightDecay))
           .amsgrad($(bool adamAmsgrad));
         torch::optim::Adam optimizer(*params, options);
+        optimizer.zero_grad();
         typedef at::Tensor* (*Func)(std::vector<at::Tensor>*);
         auto func = (Func)tfunc;
         for(int i=0;i<$(int numIter);i++){
-          optimizer.step([&]{
-            return *(func(params));
-          });
+          auto loss = func(params);
+          loss->backward();
+          optimizer.step();
         }
         return params;
       }|]
@@ -95,7 +96,9 @@ adam adamLr adamBetas0 adamBetas1 adamEps adamWeightDecay adamAmsgrad initParams
       .eps($(double adamEps))
       .weight_decay($(double adamWeightDecay))
       .amsgrad($(bool adamAmsgrad));
-    return new torch::optim::Adam(params, options);
+    torch::optim::Adam* optimizer = new torch::optim::Adam(params, options);
+    optimizer->zero_grad();
+    return optimizer;
   }|]
 
 getAdamParams :: Ptr Adam -> IO (Ptr TensorList) 
@@ -115,7 +118,11 @@ stepAdam adam loss =
         auto optimizer = $(torch::optim::Adam* adam);
         typedef at::Tensor* (*Func)(std::vector<at::Tensor>*);
         auto func = (Func)tfunc;
-        auto v = optimizer->step([&]{ return *(func(&(optimizer->param_groups().at(0).params()))); });
+        auto v = optimizer->step([&]{
+          auto loss = func(&(optimizer->param_groups().at(0).params()));
+          loss->backward();
+          return *loss;
+        });
         return new at::Tensor(v);
       }|]
   where
