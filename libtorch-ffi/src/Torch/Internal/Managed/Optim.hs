@@ -25,7 +25,7 @@ optimizerWithAdam adamLr adamBetas0 adamBetas1 adamEps adamWeightDecay adamAmsgr
   where
     trans :: (ForeignPtr TensorList -> IO (ForeignPtr Tensor)) -> Ptr TensorList -> IO (Ptr Tensor)
     trans func inputs = do
-      inputs' <- fromPtr inputs
+      inputs' <- newForeignPtr_ inputs
       ret <- func inputs'
       return $ unsafeForeignPtrToPtr ret
 
@@ -48,6 +48,6 @@ stepAdam adam loss = cast1 (\opt -> Unmanaged.stepAdam opt (trans loss)) adam
   where
     trans :: (ForeignPtr TensorList -> IO (ForeignPtr Tensor)) -> Ptr TensorList -> IO (Ptr Tensor)
     trans func inputs = do
-      inputs' <- fromPtr inputs
+      inputs' <- newForeignPtr_ inputs
       ret <- func inputs'
       return $ unsafeForeignPtrToPtr ret

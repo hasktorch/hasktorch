@@ -63,8 +63,7 @@ optimizerWithAdam adamLr adamBetas0 adamBetas1 adamEps adamWeightDecay adamAmsgr
         auto func = (Func)tfunc;
         for(int i=0;i<$(int numIter);i++){
           optimizer.step([&]{
-            std::vector<at::Tensor>* ps = new std::vector<at::Tensor>(*params);
-            return *(func(ps));
+            return *(func(params));
           });
         }
         return params;
@@ -116,8 +115,7 @@ stepAdam adam loss =
         auto optimizer = $(torch::optim::Adam* adam);
         typedef at::Tensor* (*Func)(std::vector<at::Tensor>*);
         auto func = (Func)tfunc;
-        auto params = new std::vector<at::Tensor>(optimizer->param_groups().at(0).params());
-        auto v = optimizer->step([&]{ return *(func(params)); });
+        auto v = optimizer->step([&]{ return *(func(&(optimizer->param_groups().at(0).params()))); });
         return new at::Tensor(v);
       }|]
   where

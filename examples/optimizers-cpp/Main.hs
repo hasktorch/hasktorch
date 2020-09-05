@@ -45,9 +45,12 @@ optRosen numIter optInit = do
     paramInit <- sample RosenSpec
     putStrLn ("Initial :" ++ show paramInit)
     optimizer <- initOptimizer optInit paramInit
+--    print paramInit
     forM_ [1..numIter] \i -> do
       step optimizer $ \paramState -> do
         let lossValue = lossRosen paramState
+--        print paramState
+--        print lossValue
         showLog 1000 i numIter lossValue paramState
         return lossValue
     trained <- getParams optimizer :: IO Rosen
