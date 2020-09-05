@@ -2,6 +2,8 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Torch.Optim.Internal where
 
@@ -18,13 +20,16 @@ import Torch.NN
 
 import Data.Default.Class
 
-class OptimizerOption option optimizer | optimizer -> option where
-  -- steps :: Parameterized d => option -> d -> (d -> IO Tensor) -> Int -> IO d
-  initOptimizer :: Parameterized d => option -> d -> IO (optimizer d)
-  step :: Parameterized d => optimizer d -> (d -> IO Tensor) -> IO Tensor
+data OptimizerState option state p = OptimizerState option state p
+type Adam = ForeignPtr ATen.Adam
+
+class Optimizer option where
+  type ToOptStateRef option :: *
+  initOptimizer :: Parameterized d => option -> d -> IO (OptimizerState option (ToOptStateRef option) d)
+  step :: Parameterized d => OptimizerState option (ToOptStateRef option) d -> (d -> IO Tensor) -> IO Tensor
   -- Returned d depends on the state of optimizer.
   -- Do not call step function after this function is called.
-  getParams :: Parameterized d => optimizer d -> IO d
+  getParams :: Parameterized d => OptimizerState option (ToOptStateRef option) d -> IO d
 
 --  next :: Parameterized d => optimizer d -> IO d
 
@@ -44,7 +49,6 @@ data AdamOptions = AdamOptions
   , adamAmsgrad :: Bool
   } deriving (Show, Eq)
 
-data Adam p = Adam (ForeignPtr ATen.Adam) p
 
 instance Default AdamOptions where
   def = AdamOptions
@@ -76,19 +80,19 @@ adam
   :: Parameterized d
   => AdamOptions
   -> d
-  -> IO (Adam d)
-adam AdamOptions{..} initParams = do
+  -> IO (OptimizerState AdamOptions Adam d)
+adam opt@AdamOptions{..} initParams = do
   v <- cast7 LibTorch.adam adamLr (fst adamBetas) (snd adamBetas) adamEps adamWeightDecay adamAmsgrad initParams'
-  return $ Adam v initParams
+  return $ OptimizerState opt v initParams
   where
     initParams' = map toDependent $ flattenParameters initParams
 
 stepAdam
   :: Parameterized d
-  => Adam d
+  => OptimizerState AdamOptions Adam d
   -> (d -> IO Tensor)
   -> IO Tensor
-stepAdam (Adam optimizer initParams) loss = cast0 (LibTorch.stepAdam optimizer trans)
+stepAdam (OptimizerState _ optimizer initParams) loss = cast0 (LibTorch.stepAdam optimizer trans)
   where
     trans :: ForeignPtr ATen.TensorList -> IO (ForeignPtr ATen.Tensor)
     trans inputs =
@@ -96,13 +100,14 @@ stepAdam (Adam optimizer initParams) loss = cast0 (LibTorch.stepAdam optimizer t
         (Unsafe ret) <- loss $ replaceParameters initParams $  map (IndependentTensor . Unsafe) inputs'
         cast ret return
 
-instance OptimizerOption AdamOptions Adam where
+instance Optimizer AdamOptions where
   -- steps opt initParams loss numIter = do
   --   v <- optimizerWithAdam' opt (flattenParameters initParams) (\params -> loss (replaceParameters initParams params))  numIter
   --   return $ replaceParameters initParams v
+  type ToOptStateRef AdamOptions = Adam
   initOptimizer = adam
   step = stepAdam
-  getParams (Adam optimizer initParams) = fmap (replaceParameters initParams . map (IndependentTensor . Unsafe)) $ cast0 (LibTorch.getAdamParams optimizer)
+  getParams (OptimizerState _ optimizer initParams) = fmap (replaceParameters initParams . map (IndependentTensor . Unsafe)) $ cast0 (LibTorch.getAdamParams optimizer)
 
 -- data AdamwOptions = AdamwOptions
 --   { adamwLr :: Double

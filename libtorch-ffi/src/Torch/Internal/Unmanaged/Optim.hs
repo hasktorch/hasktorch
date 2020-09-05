@@ -102,7 +102,7 @@ adam adamLr adamBetas0 adamBetas1 adamEps adamWeightDecay adamAmsgrad initParams
 getAdamParams :: Ptr Adam -> IO (Ptr TensorList) 
 getAdamParams adam =
   [C.throwBlock| std::vector<at::Tensor>* {
-    return new std::vector<at::Tensor>($(torch::optim::Adam* adam)->parameters());
+    return new std::vector<at::Tensor>($(torch::optim::Adam* adam)->param_groups().at(0).params());
   }|]
 
 stepAdam :: Ptr Adam -> (Ptr TensorList -> IO (Ptr Tensor)) -> IO (Ptr Tensor)
@@ -116,7 +116,7 @@ stepAdam adam loss =
         auto optimizer = $(torch::optim::Adam* adam);
         typedef at::Tensor* (*Func)(std::vector<at::Tensor>*);
         auto func = (Func)tfunc;
-        auto params = new std::vector<at::Tensor>(optimizer->parameters());
+        auto params = new std::vector<at::Tensor>(optimizer->param_groups().at(0).params());
         auto v = optimizer->step([&]{ return *(func(params)); });
         return new at::Tensor(v);
       }|]
