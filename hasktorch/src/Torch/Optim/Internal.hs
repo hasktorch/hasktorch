@@ -30,6 +30,7 @@ class Optimizer option where
   -- Returned d depends on the state of optimizer.
   -- Do not call step function after this function is called.
   getParams :: Parameterized d => OptimizerState option (ToOptStateRef option) d -> IO d
+  steps :: Parameterized d => Int -> option -> d -> (d -> IO Tensor) -> IO d
 
 --  next :: Parameterized d => optimizer d -> IO d
 
@@ -101,13 +102,13 @@ stepAdam (OptimizerState _ optimizer initParams) loss = cast0 (LibTorch.stepAdam
         cast ret return
 
 instance Optimizer AdamOptions where
-  -- steps opt initParams loss numIter = do
-  --   v <- optimizerWithAdam' opt (flattenParameters initParams) (\params -> loss (replaceParameters initParams params))  numIter
-  --   return $ replaceParameters initParams v
   type ToOptStateRef AdamOptions = Adam
   initOptimizer = adam
   step = stepAdam
   getParams (OptimizerState _ optimizer initParams) = fmap (replaceParameters initParams . map (IndependentTensor . Unsafe)) $ cast0 (LibTorch.getAdamParams optimizer)
+  steps numIter opt initParams loss = do
+    v <- optimizerWithAdam' opt (flattenParameters initParams) (\params -> loss (replaceParameters initParams params))  numIter
+    return $ replaceParameters initParams v
 
 -- data AdamwOptions = AdamwOptions
 --   { adamwLr :: Double
