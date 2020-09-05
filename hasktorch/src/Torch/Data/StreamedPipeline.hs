@@ -50,9 +50,12 @@ import           Torch.Data.Internal
 
 {- $dataset
 We will show how to retrieve the IMDB dataset as an example datastream.
+The dataset used here can be found at https://ai.stanford.edu/~amaas/data/sentiment/
 
+> import Pipes
 > import qualified Pipes.Safe as Safe
 > import qualified Pipes.Prelude as P
+> import System.Directory 
 > 
 > newtype Imdb = Imdb { dataDir :: String }
 >
@@ -62,13 +65,16 @@ We will show how to retrieve the IMDB dataset as an example datastream.
 >   streamSamples Imdb{..} sent = Select $ do
 >     rawFilePaths <- zip (repeat sent) <$> (liftIO $ listDirectory (dataDir </> sentToPath sent))
 >     let filePaths = fmap (second $ mappend (dataDir </> sentToPath sent)) rawFilePaths
->     for (each $ filePaths ) $ \(rev, fp) -> Safe.withFile fp ReadMode $ \fh -> do
+>     for (each filePaths) $ \(rev, fp) -> Safe.withFile fp ReadMode $ \fh -> 
 >       P.zip (PT.fromHandleLn fh) (yield rev)
 >         where sentToPath Pos = "pos" ++ pure pathSeparator 
 >               sentToPath Neg = "neg" ++ pure pathSeparator
 
-This highlights a use of seeds that is pretty opinionated. When running this datastream with either
-'streamFrom' or 'streamFrom\'', you need to supply both 'Positive' and 'Negative' values as seeds
+This streams in movie reviews from each file in either the positive review directory or
+the negative review directory, depending on the seed value used.
+
+This highlights a use of seed values that is more interesting than just specifying the thread count, but also has some problems.
+When running this datastream with either 'streamFrom' or 'streamFrom\'', you need to supply both 'Positive' and 'Negative' values as seeds
 to retrieve the entire IMDB dataset, and in this case positive and negative reviews will be streamed in concurrently.
 The problem with designing a datastream in this fashion is you limit the amount of concurrency (2 threads in this case) without
 duplicating data. Ultimately though seeds should be quite flexible and allow you to design the concurrency how you see fit. Be careful
