@@ -95,7 +95,6 @@ adagrad lr lr_decay weight_decay initial_accumulator_value eps initParams =
       .initial_accumulator_value($(double initial_accumulator_value))
       .eps($(double eps));
     torch::optim::Adagrad* optimizer = new torch::optim::Adagrad(params, options);
-    optimizer->zero_grad();
     return dynamic_cast<torch::optim::Optimizer*>(optimizer);
   }|]
 
@@ -273,6 +272,7 @@ step optimizer loss =
         typedef at::Tensor* (*Func)(std::vector<at::Tensor>*);
         auto func = (Func)tfunc;
         auto v = optimizer->step([&]{
+          optimizer->zero_grad();
           auto loss = func(&(optimizer->param_groups().at(0).params()));
           loss->backward();
           return *loss;

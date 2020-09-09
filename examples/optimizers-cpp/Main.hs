@@ -102,27 +102,33 @@ checkGlobalMinAckley = do
 main :: IO ()
 main = do
     let numIter = 20000
-        opt = (def { adamLr = 1e-4
-                   , adamBetas = (0.9, 0.999)
-                   , adamEps = 1e-8
-                   , adamWeightDecay = 0
-                   , adamAmsgrad = False
-                   } :: AdamOptions)
+        adamOpt = (def { adamLr = 1e-4
+                       , adamBetas = (0.9, 0.999)
+                       , adamEps = 1e-8
+                       , adamWeightDecay = 0
+                       , adamAmsgrad = False
+                       } :: AdamOptions)
 
     -- Convex Quadratic w/ GD, GD+Momentum, Adam
     putStrLn "\nConvex Quadratic\n================"
+    putStrLn "\nGD"
+    optConvQuad numIter (def :: SGDOptions)
     putStrLn "\nAdam"
-    optConvQuad numIter opt
+    optConvQuad numIter adamOpt
     checkGlobalMinConvQuad
 
     -- 2D Rosenbrock w/ GD, GD+Momentum, Adam
     putStrLn "\n2D Rosenbrock\n================"
+    putStrLn "\nGD"
+    optRosen numIter (def :: SGDOptions)
     putStrLn "\nAdam"
-    optRosen numIter opt
+    optRosen numIter adamOpt
     checkGlobalMinRosen
 
     -- Ackley w/ GD, GD+Momentum, Adam
     putStrLn "\nAckley (Gradient methods fail)\n================"
+    putStrLn "\nGD"
+    optAckley numIter (def :: SGDOptions)
     putStrLn "\nAdam"
-    optAckley numIter opt
+    optAckley numIter adamOpt
     checkGlobalMinAckley
