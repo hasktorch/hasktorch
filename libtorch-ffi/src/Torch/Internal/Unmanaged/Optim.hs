@@ -28,8 +28,78 @@ C.include "<torch/types.h>"
 
 C.include "<torch/optim.h>"
 
+-- optimizerWithAdam
+--   :: CDouble
+--   -> CDouble
+--   -> CDouble
+--   -> CDouble
+--   -> CDouble
+--   -> CBool
+--   -> Ptr TensorList
+--   -> (Ptr TensorList -> IO (Ptr Tensor))
+--   -> CInt
+--   -> IO (Ptr TensorList)
+-- optimizerWithAdam adamLr adamBetas0 adamBetas1 adamEps adamWeightDecay adamAmsgrad initParams loss numIter =
+--   bracket
+--     (callbackHelper loss')
+--     freeHaskellFunPtr
+--     $ \funcPtr ->
+--       [C.throwBlock| std::vector<at::Tensor>* {
+--         std::vector<at::Tensor>* init_params = $(std::vector<at::Tensor>* initParams);
+--         std::vector<at::Tensor>* params = new std::vector<at::Tensor>();
+--         auto tfunc = $(void* (*funcPtr)(void*));
+--         for(int i=0;i<init_params->size();i++){
+--           params->push_back((*init_params)[i].detach().set_requires_grad(true));
+--         }
+--         auto options = torch::optim::AdamOptions()
+--           .lr($(double adamLr))
+--           .betas(std::make_tuple($(double adamBetas0),$(double adamBetas1)))
+--           .eps($(double adamEps))
+--           .weight_decay($(double adamWeightDecay))
+--           .amsgrad($(bool adamAmsgrad));
+--         torch::optim::Adam optimizer(*params, options);
+--         optimizer.zero_grad();
+--         typedef at::Tensor* (*Func)(std::vector<at::Tensor>*);
+--         auto func = (Func)tfunc;
+--         for(int i=0;i<$(int numIter);i++){
+--           auto loss = func(params);
+--           loss->backward();
+--           optimizer.step();
+--         }
+--         return params;
+--       }|]
+--   where
+--     loss' :: Ptr () -> IO (Ptr ())
+--     loss' params = castPtr <$> loss (castPtr params)
 
-optimizerWithAdam
+
+adagrad
+  :: CDouble
+  -> CDouble
+  -> CDouble
+  -> CDouble
+  -> CDouble
+  -> Ptr TensorList
+  -> IO (Ptr Optimizer)
+adagrad lr lr_decay weight_decay initial_accumulator_value eps initParams =
+  [C.throwBlock| torch::optim::Optimizer* {
+    std::vector<at::Tensor>* init_params = $(std::vector<at::Tensor>* initParams);
+    std::vector<at::Tensor> params;
+    for(int i=0;i<init_params->size();i++){
+      params.push_back((*init_params)[i].detach().set_requires_grad(true));
+    }
+    auto options = torch::optim::AdagradOptions()
+      .lr($(double lr))
+      .lr_decay($(double lr_decay))
+      .weight_decay($(double weight_decay))
+      .initial_accumulator_value($(double initial_accumulator_value))
+      .eps($(double eps));
+    torch::optim::Adagrad* optimizer = new torch::optim::Adagrad(params, options);
+    optimizer->zero_grad();
+    return dynamic_cast<torch::optim::Optimizer*>(optimizer);
+  }|]
+
+rmsprop
   :: CDouble
   -> CDouble
   -> CDouble
@@ -37,42 +107,50 @@ optimizerWithAdam
   -> CDouble
   -> CBool
   -> Ptr TensorList
-  -> (Ptr TensorList -> IO (Ptr Tensor))
-  -> CInt
-  -> IO (Ptr TensorList)
-optimizerWithAdam adamLr adamBetas0 adamBetas1 adamEps adamWeightDecay adamAmsgrad initParams loss numIter =
-  bracket
-    (callbackHelper loss')
-    freeHaskellFunPtr
-    $ \funcPtr ->
-      [C.throwBlock| std::vector<at::Tensor>* {
-        std::vector<at::Tensor>* init_params = $(std::vector<at::Tensor>* initParams);
-        std::vector<at::Tensor>* params = new std::vector<at::Tensor>();
-        auto tfunc = $(void* (*funcPtr)(void*));
-        for(int i=0;i<init_params->size();i++){
-          params->push_back((*init_params)[i].detach().set_requires_grad(true));
-        }
-        auto options = torch::optim::AdamOptions()
-          .lr($(double adamLr))
-          .betas(std::make_tuple($(double adamBetas0),$(double adamBetas1)))
-          .eps($(double adamEps))
-          .weight_decay($(double adamWeightDecay))
-          .amsgrad($(bool adamAmsgrad));
-        torch::optim::Adam optimizer(*params, options);
-        optimizer.zero_grad();
-        typedef at::Tensor* (*Func)(std::vector<at::Tensor>*);
-        auto func = (Func)tfunc;
-        for(int i=0;i<$(int numIter);i++){
-          auto loss = func(params);
-          loss->backward();
-          optimizer.step();
-        }
-        return params;
-      }|]
-  where
-    loss' :: Ptr () -> IO (Ptr ())
-    loss' params = castPtr <$> loss (castPtr params)
+  -> IO (Ptr Optimizer)
+rmsprop lr alpha eps weight_decay momentum centered initParams =
+  [C.throwBlock| torch::optim::Optimizer* {
+    std::vector<at::Tensor>* init_params = $(std::vector<at::Tensor>* initParams);
+    std::vector<at::Tensor> params;
+    for(int i=0;i<init_params->size();i++){
+      params.push_back((*init_params)[i].detach().set_requires_grad(true));
+    }
+    auto options = torch::optim::RMSpropOptions()
+      .lr($(double lr))
+      .alpha($(double alpha))
+      .eps($(double eps))
+      .weight_decay($(double weight_decay))
+      .momentum($(double momentum))
+      .centered($(bool centered));
+    torch::optim::RMSprop* optimizer = new torch::optim::RMSprop(params, options);
+    optimizer->zero_grad();
+    return dynamic_cast<torch::optim::Optimizer*>(optimizer);
+  }|]
 
+sgd
+  :: CDouble
+  -> CDouble
+  -> CDouble
+  -> CDouble
+  -> CBool
+  -> Ptr TensorList
+  -> IO (Ptr Optimizer)
+sgd lr momentum dampening weight_decay nesterov initParams =
+  [C.throwBlock| torch::optim::Optimizer* {
+    std::vector<at::Tensor>* init_params = $(std::vector<at::Tensor>* initParams);
+    std::vector<at::Tensor> params;
+    for(int i=0;i<init_params->size();i++){
+      params.push_back((*init_params)[i].detach().set_requires_grad(true));
+    }
+    auto options = torch::optim::SGDOptions($(double lr))
+      .momentum($(double momentum))
+      .dampening($(double dampening))
+      .weight_decay($(double weight_decay))
+      .nesterov($(bool nesterov));
+    torch::optim::SGD* optimizer = new torch::optim::SGD(params, options);
+    optimizer->zero_grad();
+    return dynamic_cast<torch::optim::Optimizer*>(optimizer);
+  }|]
 
 adam
   :: CDouble
@@ -82,9 +160,9 @@ adam
   -> CDouble
   -> CBool
   -> Ptr TensorList
-  -> IO (Ptr Adam)
+  -> IO (Ptr Optimizer)
 adam adamLr adamBetas0 adamBetas1 adamEps adamWeightDecay adamAmsgrad initParams =
-  [C.throwBlock| torch::optim::Adam* {
+  [C.throwBlock| torch::optim::Optimizer* {
     std::vector<at::Tensor>* init_params = $(std::vector<at::Tensor>* initParams);
     std::vector<at::Tensor> params;
     for(int i=0;i<init_params->size();i++){
@@ -98,24 +176,100 @@ adam adamLr adamBetas0 adamBetas1 adamEps adamWeightDecay adamAmsgrad initParams
       .amsgrad($(bool adamAmsgrad));
     torch::optim::Adam* optimizer = new torch::optim::Adam(params, options);
     optimizer->zero_grad();
-    return optimizer;
+    return dynamic_cast<torch::optim::Optimizer*>(optimizer);
   }|]
 
-getAdamParams :: Ptr Adam -> IO (Ptr TensorList) 
-getAdamParams adam =
+adamw
+  :: CDouble
+  -> CDouble
+  -> CDouble
+  -> CDouble
+  -> CDouble
+  -> CBool
+  -> Ptr TensorList
+  -> IO (Ptr Optimizer)
+adamw adamLr adamBetas0 adamBetas1 adamEps adamWeightDecay adamAmsgrad initParams =
+  [C.throwBlock| torch::optim::Optimizer* {
+    std::vector<at::Tensor>* init_params = $(std::vector<at::Tensor>* initParams);
+    std::vector<at::Tensor> params;
+    for(int i=0;i<init_params->size();i++){
+      params.push_back((*init_params)[i].detach().set_requires_grad(true));
+    }
+    auto options = torch::optim::AdamWOptions()
+      .lr($(double adamLr))
+      .betas(std::make_tuple($(double adamBetas0),$(double adamBetas1)))
+      .eps($(double adamEps))
+      .weight_decay($(double adamWeightDecay))
+      .amsgrad($(bool adamAmsgrad));
+    torch::optim::AdamW* optimizer = new torch::optim::AdamW(params, options);
+    optimizer->zero_grad();
+    return dynamic_cast<torch::optim::Optimizer*>(optimizer);
+  }|]
+
+
+lbfgs
+  :: CDouble
+  -> CInt
+  -> CInt
+  -> CDouble
+  -> CDouble
+  -> CInt
+  -> Maybe (Ptr StdString)
+  -> Ptr TensorList
+  -> IO (Ptr Optimizer)
+lbfgs lr max_iter max_eval tolerance_grad tolerance_change history_size Nothing initParams =
+  [C.throwBlock| torch::optim::Optimizer* {
+    std::vector<at::Tensor>* init_params = $(std::vector<at::Tensor>* initParams);
+    std::vector<at::Tensor> params;
+    for(int i=0;i<init_params->size();i++){
+      params.push_back((*init_params)[i].detach().set_requires_grad(true));
+    }
+    auto options = torch::optim::LBFGSOptions()
+      .lr($(double lr))
+      .max_iter($(int max_iter))
+      .max_eval($(int max_eval))
+      .tolerance_grad($(double tolerance_grad))
+      .tolerance_change($(double tolerance_change))
+      .history_size($(int history_size));
+    torch::optim::LBFGS* optimizer = new torch::optim::LBFGS(params, options);
+    optimizer->zero_grad();
+    return dynamic_cast<torch::optim::Optimizer*>(optimizer);
+  }|]
+lbfgs lr max_iter max_eval tolerance_grad tolerance_change history_size (Just line_search_fn) initParams =
+  [C.throwBlock| torch::optim::Optimizer* {
+    std::vector<at::Tensor>* init_params = $(std::vector<at::Tensor>* initParams);
+    std::vector<at::Tensor> params;
+    for(int i=0;i<init_params->size();i++){
+      params.push_back((*init_params)[i].detach().set_requires_grad(true));
+    }
+    auto options = torch::optim::LBFGSOptions()
+      .lr($(double lr))
+      .max_iter($(int max_iter))
+      .max_eval($(int max_eval))
+      .tolerance_grad($(double tolerance_grad))
+      .tolerance_change($(double tolerance_change))
+      .history_size($(int history_size))
+      .line_search_fn(*$(std::string* line_search_fn));
+    torch::optim::LBFGS* optimizer = new torch::optim::LBFGS(params, options);
+    optimizer->zero_grad();
+    return dynamic_cast<torch::optim::Optimizer*>(optimizer);
+  }|]
+
+getParams :: Ptr Optimizer -> IO (Ptr TensorList) 
+getParams optimizer =
   [C.throwBlock| std::vector<at::Tensor>* {
-    return new std::vector<at::Tensor>($(torch::optim::Adam* adam)->param_groups().at(0).params());
+    return new std::vector<at::Tensor>($(torch::optim::Optimizer* optimizer)->param_groups().at(0).params());
   }|]
 
-stepAdam :: Ptr Adam -> (Ptr TensorList -> IO (Ptr Tensor)) -> IO (Ptr Tensor)
-stepAdam adam loss =
+step :: Ptr Optimizer -> (Ptr TensorList -> IO (Ptr Tensor)) -> IO (Ptr Tensor)
+step optimizer loss =
   bracket
     (callbackHelper loss')
     freeHaskellFunPtr
     $ \funcPtr ->
       [C.throwBlock| at::Tensor* {
         auto tfunc = $(void* (*funcPtr)(void*));
-        auto optimizer = $(torch::optim::Adam* adam);
+        auto optimizer = $(torch::optim::Optimizer* optimizer);
         typedef at::Tensor* (*Func)(std::vector<at::Tensor>*);
         auto func = (Func)tfunc;
         auto v = optimizer->step([&]{

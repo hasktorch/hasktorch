@@ -20,27 +20,51 @@ import Torch.NN
 
 import Data.Default.Class
 
-data OptimizerState option state p = OptimizerState option state p
-type Adam = ForeignPtr ATen.Adam
+type OptimizerRef = ForeignPtr ATen.Optimizer
+data OptimizerState option p = OptimizerState option OptimizerRef p
 
 class Optimizer option where
-  type ToOptStateRef option :: *
-  initOptimizer :: Parameterized d => option -> d -> IO (OptimizerState option (ToOptStateRef option) d)
-  step :: Parameterized d => OptimizerState option (ToOptStateRef option) d -> (d -> IO Tensor) -> IO Tensor
+  -- type ToOptStateRef option :: *
+  initOptimizer :: Parameterized d => option -> d -> IO (OptimizerState option d)
+  step :: Parameterized d => OptimizerState option d -> (d -> IO Tensor) -> IO Tensor
   -- Returned d depends on the state of optimizer.
   -- Do not call step function after this function is called.
-  getParams :: Parameterized d => OptimizerState option (ToOptStateRef option) d -> IO d
-  steps :: Parameterized d => Int -> option -> d -> (d -> IO Tensor) -> IO d
+  getParams :: Parameterized d => OptimizerState option d -> IO d
+  -- steps :: Parameterized d => Int -> option -> d -> (d -> IO Tensor) -> IO d
+  step (OptimizerState _ optimizer initParams) loss = cast0 (LibTorch.step optimizer trans)
+    where
+      trans :: ForeignPtr ATen.TensorList -> IO (ForeignPtr ATen.Tensor)
+      trans inputs =
+        uncast inputs $ \inputs' -> do
+          (Unsafe ret) <- loss $ replaceParameters initParams $  map (IndependentTensor . Unsafe) inputs'
+          cast ret return
+  getParams (OptimizerState _ optimizer initParams) = fmap (replaceParameters initParams . map (IndependentTensor . Unsafe)) $ cast0 (LibTorch.getParams optimizer)
 
 --  next :: Parameterized d => optimizer d -> IO d
 
--- data AdagradOptions = AdagradOptions
---   { adagradLr :: Double
---   , adagradLrDecay :: Double
---   , adagradWeightDecay :: Double
---   , adagradInitialAccumulatorValue :: Double
---   , adagradEps :: Double
---   } deriving (Show, Eq)
+data AdagradOptions = AdagradOptions
+  { adagradLr :: Double
+  , adagradLrDecay :: Double
+  , adagradWeightDecay :: Double
+  , adagradInitialAccumulatorValue :: Double
+  , adagradEps :: Double
+  } deriving (Show, Eq)
+
+instance Default AdagradOptions where
+  def = AdagradOptions
+    { adagradLr = 1e-2
+    , adagradLrDecay = 0
+    , adagradWeightDecay = 0
+    , adagradInitialAccumulatorValue = 0
+    , adagradEps = 1e-10
+    } 
+
+instance Optimizer AdagradOptions where
+  initOptimizer  opt@AdagradOptions{..} initParams = do
+    v <- cast6 LibTorch.adagrad adagradLr adagradLrDecay adagradWeightDecay adagradInitialAccumulatorValue adagradEps initParams'
+    return $ OptimizerState opt v initParams
+    where
+      initParams' = map toDependent $ flattenParameters initParams
 
 data AdamOptions = AdamOptions
   { adamLr :: Double
@@ -60,86 +84,130 @@ instance Default AdamOptions where
     , adamAmsgrad = False
     } 
 
-optimizerWithAdam'
-  :: AdamOptions
-  -> [Parameter]
-  -> ([Parameter] -> IO Tensor)
-  -> Int
-  -> IO [Parameter]
-optimizerWithAdam' AdamOptions{..} initParams loss numIter = do
-  v <- cast9 LibTorch.optimizerWithAdam adamLr (fst adamBetas) (snd adamBetas) adamEps adamWeightDecay adamAmsgrad initParams' (trans loss) numIter
-  return $ map IndependentTensor v
-  where
-    initParams' = map toDependent initParams
-    trans :: ([Parameter] -> IO Tensor) -> ForeignPtr ATen.TensorList -> IO (ForeignPtr ATen.Tensor)
-    trans func inputs =
-      uncast inputs $ \inputs' -> do
-        (Unsafe ret) <- func $ map (IndependentTensor . Unsafe) inputs'
-        cast ret return
-
-adam
-  :: Parameterized d
-  => AdamOptions
-  -> d
-  -> IO (OptimizerState AdamOptions Adam d)
-adam opt@AdamOptions{..} initParams = do
-  v <- cast7 LibTorch.adam adamLr (fst adamBetas) (snd adamBetas) adamEps adamWeightDecay adamAmsgrad initParams'
-  return $ OptimizerState opt v initParams
-  where
-    initParams' = map toDependent $ flattenParameters initParams
-
-stepAdam
-  :: Parameterized d
-  => OptimizerState AdamOptions Adam d
-  -> (d -> IO Tensor)
-  -> IO Tensor
-stepAdam (OptimizerState _ optimizer initParams) loss = cast0 (LibTorch.stepAdam optimizer trans)
-  where
-    trans :: ForeignPtr ATen.TensorList -> IO (ForeignPtr ATen.Tensor)
-    trans inputs =
-      uncast inputs $ \inputs' -> do
-        (Unsafe ret) <- loss $ replaceParameters initParams $  map (IndependentTensor . Unsafe) inputs'
-        cast ret return
-
 instance Optimizer AdamOptions where
-  type ToOptStateRef AdamOptions = Adam
-  initOptimizer = adam
-  step = stepAdam
-  getParams (OptimizerState _ optimizer initParams) = fmap (replaceParameters initParams . map (IndependentTensor . Unsafe)) $ cast0 (LibTorch.getAdamParams optimizer)
-  steps numIter opt initParams loss = do
-    v <- optimizerWithAdam' opt (flattenParameters initParams) (\params -> loss (replaceParameters initParams params))  numIter
-    return $ replaceParameters initParams v
+  initOptimizer  opt@AdamOptions{..} initParams = do
+    v <- cast7 LibTorch.adam adamLr (fst adamBetas) (snd adamBetas) adamEps adamWeightDecay adamAmsgrad initParams'
+    return $ OptimizerState opt v initParams
+    where
+      initParams' = map toDependent $ flattenParameters initParams
+  -- steps numIter opt initParams loss = do
+  --   v <- optimizerWithAdam' opt (flattenParameters initParams) (\params -> loss (replaceParameters initParams params))  numIter
+  --   return $ replaceParameters initParams v
 
--- data AdamwOptions = AdamwOptions
---   { adamwLr :: Double
---   , adamwBetas :: (Double,Double)
---   , adamwEps :: Double
---   , adamwWeightDecay :: Double
---   , adamwAmsgrad :: Bool
---   } deriving (Show, Eq)
+-- optimizerWithAdam'
+--   :: AdamOptions
+--   -> [Parameter]
+--   -> ([Parameter] -> IO Tensor)
+--   -> Int
+--   -> IO [Parameter]
+-- optimizerWithAdam' AdamOptions{..} initParams loss numIter = do
+--   v <- cast9 LibTorch.optimizerWithAdam adamLr (fst adamBetas) (snd adamBetas) adamEps adamWeightDecay adamAmsgrad initParams' (trans loss) numIter
+--   return $ map IndependentTensor v
+--   where
+--     initParams' = map toDependent initParams
+--     trans :: ([Parameter] -> IO Tensor) -> ForeignPtr ATen.TensorList -> IO (ForeignPtr ATen.Tensor)
+--     trans func inputs =
+--       uncast inputs $ \inputs' -> do
+--         (Unsafe ret) <- func $ map (IndependentTensor . Unsafe) inputs'
+--         cast ret return
 
--- data LbfgsOptions = LbfgsOptions
---   { lbfgsLr :: Double
---   , lbfgsMaxIter :: Int
---   , lbfgsMaxEval :: Maybe Int
---   , lbfgsToleranceGrad :: Double
---   , lbfgsToleranceChange :: Double
---   , lbfgsHistorySize :: Int
---   , lbfgsLineSearchFn :: String
---   } deriving (Show, Eq)
+data AdamwOptions = AdamwOptions
+  { adamwLr :: Double
+  , adamwBetas :: (Double,Double)
+  , adamwEps :: Double
+  , adamwWeightDecay :: Double
+  , adamwAmsgrad :: Bool
+  } deriving (Show, Eq)
 
--- data RmspropOptions = RmspropOptions
---   { rmspropLr :: Double
---   , rmspropBetas :: (Double,Double)
---   , rmspropEps :: Double
---   , rmspropWeightDecay :: Double
---   , rmspropAmsgrad :: Bool
---   } deriving (Show, Eq)
+instance Default AdamwOptions where
+  def = AdamwOptions
+    { adamwLr = 1e-3
+    , adamwBetas = (0.9, 0.999)
+    , adamwEps = 1e-8
+    , adamwWeightDecay = 1e-2
+    , adamwAmsgrad = False
+    } 
 
--- data SgdOptions = SgdOptions
---   { sgdLr :: Double
---   , sgdMomentum :: Double
---   , sgdDampening :: Double
---   , sgdWeightDecay :: Double
---   , sgdNesterov :: Bool
---   } deriving (Show, Eq)
+instance Optimizer AdamwOptions where
+  initOptimizer  opt@AdamwOptions{..} initParams = do
+    v <- cast7 LibTorch.adamw adamwLr (fst adamwBetas) (snd adamwBetas) adamwEps adamwWeightDecay adamwAmsgrad initParams'
+    return $ OptimizerState opt v initParams
+    where
+      initParams' = map toDependent $ flattenParameters initParams
+
+data LbfgsOptions = LbfgsOptions
+  { lbfgsLr :: Double
+  , lbfgsMaxIter :: Int
+  , lbfgsMaxEval :: Int
+  , lbfgsToleranceGrad :: Double
+  , lbfgsToleranceChange :: Double
+  , lbfgsHistorySize :: Int
+  , lbfgsLineSearchFn :: Maybe String
+  } deriving (Show, Eq)
+  
+instance Default LbfgsOptions where
+  def = LbfgsOptions
+    { lbfgsLr = 1
+    , lbfgsMaxIter = 20
+    , lbfgsMaxEval = (20 * 5) `div` 4
+    , lbfgsToleranceGrad = 1e-7
+    , lbfgsToleranceChange = 1e-9
+    , lbfgsHistorySize = 100
+    , lbfgsLineSearchFn = Nothing
+    } 
+
+instance Optimizer LbfgsOptions where
+  initOptimizer opt@LbfgsOptions{..} initParams = do
+    v <- cast8 LibTorch.lbfgs lbfgsLr lbfgsMaxIter lbfgsMaxEval lbfgsToleranceGrad lbfgsToleranceChange lbfgsHistorySize lbfgsLineSearchFn initParams'
+    return $ OptimizerState opt v initParams
+    where
+      initParams' = map toDependent $ flattenParameters initParams
+
+data RmspropOptions = RmspropOptions
+  { rmspropLr :: Double
+  , rmspropAlpha :: Double
+  , rmspropEps :: Double
+  , rmspropWeightDecay :: Double
+  , rmspropMomentum :: Double
+  , rmspropCentered :: Bool
+  } deriving (Show, Eq)
+
+instance Default RmspropOptions where
+  def = RmspropOptions
+    { rmspropLr = 1e-2
+    , rmspropAlpha = 0.99
+    , rmspropEps = 1e-8
+    , rmspropWeightDecay = 0
+    , rmspropMomentum = 0
+    , rmspropCentered = False
+    } 
+
+instance Optimizer RmspropOptions where
+  initOptimizer opt@RmspropOptions{..} initParams = do
+    v <- cast7 LibTorch.rmsprop rmspropLr rmspropAlpha rmspropEps rmspropWeightDecay rmspropMomentum rmspropCentered initParams'
+    return $ OptimizerState opt v initParams
+    where
+      initParams' = map toDependent $ flattenParameters initParams
+data SGDOptions = SGDOptions
+  { sgdLr :: Double
+  , sgdMomentum :: Double
+  , sgdDampening :: Double
+  , sgdWeightDecay :: Double
+  , sgdNesterov :: Bool
+  } deriving (Show, Eq)
+
+instance Default SGDOptions where
+  def = SGDOptions
+    { sgdLr = 1e-3
+    , sgdMomentum = 0
+    , sgdDampening = 0
+    , sgdWeightDecay = 0
+    , sgdNesterov = False
+    } 
+
+instance Optimizer SGDOptions where
+  initOptimizer  opt@SGDOptions{..} initParams = do
+    v <- cast6 LibTorch.sgd sgdLr sgdMomentum sgdDampening sgdWeightDecay sgdNesterov initParams'
+    return $ OptimizerState opt v initParams
+    where
+      initParams' = map toDependent $ flattenParameters initParams

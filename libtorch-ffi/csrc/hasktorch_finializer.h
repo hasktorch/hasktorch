@@ -90,5 +90,5 @@ extern "C" {
 
   void delete_cdoubleint64(std::tuple<double,int64_t>* ptr);
 
-  void delete_adam(torch::optim::Adam* ptr);
+  void delete_optimizer(torch::optim::Optimizer* ptr);
 };
