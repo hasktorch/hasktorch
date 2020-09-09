@@ -10,11 +10,13 @@ Optimizers are represented by libtorch's c++ codes.
 The `step` function can be called for any optimizer, and is defined as:
 
 ```
+type OptimizerRef = ForeignPtr ATen.Optimizer
+data OptimizerState option p = OptimizerState option OptimizerRef p
+
 class Optimizer option where
-  type ToOptStateRef option :: *
-  initOptimizer :: Parameterized d => option -> d -> IO (OptimizerState option (ToOptStateRef option) d)
-  step :: Parameterized d => OptimizerState option (ToOptStateRef option) d -> (d -> IO Tensor) -> IO Tensor
-  getParams :: Parameterized d => OptimizerState option (ToOptStateRef option) d -> IO d
+  initOptimizer :: Parameterized d => option -> d -> IO (OptimizerState option d)
+  step :: Parameterized d => OptimizerState option d -> (d -> IO Tensor) -> IO Tensor
+  getParams :: Parameterized d => OptimizerState option d -> IO d
 ```
 
 The `step` function returns loss, and it updates parameters of OptimizerState.
