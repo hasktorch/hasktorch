@@ -23,12 +23,12 @@ class Optimizer o where
 
 -- | run a single iteration of an optimizer, returning new parameters and updated optimizer state
 runStep :: (Parameterized p, Optimizer o) =>
-        p -> o -> Loss -> LearningRate -> IO ([Parameter], o)
+        p -> o -> Loss -> LearningRate -> IO (p, o)
 runStep paramState optState lossValue lr = do
     performGC
     let (flatParameters', optState') = step lr gradients depParameters optState 
     newFlatParam <- mapM makeIndependent flatParameters'
-    pure (newFlatParam, optState')
+    pure (replaceParameters paramState newFlatParam, optState')
     where
         flatParameters = flattenParameters paramState
         gradients = grad' lossValue flatParameters
@@ -36,12 +36,12 @@ runStep paramState optState lossValue lr = do
 
 -- | run a single iteration of an optimizer, returning new parameters and updated optimizer state
 runStep' :: (Parameterized p, Optimizer o) =>
-        p -> o -> LearningRate -> Gradients -> IO ([Parameter], o)
+        p -> o -> LearningRate -> Gradients -> IO (p, o)
 runStep' paramState optState lr gradients = do
     performGC
     let (flatParameters', optState') = step lr gradients depParameters optState 
     newFlatParam <- mapM makeIndependent flatParameters'
-    pure (newFlatParam, optState')
+    pure (replaceParameters paramState newFlatParam, optState')
     where
         flatParameters = flattenParameters paramState
         depParameters = fmap toDependent flatParameters

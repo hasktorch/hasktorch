@@ -24,13 +24,11 @@ type OptimizerRef = ForeignPtr ATen.Optimizer
 data OptimizerState option p = OptimizerState option OptimizerRef p
 
 class Optimizer option where
-  -- type ToOptStateRef option :: *
   initOptimizer :: Parameterized d => option -> d -> IO (OptimizerState option d)
   step :: Parameterized d => OptimizerState option d -> (d -> IO Tensor) -> IO Tensor
   -- Returned d depends on the state of optimizer.
   -- Do not call step function after this function is called.
   getParams :: Parameterized d => OptimizerState option d -> IO d
-  -- steps :: Parameterized d => Int -> option -> d -> (d -> IO Tensor) -> IO d
   step (OptimizerState _ optimizer initParams) loss = cast0 (LibTorch.step optimizer trans)
     where
       trans :: ForeignPtr ATen.TensorList -> IO (ForeignPtr ATen.Tensor)
@@ -39,8 +37,6 @@ class Optimizer option where
           (Unsafe ret) <- loss $ replaceParameters initParams $  map (IndependentTensor . Unsafe) inputs'
           cast ret return
   getParams (OptimizerState _ optimizer initParams) = fmap (replaceParameters initParams . map (IndependentTensor . Unsafe)) $ cast0 (LibTorch.getParams optimizer)
-
---  next :: Parameterized d => optimizer d -> IO d
 
 data AdagradOptions = AdagradOptions
   { adagradLr :: Double
@@ -90,26 +86,6 @@ instance Optimizer AdamOptions where
     return $ OptimizerState opt v initParams
     where
       initParams' = map toDependent $ flattenParameters initParams
-  -- steps numIter opt initParams loss = do
-  --   v <- optimizerWithAdam' opt (flattenParameters initParams) (\params -> loss (replaceParameters initParams params))  numIter
-  --   return $ replaceParameters initParams v
-
--- optimizerWithAdam'
---   :: AdamOptions
---   -> [Parameter]
---   -> ([Parameter] -> IO Tensor)
---   -> Int
---   -> IO [Parameter]
--- optimizerWithAdam' AdamOptions{..} initParams loss numIter = do
---   v <- cast9 LibTorch.optimizerWithAdam adamLr (fst adamBetas) (snd adamBetas) adamEps adamWeightDecay adamAmsgrad initParams' (trans loss) numIter
---   return $ map IndependentTensor v
---   where
---     initParams' = map toDependent initParams
---     trans :: ([Parameter] -> IO Tensor) -> ForeignPtr ATen.TensorList -> IO (ForeignPtr ATen.Tensor)
---     trans func inputs =
---       uncast inputs $ \inputs' -> do
---         (Unsafe ret) <- func $ map (IndependentTensor . Unsafe) inputs'
---         cast ret return
 
 data AdamwOptions = AdamwOptions
   { adamwLr :: Double

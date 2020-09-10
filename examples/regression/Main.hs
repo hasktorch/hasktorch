@@ -33,7 +33,7 @@ main = do
         when (i `mod` 100 == 0) $ do
             putStrLn $ "Iteration: " ++ show i ++ " | Loss: " ++ show loss
         (newParam, _) <- runStep state optimizer loss 5e-3 
-        pure (replaceParameters state newParam, randGen')
+        pure (newParam, randGen')
     printParams trained
     pure ()
   where
