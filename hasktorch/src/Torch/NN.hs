@@ -41,62 +41,73 @@ nextParameter = do
     [] -> error "Not enough parameters supplied to replaceParameters"
     (p : t) -> do put t; return p
 
-class HasForward f a where
-  type B f a :: Type
-  type B f a = GB (Rep f) (Rep a)
-
-  forward :: f -> a -> B f a
+class HasForward f a b | f a -> b where
+  forward :: f -> a -> b
   default forward ::
     ( Generic f,
       Generic a,
-      GHasForward (Rep f) (Rep a),
-      B f a ~ GB (Rep f) (Rep a)
+      Generic b,
+      GHasForward (Rep f) (Rep a) (Rep b)
     ) =>
     f ->
     a ->
-    B f a
-  forward f a = gForward (from f) (from a)
+    b
+  forward f a = to $ gForward (from f) (from a)
+  forwardStoch :: f -> a -> IO b
+  default forwardStoch ::
+    ( Generic f,
+      Generic a,
+      Generic b,
+      GHasForward (Rep f) (Rep a) (Rep b)
+    ) =>
+    f ->
+    a ->
+    IO b
+  forwardStoch f a = to <$> gForwardStoch (from f) (from a)
 
-class GHasForward (f :: Type -> Type) (a :: Type -> Type) where
-  type GB f a :: Type
-  gForward :: forall c c'. f c -> a c' -> GB f a
+class GHasForward (f :: Type -> Type) (a :: Type -> Type) (b :: Type -> Type) | f a -> b where
+  gForward :: forall c c' c''. f c -> a c' -> b c''
+  gForwardStoch :: forall c c' c''. f c -> a c' -> IO (b c)
 
-instance GHasForward U1 U1 where
-  type GB U1 U1 = ()
-  gForward U1 U1 = ()
+instance GHasForward U1 U1 U1 where
+  gForward U1 U1 = U1
+  gForwardStoch U1 U1 = return U1
 
 instance
-  ( GHasForward f a,
-    GHasForward g a'
+  ( GHasForward f a b,
+    GHasForward g a' b',
+    b'' ~ (b :+: b')
   ) =>
-  GHasForward (f :+: g) (a :+: a')
+  GHasForward (f :+: g) (a :+: a') b''
   where
-  type GB (f :+: g) (a :+: a') = Either (GB f a) (GB g a')
-  gForward (L1 f) (L1 a) = Left $ gForward f a
-  gForward (R1 g) (R1 a') = Right $ gForward g a'
+  gForward (L1 f) (L1 a) = L1 $ gForward f a
+  gForward (R1 g) (R1 a') = R1 $ gForward g a'
+  gForwardStoch (L1 f) (L1 a) = L1 <$> gForwardStoch f a
+  gForwardStoch (R1 g) (R1 a') = R1 <$> gForwardStoch g a'
 
 instance
-  ( GHasForward f a,
-    GHasForward g a'
+  ( GHasForward f a b,
+    GHasForward g a' b',
+    b'' ~ (b :*: b')
   ) =>
-  GHasForward (f :*: g) (a :*: a')
+  GHasForward (f :*: g) (a :*: a') b''
   where
-  type GB (f :*: g) (a :*: a') = (GB f a, GB g a')
-  gForward (f :*: g) (a :*: a') = (gForward f a, gForward g a')
+  gForward (f :*: g) (a :*: a') = gForward f a :*: gForward g a'
+  gForwardStoch (f :*: g) (a :*: a') = liftA2 ((:*:)) (gForwardStoch f a) (gForwardStoch g a')
 
 instance
-  (HasForward f a) =>
-  GHasForward (K1 i f) (K1 i a)
+  (HasForward f a b) =>
+  GHasForward (K1 i f) (K1 i a) (K1 i b)
   where
-  type GB (K1 i f) (K1 i a) = B f a
-  gForward (K1 f) (K1 a) = forward f a
+  gForward (K1 f) (K1 a) = K1 $ forward f a
+  gForwardStoch (K1 f) (K1 a) = K1 <$> forwardStoch f a
 
 instance
-  (GHasForward f a) =>
-  GHasForward (M1 i t f) (M1 i t' a)
+  (GHasForward f a b) =>
+  GHasForward (M1 i t f) (M1 i t' a) (M1 i t' b)
   where
-  type GB (M1 i t f) (M1 i t' a) = GB f a
-  gForward (M1 f) (M1 a) = gForward f a
+  gForward (M1 f) (M1 a) = M1 $ gForward f a
+  gForwardStoch (M1 f) (M1 a) = M1 <$> gForwardStoch f a
 
 class Parameterized f where
   flattenParameters :: f -> [Parameter]
