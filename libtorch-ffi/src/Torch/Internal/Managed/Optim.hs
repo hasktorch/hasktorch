@@ -105,3 +105,12 @@ step optimizer loss = cast1 (\opt -> Unmanaged.step opt (trans loss)) optimizer
       inputs' <- newForeignPtr_ inputs
       ret <- func inputs'
       return $ unsafeForeignPtrToPtr ret
+
+unsafeStep :: ForeignPtr Optimizer -> ForeignPtr TensorList -> ForeignPtr Tensor -> IO (ForeignPtr TensorList)
+unsafeStep = cast3 Unmanaged.unsafeStep
+
+save :: ForeignPtr Optimizer -> ForeignPtr StdString -> IO ()
+save = cast2 Unmanaged.save
+
+load :: ForeignPtr Optimizer -> ForeignPtr StdString -> IO ()
+load = cast2 Unmanaged.load

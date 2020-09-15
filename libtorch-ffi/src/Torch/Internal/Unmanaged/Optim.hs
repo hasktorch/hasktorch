@@ -28,6 +28,8 @@ C.include "<torch/types.h>"
 
 C.include "<torch/optim.h>"
 
+C.include "<torch/serialize.h>"
+
 -- optimizerWithAdam
 --   :: CDouble
 --   -> CDouble
@@ -95,6 +97,7 @@ adagrad lr lr_decay weight_decay initial_accumulator_value eps initParams =
       .initial_accumulator_value($(double initial_accumulator_value))
       .eps($(double eps));
     torch::optim::Adagrad* optimizer = new torch::optim::Adagrad(params, options);
+    optimizer->zero_grad();
     return dynamic_cast<torch::optim::Optimizer*>(optimizer);
   }|]
 
@@ -261,9 +264,9 @@ getParams optimizer =
   }|]
 
 step :: Ptr Optimizer -> (Ptr TensorList -> IO (Ptr Tensor)) -> IO (Ptr Tensor)
-step optimizer loss =
+step optimizer lossFunc =
   bracket
-    (callbackHelper loss')
+    (callbackHelper lossFunc')
     freeHaskellFunPtr
     $ \funcPtr ->
       [C.throwBlock| at::Tensor* {
@@ -280,5 +283,33 @@ step optimizer loss =
         return new at::Tensor(v);
       }|]
   where
-    loss' :: Ptr () -> IO (Ptr ())
-    loss' params = castPtr <$> loss (castPtr params)
+    lossFunc' :: Ptr () -> IO (Ptr ())
+    lossFunc' params = castPtr <$> lossFunc (castPtr params)
+
+-- After this function is called, params(TensorList) of input is updated.
+-- TensorList of output is the same as input's params(TensorList).
+unsafeStep :: Ptr Optimizer -> Ptr TensorList -> Ptr Tensor -> IO (Ptr TensorList)
+unsafeStep optimizer params loss =
+  [C.throwBlock| std::vector<at::Tensor>* {
+    auto optimizer = $(torch::optim::Optimizer* optimizer);
+    auto loss = $(at::Tensor* loss);
+    optimizer->param_groups().at(0).params() = *$(std::vector<at::Tensor>* params);
+    optimizer->zero_grad();
+    loss->backward();
+    optimizer->step();
+    return new std::vector<at::Tensor>(optimizer->param_groups().at(0).params());
+  }|]
+
+save :: Ptr Optimizer -> Ptr StdString -> IO ()
+save optimizer filename =
+  [C.throwBlock| void {
+    std::ofstream output(*$(std::string* filename));
+    torch::save(*$(torch::optim::Optimizer* optimizer),output);
+  }|]
+
+load :: Ptr Optimizer -> Ptr StdString -> IO ()
+load optimizer filename =
+  [C.throwBlock| void {
+    std::ifstream input(*$(std::string* filename));
+    torch::load(*$(torch::optim::Optimizer* optimizer),input);
+  }|]
