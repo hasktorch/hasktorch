@@ -25,7 +25,7 @@ data OptimizerState option model = OptimizerState option OptimizerRef model
 
 class Optimizer option where
   initOptimizer :: Parameterized model => option -> model -> IO (OptimizerState option model)
-  step :: Parameterized model => OptimizerState option model -> ( -> IO Tensor) -> IO Tensor
+  step :: Parameterized model => OptimizerState option model -> (model -> IO Tensor) -> IO Tensor
   -- Returned d depends on the state of optimizer.
   -- Do not call step function after this function is called.
   getParams :: Parameterized model => OptimizerState option model -> IO model
