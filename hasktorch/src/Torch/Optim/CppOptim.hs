@@ -27,6 +27,21 @@ import Data.Default.Class
 type CppOptimizerRef = ForeignPtr ATen.Optimizer
 data CppOptimizerState option = CppOptimizerState option CppOptimizerRef
 
+-- class Optimizer option where
+--   initOptimizer :: Parameterized model => option -> model -> IO (OptimizerState option model)
+--   step :: Parameterized model => OptimizerState option model -> (model -> IO Tensor) -> IO Tensor
+--   -- Returned d depends on the state of optimizer.
+--   -- Do not call step function after this function is called.
+--   getParams :: Parameterized model => OptimizerState option model -> IO model
+--   step (OptimizerState _ optimizer initParams) loss = cast0 (LibTorch.step optimizer trans)
+--     where
+--       trans :: ForeignPtr ATen.TensorList -> IO (ForeignPtr ATen.Tensor)
+--       trans inputs =
+--         uncast inputs $ \inputs' -> do
+--           (Unsafe ret) <- loss $ replaceParameters initParams $  map (IndependentTensor . Unsafe) inputs'
+--           cast ret return
+--   getParams (OptimizerState _ optimizer initParams) = fmap (replaceParameters initParams . map (IndependentTensor . Unsafe)) $ cast0 (LibTorch.getParams optimizer)
+
 class CppOptimizer option where
   initOptimizer :: Parameterized model => option -> model -> IO (CppOptimizerState option)
   unsafeStep :: Parameterized model => model -> CppOptimizerState option -> Tensor -> IO (model, CppOptimizerState option)

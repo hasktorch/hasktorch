@@ -48,59 +48,61 @@ instance
   apply' _ _ = zeros
 
 class Optimizer optim gradients tensors dtype device where
-  step_ ::
+  step ::
     LearningRate device dtype ->
     HList gradients ->
     HList tensors ->
     optim ->
     (HList tensors, optim)
 
-  runStep ::
-    forall model parameters.
-    ( Parameterized model,
-      parameters ~ Parameters model,
-      HasGrad (HList parameters) (HList gradients),
-      tensors ~ gradients,
-      HMap' ToDependent parameters tensors,
-      ATen.Castable (HList gradients) [D.ATenTensor],
-      HMapM' IO MakeIndependent tensors parameters
-    ) =>
-    model ->
-    optim ->
-    Loss device dtype ->
-    LearningRate device dtype ->
-    IO (model, optim)
-  runStep model optim loss learningRate = do
-    performGC
-    let parameters = flattenParameters model
-        gradients = grad loss parameters
-        tensors = hmap' ToDependent parameters
-        (tensors', optim') = step_ learningRate gradients tensors optim
-    parameters' <- hmapM' MakeIndependent tensors'
-    let model' = replaceParameters model parameters'
-    return (model', optim')
-  
-  runStep' ::
-    forall model parameters.
-    ( Parameterized model,
-      parameters ~ Parameters model,
-      tensors ~ gradients,
-      HMap' ToDependent parameters tensors,
-      HMapM' IO MakeIndependent tensors parameters
-    ) =>
-    model ->
-    optim ->
-    LearningRate device dtype ->
-    HList gradients ->
-    IO (model, optim)
-  runStep' model optim learningRate gradients = do
-    performGC
-    let parameters = flattenParameters model
-        tensors = hmap' ToDependent parameters
-        (tensors', optim') = step_ learningRate gradients tensors optim
-    parameters' <- hmapM' MakeIndependent tensors'
-    let model' = replaceParameters model parameters'
-    return (model', optim')
+runStep ::
+  forall model optim parameters gradients tensors dtype device.
+  ( Parameterized model,
+    parameters ~ Parameters model,
+    HasGrad (HList parameters) (HList gradients),
+    tensors ~ gradients,
+    HMap' ToDependent parameters tensors,
+    ATen.Castable (HList gradients) [D.ATenTensor],
+    Optimizer optim gradients tensors dtype device,
+    HMapM' IO MakeIndependent tensors parameters
+  ) =>
+  model ->
+  optim ->
+  Loss device dtype ->
+  LearningRate device dtype ->
+  IO (model, optim)
+runStep model optim loss learningRate = do
+  performGC
+  let parameters = flattenParameters model
+      gradients = grad loss parameters
+      tensors = hmap' ToDependent parameters
+      (tensors', optim') = step learningRate gradients tensors optim
+  parameters' <- hmapM' MakeIndependent tensors'
+  let model' = replaceParameters model parameters'
+  return (model', optim')
+
+runStep' ::
+  forall model optim parameters gradients tensors dtype device.
+  ( Parameterized model,
+    parameters ~ Parameters model,
+    tensors ~ gradients,
+    HMap' ToDependent parameters tensors,
+    Optimizer optim gradients tensors dtype device,
+    HMapM' IO MakeIndependent tensors parameters
+  ) =>
+  model ->
+  optim ->
+  LearningRate device dtype ->
+  HList gradients ->
+  IO (model, optim)
+runStep' model optim learningRate gradients = do
+  performGC
+  let parameters = flattenParameters model
+      tensors = hmap' ToDependent parameters
+      (tensors', optim') = step learningRate gradients tensors optim
+  parameters' <- hmapM' MakeIndependent tensors'
+  let model' = replaceParameters model parameters'
+  return (model', optim')
 
 --
 -- Gradient Descent (GD)
@@ -143,7 +145,7 @@ instance
   ) =>
   Optimizer GD gradients tensors dtype device
   where
-  step_ = gd
+  step = gd
 
 instance Parameterized GD where
   type Parameters GD = '[]
@@ -213,7 +215,7 @@ instance
   ) =>
   Optimizer (GDM momenta) gradients tensors dtype device
   where
-  step_ = gdm
+  step = gdm
 
 instance Parameterized (GDM momenta) where
   type Parameters (GDM momenta) = momenta
@@ -359,7 +361,7 @@ instance
   ) =>
   Optimizer (Adam momenta) gradients tensors dtype device
   where
-  step_ = adam
+  step = adam
 
 instance
   HAppendFD momenta momenta (momenta ++ momenta) =>
