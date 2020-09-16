@@ -10,9 +10,9 @@ import Prelude hiding (sqrt)
 import Text.Printf (printf)
 import Data.Default.Class
 
-import Torch hiding (Optimizer(..), runStep, Adam(..))
+import Torch
 import TestFunctions
-import Torch.Optim.Internal
+import Torch.Optim.CppOptim
 
 -- import Data.IORef
 
@@ -25,7 +25,7 @@ showLog n i maxIter lossValue state =
             ++ " | Parameters: " ++ show state)
 
 -- | Optimize convex quadratic with specified optimizer
-optConvQuad :: (Optimizer opt) => Int -> opt -> IO ()
+optConvQuad :: (CppOptimizer opt) => Int -> opt -> IO ()
 optConvQuad numIter optInit = do
     let dim = 2
         a = eye' dim dim
@@ -33,49 +33,34 @@ optConvQuad numIter optInit = do
     paramInit <- sample $ ConvQuadSpec dim
     putStrLn ("Initial :" ++ show paramInit)
     optimizer <- initOptimizer optInit paramInit
-    forM_ [1..numIter] \i -> do
-      step optimizer $ \paramState -> do
+    trained <- foldLoop (paramInit, optimizer) numIter $ \(paramState, optState) i -> do
         let lossValue = (lossConvQuad a b) paramState
         showLog 1000 i numIter lossValue paramState
-        return lossValue
-    trained <- getParams optimizer :: IO ConvQuad
-    -- ref <- newIORef 0
-    -- steps numIter optInit paramInit $ \paramState -> do
-    --     let lossValue = (lossConvQuad a b) paramState
-    --     i <- atomicModifyIORef ref $ \v -> (v+1,v)
-    --     showLog 1000 i numIter lossValue paramState
-    --     return lossValue
+        runStep paramState optState lossValue 5e-4
     pure ()
 
 -- | Optimize Rosenbrock function with specified optimizer
-optRosen :: (Optimizer opt) => Int -> opt -> IO ()
+optRosen :: (CppOptimizer opt) => Int -> opt -> IO ()
 optRosen numIter optInit = do
     paramInit <- sample RosenSpec
     putStrLn ("Initial :" ++ show paramInit)
     optimizer <- initOptimizer optInit paramInit
---    print paramInit
-    forM_ [1..numIter] \i -> do
-      step optimizer $ \paramState -> do
+    trained <- foldLoop (paramInit, optimizer) numIter $ \(paramState, optState) i -> do
         let lossValue = lossRosen paramState
---        print paramState
---        print lossValue
         showLog 1000 i numIter lossValue paramState
-        return lossValue
-    trained <- getParams optimizer :: IO Rosen
+        runStep paramState optState lossValue 5e-4
     pure ()
 
 -- | Optimize Ackley function with specified optimizer
-optAckley :: (Optimizer opt) => Int -> opt -> IO ()
+optAckley :: (CppOptimizer opt) => Int -> opt -> IO ()
 optAckley numIter optInit = do
     paramInit <- sample AckleySpec
     putStrLn ("Initial :" ++ show paramInit)
     optimizer <- initOptimizer optInit paramInit
-    forM_ [1..numIter] \i -> do
-      step optimizer $ \paramState -> do
+    trained <- foldLoop (paramInit, optimizer) numIter $ \(paramState, optState) i -> do
         let lossValue = lossAckley paramState
         showLog 1000 i numIter lossValue paramState
-        return lossValue
-    trained <- getParams optimizer :: IO Ackley
+        runStep paramState optState lossValue 5e-4
     pure ()
 
 -- | Check global minimum point for Rosenbrock

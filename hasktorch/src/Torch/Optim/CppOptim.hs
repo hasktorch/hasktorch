@@ -4,8 +4,10 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
 
-module Torch.Optim.Internal where
+module Torch.Optim.CppOptim where
 
 import Foreign.ForeignPtr
 
@@ -13,6 +15,8 @@ import Torch.Internal.Cast
 import Torch.Internal.Class (Castable(..), CppTuple2(..), CppTuple3(..), CppTuple4(..), CppObject(..))
 import qualified Torch.Internal.Type as ATen
 import qualified Torch.Internal.Managed.Optim as LibTorch
+import qualified Torch.Optim as Optim
+import System.Mem(performGC)
 
 import Torch.Tensor
 import Torch.Autograd
@@ -20,23 +24,24 @@ import Torch.NN
 
 import Data.Default.Class
 
-type OptimizerRef = ForeignPtr ATen.Optimizer
-data OptimizerState option model = OptimizerState option OptimizerRef model
+type CppOptimizerRef = ForeignPtr ATen.Optimizer
+data CppOptimizerState option = CppOptimizerState option CppOptimizerRef
 
-class Optimizer option where
-  initOptimizer :: Parameterized model => option -> model -> IO (OptimizerState option model)
-  step :: Parameterized model => OptimizerState option model -> (model -> IO Tensor) -> IO Tensor
-  -- Returned d depends on the state of optimizer.
-  -- Do not call step function after this function is called.
-  getParams :: Parameterized model => OptimizerState option model -> IO model
-  step (OptimizerState _ optimizer initParams) loss = cast0 (LibTorch.step optimizer trans)
-    where
-      trans :: ForeignPtr ATen.TensorList -> IO (ForeignPtr ATen.Tensor)
-      trans inputs =
-        uncast inputs $ \inputs' -> do
-          (Unsafe ret) <- loss $ replaceParameters initParams $  map (IndependentTensor . Unsafe) inputs'
-          cast ret return
-  getParams (OptimizerState _ optimizer initParams) = fmap (replaceParameters initParams . map (IndependentTensor . Unsafe)) $ cast0 (LibTorch.getParams optimizer)
+class CppOptimizer option where
+  initOptimizer :: Parameterized model => option -> model -> IO (CppOptimizerState option)
+  unsafeStep :: Parameterized model => model -> CppOptimizerState option -> Tensor -> IO (model, CppOptimizerState option)
+  unsafeStep model o@(CppOptimizerState _ optimizer) loss = do
+    v <- cast3 LibTorch.unsafeStep optimizer (map toDependent $ flattenParameters model) loss
+    let newModel = replaceParameters model $ map (IndependentTensor . Unsafe) v  
+    return (newModel, o)
+
+instance {-# OVERLAPS #-} CppOptimizer option => Optim.Optimizer (CppOptimizerState option) where
+  step = error  "step is not implemented for CppOptimizer."
+  runStep paramState optState lossValue lr = do
+    performGC
+    unsafeStep paramState optState lossValue
+
+  runStep' = error  "runStep' is not implemented for CppOptimizer."
 
 data AdagradOptions = AdagradOptions
   { adagradLr :: Double
@@ -55,10 +60,10 @@ instance Default AdagradOptions where
     , adagradEps = 1e-10
     } 
 
-instance Optimizer AdagradOptions where
+instance CppOptimizer AdagradOptions where
   initOptimizer  opt@AdagradOptions{..} initParams = do
     v <- cast6 LibTorch.adagrad adagradLr adagradLrDecay adagradWeightDecay adagradInitialAccumulatorValue adagradEps initParams'
-    return $ OptimizerState opt v initParams
+    return $ CppOptimizerState opt v
     where
       initParams' = map toDependent $ flattenParameters initParams
 
@@ -80,10 +85,10 @@ instance Default AdamOptions where
     , adamAmsgrad = False
     } 
 
-instance Optimizer AdamOptions where
+instance CppOptimizer AdamOptions where
   initOptimizer  opt@AdamOptions{..} initParams = do
     v <- cast7 LibTorch.adam adamLr (fst adamBetas) (snd adamBetas) adamEps adamWeightDecay adamAmsgrad initParams'
-    return $ OptimizerState opt v initParams
+    return $ CppOptimizerState opt v
     where
       initParams' = map toDependent $ flattenParameters initParams
 
@@ -104,10 +109,10 @@ instance Default AdamwOptions where
     , adamwAmsgrad = False
     } 
 
-instance Optimizer AdamwOptions where
+instance CppOptimizer AdamwOptions where
   initOptimizer  opt@AdamwOptions{..} initParams = do
     v <- cast7 LibTorch.adamw adamwLr (fst adamwBetas) (snd adamwBetas) adamwEps adamwWeightDecay adamwAmsgrad initParams'
-    return $ OptimizerState opt v initParams
+    return $ CppOptimizerState opt v
     where
       initParams' = map toDependent $ flattenParameters initParams
 
@@ -132,10 +137,10 @@ instance Default LbfgsOptions where
     , lbfgsLineSearchFn = Nothing
     } 
 
-instance Optimizer LbfgsOptions where
+instance CppOptimizer LbfgsOptions where
   initOptimizer opt@LbfgsOptions{..} initParams = do
     v <- cast8 LibTorch.lbfgs lbfgsLr lbfgsMaxIter lbfgsMaxEval lbfgsToleranceGrad lbfgsToleranceChange lbfgsHistorySize lbfgsLineSearchFn initParams'
-    return $ OptimizerState opt v initParams
+    return $ CppOptimizerState opt v
     where
       initParams' = map toDependent $ flattenParameters initParams
 
@@ -158,10 +163,10 @@ instance Default RmspropOptions where
     , rmspropCentered = False
     } 
 
-instance Optimizer RmspropOptions where
+instance CppOptimizer RmspropOptions where
   initOptimizer opt@RmspropOptions{..} initParams = do
     v <- cast7 LibTorch.rmsprop rmspropLr rmspropAlpha rmspropEps rmspropWeightDecay rmspropMomentum rmspropCentered initParams'
-    return $ OptimizerState opt v initParams
+    return $ CppOptimizerState opt v
     where
       initParams' = map toDependent $ flattenParameters initParams
 data SGDOptions = SGDOptions
@@ -181,9 +186,9 @@ instance Default SGDOptions where
     , sgdNesterov = False
     } 
 
-instance Optimizer SGDOptions where
+instance CppOptimizer SGDOptions where
   initOptimizer  opt@SGDOptions{..} initParams = do
     v <- cast6 LibTorch.sgd sgdLr sgdMomentum sgdDampening sgdWeightDecay sgdNesterov initParams'
-    return $ OptimizerState opt v initParams
+    return $ CppOptimizerState opt v
     where
       initParams' = map toDependent $ flattenParameters initParams

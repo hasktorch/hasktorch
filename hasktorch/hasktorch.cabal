@@ -34,7 +34,7 @@ library
                     , Torch.Initializers
                     , Torch.Autograd
                     , Torch.Optim
-                    , Torch.Optim.Internal
+                    , Torch.Optim.CppOptim
                     , Torch.Vision
                     , Torch.NN
                     , Torch.NN.Recurrent.Cell.Elman
