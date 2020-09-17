@@ -84,6 +84,8 @@ data JitGraph
 data JitNode
 data JitValue
 
+data Optimizer
+
 typeTable = Map.fromList [
         (C.TypeName "std::array", [t|StdArray|])
       , (C.TypeName "std::vector", [t|StdVector|])
@@ -123,4 +125,6 @@ typeTable = Map.fromList [
       , (C.TypeName "torch::jit::Node", [t|JitNode|])
       , (C.TypeName "torch::jit::Value", [t|JitValue|])
       , (C.TypeName "at::indexing::TensorIndex", [t|TensorIndex|])
+      , (C.TypeName "torch::optim::Optimizer", [t|Optimizer|])
     ]
+

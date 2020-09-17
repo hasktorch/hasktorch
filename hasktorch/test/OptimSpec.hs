@@ -119,8 +119,7 @@ optConvQuad numIter optInit = do
     paramInit <- sample $ ConvQuadSpec dim
     trained <- foldLoop (paramInit, optInit) numIter $ \(paramState, optState) i -> do
         let lossValue = (lossConvQuad a b) paramState
-        (paramState' , optState') <- runStep paramState optState lossValue 5e-4
-        pure (replaceParameters paramState paramState', optState')
+        runStep paramState optState lossValue 5e-4
     pure ()
 
 -- | Optimize Rosenbrock function with specified optimizer
@@ -129,8 +128,7 @@ optRosen numIter optInit = do
     paramInit <- sample RosenSpec
     trained <- foldLoop (paramInit, optInit) numIter $ \(paramState, optState) i -> do
         let lossValue = lossRosen paramState
-        (paramState', optState') <- runStep paramState optState lossValue 5e-4
-        pure (replaceParameters paramState paramState', optState')
+        runStep paramState optState lossValue 5e-4
     pure ()
 
 -- | Optimize Ackley function with specified optimizer
@@ -139,8 +137,7 @@ optAckley numIter optInit = do
     paramInit <- sample AckleySpec
     trained <- foldLoop (paramInit, optInit) numIter $ \(paramState, optState) i -> do
         let lossValue = lossAckley paramState
-        (paramState', optState') <- runStep paramState optState lossValue 5e-4
-        pure (replaceParameters paramState paramState', optState')
+        runStep paramState optState lossValue 5e-4
     pure ()
 
 -- | Check global minimum point for Rosenbrock
