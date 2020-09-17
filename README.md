@@ -11,6 +11,11 @@ Contributions/PR are encouraged (see Contributing).
 Currently we are prepping development and migration for a major 2nd release, Hasktorch 0.2.
 The 1st release, Hasktorch 0.1, that you can find on hackage is outdated and should not be used at this point.
 
+## Talks
+
+- [High-level MuniHac talk](https://www.youtube.com/watch?v=Qu6RIO02m1U&t=360) by [@austinvhuang][austin-twitter]
+- [Hands-on live-coding demo](https://www.youtube.com/watch?v=ZnYa99QoznE&t=1689) by [@tscholak][torsten-twitter]
+- [Low-level FFI talk](https://www.youtube.com/watch?v=qWpD8t_Aodk&feature=youtu.be) by [@junjihashimoto][junji-twitter]
 
 ## Project Structure
 
@@ -250,11 +255,13 @@ Some example notebooks are found in the `notebooks/` directory.
 We welcome new contributors.
 
 Contact Austin Huang or Sam Stites for access to the [hasktorch slack channel][slack].
-You can send an email to [hasktorch@gmail.com][email] or on twitter as [@austinvhuang][austin-twitter] or [@SamStites][sam-twitter].
+You can send an email to [hasktorch@gmail.com][email] or on twitter as [@austinvhuang][austin-twitter], [@SamStites][sam-twitter], or [@tscholak][torsten-twitter].
 
 [email]:mailto:hasktorch@gmail.com
 [austin-twitter]:https://twitter.com/austinvhuang
 [sam-twitter]:https://twitter.com/samstites
+[torsten-twitter]:https://twitter.com/tscholak
+[junji-twitter]:https://twitter.com/junjihashimoto3
 [slack]:https://hasktorch.slack.com
 [gitter-dh]:https://gitter.im/dataHaskell/Lobby
 
