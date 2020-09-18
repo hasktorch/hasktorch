@@ -93,7 +93,6 @@ instance (HasForward modelA inA, HasForward modelB inB) => HasForwardSum' 'Deter
 
 -- TODO: remove placeholder 'G', replace with something like https://github.com/hasktorch/hasktorch/blob/35e447da733c3430cd4a181c0e1d1b029b68e942/hasktorch/src/Torch/Random.hs#L38
 data G
-instance Monad m => MonadState G m
 
 instance (HasForward modelA inA, HasForward modelB inB) => HasForwardProduct 'Stochastic 'Deterministic modelA inA modelB inB where
   type BProduct 'Stochastic 'Deterministic modelA inA modelB inB = G -> ((B modelA inA, B modelB inB), G)
@@ -131,7 +130,7 @@ instance (HasForward modelA inA, HasForward modelB inB) => HasForwardSum' 'Deter
 
 instance (HasForward modelA inA, HasForward modelB inB) => HasForwardProduct 'Stochastic 'Stochastic modelA inA modelB inB where
   type BProduct 'Stochastic 'Stochastic modelA inA modelB inB = G -> ((B modelA inA, B modelB inB), G)
-  forwardProduct _ _ modelA inA modelB inB = do
+  forwardProduct _ _ modelA inA modelB inB = runState $ do
     outA <- state (forward modelA inA)
     outB <- state (forward modelB inB)
     return (outA, outB)
@@ -145,8 +144,7 @@ instance (HasForward modelA inA, HasForward modelB inB) => HasForwardSum 'Stocha
 instance (HasForward modelA inA, HasForward modelB inB) => HasForwardSum' 'Stochastic 'Stochastic modelA inA modelB inB where
   type BSum' 'Stochastic 'Stochastic modelA inA modelB inB = G -> (Either (B modelA inA) (B modelB inB), G)
   forwardSum' _ _ (Left (modelA, inA)) = \g -> let (outA, g') = forward modelA inA g in (Left outA, g')
-  forwardSum' _ _ (Right(modelB, inB)) = \g -> let (outB, g') = forward modelB inB g in (Right outB, g')
-
+  forwardSum' _ _ (Right (modelB, inB)) = \g -> let (outB, g') = forward modelB inB g in (Right outB, g')
 
 --
 -- Parameterized
