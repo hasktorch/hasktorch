@@ -22,6 +22,7 @@ import Control.Monad.State.Strict
 import Data.Kind
 import Data.Proxy
 import GHC.Generics
+import GHC.TypeLits
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.Autograd
 import Torch.Functional
@@ -49,13 +50,22 @@ class HasForward f a where
 
 data ModelRandomness = Deterministic | Stochastic
 
-
 -- TODO: remove placeholder random state 'G', replace with (typed version of):
 -- https://github.com/hasktorch/hasktorch/blob/35e447da733c3430cd4a181c0e1d1b029b68e942/hasktorch/src/Torch/Random.hs#L38
 data G
 
+type family ModelRandomnessR' (rhs :: Type) :: ModelRandomness where
+  ModelRandomnessR' (_, G) = 'Stochastic
+  ModelRandomnessR' _ =
+    TypeError
+      ( Text "Stochastic models taking a 'Generator' "
+          :<>: Text "(i.e., having the form 'forward :: f -> a -> Generator -> _') "
+          :<>: Text "must return the final Generator state in the form "
+          :<>: Text "'forward :: f -> a -> Generator -> (_, Generator)'"
+      )
+
 type family ModelRandomnessR (out :: Type) :: ModelRandomness where
-  ModelRandomnessR ((->) G (_, G)) = 'Stochastic
+  ModelRandomnessR ((->) G rhs) = ModelRandomnessR' rhs
   ModelRandomnessR _ = 'Deterministic
 
 class HasForwardProduct (modelARandomness :: ModelRandomness) (modelBRandomness :: ModelRandomness) f1 a1 f2 a2 where
