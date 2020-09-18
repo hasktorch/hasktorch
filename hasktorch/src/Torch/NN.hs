@@ -54,18 +54,15 @@ data ModelRandomness = Deterministic | Stochastic
 -- https://github.com/hasktorch/hasktorch/blob/35e447da733c3430cd4a181c0e1d1b029b68e942/hasktorch/src/Torch/Random.hs#L38
 data G
 
-type family ModelRandomnessR' (rhs :: Type) :: ModelRandomness where
-  ModelRandomnessR' (_, G) = 'Stochastic
-  ModelRandomnessR' _ =
+type family ModelRandomnessR (out :: Type) :: ModelRandomness where
+  ModelRandomnessR ((->) G (_, G)) = 'Stochastic
+  ModelRandomnessR ((->) G _) =
     TypeError
       ( Text "Stochastic models taking a 'Generator' "
           :<>: Text "(i.e., having the form 'forward :: f -> a -> Generator -> _') "
           :<>: Text "must return the final Generator state in the form "
           :<>: Text "'forward :: f -> a -> Generator -> (_, Generator)'"
       )
-
-type family ModelRandomnessR (out :: Type) :: ModelRandomness where
-  ModelRandomnessR ((->) G rhs) = ModelRandomnessR' rhs
   ModelRandomnessR _ = 'Deterministic
 
 class HasForwardProduct (modelARandomness :: ModelRandomness) (modelBRandomness :: ModelRandomness) f1 a1 f2 a2 where
