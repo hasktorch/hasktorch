@@ -49,8 +49,13 @@ class HasForward f a where
 
 data ModelRandomness = Deterministic | Stochastic
 
+
+-- TODO: remove placeholder random state 'G', replace with (typed version of):
+-- https://github.com/hasktorch/hasktorch/blob/35e447da733c3430cd4a181c0e1d1b029b68e942/hasktorch/src/Torch/Random.hs#L38
+data G
+
 type family ModelRandomnessR (out :: Type) :: ModelRandomness where
-  ModelRandomnessR ((->) g (_, g)) = 'Stochastic
+  ModelRandomnessR ((->) G (_, G)) = 'Stochastic
   ModelRandomnessR _ = 'Deterministic
 
 class HasForwardProduct (modelARandomness :: ModelRandomness) (modelBRandomness :: ModelRandomness) f1 a1 f2 a2 where
@@ -90,9 +95,6 @@ instance (HasForward modelA inA, HasForward modelB inB) => HasForwardSum' 'Deter
 --
 -- Stochastic mixed instances
 --
-
--- TODO: remove placeholder 'G', replace with something like https://github.com/hasktorch/hasktorch/blob/35e447da733c3430cd4a181c0e1d1b029b68e942/hasktorch/src/Torch/Random.hs#L38
-data G
 
 instance (HasForward modelA inA, HasForward modelB inB) => HasForwardProduct 'Stochastic 'Deterministic modelA inA modelB inB where
   type BProduct 'Stochastic 'Deterministic modelA inA modelB inB = G -> ((B modelA inA, B modelB inB), G)
