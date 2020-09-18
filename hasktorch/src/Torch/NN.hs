@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -19,6 +20,7 @@ module Torch.NN where
 import Control.Applicative (Applicative (liftA2))
 import Control.Monad.State.Strict
 import Data.Kind
+import Data.Proxy
 import GHC.Generics
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.Autograd
@@ -41,73 +43,114 @@ nextParameter = do
     [] -> error "Not enough parameters supplied to replaceParameters"
     (p : t) -> do put t; return p
 
-class HasForward f a b | f a -> b where
+class HasForward f a where
+  type B f a :: Type
   forward :: f -> a -> b
-  default forward ::
-    ( Generic f,
-      Generic a,
-      Generic b,
-      GHasForward (Rep f) (Rep a) (Rep b)
-    ) =>
-    f ->
-    a ->
-    b
-  forward f a = to $ gForward (from f) (from a)
-  forwardStoch :: f -> a -> IO b
-  default forwardStoch ::
-    ( Generic f,
-      Generic a,
-      Generic b,
-      GHasForward (Rep f) (Rep a) (Rep b)
-    ) =>
-    f ->
-    a ->
-    IO b
-  forwardStoch f a = to <$> gForwardStoch (from f) (from a)
 
-class GHasForward (f :: Type -> Type) (a :: Type -> Type) (b :: Type -> Type) | f a -> b where
-  gForward :: forall c c' c''. f c -> a c' -> b c''
-  gForwardStoch :: forall c c' c''. f c -> a c' -> IO (b c)
+data ModelRandomness = Deterministic | Stochastic
 
-instance GHasForward U1 U1 U1 where
-  gForward U1 U1 = U1
-  gForwardStoch U1 U1 = return U1
+type family ModelRandomnessR (out :: Type) :: ModelRandomness where
+  ModelRandomnessR ((->) g (_, g)) = 'Stochastic
+  ModelRandomnessR _ = 'Deterministic
 
-instance
-  ( GHasForward f a b,
-    GHasForward g a' b',
-    b'' ~ (b :+: b')
-  ) =>
-  GHasForward (f :+: g) (a :+: a') b''
-  where
-  gForward (L1 f) (L1 a) = L1 $ gForward f a
-  gForward (R1 g) (R1 a') = R1 $ gForward g a'
-  gForwardStoch (L1 f) (L1 a) = L1 <$> gForwardStoch f a
-  gForwardStoch (R1 g) (R1 a') = R1 <$> gForwardStoch g a'
+class HasForwardProduct (modelARandomness :: ModelRandomness) (modelBRandomness :: ModelRandomness) f1 a1 f2 a2 where
+  type BProduct modelARandomness modelBRandomness f1 a1 f2 a2 :: Type
+  forwardProduct :: Proxy modelARandomness -> Proxy modelBRandomness -> f1 -> a1 -> f2 -> a2 -> BProduct modelARandomness modelBRandomness f1 a1 f2 a2
 
-instance
-  ( GHasForward f a b,
-    GHasForward g a' b',
-    b'' ~ (b :*: b')
-  ) =>
-  GHasForward (f :*: g) (a :*: a') b''
-  where
-  gForward (f :*: g) (a :*: a') = gForward f a :*: gForward g a'
-  gForwardStoch (f :*: g) (a :*: a') = liftA2 ((:*:)) (gForwardStoch f a) (gForwardStoch g a')
+class HasForwardSum (modelARandomness :: ModelRandomness) (modelBRandomness :: ModelRandomness) f1 a1 f2 a2 where
+  type BSum modelARandomness modelBRandomness f1 a1 f2 a2 :: Type
+  forwardSum :: Proxy modelARandomness -> Proxy modelBRandomness -> Either f1 f2 -> Either a1 a2 -> BSum modelARandomness modelBRandomness f1 a1 f2 a2
 
-instance
-  (HasForward f a b) =>
-  GHasForward (K1 i f) (K1 i a) (K1 i b)
-  where
-  gForward (K1 f) (K1 a) = K1 $ forward f a
-  gForwardStoch (K1 f) (K1 a) = K1 <$> forwardStoch f a
+-- | Alternative 'HasForwardSum'
+class HasForwardSum' (modelARandomness :: ModelRandomness) (modelBRandomness :: ModelRandomness) f1 a1 f2 a2 where
+  type BSum' modelARandomness modelBRandomness f1 a1 f2 a2 :: Type
+  forwardSum' :: Proxy modelARandomness -> Proxy modelBRandomness -> Either (f1, a1) (f2, a2) -> BSum' modelARandomness modelBRandomness f1 a1 f2 a2
 
-instance
-  (GHasForward f a b) =>
-  GHasForward (M1 i t f) (M1 i t' a) (M1 i t' b)
-  where
-  gForward (M1 f) (M1 a) = M1 $ gForward f a
-  gForwardStoch (M1 f) (M1 a) = M1 <$> gForwardStoch f a
+-- TODO replace HasForwardSum' -> HasForwardSum or remove HasForwardSum'
+
+--
+-- Deterministic instances
+--
+
+instance (HasForward modelA inA, HasForward modelB inB) => HasForwardProduct 'Deterministic 'Deterministic modelA inA modelB inB where
+  type BProduct 'Deterministic 'Deterministic modelA inA modelB inB = (B modelA inA, B modelB inB)
+  forwardProduct _ _ modelA inA modelB inB = (forward modelA inA, forward modelB inB)
+
+instance (HasForward modelA inA, HasForward modelB inB) => HasForwardSum 'Deterministic 'Deterministic modelA inA modelB inB where
+  type BSum 'Deterministic 'Deterministic modelA inA modelB inB = Maybe (Either (B modelA inA) (B modelB inB))
+  forwardSum _ _ (Left modelA) (Left inA) = Just . Left $ forward modelA inA
+  forwardSum _ _ (Right modelA) (Right inA) = Just . Right $ forward modelA inA
+  forwardSum _ _ _ _ = Nothing
+
+instance (HasForward modelA inA, HasForward modelB inB) => HasForwardSum' 'Deterministic 'Deterministic modelA inA modelB inB where
+  type BSum' 'Deterministic 'Deterministic modelA inA modelB inB = Either (B modelA inA) (B modelB inB)
+  forwardSum' _ _ (Left (modelA, inA)) = Left $ forward modelA inA
+  forwardSum' _ _ (Right (modelB, inB)) = Right $ forward modelB inB
+
+--
+-- Stochastic mixed instances
+--
+
+-- TODO: remove placeholder 'G', replace with something like https://github.com/hasktorch/hasktorch/blob/35e447da733c3430cd4a181c0e1d1b029b68e942/hasktorch/src/Torch/Random.hs#L38
+data G
+instance Monad m => MonadState G m
+
+instance (HasForward modelA inA, HasForward modelB inB) => HasForwardProduct 'Stochastic 'Deterministic modelA inA modelB inB where
+  type BProduct 'Stochastic 'Deterministic modelA inA modelB inB = G -> ((B modelA inA, B modelB inB), G)
+  forwardProduct _ _ modelA inA modelB inB = \g -> let (outA, g') = forward modelA inA g in ((outA, forward modelB inB), g')
+
+instance (HasForward modelA inA, HasForward modelB inB) => HasForwardProduct 'Deterministic 'Stochastic modelA inA modelB inB where
+  type BProduct 'Deterministic 'Stochastic modelA inA modelB inB = G -> ((B modelA inA, B modelB inB), G)
+  forwardProduct _ _ modelA inA modelB inB = \g -> let (outB, g') = forward modelB inB g in ((forward modelA inA, outB), g')
+
+instance (HasForward modelA inA, HasForward modelB inB) => HasForwardSum 'Stochastic 'Deterministic modelA inA modelB inB where
+  type BSum 'Stochastic 'Deterministic modelA inA modelB inB = G -> (Maybe (Either (B modelA inA) (B modelB inB)), G)
+  forwardSum _ _ (Left modelA) (Left inA) = \g -> let (outA, g') = forward modelA inA g in (Just . Left $ outA, g')
+  forwardSum _ _ (Right modelB) (Right inB) = \g -> (Just . Right $ forward modelB inB, g)
+  forwardSum _ _ _ _ = \g -> (Nothing, g)
+
+instance (HasForward modelA inA, HasForward modelB inB) => HasForwardSum 'Deterministic 'Stochastic modelA inA modelB inB where
+  type BSum 'Deterministic 'Stochastic modelA inA modelB inB = G -> (Maybe (Either (B modelA inA) (B modelB inB)), G)
+  forwardSum _ _ (Left modelA) (Left inA) = \g -> (Just . Left $ forward modelA inA, g)
+  forwardSum _ _ (Right modelB) (Right inB) = \g -> let (outB, g') = forward modelB inB g in (Just . Right $ outB, g')
+  forwardSum _ _ _ _ = \g -> (Nothing, g)
+
+instance (HasForward modelA inA, HasForward modelB inB) => HasForwardSum' 'Stochastic 'Deterministic modelA inA modelB inB where
+  type BSum' 'Stochastic 'Deterministic modelA inA modelB inB = G -> (Either (B modelA inA) (B modelB inB), G)
+  forwardSum' _ _ (Left (modelA, inA)) = \g -> let (outA, g') = forward modelA inA g in (Left outA, g')
+  forwardSum' _ _ (Right (modelB, inB)) = \g -> (Right $ forward modelB inB, g)
+
+instance (HasForward modelA inA, HasForward modelB inB) => HasForwardSum' 'Deterministic 'Stochastic modelA inA modelB inB where
+  type BSum' 'Deterministic 'Stochastic modelA inA modelB inB = G -> (Either (B modelA inA) (B modelB inB), G)
+  forwardSum' _ _ (Left (modelA, inA)) = \g -> (Left $ forward modelA inA, g)
+  forwardSum' _ _ (Right (modelB, inB)) = \g -> let (outA, g') = forward modelB inB g in (Right outA, g')
+
+--
+-- Fully-stochastic instances
+--
+
+instance (HasForward modelA inA, HasForward modelB inB) => HasForwardProduct 'Stochastic 'Stochastic modelA inA modelB inB where
+  type BProduct 'Stochastic 'Stochastic modelA inA modelB inB = G -> ((B modelA inA, B modelB inB), G)
+  forwardProduct _ _ modelA inA modelB inB = do
+    outA <- state (forward modelA inA)
+    outB <- state (forward modelB inB)
+    return (outA, outB)
+
+instance (HasForward modelA inA, HasForward modelB inB) => HasForwardSum 'Stochastic 'Stochastic modelA inA modelB inB where
+  type BSum 'Stochastic 'Stochastic modelA inA modelB inB = G -> (Maybe (Either (B modelA inA) (B modelB inB)), G)
+  forwardSum _ _ (Left modelA) (Left inA) = \g -> let (outA, g') = forward modelA inA g in (Just . Left $ outA, g')
+  forwardSum _ _ (Right modelB) (Right inB) = \g -> let (outB, g') = forward modelB inB g in (Just . Left $ outB, g')
+  forwardSum _ _ _ _ = \g -> (Nothing, g)
+
+instance (HasForward modelA inA, HasForward modelB inB) => HasForwardSum' 'Stochastic 'Stochastic modelA inA modelB inB where
+  type BSum' 'Stochastic 'Stochastic modelA inA modelB inB = G -> (Either (B modelA inA) (B modelB inB), G)
+  forwardSum' _ _ (Left (modelA, inA)) = \g -> let (outA, g') = forward modelA inA g in (Left outA, g')
+  forwardSum' _ _ (Right(modelB, inB)) = \g -> let (outB, g') = forward modelB inB g in (Right outB, g')
+
+
+--
+-- Parameterized
+--
 
 class Parameterized f where
   flattenParameters :: f -> [Parameter]
