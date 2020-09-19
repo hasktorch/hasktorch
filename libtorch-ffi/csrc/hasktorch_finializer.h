@@ -6,6 +6,8 @@
 #include <ATen/Storage.h>
 #include <ATen/TensorIndexing.h>
 #include <torch/csrc/jit/api/module.h>
+#include <torch/optim.h>
+
 #include <array>
 #include <string>
 #include <tuple>
@@ -87,5 +89,6 @@ extern "C" {
   void delete_tensortensorcdoubleint64(std::tuple<at::Tensor,at::Tensor,double,int64_t>* ptr);
 
   void delete_cdoubleint64(std::tuple<double,int64_t>* ptr);
-};
 
+  void delete_optimizer(torch::optim::Optimizer* ptr);
+};

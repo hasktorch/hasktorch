@@ -43,7 +43,7 @@ train OptimSpec{..} dataset init = do
             when (iter `mod` 50 == 0) $ do
                 putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
             (newParam, _) <- runStep state optimizer loss learningRate
-            pure $ replaceParameters state newParam
+            pure newParam
     pure trained
 
 --

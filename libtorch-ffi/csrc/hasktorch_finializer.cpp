@@ -151,3 +151,7 @@ void delete_tensortensorcdoubleint64(std::tuple<at::Tensor,at::Tensor,double,int
 void delete_cdoubleint64(std::tuple<double,int64_t>* object){
   delete object;
 }
+
+void delete_optimizer(torch::optim::Optimizer* object){
+  delete object;
+}
