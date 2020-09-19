@@ -8,6 +8,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -21,6 +22,7 @@ import Control.Applicative (Applicative (liftA2))
 import Control.Monad.State.Strict
 import Data.Kind
 import Data.Proxy
+import Data.Type.Bool
 import GHC.Generics
 import GHC.TypeLits
 import System.IO.Unsafe (unsafePerformIO)
@@ -54,15 +56,31 @@ data ModelRandomness = Deterministic | Stochastic
 -- https://github.com/hasktorch/hasktorch/blob/35e447da733c3430cd4a181c0e1d1b029b68e942/hasktorch/src/Torch/Random.hs#L38
 data G
 
-type family ModelRandomnessR (out :: Type) :: ModelRandomness where
-  ModelRandomnessR ((->) G (_, G)) = 'Stochastic
-  ModelRandomnessR ((->) G _) =
-    TypeError
-      ( Text "Stochastic models taking a 'Generator' "
-          :<>: Text "(i.e., having the form 'forward :: f -> a -> Generator -> _') "
-          :<>: Text "must return the final Generator state in the form "
-          :<>: Text "'forward :: f -> a -> Generator -> (_, Generator)'"
+-- TODO: move to typelevel utils (maybe Torch.Typed.Aux?)
+type family Contains (f :: k) (a :: Type) :: Bool where
+  Contains a a = 'True
+  Contains (f g) a = Contains f a || Contains g a
+  Contains _ _ = 'False
+
+type family CheckStochasticOutType (f :: k) :: ModelRandomness where
+  CheckStochasticOutType (b, G) =
+    If
+      (Not (Contains b G))
+      'Stochastic
+      ( TypeError
+          ( Text "For stochastic models, 'b' must not contain 'Generator' in "
+              :<>: Text "'forward :: f -> a -> Generator -> (b, Generator)'."
+          )
       )
+  CheckStochasticOutType _ =
+    ( TypeError
+        ( Text "Stochastic models must have a forward pass of the form "
+            :<>: Text "'forward :: f -> a -> Generator -> (b, Generator)'."
+        )
+    )
+
+type family ModelRandomnessR (out :: Type) :: ModelRandomness where
+  ModelRandomnessR ((->) G f) = CheckStochasticOutType f
   ModelRandomnessR _ = 'Deterministic
 
 class HasForwardProduct (modelARandomness :: ModelRandomness) (modelBRandomness :: ModelRandomness) f1 a1 f2 a2 where
