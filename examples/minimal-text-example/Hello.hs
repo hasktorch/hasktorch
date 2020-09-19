@@ -35,7 +35,7 @@ run input_tensor init_hidden expected_output model i = do
     when (i `mod` 100 == 0) $ do
         print loss
     (newParam, _) <- runStep model GD loss 0.05
-    return $ replaceParameters model newParam
+    return newParam
 
 
 -- | convert a list to a one-dimensional tensor

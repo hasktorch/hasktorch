@@ -180,7 +180,7 @@ instance A.Parameterized (LSTMLayer inputSize hiddenSize directionality dtype de
       untypeParam bi',
       untypeParam bh'
     ]
-  replaceOwnParameters (LSTMUnidirectionalLayer _wi _wh _bi _bh) = do
+  _replaceParameters (LSTMUnidirectionalLayer _wi _wh _bi _bh) = do
     wi <- A.nextParameter
     wh <- A.nextParameter
     bi <- A.nextParameter
@@ -192,7 +192,7 @@ instance A.Parameterized (LSTMLayer inputSize hiddenSize directionality dtype de
           (UnsafeMkParameter bi)
           (UnsafeMkParameter bh)
       )
-  replaceOwnParameters (LSTMBidirectionalLayer _wi _wh _bi _bh _wi' _wh' _bi' _bh') = do
+  _replaceParameters (LSTMBidirectionalLayer _wi _wh _bi _bh _wi' _wh' _bi' _bh') = do
     wi <- A.nextParameter
     wh <- A.nextParameter
     bi <- A.nextParameter
@@ -279,22 +279,24 @@ instance
       ),
     Parameterized (LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device),
     HAppendFD
-      (Parameters (LSTMLayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device))
       (Parameters (LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device))
-      (Parameters (LSTMLayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device) ++ Parameters (LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device))
+      (Parameters (LSTMLayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device))
+      ( Parameters (LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device)
+          ++ Parameters (LSTMLayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)
+      )
   ) =>
   LSTMLayerStackParameterized 'True inputSize hiddenSize numLayers directionality dtype device
   where
   type
     LSTMLayerStackParameters 'True inputSize hiddenSize numLayers directionality dtype device =
-      Parameters (LSTMLayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)
-        ++ Parameters (LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device)
+      Parameters (LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device)
+        ++ Parameters (LSTMLayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)
   lstmLayerStackFlattenParameters _ (LSTMLayerK lstmLayer lstmLayerStack) =
     let parameters = flattenParameters lstmLayer
         parameters' = flattenParameters @(LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device) lstmLayerStack
-     in parameters `happendFD` parameters'
+     in parameters' `happendFD` parameters
   lstmLayerStackReplaceParameters _ (LSTMLayerK lstmLayer lstmLayerStack) parameters'' =
-    let (parameters, parameters') = hunappendFD parameters''
+    let (parameters', parameters) = hunappendFD parameters''
         lstmLayer' = replaceParameters lstmLayer parameters
         lstmLayerStack' = replaceParameters @(LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device) lstmLayerStack parameters'
      in LSTMLayerK lstmLayer' lstmLayerStack'
@@ -366,12 +368,12 @@ instance A.Parameterized (LSTMLayerStack inputSize hiddenSize numLayers directio
   flattenParameters (LSTMLayerK stack layer) =
     A.flattenParameters stack
       ++ A.flattenParameters layer
-  replaceOwnParameters (LSTMLayer1 layer) = do
-    layer' <- A.replaceOwnParameters layer
+  _replaceParameters (LSTMLayer1 layer) = do
+    layer' <- A._replaceParameters layer
     return $ LSTMLayer1 layer'
-  replaceOwnParameters (LSTMLayerK stack layer) = do
-    stack' <- A.replaceOwnParameters stack
-    layer' <- A.replaceOwnParameters layer
+  _replaceParameters (LSTMLayerK stack layer) = do
+    stack' <- A._replaceParameters stack
+    layer' <- A._replaceParameters layer
     return $ LSTMLayerK stack' layer'
 
 newtype
@@ -432,8 +434,8 @@ instance
 
 instance A.Parameterized (LSTM inputSize hiddenSize numLayers directionality dtype device) where
   flattenParameters LSTM {..} = A.flattenParameters lstm_layer_stack
-  replaceOwnParameters LSTM {..} = do
-    lstm_layer_stack' <- A.replaceOwnParameters lstm_layer_stack
+  _replaceParameters LSTM {..} = do
+    lstm_layer_stack' <- A._replaceParameters lstm_layer_stack
     return $
       LSTM
         { lstm_layer_stack = lstm_layer_stack',
@@ -673,15 +675,15 @@ instance A.Parameterized (LSTMWithInit inputSize hiddenSize numLayers directiona
   flattenParameters LSTMWithLearnedInit {..} =
     A.flattenParameters lstmWithLearnedInit_lstm
       ++ fmap untypeParam [lstmWithLearnedInit_c, lstmWithLearnedInit_h]
-  replaceOwnParameters LSTMWithConstInit {..} = do
-    lstmWithConstInit_lstm' <- A.replaceOwnParameters lstmWithConstInit_lstm
+  _replaceParameters LSTMWithConstInit {..} = do
+    lstmWithConstInit_lstm' <- A._replaceParameters lstmWithConstInit_lstm
     return $
       LSTMWithConstInit
         { lstmWithConstInit_lstm = lstmWithConstInit_lstm',
           ..
         }
-  replaceOwnParameters LSTMWithLearnedInit {..} = do
-    lstmWithLearnedInit_lstm' <- A.replaceOwnParameters lstmWithLearnedInit_lstm
+  _replaceParameters LSTMWithLearnedInit {..} = do
+    lstmWithLearnedInit_lstm' <- A._replaceParameters lstmWithLearnedInit_lstm
     lstmWithLearnedInit_c' <- A.nextParameter
     lstmWithLearnedInit_h' <- A.nextParameter
     return $

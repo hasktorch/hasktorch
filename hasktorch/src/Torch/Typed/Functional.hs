@@ -628,7 +628,7 @@ log10 input = unsafePerformIO $ ATen.cast1 ATen.Managed.log10_t input
 -- this operation supports broadcasting
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 --
--- >>> dtype &&& shape $ pow 2 (ones :: CPUTensor 'D.Float '[3,2])
+-- >>> dtype &&& shape $ pow (2 :: CPUTensor 'D.Float '[]) (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 pow ::
   forall shape'' shape shape' dtype device.
@@ -4196,13 +4196,15 @@ unsqueeze input = unsafePerformIO $ ATen.cast2 ATen.Managed.unsqueeze_tl input (
 
 type family SqueezeAll (shape :: [Nat]) :: [Nat] where
   SqueezeAll '[] = '[]
-  SqueezeAll (1 ': xs) = xs
+  SqueezeAll (1 ': xs) = SqueezeAll xs
   SqueezeAll (x ': xs) = x ': SqueezeAll xs
 
 -- | squeeze all dimensions
 --
 -- >>> dtype &&& shape $ squeezeAll (ones :: CPUTensor 'D.Float '[2,1,2,1,2])
 -- (Float,[2,2,2])
+-- >>> squeezeAll (ones :: CPUTensor 'D.Float '[2,1,2,1,2])
+-- Tensor Float [2,2,2]
 squeezeAll ::
   forall shape shape' dtype device.
   (shape' ~ SqueezeAll shape) =>
@@ -4222,12 +4224,23 @@ type family SqueezeDimCheck (shape :: [a]) (dim :: Nat) (result :: Maybe [a]) ::
   SqueezeDimCheck shape dim Nothing = TypeError (Text "The tensor cannot be squeezed at the specified dimension " :<>: ShowType dim)
   SqueezeDimCheck _ _ ('Just shape') = shape'
 
+-- | Calculate the output shape of a squeeze along a given dimension
+--
+-- >>> :kind! SqueezeDim '[2,1,2] 1
+-- SqueezeDim '[2,1,2] 1 :: [Nat]
+-- = '[2, 2]
 type SqueezeDim shape dim = SqueezeDimCheck shape dim (SqueezeDimImpl shape dim)
 
 -- | squeeze a particular dimension
 --
 -- >>> dtype &&& shape $ squeezeDim @1 (ones :: CPUTensor 'D.Float '[2,1,2,1,2])
 -- (Float,[2,2,1,2])
+-- >>> squeezeDim @1 (ones :: CPUTensor 'D.Float '[2,1,2,1,2])
+-- Tensor Float [2,2,1,2]
+-- >>> dtype &&& shape $ squeezeDim @3 (ones :: CPUTensor 'D.Float '[2,1,2,1,2])
+-- (Float,[2,1,2,2])
+-- >>> squeezeDim @3 (ones :: CPUTensor 'D.Float '[2,1,2,1,2])
+-- Tensor Float [2,1,2,2]
 squeezeDim ::
   forall dim shape shape' dtype device.
   (KnownNat dim, shape' ~ SqueezeDim shape dim) =>
@@ -4799,7 +4812,7 @@ nonzero _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.nonzero_t) _input
 -- >>> :kind! GatherDimImpl '[2, 1, 1] '[2, 1] 1
 -- GatherDimImpl '[2, 1, 1] '[2, 1] 1 :: Maybe [Nat]
 -- = 'Nothing
--- :kind! GatherDimImpl '[2, 1, 1] '[2, 1, 3] 2
+-- >>> :kind! GatherDimImpl '[2, 1, 1] '[2, 1, 3] 2
 -- GatherDimImpl '[2, 1, 1] '[2, 1, 3] 2 :: Maybe [Nat]
 -- = 'Just '[2, 1, 3]
 type family GatherDimImpl (shape :: [Nat]) (shape' :: [Nat]) (dim :: Nat) :: Maybe [Nat] where
@@ -4817,6 +4830,11 @@ type family GatherDimCheck (shape :: [a]) (shape' :: [a]) (dim :: Nat) (result :
       )
   GatherDimCheck _ _ _ (Just shape'') = shape''
 
+-- | Calculate the output shape of a gather operation for a given index shape along a given axis
+--
+-- >>> :kind! GatherDim '[2, 1, 1] '[2, 1, 3] 2
+-- GatherDim '[2, 1, 1] '[2, 1, 3] 2 :: [Nat]
+-- = '[2, 1, 3]
 type GatherDim shape shape' dim = GatherDimCheck shape shape' dim (GatherDimImpl shape shape' dim)
 
 -- | gather values along an axis for a specified dimension.

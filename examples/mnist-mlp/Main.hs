@@ -62,7 +62,7 @@ trainLoop model optimizer = P.foldM  step begin done . enumerate
           when (iter `mod` 50 == 0) $ do
             putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
           (newParam, _) <- runStep model optimizer loss 1e-3
-          pure $ replaceParameters model newParam
+          pure newParam
         done = pure
         begin = pure model
 

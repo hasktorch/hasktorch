@@ -237,7 +237,7 @@ runMethod1 module' func input = unsafePerformIO $ cast3 runMethod1' module' func
 
 instance Parameterized ScriptModule where
   flattenParameters module' = map IndependentTensor $ getParameters module'
-  replaceOwnParameters module' = do
+  _replaceParameters module' = do
     let len = length (getParameters module')
     ps' <- replicateM len nextParameter
     return $ updateParameters WithRequiredGrad module' (map toDependent ps')

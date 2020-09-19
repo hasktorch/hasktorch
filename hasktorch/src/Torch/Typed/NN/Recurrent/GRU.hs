@@ -230,22 +230,22 @@ instance
       ),
     Parameterized (GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device),
     HAppendFD
-      (Parameters (GRULayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device))
       (Parameters (GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device))
-      (Parameters (GRULayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device) ++ Parameters (GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device))
+      (Parameters (GRULayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device))
+      (Parameters (GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device) ++ Parameters (GRULayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device))
   ) =>
   GRULayerStackParameterized 'True inputSize hiddenSize numLayers directionality dtype device
   where
   type
     GRULayerStackParameters 'True inputSize hiddenSize numLayers directionality dtype device =
-      Parameters (GRULayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)
-        ++ Parameters (GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device)
+      Parameters (GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device)
+        ++ Parameters (GRULayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)
   gruLayerStackFlattenParameters _ (GRULayerK gruLayer gruLayerStack) =
     let parameters = flattenParameters gruLayer
         parameters' = flattenParameters @(GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device) gruLayerStack
-     in parameters `happendFD` parameters'
+     in parameters' `happendFD` parameters
   gruLayerStackReplaceParameters _ (GRULayerK gruLayer gruLayerStack) parameters'' =
-    let (parameters, parameters') = hunappendFD parameters''
+    let (parameters', parameters) = hunappendFD parameters''
         gruLayer' = replaceParameters gruLayer parameters
         gruLayerStack' = replaceParameters @(GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device) gruLayerStack parameters'
      in GRULayerK gruLayer' gruLayerStack'

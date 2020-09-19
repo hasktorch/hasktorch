@@ -63,6 +63,7 @@ instance
   HasForward (Linear inputFeatures outputFeatures dtype device) (Tensor device dtype shape) (Tensor device dtype shape')
   where
   forward = linearForward
+  forwardStoch = (pure .) . forward
 
 instance
   ( KnownNat inputFeatures,

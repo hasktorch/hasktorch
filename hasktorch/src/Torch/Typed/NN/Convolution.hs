@@ -87,6 +87,7 @@ instance
   HasForward (Conv1d inputChannelSize outputChannelSize kernelSize dtype device) (Tensor device dtype '[batchSize, inputChannelSize, inputSize], Proxy stride, Proxy padding) (Tensor device dtype '[batchSize, outputChannelSize, outputSize])
   where
   forward model (input, Proxy, Proxy) = conv1dForward @stride @padding model input
+  forwardStoch = (pure .) . forward
 
 instance
   ( KnownNat inputChannelSize,
@@ -167,6 +168,7 @@ instance
   HasForward (Conv2d inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device) (Tensor device dtype '[batchSize, inputChannelSize, inputSize0, inputSize1], Proxy stride, Proxy padding) (Tensor device dtype '[batchSize, outputChannelSize, outputSize0, outputSize1])
   where
   forward model (input, Proxy, Proxy) = conv2dForward @stride @padding model input
+  forwardStoch = (pure .) . forward
 
 instance
   ( KnownNat inputChannelSize,
@@ -253,6 +255,7 @@ instance
   HasForward (Conv3d inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device) (Tensor device dtype '[batchSize, inputChannelSize, inputSize0, inputSize1, inputSize2], Proxy stride, Proxy padding) (Tensor device dtype '[batchSize, outputChannelSize, outputSize0, outputSize1, outputSize2])
   where
   forward model (input, Proxy, Proxy) = conv3dForward @stride @padding model input
+  forwardStoch = (pure .) . forward
 
 instance
   ( KnownNat inputChannelSize,

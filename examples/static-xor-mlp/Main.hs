@@ -71,6 +71,7 @@ instance
     (Tensor device dtype '[batchSize, outputFeatures])
   where
   forward MLP {..} = forward layer2 . tanh . forward layer1 . tanh . forward layer0
+  forwardStoch = (pure .) . forward
 
 instance
   ( KnownDevice device,

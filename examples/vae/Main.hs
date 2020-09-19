@@ -123,7 +123,7 @@ main = do
       when (i `mod` 100 == 0) $ do
           putStrLn $ show loss
       (new_flat_parameters, _) <- runStep vaeState optimizer loss 1e-5
-      pure $ replaceParameters vaeState new_flat_parameters
+      pure new_flat_parameters
     putStrLn "Done"
   where
     -- model parameters

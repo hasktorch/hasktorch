@@ -55,7 +55,7 @@ data
   where
   MultiheadAttentionSpec ::
     -- | spec for dropout
-    {mhaDropoutSpec :: DropoutSpec} ->
+    DropoutSpec ->
     MultiheadAttentionSpec embedDim kEmbedDim vEmbedDim numHeads dtype device
   deriving (Show, Eq)
 
@@ -174,7 +174,7 @@ instance
     (MultiheadAttentionSpec embedDim kEmbedDim vEmbedDim numHeads dtype device)
     (MultiheadAttention embedDim kEmbedDim vEmbedDim numHeads dtype device)
   where
-  sample MultiheadAttentionSpec {..} =
+  sample (MultiheadAttentionSpec mhaDropoutSpec) =
     MultiheadAttention
       <$> A.sample LinearSpec
       <*> A.sample LinearSpec

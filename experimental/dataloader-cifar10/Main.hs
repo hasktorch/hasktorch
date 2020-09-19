@@ -64,7 +64,7 @@ train numEpoch trainData = do
                 loss = nllLoss' label $ mlp state input
                 flatParameters = flattenParameters state
             (newParam, _) <- runStep state GD loss 1e-3
-            pure $ (replaceParameters state newParam, (toDouble loss)+sumLoss)
+            pure $ (newParam, (toDouble loss)+sumLoss)
         putStrLn $ "Epoch: " ++ show iter ++ " | Loss: " ++ show trained_loss'
         pure trained'
     pure trained
