@@ -80,7 +80,7 @@ trainLoop model optimizer inputs = P.foldM step init done $ enumerateData inputs
             liftIO $ print iter
             liftIO $ putStrLn $ " | Loss: " ++ show loss
           (newParam, _) <- liftIO $ runStep model optimizer loss 1e-2
-          pure $ replaceParameters model newParam
+          pure newParam
 
         done = pure
         init = pure model

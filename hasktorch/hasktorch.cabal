@@ -34,6 +34,7 @@ library
                     , Torch.Initializers
                     , Torch.Autograd
                     , Torch.Optim
+                    , Torch.Optim.CppOptim
                     , Torch.Vision
                     , Torch.NN
                     , Torch.NN.Recurrent.Cell.Elman
@@ -121,6 +122,7 @@ library
                     , foldl
                     , transformers-base
                     , array
+                    , data-default-class
                     , containers
                     , inline-c
 
