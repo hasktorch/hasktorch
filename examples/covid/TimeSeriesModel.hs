@@ -92,21 +92,12 @@ swish x = T.mul x (sigmoid x)
 
 instance HasForward Simple1dModel [Tensor] Tensor where
   forward Simple1dModel {..} inputs = 
-    swish $ forward decoder (forward encoder $ output)
+    swish $ forward decoder (forward encoder $ seqOutput)
     where
       cell = gru1d
-      -- hSize = P.div ((shape . toDependent . weightsIH $ cell) !! 0) 4 -- 4 for LSTM
       hSize = P.div ((shape . toDependent . G.weightsIH $ cell) !! 0) 3 -- 3 for GRU
-      -- iSize = (shape . toDependent . weightsIH $ cell) !! 1
-      -- LSTM
-      -- cellInit = zeros' [1, hSize]
-      -- hiddenInit = zeros' [1, hSize]
-      -- stateInit = (hiddenInit, cellInit)
-      -- GRU
       hiddenInit = zeros' [1, hSize ] -- what should this be for GRU
-      -- (lstmOutput, cellState) = foldl (lstmCellForward cell) stateInit inputs
-      -- inputs' = forward mlp1d0 inputs -- TODO - get this working
-      output = foldl (gruCellForward cell . forward encoder) hiddenInit inputs
+      seqOutput = foldl (gruCellForward cell . forward encoder) hiddenInit inputs
   forwardStoch m x = pure (forward m x)
 
 {- Attempt to model cross-correlations -}
@@ -153,7 +144,6 @@ t2vForward t Time2Vec {..} =
         toDependent b
       )
 
-{-
 data TSModelSpec = TSModelSpec
   { nCounties :: Int,
     countyEmbedDim :: Int,
@@ -199,63 +189,17 @@ tsmodelForward t TSModel {..} (hiddenState, cellState) allCounties countyCount =
 
 instance HasForward TSModel Tensor Tensor where
   forward model modelInputs = undefined
-
--- forward:: TSModel -> ModelInputs -> (Tensor, Tensor)
-
-{- Computation Setups for Time Series -}
-
--- | Check forward computation
-checkOutputs = do
-  -- check time2vec
-  t2v <- sample $ Time2VecSpec 10
-  lstmLayer <- sample $ LSTMSpec (10 + 1) 2
-  let result = t2vForward 3.0 t2v
-  print result
-  -- check end-to-end
-  let inputDim = 3193 + 1 + 1 -- # counties + t2vDim + county of interest count
-  model <-
-    sample
-      TSModelSpec
-        { nCounties = 3193,
-          countyEmbedDim = 6,
-          t2vSpec = Time2VecSpec {t2vDim = 6},
-          lstmSpec = LSTMSpec {inputSize = inputDim, hiddenSize = 12}
-        }
-  let result = tsmodelForward 10.0 model (ones' [inputDim], ones' [inputDim]) (ones' [3193]) 15.0
-  print result
-
-initModel nRegions t2vDim lstmHDim =
-  sample
-    TSModelSpec
-      { nCounties = nRegions,
-        countyEmbedDim = t2vDim,
-        t2vSpec = Time2VecSpec {t2vDim = t2vDim},
-        lstmSpec = LSTMSpec {inputSize = t2vDim + 1, hiddenSize = lstmHDim} -- t2vDim + this region's count (1D for now)
-      }
-
--}
-
-{-
-testModel = do
-  let t2vd = 6
-  let inputDim = 3193 + t2vd + 1 -- # counties + t2vDim + county of interest count
-  initializedModel <- initModel 3193 t2vd 6
-  let spec = optimSpec initializedModel undefined
-  model <- train spec undefined initializedModel
-  pure ()
--}
-
-{- Computation Setups for 1D baseline -}
+  forwardStoch model modelInputs = undefined
 
 {-
 clipGradient :: T.Scalar a => a -> Gradients -> Gradients
 clipGradient maxScale (Gradients gradients) =  
   if scale > maxScale then
-    Gradients TODO - zipWith (mulScalar (scale / maxScale) <$> gradients)
+    Gradients zipWith (mulScalar (scale / maxScale) <$> gradients)
   else
     Gradients gradients
   where
-    scales = (asValue . T.sumAll . T.abs <$> gradients)
+    scale = (asValue . T.sumAll . T.abs <$> gradients)
 -}
 
 train ::
