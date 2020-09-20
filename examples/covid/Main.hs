@@ -38,17 +38,15 @@ optimSpec initializedModel lossFn =
     { optimizer = mkAdam 0 0.9 0.999 (flattenParameters initializedModel),
       batchSize = 1, -- note used ATM
       numIters = 100000,
-      -- learningRate = 1e-11, -- LSTM
-      learningRate = 1e-3, -- GRU
+      learningRate = 1e-2, -- GRU
       lossFn = lossFn
     } ::
     OptimSpec Adam Simple1dModel
 
 modelSpec = Simple1dSpec {
-  -- lstm1dSpec = LSTMSpec {inputSize = 1, hiddenSize = 32},
-  encoderSpec = MLPEncoder (MLPSpec 1 16 8 1),
+  encoderSpec = MLPSpec 1 8 4 1,
   gru1dSpec = GRUSpec {inputSize = 1, hiddenSize = 1},
-  decoderSpec = (MLPSpec 1 32 16 1)
+  decoderSpec = MLPSpec 1 8 4 1
 }
 
 main :: IO ()

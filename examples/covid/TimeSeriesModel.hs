@@ -30,8 +30,6 @@ data OptimSpec o p where
     } ->
     OptimSpec o p
 
-{- MLP Module -}
-
 data MLPSpec = MLPSpec {
     inputFeatures :: Int,
     hiddenFeatures0 :: Int,
@@ -63,7 +61,55 @@ mlp MLP{..} input =
 
 instance HasForward MLP Tensor Tensor where
   forward = mlp
-  forwardStoch x = pure (mlp x)
+  forwardStoch model x = pure $ mlp model x -- TODO - have make this the default defn?
+
+{- Trivial 1D baseline -}
+
+data Simple1dSpec = Simple1dSpec
+  { 
+    encoderSpec :: MLPSpec,
+    gru1dSpec :: GRUSpec,
+    decoderSpec :: MLPSpec
+  }
+  deriving (Eq, Show)
+
+data Simple1dModel = Simple1dModel
+  { 
+    encoder :: MLP,
+    gru1d :: GRUCell,
+    decoder :: MLP
+  }
+  deriving (Generic, Show, Parameterized)
+
+instance Randomizable Simple1dSpec Simple1dModel where
+  sample Simple1dSpec {..} =
+    Simple1dModel
+      <$> sample encoderSpec
+      <*> sample gru1dSpec
+      <*> sample decoderSpec
+
+swish x = T.mul x (sigmoid x)
+
+instance HasForward Simple1dModel [Tensor] Tensor where
+  forward Simple1dModel {..} inputs = 
+    swish $ forward decoder (forward encoder $ output)
+    where
+      cell = gru1d
+      -- hSize = P.div ((shape . toDependent . weightsIH $ cell) !! 0) 4 -- 4 for LSTM
+      hSize = P.div ((shape . toDependent . G.weightsIH $ cell) !! 0) 3 -- 3 for GRU
+      -- iSize = (shape . toDependent . weightsIH $ cell) !! 1
+      -- LSTM
+      -- cellInit = zeros' [1, hSize]
+      -- hiddenInit = zeros' [1, hSize]
+      -- stateInit = (hiddenInit, cellInit)
+      -- GRU
+      hiddenInit = zeros' [1, hSize ] -- what should this be for GRU
+      -- (lstmOutput, cellState) = foldl (lstmCellForward cell) stateInit inputs
+      -- inputs' = forward mlp1d0 inputs -- TODO - get this working
+      output = foldl (gruCellForward cell . forward encoder) hiddenInit inputs
+  forwardStoch m x = pure (forward m x)
+
+{- Attempt to model cross-correlations -}
 
 data Time2VecSpec = Time2VecSpec
   { t2vDim :: Int -- note output dimensions is +1 of this value due to non-periodic term
@@ -106,86 +152,6 @@ t2vForward t Time2Vec {..} =
         toDependent w,
         toDependent b
       )
-
-{- Trivial 1D baseline -}
-
-data Simple1dSpec = Simple1dSpec
-  -- { lstm1dSpec :: LSTMSpec,
-  { 
-    encoderSpec :: MLPSpec,
-    gru1dSpec :: GRUSpec,
-    decoderSpec :: MLPSpec
-  }
-  deriving (Eq, Show)
-
-{-
-data Encoder =
-  MLPEncoder MLP | LinearEncoder Linear 
-    deriving (Generic, Parameterized, Randomizable, Show)
--}
-
-data Encoder a where
-  MLPEncoder :: MLPSpec -> Encoder MLP
-  LinearEncoder :: LinearSpec -> Encoder Linear
-
-{-
-data Seq =
-  SeqGRU GRUCell | SeqLSTM LSTMCell 
-    deriving (Generic, Parameterized, Randomizable, Show)
-data Decoder =
-  MLPDecoder MLP | LinearDecoder Linear 
-    deriving (Generic, Parameterized, Randomizable, Show)
-
-instance HasForward Encoder Tensor Tensor where
-  forward (MLPEncoder m) = forward m
-  forward (LinearEncoder m) = forward m
-
-data EncoderSpec
-
-instance Randomizable EncoderSpec Encoder  where
-  sample = undefined
-instance Randomizable SeqSpec Seq where
-  sample = undefined
-instance Randomizable DecoderSpec Decoder where
-  sample = undefined
--}
-
-data Simple1dModel = Simple1dModel
-  { 
-    encoder :: MLP,
-    gru1d :: GRUCell,
-    decoder :: MLP
-  }
-  deriving (Generic, Show, Parameterized)
-
-instance Randomizable Simple1dSpec Simple1dModel where
-  sample Simple1dSpec {..} =
-    Simple1dModel
-      <$> sample encoderSpec
-      <*> sample gru1dSpec
-      <*> sample decoderSpec
-
-swish x = T.mul x (sigmoid x)
-
-instance HasForward Simple1dModel [Tensor] Tensor where
-  forward Simple1dModel {..} inputs = 
-    swish . forward encoder $ lstmOutput
-    where
-      cell = gru1d
-      -- hSize = P.div ((shape . toDependent . weightsIH $ cell) !! 0) 4 -- 4 for LSTM
-      hSize = P.div ((shape . toDependent . G.weightsIH $ cell) !! 0) 3 -- 3 for GRU
-      -- iSize = (shape . toDependent . weightsIH $ cell) !! 1
-      -- LSTM
-      -- cellInit = zeros' [1, hSize]
-      -- hiddenInit = zeros' [1, hSize]
-      -- stateInit = (hiddenInit, cellInit)
-      -- GRU
-      hiddenInit = zeros' [1, hSize ] -- what should this be for GRU
-      -- (lstmOutput, cellState) = foldl (lstmCellForward cell) stateInit inputs
-      -- inputs' = forward mlp1d0 inputs -- TODO - get this working
-      lstmOutput = foldl (gruCellForward cell . forward encoder) hiddenInit inputs
-
-{- Attempt to model cross-correlations -}
 
 {-
 data TSModelSpec = TSModelSpec
@@ -268,6 +234,7 @@ initModel nRegions t2vDim lstmHDim =
       }
 
 -}
+
 {-
 testModel = do
   let t2vd = 6
@@ -277,6 +244,7 @@ testModel = do
   model <- train spec undefined initializedModel
   pure ()
 -}
+
 {- Computation Setups for 1D baseline -}
 
 {-
@@ -303,16 +271,17 @@ train OptimSpec {..} dataset init = do
       let startTime = 0 :: Int
           obs' = asValue obs :: Float
           time = round obs'
-          (past, future) = getItem dataset time 1 -- TODO clean up mod hack
+          (past, future) = getItem dataset time 1
           output = forward state (getObs' 0 past)
-          output' = asValue output :: Float
           actual = (getTime' 0 0 future)
-          actual' = P.round (asValue actual :: Float) :: Int
           loss = T.sqrt $ lossFn actual output -- get absolute value of error
-          loss' = asValue loss :: Float
           flatParameters = flattenParameters state
           (Gradients gradients) = grad' loss flatParameters
       when (iter `mod` 10 == 0) $ do
+        let  
+            output' = asValue output :: Float
+            actual' = P.round (asValue actual :: Float) :: Int
+            loss' = asValue loss :: Float
         putStrLn $ printf "it %6d | seqlen (t) %4d | pred %6.1f | actual %4d | error %5.1f" iter time output' actual' loss'
       (newParam, _) <- runStep state optimizer loss learningRate
       pure $ replaceParameters state newParam
