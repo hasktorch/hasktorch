@@ -165,7 +165,7 @@ instance (HasForward modelA inA, HasForward modelB inB) => HasForwardProduct 'St
 instance (HasForward modelA inA, HasForward modelB inB) => HasForwardSum 'Stochastic 'Stochastic modelA inA modelB inB where
   type BSum 'Stochastic 'Stochastic modelA inA modelB inB = G -> (Maybe (Either (B modelA inA) (B modelB inB)), G)
   forwardSum _ _ (Left modelA) (Left inA) = \g -> let (outA, g') = forward modelA inA g in (Just . Left $ outA, g')
-  forwardSum _ _ (Right modelB) (Right inB) = \g -> let (outB, g') = forward modelB inB g in (Just . Left $ outB, g')
+  forwardSum _ _ (Right modelB) (Right inB) = \g -> let (outB, g') = forward modelB inB g in (Just . Right $ outB, g')
   forwardSum _ _ _ _ = \g -> (Nothing, g)
 
 instance (HasForward modelA inA, HasForward modelB inB) => HasForwardSum' 'Stochastic 'Stochastic modelA inA modelB inB where
