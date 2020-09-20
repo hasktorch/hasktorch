@@ -39,6 +39,22 @@ Internals (for contributing developers):
 The following steps will get you started.
 They assume the hasktorch repository has just been cloned.
 
+### Download and Rename MNIST Data
+
+```sh
+cd hasktorch/examples
+./datasets/download-mnist.sh 
+cp -r mnist data
+```
+
+Works if you run executables from example directory. E.g.:
+
+```sh
+cd hasktorch/examples
+export DEVICE=cpu
+cabal run static-mnist-mlp
+```
+
 ### On macOS or Ubuntu-like OSes'
 
 For Nix-based operation, see the following section.
