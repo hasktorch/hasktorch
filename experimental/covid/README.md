@@ -1,9 +1,10 @@
-# Tabular Data Analysis of County-Level COVID-19 Epidemiological Data
+Some experimental modeling of time-series data using [NYT County-level covid case counts](https://github.com/nytimes/covid-19-data).
 
-NYT County-level case counts:
-https://github.com/nytimes/covid-19-data
+## Things to do
 
-## Things To Look Into
+Extend this to model correlation structure between regions and backtest.
+
+## Other data to explore
 
 Commuting flows between counties:
 https://www.census.gov/data/tables/2015/demo/metro-micro/commuting-flows-2015.html
