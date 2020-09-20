@@ -35,10 +35,11 @@ plotExampleData modelData tensorData = do
 
 optimSpec initializedModel lossFn =
   OptimSpec
-    { optimizer = mkAdam 0 0.9 0.999 (flattenParameters initializedModel),
+    { -- optimizer = mkAdam 0 0.9 0.999 (flattenParameters initializedModel),
+      optimizer = mkAdam 0 0.99 0.9999 (flattenParameters initializedModel),
       batchSize = 1, -- note used ATM
       numIters = 100000,
-      learningRate = 1e-2, -- GRU
+      learningRate = 5e-3,
       lossFn = lossFn
     } ::
     OptimSpec Adam Simple1dModel

@@ -209,8 +209,8 @@ train ::
   p ->
   IO p
 train OptimSpec {..} dataset init = do
-  trained <- foldLoop init numIters $
-    \state iter -> do
+  (trained, _) <- foldLoop (init, optimizer) numIters $
+    \(state, optimizer) iter -> do
       obs <- randintIO' 0 190 []
       let startTime = 0 :: Int
           obs' = asValue obs :: Float
@@ -228,7 +228,7 @@ train OptimSpec {..} dataset init = do
             loss' = asValue loss :: Float
         putStrLn $ printf "it %6d | seqlen (t) %4d | pred %6.1f | actual %4d | error %5.1f" iter time output' actual' loss'
       (newModel, optimizer) <- runStep state optimizer loss learningRate
-      pure newModel
+      pure (newModel, optimizer)
       -- (newParam, _) <- runStep state optimizer loss learningRate
       -- pure $ replaceParameters state newParam
   pure trained
