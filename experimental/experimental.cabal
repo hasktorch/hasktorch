@@ -37,22 +37,3 @@ executable dataloader-cifar10
                      , datasets
                      , streaming
                      , JuicyPixels
-
-executable covid
-  import:              config
-  hs-source-dirs:      covid
-  main-is:             Main.hs
-  other-modules:       CovidData, CovidUtil, TimeSeriesModel
-  ghc-options:         -fno-warn-partial-type-signatures
-  build-depends:       libtorch-ffi
-                     , bytestring
-                     , hvega
-                     , cassava
-                     , containers
-                     , pipes
-                     , pipes-safe
-                     , pretty-simple
-                     , safe
-                     , text
-                     , time
-                     , vector
