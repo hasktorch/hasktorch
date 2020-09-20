@@ -32,7 +32,7 @@ run input_tensor init_hidden expected_output model i = do
         loss = mseLoss expected_output output
     print loss 
     (newParam, _) <- runStep model GD loss 5e-2
-    pure $ replaceParameters model newParam
+    pure newParam
 
 
 main :: IO ()

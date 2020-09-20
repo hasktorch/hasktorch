@@ -121,8 +121,7 @@ oneEpoch dataset pretrainedbb model optim = do
                 loss = F.nllLoss' labelBatch scores
             when (iter `mod` 30 == 0) $ do
                 putStrLn $ "Iteration: " ++ show iter ++ " | Loss for current mini-batch: " ++ show loss
-            (newParam, newOptim) <- runStep iterModel iterOptim loss 1e-4
-            pure (N.replaceParameters iterModel newParam, newOptim)
+            runStep iterModel iterOptim loss 1e-4
     return (newEpochModel, newEpochOptim)
 
 train :: DataSet -> DataSet -> AlexNetBB -> IO N.Linear

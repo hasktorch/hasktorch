@@ -98,6 +98,12 @@ instance Castable String CString where
   cast x f = withCString x f
   uncast x f = peekCString x >>= f
 
+instance (Castable a a') => Castable (Maybe a) (Maybe a') where
+  cast Nothing f = f Nothing
+  cast (Just v) f = cast v (\v -> f (Just v))
+  uncast Nothing f = f Nothing
+  uncast (Just v) f = uncast v (\v -> f (Just v)) 
+
 instance (CppObject a) => Castable (ForeignPtr a) (Ptr a) where
   cast x f = withForeignPtr x f
   uncast x f = fromPtr x >>= f
