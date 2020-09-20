@@ -204,7 +204,7 @@ clipGradient maxScale (Gradients gradients) =
 
 train ::
   (Optimizer o, Parameterized p, HasForward p [Tensor] Tensor) =>
-  OptimSpec o p ->
+  OptimSpec o Simple1dModel ->
   TimeSeriesData ->
   p ->
   IO p
@@ -227,6 +227,8 @@ train OptimSpec {..} dataset init = do
             actual' = P.round (asValue actual :: Float) :: Int
             loss' = asValue loss :: Float
         putStrLn $ printf "it %6d | seqlen (t) %4d | pred %6.1f | actual %4d | error %5.1f" iter time output' actual' loss'
-      (newParam, _) <- runStep state optimizer loss learningRate
-      pure $ replaceParameters state newParam
+      (newModel, optimizer) <- runStep state optimizer loss learningRate
+      pure newModel
+      -- (newParam, _) <- runStep state optimizer loss learningRate
+      -- pure $ replaceParameters state newParam
   pure trained
