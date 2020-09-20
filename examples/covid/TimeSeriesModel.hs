@@ -63,6 +63,7 @@ mlp MLP{..} input =
 
 instance HasForward MLP Tensor Tensor where
   forward = mlp
+  forwardStoch x = pure (mlp x)
 
 data Time2VecSpec = Time2VecSpec
   { t2vDim :: Int -- note output dimensions is +1 of this value due to non-periodic term
@@ -111,42 +112,64 @@ t2vForward t Time2Vec {..} =
 data Simple1dSpec = Simple1dSpec
   -- { lstm1dSpec :: LSTMSpec,
   { 
-    mlp1dSpec0 :: MLPSpec,
+    encoderSpec :: MLPSpec,
     gru1dSpec :: GRUSpec,
-    mlp1dSpec :: MLPSpec
+    decoderSpec :: MLPSpec
   }
   deriving (Eq, Show)
 
-data PreNet = PreMLP MLP | PreLinear Linear
-data SeqNet = SeqGRU GRUCell | SeqLSTM LSTMCell
-data PostNet = PostMLP MLP | PostLinear Linear
+{-
+data Encoder =
+  MLPEncoder MLP | LinearEncoder Linear 
+    deriving (Generic, Parameterized, Randomizable, Show)
+-}
 
-instance HasForward PreNet Tensor Tensor where
-  forward (PreMLP m) = forward m
-  forward (PreLinear m) = forward m
+data Encoder a where
+  MLPEncoder :: MLPSpec -> Encoder MLP
+  LinearEncoder :: LinearSpec -> Encoder Linear
+
+{-
+data Seq =
+  SeqGRU GRUCell | SeqLSTM LSTMCell 
+    deriving (Generic, Parameterized, Randomizable, Show)
+data Decoder =
+  MLPDecoder MLP | LinearDecoder Linear 
+    deriving (Generic, Parameterized, Randomizable, Show)
+
+instance HasForward Encoder Tensor Tensor where
+  forward (MLPEncoder m) = forward m
+  forward (LinearEncoder m) = forward m
+
+data EncoderSpec
+
+instance Randomizable EncoderSpec Encoder  where
+  sample = undefined
+instance Randomizable SeqSpec Seq where
+  sample = undefined
+instance Randomizable DecoderSpec Decoder where
+  sample = undefined
+-}
 
 data Simple1dModel = Simple1dModel
-  -- { lstm1d :: LSTMCell,
   { 
-    mlp1d0 :: MLP,
+    encoder :: MLP,
     gru1d :: GRUCell,
-    mlp1d :: MLP
-    -- mlp1d :: Linear
+    decoder :: MLP
   }
   deriving (Generic, Show, Parameterized)
 
 instance Randomizable Simple1dSpec Simple1dModel where
   sample Simple1dSpec {..} =
     Simple1dModel
-      <$> sample mlp1dSpec
+      <$> sample encoderSpec
       <*> sample gru1dSpec
-      <*> sample mlp1dSpec
+      <*> sample decoderSpec
 
 swish x = T.mul x (sigmoid x)
 
 instance HasForward Simple1dModel [Tensor] Tensor where
   forward Simple1dModel {..} inputs = 
-    swish . forward mlp1d $ lstmOutput
+    swish . forward encoder $ lstmOutput
     where
       cell = gru1d
       -- hSize = P.div ((shape . toDependent . weightsIH $ cell) !! 0) 4 -- 4 for LSTM
@@ -160,7 +183,7 @@ instance HasForward Simple1dModel [Tensor] Tensor where
       hiddenInit = zeros' [1, hSize ] -- what should this be for GRU
       -- (lstmOutput, cellState) = foldl (lstmCellForward cell) stateInit inputs
       -- inputs' = forward mlp1d0 inputs -- TODO - get this working
-      lstmOutput = foldl (gruCellForward cell . forward mlp1d0) hiddenInit inputs
+      lstmOutput = foldl (gruCellForward cell . forward encoder) hiddenInit inputs
 
 {- Attempt to model cross-correlations -}
 

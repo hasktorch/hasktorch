@@ -46,9 +46,9 @@ optimSpec initializedModel lossFn =
 
 modelSpec = Simple1dSpec {
   -- lstm1dSpec = LSTMSpec {inputSize = 1, hiddenSize = 32},
-  mlp1dSpec0 = MLPSpec 1 16 8 1,
+  encoderSpec = MLPEncoder (MLPSpec 1 16 8 1),
   gru1dSpec = GRUSpec {inputSize = 1, hiddenSize = 1},
-  mlp1dSpec = MLPSpec 1 32 16 1
+  decoderSpec = (MLPSpec 1 32 16 1)
 }
 
 main :: IO ()
