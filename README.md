@@ -39,21 +39,6 @@ Internals (for contributing developers):
 The following steps will get you started.
 They assume the hasktorch repository has just been cloned.
 
-### Download and Rename MNIST Data
-
-```sh
-cd hasktorch/examples
-./datasets/download-mnist.sh 
-cp -r mnist data
-```
-
-Works if you run executables from example directory. E.g.:
-
-```sh
-cd hasktorch/examples
-export DEVICE=cpu
-cabal run static-mnist-mlp
-```
 
 ### On macOS or Ubuntu-like OSes'
 
@@ -111,7 +96,31 @@ You can launch a Nix shell via
 $ nix-shell
 ```
 
-and use `cabal build`, `cabal repl`, `cabal test`, etc. from within.
+### Getting Started in Nix-shell
+
+On Linux and OS X the code below will:
+
+ * Build hasktorch and examples
+ * Run unit tests
+ * Download MNIST dataset into common directory
+ * Run static-mnist-cnn
+ * Drop you in repl with hasktorch imported
+
+```sh
+$ nix-shell
+$ cabal build hasktorch
+$ cabal test hasktorch
+$ cabal build examples
+$ cabal test examples
+$ cd examples
+$ ./datasets/download-mnist.sh 
+$ cp -r mnist data
+$ export DEVICE=cpu
+$ cabal run static-mnist-cnn
+$ cd ..
+$ cabal repl hasktorch
+```
+
 We also support Stack with Nix, see below.
 
 Note that this shell is configured to use the CPU backend only.
