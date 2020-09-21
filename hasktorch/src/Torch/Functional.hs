@@ -563,6 +563,28 @@ eq a b = unsafePerformIO $ (cast2 ATen.eq_tt) a b
 
 (==.) = eq
 
+-- | Returns a new tensor with the elements of input at the given indices. The input tensor is treated as if it were viewed as a 1-D tensor. The result takes the same shape as the indices. 
+take
+  :: Tensor -- ^ index
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+take _index _self = unsafePerformIO $ (cast2 ATen.take_tt) _self _index
+
+-- | Returns a new 1-D tensor which indexes the input tensor according to the boolean mask mask which is a BoolTensor.
+-- The shapes of the mask tensor and the input tensor don’t need to match, but they must be broadcastable.
+maskedSelect
+  :: Tensor -- ^ mask
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+maskedSelect _mask _self = unsafePerformIO $ (cast2 ATen.masked_select_tt) _self _mask
+
+-- | Returns a tuple of 1-D tensors, one for each dimension in input, each containing the indices (in that dimension) of all non-zero elements of input .
+nonzero
+  :: Tensor -- ^ input
+  -> Tensor -- ^ output
+nonzero _self = unsafePerformIO $ (cast1 ATen.nonzero_t) _self
+
+
 isclose
   :: Double -- ^ rtol
   -> Double -- ^ atol
@@ -622,6 +644,43 @@ squeezeDim
   -> Tensor -- ^ input
   -> Tensor -- ^ output
 squeezeDim dim t = unsafePerformIO $ (cast2 ATen.squeeze_tl) t dim
+
+--
+-- Cumulative operations
+--
+
+-- | Returns a tuple (values, indices) where values is the cumulative maximum of elements of input in the dimension dim. And indices is the index location of each maximum value found in the dimension dim.
+cummax
+  :: Int -- ^ dim
+  -> Tensor -- ^ input
+  -> (Tensor,Tensor) -- ^ output (values, indices)
+cummax _dim _self = unsafePerformIO $ (cast2 ATen.cummax_tl) _self _dim
+
+-- | Returns a tuple (values, indices) where values is the cumulative minimum of elements of input in the dimension dim. And indices is the index location of each maximum value found in the dimension dim.
+cummin
+  :: Int -- ^ dim
+  -> Tensor -- ^ input
+  -> (Tensor,Tensor) -- ^ output (values, indices)
+cummin _dim _self = unsafePerformIO $ (cast2 ATen.cummin_tl) _self _dim
+
+-- | Returns the cumulative product of elements of input in the dimension dim.
+-- For example, if input is a vector of size N, the result will also be a vector of size N, with elements.
+cumprod
+  :: Int -- ^ dim
+  -> DType -- ^ dtype
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+cumprod _dim _dtype _self = unsafePerformIO $ (cast3 ATen.cumprod_tls) _self _dim _dtype
+
+-- | Returns the cumulative sum of elements of input in the dimension dim.
+-- For example, if input is a vector of size N, the result will also be a vector of size N, with elements.
+cumsum
+  :: Int -- ^ dim
+  -> DType -- ^ dtype
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+cumsum _dim _dtype _self = unsafePerformIO $ (cast3 ATen.cumsum_tls) _self _dim _dtype
+
 
 --
 -- Loss Functions
@@ -718,6 +777,16 @@ ctcLoss' reduction inputLengths targetLengths logProbs targets  = unsafePerformI
     where
         blank = 0 :: Int
         zeroInfinity = False
+
+-- | Returns the p-norm of (input - other)
+-- The shapes of input and other must be broadcastable.
+dist
+  :: Float -- ^ p
+  -> Tensor -- ^ other
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+dist _p _other _self = unsafePerformIO $ (cast3 ATen.dist_tts) _self _other _p
+
 
 -- | Measures the loss given an input tensor xx and a labels tensor yy (containing 1 or -1).
 -- This is usually used for measuring whether two inputs are similar or dissimilar,
@@ -974,6 +1043,16 @@ inverse
     -> Tensor -- ^ output
 inverse t = unsafePerformIO $ (cast1 ATen.inverse_t) t
 
+-- | Solves a system of equations with a triangular coefficient matrix AA and multiple right-hand sides bb
+triangularSolve
+  :: Tensor -- ^ A
+  -> Bool -- ^ upper
+  -> Bool -- ^ transpose
+  -> Bool -- ^ unitriangular
+  -> Tensor -- ^ input
+  -> (Tensor,Tensor) -- ^ output
+triangularSolve _A _upper _transpose _unitriangular _self = unsafePerformIO $ (cast5 ATen.triangular_solve_ttbbb) _self _A _upper _transpose _unitriangular
+
 -- | This function returns eigenvalues and eigenvectors of a real symmetric matrix input or a batch of real symmetric matrices, represented by a namedtuple (eigenvalues, eigenvectors).
 symeig
  :: Bool -- ^ bool which controls whether eigenvectors have to be computed
@@ -1052,6 +1131,25 @@ orgqr
  -> Tensor -- ^ the @tau@ from @geqrf@ function
  -> Tensor -- ^ output
 orgqr b a = unsafePerformIO $ (cast2 ATen.orgqr_tt) b a
+
+-- | Multiplies mat (given by input3) by the orthogonal Q matrix of the QR factorization formed by torch.geqrf() that is represented by (a, tau) (given by (input, input2)).
+-- This directly calls the underlying LAPACK function ?ormqr. See LAPACK documentation for ormqr for further details.
+ormqr
+  :: Tensor -- ^ input2
+  -> Tensor -- ^ input3
+  -> Bool -- ^ left
+  -> Bool -- ^ transpose
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+ormqr _input2 _input3 _left _transpose _self = unsafePerformIO $ (cast5 ATen.ormqr_tttbb) _self _input2 _input3 _left _transpose
+
+-- | Returns the LU solve of the linear system Ax = bAx=b using the partially pivoted LU factorization of A from torch.lu().
+luSolve
+  :: Tensor -- ^ LU_data
+  -> Tensor -- ^ LU_pivots
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+luSolve _LU_data _LU_pivots _self = unsafePerformIO $ (cast3 ATen.lu_solve_ttt) _self _LU_data _LU_pivots
 
 --
 -- dropout
@@ -1402,13 +1500,110 @@ flattenAll
 flattenAll t =
   unsafePerformIO $ (cast3 ATen.flatten_tll) t (0 :: Int) (-1 :: Int)
 
--- Not used yet
-data RNNParams = RNNParams {
-    weightIH :: Tensor,
-    weightHH :: Tensor,
-    biasIH :: Tensor,
-    biasHH :: Tensor
-} deriving (Show)
+lstm
+  :: Tensor -- ^ input
+  -> [Tensor] -- ^ hx
+  -> [Tensor] -- ^ params
+  -> Bool -- ^ has_biases
+  -> Int -- ^ num_layers
+  -> Double -- ^ dropout
+  -> Bool -- ^ train
+  -> Bool -- ^ bidirectional
+  -> Bool -- ^ batch_first
+  -> (Tensor,Tensor,Tensor)
+lstm _input _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first = unsafePerformIO $ (cast9 ATen.lstm_tllbldbbb) _input _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first
+
+lstm'
+  :: Tensor -- ^ batch_sizes
+  -> [Tensor] -- ^ hx
+  -> [Tensor] -- ^ params
+  -> Bool -- ^ has_biases
+  -> Int -- ^ num_layers
+  -> Double -- ^ dropout
+  -> Bool -- ^ train
+  -> Bool -- ^ bidirectional
+  -> Tensor -- ^ data
+  -> (Tensor,Tensor,Tensor)
+lstm' _batch_sizes _hx _params _has_biases _num_layers _dropout _train _bidirectional _data = unsafePerformIO $ (cast9 ATen.lstm_ttllbldbb) _data _batch_sizes _hx _params _has_biases _num_layers _dropout _train _bidirectional
+
+gru
+  :: Tensor -- ^ hx
+  -> [Tensor] -- ^ params
+  -> Bool -- ^ has_biases
+  -> Int -- ^ num_layers
+  -> Double -- ^ dropout
+  -> Bool -- ^ train
+  -> Bool -- ^ bidirectional
+  -> Bool -- ^ batch_first
+  -> Tensor -- ^ input
+  -> (Tensor,Tensor)
+gru _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first _input = unsafePerformIO $ (cast9 ATen.gru_ttlbldbbb) _input _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first
+
+gru'
+  :: Tensor -- ^ batch_sizes
+  -> Tensor -- ^ hx
+  -> [Tensor] -- ^ params
+  -> Bool -- ^ has_biases
+  -> Int -- ^ num_layers
+  -> Double -- ^ dropout
+  -> Bool -- ^ train
+  -> Bool -- ^ bidirectional
+  -> Tensor -- ^ data
+  -> (Tensor,Tensor)
+gru' _batch_sizes _hx _params _has_biases _num_layers _dropout _train _bidirectional _data = unsafePerformIO $ (cast9 ATen.gru_tttlbldbb) _data _batch_sizes _hx _params _has_biases _num_layers _dropout _train _bidirectional
+
+rnnTanh
+  :: Tensor -- ^ hx
+  -> [Tensor] -- ^ params
+  -> Bool -- ^ has_biases
+  -> Int -- ^ num_layers
+  -> Double -- ^ dropout
+  -> Bool -- ^ train
+  -> Bool -- ^ bidirectional
+  -> Bool -- ^ batch_first
+  -> Tensor -- ^ input
+  -> (Tensor,Tensor)
+rnnTanh _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first _input = unsafePerformIO $ (cast9 ATen.rnn_tanh_ttlbldbbb) _input _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first
+
+rnnTanh'
+  :: Tensor -- ^ batch_sizes
+  -> Tensor -- ^ hx
+  -> [Tensor] -- ^ params
+  -> Bool -- ^ has_biases
+  -> Int -- ^ num_layers
+  -> Double -- ^ dropout
+  -> Bool -- ^ train
+  -> Bool -- ^ bidirectional
+  -> Tensor -- ^ data
+  -> (Tensor,Tensor)
+rnnTanh' _batch_sizes _hx _params _has_biases _num_layers _dropout _train _bidirectional _data = unsafePerformIO $ (cast9 ATen.rnn_tanh_tttlbldbb) _data _batch_sizes _hx _params _has_biases _num_layers _dropout _train _bidirectional
+
+rnnRelu
+  :: Tensor -- ^ hx
+  -> [Tensor] -- ^ params
+  -> Bool -- ^ has_biases
+  -> Int -- ^ num_layers
+  -> Double -- ^ dropout
+  -> Bool -- ^ train
+  -> Bool -- ^ bidirectional
+  -> Bool -- ^ batch_first
+  -> Tensor -- ^ input
+  -> (Tensor,Tensor)
+rnnRelu _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first _input = unsafePerformIO $ (cast9 ATen.rnn_relu_ttlbldbbb) _input _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first
+
+
+rnnRelu'
+  :: Tensor -- ^ data
+  -> Tensor -- ^ batch_sizes
+  -> Tensor -- ^ hx
+  -> [Tensor] -- ^ params
+  -> Bool -- ^ has_biases
+  -> Int -- ^ num_layers
+  -> Double -- ^ dropout
+  -> Bool -- ^ train
+  -> Bool -- ^ bidirectional
+  -> (Tensor,Tensor)
+rnnRelu' _data _batch_sizes _hx _params _has_biases _num_layers _dropout _train _bidirectional = unsafePerformIO $ (cast9 ATen.rnn_relu_tttlbldbb) _data _batch_sizes _hx _params _has_biases _num_layers _dropout _train _bidirectional
 
 -- | A long short-term memory (LSTM) cell.
 lstmCell
@@ -1612,6 +1807,42 @@ tril
   -> Tensor -- ^ input
   -> Tensor -- ^ output
 tril (Diag diagonal) input = unsafePerformIO $ (cast2 ATen.tril_tl) input diagonal
+
+-- | Returns a new tensor with the truncated integer values of the elements of input.
+trunc
+  :: Tensor -- ^ input
+  -> Tensor -- ^ output
+trunc input = unsafePerformIO $ (cast1 ATen.trunc_t) input
+
+-- | Returns the unique elements of the input tensor along a dimension.
+uniqueDim
+  :: Int -- ^ dim
+  -> Bool -- ^ sorted
+  -> Bool -- ^ return_inverse
+  -> Bool -- ^ return_counts
+  -> Tensor -- ^ input
+  -> (Tensor,Tensor,Tensor) -- ^ output
+uniqueDim dim sorted returnInverse returnCounts self = unsafePerformIO $ (cast5 ATen.unique_dim_tlbbb) self dim sorted returnInverse returnCounts
+
+-- | Eliminates all but the first element from every consecutive group of equivalent elements.
+-- This function is different from uniqueDim in the sense that this function only eliminates consecutive duplicate values. 
+uniqueConsecutive
+  :: Bool -- ^ return_inverse
+  -> Bool -- ^ return_counts
+  -> Int -- ^ dim
+  -> Tensor -- ^ input
+  -> (Tensor,Tensor,Tensor) -- ^ output
+uniqueConsecutive returnInverse returnCounts dim self = unsafePerformIO $ (cast4 ATen.unique_consecutive_tbbl) self returnInverse returnCounts dim
+
+-- | Eliminates all but the first element from every consecutive group of equivalent elements along a dimension.
+-- This function is different from uniqueDim in the sense that this function only eliminates consecutive duplicate values. 
+uniqueDimConsecutive
+  :: Int -- ^ dim
+  -> Bool -- ^ return_inverse
+  -> Bool -- ^ return_counts
+  -> Tensor -- ^ input
+  -> (Tensor,Tensor,Tensor) -- ^ output
+uniqueDimConsecutive dim returnInverse returnCounts self = unsafePerformIO $ (cast4 ATen.unique_dim_consecutive_tlbb) self dim returnInverse returnCounts
 
 -- | Returns a new tensor with a dimension of size one inserted at the specified position.
 -- The returned tensor shares the same underlying data with this tensor.

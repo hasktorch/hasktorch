@@ -34,14 +34,20 @@ gruCellForward GRUCell{..} input hidden =
         biasIH' = toDependent biasIH
         biasHH' = toDependent biasHH
 
+instance Parameterized GRUCell
+
 instance Randomizable GRUSpec GRUCell where
   sample GRUSpec{..} = do
-    weightsIH' <- makeIndependent =<< randIO' [inputSize, hiddenSize]
-    weightsHH' <- makeIndependent =<< randIO' [hiddenSize, hiddenSize]
-    biasIH' <- makeIndependent =<< randIO' [hiddenSize]
-    biasHH' <- makeIndependent =<< randIO' [hiddenSize]
+    -- https://pytorch.org/docs/stable/generated/torch.nn.GRUCell.html
+    weightsIH' <- makeIndependent =<< initScale <$> randIO' [3 * hiddenSize, inputSize]
+    weightsHH' <- makeIndependent =<< initScale <$> randIO' [3 * hiddenSize, hiddenSize]
+    biasIH' <- makeIndependent =<< initScale <$> randIO' [3 * hiddenSize]
+    biasHH' <- makeIndependent =<< initScale <$> randIO' [3 * hiddenSize]
     pure $ GRUCell {
         weightsIH=weightsIH',
         weightsHH=weightsHH',
         biasIH=biasIH',
         biasHH=biasHH' }
+    where
+      scale = Prelude.sqrt $ 1.0 / fromIntegral hiddenSize :: Float
+      initScale =  subScalar scale . mulScalar scale . mulScalar (2.0 :: Float)

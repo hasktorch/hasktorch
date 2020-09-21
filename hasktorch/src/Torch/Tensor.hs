@@ -195,8 +195,15 @@ indexSelect
  :: Int -- ^ dim
  -> Tensor -- ^ indexTensor
  -> Tensor -- ^ input
- -> Tensor
+ -> Tensor -- ^ output
 indexSelect dim indexTensor t = unsafePerformIO $ (cast3 ATen.index_select_tlt) t dim indexTensor
+
+indexSelect' 
+  :: Int  -- ^ dim
+  -> [Int]  -- ^ indexList
+  -> Tensor -- ^ input
+  -> Tensor -- ^ output
+indexSelect' dim indexList t = unsafePerformIO $ (cast3 ATen.index_select_tlt) t dim (asTensor indexList)
 
 -- | Slices the input tensor along the selected dimension at the given range. 
 slice

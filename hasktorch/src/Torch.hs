@@ -7,6 +7,7 @@ module Torch
   , module Torch.NN
   , module Torch.Optim
   , module Torch.Random
+  , module Torch.Scalar
   , module Torch.Tensor
   , module Torch.TensorFactories
   , module Torch.TensorOptions
@@ -19,6 +20,7 @@ import Torch.Functional
 import Torch.NN
 import Torch.Optim
 import Torch.Random
+import Torch.Scalar
 import Torch.Tensor
 import Torch.TensorOptions
 import Torch.TensorFactories
