@@ -1,6 +1,7 @@
 module Torch
   ( module Torch
   , module Torch.Autograd
+  , module Torch.Data
   , module Torch.Device
   , module Torch.DType
   , module Torch.Functional
@@ -14,6 +15,7 @@ module Torch
   ) where
 
 import Torch.Autograd
+import Torch.Data
 import Torch.Device
 import Torch.DType
 import Torch.Functional

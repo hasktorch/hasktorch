@@ -106,7 +106,7 @@ instance
   ) =>
   Datastream IO () (Xor device batchSize) (Tensor device 'Float '[batchSize, 2])
   where
-  streamBatch Xor {..} _ = Select $ P.replicateM iters randBool
+  streamSamples Xor {..} _ = Select $ P.replicateM iters randBool
     where
       randBool =
         toDType @'Float @'Bool
@@ -120,9 +120,9 @@ train ::
   (model ~ MLP 2 1 4 'Float device, _) =>
   LearningRate device 'Float ->
   (model, optim) ->
-  ListT IO (Tensor device 'Float '[batchSize, 2], Int) ->
+  ListT IO (Tensor device 'Float '[batchSize, 2]) ->
   IO (model, optim)
-train learningRate (model, optim) = P.foldM step begin done . enumerate
+train learningRate (model, optim) = P.foldM step begin done . enumerateData
   where
     step (model, optim) (input, i) = do
       let actualOutput = squeezeAll . ((sigmoid .) . forward) model $ input
@@ -142,6 +142,6 @@ main = do
   initModel <- sample (MLPSpec :: MLPSpec 2 1 4 'Float Device)
   let initOptim = mkAdam 0 0.9 0.999 (flattenParameters initModel)
       dataset = Xor @Device @256 numIters
-      dataSource = makeListT' dataloaderOpts dataset [()]
+      dataSource = streamFrom' datastreamOpts dataset [()]
   (trained, _) <- runContT dataSource $ train learningRate (initModel, initOptim)
   print trained

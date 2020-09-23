@@ -20,7 +20,7 @@ import Torch (ATenTensor)
 import Torch.Data.Pipeline
 import Torch.Internal.Class (Castable)
 import Torch.Typed
-import Torch.Typed.Vision (Mnist (Mnist), mnistData)
+import Torch.Typed.Vision (mnistData, MNIST(..))
 import Prelude hiding (length)
 
 foldLoop ::
@@ -120,10 +120,10 @@ train initModel initOptim forward learningRate ptFile = do
     numEpochs
     $ \(epochModel, epochOptim) epoch -> do
       (epochModel', epochOptim') <-
-        runContT (makeListT (mapStyleOpts 1) trainingData) $
+        runContT (streamFromMap (datasetOpts 1) trainingData) $
           trainStep learningRate forward (epochModel, epochOptim) . fst
       (testLoss, testError) <-
-        runContT (makeListT (mapStyleOpts 1) testData) $
+        runContT (streamFromMap (datasetOpts 1) testData) $
           evalStep (forward epochModel' False) . fst
       putStrLn $
         "Epoch: "
@@ -135,7 +135,7 @@ train initModel initOptim forward learningRate ptFile = do
       save (hmap' ToDependent . flattenParameters $ epochModel') ptFile
       return (epochModel', epochOptim')
   where
-    trainStep lr forward' init = P.foldM step begin done . enumerate
+    trainStep lr forward' init = P.foldM step begin done . enumerateData
       where
         step (model, optim) ((input, target), iter) = do
           prediction <- forward' model True input
@@ -144,7 +144,7 @@ train initModel initOptim forward learningRate ptFile = do
         begin = pure init
         done = pure
 
-    evalStep forward' = P.foldM step begin done . enumerate
+    evalStep forward' = P.foldM step begin done . enumerateData
       where
         step (org_loss, org_err) ((input, target), _) = do
           prediction <- forward' input
@@ -159,7 +159,7 @@ train initModel initOptim forward learningRate ptFile = do
         begin = pure (0, 0)
         done = pure
 
-mkMnist :: IO (Mnist device batchSize, Mnist device batchSize)
+mkMnist :: IO (MNIST IO device batchSize, MNIST IO device batchSize)
 mkMnist = do
   (train, test) <- initMnist "data"
-  return (Mnist train, Mnist test)
+  return (MNIST train, MNIST test)
