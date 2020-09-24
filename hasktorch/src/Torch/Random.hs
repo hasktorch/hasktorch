@@ -13,6 +13,7 @@ module Torch.Random
   , randint'
   , normal
   , normal'
+  , dropout
   ) where
 
 import Torch.Internal.Cast
@@ -20,6 +21,7 @@ import Torch.Internal.Class (Castable(..))
 import qualified Torch.Internal.Const as ATen
 import qualified Torch.Internal.Type as ATen
 import Data.Word
+import qualified Torch.Internal.Managed.Native as ATen
 import qualified Torch.Internal.Managed.Type.Generator as ATen
 import qualified Torch.Internal.Managed.TensorFactories as LibTorch
 import Torch.Device
@@ -82,6 +84,30 @@ generatorFactory func size options Generator{..} =
     return (tensor,Generator device nextSeed nextGenenerator)
 
 
+generatorFactory' :: Generator -> (ForeignPtr ATen.Generator -> IO (ForeignPtr ATen.Tensor)) -> (Tensor,Generator)
+generatorFactory' Generator{..} func =
+  unsafePerformIO $ do
+    mGenerator <- atomically $ do
+      v <- readTVar generator
+      case v of
+        Just v' -> do
+          writeTVar generator Nothing
+          return $ Just v'
+        Nothing -> return Nothing
+    genPtr <- case mGenerator of
+                Just gen -> return gen
+                Nothing -> case device of
+                  Device CPU _ -> ATen.newCPUGenerator seed
+                  Device CUDA idx -> do
+                    gen <- ATen.newCUDAGenerator (fromIntegral idx)
+                    ATen.generator_set_current_seed gen seed
+                    return gen
+    tensor <- func genPtr
+    nextSeed <- ATen.generator_current_seed genPtr
+    nextGenenerator <- newTVarIO (Just genPtr)
+    return (tensor,Generator device nextSeed nextGenenerator)
+
+
 randn :: [Int] -> TensorOptions -> Generator -> (Tensor,Generator)
 randn size opts gen = generatorFactory LibTorch.randn_lGo size opts gen
 
@@ -105,3 +131,12 @@ normal mean std size opts gen = generatorFactory (LibTorch.normal_ddlGo (realToF
 
 normal' :: Double -> Double -> [Int] -> Generator -> (Tensor,Generator)
 normal' mean std size gen = normal mean std size defaultOpts gen
+
+-- | Pure functional dropout
+dropout
+  :: Double -- ^ dropout probability
+  -> Maybe Generator -- ^ generator
+  -> Tensor -- ^ input
+  -> (Tensor,Generator) -- ^ output
+dropout p Nothing input = cast3 ATen.dropout_tdb input p False
+dropout p (Just gen) input = generatorFactory' gen $ \gen' -> cast3 LibTorch._fused_dropout_tdG input (1-p) gen'
