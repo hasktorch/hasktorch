@@ -48,7 +48,7 @@ nextParameter = do
 
 class HasForward f a where
   type B f a :: Type
-  forward :: f -> a -> b
+  forward :: f -> a -> B f a
 
 data ModelRandomness = Deterministic | Stochastic
 
@@ -121,9 +121,12 @@ instance (HasForward modelA inA, HasForward modelB inB) => HasForwardSum' 'Deter
 -- Stochastic mixed instances
 --
 
+type family Fst (t :: (a, b)) :: a where
+  Fst '(a, _) = a
+
 instance (HasForward modelA inA, HasForward modelB inB) => HasForwardProduct 'Stochastic 'Deterministic modelA inA modelB inB where
-  type BProduct 'Stochastic 'Deterministic modelA inA modelB inB = G -> ((B modelA inA, B modelB inB), G)
-  forwardProduct _ _ modelA inA modelB inB = \g -> let (outA, g') = forward modelA inA g in ((outA, forward modelB inB), g')
+  type BProduct 'Stochastic 'Deterministic modelA inA modelB inB = G -> ((Fst (B modelA inA), B modelB inB), G)
+  forwardProduct _ _ modelA inA modelB inB = \g -> let (outA1, g') = forward modelA inA g in ((outA1, forward modelB inB), g')
 
 instance (HasForward modelA inA, HasForward modelB inB) => HasForwardProduct 'Deterministic 'Stochastic modelA inA modelB inB where
   type BProduct 'Deterministic 'Stochastic modelA inA modelB inB = G -> ((B modelA inA, B modelB inB), G)
