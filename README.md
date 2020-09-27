@@ -213,6 +213,30 @@ $ nix-shell \
   --command "export DEVICE=\"cuda:0\"; cabal run static-mnist-mlp"
 ```
 
+### Getting Started With Stack in Nix-shell 
+
+On Linux and OS X the code below will:
+
+ * Drop you into nix-shell with Stack available
+ * Build hasktorch and examples with Stack
+ * Run unit tests
+ * Download MNIST dataset into common directory
+ * Find the executable created for static-mnist-cnn
+ * Run static-mnist-cnn
+
+
+```sh
+$ nix-shell -p stack
+$ stack --nix build
+$ stack --nix test
+$ cd examples
+$ ./datasets/download-mnist.sh 
+$ cp -r mnist data
+$ find . -type f -executable -name static-mnist-cnn
+$ `find . -type f -executable -name static-mnist-cnn`
+```
+
+
 ### Set up your development environment
 
 If you want to develop the project with great Haskell IDE integration,
