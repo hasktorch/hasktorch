@@ -1,6 +1,7 @@
 module Torch.Typed
   ( module Torch.HList,
     module Torch.Typed,
+    module Torch.Data,
     module Torch.Typed.Aux,
     module Torch.Typed.Autograd,
     module Torch.Typed.Device,
@@ -22,6 +23,7 @@ module Torch.Typed
   )
 where
 
+import Torch.Data
 import Torch.DType (DType (..))
 import Torch.Device (Device (..), DeviceType (..))
 import Torch.Functional (Reduction (..), Tri (..))

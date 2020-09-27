@@ -28,7 +28,7 @@ mkReg regFn selectFn a b model input target =
         selectParams = flattenAll $ cat (Dim 0) $ flattenAll <$> (selectFn $ model) 
 
 -- | Setup pruning parameters and run
-regularizationTest :: (Dataset d) => d -> IO () 
+regularizationTest :: (MockDataset d) => d -> IO () 
 regularizationTest mnistData = do
 
     print "sampling"

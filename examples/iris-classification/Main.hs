@@ -1,26 +1,21 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DeriveGeneric #-}
 module Main where
 
-import           Control.Arrow (Arrow(first))
-import           Control.Monad (foldM, when, (>=>))
-import           Control.Monad.Cont (runContT, runCont, ContT(ContT))
-import           Data.Csv (FromNamedRecord)
+import           Control.Monad (foldM, when)
+import           Control.Monad.Cont (runContT)
 import           Data.Vector (Vector, toList)
 import           GHC.Generics (Generic)
-import           Pipes
 import qualified Pipes.Prelude as P
+import           Pipes
 import           Pipes.Safe (runSafeT)
 import           Torch
-import           Torch.Data.CsvDataset
-import           Torch.Data.StreamedPipeline (dataloaderOpts, pmap, makeListT)
-import           Torch.Tensor
+import           Torch.Data.CsvDatastream
 
 data MLPSpec = MLPSpec {
     inputFeatures   :: Int,
@@ -57,7 +52,7 @@ data IrisClass = Setosa | Versicolor | Virginica deriving (Eq, Show, Enum, Gener
 instance FromField IrisClass where
   parseField b = case b of
     "Iris-setosa"      -> pure Setosa
-    "Iris-versicolor" -> pure Versicolor
+    "Iris-versicolor"  -> pure Versicolor
     "Iris-virginica"   -> pure Virginica
     _                  -> mzero
 
@@ -76,12 +71,13 @@ irisToTensor iris = do
         getFeatures = fmap (\x -> [sepalLength x, sepalWidth x, petalLength x, petalWidth x])
         getClasses = fmap (\x -> fromEnum $ irisClass x)
 
-trainLoop :: (Optimizer o, MonadIO m) => MLP -> o -> ListT m ((Tensor, Tensor), Int)  -> m MLP
-trainLoop model optimizer inputs = P.foldM step init done $ enumerate inputs
+trainLoop :: (Optimizer o, MonadIO m) => MLP -> o -> ListT m (Tensor, Tensor)  -> m MLP
+trainLoop model optimizer inputs = P.foldM step init done $ enumerateData inputs
   where 
         step model ((input, label), iter) = do
           let loss = binaryCrossEntropyLoss' label $ mlp model input
-          when (iter == 5) $ do
+          when ((iter `mod` 5) == 0) $ do
+            liftIO $ print iter
             liftIO $ putStrLn $ " | Loss: " ++ show loss
           (newParam, _) <- liftIO $ runStep model optimizer loss 1e-2
           pure newParam
@@ -92,15 +88,15 @@ trainLoop model optimizer inputs = P.foldM step init done $ enumerate inputs
 main :: IO ()
 main = runSafeT $ do
   init <- liftIO $ sample spec 
-  let (irisTrain :: CsvDataset Iris) = (csvDataset  "data/iris.data") { batchSize = 4 
-                                                                      -- need to bring whole dataset into memory to get a good shuffle
-                                                                      -- since iris.data is sorted
-                                                                      , shuffle = Just 150 
-                                                                      }
-  foldM (\model epoch -> do
-            flip runContT (trainLoop model optimizer) $ do raw <- makeListT dataloaderOpts irisTrain (Select $ yield ())
-                                                           pmap 2 (first irisToTensor) raw
-        ) init [1..500]
+  let (irisTrain :: CsvDatastream Iris) = (csvDatastream  "data/iris.data") { batchSize = 1
+                                                                            -- need to bring whole dataset into memory to get a good shuffle
+                                                                            -- since iris.data is sorted
+                                                                            , bufferedShuffle = Just 150 
+                                                                            }
+  foldM (\model epoch -> 
+            runContT  (streamFrom' datastreamOpts irisTrain [()] >>= pmap  irisToTensor) $
+              trainLoop model optimizer
+        ) init [1..10]
 
   pure ()
   where spec = MLPSpec 4 10 10 3

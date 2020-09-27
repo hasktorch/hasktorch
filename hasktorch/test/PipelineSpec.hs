@@ -20,6 +20,7 @@ import           Pipes.Prelude (drain)
 import           GHC.Exts (IsList(fromList))
 
 import           Torch.Data.Pipeline
+import           Torch.Data.Utils
 import qualified Pipes.Prelude as P
 
 streamAheadTimeout = 25000
@@ -39,22 +40,22 @@ instance Dataset IO MockData Int Int where
   getItem MockData _ = threadDelay 10000 >> pure 0
   keys (MockData) = fromList [0 .. 1]
 
-instance Applicative m => Dataset m ShuffleSet Int Int where
+instance  Dataset IO ShuffleSet Int Int where
   getItem ShuffleSet k = pure k
   keys _ = fromList [0 .. 100]
 
 testFoldTimeout :: MockData -> IO ()
 testFoldTimeout dataset = do
-   runContT (makeListT (mapStyleOpts 1) dataset) $
-     (\l -> runEffect $ enumerate l >-> takeThenTimeout) . fst
+   runContT (streamFromMap (datasetOpts 1) dataset) $
+     (\l -> runEffect $ enumerateData l >-> takeThenTimeout) . fst
   where takeThenTimeout = forever $ do
           (_, iter) <- await
           lift $ when (iter == 0) $ threadDelay 5000 
 
 testConcurrentFoldTimeout :: ConcurrentData -> Int -> IO ()
 testConcurrentFoldTimeout dataset numWorkers = do
-   runContT (makeListT (mapStyleOpts numWorkers) dataset ) $
-     (\l -> runEffect $ enumerate l >-> takeThenTimeout) . fst
+   runContT (streamFromMap (datasetOpts numWorkers) dataset ) $
+     (\l -> runEffect $ enumerateData l >-> takeThenTimeout) . fst
   where takeThenTimeout = forever $ do
           (_, iter) <- await
           -- don't timeout on the last two iterations since data shouldn't be
@@ -63,11 +64,11 @@ testConcurrentFoldTimeout dataset numWorkers = do
 
 testShuffle :: IO ()
 testShuffle = do
-  let options = (mapStyleOpts 4) { shuffle = Shuffle $ mkStdGen 123 }
-  let optionsDiff = (mapStyleOpts 4) { shuffle = Shuffle $ mkStdGen 50 }
+  let options = (datasetOpts 4) { shuffle = Shuffle $ mkStdGen 123 }
+  let optionsDiff = (datasetOpts 4) { shuffle = Shuffle $ mkStdGen 50 }
 
-  datasets <- replicateM 100 $ runContT (makeListT options ShuffleSet) $ P.toListM . enumerate . fst
-  differentOrder <- runContT (makeListT optionsDiff ShuffleSet) $ P.toListM . enumerate . fst
+  datasets <- replicateM 100 $ runContT (streamFromMap options ShuffleSet) $ P.toListM . enumerate . fst
+  differentOrder <- runContT (streamFromMap optionsDiff ShuffleSet) $ P.toListM . enumerate . fst
 
   all (\elems -> elems == head datasets) datasets `shouldBe` True
   head datasets == differentOrder `shouldBe` False
