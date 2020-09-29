@@ -2,11 +2,25 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module Torch.GraduallyTyped.Prelude where
+module Torch.GraduallyTyped.Prelude
+  ( module Data.Kind,
+    module Data.Proxy,
+    module Data.Type.Bool,
+    module GHC.TypeLits,
+    Fst,
+    Snd,
+    Elem,
+    Contains,
+  )
+where
 
 import Data.Kind (Type)
+import Data.Proxy (Proxy (..))
+import Data.Type.Bool (If, type (||))
+import GHC.TypeLits (ErrorMessage (..), TypeError (..))
 
 -- | Returns the first element of a type-level tuple with the kind @(k, k')@ marked by a prefix quote.
 --
@@ -45,3 +59,19 @@ type family Elem (e :: t) (es :: [t]) :: Bool where
   Elem _ '[] = 'False
   Elem x (x ': xs) = 'True
   Elem x (_ ': xs) = Elem x xs
+
+-- | Test whether or not a given type contains another:
+--
+-- >>> :kind! Contains (Either Int String) Int
+-- Contains (Either Int String) Int :: Bool
+-- = 'True
+-- >>> :kind! Contains (Either Int String) Bool
+-- Contains (Either Int String) Bool :: Bool
+-- = 'False
+-- >>> :kind! Contains (Either Int String) Either
+-- Contains (Either Int String) Either :: Bool
+-- = 'True
+type family Contains (f :: k) (a :: k') :: Bool where
+  Contains a a = 'True
+  Contains (f g) a = Contains f a || Contains g a
+  Contains _ _ = 'False
