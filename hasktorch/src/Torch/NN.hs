@@ -62,26 +62,25 @@ type family Contains (f :: k) (a :: Type) :: Bool where
   Contains (f g) a = Contains f a || Contains g a
   Contains _ _ = 'False
 
-type family CheckStochasticOutType (f :: k) :: ModelRandomness where
-  CheckStochasticOutType (b, G) =
+type family ModelRandomnessR (out :: Type) :: (ModelRandomness, Type) where
+  ModelRandomnessR (G -> (out, G)) =
     If
-      (Not (Contains b G))
-      'Stochastic
+      (Contains out G)
       ( TypeError
           ( Text "For stochastic models, 'b' must not contain 'Generator' in "
               :<>: Text "'forward :: f -> a -> Generator -> (b, Generator)'."
           )
       )
-  CheckStochasticOutType _ =
-    ( TypeError
-        ( Text "Stochastic models must have a forward pass of the form "
-            :<>: Text "'forward :: f -> a -> Generator -> (b, Generator)'."
-        )
-    )
-
-type family ModelRandomnessR (out :: Type) :: ModelRandomness where
-  ModelRandomnessR ((->) G f) = CheckStochasticOutType f
-  ModelRandomnessR _ = 'Deterministic
+      '( 'Stochastic, out)
+  ModelRandomnessR out =
+    If
+      (Contains out G)
+      ( TypeError
+          ( Text "Stochastic models must have a forward pass of the form "
+              :<>: Text "'forward :: f -> a -> Generator -> (b, Generator)'."
+          )
+      )
+      '( 'Deterministic, out)
 
 class HasForwardProduct (modelARandomness :: ModelRandomness) (modelBRandomness :: ModelRandomness) f1 a1 f2 a2 where
   type BProduct modelARandomness modelBRandomness f1 a1 f2 a2 :: Type
