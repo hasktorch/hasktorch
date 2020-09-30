@@ -11,6 +11,7 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
@@ -128,9 +129,6 @@ instance (HasForward modelA inA, HasForward modelB inB) => HasForwardSum 'Determ
 -- Stochastic mixed instances
 --
 
-type family Fst (t :: (k, k')) :: k where
-  Fst '(x, _) = x
-
 instance
   ( HasForward modelA inA,
     B modelA inA ~ (G -> (outA, G)),
@@ -206,6 +204,41 @@ instance
   type BSum 'Stochastic 'Stochastic modelA inA outA modelB inB outB = G -> (Either outA outB, G)
   forwardSum _ _ (Left (modelA, inA)) _ = \g -> let (outA, g') = forward modelA inA g in (Left outA, g')
   forwardSum _ _ (Right (modelB, inB)) _ = \g -> let (outB, g') = forward modelB inB g in (Right outB, g')
+
+-- TODO: move to Torch.Typed.Prelude?
+type family Fst (t :: (k, k')) :: k where
+  Fst '(x, _) = x
+
+type family Snd (t :: (k, k')) :: k' where
+  Snd '(_, y) = y
+
+instance
+  ( '(modelARandomness, outA) ~ ModelRandomnessR (B modelA inA),
+    '(modelBRandomness, outB) ~ ModelRandomnessR (B modelB inB),
+    HasForwardProduct modelARandomness modelBRandomness modelA inA outA modelB inB outB
+  ) => HasForward (modelA, modelB) (inA, inB)
+  where
+  type
+    B (modelA, modelB) (inA, inB) =
+      BProduct
+        (Fst (ModelRandomnessR (B modelA inA)))
+        (Fst (ModelRandomnessR (B modelB inB)))
+        modelA
+        inA
+        (Snd (ModelRandomnessR (B modelA inA)))
+        modelB
+        inB
+        (Snd (ModelRandomnessR (B modelB inB)))
+  forward (modelA, modelB) (inA, inB) =
+    forwardProduct
+      (Proxy :: Proxy modelARandomness)
+      (Proxy :: Proxy modelBRandomness)
+      modelA
+      inA
+      (Proxy :: Proxy outA)
+      modelB
+      inB
+      (Proxy :: Proxy outB)
 
 --
 -- Parameterized
