@@ -96,6 +96,16 @@ You can launch a Nix shell via
 $ nix-shell
 ```
 
+We also support Stack with Nix, see below.
+
+Note that this shell is configured to use the CPU backend only.
+In order to benefit from any CUDA-capable hardware acceleration your computer may provide (sorry macOS users),
+launch the Nix shell instead with:
+
+```sh
+$ nix-shell --arg cudaSupport true --argstr cudaMajorVersion 10
+```
+
 ### Getting Started in Nix-shell
 
 On Linux and OS X the code below will:
@@ -121,15 +131,20 @@ $ cd ..
 $ cabal repl hasktorch
 ```
 
-We also support Stack with Nix, see below.
+### Troubleshooting Nix-shell under Windows
 
-Note that this shell is configured to use the CPU backend only.
-In order to benefit from any CUDA-capable hardware acceleration your computer may provide (sorry macOS users),
-launch the Nix shell instead with:
+Hasktorch mainly works on Windows Subsystem for Linux 2. 
+Tested on Debian and Ubuntu.
+It is not quite as roubust, but these extra command gets it to work:
 
 ```sh
-$ nix-shell --arg cudaSupport true --argstr cudaMajorVersion 10
+$ nix-shell
+$ cabal update
+$ haskell-language-server
+$ code .
 ```
+
+There is better integration of VS Code with Ubuntu.
 
 #### Known Nix Shell Issues
 
