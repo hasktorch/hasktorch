@@ -5,13 +5,10 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Torch.NN where
@@ -93,7 +90,7 @@ instance
   GHasForward (f :*: g) (a :*: a') b''
   where
   gForward (f :*: g) (a :*: a') = gForward f a :*: gForward g a'
-  gForwardStoch (f :*: g) (a :*: a') = liftA2 ((:*:)) (gForwardStoch f a) (gForwardStoch g a')
+  gForwardStoch (f :*: g) (a :*: a') = liftA2 (:*:) (gForwardStoch f a) (gForwardStoch g a')
 
 instance
   (HasForward f a b) =>
@@ -193,16 +190,18 @@ class Randomizable spec f | spec -> f where
 -- Linear FC Layer
 --
 
-data LinearSpec = LinearSpec
-  { in_features :: Int,
-    out_features :: Int
-  }
+data LinearSpec
+  = LinearSpec
+      { in_features :: Int,
+        out_features :: Int
+      }
   deriving (Show, Eq)
 
-data Linear = Linear
-  { weight :: Parameter,
-    bias :: Parameter
-  }
+data Linear
+  = Linear
+      { weight :: Parameter,
+        bias :: Parameter
+      }
   deriving (Show, Generic, Parameterized)
 
 instance Parameterized [Linear]
@@ -210,7 +209,7 @@ instance Parameterized [Linear]
 linear :: Linear -> Tensor -> Tensor
 linear layer input = linear' input w b
   where
-    linear' input weight bias = unsafePerformIO $ (cast3 ATen.linear_ttt) input weight bias
+    linear' input weight bias = unsafePerformIO $ cast3 ATen.linear_ttt input weight bias
     w = toDependent (weight layer)
     b = toDependent (bias layer)
 
@@ -247,30 +246,30 @@ instance Randomizable LinearSpec Linear where
         =<< pure
           ( subScalar bound $ mulScalar (bound * 2.0) init
           )
-
     return $ Linear w b
 
 --
 -- Conv2d
 --
 
-data Conv2dSpec = Conv2dSpec
-  { inputChannelSize :: Int,
-    outputChannelSize :: Int,
-    kernelHeight :: Int,
-    kernelWidth :: Int
-  }
+data Conv2dSpec
+  = Conv2dSpec
+      { inputChannelSize :: Int,
+        outputChannelSize :: Int,
+        kernelHeight :: Int,
+        kernelWidth :: Int
+      }
   deriving (Show, Eq)
 
-data Conv2d = Conv2d
-  { conv2dWeight :: Parameter,
-    conv2dBias :: Parameter
-  }
+data Conv2d
+  = Conv2d
+      { conv2dWeight :: Parameter,
+        conv2dBias :: Parameter
+      }
   deriving (Show, Generic, Parameterized)
 
 conv2dForward :: Conv2d -> (Int, Int) -> (Int, Int) -> Tensor -> Tensor
-conv2dForward layer stride padding input =
-  Torch.Functional.conv2d' w b stride padding input
+conv2dForward layer = Torch.Functional.conv2d' w b
   where
     w = toDependent (conv2dWeight layer)
     b = toDependent (conv2dBias layer)
@@ -307,5 +306,4 @@ instance Randomizable Conv2dSpec Conv2d where
         =<< pure
           ( subScalar bound $ mulScalar (bound * 2.0) init
           )
-
     return $ Conv2d w b
