@@ -161,10 +161,10 @@ instance
   ) =>
   HasForwardSum 'Stochastic 'Deterministic modelA inA outA modelB inB outB
   where
-  type BSum 'Stochastic 'Deterministic modelA inA outA modelB inB outB = G -> Maybe (Either outA outB, G)
-  forwardSum _ _ (Left modelA) (Left inA) _ = \g -> let (outA, g') = forward modelA inA g in Just (Left outA, g')
-  forwardSum _ _ (Right modelB) (Right inB) _ = \g -> Just (Right $ forward modelB inB, g)
-  forwardSum _ _ _ _ _ = \g -> Nothing
+  type BSum 'Stochastic 'Deterministic modelA inA outA modelB inB outB = G -> (Maybe (Either outA outB), G)
+  forwardSum _ _ (Left modelA) (Left inA) _ = \g -> let (outA, g') = forward modelA inA g in (Just $ Left outA, g')
+  forwardSum _ _ (Right modelB) (Right inB) _ = \g -> (Just . Right $ forward modelB inB, g)
+  forwardSum _ _ _ _ _ = \g -> (Nothing, g)
 
 instance
   ( HasForward modelA inA,
@@ -174,9 +174,10 @@ instance
   ) =>
   HasForwardSum 'Deterministic 'Stochastic modelA inA outA modelB inB outB
   where
-  type BSum 'Deterministic 'Stochastic modelA inA outA modelB inB outB = G -> Maybe (Either outA outB, G)
-  forwardSum _ _ (Left modelA) (Left inA) _ = \g -> Just (Left $ forward modelA inA, g)
-  forwardSum _ _ (Right modelB) (Right inB) _ = \g -> let (outA, g') = forward modelB inB g in Just (Right outA, g')
+  type BSum 'Deterministic 'Stochastic modelA inA outA modelB inB outB = G -> (Maybe (Either outA outB), G)
+  forwardSum _ _ (Left modelA) (Left inA) _ = \g -> (Just . Left $ forward modelA inA, g)
+  forwardSum _ _ (Right modelB) (Right inB) _ = \g -> let (outA, g') = forward modelB inB g in (Just $ Right outA, g')
+  forwardSum _ _ _ _ _ = \g -> (Nothing, g)
 
 --
 -- Fully-stochastic instances
@@ -204,10 +205,10 @@ instance
   ) =>
   HasForwardSum 'Stochastic 'Stochastic modelA inA outA modelB inB outB
   where
-  type BSum 'Stochastic 'Stochastic modelA inA outA modelB inB outB = G -> Maybe (Either outA outB, G)
-  forwardSum _ _ (Left modelA) (Left inA) _ = \g -> let (outA, g') = forward modelA inA g in Just (Left outA, g')
-  forwardSum _ _ (Right modelB) (Right inB) _ = \g -> let (outA, g') = forward modelB inB g in Just (Right outA, g')
-  forwardSum _ _ _ _ _ = \g -> Nothing
+  type BSum 'Stochastic 'Stochastic modelA inA outA modelB inB outB = G -> (Maybe (Either outA outB), G)
+  forwardSum _ _ (Left modelA) (Left inA) _ = \g -> let (outA, g') = forward modelA inA g in (Just $ Left outA, g')
+  forwardSum _ _ (Right modelB) (Right inB) _ = \g -> let (outA, g') = forward modelB inB g in (Just $ Right outA, g')
+  forwardSum _ _ _ _ _ = \g -> (Nothing, g)
 
 -- TODO: move to Torch.Typed.Prelude?
 type family Fst (t :: (k, k')) :: k where
