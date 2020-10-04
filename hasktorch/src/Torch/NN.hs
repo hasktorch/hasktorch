@@ -55,7 +55,8 @@ class HasForward model input where
     ( Generic model,
       Generic input,
       GHasForward (Rep model) (Rep input),
-      Output model input ~ GOutput (Rep model) (Rep input)
+      Output model input ~ GOutput (Rep model) (Rep input),
+      Generic (Output model input)
     ) =>
     model ->
     input ->
@@ -66,9 +67,29 @@ class GHasForward (model :: Type -> Type) (input :: Type -> Type) where
   type GOutput model input :: Type
   gForward :: forall a b c. model a -> input b -> Rep (GOutput model input) c
 
-instance GHasForward U1 U1 where
-  type GOutput U1 U1 = U1 ()
-  gForward U1 U1 = U1 -- TODO: fix this
+-- instance GHasForward U1 U1 where
+-- type GOutput U1 U1 = U1 ()
+-- gForward U1 U1 = U1 -- TODO: what to put here?
+
+instance
+  ( '(modelARandomness, outputA) ~ ModelRandomnessR (GOutput rmodelA rinputA),
+    '(modelBRandomness, outputB) ~ ModelRandomnessR (GOutput rmodelB rinputB),
+    HasForwardProduct modelARandomness (rmodelA ()) (rinputA ()) outputA modelBRandomness (rmodelB ()) (rinputB ()) outputB
+  ) =>
+  GHasForward (rmodelA :*: rmodelB) (rinputA :*: rinputB)
+  where
+  type
+    GOutput (rmodelA :*: rmodelB) (rinputA :*: rinputB) =
+      OutputProduct
+        (Fst (ModelRandomnessR (GOutput rmodelA rinputA)))
+        (rmodelA ())
+        (rinputA ())
+        (Snd (ModelRandomnessR (GOutput rmodelA rinputA)))
+        (Fst (ModelRandomnessR (GOutput rmodelB rinputB)))
+        (rmodelB ())
+        (rinputB ())
+        (Snd (ModelRandomnessR (GOutput rmodelB rinputB)))
+  gForward (modelA :*: modelB) (inputA :*: inputB) = undefined
 
 data ModelRandomness = Deterministic | Stochastic
 
