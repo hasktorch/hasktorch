@@ -48,8 +48,8 @@ nextParameter = do
     (p : t) -> do put t; return p
 
 class HasForward f a where
-  type B f a :: Type
-  forward :: f -> a -> B f a
+  type Output model input :: Type
+  forward :: model -> input -> Output model input
 
 data ModelRandomness = Deterministic | Stochastic
 
@@ -63,48 +63,60 @@ type family Contains (f :: k) (a :: Type) :: Bool where
   Contains (f g) a = Contains f a || Contains g a
   Contains _ _ = 'False
 
-type family ModelRandomnessR (out :: Type) :: (ModelRandomness, Type) where
-  ModelRandomnessR (G -> (out, G)) =
+type family ModelRandomnessR (output :: Type) :: (ModelRandomness, Type) where
+  ModelRandomnessR ((Generator device) -> (output, (Generator device))) =
     If
-      (Contains out G)
-      ( TypeError
-          ( Text "For stochastic models, 'b' must not contain 'Generator' in "
-              :<>: Text "'forward :: f -> a -> Generator -> (b, Generator)'."
-          )
-      )
-      '( 'Stochastic, out)
-  ModelRandomnessR out =
+      (Contains output Generator)
+      (TypeError (Text "The random generator appears in a wrong position in the output type."))
+      '( 'Stochastic, output)
+  ModelRandomnessR output =
     If
-      (Contains out G)
-      ( TypeError
-          ( Text "Stochastic models must have a forward pass of the form "
-              :<>: Text "'forward :: f -> a -> Generator -> (b, Generator)'."
-          )
-      )
-      '( 'Deterministic, out)
+      (Contains output Generator)
+      (TypeError (Text "The random generator appears in a wrong position in the output type."))
+      '( 'Deterministic, output)
 
-class HasForwardProduct (modelARandomness :: ModelRandomness) (modelBRandomness :: ModelRandomness) f1 a1 b1 f2 a2 b2 where
-  type BProduct modelARandomness modelBRandomness f1 a1 b1 f2 a2 b2 :: Type
+class
+  HasForwardProduct
+    (modelARandomness :: ModelRandomness)
+    modelA
+    inputA
+    outputA
+    (modelBRandomness :: ModelRandomness)
+    modelB
+    inputB
+    outputB
+  where
+  type OutputProduct modelARandomness modelA inputA outputA modelBRandomness modelB inputB outputB :: Type
   forwardProduct ::
     Proxy modelARandomness ->
     Proxy modelBRandomness ->
-    f1 ->
-    a1 ->
-    Proxy b1 ->
-    f2 ->
-    a2 ->
-    Proxy b2 ->
-    BProduct modelARandomness modelBRandomness f1 a1 b1 f2 a2 b2
+    modelA ->
+    inputA ->
+    Proxy outputA ->
+    modelB ->
+    inputB ->
+    Proxy outputB ->
+    OutputProduct modelARandomness modelBRandomness modelA inputA outputA modelB inputB outputB
 
-class HasForwardSum (modelARandomness :: ModelRandomness) (modelBRandomness :: ModelRandomness) f1 a1 b1 f2 a2 b2 where
-  type BSum modelARandomness modelBRandomness f1 a1 b1 f2 a2 b2 :: Type
+class
+  HasForwardSum
+    (modelARandomness :: ModelRandomness)
+    modelA
+    inputA
+    outputA
+    (modelBRandomness :: ModelRandomness)
+    modelB
+    inputB
+    outputB
+  where
+  type OutputSum modelARandomness modelA inputA outputA modelBRandomness modelB inputB outputB :: Type
   forwardSum ::
     Proxy modelARandomness ->
     Proxy modelBRandomness ->
-    Either f1 f2 ->
-    Either a1 a2 ->
-    Proxy (Either b1 b2) ->
-    BSum modelARandomness modelBRandomness f1 a1 b1 f2 a2 b2
+    Either modelA modelB ->
+    Either inputA inputB ->
+    Proxy (Either outputA outputB) ->
+    OutputSum modelARandomness modelBRandomness modelA inputA outputA modelB inputB outputB
 
 --
 -- Deterministic instances
@@ -112,17 +124,20 @@ class HasForwardSum (modelARandomness :: ModelRandomness) (modelBRandomness :: M
 
 instance
   ( HasForward modelA inA,
-    B modelA inA ~ outA,
+    Output modelA inA ~ outA,
     HasForward modelB inB,
-    B modelB inB ~ outB
+    Output modelB inB ~ outB
   ) =>
-  HasForwardProduct 'Deterministic 'Deterministic modelA inA outA modelB inB outB
+  HasForwardProduct 'Deterministic modelA inA outA 'Deterministic modelB inB outB
   where
-  type BProduct 'Deterministic 'Deterministic modelA inA outA modelB inB outB = (outA, outB)
+  type OutputProduct 'Deterministic modelA inA outA 'Deterministic modelB inB outB = (outA, outB)
   forwardProduct _ _ modelA inA _ modelB inB _ = (forward modelA inA, forward modelB inB)
 
-instance (HasForward modelA inA, HasForward modelB inB) => HasForwardSum 'Deterministic 'Deterministic modelA inA outA modelB inB outB where
-  type BSum 'Deterministic 'Deterministic modelA inA outA modelB inB outB = Maybe (Either (B modelA inA) (B modelB inB))
+instance
+  (HasForward modelA inA, HasForward modelB inB) =>
+  HasForwardSum 'Deterministic modelA inA outA 'Deterministic modelB inB outB
+  where
+  type OutputSum 'Deterministic 'Deterministic modelA inA outA modelB inB outB = Maybe (Either (Output modelA inA) (Output modelB inB))
   forwardSum _ _ (Left modelA) (Left inA) _ = Just . Left $ forward modelA inA
   forwardSum _ _ (Right modelB) (Right inB) _ = Just . Right $ forward modelB inB
   forwardSum _ _ _ _ _ = Nothing
@@ -133,48 +148,48 @@ instance (HasForward modelA inA, HasForward modelB inB) => HasForwardSum 'Determ
 
 instance
   ( HasForward modelA inA,
-    B modelA inA ~ (G -> (outA, G)),
+    Output modelA inA ~ (G -> (outA, G)),
     HasForward modelB inB,
-    B modelB inB ~ outB
+    Output modelB inB ~ outB
   ) =>
-  HasForwardProduct 'Stochastic 'Deterministic modelA inA outA modelB inB outB
+  HasForwardProduct 'Stochastic modelA inA outA 'Deterministic modelB inB outB
   where
-  type BProduct 'Stochastic 'Deterministic modelA inA outA modelB inB outB = G -> ((outA, outB), G)
+  type OutputProduct 'Stochastic modelA inA outA 'Deterministic modelB inB outB = G -> ((outA, outB), G)
   forwardProduct _ _ modelA inA _ modelB inB _ = \g -> let (outA, g') = forward modelA inA g in ((outA, forward modelB inB), g')
 
 instance
   ( HasForward modelA inA,
-    B modelA inA ~ outA,
+    Output modelA inA ~ outA,
     HasForward modelB inB,
-    B modelB inB ~ (G -> (outB, G))
+    Output modelB inB ~ (G -> (outB, G))
   ) =>
-  HasForwardProduct 'Deterministic 'Stochastic modelA inA outA modelB inB outB
+  HasForwardProduct 'Deterministic modelA inA outA 'Stochastic modelB inB outB
   where
-  type BProduct 'Deterministic 'Stochastic modelA inA outA modelB inB outB = G -> ((outA, outB), G)
+  type OutputProduct 'Deterministic modelA inA outA 'Stochastic modelB inB outB = G -> ((outA, outB), G)
   forwardProduct _ _ modelA inA _ modelB inB _ = \g -> let (outB, g') = forward modelB inB g in ((forward modelA inA, outB), g')
 
 instance
   ( HasForward modelA inA,
-    B modelA inA ~ (G -> (outA, G)),
+    Output modelA inA ~ (G -> (outA, G)),
     HasForward modelB inB,
-    B modelB inB ~ outB
+    Output modelB inB ~ outB
   ) =>
-  HasForwardSum 'Stochastic 'Deterministic modelA inA outA modelB inB outB
+  HasForwardSum 'Stochastic modelA inA outA 'Deterministic modelB inB outB
   where
-  type BSum 'Stochastic 'Deterministic modelA inA outA modelB inB outB = G -> (Maybe (Either outA outB), G)
+  type OutputSum 'Stochastic modelA inA outA 'Deterministic modelB inB outB = G -> (Maybe (Either outA outB), G)
   forwardSum _ _ (Left modelA) (Left inA) _ = \g -> let (outA, g') = forward modelA inA g in (Just $ Left outA, g')
   forwardSum _ _ (Right modelB) (Right inB) _ = \g -> (Just . Right $ forward modelB inB, g)
   forwardSum _ _ _ _ _ = \g -> (Nothing, g)
 
 instance
   ( HasForward modelA inA,
-    B modelA inA ~ outA,
+    Output modelA inA ~ outA,
     HasForward modelB inB,
-    B modelB inB ~ (G -> (outB, G))
+    Output modelB inB ~ (G -> (outB, G))
   ) =>
-  HasForwardSum 'Deterministic 'Stochastic modelA inA outA modelB inB outB
+  HasForwardSum 'Deteriministic modelA inA outA 'Stochastic modelB inB outB
   where
-  type BSum 'Deterministic 'Stochastic modelA inA outA modelB inB outB = G -> (Maybe (Either outA outB), G)
+  type OutputSum 'Deterministic modelA inA outA 'Stochastic modelB inB outB = G -> (Maybe (Either outA outB), G)
   forwardSum _ _ (Left modelA) (Left inA) _ = \g -> (Just . Left $ forward modelA inA, g)
   forwardSum _ _ (Right modelB) (Right inB) _ = \g -> let (outA, g') = forward modelB inB g in (Just $ Right outA, g')
   forwardSum _ _ _ _ _ = \g -> (Nothing, g)
@@ -185,13 +200,13 @@ instance
 
 instance
   ( HasForward modelA inA,
-    B modelA inA ~ (G -> (outA, G)),
+    Output modelA inA ~ (G -> (outA, G)),
     HasForward modelB inB,
-    B modelB inB ~ (G -> (outB, G))
+    Output modelB inB ~ (G -> (outB, G))
   ) =>
-  HasForwardProduct 'Stochastic 'Stochastic modelA inA outA modelB inB outB
+  HasForwardProduct 'Stochastic modelA inA outA 'Stochastic modelB inB outB
   where
-  type BProduct 'Stochastic 'Stochastic modelA inA outA modelB inB outB = G -> ((outA, outB), G)
+  type OutputProduct 'Stochastic modelA inA outA 'Stochastic modelB inB outB = G -> ((outA, outB), G)
   forwardProduct _ _ modelA inA _ modelB inB _ = runState $ do
     outA <- state (forward modelA inA)
     outB <- state (forward modelB inB)
@@ -199,13 +214,13 @@ instance
 
 instance
   ( HasForward modelA inA,
-    B modelA inA ~ (G -> (outA, G)),
+    Output modelA inA ~ (G -> (outA, G)),
     HasForward modelB inB,
-    B modelB inB ~ (G -> (outB, G))
+    Output modelB inB ~ (G -> (outB, G))
   ) =>
-  HasForwardSum 'Stochastic 'Stochastic modelA inA outA modelB inB outB
+  HasForwardSum 'Stochastic modelA inA outA 'Stochastic modelB inB outB
   where
-  type BSum 'Stochastic 'Stochastic modelA inA outA modelB inB outB = G -> (Maybe (Either outA outB), G)
+  type OutputSum 'Stochastic modelA inA outA 'Stochastic modelB inB outB = G -> (Maybe (Either outA outB), G)
   forwardSum _ _ (Left modelA) (Left inA) _ = \g -> let (outA, g') = forward modelA inA g in (Just $ Left outA, g')
   forwardSum _ _ (Right modelB) (Right inB) _ = \g -> let (outA, g') = forward modelB inB g in (Just $ Right outA, g')
   forwardSum _ _ _ _ _ = \g -> (Nothing, g)
@@ -218,23 +233,23 @@ type family Snd (t :: (k, k')) :: k' where
   Snd '(_, y) = y
 
 instance
-  ( '(modelARandomness, outA) ~ ModelRandomnessR (B modelA inA),
-    '(modelBRandomness, outB) ~ ModelRandomnessR (B modelB inB),
+  ( '(modelARandomness, outA) ~ ModelRandomnessR (Output modelA inA),
+    '(modelBRandomness, outB) ~ ModelRandomnessR (Output modelB inB),
     HasForwardProduct modelARandomness modelBRandomness modelA inA outA modelB inB outB
   ) =>
   HasForward (modelA, modelB) (inA, inB)
   where
   type
-    B (modelA, modelB) (inA, inB) =
-      BProduct
-        (Fst (ModelRandomnessR (B modelA inA)))
-        (Fst (ModelRandomnessR (B modelB inB)))
+    Output (modelA, modelB) (inA, inB) =
+      OutputProduct
+        (Fst (ModelRandomnessR (Output modelA inA)))
         modelA
         inA
-        (Snd (ModelRandomnessR (B modelA inA)))
+        (Snd (ModelRandomnessR (Output modelA inA)))
+        (Fst (ModelRandomnessR (Output modelB inB)))
         modelB
         inB
-        (Snd (ModelRandomnessR (B modelB inB)))
+        (Snd (ModelRandomnessR (Output modelB inB)))
   forward (modelA, modelB) (inA, inB) =
     forwardProduct
       (Proxy :: Proxy modelARandomness)
@@ -247,23 +262,23 @@ instance
       (Proxy :: Proxy outB)
 
 instance
-  ( '(modelARandomness, outA) ~ ModelRandomnessR (B modelA inA),
-    '(modelBRandomness, outB) ~ ModelRandomnessR (B modelB inB),
+  ( '(modelARandomness, outA) ~ ModelRandomnessR (Output modelA inA),
+    '(modelBRandomness, outB) ~ ModelRandomnessR (Output modelB inB),
     HasForwardSum modelARandomness modelBRandomness modelA inA outA modelB inB outB
   ) =>
   HasForward (Either modelA modelB) (Either inA inB)
   where
   type
-    B (Either modelA modelB) (Either inA inB) =
-      BSum
-        (Fst (ModelRandomnessR (B modelA inA)))
-        (Fst (ModelRandomnessR (B modelB inB)))
+    Output (Either modelA modelB) (Either inA inB) =
+      OutputSum
+        (Fst (ModelRandomnessR (Output modelA inA)))
         modelA
         inA
-        (Snd (ModelRandomnessR (B modelA inA)))
+        (Snd (ModelRandomnessR (Output modelA inA)))
+        (Fst (ModelRandomnessR (Output modelB inB)))
         modelB
         inB
-        (Snd (ModelRandomnessR (B modelB inB)))
+        (Snd (ModelRandomnessR (Output modelB inB)))
   forward eitherModel eitherIn =
     forwardSum
       (Proxy :: Proxy modelARandomness)
