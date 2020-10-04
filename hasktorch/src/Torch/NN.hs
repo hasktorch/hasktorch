@@ -51,14 +51,24 @@ class HasForward model input where
   type Output model input :: Type
   type Output model input = GOutput (Rep model) (Rep input)
   forward :: model -> input -> Output model input
+  default forward ::
+    ( Generic model,
+      Generic input,
+      GHasForward (Rep model) (Rep input),
+      Output model input ~ GOutput (Rep model) (Rep input)
+    ) =>
+    model ->
+    input ->
+    Output model input
+  forward model input = to $ gForward (from model) (from input)
 
 class GHasForward (model :: Type -> Type) (input :: Type -> Type) where
   type GOutput model input :: Type
-  gForward :: forall a b. model a -> input b -> GOutput model input
+  gForward :: forall a b c. model a -> input b -> Rep (GOutput model input) c
 
 instance GHasForward U1 U1 where
   type GOutput U1 U1 = U1 ()
-  gForward U1 U1 = U1
+  gForward U1 U1 = U1 -- TODO: fix this
 
 data ModelRandomness = Deterministic | Stochastic
 
