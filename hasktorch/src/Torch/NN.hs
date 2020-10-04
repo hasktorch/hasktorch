@@ -64,14 +64,14 @@ type family Contains (f :: k) (a :: Type) :: Bool where
   Contains _ _ = 'False
 
 type family ModelRandomnessR (output :: Type) :: (ModelRandomness, Type) where
-  ModelRandomnessR ((Generator device) -> (output, (Generator device))) =
+  ModelRandomnessR (G -> (output, G)) =
     If
-      (Contains output Generator)
+      (Contains output G)
       (TypeError (Text "The random generator appears in a wrong position in the output type."))
       '( 'Stochastic, output)
   ModelRandomnessR output =
     If
-      (Contains output Generator)
+      (Contains output G)
       (TypeError (Text "The random generator appears in a wrong position in the output type."))
       '( 'Deterministic, output)
 
@@ -187,7 +187,7 @@ instance
     HasForward modelB inB,
     Output modelB inB ~ (G -> (outB, G))
   ) =>
-  HasForwardSum 'Deteriministic modelA inA outA 'Stochastic modelB inB outB
+  HasForwardSum 'Deterministic modelA inA outA 'Stochastic modelB inB outB
   where
   type OutputSum 'Deterministic modelA inA outA 'Stochastic modelB inB outB = G -> (Maybe (Either outA outB), G)
   forwardSum _ _ (Left modelA) (Left inA) _ = \g -> (Just . Left $ forward modelA inA, g)
