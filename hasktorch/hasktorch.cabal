@@ -77,12 +77,18 @@ library
                     , Torch.Typed.Vision
                     , Torch.GraduallyTyped
                     , Torch.GraduallyTyped.Prelude
+                    , Torch.GraduallyTyped.DType
+                    , Torch.GraduallyTyped.Device
+                    , Torch.GraduallyTyped.Shape
+                    , Torch.GraduallyTyped.Layout
                     , Torch.GraduallyTyped.Tensor
+                    , Torch.GraduallyTyped.Creation
                     , Torch.GraduallyTyped.Autograd
                     , Torch.GraduallyTyped.Random
                     , Torch.GraduallyTyped.Functional
                     , Torch.GraduallyTyped.Functional.Activation
                     , Torch.GraduallyTyped.NN
+                    , Torch.GraduallyTyped.Internal.TensorOptions
                     , Torch.Distributions.Constraints
                     , Torch.Distributions.Distribution
                     , Torch.Distributions.Bernoulli
@@ -133,6 +139,7 @@ library
                     , data-default-class
                     , containers
                     , inline-c
+                    , generics-sop
 
  default-extensions:  Strict
                     , StrictData

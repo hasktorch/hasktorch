@@ -9,7 +9,7 @@ import Control.Concurrent.STM (TVar)
 import Data.Word (Word64)
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (Nat)
-import Torch.GraduallyTyped.Tensor (Device, DeviceType)
+import Torch.GraduallyTyped.Device (Device, DeviceType)
 import qualified Torch.Internal.Type as ATen
 
 data Generator (device :: Device (DeviceType Nat)) where

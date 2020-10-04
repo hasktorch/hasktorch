@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -13,13 +14,53 @@ module Torch.GraduallyTyped.NN where
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Torch.GraduallyTyped.Prelude (Contains, ErrorMessage (Text), Fst, If, Proxy (..), Snd, Type, TypeError)
 import Torch.GraduallyTyped.Random (Generator)
-import Torch.GraduallyTyped.Tensor (Device (AnyDevice))
+import Torch.GraduallyTyped.Device (Device (AnyDevice))
+import Generics.SOP (Code, I, SOP(..), Generic, NS(..), NP)
+import GHC.Base (coerce, Any)
 
 data ModelRandomness = Deterministic | Stochastic
 
 class HasForward model input where
   type Output model input :: Type
   forward :: model -> input -> Output model input
+
+-- class GHasForward model input where
+--   type GOutput model input
+--   gForward :: (Generic model, Generic input, Code model ~ Code input) => model -> input -> GOutput model input
+--   gForward model input = gForwardSS (from model) (from input)
+
+-- class GHasForwardSS modelss inputss where
+--   type GOutputSS modelss inputss
+--   gForwardSS :: forall models inputs . (GHasForwardPP models inputs) => SOP I modelss -> SOP I inputss -> GOutputSS modelss inputss
+--   gForwardSS (SOP (Z (models :: NP I models))) (SOP (Z (inputs :: NP I inputs))) = gForwardPP @models @inputs models inputs
+
+-- class GHasForwardPP models inputs where
+--   type GOutputPP models inputs
+--   gForwardPP :: () => NP I models -> NP I inputs -> GOutputPP models inputs
+
+data Bar = Bar
+
+newtype Foo (foo :: Maybe Bar) = Foo Int deriving Num
+
+-- >>> :kind! MaybeF 'Nothing ('Just 'Bar)
+-- MaybeF 'Nothing ('Just 'Bar) :: Maybe Bar
+-- = 'Nothing
+-- >>> :kind! MaybeF ('Just 'Bar) ('Just 'Bar)
+-- MaybeF ('Just 'Bar) ('Just 'Bar) :: Maybe Bar
+-- = 'Just 'Bar
+type family MaybeF (a :: Maybe k) (b :: Maybe k) :: Maybe k where
+  MaybeF ('Just k) ('Just k) = 'Just k
+  MaybeF _ _ = 'Nothing
+
+fooUntyped :: Foo 'Nothing -> Foo 'Nothing -> Foo 'Nothing
+fooUntyped = (+)
+
+foo :: forall a b . Foo a -> Foo b -> Foo (MaybeF a b)
+foo a b = coerce $ fooUntyped (coerce a) (coerce b)
+
+
+
+
 
 type family ModelRandomnessR (output :: Type) :: (ModelRandomness, Type) where
   ModelRandomnessR (Generator device -> (output, Generator device)) =
