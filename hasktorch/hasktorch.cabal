@@ -77,11 +77,11 @@ library
                     , Torch.Typed.Vision
                     , Torch.GraduallyTyped
                     , Torch.GraduallyTyped.Prelude
+                    , Torch.GraduallyTyped.Tensor
                     , Torch.GraduallyTyped.DType
                     , Torch.GraduallyTyped.Device
                     , Torch.GraduallyTyped.Shape
                     , Torch.GraduallyTyped.Layout
-                    , Torch.GraduallyTyped.Tensor
                     , Torch.GraduallyTyped.Creation
                     , Torch.GraduallyTyped.Autograd
                     , Torch.GraduallyTyped.Random
