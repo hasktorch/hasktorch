@@ -27,12 +27,12 @@ data (Optimizer o, Parameterized p) => OptimSpec o p = OptimSpec {
 
 -- | Train a model
 train 
-    :: (Dataset d, Optimizer o, Parameterized p, HasForward p Tensor Tensor) 
+    :: (MockDataset d, Optimizer o, Parameterized p, HasForward p Tensor Tensor) 
     => OptimSpec o p -> d -> p -> IO p
 train OptimSpec{..} dataset init = do
     trained <- foldLoop init numIters $
         \state iter -> do
-            (input, label) <- getItem dataset (iter*batchSize) batchSize
+            (input, label) <- Dataset.getItem dataset (iter*batchSize) batchSize
             -- print $ shape input
             let loss = lossFn state input label
 
@@ -43,7 +43,7 @@ train OptimSpec{..} dataset init = do
             when (iter `mod` 50 == 0) $ do
                 putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
             (newParam, _) <- runStep state optimizer loss learningRate
-            pure $ replaceParameters state newParam
+            pure newParam
     pure trained
 
 --

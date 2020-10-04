@@ -20,7 +20,7 @@ import           Torch.Serialize                                (load)
 import           Torch.Tensor                                   (Tensor, reshape, asTensor, toInt, shape)
 import           Torch.Functional.Internal                      (repeatInterleaveScalar)
 import           Torch.NN                            as N
-import           Torch.Functional                    as F
+import           Torch.Functional                    as F       hiding (take)
 import qualified Torch.DType                         as D
 import qualified Torch.Vision                        as V
 import qualified Torch.Typed.Vision                  as V       hiding (getImages')
@@ -121,8 +121,7 @@ oneEpoch dataset pretrainedbb model optim = do
                 loss = F.nllLoss' labelBatch scores
             when (iter `mod` 30 == 0) $ do
                 putStrLn $ "Iteration: " ++ show iter ++ " | Loss for current mini-batch: " ++ show loss
-            (newParam, newOptim) <- runStep iterModel iterOptim loss 1e-4
-            pure (N.replaceParameters iterModel newParam, newOptim)
+            runStep iterModel iterOptim loss 1e-4
     return (newEpochModel, newEpochOptim)
 
 train :: DataSet -> DataSet -> AlexNetBB -> IO N.Linear

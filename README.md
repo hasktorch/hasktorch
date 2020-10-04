@@ -11,6 +11,11 @@ Contributions/PR are encouraged (see Contributing).
 Currently we are prepping development and migration for a major 2nd release, Hasktorch 0.2.
 The 1st release, Hasktorch 0.1, that you can find on hackage is outdated and should not be used at this point.
 
+## Talks
+
+- [High-level MuniHac talk](https://www.youtube.com/watch?v=Qu6RIO02m1U&t=360) by [@austinvhuang][austin-twitter]
+- [Hands-on live-coding demo](https://www.youtube.com/watch?v=ZnYa99QoznE&t=1689) by [@tscholak][torsten-twitter]
+- [Low-level FFI talk](https://www.youtube.com/watch?v=qWpD8t_Aodk&feature=youtu.be) by [@junjihashimoto][junji-twitter]
 
 ## Project Structure
 
@@ -33,6 +38,7 @@ Internals (for contributing developers):
 
 The following steps will get you started.
 They assume the hasktorch repository has just been cloned.
+
 
 ### On macOS or Ubuntu-like OSes'
 
@@ -90,7 +96,6 @@ You can launch a Nix shell via
 $ nix-shell
 ```
 
-and use `cabal build`, `cabal repl`, `cabal test`, etc. from within.
 We also support Stack with Nix, see below.
 
 Note that this shell is configured to use the CPU backend only.
@@ -100,6 +105,46 @@ launch the Nix shell instead with:
 ```sh
 $ nix-shell --arg cudaSupport true --argstr cudaMajorVersion 10
 ```
+
+### Getting Started in Nix-shell
+
+On Linux and OS X the code below will:
+
+ * Build hasktorch and examples
+ * Run unit tests
+ * Download MNIST dataset into common directory
+ * Run static-mnist-cnn
+ * Drop you in repl with hasktorch imported
+
+```sh
+$ nix-shell
+$ cabal build hasktorch
+$ cabal test hasktorch
+$ cabal build examples
+$ cabal test examples
+$ cd examples
+$ ./datasets/download-mnist.sh 
+$ cp -r mnist data
+$ export DEVICE=cpu
+$ cabal run static-mnist-cnn
+$ cd ..
+$ cabal repl hasktorch
+```
+
+### Troubleshooting Nix-shell under Windows
+
+Hasktorch mainly works on Windows Subsystem for Linux 2. 
+Tested on Debian and Ubuntu.
+It is not quite as roubust, but these extra command gets it to work:
+
+```sh
+$ nix-shell
+$ cabal update
+$ haskell-language-server
+$ code .
+```
+
+There is better integration of VS Code with Ubuntu.
 
 #### Known Nix Shell Issues
 
@@ -183,6 +228,30 @@ $ nix-shell \
   --command "export DEVICE=\"cuda:0\"; cabal run static-mnist-mlp"
 ```
 
+### Getting Started With Stack in Nix-shell 
+
+On Linux and OS X the code below will:
+
+ * Drop you into nix-shell with Stack available
+ * Build hasktorch and examples with Stack
+ * Run unit tests
+ * Download MNIST dataset into common directory
+ * Find the executable created for static-mnist-cnn
+ * Run static-mnist-cnn
+
+
+```sh
+$ nix-shell -p stack
+$ stack --nix build
+$ stack --nix test
+$ cd examples
+$ ./datasets/download-mnist.sh 
+$ cp -r mnist data
+$ find . -type f -executable -name static-mnist-cnn
+$ `find . -type f -executable -name static-mnist-cnn`
+```
+
+
 ### Set up your development environment
 
 If you want to develop the project with great Haskell IDE integration,
@@ -250,11 +319,13 @@ Some example notebooks are found in the `notebooks/` directory.
 We welcome new contributors.
 
 Contact Austin Huang or Sam Stites for access to the [hasktorch slack channel][slack].
-You can send an email to [hasktorch@gmail.com][email] or on twitter as [@austinvhuang][austin-twitter] or [@SamStites][sam-twitter].
+You can send an email to [hasktorch@gmail.com][email] or on twitter as [@austinvhuang][austin-twitter], [@SamStites][sam-twitter], or [@tscholak][torsten-twitter].
 
 [email]:mailto:hasktorch@gmail.com
 [austin-twitter]:https://twitter.com/austinvhuang
 [sam-twitter]:https://twitter.com/samstites
+[torsten-twitter]:https://twitter.com/tscholak
+[junji-twitter]:https://twitter.com/junjihashimoto3
 [slack]:https://hasktorch.slack.com
 [gitter-dh]:https://gitter.im/dataHaskell/Lobby
 

@@ -10,18 +10,15 @@ import           GHC.Generics
 import           Prelude hiding (exp)
 
 
-import           Control.Monad ((<=<))
-import           Control.Monad (forM_)
-import           Control.Monad (forever)
-import           Control.Monad.Cont (ContT(runContT))
+import           Control.Monad ((<=<), forM_)
+import           Control.Monad.Cont (ContT(..))
 
-import           Pipes
 import qualified Pipes.Prelude as P
+import           Pipes
 
 import           Torch
 import qualified Torch.Vision as V
 import           Torch.Serialize
-import           Torch.Data.Pipeline
 import           Torch.Typed.Vision (initMnist)
 
 data MLPSpec = MLPSpec {
@@ -54,15 +51,15 @@ mlp MLP{..} input =
     . linear l0
     $ input
 
-trainLoop :: Optimizer o => MLP -> o -> ListT IO ((Tensor, Tensor), Int) -> IO  MLP
-trainLoop model optimizer = P.foldM  step begin done . enumerate
+trainLoop :: Optimizer o => MLP -> o -> ListT IO (Tensor, Tensor) -> IO  MLP
+trainLoop model optimizer = P.foldM  step begin done . enumerateData
   where step :: MLP -> ((Tensor, Tensor), Int) -> IO MLP
         step model ((input, label), iter) = do
           let loss = nllLoss' label $ mlp model input
           when (iter `mod` 50 == 0) $ do
             putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
           (newParam, _) <- runStep model optimizer loss 1e-3
-          pure $ replaceParameters model newParam
+          pure newParam
         done = pure
         begin = pure model
 
@@ -75,13 +72,13 @@ displayImages model (testImg, testLabel) =  do
 main :: IO ()
 main = do
     (trainData, testData) <- initMnist "data"
-    let trainMnist = V.Mnist { batchSize = 64 , mnistData = trainData}
-        testMnist = V.Mnist { batchSize = 1 , mnistData = testData}
+    let trainMnist = V.MNIST { batchSize = 32 , mnistData = trainData}
+        testMnist = V.MNIST { batchSize = 1 , mnistData = testData}
         spec = MLPSpec 784 64 32 10
         optimizer = GD
     init <- sample spec
     model <- foldLoop init 5 $ \model _ ->
-      runContT (makeListT (mapStyleOpts 2) trainMnist) $ trainLoop model optimizer . fst
+      runContT (streamFromMap (datasetOpts 2) trainMnist) $ trainLoop model optimizer . fst
   
     -- show test images + labels
     forM_ [0..10]  $ displayImages model <=< getItem testMnist

@@ -27,7 +27,7 @@ data (Parameterized t, Parameterized s) => DistillSpec t s = DistillSpec {
 
 -- | Distill a teacher to a student
 distill
-    :: (Parameterized t, Parameterized s, Optimizer o, Dataset d)
+    :: (Parameterized t, Parameterized s, Optimizer o, MockDataset d)
     => DistillSpec t s
     -> OptimSpec o s
     -> d
@@ -35,12 +35,12 @@ distill
 distill DistillSpec{..} OptimSpec{..} dataset = do
     trained <- foldLoop student numIters $
         \state iter -> do
-            (input, _) <- getItem dataset (iter * batchSize) batchSize
+            (input, _) <- Dataset.getItem dataset (iter * batchSize) batchSize
             let tOutput = teacherView teacher input
                 sOutput = studentView state input
                 loss = distillLoss tOutput sOutput
             when (iter `mod` 50 == 0) $ do
                 putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
             (newParam, _) <- runStep state optimizer loss learningRate
-            pure $ replaceParameters state newParam
+            pure newParam
     pure trained

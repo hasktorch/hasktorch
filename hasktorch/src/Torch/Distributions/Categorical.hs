@@ -66,4 +66,4 @@ fromProbs :: D.Tensor -> Categorical
 fromProbs ps = Categorical ps $ probsToLogits False ps
 
 fromLogits :: D.Tensor -> Categorical
-fromLogits logits' = Categorical (probsToLogits False logits') logits'
+fromLogits logits' = Categorical (logitsToProbs False logits') logits'

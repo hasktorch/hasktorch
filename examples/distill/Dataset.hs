@@ -1,12 +1,12 @@
 module Dataset where
 
-import Torch
+import Torch hiding (take)
 import qualified Torch.Typed.Vision as V hiding (getImages')
 import qualified Torch.Vision as V
 
 -- This is a placeholder for this example until we have a more formal data loader abstraction
 --
-class Dataset d where
+class MockDataset d where
     getItem
         :: d
         -> Int -- index
@@ -18,7 +18,7 @@ data MNIST = MNIST {
     idxList :: [Int]
 }
 
-instance Dataset MNIST where
+instance MockDataset MNIST where
     getItem mnistData index n = do
         let currIndex = index
         let idx = take n (drop (currIndex + n) (idxList mnistData))

@@ -66,8 +66,8 @@ main = do
         loss = mseLoss y y'
     when (i `mod` 100 == 0) $ do
       putStrLn $ "Iteration: " ++ show i ++ " | Loss: " ++ show loss
-    (newParam, _) <- runStep state optimizer loss 1e-1
-    return $ replaceParameters state $ newParam
+    (newState, _) <- runStep state optimizer loss 1e-1
+    return newState
   putStrLn "Final Model:"
   putStrLn $ "0, 0 => " ++ (show $ squeezeAll $ model trained (asTensor [0, 0 :: Float]))
   putStrLn $ "0, 1 => " ++ (show $ squeezeAll $ model trained (asTensor [0, 1 :: Float]))

@@ -15,36 +15,35 @@ import System.Mem (performGC)
 type LearningRate = Tensor
 type Loss = Tensor
 newtype Gradients = Gradients [Tensor] deriving Show
+data OptimizerState option = OptimizerState option
 
+grad' :: Loss -> [Parameter] -> Gradients
 grad' t p = Gradients (grad t p)
 
-class Optimizer o where
-    step :: LearningRate -> Gradients -> [Tensor] -> o -> ([Tensor], o)
-
--- | run a single iteration of an optimizer, returning new parameters and updated optimizer state
-runStep :: (Parameterized p, Optimizer o) =>
-        p -> o -> Loss -> LearningRate -> IO ([Parameter], o)
-runStep paramState optState lossValue lr = do
-    performGC
-    let (flatParameters', optState') = step lr gradients depParameters optState 
-    newFlatParam <- mapM makeIndependent flatParameters'
-    pure (newFlatParam, optState')
-    where
-        flatParameters = flattenParameters paramState
-        gradients = grad' lossValue flatParameters
-        depParameters = fmap toDependent flatParameters
-
--- | run a single iteration of an optimizer, returning new parameters and updated optimizer state
-runStep' :: (Parameterized p, Optimizer o) =>
-        p -> o -> LearningRate -> Gradients -> IO ([Parameter], o)
-runStep' paramState optState lr gradients = do
-    performGC
-    let (flatParameters', optState') = step lr gradients depParameters optState 
-    newFlatParam <- mapM makeIndependent flatParameters'
-    pure (newFlatParam, optState')
-    where
-        flatParameters = flattenParameters paramState
-        depParameters = fmap toDependent flatParameters
+class Optimizer optimizer where
+    step :: LearningRate -> Gradients -> [Tensor] -> optimizer -> ([Tensor], optimizer)
+    -- | run a single iteration of an optimizer, returning new parameters and updated optimizer state
+    runStep :: (Parameterized model) => model -> optimizer -> Loss -> LearningRate -> IO (model, optimizer)
+    runStep paramState optState lossValue lr = do
+        performGC
+        let (flatParameters', optState') = step lr gradients depParameters optState 
+        newFlatParam <- mapM makeIndependent flatParameters'
+        pure (replaceParameters paramState newFlatParam, optState')
+        where
+            flatParameters = flattenParameters paramState
+            gradients = grad' lossValue flatParameters
+            depParameters = fmap toDependent flatParameters
+    
+    -- | run a single iteration of an optimizer, returning new parameters and updated optimizer state
+    runStep' :: (Parameterized model) =>model -> optimizer -> Gradients -> LearningRate -> IO (model, optimizer)
+    runStep' paramState optState gradients lr = do
+        performGC
+        let (flatParameters', optState') = step lr gradients depParameters optState 
+        newFlatParam <- mapM makeIndependent flatParameters'
+        pure (replaceParameters paramState newFlatParam, optState')
+        where
+            flatParameters = flattenParameters paramState
+            depParameters = fmap toDependent flatParameters
 
 --
 -- Gradient Descent

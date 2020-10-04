@@ -399,6 +399,10 @@ linear layer input = linear' input w b
 linearForward :: Linear -> Tensor -> Tensor
 linearForward = linear -- temporary alias until dependencies are updated
 
+instance HasForward Linear Tensor Tensor where
+  forward = linearForward
+  forwardStoch m x = pure $ linearForward m x
+
 instance Randomizable LinearSpec Linear where
   sample LinearSpec {..} = do
     w <-

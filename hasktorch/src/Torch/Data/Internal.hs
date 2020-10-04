@@ -19,16 +19,15 @@ runWithBuffer :: forall a m b .
   (MonadBaseControl IO m) =>
   Int ->
   (Output a -> m ()) ->
-  ContT b m (ListT m (a, Int))
+  -- ContT b m (ListT m (a, Int))
+  ContT b m (ListT m a)
 runWithBuffer bufferSize batchHandler = ContT $ \f ->
   snd
     <$> withBufferLifted
       (bounded bufferSize)
       (\batchOutput -> batchHandler batchOutput)
-      (\input -> f . Select $ P.zip (fromInput' input) iters)
-  where
-    iters :: Producer Int m ()
-    iters = each [0..]
+      -- (\input -> f . Select $ P.zip (fromInput' input) iters)
+      (\input -> f . Select $ fromInput' input)
 
 liftedBracket :: MonadBaseControl IO m => m a -> (a -> m b) -> (a -> m c) -> m c
 liftedBracket acquire release action = control $ \runInIO ->
@@ -83,3 +82,7 @@ atomically = liftIO . STM.atomically
 
 instance (MonadBase IO m) => MonadBase IO (Proxy a' a b' b m) where
   liftBase = lift . liftBase
+
+
+---- make a runData function which just does runContT but zips that
+---- the listT with the iteration! This is much better

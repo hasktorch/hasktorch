@@ -135,4 +135,5 @@ main = do
   case deviceStr of
     Right "cpu"    -> train' @'( 'CPU, 0)
     Right "cuda:0" -> train' @'( 'CUDA, 0)
-    _              -> error "Don't know what to do or how."
+    Right device -> error $ "Unknown device setting: " ++ device
+    _ -> train' @'( 'CPU, 0)
