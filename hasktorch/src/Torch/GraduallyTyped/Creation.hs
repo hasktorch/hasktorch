@@ -84,5 +84,5 @@ ones =
       tensor <- case (namedDims shape, sizedDims shape) of
         (Just names, Just sizes) -> cast3 ATen.ones_lNo sizes names opts
         (Nothing, Just sizes) -> cast2 ATen.ones_lo sizes opts
-        _ -> fail $ "invalid tensor shape specification " <> show shape
+        _ -> fail $ "Invalid tensor shape specification " <> show shape <> "."
       return $ UnsafeTensor tensor

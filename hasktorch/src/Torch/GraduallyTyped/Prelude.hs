@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -14,11 +15,23 @@ module Torch.GraduallyTyped.Prelude
     Snd,
     Elem,
     Contains,
+    whenM,
+    unlessM,
+    ifM,
+    guardM,
+    bool,
+    (&&^),
+    (||^),
+    (<&&>),
+    (<||>),
   )
 where
 
+import Control.Applicative (Applicative (liftA2))
+import Control.Monad (MonadPlus, guard, unless, when)
 import Data.Kind (Type)
 import Data.Proxy (Proxy (..))
+import Data.String (IsString, fromString)
 import Data.Type.Bool (If, type (||))
 import GHC.TypeLits (ErrorMessage (..), TypeError (..))
 
@@ -75,3 +88,56 @@ type family Contains (f :: k) (a :: k') :: Bool where
   Contains a a = 'True
   Contains (f g) a = Contains f a || Contains g a
   Contains _ _ = 'False
+
+bool :: a -> a -> Bool -> a
+bool f t p = if p then t else f
+
+whenM :: Monad m => m Bool -> m () -> m ()
+whenM p m =
+  p >>= flip when m
+
+unlessM :: Monad m => m Bool -> m () -> m ()
+unlessM p m =
+  p >>= flip unless m
+
+ifM :: Monad m => m Bool -> m a -> m a -> m a
+ifM p x y = p >>= \b -> if b then x else y
+
+guardM :: MonadPlus m => m Bool -> m ()
+guardM f = guard =<< f
+
+-- | The '||' operator lifted to a monad. If the first
+-- argument evaluates to 'True' the second argument will not
+-- be evaluated.
+infixr 2 ||^ -- same as (||)
+
+(||^) :: Monad m => m Bool -> m Bool -> m Bool
+(||^) a b = ifM a (return True) b
+
+infixr 2 <||>
+
+-- | '||' lifted to an Applicative.
+-- Unlike '||^' the operator is __not__ short-circuiting.
+(<||>) :: Applicative a => a Bool -> a Bool -> a Bool
+(<||>) = liftA2 (||)
+{-# INLINE (<||>) #-}
+
+-- | The '&&' operator lifted to a monad. If the first
+-- argument evaluates to 'False' the second argument will not
+-- be evaluated.
+infixr 3 &&^ -- same as (&&)
+
+(&&^) :: Monad m => m Bool -> m Bool -> m Bool
+(&&^) a b = ifM a b (return False)
+
+infixr 3 <&&>
+
+-- | '&&' lifted to an Applicative.
+-- Unlike '&&^' the operator is __not__ short-circuiting.
+(<&&>) :: Applicative a => a Bool -> a Bool -> a Bool
+(<&&>) = liftA2 (&&)
+{-# INLINE (<&&>) #-}
+
+instance IsString str => MonadFail (Either str) where
+  fail :: String -> Either str a
+  fail = Left . fromString

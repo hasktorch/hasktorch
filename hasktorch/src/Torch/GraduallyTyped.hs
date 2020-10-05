@@ -13,19 +13,21 @@ module Torch.GraduallyTyped
     module Torch.GraduallyTyped.Layout,
     module Torch.GraduallyTyped.Creation,
     module Torch.HList,
+    module Torch.DType,
   )
 where
 
+import Torch.DType
 import Torch.Data
-import Torch.GraduallyTyped.Prelude
 import Torch.GraduallyTyped.Autograd
-import Torch.GraduallyTyped.Functional
-import Torch.GraduallyTyped.NN
-import Torch.GraduallyTyped.Random
-import Torch.GraduallyTyped.Tensor
-import Torch.GraduallyTyped.Device
-import Torch.GraduallyTyped.Shape
-import Torch.GraduallyTyped.Layout
-import Torch.GraduallyTyped.DType
 import Torch.GraduallyTyped.Creation
+import Torch.GraduallyTyped.DType
+import Torch.GraduallyTyped.Device
+import Torch.GraduallyTyped.Functional
+import Torch.GraduallyTyped.Layout
+import Torch.GraduallyTyped.NN
+import Torch.GraduallyTyped.Prelude
+import Torch.GraduallyTyped.Random
+import Torch.GraduallyTyped.Shape
+import Torch.GraduallyTyped.Tensor
 import Torch.HList

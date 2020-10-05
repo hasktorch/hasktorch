@@ -21,39 +21,20 @@
 
 module Torch.GraduallyTyped.Tensor where
 
+import Data.Coerce (coerce)
 import Data.Int (Int16)
-import Data.Kind (Type)
-import Data.Proxy (Proxy (..))
 import Foreign.ForeignPtr (ForeignPtr)
-import GHC.TypeLits
-  ( KnownNat,
-    KnownSymbol,
-    Nat,
-    Symbol,
-    natVal,
-    symbolVal,
-  )
+import GHC.TypeLits (Nat, Symbol)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType
-  ( DataType (..),
-    KnownDataType (..),
-  )
-import Torch.GraduallyTyped.Device
-  ( Device (..),
-    DeviceType (..),
-    KnownDevice (..),
-  )
-import Torch.GraduallyTyped.Layout
-  ( KnownLayout (..),
-    Layout (..),
-    LayoutType (..),
-  )
-import Torch.GraduallyTyped.Shape (Dim, Shape (AnyShape))
+import Torch.GraduallyTyped.DType (DataType (..), KnownDataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice (..))
+import Torch.GraduallyTyped.Layout (KnownLayout (..), Layout (..), LayoutType (..))
+import Torch.GraduallyTyped.Prelude ((&&^))
+import Torch.GraduallyTyped.Shape (Dim, Shape (..))
 import Torch.Internal.Cast (cast0, cast1)
 import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Managed.Autograd as ATen
-import qualified Torch.Internal.Managed.Cast as ATen ()
 import qualified Torch.Internal.Managed.Type.Context as ATen
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
 import qualified Torch.Internal.Type as ATen (Tensor, TensorList)
@@ -209,6 +190,9 @@ cuda ::
 cuda = unsafePerformIO . cast1 ATen.tensor_cuda
 
 -- | Returns the compute device of the input tensor.
+-- >>> t <- ones @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+-- >>> device t
+-- CPU
 device ::
   forall requiresGradient layout device dataType shape.
   KnownDevice device =>
@@ -226,11 +210,108 @@ device tensor =
             isCUDA <- cast1 ATen.tensor_is_cuda tensor
             if isCUDA
               then do
-                deviceId :: Int <- cast1 ATen.tensor_get_device $ tensor
-                pure . CUDA . fromIntegral $ deviceId
+                deviceIndex :: Int <- cast1 ATen.tensor_get_device tensor
+                pure . CUDA . fromIntegral $ deviceIndex
               else pure $ CPU
           else pure $ CPU
     Device deviceType -> deviceType
+
+-- | Returns the input tensor but with 'AnyDevice' as device type annotation.
+-- Any static information about the device is thus erased.
+-- The underlying tensor data structure is not changed.
+-- >>> t <- ones @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+-- >>> :type uncheckedDevice t
+-- uncheckedDevice t
+--   :: Tensor
+--        'Dependent
+--        ('Layout 'Dense)
+--        'AnyDevice
+--        ('DataType 'Float)
+--        ('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+uncheckedDevice ::
+  forall requiresGradient layout device dataType shape.
+  -- | input tensor
+  Tensor requiresGradient layout device dataType shape ->
+  -- | tensor without checked device
+  Tensor requiresGradient layout 'AnyDevice dataType shape
+uncheckedDevice = coerce
+
+-- | Returns 'True' if the tensor is in the memory of 'device' and 'False' otherwise.
+-- If 'device' is 'AnyDevice', 'True' is returned for consistency.
+-- >>> t <- ones @('Layout 'Dense) @'AnyDevice @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) CPU
+-- >>> checkDevice @('Device 'CPU) t
+-- True
+-- >>> checkDevice @('Device ('CUDA 0)) t
+-- False
+checkDevice ::
+  forall (device :: Device (DeviceType Nat)) requiresGradient layout dataType shape.
+  (KnownDevice device) =>
+  -- | tensor under consideration
+  Tensor requiresGradient layout 'AnyDevice dataType shape ->
+  -- | whether or not the input tensor is on the 'device'
+  Bool
+checkDevice tensor =
+  case deviceVal @device of
+    AnyDevice -> True
+    Device CPU -> not . unsafePerformIO $ cast0 ATen.hasCUDA &&^ cast1 ATen.tensor_is_cuda tensor
+    Device (CUDA deviceIndex) ->
+      unsafePerformIO $
+        cast0 ATen.hasCUDA
+          &&^ cast1 ATen.tensor_is_cuda tensor
+          &&^ ((deviceIndex ==) . fromIntegral) <$> (cast1 ATen.tensor_get_device tensor :: IO Int)
+
+-- | Checks whether or not the input tensor is in the memory of 'device'
+-- and returns a statically annotated copy of it wrapped in a 'MonadFail' 'm'.
+-- For instance, if 'm' is 'Maybe', then the result will be wrapped in 'Just' if and only if the tensor is indeed on 'device'.
+-- If it is not, then the result will be 'Nothing'.
+-- In the REPL, 'm' will default to 'IO':
+-- >>> t <- ones @('Layout 'Dense) @'AnyDevice @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) CPU
+-- >>> t' <- checkedDevice @('Device 'CPU) t
+-- >>> :type t'
+-- t'
+--   :: Tensor
+--        'Dependent
+--        ('Layout 'Dense)
+--        ('Device 'CPU)
+--        ('DataType 'Float)
+--        ('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+-- >>> t' <- checkedDevice @('Device ('CUDA 0)) t
+-- *** Exception: user error (The tensor is not in the memory of the device "Device (CUDA 0)".)
+checkedDevice ::
+  forall (device :: Device (DeviceType Nat)) m requiresGradient layout dataType shape.
+  (KnownDevice device, MonadFail m) =>
+  -- | input tensor
+  Tensor requiresGradient layout 'AnyDevice dataType shape ->
+  -- | annotated output tensor wrapped in 'm'
+  m (Tensor requiresGradient layout device dataType shape)
+checkedDevice tensor
+  | checkDevice @device tensor = pure . coerce $ tensor
+  | otherwise = fail $ "The tensor is not in the memory of the device \"" <> show (deviceVal @device) <> "\"."
+
+-- | Unsafe version of 'checkedDevice'.
+-- If the tensor is not on 'device', the execution is stopped and an error message is displayed.
+-- >>> t <- ones @('Layout 'Dense) @'AnyDevice @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) CPU
+-- >>> t' = unsafeCheckedDevice @('Device 'CPU) t
+-- >>> :type t'
+-- t'
+--   :: Tensor
+--        'Dependent
+--        ('Layout 'Dense)
+--        ('Device 'CPU)
+--        ('DataType 'Float)
+--        ('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+-- >>> t' = checkedDevice @('Device ('CUDA 0)) t
+-- *** Exception: The tensor is not in the memory of the device "Device (CUDA 0)".
+unsafeCheckedDevice ::
+  forall (device :: Device (DeviceType Nat)) requiresGradient layout dataType shape.
+  KnownDevice device =>
+  -- | input tensor
+  Tensor requiresGradient layout 'AnyDevice dataType shape ->
+  -- | annotated output tensor
+  Tensor requiresGradient layout device dataType shape
+unsafeCheckedDevice tensor = case checkedDevice @device tensor of
+  Right tensor' -> tensor'
+  Left err -> error err
 
 -- | Returns the data type of the input tensor.
 dtype ::

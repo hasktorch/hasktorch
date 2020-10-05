@@ -46,10 +46,12 @@ import qualified Torch.Internal.Type as ATen (Tensor, TensorList)
 data DeviceType (deviceId :: Type) where
   CPU :: forall deviceId. DeviceType deviceId
   CUDA :: forall deviceId. deviceId -> DeviceType deviceId
+  deriving Show
 
 data Device (deviceType :: Type) where
   AnyDevice :: forall deviceType. Device deviceType
   Device :: forall deviceType. deviceType -> Device deviceType
+  deriving Show
 
 class KnownDevice (device :: Device (DeviceType Nat)) where
   deviceVal :: Device (DeviceType Int16)
