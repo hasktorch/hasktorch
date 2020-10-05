@@ -33,7 +33,15 @@ type FactoryTypeWithDimnames =
   ForeignPtr ATen.TensorOptions ->
   IO (ForeignPtr ATen.Tensor)
 
-mkFactory :: FactoryType -> [Int] -> TensorOptions -> IO Tensor
+mkFactory ::
+  -- | aten_impl
+  FactoryType ->
+  -- | shape
+  [Int] ->
+  -- | opts
+  TensorOptions ->
+  -- | output
+  IO Tensor
 mkFactory = cast2
 
 mkFactoryUnsafe :: FactoryType -> [Int] -> TensorOptions -> Tensor
@@ -143,7 +151,15 @@ randLikeIO ::
   IO Tensor
 randLikeIO = cast2 LibTorch.rand_like_to
 
-fullLike :: Tensor -> Float -> TensorOptions -> IO Tensor
+fullLike ::
+  -- | input
+  Tensor ->
+  -- | _fill_value
+  Float ->
+  -- | opt
+  TensorOptions ->
+  -- | output
+  IO Tensor
 fullLike = cast3 LibTorch.full_like_tso
 
 onesWithDimnames :: [(Int, Dimname)] -> TensorOptions -> Tensor
@@ -180,8 +196,14 @@ logspace start end steps base opts = unsafePerformIO $ cast5 LibTorch.logspace_s
 -- empty :: [Int] -> TensorOptions -> Tensor
 -- empty = mkFactoryUnsafe LibTorch.empty_lo
 
-eyeSquare :: Int -> TensorOptions -> Tensor
-eyeSquare dim opts = unsafePerformIO $ cast2 LibTorch.eye_lo dim opts
+eyeSquare ::
+  -- | dim
+  Int ->
+  -- | opts
+  TensorOptions ->
+  -- | output
+  Tensor
+eyeSquare dim = unsafePerformIO . cast2 LibTorch.eye_lo dim
 
 -- | Returns a 2-D tensor with ones on the diagonal and zeros elsewhere.
 eye ::
@@ -248,123 +270,184 @@ randLikeIO' :: Tensor -> IO Tensor
 randLikeIO' t = randLikeIO t defaultOpts
 
 bernoulliIO' ::
+  -- | t
   Tensor ->
+  -- | output
   IO Tensor
 bernoulliIO' = cast1 ATen.bernoulli_t
 
 bernoulliIO ::
+  -- | t
   Tensor ->
+  -- | p
   Double ->
+  -- | output
   IO Tensor
 bernoulliIO = cast2 ATen.bernoulli_td
 
 poissonIO ::
+  -- | t
   Tensor ->
+  -- | output
   IO Tensor
 poissonIO = cast1 ATen.poisson_t
 
 multinomialIO' ::
+  -- | t
   Tensor ->
+  -- | num_samples
   Int ->
+  -- | output
   IO Tensor
 multinomialIO' = cast2 ATen.multinomial_tl
 
 multinomialIO ::
+  -- | t
   Tensor ->
+  -- | num_samples
   Int ->
+  -- | replacement
   Bool ->
+  -- | output
   IO Tensor
 multinomialIO = cast3 ATen.multinomial_tlb
 
 normalIO' ::
+  -- | _mean
   Tensor ->
+  -- | output
   IO Tensor
 normalIO' = cast1 ATen.normal_t
 
 normalIO ::
+  -- | _mean
   Tensor ->
+  -- | _std
   Tensor ->
+  -- | output
   IO Tensor
 normalIO = cast2 ATen.normal_tt
 
 normalScalarIO ::
+  -- | _mean
   Tensor ->
+  -- | _std
   Double ->
+  -- | output
   IO Tensor
 normalScalarIO = cast2 ATen.normal_td
 
 normalScalarIO' ::
+  -- | _mean
   Double ->
+  -- | _std
   Tensor ->
+  -- | output
   IO Tensor
 normalScalarIO' = cast2 ATen.normal_dt
 
 normalWithSizeIO ::
+  -- | _mean
   Double ->
+  -- | _std
   Double ->
+  -- | _size
   Int ->
+  -- | output
   IO Tensor
 normalWithSizeIO = cast3 ATen.normal_ddl
 
 rreluIO''' ::
+  -- | t
   Tensor ->
+  -- | output
   IO Tensor
 rreluIO''' = cast1 ATen.rrelu_t
 
 rreluIO'' ::
   Scalar a =>
+  -- | t
   Tensor ->
+  -- | upper
   a ->
+  -- | output
   IO Tensor
 rreluIO'' = cast2 ATen.rrelu_ts
 
 rreluIO' ::
   Scalar a =>
+  -- | t
   Tensor ->
+  -- | lower
   a ->
+  -- | upper
   a ->
+  -- | output
   IO Tensor
 rreluIO' = cast3 ATen.rrelu_tss
 
 rreluIO ::
   Scalar a =>
+  -- | t
   Tensor ->
+  -- | lower
   a ->
+  -- | upper
   a ->
+  -- | training
   Bool ->
+  -- | output
   IO Tensor
 rreluIO = cast4 ATen.rrelu_tssb
 
 rreluWithNoiseIO''' ::
+  -- | t
   Tensor ->
+  -- | noise
   Tensor ->
+  -- | output
   IO Tensor
 rreluWithNoiseIO''' = cast2 ATen.rrelu_with_noise_tt
 
 rreluWithNoiseIO'' ::
   Scalar a =>
+  -- | t
   Tensor ->
+  -- | noise
   Tensor ->
+  -- | upper
   a ->
+  -- | output
   IO Tensor
 rreluWithNoiseIO'' = cast3 ATen.rrelu_with_noise_tts
 
 rreluWithNoiseIO' ::
   Scalar a =>
+  -- | t
   Tensor ->
+  -- | noise
   Tensor ->
+  -- | lower
   a ->
+  -- | upper
   a ->
+  -- | output
   IO Tensor
 rreluWithNoiseIO' = cast4 ATen.rrelu_with_noise_ttss
 
 rreluWithNoiseIO ::
   Scalar a =>
+  -- | t
   Tensor ->
+  -- | noise
   Tensor ->
+  -- | lower
   a ->
+  -- | upper
   a ->
+  -- | training
   Bool ->
+  -- | output
   IO Tensor
 rreluWithNoiseIO = cast5 ATen.rrelu_with_noise_ttssb
 

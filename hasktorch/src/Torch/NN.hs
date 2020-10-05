@@ -190,18 +190,16 @@ class Randomizable spec f | spec -> f where
 -- Linear FC Layer
 --
 
-data LinearSpec
-  = LinearSpec
-      { in_features :: Int,
-        out_features :: Int
-      }
+data LinearSpec = LinearSpec
+  { in_features :: Int,
+    out_features :: Int
+  }
   deriving (Show, Eq)
 
-data Linear
-  = Linear
-      { weight :: Parameter,
-        bias :: Parameter
-      }
+data Linear = Linear
+  { weight :: Parameter,
+    bias :: Parameter
+  }
   deriving (Show, Generic, Parameterized)
 
 instance Parameterized [Linear]
@@ -252,23 +250,31 @@ instance Randomizable LinearSpec Linear where
 -- Conv2d
 --
 
-data Conv2dSpec
-  = Conv2dSpec
-      { inputChannelSize :: Int,
-        outputChannelSize :: Int,
-        kernelHeight :: Int,
-        kernelWidth :: Int
-      }
+data Conv2dSpec = Conv2dSpec
+  { inputChannelSize :: Int,
+    outputChannelSize :: Int,
+    kernelHeight :: Int,
+    kernelWidth :: Int
+  }
   deriving (Show, Eq)
 
-data Conv2d
-  = Conv2d
-      { conv2dWeight :: Parameter,
-        conv2dBias :: Parameter
-      }
+data Conv2d = Conv2d
+  { conv2dWeight :: Parameter,
+    conv2dBias :: Parameter
+  }
   deriving (Show, Generic, Parameterized)
 
-conv2dForward :: Conv2d -> (Int, Int) -> (Int, Int) -> Tensor -> Tensor
+conv2dForward ::
+  -- | layer
+  Conv2d ->
+  -- | stride
+  (Int, Int) ->
+  -- | padding
+  (Int, Int) ->
+  -- | input
+  Tensor ->
+  -- | output
+  Tensor
 conv2dForward layer = Torch.Functional.conv2d' w b
   where
     w = toDependent (conv2dWeight layer)
