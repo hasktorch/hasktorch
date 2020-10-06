@@ -39,8 +39,8 @@ import qualified Torch.Internal.Managed.Type.StdArray as ATen
 import qualified Torch.Internal.Managed.Type.StdString as ATen
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
 import qualified Torch.Internal.Managed.Type.TensorOptions as ATen
-import qualified Torch.Internal.Type as ATen
 import Torch.Internal.Type (TensorList)
+import qualified Torch.Internal.Type as ATen
 import Torch.Internal.Unmanaged.Type.C10Dict
 import Torch.Internal.Unmanaged.Type.IValue (IValueLike (..))
 import qualified Torch.Internal.Unmanaged.Type.Module as Unmanaged
@@ -68,27 +68,24 @@ newtype Capsule = UnsafeCapsule (ForeignPtr (ATen.C10Ptr ATen.Capsule))
 -- | See https://github.com/pytorch/pytorch/wiki/PyTorch-IR
 newtype Graph = UnsafeGraph (ForeignPtr (ATen.SharedPtr ATen.JitGraph))
 
-data JitGraph
-  = JitGraph
-      { graphInputs :: [JitValue],
-        graphOutputs :: [JitValue],
-        graphNodes :: [JitNode]
-      }
+data JitGraph = JitGraph
+  { graphInputs :: [JitValue],
+    graphOutputs :: [JitValue],
+    graphNodes :: [JitNode]
+  }
   deriving (Show, Eq)
 
-data JitNode
-  = JitNode
-      { nodeInputs :: [JitValue],
-        nodeOutputs :: [JitValue],
-        nodeKind :: String
-      }
+data JitNode = JitNode
+  { nodeInputs :: [JitValue],
+    nodeOutputs :: [JitValue],
+    nodeKind :: String
+  }
   deriving (Show, Eq)
 
-data JitValue
-  = JitValue
-      { valueId :: Int,
-        valueType :: String
-      }
+data JitValue = JitValue
+  { valueId :: Int,
+    valueType :: String
+  }
   deriving (Show, Eq)
 
 instance Show Blob where
@@ -163,14 +160,26 @@ load WithRequiredGrad file = do
 load' :: FilePath -> IO RawModule
 load' = cast1 LibTorch.load
 
-forwardIO :: ScriptModule -> [IValue] -> IO IValue
+forwardIO ::
+  -- | module
+  ScriptModule ->
+  -- | inputs
+  [IValue] ->
+  -- | output
+  IO IValue
 forwardIO = cast2 forward'
   where
     forward' :: ScriptModule -> [RawIValue] -> IO RawIValue
     forward' = cast2 LibTorch.forward
 
-forward :: ScriptModule -> [IValue] -> IValue
-forward module' inputs' = unsafePerformIO $ forwardIO module' inputs'
+forward ::
+  -- | module
+  ScriptModule ->
+  -- | inputs
+  [IValue] ->
+  -- | output
+  IValue
+forward module' = unsafePerformIO . forwardIO module'
 
 registerParameter :: RawModule -> String -> Tensor -> Bool -> IO ()
 registerParameter = cast4 LibTorch.registerParameter
@@ -178,10 +187,18 @@ registerParameter = cast4 LibTorch.registerParameter
 registerModule :: RawModule -> String -> RawModule -> IO ()
 registerModule = cast3 LibTorch.registerModule
 
-getParameters :: ScriptModule -> [Tensor]
-getParameters module' = unsafePerformIO $ cast1 LibTorch.getParameters module'
+getParameters ::
+  -- | module
+  ScriptModule ->
+  -- | output
+  [Tensor]
+getParameters = unsafePerformIO . cast1 LibTorch.getParameters
 
-getParametersIO :: RawModule -> IO [Tensor]
+getParametersIO ::
+  -- | module
+  RawModule ->
+  -- | output
+  IO [Tensor]
 getParametersIO = cast1 LibTorch.getParameters
 
 setParameters :: RawModule -> [Tensor] -> IO ()
@@ -221,20 +238,48 @@ train = cast2 LibTorch.train
 define :: RawModule -> String -> IO ()
 define = cast2 LibTorch.define
 
-dumpToStr :: ScriptModule -> Bool -> Bool -> Bool -> Int -> IO String
+dumpToStr ::
+  -- | print_method_bodies
+  ScriptModule ->
+  -- | print_attr_values
+  Bool ->
+  -- | print_param_values
+  Bool ->
+  -- | ?
+  Bool ->
+  -- | level
+  Int ->
+  -- | ouput
+  IO String
 dumpToStr = cast5 LibTorch.dumpToStr
 
 dumpToStr' :: ScriptModule -> IO String
 dumpToStr' obj = dumpToStr obj True True True 0
 
-runMethod :: ScriptModule -> String -> [IValue] -> IValue
-runMethod module' func inputs = unsafePerformIO $ cast3 runMethod' module' func inputs
+runMethod ::
+  -- | module
+  ScriptModule ->
+  -- | func
+  String ->
+  -- | inputs
+  [IValue] ->
+  -- | output
+  IValue
+runMethod module' func = unsafePerformIO . cast3 runMethod' module' func
   where
     runMethod' :: ScriptModule -> String -> [RawIValue] -> IO RawIValue
     runMethod' = cast3 LibTorch.runMethod
 
-runMethod1 :: ScriptModule -> String -> IValue -> IValue
-runMethod1 module' func input = unsafePerformIO $ cast3 runMethod1' module' func input
+runMethod1 ::
+  -- | module
+  ScriptModule ->
+  -- | func
+  String ->
+  -- | inputs
+  IValue ->
+  -- | output
+  IValue
+runMethod1 module' func = unsafePerformIO . cast3 runMethod1' module' func
   where
     runMethod1' :: ScriptModule -> String -> RawIValue -> IO RawIValue
     runMethod1' = cast3 LibTorch.runMethod1
@@ -246,7 +291,17 @@ instance Parameterized ScriptModule where
     ps' <- replicateM len nextParameter
     return $ updateParameters WithRequiredGrad module' (map toDependent ps')
 
-trace :: String -> String -> ([Tensor] -> IO [Tensor]) -> [Tensor] -> IO RawModule
+trace ::
+  -- | moduleName
+  String ->
+  -- | functionName
+  String ->
+  -- | function
+  ([Tensor] -> IO [Tensor]) ->
+  -- | inputs
+  [Tensor] ->
+  -- | output
+  IO RawModule
 trace moduleName functionName func = cast3 (\m f inps -> LibTorch.trace m f (trans func) inps) moduleName functionName
   where
     trans :: ([Tensor] -> IO [Tensor]) -> ForeignPtr TensorList -> IO (ForeignPtr TensorList)
@@ -300,7 +355,13 @@ traceWithParameters moduleName func parameterized_parameters inputs = do
     "def forward(self, " ++ args ++ "):\n" ++ "    return self.forwardWithParameters(" ++ params ++ ", " ++ args ++ " )\n"
   return r
 
-traceAsGraph :: ([Tensor] -> IO [Tensor]) -> [Tensor] -> IO Graph
+traceAsGraph ::
+  -- | function
+  ([Tensor] -> IO [Tensor]) ->
+  -- | inputs
+  [Tensor] ->
+  -- | output
+  IO Graph
 traceAsGraph func = cast1 (LibTorch.traceAsGraph (trans func))
   where
     trans :: ([Tensor] -> IO [Tensor]) -> ForeignPtr TensorList -> IO (ForeignPtr TensorList)
