@@ -226,7 +226,7 @@ checkLayout tensor =
 -- and returns a statically annotated copy of it wrapped in a 'MonadFail' 'm'.
 --
 -- For instance, if 'm' is 'Maybe', then the result will be wrapped in 'Just' if and only if the tensor has indeed the memory layout 'layout'.
--- If it is not, then the result will be 'Nothing'.
+-- If it does not have it, then the result will be 'Nothing'.
 --
 -- In the REPL, 'm' will default to 'IO':
 -- >>> t <- ones @'AnyLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) (Layout Dense)
@@ -253,7 +253,7 @@ checkedLayout tensor
   | otherwise = fail $ "The tensor does not have the memory layout \"" <> show (layoutVal @layout) <> "\"."
 
 -- | Unsafe version of 'checkedLayout'.
--- If the tensor does not have the memory layout 'layout', the execution is stopped and an error message is displayed.
+-- If the tensor does not have the memory layout 'layout', then the execution is stopped and an error message is displayed.
 --
 -- >>> t <- ones @'AnyLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) CPU
 -- >>> t' = unsafeCheckedLayout @('Layout 'Dense) t
@@ -406,7 +406,7 @@ checkedDevice tensor
   | otherwise = fail $ "The tensor is not in the memory of the device \"" <> show (deviceVal @device) <> "\"."
 
 -- | Unsafe version of 'checkedDevice'.
--- If the tensor is not on 'device', the execution is stopped and an error message is displayed.
+-- If the tensor is not on 'device', then the execution is stopped and an error message is displayed.
 --
 -- >>> t <- ones @('Layout 'Dense) @'AnyDevice @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) CPU
 -- >>> t' = unsafeCheckedDevice @('Device 'CPU) t
@@ -588,8 +588,8 @@ checkDataType tensor =
 -- | Checks whether or not the input tensor has the data type 'dataType'
 -- and returns a statically annotated copy of it wrapped in a 'MonadFail' 'm'.
 --
--- For instance, if 'm' is 'Maybe', then the result will be wrapped in 'Just' if and only if the tensor has the data type 'dataType'.
--- If it is not, then the result will be 'Nothing'.
+-- For instance, if 'm' is 'Maybe', then the result will be wrapped in 'Just' if and only if the tensor has indeed the data type 'dataType'.
+-- If it does not have it, then the result will be 'Nothing'.
 --
 -- In the REPL, 'm' will default to 'IO':
 -- >>> t <- ones @('Layout 'Dense) @('Device 'CPU) @'AnyDataType @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) (DataType Float)
@@ -616,7 +616,7 @@ checkedDataType tensor
   | otherwise = fail $ "The tensor does not have the data type \"" <> show (dataTypeVal @dataType) <> "\"."
 
 -- | Unsafe version of 'checkedDataType'.
--- If the tensor is not on 'device', the execution is stopped and an error message is displayed.
+-- If the tensor does not have the data type 'dataType', then the execution is stopped and an error message is displayed.
 --
 -- >>> t <- ones @('Layout 'Dense) @('Device 'CPU) @'AnyDataType @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) (DataType Float)
 -- >>> t' = checkedDataType @('DataType 'Float) t
