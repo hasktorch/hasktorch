@@ -1,51 +1,21 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE UndecidableSuperClasses #-}
-{-# LANGUAGE NoStarIsType #-}
 
 module Torch.GraduallyTyped.DType where
 
-import Data.Int (Int16)
 import Data.Kind (Type)
-import Data.Proxy (Proxy (..))
-import Foreign.ForeignPtr (ForeignPtr)
-import GHC.TypeLits
-  ( KnownNat,
-    KnownSymbol,
-    Nat,
-    Symbol,
-    natVal,
-    symbolVal,
-  )
-import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
-import Torch.Internal.Cast (cast0, cast1)
-import Torch.Internal.Class (Castable (..))
-import qualified Torch.Internal.Managed.Autograd as ATen
-import qualified Torch.Internal.Managed.Cast as ATen ()
-import qualified Torch.Internal.Managed.Type.Context as ATen
-import qualified Torch.Internal.Managed.Type.Tensor as ATen
-import qualified Torch.Internal.Type as ATen (Tensor, TensorList)
 
 data DataType (dType :: Type) where
   AnyDataType :: forall dType. DataType dType
   DataType :: forall dType. dType -> DataType dType
+  deriving (Show)
 
 class KnownDataType (dataType :: DataType DType) where
   dataTypeVal :: DataType DType

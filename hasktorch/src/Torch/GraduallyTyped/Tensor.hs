@@ -219,6 +219,7 @@ device tensor =
 -- | Returns the input tensor but with 'AnyDevice' as device type annotation.
 -- Any static information about the device is thus erased.
 -- The underlying tensor data structure is not changed.
+--
 -- >>> t <- ones @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
 -- >>> :type uncheckedDevice t
 -- uncheckedDevice t
@@ -238,11 +239,14 @@ uncheckedDevice = coerce
 
 -- | Returns 'True' if the tensor is in the memory of 'device' and 'False' otherwise.
 -- If 'device' is 'AnyDevice', 'True' is returned for consistency.
+--
 -- >>> t <- ones @('Layout 'Dense) @'AnyDevice @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) CPU
 -- >>> checkDevice @('Device 'CPU) t
 -- True
 -- >>> checkDevice @('Device ('CUDA 0)) t
 -- False
+-- >>> checkDevice @'AnyDevice t
+-- True
 checkDevice ::
   forall (device :: Device (DeviceType Nat)) requiresGradient layout dataType shape.
   (KnownDevice device) =>
@@ -262,8 +266,10 @@ checkDevice tensor =
 
 -- | Checks whether or not the input tensor is in the memory of 'device'
 -- and returns a statically annotated copy of it wrapped in a 'MonadFail' 'm'.
+--
 -- For instance, if 'm' is 'Maybe', then the result will be wrapped in 'Just' if and only if the tensor is indeed on 'device'.
 -- If it is not, then the result will be 'Nothing'.
+--
 -- In the REPL, 'm' will default to 'IO':
 -- >>> t <- ones @('Layout 'Dense) @'AnyDevice @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) CPU
 -- >>> t' <- checkedDevice @('Device 'CPU) t
@@ -290,6 +296,7 @@ checkedDevice tensor
 
 -- | Unsafe version of 'checkedDevice'.
 -- If the tensor is not on 'device', the execution is stopped and an error message is displayed.
+--
 -- >>> t <- ones @('Layout 'Dense) @'AnyDevice @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) CPU
 -- >>> t' = unsafeCheckedDevice @('Device 'CPU) t
 -- >>> :type t'
@@ -300,7 +307,7 @@ checkedDevice tensor
 --        ('Device 'CPU)
 --        ('DataType 'Float)
 --        ('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
--- >>> t' = checkedDevice @('Device ('CUDA 0)) t
+-- >>> t' = unsafeCheckedDevice @('Device ('CUDA 0)) t
 -- *** Exception: The tensor is not in the memory of the device "Device (CUDA 0)".
 unsafeCheckedDevice ::
   forall (device :: Device (DeviceType Nat)) requiresGradient layout dataType shape.
@@ -314,6 +321,9 @@ unsafeCheckedDevice tensor = case checkedDevice @device tensor of
   Left err -> error err
 
 -- | Returns the data type of the input tensor.
+-- >>> t <- ones @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+-- >>> dtype t
+-- Float
 dtype ::
   forall requiresGradient layout device dataType shape.
   KnownDataType dataType =>
@@ -325,3 +335,102 @@ dtype tensor =
   case dataTypeVal @dataType of
     AnyDataType -> unsafePerformIO $ cast1 ATen.tensor_scalar_type tensor
     DataType dtype -> dtype
+
+-- | Returns the input tensor but with 'AnyDataType' as data-type type annotation.
+-- Any static information about the data type is thus erased.
+-- The underlying tensor data structure is not changed.
+--
+-- >>> t <- ones @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+-- >>> :type uncheckedDataType t
+-- uncheckedDataType t
+--   :: Tensor
+--        'Dependent
+--        ('Layout 'Dense)
+--        ('Device 'CPU)
+--        'AnyDataType
+--        ('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+uncheckedDataType ::
+  forall requiresGradient layout device dataType shape.
+  -- | input tensor
+  Tensor requiresGradient layout device dataType shape ->
+  -- | tensor without checked data type
+  Tensor requiresGradient layout device 'AnyDataType shape
+uncheckedDataType = coerce
+
+-- | Returns 'True' if the tensor has the data type 'dataType' and 'False' otherwise.
+-- If 'dataType' is 'AnyDataType', 'True' is returned for consistency.
+--
+-- >>> t <- ones @('Layout 'Dense) @'AnyDevice @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) CPU
+-- >>> checkDataType @('DataType 'Float) t
+-- True
+-- >>> checkDataType @('DataType 'Double) t
+-- False
+-- >>> checkDataType @'AnyDataType t
+-- True
+checkDataType ::
+  forall (dataType :: DataType DType) requiresGradient layout device shape.
+  (KnownDataType dataType) =>
+  -- | tensor under consideration
+  Tensor requiresGradient layout device 'AnyDataType shape ->
+  -- | whether or not the input tensor has the data type 'dataType'
+  Bool
+checkDataType tensor =
+  case dataTypeVal @dataType of
+    AnyDataType -> True
+    DataType dtype -> unsafePerformIO $ (dtype ==) <$> cast1 ATen.tensor_scalar_type tensor
+
+-- | Checks whether or not the input tensor has the data type 'dataType'
+-- and returns a statically annotated copy of it wrapped in a 'MonadFail' 'm'.
+--
+-- For instance, if 'm' is 'Maybe', then the result will be wrapped in 'Just' if and only if the tensor has the data type 'dataType'.
+-- If it is not, then the result will be 'Nothing'.
+--
+-- In the REPL, 'm' will default to 'IO':
+-- >>> t <- ones @('Layout 'Dense) @('Device 'CPU) @'AnyDataType @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) (DataType Float)
+-- >>> t' <- checkedDataType @('DataType 'Float) t
+-- >>> :type t'
+-- t'
+--   :: Tensor
+--        'Dependent
+--        ('Layout 'Dense)
+--        ('Device 'CPU)
+--        ('DataType 'Float)
+--        ('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+-- >>> t' <- checkedDataType @('DataType 'Double) t
+-- *** Exception: user error (The tensor does not have the data type "DataType Double".)
+checkedDataType ::
+  forall (dataType :: DataType DType) m requiresGradient layout device shape.
+  (KnownDataType dataType, MonadFail m) =>
+  -- | input tensor
+  Tensor requiresGradient layout device 'AnyDataType shape ->
+  -- | annotated output tensor wrapped in 'm'
+  m (Tensor requiresGradient layout device dataType shape)
+checkedDataType tensor
+  | checkDataType @dataType tensor = pure . coerce $ tensor
+  | otherwise = fail $ "The tensor does not have the data type \"" <> show (dataTypeVal @dataType) <> "\"."
+
+-- | Unsafe version of 'checkedDataType'.
+-- If the tensor is not on 'device', the execution is stopped and an error message is displayed.
+--
+-- >>> t <- ones @('Layout 'Dense) @('Device 'CPU) @'AnyDataType @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) (DataType Float)
+-- >>> t' = checkedDataType @('DataType 'Float) t
+-- >>> :type t'
+-- t'
+--   :: Tensor
+--        'Dependent
+--        ('Layout 'Dense)
+--        ('Device 'CPU)
+--        ('DataType 'Float)
+--        ('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+-- >>> t' = unsafeCheckedDataType @('DataType 'Double) t
+-- *** Exception: user error (The tensor does not have the data type "DataType Double".)
+unsafeCheckedDataType ::
+  forall (dataType :: DataType DType) requiresGradient layout device shape.
+  KnownDataType dataType =>
+  -- | input tensor
+  Tensor requiresGradient layout device 'AnyDataType shape ->
+  -- | annotated output tensor
+  Tensor requiresGradient layout device dataType shape
+unsafeCheckedDataType tensor = case checkedDataType @dataType tensor of
+  Right tensor' -> tensor'
+  Left err -> error err
