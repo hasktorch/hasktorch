@@ -19,7 +19,6 @@ module Torch.GraduallyTyped.Prelude
     unlessM,
     ifM,
     guardM,
-    bool,
     (&&^),
     (||^),
     (<&&>),
@@ -88,9 +87,6 @@ type family Contains (f :: k) (a :: k') :: Bool where
   Contains a a = 'True
   Contains (f g) a = Contains f a || Contains g a
   Contains _ _ = 'False
-
-bool :: a -> a -> Bool -> a
-bool f t p = if p then t else f
 
 whenM :: Monad m => m Bool -> m () -> m ()
 whenM p m =

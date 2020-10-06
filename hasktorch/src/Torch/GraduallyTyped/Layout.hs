@@ -21,6 +21,7 @@ data LayoutType
     Dense
   | -- | sparse tensor
     Sparse
+  deriving (Show)
 
 instance Castable LayoutType ATen.Layout where
   cast Dense f = f ATen.kStrided
@@ -33,6 +34,7 @@ instance Castable LayoutType ATen.Layout where
 data Layout (layoutType :: Type) where
   AnyLayout :: forall layoutType. Layout layoutType
   Layout :: forall layoutType. layoutType -> Layout layoutType
+  deriving (Show)
 
 class KnownLayout (layout :: Layout LayoutType) where
   layoutVal :: Layout LayoutType

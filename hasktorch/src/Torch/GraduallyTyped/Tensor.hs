@@ -32,7 +32,7 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice (.
 import Torch.GraduallyTyped.Layout (KnownLayout (..), Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.Prelude ((&&^))
 import Torch.GraduallyTyped.Shape (Dim, Shape (..))
-import Torch.Internal.Cast (cast0, cast1)
+import Torch.Internal.Cast (cast0, cast1, cast2)
 import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Managed.Autograd as ATen
 import qualified Torch.Internal.Managed.Type.Context as ATen
@@ -156,20 +156,127 @@ toSparse ::
 toSparse = unsafePerformIO . cast1 ATen.tensor_to_sparse
 
 -- Returns the memory layout of the input tensor.
+--
+-- >>> t <- ones @('Layout 'Sparse) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+-- >>> layout t
+-- Sparse
+-- >>> t <- ones @'AnyLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) (Layout Sparse)
+-- >>> layout t
+-- Sparse
 layout ::
   forall requiresGradient layout device dataType shape.
   KnownLayout layout =>
   -- | input
   Tensor requiresGradient layout device dataType shape ->
   -- | memory layout
-  Layout LayoutType
+  LayoutType
 layout tensor =
   case layoutVal @layout of
     AnyLayout ->
       if unsafePerformIO . cast1 ATen.tensor_is_sparse $ tensor
-        then Layout Sparse
-        else Layout Dense
-    Layout layoutType -> Layout layoutType
+        then Sparse
+        else Dense
+    Layout layoutType -> layoutType
+
+-- | Returns the input tensor but with 'AnyLayout' as memory layout type annotation.
+-- Any static information about the tensor's memory layout is thus erased.
+-- However, the tensor's underlying data structure is not changed.
+--
+-- >>> t <- ones @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+-- >>> :type uncheckedLayout t
+-- uncheckedLayout t
+--   :: Tensor
+--        'Dependent
+--        'AnyLayout
+--        '('Device 'CPU)
+--        ('DataType 'Float)
+--        ('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+uncheckedLayout ::
+  forall requiresGradient layout device dataType shape.
+  -- | input tensor
+  Tensor requiresGradient layout device dataType shape ->
+  -- | tensor without checked layout
+  Tensor requiresGradient 'AnyLayout device dataType shape
+uncheckedLayout = coerce
+
+-- | Returns 'True' if the tensor has the memory layout 'layout' and 'False' otherwise.
+-- If 'layout' is 'AnyLayout', 'True' is returned for consistency.
+--
+-- >>> t <- ones @'AnyLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) (Layout Sparse)
+-- >>> checkLayout @('Layout 'Sparse) t
+-- True
+-- >>> checkLayout @('Layout 'Dense) t
+-- False
+-- >>> checkLayout @'AnyLayout t
+-- True
+checkLayout ::
+  forall (layout :: Layout LayoutType) requiresGradient device dataType shape.
+  (KnownLayout layout) =>
+  -- | tensor under consideration
+  Tensor requiresGradient 'AnyLayout device dataType shape ->
+  -- | whether or not the input tensor has the memory layout 'layout'
+  Bool
+checkLayout tensor =
+  case layoutVal @layout of
+    AnyLayout -> True
+    Layout Sparse -> undefined
+    Layout Dense -> undefined
+
+-- | Checks whether or not the input tensor has the memory layout 'layout'
+-- and returns a statically annotated copy of it wrapped in a 'MonadFail' 'm'.
+--
+-- For instance, if 'm' is 'Maybe', then the result will be wrapped in 'Just' if and only if the tensor has indeed the memory layout 'layout'.
+-- If it is not, then the result will be 'Nothing'.
+--
+-- In the REPL, 'm' will default to 'IO':
+-- >>> t <- ones @'AnyLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) (Layout Dense)
+-- >>> t' <- checkedLayout @('Layout 'Dense) t
+-- >>> :type t'
+-- t'
+--   :: Tensor
+--        'Dependent
+--        ('Layout 'Dense)
+--        ('Device 'CPU)
+--        ('DataType 'Float)
+--        ('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+-- >>> t' <- checkedLayout @('Layout 'Sparse) t
+-- *** Exception: user error (The tensor does not have the memory layout "Layout Sparse".)
+checkedLayout ::
+  forall (layout :: Layout LayoutType) m requiresGradient device dataType shape.
+  (KnownLayout layout, MonadFail m) =>
+  -- | input tensor
+  Tensor requiresGradient 'AnyLayout device dataType shape ->
+  -- | annotated output tensor wrapped in 'm'
+  m (Tensor requiresGradient layout device dataType shape)
+checkedLayout tensor
+  | checkLayout @layout tensor = pure . coerce $ tensor
+  | otherwise = fail $ "The tensor does not have the memory layout \"" <> show (layoutVal @layout) <> "\"."
+
+-- | Unsafe version of 'checkedLayout'.
+-- If the tensor does not have the memory layout 'layout', the execution is stopped and an error message is displayed.
+--
+-- >>> t <- ones @'AnyLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) CPU
+-- >>> t' = unsafeCheckedLayout @('Layout 'Dense) t
+-- >>> :type t'
+-- t'
+--   :: Tensor
+--        'Dependent
+--        ('Layout 'Dense)
+--        ('Device 'CPU)
+--        ('DataType 'Float)
+--        ('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+-- >>> t' = unsafeCheckedLayout @('Layout 'Sparse) t
+-- *** Exception: The tensor does not have the memory layout "Layout Sparse".
+unsafeCheckedLayout ::
+  forall (layout :: Layout LayoutType) m requiresGradient device dataType shape.
+  KnownLayout layout =>
+  -- | input tensor
+  Tensor requiresGradient 'AnyLayout device dataType shape ->
+  -- | annotated output tensor
+  Tensor requiresGradient layout device dataType shape
+unsafeCheckedLayout tensor = case checkedLayout @layout tensor of
+  Right tensor' -> tensor'
+  Left err -> error err
 
 -- | Returns a copy of the tensor in CPU memory.
 cpu ::
@@ -190,7 +297,11 @@ cuda ::
 cuda = unsafePerformIO . cast1 ATen.tensor_cuda
 
 -- | Returns the compute device of the input tensor.
+--
 -- >>> t <- ones @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+-- >>> device t
+-- CPU
+-- >>> t <- ones @('Layout 'Dense) @'AnyDevice @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) (Device CPU)
 -- >>> device t
 -- CPU
 device ::
@@ -217,8 +328,8 @@ device tensor =
     Device deviceType -> deviceType
 
 -- | Returns the input tensor but with 'AnyDevice' as device type annotation.
--- Any static information about the device is thus erased.
--- The underlying tensor data structure is not changed.
+-- Any static information about the tensor's device is thus erased.
+-- However, the tensor's underlying data structure is not changed.
 --
 -- >>> t <- ones @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
 -- >>> :type uncheckedDevice t
@@ -320,25 +431,120 @@ unsafeCheckedDevice tensor = case checkedDevice @device tensor of
   Right tensor' -> tensor'
   Left err -> error err
 
+-- | Returns a copy of the tensor converted to 'Bool'.
+bool ::
+  forall requiresGradient layout device dataType shape.
+  -- | input
+  Tensor requiresGradient layout device dataType shape ->
+  -- | 'Bool' copy
+  Tensor 'Dependent layout device ('DataType 'Bool) shape
+bool tensor = unsafePerformIO $ cast2 ATen.tensor_toType_s tensor Bool
+
+-- | Returns a copy of the tensor converted to 'UInt8'.
+byte ::
+  forall requiresGradient layout device dataType shape.
+  -- | input
+  Tensor requiresGradient layout device dataType shape ->
+  -- | 'UInt8' copy
+  Tensor 'Dependent layout device ('DataType 'UInt8) shape
+byte tensor = unsafePerformIO $ cast2 ATen.tensor_toType_s tensor UInt8
+
+-- | Returns a copy of the tensor converted to 'Int8'.
+char ::
+  forall requiresGradient layout device dataType shape.
+  -- | input
+  Tensor requiresGradient layout device dataType shape ->
+  -- | 'Int8' copy
+  Tensor 'Dependent layout device ('DataType 'Int8) shape
+char tensor = unsafePerformIO $ cast2 ATen.tensor_toType_s tensor Int8
+
+-- | Returns a copy of the tensor converted to 'Int16'.
+short ::
+  forall requiresGradient layout device dataType shape.
+  -- | input
+  Tensor requiresGradient layout device dataType shape ->
+  -- | 'Int16' copy
+  Tensor 'Dependent layout device ('DataType 'Int16) shape
+short tensor = unsafePerformIO $ cast2 ATen.tensor_toType_s tensor Int16
+
+-- | Returns a copy of the tensor converted to 'Int32'.
+int ::
+  forall requiresGradient layout device dataType shape.
+  -- | input
+  Tensor requiresGradient layout device dataType shape ->
+  -- | 'Int32' copy
+  Tensor 'Dependent layout device ('DataType 'Int32) shape
+int tensor = unsafePerformIO $ cast2 ATen.tensor_toType_s tensor Int32
+
+-- | Returns a copy of the tensor converted to 'Int64'.
+long ::
+  forall requiresGradient layout device dataType shape.
+  -- | input
+  Tensor requiresGradient layout device dataType shape ->
+  -- | 'Int64' copy
+  Tensor 'Dependent layout device ('DataType 'Int64) shape
+long tensor = unsafePerformIO $ cast2 ATen.tensor_toType_s tensor Int64
+
+-- | Returns a copy of the tensor converted to the 16-bit floating point format 'Half'.
+half ::
+  forall requiresGradient layout device dataType shape.
+  -- | input
+  Tensor requiresGradient layout device dataType shape ->
+  -- | 'Half' copy
+  Tensor requiresGradient layout device ('DataType 'Half) shape
+half tensor = unsafePerformIO $ cast2 ATen.tensor_toType_s tensor Half
+
+-- | Returns a copy of the tensor converted to the 32-bit floating point format 'Float'.
+float ::
+  forall requiresGradient layout device dataType shape.
+  -- | input
+  Tensor requiresGradient layout device dataType shape ->
+  -- | 'Float' copy
+  Tensor requiresGradient layout device ('DataType 'Float) shape
+float tensor = unsafePerformIO $ cast2 ATen.tensor_toType_s tensor Float
+
+-- | Returns a copy of the tensor converted to the 32-bit floating point format 'Double'.
+double ::
+  forall requiresGradient layout device dataType shape.
+  -- | input
+  Tensor requiresGradient layout device dataType shape ->
+  -- | 'Double' copy
+  Tensor requiresGradient layout device ('DataType 'Double) shape
+double tensor = unsafePerformIO $ cast2 ATen.tensor_toType_s tensor Double
+
 -- | Returns the data type of the input tensor.
+--
 -- >>> t <- ones @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
 -- >>> dtype t
 -- Float
-dtype ::
-  forall requiresGradient layout device dataType shape.
+-- >>> t <- ones @('Layout 'Dense) @('Device 'CPU) @'AnyDataType @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) (DataType Float)
+-- >>> dtype t
+-- Float
+dataType ::
+  forall dataType requiresGradient layout device shape.
   KnownDataType dataType =>
   -- | input
   Tensor requiresGradient layout device dataType shape ->
   -- | data type of the input tensor
   DType
-dtype tensor =
+dataType tensor =
   case dataTypeVal @dataType of
     AnyDataType -> unsafePerformIO $ cast1 ATen.tensor_scalar_type tensor
     DataType dtype -> dtype
 
+-- | Alias for 'dataType'.
+dtype ::
+  forall dataType requiresGradient layout device shape.
+  KnownDataType dataType =>
+  -- | input
+  Tensor requiresGradient layout device dataType shape ->
+  -- | data type of the input tensor
+  DType
+dtype = dataType @dataType
+
 -- | Returns the input tensor but with 'AnyDataType' as data-type type annotation.
--- Any static information about the data type is thus erased.
--- The underlying tensor data structure is not changed.
+-- Any static information about the tensor's data type is thus erased.
+-- However, the tensor's underlying data structure is not changed.
 --
 -- >>> t <- ones @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
 -- >>> :type uncheckedDataType t
