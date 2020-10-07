@@ -73,6 +73,7 @@ library
                     , Torch.Typed.DType
                     , Torch.Typed.Autograd
                     , Torch.Typed.Optim
+                    , Torch.Typed.Optim.CppOptim
                     , Torch.Typed.Serialize
                     , Torch.Typed.Vision
                     , Torch.Distributions.Constraints
