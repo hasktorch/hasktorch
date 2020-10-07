@@ -21,8 +21,9 @@ import Foreign.C.Types
 import Foreign
 import Torch.Internal.Type
 
-
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
+
+
 
 C.include "<ATen/core/interned_strings.h>"
 
@@ -34,8 +35,6 @@ newSymbol  =
   [C.throwBlock| at::Symbol* { return new at::Symbol(
     );
   }|]
-
-
 
 symbol_is_attr
   :: Ptr Symbol
@@ -93,7 +92,29 @@ symbol_is_dimname _obj =
     );
   }|]
 
+symbol_toUnqualString
+  :: Ptr Symbol
+  -> IO (Ptr StdString)
+symbol_toUnqualString _obj =
+  [C.throwBlock| std::string* { return new std::string((*$(at::Symbol* _obj)).toUnqualString(
+    ));
+  }|]
 
+symbol_toQualString
+  :: Ptr Symbol
+  -> IO (Ptr StdString)
+symbol_toQualString _obj =
+  [C.throwBlock| std::string* { return new std::string((*$(at::Symbol* _obj)).toQualString(
+    ));
+  }|]
+
+symbol_toDisplayString
+  :: Ptr Symbol
+  -> IO (Ptr StdString)
+symbol_toDisplayString _obj =
+  [C.throwBlock| std::string* { return new std::string((*$(at::Symbol* _obj)).toDisplayString(
+    ));
+  }|]
 
 attr_s
   :: Ptr StdString

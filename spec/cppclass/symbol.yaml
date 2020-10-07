@@ -21,3 +21,6 @@ methods:
 - is_user() -> bool
 - is_caffe2() -> bool
 - is_dimname() -> bool
+- toUnqualString() -> std::string
+- toQualString() -> std::string
+- toDisplayString() -> std::string
