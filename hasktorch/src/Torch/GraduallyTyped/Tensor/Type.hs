@@ -21,8 +21,10 @@
 
 module Torch.GraduallyTyped.Tensor.Type where
 
+import Control.Monad (foldM)
 import Data.Coerce (coerce)
 import Data.Int (Int16)
+import Data.Monoid (Sum (..))
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (Nat, Symbol)
 import System.IO.Unsafe (unsafePerformIO)
@@ -30,8 +32,8 @@ import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), KnownDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice (..))
 import Torch.GraduallyTyped.Layout (KnownLayout (..), Layout (..), LayoutType (..))
-import Torch.GraduallyTyped.Prelude ((&&^))
-import Torch.GraduallyTyped.Shape (SizedDim, Dim, Shape (..), KnownShape (..))
+import Torch.GraduallyTyped.Prelude (ifM, (&&^))
+import Torch.GraduallyTyped.Shape (Dim (..), KnownShape (..), Shape (..))
 import Torch.Internal.Cast (cast0, cast1, cast2)
 import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Managed.Autograd as ATen
@@ -126,7 +128,7 @@ makeIndependent ::
   Tensor 'Dependent layout device dataType shape ->
   -- | copy with gradients
   IO (Tensor 'Independent layout device dataType shape)
-makeIndependent = cast1 ATen.makeIndependent
+makeIndependent tensor = cast2 ATen.tensor_set_requires_grad_b tensor True
 
 -- | Returns a dependent copy of the tensor that does not require gradients.
 makeDependent ::
@@ -135,7 +137,7 @@ makeDependent ::
   Tensor 'Independent layout device dataType shape ->
   -- | copy without gradients
   IO (Tensor 'Dependent layout device dataType shape)
-makeDependent = undefined -- TODO: implement set_requires_grad(false)
+makeDependent tensor = cast2 ATen.tensor_set_requires_grad_b tensor False
 
 -- | Returns a dense copy of the tensor.
 toDense ::
@@ -651,7 +653,40 @@ shape ::
 shape tensor =
   case shapeVal @shape of
     AnyShape -> unsafePerformIO $ do
-      xs <- cast1 ATen.tensor_sizes tensor
-      _ <- cast1 ATen.tensor_has_names tensor
-      return $ SizedDim <$> xs
-    Shape shape -> shape
+      sizes <- cast1 ATen.tensor_sizes tensor
+      ifM
+        (cast1 ATen.tensor_has_names tensor)
+        ( do
+            names :: [String] <- undefined
+            return $ zipWith NamedSizedDim names sizes
+        )
+        (return $ SizedDim <$> sizes)
+    Shape shape ->
+      unsafePerformIO $
+        snd <$> foldM step' mempty shape
+      where
+        inc = (<>) (Sum 1)
+        step' (s, as) a = (\a' -> (inc s, a : as)) <$> step s a
+        step :: Sum Int -> Dim String Integer -> IO (Dim String Integer)
+        step dim AnyDim = do
+          size :: Int <- cast2 ATen.tensor_size_l tensor (getSum dim)
+          ifM
+            (cast1 ATen.tensor_has_names tensor)
+            ( do
+                name :: String <- undefined
+                return $ NamedSizedDim name (fromIntegral size)
+            )
+            (return $ SizedDim (fromIntegral size))
+        step dim (NamedDim name) = do
+          size :: Int <- cast2 ATen.tensor_size_l tensor (getSum dim)
+          (return $ NamedSizedDim name (fromIntegral size))
+        step dim (SizedDim size) = do
+          ifM
+            (cast1 ATen.tensor_has_names tensor)
+            ( do
+                name :: String <- undefined
+                return $ NamedSizedDim name (fromIntegral size)
+            )
+            (return $ SizedDim size)
+        step _ namedSizedDim@(NamedSizedDim _ _) =
+          return namedSizedDim
