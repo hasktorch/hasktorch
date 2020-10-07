@@ -31,7 +31,7 @@ import Torch.GraduallyTyped.DType (DataType (..), KnownDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice (..))
 import Torch.GraduallyTyped.Layout (KnownLayout (..), Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.Prelude ((&&^))
-import Torch.GraduallyTyped.Shape (Dim, Shape (..))
+import Torch.GraduallyTyped.Shape (SizedDim, Dim, Shape (..), KnownShape (..))
 import Torch.Internal.Cast (cast0, cast1, cast2)
 import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Managed.Autograd as ATen
@@ -640,3 +640,18 @@ unsafeCheckedDataType ::
 unsafeCheckedDataType tensor = case checkedDataType @dataType tensor of
   Right tensor' -> tensor'
   Left err -> error err
+
+shape ::
+  forall requiresGradient layout device dataType shape.
+  KnownShape shape =>
+  -- | input
+  Tensor requiresGradient layout device dataType shape ->
+  -- | shape of the input tensor
+  [Dim String Integer]
+shape tensor =
+  case shapeVal @shape of
+    AnyShape -> unsafePerformIO $ do
+      xs <- cast1 ATen.tensor_sizes tensor
+      _ <- cast1 ATen.tensor_has_names tensor
+      return $ SizedDim <$> xs
+    Shape shape -> shape

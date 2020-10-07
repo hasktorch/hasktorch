@@ -78,6 +78,7 @@ library
                     , Torch.GraduallyTyped
                     , Torch.GraduallyTyped.Prelude
                     , Torch.GraduallyTyped.Tensor
+                    , Torch.GraduallyTyped.Tensor.Type
                     , Torch.GraduallyTyped.DType
                     , Torch.GraduallyTyped.Device
                     , Torch.GraduallyTyped.Shape
@@ -88,6 +89,8 @@ library
                     , Torch.GraduallyTyped.Functional
                     , Torch.GraduallyTyped.Functional.Activation
                     , Torch.GraduallyTyped.NN
+                    , Torch.GraduallyTyped.NN.Class
+                    , Torch.GraduallyTyped.NN.Initialization
                     , Torch.GraduallyTyped.Internal.TensorOptions
                     , Torch.Distributions.Constraints
                     , Torch.Distributions.Distribution
