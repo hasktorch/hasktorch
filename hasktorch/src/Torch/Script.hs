@@ -239,13 +239,13 @@ define :: RawModule -> String -> IO ()
 define = cast2 LibTorch.define
 
 dumpToStr ::
-  -- | print_method_bodies
+  -- | module
   ScriptModule ->
+  -- | print_method_bodies
+  Bool ->
   -- | print_attr_values
   Bool ->
   -- | print_param_values
-  Bool ->
-  -- | ?
   Bool ->
   -- | level
   Int ->
