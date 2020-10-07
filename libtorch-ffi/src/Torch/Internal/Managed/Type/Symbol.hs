@@ -63,6 +63,21 @@ symbol_is_dimname
   -> IO (CBool)
 symbol_is_dimname = cast1 Unmanaged.symbol_is_dimname
 
+symbol_toUnqualString
+  :: ForeignPtr Symbol
+  -> IO (ForeignPtr StdString)
+symbol_toUnqualString = cast1 Unmanaged.symbol_toUnqualString
+
+symbol_toQualString
+  :: ForeignPtr Symbol
+  -> IO (ForeignPtr StdString)
+symbol_toQualString = cast1 Unmanaged.symbol_toQualString
+
+symbol_toDisplayString
+  :: ForeignPtr Symbol
+  -> IO (ForeignPtr StdString)
+symbol_toDisplayString = cast1 Unmanaged.symbol_toDisplayString
+
 attr_s
   :: ForeignPtr StdString
   -> IO (ForeignPtr Symbol)

@@ -96,6 +96,16 @@ You can launch a Nix shell via
 $ nix-shell
 ```
 
+We also support Stack with Nix, see below.
+
+Note that this shell is configured to use the CPU backend only.
+In order to benefit from any CUDA-capable hardware acceleration your computer may provide (sorry macOS users),
+launch the Nix shell instead with:
+
+```sh
+$ nix-shell --arg cudaSupport true --argstr cudaMajorVersion 10
+```
+
 ### Getting Started in Nix-shell
 
 On Linux and OS X the code below will:
@@ -121,15 +131,20 @@ $ cd ..
 $ cabal repl hasktorch
 ```
 
-We also support Stack with Nix, see below.
+### Troubleshooting Nix-shell under Windows
 
-Note that this shell is configured to use the CPU backend only.
-In order to benefit from any CUDA-capable hardware acceleration your computer may provide (sorry macOS users),
-launch the Nix shell instead with:
+Hasktorch mainly works on Windows Subsystem for Linux 2. 
+Tested on Debian and Ubuntu.
+It is not quite as roubust, but these extra command gets it to work:
 
 ```sh
-$ nix-shell --arg cudaSupport true --argstr cudaMajorVersion 10
+$ nix-shell
+$ cabal update
+$ haskell-language-server
+$ code .
 ```
+
+There is better integration of VS Code with Ubuntu.
 
 #### Known Nix Shell Issues
 
@@ -212,6 +227,30 @@ $ nix-shell \
   --argstr cudaMajorVersion 10 \
   --command "export DEVICE=\"cuda:0\"; cabal run static-mnist-mlp"
 ```
+
+### Getting Started With Stack in Nix-shell 
+
+On Linux and OS X the code below will:
+
+ * Drop you into nix-shell with Stack available
+ * Build hasktorch and examples with Stack
+ * Run unit tests
+ * Download MNIST dataset into common directory
+ * Find the executable created for static-mnist-cnn
+ * Run static-mnist-cnn
+
+
+```sh
+$ nix-shell -p stack
+$ stack --nix build
+$ stack --nix test
+$ cd examples
+$ ./datasets/download-mnist.sh 
+$ cp -r mnist data
+$ find . -type f -executable -name static-mnist-cnn
+$ `find . -type f -executable -name static-mnist-cnn`
+```
+
 
 ### Set up your development environment
 
