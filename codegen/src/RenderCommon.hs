@@ -72,6 +72,7 @@ ctypeToCppType ct =
     CInt32 -> "int32_t"
     CInt64 -> "int64_t"
     CInt64Q -> "int64_t"
+    CString -> "char*"
 
 stltypeToCppType :: STLType -> Text
 stltypeToCppType t =
@@ -184,6 +185,7 @@ ctypeToHsType ct =
     CInt32 -> "Int32"
     CInt64 -> "Int64"
     CInt64Q -> "Int64"
+    CString -> "CString"
 
 ctypeToHigherHsType :: CType -> Text
 ctypeToHigherHsType ct =
@@ -203,6 +205,7 @@ ctypeToHigherHsType ct =
     CInt32 -> "Int32"
     CInt64 -> "Int"
     CInt64Q -> "Int"
+    CString -> "String"
 
 withParens :: Text -> Text
 withParens txt = if hasSpace' txt then "(" <> txt <> ")" else txt
@@ -304,6 +307,7 @@ ctypeToInitial ct =
     CInt32 -> "i"
     CInt64 -> "l"
     CInt64Q -> "l"
+    CString -> "s"
 
 parsableToInitial :: Parsable -> Text
 parsableToInitial parsable =
