@@ -37,14 +37,14 @@ let
           hackageSrc = sources.hackage-nix;
           stackageSrc = sources.stackage-nix;
           custom-tools = pkgsOld.haskell-nix.custom-tools // {
-            haskell-language-server."0.4.0" = args:
+            haskell-language-server."0.5.0" = args:
               (pkgsOld.haskell-nix.cabalProject (args // {
                 name = "haskell-language-server";
                 src = pkgsOld.fetchFromGitHub {
                   owner = "haskell";
                   repo = "haskell-language-server";
-                  rev = "0a18edde24923251a148cbbc0ae993a6aac83b9c";
-                  sha256 = "0b94l6bywa6jk20y2cswyq5ks4g515895k2apvr1mdfkfhngdb7b";
+                  rev = "14497f2503a2a0d389fabf3b146d674b9af41a34";
+                  sha256 = "0vkh5ff6l5wr4450xmbki3cfhlwf041fjaalnwmj7zskd72s9p7p";
                   fetchSubmodules = true;
                 };
                 # lookupSha256 = { location, tag, ... } : {
