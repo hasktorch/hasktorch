@@ -47,14 +47,8 @@ let
                   sha256 = "0vkh5ff6l5wr4450xmbki3cfhlwf041fjaalnwmj7zskd72s9p7p";
                   fetchSubmodules = true;
                 };
-                # lookupSha256 = { location, tag, ... } : {
-                #   "https://github.com/wz1000/shake"."fb3859dca2e54d1bbb2c873e68ed225fa179fbef" = "0sa0jiwgyvjsmjwpfcpvzg2p7277aa0dgra1mm6afh2rfnjphz8z";
-                #   "https://github.com/peti/cabal-plan"."894b76c0b6bf8f7d2f881431df1f13959a8fce87" = "06iklj51d9kh9bhc42lrayypcpgkjrjvna59w920ln41rskhjr4y";
-                #   }."${location}"."${tag}";
-                # plan-sha256 = "0a6c4lhnlm2lkic91ips0gb3hqlp3fk2aa01nsa8dhz9l8zg63da";
                 modules = [{
-                  # Tests don't pass for some reason, but this is a somewhat random revision.
-                  packages.haskell-language-server.doCheck = false;
+                  packages.haskell-language-server.doCheck = true;
                 }];
               })).haskell-language-server.components.exes.haskell-language-server;
           };

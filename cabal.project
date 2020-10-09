@@ -10,8 +10,5 @@ write-ghc-environment-files: always
 tests: true
 documentation: false
 
-source-repository-package
-    type: git
-    location: https://github.com/hasktorch/pipes-text
-    tag: 3dd3d9519306ea06f0c15ad71bdf57e1dfd0b747
-    --sha256: 1vp2jzn3yrwiwmy2ji859gbd788snygflnbyvyvp3d09x4p2xx2b
+allow-newer: doctest:ghc, pipes-text:pipes-safe
+
