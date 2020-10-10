@@ -54,50 +54,34 @@ with pkgs;
 
 let
 
-  ghcWithPackages = packages:
-    let
-      ghc = (hasktorchHaskellPackages.shellFor {
-        packages = _: [];
-        additional = packages;
-        withHoogle = true;
-        exactDeps = true;
-      }).ghc;
-      ihaskell = hasktorchHaskellPackages.ihaskell.components.exes.ihaskell;
-    in
-      symlinkJoin {
-        name = "ihaskell-env";
-        paths = [ ghc.out ihaskell.out ];
-      };
+  customIHaskell = symlinkJoin {
+    name="ihaskell-hnix"; 
+    paths=[
+      hasktorchHaskellPackages.ihaskell.components.exes.ihaskell
+      hasktorchHaskellPackages.ihaskell.components.library
+    ];
+  };
 
   iHaskell = jupyterWith.kernels.iHaskellWith {
-    haskellPackages = { inherit ghcWithPackages; };
+    haskellPackages = hasktorchHaskellPackages;
+    customIHaskell = customIHaskell;
     name = "haskell";
     packages = p: with p; [
       hasktorch
       hvega
       ihaskell-hvega
-      # matrix
-      # hmatrix
-      # monad-bayes
-      # statistics 
-      # vector
-      # aeson
-      # aeson-pretty
-      # formatting
-      # foldl
-      # histogram-fill
-      # funflow
-      # JuicyPixels
     ];
   };
 
   jupyterEnvironment = jupyterWith.jupyterlabWith {
     kernels = [ iHaskell ];
-    directory = jupyterWith.mkDirectoryWith {
-      extensions = [
-        "jupyterlab-ihaskell"
-      ];
-    };
+    # TODO: JupyterLab and iHaskell are currently not supported.
+    #       Use JupyterNotebook instead.
+    # directory = jupyterWith.mkDirectoryWith {
+    #   extensions = [
+    #     "jupyterlab-ihaskell"
+    #   ];
+    # };
   };
 
 in

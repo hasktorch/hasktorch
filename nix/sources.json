@@ -11,7 +11,7 @@
         "url": "https://github.com/input-output-hk/hackage.nix/archive/7d8dee4ff2685774c9a42e5894b482f326fe589c.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
-    "haskell.nix": {
+    "haskell-nix": {
         "branch": "master",
         "description": "Alternative Haskell Infrastructure for Nixpkgs",
         "homepage": "https://input-output-hk.github.io/haskell.nix",
@@ -41,10 +41,10 @@
         "homepage": "",
         "owner": "tweag",
         "repo": "jupyterWith",
-        "rev": "41ef8935b2a0eb1ee8729fd53cf4b08313541628",
-        "sha256": "0073ddld6m5kqv141gb2aq1dys4sv9vhifgic0w8qqjpm0l24kzf",
+        "rev": "35eb565c6d00f3c61ef5e74e7e41870cfa3926f7",
+        "sha256": "15zpprs0blvlvbqapkyn92x6dpfa6va2xz25v24z67lqs96ii4jm",
         "type": "tarball",
-        "url": "https://github.com/tweag/jupyterWith/archive/41ef8935b2a0eb1ee8729fd53cf4b08313541628.tar.gz",
+        "url": "https://github.com/tweag/jupyterWith/archive/35eb565c6d00f3c61ef5e74e7e41870cfa3926f7.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "niv": {
@@ -83,7 +83,7 @@
         "url": "https://github.com/stites/pytorch-world/archive/00c4565901d60e64929c265e053036b393d07779.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
-    "stackage.nix": {
+    "stackage-nix": {
         "branch": "master",
         "description": "Automatically generated Nix expressions of Stackage snapshots",
         "homepage": "",

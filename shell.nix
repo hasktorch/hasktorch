@@ -12,8 +12,11 @@
     inherit config sourcesOverride cudaSupport cudaMajorVersion;
   }
 }:
+
 with pkgs;
+
 let
+
   # This provides a development environment that can be used with nix-shell or
   # lorri. See https://input-output-hk.github.io/haskell.nix/user-guide/development/
   shell = hasktorchHaskellPackages.shellFor {
