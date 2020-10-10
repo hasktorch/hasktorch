@@ -10,5 +10,4 @@ write-ghc-environment-files: always
 tests: true
 documentation: false
 
-allow-newer: doctest:ghc, pipes-text:pipes-safe
-
+allow-newer: doctest-0.17:ghc, pipes-text-0.0.2.5:pipes-safe

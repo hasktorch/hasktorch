@@ -38,19 +38,27 @@ let
           stackageSrc = sources.stackage-nix;
           custom-tools = pkgsOld.haskell-nix.custom-tools // {
             haskell-language-server."0.5.0" = args:
-              (pkgsOld.haskell-nix.cabalProject (args // {
-                name = "haskell-language-server";
-                src = pkgsOld.fetchFromGitHub {
-                  owner = "haskell";
-                  repo = "haskell-language-server";
-                  rev = "14497f2503a2a0d389fabf3b146d674b9af41a34";
-                  sha256 = "0vkh5ff6l5wr4450xmbki3cfhlwf041fjaalnwmj7zskd72s9p7p";
-                  fetchSubmodules = true;
-                };
-                modules = [{
-                  packages.haskell-language-server.doCheck = true;
-                }];
-              })).haskell-language-server.components.exes.haskell-language-server;
+              let
+                project = pkgsOld.haskell-nix.project' (args // {
+                  src = pkgsOld.evalPackages.fetchgit {
+                    url = "https://github.com/haskell/haskell-language-server.git";
+                    fetchSubmodules = true;
+                    rev = "14497f2503a2a0d389fabf3b146d674b9af41a34";
+                    sha256 = "0vkh5ff6l5wr4450xmbki3cfhlwf041fjaalnwmj7zskd72s9p7p";
+                  };
+                  projectFileName = "cabal.project";
+                  cabalProjectLocal = ''
+                    allow-newer: diagrams-svg:base, monoid-extras:base, svg-builder:base,
+                      diagrams-lib:base, dual-tree:base, active:base, diagrams-core:base,
+                      diagrams-contrib:base, force-layout:base, diagrams-postscript:base,
+                      statestack:base
+
+                    package haskell-language-server
+                      flags: -agpl
+                  '';
+                });
+              in
+                project.hsPkgs.haskell-language-server.components.exes.haskell-language-server;
           };
         };
       })
