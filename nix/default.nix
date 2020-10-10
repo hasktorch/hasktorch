@@ -47,14 +47,14 @@ let
                     sha256 = "0vkh5ff6l5wr4450xmbki3cfhlwf041fjaalnwmj7zskd72s9p7p";
                   };
                   projectFileName = "cabal.project";
+                  sha256map = {
+                    "https://github.com/bubba/brittany.git"."c59655f10d5ad295c2481537fc8abf0a297d9d1c" = "1rkk09f8750qykrmkqfqbh44dbx1p8aq1caznxxlw8zqfvx39cxl";
+                  };
                   cabalProjectLocal = ''
                     allow-newer: diagrams-svg:base, monoid-extras:base, svg-builder:base,
                       diagrams-lib:base, dual-tree:base, active:base, diagrams-core:base,
                       diagrams-contrib:base, force-layout:base, diagrams-postscript:base,
                       statestack:base
-
-                    package haskell-language-server
-                      flags: -agpl
                   '';
                 });
               in
