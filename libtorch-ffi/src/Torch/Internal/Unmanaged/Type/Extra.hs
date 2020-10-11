@@ -83,3 +83,15 @@ tensor_assign2_t _obj _idx0 _idx1 _val  =
   [C.throwBlock| void { (*$(at::Tensor* _obj))[$(int64_t _idx0)][$(int64_t _idx1)] = *$(at::Tensor* _val); }|]
 
 
+tensor_names
+  :: Ptr Tensor
+  -> IO (Ptr DimnameList)
+tensor_names _obj =
+  [C.throwBlock| std::vector<at::Dimname>* {
+      auto ref = (*$(at::Tensor* _obj)).names();
+      std::vector<at::Dimname>* vec = new std::vector<at::Dimname>();
+      for(int i=0;i<ref.size();i++){
+        vec->push_back(ref[i]);
+      }
+      return vec;
+  }|]
