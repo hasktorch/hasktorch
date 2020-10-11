@@ -30,17 +30,17 @@ let
     inherit ghc;
 
     name = "hasktorch-stack-dev-shell";
-    
+
     extraArgs = [
       "--extra-include-dirs=${torch}/include/torch/csrc/api/include"
     ];
-    
+
     inherit buildInputs;
 
     phases = ["nobuildPhase"];
     nobuildPhase = "echo '${lib.concatStringsSep "\n" ([ghc] ++ buildInputs)}' > $out";
     meta.platforms = lib.platforms.unix;
-    
+
     inherit withHoogle;
   };
 
