@@ -33,16 +33,15 @@
             <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#">Getting Started</a>
+            <a class="nav-link" href="getting_started.html">Getting Started</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="https://hasktorch.github.io/">Docs</a>
+            <a class="nav-link" href="docs.html">Docs</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="http://github.com/hasktorch/hasktorch/">Github</a>
           </li>
         </ul>
-
       </div>
     </nav>
   </header>
@@ -56,12 +55,12 @@
         <div class="carousel-item active">
           <div class="container">
             <div class="carousel-caption text-center">
-              <img src="img/hasktorch.png" width="250px" />
+              <img src="img/hasktorch.png" width="500px" />
               <h1>Hasktorch</h1>
               <p>
                 Functional Differentiable Programming in Haskell.
               </p>
-              <p><a class="btn btn-lg btn-primary" href="#" role="button">Get Started</a></p>
+              <p><a class="btn btn-lg btn-secondary" href="#learn_more" role="button">Learn More</a></p>
             </div>
           </div>
         </div>
@@ -74,7 +73,8 @@
       ================================================== -->
     <!-- Wrap the rest of the page in another container to center all the content. -->
 
-    <div class="container marketing">
+    <a id="learn_more"></a>
+    <div class="container marketing" id="learn_more">
 
       <!-- Three columns of text below the carousel -->
       <div class="row">
@@ -82,35 +82,24 @@
           <iframe width="300" src="https://www.youtube.com/embed/Qu6RIO02m1U" frameborder="0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowfullscreen></iframe>
-          <!-- <img class="rounded-circle"
-            src="data:image/gif;base64,R0lGODlhAQABAIAAAHd3dwAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=="
-            alt="Generic placeholder image" width="140" height="140"> -->
-          <!-- <h2></h2> -->
-          <p>
-            High-level library overview
-          </p>
-          <p><a class="btn btn-secondary" href="#" role="button">View details &raquo;</a></p>
+          <br>
+          High-level library overview
         </div><!-- /.col-lg-4 -->
         <div class="col-lg-4">
           <iframe width="300" src="https://www.youtube.com/embed/ZnYa99QoznE?start=1831" frameborder="0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowfullscreen></iframe>
-          <p>
-            Typed neural networks live demo
-          </p>
-          <p><a class="btn btn-secondary" href="#" role="button">View details &raquo;</a></p>
+          <br>
+          Typed neural networks live demo
         </div><!-- /.col-lg-4 -->
         <div class="col-lg-4">
           <iframe width="300" src="https://www.youtube.com/embed/qWpD8t_Aodk?start=1831" frameborder="0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowfullscreen></iframe>
-          <p>
-            Library internals
-          </p>
-          <p><a class="btn btn-secondary" href="#" role="button">View details &raquo;</a></p>
+          <br>
+          Library internals
         </div><!-- /.col-lg-4 -->
       </div><!-- /.row -->
-
 
       <!-- START THE FEATURETTES -->
 
@@ -118,17 +107,21 @@
 
       <div class="row featurette">
         <div class="col-md-7">
-          <h2 class="featurette-heading">Functional programming meets neural networks. <span class="text-muted">Using
-              PyTorch's C++ Backend</span>
+          <h2 class="featurette-heading">Functional
+            <span class="text-muted">differentiable programming
+            </span>
+            <p class="lead">
           </h2>
           <p class="lead">
-            Tensor operations.
-            Automatic differentiation.
+            A library for tensor math and neural networks for functional programmers.
+            Use algebraic data types to represent models, function composition to
+            build neural network composition, generics to automate boilerplate, or
+            (optionally) type-level computations to type neural network dimensions.
           </p>
         </div>
         <div class="col-md-5">
-          <img src="img/docs.png" <img class="featurette-image img-fluid mx-auto" data-src="holder.js/500x500/auto"
-            alt="Generic placeholder image">
+          <img src="img/haskell.png" width="500px" class="featurette-image img-fluid mx-auto"
+            data-src="holder.js/500x500/auto" alt="Haskell logo">
         </div>
       </div>
 
@@ -136,15 +129,19 @@
 
       <div class="row featurette">
         <div class="col-md-7 order-md-2">
-          <h2 class="featurette-heading">Typed neural networks.<span class="text-muted">typed tensors</span>
+          <h2 class="featurette-heading">Powered by<span class="text-muted"> libtorch</span>
           </h2>
           <p class="lead">
-
+            libtorch is the C++ library underlying PyTorch, a powerful neural network
+            library for Python.
+            We use code generated
+            bindings to bring thousands of functions and make them available to
+            Haskell, along with support for GPUs and automatic differentiation for all operations.
           </p>
         </div>
         <div class="col-md-5 order-md-1">
-          <img class="featurette-image img-fluid mx-auto" data-src="holder.js/500x500/auto"
-            alt="Generic placeholder image">
+          <img src="img/pytorch.png" width="300px" class="featurette-image img-fluid mx-auto"
+            data-src="holder.js/500x500/auto" alt="Generic placeholder image">
         </div>
       </div>
 
@@ -152,13 +149,16 @@
 
       <div class="row featurette">
         <div class="col-md-7">
-          <h2 class="featurette-heading">And lastly, this one. <span class="text-muted">Checkmate.</span></h2>
-          <p class="lead">Donec ullamcorper nulla non metus auctor fringilla. Vestibulum id ligula porta felis euismod
-            semper. Praesent commodo cursus magna, vel scelerisque nisl consectetur. Fusce dapibus, tellus ac cursus
-            commodo.</p>
+          <h2 class="featurette-heading">Join
+            <span class="text-muted">the community</span></h2>
+          <p class="lead">
+            We're always looking for new collaborators and contributors who share an interest in making an impact in how
+            machine learning systems are implemented and researched.
+            Join us by emailing <a href="mailto:hasktorch@gmail.com">hasktorch@gmail.com</a> to request a slack invite.
+          </p>
         </div>
         <div class="col-md-5">
-          <img class="featurette-image img-fluid mx-auto" data-src="holder.js/500x500/auto"
+          <img src="img/hasktorch.png" class="featurette-image img-fluid mx-auto" data-src="holder.js/500x500/auto"
             alt="Generic placeholder image">
         </div>
       </div>
@@ -173,21 +173,45 @@
     <!-- FOOTER -->
     <footer class="container">
       <p class="float-right"><a href="#">Back to top</a></p>
-      <p>&copy; 2017-2018 Company, Inc. &middot; <a href="#">Privacy</a> &middot; <a href="#">Terms</a></p>
+      <p>&copy; 2020 hasktorch.org &middot; <a href="#">Privacy</a> &middot; <a href="#">Terms</a></p>
     </footer>
   </main>
 
   <!-- Bootstrap core JavaScript
     ================================================== -->
   <!-- Placed at the end of the document so the pages load faster -->
-  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+  <!-- <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
     integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+    crossorigin="anonymous"></script> -->
+
+  <script src="https://code.jquery.com/jquery-3.2.1.min.js"
+    integrity="sha384-xBuQ/xzmlsLoJpyjoggmTEz8OWUFM0/RC5BsqQBDX2v5cMvDHcMakNTNrHIW2I5f"
     crossorigin="anonymous"></script>
+
+
   <script>window.jQuery || document.write('<script src="../../../../assets/js/vendor/jquery-slim.min.js"><\/script>')</script>
   <script src="../../../../assets/js/vendor/popper.min.js"></script>
   <script src="../../../../dist/js/bootstrap.min.js"></script>
   <!-- Just to make our placeholder images work. Don't actually copy the next line! -->
   <script src="../../../../assets/js/vendor/holder.min.js"></script>
+
+  <script>
+    // smooth scrolling
+    $(document).ready(function () {
+      $("a").on('click', function (event) {
+        if (this.hash !== "") {
+          event.preventDefault();
+          var hash = this.hash;
+          $('html, body').animate({
+            scrollTop: $(hash).offset().top
+          }, 400, function () {
+            // window.location.hash = hash;
+          });
+        }
+      });
+    });
+  </script>
+
 </body>
 
 </html>
