@@ -110,6 +110,12 @@ type family UnifyDimF (dim :: Dim Symbol Nat) (dim' :: Dim Symbol Nat) :: Dim Sy
   UnifyDimF dim dim = dim
   UnifyDimF ( 'NamedDim name) ( 'NamedDim name') =
     TypeError (UnifyDimNameErrorMessage ( 'NamedDim name) ( 'NamedDim name'))
+  UnifyDimF ( 'NamedDim name) ( 'NamedSizedDim name _) = 'NamedDim name
+  UnifyDimF ( 'NamedDim name) ( 'NamedSizedDim name' size) =
+    TypeError (UnifyDimNameErrorMessage ( 'NamedDim name) ( 'NamedSizedDim name' size))
+  UnifyDimF ( 'NamedSizedDim name _) ( 'NamedDim name) = 'NamedDim name
+  UnifyDimF ( 'NamedSizedDim name size) ( 'NamedDim name') = 
+    TypeError (UnifyDimNameErrorMessage ( 'NamedSizedDim name size) ( 'NamedDim name'))
   UnifyDimF ( 'NamedSizedDim name size) ( 'NamedSizedDim name' size) =
     TypeError (UnifyDimNameErrorMessage ( 'NamedSizedDim name size) ( 'NamedSizedDim name' size))
   UnifyDimF dim dim' =
@@ -138,7 +144,7 @@ type family AddDimF (dim :: Dim Symbol Nat) (dim' :: Dim Symbol Nat) :: Dim Symb
   AddDimF ( 'NamedDim name) ( 'NamedDim name') =
     TypeError (AddDimNameErrorMessage ( 'NamedDim name) ( 'NamedDim name'))
   AddDimF ( 'NamedDim name) ( 'NamedSizedDim name _) = 'NamedDim name
-  AddDimF ( 'NamedDim name) ( 'NamedSizedDim name' size) = 
+  AddDimF ( 'NamedDim name) ( 'NamedSizedDim name' size) =
     TypeError (AddDimNameErrorMessage ( 'NamedDim name) ( 'NamedSizedDim name' size))
   AddDimF ( 'NamedSizedDim name _) ( 'NamedDim name) = 'NamedDim name
   AddDimF ( 'NamedSizedDim name size) ( 'NamedDim name') =
