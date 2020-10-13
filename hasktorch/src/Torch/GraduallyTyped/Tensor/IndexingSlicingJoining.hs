@@ -33,7 +33,7 @@ import qualified Torch.Internal.Type as ATen
 import Type.Errors.Pretty (ToErrorMessage, type (%), type (<>))
 
 -- $setup
--- >>> import Torch.GraduallyTyped.Creation (ones)
+-- >>> import Torch.GraduallyTyped.Tensor.Creation (ones)
 -- >>> import Torch.DType (DType (..))
 -- >>> import Torch.GraduallyTyped.DType (DataType (..))
 -- >>> import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))

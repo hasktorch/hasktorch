@@ -29,7 +29,7 @@ import qualified Torch.Internal.Managed.TensorFactories as ATen
 -- | Create a tensor of ones.
 --
 -- >>> :type ones @'Dependent @'AnyLayout @'AnyDevice @'AnyDataType @'AnyShape
--- ones @'AnyLayout @'AnyDevice @'AnyDataType @'AnyShape ::
+-- ones @'Dependent @'AnyLayout @'AnyDevice @'AnyDataType @'AnyShape ::
 --   LayoutType ->
 --   DeviceType Int16 ->
 --   DType ->
@@ -37,25 +37,25 @@ import qualified Torch.Internal.Managed.TensorFactories as ATen
 --   IO (Tensor 'Dependent 'AnyLayout 'AnyDevice 'AnyDataType 'AnyShape)
 --
 -- >>> :type ones @'Dependent @('Layout 'Dense) @'AnyDevice @'AnyDataType @'AnyShape
--- ones @('Layout 'Dense) @'AnyDevice @'AnyDataType @'AnyShape ::
+-- ones @'Dependent @('Layout 'Dense) @'AnyDevice @'AnyDataType @'AnyShape ::
 --   DeviceType Int16 ->
 --   DType ->
 --   [Dim String Integer] ->
 --   IO (Tensor 'Dependent ('Layout 'Dense) 'AnyDevice 'AnyDataType 'AnyShape)
 --
 -- >>> :type ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @'AnyDataType @'AnyShape
--- ones @('Layout 'Dense) @('Device ('CUDA 0)) @'AnyDataType @'AnyShape ::
+-- ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @'AnyDataType @'AnyShape ::
 --   DType ->
 --   [Dim String Integer] ->
 --   IO (Tensor 'Dependent ('Layout 'Dense) ('Device ('CUDA 0)) 'AnyDataType 'AnyShape)
 --
 -- >>> :type ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @'AnyShape
--- ones @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @'AnyShape ::
+-- ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @'AnyShape ::
 --   [Dim String Integer] ->
 --   IO (Tensor 'Dependent ('Layout 'Dense) ('Device ('CUDA 0)) ('DataType 'Half) 'AnyShape)
 --
 -- >>> :type ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
--- ones @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) ::
+-- ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) ::
 --   IO (Tensor 'Dependent ('Layout 'Dense) ('Device ('CUDA 0)) ('DataType 'Half) ('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]))
 ones ::
   forall requiresGradient layout device dataType shape m.
