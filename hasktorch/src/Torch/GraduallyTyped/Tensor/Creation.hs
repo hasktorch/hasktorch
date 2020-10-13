@@ -62,7 +62,7 @@ import qualified Torch.Internal.Managed.TensorFactories as ATen
 -- >>> :type ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @'AnyShape
 -- ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @'AnyShape
 --   :: MonadFail m =>
---      [Dim String Integer] ->
+--      [Dim String Integer]
 --      -> m (Tensor
 --              'Dependent
 --              ('Layout 'Dense)
