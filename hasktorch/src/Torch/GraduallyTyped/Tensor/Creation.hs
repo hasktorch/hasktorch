@@ -29,12 +29,14 @@ import qualified Torch.Internal.Managed.TensorFactories as ATen
 -- | Create a tensor of ones.
 --
 -- >>> :type ones @'Dependent @'AnyLayout @'AnyDevice @'AnyDataType @'AnyShape
--- ones @'Dependent @'AnyLayout @'AnyDevice @'AnyDataType @'AnyShape ::
---   LayoutType ->
---   DeviceType Int16 ->
---   DType ->
---   [Dim String Integer] ->
---   IO (Tensor 'Dependent 'AnyLayout 'AnyDevice 'AnyDataType 'AnyShape)
+-- ones @'Dependent @'AnyLayout @'AnyDevice @'AnyDataType @'AnyShape
+--   :: MonadFail m =>
+--       LayoutType
+--       -> DeviceType GHC.Int.Int16
+--       -> DType
+--       -> [Dim String Integer]
+--       -> m (Tensor
+--               'Dependent 'AnyLayout 'AnyDevice 'AnyDataType 'AnyShape)
 --
 -- >>> :type ones @'Dependent @('Layout 'Dense) @'AnyDevice @'AnyDataType @'AnyShape
 -- ones @'Dependent @('Layout 'Dense) @'AnyDevice @'AnyDataType @'AnyShape ::
