@@ -6,4 +6,4 @@ module Torch.GraduallyTyped.NN
 where
 
 import Torch.GraduallyTyped.NN.Class
-import Torch.GraduallyTyped.NN.Initialization
+import Torch.GraduallyTyped.NN.Initialization ()

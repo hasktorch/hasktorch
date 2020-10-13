@@ -6,6 +6,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoStarIsType #-}
 
 module Torch.GraduallyTyped.Layout where
@@ -13,7 +15,8 @@ module Torch.GraduallyTyped.Layout where
 import Data.Kind (Type)
 import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Const as ATen (kSparse, kStrided)
-import qualified Torch.Internal.Type as ATen (Layout, Tensor, TensorList)
+import qualified Torch.Internal.Type as ATen (Layout)
+import Type.Errors.Pretty (TypeError, type (%), type (<>))
 
 -- | Data type that represents the memory layout of a tensor.
 data LayoutType
@@ -42,10 +45,10 @@ class KnownLayout (layout :: Layout LayoutType) where
 instance KnownLayout 'AnyLayout where
   layoutVal = AnyLayout
 
-instance KnownLayout ('Layout 'Dense) where
+instance KnownLayout ( 'Layout 'Dense) where
   layoutVal = Layout Dense
 
-instance KnownLayout ('Layout 'Sparse) where
+instance KnownLayout ( 'Layout 'Sparse) where
   layoutVal = Layout Sparse
 
 class WithLayoutC (isAnyLayout :: Bool) (layout :: Layout LayoutType) (f :: Type) where
@@ -59,3 +62,17 @@ instance WithLayoutC 'True layout f where
 instance (KnownLayout layout) => WithLayoutC 'False layout f where
   type WithLayoutF 'False f = f
   withLayout f = case layoutVal @layout of Layout layout -> f layout
+
+type family UnifyLayoutF (layout :: Layout LayoutType) (layout' :: Layout LayoutType) :: Layout LayoutType where
+  UnifyLayoutF 'AnyLayout 'AnyLayout = 'AnyLayout
+  UnifyLayoutF ( 'Layout _) 'AnyLayout = 'AnyLayout
+  UnifyLayoutF 'AnyLayout ( 'Layout _) = 'AnyLayout
+  UnifyLayoutF ( 'Layout layoutType) ( 'Layout layoutType) = 'Layout layoutType
+  UnifyLayoutF ( 'Layout layoutType) ( 'Layout layoutType') =
+    TypeError
+      ( "The supplied tensors must have the same memory layout, "
+          % "but different layouts were found:"
+          % ""
+          % "    " <> layoutType <> " and " <> layoutType' <> "."
+          % ""
+      )

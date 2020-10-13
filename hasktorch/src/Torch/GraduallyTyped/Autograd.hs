@@ -7,6 +7,7 @@ module Torch.GraduallyTyped.Autograd where
 
 import Data.Kind (Type)
 import System.IO.Unsafe (unsafePerformIO)
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Tensor
 import Torch.Internal.Cast (cast2)
 import qualified Torch.Internal.Managed.Autograd as ATen

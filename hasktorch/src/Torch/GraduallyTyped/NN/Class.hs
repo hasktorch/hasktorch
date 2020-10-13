@@ -15,8 +15,8 @@ import Control.Monad.State.Strict (MonadState (state), runState)
 import Torch.GraduallyTyped.Prelude (Contains, ErrorMessage (Text), Fst, If, Proxy (..), Snd, Type, TypeError)
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.Device (Device (AnyDevice))
-import Generics.SOP (Code, I, SOP(..), Generic, NS(..), NP)
-import GHC.Base (coerce, Any)
+-- import Generics.SOP (Code, I, SOP(..), Generic, NS(..), NP)
+-- import GHC.Base (coerce, Any)
 
 data ModelRandomness = Deterministic | Stochastic
 

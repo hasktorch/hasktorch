@@ -14,13 +14,7 @@
 
 module Torch.GraduallyTyped.Functional.Activation where
 
-import Data.Kind (Type)
-import Data.Proxy (Proxy (..))
-import Data.Type.Equality (type (==))
-import GHC.TypeLits (Nat, Symbol)
-import GHC.TypeLits.KnownNat (KnownBool, boolVal)
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.DType (DType)
 import Torch.GraduallyTyped.Tensor(Tensor)
 import Torch.Internal.Cast (cast1, cast2, cast3)
 import qualified Torch.Internal.Managed.Native as ATen

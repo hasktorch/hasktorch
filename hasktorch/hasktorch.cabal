@@ -23,7 +23,26 @@ Flag disable-doctest
  Manual:      True
 
 library
- exposed-modules:     Torch
+ exposed-modules:     Torch.GraduallyTyped
+                    , Torch.GraduallyTyped.Prelude
+                    , Torch.GraduallyTyped.Tensor
+                    , Torch.GraduallyTyped.Tensor.Type
+                    , Torch.GraduallyTyped.Tensor.Creation
+                    , Torch.GraduallyTyped.Tensor.IndexingSlicingJoining
+                    , Torch.GraduallyTyped.RequiresGradient
+                    , Torch.GraduallyTyped.DType
+                    , Torch.GraduallyTyped.Device
+                    , Torch.GraduallyTyped.Shape
+                    , Torch.GraduallyTyped.Layout
+                    , Torch.GraduallyTyped.Autograd
+                    , Torch.GraduallyTyped.Random
+                    , Torch.GraduallyTyped.Functional
+                    , Torch.GraduallyTyped.Functional.Activation
+                    , Torch.GraduallyTyped.NN
+                    , Torch.GraduallyTyped.NN.Class
+                    , Torch.GraduallyTyped.NN.Initialization
+                    , Torch.GraduallyTyped.Internal.TensorOptions
+                    , Torch
                     , Torch.Tensor
                     , Torch.TensorOptions
                     , Torch.DType
@@ -76,23 +95,6 @@ library
                     , Torch.Typed.Optim.CppOptim
                     , Torch.Typed.Serialize
                     , Torch.Typed.Vision
-                    , Torch.GraduallyTyped
-                    , Torch.GraduallyTyped.Prelude
-                    , Torch.GraduallyTyped.Tensor
-                    , Torch.GraduallyTyped.Tensor.Type
-                    , Torch.GraduallyTyped.DType
-                    , Torch.GraduallyTyped.Device
-                    , Torch.GraduallyTyped.Shape
-                    , Torch.GraduallyTyped.Layout
-                    , Torch.GraduallyTyped.Creation
-                    , Torch.GraduallyTyped.Autograd
-                    , Torch.GraduallyTyped.Random
-                    , Torch.GraduallyTyped.Functional
-                    , Torch.GraduallyTyped.Functional.Activation
-                    , Torch.GraduallyTyped.NN
-                    , Torch.GraduallyTyped.NN.Class
-                    , Torch.GraduallyTyped.NN.Initialization
-                    , Torch.GraduallyTyped.Internal.TensorOptions
                     , Torch.Distributions.Constraints
                     , Torch.Distributions.Distribution
                     , Torch.Distributions.Bernoulli
@@ -144,6 +146,7 @@ library
                     , containers
                     , inline-c
                     , generics-sop
+                    , type-errors-pretty
 
  default-extensions:  Strict
                     , StrictData

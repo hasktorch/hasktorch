@@ -24,34 +24,23 @@ module Torch.GraduallyTyped.Device where
 import Data.Int (Int16)
 import Data.Kind (Type)
 import Data.Proxy (Proxy (..))
-import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits
   ( KnownNat,
-    KnownSymbol,
     Nat,
-    Symbol,
     natVal,
-    symbolVal,
   )
-import System.IO.Unsafe (unsafePerformIO)
-import Torch.DType (DType (..))
-import Torch.Internal.Cast (cast0, cast1)
-import Torch.Internal.Class (Castable (..))
-import qualified Torch.Internal.Managed.Autograd as ATen
 import qualified Torch.Internal.Managed.Cast as ATen ()
-import qualified Torch.Internal.Managed.Type.Context as ATen
-import qualified Torch.Internal.Managed.Type.Tensor as ATen
-import qualified Torch.Internal.Type as ATen (Tensor, TensorList)
+import Type.Errors.Pretty (TypeError, type (%), type (<>))
 
 data DeviceType (deviceId :: Type) where
   CPU :: forall deviceId. DeviceType deviceId
   CUDA :: forall deviceId. deviceId -> DeviceType deviceId
-  deriving Show
+  deriving (Show)
 
 data Device (deviceType :: Type) where
   AnyDevice :: forall deviceType. Device deviceType
   Device :: forall deviceType. deviceType -> Device deviceType
-  deriving Show
+  deriving (Show)
 
 class KnownDevice (device :: Device (DeviceType Nat)) where
   deviceVal :: Device (DeviceType Int16)
@@ -59,10 +48,10 @@ class KnownDevice (device :: Device (DeviceType Nat)) where
 instance KnownDevice 'AnyDevice where
   deviceVal = AnyDevice
 
-instance KnownDevice ('Device 'CPU) where
+instance KnownDevice ( 'Device 'CPU) where
   deviceVal = Device CPU
 
-instance (KnownNat deviceId) => KnownDevice ('Device ('CUDA deviceId)) where
+instance (KnownNat deviceId) => KnownDevice ( 'Device ( 'CUDA deviceId)) where
   deviceVal = Device (CUDA (fromIntegral . natVal $ Proxy @deviceId))
 
 class WithDeviceC (isAnyDevice :: Bool) (device :: Device (DeviceType Nat)) (f :: Type) where
@@ -76,3 +65,17 @@ instance WithDeviceC 'True device f where
 instance (KnownDevice device) => WithDeviceC 'False device f where
   type WithDeviceF 'False f = f
   withDevice f = case deviceVal @device of Device device -> f device
+
+type family UnifyDeviceF (device :: Device (DeviceType Nat)) (device' :: Device (DeviceType Nat)) :: Device (DeviceType Nat) where
+  UnifyDeviceF 'AnyDevice 'AnyDevice = 'AnyDevice
+  UnifyDeviceF ( 'Device _) 'AnyDevice = 'AnyDevice
+  UnifyDeviceF 'AnyDevice ( 'Device _) = 'AnyDevice
+  UnifyDeviceF ( 'Device deviceType) ( 'Device deviceType) = 'Device deviceType
+  UnifyDeviceF ( 'Device deviceType) ( 'Device deviceType') =
+    TypeError
+      ( "The supplied tensors must be on the same device, "
+          % "but different device locations were found:"
+          % ""
+          % "    " <> deviceType <> " and " <> deviceType' <> "."
+          % ""
+      )

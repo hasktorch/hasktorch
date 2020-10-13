@@ -24,6 +24,7 @@ module Torch.GraduallyTyped.Tensor.Type where
 import Control.Monad (foldM)
 import Data.Coerce (coerce)
 import Data.Int (Int16)
+import Data.Kind (Type)
 import Data.Monoid (Sum (..))
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (Nat, Symbol)
@@ -33,28 +34,18 @@ import Torch.GraduallyTyped.DType (DataType (..), KnownDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice (..))
 import Torch.GraduallyTyped.Layout (KnownLayout (..), Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.Prelude (ifM, (&&^))
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape (Dim (..), KnownShape (..), Shape (..))
+import Torch.HList (HList (..))
 import Torch.Internal.Cast (cast0, cast1, cast2)
 import Torch.Internal.Class (Castable (..))
-import qualified Torch.Internal.Managed.Autograd as ATen
 import qualified Torch.Internal.Managed.Type.Context as ATen
+import qualified Torch.Internal.Managed.Type.Extra as ATen
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
 import qualified Torch.Internal.Type as ATen (Tensor, TensorList)
 
-data RequiresGradient
-  = -- | The tensor requires gradients.
-    Independent
-  | -- | The tensor does not require gradients.
-    Dependent
-
-class KnownRequiresGradient (requiresGradient :: RequiresGradient) where
-  requiresGradientVal :: RequiresGradient
-
-instance KnownRequiresGradient 'Independent where
-  requiresGradientVal = Independent
-
-instance KnownRequiresGradient 'Dependent where
-  requiresGradientVal = Dependent
+-- $setup
+-- import Torch.GraduallyTyped.Creation (ones)
 
 -- | A gradually typed tensor.
 newtype
@@ -70,6 +61,20 @@ newtype
     forall requiresGradient layout device dataType shape.
     ForeignPtr ATen.Tensor ->
     Tensor requiresGradient layout device dataType shape
+
+type family
+  TensorF
+    ( parameters ::
+        ( RequiresGradient,
+          Layout LayoutType,
+          Device (DeviceType Nat),
+          DataType DType,
+          Shape [Dim Symbol Nat]
+        )
+    ) ::
+    Type
+  where
+  TensorF '(requiresGradient, layout, device, dataType, shape) = Tensor requiresGradient layout device dataType shape
 
 instance
   Castable
@@ -91,6 +96,21 @@ instance
     tensorList <- mapM (\(x :: ForeignPtr ATen.Tensor) -> uncast x return) ptrList
     f tensorList
 
+instance Castable (HList tensors) [ForeignPtr ATen.Tensor] where
+  cast xs f = undefined
+  uncast xs f = undefined
+
+instance
+  Castable (HList l) [ForeignPtr ATen.Tensor] =>
+  Castable (HList l) (ForeignPtr ATen.TensorList)
+  where
+  cast xs f = do
+    ts <- cast xs return :: IO [ForeignPtr ATen.Tensor]
+    cast ts f
+  uncast xs f = uncast xs $ \(ptrList :: [ForeignPtr ATen.Tensor]) -> do
+    ts <- uncast ptrList return :: IO (HList l)
+    f ts
+
 -- | Alias for an untyped tensor without gradients.
 type UntypedTensor = Tensor 'Dependent 'AnyLayout 'AnyDevice 'AnyDataType 'AnyShape
 
@@ -98,28 +118,28 @@ type UntypedTensor = Tensor 'Dependent 'AnyLayout 'AnyDevice 'AnyDataType 'AnySh
 type UntypedParameter = Tensor 'Independent 'AnyLayout 'AnyDevice 'AnyDataType 'AnyShape
 
 -- | Alias for a tensor on CPU memory without gradients.
-type CPUTensor = Tensor 'Dependent ('Layout 'Dense) ('Device 'CPU)
+type CPUTensor = Tensor 'Dependent ( 'Layout 'Dense) ( 'Device 'CPU)
 
 -- | Alias for a tensor on CPU memory with gradients.
-type CPUParameter = Tensor 'Independent ('Layout 'Dense) ('Device 'CPU)
+type CPUParameter = Tensor 'Independent ( 'Layout 'Dense) ( 'Device 'CPU)
 
 -- | Alias for a sparse tensor on CPU memory without gradients.
-type SparseCPUTensor = Tensor 'Dependent ('Layout 'Sparse) ('Device 'CPU)
+type SparseCPUTensor = Tensor 'Dependent ( 'Layout 'Sparse) ( 'Device 'CPU)
 
 -- | Alias for a sparse tensor on CPU memory with gradients.
-type SparseCPUParameter = Tensor 'Independent ('Layout 'Sparse) ('Device 'CPU)
+type SparseCPUParameter = Tensor 'Independent ( 'Layout 'Sparse) ( 'Device 'CPU)
 
 -- | Alias for a tensor on CUDA memory without gradients.
-type CUDATensor deviceId = Tensor 'Dependent ('Layout 'Dense) ('Device ('CUDA deviceId))
+type CUDATensor deviceId = Tensor 'Dependent ( 'Layout 'Dense) ( 'Device ( 'CUDA deviceId))
 
 -- | Alias for a tensor on CUDA memory with gradients.
-type CUDAParameter deviceId = Tensor 'Independent ('Layout 'Dense) ('Device ('CUDA deviceId))
+type CUDAParameter deviceId = Tensor 'Independent ( 'Layout 'Dense) ( 'Device ( 'CUDA deviceId))
 
 -- | Alias for a sparse tensor on CUDA memory without gradients.
-type SparseCUDATensor deviceId = Tensor 'Dependent ('Layout 'Sparse) ('Device ('CUDA deviceId))
+type SparseCUDATensor deviceId = Tensor 'Dependent ( 'Layout 'Sparse) ( 'Device ( 'CUDA deviceId))
 
 -- | Alias for a sparse tensor on CUDA memory with gradients.
-type SparseCUDAParameter deviceId = Tensor 'Independent ('Layout 'Sparse) ('Device ('CUDA deviceId))
+type SparseCUDAParameter deviceId = Tensor 'Independent ( 'Layout 'Sparse) ( 'Device ( 'CUDA deviceId))
 
 -- | Returns an independent copy of the tensor that requires gradients.
 makeIndependent ::
@@ -145,7 +165,7 @@ toDense ::
   -- | input
   Tensor requiresGradient layout device dataType shape ->
   -- | dense copy
-  Tensor requiresGradient ('Layout 'Dense) device dataType shape
+  Tensor requiresGradient ( 'Layout 'Dense) device dataType shape
 toDense = unsafePerformIO . cast1 ATen.tensor_to_dense
 
 -- | Returns a sparse copy of the tensor.
@@ -154,7 +174,7 @@ toSparse ::
   -- | input
   Tensor requiresGradient layout device dataType shape ->
   -- | sparse copy
-  Tensor requiresGradient ('Layout 'Sparse) device dataType shape
+  Tensor requiresGradient ( 'Layout 'Sparse) device dataType shape
 toSparse = unsafePerformIO . cast1 ATen.tensor_to_sparse
 
 -- Returns the memory layout of the input tensor.
@@ -270,7 +290,7 @@ checkedLayout tensor
 -- >>> t' = unsafeCheckedLayout @('Layout 'Sparse) t
 -- *** Exception: The tensor does not have the memory layout "Layout Sparse".
 unsafeCheckedLayout ::
-  forall (layout :: Layout LayoutType) m requiresGradient device dataType shape.
+  forall (layout :: Layout LayoutType) requiresGradient device dataType shape.
   KnownLayout layout =>
   -- | input tensor
   Tensor requiresGradient 'AnyLayout device dataType shape ->
@@ -286,7 +306,7 @@ cpu ::
   -- | input
   Tensor requiresGradient layout device dataType shape ->
   -- | copy in CPU memory
-  Tensor requiresGradient layout ('Device 'CPU) dataType shape
+  Tensor requiresGradient layout ( 'Device 'CPU) dataType shape
 cpu = unsafePerformIO . cast1 ATen.tensor_cpu
 
 -- | Returns a copy of the tensor in CUDA memory.
@@ -295,7 +315,7 @@ cuda ::
   -- | input
   Tensor requiresGradient layout device dataType shape ->
   -- | copy in CUDA memory
-  Tensor requiresGradient layout ('Device ('CUDA 0)) dataType shape
+  Tensor requiresGradient layout ( 'Device ( 'CUDA 0)) dataType shape
 cuda = unsafePerformIO . cast1 ATen.tensor_cuda
 
 -- | Returns the compute device of the input tensor.
@@ -439,7 +459,7 @@ bool ::
   -- | input
   Tensor requiresGradient layout device dataType shape ->
   -- | 'Bool' copy
-  Tensor 'Dependent layout device ('DataType 'Bool) shape
+  Tensor 'Dependent layout device ( 'DataType 'Bool) shape
 bool tensor = unsafePerformIO $ cast2 ATen.tensor_toType_s tensor Bool
 
 -- | Returns a copy of the tensor converted to 'UInt8'.
@@ -448,7 +468,7 @@ byte ::
   -- | input
   Tensor requiresGradient layout device dataType shape ->
   -- | 'UInt8' copy
-  Tensor 'Dependent layout device ('DataType 'UInt8) shape
+  Tensor 'Dependent layout device ( 'DataType 'UInt8) shape
 byte tensor = unsafePerformIO $ cast2 ATen.tensor_toType_s tensor UInt8
 
 -- | Returns a copy of the tensor converted to 'Int8'.
@@ -457,7 +477,7 @@ char ::
   -- | input
   Tensor requiresGradient layout device dataType shape ->
   -- | 'Int8' copy
-  Tensor 'Dependent layout device ('DataType 'Int8) shape
+  Tensor 'Dependent layout device ( 'DataType 'Int8) shape
 char tensor = unsafePerformIO $ cast2 ATen.tensor_toType_s tensor Int8
 
 -- | Returns a copy of the tensor converted to 'Int16'.
@@ -466,7 +486,7 @@ short ::
   -- | input
   Tensor requiresGradient layout device dataType shape ->
   -- | 'Int16' copy
-  Tensor 'Dependent layout device ('DataType 'Int16) shape
+  Tensor 'Dependent layout device ( 'DataType 'Int16) shape
 short tensor = unsafePerformIO $ cast2 ATen.tensor_toType_s tensor Int16
 
 -- | Returns a copy of the tensor converted to 'Int32'.
@@ -475,7 +495,7 @@ int ::
   -- | input
   Tensor requiresGradient layout device dataType shape ->
   -- | 'Int32' copy
-  Tensor 'Dependent layout device ('DataType 'Int32) shape
+  Tensor 'Dependent layout device ( 'DataType 'Int32) shape
 int tensor = unsafePerformIO $ cast2 ATen.tensor_toType_s tensor Int32
 
 -- | Returns a copy of the tensor converted to 'Int64'.
@@ -484,7 +504,7 @@ long ::
   -- | input
   Tensor requiresGradient layout device dataType shape ->
   -- | 'Int64' copy
-  Tensor 'Dependent layout device ('DataType 'Int64) shape
+  Tensor 'Dependent layout device ( 'DataType 'Int64) shape
 long tensor = unsafePerformIO $ cast2 ATen.tensor_toType_s tensor Int64
 
 -- | Returns a copy of the tensor converted to the 16-bit floating point format 'Half'.
@@ -493,7 +513,7 @@ half ::
   -- | input
   Tensor requiresGradient layout device dataType shape ->
   -- | 'Half' copy
-  Tensor requiresGradient layout device ('DataType 'Half) shape
+  Tensor requiresGradient layout device ( 'DataType 'Half) shape
 half tensor = unsafePerformIO $ cast2 ATen.tensor_toType_s tensor Half
 
 -- | Returns a copy of the tensor converted to the 32-bit floating point format 'Float'.
@@ -502,7 +522,7 @@ float ::
   -- | input
   Tensor requiresGradient layout device dataType shape ->
   -- | 'Float' copy
-  Tensor requiresGradient layout device ('DataType 'Float) shape
+  Tensor requiresGradient layout device ( 'DataType 'Float) shape
 float tensor = unsafePerformIO $ cast2 ATen.tensor_toType_s tensor Float
 
 -- | Returns a copy of the tensor converted to the 32-bit floating point format 'Double'.
@@ -511,7 +531,7 @@ double ::
   -- | input
   Tensor requiresGradient layout device dataType shape ->
   -- | 'Double' copy
-  Tensor requiresGradient layout device ('DataType 'Double) shape
+  Tensor requiresGradient layout device ( 'DataType 'Double) shape
 double tensor = unsafePerformIO $ cast2 ATen.tensor_toType_s tensor Double
 
 -- | Returns the data type of the input tensor.
@@ -657,7 +677,7 @@ shape tensor =
       ifM
         (cast1 ATen.tensor_has_names tensor)
         ( do
-            names :: [String] <- undefined
+            names <- cast1 ATen.tensor_names tensor
             return $ zipWith NamedSizedDim names sizes
         )
         (return $ SizedDim <$> sizes)
@@ -666,7 +686,7 @@ shape tensor =
         snd <$> foldM step' mempty shape
       where
         inc = (<>) (Sum 1)
-        step' (s, as) a = (\a' -> (inc s, a : as)) <$> step s a
+        step' (s, as) a = (\a' -> (inc s, a' : as)) <$> step s a
         step :: Sum Int -> Dim String Integer -> IO (Dim String Integer)
         step dim AnyDim = do
           size :: Int <- cast2 ATen.tensor_size_l tensor (getSum dim)
