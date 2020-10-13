@@ -336,7 +336,10 @@ type GetDimByF dimBy shape = GetDimByCheckF dimBy shape (GetDimByImplF dimBy sha
 -- or 'Nothing' if nothing can be found.
 --
 -- >>> :kind! ReplaceDimByImplF 'AnyDimBy ('Shape '[ 'NamedDim "batch", 'NamedSizedDim "feature" 20, 'AnyDim]) 'AnyDim
--- ReplaceDimByImplF 'AnyDimBy ('Shape '[ 'NamedDim "batch", 'NamedSizedDim "feature" 20, 'AnyDim]) 'AnyDim :: Maybe (Shape [Dim Symbol Nat])
+-- ReplaceDimByImplF 'AnyDimBy ('Shape '[ 'NamedDim "batch", 'NamedSizedDim "feature" 20, 'AnyDim]) 'AnyDim :: Maybe
+--                                                                                                               [Dim
+--                                                                                                                  Symbol
+--                                                                                                                  Nat]
 -- = 'Just '[ 'AnyDim, 'NamedSizedDim "feature" 20, 'AnyDim]
 --
 -- >>> :kind! ReplaceDimByImplF ('DimByName "feature") ('Shape '[ 'NamedDim "batch", 'NamedSizedDim "feature" 20, 'AnyDim]) ('SizedDim 10)

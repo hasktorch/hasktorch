@@ -39,26 +39,34 @@ import qualified Torch.Internal.Managed.TensorFactories as ATen
 --              'Dependent 'AnyLayout 'AnyDevice 'AnyDataType 'AnyShape)
 --
 -- >>> :type ones @'Dependent @('Layout 'Dense) @'AnyDevice @'AnyDataType @'AnyShape
--- ones @'Dependent @('Layout 'Dense) @'AnyDevice @'AnyDataType @'AnyShape ::
---   DeviceType Int16 ->
---   DType ->
---   [Dim String Integer] ->
---   IO (Tensor 'Dependent ('Layout 'Dense) 'AnyDevice 'AnyDataType 'AnyShape)
+-- ones @'Dependent @('Layout 'Dense) @'AnyDevice @'AnyDataType @'AnyShape
+--   :: MonadFail m =>
+--      DeviceType GHC.Int.Int16
+--      -> DType
+--      -> [Dim String Integer]
+--      -> m (Tensor
+--              'Dependent ('Layout 'Dense) 'AnyDevice 'AnyDataType 'AnyShape)
 --
 -- >>> :type ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @'AnyDataType @'AnyShape
--- ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @'AnyDataType @'AnyShape ::
---   DType ->
---   [Dim String Integer] ->
---   IO (Tensor 'Dependent ('Layout 'Dense) ('Device ('CUDA 0)) 'AnyDataType 'AnyShape)
+-- ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @'AnyDataType @'AnyShape
+--   :: MonadFail m =>
+--      DType
+--      -> [Dim String Integer]
+--      -> IO (Tensor
+--               'Dependent ('Layout 'Dense) ('Device ('CUDA 0)) 'AnyDataType 'AnyShape)
 --
 -- >>> :type ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @'AnyShape
 -- ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @'AnyShape ::
---   [Dim String Integer] ->
---   IO (Tensor 'Dependent ('Layout 'Dense) ('Device ('CUDA 0)) ('DataType 'Half) 'AnyShape)
+--   :: MonadFail m =>
+--      [Dim String Integer] ->
+--      -> IO (Tensor
+--               'Dependent ('Layout 'Dense) ('Device ('CUDA 0)) ('DataType 'Half) 'AnyShape)
 --
 -- >>> :type ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
 -- ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) ::
---   IO (Tensor 'Dependent ('Layout 'Dense) ('Device ('CUDA 0)) ('DataType 'Half) ('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]))
+--   :: MonadFail m =>
+--      IO (Tensor
+--            'Dependent ('Layout 'Dense) ('Device ('CUDA 0)) ('DataType 'Half) ('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]))
 ones ::
   forall requiresGradient layout device dataType shape m.
   ( KnownRequiresGradient requiresGradient,

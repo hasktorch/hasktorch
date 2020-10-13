@@ -47,30 +47,30 @@ class HasCat (dimBy :: DimBy Symbol Nat) k (c :: k -> Type) (a :: k) where
   -- | Concatenates the given sequence of seq tensors in the given dimension.
   -- All tensors must either have the same shape (except in the concatenating dimension) or be empty.
   --
-  -- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @('Shape '[ 'NamedSizedDim "batch" 32, 'NamedSizedDim "feature" 8])
+  -- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "batch" 32, 'NamedSizedDim "feature" 8])
   -- >>> :type cat @('DimByName "feature") [t]
   -- cat @('DimByName "feature") [t]
   -- :: Tensor
   --      'Dependent
   --      ('Layout 'Dense)
-  --      ('Device ('CUDA 0))
-  --      ('DataType 'Half)
+  --      ('Device 'CPU)
+  --      ('DataType 'Float)
   --      ('Shape '[ 'NamedSizedDim "batch" 32, 'AnyDim])
   -- >>> :type cat @('DimByIndex 0) [t]
   -- cat @('DimByIndex 0) [t]
   --   :: Tensor
   --        'Dependent
   --        ('Layout 'Dense)
-  --        ('Device ('CUDA 0))
-  --        ('DataType 'Half)
+  --        ('Device 'CPU)
+  --        ('DataType 'Float)
   --        ('Shape '[ 'AnyDim, 'NamedSizedDim "feature" 8])
   -- >>> :type cat @'AnyDimBy (DimByIndex 0) [t]
   -- cat @'AnyDimBy (DimByIndex 0) [t]
   --   :: Tensor
   --        'Dependent
   --        ('Layout 'Dense)
-  --        ('Device ('CUDA 0))
-  --        ('DataType 'Half)
+  --        ('Device 'CPU)
+  --        ('DataType 'Float)
   --        'AnyShape
   cat :: WithDimByF (IsAnyDimBy dimBy) (c a -> CatF dimBy a c)
 

@@ -39,6 +39,9 @@ import Data.Type.Bool (If, type (||))
 import GHC.Exts (Any)
 import GHC.TypeLits (ErrorMessage (..), TypeError (..))
 
+-- $setup
+-- >>> :seti -XNoStarIsType
+
 data T1
 
 -- | Can be used to report stuck type families,

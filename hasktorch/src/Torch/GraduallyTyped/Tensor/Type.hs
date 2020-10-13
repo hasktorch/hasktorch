@@ -204,6 +204,7 @@ layout tensor =
 -- However, the tensor's underlying data structure is not changed.
 --
 -- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+-- [W TensorImpl.h:840] Warning: Named tensors and all their associated APIs are an experimental feature and subject to change. Please do not use them for anything important until they are released as stable. (function operator())
 -- >>> :type uncheckedLayout t
 -- uncheckedLayout t
 --   :: Tensor
@@ -540,7 +541,7 @@ double tensor = unsafePerformIO $ cast2 ATen.tensor_toType_s tensor Double
 -- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
 -- >>> dtype t
 -- Float
--- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @'AnyDataType @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) (DataType Float)
+-- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @'AnyDataType @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) Float
 -- >>> dtype t
 -- Float
 dataType ::
@@ -589,7 +590,7 @@ uncheckedDataType = coerce
 -- | Returns 'True' if the tensor has the data type 'dataType' and 'False' otherwise.
 -- If 'dataType' is 'AnyDataType', 'True' is returned for consistency.
 --
--- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+-- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @'AnyDataType @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
 -- >>> checkDataType @('DataType 'Float) t
 -- True
 -- >>> checkDataType @('DataType 'Double) t
@@ -642,7 +643,7 @@ checkedDataType tensor
 -- If the tensor does not have the data type 'dataType', then the execution is stopped and an error message is displayed.
 --
 -- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @'AnyDataType @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) Float
--- >>> t' = checkedDataType @('DataType 'Float) t
+-- >>> t' <- checkedDataType @('DataType 'Float) t
 -- >>> :type t'
 -- t'
 --   :: Tensor
