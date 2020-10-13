@@ -62,7 +62,7 @@ type family Fst (t :: (k, k')) :: k where
 --
 -- >>> :kind! Snd '(Int, String)
 -- Snd '(Int, String) :: *
--- = String
+-- = [Char]
 -- >>> :kind! Snd '(Int, Monad)
 -- Snd '(Int, Monad) :: (Type -> Type) -> Constraint
 -- = Monad
