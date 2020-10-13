@@ -223,7 +223,7 @@ uncheckedLayout = coerce
 -- | Returns 'True' if the tensor has the memory layout 'layout' and 'False' otherwise.
 -- If 'layout' is 'AnyLayout', 'True' is returned for consistency.
 --
--- >>> t <- ones @'Dependent @'AnyLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) (Layout Sparse)
+-- >>> t <- ones @'Dependent @'AnyLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) Sparse
 -- >>> checkLayout @('Layout 'Sparse) t
 -- True
 -- >>> checkLayout @('Layout 'Dense) t
@@ -250,7 +250,7 @@ checkLayout tensor =
 -- If it does not have it, then the result will be 'Nothing'.
 --
 -- In the REPL, 'm' will default to 'IO':
--- >>> t <- ones @'Dependent @'AnyLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) (Layout Dense)
+-- >>> t <- ones @'Dependent @'AnyLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) Dense
 -- >>> t' <- checkedLayout @('Layout 'Dense) t
 -- >>> :type t'
 -- t'
@@ -276,7 +276,7 @@ checkedLayout tensor
 -- | Unsafe version of 'checkedLayout'.
 -- If the tensor does not have the memory layout 'layout', then the execution is stopped and an error message is displayed.
 --
--- >>> t <- ones @'Dependent @'AnyLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) CPU
+-- >>> t <- ones @'Dependent @'AnyLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) Dense
 -- >>> t' = unsafeCheckedLayout @('Layout 'Dense) t
 -- >>> :type t'
 -- t'
@@ -322,7 +322,7 @@ cuda = unsafePerformIO . cast1 ATen.tensor_cuda
 -- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
 -- >>> device t
 -- CPU
--- >>> t <- ones @'Dependent @('Layout 'Dense) @'AnyDevice @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) (Device CPU)
+-- >>> t <- ones @'Dependent @('Layout 'Dense) @'AnyDevice @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) CPU
 -- >>> device t
 -- CPU
 device ::
@@ -441,6 +441,8 @@ checkedDevice tensor
 --        ('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
 -- >>> t' = unsafeCheckedDevice @('Device ('CUDA 0)) t
 -- *** Exception: The tensor is not in the memory of the device "Device (CUDA 0)".
+-- CallStack (from HasCallStack):
+--   error, called at /root/hasktorch/hasktorch/src/Torch/GraduallyTyped/Tensor/Type.hs:455:15 in main:Torch.GraduallyTyped.Tensor.Type
 unsafeCheckedDevice ::
   forall (device :: Device (DeviceType Nat)) requiresGradient layout dataType shape.
   KnownDevice device =>
@@ -567,7 +569,7 @@ dtype = dataType @dataType
 -- Any static information about the tensor's data type is thus erased.
 -- However, the tensor's underlying data structure is not changed.
 --
--- >>> t <- ones @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+-- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
 -- >>> :type uncheckedDataType t
 -- uncheckedDataType t
 --   :: Tensor
@@ -587,7 +589,7 @@ uncheckedDataType = coerce
 -- | Returns 'True' if the tensor has the data type 'dataType' and 'False' otherwise.
 -- If 'dataType' is 'AnyDataType', 'True' is returned for consistency.
 --
--- >>> t <- ones @'Dependent @('Layout 'Dense) @'AnyDevice @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) CPU
+-- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
 -- >>> checkDataType @('DataType 'Float) t
 -- True
 -- >>> checkDataType @('DataType 'Double) t
@@ -613,7 +615,7 @@ checkDataType tensor =
 -- If it does not have it, then the result will be 'Nothing'.
 --
 -- In the REPL, 'm' will default to 'IO':
--- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @'AnyDataType @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) (DataType Float)
+-- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @'AnyDataType @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) Float
 -- >>> t' <- checkedDataType @('DataType 'Float) t
 -- >>> :type t'
 -- t'
@@ -639,7 +641,7 @@ checkedDataType tensor
 -- | Unsafe version of 'checkedDataType'.
 -- If the tensor does not have the data type 'dataType', then the execution is stopped and an error message is displayed.
 --
--- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @'AnyDataType @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) (DataType Float)
+-- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @'AnyDataType @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) Float
 -- >>> t' = checkedDataType @('DataType 'Float) t
 -- >>> :type t'
 -- t'
@@ -651,6 +653,8 @@ checkedDataType tensor
 --        ('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
 -- >>> t' = unsafeCheckedDataType @('DataType 'Double) t
 -- *** Exception: user error (The tensor does not have the data type "DataType Double".)
+-- CallStack (from HasCallStack):
+--   error, called at /root/hasktorch/hasktorch/src/Torch/GraduallyTyped/Tensor/Type.hs:667:15 in main:Torch.GraduallyTyped.Tensor.Type
 unsafeCheckedDataType ::
   forall (dataType :: DataType DType) requiresGradient layout device shape.
   KnownDataType dataType =>

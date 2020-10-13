@@ -280,11 +280,17 @@ type family UnifyDimsF (dims :: [Dim Symbol Nat]) (dims' :: [Dim Symbol Nat]) ::
 -- or 'Nothing' if nothing can be found.
 --
 -- >>> :kind! GetDimByImplF 'AnyDimBy ('Shape '[ 'NamedDim "batch", 'NamedSizedDim "feature" 20, 'AnyDim])
--- GetDimByImplF 'AnyDimBy ('Shape '[ 'NamedDim "batch", 'NamedSizedDim "feature" 20, 'AnyDim]) :: Maybe (Dim Symbol Nat)
+-- GetDimByImplF 'AnyDimBy ('Shape '[ 'NamedDim "batch", 'NamedSizedDim "feature" 20, 'AnyDim]) :: Maybe
+--                                                                                                   (Dim
+--                                                                                                      Symbol
+--                                                                                                      Nat)
 -- = 'Just ('NamedDim "batch")
 --
 -- >>> :kind! GetDimByImplF ('DimByName "feature") ('Shape '[ 'NamedDim "batch", 'NamedSizedDim "feature" 20, 'AnyDim])
--- GetDimByImplF ('DimByName "feature") ('Shape '[ 'NamedDim "batch", 'NamedSizedDim "feature" 20, 'AnyDim]) :: Maybe (Dim Symbol Nat)
+-- GetDimByImplF ('DimByName "feature") ('Shape '[ 'NamedDim "batch", 'NamedSizedDim "feature" 20, 'AnyDim]) :: Maybe
+--                                                                                                                (Dim
+--                                                                                                                   Symbol
+--                                                                                                                   Nat)
 -- = 'Just ('NamedSizedDim "feature" 20)
 type family GetDimByImplF (dimBy :: DimBy Symbol Nat) (shape :: Shape [Dim Symbol Nat]) :: Maybe (Dim Symbol Nat) where
   GetDimByImplF 'AnyDimBy 'AnyShape = 'Nothing
@@ -376,7 +382,10 @@ type ReplaceDimByF dimBy shape dim = ReplaceDimByCheckF dimBy shape dim (Replace
 -- or 'Nothing' if 'index' is out of bounds.
 --
 -- >>> :kind! ReplaceDimByIndexImplF 1 '[ 'NamedDim "batch", 'NamedSizedDim "feature" 20, 'AnyDim] ('SizedDim 10)
--- ReplaceDimByIndexImplF 1 '[ 'NamedDim "batch", 'NamedSizedDim "feature" 20] ('SizedDim 10) :: Maybe [Dim Symbol Nat]
+-- ReplaceDimByIndexImplF 1 '[ 'NamedDim "batch", 'NamedSizedDim "feature" 20, 'AnyDim] ('SizedDim 10) :: Maybe
+--                                                                                                          [Dim
+--                                                                                                             Symbol
+--                                                                                                             Nat]
 -- = 'Just '[ 'NamedDim "batch", 'SizedDim 10, 'AnyDim]
 type family ReplaceDimByIndexImplF (index :: Nat) (dims :: [Dim Symbol Nat]) (dim :: Dim Symbol Nat) :: Maybe [Dim Symbol Nat] where
   ReplaceDimByIndexImplF 0 (_ ': t) dim = Just (dim ': t)
