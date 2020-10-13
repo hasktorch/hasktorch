@@ -1,20 +1,18 @@
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Torch.Dimname where
 
-
+import Data.String
 import Foreign.ForeignPtr
-import Torch.Internal.Class (Castable(..))
+import System.IO.Unsafe
+import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Const as ATen
-import qualified Torch.Internal.Type as ATen
-import qualified Torch.Internal.Managed.Type.Symbol as ATen
 import qualified Torch.Internal.Managed.Type.Dimname as ATen
 import qualified Torch.Internal.Managed.Type.StdString as ATen
-import Data.String
-import System.IO.Unsafe
+import qualified Torch.Internal.Managed.Type.Symbol as ATen
+import qualified Torch.Internal.Type as ATen
 
 newtype Dimname = Dimname (ForeignPtr ATen.Dimname)
 
@@ -31,9 +29,8 @@ instance Castable Dimname (ForeignPtr ATen.Dimname) where
 
 instance Castable [Dimname] (ForeignPtr ATen.DimnameList) where
   cast xs f = do
-    ptr_list <- mapM (\x -> (cast x return :: IO (ForeignPtr ATen.Dimname))) xs
+    ptr_list <- mapM (\x -> cast x return :: IO (ForeignPtr ATen.Dimname)) xs
     cast (map Dimname ptr_list) f
   uncast xs f = uncast xs $ \ptr_list -> do
-    dname_list <- mapM (\(x :: ForeignPtr ATen.Dimname) -> uncast x return) $ map (\(Dimname dname) -> dname) ptr_list
+    dname_list <- mapM ((\(x :: ForeignPtr ATen.Dimname) -> uncast x return) . (\(Dimname dname) -> dname)) ptr_list
     f dname_list
-
