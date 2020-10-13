@@ -209,7 +209,7 @@ layout tensor =
 --   :: Tensor
 --        'Dependent
 --        'AnyLayout
---        '('Device 'CPU)
+--        ('Device 'CPU)
 --        ('DataType 'Float)
 --        ('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
 uncheckedLayout ::

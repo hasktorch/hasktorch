@@ -39,9 +39,6 @@ import Data.Type.Bool (If, type (||))
 import GHC.Exts (Any)
 import GHC.TypeLits (ErrorMessage (..), TypeError (..))
 
--- $setup
--- >>> :seti -XNoStarIsType
-
 data T1
 
 -- | Can be used to report stuck type families,
@@ -53,22 +50,22 @@ type family Assert (err :: Constraint)  (a :: k) :: k where
 -- | Returns the first element of a type-level tuple with the kind @(k, k')@ marked by a prefix quote.
 --
 -- >>> :kind! Fst '(Int, String)
--- Fst '(Int, String) :: Type
+-- Fst '(Int, String) :: *
 -- = Int
 -- >>> :kind! Fst '(Functor, String)
--- Fst '(Functor, String) :: (Type -> Type) -> Constraint
+-- Fst '(Functor, String) :: (* -> *) -> Constraint
 -- = Functor
 type family Fst (t :: (k, k')) :: k where
   Fst '(x, _) = x
 
 -- | Returns the second element of a type-level tuple with the kind @(k, k')@ marked by a prefix quote.
 --
--- >>> :kind! Fst '(Int, String)
--- Fst '(Int, String) :: Type
--- = Int
--- >>> :kind! Fst '(Functor, String)
--- Fst '(Functor, String) :: (Type -> Type) -> Constraint
--- = Functor
+-- >>> :kind! Snd '(Int, String)
+-- Snd '(Int, String) :: *
+-- = String
+-- >>> :kind! Snd '(Int, Monad)
+-- Snd '(Int, Monad) :: (Type -> Type) -> Constraint
+-- = Monad
 type family Snd (t :: (k, k')) :: k' where
   Snd '(_, y) = y
 
