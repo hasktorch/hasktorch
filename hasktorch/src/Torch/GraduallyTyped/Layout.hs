@@ -70,7 +70,7 @@ type family UnifyLayoutF (layout :: Layout LayoutType) (layout' :: Layout Layout
   UnifyLayoutF ( 'Layout layoutType) ( 'Layout layoutType) = 'Layout layoutType
   UnifyLayoutF ( 'Layout layoutType) ( 'Layout layoutType') =
     TypeError
-      ( "The supplied tensors must have the same memory layout, "
+      ( "The supplied tensors must have the same memory layout,"
           % "but different layouts were found:"
           % ""
           % "    " <> layoutType <> " and " <> layoutType' <> "."

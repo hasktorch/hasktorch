@@ -23,7 +23,7 @@ import Torch.GraduallyTyped.Device (Device, DeviceType, UnifyDeviceF)
 import Torch.GraduallyTyped.Layout (Layout, LayoutType, UnifyLayoutF)
 import Torch.GraduallyTyped.Prelude (MapMaybe)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient, UnifyRequiresGradientF)
-import Torch.GraduallyTyped.Shape (Dim (..), DimBy (..), IsAnyDimBy, ReplaceDimByImplF, Shape (..), WithDimByC (..))
+import Torch.GraduallyTyped.Shape (AddDimF, Dim (..), DimBy (..), GetDimByF, IsAnyDimBy, ReplaceDimByF, ReplaceDimByImplF, Shape (..), UnifyShapeF, WithDimByC (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor, TensorF)
 import Torch.HList (HList)
 import Torch.Internal.Cast (cast2)
@@ -122,16 +122,19 @@ type family
              UnifyLayoutF layout layout',
              UnifyDeviceF device device',
              UnifyDataTypeF dataType dataType',
-             shape
+             ReplaceDimByF
+               dimBy
+               (UnifyShapeF (ReplaceDimByF dimBy shape 'AnyDim) (ReplaceDimByF dimBy shape' 'AnyDim))
+               (AddDimF (GetDimByF dimBy shape) (GetDimByF dimBy shape))
            )
       )
   CatHListImplF _ (x ': _) _ =
     TypeError
-      ( "Cannot concatenate because'"
+      ( "Cannot concatenate because"
           % ""
           % "    '" <> x <> "'"
           % ""
-          % "is not a tensor."
+          % "is not a tensor type."
       )
 
 type CatHListF dimBy tensors = CatHListImplF dimBy tensors 'Nothing
