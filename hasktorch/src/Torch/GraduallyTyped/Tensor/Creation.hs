@@ -19,6 +19,13 @@ import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
 import Torch.Internal.Cast (cast2, cast3)
 import qualified Torch.Internal.Managed.TensorFactories as ATen
 
+-- $setup
+-- >>> import Torch.DType (DType (..))
+-- >>> import Torch.GraduallyTyped.Device (DeviceType (..))
+-- >>> import Torch.GraduallyTyped.Layout (LayoutType (..))
+-- >>> import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
+-- >>> import Torch.GraduallyTyped.Shape (Dim (..))
+
 -- | Create a tensor of ones.
 --
 -- >>> :type ones @'Dependent @'AnyLayout @'AnyDevice @'AnyDataType @'AnyShape

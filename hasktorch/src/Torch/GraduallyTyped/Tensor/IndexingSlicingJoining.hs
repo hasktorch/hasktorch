@@ -32,6 +32,15 @@ import qualified Torch.Internal.Managed.Native as ATen
 import qualified Torch.Internal.Type as ATen
 import Type.Errors.Pretty (ToErrorMessage, type (%), type (<>))
 
+-- $setup
+-- >>> import Torch.GraduallyTyped.Creation (ones)
+-- >>> import Torch.DType (DType (..))
+-- >>> import Torch.GraduallyTyped.DType (DataType (..))
+-- >>> import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
+-- >>> import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
+-- >>> import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
+-- >>> import Torch.GraduallyTyped.Shape (Dim (..), Shape (..))
+
 class HasCat (dimBy :: DimBy Symbol Nat) k (c :: k -> Type) (a :: k) where
   type CatF dimBy a c :: Type
 

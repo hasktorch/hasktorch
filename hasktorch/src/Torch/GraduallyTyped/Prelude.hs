@@ -4,7 +4,6 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE NoStarIsType #-}
 
 module Torch.GraduallyTyped.Prelude
   ( module Data.Kind,

@@ -17,7 +17,6 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
-{-# LANGUAGE NoStarIsType #-}
 
 module Torch.GraduallyTyped.Tensor.Type where
 
@@ -45,7 +44,7 @@ import qualified Torch.Internal.Managed.Type.Tensor as ATen
 import qualified Torch.Internal.Type as ATen (Tensor, TensorList)
 
 -- $setup
--- import Torch.GraduallyTyped.Creation (ones)
+-- >>> import Torch.GraduallyTyped.Creation (ones)
 
 -- | A gradually typed tensor.
 newtype
