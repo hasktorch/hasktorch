@@ -48,6 +48,7 @@ class HasCat (dimBy :: DimBy Symbol Nat) k (c :: k -> Type) (a :: k) where
   -- All tensors must either have the same shape (except in the concatenating dimension) or be empty.
   --
   -- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "batch" 32, 'NamedSizedDim "feature" 8])
+  -- [W TensorImpl.h:840] Warning: Named tensors and all their associated APIs are an experimental feature and subject to change. Please do not use them for anything important until they are released as stable. (function operator())
   -- >>> :type cat @('DimByName "feature") [t]
   -- cat @('DimByName "feature") [t]
   -- :: Tensor

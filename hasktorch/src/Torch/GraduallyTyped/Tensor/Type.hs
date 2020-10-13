@@ -204,7 +204,6 @@ layout tensor =
 -- However, the tensor's underlying data structure is not changed.
 --
 -- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
--- [W TensorImpl.h:840] Warning: Named tensors and all their associated APIs are an experimental feature and subject to change. Please do not use them for anything important until they are released as stable. (function operator())
 -- >>> :type uncheckedLayout t
 -- uncheckedLayout t
 --   :: Tensor
@@ -224,11 +223,11 @@ uncheckedLayout = coerce
 -- | Returns 'True' if the tensor has the memory layout 'layout' and 'False' otherwise.
 -- If 'layout' is 'AnyLayout', 'True' is returned for consistency.
 --
--- >>> t <- ones @'Dependent @'AnyLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) Sparse
+-- >>> t <- ones @'Dependent @'AnyLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) Dense
 -- >>> checkLayout @('Layout 'Sparse) t
--- True
--- >>> checkLayout @('Layout 'Dense) t
 -- False
+-- >>> checkLayout @('Layout 'Dense) t
+-- True
 -- >>> checkLayout @'AnyLayout t
 -- True
 checkLayout ::
@@ -590,7 +589,7 @@ uncheckedDataType = coerce
 -- | Returns 'True' if the tensor has the data type 'dataType' and 'False' otherwise.
 -- If 'dataType' is 'AnyDataType', 'True' is returned for consistency.
 --
--- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @'AnyDataType @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+-- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @'AnyDataType @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) Float
 -- >>> checkDataType @('DataType 'Float) t
 -- True
 -- >>> checkDataType @('DataType 'Double) t
@@ -653,7 +652,7 @@ checkedDataType tensor
 --        ('DataType 'Float)
 --        ('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
 -- >>> t' = unsafeCheckedDataType @('DataType 'Double) t
--- *** Exception: user error (The tensor does not have the data type "DataType Double".)
+-- *** Exception: The tensor does not have the data type "DataType Double".
 -- CallStack (from HasCallStack):
 --   error, called at /root/hasktorch/hasktorch/src/Torch/GraduallyTyped/Tensor/Type.hs:667:15 in main:Torch.GraduallyTyped.Tensor.Type
 unsafeCheckedDataType ::
