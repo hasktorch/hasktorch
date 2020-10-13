@@ -134,9 +134,15 @@ type AddDimNameErrorMessage dim dim' =
 type family AddDimF (dim :: Dim Symbol Nat) (dim' :: Dim Symbol Nat) :: Dim Symbol Nat where
   AddDimF 'AnyDim _ = 'AnyDim
   AddDimF _ 'AnyDim = 'AnyDim
-  AddDimF ( 'NamedDim name) ( 'NamedDim name) = 'AnyDim
+  AddDimF ( 'NamedDim name) ( 'NamedDim name) = 'NamedDim name
   AddDimF ( 'NamedDim name) ( 'NamedDim name') =
     TypeError (AddDimNameErrorMessage ( 'NamedDim name) ( 'NamedDim name'))
+  AddDimF ( 'NamedDim name) ( 'NamedSizedDim name _) = 'NamedDim name
+  AddDimF ( 'NamedDim name) ( 'NamedSizedDim name' size) = 
+    TypeError (AddDimNameErrorMessage ( 'NamedDim name) ( 'NamedSizedDim name' size))
+  AddDimF ( 'NamedSizedDim name _) ( 'NamedDim name) = 'NamedDim name
+  AddDimF ( 'NamedSizedDim name size) ( 'NamedDim name') =
+    TypeError (AddDimNameErrorMessage ( 'NamedSizedDim name size) ( 'NamedDim name'))
   AddDimF ( 'NamedDim _) _ = 'AnyDim
   AddDimF _ ( 'NamedDim _) = 'AnyDim
   AddDimF ( 'SizedDim size) ( 'SizedDim size') = 'SizedDim (size + size')
