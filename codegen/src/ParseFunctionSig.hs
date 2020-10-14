@@ -101,6 +101,7 @@ data CType
     | CInt32
     | CInt64
     | CInt64Q
+    | CString
     deriving (Eq, Show, Generic, Bounded, Enum)
 
 data STLType
@@ -291,6 +292,8 @@ identifier = (lexm . try) (p >>= check)
 -- CppString
 -- >>> parseTest typ "str"
 -- CppString
+-- >>> parseTest typ "char*"
+-- CType CString
 typ :: Parser Parsable
 typ =
   tuple <|>
@@ -401,6 +404,7 @@ typ =
     pure $ TenType $ IntList Nothing
   ctype =
     ((lexm $ string "bool") >> (pure $ CType CBool)) <|>
+    ((lexm $ string "char*") >> (pure $ CType CString)) <|>
     ((lexm $ string "void*") >> (pure $ Ptr (CType CVoid))) <|>
     ((lexm $ string "void") >> (pure $ CType CVoid)) <|>
     ((lexm $ string "float") >> (pure $ CType CFloat)) <|>

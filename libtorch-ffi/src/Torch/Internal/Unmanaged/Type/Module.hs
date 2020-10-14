@@ -1,42 +1,42 @@
-
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Torch.Internal.Unmanaged.Type.Module where
 
 import Control.Exception.Safe (bracket)
-import qualified Language.C.Inline.Cpp as C
-import qualified Language.C.Inline.Cpp.Exceptions as C
-import qualified Language.C.Inline.Context as C
-import qualified Language.C.Types as C
+import Data.IORef
 import qualified Data.Map as Map
+import Foreign
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign
+import qualified Language.C.Inline.Context as C
+import qualified Language.C.Inline.Cpp as C
+import qualified Language.C.Inline.Cpp.Exceptions as C
+import qualified Language.C.Types as C
 import Torch.Internal.Type
 import Torch.Internal.Unmanaged.Helper
 
-import Data.IORef
-
-C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
+C.context $ C.cppCtx <> mempty {C.ctxTypesTable = typeTable}
 
 C.include "<torch/script.h>"
+
 C.include "<torch/csrc/jit/serialization/export.h>"
+
 C.include "<vector>"
+
 C.include "<iostream>"
 
 -- From libtorch/include/torch/csrc/jit/script/module.h
 
-newModule
-  :: Ptr StdString -> IO (Ptr Module)
+newModule ::
+  Ptr StdString -> IO (Ptr Module)
 newModule name =
   [C.throwBlock| torch::jit::script::Module* { return new torch::jit::script::Module(
      *$(std::string* name)
@@ -44,22 +44,26 @@ newModule name =
   }|]
 
 save :: Ptr Module -> FilePath -> IO ()
-save obj file = withCString file $ \cfile -> [C.throwBlock| void {
+save obj file = withCString file $ \cfile ->
+  [C.throwBlock| void {
     $(torch::jit::script::Module* obj)->save($(char* cfile));
   }|]
 
 load :: FilePath -> IO (Ptr Module)
-load file = withCString file $ \cfile -> [C.throwBlock| torch::jit::script::Module* {
+load file = withCString file $ \cfile ->
+  [C.throwBlock| torch::jit::script::Module* {
     return new torch::jit::script::Module(torch::jit::load($(char* cfile)));
   }|]
 
-forward :: Ptr Module -> (Ptr (StdVector IValue)) -> IO (Ptr IValue)
-forward obj inputs = [C.throwBlock| at::IValue* {
+forward :: Ptr Module -> Ptr (StdVector IValue) -> IO (Ptr IValue)
+forward obj inputs =
+  [C.throwBlock| at::IValue* {
     return new at::IValue($(torch::jit::script::Module* obj)->forward(*$(std::vector<at::IValue>* inputs)));
   }|]
 
 registerParameter :: Ptr Module -> Ptr StdString -> Ptr Tensor -> CBool -> IO ()
-registerParameter obj name v is_buffer = [C.throwBlock| void {
+registerParameter obj name v is_buffer =
+  [C.throwBlock| void {
     $(torch::jit::script::Module* obj)->register_parameter(
       *$(std::string* name)
     , *$(at::Tensor* v)
@@ -68,7 +72,8 @@ registerParameter obj name v is_buffer = [C.throwBlock| void {
   }|]
 
 registerModule :: Ptr Module -> Ptr StdString -> Ptr Module -> IO ()
-registerModule obj name v = [C.throwBlock| void {
+registerModule obj name v =
+  [C.throwBlock| void {
     $(torch::jit::script::Module* obj)->register_module(
       *$(std::string* name)
     , *$(torch::jit::script::Module* v)
@@ -76,14 +81,16 @@ registerModule obj name v = [C.throwBlock| void {
   }|]
 
 train :: Ptr Module -> CBool -> IO ()
-train obj on = [C.throwBlock| void {
+train obj on =
+  [C.throwBlock| void {
     $(torch::jit::script::Module* obj)->train(
       $(bool on)
     );
   }|]
 
 runMethod :: Ptr Module -> Ptr StdString -> Ptr (C10List IValue) -> IO (Ptr IValue)
-runMethod obj method_name args = [C.throwBlock| at::IValue* {
+runMethod obj method_name args =
+  [C.throwBlock| at::IValue* {
     return new at::IValue($(torch::jit::script::Module* obj)->run_method(
       *$(std::string* method_name)
     , *$(c10::List<at::IValue>* args)
@@ -91,7 +98,8 @@ runMethod obj method_name args = [C.throwBlock| at::IValue* {
   }|]
 
 runMethod1 :: Ptr Module -> Ptr StdString -> Ptr IValue -> IO (Ptr IValue)
-runMethod1 obj method_name args = [C.throwBlock| at::IValue* {
+runMethod1 obj method_name args =
+  [C.throwBlock| at::IValue* {
     return new at::IValue($(torch::jit::script::Module* obj)->run_method(
       *$(std::string* method_name)
     , *$(at::IValue* args)
@@ -99,7 +107,8 @@ runMethod1 obj method_name args = [C.throwBlock| at::IValue* {
   }|]
 
 getParameters :: Ptr Module -> IO (Ptr TensorList)
-getParameters obj = [C.throwBlock| std::vector<at::Tensor>* {
+getParameters obj =
+  [C.throwBlock| std::vector<at::Tensor>* {
     std::vector<at::Tensor>* vec_parameters = new std::vector<at::Tensor>();
     auto parameters = $(torch::jit::script::Module* obj)->parameters();
     for(auto p : parameters) {
@@ -109,7 +118,8 @@ getParameters obj = [C.throwBlock| std::vector<at::Tensor>* {
   }|]
 
 setParameters :: Ptr Module -> Ptr TensorList -> IO ()
-setParameters obj params = [C.throwBlock| void {
+setParameters obj params =
+  [C.throwBlock| void {
     auto module = $(torch::jit::script::Module* obj);
     auto parameters = module->named_parameters();
     auto vec = $(std::vector<at::Tensor>* params);
@@ -120,17 +130,20 @@ setParameters obj params = [C.throwBlock| void {
   }|]
 
 toDevice :: Ptr Module -> DeviceType -> Int16 -> IO ()
-toDevice obj device device_index = [C.throwBlock| void {
+toDevice obj device device_index =
+  [C.throwBlock| void {
     $(torch::jit::script::Module* obj)->to(torch::Device($(at::DeviceType device), $(int16_t device_index)));
   }|]
 
 clone :: Ptr Module -> IO (Ptr Module)
-clone obj = [C.throwBlock| torch::jit::script::Module* {
+clone obj =
+  [C.throwBlock| torch::jit::script::Module* {
     return new torch::jit::script::Module($(torch::jit::script::Module* obj)->clone());
   }|]
 
 define :: Ptr Module -> Ptr StdString -> IO ()
-define obj src = [C.throwBlock| void {
+define obj src =
+  [C.throwBlock| void {
     $(torch::jit::script::Module* obj)->define(
       *$(std::string* src)
     );
@@ -195,17 +208,18 @@ traceAsGraph func inputs =
 
 withJitGraph :: Ptr (SharedPtr JitGraph) -> (Ptr JitGraph -> IO a) -> IO a
 withJitGraph graph callback = do
-  v <- [C.throwBlock| torch::jit::Graph* {
+  v <-
+    [C.throwBlock| torch::jit::Graph* {
          return (*$(std::shared_ptr<torch::jit::Graph>* graph)).get();
        }|]
   callback v
 
-graphOutputs :: Ptr JitGraph -> IO [Ptr (JitValue)]
+graphOutputs :: Ptr JitGraph -> IO [Ptr JitValue]
 graphOutputs graph = do
   nodes <- newIORef []
   let func v = do
-        r <- readIORef nodes
-        writeIORef nodes (v:r)
+        r <- readIORef nodes -- TODO: Combine with -:242:9 & -:263:9
+        writeIORef nodes (v : r)
         return v
   bracket
     (callbackHelper $ \inputs' -> castPtr <$> func (castPtr inputs'))
@@ -221,12 +235,12 @@ graphOutputs graph = do
       }|]
   reverse <$> readIORef nodes
 
-graphInputs :: Ptr JitGraph -> IO [Ptr (JitValue)]
+graphInputs :: Ptr JitGraph -> IO [Ptr JitValue]
 graphInputs graph = do
   nodes <- newIORef []
   let func v = do
         r <- readIORef nodes
-        writeIORef nodes (v:r)
+        writeIORef nodes (v : r)
         return v
   bracket
     (callbackHelper $ \inputs' -> castPtr <$> func (castPtr inputs'))
@@ -242,12 +256,12 @@ graphInputs graph = do
       }|]
   reverse <$> readIORef nodes
 
-graphNodes :: Ptr JitGraph -> IO [Ptr (JitNode)]
+graphNodes :: Ptr JitGraph -> IO [Ptr JitNode]
 graphNodes graph = do
   nodes <- newIORef []
   let func v = do
         r <- readIORef nodes
-        writeIORef nodes (v:r)
+        writeIORef nodes (v : r)
         return v
   bracket
     (callbackHelper $ \inputs' -> castPtr <$> func (castPtr inputs'))
@@ -263,12 +277,12 @@ graphNodes graph = do
       }|]
   reverse <$> readIORef nodes
 
-nodeInputs :: Ptr JitNode -> IO [Ptr (JitValue)]
+nodeInputs :: Ptr JitNode -> IO [Ptr JitValue]
 nodeInputs node = do
   values <- newIORef []
   let func v = do
-        r <- readIORef values
-        writeIORef values (v:r)
+        r <- readIORef values -- TODO: Combine with -:305:9
+        writeIORef values (v : r)
         return v
   bracket
     (callbackHelper $ \inputs' -> castPtr <$> func (castPtr inputs'))
@@ -284,12 +298,12 @@ nodeInputs node = do
       }|]
   reverse <$> readIORef values
 
-nodeOutputs :: Ptr JitNode -> IO [Ptr (JitValue)]
+nodeOutputs :: Ptr JitNode -> IO [Ptr JitValue]
 nodeOutputs node = do
   values <- newIORef []
   let func v = do
         r <- readIORef values
-        writeIORef values (v:r)
+        writeIORef values (v : r)
         return v
   bracket
     (callbackHelper $ \inputs' -> castPtr <$> func (castPtr inputs'))
@@ -323,7 +337,6 @@ valueType node =
     return new std::string((*$(torch::jit::Value* node)).type()->str());
   }|]
 
-
 printGraph :: Ptr (SharedPtr JitGraph) -> IO (Ptr StdString)
 printGraph graph =
   [C.throwBlock| std::string* {
@@ -341,13 +354,13 @@ printOnnx graph =
     return new std::string(graph_str);
   }|]
 
-dumpToStr
-  :: Ptr Module
-  -> CBool
-  -> CBool
-  -> CBool
-  -> CInt
-  -> IO (Ptr StdString)
+dumpToStr ::
+  Ptr Module ->
+  CBool ->
+  CBool ->
+  CBool ->
+  CInt ->
+  IO (Ptr StdString)
 dumpToStr obj print_method_bodies print_attr_values print_param_values level =
   [C.throwBlock| std::string* {
     return new std::string($(torch::jit::script::Module* obj)->dump_to_str(

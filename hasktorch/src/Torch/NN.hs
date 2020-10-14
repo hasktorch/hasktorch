@@ -6,15 +6,11 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Torch.NN where
@@ -481,7 +477,7 @@ instance Parameterized [Linear]
 linear :: Linear -> Tensor -> Tensor
 linear layer input = linear' input w b
   where
-    linear' input weight bias = unsafePerformIO $ (cast3 ATen.linear_ttt) input weight bias
+    linear' input weight bias = unsafePerformIO $ cast3 ATen.linear_ttt input weight bias
     w = toDependent (weight layer)
     b = toDependent (bias layer)
 
@@ -518,7 +514,6 @@ instance Randomizable LinearSpec Linear where
         =<< pure
           ( subScalar bound $ mulScalar (bound * 2.0) init
           )
-
     return $ Linear w b
 
 --
@@ -539,9 +534,18 @@ data Conv2d = Conv2d
   }
   deriving (Show, Generic, Parameterized)
 
-conv2dForward :: Conv2d -> (Int, Int) -> (Int, Int) -> Tensor -> Tensor
-conv2dForward layer stride padding input =
-  Torch.Functional.conv2d' w b stride padding input
+conv2dForward ::
+  -- | layer
+  Conv2d ->
+  -- | stride
+  (Int, Int) ->
+  -- | padding
+  (Int, Int) ->
+  -- | input
+  Tensor ->
+  -- | output
+  Tensor
+conv2dForward layer = Torch.Functional.conv2d' w b
   where
     w = toDependent (conv2dWeight layer)
     b = toDependent (conv2dBias layer)
@@ -578,5 +582,4 @@ instance Randomizable Conv2dSpec Conv2d where
         =<< pure
           ( subScalar bound $ mulScalar (bound * 2.0) init
           )
-
     return $ Conv2d w b

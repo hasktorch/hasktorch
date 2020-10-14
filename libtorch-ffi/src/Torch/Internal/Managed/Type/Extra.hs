@@ -66,3 +66,8 @@ tensor_assign2_t
   -> IO ()
 tensor_assign2_t = cast4 Unmanaged.tensor_assign2_t
 
+tensor_names
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr DimnameList)
+tensor_names = cast1 Unmanaged.tensor_names
+

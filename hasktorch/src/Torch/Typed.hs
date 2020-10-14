@@ -23,8 +23,8 @@ module Torch.Typed
   )
 where
 
-import Torch.Data
 import Torch.DType (DType (..))
+import Torch.Data
 import Torch.Device (Device (..), DeviceType (..))
 import Torch.Functional (Reduction (..), Tri (..))
 import Torch.HList
