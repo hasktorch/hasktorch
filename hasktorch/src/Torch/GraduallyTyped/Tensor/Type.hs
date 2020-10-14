@@ -35,7 +35,7 @@ import Torch.GraduallyTyped.Layout (KnownLayout (..), Layout (..), LayoutType (.
 import Torch.GraduallyTyped.Prelude (ifM, (&&^))
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape (Dim (..), KnownShape (..), Shape (..))
-import Torch.HList (HList (..))
+import Torch.HList (HList (..), pattern (:.))
 import Torch.Internal.Cast (cast0, cast1, cast2)
 import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Managed.Type.Context as ATen
@@ -95,9 +95,25 @@ instance
     tensorList <- mapM (\(x :: ForeignPtr ATen.Tensor) -> uncast x return) ptrList
     f tensorList
 
-instance Castable (HList tensors) [ForeignPtr ATen.Tensor] where
-  cast xs f = undefined
-  uncast xs f = undefined
+instance Castable (HList '[]) [ForeignPtr ATen.Tensor] where
+  cast HNil f = f []
+  uncast [] f = f HNil
+  uncast (_ : _) _ = error "The list of tensors has more elements than expected. This means that the runtime length of the list did not match its compile-time length."
+
+instance
+  ( Castable (HList tensors) [ForeignPtr ATen.Tensor]
+  ) =>
+  Castable (HList (Tensor requiresGradient layout device dataType shape ': tensors)) [ForeignPtr ATen.Tensor]
+  where
+  cast (tensor :. tensors) f = do
+    ptr <- cast tensor pure
+    ptrList <- cast tensors pure
+    f (ptr : ptrList)
+  uncast [] _ = error "The list of tensors ended prematurely. This means that the runtime length of the list did not match its compile-time length."
+  uncast (ptr : ptrList) f = do
+    tensor <- uncast ptr pure
+    tensors <- uncast ptrList pure
+    f (tensor :. tensors)
 
 instance
   Castable (HList l) [ForeignPtr ATen.Tensor] =>
@@ -686,7 +702,7 @@ shape tensor =
         (return $ SizedDim <$> sizes)
     Shape shape ->
       unsafePerformIO $
-        snd <$> foldM step' mempty shape
+        reverse . snd <$> foldM step' mempty shape
       where
         inc = (<>) (Sum 1)
         step' (s, as) a = (\a' -> (inc s, a' : as)) <$> step s a

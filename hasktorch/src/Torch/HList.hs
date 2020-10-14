@@ -36,6 +36,7 @@ data instance HList '[] = HNil
 
 newtype instance HList (x ': xs) = HCons (x, HList xs)
 
+pattern (:.) :: forall x (xs :: [Type]). x -> HList xs -> HList (x : xs)
 pattern (:.) x xs = HCons (x, xs)
 
 infixr 2 :.

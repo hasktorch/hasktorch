@@ -399,7 +399,7 @@ type family ReplaceDimByIndexImplF (index :: Nat) (dims :: [Dim Symbol Nat]) (di
   ReplaceDimByIndexImplF _ _ _ = Nothing
 
 namedDims :: forall m name size. MonadPlus m => [Dim name size] -> m [name]
-namedDims = foldM step mempty
+namedDims dims = reverse <$> foldM step mempty dims
   where
     step _ AnyDim = mzero
     step acc (NamedDim name) = pure $ name : acc
@@ -407,7 +407,7 @@ namedDims = foldM step mempty
     step acc (NamedSizedDim name _) = pure $ name : acc
 
 sizedDims :: forall m name size. MonadPlus m => [Dim name size] -> m [size]
-sizedDims = foldM step mempty
+sizedDims dims = reverse <$> foldM step mempty dims
   where
     step _ AnyDim = mzero
     step _ (NamedDim _) = mzero
