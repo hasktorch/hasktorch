@@ -67,29 +67,38 @@ class GHasForward (model :: Type -> Type) (input :: Type -> Type) where
   type GOutput model input :: Type
   gForward :: forall a b c. model a -> input b -> Rep (GOutput model input) c
 
--- instance GHasForward U1 U1 where
--- type GOutput U1 U1 = U1 ()
--- gForward U1 U1 = U1 -- TODO: what to put here?
+instance GHasForward U1 U1 where
+  type GOutput U1 U1 = ()
+  gForward U1 U1 = from ()
 
 instance
-  ( '(modelARandomness, outputA) ~ ModelRandomnessR (GOutput rmodelA rinputA),
-    '(modelBRandomness, outputB) ~ ModelRandomnessR (GOutput rmodelB rinputB),
-    HasForwardProduct modelARandomness (rmodelA ()) (rinputA ()) outputA modelBRandomness (rmodelB ()) (rinputB ()) outputB
+  ( '(modelARandomness, outputA) ~ ModelRandomnessR (GOutput modelA inputA),
+    '(modelBRandomness, outputB) ~ ModelRandomnessR (GOutput modelB inputB),
+    GHasForwardProduct modelARandomness modelA inputA outputA modelBRandomness modelB inputB outputB
   ) =>
-  GHasForward (rmodelA :*: rmodelB) (rinputA :*: rinputB)
+  GHasForward (modelA :*: modelB) (inputA :*: inputB)
   where
   type
-    GOutput (rmodelA :*: rmodelB) (rinputA :*: rinputB) =
-      OutputProduct
-        (Fst (ModelRandomnessR (GOutput rmodelA rinputA)))
-        (rmodelA ())
-        (rinputA ())
-        (Snd (ModelRandomnessR (GOutput rmodelA rinputA)))
-        (Fst (ModelRandomnessR (GOutput rmodelB rinputB)))
-        (rmodelB ())
-        (rinputB ())
-        (Snd (ModelRandomnessR (GOutput rmodelB rinputB)))
-  gForward (modelA :*: modelB) (inputA :*: inputB) = undefined
+    GOutput (modelA :*: modelB) (inputA :*: inputB) =
+      GOutputProduct
+        (Fst (ModelRandomnessR (GOutput modelA inputA)))
+        modelA
+        inputA
+        (Snd (ModelRandomnessR (GOutput modelA inputA)))
+        (Fst (ModelRandomnessR (GOutput modelB inputB)))
+        modelB
+        inputB
+        (Snd (ModelRandomnessR (GOutput modelB inputB)))
+  gForward (modelA :*: modelB) (inputA :*: inputB) =
+    gForwardProduct
+      (Proxy :: Proxy (Fst (ModelRandomnessR (GOutput modelA inputA))))
+      modelA
+      inputA
+      (Proxy :: Proxy (Snd (ModelRandomnessR (GOutput modelA inputA))))
+      (Proxy :: Proxy (Fst (ModelRandomnessR (GOutput modelB inputB))))
+      modelB
+      inputB
+      (Proxy :: Proxy (Snd (ModelRandomnessR (GOutput modelB inputB))))
 
 data ModelRandomness = Deterministic | Stochastic
 
@@ -139,6 +148,29 @@ class
     OutputProduct modelARandomness modelA inputA outputA modelBRandomness modelB inputB outputB
 
 class
+  GHasForwardProduct
+    (modelARandomness :: ModelRandomness)
+    (modelA :: Type -> Type)
+    (inputA :: Type -> Type)
+    outputA
+    (modelBRandomness :: ModelRandomness)
+    (modelB :: Type -> Type)
+    (inputB :: Type -> Type)
+    outputB
+  where
+  type GOutputProduct modelARandomness modelA inputA outputA modelBRandomness modelB inputB outputB :: Type
+  gForwardProduct :: forall a b c d e.
+    Proxy modelARandomness ->
+    modelA a ->
+    inputA b ->
+    Proxy outputA ->
+    Proxy modelBRandomness ->
+    modelB c ->
+    inputB d ->
+    Proxy outputB ->
+    Rep (GOutputProduct modelARandomness modelA inputA outputA modelBRandomness modelB inputB outputB) e
+
+class
   HasForwardSum
     (modelARandomness :: ModelRandomness)
     modelA
@@ -172,6 +204,19 @@ instance
   where
   type OutputProduct 'Deterministic modelA inputA outputA 'Deterministic modelB inputB outputB = (outputA, outputB)
   forwardProduct _ modelA inputA _ _ modelB inputB _ = (forward modelA inputA, forward modelB inputB)
+
+instance
+  ( GHasForward modelA inputA,
+    GOutput modelA inputA ~ outputA,
+    GHasForward modelB inputB,
+    GOutput modelB inputB ~ outputB,
+    Generic outputA,
+    Generic outputB
+  ) =>
+  GHasForwardProduct 'Deterministic modelA inputA outputA 'Deterministic modelB inputB outputB
+  where
+  type GOutputProduct 'Deterministic modelA inputA outputA 'Deterministic modelB inputB outputB = (outputA, outputB)
+  gForwardProduct _ modelA inputA _ _ modelB inputB _ = from (to $ gForward modelA inputA, to $ gForward modelB inputB)
 
 instance
   ( HasForward modelA inputA,
