@@ -42,21 +42,21 @@ import Type.Errors.Pretty (type (%), type (<>))
 
 -- | Data type to represent a tensor dimension.
 data DimType (name :: Type) (size :: Type) where
+  -- | Dimension name is known and dimension size is unknown.
   Named ::
     forall name size.
     name ->
-    -- | Dimension name is known and dimension size is unknown.
     DimType name size
+  -- | Dimension name is unknown and dimension size is known.
   Sized ::
     forall name size.
     size ->
-    -- | Dimension name is unknown and dimension size is known.
     DimType name size
+  -- | Both dimension name and dimension size are known.
   NamedSized ::
     forall name size.
     name ->
     size ->
-    -- | Both dimension name and dimension size are known.
     DimType name size
   deriving (Show)
 
@@ -362,21 +362,21 @@ type family UnifyDimsF (dims :: [Dim (DimType Symbol Nat)]) (dims' :: [Dim (DimT
 -- returns the first dimension matching 'selectDim'
 -- or 'Nothing' if nothing can be found.
 --
--- >>> :kind! GetDimImplF 'UncheckedSelectDim ('Shape '[ 'Dim ( 'Named "batch"), 'Dim ( 'NamedSized "feature" 20), 'UncheckedDim])
--- GetDimImplF 'UncheckedSelectDim ('Shape '[ 'Dim ( 'Named "batch"), 'Dim ( 'NamedSized "feature" 20), 'UncheckedDim]) :: Maybe
---                                                                                                                           (Dim
---                                                                                                                              (DimType
---                                                                                                                                 Symbol
---                                                                                                                                 Nat)
--- = 'Just ('Dim ( 'Named "batch"))
+-- >>> :kind! GetDimImplF 'UncheckedSelectDim ('Shape '[ 'Dim ('Named "batch"), 'Dim ('NamedSized "feature" 20), 'UncheckedDim])
+-- GetDimImplF 'UncheckedSelectDim ('Shape '[ 'Dim ('Named "batch"), 'Dim ('NamedSized "feature" 20), 'UncheckedDim]) :: Maybe
+--                                                                                                                         (Dim
+--                                                                                                                            (DimType
+--                                                                                                                               Symbol
+--                                                                                                                               Nat))
+-- = 'Just ('Dim ('Named "batch"))
 --
--- >>> :kind! GetDimImplF ('SelectDim ( 'ByName "feature")) ('Shape '[ 'Dim ( 'Named "batch"), 'Dim ( 'NamedSized "feature" 20), 'UncheckedDim])
--- GetDimImplF ('SelectDim ( 'ByName "feature")) ('Shape '[ 'Dim ( 'Named "batch"), 'Dim ( 'NamedSized "feature" 20), 'UncheckedDim]) :: Maybe
---                                                                                                                                         (Dim
---                                                                                                                                            (DimType
---                                                                                                                                               Symbol
---                                                                                                                                               Nat)
--- = 'Just ('Dim ( 'NamedSized "feature" 20))
+-- >>> :kind! GetDimImplF ('SelectDim ('ByName "feature")) ('Shape '[ 'Dim ('Named "batch"), 'Dim ('NamedSized "feature" 20), 'UncheckedDim])
+-- GetDimImplF ('SelectDim ('ByName "feature")) ('Shape '[ 'Dim ('Named "batch"), 'Dim ('NamedSized "feature" 20), 'UncheckedDim]) :: Maybe
+--                                                                                                                                      (Dim
+--                                                                                                                                         (DimType
+--                                                                                                                                            Symbol
+--                                                                                                                                            Nat))
+-- = 'Just ('Dim ('NamedSized "feature" 20))
 type family GetDimImplF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape [Dim (DimType Symbol Nat)]) :: Maybe (Dim (DimType Symbol Nat)) where
   GetDimImplF 'UncheckedSelectDim 'UncheckedShape = 'Nothing
   GetDimImplF 'UncheckedSelectDim ( 'Shape '[]) = 'Nothing
@@ -420,21 +420,21 @@ type GetDimF selectDim shape = GetDimCheckF selectDim shape (GetDimImplF selectD
 -- returns a list of dimensions where the first dimension matching 'selectDim' is replaced
 -- or 'Nothing' if nothing can be found.
 --
--- >>> :kind! ReplaceDimImplF 'UncheckedSelectDim ('Shape '[ 'Dim ( 'Named "batch"), 'Dim ( 'NamedSized "feature" 20), 'UncheckedDim]) 'UncheckedDim
--- ReplaceDimImplF 'UncheckedSelectDim ('Shape '[ 'Dim ( 'Named "batch"), 'Dim ( 'NamedSized "feature" 20), 'UncheckedDim]) 'UncheckedDim :: Maybe
---                                                                                                                                             (Dim
---                                                                                                                                                (DimType
---                                                                                                                                                   Symbol
---                                                                                                                                                   Nat)
--- = 'Just '[ 'UncheckedDim, 'Dim ( 'NamedSized "feature" 20), 'UncheckedDim]
+-- >>> :kind! ReplaceDimImplF 'UncheckedSelectDim ('Shape '[ 'Dim ('Named "batch"), 'Dim ('NamedSized "feature" 20), 'UncheckedDim]) 'UncheckedDim
+-- ReplaceDimImplF 'UncheckedSelectDim ('Shape '[ 'Dim ('Named "batch"), 'Dim ('NamedSized "feature" 20), 'UncheckedDim]) 'UncheckedDim :: Maybe
+--                                                                                                                                           (Dim
+--                                                                                                                                              (DimType
+--                                                                                                                                                 Symbol
+--                                                                                                                                                 Nat))
+-- = 'Just '[ 'UncheckedDim, 'Dim ('NamedSized "feature" 20), 'UncheckedDim]
 --
--- >>> :kind! ReplaceDimImplF ('SelectDim ( 'ByName "feature")) ('Shape '[ 'Dim ( 'Named "batch"), 'Dim ( 'NamedSized "feature" 20), 'UncheckedDim]) ('SizedDim 10)
--- ReplaceDimImplF ('SelectDim ( 'ByName "feature")) ('Shape '[ 'Dim ( 'Named "batch"), 'Dim ( 'NamedSized "feature" 20), 'UncheckedDim]) ('SizedDim 10) :: Maybe
---                                                                                                                                                            (Dim
---                                                                                                                                                               (DimType
---                                                                                                                                                                  Symbol
---                                                                                                                                                                  Nat)
--- = 'Just '[ 'Dim ( 'Named "batch"), 'SizedDim 10, 'UncheckedDim]
+-- >>> :kind! ReplaceDimImplF ('SelectDim ('ByName "feature")) ('Shape '[ 'Dim ('Named "batch"), 'Dim ('NamedSized "feature" 20), 'UncheckedDim]) ('Dim ('Sized 10))
+-- ReplaceDimImplF ('SelectDim ('ByName "feature")) ('Shape '[ 'Dim ('Named "batch"), 'Dim ('NamedSized "feature" 20), 'UncheckedDim]) ('Dim ('Sized 10)) :: Maybe
+--                                                                                                                                                             (Dim
+--                                                                                                                                                                (DimType
+--                                                                                                                                                                   Symbol
+--                                                                                                                                                                   Nat))
+-- = 'Just '[ 'Dim ('Named "batch"), 'Dim ('Sized 10), 'UncheckedDim]
 type family ReplaceDimImplF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape [Dim (DimType Symbol Nat)]) (dim :: Dim (DimType Symbol Nat)) :: Maybe [Dim (DimType Symbol Nat)] where
   ReplaceDimImplF 'UncheckedSelectDim 'UncheckedShape _ = 'Nothing
   ReplaceDimImplF 'UncheckedSelectDim ( 'Shape '[]) _ = 'Nothing
@@ -474,13 +474,13 @@ type ReplaceDimF selectDim shape dim = ReplaceDimCheckF selectDim shape dim (Rep
 -- returns a new list of dimensions where the dimension in the position 'index' is replaced
 -- or 'Nothing' if 'index' is out of bounds.
 --
--- >>> :kind! ReplaceDimIndexImplF 1 '[ 'Dim ( 'Named "batch"), 'Dim ( 'NamedSized "feature" 20), 'UncheckedDim] ('SizedDim 10)
--- ReplaceDimIndexImplF 1 '[ 'Dim ( 'Named "batch"), 'Dim ( 'NamedSized "feature" 20), 'UncheckedDim] ('SizedDim 10) :: Maybe
---                                                                                                                        (Dim
---                                                                                                                           (DimType
---                                                                                                                              Symbol
---                                                                                                                              Nat)
--- = 'Just '[ 'Dim ( 'Named "batch"), 'SizedDim 10, 'UncheckedDim]
+-- >>> :kind! ReplaceDimIndexImplF 1 '[ 'Dim ('Named "batch"), 'Dim ('NamedSized "feature" 20), 'UncheckedDim] ('SizedDim 10)
+-- ReplaceDimIndexImplF 1 '[ 'Dim ('Named "batch"), 'Dim ('NamedSized "feature" 20), 'UncheckedDim] ('SizedDim 10) :: Maybe
+--                                                                                                                      (Dim
+--                                                                                                                         (DimType
+--                                                                                                                            Symbol
+--                                                                                                                            Nat))
+-- = 'Just '[ 'Dim ('Named "batch"), 'SizedDim 10, 'UncheckedDim]
 type family ReplaceDimIndexImplF (index :: Nat) (dims :: [Dim (DimType Symbol Nat)]) (dim :: Dim (DimType Symbol Nat)) :: Maybe [Dim (DimType Symbol Nat)] where
   ReplaceDimIndexImplF 0 (_ ': t) dim = Just (dim ': t)
   ReplaceDimIndexImplF index (h ': t) dim = PrependMaybe ( 'Just h) (ReplaceDimIndexImplF (index - 1) t dim)

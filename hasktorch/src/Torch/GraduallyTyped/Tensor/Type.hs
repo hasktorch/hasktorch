@@ -766,8 +766,7 @@ shape tensor =
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
---        ('Shape
---           '[ 'UncheckedDim, 'Dim ('NamedSized "feature" 8)])
+--        ('Shape '[ 'UncheckedDim, 'Dim ('NamedSized "feature" 8)])
 uncheckedDim ::
   forall selectDim requiresGradient layout device dataType shape shape'.
   (shape' ~ ReplaceDimF selectDim shape 'UncheckedDim) =>
@@ -893,7 +892,7 @@ checkedShape tensor
 -- >>> t' = unsafeCheckedShape @('Shape '[ 'Dim ('NamedSized "batch" 32), 'Dim ('Sized 8)]) t
 -- *** Exception: The tensor does not have the shape "Shape [Dim (NamedSized "batch" 32),Dim (Sized 8)]".
 -- CallStack (from HasCallStack):
---   error, called at /root/hasktorch/hasktorch/src/Torch/GraduallyTyped/Tensor/Type.hs:906:15 in main:Torch.GraduallyTyped.Tensor.Type
+--   error, called at /root/hasktorch/hasktorch/src/Torch/GraduallyTyped/Tensor/Type.hs:905:15 in main:Torch.GraduallyTyped.Tensor.Type
 unsafeCheckedShape ::
   forall (shape :: Shape [Dim (DimType Symbol Nat)]) requiresGradient layout device dataType.
   KnownShape (Dim (DimType Symbol Nat)) shape =>
