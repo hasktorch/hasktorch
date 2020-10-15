@@ -24,7 +24,7 @@ data LayoutType
     Dense
   | -- | The memory layout of the tensor is sparse.
     Sparse
-  deriving (Show)
+  deriving (Show, Eq)
 
 instance Castable LayoutType ATen.Layout where
   cast Dense f = f ATen.kStrided

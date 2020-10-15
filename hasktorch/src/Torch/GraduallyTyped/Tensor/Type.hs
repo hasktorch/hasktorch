@@ -274,8 +274,9 @@ checkLayout ::
 checkLayout tensor =
   case layoutVal @layout of
     UncheckedLayout -> True
-    Layout Sparse -> undefined
-    Layout Dense -> undefined
+    Layout layoutType ->
+      unsafePerformIO $
+        ((==) layoutType) <$> cast1 ATen.tensor_layout tensor
 
 -- | Checks whether or not the input tensor has the memory layout 'layout'
 -- and returns a statically annotated copy of it wrapped in a 'MonadFail' 'm'.
@@ -479,7 +480,7 @@ checkedDevice tensor
 -- >>> t' = unsafeCheckedDevice @('Device ('CUDA 0)) t
 -- *** Exception: The tensor is not in the memory of the device "Device (CUDA 0)".
 -- CallStack (from HasCallStack):
---   error, called at /root/hasktorch/hasktorch/src/Torch/GraduallyTyped/Tensor/Type.hs:492:15 in main:Torch.GraduallyTyped.Tensor.Type
+--   error, called at /root/hasktorch/hasktorch/src/Torch/GraduallyTyped/Tensor/Type.hs:493:15 in main:Torch.GraduallyTyped.Tensor.Type
 unsafeCheckedDevice ::
   forall (device :: Device (DeviceType Nat)) requiresGradient layout dataType shape.
   KnownDevice device =>
@@ -694,7 +695,7 @@ checkedDataType tensor
 -- >>> t' = unsafeCheckedDataType @('DataType 'Double) t
 -- *** Exception: The tensor does not have the data type "DataType Double".
 -- CallStack (from HasCallStack):
---   error, called at /root/hasktorch/hasktorch/src/Torch/GraduallyTyped/Tensor/Type.hs:707:15 in main:Torch.GraduallyTyped.Tensor.Type
+--   error, called at /root/hasktorch/hasktorch/src/Torch/GraduallyTyped/Tensor/Type.hs:708:15 in main:Torch.GraduallyTyped.Tensor.Type
 unsafeCheckedDataType ::
   forall (dataType :: DataType DType) requiresGradient layout device shape.
   KnownDataType dataType =>
@@ -892,7 +893,7 @@ checkedShape tensor
 -- >>> t' = unsafeCheckedShape @('Shape '[ 'Dim ('NamedSized "batch" 32), 'Dim ('Sized 8)]) t
 -- *** Exception: The tensor does not have the shape "Shape [Dim (NamedSized "batch" 32),Dim (Sized 8)]".
 -- CallStack (from HasCallStack):
---   error, called at /root/hasktorch/hasktorch/src/Torch/GraduallyTyped/Tensor/Type.hs:905:15 in main:Torch.GraduallyTyped.Tensor.Type
+--   error, called at /root/hasktorch/hasktorch/src/Torch/GraduallyTyped/Tensor/Type.hs:906:15 in main:Torch.GraduallyTyped.Tensor.Type
 unsafeCheckedShape ::
   forall (shape :: Shape [Dim (DimType Symbol Nat)]) requiresGradient layout device dataType.
   KnownShape (Dim (DimType Symbol Nat)) shape =>

@@ -481,7 +481,7 @@ type ReplaceDimF selectDim shape dim = ReplaceDimCheckF selectDim shape dim (Rep
 --                                                                                                                             (DimType
 --                                                                                                                                Symbol
 --                                                                                                                                Nat)]
--- = 'Just '[ 'Dim ('Named "batch"), 'SizedDim 10, 'UncheckedDim]
+-- = 'Just '[ 'Dim ('Named "batch"), 'Dim ('Sized 10), 'UncheckedDim]
 type family ReplaceDimIndexImplF (index :: Nat) (dims :: [Dim (DimType Symbol Nat)]) (dim :: Dim (DimType Symbol Nat)) :: Maybe [Dim (DimType Symbol Nat)] where
   ReplaceDimIndexImplF 0 (_ ': t) dim = Just (dim ': t)
   ReplaceDimIndexImplF index (h ': t) dim = PrependMaybe ( 'Just h) (ReplaceDimIndexImplF (index - 1) t dim)
