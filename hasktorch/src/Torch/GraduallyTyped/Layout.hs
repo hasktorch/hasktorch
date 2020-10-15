@@ -20,9 +20,9 @@ import Type.Errors.Pretty (TypeError, type (%), type (<>))
 
 -- | Data type that represents the memory layout of a tensor.
 data LayoutType
-  = -- | dense (strided) tensor
+  = -- | The memory layout of the tensor is dense (strided).
     Dense
-  | -- | sparse tensor
+  | -- | The memory layout of the tensor is sparse.
     Sparse
   deriving (Show)
 
@@ -34,8 +34,11 @@ instance Castable LayoutType ATen.Layout where
     | x == ATen.kStrided = f Dense
     | x == ATen.kSparse = f Sparse
 
+-- | Data type to represent whether or not the tensor's memory layout is checked, that is, known to the compiler.
 data Layout (layoutType :: Type) where
+  -- | The tensor's memory layout is unknown to the compiler.
   UncheckedLayout :: forall layoutType. Layout layoutType
+  -- | The tensor's memory layout is known to the compiler.
   Layout :: forall layoutType. layoutType -> Layout layoutType
   deriving (Show)
 

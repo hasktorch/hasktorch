@@ -88,8 +88,11 @@ instance
         size = natVal $ Proxy @size
      in NamedSized name size
 
+-- | Data type to represent whether or not a tensor dimension is checked, that is, known to the compiler.
 data Dim (dimType :: Type) where
+  -- | The dimension is unchecked, that is, unknown to the compiler.
   UncheckedDim :: forall dimType. Dim dimType
+  -- | The dimension is checked, that is, known to the compiler.
   Dim :: forall dimType. dimType -> Dim dimType
   deriving (Show)
 
@@ -204,6 +207,7 @@ data By (name :: Type) (index :: Type) where
     forall name index.
     index ->
     By name index
+  deriving (Show)
 
 class KnownBy (by :: By Symbol Nat) where
   byVal :: By String Integer
@@ -258,16 +262,19 @@ type IsUncheckedSelectDimF selectDim = Assert (NoUncheckedSelectDim selectDim) (
 
 -- | Data type to represent tensor shapes, that is, lists of dimensions.
 data Shape (dims :: Type) where
-  -- | A fully unknown shape.
+  -- | The shape is fully unchecked.
+  -- Neither the number of the dimensions
+  -- nor any dimension properties are known to the compiler.
   UncheckedShape ::
     forall dims.
     Shape dims
-  -- | A partially known shape.
-  -- The list of dimensions has known length, but may contain 'UncheckedDim'.
+  -- | The shape is partially known to the compiler.
+  -- The list of dimensions has a known length, but may contain 'UncheckedDim', that is, unknown dimensions.
   Shape ::
     forall dims.
     dims ->
     Shape dims
+  deriving (Show)
 
 class KnownShape k (shape :: Shape [k]) where
   type DimValF k :: Type

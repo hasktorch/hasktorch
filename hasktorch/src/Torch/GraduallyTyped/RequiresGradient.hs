@@ -8,10 +8,11 @@ module Torch.GraduallyTyped.RequiresGradient where
 
 import Type.Errors.Pretty (ToErrorMessage, TypeError)
 
+-- | Data type to represent whether or not the tensor requires gradient computation.
 data RequiresGradient
-  = -- | The tensor requires gradients.
+  = -- | The tensor requires gradients. We say the tensor is independent and thus a leaf in the computation graph.
     Independent
-  | -- | The tensor does not require gradients.
+  | -- | The tensor does not require gradients. We say the tensor is dependent.
     Dependent
   deriving (Show, Eq)
 

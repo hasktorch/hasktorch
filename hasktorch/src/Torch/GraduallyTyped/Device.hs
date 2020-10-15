@@ -32,13 +32,19 @@ import GHC.TypeLits
 import qualified Torch.Internal.Managed.Cast as ATen ()
 import Type.Errors.Pretty (TypeError, type (%), type (<>))
 
+-- | Data type to represent compute devices.
 data DeviceType (deviceId :: Type) where
+  -- | The tensor is stored in the CPU's memory.
   CPU :: forall deviceId. DeviceType deviceId
+  -- | The tensor is stored the memory of the GPU with ID 'deviceId'.
   CUDA :: forall deviceId. deviceId -> DeviceType deviceId
   deriving (Show)
 
+-- | Data type to represent whether or not the compute device is checked, that is, known to the compiler.
 data Device (deviceType :: Type) where
+  -- | The compute device is unknown to the compiler.
   UncheckedDevice :: forall deviceType. Device deviceType
+  -- | The compute device is known to the compiler.
   Device :: forall deviceType. deviceType -> Device deviceType
   deriving (Show)
 
