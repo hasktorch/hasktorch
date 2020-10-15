@@ -46,9 +46,9 @@ import qualified Torch.Internal.Managed.TensorFactories as ATen
 -- >>> :type ones @'Dependent @('Layout 'Dense) @'UncheckedDevice @'UncheckedDataType @'UncheckedShape
 -- ones @'Dependent @('Layout 'Dense) @'UncheckedDevice @'UncheckedDataType @'UncheckedShape
 --   :: MonadFail m =>
---      DeviceType GHC.Int.Int16
+--      DeviceType Int16
 --      -> DType
---      -> [Dim String Integer]
+--      -> [DimType String Integer]
 --      -> m (Tensor
 --              'Dependent ('Layout 'Dense) 'UncheckedDevice 'UncheckedDataType 'UncheckedShape)
 --
@@ -56,7 +56,7 @@ import qualified Torch.Internal.Managed.TensorFactories as ATen
 -- ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @'UncheckedDataType @'UncheckedShape
 --   :: MonadFail m =>
 --      DType
---      -> [Dim String Integer]
+--      -> [DimType String Integer]
 --      -> m (Tensor
 --              'Dependent
 --              ('Layout 'Dense)
@@ -67,7 +67,7 @@ import qualified Torch.Internal.Managed.TensorFactories as ATen
 -- >>> :type ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @'UncheckedShape
 -- ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @'UncheckedShape
 --   :: MonadFail m =>
---      [Dim String Integer]
+--      [DimType String Integer]
 --      -> m (Tensor
 --              'Dependent
 --              ('Layout 'Dense)
