@@ -35,7 +35,7 @@ import qualified Torch.Internal.Managed.TensorFactories as ATen
 --      LayoutType
 --      -> DeviceType Int16
 --      -> DType
---      -> [Dim String Integer]
+--      -> [DimType String Integer]
 --      -> m (Tensor
 --              'Dependent
 --              'UncheckedLayout

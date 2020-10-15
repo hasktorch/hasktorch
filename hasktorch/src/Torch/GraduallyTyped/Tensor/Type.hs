@@ -210,10 +210,10 @@ toSparse = unsafePerformIO . cast1 ATen.tensor_to_sparse
 
 -- Returns the memory layout of the input tensor.
 --
--- >>> t <- ones @'Dependent @('Layout 'Sparse) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
+-- >>> t <- ones @'Dependent @('Layout 'Sparse) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('NamedSized "batch" 32), 'Dim ('NamedSized "feature" 8)])
 -- >>> layout t
 -- Sparse
--- >>> t <- ones @'Dependent @'UncheckedLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)]) (Layout Sparse)
+-- >>> t <- ones @'Dependent @'UncheckedLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('NamedSized "batch" 32), 'Dim ('NamedSized "feature" 8)]) (Layout Sparse)
 -- >>> layout t
 -- Sparse
 layout ::
@@ -243,7 +243,7 @@ layout tensor =
 --        'UncheckedLayout
 --        ('Device 'CPU)
 --        ('DataType 'Float)
---        ('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
+--        ('Shape '[ 'Dim ('NamedSized "batch" 32), 'Dim ('NamedSized "feature" 8)])
 uncheckedLayout ::
   forall requiresGradient layout device dataType shape.
   -- | input tensor
@@ -291,7 +291,7 @@ checkLayout tensor =
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
---        ('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
+--        ('Shape '[ 'Dim ('NamedSized "batch" 32), 'Dim ('NamedSized "feature" 8)])
 -- >>> t' <- checkedLayout @('Layout 'Sparse) t
 -- *** Exception: user error (The tensor does not have the memory layout "Layout Sparse".)
 checkedLayout ::
@@ -317,7 +317,7 @@ checkedLayout tensor
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
---        ('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
+--        ('Shape '[ 'Dim ('NamedSized "batch" 32), 'Dim ('NamedSized "feature" 8)])
 -- >>> t' = unsafeCheckedLayout @('Layout 'Sparse) t
 -- *** Exception: The tensor does not have the memory layout "Layout Sparse".
 unsafeCheckedLayout ::
@@ -392,7 +392,8 @@ device tensor =
 --        ('Layout 'Dense)
 --        'UncheckedDevice
 --        ('DataType 'Float)
---        ('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
+--        ('Shape
+--           '[ 'Dim ('NamedSized "batch" 32), 'Dim ('NamedSized "feature" 8)])
 uncheckedDevice ::
   forall requiresGradient layout device dataType shape.
   -- | input tensor
@@ -444,7 +445,8 @@ checkDevice tensor =
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
---        ('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
+--        ('Shape
+--           '[ 'Dim ('NamedSized "batch" 32), 'Dim ('NamedSized "feature" 8)])
 -- >>> t' <- checkedDevice @('Device ('CUDA 0)) t
 -- *** Exception: user error (The tensor is not in the memory of the device "Device (CUDA 0)".)
 checkedDevice ::
@@ -470,7 +472,7 @@ checkedDevice tensor
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
---        ('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
+--        ('Shape '[ 'Dim ('NamedSized "batch" 32), 'Dim ('NamedSized "feature" 8)])
 -- >>> t' = unsafeCheckedDevice @('Device ('CUDA 0)) t
 -- *** Exception: The tensor is not in the memory of the device "Device (CUDA 0)".
 -- CallStack (from HasCallStack):
@@ -609,7 +611,8 @@ dtype = dataType @dataType
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        'UncheckedDataType
---        ('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
+--        ('Shape
+--           '[ 'Dim ('NamedSized "batch" 32), 'Dim ('NamedSized "feature" 8)])
 uncheckedDataType ::
   forall requiresGradient layout device dataType shape.
   -- | input tensor
@@ -656,7 +659,8 @@ checkDataType tensor =
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
---        ('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
+--        ('Shape
+--           '[ 'Dim ('NamedSized "batch" 32), 'Dim ('NamedSized "feature" 8)])
 -- >>> t' <- checkedDataType @('DataType 'Double) t
 -- *** Exception: user error (The tensor does not have the data type "DataType Double".)
 checkedDataType ::
@@ -682,7 +686,8 @@ checkedDataType tensor
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
---        ('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
+--        ('Shape
+--           '[ 'Dim ('NamedSized "batch" 32), 'Dim ('NamedSized "feature" 8)])
 -- >>> t' = unsafeCheckedDataType @('DataType 'Double) t
 -- *** Exception: The tensor does not have the data type "DataType Double".
 -- CallStack (from HasCallStack):
@@ -758,7 +763,8 @@ shape tensor =
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
---        ('Shape '[ 'UncheckedDim, 'Dim ( 'NamedSized "feature" 8)])
+--        ('Shape
+--           '[ 'UncheckedDim, 'Dim ('NamedSized "feature" 8)])
 uncheckedDim ::
   forall selectDim requiresGradient layout device dataType shape shape'.
   (shape' ~ ReplaceDimF selectDim shape 'UncheckedDim) =>
@@ -793,9 +799,9 @@ uncheckedShape = coerce
 -- If 'shape' is 'UncheckedShape', 'True' is returned for consistency.
 --
 -- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @'UncheckedShape [Sized 32, Sized 8]
--- >>> checkShape @('Shape [ 'Dim ( 'Sized 32), 'Dim ( 'Sized 8)]) t
+-- >>> checkShape @('Shape [ 'Dim ('Sized 32), 'Dim ('Sized 8)]) t
 -- True
--- >>> checkShape @('Shape [ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'Sized 8)]) t
+-- >>> checkShape @('Shape [ 'Dim ('NamedSized "batch" 32), 'Dim ('Sized 8)]) t
 -- False
 -- >>> checkShape @'UncheckedShape t
 -- True
@@ -846,7 +852,7 @@ checkShape tensor =
 --
 -- In the REPL, 'm' will default to 'IO':
 -- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @UncheckedShape [Sized 32, Sized 8]
--- >>> t' <- checkedShape @('Shape '[ 'Dim ( 'Sized 32), 'Dim ( 'Sized 8)]) t
+-- >>> t' <- checkedShape @('Shape '[ 'Dim ('Sized 32), 'Dim ('Sized 8)]) t
 -- >>> :type t'
 -- t'
 --   :: Tensor
@@ -854,8 +860,8 @@ checkShape tensor =
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
---        ('Shape '[ 'Dim ( 'Sized 32), 'Dim ( 'Sized 8)])
--- >>> t' <- checkedShape @('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'Sized 8)]) t
+--        ('Shape '[ 'Dim ('Sized 32), 'Dim ('Sized 8)])
+-- >>> t' <- checkedShape @('Shape '[ 'Dim ('NamedSized "batch" 32), 'Dim ('Sized 8)]) t
 -- *** Exception: user error (The tensor does not have the shape "Shape [Dim (NamedSized "batch" 32),Dim (Sized 8)]".)
 checkedShape ::
   forall (shape :: Shape [Dim (DimType Symbol Nat)]) m requiresGradient layout device dataType.
@@ -872,7 +878,7 @@ checkedShape tensor
 -- If the tensor does not have the shape 'shape', then the execution is stopped and an error message is displayed.
 --
 -- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @UncheckedShape [Sized 32, Sized 8]
--- >>> t' = unsafeCheckedShape @('Shape '[ 'Dim ( 'Sized 32), 'Dim ( 'Sized 8)]) t
+-- >>> t' = unsafeCheckedShape @('Shape '[ 'Dim ('Sized 32), 'Dim ('Sized 8)]) t
 -- >>> :type t'
 -- t'
 --   :: Tensor
@@ -880,8 +886,8 @@ checkedShape tensor
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
---        ('Shape '[ 'Dim ( 'Sized 32), 'Dim ( 'Sized 8)])
--- >>> t' = unsafeCheckedShape @('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'Sized 8)]) t
+--        ('Shape '[ 'Dim ('Sized 32), 'Dim ('Sized 8)])
+-- >>> t' = unsafeCheckedShape @('Shape '[ 'Dim ('NamedSized "batch" 32), 'Dim ('Sized 8)]) t
 -- *** Exception: The tensor does not have the shape "Shape [Dim (NamedSized "batch" 32),Dim (Sized 8)]".
 -- CallStack (from HasCallStack):
 --   error, called at /root/hasktorch/hasktorch/src/Torch/GraduallyTyped/Tensor/Type.hs:455:15 in main:Torch.GraduallyTyped.Tensor.Type
