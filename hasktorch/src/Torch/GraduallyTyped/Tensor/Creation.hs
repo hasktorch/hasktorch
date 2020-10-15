@@ -87,7 +87,8 @@ import qualified Torch.Internal.Managed.TensorFactories as ATen
 --           ('Layout 'Dense)
 --           ('Device ('CUDA 0))
 --           ('DataType 'Half)
---           ('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)]))
+--           ('Shape
+--              '[ 'Dim ('NamedSized "batch" 32), 'Dim ('NamedSized "feature" 8)]))
 ones ::
   forall requiresGradient layout device dataType shape m.
   ( KnownRequiresGradient requiresGradient,

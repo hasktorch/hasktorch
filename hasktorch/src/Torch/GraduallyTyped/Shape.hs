@@ -229,9 +229,9 @@ instance
      in ByIndex index
 
 data SelectDim (by :: Type) where
-  -- Unknown method of dimension selection.
+  -- | Unknown method of dimension selection.
   UncheckedSelectDim :: forall by. SelectDim by
-  -- Known method of dimension selection, that is, either by name or by index.
+  -- | Known method of dimension selection, that is, either by name or by index.
   SelectDim :: forall by. by -> SelectDim by
 
 class KnownSelectDim (selectDim :: SelectDim (By Symbol Nat)) where
@@ -388,7 +388,7 @@ type family GetDimImplF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape
   GetDimImplF ( 'SelectDim (ByName name)) ( 'Shape (( 'Dim ( 'Named _)) ': t)) = GetDimImplF ( 'SelectDim (ByName name)) ( 'Shape t)
   GetDimImplF ( 'SelectDim (ByName name)) ( 'Shape (( 'Dim ( 'Sized _)) ': t)) = GetDimImplF ( 'SelectDim (ByName name)) ( 'Shape t)
   GetDimImplF ( 'SelectDim (ByName name)) ( 'Shape (( 'Dim ( 'NamedSized name size)) ': _)) = 'Just ( 'Dim ( 'NamedSized name size))
-  GetDimImplF ( 'SelectDim (ByName name)) ( 'Shape (( 'Dim ( 'NamedSized _ size)) ': t)) = GetDimImplF ( 'SelectDim (ByName name)) ( 'Shape t)
+  GetDimImplF ( 'SelectDim (ByName name)) ( 'Shape (( 'Dim ( 'NamedSized _ _)) ': t)) = GetDimImplF ( 'SelectDim (ByName name)) ( 'Shape t)
   GetDimImplF ( 'SelectDim (ByIndex _)) 'UncheckedShape = 'Nothing
   GetDimImplF ( 'SelectDim (ByIndex index)) ( 'Shape dims) = GetDimIndexImplF index dims
 
@@ -475,12 +475,12 @@ type ReplaceDimF selectDim shape dim = ReplaceDimCheckF selectDim shape dim (Rep
 -- returns a new list of dimensions where the dimension in the position 'index' is replaced
 -- or 'Nothing' if 'index' is out of bounds.
 --
--- >>> :kind! ReplaceDimIndexImplF 1 '[ 'Dim ('Named "batch"), 'Dim ('NamedSized "feature" 20), 'UncheckedDim] ('SizedDim 10)
--- ReplaceDimIndexImplF 1 '[ 'Dim ('Named "batch"), 'Dim ('NamedSized "feature" 20), 'UncheckedDim] ('SizedDim 10) :: Maybe
---                                                                                                                      (Dim
---                                                                                                                         (DimType
---                                                                                                                            Symbol
---                                                                                                                            Nat))
+-- >>> :kind! ReplaceDimIndexImplF 1 '[ 'Dim ('Named "batch"), 'Dim ('NamedSized "feature" 20), 'UncheckedDim] ('Dim ('Sized 10))
+-- ReplaceDimIndexImplF 1 '[ 'Dim ('Named "batch"), 'Dim ('NamedSized "feature" 20), 'UncheckedDim] ('Dim ('Sized 10)) :: Maybe
+--                                                                                                                          [Dim
+--                                                                                                                             (DimType
+--                                                                                                                                Symbol
+--                                                                                                                                Nat)]
 -- = 'Just '[ 'Dim ('Named "batch"), 'SizedDim 10, 'UncheckedDim]
 type family ReplaceDimIndexImplF (index :: Nat) (dims :: [Dim (DimType Symbol Nat)]) (dim :: Dim (DimType Symbol Nat)) :: Maybe [Dim (DimType Symbol Nat)] where
   ReplaceDimIndexImplF 0 (_ ': t) dim = Just (dim ': t)
