@@ -28,7 +28,7 @@ import Data.Type.Equality (type (==))
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (KnownNat, KnownSymbol, Nat, Symbol, TypeError, natVal, symbolVal, type (+), type (-))
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.GraduallyTyped.Prelude (Assert, PrependMaybe)
+import Torch.GraduallyTyped.Prelude (Assert, Concat, PrependMaybe)
 import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Managed.Cast as ATen ()
 import qualified Torch.Internal.Managed.Type.Dimname as ATen (dimname_symbol, fromSymbol_s)
@@ -41,59 +41,69 @@ import qualified Torch.Internal.Type as ATen (Dimname, DimnameList)
 import Type.Errors.Pretty (type (%), type (<>))
 
 -- | Data type to represent a tensor dimension.
-data Dim (name :: Type) (size :: Type) where
-  AnyDim ::
-    forall name size.
-    -- | dimension name and dimension size unknown
-    Dim name size
-  NamedDim ::
+data DimType (name :: Type) (size :: Type) where
+  Named ::
     forall name size.
     name ->
-    -- | dimension name known and dimension size unknown
-    Dim name size
-  SizedDim ::
+    -- | Dimension name is known and dimension size is unknown.
+    DimType name size
+  Sized ::
     forall name size.
     size ->
-    -- | dimension name unknown and dimension size known
-    Dim name size
-  NamedSizedDim ::
+    -- | Dimension name is unknown and dimension size is known.
+    DimType name size
+  NamedSized ::
     forall name size.
     name ->
     size ->
-    -- | dimension name and dimension size known
-    Dim name size
+    -- | Both dimension name and dimension size are known.
+    DimType name size
   deriving (Show)
 
-class KnownDim (dim :: Dim Symbol Nat) where
-  dimVal :: Dim String Integer
-
-instance KnownDim 'AnyDim where
-  dimVal = AnyDim
+class KnownDimType (dimType :: DimType Symbol Nat) where
+  dimTypeVal :: DimType String Integer
 
 instance
   (KnownSymbol name) =>
-  KnownDim ( 'NamedDim name)
+  KnownDimType ( 'Named name)
   where
-  dimVal =
+  dimTypeVal =
     let name = symbolVal $ Proxy @name
-     in NamedDim name
+     in Named name
 
 instance
   (KnownNat size) =>
-  KnownDim ( 'SizedDim size)
+  KnownDimType ( 'Sized size)
   where
-  dimVal =
+  dimTypeVal =
     let size = natVal $ Proxy @size
-     in SizedDim size
+     in Sized size
 
 instance
   (KnownSymbol name, KnownNat size) =>
-  KnownDim ( 'NamedSizedDim name size)
+  KnownDimType ( 'NamedSized name size)
   where
-  dimVal =
+  dimTypeVal =
     let name = symbolVal $ Proxy @name
         size = natVal $ Proxy @size
-     in NamedSizedDim name size
+     in NamedSized name size
+
+data Dim (dimType :: Type) where
+  UncheckedDim :: forall dimType. Dim dimType
+  Dim :: forall dimType. dimType -> Dim dimType
+  deriving (Show)
+
+class KnownDim (dim :: Dim (DimType Symbol Nat)) where
+  dimVal :: Dim (DimType String Integer)
+
+instance KnownDim 'UncheckedDim where
+  dimVal = UncheckedDim
+
+instance
+  (KnownDimType dimType) =>
+  KnownDim ( 'Dim dimType)
+  where
+  dimVal = Dim (dimTypeVal @dimType)
 
 type UnifyDimNameErrorMessage dim dim' =
   "The supplied dimensions must be the same,"
@@ -104,28 +114,50 @@ type UnifyDimNameErrorMessage dim dim' =
     % "Check spelling and whether or not this is really what you want."
     % "If you are certain, consider dropping or changing the names."
 
-type family UnifyDimF (dim :: Dim Symbol Nat) (dim' :: Dim Symbol Nat) :: Dim Symbol Nat where
-  UnifyDimF 'AnyDim _ = 'AnyDim
-  UnifyDimF _ 'AnyDim = 'AnyDim
-  UnifyDimF dim dim = dim
-  UnifyDimF ( 'NamedDim name) ( 'NamedDim name') =
-    TypeError (UnifyDimNameErrorMessage ( 'NamedDim name) ( 'NamedDim name'))
-  UnifyDimF ( 'NamedDim name) ( 'NamedSizedDim name _) = 'NamedDim name
-  UnifyDimF ( 'NamedDim name) ( 'NamedSizedDim name' size) =
-    TypeError (UnifyDimNameErrorMessage ( 'NamedDim name) ( 'NamedSizedDim name' size))
-  UnifyDimF ( 'NamedSizedDim name _) ( 'NamedDim name) = 'NamedDim name
-  UnifyDimF ( 'NamedSizedDim name size) ( 'NamedDim name') = 
-    TypeError (UnifyDimNameErrorMessage ( 'NamedSizedDim name size) ( 'NamedDim name'))
-  UnifyDimF ( 'NamedSizedDim name size) ( 'NamedSizedDim name' size) =
-    TypeError (UnifyDimNameErrorMessage ( 'NamedSizedDim name size) ( 'NamedSizedDim name' size))
-  UnifyDimF dim dim' =
-    TypeError
-      ( "The supplied dimensions must be the same,"
-          % "but different dimensions were found:"
-          % ""
-          % "    " <> dim <> " and " <> dim' <> "."
-          % ""
-      )
+type UnifyDimSizeErrorMessage dim dim' =
+  "The supplied dimensions must be the same,"
+    % "but dimensions with different sizes were found:"
+    % ""
+    % "    " <> dim <> " and " <> dim' <> "."
+    % ""
+    % "Check whether or not this is really what you want."
+    % "If you are certain, adjust the sizes such that they match."
+
+type UnifyDimNameSizeErrorMessage dim dim' =
+  "The supplied dimensions must be the same,"
+    % "but very different dimensions were found:"
+    % ""
+    % "    " <> dim <> " and " <> dim' <> "."
+    % ""
+    % "Both names and sizes disagree."
+    % "It's very unlikely that this is what you want."
+
+type family UnifyDimTypeF (dimType :: DimType Symbol Nat) (dimType' :: DimType Symbol Nat) :: DimType Symbol Nat where
+  UnifyDimTypeF dimType dimType = dimType
+  UnifyDimTypeF ( 'Named name) ( 'Named name') = TypeError (UnifyDimNameErrorMessage ( 'Named name) ( 'Named name'))
+  UnifyDimTypeF ( 'Named name) ( 'Sized _) = 'Named name
+  UnifyDimTypeF ( 'Named name) ( 'NamedSized name _) = 'Named name
+  UnifyDimTypeF ( 'Named name) ( 'NamedSized name' size) = TypeError (UnifyDimNameErrorMessage ( 'Named name) ( 'NamedSized name' size))
+  UnifyDimTypeF ( 'Sized _) ( 'Named name) = 'Named name
+  UnifyDimTypeF ( 'Sized size) ( 'Sized size') = TypeError (UnifyDimSizeErrorMessage ( 'Sized size) ( 'Sized size'))
+  UnifyDimTypeF ( 'Sized size) ( 'NamedSized name size) = 'NamedSized name size
+  UnifyDimTypeF ( 'Sized size) ( 'NamedSized name size') = TypeError (UnifyDimSizeErrorMessage ( 'Sized size) ( 'NamedSized name size'))
+  UnifyDimTypeF ( 'NamedSized name _) ( 'Named name) = 'Named name
+  UnifyDimTypeF ( 'NamedSized name size) ( 'Named name') = TypeError (UnifyDimNameErrorMessage ( 'NamedSized name size) ( 'Named name'))
+  UnifyDimTypeF ( 'NamedSized name size) ( 'Sized size) = 'NamedSized name size
+  UnifyDimTypeF ( 'NamedSized name size) ( 'Sized size') = TypeError (UnifyDimSizeErrorMessage ( 'NamedSized name size) ( 'Sized size'))
+  UnifyDimTypeF ( 'NamedSized name size) ( 'NamedSized name' size) = TypeError (UnifyDimNameErrorMessage ( 'NamedSized name size) ( 'NamedSized name' size))
+  UnifyDimTypeF ( 'NamedSized name size) ( 'NamedSized name size') = TypeError (UnifyDimSizeErrorMessage ( 'NamedSized name size) ( 'NamedSized name size'))
+  UnifyDimTypeF ( 'NamedSized name size) ( 'NamedSized name' size') = TypeError (UnifyDimNameSizeErrorMessage ( 'NamedSized name size) ( 'NamedSized name' size'))
+
+-- | Unification of dimensions.
+--
+-- The unification rules are the same as for PyTorch, see
+-- https://pytorch.org/docs/stable/named_tensor.html#match-semantics.
+type family UnifyDimF (dim :: Dim (DimType Symbol Nat)) (dim' :: Dim (DimType Symbol Nat)) :: Dim (DimType Symbol Nat) where
+  UnifyDimF 'UncheckedDim _ = 'UncheckedDim
+  UnifyDimF _ 'UncheckedDim = 'UncheckedDim
+  UnifyDimF ( 'Dim dimType) ( 'Dim dimType') = 'Dim (UnifyDimTypeF dimType dimType')
 
 type AddDimNameErrorMessage dim dim' =
   "Cannot add the dimensions"
@@ -137,134 +169,178 @@ type AddDimNameErrorMessage dim dim' =
     % "Check spelling and whether or not this is really what you want."
     % "If you are certain, consider dropping or changing the names."
 
-type family AddDimF (dim :: Dim Symbol Nat) (dim' :: Dim Symbol Nat) :: Dim Symbol Nat where
-  AddDimF 'AnyDim _ = 'AnyDim
-  AddDimF _ 'AnyDim = 'AnyDim
-  AddDimF ( 'NamedDim name) ( 'NamedDim name) = 'NamedDim name
-  AddDimF ( 'NamedDim name) ( 'NamedDim name') =
-    TypeError (AddDimNameErrorMessage ( 'NamedDim name) ( 'NamedDim name'))
-  AddDimF ( 'NamedDim name) ( 'NamedSizedDim name _) = 'NamedDim name
-  AddDimF ( 'NamedDim name) ( 'NamedSizedDim name' size) =
-    TypeError (AddDimNameErrorMessage ( 'NamedDim name) ( 'NamedSizedDim name' size))
-  AddDimF ( 'NamedSizedDim name _) ( 'NamedDim name) = 'NamedDim name
-  AddDimF ( 'NamedSizedDim name size) ( 'NamedDim name') =
-    TypeError (AddDimNameErrorMessage ( 'NamedSizedDim name size) ( 'NamedDim name'))
-  AddDimF ( 'NamedDim _) _ = 'AnyDim
-  AddDimF _ ( 'NamedDim _) = 'AnyDim
-  AddDimF ( 'SizedDim size) ( 'SizedDim size') = 'SizedDim (size + size')
-  AddDimF ( 'SizedDim size) ( 'NamedSizedDim _ size') = 'SizedDim (size + size')
-  AddDimF ( 'NamedSizedDim _ size) ( 'SizedDim size') = 'SizedDim (size + size')
-  AddDimF ( 'NamedSizedDim name size) ( 'NamedSizedDim name size') = 'NamedSizedDim name (size + size')
-  AddDimF ( 'NamedSizedDim name size) ( 'NamedSizedDim name' size') =
-    TypeError (AddDimNameErrorMessage ( 'NamedSizedDim name size) ( 'NamedSizedDim name' size'))
+type family AddDimTypeF (dimType :: DimType Symbol Nat) (dimType' :: DimType Symbol Nat) :: DimType Symbol Nat where
+  AddDimTypeF ( 'Named name) ( 'Named name) = 'Named name
+  AddDimTypeF ( 'Named name) ( 'Named name') = TypeError (AddDimNameErrorMessage ( 'Named name) ( 'Named name'))
+  AddDimTypeF ( 'Named name) ( 'Sized _) = 'Named name
+  AddDimTypeF ( 'Named name) ( 'NamedSized name _) = 'Named name
+  AddDimTypeF ( 'Named name) ( 'NamedSized name' size) = TypeError (AddDimNameErrorMessage ( 'Named name) ( 'NamedSized name' size))
+  AddDimTypeF ( 'Sized _) ( 'Named name) = 'Named name
+  AddDimTypeF ( 'Sized size) ( 'Sized size') = 'Sized (size + size')
+  AddDimTypeF ( 'Sized size) ( 'NamedSized name size') = 'NamedSized name (size + size')
+  AddDimTypeF ( 'NamedSized name _) ( 'Named name) = 'Named name
+  AddDimTypeF ( 'NamedSized name size) ( 'Named name') = TypeError (AddDimNameErrorMessage ( 'NamedSized name size) ( 'Named name'))
+  AddDimTypeF ( 'NamedSized name size) ( 'Sized size') = 'NamedSized name (size + size')
+  AddDimTypeF ( 'NamedSized name size) ( 'NamedSized name size') = 'NamedSized name (size + size')
+  AddDimTypeF ( 'NamedSized name size) ( 'NamedSized name' size') = TypeError (AddDimNameErrorMessage ( 'NamedSized name size) ( 'NamedSized name' size'))
 
--- | Data type to access dimensions by name or by index.
-data DimBy (name :: Type) (index :: Type) where
-  AnyDimBy ::
-    forall name index.
-    -- | unknown dimension access method
-    DimBy name index
-  DimByName ::
+-- | Addition of dimensions.
+--
+-- The unification rules are the same as for PyTorch, see
+-- https://pytorch.org/docs/stable/named_tensor.html#match-semantics.
+type family AddDimF (dim :: Dim (DimType Symbol Nat)) (dim' :: Dim (DimType Symbol Nat)) :: Dim (DimType Symbol Nat) where
+  AddDimF 'UncheckedDim _ = 'UncheckedDim
+  AddDimF _ 'UncheckedDim = 'UncheckedDim
+  AddDimF ( 'Dim dimType) ( 'Dim dimType') = 'Dim (AddDimTypeF dimType dimType')
+
+-- | Data type to select dimensions by name or by index.
+data By (name :: Type) (index :: Type) where
+  ByName ::
     forall name index.
     name ->
-    -- | access dimension by name
-    DimBy name index
-  DimByIndex ::
+    By name index
+  -- | Select a dimension by index.
+  ByIndex ::
     forall name index.
     index ->
-    -- | access dimension by index
-    DimBy name index
+    By name index
 
-class KnownDimBy (dimBy :: DimBy Symbol Nat) where
-  dimByVal :: DimBy String Integer
-
-instance KnownDimBy 'AnyDimBy where
-  dimByVal = AnyDimBy
+class KnownBy (by :: By Symbol Nat) where
+  byVal :: By String Integer
 
 instance
   (KnownSymbol name) =>
-  KnownDimBy ( 'DimByName name)
+  KnownBy ( 'ByName name)
   where
-  dimByVal =
+  byVal =
     let name = symbolVal $ Proxy @name
-     in DimByName name
+     in ByName name
 
 instance
   (KnownNat index) =>
-  KnownDimBy ( 'DimByIndex index)
+  KnownBy ( 'ByIndex index)
   where
-  dimByVal =
+  byVal =
     let index = natVal $ Proxy @index
-     in DimByIndex index
+     in ByIndex index
 
-class WithDimByC (isAnyDimBy :: Bool) (dimBy :: DimBy Symbol Nat) (f :: Type) where
-  type WithDimByF isAnyDimBy f :: Type
-  withDimBy :: (DimBy String Integer -> f) -> WithDimByF isAnyDimBy f
+data SelectDim (by :: Type) where
+  -- Unknown method of dimension selection.
+  UncheckedSelectDim :: forall by. SelectDim by
+  -- Known method of dimension selection, that is, either by name or by index.
+  SelectDim :: forall by. by -> SelectDim by
 
-instance WithDimByC 'True dimBy f where
-  type WithDimByF 'True f = DimBy String Integer -> f
-  withDimBy = id
+class KnownSelectDim (selectDim :: SelectDim (By Symbol Nat)) where
+  selectDimVal :: SelectDim (By String Integer)
 
-instance (KnownDimBy dimBy) => WithDimByC 'False dimBy f where
-  type WithDimByF 'False f = f
-  withDimBy f = f (dimByVal @dimBy)
+instance KnownSelectDim 'UncheckedSelectDim where
+  selectDimVal = UncheckedSelectDim
 
-type family NoAnyDimBy dimBy where
-  NoAnyDimBy dimBy = TypeError ("No way to prove that " <> dimBy <> " is AnyDimBy. Please specify.")
+instance (KnownBy by) => KnownSelectDim ( 'SelectDim by) where
+  selectDimVal = let by = byVal @by in SelectDim by
 
-type IsAnyDimBy dimBy = Assert (NoAnyDimBy dimBy) (dimBy == 'AnyDimBy)
+class WithSelectDimC (isUncheckedSelectDim :: Bool) (selectDim :: SelectDim (By Symbol Nat)) (f :: Type) where
+  type WithSelectDimF isUncheckedSelectDim f :: Type
+  withSelectDim :: (By String Integer -> f) -> WithSelectDimF isUncheckedSelectDim f
+
+instance WithSelectDimC 'True selectDim f where
+  type WithSelectDimF 'True f = By String Integer -> f
+  withSelectDim = id
+
+instance (KnownSelectDim selectDim) => WithSelectDimC 'False selectDim f where
+  type WithSelectDimF 'False f = f
+  withSelectDim f = case selectDimVal @selectDim of SelectDim by -> f by
+
+type family NoUncheckedSelectDim selectDim where
+  NoUncheckedSelectDim selectDim = TypeError ("No way to prove that " <> selectDim <> " is UncheckedSelectDim. Please specify.")
+
+type IsUncheckedSelectDimF selectDim = Assert (NoUncheckedSelectDim selectDim) (selectDim == 'UncheckedSelectDim)
 
 -- | Data type to represent tensor shapes, that is, lists of dimensions.
 data Shape (dims :: Type) where
   -- | A fully unknown shape.
-  AnyShape ::
+  UncheckedShape ::
     forall dims.
     Shape dims
   -- | A partially known shape.
-  -- The list of dimensions has known length, but may contain 'AnyDim'.
+  -- The list of dimensions has known length, but may contain 'UncheckedDim'.
   Shape ::
     forall dims.
     dims ->
     Shape dims
 
-class KnownShape (shape :: Shape [Dim Symbol Nat]) where
-  shapeVal :: Shape [Dim String Integer]
+class KnownShape k (shape :: Shape [k]) where
+  type DimValF k :: Type
+  shapeVal :: Shape [DimValF k]
 
-instance KnownShape 'AnyShape where
-  shapeVal = AnyShape
+instance KnownShape (DimType Symbol Nat) 'UncheckedShape where
+  type DimValF (DimType Symbol Nat) = DimType String Integer
+  shapeVal = UncheckedShape
 
-instance KnownShape ( 'Shape '[]) where
+instance KnownShape (DimType Symbol Nat) ( 'Shape '[]) where
+  type DimValF (DimType Symbol Nat) = DimType String Integer
   shapeVal = Shape []
 
 instance
-  ( KnownShape ( 'Shape dims),
+  ( KnownShape (DimType Symbol Nat) ( 'Shape dimTypes),
+    KnownDimType dimType
+  ) =>
+  KnownShape (DimType Symbol Nat) ( 'Shape (dimType ': dimTypes))
+  where
+  type DimValF (DimType Symbol Nat) = DimType String Integer
+  shapeVal =
+    case shapeVal @_ @( 'Shape dimTypes) of
+      Shape dimTypes -> Shape $ dimTypeVal @dimType : dimTypes
+
+instance KnownShape (Dim (DimType Symbol Nat)) 'UncheckedShape where
+  type DimValF (Dim (DimType Symbol Nat)) = Dim (DimType String Integer)
+  shapeVal = UncheckedShape
+
+instance KnownShape (Dim (DimType Symbol Nat)) ( 'Shape '[]) where
+  type DimValF (Dim (DimType Symbol Nat)) = Dim (DimType String Integer)
+  shapeVal = Shape []
+
+instance
+  ( KnownShape (Dim (DimType Symbol Nat)) ( 'Shape dims),
     KnownDim dim
   ) =>
-  KnownShape ( 'Shape (dim ': dims))
+  KnownShape (Dim (DimType Symbol Nat)) ( 'Shape (dim ': dims))
   where
-  shapeVal = case shapeVal @( 'Shape dims) of
-    Shape dims -> Shape $ dimVal @dim : dims
+  type DimValF (Dim (DimType Symbol Nat)) = Dim (DimType String Integer)
+  shapeVal =
+    case shapeVal @_ @( 'Shape dims) of
+      Shape dims -> Shape $ dimVal @dim : dims
 
-class WithShapeC (isAnyShape :: Bool) (shape :: Shape [Dim Symbol Nat]) (f :: Type) where
-  type WithShapeF isAnyShape f :: Type
-  withShape :: ([Dim String Integer] -> f) -> WithShapeF isAnyShape f
+class WithShapeC (isUncheckedShape :: Bool) (shape :: Shape [DimType Symbol Nat]) (f :: Type) where
+  type WithShapeF isUncheckedShape f :: Type
+  withShape :: ([DimType String Integer] -> f) -> WithShapeF isUncheckedShape f
 
 instance WithShapeC 'True shape f where
-  type WithShapeF 'True f = [Dim String Integer] -> f
+  type WithShapeF 'True f = [DimType String Integer] -> f
   withShape = id
 
-instance (KnownShape shape) => WithShapeC 'False shape f where
+instance (KnownShape (DimType Symbol Nat) shape) => WithShapeC 'False shape f where
   type WithShapeF 'False f = f
-  withShape f = case shapeVal @shape of Shape shape -> f shape
+  withShape f = case shapeVal @_ @shape of Shape shape -> f shape
 
-type family UnifyShapeF (shape :: Shape [Dim Symbol Nat]) (shape' :: Shape [Dim Symbol Nat]) :: Shape [Dim Symbol Nat] where
-  UnifyShapeF 'AnyShape 'AnyShape = 'AnyShape
-  UnifyShapeF ( 'Shape _) 'AnyShape = 'AnyShape
-  UnifyShapeF 'AnyShape ( 'Shape _) = 'AnyShape
+type family ConcatShapesF (shape :: Shape [k]) (shape' :: Shape [k]) :: Shape [k] where
+  ConcatShapesF 'UncheckedShape _ = 'UncheckedShape
+  ConcatShapesF _ 'UncheckedShape = 'UncheckedShape
+  ConcatShapesF ( 'Shape dims) ( 'Shape dims') = 'Shape (Concat dims dims')
+
+type family WidenShapeF (shape :: Shape [DimType Symbol Nat]) :: Shape [Dim (DimType Symbol Nat)] where
+  WidenShapeF 'UncheckedShape = 'UncheckedShape
+  WidenShapeF ( 'Shape '[]) = 'Shape '[]
+  WidenShapeF ( 'Shape (dimType ': dimTypes)) = ConcatShapesF ( 'Shape '[ 'Dim dimType]) (WidenShapeF ( 'Shape dimTypes))
+
+type family UnifyShapeF (shape :: Shape [Dim (DimType Symbol Nat)]) (shape' :: Shape [Dim (DimType Symbol Nat)]) :: Shape [Dim (DimType Symbol Nat)] where
+  UnifyShapeF 'UncheckedShape 'UncheckedShape = 'UncheckedShape
+  UnifyShapeF ( 'Shape _) 'UncheckedShape = 'UncheckedShape
+  UnifyShapeF 'UncheckedShape ( 'Shape _) = 'UncheckedShape
   UnifyShapeF ( 'Shape dims) ( 'Shape dims) = 'Shape dims
   UnifyShapeF ( 'Shape dims) ( 'Shape dims') = 'Shape (UnifyDimsF dims dims')
 
-type family UnifyDimsF (dims :: [Dim Symbol Nat]) (dims' :: [Dim Symbol Nat]) :: [Dim Symbol Nat] where
+type family UnifyDimsF (dims :: [Dim (DimType Symbol Nat)]) (dims' :: [Dim (DimType Symbol Nat)]) :: [Dim (DimType Symbol Nat)] where
   UnifyDimsF '[] '[] = '[]
   UnifyDimsF (dim ': dims) (dim' ': dims') = UnifyDimF dim dim' ': UnifyDimsF dims dims'
   UnifyDimsF _ _ =
@@ -276,99 +352,99 @@ type family UnifyDimsF (dims :: [Dim Symbol Nat]) (dims' :: [Dim Symbol Nat]) ::
       )
 
 -- | Given a shape,
--- returns the first dimension matching 'dimBy'
+-- returns the first dimension matching 'selectDim'
 -- or 'Nothing' if nothing can be found.
 --
--- >>> :kind! GetDimByImplF 'AnyDimBy ('Shape '[ 'NamedDim "batch", 'NamedSizedDim "feature" 20, 'AnyDim])
--- GetDimByImplF 'AnyDimBy ('Shape '[ 'NamedDim "batch", 'NamedSizedDim "feature" 20, 'AnyDim]) :: Maybe
+-- >>> :kind! GetDimImplF 'UncheckedSelectDim ('Shape '[ 'Dim ( 'Named "batch"), 'Dim ( 'NamedSized "feature" 20), 'UncheckedDim])
+-- GetDimImplF 'UncheckedSelectDim ('Shape '[ 'Dim ( 'Named "batch"), 'Dim ( 'NamedSized "feature" 20), 'UncheckedDim]) :: Maybe
 --                                                                                                   (Dim
 --                                                                                                      Symbol
 --                                                                                                      Nat)
--- = 'Just ('NamedDim "batch")
+-- = 'Just ('Dim ( 'Named "batch"))
 --
--- >>> :kind! GetDimByImplF ('DimByName "feature") ('Shape '[ 'NamedDim "batch", 'NamedSizedDim "feature" 20, 'AnyDim])
--- GetDimByImplF ('DimByName "feature") ('Shape '[ 'NamedDim "batch", 'NamedSizedDim "feature" 20, 'AnyDim]) :: Maybe
+-- >>> :kind! GetDimImplF ('SelectDim ( 'ByName "feature")) ('Shape '[ 'Dim ( 'Named "batch"), 'Dim ( 'NamedSized "feature" 20), 'UncheckedDim])
+-- GetDimImplF ('SelectDim ( 'ByName "feature")) ('Shape '[ 'Dim ( 'Named "batch"), 'Dim ( 'NamedSized "feature" 20), 'UncheckedDim]) :: Maybe
 --                                                                                                                (Dim
 --                                                                                                                   Symbol
 --                                                                                                                   Nat)
--- = 'Just ('NamedSizedDim "feature" 20)
-type family GetDimByImplF (dimBy :: DimBy Symbol Nat) (shape :: Shape [Dim Symbol Nat]) :: Maybe (Dim Symbol Nat) where
-  GetDimByImplF 'AnyDimBy 'AnyShape = 'Nothing
-  GetDimByImplF 'AnyDimBy ( 'Shape '[]) = 'Nothing
-  GetDimByImplF 'AnyDimBy ( 'Shape (h ': _)) = 'Just h
-  GetDimByImplF ( 'DimByName _) 'AnyShape = 'Nothing
-  GetDimByImplF ( 'DimByName _) ( 'Shape '[]) = 'Nothing
-  GetDimByImplF ( 'DimByName name) ( 'Shape ( 'AnyDim : t)) = GetDimByImplF ( 'DimByName name) ( 'Shape t)
-  GetDimByImplF ( 'DimByName name) ( 'Shape (( 'NamedDim name) ': _)) = 'Just ( 'NamedDim name)
-  GetDimByImplF ( 'DimByName name) ( 'Shape (( 'NamedDim _) ': t)) = GetDimByImplF ( 'DimByName name) ( 'Shape t)
-  GetDimByImplF ( 'DimByName name) ( 'Shape (( 'SizedDim _) ': t)) = GetDimByImplF ( 'DimByName name) ( 'Shape t)
-  GetDimByImplF ( 'DimByName name) ( 'Shape (( 'NamedSizedDim name size) ': _)) = 'Just ( 'NamedSizedDim name size)
-  GetDimByImplF ( 'DimByName name) ( 'Shape (( 'NamedSizedDim _ size) ': t)) = GetDimByImplF ( 'DimByName name) ( 'Shape t)
-  GetDimByImplF ( 'DimByIndex _) 'AnyShape = 'Nothing
-  GetDimByImplF ( 'DimByIndex index) ( 'Shape dims) = GetDimByIndexImplF index dims
+-- = 'Just ('Dim ( 'NamedSized "feature" 20))
+type family GetDimImplF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape [Dim (DimType Symbol Nat)]) :: Maybe (Dim (DimType Symbol Nat)) where
+  GetDimImplF 'UncheckedSelectDim 'UncheckedShape = 'Nothing
+  GetDimImplF 'UncheckedSelectDim ( 'Shape '[]) = 'Nothing
+  GetDimImplF 'UncheckedSelectDim ( 'Shape (h ': _)) = 'Just h
+  GetDimImplF ( 'SelectDim (ByName _)) 'UncheckedShape = 'Nothing
+  GetDimImplF ( 'SelectDim (ByName _)) ( 'Shape '[]) = 'Nothing
+  GetDimImplF ( 'SelectDim (ByName name)) ( 'Shape ( 'UncheckedDim : t)) = GetDimImplF ( 'SelectDim (ByName name)) ( 'Shape t)
+  GetDimImplF ( 'SelectDim (ByName name)) ( 'Shape (( 'Dim ( 'Named name)) ': _)) = 'Just ( 'Dim ( 'Named name))
+  GetDimImplF ( 'SelectDim (ByName name)) ( 'Shape (( 'Dim ( 'Named _)) ': t)) = GetDimImplF ( 'SelectDim (ByName name)) ( 'Shape t)
+  GetDimImplF ( 'SelectDim (ByName name)) ( 'Shape (( 'Dim ( 'Sized _)) ': t)) = GetDimImplF ( 'SelectDim (ByName name)) ( 'Shape t)
+  GetDimImplF ( 'SelectDim (ByName name)) ( 'Shape (( 'Dim ( 'NamedSized name size)) ': _)) = 'Just ( 'Dim ( 'NamedSized name size))
+  GetDimImplF ( 'SelectDim (ByName name)) ( 'Shape (( 'Dim ( 'NamedSized _ size)) ': t)) = GetDimImplF ( 'SelectDim (ByName name)) ( 'Shape t)
+  GetDimImplF ( 'SelectDim (ByIndex _)) 'UncheckedShape = 'Nothing
+  GetDimImplF ( 'SelectDim (ByIndex index)) ( 'Shape dims) = GetDimIndexImplF index dims
 
 -- | Given a list of dimensions,
 -- returns the dimension in the position 'index'
 -- or 'Nothing' if 'index' is out of bounds.
-type family GetDimByIndexImplF (index :: Nat) (dims :: [Dim Symbol Nat]) :: Maybe (Dim Symbol Nat) where
-  GetDimByIndexImplF 0 (h ': _) = Just h
-  GetDimByIndexImplF index (_ ': t) = GetDimByIndexImplF (index - 1) t
-  GetDimByIndexImplF _ _ = Nothing
+type family GetDimIndexImplF (index :: Nat) (dims :: [Dim (DimType Symbol Nat)]) :: Maybe (Dim (DimType Symbol Nat)) where
+  GetDimIndexImplF 0 (h ': _) = Just h
+  GetDimIndexImplF index (_ ': t) = GetDimIndexImplF (index - 1) t
+  GetDimIndexImplF _ _ = Nothing
 
-type family GetDimByCheckF (dimBy :: DimBy Symbol Nat) (shape :: Shape [Dim Symbol Nat]) (res :: Maybe (Dim Symbol Nat)) :: Dim Symbol Nat where
-  GetDimByCheckF dimBy shape 'Nothing =
+type family GetDimCheckF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape [Dim (DimType Symbol Nat)]) (res :: Maybe (Dim (DimType Symbol Nat))) :: Dim (DimType Symbol Nat) where
+  GetDimCheckF selectDim shape 'Nothing =
     TypeError
       ( "Cannot return the first dimension matching"
           % ""
-          % "    '" <> dimBy <> "'"
+          % "    '" <> selectDim <> "'"
           % ""
           % "in the shape"
           % ""
           % "    '" <> shape <> "'."
           % ""
       )
-  GetDimByCheckF _ _ ( 'Just dim) = dim
+  GetDimCheckF _ _ ( 'Just dim) = dim
 
-type GetDimByF dimBy shape = GetDimByCheckF dimBy shape (GetDimByImplF dimBy shape)
+type GetDimF selectDim shape = GetDimCheckF selectDim shape (GetDimImplF selectDim shape)
 
 -- | Given a 'shape' and a dimension,
--- returns a list of dimensions where the first dimension matching 'dimBy' is replaced
+-- returns a list of dimensions where the first dimension matching 'selectDim' is replaced
 -- or 'Nothing' if nothing can be found.
 --
--- >>> :kind! ReplaceDimByImplF 'AnyDimBy ('Shape '[ 'NamedDim "batch", 'NamedSizedDim "feature" 20, 'AnyDim]) 'AnyDim
--- ReplaceDimByImplF 'AnyDimBy ('Shape '[ 'NamedDim "batch", 'NamedSizedDim "feature" 20, 'AnyDim]) 'AnyDim :: Maybe
+-- >>> :kind! ReplaceDimImplF 'UncheckedSelectDim ('Shape '[ 'Dim ( 'Named "batch"), 'Dim ( 'NamedSized "feature" 20), 'UncheckedDim]) 'UncheckedDim
+-- ReplaceDimImplF 'UncheckedSelectDim ('Shape '[ 'Dim ( 'Named "batch"), 'Dim ( 'NamedSized "feature" 20), 'UncheckedDim]) 'UncheckedDim :: Maybe
 --                                                                                                               [Dim
 --                                                                                                                  Symbol
 --                                                                                                                  Nat]
--- = 'Just '[ 'AnyDim, 'NamedSizedDim "feature" 20, 'AnyDim]
+-- = 'Just '[ 'UncheckedDim, 'Dim ( 'NamedSized "feature" 20), 'UncheckedDim]
 --
--- >>> :kind! ReplaceDimByImplF ('DimByName "feature") ('Shape '[ 'NamedDim "batch", 'NamedSizedDim "feature" 20, 'AnyDim]) ('SizedDim 10)
--- ReplaceDimByImplF ('DimByName "feature") ('Shape '[ 'NamedDim "batch", 'NamedSizedDim "feature" 20, 'AnyDim]) ('SizedDim 10) :: Maybe
+-- >>> :kind! ReplaceDimImplF ('SelectDim ( 'ByName "feature")) ('Shape '[ 'Dim ( 'Named "batch"), 'Dim ( 'NamedSized "feature" 20), 'UncheckedDim]) ('SizedDim 10)
+-- ReplaceDimImplF ('SelectDim ( 'ByName "feature")) ('Shape '[ 'Dim ( 'Named "batch"), 'Dim ( 'NamedSized "feature" 20), 'UncheckedDim]) ('SizedDim 10) :: Maybe
 --                                                                                                                                   [Dim
 --                                                                                                                                      Symbol
 --                                                                                                                                      Nat]
--- = 'Just '[ 'NamedDim "batch", 'SizedDim 10, 'AnyDim]
-type family ReplaceDimByImplF (dimBy :: DimBy Symbol Nat) (shape :: Shape [Dim Symbol Nat]) (dim :: Dim Symbol Nat) :: Maybe [Dim Symbol Nat] where
-  ReplaceDimByImplF 'AnyDimBy 'AnyShape _ = 'Nothing
-  ReplaceDimByImplF 'AnyDimBy ( 'Shape '[]) _ = 'Nothing
-  ReplaceDimByImplF 'AnyDimBy ( 'Shape (_ ': t)) dim = 'Just (dim ': t)
-  ReplaceDimByImplF ( 'DimByName _) 'AnyShape _ = 'Nothing
-  ReplaceDimByImplF ( 'DimByName _) ( 'Shape '[]) _ = 'Nothing
-  ReplaceDimByImplF ( 'DimByName name) ( 'Shape ( 'AnyDim ': t)) dim = PrependMaybe ( 'Just 'AnyDim) (ReplaceDimByImplF ( 'DimByName name) ( 'Shape t) dim)
-  ReplaceDimByImplF ( 'DimByName name) ( 'Shape (( 'NamedDim name) ': t)) dim = 'Just (dim ': t)
-  ReplaceDimByImplF ( 'DimByName name) ( 'Shape (( 'NamedDim name') ': t)) dim = PrependMaybe ( 'Just ( 'NamedDim name')) (ReplaceDimByImplF ( 'DimByName name) ( 'Shape t) dim)
-  ReplaceDimByImplF ( 'DimByName name) ( 'Shape (( 'SizedDim size) ': t)) dim = PrependMaybe ( 'Just ( 'SizedDim size)) (ReplaceDimByImplF ( 'DimByName name) ( 'Shape t) dim)
-  ReplaceDimByImplF ( 'DimByName name) ( 'Shape (( 'NamedSizedDim name _) ': t)) dim = 'Just (dim ': t)
-  ReplaceDimByImplF ( 'DimByName name) ( 'Shape (( 'NamedSizedDim name' size) ': t)) dim = PrependMaybe ( 'Just ( 'NamedSizedDim name' size)) (ReplaceDimByImplF ( 'DimByName name) ( 'Shape t) dim)
-  ReplaceDimByImplF ( 'DimByIndex _) 'AnyShape _ = 'Nothing
-  ReplaceDimByImplF ( 'DimByIndex index) ( 'Shape dims) dim = ReplaceDimByIndexImplF index dims dim
+-- = 'Just '[ 'Dim ( 'Named "batch"), 'SizedDim 10, 'UncheckedDim]
+type family ReplaceDimImplF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape [Dim (DimType Symbol Nat)]) (dim :: Dim (DimType Symbol Nat)) :: Maybe [Dim (DimType Symbol Nat)] where
+  ReplaceDimImplF 'UncheckedSelectDim 'UncheckedShape _ = 'Nothing
+  ReplaceDimImplF 'UncheckedSelectDim ( 'Shape '[]) _ = 'Nothing
+  ReplaceDimImplF 'UncheckedSelectDim ( 'Shape (_ ': t)) dim = 'Just (dim ': t)
+  ReplaceDimImplF ( 'SelectDim (ByName _)) 'UncheckedShape _ = 'Nothing
+  ReplaceDimImplF ( 'SelectDim (ByName _)) ( 'Shape '[]) _ = 'Nothing
+  ReplaceDimImplF ( 'SelectDim (ByName name)) ( 'Shape ( 'UncheckedDim ': t)) dim = PrependMaybe ( 'Just 'UncheckedDim) (ReplaceDimImplF ( 'SelectDim (ByName name)) ( 'Shape t) dim)
+  ReplaceDimImplF ( 'SelectDim (ByName name)) ( 'Shape (( 'Dim ( 'Named name)) ': t)) dim = 'Just (dim ': t)
+  ReplaceDimImplF ( 'SelectDim (ByName name)) ( 'Shape (( 'Dim ( 'Named name')) ': t)) dim = PrependMaybe ( 'Just ( 'Dim ( 'Named name'))) (ReplaceDimImplF ( 'SelectDim (ByName name)) ( 'Shape t) dim)
+  ReplaceDimImplF ( 'SelectDim (ByName name)) ( 'Shape (( 'Dim ( 'Sized size)) ': t)) dim = PrependMaybe ( 'Just ( 'Dim ( 'Sized size))) (ReplaceDimImplF ( 'SelectDim (ByName name)) ( 'Shape t) dim)
+  ReplaceDimImplF ( 'SelectDim (ByName name)) ( 'Shape (( 'Dim ( 'NamedSized name _)) ': t)) dim = 'Just (dim ': t)
+  ReplaceDimImplF ( 'SelectDim (ByName name)) ( 'Shape (( 'Dim ( 'NamedSized name' size)) ': t)) dim = PrependMaybe ( 'Just ( 'Dim ( 'NamedSized name' size))) (ReplaceDimImplF ( 'SelectDim (ByName name)) ( 'Shape t) dim)
+  ReplaceDimImplF ( 'SelectDim (ByIndex _)) 'UncheckedShape _ = 'Nothing
+  ReplaceDimImplF ( 'SelectDim (ByIndex index)) ( 'Shape dims) dim = ReplaceDimIndexImplF index dims dim
 
-type family ReplaceDimByCheckF (dimBy :: DimBy Symbol Nat) (shape :: Shape [Dim Symbol Nat]) (dim :: Dim Symbol Nat) (res :: Maybe [Dim Symbol Nat]) :: Shape [Dim Symbol Nat] where
-  ReplaceDimByCheckF dimBy shape dim 'Nothing =
+type family ReplaceDimCheckF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape [Dim (DimType Symbol Nat)]) (dim :: Dim (DimType Symbol Nat)) (res :: Maybe [Dim (DimType Symbol Nat)]) :: Shape [Dim (DimType Symbol Nat)] where
+  ReplaceDimCheckF selectDim shape dim 'Nothing =
     TypeError
       ( "Cannot replace the first dimension matching"
           % ""
-          % "    '" <> dimBy <> "'"
+          % "    '" <> selectDim <> "'"
           % ""
           % "in the shape"
           % ""
@@ -379,40 +455,38 @@ type family ReplaceDimByCheckF (dimBy :: DimBy Symbol Nat) (shape :: Shape [Dim 
           % "    '" <> dim <> "'."
           % ""
       )
-  ReplaceDimByCheckF _ _ _ ( 'Just dims) = 'Shape dims
+  ReplaceDimCheckF _ _ _ ( 'Just dims) = 'Shape dims
 
-type ReplaceDimByF dimBy shape dim = ReplaceDimByCheckF dimBy shape dim (ReplaceDimByImplF dimBy shape dim)
+type ReplaceDimF selectDim shape dim = ReplaceDimCheckF selectDim shape dim (ReplaceDimImplF selectDim shape dim)
 
 -- | Given a list of dimensions and a dimension,
 -- returns a new list of dimensions where the dimension in the position 'index' is replaced
 -- or 'Nothing' if 'index' is out of bounds.
 --
--- >>> :kind! ReplaceDimByIndexImplF 1 '[ 'NamedDim "batch", 'NamedSizedDim "feature" 20, 'AnyDim] ('SizedDim 10)
--- ReplaceDimByIndexImplF 1 '[ 'NamedDim "batch", 'NamedSizedDim "feature" 20, 'AnyDim] ('SizedDim 10) :: Maybe
+-- >>> :kind! ReplaceDimIndexImplF 1 '[ 'Dim ( 'Named "batch"), 'Dim ( 'NamedSized "feature" 20), 'UncheckedDim] ('SizedDim 10)
+-- ReplaceDimIndexImplF 1 '[ 'Dim ( 'Named "batch"), 'Dim ( 'NamedSized "feature" 20), 'UncheckedDim] ('SizedDim 10) :: Maybe
 --                                                                                                          [Dim
 --                                                                                                             Symbol
 --                                                                                                             Nat]
--- = 'Just '[ 'NamedDim "batch", 'SizedDim 10, 'AnyDim]
-type family ReplaceDimByIndexImplF (index :: Nat) (dims :: [Dim Symbol Nat]) (dim :: Dim Symbol Nat) :: Maybe [Dim Symbol Nat] where
-  ReplaceDimByIndexImplF 0 (_ ': t) dim = Just (dim ': t)
-  ReplaceDimByIndexImplF index (h ': t) dim = PrependMaybe ( 'Just h) (ReplaceDimByIndexImplF (index - 1) t dim)
-  ReplaceDimByIndexImplF _ _ _ = Nothing
+-- = 'Just '[ 'Dim ( 'Named "batch"), 'SizedDim 10, 'UncheckedDim]
+type family ReplaceDimIndexImplF (index :: Nat) (dims :: [Dim (DimType Symbol Nat)]) (dim :: Dim (DimType Symbol Nat)) :: Maybe [Dim (DimType Symbol Nat)] where
+  ReplaceDimIndexImplF 0 (_ ': t) dim = Just (dim ': t)
+  ReplaceDimIndexImplF index (h ': t) dim = PrependMaybe ( 'Just h) (ReplaceDimIndexImplF (index - 1) t dim)
+  ReplaceDimIndexImplF _ _ _ = Nothing
 
-namedDims :: forall m name size. MonadPlus m => [Dim name size] -> m [name]
+namedDims :: forall m name size. MonadPlus m => [DimType name size] -> m [name]
 namedDims dims = reverse <$> foldM step mempty dims
   where
-    step _ AnyDim = mzero
-    step acc (NamedDim name) = pure $ name : acc
-    step _ (SizedDim _) = mzero
-    step acc (NamedSizedDim name _) = pure $ name : acc
+    step acc (Named name) = pure $ name : acc
+    step _ (Sized _) = mzero
+    step acc (NamedSized name _) = pure $ name : acc
 
-sizedDims :: forall m name size. MonadPlus m => [Dim name size] -> m [size]
+sizedDims :: forall m name size. MonadPlus m => [DimType name size] -> m [size]
 sizedDims dims = reverse <$> foldM step mempty dims
   where
-    step _ AnyDim = mzero
-    step _ (NamedDim _) = mzero
-    step acc (SizedDim size) = pure $ size : acc
-    step acc (NamedSizedDim _ size) = pure $ size : acc
+    step _ (Named _) = mzero
+    step acc (Sized size) = pure $ size : acc
+    step acc (NamedSized _ size) = pure $ size : acc
 
 instance Castable String (ForeignPtr ATen.Dimname) where
   cast name f =

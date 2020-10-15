@@ -19,6 +19,7 @@ module Torch.GraduallyTyped.Prelude
     MapMaybe,
     BindMaybe,
     JoinMaybe,
+    Concat,
     whenM,
     unlessM,
     ifM,
@@ -102,6 +103,10 @@ type family JoinMaybe (a :: Maybe (Maybe k)) :: Maybe k where
   JoinMaybe 'Nothing = 'Nothing
   JoinMaybe ( 'Just 'Nothing) = 'Nothing
   JoinMaybe ( 'Just ( 'Just k)) = 'Just k
+
+type family Concat (xs :: [k]) (ys :: [k]) :: [k] where
+  Concat '[] ys = ys
+  Concat (x ': xs) ys = x ': Concat xs ys
 
 -- | Test whether or not a given type contains another:
 --

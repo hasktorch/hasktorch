@@ -14,7 +14,7 @@ module Torch.GraduallyTyped.NN.Class where
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Torch.GraduallyTyped.Prelude (Contains, ErrorMessage (Text), Fst, If, Proxy (..), Snd, Type, TypeError)
 import Torch.GraduallyTyped.Random (Generator)
-import Torch.GraduallyTyped.Device (Device (AnyDevice))
+import Torch.GraduallyTyped.Device (Device (UncheckedDevice))
 -- import Generics.SOP (Code, I, SOP(..), Generic, NS(..), NP)
 -- import GHC.Base (coerce, Any)
 
@@ -75,15 +75,15 @@ class
 
 instance
   ( HasForward modelA inputA,
-    Output modelA inputA ~ (Generator 'AnyDevice -> (outputA, Generator 'AnyDevice)),
+    Output modelA inputA ~ (Generator 'UncheckedDevice -> (outputA, Generator 'UncheckedDevice)),
     HasForward modelB inputB,
-    Output modelB inputB ~ (Generator 'AnyDevice -> (outputB, Generator 'AnyDevice))
+    Output modelB inputB ~ (Generator 'UncheckedDevice -> (outputB, Generator 'UncheckedDevice))
   ) =>
   HasForwardProduct 'Stochastic outputA 'Stochastic outputB modelA inputA modelB inputB
   where
   type
     OutputProduct 'Stochastic outputA 'Stochastic outputB modelA inputA modelB inputB =
-      Generator 'AnyDevice -> ((outputA, outputB), Generator 'AnyDevice)
+      Generator 'UncheckedDevice -> ((outputA, outputB), Generator 'UncheckedDevice)
   forwardProduct _ _ _ _ (modelA, modelB) (inputA, inputB) =
     runState $ do
       outputA <- state (forward modelA inputA)
@@ -140,15 +140,15 @@ class
 
 instance
   ( HasForward modelA inputA,
-    Output modelA inputA ~ (Generator 'AnyDevice -> (outputA, Generator 'AnyDevice)),
+    Output modelA inputA ~ (Generator 'UncheckedDevice -> (outputA, Generator 'UncheckedDevice)),
     HasForward modelB inputB,
-    Output modelB inputB ~ (Generator 'AnyDevice -> (outputB, Generator 'AnyDevice))
+    Output modelB inputB ~ (Generator 'UncheckedDevice -> (outputB, Generator 'UncheckedDevice))
   ) =>
   HasForwardSum 'Stochastic outputA 'Stochastic outputB modelA inputA modelB inputB
   where
   type
     OutputSum 'Stochastic outputA 'Stochastic outputB modelA inputA modelB inputB =
-      Generator 'AnyDevice -> (Maybe (Either outputA outputB), Generator 'AnyDevice)
+      Generator 'UncheckedDevice -> (Maybe (Either outputA outputB), Generator 'UncheckedDevice)
   forwardSum _ _ _ _ (Left modelA) (Left inputA) =
     runState $ Just . Left <$> (state $ forward modelA inputA)
   forwardSum _ _ _ _ (Right modelB) (Right inputB) =
@@ -187,7 +187,7 @@ data InputA = InputA
 data OutputA = OutputA
 
 instance HasForward ModelA InputA where
-  type Output ModelA InputA = (Generator 'AnyDevice -> (OutputA, Generator 'AnyDevice))
+  type Output ModelA InputA = (Generator 'UncheckedDevice -> (OutputA, Generator 'UncheckedDevice))
   forward _ _ g = (OutputA, g)
 
 data ModelB = ModelB
@@ -197,11 +197,11 @@ data InputB = InputB
 data OutputB = OutputB
 
 instance HasForward ModelB InputB where
-  type Output ModelB InputB = (Generator 'AnyDevice -> (OutputB, Generator 'AnyDevice))
+  type Output ModelB InputB = (Generator 'UncheckedDevice -> (OutputB, Generator 'UncheckedDevice))
   forward _ _ g = (OutputB, g)
 
-test :: Generator 'AnyDevice -> ((OutputA, OutputB), Generator 'AnyDevice)
+test :: Generator 'UncheckedDevice -> ((OutputA, OutputB), Generator 'UncheckedDevice)
 test = forward (ModelA, ModelB) (InputA, InputB)
 
-test' :: Generator 'AnyDevice -> (Maybe (Either OutputA OutputB), Generator 'AnyDevice)
+test' :: Generator 'UncheckedDevice -> (Maybe (Either OutputA OutputB), Generator 'UncheckedDevice)
 test' = forward @(Either ModelA ModelB) @(Either InputA InputB) (Left ModelA) (Right InputB)

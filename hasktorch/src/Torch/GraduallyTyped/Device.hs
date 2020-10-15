@@ -38,15 +38,15 @@ data DeviceType (deviceId :: Type) where
   deriving (Show)
 
 data Device (deviceType :: Type) where
-  AnyDevice :: forall deviceType. Device deviceType
+  UncheckedDevice :: forall deviceType. Device deviceType
   Device :: forall deviceType. deviceType -> Device deviceType
   deriving (Show)
 
 class KnownDevice (device :: Device (DeviceType Nat)) where
   deviceVal :: Device (DeviceType Int16)
 
-instance KnownDevice 'AnyDevice where
-  deviceVal = AnyDevice
+instance KnownDevice 'UncheckedDevice where
+  deviceVal = UncheckedDevice
 
 instance KnownDevice ( 'Device 'CPU) where
   deviceVal = Device CPU
@@ -67,9 +67,8 @@ instance (KnownDevice device) => WithDeviceC 'False device f where
   withDevice f = case deviceVal @device of Device device -> f device
 
 type family UnifyDeviceF (device :: Device (DeviceType Nat)) (device' :: Device (DeviceType Nat)) :: Device (DeviceType Nat) where
-  UnifyDeviceF 'AnyDevice 'AnyDevice = 'AnyDevice
-  UnifyDeviceF ( 'Device _) 'AnyDevice = 'AnyDevice
-  UnifyDeviceF 'AnyDevice ( 'Device _) = 'AnyDevice
+  UnifyDeviceF 'UncheckedDevice _ = 'UncheckedDevice
+  UnifyDeviceF _ 'UncheckedDevice = 'UncheckedDevice
   UnifyDeviceF ( 'Device deviceType) ( 'Device deviceType) = 'Device deviceType
   UnifyDeviceF ( 'Device deviceType) ( 'Device deviceType') =
     TypeError

@@ -34,7 +34,7 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice (.
 import Torch.GraduallyTyped.Layout (KnownLayout (..), Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.Prelude (ifM, (&&^))
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
-import Torch.GraduallyTyped.Shape (Dim (..), KnownShape (..), Shape (..))
+import Torch.GraduallyTyped.Shape (Dim (..), DimType (..), KnownShape (..), Shape (..))
 import Torch.HList (HList (..), pattern (:.))
 import Torch.Internal.Cast (cast0, cast1, cast2)
 import Torch.Internal.Class (Castable (..))
@@ -47,13 +47,27 @@ import qualified Torch.Internal.Type as ATen (Tensor, TensorList)
 -- >>> import Torch.GraduallyTyped.Tensor.Creation (ones)
 
 -- | A gradually typed tensor.
+--
+-- @
+--                               +-> Compute device, e.g. 'Device 'CPU
+--                               |
+--                               |               +-> List of dimensions, e.g. 'Shape '[ 'Dim ('Sized 8), 'Dim ('Sized 1) ]
+--                               +               +
+-- Tensor requiresGradient layout device dataType shape
+--       +                +             +
+--       |                |             +-> Data type, e.g. 'DataType 'Float
+--       |                |
+--       |                +-> Memory layout, e.g. 'Layout 'Dense
+--       |
+--       +-> Whether or not the tensor requires a gradient, e.g. 'Independent for one that does
+-- @
 newtype
   Tensor
     (requiresGradient :: RequiresGradient)
     (layout :: Layout LayoutType)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
-    (shape :: Shape [Dim Symbol Nat])
+    (shape :: Shape [Dim (DimType Symbol Nat)])
   where
   -- | Do not call this constructor directly, use the smart constructors instead.
   UnsafeTensor ::
@@ -68,69 +82,18 @@ type family
           Layout LayoutType,
           Device (DeviceType Nat),
           DataType DType,
-          Shape [Dim Symbol Nat]
+          Shape [Dim (DimType Symbol Nat)]
         )
     ) ::
     Type
   where
   TensorF '(requiresGradient, layout, device, dataType, shape) = Tensor requiresGradient layout device dataType shape
 
-instance
-  Castable
-    (Tensor requiresGradient layout device dataType shape)
-    (ForeignPtr ATen.Tensor)
-  where
-  cast (UnsafeTensor atenTensor) f = f atenTensor
-  uncast atenTensor f = f $ UnsafeTensor atenTensor
-
-instance
-  Castable
-    [Tensor requiresGradient layout device dataType shape]
-    (ForeignPtr ATen.TensorList)
-  where
-  cast xs f = do
-    ptrList <- mapM (\x -> (cast x return :: IO (ForeignPtr ATen.Tensor))) xs
-    cast ptrList f
-  uncast xs f = uncast xs $ \ptrList -> do
-    tensorList <- mapM (\(x :: ForeignPtr ATen.Tensor) -> uncast x return) ptrList
-    f tensorList
-
-instance Castable (HList '[]) [ForeignPtr ATen.Tensor] where
-  cast HNil f = f []
-  uncast [] f = f HNil
-  uncast (_ : _) _ = error "The list of tensors has more elements than expected. This means that the runtime length of the list did not match its compile-time length."
-
-instance
-  ( Castable (HList tensors) [ForeignPtr ATen.Tensor]
-  ) =>
-  Castable (HList (Tensor requiresGradient layout device dataType shape ': tensors)) [ForeignPtr ATen.Tensor]
-  where
-  cast (tensor :. tensors) f = do
-    ptr <- cast tensor pure
-    ptrList <- cast tensors pure
-    f (ptr : ptrList)
-  uncast [] _ = error "The list of tensors ended prematurely. This means that the runtime length of the list did not match its compile-time length."
-  uncast (ptr : ptrList) f = do
-    tensor <- uncast ptr pure
-    tensors <- uncast ptrList pure
-    f (tensor :. tensors)
-
-instance
-  Castable (HList l) [ForeignPtr ATen.Tensor] =>
-  Castable (HList l) (ForeignPtr ATen.TensorList)
-  where
-  cast xs f = do
-    ts <- cast xs return :: IO [ForeignPtr ATen.Tensor]
-    cast ts f
-  uncast xs f = uncast xs $ \(ptrList :: [ForeignPtr ATen.Tensor]) -> do
-    ts <- uncast ptrList return :: IO (HList l)
-    f ts
-
 -- | Alias for an untyped tensor without gradients.
-type UntypedTensor = Tensor 'Dependent 'AnyLayout 'AnyDevice 'AnyDataType 'AnyShape
+type UntypedTensor = Tensor 'Dependent 'UncheckedLayout 'UncheckedDevice 'UncheckedDataType 'UncheckedShape
 
 -- | Alias for an untyped tensor with gradients.
-type UntypedParameter = Tensor 'Independent 'AnyLayout 'AnyDevice 'AnyDataType 'AnyShape
+type UntypedParameter = Tensor 'Independent 'UncheckedLayout 'UncheckedDevice 'UncheckedDataType 'UncheckedShape
 
 -- | Alias for a tensor on CPU memory without gradients.
 type CPUTensor = Tensor 'Dependent ( 'Layout 'Dense) ( 'Device 'CPU)
@@ -155,6 +118,57 @@ type SparseCUDATensor deviceId = Tensor 'Dependent ( 'Layout 'Sparse) ( 'Device 
 
 -- | Alias for a sparse tensor on CUDA memory with gradients.
 type SparseCUDAParameter deviceId = Tensor 'Independent ( 'Layout 'Sparse) ( 'Device ( 'CUDA deviceId))
+
+instance
+  Castable
+    (Tensor requiresGradient layout device dataType shape)
+    (ForeignPtr ATen.Tensor)
+  where
+  cast (UnsafeTensor atenTensor) f = f atenTensor
+  uncast atenTensor f = f $ UnsafeTensor atenTensor
+
+instance
+  Castable
+    [Tensor requiresGradient layout device dataType shape]
+    (ForeignPtr ATen.TensorList)
+  where
+  cast xs f = do
+    ptrList <- mapM (\x -> (cast x return :: IO (ForeignPtr ATen.Tensor))) xs
+    cast ptrList f
+  uncast xs f = uncast xs $ \ptrList -> do
+    tensorList <- mapM (\(x :: ForeignPtr ATen.Tensor) -> uncast x return) ptrList
+    f tensorList
+
+instance Castable (HList '[]) [ForeignPtr ATen.Tensor] where
+  cast HNil f = f []
+  uncast [] f = f HNil
+  uncast (_ : _) _ = fail "The list of tensors has more elements than expected. This means that the runtime length of the list exceeded its compile-time length."
+
+instance
+  ( Castable (HList tensors) [ForeignPtr ATen.Tensor]
+  ) =>
+  Castable (HList (Tensor requiresGradient layout device dataType shape ': tensors)) [ForeignPtr ATen.Tensor]
+  where
+  cast (tensor :. tensors) f = do
+    ptr <- cast tensor pure
+    ptrList <- cast tensors pure
+    f (ptr : ptrList)
+  uncast [] _ = fail "The list of tensors ended prematurely. This means that the runtime length of the list was smaller than its compile-time length."
+  uncast (ptr : ptrList) f = do
+    tensor <- uncast ptr pure
+    tensors <- uncast ptrList pure
+    f (tensor :. tensors)
+
+instance
+  Castable (HList l) [ForeignPtr ATen.Tensor] =>
+  Castable (HList l) (ForeignPtr ATen.TensorList)
+  where
+  cast xs f = do
+    ts <- cast xs return :: IO [ForeignPtr ATen.Tensor]
+    cast ts f
+  uncast xs f = uncast xs $ \(ptrList :: [ForeignPtr ATen.Tensor]) -> do
+    ts <- uncast ptrList return :: IO (HList l)
+    f ts
 
 -- | Returns an independent copy of the tensor that requires gradients.
 makeIndependent ::
@@ -194,10 +208,10 @@ toSparse = unsafePerformIO . cast1 ATen.tensor_to_sparse
 
 -- Returns the memory layout of the input tensor.
 --
--- >>> t <- ones @'Dependent @('Layout 'Sparse) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+-- >>> t <- ones @'Dependent @('Layout 'Sparse) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
 -- >>> layout t
 -- Sparse
--- >>> t <- ones @'Dependent @'AnyLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) (Layout Sparse)
+-- >>> t <- ones @'Dependent @'UncheckedLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)]) (Layout Sparse)
 -- >>> layout t
 -- Sparse
 layout ::
@@ -209,53 +223,53 @@ layout ::
   LayoutType
 layout tensor =
   case layoutVal @layout of
-    AnyLayout ->
+    UncheckedLayout ->
       if unsafePerformIO . cast1 ATen.tensor_is_sparse $ tensor
         then Sparse
         else Dense
     Layout layoutType -> layoutType
 
--- | Returns the input tensor but with 'AnyLayout' as memory layout type annotation.
+-- | Returns the input tensor but with 'UncheckedLayout' as memory layout type annotation.
 -- Any static information about the tensor's memory layout is thus erased.
 -- However, the tensor's underlying data structure is not changed.
 --
--- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+-- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
 -- >>> :type uncheckedLayout t
 -- uncheckedLayout t
 --   :: Tensor
 --        'Dependent
---        'AnyLayout
+--        'UncheckedLayout
 --        ('Device 'CPU)
 --        ('DataType 'Float)
---        ('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+--        ('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
 uncheckedLayout ::
   forall requiresGradient layout device dataType shape.
   -- | input tensor
   Tensor requiresGradient layout device dataType shape ->
   -- | tensor without checked layout
-  Tensor requiresGradient 'AnyLayout device dataType shape
+  Tensor requiresGradient 'UncheckedLayout device dataType shape
 uncheckedLayout = coerce
 
 -- | Returns 'True' if the tensor has the memory layout 'layout' and 'False' otherwise.
--- If 'layout' is 'AnyLayout', 'True' is returned for consistency.
+-- If 'layout' is 'UncheckedLayout', 'True' is returned for consistency.
 --
--- >>> t <- ones @'Dependent @'AnyLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) Dense
+-- >>> t <- ones @'Dependent @'UncheckedLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)]) Dense
 -- >>> checkLayout @('Layout 'Sparse) t
 -- False
 -- >>> checkLayout @('Layout 'Dense) t
 -- True
--- >>> checkLayout @'AnyLayout t
+-- >>> checkLayout @'UncheckedLayout t
 -- True
 checkLayout ::
   forall (layout :: Layout LayoutType) requiresGradient device dataType shape.
   (KnownLayout layout) =>
   -- | tensor under consideration
-  Tensor requiresGradient 'AnyLayout device dataType shape ->
+  Tensor requiresGradient 'UncheckedLayout device dataType shape ->
   -- | whether or not the input tensor has the memory layout 'layout'
   Bool
 checkLayout tensor =
   case layoutVal @layout of
-    AnyLayout -> True
+    UncheckedLayout -> True
     Layout Sparse -> undefined
     Layout Dense -> undefined
 
@@ -266,7 +280,7 @@ checkLayout tensor =
 -- If it does not have it, then the result will be 'Nothing'.
 --
 -- In the REPL, 'm' will default to 'IO':
--- >>> t <- ones @'Dependent @'AnyLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) Dense
+-- >>> t <- ones @'Dependent @'UncheckedLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)]) Dense
 -- >>> t' <- checkedLayout @('Layout 'Dense) t
 -- >>> :type t'
 -- t'
@@ -275,14 +289,14 @@ checkLayout tensor =
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
---        ('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+--        ('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
 -- >>> t' <- checkedLayout @('Layout 'Sparse) t
 -- *** Exception: user error (The tensor does not have the memory layout "Layout Sparse".)
 checkedLayout ::
   forall (layout :: Layout LayoutType) m requiresGradient device dataType shape.
   (KnownLayout layout, MonadFail m) =>
   -- | input tensor
-  Tensor requiresGradient 'AnyLayout device dataType shape ->
+  Tensor requiresGradient 'UncheckedLayout device dataType shape ->
   -- | annotated output tensor wrapped in 'm'
   m (Tensor requiresGradient layout device dataType shape)
 checkedLayout tensor
@@ -292,7 +306,7 @@ checkedLayout tensor
 -- | Unsafe version of 'checkedLayout'.
 -- If the tensor does not have the memory layout 'layout', then the execution is stopped and an error message is displayed.
 --
--- >>> t <- ones @'Dependent @'AnyLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) Dense
+-- >>> t <- ones @'Dependent @'UncheckedLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)]) Dense
 -- >>> t' = unsafeCheckedLayout @('Layout 'Dense) t
 -- >>> :type t'
 -- t'
@@ -301,14 +315,14 @@ checkedLayout tensor
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
---        ('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+--        ('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
 -- >>> t' = unsafeCheckedLayout @('Layout 'Sparse) t
 -- *** Exception: The tensor does not have the memory layout "Layout Sparse".
 unsafeCheckedLayout ::
   forall (layout :: Layout LayoutType) requiresGradient device dataType shape.
   KnownLayout layout =>
   -- | input tensor
-  Tensor requiresGradient 'AnyLayout device dataType shape ->
+  Tensor requiresGradient 'UncheckedLayout device dataType shape ->
   -- | annotated output tensor
   Tensor requiresGradient layout device dataType shape
 unsafeCheckedLayout tensor = case checkedLayout @layout tensor of
@@ -335,10 +349,10 @@ cuda = unsafePerformIO . cast1 ATen.tensor_cuda
 
 -- | Returns the compute device of the input tensor.
 --
--- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+-- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
 -- >>> device t
 -- CPU
--- >>> t <- ones @'Dependent @('Layout 'Dense) @'AnyDevice @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) CPU
+-- >>> t <- ones @'Dependent @('Layout 'Dense) @'UncheckedDevice @('DataType 'Float) @('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)]) CPU
 -- >>> device t
 -- CPU
 device ::
@@ -350,7 +364,7 @@ device ::
   DeviceType Int16
 device tensor =
   case deviceVal @device of
-    AnyDevice ->
+    UncheckedDevice ->
       unsafePerformIO $ do
         hasCUDA <- cast0 ATen.hasCUDA
         if hasCUDA
@@ -364,47 +378,47 @@ device tensor =
           else pure $ CPU
     Device deviceType -> deviceType
 
--- | Returns the input tensor but with 'AnyDevice' as device type annotation.
+-- | Returns the input tensor but with 'UncheckedDevice' as device type annotation.
 -- Any static information about the tensor's device is thus erased.
 -- However, the tensor's underlying data structure is not changed.
 --
--- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+-- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
 -- >>> :type uncheckedDevice t
 -- uncheckedDevice t
 --   :: Tensor
 --        'Dependent
 --        ('Layout 'Dense)
---        'AnyDevice
+--        'UncheckedDevice
 --        ('DataType 'Float)
---        ('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+--        ('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
 uncheckedDevice ::
   forall requiresGradient layout device dataType shape.
   -- | input tensor
   Tensor requiresGradient layout device dataType shape ->
   -- | tensor without checked device
-  Tensor requiresGradient layout 'AnyDevice dataType shape
+  Tensor requiresGradient layout 'UncheckedDevice dataType shape
 uncheckedDevice = coerce
 
 -- | Returns 'True' if the tensor is in the memory of 'device' and 'False' otherwise.
--- If 'device' is 'AnyDevice', 'True' is returned for consistency.
+-- If 'device' is 'UncheckedDevice', 'True' is returned for consistency.
 --
--- >>> t <- ones @'Dependent @('Layout 'Dense) @'AnyDevice @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) CPU
+-- >>> t <- ones @'Dependent @('Layout 'Dense) @'UncheckedDevice @('DataType 'Float) @('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)]) CPU
 -- >>> checkDevice @('Device 'CPU) t
 -- True
 -- >>> checkDevice @('Device ('CUDA 0)) t
 -- False
--- >>> checkDevice @'AnyDevice t
+-- >>> checkDevice @'UncheckedDevice t
 -- True
 checkDevice ::
   forall (device :: Device (DeviceType Nat)) requiresGradient layout dataType shape.
   (KnownDevice device) =>
   -- | tensor under consideration
-  Tensor requiresGradient layout 'AnyDevice dataType shape ->
+  Tensor requiresGradient layout 'UncheckedDevice dataType shape ->
   -- | whether or not the input tensor is on the 'device'
   Bool
 checkDevice tensor =
   case deviceVal @device of
-    AnyDevice -> True
+    UncheckedDevice -> True
     Device CPU -> not . unsafePerformIO $ cast0 ATen.hasCUDA &&^ cast1 ATen.tensor_is_cuda tensor
     Device (CUDA deviceIndex) ->
       unsafePerformIO $
@@ -419,7 +433,7 @@ checkDevice tensor =
 -- If it is not, then the result will be 'Nothing'.
 --
 -- In the REPL, 'm' will default to 'IO':
--- >>> t <- ones @'Dependent @('Layout 'Dense) @'AnyDevice @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) CPU
+-- >>> t <- ones @'Dependent @('Layout 'Dense) @'UncheckedDevice @('DataType 'Float) @('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)]) CPU
 -- >>> t' <- checkedDevice @('Device 'CPU) t
 -- >>> :type t'
 -- t'
@@ -428,14 +442,14 @@ checkDevice tensor =
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
---        ('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+--        ('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
 -- >>> t' <- checkedDevice @('Device ('CUDA 0)) t
 -- *** Exception: user error (The tensor is not in the memory of the device "Device (CUDA 0)".)
 checkedDevice ::
   forall (device :: Device (DeviceType Nat)) m requiresGradient layout dataType shape.
   (KnownDevice device, MonadFail m) =>
   -- | input tensor
-  Tensor requiresGradient layout 'AnyDevice dataType shape ->
+  Tensor requiresGradient layout 'UncheckedDevice dataType shape ->
   -- | annotated output tensor wrapped in 'm'
   m (Tensor requiresGradient layout device dataType shape)
 checkedDevice tensor
@@ -445,7 +459,7 @@ checkedDevice tensor
 -- | Unsafe version of 'checkedDevice'.
 -- If the tensor is not on 'device', then the execution is stopped and an error message is displayed.
 --
--- >>> t <- ones @'Dependent @('Layout 'Dense) @'AnyDevice @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) CPU
+-- >>> t <- ones @'Dependent @('Layout 'Dense) @'UncheckedDevice @('DataType 'Float) @('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)]) CPU
 -- >>> t' = unsafeCheckedDevice @('Device 'CPU) t
 -- >>> :type t'
 -- t'
@@ -454,7 +468,7 @@ checkedDevice tensor
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
---        ('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+--        ('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
 -- >>> t' = unsafeCheckedDevice @('Device ('CUDA 0)) t
 -- *** Exception: The tensor is not in the memory of the device "Device (CUDA 0)".
 -- CallStack (from HasCallStack):
@@ -463,7 +477,7 @@ unsafeCheckedDevice ::
   forall (device :: Device (DeviceType Nat)) requiresGradient layout dataType shape.
   KnownDevice device =>
   -- | input tensor
-  Tensor requiresGradient layout 'AnyDevice dataType shape ->
+  Tensor requiresGradient layout 'UncheckedDevice dataType shape ->
   -- | annotated output tensor
   Tensor requiresGradient layout device dataType shape
 unsafeCheckedDevice tensor = case checkedDevice @device tensor of
@@ -553,10 +567,10 @@ double tensor = unsafePerformIO $ cast2 ATen.tensor_toType_s tensor Double
 
 -- | Returns the data type of the input tensor.
 --
--- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+-- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
 -- >>> dtype t
 -- Float
--- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @'AnyDataType @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) Float
+-- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @'UncheckedDataType @('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)]) Float
 -- >>> dtype t
 -- Float
 dataType ::
@@ -568,7 +582,7 @@ dataType ::
   DType
 dataType tensor =
   case dataTypeVal @dataType of
-    AnyDataType -> unsafePerformIO $ cast1 ATen.tensor_scalar_type tensor
+    UncheckedDataType -> unsafePerformIO $ cast1 ATen.tensor_scalar_type tensor
     DataType dtype -> dtype
 
 -- | Alias for 'dataType'.
@@ -581,47 +595,47 @@ dtype ::
   DType
 dtype = dataType @dataType
 
--- | Returns the input tensor but with 'AnyDataType' as data-type type annotation.
+-- | Returns the input tensor but with 'UncheckedDataType' as data-type type annotation.
 -- Any static information about the tensor's data type is thus erased.
 -- However, the tensor's underlying data structure is not changed.
 --
--- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+-- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
 -- >>> :type uncheckedDataType t
 -- uncheckedDataType t
 --   :: Tensor
 --        'Dependent
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
---        'AnyDataType
---        ('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+--        'UncheckedDataType
+--        ('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
 uncheckedDataType ::
   forall requiresGradient layout device dataType shape.
   -- | input tensor
   Tensor requiresGradient layout device dataType shape ->
   -- | tensor without checked data type
-  Tensor requiresGradient layout device 'AnyDataType shape
+  Tensor requiresGradient layout device 'UncheckedDataType shape
 uncheckedDataType = coerce
 
 -- | Returns 'True' if the tensor has the data type 'dataType' and 'False' otherwise.
--- If 'dataType' is 'AnyDataType', 'True' is returned for consistency.
+-- If 'dataType' is 'UncheckedDataType', 'True' is returned for consistency.
 --
--- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @'AnyDataType @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) Float
+-- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @'UncheckedDataType @('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)]) Float
 -- >>> checkDataType @('DataType 'Float) t
 -- True
 -- >>> checkDataType @('DataType 'Double) t
 -- False
--- >>> checkDataType @'AnyDataType t
+-- >>> checkDataType @'UncheckedDataType t
 -- True
 checkDataType ::
   forall (dataType :: DataType DType) requiresGradient layout device shape.
   (KnownDataType dataType) =>
   -- | tensor under consideration
-  Tensor requiresGradient layout device 'AnyDataType shape ->
+  Tensor requiresGradient layout device 'UncheckedDataType shape ->
   -- | whether or not the input tensor has the data type 'dataType'
   Bool
 checkDataType tensor =
   case dataTypeVal @dataType of
-    AnyDataType -> True
+    UncheckedDataType -> True
     DataType dtype -> unsafePerformIO $ (dtype ==) <$> cast1 ATen.tensor_scalar_type tensor
 
 -- | Checks whether or not the input tensor has the data type 'dataType'
@@ -631,7 +645,7 @@ checkDataType tensor =
 -- If it does not have it, then the result will be 'Nothing'.
 --
 -- In the REPL, 'm' will default to 'IO':
--- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @'AnyDataType @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) Float
+-- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @'UncheckedDataType @('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)]) Float
 -- >>> t' <- checkedDataType @('DataType 'Float) t
 -- >>> :type t'
 -- t'
@@ -640,14 +654,14 @@ checkDataType tensor =
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
---        ('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+--        ('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
 -- >>> t' <- checkedDataType @('DataType 'Double) t
 -- *** Exception: user error (The tensor does not have the data type "DataType Double".)
 checkedDataType ::
   forall (dataType :: DataType DType) m requiresGradient layout device shape.
   (KnownDataType dataType, MonadFail m) =>
   -- | input tensor
-  Tensor requiresGradient layout device 'AnyDataType shape ->
+  Tensor requiresGradient layout device 'UncheckedDataType shape ->
   -- | annotated output tensor wrapped in 'm'
   m (Tensor requiresGradient layout device dataType shape)
 checkedDataType tensor
@@ -657,7 +671,7 @@ checkedDataType tensor
 -- | Unsafe version of 'checkedDataType'.
 -- If the tensor does not have the data type 'dataType', then the execution is stopped and an error message is displayed.
 --
--- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @'AnyDataType @('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8]) Float
+-- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @'UncheckedDataType @('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)]) Float
 -- >>> t' <- checkedDataType @('DataType 'Float) t
 -- >>> :type t'
 -- t'
@@ -666,7 +680,7 @@ checkedDataType tensor
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
---        ('Shape '[ 'NamedSizedDim "Batch" 32, 'NamedSizedDim "Feature" 8])
+--        ('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
 -- >>> t' = unsafeCheckedDataType @('DataType 'Double) t
 -- *** Exception: The tensor does not have the data type "DataType Double".
 -- CallStack (from HasCallStack):
@@ -675,7 +689,7 @@ unsafeCheckedDataType ::
   forall (dataType :: DataType DType) requiresGradient layout device shape.
   KnownDataType dataType =>
   -- | input tensor
-  Tensor requiresGradient layout device 'AnyDataType shape ->
+  Tensor requiresGradient layout device 'UncheckedDataType shape ->
   -- | annotated output tensor
   Tensor requiresGradient layout device dataType shape
 unsafeCheckedDataType tensor = case checkedDataType @dataType tensor of
@@ -684,48 +698,48 @@ unsafeCheckedDataType tensor = case checkedDataType @dataType tensor of
 
 shape ::
   forall requiresGradient layout device dataType shape.
-  KnownShape shape =>
+  KnownShape (Dim (DimType Symbol Nat)) shape =>
   -- | input
   Tensor requiresGradient layout device dataType shape ->
   -- | shape of the input tensor
-  [Dim String Integer]
+  [DimType String Integer]
 shape tensor =
-  case shapeVal @shape of
-    AnyShape -> unsafePerformIO $ do
+  case shapeVal @_ @shape of
+    UncheckedShape -> unsafePerformIO $ do
       sizes <- cast1 ATen.tensor_sizes tensor
       ifM
         (cast1 ATen.tensor_has_names tensor)
         ( do
             names <- cast1 ATen.tensor_names tensor
-            return $ zipWith NamedSizedDim names sizes
+            return $ zipWith NamedSized names sizes
         )
-        (return $ SizedDim <$> sizes)
+        (return $ Sized <$> sizes)
     Shape shape ->
       unsafePerformIO $
         reverse . snd <$> foldM step' mempty shape
       where
         inc = (<>) (Sum 1)
         step' (s, as) a = (\a' -> (inc s, a' : as)) <$> step s a
-        step :: Sum Int -> Dim String Integer -> IO (Dim String Integer)
-        step dim AnyDim = do
+        step :: Sum Int -> Dim (DimType String Integer) -> IO (DimType String Integer)
+        step dim UncheckedDim = do
           size :: Int <- cast2 ATen.tensor_size_l tensor (getSum dim)
           ifM
             (cast1 ATen.tensor_has_names tensor)
             ( do
                 name :: String <- undefined
-                return $ NamedSizedDim name (fromIntegral size)
+                return $ NamedSized name (fromIntegral size)
             )
-            (return $ SizedDim (fromIntegral size))
-        step dim (NamedDim name) = do
+            (return $ Sized (fromIntegral size))
+        step dim (Dim (Named name)) = do
           size :: Int <- cast2 ATen.tensor_size_l tensor (getSum dim)
-          (return $ NamedSizedDim name (fromIntegral size))
-        step dim (SizedDim size) = do
+          (return $ NamedSized name (fromIntegral size))
+        step dim (Dim (Sized size)) = do
           ifM
             (cast1 ATen.tensor_has_names tensor)
             ( do
                 name :: String <- undefined
-                return $ NamedSizedDim name (fromIntegral size)
+                return $ NamedSized name (fromIntegral size)
             )
-            (return $ SizedDim size)
-        step _ namedSizedDim@(NamedSizedDim _ _) =
-          return namedSizedDim
+            (return $ Sized size)
+        step _ (Dim (NamedSized name size)) =
+          return $ NamedSized name size

@@ -16,15 +16,15 @@ import Torch.DType (DType (..))
 import Type.Errors.Pretty (TypeError, type (%), type (<>))
 
 data DataType (dType :: Type) where
-  AnyDataType :: forall dType. DataType dType
+  UncheckedDataType :: forall dType. DataType dType
   DataType :: forall dType. dType -> DataType dType
   deriving (Show)
 
 class KnownDataType (dataType :: DataType DType) where
   dataTypeVal :: DataType DType
 
-instance KnownDataType 'AnyDataType where
-  dataTypeVal = AnyDataType
+instance KnownDataType 'UncheckedDataType where
+  dataTypeVal = UncheckedDataType
 
 instance KnownDataType ( 'DataType 'Bool) where
   dataTypeVal = DataType Bool
@@ -66,9 +66,9 @@ instance (KnownDataType dataType) => WithDataTypeC 'False dataType f where
   withDataType f = case dataTypeVal @dataType of DataType dataType -> f dataType
 
 type family UnifyDataTypeF (dataType :: DataType DType) (dataType' :: DataType DType) :: DataType DType where
-  UnifyDataTypeF 'AnyDataType 'AnyDataType = 'AnyDataType
-  UnifyDataTypeF ( 'DataType _) 'AnyDataType = 'AnyDataType
-  UnifyDataTypeF 'AnyDataType ( 'DataType _) = 'AnyDataType
+  UnifyDataTypeF 'UncheckedDataType 'UncheckedDataType = 'UncheckedDataType
+  UnifyDataTypeF ( 'DataType _) 'UncheckedDataType = 'UncheckedDataType
+  UnifyDataTypeF 'UncheckedDataType ( 'DataType _) = 'UncheckedDataType
   UnifyDataTypeF ( 'DataType dType) ( 'DataType dType) = 'DataType dType
   UnifyDataTypeF ( 'DataType dType) ( 'DataType dType') =
     TypeError

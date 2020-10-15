@@ -35,15 +35,15 @@ instance Castable LayoutType ATen.Layout where
     | x == ATen.kSparse = f Sparse
 
 data Layout (layoutType :: Type) where
-  AnyLayout :: forall layoutType. Layout layoutType
+  UncheckedLayout :: forall layoutType. Layout layoutType
   Layout :: forall layoutType. layoutType -> Layout layoutType
   deriving (Show)
 
 class KnownLayout (layout :: Layout LayoutType) where
   layoutVal :: Layout LayoutType
 
-instance KnownLayout 'AnyLayout where
-  layoutVal = AnyLayout
+instance KnownLayout 'UncheckedLayout where
+  layoutVal = UncheckedLayout
 
 instance KnownLayout ( 'Layout 'Dense) where
   layoutVal = Layout Dense
@@ -64,9 +64,9 @@ instance (KnownLayout layout) => WithLayoutC 'False layout f where
   withLayout f = case layoutVal @layout of Layout layout -> f layout
 
 type family UnifyLayoutF (layout :: Layout LayoutType) (layout' :: Layout LayoutType) :: Layout LayoutType where
-  UnifyLayoutF 'AnyLayout 'AnyLayout = 'AnyLayout
-  UnifyLayoutF ( 'Layout _) 'AnyLayout = 'AnyLayout
-  UnifyLayoutF 'AnyLayout ( 'Layout _) = 'AnyLayout
+  UnifyLayoutF 'UncheckedLayout 'UncheckedLayout = 'UncheckedLayout
+  UnifyLayoutF ( 'Layout _) 'UncheckedLayout = 'UncheckedLayout
+  UnifyLayoutF 'UncheckedLayout ( 'Layout _) = 'UncheckedLayout
   UnifyLayoutF ( 'Layout layoutType) ( 'Layout layoutType) = 'Layout layoutType
   UnifyLayoutF ( 'Layout layoutType) ( 'Layout layoutType') =
     TypeError

@@ -23,7 +23,7 @@ import Torch.GraduallyTyped.Device (Device, DeviceType, UnifyDeviceF)
 import Torch.GraduallyTyped.Layout (Layout, LayoutType, UnifyLayoutF)
 import Torch.GraduallyTyped.Prelude (MapMaybe)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient, UnifyRequiresGradientF)
-import Torch.GraduallyTyped.Shape (AddDimF, Dim (..), DimBy (..), GetDimByF, IsAnyDimBy, ReplaceDimByF, ReplaceDimByImplF, Shape (..), UnifyShapeF, WithDimByC (..))
+import Torch.GraduallyTyped.Shape (By(..), DimType, AddDimF, Dim (..), SelectDim (..), GetDimF, IsUncheckedSelectDimF, ReplaceDimF, ReplaceDimImplF, Shape (..), UnifyShapeF, WithSelectDimC (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor, TensorF)
 import Torch.HList (HList)
 import Torch.Internal.Cast (cast2)
@@ -41,52 +41,52 @@ import Type.Errors.Pretty (ToErrorMessage, type (%), type (<>))
 -- >>> import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 -- >>> import Torch.GraduallyTyped.Shape (Dim (..), Shape (..))
 
-class HasCat (dimBy :: DimBy Symbol Nat) k (c :: k -> Type) (a :: k) where
-  type CatF dimBy a c :: Type
+class HasCat (selectDim :: SelectDim (By Symbol Nat)) k (c :: k -> Type) (a :: k) where
+  type CatF selectDim a c :: Type
 
   -- | Concatenates the given sequence of seq tensors in the given dimension.
   -- All tensors must either have the same shape (except in the concatenating dimension) or be empty.
   --
-  -- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSizedDim "batch" 32, 'NamedSizedDim "feature" 8])
+  -- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
   -- [W TensorImpl.h:840] Warning: Named tensors and all their associated APIs are an experimental feature and subject to change. Please do not use them for anything important until they are released as stable. (function operator())
-  -- >>> :type cat @('DimByName "feature") [t]
-  -- cat @('DimByName "feature") [t]
+  -- >>> :type cat @('SelectDim ('ByName "feature")) [t]
+  -- cat @('SelectDim ('ByName "feature"))  [t]
   -- :: Tensor
   --      'Dependent
   --      ('Layout 'Dense)
   --      ('Device 'CPU)
   --      ('DataType 'Float)
-  --      ('Shape '[ 'NamedSizedDim "batch" 32, 'AnyDim])
-  -- >>> :type cat @('DimByIndex 0) [t]
-  -- cat @('DimByIndex 0) [t]
+  --      ('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'UncheckedDim])
+  -- >>> :type cat @('SelectDim ( 'ByIndex 0)) [t]
+  -- cat @('SelectDim ( 'ByIndex 0)) [t]
   --   :: Tensor
   --        'Dependent
   --        ('Layout 'Dense)
   --        ('Device 'CPU)
   --        ('DataType 'Float)
-  --        ('Shape '[ 'AnyDim, 'NamedSizedDim "feature" 8])
-  -- >>> :type cat @'AnyDimBy (DimByIndex 0) [t]
-  -- cat @'AnyDimBy (DimByIndex 0) [t]
+  --        ('Shape '[ 'UncheckedDim, 'Dim ( 'NamedSized "feature" 8)])
+  -- >>> :type cat @'UncheckedSelectDim (SelectDim (ByIndex 0)) [t]
+  -- cat @'UncheckedSelectDim (SelectDim (ByIndex 0)) [t]
   --   :: Tensor
   --        'Dependent
   --        ('Layout 'Dense)
   --        ('Device 'CPU)
   --        ('DataType 'Float)
   --        'AnyShape
-  cat :: WithDimByF (IsAnyDimBy dimBy) (c a -> CatF dimBy a c)
+  cat :: WithSelectDimF (IsUncheckedSelectDimF selectDim) (c a -> CatF selectDim a c)
 
-type family CatListImplF (dimBy :: DimBy Symbol Nat) (tensor :: Type) :: Maybe Type where
-  CatListImplF 'AnyDimBy (Tensor requiresGradient layout device dataType _) = 'Just (Tensor requiresGradient layout device dataType 'AnyShape)
-  CatListImplF dimBy (Tensor requiresGradient layout device dataType shape) = MapMaybe (Tensor requiresGradient layout device dataType) (MapMaybe 'Shape (ReplaceDimByImplF dimBy shape 'AnyDim))
+type family CatListImplF (selectDim :: SelectDim (By Symbol Nat)) (tensor :: Type) :: Maybe Type where
+  CatListImplF 'UncheckedSelectDim (Tensor requiresGradient layout device dataType _) = 'Just (Tensor requiresGradient layout device dataType 'UncheckedShape)
+  CatListImplF selectDim (Tensor requiresGradient layout device dataType shape) = MapMaybe (Tensor requiresGradient layout device dataType) (MapMaybe 'Shape (ReplaceDimImplF selectDim shape 'UncheckedDim))
 
 type CheckSpellingMessage = "Check the spelling of named dimensions, and make sure the number of dimensions is correct."
 
-type family CatListCheckF (dimBy :: DimBy Symbol Nat) (tensor :: Type) (result :: Maybe Type) :: Type where
-  CatListCheckF dimBy (Tensor _ _ _ _ shape) 'Nothing =
+type family CatListCheckF (selectDim :: SelectDim (By Symbol Nat)) (tensor :: Type) (result :: Maybe Type) :: Type where
+  CatListCheckF selectDim (Tensor _ _ _ _ shape) 'Nothing =
     TypeError
       ( "Cannot concatenate the dimension"
           % ""
-          % "    " <> dimBy
+          % "    " <> selectDim
           % ""
           % "for tensors of shape"
           % ""
@@ -96,46 +96,45 @@ type family CatListCheckF (dimBy :: DimBy Symbol Nat) (tensor :: Type) (result :
       )
   CatListCheckF _ _ ( 'Just result) = result
 
-type CatListF dimBy tensor = CatListCheckF dimBy tensor (CatListImplF dimBy tensor)
+type CatListF selectDim tensor = CatListCheckF selectDim tensor (CatListImplF selectDim tensor)
 
 instance
-  ( WithDimByC (IsAnyDimBy dimBy) dimBy ([Tensor requiresGradient layout device dataType shape] -> CatListF dimBy (Tensor requiresGradient layout device dataType shape)),
-    Castable (CatListF dimBy (Tensor requiresGradient layout device dataType shape)) (ForeignPtr ATen.Tensor)
+  ( WithSelectDimC (IsUncheckedSelectDimF selectDim) selectDim ([Tensor requiresGradient layout device dataType shape] -> CatListF selectDim (Tensor requiresGradient layout device dataType shape)),
+    Castable (CatListF selectDim (Tensor requiresGradient layout device dataType shape)) (ForeignPtr ATen.Tensor)
   ) =>
-  HasCat dimBy Type [] (Tensor requiresGradient layout device dataType shape)
+  HasCat selectDim Type [] (Tensor requiresGradient layout device dataType shape)
   where
-  type CatF dimBy (Tensor requiresGradient layout device dataType shape) [] = CatListF dimBy (Tensor requiresGradient layout device dataType shape)
+  type CatF selectDim (Tensor requiresGradient layout device dataType shape) [] = CatListF selectDim (Tensor requiresGradient layout device dataType shape)
   cat =
-    withDimBy @(IsAnyDimBy dimBy) @dimBy @([Tensor requiresGradient layout device dataType shape] -> CatF dimBy (Tensor requiresGradient layout device dataType shape) []) $
-      \dimBy tensors -> case dimBy of
-        AnyDimBy -> error "A concatenation dimension must be specified, but none was given."
-        DimByName name -> undefined
-        DimByIndex index -> unsafePerformIO $ cast2 ATen.cat_ll tensors (fromInteger index :: Int)
+    withSelectDim @(IsUncheckedSelectDimF selectDim) @selectDim @([Tensor requiresGradient layout device dataType shape] -> CatF selectDim (Tensor requiresGradient layout device dataType shape) []) $
+      \by tensors -> case by of
+        ByName name -> undefined
+        ByIndex index -> unsafePerformIO $ cast2 ATen.cat_ll tensors (fromInteger index :: Int)
 
 type family
   CatHListImplF
-    (dimBy :: DimBy Symbol Nat)
+    (selectDim :: SelectDim (By Symbol Nat))
     (tensors :: [Type])
-    (acc :: Maybe (RequiresGradient, Layout LayoutType, Device (DeviceType Nat), DataType DType, Shape [Dim Symbol Nat])) ::
+    (acc :: Maybe (RequiresGradient, Layout LayoutType, Device (DeviceType Nat), DataType DType, Shape [Dim (DimType Symbol Nat)])) ::
     Type
   where
   CatHListImplF _ '[] 'Nothing = TypeError (ToErrorMessage "Cannot concatenate an empty list of tensors.")
   CatHListImplF _ '[] ( 'Just '(requiresGradient, layout, device, dataType, shape)) = TensorF '(requiresGradient, layout, device, dataType, shape)
-  CatHListImplF dimBy (Tensor requiresGradient layout device dataType shape ': tensors) 'Nothing =
-    CatHListImplF dimBy tensors ( 'Just '(requiresGradient, layout, device, dataType, shape))
-  CatHListImplF dimBy (Tensor requiresGradient layout device dataType shape ': tensors) ( 'Just '(requiresGradient', layout', device', dataType', shape')) =
+  CatHListImplF selectDim (Tensor requiresGradient layout device dataType shape ': tensors) 'Nothing =
+    CatHListImplF selectDim tensors ( 'Just '(requiresGradient, layout, device, dataType, shape))
+  CatHListImplF selectDim (Tensor requiresGradient layout device dataType shape ': tensors) ( 'Just '(requiresGradient', layout', device', dataType', shape')) =
     CatHListImplF
-      dimBy
+      selectDim
       tensors
       ( 'Just
           '( UnifyRequiresGradientF requiresGradient requiresGradient',
              UnifyLayoutF layout layout',
              UnifyDeviceF device device',
              UnifyDataTypeF dataType dataType',
-             ReplaceDimByF
-               dimBy
-               (UnifyShapeF (ReplaceDimByF dimBy shape 'AnyDim) (ReplaceDimByF dimBy shape' 'AnyDim))
-               (AddDimF (GetDimByF dimBy shape) (GetDimByF dimBy shape))
+             ReplaceDimF
+               selectDim
+               (UnifyShapeF (ReplaceDimF selectDim shape 'UncheckedDim) (ReplaceDimF selectDim shape' 'UncheckedDim))
+               (AddDimF (GetDimF selectDim shape) (GetDimF selectDim shape))
            )
       )
   CatHListImplF _ (x ': _) _ =
@@ -147,53 +146,18 @@ type family
           % "is not a tensor type."
       )
 
-type CatHListF dimBy tensors = CatHListImplF dimBy tensors 'Nothing
+type CatHListF selectDim tensors = CatHListImplF selectDim tensors 'Nothing
 
 instance
-  ( WithDimByC (IsAnyDimBy dimBy) dimBy (HList tensors -> CatHListF dimBy tensors),
-    Castable (CatHListF dimBy tensors) (ForeignPtr ATen.Tensor),
+  ( WithSelectDimC (IsUncheckedSelectDimF selectDim) selectDim (HList tensors -> CatHListF selectDim tensors),
+    Castable (CatHListF selectDim tensors) (ForeignPtr ATen.Tensor),
     Castable (HList tensors) (ForeignPtr ATen.TensorList)
   ) =>
-  HasCat dimBy [Type] HList tensors
+  HasCat selectDim [Type] HList tensors
   where
-  type CatF dimBy tensors HList = CatHListF dimBy tensors
+  type CatF selectDim tensors HList = CatHListF selectDim tensors
   cat =
-    withDimBy @(IsAnyDimBy dimBy) @dimBy @(HList tensors -> CatF dimBy tensors HList) $
-      \dimBy tensors -> case dimBy of
-        AnyDimBy -> error "A concatenation dimension must be specified, but none was given."
-        DimByName name -> undefined
-        DimByIndex index -> unsafePerformIO $ cast2 ATen.cat_ll tensors (fromInteger index :: Int)
-
--- data ListOf a = Homogeneous a | Heterogeneous a
-
--- class ListOfC (listOf :: ListOf a) (c :: a -> Type) (f :: Type) where
---   type ListOfF listOf f :: Type
---   withListOf :: (c a -> f) -> ListOfF isHomogeneous f
-
--- instance ListOfC ('Homogeneous a) [] f where
---   type ListOfF ('Homogeneous a) f = [a] -> f
---   withListOf = id
-
--- instance ListOfC ('Heterogeneous a) HList f where
---   type ListOfF ('Heterogeneous a) f = [a] -> f
---   withListOf f = f (dimByVal @dimBy)
-
--- -- | Concatenates the given sequence of seq tensors in the given dimension.
--- -- All tensors must either have the same shape (except in the concatenating dimension) or be empty.
--- cat
---   :: Dim -- ^ dimension
---   -> [Tensor] -- ^ list of tensors to concatenate
---   -> Tensor -- ^ output tensor
--- cat (Dim d) tensors = unsafePerformIO $ cast2 ATen.cat_ll tensors d
-
--- cat ::
---   forall dim shape dtype device tensors.
---   ( KnownNat dim,
---     '(shape, dtype, device) ~ Cat dim tensors,
---     ATen.Castable (HList tensors) [D.ATenTensor]
---   ) =>
---   -- | input list of tensors
---   HList tensors ->
---   -- | output tensor
---   Tensor device dtype shape
--- cat tensors = unsafePerformIO $ ATen.cast2 ATen.Managed.cat_ll tensors (natValI @dim :: Int)
+    withSelectDim @(IsUncheckedSelectDimF selectDim) @selectDim @(HList tensors -> CatF selectDim tensors HList) $
+      \by tensors -> case by of
+        ByName name -> undefined
+        ByIndex index -> unsafePerformIO $ cast2 ATen.cat_ll tensors (fromInteger index :: Int)
