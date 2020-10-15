@@ -20,11 +20,12 @@ import Torch.Internal.Cast (cast2, cast3)
 import qualified Torch.Internal.Managed.TensorFactories as ATen
 
 -- $setup
+-- >>> import Data.Int (Int16)
 -- >>> import Torch.DType (DType (..))
 -- >>> import Torch.GraduallyTyped.Device (DeviceType (..))
 -- >>> import Torch.GraduallyTyped.Layout (LayoutType (..))
 -- >>> import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
--- >>> import Torch.GraduallyTyped.Shape (Dim (..))
+-- >>> import Torch.GraduallyTyped.Shape (Dim (..), DimType (..))
 
 -- | Create a tensor of ones.
 --
@@ -32,11 +33,15 @@ import qualified Torch.Internal.Managed.TensorFactories as ATen
 -- ones @'Dependent @'UncheckedLayout @'UncheckedDevice @'UncheckedDataType @'UncheckedShape
 --   :: MonadFail m =>
 --      LayoutType
---      -> DeviceType GHC.Int.Int16
+--      -> DeviceType Int16
 --      -> DType
 --      -> [Dim String Integer]
 --      -> m (Tensor
---              'Dependent 'UncheckedLayout 'UncheckedDevice 'UncheckedDataType 'UncheckedShape)
+--              'Dependent
+--              'UncheckedLayout
+--              'UncheckedDevice
+--              'UncheckedDataType
+--              'UncheckedShape)
 --
 -- >>> :type ones @'Dependent @('Layout 'Dense) @'UncheckedDevice @'UncheckedDataType @'UncheckedShape
 -- ones @'Dependent @('Layout 'Dense) @'UncheckedDevice @'UncheckedDataType @'UncheckedShape
