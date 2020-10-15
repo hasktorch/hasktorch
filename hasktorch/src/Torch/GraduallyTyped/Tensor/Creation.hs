@@ -79,8 +79,8 @@ import qualified Torch.Internal.Managed.TensorFactories as ATen
 --              ('DataType 'Half)
 --              'UncheckedShape)
 --
--- >>> :type ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
--- ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'Dim ( 'NamedSized "feature" 8)])
+-- >>> :type ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @('Shape '[ 'NamedSized "batch" 32, 'NamedSized "feature" 8])
+-- ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @('Shape '[ 'NamedSized "batch" 32, 'NamedSized "feature" 8])
 --   :: MonadFail m =>
 --      m (Tensor
 --           'Dependent
