@@ -6,6 +6,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PolyKinds #-}
@@ -31,13 +32,16 @@ import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), KnownDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice (..))
+import Torch.GraduallyTyped.Internal.TensorOptions (tensorOptions)
 import Torch.GraduallyTyped.Layout (KnownLayout (..), Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.Prelude (ifM, (&&^))
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
-import Torch.GraduallyTyped.Shape (Dim (..), DimType (..), KnownShape (..), ReplaceDimF, Shape (..))
+import Torch.GraduallyTyped.RequiresGradient (KnownRequiresGradient, RequiresGradient (..), requiresGradientVal)
+import Torch.GraduallyTyped.Scalar ()
+import Torch.GraduallyTyped.Shape (Dim (..), DimType (..), KnownShape (..), ReplaceDimF, Shape (..), namedDims, sizedDims)
 import Torch.HList (HList (..), pattern (:.))
-import Torch.Internal.Cast (cast0, cast1, cast2)
+import Torch.Internal.Cast (cast0, cast1, cast2, cast3, cast4)
 import Torch.Internal.Class (Castable (..))
+import qualified Torch.Internal.Managed.Native as ATen
 import qualified Torch.Internal.Managed.Type.Context as ATen
 import qualified Torch.Internal.Managed.Type.Extra as ATen
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
@@ -121,6 +125,49 @@ type SparseCUDATensor deviceId = Tensor 'Dependent ( 'Layout 'Sparse) ( 'Device 
 
 -- | Alias for a sparse tensor on CUDA memory with gradients.
 type SparseCUDAParameter deviceId = Tensor 'Independent ( 'Layout 'Sparse) ( 'Device ( 'CUDA deviceId))
+
+instance
+  ( KnownRequiresGradient requiresGradient,
+    KnownLayout layout,
+    KnownDevice device,
+    KnownDataType dataType,
+    KnownShape (Dim (DimType Symbol Nat)) shape
+  ) =>
+  Num (Tensor requiresGradient layout device dataType shape)
+  where
+  (+) = (unsafePerformIO .) . cast2 ATen.add_tt
+  (-) = (unsafePerformIO .) . cast2 ATen.sub_tt
+  (*) = (unsafePerformIO .) . cast2 ATen.mul_tt
+  negate = unsafePerformIO . cast1 ATen.neg_t
+  abs = unsafePerformIO . cast1 ATen.abs_t
+  signum = unsafePerformIO . cast1 ATen.sign_t
+  fromInteger a =
+    go
+      (requiresGradientVal @requiresGradient)
+      (layoutVal @layout)
+      (deviceVal @device)
+      (dataTypeVal @dataType)
+      (shapeVal @(Dim (DimType Symbol Nat)) @shape)
+    where
+      prefix = "Unable to convert the integer " <> show a <> " to a tensor. "
+      go _ UncheckedLayout _ _ _ = error $ prefix <> "The memory layout is unknown."
+      go _ _ UncheckedDevice _ _ = error $ prefix <> "The tensor device is unknown."
+      go _ _ _ UncheckedDataType _ = error $ prefix <> "The tensor data type is unknown."
+      go _ _ _ _ UncheckedShape = error $ prefix <> "The tensor shape is unknown."
+      go requiresGradient (Layout layoutType) (Device deviceType) (DataType dType) (Shape shape) =
+        let opts = tensorOptions requiresGradient layoutType deviceType dType
+            shape' =
+              foldr
+                ( \case
+                    UncheckedDim -> \_ -> error $ prefix <> "Not all dimensions are known."
+                    Dim dimType -> \dimTypes -> dimType : dimTypes
+                )
+                []
+                shape
+         in case (namedDims shape', sizedDims shape') of
+              (Just names, Just sizes) -> unsafePerformIO $ cast4 ATen.full_lsNo sizes a names opts
+              (_, Just sizes) -> unsafePerformIO $ cast3 ATen.full_lso sizes a opts
+              _ -> error $ prefix <> "Invalid tensor shape specification " <> show shape <> "."
 
 instance
   Castable

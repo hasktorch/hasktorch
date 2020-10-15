@@ -108,7 +108,7 @@ instance
   cat =
     withSelectDim @(IsUncheckedSelectDimF selectDim) @selectDim @([Tensor requiresGradient layout device dataType shape] -> CatF selectDim (Tensor requiresGradient layout device dataType shape) []) $
       \by tensors -> case by of
-        ByName name -> undefined
+        ByName name -> unsafePerformIO $ cast2 ATen.cat_ln tensors name
         ByIndex index -> unsafePerformIO $ cast2 ATen.cat_ll tensors (fromInteger index :: Int)
 
 type family
@@ -159,5 +159,5 @@ instance
   cat =
     withSelectDim @(IsUncheckedSelectDimF selectDim) @selectDim @(HList tensors -> CatF selectDim tensors HList) $
       \by tensors -> case by of
-        ByName name -> undefined
+        ByName name -> unsafePerformIO $ cast2 ATen.cat_ln tensors name
         ByIndex index -> unsafePerformIO $ cast2 ATen.cat_ll tensors (fromInteger index :: Int)

@@ -12,6 +12,7 @@ module Torch.GraduallyTyped
     module Torch.GraduallyTyped.DType,
     module Torch.GraduallyTyped.Layout,
     module Torch.GraduallyTyped.RequiresGradient,
+    module Torch.GraduallyTyped.Scalar,
     module Torch.HList,
     module Torch.DType,
   )
@@ -28,6 +29,7 @@ import Torch.GraduallyTyped.NN
 import Torch.GraduallyTyped.Prelude
 import Torch.GraduallyTyped.Random
 import Torch.GraduallyTyped.RequiresGradient
+import Torch.GraduallyTyped.Scalar
 import Torch.GraduallyTyped.Shape
 import Torch.GraduallyTyped.Tensor
 import Torch.HList

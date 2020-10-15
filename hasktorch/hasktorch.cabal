@@ -25,6 +25,7 @@ Flag disable-doctest
 library
  exposed-modules:     Torch.GraduallyTyped
                     , Torch.GraduallyTyped.Prelude
+                    , Torch.GraduallyTyped.Scalar
                     , Torch.GraduallyTyped.Tensor
                     , Torch.GraduallyTyped.Tensor.Type
                     , Torch.GraduallyTyped.Tensor.Creation
