@@ -187,6 +187,26 @@ class
     Proxy (Either outputA outputB) ->
     OutputSum modelARandomness modelA inputA outputA modelBRandomness modelB inputB outputB
 
+class
+  GHasForwardSum
+    (modelARandomness :: ModelRandomness)
+    (modelA :: Type -> Type)
+    (inputA :: Type -> Type)
+    outputA
+    (modelBRandomness :: ModelRandomness)
+    (modelB :: Type -> Type)
+    (inputB :: Type -> Type)
+    outputB
+  where
+  type GOutputSum modelARandomness modelA inputA outputA modelBRandomness modelB inputB outputB :: Type
+  gForwardSum :: forall a b c d e.
+    Proxy modelARandomness ->
+    Proxy modelBRandomness ->
+    Either (modelA a) (modelB b) ->
+    Either (inputA c) (inputB d) ->
+    Proxy (Either outputA outputB) ->
+    Rep (GOutputSum modelARandomness modelA inputA outputA modelBRandomness modelB inputB outputB) e
+
 --
 -- Deterministic instances
 --
@@ -227,6 +247,21 @@ instance
   forwardSum _ _ (Left modelA) (Left inputA) _ = Just . Left $ forward modelA inputA
   forwardSum _ _ (Right modelB) (Right inputB) _ = Just . Right $ forward modelB inputB
   forwardSum _ _ _ _ _ = Nothing
+
+instance
+  ( GHasForward modelA inputA,
+    GOutput modelA inputA ~ outputA,
+    GHasForward modelB inputB,
+    GOutput modelB inputB ~ outputB,
+    Generic outputA,
+    Generic outputB
+  ) =>
+  GHasForwardSum 'Deterministic modelA inputA outputA 'Deterministic modelB inputB outputB
+  where
+  type GOutputSum 'Deterministic modelA inputA outputA 'Deterministic modelB inputB outputB = Maybe (Either outputA outputB)
+  gForwardSum _ _ (Left modelA) (Left inputA) _ = from $ Just . Left . to $ gForward modelA inputA
+  gForwardSum _ _ (Right modelB) (Right inputB) _ = from $ Just . Right . to $ gForward modelB inputB
+  gForwardSum _ _ _ _ _ = from Nothing
 
 --
 -- Stochastic mixed instances
