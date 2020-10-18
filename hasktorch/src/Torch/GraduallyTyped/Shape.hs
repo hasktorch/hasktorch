@@ -108,6 +108,18 @@ instance
   where
   dimVal = Dim (dimTypeVal @dimType)
 
+class WithDimC (isUncheckedDim :: Bool) (dim :: Dim (DimType Symbol Nat)) (f :: Type) where
+  type WithDimF isUncheckedDim f :: Type
+  withDim :: (DimType String Integer -> f) -> WithDimF isUncheckedDim f
+
+instance WithDimC 'True dim f where
+  type WithDimF 'True f = DimType String Integer -> f
+  withDim = id
+
+instance (KnownDim dim) => WithDimC 'False dim f where
+  type WithDimF 'False f = f
+  withDim f = case dimVal @dim of Dim dimType -> f dimType
+
 type UnifyDimNameErrorMessage dim dim' =
   "The supplied dimensions must be the same,"
     % "but dimensions with different names were found:"

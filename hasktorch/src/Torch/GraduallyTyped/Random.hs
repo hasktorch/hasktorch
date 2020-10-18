@@ -15,7 +15,8 @@ import qualified Torch.Internal.Type as ATen
 data Generator (device :: Device (DeviceType Nat)) where
   UnsafeGenerator ::
     forall device.
-    { seed :: Word64,
-      atenGenerator :: TVar (Maybe (ForeignPtr ATen.Generator))
+    { generatorSeed :: Word64,
+      generatorState :: TVar (Maybe (ForeignPtr ATen.Generator))
     } ->
     Generator device
+  NoGenerator :: forall device. Generator device

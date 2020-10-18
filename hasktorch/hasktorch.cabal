@@ -30,6 +30,13 @@ library
                     , Torch.GraduallyTyped.Tensor.Type
                     , Torch.GraduallyTyped.Tensor.Creation
                     , Torch.GraduallyTyped.Tensor.IndexingSlicingJoining
+                    , Torch.GraduallyTyped.Tensor.MathOperations
+                    , Torch.GraduallyTyped.Tensor.MathOperations.Pointwise
+                    , Torch.GraduallyTyped.Tensor.MathOperations.Reduction
+                    , Torch.GraduallyTyped.Tensor.MathOperations.Comparison
+                    , Torch.GraduallyTyped.Tensor.MathOperations.Spectral
+                    , Torch.GraduallyTyped.Tensor.MathOperations.Other
+                    , Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack
                     , Torch.GraduallyTyped.RequiresGradient
                     , Torch.GraduallyTyped.DType
                     , Torch.GraduallyTyped.Device
@@ -42,6 +49,8 @@ library
                     , Torch.GraduallyTyped.NN
                     , Torch.GraduallyTyped.NN.Class
                     , Torch.GraduallyTyped.NN.Initialization
+                    , Torch.GraduallyTyped.NN.Linear
+                    , Torch.GraduallyTyped.NN.Transformer
                     , Torch.GraduallyTyped.Internal.TensorOptions
                     , Torch
                     , Torch.Tensor

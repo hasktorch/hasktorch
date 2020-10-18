@@ -54,17 +54,17 @@ import qualified Torch.Internal.Type as ATen (Tensor, TensorList)
 -- | A gradually typed tensor.
 --
 -- @
---                               +-> Compute device, e.g. 'Device 'CPU
---                               |
---                               |               +-> List of dimensions, e.g. 'Shape '[ 'Dim ('Sized 8), 'Dim ('Sized 1) ]
---                               +               +
+--                                +-> Compute device, e.g. 'Device 'CPU
+--                                |
+--                                |               +-> List of dimensions, e.g. 'Shape '[ 'Dim ('Sized 8), 'Dim ('Sized 1) ]
+--                                +               +
 -- Tensor requiresGradient layout device dataType shape
---       +                +             +
---       |                |             +-> Data type, e.g. 'DataType 'Float
---       |                |
---       |                +-> Memory layout, e.g. 'Layout 'Dense
---       |
---       +-> Whether or not the tensor requires a gradient, e.g. 'Independent for one that does
+--        +                +             +
+--        |                |             +-> Data type, e.g. 'DataType 'Float
+--        |                |
+--        |                +-> Memory layout, e.g. 'Layout 'Dense
+--        |
+--        +-> Whether or not the tensor requires a gradient, e.g. 'Independent for one that does
 -- @
 newtype
   Tensor
