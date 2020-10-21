@@ -216,13 +216,20 @@ ones =
 
 checkedOnes ::
   forall layoutType deviceType dType dims.
-  (KnownLayoutType layoutType, KnownDeviceType deviceType, KnownDType dType, KnownList (Dim (DimType Symbol Nat)) dims) =>
-  Tensor
-    'Dependent
-    ( 'Layout layoutType)
-    ( 'Device deviceType)
-    ( 'DataType dType)
+  ( KnownLayoutType layoutType,
+    KnownDeviceType deviceType,
+    KnownDType dType,
+    WithShapeC ( 'Shape dims) (Tensor 'Dependent ( 'Layout layoutType) ( 'Device deviceType) ( 'DataType dType) ( 'Shape dims))
+  ) =>
+  WithShapeF
     ( 'Shape dims)
+    ( Tensor
+        'Dependent
+        ( 'Layout layoutType)
+        ( 'Device deviceType)
+        ( 'DataType dType)
+        ( 'Shape dims)
+    )
 checkedOnes = ones @ 'Dependent @( 'Layout layoutType) @( 'Device deviceType) @( 'DataType dType) @( 'Shape dims)
 
 -- | Like 'ones', but specialized to the case in which all arguments are unchecked at compile time.

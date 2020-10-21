@@ -346,35 +346,26 @@ instance WithShapeC 'UncheckedShape f where
   withShape = id
   withoutShape = id
 
-instance (KnownDimType dimType) => KnownElem (DimType Symbol Nat) dimType where
-  type ElemValF (DimType Symbol Nat) = DimType String Integer
-  elemVal = dimTypeVal @dimType
-
-instance
-  ( TypeError
-      ( "The supplied tensor shape must have checked dimensions only,"
-          % "but a dimension list with at least one unchecked dimension was found."
-      )
-  ) =>
-  KnownElem (Dim (DimType Symbol Nat)) 'UncheckedSelectDim
-  where
-  type ElemValF (Dim (DimType Symbol Nat)) = ElemValF (DimType Symbol Nat)
-  elemVal = undefined
-
-instance
-  KnownElem (DimType Symbol Nat) dimType =>
-  KnownElem (Dim (DimType Symbol Nat)) ( 'Dim dimType)
-  where
-  type ElemValF (Dim (DimType Symbol Nat)) = ElemValF (DimType Symbol Nat)
-  elemVal = elemVal @(DimType Symbol Nat) @dimType
-
-instance
-  (KnownList (Dim (DimType Symbol Nat)) dimTypes) =>
-  WithShapeC ( 'Shape dimTypes) f
-  where
-  type WithShapeF ( 'Shape dimTypes) f = f
-  withShape f = f (listVal @(Dim (DimType Symbol Nat)) @dimTypes)
+instance WithShapeC ( 'Shape '[]) f where
+  type WithShapeF ( 'Shape '[]) f = f
+  withShape f = f []
   withoutShape = const
+
+instance
+  (WithShapeC ( 'Shape dims) f) =>
+  WithShapeC ( 'Shape ( 'UncheckedDim ': dims)) f
+  where
+  type WithShapeF ( 'Shape ( 'UncheckedDim ': dims)) f = DimType String Integer -> WithShapeF ( 'Shape dims) f
+  withShape f dimType = withShape @( 'Shape dims) @f $ \dimTypes -> f (dimType : dimTypes)
+  withoutShape f (dimType : dimTypes) = withoutShape @( 'Shape dims) @f (f dimType) dimTypes
+
+instance
+  (WithShapeC ( 'Shape dims) f, KnownDimType dimType) =>
+  WithShapeC ( 'Shape ( 'Dim dimType ': dims)) f
+  where
+  type WithShapeF ( 'Shape ( 'Dim dimType ': dims)) f = WithShapeF ( 'Shape dims) f
+  withShape f = withShape @( 'Shape dims) @f $ \dimTypes -> f (dimTypeVal @dimType : dimTypes)
+  withoutShape f (_ : dimTypes) = withoutShape @( 'Shape dims) @f f dimTypes
 
 type family ConcatShapesF (shape :: Shape [k]) (shape' :: Shape [k]) :: Shape [k] where
   ConcatShapesF 'UncheckedShape _ = 'UncheckedShape
