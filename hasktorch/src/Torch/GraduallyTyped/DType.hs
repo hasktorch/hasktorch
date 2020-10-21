@@ -65,17 +65,20 @@ instance
   where
   dataTypeVal = DataType (dTypeVal @dType)
 
-class WithDataTypeC (isAnyDataType :: Bool) (dataType :: DataType DType) (f :: Type) where
-  type WithDataTypeF isAnyDataType f :: Type
-  withDataType :: (DType -> f) -> WithDataTypeF isAnyDataType f
+class WithDataTypeC (dataType :: DataType DType) (f :: Type) where
+  type WithDataTypeF dataType f :: Type
+  withDataType :: (DType -> f) -> WithDataTypeF dataType f
+  withoutDataType :: WithDataTypeF dataType f -> (DType -> f)
 
-instance WithDataTypeC 'True dataType f where
-  type WithDataTypeF 'True f = DType -> f
+instance WithDataTypeC 'UncheckedDataType f where
+  type WithDataTypeF 'UncheckedDataType f = DType -> f
   withDataType = id
+  withoutDataType = id
 
-instance (KnownDataType dataType) => WithDataTypeC 'False dataType f where
-  type WithDataTypeF 'False f = f
-  withDataType f = case dataTypeVal @dataType of DataType dataType -> f dataType
+instance (KnownDType dType) => WithDataTypeC ( 'DataType dType) f where
+  type WithDataTypeF ( 'DataType dType) f = f
+  withDataType f = f (dTypeVal @dType)
+  withoutDataType = const
 
 type family UnifyDataTypeF (dataType :: DataType DType) (dataType' :: DataType DType) :: DataType DType where
   UnifyDataTypeF 'UncheckedDataType 'UncheckedDataType = 'UncheckedDataType

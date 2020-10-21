@@ -26,6 +26,15 @@ data LayoutType
     Sparse
   deriving (Show, Eq)
 
+class KnownLayoutType (layoutType :: LayoutType) where
+  layoutTypeVal :: LayoutType
+
+instance KnownLayoutType 'Dense where
+  layoutTypeVal = Dense
+
+instance KnownLayoutType 'Sparse where
+  layoutTypeVal = Sparse
+
 instance Castable LayoutType ATen.Layout where
   cast Dense f = f ATen.kStrided
   cast Sparse f = f ATen.kSparse
@@ -48,23 +57,23 @@ class KnownLayout (layout :: Layout LayoutType) where
 instance KnownLayout 'UncheckedLayout where
   layoutVal = UncheckedLayout
 
-instance KnownLayout ( 'Layout 'Dense) where
-  layoutVal = Layout Dense
+instance (KnownLayoutType layoutType) => KnownLayout ( 'Layout layoutType) where
+  layoutVal = Layout (layoutTypeVal @layoutType)
 
-instance KnownLayout ( 'Layout 'Sparse) where
-  layoutVal = Layout Sparse
+class WithLayoutC (layout :: Layout LayoutType) (f :: Type) where
+  type WithLayoutF layout f :: Type
+  withLayout :: (LayoutType -> f) -> WithLayoutF layout f
+  withoutLayout :: WithLayoutF layout f -> (LayoutType -> f)
 
-class WithLayoutC (isAnyLayout :: Bool) (layout :: Layout LayoutType) (f :: Type) where
-  type WithLayoutF isAnyLayout f :: Type
-  withLayout :: (LayoutType -> f) -> WithLayoutF isAnyLayout f
-
-instance WithLayoutC 'True layout f where
-  type WithLayoutF 'True f = LayoutType -> f
+instance WithLayoutC 'UncheckedLayout f where
+  type WithLayoutF 'UncheckedLayout f = LayoutType -> f
   withLayout = id
+  withoutLayout = id
 
-instance (KnownLayout layout) => WithLayoutC 'False layout f where
-  type WithLayoutF 'False f = f
-  withLayout f = case layoutVal @layout of Layout layout -> f layout
+instance (KnownLayoutType layoutType) => WithLayoutC ( 'Layout layoutType) f where
+  type WithLayoutF ( 'Layout layoutType) f = f
+  withLayout f = f (layoutTypeVal @layoutType)
+  withoutLayout = const
 
 type family UnifyLayoutF (layout :: Layout LayoutType) (layout' :: Layout LayoutType) :: Layout LayoutType where
   UnifyLayoutF 'UncheckedLayout 'UncheckedLayout = 'UncheckedLayout

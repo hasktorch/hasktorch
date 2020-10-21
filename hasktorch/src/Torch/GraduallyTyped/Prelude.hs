@@ -1,6 +1,11 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -10,6 +15,9 @@ module Torch.GraduallyTyped.Prelude
     module Data.Proxy,
     module Data.Type.Bool,
     module GHC.TypeLits,
+    All,
+    KnownElem (..),
+    KnownList (..),
     Assert,
     Fst,
     Snd,
@@ -40,11 +48,36 @@ import Data.Type.Bool (If, type (||))
 import GHC.Exts (Any)
 import GHC.TypeLits (ErrorMessage (..), TypeError (..))
 
+type family All (c :: k -> Constraint) (xs :: [k]) :: Constraint where
+  All _ '[] = ()
+  All c (h ': t) = (c h, All c t)
+
+class KnownElem k x where
+  type ElemValF k :: Type
+  elemVal :: ElemValF k
+
+class KnownList k (xs :: [k]) where
+  listVal :: [ElemValF k]
+
+instance KnownList k '[] where
+  listVal = []
+
+instance (KnownElem k x, KnownList k xs) => KnownList k (x ': xs) where
+  listVal = elemVal @k @x : listVal @k @xs
+
+instance KnownElem Type Int where
+  type ElemValF Type = Int
+  elemVal = 1
+
+instance KnownElem Type String where
+  type ElemValF Type = Int
+  elemVal = 2
+
 data T1
 
 -- | Can be used to report stuck type families,
 -- see https://kcsongor.github.io/report-stuck-families/
-type family Assert (err :: Constraint)  (a :: k) :: k where
+type family Assert (err :: Constraint) (a :: k) :: k where
   Assert _ T1 = Any
   Assert _ k = k
 

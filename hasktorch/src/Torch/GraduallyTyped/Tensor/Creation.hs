@@ -9,7 +9,12 @@
 {-# LANGUAGE TypeOperators #-}
 
 module Torch.GraduallyTyped.Tensor.Creation
-  ( ones,
+  ( create,
+    CreateF,
+    CreateC,
+    unCreate,
+    ones,
+    checkedOnes,
     uncheckedOnes,
     randn,
     uncheckedRandn,
@@ -19,17 +24,17 @@ where
 import Control.Monad.State.Strict (runState)
 import Data.Int (Int16)
 import Data.Kind (Type)
-import Data.Type.Equality (type (==))
 import GHC.TypeLits (Nat, Symbol)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType)
-import Torch.GraduallyTyped.DType (DataType (..), WithDataTypeC (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType, WithDeviceC (..))
+import Torch.GraduallyTyped.DType (DataType (..), KnownDType, WithDataTypeC (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType, KnownDeviceType, WithDeviceC (..))
 import Torch.GraduallyTyped.Internal.TensorOptions (tensorOptions)
-import Torch.GraduallyTyped.Layout (Layout (..), LayoutType, WithLayoutC (..))
+import Torch.GraduallyTyped.Layout (KnownLayoutType, Layout (..), LayoutType, WithLayoutC (..))
+import Torch.GraduallyTyped.Prelude (KnownList)
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (KnownRequiresGradient, RequiresGradient (..), requiresGradientVal)
-import Torch.GraduallyTyped.Shape (DimType, Shape (..), WidenShapeF, WithShapeC (..), namedDims, sizedDims)
+import Torch.GraduallyTyped.Shape (Dim, DimType, Shape (..), WithShapeC (..), namedDims, sizedDims)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
 import Torch.Internal.Cast (cast2, cast3)
 import qualified Torch.Internal.Managed.TensorFactories as ATen
@@ -48,12 +53,12 @@ type CreateC
   (layout :: Layout LayoutType)
   (device :: Device (DeviceType Nat))
   (dataType :: DataType DType)
-  (shape :: Shape [DimType Symbol Nat]) =
+  (shape :: Shape [Dim (DimType Symbol Nat)]) =
   ( KnownRequiresGradient requiresGradient,
-    WithLayoutC (layout == 'UncheckedLayout) layout (WithDeviceF (device == 'UncheckedDevice) (WithDataTypeF (dataType == 'UncheckedDataType) (WithShapeF (shape == 'UncheckedShape) createOut))),
-    WithDeviceC (device == 'UncheckedDevice) device (WithDataTypeF (dataType == 'UncheckedDataType) (WithShapeF (shape == 'UncheckedShape) createOut)),
-    WithDataTypeC (dataType == 'UncheckedDataType) dataType (WithShapeF (shape == 'UncheckedShape) createOut),
-    WithShapeC (shape == 'UncheckedShape) shape createOut
+    WithLayoutC layout (WithDeviceF device (WithDataTypeF dataType (WithShapeF shape createOut))),
+    WithDeviceC device (WithDataTypeF dataType (WithShapeF shape createOut)),
+    WithDataTypeC dataType (WithShapeF shape createOut),
+    WithShapeC shape createOut
   )
 
 type CreateF
@@ -62,15 +67,15 @@ type CreateF
   (layout :: Layout LayoutType)
   (device :: Device (DeviceType Nat))
   (dataType :: DataType DType)
-  (shape :: Shape [DimType Symbol Nat]) =
+  (shape :: Shape [Dim (DimType Symbol Nat)]) =
   WithLayoutF
-    (layout == 'UncheckedLayout)
+    layout
     ( WithDeviceF
-        (device == 'UncheckedDevice)
+        device
         ( WithDataTypeF
-            (dataType == 'UncheckedDataType)
+            dataType
             ( WithShapeF
-                (shape == 'UncheckedShape)
+                shape
                 createOut
             )
         )
@@ -88,15 +93,42 @@ create ::
   ) ->
   CreateF createOut requiresGradient layout device dataType shape
 create go =
-  withLayout @(layout == 'UncheckedLayout) @layout @(WithDeviceF (device == 'UncheckedDevice) (WithDataTypeF (dataType == 'UncheckedDataType) (WithShapeF (shape == 'UncheckedShape) createOut))) $
+  withLayout @layout $
     \layoutType ->
-      withDevice @(device == 'UncheckedDevice) @device @(WithDataTypeF (dataType == 'UncheckedDataType) (WithShapeF (shape == 'UncheckedShape) createOut)) $
+      withDevice @device $
         \deviceType ->
-          withDataType @(dataType == 'UncheckedDataType) @dataType @(WithShapeF (shape == 'UncheckedShape) createOut) $
+          withDataType @dataType $
             \dType ->
-              withShape @(shape == 'UncheckedShape) @shape @createOut $
+              withShape @shape $
                 \shape ->
                   go (requiresGradientVal @requiresGradient) layoutType deviceType dType shape
+
+unCreate ::
+  forall createOut requiresGradient layout device dataType shape.
+  CreateC createOut requiresGradient layout device dataType shape =>
+  CreateF createOut requiresGradient layout device dataType shape ->
+  ( RequiresGradient ->
+    LayoutType ->
+    DeviceType Int16 ->
+    DType ->
+    [DimType String Integer] ->
+    createOut
+  )
+unCreate go =
+  \_requiresGradient layoutType deviceType dType shape ->
+    ( withoutShape @shape
+        ( withoutDataType @dataType
+            ( withoutDevice @device
+                ( withoutLayout @layout
+                    go
+                    layoutType
+                )
+                deviceType
+            )
+            dType
+        )
+        shape
+    )
 
 -- | Create a tensor of ones.
 --
@@ -162,9 +194,17 @@ create go =
 --              '[ 'Dim ('NamedSized "batch" 32), 'Dim ('NamedSized "feature" 8)]))
 ones ::
   forall requiresGradient layout device dataType shape.
-  CreateC (Tensor requiresGradient layout device dataType (WidenShapeF shape)) requiresGradient layout device dataType shape =>
-  CreateF (Tensor requiresGradient layout device dataType (WidenShapeF shape)) requiresGradient layout device dataType shape
-ones = create @(Tensor requiresGradient layout device dataType (WidenShapeF shape)) @requiresGradient @layout @device @dataType @shape go
+  CreateC (Tensor requiresGradient layout device dataType shape) requiresGradient layout device dataType shape =>
+  CreateF (Tensor requiresGradient layout device dataType shape) requiresGradient layout device dataType shape
+ones =
+  create
+    @(Tensor requiresGradient layout device dataType shape)
+    @requiresGradient
+    @layout
+    @device
+    @dataType
+    @shape
+    go
   where
     go requiresGradient layoutType deviceType dType shape =
       let opts = tensorOptions requiresGradient layoutType deviceType dType
@@ -173,6 +213,17 @@ ones = create @(Tensor requiresGradient layout device dataType (WidenShapeF shap
             (Nothing, Just sizes) -> cast2 ATen.ones_lo sizes opts
             _ -> fail $ "Invalid tensor shape specification " <> show shape <> "."
        in UnsafeTensor tensor
+
+checkedOnes ::
+  forall layoutType deviceType dType dims.
+  (KnownLayoutType layoutType, KnownDeviceType deviceType, KnownDType dType, KnownList (Dim (DimType Symbol Nat)) dims) =>
+  Tensor
+    'Dependent
+    ( 'Layout layoutType)
+    ( 'Device deviceType)
+    ( 'DataType dType)
+    ( 'Shape dims)
+checkedOnes = ones @ 'Dependent @( 'Layout layoutType) @( 'Device deviceType) @( 'DataType dType) @( 'Shape dims)
 
 -- | Like 'ones', but specialized to the case in which all arguments are unchecked at compile time.
 uncheckedOnes ::
@@ -195,9 +246,9 @@ uncheckedOnes = ones @ 'Dependent @ 'UncheckedLayout @ 'UncheckedDevice @ 'Unche
 
 randn ::
   forall requiresGradient layout device dataType shape.
-  CreateC (Generator device -> (Tensor requiresGradient layout device dataType (WidenShapeF shape), Generator device)) requiresGradient layout device dataType shape =>
-  CreateF (Generator device -> (Tensor requiresGradient layout device dataType (WidenShapeF shape), Generator device)) requiresGradient layout device dataType shape
-randn = create @(Generator device -> (Tensor requiresGradient layout device dataType (WidenShapeF shape), Generator device)) @requiresGradient @layout @device @dataType @shape go
+  CreateC (Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape =>
+  CreateF (Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape
+randn = create @(Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) @requiresGradient @layout @device @dataType @shape go
   where
     go requiresGradient layoutType deviceType dType shape = runState $ do
       opts <- pure $ tensorOptions requiresGradient layoutType deviceType dType

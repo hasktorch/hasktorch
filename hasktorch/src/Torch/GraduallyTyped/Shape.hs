@@ -28,7 +28,7 @@ import Data.Type.Equality (type (==))
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (KnownNat, KnownSymbol, Nat, Symbol, TypeError, natVal, symbolVal, type (+), type (-))
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.GraduallyTyped.Prelude (Assert, Concat, PrependMaybe)
+import Torch.GraduallyTyped.Prelude (Assert, Concat, KnownElem (..), KnownList (..), PrependMaybe)
 import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Managed.Cast as ATen ()
 import qualified Torch.Internal.Managed.Type.Dimname as ATen (dimname_symbol, fromSymbol_s)
@@ -108,17 +108,20 @@ instance
   where
   dimVal = Dim (dimTypeVal @dimType)
 
-class WithDimC (isUncheckedDim :: Bool) (dim :: Dim (DimType Symbol Nat)) (f :: Type) where
-  type WithDimF isUncheckedDim f :: Type
-  withDim :: (DimType String Integer -> f) -> WithDimF isUncheckedDim f
+class WithDimC (dim :: Dim (DimType Symbol Nat)) (f :: Type) where
+  type WithDimF dim f :: Type
+  withDim :: (DimType String Integer -> f) -> WithDimF dim f
+  withoutDim :: WithDimF dim f -> (DimType String Integer -> f)
 
-instance WithDimC 'True dim f where
-  type WithDimF 'True f = DimType String Integer -> f
+instance WithDimC 'UncheckedDim f where
+  type WithDimF 'UncheckedDim f = DimType String Integer -> f
   withDim = id
+  withoutDim = id
 
-instance (KnownDim dim) => WithDimC 'False dim f where
-  type WithDimF 'False f = f
-  withDim f = case dimVal @dim of Dim dimType -> f dimType
+instance (KnownDimType dimType) => WithDimC ( 'Dim dimType) f where
+  type WithDimF ( 'Dim dimType) f = f
+  withDim f = f (dimTypeVal @dimType)
+  withoutDim = const
 
 type UnifyDimNameErrorMessage dim dim' =
   "The supplied dimensions must be the same,"
@@ -255,17 +258,20 @@ instance KnownSelectDim 'UncheckedSelectDim where
 instance (KnownBy by) => KnownSelectDim ( 'SelectDim by) where
   selectDimVal = let by = byVal @by in SelectDim by
 
-class WithSelectDimC (isUncheckedSelectDim :: Bool) (selectDim :: SelectDim (By Symbol Nat)) (f :: Type) where
-  type WithSelectDimF isUncheckedSelectDim f :: Type
-  withSelectDim :: (By String Integer -> f) -> WithSelectDimF isUncheckedSelectDim f
+class WithSelectDimC (selectDim :: SelectDim (By Symbol Nat)) (f :: Type) where
+  type WithSelectDimF selectDim f :: Type
+  withSelectDim :: (By String Integer -> f) -> WithSelectDimF selectDim f
+  withoutSelectDim :: WithSelectDimF selectDim f -> (By String Integer -> f)
 
-instance WithSelectDimC 'True selectDim f where
-  type WithSelectDimF 'True f = By String Integer -> f
+instance WithSelectDimC 'UncheckedSelectDim f where
+  type WithSelectDimF 'UncheckedSelectDim f = By String Integer -> f
   withSelectDim = id
+  withoutSelectDim = id
 
-instance (KnownSelectDim selectDim) => WithSelectDimC 'False selectDim f where
-  type WithSelectDimF 'False f = f
-  withSelectDim f = case selectDimVal @selectDim of SelectDim by -> f by
+instance (KnownBy by) => WithSelectDimC ( 'SelectDim by) f where
+  type WithSelectDimF ( 'SelectDim by) f = f
+  withSelectDim f = f (byVal @by)
+  withoutSelectDim = const
 
 type family NoUncheckedSelectDim selectDim where
   NoUncheckedSelectDim selectDim = TypeError ("No way to prove that " <> selectDim <> " is UncheckedSelectDim. Please specify.")
@@ -330,17 +336,45 @@ instance
     case shapeVal @_ @( 'Shape dims) of
       Shape dims -> Shape $ dimVal @dim : dims
 
-class WithShapeC (isUncheckedShape :: Bool) (shape :: Shape [DimType Symbol Nat]) (f :: Type) where
-  type WithShapeF isUncheckedShape f :: Type
-  withShape :: ([DimType String Integer] -> f) -> WithShapeF isUncheckedShape f
+class WithShapeC (shape :: Shape [Dim (DimType Symbol Nat)]) (f :: Type) where
+  type WithShapeF shape f :: Type
+  withShape :: ([DimType String Integer] -> f) -> WithShapeF shape f
+  withoutShape :: WithShapeF shape f -> ([DimType String Integer] -> f)
 
-instance WithShapeC 'True shape f where
-  type WithShapeF 'True f = [DimType String Integer] -> f
+instance WithShapeC 'UncheckedShape f where
+  type WithShapeF 'UncheckedShape f = [DimType String Integer] -> f
   withShape = id
+  withoutShape = id
 
-instance (KnownShape (DimType Symbol Nat) shape) => WithShapeC 'False shape f where
-  type WithShapeF 'False f = f
-  withShape f = case shapeVal @_ @shape of Shape shape -> f shape
+instance (KnownDimType dimType) => KnownElem (DimType Symbol Nat) dimType where
+  type ElemValF (DimType Symbol Nat) = DimType String Integer
+  elemVal = dimTypeVal @dimType
+
+instance
+  ( TypeError
+      ( "The supplied tensor shape must have checked dimensions only,"
+          % "but a dimension list with at least one unchecked dimension was found."
+      )
+  ) =>
+  KnownElem (Dim (DimType Symbol Nat)) 'UncheckedSelectDim
+  where
+  type ElemValF (Dim (DimType Symbol Nat)) = ElemValF (DimType Symbol Nat)
+  elemVal = undefined
+
+instance
+  KnownElem (DimType Symbol Nat) dimType =>
+  KnownElem (Dim (DimType Symbol Nat)) ( 'Dim dimType)
+  where
+  type ElemValF (Dim (DimType Symbol Nat)) = ElemValF (DimType Symbol Nat)
+  elemVal = elemVal @(DimType Symbol Nat) @dimType
+
+instance
+  (KnownList (Dim (DimType Symbol Nat)) dimTypes) =>
+  WithShapeC ( 'Shape dimTypes) f
+  where
+  type WithShapeF ( 'Shape dimTypes) f = f
+  withShape f = f (listVal @(Dim (DimType Symbol Nat)) @dimTypes)
+  withoutShape = const
 
 type family ConcatShapesF (shape :: Shape [k]) (shape' :: Shape [k]) :: Shape [k] where
   ConcatShapesF 'UncheckedShape _ = 'UncheckedShape

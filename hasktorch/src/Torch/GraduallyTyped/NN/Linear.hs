@@ -1,4 +1,3 @@
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -7,6 +6,7 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -15,7 +15,6 @@
 module Torch.GraduallyTyped.NN.Linear where
 
 import Control.Monad.State.Strict (MonadState (state), runState)
-import Data.Type.Equality (type (==))
 import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType)
@@ -23,10 +22,13 @@ import Torch.GraduallyTyped.DType (DataType (..), WithDataTypeC (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType, WithDeviceC (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
+import Torch.GraduallyTyped.NN.Initialization (xavierUniform)
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
-import Torch.GraduallyTyped.Shape (Dim (..), DimType (..), Shape (..), WithDimC (..))
+import Torch.GraduallyTyped.Shape (Dim (..), DimType (..), Shape (..), WidenShapeF, WithDimC (..))
+import Torch.GraduallyTyped.Tensor.Creation (CreateC, unCreate)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
+import Torch.GraduallyTyped.Prelude (KnownElem)
 
 data
   Linear
@@ -51,39 +53,51 @@ instance
   forward = undefined
 
 instance
-  ( WithDeviceC (device == 'UncheckedDevice) device (WithDataTypeF (dataType == 'UncheckedDataType) (WithDimF (inputDim == 'UncheckedDim) (WithDimF (outputDim == 'UncheckedDim) (Generator device -> (Linear device dataType inputDim outputDim, Generator device))))),
-    WithDataTypeC (dataType == 'UncheckedDataType) dataType (WithDimF (inputDim == 'UncheckedDim) (WithDimF (outputDim == 'UncheckedDim) (Generator device -> (Linear device dataType inputDim outputDim, Generator device)))),
-    WithDimC (inputDim == 'UncheckedDim) inputDim (WithDimF (outputDim == 'UncheckedDim) (Generator device -> (Linear device dataType inputDim outputDim, Generator device))),
-    WithDimC (outputDim == 'UncheckedDim) outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device))
+  ( WithDeviceC device (WithDataTypeF dataType (WithDimF inputDim (WithDimF outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device))))),
+    WithDataTypeC dataType (WithDimF inputDim (WithDimF outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device)))),
+    WithDimC inputDim (WithDimF outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device))),
+    WithDimC outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device)),
+    CreateC (Double -> Generator device -> (Tensor 'Independent ( 'Layout 'Dense) device dataType ('Shape '[outputDim, inputDim]), Generator device)) 'Independent ( 'Layout 'Dense) device dataType ('Shape '[outputDim, inputDim]),
+    CreateC (Generator device -> (Tensor 'Independent ( 'Layout 'Dense) device dataType ('Shape '[outputDim, inputDim]), Generator device)) 'Independent ( 'Layout 'Dense) device dataType ('Shape '[outputDim, inputDim])
   ) =>
   HasInitialize (Linear device dataType inputDim outputDim)
   where
   type
     InitializeF (Linear device dataType inputDim outputDim) =
       ( WithDeviceF
-          (device == 'UncheckedDevice)
+          device
           ( WithDataTypeF
-              (dataType == 'UncheckedDataType)
+              dataType
               ( WithDimF
-                  (inputDim == 'UncheckedDim)
+                  inputDim
                   ( WithDimF
-                      (outputDim == 'UncheckedDim)
+                      outputDim
                       (Generator device -> (Linear device dataType inputDim outputDim, Generator device))
                   )
               )
           )
       )
   initialize =
-    withDevice @(device == 'UncheckedDevice) @device @(WithDataTypeF (dataType == 'UncheckedDataType) (WithDimF (inputDim == 'UncheckedDim) (WithDimF (outputDim == 'UncheckedDim) (Generator device -> (Linear device dataType inputDim outputDim, Generator device))))) $
-      \device ->
-        withDataType @(dataType == 'UncheckedDataType) @dataType @(WithDimF (inputDim == 'UncheckedDim) (WithDimF (outputDim == 'UncheckedDim) (Generator device -> (Linear device dataType inputDim outputDim, Generator device)))) $
-         \dataType ->
-           withDim @(inputDim == 'UncheckedDim) @inputDim @(WithDimF (outputDim == 'UncheckedDim) (Generator device -> (Linear device dataType inputDim outputDim, Generator device))) $
-            \inputDim ->
-              withDim @(outputDim == 'UncheckedDim) @outputDim @(Generator device -> (Linear device dataType inputDim outputDim, Generator device)) $
-                \outputDim ->
-                  go device dataType inputDim outputDim
-    where go device dataType inputDim outputDim = runState $ do
-            weight <- state $ undefined
-            bias <- state $ undefined
-            pure $ Linear weight bias
+    withDevice @device $
+      \deviceType ->
+        withDataType @dataType $
+          \dType ->
+            withDim @inputDim $
+              \inputDim ->
+                withDim @outputDim @(Generator device -> (Linear device dataType inputDim outputDim, Generator device)) $
+                  \outputDim ->
+                    go deviceType dType inputDim outputDim
+    where
+      go deviceType dType inputDim outputDim = runState $ do
+        weight <-
+          state $
+            unCreate @_ @ 'Independent @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim, inputDim])
+              (xavierUniform @ 'Independent @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim, inputDim]))
+              Independent
+              Dense
+              deviceType
+              dType
+              [outputDim, inputDim]
+              (0.5 :: Double)
+        bias <- state $ undefined
+        pure $ Linear weight bias

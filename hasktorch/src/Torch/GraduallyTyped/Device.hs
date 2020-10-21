@@ -40,6 +40,15 @@ data DeviceType (deviceId :: Type) where
   CUDA :: forall deviceId. deviceId -> DeviceType deviceId
   deriving (Show)
 
+class KnownDeviceType (deviceType :: DeviceType Nat) where
+  deviceTypeVal :: DeviceType Int16
+
+instance KnownDeviceType 'CPU where
+  deviceTypeVal = CPU
+
+instance (KnownNat deviceId) => KnownDeviceType ( 'CUDA deviceId) where
+  deviceTypeVal = CUDA (fromIntegral . natVal $ Proxy @deviceId)
+
 -- | Data type to represent whether or not the compute device is checked, that is, known to the compiler.
 data Device (deviceType :: Type) where
   -- | The compute device is unknown to the compiler.
@@ -54,23 +63,23 @@ class KnownDevice (device :: Device (DeviceType Nat)) where
 instance KnownDevice 'UncheckedDevice where
   deviceVal = UncheckedDevice
 
-instance KnownDevice ( 'Device 'CPU) where
-  deviceVal = Device CPU
+instance (KnownDeviceType deviceType) => KnownDevice ( 'Device deviceType) where
+  deviceVal = Device (deviceTypeVal @deviceType)
 
-instance (KnownNat deviceId) => KnownDevice ( 'Device ( 'CUDA deviceId)) where
-  deviceVal = Device (CUDA (fromIntegral . natVal $ Proxy @deviceId))
+class WithDeviceC (device :: Device (DeviceType Nat)) (f :: Type) where
+  type WithDeviceF device f :: Type
+  withDevice :: (DeviceType Int16 -> f) -> WithDeviceF device f
+  withoutDevice :: WithDeviceF device f -> (DeviceType Int16 -> f)
 
-class WithDeviceC (isAnyDevice :: Bool) (device :: Device (DeviceType Nat)) (f :: Type) where
-  type WithDeviceF isAnyDevice f :: Type
-  withDevice :: (DeviceType Int16 -> f) -> WithDeviceF isAnyDevice f
-
-instance WithDeviceC 'True device f where
-  type WithDeviceF 'True f = DeviceType Int16 -> f
+instance WithDeviceC 'UncheckedDevice f where
+  type WithDeviceF 'UncheckedDevice f = DeviceType Int16 -> f
   withDevice = id
+  withoutDevice = id
 
-instance (KnownDevice device) => WithDeviceC 'False device f where
-  type WithDeviceF 'False f = f
-  withDevice f = case deviceVal @device of Device device -> f device
+instance (KnownDeviceType deviceType) => WithDeviceC ( 'Device deviceType) f where
+  type WithDeviceF ( 'Device deviceType) f = f
+  withDevice f = f (deviceTypeVal @deviceType)
+  withoutDevice = const
 
 type family UnifyDeviceF (device :: Device (DeviceType Nat)) (device' :: Device (DeviceType Nat)) :: Device (DeviceType Nat) where
   UnifyDeviceF 'UncheckedDevice _ = 'UncheckedDevice

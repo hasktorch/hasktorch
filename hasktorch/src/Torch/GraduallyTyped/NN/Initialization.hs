@@ -1,5 +1,16 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
+{-# OPTIONS_GHC -Wno-typed-holes #-}
+{-# OPTIONS_GHC -fdefer-typed-holes #-}
 
 module Torch.GraduallyTyped.NN.Initialization where
 
@@ -9,7 +20,8 @@ import Torch.GraduallyTyped.Device (Device (UncheckedDevice))
 import Torch.GraduallyTyped.Layout (Layout (UncheckedLayout))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (Independent))
-import Torch.GraduallyTyped.Shape (DimType (..), Shape (UncheckedShape))
+import Torch.GraduallyTyped.Shape (DimType (..), Shape (UncheckedShape), WidenShapeF)
+import Torch.GraduallyTyped.Tensor.Creation (CreateC, CreateF, create, randn, unCreate)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mulScalar, subScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 
@@ -53,27 +65,44 @@ calculateFan shape =
           )
   where
     dimT = length shape
-    numInputFmaps = dimSize $ shape !! 1 
+    numInputFmaps = dimSize $ shape !! 1
     numOutputFmaps = dimSize $ shape !! 0
     receptiveFieldSize = product $ dimSize <$> tail shape
 
 -- | Xavier Initialization - Uniform
 xavierUniform ::
-  forall gain.
-  (Num gain, Floating gain) =>
-  gain ->
-  [DimType String Integer] ->
-  Generator 'UncheckedDevice ->
-  ( Tensor 'Independent 'UncheckedLayout 'UncheckedDevice 'UncheckedDataType 'UncheckedShape,
-    Generator 'UncheckedDevice
-  )
-xavierUniform gain shape = runState $ do
-  init <- _randIO' shape
-  pure $ subScalar bound $ mulScalar (bound * 2.0) init
+  forall requiresGradient layout device dataType shape gain.
+  ( CreateC (gain -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape,
+    CreateC (Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape,
+    Num gain,
+    Floating gain
+  ) =>
+  CreateF (gain -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape
+xavierUniform =
+  create
+    @(gain -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device))
+    @requiresGradient
+    @layout
+    @device
+    @dataType
+    @shape
+    go
   where
-    (fanIn, fanOut) = calculateFan shape
-    std = gain * sqrt (2.0 / (fromIntegral fanIn + fromIntegral fanOut))
-    bound = sqrt 3.0 * std
+    go requiresGradient layoutType deviceType dType shape gain =
+      let (fanIn, fanOut) = calculateFan shape
+          std = gain * sqrt (2.0 / (fromIntegral fanIn + fromIntegral fanOut))
+          bound = sqrt 3.0 * std
+       in runState $ do
+            init <-
+              state $
+                unCreate @_ @requiresGradient @layout @device @dataType @shape
+                  (randn @requiresGradient @layout @device @dataType @shape)
+                  requiresGradient
+                  layoutType
+                  deviceType
+                  dType
+                  shape
+            pure $ subScalar bound $ mulScalar (bound * 2.0) init
 
 -- | Xavier Initialization - Normal
 xavierNormal ::
@@ -86,7 +115,7 @@ xavierNormal ::
     Generator 'UncheckedDevice
   )
 xavierNormal gain shape = runState $ do
-  init <- _randnIO' shape
+  init <- _randn shape
   pure $ mulScalar std init
   where
     (fanIn, fanOut) = calculateFan shape
@@ -107,7 +136,7 @@ kaimingUniform ::
     Generator 'UncheckedDevice
   )
 kaimingUniform mode nonlinearity shape = runState $ do
-  init <- _randIO' shape
+  init <- _randn shape
   pure $ subScalar bound $ mulScalar (bound * 2.0) init
   where
     gain = calculateGain nonlinearity
@@ -125,7 +154,7 @@ kaimingNormal ::
     Generator 'UncheckedDevice
   )
 kaimingNormal mode nonlinearity shape = runState $ do
-  init <- _randnIO' shape
+  init <- _randn shape
   pure $ mulScalar std init
   where
     gain = calculateGain nonlinearity

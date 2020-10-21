@@ -18,12 +18,12 @@ import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (Nat, Symbol, TypeError)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType)
-import Torch.GraduallyTyped.DType (DataType, UnifyDataTypeF)
-import Torch.GraduallyTyped.Device (Device, DeviceType, UnifyDeviceF)
-import Torch.GraduallyTyped.Layout (Layout, LayoutType, UnifyLayoutF)
+import Torch.GraduallyTyped.DType (DataType (..), UnifyDataTypeF)
+import Torch.GraduallyTyped.Device (Device (..), DeviceType, UnifyDeviceF)
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType, UnifyLayoutF)
 import Torch.GraduallyTyped.Prelude (MapMaybe)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient, UnifyRequiresGradientF)
-import Torch.GraduallyTyped.Shape (By(..), DimType (..), AddDimF, Dim (..), SelectDim (..), GetDimF, IsUncheckedSelectDimF, ReplaceDimF, ReplaceDimImplF, Shape (..), UnifyShapeF, WithSelectDimC (..))
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), UnifyRequiresGradientF)
+import Torch.GraduallyTyped.Shape (AddDimF, By (..), Dim (..), DimType (..), GetDimF, ReplaceDimF, ReplaceDimImplF, SelectDim (..), Shape (..), UnifyShapeF, WithSelectDimC (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor, TensorF)
 import Torch.HList (HList)
 import Torch.Internal.Cast (cast2)
@@ -73,7 +73,7 @@ class HasCat (selectDim :: SelectDim (By Symbol Nat)) k (c :: k -> Type) (a :: k
   --        ('Device 'CPU)
   --        ('DataType 'Float)
   --        'AnyShape
-  cat :: WithSelectDimF (IsUncheckedSelectDimF selectDim) (c a -> CatF selectDim a c)
+  cat :: WithSelectDimF selectDim (c a -> CatF selectDim a c)
 
 type family CatListImplF (selectDim :: SelectDim (By Symbol Nat)) (tensor :: Type) :: Maybe Type where
   CatListImplF 'UncheckedSelectDim (Tensor requiresGradient layout device dataType _) = 'Just (Tensor requiresGradient layout device dataType 'UncheckedShape)
@@ -99,14 +99,14 @@ type family CatListCheckF (selectDim :: SelectDim (By Symbol Nat)) (tensor :: Ty
 type CatListF selectDim tensor = CatListCheckF selectDim tensor (CatListImplF selectDim tensor)
 
 instance
-  ( WithSelectDimC (IsUncheckedSelectDimF selectDim) selectDim ([Tensor requiresGradient layout device dataType shape] -> CatListF selectDim (Tensor requiresGradient layout device dataType shape)),
+  ( WithSelectDimC selectDim ([Tensor requiresGradient layout device dataType shape] -> CatListF selectDim (Tensor requiresGradient layout device dataType shape)),
     Castable (CatListF selectDim (Tensor requiresGradient layout device dataType shape)) (ForeignPtr ATen.Tensor)
   ) =>
   HasCat selectDim Type [] (Tensor requiresGradient layout device dataType shape)
   where
   type CatF selectDim (Tensor requiresGradient layout device dataType shape) [] = CatListF selectDim (Tensor requiresGradient layout device dataType shape)
   cat =
-    withSelectDim @(IsUncheckedSelectDimF selectDim) @selectDim @([Tensor requiresGradient layout device dataType shape] -> CatF selectDim (Tensor requiresGradient layout device dataType shape) []) $
+    withSelectDim @selectDim @([Tensor requiresGradient layout device dataType shape] -> CatF selectDim (Tensor requiresGradient layout device dataType shape) []) $
       \by tensors -> case by of
         ByName name -> unsafePerformIO $ cast2 ATen.cat_ln tensors name
         ByIndex index -> unsafePerformIO $ cast2 ATen.cat_ll tensors (fromInteger index :: Int)
@@ -149,7 +149,7 @@ type family
 type CatHListF selectDim tensors = CatHListImplF selectDim tensors 'Nothing
 
 instance
-  ( WithSelectDimC (IsUncheckedSelectDimF selectDim) selectDim (HList tensors -> CatHListF selectDim tensors),
+  ( WithSelectDimC selectDim (HList tensors -> CatHListF selectDim tensors),
     Castable (CatHListF selectDim tensors) (ForeignPtr ATen.Tensor),
     Castable (HList tensors) (ForeignPtr ATen.TensorList)
   ) =>
@@ -157,7 +157,18 @@ instance
   where
   type CatF selectDim tensors HList = CatHListF selectDim tensors
   cat =
-    withSelectDim @(IsUncheckedSelectDimF selectDim) @selectDim @(HList tensors -> CatF selectDim tensors HList) $
+    withSelectDim @selectDim @(HList tensors -> CatF selectDim tensors HList) $
       \by tensors -> case by of
         ByName name -> unsafePerformIO $ cast2 ATen.cat_ln tensors name
         ByIndex index -> unsafePerformIO $ cast2 ATen.cat_ll tensors (fromInteger index :: Int)
+
+uncheckedCat ::
+  By String Integer ->
+  [Tensor 'Dependent 'UncheckedLayout 'UncheckedDevice 'UncheckedDataType 'UncheckedShape] ->
+  Tensor
+    'Dependent
+    'UncheckedLayout
+    'UncheckedDevice
+    'UncheckedDataType
+    'UncheckedShape
+uncheckedCat = cat @ 'UncheckedSelectDim
