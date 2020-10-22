@@ -69,7 +69,7 @@ calculateFan shape =
     numOutputFmaps = dimSize $ shape !! 0
     receptiveFieldSize = product $ dimSize <$> tail shape
 
--- | Xavier Initialization - Uniform
+-- | Xavier uniform initialization
 xavierUniform ::
   forall requiresGradient layout device dataType shape gain.
   ( CreateC (gain -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape,
@@ -104,59 +104,108 @@ xavierUniform =
                   shape
             pure $ subScalar bound $ mulScalar (bound * 2.0) init
 
--- | Xavier Initialization - Normal
+-- | Xavier normal initialization
 xavierNormal ::
-  forall gain.
-  (Num gain, Floating gain) =>
-  gain ->
-  [DimType String Integer] ->
-  Generator 'UncheckedDevice ->
-  ( Tensor 'Independent 'UncheckedLayout 'UncheckedDevice 'UncheckedDataType 'UncheckedShape,
-    Generator 'UncheckedDevice
-  )
-xavierNormal gain shape = runState $ do
-  init <- _randn shape
-  pure $ mulScalar std init
+  forall requiresGradient layout device dataType shape gain.
+  ( CreateC (gain -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape,
+    CreateC (Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape,
+    Num gain,
+    Floating gain
+  ) =>
+  CreateF (gain -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape
+xavierNormal =
+  create
+    @(gain -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device))
+    @requiresGradient
+    @layout
+    @device
+    @dataType
+    @shape
+    go
   where
-    (fanIn, fanOut) = calculateFan shape
-    std = gain * sqrt (2.0 / (fromIntegral fanIn + fromIntegral fanOut))
+    go requiresGradient layoutType deviceType dType shape gain =
+      let (fanIn, fanOut) = calculateFan shape
+          std = gain * sqrt (2.0 / (fromIntegral fanIn + fromIntegral fanOut))
+       in runState $ do
+            init <-
+              state $
+                unCreate @_ @requiresGradient @layout @device @dataType @shape
+                  (randn @requiresGradient @layout @device @dataType @shape)
+                  requiresGradient
+                  layoutType
+                  deviceType
+                  dType
+                  shape
+            pure $ mulScalar std init
 
 -- | Get fan in or fan out value depending on selected fan mode, used by Kaiming
 getter :: forall a. FanMode -> ((a, a) -> a)
 getter FanIn = fst
 getter FanOut = snd
 
--- | Kaiming Initialization - Uniform
+-- | Kaiming uniform initialization
 kaimingUniform ::
-  FanMode ->
-  NonLinearity ->
-  [DimType String Integer] ->
-  Generator 'UncheckedDevice ->
-  ( Tensor 'Independent 'UncheckedLayout 'UncheckedDevice 'UncheckedDataType 'UncheckedShape,
-    Generator 'UncheckedDevice
-  )
-kaimingUniform mode nonlinearity shape = runState $ do
-  init <- _randn shape
-  pure $ subScalar bound $ mulScalar (bound * 2.0) init
+  forall requiresGradient layout device dataType shape.
+  ( CreateC (FanMode -> NonLinearity -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape,
+    CreateC (Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape
+  ) =>
+  CreateF (FanMode -> NonLinearity -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape
+kaimingUniform =
+  create
+    @(FanMode -> NonLinearity -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device))
+    @requiresGradient
+    @layout
+    @device
+    @dataType
+    @shape
+    go
   where
-    gain = calculateGain nonlinearity
-    fanValue = fromIntegral $ (getter mode) (calculateFan shape)
-    std = gain / (sqrt fanValue)
-    bound = (sqrt 3.0) * std
+    go requiresGradient layoutType deviceType dType shape fanMode nonLinearity =
+      let gain = calculateGain nonLinearity
+          fanValue = fromIntegral $ (getter fanMode) (calculateFan shape)
+          std = gain / (sqrt fanValue)
+          bound = (sqrt 3.0) * std
+       in runState $ do
+            init <-
+              state $
+                unCreate @_ @requiresGradient @layout @device @dataType @shape
+                  (randn @requiresGradient @layout @device @dataType @shape)
+                  requiresGradient
+                  layoutType
+                  deviceType
+                  dType
+                  shape
+            pure $ subScalar bound $ mulScalar (bound * 2.0) init
 
--- | Kaiming Initialization - Normal
+-- | Kaiming normal initialization
 kaimingNormal ::
-  FanMode ->
-  NonLinearity ->
-  [DimType String Integer] ->
-  Generator 'UncheckedDevice ->
-  ( Tensor 'Independent 'UncheckedLayout 'UncheckedDevice 'UncheckedDataType 'UncheckedShape,
-    Generator 'UncheckedDevice
-  )
-kaimingNormal mode nonlinearity shape = runState $ do
-  init <- _randn shape
-  pure $ mulScalar std init
+  forall requiresGradient layout device dataType shape.
+  ( CreateC (FanMode -> NonLinearity -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape,
+    CreateC (Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape
+  ) =>
+  CreateF (FanMode -> NonLinearity -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape
+kaimingNormal =
+  create
+    @(FanMode -> NonLinearity -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device))
+    @requiresGradient
+    @layout
+    @device
+    @dataType
+    @shape
+    go
   where
-    gain = calculateGain nonlinearity
-    fanValue = fromIntegral $ (getter mode) (calculateFan shape)
-    std = gain / (sqrt fanValue)
+    go requiresGradient layoutType deviceType dType shape fanMode nonLinearity =
+      let gain = calculateGain nonLinearity
+          fanValue = fromIntegral $ (getter fanMode) (calculateFan shape)
+          std = gain / (sqrt fanValue)
+       in runState $ do
+            init <-
+              state $
+                unCreate @_ @requiresGradient @layout @device @dataType @shape
+                  (randn @requiresGradient @layout @device @dataType @shape)
+                  requiresGradient
+                  layoutType
+                  deviceType
+                  dType
+                  shape
+            pure $ mulScalar std init

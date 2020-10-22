@@ -22,13 +22,13 @@ import Torch.GraduallyTyped.DType (DataType (..), WithDataTypeC (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType, WithDeviceC (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
-import Torch.GraduallyTyped.NN.Initialization (xavierUniform)
+import Torch.GraduallyTyped.NN.Initialization (FanMode (..), NonLinearity (..), calculateFan, getter, kaimingUniform)
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
-import Torch.GraduallyTyped.Shape (Dim (..), DimType (..), Shape (..), WidenShapeF, WithDimC (..))
-import Torch.GraduallyTyped.Tensor.Creation (CreateC, unCreate)
+import Torch.GraduallyTyped.Shape (Dim (..), DimType (..), Shape (..), WithDimC (..))
+import Torch.GraduallyTyped.Tensor.Creation (CreateC, randn, unCreate)
+import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mulScalar, subScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
-import Torch.GraduallyTyped.Prelude (KnownElem)
 
 data
   Linear
@@ -57,8 +57,9 @@ instance
     WithDataTypeC dataType (WithDimF inputDim (WithDimF outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device)))),
     WithDimC inputDim (WithDimF outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device))),
     WithDimC outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device)),
-    CreateC (Double -> Generator device -> (Tensor 'Independent ( 'Layout 'Dense) device dataType ('Shape '[outputDim, inputDim]), Generator device)) 'Independent ( 'Layout 'Dense) device dataType ('Shape '[outputDim, inputDim]),
-    CreateC (Generator device -> (Tensor 'Independent ( 'Layout 'Dense) device dataType ('Shape '[outputDim, inputDim]), Generator device)) 'Independent ( 'Layout 'Dense) device dataType ('Shape '[outputDim, inputDim])
+    CreateC (FanMode -> NonLinearity -> Generator device -> (Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]), Generator device)) 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]),
+    CreateC (Generator device -> (Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]), Generator device)) 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]),
+    CreateC (Generator device -> (Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim]), Generator device)) 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim])
   ) =>
   HasInitialize (Linear device dataType inputDim outputDim)
   where
@@ -92,12 +93,29 @@ instance
         weight <-
           state $
             unCreate @_ @ 'Independent @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim, inputDim])
-              (xavierUniform @ 'Independent @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim, inputDim]))
+              (kaimingUniform @ 'Independent @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim, inputDim]))
               Independent
               Dense
               deviceType
               dType
               [outputDim, inputDim]
-              (0.5 :: Double)
-        bias <- state $ undefined
-        pure $ Linear weight bias
+              FanIn
+              (LeakyRelu . Prelude.sqrt $ 5)
+        bias <-
+          state $
+            unCreate @_ @ 'Independent @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim])
+              (randn @ 'Independent @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim]))
+              Independent
+              Dense
+              deviceType
+              dType
+              [outputDim]
+        let bound :: Float =
+              1
+                / ( Prelude.sqrt . fromIntegral
+                      . getter FanIn
+                      . calculateFan
+                      $ [outputDim, inputDim]
+                  )
+
+        pure $ Linear weight (subScalar bound $ mulScalar (bound * 2) bias)
