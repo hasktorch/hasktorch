@@ -28,7 +28,7 @@ import Data.Type.Equality (type (==))
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (KnownNat, KnownSymbol, Nat, Symbol, TypeError, natVal, symbolVal, type (+), type (-))
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.GraduallyTyped.Prelude (Assert, Concat, KnownElem (..), KnownList (..), PrependMaybe)
+import Torch.GraduallyTyped.Prelude (Assert, Concat, PrependMaybe)
 import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Managed.Cast as ATen ()
 import qualified Torch.Internal.Managed.Type.Dimname as ATen (dimname_symbol, fromSymbol_s)
@@ -59,6 +59,52 @@ data DimType (name :: Type) (size :: Type) where
     size ->
     DimType name size
   deriving (Show)
+
+instance (Show name, Eq name, Num size) => Num (DimType name size) where
+  Named name + Named name'
+    | name == name' = Named name
+    | otherwise = error $ "Cannot add dimensions since they have different names, " <> show name <> " and " <> show name' <> "."
+  Named name + Sized _ = Named name
+  Named name + NamedSized name' _
+    | name == name' = Named name
+    | otherwise = error $ "Cannot add dimensions since they have different names, " <> show name <> " and " <> show name' <> "."
+  Sized _ + Named name = Named name
+  Sized size + Sized size' = Sized (size + size')
+  Sized size + NamedSized name size' = NamedSized name (size + size')
+  NamedSized name _ + Named name'
+    | name == name' = Named name
+    | otherwise = error $ "Cannot add dimensions since they have different names, " <> show name <> " and " <> show name' <> "."
+  NamedSized name size + Sized size' = NamedSized name (size + size')
+  NamedSized name size + NamedSized name' size'
+    | name == name' = NamedSized name (size + size')
+    | otherwise = error $ "Cannot add dimensions since they have different names, " <> show name <> " and " <> show name' <> "."
+  Named name * Named name'
+    | name == name' = Named name
+    | otherwise = error $ "Cannot multiply dimensions since they have different names, " <> show name <> " and " <> show name' <> "."
+  Named name * Sized _ = Named name
+  Named name * NamedSized name' _
+    | name == name' = Named name
+    | otherwise = error $ "Cannot multiply dimensions since they have different names, " <> show name <> " and " <> show name' <> "."
+  Sized _ * Named name = Named name
+  Sized size * Sized size' = Sized (size * size')
+  Sized size * NamedSized name size' = NamedSized name (size * size')
+  NamedSized name _ * Named name'
+    | name == name' = Named name
+    | otherwise = error $ "Cannot multiply dimensions since they have different names, " <> show name <> " and " <> show name' <> "."
+  NamedSized name size * Sized size' = NamedSized name (size * size')
+  NamedSized name size * NamedSized name' size'
+    | name == name' = NamedSized name (size * size')
+    | otherwise = error $ "Cannot multiply dimensions since they have different names, " <> show name <> " and " <> show name' <> "."
+  abs (Named name) = Named name
+  abs (Sized size) = Sized (abs size)
+  abs (NamedSized name size) = NamedSized name (abs size)
+  signum (Named name) = Named name
+  signum (Sized size) = Sized (signum size)
+  signum (NamedSized name size) = NamedSized name (signum size)
+  fromInteger n = Sized (fromInteger n)
+  negate (Named name) = Named name
+  negate (Sized size) = Sized (negate size)
+  negate (NamedSized name size) = NamedSized name (negate size)
 
 class KnownDimType (dimType :: DimType Symbol Nat) where
   dimTypeVal :: DimType String Integer
@@ -153,16 +199,16 @@ type UnifyDimNameSizeErrorMessage dim dim' =
 type family UnifyDimTypeF (dimType :: DimType Symbol Nat) (dimType' :: DimType Symbol Nat) :: DimType Symbol Nat where
   UnifyDimTypeF dimType dimType = dimType
   UnifyDimTypeF ( 'Named name) ( 'Named name') = TypeError (UnifyDimNameErrorMessage ( 'Named name) ( 'Named name'))
-  UnifyDimTypeF ( 'Named name) ( 'Sized _) = 'Named name
+  UnifyDimTypeF ( 'Named name) ( 'Sized _) = 'Named name -- this is correct because of torch's name propagation rules
   UnifyDimTypeF ( 'Named name) ( 'NamedSized name _) = 'Named name
   UnifyDimTypeF ( 'Named name) ( 'NamedSized name' size) = TypeError (UnifyDimNameErrorMessage ( 'Named name) ( 'NamedSized name' size))
-  UnifyDimTypeF ( 'Sized _) ( 'Named name) = 'Named name
+  UnifyDimTypeF ( 'Sized _) ( 'Named name) = 'Named name -- this is correct because of torch's name propagation rules
   UnifyDimTypeF ( 'Sized size) ( 'Sized size') = TypeError (UnifyDimSizeErrorMessage ( 'Sized size) ( 'Sized size'))
-  UnifyDimTypeF ( 'Sized size) ( 'NamedSized name size) = 'NamedSized name size
+  UnifyDimTypeF ( 'Sized size) ( 'NamedSized name size) = 'NamedSized name size -- this is correct because of torch's name propagation rules
   UnifyDimTypeF ( 'Sized size) ( 'NamedSized name size') = TypeError (UnifyDimSizeErrorMessage ( 'Sized size) ( 'NamedSized name size'))
   UnifyDimTypeF ( 'NamedSized name _) ( 'Named name) = 'Named name
   UnifyDimTypeF ( 'NamedSized name size) ( 'Named name') = TypeError (UnifyDimNameErrorMessage ( 'NamedSized name size) ( 'Named name'))
-  UnifyDimTypeF ( 'NamedSized name size) ( 'Sized size) = 'NamedSized name size
+  UnifyDimTypeF ( 'NamedSized name size) ( 'Sized size) = 'NamedSized name size -- this is correct because of torch's name propagation rules
   UnifyDimTypeF ( 'NamedSized name size) ( 'Sized size') = TypeError (UnifyDimSizeErrorMessage ( 'NamedSized name size) ( 'Sized size'))
   UnifyDimTypeF ( 'NamedSized name size) ( 'NamedSized name' size) = TypeError (UnifyDimNameErrorMessage ( 'NamedSized name size) ( 'NamedSized name' size))
   UnifyDimTypeF ( 'NamedSized name size) ( 'NamedSized name size') = TypeError (UnifyDimSizeErrorMessage ( 'NamedSized name size) ( 'NamedSized name size'))
