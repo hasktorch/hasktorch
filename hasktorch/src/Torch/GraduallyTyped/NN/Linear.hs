@@ -26,7 +26,7 @@ import Torch.GraduallyTyped.NN.Initialization (FanMode (..), NonLinearity (..), 
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape (Dim (..), DimType (..), Shape (..), WithDimC (..))
-import Torch.GraduallyTyped.Tensor.Creation (CreateC, randn, unCreate)
+import Torch.GraduallyTyped.Tensor.Creation (WithCreateC(..), randn)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mulScalar, subScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 
@@ -52,14 +52,16 @@ instance
   type ForwardOutput (Linear device dataType inputFeatures outputFeatures) (Tensor requiresGradient layout device dataType shape) = (Tensor requiresGradient layout device dataType shape)
   forward = undefined
 
+class LinearHasInitialize
+
 instance
   ( WithDeviceC device (WithDataTypeF dataType (WithDimF inputDim (WithDimF outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device))))),
     WithDataTypeC dataType (WithDimF inputDim (WithDimF outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device)))),
     WithDimC inputDim (WithDimF outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device))),
     WithDimC outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device)),
-    CreateC (FanMode -> NonLinearity -> Generator device -> (Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]), Generator device)) 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]),
-    CreateC (Generator device -> (Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]), Generator device)) 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]),
-    CreateC (Generator device -> (Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim]), Generator device)) 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim])
+    WithCreateC (FanMode -> NonLinearity -> Generator device -> (Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]), Generator device)) 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]),
+    WithCreateC (Generator device -> (Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]), Generator device)) 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]),
+    WithCreateC (Generator device -> (Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim]), Generator device)) 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim])
   ) =>
   HasInitialize (Linear device dataType inputDim outputDim)
   where
@@ -92,7 +94,7 @@ instance
       go deviceType dType inputDim outputDim = runState $ do
         weight <-
           state $
-            unCreate @_ @ 'Independent @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim, inputDim])
+            withoutCreate @_ @ 'Independent @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim, inputDim])
               (kaimingUniform @ 'Independent @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim, inputDim]))
               Independent
               Dense
@@ -103,7 +105,7 @@ instance
               (LeakyRelu . Prelude.sqrt $ 5)
         bias <-
           state $
-            unCreate @_ @ 'Independent @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim])
+            withoutCreate @_ @ 'Independent @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim])
               (randn @ 'Independent @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim]))
               Independent
               Dense

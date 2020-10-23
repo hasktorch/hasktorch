@@ -52,6 +52,7 @@ library
                     , Torch.GraduallyTyped.NN.Linear
                     , Torch.GraduallyTyped.NN.Transformer
                     , Torch.GraduallyTyped.Internal.TensorOptions
+                    , Torch.GraduallyTyped.Internal.Void
                     , Torch
                     , Torch.Tensor
                     , Torch.TensorOptions

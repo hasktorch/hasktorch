@@ -4,6 +4,10 @@ module Torch.GraduallyTyped.Tensor.MathOperations.Pointwise where
 
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Prelude hiding (abs)
+import qualified Torch.Internal.Managed.Native as ATen
+import System.IO.Unsafe (unsafePerformIO)
+import Torch.Internal.Cast (cast3, cast1, cast4, cast2)
+import Torch.GraduallyTyped.Scalar (Scalar)
 
 abs ::
   forall requiresGradient layout device dataType shape.
@@ -31,17 +35,21 @@ acosh = undefined
 
 addScalar ::
   forall scalar requiresGradient layout device dataType shape.
+  (Scalar scalar) =>
   scalar ->
   Tensor requiresGradient layout device dataType shape ->
   Tensor requiresGradient layout device dataType shape
-addScalar = undefined
+addScalar scalar tensor = unsafePerformIO $ cast2 ATen.add_ts tensor scalar
 
 addcdiv ::
   forall scalar requiresGradient layout device dataType shape.
+  (Scalar scalar) =>
   scalar ->
   Tensor requiresGradient layout device dataType shape ->
+  Tensor requiresGradient layout device dataType shape ->
+  Tensor requiresGradient layout device dataType shape ->
   Tensor requiresGradient layout device dataType shape
-addcdiv = undefined
+addcdiv scalar tensor1 tensor2 input = unsafePerformIO $ cast4 ATen.addcdiv_ttts input tensor1 tensor2 scalar
 
 addcmul ::
   forall scalar requiresGradient layout device dataType shape.
@@ -94,51 +102,86 @@ bitwiseNot = undefined
 
 bitwiseAnd ::
   forall requiresGradient layout device dataType shape.
+  -- | other
   Tensor requiresGradient layout device dataType shape ->
+  -- | input
+  Tensor requiresGradient layout device dataType shape ->
+  -- | output
   Tensor requiresGradient layout device dataType shape
-bitwiseAnd = undefined
+bitwiseAnd other input = unsafePerformIO $ cast2 ATen.bitwise_and_tt input other
 
 bitwiseOr ::
   forall requiresGradient layout device dataType shape.
+  -- | other
+  Tensor requiresGradient layout device dataType shape ->
+  -- | input
+  Tensor requiresGradient layout device dataType shape ->
+  -- | output
+  Tensor requiresGradient layout device dataType shape
+bitwiseOr other input = unsafePerformIO $ cast2 ATen.bitwise_or_tt input other
+
+bitwiseOrScalar ::
+  forall scalar requiresGradient layout device dataType shape.
+  (Scalar scalar) =>
+  scalar ->
   Tensor requiresGradient layout device dataType shape ->
   Tensor requiresGradient layout device dataType shape
-bitwiseOr = undefined
+bitwiseOrScalar scalar input = unsafePerformIO $ cast2 ATen.bitwise_or_ts input scalar
 
 ceil ::
   forall requiresGradient layout device dataType shape.
   Tensor requiresGradient layout device dataType shape ->
   Tensor requiresGradient layout device dataType shape
-ceil = undefined
+ceil = unsafePerformIO . cast1 ATen.ceil_t
 
+-- | Clamp all elements in input into the range [ min, max ]
+-- and return the result as a new tensor.
 clamp ::
-  forall requiresGradient layout device dataType shape.
+  forall min max requiresGradient layout device dataType shape.
+  (Scalar min, Scalar max) =>
+  min ->
+  max ->
   Tensor requiresGradient layout device dataType shape ->
   Tensor requiresGradient layout device dataType shape
-clamp = undefined
+clamp min max input = unsafePerformIO $ cast3 ATen.clamp__tss input min max
 
 cos ::
   forall requiresGradient layout device dataType shape.
   Tensor requiresGradient layout device dataType shape ->
   Tensor requiresGradient layout device dataType shape
-cos = undefined
+cos = unsafePerformIO . cast1 ATen.cos_t
 
 cosh ::
   forall requiresGradient layout device dataType shape.
   Tensor requiresGradient layout device dataType shape ->
   Tensor requiresGradient layout device dataType shape
-cosh = undefined
+cosh = unsafePerformIO . cast1 ATen.cosh_t
 
 deg2rad ::
   forall requiresGradient layout device dataType shape.
   Tensor requiresGradient layout device dataType shape ->
   Tensor requiresGradient layout device dataType shape
-deg2rad = undefined
+deg2rad = unsafePerformIO . cast1 ATen.deg2rad_t
 
+-- | Element-wise division of the input tensor by the other tensor.
+-- Returns the result as a new tensor.
 div ::
   forall requiresGradient layout device dataType shape.
+  -- | other
+  Tensor requiresGradient layout device dataType shape ->
+  -- | input
+  Tensor requiresGradient layout device dataType shape ->
+  -- | output
+  Tensor requiresGradient layout device dataType shape
+div other input = unsafePerformIO $ cast2 ATen.div_tt input other
+
+divScalar ::
+  forall scalar requiresGradient layout device dataType shape.
+  (Scalar scalar) =>
+  scalar ->
   Tensor requiresGradient layout device dataType shape ->
   Tensor requiresGradient layout device dataType shape
-div = undefined
+divScalar scalar tensor = unsafePerformIO $ cast2 ATen.div_ts tensor scalar
 
 digamma ::
   forall requiresGradient layout device dataType shape.
@@ -180,7 +223,7 @@ floor ::
   forall requiresGradient layout device dataType shape.
   Tensor requiresGradient layout device dataType shape ->
   Tensor requiresGradient layout device dataType shape
-floor = undefined
+floor = unsafePerformIO . cast1 ATen.min_t
 
 floorDivide ::
   forall requiresGradient layout device dataType shape.
@@ -274,10 +317,11 @@ logicalXor = undefined
 
 mulScalar ::
   forall scalar requiresGradient layout device dataType shape.
+  (Scalar scalar) =>
   scalar ->
   Tensor requiresGradient layout device dataType shape ->
   Tensor requiresGradient layout device dataType shape
-mulScalar = undefined
+mulScalar scalar tensor = unsafePerformIO $ cast2 ATen.mul_ts tensor scalar
 
 mvlgamma ::
   forall requiresGradient layout device dataType shape.
@@ -359,10 +403,11 @@ sinh = undefined
 
 subScalar ::
   forall scalar requiresGradient layout device dataType shape.
+  (Scalar scalar) =>
   scalar ->
   Tensor requiresGradient layout device dataType shape ->
   Tensor requiresGradient layout device dataType shape
-subScalar = undefined
+subScalar scalar tensor = unsafePerformIO $ cast2 ATen.sub_ts tensor scalar
 
 sqrt ::
   forall requiresGradient layout device dataType shape.

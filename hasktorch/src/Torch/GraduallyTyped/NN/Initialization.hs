@@ -15,13 +15,10 @@
 module Torch.GraduallyTyped.NN.Initialization where
 
 import Control.Monad.State.Strict (MonadState (state), runState)
-import Torch.GraduallyTyped.DType (DataType (UncheckedDataType))
-import Torch.GraduallyTyped.Device (Device (UncheckedDevice))
-import Torch.GraduallyTyped.Layout (Layout (UncheckedLayout))
 import Torch.GraduallyTyped.Random (Generator)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (Independent))
-import Torch.GraduallyTyped.Shape (DimType (..), Shape (UncheckedShape), WidenShapeF)
-import Torch.GraduallyTyped.Tensor.Creation (CreateC, CreateF, create, randn, unCreate)
+import Torch.GraduallyTyped.Scalar (Scalar)
+import Torch.GraduallyTyped.Shape (DimType (..))
+import Torch.GraduallyTyped.Tensor.Creation (WithCreateC (..), randn)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mulScalar, subScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 
@@ -72,14 +69,15 @@ calculateFan shape =
 -- | Xavier uniform initialization
 xavierUniform ::
   forall requiresGradient layout device dataType shape gain.
-  ( CreateC (gain -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape,
-    CreateC (Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape,
+  ( WithCreateC (gain -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape,
+    WithCreateC (Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape,
     Num gain,
-    Floating gain
+    Floating gain,
+    Scalar gain
   ) =>
-  CreateF (gain -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape
+  WithCreateF (gain -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape
 xavierUniform =
-  create
+  withCreate
     @(gain -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device))
     @requiresGradient
     @layout
@@ -95,7 +93,7 @@ xavierUniform =
        in runState $ do
             init <-
               state $
-                unCreate @_ @requiresGradient @layout @device @dataType @shape
+                withoutCreate @_ @requiresGradient @layout @device @dataType @shape
                   (randn @requiresGradient @layout @device @dataType @shape)
                   requiresGradient
                   layoutType
@@ -107,14 +105,15 @@ xavierUniform =
 -- | Xavier normal initialization
 xavierNormal ::
   forall requiresGradient layout device dataType shape gain.
-  ( CreateC (gain -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape,
-    CreateC (Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape,
+  ( WithCreateC (gain -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape,
+    WithCreateC (Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape,
     Num gain,
-    Floating gain
+    Floating gain,
+    Scalar gain
   ) =>
-  CreateF (gain -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape
+  WithCreateF (gain -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape
 xavierNormal =
-  create
+  withCreate
     @(gain -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device))
     @requiresGradient
     @layout
@@ -129,7 +128,7 @@ xavierNormal =
        in runState $ do
             init <-
               state $
-                unCreate @_ @requiresGradient @layout @device @dataType @shape
+                withoutCreate @_ @requiresGradient @layout @device @dataType @shape
                   (randn @requiresGradient @layout @device @dataType @shape)
                   requiresGradient
                   layoutType
@@ -146,12 +145,12 @@ getter FanOut = snd
 -- | Kaiming uniform initialization
 kaimingUniform ::
   forall requiresGradient layout device dataType shape.
-  ( CreateC (FanMode -> NonLinearity -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape,
-    CreateC (Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape
+  ( WithCreateC (FanMode -> NonLinearity -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape,
+    WithCreateC (Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape
   ) =>
-  CreateF (FanMode -> NonLinearity -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape
+  WithCreateF (FanMode -> NonLinearity -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape
 kaimingUniform =
-  create
+  withCreate
     @(FanMode -> NonLinearity -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device))
     @requiresGradient
     @layout
@@ -168,7 +167,7 @@ kaimingUniform =
        in runState $ do
             init <-
               state $
-                unCreate @_ @requiresGradient @layout @device @dataType @shape
+                withoutCreate @_ @requiresGradient @layout @device @dataType @shape
                   (randn @requiresGradient @layout @device @dataType @shape)
                   requiresGradient
                   layoutType
@@ -180,12 +179,12 @@ kaimingUniform =
 -- | Kaiming normal initialization
 kaimingNormal ::
   forall requiresGradient layout device dataType shape.
-  ( CreateC (FanMode -> NonLinearity -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape,
-    CreateC (Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape
+  ( WithCreateC (FanMode -> NonLinearity -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape,
+    WithCreateC (Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape
   ) =>
-  CreateF (FanMode -> NonLinearity -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape
+  WithCreateF (FanMode -> NonLinearity -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape
 kaimingNormal =
-  create
+  withCreate
     @(FanMode -> NonLinearity -> Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device))
     @requiresGradient
     @layout
@@ -201,7 +200,7 @@ kaimingNormal =
        in runState $ do
             init <-
               state $
-                unCreate @_ @requiresGradient @layout @device @dataType @shape
+                withoutCreate @_ @requiresGradient @layout @device @dataType @shape
                   (randn @requiresGradient @layout @device @dataType @shape)
                   requiresGradient
                   layoutType

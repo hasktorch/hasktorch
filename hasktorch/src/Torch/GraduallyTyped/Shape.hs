@@ -28,6 +28,7 @@ import Data.Type.Equality (type (==))
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (KnownNat, KnownSymbol, Nat, Symbol, TypeError, natVal, symbolVal, type (+), type (-))
 import System.IO.Unsafe (unsafePerformIO)
+import Torch.GraduallyTyped.Internal.Void (Void)
 import Torch.GraduallyTyped.Prelude (Assert, Concat, PrependMaybe)
 import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Managed.Cast as ATen ()
@@ -392,10 +393,20 @@ instance WithShapeC 'UncheckedShape f where
   withShape = id
   withoutShape = id
 
+instance {-# OVERLAPPING #-} WithShapeC 'UncheckedShape Void where
+  type WithShapeF 'UncheckedShape Void = [DimType String Integer] -> Void
+  withShape = undefined
+  withoutShape = undefined
+
 instance WithShapeC ( 'Shape '[]) f where
   type WithShapeF ( 'Shape '[]) f = f
   withShape f = f []
   withoutShape = const
+
+instance {-# OVERLAPPING #-} WithShapeC ( 'Shape '[]) Void where
+  type WithShapeF ( 'Shape '[]) Void = Void
+  withShape = undefined
+  withoutShape = undefined
 
 instance
   (WithShapeC ( 'Shape dims) f) =>
@@ -405,6 +416,11 @@ instance
   withShape f dimType = withShape @( 'Shape dims) @f $ \dimTypes -> f (dimType : dimTypes)
   withoutShape f (dimType : dimTypes) = withoutShape @( 'Shape dims) @f (f dimType) dimTypes
 
+instance {-# OVERLAPPING #-} WithShapeC ( 'Shape ( 'UncheckedDim ': dims)) Void where
+  type WithShapeF ( 'Shape ( 'UncheckedDim ': dims)) Void = DimType String Integer -> WithShapeF ( 'Shape dims) Void
+  withShape = undefined
+  withoutShape = undefined
+
 instance
   (WithShapeC ( 'Shape dims) f, KnownDimType dimType) =>
   WithShapeC ( 'Shape ( 'Dim dimType ': dims)) f
@@ -412,6 +428,11 @@ instance
   type WithShapeF ( 'Shape ( 'Dim dimType ': dims)) f = WithShapeF ( 'Shape dims) f
   withShape f = withShape @( 'Shape dims) @f $ \dimTypes -> f (dimTypeVal @dimType : dimTypes)
   withoutShape f (_ : dimTypes) = withoutShape @( 'Shape dims) @f f dimTypes
+
+instance {-# OVERLAPPING #-} WithShapeC ( 'Shape ( 'Dim dimType ': dims)) Void where
+  type WithShapeF ( 'Shape ( 'Dim dimType ': dims)) Void = WithShapeF ( 'Shape dims) Void
+  withShape = undefined
+  withoutShape = undefined
 
 type family ConcatShapesF (shape :: Shape [k]) (shape' :: Shape [k]) :: Shape [k] where
   ConcatShapesF 'UncheckedShape _ = 'UncheckedShape
