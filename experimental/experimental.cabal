@@ -37,3 +37,37 @@ executable dataloader-cifar10
                      , datasets
                      , streaming
                      , JuicyPixels
+
+executable action-transition-system
+  import:              config
+  hs-source-dirs:      action-transition-system
+  main-is:             Main.hs
+  other-modules:       Control.Monad.Fresh
+                     , Torch.Data.ActionTransitionSystem
+  ghc-options:         -rtsopts -threaded
+  build-depends:       attoparsec
+                     , foldl
+                     , text
+                     , yoctoparsec
+                     , free
+                     , generic-lens
+                     , lens
+                     , containers
+                     , hedgehog
+                     , hspec
+                     , bound
+                     , transformers
+                     , monad-gen
+                     , deriving-compat
+                     , mmorph
+                     , ordered-containers
+                     , pipes
+                     , pipes-concurrency
+                     , pipes-group
+                     , pipes-safe
+                     , libtorch-ffi
+                     , prettyprinter
+                     , prettyprinter-ansi-terminal
+                     , random
+                     , hvega
+                     , directory
