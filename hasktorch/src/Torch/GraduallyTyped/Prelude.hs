@@ -28,6 +28,7 @@ module Torch.GraduallyTyped.Prelude
     BindMaybe,
     JoinMaybe,
     Concat,
+    Reverse,
     whenM,
     unlessM,
     ifM,
@@ -118,6 +119,12 @@ type family Elem (e :: t) (es :: [t]) :: Bool where
   Elem _ '[] = 'False
   Elem x (x ': _) = 'True
   Elem x (_ ': xs) = Elem x xs
+
+type family ReverseImplF (xs :: [a]) (acc :: [a]) :: [a] where
+  ReverseImplF '[] acc = acc
+  ReverseImplF (h ': t) acc = ReverseImplF t (h ': acc)
+
+type Reverse xs = ReverseImplF xs '[]
 
 type family PrependMaybe (h :: Maybe a) (t :: Maybe [a]) :: Maybe [a] where
   PrependMaybe 'Nothing _ = 'Nothing

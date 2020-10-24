@@ -29,7 +29,7 @@ import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (KnownNat, KnownSymbol, Nat, Symbol, TypeError, natVal, symbolVal, type (+), type (-))
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.GraduallyTyped.Internal.Void (Void)
-import Torch.GraduallyTyped.Prelude (Assert, Concat, PrependMaybe)
+import Torch.GraduallyTyped.Prelude (Assert, Concat, MapMaybe, PrependMaybe, Reverse)
 import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Managed.Cast as ATen ()
 import qualified Torch.Internal.Managed.Type.Dimname as ATen (dimname_symbol, fromSymbol_s)
@@ -461,6 +461,61 @@ type family UnifyDimsF (dims :: [Dim (DimType Symbol Nat)]) (dims' :: [Dim (DimT
           % ""
           % "Try extending or broadcasting the tensor(s)."
       )
+
+type family BroadcastShapesF (shape :: Shape [Dim (DimType Symbol Nat)]) (shape' :: Shape [Dim (DimType Symbol Nat)]) :: Shape [Dim (DimType Symbol Nat)] where
+  BroadcastShapesF 'UncheckedShape 'UncheckedShape = 'UncheckedShape
+  BroadcastShapesF 'UncheckedShape ( 'Shape _) = 'UncheckedShape
+  BroadcastShapesF ( 'Shape _) 'UncheckedShape = 'UncheckedShape
+  BroadcastShapesF ( 'Shape dims) ( 'Shape dims) = 'Shape dims
+  BroadcastShapesF ( 'Shape dims) ( 'Shape dims') = 'Shape (BroadcastDimsF dims dims')
+
+type BroadcastDimsF dims dims' = BroadcastDimsCheckF dims dims' (BroadcastDimsImplF (Reverse dims) (Reverse dims'))
+
+type family BroadcastDimsCheckF (dims :: [Dim (DimType Symbol Nat)]) (dims' :: [Dim (DimType Symbol Nat)]) (result :: Maybe [Dim (DimType Symbol Nat)]) :: [Dim (DimType Symbol Nat)] where
+  BroadcastDimsCheckF dims dims' 'Nothing =
+    TypeError
+      ( "Cannot broadcast the dimensions"
+          % ""
+          % "    '" <> dims <> "' and '" <> dims' <> "'."
+          % ""
+          % "You may need to extend, squeeze, or unsqueeze the dimensions manually."
+      )
+  BroadcastDimsCheckF _ _ ( 'Just dims) = Reverse dims
+
+type family BroadcastDimsImplF (reversedDims :: [Dim (DimType Symbol Nat)]) (reversedDims' :: [Dim (DimType Symbol Nat)]) :: Maybe [Dim (DimType Symbol Nat)] where
+  BroadcastDimsImplF '[] reversedDims = 'Just reversedDims
+  BroadcastDimsImplF reversedDims '[] = 'Just reversedDims
+  BroadcastDimsImplF (dim ': reversedDims) (dim' ': reversedDims') = PrependMaybe (BroadcastDimF dim dim') (BroadcastDimsImplF reversedDims reversedDims')
+
+type family BroadcastDimF (dim :: Dim (DimType Symbol Nat)) (dim' :: Dim (DimType Symbol Nat)) :: Maybe (Dim (DimType Symbol Nat)) where
+  BroadcastDimF 'UncheckedDim _ = 'Just 'UncheckedDim
+  BroadcastDimF _ 'UncheckedDim = 'Just 'UncheckedDim
+  BroadcastDimF ( 'Dim dimType) ( 'Dim dimType') = MapMaybe 'Dim (BroadcastDimTypeF dimType dimType')
+
+type family BroadcastDimTypeF (dimType :: DimType Symbol Nat) (dimType' :: DimType Symbol Nat) :: Maybe (DimType Symbol Nat) where
+  BroadcastDimTypeF dimType dimType = 'Just dimType
+  BroadcastDimTypeF ( 'Named name) ( 'Named name') = TypeError (UnifyDimNameErrorMessage ( 'Named name) ( 'Named name'))
+  BroadcastDimTypeF ( 'Named name) ( 'Sized _) = 'Just ( 'Named name) -- this is correct because of torch's name propagation rules
+  BroadcastDimTypeF ( 'Named name) ( 'NamedSized name _) = 'Just ( 'Named name)
+  BroadcastDimTypeF ( 'Named name) ( 'NamedSized name' size) = TypeError (UnifyDimNameErrorMessage ( 'Named name) ( 'NamedSized name' size))
+  BroadcastDimTypeF ( 'Sized _) ( 'Named name) = 'Just ( 'Named name) -- this is correct because of torch's name propagation rules
+  BroadcastDimTypeF ( 'Sized size) ( 'Sized 1) = 'Just ( 'Sized size)
+  BroadcastDimTypeF ( 'Sized 1) ( 'Sized size) = 'Just ( 'Sized size)
+  BroadcastDimTypeF ( 'Sized _) ( 'Sized _) = 'Nothing -- broadcasting not possible
+  BroadcastDimTypeF ( 'Sized size) ( 'NamedSized name size) = 'Just ( 'NamedSized name size) -- this is correct because of torch's name propagation rules
+  BroadcastDimTypeF ( 'Sized size) ( 'NamedSized name 1) = 'Just ( 'NamedSized name size) -- this is correct because of torch's name propagation rules
+  BroadcastDimTypeF ( 'Sized 1) ( 'NamedSized name size) = 'Just ( 'NamedSized name size) -- this is correct because of torch's name propagation rules
+  BroadcastDimTypeF ( 'Sized _) ( 'NamedSized _ _) = 'Nothing -- broadcasting not possible
+  BroadcastDimTypeF ( 'NamedSized name _) ( 'Named name) = 'Just ( 'Named name)
+  BroadcastDimTypeF ( 'NamedSized name size) ( 'Named name') = TypeError (UnifyDimNameErrorMessage ( 'NamedSized name size) ( 'Named name'))
+  BroadcastDimTypeF ( 'NamedSized name size) ( 'Sized size) = 'Just ( 'NamedSized name size) -- this is correct because of torch's name propagation rules
+  BroadcastDimTypeF ( 'NamedSized name size) ( 'Sized 1) = 'Just ( 'NamedSized name size) -- this is correct because of torch's name propagation rules
+  BroadcastDimTypeF ( 'NamedSized name 1) ( 'Sized size) = 'Just ( 'NamedSized name size) -- this is correct because of torch's name propagation rules
+  BroadcastDimTypeF ( 'NamedSized _ _) ( 'Sized _) = 'Nothing -- broadcasting not possible
+  BroadcastDimTypeF ( 'NamedSized name size) ( 'NamedSized name 1) = 'Just ( 'NamedSized name size)
+  BroadcastDimTypeF ( 'NamedSized name 1) ( 'NamedSized name size) = 'Just ( 'NamedSized name size)
+  BroadcastDimTypeF ( 'NamedSized name _) ( 'NamedSized name _) = 'Nothing -- broadcasting not possible
+  BroadcastDimTypeF ( 'NamedSized name size) ( 'NamedSized name' size') = TypeError (UnifyDimNameErrorMessage ( 'NamedSized name size) ( 'NamedSized name' size'))
 
 -- | Given a shape,
 -- returns the first dimension matching 'selectDim'
