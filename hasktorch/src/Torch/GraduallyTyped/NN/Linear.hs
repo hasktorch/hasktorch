@@ -120,4 +120,4 @@ instance
                       $ [outputDim, inputDim]
                   )
 
-        pure $ Linear weight (subScalar bound $ mulScalar (bound * 2) bias)
+        pure $ Linear weight ((bias `mulScalar` (bound * 2)) `subScalar` bound)

@@ -32,11 +32,11 @@ errorPrefix = "Error during tensor initialization. "
 
 -- | Gain scaling value for He initialization
 calculateGain :: NonLinearity -> Float
-calculateGain Identity = 1.0
-calculateGain Sigmoid = 1.0
-calculateGain Tanh = 5.0 / 3
-calculateGain Relu = sqrt 2.0
-calculateGain (LeakyRelu param) = sqrt (2.0 / (1.0 + (param) ^^ 2))
+calculateGain Identity = 1
+calculateGain Sigmoid = 1
+calculateGain Tanh = 5 / 3
+calculateGain Relu = sqrt 2
+calculateGain (LeakyRelu param) = sqrt (2 / (1 + param ^^ 2))
 
 dimSize :: DimType String Integer -> Integer
 dimSize (Named _) = error $ errorPrefix <> "Cannot determine size of dimension."
@@ -88,8 +88,8 @@ xavierUniform =
   where
     go requiresGradient layoutType deviceType dType shape gain =
       let (fanIn, fanOut) = calculateFan shape
-          std = gain * sqrt (2.0 / (fromIntegral fanIn + fromIntegral fanOut))
-          bound = sqrt 3.0 * std
+          std = gain * sqrt (2 / (fromIntegral fanIn + fromIntegral fanOut))
+          bound = sqrt 3 * std
        in runState $ do
             init <-
               state $
@@ -100,7 +100,7 @@ xavierUniform =
                   deviceType
                   dType
                   shape
-            pure $ subScalar bound $ mulScalar (bound * 2.0) init
+            pure $ (init `mulScalar` (bound * 2)) `subScalar` bound
 
 -- | Xavier normal initialization
 xavierNormal ::
@@ -124,7 +124,7 @@ xavierNormal =
   where
     go requiresGradient layoutType deviceType dType shape gain =
       let (fanIn, fanOut) = calculateFan shape
-          std = gain * sqrt (2.0 / (fromIntegral fanIn + fromIntegral fanOut))
+          std = gain * sqrt (2 / (fromIntegral fanIn + fromIntegral fanOut))
        in runState $ do
             init <-
               state $
@@ -135,7 +135,7 @@ xavierNormal =
                   deviceType
                   dType
                   shape
-            pure $ mulScalar std init
+            pure $ init `mulScalar` std
 
 -- | Get fan in or fan out value depending on selected fan mode, used by Kaiming
 getter :: forall a. FanMode -> ((a, a) -> a)
@@ -163,7 +163,7 @@ kaimingUniform =
       let gain = calculateGain nonLinearity
           fanValue = fromIntegral $ (getter fanMode) (calculateFan shape)
           std = gain / (sqrt fanValue)
-          bound = (sqrt 3.0) * std
+          bound = (sqrt 3) * std
        in runState $ do
             init <-
               state $
@@ -174,7 +174,7 @@ kaimingUniform =
                   deviceType
                   dType
                   shape
-            pure $ subScalar bound $ mulScalar (bound * 2.0) init
+            pure $ (init `mulScalar` (bound * 2)) `subScalar` bound
 
 -- | Kaiming normal initialization
 kaimingNormal ::
@@ -207,4 +207,4 @@ kaimingNormal =
                   deviceType
                   dType
                   shape
-            pure $ mulScalar std init
+            pure $ init `mulScalar` std
