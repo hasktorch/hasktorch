@@ -18,11 +18,11 @@ module Torch.GraduallyTyped.Tensor.Creation
     checkedOnes,
     uncheckedOnes,
     randn,
+    checkedRandn,
     uncheckedRandn,
   )
 where
 
-import Control.Monad.State.Strict (runState)
 import Data.Int (Int16)
 import Data.Kind (Type)
 import GHC.TypeLits (Nat, Symbol)
@@ -33,11 +33,11 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType, KnownDeviceType, Wi
 import Torch.GraduallyTyped.Internal.TensorOptions (tensorOptions)
 import Torch.GraduallyTyped.Internal.Void (Void)
 import Torch.GraduallyTyped.Layout (KnownLayoutType, Layout (..), LayoutType, WithLayoutC (..))
-import Torch.GraduallyTyped.Random (Generator)
+import Torch.GraduallyTyped.Random (Generator, withGenerator)
 import Torch.GraduallyTyped.RequiresGradient (KnownRequiresGradient, RequiresGradient (..), requiresGradientVal)
 import Torch.GraduallyTyped.Shape (Dim, DimType, Shape (..), WidenShapeF, WithShapeC (..), namedDims, sizedDims)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
-import Torch.Internal.Cast (cast2, cast3)
+import Torch.Internal.Cast (cast2, cast3, cast4)
 import qualified Torch.Internal.Managed.TensorFactories as ATen
 
 -- $setup
@@ -276,13 +276,46 @@ randn ::
   WithCreateF (Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape
 randn = withCreate @(Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) @requiresGradient @layout @device @dataType @shape go
   where
-    go requiresGradient layoutType deviceType dType shape = runState $ do
-      opts <- pure $ tensorOptions requiresGradient layoutType deviceType dType
-      tensor <- pure . unsafePerformIO $ case (namedDims shape, sizedDims shape) of
-        (Just names, Just sizes) -> pure . unsafePerformIO $ cast3 ATen.randn_lNo sizes names opts
-        (Nothing, Just sizes) -> pure . unsafePerformIO $ cast2 ATen.randn_lo sizes opts
-        _ -> fail $ "Invalid tensor shape specification " <> show shape <> "."
-      return $ UnsafeTensor tensor
+    go requiresGradient layoutType deviceType dType shape =
+      let opts = tensorOptions requiresGradient layoutType deviceType dType
+       in withGenerator
+            ( \genPtr -> do
+                tensor <- case (namedDims shape, sizedDims shape) of
+                  (Just names, Just sizes) -> cast4 ATen.randn_lGNo sizes genPtr names opts
+                  (Nothing, Just sizes) -> cast3 ATen.randn_lGo sizes genPtr opts
+                  _ -> fail $ "Invalid tensor shape specification " <> show shape <> "."
+                pure $ UnsafeTensor tensor
+            )
+            ( unsafePerformIO $ do
+                tensor <- case (namedDims shape, sizedDims shape) of
+                  (Just names, Just sizes) -> cast3 ATen.zeros_lNo sizes names opts
+                  (Nothing, Just sizes) -> cast2 ATen.zeros_lo sizes opts
+                  _ -> fail $ "Invalid tensor shape specification " <> show shape <> "."
+                pure $ UnsafeTensor tensor
+            )
+
+checkedRandn ::
+  forall requiresGradient layoutType deviceType dType dimTypes.
+  ( KnownRequiresGradient requiresGradient,
+    KnownLayoutType layoutType,
+    KnownDeviceType deviceType,
+    KnownDType dType,
+    WithShapeC (WidenShapeF ( 'Shape dimTypes)) (Generator ( 'Device deviceType) -> (Tensor requiresGradient ( 'Layout layoutType) ( 'Device deviceType) ( 'DataType dType) (WidenShapeF ( 'Shape dimTypes)), Generator ( 'Device deviceType)))
+  ) =>
+  ( WithShapeF
+      (WidenShapeF ( 'Shape dimTypes))
+      ( Generator ( 'Device deviceType) ->
+        ( Tensor
+            requiresGradient
+            ( 'Layout layoutType)
+            ( 'Device deviceType)
+            ( 'DataType dType)
+            (WidenShapeF ( 'Shape dimTypes)),
+          Generator ( 'Device deviceType)
+        )
+      )
+  )
+checkedRandn = randn @requiresGradient @( 'Layout layoutType) @( 'Device deviceType) @( 'DataType dType) @(WidenShapeF ( 'Shape dimTypes))
 
 uncheckedRandn ::
   LayoutType ->

@@ -11,8 +11,9 @@
 
 module Torch.GraduallyTyped.DType where
 
-import Data.Kind (Type)
+import Data.Kind (Constraint, Type)
 import Torch.DType (DType (..))
+import Torch.GraduallyTyped.Prelude (Catch)
 import Type.Errors.Pretty (TypeError, type (%), type (<>))
 
 class KnownDType (dType :: DType) where
@@ -93,3 +94,6 @@ type family UnifyDataTypeF (dataType :: DataType DType) (dataType' :: DataType D
           % "    " <> dType <> " and " <> dType' <> "."
           % ""
       )
+
+type family UnifyDataTypeC (dataType :: DataType DType) (dataType' :: DataType DType) :: Constraint where
+  UnifyDataTypeC dataType dataType' = Catch (UnifyDataTypeF dataType dataType')

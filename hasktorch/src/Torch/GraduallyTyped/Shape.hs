@@ -29,7 +29,7 @@ import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (KnownNat, KnownSymbol, Nat, Symbol, TypeError, natVal, symbolVal, type (+), type (-))
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.GraduallyTyped.Internal.Void (Void)
-import Torch.GraduallyTyped.Prelude (Assert, Concat, MapMaybe, PrependMaybe, Reverse)
+import Torch.GraduallyTyped.Prelude (Catch, Assert, Concat, MapMaybe, PrependMaybe, Reverse)
 import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Managed.Cast as ATen ()
 import qualified Torch.Internal.Managed.Type.Dimname as ATen (dimname_symbol, fromSymbol_s)
@@ -40,6 +40,7 @@ import qualified Torch.Internal.Managed.Type.Symbol as ATen (dimname_s)
 import Torch.Internal.Type (IntArray)
 import qualified Torch.Internal.Type as ATen (Dimname, DimnameList)
 import Type.Errors.Pretty (type (%), type (<>))
+import Data.Kind (Constraint)
 
 -- | Data type to represent a tensor dimension.
 data DimType (name :: Type) (size :: Type) where
@@ -215,6 +216,9 @@ type family UnifyDimTypeF (dimType :: DimType Symbol Nat) (dimType' :: DimType S
   UnifyDimTypeF ( 'NamedSized name size) ( 'NamedSized name size') = TypeError (UnifyDimSizeErrorMessage ( 'NamedSized name size) ( 'NamedSized name size'))
   UnifyDimTypeF ( 'NamedSized name size) ( 'NamedSized name' size') = TypeError (UnifyDimNameSizeErrorMessage ( 'NamedSized name size) ( 'NamedSized name' size'))
 
+type family UnifyDimTypeC (dimType :: DimType Symbol Nat) (dimType' :: DimType Symbol Nat) :: Constraint where
+  UnifyDimTypeC dimType dimType' = Catch (UnifyDimTypeF dimType dimType')
+
 -- | Unification of dimensions.
 --
 -- The unification rules are the same as for PyTorch, see
@@ -223,6 +227,9 @@ type family UnifyDimF (dim :: Dim (DimType Symbol Nat)) (dim' :: Dim (DimType Sy
   UnifyDimF 'UncheckedDim _ = 'UncheckedDim
   UnifyDimF _ 'UncheckedDim = 'UncheckedDim
   UnifyDimF ( 'Dim dimType) ( 'Dim dimType') = 'Dim (UnifyDimTypeF dimType dimType')
+
+type family UnifyDimC (dim :: Dim (DimType Symbol Nat)) (dim' :: Dim (DimType Symbol Nat)) :: Constraint where
+  UnifyDimC dim dim' = Catch (UnifyDimF dim dim')
 
 type AddDimNameErrorMessage dim dim' =
   "Cannot add the dimensions"
@@ -451,6 +458,9 @@ type family UnifyShapeF (shape :: Shape [Dim (DimType Symbol Nat)]) (shape' :: S
   UnifyShapeF ( 'Shape dims) ( 'Shape dims) = 'Shape dims
   UnifyShapeF ( 'Shape dims) ( 'Shape dims') = 'Shape (UnifyDimsF dims dims')
 
+type family UnifyShapeC (shape :: Shape [Dim (DimType Symbol Nat)]) (shape' :: Shape [Dim (DimType Symbol Nat)]) :: Constraint where
+  UnifyShapeC shape shape' = Catch (UnifyShapeF shape shape')
+
 type family UnifyDimsF (dims :: [Dim (DimType Symbol Nat)]) (dims' :: [Dim (DimType Symbol Nat)]) :: [Dim (DimType Symbol Nat)] where
   UnifyDimsF '[] '[] = '[]
   UnifyDimsF (dim ': dims) (dim' ': dims') = UnifyDimF dim dim' ': UnifyDimsF dims dims'
@@ -461,6 +471,9 @@ type family UnifyDimsF (dims :: [Dim (DimType Symbol Nat)]) (dims' :: [Dim (DimT
           % ""
           % "Try extending or broadcasting the tensor(s)."
       )
+
+type family UnifyDimsC (dims :: [Dim (DimType Symbol Nat)]) (dims' :: [Dim (DimType Symbol Nat)]) :: Constraint where
+  UnifyDimsC dims dims' = Catch (UnifyDimsF dims dims')
 
 type family BroadcastShapesF (shape :: Shape [Dim (DimType Symbol Nat)]) (shape' :: Shape [Dim (DimType Symbol Nat)]) :: Shape [Dim (DimType Symbol Nat)] where
   BroadcastShapesF 'UncheckedShape 'UncheckedShape = 'UncheckedShape

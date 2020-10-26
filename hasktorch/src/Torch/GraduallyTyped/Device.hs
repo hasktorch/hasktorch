@@ -22,13 +22,14 @@
 module Torch.GraduallyTyped.Device where
 
 import Data.Int (Int16)
-import Data.Kind (Type)
+import Data.Kind (Constraint, Type)
 import Data.Proxy (Proxy (..))
 import GHC.TypeLits
   ( KnownNat,
     Nat,
     natVal,
   )
+import Torch.GraduallyTyped.Prelude (Catch)
 import qualified Torch.Internal.Managed.Cast as ATen ()
 import Type.Errors.Pretty (TypeError, type (%), type (<>))
 
@@ -93,3 +94,6 @@ type family UnifyDeviceF (device :: Device (DeviceType Nat)) (device' :: Device 
           % "    " <> deviceType <> " and " <> deviceType' <> "."
           % ""
       )
+
+type family UnifyDeviceC (device :: Device (DeviceType Nat)) (device' :: Device (DeviceType Nat)) :: Constraint where
+  UnifyDeviceC device device' = Catch (UnifyDeviceF device device')

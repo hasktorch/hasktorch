@@ -26,7 +26,7 @@ import Torch.GraduallyTyped.NN.Initialization (FanMode (..), NonLinearity (..), 
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape (Dim (..), DimType (..), Shape (..), WithDimC (..))
-import Torch.GraduallyTyped.Tensor.Creation (WithCreateC(..), randn)
+import Torch.GraduallyTyped.Tensor.Creation (WithCreateC (..), randn)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mulScalar, subScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 
@@ -47,9 +47,15 @@ data
 
 instance
   () =>
-  HasForward (Linear device dataType inputFeatures outputFeatures) (Tensor requiresGradient layout device dataType shape)
+  HasForward
+    (Linear device dataType inputFeatures outputFeatures)
+    (Tensor requiresGradient layout device dataType shape)
   where
-  type ForwardOutput (Linear device dataType inputFeatures outputFeatures) (Tensor requiresGradient layout device dataType shape) = (Tensor requiresGradient layout device dataType shape)
+  type
+    ForwardOutput
+      (Linear device dataType inputFeatures outputFeatures)
+      (Tensor requiresGradient layout device dataType shape) =
+      (Tensor requiresGradient layout device dataType shape)
   forward = undefined
 
 class LinearHasInitialize

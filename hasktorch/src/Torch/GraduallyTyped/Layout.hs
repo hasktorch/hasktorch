@@ -12,7 +12,8 @@
 
 module Torch.GraduallyTyped.Layout where
 
-import Data.Kind (Type)
+import Data.Kind (Constraint, Type)
+import Torch.GraduallyTyped.Prelude (Catch)
 import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Const as ATen (kSparse, kStrided)
 import qualified Torch.Internal.Type as ATen (Layout)
@@ -88,3 +89,6 @@ type family UnifyLayoutF (layout :: Layout LayoutType) (layout' :: Layout Layout
           % "    " <> layoutType <> " and " <> layoutType' <> "."
           % ""
       )
+
+type family UnifyLayoutC (layout :: Layout LayoutType) (layout' :: Layout LayoutType) :: Constraint where
+  UnifyLayoutC layout layout' = Catch (UnifyLayoutF layout layout')

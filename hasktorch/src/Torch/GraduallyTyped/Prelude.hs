@@ -19,6 +19,7 @@ module Torch.GraduallyTyped.Prelude
     KnownElem (..),
     KnownList (..),
     Assert,
+    Catch,
     Fst,
     Snd,
     Elem,
@@ -80,7 +81,23 @@ data T1
 -- see https://kcsongor.github.io/report-stuck-families/
 type family Assert (err :: Constraint) (a :: k) :: k where
   Assert _ T1 = Any
-  Assert _ k = k
+  Assert _ a = a
+
+-- | Approximates a normal form on the type level.
+-- 'Catch' forces its argument 'a' and returns an empty 'Constraint'
+-- if and only if the argument does not produce a 'TypeError'.
+--
+-- The first equation will recursively force the kind of the argument
+-- until it reaches 'Type' or a 'TypeError'.
+-- In the former case, it falls over to the second equation which will produce the
+-- empty constraint.
+-- In the latter case, it gets stuck with 'Catch (TypeError ...)',
+-- and the compiler will report the error message.
+--
+-- Thanks to <https://kcsongor.github.io/kcsongor> for the suggestion.
+type family Catch (a :: k) :: Constraint where
+  Catch (f a) = (Catch f, Catch a)
+  Catch _  = ()
 
 -- | Returns the first element of a type-level tuple with the kind @(k, k')@ marked by a prefix quote.
 --
