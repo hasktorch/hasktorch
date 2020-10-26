@@ -19,10 +19,11 @@ import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType)
 import Torch.GraduallyTyped.DType (DataType (..), WithDataTypeC (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType, WithDeviceC (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType, UnifyDeviceC, WithDeviceC (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Initialization (FanMode (..), NonLinearity (..), calculateFan, getter, kaimingUniform)
+import Torch.GraduallyTyped.Prelude (Catch)
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape (Dim (..), DimType (..), Shape (..), WithDimC (..))
@@ -58,10 +59,9 @@ instance
       (Tensor requiresGradient layout device dataType shape)
   forward = undefined
 
-class LinearHasInitialize
-
 instance
-  ( WithDeviceC device (WithDataTypeF dataType (WithDimF inputDim (WithDimF outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device))))),
+  ( UnifyDeviceC device device,
+    WithDeviceC device (WithDataTypeF dataType (WithDimF inputDim (WithDimF outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device))))),
     WithDataTypeC dataType (WithDimF inputDim (WithDimF outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device)))),
     WithDimC inputDim (WithDimF outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device))),
     WithDimC outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device)),
@@ -101,7 +101,7 @@ instance
         weight <-
           state $
             withoutCreate @_ @ 'Independent @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim, inputDim])
-              (kaimingUniform @ 'Independent @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim, inputDim]))
+              (kaimingUniform @ 'Independent @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim, inputDim]) @device)
               Independent
               Dense
               deviceType
@@ -112,7 +112,7 @@ instance
         bias <-
           state $
             withoutCreate @_ @ 'Independent @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim])
-              (randn @ 'Independent @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim]))
+              (randn @ 'Independent @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim]) @device)
               Independent
               Dense
               deviceType

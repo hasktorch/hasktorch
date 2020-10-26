@@ -29,10 +29,11 @@ import GHC.TypeLits (Nat, Symbol)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType)
 import Torch.GraduallyTyped.DType (DataType (..), KnownDType, WithDataTypeC (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType, KnownDeviceType, WithDeviceC (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType, KnownDeviceType, UnifyDeviceC, WithDeviceC (..))
 import Torch.GraduallyTyped.Internal.TensorOptions (tensorOptions)
 import Torch.GraduallyTyped.Internal.Void (Void)
 import Torch.GraduallyTyped.Layout (KnownLayoutType, Layout (..), LayoutType, WithLayoutC (..))
+import Torch.GraduallyTyped.Prelude (Catch)
 import Torch.GraduallyTyped.Random (Generator, withGenerator)
 import Torch.GraduallyTyped.RequiresGradient (KnownRequiresGradient, RequiresGradient (..), requiresGradientVal)
 import Torch.GraduallyTyped.Shape (Dim, DimType, Shape (..), WidenShapeF, WithShapeC (..), namedDims, sizedDims)
@@ -271,10 +272,12 @@ uncheckedOnes ::
 uncheckedOnes = ones @ 'Dependent @ 'UncheckedLayout @ 'UncheckedDevice @ 'UncheckedDataType @ 'UncheckedShape
 
 randn ::
-  forall requiresGradient layout device dataType shape.
-  WithCreateC (Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape =>
-  WithCreateF (Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) requiresGradient layout device dataType shape
-randn = withCreate @(Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)) @requiresGradient @layout @device @dataType @shape go
+  forall requiresGradient layout device dataType shape device'.
+  ( UnifyDeviceC device device',
+    WithCreateC (Generator device' -> (Tensor requiresGradient layout device dataType shape, Generator device')) requiresGradient layout device dataType shape
+  ) =>
+  WithCreateF (Generator device' -> (Tensor requiresGradient layout device dataType shape, Generator device')) requiresGradient layout device dataType shape
+randn = withCreate @(Generator device' -> (Tensor requiresGradient layout device dataType shape, Generator device')) @requiresGradient @layout @device @dataType @shape go
   where
     go requiresGradient layoutType deviceType dType shape =
       let opts = tensorOptions requiresGradient layoutType deviceType dType
@@ -300,6 +303,7 @@ checkedRandn ::
     KnownLayoutType layoutType,
     KnownDeviceType deviceType,
     KnownDType dType,
+    Catch deviceType,
     WithShapeC (WidenShapeF ( 'Shape dimTypes)) (Generator ( 'Device deviceType) -> (Tensor requiresGradient ( 'Layout layoutType) ( 'Device deviceType) ( 'DataType dType) (WidenShapeF ( 'Shape dimTypes)), Generator ( 'Device deviceType)))
   ) =>
   ( WithShapeF
@@ -315,7 +319,7 @@ checkedRandn ::
         )
       )
   )
-checkedRandn = randn @requiresGradient @( 'Layout layoutType) @( 'Device deviceType) @( 'DataType dType) @(WidenShapeF ( 'Shape dimTypes))
+checkedRandn = randn @requiresGradient @( 'Layout layoutType) @( 'Device deviceType) @( 'DataType dType) @(WidenShapeF ( 'Shape dimTypes)) @( 'Device deviceType)
 
 uncheckedRandn ::
   LayoutType ->
