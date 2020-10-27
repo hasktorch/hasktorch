@@ -56,14 +56,16 @@ linearForward ::
   Tensor _ _ _
 linearForward Linear {..} input = linear' (toDependent linearWeight) (toDependent linearBias) input
 
-instance
-  ( shape'' ~ MatMul shape '[inputFeatures, outputFeatures],
-    shape' ~ Broadcast shape'' shape''
-  ) =>
-  HasForward (Linear inputFeatures outputFeatures dtype device) (Tensor device dtype shape) (Tensor device dtype shape')
-  where
+instance HasForward (Linear inputFeatures outputFeatures dtype device) (Tensor device dtype shape) where
+  type
+    Output
+      (Linear inputFeatures outputFeatures dtype device)
+      (Tensor device dtype shape) =
+      Tensor
+        device
+        dtype
+        (Broadcast (MatMul shape '[inputFeatures, outputFeatures]) (MatMul shape '[inputFeatures, outputFeatures]))
   forward = linearForward
-  forwardStoch = (pure .) . forward
 
 instance
   ( KnownNat inputFeatures,
