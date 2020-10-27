@@ -1,3 +1,13 @@
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
+
 -- {-# LANGUAGE DataKinds #-}
 -- {-# LANGUAGE DeriveAnyClass #-}
 -- {-# LANGUAGE DeriveGeneric #-}
@@ -17,59 +27,160 @@
 
 module Torch.GraduallyTyped.NN.Transformer where
 
--- import Control.Monad
--- import Data.Proxy
--- import GHC.Generics
--- import GHC.TypeLits
--- import Prelude hiding (cos, exp, sin)
--- import Torch.GraduallyTyped.DType (DataType)
--- import Torch.DType (DType)
--- import Torch.GraduallyTyped.Device (DeviceType, Device)
+import Control.Monad.State.Strict (MonadState (state), runState)
+import Data.Kind (Type)
+import GHC.TypeLits (Nat, Symbol)
+import Torch.DType (DType)
+import Torch.GraduallyTyped.DType (DataType (DataType), WithDataTypeC (..))
+import Torch.GraduallyTyped.Device (Device (Device), DeviceType, WithDeviceC (..))
+import Torch.GraduallyTyped.NN.Class (HasInitialize (..))
+import Torch.GraduallyTyped.NN.Dropout (Dropout (Dropout))
+import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearC, Linear (Linear))
+import Torch.GraduallyTyped.Random (Generator)
+import Torch.GraduallyTyped.Scalar (Scalar)
+import Torch.GraduallyTyped.Shape (Dim (Dim), DimType, WithDimC (..))
+import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 
 -- residual f g x = f x >>= (\x' -> g (x `add` x'))
 
--- --------------------------------------------------------------------------------
--- -- Relation-Aware Multi-Headed Attention Layer
--- --------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+-- Relation-Aware Multi-Headed Attention Layer
+--------------------------------------------------------------------------------
 
--- data
---   MultiheadAttentionSpec
---     (embedDim :: Nat)
---     (kEmbedDim :: Nat)
---     (vEmbedDim :: Nat)
---     (numHeads :: Nat)
---     (dataType :: DataType (DType))
---     (device :: Device (DeviceType Nat))
---   where
---   MultiheadAttentionSpec ::
---     -- | spec for dropout
---     DropoutSpec ->
---     MultiheadAttentionSpec embedDim kEmbedDim vEmbedDim numHeads dataType device
---   deriving (Show, Eq)
+data
+  MultiheadAttention
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType (DType))
+    (embedDim :: Dim (DimType Symbol Nat))
+    (kEmbedDim :: Dim (DimType Symbol Nat))
+    (vEmbedDim :: Dim (DimType Symbol Nat))
+    (p :: Type)
+  where
+  MultiheadAttention ::
+    { -- | in-projection for query
+      mhaQInProj :: Linear device dataType embedDim embedDim,
+      -- | in-projection for key
+      mhaKInProj :: Linear device dataType kEmbedDim embedDim,
+      -- | in-projection for value
+      mhaVInProj :: Linear device dataType vEmbedDim embedDim,
+      -- | out-projection
+      mhaOutProj :: Linear device dataType embedDim embedDim,
+      -- | dropout
+      mhaDropout :: Dropout p
+    } ->
+    MultiheadAttention device dataType embedDim kEmbedDim vEmbedDim p
 
--- data
---   MultiheadAttention
---     (embedDim :: Nat)
---     (kEmbedDim :: Nat)
---     (vEmbedDim :: Nat)
---     (numHeads :: Nat)
---     (dataType :: DataType (DType))
---     (device :: Device (DeviceType Nat))
---   where
---   MultiheadAttention ::
---     { -- | in-projection for query
---       mhaQInProj :: Linear embedDim embedDim dtype device,
---       -- | in-projection for key
---       mhaKInProj :: Linear kEmbedDim embedDim dtype device,
---       -- | in-projection for value
---       mhaVInProj :: Linear vEmbedDim embedDim dtype device,
---       -- | out-projection
---       mhaOutProj :: Linear embedDim embedDim dtype device,
---       -- | dropout
---       mhaDropout :: Dropout
---     } ->
---     MultiheadAttention embedDim kEmbedDim vEmbedDim numHeads dtype device
---   deriving (Show, Generic)
+type HasInitializeMultiheadAttentionC device dataType embedDim kEmbedDim vEmbedDim p =
+  ( WithDeviceC device (WithDataTypeF dataType (WithDimF embedDim (WithDimF kEmbedDim (WithDimF vEmbedDim (p -> Generator device -> (MultiheadAttention device dataType embedDim kEmbedDim vEmbedDim p, Generator device)))))),
+    WithDataTypeC dataType (WithDimF embedDim (WithDimF kEmbedDim (WithDimF vEmbedDim (p -> Generator device -> (MultiheadAttention device dataType embedDim kEmbedDim vEmbedDim p, Generator device))))),
+    WithDimC embedDim (WithDimF kEmbedDim (WithDimF vEmbedDim (p -> Generator device -> (MultiheadAttention device dataType embedDim kEmbedDim vEmbedDim p, Generator device)))),
+    WithDimC kEmbedDim (WithDimF vEmbedDim (p -> Generator device -> (MultiheadAttention device dataType embedDim kEmbedDim vEmbedDim p, Generator device))),
+    WithDimC vEmbedDim (p -> Generator device -> (MultiheadAttention device dataType embedDim kEmbedDim vEmbedDim p, Generator device)),
+    WithDimC embedDim (Generator device -> (Linear device dataType embedDim embedDim, Generator device)),
+    HasInitializeLinearC device dataType embedDim embedDim,
+    HasInitializeLinearC device dataType kEmbedDim embedDim,
+    HasInitializeLinearC device dataType vEmbedDim embedDim,
+    Scalar p
+  )
+
+instance
+  HasInitializeMultiheadAttentionC device dataType embedDim kEmbedDim vEmbedDim p =>
+  HasInitialize (MultiheadAttention device dataType embedDim kEmbedDim vEmbedDim p)
+  where
+  type
+    InitializeF (MultiheadAttention device dataType embedDim kEmbedDim vEmbedDim p) =
+      WithDeviceF
+        device
+        ( WithDataTypeF
+            dataType
+            ( WithDimF
+                embedDim
+                ( WithDimF
+                    kEmbedDim
+                    ( WithDimF
+                        vEmbedDim
+                        (p -> Generator device -> (MultiheadAttention device dataType embedDim kEmbedDim vEmbedDim p, Generator device))
+                    )
+                )
+            )
+        )
+  initialize =
+    withDevice @device $
+      \deviceType ->
+        withDataType @dataType $
+          \dType ->
+            withDim @embedDim $
+              \embedDim ->
+                withDim @kEmbedDim $
+                  \kEmbedDim ->
+                    withDim @vEmbedDim @(p -> Generator device -> (MultiheadAttention device dataType embedDim kEmbedDim vEmbedDim p, Generator device)) $
+                      \vEmbedDim ->
+                        go deviceType dType embedDim kEmbedDim vEmbedDim
+    where
+      go deviceType dType embedDim kEmbedDim vEmbedDim p = runState $ do
+        qInProj <-
+          state $
+            withoutDim @embedDim
+              ( withoutDim @embedDim
+                  ( withoutDataType @dataType
+                      ( withoutDevice @device
+                          ( initialize @(Linear device dataType embedDim embedDim)
+                          )
+                          deviceType
+                      )
+                      dType
+                  )
+                  embedDim
+              )
+              embedDim
+        kInProj <-
+          state $
+            withoutDim @embedDim
+              ( withoutDim @kEmbedDim
+                  ( withoutDataType @dataType
+                      ( withoutDevice @device
+                          ( initialize @(Linear device dataType kEmbedDim embedDim)
+                          )
+                          deviceType
+                      )
+                      dType
+                  )
+                  kEmbedDim
+              )
+              embedDim
+        vInProj <-
+          state $
+            withoutDim @embedDim
+              ( withoutDim @vEmbedDim
+                  ( withoutDataType @dataType
+                      ( withoutDevice @device
+                          ( initialize @(Linear device dataType vEmbedDim embedDim)
+                          )
+                          deviceType
+                      )
+                      dType
+                  )
+                  vEmbedDim
+              )
+              embedDim
+        outProj <-
+          state $
+            withoutDim @embedDim
+              ( withoutDim @embedDim
+                  ( withoutDataType @dataType
+                      ( withoutDevice @device
+                          ( initialize @(Linear device dataType embedDim embedDim)
+                          )
+                          deviceType
+                      )
+                      dType
+                  )
+                  embedDim
+              )
+              embedDim
+        dropout <-
+          pure $ initialize @(Dropout p) p
+        pure $ MultiheadAttention qInProj kInProj vInProj outProj dropout
 
 -- multiheadAttention ::
 --   forall embedDim kEmbedDim vEmbedDim numHeads seqLen seqLen' batchSize headDim dtype device.

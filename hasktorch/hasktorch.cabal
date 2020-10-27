@@ -51,6 +51,8 @@ library
                     , Torch.GraduallyTyped.NN.Initialization
                     , Torch.GraduallyTyped.NN.Linear
                     , Torch.GraduallyTyped.NN.Transformer
+                    , Torch.GraduallyTyped.NN.Dropout
+                    , Torch.GraduallyTyped.NN.Activation
                     , Torch.GraduallyTyped.Internal.TensorOptions
                     , Torch.GraduallyTyped.Internal.Void
                     , Torch

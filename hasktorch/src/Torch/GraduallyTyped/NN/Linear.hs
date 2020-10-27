@@ -1,6 +1,8 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PartialTypeSignatures #-}
@@ -23,7 +25,6 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType, UnifyDeviceC, WithD
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Initialization (FanMode (..), NonLinearity (..), calculateFan, getter, kaimingUniform)
-import Torch.GraduallyTyped.Prelude (Catch)
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape (Dim (..), DimType (..), Shape (..), WithDimC (..))
@@ -46,20 +47,7 @@ data
     Linear device dataType inputFeatures outputFeatures
   deriving (Generic)
 
-instance
-  () =>
-  HasForward
-    (Linear device dataType inputFeatures outputFeatures)
-    (Tensor requiresGradient layout device dataType shape)
-  where
-  type
-    ForwardOutput
-      (Linear device dataType inputFeatures outputFeatures)
-      (Tensor requiresGradient layout device dataType shape) =
-      (Tensor requiresGradient layout device dataType shape)
-  forward = undefined
-
-instance
+type HasInitializeLinearC device dataType inputDim outputDim =
   ( UnifyDeviceC device device,
     WithDeviceC device (WithDataTypeF dataType (WithDimF inputDim (WithDimF outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device))))),
     WithDataTypeC dataType (WithDimF inputDim (WithDimF outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device)))),
@@ -68,24 +56,26 @@ instance
     WithCreateC (FanMode -> NonLinearity -> Generator device -> (Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]), Generator device)) 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]),
     WithCreateC (Generator device -> (Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]), Generator device)) 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]),
     WithCreateC (Generator device -> (Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim]), Generator device)) 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim])
-  ) =>
+  )
+
+instance
+  HasInitializeLinearC device dataType inputDim outputDim =>
   HasInitialize (Linear device dataType inputDim outputDim)
   where
   type
     InitializeF (Linear device dataType inputDim outputDim) =
-      ( WithDeviceF
-          device
-          ( WithDataTypeF
-              dataType
-              ( WithDimF
-                  inputDim
-                  ( WithDimF
-                      outputDim
-                      (Generator device -> (Linear device dataType inputDim outputDim, Generator device))
-                  )
-              )
-          )
-      )
+      WithDeviceF
+        device
+        ( WithDataTypeF
+            dataType
+            ( WithDimF
+                inputDim
+                ( WithDimF
+                    outputDim
+                    (Generator device -> (Linear device dataType inputDim outputDim, Generator device))
+                )
+            )
+        )
   initialize =
     withDevice @device $
       \deviceType ->
@@ -127,3 +117,16 @@ instance
                   )
 
         pure $ Linear weight ((bias `mulScalar` (bound * 2)) `subScalar` bound)
+
+instance
+  () =>
+  HasForward
+    (Linear device dataType inputFeatures outputFeatures)
+    (Tensor requiresGradient layout device dataType shape)
+  where
+  type
+    ForwardOutput
+      (Linear device dataType inputFeatures outputFeatures)
+      (Tensor requiresGradient layout device dataType shape) =
+      Tensor requiresGradient layout device dataType shape
+  forward = undefined
