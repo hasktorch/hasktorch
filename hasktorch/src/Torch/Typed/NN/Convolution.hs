@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -11,9 +12,9 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeInType #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE DeriveAnyClass #-}
 {-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 
 module Torch.Typed.NN.Convolution where
@@ -46,13 +47,18 @@ data
     (outputChannelSize :: Nat)
     (kernelSize :: Nat)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   Conv1d ::
     forall inputChannelSize outputChannelSize kernelSize dtype device.
     { conv1dWeight :: Parameter device dtype '[outputChannelSize, inputChannelSize, kernelSize],
       conv1dBias :: Parameter device dtype '[outputChannelSize]
     } ->
-    Conv1d inputChannelSize outputChannelSize kernelSize dtype
+    Conv1d
+      inputChannelSize
+      outputChannelSize
+      kernelSize
+      dtype
       device
   deriving (Show, Generic, Parameterized)
 
@@ -72,7 +78,8 @@ conv1dForward Conv1d {..} input =
     input
 
 instance
-  ( All KnownNat
+  ( All
+      KnownNat
       '[ stride,
          padding,
          inputChannelSize,
@@ -84,10 +91,16 @@ instance
        ],
     ConvSideCheck inputSize kernelSize stride padding outputSize
   ) =>
-  HasForward (Conv1d inputChannelSize outputChannelSize kernelSize dtype device) (Tensor device dtype '[batchSize, inputChannelSize, inputSize], Proxy stride, Proxy padding) (Tensor device dtype '[batchSize, outputChannelSize, outputSize])
+  HasForward
+    (Conv1d inputChannelSize outputChannelSize kernelSize dtype device)
+    (Tensor device dtype '[batchSize, inputChannelSize, inputSize], Proxy stride, Proxy padding)
   where
+  type
+    Output
+      (Conv1d inputChannelSize outputChannelSize kernelSize dtype device)
+      (Tensor device dtype '[batchSize, inputChannelSize, inputSize], Proxy stride, Proxy padding) =
+      Tensor device dtype '[batchSize, outputChannelSize, ConvOutputSize inputSize kernelSize stride padding]
   forward model (input, Proxy, Proxy) = conv1dForward @stride @padding model input
-  forwardStoch = (pure .) . forward
 
 instance
   ( KnownNat inputChannelSize,
@@ -97,7 +110,8 @@ instance
     KnownDevice device,
     RandDTypeIsValid device dtype
   ) =>
-  Randomizable (Conv1dSpec inputChannelSize outputChannelSize kernelSize dtype device)
+  Randomizable
+    (Conv1dSpec inputChannelSize outputChannelSize kernelSize dtype device)
     (Conv1d inputChannelSize outputChannelSize kernelSize dtype device)
   where
   sample Conv1dSpec =
@@ -121,13 +135,19 @@ data
     (kernelSize0 :: Nat)
     (kernelSize1 :: Nat)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   Conv2d ::
     forall inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device.
     { conv2dWeight :: Parameter device dtype '[outputChannelSize, inputChannelSize, kernelSize0, kernelSize1],
       conv2dBias :: Parameter device dtype '[outputChannelSize]
     } ->
-    Conv2d inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype
+    Conv2d
+      inputChannelSize
+      outputChannelSize
+      kernelSize0
+      kernelSize1
+      dtype
       device
   deriving (Show, Generic, Parameterized)
 
@@ -147,7 +167,8 @@ conv2dForward Conv2d {..} input =
     input
 
 instance
-  ( All KnownNat
+  ( All
+      KnownNat
       '[ Torch.Typed.Aux.Fst stride,
          Torch.Typed.Aux.Snd stride,
          Torch.Typed.Aux.Fst padding,
@@ -165,10 +186,16 @@ instance
     ConvSideCheck inputSize0 kernelSize0 (Torch.Typed.Aux.Fst stride) (Torch.Typed.Aux.Fst padding) outputSize0,
     ConvSideCheck inputSize1 kernelSize1 (Torch.Typed.Aux.Snd stride) (Torch.Typed.Aux.Snd padding) outputSize1
   ) =>
-  HasForward (Conv2d inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device) (Tensor device dtype '[batchSize, inputChannelSize, inputSize0, inputSize1], Proxy stride, Proxy padding) (Tensor device dtype '[batchSize, outputChannelSize, outputSize0, outputSize1])
+  HasForward
+    (Conv2d inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
+    (Tensor device dtype '[batchSize, inputChannelSize, inputSize0, inputSize1], Proxy stride, Proxy padding)
   where
+  type
+    Output
+      (Conv2d inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
+      (Tensor device dtype '[batchSize, inputChannelSize, inputSize0, inputSize1], Proxy stride, Proxy padding) =
+      Tensor device dtype '[batchSize, outputChannelSize, ConvOutputSize inputSize0 kernelSize0 (Torch.Typed.Aux.Fst stride) (Torch.Typed.Aux.Fst padding), ConvOutputSize inputSize1 kernelSize1 (Torch.Typed.Aux.Snd stride) (Torch.Typed.Aux.Snd padding)]
   forward model (input, Proxy, Proxy) = conv2dForward @stride @padding model input
-  forwardStoch = (pure .) . forward
 
 instance
   ( KnownNat inputChannelSize,
@@ -179,7 +206,8 @@ instance
     KnownDevice device,
     RandDTypeIsValid device dtype
   ) =>
-  Randomizable (Conv2dSpec inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
+  Randomizable
+    (Conv2dSpec inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
     (Conv2d inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
   where
   sample Conv2dSpec =
@@ -205,13 +233,20 @@ data
     (kernelSize1 :: Nat)
     (kernelSize2 :: Nat)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   Conv3d ::
     forall inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device.
     { conv3dWeight :: Parameter device dtype '[outputChannelSize, inputChannelSize, kernelSize0, kernelSize1, kernelSize2],
       conv3dBias :: Parameter device dtype '[outputChannelSize]
     } ->
-    Conv3d inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype
+    Conv3d
+      inputChannelSize
+      outputChannelSize
+      kernelSize0
+      kernelSize1
+      kernelSize2
+      dtype
       device
   deriving (Show, Generic, Parameterized)
 
@@ -231,7 +266,8 @@ conv3dForward Conv3d {..} input =
     input
 
 instance
-  ( All KnownNat
+  ( All
+      KnownNat
       '[ Fst3 stride,
          Snd3 stride,
          Trd3 stride,
@@ -252,10 +288,24 @@ instance
     ConvSideCheck inputSize1 kernelSize1 (Snd3 stride) (Snd3 padding) outputSize1,
     ConvSideCheck inputSize2 kernelSize2 (Trd3 stride) (Trd3 padding) outputSize2
   ) =>
-  HasForward (Conv3d inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device) (Tensor device dtype '[batchSize, inputChannelSize, inputSize0, inputSize1, inputSize2], Proxy stride, Proxy padding) (Tensor device dtype '[batchSize, outputChannelSize, outputSize0, outputSize1, outputSize2])
+  HasForward
+    (Conv3d inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
+    (Tensor device dtype '[batchSize, inputChannelSize, inputSize0, inputSize1, inputSize2], Proxy stride, Proxy padding)
   where
+  type
+    Output
+      (Conv3d inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
+      (Tensor device dtype '[batchSize, inputChannelSize, inputSize0, inputSize1, inputSize2], Proxy stride, Proxy padding) =
+      Tensor
+        device
+        dtype
+        '[ batchSize,
+           outputChannelSize,
+           ConvOutputSize inputSize0 kernelSize0 (Fst3 stride) (Fst3 padding),
+           ConvOutputSize inputSize1 kernelSize1 (Snd3 stride) (Snd3 padding),
+           ConvOutputSize inputSize2 kernelSize2 (Trd3 stride) (Trd3 padding)
+         ]
   forward model (input, Proxy, Proxy) = conv3dForward @stride @padding model input
-  forwardStoch = (pure .) . forward
 
 instance
   ( KnownNat inputChannelSize,
@@ -267,7 +317,8 @@ instance
     KnownDevice device,
     RandDTypeIsValid device dtype
   ) =>
-  Randomizable (Conv3dSpec inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
+  Randomizable
+    (Conv3dSpec inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
     (Conv3d inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
   where
   sample Conv3dSpec =
