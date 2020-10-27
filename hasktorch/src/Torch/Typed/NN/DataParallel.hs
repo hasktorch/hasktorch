@@ -28,12 +28,12 @@ import Torch.Typed.Optim
 data ForwardConcurrentlyF = ForwardConcurrentlyF | ForwardConcurrentlyStochF
 
 instance
-  ( HasForward model input output
+  ( HasForward model input
+  , output ~ Output model input
   ) =>
   Apply' ForwardConcurrentlyF (model, input) (Concurrently output)
   where
   apply' ForwardConcurrentlyF (model, input) = Concurrently . pure . forward model $ input
-  apply' ForwardConcurrentlyStochF (model, input) = Concurrently . forwardStoch model $ input
 
 -- Run a `model` concurrently on an `input`.
 --
