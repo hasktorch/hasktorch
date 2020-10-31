@@ -26,6 +26,8 @@ module Torch.GraduallyTyped.Prelude
     Elem,
     Contains,
     FromMaybe,
+    FstMaybe,
+    SndMaybe,
     PrependMaybe,
     MapMaybe,
     BindMaybe,
@@ -146,6 +148,14 @@ type Reverse xs = ReverseImplF xs '[]
 type family FromMaybe (d :: k) (x :: Maybe k) :: k where
   FromMaybe d 'Nothing = d
   FromMaybe _ ('Just v) = v
+
+type family FstMaybe (t :: Maybe (k, k')) :: Maybe k where
+  FstMaybe 'Nothing = 'Nothing
+  FstMaybe ('Just '(x, _)) = 'Just x
+
+type family SndMaybe (t :: Maybe (k, k')) :: Maybe k' where
+  SndMaybe 'Nothing = 'Nothing
+  SndMaybe ('Just '(_, y)) = 'Just y
 
 type family PrependMaybe (h :: Maybe a) (t :: Maybe [a]) :: Maybe [a] where
   PrependMaybe 'Nothing _ = 'Nothing

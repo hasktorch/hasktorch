@@ -23,7 +23,7 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType, UnifyDeviceF)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType, UnifyLayoutF)
 import Torch.GraduallyTyped.Prelude (FromMaybe, LiftTypeEqMaybe, MapMaybe)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), UnifyRequiresGradientF)
-import Torch.GraduallyTyped.Shape (AddDimF, By (..), Dim (..), DimType (..), GetDimDimsImplF, GetDimF, NumelF, ReplaceDimDimsImplF, ReplaceDimF, ReplaceDimImplF, SelectDim (..), Shape (..), UnifyShapeF, WithSelectDimC (..), WithShapeC (..), sizedDims)
+import Torch.GraduallyTyped.Shape (AddDimF, By (..), Dim (..), DimType (..), GetDimDimsImplF, GetDimF, GetIndexByNameDimsImplF, NumelF, ReplaceDimDimsImplF, ReplaceDimF, ReplaceDimImplF, SelectDim (..), Shape (..), UnifyShapeF, WithSelectDimC (..), WithShapeC (..), sizedDims)
 import Torch.GraduallyTyped.Tensor.Type (Tensor, TensorF)
 import Torch.HList (HList)
 import Torch.Internal.Cast (cast2, cast3)
@@ -207,39 +207,66 @@ type TransposeBy1Message (by1 :: By Symbol Nat) (dims :: [Dim (DimType Symbol Na
     % ""
     % "could not be found."
 
--- | Transpose
+-- | Compute transposed shapes.
 --
--- >>> :kind! Transpose '[3,2] 0 1
--- Transpose '[3,2] 0 1 :: [Nat]
--- = '[2, 3]
--- >>> :kind! Transpose '[3,2,1] 1 2
--- Transpose '[3,2,1] 1 2 :: [Nat]
--- = '[3, 1, 2]
+-- >>> type SelectDim0 = 'SelectDim ('ByName "batch")
+-- >>> type SelectDim1 = 'SelectDim ('ByName "feature")
+-- >>> type Dims = '[ 'Dim ('NamedSized "batch" 10), 'Dim ('NamedSized "feature" 8), 'Dim ('NamedSized "anotherFeature" 12)]
+-- >>> :kind! TransposeF SelectDim0 SelectDim1 ('Shape Dims)
+-- TransposeF SelectDim0 SelectDim1 ('Shape Dims) :: Shape [Dim (DimType Symbol Nat)]
+-- = 'Shape '[ 'Dim ('NamedSized "feature" 8), 'Dim ('NamedSized "batch" 10), 'Dim ('NamedSized "anotherFeature" 12)]
+-- >>> :kind! TransposeF SelectDim1 SelectDim0 ('Shape Dims)
+-- TransposeF SelectDim1 SelectDim0 ('Shape Dims) :: Shape [Dim (DimType Symbol Nat)]
+-- = 'Shape '[ 'Dim ('NamedSized "feature" 8), 'Dim ('NamedSized "batch" 10), 'Dim ('NamedSized "anotherFeature" 12)]
 type family TransposeF (selectDim0 :: SelectDim (By Symbol Nat)) (selectDim1 :: SelectDim (By Symbol Nat)) (shape :: Shape [Dim (DimType Symbol Nat)]) :: Shape [Dim (DimType Symbol Nat)] where
   TransposeF _ _ 'UncheckedShape = 'UncheckedShape
   TransposeF _ 'UncheckedSelectDim _ = 'UncheckedShape
   TransposeF 'UncheckedSelectDim _ _ = 'UncheckedShape
-  TransposeF ( 'SelectDim by0) ( 'SelectDim by1) ( 'Shape dims) =
+  TransposeF ( 'SelectDim ( 'ByName name0)) ( 'SelectDim ( 'ByName name1)) ( 'Shape dims) =
     'Shape
-      ( FromMaybe
-          (TypeError (TransposeBy1Message by1 dims))
-          ( ReplaceDimDimsImplF
-              by1
-              ( FromMaybe
-                  (TypeError (TransposeBy0Message by0 dims))
-                  ( ReplaceDimDimsImplF
-                      by0
-                      dims
-                      ( FromMaybe
-                          (TypeError (TransposeBy1Message by1 dims))
-                          (GetDimDimsImplF by1 dims)
-                      )
+      ( TransposeIndexIndexDimsF
+          ( FromMaybe
+              (TypeError (TransposeBy0Message (ByName name0) dims))
+              (GetIndexByNameDimsImplF name0 dims)
+          )
+          ( FromMaybe
+              (TypeError (TransposeBy1Message (ByName name1) dims))
+              (GetIndexByNameDimsImplF name1 dims)
+          )
+          dims
+      )
+  TransposeF ( 'SelectDim ( 'ByIndex index0)) ( 'SelectDim ( 'ByIndex index1)) ( 'Shape dims) = 'Shape (TransposeIndexIndexDimsF index0 index1 dims)
+  TransposeF ( 'SelectDim by0) ( 'SelectDim by1) _ =
+    TypeError
+      ( "Cannot transpose the tensor. "
+          % ""
+          % "The source and target dimensions must be selected either both by name or both by index, "
+          % "but mixed selectors were found: "
+          % ""
+          % "    '" <> ( 'SelectDim by0) <> "' and '" <> ( 'SelectDim by1) <> "'."
+          % ""
+      )
+
+type family TransposeIndexIndexDimsF (index0 :: Nat) (index1 :: Nat) (dims :: [Dim (DimType Symbol Nat)]) :: [Dim (DimType Symbol Nat)] where
+  TransposeIndexIndexDimsF index0 index1 dims =
+    FromMaybe
+      (TypeError (TransposeBy1Message (ByIndex index1) dims))
+      ( ReplaceDimDimsImplF
+          (ByIndex index1)
+          ( FromMaybe
+              (TypeError (TransposeBy0Message (ByIndex index0) dims))
+              ( ReplaceDimDimsImplF
+                  (ByIndex index0)
+                  dims
+                  ( FromMaybe
+                      (TypeError (TransposeBy1Message (ByIndex index1) dims))
+                      (GetDimDimsImplF (ByIndex index1) dims)
                   )
               )
-              ( FromMaybe
-                  (TypeError (TransposeBy0Message by0 dims))
-                  (GetDimDimsImplF by0 dims)
-              )
+          )
+          ( FromMaybe
+              (TypeError (TransposeBy0Message (ByIndex index0) dims))
+              (GetDimDimsImplF (ByIndex index0) dims)
           )
       )
 
@@ -257,8 +284,18 @@ type family TransposeF (selectDim0 :: SelectDim (By Symbol Nat)) (selectDim1 :: 
 --        ('Device 'CPU)
 --        ('DataType 'Float)
 --        ('Shape
---           '[ 'Dim ('NamedSized "batch" 10), 'Dim ('NamedSized "feature" 5)])
--- >>> output = transpose @'UncheckedSelectDim @('SelectDim ('ByIndex 1)) (SelectDim (ByIndex 0)) input
+--           '[ 'Dim ('NamedSized "feature" 5), 'Dim ('NamedSized "batch" 10)])
+-- >>> output = transpose @'UncheckedSelectDim @('SelectDim ('ByIndex 1)) (ByIndex 0) input
+-- >>> :type output
+-- output
+--   :: Tensor
+--        'Dependent
+--        ('Layout 'Dense)
+--        ('Device 'CPU)
+--        ('DataType 'Float)
+--        'UncheckedShape
+-- >>> shape output
+-- [NamedSized "feature" 5,NamedSized "batch" 10]
 transpose ::
   forall selectDim0 selectDim1 requiresGradient layout device dataType shape shape'.
   ( WithSelectDimC selectDim0 (WithSelectDimF selectDim1 (Tensor requiresGradient layout device dataType shape -> Tensor requiresGradient layout device dataType shape')),
@@ -275,8 +312,8 @@ transpose = withSelectDim @selectDim0 $
         _ ->
           error $
             "Cannot transpose the tensor. "
-              <> "The two dimensions must be selected either both by name or both by index, "
-              <> "but mixed selectors where found: '"
+              <> "The source and target dimensions must be selected either both by name or both by index, "
+              <> "but mixed selectors were found: '"
               <> show selectDim0
               <> "' and '"
               <> show selectDim1

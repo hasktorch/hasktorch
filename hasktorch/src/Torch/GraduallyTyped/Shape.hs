@@ -29,7 +29,7 @@ import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (type (*), KnownNat, KnownSymbol, Nat, Symbol, TypeError, natVal, symbolVal, type (+), type (-))
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.GraduallyTyped.Internal.Void (Void)
-import Torch.GraduallyTyped.Prelude (LiftTimesMaybe, LiftM2Maybe, Catch, Assert, Concat, MapMaybe, PrependMaybe, Reverse)
+import Torch.GraduallyTyped.Prelude (FstMaybe, SndMaybe, LiftTimesMaybe, LiftM2Maybe, Catch, Assert, Concat, MapMaybe, PrependMaybe, Reverse)
 import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Managed.Cast as ATen ()
 import qualified Torch.Internal.Managed.Type.Dimname as ATen (dimname_symbol, fromSymbol_s)
@@ -576,13 +576,19 @@ type family GetDimDimsImplF (by :: By Symbol Nat) (dims :: [Dim (DimType Symbol 
   GetDimDimsImplF ( 'ByIndex index) dims = GetDimByIndexImplF index dims
 
 type family GetDimByNameDimsImplF (name :: Symbol) (dims :: [Dim (DimType Symbol Nat)]) :: Maybe (Dim (DimType Symbol Nat)) where
-  GetDimByNameDimsImplF _ '[] = 'Nothing
-  GetDimByNameDimsImplF name ( 'UncheckedDim : t) = GetDimByNameDimsImplF name t
-  GetDimByNameDimsImplF name (( 'Dim ( 'Named name)) ': _) = 'Just ( 'Dim ( 'Named name))
-  GetDimByNameDimsImplF name (( 'Dim ( 'Named _)) ': t) = GetDimByNameDimsImplF name t
-  GetDimByNameDimsImplF name (( 'Dim ( 'Sized _)) ': t) = GetDimByNameDimsImplF name t
-  GetDimByNameDimsImplF name (( 'Dim ( 'NamedSized name size)) ': _) = 'Just ( 'Dim ( 'NamedSized name size))
-  GetDimByNameDimsImplF name (( 'Dim ( 'NamedSized _ _)) ': t) = GetDimByNameDimsImplF name t
+  GetDimByNameDimsImplF name dims = SndMaybe (GetDimAndIndexByNameDimsImplF 0 name dims)
+
+type family GetIndexByNameDimsImplF (name :: Symbol) (dims :: [Dim (DimType Symbol Nat)]) :: Maybe Nat where
+  GetIndexByNameDimsImplF name dims = FstMaybe (GetDimAndIndexByNameDimsImplF 0 name dims)
+
+type family GetDimAndIndexByNameDimsImplF (index :: Nat) (name :: Symbol) (dims :: [Dim (DimType Symbol Nat)]) :: Maybe (Nat, Dim (DimType Symbol Nat)) where
+  GetDimAndIndexByNameDimsImplF _ _ '[] = 'Nothing
+  GetDimAndIndexByNameDimsImplF index name ( 'UncheckedDim : t) = GetDimAndIndexByNameDimsImplF (index + 1) name t
+  GetDimAndIndexByNameDimsImplF index name (( 'Dim ( 'Named name)) ': _) = 'Just '( index, 'Dim ( 'Named name))
+  GetDimAndIndexByNameDimsImplF index name (( 'Dim ( 'Named _)) ': t) = GetDimAndIndexByNameDimsImplF (index + 1) name t
+  GetDimAndIndexByNameDimsImplF index name (( 'Dim ( 'Sized _)) ': t) = GetDimAndIndexByNameDimsImplF (index + 1) name t
+  GetDimAndIndexByNameDimsImplF index name (( 'Dim ( 'NamedSized name size)) ': _) = 'Just '( index, 'Dim ( 'NamedSized name size))
+  GetDimAndIndexByNameDimsImplF index name (( 'Dim ( 'NamedSized _ _)) ': t) = GetDimAndIndexByNameDimsImplF (index + 1) name t
 
 -- | Given a list of dimensions,
 -- returns the dimension in the position 'index'
