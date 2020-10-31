@@ -72,20 +72,15 @@ instance KnownList k '[] where
 instance (KnownElem k x, KnownList k xs) => KnownList k (x ': xs) where
   listVal = elemVal @k @x : listVal @k @xs
 
-instance KnownElem Type Int where
-  type ElemValF Type = Int
-  elemVal = 1
-
-instance KnownElem Type String where
-  type ElemValF Type = Int
-  elemVal = 2
-
-data T1
+-- | Just a dummy type for 'Assert' type family, see below.
+data T
 
 -- | Can be used to report stuck type families,
--- see https://kcsongor.github.io/report-stuck-families/
+-- see https://kcsongor.github.io/report-stuck-families/.
+-- This family is able to check whether its argument 'a' is stuck and
+-- report an error 'err' in that case.
 type family Assert (err :: Constraint) (a :: k) :: k where
-  Assert _ T1 = Any
+  Assert _ T = Any
   Assert _ a = a
 
 -- | Approximates a normal form on the type level.

@@ -15,8 +15,7 @@ module Torch.GraduallyTyped.NN.Class where
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Torch.GraduallyTyped.Prelude (Contains, ErrorMessage (Text), Fst, If, Proxy (..), Snd, Type, TypeError)
 import Torch.GraduallyTyped.Random (Generator)
-import Torch.GraduallyTyped.Device (DeviceType, Device (UncheckedDevice))
-import GHC.TypeLits (Nat)
+import Torch.GraduallyTyped.Device (Device (UncheckedDevice))
 -- import Generics.SOP (Code, I, SOP(..), Generic, NS(..), NP)
 -- import GHC.Base (coerce, Any)
 
