@@ -1,3 +1,5 @@
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -30,7 +32,7 @@ module Torch.GraduallyTyped.NN.Transformer where
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Kind (Type)
 import GHC.TypeLits (Nat, Symbol)
-import Torch.DType (DType)
+import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (DataType), WithDataTypeC (..))
 import Torch.GraduallyTyped.Device (Device (Device), DeviceType, WithDeviceC (..))
 import Torch.GraduallyTyped.NN.Class (HasInitialize (..))
@@ -38,8 +40,9 @@ import Torch.GraduallyTyped.NN.Dropout (Dropout (Dropout))
 import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearC, Linear (Linear))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape (Dim (Dim), DimType, WithDimC (..))
+import Torch.GraduallyTyped.Shape (Dim (Dim), DimType (..), Shape (..), WithDimC (..))
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
+import Torch.GraduallyTyped.Tensor.Type (Tensor)
 
 -- residual f g x = f x >>= (\x' -> g (x `add` x'))
 
@@ -181,6 +184,73 @@ instance
         dropout <-
           pure $ initialize @(Dropout p) p
         pure $ MultiheadAttention qInProj kInProj vInProj outProj dropout
+
+multiheadAttention ::
+  forall device dataType embedSize kEmbedSize vEmbedSize p requiresGradient layout batchSize seqLen seqLen' headSize.
+  _ =>
+  -- | multi-head attention model
+  MultiheadAttention device dataType ('Dim ( 'NamedSized "embed" embedSize)) ('Dim ( 'NamedSized "keyEmbed" kEmbedSize)) ('Dim ( 'NamedSized "valueEmbed" vEmbedSize)) p ->
+  -- | optional attention mask
+  Maybe (Tensor requiresGradient layout device dataType ( 'Shape '[ 'Dim ( 'NamedSized "batch" batchSize), 'Dim ( 'Sized seqLen'), 'Dim ( 'Sized seqLen)])) ->
+  -- | optional key padding mask
+  Maybe (Tensor requiresGradient layout device ( 'DataType 'Bool) ( 'Shape '[ 'Dim ( 'NamedSized "batch" batchSize), 'Dim ( 'Sized seqLen)])) ->
+  -- | optional key relations
+  Maybe (Tensor requiresGradient layout device dataType ( 'Shape '[ 'Dim ( 'NamedSized "batch" batchSize), 'Dim ( 'Sized seqLen'), 'Dim ( 'Sized seqLen), 'Dim ( 'Sized headSize)])) ->
+  -- | optional value relations
+  Maybe (Tensor requiresGradient layout device dataType ( 'Shape '[ 'Dim ( 'NamedSized "batch" batchSize), 'Dim ( 'Sized seqLen'), 'Dim ( 'Sized seqLen), 'Dim ( 'Sized headSize)])) ->
+  -- | query representation
+  Tensor requiresGradient layout device dataType ( 'Shape '[ 'Dim ( 'NamedSized "batch" batchSize), 'Dim ( 'Sized seqLen'), 'Dim ( 'NamedSized "embed" embedSize)]) ->
+  -- | key representation
+  Tensor requiresGradient layout device dataType ( 'Shape '[ 'Dim ( 'NamedSized "batch" batchSize), 'Dim ( 'Sized seqLen), 'Dim ( 'NamedSized "keyEmbed" kEmbedSize)]) ->
+  -- | value representation
+  Tensor requiresGradient layout device dataType ( 'Shape '[ 'Dim ( 'NamedSized "batch" batchSize), 'Dim ( 'Sized seqLen), 'Dim ( 'NamedSized "valueEmbed" vEmbedSize)]) ->
+  -- | attention and attention averaged over heads
+  Generator device ->
+  ( ( Tensor requiresGradient layout device dataType ( 'Shape '[ 'Dim ( 'NamedSized "batch" batchSize), 'Dim ( 'Sized seqLen'), 'Dim ( 'NamedSized "embed" embedSize)]),
+      Tensor requiresGradient layout device dataType ( 'Shape '[ 'Dim ( 'NamedSized "batch" batchSize), 'Dim ( 'Sized seqLen'), 'Dim ( 'Sized seqLen)])
+    ),
+    Generator device
+  )
+multiheadAttention MultiheadAttention {..} attentionMask keyPaddingMask keyRelations valueRelations query key value = undefined
+  -- runState $ do
+  -- weights <- state (\t g -> forward mhaDropout t g)
+  -- pure (_attention weights, averageOverHeads weights)
+  -- where 
+  --   _attentionWeights =
+  --     let scaling = Prelude.sqrt . fromIntegral $ _headDim :: Double
+  --         q = reshape' . divScalar scaling . forward mhaQInProj $ query
+  --         k = reshape' . forward mhaKInProj $ key
+  --         weights = matmul q (transpose @2 @3 k)
+  --         weights' = case keyRelations of
+  --           Nothing -> weights
+  --           Just kr -> weights `add` transpose @1 @2 ((transpose @1 @2 q) `matmul` (transpose @2 @3 kr))
+  --      in weights'
+  --   _maskAttention attentionWeights =
+  --     case attentionMask of
+  --       Nothing -> attentionWeights
+  --       Just am -> attentionWeights `add` unsqueeze @1 am
+  --   _maskKeyPaddings attentionWeights =
+  --     case keyPaddingMask of
+  --       Nothing -> attentionWeights
+  --       Just kpm ->
+  --         let keyPaddingMask' = unsqueeze @2 . unsqueeze @1 $ kpm
+  --          in maskedFill keyPaddingMask' (-1 / 0 :: Double) attentionWeights
+  --   _attention attentionWeights =
+  --     let v = reshape' . forward mhaVInProj $ value
+  --         attention = transpose @1 @2 $ matmul attentionWeights v
+  --         attention' = case valueRelations of
+  --           Nothing -> attention
+  --           Just vr -> attention `add` (matmul (transpose @1 @2 attentionWeights) vr)
+  --      in forward mhaOutProj . reshape @'[batchSize, seqLen', embedDim] $ attention'
+  --   averageOverHeads =
+  --     let numHeads' = natValI @numHeads
+  --      in divScalar numHeads' . sumDim @1
+  --   reshape' ::
+  --     forall seqLen''.
+  --     KnownNat seqLen'' =>
+  --     Tensor device dtype '[batchSize, seqLen'', embedDim] ->
+  --     Tensor device dtype '[batchSize, numHeads, seqLen'', headDim]
+  --   reshape' = transpose @1 @2 . reshape @'[batchSize, seqLen'', numHeads, headDim]
 
 -- multiheadAttention ::
 --   forall embedDim kEmbedDim vEmbedDim numHeads seqLen seqLen' batchSize headDim dtype device.

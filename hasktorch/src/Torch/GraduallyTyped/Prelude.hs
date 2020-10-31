@@ -8,6 +8,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Torch.GraduallyTyped.Prelude
@@ -24,10 +25,14 @@ module Torch.GraduallyTyped.Prelude
     Snd,
     Elem,
     Contains,
+    FromMaybe,
     PrependMaybe,
     MapMaybe,
     BindMaybe,
     JoinMaybe,
+    LiftM2Maybe,
+    LiftTimesMaybe,
+    LiftTypeEqMaybe,
     Concat,
     Reverse,
     whenM,
@@ -48,7 +53,7 @@ import Data.Proxy (Proxy (..))
 import Data.String (IsString, fromString)
 import Data.Type.Bool (If, type (||))
 import GHC.Exts (Any)
-import GHC.TypeLits (ErrorMessage (..), TypeError (..))
+import GHC.TypeLits (Nat, ErrorMessage (..), TypeError (..), type (*))
 
 type family All (c :: k -> Constraint) (xs :: [k]) :: Constraint where
   All _ '[] = ()
@@ -143,6 +148,10 @@ type family ReverseImplF (xs :: [a]) (acc :: [a]) :: [a] where
 
 type Reverse xs = ReverseImplF xs '[]
 
+type family FromMaybe (d :: k) (x :: Maybe k) :: k where
+  FromMaybe d 'Nothing = d
+  FromMaybe _ ('Just v) = v
+
 type family PrependMaybe (h :: Maybe a) (t :: Maybe [a]) :: Maybe [a] where
   PrependMaybe 'Nothing _ = 'Nothing
   PrependMaybe _ 'Nothing = 'Nothing
@@ -160,6 +169,21 @@ type family JoinMaybe (a :: Maybe (Maybe k)) :: Maybe k where
   JoinMaybe 'Nothing = 'Nothing
   JoinMaybe ( 'Just 'Nothing) = 'Nothing
   JoinMaybe ( 'Just ( 'Just k)) = 'Just k
+
+type family LiftM2Maybe (f :: k -> k' -> k'') (a :: Maybe k) (b :: Maybe k') :: Maybe k'' where
+  LiftM2Maybe _ 'Nothing _ = 'Nothing
+  LiftM2Maybe _ ('Just _) 'Nothing = 'Nothing
+  LiftM2Maybe f ('Just a) ('Just b) = 'Just (f a b)
+
+type family LiftTimesMaybe (a :: Maybe Nat) (b :: Maybe Nat) :: Maybe Nat where
+  LiftTimesMaybe 'Nothing _ = 'Nothing
+  LiftTimesMaybe ('Just _) 'Nothing = 'Nothing
+  LiftTimesMaybe ('Just a) ('Just b) = 'Just (a * b)
+
+type family LiftTypeEqMaybe (a :: Maybe k) (b :: Maybe k') :: Constraint where
+  LiftTypeEqMaybe 'Nothing _ = ()
+  LiftTypeEqMaybe ('Just _) 'Nothing = ()
+  LiftTypeEqMaybe ('Just a) ('Just b) = a ~ b
 
 type family Concat (xs :: [k]) (ys :: [k]) :: [k] where
   Concat '[] ys = ys

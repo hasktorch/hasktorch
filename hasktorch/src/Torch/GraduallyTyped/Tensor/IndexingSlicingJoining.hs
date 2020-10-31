@@ -21,12 +21,12 @@ import Torch.DType (DType)
 import Torch.GraduallyTyped.DType (DataType (..), UnifyDataTypeF)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType, UnifyDeviceF)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType, UnifyLayoutF)
-import Torch.GraduallyTyped.Prelude (MapMaybe)
+import Torch.GraduallyTyped.Prelude (FromMaybe, LiftTypeEqMaybe, MapMaybe)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), UnifyRequiresGradientF)
-import Torch.GraduallyTyped.Shape (AddDimF, By (..), Dim (..), DimType (..), GetDimF, ReplaceDimF, ReplaceDimImplF, SelectDim (..), Shape (..), UnifyShapeF, WithSelectDimC (..))
+import Torch.GraduallyTyped.Shape (AddDimF, By (..), Dim (..), DimType (..), GetDimDimsImplF, GetDimF, NumelF, ReplaceDimDimsImplF, ReplaceDimF, ReplaceDimImplF, SelectDim (..), Shape (..), UnifyShapeF, WithSelectDimC (..), WithShapeC (..), sizedDims)
 import Torch.GraduallyTyped.Tensor.Type (Tensor, TensorF)
 import Torch.HList (HList)
-import Torch.Internal.Cast (cast2)
+import Torch.Internal.Cast (cast2, cast3)
 import Torch.Internal.Class (Castable)
 import qualified Torch.Internal.Managed.Native as ATen
 import qualified Torch.Internal.Type as ATen
@@ -172,3 +172,112 @@ uncheckedCat ::
     'UncheckedDataType
     'UncheckedShape
 uncheckedCat = cat @ 'UncheckedSelectDim
+
+reshape ::
+  forall shape' requiresGradient layout device dataType shape.
+  ( LiftTypeEqMaybe (NumelF shape') (NumelF shape),
+    WithShapeC shape' (Tensor requiresGradient layout device dataType shape')
+  ) =>
+  Tensor requiresGradient layout device dataType shape ->
+  WithShapeF shape' (Tensor requiresGradient layout device dataType shape')
+reshape input = withShape @shape' @(Tensor requiresGradient layout device dataType shape') $ \shape' ->
+  case sizedDims shape' of
+    Just sizes -> unsafePerformIO $ cast2 ATen.reshape_tl input sizes
+    Nothing -> error $ "Invalid tensor shape specification '" <> show shape' <> "'."
+
+type TransposeBy0Message (by0 :: By Symbol Nat) (dims :: [Dim (DimType Symbol Nat)]) =
+  "Cannot transpose the tensor with the dimensions"
+    % ""
+    % "    '" <> dims <> "'"
+    % ""
+    % "because the specified source dimension"
+    % ""
+    % "    '" <> by0 <> "'"
+    % ""
+    % "could not be found."
+
+type TransposeBy1Message (by1 :: By Symbol Nat) (dims :: [Dim (DimType Symbol Nat)]) =
+  "Cannot transpose the tensor with the dimensions"
+    % ""
+    % "    '" <> dims <> "'"
+    % ""
+    % "because the specified target dimension"
+    % ""
+    % "    '" <> by1 <> "'"
+    % ""
+    % "could not be found."
+
+-- | Transpose
+--
+-- >>> :kind! Transpose '[3,2] 0 1
+-- Transpose '[3,2] 0 1 :: [Nat]
+-- = '[2, 3]
+-- >>> :kind! Transpose '[3,2,1] 1 2
+-- Transpose '[3,2,1] 1 2 :: [Nat]
+-- = '[3, 1, 2]
+type family TransposeF (selectDim0 :: SelectDim (By Symbol Nat)) (selectDim1 :: SelectDim (By Symbol Nat)) (shape :: Shape [Dim (DimType Symbol Nat)]) :: Shape [Dim (DimType Symbol Nat)] where
+  TransposeF _ _ 'UncheckedShape = 'UncheckedShape
+  TransposeF _ 'UncheckedSelectDim _ = 'UncheckedShape
+  TransposeF 'UncheckedSelectDim _ _ = 'UncheckedShape
+  TransposeF ( 'SelectDim by0) ( 'SelectDim by1) ( 'Shape dims) =
+    'Shape
+      ( FromMaybe
+          (TypeError (TransposeBy1Message by1 dims))
+          ( ReplaceDimDimsImplF
+              by1
+              ( FromMaybe
+                  (TypeError (TransposeBy0Message by0 dims))
+                  ( ReplaceDimDimsImplF
+                      by0
+                      dims
+                      ( FromMaybe
+                          (TypeError (TransposeBy1Message by1 dims))
+                          (GetDimDimsImplF by1 dims)
+                      )
+                  )
+              )
+              ( FromMaybe
+                  (TypeError (TransposeBy0Message by0 dims))
+                  (GetDimDimsImplF by0 dims)
+              )
+          )
+      )
+
+-- | Returns a tensor that is a transposed version of 'input'.
+-- The selected dimensions 'selectDim0' and 'selectDim1' are swapped.
+--
+-- >>> g <- generator @('Device CPU) 0
+-- >>> (input, _) = randn @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('NamedSized "batch" 10), 'Dim ('NamedSized "feature" 5)]) g
+-- >>> output = transpose @('SelectDim ('ByName "batch")) @('SelectDim ('ByName "feature")) input
+-- >>> :type output
+-- output
+--   :: Tensor
+--        'Dependent
+--        ('Layout 'Dense)
+--        ('Device 'CPU)
+--        ('DataType 'Float)
+--        ('Shape
+--           '[ 'Dim ('NamedSized "batch" 10), 'Dim ('NamedSized "feature" 5)])
+-- >>> output = transpose @'UncheckedSelectDim @('SelectDim ('ByIndex 1)) (SelectDim (ByIndex 0)) input
+transpose ::
+  forall selectDim0 selectDim1 requiresGradient layout device dataType shape shape'.
+  ( WithSelectDimC selectDim0 (WithSelectDimF selectDim1 (Tensor requiresGradient layout device dataType shape -> Tensor requiresGradient layout device dataType shape')),
+    WithSelectDimC selectDim1 (Tensor requiresGradient layout device dataType shape -> Tensor requiresGradient layout device dataType shape'),
+    shape' ~ TransposeF selectDim0 selectDim1 shape
+  ) =>
+  WithSelectDimF selectDim0 (WithSelectDimF selectDim1 (Tensor requiresGradient layout device dataType shape -> Tensor requiresGradient layout device dataType shape'))
+transpose = withSelectDim @selectDim0 $
+  \selectDim0 -> withSelectDim @selectDim1 @(Tensor requiresGradient layout device dataType shape -> Tensor requiresGradient layout device dataType shape') $
+    \selectDim1 input ->
+      case (selectDim0, selectDim1) of
+        (ByName name0, ByName name1) -> unsafePerformIO $ cast3 ATen.transpose_tnn input name0 name1
+        (ByIndex index0, ByIndex index1) -> unsafePerformIO $ cast3 ATen.transpose_tll input (fromIntegral index0 :: Int) (fromIntegral index1 :: Int)
+        _ ->
+          error $
+            "Cannot transpose the tensor. "
+              <> "The two dimensions must be selected either both by name or both by index, "
+              <> "but mixed selectors where found: '"
+              <> show selectDim0
+              <> "' and '"
+              <> show selectDim1
+              <> "'."
