@@ -581,10 +581,16 @@ instance
     KnownDType dtype,
     KnownDevice device
   ) =>
-  HasForward (TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim dtype device) (Tensor device 'D.Int64 '[batchSize, seqLen]) (Tensor device dtype '[batchSize, seqLen, numEmbeds])
+  HasForward
+    (TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim dtype device)
+    (Tensor device 'D.Int64 '[batchSize, seqLen])
   where
+  type
+    Output
+      (TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim dtype device)
+      (Tensor device 'D.Int64 '[batchSize, seqLen]) =
+      Tensor device dtype '[batchSize, seqLen, numEmbeds]
   forward model input = unsafePerformIO $ transformerLM model False input
-  forwardStoch model input = transformerLM model True input
 
 sinusoidal ::
   forall numEmbeds embedDim device.

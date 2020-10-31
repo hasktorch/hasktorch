@@ -1,12 +1,13 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeInType #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE DeriveAnyClass #-}
 
 module Torch.Typed.NN.Normalization where
 
@@ -55,10 +56,10 @@ instance
   ( IsSuffixOf normalizedShape shape,
     KnownShape normalizedShape
   ) =>
-  HasForward (LayerNorm normalizedShape dtype device) (Tensor device dtype shape) (Tensor device dtype shape)
+  HasForward (LayerNorm normalizedShape dtype device) (Tensor device dtype shape)
   where
+  type Output (LayerNorm normalizedShape dtype device) (Tensor device dtype shape) = Tensor device dtype shape
   forward = layerNormForward
-  forwardStoch = (pure .) . forward
 
 instance
   ( TensorOptions normalizedShape dtype device,

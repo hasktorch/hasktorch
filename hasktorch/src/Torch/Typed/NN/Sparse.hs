@@ -35,14 +35,20 @@ data
     (embedSize :: Nat)
     (embeddingType :: EmbeddingType)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   ConstEmbeddingSpec ::
     forall paddingIdx numEmbeds embedSize dtype device.
     Tensor device dtype '[numEmbeds, embedSize] ->
     EmbeddingSpec paddingIdx numEmbeds embedSize 'Constant dtype device
   LearnedEmbeddingWithRandomInitSpec ::
     forall paddingIdx numEmbeds embedSize dtype device.
-    EmbeddingSpec paddingIdx numEmbeds embedSize 'Learned dtype
+    EmbeddingSpec
+      paddingIdx
+      numEmbeds
+      embedSize
+      'Learned
+      dtype
       device
   LearnedEmbeddingWithCustomInitSpec ::
     forall paddingIdx numEmbeds embedSize dtype device.
@@ -58,18 +64,29 @@ data
     (embedSize :: Nat)
     (embeddingType :: EmbeddingType)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   ConstEmbedding ::
     forall paddingIdx numEmbeds embedSize dtype device.
     --  . (PaddingIdxCheck paddingIdx numEmbeds)
     {constEmbedWeights :: Tensor device dtype '[numEmbeds, embedSize]} ->
-    Embedding paddingIdx numEmbeds embedSize 'Constant dtype
+    Embedding
+      paddingIdx
+      numEmbeds
+      embedSize
+      'Constant
+      dtype
       device
   LearnedEmbedding ::
     forall paddingIdx numEmbeds embedSize dtype device.
     --  . (PaddingIdxCheck paddingIdx numEmbeds)
     {learnedEmbedWeights :: Parameter device dtype '[numEmbeds, embedSize]} ->
-    Embedding paddingIdx numEmbeds embedSize 'Learned dtype
+    Embedding
+      paddingIdx
+      numEmbeds
+      embedSize
+      'Learned
+      dtype
       device
 
 deriving instance Show (Embedding paddingIdx numEmbeds embedSize embeddingType dtype device)
@@ -116,16 +133,16 @@ embed LearnedEmbedding {..} input =
 
 instance
   ( KnownMaybeNat paddingIdx,
-    PaddingIdxCheck paddingIdx numEmbeds,
-    shape' ~ Reverse (embedSize ': (Reverse shape))
+    PaddingIdxCheck paddingIdx numEmbeds
   ) =>
-  HasForward (Embedding paddingIdx numEmbeds embedSize embeddingType dtype device) (Tensor device 'D.Int64 shape) (Tensor device dtype shape')
+  HasForward (Embedding paddingIdx numEmbeds embedSize embeddingType dtype device) (Tensor device 'D.Int64 shape)
   where
+  type Output (Embedding paddingIdx numEmbeds embedSize embeddingType dtype device) (Tensor device 'D.Int64 shape) = Tensor device dtype (Reverse (embedSize ': (Reverse shape)))
   forward = embed
-  forwardStoch = (pure .) . forward
 
 instance
-  Randomizable (EmbeddingSpec paddingIdx numEmbeds embedSize 'Constant dtype device)
+  Randomizable
+    (EmbeddingSpec paddingIdx numEmbeds embedSize 'Constant dtype device)
     (Embedding paddingIdx numEmbeds embedSize 'Constant dtype device)
   where
   sample (ConstEmbeddingSpec tensor) = pure (ConstEmbedding tensor)
@@ -137,7 +154,8 @@ instance
     KnownDevice device,
     RandDTypeIsValid device dtype
   ) =>
-  Randomizable (EmbeddingSpec 'Nothing numEmbeds embedSize 'Learned dtype device)
+  Randomizable
+    (EmbeddingSpec 'Nothing numEmbeds embedSize 'Learned dtype device)
     (Embedding 'Nothing numEmbeds embedSize 'Learned dtype device)
   where
   sample LearnedEmbeddingWithRandomInitSpec = LearnedEmbedding <$> (makeIndependent =<< randn)
@@ -154,15 +172,16 @@ instance
     KnownDevice device,
     RandDTypeIsValid device dtype
   ) =>
-  Randomizable (EmbeddingSpec ('Just paddingIdx) numEmbeds embedSize 'Learned dtype device)
-    (Embedding ('Just paddingIdx) numEmbeds embedSize 'Learned dtype device)
+  Randomizable
+    (EmbeddingSpec ( 'Just paddingIdx) numEmbeds embedSize 'Learned dtype device)
+    (Embedding ( 'Just paddingIdx) numEmbeds embedSize 'Learned dtype device)
   where
   sample LearnedEmbeddingWithRandomInitSpec =
     let mask =
           cat @0
-            ( zeros @'[paddingIdx, embedSize] @'D.Bool @device
-                :. ones @'[1, embedSize] @'D.Bool @device
-                :. zeros @'[numEmbeds - paddingIdx - 1, embedSize] @'D.Bool @device
+            ( zeros @'[paddingIdx, embedSize] @ 'D.Bool @device
+                :. ones @'[1, embedSize] @ 'D.Bool @device
+                :. zeros @'[numEmbeds - paddingIdx - 1, embedSize] @ 'D.Bool @device
                 :. HNil
             )
      in LearnedEmbedding <$> (makeIndependent =<< (maskedFill mask (0 :: Int) <$> (randn @'[numEmbeds, embedSize] @dtype @device)))
