@@ -125,15 +125,14 @@ if [[ ! -d build ]]; then
 mkdir build
 fi
 
-PIP=pip
-if ! (pip --version | grep "python 2") ;then
-    PIP=pip3
-fi
-$PIP install --user pyyaml
 
 PYTHON=python
 if ! (python --version | grep "Python 2") ;then
     PYTHON=python3
+fi
+
+if ! ($PYTHON -c 'import yaml') ; then
+    $PYTHON -m pip install --user pyyaml
 fi
 
 $PYTHON aten/src/ATen/gen.py \
