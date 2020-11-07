@@ -77,10 +77,10 @@
         "homepage": "https://pytorch.org/",
         "owner": "stites",
         "repo": "pytorch-world",
-        "rev": "00c4565901d60e64929c265e053036b393d07779",
-        "sha256": "09hszp5js33gxjdhygamn1a6ml7nbg252z6632wnfypj2xjdg3wi",
+        "rev": "e40fc2133b169b72eb8d772f98b1484dc1d3903f",
+        "sha256": "0zb0h19aqi31gl4nqhf161wx27v8brf9y2w2psaqqxwbk02f9wp8",
         "type": "tarball",
-        "url": "https://github.com/stites/pytorch-world/archive/00c4565901d60e64929c265e053036b393d07779.tar.gz",
+        "url": "https://github.com/stites/pytorch-world/archive/e40fc2133b169b72eb8d772f98b1484dc1d3903f.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "stackage-nix": {

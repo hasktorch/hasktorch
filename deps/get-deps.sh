@@ -137,14 +137,10 @@ if ! ($PYTHON -c 'import yaml') ; then
     $PYTHON -m pip install --user pyyaml
 fi
 
-$PYTHON aten/src/ATen/gen.py \
-  -s aten/src/ATen \
-  -d build/aten/src/ATen \
-  aten/src/ATen/Declarations.cwrap \
-  aten/src/THCUNN/generic/THCUNN.h \
-  aten/src/ATen/nn.yaml \
-  aten/src/ATen/native/native_functions.yaml
-
+# See https://github.com/pytorch/pytorch/blob/master/.circleci/scripts/cpp_doc_push_script.sh
+$PYTHON -m tools.codegen.gen \
+        -s aten/src/ATen \
+        -d build/aten/src/ATen
 
 # Sanitize "name: n" fields to be strings rather than booleans in Declarations.yaml
 
