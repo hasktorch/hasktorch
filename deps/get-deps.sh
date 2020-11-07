@@ -7,10 +7,16 @@
 
 set -eu
 
+USE_NIGHTLY=0
+USE_BINARY_FOR_CI=0
+COMPUTE_ARCH=cpu
+SKIP_DOWNLOAD=0
+VERSION=1.7.0
+
 usage_exit() {
-    echo "Usage: $0 [-n] [-c] [-a "cpu" or "cu92" or "cu101" or "cu102"] [-s]" 1>&2
+    echo "Usage: $0 [-n] [-c] [-a "cpu" or "cu92" or "cu101" or "cu102" or "cu110"] [-s]" 1>&2
     echo " -n # Use nightly libtorch w/  -l" 1>&2
-    echo "    # Use libtorch-1.6.0   w/o -l" 1>&2
+    echo "    # Use libtorch-$(VERSION)  w/o -l" 1>&2
     echo "" 1>&2
     echo " -c # Download libtorch from hasktorch's site w/ -c" 1>&2
     echo "    # Download libtorch from pytorch's site w/o  -c" 1>&2
@@ -19,18 +25,13 @@ usage_exit() {
     echo " -a cu92  # Use CUDA-9" 1>&2
     echo " -a cu101 # Use CUDA-10.1" 1>&2
     echo " -a cu102 # Use CUDA-10.2" 1>&2
+    echo " -a cu110 # Use CUDA-11" 1>&2
     echo "" 1>&2
     echo " -s # Skip download" 1>&2
     echo "" 1>&2
     echo " -h # Show this help" 1>&2
     exit 1
 }
-
-USE_NIGHTLY=0
-USE_BINARY_FOR_CI=0
-COMPUTE_ARCH=cpu
-SKIP_DOWNLOAD=0
-VERSION=1.6.0
 
 while getopts nca:sh OPT
 do
@@ -93,6 +94,7 @@ if [ "$SKIP_DOWNLOAD" = 0 ] ; then
 	      "cu92" ) URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcu92.zip ;;
 	      "cu101" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcu101.zip ;;
 	      "cu102" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip ;;
+	      "cu110" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcu110.zip ;;
 	esac
 	wget -O libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip "$URL"
         unzip libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip
@@ -119,7 +121,7 @@ if [ ! -e pytorch ] ; then
 fi
 
 pushd pytorch
-git checkout v1.6.0
+git checkout v$VERSION
 
 if [[ ! -d build ]]; then
 mkdir build
