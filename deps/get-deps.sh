@@ -137,6 +137,10 @@ if ! ($PYTHON -c 'import yaml') ; then
     $PYTHON -m pip install --user pyyaml
 fi
 
+if ! ($PYTHON -c 'import dataclasses') ; then
+    $PYTHON -m pip install --user dataclasses
+fi
+
 # See https://github.com/pytorch/pytorch/blob/master/.circleci/scripts/cpp_doc_push_script.sh
 $PYTHON -m tools.codegen.gen \
         -s aten/src/ATen \
