@@ -1835,37 +1835,6 @@ addmv ::
   Tensor device dtype shape'
 addmv beta alpha mat vec input = unsafePerformIO $ ATen.cast5 ATen.Managed.addmv_tttss input mat vec beta alpha
 
-
--- When libtorch-1.7, addr is deprecated, and following test does not pass, for now the codes is commented out.
--- -- | addr
--- -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
--- -- TODO: can we use D.Scalar for beta and alpha?
--- -- 
--- -- >>> t = addr 1 1 (ones :: CPUTensor 'D.Float '[3]) (zeros :: CPUTensor 'D.Float '[2]) (ones :: CPUTensor 'D.Float '[])
--- -- >>> dtype &&& shape $ t
--- -- (Float,[3,2])
--- -- >>> :t t
--- -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[3, 2]
--- addr ::
---   forall shape' shape n m dtype device.
---   ( KnownNat n,
---     KnownNat m,
---     shape' ~ Broadcast shape '[n, m]
---   ) =>
---   -- | beta
---   Float ->
---   -- | alpha
---   Float ->
---   -- | first input vector
---   Tensor device dtype '[n] ->
---   -- | second input vector
---   Tensor device dtype '[m] ->
---   -- | input tensor
---   Tensor device dtype shape ->
---   -- | output tensor
---   Tensor device dtype shape'
--- addr beta alpha vec1 vec2 input = unsafePerformIO $ ATen.cast5 ATen.Managed.addr_tttss input vec1 vec2 beta alpha
-
 -- affine_grid_generator :: Tensor device dtype shape -> [Int] -> Tensor device dtype shape
 -- affine_grid_generator _theta _size = unsafePerformIO $ (ATen.cast2 ATen.Managed.affine_grid_generator_tl) _theta _size
 
