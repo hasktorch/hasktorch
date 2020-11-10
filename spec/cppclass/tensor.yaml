@@ -15,7 +15,13 @@ methods:
 - storage_offset() -> int64_t
 - defined() -> bool
 - reset() -> void
+#- warning( push ) -> #pragma
+#- warning( disable : 4522 ) -> #pragma
 - operator=(Tensor x) -> Tensor
+#- operator=(Scalar v) -> Tensor
+#- operator=(Tensor) -> Tensor
+#- operator=(Tensor) -> Tensor
+#- warning( pop ) -> #pragma
 - is_same(Tensor other) -> bool
 - use_count() -> size_t
 - weak_use_count() -> size_t
@@ -99,6 +105,7 @@ methods:
 - vulkan() -> Tensor
 - set_requires_grad(bool requires_grad) -> Tensor
 - requires_grad() -> bool
+- mutable_grad() -> Tensor
 - grad() -> Tensor
 - backward(Tensor  gradient={}, bool keep_graph=false, bool create_graph=false) -> void
 - set_data(Tensor  new_data) -> void
@@ -119,9 +126,13 @@ methods:
 - absolute() -> Tensor
 - absolute_() -> Tensor
 - angle() -> Tensor
+- sgn() -> Tensor
+- sgn_() -> Tensor
 - conj() -> Tensor
 - acos() -> Tensor
 - acos_() -> Tensor
+- arccos() -> Tensor
+- arccos_() -> Tensor
 - add(Tensor  other, Scalar alpha=1) -> Tensor
 - add_(Tensor  other, Scalar alpha=1) -> Tensor
 - add(Scalar other, Scalar alpha=1) -> Tensor
@@ -137,14 +148,24 @@ methods:
 - any(Dimname dim, bool keepdim=false) -> Tensor
 - acosh() -> Tensor
 - acosh_() -> Tensor
+- arccosh() -> Tensor
+- arccosh_() -> Tensor
 - asinh() -> Tensor
 - asinh_() -> Tensor
+- arcsinh() -> Tensor
+- arcsinh_() -> Tensor
 - atanh() -> Tensor
 - atanh_() -> Tensor
+- arctanh() -> Tensor
+- arctanh_() -> Tensor
 - asin() -> Tensor
 - asin_() -> Tensor
+- arcsin() -> Tensor
+- arcsin_() -> Tensor
 - atan() -> Tensor
 - atan_() -> Tensor
+- arctan() -> Tensor
+- arctan_() -> Tensor
 - baddbmm(Tensor  batch1, Tensor  batch2, Scalar beta=1, Scalar alpha=1) -> Tensor
 - baddbmm_(Tensor  batch1, Tensor  batch2, Scalar beta=1, Scalar alpha=1) -> Tensor
 - bernoulli(Generator generator=nullptr) -> Tensor
@@ -165,6 +186,7 @@ methods:
 - bmm(Tensor  mat2) -> Tensor
 - ceil() -> Tensor
 - ceil_() -> Tensor
+- unsafe_chunk(int64_t chunks, int64_t dim=0) -> TensorList
 - chunk(int64_t chunks, int64_t dim=0) -> TensorList
 - clamp_max(Scalar max) -> Tensor
 - clamp_max_(Scalar max) -> Tensor
@@ -177,6 +199,7 @@ methods:
 - cos_() -> Tensor
 - cosh() -> Tensor
 - cosh_() -> Tensor
+- count_nonzero(IntArrayRef dim) -> Tensor
 - cummax(int64_t dim) -> (Tensor,Tensor)
 - cummax(Dimname dim) -> (Tensor,Tensor)
 - cummin(int64_t dim) -> (Tensor,Tensor)
@@ -191,7 +214,12 @@ methods:
 - div_(Tensor  other) -> Tensor
 - div(Scalar other) -> Tensor
 - div_(Scalar other) -> Tensor
+- divide(Tensor  other) -> Tensor
+- divide_(Tensor  other) -> Tensor
+- divide(Scalar other) -> Tensor
+- divide_(Scalar other) -> Tensor
 - dot(Tensor  tensor) -> Tensor
+- vdot(Tensor  other) -> Tensor
 - new_empty(IntArrayRef size, TensorOptions  options={}) -> Tensor
 - new_full(IntArrayRef size, Scalar fill_value, TensorOptions  options={}) -> Tensor
 - resize_(IntArrayRef size) -> Tensor
@@ -202,6 +230,8 @@ methods:
 - erfc_() -> Tensor
 - exp() -> Tensor
 - exp_() -> Tensor
+- exp2() -> Tensor
+- exp2_() -> Tensor
 - expm1() -> Tensor
 - expm1_() -> Tensor
 - expand(IntArrayRef size, bool implicit=false) -> Tensor
@@ -222,6 +252,10 @@ methods:
 - frac_() -> Tensor
 - ger(Tensor  vec2) -> Tensor
 - fft(int64_t signal_ndim, bool normalized=false) -> Tensor
+- gcd(Tensor  other) -> Tensor
+- gcd_(Tensor  other) -> Tensor
+- lcm(Tensor  other) -> Tensor
+- lcm_(Tensor  other) -> Tensor
 - ifft(int64_t signal_ndim, bool normalized=false) -> Tensor
 - rfft(int64_t signal_ndim, bool normalized=false, bool onesided=true) -> Tensor
 - irfft(int64_t signal_ndim, bool normalized=false, bool onesided=true, IntArrayRef signal_sizes={}) -> Tensor
@@ -238,6 +272,7 @@ methods:
 - is_distributed() -> bool
 - is_floating_point() -> bool
 - is_complex() -> bool
+- isreal() -> Tensor
 - is_nonzero() -> bool
 - is_same_size(Tensor  other) -> bool
 - is_signed() -> bool
@@ -260,16 +295,19 @@ methods:
 - logsumexp(DimnameList dim, bool keepdim=false) -> Tensor
 - matmul(Tensor  other) -> Tensor
 - matrix_power(int64_t n) -> Tensor
+- matrix_exp() -> Tensor
 - max(int64_t dim, bool keepdim=false) -> (Tensor,Tensor)
-- max_values(IntArrayRef dim, bool keepdim=false) -> Tensor
+#- max_values(IntArrayRef dim, bool keepdim=false) -> Tensor
 - max(Dimname dim, bool keepdim=false) -> (Tensor,Tensor)
-- max_values(DimnameList dim, bool keepdim=false) -> Tensor
+#- max_values(DimnameList dim, bool keepdim=false) -> Tensor
+#- max(IntArrayRef dim={}, bool keepdim=false) -> Tensor
 - median(int64_t dim, bool keepdim=false) -> (Tensor,Tensor)
 - median(Dimname dim, bool keepdim=false) -> (Tensor,Tensor)
 - min(int64_t dim, bool keepdim=false) -> (Tensor,Tensor)
-- min_values(IntArrayRef dim, bool keepdim=false) -> Tensor
+#- min_values(IntArrayRef dim, bool keepdim=false) -> Tensor
 - min(Dimname dim, bool keepdim=false) -> (Tensor,Tensor)
-- min_values(DimnameList dim, bool keepdim=false) -> Tensor
+#- min_values(DimnameList dim, bool keepdim=false) -> Tensor
+#- min(IntArrayRef dim={}, bool keepdim=false) -> Tensor
 - mm(Tensor  mat2) -> Tensor
 - mode(int64_t dim=-1, bool keepdim=false) -> (Tensor,Tensor)
 - mode(Dimname dim, bool keepdim=false) -> (Tensor,Tensor)
@@ -277,6 +315,10 @@ methods:
 - mul_(Tensor  other) -> Tensor
 - mul(Scalar other) -> Tensor
 - mul_(Scalar other) -> Tensor
+- multiply(Tensor  other) -> Tensor
+- multiply_(Tensor  other) -> Tensor
+- multiply(Scalar other) -> Tensor
+- multiply_(Scalar other) -> Tensor
 - mv(Tensor  vec) -> Tensor
 - mvlgamma(int64_t p) -> Tensor
 - mvlgamma_(int64_t p) -> Tensor
@@ -284,6 +326,8 @@ methods:
 - narrow(int64_t dim, int64_t start, int64_t length) -> Tensor
 - narrow(int64_t dim, Tensor  start, int64_t length) -> Tensor
 - permute(IntArrayRef dims) -> Tensor
+- movedim(IntArrayRef source, IntArrayRef dfestination) -> Tensor
+#- movedim(int64_t source, int64_t destination) -> Tensor
 - numpy_T() -> Tensor
 - is_pinned() -> bool
 - pin_memory() -> Tensor
@@ -296,6 +340,8 @@ methods:
 - reciprocal_() -> Tensor
 - neg() -> Tensor
 - neg_() -> Tensor
+- negative() -> Tensor
+- negative_() -> Tensor
 - repeat(IntArrayRef repeats) -> Tensor
 - reshape(IntArrayRef shape) -> Tensor
 - reshape_as(Tensor  other) -> Tensor
@@ -324,7 +370,9 @@ methods:
 - slice(int64_t dim=0, int64_t start=0, int64_t end=9223372036854775807, int64_t step=1) -> Tensor
 - slogdet() -> (Tensor,Tensor)
 - smm(Tensor  mat2) -> Tensor
+- unsafe_split(int64_t split_size, int64_t dim=0) -> TensorList
 - split(int64_t split_size, int64_t dim=0) -> TensorList
+- unsafe_split_with_sizes(IntArrayRef split_sizes, int64_t dim=0) -> TensorList
 - split_with_sizes(IntArrayRef split_sizes, int64_t dim=0) -> TensorList
 - squeeze() -> Tensor
 - squeeze(int64_t dim) -> Tensor
@@ -363,6 +411,8 @@ methods:
 - true_divide_(Scalar other) -> Tensor
 - trunc() -> Tensor
 - trunc_() -> Tensor
+- fix() -> Tensor
+- fix_() -> Tensor
 - type_as(Tensor  other) -> Tensor
 - unsqueeze(int64_t dim) -> Tensor
 - unsqueeze_(int64_t dim) -> Tensor
@@ -380,6 +430,12 @@ methods:
 - sub_(Tensor  other, Scalar alpha=1) -> Tensor
 - sub(Scalar other, Scalar alpha=1) -> Tensor
 - sub_(Scalar other, Scalar alpha=1) -> Tensor
+- subtract(Tensor  other, Scalar alpha=1) -> Tensor
+- subtract_(Tensor  other, Scalar alpha=1) -> Tensor
+- subtract(Scalar other, Scalar alpha=1) -> Tensor
+- subtract_(Scalar other, Scalar alpha=1) -> Tensor
+- heaviside(Tensor  values) -> Tensor
+- heaviside_(Tensor  values) -> Tensor
 - addmm(Tensor  mat1, Tensor  mat2, Scalar beta=1, Scalar alpha=1) -> Tensor
 - addmm_(Tensor  mat1, Tensor  mat2, Scalar beta=1, Scalar alpha=1) -> Tensor
 - sparse_resize_(IntArrayRef size, int64_t sparse_dim, int64_t dense_dim) -> Tensor
@@ -447,6 +503,8 @@ methods:
 - scatter(int64_t dim, Tensor  index, Scalar value) -> Tensor
 - scatter(Dimname dim, Tensor  index, Tensor  src) -> Tensor
 - scatter(Dimname dim, Tensor  index, Scalar value) -> Tensor
+- scatter_(int64_t dim, Tensor  index, Tensor  src, std::string reduce) -> Tensor
+- scatter_(int64_t dim, Tensor  index, Scalar value, std::string reduce) -> Tensor
 - scatter_add_(int64_t dim, Tensor  index, Tensor  src) -> Tensor
 - scatter_add(int64_t dim, Tensor  index, Tensor  src) -> Tensor
 - scatter_add(Dimname dim, Tensor  index, Tensor  src) -> Tensor
@@ -527,16 +585,36 @@ methods:
 - trace() -> Tensor
 - ne(Scalar other) -> Tensor
 - ne(Tensor  other) -> Tensor
+- not_equal(Scalar other) -> Tensor
+- not_equal(Tensor  other) -> Tensor
+- not_equal_(Scalar other) -> Tensor
+- not_equal_(Tensor  other) -> Tensor
 - eq(Scalar other) -> Tensor
 - eq(Tensor  other) -> Tensor
 - ge(Scalar other) -> Tensor
 - ge(Tensor  other) -> Tensor
+- greater_equal(Scalar other) -> Tensor
+- greater_equal(Tensor  other) -> Tensor
+- greater_equal_(Scalar other) -> Tensor
+- greater_equal_(Tensor  other) -> Tensor
 - le(Scalar other) -> Tensor
 - le(Tensor  other) -> Tensor
+- less_equal(Scalar other) -> Tensor
+- less_equal(Tensor  other) -> Tensor
+- less_equal_(Scalar other) -> Tensor
+- less_equal_(Tensor  other) -> Tensor
 - gt(Scalar other) -> Tensor
 - gt(Tensor  other) -> Tensor
+- greater(Scalar other) -> Tensor
+- greater(Tensor  other) -> Tensor
+- greater_(Scalar other) -> Tensor
+- greater_(Tensor  other) -> Tensor
 - lt(Scalar other) -> Tensor
 - lt(Tensor  other) -> Tensor
+- less(Scalar other) -> Tensor
+- less(Tensor  other) -> Tensor
+- less_(Scalar other) -> Tensor
+- less_(Tensor  other) -> Tensor
 - take(Tensor  index) -> Tensor
 - index_select(int64_t dim, Tensor  index) -> Tensor
 - index_select(Dimname dim, Tensor  index) -> Tensor
@@ -568,8 +646,11 @@ methods:
 - polygamma(int64_t n) -> Tensor
 - erfinv() -> Tensor
 - erfinv_() -> Tensor
+- i0() -> Tensor
+- i0_() -> Tensor
 - sign() -> Tensor
 - sign_() -> Tensor
+- signbit() -> Tensor
 - dist(Tensor  other, Scalar p=2) -> Tensor
 - atan2(Tensor  other) -> Tensor
 - lerp(Tensor  end, Scalar weight) -> Tensor
@@ -577,12 +658,18 @@ methods:
 - histc(int64_t bins=100, Scalar min=0, Scalar max=0) -> Tensor
 - fmod(Scalar other) -> Tensor
 - fmod(Tensor  other) -> Tensor
+- hypot(Tensor  other) -> Tensor
+- hypot_(Tensor  other) -> Tensor
+- nextafter(Tensor  other) -> Tensor
+- nextafter_(Tensor  other) -> Tensor
 - remainder(Scalar other) -> Tensor
 - remainder(Tensor  other) -> Tensor
-- min(Tensor  other) -> Tensor
 - min() -> Tensor
-- max(Tensor  other) -> Tensor
 - max() -> Tensor
+- maximum(Tensor  other) -> Tensor
+- max(Tensor  other) -> Tensor
+- minimum(Tensor  other) -> Tensor
+- min(Tensor  other) -> Tensor
 - median() -> Tensor
 - sort(int64_t dim=-1, bool descending=false) -> (Tensor,Tensor)
 - sort(Dimname dim, bool descending=false) -> (Tensor,Tensor)
