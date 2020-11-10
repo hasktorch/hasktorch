@@ -14,7 +14,7 @@
 }:
 
 # assert that the correct cuda versions are used
-assert cudaSupport -> (cudaMajorVersion == "9" || cudaMajorVersion == "10");
+assert cudaSupport -> (cudaMajorVersion == "9" || cudaMajorVersion == "10" || cudaMajorVersion == "11");
 
 let
   sources = import ./sources.nix { inherit pkgs; }
@@ -82,6 +82,14 @@ let
           }
         else if cudaSupport && cudaMajorVersion == "10" then
           let libtorch = libtorchSrc.libtorch_cudatoolkit_10_2; in
+          {
+            c10 = libtorch;
+            torch = libtorch;
+            torch_cpu = libtorch;
+            torch_cuda = libtorch;
+          }
+        else if cudaSupport && cudaMajorVersion == "11" then
+          let libtorch = libtorchSrc.libtorch_cudatoolkit_11_0; in
           {
             c10 = libtorch;
             torch = libtorch;

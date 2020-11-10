@@ -1,7 +1,7 @@
 cabal-version:       3.0
 name:                libtorch-ffi
-version:             1.6.0.0
--- The prefix(1.6) of this version("1.6.0.0") is the same as libtorch's one.
+version:             1.7.0.0
+-- The prefix(1.7) of this version("1.7.0.0") is the same as libtorch's one.
 synopsis:            test out alternative options for ffi interface to libtorch 1.x
 -- description:
 homepage:            https://github.com/hasktorch/hasktorch#readme
@@ -46,6 +46,7 @@ library
                     , Torch.Internal.Unmanaged.Native.Native13
                     , Torch.Internal.Unmanaged.Native.Native14
                     , Torch.Internal.Unmanaged.Native.Native15
+                    , Torch.Internal.Unmanaged.Native.Extra
                     , Torch.Internal.Unmanaged.Type.Tuple
                     , Torch.Internal.Unmanaged.Type.Generator
                     , Torch.Internal.Unmanaged.Type.IntArray
@@ -73,6 +74,7 @@ library
                     , Torch.Internal.Unmanaged.Type.C10Dict
                     , Torch.Internal.Unmanaged.Type.C10Tuple
                     , Torch.Internal.Unmanaged.Type.Module
+                    , Torch.Internal.Unmanaged.Type.StdVector
                     , Torch.Internal.Managed.Cast
                     , Torch.Internal.Managed.Native
                     , Torch.Internal.Managed.Native.Native0
@@ -91,6 +93,7 @@ library
                     , Torch.Internal.Managed.Native.Native13
                     , Torch.Internal.Managed.Native.Native14
                     , Torch.Internal.Managed.Native.Native15
+                    , Torch.Internal.Managed.Native.Extra
                     , Torch.Internal.Managed.Type.Tuple
                     , Torch.Internal.Managed.Type.Generator
                     , Torch.Internal.Managed.Type.IntArray
@@ -118,6 +121,7 @@ library
                     , Torch.Internal.Managed.Type.C10Dict
                     , Torch.Internal.Managed.Type.C10Tuple
                     , Torch.Internal.Managed.Type.Module
+                    , Torch.Internal.Managed.Type.StdVector
                     , Torch.Internal.Unmanaged.Autograd
                     , Torch.Internal.Unmanaged.TensorFactories
                     , Torch.Internal.Unmanaged.Serialize

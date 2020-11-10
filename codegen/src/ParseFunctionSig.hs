@@ -71,6 +71,7 @@ data Parsable
     | StorageType
     | CType CType
     | STLType STLType
+    | ArrayRef CType
     | CppString
     | Tuple [Parsable]
     | CppClass SignatureStr CppTypeStr HsTypeStr
@@ -294,6 +295,8 @@ identifier = (lexm . try) (p >>= check)
 -- CppString
 -- >>> parseTest typ "char*"
 -- CType CString
+-- >>> parseTest typ "ArrayRef<double>"
+-- ArrayRef CDouble
 typ :: Parser Parsable
 typ =
   tuple <|>
@@ -308,6 +311,7 @@ typ =
   try stlbool <|>
   ctype <|>
   stl <|>
+  arrayref <|>
   cppstring <|>
   cppclass <|>
   other
@@ -435,6 +439,13 @@ typ =
     num <- pinteger
     _ <- lexm $ string "]"
     pure $ STLType $ Array CBool (fromIntegral num)
+  arrayref = do
+    _ <- lexm $ string "ArrayRef<"
+    val' <- ctype
+    _ <- lexm $ string ">"
+    case val' of
+      CType v -> pure $ ArrayRef v
+      _ -> fail "Can not parse ctype."
   cppstring =
     ((lexm $ string "std::string") >> (pure $ CppString)) <|>
     ((lexm $ string "str") >> (pure $ CppString))

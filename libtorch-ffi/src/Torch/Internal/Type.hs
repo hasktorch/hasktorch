@@ -46,6 +46,8 @@ data IntArrayRef
 -- std::vector<int64>
 type IntArray = StdVector Int64
 
+data ArrayRef a
+
 data Storage
 
 data StdString
@@ -126,5 +128,6 @@ typeTable = Map.fromList [
       , (C.TypeName "torch::jit::Value", [t|JitValue|])
       , (C.TypeName "at::indexing::TensorIndex", [t|TensorIndex|])
       , (C.TypeName "torch::optim::Optimizer", [t|Optimizer|])
+      , (C.TypeName "ArrayRef", [t|ArrayRef|])
     ]
 

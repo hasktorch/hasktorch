@@ -103,6 +103,7 @@ nativeFunctionsFilter fns bindings =
             not (isPrefixOf "_" (D.name a)) &&
             not (isSuffixOf "_" (D.name a)) &&
             not (isSuffixOf "_out" (D.name a)) &&
+            not (isSuffixOf "_backward" (D.name a)) &&
             all (/= P.GeneratorType) (map D.dynamic_type' (D.arguments a))
          ) $
   renameFilter bindings $

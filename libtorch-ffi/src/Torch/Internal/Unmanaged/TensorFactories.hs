@@ -24,8 +24,8 @@ import qualified Language.C.Types as C
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 C.include "<vector>"
---C.include "<ATen/Tensor.h>"
---C.include "<ATen/Functions.h>"
+C.include "<ATen/Tensor.h>"
+C.include "<ATen/Functions.h>"
 
 C.include "<torch/csrc/autograd/generated/variable_factories.h>"
 
@@ -747,6 +747,72 @@ hamming_window_lbdd _window_length _periodic _alpha _beta =
     $(int64_t _window_length)
   , $(bool _periodic)
   , $(double _alpha)
+  , $(double _beta)));
+  }|]
+
+kaiser_window_lo
+  :: Int64
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+kaiser_window_lo _window_length _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::kaiser_window(
+    $(int64_t _window_length)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+kaiser_window_l
+  :: Int64
+  -> IO (Ptr Tensor)
+kaiser_window_l _window_length =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::kaiser_window(
+    $(int64_t _window_length)));
+  }|]
+
+kaiser_window_lbo
+  :: Int64
+  -> CBool
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+kaiser_window_lbo _window_length _periodic _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::kaiser_window(
+    $(int64_t _window_length)
+  , $(bool _periodic)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+kaiser_window_lb
+  :: Int64
+  -> CBool
+  -> IO (Ptr Tensor)
+kaiser_window_lb _window_length _periodic =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::kaiser_window(
+    $(int64_t _window_length)
+  , $(bool _periodic)));
+  }|]
+
+kaiser_window_lbdo
+  :: Int64
+  -> CBool
+  -> CDouble
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+kaiser_window_lbdo _window_length _periodic _beta _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::kaiser_window(
+    $(int64_t _window_length)
+  , $(bool _periodic)
+  , $(double _beta)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+kaiser_window_lbd
+  :: Int64
+  -> CBool
+  -> CDouble
+  -> IO (Ptr Tensor)
+kaiser_window_lbd _window_length _periodic _beta =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::kaiser_window(
+    $(int64_t _window_length)
+  , $(bool _periodic)
   , $(double _beta)));
   }|]
 

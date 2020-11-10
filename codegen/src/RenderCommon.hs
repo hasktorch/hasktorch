@@ -80,6 +80,9 @@ stltypeToCppType t =
     P.Array ct len -> [st|std::array<#{ctypeToCppType ct},#{len}>|]
 
 
+arrayrefToCppType :: CType -> Text
+arrayrefToCppType ct = [st|std::vector<#{ctypeToCppType ct}>|]
+
 parsableToCppType :: Parsable -> Text
 parsableToCppType parsable =
   case parsable of
@@ -90,6 +93,7 @@ parsableToCppType parsable =
     StorageType -> "at::Storage"
     CType ct -> ctypeToCppType ct
     STLType t -> stltypeToCppType t
+    ArrayRef ct -> arrayrefToCppType ct
     CppString -> "std::string"
     Tuple parsables -> [st|std::tuple<#{T.intercalate "," (map parsableToCppType parsables)}>|]
     P.CppClass _ cpptype _ -> fromString cpptype
@@ -167,6 +171,12 @@ stltypeToHigherHsType t =
   case t of
     P.Array ct len -> [st|(#{T.intercalate "," (Prelude.replicate len (ctypeToHigherHsType ct))})|]
 
+arrayrefToHsType :: CType -> Text
+arrayrefToHsType ct = [st|(StdVector #{ctypeToHsType ct})|]
+
+arrayrefToHigherHsType :: CType -> Text
+arrayrefToHigherHsType ct = [st|([#{ctypeToHigherHsType ct}])|]
+  
 ctypeToHsType :: CType -> Text
 ctypeToHsType ct =
   case ct of
@@ -223,6 +233,7 @@ parsableToHsType parsable =
     StorageType -> "Storage"
     CType ct -> ctypeToHsType ct
     STLType t -> stltypeToHsType t
+    ArrayRef ct -> arrayrefToHsType ct
     CppString -> "StdString"
     Tuple parsables -> [st|StdTuple '(#{T.intercalate "," (map parsableToHsType parsables)})|]
     P.CppClass _ _ hstype -> fromString hstype
@@ -246,6 +257,7 @@ parsableToHigherHsType parsable =
     StorageType -> "Storage"
     CType ct -> ctypeToHigherHsType ct
     STLType t -> stltypeToHigherHsType t
+    ArrayRef ct -> arrayrefToHigherHsType ct
     CppString -> "String"
     Tuple parsables -> [st|(#{T.intercalate "," (map parsableToHigherHsType parsables)})|]
     P.CppClass _ _ hstype -> fromString hstype
@@ -289,6 +301,9 @@ stltypeToInitial t =
   case t of
     P.Array _ _ -> "a"
 
+arrayrefToInitial :: CType -> Text
+arrayrefToInitial _ = "a"
+
 ctypeToInitial :: CType -> Text
 ctypeToInitial ct =
   case ct of
@@ -319,6 +334,7 @@ parsableToInitial parsable =
     StorageType -> "S"
     CType ct -> ctypeToInitial ct
     STLType t -> stltypeToInitial t
+    ArrayRef t -> arrayrefToInitial t
     CppString -> "s"
     Tuple _ -> "t"
     P.CppClass _ _ _ -> "c"
@@ -368,6 +384,7 @@ retToCppType parsable =
     StorageType -> "Storage"
     CType ct -> ctypeToCppType ct
     STLType t -> stltypeToCppType t
+    ArrayRef t -> arrayrefToCppType t
     CppString -> "std::string"
     Tuple parsables -> [st|tuple<#{T.intercalate "," (map parsableToCppType parsables)}>|]
     P.CppClass _ cpptype _ -> fromString cpptype
