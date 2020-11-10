@@ -16,6 +16,7 @@ module Torch.Internal.Unmanaged.Native
  , module Torch.Internal.Unmanaged.Native.Native13
  , module Torch.Internal.Unmanaged.Native.Native14
  , module Torch.Internal.Unmanaged.Native.Native15
+ , module Torch.Internal.Unmanaged.Native.Extra
  ) where
 import Torch.Internal.Unmanaged.Native.Native0
 import Torch.Internal.Unmanaged.Native.Native1
@@ -33,6 +34,4 @@ import Torch.Internal.Unmanaged.Native.Native12
 import Torch.Internal.Unmanaged.Native.Native13
 import Torch.Internal.Unmanaged.Native.Native14
 import Torch.Internal.Unmanaged.Native.Native15
-
-
-
+import Torch.Internal.Unmanaged.Native.Extra

@@ -156,3 +156,12 @@ instance CppTuple2 (Ptr (StdTuple '(CDouble,Int64))) where
   get0 v = [C.throwBlock| double { return (std::get<0>(*$(std::tuple<double,int64_t>* v)));}|]
   get1 v = [C.throwBlock| int64_t { return (std::get<1>(*$(std::tuple<double,int64_t>* v)));}|]
 
+
+-----------------StdTuple '(CDouble,CDouble)---------------------
+
+instance CppTuple2 (Ptr (StdTuple '(CDouble,CDouble))) where
+  type A (Ptr (StdTuple '(CDouble,CDouble))) = CDouble
+  type B (Ptr (StdTuple '(CDouble,CDouble))) = CDouble
+  get0 v = [C.throwBlock| double { return (std::get<0>(*$(std::tuple<double,double>* v)));}|]
+  get1 v = [C.throwBlock| double { return (std::get<1>(*$(std::tuple<double,double>* v)));}|]
+

@@ -19,6 +19,7 @@ import Torch.Internal.Managed.Type.C10List
 import Torch.Internal.Managed.Type.IValueList
 import Torch.Internal.Managed.Type.C10Tuple
 import Torch.Internal.Managed.Type.C10Dict
+import Torch.Internal.Managed.Type.StdVector
 
 instance Castable Int (ForeignPtr IntArray) where
   cast xs f = do
@@ -41,6 +42,19 @@ instance Castable [Int] (ForeignPtr IntArray) where
     if len == 0
       then f []
       else f =<< mapM (\i -> intArray_at_s xs i >>= return . fromIntegral) [0..(len - 1)]
+
+instance Castable [Double] (ForeignPtr (StdVector CDouble)) where
+  cast xs f = do
+    arr <- newStdVectorDouble
+    forM_ xs $ (stdVectorDouble_push_back arr) . realToFrac
+    f arr
+  uncast xs f = do
+    len <- stdVectorDouble_size xs
+    -- NB: This check is necessary, because len is unsigned and it will wrap around if
+    --     we subtract 1 when it's 0.
+    if len == 0
+      then f []
+      else f =<< mapM (\i -> stdVectorDouble_at xs i >>= return . realToFrac) [0..(len - 1)]
 
 instance Castable [ForeignPtr Tensor] (ForeignPtr TensorList) where
   cast xs f = do
