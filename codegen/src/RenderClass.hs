@@ -19,7 +19,7 @@ import qualified ParseClass as PC
 import RenderCommon
 
 renderImport :: Bool -> PC.CppClassSpec -> Text -> Text
-renderImport is_managed typ_ unmanagedModuleName =  if is_managed then  [st|
+renderImport is_managed _ unmanagedModuleName =  if is_managed then  [st|
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign
