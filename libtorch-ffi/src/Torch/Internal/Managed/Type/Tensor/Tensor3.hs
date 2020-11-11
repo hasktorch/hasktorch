@@ -24,60 +24,6 @@ import qualified Torch.Internal.Unmanaged.Type.Tensor.Tensor3 as Unmanaged
 
 
 
-tensor_ne__s
-  :: ForeignPtr Tensor
-  -> ForeignPtr Scalar
-  -> IO (ForeignPtr Tensor)
-tensor_ne__s = cast2 Unmanaged.tensor_ne__s
-
-tensor_ne__t
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-tensor_ne__t = cast2 Unmanaged.tensor_ne__t
-
-tensor_bitwise_and_s
-  :: ForeignPtr Tensor
-  -> ForeignPtr Scalar
-  -> IO (ForeignPtr Tensor)
-tensor_bitwise_and_s = cast2 Unmanaged.tensor_bitwise_and_s
-
-tensor_bitwise_and_t
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-tensor_bitwise_and_t = cast2 Unmanaged.tensor_bitwise_and_t
-
-tensor_bitwise_and__s
-  :: ForeignPtr Tensor
-  -> ForeignPtr Scalar
-  -> IO (ForeignPtr Tensor)
-tensor_bitwise_and__s = cast2 Unmanaged.tensor_bitwise_and__s
-
-tensor_bitwise_and__t
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-tensor_bitwise_and__t = cast2 Unmanaged.tensor_bitwise_and__t
-
-tensor___and___s
-  :: ForeignPtr Tensor
-  -> ForeignPtr Scalar
-  -> IO (ForeignPtr Tensor)
-tensor___and___s = cast2 Unmanaged.tensor___and___s
-
-tensor___and___t
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-tensor___and___t = cast2 Unmanaged.tensor___and___t
-
-tensor___iand___s
-  :: ForeignPtr Tensor
-  -> ForeignPtr Scalar
-  -> IO (ForeignPtr Tensor)
-tensor___iand___s = cast2 Unmanaged.tensor___iand___s
-
 tensor___iand___t
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -448,6 +394,30 @@ tensor_ne_t
   -> IO (ForeignPtr Tensor)
 tensor_ne_t = cast2 Unmanaged.tensor_ne_t
 
+tensor_not_equal_s
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+tensor_not_equal_s = cast2 Unmanaged.tensor_not_equal_s
+
+tensor_not_equal_t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_not_equal_t = cast2 Unmanaged.tensor_not_equal_t
+
+tensor_not_equal__s
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+tensor_not_equal__s = cast2 Unmanaged.tensor_not_equal__s
+
+tensor_not_equal__t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_not_equal__t = cast2 Unmanaged.tensor_not_equal__t
+
 tensor_eq_s
   :: ForeignPtr Tensor
   -> ForeignPtr Scalar
@@ -472,6 +442,30 @@ tensor_ge_t
   -> IO (ForeignPtr Tensor)
 tensor_ge_t = cast2 Unmanaged.tensor_ge_t
 
+tensor_greater_equal_s
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+tensor_greater_equal_s = cast2 Unmanaged.tensor_greater_equal_s
+
+tensor_greater_equal_t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_greater_equal_t = cast2 Unmanaged.tensor_greater_equal_t
+
+tensor_greater_equal__s
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+tensor_greater_equal__s = cast2 Unmanaged.tensor_greater_equal__s
+
+tensor_greater_equal__t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_greater_equal__t = cast2 Unmanaged.tensor_greater_equal__t
+
 tensor_le_s
   :: ForeignPtr Tensor
   -> ForeignPtr Scalar
@@ -483,6 +477,30 @@ tensor_le_t
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 tensor_le_t = cast2 Unmanaged.tensor_le_t
+
+tensor_less_equal_s
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+tensor_less_equal_s = cast2 Unmanaged.tensor_less_equal_s
+
+tensor_less_equal_t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_less_equal_t = cast2 Unmanaged.tensor_less_equal_t
+
+tensor_less_equal__s
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+tensor_less_equal__s = cast2 Unmanaged.tensor_less_equal__s
+
+tensor_less_equal__t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_less_equal__t = cast2 Unmanaged.tensor_less_equal__t
 
 tensor_gt_s
   :: ForeignPtr Tensor
@@ -496,6 +514,30 @@ tensor_gt_t
   -> IO (ForeignPtr Tensor)
 tensor_gt_t = cast2 Unmanaged.tensor_gt_t
 
+tensor_greater_s
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+tensor_greater_s = cast2 Unmanaged.tensor_greater_s
+
+tensor_greater_t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_greater_t = cast2 Unmanaged.tensor_greater_t
+
+tensor_greater__s
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+tensor_greater__s = cast2 Unmanaged.tensor_greater__s
+
+tensor_greater__t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_greater__t = cast2 Unmanaged.tensor_greater__t
+
 tensor_lt_s
   :: ForeignPtr Tensor
   -> ForeignPtr Scalar
@@ -507,6 +549,30 @@ tensor_lt_t
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 tensor_lt_t = cast2 Unmanaged.tensor_lt_t
+
+tensor_less_s
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+tensor_less_s = cast2 Unmanaged.tensor_less_s
+
+tensor_less_t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_less_t = cast2 Unmanaged.tensor_less_t
+
+tensor_less__s
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+tensor_less__s = cast2 Unmanaged.tensor_less__s
+
+tensor_less__t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_less__t = cast2 Unmanaged.tensor_less__t
 
 tensor_take_t
   :: ForeignPtr Tensor
@@ -711,6 +777,16 @@ tensor_erfinv_
   -> IO (ForeignPtr Tensor)
 tensor_erfinv_ = cast1 Unmanaged.tensor_erfinv_
 
+tensor_i0
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_i0 = cast1 Unmanaged.tensor_i0
+
+tensor_i0_
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_i0_ = cast1 Unmanaged.tensor_i0_
+
 tensor_sign
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
@@ -720,6 +796,11 @@ tensor_sign_
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 tensor_sign_ = cast1 Unmanaged.tensor_sign_
+
+tensor_signbit
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_signbit = cast1 Unmanaged.tensor_signbit
 
 tensor_dist_ts
   :: ForeignPtr Tensor
@@ -768,6 +849,30 @@ tensor_fmod_t
   -> IO (ForeignPtr Tensor)
 tensor_fmod_t = cast2 Unmanaged.tensor_fmod_t
 
+tensor_hypot_t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_hypot_t = cast2 Unmanaged.tensor_hypot_t
+
+tensor_hypot__t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_hypot__t = cast2 Unmanaged.tensor_hypot__t
+
+tensor_nextafter_t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_nextafter_t = cast2 Unmanaged.tensor_nextafter_t
+
+tensor_nextafter__t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_nextafter__t = cast2 Unmanaged.tensor_nextafter__t
+
 tensor_remainder_s
   :: ForeignPtr Tensor
   -> ForeignPtr Scalar
@@ -780,16 +885,21 @@ tensor_remainder_t
   -> IO (ForeignPtr Tensor)
 tensor_remainder_t = cast2 Unmanaged.tensor_remainder_t
 
-tensor_min_t
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-tensor_min_t = cast2 Unmanaged.tensor_min_t
-
 tensor_min
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 tensor_min = cast1 Unmanaged.tensor_min
+
+tensor_max
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_max = cast1 Unmanaged.tensor_max
+
+tensor_maximum_t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_maximum_t = cast2 Unmanaged.tensor_maximum_t
 
 tensor_max_t
   :: ForeignPtr Tensor
@@ -797,10 +907,17 @@ tensor_max_t
   -> IO (ForeignPtr Tensor)
 tensor_max_t = cast2 Unmanaged.tensor_max_t
 
-tensor_max
+tensor_minimum_t
   :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-tensor_max = cast1 Unmanaged.tensor_max
+tensor_minimum_t = cast2 Unmanaged.tensor_minimum_t
+
+tensor_min_t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_min_t = cast2 Unmanaged.tensor_min_t
 
 tensor_median
   :: ForeignPtr Tensor

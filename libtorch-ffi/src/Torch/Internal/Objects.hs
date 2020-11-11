@@ -243,6 +243,12 @@ foreign import ccall unsafe "hasktorch_finalizer.h &delete_cdoubleint64"
 instance CppObject (StdTuple '(CDouble,Int64)) where
   fromPtr ptr = newForeignPtr c_delete_cdoubleint64 ptr
 
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_cdoublecdouble"
+  c_delete_cdoublecdouble :: FunPtr ( Ptr (StdTuple '(CDouble,CDouble)) -> IO ())
+
+instance CppObject (StdTuple '(CDouble,CDouble)) where
+  fromPtr ptr = newForeignPtr c_delete_cdoublecdouble ptr
+
 foreign import ccall unsafe "hasktorch_finalizer.h &delete_tensortensorcdoubleint64"
   c_delete_tensortensorcdoubleint64 :: FunPtr ( Ptr (StdTuple '(Tensor,Tensor,CDouble,Int64)) -> IO ())
 
@@ -255,3 +261,20 @@ foreign import ccall unsafe "hasktorch_finalizer.h &delete_optimizer"
 instance CppObject Optimizer where
   fromPtr ptr = newForeignPtr c_delete_optimizer ptr
 
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_stdvectordouble"
+  c_delete_stdvectordouble :: FunPtr ( Ptr (StdVector CDouble) -> IO ())
+
+instance CppObject (StdVector CDouble) where
+  fromPtr ptr = newForeignPtr c_delete_stdvectordouble ptr
+
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_stdvectorint"
+  c_delete_stdvectorint :: FunPtr ( Ptr (StdVector CInt) -> IO ())
+
+instance CppObject (StdVector CInt) where
+  fromPtr ptr = newForeignPtr c_delete_stdvectorint ptr
+
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_stdvectorbool"
+  c_delete_stdvectorbool :: FunPtr ( Ptr (StdVector CBool) -> IO ())
+
+instance CppObject (StdVector CBool) where
+  fromPtr ptr = newForeignPtr c_delete_stdvectorbool ptr

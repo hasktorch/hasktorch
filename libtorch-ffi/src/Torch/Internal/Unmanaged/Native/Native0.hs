@@ -582,14 +582,6 @@ absolute_t _self =
     *$(at::Tensor* _self)));
   }|]
 
-absolute__t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
-absolute__t _self =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::absolute_(
-    *$(at::Tensor* _self)));
-  }|]
-
 absolute_out_tt
   :: Ptr Tensor
   -> Ptr Tensor
@@ -634,6 +626,24 @@ view_as_complex_t _self =
     *$(at::Tensor* _self)));
   }|]
 
+sgn_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+sgn_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::sgn(
+    *$(at::Tensor* _self)));
+  }|]
+
+sgn_out_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+sgn_out_tt _out _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::sgn_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)));
+  }|]
+
 real_t
   :: Ptr Tensor
   -> IO (Ptr Tensor)
@@ -668,6 +678,14 @@ conj_out_tt _out _self =
   , *$(at::Tensor* _self)));
   }|]
 
+_conj_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+_conj_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_conj(
+    *$(at::Tensor* _self)));
+  }|]
+
 acos_t
   :: Ptr Tensor
   -> IO (Ptr Tensor)
@@ -690,6 +708,32 @@ acos_out_tt
   -> IO (Ptr Tensor)
 acos_out_tt _out _self =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::acos_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)));
+  }|]
+
+arccos_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+arccos_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::arccos(
+    *$(at::Tensor* _self)));
+  }|]
+
+arccos__t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+arccos__t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::arccos_(
+    *$(at::Tensor* _self)));
+  }|]
+
+arccos_out_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+arccos_out_tt _out _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::arccos_out(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)));
   }|]
@@ -827,6 +871,76 @@ add_out_ttt
   -> IO (Ptr Tensor)
 add_out_ttt _out _self _other =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::add_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , *$(at::Tensor* _other)));
+  }|]
+
+_add_relu_tts
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+_add_relu_tts _self _other _alpha =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_add_relu(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _other)
+  , *$(at::Scalar* _alpha)));
+  }|]
+
+_add_relu_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+_add_relu_tt _self _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_add_relu(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _other)));
+  }|]
+
+_add_relu__tts
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+_add_relu__tts _self _other _alpha =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_add_relu_(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _other)
+  , *$(at::Scalar* _alpha)));
+  }|]
+
+_add_relu__tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+_add_relu__tt _self _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_add_relu_(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _other)));
+  }|]
+
+_add_relu_out_ttts
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+_add_relu_out_ttts _out _self _other _alpha =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_add_relu_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , *$(at::Tensor* _other)
+  , *$(at::Scalar* _alpha)));
+  }|]
+
+_add_relu_out_ttt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+_add_relu_out_ttt _out _self _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_add_relu_out(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
   , *$(at::Tensor* _other)));
@@ -1590,11 +1704,107 @@ acosh_out_tt _out _self =
   , *$(at::Tensor* _self)));
   }|]
 
+arccosh_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+arccosh_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::arccosh(
+    *$(at::Tensor* _self)));
+  }|]
+
+arccosh__t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+arccosh__t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::arccosh_(
+    *$(at::Tensor* _self)));
+  }|]
+
+arccosh_out_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+arccosh_out_tt _out _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::arccosh_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)));
+  }|]
+
 asinh_t
   :: Ptr Tensor
   -> IO (Ptr Tensor)
 asinh_t _self =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::asinh(
     *$(at::Tensor* _self)));
+  }|]
+
+asinh__t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+asinh__t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::asinh_(
+    *$(at::Tensor* _self)));
+  }|]
+
+asinh_out_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+asinh_out_tt _out _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::asinh_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)));
+  }|]
+
+arcsinh_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+arcsinh_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::arcsinh(
+    *$(at::Tensor* _self)));
+  }|]
+
+arcsinh__t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+arcsinh__t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::arcsinh_(
+    *$(at::Tensor* _self)));
+  }|]
+
+arcsinh_out_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+arcsinh_out_tt _out _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::arcsinh_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)));
+  }|]
+
+atanh_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+atanh_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::atanh(
+    *$(at::Tensor* _self)));
+  }|]
+
+atanh__t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+atanh__t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::atanh_(
+    *$(at::Tensor* _self)));
+  }|]
+
+atanh_out_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+atanh_out_tt _out _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::atanh_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)));
   }|]
 

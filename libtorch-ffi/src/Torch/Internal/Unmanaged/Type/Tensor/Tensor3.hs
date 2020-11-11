@@ -32,87 +32,6 @@ C.include "<vector>"
 
 
 
-tensor_ne__s
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
-tensor_ne__s _obj _other =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).ne_(
-    *$(at::Scalar* _other)));
-  }|]
-
-tensor_ne__t
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-tensor_ne__t _obj _other =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).ne_(
-    *$(at::Tensor* _other)));
-  }|]
-
-tensor_bitwise_and_s
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
-tensor_bitwise_and_s _obj _other =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).bitwise_and(
-    *$(at::Scalar* _other)));
-  }|]
-
-tensor_bitwise_and_t
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-tensor_bitwise_and_t _obj _other =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).bitwise_and(
-    *$(at::Tensor* _other)));
-  }|]
-
-tensor_bitwise_and__s
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
-tensor_bitwise_and__s _obj _other =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).bitwise_and_(
-    *$(at::Scalar* _other)));
-  }|]
-
-tensor_bitwise_and__t
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-tensor_bitwise_and__t _obj _other =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).bitwise_and_(
-    *$(at::Tensor* _other)));
-  }|]
-
-tensor___and___s
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
-tensor___and___s _obj _other =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).__and__(
-    *$(at::Scalar* _other)));
-  }|]
-
-tensor___and___t
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-tensor___and___t _obj _other =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).__and__(
-    *$(at::Tensor* _other)));
-  }|]
-
-tensor___iand___s
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
-tensor___iand___s _obj _other =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).__iand__(
-    *$(at::Scalar* _other)));
-  }|]
-
 tensor___iand___t
   :: Ptr Tensor
   -> Ptr Tensor
@@ -682,6 +601,42 @@ tensor_ne_t _obj _other =
     *$(at::Tensor* _other)));
   }|]
 
+tensor_not_equal_s
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+tensor_not_equal_s _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).not_equal(
+    *$(at::Scalar* _other)));
+  }|]
+
+tensor_not_equal_t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_not_equal_t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).not_equal(
+    *$(at::Tensor* _other)));
+  }|]
+
+tensor_not_equal__s
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+tensor_not_equal__s _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).not_equal_(
+    *$(at::Scalar* _other)));
+  }|]
+
+tensor_not_equal__t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_not_equal__t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).not_equal_(
+    *$(at::Tensor* _other)));
+  }|]
+
 tensor_eq_s
   :: Ptr Tensor
   -> Ptr Scalar
@@ -718,6 +673,42 @@ tensor_ge_t _obj _other =
     *$(at::Tensor* _other)));
   }|]
 
+tensor_greater_equal_s
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+tensor_greater_equal_s _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).greater_equal(
+    *$(at::Scalar* _other)));
+  }|]
+
+tensor_greater_equal_t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_greater_equal_t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).greater_equal(
+    *$(at::Tensor* _other)));
+  }|]
+
+tensor_greater_equal__s
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+tensor_greater_equal__s _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).greater_equal_(
+    *$(at::Scalar* _other)));
+  }|]
+
+tensor_greater_equal__t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_greater_equal__t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).greater_equal_(
+    *$(at::Tensor* _other)));
+  }|]
+
 tensor_le_s
   :: Ptr Tensor
   -> Ptr Scalar
@@ -733,6 +724,42 @@ tensor_le_t
   -> IO (Ptr Tensor)
 tensor_le_t _obj _other =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).le(
+    *$(at::Tensor* _other)));
+  }|]
+
+tensor_less_equal_s
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+tensor_less_equal_s _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).less_equal(
+    *$(at::Scalar* _other)));
+  }|]
+
+tensor_less_equal_t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_less_equal_t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).less_equal(
+    *$(at::Tensor* _other)));
+  }|]
+
+tensor_less_equal__s
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+tensor_less_equal__s _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).less_equal_(
+    *$(at::Scalar* _other)));
+  }|]
+
+tensor_less_equal__t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_less_equal__t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).less_equal_(
     *$(at::Tensor* _other)));
   }|]
 
@@ -754,6 +781,42 @@ tensor_gt_t _obj _other =
     *$(at::Tensor* _other)));
   }|]
 
+tensor_greater_s
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+tensor_greater_s _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).greater(
+    *$(at::Scalar* _other)));
+  }|]
+
+tensor_greater_t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_greater_t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).greater(
+    *$(at::Tensor* _other)));
+  }|]
+
+tensor_greater__s
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+tensor_greater__s _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).greater_(
+    *$(at::Scalar* _other)));
+  }|]
+
+tensor_greater__t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_greater__t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).greater_(
+    *$(at::Tensor* _other)));
+  }|]
+
 tensor_lt_s
   :: Ptr Tensor
   -> Ptr Scalar
@@ -769,6 +832,42 @@ tensor_lt_t
   -> IO (Ptr Tensor)
 tensor_lt_t _obj _other =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).lt(
+    *$(at::Tensor* _other)));
+  }|]
+
+tensor_less_s
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+tensor_less_s _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).less(
+    *$(at::Scalar* _other)));
+  }|]
+
+tensor_less_t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_less_t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).less(
+    *$(at::Tensor* _other)));
+  }|]
+
+tensor_less__s
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+tensor_less__s _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).less_(
+    *$(at::Scalar* _other)));
+  }|]
+
+tensor_less__t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_less__t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).less_(
     *$(at::Tensor* _other)));
   }|]
 
@@ -1092,6 +1191,22 @@ tensor_erfinv_ _obj =
     ));
   }|]
 
+tensor_i0
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_i0 _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).i0(
+    ));
+  }|]
+
+tensor_i0_
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_i0_ _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).i0_(
+    ));
+  }|]
+
 tensor_sign
   :: Ptr Tensor
   -> IO (Ptr Tensor)
@@ -1105,6 +1220,14 @@ tensor_sign_
   -> IO (Ptr Tensor)
 tensor_sign_ _obj =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).sign_(
+    ));
+  }|]
+
+tensor_signbit
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_signbit _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).signbit(
     ));
   }|]
 
@@ -1181,6 +1304,42 @@ tensor_fmod_t _obj _other =
     *$(at::Tensor* _other)));
   }|]
 
+tensor_hypot_t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_hypot_t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).hypot(
+    *$(at::Tensor* _other)));
+  }|]
+
+tensor_hypot__t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_hypot__t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).hypot_(
+    *$(at::Tensor* _other)));
+  }|]
+
+tensor_nextafter_t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_nextafter_t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).nextafter(
+    *$(at::Tensor* _other)));
+  }|]
+
+tensor_nextafter__t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_nextafter__t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).nextafter_(
+    *$(at::Tensor* _other)));
+  }|]
+
 tensor_remainder_s
   :: Ptr Tensor
   -> Ptr Scalar
@@ -1199,21 +1358,29 @@ tensor_remainder_t _obj _other =
     *$(at::Tensor* _other)));
   }|]
 
-tensor_min_t
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-tensor_min_t _obj _other =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).min(
-    *$(at::Tensor* _other)));
-  }|]
-
 tensor_min
   :: Ptr Tensor
   -> IO (Ptr Tensor)
 tensor_min _obj =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).min(
     ));
+  }|]
+
+tensor_max
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_max _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).max(
+    ));
+  }|]
+
+tensor_maximum_t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_maximum_t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).maximum(
+    *$(at::Tensor* _other)));
   }|]
 
 tensor_max_t
@@ -1225,12 +1392,22 @@ tensor_max_t _obj _other =
     *$(at::Tensor* _other)));
   }|]
 
-tensor_max
+tensor_minimum_t
   :: Ptr Tensor
+  -> Ptr Tensor
   -> IO (Ptr Tensor)
-tensor_max _obj =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).max(
-    ));
+tensor_minimum_t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).minimum(
+    *$(at::Tensor* _other)));
+  }|]
+
+tensor_min_t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_min_t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).min(
+    *$(at::Tensor* _other)));
   }|]
 
 tensor_median

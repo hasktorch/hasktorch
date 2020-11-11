@@ -520,6 +520,14 @@ tensor_requires_grad _obj =
     );
   }|]
 
+tensor_mutable_grad
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_mutable_grad _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).mutable_grad(
+    ));
+  }|]
+
 tensor_grad
   :: Ptr Tensor
   -> IO (Ptr Tensor)
@@ -703,6 +711,22 @@ tensor_angle _obj =
     ));
   }|]
 
+tensor_sgn
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_sgn _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).sgn(
+    ));
+  }|]
+
+tensor_sgn_
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_sgn_ _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).sgn_(
+    ));
+  }|]
+
 tensor_conj
   :: Ptr Tensor
   -> IO (Ptr Tensor)
@@ -724,6 +748,22 @@ tensor_acos_
   -> IO (Ptr Tensor)
 tensor_acos_ _obj =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).acos_(
+    ));
+  }|]
+
+tensor_arccos
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_arccos _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).arccos(
+    ));
+  }|]
+
+tensor_arccos_
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_arccos_ _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).arccos_(
     ));
   }|]
 
@@ -906,6 +946,22 @@ tensor_acosh_ _obj =
     ));
   }|]
 
+tensor_arccosh
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_arccosh _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).arccosh(
+    ));
+  }|]
+
+tensor_arccosh_
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_arccosh_ _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).arccosh_(
+    ));
+  }|]
+
 tensor_asinh
   :: Ptr Tensor
   -> IO (Ptr Tensor)
@@ -919,6 +975,22 @@ tensor_asinh_
   -> IO (Ptr Tensor)
 tensor_asinh_ _obj =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).asinh_(
+    ));
+  }|]
+
+tensor_arcsinh
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_arcsinh _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).arcsinh(
+    ));
+  }|]
+
+tensor_arcsinh_
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_arcsinh_ _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).arcsinh_(
     ));
   }|]
 
@@ -938,6 +1010,22 @@ tensor_atanh_ _obj =
     ));
   }|]
 
+tensor_arctanh
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_arctanh _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).arctanh(
+    ));
+  }|]
+
+tensor_arctanh_
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_arctanh_ _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).arctanh_(
+    ));
+  }|]
+
 tensor_asin
   :: Ptr Tensor
   -> IO (Ptr Tensor)
@@ -954,6 +1042,22 @@ tensor_asin_ _obj =
     ));
   }|]
 
+tensor_arcsin
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_arcsin _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).arcsin(
+    ));
+  }|]
+
+tensor_arcsin_
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_arcsin_ _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).arcsin_(
+    ));
+  }|]
+
 tensor_atan
   :: Ptr Tensor
   -> IO (Ptr Tensor)
@@ -967,6 +1071,22 @@ tensor_atan_
   -> IO (Ptr Tensor)
 tensor_atan_ _obj =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).atan_(
+    ));
+  }|]
+
+tensor_arctan
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_arctan _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).arctan(
+    ));
+  }|]
+
+tensor_arctan_
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_arctan_ _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).arctan_(
     ));
   }|]
 
@@ -1164,6 +1284,17 @@ tensor_ceil_ _obj =
     ));
   }|]
 
+tensor_unsafe_chunk_ll
+  :: Ptr Tensor
+  -> Int64
+  -> Int64
+  -> IO (Ptr TensorList)
+tensor_unsafe_chunk_ll _obj _chunks _dim =
+  [C.throwBlock| std::vector<at::Tensor>* { return new std::vector<at::Tensor>((*$(at::Tensor* _obj)).unsafe_chunk(
+    $(int64_t _chunks)
+  , $(int64_t _dim)));
+  }|]
+
 tensor_chunk_ll
   :: Ptr Tensor
   -> Int64
@@ -1262,6 +1393,15 @@ tensor_cosh_ _obj =
     ));
   }|]
 
+tensor_count_nonzero_l
+  :: Ptr Tensor
+  -> Ptr IntArray
+  -> IO (Ptr Tensor)
+tensor_count_nonzero_l _obj _dim =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).count_nonzero(
+    *$(std::vector<int64_t>* _dim)));
+  }|]
+
 tensor_cummax_l
   :: Ptr Tensor
   -> Int64
@@ -1287,5 +1427,14 @@ tensor_cummin_l
 tensor_cummin_l _obj _dim =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).cummin(
     $(int64_t _dim)));
+  }|]
+
+tensor_cummin_n
+  :: Ptr Tensor
+  -> Ptr Dimname
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+tensor_cummin_n _obj _dim =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).cummin(
+    *$(at::Dimname* _dim)));
   }|]
 

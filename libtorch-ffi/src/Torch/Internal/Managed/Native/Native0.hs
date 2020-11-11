@@ -343,11 +343,6 @@ absolute_t
   -> IO (ForeignPtr Tensor)
 absolute_t = cast1 Unmanaged.absolute_t
 
-absolute__t
-  :: ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-absolute__t = cast1 Unmanaged.absolute__t
-
 absolute_out_tt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -375,6 +370,17 @@ view_as_complex_t
   -> IO (ForeignPtr Tensor)
 view_as_complex_t = cast1 Unmanaged.view_as_complex_t
 
+sgn_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+sgn_t = cast1 Unmanaged.sgn_t
+
+sgn_out_tt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+sgn_out_tt = cast2 Unmanaged.sgn_out_tt
+
 real_t
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
@@ -396,6 +402,11 @@ conj_out_tt
   -> IO (ForeignPtr Tensor)
 conj_out_tt = cast2 Unmanaged.conj_out_tt
 
+_conj_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+_conj_t = cast1 Unmanaged._conj_t
+
 acos_t
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
@@ -411,6 +422,22 @@ acos_out_tt
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 acos_out_tt = cast2 Unmanaged.acos_out_tt
+
+arccos_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+arccos_t = cast1 Unmanaged.arccos_t
+
+arccos__t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+arccos__t = cast1 Unmanaged.arccos__t
+
+arccos_out_tt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+arccos_out_tt = cast2 Unmanaged.arccos_out_tt
 
 avg_pool1d_tlllbb
   :: ForeignPtr Tensor
@@ -491,6 +518,47 @@ add_out_ttt
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 add_out_ttt = cast3 Unmanaged.add_out_ttt
+
+_add_relu_tts
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+_add_relu_tts = cast3 Unmanaged._add_relu_tts
+
+_add_relu_tt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+_add_relu_tt = cast2 Unmanaged._add_relu_tt
+
+_add_relu__tts
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+_add_relu__tts = cast3 Unmanaged._add_relu__tts
+
+_add_relu__tt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+_add_relu__tt = cast2 Unmanaged._add_relu__tt
+
+_add_relu_out_ttts
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+_add_relu_out_ttts = cast4 Unmanaged._add_relu_out_ttts
+
+_add_relu_out_ttt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+_add_relu_out_ttt = cast3 Unmanaged._add_relu_out_ttt
 
 add_tss
   :: ForeignPtr Tensor
@@ -932,8 +1000,67 @@ acosh_out_tt
   -> IO (ForeignPtr Tensor)
 acosh_out_tt = cast2 Unmanaged.acosh_out_tt
 
+arccosh_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+arccosh_t = cast1 Unmanaged.arccosh_t
+
+arccosh__t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+arccosh__t = cast1 Unmanaged.arccosh__t
+
+arccosh_out_tt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+arccosh_out_tt = cast2 Unmanaged.arccosh_out_tt
+
 asinh_t
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 asinh_t = cast1 Unmanaged.asinh_t
+
+asinh__t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+asinh__t = cast1 Unmanaged.asinh__t
+
+asinh_out_tt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+asinh_out_tt = cast2 Unmanaged.asinh_out_tt
+
+arcsinh_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+arcsinh_t = cast1 Unmanaged.arcsinh_t
+
+arcsinh__t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+arcsinh__t = cast1 Unmanaged.arcsinh__t
+
+arcsinh_out_tt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+arcsinh_out_tt = cast2 Unmanaged.arcsinh_out_tt
+
+atanh_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+atanh_t = cast1 Unmanaged.atanh_t
+
+atanh__t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+atanh__t = cast1 Unmanaged.atanh__t
+
+atanh_out_tt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+atanh_out_tt = cast2 Unmanaged.atanh_out_tt
 

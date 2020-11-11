@@ -28,7 +28,7 @@ import Data.Kind
 import Data.Proxy
 import GHC.Exts (IsList (..))
 import GHC.TypeLits
-import Prelude hiding (id, (.))
+import Prelude hiding ((.), id)
 
 type family ListLength (xs :: [k]) :: Nat where
   ListLength '[] = 0
@@ -72,6 +72,7 @@ instance (Monoid a, Monoid (HList as)) => Monoid (HList (a ': as)) where
   mempty = mempty :. mempty
   mappend (x :. xs) (y :. ys) = mappend x y :. mappend xs ys
 
+{- HLINT ignore "Redundant bracket" -}
 instance IsList (Maybe (HList '[(a :: Type)])) where
   type Item (Maybe (HList '[(a :: Type)])) = a
   fromList [x] = liftA2 (:.) (Just x) (Just HNil)
@@ -161,8 +162,7 @@ class
   Applicative f =>
   HSequence f (xs :: [k]) (ys :: [k])
     | xs -> ys,
-      ys f -> xs
-  where
+      ys f -> xs where
   hsequence :: HList xs -> f (HList ys)
 
 instance Applicative f => HSequence f '[] '[] where
@@ -214,7 +214,7 @@ instance
 
 data HNothing = HNothing
 
-data HJust x = HJust x
+newtype HJust x = HJust x
 
 class HUnfold f res xs where
   hunfoldr' :: f -> res -> HList xs
@@ -284,8 +284,7 @@ class
     (n :: Nat)
     (e :: Type)
     (es :: [Type])
-    | n e -> es
-  where
+    | n e -> es where
   hreplicateFD :: e -> HList es
 
 instance {-# OVERLAPS #-} HReplicateFD 0 e '[] where
@@ -402,9 +401,9 @@ instance
 htranspose ::
   forall (acc :: [Type]) (xs :: [Type]) (xxs :: [Type]) (res :: Type).
   ( HReplicateFD (ListLength xs) (HList ('[] :: [Type])) acc,
-    HFoldr HZipF (HList acc) ((HList xs) ': xxs) res
+    HFoldr HZipF (HList acc) (HList xs : xxs) res
   ) =>
-  HList ((HList xs) ': xxs) ->
+  HList (HList xs : xxs) ->
   res
 htranspose (xs :. xxs) =
   hfoldr
@@ -448,8 +447,7 @@ class
     (cs :: [k])
     (ds :: [k])
     | as bs cs -> ds,
-      ds -> as bs cs
-  where
+      ds -> as bs cs where
   hzip3 :: HList as -> HList bs -> HList cs -> HList ds
   hunzip3 :: HList ds -> (HList as, HList bs, HList cs)
 
@@ -474,8 +472,7 @@ class
     (bs :: [k])
     (cs :: [k])
     (ds :: [k])
-    | f as bs cs -> ds
-  where
+    | f as bs cs -> ds where
   hzipWith3 :: f -> HList as -> HList bs -> HList cs -> HList ds
 
 instance HZipWith3 f '[] '[] '[] '[] where

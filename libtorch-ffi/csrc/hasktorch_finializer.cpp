@@ -40,6 +40,18 @@ void delete_c10listbool(c10::List<bool>* object){
   delete object;
 }
 
+void delete_stdvectordouble(std::vector<double>* object){
+  delete object;
+}
+
+void delete_stdvectorint(std::vector<int64_t>* object){
+  delete object;
+}
+
+void delete_stdvectorbool(std::vector<bool>* object){
+  delete object;
+}
+
 void delete_c10tuple(c10::intrusive_ptr<at::ivalue::Tuple>* object){
   delete object;
 }
@@ -149,6 +161,10 @@ void delete_tensortensorcdoubleint64(std::tuple<at::Tensor,at::Tensor,double,int
 }
 
 void delete_cdoubleint64(std::tuple<double,int64_t>* object){
+  delete object;
+}
+
+void delete_cdoublecdouble(std::tuple<double,double>* object){
   delete object;
 }
 

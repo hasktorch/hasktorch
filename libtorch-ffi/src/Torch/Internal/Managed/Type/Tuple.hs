@@ -124,3 +124,9 @@ instance CppTuple2 (ForeignPtr (StdTuple '(CDouble,Int64))) where
   get0 v = cast1 (get0 :: Ptr (StdTuple '(CDouble,Int64)) -> IO (CDouble)) v
   get1 v = cast1 (get1 :: Ptr (StdTuple '(CDouble,Int64)) -> IO (Int64)) v
 
+instance CppTuple2 (ForeignPtr (StdTuple '(CDouble,CDouble))) where
+  type A (ForeignPtr (StdTuple '(CDouble,CDouble))) = CDouble
+  type B (ForeignPtr (StdTuple '(CDouble,CDouble))) = CDouble
+  get0 v = cast1 (get0 :: Ptr (StdTuple '(CDouble,CDouble)) -> IO (CDouble)) v
+  get1 v = cast1 (get1 :: Ptr (StdTuple '(CDouble,CDouble)) -> IO (CDouble)) v
+

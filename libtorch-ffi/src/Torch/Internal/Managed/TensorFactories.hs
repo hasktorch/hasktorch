@@ -445,6 +445,45 @@ hamming_window_lbdd
   -> IO (ForeignPtr Tensor)
 hamming_window_lbdd = cast4 Unmanaged.hamming_window_lbdd
 
+kaiser_window_lo
+  :: Int64
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+kaiser_window_lo = cast2 Unmanaged.kaiser_window_lo
+
+kaiser_window_l
+  :: Int64
+  -> IO (ForeignPtr Tensor)
+kaiser_window_l = cast1 Unmanaged.kaiser_window_l
+
+kaiser_window_lbo
+  :: Int64
+  -> CBool
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+kaiser_window_lbo = cast3 Unmanaged.kaiser_window_lbo
+
+kaiser_window_lb
+  :: Int64
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+kaiser_window_lb = cast2 Unmanaged.kaiser_window_lb
+
+kaiser_window_lbdo
+  :: Int64
+  -> CBool
+  -> CDouble
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+kaiser_window_lbdo = cast4 Unmanaged.kaiser_window_lbdo
+
+kaiser_window_lbd
+  :: Int64
+  -> CBool
+  -> CDouble
+  -> IO (ForeignPtr Tensor)
+kaiser_window_lbd = cast3 Unmanaged.kaiser_window_lbd
+
 linspace_sslo
   :: ForeignPtr Scalar
   -> ForeignPtr Scalar

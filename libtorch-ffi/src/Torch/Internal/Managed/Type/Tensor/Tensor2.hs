@@ -24,27 +24,6 @@ import qualified Torch.Internal.Unmanaged.Type.Tensor.Tensor2 as Unmanaged
 
 
 
-tensor_size_l
-  :: ForeignPtr Tensor
-  -> Int64
-  -> IO (Int64)
-tensor_size_l = cast2 Unmanaged.tensor_size_l
-
-tensor_size_n
-  :: ForeignPtr Tensor
-  -> ForeignPtr Dimname
-  -> IO (Int64)
-tensor_size_n = cast2 Unmanaged.tensor_size_n
-
-tensor_slice_llll
-  :: ForeignPtr Tensor
-  -> Int64
-  -> Int64
-  -> Int64
-  -> Int64
-  -> IO (ForeignPtr Tensor)
-tensor_slice_llll = cast5 Unmanaged.tensor_slice_llll
-
 tensor_slogdet
   :: ForeignPtr Tensor
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
@@ -56,12 +35,26 @@ tensor_smm_t
   -> IO (ForeignPtr Tensor)
 tensor_smm_t = cast2 Unmanaged.tensor_smm_t
 
+tensor_unsafe_split_ll
+  :: ForeignPtr Tensor
+  -> Int64
+  -> Int64
+  -> IO (ForeignPtr TensorList)
+tensor_unsafe_split_ll = cast3 Unmanaged.tensor_unsafe_split_ll
+
 tensor_split_ll
   :: ForeignPtr Tensor
   -> Int64
   -> Int64
   -> IO (ForeignPtr TensorList)
 tensor_split_ll = cast3 Unmanaged.tensor_split_ll
+
+tensor_unsafe_split_with_sizes_ll
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> Int64
+  -> IO (ForeignPtr TensorList)
+tensor_unsafe_split_with_sizes_ll = cast3 Unmanaged.tensor_unsafe_split_with_sizes_ll
 
 tensor_split_with_sizes_ll
   :: ForeignPtr Tensor
@@ -288,6 +281,16 @@ tensor_trunc_
   -> IO (ForeignPtr Tensor)
 tensor_trunc_ = cast1 Unmanaged.tensor_trunc_
 
+tensor_fix
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_fix = cast1 Unmanaged.tensor_fix
+
+tensor_fix_
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_fix_ = cast1 Unmanaged.tensor_fix_
+
 tensor_type_as_t
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -396,6 +399,46 @@ tensor_sub__ss
   -> ForeignPtr Scalar
   -> IO (ForeignPtr Tensor)
 tensor_sub__ss = cast3 Unmanaged.tensor_sub__ss
+
+tensor_subtract_ts
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+tensor_subtract_ts = cast3 Unmanaged.tensor_subtract_ts
+
+tensor_subtract__ts
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+tensor_subtract__ts = cast3 Unmanaged.tensor_subtract__ts
+
+tensor_subtract_ss
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+tensor_subtract_ss = cast3 Unmanaged.tensor_subtract_ss
+
+tensor_subtract__ss
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+tensor_subtract__ss = cast3 Unmanaged.tensor_subtract__ss
+
+tensor_heaviside_t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_heaviside_t = cast2 Unmanaged.tensor_heaviside_t
+
+tensor_heaviside__t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_heaviside__t = cast2 Unmanaged.tensor_heaviside__t
 
 tensor_addmm_ttss
   :: ForeignPtr Tensor
@@ -828,6 +871,24 @@ tensor_scatter_nts
   -> IO (ForeignPtr Tensor)
 tensor_scatter_nts = cast4 Unmanaged.tensor_scatter_nts
 
+tensor_scatter__ltts
+  :: ForeignPtr Tensor
+  -> Int64
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr StdString
+  -> IO (ForeignPtr Tensor)
+tensor_scatter__ltts = cast5 Unmanaged.tensor_scatter__ltts
+
+tensor_scatter__ltss
+  :: ForeignPtr Tensor
+  -> Int64
+  -> ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> ForeignPtr StdString
+  -> IO (ForeignPtr Tensor)
+tensor_scatter__ltss = cast5 Unmanaged.tensor_scatter__ltss
+
 tensor_scatter_add__ltt
   :: ForeignPtr Tensor
   -> Int64
@@ -911,4 +972,58 @@ tensor_eq__t
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 tensor_eq__t = cast2 Unmanaged.tensor_eq__t
+
+tensor_ne__s
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+tensor_ne__s = cast2 Unmanaged.tensor_ne__s
+
+tensor_ne__t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_ne__t = cast2 Unmanaged.tensor_ne__t
+
+tensor_bitwise_and_s
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+tensor_bitwise_and_s = cast2 Unmanaged.tensor_bitwise_and_s
+
+tensor_bitwise_and_t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_bitwise_and_t = cast2 Unmanaged.tensor_bitwise_and_t
+
+tensor_bitwise_and__s
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+tensor_bitwise_and__s = cast2 Unmanaged.tensor_bitwise_and__s
+
+tensor_bitwise_and__t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_bitwise_and__t = cast2 Unmanaged.tensor_bitwise_and__t
+
+tensor___and___s
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+tensor___and___s = cast2 Unmanaged.tensor___and___s
+
+tensor___and___t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor___and___t = cast2 Unmanaged.tensor___and___t
+
+tensor___iand___s
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+tensor___iand___s = cast2 Unmanaged.tensor___iand___s
 

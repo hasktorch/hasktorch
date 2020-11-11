@@ -21,45 +21,6 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native4 as Unmanaged
 
 
-index_put_tltb
-  :: ForeignPtr Tensor
-  -> ForeignPtr TensorList
-  -> ForeignPtr Tensor
-  -> CBool
-  -> IO (ForeignPtr Tensor)
-index_put_tltb = cast4 Unmanaged.index_put_tltb
-
-index_put_tlt
-  :: ForeignPtr Tensor
-  -> ForeignPtr TensorList
-  -> ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-index_put_tlt = cast3 Unmanaged.index_put_tlt
-
-_index_put_impl__tltbb
-  :: ForeignPtr Tensor
-  -> ForeignPtr TensorList
-  -> ForeignPtr Tensor
-  -> CBool
-  -> CBool
-  -> IO (ForeignPtr Tensor)
-_index_put_impl__tltbb = cast5 Unmanaged._index_put_impl__tltbb
-
-_index_put_impl__tltb
-  :: ForeignPtr Tensor
-  -> ForeignPtr TensorList
-  -> ForeignPtr Tensor
-  -> CBool
-  -> IO (ForeignPtr Tensor)
-_index_put_impl__tltb = cast4 Unmanaged._index_put_impl__tltb
-
-_index_put_impl__tlt
-  :: ForeignPtr Tensor
-  -> ForeignPtr TensorList
-  -> ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-_index_put_impl__tlt = cast3 Unmanaged._index_put_impl__tlt
-
 instance_norm_tttttbddb
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -138,6 +99,11 @@ is_complex_t
   :: ForeignPtr Tensor
   -> IO (CBool)
 is_complex_t = cast1 Unmanaged.is_complex_t
+
+isreal_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+isreal_t = cast1 Unmanaged.isreal_t
 
 is_nonzero_t
   :: ForeignPtr Tensor
@@ -816,6 +782,48 @@ matrix_power_tl
   -> IO (ForeignPtr Tensor)
 matrix_power_tl = cast2 Unmanaged.matrix_power_tl
 
+matrix_exp_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+matrix_exp_t = cast1 Unmanaged.matrix_exp_t
+
+matrix_exp_backward_tt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+matrix_exp_backward_tt = cast2 Unmanaged.matrix_exp_backward_tt
+
+_aminmax_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
+_aminmax_t = cast1 Unmanaged._aminmax_t
+
+_aminmax_tlb
+  :: ForeignPtr Tensor
+  -> Int64
+  -> CBool
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
+_aminmax_tlb = cast3 Unmanaged._aminmax_tlb
+
+_aminmax_tl
+  :: ForeignPtr Tensor
+  -> Int64
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
+_aminmax_tl = cast2 Unmanaged._aminmax_tl
+
+_compute_linear_combination_tt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+_compute_linear_combination_tt = cast2 Unmanaged._compute_linear_combination_tt
+
+_compute_linear_combination_out_ttt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+_compute_linear_combination_out_ttt = cast3 Unmanaged._compute_linear_combination_out_ttt
+
 max_tlb
   :: ForeignPtr Tensor
   -> Int64
@@ -845,19 +853,6 @@ max_out_tttl
   -> Int64
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
 max_out_tttl = cast4 Unmanaged.max_out_tttl
-
-max_values_tlb
-  :: ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> CBool
-  -> IO (ForeignPtr Tensor)
-max_values_tlb = cast3 Unmanaged.max_values_tlb
-
-max_values_tl
-  :: ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> IO (ForeignPtr Tensor)
-max_values_tl = cast2 Unmanaged.max_values_tl
 
 max_tnb
   :: ForeignPtr Tensor
@@ -889,18 +884,53 @@ max_out_tttn
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
 max_out_tttn = cast4 Unmanaged.max_out_tttn
 
-max_values_tNb
+value_selecting_reduction_backward_tltlb
   :: ForeignPtr Tensor
-  -> ForeignPtr DimnameList
+  -> Int64
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
   -> CBool
   -> IO (ForeignPtr Tensor)
-max_values_tNb = cast3 Unmanaged.max_values_tNb
+value_selecting_reduction_backward_tltlb = cast5 Unmanaged.value_selecting_reduction_backward_tltlb
 
-max_values_tN
+amax_tlb
   :: ForeignPtr Tensor
-  -> ForeignPtr DimnameList
+  -> ForeignPtr IntArray
+  -> CBool
   -> IO (ForeignPtr Tensor)
-max_values_tN = cast2 Unmanaged.max_values_tN
+amax_tlb = cast3 Unmanaged.amax_tlb
+
+amax_tl
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+amax_tl = cast2 Unmanaged.amax_tl
+
+amax_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+amax_t = cast1 Unmanaged.amax_t
+
+amax_out_ttlb
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+amax_out_ttlb = cast4 Unmanaged.amax_out_ttlb
+
+amax_out_ttl
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+amax_out_ttl = cast3 Unmanaged.amax_out_ttl
+
+amax_out_tt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+amax_out_tt = cast2 Unmanaged.amax_out_tt
 
 max_pool1d_with_indices_tllllb
   :: ForeignPtr Tensor
@@ -941,4 +971,134 @@ max_pool1d_with_indices_tl
   -> ForeignPtr IntArray
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
 max_pool1d_with_indices_tl = cast2 Unmanaged.max_pool1d_with_indices_tl
+
+max_pool1d_tllllb
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+max_pool1d_tllllb = cast6 Unmanaged.max_pool1d_tllllb
+
+max_pool1d_tllll
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+max_pool1d_tllll = cast5 Unmanaged.max_pool1d_tllll
+
+max_pool1d_tlll
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+max_pool1d_tlll = cast4 Unmanaged.max_pool1d_tlll
+
+max_pool1d_tll
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+max_pool1d_tll = cast3 Unmanaged.max_pool1d_tll
+
+max_pool1d_tl
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+max_pool1d_tl = cast2 Unmanaged.max_pool1d_tl
+
+max_pool2d_tllllb
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+max_pool2d_tllllb = cast6 Unmanaged.max_pool2d_tllllb
+
+max_pool2d_tllll
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+max_pool2d_tllll = cast5 Unmanaged.max_pool2d_tllll
+
+max_pool2d_tlll
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+max_pool2d_tlll = cast4 Unmanaged.max_pool2d_tlll
+
+max_pool2d_tll
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+max_pool2d_tll = cast3 Unmanaged.max_pool2d_tll
+
+max_pool2d_tl
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+max_pool2d_tl = cast2 Unmanaged.max_pool2d_tl
+
+mkldnn_max_pool2d_tllllb
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+mkldnn_max_pool2d_tllllb = cast6 Unmanaged.mkldnn_max_pool2d_tllllb
+
+mkldnn_max_pool2d_tllll
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+mkldnn_max_pool2d_tllll = cast5 Unmanaged.mkldnn_max_pool2d_tllll
+
+mkldnn_max_pool2d_tlll
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+mkldnn_max_pool2d_tlll = cast4 Unmanaged.mkldnn_max_pool2d_tlll
+
+mkldnn_max_pool2d_tll
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+mkldnn_max_pool2d_tll = cast3 Unmanaged.mkldnn_max_pool2d_tll
+
+mkldnn_max_pool2d_tl
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+mkldnn_max_pool2d_tl = cast2 Unmanaged.mkldnn_max_pool2d_tl
+
+mkldnn_max_pool3d_tllllb
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+mkldnn_max_pool3d_tllllb = cast6 Unmanaged.mkldnn_max_pool3d_tllllb
 

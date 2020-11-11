@@ -37,7 +37,6 @@ import qualified ParseFunctionSig as S
   inplace: true
   is_factory_method: false
   abstract: true
-  requires_tensor: false
   device_guard: false
   with_gil: false
   deprecated: false
@@ -82,7 +81,6 @@ data Declaration = Declaration
   , inplace :: Bool
   , is_factory_method :: Maybe Bool
   , abstract :: Bool
-  , requires_tensor :: Bool
   , device_guard :: Maybe Bool
   , with_gil :: Maybe Bool
   , deprecated :: Maybe Bool

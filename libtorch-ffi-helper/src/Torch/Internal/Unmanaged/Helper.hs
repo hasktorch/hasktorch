@@ -1,3 +1,4 @@
+{-# LANGUAGE ForeignFunctionInterface #-}
 module Torch.Internal.Unmanaged.Helper where
 
 import Foreign.Ptr
