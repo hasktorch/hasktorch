@@ -173,14 +173,65 @@ uncheckedCat ::
     'UncheckedShape
 uncheckedCat = cat @ 'UncheckedSelectDim
 
+type ReshapeNumelMismatchMessage (numel :: Nat) (numel' :: Nat) (shape :: Shape [Dim (DimType Symbol Nat)]) (shape' :: Shape [Dim (DimType Symbol Nat)]) =
+  "Cannot reshape the tensor. The original shape,"
+    % ""
+    % "    '" <> shape <> "',"
+    % ""
+    % "and the new shape,"
+    % ""
+    % "    '" <> shape' <> "',"
+    % ""
+    % "have different total numbers of elements,"
+    % ""
+    % "    '" <> numel <> "' versus '" <> numel' <> "',"
+    % ""
+    % "respectively."
+
+type family ReshapeF (numel :: Maybe Nat) (numel' :: Maybe Nat) (shape :: Shape [Dim (DimType Symbol Nat)]) (shape' :: Shape [Dim (DimType Symbol Nat)]) :: Shape [Dim (DimType Symbol Nat)] where
+  ReshapeF ( 'Just numel) ( 'Just numel) _ shape' = shape'
+  ReshapeF ( 'Just numel) ( 'Just numel') shape shape' = TypeError (ReshapeNumelMismatchMessage numel numel' shape shape')
+  ReshapeF 'Nothing _ _ _ = 'UncheckedShape
+  ReshapeF _ 'Nothing _ _ = 'UncheckedShape
+  ReshapeF _ _ 'UncheckedShape _ = 'UncheckedShape
+  ReshapeF _ _ _ 'UncheckedShape = 'UncheckedShape
+
+-- | Returns a tensor with the same data and number of elements as the input tensor,
+-- but with the specified shape:
+--
+-- >>> g <- generator @('Device 'CPU) 0
+-- >>> (input, _) = randn @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 4)]) g
+-- >>> output = reshape @('Shape '[ 'Dim ('Sized 2), 'Dim ('Sized 2)]) input
+-- >>> :type output
+-- output
+--   :: Tensor
+--        'Dependent
+--        ('Layout 'Dense)
+--        ('Device 'CPU)
+--        ('DataType 'Float)
+--        ('Shape '[ 'Dim ('Sized 2), 'Dim ('Sized 2)])
+--
+-- At the value level, a single dimension may be '-1',
+-- in which case it is inferred from the remaining dimensions and the number of elements in the input:
+--
+-- >>> output' = reshape @('Shape '[ 'UncheckedDim]) (Sized (-1)) output
+-- >>> :type output'
+-- output'
+--   :: Tensor
+--        'Dependent
+--        ('Layout 'Dense)
+--        ('Device 'CPU)
+--        ('DataType 'Float)
+--        'UncheckedShape
+-- >>> shape output'
+-- [Sized 4]
 reshape ::
-  forall shape' requiresGradient layout device dataType shape.
-  ( LiftTypeEqMaybe (NumelF shape') (NumelF shape),
-    WithShapeC shape' (Tensor requiresGradient layout device dataType shape')
+  forall shape' requiresGradient layout device dataType shape shape''.
+  ( shape'' ~ ReshapeF (NumelF shape) (NumelF shape') shape shape',
+    WithShapeC shape' (Tensor requiresGradient layout device dataType shape -> Tensor requiresGradient layout device dataType shape'')
   ) =>
-  Tensor requiresGradient layout device dataType shape ->
-  WithShapeF shape' (Tensor requiresGradient layout device dataType shape')
-reshape input = withShape @shape' @(Tensor requiresGradient layout device dataType shape') $ \shape' ->
+  WithShapeF shape' (Tensor requiresGradient layout device dataType shape -> Tensor requiresGradient layout device dataType shape'')
+reshape = withShape @shape' @(Tensor requiresGradient layout device dataType shape -> Tensor requiresGradient layout device dataType shape'') $ \shape' input ->
   case sizedDims shape' of
     Just sizes -> unsafePerformIO $ cast2 ATen.reshape_tl input sizes
     Nothing -> error $ "Invalid tensor shape specification '" <> show shape' <> "'."

@@ -188,7 +188,6 @@ type family MatmulF (shape :: Shape [Dim (DimType Symbol Nat)]) (shape' :: Shape
 --                ('Device 'CPU)
 --                ('DataType 'Float)
 --                ('Shape '[ 'Dim ('NamedSized "batch" 10), 'Dim ('Sized 5), 'Dim ('Sized 3), 'Dim ('Sized 7)])
---
 matmul ::
   forall requiresGradient layout layout' device device' dataType dataType' shape shape'.
   -- input

@@ -6,7 +6,9 @@ module Torch.GraduallyTyped.Tensor.MathOperations.Pointwise where
 
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (Bool))
-import Torch.GraduallyTyped.DType (DataType (DataType), UnifyDataTypeC)
+import Torch.GraduallyTyped.DType (DataType (DataType), UnifyDataTypeC, UnifyDataTypeF)
+import Torch.GraduallyTyped.Device (UnifyDeviceF)
+import Torch.GraduallyTyped.Layout (UnifyLayoutF)
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape (BroadcastShapesF)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
@@ -86,14 +88,18 @@ acosh = unsafePerformIO . cast1 ATen.acosh_t
 --        ('DataType 'Float)
 --        ('Shape '[ 'Dim ('Sized 4), 'Dim ('NamedSized "feature" 4)])
 add ::
-  forall requiresGradient layout device dataType shape shape' shape''.
-  (shape'' ~ BroadcastShapesF shape shape') =>
+  forall requiresGradient layout layout' device device' dataType dataType' shape shape'.
   -- | input tensor
   Tensor requiresGradient layout device dataType shape ->
   -- | other tensor
-  Tensor requiresGradient layout device dataType shape' ->
+  Tensor requiresGradient layout' device' dataType' shape' ->
   -- | output tensor
-  Tensor requiresGradient layout device dataType shape''
+  Tensor
+    requiresGradient
+    (UnifyLayoutF layout layout')
+    (UnifyDeviceF device device')
+    (UnifyDataTypeF dataType dataType')
+    (BroadcastShapesF shape shape')
 input `add` other = unsafePerformIO $ cast2 ATen.add_tt input other
 
 -- | Adds a scalar 'other' to a tensor 'input':

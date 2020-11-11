@@ -20,10 +20,11 @@ import Control.Monad.State.Strict (MonadState (state), runState)
 import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType)
-import Torch.GraduallyTyped.DType (DataType (..), WithDataTypeC (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType, UnifyDeviceC, WithDeviceC (..))
-import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
+import Torch.GraduallyTyped.DType (DataType (..), UnifyDataTypeF, WithDataTypeC (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType, UnifyDeviceC, UnifyDeviceF, WithDeviceC (..))
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), UnifyLayoutF)
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
+import Torch.GraduallyTyped.NN.Functional.Linear (LinearF, linear)
 import Torch.GraduallyTyped.NN.Initialization (FanMode (..), NonLinearity (..), calculateFan, getter, kaimingUniform)
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
@@ -36,15 +37,15 @@ data
   Linear
     (device :: Device (DeviceType Nat))
     (dataType :: DataType (DType))
-    (inputFeatures :: Dim (DimType Symbol Nat))
-    (outputFeatures :: Dim (DimType Symbol Nat))
+    (inputDim :: Dim (DimType Symbol Nat))
+    (outputDim :: Dim (DimType Symbol Nat))
   where
   Linear ::
-    forall device dataType inputFeatures outputFeatures.
-    { linearWeight :: Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputFeatures, inputFeatures]),
-      linearBias :: Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputFeatures])
+    forall device dataType inputDim outputDim.
+    { linearWeight :: Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]),
+      linearBias :: Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim])
     } ->
-    Linear device dataType inputFeatures outputFeatures
+    Linear device dataType inputDim outputDim
   deriving (Generic)
 
 type HasInitializeLinearC device dataType inputDim outputDim =
@@ -119,14 +120,19 @@ instance
         pure $ Linear weight ((bias `mulScalar` (bound * 2)) `subScalar` bound)
 
 instance
-  () =>
   HasForward
     (Linear device dataType inputFeatures outputFeatures)
-    (Tensor requiresGradient layout device dataType shape)
+    (Tensor requiresGradient' layout' device' dataType' shape')
   where
   type
     ForwardOutput
       (Linear device dataType inputFeatures outputFeatures)
-      (Tensor requiresGradient layout device dataType shape) =
-      Tensor requiresGradient layout device dataType shape
-  forward = undefined
+      (Tensor requiresGradient' layout' device' dataType' shape') =
+      ( Tensor
+          requiresGradient'
+          (UnifyLayoutF (UnifyLayoutF layout' ( 'Layout 'Dense)) ( 'Layout 'Dense))
+          (UnifyDeviceF (UnifyDeviceF device' device) device)
+          (UnifyDataTypeF (UnifyDataTypeF dataType' dataType) dataType)
+          (LinearF ( 'Shape '[outputFeatures, inputFeatures]) ( 'Shape '[outputFeatures]) shape')
+      )
+  forward Linear {..} = linear linearWeight linearBias

@@ -44,8 +44,6 @@ library
                     , Torch.GraduallyTyped.Layout
                     , Torch.GraduallyTyped.Autograd
                     , Torch.GraduallyTyped.Random
-                    , Torch.GraduallyTyped.Functional
-                    , Torch.GraduallyTyped.Functional.Activation
                     , Torch.GraduallyTyped.NN
                     , Torch.GraduallyTyped.NN.Class
                     , Torch.GraduallyTyped.NN.Initialization
@@ -53,6 +51,9 @@ library
                     , Torch.GraduallyTyped.NN.Transformer
                     , Torch.GraduallyTyped.NN.Dropout
                     , Torch.GraduallyTyped.NN.Activation
+                    , Torch.GraduallyTyped.NN.Functional
+                    , Torch.GraduallyTyped.NN.Functional.Activation
+                    , Torch.GraduallyTyped.NN.Functional.Linear
                     , Torch.GraduallyTyped.Internal.TensorOptions
                     , Torch.GraduallyTyped.Internal.Void
                     , Torch

@@ -12,7 +12,7 @@
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Torch.GraduallyTyped.Functional.Activation where
+module Torch.GraduallyTyped.NN.Functional.Activation where
 
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.GraduallyTyped.Tensor(Tensor)

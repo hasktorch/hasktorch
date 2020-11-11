@@ -21,9 +21,12 @@ module Torch.GraduallyTyped.Prelude
     KnownList (..),
     Assert,
     Catch,
+    Seq,
     Fst,
     Snd,
     Elem,
+    Head,
+    Tail,
     Contains,
     FromMaybe,
     FstMaybe,
@@ -101,6 +104,10 @@ type family Catch (a :: k) :: Constraint where
   Catch (f a) = (Catch f, Catch a)
   Catch _  = ()
 
+type family Seq (a :: k) (b :: k') :: k' where
+  Seq (f a) b = Seq (Seq f a) b
+  Seq _ b = b
+
 -- | Returns the first element of a type-level tuple with the kind @(k, k')@ marked by a prefix quote.
 --
 -- >>> :kind! Fst '(Int, String)
@@ -138,6 +145,14 @@ type family Elem (e :: t) (es :: [t]) :: Bool where
   Elem _ '[] = 'False
   Elem x (x ': _) = 'True
   Elem x (_ ': xs) = Elem x xs
+
+type family Head (xs :: [a]) :: Maybe a where
+  Head '[] = 'Nothing
+  Head (x ': _) = 'Just x
+
+type family Tail (xs :: [a]) :: Maybe [a] where
+  Tail '[] = 'Nothing
+  Tail (_ ': xs) = 'Just xs 
 
 type family ReverseImplF (xs :: [a]) (acc :: [a]) :: [a] where
   ReverseImplF '[] acc = acc
