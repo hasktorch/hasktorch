@@ -23,7 +23,7 @@ let
   haskellNix = (import sources.haskell-nix { inherit system sourcesOverride; }).nixpkgsArgs;
   # use our own nixpkgs if it exist in our sources,
   # otherwise use iohkNix default nixpkgs.
-  nixpkgs = sources.nixpkgs-2003 or
+  nixpkgs = sources.nixpkgs-2009 or
     (builtins.trace "Using IOHK default nixpkgs" iohKNix.nixpkgs);
 
   # for inclusion in pkgs:
@@ -37,14 +37,14 @@ let
           hackageSrc = sources.hackage-nix;
           stackageSrc = sources.stackage-nix;
           custom-tools = pkgsOld.haskell-nix.custom-tools // {
-            haskell-language-server."0.5.0" = args:
+            haskell-language-server."0.6.0" = args:
               let
                 project = pkgsOld.haskell-nix.project' (args // {
                   src = pkgsOld.evalPackages.fetchgit {
                     url = "https://github.com/haskell/haskell-language-server.git";
                     fetchSubmodules = true;
-                    rev = "14497f2503a2a0d389fabf3b146d674b9af41a34";
-                    sha256 = "0vkh5ff6l5wr4450xmbki3cfhlwf041fjaalnwmj7zskd72s9p7p";
+                    rev = "372a12e797069dc3ac4fa33dcaabe3b992999d7c";
+                    sha256 = "0vkh6ff6l5wr4450xmbki3cfhlwf041fjaalnwmj7zskd72s9p7p";
                   };
                   projectFileName = "cabal.project";
                   sha256map = {
