@@ -15,31 +15,31 @@ VERSION=1.7.0
 
 if ! command -v unzip &> /dev/null
 then
-    echo "unzip could not be found. Please install unzip (`sudo apt install unzip` for ubuntu systems)"
+    echo "unzip could not be found. Please install unzip ("sudo apt install unzip" for ubuntu systems)"
     exit
 fi
 
 if ! command -v wget &> /dev/null
 then
-    echo "wget could not be found. Please install wget (`sudo apt install wget` for ubuntu systems)"
+    echo "wget could not be found. Please install wget ("sudo apt install wget" for ubuntu systems)"
     exit
 fi
 
 if ! command -v git &> /dev/null
 then
-    echo "git could not be found. Please install git (`sudo apt install git-all` for ubuntu systems)"
+    echo "git could not be found. Please install git ("sudo apt install git-all" for ubuntu systems)"
     exit
 fi
 
 if ! command -v sed &> /dev/null
 then
-    echo "sed could not be found. Please install git (`sudo apt install sed` for ubuntu systems)"
+    echo "sed could not be found. Please install git ("sudo apt install sed" for ubuntu systems)"
     exit
 fi
 
 if ! command -v python &> /dev/null
 then
-    echo "python could not be found. Please install python (`sudo apt install python3.6` for ubuntu systems)"
+    echo "python could not be found. Please install python ("sudo apt install python3.6" for ubuntu systems)"
     exit
 fi
 
