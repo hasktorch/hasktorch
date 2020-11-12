@@ -21,3 +21,5 @@ examples/alexNet/images
 examples/iris-classification/data/iris.data
 examples/mnist
 examples/data
+deps/pytorch
+spec/Declarations.yaml
