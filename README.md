@@ -109,7 +109,45 @@ $ cabal run static-mnist-cnn    # Run the MNIST CNN example.
 ```
 
 
-### macos+cabal+cpu
+### macos+stack+cpu
+
+TODO
+
+Starting from the top-level directory of the project, run:
+
+```sh
+$ pushd deps     # Change to the deps directory and save the current directory.
+$ ./get-deps.sh  # Run the shell script to retrieve the libtorch dependencies.
+$ popd           # Go back to the root directory of the project.
+$ source setenv  # Set the shell environment to reference the shared library locations.
+```
+
+To build and test the Hasktorch library, run:
+
+```sh
+$ stack build hasktorch  # Build the Hasktorch library.
+$ stack test hasktorch   # Build and run the Hasktorch library test suite.
+```
+
+To build and test the example executables shipped with hasktorch, run:
+
+```sh
+$ stack build examples  # Build the Hasktorch examples.
+$ stack test examples   # Build and run the Hasktorch example test suites.
+```
+
+To run the MNIST CNN example, run:
+
+```sh
+$ cd examples                   # Change to the examples directory.
+$ ./datasets/download-mnist.sh  # Download the MNIST dataset.
+$ mv mnist data                 # Move the MNIST dataset to the data directory.
+$ export DEVICE=cpu             # Set device to CPU for the MNIST CNN example.
+$ stackrun static-mnist-cnn    # Run the MNIST CNN example.
+```
+
+
+### linux+cabal+cpu
 
 Starting from the top-level directory of the project, run:
 
@@ -143,6 +181,7 @@ $ mv mnist data                 # Move the MNIST dataset to the data directory.
 $ export DEVICE=cpu             # Set device to CPU for the MNIST CNN example.
 $ cabal run static-mnist-cnn    # Run the MNIST CNN example.
 ```
+
 
 
 ### nixos+cabal+cpu

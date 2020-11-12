@@ -43,6 +43,13 @@ then
     exit
 fi
 
+if ! command -v pip &> /dev/null
+then
+    echo "pip could not be found. Please install python ("sudo apt install python3-pip" for ubuntu systems)"
+    exit
+fi
+
+
 usage_exit() {
     echo "Usage: $0 [-n] [-c] [-a "cpu" or "cu92" or "cu101" or "cu102" or "cu110"] [-s]" 1>&2
     echo " -n # Use nightly libtorch w/  -l" 1>&2
