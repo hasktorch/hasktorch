@@ -45,7 +45,7 @@ fi
 
 if ! command -v pip &> /dev/null
 then
-    echo "pip could not be found. Please install python ("sudo apt install python3-pip" for ubuntu systems)"
+    echo "pip could not be found. Please install python ("sudo apt install python-pip" for ubuntu systems)"
     exit
 fi
 

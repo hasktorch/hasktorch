@@ -33,6 +33,8 @@ They assume the hasktorch repository has just been cloned.
 * [linux+cabal+cpu](#linuxcabalcpu)
 * [linux+cabal+cuda11](#linuxcabalcuda11)
 * [macos+cabal+cpu](#macoscabalcpu)
+* [linux+stack+cpu](#linuxstackcpu)
+* [macos+stack+cpu](#macosstackcpu)
 * [nixos+cabal+cpu](#nixoscabalcpu)
 * [nixos+cabal+cuda11](#nixoscabalcuda11)
 
@@ -42,10 +44,11 @@ They assume the hasktorch repository has just been cloned.
 Starting from the top-level directory of the project, run:
 
 ```sh
-$ pushd deps     # Change to the deps directory and save the current directory.
-$ ./get-deps.sh  # Run the shell script to retrieve the libtorch dependencies.
-$ popd           # Go back to the root directory of the project.
-$ source setenv  # Set the shell environment to reference the shared library locations.
+$ pushd deps       # Change to the deps directory and save the current directory.
+$ ./get-deps.sh    # Run the shell script to retrieve the libtorch dependencies.
+$ popd             # Go back to the root directory of the project.
+$ source setenv    # Set the shell environment to reference the shared library locations.
+$ ./setup-cabal.sh # Create a cabal project file
 ```
 
 To build and test the Hasktorch library, run:
@@ -82,6 +85,7 @@ $ pushd deps             # Change to the deps directory and save the current dir
 $ ./get-deps.sh -a cu11  # Run the shell script to retrieve the libtorch dependencies.
 $ popd                   # Go back to the root directory of the project.
 $ source setenv          # Set the shell environment to reference the shared library locations.
+$ ./setup-cabal.sh       # Create a cabal project file
 ```
 
 To build and test the Hasktorch library, run:
@@ -109,9 +113,47 @@ $ cabal run static-mnist-cnn    # Run the MNIST CNN example.
 ```
 
 
-### macos+stack+cpu
+### macos+cabal+cpu
 
-TODO
+Starting from the top-level directory of the project, run:
+
+```sh
+$ pushd deps       # Change to the deps directory and save the current directory.
+$ ./get-deps.sh    # Run the shell script to retrieve the libtorch dependencies.
+$ popd             # Go back to the root directory of the project.
+$ source setenv    # Set the shell environment to reference the shared library locations.
+$ ./setup-cabal.sh # Create a cabal project file
+```
+
+To build and test the Hasktorch library, run:
+
+```sh
+$ cabal build hasktorch  # Build the Hasktorch library.
+$ cabal test hasktorch   # Build and run the Hasktorch library test suite.
+```
+
+To build and test the example executables shipped with hasktorch, run:
+
+```sh
+$ cabal build examples  # Build the Hasktorch examples.
+$ cabal test examples   # Build and run the Hasktorch example test suites.
+```
+
+To run the MNIST CNN example, run:
+
+```sh
+$ cd examples                   # Change to the examples directory.
+$ ./datasets/download-mnist.sh  # Download the MNIST dataset.
+$ mv mnist data                 # Move the MNIST dataset to the data directory.
+$ export DEVICE=cpu             # Set device to CPU for the MNIST CNN example.
+$ cabal run static-mnist-cnn    # Run the MNIST CNN example.
+```
+
+
+
+### linux+stack+cpu
+
+Install the Haskell Tool Stack if you haven't already, following [instructions here](https://docs.haskellstack.org/en/stable/README/)
 
 Starting from the top-level directory of the project, run:
 
@@ -143,11 +185,12 @@ $ cd examples                   # Change to the examples directory.
 $ ./datasets/download-mnist.sh  # Download the MNIST dataset.
 $ mv mnist data                 # Move the MNIST dataset to the data directory.
 $ export DEVICE=cpu             # Set device to CPU for the MNIST CNN example.
-$ stackrun static-mnist-cnn    # Run the MNIST CNN example.
+$ stack run static-mnist-cnn     # Run the MNIST CNN example.
 ```
 
+### macos+stack+cpu
 
-### linux+cabal+cpu
+Install the Haskell Tool Stack if you haven't already, following [instructions here](https://docs.haskellstack.org/en/stable/README/)
 
 Starting from the top-level directory of the project, run:
 
@@ -161,15 +204,15 @@ $ source setenv  # Set the shell environment to reference the shared library loc
 To build and test the Hasktorch library, run:
 
 ```sh
-$ cabal build hasktorch  # Build the Hasktorch library.
-$ cabal test hasktorch   # Build and run the Hasktorch library test suite.
+$ stack build hasktorch  # Build the Hasktorch library.
+$ stack test hasktorch   # Build and run the Hasktorch library test suite.
 ```
 
 To build and test the example executables shipped with hasktorch, run:
 
 ```sh
-$ cabal build examples  # Build the Hasktorch examples.
-$ cabal test examples   # Build and run the Hasktorch example test suites.
+$ stack build examples  # Build the Hasktorch examples.
+$ stack test examples   # Build and run the Hasktorch example test suites.
 ```
 
 To run the MNIST CNN example, run:
@@ -179,7 +222,7 @@ $ cd examples                   # Change to the examples directory.
 $ ./datasets/download-mnist.sh  # Download the MNIST dataset.
 $ mv mnist data                 # Move the MNIST dataset to the data directory.
 $ export DEVICE=cpu             # Set device to CPU for the MNIST CNN example.
-$ cabal run static-mnist-cnn    # Run the MNIST CNN example.
+$ stack run static-mnist-cnn     # Run the MNIST CNN example.
 ```
 
 
@@ -223,6 +266,7 @@ $ mv mnist data                 # Move the MNIST dataset to the data directory.
 $ export DEVICE=cpu             # Set device to CPU for the MNIST CNN example.
 $ cabal run static-mnist-cnn    # Run the MNIST CNN example.
 ```
+
 
 
 ### nixos+cabal+cuda11
