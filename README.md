@@ -4,15 +4,21 @@ Hasktorch is a library for tensors and neural networks in Haskell.
 It is an independent open source community project which leverages the core C++ libraries shared by PyTorch.
 
 This project is in active development, so expect changes to the library API as it evolves.
-We would like to invite new users to join our Hasktorch slack space for questions and discussions.
+We would like to invite new users to [join our Hasktorch slack space](#contributing) for questions and discussions. [Contributions/PR are encouraged](#contributing).
 
-Contributions/PR are encouraged (see Contributing).
+Currently we are developing the second major release of Hasktorch (0.2). Note the 1st release, Hasktorch 0.1, on hackage is outdated and _should not_ be used.
 
-Currently we are prepping development and migration for a major 2nd release, Hasktorch 0.2.
-The 1st release, Hasktorch 0.1, that you can find on hackage is outdated and should not be used at this point.
+## Documentation
 
+The documentation is divided into several sections:
 
-## Talks
+- [Introductory Videos](#introductory-videos)
+- [Getting Started](#getting-started)
+- [Known Issues](#known-issues)
+- [Contributing](#contributing)
+- [Notes for Library Developers](#notes-for-library-developers)
+
+## Introductory Videos
 
 - [High-level MuniHac talk](https://www.youtube.com/watch?v=Qu6RIO02m1U&t=360) by [@austinvhuang][austin-twitter]
 - [Hands-on live-coding demo](https://www.youtube.com/watch?v=ZnYa99QoznE&t=1689) by [@tscholak][torsten-twitter]
@@ -271,12 +277,11 @@ You can send an email to [hasktorch@gmail.com][email] or on twitter as [@austinv
 [slack]:https://hasktorch.slack.com
 [gitter-dh]:https://gitter.im/dataHaskell/Lobby
 
-## Developer Information
+## Notes for library developers
 
-See [the wiki](https://github.com/hasktorch/hasktorch/wiki) for developer information.
+See [the wiki](https://github.com/hasktorch/hasktorch/wiki) for developer notes.
 
-
-### Project Structure
+### Project Folder Structure
 
 Basic functionality:
 
