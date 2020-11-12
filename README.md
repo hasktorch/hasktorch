@@ -24,11 +24,11 @@ The 1st release, Hasktorch 0.1, that you can find on hackage is outdated and sho
 The following steps will get you started.
 They assume the hasktorch repository has just been cloned.
 
-* [linux+cabal+cpu](#linux+cabal+cpu)
-* [linux+cabal+cuda11](#linux+cabal+cuda11)
-* [macos+cabal+cpu](#macos+cabal+cpu)
-* [nixos+cabal+cpu](#nixos+cabal+cpu)
-* [nixos+cabal+cuda11](#nixos+cabal+cuda11)
+* [linux+cabal+cpu](#linuxcabalcpu)
+* [linux+cabal+cuda11](#linuxcabalcuda11)
+* [macos+cabal+cpu](#macoscabalcpu)
+* [nixos+cabal+cpu](#nixoscabalcpu)
+* [nixos+cabal+cuda11](#nixoscabalcuda11)
 
 
 ### linux+cabal+cpu
