@@ -118,6 +118,10 @@ echo "Generate ATen files."
 
 if [ ! -e pytorch ] ; then
     git clone https://github.com/pytorch/pytorch.git
+else
+    pushd pytorch
+    git pull origin v$VERSION
+    popd
 fi
 
 pushd pytorch
