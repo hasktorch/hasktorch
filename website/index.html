@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <link rel="icon" href="../../../../favicon.ico" />
+
+    <title>Hasktorch</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet" />
+    <link href="carousel.css" rel="stylesheet" />
+  </head>
+
+  <body>
+    <header>
+      <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+        <a class="navbar-brand" href="#">Hasktorch</a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-toggle="collapse"
+          data-target="#navbarCollapse"
+          aria-controls="navbarCollapse"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarCollapse">
+          <!-- <ul class="navbar-nav mr-auto"> -->
+          <ul class="navbar-nav ml-auto">
+            <li class="nav-item active">
+              <a class="nav-link" href="#"
+                >Home <span class="sr-only">(current)</span></a
+              >
+            </li>
+            <!-- <li class="nav-item">
+            <a class="nav-link" href="getting_started.html">Getting Started</a>
+          </li> -->
+            <li class="nav-item">
+              <a class="nav-link" href="docs.html">API Reference</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="http://github.com/hasktorch/hasktorch/"
+                >Github</a
+              >
+            </li>
+          </ul>
+        </div>
+      </nav>
+    </header>
+
+    <main role="main">
+      <div id="myCarousel" class="carousel slide" data-ride="carousel">
+        <div class="carousel-inner">
+          <div class="carousel-item active">
+            <div class="container">
+              <div class="carousel-caption text-center">
+                <img src="img/hasktorch.png" width="500px" />
+                <h1>Hasktorch</h1>
+                <p>Functional Differentiable Programming in Haskell.</p>
+                <p>
+                  <a
+                    class="btn btn-lg btn-secondary"
+                    href="#learn_more"
+                    role="button"
+                    >Learn More</a
+                  >
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Marketing messaging and featurettes
+      ================================================== -->
+      <!-- Wrap the rest of the page in another container to center all the content. -->
+
+      <a id="learn_more"></a>
+      <div class="container marketing" id="learn_more">
+        <!-- Three columns of text below the carousel -->
+        <div class="row">
+          <div class="col-lg-4">
+            <iframe
+              width="300"
+              src="https://www.youtube.com/embed/Qu6RIO02m1U"
+              frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+            ></iframe>
+            <br />
+            High-level library overview
+          </div>
+          <!-- /.col-lg-4 -->
+          <div class="col-lg-4">
+            <iframe
+              width="300"
+              src="https://www.youtube.com/embed/ZnYa99QoznE?start=1831"
+              frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+            ></iframe>
+            <br />
+            Typed neural networks live demo
+          </div>
+          <!-- /.col-lg-4 -->
+          <div class="col-lg-4">
+            <iframe
+              width="300"
+              src="https://www.youtube.com/embed/qWpD8t_Aodk?start=1831"
+              frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+            ></iframe>
+            <br />
+            Library internals
+          </div>
+          <!-- /.col-lg-4 -->
+        </div>
+        <!-- /.row -->
+
+        <!-- START THE FEATURETTES -->
+
+        <hr class="featurette-divider" />
+
+        <div class="row featurette">
+          <div class="col-md-7">
+            <h2 class="featurette-heading">
+              Functional
+              <span class="text-muted">differentiable programming </span>
+              <p class="lead"></p>
+            </h2>
+
+            <p class="lead">
+              Hasktorch is a Haskell library for tensor math and neural networks
+              using typed functional programming. Use algebraic data types to
+              represent models, function composition to build neural network
+              computations, generics to automate boilerplate, or optionally
+              type-level computations to type neural network dimensions.
+            </p>
+          </div>
+          <div class="col-md-5">
+            <img
+              src="img/haskell.png"
+              width="500px"
+              class="featurette-image img-fluid mx-auto"
+              data-src="holder.js/500x500/auto"
+              alt="Haskell logo"
+            />
+          </div>
+        </div>
+
+        <hr class="featurette-divider" />
+
+        <div class="row featurette">
+          <div class="col-md-7 order-md-2">
+            <h2 class="featurette-heading">
+              Powered by<span class="text-muted"> libtorch</span>
+            </h2>
+            <p class="lead">
+              libtorch is the C++ library underlying
+              <a href="https://pytorch.org">PyTorch</a>, a powerful neural
+              network library for Python. Hasktorch uses code generated bindings
+              to make all libtorch functions available in Haskell including GPU
+              support and automatic differentiation.
+            </p>
+          </div>
+          <div class="col-md-5 order-md-1">
+            <img
+              src="img/pytorch.png"
+              width="300px"
+              class="featurette-image img-fluid mx-auto"
+              data-src="holder.js/500x500/auto"
+              alt="PyTorch logo"
+            />
+          </div>
+        </div>
+
+        <hr class="featurette-divider" />
+
+        <div class="row featurette">
+          <div class="col-md-7">
+            <h2 class="featurette-heading">
+              Join <span class="text-muted">the community</span>
+            </h2>
+            <p class="lead">
+              Join us in bringing together typed functional programming and
+              machine learning. Email
+              <a href="mailto:hasktorch@gmail.com">hasktorch@gmail.com</a> for a
+              slack invite. Visit the
+              <a href="http://github.com/hasktorch/hasktorch/"
+                >hasktorch github</a
+              >
+              to get started.
+            </p>
+          </div>
+          <div class="col-md-5">
+            <img
+              src="img/hasktorch.png"
+              class="featurette-image img-fluid mx-auto"
+              data-src="holder.js/500x500/auto"
+              alt="Hasktorch logo"
+            />
+          </div>
+        </div>
+
+        <hr class="featurette-divider" />
+
+        <!-- /END THE FEATURETTES -->
+      </div>
+      <!-- /.container -->
+
+      <!-- FOOTER -->
+      <footer class="container">
+        <p class="float-right"><a href="#">Back to top</a></p>
+        <p>&copy; 2020 hasktorch.org</p>
+      </footer>
+    </main>
+
+    <script
+      src="https://code.jquery.com/jquery-3.2.1.min.js"
+      integrity="sha384-xBuQ/xzmlsLoJpyjoggmTEz8OWUFM0/RC5BsqQBDX2v5cMvDHcMakNTNrHIW2I5f"
+      crossorigin="anonymous"
+    ></script>
+
+    <script>
+      window.jQuery ||
+        document.write(
+          '<script src="../../../../assets/js/vendor/jquery-slim.min.js"><\/script>'
+        );
+    </script>
+    <script src="js/bootstrap.min.js"></script>
+
+    <script>
+      // smooth scrolling
+      $(document).ready(function () {
+        $("a").on("click", function (event) {
+          if (this.hash !== "") {
+            event.preventDefault();
+            var hash = this.hash;
+            $("html, body").animate(
+              {
+                scrollTop: $(hash).offset().top,
+              },
+              400,
+              function () {
+                // window.location.hash = hash;
+              }
+            );
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
