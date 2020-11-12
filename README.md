@@ -1,4 +1,4 @@
-# Hasktorch 0.2 Pre-Release
+# Hasktorch
 
 Hasktorch is a library for tensors and neural networks in Haskell.
 It is an independent open source community project which leverages the core C++ libraries shared by PyTorch.
@@ -20,7 +20,7 @@ The documentation is divided into several sections:
 
 ## Introductory Videos
 
-- [High-level MuniHac talk](https://www.youtube.com/watch?v=Qu6RIO02m1U&t=360) by [@austinvhuang][austin-twitter]
+- [High-level MuniHac talk](https://www.youtube.com/watch?v=Qu6RIO02m1U) by [@austinvhuang][austin-twitter]
 - [Hands-on live-coding demo](https://www.youtube.com/watch?v=ZnYa99QoznE&t=1689) by [@tscholak][torsten-twitter]
 - [Low-level FFI talk](https://www.youtube.com/watch?v=qWpD8t_Aodk&feature=youtu.be) by [@junjihashimoto][junji-twitter]
 
