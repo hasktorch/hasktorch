@@ -1340,12 +1340,19 @@ geqrf input = unsafePerformIO $ ATen.cast1 ATen.Managed.geqrf_t input
 -- See the LAPACK documentation for `?orgqr` for further details,
 -- https://software.intel.com/en-us/mkl-developer-reference-c-orgqr.
 --
--- >>> dtype &&& shape $ orgqr (ones :: CPUTensor 'D.Float '[3,4]) (ones :: CPUTensor 'D.Float '[3])
--- (Float,[3,4])
+-- When libtorch-1.7, this function behavior is changed.
+-- First dimention should be greater than second dimention.
+--
+-- >>> dtype &&& shape $ orgqr (ones :: CPUTensor 'D.Float '[4,3]) (ones :: CPUTensor 'D.Float '[3])
+-- (Float,[4,3])
 orgqr ::
   forall m n dtype device.
+  ( KnownNat n,
+    KnownNat m,
+    n <= m
+  ) =>
   Tensor device dtype '[m, n] ->
-  Tensor device dtype '[Min m n] ->
+  Tensor device dtype '[n] ->
   Tensor device dtype '[m, n]
 orgqr a tau = unsafePerformIO $ ATen.cast2 ATen.Managed.orgqr_tt a tau
 
@@ -1828,35 +1835,6 @@ addmv ::
   Tensor device dtype shape'
 addmv beta alpha mat vec input = unsafePerformIO $ ATen.cast5 ATen.Managed.addmv_tttss input mat vec beta alpha
 
--- | addr
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
--- TODO: can we use D.Scalar for beta and alpha?
---
--- >>> t = addr 1 1 (ones :: CPUTensor 'D.Float '[3]) (zeros :: CPUTensor 'D.Float '[2]) (ones :: CPUTensor 'D.Float '[])
--- >>> dtype &&& shape $ t
--- (Float,[3,2])
--- >>> :t t
--- t :: Tensor '( 'D.CPU, 0) 'D.Float '[3, 2]
-addr ::
-  forall shape' shape n m dtype device.
-  ( KnownNat n,
-    KnownNat m,
-    shape' ~ Broadcast shape '[n, m]
-  ) =>
-  -- | beta
-  Float ->
-  -- | alpha
-  Float ->
-  -- | first input vector
-  Tensor device dtype '[n] ->
-  -- | second input vector
-  Tensor device dtype '[m] ->
-  -- | input tensor
-  Tensor device dtype shape ->
-  -- | output tensor
-  Tensor device dtype shape'
-addr beta alpha vec1 vec2 input = unsafePerformIO $ ATen.cast5 ATen.Managed.addr_tttss input vec1 vec2 beta alpha
-
 -- affine_grid_generator :: Tensor device dtype shape -> [Int] -> Tensor device dtype shape
 -- affine_grid_generator _theta _size = unsafePerformIO $ (ATen.cast2 ATen.Managed.affine_grid_generator_tl) _theta _size
 
@@ -1893,10 +1871,10 @@ allclose rtol atol equalNaN input other =
 -- (Int64,([4,1],[[1],[1],[1],[0]]))
 --
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Int]) $ argmax @0 @DropDim t
--- (Int64,([2],[3,1]))
+-- (Int64,([2],[0,1]))
 --
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Int]]) $ argmax @0 @KeepDim t
--- (Int64,([1,2],[[3,1]]))
+-- (Int64,([1,2],[[0,1]]))
 argmax ::
   forall dim keepOrDropDim shape' shape dtype device.
   ( KnownNat dim,

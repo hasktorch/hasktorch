@@ -14,7 +14,7 @@
 }:
 
 # assert that the correct cuda versions are used
-assert cudaSupport -> (cudaMajorVersion == "9" || cudaMajorVersion == "10");
+assert cudaSupport -> (cudaMajorVersion == "9" || cudaMajorVersion == "10" || cudaMajorVersion == "11");
 
 let
   sources = import ./sources.nix { inherit pkgs; }
@@ -37,18 +37,19 @@ let
           hackageSrc = sources.hackage-nix;
           stackageSrc = sources.stackage-nix;
           custom-tools = pkgsOld.haskell-nix.custom-tools // {
-            haskell-language-server."0.5.0" = args:
+            haskell-language-server."0.6.0" = args:
               let
                 project = pkgsOld.haskell-nix.project' (args // {
                   src = pkgsOld.evalPackages.fetchgit {
                     url = "https://github.com/haskell/haskell-language-server.git";
                     fetchSubmodules = true;
-                    rev = "14497f2503a2a0d389fabf3b146d674b9af41a34";
-                    sha256 = "0vkh5ff6l5wr4450xmbki3cfhlwf041fjaalnwmj7zskd72s9p7p";
+                    rev = "372a12e797069dc3ac4fa33dcaabe3b992999d7c";
+                    sha256 = "027fq6752024wzzq9izsilm5lkq9gmpxf82rixbimbijw0yk4pwj";
                   };
                   projectFileName = "cabal.project";
                   sha256map = {
                     "https://github.com/bubba/brittany.git"."c59655f10d5ad295c2481537fc8abf0a297d9d1c" = "1rkk09f8750qykrmkqfqbh44dbx1p8aq1caznxxlw8zqfvx39cxl";
+                    "https://github.com/bubba/hie-bios.git"."cec139a1c3da1632d9a59271acc70156413017e7" = "1iqk55jga4naghmh8zak9q7ssxawk820vw8932dhympb767dfkha";
                   };
                   cabalProjectLocal = ''
                     allow-newer: diagrams-svg:base, monoid-extras:base, svg-builder:base,
@@ -82,6 +83,14 @@ let
           }
         else if cudaSupport && cudaMajorVersion == "10" then
           let libtorch = libtorchSrc.libtorch_cudatoolkit_10_2; in
+          {
+            c10 = libtorch;
+            torch = libtorch;
+            torch_cpu = libtorch;
+            torch_cuda = libtorch;
+          }
+        else if cudaSupport && cudaMajorVersion == "11" then
+          let libtorch = libtorchSrc.libtorch_cudatoolkit_11_0; in
           {
             c10 = libtorch;
             torch = libtorch;

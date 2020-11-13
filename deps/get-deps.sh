@@ -7,10 +7,53 @@
 
 set -eu
 
+USE_NIGHTLY=0
+USE_BINARY_FOR_CI=0
+COMPUTE_ARCH=cpu
+SKIP_DOWNLOAD=0
+VERSION=1.7.0
+
+if ! command -v unzip &> /dev/null
+then
+    echo "unzip could not be found. Please install unzip ("sudo apt install unzip" for ubuntu systems)"
+    exit
+fi
+
+if ! command -v wget &> /dev/null
+then
+    echo "wget could not be found. Please install wget ("sudo apt install wget" for ubuntu systems)"
+    exit
+fi
+
+if ! command -v git &> /dev/null
+then
+    echo "git could not be found. Please install git ("sudo apt install git-all" for ubuntu systems)"
+    exit
+fi
+
+if ! command -v sed &> /dev/null
+then
+    echo "sed could not be found. Please install git ("sudo apt install sed" for ubuntu systems)"
+    exit
+fi
+
+if ! command -v python &> /dev/null
+then
+    echo "python could not be found. Please install python ("sudo apt install python3.6" for ubuntu systems)"
+    exit
+fi
+
+if ! command -v pip &> /dev/null
+then
+    echo "pip could not be found. Please install python ("sudo apt install python-pip" for ubuntu systems)"
+    exit
+fi
+
+
 usage_exit() {
-    echo "Usage: $0 [-n] [-c] [-a "cpu" or "cu92" or "cu101" or "cu102"] [-s]" 1>&2
+    echo "Usage: $0 [-n] [-c] [-a "cpu" or "cu92" or "cu101" or "cu102" or "cu110"] [-s]" 1>&2
     echo " -n # Use nightly libtorch w/  -l" 1>&2
-    echo "    # Use libtorch-1.6.0   w/o -l" 1>&2
+    echo "    # Use libtorch-$(VERSION)  w/o -l" 1>&2
     echo "" 1>&2
     echo " -c # Download libtorch from hasktorch's site w/ -c" 1>&2
     echo "    # Download libtorch from pytorch's site w/o  -c" 1>&2
@@ -19,18 +62,13 @@ usage_exit() {
     echo " -a cu92  # Use CUDA-9" 1>&2
     echo " -a cu101 # Use CUDA-10.1" 1>&2
     echo " -a cu102 # Use CUDA-10.2" 1>&2
+    echo " -a cu110 # Use CUDA-11" 1>&2
     echo "" 1>&2
     echo " -s # Skip download" 1>&2
     echo "" 1>&2
     echo " -h # Show this help" 1>&2
     exit 1
 }
-
-USE_NIGHTLY=0
-USE_BINARY_FOR_CI=0
-COMPUTE_ARCH=cpu
-SKIP_DOWNLOAD=0
-VERSION=1.6.0
 
 while getopts nca:sh OPT
 do
@@ -93,6 +131,7 @@ if [ "$SKIP_DOWNLOAD" = 0 ] ; then
 	      "cu92" ) URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcu92.zip ;;
 	      "cu101" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcu101.zip ;;
 	      "cu102" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip ;;
+	      "cu110" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcu110.zip ;;
 	esac
 	wget -O libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip "$URL"
         unzip libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip
@@ -116,34 +155,37 @@ echo "Generate ATen files."
 
 if [ ! -e pytorch ] ; then
     git clone https://github.com/pytorch/pytorch.git
+else
+    pushd pytorch
+    git pull origin v$VERSION
+    popd
 fi
 
 pushd pytorch
-git checkout v1.6.0
+git checkout v$VERSION
 
 if [[ ! -d build ]]; then
 mkdir build
 fi
 
-PIP=pip
-if ! (pip --version | grep "python 2") ;then
-    PIP=pip3
-fi
-$PIP install --user pyyaml
 
 PYTHON=python
 if ! (python --version | grep "Python 2") ;then
     PYTHON=python3
 fi
 
-$PYTHON aten/src/ATen/gen.py \
-  -s aten/src/ATen \
-  -d build/aten/src/ATen \
-  aten/src/ATen/Declarations.cwrap \
-  aten/src/THCUNN/generic/THCUNN.h \
-  aten/src/ATen/nn.yaml \
-  aten/src/ATen/native/native_functions.yaml
+if ! ($PYTHON -c 'import yaml') ; then
+    $PYTHON -m pip install --user pyyaml
+fi
 
+if ! ($PYTHON -c 'import dataclasses') ; then
+    $PYTHON -m pip install --user dataclasses
+fi
+
+# See https://github.com/pytorch/pytorch/blob/master/.circleci/scripts/cpp_doc_push_script.sh
+$PYTHON -m tools.codegen.gen \
+        -s aten/src/ATen \
+        -d build/aten/src/ATen
 
 # Sanitize "name: n" fields to be strings rather than booleans in Declarations.yaml
 

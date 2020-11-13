@@ -1,54 +1,51 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Torch.Tensor where
 
-import Control.Monad (forM_, forM)
 import Control.Exception.Safe (throwIO)
-import GHC.Generics
-import Foreign.ForeignPtr
-import Foreign.Ptr
-import Foreign.Storable
-import Foreign.C.Types
-import System.IO.Unsafe
+import Control.Monad (forM, forM_)
 import Data.Int (Int16, Int64)
-import Data.Word (Word8)
 import Data.List (intercalate)
 import Data.Proxy
 import Data.Reflection
 import qualified Data.Vector as V
+import Data.Word (Word8)
+import Foreign.C.Types
+import Foreign.ForeignPtr
+import Foreign.Ptr
+import Foreign.Storable
+import GHC.Generics
 import Numeric
-
+import System.IO.Unsafe
+import Torch.DType
+import Torch.Device
 import Torch.Internal.Cast
-import Torch.Internal.Class (Castable(..), CppTuple2(..), CppTuple3(..), CppTuple4(..))
-import qualified Torch.Internal.Unmanaged.Type.Tensor as Unmanaged (tensor_data_ptr)
+import Torch.Internal.Class (Castable (..), CppTuple2 (..), CppTuple3 (..), CppTuple4 (..))
+import qualified Torch.Internal.Const as ATen
+import qualified Torch.Internal.Managed.Cast as ATen
+import qualified Torch.Internal.Managed.Native as ATen
+import qualified Torch.Internal.Managed.TensorFactories as LibTorch
 import qualified Torch.Internal.Managed.Type.Context as ATen
-import qualified Torch.Internal.Managed.Type.Tensor as ATen
-import qualified Torch.Internal.Managed.Type.TensorOptions as ATen
-import qualified Torch.Internal.Managed.Type.TensorIndex as ATen
 import qualified Torch.Internal.Managed.Type.StdArray as ATen
 import qualified Torch.Internal.Managed.Type.StdString as ATen
-import qualified Torch.Internal.Managed.Native as ATen
-import qualified Torch.Internal.Managed.Cast as ATen
+import qualified Torch.Internal.Managed.Type.Tensor as ATen
+import qualified Torch.Internal.Managed.Type.TensorIndex as ATen
+import qualified Torch.Internal.Managed.Type.TensorOptions as ATen
 import qualified Torch.Internal.Type as ATen
-import qualified Torch.Internal.Const as ATen
-import qualified Torch.Internal.Managed.TensorFactories as LibTorch
-
-import Torch.Device
-import Torch.DType
+import qualified Torch.Internal.Unmanaged.Type.Tensor as Unmanaged (tensor_data_ptr)
 import Torch.TensorOptions
-
 
 type ATenTensor = ForeignPtr ATen.Tensor
 
@@ -64,34 +61,44 @@ instance Castable Tensor ATenTensor where
 --------------------------------------------------------------------------------
 
 -- | Returns the total number of elements in the input tensor.
-numel 
- :: Tensor -- ^ input 
- -> Int -- ^ number of elements in tensor
+numel ::
+  -- | input
+  Tensor ->
+  -- | number of elements in tensor
+  Int
 numel t = unsafePerformIO $ cast1 ATen.tensor_numel $ t
 
 -- | Returns the size of a given dimension of the input tensor.
-size
- :: Int -- ^ dimension
- -> Tensor -- ^ input 
- -> Int
+size ::
+  -- | dimension
+  Int ->
+  -- | input
+  Tensor ->
+  Int
 size dim t = unsafePerformIO $ (cast2 ATen.tensor_size_l) t dim
 
 -- | Returns the shape of the tensor
-shape 
- :: Tensor -- ^ input
- -> [Int] -- ^ list of integers representing the shape of the tensor
+shape ::
+  -- | input
+  Tensor ->
+  -- | list of integers representing the shape of the tensor
+  [Int]
 shape t = unsafePerformIO $ (cast1 ATen.tensor_sizes) t
 
 -- | Returns the dimensions of the input tensor
-dim 
- :: Tensor -- ^ input 
- -> Int -- ^ output
+dim ::
+  -- | input
+  Tensor ->
+  -- | output
+  Int
 dim t = unsafePerformIO $ (cast1 ATen.tensor_dim) t
 
 -- | Returns the device on which the tensor is currently allocated
-device 
- :: Tensor -- ^ input
- -> Device -- ^ object representing the device
+device ::
+  -- | input
+  Tensor ->
+  -- | object representing the device
+  Device
 device t = unsafePerformIO $ do
   hasCUDA <- cast0 ATen.hasCUDA :: IO Bool
   if hasCUDA
@@ -99,137 +106,164 @@ device t = unsafePerformIO $ do
       isCUDA <- cast1 ATen.tensor_is_cuda t :: IO Bool
       if isCUDA then cuda <$> cast1 ATen.tensor_get_device t else pure cpu
     else pure cpu
- where
-  cpu = Device { deviceType = CPU, deviceIndex = 0 }
-  cuda :: Int -> Device
-  cuda di = Device { deviceType = CUDA, deviceIndex = fromIntegral di }
+  where
+    cpu = Device {deviceType = CPU, deviceIndex = 0}
+    cuda :: Int -> Device
+    cuda di = Device {deviceType = CUDA, deviceIndex = fromIntegral di}
 
 -- | Returns the data type of the input tensor
-dtype 
- :: Tensor -- ^ input
- -> DType -- ^ data type of the input tensor
+dtype ::
+  -- | input
+  Tensor ->
+  -- | data type of the input tensor
+  DType
 dtype t = unsafePerformIO $ cast1 ATen.tensor_scalar_type t
 
-
-toDouble :: Tensor -> Double  
+toDouble :: Tensor -> Double
 toDouble t = unsafePerformIO $ cast1 ATen.tensor_item_double t
 
 toInt :: Tensor -> Int
 toInt t = unsafePerformIO $ cast1 ATen.tensor_item_int64_t t
 
 -- | Casts the input tensor to the given data type
-toType 
- :: DType -- ^ data type to cast input to 
- -> Tensor -- ^ input 
- -> Tensor -- ^ output
+toType ::
+  -- | data type to cast input to
+  DType ->
+  -- | input
+  Tensor ->
+  -- | output
+  Tensor
 toType dtype t = unsafePerformIO $ cast2 ATen.tensor_toType_s t dtype
 
 -- | Casts the input tensor to given device
-toDevice 
- :: Device -- ^ device to cast input to
- -> Tensor -- ^ input
- -> Tensor -- ^ output
+toDevice ::
+  -- | device to cast input to
+  Device ->
+  -- | input
+  Tensor ->
+  -- | output
+  Tensor
 toDevice device' t = unsafePerformIO $ do
   hasCUDA <- cast0 ATen.hasCUDA :: IO Bool
   let device = Torch.Tensor.device t
-  t' <- toDevice' (deviceType device)
-                  (deviceType device')
-                  (deviceIndex device)
-                  (deviceIndex device')
-                  hasCUDA
-  check (deviceType device')
-        (deviceType $ Torch.Tensor.device t')
-        (deviceIndex device')
-        (deviceIndex $ Torch.Tensor.device t')
+  t' <-
+    toDevice'
+      (deviceType device)
+      (deviceType device')
+      (deviceIndex device)
+      (deviceIndex device')
+      hasCUDA
+  check
+    (deviceType device')
+    (deviceType $ Torch.Tensor.device t')
+    (deviceIndex device')
+    (deviceIndex $ Torch.Tensor.device t')
   pure t'
- where
-  toDevice' dt   dt'  di di' _    | dt == dt' && di == di' = pure t -- do nothing
-  toDevice' CUDA CUDA di di' True | di /= di'              = getOpts t >>= withDeviceIndex di' >>= to t -- copy from di to di'
-  toDevice' CPU  CUDA 0  di' True | di' >= 0               = getOpts t >>= withDeviceIndex di' >>= to t -- copy from cpu:0 to cuda:di'
-  toDevice' CUDA CPU  di 0   True | di >= 0                = getOpts t >>= withDeviceType CPU  >>= to t -- copy from cuda:di to cpu:0
-  toDevice' dt   dt'  di di' _                             =
-    error
-      $  "cannot move tensor from \""
-      <> show dt
-      <> ":"
-      <> show di
-      <> "\" to \""
-      <> show dt'
-      <> ":"
-      <> show di'
-      <> "\""
-  getOpts :: Tensor -> IO TensorOptions
-  getOpts = cast1 ATen.tensor_options
-  withDeviceType :: DeviceType -> TensorOptions -> IO TensorOptions
-  withDeviceType dt opts = cast2 ATen.tensorOptions_device_D opts dt
-  withDeviceIndex :: Int16 -> TensorOptions -> IO TensorOptions
-  withDeviceIndex di opts = cast2 ATen.tensorOptions_device_index_s opts di -- careful, setting the device index implies setting the device type to CUDA!
-  to :: Tensor -> TensorOptions -> IO Tensor
-  to t opts = cast4 ATen.tensor_to_obb t opts nonBlocking copy
-   where
-    nonBlocking = False
-    copy = False
-  check dt dt' di di' | dt == dt' && di == di' = pure ()
-  check dt dt' di di' =
-    error
-      $  "moving of tensor failed: device should have been \""
-      <> show dt
-      <> ":"
-      <> show di
-      <> "\" but is \""
-      <> show dt'
-      <> ":"
-      <> show di'
-      <> "\""
+  where
+    toDevice' dt dt' di di' _ | dt == dt' && di == di' = pure t -- do nothing
+    toDevice' CUDA CUDA di di' True | di /= di' = getOpts t >>= withDeviceIndex di' >>= to t -- copy from di to di'
+    toDevice' CPU CUDA 0 di' True | di' >= 0 = getOpts t >>= withDeviceIndex di' >>= to t -- copy from cpu:0 to cuda:di'
+    toDevice' CUDA CPU di 0 True | di >= 0 = getOpts t >>= withDeviceType CPU >>= to t -- copy from cuda:di to cpu:0
+    toDevice' dt dt' di di' _ =
+      error $
+        "cannot move tensor from \""
+          <> show dt
+          <> ":"
+          <> show di
+          <> "\" to \""
+          <> show dt'
+          <> ":"
+          <> show di'
+          <> "\""
+    getOpts :: Tensor -> IO TensorOptions
+    getOpts = cast1 ATen.tensor_options
+    withDeviceType :: DeviceType -> TensorOptions -> IO TensorOptions
+    withDeviceType dt opts = cast2 ATen.tensorOptions_device_D opts dt
+    withDeviceIndex :: Int16 -> TensorOptions -> IO TensorOptions
+    withDeviceIndex di opts = cast2 ATen.tensorOptions_device_index_s opts di -- careful, setting the device index implies setting the device type to CUDA!
+    to :: Tensor -> TensorOptions -> IO Tensor
+    to t opts = cast4 ATen.tensor_to_obb t opts nonBlocking copy
+      where
+        nonBlocking = False
+        copy = False
+    check dt dt' di di' | dt == dt' && di == di' = pure ()
+    check dt dt' di di' =
+      error $
+        "moving of tensor failed: device should have been \""
+          <> show dt
+          <> ":"
+          <> show di
+          <> "\" but is \""
+          <> show dt'
+          <> ":"
+          <> show di'
+          <> "\""
 
--- | Slices the input tensor along the selected dimension at the given index. 
-select 
- :: Int -- ^ dimension to slice along
- -> Int -- ^ index in the given dimension 
- -> Tensor -- ^ input
- -> Tensor -- ^ output
+-- | Slices the input tensor along the selected dimension at the given index.
+select ::
+  -- | dimension to slice along
+  Int ->
+  -- | index in the given dimension
+  Int ->
+  -- | input
+  Tensor ->
+  -- | output
+  Tensor
 select dim idx t = unsafePerformIO $ cast3 ATen.tensor_select_ll t dim idx
 
 -- | Returns a new tensor which indexes the input tensor along dimension dim using the entries in index which is a LongTensor.
-indexSelect 
- :: Int -- ^ dim
- -> Tensor -- ^ indexTensor
- -> Tensor -- ^ input
- -> Tensor -- ^ output
+indexSelect ::
+  -- | dim
+  Int ->
+  -- | indexTensor
+  Tensor ->
+  -- | input
+  Tensor ->
+  -- | output
+  Tensor
 indexSelect dim indexTensor t = unsafePerformIO $ (cast3 ATen.index_select_tlt) t dim indexTensor
 
-indexSelect' 
-  :: Int  -- ^ dim
-  -> [Int]  -- ^ indexList
-  -> Tensor -- ^ input
-  -> Tensor -- ^ output
+indexSelect' ::
+  -- | dim
+  Int ->
+  -- | indexList
+  [Int] ->
+  -- | input
+  Tensor ->
+  -- | output
+  Tensor
 indexSelect' dim indexList t = unsafePerformIO $ (cast3 ATen.index_select_tlt) t dim (asTensor indexList)
 
--- | Slices the input tensor along the selected dimension at the given range. 
-slice
-  :: Int -- ^ dim
-  -> Int -- ^ start
-  -> Int -- ^ end
-  -> Int -- ^ step
-  -> Tensor -- ^ input
-  -> Tensor
+-- | Slices the input tensor along the selected dimension at the given range.
+slice ::
+  -- | dim
+  Int ->
+  -- | start
+  Int ->
+  -- | end
+  Int ->
+  -- | step
+  Int ->
+  -- | input
+  Tensor ->
+  Tensor
 slice _dim _start _end _step _self = unsafePerformIO $ (cast5 ATen.slice_tllll) _self _dim _start _end _step
 
-isContiguous
-  :: Tensor
-  -> Bool
+isContiguous ::
+  Tensor ->
+  Bool
 isContiguous t = unsafePerformIO $ (cast1 ATen.tensor_is_contiguous) t
 
-contiguous
-  :: Tensor
-  -> Tensor
+contiguous ::
+  Tensor ->
+  Tensor
 contiguous t = unsafePerformIO $ (cast1 ATen.tensor_contiguous) t
 
 -- | Returns a tensor with the same data and number of elements as input, but with the specified shape.
-reshape 
- :: [Int] 
- -> Tensor 
- -> Tensor
+reshape ::
+  [Int] ->
+  Tensor ->
+  Tensor
 reshape shape t = unsafePerformIO $ cast2 ATen.reshape_tl t shape
 
 --------------------------------------------------------------------------------
@@ -279,6 +313,7 @@ toCUDA t = unsafePerformIO $ (cast1 ATen.tensor_cuda) t
 -- `torch.tensor([1, 2])`) | `asTensor([1, 2 ::Int])`
 
 newtype RawTensorIndexList = RawTensorIndexList (ForeignPtr (ATen.StdVector ATen.TensorIndex))
+
 newtype RawTensorIndex = RawTensorIndex (ForeignPtr ATen.TensorIndex)
 
 (!) :: TensorIndex a => Tensor -> a -> Tensor
@@ -319,94 +354,94 @@ class TensorIndex a where
 instance {-# OVERLAPS #-} TensorIndex None where
   pushIndex vec _ = unsafePerformIO $ do
     idx <- ATen.newTensorIndexWithNone
-    return ((RawTensorIndex idx):vec)
-    
+    return ((RawTensorIndex idx) : vec)
+
 instance {-# OVERLAPS #-} TensorIndex Ellipsis where
   pushIndex vec _ = unsafePerformIO $ do
     idx <- ATen.newTensorIndexWithEllipsis
-    return ((RawTensorIndex idx):vec)
-    
+    return ((RawTensorIndex idx) : vec)
+
 instance {-# OVERLAPS #-} TensorIndex Bool where
   pushIndex vec b = unsafePerformIO $ do
     idx <- ATen.newTensorIndexWithBool (if b then 1 else 0)
-    return ((RawTensorIndex idx):vec)
-    
-instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (a,a)) where
-  pushIndex vec (Slice (start,end)) = unsafePerformIO $ do
-    idx <- ATen.newTensorIndexWithSlice (fromIntegral start :: CInt) (fromIntegral end ::CInt) 1
-    return ((RawTensorIndex idx):vec)
-    
-instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (a,a,a)) where
-  pushIndex vec (Slice (start,end,step)) = unsafePerformIO $ do
-    idx <- ATen.newTensorIndexWithSlice (fromIntegral start :: CInt) (fromIntegral end ::CInt) (fromIntegral step ::CInt)
-    return ((RawTensorIndex idx):vec)
+    return ((RawTensorIndex idx) : vec)
 
-instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (None,None,a)) where
-  pushIndex vec (Slice (_,_,step)) = unsafePerformIO $ do
-    idx <- ATen.newTensorIndexWithSlice 0 (maxBound ::CInt) (fromIntegral step ::CInt)
-    return ((RawTensorIndex idx):vec)
+instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (a, a)) where
+  pushIndex vec (Slice (start, end)) = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithSlice (fromIntegral start :: CInt) (fromIntegral end :: CInt) 1
+    return ((RawTensorIndex idx) : vec)
+
+instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (a, a, a)) where
+  pushIndex vec (Slice (start, end, step)) = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithSlice (fromIntegral start :: CInt) (fromIntegral end :: CInt) (fromIntegral step :: CInt)
+    return ((RawTensorIndex idx) : vec)
+
+instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (None, None, a)) where
+  pushIndex vec (Slice (_, _, step)) = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithSlice 0 (maxBound :: CInt) (fromIntegral step :: CInt)
+    return ((RawTensorIndex idx) : vec)
 
 instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice a) where
   pushIndex vec (Slice start) = unsafePerformIO $ do
-    idx <- ATen.newTensorIndexWithSlice (fromIntegral start :: CInt) (maxBound ::CInt) 1
-    return ((RawTensorIndex idx):vec)
+    idx <- ATen.newTensorIndexWithSlice (fromIntegral start :: CInt) (maxBound :: CInt) 1
+    return ((RawTensorIndex idx) : vec)
 
-instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (a,None)) where
-  pushIndex vec (Slice (start,_)) = unsafePerformIO $ do
-    idx <- ATen.newTensorIndexWithSlice (fromIntegral start :: CInt) (maxBound ::CInt) 1
-    return ((RawTensorIndex idx):vec)
+instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (a, None)) where
+  pushIndex vec (Slice (start, _)) = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithSlice (fromIntegral start :: CInt) (maxBound :: CInt) 1
+    return ((RawTensorIndex idx) : vec)
 
-instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (a,None,a)) where
-  pushIndex vec (Slice (start,_,step)) = unsafePerformIO $ do
-    idx <- ATen.newTensorIndexWithSlice (fromIntegral start :: CInt) (maxBound ::CInt) (fromIntegral step :: CInt)
-    return ((RawTensorIndex idx):vec)
+instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (a, None, a)) where
+  pushIndex vec (Slice (start, _, step)) = unsafePerformIO $ do
+    idx <- ATen.newTensorIndexWithSlice (fromIntegral start :: CInt) (maxBound :: CInt) (fromIntegral step :: CInt)
+    return ((RawTensorIndex idx) : vec)
 
-instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (None,a,a)) where
-  pushIndex vec (Slice (_,end,step)) = unsafePerformIO $ do
+instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (None, a, a)) where
+  pushIndex vec (Slice (_, end, step)) = unsafePerformIO $ do
     idx <- ATen.newTensorIndexWithSlice 0 (fromIntegral end :: CInt) (fromIntegral step :: CInt)
-    return ((RawTensorIndex idx):vec)
+    return ((RawTensorIndex idx) : vec)
 
-instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (None,a)) where
-  pushIndex vec (Slice (_,end)) = unsafePerformIO $ do
+instance {-# OVERLAPS #-} (Integral a) => TensorIndex (Slice (None, a)) where
+  pushIndex vec (Slice (_, end)) = unsafePerformIO $ do
     idx <- ATen.newTensorIndexWithSlice 0 (fromIntegral end :: CInt) 1
-    return ((RawTensorIndex idx):vec)
+    return ((RawTensorIndex idx) : vec)
 
 instance {-# OVERLAPS #-} TensorIndex (Slice ()) where
   pushIndex vec (Slice ()) = unsafePerformIO $ do
     idx <- ATen.newTensorIndexWithSlice 0 (maxBound :: CInt) 1
-    return ((RawTensorIndex idx):vec)
+    return ((RawTensorIndex idx) : vec)
 
 instance TensorIndex Int where
   pushIndex vec v = unsafePerformIO $ do
-    idx <- ATen.newTensorIndexWithInt (fromIntegral v::CInt)
-    return ((RawTensorIndex idx):vec)
+    idx <- ATen.newTensorIndexWithInt (fromIntegral v :: CInt)
+    return ((RawTensorIndex idx) : vec)
 
 instance TensorIndex Integer where
   pushIndex vec v = unsafePerformIO $ do
-    idx <- ATen.newTensorIndexWithInt (fromIntegral v::CInt)
-    return ((RawTensorIndex idx):vec)
+    idx <- ATen.newTensorIndexWithInt (fromIntegral v :: CInt)
+    return ((RawTensorIndex idx) : vec)
 
 instance TensorIndex Tensor where
   pushIndex vec v = unsafePerformIO $ do
     idx <- cast1 ATen.newTensorIndexWithTensor v
-    return (idx:vec)
+    return (idx : vec)
 
 instance TensorIndex () where
   pushIndex vec _ = unsafePerformIO $ do
     idx <- ATen.newTensorIndexWithSlice 0 (maxBound :: CInt) 1
-    return ((RawTensorIndex idx):vec)
+    return ((RawTensorIndex idx) : vec)
 
-instance (TensorIndex a, TensorIndex b) => TensorIndex (a,b) where
-  pushIndex vec (a,b) = (flip pushIndex a) . (flip pushIndex b) $ vec
-  
-instance (TensorIndex a, TensorIndex b, TensorIndex c) => TensorIndex (a,b,c) where
-  pushIndex vec (a,b,c) = (flip pushIndex a) . (flip pushIndex b) . (flip pushIndex c) $ vec
+instance (TensorIndex a, TensorIndex b) => TensorIndex (a, b) where
+  pushIndex vec (a, b) = (flip pushIndex a) . (flip pushIndex b) $ vec
 
-instance (TensorIndex a, TensorIndex b, TensorIndex c, TensorIndex d) => TensorIndex (a,b,c,d) where
-  pushIndex vec (a,b,c,d) = (flip pushIndex a) . (flip pushIndex b) . (flip pushIndex c) . (flip pushIndex d) $ vec
+instance (TensorIndex a, TensorIndex b, TensorIndex c) => TensorIndex (a, b, c) where
+  pushIndex vec (a, b, c) = (flip pushIndex a) . (flip pushIndex b) . (flip pushIndex c) $ vec
 
-instance (TensorIndex a, TensorIndex b, TensorIndex c, TensorIndex d, TensorIndex e) => TensorIndex (a,b,c,d,e) where
-  pushIndex vec (a,b,c,d,e) = (flip pushIndex a) . (flip pushIndex b) . (flip pushIndex c) . (flip pushIndex d) . (flip pushIndex e) $ vec
+instance (TensorIndex a, TensorIndex b, TensorIndex c, TensorIndex d) => TensorIndex (a, b, c, d) where
+  pushIndex vec (a, b, c, d) = (flip pushIndex a) . (flip pushIndex b) . (flip pushIndex c) . (flip pushIndex d) $ vec
+
+instance (TensorIndex a, TensorIndex b, TensorIndex c, TensorIndex d, TensorIndex e) => TensorIndex (a, b, c, d, e) where
+  pushIndex vec (a, b, c, d, e) = (flip pushIndex a) . (flip pushIndex b) . (flip pushIndex c) . (flip pushIndex d) . (flip pushIndex e) $ vec
 
 --------------------------------------------------------------------------------
 -- Scalar <-> Tensor promotion
@@ -416,6 +451,7 @@ class TensorLike a where
   asTensor' :: a -> TensorOptions -> Tensor
   asTensor :: a -> Tensor
   asValue :: Tensor -> a
+
   -- Internal functions(like "_xxx") are below. Do not use them directly.
   _dtype :: DType
   _dims :: a -> [Int]
@@ -424,6 +460,7 @@ class TensorLike a where
   _pokeElemOff :: Ptr () -> Int -> a -> IO ()
 
 int64_opts = withDType Int64 defaultOpts
+
 float_opts = withDType Float defaultOpts
 
 withTensor :: Tensor -> (Ptr () -> IO a) -> IO a
@@ -440,18 +477,16 @@ instance {-# OVERLAPPING #-} (Reifies a DType, Storable a) => TensorLike a where
 
   asValue t = unsafePerformIO $ do
     if _dtype @a == dtype t
-    then do
-      withTensor t $ \ptr -> do
-        _peekElemOff ptr 0 []
-    else
-      throwIO $ userError $ "The infered DType of asValue is " ++ show (_dtype @a)  ++ ", but the DType of tensor on memory is " ++ show (dtype t) ++ "."
+      then do
+        withTensor t $ \ptr -> do
+          _peekElemOff ptr 0 []
+      else throwIO $ userError $ "The infered DType of asValue is " ++ show (_dtype @a) ++ ", but the DType of tensor on memory is " ++ show (dtype t) ++ "."
 
   _dtype = reflect (Proxy :: Proxy a)
   _dims _ = []
   _deepDims _ = Just []
   _peekElemOff ptr offset _ = peekElemOff (castPtr ptr) offset
   _pokeElemOff ptr offset v = pokeElemOff (castPtr ptr) offset v
-
 
 instance {-# OVERLAPPING #-} TensorLike Bool where
   asTensor' v opts = unsafePerformIO $ do
@@ -464,18 +499,16 @@ instance {-# OVERLAPPING #-} TensorLike Bool where
 
   asValue t = unsafePerformIO $ do
     if _dtype @Bool == dtype t
-    then do
-      withTensor t $ \ptr -> do
-        _peekElemOff ptr 0 []
-    else
-      throwIO $ userError $ "The infered DType of asValue is " ++ show (_dtype @Bool)  ++ ", but the DType of tensor on memory is " ++ show (dtype t) ++ "."
+      then do
+        withTensor t $ \ptr -> do
+          _peekElemOff ptr 0 []
+      else throwIO $ userError $ "The infered DType of asValue is " ++ show (_dtype @Bool) ++ ", but the DType of tensor on memory is " ++ show (dtype t) ++ "."
 
   _dtype = reflect (Proxy :: Proxy Bool)
   _dims _ = []
   _deepDims _ = Just []
   _peekElemOff ptr offset _ = (/= 0) <$> (peekElemOff (castPtr ptr) offset :: IO Word8)
   _pokeElemOff ptr offset v = pokeElemOff (castPtr ptr) offset ((if v then 1 else 0) :: Word8)
-
 
 instance {-# OVERLAPPING #-} TensorLike a => TensorLike [a] where
   asTensor' v opts = unsafePerformIO $ do
@@ -489,62 +522,61 @@ instance {-# OVERLAPPING #-} TensorLike a => TensorLike [a] where
   asValue t' = unsafePerformIO $ do
     let t = if isContiguous t' then t' else contiguous t'
     if _dtype @a == dtype t
-    then do
-      withTensor t $ \ptr -> do
-        _peekElemOff ptr 0 (shape t)
-    else
-      throwIO $ userError $ "The infered DType of asValue is " ++ show (_dtype @a)  ++ ", but the DType of tensor on memory is " ++ show (dtype t) ++ "."
+      then do
+        withTensor t $ \ptr -> do
+          _peekElemOff ptr 0 (shape t)
+      else throwIO $ userError $ "The infered DType of asValue is " ++ show (_dtype @a) ++ ", but the DType of tensor on memory is " ++ show (dtype t) ++ "."
 
   _dtype = _dtype @a
 
   _dims [] = []
-  _dims v@(x:_) = (length v):(_dims x)
+  _dims v@(x : _) = (length v) : (_dims x)
 
   _deepDims [] = Just []
-  _deepDims v@(x:xs) = do
+  _deepDims v@(x : xs) = do
     deepDimsX <- _deepDims x
     deepDimsXs <- traverse _deepDims xs
     if and $ fmap (deepDimsX ==) deepDimsXs
-    then return $ length v : deepDimsX
-    else Nothing
+      then return $ length v : deepDimsX
+      else Nothing
 
   _peekElemOff ptr offset [] = return []
-  _peekElemOff ptr offset (d:dims) =
+  _peekElemOff ptr offset (d : dims) =
     let width = product dims
-    in forM [0..(d-1)] $ \i ->
-         _peekElemOff ptr (offset+i*width) dims
+     in forM [0 .. (d -1)] $ \i ->
+          _peekElemOff ptr (offset + i * width) dims
 
   _pokeElemOff ptr offset [] = return ()
-  _pokeElemOff ptr offset v@(x:_) =
+  _pokeElemOff ptr offset v@(x : _) =
     let width = product (_dims x)
-    in forM_ (zip [0..] v) $ \(i,d) ->
-         if product (_dims d) == width -- This validation may be slow.
-         then (_pokeElemOff @a) ptr (offset+i*width) d
-         else throwIO $ userError $ "There are lists having different length."
+     in forM_ (zip [0 ..] v) $ \(i, d) ->
+          if product (_dims d) == width -- This validation may be slow.
+            then (_pokeElemOff @a) ptr (offset + i * width) d
+            else throwIO $ userError $ "There are lists having different length."
 
 class AsTensors as where
   toTensors :: as -> V.Vector Tensor
-  default toTensors ::  (Generic as, GAsTensors (Rep as)) => as -> V.Vector Tensor
+  default toTensors :: (Generic as, GAsTensors (Rep as)) => as -> V.Vector Tensor
   toTensors a = gToTensors $ from a
 
 instance TensorLike a => AsTensors a where
   toTensors = pure . asTensor
-  
+
 class GAsTensors record where
   gToTensors :: record as -> V.Vector Tensor
 
-instance (GAsTensors ls, GAsTensors rs ) => GAsTensors (ls :*: rs) where
-  gToTensors (g :*: d) = gToTensors  g V.++ gToTensors d
+instance (GAsTensors ls, GAsTensors rs) => GAsTensors (ls :*: rs) where
+  gToTensors (g :*: d) = gToTensors g V.++ gToTensors d
 
-instance (GAsTensors ls , GAsTensors rs ) => GAsTensors (ls :+: rs) where
-  gToTensors (L1 g) = gToTensors g 
-  gToTensors (R1 g) = gToTensors g 
-  
+instance (GAsTensors ls, GAsTensors rs) => GAsTensors (ls :+: rs) where
+  gToTensors (L1 g) = gToTensors g
+  gToTensors (R1 g) = gToTensors g
+
 instance (GAsTensors ls) => GAsTensors (M1 i c ls) where
-  gToTensors (M1 g) = gToTensors g 
+  gToTensors (M1 g) = gToTensors g
 
 instance (TensorLike ls) => GAsTensors (K1 i ls) where
-  gToTensors (K1 g) = pure $ asTensor g 
+  gToTensors (K1 g) = pure $ asTensor g
 
 --------------------------------------------------------------------------------
 -- Show
@@ -552,26 +584,26 @@ instance (TensorLike ls) => GAsTensors (K1 i ls) where
 
 instance Show Tensor where
   show t = case (dim t) of
-      0 -> details ++ show0d t
-      1 -> details ++ show1d t
-      2 -> details ++ show2d t
-      _ -> details
+    0 -> details ++ show0d t
+    1 -> details ++ show1d t
+    2 -> details ++ show2d t
+    _ -> details
     where
       -- TODO: this is obviously not the right way to do it,
       -- and will be terribly slow, so please fix it.
-      showElems elemShow sep t = "[" ++ (intercalate sep $ map elemShow [t ! i | i <- [0..((size 0 t) - 1)]]) ++ "]"
+      showElems elemShow sep t = "[" ++ (intercalate sep $ map elemShow [t ! i | i <- [0 .. ((size 0 t) - 1)]]) ++ "]"
       padPositive x s = if x >= 0 then " " ++ s else s
       -- TODO: this assumes that scientific notation only uses one-digit exponents, which is not
       --       true in general
       padLarge x s = if (abs x) >= 0.1 then s ++ "   " else s
-      show0d x = if isIntegral (dtype t)
-                  then padPositive (toInt x) $ show $ toInt x
-                  else padLarge (toDouble x) $ padPositive (toDouble x) $ showGFloat (Just 4) (toDouble x) ""
+      show0d x =
+        if isIntegral (dtype t)
+          then padPositive (toInt x) $ show $ toInt x
+          else padLarge (toDouble x) $ padPositive (toDouble x) $ showGFloat (Just 4) (toDouble x) ""
       show1d = showElems show0d ", "
       show2d = showElems show1d (",\n " ++ padding)
       details = "Tensor " ++ (show $ dtype t) ++ " " ++ (show $ shape t) ++ " "
       padding = map (const ' ') details
-
 
 --------------------------------------------------------------------------------
 

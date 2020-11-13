@@ -173,6 +173,7 @@ data Tensor
 data Scalar
 data TensorOptions
 data TensorList
+data ArrayRef a
 data IntArrayRef
 data IntArray
 data TensorAVector

@@ -3,53 +3,48 @@
 module Torch.Optim where
 
 import Control.Monad.State
-import Prelude hiding (sqrt)
-
+import System.Mem (performGC)
+import Torch.Autograd
+import Torch.Functional
+import Torch.NN
 import Torch.Tensor
 import Torch.TensorFactories
-import Torch.Functional
-import Torch.Autograd
-import Torch.NN
-import System.Mem (performGC)
+import Prelude hiding (sqrt)
 
 type LearningRate = Tensor
+
 type Loss = Tensor
-newtype Gradients = Gradients [Tensor] deriving Show
-data OptimizerState option = OptimizerState option
+
+newtype Gradients = Gradients [Tensor] deriving (Show)
+
+newtype OptimizerState option = OptimizerState option
 
 grad' :: Loss -> [Parameter] -> Gradients
 grad' t p = Gradients (grad t p)
 
 class Optimizer optimizer where
-    step :: LearningRate -> Gradients -> [Tensor] -> optimizer -> ([Tensor], optimizer)
-    -- | run a single iteration of an optimizer, returning new parameters and updated optimizer state
-    runStep :: (Parameterized model) => model -> optimizer -> Loss -> LearningRate -> IO (model, optimizer)
-    runStep paramState optState lossValue lr = do
-        performGC
-        let (flatParameters', optState') = step lr gradients depParameters optState 
-        newFlatParam <- mapM makeIndependent flatParameters'
-        pure (replaceParameters paramState newFlatParam, optState')
-        where
-            flatParameters = flattenParameters paramState
-            gradients = grad' lossValue flatParameters
-            depParameters = fmap toDependent flatParameters
-    
-    -- | run a single iteration of an optimizer, returning new parameters and updated optimizer state
-    runStep' :: (Parameterized model) =>model -> optimizer -> Gradients -> LearningRate -> IO (model, optimizer)
-    runStep' paramState optState gradients lr = do
-        performGC
-        let (flatParameters', optState') = step lr gradients depParameters optState 
-        newFlatParam <- mapM makeIndependent flatParameters'
-        pure (replaceParameters paramState newFlatParam, optState')
-        where
-            flatParameters = flattenParameters paramState
-            depParameters = fmap toDependent flatParameters
+  step :: LearningRate -> Gradients -> [Tensor] -> optimizer -> ([Tensor], optimizer)
+
+  -- | run a single iteration of an optimizer, returning new parameters and updated optimizer state
+  runStep :: (Parameterized model) => model -> optimizer -> Loss -> LearningRate -> IO (model, optimizer)
+  runStep paramState optState lossValue = runStep' paramState optState (grad' lossValue $ flattenParameters paramState)
+
+  -- | run a single iteration of an optimizer, returning new parameters and updated optimizer state
+  runStep' :: (Parameterized model) => model -> optimizer -> Gradients -> LearningRate -> IO (model, optimizer)
+  runStep' paramState optState gradients lr = do
+    performGC
+    let (flatParameters', optState') = step lr gradients depParameters optState
+    newFlatParam <- mapM makeIndependent flatParameters'
+    pure (replaceParameters paramState newFlatParam, optState')
+    where
+      flatParameters = flattenParameters paramState
+      depParameters = fmap toDependent flatParameters
 
 --
 -- Gradient Descent
 --
 
-data GD = GD deriving Show
+data GD = GD deriving (Show)
 
 -- | Stateless gradient descent step
 gd :: LearningRate -> Gradients -> [Tensor] -> [Tensor]
@@ -58,14 +53,14 @@ gd lr (Gradients gradients) parameters = zipWith step parameters gradients
     step p dp = p - (lr * dp)
 
 -- | Gradient descent step with a dummy state variable
-gd' :: LearningRate -> Gradients -> [Tensor] -> GD -> ([Tensor], GD) 
+gd' :: LearningRate -> Gradients -> [Tensor] -> GD -> ([Tensor], GD)
 gd' lr gradients depParameters dummy = (gd lr gradients depParameters, dummy)
 
 instance Optimizer GD where
-    step = gd'
+  step = gd'
 
 sgd :: LearningRate -> [Parameter] -> [Tensor] -> [Tensor]
-sgd lr parameters gradients = zipWith step depParameters gradients
+sgd lr parameters = zipWith step depParameters
   where
     step p dp = p - (lr * dp)
     depParameters = map toDependent parameters
@@ -74,76 +69,91 @@ sgd lr parameters gradients = zipWith step depParameters gradients
 -- Gradient Descent with Momentum
 --
 
-data GDM = GDM { beta :: Float, momentum :: [Tensor] } deriving Show
+data GDM = GDM {beta :: Float, momentum :: [Tensor]} deriving (Show)
 
 -- gradient descent with momentum step
-gdm 
-    :: LearningRate -- ^ learning rate
-    -> Gradients -- ^ model parameter gradients
-    -> [Tensor] -- ^ model parameters
-    -> GDM -- ^ beta & momentum
-    -> ([Tensor], GDM) -- ^ returns new parameters + updated momentum
-gdm lr (Gradients gradients) parameters (GDM beta momentum) = 
-    (fmap fst runStep, GDM beta (fmap snd runStep))
-    where
-        step p dp z = let z' = mulScalar beta z + dp in (p - lr * z', z')
-        runStep = (zipWith3 step) parameters gradients momentum
+gdm ::
+  -- | learning rate
+  LearningRate ->
+  -- | model parameter gradients
+  Gradients ->
+  -- | model parameters
+  [Tensor] ->
+  -- | beta & momentum
+  GDM ->
+  -- | returns new parameters + updated momentum
+  ([Tensor], GDM)
+gdm lr (Gradients gradients) parameters (GDM beta momentum) =
+  (fmap fst runStep, GDM beta (fmap snd runStep))
+  where
+    step p dp z = let z' = mulScalar beta z + dp in (p - lr * z', z')
+    runStep = zipWith3 step parameters gradients momentum
 
 instance Optimizer GDM where
-    step = gdm
+  step = gdm
 
 --
 -- Adam
 --
 
 -- | State representation for Adam Optimizer
-data Adam = Adam { 
-    beta1 :: Float, -- 1st moment forgetting factor
-    beta2 :: Float, -- 2nd moment forgetting factor
-    m1 :: [Tensor], -- 1st moment
-    m2 :: [Tensor], -- 2nd moment
-    iter :: Int -- iteration
-    } deriving Show
+data Adam
+  = Adam
+      { beta1 :: Float, -- 1st moment forgetting factor
+        beta2 :: Float, -- 2nd moment forgetting factor
+        m1 :: [Tensor], -- 1st moment
+        m2 :: [Tensor], -- 2nd moment
+        iter :: Int -- iteration
+      }
+  deriving (Show)
 
-mkAdam
-  :: Int
-  -> Float
-  -> Float
-  -> [Parameter]
-  -> Adam
-mkAdam iter beta1 beta2 parameters = Adam beta1
-                                          beta2
-                                          (initZeros <$> parameters)
-                                          (initZeros <$> parameters)
-                                          iter
-    where initZeros = zerosLike . toDependent
+mkAdam ::
+  Int ->
+  Float ->
+  Float ->
+  [Parameter] ->
+  Adam
+mkAdam iter beta1 beta2 parameters =
+  Adam
+    beta1
+    beta2
+    (initZeros <$> parameters)
+    (initZeros <$> parameters)
+    iter
+  where
+    initZeros = zerosLike . toDependent
 
 -- | Adam step
-adam 
-    :: LearningRate  -- ^ learning rate
-    -> Gradients -- ^ model parameter gradients
-    -> [Tensor] -- ^ model parameters
-    -> Adam -- ^ adam parameters - beta1, beta2, moments, iteration
-    -> ([Tensor], Adam) -- ^ returns new parameters + updated adam parameters
-adam lr (Gradients gradients) parameters Adam{..} = (parameters', Adam beta1 beta2 m1' m2' (iter+1))
-    where
-        -- decaying averages of 1st & 2nd moments
-        f1 m1 dp = mulScalar beta1 m1 + mulScalar (1 - beta1) dp
-        f2 m2 dp = mulScalar beta2 m2 + mulScalar (1 - beta2) (dp * dp)
-        m1' = zipWith f1 m1 gradients
-        m2' = zipWith f2 m2 gradients
-        -- bias adjustment
-        a beta m = divScalar (1 - beta^(iter + 1)) m
-        a1 = fmap (a beta1) m1'
-        a2 = fmap (a beta2) m2'
-        -- parameter update
-        eps = 1e-37
-        update prevParam a1' a2' = prevParam  - lr * a1' / (sqrt a2' + eps)
-        parameters' = zipWith3 update parameters a1 a2
+adam ::
+  -- | learning rate
+  LearningRate ->
+  -- | model parameter gradients
+  Gradients ->
+  -- | model parameters
+  [Tensor] ->
+  -- | adam parameters - beta1, beta2, moments, iteration
+  Adam ->
+  -- | returns new parameters + updated adam parameters
+  ([Tensor], Adam)
+adam lr (Gradients gradients) parameters Adam {..} = (parameters', Adam beta1 beta2 m1' m2' (iter + 1))
+  where
+    -- decaying averages of 1st & 2nd moments
+    f1 m1 dp = mulScalar beta1 m1 + mulScalar (1 - beta1) dp
+    f2 m2 dp = mulScalar beta2 m2 + mulScalar (1 - beta2) (dp * dp)
+    m1' = zipWith f1 m1 gradients
+    m2' = zipWith f2 m2 gradients
+    -- bias adjustment
+    a beta = divScalar (1 - beta ^ (iter + 1))
+    a1 = fmap (a beta1) m1'
+    a2 = fmap (a beta2) m2'
+    -- parameter update
+    eps = 1e-37
+    update prevParam a1' a2' = prevParam - lr * a1' / (sqrt a2' + eps)
+    parameters' = zipWith3 update parameters a1 a2
 
 instance Optimizer Adam where
-    step = adam
+  step = adam
 
 -- | syntactic sugar for looping with foldM
 foldLoop :: a -> Int -> (a -> Int -> IO a) -> IO a
-foldLoop x count block = foldM block x [1..count]
+foldLoop x count block = foldM block x [1 .. count]

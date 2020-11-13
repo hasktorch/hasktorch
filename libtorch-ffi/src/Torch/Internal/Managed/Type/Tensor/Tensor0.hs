@@ -335,6 +335,11 @@ tensor_requires_grad
   -> IO (CBool)
 tensor_requires_grad = cast1 Unmanaged.tensor_requires_grad
 
+tensor_mutable_grad
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_mutable_grad = cast1 Unmanaged.tensor_mutable_grad
+
 tensor_grad
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
@@ -451,6 +456,16 @@ tensor_angle
   -> IO (ForeignPtr Tensor)
 tensor_angle = cast1 Unmanaged.tensor_angle
 
+tensor_sgn
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_sgn = cast1 Unmanaged.tensor_sgn
+
+tensor_sgn_
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_sgn_ = cast1 Unmanaged.tensor_sgn_
+
 tensor_conj
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
@@ -465,6 +480,16 @@ tensor_acos_
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 tensor_acos_ = cast1 Unmanaged.tensor_acos_
+
+tensor_arccos
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_arccos = cast1 Unmanaged.tensor_arccos
+
+tensor_arccos_
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_arccos_ = cast1 Unmanaged.tensor_arccos_
 
 tensor_add_ts
   :: ForeignPtr Tensor
@@ -577,6 +602,16 @@ tensor_acosh_
   -> IO (ForeignPtr Tensor)
 tensor_acosh_ = cast1 Unmanaged.tensor_acosh_
 
+tensor_arccosh
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_arccosh = cast1 Unmanaged.tensor_arccosh
+
+tensor_arccosh_
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_arccosh_ = cast1 Unmanaged.tensor_arccosh_
+
 tensor_asinh
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
@@ -586,6 +621,16 @@ tensor_asinh_
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 tensor_asinh_ = cast1 Unmanaged.tensor_asinh_
+
+tensor_arcsinh
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_arcsinh = cast1 Unmanaged.tensor_arcsinh
+
+tensor_arcsinh_
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_arcsinh_ = cast1 Unmanaged.tensor_arcsinh_
 
 tensor_atanh
   :: ForeignPtr Tensor
@@ -597,6 +642,16 @@ tensor_atanh_
   -> IO (ForeignPtr Tensor)
 tensor_atanh_ = cast1 Unmanaged.tensor_atanh_
 
+tensor_arctanh
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_arctanh = cast1 Unmanaged.tensor_arctanh
+
+tensor_arctanh_
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_arctanh_ = cast1 Unmanaged.tensor_arctanh_
+
 tensor_asin
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
@@ -607,6 +662,16 @@ tensor_asin_
   -> IO (ForeignPtr Tensor)
 tensor_asin_ = cast1 Unmanaged.tensor_asin_
 
+tensor_arcsin
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_arcsin = cast1 Unmanaged.tensor_arcsin
+
+tensor_arcsin_
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_arcsin_ = cast1 Unmanaged.tensor_arcsin_
+
 tensor_atan
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
@@ -616,6 +681,16 @@ tensor_atan_
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 tensor_atan_ = cast1 Unmanaged.tensor_atan_
+
+tensor_arctan
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_arctan = cast1 Unmanaged.tensor_arctan
+
+tensor_arctan_
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_arctan_ = cast1 Unmanaged.tensor_arctan_
 
 tensor_baddbmm_ttss
   :: ForeignPtr Tensor
@@ -741,6 +816,13 @@ tensor_ceil_
   -> IO (ForeignPtr Tensor)
 tensor_ceil_ = cast1 Unmanaged.tensor_ceil_
 
+tensor_unsafe_chunk_ll
+  :: ForeignPtr Tensor
+  -> Int64
+  -> Int64
+  -> IO (ForeignPtr TensorList)
+tensor_unsafe_chunk_ll = cast3 Unmanaged.tensor_unsafe_chunk_ll
+
 tensor_chunk_ll
   :: ForeignPtr Tensor
   -> Int64
@@ -804,6 +886,12 @@ tensor_cosh_
   -> IO (ForeignPtr Tensor)
 tensor_cosh_ = cast1 Unmanaged.tensor_cosh_
 
+tensor_count_nonzero_l
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+tensor_count_nonzero_l = cast2 Unmanaged.tensor_count_nonzero_l
+
 tensor_cummax_l
   :: ForeignPtr Tensor
   -> Int64
@@ -821,4 +909,10 @@ tensor_cummin_l
   -> Int64
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
 tensor_cummin_l = cast2 Unmanaged.tensor_cummin_l
+
+tensor_cummin_n
+  :: ForeignPtr Tensor
+  -> ForeignPtr Dimname
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
+tensor_cummin_n = cast2 Unmanaged.tensor_cummin_n
 
