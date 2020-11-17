@@ -83,6 +83,18 @@
         "url": "https://github.com/NixOS/nixpkgs/archive/07e5844fdf6fe99f41229d7392ce81cfe191bcfc.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
+    "nixpkgs-staging-next": {
+        "branch": "staging-next",
+        "description": "Nix Packages collection",
+        "homepage": null,
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "986c2d36da97856f392dd66d265b7646b32fa3b9",
+        "sha256": "1ickrri9c0vkicsl7k67vv909w6rxlndq7rss29ann7xvlla46rj",
+        "type": "tarball",
+        "url": "https://github.com/NixOS/nixpkgs/archive/986c2d36da97856f392dd66d265b7646b32fa3b9.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "pytorch-world": {
         "branch": "unstable",
         "description": "nix scripts for pytorch-related libraries",
