@@ -29,11 +29,11 @@ jobs:
       - run: nix-env -iA cachix -f https://cachix.org/api/v1/install
       - run: cachix use iohk
       - name: Build
-        run: stack --nix build
+        run: stack --nix build --stack-yaml stack-8.10.2.yaml
       - name: Test
         run: |
-          stack --nix test codegen
-          stack --nix test libtorch-ffi
-          stack --nix test hasktorch
-          stack --nix exec codegen-exe
-          stack --nix exec xor-mlp
+          stack --nix test codegen --stack-yaml stack-8.10.2.yaml
+          stack --nix test libtorch-ffi --stack-yaml stack-8.10.2.yaml
+          stack --nix test hasktorch --stack-yaml stack-8.10.2.yaml
+          stack --nix exec codegen-exe --stack-yaml stack-8.10.2.yaml
+          stack --nix exec xor-mlp --stack-yaml stack-8.10.2.yaml
