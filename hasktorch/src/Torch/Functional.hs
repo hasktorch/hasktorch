@@ -2671,6 +2671,19 @@ upsampleBilinear2d ::
   Tensor
 upsampleBilinear2d (outputHeight, outputWidth) alignCorners input = unsafePerformIO $ cast3 ATen.upsample_bilinear2d_tlb input [outputHeight, outputWidth] alignCorners
 
+-- | Applies a 2D nearest neighbor upsampling to an input signal composed of several input channels.
+upsampleNearest2d ::
+  -- | output_size
+  (Int, Int) ->
+  -- | scales_h
+  Double ->
+  -- | scales_w
+  Double ->
+  -- | self
+  Tensor ->
+  Tensor
+upsampleNearest2d output_size scales_h scales_w self = unsafePerformIO $ cast4 ATen.upsample_nearest2d_tldd self output_size scales_h scales_w
+
 -- | Splits the tensor into chunks of given size if possible.
 split ::
   -- | split-size
@@ -2834,3 +2847,64 @@ stdMeanDim ::
   -- | output
   (Tensor, Tensor)
 stdMeanDim (Dim d) unbiased k input = unsafePerformIO $ cast4 ATen.std_mean_tlbb input d unbiased (keepdim k)
+
+-- | Returns a copy of input.
+clone ::
+  -- | input
+  Tensor ->
+  -- | output
+  IO Tensor
+clone input = cast1 ATen.clone_t input
+
+-- | Returns a new tensor with the same data as the input tensor but of a different shape.
+view ::
+  -- | the desired size
+  [Int] ->
+  -- | input
+  Tensor ->
+  -- | output
+  Tensor
+view dims t = unsafePerformIO $ (cast2 ATen.tensor_view_l) t dims
+
+-- | Repeats this tensor along the specified dimensions.
+repeat ::
+  -- | The number of times to repeat this tensor along each dimension
+  [Int] ->
+  -- | input
+  Tensor ->
+  -- | output
+  Tensor
+repeat a t = unsafePerformIO $ (cast2 ATen.tensor_repeat_l) t a
+
+batchNorm ::
+  -- | weight
+  Tensor ->
+  -- | bias
+  Tensor ->
+  -- | running_mean
+  Tensor ->
+  -- | running_var
+  Tensor ->
+  -- | training
+  Bool ->
+  -- | momentum
+  Double ->
+  -- | eps
+  Double ->
+  -- | input
+  Tensor ->
+  -- | output
+  Tensor
+batchNorm weight bias running_mean running_var training momentum eps input =
+  unsafePerformIO $
+    cast9
+      ATen.batch_norm_tttttbddb
+      input
+      weight
+      bias
+      running_mean
+      running_var
+      training
+      momentum
+      eps
+      True
