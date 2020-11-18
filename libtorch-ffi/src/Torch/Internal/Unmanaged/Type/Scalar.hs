@@ -53,3 +53,18 @@ newScalar_d _a =
     $(double _a));
   }|]
 
+newScalar_b
+  :: CBool
+  -> IO (Ptr Scalar)
+newScalar_b _a =
+  [C.throwBlock| at::Scalar* { return new at::Scalar(
+    $(bool _a));
+  }|]
+
+newScalar_f
+  :: CFloat
+  -> IO (Ptr Scalar)
+newScalar_f _a =
+  [C.throwBlock| at::Scalar* { return new at::Scalar(
+    $(float _a));
+  }|]
