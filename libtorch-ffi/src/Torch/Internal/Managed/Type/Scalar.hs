@@ -38,3 +38,13 @@ newScalar_d
   -> IO (ForeignPtr Scalar)
 newScalar_d = cast1 Unmanaged.newScalar_d
 
+newScalar_b
+  :: CBool
+  -> IO (ForeignPtr Scalar)
+newScalar_b = cast1 Unmanaged.newScalar_b
+
+newScalar_f
+  :: CFloat
+  -> IO (ForeignPtr Scalar)
+newScalar_f = cast1 Unmanaged.newScalar_f
+

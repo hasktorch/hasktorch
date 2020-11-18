@@ -15,6 +15,7 @@ module Torch.NN where
 
 import Control.Applicative (Applicative (liftA2))
 import Control.Monad.State.Strict
+import Data.Foldable (toList)
 import Data.Kind
 import GHC.Generics
 import System.IO.Unsafe (unsafePerformIO)
@@ -24,6 +25,7 @@ import Torch.Initializers
 import Torch.Internal.Cast (cast3)
 import qualified Torch.Internal.Managed.Native as ATen
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
+import Torch.Scalar
 import Torch.Tensor
 import Torch.TensorFactories (ones', randIO', randnIO')
 
@@ -130,17 +132,13 @@ instance Parameterized Parameter where
   flattenParameters = pure
   _replaceParameters _ = nextParameter
 
-instance Parameterized Int where
+instance {-# OVERLAPS #-} (Scalar a) => Parameterized a where
   flattenParameters _ = []
   _replaceParameters = return
 
-instance Parameterized Float where
-  flattenParameters _ = []
-  _replaceParameters = return
-
-instance Parameterized Double where
-  flattenParameters _ = []
-  _replaceParameters = return
+instance {-# OVERLAPS #-} (Foldable t, Traversable t, Parameterized a) => Parameterized (t a) where
+  flattenParameters = (=<<) flattenParameters . toList
+  _replaceParameters = mapM _replaceParameters
 
 instance Parameterized (a -> a) where
   flattenParameters _ = []
@@ -201,8 +199,6 @@ data Linear = Linear
     bias :: Parameter
   }
   deriving (Show, Generic, Parameterized)
-
-instance Parameterized [Linear]
 
 linear :: Linear -> Tensor -> Tensor
 linear layer input = linear' input w b
