@@ -27,7 +27,7 @@ import qualified Torch.Internal.Managed.Native as ATen
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
 import Torch.Scalar
 import Torch.Tensor
-import Torch.TensorFactories (ones', randIO', randnIO')
+import Torch.TensorFactories (ones', randIO', randnIO', zeros')
 
 type Parameter = IndependentTensor
 
@@ -309,3 +309,61 @@ instance Randomizable Conv2dSpec Conv2d where
           ( subScalar bound $ mulScalar (bound * 2.0) init
           )
     return $ Conv2d w b
+
+data BatchNormSpec = BatchNormSpec
+  { numFeatures :: Int
+  }
+  deriving (Show, Eq)
+
+data BatchNorm = BatchNorm
+  { batchNormWeight :: Parameter,
+    batchNormBias :: Parameter,
+    runningMean :: Tensor,
+    runningVar :: Tensor
+  }
+  deriving (Show, Generic, Parameterized)
+
+batchNormForward :: BatchNorm -> Bool -> Double -> Double -> Tensor -> Tensor
+batchNormForward BatchNorm {..} train momentum eps input =
+  Torch.Functional.batchNorm
+    (toDependent batchNormWeight)
+    (toDependent batchNormBias)
+    runningMean
+    runningVar
+    train
+    momentum
+    eps
+    input
+
+instance Randomizable BatchNormSpec BatchNorm where
+  sample BatchNormSpec {..} = do
+    w <- makeIndependent (ones' [numFeatures])
+    b <- makeIndependent (zeros' [numFeatures])
+    mean <- toDependent <$> makeIndependent (zeros' [numFeatures])
+    var <- toDependent <$> makeIndependent (ones' [numFeatures])
+    return $ BatchNorm w b mean var
+
+data UpSampleSpec = UpSampleSpec
+  { upsampleInputFilters :: Int,
+    upsampleStride :: Int
+  }
+  deriving (Show, Eq)
+
+instance Parameterized UpSampleSpec where
+  flattenParameters _ = []
+  _replaceParameters = return
+
+data UpSample = UpSample
+  { upsampleSpec :: UpSampleSpec
+  }
+  deriving (Show, Generic, Parameterized)
+
+instance Randomizable UpSampleSpec UpSample where
+  sample s = do
+    UpSample
+      <$> pure s
+
+instance HasForward UpSample Tensor Tensor where
+  forward (UpSample (UpSampleSpec {..})) input =
+    upsampleNearest2d (upsampleStride, upsampleStride) (-1) (-1) input
+  forwardStoch m x = pure $ forward m x
