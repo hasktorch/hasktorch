@@ -33,7 +33,7 @@ let
 
     # These programs will be available inside the nix-shell.
     buildInputs =
-      with haskellPackages; [ hlint weeder ghcid lentil ]
+      with haskellPackages; [ hlint weeder ghcid ]
       # TODO: Add additional packages to the shell.
       ++ [ ];
 
