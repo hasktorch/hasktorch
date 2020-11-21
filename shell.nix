@@ -35,7 +35,7 @@ let
     buildInputs =
       with haskellPackages; [ hlint weeder ghcid ]
       # TODO: Add additional packages to the shell.
-      ++ [ ];
+      ++ [ code-server ];
 
     # Prevents cabal from choosing alternate plans, so that
     # *all* dependencies are provided by Nix.

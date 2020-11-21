@@ -59,7 +59,13 @@ let
                   '';
                 });
               in
-                project.hsPkgs.haskell-language-server.components.exes.haskell-language-server;
+                pkgsOld.symlinkJoin {
+                  name = "haskell-language-server";
+                  paths = with (project.hsPkgs.haskell-language-server.components.exes); [
+                    haskell-language-server
+                    haskell-language-server-wrapper
+                  ];
+                };
           };
         };
       })
@@ -124,6 +130,10 @@ let
     ++ [
       (import "${sources.jupyterWith}/nix/python-overlay.nix")
       (import "${sources.jupyterWith}/nix/overlay.nix")
+    ]
+    # other overlays:
+    ++ [
+      (import ./code-server.nix)
     ];
 
   pkgs = import nixpkgs {
