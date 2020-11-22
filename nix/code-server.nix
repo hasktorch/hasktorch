@@ -106,7 +106,7 @@ pkgs: _: with pkgs; {
           | xargs sed -i 's/yarn install/yarn install --offline/g'
 
         # remove download of coder-cloud agent
-        sed -i ':a;N;$!ba;s/OS=.*agent//' ci/build/npm-postinstall.sh
+        sed -i ':a;N;$!ba;s/\n  OS=.*work"\n  fi\n//' ci/build/npm-postinstall.sh
 
         # use offline cache when installing release packages
         substituteInPlace ci/build/npm-postinstall.sh \
