@@ -64,7 +64,7 @@ pkgs: _: with pkgs; {
 
         # to get hash values use nix-build -A code-server.prefetchYarnCache
         outputHash = {
-          x86_64-linux = "1443qwkllb714s4qw3b9y1mcc6p2ykgc02pw2k3z2gczvvr0g8qv";
+          x86_64-linux = "0860h4x4yvi56452bc67avpiv29l7dkn4579pqki3fybi0fpacqf";
           x86_64-darwin = "1443qwkllb714s4qw3b9y1mcc6p2ykgc02pw2k3z2gczvvr0g8qv";
         }.${system} or (throw "Unsupported system ${system}");
       };
