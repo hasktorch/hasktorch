@@ -21,7 +21,7 @@ pkgs: _: with pkgs; {
         owner = "cdr";
         repo = "code-server";
         rev = "v${version}";
-        sha256 = "1c0p1s0bl3az5ysl97mz3gbynyndz6jd2jj7lx2snz6jqqd43y9p";
+        sha256 = "0xh4kd7ha9fh5ix17fp8kk5i6g1aawv63r3gl73gkafg6fwr72vx";
         fetchSubmodules = true;
       };
 
