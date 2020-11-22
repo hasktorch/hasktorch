@@ -33,7 +33,7 @@ pkgs: _: with pkgs; {
         src = fetchFromGitHub {
           owner = "cdr";
           repo = "cloud-agent";
-          rev = version;
+          rev = "v${version}";
           sha256 = "1p20cvgvs38604km9ixylz0r3k7blkd80lncmma3z05y5n5fqps1";
         };
 
