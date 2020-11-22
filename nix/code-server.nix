@@ -37,7 +37,7 @@ pkgs: _: with pkgs; {
           sha256 = "06fpiwxjz2cgzw4ks9sk3376rprkd02khfnb10hg7dhn3y9gp7x8";
         };
 
-        vendorSha256 = "0yky1v1ak3ysykjf3gm1hd7qyj5rm4fw7amga81sb31x0357jlzr";
+        vendorSha256 = "0k9v10wkzx53r5syf6bmm81gr4s5dalyaa07y9zvx6vv5r2h0661";
       };
 
       yarnCache = stdenv.mkDerivation {
