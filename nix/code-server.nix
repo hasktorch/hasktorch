@@ -34,7 +34,7 @@ pkgs: _: with pkgs; {
           owner = "cdr";
           repo = "cloud-agent";
           rev = "v${version}";
-          sha256 = "1p20cvgvs38604km9ixylz0r3k7blkd80lncmma3z05y5n5fqps1";
+          sha256 = "06fpiwxjz2cgzw4ks9sk3376rprkd02khfnb10hg7dhn3y9gp7x8";
         };
 
         vendorSha256 = "0yky1v1ak3ysykjf3gm1hd7qyj5rm4fw7amga81sb31x0357jlzr";
