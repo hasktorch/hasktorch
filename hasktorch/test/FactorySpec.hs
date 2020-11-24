@@ -1,12 +1,11 @@
 module FactorySpec (spec) where
 
-import Test.Hspec
 import Control.Exception.Safe
-
-import Torch.Tensor
+import Test.Hspec
 import Torch.DType
-import Torch.TensorFactories
 import Torch.Functional
+import Torch.Tensor
+import Torch.TensorFactories
 import Torch.TensorOptions
 
 spec :: Spec
@@ -32,7 +31,7 @@ spec = do
   it "linspace factory" $ do
     let start = 5.0 :: Double
     let end = 25.0 :: Double
-    let x = linspace  start end 50 defaultOpts
+    let x = linspace start end 50 defaultOpts
     (toDouble $ select 0 49 x) `shouldBe` 25.0
   it "logspace factory" $ do
     let start = 5.0 :: Double
@@ -53,3 +52,7 @@ spec = do
     let x = full' [5, 2] (15.0 :: Double)
     shape x `shouldBe` [5, 2]
     (toDouble $ select 0 0 (select 0 0 x)) `shouldBe` 15.0
+  it "arange factory" $ do
+    let x = arange' 0 10 2
+    shape x `shouldBe` [5]
+    asValue x `shouldBe` [0 :: Float, 2, 4, 6, 8]

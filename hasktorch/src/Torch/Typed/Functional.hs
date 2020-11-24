@@ -3727,12 +3727,12 @@ type family Narrow (shape :: [Nat]) (dim :: Nat) (start :: Nat) (length :: Nat) 
 
 -- | "Narrow" a tensor by returning a tensor that is a slice from 'start' of length 'length' along 'dim'
 --
--- >>> narrow @0 @0 @2 (ones :: CPUTensor 'D.Float '[3,3,3])
--- Tensor Float [2,3,3]
--- >>> narrow @1 @1 @2 (ones :: CPUTensor 'D.Half '[3,3,3])
--- Tensor Half [3,2,3]
--- >>> narrow @1 @1 @2 (ones :: CPUTensor 'D.Bool '[3,3,3])
--- Tensor Bool [3,2,3]
+-- >>> dtype &&& shape $ narrow @0 @0 @2 (ones :: CPUTensor 'D.Float '[3,3,3])
+-- (Float,[2,3,3])
+-- >>> dtype &&& shape $ narrow @1 @1 @2 (ones :: CPUTensor 'D.Half '[3,3,3])
+-- (Half,[3,2,3])
+-- >>> dtype &&& shape $ narrow @1 @1 @2 (ones :: CPUTensor 'D.Bool '[3,3,3])
+-- (Bool,[3,2,3])
 narrow ::
   forall dim start length shape mbSize mbNewShape dtype device.
   ( All KnownNat '[dim, start, length],
@@ -4182,7 +4182,10 @@ type family SqueezeAll (shape :: [Nat]) :: [Nat] where
 -- >>> dtype &&& shape $ squeezeAll (ones :: CPUTensor 'D.Float '[2,1,2,1,2])
 -- (Float,[2,2,2])
 -- >>> squeezeAll (ones :: CPUTensor 'D.Float '[2,1,2,1,2])
--- Tensor Float [2,2,2]
+-- Tensor Float [2,2,2] [[[ 1.0000   ,  1.0000   ],
+--                        [ 1.0000   ,  1.0000   ]],
+--                       [[ 1.0000   ,  1.0000   ],
+--                        [ 1.0000   ,  1.0000   ]]]
 squeezeAll ::
   forall shape shape' dtype device.
   (shape' ~ SqueezeAll shape) =>
@@ -4213,12 +4216,8 @@ type SqueezeDim shape dim = SqueezeDimCheck shape dim (SqueezeDimImpl shape dim)
 --
 -- >>> dtype &&& shape $ squeezeDim @1 (ones :: CPUTensor 'D.Float '[2,1,2,1,2])
 -- (Float,[2,2,1,2])
--- >>> squeezeDim @1 (ones :: CPUTensor 'D.Float '[2,1,2,1,2])
--- Tensor Float [2,2,1,2]
 -- >>> dtype &&& shape $ squeezeDim @3 (ones :: CPUTensor 'D.Float '[2,1,2,1,2])
 -- (Float,[2,1,2,2])
--- >>> squeezeDim @3 (ones :: CPUTensor 'D.Float '[2,1,2,1,2])
--- Tensor Float [2,1,2,2]
 squeezeDim ::
   forall dim shape shape' dtype device.
   (KnownNat dim, shape' ~ SqueezeDim shape dim) =>
@@ -5664,8 +5663,8 @@ type Upsample2d shape h w = Upsample2dCheck shape h w
 
 -- | Applies a 2D bilinear upsampling to an input signal composed of several input channels.
 --
--- >>> upsample_bilinear2d @3 @5 False (ones :: CPUTensor 'D.Float '[2,3,2,2])
--- Tensor Float [2,3,3,5]
+-- >>> (dtype &&& shape) $ upsample_bilinear2d @3 @5 False (ones :: CPUTensor 'D.Float '[2,3,2,2])
+-- (Float,[2,3,3,5])
 upsample_bilinear2d ::
   forall w h shape dtype device.
   (KnownNat h, KnownNat w, All KnownNat shape) =>
@@ -5681,8 +5680,8 @@ upsample_bilinear2d _align_corners _input =
 
 -- | Applies a 2D bicubic upsampling to an input signal composed of several input channels.
 --
--- >>> upsample_bicubic2d @3 @5 False (ones :: CPUTensor 'D.Float '[2,3,2,2])
--- Tensor Float [2,3,3,5]
+-- >>> (dtype &&& shape) $ upsample_bicubic2d @3 @5 False (ones :: CPUTensor 'D.Float '[2,3,2,2])
+-- (Float,[2,3,3,5])
 upsample_bicubic2d ::
   forall w h shape dtype device.
   (KnownNat h, KnownNat w, All KnownNat shape) =>
@@ -5702,8 +5701,8 @@ upsample_bicubic2d _align_corners _input = unsafePerformIO $ (ATen.cast3 ATen.Ma
 
 -- | Applies a 2D bicubic upsampling to an input signal composed of several input channels.
 --
--- >>> upsample_nearest2d @3 @5 (ones :: CPUTensor 'D.Float '[2,3,2,2])
--- Tensor Float [2,3,3,5]
+-- >>> (dtype &&& shape) $ upsample_nearest2d @3 @5 (ones :: CPUTensor 'D.Float '[2,3,2,2])
+-- (Float,[2,3,3,5])
 upsample_nearest2d ::
   forall w h shape dtype device.
   (KnownNat h, KnownNat w, All KnownNat shape) =>
