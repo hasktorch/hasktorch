@@ -870,8 +870,9 @@ lstmForwardWithDropout,
 --   :: (Tensor '( 'D.CPU, 0) 'D.Float '[5, 16, 60],
 --       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30],
 --       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30])
--- >>> lstmForwardWithDropout @'BatchFirst model input
--- (Tensor Float [5,16,60] ,Tensor Float [6,5,30] ,Tensor Float [6,5,30] )
+-- >>> (a,b,c) = lstmForwardWithDropout @'BatchFirst model input
+-- >>> ((dtype a, shape a), (dtype b, shape b), (dtype c, shape c))
+-- ((Float,[5,16,60]),(Float,[6,5,30]),(Float,[6,5,30]))
 lstmForwardWithDropout =
   lstmForward
     @shapeOrder
@@ -901,8 +902,9 @@ lstmForwardWithDropout =
 --   :: (Tensor '( 'D.CPU, 0) 'D.Float '[5, 16, 60],
 --       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30],
 --       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30])
--- >>> lstmForwardWithoutDropout @'BatchFirst model input
--- (Tensor Float [5,16,60] ,Tensor Float [6,5,30] ,Tensor Float [6,5,30] )
+-- >>> (a,b,c) = lstmForwardWithoutDropout @'BatchFirst model input
+-- >>> ((dtype a, shape a), (dtype b, shape b), (dtype c, shape c))
+-- ((Float,[5,16,60]),(Float,[6,5,30]),(Float,[6,5,30]))
 lstmForwardWithoutDropout =
   lstmForward
     @shapeOrder

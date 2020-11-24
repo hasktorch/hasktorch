@@ -728,8 +728,9 @@ gruForwardWithDropout,
 -- gruForwardWithDropout @'BatchFirst model input
 --   :: (Tensor '( 'D.CPU, 0) 'D.Float '[5, 16, 60],
 --       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30])
--- >>> gruForwardWithDropout @'BatchFirst model input
--- (Tensor Float [5,16,60] ,Tensor Float [6,5,30] )
+-- >>> (a,b) = gruForwardWithDropout @'BatchFirst model input
+-- >>> ((dtype a, shape a), (dtype b, shape b))
+-- ((Float,[5,16,60]),(Float,[6,5,30]))
 gruForwardWithDropout =
   gruForward
     @shapeOrder
@@ -758,8 +759,9 @@ gruForwardWithDropout =
 -- gruForwardWithoutDropout @'BatchFirst model input
 --   :: (Tensor '( 'D.CPU, 0) 'D.Float '[5, 16, 60],
 --       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30])
--- >>> gruForwardWithoutDropout @'BatchFirst model input
--- (Tensor Float [5,16,60] ,Tensor Float [6,5,30] )
+-- >>> (a,b) = gruForwardWithoutDropout @'BatchFirst model input
+-- >>> ((dtype a, shape a), (dtype b, shape b))
+-- ((Float,[5,16,60]),(Float,[6,5,30]))
 gruForwardWithoutDropout =
   gruForward
     @shapeOrder
