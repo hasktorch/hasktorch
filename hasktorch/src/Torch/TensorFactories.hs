@@ -480,3 +480,29 @@ full' shape value = full shape value defaultOpts
 
 sparseCooTensor' :: Tensor -> Tensor -> [Int] -> Tensor
 sparseCooTensor' indices values size = sparseCooTensor indices values size defaultOpts
+
+-- | Returns a 1-D tensor with values from the interval [start, end) taken with common difference step beginning from start.
+arange ::
+  -- | start
+  Int ->
+  -- | end
+  Int ->
+  -- | step
+  Int ->
+  -- | configures the data type, device, layout and other properties of the resulting tensor.
+  TensorOptions ->
+  -- | output
+  Tensor
+arange s e ss o = unsafePerformIO $ (cast4 ATen.arange_ssso) s e ss o
+
+-- | Returns a 1-D tensor with values from the interval [start, end) taken with common difference step beginning from start.
+arange' ::
+  -- | start
+  Int ->
+  -- | end
+  Int ->
+  -- | step
+  Int ->
+  -- | output
+  Tensor
+arange' s e ss = arange s e ss defaultOpts
