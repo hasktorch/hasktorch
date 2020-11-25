@@ -339,8 +339,8 @@ instance Randomizable BatchNormSpec BatchNorm where
   sample BatchNormSpec {..} = do
     w <- makeIndependent (ones' [numFeatures])
     b <- makeIndependent (zeros' [numFeatures])
-    mean <- toDependent <$> makeIndependent (zeros' [numFeatures])
-    var <- toDependent <$> makeIndependent (ones' [numFeatures])
+    mean <- toDependent <$> makeIndependentWithRequiresGrad (zeros' [numFeatures]) False
+    var <- toDependent <$> makeIndependentWithRequiresGrad (ones' [numFeatures]) False
     return $ BatchNorm w b mean var
 
 data UpSampleSpec = UpSampleSpec
