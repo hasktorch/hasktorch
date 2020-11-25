@@ -12,6 +12,7 @@ import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
 import qualified Language.C.Inline.Context as C
 import qualified Language.C.Types as C
+import Foreign.C.Types (CBool)
 
 import Torch.Internal.Type
 
@@ -65,9 +66,9 @@ grad y inputs = [C.throwBlock| std::vector<at::Tensor>* {
     return new std::vector<at::Tensor>(at::fmap<at::Tensor>(outputs));
   }|]
 
-makeIndependent :: Ptr Tensor -> IO (Ptr Tensor)
-makeIndependent t = [C.throwBlock| at::Tensor* {
-    return new at::Tensor($(at::Tensor* t)->detach().set_requires_grad(true));
+makeIndependent :: Ptr Tensor -> CBool -> IO (Ptr Tensor)
+makeIndependent tensor requires_grad = [C.throwBlock| at::Tensor* {
+    return new at::Tensor($(at::Tensor* tensor)->detach().set_requires_grad($(bool requires_grad)));
   }|]
 
 dropVariable :: Ptr Tensor -> IO (Ptr Tensor)
