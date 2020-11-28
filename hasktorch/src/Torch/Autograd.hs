@@ -28,4 +28,7 @@ requiresGrad :: Tensor -> Bool
 requiresGrad t = unsafePerformIO $ cast1 ATen.tensor_requires_grad t
 
 makeIndependent :: Tensor -> IO IndependentTensor
-makeIndependent t = IndependentTensor <$> cast1 Torch.Internal.Managed.Autograd.makeIndependent t
+makeIndependent tensor = makeIndependentWithRequiresGrad tensor True
+
+makeIndependentWithRequiresGrad :: Tensor -> Bool -> IO IndependentTensor
+makeIndependentWithRequiresGrad tensor requires_grad = IndependentTensor <$> cast2 Torch.Internal.Managed.Autograd.makeIndependent tensor requires_grad

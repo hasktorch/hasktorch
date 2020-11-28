@@ -21,19 +21,19 @@ jobs:
           sudo apt update -qq
           sudo apt -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install cmake curl wget unzip git libtinfo-dev python3 python3-yaml
           (wget -qO- https://get.haskellstack.org/ | sh) || true
-      - uses: cachix/install-nix-action@v10
-      - uses: cachix/cachix-action@v6
+      - uses: cachix/install-nix-action@v12
+      - uses: cachix/cachix-action@v8
         with:
           name: hasktorch
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - run: nix-env -iA cachix -f https://cachix.org/api/v1/install
       - run: cachix use iohk
       - name: Build
-        run: stack --nix build
+        run: stack --nix build --stack-yaml stack-8.10.2.yaml
       - name: Test
         run: |
-          stack --nix test codegen
-          stack --nix test libtorch-ffi
-          stack --nix test hasktorch
-          stack --nix exec codegen-exe
-          stack --nix exec xor-mlp
+          stack --nix test codegen --stack-yaml stack-8.10.2.yaml
+          stack --nix test libtorch-ffi --stack-yaml stack-8.10.2.yaml
+          stack --nix test hasktorch --stack-yaml stack-8.10.2.yaml
+          stack --nix exec codegen-exe --stack-yaml stack-8.10.2.yaml
+          stack --nix exec xor-mlp --stack-yaml stack-8.10.2.yaml

@@ -459,9 +459,15 @@ class TensorLike a where
   _peekElemOff :: Ptr () -> Int -> [Int] -> IO a
   _pokeElemOff :: Ptr () -> Int -> a -> IO ()
 
+bool_opts = withDType Bool defaultOpts
+
+uint8_opts = withDType UInt8 defaultOpts
+
 int64_opts = withDType Int64 defaultOpts
 
 float_opts = withDType Float defaultOpts
+
+double_opts = withDType Double defaultOpts
 
 withTensor :: Tensor -> (Ptr () -> IO a) -> IO a
 withTensor t fn = cast t $ \t' -> withForeignPtr t' $ \tensor_ptr -> Unmanaged.tensor_data_ptr tensor_ptr >>= fn
@@ -509,6 +515,28 @@ instance {-# OVERLAPPING #-} TensorLike Bool where
   _deepDims _ = Just []
   _peekElemOff ptr offset _ = (/= 0) <$> (peekElemOff (castPtr ptr) offset :: IO Word8)
   _pokeElemOff ptr offset v = pokeElemOff (castPtr ptr) offset ((if v then 1 else 0) :: Word8)
+
+instance {-# OVERLAPPING #-} TensorLike Tensor where
+  asTensor' = error "Not implemented for Tensor-type"
+  asTensor = id
+  asValue = id
+  _dtype = error "Not implemented for Tensor-type"
+  _dims v = error "Not implemented for Tensor-type"
+  _deepDims v = error "Not implemented for Tensor-type"
+  _peekElemOff = error "Not implemented for Tensor-type"
+  _pokeElemOff = error "Not implemented for Tensor-type"
+
+instance {-# OVERLAPPING #-} TensorLike a => TensorLike (a, a) where
+  asTensor' = error "Not implemented for tuple-type"
+  asTensor (a, b) = asTensor [a, b]
+  asValue v =
+    let [a, b] = asValue v
+     in (a, b)
+  _dtype = error "Not implemented for tuple-type"
+  _dims v = error "Not implemented for tuple-type"
+  _deepDims v = error "Not implemented for tuple-type"
+  _peekElemOff = error "Not implemented for tuple-type"
+  _pokeElemOff = error "Not implemented for tuple-type"
 
 instance {-# OVERLAPPING #-} TensorLike a => TensorLike [a] where
   asTensor' v opts = unsafePerformIO $ do
@@ -586,7 +614,9 @@ instance Show Tensor where
   show t = case (dim t) of
     0 -> details ++ show0d t
     1 -> details ++ show1d t
-    2 -> details ++ show2d t
+    2 -> details ++ show2d 0 t
+    3 -> details ++ show3d 0 t
+    4 -> details ++ show4d 0 t
     _ -> details
     where
       -- TODO: this is obviously not the right way to do it,
@@ -601,7 +631,9 @@ instance Show Tensor where
           then padPositive (toInt x) $ show $ toInt x
           else padLarge (toDouble x) $ padPositive (toDouble x) $ showGFloat (Just 4) (toDouble x) ""
       show1d = showElems show0d ", "
-      show2d = showElems show1d (",\n " ++ padding)
+      show2d offset = showElems show1d (",\n " ++ padding ++ replicate offset ' ')
+      show3d offset = showElems (show2d (offset + 1)) (",\n " ++ padding ++ replicate offset ' ')
+      show4d offset = showElems (show3d (offset + 1)) (",\n " ++ padding ++ replicate offset ' ')
       details = "Tensor " ++ (show $ dtype t) ++ " " ++ (show $ shape t) ++ " "
       padding = map (const ' ') details
 
