@@ -10,14 +10,14 @@ pkgs: _: with pkgs; {
 
     in stdenv.mkDerivation rec {
       pname = "code-server";
-      version = "3.7.2";
-      commit = "a0db6723c1ef22b40d7ac0df5ac1bb9a92e4fe46";
+      version = "3.7.3";
+      commit = "93fb76e4a71b1959ec2a23481ba2611200d714b2";
 
       src = fetchFromGitHub {
         owner = "cdr";
         repo = "code-server";
         rev = "v${version}";
-        sha256 = "0xh4kd7ha9fh5ix17fp8kk5i6g1aawv63r3gl73gkafg6fwr72vx";
+        sha256 = "1dasgvjlqfpmcim5lgllgqsglv1jw0qpkixkg09886f58gwmhhzq";
         fetchSubmodules = true;
       };
 
@@ -78,7 +78,7 @@ pkgs: _: with pkgs; {
       # buildInputs = [ libsecret xorg.libX11 xorg.libxkbfile ];
       buildInputs = stdenv.lib.optionals (!stdenv.isDarwin) [ libsecret ]
         ++ [xorg.libX11 xorg.libxkbfile ]
-        ++ stdenv.lib.optionals stdenv.isDarwin (with darwin.apple_sdk.frameworks; [ xcbuild AppKit darwin.DarwinTools ])
+        ++ stdenv.lib.optionals stdenv.isDarwin (with darwin.apple_sdk.frameworks; [ xcbuild darwin.DarwinTools AppKit ])
       ;
 
       patchPhase = ''
