@@ -54,6 +54,7 @@ library
                     , Torch.GraduallyTyped.NN.Functional
                     , Torch.GraduallyTyped.NN.Functional.Activation
                     , Torch.GraduallyTyped.NN.Functional.Linear
+                    , Torch.GraduallyTyped.NN.Functional.NonLinearActivation
                     , Torch.GraduallyTyped.Internal.TensorOptions
                     , Torch.GraduallyTyped.Internal.Void
                     , Torch

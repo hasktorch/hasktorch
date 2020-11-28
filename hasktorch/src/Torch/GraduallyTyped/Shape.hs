@@ -547,6 +547,19 @@ type family NumelDimTypeF (dimType :: DimType Symbol Nat) :: Maybe Nat where
   NumelDimTypeF ('Sized size) = 'Just size
   NumelDimTypeF ('NamedSized _ size) = 'Just size
 
+type family CheckSelectDimF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape [Dim (DimType Symbol Nat)]) :: Shape [Dim (DimType Symbol Nat)] where
+  CheckSelectDimF _ 'UncheckedShape = 'UncheckedShape
+  CheckSelectDimF 'UncheckedSelectDim _ = 'UncheckedShape
+  CheckSelectDimF ('SelectDim by) ('Shape dims) = 'Shape (CheckSelectDimDimsImplF by dims)
+
+type family CheckSelectDimDimsImplF (by :: By Symbol Nat) (dims :: [Dim (DimType Symbol Nat)]) :: [Dim (DimType Symbol Nat)] where
+  CheckSelectDimDimsImplF ( 'ByName name) dims = CheckSelectDimByNameDimsImplF name dims
+  CheckSelectDimDimsImplF ( 'ByIndex index) dims = CheckSelectDimByIndexImplF index dims
+
+type family CheckSelectDimByNameDimsImplF (name :: Symbol) (dims :: [Dim (DimType Symbol Nat)]) :: [Dim (DimType Symbol Nat)] where
+
+type family CheckSelectDimByIndexImplF (index :: Nat) (dims :: [Dim (DimType Symbol Nat)]) :: [Dim (DimType Symbol Nat)] where
+
 -- | Given a shape,
 -- returns the first dimension matching 'selectDim'
 -- or 'Nothing' if nothing can be found.
