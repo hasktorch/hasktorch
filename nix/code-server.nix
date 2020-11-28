@@ -1,14 +1,10 @@
 pkgs: _: with pkgs; {
   code-server =
-    ({ stdenv, fetchFromGitHub, buildGoModule, makeWrapper, runCommand
-    , moreutils, jq, git, zip, rsync, pkgconfig, yarn, python2
-    , nodejs-12_x, libsecret, xorg, ripgrep, nettools }:
-
     let
       system = stdenv.hostPlatform.system;
 
-      nodejs = nodejs-12_x;
-      python = python2;
+      nodejs = nodejs-15_x;
+      python = python3;
       yarn' = yarn.override { inherit nodejs; };
       defaultYarnOpts = [ "frozen-lockfile" "non-interactive" "no-progress"];
 
@@ -65,7 +61,7 @@ pkgs: _: with pkgs; {
         # to get hash values use nix-build -A code-server.prefetchYarnCache
         outputHash = {
           x86_64-linux = "0860h4x4yvi56452bc67avpiv29l7dkn4579pqki3fybi0fpacqf";
-          x86_64-darwin = "1443qwkllb714s4qw3b9y1mcc6p2ykgc02pw2k3z2gczvvr0g8qv";
+          x86_64-darwin = "0860h4x4yvi56452bc67avpiv29l7dkn4579pqki3fybi0fpacqf";
         }.${system} or (throw "Unsupported system ${system}");
       };
 
@@ -82,7 +78,7 @@ pkgs: _: with pkgs; {
       # buildInputs = [ libsecret xorg.libX11 xorg.libxkbfile ];
       buildInputs = stdenv.lib.optionals (!stdenv.isDarwin) [ libsecret ]
         ++ [xorg.libX11 xorg.libxkbfile ]
-        ++ stdenv.lib.optionals stdenv.isDarwin (with darwin.apple_sdk.frameworks; [ CoreFoundation Security ])
+        ++ stdenv.lib.optionals stdenv.isDarwin (with darwin.apple_sdk.frameworks; [ xcbuild AppKit darwin.DarwinTools ])
       ;
 
       patchPhase = ''
@@ -208,7 +204,7 @@ pkgs: _: with pkgs; {
         ln -s "${cloudAgent}/bin/cloud-agent" $out/libexec/code-server/lib/coder-cloud-agent
 
         # create wrapper
-        makeWrapper "${nodejs-12_x}/bin/node" "$out/bin/code-server" \
+        makeWrapper "${nodejs}/bin/node" "$out/bin/code-server" \
           --add-flags "$out/libexec/code-server/out/node/entry.js"
       '';
 
@@ -229,9 +225,5 @@ pkgs: _: with pkgs; {
         maintainers = with maintainers; [ offline ];
         platforms = ["x86_64-linux" "x86_64-darwin"];
       };
-    }) { inherit stdenv fetchFromGitHub buildGoModule makeWrapper runCommand
-      moreutils jq git zip rsync pkgconfig yarn python2
-      nodejs-12_x libsecret xorg ripgrep nettools; };
-
-
+    };
 }

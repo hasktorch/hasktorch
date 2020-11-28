@@ -91,6 +91,8 @@ let
           text = "Documentation for hasktorch and its libraries.";
         };
       };
+
+    code-server = pkgs.code-server;
   };
 
 in
