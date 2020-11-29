@@ -5,7 +5,9 @@ import Test.Hspec
 import System.Directory (removeFile)
 
 import Torch.Tensor
+import Torch.TensorFactories
 import Torch.Serialize
+import System.IO
 
 spec :: Spec
 spec = do
@@ -20,3 +22,20 @@ spec = do
     let [ii,vv] = tensors
     (asValue ii :: [[Int]]) `shouldBe` i
     (asValue vv :: [Float]) `shouldBe` v
+  it "save and load a raw data of numpy" $ do
+    let org = zeros' [4]
+    -- Following python script generates 'test/data/numpy_rawfile' file
+    -- 
+    -- #!/usr/bin/env python
+    -- import torch
+    -- f = open("test/data/numpy_rawfile","wb")
+    -- torch.tensor([1,2,3,4], dtype=torch.float32).numpy().tofile(f)
+    -- 
+    new <- System.IO.withFile "test/data/numpy_rawfile" System.IO.ReadMode $
+             \h -> loadBinary h org
+    (asValue new :: [Float]) `shouldBe` [1,2,3,4]
+    System.IO.withFile "numpy_rawfile" System.IO.WriteMode $
+      \h -> saveBinary h new
+    new' <- System.IO.withFile "numpy_rawfile" System.IO.ReadMode $
+             \h -> loadBinary h org
+    (asValue new' :: [Float]) `shouldBe` [1,2,3,4]
