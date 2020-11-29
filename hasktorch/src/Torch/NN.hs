@@ -365,5 +365,7 @@ instance Randomizable UpSampleSpec UpSample where
 
 instance HasForward UpSample Tensor Tensor where
   forward (UpSample (UpSampleSpec {..})) input =
-    upsampleNearest2d (upsampleStride, upsampleStride) (-1) (-1) input
+    upsampleNearest2d (outputWidth * upsampleStride, outputHeight * upsampleStride) (fromIntegral upsampleStride) (fromIntegral upsampleStride) input
+    where
+      outputWidth:outputHeight:_ = reverse $ shape input
   forwardStoch m x = pure $ forward m x

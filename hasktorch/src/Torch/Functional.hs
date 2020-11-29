@@ -2682,7 +2682,7 @@ upsampleNearest2d ::
   -- | self
   Tensor ->
   Tensor
-upsampleNearest2d output_size scales_h scales_w self = unsafePerformIO $ cast4 ATen.upsample_nearest2d_tldd self output_size scales_h scales_w
+upsampleNearest2d (outputHeight, outputWidth) scales_h scales_w self = unsafePerformIO $ cast4 ATen.upsample_nearest2d_tldd self [outputHeight, outputWidth] scales_h scales_w
 
 -- | Splits the tensor into chunks of given size if possible.
 split ::
