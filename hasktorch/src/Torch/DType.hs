@@ -113,3 +113,16 @@ isIntegral Int64 = True
 isIntegral Half = False
 isIntegral Float = False
 isIntegral Double = False
+
+byteLength :: DType -> Int
+byteLength dtype =
+  case dtype of
+    Bool -> 1
+    UInt8 -> 1
+    Int8 -> 1
+    Int16 -> 2
+    Int32 -> 4
+    Int64 -> 8
+    Half -> 2
+    Float -> 4
+    Double -> 8
