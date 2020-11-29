@@ -2848,13 +2848,22 @@ stdMeanDim ::
   (Tensor, Tensor)
 stdMeanDim (Dim d) unbiased k input = unsafePerformIO $ cast4 ATen.std_mean_tlbb input d unbiased (keepdim k)
 
--- | Returns a copy of input.
+-- | Returns a copy of input. Output tensor keeps a computational graph and a requires_grad value of input tensor.
+-- https://discuss.pytorch.org/t/clone-and-detach-in-v0-4-0/16861/41
 clone ::
   -- | input
   Tensor ->
   -- | output
   IO Tensor
 clone input = cast1 ATen.clone_t input
+
+-- | Returns a copy of input. Output tensor does not keep a computational graph and a requires_grad value of input tensor.
+detach ::
+  -- | input
+  Tensor ->
+  -- | output
+  IO Tensor
+detach input = cast1 ATen.detach_t input
 
 -- | Returns a new tensor with the same data as the input tensor but of a different shape.
 view ::
