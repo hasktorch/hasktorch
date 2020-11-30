@@ -23,7 +23,6 @@ module Torch.GraduallyTyped.Tensor.Creation
   )
 where
 
-import Data.Foldable (Foldable (fold))
 import Data.Int (Int16)
 import Data.Kind (Type)
 import Data.Monoid (All (..))
@@ -154,64 +153,60 @@ instance
 --
 -- >>> :type ones @'Dependent @'UncheckedLayout @'UncheckedDevice @'UncheckedDataType @'UncheckedShape
 -- ones @'Dependent @'UncheckedLayout @'UncheckedDevice @'UncheckedDataType @'UncheckedShape
---   :: MonadFail m =>
---      LayoutType
---      -> DeviceType Int16
+--   :: LayoutType
+--      -> DeviceType GHC.Int.Int16
 --      -> DType
---      -> [DimType String Integer]
---      -> m (Tensor
---              'Dependent
---              'UncheckedLayout
---              'UncheckedDevice
---              'UncheckedDataType
---              'UncheckedShape)
+--      -> [Dim String Integer]
+--      -> Tensor
+--           'Dependent
+--           'UncheckedLayout
+--           'UncheckedDevice
+--           'UncheckedDataType
+--           'UncheckedShape
 --
 -- >>> :type ones @'Dependent @('Layout 'Dense) @'UncheckedDevice @'UncheckedDataType @'UncheckedShape
 -- ones @'Dependent @('Layout 'Dense) @'UncheckedDevice @'UncheckedDataType @'UncheckedShape
---   :: MonadFail m =>
---      DeviceType Int16
+--   :: DeviceType Int16
 --      -> DType
---      -> [DimType String Integer]
---      -> m (Tensor
---              'Dependent
---              ('Layout 'Dense)
---              'UncheckedDevice
---              'UncheckedDataType
---              'UncheckedShape)
+--      -> [Dim String Integer]
+--      -> Tensor
+--           'Dependent
+--           ('Layout 'Dense)
+--           'UncheckedDevice
+--           'UncheckedDataType
+--           'UncheckedShape
 --
 -- >>> :type ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @'UncheckedDataType @'UncheckedShape
 -- ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @'UncheckedDataType @'UncheckedShape
---   :: MonadFail m =>
---      DType
---      -> [DimType String Integer]
---      -> m (Tensor
---              'Dependent
---              ('Layout 'Dense)
---              ('Device ('CUDA 0))
---              'UncheckedDataType
---              'UncheckedShape)
+--   :: DType
+--      -> [Dim String Integer]
+--      -> Tensor
+--           'Dependent
+--           ('Layout 'Dense)
+--           ('Device ('CUDA 0))
+--           'UncheckedDataType
+--           'UncheckedShape
 --
 -- >>> :type ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @'UncheckedShape
 -- ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @'UncheckedShape
---   :: MonadFail m =>
---      [DimType String Integer]
---      -> m (Tensor
---              'Dependent
---              ('Layout 'Dense)
---              ('Device ('CUDA 0))
---              ('DataType 'Half)
---              'UncheckedShape)
---
--- >>> :type ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @('Shape '[ 'NamedSized "batch" 32, 'NamedSized "feature" 8])
--- ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @('Shape '[ 'NamedSized "batch" 32, 'NamedSized "feature" 8])
---   :: MonadFail m =>
---      m (Tensor
+--   :: [Dim String Integer]
+--      -> Tensor
 --           'Dependent
 --           ('Layout 'Dense)
 --           ('Device ('CUDA 0))
 --           ('DataType 'Half)
---           ('Shape
---              '[ 'Dim ('NamedSized "batch" 32), 'Dim ('NamedSized "feature" 8)]))
+--           'UncheckedShape
+--
+-- >>> :type ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)])
+-- ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)])
+--   :: Tensor
+--        'Dependent
+--        ('Layout 'Dense)
+--        ('Device ('CUDA 0))
+--        ('DataType 'Half)
+--        ('Shape
+--           '[ 'Dim ('Name "batch") ('Size 32),
+--              'Dim ('Name "feature") ('Size 8)])
 ones ::
   forall requiresGradient layout device dataType shape.
   WithCreateC (Tensor requiresGradient layout device dataType shape) requiresGradient layout device dataType shape =>

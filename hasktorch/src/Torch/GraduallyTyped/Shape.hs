@@ -34,7 +34,7 @@ import qualified Torch.Internal.Managed.Type.Dimname as ATen (dimname_symbol, fr
 import qualified Torch.Internal.Managed.Type.DimnameList as ATen (dimnameList_at_s, dimnameList_push_back_n, dimnameList_size, newDimnameList)
 import qualified Torch.Internal.Managed.Type.IntArray as ATen
 import qualified Torch.Internal.Managed.Type.StdString as ATen (newStdString_s, string_c_str)
-import qualified Torch.Internal.Managed.Type.Symbol as ATen (dimname_s)
+import qualified Torch.Internal.Managed.Type.Symbol as ATen (symbol_toUnqualString, dimname_s)
 import Torch.Internal.Type (IntArray)
 import qualified Torch.Internal.Type as ATen (Dimname, DimnameList)
 import Type.Errors.Pretty (type (%), type (<>))
@@ -435,7 +435,7 @@ instance Castable String (ForeignPtr ATen.Dimname) where
   uncast ptr f =
     let name = unsafePerformIO $ do
           symbol <- ATen.dimname_symbol ptr
-          str <- undefined symbol
+          str <- ATen.symbol_toUnqualString symbol
           ATen.string_c_str str
      in f name
 
