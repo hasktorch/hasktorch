@@ -26,12 +26,13 @@ import Torch.GraduallyTyped.NN.Dropout (Dropout (Dropout))
 import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearC, Linear (Linear))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape (dimVal, WithShapeC(..), NumelF, By(..), SelectDim(..), Dim (..), DimType (..), Shape (..), WithDimC (..))
+import Torch.GraduallyTyped.Shape (dimSize, Size(..), Name(..), KnownDim(..), WithShapeC(..), NumelF, By(..), SelectDim(..), Dim (..), Shape (..), WithDimC (..))
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (divScalar, add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (ReshapeF, TransposeF, reshape, transpose)
 import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (matmul)
 import Torch.GraduallyTyped.NN.Functional.Linear (LinearF)
+import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (softmax)
 
 -- residual f g x = f x >>= (\x' -> g (x `add` x'))
 
@@ -43,9 +44,9 @@ data
   MultiheadAttention
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
-    (queryEmbedDim :: Dim (DimType Symbol Nat))
-    (keyEmbedDim :: Dim (DimType Symbol Nat))
-    (valueEmbedDim :: Dim (DimType Symbol Nat))
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
     (dropoutP :: Type)
   where
   MultiheadAttention ::
@@ -175,7 +176,7 @@ instance
         pure $ MultiheadAttention qInProj kInProj vInProj outProj dropout
 
 reshape' ::
-  forall (batchDim :: Dim (DimType Symbol Nat)) (seqDim :: Dim (DimType Symbol Nat)) (headDim :: Dim (DimType Symbol Nat)) (headEmbedDim :: Dim (DimType Symbol Nat)) requiresGradient layout device dataType shape.
+  forall (batchDim :: Dim (Name Symbol) (Size Nat)) (seqDim :: Dim (Name Symbol) (Size Nat)) (headDim :: Dim (Name Symbol) (Size Nat)) (headEmbedDim :: Dim (Name Symbol) (Size Nat)) requiresGradient layout device dataType shape.
   ( WithShapeC
       ( 'Shape '[batchDim, seqDim, headDim, headEmbedDim])
       ( Tensor requiresGradient layout device dataType shape ->
@@ -351,7 +352,7 @@ reshape' =
       )
 
 multiheadAttention ::
-  forall (batchDim :: Dim (DimType Symbol Nat)) (querySeqDim :: Dim (DimType Symbol Nat)) (keySeqDim :: Dim (DimType Symbol Nat)) (headDim :: Dim (DimType Symbol Nat)) (headEmbedDim :: Dim (DimType Symbol Nat)) device dataType queryEmbedDim keyEmbedDim valueEmbedDim dropoutP requiresGradient queryLayout queryDevice queryDataType queryShape keyLayout keyDevice keyDataType keyShape valueLayout valueDevice valyeDataType valueShape generatorDevice outputLayout outputDevice outputDataType outputShape.
+  forall (batchDim :: Dim (Name Symbol) (Size Nat)) (querySeqDim :: Dim (Name Symbol) (Size Nat)) (keySeqDim :: Dim (Name Symbol) (Size Nat)) (headDim :: Dim (Name Symbol) (Size Nat)) (headEmbedDim :: Dim (Name Symbol) (Size Nat)) device dataType queryEmbedDim keyEmbedDim valueEmbedDim dropoutP requiresGradient queryLayout queryDevice queryDataType queryShape keyLayout keyDevice keyDataType keyShape valueLayout valueDevice valyeDataType valueShape generatorDevice outputLayout outputDevice outputDataType outputShape.
   _ =>
   -- | multi-head attention model
   MultiheadAttention device dataType queryEmbedDim keyEmbedDim valueEmbedDim dropoutP ->
@@ -369,24 +370,21 @@ multiheadAttention ::
   )
 multiheadAttention MultiheadAttention {..} query key value g =
   let batchDim = case dimVal @batchDim of
-        UncheckedDim -> undefined
-        Dim dimType -> dimType
+        Dim (Name name) (Size size) -> Dim name size
+        Dim _ _ -> undefined
       querySeqDim = case dimVal @querySeqDim of
-        UncheckedDim -> undefined
-        Dim dimType -> dimType
+        Dim (Name name) (Size size) -> Dim name size
+        Dim _ _ -> undefined
       keySeqDim = case dimVal @keySeqDim of
-        UncheckedDim -> undefined
-        Dim dimType -> dimType
+        Dim (Name name) (Size size) -> Dim name size
+        Dim _ _ -> undefined
       headDim = case dimVal @headDim of
-        UncheckedDim -> undefined
-        Dim dimType -> dimType
+        Dim (Name name) (Size size) -> Dim name size
+        Dim _ _ -> undefined
       headEmbedDim = case dimVal @headEmbedDim of
-        UncheckedDim -> undefined
-        Dim dimType -> dimType
-      scaling :: Double = sqrt . fromIntegral $ case headDim of
-        Named _ -> error "scaling"
-        Sized size -> size
-        NamedSized _ size -> size
+        Dim (Name name) (Size size) -> Dim name size
+        Dim _ _ -> undefined
+      scaling :: Double = sqrt . fromIntegral . dimSize $ headDim
       q =
         transpose @( 'SelectDim ( 'ByIndex 1)) @( 'SelectDim ( 'ByIndex 2))
           . reshape' @batchDim @querySeqDim @headDim @headEmbedDim [batchDim, querySeqDim, headDim, headEmbedDim]
@@ -417,7 +415,7 @@ multiheadAttention MultiheadAttention {..} query key value g =
                 ( 'Shape '[batchDim, seqDim, headDim, headEmbedDim])
             )
         ) =>
-      [DimType String Integer] ->
+      [Dim String Integer] ->
       Tensor requiresGradient layout device dataType shape ->
       Tensor
         requiresGradient
@@ -449,8 +447,6 @@ multiheadAttention MultiheadAttention {..} query key value g =
         (reshape @( 'Shape '[batchDim, seqDim, headDim, headEmbedDim]) @requiresGradient @layout @device @dataType @shape)
         [batchDim, seqDim, headDim, headEmbedDim]
         input
-      
-
 
 -- attent MultiheadAttention {..} attentionWeights value =
 --   let v = 

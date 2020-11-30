@@ -17,7 +17,7 @@ module Torch.GraduallyTyped.NN.Initialization where
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape (DimType (..))
+import Torch.GraduallyTyped.Shape (Dim(..),dimSize)
 import Torch.GraduallyTyped.Tensor.Creation (WithCreateC (..), randn)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mulScalar, subScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
@@ -39,14 +39,9 @@ calculateGain Tanh = 5 / 3
 calculateGain Relu = sqrt 2
 calculateGain (LeakyRelu param) = sqrt (2 / (1 + param ^^ 2))
 
-dimSize :: DimType String Integer -> Integer
-dimSize (Named _) = error $ errorPrefix <> "Cannot determine size of dimension."
-dimSize (Sized size) = size
-dimSize (NamedSized _ size) = size
-
 -- | Fan-in / Fan-out scaling calculation
 calculateFan ::
-  [DimType String Integer] ->
+  [Dim String Integer] ->
   (Integer, Integer)
 calculateFan shape =
   if dimT < 2
@@ -165,9 +160,9 @@ kaimingUniform =
   where
     go requiresGradient layoutType deviceType dType shape fanMode nonLinearity =
       let gain = calculateGain nonLinearity
-          fanValue = fromIntegral $ (getter fanMode) (calculateFan shape)
-          std = gain / (sqrt fanValue)
-          bound = (sqrt 3) * std
+          fanValue = fromIntegral $ getter fanMode (calculateFan shape)
+          std = gain / sqrt fanValue
+          bound = sqrt 3 * std
        in runState $ do
             init <-
               state $
@@ -200,8 +195,8 @@ kaimingNormal =
   where
     go requiresGradient layoutType deviceType dType shape fanMode nonLinearity =
       let gain = calculateGain nonLinearity
-          fanValue = fromIntegral $ (getter fanMode) (calculateFan shape)
-          std = gain / (sqrt fanValue)
+          fanValue = fromIntegral $ getter fanMode (calculateFan shape)
+          std = gain / sqrt fanValue
        in runState $ do
             init <-
               state $

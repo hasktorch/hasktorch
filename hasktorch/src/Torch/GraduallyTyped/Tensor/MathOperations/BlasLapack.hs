@@ -13,13 +13,13 @@ import Torch.GraduallyTyped.DType (UnifyDataTypeF)
 import Torch.GraduallyTyped.Device (UnifyDeviceF)
 import Torch.GraduallyTyped.Layout (UnifyLayoutF)
 import Torch.GraduallyTyped.Prelude (PrependMaybe, Reverse)
-import Torch.GraduallyTyped.Shape (BroadcastDimsImplF, Dim, DimType, Shape (..))
+import Torch.GraduallyTyped.Shape (Size, Name, BroadcastDimsImplF, Dim, Shape (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.Internal.Cast (cast2)
 import qualified Torch.Internal.Managed.Native as ATen
 import Type.Errors.Pretty (type (%), type (<>))
 
-type family MatmulDimsImplF (reversedDims :: [Dim (DimType Symbol Nat)]) (reversedDims' :: [Dim (DimType Symbol Nat)]) :: Maybe [Dim (DimType Symbol Nat)] where
+type family MatmulDimsImplF (reversedDims :: [Dim (Name Symbol) (Size Nat)]) (reversedDims' :: [Dim (Name Symbol) (Size Nat)]) :: Maybe [Dim (Name Symbol) (Size Nat)] where
   MatmulDimsImplF (k ': '[]) (k ': '[]) = Just '[]
   MatmulDimsImplF (k ': '[]) (m ': k ': reversedBroadcastDims') =
     PrependMaybe (Just m) (BroadcastDimsImplF '[] reversedBroadcastDims')
@@ -29,7 +29,7 @@ type family MatmulDimsImplF (reversedDims :: [Dim (DimType Symbol Nat)]) (revers
     PrependMaybe (Just m) (PrependMaybe (Just n) (BroadcastDimsImplF reversedBroadcastDims reversedBroadcastDims'))
   MatmulDimsImplF _ _ = 'Nothing
 
-type family MatmulDimsCheckF (dims :: [Dim (DimType Symbol Nat)]) (dims' :: [Dim (DimType Symbol Nat)]) (result :: Maybe [Dim (DimType Symbol Nat)]) :: [Dim (DimType Symbol Nat)] where
+type family MatmulDimsCheckF (dims :: [Dim (Name Symbol) (Size Nat)]) (dims' :: [Dim (Name Symbol) (Size Nat)]) (result :: Maybe [Dim (Name Symbol) (Size Nat)]) :: [Dim (Name Symbol) (Size Nat)] where
   MatmulDimsCheckF dims dims' Nothing =
     TypeError
       ( "Cannot multiply the tensors since the dimensions"
@@ -43,7 +43,7 @@ type family MatmulDimsCheckF (dims :: [Dim (DimType Symbol Nat)]) (dims' :: [Dim
 
 type MatmulDimsF dims dims' = MatmulDimsCheckF dims dims' (MatmulDimsImplF (Reverse dims) (Reverse dims'))
 
-type family MatmulF (shape :: Shape [Dim (DimType Symbol Nat)]) (shape' :: Shape [Dim (DimType Symbol Nat)]) :: Shape [Dim (DimType Symbol Nat)] where
+type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
   MatmulF 'UncheckedShape _ = 'UncheckedShape
   MatmulF _ 'UncheckedShape = 'UncheckedShape
   MatmulF ( 'Shape dims) ( 'Shape dims') = 'Shape (MatmulDimsF dims dims')

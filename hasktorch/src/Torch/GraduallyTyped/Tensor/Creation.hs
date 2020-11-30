@@ -23,8 +23,10 @@ module Torch.GraduallyTyped.Tensor.Creation
   )
 where
 
+import Data.Foldable (Foldable (fold))
 import Data.Int (Int16)
 import Data.Kind (Type)
+import Data.Monoid (All (..))
 import GHC.TypeLits (Nat, Symbol)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType)
@@ -36,7 +38,7 @@ import Torch.GraduallyTyped.Layout (KnownLayoutType, Layout (..), LayoutType, Wi
 import Torch.GraduallyTyped.Prelude (Catch)
 import Torch.GraduallyTyped.Random (Generator, withGenerator)
 import Torch.GraduallyTyped.RequiresGradient (KnownRequiresGradient, RequiresGradient (..), requiresGradientVal)
-import Torch.GraduallyTyped.Shape (Dim, DimType, Shape (..), WidenShapeF, WithShapeC (..), namedDims, sizedDims)
+import Torch.GraduallyTyped.Shape (Dim (..), Name (..), Shape (..), Size (..), WithShapeC (..), dimName, dimSize)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
 import Torch.Internal.Cast (cast2, cast3, cast4)
 import qualified Torch.Internal.Managed.TensorFactories as ATen
@@ -47,7 +49,7 @@ import qualified Torch.Internal.Managed.TensorFactories as ATen
 -- >>> import Torch.GraduallyTyped.Device (DeviceType (..))
 -- >>> import Torch.GraduallyTyped.Layout (LayoutType (..))
 -- >>> import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
--- >>> import Torch.GraduallyTyped.Shape (Dim (..), DimType (..))
+-- >>> import Torch.GraduallyTyped.Shape (Dim (..))
 
 class
   WithCreateC
@@ -56,7 +58,7 @@ class
     (layout :: Layout LayoutType)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
-    (shape :: Shape [Dim (DimType Symbol Nat)])
+    (shape :: Shape [Dim (Name Symbol) (Size Nat)])
   where
   type
     WithCreateF createOut requiresGradient layout device dataType shape ::
@@ -66,7 +68,7 @@ class
       LayoutType ->
       DeviceType Int16 ->
       DType ->
-      [DimType String Integer] ->
+      [Dim String Integer] ->
       createOut
     ) ->
     WithCreateF createOut requiresGradient layout device dataType shape
@@ -76,7 +78,7 @@ class
       LayoutType ->
       DeviceType Int16 ->
       DType ->
-      [DimType String Integer] ->
+      [Dim String Integer] ->
       createOut
     )
 
@@ -135,19 +137,18 @@ instance
                     go (requiresGradientVal @requiresGradient) layoutType deviceType dType shape
   withoutCreate go =
     \_requiresGradient layoutType deviceType dType shape ->
-      ( withoutShape @shape
-          ( withoutDataType @dataType
-              ( withoutDevice @device
-                  ( withoutLayout @layout
-                      go
-                      layoutType
-                  )
-                  deviceType
-              )
-              dType
-          )
-          shape
-      )
+      withoutShape @shape
+        ( withoutDataType @dataType
+            ( withoutDevice @device
+                ( withoutLayout @layout
+                    go
+                    layoutType
+                )
+                deviceType
+            )
+            dType
+        )
+        shape
 
 -- | Create a tensor of ones.
 --
@@ -225,32 +226,32 @@ ones =
     @shape
     go
   where
-    go requiresGradient layoutType deviceType dType shape =
+    go requiresGradient layoutType deviceType dType dims =
       let opts = tensorOptions requiresGradient layoutType deviceType dType
-          tensor = unsafePerformIO $ case (namedDims shape, sizedDims shape) of
-            (Just names, Just sizes) -> cast3 ATen.ones_lNo sizes names opts
-            (Nothing, Just sizes) -> cast2 ATen.ones_lo sizes opts
-            _ -> fail $ "Invalid tensor shape specification " <> show shape <> "."
+          tensor = unsafePerformIO $ case (map dimName dims, map dimSize dims) of
+            (names, sizes)
+              | getAll . foldMap (\name -> All $ name == mempty) $ names -> cast2 ATen.ones_lo sizes opts
+              | otherwise -> cast3 ATen.ones_lNo sizes names opts
        in UnsafeTensor tensor
 
 checkedOnes ::
-  forall requiresGradient layoutType deviceType dType dimTypes.
+  forall requiresGradient layoutType deviceType dType dims.
   ( KnownRequiresGradient requiresGradient,
     KnownLayoutType layoutType,
     KnownDeviceType deviceType,
     KnownDType dType,
-    WithShapeC (WidenShapeF ( 'Shape dimTypes)) (Tensor requiresGradient ( 'Layout layoutType) ( 'Device deviceType) ( 'DataType dType) (WidenShapeF ( 'Shape dimTypes)))
+    WithShapeC ( 'Shape dims) (Tensor requiresGradient ( 'Layout layoutType) ( 'Device deviceType) ( 'DataType dType) ( 'Shape dims))
   ) =>
   WithShapeF
-    (WidenShapeF ( 'Shape dimTypes))
+    ( 'Shape dims)
     ( Tensor
         requiresGradient
         ( 'Layout layoutType)
         ( 'Device deviceType)
         ( 'DataType dType)
-        (WidenShapeF ( 'Shape dimTypes))
+        ( 'Shape dims)
     )
-checkedOnes = ones @requiresGradient @( 'Layout layoutType) @( 'Device deviceType) @( 'DataType dType) @(WidenShapeF ( 'Shape dimTypes))
+checkedOnes = ones @requiresGradient @( 'Layout layoutType) @( 'Device deviceType) @( 'DataType dType) @( 'Shape dims)
 
 -- | Like 'ones', but specialized to the case in which all arguments are unchecked at compile time.
 uncheckedOnes ::
@@ -261,7 +262,7 @@ uncheckedOnes ::
   -- | Data type of the tensor.
   DType ->
   -- | Shape of the tensor.
-  [DimType String Integer] ->
+  [Dim String Integer] ->
   -- | Returned tensor.
   Tensor
     'Dependent
@@ -283,49 +284,49 @@ randn = withCreate @(Generator device' -> (Tensor requiresGradient layout device
       let opts = tensorOptions requiresGradient layoutType deviceType dType
        in withGenerator
             ( \genPtr -> do
-                tensor <- case (namedDims shape, sizedDims shape) of
-                  (Just names, Just sizes) -> cast4 ATen.randn_lGNo sizes genPtr names opts
-                  (Nothing, Just sizes) -> cast3 ATen.randn_lGo sizes genPtr opts
-                  _ -> fail $ "Invalid tensor shape specification " <> show shape <> "."
+                tensor <- case (map dimName shape, map dimSize shape) of
+                  (names, sizes)
+                    | getAll . foldMap (\name -> All $ name == mempty) $ names -> cast3 ATen.randn_lGo sizes genPtr opts
+                    | otherwise -> cast4 ATen.randn_lGNo sizes genPtr names opts
                 pure $ UnsafeTensor tensor
             )
             ( unsafePerformIO $ do
-                tensor <- case (namedDims shape, sizedDims shape) of
-                  (Just names, Just sizes) -> cast3 ATen.zeros_lNo sizes names opts
-                  (Nothing, Just sizes) -> cast2 ATen.zeros_lo sizes opts
-                  _ -> fail $ "Invalid tensor shape specification " <> show shape <> "."
+                tensor <- case (map dimName shape, map dimSize shape) of
+                  (names, sizes)
+                    | getAll . foldMap (\name -> All $ name == mempty) $ names -> cast2 ATen.zeros_lo sizes opts
+                    | otherwise -> cast3 ATen.zeros_lNo sizes names opts
                 pure $ UnsafeTensor tensor
             )
 
 checkedRandn ::
-  forall requiresGradient layoutType deviceType dType dimTypes.
+  forall requiresGradient layoutType deviceType dType dims.
   ( KnownRequiresGradient requiresGradient,
     KnownLayoutType layoutType,
     KnownDeviceType deviceType,
     KnownDType dType,
     Catch deviceType,
-    WithShapeC (WidenShapeF ( 'Shape dimTypes)) (Generator ( 'Device deviceType) -> (Tensor requiresGradient ( 'Layout layoutType) ( 'Device deviceType) ( 'DataType dType) (WidenShapeF ( 'Shape dimTypes)), Generator ( 'Device deviceType)))
+    WithShapeC ( 'Shape dims) (Generator ( 'Device deviceType) -> (Tensor requiresGradient ( 'Layout layoutType) ( 'Device deviceType) ( 'DataType dType) ( 'Shape dims), Generator ( 'Device deviceType)))
   ) =>
   ( WithShapeF
-      (WidenShapeF ( 'Shape dimTypes))
+      ( 'Shape dims)
       ( Generator ( 'Device deviceType) ->
         ( Tensor
             requiresGradient
             ( 'Layout layoutType)
             ( 'Device deviceType)
             ( 'DataType dType)
-            (WidenShapeF ( 'Shape dimTypes)),
+            ( 'Shape dims),
           Generator ( 'Device deviceType)
         )
       )
   )
-checkedRandn = randn @requiresGradient @( 'Layout layoutType) @( 'Device deviceType) @( 'DataType dType) @(WidenShapeF ( 'Shape dimTypes)) @( 'Device deviceType)
+checkedRandn = randn @requiresGradient @( 'Layout layoutType) @( 'Device deviceType) @( 'DataType dType) @( 'Shape dims) @( 'Device deviceType)
 
 uncheckedRandn ::
   LayoutType ->
   DeviceType Int16 ->
   DType ->
-  [DimType String Integer] ->
+  [Dim String Integer] ->
   Generator 'UncheckedDevice ->
   (Tensor 'Dependent 'UncheckedLayout 'UncheckedDevice 'UncheckedDataType 'UncheckedShape, Generator 'UncheckedDevice)
 uncheckedRandn = randn @ 'Dependent @ 'UncheckedLayout @ 'UncheckedDevice @ 'UncheckedDataType @ 'UncheckedShape

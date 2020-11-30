@@ -14,7 +14,7 @@ import Torch.GraduallyTyped.DType (UnifyDataTypeF)
 import Torch.GraduallyTyped.Device (UnifyDeviceF)
 import Torch.GraduallyTyped.Layout (UnifyLayoutF)
 import Torch.GraduallyTyped.Prelude (Reverse, Seq)
-import Torch.GraduallyTyped.Shape (BroadcastShapesF, By (..), Dim (..), DimType (..), SelectDim (..), Shape (..), UnifyDimF)
+import Torch.GraduallyTyped.Shape (Size, Name, BroadcastShapesF, By (..), Dim (..), SelectDim (..), Shape (..), UnifyDimF)
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (TransposeF, transpose)
 import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (MatmulF, matmul)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
@@ -32,9 +32,9 @@ import Type.Errors.Pretty (type (%), type (<>))
 -- >>> type BiasShape = 'Shape '[OutputDim]
 -- >>> type InputShape = 'Shape '[BatchDim, InputDim]
 -- >>> :kind! LinearF WeightShape BiasShape InputShape
--- LinearF WeightShape BiasShape InputShape :: Shape [Dim (DimType Symbol Nat)]
+-- LinearF WeightShape BiasShape InputShape :: Shape [Dim (Name Symbol) (Size Nat)]
 -- = 'Shape '[ 'Dim ('NamedSized "batch" 20), 'Dim ('NamedSized "output" 10)]
-type family LinearF (weightShape :: Shape [Dim (DimType Symbol Nat)]) (biasShape :: Shape [Dim (DimType Symbol Nat)]) (inputShape :: Shape [Dim (DimType Symbol Nat)]) :: Shape [Dim (DimType Symbol Nat)] where
+type family LinearF (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (biasShape :: Shape [Dim (Name Symbol) (Size Nat)]) (inputShape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
   LinearF ( 'Shape '[]) _ _ = TypeError (LinearWeightDimsErrorMessage '[])
   LinearF ( 'Shape '[weightDim]) _ _ = TypeError (LinearWeightDimsErrorMessage '[weightDim])
   LinearF ( 'Shape (weightDim ': weightDim' ': weightDim'' ': weightDims)) _ _ = TypeError (LinearWeightDimsErrorMessage (weightDim ': weightDim' ': weightDim'' ': weightDims))
@@ -46,7 +46,7 @@ type family LinearF (weightShape :: Shape [Dim (DimType Symbol Nat)]) (biasShape
   LinearF _ 'UncheckedShape _ = 'UncheckedShape
   LinearF _ _ 'UncheckedShape = 'UncheckedShape
 
-type family LinearDimsF (weightDims :: [Dim (DimType Symbol Nat)]) (biasDims :: [Dim (DimType Symbol Nat)]) (reversedInputDims :: [Dim (DimType Symbol Nat)]) :: [Dim (DimType Symbol Nat)] where
+type family LinearDimsF (weightDims :: [Dim (Name Symbol) (Size Nat)]) (biasDims :: [Dim (Name Symbol) (Size Nat)]) (reversedInputDims :: [Dim (Name Symbol) (Size Nat)]) :: [Dim (Name Symbol) (Size Nat)] where
   LinearDimsF '[outputDim, inputDim] '[outputDim'] (inputDim' ': reversedInputDims) = Seq (UnifyDimF inputDim inputDim') (UnifyDimF outputDim outputDim' ': reversedInputDims)
 
 type LinearInputDimsErrorMessage =
@@ -54,7 +54,7 @@ type LinearInputDimsErrorMessage =
     % "The input tensor does not have the minimum required number of dimensions."
     % "At least one dimension is needed, but none were found."
 
-type LinearBiasDimsErrorMessage (biasDims :: [Dim (DimType Symbol Nat)]) =
+type LinearBiasDimsErrorMessage (biasDims :: [Dim (Name Symbol) (Size Nat)]) =
   "Cannot apply the linear transformation."
     % "The bias tensor must have exactly one dimension,"
     % "but the following dimensions were found:"
@@ -62,7 +62,7 @@ type LinearBiasDimsErrorMessage (biasDims :: [Dim (DimType Symbol Nat)]) =
     % "    " <> biasDims <> "."
     % ""
 
-type LinearWeightDimsErrorMessage (weightDims :: [Dim (DimType Symbol Nat)]) =
+type LinearWeightDimsErrorMessage (weightDims :: [Dim (Name Symbol) (Size Nat)]) =
   "Cannot apply the linear transformation."
     % "The weight tensor must have exactly two dimensions,"
     % "but the following dimensions were found:"

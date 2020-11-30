@@ -21,11 +21,11 @@
 
 module Torch.GraduallyTyped.Tensor.Type where
 
-import Control.Monad (foldM)
 import Data.Coerce (coerce)
+import Data.Foldable (Foldable (fold))
 import Data.Int (Int16)
 import Data.Kind (Type)
-import Data.Monoid (All (..), Sum (..))
+import Data.Monoid (All (..))
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (Nat, Symbol)
 import System.IO.Unsafe (unsafePerformIO)
@@ -34,10 +34,10 @@ import Torch.GraduallyTyped.DType (DataType (..), KnownDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice (..))
 import Torch.GraduallyTyped.Internal.TensorOptions (tensorOptions)
 import Torch.GraduallyTyped.Layout (KnownLayout (..), Layout (..), LayoutType (..))
-import Torch.GraduallyTyped.Prelude (Proxy, ifM, (&&^))
+import Torch.GraduallyTyped.Prelude (ifM, (&&^))
 import Torch.GraduallyTyped.RequiresGradient (KnownRequiresGradient, RequiresGradient (..), requiresGradientVal)
 import Torch.GraduallyTyped.Scalar ()
-import Torch.GraduallyTyped.Shape (Dim (..), DimType (..), KnownShape (..), ReplaceDimF, Shape (..), namedDims, sizedDims)
+import Torch.GraduallyTyped.Shape (Dim (..), KnownShape (..), Name (..), ReplaceDimF, Shape (..), Size (..))
 import Torch.HList (HList (..), pattern (:.))
 import Torch.Internal.Cast (cast0, cast1, cast2, cast3, cast4)
 import Torch.Internal.Class (Castable (..))
@@ -72,7 +72,7 @@ newtype
     (layout :: Layout LayoutType)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
-    (shape :: Shape [Dim (DimType Symbol Nat)])
+    (shape :: Shape [Dim (Name Symbol) (Size Nat)])
   where
   -- | Unsafe constructor for tensors.
   -- Do not call this constructor directly,
@@ -89,7 +89,7 @@ type family
           Layout LayoutType,
           Device (DeviceType Nat),
           DataType DType,
-          Shape [Dim (DimType Symbol Nat)]
+          Shape [Dim (Name Symbol) (Size Nat)]
         )
     ) ::
     Type
@@ -131,7 +131,7 @@ instance
     KnownLayout layout,
     KnownDevice device,
     KnownDataType dataType,
-    KnownShape (Dim (DimType Symbol Nat)) shape
+    KnownShape shape
   ) =>
   Num (Tensor requiresGradient layout device dataType shape)
   where
@@ -141,33 +141,34 @@ instance
   negate = unsafePerformIO . cast1 ATen.neg_t
   abs = unsafePerformIO . cast1 ATen.abs_t
   signum = unsafePerformIO . cast1 ATen.sign_t
-  fromInteger a =
-    go
-      (requiresGradientVal @requiresGradient)
-      (layoutVal @layout)
-      (deviceVal @device)
-      (dataTypeVal @dataType)
-      (shapeVal @(Dim (DimType Symbol Nat)) @shape)
-    where
-      prefix = "Unable to convert the integer " <> show a <> " to a tensor. "
-      go _ UncheckedLayout _ _ _ = error $ prefix <> "The memory layout is unknown."
-      go _ _ UncheckedDevice _ _ = error $ prefix <> "The tensor device is unknown."
-      go _ _ _ UncheckedDataType _ = error $ prefix <> "The tensor data type is unknown."
-      go _ _ _ _ UncheckedShape = error $ prefix <> "The tensor shape is unknown."
-      go requiresGradient (Layout layoutType) (Device deviceType) (DataType dType) (Shape shape) =
-        let opts = tensorOptions requiresGradient layoutType deviceType dType
-            shape' =
-              foldr
-                ( \case
-                    UncheckedDim -> \_ -> error $ prefix <> "Not all dimensions are known."
-                    Dim dimType -> \dimTypes -> dimType : dimTypes
-                )
-                []
-                shape
-         in case (namedDims shape', sizedDims shape') of
-              (Just names, Just sizes) -> unsafePerformIO $ cast4 ATen.full_lsNo sizes a names opts
-              (_, Just sizes) -> unsafePerformIO $ cast3 ATen.full_lso sizes a opts
-              _ -> error $ prefix <> "Invalid tensor shape specification " <> show shape <> "."
+  fromInteger a = undefined
+
+-- go
+--   (requiresGradientVal @requiresGradient)
+--   (layoutVal @layout)
+--   (deviceVal @device)
+--   (dataTypeVal @dataType)
+--   (shapeVal @(Dim (Name Symbol) (Size Nat)) @shape)
+-- where
+--   prefix = "Unable to convert the integer " <> show a <> " to a tensor. "
+--   go _ UncheckedLayout _ _ _ = error $ prefix <> "The memory layout is unknown."
+--   go _ _ UncheckedDevice _ _ = error $ prefix <> "The tensor device is unknown."
+--   go _ _ _ UncheckedDataType _ = error $ prefix <> "The tensor data type is unknown."
+--   go _ _ _ _ UncheckedShape = error $ prefix <> "The tensor shape is unknown."
+--   go requiresGradient (Layout layoutType) (Device deviceType) (DataType dType) (Shape shape) =
+--     let opts = tensorOptions requiresGradient layoutType deviceType dType
+--         shape' =
+--           foldr
+--             ( \case
+--                 UncheckedDim -> \_ -> error $ prefix <> "Not all dimensions are known."
+--                 Dim dimType -> \dimTypes -> dimType : dimTypes
+--             )
+--             []
+--             shape
+--      in case (namedDims shape', sizedDims shape') of
+--           (Just names, Just sizes) -> unsafePerformIO $ cast4 ATen.full_lsNo sizes a names opts
+--           (_, Just sizes) -> unsafePerformIO $ cast3 ATen.full_lso sizes a opts
+--           _ -> error $ prefix <> "Invalid tensor shape specification " <> show shape <> "."
 
 instance
   Castable
@@ -760,51 +761,63 @@ unsafeCheckedDataType tensor = case checkedDataType @dataType tensor of
 
 shape ::
   forall requiresGradient layout device dataType shape.
-  KnownShape (Dim (DimType Symbol Nat)) shape =>
+  KnownShape shape =>
   -- | input
   Tensor requiresGradient layout device dataType shape ->
   -- | shape of the input tensor
-  [DimType String Integer]
+  [Dim String Integer]
 shape tensor =
-  case shapeVal @_ @shape of
+  case shapeVal @shape of
     UncheckedShape -> unsafePerformIO $ do
       sizes <- cast1 ATen.tensor_sizes tensor
       ifM
         (cast1 ATen.tensor_has_names tensor)
         ( do
             names <- cast1 ATen.tensor_names tensor
-            return $ zipWith NamedSized names sizes
+            return $ zipWith Dim names sizes
         )
-        (return $ Sized <$> sizes)
-    Shape shape ->
-      unsafePerformIO $
-        reverse . snd <$> foldM step' mempty shape
-      where
-        inc = (<>) (Sum 1)
-        step' (s, as) a = (\a' -> (inc s, a' : as)) <$> step s a
-        step :: Sum Int -> Dim (DimType String Integer) -> IO (DimType String Integer)
-        step dim UncheckedDim = do
-          size :: Int <- cast2 ATen.tensor_size_l tensor (getSum dim)
-          ifM
-            (cast1 ATen.tensor_has_names tensor)
-            ( do
-                name :: String <- undefined
-                return $ NamedSized name (fromIntegral size)
-            )
-            (return $ Sized (fromIntegral size))
-        step dim (Dim (Named name)) = do
-          size :: Int <- cast2 ATen.tensor_size_l tensor (getSum dim)
-          (return $ NamedSized name (fromIntegral size))
-        step dim (Dim (Sized size)) = do
-          ifM
-            (cast1 ATen.tensor_has_names tensor)
-            ( do
-                name :: String <- undefined
-                return $ NamedSized name (fromIntegral size)
-            )
-            (return $ Sized size)
-        step _ (Dim (NamedSized name size)) =
-          return $ NamedSized name size
+        (return $ Dim "" <$> sizes)
+    Shape dims ->
+      let sizes = unsafePerformIO $ cast1 ATen.tensor_sizes tensor
+          names =
+            unsafePerformIO $
+              ifM
+                (cast1 ATen.tensor_has_names tensor)
+                (cast1 ATen.tensor_names tensor)
+                (pure $ map (const mempty) sizes)
+          f (Dim UncheckedName UncheckedSize) name size = Dim name size
+          f (Dim (Name name) UncheckedSize) name' size
+            | name == name' = Dim name size
+            | otherwise =
+              error $
+                "The compile- and runtime dimension names are not the same, '"
+                  <> name
+                  <> "' != '"
+                  <> name'
+                  <> "'. Please open a ticket on GitHub."
+          f (Dim UncheckedName (Size size)) name size'
+            | size == size' = Dim name size
+            | otherwise =
+              error $
+                "The compile- and runtime dimension sizes are not the same, '"
+                  <> show size
+                  <> "' != '"
+                  <> show size'
+                  <> "'. Please open a ticket on GitHub."
+          f (Dim (Name name) (Size size)) name' size'
+            | name == name' && size == size' = Dim name size
+            | otherwise =
+              error $
+                "The compile- and runtime dimension names and sizes are not the same, '"
+                  <> name
+                  <> "' != '"
+                  <> name'
+                  <> "' and '"
+                  <> show size
+                  <> "' != '"
+                  <> show size'
+                  <> "'. Please open a ticket on GitHub."
+       in zipWith3 f dims names sizes
 
 -- | Returns the input tensor but with the selected dimension replaces with 'UncheckedDim' as dimension type annotation.
 -- The static information about the selected tensor dimension is thus erased.
@@ -820,12 +833,11 @@ shape tensor =
 --        ('DataType 'Float)
 --        ('Shape '[ 'UncheckedDim, 'Dim ('NamedSized "feature" 8)])
 uncheckedDim ::
-  forall selectDim requiresGradient layout device dataType shape shape'.
-  (shape' ~ ReplaceDimF selectDim shape 'UncheckedDim) =>
+  forall selectDim requiresGradient layout device dataType shape.
   -- | input tensor
   Tensor requiresGradient layout device dataType shape ->
   -- | tensor with the selected dimensions unchecked
-  Tensor requiresGradient layout device dataType shape'
+  Tensor requiresGradient layout device dataType (ReplaceDimF selectDim shape ( 'Dim 'UncheckedName 'UncheckedSize))
 uncheckedDim = coerce
 
 -- | Returns the input tensor but with 'UncheckedShape' as shape type annotation.
@@ -860,43 +872,28 @@ uncheckedShape = coerce
 -- >>> checkShape @'UncheckedShape t
 -- True
 checkShape ::
-  forall (shape :: Shape [Dim (DimType Symbol Nat)]) requiresGradient layout device dataType.
-  (KnownShape (Dim (DimType Symbol Nat)) shape) =>
+  forall (shape :: Shape [Dim (Name Symbol) (Size Nat)]) requiresGradient layout device dataType.
+  (KnownShape shape) =>
   -- | tensor under consideration
   Tensor requiresGradient layout device dataType 'UncheckedShape ->
   -- | whether or not the input tensor has the shape 'shape'
   Bool
 checkShape tensor =
-  case shapeVal @(Dim (DimType Symbol Nat)) @shape of
+  case shapeVal @shape of
     UncheckedShape -> True
-    Shape shape ->
-      unsafePerformIO $
-        getAll . snd <$> foldM step' mempty shape
-      where
-        inc = (<>) (Sum 1)
-        step' (s, b) a = (\b' -> (inc s, b <> b')) <$> step s a
-        step :: Sum Int -> Dim (DimType String Integer) -> IO All
-        step _ UncheckedDim = mempty
-        step _ (Dim (Named name)) =
-          ifM
-            (cast1 ATen.tensor_has_names tensor)
-            ( do
-                name' :: String <- undefined
-                return . All $ name == name'
-            )
-            (return . All $ False)
-        step dim (Dim (Sized size)) = do
-          size' :: Int <- cast2 ATen.tensor_size_l tensor (getSum dim)
-          return . All $ fromIntegral size == size'
-        step dim (Dim (NamedSized name size)) =
-          ifM
-            (cast1 ATen.tensor_has_names tensor)
-            ( do
-                name' :: String <- undefined
-                size' :: Int <- cast2 ATen.tensor_size_l tensor (getSum dim)
-                return . All $ name == name' && fromIntegral size == size'
-            )
-            (return . All $ False)
+    Shape dims ->
+      let sizes = unsafePerformIO $ cast1 ATen.tensor_sizes tensor
+          names =
+            unsafePerformIO $
+              ifM
+                (cast1 ATen.tensor_has_names tensor)
+                (cast1 ATen.tensor_names tensor)
+                (pure $ map (const mempty) sizes)
+          f (Dim UncheckedName UncheckedSize) _ _ = mempty
+          f (Dim (Name name) UncheckedSize) name' _ = All $ name == name'
+          f (Dim UncheckedName (Size size)) _ size' = All $ size == size'
+          f (Dim (Name name) (Size size)) name' size' = All $ name == name' && size == size'
+       in getAll . fold $ zipWith3 f dims names sizes
 
 -- | Checks whether or not the input tensor has the shape 'shape'
 -- and returns a statically annotated copy of it wrapped in a 'MonadFail' 'm'.
@@ -918,15 +915,15 @@ checkShape tensor =
 -- >>> t' <- checkedShape @('Shape '[ 'Dim ('NamedSized "batch" 32), 'Dim ('Sized 8)]) t
 -- *** Exception: user error (The tensor does not have the shape "Shape [Dim (NamedSized "batch" 32),Dim (Sized 8)]".)
 checkedShape ::
-  forall (shape :: Shape [Dim (DimType Symbol Nat)]) m requiresGradient layout device dataType.
-  (KnownShape (Dim (DimType Symbol Nat)) shape, MonadFail m) =>
+  forall (shape :: Shape [Dim (Name Symbol) (Size Nat)]) m requiresGradient layout device dataType.
+  (KnownShape shape, MonadFail m) =>
   -- | input tensor
   Tensor requiresGradient layout device dataType 'UncheckedShape ->
   -- | annotated output tensor wrapped in 'm'
   m (Tensor requiresGradient layout device dataType shape)
 checkedShape tensor
   | checkShape @shape tensor = pure . coerce $ tensor
-  | otherwise = fail $ "The tensor does not have the shape \"" <> show (shapeVal @(Dim (DimType Symbol Nat)) @shape) <> "\"."
+  | otherwise = fail $ "The tensor does not have the shape \"" <> show (shapeVal @shape) <> "\"."
 
 -- | Unsafe version of 'checkedShape'.
 -- If the tensor does not have the shape 'shape', then the execution is stopped and an error message is displayed.
@@ -946,8 +943,8 @@ checkedShape tensor
 -- CallStack (from HasCallStack):
 --   error, called at /root/hasktorch/hasktorch/src/Torch/GraduallyTyped/Tensor/Type.hs:910:15 in main:Torch.GraduallyTyped.Tensor.Type
 unsafeCheckedShape ::
-  forall (shape :: Shape [Dim (DimType Symbol Nat)]) requiresGradient layout device dataType.
-  KnownShape (Dim (DimType Symbol Nat)) shape =>
+  forall (shape :: Shape [Dim (Name Symbol) (Size Nat)]) requiresGradient layout device dataType.
+  KnownShape shape =>
   -- | input tensor
   Tensor requiresGradient layout device dataType 'UncheckedShape ->
   -- | annotated output tensor

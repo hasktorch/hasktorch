@@ -21,9 +21,9 @@ import Torch.DType (DType)
 import Torch.GraduallyTyped.DType (DataType (..), UnifyDataTypeF)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType, UnifyDeviceF)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType, UnifyLayoutF)
-import Torch.GraduallyTyped.Prelude (FromMaybe, LiftTypeEqMaybe, MapMaybe)
+import Torch.GraduallyTyped.Prelude (FromMaybe, MapMaybe)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), UnifyRequiresGradientF)
-import Torch.GraduallyTyped.Shape (AddDimF, By (..), Dim (..), DimType (..), GetDimDimsImplF, GetDimF, GetIndexByNameDimsImplF, NumelF, ReplaceDimDimsImplF, ReplaceDimF, ReplaceDimImplF, SelectDim (..), Shape (..), UnifyShapeF, WithSelectDimC (..), WithShapeC (..), sizedDims)
+import Torch.GraduallyTyped.Shape (dimSize, GetDimImplF, GetIndexByNameF, Size(..), Name(..), AddDimF, By (..), Dim (..), GetDimF, NumelF, ReplaceDimF, ReplaceDimImplF, SelectDim (..), Shape (..), UnifyShapeF, WithSelectDimC (..), WithShapeC (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor, TensorF)
 import Torch.HList (HList)
 import Torch.Internal.Cast (cast2, cast3)
@@ -77,7 +77,8 @@ class HasCat (selectDim :: SelectDim (By Symbol Nat)) k (c :: k -> Type) (a :: k
 
 type family CatListImplF (selectDim :: SelectDim (By Symbol Nat)) (tensor :: Type) :: Maybe Type where
   CatListImplF 'UncheckedSelectDim (Tensor requiresGradient layout device dataType _) = 'Just (Tensor requiresGradient layout device dataType 'UncheckedShape)
-  CatListImplF selectDim (Tensor requiresGradient layout device dataType shape) = MapMaybe (Tensor requiresGradient layout device dataType) (MapMaybe 'Shape (ReplaceDimImplF selectDim shape 'UncheckedDim))
+  CatListImplF ('SelectDim _) (Tensor requiresGradient layout device dataType 'UncheckedShape) = 'Just (Tensor requiresGradient layout device dataType 'UncheckedShape)
+  CatListImplF ('SelectDim by) (Tensor requiresGradient layout device dataType ('Shape dims)) = MapMaybe (Tensor requiresGradient layout device dataType) (MapMaybe 'Shape (ReplaceDimImplF by dims ('Dim 'UncheckedName 'UncheckedSize)))
 
 type CheckSpellingMessage = "Check the spelling of named dimensions, and make sure the number of dimensions is correct."
 
@@ -115,7 +116,7 @@ type family
   CatHListImplF
     (selectDim :: SelectDim (By Symbol Nat))
     (tensors :: [Type])
-    (acc :: Maybe (RequiresGradient, Layout LayoutType, Device (DeviceType Nat), DataType DType, Shape [Dim (DimType Symbol Nat)])) ::
+    (acc :: Maybe (RequiresGradient, Layout LayoutType, Device (DeviceType Nat), DataType DType, Shape [Dim (Name Symbol) (Size Nat)])) ::
     Type
   where
   CatHListImplF _ '[] 'Nothing = TypeError (ToErrorMessage "Cannot concatenate an empty list of tensors.")
@@ -133,7 +134,7 @@ type family
              UnifyDataTypeF dataType dataType',
              ReplaceDimF
                selectDim
-               (UnifyShapeF (ReplaceDimF selectDim shape 'UncheckedDim) (ReplaceDimF selectDim shape' 'UncheckedDim))
+               (UnifyShapeF (ReplaceDimF selectDim shape ('Dim 'UncheckedName 'UncheckedSize)) (ReplaceDimF selectDim shape' ('Dim 'UncheckedName 'UncheckedSize)))
                (AddDimF (GetDimF selectDim shape) (GetDimF selectDim shape))
            )
       )
@@ -173,7 +174,7 @@ uncheckedCat ::
     'UncheckedShape
 uncheckedCat = cat @ 'UncheckedSelectDim
 
-type ReshapeNumelMismatchMessage (numel :: Nat) (numel' :: Nat) (shape :: Shape [Dim (DimType Symbol Nat)]) (shape' :: Shape [Dim (DimType Symbol Nat)]) =
+type ReshapeNumelMismatchMessage (numel :: Nat) (numel' :: Nat) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: Shape [Dim (Name Symbol) (Size Nat)]) =
   "Cannot reshape the tensor. The original shape,"
     % ""
     % "    '" <> shape <> "',"
@@ -188,7 +189,7 @@ type ReshapeNumelMismatchMessage (numel :: Nat) (numel' :: Nat) (shape :: Shape 
     % ""
     % "respectively."
 
-type family ReshapeF (numel :: Maybe Nat) (numel' :: Maybe Nat) (shape :: Shape [Dim (DimType Symbol Nat)]) (shape' :: Shape [Dim (DimType Symbol Nat)]) :: Shape [Dim (DimType Symbol Nat)] where
+type family ReshapeF (numel :: Maybe Nat) (numel' :: Maybe Nat) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
   ReshapeF ( 'Just numel) ( 'Just numel) _ shape' = shape'
   ReshapeF ( 'Just numel) ( 'Just numel') shape shape' = TypeError (ReshapeNumelMismatchMessage numel numel' shape shape')
   ReshapeF 'Nothing _ _ _ = 'UncheckedShape
@@ -231,12 +232,10 @@ reshape ::
     WithShapeC shape' (Tensor requiresGradient layout device dataType shape -> Tensor requiresGradient layout device dataType shape'')
   ) =>
   WithShapeF shape' (Tensor requiresGradient layout device dataType shape -> Tensor requiresGradient layout device dataType shape'')
-reshape = withShape @shape' @(Tensor requiresGradient layout device dataType shape -> Tensor requiresGradient layout device dataType shape'') $ \shape' input ->
-  case sizedDims shape' of
-    Just sizes -> unsafePerformIO $ cast2 ATen.reshape_tl input sizes
-    Nothing -> error $ "Invalid tensor shape specification '" <> show shape' <> "'."
+reshape = withShape @shape' @(Tensor requiresGradient layout device dataType shape -> Tensor requiresGradient layout device dataType shape'') $ \dims' input ->
+  unsafePerformIO $ cast2 ATen.reshape_tl input (fmap dimSize dims')
 
-type TransposeBy0Message (by0 :: By Symbol Nat) (dims :: [Dim (DimType Symbol Nat)]) =
+type TransposeBy0Message (by0 :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) =
   "Cannot transpose the tensor with the dimensions"
     % ""
     % "    '" <> dims <> "'"
@@ -247,7 +246,7 @@ type TransposeBy0Message (by0 :: By Symbol Nat) (dims :: [Dim (DimType Symbol Na
     % ""
     % "could not be found."
 
-type TransposeBy1Message (by1 :: By Symbol Nat) (dims :: [Dim (DimType Symbol Nat)]) =
+type TransposeBy1Message (by1 :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) =
   "Cannot transpose the tensor with the dimensions"
     % ""
     % "    '" <> dims <> "'"
@@ -264,12 +263,12 @@ type TransposeBy1Message (by1 :: By Symbol Nat) (dims :: [Dim (DimType Symbol Na
 -- >>> type SelectDim1 = 'SelectDim ('ByName "feature")
 -- >>> type Dims = '[ 'Dim ('NamedSized "batch" 10), 'Dim ('NamedSized "feature" 8), 'Dim ('NamedSized "anotherFeature" 12)]
 -- >>> :kind! TransposeF SelectDim0 SelectDim1 ('Shape Dims)
--- TransposeF SelectDim0 SelectDim1 ('Shape Dims) :: Shape [Dim (DimType Symbol Nat)]
+-- TransposeF SelectDim0 SelectDim1 ('Shape Dims) :: Shape [Dim (Name Symbol) (Size Nat)]
 -- = 'Shape '[ 'Dim ('NamedSized "feature" 8), 'Dim ('NamedSized "batch" 10), 'Dim ('NamedSized "anotherFeature" 12)]
 -- >>> :kind! TransposeF SelectDim1 SelectDim0 ('Shape Dims)
--- TransposeF SelectDim1 SelectDim0 ('Shape Dims) :: Shape [Dim (DimType Symbol Nat)]
+-- TransposeF SelectDim1 SelectDim0 ('Shape Dims) :: Shape [Dim (Name Symbol) (Size Nat)]
 -- = 'Shape '[ 'Dim ('NamedSized "feature" 8), 'Dim ('NamedSized "batch" 10), 'Dim ('NamedSized "anotherFeature" 12)]
-type family TransposeF (selectDim0 :: SelectDim (By Symbol Nat)) (selectDim1 :: SelectDim (By Symbol Nat)) (shape :: Shape [Dim (DimType Symbol Nat)]) :: Shape [Dim (DimType Symbol Nat)] where
+type family TransposeF (selectDim0 :: SelectDim (By Symbol Nat)) (selectDim1 :: SelectDim (By Symbol Nat)) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
   TransposeF _ _ 'UncheckedShape = 'UncheckedShape
   TransposeF _ 'UncheckedSelectDim _ = 'UncheckedShape
   TransposeF 'UncheckedSelectDim _ _ = 'UncheckedShape
@@ -278,11 +277,11 @@ type family TransposeF (selectDim0 :: SelectDim (By Symbol Nat)) (selectDim1 :: 
       ( TransposeIndexIndexDimsF
           ( FromMaybe
               (TypeError (TransposeBy0Message (ByName name0) dims))
-              (GetIndexByNameDimsImplF name0 dims)
+              (GetIndexByNameF name0 dims)
           )
           ( FromMaybe
               (TypeError (TransposeBy1Message (ByName name1) dims))
-              (GetIndexByNameDimsImplF name1 dims)
+              (GetIndexByNameF name1 dims)
           )
           dims
       )
@@ -294,30 +293,30 @@ type family TransposeF (selectDim0 :: SelectDim (By Symbol Nat)) (selectDim1 :: 
           % "The source and target dimensions must be selected either both by name or both by index, "
           % "but mixed selectors were found: "
           % ""
-          % "    '" <> ( 'SelectDim by0) <> "' and '" <> ( 'SelectDim by1) <> "'."
+          % "    '" <> 'SelectDim by0 <> "' and '" <> 'SelectDim by1 <> "'."
           % ""
       )
 
-type family TransposeIndexIndexDimsF (index0 :: Nat) (index1 :: Nat) (dims :: [Dim (DimType Symbol Nat)]) :: [Dim (DimType Symbol Nat)] where
+type family TransposeIndexIndexDimsF (index0 :: Nat) (index1 :: Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) :: [Dim (Name Symbol) (Size Nat)] where
   TransposeIndexIndexDimsF index0 index1 dims =
     FromMaybe
       (TypeError (TransposeBy1Message (ByIndex index1) dims))
-      ( ReplaceDimDimsImplF
+      ( ReplaceDimImplF
           (ByIndex index1)
           ( FromMaybe
               (TypeError (TransposeBy0Message (ByIndex index0) dims))
-              ( ReplaceDimDimsImplF
+              ( ReplaceDimImplF
                   (ByIndex index0)
                   dims
                   ( FromMaybe
                       (TypeError (TransposeBy1Message (ByIndex index1) dims))
-                      (GetDimDimsImplF (ByIndex index1) dims)
+                      (GetDimImplF (ByIndex index1) dims)
                   )
               )
           )
           ( FromMaybe
               (TypeError (TransposeBy0Message (ByIndex index0) dims))
-              (GetDimDimsImplF (ByIndex index0) dims)
+              (GetDimImplF (ByIndex index0) dims)
           )
       )
 

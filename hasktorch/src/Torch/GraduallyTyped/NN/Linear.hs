@@ -28,7 +28,7 @@ import Torch.GraduallyTyped.NN.Functional.Linear (LinearF, linear)
 import Torch.GraduallyTyped.NN.Initialization (FanMode (..), NonLinearity (..), calculateFan, getter, kaimingUniform)
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
-import Torch.GraduallyTyped.Shape (Dim (..), DimType (..), Shape (..), WithDimC (..))
+import Torch.GraduallyTyped.Shape (Size, Name, Dim (..), Shape (..), WithDimC (..))
 import Torch.GraduallyTyped.Tensor.Creation (WithCreateC (..), randn)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mulScalar, subScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
@@ -36,9 +36,9 @@ import Torch.GraduallyTyped.Tensor.Type (Tensor)
 data
   Linear
     (device :: Device (DeviceType Nat))
-    (dataType :: DataType (DType))
-    (inputDim :: Dim (DimType Symbol Nat))
-    (outputDim :: Dim (DimType Symbol Nat))
+    (dataType :: DataType DType)
+    (inputDim :: Dim (Name Symbol) (Size Nat))
+    (outputDim :: Dim (Name Symbol) (Size Nat))
   where
   Linear ::
     forall device dataType inputDim outputDim.

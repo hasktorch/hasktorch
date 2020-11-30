@@ -14,13 +14,13 @@ module Torch.GraduallyTyped.NN.Activation where
 import Data.Singletons.TypeLits (Nat, Symbol)
 import GHC.Generics (Generic)
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
-import Torch.GraduallyTyped.Shape (Dim, DimType, WithDimC (..))
+import Torch.GraduallyTyped.Shape (Size, Name, Dim, WithDimC (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 
-data Softmax (dim :: Dim (DimType Symbol Nat)) where
+data Softmax (dim :: Dim (Name Symbol) (Size Nat)) where
   Softmax ::
     forall dim.
-    DimType String Integer ->
+    Dim String Integer ->
     Softmax dim
   deriving (Generic)
 
