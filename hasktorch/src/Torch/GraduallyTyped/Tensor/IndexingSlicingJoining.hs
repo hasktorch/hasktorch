@@ -189,13 +189,16 @@ type ReshapeNumelMismatchMessage (numel :: Nat) (numel' :: Nat) (shape :: Shape 
     % ""
     % "respectively."
 
-type family ReshapeF (numel :: Maybe Nat) (numel' :: Maybe Nat) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
-  ReshapeF ( 'Just numel) ( 'Just numel) _ shape' = shape'
-  ReshapeF ( 'Just numel) ( 'Just numel') shape shape' = TypeError (ReshapeNumelMismatchMessage numel numel' shape shape')
-  ReshapeF 'Nothing _ _ _ = 'UncheckedShape
-  ReshapeF _ 'Nothing _ _ = 'UncheckedShape
-  ReshapeF _ _ 'UncheckedShape _ = 'UncheckedShape
-  ReshapeF _ _ _ 'UncheckedShape = 'UncheckedShape
+type family ReshapeImplF (numel :: Maybe Nat) (numel' :: Maybe Nat) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
+  ReshapeImplF ( 'Just numel) ( 'Just numel) _ shape' = shape'
+  ReshapeImplF ( 'Just numel) ( 'Just numel') shape shape' = TypeError (ReshapeNumelMismatchMessage numel numel' shape shape')
+  ReshapeImplF 'Nothing _ _ _ = 'UncheckedShape
+  ReshapeImplF _ 'Nothing _ _ = 'UncheckedShape
+  ReshapeImplF _ _ 'UncheckedShape _ = 'UncheckedShape
+  ReshapeImplF _ _ _ 'UncheckedShape = 'UncheckedShape
+
+type family ReshapeF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
+  ReshapeF shape shape' = ReshapeImplF (NumelF shape) (NumelF shape') shape shape'
 
 -- | Returns a tensor with the same data and number of elements as the input tensor,
 -- but with the specified shape:
@@ -228,7 +231,7 @@ type family ReshapeF (numel :: Maybe Nat) (numel' :: Maybe Nat) (shape :: Shape 
 -- [Sized 4]
 reshape ::
   forall shape' requiresGradient layout device dataType shape shape''.
-  ( shape'' ~ ReshapeF (NumelF shape) (NumelF shape') shape shape',
+  ( shape'' ~ ReshapeF shape shape',
     WithShapeC shape' (Tensor requiresGradient layout device dataType shape -> Tensor requiresGradient layout device dataType shape'')
   ) =>
   WithShapeF shape' (Tensor requiresGradient layout device dataType shape -> Tensor requiresGradient layout device dataType shape'')
