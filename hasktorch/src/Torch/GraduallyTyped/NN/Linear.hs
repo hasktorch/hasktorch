@@ -3,6 +3,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PartialTypeSignatures #-}
@@ -28,7 +29,7 @@ import Torch.GraduallyTyped.NN.Functional.Linear (LinearF, linear)
 import Torch.GraduallyTyped.NN.Initialization (FanMode (..), NonLinearity (..), calculateFan, getter, kaimingUniform)
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
-import Torch.GraduallyTyped.Shape (Size, Name, Dim (..), Shape (..), WithDimC (..))
+import Torch.GraduallyTyped.Shape (Dim (..), Name, Shape (..), Size, WithDimC (..))
 import Torch.GraduallyTyped.Tensor.Creation (WithCreateC (..), randn)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mulScalar, subScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
@@ -123,11 +124,13 @@ instance
   HasForward
     (Linear device dataType inputFeatures outputFeatures)
     (Tensor requiresGradient' layout' device' dataType' shape')
+    generator
   where
   type
     ForwardOutput
       (Linear device dataType inputFeatures outputFeatures)
-      (Tensor requiresGradient' layout' device' dataType' shape') =
+      (Tensor requiresGradient' layout' device' dataType' shape')
+      generator =
       ( Tensor
           requiresGradient'
           (UnifyLayoutF (UnifyLayoutF layout' ( 'Layout 'Dense)) ( 'Layout 'Dense))

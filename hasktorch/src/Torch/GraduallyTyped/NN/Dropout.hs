@@ -6,8 +6,10 @@
 
 module Torch.GraduallyTyped.NN.Dropout where
 
+import Data.Coerce (coerce)
 import Data.Kind (Type)
 import GHC.Generics (Generic)
+import Torch.GraduallyTyped.Device (UnifyDeviceF)
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.Scalar (Scalar)
@@ -33,10 +35,15 @@ instance
   HasForward
     (Dropout p)
     (Tensor requiresGradient layout device dataType shape)
+    (Generator generatorDevice)
   where
   type
     ForwardOutput
       (Dropout p)
-      (Tensor requiresGradient layout device dataType shape) =
-      Generator device -> (Tensor requiresGradient layout device dataType shape, Generator device)
-  forward = undefined
+      (Tensor requiresGradient layout device dataType shape)
+      (Generator generatorDevice) =
+      Generator generatorDevice ->
+      ( Tensor requiresGradient layout (UnifyDeviceF device generatorDevice) dataType shape,
+        Generator (UnifyDeviceF device generatorDevice)
+      )
+  forward (Dropout _p) input g = coerce (input, g)

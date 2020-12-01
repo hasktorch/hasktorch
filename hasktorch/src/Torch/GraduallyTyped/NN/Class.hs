@@ -12,18 +12,22 @@
 
 module Torch.GraduallyTyped.NN.Class where
 
-import Control.Monad.State.Strict (MonadState (state), runState)
-import Torch.GraduallyTyped.Prelude (Contains, ErrorMessage (Text), Fst, If, Proxy (..), Snd, Type, TypeError)
-import Torch.GraduallyTyped.Random (Generator)
-import Torch.GraduallyTyped.Device (Device (UncheckedDevice))
+-- import Control.Monad.State.Strict (MonadState (state), runState)
+-- import Torch.GraduallyTyped.Prelude (Contains, ErrorMessage (Text), Fst, If, Proxy (..), Snd, Type, TypeError)
+-- import Torch.GraduallyTyped.Random (Generator)
+-- import Torch.GraduallyTyped.Device (Device (UncheckedDevice), DeviceType)
 -- import Generics.SOP (Code, I, SOP(..), Generic, NS(..), NP)
 -- import GHC.Base (coerce, Any)
 
-data ModelRandomness = Deterministic | Stochastic
+import Data.Kind (Type)
 
-class HasForward model input where
-  type ForwardOutput model input :: Type
-  forward :: model -> input -> ForwardOutput model input
+class HasForward model input generator where
+  type ForwardOutput model input generator :: Type
+  forward :: model -> input -> ForwardOutput model input generator
+
+class HasInitialize model where
+  type InitializeF model :: Type
+  initialize :: InitializeF model
 
 -- class GHasForward model input where
 --   type GOutput model input
@@ -39,174 +43,173 @@ class HasForward model input where
 --   type GOutputPP models inputs
 --   gForwardPP :: () => NP I models -> NP I inputs -> GOutputPP models inputs
 
-type family ModelRandomnessR (output :: Type) :: (ModelRandomness, Type) where
-  ModelRandomnessR (Generator device -> (output, Generator device)) =
-    If
-      (Contains output Generator)
-      (TypeError (Text "The random generator appears in a wrong position in the output type."))
-      '( 'Stochastic, output)
-  ModelRandomnessR output =
-    If
-      (Contains output Generator)
-      (TypeError (Text "The random generator appears in a wrong position in the output type."))
-      '( 'Deterministic, output)
+-- data ModelRandomness = Deterministic | Stochastic
 
-class
-  HasForwardProduct
-    (modelARandomness :: ModelRandomness)
-    outputA
-    (modelBRandomness :: ModelRandomness)
-    outputB
-    modelA
-    inputA
-    modelB
-    inputB
-  where
-  type
-    ForwardOutputProduct modelARandomness outputA modelBRandomness outputB modelA inputA modelB inputB ::
-      Type
-  forwardProduct ::
-    Proxy modelARandomness ->
-    Proxy outputA ->
-    Proxy modelBRandomness ->
-    Proxy outputB ->
-    (modelA, modelB) ->
-    (inputA, inputB) ->
-    ForwardOutputProduct modelARandomness outputA modelBRandomness outputB modelA inputA modelB inputB
+-- type family ModelRandomnessR (output :: Type) :: (ModelRandomness, Type) where
+--   ModelRandomnessR (Generator device -> (output, Generator device)) =
+--     If
+--       (Contains output Generator)
+--       (TypeError (Text "The random generator appears in a wrong position in the output type."))
+--       '( 'Stochastic, output)
+--   ModelRandomnessR output =
+--     If
+--       (Contains output Generator)
+--       (TypeError (Text "The random generator appears in a wrong position in the output type."))
+--       '( 'Deterministic, output)
 
-instance
-  ( HasForward modelA inputA,
-    ForwardOutput modelA inputA ~ (Generator 'UncheckedDevice -> (outputA, Generator 'UncheckedDevice)),
-    HasForward modelB inputB,
-    ForwardOutput modelB inputB ~ (Generator 'UncheckedDevice -> (outputB, Generator 'UncheckedDevice))
-  ) =>
-  HasForwardProduct 'Stochastic outputA 'Stochastic outputB modelA inputA modelB inputB
-  where
-  type
-    ForwardOutputProduct 'Stochastic outputA 'Stochastic outputB modelA inputA modelB inputB =
-      Generator 'UncheckedDevice -> ((outputA, outputB), Generator 'UncheckedDevice)
-  forwardProduct _ _ _ _ (modelA, modelB) (inputA, inputB) =
-    runState $ do
-      outputA <- state (forward modelA inputA)
-      outputB <- state (forward modelB inputB)
-      return (outputA, outputB)
+-- class
+--   HasForwardProduct
+--     (modelARandomness :: ModelRandomness)
+--     outputA
+--     (modelBRandomness :: ModelRandomness)
+--     outputB
+--     modelA
+--     inputA
+--     modelB
+--     inputB
+--   where
+--   type
+--     ForwardOutputProduct modelARandomness outputA modelBRandomness outputB modelA inputA modelB inputB ::
+--       Type
+--   forwardProduct ::
+--     Proxy modelARandomness ->
+--     Proxy outputA ->
+--     Proxy modelBRandomness ->
+--     Proxy outputB ->
+--     (modelA, modelB) ->
+--     (inputA, inputB) ->
+--     ForwardOutputProduct modelARandomness outputA modelBRandomness outputB modelA inputA modelB inputB
 
-instance
-  ( '(modelARandomness, outputA) ~ ModelRandomnessR (ForwardOutput modelA inputA),
-    '(modelBRandomness, outputB) ~ ModelRandomnessR (ForwardOutput modelB inputB),
-    HasForwardProduct modelARandomness outputA modelBRandomness outputB modelA inputA modelB inputB
-  ) =>
-  HasForward (modelA, modelB) (inputA, inputB)
-  where
-  type
-    ForwardOutput (modelA, modelB) (inputA, inputB) =
-      ForwardOutputProduct
-        (Fst (ModelRandomnessR (ForwardOutput modelA inputA)))
-        (Snd (ModelRandomnessR (ForwardOutput modelA inputA)))
-        (Fst (ModelRandomnessR (ForwardOutput modelB inputB)))
-        (Snd (ModelRandomnessR (ForwardOutput modelB inputB)))
-        modelA
-        inputA
-        modelB
-        inputB
-  forward =
-    forwardProduct
-      (Proxy :: Proxy modelARandomness)
-      (Proxy :: Proxy outputA)
-      (Proxy :: Proxy modelBRandomness)
-      (Proxy :: Proxy outputB)
+-- instance
+--   ( HasForward modelA inputA,
+--     ForwardOutput modelA inputA 'UncheckedDevice ~ (Generator 'UncheckedDevice -> (outputA, Generator 'UncheckedDevice)),
+--     HasForward modelB inputB,
+--     ForwardOutput modelB inputB ~ (Generator 'UncheckedDevice -> (outputB, Generator 'UncheckedDevice))
+--   ) =>
+--   HasForwardProduct 'Stochastic outputA 'Stochastic outputB modelA inputA modelB inputB
+--   where
+--   type
+--     ForwardOutputProduct 'Stochastic outputA 'Stochastic outputB modelA inputA modelB inputB =
+--       Generator 'UncheckedDevice -> ((outputA, outputB), Generator 'UncheckedDevice)
+--   forwardProduct _ _ _ _ (modelA, modelB) (inputA, inputB) =
+--     runState $ do
+--       outputA <- state (forward modelA inputA)
+--       outputB <- state (forward modelB inputB)
+--       return (outputA, outputB)
 
-class
-  HasForwardSum
-    (modelARandomness :: ModelRandomness)
-    outputA
-    (modelBRandomness :: ModelRandomness)
-    outputB
-    modelA
-    inputA
-    modelB
-    inputB
-  where
-  type
-    ForwardOutputSum modelARandomness outputA modelBRandomness outputB modelA inputA modelB inputB ::
-      Type
-  forwardSum ::
-    Proxy modelARandomness ->
-    Proxy outputA ->
-    Proxy modelBRandomness ->
-    Proxy outputB ->
-    Either modelA modelB ->
-    Either inputA inputB ->
-    ForwardOutputSum modelARandomness outputA modelBRandomness outputB modelA inputA modelB inputB
+-- instance
+--   ( '(modelARandomness, outputA) ~ ModelRandomnessR (ForwardOutput modelA inputA),
+--     '(modelBRandomness, outputB) ~ ModelRandomnessR (ForwardOutput modelB inputB),
+--     HasForwardProduct modelARandomness outputA modelBRandomness outputB modelA inputA modelB inputB
+--   ) =>
+--   HasForward (modelA, modelB) (inputA, inputB)
+--   where
+--   type
+--     ForwardOutput (modelA, modelB) (inputA, inputB) =
+--       ForwardOutputProduct
+--         (Fst (ModelRandomnessR (ForwardOutput modelA inputA)))
+--         (Snd (ModelRandomnessR (ForwardOutput modelA inputA)))
+--         (Fst (ModelRandomnessR (ForwardOutput modelB inputB)))
+--         (Snd (ModelRandomnessR (ForwardOutput modelB inputB)))
+--         modelA
+--         inputA
+--         modelB
+--         inputB
+--   forward =
+--     forwardProduct
+--       (Proxy :: Proxy modelARandomness)
+--       (Proxy :: Proxy outputA)
+--       (Proxy :: Proxy modelBRandomness)
+--       (Proxy :: Proxy outputB)
 
-instance
-  ( HasForward modelA inputA,
-    ForwardOutput modelA inputA ~ (Generator 'UncheckedDevice -> (outputA, Generator 'UncheckedDevice)),
-    HasForward modelB inputB,
-    ForwardOutput modelB inputB ~ (Generator 'UncheckedDevice -> (outputB, Generator 'UncheckedDevice))
-  ) =>
-  HasForwardSum 'Stochastic outputA 'Stochastic outputB modelA inputA modelB inputB
-  where
-  type
-    ForwardOutputSum 'Stochastic outputA 'Stochastic outputB modelA inputA modelB inputB =
-      Generator 'UncheckedDevice -> (Maybe (Either outputA outputB), Generator 'UncheckedDevice)
-  forwardSum _ _ _ _ (Left modelA) (Left inputA) =
-    runState $ Just . Left <$> (state $ forward modelA inputA)
-  forwardSum _ _ _ _ (Right modelB) (Right inputB) =
-    runState $ Just . Right <$> (state $ forward modelB inputB)
-  forwardSum _ _ _ _ _ _ = runState . pure $ Nothing
+-- class
+--   HasForwardSum
+--     (modelARandomness :: ModelRandomness)
+--     outputA
+--     (modelBRandomness :: ModelRandomness)
+--     outputB
+--     modelA
+--     inputA
+--     modelB
+--     inputB
+--   where
+--   type
+--     ForwardOutputSum modelARandomness outputA modelBRandomness outputB modelA inputA modelB inputB ::
+--       Type
+--   forwardSum ::
+--     Proxy modelARandomness ->
+--     Proxy outputA ->
+--     Proxy modelBRandomness ->
+--     Proxy outputB ->
+--     Either modelA modelB ->
+--     Either inputA inputB ->
+--     ForwardOutputSum modelARandomness outputA modelBRandomness outputB modelA inputA modelB inputB
 
-instance
-  ( '(modelARandomness, outputA) ~ ModelRandomnessR (ForwardOutput modelA inputA),
-    '(modelBRandomness, outputB) ~ ModelRandomnessR (ForwardOutput modelB inputB),
-    HasForwardSum modelARandomness outputA modelBRandomness outputB modelA inputA modelB inputB
-  ) =>
-  HasForward (Either modelA modelB) (Either inputA inputB)
-  where
-  type
-    ForwardOutput (Either modelA modelB) (Either inputA inputB) =
-      ForwardOutputSum
-        (Fst (ModelRandomnessR (ForwardOutput modelA inputA)))
-        (Snd (ModelRandomnessR (ForwardOutput modelA inputA)))
-        (Fst (ModelRandomnessR (ForwardOutput modelB inputB)))
-        (Snd (ModelRandomnessR (ForwardOutput modelB inputB)))
-        modelA
-        inputA
-        modelB
-        inputB
-  forward =
-    forwardSum
-      (Proxy :: Proxy modelARandomness)
-      (Proxy :: Proxy outputA)
-      (Proxy :: Proxy modelBRandomness)
-      (Proxy :: Proxy outputB)
+-- instance
+--   ( HasForward modelA inputA,
+--     ForwardOutput modelA inputA ~ (Generator 'UncheckedDevice -> (outputA, Generator 'UncheckedDevice)),
+--     HasForward modelB inputB,
+--     ForwardOutput modelB inputB ~ (Generator 'UncheckedDevice -> (outputB, Generator 'UncheckedDevice))
+--   ) =>
+--   HasForwardSum 'Stochastic outputA 'Stochastic outputB modelA inputA modelB inputB
+--   where
+--   type
+--     ForwardOutputSum 'Stochastic outputA 'Stochastic outputB modelA inputA modelB inputB =
+--       Generator 'UncheckedDevice -> (Maybe (Either outputA outputB), Generator 'UncheckedDevice)
+--   forwardSum _ _ _ _ (Left modelA) (Left inputA) =
+--     runState $ Just . Left <$> (state $ forward modelA inputA)
+--   forwardSum _ _ _ _ (Right modelB) (Right inputB) =
+--     runState $ Just . Right <$> (state $ forward modelB inputB)
+--   forwardSum _ _ _ _ _ _ = runState . pure $ Nothing
 
-data ModelA = ModelA
+-- instance
+--   ( '(modelARandomness, outputA) ~ ModelRandomnessR (ForwardOutput modelA inputA),
+--     '(modelBRandomness, outputB) ~ ModelRandomnessR (ForwardOutput modelB inputB),
+--     HasForwardSum modelARandomness outputA modelBRandomness outputB modelA inputA modelB inputB
+--   ) =>
+--   HasForward (Either modelA modelB) (Either inputA inputB)
+--   where
+--   type
+--     ForwardOutput (Either modelA modelB) (Either inputA inputB) =
+--       ForwardOutputSum
+--         (Fst (ModelRandomnessR (ForwardOutput modelA inputA)))
+--         (Snd (ModelRandomnessR (ForwardOutput modelA inputA)))
+--         (Fst (ModelRandomnessR (ForwardOutput modelB inputB)))
+--         (Snd (ModelRandomnessR (ForwardOutput modelB inputB)))
+--         modelA
+--         inputA
+--         modelB
+--         inputB
+--   forward =
+--     forwardSum
+--       (Proxy :: Proxy modelARandomness)
+--       (Proxy :: Proxy outputA)
+--       (Proxy :: Proxy modelBRandomness)
+--       (Proxy :: Proxy outputB)
 
-data InputA = InputA
+-- data ModelA = ModelA
 
-data OutputA = OutputA
+-- data InputA = InputA
 
-instance HasForward ModelA InputA where
-  type ForwardOutput ModelA InputA = (Generator 'UncheckedDevice -> (OutputA, Generator 'UncheckedDevice))
-  forward _ _ g = (OutputA, g)
+-- data OutputA = OutputA
 
-data ModelB = ModelB
+-- instance HasForward ModelA InputA where
+--   type ForwardOutput ModelA InputA = (Generator 'UncheckedDevice -> (OutputA, Generator 'UncheckedDevice))
+--   forward _ _ g = (OutputA, g)
 
-data InputB = InputB
+-- data ModelB = ModelB
 
-data OutputB = OutputB
+-- data InputB = InputB
 
-instance HasForward ModelB InputB where
-  type ForwardOutput ModelB InputB = (Generator 'UncheckedDevice -> (OutputB, Generator 'UncheckedDevice))
-  forward _ _ g = (OutputB, g)
+-- data OutputB = OutputB
 
-test :: Generator 'UncheckedDevice -> ((OutputA, OutputB), Generator 'UncheckedDevice)
-test = forward (ModelA, ModelB) (InputA, InputB)
+-- instance HasForward ModelB InputB where
+--   type ForwardOutput ModelB InputB = (Generator 'UncheckedDevice -> (OutputB, Generator 'UncheckedDevice))
+--   forward _ _ g = (OutputB, g)
 
-test' :: Generator 'UncheckedDevice -> (Maybe (Either OutputA OutputB), Generator 'UncheckedDevice)
-test' = forward @(Either ModelA ModelB) @(Either InputA InputB) (Left ModelA) (Right InputB)
+-- test :: Generator 'UncheckedDevice -> ((OutputA, OutputB), Generator 'UncheckedDevice)
+-- test = forward (ModelA, ModelB) (InputA, InputB)
 
-class HasInitialize model where
-  type InitializeF model :: Type
-  initialize :: InitializeF model
+-- test' :: Generator 'UncheckedDevice -> (Maybe (Either OutputA OutputB), Generator 'UncheckedDevice)
+-- test' = forward @(Either ModelA ModelB) @(Either InputA InputB) (Left ModelA) (Right InputB)
+

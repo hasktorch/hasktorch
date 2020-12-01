@@ -14,10 +14,7 @@ import Torch.GraduallyTyped.DType (UnifyDataTypeF)
 import Torch.GraduallyTyped.Device (UnifyDeviceF)
 import Torch.GraduallyTyped.Layout (UnifyLayoutF)
 import Torch.GraduallyTyped.Prelude (Reverse, Seq)
-import Torch.GraduallyTyped.Shape (Size, Name, BroadcastShapesF, By (..), Dim (..), SelectDim (..), Shape (..), UnifyDimF)
-import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (TransposeF, transpose)
-import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (MatmulF, matmul)
-import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
+import Torch.GraduallyTyped.Shape (Dim (..), Name, Shape (..), Size, UnifyDimF)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.Internal.Cast (cast3)
 import qualified Torch.Internal.Managed.Native as ATen
@@ -25,15 +22,17 @@ import Type.Errors.Pretty (type (%), type (<>))
 
 -- | Compute the output shape of a linear transformation.
 --
--- >>> type InputDim = 'Dim ('NamedSized "input" 5)
--- >>> type OutputDim = 'Dim ('NamedSized "output" 10)
--- >>> type BatchDim = 'Dim ('NamedSized "batch" 20)
+-- >>> type InputDim = 'Dim ('Name "input") ('Size 5)
+-- >>> type OutputDim = 'Dim ('Name "output") ('Size 10)
+-- >>> type BatchDim = 'Dim ('Name "batch") ('Size 20)
 -- >>> type WeightShape = 'Shape '[OutputDim, InputDim]
 -- >>> type BiasShape = 'Shape '[OutputDim]
 -- >>> type InputShape = 'Shape '[BatchDim, InputDim]
 -- >>> :kind! LinearF WeightShape BiasShape InputShape
 -- LinearF WeightShape BiasShape InputShape :: Shape [Dim (Name Symbol) (Size Nat)]
--- = 'Shape '[ 'Dim ('NamedSized "batch" 20), 'Dim ('NamedSized "output" 10)]
+-- = 'Shape
+--     '[ 'Dim ('Name "batch") ('Size 20),
+--        'Dim ('Name "output") ('Size 10)]
 type family LinearF (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (biasShape :: Shape [Dim (Name Symbol) (Size Nat)]) (inputShape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
   LinearF ( 'Shape '[]) _ _ = TypeError (LinearWeightDimsErrorMessage '[])
   LinearF ( 'Shape '[weightDim]) _ _ = TypeError (LinearWeightDimsErrorMessage '[weightDim])
@@ -89,16 +88,16 @@ type LinearWeightDimsErrorMessage (weightDims :: [Dim (Name Symbol) (Size Nat)])
 --
 -- Examples:
 --
--- >>> type InputDim = 'Dim ('NamedSized "input" 5)
--- >>> type OutputDim = 'Dim ('NamedSized "output" 10)
--- >>> type BatchDim = 'Dim ('NamedSized "batch" 20)
+-- >>> type InputDim = 'Dim ('Name "input") ('Size 5)
+-- >>> type OutputDim = 'Dim ('Name "output") ('Size 10)
+-- >>> type BatchDim = 'Dim ('Name "batch") ('Size 20)
 -- >>> type WeightShape = 'Shape '[OutputDim, InputDim]
 -- >>> type BiasShape = 'Shape '[OutputDim]
 -- >>> type InputShape = 'Shape '[BatchDim, InputDim]
 -- >>> g <- generator @('Device 'CPU) 0
 -- >>> (weight, g') = randn @'Independent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @WeightShape g
 -- >>> (bias, g'') = randn @'Independent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @BiasShape g'
--- >>> (input, _) = randn @'Dependent @('Layout 'Dense) @('Device CPU) @('DataType 'Float) @InputShape g''
+-- >>> (input, _) = randn @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @InputShape g''
 -- >>> result = linear weight bias input
 -- >>> :type result
 -- result
@@ -108,7 +107,8 @@ type LinearWeightDimsErrorMessage (weightDims :: [Dim (Name Symbol) (Size Nat)])
 --        ('Device 'CPU)
 --        ('DataType 'Float)
 --        ('Shape
---           '[ 'Dim ('NamedSized "batch" 20), 'Dim ('NamedSized "output" 10)])
+--           '[ 'Dim ('Name "batch") ('Size 20),
+--              'Dim ('Name "output") ('Size 10)])
 linear ::
   forall requiresGradient requiresGradient' requiresGradient'' layout layout' layout'' device device' device'' dataType dataType' dataType'' shape shape' shape''.
   -- | weight
