@@ -27,7 +27,7 @@ import Torch.GraduallyTyped.NN.Dropout (Dropout (Dropout))
 import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearC, Linear (Linear))
 import Torch.GraduallyTyped.Random (generator, Generator)
 import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape (UnifyDimF, GetDimF, dimSize, Size(..), Name(..), KnownDim(..), WithShapeC(..), NumelF, By(..), SelectDim(..), Dim (..), Shape (..), WithDimC (..))
+import Torch.GraduallyTyped.Shape (type (!), UnifyDimF, GetDimF, dimSize, Size(..), Name(..), KnownDim(..), WithShapeC(..), NumelF, By(..), SelectDim(..), Dim (..), Shape (..), WithDimC (..))
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (divScalar, add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (ReshapeF, TransposeF, reshape, transpose)
@@ -206,6 +206,33 @@ multiheadAttention ::
     KnownDim querySeqDim,
     KnownDim batchDim,
     Scalar dropoutP,
+    WithDimC
+      headDim
+      ( WithDimF
+          headEmbedDim
+          ( Generator generatorDevice ->
+            ( Tensor
+                requiresGradient
+                outputLayout
+                outputDevice
+                outputDataType
+                outputShape,
+              Generator outputDevice
+            )
+          )
+      ),
+    WithDimC
+      headEmbedDim
+      ( Generator generatorDevice ->
+        ( Tensor
+            requiresGradient
+            outputLayout
+            outputDevice
+            outputDataType
+            outputShape,
+          Generator outputDevice
+        )
+      ),
     WithShapeC
       ( 'Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
       ( Tensor
@@ -594,9 +621,9 @@ multiheadAttention ::
       )
       ( 'Layout 'Dense)
       ~ outputLayout,
-    batchDim ~ UnifyDimF (UnifyDimF (GetDimF ( 'SelectDim ( 'ByIndex 0)) queryShape) (GetDimF ( 'SelectDim ( 'ByIndex 0)) keyShape)) (GetDimF ( 'SelectDim ( 'ByIndex 0)) valueShape),
-    querySeqDim ~ GetDimF ( 'SelectDim ( 'ByIndex 1)) queryShape,
-    keySeqDim ~ UnifyDimF (GetDimF ( 'SelectDim ( 'ByIndex 1)) keyShape) (GetDimF ( 'SelectDim ( 'ByIndex 1)) valueShape)
+    batchDim ~ UnifyDimF (UnifyDimF (queryShape ! 0) (keyShape ! 0)) (valueShape ! 0),
+    querySeqDim ~ (queryShape ! 1),
+    keySeqDim ~ UnifyDimF (keyShape ! 1) (valueShape ! 1)
   ) =>
   -- | multi-head attention model
   MultiheadAttention device dataType embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP ->
@@ -606,47 +633,56 @@ multiheadAttention ::
   Tensor requiresGradient keyLayout keyDevice keyDataType keyShape ->
   -- | value representation
   Tensor requiresGradient valueLayout valueDevice valueDataType valueShape ->
-  -- | random generator
-  Generator generatorDevice ->
-  -- | attention and random generator
-  ( Tensor requiresGradient outputLayout outputDevice outputDataType outputShape,
-    Generator outputDevice
-  )
-multiheadAttention MultiheadAttention {..} query key value g =
-  let batchDim = case dimVal @batchDim of
-        Dim (Name name) (Size size) -> Dim name size
-        Dim _ _ -> undefined
-      querySeqDim = case dimVal @querySeqDim of
-        Dim (Name name) (Size size) -> Dim name size
-        Dim _ _ -> undefined
-      keySeqDim = case dimVal @keySeqDim of
-        Dim (Name name) (Size size) -> Dim name size
-        Dim _ _ -> undefined
-      headDim = case dimVal @headDim of
-        Dim (Name name) (Size size) -> Dim name size
-        Dim _ _ -> undefined
-      headEmbedDim = case dimVal @headEmbedDim of
-        Dim (Name name) (Size size) -> Dim name size
-        Dim _ _ -> undefined
-      embedDim = case dimVal @embedDim of
-        Dim (Name name) (Size size) -> Dim name size
-        Dim _ _ -> undefined
-      scaling :: Double = sqrt . fromIntegral . dimSize $ headDim
-      q =
-        transpose @( 'SelectDim ( 'ByIndex 1)) @( 'SelectDim ( 'ByIndex 2))
-          . reshape' @batchDim @querySeqDim @headDim @headEmbedDim [batchDim, querySeqDim, headDim, headEmbedDim]
-          . flip divScalar scaling
-          . forward @_ @_ @() mhaQInProj
-          $ query
-      k = transpose @( 'SelectDim ( 'ByIndex 1)) @( 'SelectDim ( 'ByIndex 2))
-          . reshape' @batchDim @keySeqDim @headDim @headEmbedDim [batchDim, keySeqDim, headDim, headEmbedDim]
-          . forward @_ @_ @() mhaKInProj $ key
-      qk = q `matmul` transpose @( 'SelectDim ( 'ByIndex 2)) @( 'SelectDim ( 'ByIndex 3)) k
-      (weights, g') = forward @_ @_ @(Generator generatorDevice) mhaDropout (softmax @( 'SelectDim ( 'ByIndex 3)) qk) g
-      v = transpose @( 'SelectDim ( 'ByIndex 1)) @( 'SelectDim ( 'ByIndex 2))
-          . reshape' @batchDim @keySeqDim @headDim @headEmbedDim  [batchDim, keySeqDim, headDim, headEmbedDim]
-          . forward @_ @_ @() mhaVInProj $ value
-   in (forward @_ @_ @() mhaOutProj . reshape'' @batchDim @querySeqDim @embedDim [batchDim, querySeqDim, embedDim] . transpose @( 'SelectDim ( 'ByIndex 1)) @( 'SelectDim ( 'ByIndex 2)) $ weights `matmul` v, g')
+  WithDimF
+    headDim
+    ( WithDimF
+        headEmbedDim
+        ( Generator generatorDevice ->
+          ( Tensor requiresGradient outputLayout outputDevice outputDataType outputShape,
+            Generator outputDevice
+          )
+        )
+    )
+multiheadAttention MultiheadAttention {..} query key value =
+  withDim @headDim $ \headDim ->
+    withDim @headEmbedDim $ \headEmbedDim g ->
+      let batchDim = case dimVal @batchDim of
+            Dim (Name name) (Size size) -> Dim name size
+            Dim _ _ -> undefined
+          querySeqDim = case dimVal @querySeqDim of
+            Dim (Name name) (Size size) -> Dim name size
+            Dim _ _ -> undefined
+          keySeqDim = case dimVal @keySeqDim of
+            Dim (Name name) (Size size) -> Dim name size
+            Dim _ _ -> undefined
+          embedDim = case dimVal @embedDim of
+            Dim (Name name) (Size size) -> Dim name size
+            Dim _ _ -> undefined
+          scaling :: Double = sqrt . fromIntegral . dimSize $ headDim
+          q =
+            transpose @( 'SelectDim ( 'ByIndex 1)) @( 'SelectDim ( 'ByIndex 2))
+              . reshape' @batchDim @querySeqDim @headDim @headEmbedDim [batchDim, querySeqDim, headDim, headEmbedDim]
+              . flip divScalar scaling
+              . forward @_ @_ @() mhaQInProj
+              $ query
+          k =
+            transpose @( 'SelectDim ( 'ByIndex 1)) @( 'SelectDim ( 'ByIndex 2))
+              . reshape' @batchDim @keySeqDim @headDim @headEmbedDim [batchDim, keySeqDim, headDim, headEmbedDim]
+              . forward @_ @_ @() mhaKInProj
+              $ key
+          qk = q `matmul` transpose @( 'SelectDim ( 'ByIndex 2)) @( 'SelectDim ( 'ByIndex 3)) k
+          (weights, g') = forward @_ @_ @(Generator generatorDevice) mhaDropout (softmax @( 'SelectDim ( 'ByIndex 3)) qk) g
+          v =
+            transpose @( 'SelectDim ( 'ByIndex 1)) @( 'SelectDim ( 'ByIndex 2))
+              . reshape' @batchDim @keySeqDim @headDim @headEmbedDim [batchDim, keySeqDim, headDim, headEmbedDim]
+              . forward @_ @_ @() mhaVInProj
+              $ value
+      in ( forward @_ @_ @() mhaOutProj
+              . reshape'' @batchDim @querySeqDim @embedDim [batchDim, querySeqDim, embedDim]
+              . transpose @( 'SelectDim ( 'ByIndex 1)) @( 'SelectDim ( 'ByIndex 2))
+              $ weights `matmul` v,
+            g'
+          )
   where
     reshape' ::
       forall batchDim seqDim headDim headEmbedDim requiresGradient layout device dataType shape.
@@ -667,8 +703,8 @@ multiheadAttention MultiheadAttention {..} query key value g =
         (reshape @( 'Shape '[batchDim, seqDim, headDim, headEmbedDim]) @requiresGradient @layout @device @dataType @shape)
         [batchDim, seqDim, headDim, headEmbedDim]
         input
-    reshape''
-      :: forall batchDim seqDim embedDim requiresGradient layout device dataType shape.
+    reshape'' ::
+      forall batchDim seqDim embedDim requiresGradient layout device dataType shape.
       WithShapeC
         ( 'Shape '[batchDim, seqDim, embedDim])
         ( Tensor requiresGradient layout device dataType shape ->
@@ -685,21 +721,25 @@ multiheadAttention MultiheadAttention {..} query key value g =
          )
         (reshape @( 'Shape '[batchDim, seqDim, embedDim]) @requiresGradient @layout @device @dataType @shape)
         [batchDim, seqDim, embedDim]
-        input 
+        input
 
 type TestDevice :: Device (DeviceType Nat)
 type TestDevice = 'Device 'CPU
 type TestLayout = 'Layout 'Dense
 type TestDataType = 'DataType 'Float
-type TestEmbedDim = 'Dim ('Name "embed") ('Size 32)
-type TestQuerySeqDim = 'Dim ('Name "querySeq") ('Size 64)
-type TestQueryEmbedDim = 'Dim ('Name "queryEmbed") ('Size 32)
+type TestEmbedDim = 'Dim ('Name "embed") ('Size 768)
+type TestQueryEmbedDim = 'Dim ('Name "queryEmbed") ('Size 768)
+type TestKeyEmbedDim = 'Dim ('Name "keyEmbed") ('Size 1024)
+type TestValueEmbedDim = 'Dim ('Name "valueEmbed") ('Size 1024)
+type TestQuerySeqDim = 'Dim ('Name "querySeq") ('Size 32)
 type TestKeySeqDim = 'Dim ('Name "keySeq") ('Size 48)
-type TestKeyEmbedDim = 'Dim ('Name "keyEmbed") ('Size 16)
-type TestValueEmbedDim = 'Dim ('Name "valueEmbed") ('Size 24)
-type TestHeadDim = 'Dim ('Name "head") ('Size 8)
-type TestHeadEmbedDim = 'Dim ('Name "headEmbed") ('Size 4)
 type TestBatchDim = 'Dim ('Name "batch") ('Size 4)
+-- type TestHeadDim = 'Dim ('Name "head") ('Size 12)
+-- type TestHeadEmbedDim = 'Dim ('Name "headEmbed") ('Size 64)
+type TestHeadDim :: Dim (Name Symbol) (Size Nat)
+type TestHeadDim = 'Dim ('Name "head") 'UncheckedSize
+type TestHeadEmbedDim :: Dim (Name Symbol) (Size Nat)
+type TestHeadEmbedDim = 'Dim ('Name "headEmbed") 'UncheckedSize
 
 testmha ::
   IO
@@ -708,18 +748,18 @@ testmha ::
         ( 'Layout 'Dense)
         ( 'Device 'CPU)
         ( 'DataType 'Float)
-        ( 'Shape '[TestBatchDim, TestQuerySeqDim, TestQueryEmbedDim])
+        -- ( 'Shape '[TestBatchDim, TestQuerySeqDim, TestQueryEmbedDim])
+        'UncheckedShape
     )
 testmha = do
   g <- generator @TestDevice 0
-  let (result, _) =
-        runState
-          ( do
-              mha <- state $ initialize @(MultiheadAttention TestDevice TestDataType TestEmbedDim TestQueryEmbedDim TestKeyEmbedDim TestValueEmbedDim Float) 0.0
-              query <- state $ randn @ 'Dependent @TestLayout @TestDevice @TestDataType @( 'Shape '[TestBatchDim, TestQuerySeqDim, TestQueryEmbedDim])
-              key <- state $ randn @ 'Dependent @TestLayout @TestDevice @TestDataType @( 'Shape '[TestBatchDim, TestKeySeqDim, TestKeyEmbedDim])
-              value <- state $ randn @ 'Dependent @TestLayout @TestDevice @TestDataType @( 'Shape '[TestBatchDim, TestKeySeqDim, TestValueEmbedDim])
-              state $ multiheadAttention @TestHeadDim @TestHeadEmbedDim mha query key value
-          )
-          g
+  let (result, _) = runState
+        ( do
+            mha <- state $ initialize @(MultiheadAttention TestDevice TestDataType TestEmbedDim TestQueryEmbedDim TestKeyEmbedDim TestValueEmbedDim Float) 0.0
+            query <- state $ randn @ 'Dependent @TestLayout @TestDevice @TestDataType @( 'Shape '[TestBatchDim, TestQuerySeqDim, TestQueryEmbedDim])
+            key <- state $ randn @ 'Dependent @TestLayout @TestDevice @TestDataType @( 'Shape '[TestBatchDim, TestKeySeqDim, TestKeyEmbedDim])
+            value <- state $ randn @ 'Dependent @TestLayout @TestDevice @TestDataType @( 'Shape '[TestBatchDim, TestKeySeqDim, TestValueEmbedDim])
+            state $ multiheadAttention @TestHeadDim @TestHeadEmbedDim mha query key value 12 64
+        )
+        g
   pure result

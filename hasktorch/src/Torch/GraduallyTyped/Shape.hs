@@ -27,7 +27,7 @@ import Data.Proxy (Proxy (..))
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (KnownNat (..), KnownSymbol (..), Nat, Symbol, TypeError, natVal, symbolVal, type (+), type (-))
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.GraduallyTyped.Prelude (Fst, LiftTimesMaybe, MapMaybe, PrependMaybe, Reverse, Snd)
+import Torch.GraduallyTyped.Prelude (If, Fst, LiftTimesMaybe, MapMaybe, PrependMaybe, Reverse, Snd)
 import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Managed.Cast as ATen ()
 import qualified Torch.Internal.Managed.Type.Dimname as ATen (dimname_symbol, fromSymbol_s)
@@ -392,6 +392,10 @@ type family GetDimF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape [Di
   GetDimF 'UncheckedSelectDim _ = 'Dim 'UncheckedName 'UncheckedSize
   GetDimF _ 'UncheckedShape = 'Dim 'UncheckedName 'UncheckedSize
   GetDimF ( 'SelectDim by) ( 'Shape dims) = GetDimCheckF by dims (GetDimImplF by dims)
+
+type family (!) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (_k :: k) :: Dim (Name Symbol) (Size Nat) where
+  (!) shape (index :: Nat) = GetDimF ('SelectDim ('ByIndex index)) shape
+  (!) shape (name :: Symbol) = GetDimF ('SelectDim ('ByName name)) shape
 
 type family ReplaceDimByIndexF (index :: Maybe Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) (dim :: Dim (Name Symbol) (Size Nat)) :: Maybe [Dim (Name Symbol) (Size Nat)] where
   ReplaceDimByIndexF ( 'Just 0) (_ ': t) dim = 'Just (dim ': t)
