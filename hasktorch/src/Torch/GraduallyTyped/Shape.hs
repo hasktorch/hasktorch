@@ -115,6 +115,8 @@ type family UnifyNameF (name :: Name Symbol) (name' :: Name Symbol) :: Name Symb
   UnifyNameF 'UncheckedName _ = 'UncheckedName
   UnifyNameF _ 'UncheckedName = 'UncheckedName
   UnifyNameF ( 'Name name) ( 'Name name) = 'Name name
+  UnifyNameF ( 'Name name) ( 'Name "*") = 'Name name
+  UnifyNameF ( 'Name "*") ('Name name) = 'Name name
   UnifyNameF ( 'Name name) ( 'Name name') = TypeError (UnifyNameErrorMessage name name')
 
 type UnifySizeErrorMessage (size :: Nat) (size' :: Nat) =
@@ -338,7 +340,7 @@ type family BroadcastDimsImplF (reversedDims :: [Dim (Name Symbol) (Size Nat)]) 
   BroadcastDimsImplF reversedDims '[] = 'Just reversedDims
   BroadcastDimsImplF (dim ': reversedDims) (dim' ': reversedDims') = PrependMaybe (BroadcastDimF dim dim') (BroadcastDimsImplF reversedDims reversedDims')
 
-type BroadcastDimsF dims dims' = BroadcastDimsCheckF dims dims' (BroadcastDimsImplF dims dims')
+type BroadcastDimsF dims dims' = BroadcastDimsCheckF dims dims' (BroadcastDimsImplF (Reverse dims) (Reverse dims'))
 
 type family BroadcastShapesF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
   BroadcastShapesF 'UncheckedShape _ = 'UncheckedShape

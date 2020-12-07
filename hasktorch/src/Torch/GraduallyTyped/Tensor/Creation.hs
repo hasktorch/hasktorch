@@ -17,6 +17,7 @@ module Torch.GraduallyTyped.Tensor.Creation
     ones,
     checkedOnes,
     uncheckedOnes,
+    zeros,
     randn,
     checkedRandn,
     uncheckedRandn,
@@ -225,7 +226,7 @@ ones =
       let opts = tensorOptions requiresGradient layoutType deviceType dType
           tensor = unsafePerformIO $ case (map dimName dims, map dimSize dims) of
             (names, sizes)
-              | getAll . foldMap (\name -> All $ name == mempty) $ names -> cast2 ATen.ones_lo sizes opts
+              | getAll . foldMap (\name -> All $ name == "*") $ names -> cast2 ATen.ones_lo sizes opts
               | otherwise -> cast3 ATen.ones_lNo sizes names opts
        in UnsafeTensor tensor
 
@@ -267,6 +268,28 @@ uncheckedOnes ::
     'UncheckedShape
 uncheckedOnes = ones @ 'Dependent @ 'UncheckedLayout @ 'UncheckedDevice @ 'UncheckedDataType @ 'UncheckedShape
 
+zeros ::
+  forall requiresGradient layout device dataType shape.
+  WithCreateC (Tensor requiresGradient layout device dataType shape) requiresGradient layout device dataType shape =>
+  WithCreateF (Tensor requiresGradient layout device dataType shape) requiresGradient layout device dataType shape
+zeros =
+  withCreate
+    @(Tensor requiresGradient layout device dataType shape)
+    @requiresGradient
+    @layout
+    @device
+    @dataType
+    @shape
+    go
+  where
+    go requiresGradient layoutType deviceType dType dims =
+      let opts = tensorOptions requiresGradient layoutType deviceType dType
+          tensor = unsafePerformIO $ case (map dimName dims, map dimSize dims) of
+            (names, sizes)
+              | getAll . foldMap (\name -> All $ name == "*") $ names -> cast2 ATen.zeros_lo sizes opts
+              | otherwise -> cast3 ATen.zeros_lNo sizes names opts
+       in UnsafeTensor tensor
+
 randn ::
   forall requiresGradient layout device dataType shape device'.
   ( UnifyDeviceC device device',
@@ -281,14 +304,14 @@ randn = withCreate @(Generator device' -> (Tensor requiresGradient layout device
             ( \genPtr -> do
                 tensor <- case (map dimName shape, map dimSize shape) of
                   (names, sizes)
-                    | getAll . foldMap (\name -> All $ name == mempty) $ names -> cast3 ATen.randn_lGo sizes genPtr opts
+                    | getAll . foldMap (\name -> All $ name == "*") $ names -> cast3 ATen.randn_lGo sizes genPtr opts
                     | otherwise -> cast4 ATen.randn_lGNo sizes genPtr names opts
                 pure $ UnsafeTensor tensor
             )
             ( unsafePerformIO $ do
                 tensor <- case (map dimName shape, map dimSize shape) of
                   (names, sizes)
-                    | getAll . foldMap (\name -> All $ name == mempty) $ names -> cast2 ATen.zeros_lo sizes opts
+                    | getAll . foldMap (\name -> All $ name == "*") $ names -> cast2 ATen.zeros_lo sizes opts
                     | otherwise -> cast3 ATen.zeros_lNo sizes names opts
                 pure $ UnsafeTensor tensor
             )

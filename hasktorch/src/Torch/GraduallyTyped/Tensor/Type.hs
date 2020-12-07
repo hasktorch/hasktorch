@@ -798,7 +798,7 @@ shape tensor =
             names <- cast1 ATen.tensor_names tensor
             return $ zipWith Dim names sizes
         )
-        (return $ Dim "" <$> sizes)
+        (return $ Dim "*" <$> sizes)
     Shape dims ->
       let sizes = unsafePerformIO $ cast1 ATen.tensor_sizes tensor
           names =
@@ -806,30 +806,20 @@ shape tensor =
               ifM
                 (cast1 ATen.tensor_has_names tensor)
                 (cast1 ATen.tensor_names tensor)
-                (pure $ map (const mempty) sizes)
-          f (Dim UncheckedName UncheckedSize) name size = Dim name size
-          f (Dim (Name name) UncheckedSize) name' size
-            | name == name' = Dim name size
-            | otherwise =
-              error $
+                (pure $ map (const "*") sizes)
+          nameError name name' = error $
                 "The compile- and runtime dimension names are not the same, '"
                   <> name
                   <> "' != '"
                   <> name'
                   <> "'. Please open a ticket on GitHub."
-          f (Dim UncheckedName (Size size)) name size'
-            | size == size' = Dim name size
-            | otherwise =
-              error $
+          sizeError size size' = error $
                 "The compile- and runtime dimension sizes are not the same, '"
                   <> show size
                   <> "' != '"
                   <> show size'
                   <> "'. Please open a ticket on GitHub."
-          f (Dim (Name name) (Size size)) name' size'
-            | name == name' && size == size' = Dim name size
-            | otherwise =
-              error $
+          nameSizeError name name' size size' = error $
                 "The compile- and runtime dimension names and sizes are not the same, '"
                   <> name
                   <> "' != '"
@@ -839,6 +829,18 @@ shape tensor =
                   <> "' != '"
                   <> show size'
                   <> "'. Please open a ticket on GitHub."
+          f (Dim UncheckedName UncheckedSize) name size = Dim name size
+          f (Dim (Name name) UncheckedSize) name' size
+            | name == name' = Dim name size
+            | otherwise = nameError name name'
+          f (Dim UncheckedName (Size size)) name size'
+            | size == size' = Dim name size
+            | otherwise = sizeError size size'
+          f (Dim (Name name) (Size size)) name' size'
+            | name == name' && size == size' = Dim name size
+            | name /= name' && size == size' = nameError name name'
+            | name == name' && size /= size' = sizeError size size'
+            | otherwise = nameSizeError name name' size size'
        in zipWith3 f dims names sizes
 
 -- | Returns the input tensor but with the selected dimension replaces with 'UncheckedDim' as dimension type annotation.

@@ -7,6 +7,7 @@ module Torch.GraduallyTyped.NN
     module Torch.GraduallyTyped.NN.Dropout,
     module Torch.GraduallyTyped.NN.Activation,
     module Torch.GraduallyTyped.NN.Functional,
+    module Torch.GraduallyTyped.NN.Normalization,
   )
 where
 
@@ -17,3 +18,4 @@ import Torch.GraduallyTyped.NN.Linear
 import Torch.GraduallyTyped.NN.Transformer
 import Torch.GraduallyTyped.NN.Activation
 import Torch.GraduallyTyped.NN.Functional
+import Torch.GraduallyTyped.NN.Normalization
