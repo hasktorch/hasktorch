@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE PartialTypeSignatures #-}
@@ -13,6 +15,12 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
+-- {-# OPTIONS_GHC -fplugin TypeLevel.Rewrite
+--                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Device.UnifyDeviceL1
+--                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Device.UnifyDeviceL2
+--                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Device.UnifyDeviceL3
+--                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Device.UnifyDeviceL4
+--                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Device.UnifyDeviceL5 #-}
 
 module Torch.GraduallyTyped.NN.Transformer where
 
@@ -21,8 +29,8 @@ import Data.Kind (Type)
 import GHC.TypeLits (type (<=), type (*), KnownNat, Div, Nat, Symbol)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (UnifyDataTypeF, DataType (DataType), WithDataTypeC (..))
-import Torch.GraduallyTyped.Device (UnifyDeviceF, Device (..), DeviceType(..), WithDeviceC (..))
-import Torch.GraduallyTyped.NN.Class (HasForward, forward, HasInitialize (..))
+import Torch.GraduallyTyped.Device (UnifyDeviceC, UnifyDeviceF, Device (..), DeviceType(..), WithDeviceC (..))
+import Torch.GraduallyTyped.NN.Class (HasForward(..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout (Dropout))
 import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearC, Linear (Linear))
 import Torch.GraduallyTyped.Random (generator, Generator)
@@ -35,11 +43,137 @@ import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (MatmulF, matmul)
 import Torch.GraduallyTyped.NN.Functional.Linear (LinearF)
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, softmax)
 import Torch.GraduallyTyped.Layout
+    ( Layout(Layout), LayoutType(Dense), UnifyLayoutF )
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient(Dependent))
 import Torch.GraduallyTyped.Tensor.Creation (randn)
 import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormC, LayerNorm)
 import Torch.GraduallyTyped.NN.Functional.Activation (relu)
 import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormF)
+import GHC.TypeNats (type (+))
+import Data.Proxy (Proxy(..))
+import GHC.TypeLits (type (-))
+import GHC.TypeLits (type (<=?))
+import Torch.GraduallyTyped.Prelude (F)
+
+-- type Fab a b = F a b
+
+-- f ::
+--   forall a b fab.
+--   ( fab ~ Fab a b
+--   ) =>
+--   F a (F a b) ->
+--   fab
+-- f = id
+
+multiheadAttention' ::
+  forall headDim headEmbedDim generatorDevice batchDim querySeqDim keySeqDim device dataType embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP requiresGradient queryLayout queryDevice queryDataType queryShape keyLayout keyDevice keyDataType keyShape valueLayout valueDevice valueDataType valueShape outputLayout outputDevice outputGeneratorDevice outputDataType outputShape.
+  ( MultiheadAttentionC headDim headEmbedDim batchDim querySeqDim keySeqDim device dataType embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP requiresGradient queryLayout queryDevice queryDataType queryShape keyLayout keyDevice keyDataType keyShape valueLayout valueDevice valueDataType valueShape generatorDevice outputLayout outputDevice outputGeneratorDevice outputDataType outputShape,
+    outputLayout ~ MultiheadAttentionOutputLayout queryLayout keyLayout valueLayout,
+    outputDevice ~ MultiheadAttentionOutputDevice device queryDevice keyDevice valueDevice generatorDevice,
+    outputGeneratorDevice ~ MultiheadAttentionOutputGeneratorDevice device queryDevice keyDevice generatorDevice,
+    outputDataType ~ MultiheadAttentionOutputDataType dataType queryDataType keyDataType valueDataType,
+    outputShape ~ MultiheadAttentionOutputShape embedDim queryEmbedDim keyEmbedDim valueEmbedDim headDim headEmbedDim batchDim querySeqDim keySeqDim queryShape keyShape valueShape
+  ) =>
+  -- | multi-head attention model
+  MultiheadAttention device dataType embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP ->
+  -- | query representation
+  Tensor requiresGradient queryLayout queryDevice queryDataType queryShape ->
+  -- | key representation
+  Tensor requiresGradient keyLayout keyDevice keyDataType keyShape ->
+  -- | value representation
+  Tensor requiresGradient valueLayout valueDevice valueDataType valueShape ->
+  WithDimF
+    headDim
+    ( WithDimF
+        headEmbedDim
+        ( Generator generatorDevice ->
+          ( Tensor requiresGradient outputLayout outputDevice outputDataType outputShape,
+            Generator outputGeneratorDevice
+          )
+        )
+    )
+multiheadAttention' MultiheadAttention {..} query key value =
+  withDim @headDim $ \headDim ->
+    withDim @headEmbedDim $ \headEmbedDim g ->
+      let batchDim = case dimVal @batchDim of
+            Dim (Name name) (Size size) -> Dim name size
+            Dim _ _ -> undefined
+          querySeqDim = case dimVal @querySeqDim of
+            Dim (Name name) (Size size) -> Dim name size
+            Dim _ _ -> undefined
+          keySeqDim = case dimVal @keySeqDim of
+            Dim (Name name) (Size size) -> Dim name size
+            Dim _ _ -> undefined
+          embedDim = case dimVal @embedDim of
+            Dim (Name name) (Size size) -> Dim name size
+            Dim _ _ -> undefined
+          scaling :: Double = sqrt . fromIntegral . dimSize $ headDim
+          q =
+            transpose @( 'SelectDim ( 'ByIndex 1)) @( 'SelectDim ( 'ByIndex 2))
+              . reshape' @batchDim @querySeqDim @headDim @headEmbedDim [batchDim, querySeqDim, headDim, headEmbedDim]
+              . flip divScalar scaling
+              . forward @_ @_ @() mhaQInProj
+              $ query
+          k =
+            transpose @( 'SelectDim ( 'ByIndex 1)) @( 'SelectDim ( 'ByIndex 2))
+              . reshape' @batchDim @keySeqDim @headDim @headEmbedDim [batchDim, keySeqDim, headDim, headEmbedDim]
+              . forward @_ @_ @() mhaKInProj
+              $ key
+          qk = q `matmul` transpose @( 'SelectDim ( 'ByIndex 2)) @( 'SelectDim ( 'ByIndex 3)) k
+          (weights, g') = forward @_ @_ @(Generator generatorDevice) mhaDropout (softmax @( 'SelectDim ( 'ByIndex 3)) qk) g
+          v =
+            transpose @( 'SelectDim ( 'ByIndex 1)) @( 'SelectDim ( 'ByIndex 2))
+              . reshape' @batchDim @keySeqDim @headDim @headEmbedDim [batchDim, keySeqDim, headDim, headEmbedDim]
+              . forward @_ @_ @() mhaVInProj
+              $ value
+      in ( forward @_ @_ @() mhaOutProj
+              . reshape'' @batchDim @querySeqDim @embedDim [batchDim, querySeqDim, embedDim]
+              . transpose @( 'SelectDim ( 'ByIndex 1)) @( 'SelectDim ( 'ByIndex 2))
+              $ weights `matmul` v,
+            g'
+          )
+  where
+    reshape' ::
+      forall batchDim seqDim headDim headEmbedDim requiresGradient layout device dataType shape.
+      WithShapeC
+        ( 'Shape '[batchDim, seqDim, headDim, headEmbedDim])
+        ( Tensor requiresGradient layout device dataType shape ->
+          Tensor requiresGradient layout device dataType (ReshapeF shape ( 'Shape '[batchDim, seqDim, headDim, headEmbedDim]))
+        ) =>
+      [Dim String Integer] ->
+      Tensor requiresGradient layout device dataType shape ->
+      Tensor requiresGradient layout device dataType (ReshapeF shape ( 'Shape '[batchDim, seqDim, headDim, headEmbedDim]))
+    reshape' [batchDim, seqDim, headDim, headEmbedDim] input =
+      withoutShape
+        @( 'Shape '[batchDim, seqDim, headDim, headEmbedDim])
+        @( Tensor requiresGradient layout device dataType shape ->
+           Tensor requiresGradient layout device dataType (ReshapeF shape ( 'Shape '[batchDim, seqDim, headDim, headEmbedDim]))
+         )
+        (reshape @( 'Shape '[batchDim, seqDim, headDim, headEmbedDim]) @requiresGradient @layout @device @dataType @shape)
+        [batchDim, seqDim, headDim, headEmbedDim]
+        input
+    reshape'' ::
+      forall batchDim seqDim embedDim requiresGradient layout device dataType shape.
+      WithShapeC
+        ( 'Shape '[batchDim, seqDim, embedDim])
+        ( Tensor requiresGradient layout device dataType shape ->
+          Tensor requiresGradient layout device dataType (ReshapeF shape ( 'Shape '[batchDim, seqDim, embedDim]))
+        ) =>
+      [Dim String Integer] ->
+      Tensor requiresGradient layout device dataType shape ->
+      Tensor requiresGradient layout device dataType (ReshapeF shape ( 'Shape '[batchDim, seqDim, embedDim]))
+    reshape'' [batchDim, seqDim, embedDim] input =
+      withoutShape
+        @( 'Shape '[batchDim, seqDim, embedDim])
+        @( Tensor requiresGradient layout device dataType shape ->
+           Tensor requiresGradient layout device dataType (ReshapeF shape ( 'Shape '[batchDim, seqDim, embedDim]))
+         )
+        (reshape @( 'Shape '[batchDim, seqDim, embedDim]) @requiresGradient @layout @device @dataType @shape)
+        [batchDim, seqDim, embedDim]
+        input
+
+
+
 
 --------------------------------------------------------------------------------
 -- Multi-Headed Attention Layer
@@ -187,6 +321,10 @@ instance
         dropout <-
           pure $ initialize @(Dropout dropoutP) dropoutP
         pure $ MultiheadAttention qInProj kInProj vInProj outProj dropout
+
+type BatchDim queryShape keyShape valueShape = UnifyDimF (UnifyDimF (queryShape ! 0) (keyShape ! 0)) (valueShape ! 0)
+type QuerySeqDim queryShape = queryShape ! 1
+type KeySeqDim keyShape valueShape = UnifyDimF (keyShape ! 1) (valueShape ! 1)
 
 type MultiheadAttentionC headDim headEmbedDim batchDim querySeqDim keySeqDim device dataType embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP requiresGradient queryLayout queryDevice queryDataType queryShape keyLayout keyDevice keyDataType keyShape valueLayout valueDevice valueDataType valueShape generatorDevice outputLayout outputDevice outputGeneratorDevice outputDataType outputShape =
   ( KnownDim embedDim,
@@ -528,9 +666,12 @@ type MultiheadAttentionC headDim headEmbedDim batchDim querySeqDim keySeqDim dev
               ( 'Shape '[batchDim, querySeqDim, embedDim])
           )
       ),
-    batchDim ~ UnifyDimF (UnifyDimF (queryShape ! 0) (keyShape ! 0)) (valueShape ! 0),
-    querySeqDim ~ (queryShape ! 1),
-    keySeqDim ~ UnifyDimF (keyShape ! 1) (valueShape ! 1)
+    -- UnifyDeviceC queryDevice device,
+    -- UnifyDeviceC keyDevice device,
+    -- UnifyDeviceC valueDevice device,
+    batchDim ~ BatchDim queryShape keyShape valueShape,
+    querySeqDim ~ QuerySeqDim queryShape,
+    keySeqDim ~ KeySeqDim keyShape valueShape
   )
 
 type MultiheadAttentionOutputDevice device queryDevice keyDevice valueDevice generatorDevice =
@@ -539,21 +680,12 @@ type MultiheadAttentionOutputDevice device queryDevice keyDevice valueDevice gen
         ( UnifyDeviceF
             ( UnifyDeviceF
                 ( UnifyDeviceF
-                    ( UnifyDeviceF
-                        (UnifyDeviceF queryDevice device)
-                        device
-                    )
-                    ( UnifyDeviceF
-                        (UnifyDeviceF keyDevice device)
-                        device
-                    )
+                    (UnifyDeviceF (UnifyDeviceF queryDevice device) device)
+                    (UnifyDeviceF (UnifyDeviceF keyDevice device) device)
                 )
                 generatorDevice
             )
-            ( UnifyDeviceF
-                (UnifyDeviceF valueDevice device)
-                device
-            )
+            (UnifyDeviceF (UnifyDeviceF valueDevice device) device)
         )
         device
     )
@@ -562,8 +694,8 @@ type MultiheadAttentionOutputDevice device queryDevice keyDevice valueDevice gen
 type MultiheadAttentionOutputGeneratorDevice device queryDevice keyDevice generatorDevice =
   UnifyDeviceF
     ( UnifyDeviceF
-        (UnifyDeviceF (UnifyDeviceF queryDevice device) device)
-        (UnifyDeviceF (UnifyDeviceF keyDevice device) device)
+        (UnifyDeviceF queryDevice device)
+        (UnifyDeviceF keyDevice device)
     )
     generatorDevice
 
@@ -672,7 +804,10 @@ multiheadAttention ::
     outputDevice ~ MultiheadAttentionOutputDevice device queryDevice keyDevice valueDevice generatorDevice,
     outputGeneratorDevice ~ MultiheadAttentionOutputGeneratorDevice device queryDevice keyDevice generatorDevice,
     outputDataType ~ MultiheadAttentionOutputDataType dataType queryDataType keyDataType valueDataType,
-    outputShape ~ MultiheadAttentionOutputShape embedDim queryEmbedDim keyEmbedDim valueEmbedDim headDim headEmbedDim batchDim querySeqDim keySeqDim queryShape keyShape valueShape
+    outputShape ~ MultiheadAttentionOutputShape embedDim queryEmbedDim keyEmbedDim valueEmbedDim headDim headEmbedDim batchDim querySeqDim keySeqDim queryShape keyShape valueShape,
+    UnifyDeviceC queryDevice device,
+    UnifyDeviceC keyDevice device,
+    UnifyDeviceC valueDevice device
   ) =>
   -- | multi-head attention model
   MultiheadAttention device dataType embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP ->
@@ -1473,3 +1608,319 @@ testtl = do
           )
           g
   pure result
+
+data
+  TransformerLayerStack
+    (numLayers :: Nat)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (dropoutP :: Type)
+  where
+  TransformerLayerStackNil ::
+    TransformerLayerStack 0 device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP
+  TransformerLayerStackCons ::
+    -- | head dim
+    Dim String Integer ->
+    -- | head embed dim
+    Dim String Integer ->
+    TransformerLayer device dataType embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP ->
+    TransformerLayerStack numLayers device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP ->
+    TransformerLayerStack (numLayers + 1) device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP
+
+class
+  HasInitializeTransformerLayerStack (nil :: Bool) numLayers device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP
+  where
+  initializeTransformerLayerStack ::
+    Proxy nil ->
+    WithDeviceF
+      device
+      ( WithDataTypeF
+          dataType
+          ( WithDimF
+              headDim
+              ( WithDimF
+                  headEmbedDim
+                  ( WithDimF
+                      embedDim
+                      ( WithDimF
+                          ffnDim
+                          ( WithDimF
+                              queryEmbedDim
+                              ( WithDimF
+                                  keyEmbedDim
+                                  ( WithDimF
+                                      valueEmbedDim
+                                      (dropoutP -> Double -> Generator device -> (TransformerLayerStack numLayers device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))
+                                  )
+                              )
+                          )
+                      )
+                  )
+              )
+          )
+      )
+
+type HasInitializeTransformerLayerStackC numLayers device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP =
+  ( WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF ffnDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Double -> Generator device -> (TransformerLayerStack numLayers device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)))))))))),
+    WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF ffnDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Double -> Generator device -> (TransformerLayerStack numLayers device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))))))))),
+    WithDimC headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF ffnDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Double -> Generator device -> (TransformerLayerStack numLayers device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)))))))),
+    WithDimC headEmbedDim (WithDimF embedDim (WithDimF ffnDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Double -> Generator device -> (TransformerLayerStack numLayers device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))))))),
+    WithDimC embedDim (WithDimF ffnDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Double -> Generator device -> (TransformerLayerStack numLayers device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)))))),
+    WithDimC ffnDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Double -> Generator device -> (TransformerLayerStack numLayers device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))))),
+    WithDimC queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Double -> Generator device -> (TransformerLayerStack numLayers device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)))),
+    WithDimC keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Double -> Generator device -> (TransformerLayerStack numLayers device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))),
+    WithDimC valueEmbedDim (dropoutP -> Double -> Generator device -> (TransformerLayerStack numLayers device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))
+  )
+
+instance
+  HasInitializeTransformerLayerStackC 0 device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP =>
+  HasInitializeTransformerLayerStack 'False 0 device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP where
+  initializeTransformerLayerStack _ =
+    withDevice @device $
+      \_deviceType ->
+        withDataType @dataType $
+          \_dType ->
+            withDim @headDim $
+              \_headDim ->
+                withDim @headEmbedDim $
+                  \_headEmbedDim ->
+                    withDim @embedDim $
+                      \_embedDim ->
+                        withDim @ffnDim $
+                          \_ffnDim ->
+                            withDim @queryEmbedDim $
+                              \_queryEmbedDim ->
+                                withDim @keyEmbedDim $
+                                  \_keyEmbedDim ->
+                                    withDim @valueEmbedDim @(dropoutP -> Double -> Generator device -> (TransformerLayerStack 0 device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)) $
+                                      \_valueEmbedDim ->
+                                        \_dropoutP _eps g -> (TransformerLayerStackNil, g)
+
+instance
+  ( HasInitializeTransformerLayerC device dataType embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP,
+    HasInitializeTransformerLayerStackC (numLayers - 1) device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP,
+    HasInitializeTransformerLayerStackC numLayers device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP,
+    HasInitialize (TransformerLayerStack (numLayers - 1) device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
+  ) =>
+  HasInitializeTransformerLayerStack 'True numLayers device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP where
+  initializeTransformerLayerStack _ =
+    withDevice @device $
+      \deviceType ->
+        withDataType @dataType $
+          \dType ->
+            withDim @headDim $
+              \headDim ->
+                withDim @headEmbedDim $
+                  \headEmbedDim ->
+                    withDim @embedDim $
+                      \embedDim ->
+                        withDim @ffnDim $
+                          \ffnDim ->
+                            withDim @queryEmbedDim $
+                              \queryEmbedDim ->
+                                withDim @keyEmbedDim $
+                                  \keyEmbedDim ->
+                                    withDim @valueEmbedDim @(dropoutP -> Double -> Generator device -> (TransformerLayerStack numLayers device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)) $
+                                      \valueEmbedDim ->
+                                        go deviceType dType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim
+    where
+      go deviceType dType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP eps = runState $ do
+        layerStack <-
+          state $
+            withoutDim @valueEmbedDim @(dropoutP -> Double -> Generator device -> (TransformerLayerStack (numLayers - 1) device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))
+              ( withoutDim @keyEmbedDim
+                  ( withoutDim @queryEmbedDim
+                      ( withoutDim @ffnDim
+                          ( withoutDim @embedDim
+                              ( withoutDim @headEmbedDim
+                                  ( withoutDim @headDim
+                                      ( withoutDataType @dataType
+                                          ( withoutDevice @device
+                                              ( initialize @(TransformerLayerStack (numLayers - 1) device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
+                                              )
+                                              deviceType
+                                          )
+                                          dType
+                                      )
+                                      headDim
+                                  )
+                                  headEmbedDim
+                              )
+                              embedDim
+                          )
+                          ffnDim
+                      )
+                      queryEmbedDim
+                  )
+                  keyEmbedDim
+              )
+              valueEmbedDim
+              dropoutP
+              eps
+        layer <-
+          state $
+            withoutDim @valueEmbedDim
+              ( withoutDim @keyEmbedDim
+                  ( withoutDim @queryEmbedDim
+                      ( withoutDim @ffnDim
+                          ( withoutDim @embedDim
+                              ( withoutDataType @dataType
+                                  ( withoutDevice @device
+                                      ( initialize @(TransformerLayer device dataType embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
+                                      )
+                                      deviceType
+                                  )
+                                  dType
+                              )
+                              embedDim
+                          )
+                          ffnDim
+                      )
+                      queryEmbedDim
+                  )
+                  keyEmbedDim
+              )
+              valueEmbedDim
+              dropoutP
+              eps
+        pure $ TransformerLayerStackCons headDim headEmbedDim layer layerStack
+
+instance
+  HasInitializeTransformerLayerStack (1 <=? numLayers) numLayers device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP =>
+  HasInitialize (TransformerLayerStack numLayers device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
+  where
+  type
+    InitializeF (TransformerLayerStack numLayers device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP) =
+      WithDeviceF
+      device
+      ( WithDataTypeF
+          dataType
+          ( WithDimF
+              headDim
+              ( WithDimF
+                  headEmbedDim
+                  ( WithDimF
+                      embedDim
+                      ( WithDimF
+                          ffnDim
+                          ( WithDimF
+                              queryEmbedDim
+                              ( WithDimF
+                                  keyEmbedDim
+                                  ( WithDimF
+                                      valueEmbedDim
+                                      (dropoutP -> Double -> Generator device -> (TransformerLayerStack numLayers device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))
+                                  )
+                              )
+                          )
+                      )
+                  )
+              )
+          )
+      )
+  initialize = initializeTransformerLayerStack @(1 <=? numLayers) @numLayers @device @dataType @headDim @headEmbedDim @embedDim @ffnDim @queryEmbedDim @keyEmbedDim @valueEmbedDim @dropoutP (Proxy :: Proxy (1 <=? numLayers))
+
+class
+  HasForwardTransformerLayerStack (nil :: Bool) (numLayers :: Nat) (headDim :: Dim (Name Symbol) (Size Nat)) (headEmbedDim :: Dim (Name Symbol) (Size Nat)) (batchDim :: Dim (Name Symbol) (Size Nat)) (querySeqDim :: Dim (Name Symbol) (Size Nat)) device dataType (embedDim :: Dim (Name Symbol) (Size Nat)) (ffnDim :: Dim (Name Symbol) (Size Nat)) queryEmbedDim dropoutP requiresGradient queryLayout queryDevice queryDataType (queryShape :: Shape [Dim (Name Symbol) (Size Nat)]) generatorDevice
+  where
+    type HasForwardTransformerLayerStackOutput nil numLayers headDim headEmbedDim querySeqDim :: Type
+    type OutputQueryLayout nil numLayers queryLayout :: Layout LayoutType
+    type OutputQueryDevice nil numLayers device queryDevice generatorDevice :: Device (DeviceType Nat)
+    type OutputQueryDataType nil numLayers dataType queryDataType :: DataType DType
+    type OutputQueryShape nil numLayers embedDim ffnDim queryEmbedDim headDim headEmbedDim batchDim querySeqDim queryShape :: Shape [Dim (Name Symbol) (Size Nat)]
+    type OutputGeneratorDevice nil numLayers device queryDevice generatorDevice :: Device (DeviceType Nat)
+    forwardTransformerLayerStack ::
+      TransformerLayerStack numLayers device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP ->
+      Tensor requiresGradient queryLayout queryDevice queryDataType queryShape ->
+      Generator generatorDevice ->
+      ( Tensor requiresGradient (OutputQueryLayout nil numLayers queryLayout) (OutputQueryDevice nil numLayers device queryDevice generatorDevice) (OutputQueryDataType nil numLayers dataType queryDataType) (OutputQueryShape nil numLayers embedDim ffnDim queryEmbedDim headDim headEmbedDim batchDim querySeqDim queryShape),
+        Generator (OutputGeneratorDevice nil numLayers device queryDevice generatorDevice)
+      )
+
+instance
+  ( WithDimC headDim (WithDimF headEmbedDim (Generator generatorDevice -> (Tensor requiresGradient (OutputQueryLayout 'False 0 queryLayout) (OutputQueryDevice 'False 0 device queryDevice generatorDevice) (OutputQueryDataType 'False 0 dataType queryDataType) (OutputQueryShape 'False 0 embedDim ffnDim queryEmbedDim headDim headEmbedDim batchDim querySeqDim queryShape), Generator (OutputGeneratorDevice 'False 0 device queryDevice generatorDevice)))),
+    WithDimC headEmbedDim (Generator generatorDevice -> (Tensor requiresGradient (OutputQueryLayout 'False 0 queryLayout) (OutputQueryDevice 'False 0 device queryDevice generatorDevice) (OutputQueryDataType 'False 0 dataType queryDataType) (OutputQueryShape 'False 0 embedDim ffnDim queryEmbedDim headDim headEmbedDim batchDim querySeqDim queryShape), Generator (OutputGeneratorDevice 'False 0 device queryDevice generatorDevice)))
+  ) =>
+  HasForwardTransformerLayerStack 'False 0 headDim headEmbedDim batchDim querySeqDim device dataType embedDim ffnDim queryEmbedDim dropoutP requiresGradient queryLayout queryDevice queryDataType queryShape generatorDevice
+  where
+  type OutputQueryLayout 'False 0 queryLayout = queryLayout
+  type OutputQueryDevice 'False 0 device queryDevice generatorDevice = queryDevice
+  type OutputQueryDataType 'False 0 dataType queryDataType = queryDataType
+  type OutputQueryShape 'False 0 embedDim ffnDim queryEmbedDim headDim headEmbedDim batchDim querySeqDim queryShape = queryShape
+  type OutputGeneratorDevice 'False 0 device queryDevice generatorDevice = generatorDevice
+  forwardTransformerLayerStack TransformerLayerStackNil x g = (x, g)
+
+instance
+  ( MultiheadAttentionC headDim headEmbedDim batchDim querySeqDim querySeqDim device dataType embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP requiresGradient queryLayout queryDevice queryDataType queryShape queryLayout queryDevice queryDataType queryShape queryLayout queryDevice queryDataType queryShape generatorDevice (MultiheadAttentionOutputLayout queryLayout queryLayout queryLayout) (MultiheadAttentionOutputDevice device queryDevice queryDevice queryDevice generatorDevice) (MultiheadAttentionOutputGeneratorDevice device queryDevice queryDevice generatorDevice) (MultiheadAttentionOutputDataType dataType queryDataType queryDataType queryDataType) (MultiheadAttentionOutputShape embedDim queryEmbedDim queryEmbedDim queryEmbedDim headDim headEmbedDim batchDim querySeqDim querySeqDim queryShape queryShape queryShape),
+    WithDimC headDim (WithDimF headEmbedDim (Generator generatorDevice -> (Tensor requiresGradient (TransformerLayerOutputLayout queryLayout (MultiheadAttentionOutputLayout queryLayout queryLayout queryLayout)) (TransformerLayerOutputDevice device queryDevice (MultiheadAttentionOutputDevice device queryDevice queryDevice queryDevice generatorDevice) (MultiheadAttentionOutputGeneratorDevice device queryDevice queryDevice generatorDevice) (TransformerLayerOutputGeneratorDevice device queryDevice (MultiheadAttentionOutputDevice device queryDevice queryDevice queryDevice generatorDevice) (MultiheadAttentionOutputGeneratorDevice device queryDevice queryDevice generatorDevice))) (TransformerLayerOutputDataType dataType queryDataType (MultiheadAttentionOutputDataType dataType queryDataType queryDataType queryDataType)) (TransformerLayerOutputShape ffnDim queryEmbedDim queryShape (MultiheadAttentionOutputShape embedDim queryEmbedDim queryEmbedDim queryEmbedDim headDim headEmbedDim batchDim querySeqDim querySeqDim queryShape queryShape queryShape)), Generator (TransformerLayerOutputGeneratorDevice device queryDevice (MultiheadAttentionOutputDevice device queryDevice queryDevice queryDevice generatorDevice) (MultiheadAttentionOutputGeneratorDevice device queryDevice queryDevice generatorDevice))))),
+    WithDimC headEmbedDim (Generator generatorDevice -> (Tensor requiresGradient (TransformerLayerOutputLayout queryLayout (MultiheadAttentionOutputLayout queryLayout queryLayout queryLayout)) (TransformerLayerOutputDevice device queryDevice (MultiheadAttentionOutputDevice device queryDevice queryDevice queryDevice generatorDevice) (MultiheadAttentionOutputGeneratorDevice device queryDevice queryDevice generatorDevice) (TransformerLayerOutputGeneratorDevice device queryDevice (MultiheadAttentionOutputDevice device queryDevice queryDevice queryDevice generatorDevice) (MultiheadAttentionOutputGeneratorDevice device queryDevice queryDevice generatorDevice))) (TransformerLayerOutputDataType dataType queryDataType (MultiheadAttentionOutputDataType dataType queryDataType queryDataType queryDataType)) (TransformerLayerOutputShape ffnDim queryEmbedDim queryShape (MultiheadAttentionOutputShape embedDim queryEmbedDim queryEmbedDim queryEmbedDim headDim headEmbedDim batchDim querySeqDim querySeqDim queryShape queryShape queryShape)), Generator (TransformerLayerOutputGeneratorDevice device queryDevice (MultiheadAttentionOutputDevice device queryDevice queryDevice queryDevice generatorDevice) (MultiheadAttentionOutputGeneratorDevice device queryDevice queryDevice generatorDevice)))),
+    KnownDim queryEmbedDim,
+    HasForward (TransformerLayerStack numLayers device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP) (Tensor requiresGradient (TransformerLayerOutputLayout queryLayout (MultiheadAttentionOutputLayout queryLayout queryLayout queryLayout)) (TransformerLayerOutputDevice device queryDevice (MultiheadAttentionOutputDevice device queryDevice queryDevice queryDevice generatorDevice) (MultiheadAttentionOutputGeneratorDevice device queryDevice queryDevice generatorDevice) (TransformerLayerOutputGeneratorDevice device queryDevice (MultiheadAttentionOutputDevice device queryDevice queryDevice queryDevice generatorDevice) (MultiheadAttentionOutputGeneratorDevice device queryDevice queryDevice generatorDevice))) (TransformerLayerOutputDataType dataType queryDataType (MultiheadAttentionOutputDataType dataType queryDataType queryDataType queryDataType)) (TransformerLayerOutputShape ffnDim queryEmbedDim queryShape (MultiheadAttentionOutputShape embedDim queryEmbedDim queryEmbedDim queryEmbedDim headDim headEmbedDim batchDim querySeqDim querySeqDim queryShape queryShape queryShape))) (Generator (TransformerLayerOutputGeneratorDevice device queryDevice (MultiheadAttentionOutputDevice device queryDevice queryDevice queryDevice generatorDevice) (MultiheadAttentionOutputGeneratorDevice device queryDevice queryDevice generatorDevice)))
+  ) =>
+  HasForwardTransformerLayerStack 'True numLayers headDim headEmbedDim batchDim querySeqDim device dataType embedDim ffnDim queryEmbedDim dropoutP requiresGradient queryLayout queryDevice queryDataType queryShape generatorDevice
+  where
+  type OutputQueryLayout 'True numLayers queryLayout = TransformerLayerOutputLayout queryLayout (MultiheadAttentionOutputLayout queryLayout queryLayout queryLayout)
+  type OutputQueryDevice 'True numLayers device queryDevice generatorDevice = TransformerLayerOutputDevice device queryDevice (MultiheadAttentionOutputDevice device queryDevice queryDevice queryDevice generatorDevice) (MultiheadAttentionOutputGeneratorDevice device queryDevice queryDevice generatorDevice) (TransformerLayerOutputGeneratorDevice device queryDevice (MultiheadAttentionOutputDevice device queryDevice queryDevice queryDevice generatorDevice) (MultiheadAttentionOutputGeneratorDevice device queryDevice queryDevice generatorDevice))
+  type OutputQueryDataType 'True numLayers dataType queryDataType = TransformerLayerOutputDataType dataType queryDataType (MultiheadAttentionOutputDataType dataType queryDataType queryDataType queryDataType)
+  type OutputQueryShape 'True numLayers embedDim ffnDim queryEmbedDim headDim headEmbedDim batchDim querySeqDim queryShape = TransformerLayerOutputShape ffnDim queryEmbedDim queryShape (MultiheadAttentionOutputShape embedDim queryEmbedDim queryEmbedDim queryEmbedDim headDim headEmbedDim batchDim querySeqDim querySeqDim queryShape queryShape queryShape)
+  type OutputGeneratorDevice 'True numLayers device queryDevice generatorDevice = TransformerLayerOutputGeneratorDevice device queryDevice (MultiheadAttentionOutputDevice device queryDevice queryDevice queryDevice generatorDevice) (MultiheadAttentionOutputGeneratorDevice device queryDevice queryDevice generatorDevice)
+  forwardTransformerLayerStack (TransformerLayerStackCons headDim headEmbedDim layer layerStack) x g =
+    let (x', g') =
+          withoutDim @headEmbedDim
+            ( withoutDim @headDim 
+                ( transformerLayer @headDim @headEmbedDim @batchDim @querySeqDim @querySeqDim @device @dataType @embedDim @ffnDim @queryEmbedDim @queryEmbedDim @queryEmbedDim @dropoutP @requiresGradient @queryLayout @queryDevice @queryDataType @queryShape @queryLayout @queryDevice @queryDataType @queryShape @queryLayout @queryDevice @queryDataType @queryShape @generatorDevice @(TransformerLayerOutputLayout queryLayout (MultiheadAttentionOutputLayout queryLayout queryLayout queryLayout)) @(TransformerLayerOutputDevice device queryDevice (MultiheadAttentionOutputDevice device queryDevice queryDevice queryDevice generatorDevice) (MultiheadAttentionOutputGeneratorDevice device queryDevice queryDevice generatorDevice) (TransformerLayerOutputGeneratorDevice device queryDevice (MultiheadAttentionOutputDevice device queryDevice queryDevice queryDevice generatorDevice) (MultiheadAttentionOutputGeneratorDevice device queryDevice queryDevice generatorDevice))) @(TransformerLayerOutputDataType dataType queryDataType (MultiheadAttentionOutputDataType dataType queryDataType queryDataType queryDataType)) @(TransformerLayerOutputShape ffnDim queryEmbedDim queryShape (MultiheadAttentionOutputShape embedDim queryEmbedDim queryEmbedDim queryEmbedDim headDim headEmbedDim batchDim querySeqDim querySeqDim queryShape queryShape queryShape)) @(TransformerLayerOutputGeneratorDevice device queryDevice (MultiheadAttentionOutputDevice device queryDevice queryDevice queryDevice generatorDevice) (MultiheadAttentionOutputGeneratorDevice device queryDevice queryDevice generatorDevice)) @(MultiheadAttentionOutputLayout queryLayout queryLayout queryLayout) @(MultiheadAttentionOutputDevice device queryDevice queryDevice queryDevice generatorDevice) @(MultiheadAttentionOutputGeneratorDevice device queryDevice queryDevice generatorDevice) @(MultiheadAttentionOutputDataType dataType queryDataType queryDataType queryDataType) @(MultiheadAttentionOutputShape embedDim queryEmbedDim queryEmbedDim queryEmbedDim headDim headEmbedDim batchDim querySeqDim querySeqDim queryShape queryShape queryShape) layer x x x
+                )
+                headDim
+            )
+            headEmbedDim
+            g
+    in (x', g')
+    -- in forward @(TransformerLayerStack numLayers device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP) @(Tensor requiresGradient (TransformerLayerOutputLayout queryLayout (MultiheadAttentionOutputLayout queryLayout queryLayout queryLayout)) (TransformerLayerOutputDevice device queryDevice (MultiheadAttentionOutputDevice device queryDevice queryDevice queryDevice generatorDevice) (MultiheadAttentionOutputGeneratorDevice device queryDevice queryDevice generatorDevice) (TransformerLayerOutputGeneratorDevice device queryDevice (MultiheadAttentionOutputDevice device queryDevice queryDevice queryDevice generatorDevice) (MultiheadAttentionOutputGeneratorDevice device queryDevice queryDevice generatorDevice))) (TransformerLayerOutputDataType dataType queryDataType (MultiheadAttentionOutputDataType dataType queryDataType queryDataType queryDataType)) (TransformerLayerOutputShape ffnDim queryEmbedDim queryShape (MultiheadAttentionOutputShape embedDim queryEmbedDim queryEmbedDim queryEmbedDim headDim headEmbedDim batchDim querySeqDim querySeqDim queryShape queryShape queryShape))) @(Generator (TransformerLayerOutputGeneratorDevice device queryDevice (MultiheadAttentionOutputDevice device queryDevice queryDevice queryDevice generatorDevice) (MultiheadAttentionOutputGeneratorDevice device queryDevice queryDevice generatorDevice))) layerStack x' g'
+
+instance
+  (HasForwardTransformerLayerStack (1 <=? numLayers) numLayers headDim headEmbedDim (BatchDim queryShape queryShape queryShape) (QuerySeqDim queryShape) device dataType embedDim ffnDim queryEmbedDim dropoutP requiresGradient queryLayout queryDevice queryDataType queryShape generatorDevice
+  ) =>
+  HasForward (TransformerLayerStack numLayers device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP) (Tensor requiresGradient queryLayout queryDevice queryDataType queryShape) (Generator generatorDevice)
+  where
+  type ForwardOutput (TransformerLayerStack numLayers device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP) (Tensor requiresGradient queryLayout queryDevice queryDataType queryShape) (Generator generatorDevice) =
+    TransformerLayerStack numLayers device dataType headDim headEmbedDim embedDim ffnDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP ->
+      Tensor requiresGradient queryLayout queryDevice queryDataType queryShape ->
+      Generator generatorDevice ->
+      ( Tensor requiresGradient (OutputQueryLayout (1 <=? numLayers) numLayers queryLayout) (OutputQueryDevice (1 <=? numLayers) numLayers device queryDevice generatorDevice) (OutputQueryDataType (1 <=? numLayers) numLayers dataType queryDataType) (OutputQueryShape (1 <=? numLayers) numLayers embedDim ffnDim queryEmbedDim headDim headEmbedDim (BatchDim queryShape queryShape queryShape) (QuerySeqDim queryShape) queryShape),
+        Generator (OutputGeneratorDevice (1 <=? numLayers) numLayers device queryDevice generatorDevice)
+      )
+
+
+-- transformerLayerStack TransformerLayerStackNil x = x
+-- transformerLayerStack (TransformerLayerStackCons layer layerStack) x = transformerLayerStack layerStack $ transformerLayer layer x x x
+
+-- testtlstack ::
+--   IO
+--     ( Tensor
+--         'Dependent
+--         ( 'Layout 'Dense)
+--         ( 'Device 'CPU)
+--         ( 'DataType 'Float)
+--         ( 'Shape '[TestBatchDim, TestQuerySeqDim, TestQueryEmbedDim])
+--     )
+-- testtlstack = do
+--   g <- generator @TestDevice 0
+--   let (result, _) =
+--         runState
+--           ( do
+--               tlstack <- state $ initialize @(TransformerLayerStack 10 TestDevice TestDataType TestEmbedDim TestFFNDim TestQueryEmbedDim TestKeyEmbedDim TestValueEmbedDim Float) 0.0 1e-5
+--               query <- state $ randn @ 'Dependent @TestLayout @TestDevice @TestDataType @( 'Shape '[TestBatchDim, TestQuerySeqDim, TestQueryEmbedDim])
+--               key <- state $ randn @ 'Dependent @TestLayout @TestDevice @TestDataType @( 'Shape '[TestBatchDim, TestKeySeqDim, TestKeyEmbedDim])
+--               value <- state $ randn @ 'Dependent @TestLayout @TestDevice @TestDataType @( 'Shape '[TestBatchDim, TestKeySeqDim, TestValueEmbedDim])
+--               state $ _
+--               -- state $ transformerLayer @TestHeadDim @TestHeadEmbedDim tl query key value
+--           )
+--           g
+--   pure result

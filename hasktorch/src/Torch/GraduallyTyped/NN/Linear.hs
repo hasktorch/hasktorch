@@ -22,7 +22,7 @@ import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType)
 import Torch.GraduallyTyped.DType (DataType (..), UnifyDataTypeF, WithDataTypeC (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType, UnifyDeviceC, UnifyDeviceF, WithDeviceC (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType, UnifyDeviceF, WithDeviceC (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), UnifyLayoutF)
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Functional.Linear (LinearF, linear)
@@ -50,8 +50,7 @@ data
   deriving (Generic)
 
 type HasInitializeLinearC device dataType inputDim outputDim =
-  ( UnifyDeviceC device device,
-    WithDeviceC device (WithDataTypeF dataType (WithDimF inputDim (WithDimF outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device))))),
+  ( WithDeviceC device (WithDataTypeF dataType (WithDimF inputDim (WithDimF outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device))))),
     WithDataTypeC dataType (WithDimF inputDim (WithDimF outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device)))),
     WithDimC inputDim (WithDimF outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device))),
     WithDimC outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device)),

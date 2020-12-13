@@ -31,7 +31,7 @@ import GHC.TypeLits (Nat, Symbol)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType)
 import Torch.GraduallyTyped.DType (DataType (..), KnownDType, WithDataTypeC (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType, KnownDeviceType, UnifyDeviceC, WithDeviceC (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType, KnownDeviceType, WithDeviceC (..))
 import Torch.GraduallyTyped.Internal.TensorOptions (tensorOptions)
 import Torch.GraduallyTyped.Internal.Void (Void)
 import Torch.GraduallyTyped.Layout (KnownLayoutType, Layout (..), LayoutType, WithLayoutC (..))
@@ -292,8 +292,7 @@ zeros =
 
 randn ::
   forall requiresGradient layout device dataType shape device'.
-  ( UnifyDeviceC device device',
-    WithCreateC (Generator device' -> (Tensor requiresGradient layout device dataType shape, Generator device')) requiresGradient layout device dataType shape
+  ( WithCreateC (Generator device' -> (Tensor requiresGradient layout device dataType shape, Generator device')) requiresGradient layout device dataType shape
   ) =>
   WithCreateF (Generator device' -> (Tensor requiresGradient layout device dataType shape, Generator device')) requiresGradient layout device dataType shape
 randn = withCreate @(Generator device' -> (Tensor requiresGradient layout device dataType shape, Generator device')) @requiresGradient @layout @device @dataType @shape go

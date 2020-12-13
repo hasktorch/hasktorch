@@ -135,6 +135,7 @@ library
                     , ghc-typelits-extra
                     , ghc-typelits-knownnat
                     , ghc-typelits-natnormalise
+                    , typelevel-rewrite-rules
                     , mtl
                     , safe-exceptions
                     , random

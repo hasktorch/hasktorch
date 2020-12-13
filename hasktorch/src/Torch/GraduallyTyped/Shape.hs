@@ -18,6 +18,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 {-# LANGUAGE NoStarIsType #-}
+{-# LANGUAGE TypeFamilyDependencies #-}
 
 module Torch.GraduallyTyped.Shape where
 
@@ -111,13 +112,28 @@ type UnifyNameErrorMessage (name :: Symbol) (name' :: Symbol) =
     % "Check spelling and whether or not this is really what you want."
     % "If you are certain, consider dropping or changing the names."
 
-type family UnifyNameF (name :: Name Symbol) (name' :: Name Symbol) :: Name Symbol where
-  UnifyNameF 'UncheckedName _ = 'UncheckedName
-  UnifyNameF _ 'UncheckedName = 'UncheckedName
-  UnifyNameF ( 'Name name) ( 'Name name) = 'Name name
-  UnifyNameF ( 'Name name) ( 'Name "*") = 'Name name
-  UnifyNameF ( 'Name "*") ('Name name) = 'Name name
-  UnifyNameF ( 'Name name) ( 'Name name') = TypeError (UnifyNameErrorMessage name name')
+class
+  ( UnifyNameF name (UnifyNameF name name') ~ UnifyNameF name name',
+    UnifyNameF (UnifyNameF name name') name' ~ UnifyNameF name name'
+  ) =>
+  UnifyNameC (name :: Name Symbol) (name' :: Name Symbol)
+  where
+  type UnifyNameF name name' :: Name Symbol
+
+instance
+  ( UnifyNameF name (UnifyNameF name name') ~ UnifyNameF name name',
+    UnifyNameF (UnifyNameF name name') name' ~ UnifyNameF name name'
+  ) =>
+  UnifyNameC name name' where
+  type UnifyNameF name name' = UnifyNameImplF name name'
+
+type family UnifyNameImplF (name :: Name Symbol) (name' :: Name Symbol) :: Name Symbol where
+  UnifyNameImplF 'UncheckedName _ = 'UncheckedName
+  UnifyNameImplF _ 'UncheckedName = 'UncheckedName
+  UnifyNameImplF ( 'Name name) ( 'Name name) = 'Name name
+  UnifyNameImplF ( 'Name name) ( 'Name "*") = 'Name name
+  UnifyNameImplF ( 'Name "*") ('Name name) = 'Name name
+  UnifyNameImplF ( 'Name name) ( 'Name name') = TypeError (UnifyNameErrorMessage name name')
 
 type UnifySizeErrorMessage (size :: Nat) (size' :: Nat) =
   "The supplied dimensions must be the same,"
@@ -128,11 +144,26 @@ type UnifySizeErrorMessage (size :: Nat) (size' :: Nat) =
     % "Check whether or not this is really what you want."
     % "If you are certain, adjust the sizes such that they match."
 
-type family UnifySizeF (size :: Size Nat) (size' :: Size Nat) :: Size Nat where
-  UnifySizeF 'UncheckedSize _ = 'UncheckedSize
-  UnifySizeF _ 'UncheckedSize = 'UncheckedSize
-  UnifySizeF ( 'Size size) ( 'Size size) = 'Size size
-  UnifySizeF ( 'Size size) ( 'Size size') = TypeError (UnifySizeErrorMessage size size')
+class
+  ( UnifySizeF size (UnifySizeF size size') ~ UnifySizeF size size',
+    UnifySizeF (UnifySizeF size size') size' ~ UnifySizeF size size'
+  ) =>
+  UnifySizeC (size :: Size Nat) (size' :: Size Nat)
+  where
+  type UnifySizeF size size' :: Size Nat
+
+instance
+  ( UnifySizeF size (UnifySizeF size size') ~ UnifySizeF size size',
+    UnifySizeF (UnifySizeF size size') size' ~ UnifySizeF size size'
+  ) =>
+  UnifySizeC size size' where
+  type UnifySizeF size size' = UnifySizeImplF size size'
+
+type family UnifySizeImplF (size :: Size Nat) (size' :: Size Nat) :: Size Nat where
+  UnifySizeImplF 'UncheckedSize _ = 'UncheckedSize
+  UnifySizeImplF _ 'UncheckedSize = 'UncheckedSize
+  UnifySizeImplF ( 'Size size) ( 'Size size) = 'Size size
+  UnifySizeImplF ( 'Size size) ( 'Size size') = TypeError (UnifySizeErrorMessage size size')
 
 -- | Unification of dimensions.
 --

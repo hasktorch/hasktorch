@@ -21,7 +21,6 @@ import Torch.GraduallyTyped.Shape (Dim(..),dimSize)
 import Torch.GraduallyTyped.Tensor.Creation (WithCreateC (..), randn)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mulScalar, subScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
-import Torch.GraduallyTyped.Device (UnifyDeviceC)
 
 -- | Note: Identity = linear w/o activation
 data NonLinearity = Identity | Sigmoid | Tanh | Relu | LeakyRelu Float
@@ -65,8 +64,7 @@ calculateFan shape =
 -- | Xavier uniform initialization
 xavierUniform ::
   forall requiresGradient layout device dataType shape gain device'.
-  ( UnifyDeviceC device device',
-    WithCreateC (gain -> Generator device' -> (Tensor requiresGradient layout device dataType shape, Generator device')) requiresGradient layout device dataType shape,
+  ( WithCreateC (gain -> Generator device' -> (Tensor requiresGradient layout device dataType shape, Generator device')) requiresGradient layout device dataType shape,
     WithCreateC (Generator device' -> (Tensor requiresGradient layout device dataType shape, Generator device')) requiresGradient layout device dataType shape,
     Num gain,
     Floating gain,
@@ -102,8 +100,7 @@ xavierUniform =
 -- | Xavier normal initialization
 xavierNormal ::
   forall requiresGradient layout device dataType shape gain device'.
-  ( UnifyDeviceC device device',
-    WithCreateC (gain -> Generator device' -> (Tensor requiresGradient layout device dataType shape, Generator device')) requiresGradient layout device dataType shape,
+  ( WithCreateC (gain -> Generator device' -> (Tensor requiresGradient layout device dataType shape, Generator device')) requiresGradient layout device dataType shape,
     WithCreateC (Generator device' -> (Tensor requiresGradient layout device dataType shape, Generator device')) requiresGradient layout device dataType shape,
     Num gain,
     Floating gain,
@@ -143,8 +140,7 @@ getter FanOut = snd
 -- | Kaiming uniform initialization
 kaimingUniform ::
   forall requiresGradient layout device dataType shape device'.
-  ( UnifyDeviceC device device',
-    WithCreateC (FanMode -> NonLinearity -> Generator device' -> (Tensor requiresGradient layout device dataType shape, Generator device')) requiresGradient layout device dataType shape,
+  ( WithCreateC (FanMode -> NonLinearity -> Generator device' -> (Tensor requiresGradient layout device dataType shape, Generator device')) requiresGradient layout device dataType shape,
     WithCreateC (Generator device' -> (Tensor requiresGradient layout device dataType shape, Generator device')) requiresGradient layout device dataType shape
   ) =>
   WithCreateF (FanMode -> NonLinearity -> Generator device' -> (Tensor requiresGradient layout device dataType shape, Generator device')) requiresGradient layout device dataType shape
@@ -178,8 +174,7 @@ kaimingUniform =
 -- | Kaiming normal initialization
 kaimingNormal ::
   forall requiresGradient layout device dataType shape device'.
-  ( UnifyDeviceC device device',
-    WithCreateC (FanMode -> NonLinearity -> Generator device' -> (Tensor requiresGradient layout device dataType shape, Generator device')) requiresGradient layout device dataType shape,
+  ( WithCreateC (FanMode -> NonLinearity -> Generator device' -> (Tensor requiresGradient layout device dataType shape, Generator device')) requiresGradient layout device dataType shape,
     WithCreateC (Generator device' -> (Tensor requiresGradient layout device dataType shape, Generator device')) requiresGradient layout device dataType shape
   ) =>
   WithCreateF (FanMode -> NonLinearity -> Generator device' -> (Tensor requiresGradient layout device dataType shape, Generator device')) requiresGradient layout device dataType shape
