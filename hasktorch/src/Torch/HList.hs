@@ -237,7 +237,7 @@ instance
 
 hunfoldr ::
   forall f res (xs :: [Type]) a.
-  (Apply f a res, HUnfold f res xs, res ~ HUnfoldRes s xs) =>
+  (Apply f a res, HUnfold f res xs, res ~ HUnfoldRes a xs) =>
   f ->
   a ->
   HList xs
