@@ -470,7 +470,9 @@ float_opts = withDType Float defaultOpts
 double_opts = withDType Double defaultOpts
 
 withTensor :: Tensor -> (Ptr () -> IO a) -> IO a
-withTensor t fn = cast t $ \t' -> withForeignPtr t' $ \tensor_ptr -> Unmanaged.tensor_data_ptr tensor_ptr >>= fn
+withTensor t fn =
+  let tensor = if isContiguous t then t else contiguous t
+   in cast tensor $ \t' -> withForeignPtr t' $ \tensor_ptr -> Unmanaged.tensor_data_ptr tensor_ptr >>= fn
 
 instance {-# OVERLAPPING #-} (Reifies a DType, Storable a) => TensorLike a where
   asTensor' v opts = unsafePerformIO $ do
