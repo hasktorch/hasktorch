@@ -83,49 +83,29 @@ instance (KnownDeviceType deviceType) => WithDeviceC ( 'Device deviceType) f whe
   withDevice f = f (deviceTypeVal @deviceType)
   withoutDevice = const
 
-class
-  ( UnifyDeviceF device device ~ device,
-    UnifyDeviceF device' device' ~ device',
-    UnifyDeviceF device device' ~ UnifyDeviceF device' device,
-    UnifyDeviceF device (UnifyDeviceF device device') ~ UnifyDeviceF device device',
-    UnifyDeviceF device' (UnifyDeviceF device device') ~ UnifyDeviceF device device',
-    UnifyDeviceF (UnifyDeviceF device device') device ~ UnifyDeviceF device device',
-    UnifyDeviceF (UnifyDeviceF device device') device' ~ UnifyDeviceF device device'
-  ) =>
-  UnifyDeviceC (device :: Device (DeviceType Nat)) (device' :: Device (DeviceType Nat))
-  where
-  type UnifyDeviceF device device' :: Device (DeviceType Nat)
-
--- class
---   (
---     forall device' . (UnifyDeviceF device' device ~ device')
---   ) =>
---   WFDevice device
-
-
-instance
-  ( UnifyDeviceF device device ~ device,
-    UnifyDeviceF device' device' ~ device',
-    UnifyDeviceF device device' ~ UnifyDeviceF device' device,
-    UnifyDeviceF device (UnifyDeviceF device device') ~ UnifyDeviceF device device',
-    UnifyDeviceF device' (UnifyDeviceF device device') ~ UnifyDeviceF device device',
-    UnifyDeviceF (UnifyDeviceF device device') device ~ UnifyDeviceF device device',
-    UnifyDeviceF (UnifyDeviceF device device') device' ~ UnifyDeviceF device device'
-  ) =>
-  UnifyDeviceC device device' where
-  type UnifyDeviceF device device' = UnifyDeviceImplF device device'
-
+type UnifyDeviceL device device' = (
+    UnifyDeviceL1 device,
+    UnifyDeviceL1 device',
+    UnifyDeviceL2 device device',
+    UnifyDeviceL2 device' device,
+    UnifyDeviceL3 device device',
+    UnifyDeviceL3 device' device,
+    UnifyDeviceL4 device device',
+    UnifyDeviceL4 device' device,
+    UnifyDeviceL5 device device',
+    UnifyDeviceL5 device' device
+  )
 type UnifyDeviceL1 device = UnifyDeviceF device device ~ device
 type UnifyDeviceL2 device device' = UnifyDeviceF device (UnifyDeviceF device device') ~ UnifyDeviceF device device'
 type UnifyDeviceL3 device device' = UnifyDeviceF device' (UnifyDeviceF device device') ~ UnifyDeviceF device device'
 type UnifyDeviceL4 device device' = UnifyDeviceF (UnifyDeviceF device device') device ~ UnifyDeviceF device device'
 type UnifyDeviceL5 device device' = UnifyDeviceF (UnifyDeviceF device device') device' ~ UnifyDeviceF device device'
 
-type family UnifyDeviceImplF (device :: Device (DeviceType Nat)) (device' :: Device (DeviceType Nat)) :: Device (DeviceType Nat) where
-  UnifyDeviceImplF 'UncheckedDevice _ = 'UncheckedDevice
-  UnifyDeviceImplF _ 'UncheckedDevice = 'UncheckedDevice
-  UnifyDeviceImplF ( 'Device deviceType) ( 'Device deviceType) = 'Device deviceType
-  UnifyDeviceImplF ( 'Device deviceType) ( 'Device deviceType') = TypeError (UnifyDeviceErrorMessage deviceType deviceType')
+type family UnifyDeviceF (device :: Device (DeviceType Nat)) (device' :: Device (DeviceType Nat)) :: Device (DeviceType Nat) where
+  UnifyDeviceF 'UncheckedDevice _ = 'UncheckedDevice
+  UnifyDeviceF _ 'UncheckedDevice = 'UncheckedDevice
+  UnifyDeviceF ( 'Device deviceType) ( 'Device deviceType) = 'Device deviceType
+  UnifyDeviceF ( 'Device deviceType) ( 'Device deviceType') = TypeError (UnifyDeviceErrorMessage deviceType deviceType')
 
 type UnifyDeviceErrorMessage (deviceType :: DeviceType Nat) (deviceType' :: DeviceType Nat) =
   "The supplied tensors must be on the same device, "
