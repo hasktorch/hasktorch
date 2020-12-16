@@ -48,4 +48,10 @@ instance
       (Tensor requiresGradient layout device dataType shape)
       generator =
       Tensor requiresGradient layout device dataType (SoftmaxF selectDim shape)
-  forward (Softmax by) input = withoutSelectDim @selectDim (softmax @selectDim @requiresGradient @layout @device @dataType @shape) by input
+  type
+    ForwardGeneratorOutput
+      (Softmax selectDim)
+      (Tensor requiresGradient layout device dataType shape)
+      generator =
+      generator
+  forward (Softmax by) input g = (withoutSelectDim @selectDim (softmax @selectDim @requiresGradient @layout @device @dataType @shape) by input, g)

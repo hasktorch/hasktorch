@@ -23,7 +23,8 @@ import Data.Kind (Type)
 
 class HasForward model input generator where
   type ForwardOutput model input generator :: Type
-  forward :: model -> input -> ForwardOutput model input generator
+  type ForwardGeneratorOutput model input generator :: Type
+  forward :: model -> input -> generator -> (ForwardOutput model input generator, ForwardGeneratorOutput model input generator)
 
 class HasInitialize model where
   type InitializeF model :: Type

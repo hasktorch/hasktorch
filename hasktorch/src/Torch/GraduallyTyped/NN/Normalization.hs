@@ -107,16 +107,22 @@ instance
       (LayerNorm device dataType normalizedShape)
       (Tensor requiresGradient' layout' device' dataType' shape')
       generator =
-      ( Tensor
-          requiresGradient'
-          (UnifyLayoutF (UnifyLayoutF layout' ( 'Layout 'Dense)) ( 'Layout 'Dense))
-          (UnifyDeviceF (UnifyDeviceF device' device) device)
-          (UnifyDataTypeF (UnifyDataTypeF dataType' dataType) dataType)
-          (LayerNormF normalizedShape normalizedShape shape')
-      )
-  forward LayerNorm {..} = layerNorm layerNormWeight layerNormBias layerNormEps
+      Tensor
+        requiresGradient'
+        (UnifyLayoutF (UnifyLayoutF layout' ( 'Layout 'Dense)) ( 'Layout 'Dense))
+        (UnifyDeviceF (UnifyDeviceF device' device) device)
+        (UnifyDataTypeF (UnifyDataTypeF dataType' dataType) dataType)
+        (LayerNormF normalizedShape normalizedShape shape')
+  type
+    ForwardGeneratorOutput
+      (LayerNorm device dataType normalizedShape)
+      (Tensor requiresGradient' layout' device' dataType' shape')
+      generator =
+      generator
+  forward LayerNorm {..} input g = (layerNorm layerNormWeight layerNormBias layerNormEps input, g)
 
 type TestLayerNormDevice :: Device (DeviceType Nat)
+
 type TestLayerNormDevice = 'Device 'CPU
 
 type TestLayerNormLayout = 'Layout 'Dense
@@ -124,12 +130,15 @@ type TestLayerNormLayout = 'Layout 'Dense
 type TestLayerNormDataType = 'DataType 'Float
 
 type TestLayerNormBatchDim = 'Dim ( 'Name "batch") ( 'Size 4)
+
 -- type TestLayerNormBatchDim = 'Dim ( 'Name "*") ( 'Size 4)
 
 type TestLayerNormFstFeatureDim = 'Dim ( 'Name "fstFeature") ( 'Size 12)
+
 -- type TestLayerNormFstFeatureDim = 'Dim ( 'Name "*") ( 'Size 12)
 
 type TestLayerNormSndFeatureDim = 'Dim ( 'Name "sndFeature") ( 'Size 16)
+
 -- type TestLayerNormSndFeatureDim = 'Dim ( 'Name "*") ( 'Size 16)
 
 testln ::
@@ -153,7 +162,7 @@ testln = do
           ( do
               ln <- pure $ initialize @(LayerNorm TestLayerNormDevice TestLayerNormDataType ( 'Shape '[TestLayerNormFstFeatureDim, TestLayerNormSndFeatureDim])) 1e-5
               input <- state $ randn @ 'Dependent @TestLayerNormLayout @TestLayerNormDevice @TestLayerNormDataType @( 'Shape '[TestLayerNormBatchDim, TestLayerNormFstFeatureDim, TestLayerNormSndFeatureDim])
-              pure $ forward ln input
+              state $ forward ln input
           )
           g
   pure result

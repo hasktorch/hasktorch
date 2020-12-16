@@ -130,11 +130,16 @@ instance
       (Linear device dataType inputFeatures outputFeatures)
       (Tensor requiresGradient' layout' device' dataType' shape')
       generator =
-      ( Tensor
-          requiresGradient'
-          (UnifyLayoutF (UnifyLayoutF layout' ( 'Layout 'Dense)) ( 'Layout 'Dense))
-          (UnifyDeviceF (UnifyDeviceF device' device) device)
-          (UnifyDataTypeF (UnifyDataTypeF dataType' dataType) dataType)
-          (LinearF ( 'Shape '[outputFeatures, inputFeatures]) ( 'Shape '[outputFeatures]) shape')
-      )
-  forward Linear {..} = linear linearWeight linearBias
+      Tensor
+        requiresGradient'
+        (UnifyLayoutF (UnifyLayoutF layout' ( 'Layout 'Dense)) ( 'Layout 'Dense))
+        (UnifyDeviceF (UnifyDeviceF device' device) device)
+        (UnifyDataTypeF (UnifyDataTypeF dataType' dataType) dataType)
+        (LinearF ( 'Shape '[outputFeatures, inputFeatures]) ( 'Shape '[outputFeatures]) shape')
+  type
+    ForwardGeneratorOutput
+      (Linear device dataType inputFeatures outputFeatures)
+      (Tensor requiresGradient' layout' device' dataType' shape')
+      generator =
+      generator
+  forward Linear {..} input g = (linear linearWeight linearBias input, g)

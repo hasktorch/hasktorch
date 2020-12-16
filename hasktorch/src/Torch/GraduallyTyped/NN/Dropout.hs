@@ -42,8 +42,11 @@ instance
       (Dropout p)
       (Tensor requiresGradient layout device dataType shape)
       (Generator generatorDevice) =
-      Generator generatorDevice ->
-      ( Tensor requiresGradient layout (UnifyDeviceF device generatorDevice) dataType shape,
-        Generator (UnifyDeviceF device generatorDevice)
-      )
+      Tensor requiresGradient layout (UnifyDeviceF device generatorDevice) dataType shape
+  type
+    ForwardGeneratorOutput
+      (Dropout p)
+      (Tensor requiresGradient layout device dataType shape)
+      (Generator generatorDevice) =
+      Generator (UnifyDeviceF device generatorDevice)
   forward (Dropout _p) input g = coerce (input, g)
