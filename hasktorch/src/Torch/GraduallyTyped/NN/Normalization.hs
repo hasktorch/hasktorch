@@ -25,7 +25,7 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), UnifyDeviceF, 
 import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense), UnifyLayoutF)
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormF, layerNorm)
-import Torch.GraduallyTyped.Random (generator)
+import Torch.GraduallyTyped.Random (mkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape (Dim (..), KnownShape, Name (..), Shape (..), Size (..), WithShapeC (..))
 import Torch.GraduallyTyped.Tensor.Creation (WithCreateC (withoutCreate), ones, randn, zeros)
@@ -147,7 +147,7 @@ testln ::
         )
     )
 testln = do
-  g <- generator @TestLayerNormDevice 0
+  g <- mkGenerator @TestLayerNormDevice 0
   let (result, _) =
         runState
           ( do

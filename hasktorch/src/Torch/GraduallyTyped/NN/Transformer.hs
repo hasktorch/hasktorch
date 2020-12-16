@@ -26,37 +26,29 @@ module Torch.GraduallyTyped.NN.Transformer where
 
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Kind (Type)
-import GHC.TypeLits (type (<=), type (*), KnownNat, Div, Nat, Symbol)
+import Data.Proxy (Proxy (..))
+import GHC.TypeLits (Nat, Symbol, type (+), type (-), type (<=?))
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (UnifyDataTypeF, DataType (DataType), WithDataTypeC (..))
-import Torch.GraduallyTyped.Device (UnifyDeviceL, UnifyDeviceF, Device (..), DeviceType(..), WithDeviceC (..))
-import Torch.GraduallyTyped.NN.Class (HasForward(..), HasInitialize (..))
-import Torch.GraduallyTyped.NN.Dropout (Dropout (Dropout))
-import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearC, Linear (Linear))
-import Torch.GraduallyTyped.Random (generator, Generator)
-import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape (BroadcastShapesF, type (!), UnifyDimF, GetDimF, dimSize, Size(..), Name(..), KnownDim(..), WithShapeC(..), NumelF, By(..), SelectDim(..), Dim (..), Shape (..), WithDimC (..))
-import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (divScalar, add)
-import Torch.GraduallyTyped.Tensor.Type (Tensor)
-import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (ReshapeF, TransposeF, reshape, transpose)
-import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (MatmulF, matmul)
+import Torch.GraduallyTyped.DType (DataType (DataType), UnifyDataTypeF, WithDataTypeC (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), UnifyDeviceF, UnifyDeviceL, WithDeviceC (..))
+import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense), UnifyLayoutF)
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
+import Torch.GraduallyTyped.NN.Dropout (Dropout)
+import Torch.GraduallyTyped.NN.Functional.Activation (relu)
 import Torch.GraduallyTyped.NN.Functional.Linear (LinearF)
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, softmax)
-import Torch.GraduallyTyped.Layout
-    ( Layout(Layout), LayoutType(Dense), UnifyLayoutF )
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient(Dependent))
-import Torch.GraduallyTyped.Tensor.Creation (randn)
-import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormC, LayerNorm)
-import Torch.GraduallyTyped.NN.Functional.Activation (relu)
 import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormF)
-import GHC.TypeNats (type (+))
-import Data.Proxy (Proxy(..))
-import GHC.TypeLits (type (-))
-import GHC.TypeLits (type (<=?))
-
---------------------------------------------------------------------------------
--- Multi-Headed Attention Layer
---------------------------------------------------------------------------------
+import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearC, Linear)
+import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormC, LayerNorm)
+import Torch.GraduallyTyped.Random (Generator, mkGenerator)
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (Dependent))
+import Torch.GraduallyTyped.Scalar (Scalar)
+import Torch.GraduallyTyped.Shape (BroadcastShapesF, By (..), Dim (..), KnownDim (..), Name (..), SelectDim (..), Shape (..), Size (..), UnifyDimF, WithDimC (..), WithShapeC (..), dimSize, type (!))
+import Torch.GraduallyTyped.Tensor.Creation (randn)
+import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (ReshapeF, TransposeF, reshape, transpose)
+import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (MatmulF, matmul)
+import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add, divScalar)
+import Torch.GraduallyTyped.Tensor.Type (Tensor)
 
 data
   MultiheadAttention
@@ -823,7 +815,7 @@ testmha ::
         -- 'UncheckedShape
     )
 testmha = do
-  g <- generator @TestDevice 0
+  g <- mkGenerator @TestDevice 0
   let (result, _) = runState
         ( do
             mha <- state $ initialize @(MultiheadAttention TestDevice TestDataType TestEmbedDim TestQueryEmbedDim TestKeyEmbedDim TestValueEmbedDim Float) 0.0
@@ -1074,7 +1066,7 @@ testmlp ::
         ( 'Shape '[TestBatchDim, TestQuerySeqDim, TestEmbedDim])
     )
 testmlp = do
-  g <- generator @TestDevice 0
+  g <- mkGenerator @TestDevice 0
   let (result, _) =
         runState
           ( do
@@ -1471,7 +1463,7 @@ testtl ::
         ( 'Shape '[TestBatchDim, TestQuerySeqDim, TestQueryEmbedDim])
     )
 testtl = do
-  g <- generator @TestDevice 0
+  g <- mkGenerator @TestDevice 0
   let (result, _) =
         runState
           ( do
@@ -1732,7 +1724,7 @@ testtlstack ::
         ( 'Shape _)
     )
 testtlstack = do
-  g <- generator @TestDevice 0
+  g <- mkGenerator @TestDevice 0
   let (result, _) =
         runState
           ( do

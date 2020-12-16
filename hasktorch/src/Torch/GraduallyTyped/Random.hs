@@ -8,7 +8,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Torch.GraduallyTyped.Random (Generator, noGenerator, generator, checkedGenerator, uncheckedGenerator, withGenerator) where
+module Torch.GraduallyTyped.Random (Generator, noGenerator, mkGenerator, checkedGenerator, uncheckedGenerator, withGenerator) where
 
 import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVar, writeTVar)
 import Data.Int (Int16)
@@ -33,11 +33,11 @@ data Generator (device :: Device (DeviceType Nat)) where
 noGenerator :: forall device. Generator device
 noGenerator = NoGenerator
 
-generator ::
+mkGenerator ::
   forall device.
   (WithDeviceC device (Word64 -> IO (Generator device))) =>
   WithDeviceF device (Word64 -> IO (Generator device))
-generator =
+mkGenerator =
   withDevice @device go
   where
     go device seed = case device of
@@ -56,13 +56,13 @@ checkedGenerator ::
   KnownDeviceType deviceType =>
   Word64 ->
   IO (Generator ( 'Device deviceType))
-checkedGenerator = generator @( 'Device deviceType)
+checkedGenerator = mkGenerator @( 'Device deviceType)
 
 uncheckedGenerator ::
   DeviceType Int16 ->
   Word64 ->
   IO (Generator 'UncheckedDevice)
-uncheckedGenerator = generator @ 'UncheckedDevice
+uncheckedGenerator = mkGenerator @ 'UncheckedDevice
 
 withGenerator ::
   forall a device.
