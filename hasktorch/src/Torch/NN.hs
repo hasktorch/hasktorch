@@ -20,6 +20,7 @@ import Data.Kind
 import GHC.Generics
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.Autograd
+import Torch.Device
 import Torch.Functional
 import Torch.Initializers
 import Torch.Internal.Cast (cast3)
@@ -28,7 +29,6 @@ import qualified Torch.Internal.Managed.Type.Tensor as ATen
 import Torch.Scalar
 import Torch.Tensor
 import Torch.TensorFactories (ones', randIO', randnIO', zeros')
-import Torch.Device
 
 type Parameter = IndependentTensor
 
@@ -123,7 +123,7 @@ class Parameterized f where
   replaceDevice dev f = to $ gReplaceDevice dev (from f)
 
 defaultReplaceDevice :: Parameterized a => Device -> a -> a
-defaultReplaceDevice dev f = replaceParameters f $ map (IndependentTensor . (toDevice dev) . toDependent) $ flattenParameters f
+defaultReplaceDevice dev f = replaceParameters f $ map (IndependentTensor . (_toDevice dev) . toDependent) $ flattenParameters f
 
 replaceParameters :: Parameterized f => f -> [Parameter] -> f
 replaceParameters f params =
@@ -132,15 +132,18 @@ replaceParameters f params =
         then f'
         else error "Some parameters in a call to replaceParameters haven't been consumed!"
 
+instance Parameterized a => ToDevice a where
+  toDevice = replaceDevice
+
 instance Parameterized Tensor where
   flattenParameters _ = []
   _replaceParameters = return
-  replaceDevice = toDevice
+  replaceDevice = _toDevice
 
 instance Parameterized Parameter where
   flattenParameters = pure
   _replaceParameters _ = nextParameter
-  replaceDevice device t = IndependentTensor $ toDevice device $ toDependent t
+  replaceDevice device t = IndependentTensor $ (_toDevice device) $ toDependent t
 
 instance {-# OVERLAPS #-} (Scalar a) => Parameterized a where
   flattenParameters _ = []
@@ -160,7 +163,7 @@ instance Parameterized (a -> a) where
 class GParameterized f where
   gFlattenParameters :: forall a. f a -> [Parameter]
   _gReplaceParameters :: forall a. f a -> ParamStream (f a)
-  gReplaceDevice :: forall a. Device -> f a -> f a 
+  gReplaceDevice :: forall a. Device -> f a -> f a
 
 instance GParameterized U1 where
   gFlattenParameters U1 = []
@@ -344,7 +347,7 @@ data BatchNorm = BatchNorm
   deriving (Show, Generic)
 
 instance Parameterized BatchNorm where
-  replaceDevice dev BatchNorm{..} =
+  replaceDevice dev BatchNorm {..} =
     BatchNorm
       (replaceDevice dev batchNormWeight)
       (replaceDevice dev batchNormBias)
@@ -396,5 +399,5 @@ instance HasForward UpSample Tensor Tensor where
   forward (UpSample (UpSampleSpec {..})) input =
     upsampleNearest2d (outputWidth * upsampleStride, outputHeight * upsampleStride) (fromIntegral upsampleStride) (fromIntegral upsampleStride) input
     where
-      outputWidth:outputHeight:_ = reverse $ shape input
+      outputWidth : outputHeight : _ = reverse $ shape input
   forwardStoch m x = pure $ forward m x
