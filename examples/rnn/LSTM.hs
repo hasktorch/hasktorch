@@ -98,6 +98,7 @@ instance Parameterized LSTMCell where
     let hidden_gate = [hg_ih, hg_hh, hg_b]
     let output_gate = [og_ih, og_hh, og_b]
     return $ LSTMCell{..}
+  replaceDevice = defaultReplaceDevice
 
 instance Show LSTMCell where
   show LSTMCell{..} =
