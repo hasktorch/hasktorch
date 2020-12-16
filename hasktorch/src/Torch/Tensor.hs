@@ -135,15 +135,21 @@ toType ::
   Tensor
 toType dtype t = unsafePerformIO $ cast2 ATen.tensor_toType_s t dtype
 
+class ToDevice a where
+  toDevice :: Device -> a -> a
+
+instance ToDevice Tensor where
+  toDevice = _toDevice
+
 -- | Casts the input tensor to given device
-toDevice ::
+_toDevice ::
   -- | device to cast input to
   Device ->
   -- | input
   Tensor ->
   -- | output
   Tensor
-toDevice device' t = unsafePerformIO $ do
+_toDevice device' t = unsafePerformIO $ do
   hasCUDA <- cast0 ATen.hasCUDA :: IO Bool
   let device = Torch.Tensor.device t
   t' <-

@@ -73,6 +73,7 @@ instance Parameterized GRUCell where
     let update_gate = [ug_ih, ug_hh, ug_b]
     let gru_hidden_gate = [hg_ih, hg_hh, hg_b]
     return $ GRUCell{..}
+  replaceDevice = defaultReplaceDevice
 
 
 instance Show GRUCell where
