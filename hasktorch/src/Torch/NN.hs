@@ -28,6 +28,7 @@ import qualified Torch.Internal.Managed.Type.Tensor as ATen
 import Torch.Scalar
 import Torch.Tensor
 import Torch.TensorFactories (ones', randIO', randnIO', zeros')
+import Torch.Device
 
 type Parameter = IndependentTensor
 
@@ -117,6 +118,13 @@ class Parameterized f where
   default _replaceParameters :: (Generic f, GParameterized (Rep f)) => f -> ParamStream f
   _replaceParameters f = to <$> _gReplaceParameters (from f)
 
+  replaceDevice :: Device -> f -> f
+  default replaceDevice :: (Generic f, GParameterized (Rep f)) => Device -> f -> f
+  replaceDevice dev f = to $ gReplaceDevice dev (from f)
+
+defaultReplaceDevice :: Parameterized a => Device -> a -> a
+defaultReplaceDevice dev f = replaceParameters f $ map (IndependentTensor . (toDevice dev) . toDependent) $ flattenParameters f
+
 replaceParameters :: Parameterized f => f -> [Parameter] -> f
 replaceParameters f params =
   let (f', remaining) = runState (_replaceParameters f) params
@@ -127,30 +135,37 @@ replaceParameters f params =
 instance Parameterized Tensor where
   flattenParameters _ = []
   _replaceParameters = return
+  replaceDevice = toDevice
 
 instance Parameterized Parameter where
   flattenParameters = pure
   _replaceParameters _ = nextParameter
+  replaceDevice device t = IndependentTensor $ toDevice device $ toDependent t
 
 instance {-# OVERLAPS #-} (Scalar a) => Parameterized a where
   flattenParameters _ = []
   _replaceParameters = return
+  replaceDevice _ = id
 
 instance {-# OVERLAPS #-} (Foldable t, Traversable t, Parameterized a) => Parameterized (t a) where
   flattenParameters = (=<<) flattenParameters . toList
   _replaceParameters = mapM _replaceParameters
+  replaceDevice dev t = fmap (replaceDevice dev) t
 
 instance Parameterized (a -> a) where
   flattenParameters _ = []
   _replaceParameters = return
+  replaceDevice _ = id
 
 class GParameterized f where
   gFlattenParameters :: forall a. f a -> [Parameter]
   _gReplaceParameters :: forall a. f a -> ParamStream (f a)
+  gReplaceDevice :: forall a. Device -> f a -> f a 
 
 instance GParameterized U1 where
   gFlattenParameters U1 = []
   _gReplaceParameters U1 = return U1
+  gReplaceDevice dev U1 = U1
 
 instance (GParameterized f, GParameterized g) => GParameterized (f :+: g) where
   gFlattenParameters (L1 x) = gFlattenParameters x
@@ -161,6 +176,8 @@ instance (GParameterized f, GParameterized g) => GParameterized (f :+: g) where
   _gReplaceParameters (R1 x) = do
     x' <- _gReplaceParameters x
     return $ R1 x'
+  gReplaceDevice dev (L1 x) = L1 (gReplaceDevice dev x)
+  gReplaceDevice dev (R1 x) = R1 (gReplaceDevice dev x)
 
 instance (GParameterized f, GParameterized g) => GParameterized (f :*: g) where
   gFlattenParameters (x :*: y) = gFlattenParameters x ++ gFlattenParameters y
@@ -168,18 +185,21 @@ instance (GParameterized f, GParameterized g) => GParameterized (f :*: g) where
     x' <- _gReplaceParameters x
     y' <- _gReplaceParameters y
     return $ x' :*: y'
+  gReplaceDevice dev (x :*: y) = (gReplaceDevice dev x) :*: (gReplaceDevice dev y)
 
 instance (Parameterized c) => GParameterized (K1 i c) where
   gFlattenParameters (K1 x) = flattenParameters x
   _gReplaceParameters (K1 x) = do
     x' <- _replaceParameters x
     return $ K1 x'
+  gReplaceDevice dev (K1 x) = K1 (replaceDevice dev x)
 
 instance (GParameterized f) => GParameterized (M1 i t f) where
   gFlattenParameters (M1 x) = gFlattenParameters x
   _gReplaceParameters (M1 x) = do
     x' <- _gReplaceParameters x
     return $ M1 x'
+  gReplaceDevice dev (M1 x) = M1 (gReplaceDevice dev x)
 
 class Randomizable spec f | spec -> f where
   sample :: spec -> IO f
@@ -321,7 +341,15 @@ data BatchNorm = BatchNorm
     runningMean :: Tensor,
     runningVar :: Tensor
   }
-  deriving (Show, Generic, Parameterized)
+  deriving (Show, Generic)
+
+instance Parameterized BatchNorm where
+  replaceDevice dev BatchNorm{..} =
+    BatchNorm
+      (replaceDevice dev batchNormWeight)
+      (replaceDevice dev batchNormBias)
+      (replaceDevice dev runningMean)
+      (replaceDevice dev runningVar)
 
 batchNormForward :: BatchNorm -> Bool -> Double -> Double -> Tensor -> Tensor
 batchNormForward BatchNorm {..} train momentum eps input =
@@ -352,6 +380,7 @@ data UpSampleSpec = UpSampleSpec
 instance Parameterized UpSampleSpec where
   flattenParameters _ = []
   _replaceParameters = return
+  replaceDevice _ = id
 
 data UpSample = UpSample
   { upsampleSpec :: UpSampleSpec
