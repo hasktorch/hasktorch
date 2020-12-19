@@ -150,6 +150,23 @@ instance {-# OVERLAPS #-} (Scalar a) => Parameterized a where
   _replaceParameters = return
   replaceDevice _ = id
 
+instance {-# OVERLAPS #-} (Parameterized a, Parameterized b) => Parameterized (a, b) where
+  flattenParameters (a, b) = flattenParameters a ++ flattenParameters b
+  _replaceParameters (a, b) = do
+    a' <- _replaceParameters a
+    b' <- _replaceParameters b
+    return (a', b')
+  replaceDevice dev (a, b) = (replaceDevice dev a, replaceDevice dev b)
+
+instance {-# OVERLAPS #-} (Parameterized a, Parameterized b, Parameterized c) => Parameterized (a, b, c) where
+  flattenParameters (a, b, c) = flattenParameters a ++ flattenParameters b ++ flattenParameters c
+  _replaceParameters (a, b, c) = do
+    a' <- _replaceParameters a
+    b' <- _replaceParameters b
+    c' <- _replaceParameters c
+    return (a', b', c')
+  replaceDevice dev (a, b, c) = (replaceDevice dev a, replaceDevice dev b, replaceDevice dev c)
+
 instance {-# OVERLAPS #-} (Foldable t, Traversable t, Parameterized a) => Parameterized (t a) where
   flattenParameters = (=<<) flattenParameters . toList
   _replaceParameters = mapM _replaceParameters

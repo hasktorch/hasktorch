@@ -453,10 +453,16 @@ instance (TensorIndex a, TensorIndex b, TensorIndex c, TensorIndex d, TensorInde
 -- Scalar <-> Tensor promotion
 --------------------------------------------------------------------------------
 
+asValue :: TensorLike a => Tensor -> a
+asValue t =
+  let cpuTensor = if device t == Device CPU 0 then t else toCPU t
+      contTensor = if isContiguous cpuTensor then cpuTensor else contiguous cpuTensor
+   in _asValue contTensor
+
 class TensorLike a where
   asTensor' :: a -> TensorOptions -> Tensor
   asTensor :: a -> Tensor
-  asValue :: Tensor -> a
+  _asValue :: Tensor -> a
 
   -- Internal functions(like "_xxx") are below. Do not use them directly.
   _dtype :: DType
@@ -489,7 +495,7 @@ instance {-# OVERLAPPING #-} (Reifies a DType, Storable a) => TensorLike a where
 
   asTensor v = asTensor' v defaultOpts
 
-  asValue t = unsafePerformIO $ do
+  _asValue t = unsafePerformIO $ do
     if _dtype @a == dtype t
       then do
         withTensor t $ \ptr -> do
@@ -511,7 +517,7 @@ instance {-# OVERLAPPING #-} TensorLike Bool where
 
   asTensor v = asTensor' v defaultOpts
 
-  asValue t = unsafePerformIO $ do
+  _asValue t = unsafePerformIO $ do
     if _dtype @Bool == dtype t
       then do
         withTensor t $ \ptr -> do
@@ -527,7 +533,7 @@ instance {-# OVERLAPPING #-} TensorLike Bool where
 instance {-# OVERLAPPING #-} TensorLike Tensor where
   asTensor' = error "Not implemented for Tensor-type"
   asTensor = id
-  asValue = id
+  _asValue = id
   _dtype = error "Not implemented for Tensor-type"
   _dims v = error "Not implemented for Tensor-type"
   _deepDims v = error "Not implemented for Tensor-type"
@@ -537,8 +543,8 @@ instance {-# OVERLAPPING #-} TensorLike Tensor where
 instance {-# OVERLAPPING #-} TensorLike a => TensorLike (a, a) where
   asTensor' = error "Not implemented for tuple-type"
   asTensor (a, b) = asTensor [a, b]
-  asValue v =
-    let [a, b] = asValue v
+  _asValue v =
+    let [a, b] = _asValue v
      in (a, b)
   _dtype = error "Not implemented for tuple-type"
   _dims v = error "Not implemented for tuple-type"
@@ -555,8 +561,7 @@ instance {-# OVERLAPPING #-} TensorLike a => TensorLike [a] where
 
   asTensor v = asTensor' v defaultOpts
 
-  asValue t' = unsafePerformIO $ do
-    let t = if isContiguous t' then t' else contiguous t'
+  _asValue t = unsafePerformIO $ do
     if _dtype @a == dtype t
       then do
         withTensor t $ \ptr -> do
@@ -619,11 +624,13 @@ instance (TensorLike ls) => GAsTensors (K1 i ls) where
 --------------------------------------------------------------------------------
 
 instance Show Tensor where
-  show t = case (dim t) of
-    0 -> details ++ show0d t
-    1 -> details ++ show1d t
-    n -> details ++ shownd n 0 t
+  show t' =
+    case (dim t) of
+      0 -> details ++ show0d t
+      1 -> details ++ show1d t
+      n -> details ++ shownd n 0 t
     where
+      t = if device t' == Device CPU 0 then t' else toCPU t'
       -- TODO: this is obviously not the right way to do it,
       -- and will be terribly slow, so please fix it.
       showElems elemShow sep t = "[" ++ (intercalate sep $ map elemShow [t ! i | i <- [0 .. ((size 0 t) - 1)]]) ++ "]"

@@ -10,6 +10,8 @@ import Control.Exception.Safe
 import Control.Monad.State.Strict
 
 import Torch.Tensor
+import Torch.TensorFactories
+import Torch.Autograd
 import Torch.NN
 import GHC.Generics
 
@@ -29,3 +31,11 @@ spec = do
         init2 = [i2,i3]
     length (flattenParameters init) `shouldBe` 4
     length (flattenParameters (fst (flip runState (flattenParameters init2) (_replaceParameters init)))) `shouldBe` 4
+  it "create flatten-parameters of (Parameter,Parameter)" $ do
+    i0 <- makeIndependent $ zeros' [2,2]
+    i1 <- makeIndependent $ zeros' [2,2]
+    i2 <- makeIndependent $ zeros' [2,2]
+    let init = (i0,i1)
+        init2 = (i0,i1,i2)
+    length (flattenParameters init) `shouldBe` 2
+    length (flattenParameters init2) `shouldBe` 3
