@@ -126,6 +126,7 @@ library
                     , data-default-class
                     , containers
                     , inline-c
+                    , vector-sized
 
  default-extensions:  Strict
                     , StrictData
