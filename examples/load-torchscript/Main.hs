@@ -13,6 +13,7 @@ import qualified Torch.Tensor                  as D
 import qualified Torch.TensorFactories         as D
 import qualified Torch.TensorOptions           as D
 import qualified Torch.Functional              as D
+import qualified Torch.NN                      as D
 
 import Control.Exception.Safe (catch,throwIO)
 import Language.C.Inline.Cpp.Exceptions (CppException(..))

@@ -123,7 +123,7 @@ getImages mnist imageIdxs = UnsafeMkTensor $ unsafePerformIO $ do
           (F.plusPtr ptr1 ((natValI @DataDim) * i))
           (F.plusPtr ptr2 (off + 16 + (natValI @DataDim) * idx))
           (natValI @DataDim)
-  return $ D.toType D.Float t
+  return $ D._toType D.Float t
 
 length :: MnistData -> Int
 length mnist = fromIntegral $ BS.length (labels mnist) - 8

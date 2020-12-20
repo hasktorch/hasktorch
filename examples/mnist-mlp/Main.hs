@@ -54,13 +54,13 @@ mlp MLP {..} input =
     . linear l0
     $ input
 
-trainLoop :: Optimizer o => Device -> MLP -> o -> ListT IO (Tensor, Tensor) -> IO MLP
-trainLoop localDevice model optimizer = P.foldM step begin done . enumerateData
+trainLoop :: Optimizer o => (Device, DType) -> MLP -> o -> ListT IO (Tensor, Tensor) -> IO MLP
+trainLoop device' model optimizer = P.foldM step begin done . enumerateData
   where
     step :: MLP -> ((Tensor, Tensor), Int) -> IO MLP
     step model args = do
-      let ((input, label), iter) = toDevice localDevice args
-      let loss = nllLoss' label $ mlp model input
+      let ((input, label), iter) = toDevice' device' args
+          loss = nllLoss' label $ mlp model input
       when (iter `mod` 50 == 0) $ do
         putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
       (newParam, _) <- runStep model optimizer loss 1e-3
@@ -74,24 +74,56 @@ displayImages model (testImg, testLabel) = do
   putStrLn $ "Model        : " ++ (show . (argmax (Dim 1) RemoveDim) . exp $ mlp model testImg)
   putStrLn $ "Ground Truth : " ++ (show testLabel)
 
+toDevice' :: Parameterized a => (Device, DType) -> a -> a
+toDevice' (device', dtype') model = replaceTensor func model
+  where
+    func tensor =
+      let tensor' = toDevice device' tensor
+          tensor'' =
+            if isIntegral (dtype tensor')
+            then tensor'
+            else toType dtype' tensor'
+      in tensor''
+
+fromDevice :: Parameterized a => a -> a
+fromDevice model = replaceTensor func model
+  where
+    func tensor =
+      let tensor' = toDevice (Device CPU 0) tensor
+          tensor'' =
+            if isIntegral (dtype tensor')
+            then tensor'
+            else toType Float tensor'
+      in tensor''
+
+
 main :: IO ()
 main = do
   deviceStr <- try (getEnv "DEVICE") :: IO (Either SomeException String)
+  dtypeStr <- try (getEnv "DTYPE") :: IO (Either SomeException String)
   let localDevice = case deviceStr of
         Right "cpu" -> Device CPU 0
         Right "cuda:0" -> Device CUDA 0
         Right device -> error $ "Unknown device setting: " ++ device
         _ -> Device CPU 0
+      localDType = case dtypeStr of
+        Right "double" -> Double
+        Right "float" -> Float
+        Right "half" -> Half
+        Right "bfloat16" -> BFloat16
+        Right type' -> error $ "Unknown dtype setting: " ++ type'
+        _ -> Float
   (trainData, testData) <- initMnist "data"
   let trainMnist = V.MNIST {batchSize = 32, mnistData = trainData}
       testMnist = V.MNIST {batchSize = 1, mnistData = testData}
       spec = MLPSpec 784 64 32 10
       optimizer = GD
-  init <- toDevice localDevice <$> sample spec
+      device' = (localDevice, localDType)
+  init <- toDevice' device' <$> sample spec
   model <- foldLoop init 5 $ \model _ ->
-    runContT (streamFromMap (datasetOpts 2) trainMnist) $ trainLoop localDevice model optimizer . fst
+    runContT (streamFromMap (datasetOpts 2) trainMnist) $ trainLoop device' model optimizer . fst
 
   -- show test images + labels
-  forM_ [0 .. 10] $ displayImages model <=< getItem testMnist
+  forM_ [0 .. 10] $ displayImages (fromDevice model) <=< getItem testMnist
 
   putStrLn "Done"

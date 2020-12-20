@@ -100,7 +100,7 @@ getImages' n dataDim mnist imageIdxs = unsafePerformIO $ do
           (F.plusPtr ptr1 (dataDim * i))
           (F.plusPtr ptr2 (off + 16 + dataDim * idx))
           dataDim
-  return $ D.toType D.Float t
+  return $ D._toType D.Float t
 
 -- http://paulbourke.net/dataformats/asciiart/
 grayScale10 = " .:-=+*#%@"

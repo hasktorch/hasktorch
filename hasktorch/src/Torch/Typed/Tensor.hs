@@ -152,10 +152,10 @@ instance
   fromList xs = do
     shapeXs <- D._deepDims xs
     if shapeVal @shape == shapeXs
-      then return $ UnsafeMkTensor . D.toDevice (deviceVal @device) . D.asTensor $ xs
+      then return $ UnsafeMkTensor . D._toDevice (deviceVal @device) . D.asTensor $ xs
       else Nothing
   toList Nothing = []
-  toList (Just t) = D.asValue . D.toDevice (D.Device D.CPU 0) . toDynamic $ t
+  toList (Just t) = D.asValue . D._toDevice (D.Device D.CPU 0) . toDynamic $ t
 
 instance KnownDevice device => Num (Tensor device dtype shape) where
   (+) a b = UnsafeMkTensor $ toDynamic a + toDynamic b
@@ -164,12 +164,12 @@ instance KnownDevice device => Num (Tensor device dtype shape) where
   negate t = UnsafeMkTensor $ negate $ toDynamic t
   abs t = UnsafeMkTensor $ abs $ toDynamic t
   signum t = UnsafeMkTensor $ signum $ toDynamic t
-  fromInteger i = UnsafeMkTensor . D.toDevice (deviceVal @device) . D.asTensor @Int $ fromInteger @Int i
+  fromInteger i = UnsafeMkTensor . D._toDevice (deviceVal @device) . D.asTensor @Int $ fromInteger @Int i
 
 instance KnownDevice device => Fractional (Tensor device dtype shape) where
   a / b = UnsafeMkTensor $ toDynamic a / toDynamic b
   recip t = UnsafeMkTensor $ recip $ toDynamic t
-  fromRational i = UnsafeMkTensor . D.toDevice (deviceVal @device) . D.asTensor @Float $ fromRational @Float i
+  fromRational i = UnsafeMkTensor . D._toDevice (deviceVal @device) . D.asTensor @Float $ fromRational @Float i
 
 instance Show (Tensor device dtype shape) where
   show (UnsafeMkTensor dynamic) = show dynamic
@@ -531,7 +531,7 @@ toDevice ::
   KnownDevice device' =>
   Tensor device dtype shape ->
   Tensor device' dtype shape
-toDevice = UnsafeMkTensor . D.toDevice (deviceVal @device') . toDynamic
+toDevice = UnsafeMkTensor . D._toDevice (deviceVal @device') . toDynamic
 
 -- | change tensor data type
 toDType ::
@@ -539,7 +539,7 @@ toDType ::
   KnownDType dtype' =>
   Tensor device dtype shape ->
   Tensor device dtype' shape
-toDType = UnsafeMkTensor . D.toType (dtypeVal @dtype') . toDynamic
+toDType = UnsafeMkTensor . D._toType (dtypeVal @dtype') . toDynamic
 
 --------------------------------------------------------------------------------
 -- Auxiliary functions for accessing tensor options as values

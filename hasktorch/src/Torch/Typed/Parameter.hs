@@ -34,7 +34,7 @@ import Torch.DType (DType)
 import Torch.Device (DeviceType)
 import Torch.HList
 import qualified Torch.NN (Parameter, Randomizable (..), sample)
-import qualified Torch.Tensor (_toDevice, toType)
+import qualified Torch.Tensor (_toDevice, _toType)
 import Torch.Typed.Aux
 import Torch.Typed.Factories
 import Torch.Typed.Functional
@@ -98,7 +98,7 @@ parameterToDType ::
 parameterToDType (UnsafeMkParameter t) =
   UnsafeMkParameter
     . Torch.Autograd.IndependentTensor
-    . Torch.Tensor.toType (dtypeVal @dtype')
+    . Torch.Tensor._toType (dtypeVal @dtype')
     . Torch.Autograd.toDependent
     $ t
 

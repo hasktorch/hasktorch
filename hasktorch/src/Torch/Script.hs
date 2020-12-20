@@ -27,7 +27,7 @@ import System.IO.Unsafe
 import Torch.Autograd
 import Torch.DType
 import Torch.Device
-import Torch.Tensor (toDevice)
+import Torch.Tensor (_toDevice)
 import Torch.Internal.Cast
 import Torch.Internal.Class (Castable (..), CppObject (..), CppTuple2 (..), CppTuple3 (..), CppTuple4 (..))
 import qualified Torch.Internal.Const as ATen
@@ -291,7 +291,7 @@ instance Parameterized ScriptModule where
     let len = length (getParameters module')
     ps' <- replicateM len nextParameter
     return $ updateParameters WithRequiredGrad module' (map toDependent ps')
-  replaceDevice = defaultReplaceDevice
+  replaceTensor = defaultReplaceTensor
 
 trace ::
   -- | moduleName

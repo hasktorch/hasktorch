@@ -125,23 +125,17 @@ toDouble t = unsafePerformIO $ cast1 ATen.tensor_item_double t
 toInt :: Tensor -> Int
 toInt t = unsafePerformIO $ cast1 ATen.tensor_item_int64_t t
 
--- | Casts the input tensor to the given data type
-toType ::
+-- | Casts the input tensor to the given data type. This is a internal function. Use Tensor.NN.toType.
+_toType ::
   -- | data type to cast input to
   DType ->
   -- | input
   Tensor ->
   -- | output
   Tensor
-toType dtype t = unsafePerformIO $ cast2 ATen.tensor_toType_s t dtype
+_toType dtype t = unsafePerformIO $ cast2 ATen.tensor_toType_s t dtype
 
-class ToDevice a where
-  toDevice :: Device -> a -> a
-
-instance ToDevice Tensor where
-  toDevice = _toDevice
-
--- | Casts the input tensor to given device
+-- | Casts the input tensor to given device. This is a internal function. Use Tensor.NN.toDevice.
 _toDevice ::
   -- | device to cast input to
   Device ->

@@ -65,6 +65,18 @@ kComplexFloat = [C.pure| int8_t { (int8_t) at::ScalarType::ComplexFloat } |]
 kComplexDouble :: ScalarType
 kComplexDouble = [C.pure| int8_t { (int8_t) at::ScalarType::ComplexDouble } |]
 
+kQInt8 :: ScalarType
+kQInt8 = [C.pure| int8_t { (int8_t) at::ScalarType::QInt8 } |]
+
+kQUInt8 :: ScalarType
+kQUInt8 = [C.pure| int8_t { (int8_t) at::ScalarType::QUInt8 } |]
+
+kQInt32 :: ScalarType
+kQInt32 = [C.pure| int8_t { (int8_t) at::ScalarType::QInt32 } |]
+
+kBFloat16 :: ScalarType
+kBFloat16 = [C.pure| int8_t { (int8_t) at::ScalarType::BFloat16 } |]
+
 kUndefined :: ScalarType
 kUndefined = [C.pure| int8_t { (int8_t) at::ScalarType::Undefined } |]
 
