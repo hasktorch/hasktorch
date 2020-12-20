@@ -14,6 +14,7 @@ import Torch.DType
 import Torch.TensorFactories
 import Torch.Functional
 import Torch.TensorOptions
+import Torch.NN
 import Data.Word
 import Data.Int
 
