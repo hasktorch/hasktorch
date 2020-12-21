@@ -2,6 +2,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module ScriptSpec(spec) where
 
@@ -33,9 +34,8 @@ data MLP = MLP {
     l0 :: Linear,
     l1 :: Linear,
     l2 :: Linear
-    } deriving (Generic, Show)
+    } deriving (Generic, Show, Parameterized, ToTensor)
 
-instance Parameterized MLP
 instance Randomizable MLPSpec MLP where
     sample MLPSpec {..} = MLP 
         <$> sample (LinearSpec inputFeatures hiddenFeatures0)
@@ -57,9 +57,8 @@ data MonoSpec = MonoSpec deriving (Show, Eq)
 
 data MonoP = MonoP {
   m :: Parameter
-  } deriving (Generic, Show)
+  } deriving (Generic, Show, Parameterized, ToTensor)
 
-instance Parameterized MonoP
 instance Randomizable MonoSpec MonoP where
   sample MonoSpec  = do
     m <- makeIndependent (ones' [])

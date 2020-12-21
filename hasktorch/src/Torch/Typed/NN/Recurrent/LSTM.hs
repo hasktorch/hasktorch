@@ -54,6 +54,7 @@ import Torch.Typed.NN.Dropout
 import Torch.Typed.NN.Recurrent.Aux
 import Torch.Typed.Parameter
 import Torch.Typed.Tensor
+import qualified Torch.Traversable as A
 import Prelude hiding (tanh)
 
 data
@@ -163,14 +164,14 @@ instance
       <*> (makeIndependent =<< pure zeros)
       <*> (makeIndependent =<< pure zeros)
 
-instance A.Parameterized (LSTMLayer inputSize hiddenSize directionality dtype device) where
-  flattenParameters (LSTMUnidirectionalLayer wi wh bi bh) =
+instance A.GTraversable A.Parameter (LSTMLayer inputSize hiddenSize directionality dtype device) where
+  gflatten (LSTMUnidirectionalLayer wi wh bi bh) =
     [ untypeParam wi,
       untypeParam wh,
       untypeParam bi,
       untypeParam bh
     ]
-  flattenParameters (LSTMBidirectionalLayer wi wh bi bh wi' wh' bi' bh') =
+  gflatten (LSTMBidirectionalLayer wi wh bi bh wi' wh' bi' bh') =
     [ untypeParam wi,
       untypeParam wh,
       untypeParam bi,
@@ -180,7 +181,7 @@ instance A.Parameterized (LSTMLayer inputSize hiddenSize directionality dtype de
       untypeParam bi',
       untypeParam bh'
     ]
-  _replaceParameters (LSTMUnidirectionalLayer _wi _wh _bi _bh) = do
+  gupdate (LSTMUnidirectionalLayer _wi _wh _bi _bh) = do
     wi <- A.nextParameter
     wh <- A.nextParameter
     bi <- A.nextParameter
@@ -192,7 +193,7 @@ instance A.Parameterized (LSTMLayer inputSize hiddenSize directionality dtype de
           (UnsafeMkParameter bi)
           (UnsafeMkParameter bh)
       )
-  _replaceParameters (LSTMBidirectionalLayer _wi _wh _bi _bh _wi' _wh' _bi' _bh') = do
+  gupdate (LSTMBidirectionalLayer _wi _wh _bi _bh _wi' _wh' _bi' _bh') = do
     wi <- A.nextParameter
     wh <- A.nextParameter
     bi <- A.nextParameter
@@ -212,7 +213,6 @@ instance A.Parameterized (LSTMLayer inputSize hiddenSize directionality dtype de
           (UnsafeMkParameter bi')
           (UnsafeMkParameter bh')
       )
-  replaceTensor = A.defaultReplaceTensor
 
 data
   LSTMLayerStackSpec
@@ -363,20 +363,19 @@ instance
   where
   sample = lstmLayerStackSample (Proxy :: Proxy flag)
 
-instance A.Parameterized (LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device) where
-  flattenParameters (LSTMLayer1 layer) =
-    A.flattenParameters layer
-  flattenParameters (LSTMLayerK stack layer) =
-    A.flattenParameters stack
-      ++ A.flattenParameters layer
-  _replaceParameters (LSTMLayer1 layer) = do
-    layer' <- A._replaceParameters layer
+instance A.GTraversable A.Parameter (LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device) where
+  gflatten (LSTMLayer1 layer) =
+    A.gflatten layer
+  gflatten (LSTMLayerK stack layer) =
+    A.gflatten stack
+      ++ A.gflatten layer
+  gupdate (LSTMLayer1 layer) = do
+    layer' <- A.gupdate layer
     return $ LSTMLayer1 layer'
-  _replaceParameters (LSTMLayerK stack layer) = do
-    stack' <- A._replaceParameters stack
-    layer' <- A._replaceParameters layer
+  gupdate (LSTMLayerK stack layer) = do
+    stack' <- A.gupdate stack
+    layer' <- A.gupdate layer
     return $ LSTMLayerK stack' layer'
-  replaceTensor = A.defaultReplaceTensor
 
 newtype
   LSTMSpec
@@ -434,16 +433,15 @@ instance
 -- https://github.com/pytorch/pytorch/issues/9221
 -- https://discuss.pytorch.org/t/initializing-rnn-gru-and-lstm-correctly/23605
 
-instance A.Parameterized (LSTM inputSize hiddenSize numLayers directionality dtype device) where
-  flattenParameters LSTM {..} = A.flattenParameters lstm_layer_stack
-  _replaceParameters LSTM {..} = do
-    lstm_layer_stack' <- A._replaceParameters lstm_layer_stack
+instance A.GTraversable A.Parameter (LSTM inputSize hiddenSize numLayers directionality dtype device) where
+  gflatten LSTM {..} = A.gflatten lstm_layer_stack
+  gupdate LSTM {..} = do
+    lstm_layer_stack' <- A.gupdate lstm_layer_stack
     return $
       LSTM
         { lstm_layer_stack = lstm_layer_stack',
           ..
         }
-  replaceTensor = A.defaultReplaceTensor
 
 -- | Helper to do xavier uniform initializations on weight matrices and
 -- orthagonal initializations for the gates. (When implemented.)
@@ -672,21 +670,21 @@ instance
       <*> (makeIndependent =<< pure c)
       <*> (makeIndependent =<< pure h)
 
-instance A.Parameterized (LSTMWithInit inputSize hiddenSize numLayers directionality initialization dtype device) where
-  flattenParameters LSTMWithConstInit {..} =
-    A.flattenParameters lstmWithConstInit_lstm
-  flattenParameters LSTMWithLearnedInit {..} =
-    A.flattenParameters lstmWithLearnedInit_lstm
+instance A.GTraversable A.Parameter (LSTMWithInit inputSize hiddenSize numLayers directionality initialization dtype device) where
+  gflatten LSTMWithConstInit {..} =
+    A.gflatten lstmWithConstInit_lstm
+  gflatten LSTMWithLearnedInit {..} =
+    A.gflatten lstmWithLearnedInit_lstm
       ++ fmap untypeParam [lstmWithLearnedInit_c, lstmWithLearnedInit_h]
-  _replaceParameters LSTMWithConstInit {..} = do
-    lstmWithConstInit_lstm' <- A._replaceParameters lstmWithConstInit_lstm
+  gupdate LSTMWithConstInit {..} = do
+    lstmWithConstInit_lstm' <- A.gupdate lstmWithConstInit_lstm
     return $
       LSTMWithConstInit
         { lstmWithConstInit_lstm = lstmWithConstInit_lstm',
           ..
         }
-  _replaceParameters LSTMWithLearnedInit {..} = do
-    lstmWithLearnedInit_lstm' <- A._replaceParameters lstmWithLearnedInit_lstm
+  gupdate LSTMWithLearnedInit {..} = do
+    lstmWithLearnedInit_lstm' <- A.gupdate lstmWithLearnedInit_lstm
     lstmWithLearnedInit_c' <- A.nextParameter
     lstmWithLearnedInit_h' <- A.nextParameter
     return $
@@ -695,7 +693,6 @@ instance A.Parameterized (LSTMWithInit inputSize hiddenSize numLayers directiona
           lstmWithLearnedInit_c = UnsafeMkParameter lstmWithLearnedInit_c',
           lstmWithLearnedInit_h = UnsafeMkParameter lstmWithLearnedInit_h'
         }
-  replaceTensor = A.defaultReplaceTensor
 
 lstmForward ::
   forall

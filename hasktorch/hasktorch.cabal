@@ -26,6 +26,7 @@ library
  exposed-modules:     Torch
                     , Torch.Tensor
                     , Torch.TensorOptions
+                    , Torch.Traversable
                     , Torch.DType
                     , Torch.Device
                     , Torch.TensorFactories

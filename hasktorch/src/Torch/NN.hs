@@ -10,6 +10,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ConstraintKinds #-}
 
 module Torch.NN where
 
@@ -30,17 +31,26 @@ import qualified Torch.Internal.Managed.Type.Tensor as ATen
 import Torch.Scalar
 import Torch.Tensor
 import Torch.TensorFactories (ones', randIO', randnIO', zeros')
+import Torch.Traversable
 
 type Parameter = IndependentTensor
 
 type ParamStream a = State [Parameter] a
 
+type Parameterized = GTraversable Parameter
+
 nextParameter :: ParamStream Parameter
-nextParameter = do
-  params <- get
-  case params of
-    [] -> error "Not enough parameters supplied to replaceParameters"
-    (p : t) -> do put t; return p
+nextParameter = gpop
+
+flattenParameters :: Parameterized f => f -> [Parameter]
+flattenParameters = gflatten
+
+replaceParameters :: Parameterized f => f -> [Parameter] -> f
+replaceParameters = greplace
+
+instance GTraversable Parameter Tensor where
+  gflatten _ = []
+  gupdate = pure
 
 class HasForward f a b | f a -> b where
   forward :: f -> a -> b
@@ -110,121 +120,6 @@ instance
   gForward (M1 f) (M1 a) = M1 $ gForward f a
   gForwardStoch (M1 f) (M1 a) = M1 <$> gForwardStoch f a
 
-class Parameterized f where
-  flattenParameters :: f -> [Parameter]
-  default flattenParameters :: (Generic f, GParameterized (Rep f)) => f -> [Parameter]
-  flattenParameters f = gFlattenParameters (from f)
-
-  _replaceParameters :: f -> ParamStream f
-  default _replaceParameters :: (Generic f, GParameterized (Rep f)) => f -> ParamStream f
-  _replaceParameters f = to <$> _gReplaceParameters (from f)
-
-  replaceTensor :: (Tensor -> Tensor) -> f -> f
-  default replaceTensor :: (Generic f, GParameterized (Rep f)) => (Tensor -> Tensor) -> f -> f
-  replaceTensor dev f = to $ gReplaceTensor dev (from f)
-
-defaultReplaceTensor :: Parameterized a => (Tensor -> Tensor) -> a -> a
-defaultReplaceTensor dev f = replaceParameters f $ map (IndependentTensor . dev . toDependent) $ flattenParameters f
-
-replaceParameters :: Parameterized f => f -> [Parameter] -> f
-replaceParameters f params =
-  let (f', remaining) = runState (_replaceParameters f) params
-   in if null remaining
-        then f'
-        else error "Some parameters in a call to replaceParameters haven't been consumed!"
-
-toType :: Parameterized a => DType -> a -> a
-toType type' = replaceTensor (_toType type')
-
-toDevice :: Parameterized a => Device -> a -> a
-toDevice device' = replaceTensor (_toDevice device')
-
-instance Parameterized Tensor where
-  flattenParameters _ = []
-  _replaceParameters = return
-  replaceTensor dev = dev
-
-instance Parameterized Parameter where
-  flattenParameters = pure
-  _replaceParameters _ = nextParameter
-  replaceTensor dev t = IndependentTensor $ dev $ toDependent t
-
-instance {-# OVERLAPS #-} (Scalar a) => Parameterized a where
-  flattenParameters _ = []
-  _replaceParameters = return
-  replaceTensor _ = id
-
-instance {-# OVERLAPS #-} (Parameterized a, Parameterized b) => Parameterized (a, b) where
-  flattenParameters (a, b) = flattenParameters a ++ flattenParameters b
-  _replaceParameters (a, b) = do
-    a' <- _replaceParameters a
-    b' <- _replaceParameters b
-    return (a', b')
-  replaceTensor dev (a, b) = (replaceTensor dev a, replaceTensor dev b)
-
-instance {-# OVERLAPS #-} (Parameterized a, Parameterized b, Parameterized c) => Parameterized (a, b, c) where
-  flattenParameters (a, b, c) = flattenParameters a ++ flattenParameters b ++ flattenParameters c
-  _replaceParameters (a, b, c) = do
-    a' <- _replaceParameters a
-    b' <- _replaceParameters b
-    c' <- _replaceParameters c
-    return (a', b', c')
-  replaceTensor dev (a, b, c) = (replaceTensor dev a, replaceTensor dev b, replaceTensor dev c)
-
-instance {-# OVERLAPS #-} (Foldable t, Traversable t, Parameterized a) => Parameterized (t a) where
-  flattenParameters = (=<<) flattenParameters . toList
-  _replaceParameters = mapM _replaceParameters
-  replaceTensor dev t = fmap (replaceTensor dev) t
-
-instance Parameterized (a -> a) where
-  flattenParameters _ = []
-  _replaceParameters = return
-  replaceTensor _ = id
-
-class GParameterized f where
-  gFlattenParameters :: forall a. f a -> [Parameter]
-  _gReplaceParameters :: forall a. f a -> ParamStream (f a)
-  gReplaceTensor :: forall a. (Tensor -> Tensor) -> f a -> f a
-
-instance GParameterized U1 where
-  gFlattenParameters U1 = []
-  _gReplaceParameters U1 = return U1
-  gReplaceTensor dev U1 = U1
-
-instance (GParameterized f, GParameterized g) => GParameterized (f :+: g) where
-  gFlattenParameters (L1 x) = gFlattenParameters x
-  gFlattenParameters (R1 x) = gFlattenParameters x
-  _gReplaceParameters (L1 x) = do
-    x' <- _gReplaceParameters x
-    return $ L1 x'
-  _gReplaceParameters (R1 x) = do
-    x' <- _gReplaceParameters x
-    return $ R1 x'
-  gReplaceTensor dev (L1 x) = L1 (gReplaceTensor dev x)
-  gReplaceTensor dev (R1 x) = R1 (gReplaceTensor dev x)
-
-instance (GParameterized f, GParameterized g) => GParameterized (f :*: g) where
-  gFlattenParameters (x :*: y) = gFlattenParameters x ++ gFlattenParameters y
-  _gReplaceParameters (x :*: y) = do
-    x' <- _gReplaceParameters x
-    y' <- _gReplaceParameters y
-    return $ x' :*: y'
-  gReplaceTensor dev (x :*: y) = (gReplaceTensor dev x) :*: (gReplaceTensor dev y)
-
-instance (Parameterized c) => GParameterized (K1 i c) where
-  gFlattenParameters (K1 x) = flattenParameters x
-  _gReplaceParameters (K1 x) = do
-    x' <- _replaceParameters x
-    return $ K1 x'
-  gReplaceTensor dev (K1 x) = K1 (replaceTensor dev x)
-
-instance (GParameterized f) => GParameterized (M1 i t f) where
-  gFlattenParameters (M1 x) = gFlattenParameters x
-  _gReplaceParameters (M1 x) = do
-    x' <- _gReplaceParameters x
-    return $ M1 x'
-  gReplaceTensor dev (M1 x) = M1 (gReplaceTensor dev x)
-
 class Randomizable spec f | spec -> f where
   sample :: spec -> IO f
 
@@ -242,7 +137,7 @@ data Linear = Linear
   { weight :: Parameter,
     bias :: Parameter
   }
-  deriving (Show, Generic, Parameterized)
+  deriving (Show, Generic, Parameterized, ToTensor)
 
 linear :: Linear -> Tensor -> Tensor
 linear layer input = linear' input w b
@@ -302,7 +197,7 @@ data Conv2d = Conv2d
   { conv2dWeight :: Parameter,
     conv2dBias :: Parameter
   }
-  deriving (Show, Generic, Parameterized)
+  deriving (Show, Generic, Parameterized, ToTensor)
 
 conv2dForward ::
   -- | layer
@@ -365,15 +260,7 @@ data BatchNorm = BatchNorm
     runningMean :: Tensor,
     runningVar :: Tensor
   }
-  deriving (Show, Generic)
-
-instance Parameterized BatchNorm where
-  replaceTensor dev BatchNorm {..} =
-    BatchNorm
-      (replaceTensor dev batchNormWeight)
-      (replaceTensor dev batchNormBias)
-      (replaceTensor dev runningMean)
-      (replaceTensor dev runningVar)
+  deriving (Show, Generic, Parameterized, ToTensor)
 
 batchNormForward :: BatchNorm -> Bool -> Double -> Double -> Tensor -> Tensor
 batchNormForward BatchNorm {..} train momentum eps input =
@@ -399,17 +286,12 @@ data UpSampleSpec = UpSampleSpec
   { upsampleInputFilters :: Int,
     upsampleStride :: Int
   }
-  deriving (Show, Eq)
-
-instance Parameterized UpSampleSpec where
-  flattenParameters _ = []
-  _replaceParameters = return
-  replaceTensor _ = id
+  deriving (Show, Eq, Generic, Parameterized, ToTensor)
 
 data UpSample = UpSample
   { upsampleSpec :: UpSampleSpec
   }
-  deriving (Show, Generic, Parameterized)
+  deriving (Show, Generic, Parameterized, ToTensor)
 
 instance Randomizable UpSampleSpec UpSample where
   sample s = do

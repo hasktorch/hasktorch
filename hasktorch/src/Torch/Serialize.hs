@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module Torch.Serialize where
 
 import Control.Exception.Safe
@@ -18,6 +20,7 @@ import Torch.Internal.Cast
 import qualified Torch.Internal.Managed.Serialize as S
 import Torch.NN
 import Torch.Tensor
+import Torch.Traversable
 
 save ::
   -- | inputs
@@ -36,7 +39,7 @@ load ::
 load = cast1 S.load
 
 saveParams ::
-  Parameterized f =>
+  GTraversable Parameter f =>
   -- | model
   f ->
   -- | filepath
@@ -48,7 +51,7 @@ saveParams model filePath = do
   save params filePath
 
 loadParams ::
-  Parameterized b =>
+  GTraversable Parameter b =>
   -- | model
   b ->
   -- | filepath

@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -19,7 +20,7 @@ data GRUCell = GRUCell {
     weightsHH :: Parameter,
     biasIH :: Parameter,
     biasHH :: Parameter
-} deriving (Generic, Show)
+} deriving (Generic, Show, Parameterized, ToTensor)
 
 gruCellForward 
     :: GRUCell -- ^ cell parameters
@@ -33,8 +34,6 @@ gruCellForward GRUCell{..} input hidden =
         weightsHH' = toDependent weightsHH
         biasIH' = toDependent biasIH
         biasHH' = toDependent biasHH
-
-instance Parameterized GRUCell
 
 instance Randomizable GRUSpec GRUCell where
   sample GRUSpec{..} = do

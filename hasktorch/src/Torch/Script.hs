@@ -48,6 +48,7 @@ import qualified Torch.Internal.Unmanaged.Type.Module as Unmanaged
 import Torch.NN
 import Torch.Tensor (Tensor (..))
 import Torch.TensorOptions
+import Torch.Traversable
 
 newtype ScriptModule = UnsafeScriptModule (ForeignPtr ATen.Module)
 
@@ -285,13 +286,12 @@ runMethod1 module' func = unsafePerformIO . cast3 runMethod1' module' func
     runMethod1' :: ScriptModule -> String -> RawIValue -> IO RawIValue
     runMethod1' = cast3 LibTorch.runMethod1
 
-instance Parameterized ScriptModule where
-  flattenParameters module' = map IndependentTensor $ getParameters module'
-  _replaceParameters module' = do
+instance GTraversable Parameter ScriptModule where
+  gflatten module' = map IndependentTensor $ getParameters module'
+  gupdate module' = do
     let len = length (getParameters module')
     ps' <- replicateM len nextParameter
     return $ updateParameters WithRequiredGrad module' (map toDependent ps')
-  replaceTensor = defaultReplaceTensor
 
 trace ::
   -- | moduleName

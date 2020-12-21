@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -19,7 +20,7 @@ data ElmanCell = ElmanCell {
     weightsHH :: Parameter,
     biasIH :: Parameter,
     biasHH :: Parameter
-} deriving (Generic, Show)
+} deriving (Generic, Show, Parameterized, ToTensor)
 
 elmanCellForward
     :: ElmanCell -- ^ cell parameters
@@ -33,8 +34,6 @@ elmanCellForward ElmanCell{..} input hidden =
         weightsHH' = toDependent weightsHH
         biasIH' = toDependent biasIH
         biasHH' = toDependent biasIH
-
-instance Parameterized ElmanCell
 
 instance Randomizable ElmanSpec ElmanCell where
     sample ElmanSpec{..} = do

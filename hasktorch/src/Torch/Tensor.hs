@@ -11,11 +11,15 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE ConstraintKinds #-}
 
 module Torch.Tensor where
 
 import Control.Exception.Safe (throwIO)
 import Control.Monad (forM, forM_)
+import Control.Monad.State.Strict
 import Data.Int (Int16, Int64)
 import Data.List (intercalate)
 import Data.Proxy
@@ -46,6 +50,7 @@ import qualified Torch.Internal.Managed.Type.TensorOptions as ATen
 import qualified Torch.Internal.Type as ATen
 import qualified Torch.Internal.Unmanaged.Type.Tensor as Unmanaged (tensor_data_ptr)
 import Torch.TensorOptions
+import Torch.Traversable
 
 type ATenTensor = ForeignPtr ATen.Tensor
 
@@ -124,6 +129,14 @@ toDouble t = unsafePerformIO $ cast1 ATen.tensor_item_double t
 
 toInt :: Tensor -> Int
 toInt t = unsafePerformIO $ cast1 ATen.tensor_item_int64_t t
+
+type ToTensor = GTraversable Tensor
+
+toType :: ToTensor a => DType -> a -> a
+toType dtype = gmap (_toType dtype)
+
+toDevice :: ToTensor a => Device -> a -> a
+toDevice device = gmap (_toDevice device)
 
 -- | Casts the input tensor to the given data type. This is a internal function. Use Tensor.NN.toType.
 _toType ::
