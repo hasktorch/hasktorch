@@ -2,6 +2,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 module LSTM where
 
@@ -75,30 +76,29 @@ instance Randomizable LSTMSpec LSTMCell where
 
 
 -- Typeclass that allows us to manipulate and update the layer weights
-instance Parameterized LSTMCell where
-  flattenParameters LSTMCell{..} =
+instance GTraversable Parameter LSTMCell where
+  gflatten LSTMCell{..} =
     input_gate ++ forget_gate ++ hidden_gate ++
     output_gate ++ [cell_state]
-  _replaceParameters _ = do
-    ig_ih <- nextParameter
-    ig_hh <- nextParameter
-    ig_b  <- nextParameter
-    fg_ih <- nextParameter
-    fg_hh <- nextParameter
-    fg_b <- nextParameter
-    hg_ih <- nextParameter
-    hg_hh <- nextParameter
-    hg_b <- nextParameter
-    og_ih <- nextParameter
-    og_hh <- nextParameter
-    og_b <- nextParameter
-    cell_state <- nextParameter
+  gupdate _ = do
+    ig_ih <- gpop
+    ig_hh <- gpop
+    ig_b  <- gpop
+    fg_ih <- gpop
+    fg_hh <- gpop
+    fg_b <- gpop
+    hg_ih <- gpop
+    hg_hh <- gpop
+    hg_b <- gpop
+    og_ih <- gpop
+    og_hh <- gpop
+    og_b <- gpop
+    cell_state <- gpop
     let input_gate = [ig_ih, ig_hh, ig_b]
     let forget_gate = [fg_ih, fg_hh, fg_b]
     let hidden_gate = [hg_ih, hg_hh, hg_b]
     let output_gate = [og_ih, og_hh, og_b]
     return $ LSTMCell{..}
-  replaceTensor = defaultReplaceTensor
 
 instance Show LSTMCell where
   show LSTMCell{..} =

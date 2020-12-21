@@ -12,6 +12,7 @@ module Torch
     module Torch.Tensor,
     module Torch.TensorFactories,
     module Torch.TensorOptions,
+    module Torch.Traversable,
   )
 where
 
@@ -27,3 +28,4 @@ import Torch.Scalar
 import Torch.Tensor
 import Torch.TensorFactories
 import Torch.TensorOptions
+import Torch.Traversable

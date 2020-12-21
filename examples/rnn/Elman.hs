@@ -2,6 +2,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 module Elman where
 
@@ -34,14 +35,13 @@ instance Randomizable ElmanSpec ElmanCell where
       return $ ElmanCell w_ih w_hh b
 
 
-instance Parameterized ElmanCell where
-  flattenParameters ElmanCell{..} = [input_weight, hidden_weight, bias]
-  _replaceParameters _ = do
+instance GTraversable Parameter ElmanCell where
+  gflatten ElmanCell{..} = [input_weight, hidden_weight, bias]
+  gupdate _ = do
     input_weight <- nextParameter
     hidden_weight <- nextParameter
     bias   <- nextParameter
     return $ ElmanCell{..}
-  replaceTensor = defaultReplaceTensor
 
 
 instance Show ElmanCell where

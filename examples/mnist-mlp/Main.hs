@@ -3,6 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Main where
 
@@ -35,7 +36,7 @@ data MLP = MLP
     l1 :: Linear,
     l2 :: Linear
   }
-  deriving (Generic, Show, Parameterized)
+  deriving (Generic, Show, Parameterized, ToTensor)
 
 instance Randomizable MLPSpec MLP where
   sample MLPSpec {..} =
@@ -74,8 +75,8 @@ displayImages model (testImg, testLabel) = do
   putStrLn $ "Model        : " ++ (show . (argmax (Dim 1) RemoveDim) . exp $ mlp model testImg)
   putStrLn $ "Ground Truth : " ++ (show testLabel)
 
-toDevice' :: Parameterized a => (Device, DType) -> a -> a
-toDevice' (device', dtype') model = replaceTensor func model
+toDevice' :: ToTensor a => (Device, DType) -> a -> a
+toDevice' (device', dtype') model = gmap func model
   where
     func tensor =
       let tensor' = toDevice device' tensor
@@ -85,8 +86,8 @@ toDevice' (device', dtype') model = replaceTensor func model
             else toType dtype' tensor'
       in tensor''
 
-fromDevice :: Parameterized a => a -> a
-fromDevice model = replaceTensor func model
+fromDevice :: ToTensor a => a -> a
+fromDevice model = gmap func model
   where
     func tensor =
       let tensor' = toDevice (Device CPU 0) tensor

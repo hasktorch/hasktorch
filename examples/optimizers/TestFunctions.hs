@@ -1,6 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module TestFunctions where
 
@@ -18,14 +19,12 @@ import Torch.NN hiding (sgd)
 -- Convex Quadratic
 
 data ConvQuadSpec = ConvQuadSpec { n :: Int }
-data ConvQuad = ConvQuad { w :: Parameter } deriving (Show, Generic)
+data ConvQuad = ConvQuad { w :: Parameter } deriving (Show, Generic, Parameterized, ToTensor)
 
 instance Randomizable ConvQuadSpec ConvQuad where
   sample (ConvQuadSpec n) = do
         w <- makeIndependent =<<randnIO' [n]
         pure $ ConvQuad w
-
-instance Parameterized ConvQuad
 
 convexQuadratic :: Tensor -> Tensor -> Tensor -> Tensor
 convexQuadratic a b w =
@@ -38,7 +37,7 @@ lossConvQuad a b (ConvQuad w) = convexQuadratic a b w'
 -- 2D Rosenbrock
 
 data RosenSpec = RosenSpec deriving (Show, Eq)
-data Rosen = Rosen { x :: Parameter, y :: Parameter } deriving (Generic)
+data Rosen = Rosen { x :: Parameter, y :: Parameter } deriving (Generic, Parameterized, ToTensor)
 
 instance Show Rosen where
     show (Rosen x y) = show (extract x :: Float, extract y :: Float)
@@ -51,12 +50,6 @@ instance Randomizable RosenSpec Rosen where
       x <- makeIndependent =<< randnIO' [1]
       y <- makeIndependent =<< randnIO' [1]
       pure $ Rosen x y
-
--- instance Parameterized Rosen
-
-instance Parameterized Rosen where
-  -- flattenParameters :: f -> [Parameter]
-  flattenParameters (Rosen x y) = [x, y]
 
 rosenbrock2d :: Float -> Float -> Tensor -> Tensor -> Tensor
 rosenbrock2d a b x y = square (addScalar a ((-1.0) * x )) + mulScalar b (square (y - x*x))
@@ -71,14 +64,12 @@ lossRosen  Rosen{..} = rosenbrock' (toDependent x) (toDependent y)
 -- Ackley function
 
 data AckleySpec = AckleySpec deriving (Show, Eq)
-data Ackley = Ackley { pos :: Parameter } deriving (Show, Generic)
+data Ackley = Ackley { pos :: Parameter } deriving (Show, Generic, Parameterized)
 
 instance Randomizable AckleySpec Ackley where
   sample AckleySpec = do
       pos <- makeIndependent =<< randnIO' [2]
       pure $ Ackley pos
-
-instance Parameterized Ackley
 
 ackley :: Float -> Float -> Float -> Tensor -> Tensor
 ackley a b c x = 

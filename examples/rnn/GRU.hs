@@ -2,6 +2,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 module GRU where
 
@@ -56,10 +57,10 @@ instance Randomizable GRUSpec GRUCell where
       return $ GRUCell rg ug hg
 
 
-instance Parameterized GRUCell where
-  flattenParameters GRUCell{..} =
+instance GTraversable Parameter GRUCell where
+  gflatten GRUCell{..} =
     reset_gate ++ update_gate ++ gru_hidden_gate
-  _replaceParameters _ = do
+  gupdate _ = do
     rg_ih <- nextParameter
     rg_hh <- nextParameter
     rg_b  <- nextParameter
@@ -73,7 +74,6 @@ instance Parameterized GRUCell where
     let update_gate = [ug_ih, ug_hh, ug_b]
     let gru_hidden_gate = [hg_ih, hg_hh, hg_b]
     return $ GRUCell{..}
-  replaceTensor = defaultReplaceTensor
 
 
 instance Show GRUCell where

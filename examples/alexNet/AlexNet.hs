@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
 
@@ -39,9 +40,8 @@ data AlexNetBB = AlexNetBB {
     c5 :: Conv2d,
     l1 :: Linear,
     l2 :: Linear
-    } deriving (Generic, Show)
+    } deriving (Generic, Show, Parameterized, ToTensor)
 
-instance Parameterized AlexNetBB
 instance Randomizable AlexNetBBSpec AlexNetBB where
     sample AlexNetBBSpec {..} = AlexNetBB 
         <$> sample (conv1)

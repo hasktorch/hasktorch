@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FunctionalDependencies #-}
 
@@ -29,7 +30,7 @@ data VAEState = VAEState {
   logvarFC :: Linear,
   decoderState :: [Linear],
   nonlinearity :: Tensor -> Tensor
-} deriving (Generic)
+} deriving (Generic, Parameterized)
 
 instance Randomizable VAESpec VAEState where
   sample VAESpec{..} = do
@@ -39,8 +40,6 @@ instance Randomizable VAESpec VAEState where
     decoderState <- mapM sample decoderSpec
     let nonlinearity = nonlinearitySpec
     pure $ VAEState{..}
-
-instance Parameterized VAEState
 
 -- Output including latent mu and logvar used for VAE loss
 
