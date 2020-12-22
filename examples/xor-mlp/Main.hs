@@ -23,7 +23,7 @@ data MLP = MLP
   { layers :: [Linear],
     nonlinearity :: Tensor -> Tensor
   }
-  deriving (Generic, Parameterized)
+  deriving (Generic)
 
 instance Randomizable MLPSpec MLP where
   sample MLPSpec {..} = do

@@ -61,7 +61,7 @@ data MLP = MLP {
     mlpFC0 :: Linear,
     mlpFC1 :: Linear,
     mlpFC2 :: Linear
-    } deriving (Generic, Show, Parameterized)
+    } deriving (Generic, Show)
 
 mlpTemp :: Float -> MLP -> Tensor -> Tensor
 mlpTemp temperature MLP{..} input = 
@@ -99,7 +99,7 @@ data CNN = CNN {
     cnnConv0 :: Conv2d,
     cnnFC0 :: Linear,
     cnnFC1:: Linear
-} deriving (Generic, Show, Parameterized)
+} deriving (Generic, Show)
 
 instance HasForward CNN Tensor Tensor where
     forward CNN {..} input =

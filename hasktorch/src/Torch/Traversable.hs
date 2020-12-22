@@ -4,6 +4,9 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DataKinds #-}
 
 module Torch.Traversable where
 
@@ -62,6 +65,8 @@ instance GTraversable a a where
   gflatten = pure
   gupdate _ = gpop
 
+instance {-# OVERLAPS #-} (Generic f, GGTraversable a (Rep f)) => GTraversable a f
+
 instance (GTraversable a a0, GTraversable a b0) => GTraversable a (a0, b0) where
   gflatten (a, b) = gflatten a ++ gflatten b
   gupdate (a, b) = do
@@ -89,24 +94,6 @@ instance (GTraversable a a0, GTraversable a b0, GTraversable a c0, GTraversable 
 instance (GTraversable a f) => GTraversable a [f] where
   gflatten = (=<<) gflatten . toList
   gupdate = mapM gupdate
-
-instance {-# OVERLAPS #-} GTraversable a (f -> f) where
-  gflatten _ = []
-  gupdate = pure
-
-instance GTraversable a Float where
-  gflatten _ = []
-  gupdate = pure
-instance GTraversable a Double where
-  gflatten _ = []
-  gupdate = pure
-instance GTraversable a Int where
-  gflatten _ = []
-  gupdate = pure
-instance GTraversable a Bool where
-  gflatten _ = []
-  gupdate = pure
-
 
 gpop :: State [a] a
 gpop = do

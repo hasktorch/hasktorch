@@ -23,7 +23,7 @@ newtype IndependentTensor
   = IndependentTensor
       { toDependent :: Tensor
       }
-  deriving (Show, Generic, ToTensor)
+  deriving (Show, Generic)
 
 grad :: Tensor -> [IndependentTensor] -> [Tensor]
 grad y inputs = unsafePerformIO $ cast2 Torch.Internal.Managed.Autograd.grad y (map toDependent inputs)

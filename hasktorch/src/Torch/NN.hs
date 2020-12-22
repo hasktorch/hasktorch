@@ -39,6 +39,22 @@ type ParamStream a = State [Parameter] a
 
 type Parameterized = GTraversable Parameter
 
+instance GTraversable Parameter Bool where
+  gflatten _ = []
+  gupdate = pure
+instance GTraversable Parameter Int where
+  gflatten _ = []
+  gupdate = pure
+instance GTraversable Parameter Float where
+  gflatten _ = []
+  gupdate = pure
+instance GTraversable Parameter Double where
+  gflatten _ = []
+  gupdate = pure
+instance GTraversable Parameter (a->a) where
+  gflatten _ = []
+  gupdate = pure
+
 nextParameter :: ParamStream Parameter
 nextParameter = gpop
 
@@ -137,7 +153,7 @@ data Linear = Linear
   { weight :: Parameter,
     bias :: Parameter
   }
-  deriving (Show, Generic, Parameterized, ToTensor)
+  deriving (Show, Generic)
 
 linear :: Linear -> Tensor -> Tensor
 linear layer input = linear' input w b
@@ -197,7 +213,7 @@ data Conv2d = Conv2d
   { conv2dWeight :: Parameter,
     conv2dBias :: Parameter
   }
-  deriving (Show, Generic, Parameterized, ToTensor)
+  deriving (Show, Generic)
 
 conv2dForward ::
   -- | layer
@@ -260,7 +276,7 @@ data BatchNorm = BatchNorm
     runningMean :: Tensor,
     runningVar :: Tensor
   }
-  deriving (Show, Generic, Parameterized, ToTensor)
+  deriving (Show, Generic)
 
 batchNormForward :: BatchNorm -> Bool -> Double -> Double -> Tensor -> Tensor
 batchNormForward BatchNorm {..} train momentum eps input =
@@ -286,12 +302,12 @@ data UpSampleSpec = UpSampleSpec
   { upsampleInputFilters :: Int,
     upsampleStride :: Int
   }
-  deriving (Show, Eq, Generic, Parameterized, ToTensor)
+  deriving (Show, Eq, Generic)
 
 data UpSample = UpSample
   { upsampleSpec :: UpSampleSpec
   }
-  deriving (Show, Generic, Parameterized, ToTensor)
+  deriving (Show, Generic)
 
 instance Randomizable UpSampleSpec UpSample where
   sample s = do

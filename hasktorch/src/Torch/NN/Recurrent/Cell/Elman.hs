@@ -20,7 +20,7 @@ data ElmanCell = ElmanCell {
     weightsHH :: Parameter,
     biasIH :: Parameter,
     biasHH :: Parameter
-} deriving (Generic, Show, Parameterized, ToTensor)
+} deriving (Generic, Show)
 
 elmanCellForward
     :: ElmanCell -- ^ cell parameters

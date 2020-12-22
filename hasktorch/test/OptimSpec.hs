@@ -26,7 +26,7 @@ import Torch.Optim
 -- Convex Quadratic
 
 data ConvQuadSpec = ConvQuadSpec { n :: Int }
-data ConvQuad = ConvQuad { w :: Parameter } deriving (Show, Generic, Parameterized, ToTensor)
+data ConvQuad = ConvQuad { w :: Parameter } deriving (Show, Generic)
 
 instance Randomizable ConvQuadSpec ConvQuad where
   sample (ConvQuadSpec n) = do
@@ -44,7 +44,7 @@ lossConvQuad a b (ConvQuad w) = convexQuadratic a b w'
 -- 2D Rosenbrock
 
 data RosenSpec = RosenSpec deriving (Show, Eq)
-data Rosen = Rosen { x :: Parameter, y :: Parameter } deriving (Generic, Parameterized, ToTensor)
+data Rosen = Rosen { x :: Parameter, y :: Parameter } deriving (Generic)
 
 instance Show Rosen where
     show (Rosen x y) = show (extract x :: Float, extract y :: Float)
@@ -71,7 +71,7 @@ lossRosen  Rosen{..} = rosenbrock' (toDependent x) (toDependent y)
 -- Ackley function
 
 data AckleySpec = AckleySpec deriving (Show, Eq)
-data Ackley = Ackley { pos :: Parameter } deriving (Show, Generic, Parameterized, ToTensor)
+data Ackley = Ackley { pos :: Parameter } deriving (Show, Generic)
 
 instance Randomizable AckleySpec Ackley where
   sample AckleySpec = do

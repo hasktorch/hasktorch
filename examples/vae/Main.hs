@@ -30,7 +30,7 @@ data VAEState = VAEState {
   logvarFC :: Linear,
   decoderState :: [Linear],
   nonlinearity :: Tensor -> Tensor
-} deriving (Generic, Parameterized)
+} deriving (Generic)
 
 instance Randomizable VAESpec VAEState where
   sample VAESpec{..} = do

@@ -28,7 +28,7 @@ data MLP = MLP {
     l0 :: Linear,
     l1 :: Linear,
     l2 :: Linear
-    } deriving (Generic, Show, Parameterized)
+    } deriving (Generic, Show)
 
 instance Randomizable MLPSpec MLP where
     sample MLPSpec {..} = MLP 

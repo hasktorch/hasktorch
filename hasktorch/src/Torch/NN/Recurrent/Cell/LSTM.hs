@@ -20,7 +20,7 @@ data LSTMCell = LSTMCell {
     weightsHH :: Parameter,
     biasIH :: Parameter,
     biasHH :: Parameter
-} deriving (Generic, Show, Parameterized, ToTensor)
+} deriving (Generic, Show)
 
 lstmCellForward 
     :: LSTMCell -- ^ cell parameters

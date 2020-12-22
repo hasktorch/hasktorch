@@ -61,6 +61,22 @@ instance Castable Tensor ATenTensor where
   cast (Unsafe aten_tensor) f = f aten_tensor
   uncast aten_tensor f = f $ Unsafe aten_tensor
 
+instance GTraversable Tensor Bool where
+  gflatten _ = []
+  gupdate = pure
+instance GTraversable Tensor Int where
+  gflatten _ = []
+  gupdate = pure
+instance GTraversable Tensor Float where
+  gflatten _ = []
+  gupdate = pure
+instance GTraversable Tensor Double where
+  gflatten _ = []
+  gupdate = pure
+instance GTraversable Tensor (a->a) where
+  gflatten _ = []
+  gupdate = pure
+
 --------------------------------------------------------------------------------
 -- Basic tensor properties
 --------------------------------------------------------------------------------

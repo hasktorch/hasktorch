@@ -36,7 +36,7 @@ data MLP = MLP
     l1 :: Linear,
     l2 :: Linear
   }
-  deriving (Generic, Show, Parameterized, ToTensor)
+  deriving (Generic, Show)
 
 instance Randomizable MLPSpec MLP where
   sample MLPSpec {..} =

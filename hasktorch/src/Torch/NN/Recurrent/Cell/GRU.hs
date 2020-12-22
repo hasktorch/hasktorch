@@ -20,7 +20,7 @@ data GRUCell = GRUCell {
     weightsHH :: Parameter,
     biasIH :: Parameter,
     biasHH :: Parameter
-} deriving (Generic, Show, Parameterized, ToTensor)
+} deriving (Generic, Show)
 
 gruCellForward 
     :: GRUCell -- ^ cell parameters
