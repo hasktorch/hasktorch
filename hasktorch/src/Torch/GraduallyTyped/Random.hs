@@ -1,3 +1,4 @@
+{-# LANGUAGE RoleAnnotations #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -29,6 +30,7 @@ data Generator (device :: Device (DeviceType Nat)) where
     } ->
     Generator device
   NoGenerator :: forall device. Generator device
+type role Generator nominal
 
 noGenerator :: forall device. Generator device
 noGenerator = NoGenerator

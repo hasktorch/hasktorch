@@ -95,11 +95,14 @@ type UnifyDeviceL device device' = (
     UnifyDeviceL5 device device',
     UnifyDeviceL5 device' device
   )
+type UnifyDeviceLRightAssociative device device' device'' = UnifyDeviceF (UnifyDeviceF device device') device'' ~ UnifyDeviceF device (UnifyDeviceF device' device'')
 type UnifyDeviceL1 device = UnifyDeviceF device device ~ device
 type UnifyDeviceL2 device device' = UnifyDeviceF device (UnifyDeviceF device device') ~ UnifyDeviceF device device'
 type UnifyDeviceL3 device device' = UnifyDeviceF device' (UnifyDeviceF device device') ~ UnifyDeviceF device device'
 type UnifyDeviceL4 device device' = UnifyDeviceF (UnifyDeviceF device device') device ~ UnifyDeviceF device device'
 type UnifyDeviceL5 device device' = UnifyDeviceF (UnifyDeviceF device device') device' ~ UnifyDeviceF device device'
+type UnifyDeviceL6 device device' device'' = UnifyDeviceF (UnifyDeviceF (UnifyDeviceF device device') device'') device ~ UnifyDeviceF (UnifyDeviceF device device') device''
+type UnifyDeviceL7 device device' device'' = UnifyDeviceF (UnifyDeviceF (UnifyDeviceF device' device) device'') device ~ UnifyDeviceF (UnifyDeviceF device' device) device''
 
 type family UnifyDeviceF (device :: Device (DeviceType Nat)) (device' :: Device (DeviceType Nat)) :: Device (DeviceType Nat) where
   UnifyDeviceF 'UncheckedDevice _ = 'UncheckedDevice

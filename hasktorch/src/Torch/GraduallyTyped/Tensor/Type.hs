@@ -1,3 +1,4 @@
+{-# LANGUAGE RoleAnnotations #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
@@ -81,6 +82,13 @@ newtype
     forall requiresGradient layout device dataType shape.
     ForeignPtr ATen.Tensor ->
     Tensor requiresGradient layout device dataType shape
+type role Tensor nominal nominal nominal nominal nominal
+
+data MyProxy (a :: Maybe Nat) = MyProxy
+type role MyProxy phantom -- representational
+
+f :: forall a. MyProxy a -> MyProxy 'Nothing
+f = coerce
 
 type family
   TensorF

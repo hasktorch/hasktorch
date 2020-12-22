@@ -16,11 +16,7 @@
 {-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 -- {-# OPTIONS_GHC -fplugin TypeLevel.Rewrite
---                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Device.UnifyDeviceL1
---                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Device.UnifyDeviceL2
---                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Device.UnifyDeviceL3
---                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Device.UnifyDeviceL4
---                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Device.UnifyDeviceL5 #-}
+--                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Device.UnifyDeviceLRightAssociative #-}
 
 module Torch.GraduallyTyped.NN.Transformer where
 
@@ -43,12 +39,12 @@ import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormC, LayerNorm
 import Torch.GraduallyTyped.Random (Generator, mkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (Dependent))
 import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape (BroadcastShapesF, By (..), Dim (..), KnownDim (..), Name (..), SelectDim (..), Shape (..), Size (..), UnifyDimF, WithDimC (..), WithShapeC (..), dimSize, type (!))
+import Torch.GraduallyTyped.Shape (KnownShape, BroadcastShapesF, By (..), Dim (..), KnownDim (..), Name (..), SelectDim (..), Shape (..), Size (..), UnifyDimF, WithDimC (..), WithShapeC (..), dimSize, type (!))
 import Torch.GraduallyTyped.Tensor.Creation (randn)
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (ReshapeF, TransposeF, reshape, transpose)
 import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (MatmulF, matmul)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add, divScalar)
-import Torch.GraduallyTyped.Tensor.Type (Tensor)
+import Torch.GraduallyTyped.Tensor.Type (shape, Tensor)
 
 data
   MultiheadAttention
@@ -194,8 +190,22 @@ instance
         pure $ MultiheadAttention qInProj kInProj vInProj outProj dropout
 
 type BatchDim queryShape keyShape valueShape = UnifyDimF (UnifyDimF (queryShape ! 0) (keyShape ! 0)) (valueShape ! 0)
+
+getBatchDim :: [Dim String Integer] -> [Dim String Integer] -> [Dim String Integer] -> Dim String Integer 
+getBatchDim (batchDim : _queryDims) (batchDim' : _keyDims) (batchDim'' : _valueDims) | batchDim == batchDim' && batchDim' == batchDim'' = batchDim
+getBatchDim _ _ _ = error "batchDim"
+
 type QuerySeqDim queryShape = queryShape ! 1
+
+getQuerySeqDim :: [Dim String Integer] -> Dim String Integer
+getQuerySeqDim (_batchDim : querySeqDim : _queryDims) = querySeqDim
+getQuerySeqDim _ = error "querySeqDim"
+
 type KeySeqDim keyShape valueShape = UnifyDimF (keyShape ! 1) (valueShape ! 1)
+
+getKeySeqDim :: [Dim String Integer] -> [Dim String Integer] -> Dim String Integer
+getKeySeqDim (_batchDim : keySeqDim : _keyDims) (_batchDim' : keySeqDim' : _valueDims) | keySeqDim == keySeqDim' = keySeqDim
+getKeySeqDim _ _ = error "keySeqDim"
 
 type MultiheadAttentionC headDim headEmbedDim batchDim querySeqDim keySeqDim device dataType embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP requiresGradient queryLayout queryDevice queryDataType queryShape keyLayout keyDevice keyDataType keyShape valueLayout valueDevice valueDataType valueShape generatorDevice outputLayout outputDevice outputGeneratorDevice outputDataType outputShape =
   ( KnownDim embedDim,
@@ -204,6 +214,9 @@ type MultiheadAttentionC headDim headEmbedDim batchDim querySeqDim keySeqDim dev
     KnownDim keySeqDim,
     KnownDim querySeqDim,
     KnownDim batchDim,
+    KnownShape queryShape,
+    KnownShape keyShape,
+    KnownShape valueShape,
     Scalar dropoutP,
     WithDimC
       headDim
@@ -537,15 +550,16 @@ type MultiheadAttentionC headDim headEmbedDim batchDim querySeqDim keySeqDim dev
               ( 'Shape '[batchDim, querySeqDim, embedDim])
           )
       ),
-    UnifyDeviceL queryDevice device,
-    UnifyDeviceL keyDevice device,
-    UnifyDeviceL valueDevice device,
+    -- UnifyDeviceL queryDevice device,
+    -- UnifyDeviceL keyDevice device,
+    -- UnifyDeviceL valueDevice device,
     batchDim ~ BatchDim queryShape keyShape valueShape,
     querySeqDim ~ QuerySeqDim queryShape,
     keySeqDim ~ KeySeqDim keyShape valueShape
   )
 
 type MultiheadAttentionOutputDevice device queryDevice keyDevice valueDevice generatorDevice =
+  -- UnifyDeviceF valueDevice (UnifyDeviceF generatorDevice (UnifyDeviceF keyDevice (UnifyDeviceF queryDevice device)))
   UnifyDeviceF
     ( UnifyDeviceF
         ( UnifyDeviceF
@@ -563,10 +577,11 @@ type MultiheadAttentionOutputDevice device queryDevice keyDevice valueDevice gen
     device
 
 type MultiheadAttentionOutputGeneratorDevice device queryDevice keyDevice generatorDevice =
+  -- UnifyDeviceF generatorDevice (UnifyDeviceF keyDevice (UnifyDeviceF queryDevice device))
   UnifyDeviceF
     ( UnifyDeviceF
-        (UnifyDeviceF queryDevice device)
-        (UnifyDeviceF keyDevice device)
+        (UnifyDeviceF (UnifyDeviceF queryDevice device) device)
+        (UnifyDeviceF (UnifyDeviceF keyDevice device) device)
     )
     generatorDevice
 
@@ -700,13 +715,13 @@ multiheadAttention MultiheadAttention {..} query key value =
     withDim @headEmbedDim $ \headEmbedDim g ->
       let batchDim = case dimVal @batchDim of
             Dim (Name name) (Size size) -> Dim name size
-            Dim _ _ -> undefined
+            Dim _ _ -> getBatchDim (shape query) (shape key) (shape value)
           querySeqDim = case dimVal @querySeqDim of
             Dim (Name name) (Size size) -> Dim name size
-            Dim _ _ -> undefined
+            Dim _ _ -> getQuerySeqDim (shape query)
           keySeqDim = case dimVal @keySeqDim of
             Dim (Name name) (Size size) -> Dim name size
-            Dim _ _ -> undefined
+            Dim _ _ -> getKeySeqDim (shape key) (shape value)
           embedDim = case dimVal @embedDim of
             Dim (Name name) (Size size) -> Dim name size
             Dim _ _ -> undefined
@@ -972,6 +987,7 @@ type TransformerMLPOutputLayout inputLayout =
     ( 'Layout 'Dense)
 
 type TransformerMLPOutputDevice device inputDevice outputGeneratorDevice =
+  -- UnifyDeviceF device (UnifyDeviceF inputDevice outputGeneratorDevice)
   UnifyDeviceF
     ( UnifyDeviceF
         (UnifyDeviceF inputDevice outputGeneratorDevice)
@@ -1014,6 +1030,7 @@ type TransformerMLPOutputShape embedDim ffnDim inputShape =
     )
 
 type TransformerMLPOutputGeneratorDevice device inputDevice generatorDevice =
+  -- UnifyDeviceF generatorDevice (UnifyDeviceF inputDevice device)
   UnifyDeviceF
     ( UnifyDeviceF
         ( UnifyDeviceF
@@ -1258,6 +1275,7 @@ type TransformerLayerOutputLayout queryLayout multiheadAttentionOutputLayout =
 type TransformerLayerOutputLayout' queryLayout keyLayout valueLayout = TransformerLayerOutputLayout queryLayout (MultiheadAttentionOutputLayout queryLayout keyLayout valueLayout)
 
 type TransformerLayerOutputDevice device queryDevice multiheadAttentionOutputDevice multiheadAttentionOutputGeneratorDevice outputGeneratorDevice =
+  -- UnifyDeviceF outputGeneratorDevice (UnifyDeviceF multiheadAttentionOutputGeneratorDevice (UnifyDeviceF multiheadAttentionOutputDevice (UnifyDeviceF queryDevice device)))
   UnifyDeviceF
     ( UnifyDeviceF
         ( UnifyDeviceF
@@ -1283,6 +1301,7 @@ type TransformerLayerOutputDevice device queryDevice multiheadAttentionOutputDev
 type TransformerLayerOutputDevice' device queryDevice keyDevice valueDevice generatorDevice = TransformerLayerOutputDevice device queryDevice (MultiheadAttentionOutputDevice device queryDevice keyDevice valueDevice generatorDevice) (MultiheadAttentionOutputGeneratorDevice device queryDevice keyDevice generatorDevice) (TransformerLayerOutputGeneratorDevice' device queryDevice keyDevice valueDevice generatorDevice)
 
 type TransformerLayerOutputGeneratorDevice device queryDevice multiheadAttentionOutputDevice multiheadAttentionOutputGeneratorDevice =
+  -- UnifyDeviceF multiheadAttentionOutputGeneratorDevice (UnifyDeviceF multiheadAttentionOutputDevice (UnifyDeviceF queryDevice device))
   UnifyDeviceF
     ( UnifyDeviceF
         ( UnifyDeviceF

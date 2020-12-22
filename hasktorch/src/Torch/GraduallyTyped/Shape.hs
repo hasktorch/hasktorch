@@ -70,7 +70,7 @@ instance KnownSymbol name => KnownName ( 'Name name) where
 
 data Dim (name :: Type) (size :: Type) where
   Dim :: forall name size. name -> size -> Dim name size
-  deriving (Show)
+  deriving (Eq, Ord, Show)
 
 class KnownDim (dim :: Dim (Name Symbol) (Size Nat)) where
   dimVal :: Dim (Name String) (Size Integer)
