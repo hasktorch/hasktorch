@@ -1,18 +1,18 @@
-{-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Torch.Traversable where
 
 import Control.Monad.State.Strict
-import GHC.Generics
 import Data.Foldable (toList)
+import GHC.Generics
 import Torch.Scalar
 
 class GTraversable a f where
@@ -109,8 +109,8 @@ gmap func x =
         then f'
         else error "Some values in a call to gmap haven't been consumed!"
 
-greplace :: (GTraversable a f) => f -> [a] -> f 
-greplace f x = 
+greplace :: (GTraversable a f) => f -> [a] -> f
+greplace f x =
   let (f', remaining) = runState (gupdate f) x
    in if null remaining
         then f'

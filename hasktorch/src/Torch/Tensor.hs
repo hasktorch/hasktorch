@@ -1,6 +1,8 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -11,9 +13,6 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE ConstraintKinds #-}
 
 module Torch.Tensor where
 
@@ -64,16 +63,20 @@ instance Castable Tensor ATenTensor where
 instance GTraversable Tensor Bool where
   gflatten _ = []
   gupdate = pure
+
 instance GTraversable Tensor Int where
   gflatten _ = []
   gupdate = pure
+
 instance GTraversable Tensor Float where
   gflatten _ = []
   gupdate = pure
+
 instance GTraversable Tensor Double where
   gflatten _ = []
   gupdate = pure
-instance GTraversable Tensor (a->a) where
+
+instance GTraversable Tensor (a -> a) where
   gflatten _ = []
   gupdate = pure
 

@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -10,7 +11,6 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE ConstraintKinds #-}
 
 module Torch.NN where
 
@@ -21,8 +21,8 @@ import Data.Kind
 import GHC.Generics
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.Autograd
-import Torch.Device
 import Torch.DType
+import Torch.Device
 import Torch.Functional
 import Torch.Initializers
 import Torch.Internal.Cast (cast3)
@@ -42,16 +42,20 @@ type Parameterized = GTraversable Parameter
 instance GTraversable Parameter Bool where
   gflatten _ = []
   gupdate = pure
+
 instance GTraversable Parameter Int where
   gflatten _ = []
   gupdate = pure
+
 instance GTraversable Parameter Float where
   gflatten _ = []
   gupdate = pure
+
 instance GTraversable Parameter Double where
   gflatten _ = []
   gupdate = pure
-instance GTraversable Parameter (a->a) where
+
+instance GTraversable Parameter (a -> a) where
   gflatten _ = []
   gupdate = pure
 

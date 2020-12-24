@@ -1,9 +1,9 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE FlexibleContexts #-}
 
 module Main where
 
@@ -82,9 +82,9 @@ toDevice' (device', dtype') model = gmap func model
       let tensor' = toDevice device' tensor
           tensor'' =
             if isIntegral (dtype tensor')
-            then tensor'
-            else toType dtype' tensor'
-      in tensor''
+              then tensor'
+              else toType dtype' tensor'
+       in tensor''
 
 fromDevice :: ToTensor a => a -> a
 fromDevice model = gmap func model
@@ -93,10 +93,9 @@ fromDevice model = gmap func model
       let tensor' = toDevice (Device CPU 0) tensor
           tensor'' =
             if isIntegral (dtype tensor')
-            then tensor'
-            else toType Float tensor'
-      in tensor''
-
+              then tensor'
+              else toType Float tensor'
+       in tensor''
 
 main :: IO ()
 main = do
