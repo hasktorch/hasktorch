@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -80,6 +81,15 @@ instance (KnownDType dType) => WithDataTypeC ( 'DataType dType) f where
   type WithDataTypeF ( 'DataType dType) f = f
   withDataType f = f (dTypeVal @dType)
   withoutDataType = const
+
+type UnifyDataTypeRightAssociativeL dataType dataType' dataType'' = UnifyDataTypeF (UnifyDataTypeF dataType dataType') dataType'' ~ UnifyDataTypeF dataType (UnifyDataTypeF dataType' dataType'')
+type UnifyDataTypeIdempotenceL1 dataType = UnifyDataTypeF dataType dataType ~ dataType
+type UnifyDataTypeIdempotenceL2 dataType dataType' = UnifyDataTypeF dataType (UnifyDataTypeF dataType dataType') ~ UnifyDataTypeF dataType dataType'
+type UnifyDataTypeIdempotenceL2C dataType dataType' = UnifyDataTypeF dataType (UnifyDataTypeF dataType' dataType) ~ UnifyDataTypeF dataType dataType'
+type UnifyDataTypeIdempotenceL3 dataType dataType' dataType'' = UnifyDataTypeF dataType (UnifyDataTypeF dataType' (UnifyDataTypeF dataType dataType'')) ~ UnifyDataTypeF dataType (UnifyDataTypeF dataType' dataType'')
+type UnifyDataTypeIdempotenceL3C dataType dataType' dataType'' = UnifyDataTypeF dataType (UnifyDataTypeF dataType' (UnifyDataTypeF dataType'' dataType)) ~ UnifyDataTypeF dataType (UnifyDataTypeF dataType' dataType'')
+type UnifyDataTypeIdempotenceL4 dataType dataType' dataType'' dataType''' = UnifyDataTypeF dataType (UnifyDataTypeF dataType' (UnifyDataTypeF dataType'' (UnifyDataTypeF dataType dataType'''))) ~ UnifyDataTypeF dataType (UnifyDataTypeF dataType' (UnifyDataTypeF dataType'' dataType'''))
+type UnifyDataTypeIdempotenceL4C dataType dataType' dataType'' dataType''' = UnifyDataTypeF dataType (UnifyDataTypeF dataType' (UnifyDataTypeF dataType'' (UnifyDataTypeF dataType''' dataType))) ~ UnifyDataTypeF dataType (UnifyDataTypeF dataType' (UnifyDataTypeF dataType'' dataType'''))
 
 type family UnifyDataTypeF (dataType :: DataType DType) (dataType' :: DataType DType) :: DataType DType where
   UnifyDataTypeF 'UncheckedDataType 'UncheckedDataType = 'UncheckedDataType

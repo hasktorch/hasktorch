@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -75,6 +76,15 @@ instance (KnownLayoutType layoutType) => WithLayoutC ( 'Layout layoutType) f whe
   type WithLayoutF ( 'Layout layoutType) f = f
   withLayout f = f (layoutTypeVal @layoutType)
   withoutLayout = const
+
+type UnifyLayoutRightAssociativeL layout layout' layout'' = UnifyLayoutF (UnifyLayoutF layout layout') layout'' ~ UnifyLayoutF layout (UnifyLayoutF layout' layout'')
+type UnifyLayoutIdempotenceL1 layout = UnifyLayoutF layout layout ~ layout
+type UnifyLayoutIdempotenceL2 layout layout' = UnifyLayoutF layout (UnifyLayoutF layout layout') ~ UnifyLayoutF layout layout'
+type UnifyLayoutIdempotenceL2C layout layout' = UnifyLayoutF layout (UnifyLayoutF layout' layout) ~ UnifyLayoutF layout layout'
+type UnifyLayoutIdempotenceL3 layout layout' layout'' = UnifyLayoutF layout (UnifyLayoutF layout' (UnifyLayoutF layout layout'')) ~ UnifyLayoutF layout (UnifyLayoutF layout' layout'')
+type UnifyLayoutIdempotenceL3C layout layout' layout'' = UnifyLayoutF layout (UnifyLayoutF layout' (UnifyLayoutF layout'' layout)) ~ UnifyLayoutF layout (UnifyLayoutF layout' layout'')
+type UnifyLayoutIdempotenceL4 layout layout' layout'' layout''' = UnifyLayoutF layout (UnifyLayoutF layout' (UnifyLayoutF layout'' (UnifyLayoutF layout layout'''))) ~ UnifyLayoutF layout (UnifyLayoutF layout' (UnifyLayoutF layout'' layout'''))
+type UnifyLayoutIdempotenceL4C layout layout' layout'' layout''' = UnifyLayoutF layout (UnifyLayoutF layout' (UnifyLayoutF layout'' (UnifyLayoutF layout''' layout))) ~ UnifyLayoutF layout (UnifyLayoutF layout' (UnifyLayoutF layout'' layout'''))
 
 type family UnifyLayoutF (layout :: Layout LayoutType) (layout' :: Layout LayoutType) :: Layout LayoutType where
   UnifyLayoutF 'UncheckedLayout 'UncheckedLayout = 'UncheckedLayout

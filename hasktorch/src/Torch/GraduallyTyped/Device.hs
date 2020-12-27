@@ -83,26 +83,14 @@ instance (KnownDeviceType deviceType) => WithDeviceC ( 'Device deviceType) f whe
   withDevice f = f (deviceTypeVal @deviceType)
   withoutDevice = const
 
-type UnifyDeviceL device device' = (
-    UnifyDeviceL1 device,
-    UnifyDeviceL1 device',
-    UnifyDeviceL2 device device',
-    UnifyDeviceL2 device' device,
-    UnifyDeviceL3 device device',
-    UnifyDeviceL3 device' device,
-    UnifyDeviceL4 device device',
-    UnifyDeviceL4 device' device,
-    UnifyDeviceL5 device device',
-    UnifyDeviceL5 device' device
-  )
-type UnifyDeviceLRightAssociative device device' device'' = UnifyDeviceF (UnifyDeviceF device device') device'' ~ UnifyDeviceF device (UnifyDeviceF device' device'')
-type UnifyDeviceL1 device = UnifyDeviceF device device ~ device
-type UnifyDeviceL2 device device' = UnifyDeviceF device (UnifyDeviceF device device') ~ UnifyDeviceF device device'
-type UnifyDeviceL3 device device' = UnifyDeviceF device' (UnifyDeviceF device device') ~ UnifyDeviceF device device'
-type UnifyDeviceL4 device device' = UnifyDeviceF (UnifyDeviceF device device') device ~ UnifyDeviceF device device'
-type UnifyDeviceL5 device device' = UnifyDeviceF (UnifyDeviceF device device') device' ~ UnifyDeviceF device device'
-type UnifyDeviceL6 device device' device'' = UnifyDeviceF (UnifyDeviceF (UnifyDeviceF device device') device'') device ~ UnifyDeviceF (UnifyDeviceF device device') device''
-type UnifyDeviceL7 device device' device'' = UnifyDeviceF (UnifyDeviceF (UnifyDeviceF device' device) device'') device ~ UnifyDeviceF (UnifyDeviceF device' device) device''
+type UnifyDeviceRightAssociativeL device device' device'' = UnifyDeviceF (UnifyDeviceF device device') device'' ~ UnifyDeviceF device (UnifyDeviceF device' device'')
+type UnifyDeviceIdempotenceL1 device = UnifyDeviceF device device ~ device
+type UnifyDeviceIdempotenceL2 device device' = UnifyDeviceF device (UnifyDeviceF device device') ~ UnifyDeviceF device device'
+type UnifyDeviceIdempotenceL2C device device' = UnifyDeviceF device (UnifyDeviceF device' device) ~ UnifyDeviceF device device'
+type UnifyDeviceIdempotenceL3 device device' device'' = UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device device'')) ~ UnifyDeviceF device (UnifyDeviceF device' device'')
+type UnifyDeviceIdempotenceL3C device device' device'' = UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' device)) ~ UnifyDeviceF device (UnifyDeviceF device' device'')
+type UnifyDeviceIdempotenceL4 device device' device'' device''' = UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' (UnifyDeviceF device device'''))) ~ UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' device'''))
+type UnifyDeviceIdempotenceL4C device device' device'' device''' = UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' (UnifyDeviceF device''' device))) ~ UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' device'''))
 
 type family UnifyDeviceF (device :: Device (DeviceType Nat)) (device' :: Device (DeviceType Nat)) :: Device (DeviceType Nat) where
   UnifyDeviceF 'UncheckedDevice _ = 'UncheckedDevice
