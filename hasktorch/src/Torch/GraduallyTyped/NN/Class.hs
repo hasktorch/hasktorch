@@ -10,8 +10,6 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
--- {-# OPTIONS_GHC -fplugin TypeLevel.Rewrite
---                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Prelude.TestLaw #-}
 
 
 module Torch.GraduallyTyped.NN.Class where
@@ -24,22 +22,6 @@ module Torch.GraduallyTyped.NN.Class where
 -- import GHC.Base (coerce, Any)
 
 import Data.Kind (Type)
--- import Torch.GraduallyTyped.Prelude (TestF)
-
--- class Foo a where
---   foo :: ()
-
--- f :: forall a b . (Foo (TestF a (TestF a (TestF a (TestF a b))))) => ()
--- f = foo @(TestF a (TestF a b))
-
--- f' :: forall a b . (Foo (TestF a (TestF a b))) => ()
--- f' = foo @(TestF a b)
-
--- f'' :: forall a b c. (Foo (TestF a (TestF b c))) => ()
--- f'' = foo @(TestF (TestF a b) c)
-
--- f''' :: forall a b c. (Foo (TestF (TestF a b) c)) => ()
--- f''' = foo @(TestF a (TestF b c))
 
 
 class HasForward model input generator where

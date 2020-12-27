@@ -142,6 +142,36 @@ type family UnifySizeF (size :: Size Nat) (size' :: Size Nat) :: Size Nat where
 type family UnifyDimF (dim :: Dim (Name Symbol) (Size Nat)) (dim' :: Dim (Name Symbol) (Size Nat)) :: Dim (Name Symbol) (Size Nat) where
   UnifyDimF ( 'Dim name size) ( 'Dim name' size') = 'Dim (UnifyNameF name name') (UnifySizeF size size')
 
+checkDim ::
+  forall dim. KnownDim dim =>
+  Dim String Integer ->
+  Bool
+checkDim (Dim name size) =
+  case dimVal @dim of
+    Dim UncheckedName UncheckedSize -> True
+    Dim (Name name') UncheckedSize -> name == name'
+    Dim UncheckedName (Size size') -> size == size'
+    Dim (Name name') (Size size') -> name == name' && size == size'
+
+unifyDim ::
+  forall m.
+  MonadFail m =>
+  Dim String Integer ->
+  Dim String Integer ->
+  m (Dim String Integer)
+unifyDim (Dim name size) (Dim name' size') | name == name' && size == size' = pure (Dim name size)
+unifyDim (Dim "*" size) (Dim name' size') | size == size' = pure (Dim name' size)
+unifyDim (Dim name size) (Dim "*" size') | size == size' = pure (Dim name size)
+unifyDim dim dim' =
+  fail $
+    "The supplied dimensions must be the same,"
+      <> "but dimensions with different names and/or sizes were found:"
+      <> "    "
+      <> show dim
+      <> " and "
+      <> show dim'
+      <> "."
+
 type family AddSizeF (size :: Size Nat) (size' :: Size Nat) :: Size Nat where
   AddSizeF 'UncheckedSize _ = 'UncheckedSize
   AddSizeF _ 'UncheckedSize = 'UncheckedSize

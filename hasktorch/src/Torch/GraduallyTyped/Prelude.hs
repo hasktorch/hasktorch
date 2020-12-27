@@ -48,8 +48,8 @@ module Torch.GraduallyTyped.Prelude
     (&&^),
     (||^),
     (<&&>),
-    (<||>),
-    TestLaw, TestF
+    (<||>)
+    -- TestLaw, TestRightAssociative, TestF
   )
 where
 
@@ -62,9 +62,10 @@ import Data.Type.Bool (If, type (||))
 import GHC.Exts (Any)
 import GHC.TypeLits (Nat, ErrorMessage (..), TypeError (..), type (*))
 
-type TestLaw a b = (TestF a (TestF a b) ~ TestF a b)
+-- type TestLaw a b = TestF a (TestF a b) ~ TestF a b
+-- type TestRightAssociative a b c = TestF (TestF a b) c ~ TestF a (TestF b c)
 
-type family TestF a b
+-- type family TestF a b
 
 type family All (c :: k -> Constraint) (xs :: [k]) :: Constraint where
   All _ '[] = ()

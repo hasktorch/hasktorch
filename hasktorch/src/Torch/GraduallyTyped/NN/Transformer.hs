@@ -16,7 +16,13 @@
 {-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 -- {-# OPTIONS_GHC -fplugin TypeLevel.Rewrite
---                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Device.UnifyDeviceLRightAssociative #-}
+--                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Device.UnifyDeviceL1
+--                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Device.UnifyDeviceL2
+--                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Device.UnifyDeviceL3
+--                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Device.UnifyDeviceL4
+--                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Device.UnifyDeviceL5
+--                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Device.UnifyDeviceL6
+--                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Device.UnifyDeviceL7 #-}
 
 module Torch.GraduallyTyped.NN.Transformer where
 
@@ -34,7 +40,7 @@ import Torch.GraduallyTyped.NN.Functional.Activation (relu)
 import Torch.GraduallyTyped.NN.Functional.Linear (LinearF)
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, softmax)
 import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormF)
-import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearC, Linear)
+import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearC, Linear(..))
 import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormC, LayerNorm)
 import Torch.GraduallyTyped.Random (Generator, mkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (Dependent))
@@ -206,6 +212,15 @@ type KeySeqDim keyShape valueShape = UnifyDimF (keyShape ! 1) (valueShape ! 1)
 getKeySeqDim :: [Dim String Integer] -> [Dim String Integer] -> Dim String Integer
 getKeySeqDim (_batchDim : keySeqDim : _keyDims) (_batchDim' : keySeqDim' : _valueDims) | keySeqDim == keySeqDim' = keySeqDim
 getKeySeqDim _ _ = error "keySeqDim"
+
+getEmbedDim ::
+  forall device dataType embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP.
+  (KnownDim embedDim, KnownDim queryEmbedDim) =>
+  MultiheadAttention device dataType embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP ->
+  Dim String Integer
+getEmbedDim MultiheadAttention {..} = case dimVal @embedDim of
+  Dim (Name name) (Size size) -> Dim name size
+  Dim _ _ -> head . shape . linearWeight $ mhaQInProj
 
 type MultiheadAttentionC headDim headEmbedDim batchDim querySeqDim keySeqDim device dataType embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP requiresGradient queryLayout queryDevice queryDataType queryShape keyLayout keyDevice keyDataType keyShape valueLayout valueDevice valueDataType valueShape generatorDevice outputLayout outputDevice outputGeneratorDevice outputDataType outputShape =
   ( KnownDim embedDim,
