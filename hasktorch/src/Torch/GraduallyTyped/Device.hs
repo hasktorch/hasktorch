@@ -91,6 +91,8 @@ type UnifyDeviceIdempotenceL3 device device' device'' = UnifyDeviceF device (Uni
 type UnifyDeviceIdempotenceL3C device device' device'' = UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' device)) ~ UnifyDeviceF device (UnifyDeviceF device' device'')
 type UnifyDeviceIdempotenceL4 device device' device'' device''' = UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' (UnifyDeviceF device device'''))) ~ UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' device'''))
 type UnifyDeviceIdempotenceL4C device device' device'' device''' = UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' (UnifyDeviceF device''' device))) ~ UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' device'''))
+type UnifyDeviceIdempotenceL5 device device' device'' device''' device'''' = UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' (UnifyDeviceF device''' (UnifyDeviceF device device'''')))) ~ UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' (UnifyDeviceF device''' device'''')))
+type UnifyDeviceIdempotenceL5C device device' device'' device''' device'''' = UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' (UnifyDeviceF device''' (UnifyDeviceF device'''' device)))) ~ UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' (UnifyDeviceF device''' device'''')))
 
 type family UnifyDeviceF (device :: Device (DeviceType Nat)) (device' :: Device (DeviceType Nat)) :: Device (DeviceType Nat) where
   UnifyDeviceF 'UncheckedDevice _ = 'UncheckedDevice
