@@ -14,11 +14,11 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 {-# LANGUAGE NoStarIsType #-}
-{-# LANGUAGE TypeFamilyDependencies #-}
 
 module Torch.GraduallyTyped.Shape where
 
@@ -28,7 +28,7 @@ import Data.Proxy (Proxy (..))
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (KnownNat (..), KnownSymbol (..), Nat, Symbol, TypeError, natVal, symbolVal, type (+), type (-))
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.GraduallyTyped.Prelude (If, Fst, LiftTimesMaybe, MapMaybe, PrependMaybe, Reverse, Snd)
+import Torch.GraduallyTyped.Prelude (Fst, If, LiftTimesMaybe, MapMaybe, PrependMaybe, Reverse, Snd)
 import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Managed.Cast as ATen ()
 import qualified Torch.Internal.Managed.Type.Dimname as ATen (dimname_symbol, fromSymbol_s)
@@ -117,7 +117,7 @@ type family UnifyNameF (name :: Name Symbol) (name' :: Name Symbol) :: Name Symb
   UnifyNameF _ 'UncheckedName = 'UncheckedName
   UnifyNameF ( 'Name name) ( 'Name name) = 'Name name
   UnifyNameF ( 'Name name) ( 'Name "*") = 'Name name
-  UnifyNameF ( 'Name "*") ('Name name) = 'Name name
+  UnifyNameF ( 'Name "*") ( 'Name name) = 'Name name
   UnifyNameF ( 'Name name) ( 'Name name') = TypeError (UnifyNameErrorMessage name name')
 
 type UnifySizeErrorMessage (size :: Nat) (size' :: Nat) =
@@ -143,7 +143,8 @@ type family UnifyDimF (dim :: Dim (Name Symbol) (Size Nat)) (dim' :: Dim (Name S
   UnifyDimF ( 'Dim name size) ( 'Dim name' size') = 'Dim (UnifyNameF name name') (UnifySizeF size size')
 
 checkDim ::
-  forall dim. KnownDim dim =>
+  forall dim.
+  KnownDim dim =>
   Dim String Integer ->
   Bool
 checkDim (Dim name size) =
@@ -165,12 +166,19 @@ unifyDim (Dim name size) (Dim "*" size') | size == size' = pure (Dim name size)
 unifyDim dim dim' =
   fail $
     "The supplied dimensions must be the same,"
-      <> "but dimensions with different names and/or sizes were found:"
-      <> "    "
+      <> "but dimensions with different names and/or sizes were found: "
       <> show dim
       <> " and "
       <> show dim'
       <> "."
+
+unifyDims ::
+  forall m.
+  MonadFail m =>
+  Dim String Integer ->
+  [Dim String Integer] ->
+  m (Dim String Integer)
+unifyDims = foldM unifyDim
 
 type family AddSizeF (size :: Size Nat) (size' :: Size Nat) :: Size Nat where
   AddSizeF 'UncheckedSize _ = 'UncheckedSize
@@ -427,8 +435,23 @@ type family GetDimF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape [Di
   GetDimF ( 'SelectDim by) ( 'Shape dims) = GetDimCheckF by dims (GetDimImplF by dims)
 
 type family (!) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (_k :: k) :: Dim (Name Symbol) (Size Nat) where
-  (!) shape (index :: Nat) = GetDimF ('SelectDim ('ByIndex index)) shape
-  (!) shape (name :: Symbol) = GetDimF ('SelectDim ('ByName name)) shape
+  (!) shape (index :: Nat) = GetDimF ( 'SelectDim ( 'ByIndex index)) shape
+  (!) shape (name :: Symbol) = GetDimF ( 'SelectDim ( 'ByName name)) shape
+
+getDim ::
+  forall m.
+  MonadFail m =>
+  By String Integer ->
+  [Dim String Integer] ->
+  m (Dim String Integer)
+getDim by shape = go 0 shape
+  where
+    go _ [] = fail $ "Cannot return the first dimension matching " <> show by <> " in the shape " <> show shape <> "."
+    go index (dim@(Dim name _) : dims) =
+      case by of
+        ByName name' | name == name' -> pure dim
+        ByIndex index' | index == index' -> pure dim
+        _ -> go (index + 1) dims
 
 type family ReplaceDimByIndexF (index :: Maybe Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) (dim :: Dim (Name Symbol) (Size Nat)) :: Maybe [Dim (Name Symbol) (Size Nat)] where
   ReplaceDimByIndexF ( 'Just 0) (_ ': t) dim = 'Just (dim ': t)

@@ -53,6 +53,7 @@ import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Kind (Type)
 import Data.Proxy (Proxy (..))
 import GHC.TypeLits (Nat, Symbol, type (+), type (-), type (<=?))
+import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (DataType), UnifyDataTypeF, WithDataTypeC (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), UnifyDeviceF, WithDeviceC (..))
@@ -68,7 +69,7 @@ import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormC, LayerNorm
 import Torch.GraduallyTyped.Random (Generator, mkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (Dependent))
 import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape (BroadcastShapesF, By (..), Dim (..), KnownDim (..), KnownShape, Name (..), SelectDim (..), Shape (..), Size (..), UnifyDimF, WithDimC (..), WithShapeC (..), dimSize, type (!))
+import Torch.GraduallyTyped.Shape (BroadcastShapesF, By (..), Dim (..), KnownDim (..), KnownShape, Name (..), SelectDim (..), Shape (..), Size (..), UnifyDimF, WithDimC (..), WithShapeC (..), dimSize, getDim, unifyDims, type (!))
 import Torch.GraduallyTyped.Tensor.Creation (randn)
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (ReshapeF, TransposeF, reshape, transpose)
 import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (MatmulF, matmul)
@@ -220,30 +221,45 @@ instance
 
 type BatchDim queryShape keyShape valueShape = UnifyDimF (UnifyDimF (queryShape ! 0) (keyShape ! 0)) (valueShape ! 0)
 
-getBatchDim :: [Dim String Integer] -> [Dim String Integer] -> [Dim String Integer] -> Dim String Integer
-getBatchDim (batchDim : _queryDims) (batchDim' : _keyDims) (batchDim'' : _valueDims) | batchDim == batchDim' && batchDim' == batchDim'' = batchDim
-getBatchDim _ _ _ = error "batchDim"
+unsafeGetBatchDim :: [Dim String Integer] -> [Dim String Integer] -> [Dim String Integer] -> Dim String Integer
+unsafeGetBatchDim queryDims keyDims valueDims =
+  unsafePerformIO $ do
+    dim <- getDim (ByIndex 0) queryDims
+    dims <- sequence [getDim (ByIndex 0) keyDims, getDim (ByIndex 0) valueDims]
+    unifyDims dim dims
 
 type QuerySeqDim queryShape = queryShape ! 1
 
-getQuerySeqDim :: [Dim String Integer] -> Dim String Integer
-getQuerySeqDim (_batchDim : querySeqDim : _queryDims) = querySeqDim
-getQuerySeqDim _ = error "querySeqDim"
+unsafeGetQuerySeqDim :: [Dim String Integer] -> Dim String Integer
+unsafeGetQuerySeqDim = unsafePerformIO . getDim (ByIndex 1)
 
 type KeySeqDim keyShape valueShape = UnifyDimF (keyShape ! 1) (valueShape ! 1)
 
-getKeySeqDim :: [Dim String Integer] -> [Dim String Integer] -> Dim String Integer
-getKeySeqDim (_batchDim : keySeqDim : _keyDims) (_batchDim' : keySeqDim' : _valueDims) | keySeqDim == keySeqDim' = keySeqDim
-getKeySeqDim _ _ = error "keySeqDim"
+unsafeGetKeySeqDim :: [Dim String Integer] -> [Dim String Integer] -> Dim String Integer
+unsafeGetKeySeqDim keyDims valueDims =
+  unsafePerformIO $ do
+    dim <- getDim (ByIndex 1) keyDims
+    dims <- sequence [getDim (ByIndex 1) valueDims]
+    unifyDims dim dims
 
-getEmbedDim ::
+unsafeGetEmbedDim ::
   forall device dataType embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP.
-  (KnownDim embedDim, KnownDim queryEmbedDim) =>
+  (KnownDim embedDim, KnownDim queryEmbedDim, KnownDim keyEmbedDim, KnownDim valueEmbedDim) =>
   MultiheadAttention device dataType embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP ->
   Dim String Integer
-getEmbedDim MultiheadAttention {..} = case dimVal @embedDim of
-  Dim (Name name) (Size size) -> Dim name size
-  Dim _ _ -> head . shape . linearWeight $ mhaQInProj
+unsafeGetEmbedDim MultiheadAttention {..} =
+  unsafePerformIO $ do
+    dim <- getDim (ByIndex 0) . shape . linearWeight $ mhaQInProj
+    dims <-
+      sequence
+        [ getDim (ByIndex 0) . shape . linearBias $ mhaQInProj,
+          getDim (ByIndex 0) . shape . linearWeight $ mhaKInProj,
+          getDim (ByIndex 0) . shape . linearBias $ mhaKInProj,
+          getDim (ByIndex 0) . shape . linearWeight $ mhaVInProj,
+          getDim (ByIndex 0) . shape . linearBias $ mhaVInProj,
+          getDim (ByIndex 1) . shape . linearWeight $ mhaOutProj
+        ]
+    unifyDims dim dims
 
 type TransposeAndReshape embedDim queryEmbedDim queryShape batchDim querySeqDim headDim headEmbedDim keyEmbedDim keyShape keySeqDim valueEmbedDim valueShape =
   TransposeF
@@ -307,6 +323,9 @@ type TransposeAndReshape embedDim queryEmbedDim queryShape batchDim querySeqDim 
 
 type MultiheadAttentionC headDim headEmbedDim batchDim querySeqDim keySeqDim device dataType embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP requiresGradient queryLayout queryDevice queryDataType queryShape keyLayout keyDevice keyDataType keyShape valueLayout valueDevice valueDataType valueShape generatorDevice outputLayout outputDevice outputGeneratorDevice outputDataType outputShape =
   ( KnownDim embedDim,
+    KnownDim queryEmbedDim,
+    KnownDim keyEmbedDim,
+    KnownDim valueEmbedDim,
     KnownDim headEmbedDim,
     KnownDim headDim,
     KnownDim keySeqDim,
@@ -492,21 +511,21 @@ multiheadAttention ::
           )
         )
     )
-multiheadAttention MultiheadAttention {..} query key value =
+multiheadAttention mha@MultiheadAttention {..} query key value =
   withDim @headDim $ \headDim ->
     withDim @headEmbedDim $ \headEmbedDim g ->
       let batchDim = case dimVal @batchDim of
             Dim (Name name) (Size size) -> Dim name size
-            Dim _ _ -> getBatchDim (shape query) (shape key) (shape value)
+            Dim _ _ -> unsafeGetBatchDim (shape query) (shape key) (shape value)
           querySeqDim = case dimVal @querySeqDim of
             Dim (Name name) (Size size) -> Dim name size
-            Dim _ _ -> getQuerySeqDim (shape query)
+            Dim _ _ -> unsafeGetQuerySeqDim (shape query)
           keySeqDim = case dimVal @keySeqDim of
             Dim (Name name) (Size size) -> Dim name size
-            Dim _ _ -> getKeySeqDim (shape key) (shape value)
+            Dim _ _ -> unsafeGetKeySeqDim (shape key) (shape value)
           embedDim = case dimVal @embedDim of
             Dim (Name name) (Size size) -> Dim name size
-            Dim _ _ -> undefined
+            Dim _ _ -> unsafeGetEmbedDim mha
           scaling :: Double = sqrt . fromIntegral . dimSize $ headDim
           (q, g') =
             let (query', g') = forward mhaQInProj query g
