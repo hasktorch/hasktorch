@@ -85,6 +85,8 @@ type UnifyLayoutIdempotenceL3 layout layout' layout'' = UnifyLayoutF layout (Uni
 type UnifyLayoutIdempotenceL3C layout layout' layout'' = UnifyLayoutF layout (UnifyLayoutF layout' (UnifyLayoutF layout'' layout)) ~ UnifyLayoutF layout (UnifyLayoutF layout' layout'')
 type UnifyLayoutIdempotenceL4 layout layout' layout'' layout''' = UnifyLayoutF layout (UnifyLayoutF layout' (UnifyLayoutF layout'' (UnifyLayoutF layout layout'''))) ~ UnifyLayoutF layout (UnifyLayoutF layout' (UnifyLayoutF layout'' layout'''))
 type UnifyLayoutIdempotenceL4C layout layout' layout'' layout''' = UnifyLayoutF layout (UnifyLayoutF layout' (UnifyLayoutF layout'' (UnifyLayoutF layout''' layout))) ~ UnifyLayoutF layout (UnifyLayoutF layout' (UnifyLayoutF layout'' layout'''))
+type UnifyLayoutIdempotenceL5 layout layout' layout'' layout''' layout'''' = UnifyLayoutF layout (UnifyLayoutF layout' (UnifyLayoutF layout'' (UnifyLayoutF layout''' (UnifyLayoutF layout layout'''')))) ~ UnifyLayoutF layout (UnifyLayoutF layout' (UnifyLayoutF layout'' (UnifyLayoutF layout''' layout'''')))
+type UnifyLayoutIdempotenceL5C layout layout' layout'' layout''' layout'''' = UnifyLayoutF layout (UnifyLayoutF layout' (UnifyLayoutF layout'' (UnifyLayoutF layout''' (UnifyLayoutF layout'''' layout)))) ~ UnifyLayoutF layout (UnifyLayoutF layout' (UnifyLayoutF layout'' (UnifyLayoutF layout''' layout'''')))
 
 type family UnifyLayoutF (layout :: Layout LayoutType) (layout' :: Layout LayoutType) :: Layout LayoutType where
   UnifyLayoutF 'UncheckedLayout 'UncheckedLayout = 'UncheckedLayout

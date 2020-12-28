@@ -24,6 +24,8 @@
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Layout.UnifyLayoutIdempotenceL3C
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Layout.UnifyLayoutIdempotenceL4
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Layout.UnifyLayoutIdempotenceL4C
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Layout.UnifyLayoutIdempotenceL5
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Layout.UnifyLayoutIdempotenceL5C
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Device.UnifyDeviceRightAssociativeL
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Device.UnifyDeviceIdempotenceL1
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Device.UnifyDeviceIdempotenceL2
@@ -41,7 +43,9 @@
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.DType.UnifyDataTypeIdempotenceL3
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.DType.UnifyDataTypeIdempotenceL3C
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.DType.UnifyDataTypeIdempotenceL4
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.DType.UnifyDataTypeIdempotenceL4C #-}
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.DType.UnifyDataTypeIdempotenceL4C
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.DType.UnifyDataTypeIdempotenceL5
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.DType.UnifyDataTypeIdempotenceL5C #-}
 
 module Torch.GraduallyTyped.NN.Transformer where
 
@@ -1012,13 +1016,38 @@ transformerLayer ::
     multiheadAttentionOutputDataType ~ MultiheadAttentionOutputDataType dataType queryDataType keyDataType valueDataType,
     multiheadAttentionOutputShape ~ MultiheadAttentionOutputShape embedDim queryEmbedDim keyEmbedDim valueEmbedDim headDim headEmbedDim batchDim querySeqDim keySeqDim queryShape keyShape valueShape,
     KnownDim queryEmbedDim,
-    outputLayout ~ TransformerLayerOutputLayout multiheadAttentionOutputLayout,
-    outputDevice ~ TransformerLayerOutputDevice multiheadAttentionOutputDevice,
-    outputDataType ~ TransformerLayerOutputDataType multiheadAttentionOutputDataType,
-    outputShape ~ TransformerLayerOutputShape ffnDim queryEmbedDim queryShape multiheadAttentionOutputShape,
-    outputGeneratorDevice ~ TransformerLayerOutputGeneratorDevice multiheadAttentionOutputDevice,
-    WithDimC headDim (WithDimF headEmbedDim (Generator generatorDevice -> (Tensor requiresGradient outputLayout outputDevice outputDataType outputShape, Generator outputGeneratorDevice))),
-    WithDimC headEmbedDim (Generator generatorDevice -> (Tensor requiresGradient outputLayout outputDevice outputDataType outputShape, Generator outputGeneratorDevice))
+    WithDimC
+      headEmbedDim
+      ( Generator generatorDevice ->
+        ( Tensor
+            requiresGradient
+            (TransformerLayerOutputLayout multiheadAttentionOutputLayout)
+            (TransformerLayerOutputDevice multiheadAttentionOutputDevice)
+            (TransformerLayerOutputDataType multiheadAttentionOutputDataType)
+            (TransformerLayerOutputShape ffnDim queryEmbedDim queryShape multiheadAttentionOutputShape),
+          Generator (TransformerLayerOutputGeneratorDevice multiheadAttentionOutputDevice)
+        )
+      ),
+    WithDimC
+      headDim
+      ( WithDimF
+          headEmbedDim
+          ( Generator generatorDevice ->
+            ( Tensor
+                requiresGradient
+                (TransformerLayerOutputLayout multiheadAttentionOutputLayout)
+                (TransformerLayerOutputDevice multiheadAttentionOutputDevice)
+                (TransformerLayerOutputDataType multiheadAttentionOutputDataType)
+                (TransformerLayerOutputShape ffnDim queryEmbedDim queryShape multiheadAttentionOutputShape),
+              Generator (TransformerLayerOutputGeneratorDevice multiheadAttentionOutputDevice)
+            )
+          )
+      )
+      -- outputLayout ~ multiheadAttentionOutputLayout,
+      -- outputDevice ~ multiheadAttentionOutputDevice,
+      -- outputDataType ~ multiheadAttentionOutputDataType,
+      -- outputShape ~ TransformerLayerOutputShape ffnDim queryEmbedDim queryShape multiheadAttentionOutputShape
+      -- outputGeneratorDevice ~ multiheadAttentionOutputDevice
   ) =>
   -- | transformer layer model
   TransformerLayer device dataType embedDim ffnDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP ->
@@ -1035,11 +1064,11 @@ transformerLayer ::
         ( Generator generatorDevice ->
           ( Tensor
               requiresGradient
-              outputLayout
-              outputDevice
-              outputDataType
-              outputShape,
-            Generator outputGeneratorDevice
+              (TransformerLayerOutputLayout multiheadAttentionOutputLayout)
+              (TransformerLayerOutputDevice multiheadAttentionOutputDevice)
+              (TransformerLayerOutputDataType multiheadAttentionOutputDataType)
+              (TransformerLayerOutputShape ffnDim queryEmbedDim queryShape multiheadAttentionOutputShape),
+            Generator (TransformerLayerOutputGeneratorDevice multiheadAttentionOutputDevice)
           )
         )
     )
