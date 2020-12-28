@@ -766,8 +766,8 @@ instance
 type TransformerMLPOutputLayout inputLayout =
   UnifyLayoutF inputLayout ( 'Layout 'Dense)
 
-type TransformerMLPOutputDevice device inputDevice outputGeneratorDevice =
-  UnifyDeviceF inputDevice (UnifyDeviceF outputGeneratorDevice device)
+type TransformerMLPOutputDevice device inputDevice generatorDevice =
+  UnifyDeviceF inputDevice (UnifyDeviceF device generatorDevice)
 
 type TransformerMLPOutputDataType dataType inputDataType =
   UnifyDataTypeF inputDataType dataType
@@ -793,20 +793,20 @@ type TransformerMLPOutputGeneratorDevice device inputDevice generatorDevice =
   UnifyDeviceF inputDevice (UnifyDeviceF device generatorDevice)
 
 transformerMLP ::
-  forall device dataType embedDim ffnDim dropoutP requiresGradient inputLayout inputDevice inputDataType inputShape generatorDevice outputLayout outputDevice outputDataType outputShape outputGeneratorDevice.
+  forall device dataType embedDim ffnDim dropoutP requiresGradient inputLayout inputDevice inputDataType inputShape generatorDevice.
   ( Scalar dropoutP,
-    KnownDim embedDim,
-    outputLayout ~ TransformerMLPOutputLayout inputLayout,
-    outputDevice ~ TransformerMLPOutputDevice device inputDevice outputGeneratorDevice,
-    outputDataType ~ TransformerMLPOutputDataType dataType inputDataType,
-    outputShape ~ TransformerMLPOutputShape embedDim ffnDim inputShape,
-    outputGeneratorDevice ~ TransformerMLPOutputGeneratorDevice device inputDevice generatorDevice
+    KnownDim embedDim
   ) =>
   TransformerMLP device dataType embedDim ffnDim dropoutP ->
   Tensor requiresGradient inputLayout inputDevice inputDataType inputShape ->
   Generator generatorDevice ->
-  ( Tensor requiresGradient outputLayout outputDevice outputDataType outputShape,
-    Generator outputGeneratorDevice
+  ( Tensor
+      requiresGradient
+      (TransformerMLPOutputLayout inputLayout)
+      (TransformerMLPOutputDevice device inputDevice generatorDevice)
+      (TransformerMLPOutputDataType dataType inputDataType)
+      (TransformerMLPOutputShape embedDim ffnDim inputShape),
+    Generator (TransformerMLPOutputGeneratorDevice device inputDevice generatorDevice)
   )
 transformerMLP TransformerMLP {..} =
   let residual f f' x g =
