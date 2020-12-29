@@ -167,6 +167,48 @@ readImageAsRGB8WithScaling file width height keepAspectRatio =
       let img = (resizeRGB8 width height keepAspectRatio) . I.convertRGB8 $ img'
       return $ Right (img, fromDynImage . I.ImageRGB8 $ img)
 
+centerCrop :: Int -> Int -> I.Image I.PixelRGB8 -> I.Image I.PixelRGB8
+centerCrop width height input = unsafePerformIO $ do
+  let channel = 3 :: Int
+      (I.Image org_w org_h org_vec) = input
+      img@(I.Image w h vec) = I.generateImage (\_ _ -> (I.PixelRGB8 0 0 0)) width height :: I.Image I.PixelRGB8
+      (org_fptr, org_len) = V.unsafeToForeignPtr0 org_vec
+      org_whc = fromIntegral $ org_w * org_h * channel
+      (fptr, len) = V.unsafeToForeignPtr0 vec
+      whc = fromIntegral $ w * h * channel
+  F.withForeignPtr org_fptr $ \ptr1 -> F.withForeignPtr fptr $ \ptr2 -> do
+    let src = F.castPtr ptr1
+        dst = F.castPtr ptr2
+        iw = fromIntegral w
+        ih = fromIntegral h
+        iorg_w = fromIntegral org_w
+        iorg_h = fromIntegral org_h
+        ichannel = fromIntegral channel
+    [C.block| void {
+        uint8_t* src = $(uint8_t* src);
+        uint8_t* dst = $(uint8_t* dst);
+        int w = $(int iw);
+        int h = $(int ih);
+        int channel = $(int ichannel);
+        int ow = $(int iorg_w);
+        int oh = $(int iorg_h);
+        int offsetx = (ow - w)/2;
+        int offsety = (oh - h)/2;
+        for(int y=0;y<h;y++){
+          for(int x=0;x<w;x++){
+            for(int c=0;c<channel;c++){
+              int sy = y + offsety;
+              int sx = x + offsetx;
+              if(sx >= 0 && sx < ow &&
+                 sy >= 0 && sy < oh){
+                 dst[(y*w+x)*channel+c] = src[(sy*ow+sx)*channel+c];
+              }
+            }
+          }
+        }
+    } |]
+    return img
+
 drawLine :: Int -> Int -> Int -> Int -> (Int, Int, Int) -> I.Image I.PixelRGB8 -> IO ()
 drawLine x0 y0 x1 y1 (r, g, b) input = do
   let img@(I.Image w h vec) = input
