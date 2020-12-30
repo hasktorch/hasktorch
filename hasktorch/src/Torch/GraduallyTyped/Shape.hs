@@ -485,6 +485,38 @@ type family ReplaceDimF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape
   ReplaceDimF _ 'UncheckedShape _ = 'UncheckedShape
   ReplaceDimF ( 'SelectDim by) ( 'Shape dims) dim = 'Shape (ReplaceDimCheckF by dims dim (ReplaceDimImplF by dims dim))
 
+type family InsertDimByIndexF (index :: Maybe Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) (dim :: Dim (Name Symbol) (Size Nat)) :: Maybe [Dim (Name Symbol) (Size Nat)] where
+  InsertDimByIndexF ( 'Just 0) dims dim = 'Just (dim ': dims)
+  InsertDimByIndexF ( 'Just index) (h ': t) dim = PrependMaybe ( 'Just h) (InsertDimByIndexF ( 'Just (index - 1)) t dim)
+  InsertDimByIndexF _ _ _ = 'Nothing
+
+type family InsertDimImplF (by :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) (dim :: Dim (Name Symbol) (Size Nat)) :: Maybe [Dim (Name Symbol) (Size Nat)] where
+  InsertDimImplF ( 'ByName name) dims dim = InsertDimByIndexF (GetIndexByNameF name dims) dims dim
+  InsertDimImplF ( 'ByIndex index) dims dim = InsertDimByIndexF ( 'Just index) dims dim
+
+type InsertDimErrorMessage (by :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) (dim :: Dim (Name Symbol) (Size Nat)) =
+  "Cannot insert the dimension"
+    % ""
+    % "    '" <> dim <> "'"
+    % ""
+    % "before the first dimension matching"
+    % ""
+    % "    '" <> by <> "'"
+    % ""
+    % "in the shape"
+    % ""
+    % "    '" <> dims <> "'."
+    % ""
+
+type family InsertDimCheckF (by :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) (dim :: Dim (Name Symbol) (Size Nat)) (result :: Maybe [Dim (Name Symbol) (Size Nat)]) :: [Dim (Name Symbol) (Size Nat)] where
+  InsertDimCheckF by dims dim 'Nothing = TypeError (InsertDimErrorMessage by dims dim)
+  InsertDimCheckF _ _ _ ( 'Just dims) = dims
+
+type family InsertDimF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (dim :: Dim (Name Symbol) (Size Nat)) :: Shape [Dim (Name Symbol) (Size Nat)] where
+  InsertDimF 'UncheckedSelectDim _ _ = 'UncheckedShape
+  InsertDimF _ 'UncheckedShape _ = 'UncheckedShape
+  InsertDimF ( 'SelectDim by) ( 'Shape dims) dim = 'Shape (InsertDimCheckF by dims dim (InsertDimImplF by dims dim))
+
 instance Castable String (ForeignPtr ATen.Dimname) where
   cast name f =
     let ptr = unsafePerformIO $ do

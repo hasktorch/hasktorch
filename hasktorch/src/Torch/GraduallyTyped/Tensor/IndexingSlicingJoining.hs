@@ -23,7 +23,7 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType, UnifyDeviceF)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType, UnifyLayoutF)
 import Torch.GraduallyTyped.Prelude (FromMaybe, MapMaybe)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), UnifyRequiresGradientF)
-import Torch.GraduallyTyped.Shape (dimSize, GetDimImplF, GetIndexByNameF, Size(..), Name(..), AddDimF, By (..), Dim (..), GetDimF, NumelF, ReplaceDimF, ReplaceDimImplF, SelectDim (..), Shape (..), UnifyShapeF, WithSelectDimC (..), WithShapeC (..))
+import Torch.GraduallyTyped.Shape (AddDimF, By (..), Dim (..), GetDimF, GetDimImplF, GetIndexByNameF, InsertDimImplF, Name (..), NumelF, ReplaceDimF, ReplaceDimImplF, SelectDim (..), Shape (..), Size (..), UnifyShapeF, WithSelectDimC (..), WithShapeC (..), dimSize)
 import Torch.GraduallyTyped.Tensor.Type (Tensor, TensorF)
 import Torch.HList (HList)
 import Torch.Internal.Cast (cast2, cast3)
@@ -77,8 +77,8 @@ class HasCat (selectDim :: SelectDim (By Symbol Nat)) k (c :: k -> Type) (a :: k
 
 type family CatListImplF (selectDim :: SelectDim (By Symbol Nat)) (tensor :: Type) :: Maybe Type where
   CatListImplF 'UncheckedSelectDim (Tensor requiresGradient layout device dataType _) = 'Just (Tensor requiresGradient layout device dataType 'UncheckedShape)
-  CatListImplF ('SelectDim _) (Tensor requiresGradient layout device dataType 'UncheckedShape) = 'Just (Tensor requiresGradient layout device dataType 'UncheckedShape)
-  CatListImplF ('SelectDim by) (Tensor requiresGradient layout device dataType ('Shape dims)) = MapMaybe (Tensor requiresGradient layout device dataType) (MapMaybe 'Shape (ReplaceDimImplF by dims ('Dim 'UncheckedName 'UncheckedSize)))
+  CatListImplF ( 'SelectDim _) (Tensor requiresGradient layout device dataType 'UncheckedShape) = 'Just (Tensor requiresGradient layout device dataType 'UncheckedShape)
+  CatListImplF ( 'SelectDim by) (Tensor requiresGradient layout device dataType ( 'Shape dims)) = MapMaybe (Tensor requiresGradient layout device dataType) (MapMaybe 'Shape (ReplaceDimImplF by dims ( 'Dim 'UncheckedName 'UncheckedSize)))
 
 type CheckSpellingMessage = "Check the spelling of named dimensions, and make sure the number of dimensions is correct."
 
@@ -134,7 +134,7 @@ type family
              UnifyDataTypeF dataType dataType',
              ReplaceDimF
                selectDim
-               (UnifyShapeF (ReplaceDimF selectDim shape ('Dim 'UncheckedName 'UncheckedSize)) (ReplaceDimF selectDim shape' ('Dim 'UncheckedName 'UncheckedSize)))
+               (UnifyShapeF (ReplaceDimF selectDim shape ( 'Dim 'UncheckedName 'UncheckedSize)) (ReplaceDimF selectDim shape' ( 'Dim 'UncheckedName 'UncheckedSize)))
                (AddDimF (GetDimF selectDim shape) (GetDimF selectDim shape))
            )
       )
@@ -371,3 +371,50 @@ transpose = withSelectDim @selectDim0 $
               <> "' and '"
               <> show selectDim1
               <> "'."
+
+type UnsqueezeByMessage (by :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) =
+  "Cannot unsqueeze the tensor with the dimensions"
+    % ""
+    % "    '" <> dims <> "'"
+    % ""
+    % "because the specified source dimension"
+    % ""
+    % "    '" <> by <> "'"
+    % ""
+    % "could not be found."
+
+type family UnsqueezeF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
+  UnsqueezeF _ 'UncheckedShape = 'UncheckedShape
+  UnsqueezeF 'UncheckedSelectDim _ = 'UncheckedShape
+  UnsqueezeF ( 'SelectDim ( 'ByName name)) ( 'Shape dims) =
+    'Shape
+      ( UnsqueezeIndexDimsF
+          ( FromMaybe
+              (TypeError (UnsqueezeByMessage (ByName name) dims))
+              (GetIndexByNameF name dims)
+          )
+          dims
+      )
+  UnsqueezeF ( 'SelectDim ( 'ByIndex index)) ( 'Shape dims) = 'Shape (UnsqueezeIndexDimsF index dims)
+
+type family UnsqueezeIndexDimsF (index :: Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) :: [Dim (Name Symbol) (Size Nat)] where
+  UnsqueezeIndexDimsF index dims =
+    FromMaybe
+      (TypeError (UnsqueezeByMessage (ByIndex index) dims))
+      ( InsertDimImplF
+          (ByIndex index)
+          dims
+          ( 'Dim ( 'Name "*") ( 'Size 1))
+      )
+
+unsqueeze ::
+  forall selectDim requiresGradient layout device dataType shape shape'.
+  ( WithSelectDimC selectDim (Tensor requiresGradient layout device dataType shape -> Tensor requiresGradient layout device dataType shape'),
+    shape' ~ UnsqueezeF selectDim shape
+  ) =>
+  WithSelectDimF selectDim (Tensor requiresGradient layout device dataType shape -> Tensor requiresGradient layout device dataType shape')
+unsqueeze = withSelectDim @selectDim @(Tensor requiresGradient layout device dataType shape -> Tensor requiresGradient layout device dataType shape') $
+  \selectDim input ->
+    case selectDim of
+      ByName _name -> undefined
+      ByIndex index -> unsafePerformIO $ cast2 ATen.unsqueeze_tl input (fromIntegral index :: Int)
