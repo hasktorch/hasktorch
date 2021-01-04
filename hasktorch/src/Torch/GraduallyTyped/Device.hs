@@ -1,4 +1,3 @@
-{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
@@ -10,6 +9,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -23,16 +23,11 @@
 module Torch.GraduallyTyped.Device where
 
 import Data.Int (Int16)
-import Data.Kind (Constraint, Type)
+import Data.Kind (Type)
 import Data.Proxy (Proxy (..))
-import GHC.TypeLits
-  ( KnownNat,
-    Nat,
-    natVal,
-  )
-import Torch.GraduallyTyped.Prelude (Catch)
+import GHC.TypeLits (KnownNat (..), Nat, natVal)
 import qualified Torch.Internal.Managed.Cast as ATen ()
-import Type.Errors.Pretty (TypeError, type (%), type (<>))
+import Type.Errors.Pretty (type (%), type (<>))
 
 -- | Data type to represent compute devices.
 data DeviceType (deviceId :: Type) where
@@ -82,27 +77,6 @@ instance (KnownDeviceType deviceType) => WithDeviceC ( 'Device deviceType) f whe
   type WithDeviceF ( 'Device deviceType) f = f
   withDevice f = f (deviceTypeVal @deviceType)
   withoutDevice = const
-
-type UnifyDeviceRightAssociativeL device device' device'' = UnifyDeviceF (UnifyDeviceF device device') device'' ~ UnifyDeviceF device (UnifyDeviceF device' device'')
-type UnifyDeviceIdempotenceL1 device = UnifyDeviceF device device ~ device
-type UnifyDeviceIdempotenceL2 device device' = UnifyDeviceF device (UnifyDeviceF device device') ~ UnifyDeviceF device device'
-type UnifyDeviceIdempotenceL2C device device' = UnifyDeviceF device (UnifyDeviceF device' device) ~ UnifyDeviceF device device'
-type UnifyDeviceIdempotenceL3 device device' device'' = UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device device'')) ~ UnifyDeviceF device (UnifyDeviceF device' device'')
-type UnifyDeviceIdempotenceL3C device device' device'' = UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' device)) ~ UnifyDeviceF device (UnifyDeviceF device' device'')
-type UnifyDeviceIdempotenceL4 device device' device'' device''' = UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' (UnifyDeviceF device device'''))) ~ UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' device'''))
-type UnifyDeviceIdempotenceL4C device device' device'' device''' = UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' (UnifyDeviceF device''' device))) ~ UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' device'''))
-type UnifyDeviceIdempotenceL5 device device' device'' device''' device'''' = UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' (UnifyDeviceF device''' (UnifyDeviceF device device'''')))) ~ UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' (UnifyDeviceF device''' device'''')))
-type UnifyDeviceIdempotenceL5C device device' device'' device''' device'''' = UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' (UnifyDeviceF device''' (UnifyDeviceF device'''' device)))) ~ UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' (UnifyDeviceF device''' device'''')))
-type UnifyDeviceIdempotenceL6 device device' device'' device''' device'''' device''''' = UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' (UnifyDeviceF device''' (UnifyDeviceF device'''' (UnifyDeviceF device device'''''))))) ~ UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' (UnifyDeviceF device''' (UnifyDeviceF device'''' device'''''))))
-type UnifyDeviceIdempotenceL6C device device' device'' device''' device'''' device''''' = UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' (UnifyDeviceF device''' (UnifyDeviceF device'''' (UnifyDeviceF device''''' device))))) ~ UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' (UnifyDeviceF device''' (UnifyDeviceF device'''' device'''''))))
-type UnifyDeviceIdempotenceL7 device device' device'' device''' device'''' device''''' device'''''' = UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' (UnifyDeviceF device''' (UnifyDeviceF device'''' (UnifyDeviceF device''''' (UnifyDeviceF device device'''''')))))) ~ UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' (UnifyDeviceF device''' (UnifyDeviceF device'''' (UnifyDeviceF device''''' device'''''')))))
-type UnifyDeviceIdempotenceL7C device device' device'' device''' device'''' device''''' device'''''' = UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' (UnifyDeviceF device''' (UnifyDeviceF device'''' (UnifyDeviceF device''''' (UnifyDeviceF device'''''' device)))))) ~ UnifyDeviceF device (UnifyDeviceF device' (UnifyDeviceF device'' (UnifyDeviceF device''' (UnifyDeviceF device'''' (UnifyDeviceF device''''' device'''''')))))
-
-type family UnifyDeviceF (device :: Device (DeviceType Nat)) (device' :: Device (DeviceType Nat)) :: Device (DeviceType Nat) where
-  UnifyDeviceF 'UncheckedDevice _ = 'UncheckedDevice
-  UnifyDeviceF _ 'UncheckedDevice = 'UncheckedDevice
-  UnifyDeviceF ( 'Device deviceType) ( 'Device deviceType) = 'Device deviceType
-  UnifyDeviceF ( 'Device deviceType) ( 'Device deviceType') = TypeError (UnifyDeviceErrorMessage deviceType deviceType')
 
 type UnifyDeviceErrorMessage (deviceType :: DeviceType Nat) (deviceType' :: DeviceType Nat) =
   "The supplied tensors must be on the same device, "

@@ -10,12 +10,10 @@ module Torch.GraduallyTyped.NN.Functional.Linear where
 
 import GHC.TypeLits (Nat, Symbol, TypeError)
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.GraduallyTyped.DType (UnifyDataTypeF)
-import Torch.GraduallyTyped.Device (UnifyDeviceF)
-import Torch.GraduallyTyped.Layout (UnifyLayoutF)
 import Torch.GraduallyTyped.Prelude (Reverse, Seq)
-import Torch.GraduallyTyped.Shape (Dim (..), Name, Shape (..), Size, UnifyDimF)
+import Torch.GraduallyTyped.Shape (Dim (..), Name, Shape (..), Size)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
+import Torch.GraduallyTyped.Unify (type (<+>))
 import Torch.Internal.Cast (cast3)
 import qualified Torch.Internal.Managed.Native as ATen
 import Type.Errors.Pretty (type (%), type (<>))
@@ -46,7 +44,7 @@ type family LinearF (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (biasS
   LinearF _ _ 'UncheckedShape = 'UncheckedShape
 
 type family LinearDimsF (weightDims :: [Dim (Name Symbol) (Size Nat)]) (biasDims :: [Dim (Name Symbol) (Size Nat)]) (reversedInputDims :: [Dim (Name Symbol) (Size Nat)]) :: [Dim (Name Symbol) (Size Nat)] where
-  LinearDimsF '[outputDim, inputDim] '[outputDim'] (inputDim' ': reversedInputDims) = Seq (UnifyDimF inputDim inputDim') (UnifyDimF outputDim outputDim' ': reversedInputDims)
+  LinearDimsF '[outputDim, inputDim] '[outputDim'] (inputDim' ': reversedInputDims) = Seq (inputDim <+> inputDim') (outputDim <+> outputDim' ': reversedInputDims)
 
 type LinearInputDimsErrorMessage =
   "Cannot apply the linear transformation."
@@ -120,8 +118,8 @@ linear ::
   -- | output
   Tensor
     requiresGradient''
-    (UnifyLayoutF (UnifyLayoutF layout'' layout) layout')
-    (UnifyDeviceF (UnifyDeviceF device'' device) device')
-    (UnifyDataTypeF (UnifyDataTypeF dataType'' dataType) dataType')
+    (layout <+> (layout' <+> layout''))
+    (device <+> (device' <+> device''))
+    (dataType <+> (dataType' <+> dataType''))
     (LinearF shape shape' shape'')
 linear weight bias input = unsafePerformIO $ cast3 ATen.linear_ttt input weight bias

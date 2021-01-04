@@ -11,19 +11,19 @@ import qualified Torch.Internal.Type as ATen
 
 instance Castable Float (ForeignPtr ATen.Scalar) where
   cast x f = ATen.newScalar_d (realToFrac x) >>= f
-  uncast x f = undefined
+  uncast _x _f = undefined
 
 instance Castable Double (ForeignPtr ATen.Scalar) where
   cast x f = ATen.newScalar_d (realToFrac x) >>= f
-  uncast x f = undefined
+  uncast _x _f = undefined
 
 instance Castable Int (ForeignPtr ATen.Scalar) where
   cast x f = ATen.newScalar_i (fromIntegral x) >>= f
-  uncast x f = undefined
+  uncast _x _f = undefined
 
 instance Castable Integer (ForeignPtr ATen.Scalar) where
   cast x f = ATen.newScalar_i (fromIntegral x) >>= f
-  uncast x f = undefined
+  uncast _x _f = undefined
 
 class (Castable a (ForeignPtr ATen.Scalar)) => Scalar a
 

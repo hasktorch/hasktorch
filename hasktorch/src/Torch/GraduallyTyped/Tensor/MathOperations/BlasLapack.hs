@@ -9,12 +9,10 @@ module Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack where
 
 import GHC.TypeLits (Nat, Symbol, TypeError)
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.GraduallyTyped.DType (UnifyDataTypeF)
-import Torch.GraduallyTyped.Device (UnifyDeviceF)
-import Torch.GraduallyTyped.Layout (UnifyLayoutF)
 import Torch.GraduallyTyped.Prelude (PrependMaybe, Reverse)
-import Torch.GraduallyTyped.Shape (Size, Name, BroadcastDimsImplF, Dim, Shape (..))
+import Torch.GraduallyTyped.Shape (BroadcastDimsImplF, Dim, Name, Shape (..), Size)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
+import Torch.GraduallyTyped.Unify (type (<+>))
 import Torch.Internal.Cast (cast2)
 import qualified Torch.Internal.Managed.Native as ATen
 import Type.Errors.Pretty (type (%), type (<>))
@@ -195,5 +193,10 @@ matmul ::
   -- other
   Tensor requiresGradient layout' device' dataType' shape' ->
   -- output
-  Tensor requiresGradient (UnifyLayoutF layout layout') (UnifyDeviceF device device') (UnifyDataTypeF dataType dataType') (MatmulF shape shape')
+  Tensor
+    requiresGradient
+    (layout <+> layout')
+    (device <+> device')
+    (dataType <+> dataType')
+    (MatmulF shape shape')
 input `matmul` other = unsafePerformIO $ cast2 ATen.matmul_tt input other

@@ -1,5 +1,5 @@
-{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -12,10 +12,9 @@
 
 module Torch.GraduallyTyped.DType where
 
-import Data.Kind (Constraint, Type)
+import Data.Kind (Type)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.Prelude (Catch)
-import Type.Errors.Pretty (TypeError, type (%), type (<>))
+import Type.Errors.Pretty (type (%), type (<>))
 
 class KnownDType (dType :: DType) where
   dTypeVal :: DType
@@ -82,30 +81,9 @@ instance (KnownDType dType) => WithDataTypeC ( 'DataType dType) f where
   withDataType f = f (dTypeVal @dType)
   withoutDataType = const
 
-type UnifyDataTypeRightAssociativeL dataType dataType' dataType'' = UnifyDataTypeF (UnifyDataTypeF dataType dataType') dataType'' ~ UnifyDataTypeF dataType (UnifyDataTypeF dataType' dataType'')
-type UnifyDataTypeIdempotenceL1 dataType = UnifyDataTypeF dataType dataType ~ dataType
-type UnifyDataTypeIdempotenceL2 dataType dataType' = UnifyDataTypeF dataType (UnifyDataTypeF dataType dataType') ~ UnifyDataTypeF dataType dataType'
-type UnifyDataTypeIdempotenceL2C dataType dataType' = UnifyDataTypeF dataType (UnifyDataTypeF dataType' dataType) ~ UnifyDataTypeF dataType dataType'
-type UnifyDataTypeIdempotenceL3 dataType dataType' dataType'' = UnifyDataTypeF dataType (UnifyDataTypeF dataType' (UnifyDataTypeF dataType dataType'')) ~ UnifyDataTypeF dataType (UnifyDataTypeF dataType' dataType'')
-type UnifyDataTypeIdempotenceL3C dataType dataType' dataType'' = UnifyDataTypeF dataType (UnifyDataTypeF dataType' (UnifyDataTypeF dataType'' dataType)) ~ UnifyDataTypeF dataType (UnifyDataTypeF dataType' dataType'')
-type UnifyDataTypeIdempotenceL4 dataType dataType' dataType'' dataType''' = UnifyDataTypeF dataType (UnifyDataTypeF dataType' (UnifyDataTypeF dataType'' (UnifyDataTypeF dataType dataType'''))) ~ UnifyDataTypeF dataType (UnifyDataTypeF dataType' (UnifyDataTypeF dataType'' dataType'''))
-type UnifyDataTypeIdempotenceL4C dataType dataType' dataType'' dataType''' = UnifyDataTypeF dataType (UnifyDataTypeF dataType' (UnifyDataTypeF dataType'' (UnifyDataTypeF dataType''' dataType))) ~ UnifyDataTypeF dataType (UnifyDataTypeF dataType' (UnifyDataTypeF dataType'' dataType'''))
-type UnifyDataTypeIdempotenceL5 dataType dataType' dataType'' dataType''' dataType'''' = UnifyDataTypeF dataType (UnifyDataTypeF dataType' (UnifyDataTypeF dataType'' (UnifyDataTypeF dataType''' (UnifyDataTypeF dataType dataType'''')))) ~ UnifyDataTypeF dataType (UnifyDataTypeF dataType' (UnifyDataTypeF dataType'' (UnifyDataTypeF dataType''' dataType'''')))
-type UnifyDataTypeIdempotenceL5C dataType dataType' dataType'' dataType''' dataType'''' = UnifyDataTypeF dataType (UnifyDataTypeF dataType' (UnifyDataTypeF dataType'' (UnifyDataTypeF dataType''' (UnifyDataTypeF dataType'''' dataType)))) ~ UnifyDataTypeF dataType (UnifyDataTypeF dataType' (UnifyDataTypeF dataType'' (UnifyDataTypeF dataType''' dataType'''')))
-
-type family UnifyDataTypeF (dataType :: DataType DType) (dataType' :: DataType DType) :: DataType DType where
-  UnifyDataTypeF 'UncheckedDataType 'UncheckedDataType = 'UncheckedDataType
-  UnifyDataTypeF ( 'DataType _) 'UncheckedDataType = 'UncheckedDataType
-  UnifyDataTypeF 'UncheckedDataType ( 'DataType _) = 'UncheckedDataType
-  UnifyDataTypeF ( 'DataType dType) ( 'DataType dType) = 'DataType dType
-  UnifyDataTypeF ( 'DataType dType) ( 'DataType dType') =
-    TypeError
-      ( "The supplied tensors must have the same data type, "
-          % "but different data types were found:"
-          % ""
-          % "    " <> dType <> " and " <> dType' <> "."
-          % ""
-      )
-
-type family UnifyDataTypeC (dataType :: DataType DType) (dataType' :: DataType DType) :: Constraint where
-  UnifyDataTypeC dataType dataType' = Catch (UnifyDataTypeF dataType dataType')
+type UnifyDataTypeErrorMessage (dType :: DType) (dType' :: DType) =
+  "The supplied tensors must have the same data type, "
+    % "but different data types were found:"
+    % ""
+    % "    " <> dType <> " and " <> dType' <> "."
+    % ""

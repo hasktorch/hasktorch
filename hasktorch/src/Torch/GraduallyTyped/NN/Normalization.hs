@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -14,15 +15,18 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -fplugin TypeLevel.Rewrite
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL1
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2 #-}
 
 module Torch.GraduallyTyped.NN.Normalization where
 
 import Control.Monad.State.Strict (MonadState (state), runState)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), UnifyDataTypeF, WithDataTypeC (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), UnifyDeviceF, WithDeviceC (..))
-import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense), UnifyLayoutF)
+import Torch.GraduallyTyped.DType (DataType (..), WithDataTypeC (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (..))
+import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormF, layerNorm)
 import Torch.GraduallyTyped.Random (mkGenerator)
@@ -30,6 +34,7 @@ import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape (Dim (..), KnownShape, Name (..), Shape (..), Size (..), WithShapeC (..))
 import Torch.GraduallyTyped.Tensor.Creation (WithCreateC (withoutCreate), ones, randn, zeros)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
+import Torch.GraduallyTyped.Unify (type (<+>))
 
 data
   LayerNorm
@@ -109,9 +114,9 @@ instance
       generator =
       Tensor
         requiresGradient'
-        (UnifyLayoutF (UnifyLayoutF layout' ( 'Layout 'Dense)) ( 'Layout 'Dense))
-        (UnifyDeviceF (UnifyDeviceF device' device) device)
-        (UnifyDataTypeF (UnifyDataTypeF dataType' dataType) dataType)
+        ('Layout 'Dense <+> layout')
+        (device <+> device')
+        (dataType <+> dataType')
         (LayerNormF normalizedShape normalizedShape shape')
   type
     ForwardGeneratorOutput

@@ -11,19 +11,17 @@ module Torch.GraduallyTyped.NN.Functional.Normalization where
 
 import GHC.TypeLits (Nat, Symbol, TypeError)
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.GraduallyTyped.DType (UnifyDataTypeF)
-import Torch.GraduallyTyped.Device (UnifyDeviceF)
-import Torch.GraduallyTyped.Layout (UnifyLayoutF)
 import Torch.GraduallyTyped.Prelude (Reverse)
-import Torch.GraduallyTyped.Shape (Dim, KnownShape, Name, Shape (..), Size, UnifyDimF, UnifyDimsF, dimSize)
+import Torch.GraduallyTyped.Shape (Dim, KnownShape, Name, Shape (..), Size, dimSize)
 import Torch.GraduallyTyped.Tensor.Type (Tensor, shape)
+import Torch.GraduallyTyped.Unify (type (<+>))
 import Torch.Internal.Cast (cast5)
 import qualified Torch.Internal.Managed.Native as ATen
 import Type.Errors.Pretty (type (%))
 
 type family LayerNormImplF (reverseNormalizedDims :: [Dim (Name Symbol) (Size Nat)]) (reverseInputDims :: [Dim (Name Symbol) (Size Nat)]) :: [Dim (Name Symbol) (Size Nat)] where
   LayerNormImplF '[] reverseInputDims = reverseInputDims
-  LayerNormImplF (normalizedDim ': reverseNormalizedDims) (inputDim ': reverseInputDims) = UnifyDimF normalizedDim inputDim ': LayerNormImplF reverseNormalizedDims reverseInputDims
+  LayerNormImplF (normalizedDim ': reverseNormalizedDims) (inputDim ': reverseInputDims) = normalizedDim <+> inputDim ': LayerNormImplF reverseNormalizedDims reverseInputDims
   LayerNormImplF _ '[] = TypeError LayerNormShapeErrorMessage
 
 type LayerNormShapeErrorMessage =
@@ -34,7 +32,7 @@ type family LayerNormF (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (bi
   LayerNormF 'UncheckedShape _ _ = 'UncheckedShape
   LayerNormF _ 'UncheckedShape _ = 'UncheckedShape
   LayerNormF _ _ 'UncheckedShape = 'UncheckedShape
-  LayerNormF ( 'Shape weightDims) ( 'Shape biasDims) ( 'Shape inputDims) = 'Shape (Reverse (LayerNormImplF (Reverse (UnifyDimsF weightDims biasDims)) (Reverse inputDims)))
+  LayerNormF ( 'Shape weightDims) ( 'Shape biasDims) ( 'Shape inputDims) = 'Shape (Reverse (LayerNormImplF (Reverse (weightDims <+> biasDims)) (Reverse inputDims)))
 
 layerNorm ::
   forall requiresGradient requiresGradient' requiresGradient'' layout layout' layout'' device device' device'' dataType dataType' dataType'' shape shape' shape''.
@@ -50,9 +48,9 @@ layerNorm ::
   -- | output
   Tensor
     requiresGradient''
-    (UnifyLayoutF (UnifyLayoutF layout'' layout) layout')
-    (UnifyDeviceF (UnifyDeviceF device'' device) device')
-    (UnifyDataTypeF (UnifyDataTypeF dataType'' dataType) dataType')
+    (layout <+> (layout' <+> layout''))
+    (device <+> (device' <+> device''))
+    (dataType <+> (dataType' <+> dataType''))
     (LayerNormF shape shape' shape'')
 layerNorm weight bias eps input =
   let dims = shape weight

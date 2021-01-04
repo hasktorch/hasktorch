@@ -49,7 +49,6 @@ module Torch.GraduallyTyped.Prelude
     (||^),
     (<&&>),
     (<||>)
-    -- TestLaw, TestRightAssociative, TestF
   )
 where
 
@@ -61,11 +60,6 @@ import Data.String (IsString, fromString)
 import Data.Type.Bool (If, type (||))
 import GHC.Exts (Any)
 import GHC.TypeLits (Nat, ErrorMessage (..), TypeError (..), type (*))
-
--- type TestLaw a b = TestF a (TestF a b) ~ TestF a b
--- type TestRightAssociative a b c = TestF (TestF a b) c ~ TestF a (TestF b c)
-
--- type family TestF a b
 
 type family All (c :: k -> Constraint) (xs :: [k]) :: Constraint where
   All _ '[] = ()
@@ -111,6 +105,7 @@ type family Catch (a :: k) :: Constraint where
   Catch (f a) = (Catch f, Catch a)
   Catch _  = ()
 
+-- type Seq :: forall k k'. k -> k' -> k'
 type family Seq (a :: k) (b :: k') :: k' where
   Seq (f a) b = Seq (Seq f a) b
   Seq _ b = b

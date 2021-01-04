@@ -18,13 +18,14 @@ import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (Nat, Symbol, TypeError)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType)
-import Torch.GraduallyTyped.DType (DataType (..), UnifyDataTypeF)
-import Torch.GraduallyTyped.Device (Device (..), DeviceType, UnifyDeviceF)
-import Torch.GraduallyTyped.Layout (Layout (..), LayoutType, UnifyLayoutF)
+import Torch.GraduallyTyped.DType (DataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType)
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType)
 import Torch.GraduallyTyped.Prelude (FromMaybe, MapMaybe)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), UnifyRequiresGradientF)
-import Torch.GraduallyTyped.Shape (AddDimF, By (..), Dim (..), GetDimF, GetDimImplF, GetIndexByNameF, InsertDimImplF, Name (..), NumelF, ReplaceDimF, ReplaceDimImplF, SelectDim (..), Shape (..), Size (..), UnifyShapeF, WithSelectDimC (..), WithShapeC (..), dimSize)
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
+import Torch.GraduallyTyped.Shape (AddDimF, By (..), Dim (..), GetDimF, GetDimImplF, GetIndexByNameF, InsertDimImplF, Name (..), NumelF, ReplaceDimF, ReplaceDimImplF, SelectDim (..), Shape (..), Size (..), WithSelectDimC (..), WithShapeC (..), dimSize)
 import Torch.GraduallyTyped.Tensor.Type (Tensor, TensorF)
+import Torch.GraduallyTyped.Unify (type (<+>))
 import Torch.HList (HList)
 import Torch.Internal.Cast (cast2, cast3)
 import Torch.Internal.Class (Castable)
@@ -128,13 +129,13 @@ type family
       selectDim
       tensors
       ( 'Just
-          '( UnifyRequiresGradientF requiresGradient requiresGradient',
-             UnifyLayoutF layout layout',
-             UnifyDeviceF device device',
-             UnifyDataTypeF dataType dataType',
+          '( requiresGradient <+> requiresGradient',
+             layout <+> layout',
+             device <+> device',
+             dataType <+> dataType',
              ReplaceDimF
                selectDim
-               (UnifyShapeF (ReplaceDimF selectDim shape ( 'Dim 'UncheckedName 'UncheckedSize)) (ReplaceDimF selectDim shape' ( 'Dim 'UncheckedName 'UncheckedSize)))
+               (ReplaceDimF selectDim shape ( 'Dim 'UncheckedName 'UncheckedSize) <+> ReplaceDimF selectDim shape' ( 'Dim 'UncheckedName 'UncheckedSize))
                (AddDimF (GetDimF selectDim shape) (GetDimF selectDim shape))
            )
       )

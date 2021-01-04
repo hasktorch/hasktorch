@@ -1,17 +1,17 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Torch.GraduallyTyped.Tensor.MathOperations.Pointwise where
 
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (Bool))
-import Torch.GraduallyTyped.DType (DataType (DataType), UnifyDataTypeC, UnifyDataTypeF)
-import Torch.GraduallyTyped.Device (UnifyDeviceF)
-import Torch.GraduallyTyped.Layout (UnifyLayoutF)
+import Torch.GraduallyTyped.DType (DataType (DataType))
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape (BroadcastShapesF)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
+import Torch.GraduallyTyped.Unify (type (<+>))
 import Torch.Internal.Cast (cast1, cast2, cast3, cast4)
 import qualified Torch.Internal.Managed.Native as ATen
 import Prelude hiding (abs)
@@ -88,7 +88,7 @@ acosh = unsafePerformIO . cast1 ATen.acosh_t
 --        ('DataType 'Float)
 --        ('Shape '[ 'Dim ('Sized 4), 'Dim ('NamedSized "feature" 4)])
 add ::
-  forall requiresGradient layout layout' device device' dataType dataType' shape shape'.
+  forall requiresGradient layout device dataType shape layout' device' dataType' shape'.
   -- | input tensor
   Tensor requiresGradient layout device dataType shape ->
   -- | other tensor
@@ -96,9 +96,9 @@ add ::
   -- | output tensor
   Tensor
     requiresGradient
-    (UnifyLayoutF layout layout')
-    (UnifyDeviceF device device')
-    (UnifyDataTypeF dataType dataType')
+    (layout <+> layout')
+    (device <+> device')
+    (dataType <+> dataType')
     (BroadcastShapesF shape shape')
 input `add` other = unsafePerformIO $ cast2 ATen.add_tt input other
 
@@ -249,7 +249,6 @@ atan2 input other = unsafePerformIO $ cast2 ATen.atan2_tt input other
 -- For 'Bool' tensors, the function computes the logical NOT.
 bitwiseNot ::
   forall requiresGradient layout device dataType shape.
-  (UnifyDataTypeC dataType ( 'DataType 'Bool)) =>
   -- | input
   Tensor requiresGradient layout device dataType shape ->
   -- | output
@@ -423,14 +422,18 @@ deg2rad = unsafePerformIO . cast1 ATen.deg2rad_t
 -- 'trueDivide' or 'trueDivideScalar' which can come in handy
 -- when both the 'dividend' and the 'divisor' have 'Bool' or integer data types.
 div ::
-  forall requiresGradient layout device dataType shape shape' shape''.
-  (shape'' ~ BroadcastShapesF shape shape') =>
+  forall requiresGradient layout device dataType shape layout' device' dataType' shape'.
   -- | tensor dividend
   Tensor requiresGradient layout device dataType shape ->
   -- | tensor divisor
-  Tensor requiresGradient layout device dataType shape' ->
+  Tensor requiresGradient layout' device' dataType' shape' ->
   -- | tensor output
-  Tensor requiresGradient layout device dataType shape''
+  Tensor
+    requiresGradient
+    (layout <+> layout')
+    (device <+> device')
+    (dataType <+> dataType')
+    (BroadcastShapesF shape shape')
 dividend `div` divisor = unsafePerformIO $ cast2 ATen.div_tt dividend divisor
 
 -- | Element-wise division of the first input, the 'dividend' tensor,
@@ -848,14 +851,18 @@ input `logicalXor` other = unsafePerformIO $ cast2 ATen.logical_xor_tt input oth
 -- See 'mulScalar' for a version of this function where
 -- the 'other' input is a scalar.
 mul ::
-  forall requiresGradient layout device dataType shape shape' shape''.
-  (shape'' ~ BroadcastShapesF shape shape') =>
+  forall requiresGradient layout device dataType shape layout' device' dataType' shape'.
   -- | input tensor
   Tensor requiresGradient layout device dataType shape ->
   -- | other tensor
-  Tensor requiresGradient layout device dataType shape' ->
+  Tensor requiresGradient layout' device' dataType' shape' ->
   -- | output tensor
-  Tensor requiresGradient layout device dataType shape''
+  Tensor
+    requiresGradient
+    (layout <+> layout')
+    (device <+> device')
+    (dataType <+> dataType')
+    (BroadcastShapesF shape shape')
 input `mul` other = unsafePerformIO $ cast2 ATen.sub_tt input other
 
 -- Multiplies each element of the input 'input' with the scalar 'other' and returns a new resulting tensor:
@@ -1114,14 +1121,18 @@ sinh = unsafePerformIO . cast1 ATen.sinh_t
 -- See 'subScalar' for a version of this function where
 -- the 'other' input is a scalar.
 sub ::
-  forall requiresGradient layout device dataType shape shape' shape''.
-  (shape'' ~ BroadcastShapesF shape shape') =>
+  forall requiresGradient layout device dataType shape layout' device' dataType' shape'.
   -- | input tensor
   Tensor requiresGradient layout device dataType shape ->
   -- | other tensor
-  Tensor requiresGradient layout device dataType shape' ->
+  Tensor requiresGradient layout' device' dataType' shape' ->
   -- | output tensor
-  Tensor requiresGradient layout device dataType shape''
+  Tensor
+    requiresGradient
+    (layout <+> layout')
+    (device <+> device')
+    (dataType <+> dataType')
+    (BroadcastShapesF shape shape')
 input `sub` other = unsafePerformIO $ cast2 ATen.sub_tt input other
 
 -- | Subtracts a scalar 'other' from a tensor 'input':

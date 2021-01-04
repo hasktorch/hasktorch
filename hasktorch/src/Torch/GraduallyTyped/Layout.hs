@@ -1,5 +1,5 @@
-{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -13,12 +13,11 @@
 
 module Torch.GraduallyTyped.Layout where
 
-import Data.Kind (Constraint, Type)
-import Torch.GraduallyTyped.Prelude (Catch)
+import Data.Kind (Type)
 import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Const as ATen (kSparse, kStrided)
 import qualified Torch.Internal.Type as ATen (Layout)
-import Type.Errors.Pretty (TypeError, type (%), type (<>))
+import Type.Errors.Pretty (type (%), type (<>))
 
 -- | Data type that represents the memory layout of a tensor.
 data LayoutType
@@ -77,30 +76,9 @@ instance (KnownLayoutType layoutType) => WithLayoutC ( 'Layout layoutType) f whe
   withLayout f = f (layoutTypeVal @layoutType)
   withoutLayout = const
 
-type UnifyLayoutRightAssociativeL layout layout' layout'' = UnifyLayoutF (UnifyLayoutF layout layout') layout'' ~ UnifyLayoutF layout (UnifyLayoutF layout' layout'')
-type UnifyLayoutIdempotenceL1 layout = UnifyLayoutF layout layout ~ layout
-type UnifyLayoutIdempotenceL2 layout layout' = UnifyLayoutF layout (UnifyLayoutF layout layout') ~ UnifyLayoutF layout layout'
-type UnifyLayoutIdempotenceL2C layout layout' = UnifyLayoutF layout (UnifyLayoutF layout' layout) ~ UnifyLayoutF layout layout'
-type UnifyLayoutIdempotenceL3 layout layout' layout'' = UnifyLayoutF layout (UnifyLayoutF layout' (UnifyLayoutF layout layout'')) ~ UnifyLayoutF layout (UnifyLayoutF layout' layout'')
-type UnifyLayoutIdempotenceL3C layout layout' layout'' = UnifyLayoutF layout (UnifyLayoutF layout' (UnifyLayoutF layout'' layout)) ~ UnifyLayoutF layout (UnifyLayoutF layout' layout'')
-type UnifyLayoutIdempotenceL4 layout layout' layout'' layout''' = UnifyLayoutF layout (UnifyLayoutF layout' (UnifyLayoutF layout'' (UnifyLayoutF layout layout'''))) ~ UnifyLayoutF layout (UnifyLayoutF layout' (UnifyLayoutF layout'' layout'''))
-type UnifyLayoutIdempotenceL4C layout layout' layout'' layout''' = UnifyLayoutF layout (UnifyLayoutF layout' (UnifyLayoutF layout'' (UnifyLayoutF layout''' layout))) ~ UnifyLayoutF layout (UnifyLayoutF layout' (UnifyLayoutF layout'' layout'''))
-type UnifyLayoutIdempotenceL5 layout layout' layout'' layout''' layout'''' = UnifyLayoutF layout (UnifyLayoutF layout' (UnifyLayoutF layout'' (UnifyLayoutF layout''' (UnifyLayoutF layout layout'''')))) ~ UnifyLayoutF layout (UnifyLayoutF layout' (UnifyLayoutF layout'' (UnifyLayoutF layout''' layout'''')))
-type UnifyLayoutIdempotenceL5C layout layout' layout'' layout''' layout'''' = UnifyLayoutF layout (UnifyLayoutF layout' (UnifyLayoutF layout'' (UnifyLayoutF layout''' (UnifyLayoutF layout'''' layout)))) ~ UnifyLayoutF layout (UnifyLayoutF layout' (UnifyLayoutF layout'' (UnifyLayoutF layout''' layout'''')))
-
-type family UnifyLayoutF (layout :: Layout LayoutType) (layout' :: Layout LayoutType) :: Layout LayoutType where
-  UnifyLayoutF 'UncheckedLayout 'UncheckedLayout = 'UncheckedLayout
-  UnifyLayoutF ( 'Layout _) 'UncheckedLayout = 'UncheckedLayout
-  UnifyLayoutF 'UncheckedLayout ( 'Layout _) = 'UncheckedLayout
-  UnifyLayoutF ( 'Layout layoutType) ( 'Layout layoutType) = 'Layout layoutType
-  UnifyLayoutF ( 'Layout layoutType) ( 'Layout layoutType') =
-    TypeError
-      ( "The supplied tensors must have the same memory layout,"
-          % "but different layouts were found:"
-          % ""
-          % "    " <> layoutType <> " and " <> layoutType' <> "."
-          % ""
-      )
-
-type family UnifyLayoutC (layout :: Layout LayoutType) (layout' :: Layout LayoutType) :: Constraint where
-  UnifyLayoutC layout layout' = Catch (UnifyLayoutF layout layout')
+type UnifyLayoutErrorMessage (layoutType :: LayoutType) (layoutType' :: LayoutType) =
+  "The supplied tensors must have the same memory layout,"
+    % "but different layouts were found:"
+    % ""
+    % "    " <> layoutType <> " and " <> layoutType' <> "."
+    % ""

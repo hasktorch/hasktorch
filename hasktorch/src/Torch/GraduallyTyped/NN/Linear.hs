@@ -13,7 +13,8 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -Wno-partial-type-signatures #-}
+{-# OPTIONS_GHC -fplugin TypeLevel.Rewrite
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2 #-}
 
 module Torch.GraduallyTyped.NN.Linear where
 
@@ -21,9 +22,9 @@ import Control.Monad.State.Strict (MonadState (state), runState)
 import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType)
-import Torch.GraduallyTyped.DType (DataType (..), UnifyDataTypeF, WithDataTypeC (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType, UnifyDeviceF, WithDeviceC (..))
-import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), UnifyLayoutF)
+import Torch.GraduallyTyped.DType (DataType (..), WithDataTypeC (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType, WithDeviceC (..))
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Functional.Linear (LinearF, linear)
 import Torch.GraduallyTyped.NN.Initialization (FanMode (..), NonLinearity (..), calculateFan, getter, kaimingUniform)
@@ -33,6 +34,7 @@ import Torch.GraduallyTyped.Shape (Dim (..), Name, Shape (..), Size, WithDimC (.
 import Torch.GraduallyTyped.Tensor.Creation (WithCreateC (..), randn)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mulScalar, subScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
+import Torch.GraduallyTyped.Unify (type (<+>))
 
 data
   Linear
@@ -132,9 +134,9 @@ instance
       generator =
       Tensor
         requiresGradient'
-        (UnifyLayoutF (UnifyLayoutF layout' ( 'Layout 'Dense)) ( 'Layout 'Dense))
-        (UnifyDeviceF (UnifyDeviceF device' device) device)
-        (UnifyDataTypeF (UnifyDataTypeF dataType' dataType) dataType)
+        ('Layout 'Dense <+> layout')
+        (device <+> device')
+        (dataType <+> dataType')
         (LinearF ( 'Shape '[outputFeatures, inputFeatures]) ( 'Shape '[outputFeatures]) shape')
   type
     ForwardGeneratorOutput

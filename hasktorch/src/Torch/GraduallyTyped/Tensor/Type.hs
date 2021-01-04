@@ -1,4 +1,3 @@
-{-# LANGUAGE RoleAnnotations #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
@@ -13,6 +12,7 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RoleAnnotations #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -33,14 +33,13 @@ import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), KnownDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice (..))
-import Torch.GraduallyTyped.Internal.TensorOptions (tensorOptions)
 import Torch.GraduallyTyped.Layout (KnownLayout (..), Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.Prelude (ifM, (&&^))
-import Torch.GraduallyTyped.RequiresGradient (KnownRequiresGradient, RequiresGradient (..), requiresGradientVal)
+import Torch.GraduallyTyped.RequiresGradient (KnownRequiresGradient, RequiresGradient (..))
 import Torch.GraduallyTyped.Scalar ()
 import Torch.GraduallyTyped.Shape (Dim (..), KnownShape (..), Name (..), ReplaceDimF, Shape (..), Size (..))
 import Torch.HList (HList (..), pattern (:.))
-import Torch.Internal.Cast (cast0, cast1, cast2, cast3, cast4)
+import Torch.Internal.Cast (cast0, cast1, cast2)
 import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Managed.Native as ATen
 import qualified Torch.Internal.Managed.Type.Context as ATen
@@ -82,9 +81,11 @@ newtype
     forall requiresGradient layout device dataType shape.
     ForeignPtr ATen.Tensor ->
     Tensor requiresGradient layout device dataType shape
+
 type role Tensor nominal nominal nominal nominal nominal
 
 data MyProxy (a :: Maybe Nat) = MyProxy
+
 type role MyProxy phantom -- representational
 
 f :: forall a. MyProxy a -> MyProxy 'Nothing
@@ -149,7 +150,7 @@ instance
   negate = unsafePerformIO . cast1 ATen.neg_t
   abs = unsafePerformIO . cast1 ATen.abs_t
   signum = unsafePerformIO . cast1 ATen.sign_t
-  fromInteger a = undefined
+  fromInteger _a = undefined
 
 -- go
 --   (requiresGradientVal @requiresGradient)
@@ -333,7 +334,7 @@ checkLayout tensor =
     UncheckedLayout -> True
     Layout layoutType ->
       unsafePerformIO $
-        ((==) layoutType) <$> cast1 ATen.tensor_layout tensor
+        (==) layoutType <$> cast1 ATen.tensor_layout tensor
 
 -- | Checks whether or not the input tensor has the memory layout 'layout'
 -- and returns a statically annotated copy of it wrapped in a 'MonadFail' 'm'.
@@ -815,28 +816,31 @@ shape tensor =
                 (cast1 ATen.tensor_has_names tensor)
                 (cast1 ATen.tensor_names tensor)
                 (pure $ map (const "*") sizes)
-          nameError name name' = error $
-                "The compile- and runtime dimension names are not the same, '"
-                  <> name
-                  <> "' != '"
-                  <> name'
-                  <> "'. Please open a ticket on GitHub."
-          sizeError size size' = error $
-                "The compile- and runtime dimension sizes are not the same, '"
-                  <> show size
-                  <> "' != '"
-                  <> show size'
-                  <> "'. Please open a ticket on GitHub."
-          nameSizeError name name' size size' = error $
-                "The compile- and runtime dimension names and sizes are not the same, '"
-                  <> name
-                  <> "' != '"
-                  <> name'
-                  <> "' and '"
-                  <> show size
-                  <> "' != '"
-                  <> show size'
-                  <> "'. Please open a ticket on GitHub."
+          nameError name name' =
+            error $
+              "The compile- and runtime dimension names are not the same, '"
+                <> name
+                <> "' != '"
+                <> name'
+                <> "'. Please open a ticket on GitHub."
+          sizeError size size' =
+            error $
+              "The compile- and runtime dimension sizes are not the same, '"
+                <> show size
+                <> "' != '"
+                <> show size'
+                <> "'. Please open a ticket on GitHub."
+          nameSizeError name name' size size' =
+            error $
+              "The compile- and runtime dimension names and sizes are not the same, '"
+                <> name
+                <> "' != '"
+                <> name'
+                <> "' and '"
+                <> show size
+                <> "' != '"
+                <> show size'
+                <> "'. Please open a ticket on GitHub."
           f (Dim UncheckedName UncheckedSize) name size = Dim name size
           f (Dim (Name name) UncheckedSize) name' size
             | name == name' = Dim name size
