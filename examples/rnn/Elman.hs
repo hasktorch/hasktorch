@@ -41,6 +41,7 @@ instance Parameterized ElmanCell where
     hidden_weight <- nextParameter
     bias   <- nextParameter
     return $ ElmanCell{..}
+  replaceDevice = defaultReplaceDevice
 
 
 instance Show ElmanCell where

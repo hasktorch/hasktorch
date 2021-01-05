@@ -215,6 +215,7 @@ executable load-torchscript
   build-depends:       inline-c-cpp
                      , safe-exceptions
                      , unix
+                     , JuicyPixels
 
 executable matrix-factorization
   import:              config

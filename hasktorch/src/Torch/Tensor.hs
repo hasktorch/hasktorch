@@ -135,15 +135,21 @@ toType ::
   Tensor
 toType dtype t = unsafePerformIO $ cast2 ATen.tensor_toType_s t dtype
 
+class ToDevice a where
+  toDevice :: Device -> a -> a
+
+instance ToDevice Tensor where
+  toDevice = _toDevice
+
 -- | Casts the input tensor to given device
-toDevice ::
+_toDevice ::
   -- | device to cast input to
   Device ->
   -- | input
   Tensor ->
   -- | output
   Tensor
-toDevice device' t = unsafePerformIO $ do
+_toDevice device' t = unsafePerformIO $ do
   hasCUDA <- cast0 ATen.hasCUDA :: IO Bool
   let device = Torch.Tensor.device t
   t' <-
@@ -447,10 +453,16 @@ instance (TensorIndex a, TensorIndex b, TensorIndex c, TensorIndex d, TensorInde
 -- Scalar <-> Tensor promotion
 --------------------------------------------------------------------------------
 
+asValue :: TensorLike a => Tensor -> a
+asValue t =
+  let cpuTensor = if device t == Device CPU 0 then t else toCPU t
+      contTensor = if isContiguous cpuTensor then cpuTensor else contiguous cpuTensor
+   in _asValue contTensor
+
 class TensorLike a where
   asTensor' :: a -> TensorOptions -> Tensor
   asTensor :: a -> Tensor
-  asValue :: Tensor -> a
+  _asValue :: Tensor -> a
 
   -- Internal functions(like "_xxx") are below. Do not use them directly.
   _dtype :: DType
@@ -470,7 +482,9 @@ float_opts = withDType Float defaultOpts
 double_opts = withDType Double defaultOpts
 
 withTensor :: Tensor -> (Ptr () -> IO a) -> IO a
-withTensor t fn = cast t $ \t' -> withForeignPtr t' $ \tensor_ptr -> Unmanaged.tensor_data_ptr tensor_ptr >>= fn
+withTensor t fn =
+  let tensor = if isContiguous t then t else contiguous t
+   in cast tensor $ \t' -> withForeignPtr t' $ \tensor_ptr -> Unmanaged.tensor_data_ptr tensor_ptr >>= fn
 
 instance {-# OVERLAPPING #-} (Reifies a DType, Storable a) => TensorLike a where
   asTensor' v opts = unsafePerformIO $ do
@@ -481,7 +495,7 @@ instance {-# OVERLAPPING #-} (Reifies a DType, Storable a) => TensorLike a where
 
   asTensor v = asTensor' v defaultOpts
 
-  asValue t = unsafePerformIO $ do
+  _asValue t = unsafePerformIO $ do
     if _dtype @a == dtype t
       then do
         withTensor t $ \ptr -> do
@@ -503,7 +517,7 @@ instance {-# OVERLAPPING #-} TensorLike Bool where
 
   asTensor v = asTensor' v defaultOpts
 
-  asValue t = unsafePerformIO $ do
+  _asValue t = unsafePerformIO $ do
     if _dtype @Bool == dtype t
       then do
         withTensor t $ \ptr -> do
@@ -519,7 +533,7 @@ instance {-# OVERLAPPING #-} TensorLike Bool where
 instance {-# OVERLAPPING #-} TensorLike Tensor where
   asTensor' = error "Not implemented for Tensor-type"
   asTensor = id
-  asValue = id
+  _asValue = id
   _dtype = error "Not implemented for Tensor-type"
   _dims v = error "Not implemented for Tensor-type"
   _deepDims v = error "Not implemented for Tensor-type"
@@ -529,8 +543,8 @@ instance {-# OVERLAPPING #-} TensorLike Tensor where
 instance {-# OVERLAPPING #-} TensorLike a => TensorLike (a, a) where
   asTensor' = error "Not implemented for tuple-type"
   asTensor (a, b) = asTensor [a, b]
-  asValue v =
-    let [a, b] = asValue v
+  _asValue v =
+    let [a, b] = _asValue v
      in (a, b)
   _dtype = error "Not implemented for tuple-type"
   _dims v = error "Not implemented for tuple-type"
@@ -547,8 +561,7 @@ instance {-# OVERLAPPING #-} TensorLike a => TensorLike [a] where
 
   asTensor v = asTensor' v defaultOpts
 
-  asValue t' = unsafePerformIO $ do
-    let t = if isContiguous t' then t' else contiguous t'
+  _asValue t = unsafePerformIO $ do
     if _dtype @a == dtype t
       then do
         withTensor t $ \ptr -> do
@@ -611,14 +624,13 @@ instance (TensorLike ls) => GAsTensors (K1 i ls) where
 --------------------------------------------------------------------------------
 
 instance Show Tensor where
-  show t = case (dim t) of
-    0 -> details ++ show0d t
-    1 -> details ++ show1d t
-    2 -> details ++ show2d 0 t
-    3 -> details ++ show3d 0 t
-    4 -> details ++ show4d 0 t
-    _ -> details
+  show t' =
+    case (dim t) of
+      0 -> details ++ show0d t
+      1 -> details ++ show1d t
+      n -> details ++ shownd n 0 t
     where
+      t = if device t' == Device CPU 0 then t' else toCPU t'
       -- TODO: this is obviously not the right way to do it,
       -- and will be terribly slow, so please fix it.
       showElems elemShow sep t = "[" ++ (intercalate sep $ map elemShow [t ! i | i <- [0 .. ((size 0 t) - 1)]]) ++ "]"
@@ -631,9 +643,10 @@ instance Show Tensor where
           then padPositive (toInt x) $ show $ toInt x
           else padLarge (toDouble x) $ padPositive (toDouble x) $ showGFloat (Just 4) (toDouble x) ""
       show1d = showElems show0d ", "
-      show2d offset = showElems show1d (",\n " ++ padding ++ replicate offset ' ')
-      show3d offset = showElems (show2d (offset + 1)) (",\n " ++ padding ++ replicate offset ' ')
-      show4d offset = showElems (show3d (offset + 1)) (",\n " ++ padding ++ replicate offset ' ')
+      shownd n offset =
+        case n of
+          2 -> showElems show1d (",\n " ++ padding ++ replicate offset ' ')
+          _ -> showElems (shownd (n -1) (offset + 1)) (",\n " ++ padding ++ replicate offset ' ')
       details = "Tensor " ++ (show $ dtype t) ++ " " ++ (show $ shape t) ++ " "
       padding = map (const ' ') details
 

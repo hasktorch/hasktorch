@@ -168,7 +168,7 @@ library
                     , inline-c
                     , generics-sop
                     , type-errors-pretty
-
+                    , vector-sized
  default-extensions:  Strict
                     , StrictData
 

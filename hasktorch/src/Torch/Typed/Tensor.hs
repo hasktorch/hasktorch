@@ -51,6 +51,8 @@ import qualified Torch.Tensor as D
 import qualified Torch.TensorFactories as D
 import Torch.Typed.Aux
 import Prelude hiding (id, (.))
+import Data.Vector.Sized (Vector)
+import qualified Data.Vector.Sized as V
 
 class KnownShape (shape :: [Nat]) where
   shapeVal :: [Int]
@@ -434,6 +436,15 @@ instance Castable [Tensor device dtype shape] (ForeignPtr ATen.TensorList) where
   uncast xs f = uncast xs $ \ptr_list -> do
     tensor_list <- mapM (\(x :: ForeignPtr ATen.Tensor) -> uncast x return) ptr_list
     f tensor_list
+
+instance KnownNat n => Castable (Vector n (Tensor device dtype shape)) (ForeignPtr ATen.TensorList) where
+  cast xs f = do
+    ptr_list <- V.toList <$> mapM (\x -> (cast x return :: IO (ForeignPtr ATen.Tensor))) xs
+    cast ptr_list f
+  uncast xs f = uncast xs $ \ptr_list -> do
+    tensor_list <- mapM (\(x :: ForeignPtr ATen.Tensor) -> uncast x return) ptr_list
+    Just xs <- pure $ V.fromListN tensor_list
+    f xs
 
 data TensorListFold = TensorListFold
 

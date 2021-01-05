@@ -11,7 +11,7 @@ import Prelude hiding (length)
 import Test.Hspec (Spec, describe, it, shouldBe)
 
 import Torch.Typed
-import Torch (TensorLike(asValue))
+import Torch (asValue)
 
 
 checkAsTensor :: IO ()

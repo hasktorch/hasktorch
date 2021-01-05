@@ -86,6 +86,9 @@ import Prelude hiding
     tanh,
   )
 
+import qualified Data.Vector.Sized as V
+import Data.Vector.Sized (Vector)
+
 -- $setup
 --
 -- >>> :set -XOverloadedLists
@@ -4045,6 +4048,15 @@ stack ::
   -- | output
   Tensor device dtype shape
 stack tensors = unsafePerformIO $ ATen.cast2 ATen.Managed.stack_ll tensors (natValI @dim :: Int)
+
+vecStack ::
+  forall dim n shape dtype device.
+  ( KnownNat dim, KnownNat n ) =>
+  -- | Input list of tensors
+  Vector n (Tensor device dtype shape) ->
+  -- | Output list of tensors
+  Tensor device dtype (Insert dim n shape)
+vecStack tensors = unsafePerformIO $ ATen.cast2 ATen.Managed.stack_ll tensors (natValI @dim :: Int)
 
 -- stft :: Tensor device dtype shape -> Int -> Int -> Int -> Tensor device dtype shape -> Bool -> Bool -> Tensor device dtype shape
 -- stft _input _n_fft _hop_length _win_length _window _normalized _onesided = unsafePerformIO $ (ATen.cast7 ATen.Managed.stft_tllltbb) _input _n_fft _hop_length _win_length _window _normalized _onesided
