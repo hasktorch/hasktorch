@@ -245,3 +245,108 @@ type TestDecoderInputSeqDim = 'Dim ( 'Name "*") ( 'Size 48)
 --           )
 --           g
 --   pure result
+
+testSequenceToSequenceUnchecked = do
+  let deviceType = CPU
+      dType = Float
+  g <- mkGenerator @ 'UncheckedDevice deviceType 0
+  let (result, _) =
+        runState
+          ( do
+              let headDim = Dim "head" 12
+                  headEmbedDim = Dim "headEmbed" 64
+                  embedDim = Dim "*" 768
+                  inputEmbedDim = Dim "*" 512
+                  decoderInputEmbedDim = Dim "*" 1024
+                  ffnDim = Dim "*" 256
+                  batchDim = Dim "*" 4
+                  inputSeqDim = Dim "*" 32
+                  decoderInputSeqDim = Dim "*" 48
+              sequenceToSequence <-
+                state $
+                  initialize
+                    @( SequenceToSequenceTransformer
+                         24
+                         24
+                         'UncheckedDevice
+                         'UncheckedDataType
+                         ( 'Dim 'UncheckedName 'UncheckedSize) -- headDim
+                         ( 'Dim 'UncheckedName 'UncheckedSize) -- headEmbedDim
+                         ( 'Dim 'UncheckedName 'UncheckedSize) -- embedDim
+                         ( 'Dim 'UncheckedName 'UncheckedSize) -- inputEmbedDim
+                         ( 'Dim 'UncheckedName 'UncheckedSize) -- decoderInputEmbedDim
+                         ( 'Dim 'UncheckedName 'UncheckedSize) -- ffnDim
+                         Float
+                     )
+                    deviceType
+                    dType
+                    headDim
+                    headEmbedDim
+                    embedDim
+                    inputEmbedDim
+                    decoderInputEmbedDim
+                    ffnDim
+                    0.0
+                    1e-6
+              input <-
+                state $
+                  randn
+                    @ 'Dependent
+                    @TestLayout
+                    @TestDevice
+                    @TestDataType
+                    @( 'Shape '[ 'Dim 'UncheckedName 'UncheckedSize, 'Dim 'UncheckedName 'UncheckedSize, 'Dim 'UncheckedName 'UncheckedSize])
+                    batchDim
+                    inputSeqDim
+                    inputEmbedDim
+              decoderInput <-
+                state $
+                  randn
+                    @ 'Dependent
+                    @TestLayout
+                    @TestDevice
+                    @TestDataType
+                    @( 'Shape '[ 'Dim 'UncheckedName 'UncheckedSize, 'Dim 'UncheckedName 'UncheckedSize, 'Dim 'UncheckedName 'UncheckedSize])
+                    batchDim
+                    decoderInputSeqDim
+                    decoderInputEmbedDim
+              attentionMask <-
+                state $
+                  randn
+                    @ 'Dependent
+                    @TestLayout
+                    @TestDevice
+                    @TestDataType
+                    @( 'Shape '[ 'Dim 'UncheckedName 'UncheckedSize, 'Dim 'UncheckedName 'UncheckedSize, 'Dim 'UncheckedName 'UncheckedSize])
+                    batchDim
+                    inputSeqDim
+                    inputSeqDim
+              decoderAttentionMask <-
+                state $
+                  randn
+                    @ 'Dependent
+                    @TestLayout
+                    @TestDevice
+                    @TestDataType
+                    @( 'Shape '[ 'Dim 'UncheckedName 'UncheckedSize, 'Dim 'UncheckedName 'UncheckedSize, 'Dim 'UncheckedName 'UncheckedSize])
+                    batchDim
+                    decoderInputSeqDim
+                    decoderInputSeqDim
+              crossAttentionMask <-
+                state $
+                  randn
+                    @ 'Dependent
+                    @TestLayout
+                    @TestDevice
+                    @TestDataType
+                    @( 'Shape '[ 'Dim 'UncheckedName 'UncheckedSize, 'Dim 'UncheckedName 'UncheckedSize, 'Dim 'UncheckedName 'UncheckedSize])
+                    batchDim
+                    decoderInputSeqDim
+                    inputSeqDim
+              state $
+                forward
+                  sequenceToSequence
+                  (input, decoderInput, attentionMask, decoderAttentionMask, crossAttentionMask)
+          )
+          g
+  pure result
