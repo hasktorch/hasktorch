@@ -14,7 +14,7 @@ import Torch.GraduallyTyped.Prelude (Reverse, Seq)
 import Torch.GraduallyTyped.Shape (Dim (..), Name, Shape (..), Size)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
-import Torch.Internal.Cast (cast3)
+import Torch.Internal.Cast (cast2, cast3)
 import qualified Torch.Internal.Managed.Native as ATen
 import Type.Errors.Pretty (type (%), type (<>))
 
@@ -26,25 +26,25 @@ import Type.Errors.Pretty (type (%), type (<>))
 -- >>> type WeightShape = 'Shape '[OutputDim, InputDim]
 -- >>> type BiasShape = 'Shape '[OutputDim]
 -- >>> type InputShape = 'Shape '[BatchDim, InputDim]
--- >>> :kind! LinearF WeightShape BiasShape InputShape
--- LinearF WeightShape BiasShape InputShape :: Shape [Dim (Name Symbol) (Size Nat)]
+-- >>> :kind! LinearWithBiasF WeightShape BiasShape InputShape
+-- LinearWithBiasF WeightShape BiasShape InputShape :: Shape [Dim (Name Symbol) (Size Nat)]
 -- = 'Shape
 --     '[ 'Dim ('Name "batch") ('Size 20),
 --        'Dim ('Name "output") ('Size 10)]
-type family LinearF (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (biasShape :: Shape [Dim (Name Symbol) (Size Nat)]) (inputShape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
-  LinearF ( 'Shape '[]) _ _ = TypeError (LinearWeightDimsErrorMessage '[])
-  LinearF ( 'Shape '[weightDim]) _ _ = TypeError (LinearWeightDimsErrorMessage '[weightDim])
-  LinearF ( 'Shape (weightDim ': weightDim' ': weightDim'' ': weightDims)) _ _ = TypeError (LinearWeightDimsErrorMessage (weightDim ': weightDim' ': weightDim'' ': weightDims))
-  LinearF _ ( 'Shape '[]) _ = TypeError (LinearBiasDimsErrorMessage '[])
-  LinearF _ ( 'Shape (biasDim ': biasDim' ': biasDims)) _ = TypeError (LinearBiasDimsErrorMessage (biasDim ': biasDim' ': biasDims))
-  LinearF _ _ ( 'Shape '[]) = TypeError LinearInputDimsErrorMessage
-  LinearF ( 'Shape weightDims) ( 'Shape biasDims) ( 'Shape inputDims) = 'Shape (Reverse (LinearDimsF weightDims biasDims (Reverse inputDims)))
-  LinearF 'UncheckedShape _ _ = 'UncheckedShape
-  LinearF _ 'UncheckedShape _ = 'UncheckedShape
-  LinearF _ _ 'UncheckedShape = 'UncheckedShape
+type family LinearWithBiasF (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (biasShape :: Shape [Dim (Name Symbol) (Size Nat)]) (inputShape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
+  LinearWithBiasF ( 'Shape '[]) _ _ = TypeError (LinearWeightDimsErrorMessage '[])
+  LinearWithBiasF ( 'Shape '[weightDim]) _ _ = TypeError (LinearWeightDimsErrorMessage '[weightDim])
+  LinearWithBiasF ( 'Shape (weightDim ': weightDim' ': weightDim'' ': weightDims)) _ _ = TypeError (LinearWeightDimsErrorMessage (weightDim ': weightDim' ': weightDim'' ': weightDims))
+  LinearWithBiasF _ ( 'Shape '[]) _ = TypeError (LinearBiasDimsErrorMessage '[])
+  LinearWithBiasF _ ( 'Shape (biasDim ': biasDim' ': biasDims)) _ = TypeError (LinearBiasDimsErrorMessage (biasDim ': biasDim' ': biasDims))
+  LinearWithBiasF _ _ ( 'Shape '[]) = TypeError LinearInputDimsErrorMessage
+  LinearWithBiasF ( 'Shape weightDims) ( 'Shape biasDims) ( 'Shape inputDims) = 'Shape (Reverse (LinearWithBiasDimsF weightDims biasDims (Reverse inputDims)))
+  LinearWithBiasF 'UncheckedShape _ _ = 'UncheckedShape
+  LinearWithBiasF _ 'UncheckedShape _ = 'UncheckedShape
+  LinearWithBiasF _ _ 'UncheckedShape = 'UncheckedShape
 
-type family LinearDimsF (weightDims :: [Dim (Name Symbol) (Size Nat)]) (biasDims :: [Dim (Name Symbol) (Size Nat)]) (reversedInputDims :: [Dim (Name Symbol) (Size Nat)]) :: [Dim (Name Symbol) (Size Nat)] where
-  LinearDimsF '[outputDim, inputDim] '[outputDim'] (inputDim' ': reversedInputDims) = Seq (inputDim <+> inputDim') (outputDim <+> outputDim' ': reversedInputDims)
+type family LinearWithBiasDimsF (weightDims :: [Dim (Name Symbol) (Size Nat)]) (biasDims :: [Dim (Name Symbol) (Size Nat)]) (reversedInputDims :: [Dim (Name Symbol) (Size Nat)]) :: [Dim (Name Symbol) (Size Nat)] where
+  LinearWithBiasDimsF '[outputDim, inputDim] '[outputDim'] (inputDim' ': reversedInputDims) = Seq (inputDim <+> inputDim') (outputDim <+> outputDim' ': reversedInputDims)
 
 type LinearInputDimsErrorMessage =
   "Cannot apply the linear transformation."
@@ -107,7 +107,7 @@ type LinearWeightDimsErrorMessage (weightDims :: [Dim (Name Symbol) (Size Nat)])
 --        ('Shape
 --           '[ 'Dim ('Name "batch") ('Size 20),
 --              'Dim ('Name "output") ('Size 10)])
-linear ::
+linearWithBias ::
   forall requiresGradient requiresGradient' requiresGradient'' layout layout' layout'' device device' device'' dataType dataType' dataType'' shape shape' shape''.
   -- | weight
   Tensor requiresGradient layout device dataType shape ->
@@ -121,5 +121,32 @@ linear ::
     (layout <+> (layout' <+> layout''))
     (device <+> (device' <+> device''))
     (dataType <+> (dataType' <+> dataType''))
-    (LinearF shape shape' shape'')
-linear weight bias input = unsafePerformIO $ cast3 ATen.linear_ttt input weight bias
+    (LinearWithBiasF shape shape' shape'')
+linearWithBias weight bias input = unsafePerformIO $ cast3 ATen.linear_ttt input weight bias
+
+type family LinearWithoutBiasF (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (inputShape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
+  LinearWithoutBiasF ( 'Shape '[]) _ = TypeError (LinearWeightDimsErrorMessage '[])
+  LinearWithoutBiasF ( 'Shape '[weightDim]) _ = TypeError (LinearWeightDimsErrorMessage '[weightDim])
+  LinearWithoutBiasF ( 'Shape (weightDim ': weightDim' ': weightDim'' ': weightDims)) _ = TypeError (LinearWeightDimsErrorMessage (weightDim ': weightDim' ': weightDim'' ': weightDims))
+  LinearWithoutBiasF _ ( 'Shape '[]) = TypeError LinearInputDimsErrorMessage
+  LinearWithoutBiasF ( 'Shape weightDims) ( 'Shape inputDims) = 'Shape (Reverse (LinearWithoutBiasDimsF weightDims (Reverse inputDims)))
+  LinearWithoutBiasF 'UncheckedShape _ = 'UncheckedShape
+  LinearWithoutBiasF _ 'UncheckedShape = 'UncheckedShape
+
+type family LinearWithoutBiasDimsF (weightDims :: [Dim (Name Symbol) (Size Nat)]) (reversedInputDims :: [Dim (Name Symbol) (Size Nat)]) :: [Dim (Name Symbol) (Size Nat)] where
+  LinearWithoutBiasDimsF '[outputDim, inputDim] (inputDim' ': reversedInputDims) = Seq (inputDim <+> inputDim') (outputDim ': reversedInputDims)
+
+linearWithoutBias ::
+  forall requiresGradient requiresGradient' layout layout' device device' dataType dataType' shape shape'.
+  -- | weight
+  Tensor requiresGradient layout device dataType shape ->
+  -- | input
+  Tensor requiresGradient' layout' device' dataType' shape' ->
+  -- | output
+  Tensor
+    requiresGradient'
+    (layout <+> layout')
+    (device <+> device')
+    (dataType <+> dataType')
+    (LinearWithoutBiasF shape shape')
+linearWithoutBias weight input = unsafePerformIO $ cast2 ATen.linear_tt input weight

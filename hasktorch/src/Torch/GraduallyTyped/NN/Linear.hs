@@ -19,14 +19,13 @@
 module Torch.GraduallyTyped.NN.Linear where
 
 import Control.Monad.State.Strict (MonadState (state), runState)
-import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType)
 import Torch.GraduallyTyped.DType (DataType (..), WithDataTypeC (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType, WithDeviceC (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
-import Torch.GraduallyTyped.NN.Functional.Linear (LinearF, linear)
+import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithBiasF, LinearWithoutBiasF, linearWithBias, linearWithoutBias)
 import Torch.GraduallyTyped.NN.Initialization (FanMode (..), NonLinearity (..), calculateFan, getter, kaimingUniform)
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
@@ -36,37 +35,43 @@ import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mulScalar, subScala
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
+data LinearHasBias = WithBias | WithoutBias
+
 data
   Linear
+    (hasBias :: LinearHasBias)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (inputDim :: Dim (Name Symbol) (Size Nat))
     (outputDim :: Dim (Name Symbol) (Size Nat))
   where
-  Linear ::
+  LinearWithBias ::
     forall device dataType inputDim outputDim.
     { linearWeight :: Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]),
       linearBias :: Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim])
     } ->
-    Linear device dataType inputDim outputDim
-  deriving (Generic)
+    Linear 'WithBias device dataType inputDim outputDim
+  LinearWithoutBias ::
+    forall device dataType inputDim outputDim.
+    Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]) ->
+    Linear 'WithoutBias device dataType inputDim outputDim
 
-type HasInitializeLinearC device dataType inputDim outputDim =
-  ( WithDeviceC device (WithDataTypeF dataType (WithDimF inputDim (WithDimF outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device))))),
-    WithDataTypeC dataType (WithDimF inputDim (WithDimF outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device)))),
-    WithDimC inputDim (WithDimF outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device))),
-    WithDimC outputDim (Generator device -> (Linear device dataType inputDim outputDim, Generator device)),
+type HasInitializeLinearWithBiasC device dataType inputDim outputDim =
+  ( WithDeviceC device (WithDataTypeF dataType (WithDimF inputDim (WithDimF outputDim (Generator device -> (Linear 'WithBias device dataType inputDim outputDim, Generator device))))),
+    WithDataTypeC dataType (WithDimF inputDim (WithDimF outputDim (Generator device -> (Linear 'WithBias device dataType inputDim outputDim, Generator device)))),
+    WithDimC inputDim (WithDimF outputDim (Generator device -> (Linear 'WithBias device dataType inputDim outputDim, Generator device))),
+    WithDimC outputDim (Generator device -> (Linear 'WithBias device dataType inputDim outputDim, Generator device)),
     WithCreateC (FanMode -> NonLinearity -> Generator device -> (Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]), Generator device)) 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]),
     WithCreateC (Generator device -> (Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]), Generator device)) 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]),
     WithCreateC (Generator device -> (Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim]), Generator device)) 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim])
   )
 
 instance
-  HasInitializeLinearC device dataType inputDim outputDim =>
-  HasInitialize (Linear device dataType inputDim outputDim)
+  HasInitializeLinearWithBiasC device dataType inputDim outputDim =>
+  HasInitialize (Linear 'WithBias device dataType inputDim outputDim)
   where
   type
-    InitializeF (Linear device dataType inputDim outputDim) =
+    InitializeF (Linear 'WithBias device dataType inputDim outputDim) =
       WithDeviceF
         device
         ( WithDataTypeF
@@ -75,7 +80,7 @@ instance
                 inputDim
                 ( WithDimF
                     outputDim
-                    (Generator device -> (Linear device dataType inputDim outputDim, Generator device))
+                    (Generator device -> (Linear 'WithBias device dataType inputDim outputDim, Generator device))
                 )
             )
         )
@@ -86,7 +91,7 @@ instance
           \dType ->
             withDim @inputDim $
               \inputDim ->
-                withDim @outputDim @(Generator device -> (Linear device dataType inputDim outputDim, Generator device)) $
+                withDim @outputDim @(Generator device -> (Linear 'WithBias device dataType inputDim outputDim, Generator device)) $
                   \outputDim ->
                     go deviceType dType inputDim outputDim
     where
@@ -118,30 +123,106 @@ instance
                       . calculateFan
                       $ [outputDim, inputDim]
                   )
-
-        pure $ Linear weight ((bias `mulScalar` (bound * 2)) `subScalar` bound)
+        pure $ LinearWithBias weight ((bias `mulScalar` (bound * 2)) `subScalar` bound)
 
 instance
   HasForward
-    (Linear device dataType inputFeatures outputFeatures)
+    (Linear 'WithBias device dataType inputFeatures outputFeatures)
     (Tensor requiresGradient' layout' device' dataType' shape')
     generator
   where
   type
     ForwardOutput
-      (Linear device dataType inputFeatures outputFeatures)
+      (Linear 'WithBias device dataType inputFeatures outputFeatures)
       (Tensor requiresGradient' layout' device' dataType' shape')
       generator =
       Tensor
         requiresGradient'
-        ('Layout 'Dense <+> layout')
+        ( 'Layout 'Dense <+> layout')
         (device <+> device')
         (dataType <+> dataType')
-        (LinearF ( 'Shape '[outputFeatures, inputFeatures]) ( 'Shape '[outputFeatures]) shape')
+        (LinearWithBiasF ( 'Shape '[outputFeatures, inputFeatures]) ( 'Shape '[outputFeatures]) shape')
   type
     ForwardGeneratorOutput
-      (Linear device dataType inputFeatures outputFeatures)
+      (Linear 'WithBias device dataType inputFeatures outputFeatures)
       (Tensor requiresGradient' layout' device' dataType' shape')
       generator =
       generator
-  forward Linear {..} input g = (linear linearWeight linearBias input, g)
+  forward LinearWithBias {..} input g = (linearWithBias linearWeight linearBias input, g)
+
+type HasInitializeLinearWithoutBiasC device dataType inputDim outputDim =
+  ( WithDeviceC device (WithDataTypeF dataType (WithDimF inputDim (WithDimF outputDim (Generator device -> (Linear 'WithoutBias device dataType inputDim outputDim, Generator device))))),
+    WithDataTypeC dataType (WithDimF inputDim (WithDimF outputDim (Generator device -> (Linear 'WithoutBias device dataType inputDim outputDim, Generator device)))),
+    WithDimC inputDim (WithDimF outputDim (Generator device -> (Linear 'WithoutBias device dataType inputDim outputDim, Generator device))),
+    WithDimC outputDim (Generator device -> (Linear 'WithoutBias device dataType inputDim outputDim, Generator device)),
+    WithCreateC (FanMode -> NonLinearity -> Generator device -> (Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]), Generator device)) 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]),
+    WithCreateC (Generator device -> (Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]), Generator device)) 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim])
+  )
+
+instance
+  HasInitializeLinearWithoutBiasC device dataType inputDim outputDim =>
+  HasInitialize (Linear 'WithoutBias device dataType inputDim outputDim)
+  where
+  type
+    InitializeF (Linear 'WithoutBias device dataType inputDim outputDim) =
+      WithDeviceF
+        device
+        ( WithDataTypeF
+            dataType
+            ( WithDimF
+                inputDim
+                ( WithDimF
+                    outputDim
+                    (Generator device -> (Linear 'WithoutBias device dataType inputDim outputDim, Generator device))
+                )
+            )
+        )
+  initialize =
+    withDevice @device $
+      \deviceType ->
+        withDataType @dataType $
+          \dType ->
+            withDim @inputDim $
+              \inputDim ->
+                withDim @outputDim @(Generator device -> (Linear 'WithoutBias device dataType inputDim outputDim, Generator device)) $
+                  \outputDim ->
+                    go deviceType dType inputDim outputDim
+    where
+      go deviceType dType inputDim outputDim = runState $ do
+        weight <-
+          state $
+            withoutCreate @_ @ 'Independent @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim, inputDim])
+              (kaimingUniform @ 'Independent @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim, inputDim]) @device)
+              Independent
+              Dense
+              deviceType
+              dType
+              [outputDim, inputDim]
+              FanIn
+              (LeakyRelu . Prelude.sqrt $ 5)
+        pure $ LinearWithoutBias weight
+
+instance
+  HasForward
+    (Linear 'WithoutBias device dataType inputFeatures outputFeatures)
+    (Tensor requiresGradient' layout' device' dataType' shape')
+    generator
+  where
+  type
+    ForwardOutput
+      (Linear 'WithoutBias device dataType inputFeatures outputFeatures)
+      (Tensor requiresGradient' layout' device' dataType' shape')
+      generator =
+      Tensor
+        requiresGradient'
+        ( 'Layout 'Dense <+> layout')
+        (device <+> device')
+        (dataType <+> dataType')
+        (LinearWithoutBiasF ( 'Shape '[outputFeatures, inputFeatures]) shape')
+  type
+    ForwardGeneratorOutput
+      (Linear 'WithoutBias device dataType inputFeatures outputFeatures)
+      (Tensor requiresGradient' layout' device' dataType' shape')
+      generator =
+      generator
+  forward (LinearWithoutBias linearWeight) input g = (linearWithoutBias linearWeight input, g)
