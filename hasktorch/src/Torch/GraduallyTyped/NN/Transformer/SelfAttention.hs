@@ -46,12 +46,17 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (.
 import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout)
+import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithBiasF)
+import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF)
 import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormF)
 import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormC, LayerNorm)
 import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (HasInitializeMultiHeadAttentionC, MultiHeadAttention, MultiHeadAttentionOutputShape)
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape (BroadcastShapesF, Dim (..), KnownDim (..), Name (..), Shape (..), Size (..), WithDimC (..), WithShapeC (..), type (!))
+import Torch.GraduallyTyped.Shape (BroadcastShapesF, By (..), Dim (..), KnownDim (..), Name (..), SelectDim (..), Shape (..), Size (..), WithDimC (..), WithShapeC (..), type (!))
+import Torch.GraduallyTyped.Tensor (ReshapeF)
+import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (TransposeF, UnsqueezeF)
+import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (MatmulF)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
@@ -172,6 +177,85 @@ instance
         let dropout = initialize @(Dropout dropoutP) dropoutP
         pure $ SelfAttention multiheadAttention layerNorm dropout
 
+type SelfAttentionTransposeAndReshape
+  (embedDim :: Dim (Name Symbol) (Size Nat))
+  (attentionMaskShape :: Shape [Dim (Name Symbol) (Size Nat)])
+  (normedBatchDim :: Dim (Name Symbol) (Size Nat))
+  (normedQuerySeqDim :: Dim (Name Symbol) (Size Nat))
+  (transposed :: Shape [Dim (Name Symbol) (Size Nat)]) =
+  ReshapeF
+    ( TransposeF
+        ( 'SelectDim ( 'ByIndex 1))
+        ( 'SelectDim ( 'ByIndex 2))
+        ( MatmulF
+            ( BroadcastShapesF
+                ( SoftmaxF
+                    ( 'SelectDim ( 'ByIndex 3))
+                    ( MatmulF
+                        transposed
+                        ( TransposeF
+                            ( 'SelectDim ( 'ByIndex 2))
+                            ( 'SelectDim ( 'ByIndex 3))
+                            transposed
+                        )
+                    )
+                )
+                ( UnsqueezeF
+                    ( 'SelectDim ( 'ByIndex 1))
+                    attentionMaskShape
+                )
+            )
+            transposed
+        )
+    )
+    ( 'Shape '[normedBatchDim, normedQuerySeqDim, embedDim])
+
+type SelfAttentionTransposeAndReshape'
+  (headDim :: Dim (Name Symbol) (Size Nat))
+  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (embedDim :: Dim (Name Symbol) (Size Nat))
+  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (normedQueryShape :: Shape [Dim (Name Symbol) (Size Nat)])
+  (attentionMaskShape :: Shape [Dim (Name Symbol) (Size Nat)])
+  (normedBatchDim :: Dim (Name Symbol) (Size Nat))
+  (normedQuerySeqDim :: Dim (Name Symbol) (Size Nat)) =
+  SelfAttentionTransposeAndReshape
+    embedDim
+    attentionMaskShape
+    normedBatchDim
+    normedQuerySeqDim
+    ( TransposeF
+        ( 'SelectDim ( 'ByIndex 1))
+        ( 'SelectDim ( 'ByIndex 2))
+        ( ReshapeF
+            ( LinearWithBiasF
+                ( 'Shape '[embedDim, queryEmbedDim])
+                ( 'Shape '[embedDim])
+                normedQueryShape
+            )
+            ( 'Shape
+                '[normedBatchDim, normedQuerySeqDim, headDim, headEmbedDim]
+            )
+        )
+    )
+
+type SelfAttentionTransposeAndReshape''
+  (headDim :: Dim (Name Symbol) (Size Nat))
+  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (embedDim :: Dim (Name Symbol) (Size Nat))
+  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (normedQueryShape :: Shape [Dim (Name Symbol) (Size Nat)])
+  (attentionMaskShape :: Shape [Dim (Name Symbol) (Size Nat)]) =
+  SelfAttentionTransposeAndReshape'
+    headDim
+    headEmbedDim
+    embedDim
+    queryEmbedDim
+    normedQueryShape
+    attentionMaskShape
+    (normedQueryShape ! 0)
+    (normedQueryShape ! 1)
+
 type SelfAttentionOutputShape
   (headDim :: Dim (Name Symbol) (Size Nat))
   (headEmbedDim :: Dim (Name Symbol) (Size Nat))
@@ -181,33 +265,37 @@ type SelfAttentionOutputShape
   (attentionMaskShape :: Shape [Dim (Name Symbol) (Size Nat)]) =
   BroadcastShapesF
     queryShape
-    ( MultiHeadAttentionOutputShape
-        embedDim
-        queryEmbedDim
-        queryEmbedDim
-        queryEmbedDim
-        headDim
-        headEmbedDim
-        ((LayerNormF ( 'Shape '[queryEmbedDim]) ( 'Shape '[queryEmbedDim]) queryShape) ! 0)
-        ((LayerNormF ( 'Shape '[queryEmbedDim]) ( 'Shape '[queryEmbedDim]) queryShape) ! 1)
-        ((LayerNormF ( 'Shape '[queryEmbedDim]) ( 'Shape '[queryEmbedDim]) queryShape) ! 1)
-        (LayerNormF ( 'Shape '[queryEmbedDim]) ( 'Shape '[queryEmbedDim]) queryShape)
-        (LayerNormF ( 'Shape '[queryEmbedDim]) ( 'Shape '[queryEmbedDim]) queryShape)
-        (LayerNormF ( 'Shape '[queryEmbedDim]) ( 'Shape '[queryEmbedDim]) queryShape)
-        attentionMaskShape
+    ( LinearWithBiasF
+        ( 'Shape '[queryEmbedDim, embedDim])
+        ( 'Shape '[queryEmbedDim])
+        ( SelfAttentionTransposeAndReshape''
+            headDim
+            headEmbedDim
+            embedDim
+            queryEmbedDim
+            (LayerNormF ( 'Shape '[queryEmbedDim]) ( 'Shape '[queryEmbedDim]) queryShape)
+            attentionMaskShape
+        )
     )
 
 instance
   ( KnownDim queryEmbedDim,
     HasForward
       (MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP)
-      ( Tensor requiresGradient ( 'Layout 'Dense <+> queryLayout) (device <+> queryDevice) (dataType <+> queryDataType) (LayerNormF ( 'Shape '[queryEmbedDim]) ( 'Shape '[queryEmbedDim]) queryShape),
-        Tensor requiresGradient ( 'Layout 'Dense <+> queryLayout) (device <+> queryDevice) (dataType <+> queryDataType) (LayerNormF ( 'Shape '[queryEmbedDim]) ( 'Shape '[queryEmbedDim]) queryShape),
-        Tensor requiresGradient ( 'Layout 'Dense <+> queryLayout) (device <+> queryDevice) (dataType <+> queryDataType) (LayerNormF ( 'Shape '[queryEmbedDim]) ( 'Shape '[queryEmbedDim]) queryShape),
+      ( normedQuery,
+        normedQuery,
+        normedQuery,
         Tensor requiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
       )
       (Generator generatorDevice),
-    Scalar dropoutP
+    Scalar dropoutP,
+    normedQuery
+      ~ Tensor
+          requiresGradient
+          ( 'Layout 'Dense <+> queryLayout)
+          (device <+> queryDevice)
+          (dataType <+> queryDataType)
+          (LayerNormF ( 'Shape '[queryEmbedDim]) ( 'Shape '[queryEmbedDim]) queryShape)
   ) =>
   HasForward
     (SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)

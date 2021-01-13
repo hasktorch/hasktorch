@@ -52,6 +52,7 @@ import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithBiasF)
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, softmax)
 import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearWithBiasC, Linear (..), LinearHasBias (..))
 import Torch.GraduallyTyped.Random (Generator)
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient)
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape (BroadcastShapesF, By (..), Dim (..), KnownDim (..), KnownShape, Name (..), SelectDim (..), Shape (..), Size (..), WithDimC (..), WithShapeC (..), dimSize, getDim, unifyDims, type (!))
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (ReshapeF, TransposeF, UnsqueezeF, reshape, transpose, unsqueeze)
@@ -290,19 +291,19 @@ unsafeGetEmbedDim MultiHeadAttention {..} =
     unifyDims dim dims
 
 type TransposeAndReshape
-  (embedDim :: Dim (Name Symbol) (Size Nat))
-  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (queryShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (batchDim :: Dim (Name Symbol) (Size Nat))
-  (querySeqDim :: Dim (Name Symbol) (Size Nat))
   (headDim :: Dim (Name Symbol) (Size Nat))
   (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (embedDim :: Dim (Name Symbol) (Size Nat))
+  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
   (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (keyShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (keySeqDim :: Dim (Name Symbol) (Size Nat))
   (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (queryShape :: Shape [Dim (Name Symbol) (Size Nat)])
+  (keyShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (valueShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (attentionMaskShape :: Shape [Dim (Name Symbol) (Size Nat)]) =
+  (attentionMaskShape :: Shape [Dim (Name Symbol) (Size Nat)])
+  (batchDim :: Dim (Name Symbol) (Size Nat))
+  (querySeqDim :: Dim (Name Symbol) (Size Nat))
+  (keySeqDim :: Dim (Name Symbol) (Size Nat)) =
   TransposeF
     ( 'SelectDim ( 'ByIndex 1))
     ( 'SelectDim ( 'ByIndex 2))
@@ -371,56 +372,49 @@ type TransposeAndReshape
 type MultiHeadAttentionOutputShape
   (embedDim :: Dim (Name Symbol) (Size Nat))
   (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (headDim :: Dim (Name Symbol) (Size Nat))
-  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
   (batchDim :: Dim (Name Symbol) (Size Nat))
   (querySeqDim :: Dim (Name Symbol) (Size Nat))
-  (keySeqDim :: Dim (Name Symbol) (Size Nat))
-  (queryShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (keyShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (valueShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (attentionMaskShape :: Shape [Dim (Name Symbol) (Size Nat)]) =
+  (transposedAndReshaped :: Shape [Dim (Name Symbol) (Size Nat)]) =
   LinearWithBiasF
     ( 'Shape '[queryEmbedDim, embedDim])
     ( 'Shape '[queryEmbedDim])
     ( ReshapeF
-        (TransposeAndReshape embedDim queryEmbedDim queryShape batchDim querySeqDim headDim headEmbedDim keyEmbedDim keyShape keySeqDim valueEmbedDim valueShape attentionMaskShape)
+        transposedAndReshaped
         ( 'Shape '[batchDim, querySeqDim, embedDim])
     )
 
 type HasForwardMultiHeadAttentionC
-  headDim
-  headEmbedDim
-  batchDim
-  querySeqDim
-  keySeqDim
-  device
-  dataType
-  embedDim
-  queryEmbedDim
-  keyEmbedDim
-  valueEmbedDim
-  dropoutP
-  requiresGradient
-  queryLayout
-  queryDevice
-  queryDataType
-  queryShape
-  keyLayout
-  keyDevice
-  keyDataType
-  keyShape
-  valueLayout
-  valueDevice
-  valueDataType
-  valueShape
-  attentionMaskLayout
-  attentionMaskDevice
-  attentionMaskDataType
-  attentionMaskShape
-  generatorDevice =
+  (device :: Device (DeviceType Nat))
+  (dataType :: DataType DType)
+  (headDim :: Dim (Name Symbol) (Size Nat))
+  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (embedDim :: Dim (Name Symbol) (Size Nat))
+  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (dropoutP :: Type)
+  (requiresGradient :: RequiresGradient)
+  (queryLayout :: Layout LayoutType)
+  (queryDevice :: Device (DeviceType Nat))
+  (queryDataType :: DataType DType)
+  (queryShape :: Shape [Dim (Name Symbol) (Size Nat)])
+  (keyLayout :: Layout LayoutType)
+  (keyDevice :: Device (DeviceType Nat))
+  (keyDataType :: DataType DType)
+  (keyShape :: Shape [Dim (Name Symbol) (Size Nat)])
+  (valueLayout :: Layout LayoutType)
+  (valueDevice :: Device (DeviceType Nat))
+  (valueDataType :: DataType DType)
+  (valueShape :: Shape [Dim (Name Symbol) (Size Nat)])
+  (attentionMaskLayout :: Layout LayoutType)
+  (attentionMaskDevice :: Device (DeviceType Nat))
+  (attentionMaskDataType :: DataType DType)
+  (attentionMaskShape :: Shape [Dim (Name Symbol) (Size Nat)])
+  (generatorDevice :: Device (DeviceType Nat))
+  (batchDim :: Dim (Name Symbol) (Size Nat))
+  (querySeqDim :: Dim (Name Symbol) (Size Nat))
+  (keySeqDim :: Dim (Name Symbol) (Size Nat))
+  (transposedAndReshaped :: Shape [Dim (Name Symbol) (Size Nat)]) =
   ( KnownDim embedDim,
     KnownDim queryEmbedDim,
     KnownDim keyEmbedDim,
@@ -517,51 +511,57 @@ type HasForwardMultiHeadAttentionC
           ( 'Layout 'Dense <+> queryLayout <+> keyLayout <+> attentionMaskLayout <+> valueLayout)
           (device <+> queryDevice <+> keyDevice <+> generatorDevice <+> attentionMaskDevice <+> valueDevice)
           (dataType <+> queryDataType <+> keyDataType <+> attentionMaskDataType <+> valueDataType)
-          (TransposeAndReshape embedDim queryEmbedDim queryShape batchDim querySeqDim headDim headEmbedDim keyEmbedDim keyShape keySeqDim valueEmbedDim valueShape attentionMaskShape) ->
+          transposedAndReshaped ->
         Tensor
           requiresGradient
           ( 'Layout 'Dense <+> queryLayout <+> keyLayout <+> attentionMaskLayout <+> valueLayout)
           (device <+> queryDevice <+> keyDevice <+> generatorDevice <+> attentionMaskDevice <+> valueDevice)
           (dataType <+> queryDataType <+> keyDataType <+> attentionMaskDataType <+> valueDataType)
           ( ReshapeF
-              (TransposeAndReshape embedDim queryEmbedDim queryShape batchDim querySeqDim headDim headEmbedDim keyEmbedDim keyShape keySeqDim valueEmbedDim valueShape attentionMaskShape)
+              transposedAndReshaped
               ( 'Shape '[batchDim, querySeqDim, embedDim])
           )
       )
   )
 
 instance
-  HasForwardMultiHeadAttentionC
-    headDim
-    headEmbedDim
-    (BatchDim queryShape keyShape valueShape)
-    (QuerySeqDim queryShape)
-    (KeySeqDim keyShape valueShape)
-    device
-    dataType
-    embedDim
-    queryEmbedDim
-    keyEmbedDim
-    valueEmbedDim
-    dropoutP
-    requiresGradient
-    queryLayout
-    queryDevice
-    queryDataType
-    queryShape
-    keyLayout
-    keyDevice
-    keyDataType
-    keyShape
-    valueLayout
-    valueDevice
-    valueDataType
-    valueShape
-    attentionMaskLayout
-    attentionMaskDevice
-    attentionMaskDataType
-    attentionMaskShape
-    generatorDevice =>
+  ( HasForwardMultiHeadAttentionC
+      device
+      dataType
+      headDim
+      headEmbedDim
+      embedDim
+      queryEmbedDim
+      keyEmbedDim
+      valueEmbedDim
+      dropoutP
+      requiresGradient
+      queryLayout
+      queryDevice
+      queryDataType
+      queryShape
+      keyLayout
+      keyDevice
+      keyDataType
+      keyShape
+      valueLayout
+      valueDevice
+      valueDataType
+      valueShape
+      attentionMaskLayout
+      attentionMaskDevice
+      attentionMaskDataType
+      attentionMaskShape
+      generatorDevice
+      batchDim
+      querySeqDim
+      keySeqDim
+      transposedAndReshaped,
+    batchDim ~ BatchDim queryShape keyShape valueShape,
+    querySeqDim ~ QuerySeqDim queryShape,
+    keySeqDim ~ KeySeqDim keyShape valueShape,
+    transposedAndReshaped ~ TransposeAndReshape headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim queryShape keyShape valueShape attentionMaskShape batchDim querySeqDim keySeqDim
+  ) =>
   HasForward
     (MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
     ( Tensor requiresGradient queryLayout queryDevice queryDataType queryShape,
@@ -585,7 +585,13 @@ instance
         ( 'Layout 'Dense <+> queryLayout <+> keyLayout <+> attentionMaskLayout <+> valueLayout)
         (device <+> queryDevice <+> keyDevice <+> generatorDevice <+> attentionMaskDevice <+> valueDevice)
         (dataType <+> queryDataType <+> keyDataType <+> attentionMaskDataType <+> valueDataType)
-        (MultiHeadAttentionOutputShape embedDim queryEmbedDim keyEmbedDim valueEmbedDim headDim headEmbedDim (BatchDim queryShape keyShape valueShape) (QuerySeqDim queryShape) (KeySeqDim keyShape valueShape) queryShape keyShape valueShape attentionMaskShape)
+        ( MultiHeadAttentionOutputShape
+            embedDim
+            queryEmbedDim
+            (BatchDim queryShape keyShape valueShape)
+            (QuerySeqDim queryShape)
+            (TransposeAndReshape headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim queryShape keyShape valueShape attentionMaskShape (BatchDim queryShape keyShape valueShape) (QuerySeqDim queryShape) (KeySeqDim keyShape valueShape))
+        )
   type
     ForwardGeneratorOutput
       (MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)

@@ -46,12 +46,18 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (.
 import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout)
+import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithBiasF)
+import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF)
 import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormF)
 import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormC, LayerNorm)
 import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (HasInitializeMultiHeadAttentionC, MultiHeadAttention, MultiHeadAttentionOutputShape)
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape (BroadcastShapesF, Dim (..), KnownDim (..), Name (..), Shape (..), Size (..), WithDimC (..), WithShapeC (..), type (!))
+import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, type (!))
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownDim (..), Name (..), SelectDim (..), Shape (..), Size (..), WithDimC (..), WithShapeC (..))
+import Torch.GraduallyTyped.Tensor (TransposeF)
+import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (ReshapeF, UnsqueezeF)
+import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (MatmulF)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
@@ -179,6 +185,107 @@ instance
         let dropout = initialize @(Dropout dropoutP) dropoutP
         pure $ CrossAttention multiheadAttention layerNorm dropout
 
+type CrossAttentionTransposeAndReshape
+  (embedDim :: Dim (Name Symbol) (Size Nat))
+  (attentionMaskShape :: Shape [Dim (Name Symbol) (Size Nat)])
+  (normedBatchDim :: Dim (Name Symbol) (Size Nat))
+  (normedQuerySeqDim :: Dim (Name Symbol) (Size Nat))
+  (transposed :: Shape [Dim (Name Symbol) (Size Nat)])
+  (transposed' :: Shape [Dim (Name Symbol) (Size Nat)]) =
+  ReshapeF
+    ( TransposeF
+        ( 'SelectDim ( 'ByIndex 1))
+        ( 'SelectDim ( 'ByIndex 2))
+        ( MatmulF
+            ( BroadcastShapesF
+                ( SoftmaxF
+                    ( 'SelectDim ( 'ByIndex 3))
+                    ( MatmulF
+                        transposed
+                        ( TransposeF
+                            ( 'SelectDim ( 'ByIndex 2))
+                            ( 'SelectDim ( 'ByIndex 3))
+                            transposed'
+                        )
+                    )
+                )
+                ( UnsqueezeF
+                    ( 'SelectDim ( 'ByIndex 1))
+                    attentionMaskShape
+                )
+            )
+            transposed'
+        )
+    )
+    ( 'Shape '[normedBatchDim, normedQuerySeqDim, embedDim])
+
+type CrossAttentionTransposeAndReshape'
+  (headDim :: Dim (Name Symbol) (Size Nat))
+  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (embedDim :: Dim (Name Symbol) (Size Nat))
+  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (normedQueryShape :: Shape [Dim (Name Symbol) (Size Nat)])
+  (keyShape :: Shape [Dim (Name Symbol) (Size Nat)])
+  (attentionMaskShape :: Shape [Dim (Name Symbol) (Size Nat)])
+  (normedBatchDim :: Dim (Name Symbol) (Size Nat))
+  (normedQuerySeqDim :: Dim (Name Symbol) (Size Nat))
+  (keySeqDim :: Dim (Name Symbol) (Size Nat)) =
+  CrossAttentionTransposeAndReshape
+    embedDim    attentionMaskShape
+    normedBatchDim
+    normedQuerySeqDim
+    ( TransposeF
+        ( 'SelectDim ( 'ByIndex 1))
+        ( 'SelectDim ( 'ByIndex 2))
+        ( ReshapeF
+            ( LinearWithBiasF
+                ( 'Shape '[embedDim, queryEmbedDim])
+                ( 'Shape '[embedDim])
+                normedQueryShape
+            )
+            ( 'Shape
+                '[normedBatchDim, normedQuerySeqDim, headDim, headEmbedDim]
+            )
+        )
+    )
+    ( TransposeF
+        ( 'SelectDim ( 'ByIndex 1))
+        ( 'SelectDim ( 'ByIndex 2))
+        ( ReshapeF
+            ( LinearWithBiasF
+                ( 'Shape '[embedDim, keyEmbedDim])
+                ( 'Shape '[embedDim])
+                keyShape
+            )
+            ( 'Shape
+                '[normedBatchDim, keySeqDim, headDim, headEmbedDim]
+            )
+        )
+    )
+
+type CrossAttentionTransposeAndReshape''
+  (headDim :: Dim (Name Symbol) (Size Nat))
+  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (embedDim :: Dim (Name Symbol) (Size Nat))
+  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (normedQueryShape :: Shape [Dim (Name Symbol) (Size Nat)])
+  (keyShape :: Shape [Dim (Name Symbol) (Size Nat)])
+  (attentionMaskShape :: Shape [Dim (Name Symbol) (Size Nat)]) =
+  CrossAttentionTransposeAndReshape'
+    headDim
+    headEmbedDim
+    embedDim
+    queryEmbedDim
+    keyEmbedDim
+    normedQueryShape
+    keyShape
+    attentionMaskShape
+    (normedQueryShape ! 0 <+> keyShape ! 0)
+    (normedQueryShape ! 1)
+    (keyShape ! 1)
+
 type CrossAttentionOutputShape
   (headDim :: Dim (Name Symbol) (Size Nat))
   (headEmbedDim :: Dim (Name Symbol) (Size Nat))
@@ -190,20 +297,19 @@ type CrossAttentionOutputShape
   (attentionMaskShape :: Shape [Dim (Name Symbol) (Size Nat)]) =
   BroadcastShapesF
     queryShape
-    ( MultiHeadAttentionOutputShape
-        embedDim
-        queryEmbedDim
-        keyEmbedDim
-        keyEmbedDim
-        headDim
-        headEmbedDim
-        (((LayerNormF ( 'Shape '[queryEmbedDim]) ( 'Shape '[queryEmbedDim]) queryShape) ! 0) <+> (keyShape ! 0))
-        ((LayerNormF ( 'Shape '[queryEmbedDim]) ( 'Shape '[queryEmbedDim]) queryShape) ! 1)
-        (keyShape ! 1)
-        (LayerNormF ( 'Shape '[queryEmbedDim]) ( 'Shape '[queryEmbedDim]) queryShape)
-        keyShape
-        keyShape
-        attentionMaskShape
+    ( LinearWithBiasF
+        ( 'Shape '[queryEmbedDim, embedDim])
+        ( 'Shape '[queryEmbedDim])
+        ( CrossAttentionTransposeAndReshape''
+            headDim
+            headEmbedDim
+            embedDim
+            queryEmbedDim
+            keyEmbedDim
+            (LayerNormF ( 'Shape '[queryEmbedDim]) ( 'Shape '[queryEmbedDim]) queryShape)
+            keyShape
+            attentionMaskShape
+        )
     )
 
 instance

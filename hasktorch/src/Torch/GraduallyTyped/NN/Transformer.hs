@@ -179,7 +179,7 @@ type TestDecoderInputSeqDim = 'Dim ( 'Name "*") ( 'Size 48)
 --   let (result, _) =
 --         runState
 --           ( do
---               stack <- state $ initialize @(TransformerStack 2 TestDevice TestDataType TestHeadDim TestHeadEmbedDim TestEmbedDim TestQueryEmbedDim TestFFNDim Float) 0.0 1e-6
+--               stack <- state $ initialize @(TransformerStack 10 TestDevice TestDataType TestHeadDim TestHeadEmbedDim TestEmbedDim TestQueryEmbedDim TestFFNDim Float) 0.0 1e-6
 --               query <- state $ randn @ 'Dependent @TestLayout @TestDevice @TestDataType @( 'Shape '[TestBatchDim, TestQuerySeqDim, TestQueryEmbedDim])
 --               attentionMask <- state $ randn @ 'Dependent @TestLayout @TestDevice @TestDataType @( 'Shape '[TestBatchDim, TestQuerySeqDim, TestQuerySeqDim])
 --               state $ forward stack (query, attentionMask)
