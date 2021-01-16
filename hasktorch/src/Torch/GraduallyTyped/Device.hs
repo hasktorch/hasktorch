@@ -77,10 +77,3 @@ instance (KnownDeviceType deviceType) => WithDeviceC ( 'Device deviceType) f whe
   type WithDeviceF ( 'Device deviceType) f = f
   withDevice f = f (deviceTypeVal @deviceType)
   withoutDevice = const
-
-type UnifyDeviceErrorMessage (deviceType :: DeviceType Nat) (deviceType' :: DeviceType Nat) =
-  "The supplied tensors must be on the same device, "
-    % "but different device locations were found:"
-    % ""
-    % "    " <> deviceType <> " and " <> deviceType' <> "."
-    % ""

@@ -13,10 +13,10 @@ module Torch.GraduallyTyped.Unify where
 import GHC.TypeLits (Symbol, TypeError)
 import GHC.TypeNats (Nat)
 import Torch.DType (DType)
-import Torch.GraduallyTyped.DType (DataType (..), UnifyDataTypeErrorMessage)
-import Torch.GraduallyTyped.Device (Device (..), DeviceType, UnifyDeviceErrorMessage)
-import Torch.GraduallyTyped.Layout (Layout (..), LayoutType, UnifyLayoutErrorMessage)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), UnifyRequiresGradientMessage)
+import Torch.GraduallyTyped.DType (DataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType)
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType)
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Shape (..), Size (..))
 import Type.Errors.Pretty (type (%), type (<>))
 
@@ -28,43 +28,75 @@ infixr 8 <+>
 
 type Unify :: forall k -> k -> k -> k
 type family Unify k (a :: k) (b :: k) :: k where
-  Unify RequiresGradient requiresGradient requiresGradient = requiresGradient
-  Unify RequiresGradient _ _ = TypeError UnifyRequiresGradientMessage
+  Unify k a a = a
+  -- Unify RequiresGradient requiresGradient requiresGradient = requiresGradient
+  Unify RequiresGradient requiresGradient requiresGradient' = TypeError (UnifyRequiresGradientMessage requiresGradient requiresGradient')
   Unify (Layout LayoutType) 'UncheckedLayout _ = 'UncheckedLayout
   Unify (Layout LayoutType) _ 'UncheckedLayout = 'UncheckedLayout
-  Unify (Layout LayoutType) ( 'Layout layoutType) ( 'Layout layoutType) = 'Layout layoutType
+  -- Unify (Layout LayoutType) ( 'Layout layoutType) ( 'Layout layoutType) = 'Layout layoutType
   Unify (Layout LayoutType) ( 'Layout layoutType) ( 'Layout layoutType') = TypeError (UnifyLayoutErrorMessage layoutType layoutType')
   Unify (Device (DeviceType Nat)) 'UncheckedDevice _ = 'UncheckedDevice
   Unify (Device (DeviceType Nat)) _ 'UncheckedDevice = 'UncheckedDevice
-  Unify (Device (DeviceType Nat)) ( 'Device deviceType) ( 'Device deviceType) = 'Device deviceType
+  -- Unify (Device (DeviceType Nat)) ( 'Device deviceType) ( 'Device deviceType) = 'Device deviceType
   Unify (Device (DeviceType Nat)) ( 'Device deviceType) ( 'Device deviceType') = TypeError (UnifyDeviceErrorMessage deviceType deviceType')
   Unify (DataType DType) 'UncheckedDataType _ = 'UncheckedDataType
   Unify (DataType DType) _ 'UncheckedDataType = 'UncheckedDataType
-  Unify (DataType DType) ( 'DataType dType) ( 'DataType dType) = 'DataType dType
+  -- Unify (DataType DType) ( 'DataType dType) ( 'DataType dType) = 'DataType dType
   Unify (DataType DType) ( 'DataType dType) ( 'DataType dType') = TypeError (UnifyDataTypeErrorMessage dType dType')
   Unify (Shape [Dim (Name Symbol) (Size Nat)]) 'UncheckedShape _ = 'UncheckedShape
   Unify (Shape [Dim (Name Symbol) (Size Nat)]) _ 'UncheckedShape = 'UncheckedShape
   Unify (Shape [Dim (Name Symbol) (Size Nat)]) ( 'Shape dims) ( 'Shape dims') = 'Shape (Unify [Dim (Name Symbol) (Size Nat)] dims dims')
-  Unify [Dim (Name Symbol) (Size Nat)] '[] '[] = '[]
+  -- Unify [Dim (Name Symbol) (Size Nat)] '[] '[] = '[]
   Unify [Dim (Name Symbol) (Size Nat)] (dim ': dims) (dim' ': dims') = Unify (Dim (Name Symbol) (Size Nat)) dim dim' ': Unify [Dim (Name Symbol) (Size Nat)] dims dims'
-  Unify [Dim (Name Symbol) (Size Nat)] _ _ = TypeError UnifyDimsErrorMessage
+  Unify [Dim (Name Symbol) (Size Nat)] dims dims' = TypeError (UnifyDimsErrorMessage dims dims')
   Unify (Dim (Name Symbol) (Size Nat)) ( 'Dim name size) ( 'Dim name' size') = 'Dim (Unify (Name Symbol) name name') (Unify (Size Nat) size size')
   Unify (Name Symbol) 'UncheckedName _ = 'UncheckedName
   Unify (Name Symbol) _ 'UncheckedName = 'UncheckedName
-  Unify (Name Symbol) ( 'Name name) ( 'Name name) = 'Name name
+  -- Unify (Name Symbol) ( 'Name name) ( 'Name name) = 'Name name
   Unify (Name Symbol) ( 'Name name) ( 'Name "*") = 'Name name
   Unify (Name Symbol) ( 'Name "*") ( 'Name name) = 'Name name
   Unify (Name Symbol) ( 'Name name) ( 'Name name') = TypeError (UnifyNameErrorMessage name name')
   Unify (Size Nat) 'UncheckedSize _ = 'UncheckedSize
   Unify (Size Nat) _ 'UncheckedSize = 'UncheckedSize
-  Unify (Size Nat) ( 'Size size) ( 'Size size) = 'Size size
+  -- Unify (Size Nat) ( 'Size size) ( 'Size size) = 'Size size
   Unify (Size Nat) ( 'Size size) ( 'Size size') = TypeError (UnifySizeErrorMessage size size')
 
-type UnifyDimsErrorMessage =
+type UnifyRequiresGradientMessage (requiresGradient :: RequiresGradient) (requiresGradient' :: RequiresGradient) =
+  "The supplied tensors must all either require or disable gradient calculation,"
+    % "but different gradient settings were found:"
+    % ""
+    % "    " <> requiresGradient <> " and " <> requiresGradient' <> "."
+    % ""
+
+type UnifyLayoutErrorMessage (layoutType :: LayoutType) (layoutType' :: LayoutType) =
+  "The supplied tensors must have the same memory layout,"
+    % "but different layouts were found:"
+    % ""
+    % "    " <> layoutType <> " and " <> layoutType' <> "."
+    % ""
+
+type UnifyDeviceErrorMessage (deviceType :: DeviceType Nat) (deviceType' :: DeviceType Nat) =
+  "The supplied tensors must be on the same device, "
+    % "but different device locations were found:"
+    % ""
+    % "    " <> deviceType <> " and " <> deviceType' <> "."
+    % ""
+
+type UnifyDataTypeErrorMessage (dType :: DType) (dType' :: DType) =
+  "The supplied tensors must have the same data type, "
+    % "but different data types were found:"
+    % ""
+    % "    " <> dType <> " and " <> dType' <> "."
+    % ""
+
+type UnifyDimsErrorMessage (dims :: [Dim (Name Symbol) (Size Nat)]) (dims' :: [Dim (Name Symbol) (Size Nat)]) =
   "The supplied tensors must have shapes with identical number of dimensions,"
     % "but dimension lists of different lengths were found."
+    % "Here are the tails of both dimension lists:"
     % ""
-    % "Try extending or broadcasting the tensor(s)."
+    % "    " <> dims <> " and " <> dims' <> "."
+    % ""
+    % "Try extending, (un-)squeezing, or broadcasting the tensor(s)."
 
 type UnifyNameErrorMessage (name :: Symbol) (name' :: Symbol) =
   "The supplied dimensions must be the same,"

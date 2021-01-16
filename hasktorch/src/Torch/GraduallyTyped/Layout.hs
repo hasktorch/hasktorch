@@ -75,10 +75,3 @@ instance (KnownLayoutType layoutType) => WithLayoutC ( 'Layout layoutType) f whe
   type WithLayoutF ( 'Layout layoutType) f = f
   withLayout f = f (layoutTypeVal @layoutType)
   withoutLayout = const
-
-type UnifyLayoutErrorMessage (layoutType :: LayoutType) (layoutType' :: LayoutType) =
-  "The supplied tensors must have the same memory layout,"
-    % "but different layouts were found:"
-    % ""
-    % "    " <> layoutType <> " and " <> layoutType' <> "."
-    % ""

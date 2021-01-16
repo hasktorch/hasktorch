@@ -24,5 +24,3 @@ instance KnownRequiresGradient 'Independent where
 
 instance KnownRequiresGradient 'Dependent where
   requiresGradientVal = Dependent
-
-type UnifyRequiresGradientMessage = ToErrorMessage "The supplied tensors must all either require or disable gradient calculation."

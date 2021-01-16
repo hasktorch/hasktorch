@@ -288,65 +288,13 @@ testSequenceToSequenceUnchecked = do
                     ffnDim
                     0.0
                     1e-6
-              input <-
-                state $
-                  randn
-                    @ 'Dependent
-                    @TestLayout
-                    @TestDevice
-                    @TestDataType
-                    @( 'Shape '[ 'Dim 'UncheckedName 'UncheckedSize, 'Dim 'UncheckedName 'UncheckedSize, 'Dim 'UncheckedName 'UncheckedSize])
-                    batchDim
-                    inputSeqDim
-                    inputEmbedDim
-              decoderInput <-
-                state $
-                  randn
-                    @ 'Dependent
-                    @TestLayout
-                    @TestDevice
-                    @TestDataType
-                    @( 'Shape '[ 'Dim 'UncheckedName 'UncheckedSize, 'Dim 'UncheckedName 'UncheckedSize, 'Dim 'UncheckedName 'UncheckedSize])
-                    batchDim
-                    decoderInputSeqDim
-                    decoderInputEmbedDim
-              attentionMask <-
-                state $
-                  randn
-                    @ 'Dependent
-                    @TestLayout
-                    @TestDevice
-                    @TestDataType
-                    @( 'Shape '[ 'Dim 'UncheckedName 'UncheckedSize, 'Dim 'UncheckedName 'UncheckedSize, 'Dim 'UncheckedName 'UncheckedSize])
-                    batchDim
-                    inputSeqDim
-                    inputSeqDim
-              decoderAttentionMask <-
-                state $
-                  randn
-                    @ 'Dependent
-                    @TestLayout
-                    @TestDevice
-                    @TestDataType
-                    @( 'Shape '[ 'Dim 'UncheckedName 'UncheckedSize, 'Dim 'UncheckedName 'UncheckedSize, 'Dim 'UncheckedName 'UncheckedSize])
-                    batchDim
-                    decoderInputSeqDim
-                    decoderInputSeqDim
-              crossAttentionMask <-
-                state $
-                  randn
-                    @ 'Dependent
-                    @TestLayout
-                    @TestDevice
-                    @TestDataType
-                    @( 'Shape '[ 'Dim 'UncheckedName 'UncheckedSize, 'Dim 'UncheckedName 'UncheckedSize, 'Dim 'UncheckedName 'UncheckedSize])
-                    batchDim
-                    decoderInputSeqDim
-                    inputSeqDim
-              state $
-                forward
-                  sequenceToSequence
-                  (input, decoderInput, attentionMask, decoderAttentionMask, crossAttentionMask)
+              let randn' = randn @ 'Dependent @ 'UncheckedLayout @ 'UncheckedDevice @ 'UncheckedDataType @ 'UncheckedShape Dense deviceType dType
+              input <- state $ randn' [batchDim, inputSeqDim, inputEmbedDim]
+              decoderInput <- state $ randn' [batchDim, decoderInputSeqDim, decoderInputEmbedDim]
+              attentionMask <- state $ randn' [batchDim, inputSeqDim, inputSeqDim]
+              decoderAttentionMask <- state $ randn' [batchDim, decoderInputSeqDim, decoderInputSeqDim]
+              crossAttentionMask <- state $ randn' [batchDim, decoderInputSeqDim, inputSeqDim]
+              state $ forward sequenceToSequence (input, decoderInput, attentionMask, decoderAttentionMask, crossAttentionMask)
           )
           g
   pure result

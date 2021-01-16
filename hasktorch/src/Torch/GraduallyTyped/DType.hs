@@ -80,10 +80,3 @@ instance (KnownDType dType) => WithDataTypeC ( 'DataType dType) f where
   type WithDataTypeF ( 'DataType dType) f = f
   withDataType f = f (dTypeVal @dType)
   withoutDataType = const
-
-type UnifyDataTypeErrorMessage (dType :: DType) (dType' :: DType) =
-  "The supplied tensors must have the same data type, "
-    % "but different data types were found:"
-    % ""
-    % "    " <> dType <> " and " <> dType' <> "."
-    % ""
