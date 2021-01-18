@@ -179,7 +179,7 @@ getNamedAttributes :: Ptr Module -> IO [(Ptr StdString,Ptr IValue)]
 getNamedAttributes _obj = do
   let new = [C.throwBlock| std::vector<std::tuple<std::string,at::IValue>>* {
               auto module = $(torch::jit::script::Module* _obj);
-              auto obj = module->named_buffers();
+              auto obj = module->named_attributes();
               auto ret = new std::vector<std::tuple<std::string,at::IValue>>();
               for(auto p : obj){
                 ret->push_back({p.name,p.value});
