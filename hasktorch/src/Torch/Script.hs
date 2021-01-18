@@ -149,6 +149,7 @@ data LoadMode
   | WithRequiredGrad
   deriving (Show, Eq)
 
+-- | Load a torchscript file
 load :: LoadMode -> FilePath -> IO ScriptModule
 load WithoutRequiredGrad file = cast1 LibTorch.load file
 load WithRequiredGrad file = do
@@ -217,6 +218,59 @@ updateParameters mode module' inputs = unsafePerformIO $
   where
     setParameters' :: ScriptModule -> [Tensor] -> IO ()
     setParameters' = cast2 LibTorch.setParameters
+
+getNamedParameters ::
+  -- | module
+  ScriptModule ->
+  -- | output
+  [(String,Tensor)]
+getNamedParameters (UnsafeScriptModule m) = unsafePerformIO $ do
+  dat <- LibTorch.getNamedParameters m
+  forM dat $ \(key,value) ->
+    (,) <$> uncast key return <*> uncast value return
+
+getNamedBuffers ::
+  -- | module
+  ScriptModule ->
+  -- | output
+  [(String,Tensor)]
+getNamedBuffers (UnsafeScriptModule m) = unsafePerformIO $ do
+  dat <- LibTorch.getNamedBuffers m
+  forM dat $ \(key,value) ->
+    (,) <$> uncast key return <*> uncast value return
+
+-- | Load all attributes including training flags
+-- This function returns IVObject type as Tensor type.
+-- To get Tensor type, use get getNamedParameters and getNamedBuffers.
+getNamedAttributes ::
+  -- | module
+  ScriptModule ->
+  -- | output
+  [(String,IValue)]
+getNamedAttributes (UnsafeScriptModule m) = unsafePerformIO $ do
+  dat <- LibTorch.getNamedAttributes m
+  forM dat $ \(key,value) ->
+    (,) <$> uncast key return <*> uncast value return
+
+getNamedModules ::
+  -- | module
+  ScriptModule ->
+  -- | output
+  [(String,ScriptModule)]
+getNamedModules (UnsafeScriptModule m) = unsafePerformIO $ do
+  dat <- LibTorch.getNamedModules m
+  forM dat $ \(key,value) ->
+    (,) <$> uncast key return <*> uncast value return
+
+getNamedChildren ::
+  -- | module
+  ScriptModule ->
+  -- | output
+  [(String,ScriptModule)]
+getNamedChildren (UnsafeScriptModule m) = unsafePerformIO $ do
+  dat <- LibTorch.getNamedChildren m
+  forM dat $ \(key,value) ->
+    (,) <$> uncast key return <*> uncast value return
 
 toScriptModule :: RawModule -> IO ScriptModule
 toScriptModule rawModule = do
