@@ -46,6 +46,6 @@ pickleSave inputs file = withCString file $ \cfile -> [C.throwBlock| void {
 pickleLoad :: FilePath -> IO (Ptr IValue)
 pickleLoad file = withCString file $ \cfile -> [C.throwBlock| at::IValue* {
     auto fin = std::ifstream($(char* cfile), std::ios::in | std::ifstream::binary);
-    const std::vector<char> input = std::vector<char>(std::istream_iterator<char>(fin), std::istream_iterator<char>());
+    const std::vector<char> input = std::vector<char>(std::istreambuf_iterator<char>(fin), std::istreambuf_iterator<char>());
     return new at::IValue(torch::pickle_load(input));
   }|]
