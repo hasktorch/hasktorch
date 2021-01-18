@@ -19,8 +19,10 @@ import Torch.Internal.Type
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 C.include "<vector>"
+C.include "<fstream>"
 C.include "<torch/serialize.h>"
 C.include "<ATen/Tensor.h>"
+C.include "<ATen/core/ivalue.h>"
 
 save :: Ptr TensorList -> FilePath -> IO ()
 save inputs file = withCString file $ \cfile -> [C.throwBlock| void {
@@ -32,4 +34,18 @@ load file = withCString file $ \cfile -> [C.throwBlock| std::vector<at::Tensor>*
     std::vector<at::Tensor> tensor_vec;                                                
     torch::load(tensor_vec,$(char* cfile));
     return new std::vector<at::Tensor>(tensor_vec);
+  }|]
+
+pickleSave :: Ptr IValue -> FilePath -> IO ()
+pickleSave inputs file = withCString file $ \cfile -> [C.throwBlock| void {
+    auto output = torch::pickle_save(*$(at::IValue* inputs));
+    auto fout = std::ofstream($(char* cfile), std::ios::out | std::ofstream::binary);
+    std::copy(output.begin(), output.end(), std::ostreambuf_iterator<char>(fout));
+  }|]
+
+pickleLoad :: FilePath -> IO (Ptr IValue)
+pickleLoad file = withCString file $ \cfile -> [C.throwBlock| at::IValue* {
+    auto fin = std::ifstream($(char* cfile), std::ios::in | std::ifstream::binary);
+    const std::vector<char> input = std::vector<char>(std::istream_iterator<char>(fin), std::istream_iterator<char>());
+    return new at::IValue(torch::pickle_load(input));
   }|]

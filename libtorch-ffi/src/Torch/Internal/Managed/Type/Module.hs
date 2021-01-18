@@ -24,6 +24,7 @@ import Torch.Internal.Type
 import Torch.Internal.Class
 import Torch.Internal.Cast
 import Torch.Internal.Objects
+import Control.Monad(forM)
 
 import qualified Torch.Internal.Unmanaged.Type.Module as Unmanaged
 
@@ -59,6 +60,46 @@ getParameters = cast1 Unmanaged.getParameters
 
 setParameters :: ForeignPtr Module -> ForeignPtr TensorList -> IO ()
 setParameters = cast2 Unmanaged.setParameters
+
+getNamedParameters :: ForeignPtr Module -> IO [(ForeignPtr StdString,ForeignPtr Tensor)]
+getNamedParameters obj = withForeignPtr obj $ \obj' -> do
+  v <- Unmanaged.getNamedParameters obj'
+  forM v $ \(a,b) -> do
+    a' <- uncast a return 
+    b' <- uncast b return
+    return (a',b')
+
+getNamedBuffers :: ForeignPtr Module -> IO [(ForeignPtr StdString,ForeignPtr Tensor)]
+getNamedBuffers obj = withForeignPtr obj $ \obj' -> do
+  v <- Unmanaged.getNamedBuffers obj'
+  forM v $ \(a,b) -> do
+    a' <- uncast a return 
+    b' <- uncast b return
+    return (a',b')
+
+getNamedAttributes :: ForeignPtr Module -> IO [(ForeignPtr StdString,ForeignPtr IValue)]
+getNamedAttributes obj = withForeignPtr obj $ \obj' -> do
+  v <- Unmanaged.getNamedAttributes obj'
+  forM v $ \(a,b) -> do
+    a' <- uncast a return 
+    b' <- uncast b return
+    return (a',b')
+
+getNamedModules :: ForeignPtr Module -> IO [(ForeignPtr StdString,ForeignPtr Module)]
+getNamedModules obj = withForeignPtr obj $ \obj' -> do
+  v <- Unmanaged.getNamedModules obj'
+  forM v $ \(a,b) -> do
+    a' <- uncast a return 
+    b' <- uncast b return
+    return (a',b')
+
+getNamedChildren :: ForeignPtr Module -> IO [(ForeignPtr StdString,ForeignPtr Module)]
+getNamedChildren obj = withForeignPtr obj $ \obj' -> do
+  v <- Unmanaged.getNamedChildren obj'
+  forM v $ \(a,b) -> do
+    a' <- uncast a return 
+    b' <- uncast b return
+    return (a',b')
 
 toDevice :: ForeignPtr Module -> DeviceType -> Int16 -> IO ()
 toDevice = cast3 Unmanaged.toDevice

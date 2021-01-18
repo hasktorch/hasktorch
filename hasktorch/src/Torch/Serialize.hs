@@ -18,6 +18,7 @@ import Torch.Internal.Cast
 import qualified Torch.Internal.Managed.Serialize as S
 import Torch.NN
 import Torch.Tensor
+import Torch.Script hiding(save,load,clone)
 
 save ::
   -- | inputs
@@ -34,6 +35,22 @@ load ::
   -- | output
   IO [Tensor]
 load = cast1 S.load
+
+pickleSave ::
+  -- | inputs
+  IValue ->
+  -- | file
+  FilePath ->
+  -- | output
+  IO ()
+pickleSave = cast2 S.pickleSave
+
+pickleLoad ::
+  -- | file
+  FilePath ->
+  -- | output
+  IO IValue
+pickleLoad = cast1 S.pickleLoad
 
 saveParams ::
   Parameterized f =>
