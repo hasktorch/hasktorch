@@ -149,6 +149,7 @@ data LoadMode
   | WithRequiredGrad
   deriving (Show, Eq)
 
+-- | Load a torchscript file
 load :: LoadMode -> FilePath -> IO ScriptModule
 load WithoutRequiredGrad file = cast1 LibTorch.load file
 load WithRequiredGrad file = do
@@ -238,6 +239,9 @@ getNamedBuffers (UnsafeScriptModule m) = unsafePerformIO $ do
   forM dat $ \(key,value) ->
     (,) <$> uncast key return <*> uncast value return
 
+-- | Load all attributes including training flags
+-- This function returns IVObject type as Tensor type.
+-- To get Tensor type, use get getNamedParameters and getNamedBuffers.
 getNamedAttributes ::
   -- | module
   ScriptModule ->

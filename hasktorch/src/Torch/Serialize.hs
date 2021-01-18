@@ -36,6 +36,7 @@ load ::
   IO [Tensor]
 load = cast1 S.load
 
+-- | Save state_dict
 pickleSave ::
   -- | inputs
   IValue ->
@@ -45,6 +46,10 @@ pickleSave ::
   IO ()
 pickleSave = cast2 S.pickleSave
 
+-- | Load a state_dict file
+-- You should use a dict function of pytorch to save a state_dict file as follows.
+--
+-- > torch.save(dict(model.state_dict()), "state_dict.pth")
 pickleLoad ::
   -- | file
   FilePath ->
