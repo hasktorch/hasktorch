@@ -15,3 +15,9 @@ save = cast2 Unmanaged.save
 
 load :: FilePath -> IO (ForeignPtr TensorList)
 load = cast1 Unmanaged.load
+
+pickleSave :: ForeignPtr IValue -> FilePath -> IO ()
+pickleSave = cast2 Unmanaged.pickleSave
+
+pickleLoad :: FilePath -> IO (ForeignPtr IValue)
+pickleLoad = cast1 Unmanaged.pickleLoad

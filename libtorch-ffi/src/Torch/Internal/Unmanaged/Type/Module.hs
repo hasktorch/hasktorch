@@ -22,6 +22,8 @@ import qualified Language.C.Inline.Cpp.Exceptions as C
 import qualified Language.C.Types as C
 import Torch.Internal.Type
 import Torch.Internal.Unmanaged.Helper
+import Control.Exception.Safe (bracket)
+import Control.Monad (forM)
 
 C.context $ C.cppCtx <> mempty {C.ctxTypesTable = typeTable}
 
@@ -128,6 +130,117 @@ setParameters obj params =
       module->register_parameter(p.name,(*vec)[i],false);
     }
   }|]
+
+getNamedParameters :: Ptr Module -> IO [(Ptr StdString,Ptr Tensor)]
+getNamedParameters _obj = do
+  let new = [C.throwBlock| std::vector<std::tuple<std::string,at::Tensor>>* {
+              auto module = $(torch::jit::script::Module* _obj);
+              auto obj = module->named_parameters();
+              auto ret = new std::vector<std::tuple<std::string,at::Tensor>>();
+              for(auto p : obj){
+                ret->push_back({p.name,p.value});
+              }
+              return ret;
+             }|]
+      free dat = [C.throwBlock| void {
+              delete $(std::vector<std::tuple<std::string,at::Tensor>>* dat);
+             }|]
+  bracket new free $ \dat -> do
+    size <- [C.throwBlock| int64_t { return (long int)$(std::vector<std::tuple<std::string,at::Tensor>>* dat)->size();}|]
+    ret <- forM [0..(size-1)] $ \i -> do
+      key <- [C.throwBlock| std::string* { return new std::string(std::get<0>($(std::vector<std::tuple<std::string,at::Tensor>>* dat)->at($(int64_t i))));}|]
+      val <- [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<1>($(std::vector<std::tuple<std::string,at::Tensor>>* dat)->at($(int64_t i))));}|]
+      return (key,val)
+    return ret
+
+getNamedBuffers :: Ptr Module -> IO [(Ptr StdString,Ptr Tensor)]
+getNamedBuffers _obj = do
+  let new = [C.throwBlock| std::vector<std::tuple<std::string,at::Tensor>>* {
+              auto module = $(torch::jit::script::Module* _obj);
+              auto obj = module->named_buffers();
+              auto ret = new std::vector<std::tuple<std::string,at::Tensor>>();
+              for(auto p : obj){
+                ret->push_back({p.name,p.value});
+              }
+              return ret;
+             }|]
+      free dat = [C.throwBlock| void {
+              delete $(std::vector<std::tuple<std::string,at::Tensor>>* dat);
+             }|]
+  bracket new free $ \dat -> do
+    size <- [C.throwBlock| int64_t { return (long int)$(std::vector<std::tuple<std::string,at::Tensor>>* dat)->size();}|]
+    ret <- forM [0..(size-1)] $ \i -> do
+      key <- [C.throwBlock| std::string* { return new std::string(std::get<0>($(std::vector<std::tuple<std::string,at::Tensor>>* dat)->at($(int64_t i))));}|]
+      val <- [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<1>($(std::vector<std::tuple<std::string,at::Tensor>>* dat)->at($(int64_t i))));}|]
+      return (key,val)
+    return ret
+
+getNamedAttributes :: Ptr Module -> IO [(Ptr StdString,Ptr IValue)]
+getNamedAttributes _obj = do
+  let new = [C.throwBlock| std::vector<std::tuple<std::string,at::IValue>>* {
+              auto module = $(torch::jit::script::Module* _obj);
+              auto obj = module->named_attributes();
+              auto ret = new std::vector<std::tuple<std::string,at::IValue>>();
+              for(auto p : obj){
+                ret->push_back({p.name,p.value});
+              }
+              return ret;
+             }|]
+      free dat = [C.throwBlock| void {
+              delete $(std::vector<std::tuple<std::string,at::IValue>>* dat);
+             }|]
+  bracket new free $ \dat -> do
+    size <- [C.throwBlock| int64_t { return (long int)$(std::vector<std::tuple<std::string,at::IValue>>* dat)->size();}|]
+    ret <- forM [0..(size-1)] $ \i -> do
+      key <- [C.throwBlock| std::string* { return new std::string(std::get<0>($(std::vector<std::tuple<std::string,at::IValue>>* dat)->at($(int64_t i))));}|]
+      val <- [C.throwBlock| at::IValue* { return new at::IValue(std::get<1>($(std::vector<std::tuple<std::string,at::IValue>>* dat)->at($(int64_t i))));}|]
+      return (key,val)
+    return ret
+
+getNamedModules :: Ptr Module -> IO [(Ptr StdString,Ptr Module)]
+getNamedModules _obj = do
+  let new = [C.throwBlock| std::vector<std::tuple<std::string,torch::jit::script::Module>>* {
+              auto module = $(torch::jit::script::Module* _obj);
+              auto obj = module->named_modules();
+              auto ret = new std::vector<std::tuple<std::string,torch::jit::script::Module>>();
+              for(auto p : obj){
+                ret->push_back({p.name,p.value});
+              }
+              return ret;
+             }|]
+      free dat = [C.throwBlock| void {
+              delete $(std::vector<std::tuple<std::string,torch::jit::script::Module>>* dat);
+             }|]
+  bracket new free $ \dat -> do
+    size <- [C.throwBlock| int64_t { return (long int)$(std::vector<std::tuple<std::string,torch::jit::script::Module>>* dat)->size();}|]
+    ret <- forM [0..(size-1)] $ \i -> do
+      key <- [C.throwBlock| std::string* { return new std::string(std::get<0>($(std::vector<std::tuple<std::string,torch::jit::script::Module>>* dat)->at($(int64_t i))));}|]
+      val <- [C.throwBlock| torch::jit::script::Module* { return new torch::jit::script::Module(std::get<1>($(std::vector<std::tuple<std::string,torch::jit::script::Module>>* dat)->at($(int64_t i))));}|]
+      return (key,val)
+    return ret
+
+getNamedChildren :: Ptr Module -> IO [(Ptr StdString,Ptr Module)]
+getNamedChildren _obj = do
+  let new = [C.throwBlock| std::vector<std::tuple<std::string,torch::jit::script::Module>>* {
+              auto module = $(torch::jit::script::Module* _obj);
+              auto obj = module->named_children();
+              auto ret = new std::vector<std::tuple<std::string,torch::jit::script::Module>>();
+              for(auto p : obj){
+                ret->push_back({p.name,p.value});
+              }
+              return ret;
+             }|]
+      free dat = [C.throwBlock| void {
+              delete $(std::vector<std::tuple<std::string,torch::jit::script::Module>>* dat);
+             }|]
+  bracket new free $ \dat -> do
+    size <- [C.throwBlock| int64_t { return (long int)$(std::vector<std::tuple<std::string,torch::jit::script::Module>>* dat)->size();}|]
+    ret <- forM [0..(size-1)] $ \i -> do
+      key <- [C.throwBlock| std::string* { return new std::string(std::get<0>($(std::vector<std::tuple<std::string,torch::jit::script::Module>>* dat)->at($(int64_t i))));}|]
+      val <- [C.throwBlock| torch::jit::script::Module* { return new torch::jit::script::Module(std::get<1>($(std::vector<std::tuple<std::string,torch::jit::script::Module>>* dat)->at($(int64_t i))));}|]
+      return (key,val)
+    return ret
+
 
 toDevice :: Ptr Module -> DeviceType -> Int16 -> IO ()
 toDevice obj device device_index =
