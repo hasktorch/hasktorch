@@ -22,6 +22,11 @@ import System.IO (hPutStrLn, stderr)
 import System.Mem (performGC)
 import System.SysInfo
 
+foreign import ccall unsafe "hasktorch_finalizer.h showWeakPtrList"
+  showWeakPtrList :: IO ()
+
+
+
 prettyException :: IO a -> IO a
 prettyException func =
   func `catch` \a@(CppStdException message) -> do

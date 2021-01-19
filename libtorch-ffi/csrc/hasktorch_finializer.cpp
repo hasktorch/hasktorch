@@ -1,4 +1,6 @@
 #include "hasktorch_finializer.h"
+#undef CHECK
+#include "Rts.h"
 
 void delete_tensor(at::Tensor* tensor){
   delete tensor;
@@ -170,4 +172,185 @@ void delete_cdoublecdouble(std::tuple<double,double>* object){
 
 void delete_optimizer(torch::optim::Optimizer* object){
   delete object;
+}
+
+
+typedef void (*FUNC)(void *);
+void
+showCFinalizers(StgCFinalizerList *list)
+{
+  StgCFinalizerList *head;
+  for (head = list;
+       (StgClosure *)head != &stg_NO_FINALIZER_closure;
+       head = (StgCFinalizerList *)head->link)
+    {
+      /* if (head->flag) */
+      /* 	((void (*)(void *, void *))head->fptr)(head->eptr, head->ptr); */
+      /* else */
+      /* 	((void (*)(void *))head->fptr)(head->ptr); */
+      FUNC ptr = (void (*)(void *))head->fptr;
+      if(ptr == (FUNC)delete_tensor){
+	printf("tensor\n");
+      }
+      if(ptr == (FUNC)delete_tensorlist){
+	printf("tensorlist\n");
+      }
+      if(ptr == (FUNC)delete_tensorindex){
+	printf("tensorindex\n");
+      }
+      if(ptr == (FUNC)delete_tensorindexlist){
+	printf("tensorindexlist\n");
+      }
+      if(ptr == (FUNC)delete_c10dict){
+	printf("c10dict\n");
+      }
+      if(ptr == (FUNC)delete_c10listivalue){
+	printf("c10listivalue\n");
+      }
+      if(ptr == (FUNC)delete_c10listtensor){
+	printf("c10listtensor\n");
+      }
+      if(ptr == (FUNC)delete_c10listdouble){
+	printf("c10listdouble\n");
+      }
+      if(ptr == (FUNC)delete_c10listint){
+	printf("c10listint\n");
+      }
+      if(ptr == (FUNC)delete_c10listbool){
+	printf("c10listbool\n");
+      }
+      if(ptr == (FUNC)delete_stdvectordouble){
+	printf("stdvectordouble\n");
+      }
+      if(ptr == (FUNC)delete_stdvectorint){
+	printf("stdvectorint\n");
+      }
+      if(ptr == (FUNC)delete_stdvectorbool){
+	printf("stdvectorbool\n");
+      }
+      if(ptr == (FUNC)delete_c10tuple){
+	printf("c10tuple\n");
+      }
+      if(ptr == (FUNC)delete_context){
+	printf("context\n");
+      }
+      if(ptr == (FUNC)delete_dimname){
+	printf("dimname\n");
+      }
+      if(ptr == (FUNC)delete_dimnamelist){
+	printf("dimnamelist\n");
+      }
+      if(ptr == (FUNC)delete_generator){
+	printf("generator\n");
+      }
+      if(ptr == (FUNC)delete_ivalue){
+	printf("ivalue\n");
+      }
+      if(ptr == (FUNC)delete_ivaluelist){
+	printf("ivaluelist\n");
+      }
+      if(ptr == (FUNC)delete_intarray){
+	printf("intarray\n");
+      }
+      if(ptr == (FUNC)delete_module){
+	printf("module\n");
+      }
+      if(ptr == (FUNC)delete_jitgraph){
+	printf("jitgraph\n");
+      }
+      if(ptr == (FUNC)delete_jitnode){
+	printf("jitnode\n");
+      }
+      if(ptr == (FUNC)delete_jitvalue){
+	printf("jitvalue\n");
+      }
+      if(ptr == (FUNC)delete_scalar){
+	printf("scalar\n");
+      }
+      if(ptr == (FUNC)delete_stdarraybool2){
+	printf("stdarraybool2\n");
+      }
+      if(ptr == (FUNC)delete_stdarraybool3){
+	printf("stdarraybool3\n");
+      }
+      if(ptr == (FUNC)delete_stdarraybool4){
+	printf("stdarraybool4\n");
+      }
+      if(ptr == (FUNC)delete_stdstring){
+	printf("stdstring\n");
+      }
+      if(ptr == (FUNC)delete_storage){
+	printf("storage\n");
+      }
+      if(ptr == (FUNC)delete_symbol){
+	printf("symbol\n");
+      }
+      if(ptr == (FUNC)delete_tensoroptions){
+	printf("tensoroptions\n");
+      }
+      if(ptr == (FUNC)delete_tensortensor){
+	printf("tensorten\n");
+      }
+      if(ptr == (FUNC)delete_tensortensortensortensortensor){
+	printf("tensortensortensortensorten\n");
+      }
+      if(ptr == (FUNC)delete_tensortensortensortensorlist){
+	printf("tensortensortensortensorl\n");
+      }
+      if(ptr == (FUNC)delete_tensortensortensortensorint64){
+	printf("tensortensortensortensorin\n");
+      }
+      if(ptr == (FUNC)delete_tensortensortensor){
+	printf("tensortensorten\n");
+      }
+      if(ptr == (FUNC)delete_tensortensortensortensor){
+	printf("tensortensortensorten\n");
+      }
+      if(ptr == (FUNC)delete_tensortensorcdoubleint64){
+	printf("tensortensorcdoublein\n");
+      }
+      if(ptr == (FUNC)delete_cdoubleint64){
+	printf("cdoublein\n");
+      }
+      if(ptr == (FUNC)delete_cdoublecdouble){
+	printf("cdoublecdou\n");
+      }
+      if(ptr == (FUNC)delete_optimizer){
+	printf("optimi\n");
+      }
+    }
+}
+
+void
+showAllCFinalizers(StgWeak *list)
+{
+  StgWeak *w;
+  for (w = list; w; w = w->link) {
+    // We need to filter out DEAD_WEAK objects, because it's not guaranteed
+    // that the list will not have them when shutting down.
+    // They only get filtered out during GC for the generation they
+    // belong to.
+    // If there's no major GC between the time that the finalizer for the
+    // object from the oldest generation is manually called and shutdown
+    // we end up running the same finalizer twice. See #7170.
+    const StgInfoTable *winfo = w->header.info;
+    if (winfo != &stg_DEAD_WEAK_info) {
+      showCFinalizers((StgCFinalizerList *)w->cfinalizers);
+    }
+  }
+
+}
+
+void
+showWeakPtrList(){
+  //  runAllCFinalizers(StgWeak *w)
+  /* run C finalizers for all active weak pointers */
+  //for (uint32_t i = 0; i < n_capabilities; i++) {
+  // showAllCFinalizers(capabilities[i]->weak_ptr_list_hd);
+  //}
+  ACQUIRE_LOCK(sm_mutex);
+  for (uint32_t g = 0; g < RtsFlags.GcFlags.generations; g++) {
+    showAllCFinalizers(generations[g].weak_ptr_list);
+  }
+  RELEASE_LOCK(sm_mutex);
 }

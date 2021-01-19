@@ -19,6 +19,7 @@ import System.Environment
 import Torch
 import Torch.Serialize
 import Torch.Typed.Vision (initMnist)
+import Torch.Internal.GC
 import qualified Torch.Vision as V
 import Prelude hiding (exp)
 
@@ -91,6 +92,7 @@ main = do
   model <- foldLoop init 5 $ \model _ ->
     runContT (streamFromMap (datasetOpts 2) trainMnist) $ trainLoop localDevice model optimizer . fst
 
+  showWeakPtrList
   -- show test images + labels
   forM_ [0 .. 10] $ displayImages model <=< getItem testMnist
 
