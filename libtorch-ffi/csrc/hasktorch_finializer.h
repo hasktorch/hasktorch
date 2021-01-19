@@ -99,6 +99,6 @@ extern "C" {
   void delete_cdoublecdouble(std::tuple<double,double>* ptr);
 
   void delete_optimizer(torch::optim::Optimizer* ptr);
+  void showObject(void* ptr, void* fptr);
   void showWeakPtrList();
-
 };

@@ -163,6 +163,7 @@ library
  default-extensions:          Strict
                             , StrictData
  cxx-sources:          csrc/hasktorch_finializer.cpp
+ c-sources:            csrc/dump.c
  install-includes:     csrc/hasktorch_finializer.h
  include-dirs:         csrc
 
