@@ -261,12 +261,12 @@ uncheckedOnes ::
   [Dim String Integer] ->
   -- | Returned tensor.
   Tensor
-    'Dependent
+    'WithoutGradient
     'UncheckedLayout
     'UncheckedDevice
     'UncheckedDataType
     'UncheckedShape
-uncheckedOnes = ones @ 'Dependent @ 'UncheckedLayout @ 'UncheckedDevice @ 'UncheckedDataType @ 'UncheckedShape
+uncheckedOnes = ones @ 'WithoutGradient @ 'UncheckedLayout @ 'UncheckedDevice @ 'UncheckedDataType @ 'UncheckedShape
 
 zeros ::
   forall requiresGradient layout device dataType shape.
@@ -340,10 +340,23 @@ checkedRandn ::
 checkedRandn = randn @requiresGradient @( 'Layout layoutType) @( 'Device deviceType) @( 'DataType dType) @( 'Shape dims) @( 'Device deviceType)
 
 uncheckedRandn ::
+  -- | Memory layout of the tensor.
   LayoutType ->
+  -- | Compute device of the tensor.
   DeviceType Int16 ->
+  -- | Data type of the tensor.
   DType ->
+  -- | Shape of the tensor.
   [Dim String Integer] ->
+  -- | Random number generator.
   Generator 'UncheckedDevice ->
-  (Tensor 'Dependent 'UncheckedLayout 'UncheckedDevice 'UncheckedDataType 'UncheckedShape, Generator 'UncheckedDevice)
-uncheckedRandn = randn @ 'Dependent @ 'UncheckedLayout @ 'UncheckedDevice @ 'UncheckedDataType @ 'UncheckedShape
+  -- | Returned tensor and generator.
+  ( Tensor
+      'WithoutGradient
+      'UncheckedLayout
+      'UncheckedDevice
+      'UncheckedDataType
+      'UncheckedShape,
+    Generator 'UncheckedDevice
+  )
+uncheckedRandn = randn @ 'WithoutGradient @ 'UncheckedLayout @ 'UncheckedDevice @ 'UncheckedDataType @ 'UncheckedShape

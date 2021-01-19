@@ -13,7 +13,7 @@ import System.IO.Unsafe (unsafePerformIO)
 import Torch.GraduallyTyped.Prelude (Reverse, Seq)
 import Torch.GraduallyTyped.Shape (Dim (..), Name, Shape (..), Size)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
-import Torch.GraduallyTyped.Unify (type (<+>))
+import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import Torch.Internal.Cast (cast2, cast3)
 import qualified Torch.Internal.Managed.Native as ATen
 import Type.Errors.Pretty (type (%), type (<>))
@@ -117,7 +117,7 @@ linearWithBias ::
   Tensor requiresGradient'' layout'' device'' dataType'' shape'' ->
   -- | output
   Tensor
-    requiresGradient''
+    (requiresGradient' <|> requiresGradient'' <|> requiresGradient'')
     (layout <+> (layout' <+> layout''))
     (device <+> (device' <+> device''))
     (dataType <+> (dataType' <+> dataType''))
@@ -144,7 +144,7 @@ linearWithoutBias ::
   Tensor requiresGradient' layout' device' dataType' shape' ->
   -- | output
   Tensor
-    requiresGradient'
+    (requiresGradient <|> requiresGradient')
     (layout <+> layout')
     (device <+> device')
     (dataType <+> dataType')

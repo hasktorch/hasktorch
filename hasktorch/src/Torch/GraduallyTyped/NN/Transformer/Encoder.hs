@@ -24,7 +24,7 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (.
 import Torch.GraduallyTyped.Layout (Layout, LayoutType)
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout)
-import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormC, LayerNorm)
+import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormWithoutBiasC, LayerNorm, LayerNormHasBias (..))
 import Torch.GraduallyTyped.NN.Transformer.Stack (HasForwardTransformerStack, HasForwardTransformerStackGeneratorOutput, HasForwardTransformerStackOutput, HasInitializeTransformerStack, HasInitializeTransformerStackC, TransformerStack)
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient)
@@ -50,7 +50,7 @@ data
     { -- | encoder layer stack
       teStack :: TransformerStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP,
       -- | encoder layer norm
-      teLayerNorm :: LayerNorm device dataType ( 'Shape '[queryEmbedDim]),
+      teLayerNorm :: LayerNorm 'WithoutBias device dataType ( 'Shape '[queryEmbedDim]),
       -- | encoder dropout
       teDropout :: Dropout dropoutP
     } ->
@@ -69,7 +69,7 @@ type HasInitializeTransformerEncoderC numLayers device dataType headDim headEmbe
       queryEmbedDim
       ffnDim
       dropoutP,
-    HasInitializeLayerNormC device dataType ( 'Shape '[queryEmbedDim]),
+    HasInitializeLayerNormWithoutBiasC device dataType ( 'Shape '[queryEmbedDim]),
     Scalar dropoutP,
     WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device)))))))),
     WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device))))))),
@@ -154,7 +154,7 @@ instance
               withoutShape @( 'Shape '[queryEmbedDim])
                 ( withoutDataType @dataType
                     ( withoutDevice @device
-                        ( initialize @(LayerNorm device dataType ( 'Shape '[queryEmbedDim]))
+                        ( initialize @(LayerNorm 'WithoutBias device dataType ( 'Shape '[queryEmbedDim]))
                         )
                         deviceType
                     )
@@ -175,81 +175,82 @@ type HasForwardTransformerEncoderC
   (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
   (ffnDim :: Dim (Name Symbol) (Size Nat))
   (dropoutP :: Type)
-  (requiresGradient :: RequiresGradient)
+  (inputRequiresGradient :: RequiresGradient)
   (inputLayout :: Layout LayoutType)
   (inputDevice :: Device (DeviceType Nat))
   (inputDataType :: DataType DType)
   (inputShape :: Shape [Dim (Name Symbol) (Size Nat)])
+  (attentionMaskRequiresGradient :: RequiresGradient)
   (attentionMaskLayout :: Layout LayoutType)
   (attentionMaskDevice :: Device (DeviceType Nat))
   (attentionMaskDataType :: DataType DType)
   (attentionMaskShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (generatorDevice :: Device (DeviceType Nat)) =
   ( Scalar dropoutP,
-    HasForwardTransformerStack (1 <=? numLayers) numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP requiresGradient inputLayout (inputDevice <+> generatorDevice) inputDataType inputShape attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape (inputDevice <+> generatorDevice),
+    HasForwardTransformerStack (1 <=? numLayers) numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP inputRequiresGradient inputLayout (inputDevice <+> generatorDevice) inputDataType inputShape attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape (inputDevice <+> generatorDevice),
     HasForward
-      (LayerNorm device dataType ( 'Shape '[queryEmbedDim]))
-      (HasForwardTransformerStackOutput (1 <=? numLayers) numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim requiresGradient inputLayout (inputDevice <+> generatorDevice) inputDataType inputShape attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape (inputDevice <+> generatorDevice))
+      (LayerNorm 'WithoutBias device dataType ( 'Shape '[queryEmbedDim]))
+      (HasForwardTransformerStackOutput (1 <=? numLayers) numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim inputRequiresGradient inputLayout (inputDevice <+> generatorDevice) inputDataType inputShape attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape (inputDevice <+> generatorDevice))
       (HasForwardTransformerStackGeneratorOutput (1 <=? numLayers) numLayers device (inputDevice <+> generatorDevice) attentionMaskDevice (inputDevice <+> generatorDevice)),
     HasForward
       (Dropout dropoutP)
       ( ForwardOutput
-          (LayerNorm device dataType ( 'Shape '[queryEmbedDim]))
-          (HasForwardTransformerStackOutput (1 <=? numLayers) numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim requiresGradient inputLayout (inputDevice <+> generatorDevice) inputDataType inputShape attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape (inputDevice <+> generatorDevice))
+          (LayerNorm 'WithoutBias device dataType ( 'Shape '[queryEmbedDim]))
+          (HasForwardTransformerStackOutput (1 <=? numLayers) numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim inputRequiresGradient inputLayout (inputDevice <+> generatorDevice) inputDataType inputShape attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape (inputDevice <+> generatorDevice))
           (HasForwardTransformerStackGeneratorOutput (1 <=? numLayers) numLayers device (inputDevice <+> generatorDevice) attentionMaskDevice (inputDevice <+> generatorDevice))
       )
       ( ForwardGeneratorOutput
-          (LayerNorm device dataType ( 'Shape '[queryEmbedDim]))
-          (HasForwardTransformerStackOutput (1 <=? numLayers) numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim requiresGradient inputLayout (inputDevice <+> generatorDevice) inputDataType inputShape attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape (inputDevice <+> generatorDevice))
+          (LayerNorm 'WithoutBias device dataType ( 'Shape '[queryEmbedDim]))
+          (HasForwardTransformerStackOutput (1 <=? numLayers) numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim inputRequiresGradient inputLayout (inputDevice <+> generatorDevice) inputDataType inputShape attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape (inputDevice <+> generatorDevice))
           (HasForwardTransformerStackGeneratorOutput (1 <=? numLayers) numLayers device (inputDevice <+> generatorDevice) attentionMaskDevice (inputDevice <+> generatorDevice))
       )
   )
 
 instance
-  HasForwardTransformerEncoderC numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP requiresGradient inputLayout inputDevice inputDataType inputShape attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape generatorDevice =>
+  HasForwardTransformerEncoderC numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP inputRequiresGradient inputLayout inputDevice inputDataType inputShape attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape generatorDevice =>
   HasForward
     (TransformerEncoder numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
-    ( Tensor requiresGradient inputLayout inputDevice inputDataType inputShape,
-      Tensor requiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+    ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+      Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
     )
     (Generator generatorDevice)
   where
   type
     ForwardOutput
       (TransformerEncoder numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
-      ( Tensor requiresGradient inputLayout inputDevice inputDataType inputShape,
-        Tensor requiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+      ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+        Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
       )
       (Generator generatorDevice) =
       ForwardOutput
         (Dropout dropoutP)
         ( ForwardOutput
-            (LayerNorm device dataType ( 'Shape '[queryEmbedDim]))
-            (HasForwardTransformerStackOutput (1 <=? numLayers) numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim requiresGradient inputLayout (inputDevice <+> generatorDevice) inputDataType inputShape attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape (inputDevice <+> generatorDevice))
+            (LayerNorm 'WithoutBias device dataType ( 'Shape '[queryEmbedDim]))
+            (HasForwardTransformerStackOutput (1 <=? numLayers) numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim inputRequiresGradient inputLayout (inputDevice <+> generatorDevice) inputDataType inputShape attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape (inputDevice <+> generatorDevice))
             (HasForwardTransformerStackGeneratorOutput (1 <=? numLayers) numLayers device (inputDevice <+> generatorDevice) attentionMaskDevice (inputDevice <+> generatorDevice))
         )
         ( ForwardGeneratorOutput
-            (LayerNorm device dataType ( 'Shape '[queryEmbedDim]))
-            (HasForwardTransformerStackOutput (1 <=? numLayers) numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim requiresGradient inputLayout (inputDevice <+> generatorDevice) inputDataType inputShape attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape (inputDevice <+> generatorDevice))
+            (LayerNorm 'WithoutBias device dataType ( 'Shape '[queryEmbedDim]))
+            (HasForwardTransformerStackOutput (1 <=? numLayers) numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim inputRequiresGradient inputLayout (inputDevice <+> generatorDevice) inputDataType inputShape attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape (inputDevice <+> generatorDevice))
             (HasForwardTransformerStackGeneratorOutput (1 <=? numLayers) numLayers device (inputDevice <+> generatorDevice) attentionMaskDevice (inputDevice <+> generatorDevice))
         )
   type
     ForwardGeneratorOutput
       (TransformerEncoder numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
-      ( Tensor requiresGradient inputLayout inputDevice inputDataType inputShape,
-        Tensor requiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+      ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+        Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
       )
       (Generator generatorDevice) =
       ForwardGeneratorOutput
         (Dropout dropoutP)
         ( ForwardOutput
-            (LayerNorm device dataType ( 'Shape '[queryEmbedDim]))
-            (HasForwardTransformerStackOutput (1 <=? numLayers) numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim requiresGradient inputLayout (inputDevice <+> generatorDevice) inputDataType inputShape attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape (inputDevice <+> generatorDevice))
+            (LayerNorm 'WithoutBias device dataType ( 'Shape '[queryEmbedDim]))
+            (HasForwardTransformerStackOutput (1 <=? numLayers) numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim inputRequiresGradient inputLayout (inputDevice <+> generatorDevice) inputDataType inputShape attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape (inputDevice <+> generatorDevice))
             (HasForwardTransformerStackGeneratorOutput (1 <=? numLayers) numLayers device (inputDevice <+> generatorDevice) attentionMaskDevice (inputDevice <+> generatorDevice))
         )
         ( ForwardGeneratorOutput
-            (LayerNorm device dataType ( 'Shape '[queryEmbedDim]))
-            (HasForwardTransformerStackOutput (1 <=? numLayers) numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim requiresGradient inputLayout (inputDevice <+> generatorDevice) inputDataType inputShape attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape (inputDevice <+> generatorDevice))
+            (LayerNorm 'WithoutBias device dataType ( 'Shape '[queryEmbedDim]))
+            (HasForwardTransformerStackOutput (1 <=? numLayers) numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim inputRequiresGradient inputLayout (inputDevice <+> generatorDevice) inputDataType inputShape attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape (inputDevice <+> generatorDevice))
             (HasForwardTransformerStackGeneratorOutput (1 <=? numLayers) numLayers device (inputDevice <+> generatorDevice) attentionMaskDevice (inputDevice <+> generatorDevice))
         )
   forward TransformerEncoder {..} (input, attentionMask) =

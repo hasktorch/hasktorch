@@ -34,7 +34,7 @@ tensorOptions ::
   TensorOptions
 tensorOptions requiresGradient layoutType deviceType dType = unsafePerformIO $ do
   opts :: TensorOptions <- cast1 ATen.newTensorOptions_s dType
-  opts :: TensorOptions <- let b = requiresGradient == Independent in cast2 ATen.tensorOptions_requires_grad_b opts b
+  opts :: TensorOptions <- let b = requiresGradient == WithGradient in cast2 ATen.tensorOptions_requires_grad_b opts b
   opts :: TensorOptions <- withDevice deviceType opts
   opts :: TensorOptions <- cast2 ATen.tensorOptions_layout_L opts layoutType
   return opts

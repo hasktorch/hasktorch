@@ -11,7 +11,7 @@ import Torch.GraduallyTyped.DType (DataType (DataType))
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape (BroadcastShapesF)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
-import Torch.GraduallyTyped.Unify (type (<+>))
+import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import Torch.Internal.Cast (cast1, cast2, cast3, cast4)
 import qualified Torch.Internal.Managed.Native as ATen
 import Prelude hiding (abs)
@@ -88,14 +88,14 @@ acosh = unsafePerformIO . cast1 ATen.acosh_t
 --        ('DataType 'Float)
 --        ('Shape '[ 'Dim ('Sized 4), 'Dim ('NamedSized "feature" 4)])
 add ::
-  forall requiresGradient layout device dataType shape layout' device' dataType' shape'.
+  forall requiresGradient layout device dataType shape requiresGradient' layout' device' dataType' shape'.
   -- | input tensor
   Tensor requiresGradient layout device dataType shape ->
   -- | other tensor
-  Tensor requiresGradient layout' device' dataType' shape' ->
+  Tensor requiresGradient' layout' device' dataType' shape' ->
   -- | output tensor
   Tensor
-    requiresGradient
+    (requiresGradient <|> requiresGradient')
     (layout <+> layout')
     (device <+> device')
     (dataType <+> dataType')
@@ -234,14 +234,18 @@ atanh = unsafePerformIO . cast1 ATen.atanh_t
 --
 -- Note that the shapes of 'input' and 'other' must be broadcastable.
 atan2 ::
-  forall requiresGradient layout device dataType shape shape' shape''.
-  (shape'' ~ BroadcastShapesF shape shape') =>
+  forall requiresGradient layout device dataType shape requiresGradient' layout' device' dataType' shape'.
   -- | input tensor
   Tensor requiresGradient layout device dataType shape ->
   -- | other input tensor
-  Tensor requiresGradient layout device dataType shape' ->
+  Tensor requiresGradient' layout' device' dataType' shape' ->
   -- | output tensor
-  Tensor requiresGradient layout device dataType shape''
+  Tensor
+    (requiresGradient <|> requiresGradient')
+    (layout <+> layout')
+    (device <+> device')
+    (dataType <+> dataType')
+    (BroadcastShapesF shape shape')
 atan2 input other = unsafePerformIO $ cast2 ATen.atan2_tt input other
 
 -- | Computes the bitwise NOT of the given 'input' tensor.
@@ -422,14 +426,14 @@ deg2rad = unsafePerformIO . cast1 ATen.deg2rad_t
 -- 'trueDivide' or 'trueDivideScalar' which can come in handy
 -- when both the 'dividend' and the 'divisor' have 'Bool' or integer data types.
 div ::
-  forall requiresGradient layout device dataType shape layout' device' dataType' shape'.
+  forall requiresGradient layout device dataType shape requiresGradient' layout' device' dataType' shape'.
   -- | tensor dividend
   Tensor requiresGradient layout device dataType shape ->
   -- | tensor divisor
-  Tensor requiresGradient layout' device' dataType' shape' ->
+  Tensor requiresGradient' layout' device' dataType' shape' ->
   -- | tensor output
   Tensor
-    requiresGradient
+    (requiresGradient <|> requiresGradient')
     (layout <+> layout')
     (device <+> device')
     (dataType <+> dataType')
@@ -851,14 +855,14 @@ input `logicalXor` other = unsafePerformIO $ cast2 ATen.logical_xor_tt input oth
 -- See 'mulScalar' for a version of this function where
 -- the 'other' input is a scalar.
 mul ::
-  forall requiresGradient layout device dataType shape layout' device' dataType' shape'.
+  forall requiresGradient layout device dataType shape requiresGradient' layout' device' dataType' shape'.
   -- | input tensor
   Tensor requiresGradient layout device dataType shape ->
   -- | other tensor
-  Tensor requiresGradient layout' device' dataType' shape' ->
+  Tensor requiresGradient' layout' device' dataType' shape' ->
   -- | output tensor
   Tensor
-    requiresGradient
+    (requiresGradient <|> requiresGradient')
     (layout <+> layout')
     (device <+> device')
     (dataType <+> dataType')
@@ -947,13 +951,18 @@ polygamma n input = unsafePerformIO $ cast2 ATen.polygamma_lt n input
 -- \mathrm{output}_i = \mathrm{input}_i^{\mathrm{exponent}_i}.
 -- \]
 pow ::
-  forall requiresGradient layout device dataType shape.
+  forall requiresGradient layout device dataType shape requiresGradient' layout' device' dataType' shape'.
   -- | tensor exponent
   Tensor requiresGradient layout device dataType shape ->
   -- | tensor input
-  Tensor requiresGradient layout device dataType shape ->
+  Tensor requiresGradient' layout' device' dataType' shape' ->
   -- | tensor output
-  Tensor requiresGradient layout device dataType shape
+  Tensor
+    (requiresGradient <|> requiresGradient')
+    (layout <+> layout')
+    (device <+> device')
+    (dataType <+> dataType')
+    (BroadcastShapesF shape shape')
 pow exponent input = unsafePerformIO $ cast2 ATen.pow_tt input exponent
 
 -- | Takes the power of each element in the tensor 'input' with the scalar 'exponent' and
@@ -1043,6 +1052,7 @@ round ::
   forall requiresGradient layout device dataType shape.
   -- | input
   Tensor requiresGradient layout device dataType shape ->
+  -- | output
   Tensor requiresGradient layout device dataType shape
 round = unsafePerformIO . cast1 ATen.round_t
 
@@ -1121,14 +1131,14 @@ sinh = unsafePerformIO . cast1 ATen.sinh_t
 -- See 'subScalar' for a version of this function where
 -- the 'other' input is a scalar.
 sub ::
-  forall requiresGradient layout device dataType shape layout' device' dataType' shape'.
+  forall requiresGradient layout device dataType shape requiresGradient' layout' device' dataType' shape'.
   -- | input tensor
   Tensor requiresGradient layout device dataType shape ->
   -- | other tensor
-  Tensor requiresGradient layout' device' dataType' shape' ->
+  Tensor requiresGradient' layout' device' dataType' shape' ->
   -- | output tensor
   Tensor
-    requiresGradient
+    (requiresGradient <|> requiresGradient)
     (layout <+> layout')
     (device <+> device')
     (dataType <+> dataType')
@@ -1217,13 +1227,18 @@ tanh = unsafePerformIO . cast1 ATen.tanh_t
 -- See 'trueDivideScalar' for a version of this function
 -- where the divisor is a scalar.
 trueDivide ::
-  forall requiresGradient layout device dataType shape.
+  forall requiresGradient layout device dataType shape requiresGradient' layout' device' dataType' shape'.
   -- | tensor dividend
   Tensor requiresGradient layout device dataType shape ->
   -- | tensor divisor
-  Tensor requiresGradient layout device dataType shape ->
+  Tensor requiresGradient' layout' device' dataType' shape' ->
   -- | tensor output
-  Tensor requiresGradient layout device dataType shape
+  Tensor
+    (requiresGradient <|> requiresGradient')
+    (layout <+> layout')
+    (device <+> device')
+    (dataType <+> dataType')
+    (shape <+> shape')
 dividend `trueDivide` divisor = unsafePerformIO $ cast2 ATen.true_divide_tt dividend divisor
 
 -- | Performs “true division”

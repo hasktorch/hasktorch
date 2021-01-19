@@ -288,7 +288,7 @@ testSequenceToSequenceUnchecked = do
                     ffnDim
                     0.0
                     1e-6
-              let randn' = randn @ 'Dependent @ 'UncheckedLayout @ 'UncheckedDevice @ 'UncheckedDataType @ 'UncheckedShape Dense deviceType dType
+              let randn' = randn @ 'WithoutGradient @ 'UncheckedLayout @ 'UncheckedDevice @ 'UncheckedDataType @ 'UncheckedShape Dense deviceType dType
               input <- state $ randn' [batchDim, inputSeqDim, inputEmbedDim]
               decoderInput <- state $ randn' [batchDim, decoderInputSeqDim, decoderInputEmbedDim]
               attentionMask <- state $ randn' [batchDim, inputSeqDim, inputSeqDim]

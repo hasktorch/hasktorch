@@ -69,6 +69,7 @@ type family BroadcastDimsImplF (reversedDims :: [Dim (Name Symbol) (Size Nat)]) 
 type BroadcastDimsF dims dims' = BroadcastDimsCheckF dims dims' (BroadcastDimsImplF (Reverse dims) (Reverse dims'))
 
 type family BroadcastShapesF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
+  BroadcastShapesF shape shape = shape
   BroadcastShapesF ( 'Shape dims) ( 'Shape dims') = 'Shape (BroadcastDimsF dims dims')
   BroadcastShapesF shape shape' = shape <+> shape'
 
@@ -132,6 +133,24 @@ type family ReplaceDimByIndexF (index :: Maybe Nat) (dims :: [Dim (Name Symbol) 
 type family ReplaceDimImplF (by :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) (dim :: Dim (Name Symbol) (Size Nat)) :: Maybe [Dim (Name Symbol) (Size Nat)] where
   ReplaceDimImplF ( 'ByName name) dims dim = ReplaceDimByIndexF (GetIndexByNameF name dims) dims dim
   ReplaceDimImplF ( 'ByIndex index) dims dim = ReplaceDimByIndexF ( 'Just index) dims dim
+
+type family ReplaceDimNameByIndexF (index :: Maybe Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) (name :: Name Symbol) :: Maybe [Dim (Name Symbol) (Size Nat)] where
+  ReplaceDimNameByIndexF ( 'Just 0) ('Dim _ size ': t) name' = 'Just ('Dim name' size ': t)
+  ReplaceDimNameByIndexF ( 'Just index) (h ': t) name' = PrependMaybe ( 'Just h) (ReplaceDimNameByIndexF ( 'Just (index - 1)) t name')
+  ReplaceDimNameByIndexF _ _ _ = 'Nothing
+
+type family ReplaceDimNameImplF (by :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) (name' :: Name Symbol) :: Maybe [Dim (Name Symbol) (Size Nat)] where
+  ReplaceDimNameImplF ( 'ByName name) dims name' = ReplaceDimNameByIndexF (GetIndexByNameF name dims) dims name'
+  ReplaceDimNameImplF ( 'ByIndex index) dims name' = ReplaceDimNameByIndexF ( 'Just index) dims name'
+
+type family ReplaceDimSizeByIndexF (index :: Maybe Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) (size' :: Size Nat) :: Maybe [Dim (Name Symbol) (Size Nat)] where
+  ReplaceDimSizeByIndexF ( 'Just 0) ('Dim name _ ': t) size' = 'Just ('Dim name size' ': t)
+  ReplaceDimSizeByIndexF ( 'Just index) (h ': t) size' = PrependMaybe ( 'Just h) (ReplaceDimSizeByIndexF ( 'Just (index - 1)) t size')
+  ReplaceDimSizeByIndexF _ _ _ = 'Nothing
+
+type family ReplaceDimSizeImplF (by :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) (size' :: Size Nat) :: Maybe [Dim (Name Symbol) (Size Nat)] where
+  ReplaceDimSizeImplF ( 'ByName name) dims size' = ReplaceDimSizeByIndexF (GetIndexByNameF name dims) dims size'
+  ReplaceDimSizeImplF ( 'ByIndex index) dims size' = ReplaceDimSizeByIndexF ( 'Just index) dims size'
 
 type ReplaceDimErrorMessage (by :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) (dim :: Dim (Name Symbol) (Size Nat)) =
   "Cannot replace the first dimension matching"

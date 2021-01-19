@@ -18,7 +18,6 @@
 {-# OPTIONS_GHC -fomit-interface-pragmas
                 -fplugin TypeLevel.Rewrite
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyRightAssociativeL
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL1
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2C
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL3
@@ -49,11 +48,11 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (.
 import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout)
-import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithBiasF)
+import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithoutBiasF)
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, softmax)
-import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearWithBiasC, Linear (..), LinearHasBias (..))
+import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearWithoutBiasC, Linear (..), LinearHasBias (..))
 import Torch.GraduallyTyped.Random (Generator)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient)
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape (BroadcastShapesF, By (..), Dim (..), KnownDim (..), KnownShape, Name (..), SelectDim (..), Shape (..), Size (..), WithDimC (..), WithShapeC (..), dimSize, getDim, unifyDims, type (!))
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (ReshapeF, TransposeF, UnsqueezeF, reshape, transpose, unsqueeze)
@@ -75,18 +74,19 @@ data
     (dropoutP :: Type)
   where
   MultiHeadAttention ::
+    forall device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP.
     { -- | head dim
       mhaHeadDim :: Dim String Integer,
       -- | head embed dim
       mhaHeadEmbedDim :: Dim String Integer,
       -- | in-projection for query
-      mhaQInProj :: Linear 'WithBias device dataType queryEmbedDim embedDim,
+      mhaQInProj :: Linear 'WithoutBias device dataType queryEmbedDim embedDim,
       -- | in-projection for key
-      mhaKInProj :: Linear 'WithBias device dataType keyEmbedDim embedDim,
+      mhaKInProj :: Linear 'WithoutBias device dataType keyEmbedDim embedDim,
       -- | in-projection for value
-      mhaVInProj :: Linear 'WithBias device dataType valueEmbedDim embedDim,
+      mhaVInProj :: Linear 'WithoutBias device dataType valueEmbedDim embedDim,
       -- | out-projection
-      mhaOutProj :: Linear 'WithBias device dataType embedDim queryEmbedDim,
+      mhaOutProj :: Linear 'WithoutBias device dataType embedDim queryEmbedDim,
       -- | dropout
       mhaDropout :: Dropout dropoutP
     } ->
@@ -111,10 +111,10 @@ type HasInitializeMultiHeadAttentionC
     WithDimC keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))),
     WithDimC valueEmbedDim (dropoutP -> Generator device -> (MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)),
     WithDimC queryEmbedDim (Generator device -> (Linear 'WithBias device dataType embedDim queryEmbedDim, Generator device)),
-    HasInitializeLinearWithBiasC device dataType queryEmbedDim embedDim,
-    HasInitializeLinearWithBiasC device dataType keyEmbedDim embedDim,
-    HasInitializeLinearWithBiasC device dataType valueEmbedDim embedDim,
-    HasInitializeLinearWithBiasC device dataType embedDim queryEmbedDim,
+    HasInitializeLinearWithoutBiasC device dataType queryEmbedDim embedDim,
+    HasInitializeLinearWithoutBiasC device dataType keyEmbedDim embedDim,
+    HasInitializeLinearWithoutBiasC device dataType valueEmbedDim embedDim,
+    HasInitializeLinearWithoutBiasC device dataType embedDim queryEmbedDim,
     Scalar dropoutP
   )
 
@@ -174,7 +174,7 @@ instance
               ( withoutDim @queryEmbedDim
                   ( withoutDataType @dataType
                       ( withoutDevice @device
-                          ( initialize @(Linear 'WithBias device dataType queryEmbedDim embedDim)
+                          ( initialize @(Linear 'WithoutBias device dataType queryEmbedDim embedDim)
                           )
                           deviceType
                       )
@@ -189,7 +189,7 @@ instance
               ( withoutDim @keyEmbedDim
                   ( withoutDataType @dataType
                       ( withoutDevice @device
-                          ( initialize @(Linear 'WithBias device dataType keyEmbedDim embedDim)
+                          ( initialize @(Linear 'WithoutBias device dataType keyEmbedDim embedDim)
                           )
                           deviceType
                       )
@@ -204,7 +204,7 @@ instance
               ( withoutDim @valueEmbedDim
                   ( withoutDataType @dataType
                       ( withoutDevice @device
-                          ( initialize @(Linear 'WithBias device dataType valueEmbedDim embedDim)
+                          ( initialize @(Linear 'WithoutBias device dataType valueEmbedDim embedDim)
                           )
                           deviceType
                       )
@@ -219,7 +219,7 @@ instance
               ( withoutDim @embedDim
                   ( withoutDataType @dataType
                       ( withoutDevice @device
-                          ( initialize @(Linear 'WithBias device dataType embedDim queryEmbedDim)
+                          ( initialize @(Linear 'WithoutBias device dataType embedDim queryEmbedDim)
                           )
                           deviceType
                       )
@@ -279,15 +279,12 @@ unsafeGetEmbedDim ::
   Dim String Integer
 unsafeGetEmbedDim MultiHeadAttention {..} =
   unsafePerformIO $ do
-    dim <- getDim (ByIndex 0) . shape . linearWeight $ mhaQInProj
+    dim <- getDim (ByIndex 0) . shape . linearWithoutBiasWeight $ mhaQInProj
     dims <-
       sequence
-        [ getDim (ByIndex 0) . shape . linearBias $ mhaQInProj,
-          getDim (ByIndex 0) . shape . linearWeight $ mhaKInProj,
-          getDim (ByIndex 0) . shape . linearBias $ mhaKInProj,
-          getDim (ByIndex 0) . shape . linearWeight $ mhaVInProj,
-          getDim (ByIndex 0) . shape . linearBias $ mhaVInProj,
-          getDim (ByIndex 1) . shape . linearWeight $ mhaOutProj
+        [ getDim (ByIndex 0) . shape . linearWithoutBiasWeight $ mhaKInProj,
+          getDim (ByIndex 0) . shape . linearWithoutBiasWeight $ mhaVInProj,
+          getDim (ByIndex 1) . shape . linearWithoutBiasWeight $ mhaOutProj
         ]
     unifyDims dim dims
 
@@ -317,9 +314,8 @@ type TransposeAndReshape
                         ( 'SelectDim ( 'ByIndex 1))
                         ( 'SelectDim ( 'ByIndex 2))
                         ( ReshapeF
-                            ( LinearWithBiasF
+                            ( LinearWithoutBiasF
                                 ( 'Shape '[embedDim, queryEmbedDim])
-                                ( 'Shape '[embedDim])
                                 queryShape
                             )
                             ( 'Shape
@@ -334,9 +330,8 @@ type TransposeAndReshape
                             ( 'SelectDim ( 'ByIndex 1))
                             ( 'SelectDim ( 'ByIndex 2))
                             ( ReshapeF
-                                ( LinearWithBiasF
+                                ( LinearWithoutBiasF
                                     ( 'Shape '[embedDim, keyEmbedDim])
-                                    ( 'Shape '[embedDim])
                                     keyShape
                                 )
                                 ( 'Shape
@@ -360,9 +355,8 @@ type TransposeAndReshape
             ( 'SelectDim ( 'ByIndex 1))
             ( 'SelectDim ( 'ByIndex 2))
             ( ReshapeF
-                ( LinearWithBiasF
+                ( LinearWithoutBiasF
                     ( 'Shape '[embedDim, valueEmbedDim])
-                    ( 'Shape '[embedDim])
                     valueShape
                 )
                 ( 'Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
@@ -376,9 +370,8 @@ type MultiHeadAttentionOutputShape
   (batchDim :: Dim (Name Symbol) (Size Nat))
   (querySeqDim :: Dim (Name Symbol) (Size Nat))
   (transposedAndReshaped :: Shape [Dim (Name Symbol) (Size Nat)]) =
-  LinearWithBiasF
+  LinearWithoutBiasF
     ( 'Shape '[queryEmbedDim, embedDim])
-    ( 'Shape '[queryEmbedDim])
     ( ReshapeF
         transposedAndReshaped
         ( 'Shape '[batchDim, querySeqDim, embedDim])
@@ -394,7 +387,6 @@ type HasForwardMultiHeadAttentionC
   (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
   (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
   (dropoutP :: Type)
-  (requiresGradient :: RequiresGradient)
   (queryLayout :: Layout LayoutType)
   (queryDevice :: Device (DeviceType Nat))
   (queryDataType :: DataType DType)
@@ -430,24 +422,22 @@ type HasForwardMultiHeadAttentionC
     WithShapeC
       ( 'Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
       ( Tensor
-          requiresGradient
+          'WithGradient
           ( 'Layout 'Dense <+> keyLayout)
           (device <+> keyDevice)
           (dataType <+> keyDataType)
-          ( LinearWithBiasF
+          ( LinearWithoutBiasF
               ( 'Shape '[embedDim, keyEmbedDim])
-              ( 'Shape '[embedDim])
               keyShape
           ) ->
         Tensor
-          requiresGradient
+          'WithGradient
           ( 'Layout 'Dense <+> keyLayout)
           (device <+> keyDevice)
           (dataType <+> keyDataType)
           ( ReshapeF
-              ( LinearWithBiasF
+              ( LinearWithoutBiasF
                   ( 'Shape '[embedDim, keyEmbedDim])
-                  ( 'Shape '[embedDim])
                   keyShape
               )
               ( 'Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
@@ -456,24 +446,22 @@ type HasForwardMultiHeadAttentionC
     WithShapeC
       ( 'Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
       ( Tensor
-          requiresGradient
+          'WithGradient
           ( 'Layout 'Dense <+> valueLayout)
           (device <+> valueDevice)
           (dataType <+> valueDataType)
-          ( LinearWithBiasF
+          ( LinearWithoutBiasF
               ( 'Shape '[embedDim, valueEmbedDim])
-              ( 'Shape '[embedDim])
               valueShape
           ) ->
         Tensor
-          requiresGradient
+          'WithGradient
           ( 'Layout 'Dense <+> valueLayout)
           (device <+> valueDevice)
           (dataType <+> valueDataType)
           ( ReshapeF
-              ( LinearWithBiasF
+              ( LinearWithoutBiasF
                   ( 'Shape '[embedDim, valueEmbedDim])
-                  ( 'Shape '[embedDim])
                   valueShape
               )
               ( 'Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
@@ -482,24 +470,22 @@ type HasForwardMultiHeadAttentionC
     WithShapeC
       ( 'Shape '[batchDim, querySeqDim, headDim, headEmbedDim])
       ( Tensor
-          requiresGradient
+          'WithGradient
           ( 'Layout 'Dense <+> queryLayout)
           (device <+> queryDevice)
           (dataType <+> queryDataType)
-          ( LinearWithBiasF
+          ( LinearWithoutBiasF
               ( 'Shape '[embedDim, queryEmbedDim])
-              ( 'Shape '[embedDim])
               queryShape
           ) ->
         Tensor
-          requiresGradient
+          'WithGradient
           ( 'Layout 'Dense <+> queryLayout)
           (device <+> queryDevice)
           (dataType <+> queryDataType)
           ( ReshapeF
-              ( LinearWithBiasF
+              ( LinearWithoutBiasF
                   ( 'Shape '[embedDim, queryEmbedDim])
-                  ( 'Shape '[embedDim])
                   queryShape
               )
               ( 'Shape '[batchDim, querySeqDim, headDim, headEmbedDim])
@@ -508,13 +494,13 @@ type HasForwardMultiHeadAttentionC
     WithShapeC
       ( 'Shape '[batchDim, querySeqDim, embedDim])
       ( Tensor
-          requiresGradient
+          'WithGradient
           ( 'Layout 'Dense <+> queryLayout <+> keyLayout <+> attentionMaskLayout <+> valueLayout)
           (device <+> queryDevice <+> keyDevice <+> generatorDevice <+> attentionMaskDevice <+> valueDevice)
           (dataType <+> queryDataType <+> keyDataType <+> attentionMaskDataType <+> valueDataType)
           transposedAndReshaped ->
         Tensor
-          requiresGradient
+          'WithGradient
           ( 'Layout 'Dense <+> queryLayout <+> keyLayout <+> attentionMaskLayout <+> valueLayout)
           (device <+> queryDevice <+> keyDevice <+> generatorDevice <+> attentionMaskDevice <+> valueDevice)
           (dataType <+> queryDataType <+> keyDataType <+> attentionMaskDataType <+> valueDataType)
@@ -536,7 +522,6 @@ instance
       keyEmbedDim
       valueEmbedDim
       dropoutP
-      requiresGradient
       queryLayout
       queryDevice
       queryDataType
@@ -565,24 +550,24 @@ instance
   ) =>
   HasForward
     (MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
-    ( Tensor requiresGradient queryLayout queryDevice queryDataType queryShape,
-      Tensor requiresGradient keyLayout keyDevice keyDataType keyShape,
-      Tensor requiresGradient valueLayout valueDevice valueDataType valueShape,
-      Tensor requiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+    ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+      Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
+      Tensor valueRequiresGradient valueLayout valueDevice valueDataType valueShape,
+      Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
     )
     (Generator generatorDevice)
   where
   type
     ForwardOutput
       (MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
-      ( Tensor requiresGradient queryLayout queryDevice queryDataType queryShape,
-        Tensor requiresGradient keyLayout keyDevice keyDataType keyShape,
-        Tensor requiresGradient valueLayout valueDevice valueDataType valueShape,
-        Tensor requiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+      ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+        Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
+        Tensor valueRequiresGradient valueLayout valueDevice valueDataType valueShape,
+        Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
       )
       (Generator generatorDevice) =
       Tensor
-        requiresGradient
+        'WithGradient
         ( 'Layout 'Dense <+> queryLayout <+> keyLayout <+> attentionMaskLayout <+> valueLayout)
         (device <+> queryDevice <+> keyDevice <+> generatorDevice <+> attentionMaskDevice <+> valueDevice)
         (dataType <+> queryDataType <+> keyDataType <+> attentionMaskDataType <+> valueDataType)
@@ -596,10 +581,10 @@ instance
   type
     ForwardGeneratorOutput
       (MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
-      ( Tensor requiresGradient queryLayout queryDevice queryDataType queryShape,
-        Tensor requiresGradient keyLayout keyDevice keyDataType keyShape,
-        Tensor requiresGradient valueLayout valueDevice valueDataType valueShape,
-        Tensor requiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+      ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+        Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
+        Tensor valueRequiresGradient valueLayout valueDevice valueDataType valueShape,
+        Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
       )
       (Generator generatorDevice) =
       Generator (device <+> queryDevice <+> keyDevice <+> generatorDevice)

@@ -1,4 +1,3 @@
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -14,9 +13,9 @@
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fplugin TypeLevel.Rewrite
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL1
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2 #-}
 
 module Torch.GraduallyTyped.NN.Normalization where
@@ -28,48 +27,58 @@ import Torch.GraduallyTyped.DType (DataType (..), WithDataTypeC (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (..))
 import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
-import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormF, layerNorm)
+import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithBiasF, LayerNormWithoutBiasF, LayerNormWithoutBiasSelectDimsF, layerNormWithBias, layerNormWithoutBias)
 import Torch.GraduallyTyped.Random (mkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
-import Torch.GraduallyTyped.Shape (Dim (..), KnownShape, Name (..), Shape (..), Size (..), WithShapeC (..))
+import Torch.GraduallyTyped.Shape (Dim (..), KnownShape, Name (..), Shape (..), Size (..), WithSelectDimsC, WithShapeC (..))
 import Torch.GraduallyTyped.Tensor.Creation (WithCreateC (withoutCreate), ones, randn, zeros)
+import Torch.GraduallyTyped.Tensor.MathOperations.Reduction (MeanF)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
+data LayerNormHasBias = WithBias | WithoutBias
+
 data
   LayerNorm
+    (hasBias :: LayerNormHasBias)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (normalizedShape :: Shape [Dim (Name Symbol) (Size Nat)])
   where
-  LayerNorm ::
+  LayerNormWithBias ::
     forall device dataType normalizedShape.
-    { layerNormWeight :: Tensor 'Independent ( 'Layout 'Dense) device dataType normalizedShape,
-      layerNormBias :: Tensor 'Independent ( 'Layout 'Dense) device dataType normalizedShape,
-      layerNormEps :: Double
+    { layerNormWithBiasWeight :: Tensor 'WithGradient ( 'Layout 'Dense) device dataType normalizedShape,
+      layerNormBias :: Tensor 'WithGradient ( 'Layout 'Dense) device dataType normalizedShape,
+      layerNormWithBiasEps :: Double
     } ->
-    LayerNorm device dataType normalizedShape
+    LayerNorm 'WithBias device dataType normalizedShape
+  LayerNormWithoutBias ::
+    forall device dataType normalizedShape.
+    { layerNormWithoutBiasWeight :: Tensor 'WithGradient ( 'Layout 'Dense) device dataType normalizedShape,
+      layerNormWithoutBiasEps :: Double
+    } ->
+    LayerNorm 'WithoutBias device dataType normalizedShape
 
-type HasInitializeLayerNormC device dataType normalizedShape =
-  ( WithDeviceC device (WithDataTypeF dataType (WithShapeF normalizedShape (Double -> LayerNorm device dataType normalizedShape))),
-    WithDataTypeC dataType (WithShapeF normalizedShape (Double -> LayerNorm device dataType normalizedShape)),
-    WithShapeC normalizedShape (Double -> LayerNorm device dataType normalizedShape),
-    WithCreateC (Tensor 'Independent ( 'Layout 'Dense) device dataType normalizedShape) 'Independent ( 'Layout 'Dense) device dataType normalizedShape
+type HasInitializeLayerNormWithBiasC device dataType normalizedShape =
+  ( WithDeviceC device (WithDataTypeF dataType (WithShapeF normalizedShape (Double -> LayerNorm 'WithBias device dataType normalizedShape))),
+    WithDataTypeC dataType (WithShapeF normalizedShape (Double -> LayerNorm 'WithBias device dataType normalizedShape)),
+    WithShapeC normalizedShape (Double -> LayerNorm 'WithBias device dataType normalizedShape),
+    WithCreateC (Tensor 'WithGradient ( 'Layout 'Dense) device dataType normalizedShape) 'WithGradient ( 'Layout 'Dense) device dataType normalizedShape
   )
 
 instance
-  HasInitializeLayerNormC device dataType normalizedShape =>
-  HasInitialize (LayerNorm device dataType normalizedShape)
+  HasInitializeLayerNormWithBiasC device dataType normalizedShape =>
+  HasInitialize (LayerNorm 'WithBias device dataType normalizedShape)
   where
   type
-    InitializeF (LayerNorm device dataType normalizedShape) =
+    InitializeF (LayerNorm 'WithBias device dataType normalizedShape) =
       WithDeviceF
         device
         ( WithDataTypeF
             dataType
             ( WithShapeF
                 normalizedShape
-                (Double -> LayerNorm device dataType normalizedShape)
+                (Double -> LayerNorm 'WithBias device dataType normalizedShape)
             )
         )
   initialize =
@@ -77,54 +86,131 @@ instance
       \deviceType ->
         withDataType @dataType $
           \dType ->
-            withShape @normalizedShape @(Double -> LayerNorm device dataType normalizedShape) $
+            withShape @normalizedShape @(Double -> LayerNorm 'WithBias device dataType normalizedShape) $
               \dims ->
                 go deviceType dType dims
     where
       go deviceType dType dims eps =
         let weight =
-              withoutCreate @_ @ 'Independent @( 'Layout 'Dense) @device @dataType @normalizedShape
-                (ones @ 'Independent @( 'Layout 'Dense) @device @dataType @normalizedShape)
-                Independent
+              withoutCreate @_ @ 'WithGradient @( 'Layout 'Dense) @device @dataType @normalizedShape
+                (ones @ 'WithGradient @( 'Layout 'Dense) @device @dataType @normalizedShape)
+                WithGradient
                 Dense
                 deviceType
                 dType
                 dims
             bias =
-              withoutCreate @_ @ 'Independent @( 'Layout 'Dense) @device @dataType @normalizedShape
-                (zeros @ 'Independent @( 'Layout 'Dense) @device @dataType @normalizedShape)
-                Independent
+              withoutCreate @_ @ 'WithGradient @( 'Layout 'Dense) @device @dataType @normalizedShape
+                (zeros @ 'WithGradient @( 'Layout 'Dense) @device @dataType @normalizedShape)
+                WithGradient
                 Dense
                 deviceType
                 dType
                 dims
-         in LayerNorm weight bias eps
+         in LayerNormWithBias weight bias eps
+
+type HasInitializeLayerNormWithoutBiasC device dataType normalizedShape =
+  ( WithDeviceC device (WithDataTypeF dataType (WithShapeF normalizedShape (Double -> LayerNorm 'WithoutBias device dataType normalizedShape))),
+    WithDataTypeC dataType (WithShapeF normalizedShape (Double -> LayerNorm 'WithoutBias device dataType normalizedShape)),
+    WithShapeC normalizedShape (Double -> LayerNorm 'WithoutBias device dataType normalizedShape),
+    WithCreateC (Tensor 'WithGradient ( 'Layout 'Dense) device dataType normalizedShape) 'WithGradient ( 'Layout 'Dense) device dataType normalizedShape
+  )
+
+instance
+  HasInitializeLayerNormWithoutBiasC device dataType normalizedShape =>
+  HasInitialize (LayerNorm 'WithoutBias device dataType normalizedShape)
+  where
+  type
+    InitializeF (LayerNorm 'WithoutBias device dataType normalizedShape) =
+      WithDeviceF
+        device
+        ( WithDataTypeF
+            dataType
+            ( WithShapeF
+                normalizedShape
+                (Double -> LayerNorm 'WithoutBias device dataType normalizedShape)
+            )
+        )
+  initialize =
+    withDevice @device $
+      \deviceType ->
+        withDataType @dataType $
+          \dType ->
+            withShape @normalizedShape @(Double -> LayerNorm 'WithoutBias device dataType normalizedShape) $
+              \dims ->
+                go deviceType dType dims
+    where
+      go deviceType dType dims eps =
+        let weight =
+              withoutCreate @_ @ 'WithGradient @( 'Layout 'Dense) @device @dataType @normalizedShape
+                (ones @ 'WithGradient @( 'Layout 'Dense) @device @dataType @normalizedShape)
+                WithGradient
+                Dense
+                deviceType
+                dType
+                dims
+         in LayerNormWithoutBias weight eps
 
 instance
   KnownShape normalizedShape =>
   HasForward
-    (LayerNorm device dataType normalizedShape)
+    (LayerNorm 'WithBias device dataType normalizedShape)
     (Tensor requiresGradient' layout' device' dataType' shape')
     generator
   where
   type
     ForwardOutput
-      (LayerNorm device dataType normalizedShape)
+      (LayerNorm 'WithBias device dataType normalizedShape)
       (Tensor requiresGradient' layout' device' dataType' shape')
       generator =
       Tensor
-        requiresGradient'
-        ('Layout 'Dense <+> layout')
+        'WithGradient
+        ( 'Layout 'Dense <+> layout')
         (device <+> device')
         (dataType <+> dataType')
-        (LayerNormF normalizedShape normalizedShape shape')
+        (LayerNormWithBiasF normalizedShape normalizedShape shape')
   type
     ForwardGeneratorOutput
-      (LayerNorm device dataType normalizedShape)
+      (LayerNorm 'WithBias device dataType normalizedShape)
       (Tensor requiresGradient' layout' device' dataType' shape')
       generator =
       generator
-  forward LayerNorm {..} input g = (layerNorm layerNormWeight layerNormBias layerNormEps input, g)
+  forward LayerNormWithBias {..} input g = (layerNormWithBias layerNormWithBiasWeight layerNormBias layerNormWithBiasEps input, g)
+
+type LayerNormWithoutBiasC' selectDims shape requiresGradient' layout' device' dataType' shape' =
+  ( KnownShape shape,
+    KnownShape shape',
+    WithSelectDimsC selectDims (Tensor requiresGradient' layout' device' dataType' shape' -> Tensor requiresGradient' layout' device' dataType' (MeanF selectDims shape'))
+  )
+
+type LayerNormWithoutBiasC shape requiresGradient' layout' device' dataType' shape' =
+  LayerNormWithoutBiasC' (LayerNormWithoutBiasSelectDimsF shape shape') shape requiresGradient' layout' device' dataType' shape'
+
+instance
+  LayerNormWithoutBiasC normalizedShape requiresGradient' layout' device' dataType' shape' =>
+  HasForward
+    (LayerNorm 'WithoutBias device dataType normalizedShape)
+    (Tensor requiresGradient' layout' device' dataType' shape')
+    generator
+  where
+  type
+    ForwardOutput
+      (LayerNorm 'WithoutBias device dataType normalizedShape)
+      (Tensor requiresGradient' layout' device' dataType' shape')
+      generator =
+      Tensor
+        'WithGradient
+        ( 'Layout 'Dense <+> layout')
+        (device <+> device')
+        (dataType <+> dataType')
+        (LayerNormWithoutBiasF normalizedShape shape')
+  type
+    ForwardGeneratorOutput
+      (LayerNorm 'WithoutBias device dataType normalizedShape)
+      (Tensor requiresGradient' layout' device' dataType' shape')
+      generator =
+      generator
+  forward LayerNormWithoutBias {..} input g = (layerNormWithoutBias layerNormWithoutBiasWeight layerNormWithoutBiasEps input, g)
 
 type TestLayerNormDevice :: Device (DeviceType Nat)
 
@@ -149,7 +235,7 @@ type TestLayerNormSndFeatureDim = 'Dim ( 'Name "sndFeature") ( 'Size 16)
 testln ::
   IO
     ( Tensor
-        'Dependent
+        'WithGradient
         ( 'Layout 'Dense)
         ( 'Device 'CPU)
         ( 'DataType 'Float)
@@ -165,8 +251,8 @@ testln = do
   let (result, _) =
         runState
           ( do
-              ln <- pure $ initialize @(LayerNorm TestLayerNormDevice TestLayerNormDataType ( 'Shape '[TestLayerNormFstFeatureDim, TestLayerNormSndFeatureDim])) 1e-5
-              input <- state $ randn @ 'Dependent @TestLayerNormLayout @TestLayerNormDevice @TestLayerNormDataType @( 'Shape '[TestLayerNormBatchDim, TestLayerNormFstFeatureDim, TestLayerNormSndFeatureDim])
+              let ln = initialize @(LayerNorm 'WithBias TestLayerNormDevice TestLayerNormDataType ( 'Shape '[TestLayerNormFstFeatureDim, TestLayerNormSndFeatureDim])) 1e-5
+              input <- state $ randn @ 'WithoutGradient @TestLayerNormLayout @TestLayerNormDevice @TestLayerNormDataType @( 'Shape '[TestLayerNormBatchDim, TestLayerNormFstFeatureDim, TestLayerNormSndFeatureDim])
               state $ forward ln input
           )
           g

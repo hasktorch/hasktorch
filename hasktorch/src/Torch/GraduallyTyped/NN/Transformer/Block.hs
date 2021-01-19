@@ -17,7 +17,6 @@
 {-# LANGUAGE NoStarIsType #-}
 {-# OPTIONS_GHC -fplugin TypeLevel.Rewrite
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyRightAssociativeL
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL1
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2C
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL3
@@ -45,11 +44,13 @@ import Torch.GraduallyTyped.DType (DataType, WithDataTypeC (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (..))
 import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
+import Torch.GraduallyTyped.NN.Normalization (LayerNormWithoutBiasC)
 import Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork (FeedForwardNetworkOutputShape, HasInitializeTransformerFeedForwardNetworkC, TransformerFeedForwardNetwork)
 import Torch.GraduallyTyped.NN.Transformer.SelfAttention (HasInitializeSelfAttentionC, SelfAttention, SelfAttentionOutputShape)
 import Torch.GraduallyTyped.Random (Generator)
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape (Dim (..), KnownDim, Name (..), Size (..), WithDimC (..))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Shape (..), Size (..), WithDimC (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
@@ -173,29 +174,35 @@ instance
 instance
   ( HasForward
       (SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
-      ( Tensor requiresGradient queryLayout queryDevice queryDataType queryShape,
-        Tensor requiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+      ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+        Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
       )
       (Generator generatorDevice),
-    KnownDim queryEmbedDim,
+    LayerNormWithoutBiasC
+      ( 'Shape '[queryEmbedDim])
+      'WithGradient
+      (queryLayout <+> 'Layout 'Dense <+> attentionMaskLayout)
+      (queryDevice <+> device <+> generatorDevice <+> attentionMaskDevice)
+      (queryDataType <+> dataType <+> attentionMaskDataType)
+      (SelfAttentionOutputShape headDim headEmbedDim embedDim queryEmbedDim queryShape attentionMaskShape),
     Scalar dropoutP
   ) =>
   HasForward
     (TransformerBlock device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
-    ( Tensor requiresGradient queryLayout queryDevice queryDataType queryShape,
-      Tensor requiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+    ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+      Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
     )
     (Generator generatorDevice)
   where
   type
     ForwardOutput
       (TransformerBlock device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
-      ( Tensor requiresGradient queryLayout queryDevice queryDataType queryShape,
-        Tensor requiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+      ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+        Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
       )
       (Generator generatorDevice) =
       Tensor
-        requiresGradient
+        'WithGradient
         (queryLayout <+> 'Layout 'Dense <+> attentionMaskLayout)
         (queryDevice <+> device <+> generatorDevice <+> attentionMaskDevice)
         (queryDataType <+> dataType <+> attentionMaskDataType)
@@ -207,8 +214,8 @@ instance
   type
     ForwardGeneratorOutput
       (TransformerBlock device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
-      ( Tensor requiresGradient queryLayout queryDevice queryDataType queryShape,
-        Tensor requiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+      ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+        Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
       )
       (Generator generatorDevice) =
       Generator (device <+> queryDevice <+> generatorDevice <+> attentionMaskDevice)

@@ -47,7 +47,7 @@ type family SoftmaxF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape [D
 -- Softmax is applied to all slices along 'selectDim',
 -- and will re-scale them so that the elements lie in the range \([0, 1]\) and sum to \(1\):
 --
--- >>> g <- generator @('Device 'CPU) 0
+-- >>> g <- mkGenerator @('Device 'CPU) 0
 -- >>> (input, _) = randn @'Dependent @('Layout Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)]) g
 -- >>> result = softmax @('SelectDim ('ByName "feature")) input
 -- >>> :type result
@@ -62,12 +62,11 @@ type family SoftmaxF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape [D
 --              'Dim ('Name "feature") ('Size 8)])
 softmax ::
   forall selectDim requiresGradient layout device dataType shape.
-  ( WithSelectDimC
-      selectDim
-      ( Tensor requiresGradient layout device dataType shape ->
-        Tensor requiresGradient layout device dataType (SoftmaxF selectDim shape)
-      )
-  ) =>
+  WithSelectDimC
+    selectDim
+    ( Tensor requiresGradient layout device dataType shape ->
+      Tensor requiresGradient layout device dataType (SoftmaxF selectDim shape)
+    ) =>
   WithSelectDimF
     selectDim
     ( Tensor requiresGradient layout device dataType shape ->

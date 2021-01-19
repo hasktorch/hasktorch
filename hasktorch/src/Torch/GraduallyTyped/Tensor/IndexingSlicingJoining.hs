@@ -165,10 +165,11 @@ instance
         ByIndex index -> unsafePerformIO $ cast2 ATen.cat_ll tensors (fromInteger index :: Int)
 
 uncheckedCat ::
+  forall requiresGradient.
   By String Integer ->
-  [Tensor 'Dependent 'UncheckedLayout 'UncheckedDevice 'UncheckedDataType 'UncheckedShape] ->
+  [Tensor requiresGradient 'UncheckedLayout 'UncheckedDevice 'UncheckedDataType 'UncheckedShape] ->
   Tensor
-    'Dependent
+    requiresGradient
     'UncheckedLayout
     'UncheckedDevice
     'UncheckedDataType

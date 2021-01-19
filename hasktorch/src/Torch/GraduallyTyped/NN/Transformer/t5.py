@@ -21,8 +21,8 @@ class T5Small(torch.nn.Module):
 # traced_model.save("t5-small.pt")
 
 model = T5Model.from_pretrained('t5-small', torchscript=False)
-named_parameters = dict(model.named_parameters())
-for k, v in named_parameters.items():
+d = dict(model.state_dict())
+for k, v in d.items():
     print("{}: {}".format(k, v.shape))
 
-torch.save(named_parameters, "t5-small.pt", _use_new_zipfile_serialization=True)
+torch.save(d, "t5-small.pt", _use_new_zipfile_serialization=True)

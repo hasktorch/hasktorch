@@ -47,13 +47,14 @@ data
   where
   LinearWithBias ::
     forall device dataType inputDim outputDim.
-    { linearWeight :: Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]),
-      linearBias :: Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim])
+    { linearWithBiasWeight :: Tensor 'WithGradient ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]),
+      linearBias :: Tensor 'WithGradient ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim])
     } ->
     Linear 'WithBias device dataType inputDim outputDim
   LinearWithoutBias ::
     forall device dataType inputDim outputDim.
-    Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]) ->
+    { linearWithoutBiasWeight :: Tensor 'WithGradient ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim])
+    } ->
     Linear 'WithoutBias device dataType inputDim outputDim
 
 type HasInitializeLinearWithBiasC device dataType inputDim outputDim =
@@ -61,9 +62,9 @@ type HasInitializeLinearWithBiasC device dataType inputDim outputDim =
     WithDataTypeC dataType (WithDimF inputDim (WithDimF outputDim (Generator device -> (Linear 'WithBias device dataType inputDim outputDim, Generator device)))),
     WithDimC inputDim (WithDimF outputDim (Generator device -> (Linear 'WithBias device dataType inputDim outputDim, Generator device))),
     WithDimC outputDim (Generator device -> (Linear 'WithBias device dataType inputDim outputDim, Generator device)),
-    WithCreateC (FanMode -> NonLinearity -> Generator device -> (Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]), Generator device)) 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]),
-    WithCreateC (Generator device -> (Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]), Generator device)) 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]),
-    WithCreateC (Generator device -> (Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim]), Generator device)) 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim])
+    WithCreateC (FanMode -> NonLinearity -> Generator device -> (Tensor 'WithGradient ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]), Generator device)) 'WithGradient ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]),
+    WithCreateC (Generator device -> (Tensor 'WithGradient ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]), Generator device)) 'WithGradient ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]),
+    WithCreateC (Generator device -> (Tensor 'WithGradient ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim]), Generator device)) 'WithGradient ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim])
   )
 
 instance
@@ -98,9 +99,9 @@ instance
       go deviceType dType inputDim outputDim = runState $ do
         weight <-
           state $
-            withoutCreate @_ @ 'Independent @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim, inputDim])
-              (kaimingUniform @ 'Independent @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim, inputDim]) @device)
-              Independent
+            withoutCreate @_ @ 'WithGradient @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim, inputDim])
+              (kaimingUniform @ 'WithGradient @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim, inputDim]) @device)
+              WithGradient
               Dense
               deviceType
               dType
@@ -109,9 +110,9 @@ instance
               (LeakyRelu . Prelude.sqrt $ 5)
         bias <-
           state $
-            withoutCreate @_ @ 'Independent @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim])
-              (randn @ 'Independent @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim]) @device)
-              Independent
+            withoutCreate @_ @ 'WithGradient @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim])
+              (randn @ 'WithGradient @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim]) @device)
+              WithGradient
               Dense
               deviceType
               dType
@@ -137,7 +138,7 @@ instance
       (Tensor requiresGradient' layout' device' dataType' shape')
       generator =
       Tensor
-        requiresGradient'
+        'WithGradient
         ( 'Layout 'Dense <+> layout')
         (device <+> device')
         (dataType <+> dataType')
@@ -148,15 +149,15 @@ instance
       (Tensor requiresGradient' layout' device' dataType' shape')
       generator =
       generator
-  forward LinearWithBias {..} input g = (linearWithBias linearWeight linearBias input, g)
+  forward LinearWithBias {..} input g = (linearWithBias linearWithBiasWeight linearBias input, g)
 
 type HasInitializeLinearWithoutBiasC device dataType inputDim outputDim =
   ( WithDeviceC device (WithDataTypeF dataType (WithDimF inputDim (WithDimF outputDim (Generator device -> (Linear 'WithoutBias device dataType inputDim outputDim, Generator device))))),
     WithDataTypeC dataType (WithDimF inputDim (WithDimF outputDim (Generator device -> (Linear 'WithoutBias device dataType inputDim outputDim, Generator device)))),
     WithDimC inputDim (WithDimF outputDim (Generator device -> (Linear 'WithoutBias device dataType inputDim outputDim, Generator device))),
     WithDimC outputDim (Generator device -> (Linear 'WithoutBias device dataType inputDim outputDim, Generator device)),
-    WithCreateC (FanMode -> NonLinearity -> Generator device -> (Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]), Generator device)) 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]),
-    WithCreateC (Generator device -> (Tensor 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]), Generator device)) 'Independent ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim])
+    WithCreateC (FanMode -> NonLinearity -> Generator device -> (Tensor 'WithGradient ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]), Generator device)) 'WithGradient ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]),
+    WithCreateC (Generator device -> (Tensor 'WithGradient ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]), Generator device)) 'WithGradient ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim])
   )
 
 instance
@@ -191,9 +192,9 @@ instance
       go deviceType dType inputDim outputDim = runState $ do
         weight <-
           state $
-            withoutCreate @_ @ 'Independent @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim, inputDim])
-              (kaimingUniform @ 'Independent @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim, inputDim]) @device)
-              Independent
+            withoutCreate @_ @ 'WithGradient @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim, inputDim])
+              (kaimingUniform @ 'WithGradient @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim, inputDim]) @device)
+              WithGradient
               Dense
               deviceType
               dType
@@ -214,7 +215,7 @@ instance
       (Tensor requiresGradient' layout' device' dataType' shape')
       generator =
       Tensor
-        requiresGradient'
+        'WithGradient
         ( 'Layout 'Dense <+> layout')
         (device <+> device')
         (dataType <+> dataType')

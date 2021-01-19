@@ -17,7 +17,6 @@
 {-# LANGUAGE NoStarIsType #-}
 {-# OPTIONS_GHC -fplugin TypeLevel.Rewrite
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyRightAssociativeL
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL1
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2C
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL3
@@ -46,12 +45,13 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (.
 import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout)
-import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithBiasF)
+import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithoutBiasF)
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF)
-import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormF)
-import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormC, LayerNorm)
-import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (HasInitializeMultiHeadAttentionC, MultiHeadAttention, MultiHeadAttentionOutputShape)
+import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithoutBiasF)
+import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormWithoutBiasC, LayerNorm, LayerNormHasBias (..), LayerNormWithoutBiasC)
+import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (HasInitializeMultiHeadAttentionC, MultiHeadAttention)
 import Torch.GraduallyTyped.Random (Generator)
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, type (!))
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownDim (..), Name (..), SelectDim (..), Shape (..), Size (..), WithDimC (..), WithShapeC (..))
@@ -78,7 +78,7 @@ data
     { -- | cross-attention
       caMultiheadAttention :: MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP,
       -- | layer norm
-      caLayerNorm :: LayerNorm device dataType ( 'Shape '[queryEmbedDim]),
+      caLayerNorm :: LayerNorm 'WithoutBias device dataType ( 'Shape '[queryEmbedDim]),
       -- | dropout
       caDropout :: Dropout dropoutP
     } ->
@@ -86,7 +86,7 @@ data
 
 type HasInitializeCrossAttentionC device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP =
   ( HasInitializeMultiHeadAttentionC device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP,
-    HasInitializeLayerNormC device dataType ( 'Shape '[queryEmbedDim]),
+    HasInitializeLayerNormWithoutBiasC device dataType ( 'Shape '[queryEmbedDim]),
     Scalar dropoutP,
     WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (dropoutP -> Double -> Generator device -> (CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device)))))))),
     WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (dropoutP -> Double -> Generator device -> (CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device))))))),
@@ -174,7 +174,7 @@ instance
               withoutShape @( 'Shape '[queryEmbedDim])
                 ( withoutDataType @dataType
                     ( withoutDevice @device
-                        ( initialize @(LayerNorm device dataType ( 'Shape '[queryEmbedDim]))
+                        ( initialize @(LayerNorm 'WithoutBias device dataType ( 'Shape '[queryEmbedDim]))
                         )
                         deviceType
                     )
@@ -232,16 +232,16 @@ type CrossAttentionTransposeAndReshape'
   (normedQuerySeqDim :: Dim (Name Symbol) (Size Nat))
   (keySeqDim :: Dim (Name Symbol) (Size Nat)) =
   CrossAttentionTransposeAndReshape
-    embedDim    attentionMaskShape
+    embedDim
+    attentionMaskShape
     normedBatchDim
     normedQuerySeqDim
     ( TransposeF
         ( 'SelectDim ( 'ByIndex 1))
         ( 'SelectDim ( 'ByIndex 2))
         ( ReshapeF
-            ( LinearWithBiasF
+            ( LinearWithoutBiasF
                 ( 'Shape '[embedDim, queryEmbedDim])
-                ( 'Shape '[embedDim])
                 normedQueryShape
             )
             ( 'Shape
@@ -253,9 +253,8 @@ type CrossAttentionTransposeAndReshape'
         ( 'SelectDim ( 'ByIndex 1))
         ( 'SelectDim ( 'ByIndex 2))
         ( ReshapeF
-            ( LinearWithBiasF
+            ( LinearWithoutBiasF
                 ( 'Shape '[embedDim, keyEmbedDim])
-                ( 'Shape '[embedDim])
                 keyShape
             )
             ( 'Shape
@@ -297,51 +296,50 @@ type CrossAttentionOutputShape
   (attentionMaskShape :: Shape [Dim (Name Symbol) (Size Nat)]) =
   BroadcastShapesF
     queryShape
-    ( LinearWithBiasF
+    ( LinearWithoutBiasF
         ( 'Shape '[queryEmbedDim, embedDim])
-        ( 'Shape '[queryEmbedDim])
         ( CrossAttentionTransposeAndReshape''
             headDim
             headEmbedDim
             embedDim
             queryEmbedDim
             keyEmbedDim
-            (LayerNormF ( 'Shape '[queryEmbedDim]) ( 'Shape '[queryEmbedDim]) queryShape)
+            (LayerNormWithoutBiasF ( 'Shape '[queryEmbedDim]) queryShape)
             keyShape
             attentionMaskShape
         )
     )
 
 instance
-  ( KnownDim queryEmbedDim,
+  ( LayerNormWithoutBiasC ( 'Shape '[queryEmbedDim]) queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
     HasForward
       (MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP)
-      ( Tensor requiresGradient ( 'Layout 'Dense <+> queryLayout) (device <+> queryDevice) (dataType <+> queryDataType) (LayerNormF ( 'Shape '[queryEmbedDim]) ( 'Shape '[queryEmbedDim]) queryShape),
-        Tensor requiresGradient keyLayout keyDevice keyDataType keyShape,
-        Tensor requiresGradient keyLayout keyDevice keyDataType keyShape,
-        Tensor requiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+      ( Tensor 'WithGradient ( 'Layout 'Dense <+> queryLayout) (device <+> queryDevice) (dataType <+> queryDataType) (LayerNormWithoutBiasF ( 'Shape '[queryEmbedDim]) queryShape),
+        Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
+        Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
+        Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
       )
       (Generator generatorDevice),
     Scalar dropoutP
   ) =>
   HasForward
     (CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
-    ( Tensor requiresGradient queryLayout queryDevice queryDataType queryShape,
-      Tensor requiresGradient keyLayout keyDevice keyDataType keyShape,
-      Tensor requiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+    ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+      Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
+      Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
     )
     (Generator generatorDevice)
   where
   type
     ForwardOutput
       (CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
-      ( Tensor requiresGradient queryLayout queryDevice queryDataType queryShape,
-        Tensor requiresGradient keyLayout keyDevice keyDataType keyShape,
-        Tensor requiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+      ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+        Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
+        Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
       )
       (Generator generatorDevice) =
       Tensor
-        requiresGradient
+        'WithGradient
         (queryLayout <+> 'Layout 'Dense <+> keyLayout <+> attentionMaskLayout)
         (queryDevice <+> device <+> keyDevice <+> generatorDevice <+> attentionMaskDevice)
         (queryDataType <+> dataType <+> keyDataType <+> attentionMaskDataType)
@@ -349,9 +347,9 @@ instance
   type
     ForwardGeneratorOutput
       (CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
-      ( Tensor requiresGradient queryLayout queryDevice queryDataType queryShape,
-        Tensor requiresGradient keyLayout keyDevice keyDataType keyShape,
-        Tensor requiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+      ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+        Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
+        Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
       )
       (Generator generatorDevice) =
       Generator (device <+> queryDevice <+> keyDevice <+> generatorDevice <+> attentionMaskDevice)

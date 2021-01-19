@@ -22,7 +22,7 @@
 
 module Torch.GraduallyTyped.Shape.Type where
 
-import Control.Monad (MonadPlus, foldM, mzero)
+import Control.Monad (foldM)
 import Data.Kind (Type)
 import Data.Proxy (Proxy (..))
 import Foreign.ForeignPtr (ForeignPtr)
@@ -32,11 +32,10 @@ import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Managed.Cast as ATen ()
 import qualified Torch.Internal.Managed.Type.Dimname as ATen (dimname_symbol, fromSymbol_s)
 import qualified Torch.Internal.Managed.Type.DimnameList as ATen (dimnameList_at_s, dimnameList_push_back_n, dimnameList_size, newDimnameList)
-import qualified Torch.Internal.Managed.Type.IntArray as ATen
+import qualified Torch.Internal.Managed.Type.IntArray as ATen (intArray_at_s, intArray_push_back_l, intArray_size, newIntArray)
 import qualified Torch.Internal.Managed.Type.StdString as ATen (newStdString_s, string_c_str)
 import qualified Torch.Internal.Managed.Type.Symbol as ATen (dimname_s, symbol_toUnqualString)
-import Torch.Internal.Type (IntArray)
-import qualified Torch.Internal.Type as ATen (Dimname, DimnameList)
+import qualified Torch.Internal.Type as ATen (Dimname, DimnameList, IntArray)
 
 data Size (size :: Type) where
   UncheckedSize :: forall size. Size size
@@ -67,7 +66,12 @@ instance KnownSymbol name => KnownName ( 'Name name) where
   nameVal = Name (symbolVal $ Proxy @name)
 
 data Dim (name :: Type) (size :: Type) where
-  Dim :: forall name size. name -> size -> Dim name size
+  Dim ::
+    forall name size.
+    { dimName :: name,
+      dimSize :: size
+    } ->
+    Dim name size
   deriving (Eq, Ord, Show)
 
 class KnownDim (dim :: Dim (Name Symbol) (Size Nat)) where
@@ -151,7 +155,7 @@ data By (name :: Type) (index :: Type) where
     forall name index.
     index ->
     By name index
-  deriving (Show)
+  deriving (Show, Eq, Ord)
 
 class KnownBy (by :: By Symbol Nat) where
   byVal :: By String Integer
@@ -201,6 +205,56 @@ instance (KnownBy by) => WithSelectDimC ( 'SelectDim by) f where
   type WithSelectDimF ( 'SelectDim by) f = f
   withSelectDim f = f (byVal @by)
   withoutSelectDim = const
+
+data SelectDims (selectDims :: Type) where
+  UncheckedSelectDims ::
+    forall selectDims.
+    SelectDims selectDims
+  SelectDims ::
+    forall selectDims.
+    selectDims ->
+    SelectDims selectDims
+
+class KnownSelectDims (selectDims :: SelectDims [By Symbol Nat]) where
+  selectDimsVal :: SelectDims [By String Integer]
+
+instance KnownSelectDims 'UncheckedSelectDims where
+  selectDimsVal = UncheckedSelectDims
+
+instance KnownSelectDims ( 'SelectDims '[]) where
+  selectDimsVal = SelectDims []
+
+instance
+  (KnownBy by, KnownSelectDims ( 'SelectDims bys)) =>
+  KnownSelectDims ( 'SelectDims (by ': bys))
+  where
+  selectDimsVal =
+    let by = byVal @by
+        SelectDims bys = selectDimsVal @( 'SelectDims bys)
+     in SelectDims (by : bys)
+
+class WithSelectDimsC (selectDims :: SelectDims [By Symbol Nat]) (f :: Type) where
+  type WithSelectDimsF selectDims f :: Type
+  withSelectDims :: ([By String Integer] -> f) -> WithSelectDimsF selectDims f
+  withoutSelectDims :: WithSelectDimsF selectDims f -> ([By String Integer] -> f)
+
+instance WithSelectDimsC 'UncheckedSelectDims f where
+  type WithSelectDimsF 'UncheckedSelectDims f = [By String Integer] -> f
+  withSelectDims = id
+  withoutSelectDims = id
+
+instance WithSelectDimsC ( 'SelectDims '[]) f where
+  type WithSelectDimsF ( 'SelectDims '[]) f = f
+  withSelectDims f = f []
+  withoutSelectDims = const
+
+instance
+  (WithSelectDimsC ( 'SelectDims selectDims) f, KnownBy by) =>
+  WithSelectDimsC ( 'SelectDims (by ': selectDims)) f
+  where
+  type WithSelectDimsF ( 'SelectDims (by ': selectDims)) f = WithSelectDimsF ( 'SelectDims selectDims) f
+  withSelectDims f = withSelectDims @( 'SelectDims selectDims) @f $ \bys -> f (byVal @by : bys)
+  withoutSelectDims f (_ : bys) = withoutSelectDims @( 'SelectDims selectDims) @f f bys
 
 -- | Data type to represent tensor shapes, that is, lists of dimensions.
 data Shape (dims :: Type) where
@@ -329,7 +383,7 @@ instance Castable [String] (ForeignPtr ATen.DimnameList) where
     names <- mapM (\(x :: ForeignPtr ATen.Dimname) -> uncast x return) ptrList
     f names
 
-instance Castable [Integer] (ForeignPtr IntArray) where
+instance Castable [Integer] (ForeignPtr ATen.IntArray) where
   cast sizes f =
     let ptr = unsafePerformIO $ do
           array <- ATen.newIntArray
@@ -341,21 +395,3 @@ instance Castable [Integer] (ForeignPtr IntArray) where
           len <- ATen.intArray_size ptr
           mapM ((<$>) toInteger . ATen.intArray_at_s ptr) [0 .. (len - 1)]
      in f sizes
-
-dimName :: Dim String Integer -> String
-dimName (Dim name _) = name
-
-dimNames :: forall m name size. MonadPlus m => [Dim (Name name) (Size size)] -> m [name]
-dimNames dims = reverse <$> foldM step mempty dims
-  where
-    step acc (Dim (Name name) _) = pure $ name : acc
-    step _ (Dim UncheckedName _) = mzero
-
-dimSize :: Dim String Integer -> Integer
-dimSize (Dim _ size) = size
-
-dimSizes :: forall m name size. MonadPlus m => [Dim (Name name) (Size size)] -> m [size]
-dimSizes dims = reverse <$> foldM step mempty dims
-  where
-    step acc (Dim _ (Size size)) = pure $ size : acc
-    step _ (Dim _ UncheckedSize) = mzero

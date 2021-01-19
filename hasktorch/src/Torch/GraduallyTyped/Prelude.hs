@@ -28,6 +28,7 @@ module Torch.GraduallyTyped.Prelude
     Elem,
     Head,
     Tail,
+    Length,
     Contains,
     FromMaybe,
     FstMaybe,
@@ -59,7 +60,7 @@ import Data.Proxy (Proxy (..))
 import Data.String (IsString, fromString)
 import Data.Type.Bool (If, type (||))
 import GHC.Exts (Any)
-import GHC.TypeLits (Nat, ErrorMessage (..), TypeError (..), type (*))
+import GHC.TypeLits (Nat, ErrorMessage (..), TypeError (..), type (*), type (+))
 
 type family All (c :: k -> Constraint) (xs :: [k]) :: Constraint where
   All _ '[] = ()
@@ -161,6 +162,10 @@ type family ReverseImplF (xs :: [a]) (acc :: [a]) :: [a] where
   ReverseImplF (h ': t) acc = ReverseImplF t (h ': acc)
 
 type Reverse xs = ReverseImplF xs '[]
+
+type family Length (xs :: [a]) :: Nat where
+  Length '[] = 0
+  Length (_ ': xs) = 1 + Length xs
 
 type family FromMaybe (d :: k) (x :: Maybe k) :: k where
   FromMaybe d 'Nothing = d

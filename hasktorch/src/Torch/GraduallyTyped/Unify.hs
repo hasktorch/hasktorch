@@ -28,37 +28,30 @@ infixr 8 <+>
 
 type Unify :: forall k -> k -> k -> k
 type family Unify k (a :: k) (b :: k) :: k where
-  Unify k a a = a
-  -- Unify RequiresGradient requiresGradient requiresGradient = requiresGradient
+  Unify _ a a = a
   Unify RequiresGradient requiresGradient requiresGradient' = TypeError (UnifyRequiresGradientMessage requiresGradient requiresGradient')
   Unify (Layout LayoutType) 'UncheckedLayout _ = 'UncheckedLayout
   Unify (Layout LayoutType) _ 'UncheckedLayout = 'UncheckedLayout
-  -- Unify (Layout LayoutType) ( 'Layout layoutType) ( 'Layout layoutType) = 'Layout layoutType
   Unify (Layout LayoutType) ( 'Layout layoutType) ( 'Layout layoutType') = TypeError (UnifyLayoutErrorMessage layoutType layoutType')
   Unify (Device (DeviceType Nat)) 'UncheckedDevice _ = 'UncheckedDevice
   Unify (Device (DeviceType Nat)) _ 'UncheckedDevice = 'UncheckedDevice
-  -- Unify (Device (DeviceType Nat)) ( 'Device deviceType) ( 'Device deviceType) = 'Device deviceType
   Unify (Device (DeviceType Nat)) ( 'Device deviceType) ( 'Device deviceType') = TypeError (UnifyDeviceErrorMessage deviceType deviceType')
   Unify (DataType DType) 'UncheckedDataType _ = 'UncheckedDataType
   Unify (DataType DType) _ 'UncheckedDataType = 'UncheckedDataType
-  -- Unify (DataType DType) ( 'DataType dType) ( 'DataType dType) = 'DataType dType
   Unify (DataType DType) ( 'DataType dType) ( 'DataType dType') = TypeError (UnifyDataTypeErrorMessage dType dType')
   Unify (Shape [Dim (Name Symbol) (Size Nat)]) 'UncheckedShape _ = 'UncheckedShape
   Unify (Shape [Dim (Name Symbol) (Size Nat)]) _ 'UncheckedShape = 'UncheckedShape
   Unify (Shape [Dim (Name Symbol) (Size Nat)]) ( 'Shape dims) ( 'Shape dims') = 'Shape (Unify [Dim (Name Symbol) (Size Nat)] dims dims')
-  -- Unify [Dim (Name Symbol) (Size Nat)] '[] '[] = '[]
   Unify [Dim (Name Symbol) (Size Nat)] (dim ': dims) (dim' ': dims') = Unify (Dim (Name Symbol) (Size Nat)) dim dim' ': Unify [Dim (Name Symbol) (Size Nat)] dims dims'
   Unify [Dim (Name Symbol) (Size Nat)] dims dims' = TypeError (UnifyDimsErrorMessage dims dims')
   Unify (Dim (Name Symbol) (Size Nat)) ( 'Dim name size) ( 'Dim name' size') = 'Dim (Unify (Name Symbol) name name') (Unify (Size Nat) size size')
   Unify (Name Symbol) 'UncheckedName _ = 'UncheckedName
   Unify (Name Symbol) _ 'UncheckedName = 'UncheckedName
-  -- Unify (Name Symbol) ( 'Name name) ( 'Name name) = 'Name name
   Unify (Name Symbol) ( 'Name name) ( 'Name "*") = 'Name name
   Unify (Name Symbol) ( 'Name "*") ( 'Name name) = 'Name name
   Unify (Name Symbol) ( 'Name name) ( 'Name name') = TypeError (UnifyNameErrorMessage name name')
   Unify (Size Nat) 'UncheckedSize _ = 'UncheckedSize
   Unify (Size Nat) _ 'UncheckedSize = 'UncheckedSize
-  -- Unify (Size Nat) ( 'Size size) ( 'Size size) = 'Size size
   Unify (Size Nat) ( 'Size size) ( 'Size size') = TypeError (UnifySizeErrorMessage size size')
 
 type UnifyRequiresGradientMessage (requiresGradient :: RequiresGradient) (requiresGradient' :: RequiresGradient) =
@@ -118,8 +111,6 @@ type UnifySizeErrorMessage (size :: Nat) (size' :: Nat) =
 
 type UnifyRightAssociativeL k a b c = Unify k (Unify k a b) c ~ Unify k a (Unify k b c)
 
-type UnifyIdempotenceL1 k a = Unify k a a ~ a
-
 type UnifyIdempotenceL2 k a b = Unify k a (Unify k a b) ~ Unify k a b
 
 type UnifyIdempotenceL2C k a b = Unify k a (Unify k b a) ~ Unify k a b
@@ -147,3 +138,14 @@ type UnifyIdempotenceL7C k a b c d e f g = Unify k a (Unify k b (Unify k c (Unif
 type UnifyIdempotenceL8 k a b c d e f g h = Unify k a (Unify k b (Unify k c (Unify k d (Unify k e (Unify k f (Unify k g (Unify k a h))))))) ~ Unify k a (Unify k b (Unify k c (Unify k d (Unify k e (Unify k f (Unify k g h))))))
 
 type UnifyIdempotenceL8C k a b c d e f g h = Unify k a (Unify k b (Unify k c (Unify k d (Unify k e (Unify k f (Unify k g (Unify k h a))))))) ~ Unify k a (Unify k b (Unify k c (Unify k d (Unify k e (Unify k f (Unify k g h))))))
+
+type family (<|>) (a :: k) (b :: k) :: k where
+  (<|>) (a :: k) (b :: k) = Or k a b
+
+infixr 8 <|>
+
+type Or :: forall k -> k -> k -> k
+type family Or k (a :: k) (b :: k) :: k where
+  Or _ a a = a
+  Or RequiresGradient _ WithGradient = WithGradient
+  Or RequiresGradient WithGradient _ = WithGradient
