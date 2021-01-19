@@ -1,22 +1,20 @@
 #include "Rts.h"
-
-extern void showObject(void* ptr, void* fptr);
-extern void showWeakPtrList();
+#include "hasktorch_dump.h"
 
 void
-showCFinalizers(StgCFinalizerList *list)
+showCFinalizers(int flag, StgCFinalizerList *list)
 {
   StgCFinalizerList *head;
   for (head = list;
        (StgClosure *)head != &stg_NO_FINALIZER_closure;
        head = (StgCFinalizerList *)head->link)
     {
-      showObject(head->ptr,head->fptr);
+      showObject(flag, head->ptr, head->fptr);
     }
 }
 
 void
-showAllCFinalizers(StgWeak *list)
+showAllCFinalizers(int flag, StgWeak *list)
 {
   StgWeak *w;
   for (w = list; w; w = w->link) {
@@ -29,22 +27,18 @@ showAllCFinalizers(StgWeak *list)
     // we end up running the same finalizer twice. See #7170.
     const StgInfoTable *winfo = w->header.info;
     if (winfo != &stg_DEAD_WEAK_info) {
-      showCFinalizers((StgCFinalizerList *)w->cfinalizers);
+      showCFinalizers(flag,(StgCFinalizerList *)w->cfinalizers);
     }
   }
 
 }
 
 void
-showWeakPtrList(){
-  //  runAllCFinalizers(StgWeak *w)
-  /* run C finalizers for all active weak pointers */
-  //for (uint32_t i = 0; i < n_capabilities; i++) {
-  // showAllCFinalizers(capabilities[i]->weak_ptr_list_hd);
-  //}
+showWeakPtrList(int flag){
   ACQUIRE_LOCK(sm_mutex);
+  shiftObjectMap();
   for (uint32_t g = 0; g < RtsFlags.GcFlags.generations; g++) {
-    showAllCFinalizers(generations[g].weak_ptr_list);
+    showAllCFinalizers(flag,generations[g].weak_ptr_list);
   }
   RELEASE_LOCK(sm_mutex);
 }

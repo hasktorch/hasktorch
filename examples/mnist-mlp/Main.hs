@@ -94,7 +94,7 @@ main = do
     runContT (streamFromMap (datasetOpts 2) trainMnist) $ trainLoop localDevice model optimizer . fst
 
   performGC
-  showWeakPtrList
+  dumpLibtorchObjects 1
   -- show test images + labels
   forM_ [0 .. 10] $ displayImages model <=< getItem testMnist
 

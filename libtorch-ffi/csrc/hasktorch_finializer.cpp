@@ -1,4 +1,5 @@
 #include "hasktorch_finializer.h"
+#include <map>
 
 void delete_tensor(at::Tensor* tensor){
   delete tensor;
@@ -172,137 +173,117 @@ void delete_optimizer(torch::optim::Optimizer* object){
   delete object;
 }
 
+std::map<void*,int> objectAge;
+std::map<void*,int> prevObjectAge;
+
 void
-showObject(void* ptr, void* fptr){
+shiftObjectMap(){
+  prevObjectAge = objectAge;
+  objectAge = std::map<void*,int>();
+}
+
+void
+showObject(int flag, void* ptr, void* fptr){
+  auto it = prevObjectAge.find(ptr);
+  int age = 0;
+  if (it != prevObjectAge.end()) {
+    objectAge[ptr] = it->second + 1;
+    age = it->second + 1;
+  } else {
+    objectAge[ptr] = 1;
+    age = 1;
+  }
+  if(flag == 0)
+    return;
+  if(age < flag)
+    return;
   if(fptr == (void*)delete_tensor){
     at::Tensor* t = (at::Tensor*) ptr;
-    std::cout << "Tensor:" << t->sizes() << std::endl;
-  }
-  if(fptr == (void*)delete_tensorlist){
-    printf("tensorlist\n");
-  }
-  if(fptr == (void*)delete_tensorindex){
-    printf("tensorindex\n");
-  }
-  if(fptr == (void*)delete_tensorindexlist){
-    printf("tensorindexlist\n");
-  }
-  if(fptr == (void*)delete_c10dict){
-    printf("c10dict\n");
-  }
-  if(fptr == (void*)delete_c10listivalue){
-    printf("c10listivalue\n");
-  }
-  if(fptr == (void*)delete_c10listtensor){
-    printf("c10listtensor\n");
-  }
-  if(fptr == (void*)delete_c10listdouble){
-    printf("c10listdouble\n");
-  }
-  if(fptr == (void*)delete_c10listint){
-    printf("c10listint\n");
-  }
-  if(fptr == (void*)delete_c10listbool){
-    printf("c10listbool\n");
-  }
-  if(fptr == (void*)delete_stdvectordouble){
-    printf("stdvectordouble\n");
-  }
-  if(fptr == (void*)delete_stdvectorint){
-    printf("stdvectorint\n");
-  }
-  if(fptr == (void*)delete_stdvectorbool){
-    printf("stdvectorbool\n");
-  }
-  if(fptr == (void*)delete_c10tuple){
-    printf("c10tuple\n");
-  }
-  if(fptr == (void*)delete_context){
-    printf("context\n");
-  }
-  if(fptr == (void*)delete_dimname){
-    printf("dimname\n");
-  }
-  if(fptr == (void*)delete_dimnamelist){
-    printf("dimnamelist\n");
-  }
-  if(fptr == (void*)delete_generator){
-    printf("generator\n");
-  }
-  if(fptr == (void*)delete_ivalue){
-    printf("ivalue\n");
-  }
-  if(fptr == (void*)delete_ivaluelist){
-    printf("ivaluelist\n");
-  }
-  if(fptr == (void*)delete_intarray){
-    printf("intarray\n");
-  }
-  if(fptr == (void*)delete_module){
-    printf("module\n");
-  }
-  if(fptr == (void*)delete_jitgraph){
-    printf("jitgraph\n");
-  }
-  if(fptr == (void*)delete_jitnode){
-    printf("jitnode\n");
-  }
-  if(fptr == (void*)delete_jitvalue){
-    printf("jitvalue\n");
-  }
-  if(fptr == (void*)delete_scalar){
-    printf("scalar\n");
-  }
-  if(fptr == (void*)delete_stdarraybool2){
-    printf("stdarraybool2\n");
-  }
-  if(fptr == (void*)delete_stdarraybool3){
-    printf("stdarraybool3\n");
-  }
-  if(fptr == (void*)delete_stdarraybool4){
-    printf("stdarraybool4\n");
-  }
-  if(fptr == (void*)delete_stdstring){
-    printf("stdstring\n");
-  }
-  if(fptr == (void*)delete_storage){
-    printf("storage\n");
-  }
-  if(fptr == (void*)delete_symbol){
-    printf("symbol\n");
-  }
-  if(fptr == (void*)delete_tensoroptions){
-    printf("tensoroptions\n");
-  }
-  if(fptr == (void*)delete_tensortensor){
-    printf("tensorten\n");
-  }
-  if(fptr == (void*)delete_tensortensortensortensortensor){
-    printf("tensortensortensortensorten\n");
-  }
-  if(fptr == (void*)delete_tensortensortensortensorlist){
-    printf("tensortensortensortensorl\n");
-  }
-  if(fptr == (void*)delete_tensortensortensortensorint64){
-    printf("tensortensortensortensorin\n");
-  }
-  if(fptr == (void*)delete_tensortensortensor){
-    printf("tensortensorten\n");
-  }
-  if(fptr == (void*)delete_tensortensortensortensor){
-    printf("tensortensortensorten\n");
-  }
-  if(fptr == (void*)delete_tensortensorcdoubleint64){
-    printf("tensortensorcdoublein\n");
-  }
-  if(fptr == (void*)delete_cdoubleint64){
-    printf("cdoublein\n");
-  }
-  if(fptr == (void*)delete_cdoublecdouble){
-    printf("cdoublecdou\n");
-  }
-  if(fptr == (void*)delete_optimizer){
-    printf("optimi\n");
+    std::cout << age << ":" << "Tensor " << t->scalar_type() << " " << t->sizes() << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_tensorlist){
+    std::cout << age << ":" << "[Tensor]" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_tensorindex){
+    std::cout << age << ":" << "tensorindex" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_tensorindexlist){
+    std::cout << age << ":" << "[tensorindex]" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_c10dict){
+    std::cout << age << ":" << "c10dict" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_c10listivalue){
+    std::cout << age << ":" << "c10listivalue" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_c10listtensor){
+    std::cout << age << ":" << "c10listtensor" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_c10listdouble){
+    std::cout << age << ":" << "c10listdouble" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_c10listint){
+    std::cout << age << ":" << "c10listint" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_c10listbool){
+    std::cout << age << ":" << "c10listbool" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_stdvectordouble){
+    std::cout << age << ":" << "std::vector<double>" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_stdvectorint){
+    std::cout << age << ":" << "std::vector<int>" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_stdvectorbool){
+    std::cout << age << ":" << "std::vector<bool>" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_c10tuple){
+    std::cout << age << ":" << "c10tuple" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_context){
+    std::cout << age << ":" << "context" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_dimname){
+    std::cout << age << ":" << "dimname" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_dimnamelist){
+    std::cout << age << ":" << "[dimname]" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_generator){
+    std::cout << age << ":" << "generator" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_ivalue){
+    std::cout << age << ":" << "ivalue" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_ivaluelist){
+    std::cout << age << ":" << "[ivalue]" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_intarray){
+    std::cout << age << ":" << "intarray" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_module){
+    std::cout << age << ":" << "module" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_jitgraph){
+    std::cout << age << ":" << "jitgraph" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_jitnode){
+    std::cout << age << ":" << "jitnode" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_jitvalue){
+    std::cout << age << ":" << "jitvalue" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_scalar){
+    std::cout << age << ":" << "scalar" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_stdarraybool2){
+    std::cout << age << ":" << "std::array<bool,2>" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_stdarraybool3){
+    std::cout << age << ":" << "std::array<bool,3>" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_stdarraybool4){
+    std::cout << age << ":" << "std::array<bool,4>" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_stdstring){
+    std::cout << age << ":" << "std::string" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_storage){
+    std::cout << age << ":" << "storage" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_symbol){
+    std::cout << age << ":" << "symbol" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_tensoroptions){
+    std::cout << age << ":" << "tensoroptions" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_tensortensor){
+    std::cout << age << ":" << "(tensor,tensor)" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_tensortensortensortensortensor){
+    std::cout << age << ":" << "(tensor,tensor,tensor,tensor,tensor)" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_tensortensortensortensorlist){
+    std::cout << age << ":" << "(tensor,tensor,tensor,[tensor])" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_tensortensortensortensorint64){
+    std::cout << age << ":" << "(tensor,tensor,tensor,tensor,int)" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_tensortensortensor){
+    std::cout << age << ":" << "(tensor,tensor,tensor)" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_tensortensortensortensor){
+    std::cout << age << ":" << "(tensor,tensor,tensor,tensor)" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_tensortensorcdoubleint64){
+    std::cout << age << ":" << "(tensor,tensor,double,int)" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_cdoubleint64){
+    std::cout << age << ":" << "(double,int)" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_cdoublecdouble){
+    std::cout << age << ":" << "(double,double)" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_optimizer){
+    std::cout << age << ":" << "optimizer" << ":" << std::hex << (ptr) << std::dec << std::endl;
   }
 }
 

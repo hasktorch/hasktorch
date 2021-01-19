@@ -21,11 +21,20 @@ import System.Environment (lookupEnv)
 import System.IO (hPutStrLn, stderr)
 import System.Mem (performGC)
 import System.SysInfo
+import Foreign.C.Types
 
 foreign import ccall unsafe "hasktorch_finalizer.h showWeakPtrList"
-  showWeakPtrList :: IO ()
+  c_showWeakPtrList :: CInt -> IO ()
 
-
+-- | Returns all objects of libtorch. 
+-- Each time it is called, the age of the object increases by one.
+-- Dumps objects that are greater than or equal to the argument of age.
+dumpLibtorchObjects ::
+  -- | age
+  Int ->
+  -- | output
+  IO ()
+dumpLibtorchObjects age = c_showWeakPtrList (fromIntegral age)
 
 prettyException :: IO a -> IO a
 prettyException func =
