@@ -15,7 +15,7 @@
 module Torch.GraduallyTyped.NN.Functional.Activation where
 
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.GraduallyTyped.Tensor(Tensor)
+import Torch.GraduallyTyped.Tensor (Tensor)
 import Torch.Internal.Cast (cast1, cast2, cast3)
 import qualified Torch.Internal.Managed.Native as ATen
 import Torch.Scalar (Scalar)

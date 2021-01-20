@@ -809,7 +809,12 @@ shape tensor =
         )
         (return $ Dim "*" <$> sizes)
     Shape dims ->
-      let sizes = unsafePerformIO $ cast1 ATen.tensor_sizes tensor
+      let sizes =
+            unsafePerformIO $
+              ifM
+                ((> (0 :: Int)) <$> (cast1 ATen.tensor_dim tensor))
+                (cast1 ATen.tensor_sizes tensor)
+                (pure [])
           names =
             unsafePerformIO $
               ifM

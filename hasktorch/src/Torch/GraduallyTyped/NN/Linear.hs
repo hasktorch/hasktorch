@@ -27,6 +27,7 @@ import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithBiasF, LinearWithoutBiasF, linearWithBias, linearWithoutBias)
 import Torch.GraduallyTyped.NN.Initialization (FanMode (..), NonLinearity (..), calculateFan, getter, kaimingUniform)
+import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape (Dim (..), Name, Shape (..), Size, WithDimC (..))
@@ -35,11 +36,9 @@ import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mulScalar, subScala
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
-data LinearHasBias = WithBias | WithoutBias
-
 data
   Linear
-    (hasBias :: LinearHasBias)
+    (hasBias :: HasBias)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (inputDim :: Dim (Name Symbol) (Size Nat))

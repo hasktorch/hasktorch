@@ -27,20 +27,18 @@ import Torch.GraduallyTyped.DType (DataType (..), WithDataTypeC (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (..))
 import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
-import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithBiasF, LayerNormWithoutBiasF, LayerNormWithoutBiasSelectDimsF, layerNormWithBias, layerNormWithoutBias)
+import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithBiasF, LayerNormWithoutBiasF, layerNormWithBias, layerNormWithoutBias)
+import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Random (mkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape (Dim (..), KnownShape, Name (..), Shape (..), Size (..), WithSelectDimsC, WithShapeC (..))
 import Torch.GraduallyTyped.Tensor.Creation (WithCreateC (withoutCreate), ones, randn, zeros)
-import Torch.GraduallyTyped.Tensor.MathOperations.Reduction (MeanF)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
-data LayerNormHasBias = WithBias | WithoutBias
-
 data
   LayerNorm
-    (hasBias :: LayerNormHasBias)
+    (hasBias :: HasBias)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (normalizedShape :: Shape [Dim (Name Symbol) (Size Nat)])
@@ -177,17 +175,10 @@ instance
       generator
   forward LayerNormWithBias {..} input g = (layerNormWithBias layerNormWithBiasWeight layerNormBias layerNormWithBiasEps input, g)
 
-type LayerNormWithoutBiasC' selectDims shape requiresGradient' layout' device' dataType' shape' =
-  ( KnownShape shape,
-    KnownShape shape',
-    WithSelectDimsC selectDims (Tensor requiresGradient' layout' device' dataType' shape' -> Tensor requiresGradient' layout' device' dataType' (MeanF selectDims shape'))
-  )
-
-type LayerNormWithoutBiasC shape requiresGradient' layout' device' dataType' shape' =
-  LayerNormWithoutBiasC' (LayerNormWithoutBiasSelectDimsF shape shape') shape requiresGradient' layout' device' dataType' shape'
-
 instance
-  LayerNormWithoutBiasC normalizedShape requiresGradient' layout' device' dataType' shape' =>
+  ( KnownShape normalizedShape,
+    KnownShape shape'
+  ) =>
   HasForward
     (LayerNorm 'WithoutBias device dataType normalizedShape)
     (Tensor requiresGradient' layout' device' dataType' shape')

@@ -48,6 +48,7 @@ library
                     , Torch.GraduallyTyped.Autograd
                     , Torch.GraduallyTyped.Random
                     , Torch.GraduallyTyped.NN
+                    , Torch.GraduallyTyped.NN.Type
                     , Torch.GraduallyTyped.NN.Class
                     , Torch.GraduallyTyped.NN.Initialization
                     , Torch.GraduallyTyped.NN.Linear

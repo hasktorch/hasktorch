@@ -867,7 +867,7 @@ mul ::
     (device <+> device')
     (dataType <+> dataType')
     (BroadcastShapesF shape shape')
-input `mul` other = unsafePerformIO $ cast2 ATen.sub_tt input other
+input `mul` other = unsafePerformIO $ cast2 ATen.mul_tt input other
 
 -- Multiplies each element of the input 'input' with the scalar 'other' and returns a new resulting tensor:
 -- \[

@@ -51,8 +51,7 @@ import Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork (FeedForwardNetwor
 import Torch.GraduallyTyped.NN.Transformer.SelfAttention (HasInitializeSelfAttentionC, SelfAttention, SelfAttentionOutputShape)
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
-import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape (Dim (..), KnownDim, Name (..), Size (..), WithDimC (..))
+import Torch.GraduallyTyped.Shape (Dim (..), Name (..), Size (..), WithDimC (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
@@ -236,15 +235,15 @@ instance
           (queryDevice <+> device <+> generatorDevice <+> decoderAttentionMaskDevice <+> keyDevice <+> crossAttentionMaskDevice)
           (queryDataType <+> dataType <+> decoderAttentionMaskDataType <+> keyDataType <+> crossAttentionMaskDataType)
           ( CrossAttentionOutputShape
-                headDim
-                headEmbedDim
-                embedDim
-                queryEmbedDim
-                keyEmbedDim
-                selfAttentionOutputShape
-                keyShape
-                crossAttentionMaskShape
-            )
+              headDim
+              headEmbedDim
+              embedDim
+              queryEmbedDim
+              keyEmbedDim
+              selfAttentionOutputShape
+              keyShape
+              crossAttentionMaskShape
+          )
       )
       (Generator (device <+> queryDevice <+> generatorDevice <+> decoderAttentionMaskDevice <+> keyDevice <+> crossAttentionMaskDevice))
   ) =>

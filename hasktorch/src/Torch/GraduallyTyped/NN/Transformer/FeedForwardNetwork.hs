@@ -15,7 +15,8 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoStarIsType #-}
-{-# OPTIONS_GHC -fomit-interface-pragmas
+{-# OPTIONS_GHC -v2
+                -fomit-interface-pragmas
                 -fplugin TypeLevel.Rewrite
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyRightAssociativeL
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2
@@ -49,13 +50,14 @@ import Torch.GraduallyTyped.NN.Dropout (Dropout)
 import Torch.GraduallyTyped.NN.Functional.Activation (relu)
 import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithoutBiasF)
 import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithoutBiasF)
-import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearWithoutBiasC, Linear (..), LinearHasBias (..))
-import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormWithoutBiasC, LayerNorm, LayerNormHasBias (..), LayerNormWithoutBiasC)
+import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearWithoutBiasC, Linear (..))
+import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormWithoutBiasC, LayerNorm)
+import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Shape (..), Size (..), WithDimC (..), WithShapeC (..))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim, KnownShape, Name (..), Shape (..), Size (..), WithDimC (..), WithSelectDimsC, WithShapeC (..))
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
@@ -71,13 +73,13 @@ data
   TransformerFeedForwardNetwork ::
     forall device dataType queryEmbedDim ffnDim dropoutP.
     { -- | input weight
-      ffnInputWeight :: Linear 'Torch.GraduallyTyped.NN.Linear.WithoutBias device dataType queryEmbedDim ffnDim,
+      ffnInputWeight :: Linear 'WithoutBias device dataType queryEmbedDim ffnDim,
       -- | output weight
-      ffnOutputWeight :: Linear 'Torch.GraduallyTyped.NN.Linear.WithoutBias device dataType ffnDim queryEmbedDim,
+      ffnOutputWeight :: Linear 'WithoutBias device dataType ffnDim queryEmbedDim,
       -- | relu dropout
       ffnReluDropout :: Dropout dropoutP,
       -- | feed-forward layer norm
-      ffnLayoutNorm :: LayerNorm 'Torch.GraduallyTyped.NN.Normalization.WithoutBias device dataType ( 'Shape '[queryEmbedDim]),
+      ffnLayoutNorm :: LayerNorm 'WithoutBias device dataType ( 'Shape '[queryEmbedDim]),
       -- | feed-forward dropout
       ffnDropout :: Dropout dropoutP
     } ->
@@ -141,7 +143,7 @@ instance
               ( withoutDim @queryEmbedDim
                   ( withoutDataType @dataType
                       ( withoutDevice @device
-                          ( initialize @(Linear 'Torch.GraduallyTyped.NN.Linear.WithoutBias device dataType queryEmbedDim ffnDim)
+                          ( initialize @(Linear 'WithoutBias device dataType queryEmbedDim ffnDim)
                           )
                           deviceType
                       )
@@ -156,7 +158,7 @@ instance
               ( withoutDim @ffnDim
                   ( withoutDataType @dataType
                       ( withoutDevice @device
-                          ( initialize @(Linear 'Torch.GraduallyTyped.NN.Linear.WithoutBias device dataType ffnDim queryEmbedDim)
+                          ( initialize @(Linear 'WithoutBias device dataType ffnDim queryEmbedDim)
                           )
                           deviceType
                       )
@@ -170,7 +172,7 @@ instance
               withoutShape @( 'Shape '[queryEmbedDim])
                 ( withoutDataType @dataType
                     ( withoutDevice @device
-                        ( initialize @(LayerNorm 'Torch.GraduallyTyped.NN.Normalization.WithoutBias device dataType ( 'Shape '[queryEmbedDim]))
+                        ( initialize @(LayerNorm 'WithoutBias device dataType ( 'Shape '[queryEmbedDim]))
                         )
                         deviceType
                     )
@@ -199,7 +201,8 @@ type FeedForwardNetworkOutputShape
     )
 
 instance
-  ( LayerNormWithoutBiasC ( 'Shape '[queryEmbedDim]) queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+  ( KnownShape queryShape,
+    KnownDim queryEmbedDim,
     Scalar dropoutP
   ) =>
   HasForward

@@ -21,7 +21,7 @@ import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (addScalar, mul, pow
 import Torch.GraduallyTyped.Tensor.MathOperations.Reduction (MeanF, mean)
 import Torch.GraduallyTyped.Tensor.Type (Tensor, shape)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
-import Torch.Internal.Cast (cast5)
+import Torch.Internal.Cast (cast5, cast6)
 import qualified Torch.Internal.Managed.Native as ATen
 import Type.Errors.Pretty (type (%), type (<>))
 
@@ -31,8 +31,8 @@ type family LayerNormImplF (reverseNormalizedDims :: [Dim (Name Symbol) (Size Na
   LayerNormImplF _ '[] = TypeError LayerNormShapeErrorMessage
 
 type LayerNormShapeErrorMessage =
-  "Cannot apply layer norm. "
-    % "Normalized shape exceeds input shape."
+  "Cannot apply the layer norm. "
+    % "The normalized shape exceeds the input shape."
 
 type family LayerNormWithBiasF (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (biasShape :: Shape [Dim (Name Symbol) (Size Nat)]) (inputShape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
   LayerNormWithBiasF 'UncheckedShape _ _ = 'UncheckedShape
@@ -64,12 +64,17 @@ layerNormWithBias weight bias eps input =
         cast5 ATen.layer_norm_tlttd input (dimSize <$> dims) weight bias eps
 
 type family LayerNormWithoutBiasF (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (inputShape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
-  LayerNormWithoutBiasF weightShape inputShape =
+  LayerNormWithoutBiasF 'UncheckedShape _ = 'UncheckedShape
+  LayerNormWithoutBiasF _ 'UncheckedShape = 'UncheckedShape
+  LayerNormWithoutBiasF ( 'Shape weightDims) ( 'Shape inputDims) = 'Shape (Reverse (LayerNormImplF (Reverse weightDims) (Reverse inputDims)))
+
+type family LayerNormWithoutBiasF' (selectDims :: SelectDims [By Symbol Nat]) (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (inputShape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
+  LayerNormWithoutBiasF' selectDims weightShape inputShape =
     BroadcastShapesF
       weightShape
       ( BroadcastShapesF
           inputShape
-          (MeanF (LayerNormWithoutBiasSelectDimsF weightShape inputShape) inputShape)
+          (MeanF selectDims inputShape)
       )
 
 type family LayerNormWithoutBiasSelectDimsF (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (inputShape :: Shape [Dim (Name Symbol) (Size Nat)]) :: SelectDims [By Symbol Nat] where
@@ -82,8 +87,8 @@ type family LayerNormWithoutBiasBysF (weightDims :: [Dim (Name Symbol) (Size Nat
   LayerNormWithoutBiasBysF (_ ': weightDims) (_ ': inputDims) inputDimsLength counter = 'ByIndex (inputDimsLength - counter) ': LayerNormWithoutBiasBysF weightDims inputDims inputDimsLength (counter + 1)
   LayerNormWithoutBiasBysF _ '[] inputDimsLength counter =
     TypeError
-      ( "Cannot apply layer norm."
-          % "The layer norm's weight and the input tensor have different number of dimensions,"
+      ( "Cannot apply the layer norm."
+          % "The provided weight tensor has more dimensions than the input tensor,"
           % ""
           % "    '" <> counter <> "'"
           % ""
@@ -91,16 +96,14 @@ type family LayerNormWithoutBiasBysF (weightDims :: [Dim (Name Symbol) (Size Nat
           % ""
           % "    '" <> inputDimsLength <> "',"
           % ""
-          % "respectively"
+          % "respectively."
       )
 
 -- | T5-style layer norm
 layerNormWithoutBias ::
-  forall requiresGradient layout device dataType shape requiresGradient' layout' device' dataType' shape' selectDims.
+  forall requiresGradient layout device dataType shape requiresGradient' layout' device' dataType' shape'.
   ( KnownShape shape,
-    KnownShape shape',
-    selectDims ~ LayerNormWithoutBiasSelectDimsF shape shape',
-    WithSelectDimsC selectDims (Tensor requiresGradient' layout' device' dataType' shape' -> Tensor requiresGradient' layout' device' dataType' (MeanF selectDims shape'))
+    KnownShape shape'
   ) =>
   -- | weight
   Tensor requiresGradient layout device dataType shape ->
@@ -116,6 +119,52 @@ layerNormWithoutBias ::
     (dataType <+> dataType')
     (LayerNormWithoutBiasF shape shape')
 layerNormWithoutBias weight eps input =
+  let weightShape = shape weight
+      inputShape = shape input
+      indexes :: [Int] = fromIntegral . (length inputShape -) <$> [1, 2 .. length weightShape]
+   in unsafePerformIO $
+        cast6 (go (null indexes)) input weight indexes eps (2 :: Double) True
+  where
+    go nullIndexes input weight indexes eps exponent keepDim = do
+      squaredInput <- ATen.pow_ts input exponent
+      variance <-
+        if nullIndexes
+          then pure squaredInput
+          else
+            ATen.mean_tlb
+              squaredInput
+              indexes
+              keepDim
+      ATen.add_ts variance eps
+        >>= ATen.rsqrt_t
+        >>= ATen.mul_tt input
+        >>= ATen.mul_tt weight
+
+layerNormWithoutBias' ::
+  forall requiresGradient layout device dataType shape requiresGradient' layout' device' dataType' shape' selectDims.
+  ( KnownShape shape,
+    KnownShape shape',
+    selectDims ~ LayerNormWithoutBiasSelectDimsF shape shape',
+    WithSelectDimsC
+      selectDims
+      ( Tensor requiresGradient' layout' device' dataType' shape' ->
+        Tensor requiresGradient' layout' device' dataType' (MeanF selectDims shape')
+      )
+  ) =>
+  -- | weight
+  Tensor requiresGradient layout device dataType shape ->
+  -- | eps
+  Double ->
+  -- | input
+  Tensor requiresGradient' layout' device' dataType' shape' ->
+  -- | output
+  Tensor
+    (requiresGradient <|> requiresGradient')
+    (layout <+> layout')
+    (device <+> device')
+    (dataType <+> dataType')
+    (LayerNormWithoutBiasF' selectDims shape shape')
+layerNormWithoutBias' weight eps input =
   let weightShape = shape weight
       inputShape = shape input
       bys = ByIndex . fromIntegral . (length inputShape -) <$> [1, 2 .. length weightShape]
