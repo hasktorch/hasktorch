@@ -14,6 +14,7 @@ jobs:
       run: |
         /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
         brew install libomp || true
+        brew install jemalloc || true
         pip3 install pyyaml || true
         #wget -qO- https://get.haskellstack.org/ | sed -e 's/^STACK_VERSION=.*/STACK_VERSION="1.9.3"/g' | sh || true
         wget -qO- https://get.haskellstack.org/ | sh || true

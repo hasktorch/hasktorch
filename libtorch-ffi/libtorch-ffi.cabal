@@ -143,7 +143,8 @@ library
                     , sysinfo
                     , async
                     , libtorch-ffi-helper
- extra-libraries:     c10
+ extra-libraries:     jemalloc
+                    , c10
                     , torch
                     , torch_cpu
  if os(darwin)

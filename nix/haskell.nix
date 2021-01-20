@@ -94,7 +94,7 @@ let
         packages.libtorch-ffi = {
           preConfigure = setupNumCores "libtorch-ffi";
           configureFlags = [
-            "--extra-lib-dirs=${pkgs.torch}/lib"
+            "--extra-lib-dirs=${pkgs.torch}/lib,${pkgs.jemalloc}/lib"
             "--extra-include-dirs=${pkgs.torch}/include"
             "--extra-include-dirs=${pkgs.torch}/include/torch/csrc/api/include"
           ];
