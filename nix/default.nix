@@ -28,8 +28,16 @@ let
 
   # for inclusion in pkgs:
   overlays =
+    # override jemalloc
+    [
+      (pkgsNew: pkgsOld: {
+        jemalloc = pkgsOld.jemalloc.override {
+          disableInitExecTls = true;
+        };
+      })
+    ]
     # Haskell.nix (https://github.com/input-output-hk/haskell.nix)
-    haskellNix.overlays
+    ++ haskellNix.overlays
     # override Haskell.nix hackage and stackage sources
     ++ [
       (pkgsNew: pkgsOld: let inherit (pkgsNew) lib; in {
