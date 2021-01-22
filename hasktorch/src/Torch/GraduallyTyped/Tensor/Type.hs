@@ -84,27 +84,6 @@ newtype
 
 type role Tensor nominal nominal nominal nominal nominal
 
-data MyProxy (a :: Maybe Nat) = MyProxy
-
-type role MyProxy phantom -- representational
-
-f :: forall a. MyProxy a -> MyProxy 'Nothing
-f = coerce
-
-type family
-  TensorF
-    ( parameters ::
-        ( RequiresGradient,
-          Layout LayoutType,
-          Device (DeviceType Nat),
-          DataType DType,
-          Shape [Dim (Name Symbol) (Size Nat)]
-        )
-    ) ::
-    Type
-  where
-  TensorF '(requiresGradient, layout, device, dataType, shape) = Tensor requiresGradient layout device dataType shape
-
 -- | Alias for an untyped tensor without gradients.
 type UntypedTensor = Tensor 'WithoutGradient 'UncheckedLayout 'UncheckedDevice 'UncheckedDataType 'UncheckedShape
 
@@ -812,7 +791,7 @@ shape tensor =
       let sizes =
             unsafePerformIO $
               ifM
-                ((> (0 :: Int)) <$> (cast1 ATen.tensor_dim tensor))
+                ((> (0 :: Int)) <$> cast1 ATen.tensor_dim tensor)
                 (cast1 ATen.tensor_sizes tensor)
                 (pure [])
           names =
@@ -938,13 +917,18 @@ checkShape tensor =
   case shapeVal @shape of
     UncheckedShape -> True
     Shape dims ->
-      let sizes = unsafePerformIO $ cast1 ATen.tensor_sizes tensor
+      let sizes =
+            unsafePerformIO $
+              ifM
+                ((> (0 :: Int)) <$> cast1 ATen.tensor_dim tensor)
+                (cast1 ATen.tensor_sizes tensor)
+                (pure [])
           names =
             unsafePerformIO $
               ifM
                 (cast1 ATen.tensor_has_names tensor)
                 (cast1 ATen.tensor_names tensor)
-                (pure $ map (const mempty) sizes)
+                (pure $ map (const "*") sizes)
           f (Dim UncheckedName UncheckedSize) _ _ = mempty
           f (Dim (Name name) UncheckedSize) name' _ = All $ name == name'
           f (Dim UncheckedName (Size size)) _ size' = All $ size == size'

@@ -24,7 +24,7 @@ import Torch.GraduallyTyped.Layout (Layout (..), LayoutType)
 import Torch.GraduallyTyped.Prelude (FromMaybe, MapMaybe)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape (AddDimF, By (..), Dim (..), GetDimF, GetDimImplF, GetIndexByNameF, InsertDimImplF, Name (..), NumelF, ReplaceDimF, ReplaceDimImplF, SelectDim (..), Shape (..), Size (..), WithSelectDimC (..), WithShapeC (..), dimSize)
-import Torch.GraduallyTyped.Tensor.Type (Tensor, TensorF)
+import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 import Torch.HList (HList)
 import Torch.Internal.Cast (cast2, cast3)
@@ -121,7 +121,7 @@ type family
     Type
   where
   CatHListImplF _ '[] 'Nothing = TypeError (ToErrorMessage "Cannot concatenate an empty list of tensors.")
-  CatHListImplF _ '[] ( 'Just '(requiresGradient, layout, device, dataType, shape)) = TensorF '(requiresGradient, layout, device, dataType, shape)
+  CatHListImplF _ '[] ( 'Just '(requiresGradient, layout, device, dataType, shape)) = Tensor requiresGradient layout device dataType shape
   CatHListImplF selectDim (Tensor requiresGradient layout device dataType shape ': tensors) 'Nothing =
     CatHListImplF selectDim tensors ( 'Just '(requiresGradient, layout, device, dataType, shape))
   CatHListImplF selectDim (Tensor requiresGradient layout device dataType shape ': tensors) ( 'Just '(requiresGradient', layout', device', dataType', shape')) =

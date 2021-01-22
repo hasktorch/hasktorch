@@ -173,95 +173,95 @@ instance
 instance
   ( HasForward
       (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP)
-      ( Tensor requiresGradient inputLayout inputDevice inputDataType inputShape,
-        Tensor requiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+      ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+        Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
       )
       (Generator generatorDevice),
     HasForward
       (TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim decoderInputEmbedDim inputEmbedDim ffnDim dropoutP)
-      ( Tensor requiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
+      ( Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
         ForwardOutput
           (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP)
-          ( Tensor requiresGradient inputLayout inputDevice inputDataType inputShape,
-            Tensor requiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+          ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+            Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
           )
           (Generator generatorDevice),
-        Tensor requiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
-        Tensor requiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
+        Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
+        Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
       )
       ( ForwardGeneratorOutput
           (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP)
-          ( Tensor requiresGradient inputLayout inputDevice inputDataType inputShape,
-            Tensor requiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+          ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+            Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
           )
           (Generator generatorDevice)
       )
   ) =>
   HasForward
     (SequenceToSequenceTransformer numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim decoderInputEmbedDim ffnDim dropoutP)
-    ( Tensor requiresGradient inputLayout inputDevice inputDataType inputShape,
-      Tensor requiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
-      Tensor requiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape,
-      Tensor requiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
-      Tensor requiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
+    ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+      Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
+      Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape,
+      Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
+      Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
     )
     (Generator generatorDevice)
   where
   type
     ForwardOutput
       (SequenceToSequenceTransformer numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim decoderInputEmbedDim ffnDim dropoutP)
-      ( Tensor requiresGradient inputLayout inputDevice inputDataType inputShape,
-        Tensor requiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
-        Tensor requiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape,
-        Tensor requiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
-        Tensor requiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
+      ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+        Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
+        Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape,
+        Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
+        Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
       )
       (Generator generatorDevice) =
       ForwardOutput
         (TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim decoderInputEmbedDim inputEmbedDim ffnDim dropoutP)
-        ( Tensor requiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
+        ( Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
           ForwardOutput
             (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP)
-            ( Tensor requiresGradient inputLayout inputDevice inputDataType inputShape,
-              Tensor requiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+            ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+              Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
             )
             (Generator generatorDevice),
-          Tensor requiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
-          Tensor requiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
+          Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
+          Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
         )
         ( ForwardGeneratorOutput
             (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP)
-            ( Tensor requiresGradient inputLayout inputDevice inputDataType inputShape,
-              Tensor requiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+            ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+              Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
             )
             (Generator generatorDevice)
         )
   type
     ForwardGeneratorOutput
       (SequenceToSequenceTransformer numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim decoderInputEmbedDim ffnDim dropoutP)
-      ( Tensor requiresGradient inputLayout inputDevice inputDataType inputShape,
-        Tensor requiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
-        Tensor requiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape,
-        Tensor requiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
-        Tensor requiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
+      ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+        Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
+        Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape,
+        Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
+        Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
       )
       (Generator generatorDevice) =
       ForwardGeneratorOutput
         (TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim decoderInputEmbedDim inputEmbedDim ffnDim dropoutP)
-        ( Tensor requiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
+        ( Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
           ForwardOutput
             (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP)
-            ( Tensor requiresGradient inputLayout inputDevice inputDataType inputShape,
-              Tensor requiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+            ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+              Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
             )
             (Generator generatorDevice),
-          Tensor requiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
-          Tensor requiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
+          Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
+          Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
         )
         ( ForwardGeneratorOutput
             (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP)
-            ( Tensor requiresGradient inputLayout inputDevice inputDataType inputShape,
-              Tensor requiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+            ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+              Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
             )
             (Generator generatorDevice)
         )

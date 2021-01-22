@@ -1,10 +1,16 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -v2
                 -fomit-interface-pragmas
                 -fplugin TypeLevel.Rewrite
@@ -30,8 +36,8 @@ import Control.Monad.Reader (ReaderT (runReaderT), ask, lift)
 import qualified Data.Map as Map
 import GHC.TypeLits (KnownNat, Nat)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
+import Torch.GraduallyTyped.DType (DataType (..), WithDataTypeC (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout)
@@ -52,8 +58,12 @@ import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape (NumelDimF, NumelF, Shape (..))
-import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (dimVal), Name (..), Size (..))
-import Torch.GraduallyTyped.Tensor.Type (Tensor (..), shape)
+import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownDim (..), Name (..), SelectDim (..), Size (..))
+import Torch.GraduallyTyped.Tensor.Creation (ones, zeros)
+import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (UnsqueezeF, unsqueeze)
+import Torch.GraduallyTyped.Tensor.Other (maskedFill, triu)
+import Torch.GraduallyTyped.Tensor.Type (Tensor (..), bool, checkedDataType, checkedDevice, checkedLayout, checkedShape, shape)
 import Torch.Script (IValue (..))
 import Torch.Serialize (pickleLoad)
 import qualified Torch.Tensor (Tensor (Unsafe))
@@ -97,6 +107,68 @@ data T5Small device dataType where
       Float ->
     T5Small device dataType
 
+-- | never finishes to compile...
+instance
+  HasForward
+    (SequenceToSequenceTransformer T5SmallNumLayers T5SmallNumLayers device dataType T5SmallHeadDim T5SmallHeadEmbedDim T5SmallEmbedDim T5SmallInputEmbedDim T5SmallDecoderInputEmbedDim T5SmallFFNDim Float)
+    ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+      Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
+      Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape,
+      Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
+      Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
+    )
+    (Generator generatorDevice) =>
+  HasForward
+    (T5Small device dataType)
+    ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+      Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
+      Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape,
+      Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
+      Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
+    )
+    (Generator generatorDevice)
+  where
+  type
+    ForwardOutput
+      (T5Small device dataType)
+      ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+        Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
+        Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape,
+        Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
+        Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
+      )
+      (Generator generatorDevice) =
+      ForwardOutput
+        (SequenceToSequenceTransformer T5SmallNumLayers T5SmallNumLayers device dataType T5SmallHeadDim T5SmallHeadEmbedDim T5SmallEmbedDim T5SmallInputEmbedDim T5SmallDecoderInputEmbedDim T5SmallFFNDim Float)
+        ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+          Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
+          Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape,
+          Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
+          Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
+        )
+        (Generator generatorDevice)
+  type
+    ForwardGeneratorOutput
+      (T5Small device dataType)
+      ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+        Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
+        Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape,
+        Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
+        Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
+      )
+      (Generator generatorDevice) =
+      ForwardGeneratorOutput
+        (SequenceToSequenceTransformer T5SmallNumLayers T5SmallNumLayers device dataType T5SmallHeadDim T5SmallHeadEmbedDim T5SmallEmbedDim T5SmallInputEmbedDim T5SmallDecoderInputEmbedDim T5SmallFFNDim Float)
+        ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+          Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
+          Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape,
+          Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
+          Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
+        )
+        (Generator generatorDevice)
+
+-- forward (T5Small seqToSeq) inputs = forward seqToSeq inputs
+
 -- | dropout_rate = 0.1
 t5SmallDropoutP :: Float
 t5SmallDropoutP = 0.1
@@ -105,47 +177,130 @@ t5SmallDropoutP = 0.1
 t5SmallEps :: Double
 t5SmallEps = 1e-6
 
-type T5SmallAttentionMask device dataType inputSeqSize = Tensor 'WithoutGradient ( 'Layout 'Dense) device dataType ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size inputSeqSize), 'Dim ( 'Name "*") ( 'Size inputSeqSize)])
+type T5SmallAttentionMask device dataType batchSize inputSeqSize =
+  Tensor
+    'WithoutGradient
+    ( 'Layout 'Dense)
+    device
+    dataType
+    ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size batchSize), 'Dim ( 'Name "*") ( 'Size inputSeqSize), 'Dim ( 'Name "*") ( 'Size inputSeqSize)])
 
 t5SmallAttentionMask ::
   forall device dataType inputSeqSize.
-  T5SmallAttentionMask device dataType inputSeqSize
-t5SmallAttentionMask = undefined
+  ( WithDeviceC device (WithDataTypeF dataType (T5SmallAttentionMask device dataType 1 inputSeqSize)),
+    WithDataTypeC dataType (T5SmallAttentionMask device dataType 1 inputSeqSize),
+    KnownNat inputSeqSize
+  ) =>
+  WithDeviceF device (WithDataTypeF dataType (T5SmallAttentionMask device dataType 1 inputSeqSize))
+t5SmallAttentionMask = zeros @ 'WithoutGradient @( 'Layout 'Dense) @device @dataType @( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size inputSeqSize), 'Dim ( 'Name "*") ( 'Size inputSeqSize)])
 
-type T5SmallDecoderAttentionMask device dataType decoderInputSeqSize = Tensor 'WithoutGradient ( 'Layout 'Dense) device dataType ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize), 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize)])
+type T5SmallDecoderAttentionMask device dataType batchSize decoderInputSeqSize =
+  Tensor
+    'WithoutGradient
+    ( 'Layout 'Dense)
+    device
+    dataType
+    ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size batchSize), 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize), 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize)])
 
 t5SmallDecoderAttentionMask ::
   forall device dataType decoderInputSeqSize.
-  T5SmallDecoderAttentionMask device dataType decoderInputSeqSize
-t5SmallDecoderAttentionMask = undefined
+  ( WithDeviceC device (WithDataTypeF dataType (T5SmallDecoderAttentionMask device dataType 1 decoderInputSeqSize)),
+    WithDataTypeC dataType (T5SmallDecoderAttentionMask device dataType 1 decoderInputSeqSize),
+    WithDeviceC device (WithDataTypeF dataType (Tensor 'WithoutGradient ( 'Layout 'Dense) device dataType ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize), 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize)]))),
+    WithDataTypeC dataType (Tensor 'WithoutGradient ( 'Layout 'Dense) device dataType ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize), 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize)])),
+    WithDeviceC device (WithDataTypeF dataType (T5SmallDecoderAttentionMask device dataType 1 decoderInputSeqSize)),
+    WithDataTypeC dataType (T5SmallDecoderAttentionMask device dataType 1 decoderInputSeqSize),
+    KnownNat decoderInputSeqSize
+  ) =>
+  WithDeviceF
+    device
+    ( WithDataTypeF
+        dataType
+        (T5SmallDecoderAttentionMask device dataType 1 decoderInputSeqSize)
+    )
+t5SmallDecoderAttentionMask =
+  withDevice @device $
+    \deviceType ->
+      withDataType
+        @dataType
+        @(T5SmallDecoderAttentionMask device dataType 1 decoderInputSeqSize)
+        $ \dType ->
+          let causalMask =
+                unsqueeze @( 'SelectDim ( 'ByIndex 0))
+                  . bool
+                  . triu 1
+                  $ withoutDataType
+                    @dataType
+                    @(Tensor 'WithoutGradient ( 'Layout 'Dense) device dataType ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize), 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize)]))
+                    ( withoutDevice @device
+                        ( ones
+                            @ 'WithoutGradient
+                            @( 'Layout 'Dense)
+                            @device
+                            @dataType
+                            @( 'Shape '[ 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize), 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize)])
+                        )
+                        deviceType
+                    )
+                    dType
+           in maskedFill causalMask (-1 / 0 :: Double) $
+                withoutDataType
+                  @dataType
+                  @(T5SmallDecoderAttentionMask device dataType 1 decoderInputSeqSize)
+                  ( withoutDevice @device
+                      ( zeros
+                          @ 'WithoutGradient
+                          @( 'Layout 'Dense)
+                          @device
+                          @dataType
+                          @( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize), 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize)])
+                      )
+                      deviceType
+                  )
+                  dType
 
-type T5SmallCrossAttentionMask device dataType inputSeqSize decoderInputSeqSize = Tensor 'WithoutGradient ( 'Layout 'Dense) device dataType ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize), 'Dim ( 'Name "*") ( 'Size inputSeqSize)])
+type T5SmallCrossAttentionMask device dataType batchSize inputSeqSize decoderInputSeqSize =
+  Tensor
+    'WithoutGradient
+    ( 'Layout 'Dense)
+    device
+    dataType
+    ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size batchSize), 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize), 'Dim ( 'Name "*") ( 'Size inputSeqSize)])
 
 t5SmallCrossAttentionMask ::
   forall device dataType inputSeqSize decoderInputSeqSize.
-  T5SmallCrossAttentionMask device dataType inputSeqSize decoderInputSeqSize
-t5SmallCrossAttentionMask = undefined
+  ( WithDeviceC device (WithDataTypeF dataType (T5SmallCrossAttentionMask device dataType 1 inputSeqSize decoderInputSeqSize)),
+    WithDataTypeC dataType (T5SmallCrossAttentionMask device dataType 1 inputSeqSize decoderInputSeqSize),
+    KnownNat inputSeqSize,
+    KnownNat decoderInputSeqSize
+  ) =>
+  WithDeviceF device (WithDataTypeF dataType (T5SmallCrossAttentionMask device dataType 1 inputSeqSize decoderInputSeqSize))
+t5SmallCrossAttentionMask =
+  zeros
+    @ 'WithoutGradient
+    @( 'Layout 'Dense)
+    @device
+    @dataType
+    @( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize), 'Dim ( 'Name "*") ( 'Size inputSeqSize)])
 
-type T5SmallInput device dataType batchSize inputSeqSize = Tensor 'WithoutGradient ( 'Layout 'Dense) device dataType ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size batchSize), 'Dim ( 'Name "*") ( 'Size inputSeqSize), T5SmallInputEmbedDim])
+type T5SmallInput device dataType batchSize inputSeqSize =
+  Tensor
+    'WithoutGradient
+    ( 'Layout 'Dense)
+    device
+    dataType
+    ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size batchSize), 'Dim ( 'Name "*") ( 'Size inputSeqSize), T5SmallInputEmbedDim])
 
-type T5SmallDecoderInput device dataType batchSize decoderInputSeqSize = Tensor 'WithoutGradient ( 'Layout 'Dense) device dataType ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size batchSize), 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize), T5SmallDecoderInputEmbedDim])
+type T5SmallDecoderInput device dataType batchSize decoderInputSeqSize =
+  Tensor
+    'WithoutGradient
+    ( 'Layout 'Dense)
+    device
+    dataType
+    ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size batchSize), 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize), T5SmallDecoderInputEmbedDim])
 
-type T5SmallDecoderOutput device dataType batchSize decoderInputSeqSize = T5SmallDecoderInput device dataType batchSize decoderInputSeqSize
-
-loadT5Small :: IO [(String, [Dim String Integer])]
-loadT5Small = do
-  let filePath = "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-small.pt"
-  iValue <- pickleLoad filePath
-  case iValue of
-    IVGenericDict xs -> go xs
-    _ -> fail "iValue is not a state dictionary."
-  where
-    go [] = pure []
-    go ((IVString s, IVTensor (Torch.Tensor.Unsafe t)) : xs) =
-      let t' = UnsafeTensor @ 'WithGradient @( 'Layout 'Dense) @( 'Device CPU) @ 'UncheckedDataType @ 'UncheckedShape t
-       in ((s, shape t') :) <$> go xs
-    go ((_, IVTensor _) : _) = fail "iValue is not a string"
-    go ((IVString _, _) : _) = fail "iValue is not a tensor"
+type T5SmallDecoderOutput device dataType batchSize decoderInputSeqSize =
+  T5SmallDecoderInput device dataType batchSize decoderInputSeqSize
 
 t5SmallFromPretrained :: FilePath -> Bool -> IO (T5Small ( 'Device 'CPU) ( 'DataType 'Float))
 t5SmallFromPretrained filePath = runReaderT $ do
@@ -215,14 +370,20 @@ t5SmallFromPretrained filePath = runReaderT $ do
     go ((IVString _, _) : _) = fail "iValue is not a tensor."
     go _ = fail "iValue is neither a string nor a tensor."
     lookup s stateDict = do
-      t <- lift $ maybe (fail $ "`" <> show s <> "` is not in the state dictionary.") (pure . UnsafeTensor) (Map.lookup s stateDict)
       debug <- ask
       if debug
-        then printShape s t
-        else pure t
-    printShape s tensor = lift $ do
-      putStrLn $ s <> ": " <> show (shape tensor)
-      pure tensor
+        then lift . putStrLn $ "loading `" <> s <> "`."
+        else pure ()
+      lift
+        ( maybe
+            (fail $ "`" <> show s <> "` is not in the state dictionary.")
+            (pure . UnsafeTensor)
+            (Map.lookup s stateDict)
+        )
+        >>= checkedLayout
+        >>= checkedDevice
+        >>= checkedDataType
+        >>= checkedShape
     headDim = case dimVal @T5SmallHeadDim of
       Dim (Name name) (Size size) -> pure $ Dim name size
       Dim _ _ -> lift $ fail "head dimension unspecified"
@@ -326,17 +487,17 @@ t5SmallFromPretrained filePath = runReaderT $ do
 -- forwardT5Small' ::
 --   forall device dataType .
 --   T5Small device dataType ->
---   Tensor 'Dependent ( 'Layout 'Dense) device dataType ( 'Shape '[ 'Dim ('Name "*") 'UncheckedSize, 'Dim ('Name "*") 'UncheckedSize, T5SmallInputEmbedDim]) ->
---   Tensor 'Dependent ( 'Layout 'Dense) device dataType ( 'Shape '[ 'Dim ('Name "*") 'UncheckedSize, 'Dim ('Name "*") 'UncheckedSize, T5SmallDecoderInputEmbedDim]) ->
---   Tensor 'Dependent ( 'Layout 'Dense) device dataType ( 'Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") 'UncheckedSize, 'Dim ('Name "*") 'UncheckedSize]) ->
---   Tensor 'Dependent ( 'Layout 'Dense) device dataType ( 'Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") 'UncheckedSize, 'Dim ('Name "*") 'UncheckedSize]) ->
---   Tensor 'Dependent ( 'Layout 'Dense) device dataType ( 'Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") 'UncheckedSize, 'Dim ('Name "*") 'UncheckedSize]) ->
+--   Tensor 'WithoutGradient ( 'Layout 'Dense) device dataType ( 'Shape '[ 'Dim ('Name "*") 'UncheckedSize, 'Dim ('Name "*") 'UncheckedSize, T5SmallInputEmbedDim]) ->
+--   Tensor 'WithoutGradient ( 'Layout 'Dense) device dataType ( 'Shape '[ 'Dim ('Name "*") 'UncheckedSize, 'Dim ('Name "*") 'UncheckedSize, T5SmallDecoderInputEmbedDim]) ->
+--   Tensor 'WithoutGradient ( 'Layout 'Dense) device dataType ( 'Shape '[ 'Dim ('Name "*") 'UncheckedSize, 'Dim ('Name "*") 'UncheckedSize, 'Dim ('Name "*") 'UncheckedSize]) ->
+--   Tensor 'WithoutGradient ( 'Layout 'Dense) device dataType ( 'Shape '[ 'Dim ('Name "*") 'UncheckedSize, 'Dim ('Name "*") 'UncheckedSize, 'Dim ('Name "*") 'UncheckedSize]) ->
+--   Tensor 'WithoutGradient ( 'Layout 'Dense) device dataType ( 'Shape '[ 'Dim ('Name "*") 'UncheckedSize, 'Dim ('Name "*") 'UncheckedSize, 'Dim ('Name "*") 'UncheckedSize]) ->
 --   Generator device ->
---   ( Tensor 'Dependent ( 'Layout 'Dense) device dataType 'UncheckedShape
+--   ( Tensor 'WithGradient ( 'Layout 'Dense) device dataType 'UncheckedShape
 --   , Generator device
 --   )
--- forwardT5Small' model input decoderInput attentionMask decoderAttentionMask crossAttentionMask =
---   forward model (input, decoderInput, attentionMask, decoderAttentionMask, crossAttentionMask)
+-- forwardT5Small' (T5Small seqToSeq) input decoderInput attentionMask decoderAttentionMask crossAttentionMask =
+--   forward seqToSeq (input, decoderInput, attentionMask, decoderAttentionMask, crossAttentionMask)
 
 -- forwardT5Small'' ::
 --   T5Small 'UncheckedDevice 'UncheckedDataType ->
