@@ -166,8 +166,7 @@ instance
           Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
         )
         (Generator generatorDevice)
-
--- forward (T5Small seqToSeq) inputs = forward seqToSeq inputs
+  forward (T5Small seqToSeq) inputs = forward seqToSeq inputs
 
 -- | dropout_rate = 0.1
 t5SmallDropoutP :: Float
@@ -300,7 +299,12 @@ type T5SmallDecoderInput device dataType batchSize decoderInputSeqSize =
     ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size batchSize), 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize), T5SmallDecoderInputEmbedDim])
 
 type T5SmallDecoderOutput device dataType batchSize decoderInputSeqSize =
-  T5SmallDecoderInput device dataType batchSize decoderInputSeqSize
+  Tensor
+    'WithGradient
+    ( 'Layout 'Dense)
+    device
+    dataType
+    ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size batchSize), 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize), T5SmallDecoderInputEmbedDim])
 
 t5SmallFromPretrained :: FilePath -> Bool -> IO (T5Small ( 'Device 'CPU) ( 'DataType 'Float))
 t5SmallFromPretrained filePath = runReaderT $ do
@@ -463,26 +467,26 @@ t5SmallFromPretrained filePath = runReaderT $ do
                 <*> pure (initialize @(Dropout Float) t5SmallDropoutP)
             )
 
--- forwardT5Small ::
---   forall device dataType (batchSize :: Nat) (inputSeqSize :: Nat) (decoderInputSeqSize :: Nat) .
---   ( KnownNat batchSize,
---     KnownNat inputSeqSize,
---     KnownNat decoderInputSeqSize,
---     NumelF ('Shape '[ 'Dim ('Name "*") ('Size batchSize), 'Dim ('Name "*") ('Size inputSeqSize), T5SmallEmbedDim]) ~ NumelF ('Shape '[ 'Dim ('Name "*") ('Size batchSize), 'Dim ('Name "*") ('Size inputSeqSize), T5SmallHeadDim, T5SmallHeadEmbedDim]),
---     NumelF ('Shape '[ 'Dim ('Name "*") ('Size batchSize), 'Dim ('Name "*") ('Size decoderInputSeqSize), T5SmallEmbedDim]) ~ NumelF ('Shape '[ 'Dim ('Name "*") ('Size batchSize), 'Dim ('Name "*") ('Size decoderInputSeqSize), T5SmallHeadDim, T5SmallHeadEmbedDim])
---   ) =>
---   T5Small device dataType ->
---   T5SmallInput device dataType batchSize inputSeqSize ->
---   T5SmallDecoderInput device dataType batchSize decoderInputSeqSize ->
---   T5SmallAttentionMask device dataType inputSeqSize ->
---   T5SmallDecoderAttentionMask device dataType decoderInputSeqSize ->
---   T5SmallCrossAttentionMask device dataType inputSeqSize decoderInputSeqSize ->
---   Generator device ->
---   ( T5SmallDecoderOutput device dataType batchSize decoderInputSeqSize
---   , Generator device
---   )
--- forwardT5Small model input decoderInput attentionMask decoderAttentionMask crossAttentionMask =
---   forward model (input, decoderInput, attentionMask, decoderAttentionMask, crossAttentionMask)
+forwardT5Small ::
+  forall device dataType (batchSize :: Nat) (inputSeqSize :: Nat) (decoderInputSeqSize :: Nat) .
+  ( KnownNat batchSize,
+    KnownNat inputSeqSize,
+    KnownNat decoderInputSeqSize,
+    NumelF ('Shape '[ 'Dim ('Name "*") ('Size batchSize), 'Dim ('Name "*") ('Size inputSeqSize), T5SmallEmbedDim]) ~ NumelF ('Shape '[ 'Dim ('Name "*") ('Size batchSize), 'Dim ('Name "*") ('Size inputSeqSize), T5SmallHeadDim, T5SmallHeadEmbedDim]),
+    NumelF ('Shape '[ 'Dim ('Name "*") ('Size batchSize), 'Dim ('Name "*") ('Size decoderInputSeqSize), T5SmallEmbedDim]) ~ NumelF ('Shape '[ 'Dim ('Name "*") ('Size batchSize), 'Dim ('Name "*") ('Size decoderInputSeqSize), T5SmallHeadDim, T5SmallHeadEmbedDim])
+  ) =>
+  T5Small device dataType ->
+  T5SmallInput device dataType batchSize inputSeqSize ->
+  T5SmallDecoderInput device dataType batchSize decoderInputSeqSize ->
+  T5SmallAttentionMask device dataType batchSize inputSeqSize ->
+  T5SmallDecoderAttentionMask device dataType batchSize decoderInputSeqSize ->
+  T5SmallCrossAttentionMask device dataType batchSize inputSeqSize decoderInputSeqSize ->
+  Generator device ->
+  ( T5SmallDecoderOutput device dataType batchSize decoderInputSeqSize
+  , Generator device
+  )
+forwardT5Small model input decoderInput attentionMask decoderAttentionMask crossAttentionMask =
+  forward model (input, decoderInput, attentionMask, decoderAttentionMask, crossAttentionMask)
 
 -- forwardT5Small' ::
 --   forall device dataType .
