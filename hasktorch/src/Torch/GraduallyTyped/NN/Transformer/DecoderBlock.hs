@@ -211,29 +211,31 @@ instance
   ( HasForward
       (SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
       ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+        Tensor decoderRelPosBiasRequiresGradient decoderRelPosBiasLayout decoderRelPosBiasDevice decoderRelPosBiasDataType decoderRelPosBiasShape,
         Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape
       )
       (Generator generatorDevice),
-    selfAttentionOutputShape ~ SelfAttentionOutputShape headDim headEmbedDim embedDim queryEmbedDim queryShape decoderAttentionMaskShape,
+    selfAttentionOutputShape ~ SelfAttentionOutputShape headDim headEmbedDim embedDim queryEmbedDim queryShape decoderRelPosBiasShape decoderAttentionMaskShape,
     HasForward
       (CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
       ( Tensor
           'WithGradient
-          (queryLayout <+> 'Layout 'Dense <+> decoderAttentionMaskLayout)
-          (queryDevice <+> device <+> generatorDevice <+> decoderAttentionMaskDevice)
-          (queryDataType <+> dataType <+> decoderAttentionMaskDataType)
+          (queryLayout <+> 'Layout 'Dense <+> decoderRelPosBiasLayout <+> decoderAttentionMaskLayout)
+          (queryDevice <+> device <+> generatorDevice <+> decoderRelPosBiasDevice <+> decoderAttentionMaskDevice)
+          (queryDataType <+> dataType <+> decoderRelPosBiasDataType <+> decoderAttentionMaskDataType)
           selfAttentionOutputShape,
         Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
+        Tensor crossRelPosBiasRequiresGradient crossRelPosBiasLayout crossRelPosBiasDevice crossRelPosBiasDataType crossRelPosBiasShape,
         Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
       )
-      (Generator (device <+> queryDevice <+> generatorDevice <+> decoderAttentionMaskDevice)),
+      (Generator (device <+> queryDevice <+> generatorDevice <+> decoderRelPosBiasDevice <+> decoderAttentionMaskDevice)),
     HasForward
       (TransformerFeedForwardNetwork device dataType queryEmbedDim ffnDim dropoutP)
       ( Tensor
           'WithGradient
-          (queryLayout <+> 'Layout 'Dense <+> decoderAttentionMaskLayout <+> keyLayout <+> crossAttentionMaskLayout)
-          (queryDevice <+> device <+> generatorDevice <+> decoderAttentionMaskDevice <+> keyDevice <+> crossAttentionMaskDevice)
-          (queryDataType <+> dataType <+> decoderAttentionMaskDataType <+> keyDataType <+> crossAttentionMaskDataType)
+          (queryLayout <+> 'Layout 'Dense <+> decoderRelPosBiasLayout <+> decoderAttentionMaskLayout <+> keyLayout <+> crossRelPosBiasLayout <+> crossAttentionMaskLayout)
+          (queryDevice <+> device <+> generatorDevice <+> decoderRelPosBiasDevice <+> decoderAttentionMaskDevice <+> keyDevice <+> crossRelPosBiasDevice <+> crossAttentionMaskDevice)
+          (queryDataType <+> dataType <+> decoderRelPosBiasDataType <+> decoderAttentionMaskDataType <+> keyDataType <+> crossRelPosBiasDataType <+> crossAttentionMaskDataType)
           ( CrossAttentionOutputShape
               headDim
               headEmbedDim
@@ -242,15 +244,18 @@ instance
               keyEmbedDim
               selfAttentionOutputShape
               keyShape
+              crossRelPosBiasShape
               crossAttentionMaskShape
           )
       )
-      (Generator (device <+> queryDevice <+> generatorDevice <+> decoderAttentionMaskDevice <+> keyDevice <+> crossAttentionMaskDevice))
+      (Generator (device <+> queryDevice <+> generatorDevice <+> decoderRelPosBiasDevice <+> decoderAttentionMaskDevice <+> keyDevice <+> crossRelPosBiasDevice <+> crossAttentionMaskDevice))
   ) =>
   HasForward
     (TransformerDecoderBlock device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
     ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
       Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
+      Tensor decoderRelPosBiasRequiresGradient decoderRelPosBiasLayout decoderRelPosBiasDevice decoderRelPosBiasDataType decoderRelPosBiasShape,
+      Tensor crossRelPosBiasRequiresGradient crossRelPosBiasLayout crossRelPosBiasDevice crossRelPosBiasDataType crossRelPosBiasShape,
       Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
       Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
     )
@@ -261,15 +266,17 @@ instance
       (TransformerDecoderBlock device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
       ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
         Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
+        Tensor decoderRelPosBiasRequiresGradient decoderRelPosBiasLayout decoderRelPosBiasDevice decoderRelPosBiasDataType decoderRelPosBiasShape,
+        Tensor crossRelPosBiasRequiresGradient crossRelPosBiasLayout crossRelPosBiasDevice crossRelPosBiasDataType crossRelPosBiasShape,
         Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
         Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
       )
       (Generator generatorDevice) =
       Tensor
         'WithGradient
-        (queryLayout <+> 'Layout 'Dense <+> decoderAttentionMaskLayout <+> keyLayout <+> crossAttentionMaskLayout)
-        (queryDevice <+> device <+> generatorDevice <+> decoderAttentionMaskDevice <+> keyDevice <+> crossAttentionMaskDevice)
-        (queryDataType <+> dataType <+> decoderAttentionMaskDataType <+> keyDataType <+> crossAttentionMaskDataType)
+        (queryLayout <+> 'Layout 'Dense <+> decoderRelPosBiasLayout <+> decoderAttentionMaskLayout <+> keyLayout <+> crossRelPosBiasLayout <+> crossAttentionMaskLayout)
+        (queryDevice <+> device <+> generatorDevice <+> decoderRelPosBiasDevice <+> decoderAttentionMaskDevice <+> keyDevice <+> crossRelPosBiasDevice <+> crossAttentionMaskDevice)
+        (queryDataType <+> dataType <+> decoderRelPosBiasDataType <+> decoderAttentionMaskDataType <+> keyDataType <+> crossRelPosBiasDataType <+> crossAttentionMaskDataType)
         ( FeedForwardNetworkOutputShape
             queryEmbedDim
             ffnDim
@@ -285,9 +292,11 @@ instance
                     embedDim
                     queryEmbedDim
                     queryShape
+                    decoderRelPosBiasShape
                     decoderAttentionMaskShape
                 )
                 keyShape
+                crossRelPosBiasShape
                 crossAttentionMaskShape
             )
         )
@@ -296,14 +305,16 @@ instance
       (TransformerDecoderBlock device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
       ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
         Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
+        Tensor decoderRelPosBiasRequiresGradient decoderRelPosBiasLayout decoderRelPosBiasDevice decoderRelPosBiasDataType decoderRelPosBiasShape,
+        Tensor crossRelPosBiasRequiresGradient crossRelPosBiasLayout crossRelPosBiasDevice crossRelPosBiasDataType crossRelPosBiasShape,
         Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
         Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
       )
       (Generator generatorDevice) =
-      Generator (device <+> queryDevice <+> generatorDevice <+> decoderAttentionMaskDevice <+> keyDevice <+> crossAttentionMaskDevice)
-  forward TransformerDecoderBlock {..} (query, key, decoderAttentionMask, crossAttentionMask) =
+      Generator (device <+> queryDevice <+> generatorDevice <+> decoderRelPosBiasDevice <+> decoderAttentionMaskDevice <+> keyDevice <+> crossRelPosBiasDevice <+> crossAttentionMaskDevice)
+  forward TransformerDecoderBlock {..} (query, key, decoderRelPosBias, crossRelPosBias, decoderAttentionMask, crossAttentionMask) =
     runIxState $
-      ireturn (query, decoderAttentionMask)
+      ireturn (query, decoderRelPosBias, decoderAttentionMask)
         >>>= IxState . forward tdbSelfAttention
-        >>>= (\query' -> IxState . forward tdbCrossAttention $ (query', key, crossAttentionMask))
+        >>>= (\query' -> IxState . forward tdbCrossAttention $ (query', key, crossRelPosBias, crossAttentionMask))
         >>>= IxState . forward tdbFeedForwardNetwork

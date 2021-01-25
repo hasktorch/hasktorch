@@ -175,16 +175,18 @@ instance
   ( HasForward
       (SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
       ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+        Tensor relPosBiasRequiresGradient relPosBiasLayout relPosBiasDevice relPosBiasDataType relPosBiasShape,
         Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
       )
       (Generator generatorDevice),
-    KnownShape (SelfAttentionOutputShape headDim headEmbedDim embedDim queryEmbedDim queryShape attentionMaskShape),
+    KnownShape (SelfAttentionOutputShape headDim headEmbedDim embedDim queryEmbedDim queryShape relPosBiasShape attentionMaskShape),
     KnownDim queryEmbedDim,
     Scalar dropoutP
   ) =>
   HasForward
     (TransformerBlock device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
     ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+      Tensor relPosBiasRequiresGradient relPosBiasLayout relPosBiasDevice relPosBiasDataType relPosBiasShape,
       Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
     )
     (Generator generatorDevice)
@@ -193,29 +195,31 @@ instance
     ForwardOutput
       (TransformerBlock device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
       ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+        Tensor relPosBiasRequiresGradient relPosBiasLayout relPosBiasDevice relPosBiasDataType relPosBiasShape,
         Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
       )
       (Generator generatorDevice) =
       Tensor
         'WithGradient
-        (queryLayout <+> 'Layout 'Dense <+> attentionMaskLayout)
-        (queryDevice <+> device <+> generatorDevice <+> attentionMaskDevice)
-        (queryDataType <+> dataType <+> attentionMaskDataType)
+        (queryLayout <+> 'Layout 'Dense <+> relPosBiasLayout <+> attentionMaskLayout)
+        (queryDevice <+> device <+> generatorDevice <+> relPosBiasDevice <+> attentionMaskDevice)
+        (queryDataType <+> dataType <+> relPosBiasDataType <+> attentionMaskDataType)
         ( FeedForwardNetworkOutputShape
             queryEmbedDim
             ffnDim
-            (SelfAttentionOutputShape headDim headEmbedDim embedDim queryEmbedDim queryShape attentionMaskShape)
+            (SelfAttentionOutputShape headDim headEmbedDim embedDim queryEmbedDim queryShape relPosBiasShape attentionMaskShape)
         )
   type
     ForwardGeneratorOutput
       (TransformerBlock device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
       ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+        Tensor relPosBiasRequiresGradient relPosBiasLayout relPosBiasDevice relPosBiasDataType relPosBiasShape,
         Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
       )
       (Generator generatorDevice) =
-      Generator (device <+> queryDevice <+> generatorDevice <+> attentionMaskDevice)
-  forward TransformerBlock {..} (query, attentionMask) =
+      Generator (device <+> queryDevice <+> generatorDevice <+> relPosBiasDevice <+> attentionMaskDevice)
+  forward TransformerBlock {..} (query, relPosBias, attentionMask) =
     runIxState $
-      ireturn (query, attentionMask)
+      ireturn (query, relPosBias, attentionMask)
         >>>= IxState . forward tbSelfAttention
         >>>= IxState . forward tbFeedForwardNetwork

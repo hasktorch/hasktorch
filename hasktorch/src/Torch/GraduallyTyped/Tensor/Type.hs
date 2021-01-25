@@ -25,7 +25,6 @@ module Torch.GraduallyTyped.Tensor.Type where
 import Data.Coerce (coerce)
 import Data.Foldable (Foldable (fold))
 import Data.Int (Int16)
-import Data.Kind (Type)
 import Data.Monoid (All (..))
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (Nat, Symbol)
@@ -76,7 +75,7 @@ newtype
   where
   -- | Unsafe constructor for tensors.
   -- Do not call this constructor directly,
-  -- use smart constructors like 'ones' instead.
+  -- use smart constructors like 'ones' or 'randn' instead.
   UnsafeTensor ::
     forall requiresGradient layout device dataType shape.
     ForeignPtr ATen.Tensor ->

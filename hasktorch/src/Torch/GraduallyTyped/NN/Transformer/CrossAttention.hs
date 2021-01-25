@@ -189,6 +189,7 @@ instance
 
 type CrossAttentionTransposeAndReshape
   (embedDim :: Dim (Name Symbol) (Size Nat))
+  (relPosBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (attentionMaskShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (normedBatchDim :: Dim (Name Symbol) (Size Nat))
   (normedQuerySeqDim :: Dim (Name Symbol) (Size Nat))
@@ -199,15 +200,21 @@ type CrossAttentionTransposeAndReshape
     ( 'SelectDim ( 'ByIndex 2))
     ( MatmulF
         ( BroadcastShapesF
-            ( SoftmaxF
-                ( 'SelectDim ( 'ByIndex 3))
-                ( MatmulF
-                    transposed
-                    ( TransposeF
-                        ( 'SelectDim ( 'ByIndex 2))
-                        ( 'SelectDim ( 'ByIndex 3))
-                        transposed'
+            ( BroadcastShapesF
+                ( SoftmaxF
+                    ( 'SelectDim ( 'ByIndex 3))
+                    ( MatmulF
+                        transposed
+                        ( TransposeF
+                            ( 'SelectDim ( 'ByIndex 2))
+                            ( 'SelectDim ( 'ByIndex 3))
+                            transposed'
+                        )
                     )
+                )
+                ( UnsqueezeF
+                    ( 'SelectDim ( 'ByIndex 0))
+                    relPosBiasShape
                 )
             )
             ( UnsqueezeF
@@ -226,12 +233,14 @@ type CrossAttentionTransposeAndReshape'
   (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
   (normedQueryShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (keyShape :: Shape [Dim (Name Symbol) (Size Nat)])
+  (relPosBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (attentionMaskShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (normedBatchDim :: Dim (Name Symbol) (Size Nat))
   (normedQuerySeqDim :: Dim (Name Symbol) (Size Nat))
   (keySeqDim :: Dim (Name Symbol) (Size Nat)) =
   CrossAttentionTransposeAndReshape
     embedDim
+    relPosBiasShape
     attentionMaskShape
     normedBatchDim
     normedQuerySeqDim
@@ -270,6 +279,7 @@ type CrossAttentionTransposeAndReshape''
   (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
   (normedQueryShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (keyShape :: Shape [Dim (Name Symbol) (Size Nat)])
+  (relPosBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (attentionMaskShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (normedBatchDim :: Dim (Name Symbol) (Size Nat))
   (normedQuerySeqDim :: Dim (Name Symbol) (Size Nat))
@@ -283,6 +293,7 @@ type CrossAttentionTransposeAndReshape''
         keyEmbedDim
         normedQueryShape
         keyShape
+        relPosBiasShape
         attentionMaskShape
         normedBatchDim
         normedQuerySeqDim
@@ -298,6 +309,7 @@ type CrossAttentionTransposeAndReshape'''
   (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
   (normedQueryShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (keyShape :: Shape [Dim (Name Symbol) (Size Nat)])
+  (relPosBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (attentionMaskShape :: Shape [Dim (Name Symbol) (Size Nat)]) =
   CrossAttentionTransposeAndReshape''
     headDim
@@ -307,6 +319,7 @@ type CrossAttentionTransposeAndReshape'''
     keyEmbedDim
     normedQueryShape
     keyShape
+    relPosBiasShape
     attentionMaskShape
     (normedQueryShape ! 0 <+> keyShape ! 0)
     (normedQueryShape ! 1)
@@ -320,6 +333,7 @@ type CrossAttentionOutputShape
   (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
   (queryShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (keyShape :: Shape [Dim (Name Symbol) (Size Nat)])
+  (relPosBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (attentionMaskShape :: Shape [Dim (Name Symbol) (Size Nat)]) =
   BroadcastShapesF
     queryShape
@@ -336,6 +350,7 @@ type CrossAttentionOutputShape
                 queryShape
             )
             keyShape
+            relPosBiasShape
             attentionMaskShape
         )
     )
@@ -346,7 +361,7 @@ instance
     KnownDim queryEmbedDim,
     KnownDim keyEmbedDim,
     KnownShape keyShape,
-    normedQueryShape ~ (LayerNormWithoutBiasF ( 'Shape '[queryEmbedDim]) queryShape),
+    normedQueryShape ~ LayerNormWithoutBiasF ( 'Shape '[queryEmbedDim]) queryShape,
     KnownShape normedQueryShape,
     normedBatchDim ~ ((normedQueryShape ! 0) <+> (keyShape ! 0)),
     KnownDim normedBatchDim,
@@ -405,6 +420,7 @@ instance
           keyEmbedDim
           normedQueryShape
           keyShape
+          relPosBiasShape
           attentionMaskShape
           normedBatchDim
           normedQuerySeqDim
@@ -413,15 +429,15 @@ instance
       ( 'Shape '[normedBatchDim, normedQuerySeqDim, embedDim])
       ( Tensor
           'WithGradient
-          ( 'Layout 'Dense <+> queryLayout <+> keyLayout <+> attentionMaskLayout)
-          (device <+> queryDevice <+> keyDevice <+> generatorDevice <+> attentionMaskDevice)
-          (dataType <+> queryDataType <+> keyDataType <+> attentionMaskDataType)
+          ( 'Layout 'Dense <+> queryLayout <+> keyLayout <+> relPosBiasLayout <+> attentionMaskLayout)
+          (device <+> queryDevice <+> keyDevice <+> generatorDevice <+> relPosBiasDevice <+> attentionMaskDevice)
+          (dataType <+> queryDataType <+> keyDataType <+> relPosBiasDataType <+> attentionMaskDataType)
           transposedAndReshaped ->
         Tensor
           'WithGradient
-          ( 'Layout 'Dense <+> queryLayout <+> keyLayout <+> attentionMaskLayout)
-          (device <+> queryDevice <+> keyDevice <+> generatorDevice <+> attentionMaskDevice)
-          (dataType <+> queryDataType <+> keyDataType <+> attentionMaskDataType)
+          ( 'Layout 'Dense <+> queryLayout <+> keyLayout <+> relPosBiasLayout <+> attentionMaskLayout)
+          (device <+> queryDevice <+> keyDevice <+> generatorDevice <+> relPosBiasDevice <+> attentionMaskDevice)
+          (dataType <+> queryDataType <+> keyDataType <+> relPosBiasDataType <+> attentionMaskDataType)
           ( ReshapeF
               transposedAndReshaped
               ( 'Shape '[normedBatchDim, normedQuerySeqDim, embedDim])
@@ -433,6 +449,7 @@ instance
     (CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
     ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
       Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
+      Tensor relPosBiasRequiresGradient relPosBiasLayout relPosBiasDevice relPosBiasDataType relPosBiasShape,
       Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
     )
     (Generator generatorDevice)
@@ -442,28 +459,30 @@ instance
       (CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
       ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
         Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
+        Tensor relPosBiasRequiresGradient relPosBiasLayout relPosBiasDevice relPosBiasDataType relPosBiasShape,
         Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
       )
       (Generator generatorDevice) =
       Tensor
         'WithGradient
-        (queryLayout <+> 'Layout 'Dense <+> keyLayout <+> attentionMaskLayout)
-        (queryDevice <+> device <+> keyDevice <+> generatorDevice <+> attentionMaskDevice)
-        (queryDataType <+> dataType <+> keyDataType <+> attentionMaskDataType)
-        (CrossAttentionOutputShape headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim queryShape keyShape attentionMaskShape)
+        (queryLayout <+> 'Layout 'Dense <+> keyLayout <+> relPosBiasLayout <+> attentionMaskLayout)
+        (queryDevice <+> device <+> keyDevice <+> generatorDevice <+> relPosBiasDevice <+> attentionMaskDevice)
+        (queryDataType <+> dataType <+> keyDataType <+> relPosBiasDataType <+> attentionMaskDataType)
+        (CrossAttentionOutputShape headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim queryShape keyShape relPosBiasShape attentionMaskShape)
   type
     ForwardGeneratorOutput
       (CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
       ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
         Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
+        Tensor relPosBiasRequiresGradient relPosBiasLayout relPosBiasDevice relPosBiasDataType relPosBiasShape,
         Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
       )
       (Generator generatorDevice) =
-      Generator (device <+> queryDevice <+> keyDevice <+> generatorDevice <+> attentionMaskDevice)
-  forward CrossAttention {..} (query, key, attentionMask) =
+      Generator (device <+> queryDevice <+> keyDevice <+> generatorDevice <+> relPosBiasDevice <+> attentionMaskDevice)
+  forward CrossAttention {..} (query, key, relPosBias, attentionMask) =
     runIxState $
       ireturn query
         >>>= IxState . forward caLayerNorm
-        >>>= (\query' -> IxState $ forward caMultiheadAttention (query', key, key, attentionMask))
+        >>>= (\query' -> IxState $ forward caMultiheadAttention (query', key, key, relPosBias, attentionMask))
         >>>= IxState . forward caDropout
         >>>= ireturn . (query `add`)

@@ -183,6 +183,7 @@ instance
 
 type SelfAttentionTransposeAndReshape
   (embedDim :: Dim (Name Symbol) (Size Nat))
+  (relPosBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (attentionMaskShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (normedBatchDim :: Dim (Name Symbol) (Size Nat))
   (normedQuerySeqDim :: Dim (Name Symbol) (Size Nat))
@@ -192,15 +193,21 @@ type SelfAttentionTransposeAndReshape
     ( 'SelectDim ( 'ByIndex 2))
     ( MatmulF
         ( BroadcastShapesF
-            ( SoftmaxF
-                ( 'SelectDim ( 'ByIndex 3))
-                ( MatmulF
-                    transposed
-                    ( TransposeF
-                        ( 'SelectDim ( 'ByIndex 2))
-                        ( 'SelectDim ( 'ByIndex 3))
+            ( BroadcastShapesF
+                ( SoftmaxF
+                    ( 'SelectDim ( 'ByIndex 3))
+                    ( MatmulF
                         transposed
+                        ( TransposeF
+                            ( 'SelectDim ( 'ByIndex 2))
+                            ( 'SelectDim ( 'ByIndex 3))
+                            transposed
+                        )
                     )
+                )
+                ( UnsqueezeF
+                    ( 'SelectDim ( 'ByIndex 0))
+                    relPosBiasShape
                 )
             )
             ( UnsqueezeF
@@ -217,11 +224,13 @@ type SelfAttentionTransposeAndReshape'
   (embedDim :: Dim (Name Symbol) (Size Nat))
   (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
   (normedQueryShape :: Shape [Dim (Name Symbol) (Size Nat)])
+  (relPosBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (attentionMaskShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (normedBatchDim :: Dim (Name Symbol) (Size Nat))
   (normedQuerySeqDim :: Dim (Name Symbol) (Size Nat)) =
   SelfAttentionTransposeAndReshape
     embedDim
+    relPosBiasShape
     attentionMaskShape
     normedBatchDim
     normedQuerySeqDim
@@ -245,6 +254,7 @@ type SelfAttentionTransposeAndReshape''
   (embedDim :: Dim (Name Symbol) (Size Nat))
   (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
   (normedQueryShape :: Shape [Dim (Name Symbol) (Size Nat)])
+  (relPosBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (attentionMaskShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (normedBatchDim :: Dim (Name Symbol) (Size Nat))
   (normedQuerySeqDim :: Dim (Name Symbol) (Size Nat)) =
@@ -255,6 +265,7 @@ type SelfAttentionTransposeAndReshape''
         embedDim
         queryEmbedDim
         normedQueryShape
+        relPosBiasShape
         attentionMaskShape
         normedBatchDim
         normedQuerySeqDim
@@ -267,6 +278,7 @@ type SelfAttentionTransposeAndReshape'''
   (embedDim :: Dim (Name Symbol) (Size Nat))
   (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
   (normedQueryShape :: Shape [Dim (Name Symbol) (Size Nat)])
+  (relPosBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (attentionMaskShape :: Shape [Dim (Name Symbol) (Size Nat)]) =
   SelfAttentionTransposeAndReshape''
     headDim
@@ -274,6 +286,7 @@ type SelfAttentionTransposeAndReshape'''
     embedDim
     queryEmbedDim
     normedQueryShape
+    relPosBiasShape
     attentionMaskShape
     (normedQueryShape ! 0)
     (normedQueryShape ! 1)
@@ -284,6 +297,7 @@ type SelfAttentionOutputShape
   (embedDim :: Dim (Name Symbol) (Size Nat))
   (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
   (queryShape :: Shape [Dim (Name Symbol) (Size Nat)])
+  (relPosBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (attentionMaskShape :: Shape [Dim (Name Symbol) (Size Nat)]) =
   BroadcastShapesF
     queryShape
@@ -298,13 +312,14 @@ type SelfAttentionOutputShape
                 ( 'Shape '[queryEmbedDim])
                 queryShape
             )
+            relPosBiasShape
             attentionMaskShape
         )
     )
 
 instance
   ( KnownShape queryShape,
-    normedQueryShape ~ (LayerNormWithoutBiasF ( 'Shape '[queryEmbedDim]) queryShape),
+    normedQueryShape ~ LayerNormWithoutBiasF ( 'Shape '[queryEmbedDim]) queryShape,
     KnownShape normedQueryShape,
     KnownDim embedDim,
     KnownDim queryEmbedDim,
@@ -343,6 +358,7 @@ instance
           embedDim
           queryEmbedDim
           normedQueryShape
+          relPosBiasShape
           attentionMaskShape
           normedBatchDim
           normedQuerySeqDim,
@@ -350,15 +366,15 @@ instance
       ( 'Shape '[normedBatchDim, normedQuerySeqDim, embedDim])
       ( Tensor
           'WithGradient
-          ( 'Layout 'Dense <+> queryLayout <+> attentionMaskLayout)
-          (device <+> queryDevice <+> generatorDevice <+> attentionMaskDevice)
-          (dataType <+> queryDataType <+> attentionMaskDataType)
+          ( 'Layout 'Dense <+> queryLayout <+> relPosBiasLayout <+> attentionMaskLayout)
+          (device <+> queryDevice <+> generatorDevice <+> relPosBiasDevice <+> attentionMaskDevice)
+          (dataType <+> queryDataType <+> relPosBiasDataType <+> attentionMaskDataType)
           transposedAndReshaped ->
         Tensor
           'WithGradient
-          ( 'Layout 'Dense <+> queryLayout <+> attentionMaskLayout)
-          (device <+> queryDevice <+> generatorDevice <+> attentionMaskDevice)
-          (dataType <+> queryDataType <+> attentionMaskDataType)
+          ( 'Layout 'Dense <+> queryLayout <+> relPosBiasLayout <+> attentionMaskLayout)
+          (device <+> queryDevice <+> generatorDevice <+> relPosBiasDevice <+> attentionMaskDevice)
+          (dataType <+> queryDataType <+> relPosBiasDataType <+> attentionMaskDataType)
           ( ReshapeF
               transposedAndReshaped
               ( 'Shape '[normedBatchDim, normedQuerySeqDim, embedDim])
@@ -369,6 +385,7 @@ instance
   HasForward
     (SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
     ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+      Tensor relPosBiasRequiresGradient relPosBiasLayout relPosBiasDevice relPosBiasDataType relPosBiasShape,
       Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
     )
     (Generator generatorDevice)
@@ -377,27 +394,29 @@ instance
     ForwardOutput
       (SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
       ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+        Tensor relPosBiasRequiresGradient relPosBiasLayout relPosBiasDevice relPosBiasDataType relPosBiasShape,
         Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
       )
       (Generator generatorDevice) =
       Tensor
         'WithGradient
-        (queryLayout <+> 'Layout 'Dense <+> attentionMaskLayout)
-        (queryDevice <+> device <+> generatorDevice <+> attentionMaskDevice)
-        (queryDataType <+> dataType <+> attentionMaskDataType)
-        (SelfAttentionOutputShape headDim headEmbedDim embedDim queryEmbedDim queryShape attentionMaskShape)
+        (queryLayout <+> 'Layout 'Dense <+> relPosBiasLayout <+> attentionMaskLayout)
+        (queryDevice <+> device <+> generatorDevice <+> relPosBiasDevice <+> attentionMaskDevice)
+        (queryDataType <+> dataType <+> relPosBiasDataType <+> attentionMaskDataType)
+        (SelfAttentionOutputShape headDim headEmbedDim embedDim queryEmbedDim queryShape relPosBiasShape attentionMaskShape)
   type
     ForwardGeneratorOutput
       (SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
       ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+        Tensor relPosBiasRequiresGradient relPosBiasLayout relPosBiasDevice relPosBiasDataType relPosBiasShape,
         Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
       )
       (Generator generatorDevice) =
-      (Generator (device <+> queryDevice <+> generatorDevice <+> attentionMaskDevice))
-  forward SelfAttention {..} (query, attentionMask) =
+      (Generator (device <+> queryDevice <+> generatorDevice <+> relPosBiasDevice <+> attentionMaskDevice))
+  forward SelfAttention {..} (query, relPosBias, attentionMask) =
     runIxState $
       ireturn query
         >>>= IxState . forward saLayerNorm
-        >>>= (\query' -> IxState $ forward saMultiheadAttention (query', query', query', attentionMask))
+        >>>= (\query' -> IxState $ forward saMultiheadAttention (query', query', query', relPosBias, attentionMask))
         >>>= IxState . forward saDropout
         >>>= ireturn . (query `add`)

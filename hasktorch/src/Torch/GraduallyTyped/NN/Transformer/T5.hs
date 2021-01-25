@@ -67,6 +67,7 @@ import Torch.GraduallyTyped.Tensor.Type (Tensor (..), bool, checkedDataType, che
 import Torch.Script (IValue (..))
 import Torch.Serialize (pickleLoad)
 import qualified Torch.Tensor (Tensor (Unsafe))
+import Torch.GraduallyTyped.Random (mkGenerator)
 
 -- | num_layers = 6
 type T5SmallNumLayers = 6
@@ -107,7 +108,6 @@ data T5Small device dataType where
       Float ->
     T5Small device dataType
 
--- | never finishes to compile...
 instance
   HasForward
     (SequenceToSequenceTransformer T5SmallNumLayers T5SmallNumLayers device dataType T5SmallHeadDim T5SmallHeadEmbedDim T5SmallEmbedDim T5SmallInputEmbedDim T5SmallDecoderInputEmbedDim T5SmallFFNDim Float)
@@ -166,7 +166,7 @@ instance
           Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
         )
         (Generator generatorDevice)
-  forward (T5Small seqToSeq) inputs = forward seqToSeq inputs
+  -- forward (T5Small seqToSeq) inputs = forward seqToSeq inputs
 
 -- | dropout_rate = 0.1
 t5SmallDropoutP :: Float
@@ -242,7 +242,7 @@ t5SmallDecoderAttentionMask =
                         deviceType
                     )
                     dType
-           in maskedFill causalMask (-1 / 0 :: Double) $
+           in maskedFill causalMask (-10000 :: Double) $
                 withoutDataType
                   @dataType
                   @(T5SmallDecoderAttentionMask device dataType 1 decoderInputSeqSize)
@@ -467,26 +467,41 @@ t5SmallFromPretrained filePath = runReaderT $ do
                 <*> pure (initialize @(Dropout Float) t5SmallDropoutP)
             )
 
-forwardT5Small ::
-  forall device dataType (batchSize :: Nat) (inputSeqSize :: Nat) (decoderInputSeqSize :: Nat) .
-  ( KnownNat batchSize,
-    KnownNat inputSeqSize,
-    KnownNat decoderInputSeqSize,
-    NumelF ('Shape '[ 'Dim ('Name "*") ('Size batchSize), 'Dim ('Name "*") ('Size inputSeqSize), T5SmallEmbedDim]) ~ NumelF ('Shape '[ 'Dim ('Name "*") ('Size batchSize), 'Dim ('Name "*") ('Size inputSeqSize), T5SmallHeadDim, T5SmallHeadEmbedDim]),
-    NumelF ('Shape '[ 'Dim ('Name "*") ('Size batchSize), 'Dim ('Name "*") ('Size decoderInputSeqSize), T5SmallEmbedDim]) ~ NumelF ('Shape '[ 'Dim ('Name "*") ('Size batchSize), 'Dim ('Name "*") ('Size decoderInputSeqSize), T5SmallHeadDim, T5SmallHeadEmbedDim])
-  ) =>
-  T5Small device dataType ->
-  T5SmallInput device dataType batchSize inputSeqSize ->
-  T5SmallDecoderInput device dataType batchSize decoderInputSeqSize ->
-  T5SmallAttentionMask device dataType batchSize inputSeqSize ->
-  T5SmallDecoderAttentionMask device dataType batchSize decoderInputSeqSize ->
-  T5SmallCrossAttentionMask device dataType batchSize inputSeqSize decoderInputSeqSize ->
-  Generator device ->
-  ( T5SmallDecoderOutput device dataType batchSize decoderInputSeqSize
-  , Generator device
-  )
-forwardT5Small model input decoderInput attentionMask decoderAttentionMask crossAttentionMask =
-  forward model (input, decoderInput, attentionMask, decoderAttentionMask, crossAttentionMask)
+-- forwardT5Small ::
+--   forall device dataType (batchSize :: Nat) (inputSeqSize :: Nat) (decoderInputSeqSize :: Nat) .
+--   ( KnownNat batchSize,
+--     KnownNat inputSeqSize,
+--     KnownNat decoderInputSeqSize,
+--     NumelF ('Shape '[ 'Dim ('Name "*") ('Size batchSize), 'Dim ('Name "*") ('Size inputSeqSize), T5SmallEmbedDim]) ~ NumelF ('Shape '[ 'Dim ('Name "*") ('Size batchSize), 'Dim ('Name "*") ('Size inputSeqSize), T5SmallHeadDim, T5SmallHeadEmbedDim]),
+--     NumelF ('Shape '[ 'Dim ('Name "*") ('Size batchSize), 'Dim ('Name "*") ('Size decoderInputSeqSize), T5SmallEmbedDim]) ~ NumelF ('Shape '[ 'Dim ('Name "*") ('Size batchSize), 'Dim ('Name "*") ('Size decoderInputSeqSize), T5SmallHeadDim, T5SmallHeadEmbedDim])
+--   ) =>
+--   T5Small device dataType ->
+--   T5SmallInput device dataType batchSize inputSeqSize ->
+--   T5SmallDecoderInput device dataType batchSize decoderInputSeqSize ->
+--   T5SmallAttentionMask device dataType batchSize inputSeqSize ->
+--   T5SmallDecoderAttentionMask device dataType batchSize decoderInputSeqSize ->
+--   T5SmallCrossAttentionMask device dataType batchSize inputSeqSize decoderInputSeqSize ->
+--   Generator device ->
+--   ( T5SmallDecoderOutput device dataType batchSize decoderInputSeqSize
+--   , Generator device
+--   )
+-- forwardT5Small model input decoderInput attentionMask decoderAttentionMask crossAttentionMask =
+--   forward model (input, decoderInput, attentionMask, decoderAttentionMask, crossAttentionMask)
+
+-- testForwardT5Small :: IO ()
+-- testForwardT5Small =
+--   let input = ones @'WithoutGradient @( 'Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 3), T5SmallInputEmbedDim])
+--       decoderInput = ones @'WithoutGradient @( 'Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 2), T5SmallDecoderInputEmbedDim])
+--       attentionMask = t5SmallAttentionMask @('Device 'CPU) @('DataType 'Float) @3
+--       decoderAttentionMask = t5SmallDecoderAttentionMask @('Device 'CPU) @('DataType 'Float) @2
+--       crossAttentionMask = t5SmallCrossAttentionMask @('Device 'CPU) @('DataType 'Float) @3 @2
+--    in do
+--      model <- t5SmallFromPretrained "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-small.pt" False
+--      g <- mkGenerator @('Device CPU) 0
+--      let (output, _) = forward model (input, decoderInput, attentionMask, decoderAttentionMask, crossAttentionMask) g
+--      case output of
+--        UnsafeTensor t -> print . Torch.Tensor.Unsafe $ t
+--      pure ()
 
 -- forwardT5Small' ::
 --   forall device dataType .

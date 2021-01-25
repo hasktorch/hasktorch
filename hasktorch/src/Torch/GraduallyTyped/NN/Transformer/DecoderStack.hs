@@ -348,27 +348,27 @@ instance
     outputLayout ~ (queryLayout <+> 'Layout 'Dense <+> decoderAttentionMaskLayout <+> keyLayout <+> crossAttentionMaskLayout),
     outputDevice ~ (queryDevice <+> device <+> generatorDevice <+> decoderAttentionMaskDevice <+> keyDevice <+> crossAttentionMaskDevice),
     outputDataType ~ (queryDataType <+> dataType <+> decoderAttentionMaskDataType <+> keyDataType <+> crossAttentionMaskDataType),
-    outputShape ~
-      FeedForwardNetworkOutputShape
+    outputShape
+      ~ FeedForwardNetworkOutputShape
+          queryEmbedDim
+          ffnDim
+          ( CrossAttentionOutputShape
+              headDim
+              headEmbedDim
+              embedDim
               queryEmbedDim
-              ffnDim
-              ( CrossAttentionOutputShape
+              keyEmbedDim
+              ( SelfAttentionOutputShape
                   headDim
                   headEmbedDim
                   embedDim
                   queryEmbedDim
-                  keyEmbedDim
-                  ( SelfAttentionOutputShape
-                      headDim
-                      headEmbedDim
-                      embedDim
-                      queryEmbedDim
-                      queryShape
-                      decoderAttentionMaskShape
-                  )
-                  keyShape
-                  crossAttentionMaskShape
-              ),
+                  queryShape
+                  decoderAttentionMaskShape
+              )
+              keyShape
+              crossAttentionMaskShape
+          ),
     outputGeneratorDevice ~ (device <+> queryDevice <+> generatorDevice <+> decoderAttentionMaskDevice <+> keyDevice <+> crossAttentionMaskDevice),
     HasForwardTransformerDecoderStack (1 <=? numLayers - 1) 'True (numLayers - 1) device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP outputRequiresGradient outputLayout outputDevice outputDataType outputShape keyRequiresGradient keyLayout keyDevice keyDataType keyShape decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape outputGeneratorDevice,
     HasForward
@@ -379,27 +379,27 @@ instance
         Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
       )
       (Generator outputGeneratorDevice),
-    outputShape ~
-      FeedForwardNetworkOutputShape
+    outputShape
+      ~ FeedForwardNetworkOutputShape
+          queryEmbedDim
+          ffnDim
+          ( CrossAttentionOutputShape
+              headDim
+              headEmbedDim
+              embedDim
               queryEmbedDim
-              ffnDim
-              ( CrossAttentionOutputShape
+              keyEmbedDim
+              ( SelfAttentionOutputShape
                   headDim
                   headEmbedDim
                   embedDim
                   queryEmbedDim
-                  keyEmbedDim
-                  ( SelfAttentionOutputShape
-                      headDim
-                      headEmbedDim
-                      embedDim
-                      queryEmbedDim
-                      outputShape
-                      decoderAttentionMaskShape
-                  )
-                  keyShape
-                  crossAttentionMaskShape
+                  outputShape
+                  decoderAttentionMaskShape
               )
+              keyShape
+              crossAttentionMaskShape
+          )
   ) =>
   HasForwardTransformerDecoderStack 'True 'False numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP queryRequiresGradient queryLayout queryDevice queryDataType queryShape keyRequiresGradient keyLayout keyDevice keyDataType keyShape decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape generatorDevice
   where
@@ -467,7 +467,7 @@ instance
                  IxState $
                    forwardTransformerDecoderStack
                      @(1 <=? numLayers - 1)
-                     @'True
+                     @ 'True
                      @(numLayers - 1)
                      @device
                      @dataType
@@ -512,7 +512,8 @@ instance
   HasForwardTransformerDecoderStack 'True 'True numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP queryRequiresGradient queryLayout queryDevice queryDataType queryShape keyRequiresGradient keyLayout keyDevice keyDataType keyShape decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape generatorDevice
   where
   type
-    HasForwardTransformerDecoderStackOutput 'True 'True numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim queryRequiresGradient queryLayout queryDevice queryDataType queryShape keyRequiresGradient keyLayout keyDevice keyDataType keyShape decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape generatorDevice = Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape
+    HasForwardTransformerDecoderStackOutput 'True 'True numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim queryRequiresGradient queryLayout queryDevice queryDataType queryShape keyRequiresGradient keyLayout keyDevice keyDataType keyShape decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape generatorDevice =
+      Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape
   type HasForwardTransformerDecoderStackGeneratorOutput 'True 'True numLayers device queryDevice keyDevice decoderAttentionMaskDevice crossAttentionMaskDevice generatorDevice = Generator generatorDevice
   forwardTransformerDecoderStack (Just f) (TransformerDecoderStackCons decoderBlock decoderStack) (query, key, decoderAttentionMask, crossAttentionMask) =
     runIxState $
@@ -522,7 +523,7 @@ instance
                  IxState $
                    forwardTransformerDecoderStack
                      @(1 <=? numLayers - 1)
-                     @'True
+                     @ 'True
                      @(numLayers - 1)
                      @device
                      @dataType

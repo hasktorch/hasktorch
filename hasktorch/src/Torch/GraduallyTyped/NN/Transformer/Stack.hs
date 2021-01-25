@@ -52,7 +52,7 @@ import Torch.GraduallyTyped.NN.Transformer.SelfAttention (SelfAttentionOutputSha
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape (KnownDim, Dim (..), Name (..), Shape (..), Size (..), WithDimC (..))
+import Torch.GraduallyTyped.Shape (Dim (..), KnownDim, Name (..), Shape (..), Size (..), WithDimC (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
