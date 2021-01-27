@@ -15,10 +15,24 @@ import Control.Applicative
 import GHC.TypeLits
 import Data.Proxy
 
+data Batch a where
+  ToBatch :: Tensor [a] -> Batch a
+  Concat :: [a] -> Batch a
+
 data Tensor a where
   Prim   :: (T.TensorLike a) => T.Tensor -> Tensor a
   Return :: a -> Tensor a
   Bind   :: Tensor a -> (a -> Tensor b) -> Tensor b
+
+instance (T.TensorLike a) => T.TensorLike (Tensor a) where
+  asTensor' = error "Not implemented for Tensor-a-type"
+  asTensor = toTensor
+  _asValue = Prim
+  _dtype = error "Not implemented for Tensor-a-type"
+  _dims v = error "Not implemented for Tensor-a-type"
+  _deepDims v = error "Not implemented for Tensor-a-type"
+  _peekElemOff = error "Not implemented for Tensor-a-type"
+  _pokeElemOff = error "Not implemented for Tensor-a-type"
 
 toTensor :: (T.TensorLike a) => Tensor a -> T.Tensor
 toTensor (Prim s)                        = s
