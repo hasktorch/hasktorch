@@ -43,24 +43,26 @@ import Data.Kind (Type)
 import GHC.TypeLits (Nat, Symbol)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType, WithDataTypeC (..))
+import Torch.GraduallyTyped.DType (DataType (..), WithDataTypeC (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (..))
 import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
-import Torch.GraduallyTyped.NN.Dropout (Dropout)
+import Torch.GraduallyTyped.NN.Dropout (Dropout (..))
 import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithoutBiasF)
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, softmax)
 import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearWithoutBiasC, Linear (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
-import Torch.GraduallyTyped.Random (Generator)
+import Torch.GraduallyTyped.Random (Generator, mkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape (BroadcastShapesF, By (..), Dim (..), KnownDim (..), KnownShape, Name (..), SelectDim (..), Shape (..), Size (..), WithDimC (..), WithShapeC (..), dimSize, getDim, unifyDims, type (!))
+import Torch.GraduallyTyped.Tensor.Creation (ones, zeros)
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (ReshapeF, TransposeF, UnsqueezeF, reshape, transpose, unsqueeze)
 import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (MatmulF, matmul)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add, divScalar)
-import Torch.GraduallyTyped.Tensor.Type (Tensor, shape)
+import Torch.GraduallyTyped.Tensor.Type (Tensor (..), checkedDataType, checkedDevice, checkedLayout, checkedShape, shape)
 import Torch.GraduallyTyped.Unify (type (<+>))
+import qualified Torch.Tensor
 
 data
   MultiHeadAttention
@@ -299,8 +301,7 @@ type TransposeAndReshape
   (queryShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (keyShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (valueShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (relPosBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (attentionMaskShape :: Shape [Dim (Name Symbol) (Size Nat)])
+  (attentionBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (batchDim :: Dim (Name Symbol) (Size Nat))
   (querySeqDim :: Dim (Name Symbol) (Size Nat))
   (keySeqDim :: Dim (Name Symbol) (Size Nat)) =
@@ -308,55 +309,46 @@ type TransposeAndReshape
     ( 'SelectDim ( 'ByIndex 1))
     ( 'SelectDim ( 'ByIndex 2))
     ( MatmulF
-        ( BroadcastShapesF
+        ( SoftmaxF
+            ( 'SelectDim ( 'ByIndex 3))
             ( BroadcastShapesF
-                ( SoftmaxF
-                    ( 'SelectDim ( 'ByIndex 3))
-                    ( MatmulF
+                ( MatmulF
+                    ( TransposeF
+                        ( 'SelectDim ( 'ByIndex 1))
+                        ( 'SelectDim ( 'ByIndex 2))
+                        ( ReshapeF
+                            ( LinearWithoutBiasF
+                                ( 'Shape '[embedDim, queryEmbedDim])
+                                queryShape
+                            )
+                            ( 'Shape
+                                '[batchDim, querySeqDim, headDim, headEmbedDim]
+                            )
+                        )
+                    )
+                    ( TransposeF
+                        ( 'SelectDim ( 'ByIndex 2))
+                        ( 'SelectDim ( 'ByIndex 3))
                         ( TransposeF
                             ( 'SelectDim ( 'ByIndex 1))
                             ( 'SelectDim ( 'ByIndex 2))
                             ( ReshapeF
                                 ( LinearWithoutBiasF
-                                    ( 'Shape '[embedDim, queryEmbedDim])
-                                    queryShape
+                                    ( 'Shape '[embedDim, keyEmbedDim])
+                                    keyShape
                                 )
                                 ( 'Shape
-                                    '[batchDim, querySeqDim, headDim, headEmbedDim]
-                                )
-                            )
-                        )
-                        ( TransposeF
-                            ( 'SelectDim ( 'ByIndex 2))
-                            ( 'SelectDim ( 'ByIndex 3))
-                            ( TransposeF
-                                ( 'SelectDim ( 'ByIndex 1))
-                                ( 'SelectDim ( 'ByIndex 2))
-                                ( ReshapeF
-                                    ( LinearWithoutBiasF
-                                        ( 'Shape '[embedDim, keyEmbedDim])
-                                        keyShape
-                                    )
-                                    ( 'Shape
-                                        '[ batchDim,
-                                          keySeqDim,
-                                          headDim,
-                                          headEmbedDim
-                                        ]
-                                    )
+                                    '[ batchDim,
+                                       keySeqDim,
+                                       headDim,
+                                       headEmbedDim
+                                     ]
                                 )
                             )
                         )
                     )
                 )
-                ( UnsqueezeF
-                    ( 'SelectDim ( 'ByIndex 0))
-                    relPosBiasShape
-                )
-            )
-            ( UnsqueezeF
-                ( 'SelectDim ( 'ByIndex 1))
-                attentionMaskShape
+                attentionBiasShape
             )
         )
         ( TransposeF
@@ -407,14 +399,10 @@ type HasForwardMultiHeadAttentionC
   (valueDevice :: Device (DeviceType Nat))
   (valueDataType :: DataType DType)
   (valueShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (relPosBiasLayout :: Layout LayoutType)
-  (relPosBiasDevice :: Device (DeviceType Nat))
-  (relPosBiasDataType :: DataType DType)
-  (relPosBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (attentionMaskLayout :: Layout LayoutType)
-  (attentionMaskDevice :: Device (DeviceType Nat))
-  (attentionMaskDataType :: DataType DType)
-  (attentionMaskShape :: Shape [Dim (Name Symbol) (Size Nat)])
+  (attentionBiasLayout :: Layout LayoutType)
+  (attentionBiasDevice :: Device (DeviceType Nat))
+  (attentionBiasDataType :: DataType DType)
+  (attentionBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (generatorDevice :: Device (DeviceType Nat))
   (batchDim :: Dim (Name Symbol) (Size Nat))
   (querySeqDim :: Dim (Name Symbol) (Size Nat))
@@ -507,15 +495,15 @@ type HasForwardMultiHeadAttentionC
       ( 'Shape '[batchDim, querySeqDim, embedDim])
       ( Tensor
           'WithGradient
-          ( 'Layout 'Dense <+> queryLayout <+> keyLayout <+> relPosBiasLayout <+> attentionMaskLayout <+> valueLayout)
-          (device <+> queryDevice <+> keyDevice <+> generatorDevice <+> relPosBiasDevice <+> attentionMaskDevice <+> valueDevice)
-          (dataType <+> queryDataType <+> keyDataType <+> relPosBiasDataType <+> attentionMaskDataType <+> valueDataType)
+          ( 'Layout 'Dense <+> queryLayout <+> keyLayout <+> attentionBiasLayout <+> valueLayout)
+          (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice <+> valueDevice)
+          (dataType <+> queryDataType <+> keyDataType <+> attentionBiasDataType <+> valueDataType)
           transposedAndReshaped ->
         Tensor
           'WithGradient
-          ( 'Layout 'Dense <+> queryLayout <+> keyLayout <+> relPosBiasLayout <+> attentionMaskLayout <+> valueLayout)
-          (device <+> queryDevice <+> keyDevice <+> generatorDevice <+> relPosBiasDevice <+> attentionMaskDevice <+> valueDevice)
-          (dataType <+> queryDataType <+> keyDataType <+> relPosBiasDataType <+> attentionMaskDataType <+> valueDataType)
+          ( 'Layout 'Dense <+> queryLayout <+> keyLayout <+> attentionBiasLayout <+> valueLayout)
+          (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice <+> valueDevice)
+          (dataType <+> queryDataType <+> keyDataType <+> attentionBiasDataType <+> valueDataType)
           ( ReshapeF
               transposedAndReshaped
               ( 'Shape '[batchDim, querySeqDim, embedDim])
@@ -546,14 +534,10 @@ instance
       valueDevice
       valueDataType
       valueShape
-      relPosBiasLayout
-      relPosBiasDevice
-      relPosBiasDataType
-      relPosBiasShape
-      attentionMaskLayout
-      attentionMaskDevice
-      attentionMaskDataType
-      attentionMaskShape
+      attentionBiasLayout
+      attentionBiasDevice
+      attentionBiasDataType
+      attentionBiasShape
       generatorDevice
       batchDim
       querySeqDim
@@ -562,15 +546,14 @@ instance
     batchDim ~ BatchDim queryShape keyShape valueShape,
     querySeqDim ~ QuerySeqDim queryShape,
     keySeqDim ~ KeySeqDim keyShape valueShape,
-    transposedAndReshaped ~ TransposeAndReshape headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim queryShape keyShape valueShape relPosBiasShape attentionMaskShape batchDim querySeqDim keySeqDim
+    transposedAndReshaped ~ TransposeAndReshape headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim queryShape keyShape valueShape attentionBiasShape batchDim querySeqDim keySeqDim
   ) =>
   HasForward
     (MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
     ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
       Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
       Tensor valueRequiresGradient valueLayout valueDevice valueDataType valueShape,
-      Tensor relPosBiasRequiresGradient relPosBiasLayout relPosBiasDevice relPosBiasDataType relPosBiasShape,
-      Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+      Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
     )
     (Generator generatorDevice)
   where
@@ -580,21 +563,20 @@ instance
       ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
         Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
         Tensor valueRequiresGradient valueLayout valueDevice valueDataType valueShape,
-        Tensor relPosBiasRequiresGradient relPosBiasLayout relPosBiasDevice relPosBiasDataType relPosBiasShape,
-        Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+        Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
       )
       (Generator generatorDevice) =
       Tensor
         'WithGradient
-        ( 'Layout 'Dense <+> queryLayout <+> keyLayout <+> relPosBiasLayout <+> attentionMaskLayout <+> valueLayout)
-        (device <+> queryDevice <+> keyDevice <+> generatorDevice <+> relPosBiasDevice <+> attentionMaskDevice <+> valueDevice)
-        (dataType <+> queryDataType <+> keyDataType <+> relPosBiasDataType <+> attentionMaskDataType <+> valueDataType)
+        ( 'Layout 'Dense <+> queryLayout <+> keyLayout <+> attentionBiasLayout <+> valueLayout)
+        (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice <+> valueDevice)
+        (dataType <+> queryDataType <+> keyDataType <+> attentionBiasDataType <+> valueDataType)
         ( MultiHeadAttentionOutputShape
             embedDim
             queryEmbedDim
             (BatchDim queryShape keyShape valueShape)
             (QuerySeqDim queryShape)
-            (TransposeAndReshape headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim queryShape keyShape valueShape relPosBiasShape attentionMaskShape (BatchDim queryShape keyShape valueShape) (QuerySeqDim queryShape) (KeySeqDim keyShape valueShape))
+            (TransposeAndReshape headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim queryShape keyShape valueShape attentionBiasShape (BatchDim queryShape keyShape valueShape) (QuerySeqDim queryShape) (KeySeqDim keyShape valueShape))
         )
   type
     ForwardGeneratorOutput
@@ -602,12 +584,11 @@ instance
       ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
         Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
         Tensor valueRequiresGradient valueLayout valueDevice valueDataType valueShape,
-        Tensor relPosBiasRequiresGradient relPosBiasLayout relPosBiasDevice relPosBiasDataType relPosBiasShape,
-        Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+        Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
       )
       (Generator generatorDevice) =
-      Generator (device <+> queryDevice <+> keyDevice <+> generatorDevice)
-  forward mha@MultiHeadAttention {..} (query, key, value, relPosBias, attentionMask) =
+      Generator (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)
+  forward mha@MultiHeadAttention {..} (query, key, value, attentionBias) =
     let batchDim = case dimVal @(BatchDim queryShape keyShape valueShape) of
           Dim (Name name) (Size size) -> Dim name size
           Dim _ _ -> unsafeGetBatchDim (shape query) (shape key) (shape value)
@@ -636,9 +617,8 @@ instance
               kt = k >>>= ireturn . transpose @( 'SelectDim ( 'ByIndex 2)) @( 'SelectDim ( 'ByIndex 3))
               weights =
                 matmul <<$>> q <<*>> kt
+                  >>>= ireturn . (`add` attentionBias)
                   >>>= IxState . forward mhaDropout . softmax @( 'SelectDim ( 'ByIndex 3))
-                  >>>= ireturn . (`add` unsqueeze @( 'SelectDim ( 'ByIndex 0)) relPosBias)
-                  >>>= ireturn . (`add` unsqueeze @( 'SelectDim ( 'ByIndex 1)) attentionMask)
               v =
                 ireturn value
                   >>>= IxState . forward mhaVInProj
@@ -687,3 +667,71 @@ instance
           (reshape @( 'Shape '[batchDim, seqDim, embedDim]) @requiresGradient @layout @device @dataType @shape)
           [batchDim, seqDim, embedDim]
           input
+
+testMHA ::
+  IO
+    ( Tensor
+        'WithGradient
+        ( 'Layout 'Dense)
+        ( 'Device 'CPU)
+        ( 'DataType 'Float)
+        ( 'Shape
+            '[ 'Dim ( 'Name "*") ( 'Size 1),
+               'Dim ( 'Name "*") ( 'Size 4),
+               'Dim ( 'Name "*") ( 'Size 3)
+             ]
+        )
+    )
+testMHA = do
+  let q = LinearWithoutBias (ones @ 'WithGradient @( 'Layout 'Dense) @( 'Device 'CPU) @( 'DataType 'Float) @( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 2), 'Dim ( 'Name "*") ( 'Size 3)]))
+      k = LinearWithoutBias (ones @ 'WithGradient @( 'Layout 'Dense) @( 'Device 'CPU) @( 'DataType 'Float) @( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 2), 'Dim ( 'Name "*") ( 'Size 3)]))
+      v = LinearWithoutBias (ones @ 'WithGradient @( 'Layout 'Dense) @( 'Device 'CPU) @( 'DataType 'Float) @( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 2), 'Dim ( 'Name "*") ( 'Size 3)]))
+      o = LinearWithoutBias (ones @ 'WithGradient @( 'Layout 'Dense) @( 'Device 'CPU) @( 'DataType 'Float) @( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 3), 'Dim ( 'Name "*") ( 'Size 2)]))
+      dropout = Dropout 0.1
+      mha =
+        MultiHeadAttention @( 'Device 'CPU) @( 'DataType 'Float) @( 'Dim ( 'Name "*") ( 'Size 1)) @( 'Dim ( 'Name "*") ( 'Size 2)) @( 'Dim ( 'Name "*") ( 'Size 2)) @( 'Dim ( 'Name "*") ( 'Size 3)) @( 'Dim ( 'Name "*") ( 'Size 3)) @( 'Dim ( 'Name "*") ( 'Size 3)) @Float
+          (Dim "*" 1)
+          (Dim "*" 2)
+          q
+          k
+          v
+          o
+          dropout
+  query <-
+    case Torch.Tensor.asTensor [[[0 :: Float, 1, 2], [-1, -2, -3], [7, -2, -3], [-1, 5, -3]]] of
+      Torch.Tensor.Unsafe t ->
+        pure (UnsafeTensor @ 'WithoutGradient t)
+          >>= checkedLayout @( 'Layout 'Dense)
+          >>= checkedDevice @( 'Device 'CPU)
+          >>= checkedDataType @( 'DataType 'Float)
+          >>= checkedShape @( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 4), 'Dim ( 'Name "*") ( 'Size 3)])
+  key <-
+    case Torch.Tensor.asTensor [[[0 :: Float, 0.5, 1], [-0.1, -0.2, -0.3], [-1, 0, 1]]] of
+      Torch.Tensor.Unsafe t ->
+        pure (UnsafeTensor @ 'WithoutGradient t)
+          >>= checkedLayout @( 'Layout 'Dense)
+          >>= checkedDevice @( 'Device 'CPU)
+          >>= checkedDataType @( 'DataType 'Float)
+          >>= checkedShape @( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 3), 'Dim ( 'Name "*") ( 'Size 3)])
+  let value = key
+  attentionBias <-
+    case Torch.Tensor.asTensor
+      [ [ [ [0 :: Float, 3, 3],
+            [1, 0, 3],
+            [1, 1, 0],
+            [1, 1, 1]
+          ]
+        ]
+      ] of
+      Torch.Tensor.Unsafe t ->
+        pure (UnsafeTensor @ 'WithoutGradient t)
+          >>= checkedLayout @( 'Layout 'Dense)
+          >>= checkedDevice @( 'Device 'CPU)
+          >>= checkedDataType @( 'DataType 'Float)
+          >>= checkedShape @( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 4), 'Dim ( 'Name "*") ( 'Size 3)])
+  g <- mkGenerator @( 'Device 'CPU) 0
+  let (output, _) = forward mha (query, key, value, attentionBias) g
+  case output of
+    UnsafeTensor t ->
+      print (Torch.Tensor.Unsafe t)
+  pure output

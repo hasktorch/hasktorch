@@ -14,15 +14,22 @@ module Torch.GraduallyTyped.NN.Functional.Normalization where
 
 import GHC.TypeLits (Nat, Symbol, TypeError, type (+), type (-))
 import System.IO.Unsafe (unsafePerformIO)
+import Torch.DType (DType (..))
+import Torch.GraduallyTyped.DType (DataType (DataType))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.Prelude (Length, Reverse)
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim, KnownShape, Name, SelectDims (..), Shape (..), Size, WithSelectDimsC (..), dimSize)
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownShape, Name (..), SelectDims (..), Shape (..), Size (..), WithSelectDimsC (..), dimSize)
+import Torch.GraduallyTyped.Tensor.Creation (ones)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (addScalar, mul, powScalar, rsqrt)
 import Torch.GraduallyTyped.Tensor.MathOperations.Reduction (MeanF, mean)
-import Torch.GraduallyTyped.Tensor.Type (Tensor, shape)
+import Torch.GraduallyTyped.Tensor.Type (Tensor (..), checkedDataType, checkedDevice, checkedLayout, checkedShape, shape)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import Torch.Internal.Cast (cast5, cast6)
 import qualified Torch.Internal.Managed.Native as ATen
+import qualified Torch.Tensor
 import Type.Errors.Pretty (type (%), type (<>))
 
 type family LayerNormImplF (reverseNormalizedDims :: [Dim (Name Symbol) (Size Nat)]) (reverseInputDims :: [Dim (Name Symbol) (Size Nat)]) :: [Dim (Name Symbol) (Size Nat)] where
@@ -139,6 +146,34 @@ layerNormWithoutBias weight eps input =
         >>= ATen.rsqrt_t
         >>= ATen.mul_tt input
         >>= ATen.mul_tt weight
+
+testT5LayerNorm ::
+  IO
+    ( Tensor
+        'WithGradient
+        ( 'Layout 'Dense)
+        ( 'Device 'CPU)
+        ( 'DataType 'Float)
+        ( 'Shape
+            '[ 'Dim ( 'Name "*") ( 'Size 2), 'Dim ( 'Name "*") ( 'Size 10)]
+        )
+    )
+testT5LayerNorm = do
+  let weight = ones @ 'WithGradient @( 'Layout 'Dense) @( 'Device CPU) @( 'DataType 'Float) @( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 10)])
+      eps = 1e-6 :: Double
+  input <-
+    case Torch.Tensor.asTensor [[13 :: Float, 27, 14, 19, -512, 1, 2, 3, 4, 0], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]] of
+      Torch.Tensor.Unsafe t ->
+        pure (UnsafeTensor @ 'WithoutGradient t)
+          >>= checkedLayout @( 'Layout 'Dense)
+          >>= checkedDevice @( 'Device CPU)
+          >>= checkedDataType @( 'DataType 'Float)
+          >>= checkedShape @( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 2), 'Dim ( 'Name "*") ( 'Size 10)])
+  let output = layerNormWithoutBias weight eps input
+  case output of
+    UnsafeTensor t ->
+      print (Torch.Tensor.Unsafe t)
+  pure output
 
 layerNormWithoutBias' ::
   forall requiresGradient layout device dataType shape requiresGradient' layout' device' dataType' shape' selectDims.

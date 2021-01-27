@@ -346,7 +346,7 @@ instance
       (Generator generatorDevice),
     outputRequiresGradient ~ 'WithGradient,
     outputLayout ~ (queryLayout <+> 'Layout 'Dense <+> decoderAttentionMaskLayout <+> keyLayout <+> crossAttentionMaskLayout),
-    outputDevice ~ (queryDevice <+> device <+> generatorDevice <+> decoderAttentionMaskDevice <+> keyDevice <+> crossAttentionMaskDevice),
+    outputDevice ~ (queryDevice <+> device <+> decoderAttentionMaskDevice <+> generatorDevice <+> keyDevice <+> crossAttentionMaskDevice),
     outputDataType ~ (queryDataType <+> dataType <+> decoderAttentionMaskDataType <+> keyDataType <+> crossAttentionMaskDataType),
     outputShape
       ~ FeedForwardNetworkOutputShape
@@ -369,7 +369,7 @@ instance
               keyShape
               crossAttentionMaskShape
           ),
-    outputGeneratorDevice ~ (device <+> queryDevice <+> generatorDevice <+> decoderAttentionMaskDevice <+> keyDevice <+> crossAttentionMaskDevice),
+    outputGeneratorDevice ~ (device <+> queryDevice <+> decoderAttentionMaskDevice <+> generatorDevice <+> keyDevice <+> crossAttentionMaskDevice),
     HasForwardTransformerDecoderStack (1 <=? numLayers - 1) 'True (numLayers - 1) device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP outputRequiresGradient outputLayout outputDevice outputDataType outputShape keyRequiresGradient keyLayout keyDevice keyDataType keyShape decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape outputGeneratorDevice,
     HasForward
       (TransformerDecoderBlock device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
@@ -419,7 +419,7 @@ instance
         ffnDim
         'WithGradient
         (queryLayout <+> 'Layout 'Dense <+> decoderAttentionMaskLayout <+> keyLayout <+> crossAttentionMaskLayout)
-        (queryDevice <+> device <+> generatorDevice <+> decoderAttentionMaskDevice <+> keyDevice <+> crossAttentionMaskDevice)
+        (queryDevice <+> device <+> decoderAttentionMaskDevice <+> generatorDevice <+> keyDevice <+> crossAttentionMaskDevice)
         (queryDataType <+> dataType <+> decoderAttentionMaskDataType <+> keyDataType <+> crossAttentionMaskDataType)
         ( FeedForwardNetworkOutputShape
             queryEmbedDim
@@ -457,8 +457,8 @@ instance
         crossAttentionMaskDevice
         crossAttentionMaskDataType
         crossAttentionMaskShape
-        (device <+> queryDevice <+> generatorDevice <+> decoderAttentionMaskDevice <+> keyDevice <+> crossAttentionMaskDevice)
-  type HasForwardTransformerDecoderStackGeneratorOutput 'True 'False numLayers device queryDevice keyDevice decoderAttentionMaskDevice crossAttentionMaskDevice generatorDevice = HasForwardTransformerDecoderStackGeneratorOutput (1 <=? numLayers - 1) 'True (numLayers - 1) device (queryDevice <+> device <+> generatorDevice <+> decoderAttentionMaskDevice <+> keyDevice <+> crossAttentionMaskDevice) keyDevice decoderAttentionMaskDevice crossAttentionMaskDevice (device <+> queryDevice <+> generatorDevice <+> decoderAttentionMaskDevice <+> keyDevice <+> crossAttentionMaskDevice)
+        (device <+> queryDevice <+> decoderAttentionMaskDevice <+> generatorDevice <+> keyDevice <+> crossAttentionMaskDevice)
+  type HasForwardTransformerDecoderStackGeneratorOutput 'True 'False numLayers device queryDevice keyDevice decoderAttentionMaskDevice crossAttentionMaskDevice generatorDevice = HasForwardTransformerDecoderStackGeneratorOutput (1 <=? numLayers - 1) 'True (numLayers - 1) device (queryDevice <+> device <+> decoderAttentionMaskDevice <+> generatorDevice <+> keyDevice <+> crossAttentionMaskDevice) keyDevice decoderAttentionMaskDevice crossAttentionMaskDevice (device <+> queryDevice <+> decoderAttentionMaskDevice <+> generatorDevice <+> keyDevice <+> crossAttentionMaskDevice)
   forwardTransformerDecoderStack _ (TransformerDecoderStackCons decoderBlock decoderStack) (query, key, decoderAttentionMask, crossAttentionMask) =
     runIxState $
       ireturn (query, key, decoderAttentionMask, crossAttentionMask)

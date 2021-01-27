@@ -43,6 +43,7 @@ import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout)
 import Torch.GraduallyTyped.NN.Linear (Linear (LinearWithoutBias))
 import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..))
+import Torch.GraduallyTyped.NN.Sparse (Embedding (Embedding))
 import Torch.GraduallyTyped.NN.Transformer.Block (TransformerBlock (TransformerBlock))
 import Torch.GraduallyTyped.NN.Transformer.CrossAttention (CrossAttention (CrossAttention))
 import Torch.GraduallyTyped.NN.Transformer.Decoder (TransformerDecoder (TransformerDecoder))
@@ -55,7 +56,7 @@ import Torch.GraduallyTyped.NN.Transformer.SelfAttention (SelfAttention (SelfAtt
 import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (SequenceToSequenceTransformer (..))
 import Torch.GraduallyTyped.NN.Transformer.Stack (TransformerStack (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
-import Torch.GraduallyTyped.Random (Generator)
+import Torch.GraduallyTyped.Random (Generator, mkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape (NumelDimF, NumelF, Shape (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
@@ -66,17 +67,16 @@ import Torch.GraduallyTyped.Tensor.Other (maskedFill, triu)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..), bool, checkedDataType, checkedDevice, checkedLayout, checkedShape, shape)
 import Torch.Script (IValue (..))
 import Torch.Serialize (pickleLoad)
-import qualified Torch.Tensor (Tensor (Unsafe))
-import Torch.GraduallyTyped.Random (mkGenerator)
+import qualified Torch.Tensor (Tensor (Unsafe), asTensor)
 
 -- | num_layers = 6
 type T5SmallNumLayers = 6
 
 -- | n_heads = 8
-type T5SmallHeadDim = 'Dim ( 'Name "head") ( 'Size 8)
+type T5SmallHeadDim = 'Dim ( 'Name "*") ( 'Size 8)
 
 -- | d_kv = 64
-type T5SmallHeadEmbedDim = 'Dim ( 'Name "headEmbed") ( 'Size 64)
+type T5SmallHeadEmbedDim = 'Dim ( 'Name "*") ( 'Size 64)
 
 -- | inner_dim =  = n_heads * d_kv = 512
 type T5SmallEmbedDim = 'Dim ( 'Name "*") ( 'Size 512)
@@ -89,6 +89,9 @@ type T5SmallDecoderInputEmbedDim = 'Dim ( 'Name "*") ( 'Size 512)
 
 -- | d_ff = 2048
 type T5SmallFFNDim = 'Dim ( 'Name "*") ( 'Size 2048)
+
+-- | relative_attention_num_buckets = 32
+type T5SmallRelPosEncBucketDim = 'Dim ( 'Name "*") ( 'Size 32)
 
 -- | https://huggingface.co/t5-small/blob/main/config.json
 data T5Small device dataType where
@@ -105,14 +108,17 @@ data T5Small device dataType where
       T5SmallInputEmbedDim
       T5SmallDecoderInputEmbedDim
       T5SmallFFNDim
+      T5SmallRelPosEncBucketDim
       Float ->
     T5Small device dataType
 
 instance
   HasForward
-    (SequenceToSequenceTransformer T5SmallNumLayers T5SmallNumLayers device dataType T5SmallHeadDim T5SmallHeadEmbedDim T5SmallEmbedDim T5SmallInputEmbedDim T5SmallDecoderInputEmbedDim T5SmallFFNDim Float)
+    (SequenceToSequenceTransformer T5SmallNumLayers T5SmallNumLayers device dataType T5SmallHeadDim T5SmallHeadEmbedDim T5SmallEmbedDim T5SmallInputEmbedDim T5SmallDecoderInputEmbedDim T5SmallFFNDim T5SmallRelPosEncBucketDim Float)
     ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
       Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
+      Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+      Tensor decoderRelPosRequiresGradient decoderRelPosLayout decoderRelPosDevice decoderRelPosDataType decoderRelPosShape,
       Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape,
       Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
       Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
@@ -122,6 +128,8 @@ instance
     (T5Small device dataType)
     ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
       Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
+      Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+      Tensor decoderRelPosRequiresGradient decoderRelPosLayout decoderRelPosDevice decoderRelPosDataType decoderRelPosShape,
       Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape,
       Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
       Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
@@ -133,15 +141,19 @@ instance
       (T5Small device dataType)
       ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
         Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
+        Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+        Tensor decoderRelPosRequiresGradient decoderRelPosLayout decoderRelPosDevice decoderRelPosDataType decoderRelPosShape,
         Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape,
         Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
         Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
       )
       (Generator generatorDevice) =
       ForwardOutput
-        (SequenceToSequenceTransformer T5SmallNumLayers T5SmallNumLayers device dataType T5SmallHeadDim T5SmallHeadEmbedDim T5SmallEmbedDim T5SmallInputEmbedDim T5SmallDecoderInputEmbedDim T5SmallFFNDim Float)
+        (SequenceToSequenceTransformer T5SmallNumLayers T5SmallNumLayers device dataType T5SmallHeadDim T5SmallHeadEmbedDim T5SmallEmbedDim T5SmallInputEmbedDim T5SmallDecoderInputEmbedDim T5SmallFFNDim T5SmallRelPosEncBucketDim Float)
         ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
           Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
+          Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+          Tensor decoderRelPosRequiresGradient decoderRelPosLayout decoderRelPosDevice decoderRelPosDataType decoderRelPosShape,
           Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape,
           Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
           Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
@@ -152,21 +164,25 @@ instance
       (T5Small device dataType)
       ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
         Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
+        Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+        Tensor decoderRelPosRequiresGradient decoderRelPosLayout decoderRelPosDevice decoderRelPosDataType decoderRelPosShape,
         Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape,
         Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
         Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
       )
       (Generator generatorDevice) =
       ForwardGeneratorOutput
-        (SequenceToSequenceTransformer T5SmallNumLayers T5SmallNumLayers device dataType T5SmallHeadDim T5SmallHeadEmbedDim T5SmallEmbedDim T5SmallInputEmbedDim T5SmallDecoderInputEmbedDim T5SmallFFNDim Float)
+        (SequenceToSequenceTransformer T5SmallNumLayers T5SmallNumLayers device dataType T5SmallHeadDim T5SmallHeadEmbedDim T5SmallEmbedDim T5SmallInputEmbedDim T5SmallDecoderInputEmbedDim T5SmallFFNDim T5SmallRelPosEncBucketDim Float)
         ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
           Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
+          Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+          Tensor decoderRelPosRequiresGradient decoderRelPosLayout decoderRelPosDevice decoderRelPosDataType decoderRelPosShape,
           Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape,
           Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
           Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
         )
         (Generator generatorDevice)
-  -- forward (T5Small seqToSeq) inputs = forward seqToSeq inputs
+  forward (T5Small seqToSeq) inputs = forward seqToSeq inputs
 
 -- | dropout_rate = 0.1
 t5SmallDropoutP :: Float
@@ -338,7 +354,8 @@ t5SmallFromPretrained filePath = runReaderT $ do
           <$> lookup "encoder.final_layer_norm.weight" stateDict
           <*> pure t5SmallEps
       let dropout = initialize @(Dropout Float) t5SmallDropoutP
-      pure $ TransformerEncoder stack layerNorm dropout
+      relPosEnc <- (Embedding <$> lookup ("encoder.block.0.layer.0.SelfAttention.relative_attention_bias.weight") stateDict)
+      pure $ TransformerEncoder stack layerNorm dropout relPosEnc
     decoder <- do
       stack <-
         TransformerDecoderStackCons
@@ -364,7 +381,8 @@ t5SmallFromPretrained filePath = runReaderT $ do
           <$> lookup "decoder.final_layer_norm.weight" stateDict
           <*> pure t5SmallEps
       let dropout = initialize @(Dropout Float) t5SmallDropoutP
-      pure $ TransformerDecoder stack layerNorm dropout
+      relPosEnc <- (Embedding <$> lookup ("decoder.block.0.layer.0.SelfAttention.relative_attention_bias.weight") stateDict)
+      pure $ TransformerDecoder stack layerNorm dropout relPosEnc
     pure $ SequenceToSequenceTransformer encoder decoder
   pure $ T5Small seqToSeq
   where
@@ -376,7 +394,7 @@ t5SmallFromPretrained filePath = runReaderT $ do
     lookup s stateDict = do
       debug <- ask
       if debug
-        then lift . putStrLn $ "loading `" <> s <> "`."
+        then lift . putStrLn $ "loading `" <> s <> "`..."
         else pure ()
       lift
         ( maybe
@@ -488,20 +506,36 @@ t5SmallFromPretrained filePath = runReaderT $ do
 -- forwardT5Small model input decoderInput attentionMask decoderAttentionMask crossAttentionMask =
 --   forward model (input, decoderInput, attentionMask, decoderAttentionMask, crossAttentionMask)
 
--- testForwardT5Small :: IO ()
--- testForwardT5Small =
---   let input = ones @'WithoutGradient @( 'Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 3), T5SmallInputEmbedDim])
---       decoderInput = ones @'WithoutGradient @( 'Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 2), T5SmallDecoderInputEmbedDim])
---       attentionMask = t5SmallAttentionMask @('Device 'CPU) @('DataType 'Float) @3
---       decoderAttentionMask = t5SmallDecoderAttentionMask @('Device 'CPU) @('DataType 'Float) @2
---       crossAttentionMask = t5SmallCrossAttentionMask @('Device 'CPU) @('DataType 'Float) @3 @2
---    in do
---      model <- t5SmallFromPretrained "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-small.pt" False
---      g <- mkGenerator @('Device CPU) 0
---      let (output, _) = forward model (input, decoderInput, attentionMask, decoderAttentionMask, crossAttentionMask) g
---      case output of
---        UnsafeTensor t -> print . Torch.Tensor.Unsafe $ t
---      pure ()
+testForwardT5Small :: IO ()
+testForwardT5Small =
+  let input = ones @ 'WithoutGradient @( 'Layout 'Dense) @( 'Device 'CPU) @( 'DataType 'Float) @( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 3), T5SmallInputEmbedDim])
+      decoderInput = ones @ 'WithoutGradient @( 'Layout 'Dense) @( 'Device 'CPU) @( 'DataType 'Float) @( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 2), T5SmallDecoderInputEmbedDim])
+      attentionMask = t5SmallAttentionMask @( 'Device 'CPU) @( 'DataType 'Float) @3
+      decoderAttentionMask = t5SmallDecoderAttentionMask @( 'Device 'CPU) @( 'DataType 'Float) @2
+      crossAttentionMask = t5SmallCrossAttentionMask @( 'Device 'CPU) @( 'DataType 'Float) @3 @2
+   in do
+        relPos :: Tensor 'WithoutGradient ( 'Layout 'Dense) ( 'Device 'CPU) ( 'DataType 'Int64) ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 3), 'Dim ( 'Name "*") ( 'Size 3)]) <-
+          case Torch.Tensor.asTensor [[[0 :: Int, 17, 18], [1, 0, 17], [2, 1, 0]]] of
+            Torch.Tensor.Unsafe t ->
+              pure (UnsafeTensor t)
+                >>= checkedLayout
+                >>= checkedDevice
+                >>= checkedDataType
+                >>= checkedShape
+        decoderRelPos :: Tensor 'WithoutGradient ( 'Layout 'Dense) ( 'Device 'CPU) ( 'DataType 'Int64) ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 2), 'Dim ( 'Name "*") ( 'Size 2)]) <-
+          case Torch.Tensor.asTensor [[[0 :: Int, 0], [1, 0]]] of
+            Torch.Tensor.Unsafe t ->
+              pure (UnsafeTensor t)
+                >>= checkedLayout
+                >>= checkedDevice
+                >>= checkedDataType
+                >>= checkedShape
+        model <- t5SmallFromPretrained "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-small.pt" False
+        g <- mkGenerator @( 'Device CPU) 0
+        let (output, _) = forward model (input, decoderInput, relPos, decoderRelPos, attentionMask, decoderAttentionMask, crossAttentionMask) g
+        case output of
+          UnsafeTensor t -> print . Torch.Tensor.Unsafe $ t
+        pure ()
 
 -- forwardT5Small' ::
 --   forall device dataType .

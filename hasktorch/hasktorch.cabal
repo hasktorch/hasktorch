@@ -31,6 +31,7 @@ library
                     , Torch.GraduallyTyped.Tensor.Type
                     , Torch.GraduallyTyped.Tensor.Creation
                     , Torch.GraduallyTyped.Tensor.IndexingSlicingJoining
+                    , Torch.GraduallyTyped.Tensor.Other
                     , Torch.GraduallyTyped.Tensor.MathOperations
                     , Torch.GraduallyTyped.Tensor.MathOperations.Pointwise
                     , Torch.GraduallyTyped.Tensor.MathOperations.Reduction
@@ -67,12 +68,14 @@ library
                     , Torch.GraduallyTyped.NN.Transformer.T5
                     , Torch.GraduallyTyped.NN.Dropout
                     , Torch.GraduallyTyped.NN.Activation
+                    , Torch.GraduallyTyped.NN.Normalization
+                    , Torch.GraduallyTyped.NN.Sparse
                     , Torch.GraduallyTyped.NN.Functional
                     , Torch.GraduallyTyped.NN.Functional.Activation
                     , Torch.GraduallyTyped.NN.Functional.Linear
                     , Torch.GraduallyTyped.NN.Functional.NonLinearActivation
                     , Torch.GraduallyTyped.NN.Functional.Normalization
-                    , Torch.GraduallyTyped.NN.Normalization
+                    , Torch.GraduallyTyped.NN.Functional.Sparse
                     , Torch.GraduallyTyped.Internal.TensorOptions
                     , Torch.GraduallyTyped.Internal.Void
                     , Torch

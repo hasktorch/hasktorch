@@ -108,7 +108,7 @@ type LinearWeightDimsErrorMessage (weightDims :: [Dim (Name Symbol) (Size Nat)])
 --           '[ 'Dim ('Name "batch") ('Size 20),
 --              'Dim ('Name "output") ('Size 10)])
 linearWithBias ::
-  forall requiresGradient requiresGradient' requiresGradient'' layout layout' layout'' device device' device'' dataType dataType' dataType'' shape shape' shape''.
+  forall requiresGradient layout device dataType shape requiresGradient' layout' device' dataType' shape' requiresGradient'' layout'' device'' dataType'' shape''.
   -- | weight
   Tensor requiresGradient layout device dataType shape ->
   -- | bias
@@ -137,7 +137,7 @@ type family LinearWithoutBiasDimsF (weightDims :: [Dim (Name Symbol) (Size Nat)]
   LinearWithoutBiasDimsF '[outputDim, inputDim] (inputDim' ': reversedInputDims) = Seq (inputDim <+> inputDim') (outputDim ': reversedInputDims)
 
 linearWithoutBias ::
-  forall requiresGradient requiresGradient' layout layout' device device' dataType dataType' shape shape'.
+  forall requiresGradient layout device dataType shape requiresGradient' layout' device' dataType' shape'.
   -- | weight
   Tensor requiresGradient layout device dataType shape ->
   -- | input
