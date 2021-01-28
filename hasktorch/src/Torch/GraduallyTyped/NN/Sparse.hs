@@ -100,53 +100,40 @@ instance
         pure $ Embedding weight
 
 instance
-  KnownLayout layout =>
+  ( KnownLayout layout,
+    output
+      ~ Tensor
+          'WithGradient
+          (layout <+> layout')
+          (device <+> device')
+          dataType
+          (EmbeddingF ( 'Shape '[embedNumDim, embedDim]) shape')
+  ) =>
   HasForward
     (Embedding layout device dataType embedNumDim embedDim 'Nothing)
     (Tensor requiresGradient' layout' device' ( 'DataType 'Int64) shape')
     generator
+    output
+    generator
   where
-  type
-    ForwardOutput
-      (Embedding layout device dataType embedNumDim embedDim 'Nothing)
-      (Tensor requiresGradient' layout' device' ( 'DataType 'Int64) shape')
-      generator =
-      Tensor
-        'WithGradient
-        (layout <+> layout')
-        (device <+> device')
-        dataType
-        (EmbeddingF ( 'Shape '[embedNumDim, embedDim]) shape')
-  type
-    ForwardGeneratorOutput
-      (Embedding layout device dataType embedNumDim embedDim 'Nothing)
-      (Tensor requiresGradient' layout' device' ( 'DataType 'Int64) shape')
-      generator =
-      generator
   forward (Embedding weight) input g = (embedding Nothing False weight input, g)
 
 instance
-  (KnownLayout layout, KnownNat paddingIdx) =>
+  ( KnownLayout layout,
+    KnownNat paddingIdx,
+    output
+      ~ Tensor
+          'WithGradient
+          (layout <+> layout')
+          (device <+> device')
+          dataType
+          (EmbeddingF ( 'Shape '[embedNumDim, embedDim]) shape')
+  ) =>
   HasForward
     (Embedding layout device dataType embedNumDim embedDim ( 'Just paddingIdx))
     (Tensor requiresGradient' layout' device' ( 'DataType 'Int64) shape')
     generator
+    output
+    generator
   where
-  type
-    ForwardOutput
-      (Embedding layout device dataType embedNumDim embedDim ( 'Just paddingIdx))
-      (Tensor requiresGradient' layout' device' ( 'DataType 'Int64) shape')
-      generator =
-      Tensor
-        'WithGradient
-        (layout <+> layout')
-        (device <+> device')
-        dataType
-        (EmbeddingF ( 'Shape '[embedNumDim, embedDim]) shape')
-  type
-    ForwardGeneratorOutput
-      (Embedding layout device dataType embedNumDim embedDim ( 'Just paddingIdx))
-      (Tensor requiresGradient' layout' device' ( 'DataType 'Int64) shape')
-      generator =
-      generator
   forward Embedding {..} input g = (embedding (Just . fromIntegral . natVal $ Proxy @paddingIdx) False embeddingWeight input, g)

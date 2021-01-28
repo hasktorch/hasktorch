@@ -1,16 +1,16 @@
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-
 
 module Torch.GraduallyTyped.NN.Class where
 
@@ -23,11 +23,17 @@ module Torch.GraduallyTyped.NN.Class where
 
 import Data.Kind (Type)
 
-
-class HasForward model input generator where
-  type ForwardOutput model input generator :: Type
-  type ForwardGeneratorOutput model input generator :: Type
-  forward :: model -> input -> generator -> (ForwardOutput model input generator, ForwardGeneratorOutput model input generator)
+class
+  HasForward
+    model
+    input
+    generator
+    output
+    generatorOutput
+    | model input generator -> output,
+      model input generator -> generatorOutput
+  where
+  forward :: model -> input -> generator -> (output, generatorOutput)
 
 class HasInitialize model where
   type InitializeF model :: Type
@@ -216,4 +222,3 @@ class HasInitialize model where
 
 -- test' :: Generator 'UncheckedDevice -> (Maybe (Either OutputA OutputB), Generator 'UncheckedDevice)
 -- test' = forward @(Either ModelA ModelB) @(Either InputA InputB) (Left ModelA) (Right InputB)
-

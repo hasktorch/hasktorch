@@ -213,39 +213,24 @@ instance
       ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
         Tensor decoderAttentionBiasRequiresGradient decoderAttentionBiasLayout decoderAttentionBiasDevice decoderAttentionBiasDataType decoderAttentionBiasShape
       )
-      (Generator generatorDevice),
-    selfAttentionOutputShape ~ SelfAttentionOutputShape headDim headEmbedDim embedDim queryEmbedDim queryShape decoderAttentionBiasShape,
+      (Generator generatorDevice)
+      selfAttentionOutput
+      selfAttentionGeneratorOutput,
     HasForward
       (CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
-      ( Tensor
-          'WithGradient
-          (queryLayout <+> 'Layout 'Dense <+> decoderAttentionBiasLayout)
-          (queryDevice <+> device <+> decoderAttentionBiasDevice <+> generatorDevice)
-          (queryDataType <+> dataType <+> decoderAttentionBiasDataType)
-          selfAttentionOutputShape,
+      ( selfAttentionOutput,
         Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
         Tensor crossAttentionBiasRequiresGradient crossAttentionBiasLayout crossAttentionBiasDevice crossAttentionBiasDataType crossAttentionBiasShape
       )
-      (Generator (device <+> queryDevice <+> decoderAttentionBiasDevice <+> generatorDevice)),
+      selfAttentionGeneratorOutput
+      crossAttentionOutput
+      crossAttentionGeneratorOutput,
     HasForward
       (TransformerFeedForwardNetwork device dataType queryEmbedDim ffnDim dropoutP)
-      ( Tensor
-          'WithGradient
-          (queryLayout <+> 'Layout 'Dense <+> decoderAttentionBiasLayout <+> keyLayout <+> crossAttentionBiasLayout)
-          (queryDevice <+> device <+> decoderAttentionBiasDevice <+> generatorDevice <+> keyDevice <+> crossAttentionBiasDevice)
-          (queryDataType <+> dataType <+> decoderAttentionBiasDataType <+> keyDataType <+> crossAttentionBiasDataType)
-          ( CrossAttentionOutputShape
-              headDim
-              headEmbedDim
-              embedDim
-              queryEmbedDim
-              keyEmbedDim
-              selfAttentionOutputShape
-              keyShape
-              crossAttentionBiasShape
-          )
-      )
-      (Generator (device <+> queryDevice <+> decoderAttentionBiasDevice <+> generatorDevice <+> keyDevice <+> crossAttentionBiasDevice))
+      crossAttentionOutput
+      crossAttentionGeneratorOutput
+      output
+      generatorOutput
   ) =>
   HasForward
     (TransformerDecoderBlock device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
@@ -255,52 +240,9 @@ instance
       Tensor crossAttentionBiasRequiresGradient crossAttentionBiasLayout crossAttentionBiasDevice crossAttentionBiasDataType crossAttentionBiasShape
     )
     (Generator generatorDevice)
+    output
+    generatorOutput
   where
-  type
-    ForwardOutput
-      (TransformerDecoderBlock device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
-      ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
-        Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
-        Tensor decoderAttentionBiasRequiresGradient decoderAttentionBiasLayout decoderAttentionBiasDevice decoderAttentionBiasDataType decoderAttentionBiasShape,
-        Tensor crossAttentionBiasRequiresGradient crossAttentionBiasLayout crossAttentionBiasDevice crossAttentionBiasDataType crossAttentionBiasShape
-      )
-      (Generator generatorDevice) =
-      Tensor
-        'WithGradient
-        (queryLayout <+> 'Layout 'Dense <+> decoderAttentionBiasLayout <+> keyLayout <+> crossAttentionBiasLayout)
-        (queryDevice <+> device <+> decoderAttentionBiasDevice <+> generatorDevice <+> keyDevice <+> crossAttentionBiasDevice)
-        (queryDataType <+> dataType <+> decoderAttentionBiasDataType <+> keyDataType <+> crossAttentionBiasDataType)
-        ( FeedForwardNetworkOutputShape
-            queryEmbedDim
-            ffnDim
-            ( CrossAttentionOutputShape
-                headDim
-                headEmbedDim
-                embedDim
-                queryEmbedDim
-                keyEmbedDim
-                ( SelfAttentionOutputShape
-                    headDim
-                    headEmbedDim
-                    embedDim
-                    queryEmbedDim
-                    queryShape
-                    decoderAttentionBiasShape
-                )
-                keyShape
-                crossAttentionBiasShape
-            )
-        )
-  type
-    ForwardGeneratorOutput
-      (TransformerDecoderBlock device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
-      ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
-        Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
-        Tensor decoderAttentionBiasRequiresGradient decoderAttentionBiasLayout decoderAttentionBiasDevice decoderAttentionBiasDataType decoderAttentionBiasShape,
-        Tensor crossAttentionBiasRequiresGradient crossAttentionBiasLayout crossAttentionBiasDevice crossAttentionBiasDataType crossAttentionBiasShape
-      )
-      (Generator generatorDevice) =
-      Generator (device <+> queryDevice <+> decoderAttentionBiasDevice <+> generatorDevice <+> keyDevice <+> crossAttentionBiasDevice)
   forward TransformerDecoderBlock {..} (query, key, decoderAttentionBias, crossAttentionBias) =
     runIxState $
       ireturn (query, decoderAttentionBias)

@@ -126,28 +126,21 @@ instance
         pure $ LinearWithBias weight ((bias `mulScalar` (bound * 2)) `subScalar` bound)
 
 instance
+  ( output
+      ~ Tensor
+          'WithGradient
+          ( 'Layout 'Dense <+> layout')
+          (device <+> device')
+          (dataType <+> dataType')
+          (LinearWithBiasF ( 'Shape '[outputFeatures, inputFeatures]) ( 'Shape '[outputFeatures]) shape')
+  ) =>
   HasForward
     (Linear 'WithBias device dataType inputFeatures outputFeatures)
     (Tensor requiresGradient' layout' device' dataType' shape')
     generator
+    output
+    generator
   where
-  type
-    ForwardOutput
-      (Linear 'WithBias device dataType inputFeatures outputFeatures)
-      (Tensor requiresGradient' layout' device' dataType' shape')
-      generator =
-      Tensor
-        'WithGradient
-        ( 'Layout 'Dense <+> layout')
-        (device <+> device')
-        (dataType <+> dataType')
-        (LinearWithBiasF ( 'Shape '[outputFeatures, inputFeatures]) ( 'Shape '[outputFeatures]) shape')
-  type
-    ForwardGeneratorOutput
-      (Linear 'WithBias device dataType inputFeatures outputFeatures)
-      (Tensor requiresGradient' layout' device' dataType' shape')
-      generator =
-      generator
   forward LinearWithBias {..} input g = (linearWithBias linearWithBiasWeight linearBias input, g)
 
 type HasInitializeLinearWithoutBiasC device dataType inputDim outputDim =
@@ -203,26 +196,19 @@ instance
         pure $ LinearWithoutBias weight
 
 instance
+  ( output
+      ~ Tensor
+          'WithGradient
+          ( 'Layout 'Dense <+> layout')
+          (device <+> device')
+          (dataType <+> dataType')
+          (LinearWithoutBiasF ( 'Shape '[outputFeatures, inputFeatures]) shape')
+  ) =>
   HasForward
     (Linear 'WithoutBias device dataType inputFeatures outputFeatures)
     (Tensor requiresGradient' layout' device' dataType' shape')
     generator
+    output
+    generator
   where
-  type
-    ForwardOutput
-      (Linear 'WithoutBias device dataType inputFeatures outputFeatures)
-      (Tensor requiresGradient' layout' device' dataType' shape')
-      generator =
-      Tensor
-        'WithGradient
-        ( 'Layout 'Dense <+> layout')
-        (device <+> device')
-        (dataType <+> dataType')
-        (LinearWithoutBiasF ( 'Shape '[outputFeatures, inputFeatures]) shape')
-  type
-    ForwardGeneratorOutput
-      (Linear 'WithoutBias device dataType inputFeatures outputFeatures)
-      (Tensor requiresGradient' layout' device' dataType' shape')
-      generator =
-      generator
   forward (LinearWithoutBias linearWeight) input g = (linearWithoutBias linearWeight input, g)

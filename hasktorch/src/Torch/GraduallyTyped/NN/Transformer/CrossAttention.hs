@@ -424,7 +424,15 @@ instance
               ( 'Shape '[normedBatchDim, normedQuerySeqDim, embedDim])
           )
       ),
-    Scalar dropoutP
+    Scalar dropoutP,
+    output
+      ~ Tensor
+          'WithGradient
+          (queryLayout <+> 'Layout 'Dense <+> keyLayout <+> attentionBiasLayout)
+          (queryDevice <+> device <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)
+          (queryDataType <+> dataType <+> keyDataType <+> attentionBiasDataType)
+          (CrossAttentionOutputShape headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim queryShape keyShape attentionBiasShape),
+    generatorOutput ~ Generator (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)
   ) =>
   HasForward
     (CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
@@ -433,30 +441,9 @@ instance
       Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
     )
     (Generator generatorDevice)
+    output
+    generatorOutput
   where
-  type
-    ForwardOutput
-      (CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
-      ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
-        Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
-        Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
-      )
-      (Generator generatorDevice) =
-      Tensor
-        'WithGradient
-        (queryLayout <+> 'Layout 'Dense <+> keyLayout <+> attentionBiasLayout)
-        (queryDevice <+> device <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)
-        (queryDataType <+> dataType <+> keyDataType <+> attentionBiasDataType)
-        (CrossAttentionOutputShape headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim queryShape keyShape attentionBiasShape)
-  type
-    ForwardGeneratorOutput
-      (CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
-      ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
-        Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
-        Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
-      )
-      (Generator generatorDevice) =
-      Generator (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)
   forward CrossAttention {..} (query, key, attentionBias) =
     runIxState $
       ireturn query

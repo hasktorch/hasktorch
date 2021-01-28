@@ -3,6 +3,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -264,106 +265,96 @@ class
     (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
     (ffnDim :: Dim (Name Symbol) (Size Nat))
     (dropoutP :: Type)
-    (queryRequiresGradient :: RequiresGradient)
-    (queryLayout :: Layout LayoutType)
-    (queryDevice :: Device (DeviceType Nat))
-    (queryDataType :: DataType DType)
-    (queryShape :: Shape [Dim (Name Symbol) (Size Nat)])
-    (attentionMaskRequiresGradient :: RequiresGradient)
-    (attentionMaskLayout :: Layout LayoutType)
-    (attentionMaskDevice :: Device (DeviceType Nat))
-    (attentionMaskDataType :: DataType DType)
-    (attentionMaskShape :: Shape [Dim (Name Symbol) (Size Nat)])
-    (generatorDevice :: Device (DeviceType Nat))
+    (query :: Type)
+    (attentionMask :: Type)
+    (generator :: Type)
+    (output :: Type)
+    (generatorOutput :: Type)
+    | isCons isNotFirstLayer numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP query attentionMask generator -> output,
+      isCons isNotFirstLayer numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP query attentionMask generator -> generatorOutput
   where
-  type HasForwardTransformerStackOutput isCons isNotFirstLayer numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim queryRequiresGradient queryLayout queryDevice queryDataType queryShape attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape generatorDevice :: Type
-  type HasForwardTransformerStackGeneratorOutput isCons isNotFirstLayer numLayers device queryDevice attentionMaskDevice generatorDevice :: Type
   forwardTransformerStack ::
     Maybe
       ( TransformerBlock device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP ->
-        ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
-          Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
-        ) ->
-        Generator generatorDevice ->
-        ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
-          Generator generatorDevice
-        )
+        (query, attentionMask) ->
+        generator ->
+        (query, generator)
       ) ->
     TransformerStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP ->
-    ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
-      Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
-    ) ->
-    Generator generatorDevice ->
-    ( HasForwardTransformerStackOutput isCons isNotFirstLayer numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim queryRequiresGradient queryLayout queryDevice queryDataType queryShape attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape generatorDevice,
-      HasForwardTransformerStackGeneratorOutput isCons isNotFirstLayer numLayers device queryDevice attentionMaskDevice generatorDevice
-    )
+    (query, attentionMask) ->
+    generator ->
+    (output, generatorOutput)
 
-instance HasForwardTransformerStack 'False isNotFirstLayer 0 device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP queryRequiresGradient queryLayout queryDevice queryDataType queryShape attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape generatorDevice where
-  type HasForwardTransformerStackOutput 'False isNotFirstLayer 0 device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim queryRequiresGradient queryLayout queryDevice queryDataType queryShape attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape generatorDevice = Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape
-  type HasForwardTransformerStackGeneratorOutput 'False isNotFirstLayer 0 device queryDevice attentionMaskDevice generatorDevice = Generator generatorDevice
+instance
+  HasForwardTransformerStack
+    'False
+    isNotFirstLayer
+    0
+    device
+    dataType
+    headDim
+    headEmbedDim
+    embedDim
+    queryEmbedDim
+    ffnDim
+    dropoutP
+    query
+    attentionMask
+    generator
+    query
+    generator
+  where
   forwardTransformerStack _ TransformerStackNil (query, _attentionMask) g = (query, g)
 
 instance
   ( HasForward
       (TransformerBlock device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
-      ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
-        Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
-      )
-      (Generator generatorDevice),
-    outputRequiresGradient ~ 'WithGradient,
-    outputLayout ~ (queryLayout <+> 'Layout 'Dense <+> attentionMaskLayout),
-    outputDevice ~ (queryDevice <+> device <+> attentionMaskDevice <+> generatorDevice),
-    outputDataType ~ (queryDataType <+> dataType <+> attentionMaskDataType),
-    outputShape
-      ~ FeedForwardNetworkOutputShape
-          queryEmbedDim
-          ffnDim
-          (SelfAttentionOutputShape headDim headEmbedDim embedDim queryEmbedDim queryShape attentionMaskShape),
-    outputGeneratorDevice ~ (device <+> queryDevice <+> attentionMaskDevice <+> generatorDevice),
-    HasForwardTransformerStack (1 <=? numLayers - 1) 'True (numLayers - 1) device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP outputRequiresGradient outputLayout outputDevice outputDataType outputShape attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape outputGeneratorDevice,
+      (query, attentionMask)
+      generator
+      blockOutput
+      blockGeneratorOutput,
     HasForward
       (TransformerBlock device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
-      ( Tensor outputRequiresGradient outputLayout outputDevice outputDataType outputShape,
-        Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
-      )
-      (Generator outputGeneratorDevice),
-    outputShape
-      ~ FeedForwardNetworkOutputShape
-          queryEmbedDim
-          ffnDim
-          (SelfAttentionOutputShape headDim headEmbedDim embedDim queryEmbedDim outputShape attentionMaskShape)
+      (blockOutput, attentionMask)
+      blockGeneratorOutput
+      blockOutput
+      blockGeneratorOutput,
+    HasForwardTransformerStack
+      (1 <=? numLayers - 1)
+      'True
+      (numLayers - 1)
+      device
+      dataType
+      headDim
+      headEmbedDim
+      embedDim
+      queryEmbedDim
+      ffnDim
+      dropoutP
+      blockOutput
+      attentionMask
+      blockGeneratorOutput
+      output
+      generatorOutput
   ) =>
-  HasForwardTransformerStack 'True 'False numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP queryRequiresGradient queryLayout queryDevice queryDataType queryShape attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape generatorDevice
+  HasForwardTransformerStack
+    'True
+    'False
+    numLayers
+    device
+    dataType
+    headDim
+    headEmbedDim
+    embedDim
+    queryEmbedDim
+    ffnDim
+    dropoutP
+    query
+    attentionMask
+    generator
+    output
+    generatorOutput
   where
-  type
-    HasForwardTransformerStackOutput 'True 'False numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim queryRequiresGradient queryLayout queryDevice queryDataType queryShape attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape generatorDevice =
-      HasForwardTransformerStackOutput
-        (1 <=? numLayers - 1)
-        'True
-        (numLayers - 1)
-        device
-        dataType
-        headDim
-        headEmbedDim
-        embedDim
-        queryEmbedDim
-        ffnDim
-        'WithGradient
-        (queryLayout <+> 'Layout 'Dense <+> attentionMaskLayout)
-        (queryDevice <+> device <+> attentionMaskDevice <+> generatorDevice)
-        (queryDataType <+> dataType <+> attentionMaskDataType)
-        ( FeedForwardNetworkOutputShape
-            queryEmbedDim
-            ffnDim
-            (SelfAttentionOutputShape headDim headEmbedDim embedDim queryEmbedDim queryShape attentionMaskShape)
-        )
-        attentionMaskRequiresGradient
-        attentionMaskLayout
-        attentionMaskDevice
-        attentionMaskDataType
-        attentionMaskShape
-        (device <+> queryDevice <+> attentionMaskDevice <+> generatorDevice)
-  type HasForwardTransformerStackGeneratorOutput 'True 'False numLayers device queryDevice attentionMaskDevice generatorDevice = HasForwardTransformerStackGeneratorOutput (1 <=? numLayers - 1) 'True (numLayers - 1) device (queryDevice <+> device <+> attentionMaskDevice <+> generatorDevice) attentionMaskDevice (device <+> queryDevice <+> attentionMaskDevice <+> generatorDevice)
   forwardTransformerStack _ (TransformerStackCons block stack) (query, attentionMask) =
     runIxState $
       ireturn (query, attentionMask)
@@ -374,43 +365,47 @@ instance
                      @(1 <=? numLayers - 1)
                      @ 'True
                      @(numLayers - 1)
-                     @device
-                     @dataType
-                     @headDim
-                     @headEmbedDim
-                     @embedDim
-                     @queryEmbedDim
-                     @ffnDim
-                     @dropoutP
-                     @outputRequiresGradient
-                     @outputLayout
-                     @outputDevice
-                     @outputDataType
-                     @outputShape
-                     @attentionMaskRequiresGradient
-                     @attentionMaskLayout
-                     @attentionMaskDevice
-                     @attentionMaskDataType
-                     @attentionMaskShape
-                     @outputGeneratorDevice
                      (Just forward)
                      stack
                      (query', attentionMask)
              )
 
 instance
-  ( HasForwardTransformerStack (1 <=? numLayers - 1) 'True (numLayers - 1) device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP queryRequiresGradient queryLayout queryDevice queryDataType queryShape attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape generatorDevice,
-    HasForwardTransformerStackOutput (1 <=? numLayers - 1) 'True (numLayers - 1) device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim queryRequiresGradient queryLayout queryDevice queryDataType queryShape attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape generatorDevice ~ Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
-    HasForwardTransformerStackGeneratorOutput (1 <=? numLayers - 1) 'True (numLayers - 1) device queryDevice attentionMaskDevice generatorDevice ~ Generator generatorDevice
-  ) =>
-  HasForwardTransformerStack 'True 'True numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP queryRequiresGradient queryLayout queryDevice queryDataType queryShape attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape generatorDevice
+  HasForwardTransformerStack
+    (1 <=? numLayers - 1)
+    'True
+    (numLayers - 1)
+    device
+    dataType
+    headDim
+    headEmbedDim
+    embedDim
+    queryEmbedDim
+    ffnDim
+    dropoutP
+    query
+    attentionMask
+    generator
+    query
+    generator =>
+  HasForwardTransformerStack
+    'True
+    'True
+    numLayers
+    device
+    dataType
+    headDim
+    headEmbedDim
+    embedDim
+    queryEmbedDim
+    ffnDim
+    dropoutP
+    query
+    attentionMask
+    generator
+    query
+    generator
   where
-  type
-    HasForwardTransformerStackOutput 'True 'True numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim queryRequiresGradient queryLayout queryDevice queryDataType queryShape attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape generatorDevice =
-      Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape
-  type
-    HasForwardTransformerStackGeneratorOutput 'True 'True numLayers device queryDevice attentionMaskDevice generatorDevice =
-      Generator generatorDevice
   forwardTransformerStack (Just f) (TransformerStackCons block stack) (query, attentionMask) =
     runIxState $
       ireturn (query, attentionMask)
@@ -421,34 +416,34 @@ instance
                      @(1 <=? numLayers - 1)
                      @ 'True
                      @(numLayers - 1)
-                     @device
-                     @dataType
-                     @headDim
-                     @headEmbedDim
-                     @embedDim
-                     @queryEmbedDim
-                     @ffnDim
-                     @dropoutP
-                     @queryRequiresGradient
-                     @queryLayout
-                     @queryDevice
-                     @queryDataType
-                     @queryShape
-                     @attentionMaskRequiresGradient
-                     @attentionMaskLayout
-                     @attentionMaskDevice
-                     @attentionMaskDataType
-                     @attentionMaskShape
-                     @generatorDevice
                      (Just f)
                      stack
                      (query', attentionMask)
              )
 
 instance
-  HasForwardTransformerStack (1 <=? numLayers) 'False numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP queryRequiresGradient queryLayout queryDevice queryDataType queryShape attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape generatorDevice =>
-  HasForward (TransformerStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP) (Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape, Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape) (Generator generatorDevice)
+  HasForwardTransformerStack
+    (1 <=? numLayers)
+    'False
+    numLayers
+    device
+    dataType
+    headDim
+    headEmbedDim
+    embedDim
+    queryEmbedDim
+    ffnDim
+    dropoutP
+    query
+    attentionMask
+    generator
+    output
+    generatorOutput =>
+  HasForward
+    (TransformerStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
+    (query, attentionMask)
+    generator
+    output
+    generatorOutput
   where
-  type ForwardOutput (TransformerStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP) (Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape, Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape) (Generator generatorDevice) = HasForwardTransformerStackOutput (1 <=? numLayers) 'False numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim queryRequiresGradient queryLayout queryDevice queryDataType queryShape attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape generatorDevice
-  type ForwardGeneratorOutput (TransformerStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP) (Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape, Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape) (Generator generatorDevice) = HasForwardTransformerStackGeneratorOutput (1 <=? numLayers) 'False numLayers device queryDevice attentionMaskDevice generatorDevice
   forward = forwardTransformerStack @(1 <=? numLayers) @ 'False Nothing

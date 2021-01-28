@@ -150,57 +150,42 @@ instance
          in LayerNormWithoutBias weight eps
 
 instance
-  KnownShape normalizedShape =>
+  ( KnownShape normalizedShape,
+    output
+      ~ Tensor
+          'WithGradient
+          ( 'Layout 'Dense <+> layout')
+          (device <+> device')
+          (dataType <+> dataType')
+          (LayerNormWithBiasF normalizedShape normalizedShape shape')
+  ) =>
   HasForward
     (LayerNorm 'WithBias device dataType normalizedShape)
     (Tensor requiresGradient' layout' device' dataType' shape')
     generator
+    output
+    generator
   where
-  type
-    ForwardOutput
-      (LayerNorm 'WithBias device dataType normalizedShape)
-      (Tensor requiresGradient' layout' device' dataType' shape')
-      generator =
-      Tensor
-        'WithGradient
-        ( 'Layout 'Dense <+> layout')
-        (device <+> device')
-        (dataType <+> dataType')
-        (LayerNormWithBiasF normalizedShape normalizedShape shape')
-  type
-    ForwardGeneratorOutput
-      (LayerNorm 'WithBias device dataType normalizedShape)
-      (Tensor requiresGradient' layout' device' dataType' shape')
-      generator =
-      generator
   forward LayerNormWithBias {..} input g = (layerNormWithBias layerNormWithBiasWeight layerNormBias layerNormWithBiasEps input, g)
 
 instance
   ( KnownShape normalizedShape,
-    KnownShape shape'
+    KnownShape shape',
+    output
+      ~ Tensor
+          'WithGradient
+          ( 'Layout 'Dense <+> layout')
+          (device <+> device')
+          (dataType <+> dataType')
+          (LayerNormWithoutBiasF normalizedShape shape')
   ) =>
   HasForward
     (LayerNorm 'WithoutBias device dataType normalizedShape)
     (Tensor requiresGradient' layout' device' dataType' shape')
     generator
+    output
+    generator
   where
-  type
-    ForwardOutput
-      (LayerNorm 'WithoutBias device dataType normalizedShape)
-      (Tensor requiresGradient' layout' device' dataType' shape')
-      generator =
-      Tensor
-        'WithGradient
-        ( 'Layout 'Dense <+> layout')
-        (device <+> device')
-        (dataType <+> dataType')
-        (LayerNormWithoutBiasF normalizedShape shape')
-  type
-    ForwardGeneratorOutput
-      (LayerNorm 'WithoutBias device dataType normalizedShape)
-      (Tensor requiresGradient' layout' device' dataType' shape')
-      generator =
-      generator
   forward LayerNormWithoutBias {..} input g = (layerNormWithoutBias layerNormWithoutBiasWeight layerNormWithoutBiasEps input, g)
 
 type TestLayerNormDevice :: Device (DeviceType Nat)

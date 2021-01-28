@@ -46,7 +46,7 @@ import Torch.GraduallyTyped.NN.Functional.Sparse (EmbeddingF)
 import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearWithoutBiasC, Linear)
 import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormWithoutBiasC, LayerNorm)
 import Torch.GraduallyTyped.NN.Sparse (Embedding, HasInitializeEmbeddingC)
-import Torch.GraduallyTyped.NN.Transformer.DecoderStack (HasForwardTransformerDecoderStack, HasForwardTransformerDecoderStackGeneratorOutput, HasForwardTransformerDecoderStackOutput, HasInitializeTransformerDecoderStack, HasInitializeTransformerDecoderStackC, TransformerDecoderStack)
+import Torch.GraduallyTyped.NN.Transformer.DecoderStack (HasForwardTransformerDecoderStack, HasInitializeTransformerDecoderStack, HasInitializeTransformerDecoderStackC, TransformerDecoderStack)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
@@ -227,417 +227,83 @@ instance
               headDim
         pure $ TransformerDecoder decoderStack layerNorm dropout relPosEnc
 
-type HasForwardTransformerDecoderC
-  (numLayers :: Nat)
-  (device :: Device (DeviceType Nat))
-  (dataType :: DataType DType)
-  (headDim :: Dim (Name Symbol) (Size Nat))
-  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (embedDim :: Dim (Name Symbol) (Size Nat))
-  (decoderInputEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (encoderOutputEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (ffnDim :: Dim (Name Symbol) (Size Nat))
-  (dropoutP :: Type)
-  (decoderInputRequiresGradient :: RequiresGradient)
-  (decoderInputLayout :: Layout LayoutType)
-  (decoderInputDevice :: Device (DeviceType Nat))
-  (decoderInputDataType :: DataType DType)
-  (decoderInputShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (encoderOutputRequiresGradient :: RequiresGradient)
-  (encoderOutputLayout :: Layout LayoutType)
-  (encoderOutputDevice :: Device (DeviceType Nat))
-  (encoderOutputDataType :: DataType DType)
-  (encoderOutputShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (decoderAttentionBiasRequiresGradient :: RequiresGradient)
-  (decoderAttentionBiasLayout :: Layout LayoutType)
-  (decoderAttentionBiasDevice :: Device (DeviceType Nat))
-  (decoderAttentionBiasDataType :: DataType DType)
-  (decoderAttentionBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (crossAttentionBiasRequiresGradient :: RequiresGradient)
-  (crossAttentionBiasLayout :: Layout LayoutType)
-  (crossAttentionBiasDevice :: Device (DeviceType Nat))
-  (crossAttentionBiasDataType :: DataType DType)
-  (crossAttentionBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (generatorDevice :: Device (DeviceType Nat)) =
-  ( Scalar dropoutP,
-    HasForwardTransformerDecoderStack (1 <=? numLayers) 'False numLayers device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP decoderInputRequiresGradient decoderInputLayout (decoderInputDevice <+> generatorDevice) decoderInputDataType decoderInputShape encoderOutputRequiresGradient encoderOutputLayout encoderOutputDevice encoderOutputDataType encoderOutputShape decoderAttentionBiasRequiresGradient decoderAttentionBiasLayout decoderAttentionBiasDevice decoderAttentionBiasDataType decoderAttentionBiasShape crossAttentionBiasRequiresGradient crossAttentionBiasLayout crossAttentionBiasDevice crossAttentionBiasDataType crossAttentionBiasShape (decoderInputDevice <+> generatorDevice),
+instance
+  ( HasForward
+      (Dropout dropoutP)
+      decoderInput
+      generator
+      dropoutOutput
+      dropoutGeneratorOutput,
     HasForward
-      (LayerNorm 'WithoutBias device dataType ( 'Shape '[decoderInputEmbedDim]))
-      (HasForwardTransformerDecoderStackOutput (1 <=? numLayers) 'False numLayers device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim decoderInputRequiresGradient decoderInputLayout (decoderInputDevice <+> generatorDevice) decoderInputDataType decoderInputShape encoderOutputRequiresGradient encoderOutputLayout encoderOutputDevice encoderOutputDataType encoderOutputShape decoderAttentionBiasRequiresGradient decoderAttentionBiasLayout decoderAttentionBiasDevice decoderAttentionBiasDataType decoderAttentionBiasShape crossAttentionBiasRequiresGradient crossAttentionBiasLayout crossAttentionBiasDevice crossAttentionBiasDataType crossAttentionBiasShape (decoderInputDevice <+> generatorDevice))
-      (HasForwardTransformerDecoderStackGeneratorOutput (1 <=? numLayers) 'False numLayers device (decoderInputDevice <+> generatorDevice) encoderOutputDevice decoderAttentionBiasDevice crossAttentionBiasDevice (decoderInputDevice <+> generatorDevice)),
+      (TransformerDecoderStack numLayers device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP)
+      ( dropoutOutput,
+        encoderOutput,
+        Tensor
+          'WithGradient
+          ( 'Layout 'Dense <+> decoderRelPosLayout <+> decoderAttentionMaskLayout)
+          (device <+> decoderRelPosDevice <+> decoderAttentionMaskDevice)
+          (dataType <+> decoderAttentionMaskDataType)
+          ( BroadcastShapesF
+              ( TransposeF
+                  ( 'SelectDim ( 'ByIndex 1))
+                  ( 'SelectDim ( 'ByIndex 2))
+                  ( TransposeF
+                      ( 'SelectDim ( 'ByIndex 2))
+                      ( 'SelectDim ( 'ByIndex 3))
+                      ( EmbeddingF
+                          ( 'Shape '[relPosEncBucketDim, headDim])
+                          decoderRelPosShape
+                      )
+                  )
+              )
+              ( UnsqueezeF
+                  ( 'SelectDim ( 'ByIndex 1))
+                  decoderAttentionMaskShape
+              )
+          ),
+        Tensor
+          crossAttentionMaskRequiresGradient
+          crossAttentionMaskLayout
+          crossAttentionMaskDevice
+          crossAttentionMaskDataType
+          ( UnsqueezeF
+              ( 'SelectDim ( 'ByIndex 1))
+              crossAttentionMaskShape
+          )
+      )
+      dropoutGeneratorOutput
+      stackOutput
+      stackGeneratorOutput,
+    HasForward
+      ( LayerNorm
+          'WithoutBias
+          device
+          dataType
+          ( 'Shape '[decoderInputEmbedDim])
+      )
+      stackOutput
+      stackGeneratorOutput
+      layerNormOutput
+      layerNormGeneratorOutput,
     HasForward
       (Dropout dropoutP)
-      ( ForwardOutput
-          (LayerNorm 'WithoutBias device dataType ( 'Shape '[decoderInputEmbedDim]))
-          (HasForwardTransformerDecoderStackOutput (1 <=? numLayers) 'False numLayers device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim decoderInputRequiresGradient decoderInputLayout (decoderInputDevice <+> generatorDevice) decoderInputDataType decoderInputShape encoderOutputRequiresGradient encoderOutputLayout encoderOutputDevice encoderOutputDataType encoderOutputShape decoderAttentionBiasRequiresGradient decoderAttentionBiasLayout decoderAttentionBiasDevice decoderAttentionBiasDataType decoderAttentionBiasShape crossAttentionBiasRequiresGradient crossAttentionBiasLayout crossAttentionBiasDevice crossAttentionBiasDataType crossAttentionBiasShape (decoderInputDevice <+> generatorDevice))
-          (HasForwardTransformerDecoderStackGeneratorOutput (1 <=? numLayers) 'False numLayers device (decoderInputDevice <+> generatorDevice) encoderOutputDevice decoderAttentionBiasDevice crossAttentionBiasDevice (decoderInputDevice <+> generatorDevice))
-      )
-      ( ForwardGeneratorOutput
-          (LayerNorm 'WithoutBias device dataType ( 'Shape '[decoderInputEmbedDim]))
-          (HasForwardTransformerDecoderStackOutput (1 <=? numLayers) 'False numLayers device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim decoderInputRequiresGradient decoderInputLayout (decoderInputDevice <+> generatorDevice) decoderInputDataType decoderInputShape encoderOutputRequiresGradient encoderOutputLayout encoderOutputDevice encoderOutputDataType encoderOutputShape decoderAttentionBiasRequiresGradient decoderAttentionBiasLayout decoderAttentionBiasDevice decoderAttentionBiasDataType decoderAttentionBiasShape crossAttentionBiasRequiresGradient crossAttentionBiasLayout crossAttentionBiasDevice crossAttentionBiasDataType crossAttentionBiasShape (decoderInputDevice <+> generatorDevice))
-          (HasForwardTransformerDecoderStackGeneratorOutput (1 <=? numLayers) 'False numLayers device (decoderInputDevice <+> generatorDevice) encoderOutputDevice decoderAttentionBiasDevice crossAttentionBiasDevice (decoderInputDevice <+> generatorDevice))
-      )
-  )
-
-instance
-  HasForwardTransformerDecoderC
-    numLayers
-    device
-    dataType
-    headDim
-    headEmbedDim
-    embedDim
-    decoderInputEmbedDim
-    encoderOutputEmbedDim
-    ffnDim
-    dropoutP
-    decoderInputRequiresGradient
-    decoderInputLayout
-    decoderInputDevice
-    decoderInputDataType
-    decoderInputShape
-    encoderOutputRequiresGradient
-    encoderOutputLayout
-    encoderOutputDevice
-    encoderOutputDataType
-    encoderOutputShape
-    'WithGradient
-    ( 'Layout 'Dense <+> decoderRelPosLayout <+> decoderAttentionMaskLayout)
-    (device <+> decoderRelPosDevice <+> decoderAttentionMaskDevice)
-    (dataType <+> decoderAttentionMaskDataType)
-    ( BroadcastShapesF
-        ( TransposeF
-            ( 'SelectDim ( 'ByIndex 1))
-            ( 'SelectDim ( 'ByIndex 2))
-            ( TransposeF
-                ( 'SelectDim ( 'ByIndex 2))
-                ( 'SelectDim ( 'ByIndex 3))
-                ( EmbeddingF
-                    ( 'Shape '[relPosEncBucketDim, headDim])
-                    decoderRelPosShape
-                )
-            )
-        )
-        ( UnsqueezeF
-            ( 'SelectDim ( 'ByIndex 1))
-            decoderAttentionMaskShape
-        )
-    )
-    crossAttentionMaskRequiresGradient
-    crossAttentionMaskLayout
-    crossAttentionMaskDevice
-    crossAttentionMaskDataType
-    ( UnsqueezeF
-        ( 'SelectDim ( 'ByIndex 1))
-        crossAttentionMaskShape
-    )
-    generatorDevice =>
+      layerNormOutput
+      layerNormGeneratorOutput
+      output
+      generatorOutput
+  ) =>
   HasForward
     (TransformerDecoder numLayers device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim relPosEncBucketDim dropoutP)
-    ( Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
-      Tensor encoderOutputRequiresGradient encoderOutputLayout encoderOutputDevice encoderOutputDataType encoderOutputShape,
+    ( decoderInput,
+      encoderOutput,
       Tensor decoderRelPosRequiresGradient decoderRelPosLayout decoderRelPosDevice ( 'DataType 'Int64) decoderRelPosShape,
       Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
       Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
     )
-    (Generator generatorDevice)
+    generator
+    output
+    generatorOutput
   where
-  type
-    ForwardOutput
-      (TransformerDecoder numLayers device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim relPosEncBucketDim dropoutP)
-      ( Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
-        Tensor encoderOutputRequiresGradient encoderOutputLayout encoderOutputDevice encoderOutputDataType encoderOutputShape,
-        Tensor decoderRelPosRequiresGradient decoderRelPosLayout decoderRelPosDevice ( 'DataType 'Int64) decoderRelPosShape,
-        Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
-        Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
-      )
-      (Generator generatorDevice) =
-      ForwardOutput
-        (Dropout dropoutP)
-        ( ForwardOutput
-            (LayerNorm 'WithoutBias device dataType ( 'Shape '[decoderInputEmbedDim]))
-            ( HasForwardTransformerDecoderStackOutput
-                (1 <=? numLayers)
-                'False
-                numLayers
-                device
-                dataType
-                headDim
-                headEmbedDim
-                embedDim
-                decoderInputEmbedDim
-                encoderOutputEmbedDim
-                ffnDim
-                decoderInputRequiresGradient
-                decoderInputLayout
-                (decoderInputDevice <+> generatorDevice)
-                decoderInputDataType
-                decoderInputShape
-                encoderOutputRequiresGradient
-                encoderOutputLayout
-                encoderOutputDevice
-                encoderOutputDataType
-                encoderOutputShape
-                'WithGradient
-                ( 'Layout 'Dense <+> decoderRelPosLayout <+> decoderAttentionMaskLayout)
-                (device <+> decoderRelPosDevice <+> decoderAttentionMaskDevice)
-                (dataType <+> decoderAttentionMaskDataType)
-                ( BroadcastShapesF
-                    ( TransposeF
-                        ( 'SelectDim ( 'ByIndex 1))
-                        ( 'SelectDim ( 'ByIndex 2))
-                        ( TransposeF
-                            ( 'SelectDim ( 'ByIndex 2))
-                            ( 'SelectDim ( 'ByIndex 3))
-                            ( EmbeddingF
-                                ( 'Shape '[relPosEncBucketDim, headDim])
-                                decoderRelPosShape
-                            )
-                        )
-                    )
-                    ( UnsqueezeF
-                        ( 'SelectDim ( 'ByIndex 1))
-                        decoderAttentionMaskShape
-                    )
-                )
-                crossAttentionMaskRequiresGradient
-                crossAttentionMaskLayout
-                crossAttentionMaskDevice
-                crossAttentionMaskDataType
-                ( UnsqueezeF
-                    ( 'SelectDim ( 'ByIndex 1))
-                    crossAttentionMaskShape
-                )
-                (decoderInputDevice <+> generatorDevice)
-            )
-            ( HasForwardTransformerDecoderStackGeneratorOutput
-                (1 <=? numLayers)
-                'False
-                numLayers
-                device
-                (decoderInputDevice <+> generatorDevice)
-                encoderOutputDevice
-                (device <+> decoderRelPosDevice <+> decoderAttentionMaskDevice)
-                crossAttentionMaskDevice
-                (decoderInputDevice <+> generatorDevice)
-            )
-        )
-        ( ForwardGeneratorOutput
-            (LayerNorm 'WithoutBias device dataType ( 'Shape '[decoderInputEmbedDim]))
-            ( HasForwardTransformerDecoderStackOutput
-                (1 <=? numLayers)
-                'False
-                numLayers
-                device
-                dataType
-                headDim
-                headEmbedDim
-                embedDim
-                decoderInputEmbedDim
-                encoderOutputEmbedDim
-                ffnDim
-                decoderInputRequiresGradient
-                decoderInputLayout
-                (decoderInputDevice <+> generatorDevice)
-                decoderInputDataType
-                decoderInputShape
-                encoderOutputRequiresGradient
-                encoderOutputLayout
-                encoderOutputDevice
-                encoderOutputDataType
-                encoderOutputShape
-                'WithGradient
-                ( 'Layout 'Dense <+> decoderRelPosLayout <+> decoderAttentionMaskLayout)
-                (device <+> decoderRelPosDevice <+> decoderAttentionMaskDevice)
-                (dataType <+> decoderAttentionMaskDataType)
-                ( BroadcastShapesF
-                    ( TransposeF
-                        ( 'SelectDim ( 'ByIndex 1))
-                        ( 'SelectDim ( 'ByIndex 2))
-                        ( TransposeF
-                            ( 'SelectDim ( 'ByIndex 2))
-                            ( 'SelectDim ( 'ByIndex 3))
-                            ( EmbeddingF
-                                ( 'Shape '[relPosEncBucketDim, headDim])
-                                decoderRelPosShape
-                            )
-                        )
-                    )
-                    ( UnsqueezeF
-                        ( 'SelectDim ( 'ByIndex 1))
-                        decoderAttentionMaskShape
-                    )
-                )
-                crossAttentionMaskRequiresGradient
-                crossAttentionMaskLayout
-                crossAttentionMaskDevice
-                crossAttentionMaskDataType
-                ( UnsqueezeF
-                    ( 'SelectDim ( 'ByIndex 1))
-                    crossAttentionMaskShape
-                )
-                (decoderInputDevice <+> generatorDevice)
-            )
-            ( HasForwardTransformerDecoderStackGeneratorOutput
-                (1 <=? numLayers)
-                'False
-                numLayers
-                device
-                (decoderInputDevice <+> generatorDevice)
-                encoderOutputDevice
-                (device <+> decoderRelPosDevice <+> decoderAttentionMaskDevice)
-                crossAttentionMaskDevice
-                (decoderInputDevice <+> generatorDevice)
-            )
-        )
-  type
-    ForwardGeneratorOutput
-      (TransformerDecoder numLayers device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim relPosEncBucketDim dropoutP)
-      ( Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
-        Tensor encoderOutputRequiresGradient encoderOutputLayout encoderOutputDevice encoderOutputDataType encoderOutputShape,
-        Tensor decoderRelPosRequiresGradient decoderRelPosLayout decoderRelPosDevice ( 'DataType 'Int64) decoderRelPosShape,
-        Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
-        Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
-      )
-      (Generator generatorDevice) =
-      ForwardGeneratorOutput
-        (Dropout dropoutP)
-        ( ForwardOutput
-            (LayerNorm 'WithoutBias device dataType ( 'Shape '[decoderInputEmbedDim]))
-            ( HasForwardTransformerDecoderStackOutput
-                (1 <=? numLayers)
-                'False
-                numLayers
-                device
-                dataType
-                headDim
-                headEmbedDim
-                embedDim
-                decoderInputEmbedDim
-                encoderOutputEmbedDim
-                ffnDim
-                decoderInputRequiresGradient
-                decoderInputLayout
-                (decoderInputDevice <+> generatorDevice)
-                decoderInputDataType
-                decoderInputShape
-                encoderOutputRequiresGradient
-                encoderOutputLayout
-                encoderOutputDevice
-                encoderOutputDataType
-                encoderOutputShape
-                'WithGradient
-                ( 'Layout 'Dense <+> decoderRelPosLayout <+> decoderAttentionMaskLayout)
-                (device <+> decoderRelPosDevice <+> decoderAttentionMaskDevice)
-                (dataType <+> decoderAttentionMaskDataType)
-                ( BroadcastShapesF
-                    ( TransposeF
-                        ( 'SelectDim ( 'ByIndex 1))
-                        ( 'SelectDim ( 'ByIndex 2))
-                        ( TransposeF
-                            ( 'SelectDim ( 'ByIndex 2))
-                            ( 'SelectDim ( 'ByIndex 3))
-                            ( EmbeddingF
-                                ( 'Shape '[relPosEncBucketDim, headDim])
-                                decoderRelPosShape
-                            )
-                        )
-                    )
-                    ( UnsqueezeF
-                        ( 'SelectDim ( 'ByIndex 1))
-                        decoderAttentionMaskShape
-                    )
-                )
-                crossAttentionMaskRequiresGradient
-                crossAttentionMaskLayout
-                crossAttentionMaskDevice
-                crossAttentionMaskDataType
-                ( UnsqueezeF
-                    ( 'SelectDim ( 'ByIndex 1))
-                    crossAttentionMaskShape
-                )
-                (decoderInputDevice <+> generatorDevice)
-            )
-            ( HasForwardTransformerDecoderStackGeneratorOutput
-                (1 <=? numLayers)
-                'False
-                numLayers
-                device
-                (decoderInputDevice <+> generatorDevice)
-                encoderOutputDevice
-                (device <+> decoderRelPosDevice <+> decoderAttentionMaskDevice)
-                crossAttentionMaskDevice
-                (decoderInputDevice <+> generatorDevice)
-            )
-        )
-        ( ForwardGeneratorOutput
-            (LayerNorm 'WithoutBias device dataType ( 'Shape '[decoderInputEmbedDim]))
-            ( HasForwardTransformerDecoderStackOutput
-                (1 <=? numLayers)
-                'False
-                numLayers
-                device
-                dataType
-                headDim
-                headEmbedDim
-                embedDim
-                decoderInputEmbedDim
-                encoderOutputEmbedDim
-                ffnDim
-                decoderInputRequiresGradient
-                decoderInputLayout
-                (decoderInputDevice <+> generatorDevice)
-                decoderInputDataType
-                decoderInputShape
-                encoderOutputRequiresGradient
-                encoderOutputLayout
-                encoderOutputDevice
-                encoderOutputDataType
-                encoderOutputShape
-                'WithGradient
-                ( 'Layout 'Dense <+> decoderRelPosLayout <+> decoderAttentionMaskLayout)
-                (device <+> decoderRelPosDevice <+> decoderAttentionMaskDevice)
-                (dataType <+> decoderAttentionMaskDataType)
-                ( BroadcastShapesF
-                    ( TransposeF
-                        ( 'SelectDim ( 'ByIndex 1))
-                        ( 'SelectDim ( 'ByIndex 2))
-                        ( TransposeF
-                            ( 'SelectDim ( 'ByIndex 2))
-                            ( 'SelectDim ( 'ByIndex 3))
-                            ( EmbeddingF
-                                ( 'Shape '[relPosEncBucketDim, headDim])
-                                decoderRelPosShape
-                            )
-                        )
-                    )
-                    ( UnsqueezeF
-                        ( 'SelectDim ( 'ByIndex 1))
-                        decoderAttentionMaskShape
-                    )
-                )
-                crossAttentionMaskRequiresGradient
-                crossAttentionMaskLayout
-                crossAttentionMaskDevice
-                crossAttentionMaskDataType
-                ( UnsqueezeF
-                    ( 'SelectDim ( 'ByIndex 1))
-                    crossAttentionMaskShape
-                )
-                (decoderInputDevice <+> generatorDevice)
-            )
-            ( HasForwardTransformerDecoderStackGeneratorOutput
-                (1 <=? numLayers)
-                'False
-                numLayers
-                device
-                (decoderInputDevice <+> generatorDevice)
-                encoderOutputDevice
-                (device <+> decoderRelPosDevice <+> decoderAttentionMaskDevice)
-                crossAttentionMaskDevice
-                (decoderInputDevice <+> generatorDevice)
-            )
-        )
   forward TransformerDecoder {..} (decoderInput, encoderOutput, decoderRelPos, decoderAttentionMask, crossAttentionMask) =
     let decoderRelPosBias =
           ireturn decoderRelPos

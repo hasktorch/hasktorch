@@ -177,10 +177,15 @@ instance
       ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
         Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
       )
-      (Generator generatorDevice),
-    KnownShape (SelfAttentionOutputShape headDim headEmbedDim embedDim queryEmbedDim queryShape attentionBiasShape),
-    KnownDim queryEmbedDim,
-    Scalar dropoutP
+      (Generator generatorDevice)
+      selfAttentionOutput
+      selfAttentionGeneratorOutput,
+    HasForward
+      (TransformerFeedForwardNetwork device dataType queryEmbedDim ffnDim dropoutP)
+      selfAttentionOutput
+      selfAttentionGeneratorOutput
+      output
+      generatorOutput
   ) =>
   HasForward
     (TransformerBlock device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
@@ -188,32 +193,9 @@ instance
       Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
     )
     (Generator generatorDevice)
+    output
+    generatorOutput
   where
-  type
-    ForwardOutput
-      (TransformerBlock device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
-      ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
-        Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
-      )
-      (Generator generatorDevice) =
-      Tensor
-        'WithGradient
-        (queryLayout <+> 'Layout 'Dense <+> attentionBiasLayout)
-        (queryDevice <+> device <+> attentionBiasDevice <+> generatorDevice)
-        (queryDataType <+> dataType <+> attentionBiasDataType)
-        ( FeedForwardNetworkOutputShape
-            queryEmbedDim
-            ffnDim
-            (SelfAttentionOutputShape headDim headEmbedDim embedDim queryEmbedDim queryShape attentionBiasShape)
-        )
-  type
-    ForwardGeneratorOutput
-      (TransformerBlock device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
-      ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
-        Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
-      )
-      (Generator generatorDevice) =
-      Generator (device <+> queryDevice <+> attentionBiasDevice <+> generatorDevice)
   forward TransformerBlock {..} (query, attentionBias) =
     runIxState $
       ireturn (query, attentionBias)

@@ -1,9 +1,11 @@
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Torch.GraduallyTyped.NN.Dropout where
 
@@ -13,8 +15,8 @@ import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
-import Unsafe.Coerce (unsafeCoerce)
 import Torch.GraduallyTyped.Unify (type (<+>))
+import Unsafe.Coerce (unsafeCoerce)
 
 -- | Given a random generator, randomly zeroes some of the elements of
 -- the input tensor with probability 'p' using samples from a Bernoulli distribution.
@@ -32,22 +34,15 @@ instance (Scalar p) => HasInitialize (Dropout p) where
   initialize p = Dropout p
 
 instance
-  (Scalar p) =>
+  ( Scalar p,
+    output ~ Tensor requiresGradient layout (device <+> generatorDevice) dataType shape,
+    generatorOutput ~ Generator (device <+> generatorDevice)
+  ) =>
   HasForward
     (Dropout p)
     (Tensor requiresGradient layout device dataType shape)
     (Generator generatorDevice)
+    output
+    generatorOutput
   where
-  type
-    ForwardOutput
-      (Dropout p)
-      (Tensor requiresGradient layout device dataType shape)
-      (Generator generatorDevice) =
-      Tensor requiresGradient layout (device <+> generatorDevice) dataType shape
-  type
-    ForwardGeneratorOutput
-      (Dropout p)
-      (Tensor requiresGradient layout device dataType shape)
-      (Generator generatorDevice) =
-      Generator (device <+> generatorDevice)
   forward (Dropout _p) input g = unsafeCoerce (input, g)

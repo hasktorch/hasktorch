@@ -203,30 +203,22 @@ type FeedForwardNetworkOutputShape
 instance
   ( KnownShape queryShape,
     KnownDim queryEmbedDim,
-    Scalar dropoutP
+    Scalar dropoutP,
+    output ~ Tensor
+        'WithGradient
+        (queryLayout <+> 'Layout 'Dense)
+        (queryDevice <+> device <+> generatorDevice)
+        (queryDataType <+> dataType)
+        (FeedForwardNetworkOutputShape queryEmbedDim ffnDim queryShape),
+    generatorOutput ~ Generator (device <+> queryDevice <+> generatorDevice)
   ) =>
   HasForward
     (TransformerFeedForwardNetwork device dataType queryEmbedDim ffnDim dropoutP)
     (Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape)
     (Generator generatorDevice)
+    output
+    generatorOutput
   where
-  type
-    ForwardOutput
-      (TransformerFeedForwardNetwork device dataType queryEmbedDim ffnDim dropoutP)
-      (Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape)
-      (Generator generatorDevice) =
-      Tensor
-        'WithGradient
-        (queryLayout <+> 'Layout 'Dense)
-        (queryDevice <+> device <+> generatorDevice)
-        (queryDataType <+> dataType)
-        (FeedForwardNetworkOutputShape queryEmbedDim ffnDim queryShape)
-  type
-    ForwardGeneratorOutput
-      (TransformerFeedForwardNetwork device dataType queryEmbedDim ffnDim dropoutP)
-      (Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape)
-      (Generator generatorDevice) =
-      Generator (device <+> queryDevice <+> generatorDevice)
   forward TransformerFeedForwardNetwork {..} query =
     runIxState $
       ireturn query

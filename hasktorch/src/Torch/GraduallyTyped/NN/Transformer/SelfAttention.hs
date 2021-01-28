@@ -361,7 +361,15 @@ instance
               ( 'Shape '[normedBatchDim, normedQuerySeqDim, embedDim])
           )
       ),
-    Scalar dropoutP
+    Scalar dropoutP,
+    output
+      ~ Tensor
+          'WithGradient
+          (queryLayout <+> 'Layout 'Dense <+> attentionBiasLayout)
+          (queryDevice <+> device <+> attentionBiasDevice <+> generatorDevice)
+          (queryDataType <+> dataType <+> attentionBiasDataType)
+          (SelfAttentionOutputShape headDim headEmbedDim embedDim queryEmbedDim queryShape attentionBiasShape),
+    generatorOutput ~ Generator (device <+> queryDevice <+> attentionBiasDevice <+> generatorDevice)
   ) =>
   HasForward
     (SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
@@ -369,28 +377,9 @@ instance
       Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
     )
     (Generator generatorDevice)
+    output
+    generatorOutput
   where
-  type
-    ForwardOutput
-      (SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
-      ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
-        Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
-      )
-      (Generator generatorDevice) =
-      Tensor
-        'WithGradient
-        (queryLayout <+> 'Layout 'Dense <+> attentionBiasLayout)
-        (queryDevice <+> device <+> attentionBiasDevice <+> generatorDevice)
-        (queryDataType <+> dataType <+> attentionBiasDataType)
-        (SelfAttentionOutputShape headDim headEmbedDim embedDim queryEmbedDim queryShape attentionBiasShape)
-  type
-    ForwardGeneratorOutput
-      (SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
-      ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
-        Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
-      )
-      (Generator generatorDevice) =
-      (Generator (device <+> queryDevice <+> attentionBiasDevice <+> generatorDevice))
   forward SelfAttention {..} (query, attentionBias) =
     runIxState $
       ireturn query

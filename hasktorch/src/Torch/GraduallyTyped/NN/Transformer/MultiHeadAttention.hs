@@ -61,7 +61,7 @@ import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (ReshapeF, TransposeF,
 import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (MatmulF, matmul)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add, divScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..), checkedDataType, checkedDevice, checkedLayout, checkedShape, shape)
-import Torch.GraduallyTyped.Unify (type (<+>))
+import Torch.GraduallyTyped.Unify (Unify, type (<+>))
 import qualified Torch.Tensor
 
 data
@@ -546,7 +546,57 @@ instance
     batchDim ~ BatchDim queryShape keyShape valueShape,
     querySeqDim ~ QuerySeqDim queryShape,
     keySeqDim ~ KeySeqDim keyShape valueShape,
-    transposedAndReshaped ~ TransposeAndReshape headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim queryShape keyShape valueShape attentionBiasShape batchDim querySeqDim keySeqDim
+    transposedAndReshaped ~ TransposeAndReshape headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim queryShape keyShape valueShape attentionBiasShape batchDim querySeqDim keySeqDim,
+    output
+      ~ Tensor
+          'WithGradient
+          ( 'Layout 'Dense <+> queryLayout <+> keyLayout <+> attentionBiasLayout <+> valueLayout)
+          (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice <+> valueDevice)
+          (dataType <+> queryDataType <+> keyDataType <+> attentionBiasDataType <+> valueDataType)
+          ( MultiHeadAttentionOutputShape
+              embedDim
+              queryEmbedDim
+              (BatchDim queryShape keyShape valueShape)
+              (QuerySeqDim queryShape)
+              (TransposeAndReshape headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim queryShape keyShape valueShape attentionBiasShape (BatchDim queryShape keyShape valueShape) (QuerySeqDim queryShape) (KeySeqDim keyShape valueShape))
+          ),
+    generatorOutput ~ Generator (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice),
+    Torch.GraduallyTyped.Unify.Unify
+      (Device (DeviceType Nat))
+      ( Torch.GraduallyTyped.Unify.Unify
+          (Device (DeviceType Nat))
+          ( Torch.GraduallyTyped.Unify.Unify
+              (Device (DeviceType Nat))
+              ( Torch.GraduallyTyped.Unify.Unify
+                  (Device (DeviceType Nat))
+                  device
+                  queryDevice
+              )
+              ( Torch.GraduallyTyped.Unify.Unify
+                  (Device (DeviceType Nat))
+                  device
+                  keyDevice
+              )
+          )
+          attentionBiasDevice
+      )
+      generatorDevice
+      ~ Torch.GraduallyTyped.Unify.Unify
+          (Device (DeviceType Nat))
+          device
+          ( Torch.GraduallyTyped.Unify.Unify
+              (Device (DeviceType Nat))
+              queryDevice
+              ( Torch.GraduallyTyped.Unify.Unify
+                  (Device (DeviceType Nat))
+                  keyDevice
+                  ( Torch.GraduallyTyped.Unify.Unify
+                      (Device (DeviceType Nat))
+                      attentionBiasDevice
+                      generatorDevice
+                  )
+              )
+          )
   ) =>
   HasForward
     (MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
@@ -556,38 +606,9 @@ instance
       Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
     )
     (Generator generatorDevice)
+    output
+    generatorOutput
   where
-  type
-    ForwardOutput
-      (MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
-      ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
-        Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
-        Tensor valueRequiresGradient valueLayout valueDevice valueDataType valueShape,
-        Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
-      )
-      (Generator generatorDevice) =
-      Tensor
-        'WithGradient
-        ( 'Layout 'Dense <+> queryLayout <+> keyLayout <+> attentionBiasLayout <+> valueLayout)
-        (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice <+> valueDevice)
-        (dataType <+> queryDataType <+> keyDataType <+> attentionBiasDataType <+> valueDataType)
-        ( MultiHeadAttentionOutputShape
-            embedDim
-            queryEmbedDim
-            (BatchDim queryShape keyShape valueShape)
-            (QuerySeqDim queryShape)
-            (TransposeAndReshape headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim queryShape keyShape valueShape attentionBiasShape (BatchDim queryShape keyShape valueShape) (QuerySeqDim queryShape) (KeySeqDim keyShape valueShape))
-        )
-  type
-    ForwardGeneratorOutput
-      (MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
-      ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
-        Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
-        Tensor valueRequiresGradient valueLayout valueDevice valueDataType valueShape,
-        Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
-      )
-      (Generator generatorDevice) =
-      Generator (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)
   forward mha@MultiHeadAttention {..} (query, key, value, attentionBias) =
     let batchDim = case dimVal @(BatchDim queryShape keyShape valueShape) of
           Dim (Name name) (Size size) -> Dim name size
