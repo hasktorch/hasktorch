@@ -13,7 +13,7 @@
 
 module Torch.GraduallyTyped.NN.Transformer.SequenceToSequence where
 
-import Control.Monad.Indexed ((>>>=))
+import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Kind (Type)
@@ -21,15 +21,22 @@ import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType, WithDataTypeC (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (..))
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
+import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearWithoutBiasC, Linear)
+import Torch.GraduallyTyped.NN.Sparse (Embedding, HasInitializeEmbeddingC)
 import Torch.GraduallyTyped.NN.Transformer.Decoder (HasInitializeTransformerDecoderC, TransformerDecoder)
 import Torch.GraduallyTyped.NN.Transformer.Encoder (HasInitializeTransformerEncoderC, TransformerEncoder)
+import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.Shape (Dim (..), Name (..), Size (..), WithDimC (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 
+data HasLMHead = WithLMHead | WithoutLMHead
+
 data
   SequenceToSequenceTransformer
+    (hasLMHead :: HasLMHead)
     (numEncoderLayers :: Nat)
     (numDecoderLayers :: Nat)
     (device :: Device (DeviceType Nat))
@@ -38,40 +45,55 @@ data
     (headEmbedDim :: Dim (Name Symbol) (Size Nat))
     (embedDim :: Dim (Name Symbol) (Size Nat))
     (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (decoderInputEmbedDim :: Dim (Name Symbol) (Size Nat))
     (ffnDim :: Dim (Name Symbol) (Size Nat))
     (relPosEncBucketDim :: Dim (Name Symbol) (Size Nat))
+    (vocabDim :: Dim (Name Symbol) (Size Nat))
     (dropoutP :: Type)
   where
-  SequenceToSequenceTransformer ::
-    forall numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim decoderInputEmbedDim ffnDim relPosEncBucketDim dropoutP.
+  SequenceToSequenceTransformerWithoutLMHead ::
+    forall numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP.
     { -- | encoder
-      seqToSeqEncoder :: TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP,
+      seqToSeqWithoutLMHeadEncoder :: TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP,
       -- | decoder
-      seqToSeqDecoder :: TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim decoderInputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP
+      seqToSeqWithoutLMHeadDecoder :: TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP,
+      -- | embedding
+      seqToSeqWithoutLMHeadEmbedding :: Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing
     } ->
-    SequenceToSequenceTransformer numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim decoderInputEmbedDim ffnDim relPosEncBucketDim dropoutP
+    SequenceToSequenceTransformer 'WithoutLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP
+  SequenceToSequenceTransformerWithLMHead ::
+    forall numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP.
+    { -- | encoder
+      seqToSeqWithLMHeadEncoder :: TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP,
+      -- | decoder
+      seqToSeqWithLMHeadDecoder :: TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP,
+      -- | embedding
+      seqToSeqWithLMHeadEmbedding :: Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing,
+      -- | language model head
+      seqToSeqLMHead :: Linear 'WithoutBias device dataType inputEmbedDim vocabDim
+    } ->
+    SequenceToSequenceTransformer 'WithLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP
 
-type HasInitializeSequenceToSequenceTransformerC numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim decoderInputEmbedDim ffnDim relPosEncBucketDim dropoutP =
+type HasInitializeSequenceToSequenceTransformerC hasLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP =
   ( HasInitializeTransformerEncoderC numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP,
-    HasInitializeTransformerDecoderC numDecoderLayers device dataType headDim headEmbedDim embedDim decoderInputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP,
-    WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF decoderInputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim decoderInputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device)))))))))),
-    WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF decoderInputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim decoderInputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device))))))))),
-    WithDimC headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF decoderInputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim decoderInputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device)))))))),
-    WithDimC headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF decoderInputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim decoderInputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device))))))),
-    WithDimC embedDim (WithDimF inputEmbedDim (WithDimF decoderInputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim decoderInputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device)))))),
-    WithDimC inputEmbedDim (WithDimF decoderInputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim decoderInputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device))))),
-    WithDimC decoderInputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim decoderInputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device)))),
-    WithDimC ffnDim (WithDimF relPosEncBucketDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim decoderInputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device))),
-    WithDimC relPosEncBucketDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim decoderInputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device))
+    HasInitializeTransformerDecoderC numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP,
+    HasInitializeEmbeddingC ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing,
+    WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device)))))))))),
+    WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device))))))))),
+    WithDimC headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device)))))))),
+    WithDimC headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device))))))),
+    WithDimC embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device)))))),
+    WithDimC inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device))))),
+    WithDimC ffnDim (WithDimF relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device)))),
+    WithDimC relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device))),
+    WithDimC vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device))
   )
 
 instance
-  HasInitializeSequenceToSequenceTransformerC numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim decoderInputEmbedDim ffnDim relPosEncBucketDim dropoutP =>
-  HasInitialize (SequenceToSequenceTransformer numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim decoderInputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+  HasInitializeSequenceToSequenceTransformerC 'WithoutLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP =>
+  HasInitialize (SequenceToSequenceTransformer 'WithoutLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP)
   where
   type
-    InitializeF (SequenceToSequenceTransformer numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim decoderInputEmbedDim ffnDim relPosEncBucketDim dropoutP) =
+    InitializeF (SequenceToSequenceTransformer 'WithoutLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP) =
       WithDeviceF
         device
         ( WithDataTypeF
@@ -85,12 +107,12 @@ instance
                         ( WithDimF
                             inputEmbedDim
                             ( WithDimF
-                                decoderInputEmbedDim
+                                ffnDim
                                 ( WithDimF
-                                    ffnDim
+                                    relPosEncBucketDim
                                     ( WithDimF
-                                        relPosEncBucketDim
-                                        (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim decoderInputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device))
+                                        vocabDim
+                                        (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer 'WithoutLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device))
                                     )
                                 )
                             )
@@ -112,14 +134,14 @@ instance
                       \embedDim ->
                         withDim @inputEmbedDim $
                           \inputEmbedDim ->
-                            withDim @decoderInputEmbedDim $
-                              \decoderInputEmbedDim ->
-                                withDim @ffnDim $
-                                  \ffnDim ->
-                                    withDim @relPosEncBucketDim @(dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim decoderInputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device)) $
-                                      \relPosEncBucketDim -> go deviceType dType headDim headEmbedDim embedDim inputEmbedDim decoderInputEmbedDim ffnDim relPosEncBucketDim
+                            withDim @ffnDim $
+                              \ffnDim ->
+                                withDim @relPosEncBucketDim $
+                                  \relPosEncBucketDim ->
+                                    withDim @vocabDim @(dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer 'WithoutLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device)) $
+                                      \vocabDim -> go deviceType dType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim
     where
-      go deviceType dType headDim headEmbedDim embedDim inputEmbedDim decoderInputEmbedDim ffnDim relPosEncBucketDim dropoutP eps = runState $ do
+      go deviceType dType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP eps = runState $ do
         encoder <-
           state $
             withoutDim @relPosEncBucketDim
@@ -154,13 +176,13 @@ instance
             withoutDim @relPosEncBucketDim
               ( withoutDim @ffnDim
                   ( withoutDim @inputEmbedDim
-                      ( withoutDim @decoderInputEmbedDim
+                      ( withoutDim @inputEmbedDim
                           ( withoutDim @embedDim
                               ( withoutDim @headEmbedDim
                                   ( withoutDim @headDim
                                       ( withoutDataType @dataType
                                           ( withoutDevice @device
-                                              ( initialize @(TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim decoderInputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+                                              ( initialize @(TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
                                               )
                                               deviceType
                                           )
@@ -172,7 +194,7 @@ instance
                               )
                               embedDim
                           )
-                          decoderInputEmbedDim
+                          inputEmbedDim
                       )
                       inputEmbedDim
                   )
@@ -181,41 +203,236 @@ instance
               relPosEncBucketDim
               dropoutP
               eps
-        pure $ SequenceToSequenceTransformer encoder decoder
+        embedding <-
+          state $
+            withoutDim @inputEmbedDim
+              ( withoutDim @vocabDim
+                  ( withoutDataType @dataType
+                      ( withoutDevice @device
+                          ( initialize @(Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                          )
+                          deviceType
+                      )
+                      dType
+                  )
+                  vocabDim
+              )
+              inputEmbedDim
+        pure $ SequenceToSequenceTransformerWithoutLMHead encoder decoder embedding
+
+instance
+  ( HasInitializeSequenceToSequenceTransformerC 'WithLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP,
+    HasInitializeLinearWithoutBiasC device dataType inputEmbedDim vocabDim
+  ) =>
+  HasInitialize (SequenceToSequenceTransformer 'WithLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP)
+  where
+  type
+    InitializeF (SequenceToSequenceTransformer 'WithLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP) =
+      WithDeviceF
+        device
+        ( WithDataTypeF
+            dataType
+            ( WithDimF
+                headDim
+                ( WithDimF
+                    headEmbedDim
+                    ( WithDimF
+                        embedDim
+                        ( WithDimF
+                            inputEmbedDim
+                            ( WithDimF
+                                ffnDim
+                                ( WithDimF
+                                    relPosEncBucketDim
+                                    ( WithDimF
+                                        vocabDim
+                                        (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer 'WithLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device))
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
+  initialize =
+    withDevice @device $
+      \deviceType ->
+        withDataType @dataType $
+          \dType ->
+            withDim @headDim $
+              \headDim ->
+                withDim @headEmbedDim $
+                  \headEmbedDim ->
+                    withDim @embedDim $
+                      \embedDim ->
+                        withDim @inputEmbedDim $
+                          \inputEmbedDim ->
+                            withDim @ffnDim $
+                              \ffnDim ->
+                                withDim @relPosEncBucketDim $
+                                  \relPosEncBucketDim ->
+                                    withDim @vocabDim @(dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer 'WithLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device)) $
+                                      \vocabDim -> go deviceType dType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim
+    where
+      go deviceType dType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP eps = runState $ do
+        encoder <-
+          state $
+            withoutDim @relPosEncBucketDim
+              ( withoutDim @ffnDim
+                  ( withoutDim @inputEmbedDim
+                      ( withoutDim @embedDim
+                          ( withoutDim @headEmbedDim
+                              ( withoutDim @headDim
+                                  ( withoutDataType @dataType
+                                      ( withoutDevice @device
+                                          ( initialize @(TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+                                          )
+                                          deviceType
+                                      )
+                                      dType
+                                  )
+                                  headDim
+                              )
+                              headEmbedDim
+                          )
+                          embedDim
+                      )
+                      inputEmbedDim
+                  )
+                  ffnDim
+              )
+              relPosEncBucketDim
+              dropoutP
+              eps
+        decoder <-
+          state $
+            withoutDim @relPosEncBucketDim
+              ( withoutDim @ffnDim
+                  ( withoutDim @inputEmbedDim
+                      ( withoutDim @inputEmbedDim
+                          ( withoutDim @embedDim
+                              ( withoutDim @headEmbedDim
+                                  ( withoutDim @headDim
+                                      ( withoutDataType @dataType
+                                          ( withoutDevice @device
+                                              ( initialize @(TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+                                              )
+                                              deviceType
+                                          )
+                                          dType
+                                      )
+                                      headDim
+                                  )
+                                  headEmbedDim
+                              )
+                              embedDim
+                          )
+                          inputEmbedDim
+                      )
+                      inputEmbedDim
+                  )
+                  ffnDim
+              )
+              relPosEncBucketDim
+              dropoutP
+              eps
+        embedding <-
+          state $
+            withoutDim @inputEmbedDim
+              ( withoutDim @vocabDim
+                  ( withoutDataType @dataType
+                      ( withoutDevice @device
+                          ( initialize @(Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                          )
+                          deviceType
+                      )
+                      dType
+                  )
+                  vocabDim
+              )
+              inputEmbedDim
+        lmHead <-
+          state $
+            withoutDim @vocabDim
+              ( withoutDim @inputEmbedDim
+                  ( withoutDataType @dataType
+                      ( withoutDevice @device
+                          ( initialize @(Linear 'WithoutBias device dataType inputEmbedDim vocabDim)
+                          )
+                          deviceType
+                      )
+                      dType
+                  )
+                  inputEmbedDim
+              )
+              vocabDim
+        pure $ SequenceToSequenceTransformerWithLMHead encoder decoder embedding lmHead
 
 instance
   ( HasForward
+      (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+      (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+      (Generator generatorDevice),
+    inputEmbeddingOutput
+      ~ ForwardOutput
+          (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+          (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+          (Generator generatorDevice),
+    inputEmbeddingGeneratorOutput
+      ~ ForwardGeneratorOutput
+          (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+          (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+          (Generator generatorDevice),
+    HasForward
       (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
-      ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+      ( inputEmbeddingOutput,
         Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
         Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
       )
-      (Generator generatorDevice),
-    HasForward
-      (TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim decoderInputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
-      ( Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
-        ForwardOutput
+      inputEmbeddingGeneratorOutput,
+    encoderOutput
+      ~ ForwardOutput
           (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
-          ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+          ( inputEmbeddingOutput,
             Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
             Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
           )
-          (Generator generatorDevice),
+          inputEmbeddingGeneratorOutput,
+    encoderGeneratorOutput
+      ~ ForwardGeneratorOutput
+          (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+          ( inputEmbeddingOutput,
+            Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+            Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+          )
+          inputEmbeddingGeneratorOutput,
+    HasForward
+      (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+      (Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape)
+      encoderGeneratorOutput,
+    decoderInputEmbeddingOutput
+      ~ ForwardOutput
+          (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+          (Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape)
+          encoderGeneratorOutput,
+    decoderInputEmbeddingGeneratorOutput
+      ~ ForwardGeneratorOutput
+          (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+          (Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape)
+          encoderGeneratorOutput,
+    HasForward
+      (TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+      ( decoderInputEmbeddingOutput,
+        encoderOutput,
         Tensor decoderRelPosRequiresGradient decoderRelPosLayout decoderRelPosDevice decoderRelPosDataType decoderRelPosShape,
         Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
         Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
       )
-      ( ForwardGeneratorOutput
-          (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
-          ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
-            Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
-            Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
-          )
-          (Generator generatorDevice)
-      )
+      decoderInputEmbeddingGeneratorOutput
   ) =>
   HasForward
-    (SequenceToSequenceTransformer numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim decoderInputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+    (SequenceToSequenceTransformer 'WithoutLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP)
     ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
       Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
       Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
@@ -228,7 +445,7 @@ instance
   where
   type
     ForwardOutput
-      (SequenceToSequenceTransformer numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim decoderInputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+      (SequenceToSequenceTransformer 'WithoutLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP)
       ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
         Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
         Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
@@ -239,30 +456,65 @@ instance
       )
       (Generator generatorDevice) =
       ForwardOutput
-        (TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim decoderInputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
-        ( Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
+        (TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+        ( ForwardOutput
+            (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+            (Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape)
+            ( ForwardGeneratorOutput
+                (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+                ( ForwardOutput
+                    (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                    (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                    (Generator generatorDevice),
+                  Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+                  Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+                )
+                ( ForwardGeneratorOutput
+                    (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                    (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                    (Generator generatorDevice)
+                )
+            ),
           ForwardOutput
             (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
-            ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+            ( ForwardOutput
+                (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                (Generator generatorDevice),
               Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
               Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
             )
-            (Generator generatorDevice),
+            ( ForwardGeneratorOutput
+                (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                (Generator generatorDevice)
+            ),
           Tensor decoderRelPosRequiresGradient decoderRelPosLayout decoderRelPosDevice decoderRelPosDataType decoderRelPosShape,
           Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
           Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
         )
         ( ForwardGeneratorOutput
-            (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
-            ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
-              Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
-              Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+            (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+            (Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape)
+            ( ForwardGeneratorOutput
+                (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+                ( ForwardOutput
+                    (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                    (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                    (Generator generatorDevice),
+                  Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+                  Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+                )
+                ( ForwardGeneratorOutput
+                    (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                    (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                    (Generator generatorDevice)
+                )
             )
-            (Generator generatorDevice)
         )
   type
     ForwardGeneratorOutput
-      (SequenceToSequenceTransformer numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim decoderInputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+      (SequenceToSequenceTransformer 'WithoutLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP)
       ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
         Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
         Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
@@ -273,28 +525,443 @@ instance
       )
       (Generator generatorDevice) =
       ForwardGeneratorOutput
-        (TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim decoderInputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
-        ( Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
+        (TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+        ( ForwardOutput
+            (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+            (Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape)
+            ( ForwardGeneratorOutput
+                (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+                ( ForwardOutput
+                    (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                    (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                    (Generator generatorDevice),
+                  Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+                  Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+                )
+                ( ForwardGeneratorOutput
+                    (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                    (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                    (Generator generatorDevice)
+                )
+            ),
           ForwardOutput
             (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
-            ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+            ( ForwardOutput
+                (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                (Generator generatorDevice),
               Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
               Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
             )
-            (Generator generatorDevice),
+            ( ForwardGeneratorOutput
+                (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                (Generator generatorDevice)
+            ),
           Tensor decoderRelPosRequiresGradient decoderRelPosLayout decoderRelPosDevice decoderRelPosDataType decoderRelPosShape,
           Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
           Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
         )
         ( ForwardGeneratorOutput
-            (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
-            ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
-              Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
-              Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+            (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+            (Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape)
+            ( ForwardGeneratorOutput
+                (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+                ( ForwardOutput
+                    (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                    (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                    (Generator generatorDevice),
+                  Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+                  Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+                )
+                ( ForwardGeneratorOutput
+                    (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                    (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                    (Generator generatorDevice)
+                )
             )
-            (Generator generatorDevice)
         )
-  forward SequenceToSequenceTransformer {..} (input, decoderInput, relPos, decoderRelPos, attentionMask, decoderAttentionMask, crossAttentionMask) =
+  forward SequenceToSequenceTransformerWithoutLMHead {..} (input, decoderInput, relPos, decoderRelPos, attentionMask, decoderAttentionMask, crossAttentionMask) =
     runIxState $
-      IxState (forward seqToSeqEncoder (input, relPos, attentionMask))
-        >>>= (\encoderOutput -> IxState $ forward seqToSeqDecoder (decoderInput, encoderOutput, decoderRelPos, decoderAttentionMask, crossAttentionMask))
+      ireturn input
+        >>>= IxState . forward seqToSeqWithoutLMHeadEmbedding
+        >>>= (\input' -> IxState $ forward seqToSeqWithoutLMHeadEncoder (input', relPos, attentionMask))
+        >>>= ( \encoderOutput ->
+                 ireturn decoderInput
+                   >>>= IxState . forward seqToSeqWithoutLMHeadEmbedding
+                   >>>= ( \decoderInput' ->
+                            IxState $ forward seqToSeqWithoutLMHeadDecoder (decoderInput', encoderOutput, decoderRelPos, decoderAttentionMask, crossAttentionMask)
+                        )
+             )
+
+instance
+  ( HasForward
+      (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+      (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+      (Generator generatorDevice),
+    inputEmbeddingOutput
+      ~ ForwardOutput
+          (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+          (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+          (Generator generatorDevice),
+    inputEmbeddingGeneratorOutput
+      ~ ForwardGeneratorOutput
+          (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+          (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+          (Generator generatorDevice),
+    HasForward
+      (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+      ( inputEmbeddingOutput,
+        Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+        Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+      )
+      inputEmbeddingGeneratorOutput,
+    encoderOutput
+      ~ ForwardOutput
+          (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+          ( inputEmbeddingOutput,
+            Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+            Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+          )
+          inputEmbeddingGeneratorOutput,
+    encoderGeneratorOutput
+      ~ ForwardGeneratorOutput
+          (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+          ( inputEmbeddingOutput,
+            Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+            Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+          )
+          inputEmbeddingGeneratorOutput,
+    HasForward
+      (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+      (Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape)
+      encoderGeneratorOutput,
+    decoderInputEmbeddingOutput
+      ~ ForwardOutput
+          (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+          (Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape)
+          encoderGeneratorOutput,
+    decoderInputEmbeddingGeneratorOutput
+      ~ ForwardGeneratorOutput
+          (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+          (Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape)
+          encoderGeneratorOutput,
+    HasForward
+      (TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+      ( decoderInputEmbeddingOutput,
+        encoderOutput,
+        Tensor decoderRelPosRequiresGradient decoderRelPosLayout decoderRelPosDevice decoderRelPosDataType decoderRelPosShape,
+        Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
+        Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
+      )
+      decoderInputEmbeddingGeneratorOutput,
+    decoderOutput
+      ~ ForwardOutput
+          (TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+          ( decoderInputEmbeddingOutput,
+            encoderOutput,
+            Tensor decoderRelPosRequiresGradient decoderRelPosLayout decoderRelPosDevice decoderRelPosDataType decoderRelPosShape,
+            Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
+            Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
+          )
+          decoderInputEmbeddingGeneratorOutput,
+    decoderGeneratorOutput
+      ~ ForwardGeneratorOutput
+          (TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+          ( decoderInputEmbeddingOutput,
+            encoderOutput,
+            Tensor decoderRelPosRequiresGradient decoderRelPosLayout decoderRelPosDevice decoderRelPosDataType decoderRelPosShape,
+            Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
+            Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
+          )
+          decoderInputEmbeddingGeneratorOutput,
+    HasForward
+      (Linear 'WithoutBias device dataType inputEmbedDim vocabDim)
+      decoderOutput
+      decoderGeneratorOutput
+  ) =>
+  HasForward
+    (SequenceToSequenceTransformer 'WithLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP)
+    ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+      Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
+      Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+      Tensor decoderRelPosRequiresGradient decoderRelPosLayout decoderRelPosDevice decoderRelPosDataType decoderRelPosShape,
+      Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape,
+      Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
+      Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
+    )
+    (Generator generatorDevice)
+  where
+  type
+    ForwardOutput
+      (SequenceToSequenceTransformer 'WithLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP)
+      ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+        Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
+        Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+        Tensor decoderRelPosRequiresGradient decoderRelPosLayout decoderRelPosDevice decoderRelPosDataType decoderRelPosShape,
+        Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape,
+        Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
+        Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
+      )
+      (Generator generatorDevice) =
+      ForwardOutput
+        (Linear 'WithoutBias device dataType inputEmbedDim vocabDim)
+        ( ForwardOutput
+            (TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+            ( ForwardOutput
+                (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                (Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape)
+                ( ForwardGeneratorOutput
+                    (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+                    ( ForwardOutput
+                        (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                        (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                        (Generator generatorDevice),
+                      Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+                      Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+                    )
+                    ( ForwardGeneratorOutput
+                        (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                        (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                        (Generator generatorDevice)
+                    )
+                ),
+              ForwardOutput
+                (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+                ( ForwardOutput
+                    (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                    (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                    (Generator generatorDevice),
+                  Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+                  Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+                )
+                ( ForwardGeneratorOutput
+                    (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                    (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                    (Generator generatorDevice)
+                ),
+              Tensor decoderRelPosRequiresGradient decoderRelPosLayout decoderRelPosDevice decoderRelPosDataType decoderRelPosShape,
+              Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
+              Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
+            )
+            ( ForwardGeneratorOutput
+                (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                (Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape)
+                ( ForwardGeneratorOutput
+                    (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+                    ( ForwardOutput
+                        (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                        (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                        (Generator generatorDevice),
+                      Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+                      Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+                    )
+                    ( ForwardGeneratorOutput
+                        (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                        (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                        (Generator generatorDevice)
+                    )
+                )
+            )
+        )
+        ( ForwardGeneratorOutput
+            (TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+            ( ForwardOutput
+                (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                (Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape)
+                ( ForwardGeneratorOutput
+                    (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+                    ( ForwardOutput
+                        (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                        (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                        (Generator generatorDevice),
+                      Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+                      Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+                    )
+                    ( ForwardGeneratorOutput
+                        (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                        (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                        (Generator generatorDevice)
+                    )
+                ),
+              ForwardOutput
+                (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+                ( ForwardOutput
+                    (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                    (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                    (Generator generatorDevice),
+                  Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+                  Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+                )
+                ( ForwardGeneratorOutput
+                    (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                    (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                    (Generator generatorDevice)
+                ),
+              Tensor decoderRelPosRequiresGradient decoderRelPosLayout decoderRelPosDevice decoderRelPosDataType decoderRelPosShape,
+              Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
+              Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
+            )
+            ( ForwardGeneratorOutput
+                (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                (Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape)
+                ( ForwardGeneratorOutput
+                    (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+                    ( ForwardOutput
+                        (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                        (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                        (Generator generatorDevice),
+                      Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+                      Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+                    )
+                    ( ForwardGeneratorOutput
+                        (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                        (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                        (Generator generatorDevice)
+                    )
+                )
+            )
+        )
+  type
+    ForwardGeneratorOutput
+      (SequenceToSequenceTransformer 'WithLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP)
+      ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+        Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
+        Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+        Tensor decoderRelPosRequiresGradient decoderRelPosLayout decoderRelPosDevice decoderRelPosDataType decoderRelPosShape,
+        Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape,
+        Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
+        Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
+      )
+      (Generator generatorDevice) =
+      ForwardGeneratorOutput
+        (Linear 'WithoutBias device dataType inputEmbedDim vocabDim)
+        ( ForwardOutput
+            (TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+            ( ForwardOutput
+                (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                (Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape)
+                ( ForwardGeneratorOutput
+                    (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+                    ( ForwardOutput
+                        (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                        (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                        (Generator generatorDevice),
+                      Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+                      Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+                    )
+                    ( ForwardGeneratorOutput
+                        (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                        (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                        (Generator generatorDevice)
+                    )
+                ),
+              ForwardOutput
+                (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+                ( ForwardOutput
+                    (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                    (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                    (Generator generatorDevice),
+                  Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+                  Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+                )
+                ( ForwardGeneratorOutput
+                    (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                    (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                    (Generator generatorDevice)
+                ),
+              Tensor decoderRelPosRequiresGradient decoderRelPosLayout decoderRelPosDevice decoderRelPosDataType decoderRelPosShape,
+              Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
+              Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
+            )
+            ( ForwardGeneratorOutput
+                (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                (Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape)
+                ( ForwardGeneratorOutput
+                    (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+                    ( ForwardOutput
+                        (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                        (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                        (Generator generatorDevice),
+                      Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+                      Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+                    )
+                    ( ForwardGeneratorOutput
+                        (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                        (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                        (Generator generatorDevice)
+                    )
+                )
+            )
+        )
+        ( ForwardGeneratorOutput
+            (TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+            ( ForwardOutput
+                (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                (Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape)
+                ( ForwardGeneratorOutput
+                    (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+                    ( ForwardOutput
+                        (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                        (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                        (Generator generatorDevice),
+                      Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+                      Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+                    )
+                    ( ForwardGeneratorOutput
+                        (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                        (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                        (Generator generatorDevice)
+                    )
+                ),
+              ForwardOutput
+                (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+                ( ForwardOutput
+                    (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                    (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                    (Generator generatorDevice),
+                  Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+                  Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+                )
+                ( ForwardGeneratorOutput
+                    (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                    (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                    (Generator generatorDevice)
+                ),
+              Tensor decoderRelPosRequiresGradient decoderRelPosLayout decoderRelPosDevice decoderRelPosDataType decoderRelPosShape,
+              Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
+              Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
+            )
+            ( ForwardGeneratorOutput
+                (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                (Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape)
+                ( ForwardGeneratorOutput
+                    (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+                    ( ForwardOutput
+                        (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                        (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                        (Generator generatorDevice),
+                      Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+                      Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+                    )
+                    ( ForwardGeneratorOutput
+                        (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                        (Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape)
+                        (Generator generatorDevice)
+                    )
+                )
+            )
+        )
+  forward SequenceToSequenceTransformerWithLMHead {..} (input, decoderInput, relPos, decoderRelPos, attentionMask, decoderAttentionMask, crossAttentionMask) =
+    runIxState $
+      ireturn input
+        >>>= IxState . forward seqToSeqWithLMHeadEmbedding
+        >>>= (\input' -> IxState $ forward seqToSeqWithLMHeadEncoder (input', relPos, attentionMask))
+        >>>= ( \encoderOutput ->
+                 ireturn decoderInput
+                   >>>= IxState . forward seqToSeqWithLMHeadEmbedding
+                   >>>= ( \decoderInput' ->
+                            IxState $ forward seqToSeqWithLMHeadDecoder (decoderInput', encoderOutput, decoderRelPos, decoderAttentionMask, crossAttentionMask)
+                        )
+             )
+        >>>= IxState . forward seqToSeqLMHead
