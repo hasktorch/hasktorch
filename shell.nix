@@ -28,6 +28,7 @@ let
 
     tools = {
       cabal = "3.2.0.0";
+      fourmolu = "0.3.0.0";
       haskell-language-server = "0.6.0";
     };
 
