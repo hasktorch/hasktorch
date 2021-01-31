@@ -28,6 +28,8 @@ by Soumith Chintala.
 == Tensors
 #tensors#
 
+>>> import Torch
+
 Initialize a tensor of zeros by specifying the dimensions of the
 tensor<#notes [1]>:
 
