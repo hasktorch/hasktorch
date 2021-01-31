@@ -15,24 +15,6 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoStarIsType #-}
-{-# OPTIONS_GHC -v2
-                -fomit-interface-pragmas
-                -fplugin TypeLevel.Rewrite
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyRightAssociativeL
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2C
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL3
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL3C
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL4
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL4C
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL5
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL5C
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL6
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL6C
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL7
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL7C
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8C #-}
 
 module Torch.GraduallyTyped.NN.Transformer.DecoderBlock where
 
@@ -44,16 +26,13 @@ import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType, WithDataTypeC (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (..))
-import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
-import Torch.GraduallyTyped.NN.Transformer.CrossAttention (CrossAttention, CrossAttentionOutputShape, HasInitializeCrossAttentionC)
-import Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork (FeedForwardNetworkOutputShape, HasInitializeTransformerFeedForwardNetworkC, TransformerFeedForwardNetwork)
-import Torch.GraduallyTyped.NN.Transformer.SelfAttention (HasInitializeSelfAttentionC, SelfAttention, SelfAttentionOutputShape)
+import Torch.GraduallyTyped.NN.Transformer.CrossAttention (CrossAttention, HasInitializeCrossAttentionC)
+import Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork (HasInitializeTransformerFeedForwardNetworkC, TransformerFeedForwardNetwork)
+import Torch.GraduallyTyped.NN.Transformer.SelfAttention (HasInitializeSelfAttentionC, SelfAttention)
 import Torch.GraduallyTyped.Random (Generator)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape (Dim (..), Name (..), Size (..), WithDimC (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
-import Torch.GraduallyTyped.Unify (type (<+>))
 
 data
   TransformerDecoderBlock

@@ -27,8 +27,8 @@ decoder_attention_mask = torch.ones([batch_size, decoder_seq_length], dtype=torc
 # mask = torch.ones([batch_size, decoder_seq_length], dtype=torch.bool)
 # print(model.decoder.get_extended_attention_mask(mask, (batch_size, decoder_seq_length), mask.device))
 
-context_position = torch.arange(decoder_seq_length, dtype=torch.long)[:, None]
-memory_position = torch.arange(decoder_seq_length, dtype=torch.long)[None, :]
+context_position = torch.arange(4, dtype=torch.long)[:, None]
+memory_position = torch.arange(4, dtype=torch.long)[None, :]
 relative_position = memory_position - context_position  # shape (query_length, key_length)
 relative_position_bucket = model.decoder.block[0].layer[0].SelfAttention._relative_position_bucket(
     relative_position,  # shape (query_length, key_length)

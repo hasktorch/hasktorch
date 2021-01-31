@@ -15,8 +15,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoStarIsType #-}
-{-# OPTIONS_GHC -fomit-interface-pragmas
-                -fplugin TypeLevel.Rewrite
+{-# OPTIONS_GHC -fplugin TypeLevel.Rewrite
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyRightAssociativeL
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2C
@@ -55,11 +54,11 @@ import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Random (Generator, mkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape (BroadcastShapesF, By (..), Dim (..), KnownDim (..), KnownShape, Name (..), SelectDim (..), Shape (..), Size (..), WithDimC (..), WithShapeC (..), dimSize, getDim, unifyDims, type (!))
-import Torch.GraduallyTyped.Tensor.Creation (ones, zeros)
-import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (ReshapeF, TransposeF, UnsqueezeF, reshape, transpose, unsqueeze)
+import Torch.GraduallyTyped.Shape (BroadcastShapesF, By (..), Dim (..), KnownDim (..), KnownShape, Name (..), SelectDim (..), Shape (..), Size (..), WithDimC (..), WithShapeC (..), getDim, unifyDims, type (!))
+import Torch.GraduallyTyped.Tensor.Creation (ones)
+import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (ReshapeF, TransposeF, reshape, transpose)
 import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (MatmulF, matmul)
-import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add, divScalar)
+import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..), checkedDataType, checkedDevice, checkedLayout, checkedShape, shape)
 import Torch.GraduallyTyped.Unify (Unify, type (<+>))
 import qualified Torch.Tensor
@@ -622,12 +621,10 @@ instance
         embedDim = case dimVal @embedDim of
           Dim (Name name) (Size size) -> Dim name size
           Dim _ _ -> unsafeGetEmbedDim mha
-        scaling :: Double = sqrt . fromIntegral . dimSize $ mhaHeadDim
      in runIxState $
           let q =
                 ireturn query
                   >>>= IxState . forward mhaQInProj
-                  >>>= ireturn . flip divScalar scaling
                   >>>= ireturn . reshape' @(BatchDim queryShape keyShape valueShape) @(QuerySeqDim queryShape) @headDim @headEmbedDim [batchDim, querySeqDim, mhaHeadDim, mhaHeadEmbedDim]
                   >>>= ireturn . transpose @( 'SelectDim ( 'ByIndex 1)) @( 'SelectDim ( 'ByIndex 2))
               k =

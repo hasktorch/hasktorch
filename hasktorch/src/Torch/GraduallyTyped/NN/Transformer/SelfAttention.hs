@@ -15,9 +15,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoStarIsType #-}
-{-# OPTIONS_GHC -v2
-                -fomit-interface-pragmas
-                -fplugin TypeLevel.Rewrite
+{-# OPTIONS_GHC -fplugin TypeLevel.Rewrite
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyRightAssociativeL
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2C
@@ -49,7 +47,7 @@ import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout)
 import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithoutBiasF)
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF)
-import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithoutBiasF, LayerNormWithoutBiasSelectDimsF)
+import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithoutBiasF)
 import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormWithoutBiasC, LayerNorm)
 import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (HasInitializeMultiHeadAttentionC, MultiHeadAttention)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
@@ -57,9 +55,9 @@ import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, type (!))
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownDim (..), KnownShape (..), Name (..), SelectDim (..), Shape (..), Size (..), WithDimC (..), WithSelectDimsC, WithShapeC (..))
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownDim (..), KnownShape (..), Name (..), SelectDim (..), Shape (..), Size (..), WithDimC (..), WithShapeC (..))
 import Torch.GraduallyTyped.Tensor (ReshapeF)
-import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (TransposeF, UnsqueezeF)
+import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (TransposeF)
 import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (MatmulF)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)

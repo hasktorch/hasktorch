@@ -1,5 +1,5 @@
 import torch
-from transformers import AutoTokenizer, T5ForConditionalGeneration
+from transformers import AutoTokenizer, T5Model, T5ForConditionalGeneration
 
 # class T5Small(torch.nn.Module):
 #     def __init__(self):
@@ -15,6 +15,7 @@ from transformers import AutoTokenizer, T5ForConditionalGeneration
 # traced_model = torch.jit.trace(model, [input_ids, decoder_input_ids])
 # traced_model.save("t5-small.pt")
 
+# model = T5Model.from_pretrained('t5-small', torchscript=False)
 model = T5ForConditionalGeneration.from_pretrained('t5-small', torchscript=False)
 model.eval()
 
@@ -30,4 +31,7 @@ outputs = model(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
 
 print(input_ids)
 print(decoder_input_ids)
+# print(outputs.encoder_last_hidden_state)
+# print(outputs.last_hidden_state)
 print(outputs.logits)
+# print(outputs)

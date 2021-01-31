@@ -45,6 +45,7 @@ import qualified Torch.Internal.Managed.Type.Context as ATen
 import qualified Torch.Internal.Managed.Type.Extra as ATen
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
 import qualified Torch.Internal.Type as ATen (Tensor, TensorList)
+import qualified Torch.Tensor (Tensor (Unsafe))
 
 -- $setup
 -- >>> import Torch.GraduallyTyped.Tensor.Creation (ones)
@@ -82,6 +83,9 @@ newtype
     Tensor requiresGradient layout device dataType shape
 
 type role Tensor nominal nominal nominal nominal nominal
+
+instance Show (Tensor requiresGradient layout device dataType shape) where
+  show (UnsafeTensor t) = show (Torch.Tensor.Unsafe t)
 
 -- | Alias for an untyped tensor without gradients.
 type UntypedTensor = Tensor 'WithoutGradient 'UncheckedLayout 'UncheckedDevice 'UncheckedDataType 'UncheckedShape

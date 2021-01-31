@@ -30,7 +30,6 @@ import Torch.GraduallyTyped.NN.Transformer.Encoder (HasInitializeTransformerEnco
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.Shape (Dim (..), Name (..), Size (..), WithDimC (..))
-import Torch.GraduallyTyped.Tensor.Type (Tensor)
 
 data HasLMHead = WithLMHead | WithoutLMHead
 
