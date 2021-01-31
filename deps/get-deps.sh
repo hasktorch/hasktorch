@@ -132,6 +132,9 @@ if [ "$SKIP_DOWNLOAD" = 0 ] ; then
 	      "cu101" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcu101.zip ;;
 	      "cu102" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip ;;
 	      "cu110" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcu110.zip ;;
+              *)
+                  1>&2 printf "Error: invalid value '%s' passed to -a\n\n" "$COMPUTE_ARCH"
+                  usage_exit
 	esac
 	wget -O libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip "$URL"
         unzip libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip
