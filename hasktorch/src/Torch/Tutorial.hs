@@ -20,9 +20,10 @@ In the following section we introduce Hasktorch usage at a high level
 from an end-user perspective. In the sections that follow we will delve
 into the underlying implementation concepts.
 
-The sequence of topics and examples here is loosely based on the PyTorch
-tutorial \"Deep Learning with PyTorch: A 60 Minute Blitz\" by Soumith
-Chintala.
+The sequence of topics and examples here is loosely based on the
+PyTorch tutorial [Deep Learning with PyTorch: A 60 Minute
+Blitz](https://pytorch.org/tutorials/beginner/deep_learning_60min_blitz.html)
+by Soumith Chintala.
 
 == Tensors
 #tensors#
@@ -44,8 +45,9 @@ Initialize a tensor from a Haskell list:
 Note that the numerical type of the tensor is inferred from the types of
 the values in the list.
 
-A single valued tensor can be passed to @asTensor@ as well (and can be
-converted back to a scalar using @asValue@):
+A single valued tensor can be passed to 'Torch.Tensor.asTensor' as
+well (and can be converted back to a scalar using
+'Torch.Tensor.asValue'):
 
 > > asTensor (3.5)
 > Tensor Float []  3.5000
@@ -113,7 +115,7 @@ existing tensor:
 Most operations are pure functions, similar to Haskell standard library
 math operations.
 
-Tensors implement the Num typeclass:
+Tensors implement the @Num@ typeclass:
 
 > > let x = ones' [4]
 > > x + x
@@ -150,7 +152,8 @@ dtype matches the Haskell type:
 #automatic-differentiation#
 
 Automatic differentiation is achieved through the use of two primary
-functions in @Torch.Autograd@ module, @makeIndependent@ and @grad@.
+functions in the 'Torch.Autograd' module,
+'Torch.Autograd.makeIndependent' and 'Torch.Autograd.grad'.
 
 === Independent Tensors
 #independent-tensors#
@@ -159,10 +162,10 @@ functions in @Torch.Autograd@ module, @makeIndependent@ and @grad@.
 from which a compute graph is constructed for differentiation, while
 @grad@ uses compute graph to compute gradients.
 
-@makeIndependent@ takes a tensor as input and returns an IO action which
-produces an @IndependentTensor@:
+@makeIndependent@ takes a tensor as input and returns an IO action
+which produces an 'Torch.Autograd.IndependentTensor':
 
-makeIndependent :: Tensor -> IO IndependentTensor
+> makeIndependent :: Tensor -> IO IndependentTensor
 
 What is the definition of the @IndependentTensor@ type produced by the
 @makeIndependent@ action? It’s defined in the Hasktorch library as:
@@ -176,9 +179,9 @@ up computations using ops applied to the @toDependent@ tensor of an
 @IndependentTensor@ will implicitly construct a compute graph to which
 @grad@ can be applied.
 
-All tensors have an underlying property that can be retrieved using the
-@requiresGrad@ function which indicates whether they are a
-differentiable value in a compute graph. <#notes [2]>
+All tensors have an underlying property that can be retrieved using
+the 'Torch.Autograd.requiresGrad' function which indicates whether
+they are a differentiable value in a compute graph. <#notes [2]>
 
 > > let x = asTensor [1, 2, 3]
 > > y <- makeIndependent (asTensor [4, 5, 6])
@@ -267,7 +270,7 @@ or product types, nest types, etc. The ADT can implement various
 typeclasses to take on other functionality.
 
 The core interface that defines capability specific to differentiable
-programming is the @Parameterized@ typeclass:
+programming is the 'Torch.NN.Parameterized' typeclass:
 
 > class Parameterized f where
 >   flattenParameters :: f -> [Parameter]
@@ -278,7 +281,7 @@ programming is the @Parameterized@ typeclass:
 >   default replaceOwnParameters :: (Generic f, Parameterized' (Rep f)) => f -> ParamStream f
 >   replaceOwnParameters f = to <$> replaceOwnParameters' (from f)
 
-Note @Paramater@ is simply a type alias for @IndependentTensor@ in the
+Note @Parameter@ is simply a type alias for @IndependentTensor@ in the
 context of neural networks (i.e. @type Parameter = IndependentTensor@).
 
 The role of @flattenParameters@ is to unroll any arbitrary ADT
@@ -299,7 +302,7 @@ containers of tensors, or other types that are built from tensor values
 (for example, layer modules provided in @Torch.NN@. In many cases, as
 you’ll see in the following examples, you will only need to add
 
-> intance Paramaterized MyNeuralNetwork
+> instance Parameterized MyNeuralNetwork
 
 (where @MyNeuralNetwork@ is an ADT definition for your model) and the
 compiler will derive implementations for the @flattenParameters@ and
@@ -351,13 +354,13 @@ optimization is performed such that at each iteration a batch.
 >     batchSize = 4
 >     numFeatures = 3
 
-Note the expression of the architecture in the @linear@ function (a
-single linear layer, or alternatively a neural network with zero hidden
-layers), does not require an explicit representation of the compute
-graph, but is simply a composition of tensor ops. Because of the
-autodiff mechanism described in the previous section, the graph is
-constructed automatically as pure functional ops are applied, given a
-context of a set of independent variables.
+Note the expression of the architecture in the 'Torch.NN.linear'
+function (a single linear layer, or alternatively a neural network
+with zero hidden layers), does not require an explicit representation
+of the compute graph, but is simply a composition of tensor
+ops. Because of the autodiff mechanism described in the previous
+section, the graph is constructed automatically as pure functional ops
+are applied, given a context of a set of independent variables.
 
 The @init@ variable is initialized as a @Linear@ type (defined in
 @Torch.NN@) using @sample@ which randomly initializes a @Linear@ value.
@@ -366,23 +369,24 @@ The @init@ variable is initialized as a @Linear@ type (defined in
 and representing a fully connected linear layer, equivalent to linear
 regression when no hidden layers are present.
 
-@init@ is passed into the @foldLoop@<#notes [3]> as the @state@
+@init@ is passed into the 'Torch.Optim.foldLoop'@<#notes [3]> as the @state@
 variable.
 
-A new list of @Paramater@ values is passed back from @runStep@ (which
-calls @grad@ to retrieve gradients, given a loss function, learning
-rate, and optimizer) and the typeclass function @replaceParameters@ is
-used to update the model at each iteration.
+A new list of @Parameter@ values is passed back from
+'Torch.Optim.runStep' (which calls @grad@ to retrieve gradients, given
+a loss function, learning rate, and optimizer) and the typeclass
+function @replaceParameters@ is used to update the model at each
+iteration.
 
 Initialization is discussed in more detail in the following section
 
 === Weight Initialization
 #weight-initialization#
 
-Random initialization of weights is not a pure function since two random
-initializations return different values. Initialization occurs by
-calling the @sample@ function for an ADT (@spec@) implementing the
-@Randomizable@ typeclass:
+Random initialization of weights is not a pure function since two
+random initializations return different values. Initialization occurs
+by calling the 'Torch.NN.sample' function for an ADT (@spec@)
+implementing the 'Torch.NN.Randomizable' typeclass:
 
 > class Randomizable spec f | spec -> f where
 >   sample :: spec -> IO f
@@ -403,8 +407,8 @@ and is typically used with a specification type:
 >   deriving (Show, Eq)
 
 Putting this together, in untyped tensor usage, the user can implement
-custom models or layers implementing the @Paramaterizable@ typeclass
-built up from other ADTs implementing @Paramaterizable@. The shape of
+custom models or layers implementing the @Parameterizable@ typeclass
+built up from other ADTs implementing @Parameterizable@. The shape of
 the data required for initialization is described by a type implementing
 @Randomizable@’s @spec@ parameter, and the @sample@ implementation
 specifies the default weight initialization.
@@ -454,14 +458,14 @@ the optimizer state and a @step@ function that implements a single step
 perturbation given the learning rate, loss gradients, current
 parameters, and optimizer state.
 
-This function interface is described in the Optimizer typeclass
-interface:
+This function interface is described in the 'Torch.Optim.Optimizer'
+typeclass interface:
 
 > class Optimizer o where
 >     step :: LearningRate -> Gradients -> [Tensor] -> o -> ([Tensor], o)
 
-Gradients is a newtype wrapper around a list of tensors to make intent
-explicit: @newtype Gradients = Gradients [Tensor]@.
+@Gradients@ is a newtype wrapper around a list of tensors to make
+intent explicit: @newtype Gradients = Gradients [Tensor]@.
 
 Hasktorch provides built-in optimizer implementations in @Torch.Optim@.
 Some illustrative example implementations follow.
