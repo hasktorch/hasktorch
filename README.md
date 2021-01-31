@@ -81,11 +81,11 @@ $ cabal run static-mnist-cnn    # Run the MNIST CNN example.
 Starting from the top-level directory of the project, run:
 
 ```sh
-$ pushd deps             # Change to the deps directory and save the current directory.
-$ ./get-deps.sh -a cu11  # Run the shell script to retrieve the libtorch dependencies.
-$ popd                   # Go back to the root directory of the project.
-$ source setenv          # Set the shell environment to reference the shared library locations.
-$ ./setup-cabal.sh       # Create a cabal project file
+$ pushd deps              # Change to the deps directory and save the current directory.
+$ ./get-deps.sh -a cu110  # Run the shell script to retrieve the libtorch dependencies.
+$ popd                    # Go back to the root directory of the project.
+$ source setenv           # Set the shell environment to reference the shared library locations.
+$ ./setup-cabal.sh        # Create a cabal project file
 ```
 
 To build and test the Hasktorch library, run:
