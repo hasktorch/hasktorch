@@ -30,6 +30,7 @@ module Torch.GraduallyTyped.Prelude
     Tail,
     Length,
     Contains,
+    Extract,
     FromMaybe,
     FstMaybe,
     SndMaybe,
@@ -231,6 +232,22 @@ type family Contains (f :: k) (a :: k') :: Bool where
   Contains a a = 'True
   Contains (f g) a = Contains f a || Contains g a
   Contains _ _ = 'False
+
+-- | Extract all occurrences of a given type from another:
+--
+-- >>> :kind! Extract (Either Int String) Int
+-- Extract (Either Int String) Int :: [Type]
+-- = '[Int]
+-- >>> :kind! Extract (Either Int String) Bool
+-- Extract (Either Int String) Bool :: [Type]
+-- = '[]
+-- >>> :kind! Extract (Either Int String) Either
+-- Extract (Either Int String) Either :: [Type -> Type -> Type]
+-- = '[Either]
+type family Extract (f :: k) (a :: k') :: [k'] where
+  Extract a a = '[a]
+  Extract (f g) a = Concat (Extract f a) (Extract g a)
+  Extract _ _ = '[]
 
 whenM :: Monad m => m Bool -> m () -> m ()
 whenM p m =

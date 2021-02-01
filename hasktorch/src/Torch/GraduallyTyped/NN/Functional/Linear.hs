@@ -10,8 +10,13 @@ module Torch.GraduallyTyped.NN.Functional.Linear where
 
 import GHC.TypeLits (Nat, Symbol, TypeError)
 import System.IO.Unsafe (unsafePerformIO)
+import Torch.DType (DType (..))
+import Torch.GraduallyTyped.DType (DataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.Prelude (Reverse, Seq)
-import Torch.GraduallyTyped.Shape (Dim (..), Name, Shape (..), Size)
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import Torch.Internal.Cast (cast2, cast3)
@@ -150,3 +155,15 @@ linearWithoutBias ::
     (dataType <+> dataType')
     (LinearWithoutBiasF shape shape')
 linearWithoutBias weight input = unsafePerformIO $ cast2 ATen.linear_tt input weight
+
+testLinearWithoutBias ::
+  Tensor
+    'WithGradient
+    ( 'Layout 'Dense)
+    'UncheckedDevice
+    ( 'DataType 'Float)
+    ( 'Shape '[ 'Dim ( 'Name "output") ( 'Size 2)])
+testLinearWithoutBias =
+  let weight = undefined :: Tensor 'WithGradient ( 'Layout 'Dense) ( 'Device 'CPU) ( 'DataType 'Float) ( 'Shape '[ 'Dim ( 'Name "output") ( 'Size 2), 'Dim ( 'Name "input") ( 'Size 1)])
+      input = undefined :: Tensor 'WithoutGradient ( 'Layout 'Dense) 'UncheckedDevice ( 'DataType 'Float) ( 'Shape '[ 'Dim ( 'Name "input") ( 'Size 1)])
+   in linearWithoutBias weight input

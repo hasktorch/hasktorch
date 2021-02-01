@@ -20,9 +20,9 @@ module Torch.GraduallyTyped.NN.Linear where
 
 import Control.Monad.State.Strict (MonadState (state), runState)
 import GHC.TypeLits (Nat, Symbol)
-import Torch.DType (DType)
+import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), WithDataTypeC (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType, WithDeviceC (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithBiasF, LinearWithoutBiasF, linearWithBias, linearWithoutBias)
@@ -30,7 +30,7 @@ import Torch.GraduallyTyped.NN.Initialization (FanMode (..), NonLinearity (..), 
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
-import Torch.GraduallyTyped.Shape (Dim (..), Name, Shape (..), Size, WithDimC (..))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Shape (..), Size (..), WithDimC (..))
 import Torch.GraduallyTyped.Tensor.Creation (WithCreateC (..), randn)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mulScalar, subScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
@@ -212,3 +212,15 @@ instance
     generator
   where
   forward (LinearWithoutBias linearWeight) input g = (linearWithoutBias linearWeight input, g)
+
+testForwardLinearWithoutBias ::
+  Tensor
+    'WithGradient
+    ( 'Layout 'Dense)
+    'UncheckedDevice
+    ( 'DataType 'Float)
+    ( 'Shape '[ 'Dim ( 'Name "output") ( 'Size 2)])
+testForwardLinearWithoutBias =
+  let weight = undefined :: Tensor 'WithGradient ( 'Layout 'Dense) ( 'Device 'CPU) ( 'DataType 'Float) ( 'Shape '[ 'Dim ( 'Name "output") ( 'Size 2), 'Dim ( 'Name "input") ( 'Size 1)])
+      input = undefined :: Tensor 'WithoutGradient ( 'Layout 'Dense) 'UncheckedDevice ( 'DataType 'Float) ( 'Shape '[ 'Dim ( 'Name "input") ( 'Size 1)])
+   in linearWithoutBias weight input

@@ -3,10 +3,12 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
@@ -37,6 +39,7 @@ module Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention where
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.State.Strict (MonadState (state), runState)
+import Data.Data (Proxy (..))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import GHC.TypeLits (Nat, Symbol)
@@ -44,7 +47,7 @@ import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), WithDataTypeC (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (..))
-import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense))
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout (..))
 import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithoutBiasF)
@@ -555,47 +558,13 @@ instance
           ( MultiHeadAttentionOutputShape
               embedDim
               queryEmbedDim
-              (BatchDim queryShape keyShape valueShape)
-              (QuerySeqDim queryShape)
-              (TransposeAndReshape headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim queryShape keyShape valueShape attentionBiasShape (BatchDim queryShape keyShape valueShape) (QuerySeqDim queryShape) (KeySeqDim keyShape valueShape))
+              batchDim
+              querySeqDim
+              transposedAndReshaped
           ),
-    generatorOutput ~ Generator (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice),
-    Torch.GraduallyTyped.Unify.Unify
-      (Device (DeviceType Nat))
-      ( Torch.GraduallyTyped.Unify.Unify
-          (Device (DeviceType Nat))
-          ( Torch.GraduallyTyped.Unify.Unify
-              (Device (DeviceType Nat))
-              ( Torch.GraduallyTyped.Unify.Unify
-                  (Device (DeviceType Nat))
-                  device
-                  queryDevice
-              )
-              ( Torch.GraduallyTyped.Unify.Unify
-                  (Device (DeviceType Nat))
-                  device
-                  keyDevice
-              )
-          )
-          attentionBiasDevice
-      )
-      generatorDevice
-      ~ Torch.GraduallyTyped.Unify.Unify
-          (Device (DeviceType Nat))
-          device
-          ( Torch.GraduallyTyped.Unify.Unify
-              (Device (DeviceType Nat))
-              queryDevice
-              ( Torch.GraduallyTyped.Unify.Unify
-                  (Device (DeviceType Nat))
-                  keyDevice
-                  ( Torch.GraduallyTyped.Unify.Unify
-                      (Device (DeviceType Nat))
-                      attentionBiasDevice
-                      generatorDevice
-                  )
-              )
-          )
+    generatorOutput
+      ~ Generator ((((device <+> queryDevice) <+> (device <+> keyDevice)) <+> attentionBiasDevice) <+> generatorDevice)
+      -- ~ Generator ((((device <+> queryDevice) <+> (device <+> keyDevice)) <+> attentionBiasDevice) <+> generatorDevice)
   ) =>
   HasForward
     (MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)

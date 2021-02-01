@@ -15,11 +15,11 @@
 module Torch.GraduallyTyped.Tensor.Creation
   ( WithCreateC (..),
     ones,
-    checkedOnes,
+    -- checkedOnes,
     uncheckedOnes,
     zeros,
     randn,
-    checkedRandn,
+    -- checkedRandn,
     uncheckedRandn,
   )
 where
@@ -29,12 +29,12 @@ import Data.Kind (Type)
 import Data.Monoid (All (..))
 import GHC.TypeLits (Nat, Symbol)
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.DType (DType)
+import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), KnownDType, WithDataTypeC (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType, KnownDeviceType, WithDeviceC (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDeviceType, WithDeviceC (..))
 import Torch.GraduallyTyped.Internal.TensorOptions (tensorOptions)
 import Torch.GraduallyTyped.Internal.Void (Void)
-import Torch.GraduallyTyped.Layout (KnownLayoutType, Layout (..), LayoutType, WithLayoutC (..))
+import Torch.GraduallyTyped.Layout (KnownLayoutType, Layout (..), LayoutType (..), WithLayoutC (..))
 import Torch.GraduallyTyped.Prelude (Catch)
 import Torch.GraduallyTyped.Random (Generator, withGenerator)
 import Torch.GraduallyTyped.RequiresGradient (KnownRequiresGradient, RequiresGradient (..), requiresGradientVal)
@@ -152,62 +152,52 @@ instance
 
 -- | Create a tensor of ones.
 --
--- >>> :type ones @'Dependent @'UncheckedLayout @'UncheckedDevice @'UncheckedDataType @'UncheckedShape
--- ones @'Dependent @'UncheckedLayout @'UncheckedDevice @'UncheckedDataType @'UncheckedShape
+-- >>> :type ones @'WithoutGradient @'UncheckedLayout @'UncheckedDevice @'UncheckedDataType @'UncheckedShape
+-- ones @'WithoutGradient @'UncheckedLayout @'UncheckedDevice @'UncheckedDataType @'UncheckedShape
 --   :: LayoutType
---      -> DeviceType GHC.Int.Int16
+--      -> DeviceType Int16
 --      -> DType
 --      -> [Dim String Integer]
 --      -> Tensor
---           'Dependent
+--           'WithoutGradient
 --           'UncheckedLayout
 --           'UncheckedDevice
 --           'UncheckedDataType
 --           'UncheckedShape
---
--- >>> :type ones @'Dependent @('Layout 'Dense) @'UncheckedDevice @'UncheckedDataType @'UncheckedShape
--- ones @'Dependent @('Layout 'Dense) @'UncheckedDevice @'UncheckedDataType @'UncheckedShape
+-- >>> :type ones @'WithoutGradient @('Layout 'Dense) @'UncheckedDevice @'UncheckedDataType @'UncheckedShape
+-- ones @'WithoutGradient @('Layout 'Dense) @'UncheckedDevice @'UncheckedDataType @'UncheckedShape
 --   :: DeviceType Int16
 --      -> DType
 --      -> [Dim String Integer]
 --      -> Tensor
---           'Dependent
+--           'WithoutGradient
 --           ('Layout 'Dense)
 --           'UncheckedDevice
 --           'UncheckedDataType
 --           'UncheckedShape
---
--- >>> :type ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @'UncheckedDataType @'UncheckedShape
--- ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @'UncheckedDataType @'UncheckedShape
+-- >>> :type ones @'WithoutGradient @('Layout 'Dense) @('Device ('CUDA 0)) @'UncheckedDataType @'UncheckedShape
+-- ones @'WithoutGradient @('Layout 'Dense) @('Device ('CUDA 0)) @'UncheckedDataType @'UncheckedShape
 --   :: DType
 --      -> [Dim String Integer]
 --      -> Tensor
---           'Dependent
+--           'WithoutGradient
 --           ('Layout 'Dense)
 --           ('Device ('CUDA 0))
 --           'UncheckedDataType
 --           'UncheckedShape
---
--- >>> :type ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @'UncheckedShape
--- ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @'UncheckedShape
+-- >>> :type ones @'WithoutGradient @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @'UncheckedShape
+-- ones @'WithoutGradient @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @'UncheckedShape
 --   :: [Dim String Integer]
 --      -> Tensor
---           'Dependent
+--           'WithoutGradient
 --           ('Layout 'Dense)
 --           ('Device ('CUDA 0))
 --           ('DataType 'Half)
 --           'UncheckedShape
---
--- >>> :type ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)])
--- ones @'Dependent @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)])
---   :: Tensor
---        'Dependent
---        ('Layout 'Dense)
---        ('Device ('CUDA 0))
---        ('DataType 'Half)
---        ('Shape
---           '[ 'Dim ('Name "batch") ('Size 32),
---              'Dim ('Name "feature") ('Size 8)])
+-- >>> :type ones @'WithoutGradient @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)])
+-- Couldn't match type ‘'[]’
+--                with ‘'[ 'Dim ('Name "feature") ('Size 8)]’
+--   arising from a use of ‘ones’
 ones ::
   forall requiresGradient layout device dataType shape.
   WithCreateC (Tensor requiresGradient layout device dataType shape) requiresGradient layout device dataType shape =>
@@ -230,24 +220,24 @@ ones =
               | otherwise -> cast3 ATen.ones_lNo sizes names opts
        in UnsafeTensor tensor
 
-checkedOnes ::
-  forall requiresGradient layoutType deviceType dType dims.
-  ( KnownRequiresGradient requiresGradient,
-    KnownLayoutType layoutType,
-    KnownDeviceType deviceType,
-    KnownDType dType,
-    WithShapeC ( 'Shape dims) (Tensor requiresGradient ( 'Layout layoutType) ( 'Device deviceType) ( 'DataType dType) ( 'Shape dims))
-  ) =>
-  WithShapeF
-    ( 'Shape dims)
-    ( Tensor
-        requiresGradient
-        ( 'Layout layoutType)
-        ( 'Device deviceType)
-        ( 'DataType dType)
-        ( 'Shape dims)
-    )
-checkedOnes = ones @requiresGradient @( 'Layout layoutType) @( 'Device deviceType) @( 'DataType dType) @( 'Shape dims)
+-- checkedOnes ::
+--   forall requiresGradient layoutType deviceType dType dims.
+--   ( KnownRequiresGradient requiresGradient,
+--     KnownLayoutType layoutType,
+--     KnownDeviceType deviceType,
+--     KnownDType dType,
+--     WithShapeC ( 'Shape dims) (Tensor requiresGradient ( 'Layout layoutType) ( 'Device deviceType) ( 'DataType dType) ( 'Shape dims))
+--   ) =>
+--   WithShapeF
+--     ( 'Shape dims)
+--     ( Tensor
+--         requiresGradient
+--         ( 'Layout layoutType)
+--         ( 'Device deviceType)
+--         ( 'DataType dType)
+--         ( 'Shape dims)
+--     )
+-- checkedOnes = ones @requiresGradient @( 'Layout layoutType) @( 'Device deviceType) @( 'DataType dType) @( 'Shape dims)
 
 -- | Like 'ones', but specialized to the case in which all arguments are unchecked at compile time.
 uncheckedOnes ::
@@ -315,29 +305,29 @@ randn = withCreate @(Generator device' -> (Tensor requiresGradient layout device
                 pure $ UnsafeTensor tensor
             )
 
-checkedRandn ::
-  forall requiresGradient layoutType deviceType dType dims.
-  ( KnownRequiresGradient requiresGradient,
-    KnownLayoutType layoutType,
-    KnownDeviceType deviceType,
-    KnownDType dType,
-    Catch deviceType,
-    WithShapeC ( 'Shape dims) (Generator ( 'Device deviceType) -> (Tensor requiresGradient ( 'Layout layoutType) ( 'Device deviceType) ( 'DataType dType) ( 'Shape dims), Generator ( 'Device deviceType)))
-  ) =>
-  ( WithShapeF
-      ( 'Shape dims)
-      ( Generator ( 'Device deviceType) ->
-        ( Tensor
-            requiresGradient
-            ( 'Layout layoutType)
-            ( 'Device deviceType)
-            ( 'DataType dType)
-            ( 'Shape dims),
-          Generator ( 'Device deviceType)
-        )
-      )
-  )
-checkedRandn = randn @requiresGradient @( 'Layout layoutType) @( 'Device deviceType) @( 'DataType dType) @( 'Shape dims) @( 'Device deviceType)
+-- checkedRandn ::
+--   forall requiresGradient layoutType deviceType dType dims.
+--   ( KnownRequiresGradient requiresGradient,
+--     KnownLayoutType layoutType,
+--     KnownDeviceType deviceType,
+--     KnownDType dType,
+--     Catch deviceType,
+--     WithShapeC ( 'Shape dims) (Generator ( 'Device deviceType) -> (Tensor requiresGradient ( 'Layout layoutType) ( 'Device deviceType) ( 'DataType dType) ( 'Shape dims), Generator ( 'Device deviceType)))
+--   ) =>
+--   ( WithShapeF
+--       ( 'Shape dims)
+--       ( Generator ( 'Device deviceType) ->
+--         ( Tensor
+--             requiresGradient
+--             ( 'Layout layoutType)
+--             ( 'Device deviceType)
+--             ( 'DataType dType)
+--             ( 'Shape dims),
+--           Generator ( 'Device deviceType)
+--         )
+--       )
+--   )
+-- checkedRandn = randn @requiresGradient @( 'Layout layoutType) @( 'Device deviceType) @( 'DataType dType) @( 'Shape dims) @( 'Device deviceType)
 
 uncheckedRandn ::
   -- | Memory layout of the tensor.

@@ -23,11 +23,12 @@
 module Torch.GraduallyTyped.Shape.Type where
 
 import Control.Monad (foldM)
-import Data.Kind (Type)
+import Data.Kind (Constraint, Type)
 import Data.Proxy (Proxy (..))
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (KnownNat (..), KnownSymbol (..), Nat, Symbol, natVal, symbolVal)
 import System.IO.Unsafe (unsafePerformIO)
+import Torch.GraduallyTyped.Prelude (Concat)
 import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Managed.Cast as ATen ()
 import qualified Torch.Internal.Managed.Type.Dimname as ATen (dimname_symbol, fromSymbol_s)
@@ -286,52 +287,107 @@ instance (KnownShape ( 'Shape dims), KnownDim dim) => KnownShape ( 'Shape (dim '
     case shapeVal @( 'Shape dims) of
       Shape dims -> Shape $ dimVal @dim : dims
 
-class WithShapeC (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (f :: Type) where
+class
+  ShapeConstraint shape (GetShapes f) =>
+  WithShapeC (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (f :: Type)
+  where
   type WithShapeF shape f :: Type
   withShape :: ([Dim String Integer] -> f) -> WithShapeF shape f
   withoutShape :: WithShapeF shape f -> ([Dim String Integer] -> f)
 
-instance WithShapeC 'UncheckedShape f where
+instance
+  ShapeConstraint 'UncheckedShape (GetShapes f) =>
+  WithShapeC 'UncheckedShape f
+  where
   type WithShapeF 'UncheckedShape f = [Dim String Integer] -> f
   withShape = id
   withoutShape = id
 
-instance WithShapeC ( 'Shape '[]) f where
-  type WithShapeF ( 'Shape '[]) f = f
-  withShape f = f []
-  withoutShape = const
+instance
+  ( ShapeConstraint ( 'Shape dims) (GetShapes f),
+    WithDimsC dims f
+  ) =>
+  WithShapeC ( 'Shape dims) f
+  where
+  type WithShapeF ( 'Shape dims) f = WithDimsF dims f
+  withShape = withDims @dims
+  withoutShape = withoutDims @dims
+
+type family ShapeConstraint (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shapes :: [Shape [Dim (Name Symbol) (Size Nat)]]) :: Constraint where
+  ShapeConstraint _ '[] = ()
+  ShapeConstraint shape '[shape'] = shape ~ shape'
+  ShapeConstraint _ _ = ()
+
+-- >>> :kind! GetShapes ('Shape '[ 'Dim ('Name "*") ('Size 1)])
+-- GetShapes ('Shape '[ 'Dim ('Name "*") ('Size 1)]) :: [Shape
+--                                                         [Dim (Name Symbol) (Size Nat)]]
+-- = '[ 'Shape '[ 'Dim ('Name "*") ('Size 1)]]
+-- >>> :kind! GetShapes '[ 'Shape '[ 'Dim ('Name "*") ('Size 1)], 'Shape '[ 'Dim 'UncheckedName ('Size 0)]]
+-- GetShapes '[ 'Shape '[ 'Dim ('Name "*") ('Size 1)], 'Shape '[ 'Dim 'UncheckedName ('Size 0)]] :: [Shape
+--                                                                                                     [Dim
+--                                                                                                        (Name
+--                                                                                                           Symbol)
+--                                                                                                        (Size
+--                                                                                                           Nat)]]
+-- = '[ 'Shape '[ 'Dim ('Name "*") ('Size 1)],
+--      'Shape '[ 'Dim 'UncheckedName ('Size 0)]]
+-- >>> :kind! GetShapes ('Just ('Shape '[ 'Dim ('Name "*") ('Size 1)]))
+-- GetShapes ('Just ('Shape '[ 'Dim ('Name "*") ('Size 1)])) :: [Shape
+--                                                                 [Dim (Name Symbol) (Size Nat)]]
+-- = '[ 'Shape '[ 'Dim ('Name "*") ('Size 1)]]
+type family GetShapes (f :: k) :: [Shape [Dim (Name Symbol) (Size Nat)]] where
+  GetShapes (a :: Shape [Dim (Name Symbol) (Size Nat)]) = '[a]
+  GetShapes (f g) = Concat (GetShapes f) (GetShapes g)
+  GetShapes _ = '[]
+
+class WithDimsC (dims :: [Dim (Name Symbol) (Size Nat)]) (f :: Type) where
+  type WithDimsF dims f :: Type
+  withDims :: ([Dim String Integer] -> f) -> WithDimsF dims f
+  withoutDims :: WithDimsF dims f -> ([Dim String Integer] -> f)
+
+instance WithDimsC '[] f where
+  type WithDimsF '[] f = f
+  withDims f = f []
+  withoutDims = const
 
 instance
-  (WithShapeC ( 'Shape dims) f) =>
-  WithShapeC ( 'Shape ( 'Dim 'UncheckedName 'UncheckedSize ': dims)) f
+  WithDimsC dims f =>
+  WithDimsC ( 'Dim 'UncheckedName 'UncheckedSize ': dims) f
   where
-  type WithShapeF ( 'Shape ( 'Dim 'UncheckedName 'UncheckedSize ': dims)) f = Dim String Integer -> WithShapeF ( 'Shape dims) f
-  withShape f dim = withShape @( 'Shape dims) @f $ \dims -> f (dim : dims)
-  withoutShape f (dim : dims) = withoutShape @( 'Shape dims) @f (f dim) dims
+  type WithDimsF ( 'Dim 'UncheckedName 'UncheckedSize ': dims) f = Dim String Integer -> WithDimsF dims f
+  withDims f dim = withDims @dims @f $ \dims -> f (dim : dims)
+  withoutDims f (dim : dims) = withoutDims @dims @f (f dim) dims
 
 instance
-  (WithShapeC ( 'Shape dims) f, KnownSymbol name) =>
-  WithShapeC ( 'Shape ( 'Dim ( 'Name name) 'UncheckedSize ': dims)) f
+  ( WithDimsC dims f,
+    KnownSymbol name
+  ) =>
+  WithDimsC ( 'Dim ( 'Name name) 'UncheckedSize ': dims) f
   where
-  type WithShapeF ( 'Shape ( 'Dim ( 'Name name) 'UncheckedSize ': dims)) f = Integer -> WithShapeF ( 'Shape dims) f
-  withShape f size = withShape @( 'Shape dims) @f $ \dims -> f (Dim (symbolVal $ Proxy @name) size : dims)
-  withoutShape f (Dim _ size : dims) = withoutShape @( 'Shape dims) @f (f size) dims
+  type WithDimsF ( 'Dim ( 'Name name) 'UncheckedSize ': dims) f = Integer -> WithDimsF dims f
+  withDims f size = withDims @dims @f $ \dims -> f (Dim (symbolVal $ Proxy @name) size : dims)
+  withoutDims f (Dim _ size : dims) = withoutDims @dims @f (f size) dims
 
 instance
-  (WithShapeC ( 'Shape dims) f, KnownNat size) =>
-  WithShapeC ( 'Shape ( 'Dim 'UncheckedName ( 'Size size) ': dims)) f
+  ( WithDimsC dims f,
+    KnownNat size
+  ) =>
+  WithDimsC ( 'Dim 'UncheckedName ( 'Size size) ': dims) f
   where
-  type WithShapeF ( 'Shape ( 'Dim 'UncheckedName ( 'Size size) ': dims)) f = String -> WithShapeF ( 'Shape dims) f
-  withShape f name = withShape @( 'Shape dims) @f $ \dims -> f (Dim name (natVal $ Proxy @size) : dims)
-  withoutShape f (Dim name _ : dims) = withoutShape @( 'Shape dims) @f (f name) dims
+  type WithDimsF ( 'Dim 'UncheckedName ( 'Size size) ': dims) f = String -> WithDimsF dims f
+  withDims f name = withDims @dims @f $ \dims -> f (Dim name (natVal $ Proxy @size) : dims)
+  withoutDims f (Dim name _ : dims) = withoutDims @dims @f (f name) dims
 
 instance
-  (WithShapeC ( 'Shape dims) f, KnownSymbol name, KnownNat size) =>
-  WithShapeC ( 'Shape ( 'Dim ( 'Name name) ( 'Size size) ': dims)) f
+  ( WithDimsC dims f,
+    KnownSymbol name,
+    KnownNat size
+  ) =>
+  WithDimsC ( 'Dim ( 'Name name) ( 'Size size) ': dims) f
   where
-  type WithShapeF ( 'Shape ( 'Dim ( 'Name name) ( 'Size size) ': dims)) f = WithShapeF ( 'Shape dims) f
-  withShape f = withShape @( 'Shape dims) @f $ \dims -> f (Dim (symbolVal $ Proxy @name) (natVal $ Proxy @size) : dims)
-  withoutShape f (_ : dims) = withoutShape @( 'Shape dims) @f f dims
+  type WithDimsF ( 'Dim ( 'Name name) ( 'Size size) ': dims) f = WithDimsF dims f
+  withDims f = withDims @dims @f $ \dims -> f (Dim (symbolVal $ Proxy @name) (natVal $ Proxy @size) : dims)
+  withoutDims f (_ : dims) = withoutDims @dims @f f dims
 
 getDim ::
   forall m.

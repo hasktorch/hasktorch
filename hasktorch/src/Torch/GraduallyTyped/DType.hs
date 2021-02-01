@@ -4,17 +4,19 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE UndecidableSuperClasses #-}
 
 module Torch.GraduallyTyped.DType where
 
-import Data.Kind (Type)
+import Data.Kind (Constraint, Type)
 import Torch.DType (DType (..))
-import Type.Errors.Pretty (type (%), type (<>))
+import Torch.GraduallyTyped.Prelude (Concat)
 
 class KnownDType (dType :: DType) where
   dTypeVal :: DType
@@ -66,17 +68,48 @@ instance
   where
   dataTypeVal = DataType (dTypeVal @dType)
 
-class WithDataTypeC (dataType :: DataType DType) (f :: Type) where
+class
+  DataTypeConstraint dataType (GetDataTypes f) =>
+  WithDataTypeC (dataType :: DataType DType) (f :: Type)
+  where
   type WithDataTypeF dataType f :: Type
   withDataType :: (DType -> f) -> WithDataTypeF dataType f
   withoutDataType :: WithDataTypeF dataType f -> (DType -> f)
 
-instance WithDataTypeC 'UncheckedDataType f where
+instance
+  DataTypeConstraint 'UncheckedDataType (GetDataTypes f) =>
+  WithDataTypeC 'UncheckedDataType f
+  where
   type WithDataTypeF 'UncheckedDataType f = DType -> f
   withDataType = id
   withoutDataType = id
 
-instance (KnownDType dType) => WithDataTypeC ( 'DataType dType) f where
+instance
+  ( DataTypeConstraint ( 'DataType dType) (GetDataTypes f),
+    KnownDType dType
+  ) =>
+  WithDataTypeC ( 'DataType dType) f
+  where
   type WithDataTypeF ( 'DataType dType) f = f
   withDataType f = f (dTypeVal @dType)
   withoutDataType = const
+
+type family DataTypeConstraint (datatype :: DataType DType) (datatypes :: [DataType DType]) :: Constraint where
+  DataTypeConstraint _ '[] = ()
+  DataTypeConstraint datatype '[datatype'] = datatype ~ datatype'
+  DataTypeConstraint _ _ = ()
+
+-- >>> :kind! GetDataTypes ('DataType 'Float)
+-- GetDataTypes ('DataType 'Float) :: [DataType DType]
+-- = '[ 'DataType 'Float]
+-- >>> :kind! GetDataTypes '[ 'DataType 'Bool, 'DataType 'Float]
+-- GetDataTypes '[ 'DataType 'Bool, 'DataType 'Float] :: [DataType
+--                                                          DType]
+-- = '[ 'DataType 'Bool, 'DataType 'Float]
+-- >>> :kind! GetDataTypes ('Just ('DataType 'Bool))
+-- GetDataTypes ('Just ('DataType 'Bool)) :: [DataType DType]
+-- = '[ 'DataType 'Bool]
+type family GetDataTypes (f :: k) :: [DataType DType] where
+  GetDataTypes (a :: DataType DType) = '[a]
+  GetDataTypes (f g) = Concat (GetDataTypes f) (GetDataTypes g)
+  GetDataTypes _ = '[]

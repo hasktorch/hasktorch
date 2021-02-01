@@ -31,7 +31,9 @@
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL7
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL7C
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8C #-}
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8C
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.RewriteRules.LayoutDeviceRule
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.RewriteRules.LayoutDataTypeRule #-}
 
 module Torch.GraduallyTyped.NN.Transformer.T5 where
 
@@ -46,7 +48,7 @@ import GHC.TypeLits (KnownNat, Nat, Symbol, natVal, type (-), type (<=?))
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), KnownDataType, WithDataTypeC (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, WithDeviceC (..))
-import Torch.GraduallyTyped.Layout (KnownLayout, Layout (..), LayoutType (..))
+import Torch.GraduallyTyped.Layout (KnownLayout, Layout (..), LayoutType (..), WithLayoutC (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout)
 import Torch.GraduallyTyped.NN.Linear (Linear (..))
@@ -65,9 +67,10 @@ import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (HasLMHead (..), S
 import Torch.GraduallyTyped.NN.Transformer.Stack (TransformerStack (..))
 import Torch.GraduallyTyped.Random (mkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
+import Torch.GraduallyTyped.RewriteRules ()
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownDim (..), KnownShape, Name (..), SelectDim (..), Shape (..), Size (..))
-import Torch.GraduallyTyped.Tensor.Creation (ones, zeros)
+import Torch.GraduallyTyped.Tensor.Creation (WithCreateC, ones, zeros)
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (unsqueeze)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (divScalar)
 import Torch.GraduallyTyped.Tensor.Other (maskedFill, triu)
@@ -144,10 +147,7 @@ type T5AttentionMask device dataType batchSize inputSeqSize =
 
 mkT5AttentionMask ::
   forall device dataType inputSeqSize.
-  ( WithDeviceC device (WithDataTypeF dataType (T5AttentionMask device dataType 1 inputSeqSize)),
-    WithDataTypeC dataType (T5AttentionMask device dataType 1 inputSeqSize),
-    KnownNat inputSeqSize
-  ) =>
+  WithCreateC (T5AttentionMask device dataType 1 inputSeqSize) 'WithoutGradient ( 'Layout 'Dense) device dataType ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size inputSeqSize), 'Dim ( 'Name "*") ( 'Size inputSeqSize)]) =>
   WithDeviceF device (WithDataTypeF dataType (T5AttentionMask device dataType 1 inputSeqSize))
 mkT5AttentionMask =
   zeros
@@ -167,14 +167,7 @@ type T5DecoderAttentionMask device dataType batchSize decoderInputSeqSize =
 
 mkT5DecoderAttentionMask ::
   forall device dataType decoderInputSeqSize.
-  ( WithDeviceC device (WithDataTypeF dataType (T5DecoderAttentionMask device dataType 1 decoderInputSeqSize)),
-    WithDataTypeC dataType (T5DecoderAttentionMask device dataType 1 decoderInputSeqSize),
-    WithDeviceC device (WithDataTypeF dataType (Tensor 'WithoutGradient ( 'Layout 'Dense) device dataType ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize), 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize)]))),
-    WithDataTypeC dataType (Tensor 'WithoutGradient ( 'Layout 'Dense) device dataType ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize), 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize)])),
-    WithDeviceC device (WithDataTypeF dataType (T5DecoderAttentionMask device dataType 1 decoderInputSeqSize)),
-    WithDataTypeC dataType (T5DecoderAttentionMask device dataType 1 decoderInputSeqSize),
-    KnownNat decoderInputSeqSize
-  ) =>
+  _ =>
   WithDeviceF
     device
     ( WithDataTypeF
@@ -185,8 +178,8 @@ mkT5DecoderAttentionMask =
   withDevice @device $
     \deviceType ->
       withDataType
-        @dataType
-        @(T5DecoderAttentionMask device dataType 1 decoderInputSeqSize)
+        -- @dataType
+        -- @(T5DecoderAttentionMask device dataType 1 decoderInputSeqSize)
         $ \dType ->
           let causalMask =
                 unsqueeze @( 'SelectDim ( 'ByIndex 0))
@@ -194,13 +187,13 @@ mkT5DecoderAttentionMask =
                   . triu 1
                   $ withoutDataType
                     @dataType
-                    @( Tensor
-                         'WithoutGradient
-                         ( 'Layout 'Dense)
-                         device
-                         dataType
-                         ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize), 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize)])
-                     )
+                    -- @( Tensor
+                    --      'WithoutGradient
+                    --      ( 'Layout 'Dense)
+                    --      device
+                    --      dataType
+                    --      ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize), 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize)])
+                    --  )
                     ( withoutDevice @device
                         ( ones
                             @ 'WithoutGradient
@@ -215,7 +208,7 @@ mkT5DecoderAttentionMask =
            in maskedFill causalMask (-10000 :: Double) $
                 withoutDataType
                   @dataType
-                  @(T5DecoderAttentionMask device dataType 1 decoderInputSeqSize)
+                  -- @(T5DecoderAttentionMask device dataType 1 decoderInputSeqSize)
                   ( withoutDevice @device
                       ( zeros
                           @ 'WithoutGradient
@@ -238,11 +231,7 @@ type T5CrossAttentionMask device dataType batchSize inputSeqSize decoderInputSeq
 
 mkT5CrossAttentionMask ::
   forall device dataType inputSeqSize decoderInputSeqSize.
-  ( WithDeviceC device (WithDataTypeF dataType (T5CrossAttentionMask device dataType 1 inputSeqSize decoderInputSeqSize)),
-    WithDataTypeC dataType (T5CrossAttentionMask device dataType 1 inputSeqSize decoderInputSeqSize),
-    KnownNat inputSeqSize,
-    KnownNat decoderInputSeqSize
-  ) =>
+  WithCreateC (T5CrossAttentionMask device dataType 1 inputSeqSize decoderInputSeqSize) 'WithoutGradient ( 'Layout 'Dense) device dataType ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size decoderInputSeqSize), 'Dim ( 'Name "*") ( 'Size inputSeqSize)]) =>
   WithDeviceF device (WithDataTypeF dataType (T5CrossAttentionMask device dataType 1 inputSeqSize decoderInputSeqSize))
 mkT5CrossAttentionMask =
   zeros
@@ -442,6 +431,7 @@ lookupSequenceToSequenceTransformerWithLMHead = do
         <*> ( LinearWithoutBias
                 <$> lookupTensor "lm_head.weight"
             )
+        <*> lookupInputEmbedDim
 
 lookupTensor ::
   forall numLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP requiresGradient layout shape m.
@@ -791,8 +781,7 @@ t5SmallConfigFromPretrained = t5ConfigFromPretrained
 data T5Small hasLMHead device dataType where
   T5Small ::
     forall hasLMHead device dataType.
-    { t5SmallInputEmbedDim :: Dim String Integer,
-      t5SmallSeqToSeq ::
+    { t5SmallSeqToSeq ::
         SequenceToSequenceTransformer
           hasLMHead
           T5SmallNumLayers
@@ -816,9 +805,7 @@ instance HasInitialize (T5Small 'WithoutLMHead device dataType) where
       T5SmallConfig device dataType -> IO (T5Small 'WithoutLMHead device dataType)
   initialize config =
     flip runReaderT config $
-      T5Small
-        <$> lookupInputEmbedDim
-        <*> lookupSequenceToSequenceTransformerWithoutLMHead
+      T5Small <$> lookupSequenceToSequenceTransformerWithoutLMHead
 
 instance HasInitialize (T5Small 'WithLMHead device dataType) where
   type
@@ -826,9 +813,7 @@ instance HasInitialize (T5Small 'WithLMHead device dataType) where
       T5SmallConfig device dataType -> IO (T5Small 'WithLMHead device dataType)
   initialize config =
     flip runReaderT config $
-      T5Small
-        <$> lookupInputEmbedDim
-        <*> lookupSequenceToSequenceTransformerWithLMHead
+      T5Small <$> lookupSequenceToSequenceTransformerWithLMHead
 
 instance
   HasForward
@@ -849,21 +834,16 @@ instance
     )
     inputs
     generator
-    (Tensor requiresGradient layout device dataType shape)
+    output
     generatorOutput =>
   HasForward
     (T5Small hasLMHead device dataType)
     inputs
     generator
-    (Tensor requiresGradient layout device dataType shape)
+    output
     generatorOutput
   where
-  forward T5Small {..} inputs =
-    let scaling :: Double = sqrt . fromIntegral . dimSize $ t5SmallInputEmbedDim
-     in runIxState $
-          ireturn inputs
-            >>>= IxState . forward t5SmallSeqToSeq
-            >>>= ireturn . flip divScalar scaling
+  forward T5Small {..} = forward t5SmallSeqToSeq
 
 mkT5Input ::
   forall batchSize seqSize m.
@@ -889,28 +869,36 @@ mkT5Input ::
     )
 mkT5Input xs = do
   input <- case Torch.Tensor.asTensor xs of
-            Torch.Tensor.Unsafe t ->
-              pure (UnsafeTensor t)
-                >>= checkedLayout
-                >>= checkedDevice
-                >>= checkedDataType
-                >>= checkedShape
+    Torch.Tensor.Unsafe t ->
+      pure (UnsafeTensor t)
+        >>= checkedLayout
+        >>= checkedDevice
+        >>= checkedDataType
+        >>= checkedShape
   let paddingMask = undefined
   pure (input, paddingMask)
 
 testForwardT5Small :: IO ()
 testForwardT5Small =
-   do
-        (input, inputPaddingMask) <- mkT5Input @1 @15 [[6536, 43, 118, 2008, 24, 293, 53, 3, 9, 1782, 19, 207, 21, 25, 1]]
-        (decoderInput, decoderInputPaddingMask) <- mkT5Input @1 @4 [[6536, 504, 24, 1]]
-        let attentionMask = mkT5AttentionMask @( 'Device 'CPU) @( 'DataType 'Float) @15
-            decoderAttentionMask = mkT5DecoderAttentionMask @( 'Device 'CPU) @( 'DataType 'Float) @4
-            crossAttentionMask = mkT5CrossAttentionMask @( 'Device 'CPU) @( 'DataType 'Float) @15 @4
-        config <- t5SmallConfigFromPretrained "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-small.pt" False
-        relPos <- runReaderT (mkT5RelPos @15) config
-        decoderRelPos <- runReaderT (mkT5DecoderRelPos @4) config
-        model <- initialize @(T5Small 'WithLMHead _ _) config
-        g <- mkGenerator @( 'Device CPU) 0
-        let (output, _) = forward model (input, decoderInput, relPos, decoderRelPos, attentionMask, decoderAttentionMask, crossAttentionMask) g
-        print output
-        pure ()
+  do
+    (input, inputPaddingMask) <- mkT5Input @1 @15 [[6536, 43, 118, 2008, 24, 293, 53, 3, 9, 1782, 19, 207, 21, 25, 1]]
+    (decoderInput, decoderInputPaddingMask) <- mkT5Input @1 @4 [[6536, 504, 24, 1]]
+    let attentionMask = mkT5AttentionMask @( 'Device 'CPU) @( 'DataType 'Float) @15
+        decoderAttentionMask = mkT5DecoderAttentionMask @( 'Device 'CPU) @( 'DataType 'Float) @4
+        crossAttentionMask = mkT5CrossAttentionMask @( 'Device 'CPU) @( 'DataType 'Float) @15 @4
+    config <- t5SmallConfigFromPretrained "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-small.pt" False
+    relPos <- runReaderT (mkT5RelPos @15) config
+    decoderRelPos <- runReaderT (mkT5DecoderRelPos @4) config
+    model <- initialize @(T5Small 'WithLMHead _ _) config
+    g <- mkGenerator @( 'Device CPU) 0
+    let (output, _) = forward (t5SmallSeqToSeq model) (input, decoderInput, relPos, decoderRelPos, attentionMask, decoderAttentionMask, crossAttentionMask) g
+    print output
+    pure ()
+
+foo = withLayout $ \layoutType -> withDevice $ \deviceType -> go layoutType deviceType
+  where
+    go layoutType deviceType = UnsafeTensor @ 'WithGradient @( 'Layout Dense) @( 'Device 'CPU) @( 'DataType 'Float) @( 'Shape '[]) undefined
+
+bar = withDevice @( 'Device 'CPU) go
+  where
+    go deviceType = UnsafeTensor @ 'WithGradient @( 'Layout Dense) @_ @( 'DataType 'Float) @( 'Shape '[]) undefined

@@ -1,3 +1,4 @@
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -19,7 +20,7 @@ import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Kind (Type)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType, WithDataTypeC (..))
+import Torch.GraduallyTyped.DType (DataType (..), WithDataTypeC (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
@@ -29,7 +30,10 @@ import Torch.GraduallyTyped.NN.Transformer.Decoder (HasInitializeTransformerDeco
 import Torch.GraduallyTyped.NN.Transformer.Encoder (HasInitializeTransformerEncoderC, TransformerEncoder)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Random (Generator)
-import Torch.GraduallyTyped.Shape (Dim (..), Name (..), Size (..), WithDimC (..))
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Shape (..), Size (..), WithDimC (..))
+import Torch.GraduallyTyped.Tensor.Type (Tensor)
+import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (divScalar)
 
 data HasLMHead = WithLMHead | WithoutLMHead
 
@@ -68,7 +72,9 @@ data
       -- | embedding
       seqToSeqWithLMHeadEmbedding :: Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing,
       -- | language model head
-      seqToSeqLMHead :: Linear 'WithoutBias device dataType inputEmbedDim vocabDim
+      seqToSeqLMHead :: Linear 'WithoutBias device dataType inputEmbedDim vocabDim,
+      -- | input embed dim
+      seqToSeqInputEmbedDim :: Dim String Integer
     } ->
     SequenceToSequenceTransformer 'WithLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP
 
@@ -366,7 +372,7 @@ instance
                   inputEmbedDim
               )
               vocabDim
-        pure $ SequenceToSequenceTransformerWithLMHead encoder decoder embedding lmHead
+        pure $ SequenceToSequenceTransformerWithLMHead encoder decoder embedding lmHead inputEmbedDim
 
 instance
   ( HasForward
@@ -453,26 +459,105 @@ instance
       (Linear 'WithoutBias device dataType inputEmbedDim vocabDim)
       decoderOutput
       decoderGeneratorOutput
-      output
+      (Tensor requiresGradient' layout' device' dataType' shape)
       generatorOutput
   ) =>
   HasForward
     (SequenceToSequenceTransformer 'WithLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP)
     (input, decoderInput, relPos, decoderRelPos, attentionMask, decoderAttentionMask, crossAttentionMask)
     generator
-    output
+    (Tensor requiresGradient' layout' device' dataType' shape)
     generatorOutput
   where
   forward SequenceToSequenceTransformerWithLMHead {..} (input, decoderInput, relPos, decoderRelPos, attentionMask, decoderAttentionMask, crossAttentionMask) =
-    runIxState $
-      ireturn input
-        >>>= IxState . forward seqToSeqWithLMHeadEmbedding
-        >>>= (\input' -> IxState $ forward seqToSeqWithLMHeadEncoder (input', relPos, attentionMask))
-        >>>= ( \encoderOutput ->
-                 ireturn decoderInput
-                   >>>= IxState . forward seqToSeqWithLMHeadEmbedding
-                   >>>= ( \decoderInput' ->
-                            IxState $ forward seqToSeqWithLMHeadDecoder (decoderInput', encoderOutput, decoderRelPos, decoderAttentionMask, crossAttentionMask)
-                        )
-             )
-        >>>= IxState . forward seqToSeqLMHead
+    let scaling :: Double = sqrt . fromIntegral . dimSize $ seqToSeqInputEmbedDim
+     in runIxState $
+          ireturn input
+            >>>= IxState . forward seqToSeqWithLMHeadEmbedding
+            >>>= (\input' -> IxState $ forward seqToSeqWithLMHeadEncoder (input', relPos, attentionMask))
+            >>>= ( \encoderOutput ->
+                    ireturn decoderInput
+                      >>>= IxState . forward seqToSeqWithLMHeadEmbedding
+                      >>>= ( \decoderInput' ->
+                                IxState $ forward seqToSeqWithLMHeadDecoder (decoderInput', encoderOutput, decoderRelPos, decoderAttentionMask, crossAttentionMask)
+                            )
+                )
+            >>>= IxState . forward seqToSeqLMHead
+            >>>= ireturn . flip divScalar scaling
+
+testForwardSeqToSeq :: _
+testForwardSeqToSeq =
+  let seqToSeq =
+        undefined ::
+          SequenceToSequenceTransformer
+            'WithLMHead
+            3
+            3
+            ( 'Device 'CPU)
+            ( 'DataType 'Float)
+            ( 'Dim ( 'Name "*") ( 'Size 8)) -- headDim
+            ( 'Dim ( 'Name "*") ( 'Size 64)) -- headEmbedDim
+            ( 'Dim ( 'Name "*") ( 'Size 512)) -- embedDim
+            ( 'Dim ( 'Name "*") ( 'Size 512)) -- inputEmbedDim
+            ( 'Dim ( 'Name "*") ( 'Size 2048)) -- ffnDim
+            ( 'Dim ( 'Name "*") ( 'Size 32)) -- relPosEncBucketDim
+            ( 'Dim ( 'Name "*") ( 'Size 32128)) -- vocabDim
+            Float
+      input =
+        undefined ::
+          Tensor
+            'WithoutGradient
+            ( 'Layout 'Dense)
+            ( 'Device 'CPU)
+            ( 'DataType 'Int64)
+            ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 7)])
+      decoderInput =
+        undefined ::
+          Tensor
+            'WithoutGradient
+            ( 'Layout 'Dense)
+            ( 'Device 'CPU)
+            ( 'DataType 'Int64)
+            ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 5)])
+      relPos =
+        undefined ::
+          Tensor
+            'WithoutGradient
+            ( 'Layout 'Dense)
+            ( 'Device 'CPU)
+            ( 'DataType 'Int64)
+            ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 7), 'Dim ( 'Name "*") ( 'Size 7)])
+      decoderRelPos =
+        undefined ::
+          Tensor
+            'WithoutGradient
+            ( 'Layout 'Dense)
+            'UncheckedDevice -- ( 'Device 'CPU)
+            ( 'DataType 'Int64)
+            ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 5), 'Dim ( 'Name "*") ( 'Size 5)])
+      attentionMask =
+        undefined ::
+          Tensor
+            'WithoutGradient
+            'UncheckedLayout -- ( 'Layout 'Dense)
+            ( 'Device 'CPU)
+            ( 'DataType 'Float)
+            ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 7), 'Dim ( 'Name "*") ( 'Size 7)])
+      decoderAttentionMask =
+        undefined ::
+          Tensor
+            'WithoutGradient
+            ( 'Layout 'Dense)
+            ( 'Device 'CPU)
+            ( 'DataType 'Float)
+            ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 5), 'Dim ( 'Name "*") ( 'Size 5)])
+      crossAttentionMask =
+        undefined ::
+          Tensor
+            'WithoutGradient
+            ( 'Layout 'Dense)
+            'UncheckedDevice -- ( 'Device 'CPU)
+            ( 'DataType 'Float)
+            ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 5), 'Dim ( 'Name "*") ( 'Size 7)])
+      g = undefined :: Generator ( 'Device 'CPU)
+   in forward seqToSeq (input, decoderInput, relPos, decoderRelPos, attentionMask, decoderAttentionMask, crossAttentionMask) g

@@ -19,7 +19,7 @@ module Torch.GraduallyTyped
     module Torch.GraduallyTyped.RequiresGradient,
     module Torch.GraduallyTyped.Scalar,
     module Torch.GraduallyTyped.Unify,
-    module Torch.HList,
+    -- module Torch.HList,
     module Torch.DType,
   )
 where
@@ -38,4 +38,4 @@ import Torch.GraduallyTyped.Scalar
 import Torch.GraduallyTyped.Shape
 import Torch.GraduallyTyped.Tensor
 import Torch.GraduallyTyped.Unify
-import Torch.HList
+-- import Torch.HList

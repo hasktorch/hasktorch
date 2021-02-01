@@ -23,11 +23,11 @@
 module Torch.GraduallyTyped.Device where
 
 import Data.Int (Int16)
-import Data.Kind (Type)
+import Data.Kind (Constraint, Type)
 import Data.Proxy (Proxy (..))
 import GHC.TypeLits (KnownNat (..), Nat, natVal)
+import Torch.GraduallyTyped.Prelude (Concat)
 import qualified Torch.Internal.Managed.Cast as ATen ()
-import Type.Errors.Pretty (type (%), type (<>))
 
 -- | Data type to represent compute devices.
 data DeviceType (deviceId :: Type) where
@@ -63,17 +63,48 @@ instance KnownDevice 'UncheckedDevice where
 instance (KnownDeviceType deviceType) => KnownDevice ( 'Device deviceType) where
   deviceVal = Device (deviceTypeVal @deviceType)
 
-class WithDeviceC (device :: Device (DeviceType Nat)) (f :: Type) where
+class
+  DeviceConstraint device (GetDevices f) =>
+  WithDeviceC (device :: Device (DeviceType Nat)) (f :: Type)
+  where
   type WithDeviceF device f :: Type
   withDevice :: (DeviceType Int16 -> f) -> WithDeviceF device f
   withoutDevice :: WithDeviceF device f -> (DeviceType Int16 -> f)
 
-instance WithDeviceC 'UncheckedDevice f where
+instance
+  DeviceConstraint 'UncheckedDevice (GetDevices f) =>
+  WithDeviceC 'UncheckedDevice f
+  where
   type WithDeviceF 'UncheckedDevice f = DeviceType Int16 -> f
   withDevice = id
   withoutDevice = id
 
-instance (KnownDeviceType deviceType) => WithDeviceC ( 'Device deviceType) f where
+instance
+  ( DeviceConstraint ( 'Device deviceType) (GetDevices f),
+    KnownDeviceType deviceType
+  ) =>
+  WithDeviceC ( 'Device deviceType) f
+  where
   type WithDeviceF ( 'Device deviceType) f = f
   withDevice f = f (deviceTypeVal @deviceType)
   withoutDevice = const
+
+type family DeviceConstraint (device :: Device (DeviceType Nat)) (devices :: [Device (DeviceType Nat)]) :: Constraint where
+  DeviceConstraint _ '[] = ()
+  DeviceConstraint device '[device'] = device ~ device'
+  DeviceConstraint _ _ = ()
+
+-- >>> :kind! GetDevices ('Device ('CUDA 0))
+-- GetDevices ('Device ('CUDA 0)) :: [Device (DeviceType Nat)]
+-- = '[ 'Device ('CUDA 0)]
+-- >>> :kind! GetDevices '[ 'Device 'CPU, 'Device ('CUDA 0)]
+-- GetDevices '[ 'Device 'CPU, 'Device ('CUDA 0)] :: [Device
+--                                                      (DeviceType Nat)]
+-- = '[ 'Device 'CPU, 'Device ('CUDA 0)]
+-- >>> :kind! GetDevices ('Just ('Device ('CUDA 0)))
+-- GetDevices ('Just ('Device ('CUDA 0))) :: [Device (DeviceType Nat)]
+-- = '[ 'Device ('CUDA 0)]
+type family GetDevices (f :: k) :: [Device (DeviceType Nat)] where
+  GetDevices (a :: Device (DeviceType Nat)) = '[a]
+  GetDevices (f g) = Concat (GetDevices f) (GetDevices g)
+  GetDevices _ = '[]
