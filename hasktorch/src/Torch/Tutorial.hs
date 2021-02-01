@@ -7,6 +7,13 @@ module Torch.Tutorial (
     -- $tutorial
 ) where
 
+import Torch.Internal.Managed.Type.Context (manual_seed_L)
+
+{- $setup
+>>> manual_seed_L 123
+>>> :set -XNoOverloadedLists
+-}
+
 {- $tutorial
 = Introduction
 #introduction#
@@ -51,18 +58,18 @@ A single valued tensor can be passed to 'Torch.Tensor.asTensor' as
 well (and can be converted back to a scalar using
 'Torch.Tensor.asValue'):
 
->>> asTensor (3.5)
-Tensor Float []  3.5000
+>>> asTensor 3.5
+Tensor Double []  3.5000
 
->>> asValue (asTensor (3.5)) :: Float
+>>> asValue (asTensor 3.5) :: Double
 3.5
 
 Create a randomly initialized matrix:
 
 >>> x <-randIO' [2, 2]
 >>> x
-Tensor Float [2,2] [[ 0.2019   ,  0.8406   ],
-                    [ 0.7256   ,  0.6436   ]]
+Tensor Float [2,2] [[ 0.2961   ,  0.5166   ],
+                    [ 0.2517   ,  0.6886   ]]
 
 Note that since random initialization returns a different result each
 time, unlike other tensor constructors, is monadic reflecting the
@@ -105,11 +112,11 @@ Tensor Int64 [2,3] [[ 1,  2,  3],
 Tensor constructors with a @-like@ suffix Create a tensor based on an
 existing tensor:
 
->>> x <- Torch.full' [3, 2] 4
+>>> let x = Torch.full' [3, 2] 4
 >>> Torch.randLikeIO' x
-Tensor Float [3,2] [[ 0.3411   ,  0.8137   ],
-                    [ 0.5252   ,  0.9109   ],
-                    [ 0.3809   ,  0.9191   ]]
+Tensor Float [3,2] [[ 7.3972e-2,  0.8665   ],
+                    [ 0.1366   ,  0.1025   ],
+                    [ 0.1841   ,  0.7264   ]]
 
 == Operations
 #operations#
@@ -134,14 +141,14 @@ Tensor Float [4] [ 0.0000,  0.0000,  0.5000   ,  1.0000   ]
 >>> shape x
 [4,1,3]
 
->>> select x 2 1
+>>> select 2 1 x
 Tensor Double [4,1] [[ 2.0000   ],
                      [ 5.0000   ],
                      [ 8.0000   ],
                      [ 11.0000   ]]
 
 >>> let y = asTensor [1, 2, 3]
->>> Torch.select y 0 1
+>>> Torch.select 0 1 y
 Tensor Double []  2.0000
 
 Values can be extracted from a tensor using @asValue@ so long as the
