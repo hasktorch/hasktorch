@@ -7,6 +7,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE CPP #-}
 
 module Torch.Internal.GC where
 
@@ -26,8 +27,14 @@ import Foreign.C.Types
 foreign import ccall unsafe "hasktorch_finalizer.h showWeakPtrList"
   c_showWeakPtrList :: CInt -> IO ()
 
+-- malloc_trim is a glibc function. It doesn't exist on macos.
+#ifdef ENABLE_DUMMY_MALLOC_TRIM
+mallocTrim :: CInt -> IO ()
+mallocTrim _ = return ()
+#else
 foreign import ccall unsafe "malloc.h malloc_trim"
   mallocTrim :: CInt -> IO ()
+#endif
 
 -- | Returns all objects of libtorch. 
 -- Each time it is called, the age of the object increases by one.
