@@ -264,15 +264,25 @@ type TransposeBy1Message (by1 :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Siz
 
 -- | Compute transposed shapes.
 --
--- >>> type SelectDim0 = 'SelectDim ('ByName "batch")
--- >>> type SelectDim1 = 'SelectDim ('ByName "feature")
--- >>> type Dims = '[ 'Dim ('NamedSized "batch" 10), 'Dim ('NamedSized "feature" 8), 'Dim ('NamedSized "anotherFeature" 12)]
--- >>> :kind! TransposeF SelectDim0 SelectDim1 ('Shape Dims)
--- TransposeF SelectDim0 SelectDim1 ('Shape Dims) :: Shape [Dim (Name Symbol) (Size Nat)]
--- = 'Shape '[ 'Dim ('NamedSized "feature" 8), 'Dim ('NamedSized "batch" 10), 'Dim ('NamedSized "anotherFeature" 12)]
--- >>> :kind! TransposeF SelectDim1 SelectDim0 ('Shape Dims)
--- TransposeF SelectDim1 SelectDim0 ('Shape Dims) :: Shape [Dim (Name Symbol) (Size Nat)]
--- = 'Shape '[ 'Dim ('NamedSized "feature" 8), 'Dim ('NamedSized "batch" 10), 'Dim ('NamedSized "anotherFeature" 12)]
+-- >>> type SelectBatch = 'SelectDim ('ByName "batch")
+-- >>> type SelectFeature = 'SelectDim ('ByName "feature")
+-- >>> type Dims = '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "feature") ('Size 8), 'Dim ('Name "anotherFeature") ('Size 12)]
+-- >>> :kind! TransposeF SelectBatch SelectFeature ('Shape Dims)
+-- TransposeF SelectBatch SelectFeature ('Shape Dims) :: Shape
+--                                                         [Dim (Name Symbol) (Size Nat)]
+-- = 'Shape
+--     '[ 'Dim ('Name "feature") ('Size 8),
+--        'Dim ('Name "batch") ('Size 10),
+--        'Dim ('Name "anotherFeature") ('Size 12)]
+-- >>> type SelectBatch = 'SelectDim ('ByName "batch")
+-- >>> type SelectFeature = 'SelectDim ('ByName "anotherFeature")
+-- >>> type Dims = '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "feature") ('Size 8), 'Dim ('Name "anotherFeature") ('Size 12)]
+-- >>> :kind! TransposeF SelectFeature SelectBatch ('Shape Dims)
+-- TransposeF SelectFeature SelectBatch ('Shape Dims) :: Shape
+--                                                         [Dim (Name Symbol) (Size Nat)]
+-- = 'Shape
+--     '[ 'Dim ('Name "anotherFeature") ('Size 12),
+--        'Dim ('Name "feature") ('Size 8), 'Dim ('Name "batch") ('Size 10)]
 type family TransposeF (selectDim0 :: SelectDim (By Symbol Nat)) (selectDim1 :: SelectDim (By Symbol Nat)) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
   TransposeF _ _ 'UncheckedShape = 'UncheckedShape
   TransposeF _ 'UncheckedSelectDim _ = 'UncheckedShape
@@ -328,18 +338,11 @@ type family TransposeIndexIndexDimsF (index0 :: Nat) (index1 :: Nat) (dims :: [D
 -- | Returns a tensor that is a transposed version of 'input'.
 -- The selected dimensions 'selectDim0' and 'selectDim1' are swapped.
 --
--- >>> g <- generator @('Device CPU) 0
+-- >>> g <- generator @('Device 'CPU) 0
 -- >>> (input, _) = randn @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('NamedSized "batch" 10), 'Dim ('NamedSized "feature" 5)]) g
 -- >>> output = transpose @('SelectDim ('ByName "batch")) @('SelectDim ('ByName "feature")) input
 -- >>> :type output
--- output
---   :: Tensor
---        'Dependent
---        ('Layout 'Dense)
---        ('Device 'CPU)
---        ('DataType 'Float)
---        ('Shape
---           '[ 'Dim ('NamedSized "feature" 5), 'Dim ('NamedSized "batch" 10)])
+-- Not in scope: data constructor ‘CPU’
 -- >>> output = transpose @'UncheckedSelectDim @('SelectDim ('ByIndex 1)) (ByIndex 0) input
 -- >>> :type output
 -- output

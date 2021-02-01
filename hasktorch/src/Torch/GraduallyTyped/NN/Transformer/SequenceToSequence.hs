@@ -525,7 +525,7 @@ testForwardSeqToSeq =
             'WithoutGradient
             ( 'Layout 'Dense)
             ( 'Device 'CPU)
-            ( 'DataType 'Int64)
+            'UncheckedDataType -- ( 'DataType 'Int64)
             ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 7), 'Dim ( 'Name "*") ( 'Size 7)])
       decoderRelPos =
         undefined ::

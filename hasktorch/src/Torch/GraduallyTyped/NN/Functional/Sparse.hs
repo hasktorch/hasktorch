@@ -15,7 +15,7 @@ import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..))
 import Torch.GraduallyTyped.Layout (KnownLayout, LayoutType (..))
-import Torch.GraduallyTyped.Prelude (Reverse)
+import Torch.GraduallyTyped.Prelude (Reverse, Seq)
 import Torch.GraduallyTyped.Shape (Dim (..), Name, Shape (..), Size)
 import Torch.GraduallyTyped.Tensor.Type (Tensor, layout)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
@@ -38,7 +38,7 @@ type family EmbeddingF (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (in
   EmbeddingF ( 'Shape embedDims) _ = TypeError (EmbedDimsErrorMessage embedDims)
 
 embedding ::
-  forall requiresGradient layout device dataType shape requiresGradient' layout' device' shape'.
+  forall requiresGradient layout device dataType shape requiresGradient' layout' device' dataType' shape'.
   (KnownLayout layout) =>
   -- | padding index
   Maybe Natural ->
@@ -47,13 +47,13 @@ embedding ::
   -- | weight
   Tensor requiresGradient layout device dataType shape ->
   -- | input
-  Tensor requiresGradient' layout' device' ( 'DataType 'Int64) shape' ->
+  Tensor requiresGradient' layout' device' dataType' shape' ->
   -- | output
   Tensor
     (requiresGradient <|> requiresGradient')
     (layout <+> layout')
     (device <+> device')
-    dataType
+    (Seq (dataType' <+> 'DataType 'Int64) dataType)
     (EmbeddingF shape shape')
 embedding paddingIdx scaleGradByFreq weight input =
   let isSparse = layout weight == Sparse

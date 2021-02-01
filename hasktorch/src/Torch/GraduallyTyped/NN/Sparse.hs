@@ -28,6 +28,7 @@ import Torch.GraduallyTyped.Shape (Dim (..), Name, Shape (..), Size, WithDimC (.
 import Torch.GraduallyTyped.Tensor.Creation (WithCreateC (..), randn)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
+import Torch.GraduallyTyped.Prelude (Seq)
 
 data
   Embedding
@@ -106,12 +107,12 @@ instance
           'WithGradient
           (layout <+> layout')
           (device <+> device')
-          dataType
+          (Seq (dataType' <+> 'DataType 'Int64) dataType)
           (EmbeddingF ( 'Shape '[embedNumDim, embedDim]) shape')
   ) =>
   HasForward
     (Embedding layout device dataType embedNumDim embedDim 'Nothing)
-    (Tensor requiresGradient' layout' device' ( 'DataType 'Int64) shape')
+    (Tensor requiresGradient' layout' device' dataType' shape')
     generator
     output
     generator
@@ -126,12 +127,12 @@ instance
           'WithGradient
           (layout <+> layout')
           (device <+> device')
-          dataType
+          (Seq (dataType' <+> 'DataType 'Int64) dataType)
           (EmbeddingF ( 'Shape '[embedNumDim, embedDim]) shape')
   ) =>
   HasForward
     (Embedding layout device dataType embedNumDim embedDim ( 'Just paddingIdx))
-    (Tensor requiresGradient' layout' device' ( 'DataType 'Int64) shape')
+    (Tensor requiresGradient' layout' device' dataType' shape')
     generator
     output
     generator

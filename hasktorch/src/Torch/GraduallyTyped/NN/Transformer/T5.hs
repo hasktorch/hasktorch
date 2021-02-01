@@ -178,9 +178,10 @@ mkT5DecoderAttentionMask =
   withDevice @device $
     \deviceType ->
       withDataType
-        -- @dataType
-        -- @(T5DecoderAttentionMask device dataType 1 decoderInputSeqSize)
-        $ \dType ->
+      -- @dataType
+      -- @(T5DecoderAttentionMask device dataType 1 decoderInputSeqSize)
+      $
+        \dType ->
           let causalMask =
                 unsqueeze @( 'SelectDim ( 'ByIndex 0))
                   . bool
@@ -844,6 +845,122 @@ instance
     generatorOutput
   where
   forward T5Small {..} = forward t5SmallSeqToSeq
+
+-- | T5-Base number of layers.
+-- 'num_layers = 12'
+type T5BaseNumLayers = 12
+
+-- | T5-Base number of attention heads.
+-- 'n_heads = 12'
+type T5BaseHeadDim = 'Dim ( 'Name "*") ( 'Size 12)
+
+-- | T5-Base head embedding dimension.
+-- 'd_kv = 64'
+type T5BaseHeadEmbedDim = 'Dim ( 'Name "*") ( 'Size 64)
+
+-- | T5-Base embedding dimension.
+-- 'inner_dim = n_heads * d_kv = 768'
+type T5BaseEmbedDim = 'Dim ( 'Name "*") ( 'Size 768)
+
+-- | T5-Base model dimension.
+-- 'd_model = 768'
+type T5BaseInputEmbedDim = 'Dim ( 'Name "*") ( 'Size 768)
+
+-- | T5-Base feed-forward network dimension.
+-- 'd_ff = 3072'
+type T5BaseFFNDim = 'Dim ( 'Name "*") ( 'Size 3072)
+
+-- | T5-Base relative positional encoding bucket dimension.
+-- 'relative_attention_num_buckets = 32'
+type T5BaseRelPosEncBucketDim = 'Dim ( 'Name "*") ( 'Size 32)
+
+-- | T5-Base vocabulary dimension.
+-- 'vocab_size = 32128'
+type T5BaseVocabDim = 'Dim ( 'Name "*") ( 'Size 32128)
+
+-- | T5-Base configuration data type.
+-- Modelled after https://huggingface.co/t5-base/blob/main/config.json.
+type T5BaseConfig device dataType =
+  T5Config T5BaseNumLayers device dataType T5BaseHeadDim T5BaseHeadEmbedDim T5BaseEmbedDim T5BaseInputEmbedDim T5BaseFFNDim T5BaseRelPosEncBucketDim T5BaseVocabDim Float
+
+-- | load a T5-Base configuration from a file
+t5BaseConfigFromPretrained ::
+  -- | file path
+  FilePath ->
+  -- | whether or not debugging output will be printed to the terminal
+  Bool ->
+  -- | configuration value
+  IO (T5BaseConfig ( 'Device 'CPU) ( 'DataType 'Float))
+t5BaseConfigFromPretrained = t5ConfigFromPretrained
+
+-- | T5-Base data type.
+-- Modelled after https://github.com/huggingface/transformers/blob/master/src/transformers/models/t5/modeling_t5.py.
+data T5Base hasLMHead device dataType where
+  T5Base ::
+    forall hasLMHead device dataType.
+    { t5BaseSeqToSeq ::
+        SequenceToSequenceTransformer
+          hasLMHead
+          T5BaseNumLayers
+          T5BaseNumLayers
+          device
+          dataType
+          T5BaseHeadDim
+          T5BaseHeadEmbedDim
+          T5BaseEmbedDim
+          T5BaseInputEmbedDim
+          T5BaseFFNDim
+          T5BaseRelPosEncBucketDim
+          T5BaseVocabDim
+          Float
+    } ->
+    T5Base hasLMHead device dataType
+
+instance HasInitialize (T5Base 'WithoutLMHead device dataType) where
+  type
+    InitializeF (T5Base 'WithoutLMHead device dataType) =
+      T5BaseConfig device dataType -> IO (T5Base 'WithoutLMHead device dataType)
+  initialize config =
+    flip runReaderT config $
+      T5Base <$> lookupSequenceToSequenceTransformerWithoutLMHead
+
+instance HasInitialize (T5Base 'WithLMHead device dataType) where
+  type
+    InitializeF (T5Base 'WithLMHead device dataType) =
+      T5BaseConfig device dataType -> IO (T5Base 'WithLMHead device dataType)
+  initialize config =
+    flip runReaderT config $
+      T5Base <$> lookupSequenceToSequenceTransformerWithLMHead
+
+instance
+  HasForward
+    ( SequenceToSequenceTransformer
+        hasLMHead
+        T5BaseNumLayers
+        T5BaseNumLayers
+        device
+        dataType
+        T5BaseHeadDim
+        T5BaseHeadEmbedDim
+        T5BaseEmbedDim
+        T5BaseInputEmbedDim
+        T5BaseFFNDim
+        T5BaseRelPosEncBucketDim
+        T5BaseVocabDim
+        Float
+    )
+    inputs
+    generator
+    output
+    generatorOutput =>
+  HasForward
+    (T5Base hasLMHead device dataType)
+    inputs
+    generator
+    output
+    generatorOutput
+  where
+  forward T5Base {..} = forward t5BaseSeqToSeq
 
 mkT5Input ::
   forall batchSize seqSize m.

@@ -31,6 +31,7 @@ import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormWithoutBiasC
 import Torch.GraduallyTyped.NN.Sparse (Embedding, HasInitializeEmbeddingC)
 import Torch.GraduallyTyped.NN.Transformer.DecoderStack (HasInitializeTransformerDecoderStack, HasInitializeTransformerDecoderStackC, TransformerDecoderStack)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
+import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
@@ -225,7 +226,7 @@ instance
           'WithGradient
           ( 'Layout 'Dense <+> decoderRelPosLayout <+> decoderAttentionMaskLayout)
           (device <+> decoderRelPosDevice <+> decoderAttentionMaskDevice)
-          (dataType <+> decoderAttentionMaskDataType)
+          (Seq (decoderRelPosDataType <+> 'DataType 'Int64) dataType <+> decoderAttentionMaskDataType)
           ( BroadcastShapesF
               ( TransposeF
                   ( 'SelectDim ( 'ByIndex 1))
@@ -279,7 +280,7 @@ instance
     (TransformerDecoder numLayers device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim relPosEncBucketDim dropoutP)
     ( decoderInput,
       encoderOutput,
-      Tensor decoderRelPosRequiresGradient decoderRelPosLayout decoderRelPosDevice ( 'DataType 'Int64) decoderRelPosShape,
+      Tensor decoderRelPosRequiresGradient decoderRelPosLayout decoderRelPosDevice decoderRelPosDataType decoderRelPosShape,
       Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
       Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
     )
@@ -300,6 +301,18 @@ instance
      in runIxState $
           ireturn decoderInput
             >>>= IxState . forward tdDropout
-            >>>= (\decoderInput' -> decoderAttentionBias >>>= (\decoderAttentionBias' -> IxState $ forward tdStack (decoderInput', encoderOutput, decoderAttentionBias', crossAttentionBias)))
+            >>>= ( \decoderInput' ->
+                     decoderAttentionBias
+                       >>>= ( \decoderAttentionBias' ->
+                                IxState $
+                                  forward
+                                    tdStack
+                                    ( decoderInput',
+                                      encoderOutput,
+                                      decoderAttentionBias',
+                                      crossAttentionBias
+                                    )
+                            )
+                 )
             >>>= IxState . forward tdLayerNorm
             >>>= IxState . forward tdDropout

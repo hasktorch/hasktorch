@@ -31,6 +31,7 @@ import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormWithoutBiasC
 import Torch.GraduallyTyped.NN.Sparse (Embedding, HasInitializeEmbeddingC)
 import Torch.GraduallyTyped.NN.Transformer.Stack (HasInitializeTransformerStack, HasInitializeTransformerStackC, TransformerStack)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
+import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
@@ -213,7 +214,7 @@ instance
           'WithGradient
           ( 'Layout 'Dense <+> relPosLayout <+> attentionMaskLayout)
           (device <+> relPosDevice <+> attentionMaskDevice)
-          (dataType <+> attentionMaskDataType)
+          (Seq (relPosDataType <+> 'DataType 'Int64) dataType <+> attentionMaskDataType)
           ( BroadcastShapesF
               ( TransposeF
                   ( 'SelectDim ( 'ByIndex 1))
@@ -252,7 +253,7 @@ instance
   HasForward
     (TransformerEncoder numLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
     ( input,
-      Tensor relPosRequiresGradient relPosLayout relPosDevice ( 'DataType 'Int64) relPosShape,
+      Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
       Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
     )
     generator
