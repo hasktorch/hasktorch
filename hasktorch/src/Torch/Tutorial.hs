@@ -176,17 +176,13 @@ from which a compute graph is constructed for differentiation, while
 @makeIndependent@ takes a tensor as input and returns an IO action
 which produces an 'Torch.Autograd.IndependentTensor':
 
-@
-  makeIndependent :: Tensor -> IO IndependentTensor
-@
+>  makeIndependent :: Tensor -> IO IndependentTensor
 
 What is the definition of the @IndependentTensor@ type produced by the
 @makeIndependent@ action? It’s defined in the Hasktorch library as:
 
-@
-  newtype IndependentTensor = IndependentTensor { toDependent :: Tensor }
-  deriving (Show)
-@
+>  newtype IndependentTensor = IndependentTensor { toDependent :: Tensor }
+>  deriving (Show)
 
 Thus @IndependentTensor@ is simply a wrapper around the underlying
 Tensor that is passed in as the argument to @makeIndependent@. Building
@@ -228,9 +224,7 @@ function specifying in the first argument tensor corresponding to
 function value of interest and a list of @Independent@ tensor variables
 that the the derivative is taken with respect to:
 
-@
-  grad :: Tensor -> [IndependentTensor] -> [Tensor]
-@
+>  grad :: Tensor -> [IndependentTensor] -> [Tensor]
 
 Let’s demonstrate this with a concrete example. We create a tensor and
 derive an @IndependentTensor@ from it:
@@ -291,16 +285,14 @@ typeclasses to take on other functionality.
 The core interface that defines capability specific to differentiable
 programming is the 'Torch.NN.Parameterized' typeclass:
 
-@
-  class Parameterized f where
-    flattenParameters :: f -> [Parameter]
-    default flattenParameters :: (Generic f, Parameterized' (Rep f)) => f -> [Parameter]
-    flattenParameters f = flattenParameters' (from f)
-
-    replaceOwnParameters :: f -> ParamStream f
-    default replaceOwnParameters :: (Generic f, Parameterized' (Rep f)) => f -> ParamStream f
-    replaceOwnParameters f = to <$> replaceOwnParameters' (from f)
-@
+>  class Parameterized f where
+>    flattenParameters :: f -> [Parameter]
+>    default flattenParameters :: (Generic f, Parameterized' (Rep f)) => f -> [Parameter]
+>    flattenParameters f = flattenParameters' (from f)
+>
+>    replaceOwnParameters :: f -> ParamStream f
+>    default replaceOwnParameters :: (Generic f, Parameterized' (Rep f)) => f -> ParamStream f
+>    replaceOwnParameters f = to <$> replaceOwnParameters' (from f)
 
 Note @Parameter@ is simply a type alias for @IndependentTensor@ in the
 context of neural networks (i.e. @type Parameter = IndependentTensor@).
@@ -314,9 +306,7 @@ compute gradients.
 type alias for a State type with state represented by a @Parameter@ list
 and a value parameter corresponding to the ADT defining the model.
 
-@
-  type ParamStream a = State [Parameter] a
-@
+>  type ParamStream a = State [Parameter] a
 
 Note the use of generics. Generics allow the compiler to usually
 automatically derive @flattenParameters@ and @replaceOwnParameter@
@@ -325,9 +315,7 @@ containers of tensors, or other types that are built from tensor values
 (for example, layer modules provided in @Torch.NN@. In many cases, as
 you’ll see in the following examples, you will only need to add
 
-@
-  instance Parameterized MyNeuralNetwork
-@
+>  instance Parameterized MyNeuralNetwork
 
 (where @MyNeuralNetwork@ is an ADT definition for your model) and the
 compiler will derive implementations for the @flattenParameters@ and
@@ -348,38 +336,36 @@ In a standard supervised learning model, the neural network is
 initialized using a randomized initialization scheme. An iterative
 optimization is performed such that at each iteration a batch.
 
-@
-  module Main where
-
-  import Control.Monad (when)
-  import Torch
-
-  groundTruth :: Tensor -> Tensor
-  groundTruth t = squeezeAll $ matmul t weight + bias
-    where
-      weight = asTensor ([42.0, 64.0, 96.0] :: [Float])
-      bias = full' [1] (3.14 :: Float)
-
-  model :: Linear -> Tensor -> Tensor
-  model state input = squeezeAll $ linear state input
-
-  main :: IO ()
-  main = do
-      init <- sample $ LinearSpec { in_features = numFeatures, out_features = 1 }
-      randGen <- mkGenerator (Device CPU 0) 12345
-      (trained, _) <- foldLoop (init, randGen) 2000 $ \(state, randGen) i -> do
-          let (input, randGen') = randn' [batchSize, numFeatures] randGen
-              (y, y') = (groundTruth input, model state input)
-              loss = mseLoss y y'
-          when (i `mod` 100 == 0) $ do
-              putStrLn $ "Iteration: " ++ show i ++ " | Loss: " ++ show loss
-          (newParam, _) <- runStep state GD loss 5e-3
-          pure (replaceParameters state newParam, randGen')
-      pure ()
-    where
-      batchSize = 4
-      numFeatures = 3
-@
+>  module Main where
+>
+>  import Control.Monad (when)
+>  import Torch
+>
+>  groundTruth :: Tensor -> Tensor
+>  groundTruth t = squeezeAll $ matmul t weight + bias
+>    where
+>      weight = asTensor ([42.0, 64.0, 96.0] :: [Float])
+>      bias = full' [1] (3.14 :: Float)
+>
+>  model :: Linear -> Tensor -> Tensor
+>  model state input = squeezeAll $ linear state input
+>
+>  main :: IO ()
+>  main = do
+>      init <- sample $ LinearSpec{in_features = numFeatures, out_features = 1}
+>      randGen <- mkGenerator (Device CPU 0) 12345
+>      (trained, _) <- foldLoop (init, randGen) 2000 $ \(state, randGen) i -> do
+>          let (input, randGen') = randn' [batchSize, numFeatures] randGen
+>              (y, y') = (groundTruth input, model state input)
+>              loss = mseLoss y y'
+>          when (i `mod` 100 == 0) $ do
+>              putStrLn $ "Iteration: " ++ show i ++ " | Loss: " ++ show loss
+>          (newParam, _) <- runStep state GD loss 5e-3
+>          pure (replaceParameters state newParam, randGen')
+>      pure ()
+>    where
+>      batchSize = 4
+>      numFeatures = 3
 
 Note the expression of the architecture in the 'Torch.NN.linear'
 function (a single linear layer, or alternatively a neural network
@@ -415,10 +401,8 @@ random initializations return different values. Initialization occurs
 by calling the 'Torch.NN.sample' function for an ADT (@spec@)
 implementing the 'Torch.NN.Randomizable' typeclass:
 
-@
-  class Randomizable spec f | spec -> f where
-    sample :: spec -> IO f
-@
+>  class Randomizable spec f | spec -> f where
+>    sample :: spec -> IO f
 
 In a typical (but not required) usage, @f@ is an ADT that implements the
 @Parameterized@ typeclass, so that there’s a pair of types - a
@@ -428,16 +412,12 @@ implementing @Parameterizable@ representing the model state.
 For example, a linear fully connected layer is provided by the
 @Torch.NN@ module and defined therein as:
 
-@
-  data Linear = Linear { weight :: Parameter, bias :: Parameter } deriving (Show, Generic)
-@
+>  data Linear = Linear { weight :: Parameter, bias :: Parameter } deriving (Show, Generic)
 
 and is typically used with a specification type:
 
-@
-  data LinearSpec = LinearSpec { in_features :: Int, out_features :: Int }
-    deriving (Show, Eq)
-@
+>  data LinearSpec = LinearSpec { in_features :: Int, out_features :: Int }
+>    deriving (Show, Eq)
 
 Putting this together, in untyped tensor usage, the user can implement
 custom models or layers implementing the @Parameterizable@ typeclass
@@ -494,10 +474,8 @@ parameters, and optimizer state.
 This function interface is described in the 'Torch.Optim.Optimizer'
 typeclass interface:
 
-@
-  class Optimizer o where
-      step :: LearningRate -> Gradients -> [Tensor] -> o -> ([Tensor], o)
-@
+>  class Optimizer o where
+>      step :: LearningRate -> Gradients -> [Tensor] -> o -> ([Tensor], o)
 
 @Gradients@ is a newtype wrapper around a list of tensors to make
 intent explicit: @newtype Gradients = Gradients [Tensor]@.
@@ -508,26 +486,20 @@ Some illustrative example implementations follow.
 Being stateless, stochastic gradient descent has an ADT that has only
 one constructor value:
 
-@
-  data GD = GD
-@
+>  data GD = GD
 
 and implements the step function as:
 
-@
-  instance Optimizer GD where
-      step lr gradients depParameters dummy = (gd lr gradients depParameters, dummy)
-          where
-          step p dp = p - (lr * dp)
-          gd lr (Gradients gradients) parameters = zipWith step parameters gradients
-@
+>  instance Optimizer GD where
+>      step lr gradients depParameters dummy = (gd lr gradients depParameters, dummy)
+>          where
+>          step p dp = p - (lr * dp)
+>          gd lr (Gradients gradients) parameters = zipWith step parameters gradients
 
 The use of an optimizer was illustrated in the linear regression example
 using the function @runStep@
 
-@
-  (newParam, _) <- runStep state GD loss 5e-3
-@
+>  (newParam, _) <- runStep state GD loss 5e-3
 
 In this case the new optimizer state returned is ignored (as @_@) since
 gradient descent does not have any internal state. Under the hood,
@@ -538,10 +510,8 @@ the optimizer to runStep as an abstracted interface which takes
 parameter values, the optimizer value, loss (a tensor), and learning
 rate as input and returns new parameters and an updated optimizer value.
 
-@
-  runStep :: (Parameterized p, Optimizer o) =>
-          p -> o -> Tensor -> LearningRate -> IO ([Parameter], o)
-@
+>  runStep :: (Parameterized p, Optimizer o) =>
+>          p -> o -> Tensor -> LearningRate -> IO ([Parameter], o)
 
 = Typed Tensors
 #typed-tensors#
@@ -572,20 +542,16 @@ Things we can do in typed Hasktorch:
 We can encode all Hasktorch tensor shapes on the type level using
 type-level lists and natural numbers:
 
-@
-  type EmptyShape = '[]
-  type OneDimensionalShape (a :: Nat) = '[a]
-  type TwoDimensionalShape (a :: Nat) (b :: Nat) = '[a, b]
-  -- ...
-@
+>  type EmptyShape = '[]
+>  type OneDimensionalShape (a :: Nat) = '[a]
+>  type TwoDimensionalShape (a :: Nat) (b :: Nat) = '[a, b]
+>  ...
 
 Tensor data types and compute device types are lifted to the type level
 using the @DataKinds@ language extension:
 
-@
-  type BooleanCPUTensor (shape :: [Nat]) = Tensor '(CPU,  0) 'Bool  shape
-  type IntCUDATensor    (shape :: [Nat]) = Tensor '(CUDA, 1) 'Int64 shape
-@
+>  type BooleanCPUTensor (shape :: [Nat]) = Tensor '(CPU,  0) 'Bool  shape
+>  type IntCUDATensor    (shape :: [Nat]) = Tensor '(CUDA, 1) 'Int64 shape
 
 Devices are represented as tuples consisting of a @DeviceType@ (here
 @CPU@ for the CPU and @CUDA@ for a CUDA device, respectively) and a
@@ -596,22 +562,18 @@ compile time is only possible if all tensor properties are constants and
 are statically known. If this were the case, then we could only write
 functions over fully specified tensors, say,
 
-@
-  boring :: BooleanCPUTensor '[] -> BooleanCPUTensor '[]
-  boring = id
-@
+>  boring :: BooleanCPUTensor '[] -> BooleanCPUTensor '[]
+>  boring = id
 
 Fortunately, Haskell has the ability to reason about type variables.
 This feature is called parametric polymorphism. Consider this simple
 example of a function:
 
-@
-  tensorNoOp
-    :: forall (shape :: [Nat]) (dtype :: DType) (device :: (DeviceType, Nat))
-     . Tensor device dtype shape
-    -> Tensor device dtype shape
-  tensorNoOp = id
-@
+>  tensorNoOp
+>    :: forall (shape :: [Nat]) (dtype :: DType) (device :: (DeviceType, Nat))
+>     . Tensor device dtype shape
+>    -> Tensor device dtype shape
+>  tensorNoOp = id
 
 Here, @shape@, @dtype@, and @device@ are type variables that have been
 constrained to be of kind shape, data type, and device, respectively.
