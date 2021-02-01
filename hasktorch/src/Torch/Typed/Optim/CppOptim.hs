@@ -28,6 +28,7 @@ import qualified Torch.Internal.Type as ATen
 import qualified Torch.Internal.Managed.Optim as LibTorch
 import qualified Torch.Typed.Optim as Optim
 import System.Mem(performGC)
+import Torch.Internal.GC (mallocTrim)
 
 import Torch.HList
 import Torch.Typed.Tensor
@@ -138,4 +139,5 @@ runStep :: (CppOptimizer option, Parameterized model
         -> IO (model, CppOptimizerState option (Parameters model))
 runStep model optim loss = do
   performGC
+  mallocTrim 0
   unsafeStep model optim loss
