@@ -15,8 +15,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -v2
-                -fplugin TypeLevel.Rewrite
+{-# OPTIONS_GHC -fplugin TypeLevel.Rewrite
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyRightAssociativeL
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2C
@@ -111,6 +110,10 @@ t5MaxDistance = 128
 -- 'pad_token_id = 0'
 t5PadTokenId :: Int
 t5PadTokenId = 0
+
+-- | T5 attention mask bias
+t5AttentionMaskBias :: Double
+t5AttentionMaskBias = -10000
 
 type StateDict = Map.Map String (ForeignPtr ATen.Tensor)
 
@@ -576,7 +579,7 @@ mkT5AttentionMask paddingMask =
           deviceType
           dType
           [Dim "*" 1, seqDim, seqDim]
-   in maskedFill (unsqueeze @( 'SelectDim ( 'ByIndex 1)) paddingMask) (-10000 :: Double) emptyMask
+   in maskedFill (unsqueeze @( 'SelectDim ( 'ByIndex 1)) paddingMask) t5AttentionMaskBias emptyMask
 
 mkT5DecoderAttentionMask ::
   forall requiresGradient layout device dataType shape seqDim output.
@@ -630,7 +633,7 @@ mkT5DecoderAttentionMask paddingMask =
       booleanMask = causalMask `logicalOr` unsqueeze @( 'SelectDim ( 'ByIndex 1)) paddingMask
    in maskedFill
         booleanMask
-        (-10000 :: Double)
+        t5AttentionMaskBias
         emptyMask
 
 mkT5CrossAttentionMask ::

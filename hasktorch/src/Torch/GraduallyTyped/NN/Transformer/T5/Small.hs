@@ -89,19 +89,21 @@ t5SmallConfigFromPretrained ::
   IO (T5SmallConfig ( 'Device 'CPU))
 t5SmallConfigFromPretrained = t5ConfigFromPretrained
 
-instance HasInitialize (T5Small 'WithoutLMHead device) where
+instance HasInitialize (T5Small 'WithoutLMHead ( 'Device 'CPU)) where
   type
-    InitializeF (T5Small 'WithoutLMHead device) =
-      T5SmallConfig device -> IO (T5Small 'WithoutLMHead device)
-  initialize config =
+    InitializeF (T5Small 'WithoutLMHead ( 'Device 'CPU)) =
+      FilePath -> IO (T5Small 'WithoutLMHead ( 'Device 'CPU))
+  initialize filePath = do
+    config <- t5SmallConfigFromPretrained filePath False
     flip runReaderT config $
       T5Small <$> lookupSequenceToSequenceTransformerWithoutLMHead
 
-instance HasInitialize (T5Small 'WithLMHead device) where
+instance HasInitialize (T5Small 'WithLMHead ( 'Device 'CPU)) where
   type
-    InitializeF (T5Small 'WithLMHead device) =
-      T5SmallConfig device -> IO (T5Small 'WithLMHead device)
-  initialize config =
+    InitializeF (T5Small 'WithLMHead ( 'Device 'CPU)) =
+      FilePath -> IO (T5Small 'WithLMHead ( 'Device 'CPU))
+  initialize filePath = do
+    config <- t5SmallConfigFromPretrained filePath False
     flip runReaderT config $
       T5Small <$> lookupSequenceToSequenceTransformerWithLMHead
 

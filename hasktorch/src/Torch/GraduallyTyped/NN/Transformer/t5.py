@@ -18,8 +18,14 @@ from transformers import AutoTokenizer, T5Model, T5ForConditionalGeneration
 
 def printExample(model):
 	tokenizer = AutoTokenizer.from_pretrained('t5-base')
-	input_ids = tokenizer("Studies have been shown that owning a dog is good for you", return_tensors="pt").input_ids  # Batch size 1
-	decoder_input_ids = tokenizer("Studies show that", return_tensors="pt").input_ids  # Batch size 1
+	input_ids = tokenizer(
+		["Studies have been shown that owning a dog is good for you",
+		 "Studies have been shown that owning a dog is good for you and you"
+		], padding="longest", return_tensors="pt").input_ids  # Batch size 2
+	decoder_input_ids = tokenizer(
+		["Studies show that",
+		 "Studies show that"
+		], padding="longest", return_tensors="pt").input_ids  # Batch size 2
 	outputs = model(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
 
 	print(input_ids)

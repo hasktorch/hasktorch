@@ -89,19 +89,21 @@ data
     } ->
     T5Base hasLMHead device
 
-instance HasInitialize (T5Base 'WithoutLMHead device) where
+instance HasInitialize (T5Base 'WithoutLMHead ( 'Device 'CPU)) where
   type
-    InitializeF (T5Base 'WithoutLMHead device) =
-      T5BaseConfig device -> IO (T5Base 'WithoutLMHead device)
-  initialize config =
+    InitializeF (T5Base 'WithoutLMHead ( 'Device 'CPU)) =
+      FilePath -> IO (T5Base 'WithoutLMHead ( 'Device 'CPU))
+  initialize filePath = do
+    config <- t5BaseConfigFromPretrained filePath False
     flip runReaderT config $
       T5Base <$> lookupSequenceToSequenceTransformerWithoutLMHead
 
-instance HasInitialize (T5Base 'WithLMHead device) where
+instance HasInitialize (T5Base 'WithLMHead ( 'Device 'CPU)) where
   type
-    InitializeF (T5Base 'WithLMHead device) =
-      T5BaseConfig device -> IO (T5Base 'WithLMHead device)
-  initialize config =
+    InitializeF (T5Base 'WithLMHead ( 'Device 'CPU)) =
+      FilePath -> IO (T5Base 'WithLMHead ( 'Device 'CPU))
+  initialize filePath = do
+    config <- t5BaseConfigFromPretrained filePath False
     flip runReaderT config $
       T5Base <$> lookupSequenceToSequenceTransformerWithLMHead
 
