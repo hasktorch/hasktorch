@@ -8,6 +8,7 @@ module Torch.GraduallyTyped.Tensor.MathOperations.Pointwise where
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (Bool))
 import Torch.GraduallyTyped.DType (DataType (DataType))
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape (BroadcastShapesF)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
@@ -814,7 +815,7 @@ logicalNot ::
   -- | the input tensor
   Tensor requiresGradient layout device dataType shape ->
   -- | the output tensor
-  Tensor requiresGradient layout device ( 'DataType 'Bool) shape
+  Tensor 'WithoutGradient layout device ( 'DataType 'Bool) shape
 logicalNot = unsafePerformIO . cast1 ATen.logical_not_t
 
 -- | Computes the element-wise logical OR of the given input tensors.
@@ -822,13 +823,18 @@ logicalNot = unsafePerformIO . cast1 ATen.logical_not_t
 -- If the input tensors are not a bool tensors,
 -- then zeros are treated as 'False' and nonzeros are treated as 'True'.
 logicalOr ::
-  forall requiresGradient layout device dataType shape.
+  forall requiresGradient layout device dataType shape requiresGradient' layout' device' dataType' shape'.
   -- | the input tensor
   Tensor requiresGradient layout device dataType shape ->
   -- | the tensor to compute OR with
-  Tensor requiresGradient layout device dataType shape ->
+  Tensor requiresGradient' layout' device' dataType' shape' ->
   -- | the output tensor
-  Tensor requiresGradient layout device ( 'DataType 'Bool) shape
+  Tensor
+    'WithoutGradient
+    (layout <+> layout')
+    (device <+> device')
+    ( 'DataType 'Bool)
+    (BroadcastShapesF shape shape')
 input `logicalOr` other = unsafePerformIO $ cast2 ATen.logical_or_tt input other
 
 -- | Computes the element-wise logical XOR of the given input tensors.

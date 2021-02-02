@@ -37,11 +37,12 @@ type family AddDimF (dim :: Dim (Name Symbol) (Size Nat)) (dim' :: Dim (Name Sym
   AddDimF ( 'Dim name size) ( 'Dim name' size') = 'Dim (name <+> name') (AddSizeF size size')
 
 type family BroadcastSizeF (size :: Size Nat) (size' :: Size Nat) :: Maybe (Size Nat) where
+  BroadcastSizeF 'UncheckedSize _ = 'Just 'UncheckedSize
+  BroadcastSizeF _ 'UncheckedSize = 'Just 'UncheckedSize
   BroadcastSizeF ( 'Size size) ( 'Size size) = 'Just ( 'Size size)
   BroadcastSizeF ( 'Size size) ( 'Size 1) = 'Just ( 'Size size)
   BroadcastSizeF ( 'Size 1) ( 'Size size) = 'Just ( 'Size size)
   BroadcastSizeF ( 'Size _) ( 'Size _) = 'Nothing
-  BroadcastSizeF size size' = 'Just (size <+> size')
 
 type family BroadcastDimF (dim :: Dim (Name Symbol) (Size Nat)) (dim' :: Dim (Name Symbol) (Size Nat)) :: Maybe (Dim (Name Symbol) (Size Nat)) where
   BroadcastDimF ( 'Dim name size) ( 'Dim name' size') = MapMaybe ( 'Dim (name <+> name')) (BroadcastSizeF size size')

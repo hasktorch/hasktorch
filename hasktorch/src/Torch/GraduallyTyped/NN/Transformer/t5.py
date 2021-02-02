@@ -16,33 +16,37 @@ from transformers import AutoTokenizer, T5Model, T5ForConditionalGeneration
 # traced_model.save("t5-small.pt")
 
 
+def printExample(model):
+	tokenizer = AutoTokenizer.from_pretrained('t5-base')
+	input_ids = tokenizer("Studies have been shown that owning a dog is good for you", return_tensors="pt").input_ids  # Batch size 1
+	decoder_input_ids = tokenizer("Studies show that", return_tensors="pt").input_ids  # Batch size 1
+	outputs = model(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
+
+	print(input_ids)
+	print(decoder_input_ids)
+	# print(outputs.encoder_last_hidden_state)
+	# print(outputs.last_hidden_state)
+	print(outputs.logits)
+	# print(outputs)
+
+
 # model = T5Model.from_pretrained('t5-small', torchscript=False)
 model = T5ForConditionalGeneration.from_pretrained('t5-small', torchscript=False)
 model.eval()
 
-d = dict(model.state_dict())
-for k, v in d.items():
-    print("{}: {}".format(k, v.shape))
-torch.save(d, "t5-small.pt", _use_new_zipfile_serialization=True)
+printExample(model)
 
+d = dict(model.state_dict())
+# for k, v in d.items():
+#     print("{}: {}".format(k, v.shape))
+torch.save(d, "t5-small.pt", _use_new_zipfile_serialization=True)
 
 model = T5ForConditionalGeneration.from_pretrained('t5-base', torchscript=False)
 model.eval()
 
+printExample(model)
+
 d = dict(model.state_dict())
-for k, v in d.items():
-    print("{}: {}".format(k, v.shape))
+# for k, v in d.items():
+#     print("{}: {}".format(k, v.shape))
 torch.save(d, "t5-base.pt", _use_new_zipfile_serialization=True)
-
-
-tokenizer = AutoTokenizer.from_pretrained('t5-base')
-input_ids = tokenizer("Studies have been shown that owning a dog is good for you", return_tensors="pt").input_ids  # Batch size 1
-decoder_input_ids = tokenizer("Studies show that", return_tensors="pt").input_ids  # Batch size 1
-outputs = model(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
-
-print(input_ids)
-print(decoder_input_ids)
-# print(outputs.encoder_last_hidden_state)
-# print(outputs.last_hidden_state)
-print(outputs.logits)
-# print(outputs)

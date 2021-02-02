@@ -18,6 +18,7 @@ module Torch.GraduallyTyped.Tensor.Creation
     -- checkedOnes,
     uncheckedOnes,
     zeros,
+    full,
     randn,
     -- checkedRandn,
     uncheckedRandn,
@@ -38,6 +39,7 @@ import Torch.GraduallyTyped.Layout (KnownLayoutType, Layout (..), LayoutType (..
 import Torch.GraduallyTyped.Prelude (Catch)
 import Torch.GraduallyTyped.Random (Generator, withGenerator)
 import Torch.GraduallyTyped.RequiresGradient (KnownRequiresGradient, RequiresGradient (..), requiresGradientVal)
+import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape (Dim (..), Name (..), Shape (..), Size (..), WithShapeC (..), dimName, dimSize)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
 import Torch.Internal.Cast (cast2, cast3, cast4)
@@ -278,6 +280,30 @@ zeros =
             (names, sizes)
               | getAll . foldMap (\name -> All $ name == "*") $ names -> cast2 ATen.zeros_lo sizes opts
               | otherwise -> cast3 ATen.zeros_lNo sizes names opts
+       in UnsafeTensor tensor
+
+full ::
+  forall requiresGradient layout device dataType shape input.
+  ( Scalar input,
+    WithCreateC (input -> Tensor requiresGradient layout device dataType shape) requiresGradient layout device dataType shape
+  ) =>
+  WithCreateF (input -> Tensor requiresGradient layout device dataType shape) requiresGradient layout device dataType shape
+full =
+  withCreate
+    @(input -> Tensor requiresGradient layout device dataType shape)
+    @requiresGradient
+    @layout
+    @device
+    @dataType
+    @shape
+    go
+  where
+    go requiresGradient layoutType deviceType dType dims input =
+      let opts = tensorOptions requiresGradient layoutType deviceType dType
+          tensor = unsafePerformIO $ case (map dimName dims, map dimSize dims) of
+            (names, sizes)
+              | getAll . foldMap (\name -> All $ name == "*") $ names -> cast3 ATen.full_lso sizes input opts
+              | otherwise -> cast4 ATen.full_lsNo sizes input names opts
        in UnsafeTensor tensor
 
 randn ::
