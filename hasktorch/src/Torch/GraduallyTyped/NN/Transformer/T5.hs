@@ -50,7 +50,6 @@ testForwardT5Small =
     g <- mkGenerator @( 'Device CPU) 0
     let (output, _) = forward model (input, decoderInput) g
     print output
-    pure ()
 
 testForwardT5Base :: IO ()
 testForwardT5Base =
@@ -64,4 +63,3 @@ testForwardT5Base =
     g <- mkGenerator @( 'Device CPU) 0
     let (output, _) = forward model (input, decoderInput) g
     print output
-    pure ()
