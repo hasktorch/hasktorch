@@ -28,7 +28,9 @@ import Data.Functor.Compose
 import Data.Singletons.Prelude (Reverse)
 import qualified Torch.Monad as M
 
--- Refence : https://gist.github.com/lotz84/78474ac9ee307d50376e025093316d0f
+-- Refence :
+--   https://github.com/jasigal/hasktorch-naperian/blob/master/src/Data/Naperian.hs
+--   https://gist.github.com/lotz84/78474ac9ee307d50376e025093316d0f
 
 type family Tensor_ (xs :: [Nat]) = r | r -> xs where
   Tensor_ '[] = Identity
