@@ -58,6 +58,10 @@ instance KnownNat n => Representable (V.Vector n) where
   index = V.index
   positions = V.generate id
 
+instance Applicative (Tensor '[]) where
+  pure  = return
+  (<*>) = ap
+
 instance Functor (Tensor '[]) where
   fmap func v =  toTensor $ fmap func $ fromTensor v
 
@@ -65,8 +69,12 @@ instance (Functor (Tensor ns)) => Functor (Tensor (n ': ns)) where
   fmap func v =  fromVector $ fmap (fmap func) $ toVector v
 
 instance Monad (Tensor '[]) where
-  return = toTensor. M.return . fromTensor
-  (>>=)
+  return = toTensor . M.Return
+  (>>=) a b = toTensor $ M.Bind (fromTensor a) (\v -> fromTensor (b v))
+
+-- instance (KnownNat n, Monad (Tensor ns)) => Monad (Tensor (n ': ns)) where
+--  return = replicateT
+--  (>>=) a b = toTensor $ M.Bind (fromTensor a) (\v -> fromTensor (b v))
 
 instance Representable (Tensor '[]) where
   type Log (Tensor '[]) = ()
@@ -76,7 +84,7 @@ instance Representable (Tensor '[]) where
 instance (KnownNat n, Representable (Tensor ns)) => Representable (Tensor (n ': ns)) where
   type Log (Tensor (n ': ns)) = (Finite n , (Log (Tensor ns)))
   index a (i, j) = index (index (toVector a) j) i
-  tabulate = undefined
+  tabulate func = fromVector $ tabulate (\t -> V.generate (\i -> curry func i t))
 
 class Shapely (ns :: [Nat]) where
   replicateT :: a -> Tensor ns a
