@@ -6,6 +6,10 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE IncoherentInstances #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE TypeFamilyDependencies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Torch.Monad where
 
@@ -15,11 +19,18 @@ import Control.Applicative
 import GHC.TypeLits
 import Data.Proxy
 import Data.Coerce
+import Data.Finite
+import Data.Kind
+import qualified Data.Vector.Sized as V
+import Data.Functor.Compose
+import Data.Singletons.Prelude (Reverse)
 
 newtype Batch a = Batch [a]
 newtype Channel (ch::Nat) a = Channel [a]
 newtype DX a = DX [a]
 newtype DY a = DY [a]
+newtype CPU a = CPU a
+newtype CUDA a = CUDA a
 
 data Tensor a where
   Prim   :: (T.TensorLike a) => T.Tensor -> Tensor a
@@ -76,12 +87,37 @@ instance (T.TensorLike a) => T.TensorLike (Tensor a) where
   _peekElemOff = error "Not implemented for Tensor-a-type"
   _pokeElemOff = error "Not implemented for Tensor-a-type"
 
+{-
+instance (T.TensorLike a) => T.TensorLike (CPU a) where
+  asTensor' = error "Not implemented for Tensor-a-type"
+  asTensor = T.toCPU . toTensor
+  _asValue = Prim . T.toCPU
+  _dtype = error "Not implemented for Tensor-a-type"
+  _dims v = error "Not implemented for Tensor-a-type"
+  _deepDims v = error "Not implemented for Tensor-a-type"
+  _peekElemOff = error "Not implemented for Tensor-a-type"
+  _pokeElemOff = error "Not implemented for Tensor-a-type"
+
+instance (T.TensorLike a) => T.TensorLike (CUDA a) where
+  asTensor' = error "Not implemented for Tensor-a-type"
+  asTensor = T.toCUDA . toTensor
+  _asValue = Prim
+  _dtype = error "Not implemented for Tensor-a-type"
+  _dims v = error "Not implemented for Tensor-a-type"
+  _deepDims v = error "Not implemented for Tensor-a-type"
+  _peekElemOff = error "Not implemented for Tensor-a-type"
+  _pokeElemOff = error "Not implemented for Tensor-a-type"
+-}
+
 toTensor :: (T.TensorLike a) => Tensor a -> T.Tensor
 toTensor (Prim s)                        = s
 toTensor (Return a)                      = T.asTensor $ a
 toTensor (Bind (Prim s) f)               = toTensor (f (T.asValue s))
 toTensor (Bind (Return a) f)             = toTensor (f a)
 toTensor (Bind (Bind ma f) g)            = toTensor (Bind ma (\a -> Bind (f a) g))
+
+-- (!!) :: Int -> Tensor [a] -> Tensor a
+-- (!!) n tensor = return $ (toTensor tensor) T.! n
 
 instance Functor Tensor where
   fmap = liftM
@@ -93,6 +129,9 @@ instance Applicative Tensor where
 instance Monad Tensor where
   return = Return
   (>>=)  = Bind
+
+asValue :: (T.TensorLike a) => Tensor a -> a
+asValue = T.asValue . toTensor
 
 instance Functor Batch where
   fmap = liftM
@@ -153,6 +192,11 @@ instance Monad DY where
       x <- xs
       let DY y = f x
       y
+
+-- concat :: [Tensor a] -> Tensor [a]
+--
+
+
 
 foo :: Tensor [Float]
 foo = return [1,2,3]

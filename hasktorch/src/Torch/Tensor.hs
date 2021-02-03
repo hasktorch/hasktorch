@@ -21,6 +21,7 @@ import Data.List (intercalate)
 import Data.Proxy
 import Data.Reflection
 import qualified Data.Vector as V
+import qualified Data.Vector.Sized as S
 import Data.Word (Word8)
 import Foreign.C.Types
 import Foreign.ForeignPtr
