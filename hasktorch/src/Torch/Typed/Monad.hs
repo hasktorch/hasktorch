@@ -27,6 +27,7 @@ import Data.Functor.Identity
 import Data.Functor.Compose
 import Data.Singletons.Prelude (Reverse)
 import qualified Torch.Monad as M
+import Unsafe.Coerce (unsafeCoerce)
 
 -- Refence :
 --   https://github.com/jasigal/hasktorch-naperian/blob/master/src/Data/Naperian.hs
@@ -36,7 +37,7 @@ type family Tensor_ (xs :: [Nat]) = r | r -> xs where
   Tensor_ '[] = Identity
   Tensor_ (n ': ns) = Compose (V.Vector n) (Tensor_ ns)
 
-type Tensor ns = Compose M.Tensor (Tensor_ ns)
+newtype Tensor ns a = MkTensor (M.Tensor (Tensor_ ns a))
 
 class Functor f => Representable f where
   type Log f
@@ -57,14 +58,46 @@ instance KnownNat n => Representable (V.Vector n) where
   index = V.index
   positions = V.generate id
 
+instance Functor (Tensor '[]) where
+  fmap func v =  toTensor $ fmap func $ fromTensor v
+
+instance (Functor (Tensor ns)) => Functor (Tensor (n ': ns)) where
+  fmap func v =  fromVector $ fmap (fmap func) $ toVector v
+
+instance Monad (Tensor '[]) where
+  return = toTensor. M.return . fromTensor
+  (>>=)
+
+instance Representable (Tensor '[]) where
+  type Log (Tensor '[]) = ()
+  index a _ = T.asValue (M.toTensor $ fromTensor a)
+  tabulate = toTensor . tabulate
+
+instance (KnownNat n, Representable (Tensor ns)) => Representable (Tensor (n ': ns)) where
+  type Log (Tensor (n ': ns)) = (Finite n , (Log (Tensor ns)))
+  index a (i, j) = index (index (toVector a) j) i
+  tabulate = undefined
+
 class Shapely (ns :: [Nat]) where
-  replicateT :: (T.TensorLike a) => a -> Tensor ns a
+  replicateT :: a -> Tensor ns a
 
--- toTensor :: M.Tensor a -> Tensor '[] a
--- toTensor v = 
+instance Shapely '[] where
+  replicateT a = toTensor (return a)
 
--- instance Shapely '[] where
---  replicateT a = toTensor (return a)
+instance (KnownNat n, Shapely ns, Representable (Tensor ns)) => Shapely (n ': ns) where
+  replicateT a =
+    let M.Return v = unsafeCoerce $ replicateT @ns a
+    in unsafeCoerce $ M.Return (V.replicate @n v)
 
---instance (KnownNat n, Shapely ns, Representable (Tensor ns)) => Shapely (n ': ns) where
---  replicateT a = Compose (replicateT (tabulate (const a)))
+toTensor :: M.Tensor a -> Tensor '[] a
+toTensor = unsafeCoerce
+
+fromTensor :: Tensor '[] a -> M.Tensor a
+fromTensor = unsafeCoerce
+
+toVector :: Tensor (n ': ns) a -> Tensor ns (V.Vector n a)
+toVector = unsafeCoerce
+
+fromVector :: Tensor ns (V.Vector n a) -> Tensor (n ': ns) a 
+fromVector = unsafeCoerce
+
