@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
 
-{- | Hasktorch is a library for tensor math and differentiable
-programming in Haskell.
+{- | Hasktorch is a library for scientific computing and differentiable
+programming.
 -}
 module Torch.Tutorial (
     -- $tutorial
@@ -15,37 +15,57 @@ import Torch.Internal.Managed.Type.Context (manual_seed_L)
 -}
 
 {- $tutorial
-= Introduction
+= What is Hasktorch?
 #introduction#
 
-TODO
+Hasktorch is a Haskell library for scientific computing and
+differentiable programming.  It leverages @libtorch@ (the backend
+library powering PyTorch) for efficient tensor manipulation and
+automatic differentiation, while bringing to bear Haskell's expressive
+type system and first-class support for for the functional programming
+paradigm.
 
-= Usage
-#usage#
-
-In the following section we introduce Hasktorch usage at a high level
-from an end-user perspective. In the sections that follow we will delve
-into the underlying implementation concepts.
+== Goal of this tutorial
 
 The sequence of topics and examples here is loosely based on the
 PyTorch tutorial [Deep Learning with PyTorch: A 60 Minute
 Blitz](https://pytorch.org/tutorials/beginner/deep_learning_60min_blitz.html)
 by Soumith Chintala.
 
-== Tensors
-#tensors#
+In this tutorial we will implement a simple machine learning
+model. Along the way, you will learn to
+
+- create and manipulate tensors
+
+- build computation graphs from tensors and compute gradients
+
+- optimize parameters with respect to an objective function
+
+= Usage
+#usage#
+
+The reader is encouraged to follow along with the examples in a GHCi session.
+
+To start, import 'Torch':
 
 >>> import Torch
 
-Initialize a tensor of zeros by specifying the dimensions of the
-tensor<#notes [1]>:
+== Tensors
+#tensors#
+
+A `Tensor` in Hasktorch is multidimensional array with a fixed shape
+and element type.
+
+For example, we can initialize a tensor with shape @[3, 4]@ and filled
+with zeros using
 
 >>> Torch.zeros' [3, 4]
 Tensor Float [3,4] [[ 0.0000,  0.0000,  0.0000,  0.0000],
                     [ 0.0000,  0.0000,  0.0000,  0.0000],
                     [ 0.0000,  0.0000,  0.0000,  0.0000]]
 
-Initialize a tensor from a Haskell list:
+We can also initialize a tensor from a Haskell list using
+'Torch.Tensor.asTensor':
 
 >>> asTensor ([[4, 3], [2, 1]] :: [[Float]])
 Tensor Float [2,2] [[ 4.0000   ,  3.0000   ],
@@ -54,34 +74,37 @@ Tensor Float [2,2] [[ 4.0000   ,  3.0000   ],
 Note that the numerical type of the tensor is inferred from the types of
 the values in the list.
 
-A single valued tensor can be passed to 'Torch.Tensor.asTensor' as
-well (and can be converted back to a scalar using
-'Torch.Tensor.asValue'):
+Scalar values are represented in Hasktorch as tensors with shape @[]@:
 
 >>> asTensor 3.5
 Tensor Double []  3.5000
 
->>> asValue (asTensor 3.5) :: Double
+We can get the scalar value back out using 'Torch.Tensor.asValue':
+
+>>> asValue (asTensor 3.5)
 3.5
 
-Create a randomly initialized matrix:
+=== Specifying Tensor parameters
 
->>> x <-randIO' [2, 2]
->>> x
-Tensor Float [2,2] [[ 0.2961   ,  0.5166   ],
-                    [ 0.2517   ,  0.6886   ]]
+In the previous section we initialized a tensor filled with zeros
+using @zeros'@ (note the prime suffix). Hasktorch functions use a
+convention where default versions of functions use a prime suffix. The
+unprimed versions of these functions expect an additional parameter
+specifying tensor parameters. For example:
 
-Note that since random initialization returns a different result each
-time, unlike other tensor constructors, is monadic reflecting the
-context of an underlying random number generator (RNG) changing state.
+@
+  zeros :: [Int] -> 'Torch.TensorOptions' -> Tensor
+@
 
-Hasktorch includes variations of random tensor initializers in which the
-RNG object is threaded explicitly rather than implicitly. See the
-@Torch.Random@ module functions for details and variations. Samplers for
-which the RNG is not explicit such as @randIO\'@ example above use the
-@-IO@ suffix.
+@TensorOptions@ are typically specified by starting with
+'Torch.TensorOptions.defaultOpts' and modifying using one or more of
+the following:
 
-Construct a matrix filled with zeros of dtype long:
+- 'Torch.TensorOptions.withDType' configures the data type of the elements
+- 'Torch.TensorOptions.withDevice' configures on which device the tensor is to be used
+- others (see 'Torch.TensorOptions')
+
+For example, to construct a matrix filled with zeros of dtype @Int64@:
 
 >>> zeros [4, 4] (withDType Int64 defaultOpts)
 Tensor Int64 [4,4] [[ 0,  0,  0,  0],
@@ -89,34 +112,25 @@ Tensor Int64 [4,4] [[ 0,  0,  0,  0],
                     [ 0,  0,  0,  0],
                     [ 0,  0,  0,  0]]
 
-Construct a vector filled with a specified constant:
+=== Tensor factories
 
->>> full' [3, 2] 4
-Tensor Float [3,2] [[ 4.0000   ,  4.0000   ],
-                    [ 4.0000   ,  4.0000   ],
-                    [ 4.0000   ,  4.0000   ]]
+Hasktorch comes with many "factory" functions similar to @zeros@ and
+@zeros'@ useful for initializing common kinds of tensors. For example,
+'Torch.TensorFactories.ones',
+'Torch.TensorFactories.full',
+'Torch.TensorFactories.eye',
+and the primed versions of these. See 'Torch.TensorFactories' for a
+complete list.
 
-Construct a tensor from a Haskell list:
+One useful class of factory functions are those suffixed with "-like"
+(e.g. 'Torch.TensorFactories.onesLike'), which initialize a tensor
+with the same dimensions as their argument. For example:
 
->>> asTensor [[1, 2, 3], [4, 5, 6]]
-Tensor Double [2,3] [[ 1.0000   ,  2.0000   ,  3.0000   ],
-                     [ 4.0000   ,  5.0000   ,  6.0000   ]]
-
-Note when the type of values in the list is explicit, this type is
-reflected in the dtype of the tensor:
-
->>> asTensor ([[1, 2, 3], [4, 5, 6]] :: [[Int]])
-Tensor Int64 [2,3] [[ 1,  2,  3],
-                    [ 4,  5,  6]]
-
-Tensor constructors with a @-like@ suffix Create a tensor based on an
-existing tensor:
-
->>> let x = Torch.full' [3, 2] 4
->>> Torch.randLikeIO' x
-Tensor Float [3,2] [[ 7.3972e-2,  0.8665   ],
-                    [ 0.1366   ,  0.1025   ],
-                    [ 0.1841   ,  0.7264   ]]
+>>> let x = zeros' [3, 2]
+>>> onesLike x
+Tensor Float [3,2] [[ 1.0000   ,  1.0000   ],
+                    [ 1.0000   ,  1.0000   ],
+                    [ 1.0000   ,  1.0000   ]]
 
 == Operations
 #operations#
@@ -159,6 +173,26 @@ dtype matches the Haskell type:
 >>> y
 2
 
+== Randomness
+
+Create a randomly initialized matrix:
+
+>>> x <-randIO' [2, 2]
+>>> x
+Tensor Float [2,2] [[ 0.2961   ,  0.5166   ],
+                    [ 0.2517   ,  0.6886   ]]
+
+Note that since random initialization returns a different result each
+time, unlike other tensor constructors, is monadic reflecting the
+context of an underlying random number generator (RNG) changing state.
+
+Hasktorch includes variations of random tensor initializers in which the
+RNG object is threaded explicitly rather than implicitly. See the
+@Torch.Random@ module functions for details and variations. Samplers for
+which the RNG is not explicit such as @randIO\'@ example above use the
+@-IO@ suffix.
+
+
 == Automatic Differentiation
 #automatic-differentiation#
 
@@ -192,7 +226,7 @@ up computations using ops applied to the @toDependent@ tensor of an
 
 All tensors have an underlying property that can be retrieved using
 the 'Torch.Autograd.requiresGrad' function which indicates whether
-they are a differentiable value in a compute graph. <#notes [2]>
+they are a differentiable value in a compute graph. <#notes [1]>
 
 >>> let x = asTensor [1, 2, 3]
 >>> y <- makeIndependent (asTensor [4, 5, 6])
@@ -382,7 +416,7 @@ The @init@ variable is initialized as a @Linear@ type (defined in
 and representing a fully connected linear layer, equivalent to linear
 regression when no hidden layers are present.
 
-@init@ is passed into the 'Torch.Optim.foldLoop'@<#notes [3]> as the @state@
+@init@ is passed into the 'Torch.Optim.foldLoop'@<#notes [2]> as the @state@
 variable.
 
 A new list of @Parameter@ values is passed back from
@@ -600,17 +634,13 @@ errors.
 
 #notes#
 
-1.  Hasktorch functions use a convention where default versions of
-    functions use a prime suffix. The @zeros@ function without the prime
-    suffix expects an additional parameter specifying tensor parameters.
-
-2.  PyTorch users will be familiar with this as the @requires_grad@
+1.  PyTorch users will be familiar with this as the @requires_grad@
     member variable for the PyTorch tensor type. The Hasktorch mechanism
     is distinct from PyTorch’s mechanism - by only allowing gradients to
     be applied in the context of a set of @IndependentTensor@ variables,
     it allows ops to be semantically pure and preserve referential
     transparency.
 
-3.  @foldLoop@ is a convenience function defined in terms of @foldM@ as
+2.  @foldLoop@ is a convenience function defined in terms of @foldM@ as
     @foldLoop x count block = foldM block x ([1 .. count] :: [a])@
 -}
