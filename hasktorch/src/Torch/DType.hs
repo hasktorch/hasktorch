@@ -31,7 +31,21 @@ data DType
     Float
   | -- | Double
     Double
-  deriving (Eq, Show)
+  | -- | ComplexHalf
+    ComplexHalf
+  | -- | ComplexFloat
+    ComplexFloat
+  | -- | ComplexDouble
+    ComplexDouble
+  | -- | QInt8
+    QInt8
+  | -- | QUInt8
+    QUInt8
+  | -- | QInt32
+    QInt32
+  | -- | BFloat16
+    BFloat16
+  deriving (Eq, Show, Read)
 
 instance Reifies Bool DType where
   reflect _ = Bool
@@ -91,6 +105,13 @@ instance Castable DType ATen.ScalarType where
   cast Half f = f ATen.kHalf
   cast Float f = f ATen.kFloat
   cast Double f = f ATen.kDouble
+  cast ComplexHalf f = f ATen.kComplexHalf
+  cast ComplexFloat f = f ATen.kComplexFloat
+  cast ComplexDouble f = f ATen.kComplexDouble
+  cast QInt8 f = f ATen.kQInt8
+  cast QUInt8 f = f ATen.kQUInt8
+  cast QInt32 f = f ATen.kQInt32
+  cast BFloat16 f = f ATen.kBFloat16
 
   uncast x f
     | x == ATen.kBool = f Bool
@@ -102,6 +123,13 @@ instance Castable DType ATen.ScalarType where
     | x == ATen.kHalf = f Half
     | x == ATen.kFloat = f Float
     | x == ATen.kDouble = f Double
+    | x == ATen.kComplexHalf = f ComplexHalf
+    | x == ATen.kComplexFloat = f ComplexFloat
+    | x == ATen.kComplexDouble = f ComplexDouble
+    | x == ATen.kQInt8 = f QInt8
+    | x == ATen.kQUInt8 = f QUInt8
+    | x == ATen.kQInt32 = f QInt32
+    | x == ATen.kBFloat16 = f BFloat16
 
 isIntegral :: DType -> Bool
 isIntegral Bool = True
@@ -113,6 +141,13 @@ isIntegral Int64 = True
 isIntegral Half = False
 isIntegral Float = False
 isIntegral Double = False
+isIntegral ComplexHalf = False
+isIntegral ComplexFloat = False
+isIntegral ComplexDouble = False
+isIntegral QInt8 = False
+isIntegral QUInt8 = False
+isIntegral QInt32 = False
+isIntegral BFloat16 = False
 
 byteLength :: DType -> Int
 byteLength dtype =
@@ -126,3 +161,10 @@ byteLength dtype =
     Half -> 2
     Float -> 4
     Double -> 8
+    ComplexHalf -> 4
+    ComplexFloat -> 8
+    ComplexDouble -> 16
+    QInt8 -> 1
+    QUInt8 -> 1
+    QInt32 -> 4
+    BFloat16 -> 2

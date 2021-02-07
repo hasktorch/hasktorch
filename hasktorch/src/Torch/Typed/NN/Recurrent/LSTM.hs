@@ -212,7 +212,6 @@ instance A.Parameterized (LSTMLayer inputSize hiddenSize directionality dtype de
           (UnsafeMkParameter bi')
           (UnsafeMkParameter bh')
       )
-  replaceDevice = A.defaultReplaceDevice
 
 data
   LSTMLayerStackSpec
@@ -376,7 +375,6 @@ instance A.Parameterized (LSTMLayerStack inputSize hiddenSize numLayers directio
     stack' <- A._replaceParameters stack
     layer' <- A._replaceParameters layer
     return $ LSTMLayerK stack' layer'
-  replaceDevice = A.defaultReplaceDevice
 
 newtype
   LSTMSpec
@@ -443,7 +441,6 @@ instance A.Parameterized (LSTM inputSize hiddenSize numLayers directionality dty
         { lstm_layer_stack = lstm_layer_stack',
           ..
         }
-  replaceDevice = A.defaultReplaceDevice
 
 -- | Helper to do xavier uniform initializations on weight matrices and
 -- orthagonal initializations for the gates. (When implemented.)
@@ -695,7 +692,6 @@ instance A.Parameterized (LSTMWithInit inputSize hiddenSize numLayers directiona
           lstmWithLearnedInit_c = UnsafeMkParameter lstmWithLearnedInit_c',
           lstmWithLearnedInit_h = UnsafeMkParameter lstmWithLearnedInit_h'
         }
-  replaceDevice = A.defaultReplaceDevice
 
 lstmForward ::
   forall
