@@ -16,7 +16,7 @@ import GHC.TypeLits (Nat)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (HasLMHead (..), SequenceToSequenceTransformer)
-import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5Config, T5DataType, T5DropoutP, T5RelPosEncBucketDim, lookupSequenceToSequenceTransformerWithLMHead, lookupSequenceToSequenceTransformerWithoutLMHead, t5ConfigFromPretrained)
+import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5Config, T5DataType, T5DropoutP, T5Input, T5RelPosEncBucketDim, lookupSequenceToSequenceTransformerWithLMHead, lookupSequenceToSequenceTransformerWithoutLMHead, t5ConfigFromPretrained)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 
 -- | T5-Base number of layers.
@@ -154,16 +154,14 @@ instance
           T5BaseVocabDim
           T5DropoutP
       )
-      ( input,
-        decoderInput
-      )
+      (T5Input input decoderInput)
       generator
       output
       generatorOutput
   ) =>
   HasForward
     (T5Base hasLMHead device)
-    (input, decoderInput)
+    (T5Input input decoderInput)
     generator
     output
     generatorOutput

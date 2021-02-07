@@ -68,6 +68,11 @@ library
                     , Torch.GraduallyTyped.NN.Transformer.T5.Common
                     , Torch.GraduallyTyped.NN.Transformer.T5.Small
                     , Torch.GraduallyTyped.NN.Transformer.T5.Base
+                    , Torch.GraduallyTyped.NN.Transformer.T5.Large
+                    , Torch.GraduallyTyped.NN.Transformer.T5.ThreeB
+                    , Torch.GraduallyTyped.NN.Transformer.T5.ElevenB
+                    , Torch.GraduallyTyped.NN.Transformer.T5.Generation
+                    , Torch.GraduallyTyped.NN.Transformer.T5.Vocab
                     , Torch.GraduallyTyped.NN.Transformer.T5
                     , Torch.GraduallyTyped.NN.Dropout
                     , Torch.GraduallyTyped.NN.Activation

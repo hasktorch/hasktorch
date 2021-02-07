@@ -15,16 +15,20 @@ from transformers import AutoTokenizer, T5Model, T5ForConditionalGeneration
 # traced_model = torch.jit.trace(model, [input_ids, decoder_input_ids])
 # traced_model.save("t5-small.pt")
 
+tokenizer = AutoTokenizer.from_pretrained('t5-small')
 
-def printExample(model):
-    tokenizer = AutoTokenizer.from_pretrained('t5-base')
+def print_example(model):
+    prefix = "translate English to German: "
+    # prefix = "summarize: "
     inputs = [
-        "Studies have been shown that owning a dog is good for you",
-        "Studies have been shown that owning a dog is good for you and you"]
+        prefix + "Studies have shown that owning a dog is good for you.",
+        prefix + "Studies have shown that owning a dog is good for you and your dog.",
+        prefix + "You're full of shit!"]
     tokenized_inputs = tokenizer(inputs, padding="longest", return_tensors="pt")
     decoder_inputs = [
-        "Studies show that",
-        "Studies show that"]
+        "Studien haben gezeigt, dass das Besitzen eines Hundes gut für Sie ist.",
+        "Studien haben gezeigt, dass das Besitzen eines Hundes gut für Sie und Ihren Hund ist.",
+        "Du bist voller Scheiße!"]
     tokenized_decoder_inputs = tokenizer(decoder_inputs, padding="longest", return_tensors="pt")
     outputs = model(
         input_ids=tokenized_inputs.input_ids,
@@ -34,27 +38,41 @@ def printExample(model):
 
     print(tokenized_inputs)
     print(tokenized_decoder_inputs)
-    # print(outputs.last_hidden_state)
     print(outputs.logits)
 
+    inputs = [
+        prefix + "Studies have shown that owning a dog is good for you",
+        prefix + "You're full of shit!"]
+    tokenized_inputs = tokenizer(inputs, padding="longest", return_tensors="pt")
+    print(tokenized_inputs.input_ids)
+    print(tokenized_inputs.input_ids.size())
+    output = model.generate(
+        input_ids=tokenized_inputs.input_ids,
+        attention_mask=tokenized_inputs.attention_mask,
+        num_beams=1,
+        max_length=30,
+        do_sample=False,
+        repetition_penalty=1,
+        no_repeat_ngram_size=0)
+    print(output)
+    decoded = list(map(tokenizer.decode, output))
+    print(decoded)
 
-# model = T5Model.from_pretrained('t5-small', torchscript=False)
-model = T5ForConditionalGeneration.from_pretrained('t5-small', torchscript=False)
-model.eval()
 
-printExample(model)
+def load_print_and_save(model_string):
+    # model = T5Model.from_pretrained('t5-small', torchscript=False)
+    model = T5ForConditionalGeneration.from_pretrained(model_string, torchscript=False)
+    model.eval()
 
-d = dict(model.state_dict())
-# for k, v in d.items():
-#     print("{}: {}".format(k, v.shape))
-torch.save(d, "t5-small.pt", _use_new_zipfile_serialization=True)
+    print_example(model)
 
-model = T5ForConditionalGeneration.from_pretrained('t5-base', torchscript=False)
-model.eval()
+    d = dict(model.state_dict())
+    # for k, v in d.items():
+    #     print("{}: {}".format(k, v.shape))
+    torch.save(d, model_string + ".pt", _use_new_zipfile_serialization=True)
 
-printExample(model)
+for model_string in ['t5-small']: #, 't5-base', 't5-large', 't5-3b', 't5-11b']:
+    load_print_and_save(model_string)
 
-d = dict(model.state_dict())
-# for k, v in d.items():
-#     print("{}: {}".format(k, v.shape))
-torch.save(d, "t5-base.pt", _use_new_zipfile_serialization=True)
+# for i in range(40000):
+#     print("({}, \"{}\"),".format(i, tokenizer.convert_ids_to_tokens(i)))

@@ -129,7 +129,7 @@ unifyDim (Dim "*" size) (Dim name' size') | size == size' = pure (Dim name' size
 unifyDim (Dim name size) (Dim "*" size') | size == size' = pure (Dim name size)
 unifyDim dim dim' =
   fail $
-    "The supplied dimensions must be the same,"
+    "The supplied dimensions must be the same, "
       <> "but dimensions with different names and/or sizes were found: "
       <> show dim
       <> " and "

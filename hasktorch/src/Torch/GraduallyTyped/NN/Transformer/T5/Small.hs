@@ -15,8 +15,8 @@ import Control.Monad.Reader (ReaderT (runReaderT))
 import GHC.TypeLits (Nat)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
-import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (HasLMHead (..), SequenceToSequenceTransformer)
-import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5Config, T5DataType, T5DropoutP, T5RelPosEncBucketDim, lookupSequenceToSequenceTransformerWithLMHead, lookupSequenceToSequenceTransformerWithoutLMHead, t5ConfigFromPretrained)
+import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (HasLMHead (..), SequenceToSequenceTransformer, SequenceToSequenceTransformerInput)
+import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5Config, T5DataType, T5DropoutP, T5GenerationInput, T5Input, T5Output, T5RelPosEncBucketDim, lookupSequenceToSequenceTransformerWithLMHead, lookupSequenceToSequenceTransformerWithoutLMHead, t5ConfigFromPretrained)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 
 -- | T5-Small number of layers.
@@ -124,13 +124,13 @@ instance
         T5SmallVocabDim
         T5DropoutP
     )
-    (input, decoderInput, relPos, decoderRelPos, attentionMask, decoderAttentionMask, crossAttentionMask)
+    (SequenceToSequenceTransformerInput input decoderInput relPos decoderRelPos attentionMask decoderAttentionMask crossAttentionMask)
     generator
     output
     generatorOutput =>
   HasForward
     (T5Small hasLMHead device)
-    (input, decoderInput, relPos, decoderRelPos, attentionMask, decoderAttentionMask, crossAttentionMask)
+    (SequenceToSequenceTransformerInput input decoderInput relPos decoderRelPos attentionMask decoderAttentionMask crossAttentionMask)
     generator
     output
     generatorOutput
@@ -154,18 +154,47 @@ instance
           T5SmallVocabDim
           T5DropoutP
       )
-      ( input,
-        decoderInput
-      )
+      (T5Input input decoderInput)
       generator
       output
       generatorOutput
   ) =>
   HasForward
     (T5Small hasLMHead device)
-    (input, decoderInput)
+    (T5Input input decoderInput)
     generator
     output
+    generatorOutput
+  where
+  forward T5Small {..} = forward t5SmallSeqToSeq
+
+instance
+  ( HasForward
+      ( SequenceToSequenceTransformer
+          hasLMHead
+          T5SmallNumLayers
+          T5SmallNumLayers
+          device
+          T5DataType
+          T5SmallHeadDim
+          T5SmallHeadEmbedDim
+          T5SmallEmbedDim
+          T5SmallInputEmbedDim
+          T5SmallFFNDim
+          T5RelPosEncBucketDim
+          T5SmallVocabDim
+          T5DropoutP
+      )
+      (T5GenerationInput decoderInput encoderOutput inputPaddingMask)
+      generator
+      (T5Output decoderOutput encoderOutput inputPaddingMask)
+      generatorOutput
+  ) =>
+  HasForward
+    (T5Small hasLMHead device)
+    (T5GenerationInput decoderInput encoderOutput inputPaddingMask)
+    generator
+    (T5Output decoderOutput encoderOutput inputPaddingMask)
     generatorOutput
   where
   forward T5Small {..} = forward t5SmallSeqToSeq

@@ -23,13 +23,15 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType)
 import Torch.GraduallyTyped.Prelude (FromMaybe, MapMaybe)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
-import Torch.GraduallyTyped.Shape (AddDimF, By (..), Dim (..), GetDimF, GetDimImplF, GetIndexByNameF, InsertDimImplF, Name (..), NumelF, ReplaceDimF, ReplaceDimImplF, SelectDim (..), Shape (..), Size (..), WithSelectDimC (..), WithShapeC (..), dimSize)
+import Torch.GraduallyTyped.Shape.Class (AddDimF, BroadcastShapesF, GetDimF, GetDimImplF, GetIndexByNameF, InsertDimImplF, NumelF, ReplaceDimF, ReplaceDimImplF)
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SelectDim (..), Shape (..), Size (..), WithSelectDimC (..), WithShapeC (..), dimSize)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
-import Torch.GraduallyTyped.Unify (type (<+>))
+import Torch.GraduallyTyped.Unify (type (<|>), type (<+>))
 import Torch.HList (HList)
 import Torch.Internal.Cast (cast2, cast3)
 import Torch.Internal.Class (Castable)
 import qualified Torch.Internal.Managed.Native as ATen
+import qualified Torch.Internal.Managed.Type.Tensor as ATen
 import qualified Torch.Internal.Type as ATen
 import Type.Errors.Pretty (ToErrorMessage, type (%), type (<>))
 
@@ -129,14 +131,14 @@ type family
       selectDim
       tensors
       ( 'Just
-          '( requiresGradient <+> requiresGradient',
+          '( requiresGradient <|> requiresGradient',
              layout <+> layout',
              device <+> device',
              dataType <+> dataType',
              ReplaceDimF
                selectDim
-               (ReplaceDimF selectDim shape ( 'Dim 'UncheckedName 'UncheckedSize) <+> ReplaceDimF selectDim shape' ( 'Dim 'UncheckedName 'UncheckedSize))
-               (AddDimF (GetDimF selectDim shape) (GetDimF selectDim shape))
+               (shape <+> ReplaceDimF selectDim shape' (GetDimF selectDim shape))
+               (AddDimF (GetDimF selectDim shape) (GetDimF selectDim shape'))
            )
       )
   CatHListImplF _ (x ': _) _ =
@@ -423,3 +425,15 @@ unsqueeze = withSelectDim @selectDim @(Tensor requiresGradient layout device dat
     case selectDim of
       ByName _name -> undefined
       ByIndex index -> unsafePerformIO $ cast2 ATen.unsqueeze_tl input (fromIntegral index :: Int)
+
+expand ::
+  forall shape' requiresGradient layout device dataType shape input output.
+  ( input ~ Tensor requiresGradient layout device dataType shape,
+    output ~ Tensor requiresGradient layout device dataType (BroadcastShapesF shape shape'),
+    WithShapeC shape' (input -> output)
+  ) =>
+  WithShapeF shape' (input -> output)
+expand = withShape @shape' @(input -> output) $
+  \shape' input ->
+    let sizes' = dimSize <$> shape'
+     in unsafePerformIO $ cast3 ATen.tensor_expand_lb input sizes' True

@@ -936,7 +936,9 @@ checkShape tensor =
           f (Dim (Name name) UncheckedSize) name' _ = All $ name == name'
           f (Dim UncheckedName (Size size)) _ size' = All $ size == size'
           f (Dim (Name name) (Size size)) name' size' = All $ name == name' && size == size'
-       in getAll . fold $ zipWith3 f dims names sizes
+       in length dims == length names
+            && length names == length sizes
+            && (getAll . fold) (zipWith3 f dims names sizes)
 
 -- | Checks whether or not the input tensor has the shape 'shape'
 -- and returns a statically annotated copy of it wrapped in a 'MonadFail' 'm'.

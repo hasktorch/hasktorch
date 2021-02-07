@@ -60,7 +60,7 @@ type family SoftmaxF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape [D
 --        ('Shape
 --           '[ 'Dim ('Name "batch") ('Size 32),
 --              'Dim ('Name "feature") ('Size 8)])
-softmax ::
+softmax, logSoftmax ::
   forall selectDim requiresGradient layout device dataType shape.
   WithSelectDimC
     selectDim
@@ -80,3 +80,11 @@ softmax = withSelectDim @selectDim
     case by of
       ByName name -> unsafePerformIO $ cast2 ATen.softmax_tn tensor name
       ByIndex index -> unsafePerformIO $ cast2 ATen.softmax_tl tensor (fromInteger index :: Int)
+logSoftmax = withSelectDim @selectDim
+  @( Tensor requiresGradient layout device dataType shape ->
+     Tensor requiresGradient layout device dataType (SoftmaxF selectDim shape)
+   )
+  $ \by tensor ->
+    case by of
+      ByName name -> unsafePerformIO $ cast2 ATen.log_softmax_tn tensor name
+      ByIndex index -> unsafePerformIO $ cast2 ATen.log_softmax_tl tensor (fromInteger index :: Int)
