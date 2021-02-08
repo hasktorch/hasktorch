@@ -570,10 +570,10 @@ instance {-# OVERLAPPING #-} TensorLike a => TensorLike [a] where
 
   _dtype = _dtype @a
 
-  _dims [] = []
+  _dims [] = [0]
   _dims v@(x : _) = (length v) : (_dims x)
 
-  _deepDims [] = Just []
+  _deepDims [] = Just [0]
   _deepDims v@(x : xs) = do
     deepDimsX <- _deepDims x
     deepDimsXs <- traverse _deepDims xs

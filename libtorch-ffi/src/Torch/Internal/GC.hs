@@ -7,6 +7,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE CPP #-}
 
 module Torch.Internal.GC where
 
@@ -21,6 +22,29 @@ import System.Environment (lookupEnv)
 import System.IO (hPutStrLn, stderr)
 import System.Mem (performGC)
 import System.SysInfo
+import Foreign.C.Types
+
+foreign import ccall unsafe "hasktorch_finalizer.h showWeakPtrList"
+  c_showWeakPtrList :: CInt -> IO ()
+
+-- malloc_trim is a glibc function. It doesn't exist on macos.
+#ifdef ENABLE_DUMMY_MALLOC_TRIM
+mallocTrim :: CInt -> IO ()
+mallocTrim _ = return ()
+#else
+foreign import ccall unsafe "malloc.h malloc_trim"
+  mallocTrim :: CInt -> IO ()
+#endif
+
+-- | Returns all objects of libtorch. 
+-- Each time it is called, the age of the object increases by one.
+-- Dumps objects that are greater than or equal to the argument of age.
+dumpLibtorchObjects ::
+  -- | age
+  Int ->
+  -- | output
+  IO ()
+dumpLibtorchObjects age = c_showWeakPtrList (fromIntegral age)
 
 prettyException :: IO a -> IO a
 prettyException func =
@@ -43,6 +67,7 @@ retryWithGC' count func =
           then throwIO $ CppStdException $ "Too many calls to performGC, " ++ message
           else do
             performGC
+            mallocTrim 0
             threadDelay 1000 -- We need delta delay(1ms) to wait GC.
             retryWithGC' (count -1) func
       else throwIO a
@@ -60,7 +85,9 @@ checkOSMemoryWithGC = do
     Right stat -> do
       let rate = (fromIntegral (freeram stat) / fromIntegral (totalram stat))
       if rate <= 0.5
-        then performGC
+        then do
+          performGC
+          mallocTrim 0
         else return ()
     Left _ -> return ()
   threadDelay (500 * 1000) -- wait 500msec

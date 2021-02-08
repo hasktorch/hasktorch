@@ -58,6 +58,10 @@ spec = do
         "Tensor Float [4] [ 1.0000   ,  0.0000,  1.0000   ,  0.0000]"
       show (asTensor ([1,0,1,0]::[Double])) `shouldBe`
         "Tensor Double [4] [ 1.0000   ,  0.0000,  1.0000   ,  0.0000]"
+      show (asTensor ([[]]::[[Int]])) `shouldBe`
+        "Tensor Int64 [1,0] [[]]"
+      show (asTensor ([[1]]::[[Int]])) `shouldBe`
+        "Tensor Int64 [1,1] [[ 1]]"
   
     it "TensorLike [Bool]" $ property $
       \(NonEmpty (x :: [Bool])) -> do

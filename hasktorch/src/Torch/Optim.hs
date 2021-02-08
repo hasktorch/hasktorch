@@ -9,6 +9,7 @@ import Torch.Functional
 import Torch.NN
 import Torch.Tensor
 import Torch.TensorFactories
+import Torch.Internal.GC (mallocTrim)
 import Prelude hiding (sqrt)
 
 type LearningRate = Tensor
@@ -33,6 +34,7 @@ class Optimizer optimizer where
   runStep' :: (Parameterized model) => model -> optimizer -> Gradients -> LearningRate -> IO (model, optimizer)
   runStep' paramState optState gradients lr = do
     performGC
+    mallocTrim 0
     let (flatParameters', optState') = step lr gradients depParameters optState
     newFlatParam <- mapM makeIndependent flatParameters'
     pure (replaceParameters paramState newFlatParam, optState')

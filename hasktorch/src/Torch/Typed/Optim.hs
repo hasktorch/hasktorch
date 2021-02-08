@@ -20,6 +20,7 @@ import Data.Kind
 import qualified Torch.DType as D
 import qualified Torch.Device as D
 import Torch.HList
+import Torch.Internal.GC (mallocTrim)
 import qualified Torch.Internal.Cast as ATen
 import qualified Torch.Internal.Class as ATen
 import qualified Torch.Tensor as D
@@ -73,6 +74,7 @@ runStep ::
   IO (model, optim)
 runStep model optim loss learningRate = do
   performGC
+  mallocTrim 0
   let parameters = flattenParameters model
       gradients = grad loss parameters
       tensors = hmap' ToDependent parameters
@@ -97,6 +99,7 @@ runStep' ::
   IO (model, optim)
 runStep' model optim learningRate gradients = do
   performGC
+  mallocTrim 0
   let parameters = flattenParameters model
       tensors = hmap' ToDependent parameters
       (tensors', optim') = step learningRate gradients tensors optim
