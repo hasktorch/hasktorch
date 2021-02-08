@@ -15,6 +15,7 @@ module Torch.Lens where
 
 import Control.Monad.Identity
 import GHC.Generics
+import Control.Monad.State.Strict
 
 type Traversal' s a
   = forall f. Applicative f => (a -> f a) -> s -> f s
@@ -29,6 +30,27 @@ instance {-# OVERLAPS #-} (Generic s, GHasTypes (Rep s) a) => HasTypes s a
 
 over :: Traversal' s a -> (a -> a) -> s -> s
 over l f = runIdentity . l (Identity . f)
+
+flattenValues :: forall a s. Traversal' s a -> s -> [a]
+flattenValues func orgData = reverse . snd $ runState (func push orgData) []
+  where
+    push :: a -> State [a] a
+    push v = do
+      d <- get
+      put $ v:d
+      return v
+
+replaceValues :: forall a s. Traversal' s a -> s -> [a] -> s
+replaceValues func orgData newValues = fst $ runState (func pop orgData) newValues
+  where
+    pop :: a -> State [a] a
+    pop _ = do
+      d <- get
+      case d of
+        [] -> error "Not enough values supplied to replaceValues"
+        x:xs -> do
+          put xs
+          return x
 
 types :: forall a s. HasTypes s a => Traversal' s a
 types = types_ @s @a
