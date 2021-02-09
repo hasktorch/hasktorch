@@ -40,7 +40,7 @@ import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownShape, Name (..)
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (expand)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..), shape)
 import qualified Torch.Tensor
-import Prelude hiding (Word)
+import Prelude hiding (Word, words)
 
 data IsFinished = Finished | Unfinished
 
@@ -248,60 +248,31 @@ bar = do
   g <- mkGenerator @( 'Device CPU) 0
   Beams finished _ <- last <$> foo 50 1 model input g
   let tmp = fmap (WordPiece . (t5Vocab Map.!)) . finalValue <$> finished
-      tmp' = parseString @[] bla <$> tmp
+      tmp' = parseString @[] words <$> tmp
   print tmp'
 
 newtype WordPiece = WordPiece {unWordPiece :: String} deriving (Eq, Ord, Show)
 
 newtype Word = Word {unWord :: String} deriving (Eq, Ord, Show)
 
-piecesToWords :: forall b. MonadFail b => Parser b WordPiece [Word]
-piecesToWords = go Nothing
-  where
-    go Nothing = do
-      WordPiece wordPiece <- token
-      case wordPiece of
-        '▁' : s -> go (Just s)
-        "," -> fmap (Word "," :) (go Nothing)
-        "</s>" -> pure []
-        s -> fail $ "unexpected word continuation: '" <> show s <> "'"
-    go (Just s) = do
-      WordPiece wordPiece <- token
-      case wordPiece of
-        '▁' : s' -> fmap (Word s :) (go (Just s'))
-        "," -> fmap (\words -> Word s : Word "," : words) (go Nothing)
-        "</s>" -> pure [Word s]
-        s' -> go (Just $ s ++ s')
+word :: forall b. MonadPlus b => Parser b WordPiece Word
+word =
+  let f (c, _)
+        | c == '▁' = True
+        | otherwise = False
+      p (WordPiece ",") = True
+      p (WordPiece s) = maybe False f (uncons s)
+      begin = predicate p
+      append = predicate (not . p)
+      strip ('▁' : s) = s
+      strip s = s
+      concat = strip . mconcat . (unWordPiece <$>)
+   in Word . concat <$> liftA2 (:) begin (many append)
 
-data Bla
-  = BlaEmpty
-  | BlaDone Word
-  | BlaMore Word String
-
-bla :: forall b. MonadFail b => Parser b WordPiece [Word]
-bla = do
-  go' Nothing
-  where
-    go Nothing = do
-      WordPiece wordPiece <- token
-      case wordPiece of
-        '▁' : s -> go (Just s)
-        s@"," -> pure $ BlaDone (Word s)
-        "</s>" -> pure BlaEmpty
-        s -> fail $ "unexpected word continuation: '" <> show s <> "'"
-    go (Just s) = do
-      WordPiece wordPiece <- token
-      case wordPiece of
-        '▁' : s' -> pure $ BlaMore (Word s) s'
-        s'@"," -> pure $ BlaMore (Word s) s'
-        "</s>" -> pure $ BlaDone (Word s)
-        s' -> go (Just $ s ++ s')
-    go' ms = do
-      b <- go ms
-      case b of
-        BlaEmpty -> pure []
-        BlaDone word -> pure [word]
-        BlaMore word s -> fmap (word :) (go' (Just s))
+words :: forall b. MonadPlus b => Parser b WordPiece [Word]
+words =
+  let end = is (WordPiece "</s>")
+   in manyTill word end
 
 type Parser (b :: Type -> Type) (t :: Type) (a :: Type) = FreeT ((->) t) b a
 
@@ -316,8 +287,14 @@ parseString = parseStream (maybe empty pure . uncons)
 token :: forall b t. Applicative b => Parser b t t
 token = FreeT . pure . Free $ FreeT . pure . Pure
 
+predicate :: forall b t. (MonadPlus b) => (t -> Bool) -> Parser b t t
+predicate p = mfilter p token
+
 is :: forall b t. (MonadPlus b, Eq t) => t -> Parser b t t
-is t = mfilter (== t) token
+is t = predicate (== t)
+
+isNot :: forall b t. (MonadPlus b, Eq t) => t -> Parser b t t
+isNot t = predicate (/= t)
 
 choice :: Alternative f => [f a] -> f a
 choice = asum
