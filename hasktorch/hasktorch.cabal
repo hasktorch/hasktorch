@@ -196,6 +196,7 @@ library
                     , vector-sized
                     , indexed
                     , indexed-extras
+                    , free
  default-extensions:  Strict
                     , StrictData
 

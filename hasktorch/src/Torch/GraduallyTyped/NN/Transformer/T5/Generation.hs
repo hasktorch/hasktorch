@@ -14,8 +14,14 @@
 
 module Torch.GraduallyTyped.NN.Transformer.T5.Generation where
 
-import Control.Monad.State (StateT (..), evalStateT, get, liftIO, put)
-import Data.List (nub, sortOn)
+import Control.Applicative (Alternative (many, (<|>)), Applicative (liftA2), empty)
+import Control.Monad (MonadPlus, guard, mfilter)
+import Control.Monad.State (MonadState (..), StateT (..), evalStateT)
+import Control.Monad.Trans.Free (FreeF (Free, Pure), FreeT (FreeT), iterTM)
+import Data.Foldable (asum)
+import Data.Functor (($>))
+import Data.Kind (Type)
+import Data.List (nub, sortOn, uncons)
 import qualified Data.Map as Map ((!))
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..))
@@ -29,20 +35,22 @@ import Torch.GraduallyTyped.NN.Transformer.T5.Small (T5Small)
 import Torch.GraduallyTyped.NN.Transformer.T5.Vocab (t5Vocab)
 import Torch.GraduallyTyped.Random (Generator, mkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SelectDim (..), Shape (..), Size (..))
+import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownShape, Name (..), SelectDim (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (expand)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..), shape)
 import qualified Torch.Tensor
+import Prelude hiding (Word)
 
 data IsFinished = Finished | Unfinished
 
-data Beam a b where
-  Beam ::
+data Beams a b where
+  Beams ::
     forall a b.
     { finished :: [Hypothesis 'Finished a b],
       unfinished :: [Hypothesis 'Unfinished a b]
     } ->
-    Beam a b
+    Beams a b
   deriving (Show)
 
 data Hypothesis (isFinished :: IsFinished) a b where
@@ -51,8 +59,8 @@ data Hypothesis (isFinished :: IsFinished) a b where
     Hypothesis 'Unfinished a b
   UnfinishedHypothesis ::
     forall a b.
-    { token :: a,
-      score :: Float,
+    { currentToken :: a,
+      currentScore :: Float,
       previousHypothesis :: Hypothesis 'Unfinished a b
     } ->
     Hypothesis 'Unfinished a b
@@ -77,6 +85,14 @@ deriving instance (Show a, Show b) => Show (Hypothesis 'Unfinished a b)
 
 deriving instance (Show a, Show b) => Show (Hypothesis 'Finished a b)
 
+getTokens :: forall a b. Hypothesis 'Unfinished a b -> [a]
+getTokens InitialHypothesis = []
+getTokens (UnfinishedHypothesis token _ previousHypothesis) = token : getTokens previousHypothesis
+
+getScore :: forall a b. Hypothesis 'Unfinished a b -> Float
+getScore InitialHypothesis = 0
+getScore (UnfinishedHypothesis _ previousScore _) = previousScore
+
 data SomeHypothesis a b = forall isFinished. SomeHypothesis {unSomeHypothesis :: Hypothesis isFinished a b}
 
 beamSearch ::
@@ -85,22 +101,22 @@ beamSearch ::
   Int ->
   Int ->
   ([Hypothesis 'Unfinished a b] -> m [SomeHypothesis a b]) ->
-  m [Beam a b]
-beamSearch maxSteps beamSize cont = go maxSteps (Beam [] (replicate beamSize InitialHypothesis))
+  m [Beams a b]
+beamSearch maxSteps beamSize cont = go maxSteps (Beams [] (replicate beamSize InitialHypothesis))
   where
-    go !_ (Beam _ []) = pure []
-    go n beam
+    go !_ (Beams _ []) = pure []
+    go n beams
       | n <= 0 = pure []
       | otherwise = do
-        beam' <- beamSearchStep cont beam
-        (beam' :) <$> go (n - 1) beam'
+        beams' <- beamSearchStep cont beams
+        (beams' :) <$> go (n - 1) beams'
 
 beamSearchStep ::
   forall a b m.
   Functor m =>
   ([Hypothesis 'Unfinished a b] -> m [SomeHypothesis a b]) ->
-  Beam a b ->
-  m (Beam a b)
+  Beams a b ->
+  m (Beams a b)
 beamSearchStep cont beam =
   let someHypotheses =
         take (length (unfinished beam))
@@ -108,22 +124,22 @@ beamSearchStep cont beam =
           . sortOn @Float
             ( \case
                 SomeHypothesis InitialHypothesis -> 0
-                SomeHypothesis u@UnfinishedHypothesis {} -> score u
+                SomeHypothesis u@UnfinishedHypothesis {} -> currentScore u
                 SomeHypothesis f@FinishedHypothesis {} -> finalScore f
             )
           <$> (cont . unfinished $ beam)
    in foldl
-        ( \(Beam fs us) someHypothesis ->
+        ( \(Beams fs us) someHypothesis ->
             case someHypothesis of
-              SomeHypothesis u@InitialHypothesis -> Beam fs (u : us)
-              SomeHypothesis u@UnfinishedHypothesis {} -> Beam fs (u : us)
-              SomeHypothesis f@FinishedHypothesis {} -> Beam (f : fs) us
+              SomeHypothesis u@InitialHypothesis -> Beams fs (u : us)
+              SomeHypothesis u@UnfinishedHypothesis {} -> Beams fs (u : us)
+              SomeHypothesis f@FinishedHypothesis {} -> Beams (f : fs) us
         )
-        (Beam (finished beam) [])
+        (Beams (finished beam) [])
         <$> someHypotheses
 
 foo ::
-  forall model input decoderInput encoderOutput encoderOutput' inputPaddingMask decoderOutput generator.
+  forall model input decoderInput encoderOutput encoderOutputShape encoderOutput' inputPaddingMask decoderOutput generator.
   ( HasForward
       model
       (T5Input input decoderInput)
@@ -136,7 +152,9 @@ foo ::
           ( 'Layout 'Dense)
           ( 'Device 'CPU)
           T5DataType
-          ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 15), 'Dim ( 'Name "*") ( 'Size 512)]),
+          encoderOutputShape,
+    'UncheckedShape ~ BroadcastShapesF encoderOutputShape 'UncheckedShape,
+    KnownShape encoderOutputShape,
     HasForward
       model
       (T5GenerationInput decoderInput encoderOutput' inputPaddingMask)
@@ -171,17 +189,13 @@ foo ::
   model ->
   input ->
   generator ->
-  IO [Beam Int [Int]]
+  IO [Beams Int [Int]]
 foo maxSteps beamSize model input g = do
   let cont :: [Hypothesis 'Unfinished Int [Int]] -> StateT (Maybe (encoderOutput, inputPaddingMask), generator) IO [SomeHypothesis Int [Int]]
       cont previousHypotheses = do
         let previousHypotheses' = nub previousHypotheses
         decoderInput :: decoderInput <- do
-          let tokens =
-                let go :: Hypothesis 'Unfinished Int [Int] -> [Int]
-                    go InitialHypothesis = [] -- [t5PadTokenId]
-                    go (UnfinishedHypothesis token' _ previousHypothesis') = token' : go previousHypothesis'
-                 in reverse . go <$> previousHypotheses'
+          let tokens = reverse . getTokens <$> previousHypotheses'
               batchSize = fromIntegral $ length previousHypotheses'
               seqSize =
                 let go :: Hypothesis 'Unfinished Int [Int] -> Int
@@ -189,7 +203,7 @@ foo maxSteps beamSize model input g = do
                     go (UnfinishedHypothesis _ _ previousHypothesis') = 1 + go previousHypothesis'
                  in fromIntegral . maximum $ go <$> previousHypotheses'
           input <- mkT5Input @( 'Dim ( 'Name "*") 'UncheckedSize) @( 'Dim ( 'Name "*") 'UncheckedSize) batchSize seqSize tokens
-          liftIO . print $ ((t5Vocab Map.!) <$>) <$> tokens
+          -- liftIO . print $ ((t5Vocab Map.!) <$>) <$> tokens
           -- liftIO . print $ shape input
           -- liftIO . print $ input
           pure input
@@ -210,35 +224,116 @@ foo maxSteps beamSize model input g = do
       mkHypothesis :: Hypothesis 'Unfinished Int [Int] -> Int -> Float -> SomeHypothesis Int [Int]
       mkHypothesis previousHypothesis token logProb
         | token == t5EosTokenId =
-          let go :: Hypothesis 'Unfinished Int [Int] -> [Int]
-              go InitialHypothesis = []
-              go (UnfinishedHypothesis token' _ previousHypothesis') = token' : go previousHypothesis'
-              finalValue = reverse $ token : go previousHypothesis
-              go' :: Hypothesis 'Unfinished Int [Int] -> Float
-              go' InitialHypothesis = 0
-              go' (UnfinishedHypothesis _ previousScore _) = previousScore
-              finalScore = logProb + go' previousHypothesis
+          let finalValue = reverse $ token : getTokens previousHypothesis
+              finalScore = logProb + getScore previousHypothesis
            in SomeHypothesis (FinishedHypothesis token finalScore previousHypothesis finalValue)
         | otherwise =
-          let go' :: Hypothesis 'Unfinished Int [Int] -> Float
-              go' InitialHypothesis = 0
-              go' (UnfinishedHypothesis _ previousScore _) = previousScore
-              score = logProb + go' previousHypothesis
+          let score = logProb + getScore previousHypothesis
            in SomeHypothesis (UnfinishedHypothesis token score previousHypothesis)
   evalStateT (beamSearch maxSteps beamSize cont) (Nothing, g)
 
 bar = do
   input <- do
-    -- let tokens = [[13959, 1566, 12, 2968, 10, 6536, 43, 2008, 24, 293, 53, 3, 9, 1782, 19, 207, 21, 25, 1]]
-    let tokens = [[13959, 1566, 12, 2968, 10, 148, 31, 60, 423, 13, 3, 7, 10536, 55, 1]]
+    let tokens = [[13959, 1566, 12, 2968, 10, 6536, 43, 2008, 24, 293, 53, 3, 9, 1782, 19, 207, 21, 25, 1]]
+    -- let tokens = [[13959, 1566, 12, 2968, 10, 148, 31, 60, 423, 13, 3, 7, 10536, 55, 1]]
     print $ ((t5Vocab Map.!) <$>) <$> tokens
     mkT5Input
       @( 'Dim ( 'Name "*") ( 'Size 1))
-      @( 'Dim ( 'Name "*") ( 'Size 15))
+      @( 'Dim ( 'Name "*") ( 'Size 19))
       tokens
   model <-
     initialize
       @(T5Small 'WithLMHead ( 'Device 'CPU))
       "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-small.pt"
   g <- mkGenerator @( 'Device CPU) 0
-  foo 20 10 model input g
+  Beams finished _ <- last <$> foo 50 1 model input g
+  let tmp = fmap (WordPiece . (t5Vocab Map.!)) . finalValue <$> finished
+      tmp' = parseString @[] bla <$> tmp
+  print tmp'
+
+newtype WordPiece = WordPiece {unWordPiece :: String} deriving (Eq, Ord, Show)
+
+newtype Word = Word {unWord :: String} deriving (Eq, Ord, Show)
+
+piecesToWords :: forall b. MonadFail b => Parser b WordPiece [Word]
+piecesToWords = go Nothing
+  where
+    go Nothing = do
+      WordPiece wordPiece <- token
+      case wordPiece of
+        '▁' : s -> go (Just s)
+        "," -> fmap (Word "," :) (go Nothing)
+        "</s>" -> pure []
+        s -> fail $ "unexpected word continuation: '" <> show s <> "'"
+    go (Just s) = do
+      WordPiece wordPiece <- token
+      case wordPiece of
+        '▁' : s' -> fmap (Word s :) (go (Just s'))
+        "," -> fmap (\words -> Word s : Word "," : words) (go Nothing)
+        "</s>" -> pure [Word s]
+        s' -> go (Just $ s ++ s')
+
+data Bla
+  = BlaEmpty
+  | BlaDone Word
+  | BlaMore Word String
+
+bla :: forall b. MonadFail b => Parser b WordPiece [Word]
+bla = do
+  go' Nothing
+  where
+    go Nothing = do
+      WordPiece wordPiece <- token
+      case wordPiece of
+        '▁' : s -> go (Just s)
+        s@"," -> pure $ BlaDone (Word s)
+        "</s>" -> pure BlaEmpty
+        s -> fail $ "unexpected word continuation: '" <> show s <> "'"
+    go (Just s) = do
+      WordPiece wordPiece <- token
+      case wordPiece of
+        '▁' : s' -> pure $ BlaMore (Word s) s'
+        s'@"," -> pure $ BlaMore (Word s) s'
+        "</s>" -> pure $ BlaDone (Word s)
+        s' -> go (Just $ s ++ s')
+    go' ms = do
+      b <- go ms
+      case b of
+        BlaEmpty -> pure []
+        BlaDone word -> pure [word]
+        BlaMore word s -> fmap (word :) (go' (Just s))
+
+type Parser (b :: Type -> Type) (t :: Type) (a :: Type) = FreeT ((->) t) b a
+
+parseStream :: Monad b => (s -> b (t, s)) -> Parser b t a -> s -> b (a, s)
+parseStream next = runStateT . iterTM (StateT next >>=)
+
+-- | Parse a string. When the end of the string is encountered, 'empty' is
+-- yielded into the non-determinism monad.
+parseString :: forall b t a. MonadPlus b => Parser b t a -> [t] -> b (a, [t])
+parseString = parseStream (maybe empty pure . uncons)
+
+token :: forall b t. Applicative b => Parser b t t
+token = FreeT . pure . Free $ FreeT . pure . Pure
+
+is :: forall b t. (MonadPlus b, Eq t) => t -> Parser b t t
+is t = mfilter (== t) token
+
+choice :: Alternative f => [f a] -> f a
+choice = asum
+
+option :: Alternative f => a -> f a -> f a
+option a p = p <|> pure a
+
+many1 :: Alternative f => f a -> f [a]
+many1 p = liftA2 (:) p (many p)
+{-# INLINE many1 #-}
+
+manyTill :: Alternative f => f a -> f b -> f [a]
+manyTill p end = scan where scan = (end $> []) <|> liftA2 (:) p scan
+
+skipMany :: Alternative f => f a -> f ()
+skipMany p = scan where scan = (p *> scan) <|> pure ()
+
+skipMany1 :: Alternative f => f a -> f ()
+skipMany1 p = p *> skipMany p

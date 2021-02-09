@@ -84,8 +84,6 @@ import qualified Torch.Internal.Type as ATen (Tensor)
 import qualified Torch.Script (IValue (..))
 import qualified Torch.Serialize (pickleLoad)
 import qualified Torch.Tensor (Tensor (Unsafe), asTensor)
-import qualified Torch.TensorFactories
-import qualified Torch.TensorOptions
 
 -- | T5 dType.
 type T5DType = 'Float
@@ -120,7 +118,7 @@ t5PadTokenId :: Int
 t5PadTokenId = 0
 
 -- | T5 end-of-sentence token id.
--- 'eos_token_id = 0'
+-- 'eos_token_id = 1'
 t5EosTokenId :: Int
 t5EosTokenId = 1
 
@@ -539,14 +537,7 @@ mkT5Input =
         \(Dim seqName seqSize) xs -> do
           let emptySeq = replicate (fromIntegral seqSize) t5PadTokenId
               paddedXs = padded batchSize emptySeq (padded seqSize t5PadTokenId <$> xs)
-              tensor =
-                if seqSize == 0
-                  then
-                    Torch.TensorFactories.zeros
-                      [fromIntegral batchSize, fromIntegral seqSize]
-                      (Torch.TensorOptions.withDType Int64 Torch.TensorOptions.defaultOpts)
-                  else Torch.Tensor.asTensor paddedXs
-          case tensor of
+          case Torch.Tensor.asTensor paddedXs of
             Torch.Tensor.Unsafe t ->
               pure (UnsafeTensor @ 'WithoutGradient t)
                 >>= checkedLayout @( 'Layout 'Dense)
