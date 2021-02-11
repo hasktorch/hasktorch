@@ -197,6 +197,7 @@ library
                     , indexed
                     , indexed-extras
                     , free
+                    , logict
  default-extensions:  Strict
                     , StrictData
 
