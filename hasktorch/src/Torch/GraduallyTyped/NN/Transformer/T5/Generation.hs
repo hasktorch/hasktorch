@@ -12,19 +12,21 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 
 module Torch.GraduallyTyped.NN.Transformer.T5.Generation where
 
-import Control.Applicative (Alternative (many, (<|>)), Applicative (liftA2), empty)
-import Control.Monad (MonadPlus, mfilter)
-import Control.Monad.Identity (runIdentityT)
-import Control.Monad.State (modify, MonadState (..), MonadTrans, StateT (..), evalStateT, lift)
-import Control.Monad.Trans.Free (FreeF (Free, Pure), FreeT (FreeT), iterTM, runFreeT)
+import Control.Applicative (Alternative (..), Applicative (..))
+import Control.Monad (MonadPlus (..), guard, mfilter)
+import Control.Monad.Logic (observe)
+import Control.Monad.State (MonadState (..), MonadTrans (..), StateT (..), evalStateT, gets, lift, modify)
+import Control.Monad.Trans.Free (FreeF (..), FreeT (..), iterTM, runFreeT)
 import Data.Foldable (asum)
 import Data.Functor (($>))
 import Data.Kind (Type)
 import Data.List (nub, sortOn, uncons)
 import qualified Data.Map as Map ((!))
+import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
@@ -44,7 +46,6 @@ import Torch.GraduallyTyped.Tensor.MathOperations.Comparison (Order (..), Sorted
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..), shape)
 import qualified Torch.Tensor
 import Prelude hiding (Word, words)
-import System.IO.Unsafe (unsafePerformIO)
 
 data IsFinished = Finished | Unfinished
 
@@ -276,8 +277,8 @@ word =
       p' (WordPiece "</s>") = False
       p' _ = True
       predicate p = mfilter p (WordPiece . (t5Vocab Map.!) <$> token)
-      begin = predicate (\wp -> p' wp && p wp)
-      append = predicate (\wp -> p' wp && not (p wp))
+      begin = predicate (liftA2 (&&) p' p)
+      append = predicate (liftA2 (&&) p' (not . p))
       strip ('▁' : s) = s
       strip s = s
       concat = strip . mconcat . (unWordPiece <$>)
@@ -288,11 +289,15 @@ words =
   let predicate p' = mfilter p' (WordPiece . (t5Vocab Map.!) <$> token)
       is t = predicate (== t)
       end = is (WordPiece "</s>")
-   in manyTill word end
+      forceBeginning =
+        let rewrap (WordPiece ('▁' : s)) = Word s
+         in rewrap <$> is (WordPiece "\9601Wer")
+   in liftA2 (:) forceBeginning (manyTill word end)
 
 type Parser (b :: Type -> Type) (i :: Type) (a :: Type) = FreeT ((->) i) b a
 
 -- | recurse parser
+--
 -- @
 -- recurse next parser = next parser (\parser' -> next parser' (\parser'' -> next parser'' (\parser''' -> next parser''' (...))))
 -- @
@@ -307,38 +312,33 @@ recurse next parser =
 
 next ::
   forall t b i a.
-  (MonadTrans t, Monad b, Monad (t b)) =>
-  Parser b i a ->
-  (Parser b i a -> t b a) ->
-  t b a
-next parser cont = do
-  val <- lift . runFreeT $ parser
-  case val of
-    Pure a -> pure a
-    Free feed ->
-      let i = undefined
-       in cont (feed i)
-
-next' ::
-  forall t b i a.
-  _ =>
+  (MonadTrans t, Monad (t (StateT [i] b)), Alternative (t (StateT [i] b)), Monad b, Foldable b, Show i) =>
+  t (StateT [i] b) i ->
   Parser (StateT [i] b) i a ->
   (Parser (StateT [i] b) i a -> t (StateT [i] b) a) ->
   t (StateT [i] b) a
-next' parser cont = do
+next is parser cont = do
+  lift (notNull parser) >>= guard
+  i <- is
+  lift $ modify (i :)
   val <- lift $ runFreeT parser
   case val of
     Pure a -> pure a
-    Free feed ->
-      let is :: StateT [i] b i = undefined
-       in cont . feed =<< lift is
+    Free feed -> unsafePerformIO $ do
+      putStrLn $ "feed: " <> show i
+      pure $ cont . feed $ i
 
-testNext' :: Parser (StateT [i] []) i a -> [(a, [i])]
-testNext' = flip runStateT [] . runIdentityT . recurse next'
+notNull ::
+  (Monad b, Foldable b) =>
+  Parser (StateT [i] b) i a ->
+  StateT [i] b Bool
+notNull parser = gets $ (not . null) . evalStateT (runFreeT parser)
 
-next'' ::
-  forall s a model input decoderInput encoderOutput decoderOutput inputPaddingMask generator.
-  ( s ~ (Maybe (encoderOutput, inputPaddingMask), generator),
+getIs ::
+  forall b model input decoderInput encoderOutput decoderOutput inputPaddingMask generator s.
+  ( Alternative b,
+    MonadFail b,
+    s ~ (Maybe (encoderOutput, inputPaddingMask), generator),
     decoderInput
       ~ Tensor
           'WithoutGradient
@@ -370,64 +370,46 @@ next'' ::
   ) =>
   model ->
   input ->
-  Parser (StateT [Int] []) Int a ->
-  (Parser (StateT [Int] []) Int a -> StateT s (StateT [Int] []) a) ->
-  StateT s (StateT [Int] []) a
-next'' model input parser cont = do
-  -- currently every submitted token is tried for the current parser until moving on to the next parser.
-  -- what we need to do instead is trying all parsers on each token before moving on to the next token.
-  val <- lift $ runFreeT parser
-  case val of
-    Pure a -> pure a
-    Free feed -> do
-      i <- is
-      let j = unsafePerformIO $ do
-                let k = i
-                putStrLn $ "current i: " <> show k
-                pure k
-      lift $ modify (j:)
-      cont . feed $ j
-  where
-    is :: StateT s (StateT [Int] []) Int
-    is = do
-      -- tokens <- reverse <$> lift get
-      tokens <- do
-        ts <- reverse <$> lift get
-        let ts' = unsafePerformIO $ do
-              putStrLn $ "tokens: " <> show ((t5Vocab Map.!) <$> ts)
-              pure ts
-        pure ts'
-      decoderInput :: decoderInput <- mkT5Input @( 'Dim ( 'Name "*") ( 'Size 1)) @( 'Dim ( 'Name "*") 'UncheckedSize) (fromIntegral $ length tokens) [tokens]
-      decoderOutput <- do
-        (mTensors, g) <- get
-        let (T5Output decoderOutput encoderOutput inputPaddingMask, g') =
-              case mTensors of
-                Nothing -> forward model (T5Input input decoderInput) g
-                Just (encoderOutput, inputPaddingMask) ->
-                  forward model (T5GenerationInput decoderInput encoderOutput inputPaddingMask) g
-        put (Just (encoderOutput, inputPaddingMask), g')
-        pure decoderOutput
-      case sort @( 'SelectDim ( 'ByIndex 2)) Descending
-        . logSoftmax @( 'SelectDim ( 'ByIndex 2))
-        $ decoderOutput of
-        Sorted _ (UnsafeTensor indices) ->
-          let indices' = -- take 3 . last . head . Torch.Tensor.asValue @[[[Int]]] . Torch.Tensor.Unsafe $ indices
-                unsafePerformIO $ do
-                  let tmp = take 15 . last . head . Torch.Tensor.asValue @[[[Int]]] . Torch.Tensor.Unsafe $ indices
-                  putStrLn $ "top-2: " <> show (take 2 tmp)
-                  -- putStrLn $ "bottom-5: " <> show (reverse $ take 5 $ reverse tmp)
-                  pure tmp
-          in  lift . lift $ indices'
+  StateT s (StateT [Int] b) Int
+getIs model input = do
+  -- tokens <- reverse <$> lift get
+  tokens <- do
+    ts <- reverse <$> lift get
+    let ts' = unsafePerformIO $ do
+          putStrLn $ "tokens: " <> show ((t5Vocab Map.!) <$> ts)
+          pure ts
+    pure ts'
+  decoderInput :: decoderInput <-
+    mkT5Input
+      @( 'Dim ( 'Name "*") ( 'Size 1))
+      @( 'Dim ( 'Name "*") 'UncheckedSize)
+      (fromIntegral $ length tokens)
+      [tokens]
+  decoderOutput <- do
+    (mTensors, g) <- get
+    let (T5Output decoderOutput encoderOutput inputPaddingMask, g') =
+          case mTensors of
+            Nothing -> forward model (T5Input input decoderInput) g
+            Just (encoderOutput, inputPaddingMask) ->
+              forward model (T5GenerationInput decoderInput encoderOutput inputPaddingMask) g
+    put (Just (encoderOutput, inputPaddingMask), g')
+    pure decoderOutput
+  case sort @( 'SelectDim ( 'ByIndex 2)) Descending
+    . logSoftmax @( 'SelectDim ( 'ByIndex 2))
+    $ decoderOutput of
+    Sorted _ (UnsafeTensor indices) ->
+      let indices' = last . head . Torch.Tensor.asValue @[[[Int]]] . Torch.Tensor.Unsafe $ indices
+       in lift . lift . asum $ pure <$> indices'
 
-testNext'' ::
-  forall model input generator a encoderOutput inputPaddingMask.
+testNext ::
+  forall model input generator b a.
   _ =>
   model ->
   input ->
   generator ->
-  Parser (StateT [Int] []) Int a ->
-  [((a, (Maybe (encoderOutput, inputPaddingMask), generator)), [Int])]
-testNext'' model input g = flip runStateT [] . flip runStateT (Nothing, g) . recurse (next'' model input)
+  Parser (StateT [Int] b) Int a ->
+  b (a, [Int])
+testNext model input g = flip runStateT [] . flip evalStateT (Nothing, g) . recurse (next (getIs model input))
 
 bar' = do
   input <- do
@@ -443,8 +425,8 @@ bar' = do
       @(T5Small 'WithLMHead ( 'Device 'CPU))
       "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-small.pt"
   g <- mkGenerator @( 'Device CPU) 0
-  let outputs = testNext'' model input g words
-  print (take 1 $ fst . fst <$> outputs)
+  let outputs = testNext model input g words
+  pure . fst $ observe outputs
 
 parseStream :: forall s b i a. Monad b => (s -> b (i, s)) -> Parser b i a -> s -> b (a, s)
 parseStream next = runStateT . iterTM (StateT next >>=)
