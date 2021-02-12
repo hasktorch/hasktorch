@@ -16,7 +16,7 @@ import GHC.TypeLits (Nat)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (HasLMHead (..), SequenceToSequenceTransformer)
-import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5Config, T5DataType, T5DropoutP, T5Input, T5RelPosEncBucketDim, lookupSequenceToSequenceTransformerWithLMHead, lookupSequenceToSequenceTransformerWithoutLMHead, t5ConfigFromPretrained)
+import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5Config, T5DataType, T5DropoutP, T5GenerationInput, T5Input, T5Output, T5RelPosEncBucketDim, lookupSequenceToSequenceTransformerWithLMHead, lookupSequenceToSequenceTransformerWithoutLMHead, t5ConfigFromPretrained)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 
 -- | T5-Large number of layers.
@@ -164,6 +164,37 @@ instance
     (T5Input input decoderInput)
     generator
     output
+    generatorOutput
+  where
+  forward T5Large {..} = forward t5LargeSeqToSeq
+
+instance
+  ( HasForward
+      ( SequenceToSequenceTransformer
+          hasLMHead
+          T5LargeNumLayers
+          T5LargeNumLayers
+          device
+          T5DataType
+          T5LargeHeadDim
+          T5LargeHeadEmbedDim
+          T5LargeEmbedDim
+          T5LargeInputEmbedDim
+          T5LargeFFNDim
+          T5RelPosEncBucketDim
+          T5LargeVocabDim
+          T5DropoutP
+      )
+      (T5GenerationInput decoderInput encoderOutput inputPaddingMask)
+      generator
+      (T5Output decoderOutput encoderOutput inputPaddingMask)
+      generatorOutput
+  ) =>
+  HasForward
+    (T5Large hasLMHead device)
+    (T5GenerationInput decoderInput encoderOutput inputPaddingMask)
+    generator
+    (T5Output decoderOutput encoderOutput inputPaddingMask)
     generatorOutput
   where
   forward T5Large {..} = forward t5LargeSeqToSeq
