@@ -17,15 +17,16 @@
 module Torch.GraduallyTyped.NN.Transformer.T5.Generation where
 
 import Control.Applicative (Alternative (..), Applicative (..))
-import Control.Monad (MonadPlus (..), guard, mfilter, replicateM)
+import Control.Monad (MonadPlus (..), guard, liftM, mfilter, replicateM)
 import Control.Monad.Logic (observe)
 import Control.Monad.State (MonadState (..), MonadTrans (..), StateT (..), evalStateT, gets, lift, modify)
-import Control.Monad.Trans.Free (FreeF (..), FreeT (..), iterTM, runFreeT)
+import Control.Monad.Trans.Free (FreeF (..), FreeT (..), iterTM, runFreeT, transFreeT)
+import Data.Char (toLower)
 import Data.Foldable (asum)
 import Data.Functor (($>))
 import Data.Kind (Type)
-import Data.List (nub, sortOn, uncons)
-import qualified Data.Map as Map ((!))
+import Data.List (isSuffixOf, nub, sortOn, uncons)
+import qualified Data.Map as Map (Map, lookup, (!))
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..))
@@ -428,7 +429,7 @@ testParser = do
       @(T5Small 'WithLMHead ( 'Device 'CPU))
       "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-small.pt"
   g <- mkGenerator @( 'Device CPU) 0
-  let outputs = runParser model input g words
+  let outputs = runParser model input g (transParser t5Vocab string)
   pure . fst $ observe outputs
 
 parseStream :: forall s b i a. Monad b => (s -> b (i, s)) -> Parser b i a -> s -> b (a, s)
@@ -624,10 +625,12 @@ data Cond
 data ColUnit
   = ColUnit
       { colUnitAggId :: AggType,
+        colUnitTable :: Maybe (Either TableId Alias),
         colUnitColId :: ColumnId
       }
   | DistinctColUnit
       { distinctColUnitAggId :: AggType,
+        distinctColUnitTable :: Maybe (Either TableId Alias),
         distinctColUnitColdId :: ColumnId
       }
 
@@ -635,7 +638,7 @@ data OrderBy = OrderBy Order [ValUnit]
 
 data Agg = Agg AggType ValUnit
 
-data TableUnit = TableUnitSql Sql | Table TableId
+data TableUnit = TableUnitSql Sql (Maybe Alias) | Table TableId (Maybe Alias)
 
 data ValUnit
   = Column ColUnit
@@ -657,6 +660,45 @@ newtype ColumnId = ColumnId String
 
 newtype TableId = TableId String
 
+newtype Alias = Alias String
+
+-- | @transParser vocab p@ transforms a parser @p@ over characters 'Char'
+-- into a parser over token indices 'Int' using the vocabulary @vocab@.
+transParser :: MonadPlus b => Map.Map Int String -> Parser b Char a -> Parser b Int a
+transParser vocab = FreeT . fmap (fmap (transParser vocab) . transFreeF) . runFreeT
+  where
+    transFreeF (Pure a) = Pure a
+    transFreeF (Free feed) =
+      let feed' i = do
+            s <-
+              let clean ('▁' : s) = ' ' : s
+                  clean s = s
+               in maybe empty (pure . clean) (Map.lookup i vocab)
+            (c, cs) <- maybe empty pure (uncons s)
+            go cs (feed c)
+          go [] p = p
+          go (c : cs) p = do
+            val <- lift $ runFreeT p
+            case val of
+              Pure a -> pure a
+              Free feed -> go cs (feed c)
+       in Free feed'
+
+-- | @isString s@ is a simple parser that consumes 'Char' tokens and yields them
+-- if and only if they assemble the 'String' @s@. Otherwise, the parser fails.
+isString :: MonadPlus b => String -> Parser b Char String
+isString = traverse is
+
+-- | @keyword k@ is a parser that consumes 'Char' tokens and yields them
+-- if and only if they assemble the 'String' @s@. The parser is not sensitive to
+-- letter casing.
+isKeyword :: MonadPlus b => String -> Parser b Char String
+isKeyword = traverse (satisfy . ((. toLower) . (==) . toLower))
+
+-- | @string@ parses the model output as a 'String'.
+string :: MonadPlus b => Parser b Char String
+string = manyTill token (isString "</s>")
+
 satisfyWordPiece :: MonadPlus b => (WordPiece -> Bool) -> Parser b Int WordPiece
 satisfyWordPiece p = mfilter p (WordPiece . (t5Vocab Map.!) <$> token)
 
@@ -669,11 +711,20 @@ isSelect = isWordPiece "\9601" >> isWordPiece "SEL" >> isWordPiece "ECT" $> ()
 isComma :: MonadPlus b => Parser b Int ()
 isComma = isWordPiece "," $> ()
 
+isDot :: MonadPlus b => Parser b Int ()
+isDot = isWordPiece "." $> ()
+
+endsWithDot :: MonadPlus b => Parser b Int WordPiece
+endsWithDot = satisfyWordPiece (\(WordPiece s) -> "." `isSuffixOf` s)
+
 isCount :: MonadPlus b => Parser b Int ()
 isCount = isWordPiece "\9601CO" >> isWordPiece "UNT" $> ()
 
 isFrom :: MonadPlus b => Parser b Int ()
 isFrom = isWordPiece "\9601FROM" $> ()
+
+isJoin :: MonadPlus b => Parser b Int ()
+isJoin = isWordPiece "\9601" >> isWordPiece "JO" >> isWordPiece "IN" $> ()
 
 isAs :: MonadPlus b => Parser b Int ()
 isAs = isWordPiece "\9601AS" $> ()
@@ -714,23 +765,28 @@ valUnit = betweenParentheses (choice [column, minus, plus, times, divide])
     divide = undefined
 
 colUnit :: MonadPlus b => Parser b Int ColUnit
-colUnit = ColUnit <$> aggType <*> columnId
+colUnit = undefined -- ColUnit <$> aggType <*> maybeP (eitherP <* isDot) <*> columnId
 
 columnId :: MonadPlus b => Parser b Int ColumnId
-columnId = ColumnId <$> string
+columnId = undefined -- ColumnId <$> string
 
-string :: MonadPlus b => Parser b Int String
-string =
-  let f (c, _)
-        | c == '▁' = True
-        | otherwise = False
-      p (WordPiece s) = maybe False f (uncons s)
-      begin = satisfyWordPiece p
-      append = satisfyWordPiece (not . p)
-      strip ('▁' : s) = s
-      strip s = s
-      concat = strip . mconcat . (unWordPiece <$>)
-   in concat <$> ((:) <$> begin <*> many append)
+-- string :: MonadPlus b => Parser b Int String
+-- string =
+--   let f (c, _)
+--         | c == '▁' = True
+--         | otherwise = False
+--       p (WordPiece s) = maybe False f (uncons s)
+--       begin = satisfyWordPiece p
+--       append = satisfyWordPiece (not . p)
+--       strip ('▁' : s) = s
+--       strip s = s
+--       concat = strip . mconcat . (unWordPiece <$>)
+--    in concat <$> ((:) <$> begin <*> many append)
+
+-- from :: MonadPlus b => Parser b Int From
+-- from = isFrom >> do
+--   tu <- tableUnit
+--   tuCond <- isJoin >> tableUnit
 
 -- sql :: forall b. MonadPlus b => Parser b Int [Int]
 -- sql =
