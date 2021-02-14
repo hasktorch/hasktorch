@@ -72,6 +72,7 @@ library
                     , Torch.Typed.Device
                     , Torch.Typed.DType
                     , Torch.Typed.Autograd
+                    , Torch.Typed.Lens
                     , Torch.Typed.Optim
                     , Torch.Typed.Optim.CppOptim
                     , Torch.Typed.Serialize

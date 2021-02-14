@@ -120,8 +120,7 @@ instance (KnownNat n) => KnownDevice '( 'D.CPU, n) where
 instance (KnownNat n) => KnownDevice '( 'D.CUDA, n) where
   deviceVal = D.Device D.CUDA (natValInt16 @n)
 
-data Tensor (device :: (D.DeviceType, Nat)) (dtype :: D.DType) (shape :: [Nat]) where
-  UnsafeMkTensor :: forall device dtype shape. {toDynamic :: D.Tensor} -> Tensor device dtype shape
+newtype Tensor (device :: (D.DeviceType, Nat)) (dtype :: D.DType) (shape :: [Nat]) = UnsafeMkTensor {toDynamic :: D.Tensor}
 
 type CPUTensor = Tensor '( 'D.CPU, 0)
 
