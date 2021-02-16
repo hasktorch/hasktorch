@@ -21,13 +21,15 @@ import Control.Monad (MonadPlus (..), guard, liftM, mfilter, replicateM)
 import Control.Monad.Logic (observe)
 import Control.Monad.State (MonadState (..), MonadTrans (..), StateT (..), evalStateT, gets, lift, modify)
 import Control.Monad.Trans.Free (FreeF (..), FreeT (..), iterTM, runFreeT, transFreeT)
-import Data.Char (toLower)
+import Data.Char (isAlpha, isAlphaNum, isDigit, isSpace, toLower)
 import Data.Foldable (asum)
 import Data.Functor (($>))
 import Data.Kind (Type)
 import Data.List (isSuffixOf, nub, sortOn, uncons)
 import qualified Data.Map as Map (Map, lookup, (!))
+import Data.Maybe (maybeToList)
 import System.IO.Unsafe (unsafePerformIO)
+import Text.Read (readMaybe)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
@@ -256,10 +258,10 @@ testBeamSearch = do
   g <- mkGenerator @( 'Device CPU) 0
   Beams finished _ <- last <$> runBeamSearch 50 1 model input g
   print $ finalValue <$> finished
-  let tmp = parseString @[] words . finalValue <$> finished
+  let tmp = parseString @[] (transParser t5Vocab t5Text) . finalValue <$> finished
   print tmp
 
--- | A @Parser b i a@ is a parser that consumes a stream of @i@ tokens and as a
+-- | @Parser b i a@ is a parser that consumes a stream of @i@ tokens and as a
 -- result yields a value of type @a@, while operating under the @b@
 -- non-determinism monad.
 --
@@ -331,6 +333,34 @@ hasFree ::
   Parser (StateT [i] b) i a ->
   StateT [i] b Bool
 hasFree parser = gets $ any (\case Free _ -> True; _ -> False) . evalStateT (runFreeT parser)
+
+-- | @transParser vocab p@ transforms a parser @p@ over characters 'Char'
+-- into a parser over token indices 'Int' using the vocabulary @vocab@.
+transParser :: MonadPlus b => Map.Map Int String -> Parser b Char a -> Parser b Int a
+transParser vocab = FreeT . fmap (fmap (transParser vocab) . transFreeF) . runFreeT
+  where
+    transFreeF (Pure a) = Pure a
+    transFreeF (Free feed) =
+      let feed' i = do
+            s <-
+              let clean ('▁' : s) = ' ' : s
+                  clean s = s
+               in maybe empty (pure . clean) (Map.lookup i vocab)
+            (c, cs) <- maybe empty pure (uncons s)
+            go cs (feed c)
+          go [] p = p
+          go (c : cs) p = do
+            val <- lift $ runFreeT p
+            case val of
+              Pure a -> pure a
+              -- pure . unsafePerformIO $ do
+              -- putStrLn $ "pure cs: " <> show cs
+              -- pure a
+              Free feed -> go cs (feed c)
+       in -- unsafePerformIO $ do
+          -- putStrLn $ "recurse c: " <> show c
+          -- pure $ go cs (feed c)
+          Free feed'
 
 getIs ::
   forall model input generator b decoderInput encoderOutput decoderOutput inputPaddingMask s.
@@ -429,7 +459,7 @@ testParser = do
       @(T5Small 'WithLMHead ( 'Device 'CPU))
       "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-small.pt"
   g <- mkGenerator @( 'Device CPU) 0
-  let outputs = runParser model input g (transParser t5Vocab string)
+  let outputs = runParser model input g (transParser t5Vocab t5Sql)
   pure . fst $ observe outputs
 
 parseStream :: forall s b i a. Monad b => (s -> b (i, s)) -> Parser b i a -> s -> b (a, s)
@@ -538,6 +568,10 @@ eitherP p p' = (Left <$> p) <|> (Right <$> p')
 void :: Functor f => f a -> f ()
 void p = p $> ()
 
+-- | @combine p p'@ merges the results of @p@ and @p'@ using the 'Semigroup' instance.
+combine :: (Applicative f, Semigroup a) => f a -> f a -> f a
+combine = liftA2 (<>)
+
 -- | @between open close p@ applies the parsers @open@, @p@, and @close@
 -- in that order. Only the result of @p@ is returned, the results of @open@
 -- and @close@ are discarded.
@@ -547,44 +581,77 @@ void p = p $> ()
 between :: Applicative f => f a1 -> f a2 -> f a -> f a
 between open close p = open *> p <* close
 
-newtype WordPiece = WordPiece {unWordPiece :: String} deriving (Eq, Ord, Show)
+-- | @isString s@ is a simple parser that consumes 'Char' tokens and yields them
+-- if and only if they assemble the 'String' @s@. Otherwise, the parser fails.
+isString :: MonadPlus b => String -> Parser b Char String
+isString = traverse is
 
-newtype Word = Word {unWord :: String} deriving (Eq, Ord, Show)
+isNotString :: MonadPlus b => String -> Parser b Char String
+isNotString = traverse isNot
 
-word :: forall b. MonadPlus b => Parser b Int Word
-word =
-  let f (c, _)
-        | c == '▁' = True
-        | otherwise = False
-      p (WordPiece ",") = True
-      p (WordPiece ":") = True
-      p (WordPiece ".") = True
-      p (WordPiece ";") = True
-      p (WordPiece "!") = True
-      p (WordPiece "-") = True
-      p (WordPiece "?") = True
-      p (WordPiece "...") = True
-      p (WordPiece s) = maybe False f (uncons s)
-      p' (WordPiece "</s>") = False
-      p' _ = True
-      satisfy p = mfilter p (WordPiece . (t5Vocab Map.!) <$> token)
-      begin = satisfy ((&&) <$> p' <*> p)
-      append = satisfy ((&&) <$> p' <*> (not . p))
-      strip ('▁' : s) = s
-      strip s = s
-      concat = strip . mconcat . (unWordPiece <$>)
-   in Word . concat <$> ((:) <$> begin <*> many append)
+string :: MonadPlus b => Parser b Char String
+string = many token
 
-words :: forall b. MonadPlus b => Parser b Int [Word]
-words =
-  let satisfy p' = mfilter p' (WordPiece . (t5Vocab Map.!) <$> token)
-      is t = satisfy (== t)
-      end = is (WordPiece "</s>")
-      forceBeginning :: FreeT ((->) Int) b Word =
-        let rewrap (WordPiece ('▁' : s)) = Word s
-         in rewrap <$> is (WordPiece "\9601Wer")
-   in -- (:) <$> forceBeginning <*>
-      manyTill word end
+string1 :: MonadPlus b => Parser b Char String
+string1 = many1 token
+
+-- | @t5Text@ parses a 'Char' sequence delimited by "</s>" as a 'String'.
+t5Text :: MonadPlus b => Parser b Char String
+t5Text = manyTill token (isString "</s>")
+
+space :: MonadPlus b => Parser b Char String
+space = many (satisfy isSpace)
+
+space1 :: MonadPlus b => Parser b Char String
+space1 = many1 (satisfy isSpace)
+
+alpha1 :: MonadPlus b => Parser b Char String
+alpha1 = many1 (satisfy isAlpha)
+
+alphaNum1 :: MonadPlus b => Parser b Char String
+alphaNum1 = many1 (satisfy isAlphaNum)
+
+digits1 :: MonadPlus b => Parser b Char String
+digits1 = many1 (satisfy isDigit)
+
+-- newtype WordPiece = WordPiece {unWordPiece :: String} deriving (Eq, Ord, Show)
+
+-- newtype Word = Word {unWord :: String} deriving (Eq, Ord, Show)
+
+-- word :: forall b. MonadPlus b => Parser b Int Word
+-- word =
+--   let f (c, _)
+--         | c == '▁' = True
+--         | otherwise = False
+--       p (WordPiece ",") = True
+--       p (WordPiece ":") = True
+--       p (WordPiece ".") = True
+--       p (WordPiece ";") = True
+--       p (WordPiece "!") = True
+--       p (WordPiece "-") = True
+--       p (WordPiece "?") = True
+--       p (WordPiece "...") = True
+--       p (WordPiece s) = maybe False f (uncons s)
+--       p' (WordPiece "</s>") = False
+--       p' _ = True
+--       satisfy p = mfilter p (WordPiece . (t5Vocab Map.!) <$> token)
+--       begin = satisfy ((&&) <$> p' <*> p)
+--       append = satisfy ((&&) <$> p' <*> (not . p))
+--       strip ('▁' : s) = s
+--       strip s = s
+--       concat = strip . mconcat . (unWordPiece <$>)
+--    in Word . concat <$> ((:) <$> begin <*> many append)
+
+-- words :: forall b. MonadPlus b => Parser b Int [Word]
+-- words =
+--   let satisfy p' = mfilter p' (WordPiece . (t5Vocab Map.!) <$> token)
+--       is t = satisfy (== t)
+--       end = is (WordPiece "</s>")
+--       forceBeginning :: FreeT ((->) Int) b Word =
+--         let rewrap (WordPiece ('▁' : s)) = Word s
+--          in rewrap <$> is (WordPiece "\9601Wer")
+--    in -- (:) <$> forceBeginning <*>
+--       manyTill word end
 
 data Sql = Sql
   { sqlSelect :: Select,
@@ -598,15 +665,18 @@ data Sql = Sql
     sqlExcept :: Maybe Sql,
     sqlUnion :: Maybe Sql
   }
+  deriving (Show)
 
 data Select
   = Select [Agg]
   | SelectDistinct [Agg]
+  deriving (Show)
 
 data From = From
   { fromTableUnits :: [TableUnit],
     fromCond :: Maybe Cond
   }
+  deriving (Show)
 
 data Cond
   = And Cond Cond
@@ -620,7 +690,8 @@ data Cond
   | Le ValUnit Val
   | Ne ValUnit Val
   | In ValUnit Val
-  | LIke ValUnit Val
+  | Like ValUnit Val
+  deriving (Show)
 
 data ColUnit
   = ColUnit
@@ -633,12 +704,16 @@ data ColUnit
         distinctColUnitTable :: Maybe (Either TableId Alias),
         distinctColUnitColdId :: ColumnId
       }
+  deriving (Show)
 
-data OrderBy = OrderBy Order [ValUnit]
+data OrderBy = OrderBy Order [ValUnit] deriving (Show)
 
-data Agg = Agg AggType ValUnit
+data Agg = Agg AggType ValUnit deriving (Show)
 
-data TableUnit = TableUnitSql Sql (Maybe Alias) | Table TableId (Maybe Alias)
+data TableUnit
+  = TableUnitSql Sql (Maybe Alias)
+  | Table TableId (Maybe Alias)
+  deriving (Show)
 
 data ValUnit
   = Column ColUnit
@@ -646,152 +721,243 @@ data ValUnit
   | Plus ColUnit ColUnit
   | Times ColUnit ColUnit
   | Divide ColUnit ColUnit
+  deriving (Show)
 
 data Val
-  = Number Double
+  = ValColUnit ColUnit
+  | Number Double
   | ValString String
   | ValSql Sql
-  | ValColUnit ColUnit
   | Terminal
+  deriving (Show)
 
-data AggType = NoneAggOp | Max | Min | Count | Sum | Avg
+data AggType = NoneAggOp | Max | Min | Count | Sum | Avg deriving (Show)
 
-newtype ColumnId = ColumnId String
+newtype ColumnId = ColumnId String deriving (Show)
 
-newtype TableId = TableId String
+newtype TableId = TableId String deriving (Show)
 
-newtype Alias = Alias String
-
--- | @transParser vocab p@ transforms a parser @p@ over characters 'Char'
--- into a parser over token indices 'Int' using the vocabulary @vocab@.
-transParser :: MonadPlus b => Map.Map Int String -> Parser b Char a -> Parser b Int a
-transParser vocab = FreeT . fmap (fmap (transParser vocab) . transFreeF) . runFreeT
-  where
-    transFreeF (Pure a) = Pure a
-    transFreeF (Free feed) =
-      let feed' i = do
-            s <-
-              let clean ('▁' : s) = ' ' : s
-                  clean s = s
-               in maybe empty (pure . clean) (Map.lookup i vocab)
-            (c, cs) <- maybe empty pure (uncons s)
-            go cs (feed c)
-          go [] p = p
-          go (c : cs) p = do
-            val <- lift $ runFreeT p
-            case val of
-              Pure a -> pure a
-              Free feed -> go cs (feed c)
-       in Free feed'
-
--- | @isString s@ is a simple parser that consumes 'Char' tokens and yields them
--- if and only if they assemble the 'String' @s@. Otherwise, the parser fails.
-isString :: MonadPlus b => String -> Parser b Char String
-isString = traverse is
+newtype Alias = Alias String deriving (Show)
 
 -- | @keyword k@ is a parser that consumes 'Char' tokens and yields them
 -- if and only if they assemble the 'String' @s@. The parser is not sensitive to
 -- letter casing.
+--
+-- >>> head $ parseString @[] (isKeyword "mykeyword") "MYKEYWORD"
+-- ("MYKEYWORD","")
 isKeyword :: MonadPlus b => String -> Parser b Char String
 isKeyword = traverse (satisfy . ((. toLower) . (==) . toLower))
 
--- | @string@ parses the model output as a 'String'.
-string :: MonadPlus b => Parser b Char String
-string = manyTill token (isString "</s>")
+isSelect :: MonadPlus b => Parser b Char String
+isSelect = isKeyword "select"
 
-satisfyWordPiece :: MonadPlus b => (WordPiece -> Bool) -> Parser b Int WordPiece
-satisfyWordPiece p = mfilter p (WordPiece . (t5Vocab Map.!) <$> token)
+isDistinct :: MonadPlus b => Parser b Char String
+isDistinct = isKeyword "distinct"
 
-isWordPiece :: MonadPlus b => String -> Parser b Int WordPiece
-isWordPiece s = satisfyWordPiece (== WordPiece s)
+isStar :: MonadPlus b => Parser b Char String
+isStar = pure <$> is '*'
 
-isSelect :: MonadPlus b => Parser b Int ()
-isSelect = isWordPiece "\9601" >> isWordPiece "SEL" >> isWordPiece "ECT" $> ()
+isComma :: MonadPlus b => Parser b Char String
+isComma = pure <$> is ','
 
-isComma :: MonadPlus b => Parser b Int ()
-isComma = isWordPiece "," $> ()
+isDot :: MonadPlus b => Parser b Char String
+isDot = pure <$> is '.'
 
-isDot :: MonadPlus b => Parser b Int ()
-isDot = isWordPiece "." $> ()
+isEq :: MonadPlus b => Parser b Char String
+isEq = pure <$> is '='
 
-endsWithDot :: MonadPlus b => Parser b Int WordPiece
-endsWithDot = satisfyWordPiece (\(WordPiece s) -> "." `isSuffixOf` s)
+isCount :: MonadPlus b => Parser b Char String
+isCount = isKeyword "count"
 
-isCount :: MonadPlus b => Parser b Int ()
-isCount = isWordPiece "\9601CO" >> isWordPiece "UNT" $> ()
+isFrom :: MonadPlus b => Parser b Char String
+isFrom = isKeyword "from"
 
-isFrom :: MonadPlus b => Parser b Int ()
-isFrom = isWordPiece "\9601FROM" $> ()
+isJoin :: MonadPlus b => Parser b Char String
+isJoin = isKeyword "join"
 
-isJoin :: MonadPlus b => Parser b Int ()
-isJoin = isWordPiece "\9601" >> isWordPiece "JO" >> isWordPiece "IN" $> ()
+isAs :: MonadPlus b => Parser b Char String
+isAs = isKeyword "as"
 
-isAs :: MonadPlus b => Parser b Int ()
-isAs = isWordPiece "\9601AS" $> ()
+isOn :: MonadPlus b => Parser b Char String
+isOn = isKeyword "on"
 
-isOn :: MonadPlus b => Parser b Int ()
-isOn = isWordPiece "\9601ON" $> ()
+isWhere :: MonadPlus b => Parser b Char String
+isWhere = isKeyword "where"
 
-isGroupBy :: MonadPlus b => Parser b Int ()
-isGroupBy =
-  isWordPiece "\9601G"
-    >> isWordPiece "RO"
-    >> isWordPiece "UP"
-    >> isWordPiece "\9601B"
-    >> isWordPiece "Y" $> ()
+isGroupBy :: MonadPlus b => Parser b Char String
+isGroupBy = isKeyword "group" `combine` space `combine` isKeyword "by"
 
-betweenParentheses :: MonadPlus b => Parser b Int a -> Parser b Int a
-betweenParentheses = between (isWordPiece "(") (isWordPiece ")")
+isOrderBy :: MonadPlus b => Parser b Char String
+isOrderBy = isKeyword "order" `combine` space `combine` isKeyword "by"
 
-betweenOptionalParentheses :: MonadPlus b => Parser b Int a -> Parser b Int a
+isHaving :: MonadPlus b => Parser b Char String
+isHaving = isKeyword "having"
+
+isLimit :: MonadPlus b => Parser b Char String
+isLimit = isKeyword "limit"
+
+betweenParentheses :: MonadPlus b => Parser b Char a -> Parser b Char a
+betweenParentheses = between (is '(') (is ')')
+
+betweenOptionalParentheses :: MonadPlus b => Parser b Char a -> Parser b Char a
 betweenOptionalParentheses p = betweenParentheses p <|> p
 
-select :: MonadPlus b => Parser b Int Select
-select = isSelect >> Select <$> sepBy agg isComma
+-- | 'Select' parser
+--
+-- >>> head $ parseString @[] select "select count table.*"
+-- (Select [Agg Count (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "table")), colUnitColId = ColumnId "*"}))],"")
+select :: MonadPlus b => Parser b Char Select
+select =
+  space
+    *> isSelect
+    *> space
+    *> ( (Select <$> sepBy agg isComma)
+           <|> (isDistinct *> space *> (SelectDistinct <$> sepBy agg isComma))
+       )
+    <* space
 
-agg :: MonadPlus b => Parser b Int Agg
-agg = Agg <$> aggType <*> valUnit
+agg :: MonadPlus b => Parser b Char Agg
+agg = space *> (Agg <$> aggType <*> valUnit) <* space
 
-aggType :: MonadPlus b => Parser b Int AggType
-aggType = isCount $> Count <|> pure NoneAggOp
+aggType :: MonadPlus b => Parser b Char AggType
+aggType = space *> ((isCount $> Count) <|> pure NoneAggOp) <* space
 
-valUnit :: MonadPlus b => Parser b Int ValUnit
-valUnit = betweenParentheses (choice [column, minus, plus, times, divide])
+-- | 'ValUnit' parser
+--
+-- >>> head $ parseString @[] valUnit "t1.stadium_id"
+-- (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t1")), colUnitColId = ColumnId "stadium_id"}),"")
+valUnit :: MonadPlus b => Parser b Char ValUnit
+valUnit =
+  space
+    *> betweenOptionalParentheses
+      ( space *> choice choices <* space
+      )
+    <* space
   where
+    choices = [column] --, minus, plus, times, divide]
     column = Column <$> colUnit
-    minus = undefined
-    plus = undefined
-    times = undefined
-    divide = undefined
 
-colUnit :: MonadPlus b => Parser b Int ColUnit
-colUnit = undefined -- ColUnit <$> aggType <*> maybeP (eitherP <* isDot) <*> columnId
+colUnit :: MonadPlus b => Parser b Char ColUnit
+colUnit =
+  space
+    *> ( ColUnit
+           <$> aggType
+           <*> maybeP (eitherP tableId alias <* isDot)
+           <*> columnId
+       )
+    <* space
 
-columnId :: MonadPlus b => Parser b Int ColumnId
-columnId = undefined -- ColumnId <$> string
+name :: MonadPlus b => Parser b Char String
+name = many1 $ satisfy ((||) <$> isAlphaNum <*> (== '_'))
 
--- string :: MonadPlus b => Parser b Int String
--- string =
---   let f (c, _)
---         | c == '▁' = True
---         | otherwise = False
---       p (WordPiece s) = maybe False f (uncons s)
---       begin = satisfyWordPiece p
---       append = satisfyWordPiece (not . p)
---       strip ('▁' : s) = s
---       strip s = s
---       concat = strip . mconcat . (unWordPiece <$>)
---    in concat <$> ((:) <$> begin <*> many append)
+tableId :: MonadPlus b => Parser b Char TableId
+tableId = TableId <$> name
 
--- from :: MonadPlus b => Parser b Int From
--- from = isFrom >> do
---   tu <- tableUnit
---   tuCond <- isJoin >> tableUnit
+alias :: MonadPlus b => Parser b Char Alias
+alias = Alias <$> name
 
--- sql :: forall b. MonadPlus b => Parser b Int [Int]
--- sql =
---   let
---       is t = satisfy (== t)
---       dquote = is (WordPiece "\9601\"") $> ()
---       end = is (WordPiece "</s>") $> ()
---       in dquote >> manyTill token (dquote >> end)
+columnId :: MonadPlus b => Parser b Char ColumnId
+columnId = ColumnId <$> (isStar <|> name)
+
+-- | 'From' parser
+--
+-- >>> head $ parseString @[] from "FROM people AS t1 JOIN pets AS t2 ON t1.pet_id = t2.pet_id"
+-- (From {fromTableUnits = [Table (TableId "people") (Just (Alias "t1")),Table (TableId "pets") (Just (Alias "t2"))], fromCond = Just (Eq (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t1")), colUnitColId = ColumnId "pet_id"})) (ValColUnit (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t2")), colUnitColId = ColumnId "pet_id"})))},"")
+from :: forall b. MonadPlus b => Parser b Char From
+from = space *> isFrom *> space *> (uncurry mkFrom <$> p) <* space
+  where
+    p :: Parser b Char (TableUnit, [(TableUnit, Maybe Cond)])
+    p =
+      (,)
+        <$> tableUnit
+        <*> many
+          ( space
+              *> isJoin
+              *> space
+              *> ( (,)
+                     <$> tableUnit
+                     <*> maybeP
+                       ( space
+                           *> isOn
+                           *> space
+                           *> cond
+                       )
+                 )
+          )
+    mkFrom :: TableUnit -> [(TableUnit, Maybe Cond)] -> From
+    mkFrom tu tus =
+      From
+        (tu : fmap fst tus)
+        ( foldl
+            ( \a b ->
+                case (a, b) of
+                  (Just c, Just c') -> Just (And c c')
+                  (Just c, Nothing) -> Just c
+                  (Nothing, Just c') -> Just c'
+                  (Nothing, Nothing) -> Nothing
+            )
+            Nothing
+            (fmap snd tus)
+        )
+
+tableUnit :: MonadPlus b => Parser b Char TableUnit
+tableUnit = space *> (Table <$> tableId <*> maybeP (space *> isAs *> space *> alias)) <* space
+
+-- | Condition parser
+-- >>> head $ parseString @[] cond "t1.stadium_id = t2.stadium_id"
+-- (Eq (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t1")), colUnitColId = ColumnId "stadium_id"})) (ValColUnit (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t2")), colUnitColId = ColumnId "stadium_id"})),"")
+cond :: MonadPlus b => Parser b Char Cond
+cond = space *> (Eq <$> valUnit <*> (space *> isEq *> space *> val)) <* space
+
+val :: MonadPlus b => Parser b Char Val
+val = space *> choice choices <* space
+  where
+    choices = [valColUnit, valString, terminal]
+    -- choices = [valColUnit, number, valString, valSql, terminal]
+    valColUnit = ValColUnit <$> colUnit
+    -- number = undefined
+    valString = ValString <$> string
+    -- valSql = undefined
+    terminal = pure Terminal
+
+whereCond :: MonadPlus b => Parser b Char (Maybe Cond)
+whereCond = space *> maybeP (isWhere *> space *> cond) <* space
+
+groupBy :: MonadPlus b => Parser b Char [ColUnit]
+groupBy = space *> (maybeToList <$> maybeP (isGroupBy *> space *> colUnit)) <* space
+
+orderBy :: forall b. MonadPlus b => Parser b Char (Maybe OrderBy)
+orderBy =
+  space *> maybeP (isOrderBy *> space *> p) <* space
+  where
+    p :: Parser b Char OrderBy
+    p = pure $ OrderBy Ascending []
+
+havingCond :: MonadPlus b => Parser b Char (Maybe Cond)
+havingCond = space *> maybeP (isHaving *> space *> cond) <* space
+
+limit :: MonadPlus b => Parser b Char (Maybe Int)
+limit = space *> maybeP (isLimit *> space *> digits1 >>= maybe empty pure . readMaybe) <* space
+
+-- | 'Sql' parser
+--
+-- >>> head $ parseString @[] sql "select T2.name, count(*) from concert as t1 join stadium as t2 on t1.stadium_id = t2.stadium_id group by t1.stadium_id"
+-- (Sql {sqlSelect = Select [Agg NoneAggOp (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "T2")), colUnitColId = ColumnId "name"})),Agg Count (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Nothing, colUnitColId = ColumnId "*"}))], sqlFrom = From {fromTableUnits = [Table (TableId "concert") (Just (Alias "t1")),Table (TableId "stadium") (Just (Alias "t2"))], fromCond = Just (Eq (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t1")), colUnitColId = ColumnId "stadium_id"})) (ValColUnit (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t2")), colUnitColId = ColumnId "stadium_id"})))}, sqlWhere = Nothing, sqlGroupBy = [ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t1")), colUnitColId = ColumnId "stadium_id"}], sqlOrderBy = Nothing, sqlHaving = Nothing, sqlLimit = Nothing, sqlIntersect = Nothing, sqlExcept = Nothing, sqlUnion = Nothing},"")
+sql :: MonadPlus b => Parser b Char Sql
+sql =
+  Sql
+    <$> select
+      <*> from
+      <*> whereCond
+      <*> groupBy
+      <*> orderBy
+      <*> havingCond
+      <*> limit
+      <*> pure Nothing
+      <*> pure Nothing
+      <*> pure Nothing
+
+t5Sql :: MonadPlus b => Parser b Char Sql
+t5Sql =
+  let q = space *> is '\"' <* space
+   in between q q sql <* isString "</s>"
