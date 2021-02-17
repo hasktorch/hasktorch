@@ -39,7 +39,6 @@ module Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention where
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.State.Strict (MonadState (state), runState)
-import Data.Data (Proxy (..))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import GHC.TypeLits (Nat, Symbol)
@@ -63,7 +62,7 @@ import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (ReshapeF, TransposeF,
 import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (MatmulF, matmul)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..), checkedDataType, checkedDevice, checkedLayout, checkedShape, shape)
-import Torch.GraduallyTyped.Unify (Unify, type (<+>))
+import Torch.GraduallyTyped.Unify (type (<+>))
 import qualified Torch.Tensor
 
 data

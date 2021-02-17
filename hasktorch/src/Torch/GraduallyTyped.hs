@@ -1,11 +1,6 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
-
 module Torch.GraduallyTyped
   ( module Torch.Data,
+    module Torch.Language,
     module Torch.GraduallyTyped,
     module Torch.GraduallyTyped.Prelude,
     module Torch.GraduallyTyped.Autograd,
@@ -20,12 +15,13 @@ module Torch.GraduallyTyped
     module Torch.GraduallyTyped.Scalar,
     module Torch.GraduallyTyped.Unify,
     -- module Torch.HList,
-    module Torch.DType,
+    module Torch.DType
   )
 where
 
 import Torch.DType
 import Torch.Data
+import Torch.Language
 import Torch.GraduallyTyped.Autograd
 import Torch.GraduallyTyped.DType
 import Torch.GraduallyTyped.Device

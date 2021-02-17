@@ -301,7 +301,7 @@ lookupSequenceToSequenceTransformerWithoutLMHead ::
 lookupSequenceToSequenceTransformerWithoutLMHead = do
   t5Config <- ask
   case t5Config of
-    T5Config {..} ->
+    T5Config {} ->
       SequenceToSequenceTransformerWithoutLMHead
         <$> lookupEncoder
         <*> lookupDecoder
@@ -320,7 +320,7 @@ lookupSequenceToSequenceTransformerWithLMHead ::
 lookupSequenceToSequenceTransformerWithLMHead = do
   t5Config <- ask
   case t5Config of
-    T5Config {..} ->
+    T5Config {} ->
       SequenceToSequenceTransformerWithLMHead
         <$> lookupEncoder
         <*> lookupDecoder
@@ -369,7 +369,7 @@ lookupHeadDim ::
 lookupHeadDim = do
   t5Config <- ask
   case t5Config of
-    T5Config {..} -> case dimVal @embedDim of
+    T5Config {} -> case dimVal @embedDim of
       Dim (Name name) (Size size) -> pure $ Dim name size
       Dim _ _ -> fail "head dimension unspecified"
 
@@ -382,7 +382,7 @@ lookupHeadEmbedDim ::
 lookupHeadEmbedDim = do
   t5Config <- ask
   case t5Config of
-    T5Config {..} -> case dimVal @headEmbedDim of
+    T5Config {} -> case dimVal @headEmbedDim of
       Dim (Name name) (Size size) -> pure $ Dim name size
       Dim _ _ -> fail "head embed dimension unspecified"
 
@@ -395,7 +395,7 @@ lookupInputEmbedDim ::
 lookupInputEmbedDim = do
   t5Config <- ask
   case t5Config of
-    T5Config {..} -> case dimVal @inputEmbedDim of
+    T5Config {} -> case dimVal @inputEmbedDim of
       Dim (Name name) (Size size) -> pure $ Dim name size
       Dim _ _ -> fail "input embed dimension unspecified"
 
@@ -408,7 +408,7 @@ lookupRelPosEncBucketDim ::
 lookupRelPosEncBucketDim = do
   t5Config <- ask
   case t5Config of
-    T5Config {..} -> case dimVal @relPosEncBucketDim of
+    T5Config {} -> case dimVal @relPosEncBucketDim of
       Dim (Name name) (Size size) -> pure $ Dim name size
       Dim _ _ -> fail "bucket dimension for relative positional encoding unspecified"
 
