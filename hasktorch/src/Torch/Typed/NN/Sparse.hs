@@ -38,7 +38,7 @@ data
     (device :: (D.DeviceType, Nat)) where
   ConstEmbeddingSpec ::
     forall paddingIdx numEmbeds embedSize dtype device.
-    Tensor device dtype '[numEmbeds, embedSize] ->
+    Tensor' device dtype '[numEmbeds, embedSize] ->
     EmbeddingSpec paddingIdx numEmbeds embedSize 'Constant dtype device
   LearnedEmbeddingWithRandomInitSpec ::
     forall paddingIdx numEmbeds embedSize dtype device.
@@ -46,7 +46,7 @@ data
       device
   LearnedEmbeddingWithCustomInitSpec ::
     forall paddingIdx numEmbeds embedSize dtype device.
-    Tensor device dtype '[numEmbeds, embedSize] ->
+    Tensor' device dtype '[numEmbeds, embedSize] ->
     EmbeddingSpec paddingIdx numEmbeds embedSize 'Learned dtype device
 
 deriving instance Show (EmbeddingSpec paddingIdx numEmbeds embedSize embeddingType dtype device)
@@ -62,13 +62,13 @@ data
   ConstEmbedding ::
     forall paddingIdx numEmbeds embedSize dtype device.
     --  . (PaddingIdxCheck paddingIdx numEmbeds)
-    {constEmbedWeights :: Tensor device dtype '[numEmbeds, embedSize]} ->
+    {constEmbedWeights :: Tensor' device dtype '[numEmbeds, embedSize]} ->
     Embedding paddingIdx numEmbeds embedSize 'Constant dtype
       device
   LearnedEmbedding ::
     forall paddingIdx numEmbeds embedSize dtype device.
     --  . (PaddingIdxCheck paddingIdx numEmbeds)
-    {learnedEmbedWeights :: Parameter device dtype '[numEmbeds, embedSize]} ->
+    {learnedEmbedWeights :: Parameter' device dtype '[numEmbeds, embedSize]} ->
     Embedding paddingIdx numEmbeds embedSize 'Learned dtype
       device
 
@@ -77,14 +77,14 @@ deriving instance Show (Embedding paddingIdx numEmbeds embedSize embeddingType d
 instance Generic (Embedding paddingIdx numEmbeds embedSize 'Constant dtype device) where
   type
     Rep (Embedding paddingIdx numEmbeds embedSize 'Constant dtype device) =
-      Rec0 (Tensor device dtype '[numEmbeds, embedSize])
+      Rec0 (Tensor' device dtype '[numEmbeds, embedSize])
   from (ConstEmbedding {..}) = K1 constEmbedWeights
   to = ConstEmbedding . unK1
 
 instance Generic (Embedding paddingIdx numEmbeds embedSize 'Learned dtype device) where
   type
     Rep (Embedding paddingIdx numEmbeds embedSize 'Learned dtype device) =
-      Rec0 (Parameter device dtype '[numEmbeds, embedSize])
+      Rec0 (Parameter' device dtype '[numEmbeds, embedSize])
   from (LearnedEmbedding {..}) = K1 learnedEmbedWeights
   to = LearnedEmbedding . unK1
 
@@ -119,7 +119,7 @@ instance
     PaddingIdxCheck paddingIdx numEmbeds,
     shape' ~ Reverse (embedSize ': (Reverse shape))
   ) =>
-  HasForward (Embedding paddingIdx numEmbeds embedSize embeddingType dtype device) (Tensor device 'D.Int64 shape) (Tensor device dtype shape')
+  HasForward (Embedding paddingIdx numEmbeds embedSize embeddingType dtype device) (Tensor' device 'D.Int64 shape) (Tensor' device dtype shape')
   where
   forward = embed
   forwardStoch = (pure .) . forward

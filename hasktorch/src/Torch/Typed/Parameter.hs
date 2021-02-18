@@ -44,9 +44,11 @@ newtype
   Parameter
     (device :: (DeviceType, Nat))
     (dtype :: DType)
-    (shape :: [Nat])
+    (shape :: [Type->Type])
   = UnsafeMkParameter Torch.Autograd.IndependentTensor
   deriving (Show)
+
+type Parameter' device dtype shape = Parameter device dtype (FromNats shape)
 
 untypeParam :: Parameter device dtype shape -> Torch.NN.Parameter
 untypeParam (UnsafeMkParameter param) = param

@@ -30,8 +30,8 @@ data LayerNormSpec (normalizedShape :: [Nat]) (dtype :: D.DType) (device :: (D.D
 
 data LayerNorm (normalizedShape :: [Nat]) (dtype :: D.DType) (device :: (D.DeviceType, Nat)) where
   LayerNorm ::
-    { layerNormWeight :: Parameter device dtype normalizedShape,
-      layerNormBias :: Parameter device dtype normalizedShape,
+    { layerNormWeight :: Parameter' device dtype normalizedShape,
+      layerNormBias :: Parameter' device dtype normalizedShape,
       layerNormEps :: Double
     } ->
     LayerNorm normalizedShape dtype device
@@ -55,7 +55,7 @@ instance
   ( IsSuffixOf normalizedShape shape,
     KnownShape normalizedShape
   ) =>
-  HasForward (LayerNorm normalizedShape dtype device) (Tensor device dtype shape) (Tensor device dtype shape)
+  HasForward (LayerNorm normalizedShape dtype device) (Tensor' device dtype shape) (Tensor' device dtype shape)
   where
   forward = layerNormForward
   forwardStoch = (pure .) . forward

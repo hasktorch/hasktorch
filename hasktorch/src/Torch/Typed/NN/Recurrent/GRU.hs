@@ -431,7 +431,7 @@ data
     forall inputSize hiddenSize numLayers directionality dtype device.
     GRUSpec inputSize hiddenSize numLayers directionality dtype device ->
     -- | The initial values of the hidden state
-    Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize] ->
+    Tensor' device dtype '[numLayers * NumberOfDirections directionality, hiddenSize] ->
     GRUWithInitSpec inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype device
   -- | Weights drawn from Xavier-Uniform
   --   with zeros-value initialized biases
@@ -462,7 +462,7 @@ data
   GRUWithConstInit ::
     forall inputSize hiddenSize numLayers directionality dtype device.
     { gruWithConstInit_gru :: GRU inputSize hiddenSize numLayers directionality dtype device,
-      gruWithConstInit_h :: Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize]
+      gruWithConstInit_h :: Tensor' device dtype '[numLayers * NumberOfDirections directionality, hiddenSize]
     } ->
     GRUWithInit
       inputSize
@@ -475,7 +475,7 @@ data
   GRUWithLearnedInit ::
     forall inputSize hiddenSize numLayers directionality dtype device.
     { gruWithLearnedInit_gru :: GRU inputSize hiddenSize numLayers directionality dtype device,
-      gruWithLearnedInit_h :: Parameter device dtype '[numLayers * NumberOfDirections directionality, hiddenSize]
+      gruWithLearnedInit_h :: Parameter' device dtype '[numLayers * NumberOfDirections directionality, hiddenSize]
     } ->
     GRUWithInit
       inputSize
@@ -492,7 +492,7 @@ instance Generic (GRUWithInit inputSize hiddenSize numLayers directionality 'Con
   type
     Rep (GRUWithInit inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype device) =
       Rec0 (GRU inputSize hiddenSize numLayers directionality dtype device)
-        :*: Rec0 (Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize])
+        :*: Rec0 (Tensor' device dtype '[numLayers * NumberOfDirections directionality, hiddenSize])
   from (GRUWithConstInit {..}) = K1 gruWithConstInit_gru :*: K1 gruWithConstInit_h
   to (K1 gru :*: K1 h) = GRUWithConstInit gru h
 
@@ -500,7 +500,7 @@ instance Generic (GRUWithInit inputSize hiddenSize numLayers directionality 'Lea
   type
     Rep (GRUWithInit inputSize hiddenSize numLayers directionality 'LearnedInitialization dtype device) =
       Rec0 (GRU inputSize hiddenSize numLayers directionality dtype device)
-        :*: Rec0 (Parameter device dtype '[numLayers * NumberOfDirections directionality, hiddenSize])
+        :*: Rec0 (Parameter' device dtype '[numLayers * NumberOfDirections directionality, hiddenSize])
   from (GRUWithLearnedInit {..}) = K1 gruWithLearnedInit_gru :*: K1 gruWithLearnedInit_h
   to (K1 gru :*: K1 h) = GRUWithLearnedInit gru h
 

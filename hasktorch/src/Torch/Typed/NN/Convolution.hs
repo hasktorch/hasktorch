@@ -49,8 +49,8 @@ data
     (device :: (D.DeviceType, Nat)) where
   Conv1d ::
     forall inputChannelSize outputChannelSize kernelSize dtype device.
-    { conv1dWeight :: Parameter device dtype '[outputChannelSize, inputChannelSize, kernelSize],
-      conv1dBias :: Parameter device dtype '[outputChannelSize]
+    { conv1dWeight :: Parameter' device dtype '[outputChannelSize, inputChannelSize, kernelSize],
+      conv1dBias :: Parameter' device dtype '[outputChannelSize]
     } ->
     Conv1d inputChannelSize outputChannelSize kernelSize dtype
       device

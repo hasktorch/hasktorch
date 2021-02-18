@@ -37,7 +37,7 @@ import Data.Kind
 data MNIST (m :: Type -> Type) (device :: (D.DeviceType, Nat) ) (batchSize :: Nat) = MNIST { mnistData :: MnistData }
 
 instance (KnownNat batchSize, KnownDevice device, Applicative m) =>
-  Dataset m (MNIST m device batchSize) Int (Tensor device 'D.Float '[batchSize, 784], Tensor device 'D.Int64 '[batchSize]) where
+  Dataset m (MNIST m device batchSize) Int (Tensor' device 'D.Float '[batchSize, 784], Tensor' device 'D.Int64 '[batchSize]) where
   getItem MNIST{..} ix =  
     let
       batchSize = natValI @batchSize

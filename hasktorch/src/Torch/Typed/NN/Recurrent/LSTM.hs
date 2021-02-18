@@ -509,9 +509,9 @@ data
     forall inputSize hiddenSize numLayers directionality dtype device.
     LSTMSpec inputSize hiddenSize numLayers directionality dtype device ->
     -- | The initial values of the memory cell
-    Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize] ->
+    Tensor' device dtype '[numLayers * NumberOfDirections directionality, hiddenSize] ->
     -- | The initial values of the hidden state
-    Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize] ->
+    Tensor' device dtype '[numLayers * NumberOfDirections directionality, hiddenSize] ->
     LSTMWithInitSpec inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype device
   -- | Weights drawn from Xavier-Uniform
   --   with zeros-value initialized biases
@@ -521,10 +521,10 @@ data
     LSTMSpec inputSize hiddenSize numLayers directionality dtype device ->
     -- | The initial (learnable)
     -- values of the memory cell
-    Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize] ->
+    Tensor' device dtype '[numLayers * NumberOfDirections directionality, hiddenSize] ->
     -- | The initial (learnable)
     -- values of the hidden state
-    Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize] ->
+    Tensor' device dtype '[numLayers * NumberOfDirections directionality, hiddenSize] ->
     LSTMWithInitSpec inputSize hiddenSize numLayers directionality 'LearnedInitialization dtype device
 
 deriving instance Show (LSTMWithInitSpec inputSize hiddenSize numLayers directionality initialization dtype device)
@@ -545,8 +545,8 @@ data
   LSTMWithConstInit ::
     forall inputSize hiddenSize numLayers directionality dtype device.
     { lstmWithConstInit_lstm :: LSTM inputSize hiddenSize numLayers directionality dtype device,
-      lstmWithConstInit_c :: Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize],
-      lstmWithConstInit_h :: Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize]
+      lstmWithConstInit_c :: Tensor' device dtype '[numLayers * NumberOfDirections directionality, hiddenSize],
+      lstmWithConstInit_h :: Tensor' device dtype '[numLayers * NumberOfDirections directionality, hiddenSize]
     } ->
     LSTMWithInit
       inputSize
@@ -559,8 +559,8 @@ data
   LSTMWithLearnedInit ::
     forall inputSize hiddenSize numLayers directionality dtype device.
     { lstmWithLearnedInit_lstm :: LSTM inputSize hiddenSize numLayers directionality dtype device,
-      lstmWithLearnedInit_c :: Parameter device dtype '[numLayers * NumberOfDirections directionality, hiddenSize],
-      lstmWithLearnedInit_h :: Parameter device dtype '[numLayers * NumberOfDirections directionality, hiddenSize]
+      lstmWithLearnedInit_c :: Parameter' device dtype '[numLayers * NumberOfDirections directionality, hiddenSize],
+      lstmWithLearnedInit_h :: Parameter' device dtype '[numLayers * NumberOfDirections directionality, hiddenSize]
     } ->
     LSTMWithInit
       inputSize
@@ -586,8 +586,8 @@ instance Generic (LSTMWithInit inputSize hiddenSize numLayers directionality 'Le
   type
     Rep (LSTMWithInit inputSize hiddenSize numLayers directionality 'LearnedInitialization dtype device) =
       Rec0 (LSTM inputSize hiddenSize numLayers directionality dtype device)
-        :*: Rec0 (Parameter device dtype '[numLayers * NumberOfDirections directionality, hiddenSize])
-        :*: Rec0 (Parameter device dtype '[numLayers * NumberOfDirections directionality, hiddenSize])
+        :*: Rec0 (Parameter' device dtype '[numLayers * NumberOfDirections directionality, hiddenSize])
+        :*: Rec0 (Parameter' device dtype '[numLayers * NumberOfDirections directionality, hiddenSize])
   from (LSTMWithLearnedInit {..}) = K1 lstmWithLearnedInit_lstm :*: K1 lstmWithLearnedInit_c :*: K1 lstmWithLearnedInit_h
   to (K1 lstm :*: K1 c :*: K1 h) = LSTMWithLearnedInit lstm c h
 

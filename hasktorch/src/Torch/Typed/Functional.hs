@@ -1061,13 +1061,13 @@ eig ::
   forall eigenvectors n shape dtype device.
   ( KnownNat n,
     KnownEigenVectors eigenvectors,
-    shape ~ FMap Vector (ConditionalEigenVectors eigenvectors n),
+    shape ~ FromNats (ConditionalEigenVectors eigenvectors n),
     EigDTypeIsValid device dtype
   ) =>
   -- | input matrix
-  Tensor device dtype '[Vector n, Vector n] ->
+  Tensor device dtype '[FromNat n, FromNat n] ->
   -- | eigenvalues and eigenvectors
-  ( Tensor device dtype '[Vector n, Vector 2],
+  ( Tensor device dtype '[FromNat n, FromNat 2],
     Tensor device dtype shape
   )
 eig input =
@@ -1084,7 +1084,7 @@ type family SVDShapes' (shape :: [Nat]) (reduced :: ReducedSVD) :: ([Nat], [Nat]
 
 
 type family Tuple3NatToShapes (shape :: ([Nat], [Nat], [Nat])) :: ([Type->Type], [Type->Type], [Type->Type]) where
-  Tuple3NatToShapes '(a,b,c) =  '(FMap Vector a,FMap Vector b,FMap Vector c)
+  Tuple3NatToShapes '(a,b,c) =  '(FromNats  a,FromNats  b,FromNats  c)
 
 type family SVDShapes (shape :: [Type->Type]) (reduced :: ReducedSVD) :: ([Type->Type], [Type->Type], [Type->Type]) where
   SVDShapes shape reduced = Tuple3NatToShapes (SVDShapes' (ToNats shape) reduced)
@@ -1450,7 +1450,7 @@ type family DiagSize (tri :: Tri) (index :: Nat) (m :: Type->Type) (n :: Type->T
   DiagSize 'Upper i m n =
     If
       (i <=? ToNat n)
-      (Vector (Min (ToNat m) (ToNat n - i)))
+      (FromNat (Min (ToNat m) (ToNat n - i)))
       ( TypeError
           ( Text "For a matrix with shape "
               :<>: ShowType '[m, n]
@@ -1463,7 +1463,7 @@ type family DiagSize (tri :: Tri) (index :: Nat) (m :: Type->Type) (n :: Type->T
   DiagSize 'Lower i m n =
     If
       (i <=? (ToNat m))
-      (Vector (Min (ToNat m - i) (ToNat n)))
+      (FromNat (Min (ToNat m - i) (ToNat n)))
       ( TypeError
           ( Text "For a matrix with shape "
               :<>: ShowType '[m, n]
@@ -1475,7 +1475,7 @@ type family DiagSize (tri :: Tri) (index :: Nat) (m :: Type->Type) (n :: Type->T
       )
 
 type family DiagShape (tri :: Tri) (index :: Nat) (shape :: [Type->Type]) :: [Type->Type] where
-  DiagShape _ i '[Vector n] = '[Vector (n + i), Vector (n + i)]
+  DiagShape _ i '[n] = '[FromNat (ToNat n + i), FromNat (ToNat n + i)]
   DiagShape tri i '[m, n] = '[DiagSize tri i m n]
   DiagShape _ _ shape =
     TypeError
@@ -1566,7 +1566,7 @@ instance KnownKeepOrDropDim DropDim where
 
 type family ConditionalDropDimension (shape :: [Type->Type]) (dim :: Nat) (keepOrDropDim :: KeepOrDropDim) :: [Type->Type] where
   ConditionalDropDimension '[] _ _ = TypeError (Text "The specified dimension is not available.")
-  ConditionalDropDimension (x : xs) 0 KeepDim = Vector 1 ': xs
+  ConditionalDropDimension (x : xs) 0 KeepDim = FromNat 1 ': xs
   ConditionalDropDimension (x : xs) 0 DropDim = xs
   ConditionalDropDimension (x : xs) i keepOrDropDim = x ': ConditionalDropDimension xs (i - 1) keepOrDropDim
 
@@ -2096,7 +2096,7 @@ type family CatImpl (dim :: Nat) (tensors :: [a]) (acc :: Maybe ([Type->Type], D
 type family ComputeCatShape (dim :: Nat) (shape :: [Type->Type]) (acc :: Maybe ([Type->Type], D.DType, (D.DeviceType, Nat))) :: Maybe [Type->Type] where
   ComputeCatShape 0 (x ': xs) Nothing = Just (x ': xs)
   ComputeCatShape dim (x ': xs) Nothing = AppendToMaybe x (ComputeCatShape (dim - 1) xs Nothing)
-  ComputeCatShape 0 (Vector x ': xs) (Just '(Vector y ': xs, _, _)) = Just (Vector (x + y) ': xs)
+  ComputeCatShape 0 (x ': xs) (Just '(y ': xs, _, _)) = Just (FromNat (ToNat x + ToNat y) ': xs)
   ComputeCatShape dim (x ': xs) (Just '(x ': ys, dtype, device)) = AppendToMaybe x (ComputeCatShape (dim - 1) xs (Just '(ys, dtype, device)))
   ComputeCatShape _ _ _ = Nothing
 
@@ -2193,15 +2193,15 @@ type family ComputeChunksChunkGo (n' :: Nat) (r :: Nat) (cmp :: Ordering) (cmp' 
 
 type family ComputeChunksChunkGo0 (n' :: Nat) (chunks :: Nat) :: [Nat] where
   ComputeChunksChunkGo0 _ 0 = '[]
-  ComputeChunksChunkGo0 n' chunks = n' ': (ComputeChunksChunkGo0 n' (chunks - 1))
+  ComputeChunksChunkGo0 n' chunks = n' ': ComputeChunksChunkGo0 n' (chunks - 1)
 
 type family ComputeChunks (n :: Maybe (Type -> Type)) (chunks :: Nat) :: Maybe [Type->Type] where
   ComputeChunks (Just n) chunks = Just (ComputeChunks' n chunks (Mod (ToNat n) chunks))
   ComputeChunks Nothing _ = Nothing
 
 type family ComputeChunks' (n :: Type -> Type) (chunks :: Nat) (m :: Nat) :: [Type->Type] where
-  ComputeChunks' (Vector n) chunks 0 = FMap Vector (ComputeChunksChunkGo0 (Div n chunks) chunks)
-  ComputeChunks' (Vector n) chunks _ = FMap Vector (ComputeChunksChunkGo (Div (n + chunks - 1) chunks) n (CmpNat n (Div (n + chunks - 1) chunks)) (CmpNat n 0))
+  ComputeChunks' n chunks 0 = FromNats  (ComputeChunksChunkGo0 (Div (ToNat n) chunks) chunks)
+  ComputeChunks' n chunks _ = FromNats  (ComputeChunksChunkGo (Div (ToNat n + chunks - 1) chunks) (ToNat n) (CmpNat (ToNat n) (Div (ToNat n + chunks - 1) chunks)) (CmpNat (ToNat n) 0))
 
 type family ChunkShapesImpl (chunks :: Maybe [Type -> Type]) (dim :: Nat) (shape :: [Type -> Type]) :: Maybe [[Type -> Type]] where
   ChunkShapesImpl (Just (n ': ns)) dim shape = AppendToMaybe' (ReplaceDim dim shape n) (ChunkShapesImpl (Just ns) dim shape)
@@ -2660,7 +2660,7 @@ type family DiagEmbedShapeImpl (dim1 :: Nat) (dim2 :: Nat) (shape :: [Type->Type
   DiagEmbedShapeImpl dim1 dim2 shape n = Insert dim1 n (Insert (dim2 - 1) n (Init shape))
 
 type family DiagEmbedShape (index :: Nat) (dim1 :: Nat) (dim2 :: Nat) (shape :: [Type->Type]) :: [Type->Type] where
-  DiagEmbedShape index dim1 dim2 shape = DiagEmbedShapeImpl dim1 dim2 shape (Vector (ToNat (Last shape) + index))
+  DiagEmbedShape index dim1 dim2 shape = DiagEmbedShapeImpl dim1 dim2 shape (FromNat (ToNat (Last shape) + index))
 
 -- | diagEmbed
 --
@@ -2695,7 +2695,7 @@ type family DiagflatShapeImpl (d :: Type->Type) :: [Type->Type] where
   DiagflatShapeImpl d = '[d, d]
 
 type family DiagflatShape (index :: Nat) (shape :: [Type->Type]) :: [Type->Type] where
-  DiagflatShape index shape = DiagflatShapeImpl (Vector (Numel shape + index))
+  DiagflatShape index shape = DiagflatShapeImpl (FromNat (Numel shape + index))
 
 -- | diagflat
 --
@@ -3716,7 +3716,7 @@ type family Narrow' (dim :: Nat) (shape :: [a]) (current :: Maybe a) (start :: N
   Narrow' d sh (Just c) s l =
     If
       ((s + l) <=? ToNat c)
-      (ReplaceDim d sh (Vector l))
+      (ReplaceDim d sh (FromNat l))
       ( TypeError
           ( Text "The end of the requested narrow segment "
               :<>: ShowType (s + l)
@@ -4419,13 +4419,13 @@ type family RNNShape (shapeOrder :: RNNShapeOrder) (seqLen :: Nat) (batchSize ::
   RNNShape BatchFirst seqLen batchSize featureSize = '[batchSize, seqLen, featureSize]
   RNNShape SequenceFirst seqLen batchSize featureSize = '[seqLen, batchSize, featureSize]
 
-type LSTMWIShape hiddenSize inputSize = FMap Vector '[4 * hiddenSize, inputSize]
+type LSTMWIShape hiddenSize inputSize = FromNats  '[4 * hiddenSize, inputSize]
 
-type LSTMWHShape hiddenSize inputSize = FMap Vector '[4 * hiddenSize, hiddenSize]
+type LSTMWHShape hiddenSize inputSize = FromNats  '[4 * hiddenSize, hiddenSize]
 
-type LSTMBIShape hiddenSize inputSize = FMap Vector '[4 * hiddenSize]
+type LSTMBIShape hiddenSize inputSize = FromNats  '[4 * hiddenSize]
 
-type LSTMBHShape hiddenSize inputSize = FMap Vector '[4 * hiddenSize]
+type LSTMBHShape hiddenSize inputSize = FromNats  '[4 * hiddenSize]
 
 type family LSTMRImpl (inputSize :: Nat) (hiddenSize :: Nat) (numLayers :: Nat) (directionality :: RNNDirectionality) :: [[Type->Type]] where
   LSTMRImpl inputSize hiddenSize 1 'Unidirectional =
@@ -4522,7 +4522,7 @@ lstm tensorParameters dropoutProb dropoutOn (cc, hc) input =
       (rnnBatchFirst @shapeOrder)
   where
     hasBiases = True
-    hx :: [Tensor device dtype hxShape]
+    hx :: [Tensor' device dtype hxShape]
     hx = [cc, hc]
     numLayers :: I.Int64
     numLayers = fromIntegral $ natValI @numLayers
@@ -4550,13 +4550,13 @@ lstmCell wi wh bi bh (cc, hc) input =
   where
     hx = [cc, hc] :: [Tensor' device dtype '[batchSize, hiddenSize]]
 
-type GRUWIShape hiddenSize inputSize = FMap Vector '[3 * hiddenSize, inputSize]
+type GRUWIShape hiddenSize inputSize = FromNats  '[3 * hiddenSize, inputSize]
 
-type GRUWHShape hiddenSize inputSize = FMap Vector '[3 * hiddenSize, hiddenSize]
+type GRUWHShape hiddenSize inputSize = FromNats  '[3 * hiddenSize, hiddenSize]
 
-type GRUBIShape hiddenSize inputSize = FMap Vector '[3 * hiddenSize]
+type GRUBIShape hiddenSize inputSize = FromNats  '[3 * hiddenSize]
 
-type GRUBHShape hiddenSize inputSize = FMap Vector '[3 * hiddenSize]
+type GRUBHShape hiddenSize inputSize = FromNats  '[3 * hiddenSize]
 
 type family GRURImpl (inputSize :: Nat) (hiddenSize :: Nat) (numLayers :: Nat) (directionality :: RNNDirectionality) :: [[Type->Type]] where
   GRURImpl inputSize hiddenSize 1 'Unidirectional =
@@ -5126,15 +5126,15 @@ nllLoss ::
   forall reduction n c ds dtype device.
   (KnownReduction reduction, KnownNat n, KnownNat c, KnownShape ds) =>
   -- | weight
-  Tensor device dtype '[c] ->
+  Tensor' device dtype '[c] ->
   -- | ignore which index
   Int ->
   -- | prediction
-  Tensor device dtype (n ': c ': ds) ->
+  Tensor' device dtype (n ': c ': ds) ->
   -- | target
-  Tensor device 'D.Int64 (n ': ds) ->
+  Tensor' device 'D.Int64 (n ': ds) ->
   -- | loss
-  Tensor device dtype (ConditionalReduction (n ': ds) reduction)
+  Tensor' device dtype (ConditionalReduction (n ': ds) reduction)
 nllLoss weight ignoreIndex prediction target = case shapeVal @ds of
   [] ->
     unsafePerformIO $
@@ -5343,9 +5343,9 @@ adaptiveAvgPool2d ::
        ]
   ) =>
   -- | input
-  Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] ->
+  Tensor' device dtype '[batchSize, channelSize, inputSize0, inputSize1] ->
   -- | output
-  Tensor device dtype '[batchSize, channelSize, Torch.Typed.Aux.Fst outputSize, Torch.Typed.Aux.Snd outputSize]
+  Tensor' device dtype '[batchSize, channelSize, Torch.Typed.Aux.Fst outputSize, Torch.Typed.Aux.Snd outputSize]
 adaptiveAvgPool2d input =
   unsafePerformIO $
     ATen.cast2
@@ -5378,9 +5378,9 @@ mkldnnAdaptiveAvgPool2d ::
        ]
   ) =>
   -- | input
-  Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] ->
+  Tensor' device dtype '[batchSize, channelSize, inputSize0, inputSize1] ->
   -- | output
-  Tensor device dtype '[batchSize, channelSize, Torch.Typed.Aux.Fst outputSize, Torch.Typed.Aux.Snd outputSize]
+  Tensor' device dtype '[batchSize, channelSize, Torch.Typed.Aux.Fst outputSize, Torch.Typed.Aux.Snd outputSize]
 mkldnnAdaptiveAvgPool2d input =
   unsafePerformIO $
     ATen.cast2
@@ -5419,9 +5419,9 @@ adaptiveAvgPool3d ::
        ]
   ) =>
   -- | input
-  Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1, inputSize2] ->
+  Tensor' device dtype '[batchSize, channelSize, inputSize0, inputSize1, inputSize2] ->
   -- | output
-  Tensor device dtype '[batchSize, channelSize, Fst3 outputSize, Snd3 outputSize, Trd3 outputSize]
+  Tensor' device dtype '[batchSize, channelSize, Fst3 outputSize, Snd3 outputSize, Trd3 outputSize]
 adaptiveAvgPool3d input =
   unsafePerformIO $
     ATen.cast2
@@ -5455,10 +5455,10 @@ adaptiveMaxPool2d ::
        ]
   ) =>
   -- | input
-  Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] ->
+  Tensor' device dtype '[batchSize, channelSize, inputSize0, inputSize1] ->
   -- | output
-  ( Tensor device dtype '[batchSize, channelSize, Torch.Typed.Aux.Fst outputSize, Torch.Typed.Aux.Snd outputSize],
-    Tensor device 'D.Int64 '[batchSize, channelSize, Torch.Typed.Aux.Fst outputSize, Torch.Typed.Aux.Snd outputSize]
+  ( Tensor' device dtype '[batchSize, channelSize, Torch.Typed.Aux.Fst outputSize, Torch.Typed.Aux.Snd outputSize],
+    Tensor' device 'D.Int64 '[batchSize, channelSize, Torch.Typed.Aux.Fst outputSize, Torch.Typed.Aux.Snd outputSize]
   )
 adaptiveMaxPool2d input =
   unsafePerformIO $
@@ -5498,10 +5498,10 @@ adaptiveMaxPool3d ::
        ]
   ) =>
   -- | input
-  Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1, inputSize2] ->
+  Tensor' device dtype '[batchSize, channelSize, inputSize0, inputSize1, inputSize2] ->
   -- | output
-  ( Tensor device dtype '[batchSize, channelSize, Fst3 outputSize, Snd3 outputSize, Trd3 outputSize],
-    Tensor device 'D.Int64 '[batchSize, channelSize, Fst3 outputSize, Snd3 outputSize, Trd3 outputSize]
+  ( Tensor' device dtype '[batchSize, channelSize, Fst3 outputSize, Snd3 outputSize, Trd3 outputSize],
+    Tensor' device 'D.Int64 '[batchSize, channelSize, Fst3 outputSize, Snd3 outputSize, Trd3 outputSize]
   )
 adaptiveMaxPool3d input =
   unsafePerformIO $
@@ -5552,9 +5552,9 @@ avgPool2d ::
     ConvSideCheck inputSize1 (Torch.Typed.Aux.Snd kernelSize) (Torch.Typed.Aux.Snd stride) (Torch.Typed.Aux.Snd padding) outputSize1
   ) =>
   -- | input
-  Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] ->
+  Tensor' device dtype '[batchSize, channelSize, inputSize0, inputSize1] ->
   -- | output
-  Tensor device dtype '[batchSize, channelSize, outputSize0, outputSize1]
+  Tensor' device dtype '[batchSize, channelSize, outputSize0, outputSize1]
 avgPool2d input =
   unsafePerformIO $
     ATen.cast7
@@ -5612,9 +5612,9 @@ avgPool3d ::
     ConvSideCheck inputSize2 (Trd3 kernelSize) (Trd3 stride) (Trd3 padding) outputSize2
   ) =>
   -- | input
-  Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1, inputSize2] ->
+  Tensor' device dtype '[batchSize, channelSize, inputSize0, inputSize1, inputSize2] ->
   -- | output
-  Tensor device dtype '[batchSize, channelSize, outputSize0, outputSize1, outputSize2]
+  Tensor' device dtype '[batchSize, channelSize, outputSize0, outputSize1, outputSize2]
 avgPool3d input =
   unsafePerformIO $
     ATen.cast7
@@ -5691,8 +5691,8 @@ upsample_bilinear2d ::
   (KnownNat h, KnownNat w, All KnownNat shape) =>
   -- | if True, the corner pixels of the input and output tensors are aligned, and thus preserving the values at those pixels.
   Bool ->
-  Tensor device dtype shape ->
-  Tensor device dtype (Upsample2d shape h w)
+  Tensor' device dtype shape ->
+  Tensor' device dtype (Upsample2d shape h w)
 upsample_bilinear2d _align_corners _input =
   unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_bilinear2d_tlb) _input ([w, h] :: [Int]) _align_corners
   where
@@ -5707,8 +5707,8 @@ upsample_bicubic2d ::
   forall w h shape dtype device.
   (KnownNat h, KnownNat w, All KnownNat shape) =>
   Bool ->
-  Tensor device dtype shape ->
-  Tensor device dtype (Upsample2d shape h w)
+  Tensor' device dtype shape ->
+  Tensor' device dtype (Upsample2d shape h w)
 upsample_bicubic2d _align_corners _input = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_bicubic2d_tlb) _input ([w, h] :: [Int]) _align_corners
   where
     w = natValI @w :: Int
@@ -5727,8 +5727,8 @@ upsample_bicubic2d _align_corners _input = unsafePerformIO $ (ATen.cast3 ATen.Ma
 upsample_nearest2d ::
   forall w h shape dtype device.
   (KnownNat h, KnownNat w, All KnownNat shape) =>
-  Tensor device dtype shape ->
-  Tensor device dtype (Upsample2d shape h w)
+  Tensor' device dtype shape ->
+  Tensor' device dtype (Upsample2d shape h w)
 upsample_nearest2d _input = unsafePerformIO $ (ATen.cast2 ATen.Managed.upsample_nearest2d_tl) _input ([w, h] :: [Int])
   where
     w = natValI @w :: Int

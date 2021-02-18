@@ -129,13 +129,7 @@ instance (KnownNat n) => KnownDevice '( 'D.CUDA, n) where
 data Tensor (device :: (D.DeviceType, Nat)) (dtype :: D.DType) (shape :: [Type->Type]) where
   UnsafeMkTensor :: forall device dtype shape. {toDynamic :: D.Tensor} -> Tensor device dtype shape
 
-type Tensor' device dtype shape = Tensor device dtype (FMap Vector shape)
-
-data RGB a = RGB {
-  r :: a,
-  g :: a,
-  b :: a
-}
+type Tensor' device dtype shape = Tensor device dtype (FromNats shape)
 
 type CPUTensor = Tensor '( 'D.CPU, 0)
 

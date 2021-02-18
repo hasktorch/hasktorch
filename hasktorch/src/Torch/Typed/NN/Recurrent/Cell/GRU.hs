@@ -57,13 +57,13 @@ data
     (device :: (D.DeviceType, Nat))
   = GRUCell
       { -- | input-to-hidden weights
-        gruCell_w_ih :: Parameter device dtype '[3 * hiddenDim, inputDim],
+        gruCell_w_ih :: Parameter' device dtype '[3 * hiddenDim, inputDim],
         -- | hidden-to-hidden weights
-        gruCell_w_hh :: Parameter device dtype '[3 * hiddenDim, hiddenDim],
+        gruCell_w_hh :: Parameter' device dtype '[3 * hiddenDim, hiddenDim],
         -- | input-to-hidden bias
-        gruCell_b_ih :: Parameter device dtype '[3 * hiddenDim],
+        gruCell_b_ih :: Parameter' device dtype '[3 * hiddenDim],
         -- | hidden-to-hidden bias
-        gruCell_b_hh :: Parameter device dtype '[3 * hiddenDim]
+        gruCell_b_hh :: Parameter' device dtype '[3 * hiddenDim]
       }
   deriving (Show, Generic, Parameterized)
 
@@ -96,11 +96,11 @@ gruCellForward ::
   -- | The cell
   GRUCell inputDim hiddenDim dtype device ->
   -- | The current Hidden state
-  Tensor device dtype '[batchSize, hiddenDim] ->
+  Tensor' device dtype '[batchSize, hiddenDim] ->
   -- | The input
-  Tensor device dtype '[batchSize, inputDim] ->
+  Tensor' device dtype '[batchSize, inputDim] ->
   -- | The subsequent Hidden state
-  Tensor device dtype '[batchSize, hiddenDim]
+  Tensor' device dtype '[batchSize, hiddenDim]
 gruCellForward GRUCell {..} =
   gruCell
     (toDependent gruCell_w_ih)
@@ -118,11 +118,11 @@ gruFold ::
   ) =>
   GRUCell inputDim hiddenDim dtype device ->
   -- | The initial Hidden state
-  Tensor device dtype '[batchSize, hiddenDim] ->
+  Tensor' device dtype '[batchSize, hiddenDim] ->
   -- | The list of inputs
-  [Tensor device dtype '[batchSize, inputDim]] ->
+  [Tensor' device dtype '[batchSize, inputDim]] ->
   -- | The final Hidden state
-  Tensor device dtype '[batchSize, hiddenDim]
+  Tensor' device dtype '[batchSize, hiddenDim]
 gruFold cell = foldl' (gruCellForward cell)
 
 -- | scanl' for lists of tensors unsing a `GRUCell`
@@ -135,9 +135,9 @@ gruCellScan ::
   ) =>
   GRUCell inputDim hiddenDim dtype device ->
   -- | The initial Hidden state
-  Tensor device dtype '[batchSize, hiddenDim] ->
+  Tensor' device dtype '[batchSize, hiddenDim] ->
   -- | The list of inputs
-  [Tensor device dtype '[batchSize, inputDim]] ->
+  [Tensor' device dtype '[batchSize, inputDim]] ->
   -- | All subsequent Hidden states
-  [Tensor device dtype '[batchSize, hiddenDim]]
+  [Tensor' device dtype '[batchSize, hiddenDim]]
 gruCellScan cell = scanl' (gruCellForward cell)

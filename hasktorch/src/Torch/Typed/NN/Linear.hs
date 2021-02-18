@@ -40,8 +40,8 @@ data
   where
   Linear ::
     forall inputFeatures outputFeatures dtype device.
-    { linearWeight :: Parameter device dtype '[outputFeatures, inputFeatures],
-      linearBias :: Parameter device dtype '[outputFeatures]
+    { linearWeight :: Parameter' device dtype '[outputFeatures, inputFeatures],
+      linearBias :: Parameter' device dtype '[outputFeatures]
     } ->
     Linear inputFeatures outputFeatures dtype device
   deriving (Show, Generic, Parameterized)

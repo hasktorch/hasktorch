@@ -57,13 +57,13 @@ data
     (device :: (D.DeviceType, Nat))
   = LSTMCell
       { -- | input-to-hidden weights
-        lstmCell_w_ih :: Parameter device dtype '[4 * hiddenDim, inputDim],
+        lstmCell_w_ih :: Parameter' device dtype '[4 * hiddenDim, inputDim],
         -- | hidden-to-hidden weights
-        lstmCell_w_hh :: Parameter device dtype '[4 * hiddenDim, hiddenDim],
+        lstmCell_w_hh :: Parameter' device dtype '[4 * hiddenDim, hiddenDim],
         -- | input-to-hidden bias
-        lstmCell_b_ih :: Parameter device dtype '[4 * hiddenDim],
+        lstmCell_b_ih :: Parameter' device dtype '[4 * hiddenDim],
         -- | hidden-to-hidden bias
-        lstmCell_b_hh :: Parameter device dtype '[4 * hiddenDim]
+        lstmCell_b_hh :: Parameter' device dtype '[4 * hiddenDim]
       }
   deriving (Show, Generic, Parameterized)
 
