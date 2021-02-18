@@ -21,6 +21,18 @@ import qualified Torch.DType as D
 import qualified Torch.Device as D
 import Torch.HList
 
+type family ToNat (shape :: a) :: Nat
+
+type family ToNats (shape :: [a]) :: [Nat] where
+  ToNats '[] = '[]
+  ToNats (h ': t) = ToNat h ': ToNats t
+
+type family FromNat (shape :: Nat) :: Type->Type
+
+type family FromNats (shape :: [Nat]) :: [Type->Type] where
+  FromNats '[] = '[]
+  FromNats (h ': t) = FromNat h ': FromNats t
+
 natValI :: forall n. KnownNat n => Int
 natValI = fromIntegral $ natVal $ Proxy @n
 
@@ -204,12 +216,12 @@ type family ReverseImpl (l :: [a]) (acc :: [a]) :: [a] where
 
 type Reverse l = ReverseImpl l '[]
 
-type family ExtractDim (dim :: Nat) (shape :: [Nat]) :: Maybe Nat where
+type family ExtractDim (dim :: Nat) (shape :: [a]) :: Maybe a where
   ExtractDim 0 (h ': _) = Just h
   ExtractDim dim (_ ': t) = ExtractDim (dim - 1) t
   ExtractDim _ _ = Nothing
 
-type family ReplaceDim (dim :: Nat) (shape :: [Nat]) (n :: Nat) :: Maybe [Nat] where
+type family ReplaceDim (dim :: Nat) (shape :: [a]) (n :: a) :: Maybe [a] where
   ReplaceDim 0 (_ ': t) n = Just (n ': t)
   ReplaceDim dim (h ': t) n = AppendToMaybe h (ReplaceDim (dim - 1) t n)
   ReplaceDim _ _ _ = Nothing
@@ -218,9 +230,9 @@ type family If c t e where
   If 'True t e = t
   If 'False t e = e
 
-type family AllDimsPositive (shape :: [Nat]) :: Constraint where
+type family AllDimsPositive (shape :: [a]) :: Constraint where
   AllDimsPositive '[] = ()
-  AllDimsPositive (x ': xs) = If (1 <=? x) (AllDimsPositive xs) (TypeError (Text "Expected positive dimension but got " :<>: ShowType x :<>: Text "!"))
+  AllDimsPositive (x ': xs) = If (1 <=? ToNat x) (AllDimsPositive xs) (TypeError (Text "Expected positive dimension but got " :<>: ShowType x :<>: Text "!"))
 
 --------------------------------------------------------------------------------
 -- Operations
@@ -350,3 +362,11 @@ type family StandardDTypeValidation (device :: (D.DeviceType, Nat)) (dtype :: D.
     )
   StandardDTypeValidation '( 'D.CUDA, deviceIndex) dtype = DTypeIsNotBool '( 'D.CUDA, deviceIndex) dtype
   StandardDTypeValidation '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
+
+type family FMap (f :: l -> k) (as :: [l]) :: [k] where
+  FMap f '[] = '[]
+  FMap f (a ': as) = f a ': FMap f as
+
+type family FMapM (f :: l -> k) (as :: Maybe l) :: Maybe k where
+  FMapM f Nothing = Nothing
+  FMapM f (Just a) = Just (f a)

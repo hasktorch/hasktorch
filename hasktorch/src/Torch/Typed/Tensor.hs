@@ -53,6 +53,12 @@ import Torch.Typed.Aux
 import Prelude hiding (id, (.))
 import Data.Vector.Sized (Vector)
 import qualified Data.Vector.Sized as V
+import Data.Type.Equality
+
+type instance ToNat (Vector n) = n
+type instance ToNat (n :: Nat) = n
+
+type instance FromNat (n :: Nat) = Vector n
 
 class KnownShape (shape :: [Nat]) where
   shapeVal :: [Int]
@@ -120,8 +126,16 @@ instance (KnownNat n) => KnownDevice '( 'D.CPU, n) where
 instance (KnownNat n) => KnownDevice '( 'D.CUDA, n) where
   deviceVal = D.Device D.CUDA (natValInt16 @n)
 
-data Tensor (device :: (D.DeviceType, Nat)) (dtype :: D.DType) (shape :: [Nat]) where
+data Tensor (device :: (D.DeviceType, Nat)) (dtype :: D.DType) (shape :: [Type->Type]) where
   UnsafeMkTensor :: forall device dtype shape. {toDynamic :: D.Tensor} -> Tensor device dtype shape
+
+type Tensor' device dtype shape = Tensor device dtype (FMap Vector shape)
+
+data RGB a = RGB {
+  r :: a,
+  g :: a,
+  b :: a
+}
 
 type CPUTensor = Tensor '( 'D.CPU, 0)
 
@@ -142,16 +156,16 @@ type family ComputeItemType (ty :: Type) (shape :: [Nat]) :: Type where
   ComputeItemType ty (_ ': h ': t) = [ComputeItemType ty (h ': t)]
 
 instance
-  ( D.TensorLike [ComputeItemType (ComputeHaskellType dtype) shape],
+  ( D.TensorLike [ComputeItemType (ComputeHaskellType dtype) (ToNats shape)],
     KnownDevice device,
-    KnownShape shape
+    KnownShape (ToNats shape)
   ) =>
   IsList (Maybe (Tensor device dtype shape))
   where
-  type Item (Maybe (Tensor device dtype shape)) = ComputeItemType (ComputeHaskellType dtype) shape
+  type Item (Maybe (Tensor device dtype shape)) = ComputeItemType (ComputeHaskellType dtype) (ToNats shape)
   fromList xs = do
     shapeXs <- D._deepDims xs
-    if shapeVal @shape == shapeXs
+    if shapeVal @(ToNats shape) == shapeXs
       then return $ UnsafeMkTensor . D.toDevice (deviceVal @device) . D.asTensor $ xs
       else Nothing
   toList Nothing = []
@@ -174,7 +188,7 @@ instance KnownDevice device => Fractional (Tensor device dtype shape) where
 instance Show (Tensor device dtype shape) where
   show (UnsafeMkTensor dynamic) = show dynamic
 
-class TensorOptions (shape :: [Nat]) (dtype :: D.DType) (device :: (D.DeviceType, Nat)) where
+class TensorOptions (shape :: [Type->Type]) (dtype :: D.DType) (device :: (D.DeviceType, Nat)) where
   optionsRuntimeShape :: [Int]
   optionsRuntimeDType :: D.DType
   optionsRuntimeDevice :: D.Device
@@ -184,8 +198,8 @@ instance (KnownDType dtype, KnownDevice device) => TensorOptions '[] dtype devic
   optionsRuntimeDType = dtypeVal @dtype
   optionsRuntimeDevice = deviceVal @device
 
-instance (KnownNat h, TensorOptions t dtype device) => TensorOptions (h ': t) dtype device where
-  optionsRuntimeShape = natValI @h : optionsRuntimeShape @t @dtype @device
+instance (KnownNat (ToNat h), TensorOptions t dtype device) => TensorOptions (h ': t) dtype device where
+  optionsRuntimeShape = natValI @(ToNat h) : optionsRuntimeShape @t @dtype @device
   optionsRuntimeDType = optionsRuntimeDType @t @dtype @device
   optionsRuntimeDevice = optionsRuntimeDevice @t @dtype @device
 
@@ -198,14 +212,14 @@ type family All (pred :: a -> Constraint) (l :: [a]) :: Constraint where
   All pred (h ': t) = (pred h, All pred t)
 
 data SomeShape where
-  SomeShape :: forall (shape :: [Nat]). KnownShape shape => Proxy shape -> SomeShape
+  SomeShape :: forall (shape :: [Type->Type]). KnownShape (ToNats shape) => Proxy shape -> SomeShape
 
 someShape :: [Int] -> SomeShape
 someShape [] = SomeShape $ Proxy @'[]
 someShape (h : t) = case someNatVal (fromIntegral h) of
   Nothing -> error "Negative dimension in someShape!"
   (Just (SomeNat (Proxy :: Proxy ht))) -> case someShape t of
-    (SomeShape (Proxy :: Proxy tt)) -> SomeShape $ Proxy @(ht ': tt)
+    (SomeShape (Proxy :: Proxy tt)) -> SomeShape $ Proxy @(Vector ht ': tt)
 
 data SomeDType where
   SomeDType :: forall (dtype :: D.DType). KnownDType dtype => Proxy dtype -> SomeDType
@@ -234,7 +248,7 @@ someDevice D.Device {..} = case someNatVal (fromIntegral deviceIndex) of
 withTensor ::
   D.Tensor ->
   ( forall shape dtype device.
-    KnownShape shape =>
+    KnownShape (ToNats shape) =>
     Tensor device dtype shape ->
     r
   ) ->
@@ -248,15 +262,20 @@ withTensor untypedTensor f = case someShape (D.shape untypedTensor) of
 -- Broadcast type-level function
 --------------------------------------------------------------------------------
 
-type family ComputeBroadcast (reversedShape :: [Nat]) (reversedShape' :: [Nat]) :: Maybe [Nat] where
+type family ComputeBroadcast (reversedShape :: [a]) (reversedShape' :: [a]) :: Maybe [a] where
   ComputeBroadcast '[] reversedShape = Just reversedShape
   ComputeBroadcast reversedShape '[] = Just reversedShape
-  ComputeBroadcast (h ': t) (h ': t2) = AppendToMaybe h (ComputeBroadcast t t2)
-  ComputeBroadcast (h ': t) (1 ': t2) = AppendToMaybe h (ComputeBroadcast t t2)
-  ComputeBroadcast (1 ': t) (h ': t2) = AppendToMaybe h (ComputeBroadcast t t2)
+  ComputeBroadcast (h0 ': t) (h1 ': t2) =
+    If (ToNat h0 == ToNat h1) 
+       (AppendToMaybe h0 (ComputeBroadcast t t2))
+       (If (ToNat h0 == 1)
+           (AppendToMaybe h0 (ComputeBroadcast t t2))
+           (If (ToNat h1 == 1)
+              (AppendToMaybe h1 (ComputeBroadcast t t2))
+              Nothing))
   ComputeBroadcast _ _ = Nothing
 
-type family CheckBroadcast (shape :: [Nat]) (shape' :: [Nat]) (result :: Maybe [Nat]) :: [Nat] where
+type family CheckBroadcast (shape :: [a]) (shape' :: [a]) (result :: Maybe [a]) :: [a] where
   CheckBroadcast shape shape' Nothing =
     TypeError
       ( Text "The shapes "
@@ -344,13 +363,13 @@ ne a b = UnsafeMkTensor $ D.ne (toDynamic a) (toDynamic b)
 (==.) = eq
 (/=.) = ne
 
-type family ComputeMatMul (reversedShape :: [Nat]) (reversedShape' :: [Nat]) :: Maybe [Nat] where
+type family ComputeMatMul (reversedShape :: [a]) (reversedShape' :: [a]) :: Maybe [a] where
   ComputeMatMul (k ': '[]) (k ': '[]) = Just '[]
   ComputeMatMul (k ': '[]) (m ': k ': reversedBroadcastShape') = AppendToMaybe m (ComputeBroadcast '[] reversedBroadcastShape')
   ComputeMatMul (k ': n ': reversedBroadcastShape) (k ': '[]) = AppendToMaybe n (ComputeBroadcast '[] reversedBroadcastShape)
   ComputeMatMul (k ': n ': reversedBroadcastShape) (m ': k ': reversedBroadcastShape') = AppendToMaybe m (AppendToMaybe n (ComputeBroadcast reversedBroadcastShape reversedBroadcastShape'))
 
-type family CheckMatMul (shape :: [Nat]) (shape' :: [Nat]) (result :: Maybe [Nat]) :: [Nat] where
+type family CheckMatMul (shape :: [a]) (shape' :: [a]) (result :: Maybe [a]) :: [a] where
   CheckMatMul shape shape' Nothing =
     TypeError
       ( Text "The shapes "
@@ -387,8 +406,8 @@ select ::
   forall dim idx shape' shape dtype device.
   ( KnownNat dim,
     KnownNat idx,
-    InRange shape dim idx,
-    shape' ~ Remove shape dim
+    InRange (ToNats shape) dim idx,
+    (ToNats shape') ~ Remove (ToNats shape) dim
   ) =>
   Tensor device dtype shape ->
   Tensor device dtype shape'
@@ -397,17 +416,17 @@ select t = UnsafeMkTensor $ D.select (natValI @dim) (natValI @idx) (toDynamic t)
 selectIdx ::
   forall dim n shape' shape dtype device.
   ( KnownNat dim,
-    n ~ Index shape dim,
-    shape' ~ Remove shape dim
+    n ~ Index (ToNats shape) dim,
+    ToNats shape' ~ Remove (ToNats shape) dim
   ) =>
   Tensor device dtype shape ->
   Finite n ->
   Tensor device dtype shape'
 selectIdx t idx = UnsafeMkTensor $ D.select (natValI @dim) (getFiniteI idx) (toDynamic t)
 
-type family Numel (shape :: [Nat]) :: Nat where
+type family Numel (shape :: [a]) :: Nat where
   Numel '[] = 1
-  Numel (h ': t) = h * (Numel t)
+  Numel (h ': t) = (ToNat h) * (Numel t)
 
 -- | reshape
 -- >>> t :: CPUTensor 'D.Int64 '[2,3,4] = fromJust [[[111,112,113,114],[121,122,123,124],[131,132,133,134]],[[211,212,213,214],[221,222,223,224],[231,232,233,234]]]
@@ -418,12 +437,13 @@ type family Numel (shape :: [Nat]) :: Nat where
 -- [[[111,112,113,114],[121,122,123,124],[131,132,133,134]],[[211,212,213,214],[221,222,223,224],[231,232,233,234]]]
 reshape ::
   forall shape' shape dtype device.
-  ( KnownShape shape',
+  ( KnownShape (ToNats shape),
+    KnownShape (ToNats shape'),
     Numel shape ~ Numel shape'
   ) =>
   Tensor device dtype shape ->
   Tensor device dtype shape'
-reshape t = UnsafeMkTensor $ D.reshape (shapeVal @shape') (toDynamic t)
+reshape t = UnsafeMkTensor $ D.reshape (shapeVal @(ToNats shape)) (toDynamic t)
 
 instance Castable (Tensor device dtype shape) D.ATenTensor where
   cast (UnsafeMkTensor (D.Unsafe aten_tensor)) f = f aten_tensor

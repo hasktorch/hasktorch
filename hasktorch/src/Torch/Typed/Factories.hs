@@ -141,7 +141,7 @@ linspace ::
   forall steps device start end.
   ( D.Scalar start,
     D.Scalar end,
-    KnownNat steps,
+    KnownNat (ToNat steps),
     TensorOptions '[steps] 'D.Float device
   ) =>
   -- | start
@@ -155,7 +155,7 @@ linspace start end =
     D.linspace
       start
       end
-      (natValI @steps)
+      (natValI @(ToNat steps))
       ( D.withDevice (optionsRuntimeDevice @'[steps] @D.Float @device)
           . D.withDType (optionsRuntimeDType @'[steps] @D.Float @device)
           $ D.defaultOpts
@@ -163,7 +163,7 @@ linspace start end =
 
 eyeSquare ::
   forall n dtype device.
-  ( KnownNat n,
+  ( KnownNat (ToNat n),
     TensorOptions '[n, n] dtype device
   ) =>
   -- | output
@@ -171,7 +171,7 @@ eyeSquare ::
 eyeSquare =
   UnsafeMkTensor $
     D.eyeSquare
-      (natValI @n)
+      (natValI @(ToNat n))
       ( D.withDevice (optionsRuntimeDevice @'[n, n] @dtype @device)
           . D.withDType (optionsRuntimeDType @'[n, n] @dtype @device)
           $ D.defaultOpts
