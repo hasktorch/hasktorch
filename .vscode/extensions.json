@@ -1,0 +1,11 @@
+{
+	"recommendations": [
+		"haskell.haskell"
+	],
+	"unwantedRecommendations": [
+		"alanz.vscode-hie-server",
+		"hoovercj.vscode-ghc-mod",
+		"dramforever.vscode-ghc-simple",
+		"ucl.haskelly"
+	]
+}
