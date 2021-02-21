@@ -1,17 +1,20 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Torch.Data.Parser where
 
-import Control.Applicative (Alternative (..), liftA2)
+import Control.Applicative (Alternative (..), liftA2, optional)
 import Control.Monad (MonadPlus, mfilter, replicateM)
+import Control.Monad.Logic
 import Control.Monad.State (StateT (..))
+import Control.Monad.Trans (MonadTrans (lift))
 import Control.Monad.Trans.Free (FreeF (..), FreeT (..), iterTM)
 import Data.Char (isAlpha, isAlphaNum, isDigit, isSpace)
 import Data.Foldable (asum)
 import Data.Functor (($>))
 import Data.Kind (Type)
-import Data.List (uncons)
+import Data.List
 
 -- | @Parser b i a@ is a parser that consumes a stream of @i@ tokens and as a
 -- result yields a value of type @a@, while operating under the @b@
@@ -114,11 +117,37 @@ manyTill p end = scan where scan = (end $> []) <|> liftA2 (:) p scan
 many1Till :: Alternative f => f a -> f b -> f [a]
 many1Till p end = liftA2 (:) p (manyTill p end)
 
+-- | Stateful scanner.
+--
+-- >>> :{
+--   f s a | "ell" `isInfixOf` (s ++ [a]) = Nothing
+--         | otherwise                    = Just (s ++ [a])
+-- :}
+-- >>> head $ parseString @[] (scan f "" token) "hello 123"
+scan :: (Alternative m, Monad m) => (s -> a -> Maybe s) -> s -> m a -> m [a]
+scan f s p = many_p s
+  where
+    many_p s = many1_p s <|> pure []
+    many1_p s = p >>= \a -> maybe empty (fmap (a :) . many_p) (f s a)
+
 -- | @repeatP n p@ applies the parser @p@ @n@ times and returns
 -- every parsing result. If parsing of @p@ succeeds less the @n@ times,
 -- @repeatP n p@ fails.
 repeatP :: Monad m => Int -> m a -> m [a]
 repeatP = replicateM
+
+-- | @atMost n p@ applies the parser @p@ at most @n@ times and returns
+-- every parsing result. If parsing of @p@ succeeds less the @n@ times,
+-- @repeatP n p@ succeeds as well.
+--
+-- >>> head $ parseString @[] (atMost 2 (is 'a')) "aaaaaab"
+-- ("aa","aaaab")
+atMost :: (Alternative m, Monad m) => Int -> m a -> m [a]
+atMost n =
+  let f s _
+        | s >= n = Nothing
+        | otherwise = Just (s + 1)
+   in scan f 0
 
 -- | @skipMany p@ skips /zero/ or more instances of the parser @p@.
 -- The parsing results are discarded.
@@ -134,18 +163,18 @@ skipMany1 p = p *> skipMany p
 -- separated by @sep@. Returns a list of the values returned by @p@ and
 -- discards the results of @sep@.
 sepBy :: Alternative f => f a -> f sep -> f [a]
-sepBy p sep = liftA2 (:) p ((sep *> sepBy1 p sep) <|> pure []) <|> pure []
+sepBy p sep = (p `sepBy1` sep) <|> pure []
 
 -- | @sepBy1 p sep@ applies /one/ or more occurrences of the parser @p@,
 -- separated by @sep@. Returns a list of the values returned by @p@ and
 -- discards the results of @sep@.
 sepBy1 :: Alternative f => f a -> f sep -> f [a]
-sepBy1 p sep = scan where scan = liftA2 (:) p ((sep *> scan) <|> pure [])
+sepBy1 p sep = (:) <$> p <*> many (sep *> p)
 
 -- | @maybeP p@ applies the parser @p@ optionally and returns the result
 -- wrapped in @Maybe@.
 maybeP :: Alternative f => f a -> f (Maybe a)
-maybeP p = option Nothing (Just <$> p)
+maybeP = optional
 
 -- | @eitherP p p'@ combines the two alternatives @p@ and @p'@.
 eitherP :: Alternative f => f a -> f b -> f (Either a b)
@@ -174,16 +203,23 @@ between open close p = open *> p <* close
 
 -- | @isString s@ is a simple parser that consumes 'Char' tokens and yields them
 -- if and only if they assemble the 'String' @s@. Otherwise, the parser fails.
-isString :: MonadPlus b => String -> Parser b Char String
+isString :: (Traversable t, MonadPlus b, Eq i) => t i -> Parser b i (t i)
 isString = traverse is
 
-isNotString :: MonadPlus b => String -> Parser b Char String
-isNotString = traverse isNot
-
-string :: MonadPlus b => Parser b Char String
+-- | @string@ matches any string
+--
+-- >>> parseString @[] string "a string"
+-- [("a string",""),("a strin","g"),("a stri","ng"),("a str","ing"),("a st","ring"),("a s","tring"),("a ","string"),("a"," string"),("","a string")]
+-- >>> p = string @[] >>= \s -> (guard ("dog" `isInfixOf` s) >> pure s)
+-- >>> head $ parseString p "this is a string with a dog"
+-- ("this is a string with a dog","")
+-- >>> p = string @[] >>= \s -> (guard (not $ "dog" `isInfixOf` s) >> pure s)
+-- >>> head $ parseString p "this is also string with a dog"
+-- ("this is also string with a do","g")
+string :: MonadPlus b => Parser b i [i]
 string = many token
 
-string1 :: MonadPlus b => Parser b Char String
+string1 :: MonadPlus b => Parser b i [i]
 string1 = many1 token
 
 space :: MonadPlus b => Parser b Char String

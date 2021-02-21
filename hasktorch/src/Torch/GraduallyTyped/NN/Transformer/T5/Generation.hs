@@ -16,17 +16,18 @@
 
 module Torch.GraduallyTyped.NN.Transformer.T5.Generation where
 
-import Control.Applicative (Alternative (..))
+import Control.Applicative (Alternative (..), liftA2)
 import Control.Monad (MonadPlus (..), guard)
 import Control.Monad.Logic (observe)
 import Control.Monad.State (MonadState (..), MonadTrans (..), StateT (..), evalStateT, gets, lift, modify)
 import Control.Monad.Trans.Free (FreeF (..), FreeT (..), runFreeT)
 import Data.Foldable (asum)
-import Data.List (nub, sortOn, uncons)
+import Data.Functor (($>))
+import Data.List (isInfixOf, nub, sortOn, uncons)
 import qualified Data.Map as Map (Map, lookup, (!))
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
-import Torch.Data.Parser (Parser, between, is, isString, manyTill, parseString, recurse, space, token)
+import Torch.Data.Parser (Parser, between, combine, is, isString, manyTill, parseString, recurse, scan, space, token)
 import Torch.GraduallyTyped.DType (DataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
@@ -311,18 +312,20 @@ transParser vocab = FreeT . fmap (fmap (transParser vocab) . transFreeF) . runFr
           go (c : cs) p = do
             val <- lift $ runFreeT p
             case val of
-              Pure a -> pure a
-              -- pure . unsafePerformIO $ do
-              -- putStrLn $ "pure cs: " <> show cs
-              -- pure a
-              Free feed -> go cs (feed c)
-       in -- unsafePerformIO $ do
-          -- putStrLn $ "recurse c: " <> show c
-          -- pure $ go cs (feed c)
-          Free feed'
+              Pure a ->
+                -- pure . unsafePerformIO $ do
+                --   putStrLn $ "pure cs: " <> show cs
+                --   pure a
+                pure a
+              Free feed ->
+                -- unsafePerformIO $ do
+                --   putStrLn $ "recurse c: " <> show c
+                --   pure $ go cs (feed c)
+                go cs (feed c)
+       in Free feed'
 
 -- | Get continuations from model
--- TODO: memoization? first, measure cache hits
+-- TODO: memoization? measure cache hits
 getIs ::
   forall model input generator b decoderInput encoderOutput decoderOutput inputPaddingMask s.
   ( Alternative b,
@@ -357,10 +360,11 @@ getIs ::
       (T5Output decoderOutput encoderOutput inputPaddingMask)
       generator
   ) =>
+  Int ->
   model ->
   input ->
   StateT s (StateT [Int] b) Int
-getIs model input = do
+getIs n model input = do
   -- tokens <- reverse <$> lift get
   tokens <- do
     ts <- reverse <$> lift get
@@ -387,28 +391,29 @@ getIs model input = do
     . logSoftmax @( 'SelectDim ( 'ByIndex 2))
     $ decoderOutput of
     Sorted _ (UnsafeTensor indices) ->
-      let indices' = last . head . Torch.Tensor.asValue @[[[Int]]] . Torch.Tensor.Unsafe $ indices
+      let indices' = take n . last . head . Torch.Tensor.asValue @[[[Int]]] . Torch.Tensor.Unsafe $ indices
        in lift . lift . asum $ pure <$> indices'
 
 runParser ::
   forall model input generator b a.
   _ =>
+  Int ->
   model ->
   input ->
   generator ->
   Parser (StateT [Int] b) Int a ->
   b (a, [Int])
-runParser model input g =
+runParser n model input g =
   flip runStateT []
     . flip evalStateT (Nothing, g)
-    . recurse (next (getIs model input))
+    . recurse (next (getIs n model input))
 
 testParser = do
   input <- do
-    -- let tokens = [[13959, 1566, 12, 2968, 10, 6536, 43, 2008, 24, 293, 53, 3, 9, 1782, 19, 207, 21, 25, 1]]
+    let tokens = [[13959, 1566, 12, 2968, 10, 6536, 43, 2008, 24, 293, 53, 3, 9, 1782, 19, 207, 21, 25, 1]]
     -- let tokens = [[13959, 1566, 12, 2968, 10, 148, 31, 60, 423, 13, 3, 7, 10536, 55, 1]]
     -- let tokens = [[13959, 1566, 12, 2968, 10, 3, 31, 7, 15, 3437, 3, 17, 4416, 4350, 6, 3476, 599, 1935, 61, 45, 4219, 38, 3, 17, 536, 1715, 14939, 38, 3, 17, 357, 30, 3, 17, 5411, 2427, 12925, 834, 23, 26, 3274, 3, 17, 4416, 2427, 12925, 834, 23, 26, 563, 57, 3, 17, 5411, 2427, 12925, 834, 23, 26, 31, 1]]
-    let tokens = [[13959, 1566, 12, 2968, 10, 96, 3, 23143, 14196, 332, 4416, 4350, 6, 2847, 17161, 599, 1935, 61, 21680, 4219, 6157, 332, 536, 3, 15355, 3162, 14939, 6157, 332, 357, 9191, 332, 5411, 2427, 12925, 834, 23, 26, 3274, 332, 4416, 2427, 12925, 834, 23, 26, 350, 4630, 6880, 272, 476, 3, 17, 5411, 2427, 12925, 834, 23, 26, 96, 1]]
+    -- let tokens = [[13959, 1566, 12, 2968, 10, 96, 3, 23143, 14196, 332, 4416, 4350, 6, 2847, 17161, 599, 1935, 61, 21680, 4219, 6157, 332, 536, 3, 15355, 3162, 14939, 6157, 332, 357, 9191, 332, 5411, 2427, 12925, 834, 23, 26, 3274, 332, 4416, 2427, 12925, 834, 23, 26, 350, 4630, 6880, 272, 476, 3, 17, 5411, 2427, 12925, 834, 23, 26, 96, 1]]
     print $ length <$> tokens
     print $ ((t5Vocab Map.!) <$>) <$> tokens
     mkT5Input
@@ -420,12 +425,32 @@ testParser = do
       @(T5Small 'WithLMHead ( 'Device 'CPU))
       "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-small.pt"
   g <- mkGenerator @( 'Device CPU) 0
-  let outputs = runParser model input g (transParser t5Vocab t5Sql)
+  let outputs = runParser 5 model input g (transParser t5Vocab t5Test)
   pure . fst $ observe outputs
 
 -- | @t5Text@ parses a 'Char' sequence delimited by @</s>@ as a 'String'.
 t5Text :: MonadPlus b => Parser b Char String
 t5Text = manyTill token (isString "</s>")
+
+-- >>> head $ parseString @[] t5Test "Studien haben belegt, dass es gut ist, einen Hund zu haben</s>"
+-- []
+t5Test :: MonadPlus b => Parser b Char String
+t5Test =
+  notEnd 25
+    `combine` isString "belegt"
+    `combine` notEnd 5
+    `combine` isString "dass es"
+    `combine` notEnd 25
+    `combine` isString "haben"
+    `combine` isString "</s>"
+  where
+    notEnd n = scan f "" token
+      where
+        f s a = case s ++ [a] of
+          s'
+            | "</s>" `isInfixOf` s' -> Nothing
+            | length s' > n -> Nothing
+            | otherwise -> Just s'
 
 -- | @t5Sql@ parses a 'Char' sequence starting with @\"@ and ending with @\" </s>@
 -- as 'SpiderSQL'.
