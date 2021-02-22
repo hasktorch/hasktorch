@@ -2,13 +2,15 @@
 title: Getting Started
 ---
 
-# Installation
+# Getting Started
+
+## Installation
 
 Installation guides for supported platforms can be found in the [readme][readme-getting-started].
 
 [readme-getting-started]: https://github.com/hasktorch/hasktorch#getting-started
 
-# Editor integration
+## Editor integration
 
 Hasktorch strives to present an ergonomic, strongly-typed interface
 for developing numerical algorithms. Certain interactive IDE features
@@ -19,6 +21,6 @@ preferred editor.
 
 [hls]: https://github.com/haskell/haskell-language-server
 
-# Getting help
+## Getting help
 
 TODO; mention Slack channel, what else?

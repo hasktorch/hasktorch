@@ -1,6 +1,8 @@
 ---
-title: Walkthrough
+title: Tensors
 ---
+
+# Tensors
 
 To get the most out of the walkthrough, we encourage you to follow
 along with the examples in a GHCi session.
@@ -15,8 +17,6 @@ import Torch
 import Inliterate.Import (AskInliterate)
 instance AskInliterate Tensor
 ```
-
-# Tensors
 
 A `Tensor` in Hasktorch is multidimensional array with a fixed shape
 and element type.
@@ -65,10 +65,10 @@ zeros :: [Int] -> Torch.TensorOptions -> Tensor
 `Torch.TensorOptions.defaultOpts` and modifying using one or more of
 the following:
 
-- `Torch.TensorOptions.withDType` configures the data type of the
+- `withDType` configures the data type of the
     elements
 
-- `Torch.TensorOptions.withDevice` configures on which device the
+- `withDevice` configures on which device the
     tensor is to be used
 
 - others (see `Torch.TensorOptions`)
@@ -115,8 +115,8 @@ relu (asTensor ([-1.0, -0.5, 0.5, 1] :: [Float]))
 `Torch.Tensor.select` slices out a selection by specifying a dimension
 and index:
 
-```haskell top
-x = asTensor ([[[1, 2, 3]], [[4, 5, 6]], [[7, 8, 9]], [[10, 11, 12]]] :: [[[Int]]])
+```haskell do
+let x = asTensor ([[[1, 2, 3]], [[4, 5, 6]], [[7, 8, 9]], [[10, 11, 12]]] :: [[[Int]]])
 ```
 
 ```haskell eval
@@ -127,12 +127,12 @@ shape x
 select 2 1 x
 ```
 
-```haskell top
-y = asTensor ([1, 2, 3] :: [Int])
+```haskell do
+let y = asTensor ([1, 2, 3] :: [Int])
 ```
 
 ```haskell eval
-Torch.select 0 1 y
+select 0 1 y
 ```
 
 Values can be extracted from a tensor using `asValue` so long as the
@@ -141,3 +141,4 @@ dtype matches the Haskell type:
 ```haskell eval
 let x = asTensor ([2] :: [Int]); y = asValue x :: Int in y
 ```
+
