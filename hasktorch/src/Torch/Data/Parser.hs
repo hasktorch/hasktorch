@@ -9,7 +9,7 @@ module Torch.Data.Parser where
 import Control.Applicative (Alternative (..), liftA2, optional)
 import Control.Monad (MonadPlus, mfilter, replicateM)
 import Control.Monad.Logic
-import Control.Monad.State (StateT (..))
+import Control.Monad.State (MonadState, StateT (..), get, put)
 import Control.Monad.Trans (MonadTrans (lift))
 import Control.Monad.Trans.Free (FreeF (..), FreeT (..), iterTM)
 import Data.Char (isAlpha, isAlphaNum, isDigit, isSpace)
@@ -41,57 +41,31 @@ type Parser
 
 instance (Applicative f, MonadLogic b) => MonadLogic (FreeT f b) where
   -- msplit :: FreeT f b a -> FreeT f b (Maybe (a, FreeT f b a))
-  msplit (FreeT b) = FreeT $ do
-    r <- msplit b
-    case r of
-      Nothing -> pure . Pure $ Nothing
-      Just (val, b') ->
-        case val of
-          Pure a -> pure . Pure $ Just (a, FreeT b')
-          Free w -> do
-            r' <- msplit b'
-            case r' of
-              Nothing -> pure . Free $ fmap (msplit . asum @[]) (fmap pure w)
-              Just (val', b'') ->
-                case val' of
-                  Pure a' -> pure . Pure $ Just (a', FreeT b'')
-                  Free w' -> do
-                    r'' <- msplit b''
-                    case r'' of
-                      Nothing -> pure . Free $ fmap (msplit . asum) (liftA2 (:) w (fmap pure w'))
-                      Just (val'', b''') ->
-                        case val'' of
-                          Pure a'' -> pure . Pure $ Just (a'', FreeT b''')
-                          Free w'' -> pure . Free $ fmap (msplit . asum) (liftA2 (:) w (liftA2 (:) w' (fmap pure w'')))
+  msplit (FreeT b) = FreeT $ go b []
+    where
+      go b ws = do
+        r <- msplit b
+        case r of
+          Nothing -> pure $ case ws of
+            [] -> Pure Nothing
+            (w : ws) ->
+              let go' fas [] = fas
+                  go' fas (w : ws) = go' (liftA2 (:) w fas) ws
+               in Free $ fmap (msplit . asum) (go' (fmap pure w) ws)
+          Just (val, b') ->
+            case val of
+              Pure a -> pure . Pure $ Just (a, FreeT b')
+              Free w -> go b' (w : ws)
 
--- Free w -> pure . Free $ fmap (fmap f) w -- don't recurse
--- Free w -> pure . Free $ fmap msplit w -- throw away b'
--- Free w -> do
--- pure . Free $ fmap msplit w
--- runFreeT $ msplit $ FreeT b'
--- Free w ->
---   pure . Free $ fmap (q (FreeT b')) w
--- where
---   q :: forall f b a. (Functor f, MonadLogic b) => FreeT f b a -> FreeT f b a -> FreeT f b (Maybe (a, FreeT f b a))
---   -- q b a = fmap (fmap (\(a, x) -> (a, x <|> b))) (msplit a)
---   q b a = msplit ( a <|> b)
+  ifte t th el = msplit t >>= maybe el (\(a, m) -> th a <|> (m >>= th))
 
--- interleave (FreeT b) (FreeT b') = FreeT (b `interleave` b')
+  once m = do
+    (a, _) <- maybe empty pure =<< msplit m
+    pure a
 
--- FreeT b >>- f =
---   FreeT $
---     b >>- \case
---       Pure a -> runFreeT (f a)
---       Free w -> pure . Free $ fmap (>>- f) w
+  lnot m = ifte (once m) (const empty) (pure ())
 
--- ifte t th el =
---   let th' (Pure a) = runFreeT (th a)
---       th' (Free w) = pure . Free $ fmap (>>- th) w
---    in FreeT $ ifte undefined undefined undefined -- (runFreeT t) th' (runFreeT el)
-
--- once (FreeT b) = FreeT $ once b
-
--- lnot m = ifte (once m) (const empty) (pure ())
+-- notFollowedBy p = msplit p >>= maybe (pure ()) (const empty)
 
 -- | Recurse over a parser.
 --
@@ -141,7 +115,7 @@ isNot i = satisfy (/= i)
 -- | @choice ps@ tries to apply the parsers in the list @ps@ in order,
 -- until one of them succeeds. Returns the value of the succeeding
 -- parser.
-choice :: Alternative f => [f a] -> f a
+choice :: (Foldable t, Alternative f) => t (f a) -> f a
 choice = asum
 
 -- | @option a p@ tries to apply parser @p@. If the parser @p@ fails,
