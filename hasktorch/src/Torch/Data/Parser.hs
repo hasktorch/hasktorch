@@ -1,4 +1,6 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -36,6 +38,60 @@ type Parser
   (i :: Type)
   (a :: Type) =
   FreeT ((->) i) b a
+
+instance (Applicative f, MonadLogic b) => MonadLogic (FreeT f b) where
+  -- msplit :: FreeT f b a -> FreeT f b (Maybe (a, FreeT f b a))
+  msplit (FreeT b) = FreeT $ do
+    r <- msplit b
+    case r of
+      Nothing -> pure . Pure $ Nothing
+      Just (val, b') ->
+        case val of
+          Pure a -> pure . Pure $ Just (a, FreeT b')
+          Free w -> do
+            r' <- msplit b'
+            case r' of
+              Nothing -> pure . Free $ fmap (msplit . asum @[]) (fmap pure w)
+              Just (val', b'') ->
+                case val' of
+                  Pure a' -> pure . Pure $ Just (a', FreeT b'')
+                  Free w' -> do
+                    r'' <- msplit b''
+                    case r'' of
+                      Nothing -> pure . Free $ fmap (msplit . asum) (liftA2 (:) w (fmap pure w'))
+                      Just (val'', b''') ->
+                        case val'' of
+                          Pure a'' -> pure . Pure $ Just (a'', FreeT b''')
+                          Free w'' -> pure . Free $ fmap (msplit . asum) (liftA2 (:) w (liftA2 (:) w' (fmap pure w'')))
+
+-- Free w -> pure . Free $ fmap (fmap f) w -- don't recurse
+-- Free w -> pure . Free $ fmap msplit w -- throw away b'
+-- Free w -> do
+-- pure . Free $ fmap msplit w
+-- runFreeT $ msplit $ FreeT b'
+-- Free w ->
+--   pure . Free $ fmap (q (FreeT b')) w
+-- where
+--   q :: forall f b a. (Functor f, MonadLogic b) => FreeT f b a -> FreeT f b a -> FreeT f b (Maybe (a, FreeT f b a))
+--   -- q b a = fmap (fmap (\(a, x) -> (a, x <|> b))) (msplit a)
+--   q b a = msplit ( a <|> b)
+
+-- interleave (FreeT b) (FreeT b') = FreeT (b `interleave` b')
+
+-- FreeT b >>- f =
+--   FreeT $
+--     b >>- \case
+--       Pure a -> runFreeT (f a)
+--       Free w -> pure . Free $ fmap (>>- f) w
+
+-- ifte t th el =
+--   let th' (Pure a) = runFreeT (th a)
+--       th' (Free w) = pure . Free $ fmap (>>- th) w
+--    in FreeT $ ifte undefined undefined undefined -- (runFreeT t) th' (runFreeT el)
+
+-- once (FreeT b) = FreeT $ once b
+
+-- lnot m = ifte (once m) (const empty) (pure ())
 
 -- | Recurse over a parser.
 --
