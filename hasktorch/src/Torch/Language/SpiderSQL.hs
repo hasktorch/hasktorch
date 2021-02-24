@@ -16,16 +16,30 @@
 -- * random generation of 'SpiderSQL' values
 module Torch.Language.SpiderSQL where
 
-import Control.Applicative (Alternative (..), optional)
+import Control.Applicative (Alternative (..), liftA2, optional)
 import Control.Monad (MonadPlus, guard)
-import Data.Char (isAlphaNum, isSpace, toLower)
-import Data.Either (fromLeft)
+import Control.Monad.Logic.Class (MonadLogic (..))
+import Data.Char (isAlphaNum, isDigit, isSpace, toLower)
 import Data.Foldable (Foldable (toList))
 import Data.Functor (($>))
-import Data.List hiding (groupBy)
-import Data.Maybe (fromMaybe, maybeToList)
+import Data.List (nub)
+import Data.Maybe (fromMaybe)
 import Text.Read (readMaybe)
 import Torch.Data.Parser
+  ( Parser,
+    atMost,
+    between,
+    choice,
+    combine,
+    eitherP,
+    is,
+    isNot,
+    isString,
+    maybeP,
+    satisfy,
+    space,
+    parseString
+  )
 
 data SpiderSQL = SpiderSQL
   { spiderSQLSelect :: Select,
@@ -221,10 +235,10 @@ isWhere :: MonadPlus b => Parser b Char String
 isWhere = isKeyword "where"
 
 isGroupBy :: MonadPlus b => Parser b Char String
-isGroupBy = isKeyword "group" `combine` space1 `combine` isKeyword "by"
+isGroupBy = isKeyword "group" `combine` space1' `combine` isKeyword "by"
 
 isOrderBy :: MonadPlus b => Parser b Char String
-isOrderBy = isKeyword "order" `combine` space1 `combine` isKeyword "by"
+isOrderBy = isKeyword "order" `combine` space1' `combine` isKeyword "by"
 
 isAsc :: MonadPlus b => Parser b Char String
 isAsc = isKeyword "asc"
@@ -260,9 +274,9 @@ betweenOptionalParentheses p = betweenParentheses p <|> p
 select :: MonadPlus b => Parser b Char Select
 select = do
   isSelect
-  space1
-  distinct <- optional (isDistinct <* space1)
-  aggs <- sepBy agg isComma
+  space1'
+  distinct <- optional (isDistinct <* space1')
+  aggs <- sepBy' agg isComma
   case distinct of
     Just _ -> pure $ SelectDistinct aggs
     Nothing -> pure $ Select aggs
@@ -276,7 +290,7 @@ agg =
   Agg
     <$> ( aggType >>= \case
             NoneAggOp -> pure NoneAggOp
-            at -> at <$ space1
+            at -> at <$ space1'
         )
     <*> valUnit
 
@@ -310,7 +324,7 @@ valUnit =
   where
     choices = [column, minus, plus, times, divide]
     column = Column <$> colUnit
-    binary f p = f <$> colUnit <*> (space1 *> p *> space1 *> colUnit)
+    binary f p = f <$> colUnit <*> (space1' *> p *> space1' *> colUnit)
     minus = binary Minus isMinus
     plus = binary Plus isPlus
     times = binary Times isTimes
@@ -325,16 +339,12 @@ colUnit = do
   at <- aggType
   (distinct, tabAli, col) <-
     betweenOptionalParentheses $
-      (,,) <$> optional (isDistinct <* space1)
+      (,,) <$> optional (isDistinct <* space1')
         <*> optional (eitherP alias tableId <* isDot)
         <*> columnId
   case distinct of
     Just _ -> pure $ DistinctColUnit at tabAli col
     Nothing -> pure $ ColUnit at tabAli col
-
--- | Auxiliary parser for table names, column names, and aliases.
-name :: MonadPlus b => Parser b Char String
-name = many1 $ satisfy ((||) <$> isAlphaNum <*> (== '_'))
 
 -- | 'TableId' parser.
 tableId :: MonadPlus b => Parser b Char TableId
@@ -461,10 +471,10 @@ valTableId Terminal = Nothing
 --
 -- >>> head $ parseString @[] from "FROM people AS t1 JOIN pets AS t2 ON t1.pet_id = t2.pet_id"
 -- (From {fromTableUnits = [Table (TableId "people") (Just (Alias "t1")),Table (TableId "pets") (Just (Alias "t2"))], fromCond = Just (Eq (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (Alias "t1")), colUnitColId = ColumnId "pet_id"})) (ValColUnit (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (Alias "t2")), colUnitColId = ColumnId "pet_id"})))},"")
-from :: forall b. MonadPlus b => Parser b Char From
+from :: forall b. MonadLogic b => Parser b Char From
 from = do
   isFrom
-  space1
+  space1'
   from@From {..} <- uncurry mkFrom <$> p
   let boundAliases = foldMap (toList . tableUnitAlias) fromTableUnits
       aliasReferences = foldMap condAliases fromCond
@@ -480,15 +490,15 @@ from = do
       (,)
         <$> tableUnit
         <*> many
-          ( space1
+          ( space1'
               *> isJoin
-              *> space1
+              *> space1'
               *> ( (,)
                      <$> tableUnit
                      <*> maybeP
-                       ( space1
+                       ( space1'
                            *> isOn
-                           *> space1
+                           *> space1'
                            *> cond
                        )
                  )
@@ -513,16 +523,16 @@ from = do
 --
 -- >>> head $ parseString @[] tableUnit "people as t1"
 -- (Table (TableId "people") (Just (Alias "t1")),"")
-tableUnit :: MonadPlus b => Parser b Char TableUnit
+tableUnit :: MonadLogic b => Parser b Char TableUnit
 tableUnit =
   let tableUnitSQL =
         TableUnitSQL
           <$> betweenParentheses spiderSQL
-            <*> optional (space1 *> isAs *> space1 *> alias)
+            <*> optional (space1' *> isAs *> space1' *> alias)
       table =
         Table
           <$> tableId
-            <*> optional (space1 *> isAs *> space1 *> alias)
+            <*> optional (space1' *> isAs *> space1' *> alias)
    in tableUnitSQL <|> table
 
 -- | 'Cond' parser.
@@ -531,18 +541,18 @@ tableUnit =
 -- (Eq (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t1")), colUnitColId = ColumnId "stadium_id"})) (ValColUnit (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t2")), colUnitColId = ColumnId "stadium_id"})),"")
 -- >>> head $ parseString @[] (cond <* is ';') "t2.name = \"VLDB\" AND t3.name = \"University of Michigan\";"
 -- (And (Eq (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t2")), colUnitColId = ColumnId "name"})) (ValString "VLDB")) (Eq (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t3")), colUnitColId = ColumnId "name"})) (ValString "University of Michigan")),"")
-cond :: MonadPlus b => Parser b Char Cond
+cond :: MonadLogic b => Parser b Char Cond
 cond =
-  let and =
+  let and q =
         And
-          <$> betweenOptionalParentheses p
-          <*> (space1 *> isAnd *> space1 *> betweenOptionalParentheses p)
-      or =
+          <$> betweenOptionalParentheses q
+          <*> (space1' *> isAnd *> space1' *> betweenOptionalParentheses q)
+      or q =
         Or
-          <$> betweenOptionalParentheses p
-          <*> (space1 *> isOr *> space1 *> betweenOptionalParentheses p)
-      not = Not <$> (isNotKeyword *> space1 *> betweenOptionalParentheses p)
-      binary f q = f <$> valUnit <*> (space1 *> q *> space1 *> val)
+          <$> betweenOptionalParentheses q
+          <*> (space1' *> isOr *> space1' *> betweenOptionalParentheses q)
+      not q = Not <$> (isNotKeyword *> space1' *> betweenOptionalParentheses q)
+      binary f q = f <$> valUnit <*> (space1' *> q *> space1' *> val)
       eq = binary Eq isEq
       gt = binary Gt isGt
       lt = binary Lt isLt
@@ -551,9 +561,12 @@ cond =
       ne = binary Ne isNe
       in' = binary In isIn
       like = binary Like isLike
-      between = Between <$> valUnit <*> (space1 *> isBetween *> space1 *> val) <*> (space1 *> isAnd *> space1 *> val)
-      p = choice [eq, gt, lt, ge, le, ne, in', like, between, and, or, not]
-   in betweenOptionalParentheses p
+      between = Between <$> valUnit <*> (space1' *> isBetween *> space1' *> val) <*> (space1' *> isAnd *> space1' *> val)
+      p 0 = empty
+      p n =
+        let q = p (n - 1)
+         in choice [eq, gt, lt, ge, le, ne, in', like, between, and q, or q, not q]
+   in betweenOptionalParentheses (p 4)
 
 -- | 'Val' parser.
 --
@@ -561,12 +574,12 @@ cond =
 -- (ValColUnit (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Nothing, colUnitColId = ColumnId "count"})," t1.stadium_id")
 -- >>> head $ parseString @[] val "(select *)"
 -- (ValSQL (SpiderSQL {spiderSQLSelect = Select [Agg NoneAggOp (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Nothing, colUnitColId = Star}))], spiderSQLFrom = From {fromTableUnits = [], fromCond = Nothing}, spiderSQLWhere = Nothing, spiderSQLGroupBy = [], spiderSQLOrderBy = Nothing, spiderSQLHaving = Nothing, spiderSQLLimit = Nothing, spiderSQLIntersect = Nothing, spiderSQLExcept = Nothing, spiderSQLUnion = Nothing}),"")
-val :: MonadPlus b => Parser b Char Val
+val :: MonadLogic b => Parser b Char Val
 val = choice choices
   where
     choices = [valColUnit, number, valString, valSQL, terminal]
     valColUnit = ValColUnit <$> colUnit
-    number = Number <$> (many1 (satisfy (not . isSpace)) >>= maybe empty pure . readMaybe)
+    number = Number <$> doubleP'
     valString = ValString <$> quotedString
     valSQL = ValSQL <$> betweenParentheses spiderSQL
     terminal = pure Terminal
@@ -585,15 +598,15 @@ quotedString =
 --
 -- >>> head $ parseString @[] whereCond "where t1.id = t2.id"
 -- (Eq (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t1")), colUnitColId = ColumnId "id"})) (ValColUnit (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t2")), colUnitColId = ColumnId "id"})),"")
-whereCond :: MonadPlus b => Parser b Char Cond
-whereCond = isWhere *> space1 *> cond
+whereCond :: MonadLogic b => Parser b Char Cond
+whereCond = isWhere *> space1' *> cond
 
 -- | Parser for group-by clauses.
 --
 -- >>> head $ parseString @[] groupBy "group by count t1.id, t2.id"
 -- ([ColUnit {colUnitAggId = Count, colUnitTable = Just (Left (TableId "t1")), colUnitColId = ColumnId "id"},ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t2")), colUnitColId = ColumnId "id"}],"")
 groupBy :: MonadPlus b => Parser b Char [ColUnit]
-groupBy = isGroupBy *> space1 *> sepBy1 colUnit (isComma <* space1)
+groupBy = isGroupBy *> space1' *> sepBy1' colUnit (isComma <* space1')
 
 -- | 'OrderBy' Parser.
 --
@@ -602,24 +615,24 @@ groupBy = isGroupBy *> space1 *> sepBy1 colUnit (isComma <* space1)
 orderBy :: forall b. MonadPlus b => Parser b Char OrderBy
 orderBy = do
   isOrderBy
-  space1
-  valUnits <- sepBy1 valUnit (isComma <* space1)
-  order <- optional (space1 *> (isAsc $> Asc <|> isDesc $> Desc)) >>= maybe (pure Asc) pure
+  space1'
+  valUnits <- sepBy1' valUnit (isComma <* space1')
+  order <- optional (space1' *> (isAsc $> Asc <|> isDesc $> Desc)) >>= maybe (pure Asc) pure
   pure $ OrderBy order valUnits
 
 -- | Parser for having clauses.
 --
 -- >>> head $ parseString @[] havingCond "having count(t1.customer_id) = 10"
 -- (Nothing,"having count(t1.customer_id) = 10")
-havingCond :: MonadPlus b => Parser b Char Cond
-havingCond = isHaving *> space1 *> cond
+havingCond :: MonadLogic b => Parser b Char Cond
+havingCond = isHaving *> space1' *> cond
 
 -- | Parser for limit clauses.
 --
 -- >>> head $ parseString @[] limit "limit 10"
 -- (Just 10,".5")
 limit :: MonadPlus b => Parser b Char Int
-limit = isLimit *> space1 *> (digits1 >>= maybe empty pure . readMaybe)
+limit = isLimit *> space1' *> intP'
 
 -- | 'SpiderSQL' parser.
 --
@@ -628,19 +641,47 @@ limit = isLimit *> space1 *> (digits1 >>= maybe empty pure . readMaybe)
 -- >>> head $ parseString @[] (spiderSQL <* space <* isSemicolon) "select * from concert;"
 -- (SpiderSQL {spiderSQLSelect = Select [Agg NoneAggOp (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Nothing, colUnitColId = Star}))], spiderSQLFrom = From {fromTableUnits = [Table (TableId "concert") Nothing], fromCond = Nothing}, spiderSQLWhere = Nothing, spiderSQLGroupBy = [], spiderSQLOrderBy = Nothing, spiderSQLHaving = Nothing, spiderSQLLimit = Nothing, spiderSQLIntersect = Nothing, spiderSQLExcept = Nothing, spiderSQLUnion = Nothing},"")
 -- >>> head $ parseString @[] (spiderSQL <* space <* isSemicolon) "select T2.name, count(*) from concert as t1 join stadium as t2 on t1.stadium_id = t2.stadium_id group by t1.stadium_id;"
--- (SpiderSQL {spiderSQLSelect = Select [Agg NoneAggOp (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "T2")), colUnitColId = ColumnId "name"})),Agg NoneAggOp (Column (ColUnit {colUnitAggId = Count, colUnitTable = Nothing, colUnitColId = Star}))], spiderSQLFrom = From {fromTableUnits = [Table (TableId "concert") (Just (Alias "t1")),Table (TableId "stadium") (Just (Alias "t2"))], fromCond = Just (Eq (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t1")), colUnitColId = ColumnId "stadium_id"})) (ValColUnit (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t2")), colUnitColId = ColumnId "stadium_id"})))}, spiderSQLWhere = Nothing, spiderSQLGroupBy = [ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t1")), colUnitColId = ColumnId "stadium_id"}], spiderSQLOrderBy = Nothing, spiderSQLHaving = Nothing, spiderSQLLimit = Nothing, spiderSQLIntersect = Nothing, spiderSQLExcept = Nothing, spiderSQLUnion = Nothing},"")
--- >>> head $ parseString @[] (spiderSQL <* space <* isSemicolon) "SELECT COUNT ( DISTINCT t5.title ) FROM organization AS t3 JOIN author AS t1 ON t3.oid  =  t1.oid JOIN writes AS t4 ON t4.aid  =  t1.aid JOIN publication AS t5 ON t4.pid  =  t5.pid JOIN conference AS t2 ON t5.cid  =  t2.cid WHERE t2.name  =  \"VLDB\" AND t3.name  =  \"University of Michigan\";"
--- (SpiderSQL {spiderSQLSelect = Select [Agg Count (Column (DistinctColUnit {distinctColUnitAggId = NoneAggOp, distinctColUnitTable = Just (Left (TableId "t5")), distinctColUnitColdId = ColumnId "title"}))], spiderSQLFrom = From {fromTableUnits = [Table (TableId "organization") (Just (Alias "t3")),Table (TableId "author") (Just (Alias "t1")),Table (TableId "writes") (Just (Alias "t4")),Table (TableId "publication") (Just (Alias "t5")),Table (TableId "conference") (Just (Alias "t2"))], fromCond = Just (And (And (And (Eq (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t3")), colUnitColId = ColumnId "oid"})) (ValColUnit (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t1")), colUnitColId = ColumnId "oid"}))) (Eq (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t4")), colUnitColId = ColumnId "aid"})) (ValColUnit (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t1")), colUnitColId = ColumnId "aid"})))) (Eq (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t4")), colUnitColId = ColumnId "pid"})) (ValColUnit (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t5")), colUnitColId = ColumnId "pid"})))) (Eq (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t5")), colUnitColId = ColumnId "cid"})) (ValColUnit (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t2")), colUnitColId = ColumnId "cid"}))))}, spiderSQLWhere = Just (And (Eq (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t2")), colUnitColId = ColumnId "name"})) (ValString "VLDB")) (Eq (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (TableId "t3")), colUnitColId = ColumnId "name"})) (ValString "University of Michigan"))), spiderSQLGroupBy = [], spiderSQLOrderBy = Nothing, spiderSQLHaving = Nothing, spiderSQLLimit = Nothing, spiderSQLIntersect = Nothing, spiderSQLExcept = Nothing, spiderSQLUnion = Nothing},"")
-spiderSQL :: MonadPlus b => Parser b Char SpiderSQL
+-- (SpiderSQL {spiderSQLSelect = Select [Agg NoneAggOp (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (Alias "T2")), colUnitColId = ColumnId "name"})),Agg NoneAggOp (Column (ColUnit {colUnitAggId = Count, colUnitTable = Nothing, colUnitColId = Star}))], spiderSQLFrom = From {fromTableUnits = [Table (TableId "concert") (Just (Alias "t1")),Table (TableId "stadium") (Just (Alias "t2"))], fromCond = Just (Eq (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (Alias "t1")), colUnitColId = ColumnId "stadium_id"})) (ValColUnit (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (Alias "t2")), colUnitColId = ColumnId "stadium_id"})))}, spiderSQLWhere = Nothing, spiderSQLGroupBy = [ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (Alias "t1")), colUnitColId = ColumnId "stadium_id"}], spiderSQLOrderBy = Nothing, spiderSQLHaving = Nothing, spiderSQLLimit = Nothing, spiderSQLIntersect = Nothing, spiderSQLExcept = Nothing, spiderSQLUnion = Nothing},"")
+-- >>> head $ parseString @[] (spiderSQL <* space <* isSemicolon) "SELECT COUNT ( DISTINCT t5.title ) FROM organization AS t3 JOIN author AS t1 ON t3.oid = t1.oid JOIN writes AS t4 ON t4.aid = t1.aid JOIN publication AS t5 ON t4.pid = t5.pid JOIN conference AS t2 ON t5.cid = t2.cid WHERE t2.name = \"VLDB\" AND t3.name = \"University of Michigan\";"
+-- (SpiderSQL {spiderSQLSelect = Select [Agg Count (Column (DistinctColUnit {distinctColUnitAggId = NoneAggOp, distinctColUnitTable = Just (Left (Alias "t5")), distinctColUnitColdId = ColumnId "title"}))], spiderSQLFrom = From {fromTableUnits = [Table (TableId "organization") (Just (Alias "t3")),Table (TableId "author") (Just (Alias "t1")),Table (TableId "writes") (Just (Alias "t4")),Table (TableId "publication") (Just (Alias "t5")),Table (TableId "conference") (Just (Alias "t2"))], fromCond = Just (And (And (And (Eq (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (Alias "t3")), colUnitColId = ColumnId "oid"})) (ValColUnit (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (Alias "t1")), colUnitColId = ColumnId "oid"}))) (Eq (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (Alias "t4")), colUnitColId = ColumnId "aid"})) (ValColUnit (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (Alias "t1")), colUnitColId = ColumnId "aid"})))) (Eq (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (Alias "t4")), colUnitColId = ColumnId "pid"})) (ValColUnit (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (Alias "t5")), colUnitColId = ColumnId "pid"})))) (Eq (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (Alias "t5")), colUnitColId = ColumnId "cid"})) (ValColUnit (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (Alias "t2")), colUnitColId = ColumnId "cid"}))))}, spiderSQLWhere = Just (And (Eq (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (Alias "t2")), colUnitColId = ColumnId "name"})) (ValString "VLDB")) (Eq (Column (ColUnit {colUnitAggId = NoneAggOp, colUnitTable = Just (Left (Alias "t3")), colUnitColId = ColumnId "name"})) (ValString "University of Michigan"))), spiderSQLGroupBy = [], spiderSQLOrderBy = Nothing, spiderSQLHaving = Nothing, spiderSQLLimit = Nothing, spiderSQLIntersect = Nothing, spiderSQLExcept = Nothing, spiderSQLUnion = Nothing},"")
+spiderSQL :: MonadLogic b => Parser b Char SpiderSQL
 spiderSQL = do
   sel <- select
-  fro <- fromMaybe (From [] Nothing) <$> optional (space1 *> from)
-  whe <- optional (space1 *> whereCond)
-  grp <- fromMaybe [] <$> optional (space1 *> groupBy)
-  ord <- optional (space1 *> orderBy)
-  hav <- optional (space1 *> havingCond)
-  lim <- optional (space1 *> limit)
-  int <- optional (space1 *> isIntersect *> space1 *> spiderSQL)
-  exc <- optional (space1 *> isExcept *> space1 *> spiderSQL)
-  uni <- optional (space1 *> isUnion *> space1 *> spiderSQL)
+  fro <- fromMaybe (From [] Nothing) <$> optional (space1' *> from)
+  whe <- optional (space1' *> whereCond)
+  grp <- fromMaybe [] <$> optional (space1' *> groupBy)
+  ord <- optional (space1' *> orderBy)
+  hav <- optional (space1' *> havingCond)
+  lim <- optional (space1' *> limit)
+  int <- optional (space1' *> isIntersect *> space1' *> spiderSQL)
+  exc <- optional (space1' *> isExcept *> space1' *> spiderSQL)
+  uni <- optional (space1' *> isUnion *> space1' *> spiderSQL)
   pure $ SpiderSQL sel fro whe grp ord hav lim int exc uni
+
+-- | Auxiliary parser for table names, column names, and aliases.
+name :: MonadPlus b => Parser b Char String
+name =
+  let p = satisfy ((||) <$> isAlphaNum <*> (== '_'))
+   in liftA2 (:) p (atMost 16 p)
+
+space1' :: MonadPlus b => Parser b Char String
+space1' = pure <$> satisfy isSpace
+
+digits1' :: MonadPlus b => Parser b Char String
+digits1' =
+  let p = satisfy isDigit
+   in liftA2 (:) p (atMost 8 p)
+
+intP' :: MonadPlus b => Parser b Char Int
+intP' = digits1' >>= maybe empty pure . readMaybe
+
+doubleP' :: MonadPlus b => Parser b Char Double
+doubleP' =
+  let p = satisfy (not . isSpace)
+   in liftA2 (:) p (atMost 8 p) >>= maybe empty pure . readMaybe
+
+sepBy' :: MonadPlus m => m a -> m sep -> m [a]
+sepBy' p sep = (p `sepBy1'` sep) <|> pure []
+
+sepBy1' :: MonadPlus m => m a -> m sep -> m [a]
+sepBy1' p sep = (:) <$> p <*> atMost 4 (sep *> p)

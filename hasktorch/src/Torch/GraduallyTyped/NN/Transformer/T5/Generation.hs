@@ -19,6 +19,7 @@ module Torch.GraduallyTyped.NN.Transformer.T5.Generation where
 import Control.Applicative (Alternative (..), liftA2)
 import Control.Monad (MonadPlus (..), guard)
 import Control.Monad.Logic (observe)
+import Control.Monad.Logic.Class (MonadLogic)
 import Control.Monad.State (MonadState (..), MonadTrans (..), StateT (..), evalStateT, gets, lift, modify)
 import Control.Monad.Trans.Free (FreeF (..), FreeT (..), runFreeT)
 import Data.Foldable (asum)
@@ -454,7 +455,7 @@ t5Test =
 
 -- | @t5Sql@ parses a 'Char' sequence starting with @\"@ and ending with @\" </s>@
 -- as 'SpiderSQL'.
-t5Sql :: MonadPlus b => Parser b Char SpiderSQL
+t5Sql :: MonadLogic b => Parser b Char SpiderSQL
 t5Sql =
   let q = space *> is '\"' <* space
    in between q q spiderSQL <* isString "</s>"
