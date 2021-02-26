@@ -5,10 +5,10 @@
         "homepage": "",
         "owner": "input-output-hk",
         "repo": "hackage.nix",
-        "rev": "ed53458ea6b3bb1139685659ca6d0d857515d757",
-        "sha256": "0swzynsjp8yyarvz8sq23ras864dqsd323yb0rlwmjxnhqan5b19",
+        "rev": "cc0a20004492f75568a633b91aacc6471eb8a531",
+        "sha256": "1qzyxj1l0wwfa8300sp2j1jc44gwbfxankh67l7d2vy72s7zynlv",
         "type": "tarball",
-        "url": "https://github.com/input-output-hk/hackage.nix/archive/ed53458ea6b3bb1139685659ca6d0d857515d757.tar.gz",
+        "url": "https://github.com/input-output-hk/hackage.nix/archive/cc0a20004492f75568a633b91aacc6471eb8a531.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "haskell-nix": {
@@ -17,10 +17,10 @@
         "homepage": "https://input-output-hk.github.io/haskell.nix",
         "owner": "input-output-hk",
         "repo": "haskell.nix",
-        "rev": "bdd69693b9597c4d893b6d134cf2f3f8b1809e09",
-        "sha256": "1zhh3y5gz24k46f4ds4m6ih403zwvxmsyq66bl8hlwvch8wl38bh",
+        "rev": "958e9d3e9ec53fbce72ac720b10a6418f3b477f0",
+        "sha256": "0j9p3xyck636gv87rwd6yl7w9ssv3jwrfqyxvhpchszkj097qwi6",
         "type": "tarball",
-        "url": "https://github.com/input-output-hk/haskell.nix/archive/bdd69693b9597c4d893b6d134cf2f3f8b1809e09.tar.gz",
+        "url": "https://github.com/input-output-hk/haskell.nix/archive/958e9d3e9ec53fbce72ac720b10a6418f3b477f0.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "iohk-nix": {
@@ -29,10 +29,10 @@
         "homepage": null,
         "owner": "input-output-hk",
         "repo": "iohk-nix",
-        "rev": "72262b212e0cd8efe119466f0cb123f9d3760d35",
-        "sha256": "1pr934kh8fwj40cyw8pkx0hfj41k2p3k2hkslsyk4k7a3hnplc82",
+        "rev": "4efc38924c64c23a582c84950c8c25f72ff049cc",
+        "sha256": "0nhwyrd0xc72yj5q3jqa2wl4khp4g7n72i45cxy2rgn9nrp8wqh0",
         "type": "tarball",
-        "url": "https://github.com/input-output-hk/iohk-nix/archive/72262b212e0cd8efe119466f0cb123f9d3760d35.tar.gz",
+        "url": "https://github.com/input-output-hk/iohk-nix/archive/4efc38924c64c23a582c84950c8c25f72ff049cc.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "jupyterWith": {
@@ -53,46 +53,23 @@
         "homepage": "https://github.com/nmattia/niv",
         "owner": "nmattia",
         "repo": "niv",
-        "rev": "ba57d5a29b4e0f2085917010380ef3ddc3cf380f",
-        "sha256": "1kpsvc53x821cmjg1khvp1nz7906gczq8mp83664cr15h94sh8i4",
+        "rev": "3cd7914b2c4cff48927e11c216dadfab7d903fe5",
+        "sha256": "1agq4nvbhrylf2s77kb4xhh9k7xcwdwggq764k4jgsbs70py8cw3",
         "type": "tarball",
-        "url": "https://github.com/nmattia/niv/archive/ba57d5a29b4e0f2085917010380ef3ddc3cf380f.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
-    "nixpkgs-2003": {
-        "branch": "nixpkgs-20.03-darwin",
-        "description": "Nix Packages collection",
-        "homepage": null,
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "732684b720f829056dcb62380c2c17e4d3ebd947",
-        "sha256": "1fyrgpgpn906c96bhm4ad5n4qq27flhnfpiv395iryk3zsyig4dk",
-        "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/732684b720f829056dcb62380c2c17e4d3ebd947.tar.gz",
+        "url": "https://github.com/nmattia/niv/archive/3cd7914b2c4cff48927e11c216dadfab7d903fe5.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nixpkgs-2009": {
         "branch": "nixpkgs-20.09-darwin",
+        "builtin": false,
         "description": "Nix Packages collection",
         "homepage": null,
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "07e5844fdf6fe99f41229d7392ce81cfe191bcfc",
-        "sha256": "0p2z6jidm4rlp2yjfl553q234swj1vxl8z0z8ra1hm61lfrlcmb9",
+        "rev": "f02bf8ffb9a5ec5e8f6f66f1e5544fd2aa1a0693",
+        "sha256": "156f48manydh8sbrs8j97mzvwdz2zaw51xlm0grrrnns5wa5aaln",
         "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/07e5844fdf6fe99f41229d7392ce81cfe191bcfc.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
-    "nixpkgs-staging-next": {
-        "branch": "staging-next",
-        "description": "Nix Packages collection",
-        "homepage": null,
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "986c2d36da97856f392dd66d265b7646b32fa3b9",
-        "sha256": "1ickrri9c0vkicsl7k67vv909w6rxlndq7rss29ann7xvlla46rj",
-        "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/986c2d36da97856f392dd66d265b7646b32fa3b9.tar.gz",
+        "url": "https://github.com/NixOS/nixpkgs/archive/f02bf8ffb9a5ec5e8f6f66f1e5544fd2aa1a0693.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "pytorch-world": {
@@ -101,10 +78,10 @@
         "homepage": "https://pytorch.org/",
         "owner": "stites",
         "repo": "pytorch-world",
-        "rev": "e40fc2133b169b72eb8d772f98b1484dc1d3903f",
+        "rev": "e08419a2f2b9ca177903c9595858b0dc386fc4dd",
         "sha256": "0zb0h19aqi31gl4nqhf161wx27v8brf9y2w2psaqqxwbk02f9wp8",
         "type": "tarball",
-        "url": "https://github.com/stites/pytorch-world/archive/e40fc2133b169b72eb8d772f98b1484dc1d3903f.tar.gz",
+        "url": "https://github.com/stites/pytorch-world/archive/e08419a2f2b9ca177903c9595858b0dc386fc4dd.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "stackage-nix": {
@@ -113,10 +90,10 @@
         "homepage": "",
         "owner": "input-output-hk",
         "repo": "stackage.nix",
-        "rev": "542e9900adbbe3ac445d4a84392cf8b7172d9980",
-        "sha256": "1aj34gp9qgdcw5iqjmjcphrkwvm5nb35jpnalsa7vapga92i51sl",
+        "rev": "42c0a1c7e16f53e12d6177839a6d3b19f15b4b2f",
+        "sha256": "0q8d7bwwky7i1il2mf7rhaj5d01iv76dnssgmab4hvsgp5k02xlc",
         "type": "tarball",
-        "url": "https://github.com/input-output-hk/stackage.nix/archive/542e9900adbbe3ac445d4a84392cf8b7172d9980.tar.gz",
+        "url": "https://github.com/input-output-hk/stackage.nix/archive/42c0a1c7e16f53e12d6177839a6d3b19f15b4b2f.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }

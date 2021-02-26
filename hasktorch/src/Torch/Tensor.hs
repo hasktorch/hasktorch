@@ -291,6 +291,12 @@ toCPU t = unsafePerformIO $ (cast1 ATen.tensor_cpu) t
 toCUDA :: Tensor -> Tensor
 toCUDA t = unsafePerformIO $ (cast1 ATen.tensor_cuda) t
 
+withTensorOptions :: Tensor -> TensorOptions -> Tensor
+withTensorOptions t opts = unsafePerformIO $ cast4 ATen.tensor_to_obb t opts nonBlocking copy
+  where
+    nonBlocking = False
+    copy = False
+
 --------------------------------------------------------------------------------
 -- Indexing support
 --------------------------------------------------------------------------------
@@ -461,6 +467,7 @@ asValue t =
 
 class TensorLike a where
   asTensor' :: a -> TensorOptions -> Tensor
+  asTensor' v opts = withTensorOptions (asTensor v) opts
   asTensor :: a -> Tensor
   _asValue :: Tensor -> a
 
@@ -487,13 +494,11 @@ withTensor t fn =
    in cast tensor $ \t' -> withForeignPtr t' $ \tensor_ptr -> Unmanaged.tensor_data_ptr tensor_ptr >>= fn
 
 instance {-# OVERLAPPING #-} (Reifies a DType, Storable a) => TensorLike a where
-  asTensor' v opts = unsafePerformIO $ do
-    t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) [] $ withDType (_dtype @a) opts
+  asTensor v = unsafePerformIO $ do
+    t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) [] $ withDType (_dtype @a) defaultOpts
     withTensor t $ \ptr -> do
       _pokeElemOff ptr 0 v
     return t
-
-  asTensor v = asTensor' v defaultOpts
 
   _asValue t = unsafePerformIO $ do
     if _dtype @a == dtype t
@@ -509,13 +514,11 @@ instance {-# OVERLAPPING #-} (Reifies a DType, Storable a) => TensorLike a where
   _pokeElemOff ptr offset v = pokeElemOff (castPtr ptr) offset v
 
 instance {-# OVERLAPPING #-} TensorLike Bool where
-  asTensor' v opts = unsafePerformIO $ do
-    t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) [] $ withDType (_dtype @Bool) opts
+  asTensor v = unsafePerformIO $ do
+    t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) [] $ withDType (_dtype @Bool) defaultOpts
     withTensor t $ \ptr -> do
       _pokeElemOff ptr 0 v
     return t
-
-  asTensor v = asTensor' v defaultOpts
 
   _asValue t = unsafePerformIO $ do
     if _dtype @Bool == dtype t
@@ -531,7 +534,7 @@ instance {-# OVERLAPPING #-} TensorLike Bool where
   _pokeElemOff ptr offset v = pokeElemOff (castPtr ptr) offset ((if v then 1 else 0) :: Word8)
 
 instance {-# OVERLAPPING #-} TensorLike Tensor where
-  asTensor' = error "Not implemented for Tensor-type"
+  asTensor' v opts = withTensorOptions v opts
   asTensor = id
   _asValue = id
   _dtype = error "Not implemented for Tensor-type"
@@ -541,7 +544,6 @@ instance {-# OVERLAPPING #-} TensorLike Tensor where
   _pokeElemOff = error "Not implemented for Tensor-type"
 
 instance {-# OVERLAPPING #-} TensorLike a => TensorLike (a, a) where
-  asTensor' = error "Not implemented for tuple-type"
   asTensor (a, b) = asTensor [a, b]
   _asValue v =
     let [a, b] = _asValue v
@@ -553,13 +555,11 @@ instance {-# OVERLAPPING #-} TensorLike a => TensorLike (a, a) where
   _pokeElemOff = error "Not implemented for tuple-type"
 
 instance {-# OVERLAPPING #-} TensorLike a => TensorLike [a] where
-  asTensor' v opts = unsafePerformIO $ do
-    t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) (_dims v) $ withDType (_dtype @a) opts
+  asTensor v = unsafePerformIO $ do
+    t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) (_dims v) $ withDType (_dtype @a) defaultOpts
     withTensor t $ \ptr -> do
       _pokeElemOff ptr 0 v
     return t
-
-  asTensor v = asTensor' v defaultOpts
 
   _asValue t = unsafePerformIO $ do
     if _dtype @a == dtype t
