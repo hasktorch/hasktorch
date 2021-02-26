@@ -5,7 +5,7 @@
 , buildPackages
 , config ? {}
 # GHC attribute name
-, compiler ? config.haskellNix.compiler or "ghc8103"
+, compiler ? config.haskellNix.compiler or "ghc8104"
 # Enable profiling
 , profiling ? config.haskellNix.profiling or false
 # Version info, to be passed when not building from a git work tree
