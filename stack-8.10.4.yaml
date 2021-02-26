@@ -23,6 +23,7 @@ extra-deps:
 - pipes-text-0.0.2.5@sha256:16cfd1927817a1c757b15c37ad95c67e819c28b1c4a6ce9757ab15276ec36ac7,3326
 - streaming-cassava-0.1.0.1@sha256:2d1dfeb09af62009e88311fe92f44d06dafb5cdd38879b437ea6adb3bc40acfe,1739
 - streaming-bytestring-0.1.7@sha256:5b53960c1c5f8352d46a4f1a604d04340a08dcf7ff27ca3ed31253e02c01fd03,2968
+- stm-2.5.0.0@sha256:c238075f9f0711cd6a78eab6001b3e218cdaa745d6377bf83cc21e58ceec2ea1,2100
 
 allow-newer: true
 
