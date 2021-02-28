@@ -159,8 +159,11 @@ library
   ld-options: -Wl,-keep_dwarf_unwind
   cpp-options: -DENABLE_DUMMY_MALLOC_TRIM
   if !flag(gcc)
-    ghc-options:       -optc-std=c++14 -optc-xc++
     cxx-options:       -std=c++14
+    if impl(ghc >= 8.10)
+      ghc-options:       -optcxx-std=c++14
+    else
+      ghc-options:       -optc-std=c++14 -optc-xc++
  default-extensions:          Strict
                             , StrictData
  cxx-sources:          csrc/hasktorch_finializer.cpp
