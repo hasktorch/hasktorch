@@ -30,13 +30,13 @@ jobs:
         export PATH=/opt/ghc/bin:$PATH
         source setenv
         pushd deps/ ; ./get-deps.sh -a cpu -c; popd
-        stack build --stack-yaml stack-8.10.4.yaml
+        stack build
     - name: Test
       run: |
         export PATH=/opt/ghc/bin:$PATH
         source setenv
-        stack test codegen --stack-yaml stack-8.10.4.yaml
-        stack test libtorch-ffi --stack-yaml stack-8.10.4.yaml
-        stack test hasktorch --stack-yaml stack-8.10.4.yaml
-        stack exec codegen-exe --stack-yaml stack-8.10.4.yaml
-        stack exec xor-mlp --stack-yaml stack-8.10.4.yaml
+        stack test codegen
+        stack test libtorch-ffi
+        stack test hasktorch
+        stack exec codegen-exe
+        stack exec xor-mlp
