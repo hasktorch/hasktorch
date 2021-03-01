@@ -19,7 +19,7 @@ Flag cuda
 
 Flag gcc
  Description: A flag to use gcc on macos
- Default: False
+ Default: True
  Manual: True
 
 library

@@ -152,6 +152,7 @@ library
                     , Torch.Data.Dataset
                     , Torch.Data.CsvDatastream
                     , Torch.Data.Parser
+                    , Torch.Language
                     , Torch.Language.SpiderSQL
 
  other-modules:       Paths_hasktorch

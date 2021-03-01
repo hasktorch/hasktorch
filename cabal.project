@@ -11,9 +11,3 @@ tests: true
 documentation: false
 
 allow-newer: doctest-0.17:ghc, pipes-text-0.0.2.5:pipes-safe, pipes-text-0.0.2.5:streaming-commons
-
-source-repository-package
-    type: git
-    location: https://github.com/gelisam/typelevel-rewrite-rules
-    tag: d05323312108cf8a048bf23117dd1afc77652af5
-    --sha256: 0kyggr30jzc9rr78ip509yc64bj7cpy5j29bk6812k2j1g9v357i

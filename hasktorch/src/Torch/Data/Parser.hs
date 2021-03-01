@@ -2,6 +2,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
 module Torch.Data.Parser where
@@ -11,7 +12,7 @@ import Control.Monad (MonadPlus, mfilter, replicateM)
 import Control.Monad.Logic
 import Control.Monad.State (MonadState, StateT (..), get, put)
 import Control.Monad.Trans (MonadTrans (lift))
-import Control.Monad.Trans.Free (FreeF (..), FreeT (..), iterTM)
+import Control.Monad.Trans.Free (FreeF (..), FreeT (..), iterT, iterTM, wrap)
 import Data.Char (isAlpha, isAlphaNum, isDigit, isSpace)
 import Data.Foldable (asum)
 import Data.Functor (($>))
@@ -64,8 +65,7 @@ instance (Applicative f, MonadLogic b) => MonadLogic (FreeT f b) where
     pure a
 
   lnot m = ifte (once m) (const empty) (pure ())
-
--- notFollowedBy p = msplit p >>= maybe (pure ()) (const empty)
+  -- lnot m = msplit m >>= maybe (pure ()) (const empty)
 
 -- | Recurse over a parser.
 --
@@ -82,19 +82,33 @@ recurse next parser =
   let cont = recurse next
    in next parser cont
 
-parseStream :: forall s b i a. Monad b => (s -> b (i, s)) -> Parser b i a -> s -> b (a, s)
-parseStream next = runStateT . iterTM (StateT next >>=)
+parseStream :: forall s b i a. Monad b => (s -> b (i, s)) -> Parser (StateT s b) i a -> s -> b (a, s)
+parseStream next = runStateT . iterT (StateT next >>=)
 
-parseString :: forall b i a. MonadPlus b => Parser b i a -> [i] -> b (a, [i])
+parseString :: forall b i a. MonadPlus b => Parser (StateT [i] b) i a -> [i] -> b (a, [i])
 parseString = parseStream (maybe empty pure . uncons)
+
+-- >>> parseString @[] (sequence [token <* notFollowedBy (is 'a'), token]) "ab"
+-- [("ab","")]
+-- >>> parseString @[] (sequence [token <* notFollowedBy (is 'a'), token]) "aa"
+-- []
+notFollowedBy ::
+  forall b i a.
+  (Alternative b, Foldable b, MonadPlus b) =>
+  Parser (StateT [i] b) i a ->
+  Parser (StateT [i] b) i ()
+notFollowedBy p = FreeT . StateT $ \s ->
+  if null (parseString p s)
+    then pure (Pure (), s)
+    else empty
 
 -- | @token@ is trivial parser that consumes a single token @i@ and yields it.
 --
 -- Other parsers can be derived from this one using methods of the
 -- 'Functor', 'Applicative', 'Monad', 'Alternative', and 'MonadPlus' typeclasses
 -- and the parser combinators in this module.
-token :: forall b i. Applicative b => Parser b i i
-token = FreeT . pure . Free $ FreeT . pure . Pure
+token :: forall b i. Monad b => Parser b i i
+token = wrap $ FreeT . pure . Pure
 
 -- | @satisfy p@ is a simple parser that consumes a single token @i@ and yields it
 -- if and only if @p i@ evaluates to 'True'. Otherwise, the parser fails.
