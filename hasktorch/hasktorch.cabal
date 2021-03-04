@@ -201,6 +201,7 @@ library
                     , indexed-extras
                     , free
                     , logict
+                    , parsers
  default-extensions:  Strict
                     , StrictData
 

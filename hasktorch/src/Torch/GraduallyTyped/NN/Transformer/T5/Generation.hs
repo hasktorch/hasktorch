@@ -27,8 +27,11 @@ import Data.Functor (($>))
 import Data.List (isInfixOf, nub, sortOn, uncons)
 import qualified Data.Map as Map (Map, lookup, (!))
 import System.IO.Unsafe (unsafePerformIO)
+import Text.Parser.Char (spaces)
+import Text.Parser.Combinators (between, manyTill)
+import Text.Parser.Token (TokenParsing)
 import Torch.DType (DType (..))
-import Torch.Data.Parser (Parser, between, combine, is, isString, manyTill, parseString, recurse, scan, space, token)
+import Torch.Data.Parser (Parser, combine, isString, parseString, recurse, scan, token)
 import Torch.GraduallyTyped.DType (DataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
@@ -48,6 +51,7 @@ import Torch.GraduallyTyped.Tensor.Type (Tensor (..), shape)
 import Torch.Language.SpiderSQL (SpiderSQL, spiderSQL)
 import qualified Torch.Tensor
 import Prelude hiding (Word, words)
+import Text.Parser.Char (CharParsing(char))
 
 data IsFinished = Finished | Unfinished
 
@@ -156,8 +160,8 @@ runBeamSearch ::
     encoderOutput
       ~ Tensor
           'WithGradient
-          ( 'Layout 'Dense)
-          ( 'Device 'CPU)
+          ('Layout 'Dense)
+          ('Device 'CPU)
           T5DataType
           encoderOutputShape,
     'UncheckedShape ~ BroadcastShapesF encoderOutputShape 'UncheckedShape,
@@ -171,25 +175,25 @@ runBeamSearch ::
     encoderOutput'
       ~ Tensor
           'WithGradient
-          ( 'Layout 'Dense)
-          ( 'Device 'CPU)
+          ('Layout 'Dense)
+          ('Device 'CPU)
           T5DataType
           'UncheckedShape,
     decoderInput
       ~ Tensor
           'WithoutGradient
-          ( 'Layout 'Dense)
-          ( 'Device 'CPU)
-          ( 'DataType 'Int64)
-          ( 'Shape '[ 'Dim ( 'Name "*") 'UncheckedSize, 'Dim ( 'Name "*") 'UncheckedSize]),
+          ('Layout 'Dense)
+          ('Device 'CPU)
+          ('DataType 'Int64)
+          ('Shape '[ 'Dim ('Name "*") 'UncheckedSize, 'Dim ('Name "*") 'UncheckedSize]),
     decoderOutput
       ~ Tensor
           'WithGradient
-          ( 'Layout 'Dense)
-          ( 'Device 'CPU)
+          ('Layout 'Dense)
+          ('Device 'CPU)
           T5DataType
           'UncheckedShape,
-    generator ~ Generator ( 'Device 'CPU)
+    generator ~ Generator ('Device 'CPU)
   ) =>
   Int ->
   Int ->
@@ -212,7 +216,7 @@ runBeamSearch maxSteps beamSize model input g =
                   go (UnfinishedHypothesis _ _ previousHypothesis') = 1 + go previousHypothesis'
                in fromIntegral . maximum $ go <$> previousHypotheses'
         -- liftIO . print $ ((t5Vocab Map.!) <$>) <$> tokens
-        mkT5Input @( 'Dim ( 'Name "*") 'UncheckedSize) @( 'Dim ( 'Name "*") 'UncheckedSize) batchSize seqSize tokens
+        mkT5Input @('Dim ('Name "*") 'UncheckedSize) @('Dim ('Name "*") 'UncheckedSize) batchSize seqSize tokens
       logProbs <- getLogProbs decoderInput
       pure $ zip previousHypotheses' logProbs >>= uncurry (\previousHypothesis -> zipWith (mkHypothesis previousHypothesis) [0, 1 ..] . last)
     getLogProbs :: decoderInput -> StateT (Maybe (encoderOutput, inputPaddingMask), generator) IO [[[Float]]]
@@ -223,11 +227,11 @@ runBeamSearch maxSteps beamSize model input g =
             Just (encoderOutput, inputPaddingMask) ->
               let decoderInputBatchDim : _ = shape decoderInput
                   _encoderOutputBatchDim : encoderOutputDims = shape encoderOutput
-                  encoderOutput' = expand @ 'UncheckedShape (decoderInputBatchDim : encoderOutputDims) encoderOutput
+                  encoderOutput' = expand @'UncheckedShape (decoderInputBatchDim : encoderOutputDims) encoderOutput
                in case forward model (T5GenerationInput decoderInput encoderOutput' inputPaddingMask) g of
                     (T5Output decoderOutput _ _, g') -> (T5Output decoderOutput encoderOutput inputPaddingMask, g')
       put (Just (encoderOutput, inputPaddingMask), g')
-      case logSoftmax @( 'SelectDim ( 'ByIndex 2)) decoderOutput of
+      case logSoftmax @('SelectDim ('ByIndex 2)) decoderOutput of
         UnsafeTensor t -> pure . Torch.Tensor.asValue . Torch.Tensor.Unsafe $ t
     mkHypothesis :: Hypothesis 'Unfinished Int [Int] -> Int -> Float -> SomeHypothesis Int [Int]
     mkHypothesis previousHypothesis token logProb
@@ -245,14 +249,14 @@ testBeamSearch = do
     -- let tokens = [[13959, 1566, 12, 2968, 10, 148, 31, 60, 423, 13, 3, 7, 10536, 55, 1]]
     print $ ((t5Vocab Map.!) <$>) <$> tokens
     mkT5Input
-      @( 'Dim ( 'Name "*") ( 'Size 1))
-      @( 'Dim ( 'Name "*") ( 'Size 19))
+      @('Dim ('Name "*") ('Size 1))
+      @('Dim ('Name "*") ('Size 19))
       tokens
   model <-
     initialize
-      @(T5Small 'WithLMHead ( 'Device 'CPU))
+      @(T5Small 'WithLMHead ('Device 'CPU))
       "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-small.pt"
-  g <- mkGenerator @( 'Device CPU) 0
+  g <- mkGenerator @('Device CPU) 0
   Beams finished _ <- last <$> runBeamSearch 50 1 model input g
   print $ finalValue <$> finished
   let tmp = parseString @[] (transParser t5Vocab t5Text) . finalValue <$> finished
@@ -335,17 +339,17 @@ getIs ::
     decoderInput
       ~ Tensor
           'WithoutGradient
-          ( 'Layout 'Dense)
-          ( 'Device 'CPU)
-          ( 'DataType 'Int64)
+          ('Layout 'Dense)
+          ('Device 'CPU)
+          ('DataType 'Int64)
           ( 'Shape
-              '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") 'UncheckedSize]
+              '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") 'UncheckedSize]
           ),
     decoderOutput
       ~ Tensor
           'WithGradient
-          ( 'Layout 'Dense)
-          ( 'Device 'CPU)
+          ('Layout 'Dense)
+          ('Device 'CPU)
           T5DataType
           'UncheckedShape,
     HasForward
@@ -375,8 +379,8 @@ getIs n model input = do
     pure ts'
   decoderInput :: decoderInput <-
     mkT5Input
-      @( 'Dim ( 'Name "*") ( 'Size 1))
-      @( 'Dim ( 'Name "*") 'UncheckedSize)
+      @('Dim ('Name "*") ('Size 1))
+      @('Dim ('Name "*") 'UncheckedSize)
       (fromIntegral $ length tokens)
       [tokens]
   decoderOutput <- do
@@ -388,8 +392,8 @@ getIs n model input = do
               forward model (T5GenerationInput decoderInput encoderOutput inputPaddingMask) g
     put (Just (encoderOutput, inputPaddingMask), g')
     pure decoderOutput
-  case sort @( 'SelectDim ( 'ByIndex 2)) Descending
-    . logSoftmax @( 'SelectDim ( 'ByIndex 2))
+  case sort @('SelectDim ('ByIndex 2)) Descending
+    . logSoftmax @('SelectDim ('ByIndex 2))
     $ decoderOutput of
     Sorted _ (UnsafeTensor indices) ->
       let indices' = take n . last . head . Torch.Tensor.asValue @[[[Int]]] . Torch.Tensor.Unsafe $ indices
@@ -418,14 +422,14 @@ testParser = do
     print $ length <$> tokens
     print $ ((t5Vocab Map.!) <$>) <$> tokens
     mkT5Input
-      @( 'Dim ( 'Name "*") ( 'Size 1))
-      @( 'Dim ( 'Name "*") ( 'Size 61))
+      @('Dim ('Name "*") ('Size 1))
+      @('Dim ('Name "*") ('Size 61))
       tokens
   model <-
     initialize
-      @(T5Small 'WithLMHead ( 'Device 'CPU))
+      @(T5Small 'WithLMHead ('Device 'CPU))
       "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-small.pt"
-  g <- mkGenerator @( 'Device CPU) 0
+  g <- mkGenerator @('Device CPU) 0
   let outputs = runParser 5 model input g (transParser t5Vocab t5Test)
   pure . fst $ observe outputs
 
@@ -455,7 +459,9 @@ t5Test =
 
 -- | @t5Sql@ parses a 'Char' sequence starting with @\"@ and ending with @\" </s>@
 -- as 'SpiderSQL'.
-t5Sql :: MonadLogic b => Parser b Char SpiderSQL
+t5Sql ::
+  (TokenParsing (FreeT ((->) Char) b), MonadPlus b) =>
+  Parser b Char SpiderSQL
 t5Sql =
-  let q = space *> is '\"' <* space
+  let q = spaces *> char '\"' <* spaces
    in between q q spiderSQL <* isString "</s>"

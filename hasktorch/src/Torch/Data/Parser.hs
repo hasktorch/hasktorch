@@ -18,6 +18,10 @@ import Data.Foldable (asum)
 import Data.Functor (($>))
 import Data.Kind (Type)
 import Data.List
+import Text.Parser.Char (CharParsing (..), space, digit)
+import Text.Parser.Combinators (Parsing (..))
+import Text.Parser.Token (TokenParsing)
+import Text.Read (readMaybe)
 
 -- | @Parser b i a@ is a parser that consumes a stream of @i@ tokens and as a
 -- result yields a value of type @a@, while operating under the @b@
@@ -65,7 +69,8 @@ instance (Applicative f, MonadLogic b) => MonadLogic (FreeT f b) where
     pure a
 
   lnot m = ifte (once m) (const empty) (pure ())
-  -- lnot m = msplit m >>= maybe (pure ()) (const empty)
+
+-- lnot m = msplit m >>= maybe (pure ()) (const empty)
 
 -- | Recurse over a parser.
 --
@@ -88,9 +93,27 @@ parseStream next = runStateT . iterT (StateT next >>=)
 parseString :: forall b i a. MonadPlus b => Parser (StateT [i] b) i a -> [i] -> b (a, [i])
 parseString = parseStream (maybe empty pure . uncons)
 
+-- | @token@ is trivial parser that consumes a single token @i@ and yields it.
+--
+-- Other parsers can be derived from this one using methods of the
+-- 'Functor', 'Applicative', 'Monad', 'Alternative', and 'MonadPlus' typeclasses
+-- and the parser combinators in this module.
+token :: forall b i. Monad b => Parser b i i
+token = wrap $ FreeT . pure . Pure
+
+eof :: Alternative b => Parser (StateT [i] b) i ()
+eof = FreeT . StateT $ \s ->
+  case s of
+    [] -> pure (Pure (), s)
+    _ -> empty
+
 -- >>> parseString @[] (sequence [token <* notFollowedBy (is 'a'), token]) "ab"
 -- [("ab","")]
 -- >>> parseString @[] (sequence [token <* notFollowedBy (is 'a'), token]) "aa"
+-- []
+-- >>> parseString @[] (notFollowedBy (traverse is "ab")) "a"
+-- [((),"a")]
+-- >>> parseString @[] (notFollowedBy (traverse is "ab")) "ab"
 -- []
 notFollowedBy ::
   forall b i a.
@@ -102,13 +125,31 @@ notFollowedBy p = FreeT . StateT $ \s ->
     then pure (Pure (), s)
     else empty
 
--- | @token@ is trivial parser that consumes a single token @i@ and yields it.
---
--- Other parsers can be derived from this one using methods of the
--- 'Functor', 'Applicative', 'Monad', 'Alternative', and 'MonadPlus' typeclasses
--- and the parser combinators in this module.
-token :: forall b i. Monad b => Parser b i i
-token = wrap $ FreeT . pure . Pure
+instance
+  (Alternative b, Foldable b, MonadPlus b) =>
+  Parsing (FreeT ((->) i) (StateT [i] b))
+  where
+  try = id
+  (<?>) = const
+  skipMany p = scan where scan = (p *> scan) <|> pure ()
+  skipSome p = p *> skipMany p
+  unexpected = const empty
+  eof = Torch.Data.Parser.eof
+  notFollowedBy = Torch.Data.Parser.notFollowedBy
+
+instance
+  (Alternative b, Foldable b, MonadPlus b) =>
+  CharParsing (FreeT ((->) Char) (StateT [Char] b))
+  where
+  satisfy = Torch.Data.Parser.satisfy
+  char = isToken
+  notChar = isNotToken
+  anyChar = token
+  string = isString
+
+instance
+  (Alternative b, Foldable b, MonadPlus b) =>
+  TokenParsing (FreeT ((->) Char) (StateT [Char] b))
 
 -- | @satisfy p@ is a simple parser that consumes a single token @i@ and yields it
 -- if and only if @p i@ evaluates to 'True'. Otherwise, the parser fails.
@@ -117,49 +158,14 @@ satisfy p = mfilter p token
 
 -- | @is i@ is a simple parser that consumes a single token and yields it
 -- if and only if it is equal to @i@. Otherwise, the parser fails.
-is :: forall b i. (MonadPlus b, Eq i) => i -> Parser b i i
-is i = satisfy (== i)
+isToken :: forall b i. (MonadPlus b, Eq i) => i -> Parser b i i
+isToken i = Torch.Data.Parser.satisfy (== i)
 
 -- | @isNot i@ is a simple parser that consumes a single token and yields it
 -- if and only if it is not equal to @i@. If the token is equal to @i@,
 -- the parser fails.
-isNot :: forall b i. (MonadPlus b, Eq i) => i -> Parser b i i
-isNot i = satisfy (/= i)
-
--- | @choice ps@ tries to apply the parsers in the list @ps@ in order,
--- until one of them succeeds. Returns the value of the succeeding
--- parser.
-choice :: (Foldable t, Alternative f) => t (f a) -> f a
-choice = asum
-
--- | @option a p@ tries to apply parser @p@. If the parser @p@ fails,
--- it returns the value @a@, otherwise the value returned by the parser @p@.
-option :: Alternative f => a -> f a -> f a
-option a p = p <|> pure a
-
--- | @many1 p@ applies the parser @p@ /one/ or more times. Returns a
--- list of the returned values of @p@.
-many1 :: Alternative f => f a -> f [a]
-many1 p = liftA2 (:) p (many p)
-{-# INLINE many1 #-}
-
--- | @manyTill p end@ applies the parser @p@ /zero/ or more times until
--- the parser @end@ succeeds, and returns the list of values returned by
--- @p@. The result of @end@ is discarded.
---
--- Note that this can be inefficient if the parsers @p@ and @end@ overlap,
--- as it can lead to a lot of backtracking.
-manyTill :: Alternative f => f a -> f b -> f [a]
-manyTill p end = scan where scan = (end $> []) <|> liftA2 (:) p scan
-
--- | @manyTill p end@ applies the parser @p@ /one/ or more times until
--- the parser @end@ succeeds, and returns the list of values returned by
--- @p@. The result of @end@ is discarded.
---
--- Note that this can be inefficient if the parsers @p@ and @end@ overlap,
--- as it can lead to a lot of backtracking.
-many1Till :: Alternative f => f a -> f b -> f [a]
-many1Till p end = liftA2 (:) p (manyTill p end)
+isNotToken :: forall b i. (MonadPlus b, Eq i) => i -> Parser b i i
+isNotToken i = Torch.Data.Parser.satisfy (/= i)
 
 -- | Stateful scanner.
 --
@@ -174,12 +180,6 @@ scan f s p = many_p s
     many_p s = many1_p s <|> pure []
     many1_p s = p >>= \a -> maybe empty (fmap (a :) . many_p) (f s a)
 
--- | @repeatP n p@ applies the parser @p@ @n@ times and returns
--- every parsing result. If parsing of @p@ succeeds less the @n@ times,
--- @repeatP n p@ fails.
-repeatP :: Monad m => Int -> m a -> m [a]
-repeatP = replicateM
-
 -- | @atMost n p@ applies the parser @p@ at most @n@ times and returns
 -- every parsing result. If parsing of @p@ succeeds less the @n@ times,
 -- @repeatP n p@ succeeds as well.
@@ -192,33 +192,6 @@ atMost n =
         | s >= n = Nothing
         | otherwise = Just (s + 1)
    in scan f 0
-
--- | @skipMany p@ skips /zero/ or more instances of the parser @p@.
--- The parsing results are discarded.
-skipMany :: Alternative f => f a -> f ()
-skipMany p = scan where scan = (p *> scan) <|> pure ()
-
--- | @skipMany1 p@ skips /one/ or more instances of the parser @p@.
--- The parsing results are discarded.
-skipMany1 :: Alternative f => f a -> f ()
-skipMany1 p = p *> skipMany p
-
--- | @sepBy p sep@ applies /zero/ or more occurrences of the parser @p@,
--- separated by @sep@. Returns a list of the values returned by @p@ and
--- discards the results of @sep@.
-sepBy :: Alternative f => f a -> f sep -> f [a]
-sepBy p sep = (p `sepBy1` sep) <|> pure []
-
--- | @sepBy1 p sep@ applies /one/ or more occurrences of the parser @p@,
--- separated by @sep@. Returns a list of the values returned by @p@ and
--- discards the results of @sep@.
-sepBy1 :: Alternative f => f a -> f sep -> f [a]
-sepBy1 p sep = (:) <$> p <*> many (sep *> p)
-
--- | @maybeP p@ applies the parser @p@ optionally and returns the result
--- wrapped in @Maybe@.
-maybeP :: Alternative f => f a -> f (Maybe a)
-maybeP = optional
 
 -- | @eitherP p p'@ combines the two alternatives @p@ and @p'@.
 eitherP :: Alternative f => f a -> f b -> f (Either a b)
@@ -236,19 +209,10 @@ combine = liftA2 (<>)
 combines :: (Applicative f, Monoid a) => [f a] -> f a
 combines = foldl combine (pure mempty)
 
--- | @between open close p@ applies the parsers @open@, @p@, and @close@
--- in that order. Only the result of @p@ is returned, the results of @open@
--- and @close@ are discarded.
---
--- This combinator is useful for parsing expressions wrapped in parentheses,
--- for example.
-between :: Applicative f => f a1 -> f a2 -> f a -> f a
-between open close p = open *> p <* close
-
 -- | @isString s@ is a simple parser that consumes 'Char' tokens and yields them
 -- if and only if they assemble the 'String' @s@. Otherwise, the parser fails.
 isString :: (Traversable t, MonadPlus b, Eq i) => t i -> Parser b i (t i)
-isString = traverse is
+isString = traverse isToken
 
 -- | @string@ matches any string
 --
@@ -263,20 +227,18 @@ isString = traverse is
 string :: MonadPlus b => Parser b i [i]
 string = many token
 
-string1 :: MonadPlus b => Parser b i [i]
-string1 = many1 token
+-- string1 :: MonadPlus b => Parser b i [i]
+-- string1 = many1 token
 
-space :: MonadPlus b => Parser b Char String
-space = many (satisfy isSpace)
 
-space1 :: MonadPlus b => Parser b Char String
-space1 = many1 (satisfy isSpace)
+-- alphas1 :: MonadPlus b => Parser b Char String
+-- alphas1 = many1 (satisfy isAlpha)
 
-alpha1 :: MonadPlus b => Parser b Char String
-alpha1 = many1 (satisfy isAlpha)
+-- alphaNums1 :: MonadPlus b => Parser b Char String
+-- alphaNums1 = many1 (satisfy isAlphaNum)
 
-alphaNum1 :: MonadPlus b => Parser b Char String
-alphaNum1 = many1 (satisfy isAlphaNum)
+intP :: (CharParsing m, Monad m) => m Int
+intP = some digit >>= maybe empty pure . readMaybe
 
-digits1 :: MonadPlus b => Parser b Char String
-digits1 = many1 (satisfy isDigit)
+doubleP :: (CharParsing m, Monad m) => m Double
+doubleP = some (Text.Parser.Char.satisfy (not . isSpace)) >>= maybe empty pure . readMaybe
