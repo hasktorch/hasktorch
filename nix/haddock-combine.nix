@@ -1,4 +1,4 @@
-{ runCommand, lib, ghc }:
+{ runCommand, lib, ghc, pkgs}:
 { hspkgs # Haskell packages to make documentation for. Only those with a "doc" output will be used.
   # Note: we do not provide arbitrary additional Haddock options, as these would not be 
   # applied consistently, since we're reusing the already built Haddock for the packages.
@@ -6,7 +6,7 @@
 }: 
 let 
   hsdocs = builtins.map (x: x.doc) (builtins.filter (x: x ? doc) hspkgs); 
-in runCommand "haddock-join" { buildInputs = [ hsdocs ]; } ''
+in runCommand "haddock-join" { buildInputs = [ hsdocs pkgs.jq ]; } ''
   # Merge all the docs from the packages. We don't use symlinkJoin because:
   # - We are going to want to redistribute this, so we don't want any symlinks.
   # - We want to be selective about what we copy (we don't need the hydra 
@@ -56,4 +56,15 @@ in runCommand "haddock-join" { buildInputs = [ hsdocs ]; } ''
     --gen-index \
     ${lib.optionalString (prologue != null) "--prologue ${prologue}"} \
     "''${interfaceOpts[@]}"
+
+  echo "[]" > "$root/doc-index.json"
+  for file in $(ls $root/*/*/doc-index.json); do
+    project=$(basename $(dirname $(dirname $file)))"/html"
+    jq -s \
+      ".[0] + [.[1][] | (. + {link: (\"$project/\" + .link)}) ]" \
+      "$root/doc-index.json" \
+      $file \
+      > /tmp/doc-index.json
+    mv /tmp/doc-index.json "$root/doc-index.json"
+  done
 ''
