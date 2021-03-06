@@ -671,3 +671,11 @@ instance Castable [Tensor] (ForeignPtr (ATen.C10List ATen.Tensor)) where
   uncast xs f = uncast xs $ \ptr_list -> do
     tensor_list <- mapM (\(x :: ForeignPtr ATen.Tensor) -> uncast x return) ptr_list
     f tensor_list
+
+instance Castable [Tensor] (ForeignPtr (ATen.C10List (ATen.C10Optional ATen.Tensor))) where
+  cast xs f = do
+    ptr_list <- mapM (\x -> (cast x return :: IO (ForeignPtr ATen.Tensor))) xs
+    cast ptr_list f
+  uncast xs f = uncast xs $ \ptr_list -> do
+    tensor_list <- mapM (\(x :: ForeignPtr ATen.Tensor) -> uncast x return) ptr_list
+    f tensor_list

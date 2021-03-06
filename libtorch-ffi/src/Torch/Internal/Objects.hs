@@ -23,6 +23,9 @@ foreign import ccall unsafe "hasktorch_finalizer.h &delete_c10listivalue"
 foreign import ccall unsafe "hasktorch_finalizer.h &delete_c10listtensor"
   c_delete_c10listtensor :: FunPtr ( Ptr (C10List Tensor) -> IO ())
 
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_c10listoptionaltensor"
+  c_delete_c10listoptionaltensor :: FunPtr ( Ptr (C10List (C10Optional Tensor)) -> IO ())
+
 foreign import ccall unsafe "hasktorch_finalizer.h &delete_c10listdouble"
   c_delete_c10listdouble :: FunPtr ( Ptr (C10List CDouble) -> IO ())
 
@@ -37,6 +40,9 @@ instance CppObject (C10List IValue) where
 
 instance CppObject (C10List Tensor) where
   fromPtr ptr = newForeignPtr c_delete_c10listtensor ptr
+
+instance CppObject (C10List (C10Optional Tensor)) where
+  fromPtr ptr = newForeignPtr c_delete_c10listoptionaltensor ptr
 
 instance CppObject (C10List CDouble) where
   fromPtr ptr = newForeignPtr c_delete_c10listdouble ptr
@@ -278,3 +284,9 @@ foreign import ccall unsafe "hasktorch_finalizer.h &delete_stdvectorbool"
 
 instance CppObject (StdVector CBool) where
   fromPtr ptr = newForeignPtr c_delete_stdvectorbool ptr
+
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_stream"
+  c_delete_stream :: FunPtr ( Ptr Stream -> IO ())
+
+instance CppObject Stream where
+  fromPtr ptr = newForeignPtr c_delete_stream ptr

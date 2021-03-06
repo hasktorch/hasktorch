@@ -98,11 +98,17 @@ kMSNPU = [C.pure| int16_t { (int16_t) at::DeviceType::MSNPU } |]
 kXLA :: DeviceType
 kXLA = [C.pure| int16_t { (int16_t) at::DeviceType::XLA } |]
 
+kVulkan :: DeviceType
+kVulkan = [C.pure| int16_t { (int16_t) at::DeviceType::Vulkan } |]
+
+kMetal :: DeviceType
+kMetal = [C.pure| int16_t { (int16_t) at::DeviceType::Metal } |]
+
+kXPU :: DeviceType
+kXPU = [C.pure| int16_t { (int16_t) at::DeviceType::XPU } |]
+
 kCOMPILE_TIME_MAX_DEVICE_TYPES :: DeviceType
 kCOMPILE_TIME_MAX_DEVICE_TYPES = [C.pure| int16_t { (int16_t) at::DeviceType::COMPILE_TIME_MAX_DEVICE_TYPES } |]
-
-kONLY_FOR_TEST :: DeviceType
-kONLY_FOR_TEST = [C.pure| int16_t { (int16_t) at::DeviceType::ONLY_FOR_TEST } |]
 
 -- TODO: add all values for at::Reduction
 

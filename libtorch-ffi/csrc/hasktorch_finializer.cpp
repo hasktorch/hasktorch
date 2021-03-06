@@ -29,6 +29,10 @@ void delete_c10listtensor(c10::List<at::Tensor>* object){
   delete object;
 }
 
+void delete_c10listoptionaltensor(c10::List<c10::optional<at::Tensor>>* object){
+  delete object;
+}
+
 void delete_c10listdouble(c10::List<double>* object){
   delete object;
 }
@@ -173,6 +177,10 @@ void delete_optimizer(torch::optim::Optimizer* object){
   delete object;
 }
 
+void delete_stream(c10::Stream* object){
+  delete object;
+}
+
 std::map<void*,int> objectAge;
 std::map<void*,int> prevObjectAge;
 
@@ -212,6 +220,8 @@ showObject(int flag, void* ptr, void* fptr){
     std::cout << age << ":" << "c10listivalue" << ":" << std::hex << (ptr) << std::dec << std::endl;
   }else if(fptr == (void*)delete_c10listtensor){
     std::cout << age << ":" << "c10listtensor" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_c10listoptionaltensor){
+    std::cout << age << ":" << "c10listoptionaltensor" << ":" << std::hex << (ptr) << std::dec << std::endl;
   }else if(fptr == (void*)delete_c10listdouble){
     std::cout << age << ":" << "c10listdouble" << ":" << std::hex << (ptr) << std::dec << std::endl;
   }else if(fptr == (void*)delete_c10listint){
@@ -284,6 +294,8 @@ showObject(int flag, void* ptr, void* fptr){
     std::cout << age << ":" << "(double,double)" << ":" << std::hex << (ptr) << std::dec << std::endl;
   }else if(fptr == (void*)delete_optimizer){
     std::cout << age << ":" << "optimizer" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_stream){
+    std::cout << age << ":" << "stream" << ":" << std::hex << (ptr) << std::dec << std::endl;
   }
 }
 

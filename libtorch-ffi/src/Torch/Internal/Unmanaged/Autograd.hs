@@ -61,6 +61,8 @@ grad y inputs = [C.throwBlock| std::vector<at::Tensor>* {
     auto outputs = engine.execute(roots, grads,
                                   /*keep_graph=*/true,
                                   /*create_graph=*/false,
+                                  /*accumulate_grad=*/false, // https://github.com/pytorch/pytorch/pull/46855
+                                                             // https://github.com/pytorch/pytorch/issues/46373
                                   output_edges);
 
     return new std::vector<at::Tensor>(at::fmap<at::Tensor>(outputs));
