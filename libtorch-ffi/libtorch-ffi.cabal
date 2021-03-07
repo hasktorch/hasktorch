@@ -17,6 +17,11 @@ Flag cuda
  Default: False
  Manual: True
 
+Flag rocm
+ Description: A flag to link libtorch_hip.
+ Default: False
+ Manual: True
+
 Flag gcc
  Description: A flag to use gcc on macos
  Default: False
@@ -153,6 +158,9 @@ library
 
  if flag(cuda)
   extra-libraries:     torch_cuda
+
+ if flag(rocm)
+  extra-libraries:     torch_hip
 
  extra-ghci-libraries: stdc++
  if os(darwin)

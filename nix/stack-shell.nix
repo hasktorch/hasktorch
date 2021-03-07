@@ -11,9 +11,10 @@
 , sourcesOverride ? {}
 , cudaSupport ? false
 , cudaMajorVersion ? null
+, rocmSupport ? false
 , withHoogle ? false
 , pkgs ? import ./default.nix {
-    inherit config sourcesOverride cudaSupport cudaMajorVersion;
+    inherit config sourcesOverride cudaSupport cudaMajorVersion rocmSupport;
   }
 }:
 with pkgs;
