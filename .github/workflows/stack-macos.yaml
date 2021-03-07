@@ -20,7 +20,7 @@ jobs:
         clang --version
         stack --version
         brew tap hasktorch/libtorch-prebuild https://github.com/hasktorch/homebrew-libtorch-prebuild || true
-        brew install libtorch-prebuild@1.7 || true
+        brew install libtorch-prebuild@1.8 || true
         #pushd deps/ ; ./get-deps.sh -a cpu -c ;popd
     - name: Build
       run: |
