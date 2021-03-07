@@ -16,8 +16,10 @@
 # if cudaSupport is true, this needs to be set to a valid CUDA major version number, e.g. 10:
 # nix-build --arg cudaSupport true --argstr cudaMajorVersion 10
 , cudaMajorVersion ? null
+# if true, activates ROCM support
+, rocmSupport ? false
 # pinned version of nixpkgs augmented with various overlays.
-, pkgs ? import ./nix/default.nix { inherit system crossSystem config sourcesOverride cudaSupport cudaMajorVersion; }
+, pkgs ? import ./nix/default.nix { inherit system crossSystem config sourcesOverride cudaSupport cudaMajorVersion rocmSupport; }
 # git sha1 hash, to be passed when not building from a git work tree.
 , gitrev ? null
 }:
