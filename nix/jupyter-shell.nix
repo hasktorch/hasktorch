@@ -45,8 +45,10 @@ in
 # Enable CUDA support
 , cudaSupport ? false
 , cudaMajorVersion ? null
+# Enable ROCM support
+, rocmSupport ? false
 , pkgs ? import ./default.nix {
-    inherit config sourcesOverride cudaSupport cudaMajorVersion extras;
+    inherit config sourcesOverride cudaSupport cudaMajorVersion rocmSupport extras;
   }
 }:
 

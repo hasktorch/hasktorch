@@ -9,12 +9,14 @@
 # Enable CUDA support
 , cudaSupport ? false
 , cudaMajorVersion ? null
+# Enable ROCM support
+, rocmSupport ? false
 # Add packages on top of the package set derived from cabal resolution
 , extras ? (_: {})
 }:
 
 # assert that the correct cuda versions are used
-assert cudaSupport -> (cudaMajorVersion == "9" || cudaMajorVersion == "10" || cudaMajorVersion == "11");
+assert cudaSupport -> (cudaMajorVersion == "10" || cudaMajorVersion == "11");
 
 let
   sources = import ./sources.nix { inherit pkgs; }
@@ -73,15 +75,7 @@ let
     ++ [
       (pkgs: _: with pkgs;
         let libtorchSrc = callPackage "${sources.pytorch-world}/libtorch/release.nix" { }; in
-        if cudaSupport && cudaMajorVersion == "9" then
-          let libtorch = libtorchSrc.libtorch_cudatoolkit_9_2; in
-          {
-            c10 = libtorch;
-            torch = libtorch;
-            torch_cpu = libtorch;
-            torch_cuda = libtorch;
-          }
-        else if cudaSupport && cudaMajorVersion == "10" then
+        if cudaSupport && cudaMajorVersion == "10" then
           let libtorch = libtorchSrc.libtorch_cudatoolkit_10_2; in
           {
             c10 = libtorch;
@@ -90,12 +84,20 @@ let
             torch_cuda = libtorch;
           }
         else if cudaSupport && cudaMajorVersion == "11" then
-          let libtorch = libtorchSrc.libtorch_cudatoolkit_11_0; in
+          let libtorch = libtorchSrc.libtorch_cudatoolkit_11_1; in
           {
             c10 = libtorch;
             torch = libtorch;
             torch_cpu = libtorch;
             torch_cuda = libtorch;
+          }
+        else if rocmSupport then
+          let libtorch = libtorchSrc.libtorch_rocm; in
+          {
+            c10 = libtorch;
+            torch = libtorch;
+            torch_cpu = libtorch;
+            torch_hip = libtorch;
           }
         else
           let libtorch = libtorchSrc.libtorch_cpu; in
@@ -109,7 +111,7 @@ let
     # hasktorch overlays:
     ++ [
       (pkgs: _: with pkgs; {
-        inherit gitrev cudaSupport extras;
+        inherit gitrev cudaSupport rocmSupport extras;
 
         # commonLib: mix pkgs.lib with iohk-nix utils and sources:
         commonLib = lib // iohkNix
