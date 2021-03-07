@@ -416,8 +416,12 @@ medianDim input = unsafePerformIO $ ATen.cast2 ATen.Managed.median_tl input (nat
 -- See https://pytorch.org/docs/stable/torch.html#torch.median for more information.
 --
 -- >>> t = fromJust [[5, 1], [3, 2], [4, 1], [2, 7]] :: CPUTensor 'D.Float '[4, 2]
+-- 
+-- -- libtorch 1.7.0
+-- -- (Tensor Float [1,2] [[ 3.0000   ,  1.0000   ]],Tensor Int64 [1,2] [[ 1,  0]])
+-- -- libtorch 1.8.0
 -- >>> median @0 @KeepDim t
--- (Tensor Float [1,2] [[ 3.0000   ,  1.0000   ]],Tensor Int64 [1,2] [[ 1,  0]])
+-- (Tensor Float [1,2] [[ 3.0000   ,  1.0000   ]],Tensor Int64 [1,2] [[ 1,  2]])
 median ::
   forall dim keepOrDropDim shape' shape dtype device.
   ( KnownNat dim,
@@ -2805,11 +2809,18 @@ type family PaddingIdxCheck (idx :: Maybe Nat) (numEmbeds :: Nat) :: Constraint 
 --
 -- >>> weights = fromJust [[1, 1], [2, 2], [3, 3], [4, 4]] :: CPUTensor 'D.Float '[4, 2]
 -- >>> indices = fromJust [[0], [2], [0], [1]] :: CPUTensor 'D.Int64 '[4, 1]
--- >>> t = embedding @('Just 0) False False weights indices
+-- >>> t = embedding @('Just 1) False False weights indices
 -- >>> :type t
 -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[4, 1, 2]
+-- 
+-- -- libtorch 1.7
+-- -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[[Float]]]) $ t
+-- -- (Float,([4,1,2],[[[1.0,1.0]],[[3.0,3.0]],[[1.0,1.0]],[[2.0,2.0]]]))
+-- -- 
+-- -- libtorch 1.8
+-- -- The behavior of libtorch 1.8 changes. See https://github.com/pytorch/pytorch/issues/53368
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[[Float]]]) $ t
--- (Float,([4,1,2],[[[1.0,1.0]],[[3.0,3.0]],[[1.0,1.0]],[[2.0,2.0]]]))
+-- (Float,([4,1,2],[[[1.0,1.0]],[[3.0,3.0]],[[1.0,1.0]],[[0.0,0.0]]]))
 -- >>> t = embedding @'Nothing False False weights indices
 -- >>> :type t
 -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[4, 1, 2]
