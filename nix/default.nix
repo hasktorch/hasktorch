@@ -95,9 +95,11 @@ let
           let libtorch = libtorchSrc.libtorch_rocm; in
           {
             c10 = libtorch;
+            c10_hip = libtorch;
             torch = libtorch;
             torch_cpu = libtorch;
             torch_hip = libtorch;
+            bz2 = bzip2.lib;
           }
         else
           let libtorch = libtorchSrc.libtorch_cpu; in
