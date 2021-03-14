@@ -9,7 +9,6 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE NoStarIsType #-}
 
 module Torch.Typed.Aux where
 
@@ -101,7 +100,7 @@ type family LastDim (l :: [a]) :: Nat where
 
 type family Product (xs :: [Nat]) :: Nat where
   Product '[] = 1
-  Product (x ': xs) = x * Product xs
+  Product (x ': xs) = x GHC.TypeLits.* Product xs
 
 type family BackwardsImpl (last :: Nat) (n :: Nat) :: Nat where
   BackwardsImpl last n = last - n
