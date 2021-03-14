@@ -59,19 +59,6 @@
         "url": "https://github.com/nmattia/niv/archive/3cd7914b2c4cff48927e11c216dadfab7d903fe5.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
-    "nixpkgs-2009": {
-        "branch": "nixpkgs-20.09-darwin",
-        "builtin": false,
-        "description": "Nix Packages collection",
-        "homepage": null,
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "f02bf8ffb9a5ec5e8f6f66f1e5544fd2aa1a0693",
-        "sha256": "156f48manydh8sbrs8j97mzvwdz2zaw51xlm0grrrnns5wa5aaln",
-        "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/f02bf8ffb9a5ec5e8f6f66f1e5544fd2aa1a0693.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
     "pytorch-world": {
         "branch": "unstable",
         "description": "nix scripts for pytorch-related libraries",
