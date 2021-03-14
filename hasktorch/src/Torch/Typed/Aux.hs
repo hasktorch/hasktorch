@@ -9,6 +9,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE NoStarIsType #-}
 
 module Torch.Typed.Aux where
 
@@ -98,7 +99,7 @@ type family LastDim (l :: [a]) :: Nat where
   LastDim (_ ': '[]) = 0
   LastDim (_ ': t) = 1 + LastDim t
 
-type family Product (xs :: '[Nat]) :: Nat where
+type family Product (xs :: [Nat]) :: Nat where
   Product '[] = 1
   Product (x ': xs) = x * Product xs
 
