@@ -98,6 +98,10 @@ type family LastDim (l :: [a]) :: Nat where
   LastDim (_ ': '[]) = 0
   LastDim (_ ': t) = 1 + LastDim t
 
+type family Product (xs :: '[Nat]) :: Nat where
+  Product '[] = 1
+  Product (x ': xs) = x * Product xs
+
 type family BackwardsImpl (last :: Nat) (n :: Nat) :: Nat where
   BackwardsImpl last n = last - n
 

@@ -103,7 +103,6 @@ library
                     , safe-exceptions
                     , random
                     , reflection
-                    , singletons < 3
                     , stm
                     , JuicyPixels
                     , vector
@@ -212,7 +211,6 @@ test-suite doctests
                     , safe-exceptions
                     , random
                     , reflection
-                    , singletons < 3
                     , stm
                     , JuicyPixels
                     , vector
