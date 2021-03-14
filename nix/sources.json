@@ -5,10 +5,10 @@
         "homepage": "",
         "owner": "input-output-hk",
         "repo": "hackage.nix",
-        "rev": "cc0a20004492f75568a633b91aacc6471eb8a531",
-        "sha256": "1qzyxj1l0wwfa8300sp2j1jc44gwbfxankh67l7d2vy72s7zynlv",
+        "rev": "a9ebe2761bf69cd32292ed749e0f76667391aab6",
+        "sha256": "0mwydynzq3p17wkkqd8drc57387m2drcgz0780x51nci9jwy8ac4",
         "type": "tarball",
-        "url": "https://github.com/input-output-hk/hackage.nix/archive/cc0a20004492f75568a633b91aacc6471eb8a531.tar.gz",
+        "url": "https://github.com/input-output-hk/hackage.nix/archive/a9ebe2761bf69cd32292ed749e0f76667391aab6.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "haskell-nix": {
@@ -17,10 +17,10 @@
         "homepage": "https://input-output-hk.github.io/haskell.nix",
         "owner": "input-output-hk",
         "repo": "haskell.nix",
-        "rev": "958e9d3e9ec53fbce72ac720b10a6418f3b477f0",
-        "sha256": "0j9p3xyck636gv87rwd6yl7w9ssv3jwrfqyxvhpchszkj097qwi6",
+        "rev": "08887404bb23e7e6c49e3d4404394a6c03162c0c",
+        "sha256": "055mc75v9sa8b7xajq5vn3pqfbqnpwn6wznbisb9rpr0n8w6ds66",
         "type": "tarball",
-        "url": "https://github.com/input-output-hk/haskell.nix/archive/958e9d3e9ec53fbce72ac720b10a6418f3b477f0.tar.gz",
+        "url": "https://github.com/input-output-hk/haskell.nix/archive/08887404bb23e7e6c49e3d4404394a6c03162c0c.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "iohk-nix": {
@@ -29,10 +29,10 @@
         "homepage": null,
         "owner": "input-output-hk",
         "repo": "iohk-nix",
-        "rev": "4efc38924c64c23a582c84950c8c25f72ff049cc",
-        "sha256": "0nhwyrd0xc72yj5q3jqa2wl4khp4g7n72i45cxy2rgn9nrp8wqh0",
+        "rev": "666e57027dca46964c6a26efcc2042b247d354a5",
+        "sha256": "0v5sgs8wf47x4csr6f70z2hi47my5r981m71nqgkj04n0sr6lz4b",
         "type": "tarball",
-        "url": "https://github.com/input-output-hk/iohk-nix/archive/4efc38924c64c23a582c84950c8c25f72ff049cc.tar.gz",
+        "url": "https://github.com/input-output-hk/iohk-nix/archive/666e57027dca46964c6a26efcc2042b247d354a5.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "jupyterWith": {
@@ -53,10 +53,10 @@
         "homepage": "https://github.com/nmattia/niv",
         "owner": "nmattia",
         "repo": "niv",
-        "rev": "3cd7914b2c4cff48927e11c216dadfab7d903fe5",
-        "sha256": "1agq4nvbhrylf2s77kb4xhh9k7xcwdwggq764k4jgsbs70py8cw3",
+        "rev": "af958e8057f345ee1aca714c1247ef3ba1c15f5e",
+        "sha256": "1qjavxabbrsh73yck5dcq8jggvh3r2jkbr6b5nlz5d9yrqm9255n",
         "type": "tarball",
-        "url": "https://github.com/nmattia/niv/archive/3cd7914b2c4cff48927e11c216dadfab7d903fe5.tar.gz",
+        "url": "https://github.com/nmattia/niv/archive/af958e8057f345ee1aca714c1247ef3ba1c15f5e.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "pytorch-world": {
@@ -77,10 +77,10 @@
         "homepage": "",
         "owner": "input-output-hk",
         "repo": "stackage.nix",
-        "rev": "42c0a1c7e16f53e12d6177839a6d3b19f15b4b2f",
-        "sha256": "0q8d7bwwky7i1il2mf7rhaj5d01iv76dnssgmab4hvsgp5k02xlc",
+        "rev": "e80eba940efc2d1d03d8e38828a4b8e270ad5391",
+        "sha256": "0fisn0z4k7nq1y546jjvxdqziszdjj656fcysb49c83zl2n26y76",
         "type": "tarball",
-        "url": "https://github.com/input-output-hk/stackage.nix/archive/42c0a1c7e16f53e12d6177839a6d3b19f15b4b2f.tar.gz",
+        "url": "https://github.com/input-output-hk/stackage.nix/archive/e80eba940efc2d1d03d8e38828a4b8e270ad5391.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }
