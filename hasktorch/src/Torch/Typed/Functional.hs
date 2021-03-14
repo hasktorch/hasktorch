@@ -28,7 +28,6 @@ import Data.Kind
 import Data.Maybe
 import Data.Proxy
 import Data.Reflection
-import Data.Singletons.Prelude.List (Product)
 import Foreign.ForeignPtr
 import GHC.Generics (Generic)
 import GHC.Natural (Natural)
