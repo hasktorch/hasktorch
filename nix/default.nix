@@ -20,16 +20,15 @@ let
   sources = import ./sources.nix { inherit pkgs; }
     // sourcesOverride;
   iohKNix = import sources.iohk-nix {};
-  haskellNix = (import sources.haskell-nix { inherit system sourcesOverride; }).nixpkgsArgs;
-  # use our own nixpkgs if it exist in our sources,
-  # otherwise use iohkNix default nixpkgs.
-  nixpkgs = sources.nixpkgs-staging-next or
-    (builtins.trace "Using IOHK default nixpkgs" iohKNix.nixpkgs);
+  haskellNix = import sources.haskell-nix { inherit system sourcesOverride; };
+
+  # Use haskell.nix default nixpkgs
+  nixpkgsSrc = haskellNix.sources.nixpkgs-2009;
 
   # for inclusion in pkgs:
   overlays =
     # Haskell.nix (https://github.com/input-output-hk/haskell.nix)
-    haskellNix.overlays
+    haskellNix.nixpkgsArgs.overlays
     # override Haskell.nix hackage and stackage sources
     ++ [
       (pkgsNew: pkgsOld: let inherit (pkgsNew) lib; in {
@@ -90,7 +89,7 @@ let
         commonLib = lib // iohkNix
           // import ./util.nix { inherit haskell-nix; }
           # also expose sources, nixpkgs and overlays
-          // { inherit overlays sources nixpkgs; };
+          // { inherit overlays sources nixpkgsSrc; };
       })
       # haskell-nix-ified hasktorch cabal project:
       (import ./pkgs.nix)
@@ -101,9 +100,9 @@ let
       (import "${sources.jupyterWith}/nix/overlay.nix")
     ];
 
-  pkgs = import nixpkgs {
+  pkgs = import nixpkgsSrc {
     inherit system crossSystem overlays;
-    config = haskellNix.config // config;
+    config = haskellNix.nixpkgsArgs.config // config;
   };
 
 in pkgs
