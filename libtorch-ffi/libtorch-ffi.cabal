@@ -162,7 +162,10 @@ library
  if flag(rocm)
   extra-libraries:     c10_hip
                      , torch_hip
+                     , sqlite3
+                     , tinfo
                      , bz2
+                     , z
   ghc-options:       -optcxx-D_GLIBCXX_USE_CXX11_ABI=0
   cxx-options:       -D_GLIBCXX_USE_CXX11_ABI=0
 

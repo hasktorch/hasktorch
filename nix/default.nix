@@ -92,14 +92,39 @@ let
             torch_cuda = libtorch;
           }
         else if rocmSupport then
-          let libtorch = libtorchSrc.libtorch_rocm; in
+          let libtorch = libtorchSrc.libtorch_rocm.overrideAttrs (oldAttrs: {
+                preFixup = ''
+                  for i in $out/lib/*so* ; do 
+                    patchelf --set-rpath $out/lib:${librocm-extra.out}/lib $i
+                  done
+                '';
+              });
+              version = "1.8";
+              librocm-extra =
+                stdenv.mkDerivation {
+                  name = "librocm-extra-${version}";
+                  inherit version;
+                  src = fetchzip {
+                    url = "https://github.com/hasktorch/libtorch-binary-for-ci/releases/download/1.8.0/librocm-extra.zip";
+                    sha256 = "0g5y8nc5ipz3f33qcwmbcrmz206lazm7h3q7ww8wb7hw6ka1b51m";
+                  };
+                  installPhase = ''
+                    mkdir $out
+                    cp -r {$src,$out}/lib/
+                  '';
+                  dontStrip = true;
+                };
+          in
           {
             c10 = libtorch;
             c10_hip = libtorch;
             torch = libtorch;
             torch_cpu = libtorch;
             torch_hip = libtorch;
-            bz2 = bzip2.lib;
+            z = librocm-extra;
+            bz2 = librocm-extra;
+            tinfo = librocm-extra;
+            sqlite3 = librocm-extra;
           }
         else
           let libtorch = libtorchSrc.libtorch_cpu; in
