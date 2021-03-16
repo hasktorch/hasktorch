@@ -39,6 +39,7 @@ tenTypeToCppType tentype =
     TensorAVector -> "std::vector<at::Tensor>"
     TensorOptions -> "at::TensorOptions"
     TensorList -> "std::vector<at::Tensor>"
+    C10ListTensor -> "c10::List<c10::optional<at::Tensor>>"
     IndexTensor -> "at::Tensor"
     IntegerTensor -> "at::Tensor"
     BoolTensor -> "at::Tensor"
@@ -106,6 +107,7 @@ parsableToCppType parsable =
     DimnameList -> "std::vector<at::Dimname>"
     Symbol -> "at::Symbol"
     IValue -> "at::IValue"
+    Stream -> "c10::Stream"
 
 
 ------ To Haskell Type ------
@@ -122,6 +124,7 @@ tenTypeToHsType tentype =
     TensorAVector -> "TensorAVector"
     TensorOptions -> "TensorOptions"
     TensorList -> "TensorList"
+    C10ListTensor -> "(C10List (C10Optional Tensor))"
     IntegerTensor -> "Tensor"
     IndexTensor -> "Tensor"
     BoolTensor -> "Tensor"
@@ -149,6 +152,7 @@ tenTypeToHigherHsType tentype =
     TensorAVector -> "[Tensor]"
     TensorOptions -> "TensorOptions"
     TensorList -> "[Tensor]"
+    C10ListTensor -> "[Tensor]"
     IntegerTensor -> "Tensor"
     IndexTensor -> "Tensor"
     BoolTensor -> "Tensor"
@@ -246,6 +250,7 @@ parsableToHsType parsable =
     DimnameList -> "DimnameList"
     Symbol -> "Symbol"
     IValue -> "IValue"
+    Stream -> "Stream"
 
 parsableToHigherHsType :: Parsable -> Text
 parsableToHigherHsType parsable =
@@ -270,6 +275,7 @@ parsableToHigherHsType parsable =
     DimnameList -> "[Dimname]"
     Symbol -> "Symbol"
     IValue -> "IValue"
+    Stream -> "Stream"
 
 
 ------ To initial characters ------
@@ -286,6 +292,7 @@ tenTypeToInitial tentype =
     TensorAVector -> "v"
     TensorOptions -> "o"
     TensorList -> "l"
+    C10ListTensor -> "l"
     IndexTensor -> "t"
     IntegerTensor -> "t"
     BoolTensor -> "t"
@@ -347,6 +354,7 @@ parsableToInitial parsable =
     DimnameList -> "N"
     Symbol -> "s"
     IValue -> "V"
+    Stream -> "s"
 
 isCType :: Parsable -> Bool
 isCType p =
@@ -397,6 +405,7 @@ retToCppType parsable =
     DimnameList -> "std::vector<at::Dimname>"
     Symbol -> "at::Symbol"
     IValue -> "at::IValue"
+    Stream -> "c10::Stream"
 
 
 
