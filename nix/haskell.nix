@@ -12,8 +12,6 @@
 , gitrev ? null
 # Enable CUDA support
 , cudaSupport ? false
-# Enable ROCM support
-, rocmSupport ? false
 # Add packages on top of the package set derived from cabal resolution
 , extras ? (_: {})
 }:
@@ -102,7 +100,7 @@ let
           ];
           flags = {
             cuda = cudaSupport;
-            rocm = rocmSupport;
+            rocm = false;
             gcc = !cudaSupport && pkgs.stdenv.hostPlatform.isDarwin;
           };
         };

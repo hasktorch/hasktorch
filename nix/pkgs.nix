@@ -9,7 +9,6 @@ pkgs: _: with pkgs; {
       config
       gitrev
       cudaSupport
-      rocmSupport
       extras
       ;
   };

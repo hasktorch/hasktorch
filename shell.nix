@@ -7,11 +7,9 @@
 # If cudaSupport is true, this needs to be set to a valid CUDA major version number, e.g. 10:
 # nix-shell --arg cudaSupport true --argstr cudaMajorVersion 10
 , cudaMajorVersion ? null
-# If true, activates ROCM support
-, rocmSupport ? false
 , withHoogle ? false
 , pkgs ? import ./nix/default.nix {
-    inherit config sourcesOverride cudaSupport cudaMajorVersion rocmSupport;
+    inherit config sourcesOverride cudaSupport cudaMajorVersion;
   }
 }:
 

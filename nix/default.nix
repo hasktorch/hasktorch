@@ -9,8 +9,6 @@
 # Enable CUDA support
 , cudaSupport ? false
 , cudaMajorVersion ? null
-# Enable ROCM support
-, rocmSupport ? false
 # Add packages on top of the package set derived from cabal resolution
 , extras ? (_: {})
 }:
@@ -91,41 +89,6 @@ let
             torch_cpu = libtorch;
             torch_cuda = libtorch;
           }
-        else if rocmSupport then
-          let libtorch = libtorchSrc.libtorch_rocm.overrideAttrs (oldAttrs: {
-                preFixup = ''
-                  for i in $out/lib/*so* ; do 
-                    patchelf --set-rpath $out/lib:${librocm-extra.out}/lib $i
-                  done
-                '';
-              });
-              version = "1.8";
-              librocm-extra =
-                stdenv.mkDerivation {
-                  name = "librocm-extra-${version}";
-                  inherit version;
-                  src = fetchzip {
-                    url = "https://github.com/hasktorch/libtorch-binary-for-ci/releases/download/1.8.0/librocm-extra.zip";
-                    sha256 = "0g5y8nc5ipz3f33qcwmbcrmz206lazm7h3q7ww8wb7hw6ka1b51m";
-                  };
-                  installPhase = ''
-                    mkdir $out
-                    cp -r {$src,$out}/lib/
-                  '';
-                  dontStrip = true;
-                };
-          in
-          {
-            c10 = libtorch;
-            c10_hip = libtorch;
-            torch = libtorch;
-            torch_cpu = libtorch;
-            torch_hip = libtorch;
-            z = librocm-extra;
-            bz2 = librocm-extra;
-            tinfo = librocm-extra;
-            sqlite3 = librocm-extra;
-          }
         else
           let libtorch = libtorchSrc.libtorch_cpu; in
           {
@@ -138,7 +101,7 @@ let
     # hasktorch overlays:
     ++ [
       (pkgs: _: with pkgs; {
-        inherit gitrev cudaSupport rocmSupport extras;
+        inherit gitrev cudaSupport extras;
 
         # commonLib: mix pkgs.lib with iohk-nix utils and sources:
         commonLib = lib // iohkNix
