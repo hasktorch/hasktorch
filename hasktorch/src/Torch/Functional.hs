@@ -956,7 +956,7 @@ nllLoss' ::
 nllLoss' target t = unsafePerformIO $ cast5 ATen.nll_loss_tttll t target weight ReduceMean (-100 :: Int)
   where
     nClass = shape t !! 1 -- TODO: nicer runtime error if input dimensions don't conform
-    weight = toDevice (device target) $ ones' [nClass]
+    weight = toDType (dtype t) $ _toDevice (device target) $ ones' [nClass]
 
 -- | Returns cosine similarity between x1 and x2, computed along dim.
 cosineSimilarity ::

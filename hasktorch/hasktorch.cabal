@@ -49,6 +49,7 @@ library
                     , Torch.Random
                     , Torch.Script
                     , Torch.HList
+                    , Torch.Lens
                     , Torch.Typed
                     , Torch.Typed.Aux
                     , Torch.Typed.Factories
@@ -138,6 +139,7 @@ test-suite spec
                     , FunctionalSpec
                     , GradSpec
                     , InitializerSpec
+                    , LensSpec
                     , OptimSpec
                     , SparseSpec
                     , ScriptSpec
