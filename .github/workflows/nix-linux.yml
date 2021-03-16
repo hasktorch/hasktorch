@@ -52,4 +52,4 @@ jobs:
           nix-build -j 1 -A haskellPackages.libtorch-ffi.checks.spec
           export NIX_BUILD_CORES=1
           nix-build -j 1 -A haskellPackages.hasktorch.checks.spec
-          nix-build -j 1 -A haskellPackages.examples.checks.spec
+          nix-build -j 1 -A haskellPackages.examples
