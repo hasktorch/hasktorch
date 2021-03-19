@@ -37,6 +37,7 @@ They assume the hasktorch repository has just been cloned.
 * [macos+stack+cpu](#macosstackcpu)
 * [nixos+cabal+cpu](#nixoscabalcpu)
 * [nixos+cabal+cuda11](#nixoscabalcuda11)
+* [docker+jupyterlab+cuda11](#dockerjupyterlabcuda11)
 
 
 ### linux+cabal+cpu
@@ -309,6 +310,16 @@ $ export DEVICE="cuda:0"        # Set device to CUDA for the MNIST CNN example.
 $ cabal run static-mnist-cnn    # Run the MNIST CNN example.
 ```
 
+### docker+jupyterlab+cuda11
+
+[This dockerhub repository](https://hub.docker.com/repository/docker/htorch/hasktorch-jupyter) provides the docker-image of jupyterlab.
+It supports cuda11, cuda10 and cpu only. When you use jupyterlab with hasktorch, type following command, then click a url in a console.
+
+```sh
+$ docker run --gpus all -it --rm -p 8888:8888 htorch/hasktorch-jupyter
+or
+$ docker run --gpus all -it --rm -p 8888:8888 htorch/hasktorch-jupyter:latest-cu11
+```
 
 ## Known Issues
 
