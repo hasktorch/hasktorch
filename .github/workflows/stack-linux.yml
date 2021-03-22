@@ -43,6 +43,7 @@ jobs:
         stack exec xor-mlp
     - name: Build tutorial
       run: |
+        stack build tintin
         pushd hasktorch
         stack exec tintin -- run
         popd
