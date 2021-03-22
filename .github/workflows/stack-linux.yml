@@ -46,6 +46,7 @@ jobs:
         pushd hasktorch
         stack exec tintin -- run
         popd
+        mkdir -p public/tutorial
         cp -r hasktorch/.stack-work/tintin/rendered/* public/tutorial
     - name: Deploy tutorial
       if: github.event_name == 'push' && github.ref == 'refs/heads/master'
