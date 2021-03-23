@@ -28,10 +28,10 @@ import Data.List (isInfixOf, nub, sortOn, uncons)
 import qualified Data.Map as Map (Map, lookup, (!))
 import System.IO.Unsafe (unsafePerformIO)
 import Text.Parser.Char (spaces)
-import Text.Parser.Combinators (between, manyTill)
-import Text.Parser.Token (TokenParsing)
+import Text.Parser.Combinators (between, manyTill, Parsing(..))
+import Text.Parser.Token (TokenParsing(..))
 import Torch.DType (DType (..))
-import Torch.Data.Parser (Parser, combine, isString, parseString, recurse, scan, token)
+import Torch.Data.Parser (Parser, combine, isString, parseString, recurse, scan, token, satisfy, isToken, isNotToken)
 import Torch.GraduallyTyped.DType (DataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
@@ -51,7 +51,7 @@ import Torch.GraduallyTyped.Tensor.Type (Tensor (..), shape)
 import Torch.Language.SpiderSQL (SpiderSQL, spiderSQL)
 import qualified Torch.Tensor
 import Prelude hiding (Word, words)
-import Text.Parser.Char (CharParsing(char))
+import Text.Parser.Char (CharParsing(..))
 
 data IsFinished = Finished | Unfinished
 
@@ -317,20 +317,37 @@ transParser vocab = FreeT . fmap (fmap (transParser vocab) . transFreeF) . runFr
           go (c : cs) p = do
             val <- lift $ runFreeT p
             case val of
-              Pure a ->
-                -- pure . unsafePerformIO $ do
-                --   putStrLn $ "pure cs: " <> show cs
-                --   pure a
-                pure a
-              Free feed ->
-                -- unsafePerformIO $ do
-                --   putStrLn $ "recurse c: " <> show c
-                --   pure $ go cs (feed c)
-                go cs (feed c)
+              Pure a -> pure a
+              Free feed -> go cs (feed c)
        in Free feed'
 
+instance
+  (Alternative b, Foldable b, MonadPlus b) =>
+  Parsing (FreeT ((->) Char) (StateT [Int] b))
+  where
+  try = id
+  (<?>) = const
+  skipMany p = scan where scan = (p *> scan) <|> pure ()
+  skipSome p = p *> skipMany p
+  unexpected = const empty
+  eof = undefined
+  notFollowedBy = undefined
+
+instance
+  (Alternative b, Foldable b, MonadPlus b) =>
+  CharParsing (FreeT ((->) Char) (StateT [Int] b))
+  where
+  satisfy = Torch.Data.Parser.satisfy
+  char = isToken
+  notChar = isNotToken
+  anyChar = Torch.Data.Parser.token
+  string = isString
+
+instance
+  (Alternative b, Foldable b, MonadPlus b) =>
+  TokenParsing (FreeT ((->) Char) (StateT [Int] b))
+
 -- | Get continuations from model
--- TODO: memoization? measure cache hits
 getIs ::
   forall model input generator b decoderInput encoderOutput decoderOutput inputPaddingMask s.
   ( Alternative b,
@@ -428,14 +445,14 @@ testParser = do
   model <-
     initialize
       @(T5Small 'WithLMHead ('Device 'CPU))
-      "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-small.pt"
+      "/Users/torsten.scholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-small.pt"
   g <- mkGenerator @('Device CPU) 0
   let outputs = runParser 5 model input g (transParser t5Vocab t5Test)
   pure . fst $ observe outputs
 
 -- | @t5Text@ parses a 'Char' sequence delimited by @</s>@ as a 'String'.
 t5Text :: MonadPlus b => Parser b Char String
-t5Text = manyTill token (isString "</s>")
+t5Text = manyTill Torch.Data.Parser.token (isString "</s>")
 
 -- >>> head $ parseString @[] t5Test "Studien haben belegt, dass es gut ist, einen Hund zu haben</s>"
 -- []
@@ -449,7 +466,7 @@ t5Test =
     `combine` isString "haben"
     `combine` isString "</s>"
   where
-    notEnd n = scan f "" token
+    notEnd n = scan f "" Torch.Data.Parser.token
       where
         f s a = case s ++ [a] of
           s'
