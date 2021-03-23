@@ -11,7 +11,7 @@ USE_NIGHTLY=0
 USE_BINARY_FOR_CI=0
 COMPUTE_ARCH=cpu
 SKIP_DOWNLOAD=0
-VERSION=1.7.0
+VERSION=1.8.0
 
 if ! command -v unzip &> /dev/null
 then
@@ -51,7 +51,7 @@ fi
 
 
 usage_exit() {
-    echo "Usage: $0 [-n] [-c] [-a "cpu" or "cu92" or "cu101" or "cu102" or "cu110"] [-s]" 1>&2
+    echo "Usage: $0 [-n] [-c] [-a "cpu" or "cu102" or "cu111" or "rocm"] [-s]" 1>&2
     echo " -n # Use nightly libtorch w/  -l" 1>&2
     echo "    # Use libtorch-$(VERSION)  w/o -l" 1>&2
     echo "" 1>&2
@@ -59,10 +59,9 @@ usage_exit() {
     echo "    # Download libtorch from pytorch's site w/o  -c" 1>&2
     echo "" 1>&2
     echo " -a cpu   # Use CPU without CUDA" 1>&2
-    echo " -a cu92  # Use CUDA-9" 1>&2
-    echo " -a cu101 # Use CUDA-10.1" 1>&2
     echo " -a cu102 # Use CUDA-10.2" 1>&2
-    echo " -a cu110 # Use CUDA-11" 1>&2
+    echo " -a cu111 # Use CUDA-11.1" 1>&2
+    echo " -a rocm  # Use ROCM" 1>&2
     echo "" 1>&2
     echo " -s # Skip download" 1>&2
     echo "" 1>&2
@@ -128,10 +127,9 @@ if [ "$SKIP_DOWNLOAD" = 0 ] ; then
       else
 	case "${COMPUTE_ARCH}" in
 	      "cpu" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcpu.zip ;;
-	      "cu92" ) URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcu92.zip ;;
-	      "cu101" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcu101.zip ;;
 	      "cu102" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip ;;
-	      "cu110" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcu110.zip ;;
+	      "cu111" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcu111.zip ;;
+	      "rocm" )   URL=https://github.com/hasktorch/libtorch-binary-for-ci/releases/download/${VERSION}/rocm-libtorch-cxx11-abi-shared-with-deps-latest.zip ;;
               *)
                   1>&2 printf "Error: invalid value '%s' passed to -a\n\n" "$COMPUTE_ARCH"
                   usage_exit
@@ -183,6 +181,10 @@ fi
 
 if ! ($PYTHON -c 'import dataclasses') ; then
     $PYTHON -m pip install --user dataclasses
+fi
+
+if ! ($PYTHON -c 'import typing_extensions') ; then
+    $PYTHON -m pip install --user typing_extensions
 fi
 
 # See https://github.com/pytorch/pytorch/blob/master/.circleci/scripts/cpp_doc_push_script.sh

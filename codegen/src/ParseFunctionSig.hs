@@ -84,6 +84,7 @@ data Parsable
     | DimnameList
     | Symbol
     | IValue
+    | Stream
     deriving (Eq, Show, Generic)
 
 data CType
@@ -119,6 +120,7 @@ data TenType = Scalar
     | TensorAVector -- Tensor(a)[]
     | TensorOptions
     | TensorList
+    | C10ListTensor
     | IntegerTensor
     | IndexTensor
     | BoolTensor
@@ -249,6 +251,8 @@ identifier = (lexm . try) (p >>= check)
 -- Symbol
 -- >>> parseTest typ "IValue"
 -- IValue
+-- >>> parseTest typ "Stream"
+-- Stream
 -- >>> parseTest typ "Storage"
 -- StorageType
 -- >>> parseTest typ "Tensor"
@@ -267,6 +271,8 @@ identifier = (lexm . try) (p >>= check)
 -- TenType TensorList
 -- >>> parseTest typ "TensorList"
 -- TenType TensorList
+-- >>> parseTest typ "const c10::List<c10::optional<Tensor>> &"
+-- TenType C10ListTensor
 -- >>> parseTest typ "TensorOptions"
 -- TenType TensorOptions
 -- >>> parseTest typ "bool"
@@ -333,7 +339,8 @@ typ =
     ((lexm $ string "Generator") >> (pure $ GeneratorType)) <|>
     ((lexm $ string "Storage") >> (pure $ StorageType)) <|>
     ((lexm $ string "ConstQuantizerPtr") >> (pure $ ConstQuantizerPtr)) <|>
-    ((lexm $ string "IValue") >> (pure $ IValue))
+    ((lexm $ string "IValue") >> (pure $ IValue)) <|>
+    ((lexm $ string "Stream") >> (pure $ Stream))
   cppclass = foldl (<|>) (fail "Can not parse cpptype.") $ map (\(sig,cpptype,hstype) -> ((lexm $ string sig) >> (pure $ CppClass sig cpptype hstype))) cppClassList
   scalar =
     ((lexm $ string "Scalar?") >> (pure $ TenType ScalarQ)) <|>
@@ -359,6 +366,7 @@ typ =
     ((lexm $ string "TensorList") >> (pure $ TenType TensorList)) <|>
     try ((lexm $ string "Tensor[]") >> (pure $ TenType TensorList)) <|>
     try ((lexm $ string "Tensor?[]") >> (pure $ TenType TensorList)) <|>
+    try ((lexm $ string "const c10::List<c10::optional<Tensor>> &") >> (pure $ TenType C10ListTensor)) <|>
     try ((lexm $ string "Tensor(a)[]") >> (pure $ TenType TensorAVector)) <|>
     try ((lexm $ string "Tensor(a)") >> (pure $ TenType TensorA)) <|>
     try ((lexm $ string "Tensor(a!)") >> (pure $ TenType TensorA')) <|>

@@ -65,6 +65,18 @@ kComplexFloat = [C.pure| int8_t { (int8_t) at::ScalarType::ComplexFloat } |]
 kComplexDouble :: ScalarType
 kComplexDouble = [C.pure| int8_t { (int8_t) at::ScalarType::ComplexDouble } |]
 
+kQInt8 :: ScalarType
+kQInt8 = [C.pure| int8_t { (int8_t) at::ScalarType::QInt8 } |]
+
+kQUInt8 :: ScalarType
+kQUInt8 = [C.pure| int8_t { (int8_t) at::ScalarType::QUInt8 } |]
+
+kQInt32 :: ScalarType
+kQInt32 = [C.pure| int8_t { (int8_t) at::ScalarType::QInt32 } |]
+
+kBFloat16 :: ScalarType
+kBFloat16 = [C.pure| int8_t { (int8_t) at::ScalarType::BFloat16 } |]
+
 kUndefined :: ScalarType
 kUndefined = [C.pure| int8_t { (int8_t) at::ScalarType::Undefined } |]
 
@@ -98,11 +110,17 @@ kMSNPU = [C.pure| int16_t { (int16_t) at::DeviceType::MSNPU } |]
 kXLA :: DeviceType
 kXLA = [C.pure| int16_t { (int16_t) at::DeviceType::XLA } |]
 
+kVulkan :: DeviceType
+kVulkan = [C.pure| int16_t { (int16_t) at::DeviceType::Vulkan } |]
+
+kMetal :: DeviceType
+kMetal = [C.pure| int16_t { (int16_t) at::DeviceType::Metal } |]
+
+kXPU :: DeviceType
+kXPU = [C.pure| int16_t { (int16_t) at::DeviceType::XPU } |]
+
 kCOMPILE_TIME_MAX_DEVICE_TYPES :: DeviceType
 kCOMPILE_TIME_MAX_DEVICE_TYPES = [C.pure| int16_t { (int16_t) at::DeviceType::COMPILE_TIME_MAX_DEVICE_TYPES } |]
-
-kONLY_FOR_TEST :: DeviceType
-kONLY_FOR_TEST = [C.pure| int16_t { (int16_t) at::DeviceType::ONLY_FOR_TEST } |]
 
 -- TODO: add all values for at::Reduction
 

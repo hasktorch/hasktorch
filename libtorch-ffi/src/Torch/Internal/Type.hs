@@ -68,6 +68,8 @@ data Symbol
 data IValue
 type IValueList = StdVector IValue
 
+data Stream
+
 data C10Dict a
 data C10List a
 data C10Optional a
@@ -111,6 +113,7 @@ typeTable = Map.fromList [
       , (C.TypeName "at::Symbol", [t|Symbol|])
       , (C.TypeName "Quantizer", [t|Quantizer|])
       , (C.TypeName "at::IValue", [t|IValue|])
+      , (C.TypeName "c10::Stream", [t|Stream|])
       , (C.TypeName "c10::intrusive_ptr", [t|C10Ptr|])
       , (C.TypeName "c10::Dict", [t|C10Dict|])
       , (C.TypeName "c10::List", [t|C10List|])

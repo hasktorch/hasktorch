@@ -28,6 +28,8 @@ extern "C" {
 
   void delete_c10listtensor(c10::List<at::Tensor>* object);
 
+  void delete_c10listoptionaltensor(c10::List<c10::optional<at::Tensor>>* object);
+
   void delete_c10listdouble(c10::List<double>* object);
 
   void delete_c10listint(c10::List<int64_t>* object);
@@ -99,5 +101,7 @@ extern "C" {
   void delete_cdoublecdouble(std::tuple<double,double>* ptr);
 
   void delete_optimizer(torch::optim::Optimizer* ptr);
+
+  void delete_stream(c10::Stream* ptr);
 #include "hasktorch_dump.h"
 };

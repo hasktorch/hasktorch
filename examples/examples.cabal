@@ -51,21 +51,6 @@ library static-mnist
                      , pipes-concurrency
                      , mtl
 
-
-test-suite spec
-  import:             config
-  type:               exitcode-stdio-1.0
-  hs-source-dirs:     test
-  main-is:            Spec.hs
-  other-modules:
-  build-depends:      base >= 4.7 && < 5
-                    , hspec
-                    , safe-exceptions
-                    , QuickCheck
-                    , mtl
-                    , static-mnist
-  build-tool-depends: hspec-discover:hspec-discover
-
 executable static-mnist-cnn
   import:              config
   hs-source-dirs:      static-mnist-cnn
@@ -198,6 +183,18 @@ executable image-processing
 executable mnist-mlp
   import:              config
   hs-source-dirs:      mnist-mlp
+  main-is:             Main.hs
+  ghc-options:         -fno-warn-partial-type-signatures
+  build-depends:       libtorch-ffi
+                     , bytestring >= 0.10.8
+                     , random >= 1.1
+                     , safe-exceptions
+                     , static-mnist
+                     , pipes
+
+executable mnist-mixed-precision
+  import:              config
+  hs-source-dirs:      mnist-mixed-precision
   main-is:             Main.hs
   ghc-options:         -fno-warn-partial-type-signatures
   build-depends:       libtorch-ffi
