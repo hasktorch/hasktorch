@@ -654,13 +654,15 @@ pow exponent input = unsafePerformIO $ ATen.cast2 ATen.Managed.pow_tt input expo
 -- >>> dtype &&& shape $ relu (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 relu ::
-  forall shape dtype device.
-  (StandardFloatingPointDTypeValidation device dtype) =>
+  forall shape dtype device t.
+  (StandardFloatingPointDTypeValidation device dtype,
+   Unnamed t, device ~ (UTDevice t), dtype ~ (UTDType t), shape ~ (UTShape t)
+  ) =>
   -- | input
-  Tensor device dtype shape ->
+  t ->
   -- | output
-  Tensor device dtype shape
-relu input = unsafePerformIO $ ATen.cast1 ATen.Managed.relu_t input
+  t
+relu input = unWrap $ unsafePerformIO $ ATen.cast1 ATen.Managed.relu_t (Wrap input)
 
 -- | selu
 --
@@ -708,49 +710,57 @@ sigmoid input = unsafePerformIO $ ATen.cast1 ATen.Managed.sigmoid_t input
 -- >>> dtype &&& shape $ sin (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 sin ::
-  forall shape dtype device.
-  (StandardFloatingPointDTypeValidation device dtype) =>
+  forall shape dtype device t.
+  (StandardFloatingPointDTypeValidation device dtype,
+   Unnamed t, device ~ (UTDevice t), dtype ~ (UTDType t), shape ~ (UTShape t)
+  ) =>
   -- | input
-  Tensor device dtype shape ->
+  t ->
   -- | output
-  Tensor device dtype shape
-sin input = unsafePerformIO $ ATen.cast1 ATen.Managed.sin_t input
+  t
+sin input = unWrap $ unsafePerformIO $ ATen.cast1 ATen.Managed.sin_t (Wrap input)
 
 -- | sinh
 --
 -- >>> dtype &&& shape $ sinh (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 sinh ::
-  forall shape dtype device.
-  (StandardFloatingPointDTypeValidation device dtype) =>
+  forall shape dtype device t.
+  (StandardFloatingPointDTypeValidation device dtype,
+   Unnamed t, device ~ (UTDevice t), dtype ~ (UTDType t), shape ~ (UTShape t)
+  ) =>
   -- | input
-  Tensor device dtype shape ->
+  t ->
   -- | output
-  Tensor device dtype shape
-sinh input = unsafePerformIO $ ATen.cast1 ATen.Managed.sinh_t input
+  t
+sinh input = unWrap $ unsafePerformIO $ ATen.cast1 ATen.Managed.sinh_t (Wrap input)
 
 -- | cos
 --
 -- >>> dtype &&& shape $ cos (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 cos ::
-  forall shape dtype device.
-  (StandardFloatingPointDTypeValidation device dtype) =>
+  forall shape dtype device t.
+  (StandardFloatingPointDTypeValidation device dtype,
+   Unnamed t, device ~ (UTDevice t), dtype ~ (UTDType t), shape ~ (UTShape t)
+  ) =>
   -- | input
-  Tensor device dtype shape ->
+  t ->
   -- | output
-  Tensor device dtype shape
-cos input = unsafePerformIO $ ATen.cast1 ATen.Managed.cos_t input
+  t
+cos input = unWrap $ unsafePerformIO $ ATen.cast1 ATen.Managed.cos_t (Wrap input)
 
 -- | sqrt
 sqrt ::
-  forall shape dtype device.
-  (StandardFloatingPointDTypeValidation device dtype) =>
+  forall shape dtype device t.
+  (StandardFloatingPointDTypeValidation device dtype,
+   Unnamed t, device ~ (UTDevice t), dtype ~ (UTDType t), shape ~ (UTShape t)
+  ) =>
   -- | input
-  Tensor device dtype shape ->
+  t ->
   -- | output
-  Tensor device dtype shape
-sqrt input = unsafePerformIO $ ATen.cast1 ATen.Managed.sqrt_t input
+  t
+sqrt input = unWrap $ unsafePerformIO $ ATen.cast1 ATen.Managed.sqrt_t (Wrap input)
 
 -- | tanh
 tanh ::

@@ -120,8 +120,72 @@ instance (KnownNat n) => KnownDevice '( 'D.CPU, n) where
 instance (KnownNat n) => KnownDevice '( 'D.CUDA, n) where
   deviceVal = D.Device D.CUDA (natValInt16 @n)
 
+
+type Size = Type->Type
+type Shape = [Type->Type]
+
+data RGB a = RGB {
+  r :: a,
+  g :: a,
+  b :: a
+} deriving (Show, Eq)
+
+type family ToNat (shape :: Size) :: Nat
+
+type instance ToNat (Vector n) = n
+type instance ToNat RGB = 3
+
+type family ToNats (shape :: Shape) :: [Nat] where
+  ToNats '[] = '[]
+  ToNats (x ': xs) = ToNat x ': ToNats xs
+
+type family FromNat (shape :: Nat) :: Size where
+  FromNat n = Vector n
+
+type family FromNats (shape :: [Nat]) :: Shape where
+  FromNats '[] = '[]
+  FromNats (x ': xs) = FromNat x ': FromNats xs
+
+class Unnamed t where
+  type UTShape t :: [Nat]
+  type UTDevice t :: (D.DeviceType, Nat)
+  type UTDType t :: D.DType
+  toUnnamed
+    :: forall device dtype shape.
+    (device ~ (UTDevice t),
+     dtype ~ (UTDType t),
+     shape ~ (UTShape t))
+    => t -> Tensor device dtype shape
+  fromUnnamed
+    :: forall device dtype shape.
+    (device ~ (UTDevice t),
+     dtype ~ (UTDType t),
+     shape ~ (UTShape t))
+    => Tensor device dtype shape -> t
+  toDynamic
+    :: t -> D.Tensor
+
+instance Unnamed (NamedTensor device dtype shape) where
+  type UTShape (NamedTensor device dtype shape) = ToNats shape
+  type UTDevice (NamedTensor device dtype shape) = device
+  type UTDType (NamedTensor device dtype shape) = dtype
+  toUnnamed (FromTensor t) = t
+  fromUnnamed = FromTensor
+  toDynamic (FromTensor (UnsafeMkTensor t)) = t
+
+instance Unnamed (Tensor device dtype shape) where
+  type UTShape (Tensor device dtype shape) = shape
+  type UTDevice (Tensor device dtype shape) = device
+  type UTDType (Tensor device dtype shape) = dtype
+  toUnnamed = id
+  fromUnnamed = id
+  toDynamic (UnsafeMkTensor t) = t
+
+data NamedTensor (device :: (D.DeviceType, Nat)) (dtype :: D.DType) (shape :: Shape) where
+  FromTensor :: forall device dtype shape' shape. shape ~ ToNats shape' => Tensor device dtype shape ->  NamedTensor device dtype shape'
+
 data Tensor (device :: (D.DeviceType, Nat)) (dtype :: D.DType) (shape :: [Nat]) where
-  UnsafeMkTensor :: forall device dtype shape. {toDynamic :: D.Tensor} -> Tensor device dtype shape
+  UnsafeMkTensor :: forall device dtype shape. D.Tensor -> Tensor device dtype shape
 
 type CPUTensor = Tensor '( 'D.CPU, 0)
 
@@ -156,6 +220,15 @@ instance
       else Nothing
   toList Nothing = []
   toList (Just t) = D.asValue . D.toDevice (D.Device D.CPU 0) . toDynamic $ t
+
+instance (KnownDevice device) => Num (NamedTensor device dtype shape) where
+  (+) a b = fromUnnamed $ UnsafeMkTensor $ toDynamic a + toDynamic b
+  (-) a b = fromUnnamed $ UnsafeMkTensor $ toDynamic a - toDynamic b
+  (*) a b = fromUnnamed $ UnsafeMkTensor $ toDynamic a * toDynamic b
+  negate t = fromUnnamed $ UnsafeMkTensor $ negate $ toDynamic t
+  abs t = fromUnnamed $ UnsafeMkTensor $ abs $ toDynamic t
+  signum t = fromUnnamed $ UnsafeMkTensor $ signum $ toDynamic t
+  fromInteger i = fromUnnamed $ UnsafeMkTensor . D.toDevice (deviceVal @device) . D.asTensor @Int $ fromInteger @Int i
 
 instance KnownDevice device => Num (Tensor device dtype shape) where
   (+) a b = UnsafeMkTensor $ toDynamic a + toDynamic b
@@ -424,6 +497,15 @@ reshape ::
   Tensor device dtype shape ->
   Tensor device dtype shape'
 reshape t = UnsafeMkTensor $ D.reshape (shapeVal @shape') (toDynamic t)
+
+-- | To avoid overlapped instance for (Unnamed t => Castable t D.ATenTensor)
+newtype Wrap a = Wrap {unWrap :: a}
+
+instance {-# OVERLAPS #-} Unnamed t => Castable (Wrap t) D.ATenTensor where
+  cast t f =
+    let (D.Unsafe aten_tensor) = toDynamic (unWrap t)
+    in f aten_tensor
+  uncast aten_tensor f = f $ Wrap $ fromUnnamed $ UnsafeMkTensor (D.Unsafe aten_tensor)
 
 instance Castable (Tensor device dtype shape) D.ATenTensor where
   cast (UnsafeMkTensor (D.Unsafe aten_tensor)) f = f aten_tensor
