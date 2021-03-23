@@ -20,6 +20,24 @@ import GHC.TypeLits
 import qualified Torch.DType as D
 import qualified Torch.Device as D
 import Torch.HList
+import Data.Vector.Sized (Vector)
+
+type Size = Type->Type
+type Shape = [Type->Type]
+
+type family ToNat (shape :: Size) :: Nat where
+  ToNat (Vector n) = n
+
+type family ToNats (shape :: Shape) :: [Nat] where
+  ToNats '[] = '[]
+  ToNats (x ': xs) = ToNat x ': ToNats xs
+
+type family FromNat (shape :: Nat) :: Size where
+  FromNat n = Vector n
+
+type family FromNats (shape :: [Nat]) :: Shape where
+  FromNats '[] = '[]
+  FromNats (x ': xs) = FromNat x ': FromNats xs
 
 natValI :: forall n. KnownNat n => Int
 natValI = fromIntegral $ natVal $ Proxy @n
@@ -194,11 +212,11 @@ type Index l n = CheckIndex l n (IndexImpl l n)
 
 ----------------------------------------
 
-type family InRangeCheck (shape :: [Nat]) (dim :: Nat) (idx :: Nat) (ok :: Ordering) :: Constraint where
+type family InRangeCheck (shape :: Shape) (dim :: Nat) (idx :: Nat) (ok :: Ordering) :: Constraint where
   InRangeCheck _ _ _ 'LT = ()
   InRangeCheck shape dim idx _ = IndexOutOfBound shape dim idx
 
-type InRange shape dim idx = InRangeCheck shape dim idx (CmpNat idx (Index shape dim))
+type InRange shape dim idx = InRangeCheck shape dim idx (CmpNat idx (Index (ToNats shape) dim))
 
 ----------------------------------------
 
@@ -208,12 +226,12 @@ type family ReverseImpl (l :: [a]) (acc :: [a]) :: [a] where
 
 type Reverse l = ReverseImpl l '[]
 
-type family ExtractDim (dim :: Nat) (shape :: [Nat]) :: Maybe Nat where
+type family ExtractDim (dim :: Nat) (shape :: Shape) :: Maybe Size where
   ExtractDim 0 (h ': _) = Just h
   ExtractDim dim (_ ': t) = ExtractDim (dim - 1) t
   ExtractDim _ _ = Nothing
 
-type family ReplaceDim (dim :: Nat) (shape :: [Nat]) (n :: Nat) :: Maybe [Nat] where
+type family ReplaceDim (dim :: Nat) (shape :: Shape) (n :: Size) :: Maybe Shape where
   ReplaceDim 0 (_ ': t) n = Just (n ': t)
   ReplaceDim dim (h ': t) n = AppendToMaybe h (ReplaceDim (dim - 1) t n)
   ReplaceDim _ _ _ = Nothing
@@ -222,9 +240,9 @@ type family If c t e where
   If 'True t e = t
   If 'False t e = e
 
-type family AllDimsPositive (shape :: [Nat]) :: Constraint where
+type family AllDimsPositive (shape :: Shape) :: Constraint where
   AllDimsPositive '[] = ()
-  AllDimsPositive (x ': xs) = If (1 <=? x) (AllDimsPositive xs) (TypeError (Text "Expected positive dimension but got " :<>: ShowType x :<>: Text "!"))
+  AllDimsPositive (x ': xs) = If (1 <=? (ToNat x)) (AllDimsPositive xs) (TypeError (Text "Expected positive dimension but got " :<>: ShowType x :<>: Text "!"))
 
 --------------------------------------------------------------------------------
 -- Operations

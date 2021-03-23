@@ -31,6 +31,7 @@ import Data.Kind
 import Data.Maybe
 import Data.Proxy
 import Data.Reflection
+import Data.Type.Equality
 import Foreign.ForeignPtr
 import Foreign.Storable
 import GHC.Exts
@@ -54,14 +55,20 @@ import Prelude hiding (id, (.))
 import Data.Vector.Sized (Vector)
 import qualified Data.Vector.Sized as V
 
-class KnownShape (shape :: [Nat]) where
+class KnownSize (size :: Type->Type) where
+  sizeVal :: Int
+
+instance (KnownNat n) => KnownSize (Vector n) where
+  sizeVal = natValI @n
+  
+class KnownShape (shape :: Shape) where
   shapeVal :: [Int]
 
 instance KnownShape '[] where
   shapeVal = []
 
-instance (KnownNat h, KnownShape t) => KnownShape (h ': t) where
-  shapeVal = natValI @h : shapeVal @t
+instance (KnownSize h, KnownShape t) => KnownShape (h ': t) where
+  shapeVal = sizeVal @h : shapeVal @t
 
 getFiniteI :: Finite n -> Int
 getFiniteI = fromIntegral . getFinite
@@ -120,12 +127,13 @@ instance (KnownNat n) => KnownDevice '( 'D.CPU, n) where
 instance (KnownNat n) => KnownDevice '( 'D.CUDA, n) where
   deviceVal = D.Device D.CUDA (natValInt16 @n)
 
-data Tensor (device :: (D.DeviceType, Nat)) (dtype :: D.DType) (shape :: [Nat]) where
+
+data Tensor (device :: (D.DeviceType, Nat)) (dtype :: D.DType) (shape :: Shape) where
   UnsafeMkTensor :: forall device dtype shape. {toDynamic :: D.Tensor} -> Tensor device dtype shape
 
-type CPUTensor = Tensor '( 'D.CPU, 0)
+type CPUTensor dtype shape = Tensor '( 'D.CPU, 0) dtype shape
 
-type CUDATensor deviceIndex = Tensor '( 'D.CUDA, deviceIndex)
+type CUDATensor deviceIndex dtype shape = Tensor '( 'D.CUDA, deviceIndex) dtype shape
 
 data UnknownShapeTensor device dtype = forall shape. UnknownShapeTensor (Tensor device dtype shape)
 
@@ -136,7 +144,7 @@ type family ComputeHaskellType (dtype :: D.DType) :: Type where
   ComputeHaskellType D.Double = Double
   ComputeHaskellType dtype = TypeError (Text "Unsupported tensor type " :<>: ShowType dtype)
 
-type family ComputeItemType (ty :: Type) (shape :: [Nat]) :: Type where
+type family ComputeItemType (ty :: Type) (shape :: Shape) :: Type where
   ComputeItemType _ '[] = TypeError (Text "Scalars are not supported")
   ComputeItemType ty (_ ': '[]) = ty
   ComputeItemType ty (_ ': h ': t) = [ComputeItemType ty (h ': t)]
@@ -174,7 +182,7 @@ instance KnownDevice device => Fractional (Tensor device dtype shape) where
 instance Show (Tensor device dtype shape) where
   show (UnsafeMkTensor dynamic) = show dynamic
 
-class TensorOptions (shape :: [Nat]) (dtype :: D.DType) (device :: (D.DeviceType, Nat)) where
+class TensorOptions (shape :: Shape) (dtype :: D.DType) (device :: (D.DeviceType, Nat)) where
   optionsRuntimeShape :: [Int]
   optionsRuntimeDType :: D.DType
   optionsRuntimeDevice :: D.Device
@@ -184,8 +192,8 @@ instance (KnownDType dtype, KnownDevice device) => TensorOptions '[] dtype devic
   optionsRuntimeDType = dtypeVal @dtype
   optionsRuntimeDevice = deviceVal @device
 
-instance (KnownNat h, TensorOptions t dtype device) => TensorOptions (h ': t) dtype device where
-  optionsRuntimeShape = natValI @h : optionsRuntimeShape @t @dtype @device
+instance (KnownSize h, TensorOptions t dtype device) => TensorOptions (h ': t) dtype device where
+  optionsRuntimeShape = sizeVal @h : optionsRuntimeShape @t @dtype @device
   optionsRuntimeDType = optionsRuntimeDType @t @dtype @device
   optionsRuntimeDevice = optionsRuntimeDevice @t @dtype @device
 
@@ -198,14 +206,14 @@ type family All (pred :: a -> Constraint) (l :: [a]) :: Constraint where
   All pred (h ': t) = (pred h, All pred t)
 
 data SomeShape where
-  SomeShape :: forall (shape :: [Nat]). KnownShape shape => Proxy shape -> SomeShape
+  SomeShape :: forall (shape :: Shape). KnownShape shape => Proxy shape -> SomeShape
 
 someShape :: [Int] -> SomeShape
 someShape [] = SomeShape $ Proxy @'[]
 someShape (h : t) = case someNatVal (fromIntegral h) of
   Nothing -> error "Negative dimension in someShape!"
   (Just (SomeNat (Proxy :: Proxy ht))) -> case someShape t of
-    (SomeShape (Proxy :: Proxy tt)) -> SomeShape $ Proxy @(ht ': tt)
+    (SomeShape (Proxy :: Proxy tt)) -> SomeShape $ Proxy @(FromNat ht ': tt)
 
 data SomeDType where
   SomeDType :: forall (dtype :: D.DType). KnownDType dtype => Proxy dtype -> SomeDType
@@ -248,15 +256,20 @@ withTensor untypedTensor f = case someShape (D.shape untypedTensor) of
 -- Broadcast type-level function
 --------------------------------------------------------------------------------
 
-type family ComputeBroadcast (reversedShape :: [Nat]) (reversedShape' :: [Nat]) :: Maybe [Nat] where
+type family ComputeBroadcast (reversedShape :: Shape) (reversedShape' :: Shape) :: Maybe Shape where
   ComputeBroadcast '[] reversedShape = Just reversedShape
   ComputeBroadcast reversedShape '[] = Just reversedShape
-  ComputeBroadcast (h ': t) (h ': t2) = AppendToMaybe h (ComputeBroadcast t t2)
-  ComputeBroadcast (h ': t) (1 ': t2) = AppendToMaybe h (ComputeBroadcast t t2)
-  ComputeBroadcast (1 ': t) (h ': t2) = AppendToMaybe h (ComputeBroadcast t t2)
+  ComputeBroadcast (h1 ': t) (h2 ': t2) =
+    If ((ToNat h1) == (ToNat h2))
+      (AppendToMaybe h1 (ComputeBroadcast t t2))
+      (If ((ToNat h2) == 1)
+         (AppendToMaybe h1 (ComputeBroadcast t t2))
+         (If ((ToNat h1) == 1)
+            (AppendToMaybe h2 (ComputeBroadcast t t2))
+            Nothing))
   ComputeBroadcast _ _ = Nothing
 
-type family CheckBroadcast (shape :: [Nat]) (shape' :: [Nat]) (result :: Maybe [Nat]) :: [Nat] where
+type family CheckBroadcast (shape :: Shape) (shape' :: Shape) (result :: Maybe Shape) :: Shape where
   CheckBroadcast shape shape' Nothing =
     TypeError
       ( Text "The shapes "
@@ -344,13 +357,13 @@ ne a b = UnsafeMkTensor $ D.ne (toDynamic a) (toDynamic b)
 (==.) = eq
 (/=.) = ne
 
-type family ComputeMatMul (reversedShape :: [Nat]) (reversedShape' :: [Nat]) :: Maybe [Nat] where
+type family ComputeMatMul (reversedShape :: Shape) (reversedShape' :: Shape) :: Maybe Shape where
   ComputeMatMul (k ': '[]) (k ': '[]) = Just '[]
   ComputeMatMul (k ': '[]) (m ': k ': reversedBroadcastShape') = AppendToMaybe m (ComputeBroadcast '[] reversedBroadcastShape')
   ComputeMatMul (k ': n ': reversedBroadcastShape) (k ': '[]) = AppendToMaybe n (ComputeBroadcast '[] reversedBroadcastShape)
   ComputeMatMul (k ': n ': reversedBroadcastShape) (m ': k ': reversedBroadcastShape') = AppendToMaybe m (AppendToMaybe n (ComputeBroadcast reversedBroadcastShape reversedBroadcastShape'))
 
-type family CheckMatMul (shape :: [Nat]) (shape' :: [Nat]) (result :: Maybe [Nat]) :: [Nat] where
+type family CheckMatMul (shape :: Shape) (shape' :: Shape) (result :: Maybe Shape) :: Shape where
   CheckMatMul shape shape' Nothing =
     TypeError
       ( Text "The shapes "
@@ -397,7 +410,7 @@ select t = UnsafeMkTensor $ D.select (natValI @dim) (natValI @idx) (toDynamic t)
 selectIdx ::
   forall dim n shape' shape dtype device.
   ( KnownNat dim,
-    n ~ Index shape dim,
+    FromNat n ~ Index shape dim,
     shape' ~ Remove shape dim
   ) =>
   Tensor device dtype shape ->
@@ -405,9 +418,9 @@ selectIdx ::
   Tensor device dtype shape'
 selectIdx t idx = UnsafeMkTensor $ D.select (natValI @dim) (getFiniteI idx) (toDynamic t)
 
-type family Numel (shape :: [Nat]) :: Nat where
+type family Numel (shape :: Shape) :: Nat where
   Numel '[] = 1
-  Numel (h ': t) = h * (Numel t)
+  Numel (h ': t) = (ToNat h) * (Numel t)
 
 -- | reshape
 -- >>> t :: CPUTensor 'D.Int64 '[2,3,4] = fromJust [[[111,112,113,114],[121,122,123,124],[131,132,133,134]],[[211,212,213,214],[221,222,223,224],[231,232,233,234]]]

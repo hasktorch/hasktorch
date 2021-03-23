@@ -770,7 +770,7 @@ tanh input = unsafePerformIO $ ATen.cast1 ATen.Managed.tanh_t input
 -- >>> :kind! ConditionalReduction '[3,2] ReduceMean
 -- ConditionalReduction '[3,2] ReduceMean :: [Nat]
 -- = '[]
-type family ConditionalReduction (shape :: [Nat]) (reduction :: Reduction) :: [Nat] where
+type family ConditionalReduction (shape :: Shape) (reduction :: Reduction) :: Shape where
   ConditionalReduction shape ReduceNone = shape
   ConditionalReduction shape _ = '[]
 
@@ -891,22 +891,22 @@ logSoftmax input =
   unsafePerformIO $
     ATen.cast3 ATen.Managed.log_softmax_tls input (natValI @dim) (dtypeVal @dtype)
 
-type family Square (shape :: [Nat]) :: [Nat] where
+type family Square (shape :: Shape) :: Shape where
   Square (n : n : '[]) = '[n, n]
   Square (b : n : n : '[]) = '[b, n, n]
   Square _ = TypeError (Text "This shape must be square matrix or batch + square matrix.")
 
-type family VectorOfSquare (shape :: [Nat]) :: [Nat] where
+type family VectorOfSquare (shape :: Shape) :: Shape where
   VectorOfSquare (n : n : '[]) = '[n]
   VectorOfSquare (b : n : n : '[]) = '[b, n]
   VectorOfSquare _ = TypeError (Text "This shape must be square matrix or batch + square matrix.")
 
-type family FstSquareDim (shape :: [Nat]) :: Nat where
+type family FstSquareDim (shape :: Shape) :: Size where
   FstSquareDim (n : m : '[]) = n
   FstSquareDim (b : n : m : '[]) = n
   FstSquareDim _ = TypeError (Text "Can not get first dimention of matrix or batch + matrix.")
 
-type family InverseShapeIsValid (device :: (D.DeviceType, Nat)) (shape :: [Nat]) :: Constraint where
+type family InverseShapeIsValid (device :: (D.DeviceType, Nat)) (shape :: Shape) :: Constraint where
   InverseShapeIsValid '( 'D.CPU, 0) _ = ()
   InverseShapeIsValid '( 'D.CUDA, _) shape = AllDimsPositive shape
 
@@ -1074,13 +1074,14 @@ eig ::
 eig input =
   unsafePerformIO $ ATen.cast2 ATen.Managed.eig_tb input (enableEigenVectors @eigenvectors)
 
-type family SVDShapes (shape :: [Nat]) (reduced :: ReducedSVD) :: ([Nat], [Nat], [Nat]) where
-  SVDShapes '[0, n] 'ThinSVD = '( '[0, 0], '[0], '[n, n])
-  SVDShapes '[m, n] 'ThinSVD = '( '[m, Min m n], '[Min m n], '[n, Min m n])
-  SVDShapes '[m, n] 'FullSVD = '( '[m, m], '[Min m n], '[n, n])
-  SVDShapes '[b, 0, n] 'ThinSVD = '( '[b, 0, 0], '[b, 0], '[b, n, n])
-  SVDShapes '[b, m, n] 'ThinSVD = '( '[b, m, Min m n], '[b, Min m n], '[b, n, Min m n])
-  SVDShapes '[b, m, n] 'FullSVD = '( '[b, m, m], '[b, Min m n], '[b, n, n])
+type family MinSize (size0 :: Size) (size1 :: Size) :: Size where
+  MinSize m n = If ((ToNat m) <=? (ToNat n)) m n
+
+type family SVDShapes (shape :: Shape) (reduced :: ReducedSVD) :: (Shape, Shape, Shape) where
+  SVDShapes '[m, n] 'ThinSVD = '( '[m, MinSize m n], '[MinSize m n], '[n, MinSize m n])
+  SVDShapes '[m, n] 'FullSVD = '( '[m, m], '[MinSize m n], '[n, n])
+  SVDShapes '[b, m, n] 'ThinSVD = '( '[b, m, MinSize m n], '[b, MinSize m n], '[b, n, MinSize m n])
+  SVDShapes '[b, m, n] 'FullSVD = '( '[b, m, m], '[b, MinSize m n], '[b, n, n])
   SVDShapes _ _ = TypeError (Text "A singular value decomposition can only be computed for 2D matrices for at most one batch dimension.")
 
 data ReducedSVD = ThinSVD | FullSVD
@@ -1375,12 +1376,12 @@ sign ::
   Tensor device dtype shape
 sign input = unsafePerformIO $ ATen.cast1 ATen.Managed.sign_t input
 
-type family SetValue (shape :: [Nat]) (i :: Nat) (j :: Nat) :: [Nat] where
+type family SetValue (shape :: Shape) (i :: Nat) (j :: Size) :: Shape where
   SetValue '[] _ _ = '[]
   SetValue (x : xs) 0 j = j : xs
   SetValue (x : xs) i j = x : SetValue xs (i -1) j
 
-type family GetValue (shape :: [Nat]) (i :: Nat) :: Nat where
+type family GetValue (shape :: Shape) (i :: Nat) :: Size where
   GetValue '[] _ = TypeError (Text "Can not find a element in the list.")
   GetValue (x : xs) 0 = x
   GetValue (x : xs) i = GetValue xs (i -1)
@@ -1393,7 +1394,7 @@ type family GetValue (shape :: [Nat]) (i :: Nat) :: Nat where
 -- >>> :kind! Transpose '[3,2,1] 1 2
 -- Transpose '[3,2,1] 1 2 :: [Nat]
 -- = '[3, 1, 2]
-type family Transpose (shape :: [Nat]) (dim0 :: Nat) (dim1 :: Nat) :: [Nat] where
+type family Transpose (shape :: Shape) (dim0 :: Nat) (dim1 :: Nat) :: Shape where
   Transpose s d0 d1 = (SetValue (SetValue s d0 (GetValue s d1)) d1 (GetValue s d0))
 
 -- | transpose
@@ -1467,9 +1468,9 @@ type family DiagSize (tri :: Tri) (index :: Nat) (m :: Nat) (n :: Nat) :: Nat wh
           )
       )
 
-type family DiagShape (tri :: Tri) (index :: Nat) (shape :: [Nat]) :: [Nat] where
-  DiagShape _ i '[n] = '[n + i, n + i]
-  DiagShape tri i '[m, n] = '[DiagSize tri i m n]
+type family DiagShape (tri :: Tri) (index :: Nat) (shape :: Shape) :: Shape where
+  DiagShape _ i '[n] = FromNats '[ToNat n + i, ToNat n + i]
+  DiagShape tri i '[m, n] = FromNats '[DiagSize tri i (ToNat m) (ToNat n)]
   DiagShape _ _ shape =
     TypeError
       ( Text "The input must be a matrix or a vector, but it has "
@@ -1557,9 +1558,9 @@ instance KnownKeepOrDropDim KeepDim where
 instance KnownKeepOrDropDim DropDim where
   keepOrDropDimVal = False
 
-type family ConditionalDropDimension (shape :: [Nat]) (dim :: Nat) (keepOrDropDim :: KeepOrDropDim) :: [Nat] where
+type family ConditionalDropDimension (shape :: Shape) (dim :: Nat) (keepOrDropDim :: KeepOrDropDim) :: Shape where
   ConditionalDropDimension '[] _ _ = TypeError (Text "The specified dimension is not available.")
-  ConditionalDropDimension (x : xs) 0 KeepDim = 1 ': xs
+  ConditionalDropDimension (x : xs) 0 KeepDim = FromNat 1 ': xs
   ConditionalDropDimension (x : xs) 0 DropDim = xs
   ConditionalDropDimension (x : xs) i keepOrDropDim = x ': ConditionalDropDimension xs (i - 1) keepOrDropDim
 
@@ -2034,14 +2035,14 @@ bmm input other = unsafePerformIO $ ATen.cast2 ATen.Managed.bmm_tt input other
 -- >>> :kind! Ty
 -- Ty :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))
 -- = 'Nothing
-type family BroadcastTensorsImpl (tensors :: [a]) (acc :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: Maybe ([Nat], D.DType, (D.DeviceType, Nat)) where
+type family BroadcastTensorsImpl (tensors :: [a]) (acc :: Maybe (Shape, D.DType, (D.DeviceType, Nat))) :: Maybe (Shape, D.DType, (D.DeviceType, Nat)) where
   BroadcastTensorsImpl '[] 'Nothing = 'Nothing
   BroadcastTensorsImpl '[] ('Just '(reverseShape, dtype, device)) = 'Just '(Reverse reverseShape, dtype, device)
   BroadcastTensorsImpl (Tensor device dtype shape ': tensors) 'Nothing = BroadcastTensorsImpl tensors ('Just '(Reverse shape, dtype, device))
   BroadcastTensorsImpl (Tensor device dtype shape ': tensors) ('Just '(reverseShape', dtype, device)) = BroadcastTensorsImpl tensors (MaybeTriple (ComputeBroadcast (Reverse shape) reverseShape') ('Just dtype) ('Just device))
   BroadcastTensorsImpl (Tensor device dtype shape ': _) ('Just _) = Nothing
 
-type family BroadcastTensorsCheck (tensors :: [a]) (result :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: [a] where
+type family BroadcastTensorsCheck (tensors :: [a]) (result :: Maybe (Shape, D.DType, (D.DeviceType, Nat))) :: [a] where
   BroadcastTensorsCheck tensors 'Nothing =
     TypeError
       ( Text "Cannot broadcast tensors due to incompatible shapes and/or dtypes: "
@@ -2082,28 +2083,28 @@ broadcastTensors ::
   HList tensors'
 broadcastTensors tensors = unsafePerformIO $ ATen.cast1 ATen.Managed.broadcast_tensors_l tensors
 
-type family CatImpl (dim :: Nat) (tensors :: [a]) (acc :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: Maybe ([Nat], D.DType, (D.DeviceType, Nat)) where
+type family CatImpl (dim :: Nat) (tensors :: [a]) (acc :: Maybe (Shape, D.DType, (D.DeviceType, Nat))) :: Maybe (Shape, D.DType, (D.DeviceType, Nat)) where
   CatImpl _ '[] acc = acc
   CatImpl dim (Tensor device dtype shape ': tensors) acc = CatImpl dim tensors (MaybeTriple (ComputeCatShape dim shape acc) (ComputeCatDType dtype acc) (ComputeCatDevice device acc))
 
-type family ComputeCatShape (dim :: Nat) (shape :: [Nat]) (acc :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: Maybe [Nat] where
+type family ComputeCatShape (dim :: Nat) (shape :: Shape) (acc :: Maybe (Shape, D.DType, (D.DeviceType, Nat))) :: Maybe Shape where
   ComputeCatShape 0 (x ': xs) Nothing = Just (x ': xs)
   ComputeCatShape dim (x ': xs) Nothing = AppendToMaybe x (ComputeCatShape (dim - 1) xs Nothing)
-  ComputeCatShape 0 (x ': xs) (Just '(y ': xs, _, _)) = Just ((x + y) ': xs)
+  ComputeCatShape 0 (x ': xs) (Just '(y ': xs, _, _)) = Just ((FromNat (ToNat x + ToNat y)) ': xs)
   ComputeCatShape dim (x ': xs) (Just '(x ': ys, dtype, device)) = AppendToMaybe x (ComputeCatShape (dim - 1) xs (Just '(ys, dtype, device)))
   ComputeCatShape _ _ _ = Nothing
 
-type family ComputeCatDType (dtype :: D.DType) (acc :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: Maybe D.DType where
+type family ComputeCatDType (dtype :: D.DType) (acc :: Maybe (Shape, D.DType, (D.DeviceType, Nat))) :: Maybe D.DType where
   ComputeCatDType dtype Nothing = Just dtype
   ComputeCatDType dtype (Just '(_, dtype, _)) = Just dtype
   ComputeCatDType _ _ = Nothing
 
-type family ComputeCatDevice (device :: (D.DeviceType, Nat)) (acc :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: Maybe (D.DeviceType, Nat) where
+type family ComputeCatDevice (device :: (D.DeviceType, Nat)) (acc :: Maybe (Shape, D.DType, (D.DeviceType, Nat))) :: Maybe (D.DeviceType, Nat) where
   ComputeCatDevice device Nothing = Just device
   ComputeCatDevice device (Just '(_, _, device)) = Just device
   ComputeCatDevice _ _ = Nothing
 
-type family CatCheck (res :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: ([Nat], D.DType, (D.DeviceType, Nat)) where
+type family CatCheck (res :: Maybe (Shape, D.DType, (D.DeviceType, Nat))) :: (Shape, D.DType, (D.DeviceType, Nat)) where
   CatCheck 'Nothing = TypeError (Text "Concatenation impossible.")
   CatCheck ('Just '(shape, dtype, device)) = '(shape, dtype, device)
 
@@ -2169,34 +2170,34 @@ cat tensors = unsafePerformIO $ ATen.cast2 ATen.Managed.cat_ll tensors (natValI 
 -- chain_matmul :: [Tensor device dtype shape] -> Tensor device dtype shape
 -- chain_matmul _matrices = unsafePerformIO $ (ATen.cast1 ATen.Managed.chain_matmul_l) _matrices
 
-type family ChunkImpl (chunkShapes :: Maybe [[Nat]]) (dtype :: D.DType) (device :: (D.DeviceType, Nat)) :: Maybe a where
+type family ChunkImpl (chunkShapes :: Maybe [Shape]) (dtype :: D.DType) (device :: (D.DeviceType, Nat)) :: Maybe a where
   ChunkImpl (Just '[]) _ _ = Just '[]
   ChunkImpl (Just (shape ': shapes)) dtype device = AppendToMaybe (Tensor device dtype shape) (ChunkImpl (Just shapes) dtype device)
   ChunkImpl Nothing _ _ = Nothing
 
-type family ChunkCheck (shape :: [Nat]) (dim :: Nat) (result :: Maybe a) :: a where
+type family ChunkCheck (shape :: Shape) (dim :: Nat) (result :: Maybe a) :: a where
   ChunkCheck shape dim Nothing = DimOutOfBound shape dim
   ChunkCheck _ _ (Just result) = result
 
-type family ComputeChunksChunkGo (n' :: Nat) (r :: Nat) (cmp :: Ordering) (cmp' :: Ordering) :: [Nat] where
-  ComputeChunksChunkGo n' r GT _ = n' ': ComputeChunksChunkGo n' (r - n') (CmpNat (r - n') n') (CmpNat (r - n') 0)
-  ComputeChunksChunkGo n' r EQ _ = n' ': ComputeChunksChunkGo n' (r - n') (CmpNat (r - n') n') (CmpNat (r - n') 0)
-  ComputeChunksChunkGo n' r _ GT = '[r]
+type family ComputeChunksChunkGo (n' :: Size) (r :: Nat) (cmp :: Ordering) (cmp' :: Ordering) :: Shape where
+  ComputeChunksChunkGo n' r GT _ = n' ': ComputeChunksChunkGo n' (r - (ToNat n')) (CmpNat (r - (ToNat n')) (ToNat n')) (CmpNat (r - (ToNat n')) 0)
+  ComputeChunksChunkGo n' r EQ _ = n' ': ComputeChunksChunkGo n' (r - (ToNat n')) (CmpNat (r - (ToNat n')) (ToNat n')) (CmpNat (r - (ToNat n')) 0)
+  ComputeChunksChunkGo n' r _ GT = '[FromNat r]
   ComputeChunksChunkGo n' _ _ _ = '[]
 
-type family ComputeChunksChunkGo0 (n' :: Nat) (chunks :: Nat) :: [Nat] where
+type family ComputeChunksChunkGo0 (n' :: Size) (chunks :: Nat) :: Shape where
   ComputeChunksChunkGo0 _ 0 = '[]
   ComputeChunksChunkGo0 n' chunks = n' ': (ComputeChunksChunkGo0 n' (chunks - 1))
 
-type family ComputeChunks (n :: Maybe Nat) (chunks :: Nat) :: Maybe [Nat] where
-  ComputeChunks (Just n) chunks = Just (ComputeChunks' n chunks (Mod n chunks))
+type family ComputeChunks (n :: Maybe Size) (chunks :: Nat) :: Maybe Shape where
+  ComputeChunks (Just n) chunks = Just (ComputeChunks' n chunks (Mod (ToNat n) chunks))
   ComputeChunks Nothing _ = Nothing
 
-type family ComputeChunks' (n :: Nat) (chunks :: Nat) (m :: Nat) :: [Nat] where
-  ComputeChunks' n chunks 0 = ComputeChunksChunkGo0 (Div n chunks) chunks
-  ComputeChunks' n chunks _ = ComputeChunksChunkGo (Div (n + chunks - 1) chunks) n (CmpNat n (Div (n + chunks - 1) chunks)) (CmpNat n 0)
+type family ComputeChunks' (n :: Size) (chunks :: Nat) (m :: Nat) :: Shape where
+  ComputeChunks' n chunks 0 = ComputeChunksChunkGo0 (FromNat (Div (ToNat n) chunks)) chunks
+  ComputeChunks' n chunks _ = ComputeChunksChunkGo (FromNat (Div ((ToNat n) + chunks - 1) chunks)) (ToNat n) (CmpNat (ToNat n) (Div ((ToNat n) + chunks - 1) chunks)) (CmpNat (ToNat n) 0)
 
-type family ChunkShapesImpl (chunks :: Maybe [Nat]) (dim :: Nat) (shape :: [Nat]) :: Maybe [[Nat]] where
+type family ChunkShapesImpl (chunks :: Maybe Shape) (dim :: Nat) (shape :: Shape) :: Maybe [Shape] where
   ChunkShapesImpl (Just (n ': ns)) dim shape = AppendToMaybe' (ReplaceDim dim shape n) (ChunkShapesImpl (Just ns) dim shape)
   ChunkShapesImpl (Just '[]) _ _ = Just '[]
   ChunkShapesImpl Nothing _ _ = Nothing
@@ -2616,7 +2617,7 @@ cosh input = unsafePerformIO $ ATen.cast1 ATen.Managed.cosh_t input
 -- >>> :kind! Det '[3,2,2]
 -- Det '[3,2,2] :: [Nat]
 -- = '[3]
-type family Det (shape :: [Nat]) :: [Nat] where
+type family Det (shape :: Shape) :: Shape where
   Det (n : n : '[]) = '[]
   Det (b : n : n : '[]) = '[b]
   Det _ = TypeError (Text "This shape must be square matrix or batch + squre matrix.")
@@ -2649,11 +2650,11 @@ type family DimsDistinctAscendingCheck (dim1 :: Nat) (dim2 :: Nat) (cmp :: Order
 type family DimsDistinctAscending (dim1 :: Nat) (dim2 :: Nat) :: Constraint where
   DimsDistinctAscending dim1 dim2 = DimsDistinctAscendingCheck dim1 dim2 (CmpNat dim1 dim2)
 
-type family DiagEmbedShapeImpl (dim1 :: Nat) (dim2 :: Nat) (shape :: [Nat]) (n :: Nat) :: [Nat] where
+type family DiagEmbedShapeImpl (dim1 :: Nat) (dim2 :: Nat) (shape :: Shape) (n :: Size) :: Shape where
   DiagEmbedShapeImpl dim1 dim2 shape n = Insert dim1 n (Insert (dim2 - 1) n (Init shape))
 
-type family DiagEmbedShape (index :: Nat) (dim1 :: Nat) (dim2 :: Nat) (shape :: [Nat]) :: [Nat] where
-  DiagEmbedShape index dim1 dim2 shape = DiagEmbedShapeImpl dim1 dim2 shape (Last shape + index)
+type family DiagEmbedShape (index :: Nat) (dim1 :: Nat) (dim2 :: Nat) (shape :: Shape) :: Shape where
+  DiagEmbedShape index dim1 dim2 shape = DiagEmbedShapeImpl dim1 dim2 shape (FromNat ((ToNat (Last shape)) + index))
 
 -- | diagEmbed
 --
@@ -2684,11 +2685,11 @@ diagEmbed tri t =
       (natValI @dim1)
       (natValI @dim2)
 
-type family DiagflatShapeImpl (d :: Nat) :: [Nat] where
+type family DiagflatShapeImpl (d :: Size) :: Shape where
   DiagflatShapeImpl d = '[d, d]
 
-type family DiagflatShape (index :: Nat) (shape :: [Nat]) :: [Nat] where
-  DiagflatShape index shape = DiagflatShapeImpl (Numel shape + index)
+type family DiagflatShape (index :: Nat) (shape :: Shape) :: Shape where
+  DiagflatShape index shape = DiagflatShapeImpl (FromNat (Numel shape + index))
 
 -- | diagflat
 --
@@ -2715,7 +2716,7 @@ diagflat tri t = unsafePerformIO $
       Upper -> natValI @index
       Lower -> - natValI @index
 
-type family NDimAtLeastCheck (ndim :: Nat) (shape :: [Nat]) (cmp :: Ordering) :: Constraint where
+type family NDimAtLeastCheck (ndim :: Nat) (shape :: Shape) (cmp :: Ordering) :: Constraint where
   NDimAtLeastCheck ndim shape 'GT =
     TypeError
       ( Text "Input must have at least "
@@ -2725,12 +2726,12 @@ type family NDimAtLeastCheck (ndim :: Nat) (shape :: [Nat]) (cmp :: Ordering) ::
       )
   NDimAtLeastCheck _ _ _ = ()
 
-type family NDimAtLeast (ndim :: Nat) (shape :: [Nat]) :: Constraint where
+type family NDimAtLeast (ndim :: Nat) (shape :: Shape) :: Constraint where
   NDimAtLeast ndim shape = NDimAtLeastCheck ndim shape (CmpNat ndim (ListLength shape))
 
-type family DiagonalShape (tri :: Tri) (index :: Nat) (dim1 :: Nat) (dim2 :: Nat) (shape :: [Nat]) :: [Nat] where
+type family DiagonalShape (tri :: Tri) (index :: Nat) (dim1 :: Nat) (dim2 :: Nat) (shape :: Shape) :: Shape where
   DiagonalShape tri index dim1 dim2 shape =
-    Remove (Remove shape dim2) dim1 ++ '[DiagSize tri index (Index shape dim1) (Index shape dim2)]
+    Remove (Remove shape dim2) dim1 ++ FromNats '[DiagSize tri index (Index shape dim1) (Index shape dim2)]
 
 -- | diagonal
 --
@@ -3189,7 +3190,7 @@ linear weight bias input = unsafePerformIO $ ATen.cast3 ATen.Managed.linear_ttt 
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[[[Float]]]]) $ t'
 -- (Float,([1,2,5,2],[[[[0.5,-2.25],[-0.25,1.25],[-2.0,0.0],[0.0,0.5],[1.5,2.5]],[[0.5,-2.25],[-0.25,1.25],[-2.0,0.0],[0.0,0.5],[1.5,2.5]]]]))
 linear' ::
-  forall (inputFeatures :: Nat) (outputFeatures :: Nat) (shape :: [Nat]) (shape' :: [Nat]) dtype device (shape'' :: [Nat]).
+  forall (inputFeatures :: Nat) (outputFeatures :: Nat) (shape :: Shape) (shape' :: Shape) dtype device (shape'' :: [Nat]).
   ( shape'' ~ MatMul shape '[inputFeatures, outputFeatures],
     shape' ~ Broadcast shape'' shape''
   ) =>
@@ -3700,23 +3701,23 @@ mv input vec = unsafePerformIO $ ATen.cast2 ATen.Managed.mv_tt input vec
 
 type family
   NarrowCheck
-    (mbCurrent :: Maybe Nat)
-    (mbUpdated :: Maybe [Nat])
-    (shape :: [Nat])
+    (mbCurrent :: Maybe Size)
+    (mbUpdated :: Maybe Shape)
+    (shape :: Shape)
     (dim :: Nat)
     (start :: Nat)
     (length :: Nat) ::
-    [Nat]
+    Shape
   where
   NarrowCheck Nothing _ sh d _ _ = DimOutOfBound sh d
   NarrowCheck (Just c) Nothing sh d s l = DimOutOfBound sh d
   NarrowCheck _ (Just r) _ _ _ _ = r
 
-type family Narrow' (dim :: Nat) (shape :: [Nat]) (current :: Maybe Nat) (start :: Nat) (length :: Nat) :: Maybe [Nat] where
+type family Narrow' (dim :: Nat) (shape :: Shape) (current :: Maybe Size) (start :: Nat) (length :: Nat) :: Maybe Shape where
   Narrow' d sh (Just c) s l =
     If
-      ((s + l) <=? c)
-      (ReplaceDim d sh l)
+      ((s + l) <=? (ToNat c))
+      (ReplaceDim d sh (FromNat l))
       ( TypeError
           ( Text "The end of the requested narrow segment "
               :<>: ShowType (s + l)
@@ -3734,7 +3735,7 @@ type family Narrow' (dim :: Nat) (shape :: [Nat]) (current :: Maybe Nat) (start 
           :<>: ShowType sh
       )
 
-type family Narrow (shape :: [Nat]) (dim :: Nat) (start :: Nat) (length :: Nat) :: [Nat] where
+type family Narrow (shape :: Shape) (dim :: Nat) (start :: Nat) (length :: Nat) :: Shape where
   Narrow shape dim start length =
     NarrowCheck (ExtractDim dim shape) (Narrow' dim shape (ExtractDim dim shape) start length) shape dim start length
 
@@ -3967,7 +3968,7 @@ celu alpha input = unsafePerformIO $ ATen.cast2 ATen.Managed.celu_ts input alpha
 -- sspaddmm :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Float -> Float -> Tensor device dtype shape
 -- sspaddmm _input _mat1 _mat2 _beta _alpha = unsafePerformIO $ (ATen.cast5 ATen.Managed.sspaddmm_tttss) _input _mat1 _mat2 _beta _alpha
 
-type family StackImpl (dim :: Nat) (tensors :: [a]) (count :: Nat) :: Maybe ([Nat], D.DType, (D.DeviceType, Nat)) where
+type family StackImpl (dim :: Nat) (tensors :: [a]) (count :: Nat) :: Maybe (Shape, D.DType, (D.DeviceType, Nat)) where
   StackImpl dim '[] count = Nothing
   StackImpl dim (Tensor device dtype shape ': '[]) count = MaybeTriple (ComputeStackShape shape dim count) (Just dtype) (Just device)
   StackImpl dim (Tensor device dtype shape ': Tensor device dtype shape ': tensors) count = StackImpl dim (Tensor device dtype shape ': tensors) (count + 1)
@@ -3984,13 +3985,13 @@ type family MaybeTriple (a' :: Maybe a) (b' :: Maybe b) (c' :: Maybe c) :: Maybe
   MaybeTriple _ _ Nothing = Nothing
   MaybeTriple (Just a') (Just b') (Just c') = Just '(a', b', c')
 
-type family ComputeStackShape (shape :: [Nat]) (dim :: Nat) (count :: Nat) :: Maybe [Nat] where
+type family ComputeStackShape (shape :: Shape) (dim :: Nat) (count :: Nat) :: Maybe Shape where
   ComputeStackShape _ _ 0 = Nothing
-  ComputeStackShape xs 0 count = Just (count ': xs)
+  ComputeStackShape xs 0 count = Just (FromNat count ': xs)
   ComputeStackShape (x ': xs) dim count = AppendToMaybe x (ComputeStackShape xs (dim - 1) count)
   ComputeStackShape '[] _ _ = Nothing
 
-type family StackCheck (res :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: ([Nat], D.DType, (D.DeviceType, Nat)) where
+type family StackCheck (res :: Maybe (Shape, D.DType, (D.DeviceType, Nat))) :: (Shape, D.DType, (D.DeviceType, Nat)) where
   StackCheck 'Nothing = TypeError (Text "Stacking impossible.")
   StackCheck ('Just '(shape, dtype, device)) = '(shape, dtype, device)
 
@@ -4194,7 +4195,7 @@ unsqueeze ::
   Tensor device dtype shape'
 unsqueeze input = unsafePerformIO $ ATen.cast2 ATen.Managed.unsqueeze_tl input (natValI @dim)
 
-type family SqueezeAll (shape :: [Nat]) :: [Nat] where
+type family SqueezeAll (shape :: Shape) :: [Nat] where
   SqueezeAll '[] = '[]
   SqueezeAll (1 ': xs) = SqueezeAll xs
   SqueezeAll (x ': xs) = x ': SqueezeAll xs
@@ -4416,19 +4417,19 @@ instance KnownRNNShapeOrder BatchFirst where
 instance KnownRNNShapeOrder SequenceFirst where
   rnnBatchFirst = False
 
-type family RNNShape (shapeOrder :: RNNShapeOrder) (seqLen :: Nat) (batchSize :: Nat) (featureSize :: Nat) :: [Nat] where
-  RNNShape BatchFirst seqLen batchSize featureSize = '[batchSize, seqLen, featureSize]
-  RNNShape SequenceFirst seqLen batchSize featureSize = '[seqLen, batchSize, featureSize]
+type family RNNShape (shapeOrder :: RNNShapeOrder) (seqLen :: Nat) (batchSize :: Nat) (featureSize :: Nat) :: Shape where
+  RNNShape BatchFirst seqLen batchSize featureSize = FromNats '[batchSize, seqLen, featureSize]
+  RNNShape SequenceFirst seqLen batchSize featureSize = FromNats '[seqLen, batchSize, featureSize]
 
-type LSTMWIShape hiddenSize inputSize = '[4 * hiddenSize, inputSize]
+type LSTMWIShape hiddenSize inputSize = FromNats '[4 * hiddenSize, inputSize]
 
-type LSTMWHShape hiddenSize inputSize = '[4 * hiddenSize, hiddenSize]
+type LSTMWHShape hiddenSize inputSize = FromNats '[4 * hiddenSize, hiddenSize]
 
-type LSTMBIShape hiddenSize inputSize = '[4 * hiddenSize]
+type LSTMBIShape hiddenSize inputSize = FromNats '[4 * hiddenSize]
 
-type LSTMBHShape hiddenSize inputSize = '[4 * hiddenSize]
+type LSTMBHShape hiddenSize inputSize = FromNats '[4 * hiddenSize]
 
-type family LSTMRImpl (inputSize :: Nat) (hiddenSize :: Nat) (numLayers :: Nat) (directionality :: RNNDirectionality) :: [[Nat]] where
+type family LSTMRImpl (inputSize :: Nat) (hiddenSize :: Nat) (numLayers :: Nat) (directionality :: RNNDirectionality) :: [Shape] where
   LSTMRImpl inputSize hiddenSize 1 'Unidirectional =
     '[ LSTMWIShape hiddenSize inputSize,
        LSTMWHShape hiddenSize inputSize,
@@ -4464,7 +4465,7 @@ type family LSTMRImpl (inputSize :: Nat) (hiddenSize :: Nat) (numLayers :: Nat) 
             LSTMBHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
           ]
 
-type family LSTMR' (shapes :: [[Nat]]) (dtype :: D.DType) (device :: (D.DeviceType, Nat)) :: [a] where
+type family LSTMR' (shapes :: [Shape]) (dtype :: D.DType) (device :: (D.DeviceType, Nat)) :: [a] where
   LSTMR' '[] dtype device = '[]
   LSTMR' (shape ': shapes) dtype device = Tensor device dtype shape ': LSTMR' shapes dtype device
 
@@ -4551,15 +4552,15 @@ lstmCell wi wh bi bh (cc, hc) input =
   where
     hx = [cc, hc] :: [Tensor device dtype '[batchSize, hiddenSize]]
 
-type GRUWIShape hiddenSize inputSize = '[3 * hiddenSize, inputSize]
+type GRUWIShape hiddenSize inputSize = FromNats '[3 * hiddenSize, inputSize]
 
-type GRUWHShape hiddenSize inputSize = '[3 * hiddenSize, hiddenSize]
+type GRUWHShape hiddenSize inputSize = FromNats '[3 * hiddenSize, hiddenSize]
 
-type GRUBIShape hiddenSize inputSize = '[3 * hiddenSize]
+type GRUBIShape hiddenSize inputSize = FromNats '[3 * hiddenSize]
 
-type GRUBHShape hiddenSize inputSize = '[3 * hiddenSize]
+type GRUBHShape hiddenSize inputSize = FromNats '[3 * hiddenSize]
 
-type family GRURImpl (inputSize :: Nat) (hiddenSize :: Nat) (numLayers :: Nat) (directionality :: RNNDirectionality) :: [[Nat]] where
+type family GRURImpl (inputSize :: Nat) (hiddenSize :: Nat) (numLayers :: Nat) (directionality :: RNNDirectionality) :: [Shape] where
   GRURImpl inputSize hiddenSize 1 'Unidirectional =
     '[ GRUWIShape hiddenSize inputSize,
        GRUWHShape hiddenSize inputSize,
@@ -4595,7 +4596,7 @@ type family GRURImpl (inputSize :: Nat) (hiddenSize :: Nat) (numLayers :: Nat) (
             GRUBHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
           ]
 
-type family GRUR' (shapes :: [[Nat]]) (dtype :: D.DType) (device :: (D.DeviceType, Nat)) :: [a] where
+type family GRUR' (shapes :: [Shape]) (dtype :: D.DType) (device :: (D.DeviceType, Nat)) :: [a] where
   GRUR' '[] dtype device = '[]
   GRUR' (shape ': shapes) dtype device = Tensor device dtype shape ': GRUR' shapes dtype device
 
@@ -4709,7 +4710,7 @@ gruCell wi wh bi bh hx input =
 -- cross :: Tensor device dtype shape -> Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- cross _input _other _dim = unsafePerformIO $ (ATen.cast3 ATen.Managed.cross_ttl) _input _other _dim
 
-type family MatrixOrMatrixBatch (shape :: [Nat]) :: [Nat] where
+type family MatrixOrMatrixBatch (shape :: Shape) :: [Nat] where
   MatrixOrMatrixBatch (n : m : '[]) = '[n, m]
   MatrixOrMatrixBatch (b : n : m : '[]) = '[b, n, m]
   MatrixOrMatrixBatch _ = TypeError (Text "The input must be matrix or a batch of matrices.")
@@ -4814,7 +4815,7 @@ nonzero _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.nonzero_t) _input
 -- >>> :kind! GatherDimImpl '[2, 1, 1] '[2, 1, 3] 2
 -- GatherDimImpl '[2, 1, 1] '[2, 1, 3] 2 :: Maybe [Nat]
 -- = 'Just '[2, 1, 3]
-type family GatherDimImpl (shape :: [Nat]) (shape' :: [Nat]) (dim :: Nat) :: Maybe [Nat] where
+type family GatherDimImpl (shape :: Shape) (shape' :: Shape) (dim :: Nat) :: Maybe Shape where
   GatherDimImpl (x ': xs) (y ': xs) 0 = If (1 <=? y) (Just (y ': xs)) Nothing
   GatherDimImpl (x ': xs) (x ': ys) dim = AppendToMaybe x (GatherDimImpl xs ys (dim - 1))
   GatherDimImpl _ _ _ = Nothing
@@ -4941,7 +4942,7 @@ minAll ::
   Tensor device dtype '[]
 minAll input = unsafePerformIO $ ATen.cast1 ATen.Managed.min_t input
 
-type family DropValue (shape :: [Nat]) (i :: Nat) :: [Nat] where
+type family DropValue (shape :: Shape) (i :: Nat) :: Shape where
   DropValue '[] _ = TypeError (Text "Can not find a element in the list.")
   DropValue (x : xs) 0 = xs
   DropValue (x : xs) i = x ': DropValue xs (i -1)
@@ -5004,10 +5005,10 @@ maxDim input = unsafePerformIO $ ATen.cast2 ATen.Managed.max_tl input (natValI @
 -- argsort :: Tensor device dtype shape -> Int -> Bool -> Tensor device dtype shape
 -- argsort _input _dim _descending = unsafePerformIO $ (ATen.cast3 ATen.Managed.argsort_tlb) _input _dim _descending
 
-type family TopKCheck (k :: Nat) (shape :: [Nat]) (dim :: Nat) (satd :: Maybe Nat) (result :: Maybe a) :: a where
+type family TopKCheck (k :: Size) (shape :: Shape) (dim :: Nat) (satd :: Maybe Size) (result :: Maybe a) :: a where
   TopKCheck _ shape dim _ Nothing = DimOutOfBound shape dim
   TopKCheck _ shape dim Nothing _ = DimOutOfBound shape dim
-  TopKCheck k shape dim (Just v) (Just result) = If (k <=? v) result (TypeError (Text "k must be less than or equal to the number of elements in the requested dimension."))
+  TopKCheck k shape dim (Just v) (Just result) = If ((ToNat k) <=? (ToNat v)) result (TypeError (Text "k must be less than or equal to the number of elements in the requested dimension."))
 
 type TopK k shape dim = TopKCheck k shape dim (ExtractDim dim shape) (ReplaceDim dim shape k)
 
