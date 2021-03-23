@@ -1047,3 +1047,39 @@ normal_ddl
   -> IO (ForeignPtr Tensor)
 normal_ddl = cast3 Unmanaged.normal_ddl
 
+fft_fftfreq_ldo
+  :: Int64
+  -> CDouble
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+fft_fftfreq_ldo = cast3 Unmanaged.fft_fftfreq_ldo
+
+fft_fftfreq_ld
+  :: Int64
+  -> CDouble
+  -> IO (ForeignPtr Tensor)
+fft_fftfreq_ld = cast2 Unmanaged.fft_fftfreq_ld
+
+fft_fftfreq_l
+  :: Int64
+  -> IO (ForeignPtr Tensor)
+fft_fftfreq_l = cast1 Unmanaged.fft_fftfreq_l
+
+fft_rfftfreq_ldo
+  :: Int64
+  -> CDouble
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+fft_rfftfreq_ldo = cast3 Unmanaged.fft_rfftfreq_ldo
+
+fft_rfftfreq_ld
+  :: Int64
+  -> CDouble
+  -> IO (ForeignPtr Tensor)
+fft_rfftfreq_ld = cast2 Unmanaged.fft_rfftfreq_ld
+
+fft_rfftfreq_l
+  :: Int64
+  -> IO (ForeignPtr Tensor)
+fft_rfftfreq_l = cast1 Unmanaged.fft_rfftfreq_l
+

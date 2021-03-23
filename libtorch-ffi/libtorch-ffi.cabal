@@ -1,7 +1,7 @@
 cabal-version:       3.0
 name:                libtorch-ffi
-version:             1.7.0.0
--- The prefix(1.7) of this version("1.7.0.0") is the same as libtorch's one.
+version:             1.8.0.0
+-- The prefix(1.8) of this version("1.8.0.0") is the same as libtorch's one.
 synopsis:            test out alternative options for ffi interface to libtorch 1.x
 -- description:
 homepage:            https://github.com/hasktorch/hasktorch#readme
@@ -14,6 +14,11 @@ build-type:          Simple
 
 Flag cuda
  Description: A flag to link libtorch_cuda.
+ Default: False
+ Manual: True
+
+Flag rocm
+ Description: A flag to link libtorch_hip.
  Default: False
  Manual: True
 
@@ -153,6 +158,16 @@ library
 
  if flag(cuda)
   extra-libraries:     torch_cuda
+
+ if flag(rocm)
+  extra-libraries:     c10_hip
+                     , torch_hip
+                     , sqlite3
+                     , tinfo
+                     , bz2
+                     , z
+  ghc-options:       -optcxx-D_GLIBCXX_USE_CXX11_ABI=0
+  cxx-options:       -D_GLIBCXX_USE_CXX11_ABI=0
 
  extra-ghci-libraries: stdc++
  if os(darwin)

@@ -100,6 +100,7 @@ let
           ];
           flags = {
             cuda = cudaSupport;
+            rocm = false;
             gcc = !cudaSupport && pkgs.stdenv.hostPlatform.isDarwin;
           };
         };

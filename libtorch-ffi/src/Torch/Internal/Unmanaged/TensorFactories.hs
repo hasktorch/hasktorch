@@ -1776,3 +1776,63 @@ normal_ddl _mean _std _size =
   , *$(std::vector<int64_t>* _size)));
   }|]
 
+fft_fftfreq_ldo
+  :: Int64
+  -> CDouble
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+fft_fftfreq_ldo _n _d _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::fft_fftfreq(
+    $(int64_t _n)
+  , $(double _d)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+fft_fftfreq_ld
+  :: Int64
+  -> CDouble
+  -> IO (Ptr Tensor)
+fft_fftfreq_ld _n _d =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::fft_fftfreq(
+    $(int64_t _n)
+  , $(double _d)));
+  }|]
+
+fft_fftfreq_l
+  :: Int64
+  -> IO (Ptr Tensor)
+fft_fftfreq_l _n =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::fft_fftfreq(
+    $(int64_t _n)));
+  }|]
+
+fft_rfftfreq_ldo
+  :: Int64
+  -> CDouble
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+fft_rfftfreq_ldo _n _d _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::fft_rfftfreq(
+    $(int64_t _n)
+  , $(double _d)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+fft_rfftfreq_ld
+  :: Int64
+  -> CDouble
+  -> IO (Ptr Tensor)
+fft_rfftfreq_ld _n _d =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::fft_rfftfreq(
+    $(int64_t _n)
+  , $(double _d)));
+  }|]
+
+fft_rfftfreq_l
+  :: Int64
+  -> IO (Ptr Tensor)
+fft_rfftfreq_l _n =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::fft_rfftfreq(
+    $(int64_t _n)));
+  }|]
+
