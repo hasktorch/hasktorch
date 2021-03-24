@@ -23,7 +23,7 @@ let
   haskellNix = import sources.haskell-nix { inherit system sourcesOverride; };
 
   # Use haskell.nix default nixpkgs
-  nixpkgsSrc = haskellNix.sources.nixpkgs-2009;
+  nixpkgsSrc = haskellNix.sources.nixpkgs-unstable;
 
   # for inclusion in pkgs:
   overlays =
