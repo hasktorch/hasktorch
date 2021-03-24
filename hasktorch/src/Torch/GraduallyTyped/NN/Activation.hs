@@ -12,8 +12,8 @@
 
 module Torch.GraduallyTyped.NN.Activation where
 
-import Data.Singletons.TypeLits (Nat, Symbol)
 import GHC.Generics (Generic)
+import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, softmax)
 import Torch.GraduallyTyped.Shape (By, SelectDim, WithSelectDimC (..), WithSelectDimF)
