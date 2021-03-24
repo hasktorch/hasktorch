@@ -28,7 +28,7 @@ let
 
     tools = {
       cabal = "3.2.0.0";
-      haskell-language-server = "1.0.0";
+      haskell-language-server = "latest";
     };
 
     # These programs will be available inside the nix-shell.
