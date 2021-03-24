@@ -29,6 +29,9 @@ newC10ListIValue elem = cast1 Unmanaged.newC10ListIValue elem
 newC10ListTensor :: IO (ForeignPtr (C10List Tensor))
 newC10ListTensor = cast0 Unmanaged.newC10ListTensor
 
+newC10ListOptionalTensor :: IO (ForeignPtr (C10List (C10Optional Tensor)))
+newC10ListOptionalTensor = cast0 Unmanaged.newC10ListOptionalTensor
+
 newC10ListDouble :: IO (ForeignPtr (C10List CDouble))
 newC10ListDouble = cast0 Unmanaged.newC10ListDouble
 
@@ -48,6 +51,9 @@ c10ListIValue_empty = cast1 Unmanaged.c10ListIValue_empty
 c10ListTensor_empty :: ForeignPtr (C10List Tensor) -> IO (CBool)
 c10ListTensor_empty = cast1 Unmanaged.c10ListTensor_empty
 
+c10ListOptionalTensor_empty :: ForeignPtr (C10List (C10Optional Tensor)) -> IO (CBool)
+c10ListOptionalTensor_empty = cast1 Unmanaged.c10ListOptionalTensor_empty
+
 c10ListDouble_empty :: ForeignPtr (C10List CDouble) -> IO (CBool)
 c10ListDouble_empty = cast1 Unmanaged.c10ListDouble_empty
 
@@ -62,6 +68,9 @@ c10ListIValue_size = cast1 Unmanaged.c10ListIValue_size
 
 c10ListTensor_size :: ForeignPtr (C10List Tensor) -> IO (CSize)
 c10ListTensor_size = cast1 Unmanaged.c10ListTensor_size
+
+c10ListOptionalTensor_size :: ForeignPtr (C10List (C10Optional Tensor)) -> IO (CSize)
+c10ListOptionalTensor_size = cast1 Unmanaged.c10ListOptionalTensor_size
 
 c10ListDouble_size :: ForeignPtr (C10List CDouble) -> IO (CSize)
 c10ListDouble_size = cast1 Unmanaged.c10ListDouble_size
@@ -78,6 +87,9 @@ c10ListIValue_at = cast2 Unmanaged.c10ListIValue_at
 c10ListTensor_at :: ForeignPtr (C10List Tensor) -> CSize -> IO (ForeignPtr Tensor)
 c10ListTensor_at = cast2 Unmanaged.c10ListTensor_at
 
+c10ListOptionalTensor_at :: ForeignPtr (C10List (C10Optional Tensor)) -> CSize -> IO (ForeignPtr Tensor)
+c10ListOptionalTensor_at = cast2 Unmanaged.c10ListOptionalTensor_at
+
 c10ListDouble_at :: ForeignPtr (C10List CDouble) -> CSize -> IO CDouble
 c10ListDouble_at = cast2 Unmanaged.c10ListDouble_at
 
@@ -92,6 +104,9 @@ c10ListIValue_push_back = cast2 Unmanaged.c10ListIValue_push_back
 
 c10ListTensor_push_back :: ForeignPtr (C10List Tensor) -> ForeignPtr Tensor -> IO ()
 c10ListTensor_push_back = cast2 Unmanaged.c10ListTensor_push_back
+
+c10ListOptionalTensor_push_back :: ForeignPtr (C10List (C10Optional Tensor)) -> ForeignPtr Tensor -> IO ()
+c10ListOptionalTensor_push_back = cast2 Unmanaged.c10ListOptionalTensor_push_back
 
 c10ListDouble_push_back :: ForeignPtr (C10List CDouble) -> CDouble -> IO ()
 c10ListDouble_push_back = cast2 Unmanaged.c10ListDouble_push_back

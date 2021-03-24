@@ -46,6 +46,7 @@ import qualified Torch.Internal.Managed.Type.TensorOptions as ATen
 import qualified Torch.Internal.Type as ATen
 import qualified Torch.Internal.Unmanaged.Type.Tensor as Unmanaged (tensor_data_ptr)
 import Torch.TensorOptions
+import Torch.Lens
 
 type ATenTensor = ForeignPtr ATen.Tensor
 
@@ -126,20 +127,38 @@ toInt :: Tensor -> Int
 toInt t = unsafePerformIO $ cast1 ATen.tensor_item_int64_t t
 
 -- | Casts the input tensor to the given data type
-toType ::
+_toType ::
   -- | data type to cast input to
   DType ->
   -- | input
   Tensor ->
   -- | output
   Tensor
-toType dtype t = unsafePerformIO $ cast2 ATen.tensor_toType_s t dtype
+_toType dtype t = unsafePerformIO $ cast2 ATen.tensor_toType_s t dtype
 
-class ToDevice a where
-  toDevice :: Device -> a -> a
+instance HasTypes Tensor Tensor where
+  types_ = id
 
-instance ToDevice Tensor where
-  toDevice = _toDevice
+instance HasTypes (a -> a) Tensor where
+  types_ _ = pure
+
+instance HasTypes Int Tensor where
+  types_ _ = pure
+
+instance HasTypes Double Tensor where
+  types_ _ = pure
+
+instance HasTypes Float Tensor where
+  types_ _ = pure
+
+instance HasTypes Bool Tensor where
+  types_ _ = pure
+
+toType :: forall a. HasTypes a Tensor => DType -> a -> a
+toType dtype t = over (types @Tensor @a) (_toType dtype) t
+
+toDevice :: forall a. HasTypes a Tensor => Device -> a -> a
+toDevice device' t = over (types @Tensor @a) (_toDevice device') t
 
 -- | Casts the input tensor to given device
 _toDevice ::
@@ -665,6 +684,14 @@ instance Castable [Tensor] (ForeignPtr ATen.TensorList) where
     f tensor_list
 
 instance Castable [Tensor] (ForeignPtr (ATen.C10List ATen.Tensor)) where
+  cast xs f = do
+    ptr_list <- mapM (\x -> (cast x return :: IO (ForeignPtr ATen.Tensor))) xs
+    cast ptr_list f
+  uncast xs f = uncast xs $ \ptr_list -> do
+    tensor_list <- mapM (\(x :: ForeignPtr ATen.Tensor) -> uncast x return) ptr_list
+    f tensor_list
+
+instance Castable [Tensor] (ForeignPtr (ATen.C10List (ATen.C10Optional ATen.Tensor))) where
   cast xs f = do
     ptr_list <- mapM (\x -> (cast x return :: IO (ForeignPtr ATen.Tensor))) xs
     cast ptr_list f

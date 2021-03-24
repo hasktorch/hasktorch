@@ -74,6 +74,15 @@ instance Castable [ForeignPtr Tensor] (ForeignPtr (C10List Tensor)) where
     len <- c10ListTensor_size xs
     f =<< mapM (c10ListTensor_at xs) [0..(len - 1)]
 
+instance Castable [ForeignPtr Tensor] (ForeignPtr (C10List (C10Optional Tensor))) where
+  cast xs f = do
+    l <- newC10ListOptionalTensor
+    forM_ xs $ (c10ListOptionalTensor_push_back l)
+    f l
+  uncast xs f = do
+    len <- c10ListOptionalTensor_size xs
+    f =<< mapM (c10ListOptionalTensor_at xs) [0..(len - 1)]
+
 instance Castable [CDouble] (ForeignPtr (C10List CDouble)) where
   cast xs f = do
     l <- newC10ListDouble

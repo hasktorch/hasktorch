@@ -49,6 +49,7 @@ library
                     , Torch.Random
                     , Torch.Script
                     , Torch.HList
+                    , Torch.Lens
                     , Torch.Typed
                     , Torch.Typed.Aux
                     , Torch.Typed.Factories
@@ -94,7 +95,7 @@ library
  ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
  build-depends:       async
                     , base >= 4.7 && < 5
-                    , libtorch-ffi == 1.7.*
+                    , libtorch-ffi == 1.8.*
                     , finite-typelits
                     , ghc-typelits-extra
                     , ghc-typelits-knownnat
@@ -138,6 +139,7 @@ test-suite spec
                     , FunctionalSpec
                     , GradSpec
                     , InitializerSpec
+                    , LensSpec
                     , OptimSpec
                     , SparseSpec
                     , ScriptSpec
@@ -202,7 +204,7 @@ test-suite doctests
   build-depends:      doctest >=0.16.0.1 && <0.17
                     , async
                     , base >= 4.7 && < 5
-                    , libtorch-ffi == 1.7.*
+                    , libtorch-ffi == 1.8.*
                     , finite-typelits
                     , ghc-typelits-extra
                     , ghc-typelits-knownnat
