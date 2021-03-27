@@ -21,7 +21,7 @@ import Unsafe.Coerce (unsafeCoerce)
 -- | Given a random generator, randomly zeroes some of the elements of
 -- the input tensor with probability 'p' using samples from a Bernoulli distribution.
 -- Each channel will be zeroed out independently on every 'forward' call.
-data Dropout (p :: Type) where
+newtype Dropout (p :: Type) where
   Dropout ::
     forall p.
     -- | probability of an element to be zeroed
