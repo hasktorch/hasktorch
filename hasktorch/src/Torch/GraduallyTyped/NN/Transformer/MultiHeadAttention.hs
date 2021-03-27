@@ -682,6 +682,43 @@ type HasForwardMultiHeadAttentionC
       )
   )
 
+-- | 'Forward' instance for 'MultiHeadAttention'.
+--
+-- @
+-- ┌───────────────┐  ┌───────┐       ┌─────┐       ┌───────┐
+-- │ attentionBias │  │ query │       │ key │       │ value │
+-- └───────┬───────┘  └───┬───┘       └──┬──┘       └───┬───┘
+--         │              │              │              │
+--         │              ▼              ▼              ▼
+--         │          mhaQInProj     mhaKInProj     mhaVInProj
+--         │              ▼              ▼              ▼
+--         │           reshape        reshape        reshape
+--         │              ▼              ▼              ▼
+--         │          transpose      transpose      transpose
+--         │              │              ▼              │
+--         │              │          transpose          │
+--         │              │              │              │
+--         │              └───►matmul◄───┘              │
+--         │                     │                      │
+--         └────►add◄────────────┘                      │
+--                ▼                                     │
+--             softmax                                  │
+--                ▼                                     │
+--            mhaDropout                                │
+--                │                                     │
+--                └──────────────►matmul◄───────────────┘
+--                                  ▼
+--                              transpose
+--                                  ▼
+--                               reshape
+--                                  ▼
+--                              mhaOutProj
+--                                  │
+--                                  ▼
+--                              ┌───────┐
+--                              │ query │
+--                              └───────┘
+-- @
 instance
   ( HasForwardMultiHeadAttentionC
       device
@@ -1030,6 +1067,46 @@ type BARTMultiHeadAttentionOutputShape
         ('Shape '[batchDim, querySeqDim, embedDim])
     )
 
+
+-- | 'Forward' instance for 'BARTMultiHeadAttention'.
+--
+-- @
+-- ┌───────────────┐  ┌───────┐       ┌─────┐       ┌───────┐
+-- │ attentionBias │  │ query │       │ key │       │ value │
+-- └───────┬───────┘  └───┬───┘       └──┬──┘       └───┬───┘
+--         │              │              │              │
+--         │              ▼              ▼              ▼
+--         │         bmhaQInProj    bmhaKInProj    bmhaVInProj
+--         │              ▼              │              │
+--         │           scaling           │              │
+--         │              ▼              ▼              ▼
+--         │           reshape        reshape        reshape
+--         │              ▼              ▼              ▼
+--         │          transpose      transpose      transpose
+--         │              │              ▼              │
+--         │              │          transpose          │
+--         │              │              │              │
+--         │              └───►matmul◄───┘              │
+--         │                     │                      │
+--         └────►add◄────────────┘                      │
+--                ▼                                     │
+--             softmax                                  │
+--                ▼                                     │
+--           bmhaDropout                                │
+--                │                                     │
+--                └──────────────►matmul◄───────────────┘
+--                                  ▼
+--                              transpose
+--                                  ▼
+--                               reshape
+--                                  ▼
+--                             bmhaOutProj
+--                                  │
+--                                  ▼
+--                              ┌───────┐
+--                              │ query │
+--                              └───────┘
+-- @
 instance
   ( HasForwardBARTMultiHeadAttentionC
       device
