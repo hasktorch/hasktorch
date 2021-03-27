@@ -61,7 +61,7 @@ data
       -- | decoder
       seqToSeqWithoutLMHeadDecoder :: TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP,
       -- | embedding
-      seqToSeqWithoutLMHeadEmbedding :: Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing
+      seqToSeqWithoutLMHeadEmbedding :: Embedding ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing
     } ->
     SequenceToSequenceTransformer 'WithoutLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP
   SequenceToSequenceTransformerWithLMHead ::
@@ -71,7 +71,7 @@ data
       -- | decoder
       seqToSeqWithLMHeadDecoder :: TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP,
       -- | embedding
-      seqToSeqWithLMHeadEmbedding :: Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing,
+      seqToSeqWithLMHeadEmbedding :: Embedding ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing,
       -- | language model head
       seqToSeqLMHead :: Linear 'WithoutBias device dataType inputEmbedDim vocabDim,
       -- | input embed dim
@@ -82,7 +82,7 @@ data
 type HasInitializeSequenceToSequenceTransformerC hasLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP =
   ( HasInitializeTransformerEncoderC numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP,
     HasInitializeTransformerDecoderC numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP,
-    HasInitializeEmbeddingC ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing,
+    HasInitializeEmbeddingC ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing,
     WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device)))))))))),
     WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device))))))))),
     WithDimC headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device)))))))),
@@ -215,7 +215,7 @@ instance
               ( withoutDim @vocabDim
                   ( withoutDataType @dataType
                       ( withoutDevice @device
-                          ( initialize @(Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                          ( initialize @(Embedding ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
                           )
                           deviceType
                       )
@@ -349,7 +349,7 @@ instance
               ( withoutDim @vocabDim
                   ( withoutDataType @dataType
                       ( withoutDevice @device
-                          ( initialize @(Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+                          ( initialize @(Embedding ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
                           )
                           deviceType
                       )
@@ -435,7 +435,7 @@ deriving instance
 
 instance
   ( HasForward
-      (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+      (Embedding ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
       input
       generator
       embeddingOutput
@@ -447,7 +447,7 @@ instance
       encoderOutput
       encoderGeneratorOutput,
     HasForward
-      (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+      (Embedding ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
       decoderInput
       encoderGeneratorOutput
       embeddingOutput'
@@ -487,7 +487,7 @@ instance
 
 instance
   ( HasForward
-      (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+      (Embedding ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
       decoderInput
       generator
       embeddingOutput'
@@ -522,7 +522,7 @@ instance
 
 instance
   ( HasForward
-      (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+      (Embedding ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
       input
       generator
       embeddingOutput
@@ -534,7 +534,7 @@ instance
       encoderOutput
       encoderGeneratorOutput,
     HasForward
-      (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+      (Embedding ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
       decoderInput
       encoderGeneratorOutput
       embeddingOutput'
@@ -583,7 +583,7 @@ instance
 
 instance
   ( HasForward
-      (Embedding ( 'Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+      (Embedding ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
       decoderInput
       generator
       embeddingOutput'
@@ -633,71 +633,71 @@ testForwardSeqToSeq =
             'WithLMHead
             3
             3
-            ( 'Device 'CPU)
-            ( 'DataType 'Float)
-            ( 'Dim ( 'Name "*") ( 'Size 8)) -- headDim
-            ( 'Dim ( 'Name "*") ( 'Size 64)) -- headEmbedDim
-            ( 'Dim ( 'Name "*") ( 'Size 512)) -- embedDim
-            ( 'Dim ( 'Name "*") ( 'Size 512)) -- inputEmbedDim
-            ( 'Dim ( 'Name "*") ( 'Size 2048)) -- ffnDim
-            ( 'Dim ( 'Name "*") ( 'Size 32)) -- relPosEncBucketDim
-            ( 'Dim ( 'Name "*") ( 'Size 32128)) -- vocabDim
+            ('Device 'CPU)
+            ('DataType 'Float)
+            ('Dim ('Name "*") ('Size 8)) -- headDim
+            ('Dim ('Name "*") ('Size 64)) -- headEmbedDim
+            ('Dim ('Name "*") ('Size 512)) -- embedDim
+            ('Dim ('Name "*") ('Size 512)) -- inputEmbedDim
+            ('Dim ('Name "*") ('Size 2048)) -- ffnDim
+            ('Dim ('Name "*") ('Size 32)) -- relPosEncBucketDim
+            ('Dim ('Name "*") ('Size 32128)) -- vocabDim
             Float
       input =
         undefined ::
           Tensor
             'WithoutGradient
-            ( 'Layout 'Dense)
-            ( 'Device 'CPU)
-            ( 'DataType 'Int64)
-            ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 7)])
+            ('Layout 'Dense)
+            ('Device 'CPU)
+            ('DataType 'Int64)
+            ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 7)])
       decoderInput =
         undefined ::
           Tensor
             'WithoutGradient
-            ( 'Layout 'Dense)
-            ( 'Device 'CPU)
-            ( 'DataType 'Int64)
-            ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 5)])
+            ('Layout 'Dense)
+            ('Device 'CPU)
+            ('DataType 'Int64)
+            ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 5)])
       relPos =
         undefined ::
           Tensor
             'WithoutGradient
-            ( 'Layout 'Dense)
-            ( 'Device 'CPU)
+            ('Layout 'Dense)
+            ('Device 'CPU)
             'UncheckedDataType -- ( 'DataType 'Int64)
-            ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 7), 'Dim ( 'Name "*") ( 'Size 7)])
+            ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 7), 'Dim ('Name "*") ('Size 7)])
       decoderRelPos =
         undefined ::
           Tensor
             'WithoutGradient
-            ( 'Layout 'Dense)
+            ('Layout 'Dense)
             'UncheckedDevice -- ( 'Device 'CPU)
-            ( 'DataType 'Int64)
-            ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 5), 'Dim ( 'Name "*") ( 'Size 5)])
+            ('DataType 'Int64)
+            ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 5), 'Dim ('Name "*") ('Size 5)])
       attentionMask =
         undefined ::
           Tensor
             'WithoutGradient
             'UncheckedLayout -- ( 'Layout 'Dense)
-            ( 'Device 'CPU)
-            ( 'DataType 'Float)
-            ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 7), 'Dim ( 'Name "*") ( 'Size 7)])
+            ('Device 'CPU)
+            ('DataType 'Float)
+            ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 7), 'Dim ('Name "*") ('Size 7)])
       decoderAttentionMask =
         undefined ::
           Tensor
             'WithoutGradient
-            ( 'Layout 'Dense)
-            ( 'Device 'CPU)
-            ( 'DataType 'Float)
-            ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 5), 'Dim ( 'Name "*") ( 'Size 5)])
+            ('Layout 'Dense)
+            ('Device 'CPU)
+            ('DataType 'Float)
+            ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 5), 'Dim ('Name "*") ('Size 5)])
       crossAttentionMask =
         undefined ::
           Tensor
             'WithoutGradient
-            ( 'Layout 'Dense)
+            ('Layout 'Dense)
             'UncheckedDevice -- ( 'Device 'CPU)
-            ( 'DataType 'Float)
-            ( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 1), 'Dim ( 'Name "*") ( 'Size 5), 'Dim ( 'Name "*") ( 'Size 7)])
-      g = undefined :: Generator ( 'Device 'CPU)
+            ('DataType 'Float)
+            ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 5), 'Dim ('Name "*") ('Size 7)])
+      g = undefined :: Generator ('Device 'CPU)
    in forward seqToSeq (SequenceToSequenceTransformerInput input decoderInput relPos decoderRelPos attentionMask decoderAttentionMask crossAttentionMask) g

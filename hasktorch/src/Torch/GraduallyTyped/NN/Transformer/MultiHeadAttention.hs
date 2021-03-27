@@ -682,7 +682,7 @@ type HasForwardMultiHeadAttentionC
       )
   )
 
--- | 'Forward' instance for 'MultiHeadAttention'.
+-- | 'HasForward' instance for 'MultiHeadAttention'.
 --
 -- @
 -- ┌───────────────┐  ┌───────┐       ┌─────┐       ┌───────┐
@@ -1068,44 +1068,44 @@ type BARTMultiHeadAttentionOutputShape
     )
 
 
--- | 'Forward' instance for 'BARTMultiHeadAttention'.
---
+-- | 'HasForward' instance for 'BARTMultiHeadAttention'.
+-- 
 -- @
--- ┌───────────────┐  ┌───────┐       ┌─────┐       ┌───────┐
--- │ attentionBias │  │ query │       │ key │       │ value │
--- └───────┬───────┘  └───┬───┘       └──┬──┘       └───┬───┘
---         │              │              │              │
---         │              ▼              ▼              ▼
---         │         bmhaQInProj    bmhaKInProj    bmhaVInProj
---         │              ▼              │              │
---         │           scaling           │              │
---         │              ▼              ▼              ▼
---         │           reshape        reshape        reshape
---         │              ▼              ▼              ▼
---         │          transpose      transpose      transpose
---         │              │              ▼              │
---         │              │          transpose          │
---         │              │              │              │
---         │              └───►matmul◄───┘              │
---         │                     │                      │
---         └────►add◄────────────┘                      │
---                ▼                                     │
---             softmax                                  │
---                ▼                                     │
---           bmhaDropout                                │
---                │                                     │
---                └──────────────►matmul◄───────────────┘
---                                  ▼
---                              transpose
---                                  ▼
---                               reshape
---                                  ▼
---                             bmhaOutProj
---                                  │
---                                  ▼
---                              ┌───────┐
---                              │ query │
---                              └───────┘
+-- ┌───────────────┐        ┌───────┐       ┌─────┐       ┌───────┐
+-- │ attentionBias │        │ query │       │ key │       │ value │
+-- └───────┬───────┘        └───┬───┘       └──┬──┘       └───┬───┘
+--         │                    │              │              │
+--         │                    ▼              ▼              ▼
+--         │               bmhaQInProj    bmhaKInProj    bmhaVInProj
+--         │                    ▼              │              │
+--         │                 scaling           │              │
+--         │                    ▼              ▼              ▼
+--         │                 reshape        reshape        reshape
+--         │                    ▼              ▼              ▼
+--         │                transpose      transpose      transpose
+--         │                    │              ▼              │
+--         │                    │          transpose          │
+--         │                    │              │              │
+--         │                    └───►matmul◄───┘              │
+--         │                           │                      │
+--         └──────────►add◄────────────┘                      │
+--                      ▼                                     │
+--                   softmax                                  │
+--                      ▼                                     │
+--                 bmhaDropout                                │
+--                      │                                     │
+--                      └──────────────►matmul◄───────────────┘
+--                                        ▼
+--                                    transpose
+--                                        ▼
+--                                     reshape
+--                                        ▼
+--                                   bmhaOutProj
+--                                        │
+--                                        ▼
+--                                    ┌───────┐
+--                                    │ query │
+--                                    └───────┘
 -- @
 instance
   ( HasForwardBARTMultiHeadAttentionC

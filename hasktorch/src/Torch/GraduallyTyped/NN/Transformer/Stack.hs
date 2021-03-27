@@ -242,22 +242,22 @@ class
     (ffnDim :: Dim (Name Symbol) (Size Nat))
     (dropoutP :: Type)
     (query :: Type)
-    (attentionMask :: Type)
+    (attentionBias :: Type)
     (generator :: Type)
     (output :: Type)
     (generatorOutput :: Type)
-    | isCons isNotFirstLayer numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP query attentionMask generator -> output,
-      isCons isNotFirstLayer numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP query attentionMask generator -> generatorOutput
+    | isCons isNotFirstLayer numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP query attentionBias generator -> output,
+      isCons isNotFirstLayer numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP query attentionBias generator -> generatorOutput
   where
   forwardTransformerStack ::
     Maybe
       ( TransformerBlock device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP ->
-        (query, attentionMask) ->
+        (query, attentionBias) ->
         generator ->
         (query, generator)
       ) ->
     TransformerStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP ->
-    (query, attentionMask) ->
+    (query, attentionBias) ->
     generator ->
     (output, generatorOutput)
 
@@ -275,23 +275,23 @@ instance
     ffnDim
     dropoutP
     query
-    attentionMask
+    attentionBias
     generator
     query
     generator
   where
-  forwardTransformerStack _ TransformerStackNil (query, _attentionMask) g = (query, g)
+  forwardTransformerStack _ TransformerStackNil (query, _attentionBias) g = (query, g)
 
 instance
   ( HasForward
       (TransformerBlock device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
-      (query, attentionMask)
+      (query, attentionBias)
       generator
       blockOutput
       blockGeneratorOutput,
     HasForward
       (TransformerBlock device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
-      (blockOutput, attentionMask)
+      (blockOutput, attentionBias)
       blockGeneratorOutput
       blockOutput
       blockGeneratorOutput,
@@ -308,7 +308,7 @@ instance
       ffnDim
       dropoutP
       blockOutput
-      attentionMask
+      attentionBias
       blockGeneratorOutput
       output
       generatorOutput
@@ -326,24 +326,24 @@ instance
     ffnDim
     dropoutP
     query
-    attentionMask
+    attentionBias
     generator
     output
     generatorOutput
   where
-  forwardTransformerStack _ (TransformerStackCons block stack) (query, attentionMask) =
+  forwardTransformerStack _ (TransformerStackCons block stack) (query, attentionBias) =
     runIxState $
-      ireturn (query, attentionMask)
+      ireturn (query, attentionBias)
         >>>= IxState . forward block
         >>>= ( \query' ->
                  IxState $
                    forwardTransformerStack
                      @(1 <=? numLayers - 1)
-                     @ 'True
+                     @'True
                      @(numLayers - 1)
                      (Just forward)
                      stack
-                     (query', attentionMask)
+                     (query', attentionBias)
              )
 
 instance
@@ -360,7 +360,7 @@ instance
     ffnDim
     dropoutP
     query
-    attentionMask
+    attentionBias
     generator
     query
     generator =>
@@ -377,26 +377,47 @@ instance
     ffnDim
     dropoutP
     query
-    attentionMask
+    attentionBias
     generator
     query
     generator
   where
-  forwardTransformerStack (Just f) (TransformerStackCons block stack) (query, attentionMask) =
+  forwardTransformerStack (Just f) (TransformerStackCons block stack) (query, attentionBias) =
     runIxState $
-      ireturn (query, attentionMask)
+      ireturn (query, attentionBias)
         >>>= IxState . f block
         >>>= ( \query' ->
                  IxState $
                    forwardTransformerStack
                      @(1 <=? numLayers - 1)
-                     @ 'True
+                     @'True
                      @(numLayers - 1)
                      (Just f)
                      stack
-                     (query', attentionMask)
+                     (query', attentionBias)
              )
 
+-- | 'HasForward' instance for 'TransformerStack'.
+--
+-- @
+-- ┌───────┐  ┌───────────────┐
+-- │ query │  │ attentionBias │
+-- └───┬───┘  └───────┬───────┘
+--     │              │
+--     ▼              │
+--  tsBlock◄──────────┤
+--     ▼              │
+--  tsBlock◄──────────┤
+--     ▼              │
+--    ...            ...
+--     ▼              │
+--  tsBlock◄──────────┘
+--     │
+--     ▼
+-- ┌───────┐
+-- │ query │
+-- └───────┘
+-- @
 instance
   HasForwardTransformerStack
     (1 <=? numLayers)
@@ -411,15 +432,15 @@ instance
     ffnDim
     dropoutP
     query
-    attentionMask
+    attentionBias
     generator
     output
     generatorOutput =>
   HasForward
     (TransformerStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
-    (query, attentionMask)
+    (query, attentionBias)
     generator
     output
     generatorOutput
   where
-  forward = forwardTransformerStack @(1 <=? numLayers) @ 'False Nothing
+  forward = forwardTransformerStack @(1 <=? numLayers) @'False Nothing

@@ -263,23 +263,23 @@ class
     (dropoutP :: Type)
     (query :: Type)
     (key :: Type)
-    (decoderAttentionMask :: Type)
-    (crossAttentionMask :: Type)
+    (decoderAttentionBias :: Type)
+    (crossAttentionBias :: Type)
     (generator :: Type)
     (output :: Type)
     (generatorOutput :: Type)
-    | isCons isNotFirstLayer numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP query key decoderAttentionMask crossAttentionMask generator -> output,
-      isCons isNotFirstLayer numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP query key decoderAttentionMask crossAttentionMask generator -> generatorOutput
+    | isCons isNotFirstLayer numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP query key decoderAttentionBias crossAttentionBias generator -> output,
+      isCons isNotFirstLayer numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP query key decoderAttentionBias crossAttentionBias generator -> generatorOutput
   where
   forwardTransformerDecoderStack ::
     Maybe
       ( TransformerDecoderBlock device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP ->
-        (query, key, decoderAttentionMask, crossAttentionMask) ->
+        (query, key, decoderAttentionBias, crossAttentionBias) ->
         generator ->
         (query, generator)
       ) ->
     TransformerDecoderStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP ->
-    (query, key, decoderAttentionMask, crossAttentionMask) ->
+    (query, key, decoderAttentionBias, crossAttentionBias) ->
     generator ->
     (output, generatorOutput)
 
@@ -299,24 +299,24 @@ instance
     dropoutP
     query
     key
-    decoderAttentionMask
-    crossAttentionMask
+    decoderAttentionBias
+    crossAttentionBias
     generator
     query
     generator
   where
-  forwardTransformerDecoderStack _ TransformerDecoderStackNil (query, _key, _decoderAttentionMask, _crossAttentionMask) g = (query, g)
+  forwardTransformerDecoderStack _ TransformerDecoderStackNil (query, _key, _decoderAttentionBias, _crossAttentionBias) g = (query, g)
 
 instance
   ( HasForward
       (TransformerDecoderBlock device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
-      (query, key, decoderAttentionMask, crossAttentionMask)
+      (query, key, decoderAttentionBias, crossAttentionBias)
       generator
       blockOutput
       blockGeneratorOutput,
     HasForward
       (TransformerDecoderBlock device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
-      (blockOutput, key, decoderAttentionMask, crossAttentionMask)
+      (blockOutput, key, decoderAttentionBias, crossAttentionBias)
       blockGeneratorOutput
       blockOutput
       blockGeneratorOutput,
@@ -335,8 +335,8 @@ instance
       dropoutP
       blockOutput
       key
-      decoderAttentionMask
-      crossAttentionMask
+      decoderAttentionBias
+      crossAttentionBias
       blockGeneratorOutput
       output
       generatorOutput
@@ -356,25 +356,25 @@ instance
     dropoutP
     query
     key
-    decoderAttentionMask
-    crossAttentionMask
+    decoderAttentionBias
+    crossAttentionBias
     generator
     output
     generatorOutput
   where
-  forwardTransformerDecoderStack _ (TransformerDecoderStackCons decoderBlock decoderStack) (query, key, decoderAttentionMask, crossAttentionMask) =
+  forwardTransformerDecoderStack _ (TransformerDecoderStackCons decoderBlock decoderStack) (query, key, decoderAttentionBias, crossAttentionBias) =
     runIxState $
-      ireturn (query, key, decoderAttentionMask, crossAttentionMask)
+      ireturn (query, key, decoderAttentionBias, crossAttentionBias)
         >>>= IxState . forward decoderBlock
         >>>= ( \query' ->
                  IxState $
                    forwardTransformerDecoderStack
                      @(1 <=? numLayers - 1)
-                     @ 'True
+                     @'True
                      @(numLayers - 1)
                      (Just forward)
                      decoderStack
-                     (query', key, decoderAttentionMask, crossAttentionMask)
+                     (query', key, decoderAttentionBias, crossAttentionBias)
              )
 
 instance
@@ -393,8 +393,8 @@ instance
     dropoutP
     query
     key
-    decoderAttentionMask
-    crossAttentionMask
+    decoderAttentionBias
+    crossAttentionBias
     generator
     query
     generator =>
@@ -413,27 +413,48 @@ instance
     dropoutP
     query
     key
-    decoderAttentionMask
-    crossAttentionMask
+    decoderAttentionBias
+    crossAttentionBias
     generator
     query
     generator
   where
-  forwardTransformerDecoderStack (Just f) (TransformerDecoderStackCons decoderBlock decoderStack) (query, key, decoderAttentionMask, crossAttentionMask) =
+  forwardTransformerDecoderStack (Just f) (TransformerDecoderStackCons decoderBlock decoderStack) (query, key, decoderAttentionBias, crossAttentionBias) =
     runIxState $
-      ireturn (query, key, decoderAttentionMask, crossAttentionMask)
+      ireturn (query, key, decoderAttentionBias, crossAttentionBias)
         >>>= IxState . f decoderBlock
         >>>= ( \query' ->
                  IxState $
                    forwardTransformerDecoderStack
                      @(1 <=? numLayers - 1)
-                     @ 'True
+                     @'True
                      @(numLayers - 1)
                      (Just f)
                      decoderStack
-                     (query', key, decoderAttentionMask, crossAttentionMask)
+                     (query', key, decoderAttentionBias, crossAttentionBias)
              )
 
+-- | 'HasForward' instance for 'TransformerDecoderStack'.
+--
+-- @
+-- ┌───────┐  ┌─────┐  ┌──────────────────────┐  ┌────────────────────┐
+-- │ query │  │ key │  │ decoderAttentionBias │  │ crossAttentionBias │
+-- └───┬───┘  └──┬──┘  └──────────┬───────────┘  └─────────┬──────────┘
+--     │         │                │                        │
+--     ▼         │                │                        │
+--  tdsBlock◄────┤◄───────────────┤◄───────────────────────┤
+--     ▼         │                │                        │
+--  tdsBlock◄────┤◄───────────────┤◄───────────────────────┤
+--     ▼         │                │                        │
+--    ...       ...              ...                      ...
+--     ▼         │                │                        │
+--  tdsBlock◄────┘◄───────────────┘◄───────────────────────┘
+--     │
+--     ▼
+-- ┌───────┐
+-- │ query │
+-- └───────┘
+-- @
 instance
   HasForwardTransformerDecoderStack
     (1 <=? numLayers)
@@ -450,16 +471,16 @@ instance
     dropoutP
     query
     key
-    decoderAttentionMask
-    crossAttentionMask
+    decoderAttentionBias
+    crossAttentionBias
     generator
     output
     generatorOutput =>
   HasForward
     (TransformerDecoderStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
-    (query, key, decoderAttentionMask, crossAttentionMask)
+    (query, key, decoderAttentionBias, crossAttentionBias)
     generator
     output
     generatorOutput
   where
-  forward = forwardTransformerDecoderStack @(1 <=? numLayers) @ 'False Nothing
+  forward = forwardTransformerDecoderStack @(1 <=? numLayers) @'False Nothing

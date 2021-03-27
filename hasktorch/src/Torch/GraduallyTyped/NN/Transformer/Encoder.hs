@@ -61,11 +61,11 @@ data
     { -- | encoder layer stack
       teStack :: TransformerStack numLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP,
       -- | encoder layer norm
-      teLayerNorm :: LayerNorm 'WithoutBias device dataType ( 'Shape '[inputEmbedDim]),
+      teLayerNorm :: LayerNorm 'WithoutBias device dataType ('Shape '[inputEmbedDim]),
       -- | encoder dropout
       teDropout :: Dropout dropoutP,
       -- | relative positional encoding
-      teRelPosEnc :: Embedding ( 'Layout 'Dense) device dataType relPosEncBucketDim headDim 'Nothing
+      teRelPosEnc :: Embedding ('Layout 'Dense) device dataType relPosEncBucketDim headDim 'Nothing
     } ->
     TransformerEncoder numLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP
 
@@ -82,8 +82,8 @@ type HasInitializeTransformerEncoderC numLayers device dataType headDim headEmbe
       inputEmbedDim
       ffnDim
       dropoutP,
-    HasInitializeLayerNormWithoutBiasC device dataType ( 'Shape '[inputEmbedDim]),
-    HasInitializeEmbeddingC ( 'Layout 'Dense) device dataType relPosEncBucketDim headDim 'Nothing,
+    HasInitializeLayerNormWithoutBiasC device dataType ('Shape '[inputEmbedDim]),
+    HasInitializeEmbeddingC ('Layout 'Dense) device dataType relPosEncBucketDim headDim 'Nothing,
     Scalar dropoutP,
     WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device))))))))),
     WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device)))))))),
@@ -171,10 +171,10 @@ instance
               dropoutP
               eps
         let layerNorm =
-              withoutShape @( 'Shape '[inputEmbedDim])
+              withoutShape @('Shape '[inputEmbedDim])
                 ( withoutDataType @dataType
                     ( withoutDevice @device
-                        ( initialize @(LayerNorm 'WithoutBias device dataType ( 'Shape '[inputEmbedDim]))
+                        ( initialize @(LayerNorm 'WithoutBias device dataType ('Shape '[inputEmbedDim]))
                         )
                         deviceType
                     )
@@ -189,7 +189,7 @@ instance
               ( withoutDim @relPosEncBucketDim
                   ( withoutDataType @dataType
                       ( withoutDevice @device
-                          ( initialize @(Embedding ( 'Layout 'Dense) device dataType relPosEncBucketDim headDim 'Nothing)
+                          ( initialize @(Embedding ('Layout 'Dense) device dataType relPosEncBucketDim headDim 'Nothing)
                           )
                           deviceType
                       )
@@ -200,6 +200,33 @@ instance
               headDim
         pure $ TransformerEncoder stack layerNorm dropout relPosEnc
 
+-- | 'HasForward' instance for 'TransformerEncoder'.
+--
+-- @
+--  ┌───────┐  ┌────────┐  ┌───────────────┐
+--  │ input │  │ relPos │  │ attentionMask │
+--  └───┬───┘  └───┬────┘  └───────┬───────┘
+--      │          │               │
+--      │          ▼               │
+--      │     teRelPosEnc          │
+--      │          ▼               │
+--      │      transpose           │
+--      │          ▼               ▼
+--      │      transpose       unsqueeze
+--      ▼          │               │
+--  teDropout      └─────►add◄─────┘
+--      ▼                  │
+--   teStack◄──────────────┘
+--      ▼
+-- teLayerNorm
+--      ▼
+--  teDropout
+--      │
+--      ▼
+--  ┌────────┐
+--  │ output │
+--  └────────┘
+-- @
 instance
   ( HasForward
       (Dropout dropoutP)
@@ -212,24 +239,24 @@ instance
       ( dropoutOutput,
         Tensor
           'WithGradient
-          ( 'Layout 'Dense <+> relPosLayout <+> attentionMaskLayout)
+          ('Layout 'Dense <+> relPosLayout <+> attentionMaskLayout)
           (device <+> relPosDevice <+> attentionMaskDevice)
           (Seq (relPosDataType <+> 'DataType 'Int64) dataType <+> attentionMaskDataType)
           ( BroadcastShapesF
               ( TransposeF
-                  ( 'SelectDim ( 'ByIndex 1))
-                  ( 'SelectDim ( 'ByIndex 2))
+                  ('SelectDim ('ByIndex 1))
+                  ('SelectDim ('ByIndex 2))
                   ( TransposeF
-                      ( 'SelectDim ( 'ByIndex 2))
-                      ( 'SelectDim ( 'ByIndex 3))
+                      ('SelectDim ('ByIndex 2))
+                      ('SelectDim ('ByIndex 3))
                       ( EmbeddingF
-                          ( 'Shape '[relPosEncBucketDim, headDim])
+                          ('Shape '[relPosEncBucketDim, headDim])
                           relPosShape
                       )
                   )
               )
               ( UnsqueezeF
-                  ( 'SelectDim ( 'ByIndex 1))
+                  ('SelectDim ('ByIndex 1))
                   attentionMaskShape
               )
           )
@@ -238,7 +265,7 @@ instance
       stackOutput
       stackGeneratorOutput,
     HasForward
-      (LayerNorm 'WithoutBias device dataType ( 'Shape '[inputEmbedDim]))
+      (LayerNorm 'WithoutBias device dataType ('Shape '[inputEmbedDim]))
       stackOutput
       stackGeneratorOutput
       layerNormOutput
@@ -264,11 +291,11 @@ instance
     let relPosBias =
           ireturn relPos
             >>>= IxState . forward teRelPosEnc
-            >>>= ireturn . transpose @( 'SelectDim ( 'ByIndex 2)) @( 'SelectDim ( 'ByIndex 3))
-            >>>= ireturn . transpose @( 'SelectDim ( 'ByIndex 1)) @( 'SelectDim ( 'ByIndex 2))
+            >>>= ireturn . transpose @('SelectDim ('ByIndex 2)) @('SelectDim ('ByIndex 3))
+            >>>= ireturn . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
         attentionBias =
           relPosBias
-            >>>= ireturn . (`add` unsqueeze @( 'SelectDim ( 'ByIndex 1)) attentionMask)
+            >>>= ireturn . (`add` unsqueeze @('SelectDim ('ByIndex 1)) attentionMask)
      in runIxState $
           ireturn input
             >>>= IxState . forward teDropout

@@ -21,6 +21,8 @@ import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Shape (..), Size (.
 import Type.Errors.Pretty (type (%), type (<>))
 
 type (<+>) :: forall k. k -> k -> k
+
+-- | Unification
 type family (<+>) (a :: k) (b :: k) :: k where
   (<+>) (a :: k) (b :: k) = Unify k a b
 
@@ -32,27 +34,27 @@ type family Unify k (a :: k) (b :: k) :: k where
   Unify RequiresGradient requiresGradient requiresGradient' = TypeError (UnifyRequiresGradientMessage requiresGradient requiresGradient')
   Unify (Layout _) 'UncheckedLayout _ = 'UncheckedLayout
   Unify (Layout _) _ 'UncheckedLayout = 'UncheckedLayout
-  Unify (Layout _) ( 'Layout layoutType) ( 'Layout layoutType') = TypeError (UnifyLayoutErrorMessage layoutType layoutType')
+  Unify (Layout _) ('Layout layoutType) ('Layout layoutType') = TypeError (UnifyLayoutErrorMessage layoutType layoutType')
   Unify (Device _) 'UncheckedDevice _ = 'UncheckedDevice
   Unify (Device _) _ 'UncheckedDevice = 'UncheckedDevice
-  Unify (Device _) ( 'Device deviceType) ( 'Device deviceType') = TypeError (UnifyDeviceErrorMessage deviceType deviceType')
+  Unify (Device _) ('Device deviceType) ('Device deviceType') = TypeError (UnifyDeviceErrorMessage deviceType deviceType')
   Unify (DataType _) 'UncheckedDataType _ = 'UncheckedDataType
   Unify (DataType _) _ 'UncheckedDataType = 'UncheckedDataType
-  Unify (DataType _) ( 'DataType dType) ( 'DataType dType') = TypeError (UnifyDataTypeErrorMessage dType dType')
+  Unify (DataType _) ('DataType dType) ('DataType dType') = TypeError (UnifyDataTypeErrorMessage dType dType')
   Unify (Shape _) 'UncheckedShape _ = 'UncheckedShape
   Unify (Shape _) _ 'UncheckedShape = 'UncheckedShape
-  Unify (Shape _) ( 'Shape dims) ( 'Shape dims') = 'Shape (Unify [Dim (Name Symbol) (Size Nat)] dims dims')
+  Unify (Shape _) ('Shape dims) ('Shape dims') = 'Shape (Unify [Dim (Name Symbol) (Size Nat)] dims dims')
   Unify [Dim _ _] (dim ': dims) (dim' ': dims') = Unify (Dim (Name Symbol) (Size Nat)) dim dim' ': Unify [Dim (Name Symbol) (Size Nat)] dims dims'
   Unify [Dim _ _] dims dims' = TypeError (UnifyDimsErrorMessage dims dims')
-  Unify (Dim _ _) ( 'Dim name size) ( 'Dim name' size') = 'Dim (Unify (Name Symbol) name name') (Unify (Size Nat) size size')
+  Unify (Dim _ _) ('Dim name size) ('Dim name' size') = 'Dim (Unify (Name Symbol) name name') (Unify (Size Nat) size size')
   Unify (Name _) 'UncheckedName _ = 'UncheckedName
   Unify (Name _) _ 'UncheckedName = 'UncheckedName
-  Unify (Name _) ( 'Name name) ( 'Name "*") = 'Name name
-  Unify (Name _) ( 'Name "*") ( 'Name name) = 'Name name
-  Unify (Name _) ( 'Name name) ( 'Name name') = TypeError (UnifyNameErrorMessage name name')
+  Unify (Name _) ('Name name) ('Name "*") = 'Name name
+  Unify (Name _) ('Name "*") ('Name name) = 'Name name
+  Unify (Name _) ('Name name) ('Name name') = TypeError (UnifyNameErrorMessage name name')
   Unify (Size _) 'UncheckedSize _ = 'UncheckedSize
   Unify (Size _) _ 'UncheckedSize = 'UncheckedSize
-  Unify (Size _) ( 'Size size) ( 'Size size') = TypeError (UnifySizeErrorMessage size size')
+  Unify (Size _) ('Size size) ('Size size') = TypeError (UnifySizeErrorMessage size size')
 
 type UnifyRequiresGradientMessage (requiresGradient :: RequiresGradient) (requiresGradient' :: RequiresGradient) =
   "The supplied tensors must all either require or disable gradient calculation,"

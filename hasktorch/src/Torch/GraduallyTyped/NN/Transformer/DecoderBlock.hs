@@ -186,6 +186,27 @@ instance
               eps
         pure $ TransformerDecoderBlock selfAttention crossAttention feedForwardNetwork
 
+-- | 'HasForward' instance for 'TransformerDecoderBlock'.
+--
+-- @
+-- ┌──────────────────────┐  ┌───────┐  ┌─────┐  ┌────────────────────┐
+-- │ decoderAttentionBias │  │ query │  │ key │  │ crossAttentionBias │
+-- └──────────┬───────────┘  └───┬───┘  └──┬──┘  └─────────┬──────────┘
+--            │                  │         │               │
+--            │                  ▼         │               │
+--            └──────────►tdbSelfAttention │               │
+--                               │         │               │
+--                               ▼         ▼               │
+--                            tdbCrossAttention◄───────────┘
+--                               │
+--                               ▼
+--                     tdbFeedForwardNetwork
+--                               │
+--                               ▼
+--                           ┌───────┐
+--                           │ query │
+--                           └───────┘
+-- @
 instance
   ( HasForward
       (SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)

@@ -150,6 +150,23 @@ instance
               eps
         pure $ TransformerBlock selfAttention feedForwardNetwork
 
+-- | 'HasForward' instance for 'TransformerBlock'.
+--
+-- @
+--      ┌───────┐  ┌───────────────┐
+--      │ query │  │ attentionBias │
+--      └───┬───┘  └───────┬───────┘
+--          │              │
+--          ▼              │
+--   tbSelfAttention◄──────┘
+--          ▼
+-- tbFeedForwardNetwork
+--          │
+--          ▼
+--      ┌───────┐
+--      │ query │
+--      └───────┘
+-- @
 instance
   ( HasForward
       (SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)

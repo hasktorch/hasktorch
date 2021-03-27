@@ -33,6 +33,9 @@ class
     | model input generator -> output,
       model input generator -> generatorOutput
   where
+  -- | @forward m i g@ for a model @m@, an input @o@, and a generator @g@
+  -- returns the tuple @(o, g')@ where @o@ is the output of the model applied to the input
+  -- and @g'@ is the updated generator.
   forward :: model -> input -> generator -> (output, generatorOutput)
 
 class HasInitialize model where

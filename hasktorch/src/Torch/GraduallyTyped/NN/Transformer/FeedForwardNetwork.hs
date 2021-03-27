@@ -77,7 +77,7 @@ data
       -- | relu dropout
       ffnReluDropout :: Dropout dropoutP,
       -- | feed-forward layer norm
-      ffnLayoutNorm :: LayerNorm 'WithoutBias device dataType ( 'Shape '[queryEmbedDim]),
+      ffnLayoutNorm :: LayerNorm 'WithoutBias device dataType ('Shape '[queryEmbedDim]),
       -- | feed-forward dropout
       ffnDropout :: Dropout dropoutP
     } ->
@@ -86,7 +86,7 @@ data
 type HasInitializeTransformerFeedForwardNetworkC device dataType queryEmbedDim ffnDim dropoutP =
   ( HasInitializeLinearWithoutBiasC device dataType queryEmbedDim ffnDim,
     HasInitializeLinearWithoutBiasC device dataType ffnDim queryEmbedDim,
-    HasInitializeLayerNormWithoutBiasC device dataType ( 'Shape '[queryEmbedDim]),
+    HasInitializeLayerNormWithoutBiasC device dataType ('Shape '[queryEmbedDim]),
     Scalar dropoutP,
     WithDeviceC device (WithDataTypeF dataType (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerFeedForwardNetwork device dataType queryEmbedDim ffnDim dropoutP, Generator device))))),
     WithDataTypeC dataType (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerFeedForwardNetwork device dataType queryEmbedDim ffnDim dropoutP, Generator device)))),
@@ -167,10 +167,10 @@ instance
               queryEmbedDim
         let reluDropout = initialize @(Dropout dropoutP) dropoutP
         let layerNorm =
-              withoutShape @( 'Shape '[queryEmbedDim])
+              withoutShape @('Shape '[queryEmbedDim])
                 ( withoutDataType @dataType
                     ( withoutDevice @device
-                        ( initialize @(LayerNorm 'WithoutBias device dataType ( 'Shape '[queryEmbedDim]))
+                        ( initialize @(LayerNorm 'WithoutBias device dataType ('Shape '[queryEmbedDim]))
                         )
                         deviceType
                     )
@@ -188,26 +188,55 @@ type FeedForwardNetworkOutputShape
   BroadcastShapesF
     queryShape
     ( LinearWithoutBiasF
-        ( 'Shape '[queryEmbedDim, ffnDim])
+        ('Shape '[queryEmbedDim, ffnDim])
         ( LinearWithoutBiasF
-            ( 'Shape '[ffnDim, queryEmbedDim])
+            ('Shape '[ffnDim, queryEmbedDim])
             ( LayerNormWithoutBiasF
-                ( 'Shape '[queryEmbedDim])
+                ('Shape '[queryEmbedDim])
                 queryShape
             )
         )
     )
 
+-- | 'HasForward' instance for 'TransformerFeedForwardNetwork'.
+--
+-- @
+--    ┌───────┐
+--    │ query ├────┐
+--    └───┬───┘    │
+--        │        │
+--        ▼        │
+--   ffnLayerNorm  │
+--        ▼        │
+--  ffnInputWeight │
+--        ▼        │
+--       relu      │
+--        ▼        │
+--  ffnReluDropout │
+--        ▼        │
+-- ffnOutputWeight │
+--        ▼        │
+--    ffnDropout   │
+--        │        │
+--        ▼        │
+--       add◄──────┘
+--        │
+--        ▼
+--    ┌───────┐
+--    │ query │
+--    └───────┘
+-- @
 instance
   ( KnownShape queryShape,
     KnownDim queryEmbedDim,
     Scalar dropoutP,
-    output ~ Tensor
-        'WithGradient
-        (queryLayout <+> 'Layout 'Dense)
-        (queryDevice <+> device <+> generatorDevice)
-        (queryDataType <+> dataType)
-        (FeedForwardNetworkOutputShape queryEmbedDim ffnDim queryShape),
+    output
+      ~ Tensor
+          'WithGradient
+          (queryLayout <+> 'Layout 'Dense)
+          (queryDevice <+> device <+> generatorDevice)
+          (queryDataType <+> dataType)
+          (FeedForwardNetworkOutputShape queryEmbedDim ffnDim queryShape),
     generatorOutput ~ Generator (device <+> queryDevice <+> generatorDevice)
   ) =>
   HasForward
