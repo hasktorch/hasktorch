@@ -32,6 +32,7 @@ import Torch.GraduallyTyped.NN.Transformer.DecoderBlock (HasInitializeTransforme
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.Shape (Dim (..), Name (..), Size (..), WithDimC (..))
 
+-- | Transformer decoder stack.
 data
   TransformerDecoderStack
     (numLayers :: Nat)
@@ -50,7 +51,9 @@ data
     TransformerDecoderStack 0 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP
   TransformerDecoderStackCons ::
     forall numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP.
-    { tdsBlock :: TransformerDecoderBlock device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP,
+    { -- | decoder layer block
+      tdsBlock :: TransformerDecoderBlock device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP,
+      -- | remaining decoder stack
       tdsStack :: TransformerDecoderStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP
     } ->
     TransformerDecoderStack (numLayers + 1) device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP

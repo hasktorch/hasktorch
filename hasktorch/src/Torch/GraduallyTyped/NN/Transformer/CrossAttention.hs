@@ -63,6 +63,7 @@ import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
+-- | T5-style cross-attention layer without biases.
 data
   CrossAttention
     (device :: Device (DeviceType Nat))
@@ -477,3 +478,29 @@ instance
         >>>= (\query' -> IxState $ forward caMultiheadAttention (query', key, key, attentionBias))
         >>>= IxState . forward caDropout
         >>>= ireturn . (query `add`)
+
+-- | 'HasForward' instance for 'BARTCrossAttenton'.
+--
+-- @
+--    ┌───────┐  ┌─────┐  ┌───────────────┐
+--    │ query │  │ key │  │ attentionBias │
+--    └───┬───┘  └──┬──┘  └───────┬───────┘
+--        │         │             │
+-- ┌──────┤      ┌──┴──┐          │
+-- │      │      │     │          │
+-- │      ▼      ▼     ▼          │
+-- │  bcaMultiheadAttention◄──────┘
+-- │             │
+-- │             ▼
+-- │        bcaDropout
+-- │             │
+-- └────►add◄────┘
+--        │
+--        ▼
+--  bcaLayerNorm
+--        │
+--        ▼
+--    ┌───────┐
+--    │ query │
+--    └───────┘
+-- @

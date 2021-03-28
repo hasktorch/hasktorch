@@ -43,6 +43,7 @@ import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
+-- | T5-style transformer encoder without biases.
 data
   TransformerEncoder
     (numLayers :: Nat)
@@ -302,3 +303,8 @@ instance
             >>>= (\input' -> attentionBias >>>= (\attentionBias' -> IxState $ forward teStack (input', attentionBias')))
             >>>= IxState . forward teLayerNorm
             >>>= IxState . forward teDropout
+
+-- | 'HasForward' instance for 'BARTEncoder'.
+--
+-- @
+-- @

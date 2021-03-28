@@ -65,6 +65,7 @@ import Torch.GraduallyTyped.Tensor.Type (Tensor (..), checkedDataType, checkedDe
 import Torch.GraduallyTyped.Unify (type (<+>))
 import qualified Torch.Tensor
 
+-- | T5-style multi-headed attention without biases.
 data
   MultiHeadAttention
     (device :: Device (DeviceType Nat))
@@ -235,6 +236,7 @@ instance
         let dropout = initialize @(Dropout dropoutP) dropoutP
         pure $ MultiHeadAttention headDim headEmbedDim qInProj kInProj vInProj outProj dropout
 
+-- | BART-style multi-headed attention with biases.
 data
   BARTMultiHeadAttention
     (device :: Device (DeviceType Nat))

@@ -22,7 +22,8 @@ import Type.Errors.Pretty (type (%), type (<>))
 
 type (<+>) :: forall k. k -> k -> k
 
--- | Unification
+-- | @a <+> b@ unifies @a@ and @b@.
+-- Think of it as a kind-level monoid.
 type family (<+>) (a :: k) (b :: k) :: k where
   (<+>) (a :: k) (b :: k) = Unify k a b
 

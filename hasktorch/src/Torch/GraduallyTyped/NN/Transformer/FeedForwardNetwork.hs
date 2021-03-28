@@ -60,6 +60,7 @@ import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
+-- | T5-style transformer feed-forward network without biases.
 data
   TransformerFeedForwardNetwork
     (device :: Device (DeviceType Nat))
@@ -255,3 +256,33 @@ instance
         >>>= IxState . forward ffnOutputWeight
         >>>= IxState . forward ffnDropout
         >>>= ireturn . (query `add`)
+
+-- | 'HasForward' instance for 'BARTFeedForwardNetwork'.
+--
+-- @
+--     ┌───────┐
+--     │ query ├────┐
+--     └───┬───┘    │
+--         │        │
+--         ▼        │
+--  bffnInputWeight │
+--         ▼        │
+--        relu      │
+--         ▼        │
+--  bffnReluDropout │
+--         ▼        │
+-- bffnOutputWeight │
+--         ▼        │
+--    bffnDropout   │
+--         │        │
+--         ▼        │
+--        add◄──────┘
+--         │
+--         ▼
+--   bffnLayerNorm
+--         │
+--         ▼
+--     ┌───────┐
+--     │ query │
+--     └───────┘
+-- @

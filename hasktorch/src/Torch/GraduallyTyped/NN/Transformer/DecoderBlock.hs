@@ -34,6 +34,8 @@ import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.Shape (Dim (..), Name (..), Size (..), WithDimC (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 
+-- | Transformer decoder block consisting of self-attention,
+-- cross-attention, and a feed-forward network.
 data
   TransformerDecoderBlock
     (device :: Device (DeviceType Nat))
@@ -48,8 +50,11 @@ data
   where
   TransformerDecoderBlock ::
     forall device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP.
-    { tdbSelfAttention :: SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP,
+    { -- | self-attention layer
+      tdbSelfAttention :: SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP,
+      -- | cross-attention layer
       tdbCrossAttention :: CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP,
+      -- | feed-forward network
       tdbFeedForwardNetwork :: TransformerFeedForwardNetwork device dataType queryEmbedDim ffnDim dropoutP
     } ->
     TransformerDecoderBlock device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP

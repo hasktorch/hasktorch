@@ -63,6 +63,7 @@ import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
+-- | T5-style self-attention layer without biases.
 data
   SelfAttention
     (device :: Device (DeviceType Nat))
@@ -412,3 +413,31 @@ instance
         >>>= (\query' -> IxState $ forward saMultiheadAttention (query', query', query', attentionBias))
         >>>= IxState . forward saDropout
         >>>= ireturn . (query `add`)
+
+-- | 'HasForward' instance for 'BARTSelfAttention'.
+--
+-- @
+-- ┌───────────────┐      ┌───────┐
+-- │ attentionBias │      │ query │
+-- └───────┬───────┘      └───┬───┘
+--         │                  │
+--         │            ┌─────┴─────┐
+--         │            │           │
+--         │       ┌────┼────┐      │
+--         │       │    │    │      │
+--         │       ▼    ▼    ▼      │
+--         └─►bsaMultiheadAttention │
+--                      │           │
+--                      ▼           │
+--                 bsaDropout       │
+--                      │           │
+--                      └───►add◄───┘
+--                            │
+--                            ▼
+--                      bsaLayerNorm
+--                            │
+--                            ▼
+--                        ┌───────┐
+--                        │ query │
+--                        └───────┘
+-- @
