@@ -426,7 +426,7 @@ lookupEncoderBlock n = do
     T5Config {..} -> do
       TransformerBlock
         <$> ( SelfAttention
-                <$> ( MultiHeadAttention
+                <$> ( T5MultiHeadAttention
                         <$> lookupHeadDim
                         <*> lookupHeadEmbedDim
                         <*> (LinearWithoutBias <$> lookupTensor ("encoder.block." <> show n <> ".layer.0.SelfAttention.q.weight"))
@@ -466,7 +466,7 @@ lookupDecoderBlock n = do
     T5Config {..} ->
       TransformerDecoderBlock
         <$> ( SelfAttention
-                <$> ( MultiHeadAttention
+                <$> ( T5MultiHeadAttention
                         <$> lookupHeadDim
                         <*> lookupHeadEmbedDim
                         <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.0.SelfAttention.q.weight"))
@@ -482,7 +482,7 @@ lookupDecoderBlock n = do
                 <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
             )
         <*> ( CrossAttention
-                <$> ( MultiHeadAttention
+                <$> ( T5MultiHeadAttention
                         <$> lookupHeadDim
                         <*> lookupHeadEmbedDim
                         <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.1.EncDecAttention.q.weight"))

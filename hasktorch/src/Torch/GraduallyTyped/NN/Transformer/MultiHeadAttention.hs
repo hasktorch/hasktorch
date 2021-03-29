@@ -40,7 +40,7 @@ import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
-import Data.Kind (Type)
+import Data.Kind (Constraint, Type)
 import GHC.TypeLits (Nat, Symbol)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
@@ -52,6 +52,7 @@ import Torch.GraduallyTyped.NN.Dropout (Dropout (..))
 import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithBiasF, LinearWithoutBiasF)
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, softmax)
 import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearWithBiasC, HasInitializeLinearWithoutBiasC, Linear (..))
+import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Random (Generator, mkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
@@ -65,9 +66,10 @@ import Torch.GraduallyTyped.Tensor.Type (Tensor (..), checkedDataType, checkedDe
 import Torch.GraduallyTyped.Unify (type (<+>))
 import qualified Torch.Tensor
 
--- | T5-style multi-headed attention without biases.
+-- | Multi-headed attention layer.
 data
   MultiHeadAttention
+    (style :: TransformerStyle)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (headDim :: Dim (Name Symbol) (Size Nat))
@@ -78,7 +80,8 @@ data
     (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
     (dropoutP :: Type)
   where
-  MultiHeadAttention ::
+  -- | T5-style multi-headed attention without biases.
+  T5MultiHeadAttention ::
     forall device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP.
     { -- | head dim
       mhaHeadDim :: Dim String Integer,
@@ -95,9 +98,29 @@ data
       -- | dropout
       mhaDropout :: Dropout dropoutP
     } ->
-    MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP
+    MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP
+  -- | BART-style multi-headed attention with biases.
+  BARTMultiHeadAttention ::
+    forall device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP.
+    { -- | head dim
+      bmhaHeadDim :: Dim String Integer,
+      -- | head embed dim
+      bmhaHeadEmbedDim :: Dim String Integer,
+      -- | in-projection for query
+      bmhaQInProj :: Linear 'WithBias device dataType queryEmbedDim embedDim,
+      -- | in-projection for key
+      bmhaKInProj :: Linear 'WithBias device dataType keyEmbedDim embedDim,
+      -- | in-projection for value
+      bmhaVInProj :: Linear 'WithBias device dataType valueEmbedDim embedDim,
+      -- | out-projection
+      bmhaOutProj :: Linear 'WithBias device dataType embedDim queryEmbedDim,
+      -- | dropout
+      bmhaDropout :: Dropout dropoutP
+    } ->
+    MultiHeadAttention 'BART device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP
 
-type HasInitializeMultiHeadAttentionC
+type HasInitializeMultiHeadAttentionC'
+  (style :: TransformerStyle)
   (device :: Device (DeviceType Nat))
   (dataType :: DataType DType)
   (headDim :: Dim (Name Symbol) (Size Nat))
@@ -107,28 +130,53 @@ type HasInitializeMultiHeadAttentionC
   (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
   (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
   (dropoutP :: Type) =
-  ( WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))))))))),
-    WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)))))))),
-    WithDimC headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))))))),
-    WithDimC headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)))))),
-    WithDimC embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))))),
-    WithDimC queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)))),
-    WithDimC keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))),
-    WithDimC valueEmbedDim (dropoutP -> Generator device -> (MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)),
+  ( WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))))))))),
+    WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)))))))),
+    WithDimC headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))))))),
+    WithDimC headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)))))),
+    WithDimC embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))))),
+    WithDimC queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)))),
+    WithDimC keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))),
+    WithDimC valueEmbedDim (dropoutP -> Generator device -> (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)),
     WithDimC queryEmbedDim (Generator device -> (Linear 'WithBias device dataType embedDim queryEmbedDim, Generator device)),
-    HasInitializeLinearWithoutBiasC device dataType queryEmbedDim embedDim,
-    HasInitializeLinearWithoutBiasC device dataType keyEmbedDim embedDim,
-    HasInitializeLinearWithoutBiasC device dataType valueEmbedDim embedDim,
-    HasInitializeLinearWithoutBiasC device dataType embedDim queryEmbedDim,
     Scalar dropoutP
   )
 
+type family
+  HasInitializeMultiHeadAttentionC
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (dropoutP :: Type) ::
+    Constraint
+  where
+  HasInitializeMultiHeadAttentionC 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP =
+    ( HasInitializeLinearWithoutBiasC device dataType queryEmbedDim embedDim,
+      HasInitializeLinearWithoutBiasC device dataType keyEmbedDim embedDim,
+      HasInitializeLinearWithoutBiasC device dataType valueEmbedDim embedDim,
+      HasInitializeLinearWithoutBiasC device dataType embedDim queryEmbedDim,
+      HasInitializeMultiHeadAttentionC' 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP
+    )
+  HasInitializeMultiHeadAttentionC 'BART device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP =
+    ( HasInitializeLinearWithBiasC device dataType queryEmbedDim embedDim,
+      HasInitializeLinearWithBiasC device dataType keyEmbedDim embedDim,
+      HasInitializeLinearWithBiasC device dataType valueEmbedDim embedDim,
+      HasInitializeLinearWithBiasC device dataType embedDim queryEmbedDim,
+      HasInitializeMultiHeadAttentionC' 'BART device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP
+    )
+
 instance
-  HasInitializeMultiHeadAttentionC device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP =>
-  HasInitialize (MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
+  HasInitializeMultiHeadAttentionC 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP =>
+  HasInitialize (MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
   where
   type
-    InitializeF (MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP) =
+    InitializeF (MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP) =
       WithDeviceF
         device
         ( WithDataTypeF
@@ -145,7 +193,7 @@ instance
                                 keyEmbedDim
                                 ( WithDimF
                                     valueEmbedDim
-                                    (dropoutP -> Generator device -> (MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))
+                                    (dropoutP -> Generator device -> (MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))
                                 )
                             )
                         )
@@ -168,7 +216,7 @@ instance
                           \queryEmbedDim ->
                             withDim @keyEmbedDim $
                               \keyEmbedDim ->
-                                withDim @valueEmbedDim @(dropoutP -> Generator device -> (MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)) $
+                                withDim @valueEmbedDim @(dropoutP -> Generator device -> (MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)) $
                                   \valueEmbedDim ->
                                     go deviceType dType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim
     where
@@ -234,72 +282,14 @@ instance
               )
               queryEmbedDim
         let dropout = initialize @(Dropout dropoutP) dropoutP
-        pure $ MultiHeadAttention headDim headEmbedDim qInProj kInProj vInProj outProj dropout
-
--- | BART-style multi-headed attention with biases.
-data
-  BARTMultiHeadAttention
-    (device :: Device (DeviceType Nat))
-    (dataType :: DataType DType)
-    (headDim :: Dim (Name Symbol) (Size Nat))
-    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (embedDim :: Dim (Name Symbol) (Size Nat))
-    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (dropoutP :: Type)
-  where
-  BARTMultiHeadAttention ::
-    forall device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP.
-    { -- | head dim
-      bmhaHeadDim :: Dim String Integer,
-      -- | head embed dim
-      bmhaHeadEmbedDim :: Dim String Integer,
-      -- | in-projection for query
-      bmhaQInProj :: Linear 'WithBias device dataType queryEmbedDim embedDim,
-      -- | in-projection for key
-      bmhaKInProj :: Linear 'WithBias device dataType keyEmbedDim embedDim,
-      -- | in-projection for value
-      bmhaVInProj :: Linear 'WithBias device dataType valueEmbedDim embedDim,
-      -- | out-projection
-      bmhaOutProj :: Linear 'WithBias device dataType embedDim queryEmbedDim,
-      -- | dropout
-      bmhaDropout :: Dropout dropoutP
-    } ->
-    BARTMultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP
-
-type HasInitializeBARTMultiHeadAttentionC
-  (device :: Device (DeviceType Nat))
-  (dataType :: DataType DType)
-  (headDim :: Dim (Name Symbol) (Size Nat))
-  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (embedDim :: Dim (Name Symbol) (Size Nat))
-  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (dropoutP :: Type) =
-  ( WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (BARTMultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))))))))),
-    WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (BARTMultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)))))))),
-    WithDimC headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (BARTMultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))))))),
-    WithDimC headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (BARTMultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)))))),
-    WithDimC embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (BARTMultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))))),
-    WithDimC queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (BARTMultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)))),
-    WithDimC keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (BARTMultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))),
-    WithDimC valueEmbedDim (dropoutP -> Generator device -> (BARTMultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)),
-    WithDimC queryEmbedDim (Generator device -> (Linear 'WithBias device dataType embedDim queryEmbedDim, Generator device)),
-    HasInitializeLinearWithBiasC device dataType queryEmbedDim embedDim,
-    HasInitializeLinearWithBiasC device dataType keyEmbedDim embedDim,
-    HasInitializeLinearWithBiasC device dataType valueEmbedDim embedDim,
-    HasInitializeLinearWithBiasC device dataType embedDim queryEmbedDim,
-    Scalar dropoutP
-  )
+        pure $ T5MultiHeadAttention headDim headEmbedDim qInProj kInProj vInProj outProj dropout
 
 instance
-  HasInitializeBARTMultiHeadAttentionC device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP =>
-  HasInitialize (BARTMultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
+  HasInitializeMultiHeadAttentionC 'BART device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP =>
+  HasInitialize (MultiHeadAttention 'BART device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
   where
   type
-    InitializeF (BARTMultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP) =
+    InitializeF (MultiHeadAttention 'BART device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP) =
       WithDeviceF
         device
         ( WithDataTypeF
@@ -316,7 +306,7 @@ instance
                                 keyEmbedDim
                                 ( WithDimF
                                     valueEmbedDim
-                                    (dropoutP -> Generator device -> (BARTMultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))
+                                    (dropoutP -> Generator device -> (MultiHeadAttention 'BART device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))
                                 )
                             )
                         )
@@ -339,7 +329,7 @@ instance
                           \queryEmbedDim ->
                             withDim @keyEmbedDim $
                               \keyEmbedDim ->
-                                withDim @valueEmbedDim @(dropoutP -> Generator device -> (BARTMultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)) $
+                                withDim @valueEmbedDim @(dropoutP -> Generator device -> (MultiHeadAttention 'BART device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)) $
                                   \valueEmbedDim ->
                                     go deviceType dType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim
     where
@@ -451,9 +441,9 @@ unsafeGetKeySeqDim keyDims valueDims =
 unsafeGetEmbedDim ::
   forall device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP.
   (KnownDim embedDim, KnownDim queryEmbedDim, KnownDim keyEmbedDim, KnownDim valueEmbedDim) =>
-  MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP ->
+  MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP ->
   Dim String Integer
-unsafeGetEmbedDim MultiHeadAttention {..} =
+unsafeGetEmbedDim T5MultiHeadAttention {..} =
   unsafePerformIO $ do
     dim <- getDim (ByIndex 0) . shape . linearWithoutBiasWeight $ mhaQInProj
     dims <-
@@ -464,123 +454,200 @@ unsafeGetEmbedDim MultiHeadAttention {..} =
         ]
     unifyDims dim dims
 
-type TransposeAndReshape
-  (headDim :: Dim (Name Symbol) (Size Nat))
-  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (embedDim :: Dim (Name Symbol) (Size Nat))
-  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (queryShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (keyShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (valueShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (attentionBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (batchDim :: Dim (Name Symbol) (Size Nat))
-  (querySeqDim :: Dim (Name Symbol) (Size Nat))
-  (keySeqDim :: Dim (Name Symbol) (Size Nat)) =
-  TransposeF
-    ('SelectDim ('ByIndex 1))
-    ('SelectDim ('ByIndex 2))
-    ( MatmulF
-        ( SoftmaxF
-            ('SelectDim ('ByIndex 3))
-            ( BroadcastShapesF
-                ( MatmulF
-                    ( TransposeF
-                        ('SelectDim ('ByIndex 1))
-                        ('SelectDim ('ByIndex 2))
-                        ( ReshapeF
-                            ( LinearWithoutBiasF
-                                ('Shape '[embedDim, queryEmbedDim])
-                                queryShape
-                            )
-                            ( 'Shape
-                                '[batchDim, querySeqDim, headDim, headEmbedDim]
-                            )
-                        )
-                    )
-                    ( TransposeF
-                        ('SelectDim ('ByIndex 2))
-                        ('SelectDim ('ByIndex 3))
-                        ( TransposeF
-                            ('SelectDim ('ByIndex 1))
-                            ('SelectDim ('ByIndex 2))
-                            ( ReshapeF
-                                ( LinearWithoutBiasF
-                                    ('Shape '[embedDim, keyEmbedDim])
-                                    keyShape
-                                )
-                                ( 'Shape
-                                    '[ batchDim,
-                                       keySeqDim,
-                                       headDim,
-                                       headEmbedDim
-                                     ]
-                                )
-                            )
-                        )
-                    )
-                )
-                attentionBiasShape
-            )
-        )
-        ( TransposeF
-            ('SelectDim ('ByIndex 1))
-            ('SelectDim ('ByIndex 2))
-            ( ReshapeF
-                ( LinearWithoutBiasF
-                    ('Shape '[embedDim, valueEmbedDim])
-                    valueShape
-                )
-                ('Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
-            )
-        )
-    )
+unsafeBARTGetEmbedDim ::
+  forall device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP.
+  (KnownDim embedDim, KnownDim queryEmbedDim, KnownDim keyEmbedDim, KnownDim valueEmbedDim) =>
+  MultiHeadAttention 'BART device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP ->
+  Dim String Integer
+unsafeBARTGetEmbedDim BARTMultiHeadAttention {..} =
+  unsafePerformIO $ do
+    dim <- getDim (ByIndex 0) . shape . linearWithBiasWeight $ bmhaQInProj
+    dims <-
+      sequence
+        [ getDim (ByIndex 0) . shape . linearWithBiasWeight $ bmhaKInProj,
+          getDim (ByIndex 0) . shape . linearWithBiasWeight $ bmhaVInProj,
+          getDim (ByIndex 1) . shape . linearWithBiasWeight $ bmhaOutProj
+        ]
+    unifyDims dim dims
 
-type MultiHeadAttentionOutputShape
-  (embedDim :: Dim (Name Symbol) (Size Nat))
-  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (batchDim :: Dim (Name Symbol) (Size Nat))
-  (querySeqDim :: Dim (Name Symbol) (Size Nat))
-  (transposedAndReshaped :: Shape [Dim (Name Symbol) (Size Nat)]) =
-  LinearWithoutBiasF
-    ('Shape '[queryEmbedDim, embedDim])
-    ( ReshapeF
-        transposedAndReshaped
-        ('Shape '[batchDim, querySeqDim, embedDim])
-    )
+type family
+  TransposeAndReshape
+    (style :: TransformerStyle)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (queryShape :: Shape [Dim (Name Symbol) (Size Nat)])
+    (keyShape :: Shape [Dim (Name Symbol) (Size Nat)])
+    (valueShape :: Shape [Dim (Name Symbol) (Size Nat)])
+    (attentionBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
+    (batchDim :: Dim (Name Symbol) (Size Nat))
+    (querySeqDim :: Dim (Name Symbol) (Size Nat))
+    (keySeqDim :: Dim (Name Symbol) (Size Nat)) ::
+    Shape [Dim (Name Symbol) (Size Nat)]
+  where
+  TransposeAndReshape 'T5 headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim queryShape keyShape valueShape attentionBiasShape batchDim querySeqDim keySeqDim =
+    TransposeF
+      ('SelectDim ('ByIndex 1))
+      ('SelectDim ('ByIndex 2))
+      ( MatmulF
+          ( SoftmaxF
+              ('SelectDim ('ByIndex 3))
+              ( BroadcastShapesF
+                  ( MatmulF
+                      ( TransposeF
+                          ('SelectDim ('ByIndex 1))
+                          ('SelectDim ('ByIndex 2))
+                          ( ReshapeF
+                              ( LinearWithoutBiasF
+                                  ('Shape '[embedDim, queryEmbedDim])
+                                  queryShape
+                              )
+                              ( 'Shape
+                                  '[batchDim, querySeqDim, headDim, headEmbedDim]
+                              )
+                          )
+                      )
+                      ( TransposeF
+                          ('SelectDim ('ByIndex 2))
+                          ('SelectDim ('ByIndex 3))
+                          ( TransposeF
+                              ('SelectDim ('ByIndex 1))
+                              ('SelectDim ('ByIndex 2))
+                              ( ReshapeF
+                                  ( LinearWithoutBiasF
+                                      ('Shape '[embedDim, keyEmbedDim])
+                                      keyShape
+                                  )
+                                  ( 'Shape
+                                      '[ batchDim,
+                                         keySeqDim,
+                                         headDim,
+                                         headEmbedDim
+                                       ]
+                                  )
+                              )
+                          )
+                      )
+                  )
+                  attentionBiasShape
+              )
+          )
+          ( TransposeF
+              ('SelectDim ('ByIndex 1))
+              ('SelectDim ('ByIndex 2))
+              ( ReshapeF
+                  ( LinearWithoutBiasF
+                      ('Shape '[embedDim, valueEmbedDim])
+                      valueShape
+                  )
+                  ('Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
+              )
+          )
+      )
+  TransposeAndReshape 'BART headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim queryShape keyShape valueShape attentionBiasShape batchDim querySeqDim keySeqDim =
+    TransposeF
+      ('SelectDim ('ByIndex 1))
+      ('SelectDim ('ByIndex 2))
+      ( MatmulF
+          ( SoftmaxF
+              ('SelectDim ('ByIndex 3))
+              ( BroadcastShapesF
+                  ( MatmulF
+                      ( TransposeF
+                          ('SelectDim ('ByIndex 1))
+                          ('SelectDim ('ByIndex 2))
+                          ( ReshapeF
+                              ( LinearWithBiasF
+                                  ('Shape '[embedDim, queryEmbedDim])
+                                  ('Shape '[embedDim])
+                                  queryShape
+                              )
+                              ( 'Shape
+                                  '[batchDim, querySeqDim, headDim, headEmbedDim]
+                              )
+                          )
+                      )
+                      ( TransposeF
+                          ('SelectDim ('ByIndex 2))
+                          ('SelectDim ('ByIndex 3))
+                          ( TransposeF
+                              ('SelectDim ('ByIndex 1))
+                              ('SelectDim ('ByIndex 2))
+                              ( ReshapeF
+                                  ( LinearWithBiasF
+                                      ('Shape '[embedDim, keyEmbedDim])
+                                      ('Shape '[embedDim])
+                                      keyShape
+                                  )
+                                  ( 'Shape
+                                      '[ batchDim,
+                                         keySeqDim,
+                                         headDim,
+                                         headEmbedDim
+                                       ]
+                                  )
+                              )
+                          )
+                      )
+                  )
+                  attentionBiasShape
+              )
+          )
+          ( TransposeF
+              ('SelectDim ('ByIndex 1))
+              ('SelectDim ('ByIndex 2))
+              ( ReshapeF
+                  ( LinearWithBiasF
+                      ('Shape '[embedDim, valueEmbedDim])
+                      ('Shape '[embedDim])
+                      valueShape
+                  )
+                  ('Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
+              )
+          )
+      )
 
-type HasForwardMultiHeadAttentionC
-  (device :: Device (DeviceType Nat))
-  (dataType :: DataType DType)
-  (headDim :: Dim (Name Symbol) (Size Nat))
-  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+type family
+  MultiHeadAttentionOutputShape
+    (style :: TransformerStyle)
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (batchDim :: Dim (Name Symbol) (Size Nat))
+    (querySeqDim :: Dim (Name Symbol) (Size Nat))
+    (transposedAndReshaped :: Shape [Dim (Name Symbol) (Size Nat)]) ::
+    Shape [Dim (Name Symbol) (Size Nat)]
+  where
+  MultiHeadAttentionOutputShape 'T5 embedDim queryEmbedDim batchDim querySeqDim transposedAndReshaped =
+    LinearWithoutBiasF
+      ('Shape '[queryEmbedDim, embedDim])
+      ( ReshapeF
+          transposedAndReshaped
+          ('Shape '[batchDim, querySeqDim, embedDim])
+      )
+  MultiHeadAttentionOutputShape 'BART embedDim queryEmbedDim batchDim querySeqDim transposedAndReshaped =
+    LinearWithBiasF
+      ('Shape '[queryEmbedDim, embedDim])
+      ('Shape '[queryEmbedDim])
+      ( ReshapeF
+          transposedAndReshaped
+          ('Shape '[batchDim, querySeqDim, embedDim])
+      )
+
+type HasForwardMultiHeadAttentionC'
   (embedDim :: Dim (Name Symbol) (Size Nat))
   (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
   (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
   (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
   (dropoutP :: Type)
-  (queryLayout :: Layout LayoutType)
-  (queryDevice :: Device (DeviceType Nat))
-  (queryDataType :: DataType DType)
   (queryShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (keyLayout :: Layout LayoutType)
-  (keyDevice :: Device (DeviceType Nat))
-  (keyDataType :: DataType DType)
   (keyShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (valueLayout :: Layout LayoutType)
-  (valueDevice :: Device (DeviceType Nat))
-  (valueDataType :: DataType DType)
   (valueShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (attentionBiasLayout :: Layout LayoutType)
-  (attentionBiasDevice :: Device (DeviceType Nat))
-  (attentionBiasDataType :: DataType DType)
-  (attentionBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (generatorDevice :: Device (DeviceType Nat))
   (batchDim :: Dim (Name Symbol) (Size Nat))
   (querySeqDim :: Dim (Name Symbol) (Size Nat))
-  (keySeqDim :: Dim (Name Symbol) (Size Nat))
-  (transposedAndReshaped :: Shape [Dim (Name Symbol) (Size Nat)]) =
+  (keySeqDim :: Dim (Name Symbol) (Size Nat)) =
   ( KnownDim embedDim,
     KnownDim queryEmbedDim,
     KnownDim keyEmbedDim,
@@ -591,98 +658,298 @@ type HasForwardMultiHeadAttentionC
     KnownShape queryShape,
     KnownShape keyShape,
     KnownShape valueShape,
-    Scalar dropoutP,
-    WithShapeC
-      ('Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
-      ( Tensor
-          'WithGradient
-          ('Layout 'Dense <+> keyLayout)
-          (device <+> keyDevice)
-          (dataType <+> keyDataType)
-          ( LinearWithoutBiasF
-              ('Shape '[embedDim, keyEmbedDim])
-              keyShape
-          ) ->
-        Tensor
-          'WithGradient
-          ('Layout 'Dense <+> keyLayout)
-          (device <+> keyDevice)
-          (dataType <+> keyDataType)
-          ( ReshapeF
-              ( LinearWithoutBiasF
-                  ('Shape '[embedDim, keyEmbedDim])
-                  keyShape
-              )
-              ('Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
-          )
-      ),
-    WithShapeC
-      ('Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
-      ( Tensor
-          'WithGradient
-          ('Layout 'Dense <+> valueLayout)
-          (device <+> valueDevice)
-          (dataType <+> valueDataType)
-          ( LinearWithoutBiasF
-              ('Shape '[embedDim, valueEmbedDim])
-              valueShape
-          ) ->
-        Tensor
-          'WithGradient
-          ('Layout 'Dense <+> valueLayout)
-          (device <+> valueDevice)
-          (dataType <+> valueDataType)
-          ( ReshapeF
-              ( LinearWithoutBiasF
-                  ('Shape '[embedDim, valueEmbedDim])
-                  valueShape
-              )
-              ('Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
-          )
-      ),
-    WithShapeC
-      ('Shape '[batchDim, querySeqDim, headDim, headEmbedDim])
-      ( Tensor
-          'WithGradient
-          ('Layout 'Dense <+> queryLayout)
-          (device <+> queryDevice)
-          (dataType <+> queryDataType)
-          ( LinearWithoutBiasF
-              ('Shape '[embedDim, queryEmbedDim])
-              queryShape
-          ) ->
-        Tensor
-          'WithGradient
-          ('Layout 'Dense <+> queryLayout)
-          (device <+> queryDevice)
-          (dataType <+> queryDataType)
-          ( ReshapeF
-              ( LinearWithoutBiasF
-                  ('Shape '[embedDim, queryEmbedDim])
-                  queryShape
-              )
-              ('Shape '[batchDim, querySeqDim, headDim, headEmbedDim])
-          )
-      ),
-    WithShapeC
-      ('Shape '[batchDim, querySeqDim, embedDim])
-      ( Tensor
-          'WithGradient
-          ('Layout 'Dense <+> queryLayout <+> keyLayout <+> attentionBiasLayout <+> valueLayout)
-          (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice <+> valueDevice)
-          (dataType <+> queryDataType <+> keyDataType <+> attentionBiasDataType <+> valueDataType)
-          transposedAndReshaped ->
-        Tensor
-          'WithGradient
-          ('Layout 'Dense <+> queryLayout <+> keyLayout <+> attentionBiasLayout <+> valueLayout)
-          (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice <+> valueDevice)
-          (dataType <+> queryDataType <+> keyDataType <+> attentionBiasDataType <+> valueDataType)
-          ( ReshapeF
-              transposedAndReshaped
-              ('Shape '[batchDim, querySeqDim, embedDim])
-          )
-      )
+    Scalar dropoutP
   )
+
+type family
+  HasForwardMultiHeadAttentionC
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (dropoutP :: Type)
+    (queryLayout :: Layout LayoutType)
+    (queryDevice :: Device (DeviceType Nat))
+    (queryDataType :: DataType DType)
+    (queryShape :: Shape [Dim (Name Symbol) (Size Nat)])
+    (keyLayout :: Layout LayoutType)
+    (keyDevice :: Device (DeviceType Nat))
+    (keyDataType :: DataType DType)
+    (keyShape :: Shape [Dim (Name Symbol) (Size Nat)])
+    (valueLayout :: Layout LayoutType)
+    (valueDevice :: Device (DeviceType Nat))
+    (valueDataType :: DataType DType)
+    (valueShape :: Shape [Dim (Name Symbol) (Size Nat)])
+    (attentionBiasLayout :: Layout LayoutType)
+    (attentionBiasDevice :: Device (DeviceType Nat))
+    (attentionBiasDataType :: DataType DType)
+    (attentionBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
+    (generatorDevice :: Device (DeviceType Nat))
+    (batchDim :: Dim (Name Symbol) (Size Nat))
+    (querySeqDim :: Dim (Name Symbol) (Size Nat))
+    (keySeqDim :: Dim (Name Symbol) (Size Nat))
+    (transposedAndReshaped :: Shape [Dim (Name Symbol) (Size Nat)]) ::
+    Constraint
+  where
+  HasForwardMultiHeadAttentionC
+    'T5
+    device
+    dataType
+    headDim
+    headEmbedDim
+    embedDim
+    queryEmbedDim
+    keyEmbedDim
+    valueEmbedDim
+    dropoutP
+    queryLayout
+    queryDevice
+    queryDataType
+    queryShape
+    keyLayout
+    keyDevice
+    keyDataType
+    keyShape
+    valueLayout
+    valueDevice
+    valueDataType
+    valueShape
+    attentionBiasLayout
+    attentionBiasDevice
+    attentionBiasDataType
+    attentionBiasShape
+    generatorDevice
+    batchDim
+    querySeqDim
+    keySeqDim
+    transposedAndReshaped =
+    ( HasForwardMultiHeadAttentionC' embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP queryShape keyShape valueShape batchDim querySeqDim keySeqDim,
+      WithShapeC
+        ('Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
+        ( Tensor
+            'WithGradient
+            ('Layout 'Dense <+> keyLayout)
+            (device <+> keyDevice)
+            (dataType <+> keyDataType)
+            ( LinearWithoutBiasF
+                ('Shape '[embedDim, keyEmbedDim])
+                keyShape
+            ) ->
+          Tensor
+            'WithGradient
+            ('Layout 'Dense <+> keyLayout)
+            (device <+> keyDevice)
+            (dataType <+> keyDataType)
+            ( ReshapeF
+                ( LinearWithoutBiasF
+                    ('Shape '[embedDim, keyEmbedDim])
+                    keyShape
+                )
+                ('Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
+            )
+        ),
+      WithShapeC
+        ('Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
+        ( Tensor
+            'WithGradient
+            ('Layout 'Dense <+> valueLayout)
+            (device <+> valueDevice)
+            (dataType <+> valueDataType)
+            ( LinearWithoutBiasF
+                ('Shape '[embedDim, valueEmbedDim])
+                valueShape
+            ) ->
+          Tensor
+            'WithGradient
+            ('Layout 'Dense <+> valueLayout)
+            (device <+> valueDevice)
+            (dataType <+> valueDataType)
+            ( ReshapeF
+                ( LinearWithoutBiasF
+                    ('Shape '[embedDim, valueEmbedDim])
+                    valueShape
+                )
+                ('Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
+            )
+        ),
+      WithShapeC
+        ('Shape '[batchDim, querySeqDim, headDim, headEmbedDim])
+        ( Tensor
+            'WithGradient
+            ('Layout 'Dense <+> queryLayout)
+            (device <+> queryDevice)
+            (dataType <+> queryDataType)
+            ( LinearWithoutBiasF
+                ('Shape '[embedDim, queryEmbedDim])
+                queryShape
+            ) ->
+          Tensor
+            'WithGradient
+            ('Layout 'Dense <+> queryLayout)
+            (device <+> queryDevice)
+            (dataType <+> queryDataType)
+            ( ReshapeF
+                ( LinearWithoutBiasF
+                    ('Shape '[embedDim, queryEmbedDim])
+                    queryShape
+                )
+                ('Shape '[batchDim, querySeqDim, headDim, headEmbedDim])
+            )
+        ),
+      WithShapeC
+        ('Shape '[batchDim, querySeqDim, embedDim])
+        ( Tensor
+            'WithGradient
+            ('Layout 'Dense <+> queryLayout <+> keyLayout <+> attentionBiasLayout <+> valueLayout)
+            (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice <+> valueDevice)
+            (dataType <+> queryDataType <+> keyDataType <+> attentionBiasDataType <+> valueDataType)
+            transposedAndReshaped ->
+          Tensor
+            'WithGradient
+            ('Layout 'Dense <+> queryLayout <+> keyLayout <+> attentionBiasLayout <+> valueLayout)
+            (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice <+> valueDevice)
+            (dataType <+> queryDataType <+> keyDataType <+> attentionBiasDataType <+> valueDataType)
+            ( ReshapeF
+                transposedAndReshaped
+                ('Shape '[batchDim, querySeqDim, embedDim])
+            )
+        )
+    )
+  HasForwardMultiHeadAttentionC
+    'BART
+    device
+    dataType
+    headDim
+    headEmbedDim
+    embedDim
+    queryEmbedDim
+    keyEmbedDim
+    valueEmbedDim
+    dropoutP
+    queryLayout
+    queryDevice
+    queryDataType
+    queryShape
+    keyLayout
+    keyDevice
+    keyDataType
+    keyShape
+    valueLayout
+    valueDevice
+    valueDataType
+    valueShape
+    attentionBiasLayout
+    attentionBiasDevice
+    attentionBiasDataType
+    attentionBiasShape
+    generatorDevice
+    batchDim
+    querySeqDim
+    keySeqDim
+    transposedAndReshaped =
+    ( HasForwardMultiHeadAttentionC' embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP queryShape keyShape valueShape batchDim querySeqDim keySeqDim,
+      WithShapeC
+        ('Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
+        ( Tensor
+            'WithGradient
+            ('Layout 'Dense <+> keyLayout)
+            (device <+> keyDevice)
+            (dataType <+> keyDataType)
+            ( LinearWithBiasF
+                ('Shape '[embedDim, keyEmbedDim])
+                ('Shape '[embedDim])
+                keyShape
+            ) ->
+          Tensor
+            'WithGradient
+            ('Layout 'Dense <+> keyLayout)
+            (device <+> keyDevice)
+            (dataType <+> keyDataType)
+            ( ReshapeF
+                ( LinearWithBiasF
+                    ('Shape '[embedDim, keyEmbedDim])
+                    ('Shape '[embedDim])
+                    keyShape
+                )
+                ('Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
+            )
+        ),
+      WithShapeC
+        ('Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
+        ( Tensor
+            'WithGradient
+            ('Layout 'Dense <+> valueLayout)
+            (device <+> valueDevice)
+            (dataType <+> valueDataType)
+            ( LinearWithBiasF
+                ('Shape '[embedDim, valueEmbedDim])
+                ('Shape '[embedDim])
+                valueShape
+            ) ->
+          Tensor
+            'WithGradient
+            ('Layout 'Dense <+> valueLayout)
+            (device <+> valueDevice)
+            (dataType <+> valueDataType)
+            ( ReshapeF
+                ( LinearWithBiasF
+                    ('Shape '[embedDim, valueEmbedDim])
+                    ('Shape '[embedDim])
+                    valueShape
+                )
+                ('Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
+            )
+        ),
+      WithShapeC
+        ('Shape '[batchDim, querySeqDim, headDim, headEmbedDim])
+        ( Tensor
+            'WithGradient
+            ('Layout 'Dense <+> queryLayout)
+            (device <+> queryDevice)
+            (dataType <+> queryDataType)
+            ( LinearWithBiasF
+                ('Shape '[embedDim, queryEmbedDim])
+                ('Shape '[embedDim])
+                queryShape
+            ) ->
+          Tensor
+            'WithGradient
+            ('Layout 'Dense <+> queryLayout)
+            (device <+> queryDevice)
+            (dataType <+> queryDataType)
+            ( ReshapeF
+                ( LinearWithBiasF
+                    ('Shape '[embedDim, queryEmbedDim])
+                    ('Shape '[embedDim])
+                    queryShape
+                )
+                ('Shape '[batchDim, querySeqDim, headDim, headEmbedDim])
+            )
+        ),
+      WithShapeC
+        ('Shape '[batchDim, querySeqDim, embedDim])
+        ( Tensor
+            'WithGradient
+            ('Layout 'Dense <+> queryLayout <+> keyLayout <+> attentionBiasLayout <+> valueLayout)
+            (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice <+> valueDevice)
+            (dataType <+> queryDataType <+> keyDataType <+> attentionBiasDataType <+> valueDataType)
+            transposedAndReshaped ->
+          Tensor
+            'WithGradient
+            ('Layout 'Dense <+> queryLayout <+> keyLayout <+> attentionBiasLayout <+> valueLayout)
+            (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice <+> valueDevice)
+            (dataType <+> queryDataType <+> keyDataType <+> attentionBiasDataType <+> valueDataType)
+            ( ReshapeF
+                transposedAndReshaped
+                ('Shape '[batchDim, querySeqDim, embedDim])
+            )
+        )
+    )
 
 -- | 'HasForward' instance for 'MultiHeadAttention'.
 --
@@ -723,6 +990,7 @@ type HasForwardMultiHeadAttentionC
 -- @
 instance
   ( HasForwardMultiHeadAttentionC
+      'T5
       device
       dataType
       headDim
@@ -756,7 +1024,7 @@ instance
     batchDim ~ BatchDim queryShape keyShape valueShape,
     querySeqDim ~ QuerySeqDim queryShape,
     keySeqDim ~ KeySeqDim keyShape valueShape,
-    transposedAndReshaped ~ TransposeAndReshape headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim queryShape keyShape valueShape attentionBiasShape batchDim querySeqDim keySeqDim,
+    transposedAndReshaped ~ TransposeAndReshape 'T5 headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim queryShape keyShape valueShape attentionBiasShape batchDim querySeqDim keySeqDim,
     output
       ~ Tensor
           'WithGradient
@@ -764,6 +1032,7 @@ instance
           (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice <+> valueDevice)
           (dataType <+> queryDataType <+> keyDataType <+> attentionBiasDataType <+> valueDataType)
           ( MultiHeadAttentionOutputShape
+              'T5
               embedDim
               queryEmbedDim
               batchDim
@@ -774,7 +1043,7 @@ instance
       ~ Generator ((((device <+> queryDevice) <+> (device <+> keyDevice)) <+> attentionBiasDevice) <+> generatorDevice)
   ) =>
   HasForward
-    (MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
+    (MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
     ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
       Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
       Tensor valueRequiresGradient valueLayout valueDevice valueDataType valueShape,
@@ -784,7 +1053,7 @@ instance
     output
     generatorOutput
   where
-  forward mha@MultiHeadAttention {..} (query, key, value, attentionBias) =
+  forward mha@T5MultiHeadAttention {..} (query, key, value, attentionBias) =
     let batchDim = case dimVal @(BatchDim queryShape keyShape valueShape) of
           Dim (Name name) (Size size) -> Dim name size
           Dim _ _ -> unsafeGetBatchDim (shape query) (shape key) (shape value)
@@ -823,255 +1092,8 @@ instance
                 >>>= ireturn . reshape'' @(BatchDim queryShape keyShape valueShape) @(QuerySeqDim queryShape) @embedDim [batchDim, querySeqDim, embedDim]
                 >>>= IxState . forward mhaOutProj
 
-unsafeBARTGetEmbedDim ::
-  forall device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP.
-  (KnownDim embedDim, KnownDim queryEmbedDim, KnownDim keyEmbedDim, KnownDim valueEmbedDim) =>
-  BARTMultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP ->
-  Dim String Integer
-unsafeBARTGetEmbedDim BARTMultiHeadAttention {..} =
-  unsafePerformIO $ do
-    dim <- getDim (ByIndex 0) . shape . linearWithBiasWeight $ bmhaQInProj
-    dims <-
-      sequence
-        [ getDim (ByIndex 0) . shape . linearWithBiasWeight $ bmhaKInProj,
-          getDim (ByIndex 0) . shape . linearWithBiasWeight $ bmhaVInProj,
-          getDim (ByIndex 1) . shape . linearWithBiasWeight $ bmhaOutProj
-        ]
-    unifyDims dim dims
-
-type BARTTransposeAndReshape
-  (headDim :: Dim (Name Symbol) (Size Nat))
-  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (embedDim :: Dim (Name Symbol) (Size Nat))
-  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (queryShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (keyShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (valueShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (attentionBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (batchDim :: Dim (Name Symbol) (Size Nat))
-  (querySeqDim :: Dim (Name Symbol) (Size Nat))
-  (keySeqDim :: Dim (Name Symbol) (Size Nat)) =
-  TransposeF
-    ('SelectDim ('ByIndex 1))
-    ('SelectDim ('ByIndex 2))
-    ( MatmulF
-        ( SoftmaxF
-            ('SelectDim ('ByIndex 3))
-            ( BroadcastShapesF
-                ( MatmulF
-                    ( TransposeF
-                        ('SelectDim ('ByIndex 1))
-                        ('SelectDim ('ByIndex 2))
-                        ( ReshapeF
-                            ( LinearWithBiasF
-                                ('Shape '[embedDim, queryEmbedDim])
-                                ('Shape '[embedDim])
-                                queryShape
-                            )
-                            ( 'Shape
-                                '[batchDim, querySeqDim, headDim, headEmbedDim]
-                            )
-                        )
-                    )
-                    ( TransposeF
-                        ('SelectDim ('ByIndex 2))
-                        ('SelectDim ('ByIndex 3))
-                        ( TransposeF
-                            ('SelectDim ('ByIndex 1))
-                            ('SelectDim ('ByIndex 2))
-                            ( ReshapeF
-                                ( LinearWithBiasF
-                                    ('Shape '[embedDim, keyEmbedDim])
-                                    ('Shape '[embedDim])
-                                    keyShape
-                                )
-                                ( 'Shape
-                                    '[ batchDim,
-                                       keySeqDim,
-                                       headDim,
-                                       headEmbedDim
-                                     ]
-                                )
-                            )
-                        )
-                    )
-                )
-                attentionBiasShape
-            )
-        )
-        ( TransposeF
-            ('SelectDim ('ByIndex 1))
-            ('SelectDim ('ByIndex 2))
-            ( ReshapeF
-                ( LinearWithBiasF
-                    ('Shape '[embedDim, valueEmbedDim])
-                    ('Shape '[embedDim])
-                    valueShape
-                )
-                ('Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
-            )
-        )
-    )
-
-type HasForwardBARTMultiHeadAttentionC
-  (device :: Device (DeviceType Nat))
-  (dataType :: DataType DType)
-  (headDim :: Dim (Name Symbol) (Size Nat))
-  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (embedDim :: Dim (Name Symbol) (Size Nat))
-  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (dropoutP :: Type)
-  (queryLayout :: Layout LayoutType)
-  (queryDevice :: Device (DeviceType Nat))
-  (queryDataType :: DataType DType)
-  (queryShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (keyLayout :: Layout LayoutType)
-  (keyDevice :: Device (DeviceType Nat))
-  (keyDataType :: DataType DType)
-  (keyShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (valueLayout :: Layout LayoutType)
-  (valueDevice :: Device (DeviceType Nat))
-  (valueDataType :: DataType DType)
-  (valueShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (attentionBiasLayout :: Layout LayoutType)
-  (attentionBiasDevice :: Device (DeviceType Nat))
-  (attentionBiasDataType :: DataType DType)
-  (attentionBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (generatorDevice :: Device (DeviceType Nat))
-  (batchDim :: Dim (Name Symbol) (Size Nat))
-  (querySeqDim :: Dim (Name Symbol) (Size Nat))
-  (keySeqDim :: Dim (Name Symbol) (Size Nat))
-  (transposedAndReshaped :: Shape [Dim (Name Symbol) (Size Nat)]) =
-  ( KnownDim embedDim,
-    KnownDim queryEmbedDim,
-    KnownDim keyEmbedDim,
-    KnownDim valueEmbedDim,
-    KnownDim keySeqDim,
-    KnownDim querySeqDim,
-    KnownDim batchDim,
-    KnownShape queryShape,
-    KnownShape keyShape,
-    KnownShape valueShape,
-    Scalar dropoutP,
-    WithShapeC
-      ('Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
-      ( Tensor
-          'WithGradient
-          ('Layout 'Dense <+> keyLayout)
-          (device <+> keyDevice)
-          (dataType <+> keyDataType)
-          ( LinearWithBiasF
-              ('Shape '[embedDim, keyEmbedDim])
-              ('Shape '[embedDim])
-              keyShape
-          ) ->
-        Tensor
-          'WithGradient
-          ('Layout 'Dense <+> keyLayout)
-          (device <+> keyDevice)
-          (dataType <+> keyDataType)
-          ( ReshapeF
-              ( LinearWithBiasF
-                  ('Shape '[embedDim, keyEmbedDim])
-                  ('Shape '[embedDim])
-                  keyShape
-              )
-              ('Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
-          )
-      ),
-    WithShapeC
-      ('Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
-      ( Tensor
-          'WithGradient
-          ('Layout 'Dense <+> valueLayout)
-          (device <+> valueDevice)
-          (dataType <+> valueDataType)
-          ( LinearWithBiasF
-              ('Shape '[embedDim, valueEmbedDim])
-              ('Shape '[embedDim])
-              valueShape
-          ) ->
-        Tensor
-          'WithGradient
-          ('Layout 'Dense <+> valueLayout)
-          (device <+> valueDevice)
-          (dataType <+> valueDataType)
-          ( ReshapeF
-              ( LinearWithBiasF
-                  ('Shape '[embedDim, valueEmbedDim])
-                  ('Shape '[embedDim])
-                  valueShape
-              )
-              ('Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
-          )
-      ),
-    WithShapeC
-      ('Shape '[batchDim, querySeqDim, headDim, headEmbedDim])
-      ( Tensor
-          'WithGradient
-          ('Layout 'Dense <+> queryLayout)
-          (device <+> queryDevice)
-          (dataType <+> queryDataType)
-          ( LinearWithBiasF
-              ('Shape '[embedDim, queryEmbedDim])
-              ('Shape '[embedDim])
-              queryShape
-          ) ->
-        Tensor
-          'WithGradient
-          ('Layout 'Dense <+> queryLayout)
-          (device <+> queryDevice)
-          (dataType <+> queryDataType)
-          ( ReshapeF
-              ( LinearWithBiasF
-                  ('Shape '[embedDim, queryEmbedDim])
-                  ('Shape '[embedDim])
-                  queryShape
-              )
-              ('Shape '[batchDim, querySeqDim, headDim, headEmbedDim])
-          )
-      ),
-    WithShapeC
-      ('Shape '[batchDim, querySeqDim, embedDim])
-      ( Tensor
-          'WithGradient
-          ('Layout 'Dense <+> queryLayout <+> keyLayout <+> attentionBiasLayout <+> valueLayout)
-          (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice <+> valueDevice)
-          (dataType <+> queryDataType <+> keyDataType <+> attentionBiasDataType <+> valueDataType)
-          transposedAndReshaped ->
-        Tensor
-          'WithGradient
-          ('Layout 'Dense <+> queryLayout <+> keyLayout <+> attentionBiasLayout <+> valueLayout)
-          (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice <+> valueDevice)
-          (dataType <+> queryDataType <+> keyDataType <+> attentionBiasDataType <+> valueDataType)
-          ( ReshapeF
-              transposedAndReshaped
-              ('Shape '[batchDim, querySeqDim, embedDim])
-          )
-      )
-  )
-
-type BARTMultiHeadAttentionOutputShape
-  (embedDim :: Dim (Name Symbol) (Size Nat))
-  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (batchDim :: Dim (Name Symbol) (Size Nat))
-  (querySeqDim :: Dim (Name Symbol) (Size Nat))
-  (transposedAndReshaped :: Shape [Dim (Name Symbol) (Size Nat)]) =
-  LinearWithBiasF
-    ('Shape '[queryEmbedDim, embedDim])
-    ('Shape '[queryEmbedDim])
-    ( ReshapeF
-        transposedAndReshaped
-        ('Shape '[batchDim, querySeqDim, embedDim])
-    )
-
-
 -- | 'HasForward' instance for 'BARTMultiHeadAttention'.
--- 
+--
 -- @
 -- ┌───────────────┐        ┌───────┐       ┌─────┐       ┌───────┐
 -- │ attentionBias │        │ query │       │ key │       │ value │
@@ -1110,7 +1132,8 @@ type BARTMultiHeadAttentionOutputShape
 --                                    └───────┘
 -- @
 instance
-  ( HasForwardBARTMultiHeadAttentionC
+  ( HasForwardMultiHeadAttentionC
+      'BART
       device
       dataType
       headDim
@@ -1144,14 +1167,15 @@ instance
     batchDim ~ BatchDim queryShape keyShape valueShape,
     querySeqDim ~ QuerySeqDim queryShape,
     keySeqDim ~ KeySeqDim keyShape valueShape,
-    transposedAndReshaped ~ BARTTransposeAndReshape headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim queryShape keyShape valueShape attentionBiasShape batchDim querySeqDim keySeqDim,
+    transposedAndReshaped ~ TransposeAndReshape 'BART headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim queryShape keyShape valueShape attentionBiasShape batchDim querySeqDim keySeqDim,
     output
       ~ Tensor
           'WithGradient
           ('Layout 'Dense <+> queryLayout <+> keyLayout <+> attentionBiasLayout <+> valueLayout)
           (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice <+> valueDevice)
           (dataType <+> queryDataType <+> keyDataType <+> attentionBiasDataType <+> valueDataType)
-          ( BARTMultiHeadAttentionOutputShape
+          ( MultiHeadAttentionOutputShape
+              'BART
               embedDim
               queryEmbedDim
               batchDim
@@ -1162,7 +1186,7 @@ instance
       ~ Generator ((((device <+> queryDevice) <+> (device <+> keyDevice)) <+> attentionBiasDevice) <+> generatorDevice)
   ) =>
   HasForward
-    (BARTMultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
+    (MultiHeadAttention 'BART device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
     ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
       Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
       Tensor valueRequiresGradient valueLayout valueDevice valueDataType valueShape,
@@ -1272,7 +1296,7 @@ testMHA = do
       o = LinearWithoutBias (ones @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "*") ('Size 3), 'Dim ('Name "*") ('Size 2)]))
       dropout = Dropout 0.1
       mha =
-        MultiHeadAttention @('Device 'CPU) @('DataType 'Float) @('Dim ('Name "*") ('Size 1)) @('Dim ('Name "*") ('Size 2)) @('Dim ('Name "*") ('Size 2)) @('Dim ('Name "*") ('Size 3)) @('Dim ('Name "*") ('Size 3)) @('Dim ('Name "*") ('Size 3)) @Float
+        T5MultiHeadAttention @('Device 'CPU) @('DataType 'Float) @('Dim ('Name "*") ('Size 1)) @('Dim ('Name "*") ('Size 2)) @('Dim ('Name "*") ('Size 2)) @('Dim ('Name "*") ('Size 3)) @('Dim ('Name "*") ('Size 3)) @('Dim ('Name "*") ('Size 3)) @Float
           (Dim "*" 1)
           (Dim "*" 2)
           q

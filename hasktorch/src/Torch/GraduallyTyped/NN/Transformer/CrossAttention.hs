@@ -62,6 +62,7 @@ import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (MatmulF)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
+import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle(..))
 
 -- | T5-style cross-attention layer without biases.
 data
@@ -78,7 +79,7 @@ data
   CrossAttention ::
     forall device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP.
     { -- | cross-attention
-      caMultiheadAttention :: MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP,
+      caMultiheadAttention :: MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP,
       -- | layer norm
       caLayerNorm :: LayerNorm 'WithoutBias device dataType ('Shape '[queryEmbedDim]),
       -- | dropout
@@ -87,7 +88,7 @@ data
     CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP
 
 type HasInitializeCrossAttentionC device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP =
-  ( HasInitializeMultiHeadAttentionC device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP,
+  ( HasInitializeMultiHeadAttentionC 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP,
     HasInitializeLayerNormWithoutBiasC device dataType ('Shape '[queryEmbedDim]),
     Scalar dropoutP,
     WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (dropoutP -> Double -> Generator device -> (CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device)))))))),
@@ -154,7 +155,7 @@ instance
                               ( withoutDim @headDim
                                   ( withoutDataType @dataType
                                       ( withoutDevice @device
-                                          ( initialize @(MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP)
+                                          ( initialize @(MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP)
                                           )
                                           deviceType
                                       )

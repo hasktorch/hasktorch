@@ -50,6 +50,7 @@ import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF)
 import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithoutBiasF)
 import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormWithoutBiasC, LayerNorm)
 import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (HasInitializeMultiHeadAttentionC, MultiHeadAttention)
+import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
@@ -77,7 +78,7 @@ data
   SelfAttention ::
     forall device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP.
     { -- | self-attention
-      saMultiheadAttention :: MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP,
+      saMultiheadAttention :: MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP,
       -- | layer norm
       saLayerNorm :: LayerNorm 'WithoutBias device dataType ('Shape '[queryEmbedDim]),
       -- | dropout
@@ -86,7 +87,7 @@ data
     SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP
 
 type HasInitializeSelfAttentionC device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP =
-  ( HasInitializeMultiHeadAttentionC device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP,
+  ( HasInitializeMultiHeadAttentionC 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP,
     HasInitializeLayerNormWithoutBiasC device dataType ('Shape '[queryEmbedDim]),
     Scalar dropoutP,
     WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device))))))),
@@ -147,7 +148,7 @@ instance
                               ( withoutDim @headDim
                                   ( withoutDataType @dataType
                                       ( withoutDevice @device
-                                          ( initialize @(MultiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP)
+                                          ( initialize @(MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP)
                                           )
                                           deviceType
                                       )
