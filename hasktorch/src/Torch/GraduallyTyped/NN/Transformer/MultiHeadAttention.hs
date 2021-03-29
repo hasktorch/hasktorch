@@ -41,6 +41,7 @@ import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Constraint, Type)
+import Data.Singletons (Sing, SingI (sing))
 import GHC.TypeLits (Nat, Symbol)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
@@ -52,7 +53,7 @@ import Torch.GraduallyTyped.NN.Dropout (Dropout (..))
 import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithBiasF, LinearWithoutBiasF)
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, softmax)
 import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearWithBiasC, HasInitializeLinearWithoutBiasC, Linear (..))
-import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle (..))
+import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Random (Generator, mkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
@@ -439,11 +440,12 @@ unsafeGetKeySeqDim keyDims valueDims =
     unifyDims dim dims
 
 unsafeGetEmbedDim ::
-  forall device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP.
+  forall style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP.
   (KnownDim embedDim, KnownDim queryEmbedDim, KnownDim keyEmbedDim, KnownDim valueEmbedDim) =>
-  MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP ->
+  Sing style ->
+  MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP ->
   Dim String Integer
-unsafeGetEmbedDim T5MultiHeadAttention {..} =
+unsafeGetEmbedDim ST5 T5MultiHeadAttention {..} =
   unsafePerformIO $ do
     dim <- getDim (ByIndex 0) . shape . linearWithoutBiasWeight $ mhaQInProj
     dims <-
@@ -453,13 +455,7 @@ unsafeGetEmbedDim T5MultiHeadAttention {..} =
           getDim (ByIndex 1) . shape . linearWithoutBiasWeight $ mhaOutProj
         ]
     unifyDims dim dims
-
-unsafeBARTGetEmbedDim ::
-  forall device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP.
-  (KnownDim embedDim, KnownDim queryEmbedDim, KnownDim keyEmbedDim, KnownDim valueEmbedDim) =>
-  MultiHeadAttention 'BART device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP ->
-  Dim String Integer
-unsafeBARTGetEmbedDim BARTMultiHeadAttention {..} =
+unsafeGetEmbedDim SBART BARTMultiHeadAttention {..} =
   unsafePerformIO $ do
     dim <- getDim (ByIndex 0) . shape . linearWithBiasWeight $ bmhaQInProj
     dims <-
@@ -636,31 +632,6 @@ type family
           ('Shape '[batchDim, querySeqDim, embedDim])
       )
 
-type HasForwardMultiHeadAttentionC'
-  (embedDim :: Dim (Name Symbol) (Size Nat))
-  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (dropoutP :: Type)
-  (queryShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (keyShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (valueShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (batchDim :: Dim (Name Symbol) (Size Nat))
-  (querySeqDim :: Dim (Name Symbol) (Size Nat))
-  (keySeqDim :: Dim (Name Symbol) (Size Nat)) =
-  ( KnownDim embedDim,
-    KnownDim queryEmbedDim,
-    KnownDim keyEmbedDim,
-    KnownDim valueEmbedDim,
-    KnownDim keySeqDim,
-    KnownDim querySeqDim,
-    KnownDim batchDim,
-    KnownShape queryShape,
-    KnownShape keyShape,
-    KnownShape valueShape,
-    Scalar dropoutP
-  )
-
 type family
   HasForwardMultiHeadAttentionC
     (style :: TransformerStyle)
@@ -728,8 +699,7 @@ type family
     querySeqDim
     keySeqDim
     transposedAndReshaped =
-    ( HasForwardMultiHeadAttentionC' embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP queryShape keyShape valueShape batchDim querySeqDim keySeqDim,
-      WithShapeC
+    ( WithShapeC
         ('Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
         ( Tensor
             'WithGradient
@@ -852,8 +822,7 @@ type family
     querySeqDim
     keySeqDim
     transposedAndReshaped =
-    ( HasForwardMultiHeadAttentionC' embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP queryShape keyShape valueShape batchDim querySeqDim keySeqDim,
-      WithShapeC
+    ( WithShapeC
         ('Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
         ( Tensor
             'WithGradient
@@ -953,6 +922,8 @@ type family
 
 -- | 'HasForward' instance for 'MultiHeadAttention'.
 --
+-- @forward@ for @MultiHeadAttention 'T5@:
+--
 -- @
 -- ┌───────────────┐  ┌───────┐       ┌─────┐       ┌───────┐
 -- │ attentionBias │  │ query │       │ key │       │ value │
@@ -988,111 +959,8 @@ type family
 --                              │ query │
 --                              └───────┘
 -- @
-instance
-  ( HasForwardMultiHeadAttentionC
-      'T5
-      device
-      dataType
-      headDim
-      headEmbedDim
-      embedDim
-      queryEmbedDim
-      keyEmbedDim
-      valueEmbedDim
-      dropoutP
-      queryLayout
-      queryDevice
-      queryDataType
-      queryShape
-      keyLayout
-      keyDevice
-      keyDataType
-      keyShape
-      valueLayout
-      valueDevice
-      valueDataType
-      valueShape
-      attentionBiasLayout
-      attentionBiasDevice
-      attentionBiasDataType
-      attentionBiasShape
-      generatorDevice
-      batchDim
-      querySeqDim
-      keySeqDim
-      transposedAndReshaped,
-    batchDim ~ BatchDim queryShape keyShape valueShape,
-    querySeqDim ~ QuerySeqDim queryShape,
-    keySeqDim ~ KeySeqDim keyShape valueShape,
-    transposedAndReshaped ~ TransposeAndReshape 'T5 headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim queryShape keyShape valueShape attentionBiasShape batchDim querySeqDim keySeqDim,
-    output
-      ~ Tensor
-          'WithGradient
-          ('Layout 'Dense <+> queryLayout <+> keyLayout <+> attentionBiasLayout <+> valueLayout)
-          (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice <+> valueDevice)
-          (dataType <+> queryDataType <+> keyDataType <+> attentionBiasDataType <+> valueDataType)
-          ( MultiHeadAttentionOutputShape
-              'T5
-              embedDim
-              queryEmbedDim
-              batchDim
-              querySeqDim
-              transposedAndReshaped
-          ),
-    generatorOutput
-      ~ Generator ((((device <+> queryDevice) <+> (device <+> keyDevice)) <+> attentionBiasDevice) <+> generatorDevice)
-  ) =>
-  HasForward
-    (MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
-    ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
-      Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
-      Tensor valueRequiresGradient valueLayout valueDevice valueDataType valueShape,
-      Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
-    )
-    (Generator generatorDevice)
-    output
-    generatorOutput
-  where
-  forward mha@T5MultiHeadAttention {..} (query, key, value, attentionBias) =
-    let batchDim = case dimVal @(BatchDim queryShape keyShape valueShape) of
-          Dim (Name name) (Size size) -> Dim name size
-          Dim _ _ -> unsafeGetBatchDim (shape query) (shape key) (shape value)
-        querySeqDim = case dimVal @(QuerySeqDim queryShape) of
-          Dim (Name name) (Size size) -> Dim name size
-          Dim _ _ -> unsafeGetQuerySeqDim (shape query)
-        keySeqDim = case dimVal @(KeySeqDim keyShape valueShape) of
-          Dim (Name name) (Size size) -> Dim name size
-          Dim _ _ -> unsafeGetKeySeqDim (shape key) (shape value)
-        embedDim = case dimVal @embedDim of
-          Dim (Name name) (Size size) -> Dim name size
-          Dim _ _ -> unsafeGetEmbedDim mha
-     in runIxState $
-          let q =
-                ireturn query
-                  >>>= IxState . forward mhaQInProj
-                  >>>= ireturn . reshape' @(BatchDim queryShape keyShape valueShape) @(QuerySeqDim queryShape) @headDim @headEmbedDim [batchDim, querySeqDim, mhaHeadDim, mhaHeadEmbedDim]
-                  >>>= ireturn . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
-              k =
-                ireturn key
-                  >>>= IxState . forward mhaKInProj
-                  >>>= ireturn . reshape' @(BatchDim queryShape keyShape valueShape) @(KeySeqDim keyShape valueShape) @headDim @headEmbedDim [batchDim, keySeqDim, mhaHeadDim, mhaHeadEmbedDim]
-                  >>>= ireturn . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
-              kt = k >>>= ireturn . transpose @('SelectDim ('ByIndex 2)) @('SelectDim ('ByIndex 3))
-              weights =
-                matmul <<$>> q <<*>> kt
-                  >>>= ireturn . (`add` attentionBias)
-                  >>>= IxState . forward mhaDropout . softmax @('SelectDim ('ByIndex 3))
-              v =
-                ireturn value
-                  >>>= IxState . forward mhaVInProj
-                  >>>= ireturn . reshape' @(BatchDim queryShape keyShape valueShape) @(KeySeqDim keyShape valueShape) @headDim @headEmbedDim [batchDim, keySeqDim, mhaHeadDim, mhaHeadEmbedDim]
-                  >>>= ireturn . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
-           in matmul <<$>> weights <<*>> v
-                >>>= ireturn . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
-                >>>= ireturn . reshape'' @(BatchDim queryShape keyShape valueShape) @(QuerySeqDim queryShape) @embedDim [batchDim, querySeqDim, embedDim]
-                >>>= IxState . forward mhaOutProj
-
--- | 'HasForward' instance for 'BARTMultiHeadAttention'.
+--
+-- @forward@ for @MultiHeadAttention 'BART@:
 --
 -- @
 -- ┌───────────────┐        ┌───────┐       ┌─────┐       ┌───────┐
@@ -1132,8 +1000,20 @@ instance
 --                                    └───────┘
 -- @
 instance
-  ( HasForwardMultiHeadAttentionC
-      'BART
+  ( SingI style,
+    KnownDim embedDim,
+    KnownDim queryEmbedDim,
+    KnownDim keyEmbedDim,
+    KnownDim valueEmbedDim,
+    KnownDim keySeqDim,
+    KnownDim querySeqDim,
+    KnownDim batchDim,
+    KnownShape queryShape,
+    KnownShape keyShape,
+    KnownShape valueShape,
+    Scalar dropoutP,
+    HasForwardMultiHeadAttentionC
+      style
       device
       dataType
       headDim
@@ -1167,7 +1047,7 @@ instance
     batchDim ~ BatchDim queryShape keyShape valueShape,
     querySeqDim ~ QuerySeqDim queryShape,
     keySeqDim ~ KeySeqDim keyShape valueShape,
-    transposedAndReshaped ~ TransposeAndReshape 'BART headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim queryShape keyShape valueShape attentionBiasShape batchDim querySeqDim keySeqDim,
+    transposedAndReshaped ~ TransposeAndReshape style headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim queryShape keyShape valueShape attentionBiasShape batchDim querySeqDim keySeqDim,
     output
       ~ Tensor
           'WithGradient
@@ -1175,7 +1055,7 @@ instance
           (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice <+> valueDevice)
           (dataType <+> queryDataType <+> keyDataType <+> attentionBiasDataType <+> valueDataType)
           ( MultiHeadAttentionOutputShape
-              'BART
+              style
               embedDim
               queryEmbedDim
               batchDim
@@ -1186,7 +1066,7 @@ instance
       ~ Generator ((((device <+> queryDevice) <+> (device <+> keyDevice)) <+> attentionBiasDevice) <+> generatorDevice)
   ) =>
   HasForward
-    (MultiHeadAttention 'BART device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
+    (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
     ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
       Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
       Tensor valueRequiresGradient valueLayout valueDevice valueDataType valueShape,
@@ -1196,7 +1076,7 @@ instance
     output
     generatorOutput
   where
-  forward bmha@BARTMultiHeadAttention {..} (query, key, value, attentionBias) =
+  forward mha (query, key, value, attentionBias) =
     let batchDim = case dimVal @(BatchDim queryShape keyShape valueShape) of
           Dim (Name name) (Size size) -> Dim name size
           Dim _ _ -> unsafeGetBatchDim (shape query) (shape key) (shape value)
@@ -1208,34 +1088,66 @@ instance
           Dim _ _ -> unsafeGetKeySeqDim (shape key) (shape value)
         embedDim = case dimVal @embedDim of
           Dim (Name name) (Size size) -> Dim name size
-          Dim _ _ -> unsafeBARTGetEmbedDim bmha
-        scaling :: Double = 1 / sqrt (fromIntegral (dimSize bmhaHeadDim))
-     in runIxState $
-          let q =
-                ireturn query
-                  >>>= IxState . forward bmhaQInProj
-                  >>>= ireturn . flip mulScalar scaling
-                  >>>= ireturn . reshape' @(BatchDim queryShape keyShape valueShape) @(QuerySeqDim queryShape) @headDim @headEmbedDim [batchDim, querySeqDim, bmhaHeadDim, bmhaHeadEmbedDim]
+          Dim _ _ -> unsafeGetEmbedDim (sing @style) mha
+        headDim :: Dim String Integer = case sing @style of
+          ST5 -> mhaHeadDim mha
+          SBART -> bmhaHeadDim mha
+        headEmbedDim :: Dim String Integer = case sing @style of
+          ST5 -> mhaHeadEmbedDim mha
+          SBART -> bmhaHeadEmbedDim mha
+     in runIxState $ case (sing @style, mha) of
+          (ST5, T5MultiHeadAttention {..}) ->
+            let q =
+                  ireturn query
+                    >>>= IxState . forward mhaQInProj
+                    >>>= ireturn . reshape' @(BatchDim queryShape keyShape valueShape) @(QuerySeqDim queryShape) @headDim @headEmbedDim [batchDim, querySeqDim, headDim, headEmbedDim]
+                    >>>= ireturn . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
+                k =
+                  ireturn key
+                    >>>= IxState . forward mhaKInProj
+                    >>>= ireturn . reshape' @(BatchDim queryShape keyShape valueShape) @(KeySeqDim keyShape valueShape) @headDim @headEmbedDim [batchDim, keySeqDim, headDim, headEmbedDim]
+                    >>>= ireturn . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
+                kt = k >>>= ireturn . transpose @('SelectDim ('ByIndex 2)) @('SelectDim ('ByIndex 3))
+                weights =
+                  matmul <<$>> q <<*>> kt
+                    >>>= ireturn . (`add` attentionBias)
+                    >>>= IxState . forward mhaDropout . softmax @('SelectDim ('ByIndex 3))
+                v =
+                  ireturn value
+                    >>>= IxState . forward mhaVInProj
+                    >>>= ireturn . reshape' @(BatchDim queryShape keyShape valueShape) @(KeySeqDim keyShape valueShape) @headDim @headEmbedDim [batchDim, keySeqDim, headDim, headEmbedDim]
+                    >>>= ireturn . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
+             in matmul <<$>> weights <<*>> v
                   >>>= ireturn . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
-              k =
-                ireturn key
-                  >>>= IxState . forward bmhaKInProj
-                  >>>= ireturn . reshape' @(BatchDim queryShape keyShape valueShape) @(KeySeqDim keyShape valueShape) @headDim @headEmbedDim [batchDim, keySeqDim, bmhaHeadDim, bmhaHeadEmbedDim]
+                  >>>= ireturn . reshape'' @(BatchDim queryShape keyShape valueShape) @(QuerySeqDim queryShape) @embedDim [batchDim, querySeqDim, embedDim]
+                  >>>= IxState . forward mhaOutProj
+          (SBART, BARTMultiHeadAttention {..}) ->
+            let scaling :: Double = 1 / sqrt (fromIntegral (dimSize headDim))
+                q =
+                  ireturn query
+                    >>>= IxState . forward bmhaQInProj
+                    >>>= ireturn . flip mulScalar scaling
+                    >>>= ireturn . reshape' @(BatchDim queryShape keyShape valueShape) @(QuerySeqDim queryShape) @headDim @headEmbedDim [batchDim, querySeqDim, headDim, headEmbedDim]
+                    >>>= ireturn . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
+                k =
+                  ireturn key
+                    >>>= IxState . forward bmhaKInProj
+                    >>>= ireturn . reshape' @(BatchDim queryShape keyShape valueShape) @(KeySeqDim keyShape valueShape) @headDim @headEmbedDim [batchDim, keySeqDim, headDim, headEmbedDim]
+                    >>>= ireturn . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
+                kt = k >>>= ireturn . transpose @('SelectDim ('ByIndex 2)) @('SelectDim ('ByIndex 3))
+                weights =
+                  matmul <<$>> q <<*>> kt
+                    >>>= ireturn . (`add` attentionBias)
+                    >>>= IxState . forward bmhaDropout . softmax @('SelectDim ('ByIndex 3))
+                v =
+                  ireturn value
+                    >>>= IxState . forward bmhaVInProj
+                    >>>= ireturn . reshape' @(BatchDim queryShape keyShape valueShape) @(KeySeqDim keyShape valueShape) @headDim @headEmbedDim [batchDim, keySeqDim, headDim, headEmbedDim]
+                    >>>= ireturn . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
+             in matmul <<$>> weights <<*>> v
                   >>>= ireturn . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
-              kt = k >>>= ireturn . transpose @('SelectDim ('ByIndex 2)) @('SelectDim ('ByIndex 3))
-              weights =
-                matmul <<$>> q <<*>> kt
-                  >>>= ireturn . (`add` attentionBias)
-                  >>>= IxState . forward bmhaDropout . softmax @('SelectDim ('ByIndex 3))
-              v =
-                ireturn value
-                  >>>= IxState . forward bmhaVInProj
-                  >>>= ireturn . reshape' @(BatchDim queryShape keyShape valueShape) @(KeySeqDim keyShape valueShape) @headDim @headEmbedDim [batchDim, keySeqDim, bmhaHeadDim, bmhaHeadEmbedDim]
-                  >>>= ireturn . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
-           in matmul <<$>> weights <<*>> v
-                >>>= ireturn . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
-                >>>= ireturn . reshape'' @(BatchDim queryShape keyShape valueShape) @(QuerySeqDim queryShape) @embedDim [batchDim, querySeqDim, embedDim]
-                >>>= IxState . forward bmhaOutProj
+                  >>>= ireturn . reshape'' @(BatchDim queryShape keyShape valueShape) @(QuerySeqDim queryShape) @embedDim [batchDim, querySeqDim, embedDim]
+                  >>>= IxState . forward bmhaOutProj
 
 reshape' ::
   forall batchDim seqDim headDim headEmbedDim requiresGradient layout device dataType shape.
