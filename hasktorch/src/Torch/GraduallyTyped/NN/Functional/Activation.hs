@@ -47,6 +47,15 @@ relu ::
   Tensor requiresGradient layout device dataType shape
 relu = unsafePerformIO . cast1 ATen.relu_t
 
+-- | Applies the gaussian error linear unit function element-wise.
+gelu ::
+  forall requiresGradient layout device dataType shape.
+  -- | input
+  Tensor requiresGradient layout device dataType shape ->
+  -- | output
+  Tensor requiresGradient layout device dataType shape
+gelu = unsafePerformIO . cast1 ATen.gelu_t
+
 -- | Applies the HardTanh function element-wise.
 hardtanh ::
   forall minValue maxValue requiresGradient layout device dataType shape.

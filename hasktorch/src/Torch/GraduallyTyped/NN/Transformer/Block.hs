@@ -29,6 +29,7 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (.
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork (HasInitializeTransformerFeedForwardNetworkC, TransformerFeedForwardNetwork)
 import Torch.GraduallyTyped.NN.Transformer.SelfAttention (HasInitializeSelfAttentionC, SelfAttention)
+import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle (..))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..), WithDimC (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
@@ -50,13 +51,13 @@ data
     { -- | self-attention layer
       tbSelfAttention :: SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP,
       -- | feed-forward network
-      tbFeedForwardNetwork :: TransformerFeedForwardNetwork device dataType queryEmbedDim ffnDim dropoutP
+      tbFeedForwardNetwork :: TransformerFeedForwardNetwork 'T5 device dataType queryEmbedDim ffnDim dropoutP
     } ->
     TransformerBlock device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP
 
 type HasInitializeTransformerBlockC device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP =
   ( HasInitializeSelfAttentionC device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP,
-    HasInitializeTransformerFeedForwardNetworkC device dataType queryEmbedDim ffnDim dropoutP,
+    HasInitializeTransformerFeedForwardNetworkC 'T5 device dataType queryEmbedDim ffnDim dropoutP,
     WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerBlock device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device)))))))),
     WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerBlock device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device))))))),
     WithDimC headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerBlock device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device)))))),
@@ -140,7 +141,7 @@ instance
               ( withoutDim @queryEmbedDim
                   ( withoutDataType @dataType
                       ( withoutDevice @device
-                          ( initialize @(TransformerFeedForwardNetwork device dataType queryEmbedDim ffnDim dropoutP)
+                          ( initialize @(TransformerFeedForwardNetwork 'T5 device dataType queryEmbedDim ffnDim dropoutP)
                           )
                           deviceType
                       )
@@ -180,7 +181,7 @@ instance
       selfAttentionOutput
       selfAttentionGeneratorOutput,
     HasForward
-      (TransformerFeedForwardNetwork device dataType queryEmbedDim ffnDim dropoutP)
+      (TransformerFeedForwardNetwork 'T5 device dataType queryEmbedDim ffnDim dropoutP)
       selfAttentionOutput
       selfAttentionGeneratorOutput
       output
