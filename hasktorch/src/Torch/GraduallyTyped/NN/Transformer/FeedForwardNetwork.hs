@@ -102,16 +102,8 @@ data
     } ->
     TransformerFeedForwardNetwork 'BART device dataType queryEmbedDim ffnDim dropoutP
 
-type HasInitializeTransformerFeedForwardNetworkC' style device dataType queryEmbedDim ffnDim dropoutP =
-  ( Scalar dropoutP,
-    WithDeviceC device (WithDataTypeF dataType (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP, Generator device))))),
-    WithDataTypeC dataType (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP, Generator device)))),
-    WithDimC queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP, Generator device))),
-    WithDimC ffnDim (dropoutP -> Double -> Generator device -> (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP, Generator device))
-  )
-
 type family
-  HasInitializeTransformerFeedForwardNetworkC
+  HasInitializeTransformerFeedForwardNetworkC'
     (style :: TransformerStyle)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
@@ -120,18 +112,25 @@ type family
     (dropoutP :: Type) ::
     Constraint
   where
-  HasInitializeTransformerFeedForwardNetworkC 'T5 device dataType queryEmbedDim ffnDim dropoutP =
+  HasInitializeTransformerFeedForwardNetworkC' 'T5 device dataType queryEmbedDim ffnDim dropoutP =
     ( HasInitializeLinearWithoutBiasC device dataType queryEmbedDim ffnDim,
       HasInitializeLinearWithoutBiasC device dataType ffnDim queryEmbedDim,
-      HasInitializeLayerNormWithoutBiasC device dataType ('Shape '[queryEmbedDim]),
-      HasInitializeTransformerFeedForwardNetworkC' 'T5 device dataType queryEmbedDim ffnDim dropoutP
+      HasInitializeLayerNormWithoutBiasC device dataType ('Shape '[queryEmbedDim])
     )
-  HasInitializeTransformerFeedForwardNetworkC 'BART device dataType queryEmbedDim ffnDim dropoutP =
+  HasInitializeTransformerFeedForwardNetworkC' 'BART device dataType queryEmbedDim ffnDim dropoutP =
     ( HasInitializeLinearWithBiasC device dataType queryEmbedDim ffnDim,
       HasInitializeLinearWithBiasC device dataType ffnDim queryEmbedDim,
-      HasInitializeLayerNormWithBiasC device dataType ('Shape '[queryEmbedDim]),
-      HasInitializeTransformerFeedForwardNetworkC' 'BART device dataType queryEmbedDim ffnDim dropoutP
+      HasInitializeLayerNormWithBiasC device dataType ('Shape '[queryEmbedDim])
     )
+
+type HasInitializeTransformerFeedForwardNetworkC style device dataType queryEmbedDim ffnDim dropoutP =
+  ( Scalar dropoutP,
+    WithDeviceC device (WithDataTypeF dataType (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP, Generator device))))),
+    WithDataTypeC dataType (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP, Generator device)))),
+    WithDimC queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP, Generator device))),
+    WithDimC ffnDim (dropoutP -> Double -> Generator device -> (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP, Generator device)),
+    HasInitializeTransformerFeedForwardNetworkC' style device dataType queryEmbedDim ffnDim dropoutP
+  )
 
 instance
   HasInitializeTransformerFeedForwardNetworkC 'T5 device dataType queryEmbedDim ffnDim dropoutP =>

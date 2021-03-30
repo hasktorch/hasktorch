@@ -18,7 +18,7 @@ module Torch.GraduallyTyped.NN.Transformer.SequenceToSequence where
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.State.Strict (MonadState (state), runState)
-import Data.Kind (Type)
+import Data.Kind (Constraint, Type)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), WithDataTypeC (..))
@@ -29,6 +29,7 @@ import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearWithoutBiasC, Linear)
 import Torch.GraduallyTyped.NN.Sparse (Embedding, HasInitializeEmbeddingC)
 import Torch.GraduallyTyped.NN.Transformer.Decoder (HasInitializeTransformerDecoderC, TransformerDecoder)
 import Torch.GraduallyTyped.NN.Transformer.Encoder (HasInitializeTransformerEncoderC, TransformerEncoder)
+import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
@@ -43,6 +44,7 @@ data
     (hasLMHead :: HasLMHead)
     (numEncoderLayers :: Nat)
     (numDecoderLayers :: Nat)
+    (style :: TransformerStyle)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (headDim :: Dim (Name Symbol) (Size Nat))
@@ -54,22 +56,22 @@ data
     (vocabDim :: Dim (Name Symbol) (Size Nat))
     (dropoutP :: Type)
   where
-  SequenceToSequenceTransformerWithoutLMHead ::
+  T5WithoutLMHead ::
     forall numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP.
     { -- | encoder
-      seqToSeqWithoutLMHeadEncoder :: TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP,
+      seqToSeqWithoutLMHeadEncoder :: TransformerEncoder numEncoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP,
       -- | decoder
-      seqToSeqWithoutLMHeadDecoder :: TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP,
+      seqToSeqWithoutLMHeadDecoder :: TransformerDecoder numDecoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP,
       -- | embedding
       seqToSeqWithoutLMHeadEmbedding :: Embedding ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing
     } ->
-    SequenceToSequenceTransformer 'WithoutLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP
-  SequenceToSequenceTransformerWithLMHead ::
+    SequenceToSequenceTransformer 'WithoutLMHead numEncoderLayers numDecoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP
+  T5WithLMHead ::
     forall numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP.
     { -- | encoder
-      seqToSeqWithLMHeadEncoder :: TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP,
+      seqToSeqWithLMHeadEncoder :: TransformerEncoder numEncoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP,
       -- | decoder
-      seqToSeqWithLMHeadDecoder :: TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP,
+      seqToSeqWithLMHeadDecoder :: TransformerDecoder numDecoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP,
       -- | embedding
       seqToSeqWithLMHeadEmbedding :: Embedding ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing,
       -- | language model head
@@ -77,29 +79,68 @@ data
       -- | input embed dim
       seqToSeqInputEmbedDim :: Dim String Integer
     } ->
-    SequenceToSequenceTransformer 'WithLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP
+    SequenceToSequenceTransformer 'WithLMHead numEncoderLayers numDecoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP
 
-type HasInitializeSequenceToSequenceTransformerC hasLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP =
-  ( HasInitializeTransformerEncoderC numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP,
-    HasInitializeTransformerDecoderC numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP,
-    HasInitializeEmbeddingC ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing,
-    WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device)))))))))),
-    WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device))))))))),
-    WithDimC headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device)))))))),
-    WithDimC headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device))))))),
-    WithDimC embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device)))))),
-    WithDimC inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device))))),
-    WithDimC ffnDim (WithDimF relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device)))),
-    WithDimC relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device))),
-    WithDimC vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device))
+type family
+  HasInitializeSequenceToSequenceTransformerC'
+    (hasLMHead :: HasLMHead)
+    (numEncoderLayers :: Nat)
+    (numDecoderLayers :: Nat)
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (relPosEncBucketDim :: Dim (Name Symbol) (Size Nat))
+    (vocabDim :: Dim (Name Symbol) (Size Nat))
+    (dropoutP :: Type) ::
+    Constraint
+  where
+  HasInitializeSequenceToSequenceTransformerC' 'WithoutLMHead numEncoderLayers numDecoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP =
+    HasInitializeEmbeddingC ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing
+  HasInitializeSequenceToSequenceTransformerC' 'WithLMHead numEncoderLayers numDecoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP =
+    ( HasInitializeEmbeddingC ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing,
+      HasInitializeLinearWithoutBiasC device dataType inputEmbedDim vocabDim
+    )
+
+type HasInitializeSequenceToSequenceTransformerC
+  (hasLMHead :: HasLMHead)
+  (numEncoderLayers :: Nat)
+  (numDecoderLayers :: Nat)
+  (style :: TransformerStyle)
+  (device :: Device (DeviceType Nat))
+  (dataType :: DataType DType)
+  (headDim :: Dim (Name Symbol) (Size Nat))
+  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (embedDim :: Dim (Name Symbol) (Size Nat))
+  (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (ffnDim :: Dim (Name Symbol) (Size Nat))
+  (relPosEncBucketDim :: Dim (Name Symbol) (Size Nat))
+  (vocabDim :: Dim (Name Symbol) (Size Nat))
+  (dropoutP :: Type) =
+  ( WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device)))))))))),
+    WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device))))))))),
+    WithDimC headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device)))))))),
+    WithDimC headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device))))))),
+    WithDimC embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device)))))),
+    WithDimC inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device))))),
+    WithDimC ffnDim (WithDimF relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device)))),
+    WithDimC relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device))),
+    WithDimC vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device)),
+    HasInitializeSequenceToSequenceTransformerC' hasLMHead numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP,
+    HasInitializeTransformerEncoderC numEncoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP,
+    HasInitializeTransformerDecoderC numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP
   )
 
 instance
-  HasInitializeSequenceToSequenceTransformerC 'WithoutLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP =>
-  HasInitialize (SequenceToSequenceTransformer 'WithoutLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP)
+  HasInitializeSequenceToSequenceTransformerC 'WithoutLMHead numEncoderLayers numDecoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP =>
+  HasInitialize (SequenceToSequenceTransformer 'WithoutLMHead numEncoderLayers numDecoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP)
   where
   type
-    InitializeF (SequenceToSequenceTransformer 'WithoutLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP) =
+    InitializeF (SequenceToSequenceTransformer 'WithoutLMHead numEncoderLayers numDecoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP) =
       WithDeviceF
         device
         ( WithDataTypeF
@@ -118,7 +159,7 @@ instance
                                     relPosEncBucketDim
                                     ( WithDimF
                                         vocabDim
-                                        (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer 'WithoutLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device))
+                                        (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer 'WithoutLMHead numEncoderLayers numDecoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device))
                                     )
                                 )
                             )
@@ -144,7 +185,7 @@ instance
                               \ffnDim ->
                                 withDim @relPosEncBucketDim $
                                   \relPosEncBucketDim ->
-                                    withDim @vocabDim @(dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer 'WithoutLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device)) $
+                                    withDim @vocabDim @(dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer 'WithoutLMHead numEncoderLayers numDecoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device)) $
                                       \vocabDim -> go deviceType dType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim
     where
       go deviceType dType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP eps = runState $ do
@@ -158,7 +199,7 @@ instance
                               ( withoutDim @headDim
                                   ( withoutDataType @dataType
                                       ( withoutDevice @device
-                                          ( initialize @(TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+                                          ( initialize @(TransformerEncoder numEncoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
                                           )
                                           deviceType
                                       )
@@ -188,7 +229,7 @@ instance
                                   ( withoutDim @headDim
                                       ( withoutDataType @dataType
                                           ( withoutDevice @device
-                                              ( initialize @(TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+                                              ( initialize @(TransformerDecoder numDecoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
                                               )
                                               deviceType
                                           )
@@ -224,16 +265,15 @@ instance
                   vocabDim
               )
               inputEmbedDim
-        pure $ SequenceToSequenceTransformerWithoutLMHead encoder decoder embedding
+        pure $ T5WithoutLMHead encoder decoder embedding
 
 instance
-  ( HasInitializeSequenceToSequenceTransformerC 'WithLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP,
-    HasInitializeLinearWithoutBiasC device dataType inputEmbedDim vocabDim
+  ( HasInitializeSequenceToSequenceTransformerC 'WithLMHead numEncoderLayers numDecoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP
   ) =>
-  HasInitialize (SequenceToSequenceTransformer 'WithLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP)
+  HasInitialize (SequenceToSequenceTransformer 'WithLMHead numEncoderLayers numDecoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP)
   where
   type
-    InitializeF (SequenceToSequenceTransformer 'WithLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP) =
+    InitializeF (SequenceToSequenceTransformer 'WithLMHead numEncoderLayers numDecoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP) =
       WithDeviceF
         device
         ( WithDataTypeF
@@ -252,7 +292,7 @@ instance
                                     relPosEncBucketDim
                                     ( WithDimF
                                         vocabDim
-                                        (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer 'WithLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device))
+                                        (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer 'WithLMHead numEncoderLayers numDecoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device))
                                     )
                                 )
                             )
@@ -278,7 +318,7 @@ instance
                               \ffnDim ->
                                 withDim @relPosEncBucketDim $
                                   \relPosEncBucketDim ->
-                                    withDim @vocabDim @(dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer 'WithLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device)) $
+                                    withDim @vocabDim @(dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer 'WithLMHead numEncoderLayers numDecoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device)) $
                                       \vocabDim -> go deviceType dType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim
     where
       go deviceType dType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP eps = runState $ do
@@ -292,7 +332,7 @@ instance
                               ( withoutDim @headDim
                                   ( withoutDataType @dataType
                                       ( withoutDevice @device
-                                          ( initialize @(TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+                                          ( initialize @(TransformerEncoder numEncoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
                                           )
                                           deviceType
                                       )
@@ -322,7 +362,7 @@ instance
                                   ( withoutDim @headDim
                                       ( withoutDataType @dataType
                                           ( withoutDevice @device
-                                              ( initialize @(TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+                                              ( initialize @(TransformerDecoder numDecoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
                                               )
                                               deviceType
                                           )
@@ -373,7 +413,7 @@ instance
                   inputEmbedDim
               )
               vocabDim
-        pure $ SequenceToSequenceTransformerWithLMHead encoder decoder embedding lmHead inputEmbedDim
+        pure $ T5WithLMHead encoder decoder embedding lmHead inputEmbedDim
 
 data SequenceToSequenceTransformerInput input decoderInput relPos decoderRelPos attentionMask decoderAttentionMask crossAttentionMask where
   SequenceToSequenceTransformerInput ::
@@ -441,7 +481,7 @@ instance
       embeddingOutput
       embeddingGeneratorOutput,
     HasForward
-      (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+      (TransformerEncoder numEncoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
       (embeddingOutput, relPos, attentionMask)
       embeddingGeneratorOutput
       encoderOutput
@@ -453,7 +493,7 @@ instance
       embeddingOutput'
       embeddingGeneratorOutput',
     HasForward
-      (TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+      (TransformerDecoder numDecoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
       ( embeddingOutput',
         encoderOutput,
         decoderRelPos,
@@ -465,13 +505,13 @@ instance
       generatorOutput
   ) =>
   HasForward
-    (SequenceToSequenceTransformer 'WithoutLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP)
+    (SequenceToSequenceTransformer 'WithoutLMHead numEncoderLayers numDecoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP)
     (SequenceToSequenceTransformerInput input decoderInput relPos decoderRelPos attentionMask decoderAttentionMask crossAttentionMask)
     generator
     (SequenceToSequenceTransformerOutput decoderOutput encoderOutput)
     generatorOutput
   where
-  forward SequenceToSequenceTransformerWithoutLMHead {..} SequenceToSequenceTransformerInput {..} =
+  forward T5WithoutLMHead {..} SequenceToSequenceTransformerInput {..} =
     runIxState $
       ireturn input
         >>>= IxState . forward seqToSeqWithoutLMHeadEmbedding
@@ -493,7 +533,7 @@ instance
       embeddingOutput'
       embeddingGeneratorOutput',
     HasForward
-      (TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+      (TransformerDecoder numDecoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
       ( embeddingOutput',
         encoderOutput,
         decoderRelPos,
@@ -505,13 +545,13 @@ instance
       generatorOutput
   ) =>
   HasForward
-    (SequenceToSequenceTransformer 'WithoutLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP)
+    (SequenceToSequenceTransformer 'WithoutLMHead numEncoderLayers numDecoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP)
     (SequenceToSequenceTransformerGenerationInput decoderInput encoderOutput decoderRelPos decoderAttentionMask crossAttentionMask)
     generator
     (SequenceToSequenceTransformerOutput decoderOutput encoderOutput)
     generatorOutput
   where
-  forward SequenceToSequenceTransformerWithoutLMHead {..} SequenceToSequenceTransformerGenerationInput {..} =
+  forward T5WithoutLMHead {..} SequenceToSequenceTransformerGenerationInput {..} =
     runIxState $
       ireturn generationDecoderInput
         >>>= IxState . forward seqToSeqWithoutLMHeadEmbedding
@@ -528,7 +568,7 @@ instance
       embeddingOutput
       embeddingGeneratorOutput,
     HasForward
-      (TransformerEncoder numEncoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+      (TransformerEncoder numEncoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
       (embeddingOutput, relPos, attentionMask)
       embeddingGeneratorOutput
       encoderOutput
@@ -540,7 +580,7 @@ instance
       embeddingOutput'
       embeddingGeneratorOutput',
     HasForward
-      (TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+      (TransformerDecoder numDecoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
       ( embeddingOutput',
         encoderOutput,
         decoderRelPos,
@@ -558,13 +598,13 @@ instance
       generatorOutput
   ) =>
   HasForward
-    (SequenceToSequenceTransformer 'WithLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP)
+    (SequenceToSequenceTransformer 'WithLMHead numEncoderLayers numDecoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP)
     (SequenceToSequenceTransformerInput input decoderInput relPos decoderRelPos attentionMask decoderAttentionMask crossAttentionMask)
     generator
     (SequenceToSequenceTransformerOutput (Tensor requiresGradient' layout' device' dataType' shape) encoderOutput)
     generatorOutput
   where
-  forward SequenceToSequenceTransformerWithLMHead {..} SequenceToSequenceTransformerInput {..} =
+  forward T5WithLMHead {..} SequenceToSequenceTransformerInput {..} =
     let scaling :: Double = sqrt . fromIntegral . dimSize $ seqToSeqInputEmbedDim
      in runIxState $
           ireturn input
@@ -589,7 +629,7 @@ instance
       embeddingOutput'
       embeddingGeneratorOutput',
     HasForward
-      (TransformerDecoder numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+      (TransformerDecoder numDecoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
       ( embeddingOutput',
         encoderOutput,
         decoderRelPos,
@@ -607,13 +647,13 @@ instance
       generatorOutput
   ) =>
   HasForward
-    (SequenceToSequenceTransformer 'WithLMHead numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP)
+    (SequenceToSequenceTransformer 'WithLMHead numEncoderLayers numDecoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP)
     (SequenceToSequenceTransformerGenerationInput decoderInput encoderOutput decoderRelPos decoderAttentionMask crossAttentionMask)
     generator
     (SequenceToSequenceTransformerOutput (Tensor requiresGradient' layout' device' dataType' shape) encoderOutput)
     generatorOutput
   where
-  forward SequenceToSequenceTransformerWithLMHead {..} SequenceToSequenceTransformerGenerationInput {..} =
+  forward T5WithLMHead {..} SequenceToSequenceTransformerGenerationInput {..} =
     let scaling :: Double = sqrt . fromIntegral . dimSize $ seqToSeqInputEmbedDim
      in runIxState $
           ireturn generationDecoderInput
@@ -633,6 +673,7 @@ testForwardSeqToSeq =
             'WithLMHead
             3
             3
+            'T5
             ('Device 'CPU)
             ('DataType 'Float)
             ('Dim ('Name "*") ('Size 8)) -- headDim

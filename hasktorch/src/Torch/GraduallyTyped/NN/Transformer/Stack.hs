@@ -29,6 +29,7 @@ import Torch.GraduallyTyped.DType (DataType, WithDataTypeC (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Transformer.Block (HasInitializeTransformerBlockC, TransformerBlock)
+import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle)
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.Shape (Dim (..), Name (..), Size (..), WithDimC (..))
 
@@ -36,6 +37,7 @@ import Torch.GraduallyTyped.Shape (Dim (..), Name (..), Size (..), WithDimC (..)
 data
   TransformerStack
     (numLayers :: Nat)
+    (style :: TransformerStyle)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (headDim :: Dim (Name Symbol) (Size Nat))
@@ -46,21 +48,22 @@ data
     (dropoutP :: Type)
   where
   TransformerStackNil ::
-    forall device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP.
-    TransformerStack 0 device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP
+    forall style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP.
+    TransformerStack 0 style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP
   TransformerStackCons ::
-    forall numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP.
+    forall numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP.
     { -- | encoder layer block
-      tsBlock :: TransformerBlock device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP,
+      tsBlock :: TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP,
       -- | remaining encoder stack
-      tsStack :: TransformerStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP
+      tsStack :: TransformerStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP
     } ->
-    TransformerStack (numLayers + 1) device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP
+    TransformerStack (numLayers + 1) style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP
 
 class
   HasInitializeTransformerStack
     (isCons :: Bool)
     (numLayers :: Nat)
+    (style :: TransformerStyle)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (headDim :: Dim (Name Symbol) (Size Nat))
@@ -85,7 +88,7 @@ class
                           queryEmbedDim
                           ( WithDimF
                               ffnDim
-                              (dropoutP -> Double -> Generator device -> (TransformerStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device))
+                              (dropoutP -> Double -> Generator device -> (TransformerStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device))
                           )
                       )
                   )
@@ -93,19 +96,29 @@ class
           )
       )
 
-type HasInitializeTransformerStackC numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP =
-  ( WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device)))))))),
-    WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device))))))),
-    WithDimC headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device)))))),
-    WithDimC headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device))))),
-    WithDimC embedDim (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device)))),
-    WithDimC queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device))),
-    WithDimC ffnDim (dropoutP -> Double -> Generator device -> (TransformerStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device))
+type HasInitializeTransformerStackC
+  (numLayers :: Nat)
+  (style :: TransformerStyle)
+  (device :: Device (DeviceType Nat))
+  (dataType :: DataType DType)
+  (headDim :: Dim (Name Symbol) (Size Nat))
+  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (embedDim :: Dim (Name Symbol) (Size Nat))
+  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (ffnDim :: Dim (Name Symbol) (Size Nat))
+  (dropoutP :: Type) =
+  ( WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device)))))))),
+    WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device))))))),
+    WithDimC headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device)))))),
+    WithDimC headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device))))),
+    WithDimC embedDim (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device)))),
+    WithDimC queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device))),
+    WithDimC ffnDim (dropoutP -> Double -> Generator device -> (TransformerStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device))
   )
 
 instance
-  HasInitializeTransformerStackC 0 device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP =>
-  HasInitializeTransformerStack 'False 0 device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP
+  HasInitializeTransformerStackC 0 style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP =>
+  HasInitializeTransformerStack 'False 0 style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP
   where
   initializeTransformerStack =
     withDevice @device $
@@ -120,16 +133,16 @@ instance
                       \_embedDim ->
                         withDim @queryEmbedDim $
                           \_queryEmbedDim ->
-                            withDim @ffnDim @(dropoutP -> Double -> Generator device -> (TransformerStack 0 device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device)) $
+                            withDim @ffnDim @(dropoutP -> Double -> Generator device -> (TransformerStack 0 style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device)) $
                               \_ffnDim _dropoutP _eps g -> (TransformerStackNil, g)
 
 instance
-  ( HasInitializeTransformerBlockC device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP,
-    HasInitializeTransformerStackC numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP,
-    HasInitializeTransformerStackC (numLayers - 1) device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP,
-    HasInitialize (TransformerStack (numLayers - 1) device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
+  ( HasInitializeTransformerBlockC style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP,
+    HasInitializeTransformerStackC numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP,
+    HasInitializeTransformerStackC (numLayers - 1) style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP,
+    HasInitialize (TransformerStack (numLayers - 1) style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
   ) =>
-  HasInitializeTransformerStack 'True numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP
+  HasInitializeTransformerStack 'True numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP
   where
   initializeTransformerStack =
     withDevice @device $
@@ -144,20 +157,20 @@ instance
                       \embedDim ->
                         withDim @queryEmbedDim $
                           \queryEmbedDim ->
-                            withDim @ffnDim @(dropoutP -> Double -> Generator device -> (TransformerStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device)) $
+                            withDim @ffnDim @(dropoutP -> Double -> Generator device -> (TransformerStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device)) $
                               \ffnDim -> go deviceType dType headDim headEmbedDim embedDim queryEmbedDim ffnDim
     where
       go deviceType dType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP eps = runState $ do
         stack <-
           state $
-            withoutDim @ffnDim @(dropoutP -> Double -> Generator device -> (TransformerStack (numLayers - 1) device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device))
+            withoutDim @ffnDim @(dropoutP -> Double -> Generator device -> (TransformerStack (numLayers - 1) style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device))
               ( withoutDim @queryEmbedDim
                   ( withoutDim @embedDim
                       ( withoutDim @headEmbedDim
                           ( withoutDim @headDim
                               ( withoutDataType @dataType
                                   ( withoutDevice @device
-                                      ( initialize @(TransformerStack (numLayers - 1) device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
+                                      ( initialize @(TransformerStack (numLayers - 1) style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
                                       )
                                       deviceType
                                   )
@@ -183,7 +196,7 @@ instance
                           ( withoutDim @headDim
                               ( withoutDataType @dataType
                                   ( withoutDevice @device
-                                      ( initialize @(TransformerBlock device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
+                                      ( initialize @(TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
                                       )
                                       deviceType
                                   )
@@ -203,11 +216,11 @@ instance
         pure $ TransformerStackCons block stack
 
 instance
-  HasInitializeTransformerStack (1 <=? numLayers) numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP =>
-  HasInitialize (TransformerStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
+  HasInitializeTransformerStack (1 <=? numLayers) numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP =>
+  HasInitialize (TransformerStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
   where
   type
-    InitializeF (TransformerStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP) =
+    InitializeF (TransformerStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP) =
       WithDeviceF
         device
         ( WithDataTypeF
@@ -222,20 +235,21 @@ instance
                             queryEmbedDim
                             ( WithDimF
                                 ffnDim
-                                (dropoutP -> Double -> Generator device -> (TransformerStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device))
+                                (dropoutP -> Double -> Generator device -> (TransformerStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device))
                             )
                         )
                     )
                 )
             )
         )
-  initialize = initializeTransformerStack @(1 <=? numLayers) @numLayers @device @dataType @headDim @headEmbedDim @embedDim @queryEmbedDim @ffnDim @dropoutP
+  initialize = initializeTransformerStack @(1 <=? numLayers) @numLayers @style @device @dataType @headDim @headEmbedDim @embedDim @queryEmbedDim @ffnDim @dropoutP
 
 class
   HasForwardTransformerStack
     (isCons :: Bool)
     (isNotFirstLayer :: Bool)
     (numLayers :: Nat)
+    (style :: TransformerStyle)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (headDim :: Dim (Name Symbol) (Size Nat))
@@ -249,17 +263,17 @@ class
     (generator :: Type)
     (output :: Type)
     (generatorOutput :: Type)
-    | isCons isNotFirstLayer numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP query attentionBias generator -> output,
-      isCons isNotFirstLayer numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP query attentionBias generator -> generatorOutput
+    | isCons isNotFirstLayer numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP query attentionBias generator -> output,
+      isCons isNotFirstLayer numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP query attentionBias generator -> generatorOutput
   where
   forwardTransformerStack ::
     Maybe
-      ( TransformerBlock device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP ->
+      ( TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP ->
         (query, attentionBias) ->
         generator ->
         (query, generator)
       ) ->
-    TransformerStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP ->
+    TransformerStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP ->
     (query, attentionBias) ->
     generator ->
     (output, generatorOutput)
@@ -269,6 +283,7 @@ instance
     'False
     isNotFirstLayer
     0
+    style
     device
     dataType
     headDim
@@ -287,13 +302,13 @@ instance
 
 instance
   ( HasForward
-      (TransformerBlock device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
+      (TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
       (query, attentionBias)
       generator
       blockOutput
       blockGeneratorOutput,
     HasForward
-      (TransformerBlock device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
+      (TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
       (blockOutput, attentionBias)
       blockGeneratorOutput
       blockOutput
@@ -302,6 +317,7 @@ instance
       (1 <=? numLayers - 1)
       'True
       (numLayers - 1)
+      style
       device
       dataType
       headDim
@@ -320,6 +336,7 @@ instance
     'True
     'False
     numLayers
+    style
     device
     dataType
     headDim
@@ -354,6 +371,7 @@ instance
     (1 <=? numLayers - 1)
     'True
     (numLayers - 1)
+    style
     device
     dataType
     headDim
@@ -371,6 +389,7 @@ instance
     'True
     'True
     numLayers
+    style
     device
     dataType
     headDim
@@ -426,6 +445,7 @@ instance
     (1 <=? numLayers)
     'False
     numLayers
+    style
     device
     dataType
     headDim
@@ -440,7 +460,7 @@ instance
     output
     generatorOutput =>
   HasForward
-    (TransformerStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
+    (TransformerStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
     (query, attentionBias)
     generator
     output

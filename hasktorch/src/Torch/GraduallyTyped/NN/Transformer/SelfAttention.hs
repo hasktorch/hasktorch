@@ -37,7 +37,7 @@ module Torch.GraduallyTyped.NN.Transformer.SelfAttention where
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.State.Strict (MonadState (state), runState)
-import Data.Kind (Type)
+import Data.Kind (Constraint, Type)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType, WithDataTypeC (..))
@@ -64,9 +64,10 @@ import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
--- | T5-style self-attention layer without biases.
+-- | Self-attention layer.
 data
   SelfAttention
+    (style :: TransformerStyle)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (headDim :: Dim (Name Symbol) (Size Nat))
@@ -75,7 +76,8 @@ data
     (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
     (dropoutP :: Type)
   where
-  SelfAttention ::
+  -- | T5-style self-attention layer without biases.
+  T5SelfAttention ::
     forall device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP.
     { -- | self-attention
       saMultiheadAttention :: MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP,
@@ -84,26 +86,49 @@ data
       -- | dropout
       saDropout :: Dropout dropoutP
     } ->
-    SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP
+    SelfAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP
 
-type HasInitializeSelfAttentionC device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP =
-  ( HasInitializeMultiHeadAttentionC 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP,
-    HasInitializeLayerNormWithoutBiasC device dataType ('Shape '[queryEmbedDim]),
+type family
+  HasInitializeSelfAttentionC'
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (dropoutP :: Type) ::
+    Constraint
+  where
+  HasInitializeSelfAttentionC' 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP =
+    HasInitializeLayerNormWithoutBiasC device dataType ('Shape '[queryEmbedDim])
+
+type HasInitializeSelfAttentionC
+  (style :: TransformerStyle)
+  (device :: Device (DeviceType Nat))
+  (dataType :: DataType DType)
+  (headDim :: Dim (Name Symbol) (Size Nat))
+  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (embedDim :: Dim (Name Symbol) (Size Nat))
+  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (dropoutP :: Type) =
+  ( HasInitializeMultiHeadAttentionC style device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP,
     Scalar dropoutP,
-    WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device))))))),
-    WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device)))))),
-    WithDimC headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device))))),
-    WithDimC headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device)))),
-    WithDimC embedDim (WithDimF queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device))),
-    WithDimC queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device))
+    WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device))))))),
+    WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device)))))),
+    WithDimC headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device))))),
+    WithDimC headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device)))),
+    WithDimC embedDim (WithDimF queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device))),
+    WithDimC queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device)),
+    HasInitializeSelfAttentionC' style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP
   )
 
 instance
-  HasInitializeSelfAttentionC device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP =>
-  HasInitialize (SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
+  HasInitializeSelfAttentionC 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP =>
+  HasInitialize (SelfAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
   where
   type
-    InitializeF (SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP) =
+    InitializeF (SelfAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP) =
       WithDeviceF
         device
         ( WithDataTypeF
@@ -116,7 +141,7 @@ instance
                         embedDim
                         ( WithDimF
                             queryEmbedDim
-                            (dropoutP -> Double -> Generator device -> (SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device))
+                            (dropoutP -> Double -> Generator device -> (SelfAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device))
                         )
                     )
                 )
@@ -133,7 +158,7 @@ instance
                   \headEmbedDim ->
                     withDim @embedDim $
                       \embedDim ->
-                        withDim @queryEmbedDim @(dropoutP -> Double -> Generator device -> (SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device)) $
+                        withDim @queryEmbedDim @(dropoutP -> Double -> Generator device -> (SelfAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device)) $
                           \queryEmbedDim ->
                             go deviceType dType headDim headEmbedDim embedDim queryEmbedDim
     where
@@ -179,7 +204,7 @@ instance
                 [queryEmbedDim]
                 eps
         let dropout = initialize @(Dropout dropoutP) dropoutP
-        pure $ SelfAttention multiheadAttention layerNorm dropout
+        pure $ T5SelfAttention multiheadAttention layerNorm dropout
 
 type SelfAttentionTransposeAndReshape
   (embedDim :: Dim (Name Symbol) (Size Nat))
@@ -208,35 +233,41 @@ type SelfAttentionTransposeAndReshape
         transposed
     )
 
-type SelfAttentionTransposeAndReshape'
-  (headDim :: Dim (Name Symbol) (Size Nat))
-  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (embedDim :: Dim (Name Symbol) (Size Nat))
-  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (normedQueryShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (attentionBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (normedBatchDim :: Dim (Name Symbol) (Size Nat))
-  (normedQuerySeqDim :: Dim (Name Symbol) (Size Nat)) =
-  SelfAttentionTransposeAndReshape
-    embedDim
-    attentionBiasShape
-    normedBatchDim
-    normedQuerySeqDim
-    ( TransposeF
-        ('SelectDim ('ByIndex 1))
-        ('SelectDim ('ByIndex 2))
-        ( ReshapeF
-            ( LinearWithoutBiasF
-                ('Shape '[embedDim, queryEmbedDim])
-                normedQueryShape
-            )
-            ( 'Shape
-                '[normedBatchDim, normedQuerySeqDim, headDim, headEmbedDim]
-            )
-        )
-    )
+type family
+  SelfAttentionTransposeAndReshape'
+    (style :: TransformerStyle)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (normedQueryShape :: Shape [Dim (Name Symbol) (Size Nat)])
+    (attentionBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
+    (normedBatchDim :: Dim (Name Symbol) (Size Nat))
+    (normedQuerySeqDim :: Dim (Name Symbol) (Size Nat)) ::
+    Shape [Dim (Name Symbol) (Size Nat)]
+  where
+  SelfAttentionTransposeAndReshape' 'T5 headDim headEmbedDim embedDim queryEmbedDim normedQueryShape attentionBiasShape normedBatchDim normedQuerySeqDim =
+    SelfAttentionTransposeAndReshape
+      embedDim
+      attentionBiasShape
+      normedBatchDim
+      normedQuerySeqDim
+      ( TransposeF
+          ('SelectDim ('ByIndex 1))
+          ('SelectDim ('ByIndex 2))
+          ( ReshapeF
+              ( LinearWithoutBiasF
+                  ('Shape '[embedDim, queryEmbedDim])
+                  normedQueryShape
+              )
+              ( 'Shape
+                  '[normedBatchDim, normedQuerySeqDim, headDim, headEmbedDim]
+              )
+          )
+      )
 
 type SelfAttentionTransposeAndReshape''
+  (style :: TransformerStyle)
   (headDim :: Dim (Name Symbol) (Size Nat))
   (headEmbedDim :: Dim (Name Symbol) (Size Nat))
   (embedDim :: Dim (Name Symbol) (Size Nat))
@@ -247,6 +278,7 @@ type SelfAttentionTransposeAndReshape''
   (normedQuerySeqDim :: Dim (Name Symbol) (Size Nat)) =
   ReshapeF
     ( SelfAttentionTransposeAndReshape'
+        style
         headDim
         headEmbedDim
         embedDim
@@ -259,6 +291,7 @@ type SelfAttentionTransposeAndReshape''
     ('Shape '[normedBatchDim, normedQuerySeqDim, embedDim])
 
 type SelfAttentionTransposeAndReshape'''
+  (style :: TransformerStyle)
   (headDim :: Dim (Name Symbol) (Size Nat))
   (headEmbedDim :: Dim (Name Symbol) (Size Nat))
   (embedDim :: Dim (Name Symbol) (Size Nat))
@@ -266,6 +299,7 @@ type SelfAttentionTransposeAndReshape'''
   (normedQueryShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (attentionBiasShape :: Shape [Dim (Name Symbol) (Size Nat)]) =
   SelfAttentionTransposeAndReshape''
+    style
     headDim
     headEmbedDim
     embedDim
@@ -275,29 +309,35 @@ type SelfAttentionTransposeAndReshape'''
     (normedQueryShape ! 0)
     (normedQueryShape ! 1)
 
-type SelfAttentionOutputShape
-  (headDim :: Dim (Name Symbol) (Size Nat))
-  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (embedDim :: Dim (Name Symbol) (Size Nat))
-  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (queryShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (attentionBiasShape :: Shape [Dim (Name Symbol) (Size Nat)]) =
-  BroadcastShapesF
-    queryShape
-    ( LinearWithoutBiasF
-        ('Shape '[queryEmbedDim, embedDim])
-        ( SelfAttentionTransposeAndReshape'''
-            headDim
-            headEmbedDim
-            embedDim
-            queryEmbedDim
-            ( LayerNormWithoutBiasF
-                ('Shape '[queryEmbedDim])
-                queryShape
-            )
-            attentionBiasShape
-        )
-    )
+type family
+  SelfAttentionOutputShape
+    (style :: TransformerStyle)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (queryShape :: Shape [Dim (Name Symbol) (Size Nat)])
+    (attentionBiasShape :: Shape [Dim (Name Symbol) (Size Nat)]) ::
+    Shape [Dim (Name Symbol) (Size Nat)]
+  where
+  SelfAttentionOutputShape 'T5 headDim headEmbedDim embedDim queryEmbedDim queryShape attentionBiasShape =
+    BroadcastShapesF
+      queryShape
+      ( LinearWithoutBiasF
+          ('Shape '[queryEmbedDim, embedDim])
+          ( SelfAttentionTransposeAndReshape'''
+              'T5
+              headDim
+              headEmbedDim
+              embedDim
+              queryEmbedDim
+              ( LayerNormWithoutBiasF
+                  ('Shape '[queryEmbedDim])
+                  queryShape
+              )
+              attentionBiasShape
+          )
+      )
 
 -- | 'HasForward' instance for 'SelfAttention'.
 --
@@ -362,6 +402,7 @@ instance
       ),
     transposedAndReshaped
       ~ SelfAttentionTransposeAndReshape'
+          'T5
           headDim
           headEmbedDim
           embedDim
@@ -395,11 +436,11 @@ instance
           (queryLayout <+> 'Layout 'Dense <+> attentionBiasLayout)
           (queryDevice <+> device <+> attentionBiasDevice <+> generatorDevice)
           (queryDataType <+> dataType <+> attentionBiasDataType)
-          (SelfAttentionOutputShape headDim headEmbedDim embedDim queryEmbedDim queryShape attentionBiasShape),
+          (SelfAttentionOutputShape 'T5 headDim headEmbedDim embedDim queryEmbedDim queryShape attentionBiasShape),
     generatorOutput ~ Generator (device <+> queryDevice <+> attentionBiasDevice <+> generatorDevice)
   ) =>
   HasForward
-    (SelfAttention device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
+    (SelfAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
     ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
       Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
     )
@@ -407,7 +448,7 @@ instance
     output
     generatorOutput
   where
-  forward SelfAttention {..} (query, attentionBias) =
+  forward T5SelfAttention {..} (query, attentionBias) =
     runIxState $
       ireturn query
         >>>= IxState . forward saLayerNorm

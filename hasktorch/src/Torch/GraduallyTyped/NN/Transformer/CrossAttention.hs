@@ -37,7 +37,7 @@ module Torch.GraduallyTyped.NN.Transformer.CrossAttention where
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.State.Strict (MonadState (state), runState)
-import Data.Kind (Type)
+import Data.Kind (Constraint, Type)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType, WithDataTypeC (..))
@@ -50,6 +50,7 @@ import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF)
 import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithoutBiasF)
 import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormWithoutBiasC, LayerNorm)
 import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (HasInitializeMultiHeadAttentionC, MultiHeadAttention)
+import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
@@ -62,11 +63,11 @@ import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (MatmulF)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
-import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle(..))
 
--- | T5-style cross-attention layer without biases.
+-- | Cross-attention layer.
 data
   CrossAttention
+    (style :: TransformerStyle)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (headDim :: Dim (Name Symbol) (Size Nat))
@@ -76,7 +77,8 @@ data
     (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
     (dropoutP :: Type)
   where
-  CrossAttention ::
+  -- | T5-style cross-attention layer without biases.
+  T5CrossAttention ::
     forall device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP.
     { -- | cross-attention
       caMultiheadAttention :: MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP,
@@ -85,27 +87,53 @@ data
       -- | dropout
       caDropout :: Dropout dropoutP
     } ->
-    CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP
+    CrossAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP
 
-type HasInitializeCrossAttentionC device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP =
+type family
+  HasInitializeCrossAttentionC'
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (dropoutP :: Type) ::
+    Constraint
+  where
+  HasInitializeCrossAttentionC' 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP =
+    HasInitializeLayerNormWithoutBiasC device dataType ('Shape '[queryEmbedDim])
+
+type HasInitializeCrossAttentionC
+  (style :: TransformerStyle)
+  (device :: Device (DeviceType Nat))
+  (dataType :: DataType DType)
+  (headDim :: Dim (Name Symbol) (Size Nat))
+  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (embedDim :: Dim (Name Symbol) (Size Nat))
+  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (dropoutP :: Type) =
   ( HasInitializeMultiHeadAttentionC 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP,
     HasInitializeLayerNormWithoutBiasC device dataType ('Shape '[queryEmbedDim]),
     Scalar dropoutP,
-    WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (dropoutP -> Double -> Generator device -> (CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device)))))))),
-    WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (dropoutP -> Double -> Generator device -> (CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device))))))),
-    WithDimC headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (dropoutP -> Double -> Generator device -> (CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device)))))),
-    WithDimC headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (dropoutP -> Double -> Generator device -> (CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device))))),
-    WithDimC embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (dropoutP -> Double -> Generator device -> (CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device)))),
-    WithDimC queryEmbedDim (WithDimF keyEmbedDim (dropoutP -> Double -> Generator device -> (CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device))),
-    WithDimC keyEmbedDim (dropoutP -> Double -> Generator device -> (CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device))
+    WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (dropoutP -> Double -> Generator device -> (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device)))))))),
+    WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (dropoutP -> Double -> Generator device -> (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device))))))),
+    WithDimC headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (dropoutP -> Double -> Generator device -> (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device)))))),
+    WithDimC headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (dropoutP -> Double -> Generator device -> (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device))))),
+    WithDimC embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (dropoutP -> Double -> Generator device -> (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device)))),
+    WithDimC queryEmbedDim (WithDimF keyEmbedDim (dropoutP -> Double -> Generator device -> (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device))),
+    WithDimC keyEmbedDim (dropoutP -> Double -> Generator device -> (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device)),
+    HasInitializeCrossAttentionC' 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP
   )
 
 instance
-  HasInitializeCrossAttentionC device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP =>
-  HasInitialize (CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
+  HasInitializeCrossAttentionC 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP =>
+  HasInitialize (CrossAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
   where
   type
-    InitializeF (CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP) =
+    InitializeF (CrossAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP) =
       WithDeviceF
         device
         ( WithDataTypeF
@@ -120,7 +148,7 @@ instance
                             queryEmbedDim
                             ( WithDimF
                                 keyEmbedDim
-                                (dropoutP -> Double -> Generator device -> (CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device))
+                                (dropoutP -> Double -> Generator device -> (CrossAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device))
                             )
                         )
                     )
@@ -140,7 +168,7 @@ instance
                       \embedDim ->
                         withDim @queryEmbedDim $
                           \queryEmbedDim ->
-                            withDim @keyEmbedDim @(dropoutP -> Double -> Generator device -> (CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device)) $
+                            withDim @keyEmbedDim @(dropoutP -> Double -> Generator device -> (CrossAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device)) $
                               \keyEmbedDim ->
                                 go deviceType dType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim
     where
@@ -186,7 +214,7 @@ instance
                 [queryEmbedDim]
                 eps
         let dropout = initialize @(Dropout dropoutP) dropoutP
-        pure $ CrossAttention multiheadAttention layerNorm dropout
+        pure $ T5CrossAttention multiheadAttention layerNorm dropout
 
 type CrossAttentionTransposeAndReshape
   (embedDim :: Dim (Name Symbol) (Size Nat))
@@ -216,51 +244,57 @@ type CrossAttentionTransposeAndReshape
         transposed'
     )
 
-type CrossAttentionTransposeAndReshape'
-  (headDim :: Dim (Name Symbol) (Size Nat))
-  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (embedDim :: Dim (Name Symbol) (Size Nat))
-  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (normedQueryShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (keyShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (attentionBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (normedBatchDim :: Dim (Name Symbol) (Size Nat))
-  (normedQuerySeqDim :: Dim (Name Symbol) (Size Nat))
-  (keySeqDim :: Dim (Name Symbol) (Size Nat)) =
-  CrossAttentionTransposeAndReshape
-    embedDim
-    attentionBiasShape
-    normedBatchDim
-    normedQuerySeqDim
-    ( TransposeF
-        ('SelectDim ('ByIndex 1))
-        ('SelectDim ('ByIndex 2))
-        ( ReshapeF
-            ( LinearWithoutBiasF
-                ('Shape '[embedDim, queryEmbedDim])
-                normedQueryShape
-            )
-            ( 'Shape
-                '[normedBatchDim, normedQuerySeqDim, headDim, headEmbedDim]
-            )
-        )
-    )
-    ( TransposeF
-        ('SelectDim ('ByIndex 1))
-        ('SelectDim ('ByIndex 2))
-        ( ReshapeF
-            ( LinearWithoutBiasF
-                ('Shape '[embedDim, keyEmbedDim])
-                keyShape
-            )
-            ( 'Shape
-                '[normedBatchDim, keySeqDim, headDim, headEmbedDim]
-            )
-        )
-    )
+type family
+  CrossAttentionTransposeAndReshape'
+    (style :: TransformerStyle)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (normedQueryShape :: Shape [Dim (Name Symbol) (Size Nat)])
+    (keyShape :: Shape [Dim (Name Symbol) (Size Nat)])
+    (attentionBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
+    (normedBatchDim :: Dim (Name Symbol) (Size Nat))
+    (normedQuerySeqDim :: Dim (Name Symbol) (Size Nat))
+    (keySeqDim :: Dim (Name Symbol) (Size Nat)) ::
+    Shape [Dim (Name Symbol) (Size Nat)]
+  where
+  CrossAttentionTransposeAndReshape' 'T5 headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim normedQueryShape keyShape attentionBiasShape normedBatchDim normedQuerySeqDim keySeqDim =
+    CrossAttentionTransposeAndReshape
+      embedDim
+      attentionBiasShape
+      normedBatchDim
+      normedQuerySeqDim
+      ( TransposeF
+          ('SelectDim ('ByIndex 1))
+          ('SelectDim ('ByIndex 2))
+          ( ReshapeF
+              ( LinearWithoutBiasF
+                  ('Shape '[embedDim, queryEmbedDim])
+                  normedQueryShape
+              )
+              ( 'Shape
+                  '[normedBatchDim, normedQuerySeqDim, headDim, headEmbedDim]
+              )
+          )
+      )
+      ( TransposeF
+          ('SelectDim ('ByIndex 1))
+          ('SelectDim ('ByIndex 2))
+          ( ReshapeF
+              ( LinearWithoutBiasF
+                  ('Shape '[embedDim, keyEmbedDim])
+                  keyShape
+              )
+              ( 'Shape
+                  '[normedBatchDim, keySeqDim, headDim, headEmbedDim]
+              )
+          )
+      )
 
 type CrossAttentionTransposeAndReshape''
+  (style :: TransformerStyle)
   (headDim :: Dim (Name Symbol) (Size Nat))
   (headEmbedDim :: Dim (Name Symbol) (Size Nat))
   (embedDim :: Dim (Name Symbol) (Size Nat))
@@ -274,6 +308,7 @@ type CrossAttentionTransposeAndReshape''
   (keySeqDim :: Dim (Name Symbol) (Size Nat)) =
   ReshapeF
     ( CrossAttentionTransposeAndReshape'
+        style
         headDim
         headEmbedDim
         embedDim
@@ -289,6 +324,7 @@ type CrossAttentionTransposeAndReshape''
     ('Shape '[normedBatchDim, normedQuerySeqDim, embedDim])
 
 type CrossAttentionTransposeAndReshape'''
+  (style :: TransformerStyle)
   (headDim :: Dim (Name Symbol) (Size Nat))
   (headEmbedDim :: Dim (Name Symbol) (Size Nat))
   (embedDim :: Dim (Name Symbol) (Size Nat))
@@ -298,6 +334,7 @@ type CrossAttentionTransposeAndReshape'''
   (keyShape :: Shape [Dim (Name Symbol) (Size Nat)])
   (attentionBiasShape :: Shape [Dim (Name Symbol) (Size Nat)]) =
   CrossAttentionTransposeAndReshape''
+    style
     headDim
     headEmbedDim
     embedDim
@@ -310,33 +347,39 @@ type CrossAttentionTransposeAndReshape'''
     (normedQueryShape ! 1)
     (keyShape ! 1)
 
-type CrossAttentionOutputShape
-  (headDim :: Dim (Name Symbol) (Size Nat))
-  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (embedDim :: Dim (Name Symbol) (Size Nat))
-  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (queryShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (keyShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (attentionBiasShape :: Shape [Dim (Name Symbol) (Size Nat)]) =
-  BroadcastShapesF
-    queryShape
-    ( LinearWithoutBiasF
-        ('Shape '[queryEmbedDim, embedDim])
-        ( CrossAttentionTransposeAndReshape'''
-            headDim
-            headEmbedDim
-            embedDim
-            queryEmbedDim
-            keyEmbedDim
-            ( LayerNormWithoutBiasF
-                ('Shape '[queryEmbedDim])
-                queryShape
-            )
-            keyShape
-            attentionBiasShape
-        )
-    )
+type family
+  CrossAttentionOutputShape
+    (style :: TransformerStyle)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (queryShape :: Shape [Dim (Name Symbol) (Size Nat)])
+    (keyShape :: Shape [Dim (Name Symbol) (Size Nat)])
+    (attentionBiasShape :: Shape [Dim (Name Symbol) (Size Nat)]) ::
+    Shape [Dim (Name Symbol) (Size Nat)]
+  where
+  CrossAttentionOutputShape 'T5 headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim queryShape keyShape attentionBiasShape =
+    BroadcastShapesF
+      queryShape
+      ( LinearWithoutBiasF
+          ('Shape '[queryEmbedDim, embedDim])
+          ( CrossAttentionTransposeAndReshape'''
+              'T5
+              headDim
+              headEmbedDim
+              embedDim
+              queryEmbedDim
+              keyEmbedDim
+              ( LayerNormWithoutBiasF
+                  ('Shape '[queryEmbedDim])
+                  queryShape
+              )
+              keyShape
+              attentionBiasShape
+          )
+      )
 
 -- | 'HasForward' instance for 'CrossAttention'.
 --
@@ -423,6 +466,7 @@ instance
       ),
     transposedAndReshaped
       ~ CrossAttentionTransposeAndReshape'
+          'T5
           headDim
           headEmbedDim
           embedDim
@@ -459,11 +503,11 @@ instance
           (queryLayout <+> 'Layout 'Dense <+> keyLayout <+> attentionBiasLayout)
           (queryDevice <+> device <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)
           (queryDataType <+> dataType <+> keyDataType <+> attentionBiasDataType)
-          (CrossAttentionOutputShape headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim queryShape keyShape attentionBiasShape),
+          (CrossAttentionOutputShape 'T5 headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim queryShape keyShape attentionBiasShape),
     generatorOutput ~ Generator (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)
   ) =>
   HasForward
-    (CrossAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
+    (CrossAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
     ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
       Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
       Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
@@ -472,7 +516,7 @@ instance
     output
     generatorOutput
   where
-  forward CrossAttention {..} (query, key, attentionBias) =
+  forward T5CrossAttention {..} (query, key, attentionBias) =
     runIxState $
       ireturn query
         >>>= IxState . forward caLayerNorm

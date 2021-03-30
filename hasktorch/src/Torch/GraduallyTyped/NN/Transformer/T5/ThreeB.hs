@@ -17,6 +17,7 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (HasLMHead (..), SequenceToSequenceTransformer)
 import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5Config, T5DataType, T5DropoutP, T5GenerationInput, T5Input, T5Output, T5RelPosEncBucketDim, lookupSequenceToSequenceTransformerWithLMHead, lookupSequenceToSequenceTransformerWithoutLMHead, t5ConfigFromPretrained)
+import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle (T5))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 
 -- | T5-3B number of layers.
@@ -25,27 +26,27 @@ type T5ThreeBNumLayers = 24
 
 -- | T5-3B number of attention heads.
 -- 'n_heads = 32'
-type T5ThreeBHeadDim = 'Dim ( 'Name "*") ( 'Size 32)
+type T5ThreeBHeadDim = 'Dim ('Name "*") ('Size 32)
 
 -- | T5-3B head embedding dimension.
 -- 'd_kv = 128'
-type T5ThreeBHeadEmbedDim = 'Dim ( 'Name "*") ( 'Size 128)
+type T5ThreeBHeadEmbedDim = 'Dim ('Name "*") ('Size 128)
 
 -- | T5-3B embedding dimension.
 -- 'inner_dim = n_heads * d_kv = 4096'
-type T5ThreeBEmbedDim = 'Dim ( 'Name "*") ( 'Size 4096)
+type T5ThreeBEmbedDim = 'Dim ('Name "*") ('Size 4096)
 
 -- | T5-3B model dimension.
 -- 'd_model = 1024'
-type T5ThreeBInputEmbedDim = 'Dim ( 'Name "*") ( 'Size 1024)
+type T5ThreeBInputEmbedDim = 'Dim ('Name "*") ('Size 1024)
 
 -- | T5-3B feed-forward network dimension.
 -- 'd_ff = 16384'
-type T5ThreeBFFNDim = 'Dim ( 'Name "*") ( 'Size 16384)
+type T5ThreeBFFNDim = 'Dim ('Name "*") ('Size 16384)
 
 -- | T5-3B vocabulary dimension.
 -- 'vocab_size = 32128'
-type T5ThreeBVocabDim = 'Dim ( 'Name "*") ( 'Size 32128)
+type T5ThreeBVocabDim = 'Dim ('Name "*") ('Size 32128)
 
 -- | T5-3B configuration data type.
 -- Modelled after https://huggingface.co/t5-3b/blob/main/config.json.
@@ -59,7 +60,7 @@ t5ThreeBConfigFromPretrained ::
   -- | whether or not debugging output will be printed to the terminal
   Bool ->
   -- | configuration value
-  IO (T5ThreeBConfig ( 'Device 'CPU))
+  IO (T5ThreeBConfig ('Device 'CPU))
 t5ThreeBConfigFromPretrained = t5ConfigFromPretrained
 
 -- | T5-3B data type.
@@ -76,6 +77,7 @@ data
           hasLMHead
           T5ThreeBNumLayers
           T5ThreeBNumLayers
+          'T5
           device
           T5DataType
           T5ThreeBHeadDim
@@ -89,19 +91,19 @@ data
     } ->
     T5ThreeB hasLMHead device
 
-instance HasInitialize (T5ThreeB 'WithoutLMHead ( 'Device 'CPU)) where
+instance HasInitialize (T5ThreeB 'WithoutLMHead ('Device 'CPU)) where
   type
-    InitializeF (T5ThreeB 'WithoutLMHead ( 'Device 'CPU)) =
-      FilePath -> IO (T5ThreeB 'WithoutLMHead ( 'Device 'CPU))
+    InitializeF (T5ThreeB 'WithoutLMHead ('Device 'CPU)) =
+      FilePath -> IO (T5ThreeB 'WithoutLMHead ('Device 'CPU))
   initialize filePath = do
     config <- t5ThreeBConfigFromPretrained filePath False
     flip runReaderT config $
       T5ThreeB <$> lookupSequenceToSequenceTransformerWithoutLMHead
 
-instance HasInitialize (T5ThreeB 'WithLMHead ( 'Device 'CPU)) where
+instance HasInitialize (T5ThreeB 'WithLMHead ('Device 'CPU)) where
   type
-    InitializeF (T5ThreeB 'WithLMHead ( 'Device 'CPU)) =
-      FilePath -> IO (T5ThreeB 'WithLMHead ( 'Device 'CPU))
+    InitializeF (T5ThreeB 'WithLMHead ('Device 'CPU)) =
+      FilePath -> IO (T5ThreeB 'WithLMHead ('Device 'CPU))
   initialize filePath = do
     config <- t5ThreeBConfigFromPretrained filePath False
     flip runReaderT config $
@@ -113,6 +115,7 @@ instance
         hasLMHead
         T5ThreeBNumLayers
         T5ThreeBNumLayers
+        'T5
         device
         T5DataType
         T5ThreeBHeadDim
@@ -143,6 +146,7 @@ instance
           hasLMHead
           T5ThreeBNumLayers
           T5ThreeBNumLayers
+          'T5
           device
           T5DataType
           T5ThreeBHeadDim
@@ -174,6 +178,7 @@ instance
           hasLMHead
           T5ThreeBNumLayers
           T5ThreeBNumLayers
+          'T5
           device
           T5DataType
           T5ThreeBHeadDim

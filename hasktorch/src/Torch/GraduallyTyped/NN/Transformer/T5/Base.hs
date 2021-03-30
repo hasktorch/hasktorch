@@ -17,6 +17,7 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (HasLMHead (..), SequenceToSequenceTransformer)
 import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5Config, T5DataType, T5DropoutP, T5GenerationInput, T5Input, T5Output, T5RelPosEncBucketDim, lookupSequenceToSequenceTransformerWithLMHead, lookupSequenceToSequenceTransformerWithoutLMHead, t5ConfigFromPretrained)
+import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle (T5))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 
 -- | T5-Base number of layers.
@@ -25,27 +26,27 @@ type T5BaseNumLayers = 12
 
 -- | T5-Base number of attention heads.
 -- 'n_heads = 12'
-type T5BaseHeadDim = 'Dim ( 'Name "*") ( 'Size 12)
+type T5BaseHeadDim = 'Dim ('Name "*") ('Size 12)
 
 -- | T5-Base head embedding dimension.
 -- 'd_kv = 64'
-type T5BaseHeadEmbedDim = 'Dim ( 'Name "*") ( 'Size 64)
+type T5BaseHeadEmbedDim = 'Dim ('Name "*") ('Size 64)
 
 -- | T5-Base embedding dimension.
 -- 'inner_dim = n_heads * d_kv = 768'
-type T5BaseEmbedDim = 'Dim ( 'Name "*") ( 'Size 768)
+type T5BaseEmbedDim = 'Dim ('Name "*") ('Size 768)
 
 -- | T5-Base model dimension.
 -- 'd_model = 768'
-type T5BaseInputEmbedDim = 'Dim ( 'Name "*") ( 'Size 768)
+type T5BaseInputEmbedDim = 'Dim ('Name "*") ('Size 768)
 
 -- | T5-Base feed-forward network dimension.
 -- 'd_ff = 3072'
-type T5BaseFFNDim = 'Dim ( 'Name "*") ( 'Size 3072)
+type T5BaseFFNDim = 'Dim ('Name "*") ('Size 3072)
 
 -- | T5-Base vocabulary dimension.
 -- 'vocab_size = 32128'
-type T5BaseVocabDim = 'Dim ( 'Name "*") ( 'Size 32128)
+type T5BaseVocabDim = 'Dim ('Name "*") ('Size 32128)
 
 -- | T5-Base configuration data type.
 -- Modelled after https://huggingface.co/t5-base/blob/main/config.json.
@@ -59,7 +60,7 @@ t5BaseConfigFromPretrained ::
   -- | whether or not debugging output will be printed to the terminal
   Bool ->
   -- | configuration value
-  IO (T5BaseConfig ( 'Device 'CPU))
+  IO (T5BaseConfig ('Device 'CPU))
 t5BaseConfigFromPretrained = t5ConfigFromPretrained
 
 -- | T5-Base data type.
@@ -76,6 +77,7 @@ data
           hasLMHead
           T5BaseNumLayers
           T5BaseNumLayers
+          'T5
           device
           T5DataType
           T5BaseHeadDim
@@ -89,19 +91,19 @@ data
     } ->
     T5Base hasLMHead device
 
-instance HasInitialize (T5Base 'WithoutLMHead ( 'Device 'CPU)) where
+instance HasInitialize (T5Base 'WithoutLMHead ('Device 'CPU)) where
   type
-    InitializeF (T5Base 'WithoutLMHead ( 'Device 'CPU)) =
-      FilePath -> IO (T5Base 'WithoutLMHead ( 'Device 'CPU))
+    InitializeF (T5Base 'WithoutLMHead ('Device 'CPU)) =
+      FilePath -> IO (T5Base 'WithoutLMHead ('Device 'CPU))
   initialize filePath = do
     config <- t5BaseConfigFromPretrained filePath False
     flip runReaderT config $
       T5Base <$> lookupSequenceToSequenceTransformerWithoutLMHead
 
-instance HasInitialize (T5Base 'WithLMHead ( 'Device 'CPU)) where
+instance HasInitialize (T5Base 'WithLMHead ('Device 'CPU)) where
   type
-    InitializeF (T5Base 'WithLMHead ( 'Device 'CPU)) =
-      FilePath -> IO (T5Base 'WithLMHead ( 'Device 'CPU))
+    InitializeF (T5Base 'WithLMHead ('Device 'CPU)) =
+      FilePath -> IO (T5Base 'WithLMHead ('Device 'CPU))
   initialize filePath = do
     config <- t5BaseConfigFromPretrained filePath False
     flip runReaderT config $
@@ -113,6 +115,7 @@ instance
         hasLMHead
         T5BaseNumLayers
         T5BaseNumLayers
+        'T5
         device
         T5DataType
         T5BaseHeadDim
@@ -143,6 +146,7 @@ instance
           hasLMHead
           T5BaseNumLayers
           T5BaseNumLayers
+          'T5
           device
           T5DataType
           T5BaseHeadDim
@@ -174,6 +178,7 @@ instance
           hasLMHead
           T5BaseNumLayers
           T5BaseNumLayers
+          'T5
           device
           T5DataType
           T5BaseHeadDim

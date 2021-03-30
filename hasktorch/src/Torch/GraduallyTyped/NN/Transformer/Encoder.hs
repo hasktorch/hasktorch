@@ -18,7 +18,7 @@ module Torch.GraduallyTyped.NN.Transformer.Encoder where
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.State.Strict (MonadState (state), runState)
-import Data.Kind (Type)
+import Data.Kind (Constraint, Type)
 import GHC.TypeLits (Nat, Symbol, type (<=?))
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), WithDataTypeC (..))
@@ -30,6 +30,7 @@ import Torch.GraduallyTyped.NN.Functional.Sparse (EmbeddingF)
 import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormWithoutBiasC, LayerNorm)
 import Torch.GraduallyTyped.NN.Sparse (Embedding, HasInitializeEmbeddingC)
 import Torch.GraduallyTyped.NN.Transformer.Stack (HasInitializeTransformerStack, HasInitializeTransformerStackC, TransformerStack)
+import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.Random (Generator)
@@ -43,10 +44,11 @@ import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
--- | T5-style transformer encoder without biases.
+-- | Transformer encoder.
 data
   TransformerEncoder
     (numLayers :: Nat)
+    (style :: TransformerStyle)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (headDim :: Dim (Name Symbol) (Size Nat))
@@ -57,10 +59,11 @@ data
     (relPosEncBucketDim :: Dim (Name Symbol) (Size Nat))
     (dropoutP :: Type)
   where
-  TransformerEncoder ::
+  -- | T5-style transformer encoder with relative positional encoder and without biases.
+  T5Encoder ::
     forall numLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP.
     { -- | encoder layer stack
-      teStack :: TransformerStack numLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP,
+      teStack :: TransformerStack numLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP,
       -- | encoder layer norm
       teLayerNorm :: LayerNorm 'WithoutBias device dataType ('Shape '[inputEmbedDim]),
       -- | encoder dropout
@@ -68,13 +71,45 @@ data
       -- | relative positional encoding
       teRelPosEnc :: Embedding ('Layout 'Dense) device dataType relPosEncBucketDim headDim 'Nothing
     } ->
-    TransformerEncoder numLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP
+    TransformerEncoder numLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP
 
-type HasInitializeTransformerEncoderC numLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP =
-  ( HasInitializeTransformerStackC numLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP,
+type family
+  HasInitializeTransformerEncoderC'
+    (numLayers :: Nat)
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (relPosEncBucketDim :: Dim (Name Symbol) (Size Nat))
+    (dropoutP :: Type) ::
+    Constraint
+  where
+  HasInitializeTransformerEncoderC' numLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP =
+    ( HasInitializeLayerNormWithoutBiasC device dataType ('Shape '[inputEmbedDim]),
+      HasInitializeEmbeddingC ('Layout 'Dense) device dataType relPosEncBucketDim headDim 'Nothing
+    )
+
+type HasInitializeTransformerEncoderC
+  (numLayers :: Nat)
+  (style :: TransformerStyle)
+  (device :: Device (DeviceType Nat))
+  (dataType :: DataType DType)
+  (headDim :: Dim (Name Symbol) (Size Nat))
+  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (embedDim :: Dim (Name Symbol) (Size Nat))
+  (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (ffnDim :: Dim (Name Symbol) (Size Nat))
+  (relPosEncBucketDim :: Dim (Name Symbol) (Size Nat))
+  (dropoutP :: Type) =
+  ( HasInitializeTransformerStackC numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP,
     HasInitializeTransformerStack
       (1 <=? numLayers)
       numLayers
+      style
       device
       dataType
       headDim
@@ -83,25 +118,24 @@ type HasInitializeTransformerEncoderC numLayers device dataType headDim headEmbe
       inputEmbedDim
       ffnDim
       dropoutP,
-    HasInitializeLayerNormWithoutBiasC device dataType ('Shape '[inputEmbedDim]),
-    HasInitializeEmbeddingC ('Layout 'Dense) device dataType relPosEncBucketDim headDim 'Nothing,
     Scalar dropoutP,
-    WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device))))))))),
-    WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device)))))))),
-    WithDimC headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device))))))),
-    WithDimC headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device)))))),
-    WithDimC embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device))))),
-    WithDimC inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device)))),
-    WithDimC ffnDim (WithDimF relPosEncBucketDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device))),
-    WithDimC relPosEncBucketDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device))
+    WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device))))))))),
+    WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device)))))))),
+    WithDimC headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device))))))),
+    WithDimC headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device)))))),
+    WithDimC embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device))))),
+    WithDimC inputEmbedDim (WithDimF ffnDim (WithDimF relPosEncBucketDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device)))),
+    WithDimC ffnDim (WithDimF relPosEncBucketDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device))),
+    WithDimC relPosEncBucketDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device)),
+    HasInitializeTransformerEncoderC' numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP
   )
 
 instance
-  HasInitializeTransformerEncoderC numLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP =>
-  HasInitialize (TransformerEncoder numLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+  HasInitializeTransformerEncoderC numLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP =>
+  HasInitialize (TransformerEncoder numLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
   where
   type
-    InitializeF (TransformerEncoder numLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP) =
+    InitializeF (TransformerEncoder numLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP) =
       WithDeviceF
         device
         ( WithDataTypeF
@@ -118,7 +152,7 @@ instance
                                 ffnDim
                                 ( WithDimF
                                     relPosEncBucketDim
-                                    (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device))
+                                    (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device))
                                 )
                             )
                         )
@@ -141,7 +175,7 @@ instance
                           \inputEmbedDim ->
                             withDim @ffnDim $
                               \ffnDim ->
-                                withDim @relPosEncBucketDim @(dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device)) $
+                                withDim @relPosEncBucketDim @(dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP, Generator device)) $
                                   \relPosEncBucketDim -> go deviceType dType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim
     where
       go deviceType dType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP eps = runState $ do
@@ -154,7 +188,7 @@ instance
                           ( withoutDim @headDim
                               ( withoutDataType @dataType
                                   ( withoutDevice @device
-                                      ( initialize @(TransformerStack numLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP)
+                                      ( initialize @(TransformerStack numLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP)
                                       )
                                       deviceType
                                   )
@@ -199,7 +233,7 @@ instance
                   relPosEncBucketDim
               )
               headDim
-        pure $ TransformerEncoder stack layerNorm dropout relPosEnc
+        pure $ T5Encoder stack layerNorm dropout relPosEnc
 
 -- | 'HasForward' instance for 'TransformerEncoder'.
 --
@@ -236,7 +270,7 @@ instance
       dropoutOutput
       dropoutGeneratorOutput,
     HasForward
-      (TransformerStack numLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP)
+      (TransformerStack numLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP)
       ( dropoutOutput,
         Tensor
           'WithGradient
@@ -279,7 +313,7 @@ instance
       generatorOutput
   ) =>
   HasForward
-    (TransformerEncoder numLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
+    (TransformerEncoder numLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP)
     ( input,
       Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
       Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
@@ -288,7 +322,7 @@ instance
     output
     generatorOutput
   where
-  forward TransformerEncoder {..} (input, relPos, attentionMask) =
+  forward T5Encoder {..} (input, relPos, attentionMask) =
     let relPosBias =
           ireturn relPos
             >>>= IxState . forward teRelPosEnc

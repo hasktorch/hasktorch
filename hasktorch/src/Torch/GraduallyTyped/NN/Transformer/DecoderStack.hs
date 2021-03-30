@@ -29,6 +29,7 @@ import Torch.GraduallyTyped.DType (DataType, WithDataTypeC (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Transformer.DecoderBlock (HasInitializeTransformerDecoderBlockC, TransformerDecoderBlock)
+import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle)
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.Shape (Dim (..), Name (..), Size (..), WithDimC (..))
 
@@ -36,6 +37,7 @@ import Torch.GraduallyTyped.Shape (Dim (..), Name (..), Size (..), WithDimC (..)
 data
   TransformerDecoderStack
     (numLayers :: Nat)
+    (style :: TransformerStyle)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (headDim :: Dim (Name Symbol) (Size Nat))
@@ -47,21 +49,22 @@ data
     (dropoutP :: Type)
   where
   TransformerDecoderStackNil ::
-    forall device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP.
-    TransformerDecoderStack 0 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP
+    forall style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP.
+    TransformerDecoderStack 0 style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP
   TransformerDecoderStackCons ::
-    forall numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP.
+    forall numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP.
     { -- | decoder layer block
-      tdsBlock :: TransformerDecoderBlock device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP,
+      tdsBlock :: TransformerDecoderBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP,
       -- | remaining decoder stack
-      tdsStack :: TransformerDecoderStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP
+      tdsStack :: TransformerDecoderStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP
     } ->
-    TransformerDecoderStack (numLayers + 1) device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP
+    TransformerDecoderStack (numLayers + 1) style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP
 
 class
   HasInitializeTransformerDecoderStack
     (isCons :: Bool)
     (numLayers :: Nat)
+    (style :: TransformerStyle)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (headDim :: Dim (Name Symbol) (Size Nat))
@@ -89,7 +92,7 @@ class
                               keyEmbedDim
                               ( WithDimF
                                   ffnDim
-                                  (dropoutP -> Double -> Generator device -> (TransformerDecoderStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device))
+                                  (dropoutP -> Double -> Generator device -> (TransformerDecoderStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device))
                               )
                           )
                       )
@@ -98,20 +101,20 @@ class
           )
       )
 
-type HasInitializeTransformerDecoderStackC numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP =
-  ( WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerDecoderStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device))))))))),
-    WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerDecoderStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device)))))))),
-    WithDimC headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerDecoderStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device))))))),
-    WithDimC headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerDecoderStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device)))))),
-    WithDimC embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerDecoderStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device))))),
-    WithDimC queryEmbedDim (WithDimF keyEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerDecoderStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device)))),
-    WithDimC keyEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerDecoderStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device))),
-    WithDimC ffnDim (dropoutP -> Double -> Generator device -> (TransformerDecoderStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device))
+type HasInitializeTransformerDecoderStackC numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP =
+  ( WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerDecoderStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device))))))))),
+    WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerDecoderStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device)))))))),
+    WithDimC headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerDecoderStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device))))))),
+    WithDimC headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerDecoderStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device)))))),
+    WithDimC embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerDecoderStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device))))),
+    WithDimC queryEmbedDim (WithDimF keyEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerDecoderStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device)))),
+    WithDimC keyEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerDecoderStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device))),
+    WithDimC ffnDim (dropoutP -> Double -> Generator device -> (TransformerDecoderStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device))
   )
 
 instance
-  HasInitializeTransformerDecoderStackC 0 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP =>
-  HasInitializeTransformerDecoderStack 'False 0 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP
+  HasInitializeTransformerDecoderStackC 0 style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP =>
+  HasInitializeTransformerDecoderStack 'False 0 style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP
   where
   initializeTransformerDecoderStack =
     withDevice @device $
@@ -128,16 +131,16 @@ instance
                           \_queryEmbedDim ->
                             withDim @keyEmbedDim $
                               \_keyEmbedDim ->
-                                withDim @ffnDim @(dropoutP -> Double -> Generator device -> (TransformerDecoderStack 0 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device)) $
+                                withDim @ffnDim @(dropoutP -> Double -> Generator device -> (TransformerDecoderStack 0 style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device)) $
                                   \_ffnDim _dropoutP _eps g -> (TransformerDecoderStackNil, g)
 
 instance
-  ( HasInitializeTransformerDecoderBlockC device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP,
-    HasInitializeTransformerDecoderStackC numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP,
-    HasInitializeTransformerDecoderStackC (numLayers - 1) device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP,
-    HasInitialize (TransformerDecoderStack (numLayers - 1) device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
+  ( HasInitializeTransformerDecoderBlockC style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP,
+    HasInitializeTransformerDecoderStackC numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP,
+    HasInitializeTransformerDecoderStackC (numLayers - 1) style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP,
+    HasInitialize (TransformerDecoderStack (numLayers - 1) style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
   ) =>
-  HasInitializeTransformerDecoderStack 'True numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP
+  HasInitializeTransformerDecoderStack 'True numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP
   where
   initializeTransformerDecoderStack =
     withDevice @device $
@@ -154,13 +157,13 @@ instance
                           \queryEmbedDim ->
                             withDim @keyEmbedDim $
                               \keyEmbedDim ->
-                                withDim @ffnDim @(dropoutP -> Double -> Generator device -> (TransformerDecoderStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device)) $
+                                withDim @ffnDim @(dropoutP -> Double -> Generator device -> (TransformerDecoderStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device)) $
                                   \ffnDim -> go deviceType dType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim
     where
       go deviceType dType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP eps = runState $ do
         decoderStack <-
           state $
-            withoutDim @ffnDim @(dropoutP -> Double -> Generator device -> (TransformerDecoderStack (numLayers - 1) device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device))
+            withoutDim @ffnDim @(dropoutP -> Double -> Generator device -> (TransformerDecoderStack (numLayers - 1) style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device))
               ( withoutDim @keyEmbedDim
                   ( withoutDim @queryEmbedDim
                       ( withoutDim @embedDim
@@ -168,7 +171,7 @@ instance
                               ( withoutDim @headDim
                                   ( withoutDataType @dataType
                                       ( withoutDevice @device
-                                          ( initialize @(TransformerDecoderStack (numLayers - 1) device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
+                                          ( initialize @(TransformerDecoderStack (numLayers - 1) style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
                                           )
                                           deviceType
                                       )
@@ -197,7 +200,7 @@ instance
                               ( withoutDim @headDim
                                   ( withoutDataType @dataType
                                       ( withoutDevice @device
-                                          ( initialize @(TransformerDecoderBlock device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
+                                          ( initialize @(TransformerDecoderBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
                                           )
                                           deviceType
                                       )
@@ -219,11 +222,11 @@ instance
         pure $ TransformerDecoderStackCons decoderBlock decoderStack
 
 instance
-  HasInitializeTransformerDecoderStack (1 <=? numLayers) numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP =>
-  HasInitialize (TransformerDecoderStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
+  HasInitializeTransformerDecoderStack (1 <=? numLayers) numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP =>
+  HasInitialize (TransformerDecoderStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
   where
   type
-    InitializeF (TransformerDecoderStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP) =
+    InitializeF (TransformerDecoderStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP) =
       WithDeviceF
         device
         ( WithDataTypeF
@@ -240,7 +243,7 @@ instance
                                 keyEmbedDim
                                 ( WithDimF
                                     ffnDim
-                                    (dropoutP -> Double -> Generator device -> (TransformerDecoderStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device))
+                                    (dropoutP -> Double -> Generator device -> (TransformerDecoderStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device))
                                 )
                             )
                         )
@@ -248,13 +251,14 @@ instance
                 )
             )
         )
-  initialize = initializeTransformerDecoderStack @(1 <=? numLayers) @numLayers @device @dataType @headDim @headEmbedDim @embedDim @queryEmbedDim @keyEmbedDim @ffnDim @dropoutP
+  initialize = initializeTransformerDecoderStack @(1 <=? numLayers) @numLayers @style @device @dataType @headDim @headEmbedDim @embedDim @queryEmbedDim @keyEmbedDim @ffnDim @dropoutP
 
 class
   HasForwardTransformerDecoderStack
     (isCons :: Bool)
     (isNotFirstLayer :: Bool)
     (numLayers :: Nat)
+    (style :: TransformerStyle)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (headDim :: Dim (Name Symbol) (Size Nat))
@@ -271,17 +275,17 @@ class
     (generator :: Type)
     (output :: Type)
     (generatorOutput :: Type)
-    | isCons isNotFirstLayer numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP query key decoderAttentionBias crossAttentionBias generator -> output,
-      isCons isNotFirstLayer numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP query key decoderAttentionBias crossAttentionBias generator -> generatorOutput
+    | isCons isNotFirstLayer numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP query key decoderAttentionBias crossAttentionBias generator -> output,
+      isCons isNotFirstLayer numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP query key decoderAttentionBias crossAttentionBias generator -> generatorOutput
   where
   forwardTransformerDecoderStack ::
     Maybe
-      ( TransformerDecoderBlock device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP ->
+      ( TransformerDecoderBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP ->
         (query, key, decoderAttentionBias, crossAttentionBias) ->
         generator ->
         (query, generator)
       ) ->
-    TransformerDecoderStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP ->
+    TransformerDecoderStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP ->
     (query, key, decoderAttentionBias, crossAttentionBias) ->
     generator ->
     (output, generatorOutput)
@@ -291,6 +295,7 @@ instance
     'False
     isNotFirstLayer
     0
+    style
     device
     dataType
     headDim
@@ -312,13 +317,13 @@ instance
 
 instance
   ( HasForward
-      (TransformerDecoderBlock device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
+      (TransformerDecoderBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
       (query, key, decoderAttentionBias, crossAttentionBias)
       generator
       blockOutput
       blockGeneratorOutput,
     HasForward
-      (TransformerDecoderBlock device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
+      (TransformerDecoderBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
       (blockOutput, key, decoderAttentionBias, crossAttentionBias)
       blockGeneratorOutput
       blockOutput
@@ -327,6 +332,7 @@ instance
       (1 <=? numLayers - 1)
       'True
       (numLayers - 1)
+      style
       device
       dataType
       headDim
@@ -348,6 +354,7 @@ instance
     'True
     'False
     numLayers
+    style
     device
     dataType
     headDim
@@ -385,6 +392,7 @@ instance
     (1 <=? numLayers - 1)
     'True
     (numLayers - 1)
+    style
     device
     dataType
     headDim
@@ -405,6 +413,7 @@ instance
     'True
     'True
     numLayers
+    style
     device
     dataType
     headDim
@@ -463,6 +472,7 @@ instance
     (1 <=? numLayers)
     'False
     numLayers
+    style
     device
     dataType
     headDim
@@ -480,7 +490,7 @@ instance
     output
     generatorOutput =>
   HasForward
-    (TransformerDecoderStack numLayers device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
+    (TransformerDecoderStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
     (query, key, decoderAttentionBias, crossAttentionBias)
     generator
     output

@@ -17,6 +17,7 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (HasLMHead (..), SequenceToSequenceTransformer, SequenceToSequenceTransformerInput)
 import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5Config, T5DataType, T5DropoutP, T5GenerationInput, T5Input, T5Output, T5RelPosEncBucketDim, lookupSequenceToSequenceTransformerWithLMHead, lookupSequenceToSequenceTransformerWithoutLMHead, t5ConfigFromPretrained)
+import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle (T5))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 
 -- | T5-Small number of layers.
@@ -25,27 +26,27 @@ type T5SmallNumLayers = 6
 
 -- | T5-Small number of attention heads.
 -- 'n_heads = 8'
-type T5SmallHeadDim = 'Dim ( 'Name "*") ( 'Size 8)
+type T5SmallHeadDim = 'Dim ('Name "*") ('Size 8)
 
 -- | T5-Small head embedding dimension.
 -- 'd_kv = 64'
-type T5SmallHeadEmbedDim = 'Dim ( 'Name "*") ( 'Size 64)
+type T5SmallHeadEmbedDim = 'Dim ('Name "*") ('Size 64)
 
 -- | T5-Small embedding dimension.
 -- 'inner_dim = n_heads * d_kv = 512'
-type T5SmallEmbedDim = 'Dim ( 'Name "*") ( 'Size 512)
+type T5SmallEmbedDim = 'Dim ('Name "*") ('Size 512)
 
 -- | T5-Small model dimension.
 -- 'd_model = 512'
-type T5SmallInputEmbedDim = 'Dim ( 'Name "*") ( 'Size 512)
+type T5SmallInputEmbedDim = 'Dim ('Name "*") ('Size 512)
 
 -- | T5-Small feed-forward network dimension.
 -- 'd_ff = 2048'
-type T5SmallFFNDim = 'Dim ( 'Name "*") ( 'Size 2048)
+type T5SmallFFNDim = 'Dim ('Name "*") ('Size 2048)
 
 -- | T5-Small vocabulary dimension.
 -- 'vocab_size = 32128'
-type T5SmallVocabDim = 'Dim ( 'Name "*") ( 'Size 32128)
+type T5SmallVocabDim = 'Dim ('Name "*") ('Size 32128)
 
 -- | T5-Small configuration data type.
 -- Modelled after https://huggingface.co/t5-small/blob/main/config.json.
@@ -66,6 +67,7 @@ data
           hasLMHead
           T5SmallNumLayers
           T5SmallNumLayers
+          'T5
           device
           T5DataType
           T5SmallHeadDim
@@ -86,22 +88,22 @@ t5SmallConfigFromPretrained ::
   -- | whether or not debugging output will be printed to the terminal
   Bool ->
   -- | configuration value
-  IO (T5SmallConfig ( 'Device 'CPU))
+  IO (T5SmallConfig ('Device 'CPU))
 t5SmallConfigFromPretrained = t5ConfigFromPretrained
 
-instance HasInitialize (T5Small 'WithoutLMHead ( 'Device 'CPU)) where
+instance HasInitialize (T5Small 'WithoutLMHead ('Device 'CPU)) where
   type
-    InitializeF (T5Small 'WithoutLMHead ( 'Device 'CPU)) =
-      FilePath -> IO (T5Small 'WithoutLMHead ( 'Device 'CPU))
+    InitializeF (T5Small 'WithoutLMHead ('Device 'CPU)) =
+      FilePath -> IO (T5Small 'WithoutLMHead ('Device 'CPU))
   initialize filePath = do
     config <- t5SmallConfigFromPretrained filePath False
     flip runReaderT config $
       T5Small <$> lookupSequenceToSequenceTransformerWithoutLMHead
 
-instance HasInitialize (T5Small 'WithLMHead ( 'Device 'CPU)) where
+instance HasInitialize (T5Small 'WithLMHead ('Device 'CPU)) where
   type
-    InitializeF (T5Small 'WithLMHead ( 'Device 'CPU)) =
-      FilePath -> IO (T5Small 'WithLMHead ( 'Device 'CPU))
+    InitializeF (T5Small 'WithLMHead ('Device 'CPU)) =
+      FilePath -> IO (T5Small 'WithLMHead ('Device 'CPU))
   initialize filePath = do
     config <- t5SmallConfigFromPretrained filePath False
     flip runReaderT config $
@@ -113,6 +115,7 @@ instance
         hasLMHead
         T5SmallNumLayers
         T5SmallNumLayers
+        'T5
         device
         T5DataType
         T5SmallHeadDim
@@ -143,6 +146,7 @@ instance
           hasLMHead
           T5SmallNumLayers
           T5SmallNumLayers
+          'T5
           device
           T5DataType
           T5SmallHeadDim
@@ -174,6 +178,7 @@ instance
           hasLMHead
           T5SmallNumLayers
           T5SmallNumLayers
+          'T5
           device
           T5DataType
           T5SmallHeadDim
