@@ -29,7 +29,7 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (.
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork (HasInitializeTransformerFeedForwardNetworkC, TransformerFeedForwardNetwork)
 import Torch.GraduallyTyped.NN.Transformer.SelfAttention (HasInitializeSelfAttentionC, SelfAttention)
-import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle (..))
+import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle)
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..), WithDimC (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)

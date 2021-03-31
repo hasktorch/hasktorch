@@ -358,7 +358,7 @@ type family
 --        ▼        │
 --  ffnInputWeight │
 --        ▼        │
---       relu      │
+--      relu       │
 --        ▼        │
 --  ffnReluDropout │
 --        ▼        │
@@ -414,7 +414,7 @@ instance
 --         ▼        │
 --  bffnInputWeight │
 --         ▼        │
---        gelu      │
+--       gelu       │
 --         ▼        │
 --  bffnGeluDropout │
 --         ▼        │

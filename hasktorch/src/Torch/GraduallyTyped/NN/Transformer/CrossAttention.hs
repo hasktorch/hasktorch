@@ -381,7 +381,7 @@ type family
           )
       )
 
--- | 'HasForward' instance for 'CrossAttention'.
+-- | 'HasForward' instance for @CrossAttention 'T5@.
 --
 -- @
 --    ┌───────┐  ┌─────┐  ┌───────────────┐
@@ -524,7 +524,7 @@ instance
         >>>= IxState . forward caDropout
         >>>= ireturn . (query `add`)
 
--- | 'HasForward' instance for 'BARTCrossAttenton'.
+-- | 'HasForward' instance for @CrossAttenton 'BART@.
 --
 -- @
 --    ┌───────┐  ┌─────┐  ┌───────────────┐

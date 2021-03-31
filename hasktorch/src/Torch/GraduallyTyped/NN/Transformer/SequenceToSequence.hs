@@ -37,8 +37,10 @@ import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Shape (..), Size (.
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (divScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 
+-- | Whether or not the transformer comes with a language modelling head.
 data HasLMHead = WithLMHead | WithoutLMHead
 
+-- | Sequence-to-sequence transformer model.
 data
   SequenceToSequenceTransformer
     (hasLMHead :: HasLMHead)
@@ -56,6 +58,7 @@ data
     (vocabDim :: Dim (Name Symbol) (Size Nat))
     (dropoutP :: Type)
   where
+  -- | T5-style sequence-to-sequence transformer without language modelling head.
   T5WithoutLMHead ::
     forall numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP.
     { -- | encoder
@@ -66,6 +69,7 @@ data
       seqToSeqWithoutLMHeadEmbedding :: Embedding ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing
     } ->
     SequenceToSequenceTransformer 'WithoutLMHead numEncoderLayers numDecoderLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP
+  -- | T5-style sequence-to-sequence transformer with language modelling head.
   T5WithLMHead ::
     forall numEncoderLayers numDecoderLayers device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP.
     { -- | encoder
@@ -415,6 +419,8 @@ instance
               vocabDim
         pure $ T5WithLMHead encoder decoder embedding lmHead inputEmbedDim
 
+-- | Input data type for use with a sequence-to-sequence transformer.
+-- Use this for training.
 data SequenceToSequenceTransformerInput input decoderInput relPos decoderRelPos attentionMask decoderAttentionMask crossAttentionMask where
   SequenceToSequenceTransformerInput ::
     forall input decoderInput relPos decoderRelPos attentionMask decoderAttentionMask crossAttentionMask.
@@ -439,6 +445,7 @@ deriving instance
   ) =>
   Show (SequenceToSequenceTransformerInput input decoderInput relPos decoderRelPos attentionMask decoderAttentionMask crossAttentionMask)
 
+-- | Output data type for use with a sequence-to-sequence transformer.
 data SequenceToSequenceTransformerOutput decoderOutput encoderOutput where
   SequenceToSequenceTransformerOutput ::
     forall decoderOutput encoderOutput.
@@ -453,6 +460,8 @@ deriving instance
   ) =>
   Show (SequenceToSequenceTransformerOutput decoderOutput encoderOutput)
 
+-- | Input data type for use with a sequence-to-sequence transformer.
+-- Use this for inference.
 data SequenceToSequenceTransformerGenerationInput decoderInput encoderOutput decoderRelPos decoderAttentionMask crossAttentionMask where
   SequenceToSequenceTransformerGenerationInput ::
     forall decoderInput encoderOutput decoderRelPos decoderAttentionMask crossAttentionMask.
@@ -473,6 +482,8 @@ deriving instance
   ) =>
   Show (SequenceToSequenceTransformerGenerationInput decoderInput encoderOutput decoderRelPos decoderAttentionMask crossAttentionMask)
 
+-- | 'HasForward' instance for T5-style sequence-to-sequence transformers without language modelling head.
+-- Use this instance for training.
 instance
   ( HasForward
       (Embedding ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
@@ -525,6 +536,8 @@ instance
                    >>>= \decoderOutput -> ireturn (SequenceToSequenceTransformerOutput decoderOutput encoderOutput)
              )
 
+-- | 'HasForward' instance for T5-style sequence-to-sequence transformers without language modelling head.
+-- Use this instance for inference.
 instance
   ( HasForward
       (Embedding ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
@@ -560,6 +573,8 @@ instance
              )
         >>>= \decoderOutput -> ireturn (SequenceToSequenceTransformerOutput decoderOutput generationEncoderOutput)
 
+-- | 'HasForward' instance for T5-style sequence-to-sequence transformers with language modelling head.
+-- Use this instance for training.
 instance
   ( HasForward
       (Embedding ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
@@ -621,6 +636,8 @@ instance
                        >>>= \decoderOutput -> ireturn (SequenceToSequenceTransformerOutput decoderOutput encoderOutput)
                  )
 
+-- | 'HasForward' instance for T5-style sequence-to-sequence transformers with language modelling head.
+-- Use this instance for inference.
 instance
   ( HasForward
       (Embedding ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)

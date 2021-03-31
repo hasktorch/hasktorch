@@ -339,7 +339,7 @@ type family
           )
       )
 
--- | 'HasForward' instance for 'SelfAttention'.
+-- | 'HasForward' instance for @SelfAttention 'T5@.
 --
 -- @
 -- ┌───────────────┐     ┌───────┐
@@ -456,7 +456,7 @@ instance
         >>>= IxState . forward saDropout
         >>>= ireturn . (query `add`)
 
--- | 'HasForward' instance for 'BARTSelfAttention'.
+-- | 'HasForward' instance for @SelfAttention 'BART@.
 --
 -- @
 -- ┌───────────────┐      ┌───────┐

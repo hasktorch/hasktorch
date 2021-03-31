@@ -235,7 +235,7 @@ instance
               headDim
         pure $ T5Encoder stack layerNorm dropout relPosEnc
 
--- | 'HasForward' instance for 'TransformerEncoder'.
+-- | 'HasForward' instance for @TransformerEncoder numLayers 'T5@.
 --
 -- @
 --  ┌───────┐  ┌────────┐  ┌───────────────┐
@@ -338,7 +338,7 @@ instance
             >>>= IxState . forward teLayerNorm
             >>>= IxState . forward teDropout
 
--- | 'HasForward' instance for 'BARTEncoder'.
+-- | 'HasForward' instance for @TransformerEncoder numLayers 'BART@.
 --
 -- @
 -- @
