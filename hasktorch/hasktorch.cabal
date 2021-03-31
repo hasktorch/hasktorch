@@ -163,6 +163,7 @@ test-suite spec
                     , Torch.Typed.NN.Recurrent.Cell.GRUSpec
                     , Torch.Typed.NN.TransformerSpec
                     , Torch.Typed.VisionSpec
+                    , Torch.Typed.NamedTensorSpec
                     , SerializeSpec
                     , RandomSpec
                     , VisionSpec
@@ -188,6 +189,7 @@ test-suite spec
                     , async
                     , pipes
                     , random
+                    , vector-sized
 
   build-tool-depends:  hspec-discover:hspec-discover
 
