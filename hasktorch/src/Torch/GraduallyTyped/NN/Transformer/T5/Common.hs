@@ -56,14 +56,14 @@ import Torch.GraduallyTyped.NN.Linear (Linear (..))
 import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..))
 import Torch.GraduallyTyped.NN.Sparse (Embedding (..))
 import Torch.GraduallyTyped.NN.Transformer.Block (TransformerBlock (TransformerBlock))
-import Torch.GraduallyTyped.NN.Transformer.CrossAttention (CrossAttention (..))
+import Torch.GraduallyTyped.NN.Transformer.CrossAttention (CrossAttention (..), GCrossAttention (..))
 import Torch.GraduallyTyped.NN.Transformer.Decoder (TransformerDecoder (..))
 import Torch.GraduallyTyped.NN.Transformer.DecoderBlock (TransformerDecoderBlock (..))
 import Torch.GraduallyTyped.NN.Transformer.DecoderStack (TransformerDecoderStack (..))
 import Torch.GraduallyTyped.NN.Transformer.Encoder (TransformerEncoder (..))
 import Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork (TransformerFeedForwardNetwork (..))
-import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (MultiHeadAttention (..))
-import Torch.GraduallyTyped.NN.Transformer.SelfAttention (SelfAttention (..))
+import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (GMultiHeadAttention (..), MultiHeadAttention (..))
+import Torch.GraduallyTyped.NN.Transformer.SelfAttention (GSelfAttention (..), SelfAttention (..))
 import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (HasLMHead (..), SequenceToSequenceTransformer (..), SequenceToSequenceTransformerGenerationInput (..), SequenceToSequenceTransformerInput (..), SequenceToSequenceTransformerOutput (..))
 import Torch.GraduallyTyped.NN.Transformer.Stack (TransformerStack (..))
 import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle (T5))
@@ -388,6 +388,19 @@ lookupHeadEmbedDim = do
       Dim (Name name) (Size size) -> pure $ Dim name size
       Dim _ _ -> fail "head embed dimension unspecified"
 
+lookupEmbedDim ::
+  forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim m.
+  ( MonadReader (T5Config numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim) m,
+    MonadFail m
+  ) =>
+  m (Dim String Integer)
+lookupEmbedDim = do
+  t5Config <- ask
+  case t5Config of
+    T5Config {} -> case dimVal @embedDim of
+      Dim (Name name) (Size size) -> pure $ Dim name size
+      Dim _ _ -> fail "embed dimension unspecified"
+
 lookupInputEmbedDim ::
   forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim m.
   ( MonadReader (T5Config numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim) m,
@@ -427,21 +440,26 @@ lookupEncoderBlock n = do
   case t5Config of
     T5Config {..} -> do
       TransformerBlock
-        <$> ( T5SelfAttention
-                <$> ( T5MultiHeadAttention
-                        <$> lookupHeadDim
-                        <*> lookupHeadEmbedDim
-                        <*> (LinearWithoutBias <$> lookupTensor ("encoder.block." <> show n <> ".layer.0.SelfAttention.q.weight"))
-                        <*> (LinearWithoutBias <$> lookupTensor ("encoder.block." <> show n <> ".layer.0.SelfAttention.k.weight"))
-                        <*> (LinearWithoutBias <$> lookupTensor ("encoder.block." <> show n <> ".layer.0.SelfAttention.v.weight"))
-                        <*> (LinearWithoutBias <$> lookupTensor ("encoder.block." <> show n <> ".layer.0.SelfAttention.o.weight"))
+        <$> ( SelfAttention
+                <$> ( GSelfAttention
+                        <$> ( MultiHeadAttention
+                                <$> ( GMultiHeadAttention
+                                        <$> lookupHeadDim
+                                        <*> lookupHeadEmbedDim
+                                        <*> lookupEmbedDim
+                                        <*> (LinearWithoutBias <$> lookupTensor ("encoder.block." <> show n <> ".layer.0.SelfAttention.q.weight"))
+                                        <*> (LinearWithoutBias <$> lookupTensor ("encoder.block." <> show n <> ".layer.0.SelfAttention.k.weight"))
+                                        <*> (LinearWithoutBias <$> lookupTensor ("encoder.block." <> show n <> ".layer.0.SelfAttention.v.weight"))
+                                        <*> (LinearWithoutBias <$> lookupTensor ("encoder.block." <> show n <> ".layer.0.SelfAttention.o.weight"))
+                                        <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
+                                    )
+                            )
+                        <*> ( LayerNormWithoutBias
+                                <$> lookupTensor ("encoder.block." <> show n <> ".layer.0.layer_norm.weight")
+                                <*> pure t5Eps
+                            )
                         <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
                     )
-                <*> ( LayerNormWithoutBias
-                        <$> lookupTensor ("encoder.block." <> show n <> ".layer.0.layer_norm.weight")
-                        <*> pure t5Eps
-                    )
-                <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
             )
         <*> ( T5FeedForwardNetwork
                 <$> (LinearWithoutBias <$> lookupTensor ("encoder.block." <> show n <> ".layer.1.DenseReluDense.wi.weight"))
@@ -467,37 +485,47 @@ lookupDecoderBlock n = do
   case t5Config of
     T5Config {..} ->
       TransformerDecoderBlock
-        <$> ( T5SelfAttention
-                <$> ( T5MultiHeadAttention
-                        <$> lookupHeadDim
-                        <*> lookupHeadEmbedDim
-                        <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.0.SelfAttention.q.weight"))
-                        <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.0.SelfAttention.k.weight"))
-                        <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.0.SelfAttention.v.weight"))
-                        <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.0.SelfAttention.o.weight"))
+        <$> ( SelfAttention
+                <$> ( GSelfAttention
+                        <$> ( MultiHeadAttention
+                                <$> ( GMultiHeadAttention
+                                        <$> lookupHeadDim
+                                        <*> lookupHeadEmbedDim
+                                        <*> lookupEmbedDim
+                                        <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.0.SelfAttention.q.weight"))
+                                        <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.0.SelfAttention.k.weight"))
+                                        <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.0.SelfAttention.v.weight"))
+                                        <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.0.SelfAttention.o.weight"))
+                                        <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
+                                    )
+                            )
+                        <*> ( LayerNormWithoutBias
+                                <$> lookupTensor ("decoder.block." <> show n <> ".layer.0.layer_norm.weight")
+                                <*> pure t5Eps
+                            )
                         <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
                     )
-                <*> ( LayerNormWithoutBias
-                        <$> lookupTensor ("decoder.block." <> show n <> ".layer.0.layer_norm.weight")
-                        <*> pure t5Eps
-                    )
-                <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
             )
-        <*> ( T5CrossAttention
-                <$> ( T5MultiHeadAttention
-                        <$> lookupHeadDim
-                        <*> lookupHeadEmbedDim
-                        <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.1.EncDecAttention.q.weight"))
-                        <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.1.EncDecAttention.k.weight"))
-                        <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.1.EncDecAttention.v.weight"))
-                        <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.1.EncDecAttention.o.weight"))
+        <*> ( CrossAttention
+                <$> ( GCrossAttention
+                        <$> ( MultiHeadAttention
+                                <$> ( GMultiHeadAttention
+                                        <$> lookupHeadDim
+                                        <*> lookupHeadEmbedDim
+                                        <*> lookupEmbedDim
+                                        <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.1.EncDecAttention.q.weight"))
+                                        <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.1.EncDecAttention.k.weight"))
+                                        <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.1.EncDecAttention.v.weight"))
+                                        <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.1.EncDecAttention.o.weight"))
+                                        <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
+                                    )
+                            )
+                        <*> ( LayerNormWithoutBias
+                                <$> lookupTensor ("decoder.block." <> show n <> ".layer.1.layer_norm.weight")
+                                <*> pure t5Eps
+                            )
                         <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
                     )
-                <*> ( LayerNormWithoutBias
-                        <$> lookupTensor ("decoder.block." <> show n <> ".layer.1.layer_norm.weight")
-                        <*> pure t5Eps
-                    )
-                <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
             )
         <*> ( T5FeedForwardNetwork
                 <$> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.2.DenseReluDense.wi.weight"))

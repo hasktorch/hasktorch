@@ -12,6 +12,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -v2 #-}
 
 module Torch.GraduallyTyped.NN.Transformer.SequenceToSequence where
 
@@ -688,8 +689,8 @@ testForwardSeqToSeq =
         undefined ::
           SequenceToSequenceTransformer
             'WithLMHead
-            3
-            3
+            128
+            128
             'T5
             ('Device 'CPU)
             ('DataType 'Float)
@@ -723,21 +724,21 @@ testForwardSeqToSeq =
             'WithoutGradient
             ('Layout 'Dense)
             ('Device 'CPU)
-            'UncheckedDataType -- ( 'DataType 'Int64)
+            ('DataType 'Int64)
             ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 7), 'Dim ('Name "*") ('Size 7)])
       decoderRelPos =
         undefined ::
           Tensor
             'WithoutGradient
             ('Layout 'Dense)
-            'UncheckedDevice -- ( 'Device 'CPU)
+            ('Device 'CPU)
             ('DataType 'Int64)
             ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 5), 'Dim ('Name "*") ('Size 5)])
       attentionMask =
         undefined ::
           Tensor
             'WithoutGradient
-            'UncheckedLayout -- ( 'Layout 'Dense)
+            ('Layout 'Dense)
             ('Device 'CPU)
             ('DataType 'Float)
             ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 7), 'Dim ('Name "*") ('Size 7)])
@@ -754,7 +755,7 @@ testForwardSeqToSeq =
           Tensor
             'WithoutGradient
             ('Layout 'Dense)
-            'UncheckedDevice -- ( 'Device 'CPU)
+            ('Device 'CPU)
             ('DataType 'Float)
             ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 5), 'Dim ('Name "*") ('Size 7)])
       g = undefined :: Generator ('Device 'CPU)

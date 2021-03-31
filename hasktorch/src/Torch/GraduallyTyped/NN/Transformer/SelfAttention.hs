@@ -62,10 +62,45 @@ import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (TransposeF)
 import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (MatmulF)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
-import Torch.GraduallyTyped.Unify (type (<+>))
+import Torch.GraduallyTyped.Unify (Unify, type (<+>), type (<|>))
+
+data
+  GSelfAttention
+    (mha :: Type)
+    (layerNorm :: Type)
+    (dropout :: Type)
+  where
+  GSelfAttention ::
+    forall mha layerNorm dropout.
+    { -- | self-attention
+      saMultiheadAttention :: mha,
+      -- | layer norm
+      saLayerNorm :: layerNorm,
+      -- | dropout
+      saDropout :: dropout
+    } ->
+    GSelfAttention mha layerNorm dropout
+
+type family
+  GSelfAttentionF
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (dropoutP :: Type) ::
+    Type
+  where
+  GSelfAttentionF 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP =
+    GSelfAttention
+      (MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP)
+      (LayerNorm 'WithoutBias device dataType ('Shape '[queryEmbedDim]))
+      (Dropout dropoutP)
 
 -- | Self-attention layer.
-data
+newtype
   SelfAttention
     (style :: TransformerStyle)
     (device :: Device (DeviceType Nat))
@@ -76,17 +111,10 @@ data
     (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
     (dropoutP :: Type)
   where
-  -- | T5-style self-attention layer without biases.
-  T5SelfAttention ::
-    forall device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP.
-    { -- | self-attention
-      saMultiheadAttention :: MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP,
-      -- | layer norm
-      saLayerNorm :: LayerNorm 'WithoutBias device dataType ('Shape '[queryEmbedDim]),
-      -- | dropout
-      saDropout :: Dropout dropoutP
-    } ->
-    SelfAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP
+  SelfAttention ::
+    forall style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP.
+    GSelfAttentionF style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP ->
+    SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP
 
 type family
   HasInitializeSelfAttentionC'
@@ -204,140 +232,7 @@ instance
                 [queryEmbedDim]
                 eps
         let dropout = initialize @(Dropout dropoutP) dropoutP
-        pure $ T5SelfAttention multiheadAttention layerNorm dropout
-
-type SelfAttentionTransposeAndReshape
-  (embedDim :: Dim (Name Symbol) (Size Nat))
-  (attentionBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (normedBatchDim :: Dim (Name Symbol) (Size Nat))
-  (normedQuerySeqDim :: Dim (Name Symbol) (Size Nat))
-  (transposed :: Shape [Dim (Name Symbol) (Size Nat)]) =
-  TransposeF
-    ('SelectDim ('ByIndex 1))
-    ('SelectDim ('ByIndex 2))
-    ( MatmulF
-        ( SoftmaxF
-            ('SelectDim ('ByIndex 3))
-            ( BroadcastShapesF
-                ( MatmulF
-                    transposed
-                    ( TransposeF
-                        ('SelectDim ('ByIndex 2))
-                        ('SelectDim ('ByIndex 3))
-                        transposed
-                    )
-                )
-                attentionBiasShape
-            )
-        )
-        transposed
-    )
-
-type family
-  SelfAttentionTransposeAndReshape'
-    (style :: TransformerStyle)
-    (headDim :: Dim (Name Symbol) (Size Nat))
-    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (embedDim :: Dim (Name Symbol) (Size Nat))
-    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (normedQueryShape :: Shape [Dim (Name Symbol) (Size Nat)])
-    (attentionBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
-    (normedBatchDim :: Dim (Name Symbol) (Size Nat))
-    (normedQuerySeqDim :: Dim (Name Symbol) (Size Nat)) ::
-    Shape [Dim (Name Symbol) (Size Nat)]
-  where
-  SelfAttentionTransposeAndReshape' 'T5 headDim headEmbedDim embedDim queryEmbedDim normedQueryShape attentionBiasShape normedBatchDim normedQuerySeqDim =
-    SelfAttentionTransposeAndReshape
-      embedDim
-      attentionBiasShape
-      normedBatchDim
-      normedQuerySeqDim
-      ( TransposeF
-          ('SelectDim ('ByIndex 1))
-          ('SelectDim ('ByIndex 2))
-          ( ReshapeF
-              ( LinearWithoutBiasF
-                  ('Shape '[embedDim, queryEmbedDim])
-                  normedQueryShape
-              )
-              ( 'Shape
-                  '[normedBatchDim, normedQuerySeqDim, headDim, headEmbedDim]
-              )
-          )
-      )
-
-type SelfAttentionTransposeAndReshape''
-  (style :: TransformerStyle)
-  (headDim :: Dim (Name Symbol) (Size Nat))
-  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (embedDim :: Dim (Name Symbol) (Size Nat))
-  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (normedQueryShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (attentionBiasShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (normedBatchDim :: Dim (Name Symbol) (Size Nat))
-  (normedQuerySeqDim :: Dim (Name Symbol) (Size Nat)) =
-  ReshapeF
-    ( SelfAttentionTransposeAndReshape'
-        style
-        headDim
-        headEmbedDim
-        embedDim
-        queryEmbedDim
-        normedQueryShape
-        attentionBiasShape
-        normedBatchDim
-        normedQuerySeqDim
-    )
-    ('Shape '[normedBatchDim, normedQuerySeqDim, embedDim])
-
-type SelfAttentionTransposeAndReshape'''
-  (style :: TransformerStyle)
-  (headDim :: Dim (Name Symbol) (Size Nat))
-  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (embedDim :: Dim (Name Symbol) (Size Nat))
-  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (normedQueryShape :: Shape [Dim (Name Symbol) (Size Nat)])
-  (attentionBiasShape :: Shape [Dim (Name Symbol) (Size Nat)]) =
-  SelfAttentionTransposeAndReshape''
-    style
-    headDim
-    headEmbedDim
-    embedDim
-    queryEmbedDim
-    normedQueryShape
-    attentionBiasShape
-    (normedQueryShape ! 0)
-    (normedQueryShape ! 1)
-
-type family
-  SelfAttentionOutputShape
-    (style :: TransformerStyle)
-    (headDim :: Dim (Name Symbol) (Size Nat))
-    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (embedDim :: Dim (Name Symbol) (Size Nat))
-    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (queryShape :: Shape [Dim (Name Symbol) (Size Nat)])
-    (attentionBiasShape :: Shape [Dim (Name Symbol) (Size Nat)]) ::
-    Shape [Dim (Name Symbol) (Size Nat)]
-  where
-  SelfAttentionOutputShape 'T5 headDim headEmbedDim embedDim queryEmbedDim queryShape attentionBiasShape =
-    BroadcastShapesF
-      queryShape
-      ( LinearWithoutBiasF
-          ('Shape '[queryEmbedDim, embedDim])
-          ( SelfAttentionTransposeAndReshape'''
-              'T5
-              headDim
-              headEmbedDim
-              embedDim
-              queryEmbedDim
-              ( LayerNormWithoutBiasF
-                  ('Shape '[queryEmbedDim])
-                  queryShape
-              )
-              attentionBiasShape
-          )
-      )
+        pure . SelfAttention $ GSelfAttention multiheadAttention layerNorm dropout
 
 -- | 'HasForward' instance for @SelfAttention 'T5@.
 --
@@ -367,77 +262,37 @@ type family
 --                       └───────┘
 -- @
 instance
-  ( KnownShape queryShape,
-    normedQueryShape ~ LayerNormWithoutBiasF ('Shape '[queryEmbedDim]) queryShape,
-    KnownShape normedQueryShape,
-    KnownDim embedDim,
-    KnownDim queryEmbedDim,
-    normedBatchDim ~ (normedQueryShape ! 0),
-    KnownDim normedBatchDim,
-    normedQuerySeqDim ~ (normedQueryShape ! 1),
-    KnownDim normedQuerySeqDim,
-    WithShapeC
-      ('Shape '[normedBatchDim, normedQuerySeqDim, headDim, headEmbedDim])
-      ( Tensor
-          'WithGradient
-          ('Layout 'Dense <+> queryLayout)
-          (device <+> queryDevice)
-          (dataType <+> queryDataType)
-          ( LinearWithoutBiasF
-              ('Shape '[embedDim, queryEmbedDim])
-              normedQueryShape
-          ) ->
-        Tensor
-          'WithGradient
-          ('Layout 'Dense <+> queryLayout)
-          (device <+> queryDevice)
-          (dataType <+> queryDataType)
-          ( ReshapeF
-              ( LinearWithoutBiasF
-                  ('Shape '[embedDim, queryEmbedDim])
-                  normedQueryShape
-              )
-              ('Shape '[normedBatchDim, normedQuerySeqDim, headDim, headEmbedDim])
-          )
-      ),
-    transposedAndReshaped
-      ~ SelfAttentionTransposeAndReshape'
-          'T5
-          headDim
-          headEmbedDim
-          embedDim
-          queryEmbedDim
-          normedQueryShape
-          attentionBiasShape
-          normedBatchDim
-          normedQuerySeqDim,
-    WithShapeC
-      ('Shape '[normedBatchDim, normedQuerySeqDim, embedDim])
-      ( Tensor
-          'WithGradient
-          ('Layout 'Dense <+> queryLayout <+> attentionBiasLayout)
-          (device <+> queryDevice <+> attentionBiasDevice <+> generatorDevice)
-          (dataType <+> queryDataType <+> attentionBiasDataType)
-          transposedAndReshaped ->
-        Tensor
-          'WithGradient
-          ('Layout 'Dense <+> queryLayout <+> attentionBiasLayout)
-          (device <+> queryDevice <+> attentionBiasDevice <+> generatorDevice)
-          (dataType <+> queryDataType <+> attentionBiasDataType)
-          ( ReshapeF
-              transposedAndReshaped
-              ('Shape '[normedBatchDim, normedQuerySeqDim, embedDim])
-          )
-      ),
+  ( KnownDim queryEmbedDim,
+    KnownShape queryShape,
     Scalar dropoutP,
+    normedQueryLayout ~ ('Layout 'Dense <+> queryLayout),
+    normedQueryDevice ~ (device <+> queryDevice),
+    normedQueryDataType ~ (dataType <+> queryDataType),
+    normedQueryShape ~ LayerNormWithoutBiasF ('Shape '[queryEmbedDim]) queryShape,
+    HasForward
+      (MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP)
+      ( Tensor 'WithGradient normedQueryLayout normedQueryDevice normedQueryDataType normedQueryShape,
+        Tensor 'WithGradient normedQueryLayout normedQueryDevice normedQueryDataType normedQueryShape,
+        Tensor 'WithGradient normedQueryLayout normedQueryDevice normedQueryDataType normedQueryShape,
+        Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
+      )
+      (Generator generatorDevice)
+      ( Tensor
+          'WithGradient
+          (queryLayout <+> 'Layout 'Dense <+> attentionBiasLayout)
+          (queryDevice <+> device <+> attentionBiasDevice <+> generatorDevice)
+          (queryDataType <+> dataType <+> attentionBiasDataType)
+          mhaOutputShape
+      )
+      (Generator (queryDevice <+> device <+> attentionBiasDevice <+> generatorDevice)),
     output
       ~ Tensor
           'WithGradient
           (queryLayout <+> 'Layout 'Dense <+> attentionBiasLayout)
           (queryDevice <+> device <+> attentionBiasDevice <+> generatorDevice)
           (queryDataType <+> dataType <+> attentionBiasDataType)
-          (SelfAttentionOutputShape 'T5 headDim headEmbedDim embedDim queryEmbedDim queryShape attentionBiasShape),
-    generatorOutput ~ Generator (device <+> queryDevice <+> attentionBiasDevice <+> generatorDevice)
+          (BroadcastShapesF queryShape mhaOutputShape),
+    generatorOutput ~ Generator (queryDevice <+> device <+> attentionBiasDevice <+> generatorDevice)
   ) =>
   HasForward
     (SelfAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
@@ -448,12 +303,12 @@ instance
     output
     generatorOutput
   where
-  forward T5SelfAttention {..} (query, attentionBias) =
+  forward (SelfAttention sa) (query, attentionBias) =
     runIxState $
       ireturn query
-        >>>= IxState . forward saLayerNorm
-        >>>= (\query' -> IxState $ forward saMultiheadAttention (query', query', query', attentionBias))
-        >>>= IxState . forward saDropout
+        >>>= IxState . forward (saLayerNorm sa)
+        >>>= (\query' -> IxState $ forward (saMultiheadAttention sa) (query', query', query', attentionBias))
+        >>>= IxState . forward (saDropout sa)
         >>>= ireturn . (query `add`)
 
 -- | 'HasForward' instance for @SelfAttention 'BART@.
