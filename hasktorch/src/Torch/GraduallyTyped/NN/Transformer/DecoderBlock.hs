@@ -69,89 +69,21 @@ type HasInitializeTransformerDecoderBlockC style device dataType headDim headEmb
     WithDimC embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerDecoderBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device))))),
     WithDimC queryEmbedDim (WithDimF keyEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerDecoderBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device)))),
     WithDimC keyEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerDecoderBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device))),
-    WithDimC ffnDim (dropoutP -> Double -> Generator device -> (TransformerDecoderBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device)),
-    HasInitializeSelfAttentionC style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP,
-    HasInitialize (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP),
-    InitializeF (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
-      ~ WithDeviceF
-          device
-          ( WithDataTypeF
-              dataType
-              ( WithDimF
-                  headDim
-                  ( WithDimF
-                      headEmbedDim
-                      ( WithDimF
-                          embedDim
-                          ( WithDimF
-                              queryEmbedDim
-                              ( dropoutP ->
-                                Double ->
-                                Generator device ->
-                                ( SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP,
-                                  Generator device
-                                )
-                              )
-                          )
-                      )
-                  )
-              )
-          ),
-    HasInitializeCrossAttentionC style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP,
-    HasInitialize (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP),
-    InitializeF (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
-      ~ WithDeviceF
-          device
-          ( WithDataTypeF
-              dataType
-              ( WithDimF
-                  headDim
-                  ( WithDimF
-                      headEmbedDim
-                      ( WithDimF
-                          embedDim
-                          ( WithDimF
-                              queryEmbedDim
-                              ( WithDimF
-                                  keyEmbedDim
-                                  ( dropoutP ->
-                                    Double ->
-                                    Generator device ->
-                                    ( CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP,
-                                      Generator device
-                                    )
-                                  )
-                              )
-                          )
-                      )
-                  )
-              )
-          ),
-    HasInitializeTransformerFeedForwardNetworkC style device dataType queryEmbedDim ffnDim dropoutP,
-    HasInitialize (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP),
-    InitializeF (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP)
-      ~ WithDeviceF
-          device
-          ( WithDataTypeF
-              dataType
-              ( WithDimF
-                  queryEmbedDim
-                  ( WithDimF
-                      ffnDim
-                      ( dropoutP ->
-                        Double ->
-                        Generator device ->
-                        ( TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP,
-                          Generator device
-                        )
-                      )
-                  )
-              )
-          )
+    WithDimC ffnDim (dropoutP -> Double -> Generator device -> (TransformerDecoderBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device))
   )
 
 instance
-  HasInitializeTransformerDecoderBlockC style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP =>
+  ( HasInitializeTransformerDecoderBlockC style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP,
+    HasInitializeSelfAttentionC style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP,
+    HasInitialize (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP),
+    InitializeF (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP) ~ WithDeviceF device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device))))))),
+    HasInitializeCrossAttentionC style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP,
+    HasInitialize (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP),
+    InitializeF (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP) ~ WithDeviceF device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (dropoutP -> Double -> Generator device -> (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device)))))))),
+    HasInitializeTransformerFeedForwardNetworkC style device dataType queryEmbedDim ffnDim dropoutP,
+    HasInitialize (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP),
+    InitializeF (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP) ~ WithDeviceF device (WithDataTypeF dataType (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP, Generator device)))))
+  ) =>
   HasInitialize (TransformerDecoderBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
   where
   type

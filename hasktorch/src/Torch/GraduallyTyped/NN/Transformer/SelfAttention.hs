@@ -56,7 +56,7 @@ import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, type (!))
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownDim (..), KnownShape (..), Name (..), SelectDim (..), Shape (..), Size (..), WithDimC (..), WithShapeC (..))
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownDim (..), KnownShape (..), Name (..), SelectDim (..), Shape (..), Size (..), WithDimC (..), WithDimsC (..), WithShapeC (..))
 import Torch.GraduallyTyped.Tensor (ReshapeF)
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (TransposeF)
 import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (MatmulF)
@@ -64,6 +64,9 @@ import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (Unify, type (<+>), type (<|>))
 
+-- | Generic self-attention layer.
+-- Needs to be specialized to a given transformer type, e.g. 'T5'.
+-- See 'SelfAttention'.
 data
   GSelfAttention
     (mha :: Type)
@@ -80,24 +83,6 @@ data
       saDropout :: dropout
     } ->
     GSelfAttention mha layerNorm dropout
-
-type family
-  GSelfAttentionF
-    (style :: TransformerStyle)
-    (device :: Device (DeviceType Nat))
-    (dataType :: DataType DType)
-    (headDim :: Dim (Name Symbol) (Size Nat))
-    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (embedDim :: Dim (Name Symbol) (Size Nat))
-    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (dropoutP :: Type) ::
-    Type
-  where
-  GSelfAttentionF 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP =
-    GSelfAttention
-      (MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP)
-      (LayerNorm 'WithoutBias device dataType ('Shape '[queryEmbedDim]))
-      (Dropout dropoutP)
 
 -- | Self-attention layer.
 newtype
@@ -116,22 +101,7 @@ newtype
     GSelfAttentionF style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP ->
     SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP
 
-type family
-  HasInitializeSelfAttentionC'
-    (style :: TransformerStyle)
-    (device :: Device (DeviceType Nat))
-    (dataType :: DataType DType)
-    (headDim :: Dim (Name Symbol) (Size Nat))
-    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (embedDim :: Dim (Name Symbol) (Size Nat))
-    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (dropoutP :: Type) ::
-    Constraint
-  where
-  HasInitializeSelfAttentionC' 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP =
-    HasInitializeLayerNormWithoutBiasC device dataType ('Shape '[queryEmbedDim])
-
-type HasInitializeSelfAttentionC
+type GSelfAttentionF
   (style :: TransformerStyle)
   (device :: Device (DeviceType Nat))
   (dataType :: DataType DType)
@@ -140,23 +110,76 @@ type HasInitializeSelfAttentionC
   (embedDim :: Dim (Name Symbol) (Size Nat))
   (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
   (dropoutP :: Type) =
-  ( HasInitializeMultiHeadAttentionC style device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP,
-    Scalar dropoutP,
-    WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device))))))),
+  GSelfAttention
+    (SAMultiheadAttentionF style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
+    (SALayerNormF style device dataType queryEmbedDim)
+    (SADropoutF style dropoutP)
+
+type family
+  SAMultiheadAttentionF
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (dropoutP :: Type) ::
+    Type
+  where
+  SAMultiheadAttentionF 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP =
+    MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP
+
+type family
+  SALayerNormF
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
+    Type
+  where
+  SALayerNormF 'T5 device dataType queryEmbedDim =
+    LayerNorm 'WithoutBias device dataType ('Shape '[queryEmbedDim])
+
+type family
+  SADropoutF
+    (style :: TransformerStyle)
+    (dropoutP :: Type) ::
+    Type
+  where
+  SADropoutF 'T5 dropoutP =
+    Dropout dropoutP
+
+type HasInitializeSelfAttentionC style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP =
+  ( WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device))))))),
     WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device)))))),
     WithDimC headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device))))),
     WithDimC headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device)))),
     WithDimC embedDim (WithDimF queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device))),
-    WithDimC queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device)),
-    HasInitializeSelfAttentionC' style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP
+    WithDimC queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device))
   )
 
 instance
-  HasInitializeSelfAttentionC 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP =>
-  HasInitialize (SelfAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
+  ( HasInitializeSelfAttentionC style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP,
+    Scalar dropoutP,
+    multiHeadAttention ~ SAMultiheadAttentionF style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP,
+    HasInitialize multiHeadAttention,
+    HasInitializeMultiHeadAttentionC multiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP,
+    InitializeF multiHeadAttention ~ WithDeviceF device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF queryEmbedDim (WithDimF queryEmbedDim (dropoutP -> Generator device -> (multiHeadAttention, Generator device))))))))),
+    layerNorm ~ SALayerNormF style device dataType queryEmbedDim,
+    HasInitialize layerNorm,
+    InitializeF layerNorm ~ WithDeviceF device (WithDataTypeF dataType (WithDimsF '[queryEmbedDim] (Double -> layerNorm))),
+    dropout ~ SADropoutF style dropoutP,
+    HasInitialize dropout,
+    InitializeF dropout ~ (dropoutP -> dropout),
+    WithDimsC '[queryEmbedDim] (Double -> layerNorm),
+    WithDataTypeC dataType (WithDimsF '[queryEmbedDim] (Double -> layerNorm)),
+    WithDeviceC device (WithDataTypeF dataType (WithDimsF '[queryEmbedDim] (Double -> layerNorm)))
+  ) =>
+  HasInitialize (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
   where
   type
-    InitializeF (SelfAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP) =
+    InitializeF (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP) =
       WithDeviceF
         device
         ( WithDataTypeF
@@ -169,7 +192,7 @@ instance
                         embedDim
                         ( WithDimF
                             queryEmbedDim
-                            (dropoutP -> Double -> Generator device -> (SelfAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device))
+                            (dropoutP -> Double -> Generator device -> (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device))
                         )
                     )
                 )
@@ -186,14 +209,14 @@ instance
                   \headEmbedDim ->
                     withDim @embedDim $
                       \embedDim ->
-                        withDim @queryEmbedDim @(dropoutP -> Double -> Generator device -> (SelfAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device)) $
+                        withDim @queryEmbedDim @(dropoutP -> Double -> Generator device -> (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device)) $
                           \queryEmbedDim ->
                             go deviceType dType headDim headEmbedDim embedDim queryEmbedDim
     where
       go deviceType dType headDim headEmbedDim embedDim queryEmbedDim dropoutP eps = runState $ do
-        multiheadAttention <-
+        multiHeadAttention <-
           state $
-            withoutDim @queryEmbedDim
+            withoutDim @queryEmbedDim @(dropoutP -> Generator device -> (multiHeadAttention, Generator device))
               ( withoutDim @queryEmbedDim
                   ( withoutDim @queryEmbedDim
                       ( withoutDim @embedDim
@@ -201,7 +224,7 @@ instance
                               ( withoutDim @headDim
                                   ( withoutDataType @dataType
                                       ( withoutDevice @device
-                                          ( initialize @(MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP)
+                                          ( initialize @multiHeadAttention
                                           )
                                           deviceType
                                       )
@@ -220,10 +243,10 @@ instance
               queryEmbedDim
               dropoutP
         let layerNorm =
-              withoutShape @('Shape '[queryEmbedDim])
+              withoutShape @('Shape '[queryEmbedDim]) @(Double -> layerNorm)
                 ( withoutDataType @dataType
                     ( withoutDevice @device
-                        ( initialize @(LayerNorm 'WithoutBias device dataType ('Shape '[queryEmbedDim]))
+                        ( initialize @layerNorm
                         )
                         deviceType
                     )
@@ -231,8 +254,8 @@ instance
                 )
                 [queryEmbedDim]
                 eps
-        let dropout = initialize @(Dropout dropoutP) dropoutP
-        pure . SelfAttention $ GSelfAttention multiheadAttention layerNorm dropout
+        let dropout = initialize @dropout dropoutP
+        pure . SelfAttention $ GSelfAttention multiHeadAttention layerNorm dropout
 
 -- | 'HasForward' instance for @SelfAttention 'T5@.
 --

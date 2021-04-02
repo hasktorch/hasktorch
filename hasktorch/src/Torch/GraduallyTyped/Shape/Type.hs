@@ -288,7 +288,7 @@ instance (KnownShape ( 'Shape dims), KnownDim dim) => KnownShape ( 'Shape (dim '
       Shape dims -> Shape $ dimVal @dim : dims
 
 class
-  ShapeConstraint shape (GetShapes f) =>
+  -- ShapeConstraint shape (GetShapes f) =>
   WithShapeC (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (f :: Type)
   where
   type WithShapeF shape f :: Type
@@ -296,7 +296,7 @@ class
   withoutShape :: WithShapeF shape f -> ([Dim String Integer] -> f)
 
 instance
-  ShapeConstraint 'UncheckedShape (GetShapes f) =>
+  -- ShapeConstraint 'UncheckedShape (GetShapes f) =>
   WithShapeC 'UncheckedShape f
   where
   type WithShapeF 'UncheckedShape f = [Dim String Integer] -> f
@@ -304,7 +304,7 @@ instance
   withoutShape = id
 
 instance
-  ( ShapeConstraint ( 'Shape dims) (GetShapes f),
+  ( -- ShapeConstraint ( 'Shape dims) (GetShapes f),
     WithDimsC dims f
   ) =>
   WithShapeC ( 'Shape dims) f

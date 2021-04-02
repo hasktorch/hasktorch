@@ -50,6 +50,7 @@ import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), KnownDType (..), KnownDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice)
 import Torch.GraduallyTyped.Layout (KnownLayout, Layout (..), LayoutType (..))
+import Torch.GraduallyTyped.NN.Activation (Relu (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout)
 import Torch.GraduallyTyped.NN.Linear (Linear (..))
@@ -61,7 +62,7 @@ import Torch.GraduallyTyped.NN.Transformer.Decoder (TransformerDecoder (..))
 import Torch.GraduallyTyped.NN.Transformer.DecoderBlock (TransformerDecoderBlock (..))
 import Torch.GraduallyTyped.NN.Transformer.DecoderStack (TransformerDecoderStack (..))
 import Torch.GraduallyTyped.NN.Transformer.Encoder (TransformerEncoder (..))
-import Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork (TransformerFeedForwardNetwork (..))
+import Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork (GTransformerFeedForwardNetwork (..), TransformerFeedForwardNetwork (..))
 import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (GMultiHeadAttention (..), MultiHeadAttention (..))
 import Torch.GraduallyTyped.NN.Transformer.SelfAttention (GSelfAttention (..), SelfAttention (..))
 import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (HasLMHead (..), SequenceToSequenceTransformer (..), SequenceToSequenceTransformerGenerationInput (..), SequenceToSequenceTransformerInput (..), SequenceToSequenceTransformerOutput (..))
@@ -461,15 +462,18 @@ lookupEncoderBlock n = do
                         <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
                     )
             )
-        <*> ( T5FeedForwardNetwork
-                <$> (LinearWithoutBias <$> lookupTensor ("encoder.block." <> show n <> ".layer.1.DenseReluDense.wi.weight"))
-                <*> (LinearWithoutBias <$> lookupTensor ("encoder.block." <> show n <> ".layer.1.DenseReluDense.wo.weight"))
-                <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
-                <*> ( LayerNormWithoutBias
-                        <$> lookupTensor ("encoder.block." <> show n <> ".layer.1.layer_norm.weight")
-                        <*> pure t5Eps
+        <*> ( TransformerFeedForwardNetwork
+                <$> ( GTransformerFeedForwardNetwork
+                        <$> (LinearWithoutBias <$> lookupTensor ("encoder.block." <> show n <> ".layer.1.DenseReluDense.wi.weight"))
+                        <*> (LinearWithoutBias <$> lookupTensor ("encoder.block." <> show n <> ".layer.1.DenseReluDense.wo.weight"))
+                        <*> pure Relu
+                        <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
+                        <*> ( LayerNormWithoutBias
+                                <$> lookupTensor ("encoder.block." <> show n <> ".layer.1.layer_norm.weight")
+                                <*> pure t5Eps
+                            )
+                        <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
                     )
-                <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
             )
 
 lookupDecoderBlock ::
@@ -527,15 +531,18 @@ lookupDecoderBlock n = do
                         <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
                     )
             )
-        <*> ( T5FeedForwardNetwork
-                <$> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.2.DenseReluDense.wi.weight"))
-                <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.2.DenseReluDense.wo.weight"))
-                <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
-                <*> ( LayerNormWithoutBias
-                        <$> lookupTensor ("decoder.block." <> show n <> ".layer.2.layer_norm.weight")
-                        <*> pure t5Eps
+        <*> ( TransformerFeedForwardNetwork
+                <$> ( GTransformerFeedForwardNetwork
+                        <$> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.2.DenseReluDense.wi.weight"))
+                        <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.2.DenseReluDense.wo.weight"))
+                        <*> pure Relu
+                        <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
+                        <*> ( LayerNormWithoutBias
+                                <$> lookupTensor ("decoder.block." <> show n <> ".layer.2.layer_norm.weight")
+                                <*> pure t5Eps
+                            )
+                        <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
                     )
-                <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
             )
 
 padded :: Integral n => n -> a -> [a] -> [a]

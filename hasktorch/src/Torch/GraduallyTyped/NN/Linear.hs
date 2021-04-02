@@ -26,7 +26,7 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (.
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithBiasF, LinearWithoutBiasF, linearWithBias, linearWithoutBias)
-import Torch.GraduallyTyped.NN.Initialization (FanMode (..), NonLinearity (..), calculateFan, getter, kaimingUniform)
+import Torch.GraduallyTyped.NN.Initialization (FanMode (..), ForNonLinearity (..), calculateFan, getter, kaimingUniform)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
@@ -61,11 +61,12 @@ type HasInitializeLinearWithBiasC device dataType inputDim outputDim =
     WithDataTypeC dataType (WithDimF inputDim (WithDimF outputDim (Generator device -> (Linear 'WithBias device dataType inputDim outputDim, Generator device)))),
     WithDimC inputDim (WithDimF outputDim (Generator device -> (Linear 'WithBias device dataType inputDim outputDim, Generator device))),
     WithDimC outputDim (Generator device -> (Linear 'WithBias device dataType inputDim outputDim, Generator device)),
-    WithCreateC (FanMode -> NonLinearity -> Generator device -> (Tensor 'WithGradient ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]), Generator device)) 'WithGradient ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]),
+    WithCreateC (FanMode -> ForNonLinearity -> Generator device -> (Tensor 'WithGradient ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]), Generator device)) 'WithGradient ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]),
     WithCreateC (Generator device -> (Tensor 'WithGradient ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]), Generator device)) 'WithGradient ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]),
     WithCreateC (Generator device -> (Tensor 'WithGradient ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim]), Generator device)) 'WithGradient ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim])
   )
 
+-- | TODO: Add 'ForNonLinearity' as parameter.
 instance
   HasInitializeLinearWithBiasC device dataType inputDim outputDim =>
   HasInitialize (Linear 'WithBias device dataType inputDim outputDim)
@@ -106,7 +107,7 @@ instance
               dType
               [outputDim, inputDim]
               FanIn
-              (LeakyRelu . Prelude.sqrt $ 5)
+              (ForLeakyRelu . Prelude.sqrt $ 5)
         bias <-
           state $
             withoutCreate @_ @ 'WithGradient @( 'Layout 'Dense) @device @dataType @( 'Shape '[outputDim])
@@ -148,7 +149,7 @@ type HasInitializeLinearWithoutBiasC device dataType inputDim outputDim =
     WithDataTypeC dataType (WithDimF inputDim (WithDimF outputDim (Generator device -> (Linear 'WithoutBias device dataType inputDim outputDim, Generator device)))),
     WithDimC inputDim (WithDimF outputDim (Generator device -> (Linear 'WithoutBias device dataType inputDim outputDim, Generator device))),
     WithDimC outputDim (Generator device -> (Linear 'WithoutBias device dataType inputDim outputDim, Generator device)),
-    WithCreateC (FanMode -> NonLinearity -> Generator device -> (Tensor 'WithGradient ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]), Generator device)) 'WithGradient ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]),
+    WithCreateC (FanMode -> ForNonLinearity -> Generator device -> (Tensor 'WithGradient ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]), Generator device)) 'WithGradient ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]),
     WithCreateC (Generator device -> (Tensor 'WithGradient ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim]), Generator device)) 'WithGradient ( 'Layout 'Dense) device dataType ( 'Shape '[outputDim, inputDim])
   )
 
@@ -192,7 +193,7 @@ instance
               dType
               [outputDim, inputDim]
               FanIn
-              (LeakyRelu . Prelude.sqrt $ 5)
+              (ForLeakyRelu . Prelude.sqrt $ 5)
         pure $ LinearWithoutBias weight
 
 instance

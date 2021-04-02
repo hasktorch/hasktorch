@@ -68,6 +68,9 @@ import Torch.GraduallyTyped.Tensor.Type (Tensor (..), checkedDataType, checkedDe
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import qualified Torch.Tensor
 
+-- | Generic multi-headed attention layer.
+-- Needs to be specialized to a given transformer type, e.g. 'T5'.
+-- See 'MultiHeadAttention'.
 data
   GMultiHeadAttention
     (headDim :: Dim (Name Symbol) (Size Nat))
@@ -99,6 +102,25 @@ data
       mhaDropout :: dropout
     } ->
     GMultiHeadAttention headDim headEmbedDim embedDim qInProj kInProj vInProj outProj dropout
+
+-- | Multi-headed attention layer.
+newtype
+  MultiHeadAttention
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (dropoutP :: Type)
+  where
+  MultiHeadAttention ::
+    forall style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP.
+    GMultiHeadAttentionF style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP ->
+    MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP
 
 type GMultiHeadAttentionF style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP =
   GMultiHeadAttention
@@ -134,27 +156,8 @@ type family OutProjF style device dataType embedDim queryEmbedDim where
 type family DropoutF style dropoutP where
   DropoutF style dropoutP = Dropout dropoutP
 
--- | Multi-headed attention layer.
-newtype
-  MultiHeadAttention
-    (style :: TransformerStyle)
-    (device :: Device (DeviceType Nat))
-    (dataType :: DataType DType)
-    (headDim :: Dim (Name Symbol) (Size Nat))
-    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (embedDim :: Dim (Name Symbol) (Size Nat))
-    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (dropoutP :: Type)
-  where
-  MultiHeadAttention ::
-    forall style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP.
-    GMultiHeadAttentionF style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP ->
-    MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP
-
-type HasInitializeMultiHeadAttentionC'
-  (style :: TransformerStyle)
+type HasInitializeMultiHeadAttentionC
+  (multiHeadAttention :: Type)
   (device :: Device (DeviceType Nat))
   (dataType :: DataType DType)
   (headDim :: Dim (Name Symbol) (Size Nat))
@@ -164,56 +167,18 @@ type HasInitializeMultiHeadAttentionC'
   (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
   (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
   (dropoutP :: Type) =
-  ( WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))))))))),
-    WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)))))))),
-    WithDimC headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))))))),
-    WithDimC headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)))))),
-    WithDimC embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))))),
-    WithDimC queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)))),
-    WithDimC keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device))),
-    WithDimC valueEmbedDim (dropoutP -> Generator device -> (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)),
-    WithDimC queryEmbedDim (Generator device -> (Linear 'WithBias device dataType embedDim queryEmbedDim, Generator device)),
-    Scalar dropoutP
+  ( WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (multiHeadAttention, Generator device))))))))),
+    WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (multiHeadAttention, Generator device)))))))),
+    WithDimC headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (multiHeadAttention, Generator device))))))),
+    WithDimC headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (multiHeadAttention, Generator device)))))),
+    WithDimC embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (multiHeadAttention, Generator device))))),
+    WithDimC queryEmbedDim (WithDimF keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (multiHeadAttention, Generator device)))),
+    WithDimC keyEmbedDim (WithDimF valueEmbedDim (dropoutP -> Generator device -> (multiHeadAttention, Generator device))),
+    WithDimC valueEmbedDim (dropoutP -> Generator device -> (multiHeadAttention, Generator device))
   )
 
-type family
-  HasInitializeMultiHeadAttentionC
-    (style :: TransformerStyle)
-    (device :: Device (DeviceType Nat))
-    (dataType :: DataType DType)
-    (headDim :: Dim (Name Symbol) (Size Nat))
-    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (embedDim :: Dim (Name Symbol) (Size Nat))
-    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (dropoutP :: Type) ::
-    Constraint
-  where
-  HasInitializeMultiHeadAttentionC 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP =
-    ( HasInitializeLinearWithoutBiasC device dataType queryEmbedDim embedDim,
-      HasInitializeLinearWithoutBiasC device dataType keyEmbedDim embedDim,
-      HasInitializeLinearWithoutBiasC device dataType valueEmbedDim embedDim,
-      HasInitializeLinearWithoutBiasC device dataType embedDim queryEmbedDim,
-      HasInitializeMultiHeadAttentionC' 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP
-    )
-  HasInitializeMultiHeadAttentionC 'BART device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP =
-    ( HasInitializeLinearWithBiasC device dataType queryEmbedDim embedDim,
-      HasInitializeLinearWithBiasC device dataType keyEmbedDim embedDim,
-      HasInitializeLinearWithBiasC device dataType valueEmbedDim embedDim,
-      HasInitializeLinearWithBiasC device dataType embedDim queryEmbedDim,
-      HasInitializeMultiHeadAttentionC' 'BART device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP
-    )
-  HasInitializeMultiHeadAttentionC 'BERT device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP =
-    ( HasInitializeLinearWithBiasC device dataType queryEmbedDim embedDim,
-      HasInitializeLinearWithBiasC device dataType keyEmbedDim embedDim,
-      HasInitializeLinearWithBiasC device dataType valueEmbedDim embedDim,
-      HasInitializeLinearWithBiasC device dataType embedDim queryEmbedDim,
-      HasInitializeMultiHeadAttentionC' 'BERT device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP
-    )
-
 instance
-  ( HasInitializeMultiHeadAttentionC' style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP,
+  ( HasInitializeMultiHeadAttentionC (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP) device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP,
     qInProj ~ QInProjF style device dataType queryEmbedDim embedDim,
     HasInitialize qInProj,
     InitializeF qInProj ~ WithDeviceF device (WithDataTypeF dataType (WithDimF queryEmbedDim (WithDimF embedDim (Generator device -> (qInProj, Generator device))))),

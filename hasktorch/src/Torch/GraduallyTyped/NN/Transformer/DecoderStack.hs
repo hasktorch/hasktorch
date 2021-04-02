@@ -135,7 +135,8 @@ instance
                                   \_ffnDim _dropoutP _eps g -> (TransformerDecoderStackNil, g)
 
 instance
-  ( HasInitializeTransformerDecoderBlockC style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP,
+  ( HasInitialize (TransformerDecoderBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP),
+    HasInitializeTransformerDecoderBlockC style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP,
     HasInitializeTransformerDecoderStackC numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP,
     HasInitializeTransformerDecoderStackC (numLayers - 1) style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP,
     HasInitialize (TransformerDecoderStack (numLayers - 1) style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)

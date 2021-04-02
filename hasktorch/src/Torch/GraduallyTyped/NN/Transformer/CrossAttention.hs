@@ -56,7 +56,7 @@ import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, type (!))
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownDim, KnownShape, Name (..), SelectDim (..), Shape (..), Size (..), WithDimC (..), WithShapeC (..))
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownDim, KnownShape, Name (..), SelectDim (..), Shape (..), Size (..), WithDimC (..), WithDimsC (..), WithShapeC (..))
 import Torch.GraduallyTyped.Tensor (TransposeF)
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (ReshapeF)
 import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (MatmulF)
@@ -64,6 +64,9 @@ import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 
+-- | Generic cross-attention layer.
+-- Needs to be specialized to a given transformer type, e.g. 'T5'.
+-- See 'CrossAttention'.
 data
   GCrossAttention
     (mha :: Type)
@@ -80,25 +83,6 @@ data
       caDropout :: dropout
     } ->
     GCrossAttention mha layerNorm dropout
-
-type family
-  GCrossAttentionF
-    (style :: TransformerStyle)
-    (device :: Device (DeviceType Nat))
-    (dataType :: DataType DType)
-    (headDim :: Dim (Name Symbol) (Size Nat))
-    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (embedDim :: Dim (Name Symbol) (Size Nat))
-    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (dropoutP :: Type) ::
-    Type
-  where
-  GCrossAttentionF 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP =
-    GCrossAttention
-      (MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP)
-      (LayerNorm 'WithoutBias device dataType ('Shape '[queryEmbedDim]))
-      (Dropout dropoutP)
 
 -- | Cross-attention layer.
 newtype
@@ -118,8 +102,23 @@ newtype
     GCrossAttentionF style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP ->
     CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP
 
+type GCrossAttentionF
+  (style :: TransformerStyle)
+  (device :: Device (DeviceType Nat))
+  (dataType :: DataType DType)
+  (headDim :: Dim (Name Symbol) (Size Nat))
+  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (embedDim :: Dim (Name Symbol) (Size Nat))
+  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (dropoutP :: Type) =
+  GCrossAttention
+    (CAMultiheadAttentionF style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
+    (CALayerNormF style device dataType queryEmbedDim)
+    (CADropoutF style dropoutP)
+
 type family
-  HasInitializeCrossAttentionC'
+  CAMultiheadAttentionF
     (style :: TransformerStyle)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
@@ -129,10 +128,30 @@ type family
     (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
     (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
     (dropoutP :: Type) ::
-    Constraint
+    Type
   where
-  HasInitializeCrossAttentionC' 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP =
-    HasInitializeLayerNormWithoutBiasC device dataType ('Shape '[queryEmbedDim])
+  CAMultiheadAttentionF 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP =
+    MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP
+
+type family
+  CALayerNormF
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
+    Type
+  where
+  CALayerNormF 'T5 device dataType queryEmbedDim =
+    LayerNorm 'WithoutBias device dataType ('Shape '[queryEmbedDim])
+
+type family
+  CADropoutF
+    (style :: TransformerStyle)
+    (dropoutP :: Type) ::
+    Type
+  where
+  CADropoutF 'T5 dropoutP =
+    Dropout dropoutP
 
 type HasInitializeCrossAttentionC
   (style :: TransformerStyle)
@@ -144,25 +163,36 @@ type HasInitializeCrossAttentionC
   (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
   (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
   (dropoutP :: Type) =
-  ( HasInitializeMultiHeadAttentionC 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP,
-    HasInitializeLayerNormWithoutBiasC device dataType ('Shape '[queryEmbedDim]),
-    Scalar dropoutP,
-    WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (dropoutP -> Double -> Generator device -> (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device)))))))),
+  ( WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (dropoutP -> Double -> Generator device -> (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device)))))))),
     WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (dropoutP -> Double -> Generator device -> (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device))))))),
     WithDimC headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (dropoutP -> Double -> Generator device -> (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device)))))),
     WithDimC headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (dropoutP -> Double -> Generator device -> (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device))))),
     WithDimC embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (dropoutP -> Double -> Generator device -> (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device)))),
     WithDimC queryEmbedDim (WithDimF keyEmbedDim (dropoutP -> Double -> Generator device -> (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device))),
-    WithDimC keyEmbedDim (dropoutP -> Double -> Generator device -> (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device)),
-    HasInitializeCrossAttentionC' 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP
+    WithDimC keyEmbedDim (dropoutP -> Double -> Generator device -> (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device))
   )
 
 instance
-  HasInitializeCrossAttentionC 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP =>
-  HasInitialize (CrossAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
+  ( HasInitializeCrossAttentionC style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP,
+    Scalar dropoutP,
+    multiHeadAttention ~ CAMultiheadAttentionF style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP,
+    HasInitialize multiHeadAttention,
+    HasInitializeMultiHeadAttentionC multiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP,
+    InitializeF multiHeadAttention ~ WithDeviceF device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF keyEmbedDim (dropoutP -> Generator device -> (multiHeadAttention, Generator device))))))))),
+    layerNorm ~ CALayerNormF style device dataType queryEmbedDim,
+    HasInitialize layerNorm,
+    InitializeF layerNorm ~ WithDeviceF device (WithDataTypeF dataType (WithDimsF '[queryEmbedDim] (Double -> layerNorm))),
+    dropout ~ CADropoutF style dropoutP,
+    HasInitialize dropout,
+    InitializeF dropout ~ (dropoutP -> dropout),
+    WithDimsC '[queryEmbedDim] (Double -> layerNorm),
+    WithDataTypeC dataType (WithDimsF '[queryEmbedDim] (Double -> layerNorm)),
+    WithDeviceC device (WithDataTypeF dataType (WithDimsF '[queryEmbedDim] (Double -> layerNorm)))
+  ) =>
+  HasInitialize (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
   where
   type
-    InitializeF (CrossAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP) =
+    InitializeF (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP) =
       WithDeviceF
         device
         ( WithDataTypeF
@@ -177,7 +207,7 @@ instance
                             queryEmbedDim
                             ( WithDimF
                                 keyEmbedDim
-                                (dropoutP -> Double -> Generator device -> (CrossAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device))
+                                (dropoutP -> Double -> Generator device -> (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device))
                             )
                         )
                     )
@@ -197,14 +227,14 @@ instance
                       \embedDim ->
                         withDim @queryEmbedDim $
                           \queryEmbedDim ->
-                            withDim @keyEmbedDim @(dropoutP -> Double -> Generator device -> (CrossAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device)) $
+                            withDim @keyEmbedDim @(dropoutP -> Double -> Generator device -> (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device)) $
                               \keyEmbedDim ->
                                 go deviceType dType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim
     where
       go deviceType dType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP eps = runState $ do
-        multiheadAttention <-
+        multiHeadAttention <-
           state $
-            withoutDim @keyEmbedDim
+            withoutDim @keyEmbedDim @(dropoutP -> Generator device -> (multiHeadAttention, Generator device))
               ( withoutDim @keyEmbedDim
                   ( withoutDim @queryEmbedDim
                       ( withoutDim @embedDim
@@ -212,7 +242,7 @@ instance
                               ( withoutDim @headDim
                                   ( withoutDataType @dataType
                                       ( withoutDevice @device
-                                          ( initialize @(MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP)
+                                          ( initialize @multiHeadAttention
                                           )
                                           deviceType
                                       )
@@ -231,10 +261,10 @@ instance
               keyEmbedDim
               dropoutP
         let layerNorm =
-              withoutShape @('Shape '[queryEmbedDim])
+              withoutShape @('Shape '[queryEmbedDim]) @(Double -> layerNorm)
                 ( withoutDataType @dataType
                     ( withoutDevice @device
-                        ( initialize @(LayerNorm 'WithoutBias device dataType ('Shape '[queryEmbedDim]))
+                        ( initialize @layerNorm
                         )
                         deviceType
                     )
@@ -242,8 +272,8 @@ instance
                 )
                 [queryEmbedDim]
                 eps
-        let dropout = initialize @(Dropout dropoutP) dropoutP
-        pure . CrossAttention $ GCrossAttention multiheadAttention layerNorm dropout
+        let dropout = initialize @dropout dropoutP
+        pure . CrossAttention $ GCrossAttention multiHeadAttention layerNorm dropout
 
 -- | 'HasForward' instance for @CrossAttention 'T5@.
 --

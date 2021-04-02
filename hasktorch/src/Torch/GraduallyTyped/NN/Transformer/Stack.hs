@@ -137,7 +137,8 @@ instance
                               \_ffnDim _dropoutP _eps g -> (TransformerStackNil, g)
 
 instance
-  ( HasInitializeTransformerBlockC style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP,
+  ( HasInitialize (TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP),
+    HasInitializeTransformerBlockC style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP,
     HasInitializeTransformerStackC numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP,
     HasInitializeTransformerStackC (numLayers - 1) style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP,
     HasInitialize (TransformerStack (numLayers - 1) style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
