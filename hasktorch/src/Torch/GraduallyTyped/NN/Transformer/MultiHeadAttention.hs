@@ -154,10 +154,7 @@ type family
     Type
   where
   QInProjF 'T5 device dataType queryEmbedDim embedDim = Linear 'WithoutBias device dataType queryEmbedDim embedDim
-  QInProjF 'BART device dataType queryEmbedDim embedDim = Linear 'WithBias device dataType queryEmbedDim embedDim
-  QInProjF 'MBART device dataType queryEmbedDim embedDim = Linear 'WithBias device dataType queryEmbedDim embedDim
-  QInProjF 'BERT device dataType queryEmbedDim embedDim = Linear 'WithBias device dataType queryEmbedDim embedDim
-  QInProjF 'Pegasus device dataType queryEmbedDim embedDim = Linear 'WithBias device dataType queryEmbedDim embedDim
+  QInProjF _ device dataType queryEmbedDim embedDim = Linear 'WithBias device dataType queryEmbedDim embedDim
 
 type family
   KInProjF
@@ -169,10 +166,7 @@ type family
     Type
   where
   KInProjF 'T5 device dataType keyEmbedDim embedDim = Linear 'WithoutBias device dataType keyEmbedDim embedDim
-  KInProjF 'BART device dataType keyEmbedDim embedDim = Linear 'WithBias device dataType keyEmbedDim embedDim
-  KInProjF 'MBART device dataType keyEmbedDim embedDim = Linear 'WithBias device dataType keyEmbedDim embedDim
-  KInProjF 'BERT device dataType keyEmbedDim embedDim = Linear 'WithBias device dataType keyEmbedDim embedDim
-  KInProjF 'Pegasus device dataType keyEmbedDim embedDim = Linear 'WithBias device dataType keyEmbedDim embedDim
+  KInProjF _ device dataType keyEmbedDim embedDim = Linear 'WithBias device dataType keyEmbedDim embedDim
 
 type family
   VInProjF
@@ -184,10 +178,7 @@ type family
     Type
   where
   VInProjF 'T5 device dataType valueEmbedDim embedDim = Linear 'WithoutBias device dataType valueEmbedDim embedDim
-  VInProjF 'BART device dataType valueEmbedDim embedDim = Linear 'WithBias device dataType valueEmbedDim embedDim
-  VInProjF 'MBART device dataType valueEmbedDim embedDim = Linear 'WithBias device dataType valueEmbedDim embedDim
-  VInProjF 'BERT device dataType valueEmbedDim embedDim = Linear 'WithBias device dataType valueEmbedDim embedDim
-  VInProjF 'Pegasus device dataType valueEmbedDim embedDim = Linear 'WithBias device dataType valueEmbedDim embedDim
+  VInProjF _ device dataType valueEmbedDim embedDim = Linear 'WithBias device dataType valueEmbedDim embedDim
 
 type family
   OutProjF
@@ -199,10 +190,7 @@ type family
     Type
   where
   OutProjF 'T5 device dataType embedDim queryEmbedDim = Linear 'WithoutBias device dataType embedDim queryEmbedDim
-  OutProjF 'BART device dataType embedDim queryEmbedDim = Linear 'WithBias device dataType embedDim queryEmbedDim
-  OutProjF 'MBART device dataType embedDim queryEmbedDim = Linear 'WithBias device dataType embedDim queryEmbedDim
-  OutProjF 'BERT device dataType embedDim queryEmbedDim = Linear 'WithBias device dataType embedDim queryEmbedDim
-  OutProjF 'Pegasus device dataType embedDim queryEmbedDim = Linear 'WithBias device dataType embedDim queryEmbedDim
+  OutProjF _ device dataType embedDim queryEmbedDim = Linear 'WithBias device dataType embedDim queryEmbedDim
 
 type family
   DropoutF
@@ -210,7 +198,7 @@ type family
     (dropoutP :: Type) ::
     Type
   where
-  DropoutF style dropoutP = Dropout dropoutP
+  DropoutF _ dropoutP = Dropout dropoutP
 
 type HasInitializeMultiHeadAttentionC
   (multiHeadAttention :: Type)

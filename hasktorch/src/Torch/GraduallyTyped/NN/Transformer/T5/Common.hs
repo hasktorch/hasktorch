@@ -61,7 +61,7 @@ import Torch.GraduallyTyped.NN.Transformer.CrossAttention (CrossAttention (..), 
 import Torch.GraduallyTyped.NN.Transformer.Decoder (TransformerDecoder (..))
 import Torch.GraduallyTyped.NN.Transformer.DecoderBlock (TransformerDecoderBlock (..))
 import Torch.GraduallyTyped.NN.Transformer.DecoderStack (TransformerDecoderStack (..))
-import Torch.GraduallyTyped.NN.Transformer.Encoder (TransformerEncoder (..))
+import Torch.GraduallyTyped.NN.Transformer.Encoder (GTransformerEncoder (..), TransformerEncoder (..))
 import Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork (GTransformerFeedForwardNetwork (..), TransformerFeedForwardNetwork (..))
 import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (GMultiHeadAttention (..), MultiHeadAttention (..))
 import Torch.GraduallyTyped.NN.Transformer.SelfAttention (GSelfAttention (..), SelfAttention (..))
@@ -259,15 +259,17 @@ lookupEncoder = do
   t5Config <- ask
   case t5Config of
     T5Config {..} ->
-      T5Encoder
-        <$> lookupEncoderStack
-        <*> ( LayerNormWithoutBias
-                <$> lookupTensor "encoder.final_layer_norm.weight"
-                <*> pure eps
-            )
-        <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
-        <*> ( Embedding
-                <$> lookupTensor "encoder.block.0.layer.0.SelfAttention.relative_attention_bias.weight"
+      TransformerEncoder
+        <$> ( GTransformerEncoder
+                <$> lookupEncoderStack
+                <*> ( LayerNormWithoutBias
+                        <$> lookupTensor "encoder.final_layer_norm.weight"
+                        <*> pure eps
+                    )
+                <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
+                <*> ( Embedding
+                        <$> lookupTensor "encoder.block.0.layer.0.SelfAttention.relative_attention_bias.weight"
+                    )
             )
 
 lookupDecoder ::
@@ -460,6 +462,7 @@ lookupEncoderBlock n = do
                                 <*> pure t5Eps
                             )
                         <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
+                        <*> pure ()
                     )
             )
         <*> ( TransformerFeedForwardNetwork
@@ -508,6 +511,7 @@ lookupDecoderBlock n = do
                                 <*> pure t5Eps
                             )
                         <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
+                        <*> pure ()
                     )
             )
         <*> ( CrossAttention

@@ -130,8 +130,8 @@ type family
     (dropoutP :: Type) ::
     Type
   where
-  CAMultiheadAttentionF 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP =
-    MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP
+  CAMultiheadAttentionF style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP =
+    MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP
 
 type family
   CALayerNormF
@@ -150,7 +150,7 @@ type family
     (dropoutP :: Type) ::
     Type
   where
-  CADropoutF 'T5 dropoutP =
+  CADropoutF _ dropoutP =
     Dropout dropoutP
 
 type HasInitializeCrossAttentionC
@@ -177,17 +177,17 @@ instance
     Scalar dropoutP,
     multiHeadAttention ~ CAMultiheadAttentionF style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP,
     HasInitialize multiHeadAttention,
-    HasInitializeMultiHeadAttentionC multiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP,
     InitializeF multiHeadAttention ~ WithDeviceF device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF keyEmbedDim (WithDimF keyEmbedDim (dropoutP -> Generator device -> (multiHeadAttention, Generator device))))))))),
+    HasInitializeMultiHeadAttentionC multiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP,
     layerNorm ~ CALayerNormF style device dataType queryEmbedDim,
     HasInitialize layerNorm,
     InitializeF layerNorm ~ WithDeviceF device (WithDataTypeF dataType (WithDimsF '[queryEmbedDim] (Double -> layerNorm))),
-    dropout ~ CADropoutF style dropoutP,
-    HasInitialize dropout,
-    InitializeF dropout ~ (dropoutP -> dropout),
     WithDimsC '[queryEmbedDim] (Double -> layerNorm),
     WithDataTypeC dataType (WithDimsF '[queryEmbedDim] (Double -> layerNorm)),
-    WithDeviceC device (WithDataTypeF dataType (WithDimsF '[queryEmbedDim] (Double -> layerNorm)))
+    WithDeviceC device (WithDataTypeF dataType (WithDimsF '[queryEmbedDim] (Double -> layerNorm))),
+    dropout ~ CADropoutF style dropoutP,
+    HasInitialize dropout,
+    InitializeF dropout ~ (dropoutP -> dropout)
   ) =>
   HasInitialize (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
   where

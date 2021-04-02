@@ -40,6 +40,7 @@ import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Kind (Constraint, Type)
+import Data.Singletons (SingI, sing)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType, WithDataTypeC (..))
@@ -52,7 +53,7 @@ import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithBiasF, LinearWithout
 import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithBiasF, LayerNormWithoutBiasF)
 import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearWithBiasC, HasInitializeLinearWithoutBiasC, Linear (..))
 import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormWithBiasC, HasInitializeLayerNormWithoutBiasC, LayerNorm)
-import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle (..))
+import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
@@ -132,7 +133,7 @@ type family
     Type
   where
   FFNInputWeightF 'T5 device dataType queryEmbedDim ffnDim = Linear 'WithoutBias device dataType queryEmbedDim ffnDim
-  FFNInputWeightF 'BART device dataType queryEmbedDim ffnDim = Linear 'WithBias device dataType queryEmbedDim ffnDim
+  FFNInputWeightF _ device dataType queryEmbedDim ffnDim = Linear 'WithBias device dataType queryEmbedDim ffnDim
 
 type family
   FFNOutputWeightF
@@ -144,7 +145,7 @@ type family
     Type
   where
   FFNOutputWeightF 'T5 device dataType queryEmbedDim ffnDim = Linear 'WithoutBias device dataType ffnDim queryEmbedDim
-  FFNOutputWeightF 'BART device dataType queryEmbedDim ffnDim = Linear 'WithBias device dataType ffnDim queryEmbedDim
+  FFNOutputWeightF _ device dataType queryEmbedDim ffnDim = Linear 'WithBias device dataType ffnDim queryEmbedDim
 
 type family
   FFNActivationF
@@ -153,6 +154,7 @@ type family
   where
   FFNActivationF 'T5 = Relu
   FFNActivationF 'BART = Gelu
+  FFNActivationF 'BERT = Gelu
 
 type family
   FFNActivationDropoutF
@@ -162,6 +164,7 @@ type family
   where
   FFNActivationDropoutF 'T5 dropoutP = Dropout dropoutP
   FFNActivationDropoutF 'BART dropoutP = Dropout dropoutP
+  FFNActivationDropoutF 'BERT _ = ()
 
 type family
   FFNLayerNormF
@@ -172,7 +175,7 @@ type family
     Type
   where
   FFNLayerNormF 'T5 device dataType queryEmbedDim = LayerNorm 'WithoutBias device dataType ('Shape '[queryEmbedDim])
-  FFNLayerNormF 'BART device dataType queryEmbedDim = LayerNorm 'WithBias device dataType ('Shape '[queryEmbedDim])
+  FFNLayerNormF _ device dataType queryEmbedDim = LayerNorm 'WithBias device dataType ('Shape '[queryEmbedDim])
 
 type family
   FFNDropoutF
@@ -181,7 +184,7 @@ type family
     Type
   where
   FFNDropoutF 'T5 dropoutP = Dropout dropoutP
-  FFNDropoutF 'BART dropoutP = Dropout dropoutP
+  FFNDropoutF _ dropoutP = Dropout dropoutP
 
 type HasInitializeTransformerFeedForwardNetworkC style device dataType queryEmbedDim ffnDim dropoutP =
   ( WithDeviceC device (WithDataTypeF dataType (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP, Generator device))))),
@@ -190,8 +193,31 @@ type HasInitializeTransformerFeedForwardNetworkC style device dataType queryEmbe
     WithDimC ffnDim (dropoutP -> Double -> Generator device -> (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP, Generator device))
   )
 
+type family
+  HasInitializeFFNActivationDropoutF
+    (activationDropout :: Type)
+    (style :: TransformerStyle)
+    (dropoutP :: Type) ::
+    Constraint
+  where
+  HasInitializeFFNActivationDropoutF activationDropout 'T5 dropoutP =
+    ( HasInitialize activationDropout,
+      InitializeF activationDropout ~ (dropoutP -> activationDropout)
+    )
+  HasInitializeFFNActivationDropoutF activationDropout 'BART dropoutP =
+    ( HasInitialize activationDropout,
+      InitializeF activationDropout ~ (dropoutP -> activationDropout)
+    )
+  HasInitializeFFNActivationDropoutF activationDropout 'BERT dropoutP =
+    ()
+  HasInitializeFFNActivationDropoutF activationDropout 'Pegasus dropoutP =
+    ( HasInitialize activationDropout,
+      InitializeF activationDropout ~ (dropoutP -> activationDropout)
+    )
+
 instance
-  ( HasInitializeTransformerFeedForwardNetworkC style device dataType queryEmbedDim ffnDim dropoutP,
+  ( SingI style,
+    HasInitializeTransformerFeedForwardNetworkC style device dataType queryEmbedDim ffnDim dropoutP,
     inputWeight ~ FFNInputWeightF style device dataType queryEmbedDim ffnDim,
     HasInitialize inputWeight,
     InitializeF inputWeight ~ WithDeviceF device (WithDataTypeF dataType (WithDimF queryEmbedDim (WithDimF ffnDim (Generator device -> (inputWeight, Generator device))))),
@@ -211,8 +237,7 @@ instance
     HasInitialize activation,
     InitializeF activation ~ activation,
     activationDropout ~ FFNActivationDropoutF style dropoutP,
-    HasInitialize activationDropout,
-    InitializeF activationDropout ~ (dropoutP -> activationDropout),
+    HasInitializeFFNActivationDropoutF activationDropout style dropoutP,
     layerNorm ~ FFNLayerNormF style device dataType queryEmbedDim,
     HasInitialize layerNorm,
     InitializeF layerNorm ~ WithDeviceF device (WithDataTypeF dataType (WithDimsF '[queryEmbedDim] (Double -> layerNorm))),
@@ -294,7 +319,11 @@ instance
               )
               queryEmbedDim
         let activation = initialize @activation
-        let activationDropout = initialize @activationDropout dropoutP
+        let activationDropout = case sing @style of
+              ST5 -> initialize @activationDropout dropoutP
+              SBART -> initialize @activationDropout dropoutP
+              SBERT -> ()
+              SPegasus -> initialize @activationDropout dropoutP
         let layerNorm =
               withoutShape @('Shape '[queryEmbedDim]) @(Double -> layerNorm)
                 ( withoutDataType @dataType
@@ -331,7 +360,7 @@ type family
               )
           )
       )
-  FeedForwardNetworkOutputShape 'BART queryEmbedDim ffnDim queryShape =
+  FeedForwardNetworkOutputShape _ queryEmbedDim ffnDim queryShape =
     LayerNormWithBiasF
       ('Shape '[queryEmbedDim])
       ('Shape '[queryEmbedDim])
@@ -351,30 +380,30 @@ type family
 -- | 'HasForward' instance for @TransformerFeedForwardNetwork 'T5@.
 --
 -- @
---    ┌───────┐
---    │ query ├────┐
---    └───┬───┘    │
---        │        │
---        ▼        │
---   ffnLayerNorm  │
---        ▼        │
---  ffnInputWeight │
---        ▼        │
---      relu       │
---        ▼        │
---  ffnReluDropout │
---        ▼        │
--- ffnOutputWeight │
---        ▼        │
---    ffnDropout   │
---        │        │
---        ▼        │
---       add◄──────┘
---        │
---        ▼
---    ┌───────┐
---    │ query │
---    └───────┘
+--       ┌───────┐
+--       │ query ├───────┐
+--       └───┬───┘       │
+--           │           │
+--           ▼           │
+--      ffnLayerNorm     │
+--           ▼           │
+--     ffnInputWeight    │
+--           ▼           │
+--     ffnActivation     │
+--           ▼           │
+--  ffnActivationDropout │
+--           ▼           │
+--    ffnOutputWeight    │
+--           ▼           │
+--       ffnDropout      │
+--           │           │
+--           ▼           │
+--          add◄─────────┘
+--           │
+--           ▼
+--       ┌───────┐
+--       │ query │
+--       └───────┘
 -- @
 instance
   ( KnownShape queryShape,
@@ -410,31 +439,31 @@ instance
 -- | 'HasForward' instance for @TransformerFeedForwardNetwork 'BART@.
 --
 -- @
---     ┌───────┐
---     │ query ├────┐
---     └───┬───┘    │
---         │        │
---         ▼        │
---  bffnInputWeight │
---         ▼        │
---       gelu       │
---         ▼        │
---  bffnGeluDropout │
---         ▼        │
--- bffnOutputWeight │
---         ▼        │
---    bffnDropout   │
---         │        │
---         ▼        │
---        add◄──────┘
---         │
---         ▼
---   bffnLayerNorm
---         │
---         ▼
---     ┌───────┐
---     │ query │
---     └───────┘
+--       ┌───────┐
+--       │ query ├───────┐
+--       └───┬───┘       │
+--           │           │
+--           ▼           │
+--     ffnInputWeight    │
+--           ▼           │
+--     ffnActivation     │
+--           ▼           │
+--  ffnActivationDropout │
+--           ▼           │
+--    ffnOutputWeight    │
+--           ▼           │
+--       ffnDropout      │
+--           │           │
+--           ▼           │
+--          add◄─────────┘
+--           │
+--           ▼
+--      ffnLayerNorm
+--           │
+--           ▼
+--       ┌───────┐
+--       │ query │
+--       └───────┘
 -- @
 instance
   ( KnownShape queryShape,
@@ -448,10 +477,7 @@ instance
           (dataType <+> queryDataType)
           (FeedForwardNetworkOutputShape 'BART queryEmbedDim ffnDim queryShape),
     generatorOutput
-      ~ Generator
-          ( (device <+> ((device <+> queryDevice) <+> generatorDevice))
-              <+> ((device <+> queryDevice) <+> generatorDevice)
-          )
+      ~ Generator ((device <+> ((device <+> queryDevice) <+> generatorDevice)) <+> ((device <+> queryDevice) <+> generatorDevice))
   ) =>
   HasForward
     (TransformerFeedForwardNetwork 'BART device dataType queryEmbedDim ffnDim dropoutP)
@@ -466,6 +492,64 @@ instance
         >>>= IxState . forward ffnInputWeight
         >>>= IxState . forward ffnActivation
         >>>= IxState . forward ffnActivationDropout
+        >>>= IxState . forward ffnOutputWeight
+        >>>= IxState . forward ffnDropout
+        >>>= ireturn . (query `add`)
+        >>>= IxState . forward ffnLayoutNorm
+
+-- | 'HasForward' instance for @TransformerFeedForwardNetwork 'BERT@.
+--
+-- @
+--       ┌───────┐
+--       │ query ├───────┐
+--       └───┬───┘       │
+--           │           │
+--           ▼           │
+--     ffnInputWeight    │
+--           ▼           │
+--     ffnActivation     │
+--           ▼           │
+--    ffnOutputWeight    │
+--           ▼           │
+--       ffnDropout      │
+--           │           │
+--           ▼           │
+--          add◄─────────┘
+--           │
+--           ▼
+--      ffnLayerNorm
+--           │
+--           ▼
+--       ┌───────┐
+--       │ query │
+--       └───────┘
+-- @
+instance
+  ( KnownShape queryShape,
+    KnownDim queryEmbedDim,
+    Scalar dropoutP,
+    output
+      ~ Tensor
+          'WithGradient
+          ('Layout 'Dense <+> queryLayout)
+          (device <+> queryDevice <+> generatorDevice)
+          (dataType <+> queryDataType)
+          (FeedForwardNetworkOutputShape 'BERT queryEmbedDim ffnDim queryShape),
+    generatorOutput
+      ~ Generator ((device <+> (device <+> queryDevice)) <+> generatorDevice)
+  ) =>
+  HasForward
+    (TransformerFeedForwardNetwork 'BERT device dataType queryEmbedDim ffnDim dropoutP)
+    (Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape)
+    (Generator generatorDevice)
+    output
+    generatorOutput
+  where
+  forward (TransformerFeedForwardNetwork GTransformerFeedForwardNetwork {..}) query =
+    runIxState $
+      ireturn query
+        >>>= IxState . forward ffnInputWeight
+        >>>= IxState . forward ffnActivation
         >>>= IxState . forward ffnOutputWeight
         >>>= IxState . forward ffnDropout
         >>>= ireturn . (query `add`)

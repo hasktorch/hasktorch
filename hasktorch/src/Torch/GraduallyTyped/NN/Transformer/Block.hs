@@ -35,6 +35,11 @@ import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..), WithDimC
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 
 -- | Transformer encoder block consisting of self-attention and a feed-forward network.
+--
+-- TODO: Some transformers use LayerDrop, see https://arxiv.org/abs/1909.11556, during training.
+-- To support this, we will need a layer wrapper that is either the identity function or the wrapped layer
+-- based on a uniformly random draw from a supplied generator.
+-- Complications will arise due to the gradual typing...
 data
   TransformerBlock
     (style :: TransformerStyle)

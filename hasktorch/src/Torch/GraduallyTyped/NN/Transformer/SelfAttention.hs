@@ -10,6 +10,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -30,7 +31,9 @@
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL7
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL7C
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8C #-}
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8C
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL9
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL9C #-}
 
 module Torch.GraduallyTyped.NN.Transformer.SelfAttention where
 
@@ -38,6 +41,7 @@ import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Kind (Constraint, Type)
+import Data.Singletons (SingI, sing)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType, WithDataTypeC (..))
@@ -45,12 +49,13 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (.
 import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout)
-import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithoutBiasF)
+import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithBiasF, LinearWithoutBiasF)
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF)
-import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithoutBiasF)
+import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithBiasF, LayerNormWithoutBiasF)
+import Torch.GraduallyTyped.NN.Linear (Linear)
 import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormWithoutBiasC, LayerNorm)
 import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (HasInitializeMultiHeadAttentionC, MultiHeadAttention)
-import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle (..))
+import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
@@ -72,17 +77,20 @@ data
     (mha :: Type)
     (layerNorm :: Type)
     (dropout :: Type)
+    (dense :: Type)
   where
   GSelfAttention ::
-    forall mha layerNorm dropout.
+    forall mha layerNorm dropout dense.
     { -- | self-attention
       saMultiheadAttention :: mha,
       -- | layer norm
       saLayerNorm :: layerNorm,
       -- | dropout
-      saDropout :: dropout
+      saDropout :: dropout,
+      -- | dense
+      saDense :: dense
     } ->
-    GSelfAttention mha layerNorm dropout
+    GSelfAttention mha layerNorm dropout dense
 
 -- | Self-attention layer.
 newtype
@@ -114,6 +122,7 @@ type GSelfAttentionF
     (SAMultiheadAttentionF style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
     (SALayerNormF style device dataType queryEmbedDim)
     (SADropoutF style dropoutP)
+    (SADenseF style device dataType queryEmbedDim)
 
 type family
   SAMultiheadAttentionF
@@ -127,8 +136,8 @@ type family
     (dropoutP :: Type) ::
     Type
   where
-  SAMultiheadAttentionF 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP =
-    MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP
+  SAMultiheadAttentionF style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP =
+    MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP
 
 type family
   SALayerNormF
@@ -140,6 +149,8 @@ type family
   where
   SALayerNormF 'T5 device dataType queryEmbedDim =
     LayerNorm 'WithoutBias device dataType ('Shape '[queryEmbedDim])
+  SALayerNormF 'BERT device dataType queryEmbedDim =
+    LayerNorm 'WithBias device dataType ('Shape '[queryEmbedDim])
 
 type family
   SADropoutF
@@ -147,8 +158,20 @@ type family
     (dropoutP :: Type) ::
     Type
   where
-  SADropoutF 'T5 dropoutP =
-    Dropout dropoutP
+  SADropoutF _ dropoutP = Dropout dropoutP
+
+type family
+  SADenseF
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
+    Type
+  where
+  SADenseF 'BERT device dataType queryEmbedDim =
+    Linear 'WithBias device dataType queryEmbedDim queryEmbedDim
+  SADenseF _ _ _ _ =
+    ()
 
 type HasInitializeSelfAttentionC style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP =
   ( WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device))))))),
@@ -159,22 +182,45 @@ type HasInitializeSelfAttentionC style device dataType headDim headEmbedDim embe
     WithDimC queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device))
   )
 
+type family
+  HasInitializeSADenseF
+    (dense :: Type)
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
+    Constraint
+  where
+  HasInitializeSADenseF dense 'BERT device dataType queryEmbedDim =
+    ( HasInitialize dense,
+      InitializeF dense ~ WithDeviceF device (WithDataTypeF dataType (WithDimF queryEmbedDim (WithDimF queryEmbedDim (Generator device -> (dense, Generator device))))),
+      WithDeviceC device (WithDataTypeF dataType (WithDimF queryEmbedDim (WithDimF queryEmbedDim (Generator device -> (dense, Generator device))))),
+      WithDataTypeC dataType (WithDimF queryEmbedDim (WithDimF queryEmbedDim (Generator device -> (dense, Generator device)))),
+      WithDimC queryEmbedDim (WithDimF queryEmbedDim (Generator device -> (dense, Generator device))),
+      WithDimC queryEmbedDim (Generator device -> (dense, Generator device))
+    )
+  HasInitializeSADenseF dense _ device dataType queryEmbedDim =
+    ()
+
 instance
-  ( HasInitializeSelfAttentionC style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP,
+  ( SingI style,
+    HasInitializeSelfAttentionC style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP,
     Scalar dropoutP,
     multiHeadAttention ~ SAMultiheadAttentionF style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP,
     HasInitialize multiHeadAttention,
-    HasInitializeMultiHeadAttentionC multiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP,
     InitializeF multiHeadAttention ~ WithDeviceF device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF queryEmbedDim (WithDimF queryEmbedDim (dropoutP -> Generator device -> (multiHeadAttention, Generator device))))))))),
+    HasInitializeMultiHeadAttentionC multiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP,
     layerNorm ~ SALayerNormF style device dataType queryEmbedDim,
     HasInitialize layerNorm,
     InitializeF layerNorm ~ WithDeviceF device (WithDataTypeF dataType (WithDimsF '[queryEmbedDim] (Double -> layerNorm))),
+    WithDeviceC device (WithDataTypeF dataType (WithDimsF '[queryEmbedDim] (Double -> layerNorm))),
+    WithDataTypeC dataType (WithDimsF '[queryEmbedDim] (Double -> layerNorm)),
+    WithDimsC '[queryEmbedDim] (Double -> layerNorm),
     dropout ~ SADropoutF style dropoutP,
     HasInitialize dropout,
     InitializeF dropout ~ (dropoutP -> dropout),
-    WithDimsC '[queryEmbedDim] (Double -> layerNorm),
-    WithDataTypeC dataType (WithDimsF '[queryEmbedDim] (Double -> layerNorm)),
-    WithDeviceC device (WithDataTypeF dataType (WithDimsF '[queryEmbedDim] (Double -> layerNorm)))
+    dense ~ SADenseF style device dataType queryEmbedDim,
+    HasInitializeSADenseF dense style device dataType queryEmbedDim
   ) =>
   HasInitialize (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
   where
@@ -255,7 +301,26 @@ instance
                 [queryEmbedDim]
                 eps
         let dropout = initialize @dropout dropoutP
-        pure . SelfAttention $ GSelfAttention multiHeadAttention layerNorm dropout
+        dense <-
+          state $ case sing @style of
+            SBERT ->
+              withoutDim @queryEmbedDim @(Generator device -> (dense, Generator device))
+                ( withoutDim @queryEmbedDim
+                    ( withoutDataType @dataType
+                        ( withoutDevice @device
+                            ( initialize @dense
+                            )
+                            deviceType
+                        )
+                        dType
+                    )
+                    queryEmbedDim
+                )
+                queryEmbedDim
+            ST5 -> ((),)
+            SBART -> ((),)
+            SPegasus -> ((),)
+        pure . SelfAttention $ GSelfAttention multiHeadAttention layerNorm dropout dense
 
 -- | 'HasForward' instance for @SelfAttention 'T5@.
 --
@@ -302,12 +367,12 @@ instance
       (Generator generatorDevice)
       ( Tensor
           'WithGradient
-          (queryLayout <+> 'Layout 'Dense <+> attentionBiasLayout)
-          (queryDevice <+> device <+> attentionBiasDevice <+> generatorDevice)
-          (queryDataType <+> dataType <+> attentionBiasDataType)
+          ('Layout 'Dense <+> queryLayout <+> attentionBiasLayout)
+          (device <+> queryDevice <+> attentionBiasDevice <+> generatorDevice)
+          (dataType <+> queryDataType <+> attentionBiasDataType)
           mhaOutputShape
       )
-      (Generator (queryDevice <+> device <+> attentionBiasDevice <+> generatorDevice)),
+      (Generator (device <+> queryDevice <+> attentionBiasDevice <+> generatorDevice)),
     output
       ~ Tensor
           'WithGradient
@@ -315,7 +380,7 @@ instance
           (queryDevice <+> device <+> attentionBiasDevice <+> generatorDevice)
           (queryDataType <+> dataType <+> attentionBiasDataType)
           (BroadcastShapesF queryShape mhaOutputShape),
-    generatorOutput ~ Generator (queryDevice <+> device <+> attentionBiasDevice <+> generatorDevice)
+    generatorOutput ~ Generator (device <+> queryDevice <+> attentionBiasDevice <+> generatorDevice)
   ) =>
   HasForward
     (SelfAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
@@ -346,18 +411,101 @@ instance
 --         │       ┌────┼────┐      │
 --         │       │    │    │      │
 --         │       ▼    ▼    ▼      │
---         └─►bsaMultiheadAttention │
+--         └─►saMultiheadAttention  │
 --                      │           │
 --                      ▼           │
---                 bsaDropout       │
+--                  saDropout       │
 --                      │           │
 --                      └───►add◄───┘
 --                            │
 --                            ▼
---                      bsaLayerNorm
+--                       saLayerNorm
 --                            │
 --                            ▼
 --                        ┌───────┐
 --                        │ query │
 --                        └───────┘
 -- @
+
+-- | 'HasForward' instance for @SelfAttention 'BERT@.
+--
+-- @
+-- ┌───────────────┐      ┌───────┐
+-- │ attentionBias │      │ query │
+-- └───────┬───────┘      └───┬───┘
+--         │                  │
+--         │            ┌─────┴─────┐
+--         │            │           │
+--         │       ┌────┼────┐      │
+--         │       │    │    │      │
+--         │       ▼    ▼    ▼      │
+--         └─►saMultiheadAttention  │
+--                      │           │
+--                      ▼           │
+--                   saDense        │
+--                      ▼           │
+--                  saDropout       │
+--                      │           │
+--                      └───►add◄───┘
+--                            │
+--                            ▼
+--                       saLayerNorm
+--                            │
+--                            ▼
+--                        ┌───────┐
+--                        │ query │
+--                        └───────┘
+-- @
+instance
+  ( KnownDim queryEmbedDim,
+    Scalar dropoutP,
+    query ~ Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+    attentionBias ~ Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape,
+    HasForward
+      (MultiHeadAttention 'BERT device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP)
+      (query, query, query, attentionBias)
+      (Generator generatorDevice)
+      ( Tensor
+          'WithGradient
+          ('Layout 'Dense <+> queryLayout <+> attentionBiasLayout)
+          (device <+> queryDevice <+> attentionBiasDevice <+> generatorDevice)
+          (dataType <+> queryDataType <+> attentionBiasDataType)
+          mhaOutputShape
+      )
+      (Generator (device <+> queryDevice <+> attentionBiasDevice <+> generatorDevice)),
+    output
+      ~ Tensor
+          'WithGradient
+          ('Layout 'Dense <+> queryLayout <+> attentionBiasLayout)
+          (device <+> queryDevice <+> attentionBiasDevice <+> generatorDevice)
+          (dataType <+> queryDataType <+> attentionBiasDataType)
+          ( LayerNormWithBiasF
+              ('Shape '[queryEmbedDim])
+              ('Shape '[queryEmbedDim])
+              ( BroadcastShapesF
+                  queryShape
+                  ( LinearWithBiasF
+                      ('Shape '[queryEmbedDim, queryEmbedDim])
+                      ('Shape '[queryEmbedDim])
+                      mhaOutputShape
+                  )
+              )
+          ),
+    generatorOutput
+      ~ Generator ((device <+> (device <+> (queryDevice <+> (attentionBiasDevice <+> generatorDevice)))) <+> (device <+> (queryDevice <+> (attentionBiasDevice <+> generatorDevice))))
+  ) =>
+  HasForward
+    (SelfAttention 'BERT device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
+    (query, attentionBias)
+    (Generator generatorDevice)
+    output
+    generatorOutput
+  where
+  forward (SelfAttention sa) (query, attentionBias) =
+    runIxState $
+      ireturn query
+        >>>= (\query' -> IxState $ forward (saMultiheadAttention sa) (query', query', query', attentionBias))
+        >>>= IxState . forward (saDense sa)
+        >>>= IxState . forward (saDropout sa)
+        >>>= ireturn . (query `add`)
+        >>>= IxState . forward (saLayerNorm sa)

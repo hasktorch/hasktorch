@@ -136,6 +136,7 @@ type HasInitializeSequenceToSequenceTransformerC
     WithDimC relPosEncBucketDim (WithDimF vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device))),
     WithDimC vocabDim (dropoutP -> Double -> Generator device -> (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP, Generator device)),
     HasInitializeSequenceToSequenceTransformerC' hasLMHead numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim dropoutP,
+    HasInitialize (TransformerEncoder numEncoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP),
     HasInitializeTransformerEncoderC numEncoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP,
     HasInitializeTransformerDecoderC numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim dropoutP
   )
@@ -683,80 +684,80 @@ instance
             >>>= ireturn . flip divScalar scaling
             >>>= \decoderOutput -> ireturn (SequenceToSequenceTransformerOutput decoderOutput generationEncoderOutput)
 
-testForwardSeqToSeq :: _
-testForwardSeqToSeq =
-  let seqToSeq =
-        undefined ::
-          SequenceToSequenceTransformer
-            'WithLMHead
-            128
-            128
-            'T5
-            ('Device 'CPU)
-            ('DataType 'Float)
-            ('Dim ('Name "*") ('Size 8)) -- headDim
-            ('Dim ('Name "*") ('Size 64)) -- headEmbedDim
-            ('Dim ('Name "*") ('Size 512)) -- embedDim
-            ('Dim ('Name "*") ('Size 512)) -- inputEmbedDim
-            ('Dim ('Name "*") ('Size 2048)) -- ffnDim
-            ('Dim ('Name "*") ('Size 32)) -- relPosEncBucketDim
-            ('Dim ('Name "*") ('Size 32128)) -- vocabDim
-            Float
-      input =
-        undefined ::
-          Tensor
-            'WithoutGradient
-            ('Layout 'Dense)
-            ('Device 'CPU)
-            ('DataType 'Int64)
-            ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 7)])
-      decoderInput =
-        undefined ::
-          Tensor
-            'WithoutGradient
-            ('Layout 'Dense)
-            ('Device 'CPU)
-            ('DataType 'Int64)
-            ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 5)])
-      relPos =
-        undefined ::
-          Tensor
-            'WithoutGradient
-            ('Layout 'Dense)
-            ('Device 'CPU)
-            ('DataType 'Int64)
-            ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 7), 'Dim ('Name "*") ('Size 7)])
-      decoderRelPos =
-        undefined ::
-          Tensor
-            'WithoutGradient
-            ('Layout 'Dense)
-            ('Device 'CPU)
-            ('DataType 'Int64)
-            ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 5), 'Dim ('Name "*") ('Size 5)])
-      attentionMask =
-        undefined ::
-          Tensor
-            'WithoutGradient
-            ('Layout 'Dense)
-            ('Device 'CPU)
-            ('DataType 'Float)
-            ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 7), 'Dim ('Name "*") ('Size 7)])
-      decoderAttentionMask =
-        undefined ::
-          Tensor
-            'WithoutGradient
-            ('Layout 'Dense)
-            ('Device 'CPU)
-            ('DataType 'Float)
-            ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 5), 'Dim ('Name "*") ('Size 5)])
-      crossAttentionMask =
-        undefined ::
-          Tensor
-            'WithoutGradient
-            ('Layout 'Dense)
-            ('Device 'CPU)
-            ('DataType 'Float)
-            ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 5), 'Dim ('Name "*") ('Size 7)])
-      g = undefined :: Generator ('Device 'CPU)
-   in forward seqToSeq (SequenceToSequenceTransformerInput input decoderInput relPos decoderRelPos attentionMask decoderAttentionMask crossAttentionMask) g
+-- testForwardSeqToSeq :: _
+-- testForwardSeqToSeq =
+--   let seqToSeq =
+--         undefined ::
+--           SequenceToSequenceTransformer
+--             'WithLMHead
+--             128
+--             128
+--             'T5
+--             ('Device 'CPU)
+--             ('DataType 'Float)
+--             ('Dim ('Name "*") ('Size 8)) -- headDim
+--             ('Dim ('Name "*") ('Size 64)) -- headEmbedDim
+--             ('Dim ('Name "*") ('Size 512)) -- embedDim
+--             ('Dim ('Name "*") ('Size 512)) -- inputEmbedDim
+--             ('Dim ('Name "*") ('Size 2048)) -- ffnDim
+--             ('Dim ('Name "*") ('Size 32)) -- relPosEncBucketDim
+--             ('Dim ('Name "*") ('Size 32128)) -- vocabDim
+--             Float
+--       input =
+--         undefined ::
+--           Tensor
+--             'WithoutGradient
+--             ('Layout 'Dense)
+--             ('Device 'CPU)
+--             ('DataType 'Int64)
+--             ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 7)])
+--       decoderInput =
+--         undefined ::
+--           Tensor
+--             'WithoutGradient
+--             ('Layout 'Dense)
+--             ('Device 'CPU)
+--             ('DataType 'Int64)
+--             ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 5)])
+--       relPos =
+--         undefined ::
+--           Tensor
+--             'WithoutGradient
+--             ('Layout 'Dense)
+--             ('Device 'CPU)
+--             ('DataType 'Int64)
+--             ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 7), 'Dim ('Name "*") ('Size 7)])
+--       decoderRelPos =
+--         undefined ::
+--           Tensor
+--             'WithoutGradient
+--             ('Layout 'Dense)
+--             ('Device 'CPU)
+--             ('DataType 'Int64)
+--             ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 5), 'Dim ('Name "*") ('Size 5)])
+--       attentionMask =
+--         undefined ::
+--           Tensor
+--             'WithoutGradient
+--             ('Layout 'Dense)
+--             ('Device 'CPU)
+--             ('DataType 'Float)
+--             ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 7), 'Dim ('Name "*") ('Size 7)])
+--       decoderAttentionMask =
+--         undefined ::
+--           Tensor
+--             'WithoutGradient
+--             ('Layout 'Dense)
+--             ('Device 'CPU)
+--             ('DataType 'Float)
+--             ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 5), 'Dim ('Name "*") ('Size 5)])
+--       crossAttentionMask =
+--         undefined ::
+--           Tensor
+--             'WithoutGradient
+--             ('Layout 'Dense)
+--             ('Device 'CPU)
+--             ('DataType 'Float)
+--             ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 5), 'Dim ('Name "*") ('Size 7)])
+--       g = undefined :: Generator ('Device 'CPU)
+--    in forward seqToSeq (SequenceToSequenceTransformerInput input decoderInput relPos decoderRelPos attentionMask decoderAttentionMask crossAttentionMask) g
