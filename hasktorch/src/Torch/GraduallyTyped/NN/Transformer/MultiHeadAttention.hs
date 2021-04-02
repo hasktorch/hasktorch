@@ -6,6 +6,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE PolyKinds #-}
@@ -122,7 +123,17 @@ newtype
     GMultiHeadAttentionF style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP ->
     MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP
 
-type GMultiHeadAttentionF style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP =
+type GMultiHeadAttentionF
+  (style :: TransformerStyle)
+  (device :: Device (DeviceType Nat))
+  (dataType :: DataType DType)
+  (headDim :: Dim (Name Symbol) (Size Nat))
+  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (embedDim :: Dim (Name Symbol) (Size Nat))
+  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (dropoutP :: Type) =
   GMultiHeadAttention
     headDim
     headEmbedDim
@@ -133,27 +144,72 @@ type GMultiHeadAttentionF style device dataType headDim headEmbedDim embedDim qu
     (OutProjF style device dataType embedDim queryEmbedDim)
     (DropoutF style dropoutP)
 
-type family QInProjF style device dataType queryEmbedDim embedDim where
+type family
+  QInProjF
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat)) ::
+    Type
+  where
   QInProjF 'T5 device dataType queryEmbedDim embedDim = Linear 'WithoutBias device dataType queryEmbedDim embedDim
   QInProjF 'BART device dataType queryEmbedDim embedDim = Linear 'WithBias device dataType queryEmbedDim embedDim
+  QInProjF 'MBART device dataType queryEmbedDim embedDim = Linear 'WithBias device dataType queryEmbedDim embedDim
   QInProjF 'BERT device dataType queryEmbedDim embedDim = Linear 'WithBias device dataType queryEmbedDim embedDim
+  QInProjF 'Pegasus device dataType queryEmbedDim embedDim = Linear 'WithBias device dataType queryEmbedDim embedDim
 
-type family KInProjF style device dataType keyEmbedDim embedDim where
+type family
+  KInProjF
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat)) ::
+    Type
+  where
   KInProjF 'T5 device dataType keyEmbedDim embedDim = Linear 'WithoutBias device dataType keyEmbedDim embedDim
   KInProjF 'BART device dataType keyEmbedDim embedDim = Linear 'WithBias device dataType keyEmbedDim embedDim
+  KInProjF 'MBART device dataType keyEmbedDim embedDim = Linear 'WithBias device dataType keyEmbedDim embedDim
   KInProjF 'BERT device dataType keyEmbedDim embedDim = Linear 'WithBias device dataType keyEmbedDim embedDim
+  KInProjF 'Pegasus device dataType keyEmbedDim embedDim = Linear 'WithBias device dataType keyEmbedDim embedDim
 
-type family VInProjF style device dataType valueEmbedDim embedDim where
+type family
+  VInProjF
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat)) ::
+    Type
+  where
   VInProjF 'T5 device dataType valueEmbedDim embedDim = Linear 'WithoutBias device dataType valueEmbedDim embedDim
   VInProjF 'BART device dataType valueEmbedDim embedDim = Linear 'WithBias device dataType valueEmbedDim embedDim
+  VInProjF 'MBART device dataType valueEmbedDim embedDim = Linear 'WithBias device dataType valueEmbedDim embedDim
   VInProjF 'BERT device dataType valueEmbedDim embedDim = Linear 'WithBias device dataType valueEmbedDim embedDim
+  VInProjF 'Pegasus device dataType valueEmbedDim embedDim = Linear 'WithBias device dataType valueEmbedDim embedDim
 
-type family OutProjF style device dataType embedDim queryEmbedDim where
+type family
+  OutProjF
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
+    Type
+  where
   OutProjF 'T5 device dataType embedDim queryEmbedDim = Linear 'WithoutBias device dataType embedDim queryEmbedDim
   OutProjF 'BART device dataType embedDim queryEmbedDim = Linear 'WithBias device dataType embedDim queryEmbedDim
+  OutProjF 'MBART device dataType embedDim queryEmbedDim = Linear 'WithBias device dataType embedDim queryEmbedDim
   OutProjF 'BERT device dataType embedDim queryEmbedDim = Linear 'WithBias device dataType embedDim queryEmbedDim
+  OutProjF 'Pegasus device dataType embedDim queryEmbedDim = Linear 'WithBias device dataType embedDim queryEmbedDim
 
-type family DropoutF style dropoutP where
+type family
+  DropoutF
+    (style :: TransformerStyle)
+    (dropoutP :: Type) ::
+    Type
+  where
   DropoutF style dropoutP = Dropout dropoutP
 
 type HasInitializeMultiHeadAttentionC
@@ -364,9 +420,11 @@ unsafeGetKeySeqDim keyDims valueDims =
     dims <- sequence [getDim (ByIndex 1) valueDims]
     unifyDims dim dims
 
+data Scaling = NoScaling | QueryScaling Double | WeightScaling Double
+
 -- | 'HasForward' instance for 'MultiHeadAttention'.
 --
--- Scaling of queries is optional.
+-- 'Scaling' of queries is optional.
 --
 -- @
 -- ┌───────────────┐        ┌───────┐       ┌─────┐       ┌───────┐
@@ -385,6 +443,8 @@ unsafeGetKeySeqDim keyDims valueDims =
 --         │                    │          transpose          │
 --         │                    │              │              │
 --         │                    └───►matmul◄───┘              │
+--         │                           ▼                      │
+--         │                       (scaling)                  │
 --         │                           │                      │
 --         └──────────►add◄────────────┘                      │
 --                      ▼                                     │
@@ -409,7 +469,7 @@ instance
   ( SingI style,
     HasForward
       (GMultiHeadAttentionF style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
-      ( Maybe Double,
+      ( Scaling,
         Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
         Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
         Tensor valueRequiresGradient valueLayout valueDevice valueDataType valueShape,
@@ -439,13 +499,22 @@ instance
     output
     generatorOutput
   where
-  forward (MultiHeadAttention gmha) (query, key, value, attentionBias) g =
+  forward (MultiHeadAttention gmha@GMultiHeadAttention {..}) (query, key, value, attentionBias) g =
     case sing @style of
       ST5 ->
-        forward gmha (Nothing @Double, query, key, value, attentionBias) g
+        forward gmha (NoScaling, query, key, value, attentionBias) g
       SBART ->
-        let scaling = 1 / (sqrt . fromIntegral . dimSize . mhaHeadDim $ gmha)
-         in forward gmha (Just scaling, query, key, value, attentionBias) g
+        let scaling = 1 / (sqrt . fromIntegral . dimSize $ mhaHeadDim)
+         in forward gmha (QueryScaling scaling, query, key, value, attentionBias) g
+      SMBART ->
+        let scaling = 1 / (sqrt . fromIntegral . dimSize $ mhaHeadDim)
+         in forward gmha (QueryScaling scaling, query, key, value, attentionBias) g
+      SBERT ->
+        let scaling = 1 / (sqrt . fromIntegral . dimSize $ mhaHeadDim)
+         in forward gmha (WeightScaling scaling, query, key, value, attentionBias) g
+      SPegasus ->
+        let scaling = 1 / (sqrt . fromIntegral . dimSize $ mhaHeadDim)
+         in forward gmha (QueryScaling scaling, query, key, value, attentionBias) g
 
 instance
   ( HasForward
@@ -567,7 +636,7 @@ instance
   ) =>
   HasForward
     (GMultiHeadAttention headDim headEmbedDim embedDim qInProj kInProj vInProj outProj dropout)
-    ( Maybe Double,
+    ( Scaling,
       Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
       Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
       Tensor valueRequiresGradient valueLayout valueDevice valueDataType valueShape,
@@ -591,7 +660,13 @@ instance
           q =
             ireturn query
               >>>= IxState . forward mhaQInProj
-              >>>= ireturn . maybe id (flip mulScalar) scaling
+              >>>= ireturn
+                . ( \case
+                      NoScaling -> id
+                      QueryScaling s -> flip mulScalar s
+                      WeightScaling _ -> id
+                  )
+                  scaling
               >>>= ireturn . reshapeIn @batchDim @querySeqDim @headDim @headEmbedDim [batchDim, querySeqDim, mhaHeadDim, mhaHeadEmbedDim]
               >>>= ireturn . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
           k =
@@ -602,6 +677,13 @@ instance
           kt = k >>>= ireturn . transpose @('SelectDim ('ByIndex 2)) @('SelectDim ('ByIndex 3))
           weights =
             matmul <<$>> q <<*>> kt
+              >>>= ireturn
+                . ( \case
+                      NoScaling -> id
+                      QueryScaling _ -> id
+                      WeightScaling s -> flip mulScalar s
+                  )
+                  scaling
               >>>= ireturn . (`add` attentionBias)
               >>>= IxState . forward mhaDropout . softmax @('SelectDim ('ByIndex 3))
           v =

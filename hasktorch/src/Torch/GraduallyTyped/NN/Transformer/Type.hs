@@ -15,7 +15,7 @@ module Torch.GraduallyTyped.NN.Transformer.Type where
 
 import Data.Singletons.TH (genSingletons)
 
-data TransformerStyle = T5 | BART | BERT
+data TransformerStyle = T5 | BART | MBART | BERT | Pegasus
   deriving (Show, Eq)
 
 genSingletons [''TransformerStyle]
