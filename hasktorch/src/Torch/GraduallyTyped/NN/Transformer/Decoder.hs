@@ -51,14 +51,17 @@ import Torch.GraduallyTyped.Unify (type (<+>))
 data
   GTransformerDecoder
     (stack :: Type)
+    (embedLayerNorm :: Type)
     (layerNorm :: Type)
     (dropout :: Type)
     (posEnc :: Type)
   where
   GTransformerDecoder ::
-    forall stack layerNorm dropout posEnc.
+    forall stack embedLayerNorm layerNorm dropout posEnc.
     { -- | decoder layer stack
       tdStack :: stack,
+      -- | decoder embedding layer norm
+      tdEmbedLayerNorm :: embedLayerNorm,
       -- | decoder layer norm
       tdLayerNorm :: layerNorm,
       -- | decoder dropout
@@ -66,7 +69,7 @@ data
       -- | positional encoding
       tdPosEnc :: posEnc
     } ->
-    GTransformerDecoder stack layerNorm dropout posEnc
+    GTransformerDecoder stack embedLayerNorm layerNorm dropout posEnc
 
 -- | Transformer decoder.
 data
@@ -104,6 +107,7 @@ type GTransformerDecoderF
   (dropoutP :: Type) =
   GTransformerDecoder
     (TDStackF numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP)
+    (TDEmbedLayerNormF style device dataType decoderInputEmbedDim)
     (TDLayerNormF style device dataType decoderInputEmbedDim)
     (TDDropoutF style dropoutP)
     (TDPosEncF style device dataType headDim decoderInputEmbedDim posEncDim)
@@ -127,6 +131,19 @@ type family
     TransformerDecoderStack numLayers 'T5 device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP
 
 type family
+  TDEmbedLayerNormF
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (decoderInputEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
+    Type
+  where
+  TDEmbedLayerNormF 'T5 _ _ _ = ()
+  TDEmbedLayerNormF 'BERT device dataType decoderInputEmbedDim =
+    LayerNorm 'WithBias device dataType ('Shape '[decoderInputEmbedDim])
+  TDEmbedLayerNormF 'Pegasus _ _ _ = ()
+
+type family
   TDLayerNormF
     (style :: TransformerStyle)
     (device :: Device (DeviceType Nat))
@@ -136,8 +153,7 @@ type family
   where
   TDLayerNormF 'T5 device dataType decoderInputEmbedDim =
     LayerNorm 'WithoutBias device dataType ('Shape '[decoderInputEmbedDim])
-  TDLayerNormF 'BERT device dataType decoderInputEmbedDim =
-    LayerNorm 'WithBias device dataType ('Shape '[decoderInputEmbedDim])
+  TDLayerNormF 'BERT _ _ _ = ()
   TDLayerNormF 'Pegasus device dataType decoderInputEmbedDim =
     LayerNorm 'WithBias device dataType ('Shape '[decoderInputEmbedDim])
 
@@ -191,6 +207,50 @@ type HasInitializeTransformerDecoderC
   )
 
 type family
+  HasInitializeTDEmbedLayerNormF
+    (embedLayerNorm :: Type)
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (decoderInputEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
+    Constraint
+  where
+  HasInitializeTDEmbedLayerNormF _ 'T5 _ _ _ = ()
+  HasInitializeTDEmbedLayerNormF embedLayerNorm 'BERT device dataType decoderInputEmbedDim =
+    ( HasInitialize embedLayerNorm,
+      InitializeF embedLayerNorm ~ WithDeviceF device (WithDataTypeF dataType (WithDimsF '[decoderInputEmbedDim] (Double -> embedLayerNorm))),
+      WithDeviceC device (WithDataTypeF dataType (WithDimsF '[decoderInputEmbedDim] (Double -> embedLayerNorm))),
+      WithDataTypeC dataType (WithDimsF '[decoderInputEmbedDim] (Double -> embedLayerNorm)),
+      WithDimsC '[decoderInputEmbedDim] (Double -> embedLayerNorm)
+    )
+  HasInitializeTDEmbedLayerNormF _ 'Pegasus _ _ _ = ()
+
+type family
+  HasInitializeTDLayerNormF
+    (layerNorm :: Type)
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (decoderInputEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
+    Constraint
+  where
+  HasInitializeTDLayerNormF layerNorm 'T5 device dataType decoderInputEmbedDim =
+    ( HasInitialize layerNorm,
+      InitializeF layerNorm ~ WithDeviceF device (WithDataTypeF dataType (WithDimsF '[decoderInputEmbedDim] (Double -> layerNorm))),
+      WithDeviceC device (WithDataTypeF dataType (WithDimsF '[decoderInputEmbedDim] (Double -> layerNorm))),
+      WithDataTypeC dataType (WithDimsF '[decoderInputEmbedDim] (Double -> layerNorm)),
+      WithDimsC '[decoderInputEmbedDim] (Double -> layerNorm)
+    )
+  HasInitializeTDLayerNormF _ 'BERT _ _ _ = ()
+  HasInitializeTDLayerNormF layerNorm 'Pegasus device dataType decoderInputEmbedDim =
+    ( HasInitialize layerNorm,
+      InitializeF layerNorm ~ WithDeviceF device (WithDataTypeF dataType (WithDimsF '[decoderInputEmbedDim] (Double -> layerNorm))),
+      WithDeviceC device (WithDataTypeF dataType (WithDimsF '[decoderInputEmbedDim] (Double -> layerNorm))),
+      WithDataTypeC dataType (WithDimsF '[decoderInputEmbedDim] (Double -> layerNorm)),
+      WithDimsC '[decoderInputEmbedDim] (Double -> layerNorm)
+    )
+
+type family
   HasInitializeTDPosEncF
     (posEnc :: Type)
     (style :: TransformerStyle)
@@ -233,12 +293,10 @@ instance
     HasInitialize stack,
     InitializeF stack ~ WithDeviceF device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF decoderInputEmbedDim (WithDimF encoderOutputEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (stack, Generator device))))))))),
     HasInitializeTransformerDecoderStackC stack device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP,
+    embedLayerNorm ~ TDEmbedLayerNormF style device dataType decoderInputEmbedDim,
+    HasInitializeTDEmbedLayerNormF embedLayerNorm style device dataType decoderInputEmbedDim,
     layerNorm ~ TDLayerNormF style device dataType decoderInputEmbedDim,
-    HasInitialize layerNorm,
-    InitializeF layerNorm ~ WithDeviceF device (WithDataTypeF dataType (WithDimsF '[decoderInputEmbedDim] (Double -> layerNorm))),
-    WithDeviceC device (WithDataTypeF dataType (WithDimsF '[decoderInputEmbedDim] (Double -> layerNorm))),
-    WithDataTypeC dataType (WithDimsF '[decoderInputEmbedDim] (Double -> layerNorm)),
-    WithDimsC '[decoderInputEmbedDim] (Double -> layerNorm),
+    HasInitializeTDLayerNormF layerNorm style device dataType decoderInputEmbedDim,
     dropout ~ TDDropoutF style dropoutP,
     HasInitialize dropout,
     InitializeF dropout ~ (dropoutP -> dropout),
@@ -326,18 +384,47 @@ instance
               ffnDim
               dropoutP
               eps
-        let layerNorm =
-              withoutShape @('Shape '[decoderInputEmbedDim])
-                ( withoutDataType @dataType
-                    ( withoutDevice @device
-                        ( initialize @layerNorm
-                        )
-                        deviceType
-                    )
-                    dType
-                )
-                [decoderInputEmbedDim]
-                eps
+        let embedLayerNorm = case sing @style of
+              ST5 -> ()
+              SBERT ->
+                withoutShape @('Shape '[decoderInputEmbedDim])
+                  ( withoutDataType @dataType
+                      ( withoutDevice @device
+                          ( initialize @embedLayerNorm
+                          )
+                          deviceType
+                      )
+                      dType
+                  )
+                  [decoderInputEmbedDim]
+                  eps
+              SPegasus -> ()
+        let layerNorm = case sing @style of
+              ST5 ->
+                withoutShape @('Shape '[decoderInputEmbedDim])
+                  ( withoutDataType @dataType
+                      ( withoutDevice @device
+                          ( initialize @layerNorm
+                          )
+                          deviceType
+                      )
+                      dType
+                  )
+                  [decoderInputEmbedDim]
+                  eps
+              SBERT -> ()
+              SPegasus ->
+                withoutShape @('Shape '[decoderInputEmbedDim])
+                  ( withoutDataType @dataType
+                      ( withoutDevice @device
+                          ( initialize @layerNorm
+                          )
+                          deviceType
+                      )
+                      dType
+                  )
+                  [decoderInputEmbedDim]
+                  eps
         let dropout = initialize @dropout dropoutP
         posEnc <-
           state $ case sing @style of
@@ -383,9 +470,9 @@ instance
                     posEncDim
                 )
                 decoderInputEmbedDim
-        pure . TransformerDecoder $ GTransformerDecoder stack layerNorm dropout posEnc
+        pure . TransformerDecoder $ GTransformerDecoder stack embedLayerNorm layerNorm dropout posEnc
 
--- | 'HasForward' instance for 'TransformerDecoder'.
+-- | 'HasForward' instance for @TransformerDecoder numLayers 'T5@.
 --
 -- @
 -- ┌──────────────┐  ┌───────────────┐  ┌───────────────┐  ┌──────────────────────┐  ┌────────────────────┐
@@ -517,3 +604,151 @@ instance
                  )
             >>>= IxState . forward tdLayerNorm
             >>>= IxState . forward tdDropout
+
+-- | 'HasForward' instance for @TransformerDecoder numLayers 'BART@.
+--
+-- @
+-- ┌──────────────┐  ┌────────────┐  ┌───────────────┐  ┌──────────────────────┐  ┌────────────────────┐
+-- │ decoderInput │  │ decoderPos │  │ encoderOutput │  │ decoderAttentionMask │  │ crossAttentionMask │
+-- └──────┬───────┘  └──────┬─────┘  └───────┬───────┘  └──────────┬───────────┘  └──────────┬─────────┘
+--        │                 │                │                     │                         │
+--        │                 ▼                │                     │                         │
+--        │             tdPosEnc             │                     │                         │
+--        │                 │                │                     │                         │
+--        └──────►add◄──────┘                │                     │                         │
+--                 │                         │                     │                         │
+--                 ▼                         │                     │                         │
+--          tdEmbedLayerNorm                 │                     │                         │
+--                 ▼                         │                     ▼                         ▼
+--             tdDropout                     │                 unsqueeze                 unsqueeze
+--                 ▼                         │                     │                         │
+--              tdStack◄─────────────────────┘◄────────────────────┘◄────────────────────────┘
+--                 │
+--                 ▼
+--            ┌────────┐
+--            │ output │
+--            └────────┘
+-- @
+
+-- | 'HasForward' instance for @TransformerDecoder numLayers 'MBART@.
+--
+-- @
+-- ┌──────────────┐  ┌────────────┐  ┌───────────────┐  ┌──────────────────────┐  ┌────────────────────┐
+-- │ decoderInput │  │ decoderPos │  │ encoderOutput │  │ decoderAttentionMask │  │ crossAttentionMask │
+-- └──────┬───────┘  └──────┬─────┘  └───────┬───────┘  └──────────┬───────────┘  └──────────┬─────────┘
+--        │                 │                │                     │                         │
+--        │                 ▼                │                     │                         │
+--        │             tdPosEnc             │                     │                         │
+--        │                 │                │                     │                         │
+--        └──────►add◄──────┘                │                     │                         │
+--                 │                         │                     │                         │
+--                 ▼                         │                     │                         │
+--          tdEmbedLayerNorm                 │                     │                         │
+--                 ▼                         │                     ▼                         ▼
+--             tdDropout                     │                 unsqueeze                 unsqueeze
+--                 ▼                         │                     │                         │
+--              tdStack◄─────────────────────┘◄────────────────────┘◄────────────────────────┘
+--                 ▼
+--            tdLayerNorm
+--                 │
+--                 ▼
+--            ┌────────┐
+--            │ output │
+--            └────────┘
+-- @
+
+-- | 'HasForward' instance for @TransformerDecoder numLayers 'Pegasus@.
+--
+-- @
+-- ┌──────────────┐  ┌────────────┐  ┌───────────────┐  ┌──────────────────────┐  ┌────────────────────┐
+-- │ decoderInput │  │ decoderPos │  │ encoderOutput │  │ decoderAttentionMask │  │ crossAttentionMask │
+-- └──────┬───────┘  └──────┬─────┘  └───────┬───────┘  └──────────┬───────────┘  └──────────┬─────────┘
+--        │                 │                │                     │                         │
+--        │                 ▼                │                     │                         │
+--        │             tdPosEnc             │                     │                         │
+--        │                 │                │                     │                         │
+--        └──────►add◄──────┘                │                     │                         │
+--                 │                         │                     │                         │
+--                 ▼                         │                     ▼                         ▼
+--             tdDropout                     │                 unsqueeze                 unsqueeze
+--                 ▼                         │                     │                         │
+--              tdStack◄─────────────────────┘◄────────────────────┘◄────────────────────────┘
+--                 ▼
+--            tdLayerNorm
+--                 │
+--                 ▼
+--            ┌────────┐
+--            │ output │
+--            └────────┘
+-- @
+instance
+  ( HasForward
+      (TDDropoutF 'Pegasus dropoutP)
+      ( Tensor
+          'WithGradient
+          (decoderInputLayout <+> 'Layout 'Dense <+> decoderPosLayout)
+          (decoderInputDevice <+> device <+> decoderPosDevice)
+          (decoderInputDataType <+> Seq (decoderPosDataType <+> 'DataType 'Int64) dataType)
+          (BroadcastShapesF decoderInputShape (EmbeddingF ('Shape '[posEncDim, decoderInputEmbedDim]) decoderPosShape))
+      )
+      generator
+      dropoutOutput
+      dropoutGeneratorOutput,
+    HasForward
+      (TDStackF numLayers 'Pegasus device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP)
+      ( dropoutOutput,
+        encoderOutput,
+        Tensor
+          decoderAttentionMaskRequiresGradient
+          decoderAttentionMaskLayout
+          decoderAttentionMaskDevice
+          decoderAttentionMaskDataType
+          (UnsqueezeF ('SelectDim ('ByIndex 1)) decoderAttentionMaskShape),
+        Tensor
+          crossAttentionMaskRequiresGradient
+          crossAttentionMaskLayout
+          crossAttentionMaskDevice
+          crossAttentionMaskDataType
+          (UnsqueezeF ('SelectDim ('ByIndex 1)) crossAttentionMaskShape)
+      )
+      dropoutGeneratorOutput
+      stackOutput
+      generatorOutput,
+    HasForward
+      (TDLayerNormF 'Pegasus device dataType decoderInputEmbedDim)
+      stackOutput
+      generatorOutput
+      output
+      generatorOutput
+  ) =>
+  HasForward
+    (TransformerDecoder numLayers 'Pegasus device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP)
+    ( Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
+      encoderOutput,
+      Tensor decoderPosRequiresGradient decoderPosLayout decoderPosDevice decoderPosDataType decoderPosShape,
+      Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
+      Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
+    )
+    generator
+    output
+    generatorOutput
+  where
+  forward (TransformerDecoder GTransformerDecoder {..}) (decoderInput, encoderOutput, decoderPos, decoderAttentionMask, crossAttentionMask) =
+    let decoderAttentionBias = unsqueeze @('SelectDim ('ByIndex 1)) decoderAttentionMask
+        crossAttentionBias = unsqueeze @('SelectDim ('ByIndex 1)) crossAttentionMask
+     in runIxState $
+          ireturn decoderPos
+            >>>= IxState . forward tdPosEnc
+            >>>= ireturn . (decoderInput `add`)
+            >>>= IxState . forward tdDropout
+            >>>= ( \decoderInput' ->
+                     IxState $
+                       forward
+                         tdStack
+                         ( decoderInput',
+                           encoderOutput,
+                           decoderAttentionBias,
+                           crossAttentionBias
+                         )
+                 )
+            >>>= IxState . forward tdLayerNorm

@@ -262,6 +262,7 @@ lookupEncoder = do
       TransformerEncoder
         <$> ( GTransformerEncoder
                 <$> lookupEncoderStack
+                <*> pure ()
                 <*> ( LayerNormWithoutBias
                         <$> lookupTensor "encoder.final_layer_norm.weight"
                         <*> pure eps
@@ -287,6 +288,7 @@ lookupDecoder = do
       TransformerDecoder
         <$> ( GTransformerDecoder
                 <$> lookupDecoderStack
+                <*> pure ()
                 <*> ( LayerNormWithoutBias
                         <$> lookupTensor "decoder.final_layer_norm.weight"
                         <*> pure eps
