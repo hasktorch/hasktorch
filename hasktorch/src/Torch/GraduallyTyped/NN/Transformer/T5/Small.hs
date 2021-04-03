@@ -15,8 +15,8 @@ import Control.Monad.Reader (ReaderT (runReaderT))
 import GHC.TypeLits (Nat)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
-import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (HasLMHead (..), SequenceToSequenceTransformer, SequenceToSequenceTransformerInput)
-import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5Config, T5DataType, T5DropoutP, T5GenerationInput, T5Input, T5Output, T5RelPosEncBucketDim, lookupSequenceToSequenceTransformerWithLMHead, lookupSequenceToSequenceTransformerWithoutLMHead, t5ConfigFromPretrained)
+import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (SequenceToSequenceTransformer, SequenceToSequenceTransformerInput)
+import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5Config, T5DataType, T5DropoutP, T5GenerationInput, T5Input, T5Output, T5RelPosEncBucketDim, lookupSequenceToSequenceTransformerWithLMHead, t5ConfigFromPretrained, T5ModelWithLMHead, T5Model)
 import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle (T5))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 
@@ -53,34 +53,6 @@ type T5SmallVocabDim = 'Dim ('Name "*") ('Size 32128)
 type T5SmallConfig device =
   T5Config T5SmallNumLayers device T5SmallHeadDim T5SmallHeadEmbedDim T5SmallEmbedDim T5SmallInputEmbedDim T5SmallFFNDim T5RelPosEncBucketDim T5SmallVocabDim
 
--- | T5-Small data type.
-data
-  T5Small
-    (hasLMHead :: HasLMHead)
-    (device :: Device (DeviceType Nat))
-  where
-  -- | T5-Small constructor.
-  T5Small ::
-    forall hasLMHead device.
-    { t5SmallSeqToSeq ::
-        SequenceToSequenceTransformer
-          hasLMHead
-          T5SmallNumLayers
-          T5SmallNumLayers
-          'T5
-          device
-          T5DataType
-          T5SmallHeadDim
-          T5SmallHeadEmbedDim
-          T5SmallEmbedDim
-          T5SmallInputEmbedDim
-          T5SmallFFNDim
-          T5RelPosEncBucketDim
-          T5SmallVocabDim
-          T5DropoutP
-    } ->
-    T5Small hasLMHead device
-
 -- | load a T5-Small configuration from a file
 t5SmallConfigFromPretrained ::
   -- | file path
@@ -91,115 +63,12 @@ t5SmallConfigFromPretrained ::
   IO (T5SmallConfig ('Device 'CPU))
 t5SmallConfigFromPretrained = t5ConfigFromPretrained
 
-instance HasInitialize (T5Small 'WithoutLMHead ('Device 'CPU)) where
-  type
-    InitializeF (T5Small 'WithoutLMHead ('Device 'CPU)) =
-      FilePath -> IO (T5Small 'WithoutLMHead ('Device 'CPU))
-  initialize filePath = do
-    config <- t5SmallConfigFromPretrained filePath False
-    flip runReaderT config $
-      T5Small <$> lookupSequenceToSequenceTransformerWithoutLMHead
+-- | T5-Small model.
+type T5Small
+  (device :: Device (DeviceType Nat)) =
+  T5Model T5SmallNumLayers device T5SmallHeadDim T5SmallHeadEmbedDim T5SmallEmbedDim T5SmallInputEmbedDim T5SmallFFNDim T5SmallVocabDim
 
-instance HasInitialize (T5Small 'WithLMHead ('Device 'CPU)) where
-  type
-    InitializeF (T5Small 'WithLMHead ('Device 'CPU)) =
-      FilePath -> IO (T5Small 'WithLMHead ('Device 'CPU))
-  initialize filePath = do
-    config <- t5SmallConfigFromPretrained filePath False
-    flip runReaderT config $
-      T5Small <$> lookupSequenceToSequenceTransformerWithLMHead
-
-instance
-  HasForward
-    ( SequenceToSequenceTransformer
-        hasLMHead
-        T5SmallNumLayers
-        T5SmallNumLayers
-        'T5
-        device
-        T5DataType
-        T5SmallHeadDim
-        T5SmallHeadEmbedDim
-        T5SmallEmbedDim
-        T5SmallInputEmbedDim
-        T5SmallFFNDim
-        T5RelPosEncBucketDim
-        T5SmallVocabDim
-        T5DropoutP
-    )
-    (SequenceToSequenceTransformerInput input decoderInput relPos decoderRelPos attentionMask decoderAttentionMask crossAttentionMask)
-    generator
-    output
-    generatorOutput =>
-  HasForward
-    (T5Small hasLMHead device)
-    (SequenceToSequenceTransformerInput input decoderInput relPos decoderRelPos attentionMask decoderAttentionMask crossAttentionMask)
-    generator
-    output
-    generatorOutput
-  where
-  forward T5Small {..} = forward t5SmallSeqToSeq
-
-instance
-  ( HasForward
-      ( SequenceToSequenceTransformer
-          hasLMHead
-          T5SmallNumLayers
-          T5SmallNumLayers
-          'T5
-          device
-          T5DataType
-          T5SmallHeadDim
-          T5SmallHeadEmbedDim
-          T5SmallEmbedDim
-          T5SmallInputEmbedDim
-          T5SmallFFNDim
-          T5RelPosEncBucketDim
-          T5SmallVocabDim
-          T5DropoutP
-      )
-      (T5Input input decoderInput)
-      generator
-      output
-      generatorOutput
-  ) =>
-  HasForward
-    (T5Small hasLMHead device)
-    (T5Input input decoderInput)
-    generator
-    output
-    generatorOutput
-  where
-  forward T5Small {..} = forward t5SmallSeqToSeq
-
-instance
-  ( HasForward
-      ( SequenceToSequenceTransformer
-          hasLMHead
-          T5SmallNumLayers
-          T5SmallNumLayers
-          'T5
-          device
-          T5DataType
-          T5SmallHeadDim
-          T5SmallHeadEmbedDim
-          T5SmallEmbedDim
-          T5SmallInputEmbedDim
-          T5SmallFFNDim
-          T5RelPosEncBucketDim
-          T5SmallVocabDim
-          T5DropoutP
-      )
-      (T5GenerationInput decoderInput encoderOutput inputPaddingMask)
-      generator
-      (T5Output decoderOutput encoderOutput inputPaddingMask)
-      generatorOutput
-  ) =>
-  HasForward
-    (T5Small hasLMHead device)
-    (T5GenerationInput decoderInput encoderOutput inputPaddingMask)
-    generator
-    (T5Output decoderOutput encoderOutput inputPaddingMask)
-    generatorOutput
-  where
-  forward T5Small {..} = forward t5SmallSeqToSeq
+-- | T5-Small model with language modelling head.
+type T5SmallWithLMHead
+  (device :: Device (DeviceType Nat)) =
+  T5ModelWithLMHead T5SmallNumLayers device T5SmallHeadDim T5SmallHeadEmbedDim T5SmallEmbedDim T5SmallInputEmbedDim T5SmallFFNDim T5SmallVocabDim

@@ -1,6 +1,8 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -41,10 +43,15 @@ module Torch.GraduallyTyped.NN.Transformer.T5.Common where
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.Reader (MonadIO, MonadReader, ask, liftIO)
+import Data.Coerce (Coercible, coerce)
+import Data.Generics.Product.Positions (HasPosition, position)
+import Data.Kind (Type)
 import qualified Data.Map as Map
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.Float (double2Int)
+import GHC.Generics (Generic)
 import GHC.TypeLits (KnownNat, Nat, Symbol, type (-), type (<=?))
+import Lens.Family ((^.))
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), KnownDType (..), KnownDataType (..))
@@ -65,7 +72,7 @@ import Torch.GraduallyTyped.NN.Transformer.Encoder (GTransformerEncoder (..), Tr
 import Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork (GTransformerFeedForwardNetwork (..), TransformerFeedForwardNetwork (..))
 import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (GMultiHeadAttention (..), MultiHeadAttention (..))
 import Torch.GraduallyTyped.NN.Transformer.SelfAttention (GSelfAttention (..), SelfAttention (..))
-import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (HasLMHead (..), SequenceToSequenceTransformer (..), SequenceToSequenceTransformerGenerationInput (..), SequenceToSequenceTransformerInput (..), SequenceToSequenceTransformerOutput (..))
+import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (SequenceToSequenceTransformer (..), SequenceToSequenceTransformerGenerationInput (..), SequenceToSequenceTransformerInput (..), SequenceToSequenceTransformerOutput (..), SequenceToSequenceTransformerWithLMHead (..))
 import Torch.GraduallyTyped.NN.Transformer.Stack (TransformerStack (..))
 import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle (T5))
 import Torch.GraduallyTyped.Prelude (Seq)
@@ -167,6 +174,123 @@ t5ConfigFromPretrained filePath debug = do
     go ((_, Torch.Script.IVTensor _) : _) = fail "iValue is not a string."
     go ((Torch.Script.IVString _, _) : _) = fail "iValue is not a tensor."
     go _ = fail "iValue is neither a string nor a tensor."
+
+-- | T5 Model.
+newtype
+  T5Model
+    (numLayers :: Nat)
+    (device :: Device (DeviceType Nat))
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (vocabDim :: Dim (Name Symbol) (Size Nat))
+  where
+  T5Model ::
+    forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim.
+    T5ModelSeqToSeqF T5Model numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim ->
+    T5Model numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim
+  deriving stock (Generic)
+
+newtype
+  T5ModelWithLMHead
+    (numLayers :: Nat)
+    (device :: Device (DeviceType Nat))
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (vocabDim :: Dim (Name Symbol) (Size Nat))
+  where
+  T5ModelWithLMHead ::
+    forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim.
+    T5ModelSeqToSeqF T5ModelWithLMHead numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim ->
+    T5ModelWithLMHead numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim
+  deriving stock (Generic)
+
+type family
+  T5ModelSeqToSeqF
+    ( t5Model ::
+        Nat ->
+        Device (DeviceType Nat) ->
+        Dim (Name Symbol) (Size Nat) ->
+        Dim (Name Symbol) (Size Nat) ->
+        Dim (Name Symbol) (Size Nat) ->
+        Dim (Name Symbol) (Size Nat) ->
+        Dim (Name Symbol) (Size Nat) ->
+        Dim (Name Symbol) (Size Nat) ->
+        Type
+    )
+    (numLayers :: Nat)
+    (device :: Device (DeviceType Nat))
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (vocabDim :: Dim (Name Symbol) (Size Nat)) ::
+    Type
+  where
+  T5ModelSeqToSeqF T5Model numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim =
+    SequenceToSequenceTransformer
+      numLayers
+      numLayers
+      'T5
+      device
+      T5DataType
+      headDim
+      headEmbedDim
+      embedDim
+      inputEmbedDim
+      ffnDim
+      T5RelPosEncBucketDim
+      vocabDim
+      T5DropoutP
+  T5ModelSeqToSeqF T5ModelWithLMHead numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim =
+    SequenceToSequenceTransformerWithLMHead
+      numLayers
+      numLayers
+      'T5
+      device
+      T5DataType
+      headDim
+      headEmbedDim
+      embedDim
+      inputEmbedDim
+      ffnDim
+      T5RelPosEncBucketDim
+      vocabDim
+      T5DropoutP
+
+instance
+  HasInitialize
+    (T5Model numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
+  where
+  type
+    InitializeF (T5Model numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim) =
+      FilePath -> IO (T5Model numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
+  initialize filePath = undefined
+
+-- do
+--   config <- t5BaseConfigFromPretrained filePath False
+--   flip runReaderT config $
+--     T5Base . T5Model <$> lookupSequenceToSequenceTransformer
+
+instance
+  HasInitialize
+    (T5ModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
+  where
+  type
+    InitializeF (T5ModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim) =
+      FilePath -> IO (T5ModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
+  initialize filePath = undefined
+
+-- do
+--   config <- t5BaseConfigFromPretrained filePath False
+--   flip runReaderT config $
+--     T5BaseWithLMHead . T5ModelWithLMHead <$> lookupSequenceToSequenceTransformerWithLMHead
 
 class
   HasLookupStack
@@ -299,19 +423,19 @@ lookupDecoder = do
                     )
             )
 
-lookupSequenceToSequenceTransformerWithoutLMHead ::
+lookupSequenceToSequenceTransformer ::
   forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim m.
   ( MonadReader (T5Config numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim) m,
     MonadIO m,
     MonadFail m,
     HasLookupStack numLayers (1 <=? numLayers) numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim m
   ) =>
-  m (SequenceToSequenceTransformer 'WithoutLMHead numLayers numLayers 'T5 device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim T5DropoutP)
-lookupSequenceToSequenceTransformerWithoutLMHead = do
+  m (SequenceToSequenceTransformer numLayers numLayers 'T5 device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim T5DropoutP)
+lookupSequenceToSequenceTransformer = do
   t5Config <- ask
   case t5Config of
     T5Config {} ->
-      T5WithoutLMHead
+      SequenceToSequenceTransformer
         <$> lookupEncoder
         <*> lookupDecoder
         <*> ( Embedding
@@ -325,17 +449,13 @@ lookupSequenceToSequenceTransformerWithLMHead ::
     MonadFail m,
     HasLookupStack numLayers (1 <=? numLayers) numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim m
   ) =>
-  m (SequenceToSequenceTransformer 'WithLMHead numLayers numLayers 'T5 device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim T5DropoutP)
+  m (SequenceToSequenceTransformerWithLMHead numLayers numLayers 'T5 device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim T5DropoutP)
 lookupSequenceToSequenceTransformerWithLMHead = do
   t5Config <- ask
   case t5Config of
     T5Config {} ->
-      T5WithLMHead
-        <$> lookupEncoder
-        <*> lookupDecoder
-        <*> ( Embedding
-                <$> lookupTensor "shared.weight"
-            )
+      SequenceToSequenceTransformerWithLMHead
+        <$> lookupSequenceToSequenceTransformer
         <*> ( LinearWithoutBias
                 <$> lookupTensor "lm_head.weight"
             )
@@ -1047,20 +1167,23 @@ instance
     HasForward (ShiftRight Int) decoderInput generator rightShiftedDecoderInput generator,
     HasForward (ShiftRight Int) decoderInputPaddingMask generator rightShiftedDecoderInputPaddingMask generator,
     HasForward
-      (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers 'T5 device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim T5DropoutP)
+      (T5ModelSeqToSeqF t5Model numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
       (SequenceToSequenceTransformerInput input rightShiftedDecoderInput relPos decoderRelPos attentionMask decoderAttentionMask crossAttentionMask)
       generator
       (SequenceToSequenceTransformerOutput decoderOutput encoderOutput)
-      generatorOutput
+      generatorOutput,
+    Coercible
+      (T5ModelSeqToSeqF t5Model numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
+      (t5Model numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
   ) =>
   HasForward
-    (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers 'T5 device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim T5DropoutP)
+    (t5Model numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
     (T5Input input decoderInput)
     generator
     (T5Output decoderOutput encoderOutput inputPaddingMask)
     generatorOutput
   where
-  forward seqToSeq T5Input {..} =
+  forward t5Model T5Input {..} =
     let inputPaddingMask = mkT5PaddingMask t5Input
         attentionMask =
           mkT5AttentionMask
@@ -1113,7 +1236,7 @@ instance
                                             rightShiftedDecoderInputPaddingMask
                                      in ireturn (SequenceToSequenceTransformerInput t5Input rightShiftedDecoderInput relPos decoderRelPos attentionMask decoderAttentionMask crossAttentionMask)
                                 )
-                           >>>= IxState . forward seqToSeq
+                           >>>= IxState . forward (coerce t5Model :: T5ModelSeqToSeqF t5Model numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
                            >>>= ( \(SequenceToSequenceTransformerOutput decoderOutput encoderOutput) ->
                                     ireturn $ T5Output decoderOutput encoderOutput inputPaddingMask
                                 )
@@ -1176,20 +1299,23 @@ instance
     HasForward (ShiftRight Int) decoderInput generator rightShiftedDecoderInput generator,
     HasForward (ShiftRight Int) decoderInputPaddingMask generator rightShiftedDecoderInputPaddingMask generator,
     HasForward
-      (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers 'T5 device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim T5DropoutP)
+      (T5ModelSeqToSeqF t5Model numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
       (SequenceToSequenceTransformerGenerationInput rightShiftedDecoderInput encoderOutput decoderRelPos decoderAttentionMask crossAttentionMask)
       generator
       (SequenceToSequenceTransformerOutput decoderOutput encoderOutput)
-      generatorOutput
+      generatorOutput,
+    Coercible
+      (T5ModelSeqToSeqF t5Model numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
+      (t5Model numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
   ) =>
   HasForward
-    (SequenceToSequenceTransformer hasLMHead numEncoderLayers numDecoderLayers 'T5 device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim T5DropoutP)
+    (t5Model numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
     (T5GenerationInput decoderInput encoderOutput inputPaddingMask)
     generator
     (T5Output decoderOutput encoderOutput inputPaddingMask)
     generatorOutput
   where
-  forward seqToSeq T5GenerationInput {..} =
+  forward t5Model T5GenerationInput {..} =
     runIxState $
       ireturn t5GenerationDecoderInput
         >>>= IxState . forward (initialize @(ShiftRight Int) t5PadTokenId)
@@ -1226,7 +1352,7 @@ instance
                                         rightShiftedDecoderInputPaddingMask
                                  in ireturn (SequenceToSequenceTransformerGenerationInput rightShiftedDecoderInput t5GenerationEncoderOutput decoderRelPos decoderAttentionMask crossAttentionMask)
                             )
-                       >>>= IxState . forward seqToSeq
+                       >>>= IxState . forward (coerce t5Model :: T5ModelSeqToSeqF t5Model numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
                        >>>= ( \(SequenceToSequenceTransformerOutput decoderOutput encoderOutput) ->
                                 ireturn $ T5Output decoderOutput encoderOutput t5GenerationInputPaddingMask
                             )

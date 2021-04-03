@@ -22,14 +22,13 @@ where
 
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
-import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (HasLMHead (..))
 import Torch.GraduallyTyped.NN.Transformer.T5.Base
 import Torch.GraduallyTyped.NN.Transformer.T5.Common
 import Torch.GraduallyTyped.NN.Transformer.T5.ElevenB
+import Torch.GraduallyTyped.NN.Transformer.T5.Generation
 import Torch.GraduallyTyped.NN.Transformer.T5.Large
 import Torch.GraduallyTyped.NN.Transformer.T5.Small
 import Torch.GraduallyTyped.NN.Transformer.T5.ThreeB
-import Torch.GraduallyTyped.NN.Transformer.T5.Generation
 import Torch.GraduallyTyped.NN.Transformer.T5.Vocab
 import Torch.GraduallyTyped.Random (mkGenerator)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
@@ -37,8 +36,8 @@ import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 -- testT5Input :: IO _
 -- testT5Input =
 --   mkT5Input
---     @( 'Dim ( 'Name "*") ( 'Size 2))
---     @( 'Dim ( 'Name "*") ( 'Size 17))
+--     @('Dim ('Name "*") ('Size 2))
+--     @('Dim ('Name "*") ('Size 17))
 --     [ [6536, 43, 118, 2008, 24, 293, 53, 3, 9, 1782, 19, 207, 21, 25, 1, 0, 0],
 --       [6536, 43, 118, 2008, 24, 293, 53, 3, 9, 1782, 19, 207, 21, 25, 11, 25, 1]
 --     ]
@@ -46,8 +45,8 @@ import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 -- testT5DecoderInput :: IO _
 -- testT5DecoderInput =
 --   mkT5Input
---     @( 'Dim ( 'Name "*") ( 'Size 2))
---     @( 'Dim ( 'Name "*") ( 'Size 4))
+--     @('Dim ('Name "*") ('Size 2))
+--     @('Dim ('Name "*") ('Size 4))
 --     [ [6536, 504, 24, 1],
 --       [6536, 504, 24, 1]
 --     ]
@@ -58,9 +57,9 @@ import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 --     input <- T5Input <$> testT5Input <*> testT5DecoderInput
 --     model <-
 --       initialize
---         @(T5Small 'WithLMHead ( 'Device 'CPU))
+--         @(T5SmallWithLMHead ('Device 'CPU))
 --         "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-small.pt"
---     g <- mkGenerator @( 'Device CPU) 0
+--     g <- mkGenerator @('Device CPU) 0
 --     let (output, _) = forward model input g
 --     print output
 
@@ -70,9 +69,9 @@ import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 --     input <- T5Input <$> testT5Input <*> testT5DecoderInput
 --     model <-
 --       initialize
---         @(T5Base 'WithLMHead ( 'Device 'CPU))
+--         @(T5BaseWithLMHead ('Device 'CPU))
 --         "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-base.pt"
---     g <- mkGenerator @( 'Device CPU) 0
+--     g <- mkGenerator @('Device CPU) 0
 --     let (output, _) = forward model input g
 --     print output
 
@@ -82,9 +81,9 @@ import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 --     input <- T5Input <$> testT5Input <*> testT5DecoderInput
 --     model <-
 --       initialize
---         @(T5Large 'WithLMHead ( 'Device 'CPU))
+--         @(T5LargeWithLMHead ('Device 'CPU))
 --         "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-large.pt"
---     g <- mkGenerator @( 'Device CPU) 0
+--     g <- mkGenerator @('Device CPU) 0
 --     let (output, _) = forward model input g
 --     print output
 
@@ -94,9 +93,9 @@ import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 --     input <- T5Input <$> testT5Input <*> testT5DecoderInput
 --     model <-
 --       initialize
---         @(T5ThreeB 'WithLMHead ( 'Device 'CPU))
+--         @(T5ThreeBWithLMHead ('Device 'CPU))
 --         "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-3b.pt"
---     g <- mkGenerator @( 'Device CPU) 0
+--     g <- mkGenerator @('Device CPU) 0
 --     let (output, _) = forward model input g
 --     print output
 
@@ -106,8 +105,8 @@ import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 --     input <- T5Input <$> testT5Input <*> testT5DecoderInput
 --     model <-
 --       initialize
---         @(T5ElevenB 'WithLMHead ( 'Device 'CPU))
+--         @(T5ElevenBWithLMHead ('Device 'CPU))
 --         "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-11b.pt"
---     g <- mkGenerator @( 'Device CPU) 0
+--     g <- mkGenerator @('Device CPU) 0
 --     let (output, _) = forward model input g
 --     print output

@@ -15,8 +15,8 @@ import Control.Monad.Reader (ReaderT (runReaderT))
 import GHC.TypeLits (Nat)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
-import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (HasLMHead (..), SequenceToSequenceTransformer)
-import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5Config, T5DataType, T5DropoutP, T5GenerationInput, T5Input, T5Output, T5RelPosEncBucketDim, lookupSequenceToSequenceTransformerWithLMHead, lookupSequenceToSequenceTransformerWithoutLMHead, t5ConfigFromPretrained)
+import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (SequenceToSequenceTransformer)
+import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5Config, T5DataType, T5DropoutP, T5GenerationInput, T5Input, T5Model, T5ModelWithLMHead, T5Output, T5RelPosEncBucketDim, lookupSequenceToSequenceTransformerWithLMHead, t5ConfigFromPretrained)
 import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle (T5))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 
@@ -63,143 +63,12 @@ t5ElevenBConfigFromPretrained ::
   IO (T5ElevenBConfig ('Device 'CPU))
 t5ElevenBConfigFromPretrained = t5ConfigFromPretrained
 
--- | T5-11B data type.
-data
-  T5ElevenB
-    (hasLMHead :: HasLMHead)
-    (device :: Device (DeviceType Nat))
-  where
-  -- | T5-11B constructor.
-  T5ElevenB ::
-    forall hasLMHead device.
-    { t5ElevenBSeqToSeq ::
-        SequenceToSequenceTransformer
-          hasLMHead
-          T5ElevenBNumLayers
-          T5ElevenBNumLayers
-          'T5
-          device
-          T5DataType
-          T5ElevenBHeadDim
-          T5ElevenBHeadEmbedDim
-          T5ElevenBEmbedDim
-          T5ElevenBInputEmbedDim
-          T5ElevenBFFNDim
-          T5RelPosEncBucketDim
-          T5ElevenBVocabDim
-          T5DropoutP
-    } ->
-    T5ElevenB hasLMHead device
+-- | T5-11B model.
+type T5ElevenB
+  (device :: Device (DeviceType Nat)) =
+  T5Model T5ElevenBNumLayers device T5ElevenBHeadDim T5ElevenBHeadEmbedDim T5ElevenBEmbedDim T5ElevenBInputEmbedDim T5ElevenBFFNDim T5ElevenBVocabDim
 
-instance HasInitialize (T5ElevenB 'WithoutLMHead ('Device 'CPU)) where
-  type
-    InitializeF (T5ElevenB 'WithoutLMHead ('Device 'CPU)) =
-      FilePath -> IO (T5ElevenB 'WithoutLMHead ('Device 'CPU))
-  initialize filePath = do
-    config <- t5ElevenBConfigFromPretrained filePath False
-    flip runReaderT config $
-      T5ElevenB <$> lookupSequenceToSequenceTransformerWithoutLMHead
-
-instance HasInitialize (T5ElevenB 'WithLMHead ('Device 'CPU)) where
-  type
-    InitializeF (T5ElevenB 'WithLMHead ('Device 'CPU)) =
-      FilePath -> IO (T5ElevenB 'WithLMHead ('Device 'CPU))
-  initialize filePath = do
-    config <- t5ElevenBConfigFromPretrained filePath False
-    flip runReaderT config $
-      T5ElevenB <$> lookupSequenceToSequenceTransformerWithLMHead
-
-instance
-  HasForward
-    ( SequenceToSequenceTransformer
-        hasLMHead
-        T5ElevenBNumLayers
-        T5ElevenBNumLayers
-        'T5
-        device
-        T5DataType
-        T5ElevenBHeadDim
-        T5ElevenBHeadEmbedDim
-        T5ElevenBEmbedDim
-        T5ElevenBInputEmbedDim
-        T5ElevenBFFNDim
-        T5RelPosEncBucketDim
-        T5ElevenBVocabDim
-        T5DropoutP
-    )
-    (input, decoderInput, relPos, decoderRelPos, attentionMask, decoderAttentionMask, crossAttentionMask)
-    generator
-    output
-    generatorOutput =>
-  HasForward
-    (T5ElevenB hasLMHead device)
-    (input, decoderInput, relPos, decoderRelPos, attentionMask, decoderAttentionMask, crossAttentionMask)
-    generator
-    output
-    generatorOutput
-  where
-  forward T5ElevenB {..} = forward t5ElevenBSeqToSeq
-
-instance
-  ( HasForward
-      ( SequenceToSequenceTransformer
-          hasLMHead
-          T5ElevenBNumLayers
-          T5ElevenBNumLayers
-          'T5
-          device
-          T5DataType
-          T5ElevenBHeadDim
-          T5ElevenBHeadEmbedDim
-          T5ElevenBEmbedDim
-          T5ElevenBInputEmbedDim
-          T5ElevenBFFNDim
-          T5RelPosEncBucketDim
-          T5ElevenBVocabDim
-          T5DropoutP
-      )
-      (T5Input input decoderInput)
-      generator
-      output
-      generatorOutput
-  ) =>
-  HasForward
-    (T5ElevenB hasLMHead device)
-    (T5Input input decoderInput)
-    generator
-    output
-    generatorOutput
-  where
-  forward T5ElevenB {..} = forward t5ElevenBSeqToSeq
-
-instance
-  ( HasForward
-      ( SequenceToSequenceTransformer
-          hasLMHead
-          T5ElevenBNumLayers
-          T5ElevenBNumLayers
-          'T5
-          device
-          T5DataType
-          T5ElevenBHeadDim
-          T5ElevenBHeadEmbedDim
-          T5ElevenBEmbedDim
-          T5ElevenBInputEmbedDim
-          T5ElevenBFFNDim
-          T5RelPosEncBucketDim
-          T5ElevenBVocabDim
-          T5DropoutP
-      )
-      (T5GenerationInput decoderInput encoderOutput inputPaddingMask)
-      generator
-      (T5Output decoderOutput encoderOutput inputPaddingMask)
-      generatorOutput
-  ) =>
-  HasForward
-    (T5ElevenB hasLMHead device)
-    (T5GenerationInput decoderInput encoderOutput inputPaddingMask)
-    generator
-    (T5Output decoderOutput encoderOutput inputPaddingMask)
-    generatorOutput
-  where
-  forward T5ElevenB {..} = forward t5ElevenBSeqToSeq
+-- | T5-11B model with language modelling head.
+type T5ElevenBWithLMHead
+  (device :: Device (DeviceType Nat)) =
+  T5ModelWithLMHead T5ElevenBNumLayers device T5ElevenBHeadDim T5ElevenBHeadEmbedDim T5ElevenBEmbedDim T5ElevenBInputEmbedDim T5ElevenBFFNDim T5ElevenBVocabDim

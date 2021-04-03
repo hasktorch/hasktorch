@@ -185,6 +185,7 @@ library
                     , pipes-bytestring
                     , pipes-csv
                     , lens-family-core
+                    , generic-lens
                     , cassava
                     , lifted-async
                     , monad-control

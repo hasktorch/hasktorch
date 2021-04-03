@@ -1,22 +1,28 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Torch.GraduallyTyped.NN.Transformer.T5.Base where
 
 import Control.Monad.Reader (ReaderT (runReaderT))
+import Data.Coerce (coerce)
+import Data.Kind (Type)
 import GHC.TypeLits (Nat)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
-import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (HasLMHead (..), SequenceToSequenceTransformer)
-import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5Config, T5DataType, T5DropoutP, T5GenerationInput, T5Input, T5Output, T5RelPosEncBucketDim, lookupSequenceToSequenceTransformerWithLMHead, lookupSequenceToSequenceTransformerWithoutLMHead, t5ConfigFromPretrained)
+import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (SequenceToSequenceTransformer, SequenceToSequenceTransformerWithLMHead)
+import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5Config, T5DataType, T5DropoutP, T5GenerationInput, T5Input, T5Model (..), T5ModelWithLMHead (..), T5Output, T5RelPosEncBucketDim, lookupSequenceToSequenceTransformer, lookupSequenceToSequenceTransformerWithLMHead, t5ConfigFromPretrained)
 import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle (T5))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 
@@ -63,143 +69,12 @@ t5BaseConfigFromPretrained ::
   IO (T5BaseConfig ('Device 'CPU))
 t5BaseConfigFromPretrained = t5ConfigFromPretrained
 
--- | T5-Base data type.
-data
-  T5Base
-    (hasLMHead :: HasLMHead)
-    (device :: Device (DeviceType Nat))
-  where
-  -- | T5-Base constructor.
-  T5Base ::
-    forall hasLMHead device.
-    { t5BaseSeqToSeq ::
-        SequenceToSequenceTransformer
-          hasLMHead
-          T5BaseNumLayers
-          T5BaseNumLayers
-          'T5
-          device
-          T5DataType
-          T5BaseHeadDim
-          T5BaseHeadEmbedDim
-          T5BaseEmbedDim
-          T5BaseInputEmbedDim
-          T5BaseFFNDim
-          T5RelPosEncBucketDim
-          T5BaseVocabDim
-          T5DropoutP
-    } ->
-    T5Base hasLMHead device
+-- | T5-Base model.
+type T5Base
+  (device :: Device (DeviceType Nat)) =
+  T5Model T5BaseNumLayers device T5BaseHeadDim T5BaseHeadEmbedDim T5BaseEmbedDim T5BaseInputEmbedDim T5BaseFFNDim T5BaseVocabDim
 
-instance HasInitialize (T5Base 'WithoutLMHead ('Device 'CPU)) where
-  type
-    InitializeF (T5Base 'WithoutLMHead ('Device 'CPU)) =
-      FilePath -> IO (T5Base 'WithoutLMHead ('Device 'CPU))
-  initialize filePath = do
-    config <- t5BaseConfigFromPretrained filePath False
-    flip runReaderT config $
-      T5Base <$> lookupSequenceToSequenceTransformerWithoutLMHead
-
-instance HasInitialize (T5Base 'WithLMHead ('Device 'CPU)) where
-  type
-    InitializeF (T5Base 'WithLMHead ('Device 'CPU)) =
-      FilePath -> IO (T5Base 'WithLMHead ('Device 'CPU))
-  initialize filePath = do
-    config <- t5BaseConfigFromPretrained filePath False
-    flip runReaderT config $
-      T5Base <$> lookupSequenceToSequenceTransformerWithLMHead
-
-instance
-  HasForward
-    ( SequenceToSequenceTransformer
-        hasLMHead
-        T5BaseNumLayers
-        T5BaseNumLayers
-        'T5
-        device
-        T5DataType
-        T5BaseHeadDim
-        T5BaseHeadEmbedDim
-        T5BaseEmbedDim
-        T5BaseInputEmbedDim
-        T5BaseFFNDim
-        T5RelPosEncBucketDim
-        T5BaseVocabDim
-        T5DropoutP
-    )
-    (input, decoderInput, relPos, decoderRelPos, attentionMask, decoderAttentionMask, crossAttentionMask)
-    generator
-    output
-    generatorOutput =>
-  HasForward
-    (T5Base hasLMHead device)
-    (input, decoderInput, relPos, decoderRelPos, attentionMask, decoderAttentionMask, crossAttentionMask)
-    generator
-    output
-    generatorOutput
-  where
-  forward T5Base {..} = forward t5BaseSeqToSeq
-
-instance
-  ( HasForward
-      ( SequenceToSequenceTransformer
-          hasLMHead
-          T5BaseNumLayers
-          T5BaseNumLayers
-          'T5
-          device
-          T5DataType
-          T5BaseHeadDim
-          T5BaseHeadEmbedDim
-          T5BaseEmbedDim
-          T5BaseInputEmbedDim
-          T5BaseFFNDim
-          T5RelPosEncBucketDim
-          T5BaseVocabDim
-          T5DropoutP
-      )
-      (T5Input input decoderInput)
-      generator
-      output
-      generatorOutput
-  ) =>
-  HasForward
-    (T5Base hasLMHead device)
-    (T5Input input decoderInput)
-    generator
-    output
-    generatorOutput
-  where
-  forward T5Base {..} = forward t5BaseSeqToSeq
-
-instance
-  ( HasForward
-      ( SequenceToSequenceTransformer
-          hasLMHead
-          T5BaseNumLayers
-          T5BaseNumLayers
-          'T5
-          device
-          T5DataType
-          T5BaseHeadDim
-          T5BaseHeadEmbedDim
-          T5BaseEmbedDim
-          T5BaseInputEmbedDim
-          T5BaseFFNDim
-          T5RelPosEncBucketDim
-          T5BaseVocabDim
-          T5DropoutP
-      )
-      (T5GenerationInput decoderInput encoderOutput inputPaddingMask)
-      generator
-      (T5Output decoderOutput encoderOutput inputPaddingMask)
-      generatorOutput
-  ) =>
-  HasForward
-    (T5Base hasLMHead device)
-    (T5GenerationInput decoderInput encoderOutput inputPaddingMask)
-    generator
-    (T5Output decoderOutput encoderOutput inputPaddingMask)
-    generatorOutput
-  where
-  forward T5Base {..} = forward t5BaseSeqToSeq
+-- | T5-Base model with language modelling head.
+type T5BaseWithLMHead
+  (device :: Device (DeviceType Nat)) =
+  T5ModelWithLMHead T5BaseNumLayers device T5BaseHeadDim T5BaseHeadEmbedDim T5BaseEmbedDim T5BaseInputEmbedDim T5BaseFFNDim T5BaseVocabDim
