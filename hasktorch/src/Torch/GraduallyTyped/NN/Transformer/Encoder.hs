@@ -548,12 +548,10 @@ instance
     generatorOutput
   where
   forward (TransformerEncoder GTransformerEncoder {..}) (input, pos, attentionMask) =
-    let posEnc =
+    let attentionBias = unsqueeze @('SelectDim ('ByIndex 1)) attentionMask
+     in runIxState $
           ireturn pos
             >>>= IxState . forward tePosEnc
-        attentionBias = unsqueeze @('SelectDim ('ByIndex 1)) attentionMask
-     in runIxState $
-          posEnc
             >>>= ireturn . (input `add`)
             >>>= IxState . forward teLayerNorm
             >>>= IxState . forward teDropout
@@ -583,3 +581,55 @@ instance
 --      │ output │
 --      └────────┘
 -- @
+instance
+  ( HasForward
+      (TEDropoutF 'Pegasus dropoutP)
+      ( Tensor
+          'WithGradient
+          (inputLayout <+> 'Layout 'Dense <+> posLayout)
+          (inputDevice <+> device <+> posDevice)
+          (inputDataType <+> Seq (posDataType <+> 'DataType 'Int64) dataType)
+          (BroadcastShapesF inputShape (EmbeddingF ('Shape '[posEncDim, inputEmbedDim]) posShape))
+      )
+      generator
+      dropoutOutput
+      dropoutGeneratorOutput,
+    HasForward
+      (TEStackF numLayers 'Pegasus device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP)
+      ( dropoutOutput,
+        Tensor
+          attentionMaskRequiresGradient
+          attentionMaskLayout
+          attentionMaskDevice
+          attentionMaskDataType
+          (UnsqueezeF ('SelectDim ('ByIndex 1)) attentionMaskShape)
+      )
+      dropoutGeneratorOutput
+      stackOutput
+      generatorOutput,
+    HasForward
+      (TELayerNormF 'Pegasus device dataType inputEmbedDim)
+      stackOutput
+      generatorOutput
+      output
+      generatorOutput
+  ) =>
+  HasForward
+    (TransformerEncoder numLayers 'Pegasus device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP)
+    ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+      Tensor posRequiresGradient posLayout posDevice posDataType posShape,
+      Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+    )
+    generator
+    output
+    generatorOutput
+  where
+  forward (TransformerEncoder GTransformerEncoder {..}) (input, pos, attentionMask) =
+    let attentionBias = unsqueeze @('SelectDim ('ByIndex 1)) attentionMask
+     in runIxState $
+          ireturn pos
+            >>>= IxState . forward tePosEnc
+            >>>= ireturn . (input `add`)
+            >>>= IxState . forward teDropout
+            >>>= (\input' -> IxState $ forward teStack (input', attentionBias))
+            >>>= IxState . forward teLayerNorm
