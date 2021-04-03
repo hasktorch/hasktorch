@@ -58,7 +58,7 @@ import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..))
 import Torch.GraduallyTyped.NN.Sparse (Embedding (..))
 import Torch.GraduallyTyped.NN.Transformer.Block (TransformerBlock (TransformerBlock))
 import Torch.GraduallyTyped.NN.Transformer.CrossAttention (CrossAttention (..), GCrossAttention (..))
-import Torch.GraduallyTyped.NN.Transformer.Decoder (TransformerDecoder (..))
+import Torch.GraduallyTyped.NN.Transformer.Decoder (GTransformerDecoder (..), TransformerDecoder (..))
 import Torch.GraduallyTyped.NN.Transformer.DecoderBlock (TransformerDecoderBlock (..))
 import Torch.GraduallyTyped.NN.Transformer.DecoderStack (TransformerDecoderStack (..))
 import Torch.GraduallyTyped.NN.Transformer.Encoder (GTransformerEncoder (..), TransformerEncoder (..))
@@ -284,15 +284,17 @@ lookupDecoder = do
   t5Config <- ask
   case t5Config of
     T5Config {..} ->
-      T5Decoder
-        <$> lookupDecoderStack
-        <*> ( LayerNormWithoutBias
-                <$> lookupTensor "decoder.final_layer_norm.weight"
-                <*> pure eps
-            )
-        <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
-        <*> ( Embedding
-                <$> lookupTensor "decoder.block.0.layer.0.SelfAttention.relative_attention_bias.weight"
+      TransformerDecoder
+        <$> ( GTransformerDecoder
+                <$> lookupDecoderStack
+                <*> ( LayerNormWithoutBias
+                        <$> lookupTensor "decoder.final_layer_norm.weight"
+                        <*> pure eps
+                    )
+                <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
+                <*> ( Embedding
+                        <$> lookupTensor "decoder.block.0.layer.0.SelfAttention.relative_attention_bias.weight"
+                    )
             )
 
 lookupSequenceToSequenceTransformerWithoutLMHead ::
