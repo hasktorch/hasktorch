@@ -500,7 +500,25 @@ deriving instance
   Show (SequenceToSequenceTransformerGenerationInput decoderInput encoderOutput decoderRelPos decoderAttentionMask crossAttentionMask)
 
 -- | 'HasForward' instance for sequence-to-sequence transformers without language modelling head.
--- Use this instance for training.
+--
+-- @
+--     ┌───────┐  ┌────────┐  ┌───────────────┐  ┌──────────────┐  ┌────────────┐  ┌──────────────────────┐  ┌────────────────────┐
+--     │ input │  │ relPos │  │ attentionMask │  │ decoderInput │  │ decoderPos │  │ decoderAttentionMask │  │ crossAttentionMask │
+--     └───┬───┘  └───┬────┘  └──────┬────────┘  └──────┬───────┘  └─────┬──────┘  └──────────┬───────────┘  └─────────┬──────────┘
+--         │          │              │                  │                │                    │                        │
+--         ▼          │              │                  │                │                    │                        │
+-- seqToSeqEmbedding  │              │                  │                │                    │                        │
+--         ▼          │              │                  │                │                    │                        │
+--  seqToSeqEncoder◄──┘◄─────────────┘                  ▼                │                    │                        │
+--         │                                    seqToSeqEmbedding        │                    │                        │
+--         │                                            ▼                │                    │                        │
+--         ├────────────────────────────────────►seqToSeqDecoder◄────────┘◄───────────────────┘◄───────────────────────┘
+--         │                                            │
+--         ▼                                            ▼
+-- ┌───────────────┐                            ┌───────────────┐
+-- │ encoderOutput │                            │ decoderOutput │
+-- └───────────────┘                            └───────────────┘
+-- @
 instance
   ( HasForward
       (Embedding ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
@@ -554,7 +572,23 @@ instance
              )
 
 -- | 'HasForward' instance for sequence-to-sequence transformers without language modelling head.
--- Use this instance for inference.
+-- Use this instance for sequence generation once the encoder's output is available.
+--
+-- @
+-- ┌───────────────┐  ┌──────────────┐  ┌────────────┐  ┌──────────────────────┐  ┌────────────────────┐
+-- │ encoderOutput │  │ decoderInput │  │ decoderPos │  │ decoderAttentionMask │  │ crossAttentionMask │
+-- └───────┬───────┘  └───────┬──────┘  └──────┬─────┘  └───────────┬──────────┘  └──────────┬─────────┘
+--         │                  │                │                    │                        │
+--         │                  ▼                │                    │                        │
+--         │          seqToSeqEmbedding        │                    │                        │
+--         │                  ▼                │                    │                        │
+--         ├──────────►seqToSeqDecoder◄────────┘◄───────────────────┘◄───────────────────────┘
+--         │                  │
+--         ▼                  ▼
+-- ┌───────────────┐  ┌───────────────┐
+-- │ encoderOutput │  │ decoderOutput │
+-- └───────────────┘  └───────────────┘
+-- @ 
 instance
   ( HasForward
       (Embedding ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
@@ -591,6 +625,24 @@ instance
         >>>= \decoderOutput -> ireturn (SequenceToSequenceTransformerOutput decoderOutput generationEncoderOutput)
 
 -- | 'HasForward' instance for sequence-to-sequence transformers with language modelling head.
+--
+-- @
+--                        ┌───────┐
+--                        │ input │
+--                        └───┬───┘
+--                            │
+--                            ▼
+--         ┌─────────seqToSeqTransformer
+--         │                  ▼
+--         │            seqToSeqLMHead
+--         │                  ▼
+--         │               scaling
+--         │                  │
+--         ▼                  ▼
+-- ┌───────────────┐  ┌───────────────┐
+-- │ encoderOutput │  │ decoderOutput │
+-- └───────────────┘  └───────────────┘
+-- @
 instance
   ( HasForward
       (SequenceToSequenceTransformer numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP)
