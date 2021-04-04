@@ -245,6 +245,14 @@ type family
   HasInitializeMultiHeadAttentionOutProjF _ 'BERT _ _ embedDim queryEmbedDim =
     ( embedDim ~ queryEmbedDim
     )
+  HasInitializeMultiHeadAttentionOutProjF outProj 'BART device dataType embedDim queryEmbedDim =
+    ( HasInitialize outProj,
+      InitializeF outProj ~ WithDeviceF device (WithDataTypeF dataType (WithDimF embedDim (WithDimF queryEmbedDim (Generator device -> (outProj, Generator device))))),
+      WithDeviceC device (WithDataTypeF dataType (WithDimF embedDim (WithDimF queryEmbedDim (Generator device -> (outProj, Generator device))))),
+      WithDataTypeC dataType (WithDimF embedDim (WithDimF queryEmbedDim (Generator device -> (outProj, Generator device)))),
+      WithDimC embedDim (WithDimF queryEmbedDim (Generator device -> (outProj, Generator device))),
+      WithDimC queryEmbedDim (Generator device -> (outProj, Generator device))
+    )
 
 instance
   ( HasInitializeMultiHeadAttentionC (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP) device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP,
@@ -387,6 +395,20 @@ instance
                 )
                 queryEmbedDim
             SBERT -> ((),)
+            SBART ->
+              withoutDim @queryEmbedDim @(Generator device -> (outProj, Generator device))
+                ( withoutDim @embedDim
+                    ( withoutDataType @dataType
+                        ( withoutDevice @device
+                            ( initialize @outProj
+                            )
+                            deviceType
+                        )
+                        dType
+                    )
+                    embedDim
+                )
+                queryEmbedDim
         let dropout = initialize @dropout dropoutP
         pure . MultiHeadAttention $ GMultiHeadAttention headDim headEmbedDim embedDim qInProj kInProj vInProj outProj dropout
 
@@ -434,14 +456,47 @@ lookupMultiHeadAttention ::
   String ->
   m (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
 lookupMultiHeadAttention dropoutP prefix =
-  let qInProj ST5 = LinearWithoutBias <$> lookupTensor (prefix <> "q.weight")
-      qInProj SBERT = LinearWithBias <$> lookupTensor (prefix <> "query.weight") <*> lookupTensor (prefix <> "query.bias")
-      kInProj ST5 = LinearWithoutBias <$> lookupTensor (prefix <> "k.weight")
-      kInProj SBERT = LinearWithBias <$> lookupTensor (prefix <> "key.weight") <*> lookupTensor (prefix <> "key.bias")
-      vInProj ST5 = LinearWithoutBias <$> lookupTensor (prefix <> "v.weight")
-      vInProj SBERT = LinearWithBias <$> lookupTensor (prefix <> "value.weight") <*> lookupTensor (prefix <> "value.bias")
-      outProj ST5 = LinearWithoutBias <$> lookupTensor (prefix <> "o.weight")
+  let qInProj ST5 =
+        LinearWithoutBias
+          <$> lookupTensor (prefix <> "q.weight")
+      qInProj SBERT =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "query.weight")
+          <*> lookupTensor (prefix <> "query.bias")
+      qInProj SBART =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "q_proj.weight")
+          <*> lookupTensor (prefix <> "q_proj.bias")
+      kInProj ST5 =
+        LinearWithoutBias
+          <$> lookupTensor (prefix <> "k.weight")
+      kInProj SBERT =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "key.weight")
+          <*> lookupTensor (prefix <> "key.bias")
+      kInProj SBART =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "k_proj.weight")
+          <*> lookupTensor (prefix <> "k_proj.bias")
+      vInProj ST5 =
+        LinearWithoutBias
+          <$> lookupTensor (prefix <> "v.weight")
+      vInProj SBERT =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "value.weight")
+          <*> lookupTensor (prefix <> "value.bias")
+      vInProj SBART =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "v_proj.weight")
+          <*> lookupTensor (prefix <> "v_proj.bias")
+      outProj ST5 =
+        LinearWithoutBias
+          <$> lookupTensor (prefix <> "o.weight")
       outProj SBERT = pure ()
+      outProj SBART =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "out_proj.weight")
+          <*> lookupTensor (prefix <> "out_proj.bias")
       dropout _ = pure (initialize @(Dropout dropoutP) dropoutP)
    in MultiHeadAttention
         <$> ( GMultiHeadAttention
@@ -523,7 +578,7 @@ data OutProj
 --         │                    │              │              │
 --         │                    ▼              ▼              ▼
 --         │                mhaQInProj     mhaKInProj     mhaVInProj
---         │                    ▼              ▼              ▼
+--         │                    ▼              │              │
 --         │                (scaling)          │              │
 --         │                    ▼              ▼              ▼
 --         │                 reshape        reshape        reshape

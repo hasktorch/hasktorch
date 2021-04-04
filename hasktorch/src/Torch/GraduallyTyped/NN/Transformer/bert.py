@@ -4,11 +4,13 @@ from typing import Any
 import torch
 from transformers import AutoTokenizer, BertForMaskedLM
 
+
 def pretty_convert(x: Any) -> Any:
     if isinstance(x, torch.Tensor):
         return x.tolist()
     else:
         return x
+
 
 def pretty_print(x: dict) -> None:
     y = {k: pretty_convert(v) for k, v in x.items()}
@@ -29,19 +31,23 @@ def main(args=None) -> None:
 
     tokenized_inputs = tokenizer([args.input], padding="longest", return_tensors="pt")
     pretty_print(tokenized_inputs)
-    back_decoded_inputs = tokenizer.batch_decode(tokenized_inputs['input_ids'], skip_special_tokens=False)
-    pretty_print({'back_decoded_inputs': back_decoded_inputs})
+    back_decoded_inputs = tokenizer.batch_decode(
+        tokenized_inputs["input_ids"], skip_special_tokens=False
+    )
+    pretty_print({"back_decoded_inputs": back_decoded_inputs})
 
     tokenized_labels = tokenizer([args.input], padding="longest", return_tensors="pt")
     pretty_print(tokenized_labels)
-    back_decoded_labels = tokenizer.batch_decode(tokenized_labels['input_ids'], skip_special_tokens=False)
-    pretty_print({'back_decoded_labels': back_decoded_labels})
+    back_decoded_labels = tokenizer.batch_decode(
+        tokenized_labels["input_ids"], skip_special_tokens=False
+    )
+    pretty_print({"back_decoded_labels": back_decoded_labels})
 
-    model = BertForMaskedLM.from_pretrained('bert-base-uncased')
+    model = BertForMaskedLM.from_pretrained("bert-base-uncased")
     model.eval()
 
-    outputs = model(**tokenized_inputs, labels=tokenized_labels['input_ids'])
-    pretty_print({'loss': outputs.loss})
+    outputs = model(**tokenized_inputs, labels=tokenized_labels["input_ids"])
+    pretty_print({"loss": outputs.loss})
 
     d = dict(model.state_dict())
     pretty_print({k: v.shape for k, v in d.items()})

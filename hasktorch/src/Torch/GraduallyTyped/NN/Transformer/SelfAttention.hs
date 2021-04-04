@@ -152,6 +152,8 @@ type family
     LayerNorm 'WithoutBias device dataType ('Shape '[queryEmbedDim])
   SALayerNormF 'BERT device dataType queryEmbedDim =
     LayerNorm 'WithBias device dataType ('Shape '[queryEmbedDim])
+  SALayerNormF 'BART device dataType queryEmbedDim =
+    LayerNorm 'WithBias device dataType ('Shape '[queryEmbedDim])
 
 type family
   SADropoutF
@@ -344,6 +346,7 @@ lookupSelfAttention ::
 lookupSelfAttention dropoutP eps prefix =
   let selfAttention ST5 = lookupMultiHeadAttention dropoutP (prefix <> "SelfAttention.")
       selfAttention SBERT = lookupMultiHeadAttention dropoutP (prefix <> "self.")
+      selfAttention SBART = lookupMultiHeadAttention dropoutP (prefix <> "self_attn.")
       layerNorm ST5 =
         LayerNormWithoutBias
           <$> lookupTensor (prefix <> "layer_norm.weight")
@@ -353,12 +356,18 @@ lookupSelfAttention dropoutP eps prefix =
           <$> lookupTensor (prefix <> "output.LayerNorm.weight")
           <*> lookupTensor (prefix <> "output.LayerNorm.bias")
           <*> pure eps
+      layerNorm SBART =
+        LayerNormWithBias
+          <$> lookupTensor (prefix <> "self_attn_layer_norm.weight")
+          <*> lookupTensor (prefix <> "self_attn_layer_norm.bias")
+          <*> pure eps
       dropout _ = pure (initialize @(Dropout dropoutP) dropoutP)
       dense ST5 = pure ()
       dense SBERT =
         LinearWithBias
           <$> lookupTensor (prefix <> "output.dense.weight")
           <*> lookupTensor (prefix <> "output.dense.bias")
+      dense SBART = pure ()
    in SelfAttention
         <$> ( GSelfAttention
                 <$> selfAttention (sing @style)
@@ -436,12 +445,12 @@ instance
     output
     generatorOutput
   where
-  forward (SelfAttention sa) (query, attentionBias) =
+  forward (SelfAttention GSelfAttention {..}) (query, attentionBias) =
     runIxState $
       ireturn query
-        >>>= IxState . forward (saLayerNorm sa)
-        >>>= (\query' -> IxState $ forward (saMultiheadAttention sa) (query', query', query', attentionBias))
-        >>>= IxState . forward (saDropout sa)
+        >>>= IxState . forward saLayerNorm
+        >>>= (\query' -> IxState $ forward saMultiheadAttention (query', query', query', attentionBias))
+        >>>= IxState . forward saDropout
         >>>= ireturn . (query `add`)
 
 -- | 'HasForward' instance for @SelfAttention 'BART@.
@@ -471,6 +480,51 @@ instance
 --                        │ query │
 --                        └───────┘
 -- @
+instance
+  ( KnownDim queryEmbedDim,
+    Scalar dropoutP,
+    query ~ Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+    attentionBias ~ Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape,
+    HasForward
+      (MultiHeadAttention 'BART device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP)
+      (query, query, query, attentionBias)
+      (Generator generatorDevice)
+      ( Tensor
+          'WithGradient
+          ('Layout 'Dense <+> queryLayout <+> attentionBiasLayout)
+          (device <+> queryDevice <+> attentionBiasDevice <+> generatorDevice)
+          (dataType <+> queryDataType <+> attentionBiasDataType)
+          mhaOutputShape
+      )
+      (Generator (device <+> queryDevice <+> attentionBiasDevice <+> generatorDevice)),
+    output
+      ~ Tensor
+          'WithGradient
+          ('Layout 'Dense <+> queryLayout <+> attentionBiasLayout)
+          (device <+> queryDevice <+> attentionBiasDevice <+> generatorDevice)
+          (dataType <+> queryDataType <+> attentionBiasDataType)
+          ( LayerNormWithBiasF
+              ('Shape '[queryEmbedDim])
+              ('Shape '[queryEmbedDim])
+              (BroadcastShapesF queryShape mhaOutputShape)
+          ),
+    generatorOutput
+      ~ Generator (device <+> queryDevice <+> attentionBiasDevice <+> generatorDevice)
+  ) =>
+  HasForward
+    (SelfAttention 'BART device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
+    (query, attentionBias)
+    (Generator generatorDevice)
+    output
+    generatorOutput
+  where
+  forward (SelfAttention GSelfAttention {..}) (query, attentionBias) =
+    runIxState $
+      ireturn query
+        >>>= (\query' -> IxState $ forward saMultiheadAttention (query', query', query', attentionBias))
+        >>>= IxState . forward saDropout
+        >>>= ireturn . (query `add`)
+        >>>= IxState . forward saLayerNorm
 
 -- | 'HasForward' instance for @SelfAttention 'BERT@.
 --
@@ -546,11 +600,11 @@ instance
     output
     generatorOutput
   where
-  forward (SelfAttention sa) (query, attentionBias) =
+  forward (SelfAttention GSelfAttention {..}) (query, attentionBias) =
     runIxState $
       ireturn query
-        >>>= (\query' -> IxState $ forward (saMultiheadAttention sa) (query', query', query', attentionBias))
-        >>>= IxState . forward (saDense sa)
-        >>>= IxState . forward (saDropout sa)
+        >>>= (\query' -> IxState $ forward saMultiheadAttention (query', query', query', attentionBias))
+        >>>= IxState . forward saDense
+        >>>= IxState . forward saDropout
         >>>= ireturn . (query `add`)
-        >>>= IxState . forward (saLayerNorm sa)
+        >>>= IxState . forward saLayerNorm

@@ -51,7 +51,7 @@ tensorDictFromPretrained filePath = do
   iValue <- Torch.Serialize.pickleLoad filePath
   case iValue of
     Torch.Script.IVGenericDict xs -> Map.fromList <$> go xs
-    _ -> fail "iValue is not a state dictionary."
+    _ -> fail "iValue is not a tensor dictionary."
   where
     go [] = pure []
     go ((Torch.Script.IVString s, Torch.Script.IVTensor (Torch.Tensor.Unsafe t)) : xs) = ((s, t) :) <$> go xs
@@ -75,7 +75,7 @@ lookupTensor s = do
   tensorDict <- ask
   liftIO
     ( maybe
-        (fail $ "`" <> show s <> "` is not in the state dictionary.")
+        (fail $ "`" <> show s <> "` is not in the tensor dictionary.")
         (pure . UnsafeTensor)
         (Map.lookup s tensorDict)
     )

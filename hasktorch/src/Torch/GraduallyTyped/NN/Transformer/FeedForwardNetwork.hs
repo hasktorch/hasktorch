@@ -362,6 +362,10 @@ lookupTransformerFeedForwardNetwork dropoutP eps prefix =
         LinearWithBias
           <$> lookupTensor (prefix <> "intermediate.dense.weight")
           <*> lookupTensor (prefix <> "intermediate.dense.bias")
+      inputWeight SBART =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "fc1.weight")
+          <*> lookupTensor (prefix <> "fc1.bias")
       outputWeight ST5 =
         LinearWithoutBias
           <$> lookupTensor (prefix <> "DenseReluDense.wo.weight")
@@ -369,10 +373,16 @@ lookupTransformerFeedForwardNetwork dropoutP eps prefix =
         LinearWithBias
           <$> lookupTensor (prefix <> "output.dense.weight")
           <*> lookupTensor (prefix <> "output.dense.bias")
+      outputWeight SBART =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "fc2.weight")
+          <*> lookupTensor (prefix <> "fc2.bias")
       activation ST5 = pure @m Relu
       activation SBERT = pure @m Gelu
+      activation SBART = pure @m Gelu
       activationDropout ST5 = pure (initialize @(Dropout dropoutP) dropoutP)
       activationDropout SBERT = pure ()
+      activationDropout SBART = pure (initialize @(Dropout dropoutP) dropoutP)
       layerNorm ST5 =
         LayerNormWithoutBias
           <$> lookupTensor (prefix <> "layer_norm.weight")
@@ -381,6 +391,11 @@ lookupTransformerFeedForwardNetwork dropoutP eps prefix =
         LayerNormWithBias
           <$> lookupTensor (prefix <> "output.LayerNorm.weight")
           <*> lookupTensor (prefix <> "output.LayerNorm.bias")
+          <*> pure eps
+      layerNorm SBART =
+        LayerNormWithBias
+          <$> lookupTensor (prefix <> "final_layer_norm.weight")
+          <*> lookupTensor (prefix <> "final_layer_norm.bias")
           <*> pure eps
       dropout _ = pure (initialize @(Dropout dropoutP) dropoutP)
    in TransformerFeedForwardNetwork
@@ -392,6 +407,7 @@ lookupTransformerFeedForwardNetwork dropoutP eps prefix =
                 <*> layerNorm (sing @style)
                 <*> dropout (sing @style)
             )
+
 
 type family
   FeedForwardNetworkOutputShape
