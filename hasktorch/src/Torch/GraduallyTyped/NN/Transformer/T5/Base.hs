@@ -15,14 +15,13 @@
 
 module Torch.GraduallyTyped.NN.Transformer.T5.Base where
 
-import Control.Monad.Reader (ReaderT (runReaderT))
 import Data.Coerce (coerce)
 import Data.Kind (Type)
 import GHC.TypeLits (Nat)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (SequenceToSequenceTransformer, SequenceToSequenceTransformerWithLMHead)
-import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5Config, T5DataType, T5DropoutP, T5GenerationInput, T5Input, T5Model (..), T5ModelWithLMHead (..), T5Output, T5RelPosEncBucketDim, lookupSequenceToSequenceTransformer, lookupSequenceToSequenceTransformerWithLMHead, t5ConfigFromPretrained)
+import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5DataType, T5DropoutP, T5GenerationInput, T5Input, T5Model (..), T5ModelWithLMHead (..), T5Output, T5RelPosEncBucketDim)
 import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle (T5))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 
@@ -53,21 +52,6 @@ type T5BaseFFNDim = 'Dim ('Name "*") ('Size 3072)
 -- | T5-Base vocabulary dimension.
 -- 'vocab_size = 32128'
 type T5BaseVocabDim = 'Dim ('Name "*") ('Size 32128)
-
--- | T5-Base configuration data type.
--- Modelled after https://huggingface.co/t5-base/blob/main/config.json.
-type T5BaseConfig device =
-  T5Config T5BaseNumLayers device T5BaseHeadDim T5BaseHeadEmbedDim T5BaseEmbedDim T5BaseInputEmbedDim T5BaseFFNDim T5RelPosEncBucketDim T5BaseVocabDim
-
--- | load a T5-Base configuration from a file
-t5BaseConfigFromPretrained ::
-  -- | file path
-  FilePath ->
-  -- | whether or not debugging output will be printed to the terminal
-  Bool ->
-  -- | configuration value
-  IO (T5BaseConfig ('Device 'CPU))
-t5BaseConfigFromPretrained = t5ConfigFromPretrained
 
 -- | T5-Base model.
 type T5Base

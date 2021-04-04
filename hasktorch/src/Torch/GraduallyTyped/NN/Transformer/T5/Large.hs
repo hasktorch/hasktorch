@@ -16,7 +16,7 @@ import GHC.TypeLits (Nat)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (SequenceToSequenceTransformer)
-import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5Config, T5DataType, T5DropoutP, T5GenerationInput, T5Input, T5Output, T5RelPosEncBucketDim, lookupSequenceToSequenceTransformerWithLMHead, lookupSequenceToSequenceTransformerWithoutLMHead, t5ConfigFromPretrained)
+import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5DataType, T5DropoutP, T5GenerationInput, T5Input, T5Model, T5ModelWithLMHead, T5Output, T5RelPosEncBucketDim)
 import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle (T5))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 
@@ -47,21 +47,6 @@ type T5LargeFFNDim = 'Dim ('Name "*") ('Size 4096)
 -- | T5-Large vocabulary dimension.
 -- 'vocab_size = 32128'
 type T5LargeVocabDim = 'Dim ('Name "*") ('Size 32128)
-
--- | T5-Large configuration data type.
--- Modelled after https://huggingface.co/t5-large/blob/main/config.json.
-type T5LargeConfig device =
-  T5Config T5LargeNumLayers device T5LargeHeadDim T5LargeHeadEmbedDim T5LargeEmbedDim T5LargeInputEmbedDim T5LargeFFNDim T5RelPosEncBucketDim T5LargeVocabDim
-
--- | load a T5-Large configuration from a file
-t5LargeConfigFromPretrained ::
-  -- | file path
-  FilePath ->
-  -- | whether or not debugging output will be printed to the terminal
-  Bool ->
-  -- | configuration value
-  IO (T5LargeConfig ('Device 'CPU))
-t5LargeConfigFromPretrained = t5ConfigFromPretrained
 
 -- | T5-Large model.
 type T5Large

@@ -32,19 +32,18 @@
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8C #-}
 
--- {-# OPTIONS_GHC -freduction-depth=0 #-}
-
 module Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
+import Control.Monad.Reader (MonadIO, MonadReader)
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Kind (Constraint, Type)
 import Data.Singletons (SingI, sing)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType, WithDataTypeC (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (..))
+import Torch.GraduallyTyped.DType (DataType, KnownDataType, WithDataTypeC (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, WithDeviceC (..))
 import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense))
 import Torch.GraduallyTyped.NN.Activation (Gelu (..), Relu (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
@@ -52,8 +51,8 @@ import Torch.GraduallyTyped.NN.Dropout (Dropout)
 import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithBiasF, LinearWithoutBiasF)
 import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithBiasF, LayerNormWithoutBiasF)
 import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearWithBiasC, HasInitializeLinearWithoutBiasC, Linear (..))
-import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormWithBiasC, HasInitializeLayerNormWithoutBiasC, LayerNorm)
-import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
+import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormWithBiasC, HasInitializeLayerNormWithoutBiasC, LayerNorm (..))
+import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
@@ -338,6 +337,42 @@ instance
                 eps
         let dropout = initialize @dropout dropoutP
         pure . TransformerFeedForwardNetwork $ GTransformerFeedForwardNetwork inputWeight outputWeight activation activationDropout layerNorm dropout
+
+lookupTransformerFeedForwardNetwork ::
+  forall style device dataType queryEmbedDim ffnDim dropoutP m.
+  ( SingI style,
+    MonadReader TensorDict m,
+    MonadIO m,
+    MonadFail m,
+    KnownDevice device,
+    KnownDataType dataType,
+    KnownDim queryEmbedDim,
+    KnownDim ffnDim,
+    Scalar dropoutP
+  ) =>
+  dropoutP ->
+  Double ->
+  String ->
+  m (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP)
+lookupTransformerFeedForwardNetwork dropoutP eps prefix =
+  let inputWeight ST5 = LinearWithoutBias <$> lookupTensor (prefix <> "DenseReluDense.wi.weight")
+      outputWeight ST5 = LinearWithoutBias <$> lookupTensor (prefix <> "DenseReluDense.wo.weight")
+      activation ST5 = pure @m Relu
+      activationDropout ST5 = pure (initialize @(Dropout dropoutP) dropoutP)
+      layerNorm ST5 =
+        LayerNormWithoutBias
+          <$> lookupTensor (prefix <> "layer_norm.weight")
+          <*> pure eps
+      dropout ST5 = pure (initialize @(Dropout dropoutP) dropoutP)
+   in TransformerFeedForwardNetwork
+        <$> ( GTransformerFeedForwardNetwork
+                <$> inputWeight (sing @style)
+                <*> outputWeight (sing @style)
+                <*> activation (sing @style)
+                <*> activationDropout (sing @style)
+                <*> layerNorm (sing @style)
+                <*> dropout (sing @style)
+            )
 
 type family
   FeedForwardNetworkOutputShape

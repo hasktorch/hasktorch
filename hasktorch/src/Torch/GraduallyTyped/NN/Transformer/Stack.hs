@@ -21,17 +21,20 @@ module Torch.GraduallyTyped.NN.Transformer.Stack where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
+import Control.Monad.Reader (MonadIO, MonadReader)
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Kind (Type)
+import Data.Singletons (SingI)
 import GHC.TypeLits (Nat, Symbol, type (+), type (-), type (<=?))
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType, WithDataTypeC (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (..))
+import Torch.GraduallyTyped.DType (DataType, KnownDataType, WithDataTypeC (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, WithDeviceC (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
-import Torch.GraduallyTyped.NN.Transformer.Block (HasInitializeTransformerBlockC, TransformerBlock)
-import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle)
+import Torch.GraduallyTyped.NN.Transformer.Block (HasInitializeTransformerBlockC, TransformerBlock, lookupBlock)
+import Torch.GraduallyTyped.NN.Transformer.Type (TensorDict, TransformerStyle)
 import Torch.GraduallyTyped.Random (Generator)
-import Torch.GraduallyTyped.Shape (Dim (..), Name (..), Size (..), WithDimC (..))
+import Torch.GraduallyTyped.Scalar (Scalar)
+import Torch.GraduallyTyped.Shape (Dim (..), KnownDim, Name (..), Size (..), WithDimC (..))
 
 -- | Transformer encoder stack.
 data
@@ -243,6 +246,84 @@ instance
             )
         )
   initialize = initializeTransformerStack @(1 <=? numLayers) @numLayers @style @device @dataType @headDim @headEmbedDim @embedDim @queryEmbedDim @ffnDim @dropoutP
+
+class
+  HasLookupStack
+    (n :: Nat)
+    (isCons :: Bool)
+    (numLayers :: Nat)
+    style
+    device
+    dataType
+    headDim
+    headEmbedDim
+    embedDim
+    queryEmbedDim
+    ffnDim
+    dropoutP
+    m
+  where
+  lookupStack' ::
+    dropoutP ->
+    Double ->
+    String ->
+    Integer ->
+    m (TransformerStack n style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
+
+instance
+  Applicative m =>
+  HasLookupStack 0 'False numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP m
+  where
+  lookupStack' _ _ _ _ = pure TransformerStackNil
+
+instance
+  ( SingI style,
+    MonadReader TensorDict m,
+    MonadIO m,
+    MonadFail m,
+    KnownDevice device,
+    KnownDataType dataType,
+    KnownDim headDim,
+    KnownDim headEmbedDim,
+    KnownDim embedDim,
+    KnownDim queryEmbedDim,
+    KnownDim ffnDim,
+    Scalar dropoutP,
+    HasLookupStack
+      (n - 1)
+      (1 <=? (n - 1))
+      numLayers
+      style
+      device
+      dataType
+      headDim
+      headEmbedDim
+      embedDim
+      queryEmbedDim
+      ffnDim
+      dropoutP
+      m
+  ) =>
+  HasLookupStack n 'True numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP m
+  where
+  lookupStack' dropoutP eps prefix n =
+    TransformerStackCons
+      <$> lookupBlock dropoutP eps (prefix <> show n <> ".")
+      <*> lookupStack' @(n - 1) @(1 <=? (n - 1)) @numLayers @style @device @dataType @headDim @headEmbedDim @embedDim @queryEmbedDim @ffnDim @dropoutP dropoutP eps prefix (n + 1)
+
+lookupStack ::
+  forall numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP m.
+  ( SingI style,
+    MonadReader TensorDict m,
+    MonadIO m,
+    MonadFail m,
+    HasLookupStack numLayers (1 <=? numLayers) numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP m
+  ) =>
+  dropoutP ->
+  Double ->
+  String ->
+  m (TransformerStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
+lookupStack dropoutP eps prefix = lookupStack' @numLayers @(1 <=? numLayers) @numLayers @style @device @dataType @headDim @headEmbedDim @embedDim @queryEmbedDim @ffnDim @dropoutP dropoutP eps prefix 0
 
 class
   HasForwardTransformerStack

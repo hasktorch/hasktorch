@@ -40,6 +40,7 @@ module Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
+import Control.Monad.Reader (MonadIO, MonadReader)
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Constraint, Type)
@@ -47,15 +48,15 @@ import Data.Singletons (Sing, SingI (sing))
 import GHC.TypeLits (Nat, Symbol)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), WithDataTypeC (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (..))
-import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
+import Torch.GraduallyTyped.DType (DataType (..), KnownDataType, WithDataTypeC (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, WithDeviceC (..))
+import Torch.GraduallyTyped.Layout (KnownLayout, Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout (..))
 import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithBiasF, LinearWithoutBiasF)
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, softmax)
 import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearWithBiasC, HasInitializeLinearWithoutBiasC, Linear (..))
-import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
+import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Random (Generator, mkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
@@ -367,6 +368,67 @@ instance
         let dropout = initialize @dropout dropoutP
         pure . MultiHeadAttention $ GMultiHeadAttention headDim headEmbedDim embedDim qInProj kInProj vInProj outProj dropout
 
+lookupHeadDim ::
+  forall headDim m.
+  (KnownDim headDim, MonadFail m) =>
+  m (Dim String Integer)
+lookupHeadDim = case dimVal @headDim of
+  Dim (Name name) (Size size) -> pure $ Dim name size
+  Dim _ _ -> fail "head dimension unspecified"
+
+lookupHeadEmbedDim ::
+  forall headEmbedDim m.
+  (KnownDim headEmbedDim, MonadFail m) =>
+  m (Dim String Integer)
+lookupHeadEmbedDim = case dimVal @headEmbedDim of
+  Dim (Name name) (Size size) -> pure $ Dim name size
+  Dim _ _ -> fail "head embedding dimension unspecified"
+
+lookupEmbedDim ::
+  forall embedDim m.
+  (KnownDim embedDim, MonadFail m) =>
+  m (Dim String Integer)
+lookupEmbedDim = case dimVal @embedDim of
+  Dim (Name name) (Size size) -> pure $ Dim name size
+  Dim _ _ -> fail "embed dimension unspecified"
+
+lookupMultiHeadAttention ::
+  forall style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP m.
+  ( SingI style,
+    MonadReader TensorDict m,
+    MonadIO m,
+    MonadFail m,
+    KnownDevice device,
+    KnownDataType dataType,
+    KnownDim headDim,
+    KnownDim headEmbedDim,
+    KnownDim embedDim,
+    KnownDim queryEmbedDim,
+    KnownDim keyEmbedDim,
+    KnownDim valueEmbedDim,
+    Scalar dropoutP
+  ) =>
+  dropoutP ->
+  String ->
+  m (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
+lookupMultiHeadAttention dropoutP prefix =
+  let qInProj ST5 = LinearWithoutBias <$> lookupTensor (prefix <> "q.weight")
+      kInProj ST5 = LinearWithoutBias <$> lookupTensor (prefix <> "k.weight")
+      vInProj ST5 = LinearWithoutBias <$> lookupTensor (prefix <> "v.weight")
+      outProj ST5 = LinearWithoutBias <$> lookupTensor (prefix <> "o.weight")
+      dropout ST5 = pure (initialize @(Dropout dropoutP) dropoutP)
+   in MultiHeadAttention
+        <$> ( GMultiHeadAttention
+                <$> lookupHeadDim @headDim
+                <*> lookupHeadEmbedDim @headEmbedDim
+                <*> lookupEmbedDim @embedDim
+                <*> qInProj (sing @style)
+                <*> kInProj (sing @style)
+                <*> vInProj (sing @style)
+                <*> outProj (sing @style)
+                <*> dropout (sing @style)
+            )
+
 type BatchDim ::
   Shape [Dim (Name Symbol) (Size Nat)] ->
   Shape [Dim (Name Symbol) (Size Nat)] ->
@@ -408,7 +470,14 @@ unsafeGetKeySeqDim keyDims valueDims =
     dims <- sequence [getDim (ByIndex 1) valueDims]
     unifyDims dim dims
 
-data Scaling = NoScaling | QueryScaling Double | WeightScaling Double
+-- | Whether or not scaling is applied in the multi-headed attention layer.
+data Scaling
+  = -- | Scaling is not done.
+    NoScaling
+  | -- | Scaling is applied to the query after in the in-projection.
+    QueryScaling Double
+  | -- | Scaling is applied to the attention weights.
+    WeightScaling Double
 
 -- | 'HasForward' instance for 'MultiHeadAttention'.
 --

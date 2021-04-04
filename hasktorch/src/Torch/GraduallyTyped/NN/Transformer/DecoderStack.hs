@@ -21,17 +21,20 @@ module Torch.GraduallyTyped.NN.Transformer.DecoderStack where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
+import Control.Monad.Reader (MonadIO, MonadReader)
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Kind (Type)
+import Data.Singletons (SingI)
 import GHC.TypeLits (Nat, Symbol, type (+), type (-), type (<=?))
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType, WithDataTypeC (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (..))
+import Torch.GraduallyTyped.DType (DataType, KnownDataType, WithDataTypeC (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, WithDeviceC (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
-import Torch.GraduallyTyped.NN.Transformer.DecoderBlock (HasInitializeTransformerDecoderBlockC, TransformerDecoderBlock)
-import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle)
+import Torch.GraduallyTyped.NN.Transformer.DecoderBlock (HasInitializeTransformerDecoderBlockC, TransformerDecoderBlock, lookupDecoderBlock)
+import Torch.GraduallyTyped.NN.Transformer.Type (TensorDict, TransformerStyle)
 import Torch.GraduallyTyped.Random (Generator)
-import Torch.GraduallyTyped.Shape (Dim (..), Name (..), Size (..), WithDimC (..))
+import Torch.GraduallyTyped.Scalar (Scalar)
+import Torch.GraduallyTyped.Shape (Dim (..), KnownDim, Name (..), Size (..), WithDimC (..))
 
 -- | Transformer decoder stack.
 data
@@ -253,6 +256,87 @@ instance
             )
         )
   initialize = initializeTransformerDecoderStack @(1 <=? numLayers) @numLayers @style @device @dataType @headDim @headEmbedDim @embedDim @queryEmbedDim @keyEmbedDim @ffnDim @dropoutP
+
+class
+  HasLookupDecoderStack
+    (n :: Nat)
+    (isCons :: Bool)
+    (numLayers :: Nat)
+    style
+    device
+    dataType
+    headDim
+    headEmbedDim
+    embedDim
+    queryEmbedDim
+    keyEmbedDim
+    ffnDim
+    dropoutP
+    m
+  where
+  lookupDecoderStack' ::
+    dropoutP ->
+    Double ->
+    String ->
+    Integer ->
+    m (TransformerDecoderStack n style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
+
+instance
+  Applicative m =>
+  HasLookupDecoderStack 0 'False numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP m
+  where
+  lookupDecoderStack' _ _ _ _ = pure TransformerDecoderStackNil
+
+instance
+  ( SingI style,
+    MonadReader TensorDict m,
+    MonadIO m,
+    MonadFail m,
+    KnownDevice device,
+    KnownDataType dataType,
+    KnownDim headDim,
+    KnownDim headEmbedDim,
+    KnownDim embedDim,
+    KnownDim queryEmbedDim,
+    KnownDim keyEmbedDim,
+    KnownDim ffnDim,
+    Scalar dropoutP,
+    HasLookupDecoderStack
+      (n - 1)
+      (1 <=? (n - 1))
+      numLayers
+      style
+      device
+      dataType
+      headDim
+      headEmbedDim
+      embedDim
+      queryEmbedDim
+      keyEmbedDim
+      ffnDim
+      dropoutP
+      m
+  ) =>
+  HasLookupDecoderStack n 'True numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP m
+  where
+  lookupDecoderStack' dropoutP eps prefix n =
+    TransformerDecoderStackCons
+      <$> lookupDecoderBlock dropoutP eps (prefix <> show n <> ".")
+      <*> lookupDecoderStack' @(n - 1) @(1 <=? (n - 1)) @numLayers @style @device @dataType @headDim @headEmbedDim @embedDim @queryEmbedDim @keyEmbedDim @ffnDim @dropoutP dropoutP eps prefix (n + 1)
+
+lookupDecoderStack ::
+  forall numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP m.
+  ( SingI style,
+    MonadReader TensorDict m,
+    MonadIO m,
+    MonadFail m,
+    HasLookupDecoderStack numLayers (1 <=? numLayers) numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP m
+  ) =>
+  dropoutP ->
+  Double ->
+  String ->
+  m (TransformerDecoderStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
+lookupDecoderStack dropoutP eps prefix = lookupDecoderStack' @numLayers @(1 <=? numLayers) @numLayers @style @device @dataType @headDim @headEmbedDim @embedDim @queryEmbedDim @keyEmbedDim @ffnDim @dropoutP dropoutP eps prefix 0
 
 class
   HasForwardTransformerDecoderStack

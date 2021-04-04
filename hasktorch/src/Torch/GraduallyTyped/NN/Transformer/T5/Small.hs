@@ -16,7 +16,7 @@ import GHC.TypeLits (Nat)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (SequenceToSequenceTransformer, SequenceToSequenceTransformerInput)
-import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5Config, T5DataType, T5DropoutP, T5GenerationInput, T5Input, T5Output, T5RelPosEncBucketDim, lookupSequenceToSequenceTransformerWithLMHead, t5ConfigFromPretrained, T5ModelWithLMHead, T5Model)
+import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5DataType, T5DropoutP, T5GenerationInput, T5Input, T5Model, T5ModelWithLMHead, T5Output, T5RelPosEncBucketDim)
 import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle (T5))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 
@@ -47,21 +47,6 @@ type T5SmallFFNDim = 'Dim ('Name "*") ('Size 2048)
 -- | T5-Small vocabulary dimension.
 -- 'vocab_size = 32128'
 type T5SmallVocabDim = 'Dim ('Name "*") ('Size 32128)
-
--- | T5-Small configuration data type.
--- Modelled after https://huggingface.co/t5-small/blob/main/config.json.
-type T5SmallConfig device =
-  T5Config T5SmallNumLayers device T5SmallHeadDim T5SmallHeadEmbedDim T5SmallEmbedDim T5SmallInputEmbedDim T5SmallFFNDim T5RelPosEncBucketDim T5SmallVocabDim
-
--- | load a T5-Small configuration from a file
-t5SmallConfigFromPretrained ::
-  -- | file path
-  FilePath ->
-  -- | whether or not debugging output will be printed to the terminal
-  Bool ->
-  -- | configuration value
-  IO (T5SmallConfig ('Device 'CPU))
-t5SmallConfigFromPretrained = t5ConfigFromPretrained
 
 -- | T5-Small model.
 type T5Small

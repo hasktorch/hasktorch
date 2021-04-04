@@ -39,13 +39,14 @@ module Torch.GraduallyTyped.NN.Transformer.SelfAttention where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
+import Control.Monad.Reader (MonadIO, MonadReader)
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Kind (Constraint, Type)
 import Data.Singletons (SingI, sing)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType, WithDataTypeC (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (..))
+import Torch.GraduallyTyped.DType (DataType, KnownDataType, WithDataTypeC (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, WithDeviceC (..))
 import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout)
@@ -53,9 +54,9 @@ import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithBiasF, LinearWithout
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF)
 import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithBiasF, LayerNormWithoutBiasF)
 import Torch.GraduallyTyped.NN.Linear (Linear)
-import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormWithoutBiasC, LayerNorm)
-import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (HasInitializeMultiHeadAttentionC, MultiHeadAttention)
-import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
+import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormWithoutBiasC, LayerNorm (..))
+import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (HasInitializeMultiHeadAttentionC, MultiHeadAttention, lookupMultiHeadAttention)
+import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
@@ -321,6 +322,40 @@ instance
             SBART -> ((),)
             SPegasus -> ((),)
         pure . SelfAttention $ GSelfAttention multiHeadAttention layerNorm dropout dense
+
+lookupSelfAttention ::
+  forall style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP m.
+  ( SingI style,
+    MonadReader TensorDict m,
+    MonadIO m,
+    MonadFail m,
+    KnownDevice device,
+    KnownDataType dataType,
+    KnownDim headDim,
+    KnownDim headEmbedDim,
+    KnownDim embedDim,
+    KnownDim queryEmbedDim,
+    Scalar dropoutP
+  ) =>
+  dropoutP ->
+  Double ->
+  String ->
+  m (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
+lookupSelfAttention dropoutP eps prefix =
+  let selfAttention _ = lookupMultiHeadAttention dropoutP (prefix <> "SelfAttention.")
+      layerNorm ST5 =
+        LayerNormWithoutBias
+          <$> lookupTensor (prefix <> "layer_norm.weight")
+          <*> pure eps
+      dropout _ = pure (initialize @(Dropout dropoutP) dropoutP)
+      dense ST5 = pure @m ()
+   in SelfAttention
+        <$> ( GSelfAttention
+                <$> selfAttention (sing @style)
+                <*> layerNorm (sing @style)
+                <*> dropout (sing @style)
+                <*> dense (sing @style)
+            )
 
 -- | 'HasForward' instance for @SelfAttention 'T5@.
 --

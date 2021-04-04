@@ -42,7 +42,7 @@ module Torch.GraduallyTyped.NN.Transformer.T5.Common where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
-import Control.Monad.Reader (MonadIO, MonadReader, ask, liftIO)
+import Control.Monad.Reader (MonadIO, MonadReader, ReaderT (runReaderT), ask, liftIO)
 import Data.Coerce (Coercible, coerce)
 import Data.Generics.Product.Positions (HasPosition, position)
 import Data.Kind (Type)
@@ -67,14 +67,14 @@ import Torch.GraduallyTyped.NN.Transformer.Block (TransformerBlock (TransformerB
 import Torch.GraduallyTyped.NN.Transformer.CrossAttention (CrossAttention (..), GCrossAttention (..))
 import Torch.GraduallyTyped.NN.Transformer.Decoder (GTransformerDecoder (..), TransformerDecoder (..))
 import Torch.GraduallyTyped.NN.Transformer.DecoderBlock (TransformerDecoderBlock (..))
-import Torch.GraduallyTyped.NN.Transformer.DecoderStack (TransformerDecoderStack (..))
+import Torch.GraduallyTyped.NN.Transformer.DecoderStack (HasLookupDecoderStack, TransformerDecoderStack (..))
 import Torch.GraduallyTyped.NN.Transformer.Encoder (GTransformerEncoder (..), TransformerEncoder (..))
 import Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork (GTransformerFeedForwardNetwork (..), TransformerFeedForwardNetwork (..))
 import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (GMultiHeadAttention (..), MultiHeadAttention (..))
 import Torch.GraduallyTyped.NN.Transformer.SelfAttention (GSelfAttention (..), SelfAttention (..))
-import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (SequenceToSequenceTransformer (..), SequenceToSequenceTransformerGenerationInput (..), SequenceToSequenceTransformerInput (..), SequenceToSequenceTransformerOutput (..), SequenceToSequenceTransformerWithLMHead (..))
-import Torch.GraduallyTyped.NN.Transformer.Stack (TransformerStack (..))
-import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle (T5))
+import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (SequenceToSequenceTransformer (..), SequenceToSequenceTransformerGenerationInput (..), SequenceToSequenceTransformerInput (..), SequenceToSequenceTransformerOutput (..), SequenceToSequenceTransformerWithLMHead (..), lookupSequenceToSequenceTransformer, lookupSequenceToSequenceTransformerWithLMHead)
+import Torch.GraduallyTyped.NN.Transformer.Stack (HasLookupStack, TransformerStack (..))
+import Torch.GraduallyTyped.NN.Transformer.Type (TensorDict, TransformerStyle (T5))
 import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.RewriteRules ()
@@ -135,39 +135,14 @@ t5EosTokenId = 1
 t5AttentionMaskBias :: Double
 t5AttentionMaskBias = -10000
 
-type StateDict = Map.Map String (ForeignPtr ATen.Tensor)
-
-data T5Config numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim where
-  T5Config ::
-    forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim.
-    ( KnownNat numLayers,
-      KnownDevice device,
-      KnownDim headDim,
-      KnownDim headEmbedDim,
-      KnownDim embedDim,
-      KnownDim inputEmbedDim,
-      KnownDim ffnDim,
-      KnownDim relPosEncBucketDim,
-      KnownDim vocabDim
-    ) =>
-    { debug :: Bool,
-      dropoutP :: T5DropoutP,
-      eps :: Double,
-      stateDict :: StateDict
-    } ->
-    T5Config numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim
-
-t5ConfigFromPretrained ::
-  (KnownNat numLayers, KnownDim headDim, KnownDim headEmbedDim, KnownDim embedDim, KnownDim inputEmbedDim, KnownDim ffnDim, KnownDim relPosEncBucketDim, KnownDim vocabDim) =>
+t5TensorDictFromPretrained ::
   FilePath ->
-  Bool ->
-  IO (T5Config numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim)
-t5ConfigFromPretrained filePath debug = do
+  IO TensorDict
+t5TensorDictFromPretrained filePath = do
   iValue <- Torch.Serialize.pickleLoad filePath
-  stateDict <- case iValue of
+  case iValue of
     Torch.Script.IVGenericDict xs -> Map.fromList <$> go xs
     _ -> fail "iValue is not a state dictionary."
-  pure $ T5Config debug t5DropoutP t5Eps stateDict
   where
     go [] = pure []
     go ((Torch.Script.IVString s, Torch.Script.IVTensor (Torch.Tensor.Unsafe t)) : xs) = ((s, t) :) <$> go xs
@@ -265,413 +240,46 @@ type family
       T5DropoutP
 
 instance
-  HasInitialize
-    (T5Model numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
+  ( KnownDim headDim,
+    KnownDim headEmbedDim,
+    KnownDim embedDim,
+    KnownDim ffnDim,
+    KnownDim inputEmbedDim,
+    KnownDim vocabDim,
+    HasLookupStack numLayers (1 <=? numLayers) numLayers 'T5 ('Device 'CPU) T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim T5DropoutP (ReaderT TensorDict IO),
+    HasLookupDecoderStack numLayers (1 <=? numLayers) numLayers 'T5 ('Device 'CPU) T5DataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim T5DropoutP (ReaderT TensorDict IO)
+  ) =>
+  HasInitialize (T5Model numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
   where
   type
     InitializeF (T5Model numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim) =
       FilePath -> IO (T5Model numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
-  initialize filePath = undefined
-
--- do
---   config <- t5BaseConfigFromPretrained filePath False
---   flip runReaderT config $
---     T5Base . T5Model <$> lookupSequenceToSequenceTransformer
+  initialize filePath =
+    do
+      tensorDict <- t5TensorDictFromPretrained filePath
+      flip runReaderT tensorDict $
+        T5Model <$> lookupSequenceToSequenceTransformer t5DropoutP t5Eps ""
 
 instance
-  HasInitialize
-    (T5ModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
+  ( KnownDim headDim,
+    KnownDim headEmbedDim,
+    KnownDim embedDim,
+    KnownDim ffnDim,
+    KnownDim inputEmbedDim,
+    KnownDim vocabDim,
+    HasLookupStack numLayers (1 <=? numLayers) numLayers 'T5 ('Device 'CPU) T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim T5DropoutP (ReaderT TensorDict IO),
+    HasLookupDecoderStack numLayers (1 <=? numLayers) numLayers 'T5 ('Device 'CPU) T5DataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim T5DropoutP (ReaderT TensorDict IO)
+  ) =>
+  HasInitialize (T5ModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
   where
   type
     InitializeF (T5ModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim) =
       FilePath -> IO (T5ModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
-  initialize filePath = undefined
-
--- do
---   config <- t5BaseConfigFromPretrained filePath False
---   flip runReaderT config $
---     T5BaseWithLMHead . T5ModelWithLMHead <$> lookupSequenceToSequenceTransformerWithLMHead
-
-class
-  HasLookupStack
-    (n :: Nat)
-    (isCons :: Bool)
-    (numLayers :: Nat)
-    device
-    headDim
-    headEmbedDim
-    embedDim
-    inputEmbedDim
-    ffnDim
-    (relPosEncBucketDim :: Dim (Name Symbol) (Size Nat))
-    (vocabDim :: Dim (Name Symbol) (Size Nat))
-    m
-  where
-  lookupEncoderStack' ::
-    Integer ->
-    m (TransformerStack n 'T5 device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim T5DropoutP)
-  lookupDecoderStack' ::
-    Integer ->
-    m (TransformerDecoderStack n 'T5 device T5DataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim T5DropoutP)
-
-instance
-  Applicative m =>
-  HasLookupStack 0 'False numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim m
-  where
-  lookupEncoderStack' _ = pure TransformerStackNil
-  lookupDecoderStack' _ = pure TransformerDecoderStackNil
-
-instance
-  ( MonadReader (T5Config numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim) m,
-    MonadIO m,
-    MonadFail m,
-    HasLookupStack (n - 1) (1 <=? (n - 1)) numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim m
-  ) =>
-  HasLookupStack n 'True numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim m
-  where
-  lookupEncoderStack' n =
-    TransformerStackCons
-      <$> lookupEncoderBlock n
-      <*> lookupEncoderStack' @(n - 1) @(1 <=? (n - 1)) @numLayers @device @headDim @headEmbedDim @embedDim @inputEmbedDim @ffnDim @relPosEncBucketDim @vocabDim (n + 1)
-  lookupDecoderStack' n =
-    TransformerDecoderStackCons
-      <$> lookupDecoderBlock n
-      <*> lookupDecoderStack' @(n - 1) @(1 <=? (n - 1)) @numLayers @device @headDim @headEmbedDim @embedDim @inputEmbedDim @ffnDim @relPosEncBucketDim @vocabDim (n + 1)
-
-lookupEncoderStack ::
-  forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim m.
-  ( MonadReader (T5Config numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim) m,
-    MonadIO m,
-    MonadFail m,
-    HasLookupStack numLayers (1 <=? numLayers) numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim m
-  ) =>
-  m (TransformerStack numLayers 'T5 device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim T5DropoutP)
-lookupEncoderStack = lookupEncoderStack' @numLayers @(1 <=? numLayers) @numLayers @device @headDim @headEmbedDim @embedDim @inputEmbedDim @ffnDim @relPosEncBucketDim @vocabDim 0
-
-lookupDecoderStack ::
-  forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim m.
-  ( MonadReader (T5Config numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim) m,
-    MonadIO m,
-    MonadFail m,
-    HasLookupStack numLayers (1 <=? numLayers) numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim m
-  ) =>
-  m (TransformerDecoderStack numLayers 'T5 device T5DataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim T5DropoutP)
-lookupDecoderStack = lookupDecoderStack' @numLayers @(1 <=? numLayers) @numLayers @device @headDim @headEmbedDim @embedDim @inputEmbedDim @ffnDim @relPosEncBucketDim @vocabDim 0
-
-lookupEncoder ::
-  forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim m.
-  ( MonadReader (T5Config numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim) m,
-    MonadIO m,
-    MonadFail m,
-    HasLookupStack numLayers (1 <=? numLayers) numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim m
-  ) =>
-  m
-    ( TransformerEncoder
-        numLayers
-        'T5
-        device
-        T5DataType
-        headDim
-        headEmbedDim
-        embedDim
-        inputEmbedDim
-        ffnDim
-        relPosEncBucketDim
-        T5DropoutP
-    )
-lookupEncoder = do
-  t5Config <- ask
-  case t5Config of
-    T5Config {..} ->
-      TransformerEncoder
-        <$> ( GTransformerEncoder
-                <$> lookupEncoderStack
-                <*> pure ()
-                <*> ( LayerNormWithoutBias
-                        <$> lookupTensor "encoder.final_layer_norm.weight"
-                        <*> pure eps
-                    )
-                <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
-                <*> ( Embedding
-                        <$> lookupTensor "encoder.block.0.layer.0.SelfAttention.relative_attention_bias.weight"
-                    )
-            )
-
-lookupDecoder ::
-  forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim m.
-  ( MonadReader (T5Config numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim) m,
-    MonadIO m,
-    MonadFail m,
-    HasLookupStack numLayers (1 <=? numLayers) numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim m
-  ) =>
-  m (TransformerDecoder numLayers 'T5 device T5DataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim relPosEncBucketDim T5DropoutP)
-lookupDecoder = do
-  t5Config <- ask
-  case t5Config of
-    T5Config {..} ->
-      TransformerDecoder
-        <$> ( GTransformerDecoder
-                <$> lookupDecoderStack
-                <*> pure ()
-                <*> ( LayerNormWithoutBias
-                        <$> lookupTensor "decoder.final_layer_norm.weight"
-                        <*> pure eps
-                    )
-                <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
-                <*> ( Embedding
-                        <$> lookupTensor "decoder.block.0.layer.0.SelfAttention.relative_attention_bias.weight"
-                    )
-            )
-
-lookupSequenceToSequenceTransformer ::
-  forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim m.
-  ( MonadReader (T5Config numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim) m,
-    MonadIO m,
-    MonadFail m,
-    HasLookupStack numLayers (1 <=? numLayers) numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim m
-  ) =>
-  m (SequenceToSequenceTransformer numLayers numLayers 'T5 device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim T5DropoutP)
-lookupSequenceToSequenceTransformer = do
-  t5Config <- ask
-  case t5Config of
-    T5Config {} ->
-      SequenceToSequenceTransformer
-        <$> lookupEncoder
-        <*> lookupDecoder
-        <*> ( Embedding
-                <$> lookupTensor "shared.weight"
-            )
-
-lookupSequenceToSequenceTransformerWithLMHead ::
-  forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim m.
-  ( MonadReader (T5Config numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim) m,
-    MonadIO m,
-    MonadFail m,
-    HasLookupStack numLayers (1 <=? numLayers) numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim m
-  ) =>
-  m (SequenceToSequenceTransformerWithLMHead numLayers numLayers 'T5 device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim T5DropoutP)
-lookupSequenceToSequenceTransformerWithLMHead = do
-  t5Config <- ask
-  case t5Config of
-    T5Config {} ->
-      SequenceToSequenceTransformerWithLMHead
-        <$> lookupSequenceToSequenceTransformer
-        <*> ( LinearWithoutBias
-                <$> lookupTensor "lm_head.weight"
-            )
-        <*> lookupInputEmbedDim
-
-lookupTensor ::
-  forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim requiresGradient layout shape m.
-  ( MonadReader (T5Config numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim) m,
-    MonadIO m,
-    MonadFail m,
-    KnownLayout layout,
-    KnownShape shape
-  ) =>
-  String ->
-  m (Tensor requiresGradient layout device T5DataType shape)
-lookupTensor s = do
-  t5Config <- ask
-  case t5Config of
-    T5Config {..} -> do
-      if debug
-        then liftIO . putStrLn $ "loading `" <> s <> "`..."
-        else pure ()
-      liftIO
-        ( maybe
-            (fail $ "`" <> show s <> "` is not in the state dictionary.")
-            (pure . UnsafeTensor)
-            (Map.lookup s stateDict)
-        )
-        >>= checkedLayout
-        >>= checkedDevice
-        >>= checkedDataType @T5DataType
-        >>= checkedShape
-
-lookupHeadDim ::
-  forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim m.
-  ( MonadReader (T5Config numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim) m,
-    MonadFail m
-  ) =>
-  m (Dim String Integer)
-lookupHeadDim = do
-  t5Config <- ask
-  case t5Config of
-    T5Config {} -> case dimVal @embedDim of
-      Dim (Name name) (Size size) -> pure $ Dim name size
-      Dim _ _ -> fail "head dimension unspecified"
-
-lookupHeadEmbedDim ::
-  forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim m.
-  ( MonadReader (T5Config numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim) m,
-    MonadFail m
-  ) =>
-  m (Dim String Integer)
-lookupHeadEmbedDim = do
-  t5Config <- ask
-  case t5Config of
-    T5Config {} -> case dimVal @headEmbedDim of
-      Dim (Name name) (Size size) -> pure $ Dim name size
-      Dim _ _ -> fail "head embed dimension unspecified"
-
-lookupEmbedDim ::
-  forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim m.
-  ( MonadReader (T5Config numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim) m,
-    MonadFail m
-  ) =>
-  m (Dim String Integer)
-lookupEmbedDim = do
-  t5Config <- ask
-  case t5Config of
-    T5Config {} -> case dimVal @embedDim of
-      Dim (Name name) (Size size) -> pure $ Dim name size
-      Dim _ _ -> fail "embed dimension unspecified"
-
-lookupInputEmbedDim ::
-  forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim m.
-  ( MonadReader (T5Config numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim) m,
-    MonadFail m
-  ) =>
-  m (Dim String Integer)
-lookupInputEmbedDim = do
-  t5Config <- ask
-  case t5Config of
-    T5Config {} -> case dimVal @inputEmbedDim of
-      Dim (Name name) (Size size) -> pure $ Dim name size
-      Dim _ _ -> fail "input embed dimension unspecified"
-
-lookupRelPosEncBucketDim ::
-  forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim m.
-  ( MonadReader (T5Config numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim) m,
-    MonadFail m
-  ) =>
-  m (Dim String Integer)
-lookupRelPosEncBucketDim = do
-  t5Config <- ask
-  case t5Config of
-    T5Config {} -> case dimVal @relPosEncBucketDim of
-      Dim (Name name) (Size size) -> pure $ Dim name size
-      Dim _ _ -> fail "bucket dimension for relative positional encoding unspecified"
-
-lookupEncoderBlock ::
-  forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim m.
-  ( MonadReader (T5Config numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim) m,
-    MonadIO m,
-    MonadFail m
-  ) =>
-  Integer ->
-  m (TransformerBlock 'T5 device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim T5DropoutP)
-lookupEncoderBlock n = do
-  t5Config <- ask
-  case t5Config of
-    T5Config {..} -> do
-      TransformerBlock
-        <$> ( SelfAttention
-                <$> ( GSelfAttention
-                        <$> ( MultiHeadAttention
-                                <$> ( GMultiHeadAttention
-                                        <$> lookupHeadDim
-                                        <*> lookupHeadEmbedDim
-                                        <*> lookupEmbedDim
-                                        <*> (LinearWithoutBias <$> lookupTensor ("encoder.block." <> show n <> ".layer.0.SelfAttention.q.weight"))
-                                        <*> (LinearWithoutBias <$> lookupTensor ("encoder.block." <> show n <> ".layer.0.SelfAttention.k.weight"))
-                                        <*> (LinearWithoutBias <$> lookupTensor ("encoder.block." <> show n <> ".layer.0.SelfAttention.v.weight"))
-                                        <*> (LinearWithoutBias <$> lookupTensor ("encoder.block." <> show n <> ".layer.0.SelfAttention.o.weight"))
-                                        <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
-                                    )
-                            )
-                        <*> ( LayerNormWithoutBias
-                                <$> lookupTensor ("encoder.block." <> show n <> ".layer.0.layer_norm.weight")
-                                <*> pure t5Eps
-                            )
-                        <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
-                        <*> pure ()
-                    )
-            )
-        <*> ( TransformerFeedForwardNetwork
-                <$> ( GTransformerFeedForwardNetwork
-                        <$> (LinearWithoutBias <$> lookupTensor ("encoder.block." <> show n <> ".layer.1.DenseReluDense.wi.weight"))
-                        <*> (LinearWithoutBias <$> lookupTensor ("encoder.block." <> show n <> ".layer.1.DenseReluDense.wo.weight"))
-                        <*> pure Relu
-                        <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
-                        <*> ( LayerNormWithoutBias
-                                <$> lookupTensor ("encoder.block." <> show n <> ".layer.1.layer_norm.weight")
-                                <*> pure t5Eps
-                            )
-                        <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
-                    )
-            )
-
-lookupDecoderBlock ::
-  forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim m.
-  ( MonadReader (T5Config numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim relPosEncBucketDim vocabDim) m,
-    MonadIO m,
-    MonadFail m
-  ) =>
-  Integer ->
-  m (TransformerDecoderBlock 'T5 device T5DataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim T5DropoutP)
-lookupDecoderBlock n = do
-  t5Config <- ask
-  case t5Config of
-    T5Config {..} ->
-      TransformerDecoderBlock
-        <$> ( SelfAttention
-                <$> ( GSelfAttention
-                        <$> ( MultiHeadAttention
-                                <$> ( GMultiHeadAttention
-                                        <$> lookupHeadDim
-                                        <*> lookupHeadEmbedDim
-                                        <*> lookupEmbedDim
-                                        <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.0.SelfAttention.q.weight"))
-                                        <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.0.SelfAttention.k.weight"))
-                                        <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.0.SelfAttention.v.weight"))
-                                        <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.0.SelfAttention.o.weight"))
-                                        <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
-                                    )
-                            )
-                        <*> ( LayerNormWithoutBias
-                                <$> lookupTensor ("decoder.block." <> show n <> ".layer.0.layer_norm.weight")
-                                <*> pure t5Eps
-                            )
-                        <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
-                        <*> pure ()
-                    )
-            )
-        <*> ( CrossAttention
-                <$> ( GCrossAttention
-                        <$> ( MultiHeadAttention
-                                <$> ( GMultiHeadAttention
-                                        <$> lookupHeadDim
-                                        <*> lookupHeadEmbedDim
-                                        <*> lookupEmbedDim
-                                        <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.1.EncDecAttention.q.weight"))
-                                        <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.1.EncDecAttention.k.weight"))
-                                        <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.1.EncDecAttention.v.weight"))
-                                        <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.1.EncDecAttention.o.weight"))
-                                        <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
-                                    )
-                            )
-                        <*> ( LayerNormWithoutBias
-                                <$> lookupTensor ("decoder.block." <> show n <> ".layer.1.layer_norm.weight")
-                                <*> pure t5Eps
-                            )
-                        <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
-                    )
-            )
-        <*> ( TransformerFeedForwardNetwork
-                <$> ( GTransformerFeedForwardNetwork
-                        <$> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.2.DenseReluDense.wi.weight"))
-                        <*> (LinearWithoutBias <$> lookupTensor ("decoder.block." <> show n <> ".layer.2.DenseReluDense.wo.weight"))
-                        <*> pure Relu
-                        <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
-                        <*> ( LayerNormWithoutBias
-                                <$> lookupTensor ("decoder.block." <> show n <> ".layer.2.layer_norm.weight")
-                                <*> pure t5Eps
-                            )
-                        <*> pure (initialize @(Dropout T5DropoutP) dropoutP)
-                    )
-            )
+  initialize filePath =
+    do
+      tensorDict <- t5TensorDictFromPretrained filePath
+      flip runReaderT tensorDict $
+        T5ModelWithLMHead <$> lookupSequenceToSequenceTransformerWithLMHead t5DropoutP t5Eps ""
 
 padded :: Integral n => n -> a -> [a] -> [a]
 padded n p xs =

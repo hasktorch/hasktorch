@@ -20,18 +20,21 @@ module Torch.GraduallyTyped.NN.Transformer.Block where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
+import Control.Monad.Reader (MonadIO, MonadReader)
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Kind (Type)
+import Data.Singletons (SingI)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType, WithDataTypeC (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (..))
+import Torch.GraduallyTyped.DType (DataType, KnownDataType, WithDataTypeC (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, WithDeviceC (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
-import Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork (HasInitializeTransformerFeedForwardNetworkC, TransformerFeedForwardNetwork)
-import Torch.GraduallyTyped.NN.Transformer.SelfAttention (HasInitializeSelfAttentionC, SelfAttention)
-import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle)
+import Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork (HasInitializeTransformerFeedForwardNetworkC, TransformerFeedForwardNetwork, lookupTransformerFeedForwardNetwork)
+import Torch.GraduallyTyped.NN.Transformer.SelfAttention (HasInitializeSelfAttentionC, SelfAttention, lookupSelfAttention)
+import Torch.GraduallyTyped.NN.Transformer.Type (TensorDict, TransformerStyle)
 import Torch.GraduallyTyped.Random (Generator)
-import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..), WithDimC (..))
+import Torch.GraduallyTyped.Scalar (Scalar)
+import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim, Name (..), Size (..), WithDimC (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 
 -- | Transformer encoder block consisting of self-attention and a feed-forward network.
@@ -164,6 +167,30 @@ instance
               dropoutP
               eps
         pure $ TransformerBlock selfAttention feedForwardNetwork
+
+lookupBlock ::
+  forall style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP m.
+  ( SingI style,
+    MonadReader TensorDict m,
+    MonadIO m,
+    MonadFail m,
+    KnownDevice device,
+    KnownDataType dataType,
+    KnownDim headDim,
+    KnownDim headEmbedDim,
+    KnownDim embedDim,
+    KnownDim queryEmbedDim,
+    KnownDim ffnDim,
+    Scalar dropoutP
+  ) =>
+  dropoutP ->
+  Double ->
+  String ->
+  m (TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
+lookupBlock dropoutP eps prefix =
+  TransformerBlock
+    <$> lookupSelfAttention dropoutP eps (prefix <> "layer.0.")
+    <*> lookupTransformerFeedForwardNetwork dropoutP eps (prefix <> "layer.1.")
 
 -- | 'HasForward' instance for 'TransformerBlock'.
 --

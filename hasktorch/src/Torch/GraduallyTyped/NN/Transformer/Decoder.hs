@@ -17,27 +17,28 @@ module Torch.GraduallyTyped.NN.Transformer.Decoder where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
+import Control.Monad.Reader (MonadIO, MonadReader)
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Kind (Constraint, Type)
 import Data.Singletons (SingI, sing)
 import GHC.TypeLits (Nat, Symbol, type (<=?))
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), WithDataTypeC (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (..))
+import Torch.GraduallyTyped.DType (DataType (..), KnownDataType, WithDataTypeC (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, WithDeviceC (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout)
 import Torch.GraduallyTyped.NN.Functional.Sparse (EmbeddingF)
-import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormWithoutBiasC, LayerNorm)
-import Torch.GraduallyTyped.NN.Sparse (Embedding, HasInitializeEmbeddingC)
-import Torch.GraduallyTyped.NN.Transformer.DecoderStack (HasInitializeTransformerDecoderStack, HasInitializeTransformerDecoderStackC, TransformerDecoderStack)
-import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
+import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormWithoutBiasC, LayerNorm (..))
+import Torch.GraduallyTyped.NN.Sparse (Embedding (..), HasInitializeEmbeddingC)
+import Torch.GraduallyTyped.NN.Transformer.DecoderStack (HasInitializeTransformerDecoderStack, HasInitializeTransformerDecoderStackC, HasLookupDecoderStack, TransformerDecoderStack, lookupDecoderStack)
+import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape (Dim (..), Name (..), Shape (..), Size (..), WithDimC (..), WithDimsC (..), WithShapeC (..))
+import Torch.GraduallyTyped.Shape (Dim (..), KnownDim, Name (..), Shape (..), Size (..), WithDimC (..), WithDimsC (..), WithShapeC (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
 import Torch.GraduallyTyped.Shape.Type (By (..), SelectDim (..))
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (TransposeF, UnsqueezeF, transpose, unsqueeze)
@@ -471,6 +472,46 @@ instance
                 )
                 decoderInputEmbedDim
         pure . TransformerDecoder $ GTransformerDecoder stack embedLayerNorm layerNorm dropout posEnc
+
+lookupDecoder ::
+  forall numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP m.
+  ( SingI style,
+    MonadReader TensorDict m,
+    MonadIO m,
+    MonadFail m,
+    KnownDevice device,
+    KnownDataType dataType,
+    KnownDim headDim,
+    KnownDim headEmbedDim,
+    KnownDim embedDim,
+    KnownDim decoderInputEmbedDim,
+    KnownDim encoderOutputEmbedDim,
+    KnownDim ffnDim,
+    KnownDim posEncDim,
+    Scalar dropoutP,
+    HasLookupDecoderStack numLayers (1 <=? numLayers) numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP m
+  ) =>
+  dropoutP ->
+  Double ->
+  String ->
+  m (TransformerDecoder numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP)
+lookupDecoder dropoutP eps prefix =
+  let stack ST5 = lookupDecoderStack dropoutP eps (prefix <> "block.")
+      embedLayerNorm ST5 = pure @m ()
+      layerNorm ST5 =
+        LayerNormWithoutBias
+          <$> lookupTensor (prefix <> "final_layer_norm.weight")
+          <*> pure eps
+      dropout ST5 = pure (initialize @(Dropout dropoutP) dropoutP)
+      posEnc ST5 = fmap @m Embedding $ lookupTensor (prefix <> "block.0.layer.0.SelfAttention.relative_attention_bias.weight")
+   in TransformerDecoder
+        <$> ( GTransformerDecoder
+                <$> stack (sing @style)
+                <*> embedLayerNorm (sing @style)
+                <*> layerNorm (sing @style)
+                <*> dropout (sing @style)
+                <*> posEnc (sing @style)
+            )
 
 -- | 'HasForward' instance for @TransformerDecoder numLayers 'T5@.
 --

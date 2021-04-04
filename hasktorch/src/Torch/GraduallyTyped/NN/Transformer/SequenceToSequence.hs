@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -18,23 +19,28 @@ module Torch.GraduallyTyped.NN.Transformer.SequenceToSequence where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
+import Control.Monad.Reader (MonadIO, MonadReader)
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Kind (Constraint, Type)
-import GHC.TypeLits (Nat, Symbol)
+import Data.Singletons (SingI, sing)
+import GHC.TypeLits (Nat, Symbol, type (<=?))
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), WithDataTypeC (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), WithDeviceC (..))
+import Torch.GraduallyTyped.DType (DataType (..), KnownDataType, WithDataTypeC (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, WithDeviceC (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
-import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearWithoutBiasC, Linear)
-import Torch.GraduallyTyped.NN.Sparse (Embedding, HasInitializeEmbeddingC)
-import Torch.GraduallyTyped.NN.Transformer.Decoder (HasInitializeTransformerDecoderC, TransformerDecoder)
-import Torch.GraduallyTyped.NN.Transformer.Encoder (HasInitializeTransformerEncoderC, TransformerEncoder)
-import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle (..))
+import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearWithoutBiasC, Linear (..))
+import Torch.GraduallyTyped.NN.Sparse (Embedding (..), HasInitializeEmbeddingC)
+import Torch.GraduallyTyped.NN.Transformer.Decoder (HasInitializeTransformerDecoderC, TransformerDecoder, lookupDecoder)
+import Torch.GraduallyTyped.NN.Transformer.DecoderStack (HasLookupDecoderStack)
+import Torch.GraduallyTyped.NN.Transformer.Encoder (HasInitializeTransformerEncoderC, TransformerEncoder, lookupEncoder)
+import Torch.GraduallyTyped.NN.Transformer.Stack (HasLookupStack)
+import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
-import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Shape (..), Size (..), WithDimC (..))
+import Torch.GraduallyTyped.Scalar (Scalar)
+import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), Name (..), Shape (..), Size (..), WithDimC (..))
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (divScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 
@@ -361,6 +367,74 @@ instance
               )
               vocabDim
         pure $ SequenceToSequenceTransformerWithLMHead transformer lmHead inputEmbedDim
+
+lookupSequenceToSequenceTransformer ::
+  forall numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP m.
+  ( SingI style,
+    MonadReader TensorDict m,
+    MonadIO m,
+    MonadFail m,
+    KnownDevice device,
+    KnownDataType dataType,
+    KnownDim headDim,
+    KnownDim headEmbedDim,
+    KnownDim embedDim,
+    KnownDim ffnDim,
+    KnownDim posEncDim,
+    KnownDim inputEmbedDim,
+    KnownDim vocabDim,
+    Scalar dropoutP,
+    HasLookupStack numEncoderLayers (1 <=? numEncoderLayers) numEncoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP m,
+    HasLookupDecoderStack numDecoderLayers (1 <=? numDecoderLayers) numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim dropoutP m
+  ) =>
+  dropoutP ->
+  Double ->
+  String ->
+  m (SequenceToSequenceTransformer numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP)
+lookupSequenceToSequenceTransformer dropoutP eps prefix =
+  let embedding ST5 = fmap @m Embedding $ lookupTensor "shared.weight"
+   in SequenceToSequenceTransformer
+        <$> lookupEncoder dropoutP eps (prefix <> "encoder.")
+        <*> lookupDecoder dropoutP eps (prefix <> "decoder.")
+        <*> embedding (sing @style)
+
+lookupInputEmbedDim ::
+  forall inputEmbedDim m.
+  (KnownDim inputEmbedDim, MonadFail m) =>
+  m (Dim String Integer)
+lookupInputEmbedDim = case dimVal @inputEmbedDim of
+  Dim (Name name) (Size size) -> pure $ Dim name size
+  Dim _ _ -> fail "input embedding dimension unspecified"
+
+lookupSequenceToSequenceTransformerWithLMHead ::
+  forall numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP m.
+  ( SingI style,
+    MonadReader TensorDict m,
+    MonadIO m,
+    MonadFail m,
+    KnownDevice device,
+    KnownDataType dataType,
+    KnownDim headDim,
+    KnownDim headEmbedDim,
+    KnownDim embedDim,
+    KnownDim ffnDim,
+    KnownDim posEncDim,
+    KnownDim inputEmbedDim,
+    KnownDim vocabDim,
+    Scalar dropoutP,
+    HasLookupStack numEncoderLayers (1 <=? numEncoderLayers) numEncoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP m,
+    HasLookupDecoderStack numDecoderLayers (1 <=? numDecoderLayers) numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim dropoutP m
+  ) =>
+  dropoutP ->
+  Double ->
+  String ->
+  m (SequenceToSequenceTransformerWithLMHead numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP)
+lookupSequenceToSequenceTransformerWithLMHead dropoutP eps prefix =
+  let lmHead ST5 = fmap @m LinearWithoutBias $ lookupTensor "lm_head.weight"
+   in SequenceToSequenceTransformerWithLMHead
+        <$> lookupSequenceToSequenceTransformer dropoutP eps prefix
+        <*> lmHead (sing @style)
+        <*> lookupInputEmbedDim @inputEmbedDim
 
 -- | Input data type for use with a sequence-to-sequence transformer.
 -- Use this for training.
