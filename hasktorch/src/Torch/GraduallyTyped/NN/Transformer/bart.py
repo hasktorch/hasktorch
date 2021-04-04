@@ -28,7 +28,7 @@ def main(args=None) -> None:
     tokenized_inputs = tokenizer([args.input], padding="longest", return_tensors="pt")
     pretty_print(tokenized_inputs)
     back_decoded = tokenizer.batch_decode(tokenized_inputs['input_ids'], skip_special_tokens=False)
-    print({'back_decoded': back_decoded})
+    pretty_print({'back_decoded': back_decoded})
 
     model = BartForConditionalGeneration.from_pretrained(args.model, torchscript=False)
     model.eval()

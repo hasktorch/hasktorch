@@ -1,28 +1,11 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 module Torch.GraduallyTyped.NN.Transformer.T5.Base where
 
-import Data.Coerce (coerce)
-import Data.Kind (Type)
 import GHC.TypeLits (Nat)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
-import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (SequenceToSequenceTransformer, SequenceToSequenceTransformerWithLMHead)
-import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5DataType, T5DropoutP, T5GenerationInput, T5Input, T5Model (..), T5ModelWithLMHead (..), T5Output, T5RelPosEncBucketDim)
-import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle (T5))
+import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5DataType, T5DropoutP, T5Model (..), T5ModelWithLMHead (..), T5Output, T5RelPosEncBucketDim)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 
 -- | T5-Base number of layers.

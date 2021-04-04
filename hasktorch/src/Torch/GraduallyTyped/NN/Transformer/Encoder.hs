@@ -125,8 +125,8 @@ type family
     (dropoutP :: Type) ::
     Type
   where
-  TEStackF numLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP =
-    TransformerStack numLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP
+  TEStackF numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP =
+    TransformerStack numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP
 
 type family
   TEEmbedLayerNormF
@@ -483,13 +483,21 @@ lookupEncoder ::
   m (TransformerEncoder numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP)
 lookupEncoder dropoutP eps prefix =
   let stack ST5 = lookupStack dropoutP eps (prefix <> "block.")
-      embedLayerNorm ST5 = pure @m ()
+      stack SBERT = lookupStack dropoutP eps (prefix <> "encoder.layer.")
+      embedLayerNorm ST5 = pure ()
+      embedLayerNorm SBERT =
+        LayerNormWithBias
+          <$> lookupTensor (prefix <> "embeddings.LayerNorm.weight")
+          <*> lookupTensor (prefix <> "embeddings.LayerNorm.bias")
+          <*> pure eps
       layerNorm ST5 =
         LayerNormWithoutBias
           <$> lookupTensor (prefix <> "final_layer_norm.weight")
           <*> pure eps
-      dropout ST5 = pure (initialize @(Dropout dropoutP) dropoutP)
+      layerNorm SBERT = pure ()
+      dropout _ = pure (initialize @(Dropout dropoutP) dropoutP)
       posEnc ST5 = fmap @m Embedding $ lookupTensor (prefix <> "block.0.layer.0.SelfAttention.relative_attention_bias.weight")
+      posEnc SBERT = fmap @m Embedding $ lookupTensor (prefix <> "block.0.layer.0.SelfAttention.relative_attention_bias.weight")
    in TransformerEncoder
         <$> ( GTransformerEncoder
                 <$> stack (sing @style)

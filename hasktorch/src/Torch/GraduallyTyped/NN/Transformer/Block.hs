@@ -23,7 +23,7 @@ import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.Reader (MonadIO, MonadReader)
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Kind (Type)
-import Data.Singletons (SingI)
+import Data.Singletons (SingI, sing)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType, KnownDataType, WithDataTypeC (..))
@@ -31,7 +31,7 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, W
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork (HasInitializeTransformerFeedForwardNetworkC, TransformerFeedForwardNetwork, lookupTransformerFeedForwardNetwork)
 import Torch.GraduallyTyped.NN.Transformer.SelfAttention (HasInitializeSelfAttentionC, SelfAttention, lookupSelfAttention)
-import Torch.GraduallyTyped.NN.Transformer.Type (TensorDict, TransformerStyle)
+import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle)
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim, Name (..), Size (..), WithDimC (..))
@@ -188,9 +188,13 @@ lookupBlock ::
   String ->
   m (TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
 lookupBlock dropoutP eps prefix =
-  TransformerBlock
-    <$> lookupSelfAttention dropoutP eps (prefix <> "layer.0.")
-    <*> lookupTransformerFeedForwardNetwork dropoutP eps (prefix <> "layer.1.")
+  let selfAttention ST5 = lookupSelfAttention dropoutP eps (prefix <> "layer.0.")
+      selfAttention SBERT = lookupSelfAttention dropoutP eps (prefix <> "attention.")
+      feedForwardNetwork ST5 = lookupTransformerFeedForwardNetwork dropoutP eps (prefix <> "layer.1.")
+      feedForwardNetwork SBERT = lookupTransformerFeedForwardNetwork dropoutP eps prefix
+   in TransformerBlock
+        <$> selfAttention (sing @style)
+        <*> feedForwardNetwork (sing @style)
 
 -- | 'HasForward' instance for 'TransformerBlock'.
 --

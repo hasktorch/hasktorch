@@ -38,6 +38,9 @@ class
   -- and @g'@ is the updated generator.
   forward :: model -> input -> generator -> (output, generatorOutput)
 
+instance HasForward () input generator input generator where
+  forward _ = (,)
+
 class HasInitialize model where
   type InitializeF model :: Type
   initialize :: InitializeF model

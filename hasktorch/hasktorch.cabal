@@ -75,6 +75,9 @@ library
                     , Torch.GraduallyTyped.NN.Transformer.T5.Generation
                     , Torch.GraduallyTyped.NN.Transformer.T5.Vocab
                     , Torch.GraduallyTyped.NN.Transformer.T5
+                    , Torch.GraduallyTyped.NN.Transformer.BERT.Common
+                    , Torch.GraduallyTyped.NN.Transformer.BERT.BaseUncased
+                    , Torch.GraduallyTyped.NN.Transformer.BERT
                     , Torch.GraduallyTyped.NN.Dropout
                     , Torch.GraduallyTyped.NN.Activation
                     , Torch.GraduallyTyped.NN.Normalization

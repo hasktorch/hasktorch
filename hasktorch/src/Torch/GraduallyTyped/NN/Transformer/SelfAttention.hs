@@ -53,7 +53,7 @@ import Torch.GraduallyTyped.NN.Dropout (Dropout)
 import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithBiasF, LinearWithoutBiasF)
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF)
 import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithBiasF, LayerNormWithoutBiasF)
-import Torch.GraduallyTyped.NN.Linear (Linear)
+import Torch.GraduallyTyped.NN.Linear (Linear (..))
 import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormWithoutBiasC, LayerNorm (..))
 import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (HasInitializeMultiHeadAttentionC, MultiHeadAttention, lookupMultiHeadAttention)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
@@ -342,13 +342,23 @@ lookupSelfAttention ::
   String ->
   m (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
 lookupSelfAttention dropoutP eps prefix =
-  let selfAttention _ = lookupMultiHeadAttention dropoutP (prefix <> "SelfAttention.")
+  let selfAttention ST5 = lookupMultiHeadAttention dropoutP (prefix <> "SelfAttention.")
+      selfAttention SBERT = lookupMultiHeadAttention dropoutP (prefix <> "self.")
       layerNorm ST5 =
         LayerNormWithoutBias
           <$> lookupTensor (prefix <> "layer_norm.weight")
           <*> pure eps
+      layerNorm SBERT =
+        LayerNormWithBias
+          <$> lookupTensor (prefix <> "output.LayerNorm.weight")
+          <*> lookupTensor (prefix <> "output.LayerNorm.bias")
+          <*> pure eps
       dropout _ = pure (initialize @(Dropout dropoutP) dropoutP)
-      dense ST5 = pure @m ()
+      dense ST5 = pure ()
+      dense SBERT =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "output.dense.weight")
+          <*> lookupTensor (prefix <> "output.dense.bias")
    in SelfAttention
         <$> ( GSelfAttention
                 <$> selfAttention (sing @style)

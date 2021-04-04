@@ -355,15 +355,34 @@ lookupTransformerFeedForwardNetwork ::
   String ->
   m (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP)
 lookupTransformerFeedForwardNetwork dropoutP eps prefix =
-  let inputWeight ST5 = LinearWithoutBias <$> lookupTensor (prefix <> "DenseReluDense.wi.weight")
-      outputWeight ST5 = LinearWithoutBias <$> lookupTensor (prefix <> "DenseReluDense.wo.weight")
+  let inputWeight ST5 =
+        LinearWithoutBias
+          <$> lookupTensor (prefix <> "DenseReluDense.wi.weight")
+      inputWeight SBERT =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "intermediate.dense.weight")
+          <*> lookupTensor (prefix <> "intermediate.dense.bias")
+      outputWeight ST5 =
+        LinearWithoutBias
+          <$> lookupTensor (prefix <> "DenseReluDense.wo.weight")
+      outputWeight SBERT =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "output.dense.weight")
+          <*> lookupTensor (prefix <> "output.dense.bias")
       activation ST5 = pure @m Relu
+      activation SBERT = pure @m Gelu
       activationDropout ST5 = pure (initialize @(Dropout dropoutP) dropoutP)
+      activationDropout SBERT = pure ()
       layerNorm ST5 =
         LayerNormWithoutBias
           <$> lookupTensor (prefix <> "layer_norm.weight")
           <*> pure eps
-      dropout ST5 = pure (initialize @(Dropout dropoutP) dropoutP)
+      layerNorm SBERT =
+        LayerNormWithBias
+          <$> lookupTensor (prefix <> "output.LayerNorm.weight")
+          <*> lookupTensor (prefix <> "output.LayerNorm.bias")
+          <*> pure eps
+      dropout _ = pure (initialize @(Dropout dropoutP) dropoutP)
    in TransformerFeedForwardNetwork
         <$> ( GTransformerFeedForwardNetwork
                 <$> inputWeight (sing @style)

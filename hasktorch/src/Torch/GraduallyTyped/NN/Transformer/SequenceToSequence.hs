@@ -588,7 +588,7 @@ instance
 -- ┌───────────────┐  ┌───────────────┐
 -- │ encoderOutput │  │ decoderOutput │
 -- └───────────────┘  └───────────────┘
--- @ 
+-- @
 instance
   ( HasForward
       (Embedding ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)

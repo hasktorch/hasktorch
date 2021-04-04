@@ -6,7 +6,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE IncoherentInstances #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -74,7 +73,7 @@ import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (GMultiHeadAttenti
 import Torch.GraduallyTyped.NN.Transformer.SelfAttention (GSelfAttention (..), SelfAttention (..))
 import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (SequenceToSequenceTransformer (..), SequenceToSequenceTransformerGenerationInput (..), SequenceToSequenceTransformerInput (..), SequenceToSequenceTransformerOutput (..), SequenceToSequenceTransformerWithLMHead (..), lookupSequenceToSequenceTransformer, lookupSequenceToSequenceTransformerWithLMHead)
 import Torch.GraduallyTyped.NN.Transformer.Stack (HasLookupStack, TransformerStack (..))
-import Torch.GraduallyTyped.NN.Transformer.Type (TensorDict, TransformerStyle (T5))
+import Torch.GraduallyTyped.NN.Transformer.Type (TensorDict, TransformerStyle (T5), mkTransformerInput, mkTransformerPaddingMask, tensorDictFromPretrained)
 import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.RewriteRules ()
@@ -134,21 +133,6 @@ t5EosTokenId = 1
 -- | T5 attention mask bias
 t5AttentionMaskBias :: Double
 t5AttentionMaskBias = -10000
-
-t5TensorDictFromPretrained ::
-  FilePath ->
-  IO TensorDict
-t5TensorDictFromPretrained filePath = do
-  iValue <- Torch.Serialize.pickleLoad filePath
-  case iValue of
-    Torch.Script.IVGenericDict xs -> Map.fromList <$> go xs
-    _ -> fail "iValue is not a state dictionary."
-  where
-    go [] = pure []
-    go ((Torch.Script.IVString s, Torch.Script.IVTensor (Torch.Tensor.Unsafe t)) : xs) = ((s, t) :) <$> go xs
-    go ((_, Torch.Script.IVTensor _) : _) = fail "iValue is not a string."
-    go ((Torch.Script.IVString _, _) : _) = fail "iValue is not a tensor."
-    go _ = fail "iValue is neither a string nor a tensor."
 
 -- | T5 Model.
 newtype
@@ -256,7 +240,7 @@ instance
       FilePath -> IO (T5Model numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
   initialize filePath =
     do
-      tensorDict <- t5TensorDictFromPretrained filePath
+      tensorDict <- tensorDictFromPretrained filePath
       flip runReaderT tensorDict $
         T5Model <$> lookupSequenceToSequenceTransformer t5DropoutP t5Eps ""
 
@@ -277,15 +261,9 @@ instance
       FilePath -> IO (T5ModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
   initialize filePath =
     do
-      tensorDict <- t5TensorDictFromPretrained filePath
+      tensorDict <- tensorDictFromPretrained filePath
       flip runReaderT tensorDict $
         T5ModelWithLMHead <$> lookupSequenceToSequenceTransformerWithLMHead t5DropoutP t5Eps ""
-
-padded :: Integral n => n -> a -> [a] -> [a]
-padded n p xs =
-  let n' = fromIntegral n
-      diff = n' - length xs
-   in take n' xs ++ replicate diff p
 
 mkT5Input ::
   forall batchDim seqDim m output.
@@ -303,20 +281,7 @@ mkT5Input ::
           ('Shape '[batchDim, seqDim])
   ) =>
   WithDimF batchDim (WithDimF seqDim ([[Int]] -> m output))
-mkT5Input =
-  withDim @batchDim $
-    \(Dim batchName batchSize) ->
-      withDim @seqDim @([[Int]] -> m output) $
-        \(Dim seqName seqSize) xs -> do
-          let emptySeq = replicate (fromIntegral seqSize) t5PadTokenId
-              paddedXs = padded batchSize emptySeq (padded seqSize t5PadTokenId <$> xs)
-          case Torch.Tensor.asTensor paddedXs of
-            Torch.Tensor.Unsafe t ->
-              pure (UnsafeTensor @'WithoutGradient t)
-                >>= checkedLayout @('Layout 'Dense)
-                >>= checkedDevice @('Device 'CPU)
-                >>= checkedDataType @('DataType 'Int64)
-                >>= checkedShape @('Shape '[batchDim, seqDim])
+mkT5Input = mkTransformerInput @batchDim @seqDim @m t5PadTokenId
 
 mkT5PaddingMask ::
   Tensor requiresGradient layout device dataType shape ->
@@ -326,9 +291,7 @@ mkT5PaddingMask ::
     (device <+> 'Device 'CPU)
     (Seq (dataType <+> 'DataType 'Int64) ('DataType 'Bool))
     (BroadcastShapesF shape ('Shape '[ 'Dim ('Name "*") ('Size 1)]))
-mkT5PaddingMask input =
-  let padTokenId = full @'WithoutGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Int64) @('Shape '[ 'Dim ('Name "*") ('Size 1)]) t5PadTokenId
-   in input ==. padTokenId
+mkT5PaddingMask = mkTransformerPaddingMask t5PadTokenId
 
 type MkT5AttentionMaskC requiresGradient layout device dataType shape seqDim output =
   ( KnownLayout layout,
