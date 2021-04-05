@@ -7,6 +7,9 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -21,11 +24,17 @@ import GHC.TypeNats (type (<=?))
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasInitialize (..))
 import Torch.GraduallyTyped.NN.Transformer.Encoder (TransformerEncoder, lookupEncoder)
 import Torch.GraduallyTyped.NN.Transformer.Stack (HasLookupStack)
-import Torch.GraduallyTyped.NN.Transformer.Type (TensorDict, TransformerStyle (BERT), tensorDictFromPretrained)
-import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim, Name (..), Size (..))
+import Torch.GraduallyTyped.NN.Transformer.Type (TensorDict, TransformerStyle (BERT), mkTransformerInput, mkTransformerPaddingMask, tensorDictFromPretrained)
+import Torch.GraduallyTyped.Prelude (Seq)
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
+import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
+import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim, Name (..), Shape (..), Size (..), WithDimC (..))
+import Torch.GraduallyTyped.Tensor.Type (Tensor)
+import Torch.GraduallyTyped.Unify (type (<+>))
 
 -- | BERT dType.
 type BERTDType = 'Float
@@ -42,7 +51,7 @@ bertDropoutP :: BERTDropoutP
 bertDropoutP = 0.1
 
 -- | BERT positional encoding dimension.
-type BERTPosEncDim = 'Dim ('Name "*") ('Size 32)
+type BERTPosEncDim = 'Dim ('Name "*") ('Size 512)
 
 -- | BERT layer-norm epsilon.
 -- 'layer_norm_epsilon = 1e-12'
@@ -53,6 +62,11 @@ bertEps = 1e-12
 -- 'max_position_embeddings = 512'
 bertMaxPositionEmbeddings :: Int
 bertMaxPositionEmbeddings = 512
+
+-- | BERT padding token id.
+-- 'pad_token_id = 0'
+bertPadTokenId :: Int
+bertPadTokenId = 0
 
 -- | BERT Model.
 newtype
@@ -112,7 +126,6 @@ instance
     KnownDim embedDim,
     KnownDim ffnDim,
     KnownDim inputEmbedDim,
-    KnownDim vocabDim,
     HasLookupStack numLayers (1 <=? numLayers) numLayers 'BERT ('Device 'CPU) BERTDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim BERTDropoutP (ReaderT TensorDict IO)
   ) =>
   HasInitialize (BERTModel numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim)
@@ -124,4 +137,44 @@ instance
     do
       tensorDict <- tensorDictFromPretrained filePath
       flip runReaderT tensorDict $
-        BERTModel <$> lookupEncoder bertDropoutP bertEps ""
+        BERTModel <$> lookupEncoder bertDropoutP bertEps "bert."
+
+mkBERTInput ::
+  forall batchDim seqDim m output.
+  ( MonadFail m,
+    WithDimC batchDim (WithDimF seqDim ([[Int]] -> m output)),
+    WithDimC seqDim ([[Int]] -> m output),
+    KnownDim batchDim,
+    KnownDim seqDim,
+    output
+      ~ Tensor
+          'WithoutGradient
+          ('Layout 'Dense)
+          ('Device 'CPU)
+          ('DataType 'Int64)
+          ('Shape '[batchDim, seqDim])
+  ) =>
+  WithDimF batchDim (WithDimF seqDim ([[Int]] -> m output))
+mkBERTInput = mkTransformerInput @batchDim @seqDim @m bertPadTokenId
+
+mkBERTPaddingMask ::
+  Tensor requiresGradient layout device dataType shape ->
+  Tensor
+    'WithoutGradient
+    (layout <+> 'Layout 'Dense)
+    (device <+> 'Device 'CPU)
+    (Seq (dataType <+> 'DataType 'Int64) ('DataType 'Bool))
+    (BroadcastShapesF shape ('Shape '[ 'Dim ('Name "*") ('Size 1)]))
+mkBERTPaddingMask = mkTransformerPaddingMask bertPadTokenId
+
+data BERTInput input where
+  BERTInput ::
+    forall input.
+    { bertInput :: input
+    } ->
+    BERTInput input
+
+deriving stock instance
+  ( Show input
+  ) =>
+  Show (BERTInput input)

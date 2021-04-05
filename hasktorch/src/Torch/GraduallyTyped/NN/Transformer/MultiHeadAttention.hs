@@ -192,7 +192,6 @@ type family
     Type
   where
   OutProjF 'T5 device dataType embedDim queryEmbedDim = Linear 'WithoutBias device dataType embedDim queryEmbedDim
-  OutProjF 'BERT device dataType embedDim queryEmbedDim = ()
   OutProjF _ device dataType embedDim queryEmbedDim = Linear 'WithBias device dataType embedDim queryEmbedDim
 
 type family
@@ -224,39 +223,8 @@ type HasInitializeMultiHeadAttentionC
     WithDimC valueEmbedDim (dropoutP -> Generator device -> (multiHeadAttention, Generator device))
   )
 
-type family
-  HasInitializeMultiHeadAttentionOutProjF
-    (outProj :: Type)
-    (style :: TransformerStyle)
-    (device :: Device (DeviceType Nat))
-    (dataType :: DataType DType)
-    (embedDim :: Dim (Name Symbol) (Size Nat))
-    (queryEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
-    Constraint
-  where
-  HasInitializeMultiHeadAttentionOutProjF outProj 'T5 device dataType embedDim queryEmbedDim =
-    ( HasInitialize outProj,
-      InitializeF outProj ~ WithDeviceF device (WithDataTypeF dataType (WithDimF embedDim (WithDimF queryEmbedDim (Generator device -> (outProj, Generator device))))),
-      WithDeviceC device (WithDataTypeF dataType (WithDimF embedDim (WithDimF queryEmbedDim (Generator device -> (outProj, Generator device))))),
-      WithDataTypeC dataType (WithDimF embedDim (WithDimF queryEmbedDim (Generator device -> (outProj, Generator device)))),
-      WithDimC embedDim (WithDimF queryEmbedDim (Generator device -> (outProj, Generator device))),
-      WithDimC queryEmbedDim (Generator device -> (outProj, Generator device))
-    )
-  HasInitializeMultiHeadAttentionOutProjF _ 'BERT _ _ embedDim queryEmbedDim =
-    ( embedDim ~ queryEmbedDim
-    )
-  HasInitializeMultiHeadAttentionOutProjF outProj 'BART device dataType embedDim queryEmbedDim =
-    ( HasInitialize outProj,
-      InitializeF outProj ~ WithDeviceF device (WithDataTypeF dataType (WithDimF embedDim (WithDimF queryEmbedDim (Generator device -> (outProj, Generator device))))),
-      WithDeviceC device (WithDataTypeF dataType (WithDimF embedDim (WithDimF queryEmbedDim (Generator device -> (outProj, Generator device))))),
-      WithDataTypeC dataType (WithDimF embedDim (WithDimF queryEmbedDim (Generator device -> (outProj, Generator device)))),
-      WithDimC embedDim (WithDimF queryEmbedDim (Generator device -> (outProj, Generator device))),
-      WithDimC queryEmbedDim (Generator device -> (outProj, Generator device))
-    )
-
 instance
   ( HasInitializeMultiHeadAttentionC (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP) device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP,
-    SingI style,
     qInProj ~ QInProjF style device dataType queryEmbedDim embedDim,
     HasInitialize qInProj,
     InitializeF qInProj ~ WithDeviceF device (WithDataTypeF dataType (WithDimF queryEmbedDim (WithDimF embedDim (Generator device -> (qInProj, Generator device))))),
@@ -279,7 +247,12 @@ instance
     WithDimC valueEmbedDim (WithDimF embedDim (Generator device -> (vInProj, Generator device))),
     WithDimC embedDim (Generator device -> (vInProj, Generator device)),
     outProj ~ OutProjF style device dataType embedDim queryEmbedDim,
-    HasInitializeMultiHeadAttentionOutProjF outProj style device dataType embedDim queryEmbedDim,
+    HasInitialize outProj,
+    InitializeF outProj ~ WithDeviceF device (WithDataTypeF dataType (WithDimF embedDim (WithDimF queryEmbedDim (Generator device -> (outProj, Generator device))))),
+    WithDeviceC device (WithDataTypeF dataType (WithDimF embedDim (WithDimF queryEmbedDim (Generator device -> (outProj, Generator device))))),
+    WithDataTypeC dataType (WithDimF embedDim (WithDimF queryEmbedDim (Generator device -> (outProj, Generator device)))),
+    WithDimC embedDim (WithDimF queryEmbedDim (Generator device -> (outProj, Generator device))),
+    WithDimC queryEmbedDim (Generator device -> (outProj, Generator device)),
     dropout ~ DropoutF style dropoutP,
     HasInitialize dropout,
     InitializeF dropout ~ (dropoutP -> dropout),
@@ -379,36 +352,20 @@ instance
               )
               embedDim
         outProj <-
-          state $ case sing @style of
-            ST5 ->
-              withoutDim @queryEmbedDim @(Generator device -> (outProj, Generator device))
-                ( withoutDim @embedDim
-                    ( withoutDataType @dataType
-                        ( withoutDevice @device
-                            ( initialize @outProj
-                            )
-                            deviceType
-                        )
-                        dType
-                    )
-                    embedDim
-                )
-                queryEmbedDim
-            SBERT -> ((),)
-            SBART ->
-              withoutDim @queryEmbedDim @(Generator device -> (outProj, Generator device))
-                ( withoutDim @embedDim
-                    ( withoutDataType @dataType
-                        ( withoutDevice @device
-                            ( initialize @outProj
-                            )
-                            deviceType
-                        )
-                        dType
-                    )
-                    embedDim
-                )
-                queryEmbedDim
+          state $
+            withoutDim @queryEmbedDim @(Generator device -> (outProj, Generator device))
+              ( withoutDim @embedDim
+                  ( withoutDataType @dataType
+                      ( withoutDevice @device
+                          ( initialize @outProj
+                          )
+                          deviceType
+                      )
+                      dType
+                  )
+                  embedDim
+              )
+              queryEmbedDim
         let dropout = initialize @dropout dropoutP
         pure . MultiHeadAttention $ GMultiHeadAttention headDim headEmbedDim embedDim qInProj kInProj vInProj outProj dropout
 
@@ -461,8 +418,8 @@ lookupMultiHeadAttention dropoutP prefix =
           <$> lookupTensor (prefix <> "q.weight")
       qInProj SBERT =
         LinearWithBias
-          <$> lookupTensor (prefix <> "query.weight")
-          <*> lookupTensor (prefix <> "query.bias")
+          <$> lookupTensor (prefix <> "self.query.weight")
+          <*> lookupTensor (prefix <> "self.query.bias")
       qInProj SBART =
         LinearWithBias
           <$> lookupTensor (prefix <> "q_proj.weight")
@@ -472,8 +429,8 @@ lookupMultiHeadAttention dropoutP prefix =
           <$> lookupTensor (prefix <> "k.weight")
       kInProj SBERT =
         LinearWithBias
-          <$> lookupTensor (prefix <> "key.weight")
-          <*> lookupTensor (prefix <> "key.bias")
+          <$> lookupTensor (prefix <> "self.key.weight")
+          <*> lookupTensor (prefix <> "self.key.bias")
       kInProj SBART =
         LinearWithBias
           <$> lookupTensor (prefix <> "k_proj.weight")
@@ -483,8 +440,8 @@ lookupMultiHeadAttention dropoutP prefix =
           <$> lookupTensor (prefix <> "v.weight")
       vInProj SBERT =
         LinearWithBias
-          <$> lookupTensor (prefix <> "value.weight")
-          <*> lookupTensor (prefix <> "value.bias")
+          <$> lookupTensor (prefix <> "self.value.weight")
+          <*> lookupTensor (prefix <> "self.value.bias")
       vInProj SBART =
         LinearWithBias
           <$> lookupTensor (prefix <> "v_proj.weight")
@@ -492,7 +449,10 @@ lookupMultiHeadAttention dropoutP prefix =
       outProj ST5 =
         LinearWithoutBias
           <$> lookupTensor (prefix <> "o.weight")
-      outProj SBERT = pure ()
+      outProj SBERT =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "output.dense.weight")
+          <*> lookupTensor (prefix <> "output.dense.bias")
       outProj SBART =
         LinearWithBias
           <$> lookupTensor (prefix <> "out_proj.weight")

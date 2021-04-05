@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE EmptyCase #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -13,6 +14,22 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -fplugin TypeLevel.Rewrite
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyRightAssociativeL
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2C
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL3
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL3C
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL4
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL4C
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL5
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL5C
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL6
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL6C
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL7
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL7C
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8C #-}
 
 module Torch.GraduallyTyped.NN.Transformer.Type where
 
@@ -21,23 +38,26 @@ import qualified Data.Map as Map
 import Data.Singletons.TH (genSingletons)
 import Foreign.ForeignPtr (ForeignPtr)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), KnownDataType)
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice)
-import Torch.GraduallyTyped.Layout (KnownLayout, Layout (..), LayoutType (..))
+import Torch.GraduallyTyped.DType (DataType (..), KnownDType (..), KnownDataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice (..))
+import Torch.GraduallyTyped.Layout (KnownLayout (..), Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
-import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), KnownShape (..), Name (..), Shape (..), Size (..), WithDimC (..))
-import Torch.GraduallyTyped.Tensor.Creation (full)
+import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, type (!))
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownDim (..), KnownShape (..), Name (..), SelectDim (..), Shape (..), Size (..), WithDimC (..))
+import Torch.GraduallyTyped.Tensor.Creation (WithCreateC (..), full, ones, zeros)
+import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (UnsqueezeF, unsqueeze)
 import Torch.GraduallyTyped.Tensor.MathOperations.Comparison ((==.))
-import Torch.GraduallyTyped.Tensor.Type (Tensor (..), checkedDataType, checkedDevice, checkedLayout, checkedShape)
+import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (logicalOr)
+import Torch.GraduallyTyped.Tensor.Other (maskedFill, triu)
+import Torch.GraduallyTyped.Tensor.Type (Tensor (..), bool, checkedDataType, checkedDevice, checkedLayout, checkedShape, device, layout, shape)
 import Torch.GraduallyTyped.Unify (type (<+>))
 import qualified Torch.Internal.Type as ATen (Tensor)
 import qualified Torch.Script (IValue (..))
 import qualified Torch.Serialize (pickleLoad)
 import qualified Torch.Tensor (Tensor (Unsafe), asTensor)
 
-data TransformerStyle = T5 | BART | MBART | BERT | Pegasus
+data TransformerStyle = T5 | BART | MBART | BERT | Pegasus | GPT2
   deriving (Show, Eq)
 
 genSingletons [''TransformerStyle]
@@ -132,7 +152,7 @@ mkTransformerPaddingMask ::
     (Seq (dataType <+> 'DataType 'Int64) ('DataType 'Bool))
     (BroadcastShapesF shape ('Shape '[ 'Dim ('Name "*") ('Size 1)]))
 mkTransformerPaddingMask padTokenId input =
-  let padTokenId' =
+  let padToken =
         full
           @'WithoutGradient
           @('Layout 'Dense)
@@ -140,4 +160,147 @@ mkTransformerPaddingMask padTokenId input =
           @('DataType 'Int64)
           @('Shape '[ 'Dim ('Name "*") ('Size 1)])
           padTokenId
-   in input ==. padTokenId'
+   in input ==. padToken
+
+type MkTransformerAttentionMaskC transformerDType transformerDataType requiresGradient layout device dataType shape seqDim output =
+  ( KnownDType transformerDType,
+    KnownLayout layout,
+    KnownDevice device,
+    KnownShape shape,
+    seqDim ~ (shape ! 1),
+    output
+      ~ Tensor
+          (Seq (requiresGradient <+> 'WithoutGradient) 'WithoutGradient)
+          (layout <+> 'Layout 'Dense)
+          device
+          (Seq (dataType <+> 'DataType 'Bool) transformerDataType)
+          ( BroadcastShapesF
+              (UnsqueezeF ('SelectDim ('ByIndex 1)) shape)
+              ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])
+          ),
+    WithCreateC (Tensor 'WithoutGradient layout device transformerDataType ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])) 'WithoutGradient layout device transformerDataType ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])
+  )
+
+mkTransformerAttentionMask ::
+  forall transformerDType transformerDataType requiresGradient layout device dataType shape seqDim output.
+  MkTransformerAttentionMaskC transformerDType transformerDataType requiresGradient layout device dataType shape seqDim output =>
+  Double ->
+  Tensor requiresGradient layout device dataType shape ->
+  output
+mkTransformerAttentionMask attentionMaskBias paddingMask =
+  let layoutType = layout paddingMask
+      deviceType = device paddingMask
+      dType = dTypeVal @transformerDType
+      [_batchDim, seqDim] = shape paddingMask
+      emptyMask =
+        withoutCreate @(Tensor 'WithoutGradient layout device transformerDataType ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])) @'WithoutGradient @layout @device @transformerDataType @('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])
+          (zeros @'WithoutGradient @layout @device @transformerDataType @('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim]))
+          WithoutGradient
+          layoutType
+          deviceType
+          dType
+          [Dim "*" 1, seqDim, seqDim]
+   in maskedFill (unsqueeze @('SelectDim ('ByIndex 1)) paddingMask) attentionMaskBias emptyMask
+
+type MkTransformerDecoderAttentionMaskC transformerDType transformerDataType (requiresGradient :: RequiresGradient) layout device dataType shape seqDim output =
+  ( KnownDType transformerDType,
+    KnownLayout layout,
+    KnownDevice device,
+    KnownDataType dataType,
+    KnownShape shape,
+    seqDim ~ (shape ! 1),
+    output
+      ~ Tensor
+          'WithoutGradient
+          (layout <+> 'Layout 'Dense)
+          device
+          transformerDataType
+          ( BroadcastShapesF
+              ( BroadcastShapesF
+                  ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])
+                  (UnsqueezeF ('SelectDim ('ByIndex 1)) shape)
+              )
+              ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])
+          ),
+    WithCreateC (Tensor 'WithoutGradient layout device transformerDataType ('Shape '[seqDim, seqDim])) 'WithoutGradient layout device transformerDataType ('Shape '[seqDim, seqDim]),
+    WithCreateC (Tensor 'WithoutGradient layout device transformerDataType ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])) 'WithoutGradient layout device transformerDataType ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])
+  )
+
+mkTransformerDecoderAttentionMask ::
+  forall transformerDType transformerDataType requiresGradient layout device dataType shape seqDim output.
+  MkTransformerDecoderAttentionMaskC transformerDType transformerDataType requiresGradient layout device dataType shape seqDim output =>
+  Double ->
+  Tensor requiresGradient layout device dataType shape ->
+  output
+mkTransformerDecoderAttentionMask attentionMaskBias paddingMask =
+  let layoutType = layout paddingMask
+      deviceType = device paddingMask
+      dType' = dTypeVal @transformerDType
+      [_batchDim, seqDim] = shape paddingMask
+      causalMask =
+        unsqueeze @('SelectDim ('ByIndex 0))
+          . bool
+          . triu 1
+          $ withoutCreate @(Tensor 'WithoutGradient layout device transformerDataType ('Shape '[seqDim, seqDim])) @'WithoutGradient @layout @device @transformerDataType @('Shape '[seqDim, seqDim])
+            (ones @'WithoutGradient @layout @device @transformerDataType @('Shape '[seqDim, seqDim]))
+            WithoutGradient
+            layoutType
+            deviceType
+            dType'
+            [seqDim, seqDim]
+      emptyMask =
+        withoutCreate @(Tensor 'WithoutGradient layout device transformerDataType ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])) @'WithoutGradient @layout @device @transformerDataType @('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])
+          (zeros @'WithoutGradient @layout @device @transformerDataType @('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim]))
+          WithoutGradient
+          layoutType
+          deviceType
+          dType'
+          [Dim "*" 1, seqDim, seqDim]
+      booleanMask = causalMask `logicalOr` unsqueeze @('SelectDim ('ByIndex 1)) paddingMask
+   in maskedFill
+        booleanMask
+        attentionMaskBias
+        emptyMask
+
+type MkTransformerCrossAttentionMaskC transformerDType transformerDataType seqDim' requiresGradient layout device dataType shape seqDim output =
+  ( KnownDType transformerDType,
+    KnownLayout layout,
+    KnownDevice device,
+    KnownDataType dataType,
+    KnownShape shape,
+    seqDim ~ (shape ! 1),
+    output
+      ~ Tensor
+          (Seq (requiresGradient <+> 'WithoutGradient) 'WithoutGradient)
+          (layout <+> 'Layout 'Dense)
+          device
+          (Seq (dataType <+> 'DataType 'Bool) transformerDataType)
+          ( BroadcastShapesF
+              (UnsqueezeF ('SelectDim ('ByIndex 1)) shape)
+              ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim', seqDim])
+          ),
+    WithCreateC (Tensor 'WithoutGradient layout device transformerDataType ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim', seqDim])) 'WithoutGradient layout device transformerDataType ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim', seqDim]),
+    WithDimC seqDim' (Tensor requiresGradient layout device dataType shape -> output)
+  )
+
+mkTransformerCrossAttentionMask ::
+  forall transformerDType transformerDataType seqDim' requiresGradient layout device dataType shape seqDim output.
+  MkTransformerCrossAttentionMaskC transformerDType transformerDataType seqDim' requiresGradient layout device dataType shape seqDim output =>
+  Double ->
+  WithDimF seqDim' (Tensor requiresGradient layout device dataType shape -> output)
+mkTransformerCrossAttentionMask attentionMaskBias =
+  withDim @seqDim' @(Tensor requiresGradient layout device dataType shape -> output) $
+    \seqDim' paddingMask ->
+      let layoutType = layout paddingMask
+          deviceType = device paddingMask
+          dType = dTypeVal @transformerDType
+          [_batchDim, seqDim] = shape paddingMask
+          emptyMask =
+            withoutCreate @(Tensor 'WithoutGradient layout device transformerDataType ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim', seqDim])) @'WithoutGradient @layout @device @transformerDataType @('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim', seqDim])
+              (zeros @'WithoutGradient @layout @device @transformerDataType @('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim', seqDim]))
+              WithoutGradient
+              layoutType
+              deviceType
+              dType
+              [Dim "*" 1, seqDim', seqDim]
+       in maskedFill (unsqueeze @('SelectDim ('ByIndex 1)) paddingMask) attentionMaskBias emptyMask

@@ -497,7 +497,7 @@ lookupEncoder dropoutP eps prefix =
       layerNorm SBERT = pure ()
       dropout _ = pure (initialize @(Dropout dropoutP) dropoutP)
       posEnc ST5 = fmap @m Embedding $ lookupTensor (prefix <> "block.0.layer.0.SelfAttention.relative_attention_bias.weight")
-      posEnc SBERT = fmap @m Embedding $ lookupTensor (prefix <> "block.0.layer.0.SelfAttention.relative_attention_bias.weight")
+      posEnc SBERT = fmap @m Embedding $ lookupTensor (prefix <> "embeddings.position_embeddings.weight")
    in TransformerEncoder
         <$> ( GTransformerEncoder
                 <$> stack (sing @style)

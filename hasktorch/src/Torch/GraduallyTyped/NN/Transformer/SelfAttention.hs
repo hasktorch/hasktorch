@@ -78,7 +78,6 @@ data
     (mha :: Type)
     (layerNorm :: Type)
     (dropout :: Type)
-    (dense :: Type)
   where
   GSelfAttention ::
     forall mha layerNorm dropout dense.
@@ -87,11 +86,9 @@ data
       -- | layer norm
       saLayerNorm :: layerNorm,
       -- | dropout
-      saDropout :: dropout,
-      -- | dense
-      saDense :: dense
+      saDropout :: dropout
     } ->
-    GSelfAttention mha layerNorm dropout dense
+    GSelfAttention mha layerNorm dropout
 
 -- | Self-attention layer.
 newtype
@@ -123,7 +120,6 @@ type GSelfAttentionF
     (SAMultiheadAttentionF style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
     (SALayerNormF style device dataType queryEmbedDim)
     (SADropoutF style dropoutP)
-    (SADenseF style device dataType queryEmbedDim)
 
 type family
   SAMultiheadAttentionF
@@ -163,19 +159,6 @@ type family
   where
   SADropoutF _ dropoutP = Dropout dropoutP
 
-type family
-  SADenseF
-    (style :: TransformerStyle)
-    (device :: Device (DeviceType Nat))
-    (dataType :: DataType DType)
-    (queryEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
-    Type
-  where
-  SADenseF 'BERT device dataType queryEmbedDim =
-    Linear 'WithBias device dataType queryEmbedDim queryEmbedDim
-  SADenseF _ _ _ _ =
-    ()
-
 type HasInitializeSelfAttentionC style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP =
   ( WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device))))))),
     WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device)))))),
@@ -185,29 +168,8 @@ type HasInitializeSelfAttentionC style device dataType headDim headEmbedDim embe
     WithDimC queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device))
   )
 
-type family
-  HasInitializeSADenseF
-    (dense :: Type)
-    (style :: TransformerStyle)
-    (device :: Device (DeviceType Nat))
-    (dataType :: DataType DType)
-    (queryEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
-    Constraint
-  where
-  HasInitializeSADenseF dense 'BERT device dataType queryEmbedDim =
-    ( HasInitialize dense,
-      InitializeF dense ~ WithDeviceF device (WithDataTypeF dataType (WithDimF queryEmbedDim (WithDimF queryEmbedDim (Generator device -> (dense, Generator device))))),
-      WithDeviceC device (WithDataTypeF dataType (WithDimF queryEmbedDim (WithDimF queryEmbedDim (Generator device -> (dense, Generator device))))),
-      WithDataTypeC dataType (WithDimF queryEmbedDim (WithDimF queryEmbedDim (Generator device -> (dense, Generator device)))),
-      WithDimC queryEmbedDim (WithDimF queryEmbedDim (Generator device -> (dense, Generator device))),
-      WithDimC queryEmbedDim (Generator device -> (dense, Generator device))
-    )
-  HasInitializeSADenseF dense _ device dataType queryEmbedDim =
-    ()
-
 instance
-  ( SingI style,
-    HasInitializeSelfAttentionC style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP,
+  ( HasInitializeSelfAttentionC style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP,
     Scalar dropoutP,
     multiHeadAttention ~ SAMultiheadAttentionF style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP,
     HasInitialize multiHeadAttention,
@@ -221,9 +183,7 @@ instance
     WithDimsC '[queryEmbedDim] (Double -> layerNorm),
     dropout ~ SADropoutF style dropoutP,
     HasInitialize dropout,
-    InitializeF dropout ~ (dropoutP -> dropout),
-    dense ~ SADenseF style device dataType queryEmbedDim,
-    HasInitializeSADenseF dense style device dataType queryEmbedDim
+    InitializeF dropout ~ (dropoutP -> dropout)
   ) =>
   HasInitialize (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
   where
@@ -304,26 +264,7 @@ instance
                 [queryEmbedDim]
                 eps
         let dropout = initialize @dropout dropoutP
-        dense <-
-          state $ case sing @style of
-            SBERT ->
-              withoutDim @queryEmbedDim @(Generator device -> (dense, Generator device))
-                ( withoutDim @queryEmbedDim
-                    ( withoutDataType @dataType
-                        ( withoutDevice @device
-                            ( initialize @dense
-                            )
-                            deviceType
-                        )
-                        dType
-                    )
-                    queryEmbedDim
-                )
-                queryEmbedDim
-            ST5 -> ((),)
-            SBART -> ((),)
-            SPegasus -> ((),)
-        pure . SelfAttention $ GSelfAttention multiHeadAttention layerNorm dropout dense
+        pure . SelfAttention $ GSelfAttention multiHeadAttention layerNorm dropout
 
 lookupSelfAttention ::
   forall style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP m.
@@ -345,7 +286,7 @@ lookupSelfAttention ::
   m (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
 lookupSelfAttention dropoutP eps prefix =
   let selfAttention ST5 = lookupMultiHeadAttention dropoutP (prefix <> "SelfAttention.")
-      selfAttention SBERT = lookupMultiHeadAttention dropoutP (prefix <> "self.")
+      selfAttention SBERT = lookupMultiHeadAttention dropoutP prefix
       selfAttention SBART = lookupMultiHeadAttention dropoutP (prefix <> "self_attn.")
       layerNorm ST5 =
         LayerNormWithoutBias
@@ -362,18 +303,11 @@ lookupSelfAttention dropoutP eps prefix =
           <*> lookupTensor (prefix <> "self_attn_layer_norm.bias")
           <*> pure eps
       dropout _ = pure (initialize @(Dropout dropoutP) dropoutP)
-      dense ST5 = pure ()
-      dense SBERT =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "output.dense.weight")
-          <*> lookupTensor (prefix <> "output.dense.bias")
-      dense SBART = pure ()
    in SelfAttention
         <$> ( GSelfAttention
                 <$> selfAttention (sing @style)
                 <*> layerNorm (sing @style)
                 <*> dropout (sing @style)
-                <*> dense (sing @style)
             )
 
 -- | 'HasForward' instance for @SelfAttention 'T5@.
@@ -541,8 +475,6 @@ instance
 --         └─►saMultiheadAttention  │
 --                      │           │
 --                      ▼           │
---                   saDense        │
---                      ▼           │
 --                  saDropout       │
 --                      │           │
 --                      └───►add◄───┘
@@ -581,17 +513,9 @@ instance
           ( LayerNormWithBiasF
               ('Shape '[queryEmbedDim])
               ('Shape '[queryEmbedDim])
-              ( BroadcastShapesF
-                  queryShape
-                  ( LinearWithBiasF
-                      ('Shape '[queryEmbedDim, queryEmbedDim])
-                      ('Shape '[queryEmbedDim])
-                      mhaOutputShape
-                  )
-              )
+              (BroadcastShapesF queryShape mhaOutputShape)
           ),
-    generatorOutput
-      ~ Generator ((device <+> (device <+> (queryDevice <+> (attentionBiasDevice <+> generatorDevice)))) <+> (device <+> (queryDevice <+> (attentionBiasDevice <+> generatorDevice))))
+    generatorOutput ~ Generator (device <+> queryDevice <+> attentionBiasDevice <+> generatorDevice)
   ) =>
   HasForward
     (SelfAttention 'BERT device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
@@ -604,7 +528,6 @@ instance
     runIxState $
       ireturn query
         >>>= (\query' -> IxState $ forward saMultiheadAttention (query', query', query', attentionBias))
-        >>>= IxState . forward saDense
         >>>= IxState . forward saDropout
         >>>= ireturn . (query `add`)
         >>>= IxState . forward saLayerNorm

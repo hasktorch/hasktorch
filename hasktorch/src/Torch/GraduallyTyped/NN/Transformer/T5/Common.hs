@@ -73,7 +73,7 @@ import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (GMultiHeadAttenti
 import Torch.GraduallyTyped.NN.Transformer.SelfAttention (GSelfAttention (..), SelfAttention (..))
 import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (SequenceToSequenceTransformer (..), SequenceToSequenceTransformerGenerationInput (..), SequenceToSequenceTransformerInput (..), SequenceToSequenceTransformerOutput (..), SequenceToSequenceTransformerWithLMHead (..), lookupSequenceToSequenceTransformer, lookupSequenceToSequenceTransformerWithLMHead)
 import Torch.GraduallyTyped.NN.Transformer.Stack (HasLookupStack, TransformerStack (..))
-import Torch.GraduallyTyped.NN.Transformer.Type (TensorDict, TransformerStyle (T5), mkTransformerInput, mkTransformerPaddingMask, tensorDictFromPretrained)
+import Torch.GraduallyTyped.NN.Transformer.Type (MkTransformerAttentionMaskC, MkTransformerCrossAttentionMaskC, MkTransformerDecoderAttentionMaskC, TensorDict, TransformerStyle (T5), mkTransformerAttentionMask, mkTransformerCrossAttentionMask, mkTransformerDecoderAttentionMask, mkTransformerInput, mkTransformerPaddingMask, tensorDictFromPretrained)
 import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.RewriteRules ()
@@ -292,143 +292,6 @@ mkT5PaddingMask ::
     (Seq (dataType <+> 'DataType 'Int64) ('DataType 'Bool))
     (BroadcastShapesF shape ('Shape '[ 'Dim ('Name "*") ('Size 1)]))
 mkT5PaddingMask = mkTransformerPaddingMask t5PadTokenId
-
-type MkT5AttentionMaskC requiresGradient layout device dataType shape seqDim output =
-  ( KnownLayout layout,
-    KnownDevice device,
-    KnownShape shape,
-    seqDim ~ (shape ! 1),
-    output
-      ~ Tensor
-          (Seq (requiresGradient <+> 'WithoutGradient) 'WithoutGradient)
-          (layout <+> 'Layout 'Dense)
-          device
-          (Seq (dataType <+> 'DataType 'Bool) T5DataType)
-          ( BroadcastShapesF
-              (UnsqueezeF ('SelectDim ('ByIndex 1)) shape)
-              ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])
-          ),
-    WithCreateC (Tensor 'WithoutGradient layout device T5DataType ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])) 'WithoutGradient layout device T5DataType ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])
-  )
-
-mkT5AttentionMask ::
-  forall requiresGradient layout device dataType shape seqDim output.
-  MkT5AttentionMaskC requiresGradient layout device dataType shape seqDim output =>
-  Tensor requiresGradient layout device dataType shape ->
-  output
-mkT5AttentionMask paddingMask =
-  let layoutType = layout paddingMask
-      deviceType = device paddingMask
-      dType = dTypeVal @T5DType
-      [_batchDim, seqDim] = shape paddingMask
-      emptyMask =
-        withoutCreate @(Tensor 'WithoutGradient layout device T5DataType ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])) @'WithoutGradient @layout @device @T5DataType @('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])
-          (zeros @'WithoutGradient @layout @device @T5DataType @('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim]))
-          WithoutGradient
-          layoutType
-          deviceType
-          dType
-          [Dim "*" 1, seqDim, seqDim]
-   in maskedFill (unsqueeze @('SelectDim ('ByIndex 1)) paddingMask) t5AttentionMaskBias emptyMask
-
-type MkT5DecoderAttentionMaskC (requiresGradient :: RequiresGradient) layout device dataType shape seqDim output =
-  ( KnownLayout layout,
-    KnownDevice device,
-    KnownDataType dataType,
-    KnownShape shape,
-    seqDim ~ (shape ! 1),
-    output
-      ~ Tensor
-          'WithoutGradient
-          (layout <+> 'Layout 'Dense)
-          device
-          T5DataType
-          ( BroadcastShapesF
-              ( BroadcastShapesF
-                  ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])
-                  (UnsqueezeF ('SelectDim ('ByIndex 1)) shape)
-              )
-              ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])
-          ),
-    WithCreateC (Tensor 'WithoutGradient layout device T5DataType ('Shape '[seqDim, seqDim])) 'WithoutGradient layout device T5DataType ('Shape '[seqDim, seqDim]),
-    WithCreateC (Tensor 'WithoutGradient layout device T5DataType ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])) 'WithoutGradient layout device T5DataType ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])
-  )
-
-mkT5DecoderAttentionMask ::
-  forall requiresGradient layout device dataType shape seqDim output.
-  MkT5DecoderAttentionMaskC requiresGradient layout device dataType shape seqDim output =>
-  Tensor requiresGradient layout device dataType shape ->
-  output
-mkT5DecoderAttentionMask paddingMask =
-  let layoutType = layout paddingMask
-      deviceType = device paddingMask
-      dType' = dTypeVal @T5DType
-      [_batchDim, seqDim] = shape paddingMask
-      causalMask =
-        unsqueeze @('SelectDim ('ByIndex 0))
-          . bool
-          . triu 1
-          $ withoutCreate @(Tensor 'WithoutGradient layout device T5DataType ('Shape '[seqDim, seqDim])) @'WithoutGradient @layout @device @T5DataType @('Shape '[seqDim, seqDim])
-            (ones @'WithoutGradient @layout @device @T5DataType @('Shape '[seqDim, seqDim]))
-            WithoutGradient
-            layoutType
-            deviceType
-            dType'
-            [seqDim, seqDim]
-      emptyMask =
-        withoutCreate @(Tensor 'WithoutGradient layout device T5DataType ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])) @'WithoutGradient @layout @device @T5DataType @('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])
-          (zeros @'WithoutGradient @layout @device @T5DataType @('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim]))
-          WithoutGradient
-          layoutType
-          deviceType
-          dType'
-          [Dim "*" 1, seqDim, seqDim]
-      booleanMask = causalMask `logicalOr` unsqueeze @('SelectDim ('ByIndex 1)) paddingMask
-   in maskedFill
-        booleanMask
-        t5AttentionMaskBias
-        emptyMask
-
-type MkT5CrossAttentionMaskC seqDim' requiresGradient layout device dataType shape seqDim output =
-  ( KnownLayout layout,
-    KnownDevice device,
-    KnownDataType dataType,
-    KnownShape shape,
-    seqDim ~ (shape ! 1),
-    output
-      ~ Tensor
-          (Seq (requiresGradient <+> 'WithoutGradient) 'WithoutGradient)
-          (layout <+> 'Layout 'Dense)
-          device
-          (Seq (dataType <+> 'DataType 'Bool) T5DataType)
-          ( BroadcastShapesF
-              (UnsqueezeF ('SelectDim ('ByIndex 1)) shape)
-              ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim', seqDim])
-          ),
-    WithCreateC (Tensor 'WithoutGradient layout device T5DataType ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim', seqDim])) 'WithoutGradient layout device T5DataType ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim', seqDim]),
-    WithDimC seqDim' (Tensor requiresGradient layout device dataType shape -> output)
-  )
-
-mkT5CrossAttentionMask ::
-  forall seqDim' requiresGradient layout device dataType shape seqDim output.
-  MkT5CrossAttentionMaskC seqDim' requiresGradient layout device dataType shape seqDim output =>
-  WithDimF seqDim' (Tensor requiresGradient layout device dataType shape -> output)
-mkT5CrossAttentionMask =
-  withDim @seqDim' @(Tensor requiresGradient layout device dataType shape -> output) $
-    \seqDim' paddingMask ->
-      let layoutType = layout paddingMask
-          deviceType = device paddingMask
-          dType = dTypeVal @T5DType
-          [_batchDim, seqDim] = shape paddingMask
-          emptyMask =
-            withoutCreate @(Tensor 'WithoutGradient layout device T5DataType ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim', seqDim])) @'WithoutGradient @layout @device @T5DataType @('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim', seqDim])
-              (zeros @'WithoutGradient @layout @device @T5DataType @('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim', seqDim]))
-              WithoutGradient
-              layoutType
-              deviceType
-              dType
-              [Dim "*" 1, seqDim', seqDim]
-       in maskedFill (unsqueeze @('SelectDim ('ByIndex 1)) paddingMask) t5AttentionMaskBias emptyMask
 
 -- >>> mkRelPos' 32 128 21 17
 -- [[0,17,18,19,20,21,22,23,24,24,24,24,25,25,25,25,26],[1,0,17,18,19,20,21,22,23,24,24,24,24,25,25,25,25],[2,1,0,17,18,19,20,21,22,23,24,24,24,24,25,25,25],[3,2,1,0,17,18,19,20,21,22,23,24,24,24,24,25,25],[4,3,2,1,0,17,18,19,20,21,22,23,24,24,24,24,25],[5,4,3,2,1,0,17,18,19,20,21,22,23,24,24,24,24],[6,5,4,3,2,1,0,17,18,19,20,21,22,23,24,24,24],[7,6,5,4,3,2,1,0,17,18,19,20,21,22,23,24,24],[8,7,6,5,4,3,2,1,0,17,18,19,20,21,22,23,24],[8,8,7,6,5,4,3,2,1,0,17,18,19,20,21,22,23],[8,8,8,7,6,5,4,3,2,1,0,17,18,19,20,21,22],[8,8,8,8,7,6,5,4,3,2,1,0,17,18,19,20,21],[9,8,8,8,8,7,6,5,4,3,2,1,0,17,18,19,20],[9,9,8,8,8,8,7,6,5,4,3,2,1,0,17,18,19],[9,9,9,8,8,8,8,7,6,5,4,3,2,1,0,17,18],[9,9,9,9,8,8,8,8,7,6,5,4,3,2,1,0,17],[10,9,9,9,9,8,8,8,8,7,6,5,4,3,2,1,0],[10,10,9,9,9,9,8,8,8,8,7,6,5,4,3,2,1],[10,10,10,9,9,9,9,8,8,8,8,7,6,5,4,3,2],[10,10,10,10,9,9,9,9,8,8,8,8,7,6,5,4,3],[10,10,10,10,10,9,9,9,9,8,8,8,8,7,6,5,4]]
@@ -732,9 +595,9 @@ instance
           ('DataType 'Int64)
           ('Shape '[ 'Dim ('Name "*") ('Size 1), rightShiftedDecoderInputSeqDim, rightShiftedDecoderInputSeqDim]),
     WithDimC rightShiftedDecoderInputSeqDim (Int -> decoderRelPos),
-    MkT5AttentionMaskC inputPaddingMaskRequiresGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim attentionMask,
-    MkT5CrossAttentionMaskC rightShiftedDecoderInputSeqDim inputPaddingMaskRequiresGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim crossAttentionMask,
-    MkT5DecoderAttentionMaskC rightShiftedDecoderInputPaddingMaskRequiresGradient rightShiftedDecoderInputPaddingMaskLayout rightShiftedDecoderInputPaddingMaskDevice rightShiftedDecoderInputPaddingMaskDataType rightShiftedDecoderInputPaddingMaskShape rightShiftedDecoderInputPaddingMaskSeqDim decoderAttentionMask,
+    MkTransformerAttentionMaskC T5DType T5DataType inputPaddingMaskRequiresGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim attentionMask,
+    MkTransformerCrossAttentionMaskC T5DType T5DataType rightShiftedDecoderInputSeqDim inputPaddingMaskRequiresGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim crossAttentionMask,
+    MkTransformerDecoderAttentionMaskC T5DType T5DataType rightShiftedDecoderInputPaddingMaskRequiresGradient rightShiftedDecoderInputPaddingMaskLayout rightShiftedDecoderInputPaddingMaskDevice rightShiftedDecoderInputPaddingMaskDataType rightShiftedDecoderInputPaddingMaskShape rightShiftedDecoderInputPaddingMaskSeqDim decoderAttentionMask,
     HasForward (ShiftRight Int) decoderInput generator rightShiftedDecoderInput generator,
     HasForward (ShiftRight Int) decoderInputPaddingMask generator rightShiftedDecoderInputPaddingMask generator,
     HasForward
@@ -757,12 +620,15 @@ instance
   forward t5Model T5Input {..} =
     let inputPaddingMask = mkT5PaddingMask t5Input
         attentionMask =
-          mkT5AttentionMask
+          mkTransformerAttentionMask
+            @T5DType
+            @T5DataType
             @inputPaddingMaskRequiresGradient
             @inputPaddingMaskLayout
             @inputPaddingMaskDevice
             @inputPaddingMaskDataType
             @inputPaddingMaskShape
+            t5AttentionMaskBias
             inputPaddingMask
         [_, inputSeqDim] = shape t5Input
         relPos =
@@ -784,13 +650,16 @@ instance
                              t5MaxDistance
                          crossAttentionMask =
                            withoutDim @rightShiftedDecoderInputSeqDim @(inputPaddingMask -> crossAttentionMask)
-                             ( mkT5CrossAttentionMask
+                             ( mkTransformerCrossAttentionMask
+                                 @T5DType
+                                 @T5DataType
                                  @rightShiftedDecoderInputSeqDim
                                  @inputPaddingMaskRequiresGradient
                                  @inputPaddingMaskLayout
                                  @inputPaddingMaskDevice
                                  @inputPaddingMaskDataType
                                  @inputPaddingMaskShape
+                                 t5AttentionMaskBias
                              )
                              rightShiftedDecoderInputSeqDim
                              inputPaddingMask
@@ -798,12 +667,15 @@ instance
                            >>>= IxState . forward (initialize @(ShiftRight Int) 0)
                            >>>= ( \rightShiftedDecoderInputPaddingMask ->
                                     let decoderAttentionMask =
-                                          mkT5DecoderAttentionMask
+                                          mkTransformerDecoderAttentionMask
+                                            @T5DType
+                                            @T5DataType
                                             @rightShiftedDecoderInputPaddingMaskRequiresGradient
                                             @rightShiftedDecoderInputPaddingMaskLayout
                                             @rightShiftedDecoderInputPaddingMaskDevice
                                             @rightShiftedDecoderInputPaddingMaskDataType
                                             @rightShiftedDecoderInputPaddingMaskShape
+                                            t5AttentionMaskBias
                                             rightShiftedDecoderInputPaddingMask
                                      in ireturn (SequenceToSequenceTransformerInput t5Input rightShiftedDecoderInput relPos decoderRelPos attentionMask decoderAttentionMask crossAttentionMask)
                                 )
@@ -865,8 +737,8 @@ instance
           ('DataType 'Int64)
           ('Shape '[ 'Dim ('Name "*") ('Size 1), rightShiftedDecoderInputSeqDim, rightShiftedDecoderInputSeqDim]),
     WithDimC rightShiftedDecoderInputSeqDim (Int -> decoderRelPos),
-    MkT5CrossAttentionMaskC rightShiftedDecoderInputSeqDim inputPaddingMaskRequiresGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim crossAttentionMask,
-    MkT5DecoderAttentionMaskC rightShiftedDecoderInputPaddingMaskRequiresGradient rightShiftedDecoderInputPaddingMaskLayout rightShiftedDecoderInputPaddingMaskDevice rightShiftedDecoderInputPaddingMaskDataType rightShiftedDecoderInputPaddingMaskShape rightShiftedDecoderInputPaddingMaskSeqDim decoderAttentionMask,
+    MkTransformerCrossAttentionMaskC T5DType T5DataType rightShiftedDecoderInputSeqDim inputPaddingMaskRequiresGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim crossAttentionMask,
+    MkTransformerDecoderAttentionMaskC T5DType T5DataType rightShiftedDecoderInputPaddingMaskRequiresGradient rightShiftedDecoderInputPaddingMaskLayout rightShiftedDecoderInputPaddingMaskDevice rightShiftedDecoderInputPaddingMaskDataType rightShiftedDecoderInputPaddingMaskShape rightShiftedDecoderInputPaddingMaskSeqDim decoderAttentionMask,
     HasForward (ShiftRight Int) decoderInput generator rightShiftedDecoderInput generator,
     HasForward (ShiftRight Int) decoderInputPaddingMask generator rightShiftedDecoderInputPaddingMask generator,
     HasForward
@@ -900,13 +772,16 @@ instance
                          t5MaxDistance
                      crossAttentionMask =
                        withoutDim @rightShiftedDecoderInputSeqDim @(inputPaddingMask -> crossAttentionMask)
-                         ( mkT5CrossAttentionMask
+                         ( mkTransformerCrossAttentionMask
+                             @T5DType
+                             @T5DataType
                              @rightShiftedDecoderInputSeqDim
                              @inputPaddingMaskRequiresGradient
                              @inputPaddingMaskLayout
                              @inputPaddingMaskDevice
                              @inputPaddingMaskDataType
                              @inputPaddingMaskShape
+                             t5AttentionMaskBias
                          )
                          rightShiftedDecoderInputSeqDim
                          t5GenerationInputPaddingMask
@@ -914,12 +789,15 @@ instance
                        >>>= IxState . forward (initialize @(ShiftRight Int) 0)
                        >>>= ( \rightShiftedDecoderInputPaddingMask ->
                                 let decoderAttentionMask =
-                                      mkT5DecoderAttentionMask
+                                      mkTransformerDecoderAttentionMask
+                                        @T5DType
+                                        @T5DataType
                                         @rightShiftedDecoderInputPaddingMaskRequiresGradient
                                         @rightShiftedDecoderInputPaddingMaskLayout
                                         @rightShiftedDecoderInputPaddingMaskDevice
                                         @rightShiftedDecoderInputPaddingMaskDataType
                                         @rightShiftedDecoderInputPaddingMaskShape
+                                        t5AttentionMaskBias
                                         rightShiftedDecoderInputPaddingMask
                                  in ireturn (SequenceToSequenceTransformerGenerationInput rightShiftedDecoderInput t5GenerationEncoderOutput decoderRelPos decoderAttentionMask crossAttentionMask)
                             )
