@@ -154,6 +154,7 @@ type family
   FFNActivationF 'T5 = Relu
   FFNActivationF 'BART = Gelu
   FFNActivationF 'BERT = Gelu
+  FFNActivationF 'Pegasus = Relu
 
 type family
   FFNActivationDropoutF
@@ -163,6 +164,7 @@ type family
   where
   FFNActivationDropoutF 'T5 dropoutP = Dropout dropoutP
   FFNActivationDropoutF 'BART dropoutP = Dropout dropoutP
+  FFNActivationDropoutF 'Pegasus dropoutP = Dropout dropoutP
   FFNActivationDropoutF 'BERT _ = ()
 
 type family
@@ -366,6 +368,10 @@ lookupTransformerFeedForwardNetwork dropoutP eps prefix =
         LinearWithBias
           <$> lookupTensor (prefix <> "fc1.weight")
           <*> lookupTensor (prefix <> "fc1.bias")
+      inputWeight SPegasus =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "fc1.weight")
+          <*> lookupTensor (prefix <> "fc1.bias")
       outputWeight ST5 =
         LinearWithoutBias
           <$> lookupTensor (prefix <> "DenseReluDense.wo.weight")
@@ -377,12 +383,18 @@ lookupTransformerFeedForwardNetwork dropoutP eps prefix =
         LinearWithBias
           <$> lookupTensor (prefix <> "fc2.weight")
           <*> lookupTensor (prefix <> "fc2.bias")
+      outputWeight SPegasus =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "fc2.weight")
+          <*> lookupTensor (prefix <> "fc2.bias")
       activation ST5 = pure @m Relu
       activation SBERT = pure @m Gelu
       activation SBART = pure @m Gelu
+      activation SPegasus = pure @m Relu
       activationDropout ST5 = pure (initialize @(Dropout dropoutP) dropoutP)
       activationDropout SBERT = pure ()
       activationDropout SBART = pure (initialize @(Dropout dropoutP) dropoutP)
+      activationDropout SPegasus = pure (initialize @(Dropout dropoutP) dropoutP)
       layerNorm ST5 =
         LayerNormWithoutBias
           <$> lookupTensor (prefix <> "layer_norm.weight")
@@ -397,6 +409,11 @@ lookupTransformerFeedForwardNetwork dropoutP eps prefix =
           <$> lookupTensor (prefix <> "final_layer_norm.weight")
           <*> lookupTensor (prefix <> "final_layer_norm.bias")
           <*> pure eps
+      layerNorm SPegasus =
+        LayerNormWithBias
+          <$> lookupTensor (prefix <> "final_layer_norm.weight")
+          <*> lookupTensor (prefix <> "final_layer_norm.bias")
+          <*> pure eps
       dropout _ = pure (initialize @(Dropout dropoutP) dropoutP)
    in TransformerFeedForwardNetwork
         <$> ( GTransformerFeedForwardNetwork
@@ -407,7 +424,6 @@ lookupTransformerFeedForwardNetwork dropoutP eps prefix =
                 <*> layerNorm (sing @style)
                 <*> dropout (sing @style)
             )
-
 
 type family
   FeedForwardNetworkOutputShape
@@ -425,6 +441,22 @@ type family
           ( LinearWithoutBiasF
               ('Shape '[ffnDim, queryEmbedDim])
               ( LayerNormWithoutBiasF
+                  ('Shape '[queryEmbedDim])
+                  queryShape
+              )
+          )
+      )
+  FeedForwardNetworkOutputShape 'Pegasus queryEmbedDim ffnDim queryShape =
+    BroadcastShapesF
+      queryShape
+      ( LinearWithBiasF
+          ('Shape '[queryEmbedDim, ffnDim])
+          ('Shape '[queryEmbedDim])
+          ( LinearWithBiasF
+              ('Shape '[ffnDim, queryEmbedDim])
+              ('Shape '[ffnDim])
+              ( LayerNormWithBiasF
+                  ('Shape '[queryEmbedDim])
                   ('Shape '[queryEmbedDim])
                   queryShape
               )
@@ -624,3 +656,62 @@ instance
         >>>= IxState . forward ffnDropout
         >>>= ireturn . (query `add`)
         >>>= IxState . forward ffnLayoutNorm
+
+-- | 'HasForward' instance for @TransformerFeedForwardNetwork 'Pegasus@.
+--
+-- @
+--       ┌───────┐
+--       │ query ├───────┐
+--       └───┬───┘       │
+--           │           │
+--           ▼           │
+--      ffnLayerNorm     │
+--           ▼           │
+--     ffnInputWeight    │
+--           ▼           │
+--     ffnActivation     │
+--           ▼           │
+--  ffnActivationDropout │
+--           ▼           │
+--    ffnOutputWeight    │
+--           ▼           │
+--       ffnDropout      │
+--           │           │
+--           ▼           │
+--          add◄─────────┘
+--           │
+--           ▼
+--       ┌───────┐
+--       │ query │
+--       └───────┘
+-- @
+instance
+  ( KnownShape queryShape,
+    KnownDim queryEmbedDim,
+    Scalar dropoutP,
+    output
+      ~ Tensor
+          'WithGradient
+          (queryLayout <+> 'Layout 'Dense)
+          (queryDevice <+> device <+> generatorDevice)
+          (queryDataType <+> dataType)
+          (FeedForwardNetworkOutputShape 'Pegasus queryEmbedDim ffnDim queryShape),
+    generatorOutput ~ Generator (device <+> queryDevice <+> generatorDevice)
+  ) =>
+  HasForward
+    (TransformerFeedForwardNetwork 'Pegasus device dataType queryEmbedDim ffnDim dropoutP)
+    (Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape)
+    (Generator generatorDevice)
+    output
+    generatorOutput
+  where
+  forward (TransformerFeedForwardNetwork GTransformerFeedForwardNetwork {..}) query =
+    runIxState $
+      ireturn query
+        >>>= IxState . forward ffnLayoutNorm
+        >>>= IxState . forward ffnInputWeight
+        >>>= IxState . forward ffnActivation
+        >>>= IxState . forward ffnActivationDropout
+        >>>= IxState . forward ffnOutputWeight
+        >>>= IxState . forward ffnDropout
+        >>>= ireturn . (query `add`)

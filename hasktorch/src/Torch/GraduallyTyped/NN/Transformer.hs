@@ -27,6 +27,7 @@ module Torch.GraduallyTyped.NN.Transformer
     module Torch.GraduallyTyped.NN.Transformer.Encoder,
     module Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork,
     module Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention,
+    module Torch.GraduallyTyped.NN.Transformer.Pegasus,
     module Torch.GraduallyTyped.NN.Transformer.SelfAttention,
     module Torch.GraduallyTyped.NN.Transformer.SequenceToSequence,
     module Torch.GraduallyTyped.NN.Transformer.Stack,
@@ -43,6 +44,7 @@ import Torch.GraduallyTyped.NN.Transformer.DecoderStack
 import Torch.GraduallyTyped.NN.Transformer.Encoder
 import Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork
 import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention
+import Torch.GraduallyTyped.NN.Transformer.Pegasus
 import Torch.GraduallyTyped.NN.Transformer.SelfAttention
 import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence
 import Torch.GraduallyTyped.NN.Transformer.Stack

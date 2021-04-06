@@ -49,7 +49,7 @@ import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout)
 import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithoutBiasF)
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF)
-import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithoutBiasF)
+import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithoutBiasF, LayerNormWithBiasF)
 import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormWithoutBiasC, LayerNorm (..))
 import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (HasInitializeMultiHeadAttentionC, MultiHeadAttention, lookupMultiHeadAttention)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
@@ -145,6 +145,8 @@ type family
   where
   CALayerNormF 'T5 device dataType queryEmbedDim =
     LayerNorm 'WithoutBias device dataType ('Shape '[queryEmbedDim])
+  CALayerNormF 'Pegasus device dataType queryEmbedDim =
+    LayerNorm 'WithBias device dataType ('Shape '[queryEmbedDim])
 
 type family
   CADropoutF
@@ -297,10 +299,16 @@ lookupCrossAttention ::
   String ->
   m (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
 lookupCrossAttention dropoutP eps prefix =
-  let crossAttention _ = lookupMultiHeadAttention dropoutP (prefix <> "EncDecAttention.")
+  let crossAttention ST5 = lookupMultiHeadAttention dropoutP (prefix <> "EncDecAttention.")
+      crossAttention SPegasus = lookupMultiHeadAttention dropoutP (prefix <> "encoder_attn.")
       layerNorm ST5 =
         LayerNormWithoutBias
           <$> lookupTensor (prefix <> "layer_norm.weight")
+          <*> pure eps
+      layerNorm SPegasus =
+        LayerNormWithBias
+          <$> lookupTensor (prefix <> "encoder_attn_layer_norm.weight")
+          <*> lookupTensor (prefix <> "encoder_attn_layer_norm.bias")
           <*> pure eps
       dropout _ = pure (initialize @(Dropout dropoutP) dropoutP)
    in CrossAttention
@@ -398,18 +406,96 @@ instance
 -- ┌──────┤      ┌──┴──┐          │
 -- │      │      │     │          │
 -- │      ▼      ▼     ▼          │
--- │  bcaMultiheadAttention◄──────┘
+-- │   caMultiheadAttention◄──────┘
 -- │             │
 -- │             ▼
--- │        bcaDropout
+-- │         caDropout
 -- │             │
 -- └────►add◄────┘
 --        │
 --        ▼
---  bcaLayerNorm
+--   caLayerNorm
 --        │
 --        ▼
 --    ┌───────┐
 --    │ query │
 --    └───────┘
 -- @
+
+-- | 'HasForward' instance for @CrossAttention 'Pegasus@.
+--
+-- @
+--    ┌───────┐  ┌─────┐  ┌───────────────┐
+--    │ query │  │ key │  │ attentionBias │
+--    └───┬───┘  └──┬──┘  └───────┬───────┘
+--        │         │             │
+-- ┌──────┤         │             │
+-- │      │         │             │
+-- │      ▼         │             │
+-- │ caLayerNorm    │             │
+-- │      │         │             │
+-- │      │      ┌──┴──┐          │
+-- │      │      │     │          │
+-- │      ▼      ▼     ▼          │
+-- │   caMultiheadAttention◄──────┘
+-- │             │
+-- │             ▼
+-- │         caDropout
+-- │             │
+-- └────►add◄────┘
+--        │
+--        ▼
+--    ┌───────┐
+--    │ query │
+--    └───────┘
+-- @
+instance
+  ( KnownDim queryEmbedDim,
+    KnownShape queryShape,
+    Scalar dropoutP,
+    normedQueryLayout ~ ('Layout 'Dense <+> queryLayout),
+    normedQueryDevice ~ (device <+> queryDevice),
+    normedQueryDataType ~ (dataType <+> queryDataType),
+    normedQueryShape ~ LayerNormWithBiasF ('Shape '[queryEmbedDim]) ('Shape '[queryEmbedDim]) queryShape,
+    HasForward
+      (MultiHeadAttention 'Pegasus device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP)
+      ( Tensor 'WithGradient normedQueryLayout normedQueryDevice normedQueryDataType normedQueryShape,
+        Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
+        Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
+        Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
+      )
+      (Generator generatorDevice)
+      ( Tensor
+          'WithGradient
+          (queryLayout <+> 'Layout 'Dense <+> keyLayout <+> attentionBiasLayout)
+          (queryDevice <+> device <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)
+          (queryDataType <+> dataType <+> keyDataType <+> attentionBiasDataType)
+          mhaOutputShape
+      )
+      (Generator (queryDevice <+> device <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)),
+    output
+      ~ Tensor
+          'WithGradient
+          (queryLayout <+> 'Layout 'Dense <+> keyLayout <+> attentionBiasLayout)
+          (queryDevice <+> device <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)
+          (queryDataType <+> dataType <+> keyDataType <+> attentionBiasDataType)
+          (BroadcastShapesF queryShape mhaOutputShape),
+    generatorOutput ~ Generator (queryDevice <+> device <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)
+  ) =>
+  HasForward
+    (CrossAttention 'Pegasus device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
+    ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+      Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
+      Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
+    )
+    (Generator generatorDevice)
+    output
+    generatorOutput
+  where
+  forward (CrossAttention ca) (query, key, attentionBias) =
+    runIxState $
+      ireturn query
+        >>>= IxState . forward (caLayerNorm ca)
+        >>>= (\query' -> IxState $ forward (caMultiheadAttention ca) (query', key, key, attentionBias))
+        >>>= IxState . forward (caDropout ca)
+        >>>= ireturn . (query `add`)

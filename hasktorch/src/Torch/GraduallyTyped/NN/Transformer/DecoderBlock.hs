@@ -32,7 +32,7 @@ import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Transformer.CrossAttention (CrossAttention, HasInitializeCrossAttentionC, lookupCrossAttention)
 import Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork (HasInitializeTransformerFeedForwardNetworkC, TransformerFeedForwardNetwork, lookupTransformerFeedForwardNetwork)
 import Torch.GraduallyTyped.NN.Transformer.SelfAttention (HasInitializeSelfAttentionC, SelfAttention, lookupSelfAttention)
-import Torch.GraduallyTyped.NN.Transformer.Type (TensorDict, TransformerStyle (..))
+import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape (Dim (..), KnownDim, Name (..), Size (..), WithDimC (..))
@@ -224,10 +224,16 @@ lookupDecoderBlock ::
   String ->
   m (TransformerDecoderBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
 lookupDecoderBlock dropoutP eps prefix =
-  TransformerDecoderBlock
-    <$> lookupSelfAttention dropoutP eps (prefix <> "layer.0.")
-    <*> lookupCrossAttention dropoutP eps (prefix <> "layer.1.")
-    <*> lookupTransformerFeedForwardNetwork dropoutP eps (prefix <> "layer.2.")
+  let selfAttention ST5 = lookupSelfAttention dropoutP eps (prefix <> "layer.0.")
+      selfAttention SPegasus = lookupSelfAttention dropoutP eps prefix
+      crossAttention ST5 = lookupCrossAttention dropoutP eps (prefix <> "layer.1.")
+      crossAttention SPegasus = lookupCrossAttention dropoutP eps prefix
+      feedForwardNetwork ST5 = lookupTransformerFeedForwardNetwork dropoutP eps (prefix <> "layer.2.")
+      feedForwardNetwork SPegasus = lookupTransformerFeedForwardNetwork dropoutP eps prefix
+   in TransformerDecoderBlock
+        <$> selfAttention (sing @style)
+        <*> crossAttention (sing @style)
+        <*> feedForwardNetwork (sing @style)
 
 -- | 'HasForward' instance for 'TransformerDecoderBlock'.
 --

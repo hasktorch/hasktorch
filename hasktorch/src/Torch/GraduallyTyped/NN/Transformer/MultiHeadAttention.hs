@@ -424,6 +424,10 @@ lookupMultiHeadAttention dropoutP prefix =
         LinearWithBias
           <$> lookupTensor (prefix <> "q_proj.weight")
           <*> lookupTensor (prefix <> "q_proj.bias")
+      qInProj SPegasus =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "q_proj.weight")
+          <*> lookupTensor (prefix <> "q_proj.bias")
       kInProj ST5 =
         LinearWithoutBias
           <$> lookupTensor (prefix <> "k.weight")
@@ -432,6 +436,10 @@ lookupMultiHeadAttention dropoutP prefix =
           <$> lookupTensor (prefix <> "self.key.weight")
           <*> lookupTensor (prefix <> "self.key.bias")
       kInProj SBART =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "k_proj.weight")
+          <*> lookupTensor (prefix <> "k_proj.bias")
+      kInProj SPegasus =
         LinearWithBias
           <$> lookupTensor (prefix <> "k_proj.weight")
           <*> lookupTensor (prefix <> "k_proj.bias")
@@ -446,6 +454,10 @@ lookupMultiHeadAttention dropoutP prefix =
         LinearWithBias
           <$> lookupTensor (prefix <> "v_proj.weight")
           <*> lookupTensor (prefix <> "v_proj.bias")
+      vInProj SPegasus =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "v_proj.weight")
+          <*> lookupTensor (prefix <> "v_proj.bias")
       outProj ST5 =
         LinearWithoutBias
           <$> lookupTensor (prefix <> "o.weight")
@@ -454,6 +466,10 @@ lookupMultiHeadAttention dropoutP prefix =
           <$> lookupTensor (prefix <> "output.dense.weight")
           <*> lookupTensor (prefix <> "output.dense.bias")
       outProj SBART =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "out_proj.weight")
+          <*> lookupTensor (prefix <> "out_proj.bias")
+      outProj SPegasus =
         LinearWithBias
           <$> lookupTensor (prefix <> "out_proj.weight")
           <*> lookupTensor (prefix <> "out_proj.bias")

@@ -203,6 +203,26 @@ type HasInitializeTransformerEncoderC
   )
 
 type family
+  HasInitializeTEStackF
+    (stack :: Type)
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (dropoutP :: Type) ::
+    Constraint
+  where
+  HasInitializeTEStackF stack _ device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP =
+    ( HasInitialize stack,
+      InitializeF stack ~ WithDeviceF device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (stack, Generator device)))))))),
+      HasInitializeTransformerStackC stack device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP
+    )
+
+type family
   HasInitializeTEEmbedLayerNormF
     (embedLayerNorm :: Type)
     (style :: TransformerStyle)
@@ -247,6 +267,18 @@ type family
     )
 
 type family
+  HasInitializeTEDropoutF
+    (dropout :: Type)
+    (style :: TransformerStyle)
+    (dropoutP :: Type) ::
+    Constraint
+  where
+  HasInitializeTEDropoutF dropout _ dropoutP =
+    ( HasInitialize dropout,
+      InitializeF dropout ~ (dropoutP -> dropout)
+    )
+
+type family
   HasInitializeTEPosEncF
     (posEnc :: Type)
     (style :: TransformerStyle)
@@ -286,16 +318,13 @@ instance
   ( SingI style,
     HasInitializeTransformerEncoderC numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP,
     stack ~ TEStackF numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP,
-    HasInitialize stack,
-    InitializeF stack ~ WithDeviceF device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (stack, Generator device)))))))),
-    HasInitializeTransformerStackC stack device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP,
+    HasInitializeTEStackF stack style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP,
     embedLayerNorm ~ TEEmbedLayerNormF style device dataType inputEmbedDim,
     HasInitializeTEEmbedLayerNormF embedLayerNorm style device dataType inputEmbedDim,
     layerNorm ~ TELayerNormF style device dataType inputEmbedDim,
     HasInitializeTELayerNormF layerNorm style device dataType inputEmbedDim,
     dropout ~ TEDropoutF style dropoutP,
-    HasInitialize dropout,
-    InitializeF dropout ~ (dropoutP -> dropout),
+    HasInitializeTEDropoutF dropout style dropoutP,
     posEnc ~ TEPosEncF style device dataType headDim inputEmbedDim posEncDim,
     HasInitializeTEPosEncF posEnc style device dataType headDim inputEmbedDim posEncDim
   ) =>
@@ -484,20 +513,28 @@ lookupEncoder ::
 lookupEncoder dropoutP eps prefix =
   let stack ST5 = lookupStack dropoutP eps (prefix <> "block.")
       stack SBERT = lookupStack dropoutP eps (prefix <> "encoder.layer.")
+      stack SPegasus = lookupStack dropoutP eps (prefix <> "layers.")
       embedLayerNorm ST5 = pure ()
       embedLayerNorm SBERT =
         LayerNormWithBias
           <$> lookupTensor (prefix <> "embeddings.LayerNorm.weight")
           <*> lookupTensor (prefix <> "embeddings.LayerNorm.bias")
           <*> pure eps
+      embedLayerNorm SPegasus = pure ()
       layerNorm ST5 =
         LayerNormWithoutBias
           <$> lookupTensor (prefix <> "final_layer_norm.weight")
           <*> pure eps
       layerNorm SBERT = pure ()
+      layerNorm SPegasus =
+        LayerNormWithBias
+          <$> lookupTensor (prefix <> "layer_norm.weight")
+          <*> lookupTensor (prefix <> "layer_norm.bias")
+          <*> pure eps
       dropout _ = pure (initialize @(Dropout dropoutP) dropoutP)
       posEnc ST5 = fmap @m Embedding $ lookupTensor (prefix <> "block.0.layer.0.SelfAttention.relative_attention_bias.weight")
       posEnc SBERT = fmap @m Embedding $ lookupTensor (prefix <> "embeddings.position_embeddings.weight")
+      posEnc SPegasus = fmap @m Embedding $ lookupTensor (prefix <> "embed_positions.weight")
    in TransformerEncoder
         <$> ( GTransformerEncoder
                 <$> stack (sing @style)

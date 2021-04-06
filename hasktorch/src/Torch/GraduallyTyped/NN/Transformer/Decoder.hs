@@ -128,8 +128,8 @@ type family
     (dropoutP :: Type) ::
     Type
   where
-  TDStackF numLayers 'T5 device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP =
-    TransformerDecoderStack numLayers 'T5 device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP
+  TDStackF numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP =
+    TransformerDecoderStack numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP
 
 type family
   TDEmbedLayerNormF
@@ -206,6 +206,27 @@ type HasInitializeTransformerDecoderC
     WithDimC ffnDim (WithDimF posEncDim (dropoutP -> Double -> Generator device -> (TransformerDecoder numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP, Generator device))),
     WithDimC posEncDim (dropoutP -> Double -> Generator device -> (TransformerDecoder numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP, Generator device))
   )
+
+type family
+  HasInitializeTDStackF
+    (stack :: Type)
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (decoderInputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (encoderOutputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (dropoutP :: Type) ::
+    Constraint
+  where
+  HasInitializeTDStackF stack _ device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP =
+    ( HasInitialize stack,
+      InitializeF stack ~ WithDeviceF device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF decoderInputEmbedDim (WithDimF encoderOutputEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (stack, Generator device))))))))),
+      HasInitializeTransformerDecoderStackC stack device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP
+    )
 
 type family
   HasInitializeTDEmbedLayerNormF
@@ -291,9 +312,7 @@ instance
   ( SingI style,
     HasInitializeTransformerDecoderC numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP,
     stack ~ TDStackF numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP,
-    HasInitialize stack,
-    InitializeF stack ~ WithDeviceF device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF decoderInputEmbedDim (WithDimF encoderOutputEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (stack, Generator device))))))))),
-    HasInitializeTransformerDecoderStackC stack device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP,
+    HasInitializeTDStackF stack style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP,
     embedLayerNorm ~ TDEmbedLayerNormF style device dataType decoderInputEmbedDim,
     HasInitializeTDEmbedLayerNormF embedLayerNorm style device dataType decoderInputEmbedDim,
     layerNorm ~ TDLayerNormF style device dataType decoderInputEmbedDim,
@@ -497,13 +516,21 @@ lookupDecoder ::
   m (TransformerDecoder numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP)
 lookupDecoder dropoutP eps prefix =
   let stack ST5 = lookupDecoderStack dropoutP eps (prefix <> "block.")
+      stack SPegasus = lookupDecoderStack dropoutP eps (prefix <> "layers.")
       embedLayerNorm ST5 = pure @m ()
+      embedLayerNorm SPegasus = pure ()
       layerNorm ST5 =
         LayerNormWithoutBias
           <$> lookupTensor (prefix <> "final_layer_norm.weight")
           <*> pure eps
-      dropout ST5 = pure (initialize @(Dropout dropoutP) dropoutP)
+      layerNorm SPegasus =
+        LayerNormWithBias
+          <$> lookupTensor (prefix <> "layer_norm.weight")
+          <*> lookupTensor (prefix <> "layer_norm.bias")
+          <*> pure eps
+      dropout _ = pure (initialize @(Dropout dropoutP) dropoutP)
       posEnc ST5 = fmap @m Embedding $ lookupTensor (prefix <> "block.0.layer.0.SelfAttention.relative_attention_bias.weight")
+      posEnc SPegasus = fmap @m Embedding $ lookupTensor (prefix <> "embed_positions.weight")
    in TransformerDecoder
         <$> ( GTransformerDecoder
                 <$> stack (sing @style)

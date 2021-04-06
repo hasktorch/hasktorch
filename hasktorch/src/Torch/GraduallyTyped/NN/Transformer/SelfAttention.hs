@@ -150,6 +150,8 @@ type family
     LayerNorm 'WithBias device dataType ('Shape '[queryEmbedDim])
   SALayerNormF 'BART device dataType queryEmbedDim =
     LayerNorm 'WithBias device dataType ('Shape '[queryEmbedDim])
+  SALayerNormF 'Pegasus device dataType queryEmbedDim =
+    LayerNorm 'WithBias device dataType ('Shape '[queryEmbedDim])
 
 type family
   SADropoutF
@@ -288,6 +290,7 @@ lookupSelfAttention dropoutP eps prefix =
   let selfAttention ST5 = lookupMultiHeadAttention dropoutP (prefix <> "SelfAttention.")
       selfAttention SBERT = lookupMultiHeadAttention dropoutP prefix
       selfAttention SBART = lookupMultiHeadAttention dropoutP (prefix <> "self_attn.")
+      selfAttention SPegasus = lookupMultiHeadAttention dropoutP (prefix <> "self_attn.")
       layerNorm ST5 =
         LayerNormWithoutBias
           <$> lookupTensor (prefix <> "layer_norm.weight")
@@ -301,6 +304,11 @@ lookupSelfAttention dropoutP eps prefix =
         LayerNormWithBias
           <$> lookupTensor (prefix <> "self_attn_layer_norm.weight")
           <*> lookupTensor (prefix <> "self_attn_layer_norm.bias")
+          <*> pure eps
+      layerNorm SPegasus =
+        LayerNormWithBias
+          <$> lookupTensor (prefix <> "final_layer_norm.weight")
+          <*> lookupTensor (prefix <> "final_layer_norm.bias")
           <*> pure eps
       dropout _ = pure (initialize @(Dropout dropoutP) dropoutP)
    in SelfAttention
@@ -531,3 +539,80 @@ instance
         >>>= IxState . forward saDropout
         >>>= ireturn . (query `add`)
         >>>= IxState . forward saLayerNorm
+
+-- | 'HasForward' instance for @SelfAttention 'Pegasus@.
+--
+-- @
+-- ┌───────────────┐     ┌───────┐
+-- │ attentionBias │     │ query │
+-- └───────┬───────┘     └───┬───┘
+--         │                 │
+--         │           ┌─────┴─────┐
+--         │           │           │
+--         │           ▼           │
+--         │      saLayerNorm      │
+--         │           │           │
+--         │      ┌────┼────┐      │
+--         │      │    │    │      │
+--         │      ▼    ▼    ▼      │
+--         └─►saMultiheadAttention │
+--                     │           │
+--                     ▼           │
+--                 saDropout       │
+--                     │           │
+--                     └───►add◄───┘
+--                           │
+--                           ▼
+--                       ┌───────┐
+--                       │ query │
+--                       └───────┘
+-- @
+instance
+  ( KnownDim queryEmbedDim,
+    KnownShape queryShape,
+    Scalar dropoutP,
+    normedQueryLayout ~ ('Layout 'Dense <+> queryLayout),
+    normedQueryDevice ~ (device <+> queryDevice),
+    normedQueryDataType ~ (dataType <+> queryDataType),
+    normedQueryShape ~ LayerNormWithBiasF ('Shape '[queryEmbedDim]) ('Shape '[queryEmbedDim]) queryShape,
+    HasForward
+      (MultiHeadAttention 'Pegasus device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP)
+      ( Tensor 'WithGradient normedQueryLayout normedQueryDevice normedQueryDataType normedQueryShape,
+        Tensor 'WithGradient normedQueryLayout normedQueryDevice normedQueryDataType normedQueryShape,
+        Tensor 'WithGradient normedQueryLayout normedQueryDevice normedQueryDataType normedQueryShape,
+        Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
+      )
+      (Generator generatorDevice)
+      ( Tensor
+          'WithGradient
+          ('Layout 'Dense <+> queryLayout <+> attentionBiasLayout)
+          (device <+> queryDevice <+> attentionBiasDevice <+> generatorDevice)
+          (dataType <+> queryDataType <+> attentionBiasDataType)
+          mhaOutputShape
+      )
+      (Generator (device <+> queryDevice <+> attentionBiasDevice <+> generatorDevice)),
+    output
+      ~ Tensor
+          'WithGradient
+          (queryLayout <+> 'Layout 'Dense <+> attentionBiasLayout)
+          (queryDevice <+> device <+> attentionBiasDevice <+> generatorDevice)
+          (queryDataType <+> dataType <+> attentionBiasDataType)
+          (BroadcastShapesF queryShape mhaOutputShape),
+    generatorOutput ~ Generator (device <+> queryDevice <+> attentionBiasDevice <+> generatorDevice)
+  ) =>
+  HasForward
+    (SelfAttention 'Pegasus device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
+    ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+      Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
+    )
+    (Generator generatorDevice)
+    output
+    generatorOutput
+  where
+  forward (SelfAttention GSelfAttention {..}) (query, attentionBias) =
+    runIxState $
+      ireturn query
+        >>>= IxState . forward saLayerNorm
+        >>>= (\query' -> IxState $ forward saMultiheadAttention (query', query', query', attentionBias))
+        >>>= IxState . forward saDropout
+        >>>= ireturn . (query `add`)

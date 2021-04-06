@@ -134,7 +134,7 @@ t5EosTokenId = 1
 t5AttentionMaskBias :: Double
 t5AttentionMaskBias = -10000
 
--- | T5 Model.
+-- | T5 model.
 newtype
   T5Model
     (numLayers :: Nat)
@@ -152,6 +152,7 @@ newtype
     T5Model numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim
   deriving stock (Generic)
 
+-- | T5 model with language modelling head.
 newtype
   T5ModelWithLMHead
     (numLayers :: Nat)
