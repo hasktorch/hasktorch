@@ -688,6 +688,15 @@ tensor__fw_primal_l _obj _level =
     $(int64_t _level)));
   }|]
 
+tensor_rename_N
+  :: Ptr Tensor
+  -> Ptr DimnameList
+  -> IO (Ptr Tensor)
+tensor_rename_N _obj _names =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).rename(
+    *$(std::vector<at::Dimname>* _names)));
+  }|]
+
 tensor_align_to_N
   :: Ptr Tensor
   -> Ptr DimnameList
@@ -1504,14 +1513,6 @@ tensor_cosh
   -> IO (Ptr Tensor)
 tensor_cosh _obj =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).cosh(
-    ));
-  }|]
-
-tensor_cosh_
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
-tensor_cosh_ _obj =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).cosh_(
     ));
   }|]
 

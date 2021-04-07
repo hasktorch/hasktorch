@@ -24,6 +24,12 @@ import qualified Torch.Internal.Unmanaged.Type.Tensor.Tensor3 as Unmanaged
 
 
 
+tensor___or___t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor___or___t = cast2 Unmanaged.tensor___or___t
+
 tensor___ior___s
   :: ForeignPtr Tensor
   -> ForeignPtr Scalar

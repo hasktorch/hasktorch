@@ -32,6 +32,14 @@ C.include "<vector>"
 
 
 
+tensor_cosh_
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_cosh_ _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).cosh_(
+    ));
+  }|]
+
 tensor_count_nonzero_l
   :: Ptr Tensor
   -> Ptr IntArray
@@ -1598,16 +1606,5 @@ tensor_prelu_t
 tensor_prelu_t _obj _weight =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).prelu(
     *$(at::Tensor* _weight)));
-  }|]
-
-tensor_prelu_backward_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-tensor_prelu_backward_tt _obj _grad_output _weight =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).prelu_backward(
-    *$(at::Tensor* _grad_output)
-  , *$(at::Tensor* _weight)));
   }|]
 

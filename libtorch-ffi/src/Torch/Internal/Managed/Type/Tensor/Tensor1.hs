@@ -24,6 +24,11 @@ import qualified Torch.Internal.Unmanaged.Type.Tensor.Tensor1 as Unmanaged
 
 
 
+tensor_cosh_
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_cosh_ = cast1 Unmanaged.tensor_cosh_
+
 tensor_count_nonzero_l
   :: ForeignPtr Tensor
   -> ForeignPtr IntArray
@@ -1028,11 +1033,4 @@ tensor_prelu_t
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 tensor_prelu_t = cast2 Unmanaged.tensor_prelu_t
-
-tensor_prelu_backward_tt
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-tensor_prelu_backward_tt = cast3 Unmanaged.tensor_prelu_backward_tt
 
