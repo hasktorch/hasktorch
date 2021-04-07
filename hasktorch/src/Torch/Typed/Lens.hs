@@ -39,8 +39,8 @@ type Lens' s a
 type Lens s t a b
   = forall f. Functor f => (a -> f b) -> s -> f t
 
-class HasField (field :: Symbol) shape where
-  field :: FieldIdx field shape => Lens' (NamedTensor device dtype shape) (NamedTensor device dtype (DropField field shape))
+class FieldIdx field shape => HasField (field :: Symbol) shape where
+  field :: Lens' (NamedTensor device dtype shape) (NamedTensor device dtype (DropField field shape))
   field func s = fmap func' (func a')
     where
       index = fieldIdx @field @shape Proxy

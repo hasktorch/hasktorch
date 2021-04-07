@@ -32,6 +32,7 @@ import Torch.Typed.Tensor
 import Torch.Typed.Factories
 import Data.Vector.Sized (Vector)
 import qualified Data.Vector.Sized as V
+import Torch.Typed.Lens
 
 data RGB a = RGB {
   r :: a,
@@ -40,6 +41,9 @@ data RGB a = RGB {
 } deriving (Show, Eq)
 
 type instance ToNat RGB = 3
+
+testFieldLens :: HasField "r" shape => Lens' (NamedTensor '(D.CPU,0) 'D.Float shape) (NamedTensor '(D.CPU,0) 'D.Float (DropField "r" shape))
+testFieldLens = field @"r"
 
 checkDynamicTensorAttributes' ::
   forall device dtype shape t.
