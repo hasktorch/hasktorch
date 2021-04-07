@@ -77,6 +77,7 @@ library
                     , Torch.Typed.Optim.CppOptim
                     , Torch.Typed.Serialize
                     , Torch.Typed.Vision
+                    , Torch.Typed.Lens
                     , Torch.Distributions.Constraints
                     , Torch.Distributions.Distribution
                     , Torch.Distributions.Bernoulli
