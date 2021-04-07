@@ -442,6 +442,12 @@ tensor__fw_primal_l
   -> IO (ForeignPtr Tensor)
 tensor__fw_primal_l = cast2 Unmanaged.tensor__fw_primal_l
 
+tensor_rename_N
+  :: ForeignPtr Tensor
+  -> ForeignPtr DimnameList
+  -> IO (ForeignPtr Tensor)
+tensor_rename_N = cast2 Unmanaged.tensor_rename_N
+
 tensor_align_to_N
   :: ForeignPtr Tensor
   -> ForeignPtr DimnameList
@@ -960,9 +966,4 @@ tensor_cosh
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 tensor_cosh = cast1 Unmanaged.tensor_cosh
-
-tensor_cosh_
-  :: ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-tensor_cosh_ = cast1 Unmanaged.tensor_cosh_
 
