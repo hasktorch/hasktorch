@@ -69,7 +69,7 @@ instance
   dataTypeVal = DataType (dTypeVal @dType)
 
 class
-  DataTypeConstraint dataType (GetDataTypes f) =>
+  -- DataTypeConstraint dataType (GetDataTypes f) =>
   WithDataTypeC (dataType :: DataType DType) (f :: Type)
   where
   type WithDataTypeF dataType f :: Type
@@ -77,7 +77,7 @@ class
   withoutDataType :: WithDataTypeF dataType f -> (DType -> f)
 
 instance
-  DataTypeConstraint 'UncheckedDataType (GetDataTypes f) =>
+  -- DataTypeConstraint 'UncheckedDataType (GetDataTypes f) =>
   WithDataTypeC 'UncheckedDataType f
   where
   type WithDataTypeF 'UncheckedDataType f = DType -> f
@@ -85,7 +85,7 @@ instance
   withoutDataType = id
 
 instance
-  ( DataTypeConstraint ( 'DataType dType) (GetDataTypes f),
+  ( -- DataTypeConstraint ( 'DataType dType) (GetDataTypes f),
     KnownDType dType
   ) =>
   WithDataTypeC ( 'DataType dType) f

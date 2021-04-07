@@ -3,9 +3,11 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE EmptyCase #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
@@ -41,17 +43,21 @@ import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), KnownDType (..), KnownDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice (..))
 import Torch.GraduallyTyped.Layout (KnownLayout (..), Layout (..), LayoutType (..))
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
-import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, type (!))
+import Torch.GraduallyTyped.Scalar (Scalar)
+import Torch.GraduallyTyped.Shape.Class (AddDimF, BroadcastShapesF, ReplaceDimF, type (!))
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownDim (..), KnownShape (..), Name (..), SelectDim (..), Shape (..), Size (..), WithDimC (..))
+import Torch.GraduallyTyped.Tensor (cat)
 import Torch.GraduallyTyped.Tensor.Creation (WithCreateC (..), full, ones, zeros)
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (UnsqueezeF, unsqueeze)
 import Torch.GraduallyTyped.Tensor.MathOperations.Comparison ((==.))
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (logicalOr)
 import Torch.GraduallyTyped.Tensor.Other (maskedFill, triu)
-import Torch.GraduallyTyped.Tensor.Type (Tensor (..), bool, checkedDataType, checkedDevice, checkedLayout, checkedShape, device, layout, shape)
-import Torch.GraduallyTyped.Unify (type (<+>))
+import Torch.GraduallyTyped.Tensor.Type (Tensor (..), bool, checkedDataType, checkedDevice, checkedLayout, checkedShape, dataType, device, layout, shape)
+import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
+import Torch.HList
 import qualified Torch.Internal.Type as ATen (Tensor)
 import qualified Torch.Script (IValue (..))
 import qualified Torch.Serialize (pickleLoad)
@@ -304,3 +310,65 @@ mkTransformerCrossAttentionMask attentionMaskBias =
               dType
               [Dim "*" 1, seqDim', seqDim]
        in maskedFill (unsqueeze @('SelectDim ('ByIndex 1)) paddingMask) attentionMaskBias emptyMask
+
+data ShiftRight fillValue where
+  ShiftRight :: forall fillValue. fillValue -> ShiftRight fillValue
+
+instance HasInitialize (ShiftRight fillValue) where
+  type InitializeF (ShiftRight fillValue) = fillValue -> ShiftRight fillValue
+  initialize fillValue = ShiftRight fillValue
+
+instance
+  ( input
+      ~ Tensor
+          inputRequiresGradient
+          inputLayout
+          inputDevice
+          inputDataType
+          inputShape,
+    inputBatchDim ~ (inputShape ! 0),
+    inputSeqDim ~ (inputShape ! 1),
+    filler
+      ~ Tensor
+          'WithoutGradient
+          inputLayout
+          inputDevice
+          inputDataType
+          fillerShape,
+    fillerShape ~ 'Shape '[inputBatchDim, 'Dim ('Name "*") ('Size 1)],
+    KnownLayout inputLayout,
+    KnownDevice inputDevice,
+    KnownDataType inputDataType,
+    KnownShape inputShape,
+    Scalar fillValue,
+    WithCreateC (fillValue -> filler) 'WithoutGradient inputLayout inputDevice inputDataType fillerShape,
+    rightShiftedInput
+      ~ Tensor
+          (inputRequiresGradient <|> 'WithoutGradient)
+          inputLayout
+          inputDevice
+          inputDataType
+          ( ReplaceDimF
+              ('SelectDim ('ByIndex 1))
+              (inputShape <+> 'Shape '[inputBatchDim, inputSeqDim])
+              (AddDimF inputSeqDim ('Dim ('Name "*") ('Size 1)))
+          )
+  ) =>
+  HasForward (ShiftRight fillValue) input generator rightShiftedInput generator
+  where
+  forward (ShiftRight fillValue) input g =
+    let inputLayoutType = layout input
+        inputDeviceType = device input
+        inputDType = dataType input
+        inputBatchDim : _ = shape input
+        fillerDims = [inputBatchDim, Dim "*" 1]
+        filler =
+          withoutCreate @(fillValue -> filler) @'WithoutGradient @inputLayout @inputDevice @inputDataType @fillerShape
+            (full @'WithoutGradient @inputLayout @inputDevice @inputDataType @fillerShape @fillValue)
+            WithoutGradient
+            inputLayoutType
+            inputDeviceType
+            inputDType
+            fillerDims
+            fillValue
+     in (cat @('SelectDim ('ByIndex 1)) (filler :. input :. HNil), g)

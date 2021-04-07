@@ -831,7 +831,8 @@ instance
       stackOutput
       generatorOutput
       output
-      generatorOutput
+      generatorOutput,
+    Show output
   ) =>
   HasForward
     (TransformerEncoder numLayers 'Pegasus device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP)
@@ -852,3 +853,4 @@ instance
             >>>= IxState . forward teDropout
             >>>= (\input' -> IxState $ forward teStack (input', attentionBias))
             >>>= IxState . forward teLayerNorm
+            -- >>>= ireturn . traceShowId -- Pegasus: 0.0965, -0.0048, -0.1945, ...

@@ -40,19 +40,37 @@ def main(args=None) -> None:
     )
     model.eval()
 
-    generated_ids = model.generate(
+    # generated_ids = model.generate(
+    #     input_ids=tokenized_inputs.input_ids,
+    #     attention_mask=tokenized_inputs.attention_mask,
+    #     num_beams=1,
+    #     max_length=512,
+    #     do_sample=False,
+    #     repetition_penalty=1,
+    #     no_repeat_ngram_size=0,
+    #     length_penalty=1,
+    # )
+
+    # decoded = tokenizer.batch_decode(generated_ids, skip_special_tokens=False)
+    # pretty_print({"generated_ids": generated_ids, "decoded": decoded})
+
+    # generated_ids = [   0, 139, 37695, 6817, 108, 836, 115, 39290, 108, 117, 156, 113, 109, 205, 1808, 17501, 115, 3165, 107, 1]
+    decoded = '<pad> The Eiffel Tower, built in 1889, is one of the most famous landmarks in Paris.</s>'
+
+    tokenized_decoder_inputs = tokenizer(
+        decoded, padding="longest", return_tensors="pt"
+    )
+    print(tokenized_decoder_inputs)
+
+    outputs = model(
         input_ids=tokenized_inputs.input_ids,
         attention_mask=tokenized_inputs.attention_mask,
-        num_beams=1,
-        max_length=512,
-        do_sample=False,
-        repetition_penalty=1,
-        no_repeat_ngram_size=0,
-        length_penalty=1,
+        decoder_input_ids=tokenized_decoder_inputs.input_ids,
+        decoder_attention_mask=tokenized_decoder_inputs.attention_mask,
+        labels=None,
+        return_dict=True,
     )
-
-    decoded = tokenizer.batch_decode(generated_ids, skip_special_tokens=False)
-    pretty_print({"generated_ids": generated_ids, "decoded": decoded})
+    print(outputs.logits)
 
     d = dict(model.state_dict())
     pretty_print({k: v.shape for k, v in d.items()})

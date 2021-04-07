@@ -22,6 +22,7 @@ module Torch.GraduallyTyped.Tensor.Creation
     randn,
     -- checkedRandn,
     uncheckedRandn,
+    arangeNaturals,
   )
 where
 
@@ -40,7 +41,7 @@ import Torch.GraduallyTyped.Prelude (Catch)
 import Torch.GraduallyTyped.Random (Generator, withGenerator)
 import Torch.GraduallyTyped.RequiresGradient (KnownRequiresGradient, RequiresGradient (..), requiresGradientVal)
 import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape (Dim (..), Name (..), Shape (..), Size (..), WithShapeC (..), dimName, dimSize)
+import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Shape (..), Size (..), WithDimC (..), WithShapeC (..), dimName, dimSize)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
 import Torch.Internal.Cast (cast2, cast3, cast4)
 import qualified Torch.Internal.Managed.TensorFactories as ATen
@@ -258,7 +259,7 @@ uncheckedOnes ::
     'UncheckedDevice
     'UncheckedDataType
     'UncheckedShape
-uncheckedOnes = ones @ 'WithoutGradient @ 'UncheckedLayout @ 'UncheckedDevice @ 'UncheckedDataType @ 'UncheckedShape
+uncheckedOnes = ones @'WithoutGradient @'UncheckedLayout @'UncheckedDevice @'UncheckedDataType @'UncheckedShape
 
 zeros ::
   forall requiresGradient layout device dataType shape.
@@ -375,4 +376,35 @@ uncheckedRandn ::
       'UncheckedShape,
     Generator 'UncheckedDevice
   )
-uncheckedRandn = randn @ 'WithoutGradient @ 'UncheckedLayout @ 'UncheckedDevice @ 'UncheckedDataType @ 'UncheckedShape
+uncheckedRandn = randn @'WithoutGradient @'UncheckedLayout @'UncheckedDevice @'UncheckedDataType @'UncheckedShape
+
+arangeNaturals ::
+  forall requiresGradient layout device dataType sizeDim shape createOut.
+  ( shape ~ 'Shape '[sizeDim],
+    createOut ~ Tensor requiresGradient layout device dataType shape,
+    KnownRequiresGradient requiresGradient,
+    WithLayoutC layout (WithDeviceF device (WithDataTypeF dataType (WithDimF sizeDim createOut))),
+    WithDeviceC device (WithDataTypeF dataType (WithDimF sizeDim createOut)),
+    WithDataTypeC dataType (WithDimF sizeDim createOut),
+    WithDimC sizeDim createOut
+  ) =>
+  WithLayoutF layout (WithDeviceF device (WithDataTypeF dataType (WithDimF sizeDim createOut)))
+arangeNaturals =
+  withLayout @layout $
+    \layoutType ->
+      withDevice @device $
+        \deviceType ->
+          withDataType @dataType $
+            \dType ->
+              withDim @sizeDim @createOut $
+                \sizeDim ->
+                  go (requiresGradientVal @requiresGradient) layoutType deviceType dType sizeDim
+  where
+    go requiresGradient layoutType deviceType dType sizeDim =
+      let opts = tensorOptions requiresGradient layoutType deviceType dType
+          Dim _ size = sizeDim
+          tensor = unsafePerformIO $ do
+            t <- cast2 ATen.arange_so size opts
+            -- renaming of dimension goes here
+            pure t
+       in UnsafeTensor tensor

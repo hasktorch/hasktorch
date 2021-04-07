@@ -73,7 +73,7 @@ import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (GMultiHeadAttenti
 import Torch.GraduallyTyped.NN.Transformer.SelfAttention (GSelfAttention (..), SelfAttention (..))
 import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (SequenceToSequenceTransformer (..), SequenceToSequenceTransformerGenerationInput (..), SequenceToSequenceTransformerInput (..), SequenceToSequenceTransformerOutput (..), SequenceToSequenceTransformerWithLMHead (..), lookupSequenceToSequenceTransformer, lookupSequenceToSequenceTransformerWithLMHead)
 import Torch.GraduallyTyped.NN.Transformer.Stack (HasLookupStack, TransformerStack (..))
-import Torch.GraduallyTyped.NN.Transformer.Type (MkTransformerAttentionMaskC, MkTransformerCrossAttentionMaskC, MkTransformerDecoderAttentionMaskC, TensorDict, TransformerStyle (T5), mkTransformerAttentionMask, mkTransformerCrossAttentionMask, mkTransformerDecoderAttentionMask, mkTransformerInput, mkTransformerPaddingMask, tensorDictFromPretrained)
+import Torch.GraduallyTyped.NN.Transformer.Type (MkTransformerAttentionMaskC, MkTransformerCrossAttentionMaskC, MkTransformerDecoderAttentionMaskC, ShiftRight, TensorDict, TransformerStyle (T5), mkTransformerAttentionMask, mkTransformerCrossAttentionMask, mkTransformerDecoderAttentionMask, mkTransformerInput, mkTransformerPaddingMask, tensorDictFromPretrained)
 import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.RewriteRules ()
@@ -415,68 +415,6 @@ mkT5DecoderRelPos =
                     >>= checkedDevice @('Device 'CPU)
                     >>= checkedDataType @('DataType 'Int64)
                     >>= checkedShape @('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])
-
-data ShiftRight fillValue where
-  ShiftRight :: forall fillValue. fillValue -> ShiftRight fillValue
-
-instance HasInitialize (ShiftRight fillValue) where
-  type InitializeF (ShiftRight fillValue) = fillValue -> ShiftRight fillValue
-  initialize fillValue = ShiftRight fillValue
-
-instance
-  ( input
-      ~ Tensor
-          inputRequiresGradient
-          inputLayout
-          inputDevice
-          inputDataType
-          inputShape,
-    inputBatchDim ~ (inputShape ! 0),
-    inputSeqDim ~ (inputShape ! 1),
-    filler
-      ~ Tensor
-          'WithoutGradient
-          inputLayout
-          inputDevice
-          inputDataType
-          fillerShape,
-    fillerShape ~ 'Shape '[inputBatchDim, 'Dim ('Name "*") ('Size 1)],
-    KnownLayout inputLayout,
-    KnownDevice inputDevice,
-    KnownDataType inputDataType,
-    KnownShape inputShape,
-    Scalar fillValue,
-    WithCreateC (fillValue -> filler) 'WithoutGradient inputLayout inputDevice inputDataType fillerShape,
-    rightShiftedInput
-      ~ Tensor
-          (inputRequiresGradient <|> 'WithoutGradient)
-          inputLayout
-          inputDevice
-          inputDataType
-          ( ReplaceDimF
-              ('SelectDim ('ByIndex 1))
-              (inputShape <+> 'Shape '[inputBatchDim, inputSeqDim])
-              (AddDimF inputSeqDim ('Dim ('Name "*") ('Size 1)))
-          )
-  ) =>
-  HasForward (ShiftRight fillValue) input generator rightShiftedInput generator
-  where
-  forward (ShiftRight fillValue) input g =
-    let inputLayoutType = layout input
-        inputDeviceType = device input
-        inputDType = dataType input
-        inputBatchDim : _ = shape input
-        fillerDims = [inputBatchDim, Dim "*" 1]
-        filler =
-          withoutCreate @(fillValue -> filler) @'WithoutGradient @inputLayout @inputDevice @inputDataType @fillerShape
-            (full @'WithoutGradient @inputLayout @inputDevice @inputDataType @fillerShape @fillValue)
-            WithoutGradient
-            inputLayoutType
-            inputDeviceType
-            inputDType
-            fillerDims
-            fillValue
-     in (cat @('SelectDim ('ByIndex 1)) (filler :. input :. HNil), g)
 
 data T5Input input decoderInput where
   T5Input ::

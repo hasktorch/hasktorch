@@ -64,7 +64,7 @@ instance (KnownLayoutType layoutType) => KnownLayout ( 'Layout layoutType) where
   layoutVal = Layout (layoutTypeVal @layoutType)
 
 class
-  LayoutConstraint layout (GetLayouts f) =>
+  -- LayoutConstraint layout (GetLayouts f) =>
   WithLayoutC (layout :: Layout LayoutType) (f :: Type)
   where
   type WithLayoutF layout f :: Type
@@ -72,7 +72,7 @@ class
   withoutLayout :: WithLayoutF layout f -> (LayoutType -> f)
 
 instance
-  LayoutConstraint 'UncheckedLayout (GetLayouts f) =>
+  -- LayoutConstraint 'UncheckedLayout (GetLayouts f) =>
   WithLayoutC 'UncheckedLayout f
   where
   type WithLayoutF 'UncheckedLayout f = LayoutType -> f
@@ -80,7 +80,7 @@ instance
   withoutLayout = id
 
 instance
-  ( LayoutConstraint ( 'Layout layoutType) (GetLayouts f),
+  ( -- LayoutConstraint ( 'Layout layoutType) (GetLayouts f),
     KnownLayoutType layoutType
   ) =>
   WithLayoutC ( 'Layout layoutType) f

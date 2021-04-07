@@ -45,7 +45,7 @@ type family LayerNormWithBiasF (weightShape :: Shape [Dim (Name Symbol) (Size Na
   LayerNormWithBiasF 'UncheckedShape _ _ = 'UncheckedShape
   LayerNormWithBiasF _ 'UncheckedShape _ = 'UncheckedShape
   LayerNormWithBiasF _ _ 'UncheckedShape = 'UncheckedShape
-  LayerNormWithBiasF ( 'Shape weightDims) ( 'Shape biasDims) ( 'Shape inputDims) = 'Shape (Reverse (LayerNormImplF (Reverse (weightDims <+> biasDims)) (Reverse inputDims)))
+  LayerNormWithBiasF ('Shape weightDims) ('Shape biasDims) ('Shape inputDims) = 'Shape (Reverse (LayerNormImplF (Reverse (weightDims <+> biasDims)) (Reverse inputDims)))
 
 layerNormWithBias ::
   forall requiresGradient requiresGradient' requiresGradient'' layout layout' layout'' device device' device'' dataType dataType' dataType'' shape shape' shape''.
@@ -73,7 +73,7 @@ layerNormWithBias weight bias eps input =
 type family LayerNormWithoutBiasF (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (inputShape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
   LayerNormWithoutBiasF 'UncheckedShape _ = 'UncheckedShape
   LayerNormWithoutBiasF _ 'UncheckedShape = 'UncheckedShape
-  LayerNormWithoutBiasF ( 'Shape weightDims) ( 'Shape inputDims) = 'Shape (Reverse (LayerNormImplF (Reverse weightDims) (Reverse inputDims)))
+  LayerNormWithoutBiasF ('Shape weightDims) ('Shape inputDims) = 'Shape (Reverse (LayerNormImplF (Reverse weightDims) (Reverse inputDims)))
 
 type family LayerNormWithoutBiasF' (selectDims :: SelectDims [By Symbol Nat]) (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (inputShape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
   LayerNormWithoutBiasF' selectDims weightShape inputShape =
@@ -87,7 +87,7 @@ type family LayerNormWithoutBiasF' (selectDims :: SelectDims [By Symbol Nat]) (w
 type family LayerNormWithoutBiasSelectDimsF (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (inputShape :: Shape [Dim (Name Symbol) (Size Nat)]) :: SelectDims [By Symbol Nat] where
   LayerNormWithoutBiasSelectDimsF 'UncheckedShape _ = 'UncheckedSelectDims
   LayerNormWithoutBiasSelectDimsF _ 'UncheckedShape = 'UncheckedSelectDims
-  LayerNormWithoutBiasSelectDimsF ( 'Shape weightDims) ( 'Shape inputDims) = 'SelectDims (LayerNormWithoutBiasBysF weightDims inputDims (Length inputDims) 1)
+  LayerNormWithoutBiasSelectDimsF ('Shape weightDims) ('Shape inputDims) = 'SelectDims (LayerNormWithoutBiasBysF weightDims inputDims (Length inputDims) 1)
 
 type family LayerNormWithoutBiasBysF (weightDims :: [Dim (Name Symbol) (Size Nat)]) (inputDims :: [Dim (Name Symbol) (Size Nat)]) (inputDimsLength :: Nat) (counter :: Nat) :: [By Symbol Nat] where
   LayerNormWithoutBiasBysF '[] _ _ _ = '[]
@@ -151,24 +151,24 @@ testT5LayerNorm ::
   IO
     ( Tensor
         'WithGradient
-        ( 'Layout 'Dense)
-        ( 'Device 'CPU)
-        ( 'DataType 'Float)
+        ('Layout 'Dense)
+        ('Device 'CPU)
+        ('DataType 'Float)
         ( 'Shape
-            '[ 'Dim ( 'Name "*") ( 'Size 2), 'Dim ( 'Name "*") ( 'Size 10)]
+            '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 10)]
         )
     )
 testT5LayerNorm = do
-  let weight = ones @ 'WithGradient @( 'Layout 'Dense) @( 'Device CPU) @( 'DataType 'Float) @( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 10)])
+  let weight = ones @'WithGradient @('Layout 'Dense) @('Device CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "*") ('Size 10)])
       eps = 1e-6 :: Double
   input <-
     case Torch.Tensor.asTensor [[13 :: Float, 27, 14, 19, -512, 1, 2, 3, 4, 0], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]] of
       Torch.Tensor.Unsafe t ->
-        pure (UnsafeTensor @ 'WithoutGradient t)
-          >>= checkedLayout @( 'Layout 'Dense)
-          >>= checkedDevice @( 'Device CPU)
-          >>= checkedDataType @( 'DataType 'Float)
-          >>= checkedShape @( 'Shape '[ 'Dim ( 'Name "*") ( 'Size 2), 'Dim ( 'Name "*") ( 'Size 10)])
+        pure (UnsafeTensor @'WithoutGradient t)
+          >>= checkedLayout @('Layout 'Dense)
+          >>= checkedDevice @('Device CPU)
+          >>= checkedDataType @('DataType 'Float)
+          >>= checkedShape @('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 10)])
   let output = layerNormWithoutBias weight eps input
   case output of
     UnsafeTensor t ->

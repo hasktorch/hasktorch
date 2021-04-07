@@ -101,6 +101,52 @@ instance
         pure $ Embedding weight
 
 instance
+  HasInitializeEmbeddingC layout device dataType embedNumDim embedDim ('Just paddingIdx) =>
+  HasInitialize (Embedding layout device dataType embedNumDim embedDim ('Just paddingIdx))
+  where
+  type
+    InitializeF (Embedding layout device dataType embedNumDim embedDim ('Just paddingIdx)) =
+      WithLayoutF
+        layout
+        ( WithDeviceF
+            device
+            ( WithDataTypeF
+                dataType
+                ( WithDimF
+                    embedNumDim
+                    ( WithDimF
+                        embedDim
+                        (Generator device -> (Embedding layout device dataType embedNumDim embedDim ('Just paddingIdx), Generator device))
+                    )
+                )
+            )
+        )
+  initialize =
+    withLayout @layout $
+      \layoutType ->
+        withDevice @device $
+          \deviceType ->
+            withDataType @dataType $
+              \dType ->
+                withDim @embedNumDim $
+                  \embedNumDim ->
+                    withDim @embedDim @(Generator device -> (Embedding layout device dataType embedNumDim embedDim ('Just paddingIdx), Generator device)) $
+                      \embedDim ->
+                        go layoutType deviceType dType embedNumDim embedDim
+    where
+      go layoutType deviceType dType embedNumDim embedDim = runState $ do
+        weight <-
+          state $
+            withoutCreate @_ @ 'WithGradient @layout @device @dataType @( 'Shape '[embedNumDim, embedDim])
+              (randn @ 'WithGradient @layout @device @dataType @( 'Shape '[embedNumDim, embedDim]) @device)
+              WithGradient
+              layoutType
+              deviceType
+              dType
+              [embedNumDim, embedDim]
+        pure $ Embedding weight
+
+instance
   ( KnownLayout layout,
     output
       ~ Tensor

@@ -307,8 +307,8 @@ lookupSelfAttention dropoutP eps prefix =
           <*> pure eps
       layerNorm SPegasus =
         LayerNormWithBias
-          <$> lookupTensor (prefix <> "final_layer_norm.weight")
-          <*> lookupTensor (prefix <> "final_layer_norm.bias")
+          <$> lookupTensor (prefix <> "self_attn_layer_norm.weight")
+          <*> lookupTensor (prefix <> "self_attn_layer_norm.bias")
           <*> pure eps
       dropout _ = pure (initialize @(Dropout dropoutP) dropoutP)
    in SelfAttention
@@ -612,7 +612,10 @@ instance
   forward (SelfAttention GSelfAttention {..}) (query, attentionBias) =
     runIxState $
       ireturn query
+        -- >>>= ireturn . traceShowId -- Pegasus: -4.5412, 0.1463, 43.2217, ...
         >>>= IxState . forward saLayerNorm
+        -- >>>= ireturn . traceShowId -- Pegasus: -0.0641, -0.1177, 0.1930, ...
         >>>= (\query' -> IxState $ forward saMultiheadAttention (query', query', query', attentionBias))
         >>>= IxState . forward saDropout
         >>>= ireturn . (query `add`)
+        -- >>>= ireturn . traceShowId -- Pegasus: -5.3833, 0.1969, 115.3354, ...

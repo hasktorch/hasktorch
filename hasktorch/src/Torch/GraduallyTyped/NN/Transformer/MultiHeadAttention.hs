@@ -625,16 +625,16 @@ instance
       ST5 ->
         forward gmha (NoScaling, query, key, value, attentionBias) g
       SBART ->
-        let scaling = 1 / (sqrt . fromIntegral . dimSize $ mhaHeadDim)
+        let scaling = 1 / (sqrt . fromIntegral . dimSize $ mhaHeadEmbedDim)
          in forward gmha (QueryScaling scaling, query, key, value, attentionBias) g
       SMBART ->
-        let scaling = 1 / (sqrt . fromIntegral . dimSize $ mhaHeadDim)
+        let scaling = 1 / (sqrt . fromIntegral . dimSize $ mhaHeadEmbedDim)
          in forward gmha (QueryScaling scaling, query, key, value, attentionBias) g
       SBERT ->
-        let scaling = 1 / (sqrt . fromIntegral . dimSize $ mhaHeadDim)
+        let scaling = 1 / (sqrt . fromIntegral . dimSize $ mhaHeadEmbedDim)
          in forward gmha (WeightScaling scaling, query, key, value, attentionBias) g
       SPegasus ->
-        let scaling = 1 / (sqrt . fromIntegral . dimSize $ mhaHeadDim)
+        let scaling = 1 / (sqrt . fromIntegral . dimSize $ mhaHeadEmbedDim)
          in forward gmha (QueryScaling scaling, query, key, value, attentionBias) g
 
 instance

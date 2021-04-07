@@ -21,6 +21,7 @@ import Torch.GraduallyTyped.NN.Transformer.Encoder (GTransformerEncoder (..), Tr
 import Torch.GraduallyTyped.Random (mkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Shape (..), Size (..))
+import Torch.GraduallyTyped.Tensor.Creation (arangeNaturals)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 
@@ -54,17 +55,12 @@ testForwardBERTBaseUncased =
                    ]
               )
         pos =
-          undefined ::
-            Tensor
-              'WithoutGradient
-              ('Layout 'Dense)
-              ('Device 'CPU)
-              ('DataType 'Int64)
-              ( 'Shape
-                  '[ 'Dim ('Name "*") ('Size 1),
-                     'Dim ('Name "*") ('Size 9)
-                   ]
-              )
+          arangeNaturals
+            @'WithoutGradient
+            @('Layout 'Dense)
+            @('Device 'CPU)
+            @('DataType 'Int64)
+            @('Dim ('Name "*") ('Size 9))
         attentionMask =
           undefined ::
             Tensor
