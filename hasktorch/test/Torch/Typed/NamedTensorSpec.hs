@@ -23,6 +23,7 @@
 module Torch.Typed.NamedTensorSpec (spec) where
 
 import Data.Kind
+import GHC.TypeLits
 import Test.Hspec
 import GHC.Exts
 import qualified Torch.Device as D
@@ -66,7 +67,7 @@ testDropField = id
 testDropField2 :: Proxy (DropField "y" '[Vector 2,YCoCg]) -> Proxy '[Vector 2]
 testDropField2 = id
 
-toYCoCG :: (KnownDevice device) => NamedTensor device dtype [Vector n, RGB] -> NamedTensor device dtype [Vector n, YCoCg]
+toYCoCG :: (KnownNat n, KnownDType dtype, KnownDevice device) => NamedTensor device dtype [Vector n, RGB] -> NamedTensor device dtype [Vector n, YCoCg]
 toYCoCG rgb =
   set (field @"y")  ((r + g * 2+ b)/4) $
   set (field @"co")  ((r - b)/2)  $
