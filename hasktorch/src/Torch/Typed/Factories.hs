@@ -36,6 +36,18 @@ import Torch.Typed.Aux
 import Torch.Typed.Tensor
 import Prelude hiding (sin)
 
+instance Semigroup (Tensor device dtype shape) where
+  (<>) a b = UnsafeMkTensor $ D.add (toDynamic a) (toDynamic b)
+
+instance (TensorOptions shape dtype device) => Monoid (Tensor device dtype shape) where
+  mempty = zeros
+
+instance Semigroup (NamedTensor device dtype shape) where
+  (<>) a b = fromUnnamed . UnsafeMkTensor $ D.add (toDynamic a) (toDynamic b)
+
+instance (TensorOptions shape' dtype device, shape' ~ ToNats shape) => Monoid (NamedTensor device dtype shape) where
+  mempty = fromUnnamed zeros
+
 zeros ::
   forall shape dtype device.
   (TensorOptions shape dtype device) =>

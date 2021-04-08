@@ -13,7 +13,6 @@
 {-#LANGUAGE ScopedTypeVariables#-}
 {-#LANGUAGE UndecidableInstances#-}
 {-#LANGUAGE FunctionalDependencies#-}
-{-#LANGUAGE StandaloneDeriving #-}
 
 module Torch.Typed.Lens where
 
@@ -41,8 +40,9 @@ type Lens' s a
 type Lens s t a b
   = forall f. Functor f => (a -> f b) -> s -> f t
 
-class FieldIdx field shape => HasField (field :: Symbol) shape where
+class HasField (field :: Symbol) shape where
   field :: Lens' (NamedTensor device dtype shape) (NamedTensor device dtype (DropField field shape))
+  default field :: (FieldIdx field shape) => Lens' (NamedTensor device dtype shape) (NamedTensor device dtype (DropField field shape))
   field func s = fmap func' (func a')
     where
       index = fieldIdx @field @shape Proxy
@@ -52,7 +52,7 @@ class FieldIdx field shape => HasField (field :: Symbol) shape where
       a' :: NamedTensor device dtype (DropField field shape)
       a' = fromUnnamed . UnsafeMkTensor $ (s' T.! index)
 
---deriving instance Generic (Vector (n :: Nat) ())
+instance {-# OVERLAPS #-} FieldIdx field shape => HasField field shape
 
 type family GHasField (field :: Symbol) f :: Bool where
   GHasField field (S1 ( 'MetaSel ( 'Just field) _ _ _) _) = 'True
@@ -68,7 +68,7 @@ type family GHasField (field :: Symbol) f :: Bool where
 
 type family DropField (field :: Symbol) (a :: [Type->Type]) :: [Type->Type] where
   DropField field '[] = '[]
-  DropField field (x ': xs) = If (GHasField field x) xs (x ': (DropField field xs))
+  DropField field (x ': xs) = If (GHasField field x) xs (x ': DropField field xs)
 
 instance {-# OVERLAPS #-} T.TensorIndex [Maybe Int] where
   pushIndex vec list_of_maybe_int = unsafePerformIO $ do
@@ -92,7 +92,12 @@ class FieldId (field::Symbol) a where
   -- | Return field-id
   fieldId :: Proxy a -> Maybe Int
   default fieldId :: (Generic a, GFieldId field (Rep a)) => Proxy a -> Maybe Int
-  fieldId _ = fst $ runState (gfieldId @field @(Rep a) (from (undefined :: a))) 0
+  fieldId _ = evalState (gfieldId @field @(Rep a) (from (undefined :: a))) 0
+
+instance FieldId field (Vector n v) where
+  fieldId _ = Nothing
+
+instance {-# OVERLAPS #-} (Generic s, GFieldId field (Rep s)) => FieldId field s
 
 class GFieldId (field::Symbol) a where
   gfieldId :: a b -> State Int (Maybe Int)
@@ -107,7 +112,7 @@ instance (KnownSymbol field, KnownSymbol field_) => GFieldId field (S1 ('MetaSel
   gfieldId _ = do
     i <- get
     put (i+1)
-    if (symbolVal (Proxy :: Proxy field) == symbolVal (Proxy :: Proxy field_)) 
+    if symbolVal (Proxy :: Proxy field) == symbolVal (Proxy :: Proxy field_) 
       then return (Just i)
       else return Nothing
 

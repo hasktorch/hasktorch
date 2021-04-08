@@ -54,25 +54,28 @@ data YCoCg a = YCoCg {
 
 type instance ToNat YCoCg = 3
 
-
-
 testFieldLens :: HasField "r" shape => Lens' (NamedTensor '(D.CPU,0) 'D.Float shape) (NamedTensor '(D.CPU,0) 'D.Float (DropField "r" shape))
 testFieldLens = field @"r"
+
+testFieldLens2 :: Lens' (NamedTensor '(D.CPU,0) 'D.Float '[Vector n,RGB]) (NamedTensor '(D.CPU,0) 'D.Float '[Vector n])
+testFieldLens2 = field @"r"
 
 testDropField :: Proxy (DropField "r" '[Vector 2,RGB]) -> Proxy '[Vector 2]
 testDropField = id
 
--- toYCoCG :: (KnownDevice device) => NamedTensor device dtype [Vector n, RGB] -> NamedTensor device dtype [Vector n, YCoCg]
--- toYCoCG rgb =
---   set (field @"y")  ((r + g * 2+ b)/4) $
---   set (field @"co")  ((r - b)/2)  $
---   set (field @"cg")  ((-r + g * 2 - b)/4)  $
---   undefined
---   --mempty
---   where
---     r = rgb ^. field @"r"
---     g = rgb ^. field @"g"
---     b = rgb ^. field @"b" 
+testDropField2 :: Proxy (DropField "y" '[Vector 2,YCoCg]) -> Proxy '[Vector 2]
+testDropField2 = id
+
+toYCoCG :: (KnownDevice device) => NamedTensor device dtype [Vector n, RGB] -> NamedTensor device dtype [Vector n, YCoCg]
+toYCoCG rgb =
+  set (field @"y")  ((r + g * 2+ b)/4) $
+  set (field @"co")  ((r - b)/2)  $
+  set (field @"cg")  ((-r + g * 2 - b)/4)  $
+  mempty
+  where
+    r = rgb ^. field @"r"
+    g = rgb ^. field @"g"
+    b = rgb ^. field @"b" 
 
 checkDynamicTensorAttributes' ::
   forall device dtype shape t.
