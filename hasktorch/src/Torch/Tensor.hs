@@ -53,7 +53,7 @@ type ATenTensor = ForeignPtr ATen.Tensor
 -- do not use the constructor
 newtype Tensor = Unsafe ATenTensor
 
-instance {-# OVERLAPS #-} Castable Tensor ATenTensor where
+instance Castable Tensor ATenTensor where
   cast (Unsafe aten_tensor) f = f aten_tensor
   uncast aten_tensor f = f $ Unsafe aten_tensor
 
