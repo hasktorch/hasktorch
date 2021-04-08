@@ -13,6 +13,7 @@
 {-#LANGUAGE ScopedTypeVariables#-}
 {-#LANGUAGE UndecidableInstances#-}
 {-#LANGUAGE FunctionalDependencies#-}
+{-#LANGUAGE StandaloneDeriving #-}
 
 module Torch.Typed.Lens where
 
@@ -31,6 +32,7 @@ import Torch.Typed.Tensor
 import Data.Reflection hiding (D)
 import qualified Torch.Internal.Managed.Type.TensorIndex as ATen
 import System.IO.Unsafe
+import Data.Vector.Sized (Vector)
 
 -- | Type alias for lens
 type Lens' s a
@@ -50,6 +52,8 @@ class FieldIdx field shape => HasField (field :: Symbol) shape where
       a' :: NamedTensor device dtype (DropField field shape)
       a' = fromUnnamed . UnsafeMkTensor $ (s' T.! index)
 
+--deriving instance Generic (Vector (n :: Nat) ())
+
 type family GHasField (field :: Symbol) f :: Bool where
   GHasField field (S1 ( 'MetaSel ( 'Just field) _ _ _) _) = 'True
   GHasField field (S1 ( 'MetaSel _ _ _ _) _) = 'False
@@ -59,10 +63,12 @@ type family GHasField (field :: Symbol) f :: Bool where
   GHasField field (l :+: r) = GHasField field l || GHasField field r
   GHasField field (K1 _ _) = 'False
   GHasField field U1 = 'False
+  GHasField field (Vector n) = 'False
+  GHasField field a = GHasField field (Rep (a ()))
 
 type family DropField (field :: Symbol) (a :: [Type->Type]) :: [Type->Type] where
   DropField field '[] = '[]
-  DropField field (x ': xs) = If (GHasField field (Rep (x ()))) xs (DropField field xs)
+  DropField field (x ': xs) = If (GHasField field x) xs (x ': (DropField field xs))
 
 instance {-# OVERLAPS #-} T.TensorIndex [Maybe Int] where
   pushIndex vec list_of_maybe_int = unsafePerformIO $ do

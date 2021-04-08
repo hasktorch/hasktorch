@@ -191,6 +191,7 @@ test-suite spec
                     , pipes
                     , random
                     , vector-sized
+                    , lens-family-core
 
   build-tool-depends:  hspec-discover:hspec-discover
 
