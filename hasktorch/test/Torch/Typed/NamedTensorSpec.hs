@@ -108,3 +108,17 @@ spec = do
           t2 = fromUnnamed t
       print t2
       checkDynamicTensorAttributes' t2
+    it "check a shape of lens" $ do
+      let t :: NamedTensor '(D.CPU,0) 'D.Float '[Vector 2,Vector 3,Vector 4,RGB]
+          t = mempty
+          t2 :: NamedTensor '(D.CPU,0) 'D.Float '[Vector 2,Vector 3,Vector 4]
+          t2 = t ^. field @"r"
+      print $ shape t2
+      checkDynamicTensorAttributes' t
+      checkDynamicTensorAttributes' t2
+    it "check fieldids" $ do
+      let v = RGB () () ()
+      fieldId @"r" (Proxy :: Proxy (RGB ())) `shouldBe` Just 0
+      fieldId @"g" (Proxy :: Proxy (RGB ())) `shouldBe` Just 1
+      fieldId @"b" (Proxy :: Proxy (RGB ())) `shouldBe` Just 2
+      fieldId @"y" (Proxy :: Proxy (RGB ())) `shouldBe` Nothing

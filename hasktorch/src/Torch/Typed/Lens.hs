@@ -92,43 +92,46 @@ class FieldId (field::Symbol) a where
   -- | Return field-id
   fieldId :: Proxy a -> Maybe Int
   default fieldId :: (Generic a, GFieldId field (Rep a)) => Proxy a -> Maybe Int
-  fieldId _ = evalState (gfieldId @field @(Rep a) (from (undefined :: a))) 0
+  fieldId _ = gfieldId @field (Proxy :: Proxy (Rep a))
 
 instance FieldId field (Vector n v) where
   fieldId _ = Nothing
 
 instance {-# OVERLAPS #-} (Generic s, GFieldId field (Rep s)) => FieldId field s
 
-class GFieldId (field::Symbol) a where
-  gfieldId :: a b -> State Int (Maybe Int)
+class GFieldId (field::Symbol) (a :: Type -> Type) where
+  gfieldId :: Proxy a -> Maybe Int
+  gfieldId p =  fst $ gfieldId' @field @a p
+  gfieldId' :: Proxy a -> (Maybe Int, Int)
 
-instance GFieldId field V1 where
-  gfieldId _ = return Nothing
+instance (GFieldId field f) => GFieldId field (M1 D t f) where
+  gfieldId' _ = gfieldId' @field (Proxy :: Proxy f) 
 
-instance GFieldId field U1 where
-  gfieldId _ = return Nothing
+instance (GFieldId field f) => GFieldId field (M1 C t f) where
+  gfieldId' _ = gfieldId' @field (Proxy :: Proxy f) 
 
 instance (KnownSymbol field, KnownSymbol field_) => GFieldId field (S1 ('MetaSel ('Just field_) p f b) (Rec0 a)) where
-  gfieldId _ = do
-    i <- get
-    put (i+1)
+  gfieldId' _ =
     if symbolVal (Proxy :: Proxy field) == symbolVal (Proxy :: Proxy field_) 
-      then return (Just i)
-      else return Nothing
+    then (Just 0,1)
+    else (Nothing,1)
 
-instance GFieldId field f => GFieldId field (M1 D c f) where
-  gfieldId (M1 x) = gfieldId @field x
+instance GFieldId field (K1 c f) where
+  gfieldId' _ = (Nothing, 1)
 
-instance GFieldId field f => GFieldId field (M1 C c f) where
-  gfieldId (M1 x) = gfieldId @field x
+instance GFieldId field U1 where
+  gfieldId' _ = (Nothing, 1)
 
-instance (GFieldId field a, GFieldId field b) => GFieldId field (a :+: b) where
-  gfieldId (L1 x) = gfieldId @field x
-  gfieldId (R1 x) = gfieldId @field x
+instance (GFieldId field f, GFieldId field g) => GFieldId field (f :*: g) where
+  gfieldId' _ =
+    case (gfieldId' @field (Proxy :: Proxy f), gfieldId' @field (Proxy :: Proxy g)) of
+      ((Nothing, t0), (Nothing, t1)) -> (Nothing, t0+t1)
+      ((Nothing, t0), (Just v1, t1)) -> (Just (v1+t0), t1+t0)
+      ((Just v0, t0), (_, t1)) -> (Just v0, t0 + t1)
 
-instance (GFieldId field a, GFieldId field b) => GFieldId field (a :*: b) where
-  gfieldId (a :*: b) = do
-    v <- gfieldId @field a
-    case v of
-      Just v' -> return v
-      Nothing -> gfieldId @field b
+instance (GFieldId field f, GFieldId field g) => GFieldId field (f :+: g) where
+  gfieldId' _ =
+    case (gfieldId' @field (Proxy :: Proxy f), gfieldId' @field (Proxy :: Proxy g)) of
+      ((Nothing, _) , a1) -> a1
+      (a0@(Just _, _) , _) -> a0
+
