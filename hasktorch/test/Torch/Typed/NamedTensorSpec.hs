@@ -38,6 +38,7 @@ import Torch.Typed.Lens
 import Lens.Family
 import GHC.Generics
 import Data.Proxy
+import Data.Default.Class
 
 data RGB a = RGB {
   r :: a,
@@ -79,7 +80,7 @@ toYCoCG rgb =
   set (field @"y")  ((r + g * 2+ b)/4) $
   set (field @"co")  ((r - b)/2)  $
   set (field @"cg")  ((-r + g * 2 - b)/4)  $
-  mempty
+  def
   where
     r = rgb ^. field @"r"
     g = rgb ^. field @"g"
