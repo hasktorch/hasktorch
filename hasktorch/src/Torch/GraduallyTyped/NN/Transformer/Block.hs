@@ -15,6 +15,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoStarIsType #-}
+{-# OPTIONS_GHC -v2 -Wall #-}
 
 module Torch.GraduallyTyped.NN.Transformer.Block where
 
@@ -190,9 +191,11 @@ lookupBlock ::
 lookupBlock dropoutP eps prefix =
   let selfAttention ST5 = lookupSelfAttention dropoutP eps (prefix <> "layer.0.")
       selfAttention SBERT = lookupSelfAttention dropoutP eps (prefix <> "attention.")
+      selfAttention SRoBERTa = lookupSelfAttention dropoutP eps (prefix <> "attention.")
       selfAttention SPegasus = lookupSelfAttention dropoutP eps prefix
       feedForwardNetwork ST5 = lookupTransformerFeedForwardNetwork dropoutP eps (prefix <> "layer.1.")
       feedForwardNetwork SBERT = lookupTransformerFeedForwardNetwork dropoutP eps prefix
+      feedForwardNetwork SRoBERTa = lookupTransformerFeedForwardNetwork dropoutP eps prefix
       feedForwardNetwork SPegasus = lookupTransformerFeedForwardNetwork dropoutP eps prefix
    in TransformerBlock
         <$> selfAttention (sing @style)

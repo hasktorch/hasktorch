@@ -107,7 +107,7 @@ data
       seqToSeqTransformer :: seqToSeqTransformer,
       -- | language modelling head
       seqToSeqLMHead :: seqToSeqLMHead,
-      -- | language modelling head
+      -- | language modelling head bias
       seqToSeqFinalLogitsBias :: seqToSeqFinalLogitsBias
     } ->
     GSequenceToSequenceTransformerWithLMHead seqToSeqTransformer seqToSeqLMHead seqToSeqFinalLogitsBias
@@ -532,11 +532,11 @@ instance
                     [vocabDim]
         pure . SequenceToSequenceTransformerWithLMHead $ GSequenceToSequenceTransformerWithLMHead transformer lmHead finalLogitsBias
 
-lookupInputEmbedDim ::
+lookupSeqToSeqInputEmbedDim ::
   forall inputEmbedDim m.
   (KnownDim inputEmbedDim, MonadFail m) =>
   m (Dim String Integer)
-lookupInputEmbedDim = case dimVal @inputEmbedDim of
+lookupSeqToSeqInputEmbedDim = case dimVal @inputEmbedDim of
   Dim (Name name) (Size size) -> pure $ Dim name size
   Dim _ _ -> fail "input embedding dimension unspecified"
 
@@ -574,7 +574,7 @@ lookupSequenceToSequenceTransformer dropoutP eps prefix =
         <$> encoder (sing @style)
         <*> decoder (sing @style)
         <*> embedding (sing @style)
-        <*> lookupInputEmbedDim @inputEmbedDim
+        <*> lookupSeqToSeqInputEmbedDim @inputEmbedDim
 
 lookupSequenceToSequenceTransformerWithLMHead ::
   forall numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP m.
@@ -676,7 +676,7 @@ deriving instance
   ) =>
   Show (SequenceToSequenceTransformerGenerationInput decoderInput encoderOutput decoderPos decoderAttentionMask crossAttentionMask)
 
--- | 'HasForward' instance for sequence-to-sequence transformers without language modelling head.
+-- | 'HasForward' instance for sequence-to-sequence transformers without additional head(s).
 --
 -- @
 --     ┌───────┐  ┌─────┐  ┌───────────────┐  ┌──────────────┐  ┌────────────┐  ┌──────────────────────┐  ┌────────────────────┐

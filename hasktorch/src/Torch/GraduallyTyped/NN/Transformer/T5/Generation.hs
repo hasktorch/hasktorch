@@ -12,19 +12,16 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeApplications #-}
-{-# OPTIONS_GHC -Wno-partial-type-signatures #-}
+{-# OPTIONS_GHC -v2 -Wall -Wno-partial-type-signatures #-}
 
 module Torch.GraduallyTyped.NN.Transformer.T5.Generation where
 
-import Control.Applicative (Alternative (..), liftA2)
+import Control.Applicative (Alternative (..))
 import Control.Monad (MonadPlus (..), guard)
 import Control.Monad.Logic (observe)
-import Control.Monad.Logic.Class (MonadLogic)
 import Control.Monad.State (MonadState (..), MonadTrans (..), StateT (..), evalStateT, gets, lift, modify)
 import Control.Monad.Trans.Free (FreeF (..), FreeT (..), runFreeT)
-import Data.Coerce (Coercible, coerce)
 import Data.Foldable (asum)
-import Data.Functor (($>))
 import Data.List (isInfixOf, nub, sortOn, uncons)
 import qualified Data.Map as Map (Map, lookup, (!))
 import System.IO.Unsafe (unsafePerformIO)
@@ -38,7 +35,7 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (logSoftmax)
-import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5DataType, T5GenerationInput (..), T5Input (..), T5Model (..), T5ModelSeqToSeqF, T5Output (..), mkT5Input, t5EOSTokenId)
+import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5DataType, T5GenerationInput (..), T5Input (..), T5Model (..), T5Output (..), mkT5Input, t5EOSTokenId)
 import Torch.GraduallyTyped.NN.Transformer.T5.Small (T5Small)
 import Torch.GraduallyTyped.NN.Transformer.T5.Vocab (t5Vocab)
 import Torch.GraduallyTyped.Random (Generator, mkGenerator)

@@ -13,9 +13,8 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -v2 -Wall #-}
 
-module Torch.GraduallyTyped.NN.Transformer.BERT.Common where
+module Torch.GraduallyTyped.NN.Transformer.RoBERTa.Common where
 
 import Control.Monad.Reader (ReaderT (runReaderT))
 import Data.Kind (Type)
@@ -28,8 +27,9 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasInitialize (..))
 import Torch.GraduallyTyped.NN.Transformer.Encoder (TransformerEncoder, lookupEncoder)
+import Torch.GraduallyTyped.NN.Transformer.EncoderOnly (EncoderOnlyTransformer (..), lookupEncoderOnlyTransformer)
 import Torch.GraduallyTyped.NN.Transformer.Stack (HasLookupStack)
-import Torch.GraduallyTyped.NN.Transformer.Type (TensorDict, TransformerStyle (BERT), mkTransformerInput, mkTransformerPaddingMask, tensorDictFromPretrained)
+import Torch.GraduallyTyped.NN.Transformer.Type (TensorDict, TransformerStyle (RoBERTa), mkTransformerInput, mkTransformerPaddingMask, tensorDictFromPretrained)
 import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
@@ -37,41 +37,57 @@ import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim, Name (..), Shape (..
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
--- | BERT dType.
-type BERTDType = 'Float
+-- | RoBERTa dType.
+type RoBERTaDType = 'Float
 
--- | BERT data type.
-type BERTDataType = 'DataType BERTDType
+-- | RoBERTa data type.
+type RoBERTaDataType = 'DataType RoBERTaDType
 
--- | BERT dropout probability type.
-type BERTDropoutP = Float
+-- | RoBERTa dropout probability type.
+type RoBERTaDropoutP = Float
 
--- | BERT dropout rate.
+-- | RoBERTa dropout rate.
 -- 'dropout_rate = 0.1'
-bertDropoutP :: BERTDropoutP
-bertDropoutP = 0.1
+robertaDropoutP :: RoBERTaDropoutP
+robertaDropoutP = 0.1
 
--- | BERT positional encoding dimension.
-type BERTPosEncDim = 'Dim ('Name "*") ('Size 512)
+-- | RoBERTa positional encoding dimension.
+--
+-- Note the two extra dimensions.
+type RoBERTaPosEncDim = 'Dim ('Name "*") ('Size 514)
 
--- | BERT layer-norm epsilon.
--- 'layer_norm_epsilon = 1e-12'
-bertEps :: Double
-bertEps = 1e-12
+-- | RoBERTa layer-norm epsilon.
+-- 'layer_norm_epsilon = 1e-5'
+robertaEps :: Double
+robertaEps = 1e-5
 
--- | BERT maximum number of position embeddings.
--- 'max_position_embeddings = 512'
-bertMaxPositionEmbeddings :: Int
-bertMaxPositionEmbeddings = 512
+-- | RoBERTa maximum number of position embeddings.
+-- 'max_position_embeddings = 514'
+robertaMaxPositionEmbeddings :: Int
+robertaMaxPositionEmbeddings = 514
 
--- | BERT padding token id.
--- 'pad_token_id = 0'
-bertPadTokenId :: Int
-bertPadTokenId = 0
+-- | RoBERTa padding token id.
+-- 'pad_token_id = 1'
+robertaPadTokenId :: Int
+robertaPadTokenId = 1
 
--- | BERT Model.
+-- | RoBERTa begin-of-sentence token id.
+-- 'bos_token_id = 0'
+robertaBOSTokenId :: Int
+robertaBOSTokenId = 0
+
+-- | RoBERTa end-of-sentence token id.
+-- 'eos_token_id = 0'
+robertaEOSTokenId :: Int
+robertaEOSTokenId = 2
+
+-- | RoBERTa attention mask bias
+robertaAttentionMaskBias :: Double
+robertaAttentionMaskBias = -10000
+
+-- | RoBERTa Model.
 newtype
-  BERTModel
+  RoBERTaModel
     (numLayers :: Nat)
     (device :: Device (DeviceType Nat))
     (headDim :: Dim (Name Symbol) (Size Nat))
@@ -79,18 +95,22 @@ newtype
     (embedDim :: Dim (Name Symbol) (Size Nat))
     (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
     (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (vocabDim :: Dim (Name Symbol) (Size Nat))
+    (typeVocabDim :: Dim (Name Symbol) (Size Nat))
   where
-  BERTModel ::
-    forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim.
-    BERTModelEncoderF BERTModel numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim ->
-    BERTModel numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim
+  RoBERTaModel ::
+    forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim.
+    RoBERTaModelEncoderF RoBERTaModel numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim ->
+    RoBERTaModel numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim
   deriving stock (Generic)
 
 type family
-  BERTModelEncoderF
-    ( bertModel ::
+  RoBERTaModelEncoderF
+    ( robertaModel ::
         Nat ->
         Device (DeviceType Nat) ->
+        Dim (Name Symbol) (Size Nat) ->
+        Dim (Name Symbol) (Size Nat) ->
         Dim (Name Symbol) (Size Nat) ->
         Dim (Name Symbol) (Size Nat) ->
         Dim (Name Symbol) (Size Nat) ->
@@ -104,22 +124,26 @@ type family
     (headEmbedDim :: Dim (Name Symbol) (Size Nat))
     (embedDim :: Dim (Name Symbol) (Size Nat))
     (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (ffnDim :: Dim (Name Symbol) (Size Nat)) ::
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (vocabDim :: Dim (Name Symbol) (Size Nat))
+    (typeVocabDim :: Dim (Name Symbol) (Size Nat)) ::
     Type
   where
-  BERTModelEncoderF BERTModel numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim =
-    TransformerEncoder
+  RoBERTaModelEncoderF RoBERTaModel numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim =
+    EncoderOnlyTransformer
       numLayers
-      'BERT
+      'RoBERTa
       device
-      BERTDataType
+      RoBERTaDataType
       headDim
       headEmbedDim
       embedDim
       inputEmbedDim
       ffnDim
-      BERTPosEncDim
-      BERTDropoutP
+      RoBERTaPosEncDim
+      vocabDim
+      typeVocabDim
+      RoBERTaDropoutP
 
 instance
   ( KnownDim headDim,
@@ -127,20 +151,22 @@ instance
     KnownDim embedDim,
     KnownDim ffnDim,
     KnownDim inputEmbedDim,
-    HasLookupStack numLayers (1 <=? numLayers) numLayers 'BERT ('Device 'CPU) BERTDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim BERTDropoutP (ReaderT TensorDict IO)
+    KnownDim vocabDim,
+    KnownDim typeVocabDim,
+    HasLookupStack numLayers (1 <=? numLayers) numLayers 'RoBERTa ('Device 'CPU) RoBERTaDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim RoBERTaDropoutP (ReaderT TensorDict IO)
   ) =>
-  HasInitialize (BERTModel numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim)
+  HasInitialize (RoBERTaModel numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
   where
   type
-    InitializeF (BERTModel numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim) =
-      FilePath -> IO (BERTModel numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim)
+    InitializeF (RoBERTaModel numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim) =
+      FilePath -> IO (RoBERTaModel numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
   initialize filePath =
     do
       tensorDict <- tensorDictFromPretrained filePath
       flip runReaderT tensorDict $
-        BERTModel <$> lookupEncoder bertDropoutP bertEps "bert."
+        RoBERTaModel <$> lookupEncoderOnlyTransformer robertaDropoutP robertaEps "roberta."
 
-mkBERTInput ::
+mkRoBERTaInput ::
   forall batchDim seqDim m output.
   ( MonadFail m,
     WithDimC batchDim (WithDimF seqDim ([[Int]] -> m output)),
@@ -156,9 +182,9 @@ mkBERTInput ::
           ('Shape '[batchDim, seqDim])
   ) =>
   WithDimF batchDim (WithDimF seqDim ([[Int]] -> m output))
-mkBERTInput = mkTransformerInput @batchDim @seqDim @m bertPadTokenId
+mkRoBERTaInput = mkTransformerInput @batchDim @seqDim @m robertaPadTokenId
 
-mkBERTPaddingMask ::
+mkRoBERTaPaddingMask ::
   Tensor requiresGradient layout device dataType shape ->
   Tensor
     'WithoutGradient
@@ -166,16 +192,16 @@ mkBERTPaddingMask ::
     (device <+> 'Device 'CPU)
     (Seq (dataType <+> 'DataType 'Int64) ('DataType 'Bool))
     (BroadcastShapesF shape ('Shape '[ 'Dim ('Name "*") ('Size 1)]))
-mkBERTPaddingMask = mkTransformerPaddingMask bertPadTokenId
+mkRoBERTaPaddingMask = mkTransformerPaddingMask robertaPadTokenId
 
-data BERTInput input where
-  BERTInput ::
+data RoBERTaInput input where
+  RoBERTaInput ::
     forall input.
-    { bertInput :: input
+    { robertaInput :: input
     } ->
-    BERTInput input
+    RoBERTaInput input
 
 deriving stock instance
   ( Show input
   ) =>
-  Show (BERTInput input)
+  Show (RoBERTaInput input)

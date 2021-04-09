@@ -15,6 +15,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -v2 -Wall #-}
 
 module Torch.GraduallyTyped.NN.Transformer.Pegasus.Common where
 
@@ -23,7 +24,6 @@ import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.Reader (ReaderT (runReaderT))
 import Data.Coerce (Coercible, coerce)
 import Data.Kind (Type)
-import Data.Proxy (Proxy)
 import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import GHC.TypeNats (type (<=?))
@@ -38,7 +38,7 @@ import Torch.GraduallyTyped.NN.Transformer.Stack (HasLookupStack)
 import Torch.GraduallyTyped.NN.Transformer.Type (MkTransformerAttentionMaskC, MkTransformerCrossAttentionMaskC, MkTransformerDecoderAttentionMaskC, ShiftRight, TensorDict, TransformerStyle (Pegasus), mkTransformerAttentionMask, mkTransformerCrossAttentionMask, mkTransformerDecoderAttentionMask, mkTransformerInput, mkTransformerPaddingMask, tensorDictFromPretrained)
 import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
-import Torch.GraduallyTyped.Shape.Class (BroadcastDimsF, BroadcastShapesF, type (!))
+import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, type (!))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), KnownShape (..), Name (..), Shape (..), Size (..), WithDimC (..))
 import Torch.GraduallyTyped.Tensor.Creation (arangeNaturals)
 import Torch.GraduallyTyped.Tensor.Type (Tensor, device, shape)

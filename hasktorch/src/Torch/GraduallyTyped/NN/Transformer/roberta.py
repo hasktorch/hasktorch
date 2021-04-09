@@ -2,7 +2,7 @@ import argparse
 import pprint
 from typing import Any
 import torch
-from transformers import AutoTokenizer, BertForMaskedLM
+from transformers import AutoTokenizer, RobertaForMaskedLM
 
 
 def pretty_convert(x: Any) -> Any:
@@ -20,10 +20,10 @@ def pretty_print(x: dict) -> None:
 
 def main(args=None) -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", default="bert-base-uncased")
+    parser.add_argument("--model", default="roberta-base")
     parser.add_argument("--input", default="The capital of France is [MASK].")
     parser.add_argument("--label", default="The capital of France is Paris.")
-    parser.add_argument("--output", default="bert-base-uncased.pt")
+    parser.add_argument("--output", default="roberta-base.pt")
     args = parser.parse_args()
     pretty_print(args.__dict__)
 
@@ -43,11 +43,13 @@ def main(args=None) -> None:
     )
     pretty_print({"back_decoded_labels": back_decoded_labels})
 
-    model = BertForMaskedLM.from_pretrained(args.model)
+    model = RobertaForMaskedLM.from_pretrained(args.model)
     model.eval()
 
-    outputs = model(**tokenized_inputs, labels=tokenized_labels["input_ids"])
+    outputs = model(**tokenized_inputs, labels=tokenized_labels["input_ids"], output_hidden_states=True)
     pretty_print({"loss": outputs.loss})
+    print(f"lm head logits: {outputs.logits}")
+    print(f"hidden states: {outputs.hidden_states[-1]}")
 
     d = dict(model.state_dict())
     pretty_print({k: v.shape for k, v in d.items()})

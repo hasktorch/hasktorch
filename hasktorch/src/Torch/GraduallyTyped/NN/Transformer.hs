@@ -19,6 +19,7 @@
 module Torch.GraduallyTyped.NN.Transformer
   ( module Torch.GraduallyTyped.NN.Transformer,
     module Torch.GraduallyTyped.NN.Transformer.BERT,
+    module Torch.GraduallyTyped.NN.Transformer.RoBERTa,
     module Torch.GraduallyTyped.NN.Transformer.Block,
     module Torch.GraduallyTyped.NN.Transformer.CrossAttention,
     module Torch.GraduallyTyped.NN.Transformer.Decoder,
@@ -36,6 +37,7 @@ module Torch.GraduallyTyped.NN.Transformer
 where
 
 import Torch.GraduallyTyped.NN.Transformer.BERT
+import Torch.GraduallyTyped.NN.Transformer.RoBERTa
 import Torch.GraduallyTyped.NN.Transformer.Block
 import Torch.GraduallyTyped.NN.Transformer.CrossAttention
 import Torch.GraduallyTyped.NN.Transformer.Decoder

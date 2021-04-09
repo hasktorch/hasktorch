@@ -35,7 +35,7 @@
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL7C
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8C #-}
-{-# OPTIONS_GHC -v2 #-}
+{-# OPTIONS_GHC -v2 -Wall #-}
 
 module Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention where
 
@@ -44,19 +44,18 @@ import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.Reader (MonadIO, MonadReader)
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
-import Data.Kind (Constraint, Type)
-import Data.Singletons (Sing, SingI (sing))
+import Data.Kind (Type)
+import Data.Singletons (SingI (sing))
 import GHC.TypeLits (Nat, Symbol)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), KnownDataType, WithDataTypeC (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, WithDeviceC (..))
-import Torch.GraduallyTyped.Layout (KnownLayout, Layout (..), LayoutType (..))
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout (..))
-import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithBiasF, LinearWithoutBiasF)
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, softmax)
-import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearWithBiasC, HasInitializeLinearWithoutBiasC, Linear (..))
+import Torch.GraduallyTyped.NN.Linear (Linear (..))
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Random (Generator, mkGenerator)
@@ -420,6 +419,10 @@ lookupMultiHeadAttention dropoutP prefix =
         LinearWithBias
           <$> lookupTensor (prefix <> "self.query.weight")
           <*> lookupTensor (prefix <> "self.query.bias")
+      qInProj SRoBERTa =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "self.query.weight")
+          <*> lookupTensor (prefix <> "self.query.bias")
       qInProj SBART =
         LinearWithBias
           <$> lookupTensor (prefix <> "q_proj.weight")
@@ -432,6 +435,10 @@ lookupMultiHeadAttention dropoutP prefix =
         LinearWithoutBias
           <$> lookupTensor (prefix <> "k.weight")
       kInProj SBERT =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "self.key.weight")
+          <*> lookupTensor (prefix <> "self.key.bias")
+      kInProj SRoBERTa =
         LinearWithBias
           <$> lookupTensor (prefix <> "self.key.weight")
           <*> lookupTensor (prefix <> "self.key.bias")
@@ -450,6 +457,10 @@ lookupMultiHeadAttention dropoutP prefix =
         LinearWithBias
           <$> lookupTensor (prefix <> "self.value.weight")
           <*> lookupTensor (prefix <> "self.value.bias")
+      vInProj SRoBERTa =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "self.value.weight")
+          <*> lookupTensor (prefix <> "self.value.bias")
       vInProj SBART =
         LinearWithBias
           <$> lookupTensor (prefix <> "v_proj.weight")
@@ -462,6 +473,10 @@ lookupMultiHeadAttention dropoutP prefix =
         LinearWithoutBias
           <$> lookupTensor (prefix <> "o.weight")
       outProj SBERT =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "output.dense.weight")
+          <*> lookupTensor (prefix <> "output.dense.bias")
+      outProj SRoBERTa =
         LinearWithBias
           <$> lookupTensor (prefix <> "output.dense.weight")
           <*> lookupTensor (prefix <> "output.dense.bias")
@@ -631,6 +646,9 @@ instance
         let scaling = 1 / (sqrt . fromIntegral . dimSize $ mhaHeadEmbedDim)
          in forward gmha (QueryScaling scaling, query, key, value, attentionBias) g
       SBERT ->
+        let scaling = 1 / (sqrt . fromIntegral . dimSize $ mhaHeadEmbedDim)
+         in forward gmha (WeightScaling scaling, query, key, value, attentionBias) g
+      SRoBERTa ->
         let scaling = 1 / (sqrt . fromIntegral . dimSize $ mhaHeadEmbedDim)
          in forward gmha (WeightScaling scaling, query, key, value, attentionBias) g
       SPegasus ->

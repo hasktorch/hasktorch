@@ -2,6 +2,7 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -v2 -Wall #-}
 
 module Torch.GraduallyTyped.NN.Transformer.Pegasus
   ( module Torch.GraduallyTyped.NN.Transformer.Pegasus.Common,
@@ -13,17 +14,12 @@ module Torch.GraduallyTyped.NN.Transformer.Pegasus
 where
 
 import Test.HUnit.Approx (assertApproxEqual)
-import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
-import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
-import Torch.GraduallyTyped.NN.Transformer.Encoder (GTransformerEncoder (..), TransformerEncoder (..))
 import Torch.GraduallyTyped.NN.Transformer.Pegasus.Common
 import Torch.GraduallyTyped.NN.Transformer.Pegasus.XSum
 import Torch.GraduallyTyped.Random (mkGenerator)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
-import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Shape (..), Size (..))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
 import qualified Torch.Tensor as Tensor (Tensor (..), asValue)
 
@@ -53,7 +49,7 @@ testForwardPegasusXSum =
       initialize
         @(PegasusXSumWithLMHead ('Device 'CPU))
         "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/pegasus-xsum.pt"
-    g <- mkGenerator @('Device CPU) 0
+    g <- mkGenerator @('Device 'CPU) 0
     let (PegasusOutput {..}, _) = forward model input g
     let encoderOutput = case pegasusEncoderOutput of
           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]

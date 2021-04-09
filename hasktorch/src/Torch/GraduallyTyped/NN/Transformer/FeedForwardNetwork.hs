@@ -31,6 +31,7 @@
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL7C
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8C #-}
+{-# OPTIONS_GHC -v2 -Wall #-}
 
 module Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork where
 
@@ -50,8 +51,8 @@ import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout)
 import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithBiasF, LinearWithoutBiasF)
 import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithBiasF, LayerNormWithoutBiasF)
-import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearWithBiasC, HasInitializeLinearWithoutBiasC, Linear (..))
-import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormWithBiasC, HasInitializeLayerNormWithoutBiasC, LayerNorm (..))
+import Torch.GraduallyTyped.NN.Linear (Linear (..))
+import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..))
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Random (Generator)
@@ -154,6 +155,7 @@ type family
   FFNActivationF 'T5 = Relu
   FFNActivationF 'BART = Gelu
   FFNActivationF 'BERT = Gelu
+  FFNActivationF 'RoBERTa = Gelu
   FFNActivationF 'Pegasus = Relu
 
 type family
@@ -166,6 +168,7 @@ type family
   FFNActivationDropoutF 'BART dropoutP = Dropout dropoutP
   FFNActivationDropoutF 'Pegasus dropoutP = Dropout dropoutP
   FFNActivationDropoutF 'BERT _ = ()
+  FFNActivationDropoutF 'RoBERTa _ = ()
 
 type family
   FFNLayerNormF
@@ -209,8 +212,8 @@ type family
     ( HasInitialize activationDropout,
       InitializeF activationDropout ~ (dropoutP -> activationDropout)
     )
-  HasInitializeFFNActivationDropoutF activationDropout 'BERT dropoutP =
-    ()
+  HasInitializeFFNActivationDropoutF _ 'BERT _ = ()
+  HasInitializeFFNActivationDropoutF _ 'RoBERTa _ = ()
   HasInitializeFFNActivationDropoutF activationDropout 'Pegasus dropoutP =
     ( HasInitialize activationDropout,
       InitializeF activationDropout ~ (dropoutP -> activationDropout)
@@ -364,6 +367,10 @@ lookupTransformerFeedForwardNetwork dropoutP eps prefix =
         LinearWithBias
           <$> lookupTensor (prefix <> "intermediate.dense.weight")
           <*> lookupTensor (prefix <> "intermediate.dense.bias")
+      inputWeight SRoBERTa =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "intermediate.dense.weight")
+          <*> lookupTensor (prefix <> "intermediate.dense.bias")
       inputWeight SBART =
         LinearWithBias
           <$> lookupTensor (prefix <> "fc1.weight")
@@ -379,6 +386,10 @@ lookupTransformerFeedForwardNetwork dropoutP eps prefix =
         LinearWithBias
           <$> lookupTensor (prefix <> "output.dense.weight")
           <*> lookupTensor (prefix <> "output.dense.bias")
+      outputWeight SRoBERTa =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "output.dense.weight")
+          <*> lookupTensor (prefix <> "output.dense.bias")
       outputWeight SBART =
         LinearWithBias
           <$> lookupTensor (prefix <> "fc2.weight")
@@ -389,10 +400,12 @@ lookupTransformerFeedForwardNetwork dropoutP eps prefix =
           <*> lookupTensor (prefix <> "fc2.bias")
       activation ST5 = pure @m Relu
       activation SBERT = pure @m Gelu
+      activation SRoBERTa = pure @m Gelu
       activation SBART = pure @m Gelu
       activation SPegasus = pure @m Relu
       activationDropout ST5 = pure (initialize @(Dropout dropoutP) dropoutP)
       activationDropout SBERT = pure ()
+      activationDropout SRoBERTa = pure ()
       activationDropout SBART = pure (initialize @(Dropout dropoutP) dropoutP)
       activationDropout SPegasus = pure (initialize @(Dropout dropoutP) dropoutP)
       layerNorm ST5 =
@@ -400,6 +413,11 @@ lookupTransformerFeedForwardNetwork dropoutP eps prefix =
           <$> lookupTensor (prefix <> "layer_norm.weight")
           <*> pure eps
       layerNorm SBERT =
+        LayerNormWithBias
+          <$> lookupTensor (prefix <> "output.LayerNorm.weight")
+          <*> lookupTensor (prefix <> "output.LayerNorm.bias")
+          <*> pure eps
+      layerNorm SRoBERTa =
         LayerNormWithBias
           <$> lookupTensor (prefix <> "output.LayerNorm.weight")
           <*> lookupTensor (prefix <> "output.LayerNorm.bias")
@@ -642,6 +660,64 @@ instance
   ) =>
   HasForward
     (TransformerFeedForwardNetwork 'BERT device dataType queryEmbedDim ffnDim dropoutP)
+    (Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape)
+    (Generator generatorDevice)
+    output
+    generatorOutput
+  where
+  forward (TransformerFeedForwardNetwork GTransformerFeedForwardNetwork {..}) query =
+    runIxState $
+      ireturn query
+        >>>= IxState . forward ffnInputWeight
+        >>>= IxState . forward ffnActivation
+        >>>= IxState . forward ffnOutputWeight
+        >>>= IxState . forward ffnDropout
+        >>>= ireturn . (query `add`)
+        >>>= IxState . forward ffnLayoutNorm
+
+-- | 'HasForward' instance for @TransformerFeedForwardNetwork 'RoBERTa@.
+--
+-- @
+--       ┌───────┐
+--       │ query ├───────┐
+--       └───┬───┘       │
+--           │           │
+--           ▼           │
+--     ffnInputWeight    │
+--           ▼           │
+--     ffnActivation     │
+--           ▼           │
+--    ffnOutputWeight    │
+--           ▼           │
+--       ffnDropout      │
+--           │           │
+--           ▼           │
+--          add◄─────────┘
+--           │
+--           ▼
+--      ffnLayerNorm
+--           │
+--           ▼
+--       ┌───────┐
+--       │ query │
+--       └───────┘
+-- @
+instance
+  ( KnownShape queryShape,
+    KnownDim queryEmbedDim,
+    Scalar dropoutP,
+    output
+      ~ Tensor
+          'WithGradient
+          ('Layout 'Dense <+> queryLayout)
+          (device <+> queryDevice <+> generatorDevice)
+          (dataType <+> queryDataType)
+          (FeedForwardNetworkOutputShape 'RoBERTa queryEmbedDim ffnDim queryShape),
+    generatorOutput
+      ~ Generator ((device <+> (device <+> queryDevice)) <+> generatorDevice)
+  ) =>
+  HasForward
+    (TransformerFeedForwardNetwork 'RoBERTa device dataType queryEmbedDim ffnDim dropoutP)
     (Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape)
     (Generator generatorDevice)
     output

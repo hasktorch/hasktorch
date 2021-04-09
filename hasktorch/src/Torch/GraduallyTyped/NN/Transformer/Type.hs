@@ -32,6 +32,7 @@
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL7C
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8C #-}
+{-# OPTIONS_GHC -v2 -Wall #-}
 
 module Torch.GraduallyTyped.NN.Transformer.Type where
 
@@ -63,7 +64,7 @@ import qualified Torch.Script (IValue (..))
 import qualified Torch.Serialize (pickleLoad)
 import qualified Torch.Tensor (Tensor (Unsafe), asTensor)
 
-data TransformerStyle = T5 | BART | MBART | BERT | Pegasus | GPT2
+data TransformerStyle = T5 | BART | MBART | BERT | RoBERTa | Pegasus | GPT2
   deriving (Show, Eq)
 
 genSingletons [''TransformerStyle]

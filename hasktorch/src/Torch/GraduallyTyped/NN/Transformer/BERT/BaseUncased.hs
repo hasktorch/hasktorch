@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
+{-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.NN.Transformer.BERT.BaseUncased where
 

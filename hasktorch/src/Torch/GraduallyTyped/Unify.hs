@@ -29,6 +29,10 @@ type family (<+>) (a :: k) (b :: k) :: k where
 
 infixr 8 <+>
 
+-- | Desugared kind unification.
+--
+-- TODO: add data type unification of scalar (Haskell) data types and those of kind @DataType@.
+-- Perhaps convert the scalar (Haskell) data type first to a @DataType@ so that the kinds are aligned.
 type Unify :: forall k -> k -> k -> k
 type family Unify k (a :: k) (b :: k) :: k where
   Unify _ a a = a

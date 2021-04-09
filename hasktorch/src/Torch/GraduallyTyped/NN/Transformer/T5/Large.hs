@@ -1,11 +1,12 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
+{-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.NN.Transformer.T5.Large where
 
 import GHC.TypeLits (Nat)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
-import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5DataType, T5DropoutP, T5Model (..), T5ModelWithLMHead (..), T5Output, T5RelPosEncBucketDim)
+import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5Model (..), T5ModelWithLMHead (..))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 
 -- | T5-Large number of layers.

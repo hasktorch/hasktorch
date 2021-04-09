@@ -31,6 +31,7 @@
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL7C
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8C #-}
+{-# OPTIONS_GHC -v2 -Wall #-}
 
 module Torch.GraduallyTyped.NN.Transformer.CrossAttention where
 
@@ -38,7 +39,7 @@ import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.Reader (MonadIO, MonadReader)
 import Control.Monad.State.Strict (MonadState (state), runState)
-import Data.Kind (Constraint, Type)
+import Data.Kind (Type)
 import Data.Singletons (SingI, sing)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType (..))
@@ -47,24 +48,19 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, W
 import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout)
-import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithoutBiasF)
-import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF)
 import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithoutBiasF, LayerNormWithBiasF)
-import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormWithoutBiasC, LayerNorm (..))
+import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..))
 import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (HasInitializeMultiHeadAttentionC, MultiHeadAttention, lookupMultiHeadAttention)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, type (!))
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownDim, KnownShape, Name (..), SelectDim (..), Shape (..), Size (..), WithDimC (..), WithDimsC (..), WithShapeC (..))
-import Torch.GraduallyTyped.Tensor (TransposeF)
-import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (ReshapeF)
-import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (MatmulF)
+import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
+import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim, KnownShape, Name (..), Shape (..), Size (..), WithDimC (..), WithDimsC (..), WithShapeC (..))
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
-import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
+import Torch.GraduallyTyped.Unify (type (<+>))
 
 -- | Generic cross-attention layer.
 -- Needs to be specialized to a given transformer type, e.g. 'T5'.

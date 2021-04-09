@@ -110,6 +110,8 @@ input `add` other = unsafePerformIO $ cast2 ATen.add_tt input other
 -- The result is returned as a new tensor.
 -- See 'add' for a version of this function where
 -- the second argument is a tensor.
+--
+-- TODO: add data type unification of @other@ and @dataType@.
 addScalar ::
   forall other requiresGradient layout device dataType shape.
   (Scalar other) =>

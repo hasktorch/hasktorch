@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE TypeApplications #-}
-{-# OPTIONS_GHC -v2 #-}
+{-# OPTIONS_GHC -v2 -Wall #-}
 
 module Torch.GraduallyTyped.NN.Transformer.T5
   ( module Torch.GraduallyTyped.NN.Transformer.T5.Common,

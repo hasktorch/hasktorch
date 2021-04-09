@@ -12,6 +12,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fplugin TypeLevel.Rewrite
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyRightAssociativeL #-}
+{-# OPTIONS_GHC -v2 -Wall #-}
 
 module Torch.GraduallyTyped.NN.Transformer.Decoder where
 
@@ -29,9 +30,9 @@ import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout)
 import Torch.GraduallyTyped.NN.Functional.Sparse (EmbeddingF)
-import Torch.GraduallyTyped.NN.Normalization (HasInitializeLayerNormWithoutBiasC, LayerNorm (..))
-import Torch.GraduallyTyped.NN.Sparse (Embedding (..), HasInitializeEmbeddingC)
-import Torch.GraduallyTyped.NN.Transformer.DecoderStack (HasInitializeTransformerDecoderStack, HasInitializeTransformerDecoderStackC, HasLookupDecoderStack, TransformerDecoderStack, lookupDecoderStack)
+import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..))
+import Torch.GraduallyTyped.NN.Sparse (Embedding (..))
+import Torch.GraduallyTyped.NN.Transformer.DecoderStack (HasInitializeTransformerDecoderStackC, HasLookupDecoderStack, TransformerDecoderStack, lookupDecoderStack)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Prelude (Seq)
