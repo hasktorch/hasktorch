@@ -1,3 +1,4 @@
+
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
@@ -682,21 +683,21 @@ instance Unnamed (NamedTensor device dtype shape) where
   toDynamic (FromTensor (UnsafeMkTensor t)) = t
 
 instance (KnownDevice device) => Num (NamedTensor device dtype shape) where
-  (+) a b = fromUnnamed $ UnsafeMkTensor $ toDynamic a + toDynamic b
-  (-) a b = fromUnnamed $ UnsafeMkTensor $ toDynamic a - toDynamic b
-  (*) a b = fromUnnamed $ UnsafeMkTensor $ toDynamic a * toDynamic b
-  negate t = fromUnnamed $ UnsafeMkTensor $ negate $ toDynamic t
-  abs t = fromUnnamed $ UnsafeMkTensor $ abs $ toDynamic t
-  signum t = fromUnnamed $ UnsafeMkTensor $ signum $ toDynamic t
-  fromInteger i = fromUnnamed $ UnsafeMkTensor . D.toDevice (deviceVal @device) . D.asTensor @Int $ fromInteger @Int i
+  (+) a b = fromUnnamed $ toUnnamed a + toUnnamed b
+  (-) a b = fromUnnamed $ toUnnamed a - toUnnamed b
+  (*) a b = fromUnnamed $ toUnnamed a * toUnnamed b
+  negate = fromUnnamed . negate . toUnnamed
+  abs = fromUnnamed . abs . toUnnamed
+  signum = fromUnnamed . signum . toUnnamed
+  fromInteger = fromUnnamed . fromInteger
 
 instance KnownDevice device => Fractional (NamedTensor device dtype shape) where
-  a / b = fromUnnamed $ UnsafeMkTensor $ toDynamic a / toDynamic b
-  recip t = fromUnnamed $ UnsafeMkTensor $ recip $ toDynamic t
-  fromRational i = fromUnnamed $ UnsafeMkTensor . D.toDevice (deviceVal @device) . D.asTensor @Float $ fromRational @Float i
+  a / b = fromUnnamed $ toUnnamed a / toUnnamed b
+  recip = fromUnnamed . recip . toUnnamed
+  fromRational = fromUnnamed . fromRational
 
 instance Show (NamedTensor device dtype shape) where
-  show (FromTensor (UnsafeMkTensor dynamic)) = show dynamic
+  show = show . toUnnamed
 
 type family ReplaceDevice'' (tensor :: t) (device :: (D.DeviceType, Nat)) :: t where
   ReplaceDevice'' (Tensor device0 dtype shape) device1 = Tensor device1 dtype shape
