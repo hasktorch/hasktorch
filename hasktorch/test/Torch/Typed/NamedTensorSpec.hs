@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -18,52 +19,53 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 {-# LANGUAGE NoStarIsType #-}
-{-# LANGUAGE DeriveGeneric #-}
 
 module Torch.Typed.NamedTensorSpec (spec) where
 
+import Data.Default.Class
 import Data.Kind
-import GHC.TypeLits
-import Test.Hspec
-import GHC.Exts
-import qualified Torch.Device as D
-import qualified Torch.Tensor as D
-import qualified Torch.DType as D
-import qualified Torch.Functional as F
-import Torch.Typed.Tensor
-import Torch.Typed.Factories
+import Data.Proxy
 import Data.Vector.Sized (Vector)
 import qualified Data.Vector.Sized as V
-import Torch.Typed.Lens
-import Lens.Family
+import GHC.Exts
 import GHC.Generics
-import Data.Proxy
-import Data.Default.Class
+import GHC.TypeLits
+import Lens.Family
+import Test.Hspec
+import qualified Torch.DType as D
+import qualified Torch.Device as D
+import qualified Torch.Functional as F
+import qualified Torch.Tensor as D
+import Torch.Typed.Factories
+import Torch.Typed.Lens
+import Torch.Typed.Tensor
 
-data RGB a = RGB {
-  r :: a,
-  g :: a,
-  b :: a
-} deriving (Show, Eq, Generic)
+data RGB a = RGB
+  { r :: a,
+    g :: a,
+    b :: a
+  }
+  deriving (Show, Eq, Generic)
 
-data YCoCg a = YCoCg {
-  y :: a,
-  co :: a,
-  cg :: a
-} deriving (Show, Eq, Generic)
+data YCoCg a = YCoCg
+  { y :: a,
+    co :: a,
+    cg :: a
+  }
+  deriving (Show, Eq, Generic)
 
 data RGBA a = RGBA a a a a deriving (Show, Eq, Generic)
 
-testFieldLens :: HasField "r" shape => Lens' (NamedTensor '(D.CPU,0) 'D.Float shape) (NamedTensor '(D.CPU,0) 'D.Float (DropField "r" shape))
+testFieldLens :: HasField "r" shape => Lens' (NamedTensor '(D.CPU, 0) 'D.Float shape) (NamedTensor '(D.CPU, 0) 'D.Float (DropField "r" shape))
 testFieldLens = field @"r"
 
-testFieldLens2 :: Lens' (NamedTensor '(D.CPU,0) 'D.Float '[Vector n,RGB]) (NamedTensor '(D.CPU,0) 'D.Float '[Vector n])
+testFieldLens2 :: Lens' (NamedTensor '(D.CPU, 0) 'D.Float '[Vector n, RGB]) (NamedTensor '(D.CPU, 0) 'D.Float '[Vector n])
 testFieldLens2 = field @"r"
 
-testDropField :: Proxy (DropField "r" '[Vector 2,RGB]) -> Proxy '[Vector 2]
+testDropField :: Proxy (DropField "r" '[Vector 2, RGB]) -> Proxy '[Vector 2]
 testDropField = id
 
-testDropField2 :: Proxy (DropField "y" '[Vector 2,YCoCg]) -> Proxy '[Vector 2]
+testDropField2 :: Proxy (DropField "y" '[Vector 2, YCoCg]) -> Proxy '[Vector 2]
 testDropField2 = id
 
 testCountField :: Proxy (ToNat YCoCg) -> Proxy 3
@@ -77,19 +79,20 @@ testCountField3 = id
 
 toYCoCG :: (KnownNat n, KnownDType dtype, KnownDevice device) => NamedTensor device dtype [Vector n, RGB] -> NamedTensor device dtype [Vector n, YCoCg]
 toYCoCG rgb =
-  set (field @"y")  ((r + g * 2+ b)/4) $
-  set (field @"co")  ((r - b)/2)  $
-  set (field @"cg")  ((-r + g * 2 - b)/4)  $
+  set (field @"y") ((r + g * 2 + b) / 4) $
+  set (field @"co") ((r - b) / 2) $
+  set (field @"cg") ((- r + g * 2 - b) / 4) $
   def
   where
     r = rgb ^. field @"r"
     g = rgb ^. field @"g"
-    b = rgb ^. field @"b" 
+    b = rgb ^. field @"b"
 
 checkDynamicTensorAttributes' ::
   forall device dtype shape t.
-  ( Unnamed t, device ~ (UTDevice t), dtype ~ (UTDType t), shape ~ (UTShape t)
-  , TensorOptions shape dtype device) =>
+  ( IsUnnamed t device dtype shape,
+    TensorOptions shape dtype device
+  ) =>
   t ->
   IO ()
 checkDynamicTensorAttributes' t = do
@@ -103,16 +106,16 @@ spec :: Spec
 spec = do
   describe "NamedTensor" $ do
     it "create" $ do
-      let t :: Tensor '(D.CPU,0) 'D.Float '[2,3]
+      let t :: Tensor '(D.CPU, 0) 'D.Float '[2, 3]
           t = ones
-          t2 :: NamedTensor '(D.CPU,0) 'D.Float '[Vector 2,RGB]
+          t2 :: NamedTensor '(D.CPU, 0) 'D.Float '[Vector 2, RGB]
           t2 = fromUnnamed t
       print t2
       checkDynamicTensorAttributes' t2
     it "check a shape of lens" $ do
-      let t :: NamedTensor '(D.CPU,0) 'D.Float '[Vector 2,Vector 3,Vector 4,RGB]
+      let t :: NamedTensor '(D.CPU, 0) 'D.Float '[Vector 2, Vector 3, Vector 4, RGB]
           t = def
-          t2 :: NamedTensor '(D.CPU,0) 'D.Float '[Vector 2,Vector 3,Vector 4]
+          t2 :: NamedTensor '(D.CPU, 0) 'D.Float '[Vector 2, Vector 3, Vector 4]
           t2 = t ^. field @"r"
       print $ shape t2
       checkDynamicTensorAttributes' t
