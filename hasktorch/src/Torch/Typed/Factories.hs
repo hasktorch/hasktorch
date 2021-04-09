@@ -35,6 +35,13 @@ import qualified Torch.TensorOptions as D
 import Torch.Typed.Aux
 import Torch.Typed.Tensor
 import Prelude hiding (sin)
+import Data.Default.Class
+
+instance (TensorOptions shape dtype device) => Default (Tensor device dtype shape) where
+  def = zeros
+
+instance (TensorOptions shape' dtype device, shape' ~ ToNats shape) => Default (NamedTensor device dtype shape) where
+  def = fromUnnamed zeros
 
 zeros ::
   forall shape dtype device.

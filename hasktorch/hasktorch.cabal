@@ -77,6 +77,7 @@ library
                     , Torch.Typed.Optim.CppOptim
                     , Torch.Typed.Serialize
                     , Torch.Typed.Vision
+                    , Torch.Typed.Lens
                     , Torch.Distributions.Constraints
                     , Torch.Distributions.Distribution
                     , Torch.Distributions.Bernoulli
@@ -163,6 +164,7 @@ test-suite spec
                     , Torch.Typed.NN.Recurrent.Cell.GRUSpec
                     , Torch.Typed.NN.TransformerSpec
                     , Torch.Typed.VisionSpec
+                    , Torch.Typed.NamedTensorSpec
                     , SerializeSpec
                     , RandomSpec
                     , VisionSpec
@@ -188,6 +190,9 @@ test-suite spec
                     , async
                     , pipes
                     , random
+                    , vector-sized
+                    , lens-family-core
+                    , data-default-class
 
   build-tool-depends:  hspec-discover:hspec-discover
 
