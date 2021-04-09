@@ -38,7 +38,7 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (logSoftmax)
-import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5DataType, T5GenerationInput (..), T5Input (..), T5Model (..), T5ModelSeqToSeqF, T5Output (..), mkT5Input, t5EosTokenId)
+import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5DataType, T5GenerationInput (..), T5Input (..), T5Model (..), T5ModelSeqToSeqF, T5Output (..), mkT5Input, t5EOSTokenId)
 import Torch.GraduallyTyped.NN.Transformer.T5.Small (T5Small)
 import Torch.GraduallyTyped.NN.Transformer.T5.Vocab (t5Vocab)
 import Torch.GraduallyTyped.Random (Generator, mkGenerator)
@@ -234,7 +234,7 @@ runBeamSearch maxSteps beamSize model input g =
         UnsafeTensor t -> pure . Torch.Tensor.asValue . Torch.Tensor.Unsafe $ t
     mkHypothesis :: Hypothesis 'Unfinished Int [Int] -> Int -> Float -> SomeHypothesis Int [Int]
     mkHypothesis previousHypothesis token logProb
-      | token == t5EosTokenId =
+      | token == t5EOSTokenId =
         let finalValue = reverse $ token : getTokens previousHypothesis
             finalScore = logProb + getScore previousHypothesis
          in SomeHypothesis (FinishedHypothesis token finalScore previousHypothesis finalValue)

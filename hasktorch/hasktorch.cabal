@@ -210,6 +210,8 @@ library
                     , logict
                     , parsers
                     , singletons < 3
+                    , HUnit
+                    , HUnit-approx
  default-extensions:  Strict
                     , StrictData
 

@@ -125,10 +125,14 @@ t5MaxDistance = 128
 t5PadTokenId :: Int
 t5PadTokenId = 0
 
+-- | T5 begin-of-sentence token id.
+t5BOSTokenId :: Int
+t5BOSTokenId = t5PadTokenId
+
 -- | T5 end-of-sentence token id.
 -- 'eos_token_id = 1'
-t5EosTokenId :: Int
-t5EosTokenId = 1
+t5EOSTokenId :: Int
+t5EOSTokenId = 1
 
 -- | T5 attention mask bias
 t5AttentionMaskBias :: Double
@@ -462,6 +466,10 @@ deriving instance
   ) =>
   Show (T5GenerationInput decoderInput encoderOutput inputPaddingMask)
 
+-- | 'HasForward' instance for T5 models.
+--
+-- Note that this instance always shifts decoder inputs to the right
+-- by adding a BOS token at the beginning.
 instance
   ( input
       ~ Tensor
@@ -578,7 +586,7 @@ instance
             t5MaxDistance
      in runIxState $
           ireturn t5DecoderInput
-            >>>= IxState . forward (initialize @(ShiftRight Int) t5PadTokenId)
+            >>>= IxState . forward (initialize @(ShiftRight Int) t5BOSTokenId)
             >>>= ( \rightShiftedDecoderInput ->
                      let [_, rightShiftedDecoderInputSeqDim] = shape rightShiftedDecoderInput
                          decoderRelPos =
@@ -624,6 +632,11 @@ instance
                                 )
                  )
 
+-- | 'HasForward' instance for T5 models.
+-- Use this instance for sequence generation once the encoder's output is available.
+--
+-- Note that this instance always shifts decoder inputs to the right
+-- by adding a BOS token at the beginning.
 instance
   ( decoderInput
       ~ Tensor
@@ -700,7 +713,7 @@ instance
   forward t5Model T5GenerationInput {..} =
     runIxState $
       ireturn t5GenerationDecoderInput
-        >>>= IxState . forward (initialize @(ShiftRight Int) t5PadTokenId)
+        >>>= IxState . forward (initialize @(ShiftRight Int) t5BOSTokenId)
         >>>= ( \rightShiftedDecoderInput ->
                  let [_, rightShiftedDecoderInputSeqDim] = shape rightShiftedDecoderInput
                      decoderRelPos =

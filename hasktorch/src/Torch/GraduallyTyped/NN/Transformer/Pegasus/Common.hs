@@ -295,6 +295,10 @@ deriving instance
   ) =>
   Show (PegasusGenerationInput decoderInput encoderOutput inputPaddingMask)
 
+-- | 'HasForward' instance for Pegasus models.
+--
+-- Note that this instance always shifts decoder inputs to the right
+-- by adding a BOS token at the beginning.
 instance
   ( input
       ~ Tensor
@@ -477,6 +481,11 @@ instance
                                 )
                  )
 
+-- | 'HasForward' instance for Pegasus models.
+-- Use this instance for sequence generation once the encoder's output is available.
+--
+-- Note that this instance always shifts decoder inputs to the right
+-- by adding a BOS token at the beginning.
 instance
   ( decoderInput
       ~ Tensor
@@ -555,7 +564,7 @@ instance
   forward pegasusModel PegasusGenerationInput {..} =
     runIxState $
       ireturn pegasusGenerationDecoderInput
-        >>>= IxState . forward (initialize @(ShiftRight Int) pegasusPadTokenId)
+        >>>= IxState . forward (initialize @(ShiftRight Int) pegasusBOSTokenId)
         >>>= ( \rightShiftedDecoderInput ->
                  let rightShiftedDecoderInputDevice = device rightShiftedDecoderInput
                      [_, rightShiftedDecoderInputSeqDim] = shape rightShiftedDecoderInput
