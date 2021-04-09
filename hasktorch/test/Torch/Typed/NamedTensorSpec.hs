@@ -111,7 +111,7 @@ spec = do
       checkDynamicTensorAttributes' t2
     it "check a shape of lens" $ do
       let t :: NamedTensor '(D.CPU,0) 'D.Float '[Vector 2,Vector 3,Vector 4,RGB]
-          t = mempty
+          t = def
           t2 :: NamedTensor '(D.CPU,0) 'D.Float '[Vector 2,Vector 3,Vector 4]
           t2 = t ^. field @"r"
       print $ shape t2

@@ -192,6 +192,7 @@ test-suite spec
                     , random
                     , vector-sized
                     , lens-family-core
+                    , data-default-class
 
   build-tool-depends:  hspec-discover:hspec-discover
 
