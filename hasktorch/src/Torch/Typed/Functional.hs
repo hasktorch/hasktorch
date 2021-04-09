@@ -656,8 +656,7 @@ pow exponent input = unsafePerformIO $ ATen.cast2 ATen.Managed.pow_tt input expo
 relu ::
   forall shape dtype device t.
   (StandardFloatingPointDTypeValidation device dtype,
-   Unnamed t, device ~ (UTDevice t), dtype ~ (UTDType t), shape ~ (UTShape t)
-  ) =>
+   IsUnnamed t device dtype shape) =>
   -- | input
   t ->
   -- | output
@@ -712,8 +711,7 @@ sigmoid input = unsafePerformIO $ ATen.cast1 ATen.Managed.sigmoid_t input
 sin ::
   forall shape dtype device t.
   (StandardFloatingPointDTypeValidation device dtype,
-   Unnamed t, device ~ (UTDevice t), dtype ~ (UTDType t), shape ~ (UTShape t)
-  ) =>
+   IsUnnamed t device dtype shape) =>
   -- | input
   t ->
   -- | output
@@ -727,8 +725,7 @@ sin input = unWrap $ unsafePerformIO $ ATen.cast1 ATen.Managed.sin_t (Wrap input
 sinh ::
   forall shape dtype device t.
   (StandardFloatingPointDTypeValidation device dtype,
-   Unnamed t, device ~ (UTDevice t), dtype ~ (UTDType t), shape ~ (UTShape t)
-  ) =>
+   IsUnnamed t device dtype shape) =>
   -- | input
   t ->
   -- | output
@@ -742,8 +739,7 @@ sinh input = unWrap $ unsafePerformIO $ ATen.cast1 ATen.Managed.sinh_t (Wrap inp
 cos ::
   forall shape dtype device t.
   (StandardFloatingPointDTypeValidation device dtype,
-   Unnamed t, device ~ (UTDevice t), dtype ~ (UTDType t), shape ~ (UTShape t)
-  ) =>
+   IsUnnamed t device dtype shape) =>
   -- | input
   t ->
   -- | output
@@ -754,8 +750,7 @@ cos input = unWrap $ unsafePerformIO $ ATen.cast1 ATen.Managed.cos_t (Wrap input
 sqrt ::
   forall shape dtype device t.
   (StandardFloatingPointDTypeValidation device dtype,
-   Unnamed t, device ~ (UTDevice t), dtype ~ (UTDType t), shape ~ (UTShape t)
-  ) =>
+   IsUnnamed t device dtype shape) =>
   -- | input
   t ->
   -- | output

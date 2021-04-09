@@ -154,18 +154,22 @@ class Unnamed t where
   type UTDType t :: D.DType
   toUnnamed
     :: forall device dtype shape.
-    (device ~ (UTDevice t),
-     dtype ~ (UTDType t),
-     shape ~ (UTShape t))
+    IsUnnamed t device dtype shape
     => t -> Tensor device dtype shape
   fromUnnamed
     :: forall device dtype shape.
-    (device ~ (UTDevice t),
-     dtype ~ (UTDType t),
-     shape ~ (UTShape t))
+    IsUnnamed t device dtype shape
     => Tensor device dtype shape -> t
   toDynamic
     :: t -> D.Tensor
+
+type family IsUnnamed t (device :: (D.DeviceType, Nat)) (dtype :: D.DType) (shape :: [Nat]) :: Constraint where
+  IsUnnamed t device dtype shape =
+    ( Unnamed t,
+      device ~ (UTDevice t),
+      dtype ~ (UTDType t),
+      shape ~ (UTShape t)
+    )
 
 instance Unnamed (Tensor device dtype shape) where
   type UTShape (Tensor device dtype shape) = shape
@@ -593,7 +597,7 @@ toCUDA t = UnsafeMkTensor $ D.toCUDA (toDynamic t)
 toDevice ::
   forall device' device dtype shape t t'.
   ( KnownDevice device'
-  , Unnamed t, device ~ (UTDevice t), dtype ~ (UTDType t), shape ~ (UTShape t)
+  , IsUnnamed t device dtype shape
   , Unnamed t'
   , t' ~ ReplaceDevice'' t device') =>
   t ->
@@ -604,7 +608,7 @@ toDevice = fromUnnamed . UnsafeMkTensor . D.toDevice (deviceVal @device') . toDy
 toDType ::
   forall dtype' dtype device shape t t'.
   ( KnownDType dtype'
-  , Unnamed t, device ~ (UTDevice t), dtype ~ (UTDType t), shape ~ (UTShape t)
+  , IsUnnamed t device dtype shape
   , Unnamed t'
   , t' ~ ReplaceDType'' t dtype') =>
   t ->
@@ -620,7 +624,7 @@ toDType = fromUnnamed . UnsafeMkTensor . D.toType (dtypeVal @dtype') . toDynamic
 dim ::
   forall device dtype shape t.
   ( TensorOptions shape dtype device
-  , Unnamed t, device ~ (UTDevice t), dtype ~ (UTDType t), shape ~ (UTShape t) ) =>
+  , IsUnnamed t device dtype shape) =>
   t ->
   Int
 dim t = length $ optionsRuntimeShape @shape @dtype @device
@@ -630,7 +634,7 @@ dim t = length $ optionsRuntimeShape @shape @dtype @device
 shape ::
   forall device dtype shape t.
   ( TensorOptions shape dtype device
-  , Unnamed t, device ~ (UTDevice t), dtype ~ (UTDType t), shape ~ (UTShape t) ) =>
+  , IsUnnamed t device dtype shape) =>
   t ->
   [Int]
 shape _ = optionsRuntimeShape @shape @dtype @device
@@ -640,7 +644,7 @@ shape _ = optionsRuntimeShape @shape @dtype @device
 dtype ::
   forall device dtype shape t.
   ( TensorOptions shape dtype device
-  , Unnamed t, device ~ (UTDevice t), dtype ~ (UTDType t), shape ~ (UTShape t) ) =>
+  , IsUnnamed t device dtype shape) =>
   t ->
   D.DType
 dtype _ = optionsRuntimeDType @shape @dtype @device
@@ -650,7 +654,7 @@ dtype _ = optionsRuntimeDType @shape @dtype @device
 device ::
   forall device dtype shape t.
   ( TensorOptions shape dtype device
-  , Unnamed t, device ~ (UTDevice t), dtype ~ (UTDType t), shape ~ (UTShape t) ) =>
+  , IsUnnamed t device dtype shape) =>
   t ->
   D.Device
 device _ = optionsRuntimeDevice @shape @dtype @device
