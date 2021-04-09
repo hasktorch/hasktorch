@@ -132,4 +132,3 @@ instance (GFieldId field a, GFieldId field b) => GFieldId field (a :*: b) where
     case v of
       Just v' -> return v
       Nothing -> gfieldId @field b
-

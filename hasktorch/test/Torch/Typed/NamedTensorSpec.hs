@@ -45,15 +45,13 @@ data RGB a = RGB {
   b :: a
 } deriving (Show, Eq, Generic)
 
-type instance ToNat RGB = 3
-
 data YCoCg a = YCoCg {
   y :: a,
   co :: a,
   cg :: a
 } deriving (Show, Eq, Generic)
 
-type instance ToNat YCoCg = 3
+data RGBA a = RGBA a a a a deriving (Show, Eq, Generic)
 
 testFieldLens :: HasField "r" shape => Lens' (NamedTensor '(D.CPU,0) 'D.Float shape) (NamedTensor '(D.CPU,0) 'D.Float (DropField "r" shape))
 testFieldLens = field @"r"
@@ -66,6 +64,15 @@ testDropField = id
 
 testDropField2 :: Proxy (DropField "y" '[Vector 2,YCoCg]) -> Proxy '[Vector 2]
 testDropField2 = id
+
+testCountField :: Proxy (ToNat YCoCg) -> Proxy 3
+testCountField = id
+
+testCountField2 :: Proxy (ToNat (Vector n)) -> Proxy n
+testCountField2 = id
+
+testCountField3 :: Proxy (ToNat RGBA) -> Proxy 4
+testCountField3 = id
 
 toYCoCG :: (KnownNat n, KnownDType dtype, KnownDevice device) => NamedTensor device dtype [Vector n, RGB] -> NamedTensor device dtype [Vector n, YCoCg]
 toYCoCG rgb =

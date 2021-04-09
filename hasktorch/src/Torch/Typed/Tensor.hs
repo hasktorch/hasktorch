@@ -36,6 +36,7 @@ import Foreign.ForeignPtr
 import Foreign.Storable
 import GHC.Exts
 import GHC.TypeLits
+import GHC.Generics
 import qualified Torch.DType as D
 import qualified Torch.Device as D
 import qualified Torch.Functional as D hiding (select)
@@ -125,10 +126,16 @@ instance (KnownNat n) => KnownDevice '( 'D.CUDA, n) where
 type Size = Type->Type
 type Shape = [Type->Type]
 
-
-type family ToNat (shape :: Size) :: Nat
-
-type instance ToNat (Vector n) = n
+type family ToNat (shape :: Size) :: Nat where
+  ToNat (S1 ('MetaSel _ _ _ _) _) = 1
+  ToNat (D1 _ f ) = ToNat f
+  ToNat (C1 _ f ) = ToNat f
+  ToNat (l :*: r) = ToNat l + ToNat r
+  ToNat (l :+: r) = If (ToNat l <=? ToNat r) (ToNat r) (ToNat l)
+  ToNat (K1 _ _) = 1
+  ToNat U1 = 1
+  ToNat (Vector n) = n
+  ToNat a = ToNat (Rep (a ()))
 
 type family ToNats (shape :: Shape) :: [Nat] where
   ToNats '[] = '[]
