@@ -47,6 +47,7 @@ import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..))
 import Torch.GraduallyTyped.NN.Sparse (Embedding (..))
 import Torch.GraduallyTyped.NN.Transformer.Encoder (TransformerEncoder, lookupEncoder)
+import Torch.GraduallyTyped.NN.Transformer.LMHead (LMHead, lookupLMHead)
 import Torch.GraduallyTyped.NN.Transformer.Stack (HasLookupStack)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
 import Torch.GraduallyTyped.Scalar (Scalar)
@@ -156,6 +157,90 @@ type family
   where
   EOTypeEmbeddingF _ device dataType inputEmbedDim typeVocabDim = Embedding ('Layout 'Dense) device dataType typeVocabDim inputEmbedDim 'Nothing
 
+data
+  GEncoderOnlyTransformerWithLMHead
+    (transformer :: Type)
+    (lmHead :: Type)
+  where
+  GEncoderOnlyTransformerWithLMHead ::
+    forall transformer lmHead.
+    { -- | encoder-only transformer
+      eoTransformer :: transformer,
+      -- | language modelling head
+      eoLMHead :: lmHead
+    } ->
+    GEncoderOnlyTransformerWithLMHead transformer lmHead
+
+-- | Encoder-only transformer model with language modelling head.
+data
+  EncoderOnlyTransformerWithLMHead
+    (numLayers :: Nat)
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (posEncDim :: Dim (Name Symbol) (Size Nat))
+    (vocabDim :: Dim (Name Symbol) (Size Nat))
+    (typeVocabDim :: Dim (Name Symbol) (Size Nat))
+    (dropoutP :: Type)
+  where
+  EncoderOnlyTransformerWithLMHead ::
+    forall numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP.
+    GEncoderOnlyTransformerWithLMHeadF numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP ->
+    EncoderOnlyTransformerWithLMHead numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP
+
+type GEncoderOnlyTransformerWithLMHeadF
+  (numLayers :: Nat)
+  (style :: TransformerStyle)
+  (device :: Device (DeviceType Nat))
+  (dataType :: DataType DType)
+  (headDim :: Dim (Name Symbol) (Size Nat))
+  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (embedDim :: Dim (Name Symbol) (Size Nat))
+  (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (ffnDim :: Dim (Name Symbol) (Size Nat))
+  (posEncDim :: Dim (Name Symbol) (Size Nat))
+  (vocabDim :: Dim (Name Symbol) (Size Nat))
+  (typeVocabDim :: Dim (Name Symbol) (Size Nat))
+  (dropoutP :: Type) =
+  GEncoderOnlyTransformerWithLMHead
+    (EOTransformerF numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP)
+    (EOLMHeadF style device dataType inputEmbedDim vocabDim)
+
+type family
+  EOTransformerF
+    (numLayers :: Nat)
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (posEncDim :: Dim (Name Symbol) (Size Nat))
+    (vocabDim :: Dim (Name Symbol) (Size Nat))
+    (typeVocabDim :: Dim (Name Symbol) (Size Nat))
+    (dropoutP :: Type) ::
+    Type
+  where
+  EOTransformerF numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP = EncoderOnlyTransformer numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP
+
+type family
+  EOLMHeadF
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (vocabDim :: Dim (Name Symbol) (Size Nat)) ::
+    Type
+  where
+  EOLMHeadF style device dataType inputEmbedDim vocabDim = LMHead style device dataType inputEmbedDim vocabDim
+
 lookupEncoderInputEmbedDim ::
   forall inputEmbedDim m.
   (KnownDim inputEmbedDim, MonadFail m) =>
@@ -190,10 +275,10 @@ lookupEncoderOnlyTransformer ::
 lookupEncoderOnlyTransformer dropoutP eps prefix =
   let encoder SBERT = lookupEncoder dropoutP eps prefix
       encoder SRoBERTa = lookupEncoder dropoutP eps prefix
-      embedding SBERT = fmap @m Embedding $ lookupTensor (prefix <> "embeddings.word_embeddings.weight")
-      embedding SRoBERTa = fmap @m Embedding $ lookupTensor (prefix <> "embeddings.word_embeddings.weight")
-      typeEmbedding SBERT = fmap @m Embedding $ lookupTensor (prefix <> "embeddings.token_type_embeddings.weight")
-      typeEmbedding SRoBERTa = fmap @m Embedding $ lookupTensor (prefix <> "embeddings.token_type_embeddings.weight")
+      embedding SBERT = Embedding <$> lookupTensor (prefix <> "embeddings.word_embeddings.weight")
+      embedding SRoBERTa = Embedding <$> lookupTensor (prefix <> "embeddings.word_embeddings.weight")
+      typeEmbedding SBERT = Embedding <$> lookupTensor (prefix <> "embeddings.token_type_embeddings.weight")
+      typeEmbedding SRoBERTa = Embedding <$> lookupTensor (prefix <> "embeddings.token_type_embeddings.weight")
    in EncoderOnlyTransformer
         <$> ( GEncoderOnlyTransformer
                 <$> encoder (sing @style)
@@ -202,14 +287,48 @@ lookupEncoderOnlyTransformer dropoutP eps prefix =
                 <*> lookupEncoderInputEmbedDim @inputEmbedDim
             )
 
+lookupEncoderOnlyTransformerWithLMHead ::
+  forall numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP m.
+  ( SingI style,
+    MonadReader TensorDict m,
+    MonadIO m,
+    MonadFail m,
+    KnownDevice device,
+    KnownDataType dataType,
+    KnownDim headDim,
+    KnownDim headEmbedDim,
+    KnownDim embedDim,
+    KnownDim ffnDim,
+    KnownDim posEncDim,
+    KnownDim inputEmbedDim,
+    KnownDim vocabDim,
+    KnownDim typeVocabDim,
+    Scalar dropoutP,
+    HasLookupStack numLayers (1 <=? numLayers) numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP m
+  ) =>
+  dropoutP ->
+  Double ->
+  String ->
+  m (EncoderOnlyTransformerWithLMHead numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP)
+lookupEncoderOnlyTransformerWithLMHead dropoutP eps prefix =
+  let transformer SBERT = lookupEncoderOnlyTransformer dropoutP eps (prefix <> "bert.")
+      transformer SRoBERTa = lookupEncoderOnlyTransformer dropoutP eps (prefix <> "roberta.")
+      lmHead SBERT = lookupLMHead eps (prefix <> "cls.predictions.")
+      lmHead SRoBERTa = lookupLMHead eps (prefix <> "lm_head.")
+   in EncoderOnlyTransformerWithLMHead
+        <$> ( GEncoderOnlyTransformerWithLMHead
+                <$> transformer (sing @style)
+                <*> lmHead (sing @style)
+            )
+
 -- | Input data type for use with an encoder-only transformer.
 data EncoderOnlyTransformerInput input inputType pos attentionMask where
   EncoderOnlyTransformerInput ::
     forall input inputType pos attentionMask.
-    { input :: input,
-      inputType :: inputType,
-      pos :: pos,
-      attentionMask :: attentionMask
+    { eoInput :: input,
+      eoInputType :: inputType,
+      eoPos :: pos,
+      eoAttentionMask :: attentionMask
     } ->
     EncoderOnlyTransformerInput input inputType pos attentionMask
 
@@ -225,7 +344,7 @@ deriving instance
 data EncoderOnlyTransformerOutput encoderOutput where
   EncoderOnlyTransformerOutput ::
     forall encoderOutput.
-    { encoderOutput :: encoderOutput
+    { eoEncoderOutput :: encoderOutput
     } ->
     EncoderOnlyTransformerOutput encoderOutput
 
@@ -302,14 +421,65 @@ instance
         embedScaling SRoBERTa = id
         -- embedScaling _ = flip mulScalar s
         embeddedInput =
-          ireturn input
+          ireturn eoInput
             >>>= IxState . forward eoEmbedding
             >>>= ireturn . embedScaling (sing @style)
         embeddedInputType =
-          ireturn inputType
+          ireturn eoInputType
             >>>= IxState . forward eoTypeEmbedding
             >>>= ireturn . embedScaling (sing @style)
      in runIxState $
           add <<$>> embeddedInput <<*>> embeddedInputType
-            >>>= (\input' -> IxState $ forward eoEncoder (input', pos, attentionMask))
+            >>>= (\input' -> IxState $ forward eoEncoder (input', eoPos, eoAttentionMask))
             >>>= ireturn . EncoderOnlyTransformerOutput
+
+-- | 'HasForward' instance for encoder-only transformers with language modelling head.
+--
+-- @
+--     ┌───────┐
+--     │ input │
+--     └───┬───┘
+--         │
+--         ▼
+--   eoTransformer
+--         ▼
+--     eoLMHead
+--         │
+--         ▼
+-- ┌───────────────┐
+-- │ decoderOutput │
+-- └───────────────┘
+-- @
+instance
+  ( SingI style,
+    HasForward
+      (EOTransformerF numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP)
+      input
+      generator
+      eoOutput
+      eoGeneratorOutput,
+    eoOutput ~ EncoderOnlyTransformerOutput encoderOutput,
+    HasForward
+      (EOLMHeadF style device dataType inputEmbedDim vocabDim)
+      encoderOutput
+      eoGeneratorOutput
+      lmHeadOutput
+      generatorOutput,
+    output ~ EncoderOnlyTransformerOutput lmHeadOutput
+  ) =>
+  HasForward
+    (EncoderOnlyTransformerWithLMHead numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP)
+    input
+    generator
+    output
+    generatorOutput
+  where
+  forward (EncoderOnlyTransformerWithLMHead GEncoderOnlyTransformerWithLMHead {..}) input =
+    runIxState $
+      ireturn input
+        >>>= IxState . forward eoTransformer
+        >>>= ( \EncoderOnlyTransformerOutput {..} ->
+                 ireturn eoEncoderOutput
+                   >>>= IxState . forward eoLMHead
+                   >>>= \lmHeadOutput -> ireturn (EncoderOnlyTransformerOutput lmHeadOutput)
+             )

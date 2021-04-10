@@ -7,8 +7,6 @@
 module Torch.GraduallyTyped.NN.Transformer.RoBERTa
   ( module Torch.GraduallyTyped.NN.Transformer.RoBERTa.Common,
     module Torch.GraduallyTyped.NN.Transformer.RoBERTa.Base,
-    testRoBERTaInput,
-    testRoBERTaInputType,
     testForwardRoBERTaBase,
   )
 where
@@ -53,10 +51,10 @@ testRoBERTaInputType =
 testForwardRoBERTaBase :: IO ()
 testForwardRoBERTaBase =
   do
-    RoBERTaModel model <-
+    RoBERTaModelWithLMHead model <-
       initialize
-        @(RoBERTaBase ('Device 'CPU))
-        "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/roberta-base.pt"
+        @(RoBERTaBaseWithLMHead ('Device 'CPU))
+        "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/bert-base-uncased.pt"
     encoderInput <- testRoBERTaInput
     let encoderInputType = testRoBERTaInputType
         pos =
@@ -72,12 +70,12 @@ testForwardRoBERTaBase =
         input = EncoderOnlyTransformerInput encoderInput encoderInputType pos attentionMask
     g <- mkGenerator @('Device 'CPU) 0
     let (EncoderOnlyTransformerOutput {..}, _) = forward model input g
-    let encoderOutput' = case encoderOutput of
+    let encoderOutput' = case eoEncoderOutput of
           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
-    let firstHiddenStates = do
+    let firstLMHeadLogits = do
           firstBatch <- take 1 encoderOutput'
           firstPositions <- take 3 firstBatch
           take 3 firstPositions
-    print firstHiddenStates
-    let firstHiddenStates' = [-0.0552, 0.0930, -0.0055, 0.0256, 0.2166, 0.1687, -0.0669, 0.2208, 0.2225]
-    mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstHiddenStates firstHiddenStates'
+    print firstLMHeadLogits
+    let firstLMHeadLogits' = [32.5267, -4.5318, 21.4297, 7.9570, -2.7508, 21.1128, -2.8331, -4.1595, 10.6294]
+    mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLMHeadLogits firstLMHeadLogits'

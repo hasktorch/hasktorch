@@ -28,6 +28,7 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasInitialize (..))
 import Torch.GraduallyTyped.NN.Transformer.Encoder (TransformerEncoder, lookupEncoder)
+import Torch.GraduallyTyped.NN.Transformer.EncoderOnly (EncoderOnlyTransformer, EncoderOnlyTransformerWithLMHead, lookupEncoderOnlyTransformer, lookupEncoderOnlyTransformerWithLMHead)
 import Torch.GraduallyTyped.NN.Transformer.Stack (HasLookupStack)
 import Torch.GraduallyTyped.NN.Transformer.Type (TensorDict, TransformerStyle (BERT), mkTransformerInput, mkTransformerPaddingMask, tensorDictFromPretrained)
 import Torch.GraduallyTyped.Prelude (Seq)
@@ -69,7 +70,11 @@ bertMaxPositionEmbeddings = 512
 bertPadTokenId :: Int
 bertPadTokenId = 0
 
--- | BERT Model.
+-- | BERT attention mask bias
+bertAttentionMaskBias :: Double
+bertAttentionMaskBias = -10000
+
+-- | BERT model.
 newtype
   BERTModel
     (numLayers :: Nat)
@@ -79,11 +84,32 @@ newtype
     (embedDim :: Dim (Name Symbol) (Size Nat))
     (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
     (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (vocabDim :: Dim (Name Symbol) (Size Nat))
+    (typeVocabDim :: Dim (Name Symbol) (Size Nat))
   where
   BERTModel ::
-    forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim.
-    BERTModelEncoderF BERTModel numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim ->
-    BERTModel numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim
+    forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim.
+    BERTModelEncoderF BERTModel numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim ->
+    BERTModel numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim
+  deriving stock (Generic)
+
+-- | BERT model with language modelling head.
+newtype
+  BERTModelWithLMHead
+    (numLayers :: Nat)
+    (device :: Device (DeviceType Nat))
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (vocabDim :: Dim (Name Symbol) (Size Nat))
+    (typeVocabDim :: Dim (Name Symbol) (Size Nat))
+  where
+  BERTModelWithLMHead ::
+    forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim.
+    BERTModelEncoderF BERTModelWithLMHead numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim ->
+    BERTModelWithLMHead numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim
   deriving stock (Generic)
 
 type family
@@ -91,6 +117,8 @@ type family
     ( bertModel ::
         Nat ->
         Device (DeviceType Nat) ->
+        Dim (Name Symbol) (Size Nat) ->
+        Dim (Name Symbol) (Size Nat) ->
         Dim (Name Symbol) (Size Nat) ->
         Dim (Name Symbol) (Size Nat) ->
         Dim (Name Symbol) (Size Nat) ->
@@ -104,11 +132,13 @@ type family
     (headEmbedDim :: Dim (Name Symbol) (Size Nat))
     (embedDim :: Dim (Name Symbol) (Size Nat))
     (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (ffnDim :: Dim (Name Symbol) (Size Nat)) ::
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (vocabDim :: Dim (Name Symbol) (Size Nat))
+    (typeVocabDim :: Dim (Name Symbol) (Size Nat)) ::
     Type
   where
-  BERTModelEncoderF BERTModel numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim =
-    TransformerEncoder
+  BERTModelEncoderF BERTModel numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim =
+    EncoderOnlyTransformer
       numLayers
       'BERT
       device
@@ -119,6 +149,23 @@ type family
       inputEmbedDim
       ffnDim
       BERTPosEncDim
+      vocabDim
+      typeVocabDim
+      BERTDropoutP
+  BERTModelEncoderF BERTModelWithLMHead numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim =
+    EncoderOnlyTransformerWithLMHead
+      numLayers
+      'BERT
+      device
+      BERTDataType
+      headDim
+      headEmbedDim
+      embedDim
+      inputEmbedDim
+      ffnDim
+      BERTPosEncDim
+      vocabDim
+      typeVocabDim
       BERTDropoutP
 
 instance
@@ -127,18 +174,41 @@ instance
     KnownDim embedDim,
     KnownDim ffnDim,
     KnownDim inputEmbedDim,
+    KnownDim vocabDim,
+    KnownDim typeVocabDim,
     HasLookupStack numLayers (1 <=? numLayers) numLayers 'BERT ('Device 'CPU) BERTDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim BERTDropoutP (ReaderT TensorDict IO)
   ) =>
-  HasInitialize (BERTModel numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim)
+  HasInitialize (BERTModel numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
   where
   type
-    InitializeF (BERTModel numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim) =
-      FilePath -> IO (BERTModel numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim)
+    InitializeF (BERTModel numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim) =
+      FilePath -> IO (BERTModel numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
   initialize filePath =
     do
       tensorDict <- tensorDictFromPretrained filePath
       flip runReaderT tensorDict $
-        BERTModel <$> lookupEncoder bertDropoutP bertEps "bert."
+        BERTModel <$> lookupEncoderOnlyTransformer bertDropoutP bertEps "bert."
+
+instance
+  ( KnownDim headDim,
+    KnownDim headEmbedDim,
+    KnownDim embedDim,
+    KnownDim ffnDim,
+    KnownDim inputEmbedDim,
+    KnownDim vocabDim,
+    KnownDim typeVocabDim,
+    HasLookupStack numLayers (1 <=? numLayers) numLayers 'BERT ('Device 'CPU) BERTDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim BERTDropoutP (ReaderT TensorDict IO)
+  ) =>
+  HasInitialize (BERTModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
+  where
+  type
+    InitializeF (BERTModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim) =
+      FilePath -> IO (BERTModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
+  initialize filePath =
+    do
+      tensorDict <- tensorDictFromPretrained filePath
+      flip runReaderT tensorDict $
+        BERTModelWithLMHead <$> lookupEncoderOnlyTransformerWithLMHead bertDropoutP bertEps ""
 
 mkBERTInput ::
   forall batchDim seqDim m output.

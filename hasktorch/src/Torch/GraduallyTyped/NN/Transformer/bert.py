@@ -46,8 +46,10 @@ def main(args=None) -> None:
     model = BertForMaskedLM.from_pretrained(args.model)
     model.eval()
 
-    outputs = model(**tokenized_inputs, labels=tokenized_labels["input_ids"])
+    outputs = model(**tokenized_inputs, labels=tokenized_labels["input_ids"], output_hidden_states=True)
     pretty_print({"loss": outputs.loss})
+    print(f"lm head logits: {outputs.logits}")
+    print(f"hidden states: {outputs.hidden_states[-1]}")
 
     d = dict(model.state_dict())
     pretty_print({k: v.shape for k, v in d.items()})

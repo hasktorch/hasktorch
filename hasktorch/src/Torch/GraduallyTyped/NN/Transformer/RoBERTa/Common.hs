@@ -27,7 +27,7 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasInitialize (..))
 import Torch.GraduallyTyped.NN.Transformer.Encoder (TransformerEncoder, lookupEncoder)
-import Torch.GraduallyTyped.NN.Transformer.EncoderOnly (EncoderOnlyTransformer (..), lookupEncoderOnlyTransformer)
+import Torch.GraduallyTyped.NN.Transformer.EncoderOnly (EncoderOnlyTransformer (..), EncoderOnlyTransformerWithLMHead (..), lookupEncoderOnlyTransformer, lookupEncoderOnlyTransformerWithLMHead)
 import Torch.GraduallyTyped.NN.Transformer.Stack (HasLookupStack)
 import Torch.GraduallyTyped.NN.Transformer.Type (TensorDict, TransformerStyle (RoBERTa), mkTransformerInput, mkTransformerPaddingMask, tensorDictFromPretrained)
 import Torch.GraduallyTyped.Prelude (Seq)
@@ -85,7 +85,7 @@ robertaEOSTokenId = 2
 robertaAttentionMaskBias :: Double
 robertaAttentionMaskBias = -10000
 
--- | RoBERTa Model.
+-- | RoBERTa model.
 newtype
   RoBERTaModel
     (numLayers :: Nat)
@@ -102,6 +102,25 @@ newtype
     forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim.
     RoBERTaModelEncoderF RoBERTaModel numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim ->
     RoBERTaModel numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim
+  deriving stock (Generic)
+
+-- | RoBERTa model with language modelling head.
+newtype
+  RoBERTaModelWithLMHead
+    (numLayers :: Nat)
+    (device :: Device (DeviceType Nat))
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (vocabDim :: Dim (Name Symbol) (Size Nat))
+    (typeVocabDim :: Dim (Name Symbol) (Size Nat))
+  where
+  RoBERTaModelWithLMHead ::
+    forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim.
+    RoBERTaModelEncoderF RoBERTaModelWithLMHead numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim ->
+    RoBERTaModelWithLMHead numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim
   deriving stock (Generic)
 
 type family
@@ -144,6 +163,21 @@ type family
       vocabDim
       typeVocabDim
       RoBERTaDropoutP
+  RoBERTaModelEncoderF RoBERTaModelWithLMHead numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim =
+    EncoderOnlyTransformerWithLMHead
+      numLayers
+      'RoBERTa
+      device
+      RoBERTaDataType
+      headDim
+      headEmbedDim
+      embedDim
+      inputEmbedDim
+      ffnDim
+      RoBERTaPosEncDim
+      vocabDim
+      typeVocabDim
+      RoBERTaDropoutP
 
 instance
   ( KnownDim headDim,
@@ -165,6 +199,27 @@ instance
       tensorDict <- tensorDictFromPretrained filePath
       flip runReaderT tensorDict $
         RoBERTaModel <$> lookupEncoderOnlyTransformer robertaDropoutP robertaEps "roberta."
+
+instance
+  ( KnownDim headDim,
+    KnownDim headEmbedDim,
+    KnownDim embedDim,
+    KnownDim ffnDim,
+    KnownDim inputEmbedDim,
+    KnownDim vocabDim,
+    KnownDim typeVocabDim,
+    HasLookupStack numLayers (1 <=? numLayers) numLayers 'RoBERTa ('Device 'CPU) RoBERTaDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim RoBERTaDropoutP (ReaderT TensorDict IO)
+  ) =>
+  HasInitialize (RoBERTaModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
+  where
+  type
+    InitializeF (RoBERTaModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim) =
+      FilePath -> IO (RoBERTaModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
+  initialize filePath =
+    do
+      tensorDict <- tensorDictFromPretrained filePath
+      flip runReaderT tensorDict $
+        RoBERTaModelWithLMHead <$> lookupEncoderOnlyTransformerWithLMHead robertaDropoutP robertaEps ""
 
 mkRoBERTaInput ::
   forall batchDim seqDim m output.

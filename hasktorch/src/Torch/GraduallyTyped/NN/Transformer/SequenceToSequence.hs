@@ -29,7 +29,7 @@
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL7C
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8C #-}
-{-# OPTIONS_GHC -v2 #-}
+{-# OPTIONS_GHC -v2 -Wall #-}
 
 module Torch.GraduallyTyped.NN.Transformer.SequenceToSequence where
 
@@ -45,26 +45,43 @@ import Torch.GraduallyTyped.DType (DataType (..), KnownDataType, WithDataTypeC (
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, WithDeviceC (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
-import Torch.GraduallyTyped.NN.Linear (HasInitializeLinearWithoutBiasC, Linear (..))
 import Torch.GraduallyTyped.NN.Sparse (Embedding (..), HasInitializeEmbeddingC)
 import Torch.GraduallyTyped.NN.Transformer.Decoder (HasInitializeTransformerDecoderC, TransformerDecoder, lookupDecoder)
 import Torch.GraduallyTyped.NN.Transformer.DecoderStack (HasLookupDecoderStack)
 import Torch.GraduallyTyped.NN.Transformer.Encoder (HasInitializeTransformerEncoderC, TransformerEncoder, lookupEncoder)
+import Torch.GraduallyTyped.NN.Transformer.LMHead (LMHead, lookupLMHead)
 import Torch.GraduallyTyped.NN.Transformer.Stack (HasLookupStack)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
-import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), Name (..), Shape (..), Size (..), WithDimC (..))
-import Torch.GraduallyTyped.Tensor.Creation (WithCreateC (..), zeros)
-import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add, divScalar, mulScalar)
+import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mulScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
--- | Sequence-to-sequence transformer model.
 data
+  GSequenceToSequenceTransformer
+    (encoder :: Type)
+    (decoder :: Type)
+    (embedding :: Type)
+  where
+  GSequenceToSequenceTransformer ::
+    forall encoder decoder embedding.
+    { -- | encoder
+      seqToSeqEncoder :: encoder,
+      -- | decoder
+      seqToSeqDecoder :: decoder,
+      -- | shared embedding
+      seqToSeqEmbedding :: embedding,
+      -- | input embedding dim for scaling
+      seqToSeqInputEmbedDim :: Dim String Integer
+    } ->
+    GSequenceToSequenceTransformer encoder decoder embedding
+
+-- | Sequence-to-sequence transformer model.
+newtype
   SequenceToSequenceTransformer
     (numEncoderLayers :: Nat)
     (numDecoderLayers :: Nat)
@@ -82,35 +99,83 @@ data
   where
   SequenceToSequenceTransformer ::
     forall numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP.
-    { -- | encoder
-      seqToSeqEncoder :: TransformerEncoder numEncoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP,
-      -- | decoder
-      seqToSeqDecoder :: TransformerDecoder numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim posEncDim dropoutP,
-      -- | shared embedding
-      --
-      -- TODO: Generalize this so that models with embeddings that are sensitive to the padding idx can be supported, e.g. @'Just 0@.
-      seqToSeqEmbedding :: Embedding ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing,
-      -- | input embedding dim for scaling
-      seqToSeqInputEmbedDim :: Dim String Integer
-    } ->
+    GSequenceToSequenceTransformerF numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP ->
     SequenceToSequenceTransformer numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP
+
+type GSequenceToSequenceTransformerF
+  (numEncoderLayers :: Nat)
+  (numDecoderLayers :: Nat)
+  (style :: TransformerStyle)
+  (device :: Device (DeviceType Nat))
+  (dataType :: DataType DType)
+  (headDim :: Dim (Name Symbol) (Size Nat))
+  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (embedDim :: Dim (Name Symbol) (Size Nat))
+  (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+  (ffnDim :: Dim (Name Symbol) (Size Nat))
+  (posEncDim :: Dim (Name Symbol) (Size Nat))
+  (vocabDim :: Dim (Name Symbol) (Size Nat))
+  (dropoutP :: Type) =
+  GSequenceToSequenceTransformer
+    (SeqToSeqEncoderF numEncoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP)
+    (SeqToSeqDecoderF numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP)
+    (SeqToSeqEmbeddingF style device dataType inputEmbedDim vocabDim)
+
+type family
+  SeqToSeqEncoderF
+    (numEncoderLayers :: Nat)
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (posEncDim :: Dim (Name Symbol) (Size Nat))
+    (dropoutP :: Type)
+  where
+  SeqToSeqEncoderF numEncoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP = TransformerEncoder numEncoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP
+
+type family
+  SeqToSeqDecoderF
+    (numEncoderLayers :: Nat)
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (posEncDim :: Dim (Name Symbol) (Size Nat))
+    (dropoutP :: Type)
+  where
+  SeqToSeqDecoderF numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP = TransformerDecoder numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim posEncDim dropoutP
+
+type family
+  SeqToSeqEmbeddingF
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (vocabDim :: Dim (Name Symbol) (Size Nat))
+  where
+  SeqToSeqEmbeddingF _ device dataType inputEmbedDim vocabDim = Embedding ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing
 
 data
   GSequenceToSequenceTransformerWithLMHead
-    (seqToSeqTransformer :: Type)
-    (seqToSeqLMHead :: Type)
-    (seqToSeqFinalLogitsBias :: Type)
+    (transformer :: Type)
+    (lmHead :: Type)
   where
   GSequenceToSequenceTransformerWithLMHead ::
-    forall seqToSeqTransformer seqToSeqLMHead seqToSeqFinalLogitsBias.
+    forall transformer lmHead.
     { -- | sequence-to-sequence transformer
-      seqToSeqTransformer :: seqToSeqTransformer,
+      seqToSeqTransformer :: transformer,
       -- | language modelling head
-      seqToSeqLMHead :: seqToSeqLMHead,
-      -- | language modelling head bias
-      seqToSeqFinalLogitsBias :: seqToSeqFinalLogitsBias
+      seqToSeqLMHead :: lmHead
     } ->
-    GSequenceToSequenceTransformerWithLMHead seqToSeqTransformer seqToSeqLMHead seqToSeqFinalLogitsBias
+    GSequenceToSequenceTransformerWithLMHead transformer lmHead
 
 -- | Sequence-to-sequence transformer model with language modelling head.
 data
@@ -151,7 +216,6 @@ type GSequenceToSequenceTransformerWithLMHeadF
   GSequenceToSequenceTransformerWithLMHead
     (SeqToSeqTransformerF numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP)
     (SeqToSeqLMHeadF style device dataType inputEmbedDim vocabDim)
-    (SeqToSeqFinalLogitsBiasF style device dataType vocabDim)
 
 type family
   SeqToSeqTransformerF
@@ -181,19 +245,7 @@ type family
     (vocabDim :: Dim (Name Symbol) (Size Nat)) ::
     Type
   where
-  SeqToSeqLMHeadF 'T5 device dataType inputEmbedDim vocabDim = Linear 'WithoutBias device dataType inputEmbedDim vocabDim
-  SeqToSeqLMHeadF 'Pegasus device dataType inputEmbedDim vocabDim = Linear 'WithoutBias device dataType inputEmbedDim vocabDim
-
-type family
-  SeqToSeqFinalLogitsBiasF
-    (style :: TransformerStyle)
-    (device :: Device (DeviceType Nat))
-    (dataType :: DataType DType)
-    (vocabDim :: Dim (Name Symbol) (Size Nat)) ::
-    Type
-  where
-  SeqToSeqFinalLogitsBiasF 'T5 device dataType vocabDim = ()
-  SeqToSeqFinalLogitsBiasF 'Pegasus device dataType vocabDim = Tensor 'WithGradient ('Layout 'Dense) device dataType ('Shape '[ 'Dim ('Name "*") ('Size 1), vocabDim])
+  SeqToSeqLMHeadF style device dataType inputEmbedDim vocabDim = LMHead style device dataType inputEmbedDim vocabDim
 
 type HasInitializeSequenceToSequenceTransformerC
   (transformer :: Type)
@@ -354,7 +406,7 @@ instance
                   vocabDim
               )
               inputEmbedDim
-        pure $ SequenceToSequenceTransformer encoder decoder embedding inputEmbedDim
+        pure . SequenceToSequenceTransformer $ GSequenceToSequenceTransformer encoder decoder embedding inputEmbedDim
 
 type family
   HasInitializeSeqToSeqTransformerF
@@ -397,29 +449,13 @@ type family
       WithDimC vocabDim (Generator device -> (seqToSeqLMHead, Generator device))
     )
 
-type family
-  HasInitializeSeqToSeqFinalLogitsBiasF
-    (seqToSeqFinalLogitsBias :: Type)
-    (style :: TransformerStyle)
-    (device :: Device (DeviceType Nat))
-    (dataType :: DataType DType)
-    (vocabDim :: Dim (Name Symbol) (Size Nat)) ::
-    Constraint
-  where
-  HasInitializeSeqToSeqFinalLogitsBiasF seqToSeqFinalLogitsBias 'T5 _ _ _ = ()
-  HasInitializeSeqToSeqFinalLogitsBiasF seqToSeqFinalLogitsBias 'Pegasus device dataType vocabDim =
-    ( WithCreateC seqToSeqFinalLogitsBias 'WithGradient ('Layout 'Dense) device dataType ('Shape '[ 'Dim ('Name "*") ('Size 1), vocabDim])
-    )
-
 instance
   ( SingI style,
     HasInitializeSequenceToSequenceTransformerC (SequenceToSequenceTransformerWithLMHead numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP) device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP,
     seqToSeqTransformer ~ SeqToSeqTransformerF numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP,
     HasInitializeSeqToSeqTransformerF seqToSeqTransformer style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP,
     seqToSeqLMHead ~ SeqToSeqLMHeadF style device dataType inputEmbedDim vocabDim,
-    HasInitializeSeqToSeqLMHeadF seqToSeqLMHead style device dataType inputEmbedDim vocabDim,
-    seqToSeqFinalLogitsBias ~ SeqToSeqFinalLogitsBiasF style device dataType vocabDim,
-    HasInitializeSeqToSeqFinalLogitsBiasF seqToSeqFinalLogitsBias style device dataType vocabDim
+    HasInitializeSeqToSeqLMHeadF seqToSeqLMHead style device dataType inputEmbedDim vocabDim
   ) =>
   HasInitialize (SequenceToSequenceTransformerWithLMHead numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP)
   where
@@ -519,18 +555,7 @@ instance
                   inputEmbedDim
               )
               vocabDim
-        let finalLogitsBias =
-              case sing @style of
-                ST5 -> ()
-                SPegasus ->
-                  withoutCreate @_ @'WithGradient @('Layout 'Dense) @device @dataType @('Shape '[ 'Dim ('Name "*") ('Size 1), vocabDim])
-                    (zeros @'WithGradient @('Layout 'Dense) @device @dataType @('Shape '[ 'Dim ('Name "*") ('Size 1), vocabDim]))
-                    WithGradient
-                    Dense
-                    deviceType
-                    dType
-                    [vocabDim]
-        pure . SequenceToSequenceTransformerWithLMHead $ GSequenceToSequenceTransformerWithLMHead transformer lmHead finalLogitsBias
+        pure . SequenceToSequenceTransformerWithLMHead $ GSequenceToSequenceTransformerWithLMHead transformer lmHead
 
 lookupSeqToSeqInputEmbedDim ::
   forall inputEmbedDim m.
@@ -571,10 +596,12 @@ lookupSequenceToSequenceTransformer dropoutP eps prefix =
       embedding ST5 = fmap @m Embedding $ lookupTensor "shared.weight"
       embedding SPegasus = fmap @m Embedding $ lookupTensor (prefix <> "shared.weight")
    in SequenceToSequenceTransformer
-        <$> encoder (sing @style)
-        <*> decoder (sing @style)
-        <*> embedding (sing @style)
-        <*> lookupSeqToSeqInputEmbedDim @inputEmbedDim
+        <$> ( GSequenceToSequenceTransformer
+                <$> encoder (sing @style)
+                <*> decoder (sing @style)
+                <*> embedding (sing @style)
+                <*> lookupSeqToSeqInputEmbedDim @inputEmbedDim
+            )
 
 lookupSequenceToSequenceTransformerWithLMHead ::
   forall numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP m.
@@ -602,15 +629,12 @@ lookupSequenceToSequenceTransformerWithLMHead ::
 lookupSequenceToSequenceTransformerWithLMHead dropoutP eps prefix =
   let transformer ST5 = lookupSequenceToSequenceTransformer dropoutP eps prefix
       transformer SPegasus = lookupSequenceToSequenceTransformer dropoutP eps (prefix <> "model.")
-      lmHead ST5 = fmap @m LinearWithoutBias $ lookupTensor (prefix <> "lm_head.weight")
-      lmHead SPegasus = fmap @m LinearWithoutBias $ lookupTensor (prefix <> "lm_head.weight")
-      finalLogitsBias ST5 = pure @m ()
-      finalLogitsBias SPegasus = lookupTensor (prefix <> "final_logits_bias")
+      lmHead ST5 = lookupLMHead eps (prefix <> "lm_head.")
+      lmHead SPegasus = lookupLMHead eps prefix
    in SequenceToSequenceTransformerWithLMHead
         <$> ( GSequenceToSequenceTransformerWithLMHead
                 <$> transformer (sing @style)
                 <*> lmHead (sing @style)
-                <*> finalLogitsBias (sing @style)
             )
 
 -- | Input data type for use with a sequence-to-sequence transformer.
@@ -703,27 +727,27 @@ deriving instance
 instance
   ( SingI style,
     HasForward
-      (Embedding ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+      (SeqToSeqEmbeddingF style device dataType inputEmbedDim vocabDim)
       input
       generator
       embeddingOutput
       embeddingGeneratorOutput,
     embeddingOutput ~ Tensor requiresGradient' layout' device' dataType' shape',
     HasForward
-      (TransformerEncoder numEncoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP)
+      (SeqToSeqEncoderF numEncoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP)
       (embeddingOutput, pos, attentionMask)
       embeddingGeneratorOutput
       encoderOutput
       encoderGeneratorOutput,
     HasForward
-      (Embedding ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+      (SeqToSeqEmbeddingF style device dataType inputEmbedDim vocabDim)
       decoderInput
       encoderGeneratorOutput
       embeddingOutput'
       embeddingGeneratorOutput',
     embeddingOutput' ~ Tensor requiresGradient'' layout'' device'' dataType'' shape'',
     HasForward
-      (TransformerDecoder numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim posEncDim dropoutP)
+      (SeqToSeqDecoderF numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP)
       ( embeddingOutput',
         encoderOutput,
         decoderPos,
@@ -741,7 +765,7 @@ instance
     (SequenceToSequenceTransformerOutput decoderOutput encoderOutput)
     generatorOutput
   where
-  forward SequenceToSequenceTransformer {..} SequenceToSequenceTransformerInput {..} =
+  forward (SequenceToSequenceTransformer GSequenceToSequenceTransformer {..}) SequenceToSequenceTransformerInput {..} =
     let s :: Double = sqrt . fromIntegral . dimSize $ seqToSeqInputEmbedDim
         embedScaling ::
           forall requiresGradient layout device dataType shape.
@@ -788,14 +812,14 @@ instance
 instance
   ( SingI style,
     HasForward
-      (Embedding ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing)
+      (SeqToSeqEmbeddingF style device dataType inputEmbedDim vocabDim)
       decoderInput
       generator
       embeddingOutput'
       embeddingGeneratorOutput',
     embeddingOutput' ~ Tensor requiresGradient'' layout'' device'' dataType'' shape'',
     HasForward
-      (TransformerDecoder numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim posEncDim dropoutP)
+      (SeqToSeqDecoderF numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP)
       ( embeddingOutput',
         encoderOutput,
         decoderPos,
@@ -813,7 +837,7 @@ instance
     (SequenceToSequenceTransformerOutput decoderOutput encoderOutput)
     generatorOutput
   where
-  forward SequenceToSequenceTransformer {..} SequenceToSequenceTransformerGenerationInput {..} =
+  forward (SequenceToSequenceTransformer GSequenceToSequenceTransformer {..}) SequenceToSequenceTransformerGenerationInput {..} =
     let s :: Double = sqrt . fromIntegral . dimSize $ seqToSeqInputEmbedDim
         embedScaling ::
           forall requiresGradient layout device dataType shape.
@@ -860,10 +884,6 @@ type family
 --         ┌─────────seqToSeqTransformer
 --         │                  ▼
 --         │            seqToSeqLMHead
---         │                  ▼
---         │              (scaling)
---         │                  ▼
---         │      (seqToSeqFinalLogitsBias)
 --         │                  │
 --         ▼                  ▼
 -- ┌───────────────┐  ┌───────────────┐
@@ -873,7 +893,7 @@ type family
 instance
   ( SingI style,
     HasForward
-      (SequenceToSequenceTransformer numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP)
+      (SeqToSeqTransformerF numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP)
       input
       generator
       seqToSeqOutput
@@ -885,35 +905,24 @@ instance
       seqToSeqGeneratorOutput
       lmHeadOutput
       generatorOutput,
-    lmHeadOutput ~ Tensor requiresGradient' layout' device' dataType' shape',
-    decoderOutput'
-      ~ SequenceToSequenceTransformerWithLMHeadDecoderOutputF style lmHeadOutput device dataType vocabDim
+    output ~ SequenceToSequenceTransformerOutput lmHeadOutput encoderOutput
   ) =>
   HasForward
     (SequenceToSequenceTransformerWithLMHead numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP)
     input
     generator
-    (SequenceToSequenceTransformerOutput decoderOutput' encoderOutput)
+    output
     generatorOutput
   where
   forward (SequenceToSequenceTransformerWithLMHead GSequenceToSequenceTransformerWithLMHead {..}) input =
-    let s :: Double = sqrt . fromIntegral . dimSize $ seqToSeqInputEmbedDim seqToSeqTransformer
-        scaling :: STransformerStyle style -> lmHeadOutput -> lmHeadOutput
-        scaling ST5 = flip divScalar s
-        scaling SPegasus = id
-        finalLogitsBias :: STransformerStyle style -> lmHeadOutput -> decoderOutput'
-        finalLogitsBias ST5 lmHeadOutput = lmHeadOutput
-        finalLogitsBias SPegasus lmHeadOutput = lmHeadOutput `add` seqToSeqFinalLogitsBias
-     in runIxState $
-          ireturn input
-            >>>= IxState . forward seqToSeqTransformer
-            >>>= ( \SequenceToSequenceTransformerOutput {..} ->
-                     ireturn decoderOutput
-                       >>>= IxState . forward seqToSeqLMHead
-                       >>>= ireturn . scaling (sing @style)
-                       >>>= ireturn . finalLogitsBias (sing @style)
-                       >>>= \decoderOutput' -> ireturn (SequenceToSequenceTransformerOutput decoderOutput' encoderOutput)
-                 )
+    runIxState $
+      ireturn input
+        >>>= IxState . forward seqToSeqTransformer
+        >>>= ( \SequenceToSequenceTransformerOutput {..} ->
+                 ireturn decoderOutput
+                   >>>= IxState . forward seqToSeqLMHead
+                   >>>= \lmHeadOutput -> ireturn (SequenceToSequenceTransformerOutput lmHeadOutput encoderOutput)
+             )
 
 testForwardSeqToSeq :: _
 testForwardSeqToSeq =
