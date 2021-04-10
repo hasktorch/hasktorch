@@ -18,7 +18,9 @@ import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Functional.Activation (gelu, relu)
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, softmax)
 import Torch.GraduallyTyped.Shape (By, SelectDim, WithSelectDimC (..), WithSelectDimF)
+import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (tanh)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
+import Prelude hiding (tanh)
 
 data Softmax (selectDim :: SelectDim (By Symbol Nat)) where
   Softmax ::
@@ -79,3 +81,19 @@ instance
     generator
   where
   forward Gelu input g = (gelu input, g)
+
+data Tanh where Tanh :: Tanh
+
+instance HasInitialize Tanh where
+  type InitializeF Tanh = Tanh
+  initialize = Tanh
+
+instance
+  HasForward
+    Tanh
+    (Tensor requiresGradient layout device dataType shape)
+    generator
+    (Tensor requiresGradient layout device dataType shape)
+    generator
+  where
+  forward Tanh input g = (tanh input, g)
