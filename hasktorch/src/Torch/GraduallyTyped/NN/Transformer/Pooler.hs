@@ -7,6 +7,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -v2 -Wall #-}
 
 module Torch.GraduallyTyped.NN.Transformer.Pooler where
 
@@ -37,7 +38,7 @@ data
     } ->
     GPooler dense activation
 
-data
+newtype
   Pooler
     (style :: TransformerStyle)
     (device :: Device (DeviceType Nat))
