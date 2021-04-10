@@ -1,99 +1,85 @@
+import argparse
+import pprint
+from typing import Any
 import torch
-from transformers import AutoTokenizer, T5Model, T5ForConditionalGeneration
+from transformers import AutoTokenizer, T5ForConditionalGeneration
 
-# class T5Small(torch.nn.Module):
-#     def __init__(self):
-#         super(T5Small, self).__init__()
-#         self.model = T5Model.from_pretrained('t5-small', torchscript=True)
+def pretty_convert(x: Any) -> Any:
+    if isinstance(x, torch.Tensor):
+        return x.tolist()
+    else:
+        return x
 
-#     def forward(self, input_ids, decoder_input_ids):
-#         return self.model(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
 
-# model = T5Small()
-# model.eval()
+def pretty_print(x: dict) -> None:
+    y = {k: pretty_convert(v) for k, v in x.items()}
+    pp = pprint.PrettyPrinter(indent=4, compact=True, width=120)
+    pp.pprint(y)
 
-# traced_model = torch.jit.trace(model, [input_ids, decoder_input_ids])
-# traced_model.save("t5-small.pt")
 
-tokenizer = AutoTokenizer.from_pretrained('t5-small')
+def main(args=None) -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", default="t5-small")
+    # parser.add_argument("--input", default="translate English to German: Studies have shown that owning a dog is good for you and your dog.")
+    parser.add_argument("--input", default="summarize: Transfer learning, where a model is first pre-trained on a data-rich task before being fine-tuned on a downstream task, has emerged as a powerful technique in natural language processing (NLP).")
+    parser.add_argument("--output", default="t5-small.pt")
+    args = parser.parse_args()
+    pretty_print(args.__dict__)
 
-def print_example(model):
-    prefix = "translate English to German: "
-    # prefix = "summarize: "
+    tokenizer = AutoTokenizer.from_pretrained(args.model)
 
-    # inputs = [
-    #     prefix + "Studies have shown that owning a dog is good for you.",
-    #     prefix + "Studies have shown that owning a dog is good for you and your dog.",
-    #     prefix + "You're full of shit!"]
-    # tokenized_inputs = tokenizer(inputs, padding="longest", return_tensors="pt")
-    # decoder_inputs = [
-    #     "Studien haben gezeigt, dass das Besitzen eines Hundes gut für Sie ist.",
-    #     "Studien haben gezeigt, dass das Besitzen eines Hundes gut für Sie und Ihren Hund ist.",
-    #     "Du bist voller Scheiße!"]
-    # tokenized_decoder_inputs = tokenizer(decoder_inputs, padding="longest", return_tensors="pt")
-    # outputs = model(
-    #     input_ids=tokenized_inputs.input_ids,
-    #     attention_mask=tokenized_inputs.attention_mask,
-    #     decoder_input_ids=tokenized_decoder_inputs.input_ids,
-    #     decoder_attention_mask=tokenized_decoder_inputs.attention_mask)
-    # print(tokenized_inputs)
-    # print(tokenized_decoder_inputs)
-    # print(outputs.logits)
+    tokenized_inputs = tokenizer([args.input], padding="longest", return_tensors="pt")
+    pretty_print(tokenized_inputs)
+    back_decoded = tokenizer.batch_decode(
+        tokenized_inputs["input_ids"], skip_special_tokens=False
+    )
+    pretty_print({"back_decoded": back_decoded})
 
-    inputs = [
-        prefix + "Studies have shown that owning a dog is good for you",
-        prefix + "You're full of shit!",
-        prefix + "That sounds pretty great, thanks for sharing! As Austin said, "
-               + "we are looking into bringing some of the huggingface model "
-               + "architectures (T5, BERT, GPT, etc.) and functionality "
-               + "(tokenization, training, fine tuning, etc.) to hasktorch. "
-               + "I’m currently also building a new API for hasktorch that "
-               + "interpolates between the already existing untyped and the typed API. "
-               + "I've reimplemented the T5 model architecture in that new API, "
-               + "and I'm able to use Google's model checkpoints to decode text "
-               + "(translations, summaries, etc.) from it. Let me know if you want "
-               + "to discuss any of that.",
-        prefix + "'"
-               + "select t2.name, count(*) from concert as t1 "
-               + "join stadium as t2 on t1.stadium_id = t2.stadium_id "
-               + "group by t1.stadium_id"
-               + "'",
-        prefix + "\" "
-               + "SELECT T2.name, COUNT(*) FROM concert AS T1 "
-               + "JOIN stadium AS T2 ON T1.stadium_id = T2.stadium_id "
-               + "GROUP BY t1.stadium_id "
-               + "\""]
-    tokenized_inputs = tokenizer(inputs, padding="longest", return_tensors="pt")
-    print(tokenized_inputs.input_ids)
-    print(tokenized_inputs.input_ids.size())
-    print(list(map(tokenizer.decode, tokenized_inputs.input_ids)))
-    output = model.generate(
+    model = T5ForConditionalGeneration.from_pretrained(
+        args.model, torchscript=False
+    )
+    model.eval()
+
+    generated_ids = model.generate(
         input_ids=tokenized_inputs.input_ids,
         attention_mask=tokenized_inputs.attention_mask,
         num_beams=1,
         max_length=512,
         do_sample=False,
         repetition_penalty=1,
-        no_repeat_ngram_size=0)
-    print(output)
-    decoded = list(map(tokenizer.decode, output))
-    print(decoded)
+        no_repeat_ngram_size=0,
+        length_penalty=1,
+    )
 
+    decoded = tokenizer.batch_decode(generated_ids, skip_special_tokens=False)
+    pretty_print({"generated_ids": generated_ids, "decoded": decoded})
 
-def load_print_and_save(model_string):
-    # model = T5Model.from_pretrained('t5-small', torchscript=False)
-    model = T5ForConditionalGeneration.from_pretrained(model_string, torchscript=False)
-    model.eval()
+    decoded = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
 
-    print_example(model)
+    tokenized_decoder_inputs = tokenizer(
+        # because the model doesn't shift right unless labels are passed
+        "<pad> " + decoded[0],
+        padding="longest",
+        return_tensors="pt",
+    )
+    pretty_print(tokenized_decoder_inputs)
+
+    outputs = model(
+        input_ids=tokenized_inputs.input_ids,
+        attention_mask=tokenized_inputs.attention_mask,
+        decoder_input_ids=tokenized_decoder_inputs.input_ids,
+        decoder_attention_mask=tokenized_decoder_inputs.attention_mask,
+        labels=None,
+        return_dict=True,
+    )
+    print(f"encoder_last_hidden_state: {outputs.encoder_last_hidden_state}")
+    print(f"logits: {outputs.logits}")
 
     d = dict(model.state_dict())
-    # for k, v in d.items():
-    #     print("{}: {}".format(k, v.shape))
-    torch.save(d, model_string + ".pt", _use_new_zipfile_serialization=True)
+    pretty_print({k: v.shape for k, v in d.items()})
+    torch.save(d, args.output, _use_new_zipfile_serialization=True)
 
-for model_string in ['t5-small']: #, 't5-base', 't5-large', 't5-3b', 't5-11b']:
-    load_print_and_save(model_string)
 
-# for i in range(40000):
-#     print("({}, \"{}\"),".format(i, tokenizer.convert_ids_to_tokens(i)))
+
+if __name__ == "__main__":
+    main()
