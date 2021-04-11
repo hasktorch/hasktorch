@@ -221,6 +221,7 @@ library
                     , singletons < 3
                     , HUnit
                     , HUnit-approx
+                    , tokenizers
  default-extensions:  Strict
                     , StrictData
 

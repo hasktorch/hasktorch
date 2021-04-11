@@ -48,7 +48,7 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, W
 import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout)
-import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithoutBiasF, LayerNormWithBiasF)
+import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithBiasF, LayerNormWithoutBiasF)
 import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..))
 import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (HasInitializeMultiHeadAttentionC, MultiHeadAttention, lookupMultiHeadAttention)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
@@ -142,6 +142,8 @@ type family
   CALayerNormF 'T5 device dataType queryEmbedDim =
     LayerNorm 'WithoutBias device dataType ('Shape '[queryEmbedDim])
   CALayerNormF 'Pegasus device dataType queryEmbedDim =
+    LayerNorm 'WithBias device dataType ('Shape '[queryEmbedDim])
+  CALayerNormF 'BART device dataType queryEmbedDim =
     LayerNorm 'WithBias device dataType ('Shape '[queryEmbedDim])
 
 type family
@@ -297,11 +299,17 @@ lookupCrossAttention ::
 lookupCrossAttention dropoutP eps prefix =
   let crossAttention ST5 = lookupMultiHeadAttention dropoutP (prefix <> "EncDecAttention.")
       crossAttention SPegasus = lookupMultiHeadAttention dropoutP (prefix <> "encoder_attn.")
+      crossAttention SBART = lookupMultiHeadAttention dropoutP (prefix <> "encoder_attn.")
       layerNorm ST5 =
         LayerNormWithoutBias
           <$> lookupTensor (prefix <> "layer_norm.weight")
           <*> pure eps
       layerNorm SPegasus =
+        LayerNormWithBias
+          <$> lookupTensor (prefix <> "encoder_attn_layer_norm.weight")
+          <*> lookupTensor (prefix <> "encoder_attn_layer_norm.bias")
+          <*> pure eps
+      layerNorm SBART =
         LayerNormWithBias
           <$> lookupTensor (prefix <> "encoder_attn_layer_norm.weight")
           <*> lookupTensor (prefix <> "encoder_attn_layer_norm.bias")
@@ -345,16 +353,20 @@ instance
   ( KnownDim queryEmbedDim,
     KnownShape queryShape,
     Scalar dropoutP,
+    query ~ Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+    key ~ Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
+    attentionBias ~ Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape,
     normedQueryLayout ~ ('Layout 'Dense <+> queryLayout),
     normedQueryDevice ~ (device <+> queryDevice),
     normedQueryDataType ~ (dataType <+> queryDataType),
     normedQueryShape ~ LayerNormWithoutBiasF ('Shape '[queryEmbedDim]) queryShape,
+    normedQuery ~ Tensor 'WithGradient normedQueryLayout normedQueryDevice normedQueryDataType normedQueryShape,
     HasForward
       (MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP)
-      ( Tensor 'WithGradient normedQueryLayout normedQueryDevice normedQueryDataType normedQueryShape,
-        Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
-        Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
-        Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
+      ( normedQuery,
+        key,
+        key,
+        attentionBias
       )
       (Generator generatorDevice)
       ( Tensor
@@ -376,10 +388,7 @@ instance
   ) =>
   HasForward
     (CrossAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
-    ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
-      Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
-      Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
-    )
+    (query, key, attentionBias)
     (Generator generatorDevice)
     output
     generatorOutput
@@ -417,6 +426,51 @@ instance
 --    │ query │
 --    └───────┘
 -- @
+instance
+  ( KnownDim queryEmbedDim,
+    Scalar dropoutP,
+    query ~ Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+    key ~ Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
+    attentionBias ~ Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape,
+    HasForward
+      (MultiHeadAttention 'BART device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP)
+      (query, key, key, attentionBias)
+      (Generator generatorDevice)
+      ( Tensor
+          'WithGradient
+          ('Layout 'Dense <+> queryLayout <+> keyLayout <+> attentionBiasLayout)
+          (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)
+          (dataType <+> queryDataType <+> keyDataType <+> attentionBiasDataType)
+          mhaOutputShape
+      )
+      (Generator (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)),
+    output
+      ~ Tensor
+          'WithGradient
+          ('Layout 'Dense <+> queryLayout <+> keyLayout <+> attentionBiasLayout)
+          (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)
+          (dataType <+> queryDataType <+> keyDataType <+> attentionBiasDataType)
+          ( LayerNormWithBiasF
+              ('Shape '[queryEmbedDim])
+              ('Shape '[queryEmbedDim])
+              (BroadcastShapesF queryShape mhaOutputShape)
+          ),
+    generatorOutput ~ Generator (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)
+  ) =>
+  HasForward
+    (CrossAttention 'BART device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
+    (query, key, attentionBias)
+    (Generator generatorDevice)
+    output
+    generatorOutput
+  where
+  forward (CrossAttention ca) (query, key, attentionBias) =
+    runIxState $
+      ireturn query
+        >>>= (\query' -> IxState $ forward (caMultiheadAttention ca) (query', key, key, attentionBias))
+        >>>= IxState . forward (caDropout ca)
+        >>>= ireturn . (query `add`)
+        >>>= IxState . forward (caLayerNorm ca)
 
 -- | 'HasForward' instance for @CrossAttention 'Pegasus@.
 --
@@ -447,18 +501,21 @@ instance
 -- @
 instance
   ( KnownDim queryEmbedDim,
-    KnownShape queryShape,
     Scalar dropoutP,
+    query ~ Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+    key ~ Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
+    attentionBias ~ Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape,
     normedQueryLayout ~ ('Layout 'Dense <+> queryLayout),
     normedQueryDevice ~ (device <+> queryDevice),
     normedQueryDataType ~ (dataType <+> queryDataType),
     normedQueryShape ~ LayerNormWithBiasF ('Shape '[queryEmbedDim]) ('Shape '[queryEmbedDim]) queryShape,
+    normedQuery ~ Tensor 'WithGradient normedQueryLayout normedQueryDevice normedQueryDataType normedQueryShape,
     HasForward
       (MultiHeadAttention 'Pegasus device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP)
-      ( Tensor 'WithGradient normedQueryLayout normedQueryDevice normedQueryDataType normedQueryShape,
-        Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
-        Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
-        Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
+      ( normedQuery,
+        key,
+        key,
+        attentionBias
       )
       (Generator generatorDevice)
       ( Tensor
@@ -480,10 +537,7 @@ instance
   ) =>
   HasForward
     (CrossAttention 'Pegasus device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
-    ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
-      Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
-      Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
-    )
+    (query, key, attentionBias)
     (Generator generatorDevice)
     output
     generatorOutput

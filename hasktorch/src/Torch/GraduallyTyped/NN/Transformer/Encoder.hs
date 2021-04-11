@@ -141,6 +141,8 @@ type family
     LayerNorm 'WithBias device dataType ('Shape '[inputEmbedDim])
   TEEmbedLayerNormF 'RoBERTa device dataType inputEmbedDim =
     LayerNorm 'WithBias device dataType ('Shape '[inputEmbedDim])
+  TEEmbedLayerNormF 'BART device dataType inputEmbedDim =
+    LayerNorm 'WithBias device dataType ('Shape '[inputEmbedDim])
   TEEmbedLayerNormF 'Pegasus _ _ _ = ()
 
 type family
@@ -155,6 +157,7 @@ type family
     LayerNorm 'WithoutBias device dataType ('Shape '[inputEmbedDim])
   TELayerNormF 'BERT _ _ _ = ()
   TELayerNormF 'RoBERTa _ _ _ = ()
+  TELayerNormF 'BART _ _ _ = ()
   TELayerNormF 'Pegasus device dataType inputEmbedDim =
     LayerNorm 'WithBias device dataType ('Shape '[inputEmbedDim])
 
@@ -183,6 +186,8 @@ type family
   TEPosEncF 'RoBERTa device dataType _ inputEmbedDim posEncDim =
     Embedding ('Layout 'Dense) device dataType posEncDim inputEmbedDim 'Nothing
   TEPosEncF 'Pegasus device dataType _ inputEmbedDim posEncDim =
+    Embedding ('Layout 'Dense) device dataType posEncDim inputEmbedDim 'Nothing
+  TEPosEncF 'BART device dataType _ inputEmbedDim posEncDim =
     Embedding ('Layout 'Dense) device dataType posEncDim inputEmbedDim 'Nothing
 
 type HasInitializeTransformerEncoderC
@@ -562,6 +567,7 @@ lookupEncoder dropoutP eps prefix =
   let stack ST5 = lookupStack dropoutP eps (prefix <> "block.")
       stack SBERT = lookupStack dropoutP eps (prefix <> "encoder.layer.")
       stack SRoBERTa = lookupStack dropoutP eps (prefix <> "encoder.layer.")
+      stack SBART = lookupStack dropoutP eps (prefix <> "layers.")
       stack SPegasus = lookupStack dropoutP eps (prefix <> "layers.")
       embedLayerNorm ST5 = pure ()
       embedLayerNorm SBERT =
@@ -574,6 +580,11 @@ lookupEncoder dropoutP eps prefix =
           <$> lookupTensor (prefix <> "embeddings.LayerNorm.weight")
           <*> lookupTensor (prefix <> "embeddings.LayerNorm.bias")
           <*> pure eps
+      embedLayerNorm SBART =
+        LayerNormWithBias
+          <$> lookupTensor (prefix <> "layernorm_embedding.weight")
+          <*> lookupTensor (prefix <> "layernorm_embedding.bias")
+          <*> pure eps
       embedLayerNorm SPegasus = pure ()
       layerNorm ST5 =
         LayerNormWithoutBias
@@ -581,6 +592,7 @@ lookupEncoder dropoutP eps prefix =
           <*> pure eps
       layerNorm SBERT = pure ()
       layerNorm SRoBERTa = pure ()
+      layerNorm SBART = pure ()
       layerNorm SPegasus =
         LayerNormWithBias
           <$> lookupTensor (prefix <> "layer_norm.weight")
@@ -590,6 +602,7 @@ lookupEncoder dropoutP eps prefix =
       posEnc ST5 = fmap @m Embedding $ lookupTensor (prefix <> "block.0.layer.0.SelfAttention.relative_attention_bias.weight")
       posEnc SBERT = fmap @m Embedding $ lookupTensor (prefix <> "embeddings.position_embeddings.weight")
       posEnc SRoBERTa = fmap @m Embedding $ lookupTensor (prefix <> "embeddings.position_embeddings.weight")
+      posEnc SBART = fmap @m Embedding $ lookupTensor (prefix <> "embed_positions.weight")
       posEnc SPegasus = fmap @m Embedding $ lookupTensor (prefix <> "embed_positions.weight")
    in TransformerEncoder
         <$> ( GTransformerEncoder
@@ -727,6 +740,58 @@ instance
 --     │ output │
 --     └────────┘
 -- @
+instance
+  ( HasForward
+      (TEEmbedLayerNormF 'BART device dataType inputEmbedDim)
+      ( Tensor
+          'WithGradient
+          (inputLayout <+> 'Layout 'Dense <+> posLayout)
+          (inputDevice <+> device <+> posDevice)
+          (inputDataType <+> Seq (posDataType <+> 'DataType 'Int64) dataType)
+          (BroadcastShapesF inputShape (EmbeddingF ('Shape '[posEncDim, inputEmbedDim]) posShape))
+      )
+      generator
+      layerNormOutput
+      generator,
+    HasForward
+      (TEDropoutF 'BART dropoutP)
+      layerNormOutput
+      generator
+      dropoutOutput
+      dropoutGeneratorOutput,
+    HasForward
+      (TEStackF numLayers 'BART device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP)
+      ( dropoutOutput,
+        Tensor
+          attentionMaskRequiresGradient
+          attentionMaskLayout
+          attentionMaskDevice
+          attentionMaskDataType
+          (UnsqueezeF ('SelectDim ('ByIndex 1)) attentionMaskShape)
+      )
+      dropoutGeneratorOutput
+      output
+      generatorOutput
+  ) =>
+  HasForward
+    (TransformerEncoder numLayers 'BART device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP)
+    ( Tensor inputRequiresGradient inputLayout inputDevice inputDataType inputShape,
+      Tensor posRequiresGradient posLayout posDevice posDataType posShape,
+      Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+    )
+    generator
+    output
+    generatorOutput
+  where
+  forward (TransformerEncoder GTransformerEncoder {..}) (input, pos, attentionMask) =
+    let attentionBias = unsqueeze @('SelectDim ('ByIndex 1)) attentionMask
+     in runIxState $
+          ireturn pos
+            >>>= IxState . forward tePosEnc
+            >>>= ireturn . (input `add`)
+            >>>= IxState . forward teEmbedLayerNorm
+            >>>= IxState . forward teDropout
+            >>>= (\input' -> IxState $ forward teStack (input', attentionBias))
 
 -- | 'HasForward' instance for @TransformerEncoder numLayers 'MBART@.
 --

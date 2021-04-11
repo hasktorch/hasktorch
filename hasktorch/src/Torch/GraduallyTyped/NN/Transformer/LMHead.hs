@@ -96,6 +96,7 @@ type family
   LMHeadDenseF 'BERT device dataType inputEmbedDim = Linear 'WithBias device dataType inputEmbedDim inputEmbedDim
   LMHeadDenseF 'RoBERTa device dataType inputEmbedDim = Linear 'WithBias device dataType inputEmbedDim inputEmbedDim
   LMHeadDenseF 'T5 _ _ _ = ()
+  LMHeadDenseF 'BART _ _ _ = ()
   LMHeadDenseF 'Pegasus _ _ _ = ()
 
 type family
@@ -106,6 +107,7 @@ type family
   LMHeadActivationF 'BERT = Gelu
   LMHeadActivationF 'RoBERTa = Gelu
   LMHeadActivationF 'T5 = ()
+  LMHeadActivationF 'BART = ()
   LMHeadActivationF 'Pegasus = ()
 
 type family
@@ -119,6 +121,7 @@ type family
   LMHeadLayerNormF 'BERT device dataType inputEmbedDim = LayerNorm 'WithBias device dataType ('Shape '[inputEmbedDim])
   LMHeadLayerNormF 'RoBERTa device dataType inputEmbedDim = LayerNorm 'WithBias device dataType ('Shape '[inputEmbedDim])
   LMHeadLayerNormF 'T5 _ _ _ = ()
+  LMHeadLayerNormF 'BART _ _ _ = ()
   LMHeadLayerNormF 'Pegasus _ _ _ = ()
 
 type family
@@ -133,6 +136,7 @@ type family
   LMHeadDecoderF 'BERT device dataType inputEmbedDim vocabDim = Linear 'WithBias device dataType inputEmbedDim vocabDim
   LMHeadDecoderF 'RoBERTa device dataType inputEmbedDim vocabDim = Linear 'WithBias device dataType inputEmbedDim vocabDim
   LMHeadDecoderF 'T5 device dataType inputEmbedDim vocabDim = Linear 'WithoutBias device dataType inputEmbedDim vocabDim
+  LMHeadDecoderF 'BART device dataType inputEmbedDim vocabDim = Linear 'WithoutBias device dataType inputEmbedDim vocabDim
   LMHeadDecoderF 'Pegasus device dataType inputEmbedDim vocabDim = Linear 'WithoutBias device dataType inputEmbedDim vocabDim
 
 type family
@@ -145,6 +149,7 @@ type family
   where
   LMHeadBiasF 'BERT _ _ _ = ()
   LMHeadBiasF 'RoBERTa _ _ _ = ()
+  LMHeadBiasF 'BART device dataType vocabDim = Tensor 'WithGradient ('Layout 'Dense) device dataType ('Shape '[ 'Dim ('Name "*") ('Size 1), vocabDim])
   LMHeadBiasF 'Pegasus device dataType vocabDim = Tensor 'WithGradient ('Layout 'Dense) device dataType ('Shape '[ 'Dim ('Name "*") ('Size 1), vocabDim])
   LMHeadBiasF 'T5 _ _ _ = ()
 
@@ -180,11 +185,13 @@ lookupLMHead eps prefix =
           <$> lookupTensor (prefix <> "dense.weight")
           <*> lookupTensor (prefix <> "dense.bias")
       dense ST5 = pure ()
+      dense SBART = pure ()
       dense SPegasus = pure ()
       activation :: STransformerStyle style -> LMHeadActivationF style
       activation SBERT = Gelu
       activation SRoBERTa = Gelu
       activation ST5 = ()
+      activation SBART = ()
       activation SPegasus = ()
       layerNorm SBERT =
         LayerNormWithBias
@@ -197,6 +204,7 @@ lookupLMHead eps prefix =
           <*> lookupTensor (prefix <> "layer_norm.bias")
           <*> pure eps
       layerNorm ST5 = pure ()
+      layerNorm SBART = pure ()
       layerNorm SPegasus = pure ()
       decoder SBERT =
         LinearWithBias
@@ -207,10 +215,12 @@ lookupLMHead eps prefix =
           <$> lookupTensor (prefix <> "decoder.weight")
           <*> lookupTensor (prefix <> "decoder.bias")
       decoder ST5 = LinearWithoutBias <$> lookupTensor (prefix <> "weight")
+      decoder SBART = LinearWithoutBias <$> lookupTensor (prefix <> "lm_head.weight")
       decoder SPegasus = LinearWithoutBias <$> lookupTensor (prefix <> "lm_head.weight")
       bias SBERT = pure ()
       bias SRoBERTa = pure ()
       bias ST5 = pure ()
+      bias SBART = lookupTensor (prefix <> "final_logits_bias")
       bias SPegasus = lookupTensor (prefix <> "final_logits_bias")
    in LMHead
         <$> ( GLMHead
@@ -247,6 +257,13 @@ type family
   LMHeadOutputF 'BERT decoderOutput _ _ _ = decoderOutput
   LMHeadOutputF 'T5 decoderOutput _ _ _ = decoderOutput
   LMHeadOutputF 'Pegasus (Tensor requiresGradient' layout' device' dataType' shape') device dataType vocabDim =
+    Tensor
+      'WithGradient
+      (layout' <+> 'Layout 'Dense)
+      (device' <+> device)
+      (dataType' <+> dataType)
+      (BroadcastShapesF shape' ('Shape '[ 'Dim ('Name "*") ('Size 1), vocabDim]))
+  LMHeadOutputF 'BART (Tensor requiresGradient' layout' device' dataType' shape') device dataType vocabDim =
     Tensor
       'WithGradient
       (layout' <+> 'Layout 'Dense)
@@ -321,11 +338,13 @@ instance
         scaling SBERT = id
         scaling SRoBERTa = id
         scaling ST5 = flip divScalar s
+        scaling SBART = id
         scaling SPegasus = id
         bias :: STransformerStyle style -> decoderOutput -> output
         bias SBERT = id
         bias SRoBERTa = id
         bias ST5 = id
+        bias SBART = (`add` lmHeadBias)
         bias SPegasus = (`add` lmHeadBias)
      in runIxState $
           ireturn input

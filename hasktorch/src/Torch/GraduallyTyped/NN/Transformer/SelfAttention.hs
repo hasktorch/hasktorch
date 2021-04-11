@@ -352,17 +352,16 @@ instance
   ( KnownDim queryEmbedDim,
     KnownShape queryShape,
     Scalar dropoutP,
+    query ~ Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+    attentionBias ~ Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape,
     normedQueryLayout ~ ('Layout 'Dense <+> queryLayout),
     normedQueryDevice ~ (device <+> queryDevice),
     normedQueryDataType ~ (dataType <+> queryDataType),
     normedQueryShape ~ LayerNormWithoutBiasF ('Shape '[queryEmbedDim]) queryShape,
+    normedQuery ~ Tensor 'WithGradient normedQueryLayout normedQueryDevice normedQueryDataType normedQueryShape,
     HasForward
       (MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP)
-      ( Tensor 'WithGradient normedQueryLayout normedQueryDevice normedQueryDataType normedQueryShape,
-        Tensor 'WithGradient normedQueryLayout normedQueryDevice normedQueryDataType normedQueryShape,
-        Tensor 'WithGradient normedQueryLayout normedQueryDevice normedQueryDataType normedQueryShape,
-        Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
-      )
+      (normedQuery, normedQuery, normedQuery, attentionBias)
       (Generator generatorDevice)
       ( Tensor
           'WithGradient
@@ -383,9 +382,7 @@ instance
   ) =>
   HasForward
     (SelfAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
-    ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
-      Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
-    )
+    (query, attentionBias)
     (Generator generatorDevice)
     output
     generatorOutput
@@ -453,8 +450,7 @@ instance
               ('Shape '[queryEmbedDim])
               (BroadcastShapesF queryShape mhaOutputShape)
           ),
-    generatorOutput
-      ~ Generator (device <+> queryDevice <+> attentionBiasDevice <+> generatorDevice)
+    generatorOutput ~ Generator (device <+> queryDevice <+> attentionBiasDevice <+> generatorDevice)
   ) =>
   HasForward
     (SelfAttention 'BART device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
@@ -644,19 +640,17 @@ instance
 -- @
 instance
   ( KnownDim queryEmbedDim,
-    KnownShape queryShape,
     Scalar dropoutP,
+    query ~ Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
+    attentionBias ~ Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape,
     normedQueryLayout ~ ('Layout 'Dense <+> queryLayout),
     normedQueryDevice ~ (device <+> queryDevice),
     normedQueryDataType ~ (dataType <+> queryDataType),
     normedQueryShape ~ LayerNormWithBiasF ('Shape '[queryEmbedDim]) ('Shape '[queryEmbedDim]) queryShape,
+    normedQuery ~ Tensor 'WithGradient normedQueryLayout normedQueryDevice normedQueryDataType normedQueryShape,
     HasForward
       (MultiHeadAttention 'Pegasus device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP)
-      ( Tensor 'WithGradient normedQueryLayout normedQueryDevice normedQueryDataType normedQueryShape,
-        Tensor 'WithGradient normedQueryLayout normedQueryDevice normedQueryDataType normedQueryShape,
-        Tensor 'WithGradient normedQueryLayout normedQueryDevice normedQueryDataType normedQueryShape,
-        Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
-      )
+      (normedQuery, normedQuery, normedQuery, attentionBias)
       (Generator generatorDevice)
       ( Tensor
           'WithGradient
@@ -677,9 +671,7 @@ instance
   ) =>
   HasForward
     (SelfAttention 'Pegasus device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
-    ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
-      Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
-    )
+    (query, attentionBias)
     (Generator generatorDevice)
     output
     generatorOutput
@@ -687,11 +679,7 @@ instance
   forward (SelfAttention GSelfAttention {..}) (query, attentionBias) =
     runIxState $
       ireturn query
-        -- >>>= ireturn . traceShowId -- Pegasus: -4.5412, 0.1463, 43.2217, ...
         >>>= IxState . forward saLayerNorm
-        -- >>>= ireturn . traceShowId -- Pegasus: -0.0641, -0.1177, 0.1930, ...
         >>>= (\query' -> IxState $ forward saMultiheadAttention (query', query', query', attentionBias))
         >>>= IxState . forward saDropout
         >>>= ireturn . (query `add`)
-
--- >>>= ireturn . traceShowId -- Pegasus: -5.3833, 0.1969, 115.3354, ...

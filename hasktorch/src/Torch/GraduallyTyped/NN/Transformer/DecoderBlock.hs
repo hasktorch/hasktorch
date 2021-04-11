@@ -227,10 +227,13 @@ lookupDecoderBlock ::
 lookupDecoderBlock dropoutP eps prefix =
   let selfAttention ST5 = lookupSelfAttention dropoutP eps (prefix <> "layer.0.")
       selfAttention SPegasus = lookupSelfAttention dropoutP eps prefix
+      selfAttention SBART = lookupSelfAttention dropoutP eps prefix
       crossAttention ST5 = lookupCrossAttention dropoutP eps (prefix <> "layer.1.")
       crossAttention SPegasus = lookupCrossAttention dropoutP eps prefix
+      crossAttention SBART = lookupCrossAttention dropoutP eps prefix
       feedForwardNetwork ST5 = lookupTransformerFeedForwardNetwork dropoutP eps (prefix <> "layer.2.")
       feedForwardNetwork SPegasus = lookupTransformerFeedForwardNetwork dropoutP eps prefix
+      feedForwardNetwork SBART = lookupTransformerFeedForwardNetwork dropoutP eps prefix
    in TransformerDecoderBlock
         <$> selfAttention (sing @style)
         <*> crossAttention (sing @style)

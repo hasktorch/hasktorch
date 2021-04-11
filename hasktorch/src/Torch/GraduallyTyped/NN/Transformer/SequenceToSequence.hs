@@ -590,11 +590,14 @@ lookupSequenceToSequenceTransformer ::
   m (SequenceToSequenceTransformer numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP)
 lookupSequenceToSequenceTransformer dropoutP eps prefix =
   let encoder ST5 = lookupEncoder dropoutP eps (prefix <> "encoder.")
+      encoder SBART = lookupEncoder dropoutP eps (prefix <> "encoder.")
       encoder SPegasus = lookupEncoder dropoutP eps (prefix <> "encoder.")
       decoder ST5 = lookupDecoder dropoutP eps (prefix <> "decoder.")
+      decoder SBART = lookupDecoder dropoutP eps (prefix <> "decoder.")
       decoder SPegasus = lookupDecoder dropoutP eps (prefix <> "decoder.")
-      embedding ST5 = fmap @m Embedding $ lookupTensor "shared.weight"
-      embedding SPegasus = fmap @m Embedding $ lookupTensor (prefix <> "shared.weight")
+      embedding ST5 = Embedding <$> lookupTensor "shared.weight"
+      embedding SBART = Embedding <$> lookupTensor (prefix <> "shared.weight")
+      embedding SPegasus = Embedding <$> lookupTensor (prefix <> "shared.weight")
    in SequenceToSequenceTransformer
         <$> ( GSequenceToSequenceTransformer
                 <$> encoder (sing @style)
@@ -628,8 +631,10 @@ lookupSequenceToSequenceTransformerWithLMHead ::
   m (SequenceToSequenceTransformerWithLMHead numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP)
 lookupSequenceToSequenceTransformerWithLMHead dropoutP eps prefix =
   let transformer ST5 = lookupSequenceToSequenceTransformer dropoutP eps prefix
+      transformer SBART = lookupSequenceToSequenceTransformer dropoutP eps (prefix <> "model.")
       transformer SPegasus = lookupSequenceToSequenceTransformer dropoutP eps (prefix <> "model.")
       lmHead ST5 = lookupLMHead eps (prefix <> "lm_head.")
+      lmHead SBART = lookupLMHead eps prefix
       lmHead SPegasus = lookupLMHead eps prefix
    in SequenceToSequenceTransformerWithLMHead
         <$> ( GSequenceToSequenceTransformerWithLMHead
@@ -774,6 +779,7 @@ instance
           Tensor requiresGradient layout device dataType shape
         embedScaling ST5 = id
         embedScaling SPegasus = flip mulScalar s
+        embedScaling SBART = flip mulScalar s
      in runIxState $
           ireturn input
             >>>= IxState . forward seqToSeqEmbedding

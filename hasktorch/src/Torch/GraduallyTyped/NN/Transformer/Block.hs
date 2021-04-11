@@ -193,10 +193,12 @@ lookupBlock dropoutP eps prefix =
       selfAttention SBERT = lookupSelfAttention dropoutP eps (prefix <> "attention.")
       selfAttention SRoBERTa = lookupSelfAttention dropoutP eps (prefix <> "attention.")
       selfAttention SPegasus = lookupSelfAttention dropoutP eps prefix
+      selfAttention SBART = lookupSelfAttention dropoutP eps prefix
       feedForwardNetwork ST5 = lookupTransformerFeedForwardNetwork dropoutP eps (prefix <> "layer.1.")
       feedForwardNetwork SBERT = lookupTransformerFeedForwardNetwork dropoutP eps prefix
       feedForwardNetwork SRoBERTa = lookupTransformerFeedForwardNetwork dropoutP eps prefix
       feedForwardNetwork SPegasus = lookupTransformerFeedForwardNetwork dropoutP eps prefix
+      feedForwardNetwork SBART = lookupTransformerFeedForwardNetwork dropoutP eps prefix
    in TransformerBlock
         <$> selfAttention (sing @style)
         <*> feedForwardNetwork (sing @style)
