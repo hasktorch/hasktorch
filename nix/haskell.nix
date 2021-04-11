@@ -91,6 +91,11 @@ let
 
       # Add non-Haskell dependencies
       {
+        packages.tokenizers = {
+          configureFlags = [
+            "--extra-lib-dirs=${pkgs.tokenizers_haskell}/lib"
+          ];
+        };
         packages.libtorch-ffi = {
           preConfigure = setupNumCores "libtorch-ffi";
           configureFlags = [

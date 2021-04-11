@@ -50,15 +50,18 @@ let
         nproc = ''
           case "$(uname)" in
             "Linux")
-                ${pkgs.utillinux}/bin/taskset -pc 0-1000 $$
+                ${utillinux}/bin/taskset -pc 0-1000 $$
             ;;
           esac
         '';
         libraryPath = stdenv.lib.optionalString cudaSupport ''
           export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/run/opengl-driver/lib"
         '';
+        tokenizersLibraryPath = ''
+          export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${tokenizers_haskell}/lib"
+        '';
       in
-        cpath + nproc + libraryPath;
+        cpath + nproc + libraryPath + tokenizersLibraryPath;
 
     inherit withHoogle;
   };

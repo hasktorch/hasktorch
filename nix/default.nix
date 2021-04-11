@@ -72,6 +72,18 @@ let
           }
       )
     ]
+    # tokenizers overlays:
+    ++ [
+      (pkgs: _: with pkgs; {
+        naersk = callPackage sources.naersk { };
+      })
+      (pkgsNew: pkgsOld:
+        let tokenizers = (import "${sources.tokenizers}/nix/pkgs.nix") pkgsNew pkgsOld; in
+        {
+          tokenizers_haskell = tokenizers.tokenizersPackages.tokenizers-haskell;
+        }
+      )
+    ]
     # hasktorch overlays:
     ++ [
       (pkgs: _: with pkgs; {

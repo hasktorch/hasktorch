@@ -6,6 +6,13 @@ packages:
     examples/*.cabal
     experimental/*.cabal
 
+source-repository-package
+    type: git
+    location: https://github.com/hasktorch/tokenizers
+    tag: 35abed54f7bc2c3d662f0b2db5cd2f3aab5c71de
+    --sha256: 0s0xdw604ijakpbxnj3hz086cdyyi5jjwq4zb4ss0blgfg22aj8r
+    subdir: bindings/haskell/tokenizers-haskell
+
 write-ghc-environment-files: always
 tests: true
 documentation: false
