@@ -40,6 +40,8 @@ cradle:
       component: "exe:minimal-text-example"
     - path: "./examples/mnist-mlp"
       component: "exe:mnist-mlp"
+    - path: "./examples/mnist-mixed-precision"
+      component: "exe:mnist-mixed-precision"
     - path: "./examples/optimizers"
       component: "exe:optimizers"
     - path: "./examples/regression"
