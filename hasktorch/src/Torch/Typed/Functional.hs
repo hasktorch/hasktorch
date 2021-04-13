@@ -346,6 +346,25 @@ meanDim ::
   Tensor device dtype shape'
 meanDim input = unsafePerformIO $ ATen.cast2 ATen.Managed.mean_tl input (natValI @dim)
 
+-- | Computes the mean and reduces the tensor over the specified dimension.
+--
+-- >>> t = def :: NamedTensor '( D.CPU, 0) 'D.Float '[Vector 3, Vector 4, Vector 5]
+-- >>> dtype &&& shape $ meanNamedDim @(Vector 2) t
+-- (Float,[Vector 4,Vector 5])
+meanNamedDim ::
+  forall dim shape' shape dtype device.
+  ( KnownNat (FindDim dim shape),
+    shape' ~ DropNamedValue shape dim,
+    MeanDTypeValidation device dtype
+  ) =>
+  -- | input
+  NamedTensor device dtype shape ->
+  -- | output
+  NamedTensor device dtype shape'
+meanNamedDim input = unsafePerformIO $ ATen.cast2 ATen.Managed.mean_tl input _dim
+  where
+    _dim = natValI @(FindDim dim shape)
+
 -- | Computes the mean and optionally reduces the tensor over the specified dimension.
 --
 -- See https://pytorch.org/docs/stable/torch.html#torch.mean for more information.
@@ -4951,6 +4970,11 @@ type family DropValue (shape :: [Nat]) (i :: Nat) :: [Nat] where
   DropValue (x : xs) 0 = xs
   DropValue (x : xs) i = x ': DropValue xs (i -1)
 
+type family DropNamedValue (shape :: Shape) (i :: Size) :: Shape where
+  DropNamedValue '[] _ = TypeError (Text "Can not find a element in the list.")
+  DropNamedValue (x : xs) x = xs
+  DropNamedValue (x : xs) y = x ': DropNamedValue xs y
+
 -- | minDim
 --
 -- >>> t = ones :: CPUTensor 'D.Float '[3,4,5]
@@ -5020,12 +5044,12 @@ sortDim ::
   ( KnownNat dim,
     HasDim dim shape
   ) =>
-  Tensor device dtype shape ->
   Bool ->
+  Tensor device dtype shape ->
   ( Tensor device dtype shape,
     Tensor device D.Int64 shape
   )
-sortDim _input _descending =
+sortDim _descending _input =
   let (a,b) = func (toDynamic _input)
   in (UnsafeMkTensor a, UnsafeMkTensor b)
   where
@@ -5037,12 +5061,12 @@ sortNamedDim ::
   forall dim shape dtype device.
   ( KnownNat (FindDim dim shape)
   ) =>
-  NamedTensor device dtype shape ->
   Bool ->
+  NamedTensor device dtype shape ->
   ( NamedTensor device dtype shape,
     NamedTensor device D.Int64 shape
   )
-sortNamedDim _input _descending =
+sortNamedDim _descending _input =
   let (a,b) = func (toDynamic _input)
   in (FromTensor $ UnsafeMkTensor a, FromTensor $ UnsafeMkTensor b)
   where
@@ -5060,10 +5084,10 @@ argSortDim ::
   ( KnownNat dim,
     HasDim dim shape
   ) =>
-  Tensor device dtype shape ->
   Bool ->
+  Tensor device dtype shape ->
   Tensor device D.Int64 shape
-argSortDim _input _descending = unsafePerformIO $ (ATen.cast3 ATen.Managed.argsort_tlb) _input _dim _descending
+argSortDim _descending _input = unsafePerformIO $ (ATen.cast3 ATen.Managed.argsort_tlb) _input _dim _descending
   where
     _dim = natValI @dim
 
@@ -5076,10 +5100,10 @@ argSortNamedDim ::
   forall dim shape dtype device.
   ( KnownNat (FindDim dim shape)
   ) =>
-  NamedTensor device dtype shape ->
   Bool ->
+  NamedTensor device dtype shape ->
   NamedTensor device D.Int64 shape
-argSortNamedDim _input _descending = unsafePerformIO $ (ATen.cast3 ATen.Managed.argsort_tlb) _input _dim _descending
+argSortNamedDim _descending _input = unsafePerformIO $ (ATen.cast3 ATen.Managed.argsort_tlb) _input _dim _descending
   where
     _dim = natValI @(FindDim dim shape)
 

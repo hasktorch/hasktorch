@@ -178,9 +178,16 @@ spec = do
       fieldId @"g" (Proxy :: Proxy (RGB ())) `shouldBe` Just 1
       fieldId @"b" (Proxy :: Proxy (RGB ())) `shouldBe` Just 2
       fieldId @"y" (Proxy :: Proxy (RGB ())) `shouldBe` Nothing
-    it "sort by a name" $ do
+    it "sort" $ do
       let t :: NamedTensor '(D.CPU, 0) 'D.Float '[Vector 2, Vector 3, Vector 4, RGB]
           t = def
-          (v, idx) = sortNamedDim @RGB t True
+          (v, idx) = sortNamedDim @RGB True t
       checkDynamicTensorAttributes' v
       checkDynamicTensorAttributes' idx
+    it "mean" $ do
+      let t :: NamedTensor '(D.CPU, 0) 'D.Float '[Vector 2, Vector 3, Vector 4, RGB]
+          t = def
+          v0 = meanNamedDim @RGB t :: NamedTensor '(D.CPU, 0) 'D.Float '[Vector 2, Vector 3, Vector 4]
+          v1 = meanNamedDim @(Vector 3) t :: NamedTensor '(D.CPU, 0) 'D.Float '[Vector 2, Vector 4, RGB]
+      checkDynamicTensorAttributes' v0
+      checkDynamicTensorAttributes' v1
