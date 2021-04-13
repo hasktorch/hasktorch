@@ -126,11 +126,12 @@ type Size = Type -> Type
 type Shape = [Type -> Type]
 
 type family ToNat (shape :: Size) :: Nat where
-  ToNat (S1 ( 'MetaSel _ _ _ _) _) = 1
+  ToNat (S1 ( 'MetaSel _ _ _ _) f) = ToNat f
   ToNat (D1 _ f) = ToNat f
   ToNat (C1 _ f) = ToNat f
   ToNat (l :*: r) = ToNat l + ToNat r
   ToNat (l :+: r) = If (ToNat l <=? ToNat r) (ToNat r) (ToNat l)
+  ToNat (K1 R (Vector n _)) = n
   ToNat (K1 _ _) = 1
   ToNat U1 = 1
   ToNat (Vector n) = n
@@ -494,6 +495,10 @@ instance {-# OVERLAPS #-} Unnamed t => Castable (Wrap t) D.ATenTensor where
      in f aten_tensor
   uncast aten_tensor f = f $ Wrap $ fromUnnamed $ UnsafeMkTensor (D.Unsafe aten_tensor)
 
+instance Castable (NamedTensor device dtype shape) D.ATenTensor where
+  cast (FromTensor (UnsafeMkTensor (D.Unsafe aten_tensor))) f = f aten_tensor
+  uncast aten_tensor f = f . FromTensor . UnsafeMkTensor $ D.Unsafe aten_tensor
+
 instance Castable (Tensor device dtype shape) D.ATenTensor where
   cast (UnsafeMkTensor (D.Unsafe aten_tensor)) f = f aten_tensor
   uncast aten_tensor f = f $ UnsafeMkTensor (D.Unsafe aten_tensor)
@@ -689,8 +694,69 @@ toBool t = D.asValue . toDynamic . toCPU $ t
 -- NamedTensor
 --------------------------------------------------------------------------------
 
+type family ToDType a :: D.DType where
+  ToDType Bool = 'D.Bool
+  ToDType Int = 'D.Int64
+  ToDType Float = 'D.Float
+  ToDType Double = 'D.Double
+  ToDType (f a) = ToDType a
+
+type family ToShape a :: Shape where
+  ToShape Bool = '[]
+  ToShape Int = '[]
+  ToShape Float = '[]
+  ToShape Double = '[] 
+  ToShape (f a) = f ': ToShape a
+
+type family FindDim (a :: Size) (shape :: Shape) :: Nat where
+  FindDim a (a ': _) = 0
+  FindDim a (b ': ax) = 1 + FindDim a ax
+  FindDim a _ = TypeError (Text "Not find a type:" :<>: ShowType a :<>: Text " in the shape.")
+
 data NamedTensor (device :: (D.DeviceType, Nat)) (dtype :: D.DType) (shape :: Shape) where
   FromTensor :: forall device dtype shape' shape. shape ~ ToNats shape' => Tensor device dtype shape -> NamedTensor device dtype shape'
+
+class NamedTensorLike a where
+  type ToNestedList a :: Type
+  toNestedList :: a -> ToNestedList a
+  asNamedTensor :: a -> NamedTensor '( 'D.CPU, 0) (ToDType a) (ToShape a)
+  fromNestedList :: ToNestedList a -> a
+  fromNamedTensor :: NamedTensor '( 'D.CPU, 0) (ToDType a) (ToShape a) -> a 
+
+instance NamedTensorLike Bool where
+  type ToNestedList Bool = Bool
+  toNestedList = id
+  asNamedTensor = fromUnnamed . UnsafeMkTensor . D.asTensor
+  fromNestedList = id
+  fromNamedTensor = D.asValue . toDynamic
+
+instance NamedTensorLike Int where
+  type ToNestedList Int = Int
+  toNestedList = id
+  asNamedTensor = fromUnnamed . UnsafeMkTensor . D.asTensor
+  fromNestedList = id
+  fromNamedTensor = D.asValue . toDynamic
+
+instance NamedTensorLike Float where
+  type ToNestedList Float = Float
+  toNestedList = id
+  asNamedTensor = fromUnnamed . UnsafeMkTensor . D.asTensor
+  fromNestedList = id
+  fromNamedTensor = D.asValue . toDynamic
+
+instance NamedTensorLike Double where
+  type ToNestedList Double = Double
+  toNestedList = id
+  asNamedTensor = fromUnnamed . UnsafeMkTensor . D.asTensor
+  fromNestedList = id
+  fromNamedTensor = D.asValue . toDynamic
+
+instance (KnownNat n, D.TensorLike (ToNestedList a), NamedTensorLike a) => NamedTensorLike (Vector n a) where
+  type ToNestedList (Vector n a) = [ToNestedList a]
+  toNestedList v = fmap toNestedList (V.toList v)
+  asNamedTensor v = fromUnnamed . UnsafeMkTensor . D.asTensor $ toNestedList v
+  fromNestedList = fmap fromNestedList . fromJust . V.fromList
+  fromNamedTensor =  fromNestedList . D.asValue . toDynamic
 
 instance Unnamed (NamedTensor device dtype shape) where
   type UTShape (NamedTensor device dtype shape) = ToNats shape
