@@ -8,6 +8,7 @@ module Torch.GraduallyTyped.NN.Transformer.RoBERTa
   ( module Torch.GraduallyTyped.NN.Transformer.RoBERTa.Common,
     module Torch.GraduallyTyped.NN.Transformer.RoBERTa.Base,
     testForwardRoBERTaBase,
+    testRoBERTaInput
   )
 where
 
@@ -28,15 +29,28 @@ import Torch.GraduallyTyped.Tensor.Creation (arangeNaturals, zeros)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (addScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
 import qualified Torch.Tensor as Tensor (Tensor (..), asValue)
+import Tokenizers (addSpecialToken, mkRobertaTokenizer, Tokenizer, encode, getIDs, getTokens)
 
 type TestRoBERTaSeqDim = 'Dim ('Name "*") ('Size 11)
 
+testTokenizer :: IO Tokenizer
+testTokenizer =
+  mkRobertaTokenizer
+    "/Users/tscholak/Projects/thirdParty/tokenizers/bindings/haskell/tokenizers-haskell/roberta-base-vocab.json"
+    "/Users/tscholak/Projects/thirdParty/tokenizers/bindings/haskell/tokenizers-haskell/roberta-base-merges.txt"
+
 testRoBERTaInput :: IO _
-testRoBERTaInput =
+testRoBERTaInput = do
+  tokenizer <- testTokenizer
+  mapM_ (addSpecialToken tokenizer) ["<s>", "</s>", "<unk>", "<pad>", "<mask>"]
+  encoded <- encode tokenizer "<s>Hello my name is<mask></s>"
+  ids <- getIDs encoded
+  print =<< getTokens encoded
   mkRoBERTaInput
     @('Dim ('Name "*") ('Size 1))
     @TestRoBERTaSeqDim
-    [ [0, 133, 812, 9, 1470, 16, 646, 32804, 530, 8174, 2]
+    [ ids
+      -- [0, 133, 812, 9, 1470, 16, 646, 32804, 530, 8174, 2]
     ]
 
 testRoBERTaInputType :: _

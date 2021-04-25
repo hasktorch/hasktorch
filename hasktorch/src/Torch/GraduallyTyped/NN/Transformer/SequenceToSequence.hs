@@ -58,8 +58,9 @@ import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), Name (..), Shape (..), Size (..), WithDimC (..))
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mulScalar)
-import Torch.GraduallyTyped.Tensor.Type (Tensor)
+import Torch.GraduallyTyped.Tensor.Type (Tensor (UnsafeTensor))
 import Torch.GraduallyTyped.Unify (type (<+>))
+import qualified Torch.Tensor as Tensor
 
 data
   GSequenceToSequenceTransformer
@@ -779,7 +780,18 @@ instance
           Tensor requiresGradient layout device dataType shape
         embedScaling ST5 = id
         embedScaling SPegasus = flip mulScalar s
-        embedScaling SBART = flip mulScalar s
+        embedScaling SBART = id
+        f (UnsafeTensor t) =
+          let t' = Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
+           in do
+                firstBatch <- take 1 t'
+                firstPositions <- take 3 firstBatch
+                take 3 firstPositions
+        g (UnsafeTensor t) =
+          let t' = Tensor.asValue (Tensor.Unsafe t) :: [[Int]]
+           in do
+                firstBatch <- take 1 t'
+                take 3 firstBatch
      in runIxState $
           ireturn input
             >>>= IxState . forward seqToSeqEmbedding

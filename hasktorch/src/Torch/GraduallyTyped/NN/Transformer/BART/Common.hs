@@ -429,7 +429,7 @@ instance
               inputSeqDim
      in runIxState $
           ireturn bartDecoderInput
-            >>>= IxState . forward (initialize @(ShiftRight Int) bartBOSTokenId)
+            >>>= IxState . forward (initialize @(ShiftRight Int) bartEOSTokenId)
             >>>= ( \rightShiftedDecoderInput ->
                      let rightShiftedDecoderInputDevice = device rightShiftedDecoderInput
                          [_, rightShiftedDecoderInputSeqDim] = shape rightShiftedDecoderInput
@@ -567,7 +567,7 @@ instance
   forward bartModel BARTGenerationInput {..} =
     runIxState $
       ireturn bartGenerationDecoderInput
-        >>>= IxState . forward (initialize @(ShiftRight Int) bartBOSTokenId)
+        >>>= IxState . forward (initialize @(ShiftRight Int) bartEOSTokenId)
         >>>= ( \rightShiftedDecoderInput ->
                  let rightShiftedDecoderInputDevice = device rightShiftedDecoderInput
                      [_, rightShiftedDecoderInputSeqDim] = shape rightShiftedDecoderInput

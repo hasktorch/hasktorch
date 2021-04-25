@@ -1051,5 +1051,3 @@ instance
             >>>= IxState . forward teDropout
             >>>= (\input' -> IxState $ forward teStack (input', attentionBias))
             >>>= IxState . forward teLayerNorm
-
--- >>>= ireturn . traceShowId -- Pegasus: 0.0965, -0.0048, -0.1945, ...
