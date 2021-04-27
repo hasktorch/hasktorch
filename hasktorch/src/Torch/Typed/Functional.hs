@@ -348,6 +348,7 @@ meanDim input = unsafePerformIO $ ATen.cast2 ATen.Managed.mean_tl input (natValI
 
 -- | Computes the mean and reduces the tensor over the specified dimension.
 --
+-- >>> :m + Torch.Typed.Factories
 -- >>> t = def :: NamedTensor '( D.CPU, 0) 'D.Float '[Vector 3, Vector 4, Vector 5]
 -- >>> dtype &&& shape $ meanNamedDim @(Vector 2) t
 -- (Float,[Vector 4,Vector 5])
