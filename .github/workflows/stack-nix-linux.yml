@@ -29,6 +29,18 @@ jobs:
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - run: nix-env -iA cachix -f https://cachix.org/api/v1/install
       - run: cachix use iohk
+      - name: Cache .stack
+        id: cache-stack
+        uses: actions/cache@v2
+        with:
+          path: ~/.stack
+          key: "\
+            ${{ runner.os }}-stack\
+            -${{ hashFiles('**/stack.yaml.lock') }}\
+            -${{ hashFiles('**/package.yaml') }}\
+          "
+          restore-keys: |
+            ${{ runner.os }}-stack-
       - name: Build
         run: stack --nix build
       - name: Test
