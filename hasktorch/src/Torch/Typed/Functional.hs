@@ -348,10 +348,11 @@ meanDim input = unsafePerformIO $ ATen.cast2 ATen.Managed.mean_tl input (natValI
 
 -- | Computes the mean and reduces the tensor over the specified dimension.
 --
--- >>> :m + Torch.Typed.Factories
+-- >>> import Torch.Typed.Factories
+-- >>> import Data.Default.Class
 -- >>> t = def :: NamedTensor '( D.CPU, 0) 'D.Float '[Vector 3, Vector 4, Vector 5]
--- >>> dtype &&& shape $ meanNamedDim @(Vector 2) t
--- (Float,[Vector 4,Vector 5])
+-- >>> dtype &&& shape $ meanNamedDim @(Vector 4) t
+-- (Float,[3,5])
 meanNamedDim ::
   forall dim shape' shape dtype device.
   ( KnownNat (FindDim dim shape),
@@ -5036,9 +5037,9 @@ type family HasDim (dim :: Nat) (shape :: [Nat]) :: Constraint where
 -- | sortDim
 --
 -- >>> t = ones :: CPUTensor 'D.Float '[3,4,5]
--- >>> dtype &&& shape $ fst $ sortDim @0 t
+-- >>> dtype &&& shape $ fst $ sortDim @0 True t
 -- (Float,[3,4,5])
--- >>> dtype &&& shape $ snd $ sortDim @0 t
+-- >>> dtype &&& shape $ snd $ sortDim @0 True t
 -- (Int64,[3,4,5])
 sortDim ::
   forall dim shape dtype device.
@@ -5058,6 +5059,15 @@ sortDim _descending _input =
     func _input = unsafePerformIO $ (ATen.cast3 ATen.Managed.sort_tlb) _input _dim _descending
     _dim = natValI @dim
 
+-- | sortNamedDim
+--
+-- >>> import Torch.Typed.Factories
+-- >>> import Data.Default.Class
+-- >>> t = def :: NamedTensor '( D.CPU, 0) 'D.Float '[Vector 3, Vector 4, Vector 5]
+-- >>> dtype &&& shape $ fst $ sortNamedDim @(Vector 3) True t
+-- (Float,[3,4,5])
+-- >>> dtype &&& shape $ snd $ sortNamedDim @(Vector 3) True t
+-- (Int64,[3,4,5])
 sortNamedDim ::
   forall dim shape dtype device.
   ( KnownNat (FindDim dim shape)
@@ -5078,7 +5088,7 @@ sortNamedDim _descending _input =
 -- | argSortDim
 --
 -- >>> t = ones :: CPUTensor 'D.Float '[3,4,5]
--- >>> dtype &&& shape $ argSortDim @0 t
+-- >>> dtype &&& shape $ argSortDim @0 True t
 -- (Int64,[3,4,5])
 argSortDim ::
   forall dim shape dtype device.
@@ -5092,11 +5102,6 @@ argSortDim _descending _input = unsafePerformIO $ (ATen.cast3 ATen.Managed.argso
   where
     _dim = natValI @dim
 
--- | argSortDim
---
--- >>> t = ones :: CPUTensor 'D.Float '[3,4,5]
--- >>> dtype &&& shape $ argSortDim @0 t
--- (Int64,[3,4,5])
 argSortNamedDim ::
   forall dim shape dtype device.
   ( KnownNat (FindDim dim shape)

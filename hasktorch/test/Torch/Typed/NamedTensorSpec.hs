@@ -191,3 +191,8 @@ spec = do
           v1 = meanNamedDim @(Vector 3) t :: NamedTensor '(D.CPU, 0) 'D.Float '[Vector 2, Vector 4, RGB]
       checkDynamicTensorAttributes' v0
       checkDynamicTensorAttributes' v1
+    it "shape and dtype" $ do
+      let t :: NamedTensor '(D.CPU, 0) 'D.Float '[Vector 2, Vector 3, Vector 4, RGB]
+          t = def
+      shape t `shouldBe` [2,3,4,3]
+      dtype t `shouldBe` D.Float
