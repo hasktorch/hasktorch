@@ -20,6 +20,13 @@ jobs:
     - name: Setup repos
       run: |
         git submodule init && git submodule update
+    - name: Cache .cabal
+      uses: actions/cache@v2
+      with:
+        path: ~/.cabal/store
+        key: ${{ runner.os }}-cabal-${{ hashFiles('**/fallible.cabal') }}
+        restore-keys: |
+          ${{ runner.os }}-cabal-
     - name: Build
       run: |
         export PATH=/opt/ghc/bin:$PATH
