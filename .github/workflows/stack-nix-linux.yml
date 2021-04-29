@@ -40,7 +40,7 @@ jobs:
             -${{ hashFiles('**/package.yaml') }}\
           "
           restore-keys: |
-            ${{ runner.os }}-stack-
+            ${{ runner.os }}-nix-stack-
       - name: Build
         run: stack --nix build
       - name: Test
