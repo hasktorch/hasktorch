@@ -26,6 +26,18 @@ jobs:
     - name: Setup repos
       run: |
         git submodule init && git submodule update
+    - name: Cache .stack
+      id: cache-stack
+      uses: actions/cache@v2
+      with:
+        path: ~/.stack
+        key: "\
+          ${{ runner.os }}-stack\
+          -${{ hashFiles('**/stack.yaml.lock') }}\
+          -${{ hashFiles('**/package.yaml') }}\
+        "
+        restore-keys: |
+          ${{ runner.os }}-stack-
     - name: Build
       run: |
         export PATH=/opt/ghc/bin:$PATH

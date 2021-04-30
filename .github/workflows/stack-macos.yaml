@@ -22,6 +22,18 @@ jobs:
         brew tap hasktorch/libtorch-prebuild https://github.com/hasktorch/homebrew-libtorch-prebuild || true
         brew install libtorch-prebuild@1.8 || true
         #pushd deps/ ; ./get-deps.sh -a cpu -c ;popd
+    - name: Cache .stack
+      id: cache-stack
+      uses: actions/cache@v2
+      with:
+        path: ~/.stack
+        key: "\
+          ${{ runner.os }}-stack\
+          -${{ hashFiles('**/stack.yaml.lock') }}\
+          -${{ hashFiles('**/package.yaml') }}\
+        "
+        restore-keys: |
+          ${{ runner.os }}-stack-
     - name: Build
       run: |
         #. setenv
