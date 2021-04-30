@@ -42,6 +42,7 @@ import Torch.Typed.Factories
 import Torch.Typed.Functional
 import Torch.Typed.Lens
 import Torch.Typed.Tensor
+import Torch.Lens (Lens, Lens', Traversal, Traversal', flattenValues)
 
 newtype Batch (n::Nat) a = Batch (Vector n a) deriving (Show, Eq, Generic)
 newtype Height (n::Nat) a = Height (Vector n a) deriving (Show, Eq, Generic)
@@ -99,6 +100,9 @@ testFieldLens = field @"r"
 
 testFieldLens2 :: Lens' (NamedTensor '(D.CPU, 0) 'D.Float '[Vector n, RGB]) (NamedTensor '(D.CPU, 0) 'D.Float '[Vector n])
 testFieldLens2 = field @"r"
+
+testNamedLens :: Traversal' (NamedTensor '(D.CPU, 0) 'D.Float '[Vector n, RGB]) (NamedTensor '(D.CPU, 0) 'D.Float '[Vector n])
+testNamedLens = name @RGB
 
 testDropField :: Proxy (DropField "r" '[Vector 2, RGB]) -> Proxy '[Vector 2]
 testDropField = id
@@ -196,3 +200,9 @@ spec = do
           t = def
       shape t `shouldBe` [2,3,4,3]
       dtype t `shouldBe` D.Float
+    it "named index" $ do
+      let t :: NamedTensor '(D.CPU, 0) 'D.Float '[Vector 2, Vector 3, Vector 4, RGB]
+          t = def
+          t2 = flattenValues (name @(Vector 3)) t
+      map shape t2 `shouldBe` [[2,4,3],[2,4,3],[2,4,3]]
+      map dtype t2 `shouldBe` [D.Float,D.Float,D.Float]

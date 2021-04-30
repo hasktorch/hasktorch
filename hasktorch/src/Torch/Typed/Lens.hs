@@ -17,6 +17,7 @@
 module Torch.Typed.Lens where
 
 import Control.Monad.State.Strict
+import Control.Applicative (liftA2)
 import Data.Kind
 import Data.Maybe (fromJust)
 import Data.Proxy
@@ -29,16 +30,28 @@ import System.IO.Unsafe
 import qualified Torch.DType as D
 import qualified Torch.Device as D
 import qualified Torch.Functional as D hiding (select)
+import qualified Torch.Functional.Internal as I
 import qualified Torch.Internal.Managed.Type.TensorIndex as ATen
 import qualified Torch.Tensor as T
 import Torch.Typed.Tensor
+import Torch.Typed.Aux hiding (If)
+import Torch.Lens (Lens, Lens', Traversal, Traversal')
 
--- | Type alias for lens
-type Lens' s a =
-  Lens s s a a
+class HasName (name :: Type -> Type) shape where
+  name :: Traversal' (NamedTensor device dtype shape) (NamedTensor device dtype (DropName name shape))
+  default name :: (KnownNat (NamedIdx name shape)) => Traversal' (NamedTensor device dtype shape) (NamedTensor device dtype (DropName name shape))
+  name func s = func'
+    where
+      dimension :: Int
+      dimension = natValI @(NamedIdx name shape)
+      func' = (\v -> (fromUnnamed . UnsafeMkTensor $ D.stack (D.Dim dimension) (map toDynamic v))) <$> swapA (map func a') (pure [])
+      s' = toDynamic s
+      swapA [] v = v
+      swapA (x:xs) v = swapA xs (liftA2 (\a b -> b ++ [a]) x v)
+      a' :: [NamedTensor device dtype (DropName name shape)]
+      a' = map (fromUnnamed . UnsafeMkTensor) $ I.unbind s' dimension
 
-type Lens s t a b =
-  forall f. Functor f => (a -> f b) -> s -> f t
+instance (KnownNat (NamedIdx name shape)) => HasName name shape
 
 class HasField (field :: Symbol) shape where
   field :: Lens' (NamedTensor device dtype shape) (NamedTensor device dtype (DropField field shape))
@@ -70,6 +83,11 @@ type family DropField (field :: Symbol) (a :: [Type -> Type]) :: [Type -> Type] 
   DropField field '[] = '[]
   DropField field (x ': xs) = If (GHasField field x) xs (x ': DropField field xs)
 
+type family DropName (name :: Type -> Type) (a :: [Type -> Type]) :: [Type -> Type] where
+  DropName name '[] = '[]
+  DropName name (name ': xs) = xs
+  DropName name (x ': xs) = x ': DropName name xs
+
 instance {-# OVERLAPS #-} T.TensorIndex [Maybe Int] where
   pushIndex vec list_of_maybe_int = unsafePerformIO $ do
     idx <- forM list_of_maybe_int $ \i -> do
@@ -77,6 +95,11 @@ instance {-# OVERLAPS #-} T.TensorIndex [Maybe Int] where
         Nothing -> T.RawTensorIndex <$> ATen.newTensorIndexWithSlice 0 maxBound 1
         Just v -> T.RawTensorIndex <$> ATen.newTensorIndexWithInt (fromIntegral v)
     return $ idx ++ vec
+
+type family NamedIdx (name :: Type -> Type) (shape :: [Type -> Type]) :: Nat where
+  NamedIdx name '[] = TypeError ( Text "There is not the name in the shape." )
+  NamedIdx name (name ': xs) = 0
+  NamedIdx name (x ': xs) = NamedIdx name xs + 1
 
 class FieldIdx (field :: Symbol) (a :: [Type -> Type]) where
   -- | Return field-id
