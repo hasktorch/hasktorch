@@ -716,48 +716,6 @@ type family FindDim (a :: Size) (shape :: Shape) :: Nat where
 data NamedTensor (device :: (D.DeviceType, Nat)) (dtype :: D.DType) (shape :: Shape) where
   FromTensor :: forall device dtype shape' shape. shape ~ ToNats shape' => Tensor device dtype shape -> NamedTensor device dtype shape'
 
-class NamedTensorLike a where
-  type ToNestedList a :: Type
-  toNestedList :: a -> ToNestedList a
-  asNamedTensor :: a -> NamedTensor '( 'D.CPU, 0) (ToDType a) (ToShape a)
-  fromNestedList :: ToNestedList a -> a
-  fromNamedTensor :: NamedTensor '( 'D.CPU, 0) (ToDType a) (ToShape a) -> a 
-
-instance NamedTensorLike Bool where
-  type ToNestedList Bool = Bool
-  toNestedList = id
-  asNamedTensor = fromUnnamed . UnsafeMkTensor . D.asTensor
-  fromNestedList = id
-  fromNamedTensor = D.asValue . toDynamic
-
-instance NamedTensorLike Int where
-  type ToNestedList Int = Int
-  toNestedList = id
-  asNamedTensor = fromUnnamed . UnsafeMkTensor . D.asTensor
-  fromNestedList = id
-  fromNamedTensor = D.asValue . toDynamic
-
-instance NamedTensorLike Float where
-  type ToNestedList Float = Float
-  toNestedList = id
-  asNamedTensor = fromUnnamed . UnsafeMkTensor . D.asTensor
-  fromNestedList = id
-  fromNamedTensor = D.asValue . toDynamic
-
-instance NamedTensorLike Double where
-  type ToNestedList Double = Double
-  toNestedList = id
-  asNamedTensor = fromUnnamed . UnsafeMkTensor . D.asTensor
-  fromNestedList = id
-  fromNamedTensor = D.asValue . toDynamic
-
-instance (KnownNat n, D.TensorLike (ToNestedList a), NamedTensorLike a) => NamedTensorLike (Vector n a) where
-  type ToNestedList (Vector n a) = [ToNestedList a]
-  toNestedList v = fmap toNestedList (V.toList v)
-  asNamedTensor v = fromUnnamed . UnsafeMkTensor . D.asTensor $ toNestedList v
-  fromNestedList = fmap fromNestedList . fromJust . V.fromList
-  fromNamedTensor =  fromNestedList . D.asValue . toDynamic
-
 instance Unnamed (NamedTensor device dtype shape) where
   type UTShape (NamedTensor device dtype shape) = ToNats shape
   type UTDevice (NamedTensor device dtype shape) = device

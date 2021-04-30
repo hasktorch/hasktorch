@@ -78,6 +78,7 @@ library
                     , Torch.Typed.Serialize
                     , Torch.Typed.Vision
                     , Torch.Typed.Lens
+                    , Torch.Typed.NamedTensor
                     , Torch.Distributions.Constraints
                     , Torch.Distributions.Distribution
                     , Torch.Distributions.Bernoulli
