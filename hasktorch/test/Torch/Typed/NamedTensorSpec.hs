@@ -46,9 +46,9 @@ import Torch.Typed.NamedTensor
 import Torch.Typed.Tensor
 import Torch.Lens
 
-newtype Batch (n::Nat) a = Batch (Vector n a) deriving (Show, Eq)
-newtype Height (n::Nat) a = Height (Vector n a) deriving (Show, Eq)
-newtype Width (n::Nat) a = Width (Vector n a) deriving (Show, Eq)
+newtype Batch (n::Nat) a = Batch (Vector n a) deriving (Show, Eq, Generic)
+newtype Height (n::Nat) a = Height (Vector n a) deriving (Show, Eq, Generic)
+newtype Width (n::Nat) a = Width (Vector n a) deriving (Show, Eq, Generic)
 
 data RGB a = RGB
   { r :: a,
@@ -75,6 +75,9 @@ testFieldLens2 = field @"r"
 
 testNamedLens :: Traversal' (NamedTensor '(D.CPU, 0) 'D.Float '[Vector n, RGB]) (NamedTensor '(D.CPU, 0) 'D.Float '[Vector n])
 testNamedLens = name @RGB
+
+testNamedLens2 :: Traversal' (NamedTensor '(D.CPU, 0) 'D.Float '[Vector 3, RGB, Vector 4]) (NamedTensor '(D.CPU, 0) 'D.Float '[Vector 3,Vector 4])
+testNamedLens2 = name @RGB
 
 testDropField :: Proxy (DropField "r" '[Vector 2, RGB]) -> Proxy '[Vector 2]
 testDropField = id
