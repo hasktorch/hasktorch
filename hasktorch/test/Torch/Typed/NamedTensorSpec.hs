@@ -20,6 +20,7 @@
 {-# LANGUAGE UndecidableSuperClasses #-}
 {-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module Torch.Typed.NamedTensorSpec (spec) where
 
@@ -42,7 +43,7 @@ import Torch.Typed.Factories
 import Torch.Typed.Functional
 import Torch.Typed.Lens
 import Torch.Typed.Tensor
-import Torch.Lens (Lens, Lens', Traversal, Traversal', flattenValues)
+import Torch.Lens
 
 newtype Batch (n::Nat) a = Batch (Vector n a) deriving (Show, Eq, Generic)
 newtype Height (n::Nat) a = Height (Vector n a) deriving (Show, Eq, Generic)
@@ -53,7 +54,7 @@ data RGB a = RGB
     g :: a,
     b :: a
   }
-  deriving (Show, Eq, Generic)
+  deriving (Show, Eq, Generic, Default)
 
 data YCoCg a = YCoCg
   { y :: a,
@@ -64,21 +65,22 @@ data YCoCg a = YCoCg
 
 data RGBA a = RGBA a a a a deriving (Show, Eq, Generic)
 
-instance (Coercible (vec n a) (Vector n a), KnownNat n, D.TensorLike (ToNestedList a), NamedTensorLike a) => NamedTensorLike (vec n a) where
+instance {-# OVERLAPS #-} (Coercible (vec n a) (Vector n a), KnownNat n, D.TensorLike (ToNestedList a), NamedTensorLike a) => NamedTensorLike (vec n a) where
   type ToNestedList (vec n a) = [ToNestedList a]
   toNestedList v = map (toNestedList @a) (V.toList (coerce v :: Vector n a))
   asNamedTensor v = fromUnnamed . UnsafeMkTensor . D.asTensor $ toNestedList v
   fromNestedList v = coerce (fmap fromNestedList . fromJust . V.fromList $ v :: Vector n a)
   fromNamedTensor =  fromNestedList . D.asValue . toDynamic
 
-instance (D.TensorLike (ToNestedList a), NamedTensorLike a) => NamedTensorLike (RGB a) where
-  type ToNestedList (RGB a) = [ToNestedList a]
-  toNestedList (RGB r g b) = map toNestedList [r,g,b]
+instance HasTypes Float Float where
+  types_ = id
+
+instance {-# OVERLAPS #-} (Generic (g a), Default (g a), HasTypes (g a) a, KnownNat (ToNat g), D.TensorLike (ToNestedList a), NamedTensorLike a) => NamedTensorLike (g a) where
+  type ToNestedList (g a) = [ToNestedList a]
+  toNestedList v = map (toNestedList @a) (flattenValues (types @a) v)
   asNamedTensor v = fromUnnamed . UnsafeMkTensor . D.asTensor $ toNestedList v
-  fromNestedList v =
-    let [r,g,b] = fmap fromNestedList v
-    in RGB r g b
-  fromNamedTensor = fromNestedList . D.asValue . toDynamic
+  fromNestedList v = replaceValues (types @a) def (fmap fromNestedList v)
+  fromNamedTensor =  fromNestedList . D.asValue . toDynamic
 
 testFieldLens :: HasField "r" shape => Lens' (NamedTensor '(D.CPU, 0) 'D.Float shape) (NamedTensor '(D.CPU, 0) 'D.Float (DropField "r" shape))
 testFieldLens = field @"r"
