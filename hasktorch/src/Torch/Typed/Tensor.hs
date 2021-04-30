@@ -790,3 +790,4 @@ type family ReplaceDevice'' (tensor :: t) (device :: (D.DeviceType, Nat)) :: t w
 type family ReplaceDType'' (tensor :: t) (dtype :: D.DType) :: t where
   ReplaceDType'' (Tensor device dtype0 shape) dtype1 = Tensor device dtype1 shape
   ReplaceDType'' (NamedTensor device dtype0 shape) dtype1 = NamedTensor device dtype1 shape
+

@@ -64,27 +64,12 @@ data YCoCg a = YCoCg
 
 data RGBA a = RGBA a a a a deriving (Show, Eq, Generic)
 
-instance (KnownNat n, D.TensorLike (ToNestedList a), NamedTensorLike a) => NamedTensorLike (Batch n a) where
-  type ToNestedList (Batch n a) = [ToNestedList a]
-  toNestedList (Batch v) = map toNestedList (V.toList v)
+instance (Coercible (vec n a) (Vector n a), KnownNat n, D.TensorLike (ToNestedList a), NamedTensorLike a) => NamedTensorLike (vec n a) where
+  type ToNestedList (vec n a) = [ToNestedList a]
+  toNestedList v = map (toNestedList @a) (V.toList (coerce v :: Vector n a))
   asNamedTensor v = fromUnnamed . UnsafeMkTensor . D.asTensor $ toNestedList v
-  fromNestedList = Batch . fmap fromNestedList . fromJust . V.fromList
+  fromNestedList v = coerce (fmap fromNestedList . fromJust . V.fromList $ v :: Vector n a)
   fromNamedTensor =  fromNestedList . D.asValue . toDynamic
-
-instance (KnownNat n, D.TensorLike (ToNestedList a), NamedTensorLike a) => NamedTensorLike (Height n a) where
-  type ToNestedList (Height n a) = [ToNestedList a]
-  toNestedList (Height v) = map toNestedList (V.toList v)
-  asNamedTensor v = fromUnnamed . UnsafeMkTensor . D.asTensor $ toNestedList v
-  fromNestedList = Height . fmap fromNestedList . fromJust . V.fromList
-  fromNamedTensor = fromNestedList . D.asValue . toDynamic
-
-
-instance (KnownNat n, D.TensorLike (ToNestedList a), NamedTensorLike a) => NamedTensorLike (Width n a) where
-  type ToNestedList (Width n a) = [ToNestedList a]
-  toNestedList (Width v) = map toNestedList (V.toList v)
-  asNamedTensor v = fromUnnamed . UnsafeMkTensor . D.asTensor $ toNestedList v
-  fromNestedList = Width . fmap fromNestedList . fromJust . V.fromList
-  fromNamedTensor = fromNestedList . D.asValue . toDynamic
 
 instance (D.TensorLike (ToNestedList a), NamedTensorLike a) => NamedTensorLike (RGB a) where
   type ToNestedList (RGB a) = [ToNestedList a]
