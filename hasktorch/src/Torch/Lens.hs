@@ -17,8 +17,15 @@ import Control.Monad.Identity
 import GHC.Generics
 import Control.Monad.State.Strict
 
-type Traversal' s a
-  = forall f. Applicative f => (a -> f a) -> s -> f s
+-- | Type synonym for lens
+
+type Lens s t a b = forall f. Functor f => (a -> f b) -> s -> f t
+
+type Lens' s a = Lens s s a a
+
+type Traversal s t a b = forall f. Applicative f => (a -> f b) -> s -> f t
+
+type Traversal' s a = Traversal s s a a
 
 class HasTypes s a where
   types_ :: Traversal' s a

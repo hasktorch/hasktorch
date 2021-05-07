@@ -126,11 +126,12 @@ type Size = Type -> Type
 type Shape = [Type -> Type]
 
 type family ToNat (shape :: Size) :: Nat where
-  ToNat (S1 ( 'MetaSel _ _ _ _) _) = 1
+  ToNat (S1 ( 'MetaSel _ _ _ _) f) = ToNat f
   ToNat (D1 _ f) = ToNat f
   ToNat (C1 _ f) = ToNat f
   ToNat (l :*: r) = ToNat l + ToNat r
   ToNat (l :+: r) = If (ToNat l <=? ToNat r) (ToNat r) (ToNat l)
+  ToNat (K1 R (Vector n _)) = n
   ToNat (K1 _ _) = 1
   ToNat U1 = 1
   ToNat (Vector n) = n
@@ -494,6 +495,10 @@ instance {-# OVERLAPS #-} Unnamed t => Castable (Wrap t) D.ATenTensor where
      in f aten_tensor
   uncast aten_tensor f = f $ Wrap $ fromUnnamed $ UnsafeMkTensor (D.Unsafe aten_tensor)
 
+instance Castable (NamedTensor device dtype shape) D.ATenTensor where
+  cast (FromTensor (UnsafeMkTensor (D.Unsafe aten_tensor))) f = f aten_tensor
+  uncast aten_tensor f = f . FromTensor . UnsafeMkTensor $ D.Unsafe aten_tensor
+
 instance Castable (Tensor device dtype shape) D.ATenTensor where
   cast (UnsafeMkTensor (D.Unsafe aten_tensor)) f = f aten_tensor
   uncast aten_tensor f = f $ UnsafeMkTensor (D.Unsafe aten_tensor)
@@ -689,6 +694,25 @@ toBool t = D.asValue . toDynamic . toCPU $ t
 -- NamedTensor
 --------------------------------------------------------------------------------
 
+type family ToDType a :: D.DType where
+  ToDType Bool = 'D.Bool
+  ToDType Int = 'D.Int64
+  ToDType Float = 'D.Float
+  ToDType Double = 'D.Double
+  ToDType (f a) = ToDType a
+
+type family ToShape a :: Shape where
+  ToShape Bool = '[]
+  ToShape Int = '[]
+  ToShape Float = '[]
+  ToShape Double = '[] 
+  ToShape (f a) = f ': ToShape a
+
+type family FindDim (a :: Size) (shape :: Shape) :: Nat where
+  FindDim a (a ': _) = 0
+  FindDim a (b ': ax) = 1 + FindDim a ax
+  FindDim a _ = TypeError (Text "Not find a type:" :<>: ShowType a :<>: Text " in the shape.")
+
 data NamedTensor (device :: (D.DeviceType, Nat)) (dtype :: D.DType) (shape :: Shape) where
   FromTensor :: forall device dtype shape' shape. shape ~ ToNats shape' => Tensor device dtype shape -> NamedTensor device dtype shape'
 
@@ -724,3 +748,4 @@ type family ReplaceDevice'' (tensor :: t) (device :: (D.DeviceType, Nat)) :: t w
 type family ReplaceDType'' (tensor :: t) (dtype :: D.DType) :: t where
   ReplaceDType'' (Tensor device dtype0 shape) dtype1 = Tensor device dtype1 shape
   ReplaceDType'' (NamedTensor device dtype0 shape) dtype1 = NamedTensor device dtype1 shape
+
