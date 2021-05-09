@@ -2844,8 +2844,13 @@ type family PaddingIdxCheck (idx :: Maybe Nat) (numEmbeds :: Nat) :: Constraint 
 -- -- 
 -- -- libtorch 1.8
 -- -- The behavior of libtorch 1.8 changes. See https://github.com/pytorch/pytorch/issues/53368
+-- -- (Float,([4,1,2],[[[1.0,1.0]],[[3.0,3.0]],[[1.0,1.0]],[[0.0,0.0]]]))
+-- -- 
+-- -- libtorch 1.8.1
+-- -- The behavior of libtorch 1.8.1 is reverted.
+-- -- (Float,([4,1,2],[[[1.0,1.0]],[[3.0,3.0]],[[1.0,1.0]],[[2.0,2.0]]]))
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[[Float]]]) $ t
--- (Float,([4,1,2],[[[1.0,1.0]],[[3.0,3.0]],[[1.0,1.0]],[[0.0,0.0]]]))
+-- (Float,([4,1,2],[[[1.0,1.0]],[[3.0,3.0]],[[1.0,1.0]],[[2.0,2.0]]]))
 -- >>> t = embedding @'Nothing False False weights indices
 -- >>> :type t
 -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[4, 1, 2]
