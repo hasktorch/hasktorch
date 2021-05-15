@@ -302,3 +302,12 @@ executable iris-classification
                      , pipes
                      , pipes-safe
                      , vector
+
+executable model-serving
+  import:              config
+  hs-source-dirs:      model-serving
+  main-is:             Main.hs
+  build-depends:       libtorch-ffi
+                     , aeson
+                     , servant-server
+                     , warp
