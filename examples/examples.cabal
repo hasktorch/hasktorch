@@ -303,9 +303,9 @@ executable iris-classification
                      , pipes-safe
                      , vector
 
-executable model-serving
+executable model-serving-simple
   import:              config
-  hs-source-dirs:      model-serving
+  hs-source-dirs:      model-serving/simple
   main-is:             Main.hs
   build-depends:       libtorch-ffi
                      , aeson
