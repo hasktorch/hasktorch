@@ -305,7 +305,17 @@ executable iris-classification
 
 executable model-serving-simple
   import:              config
-  hs-source-dirs:      model-serving/simple
+  hs-source-dirs:      model-serving/01-simple
+  main-is:             Main.hs
+  build-depends:       libtorch-ffi
+                     , aeson
+                     , servant-server
+                     , warp
+
+executable model-serving-infer
+  import:              config
+  hs-source-dirs:      model-serving/02-inference
+  other-modules:       Model
   main-is:             Main.hs
   build-depends:       libtorch-ffi
                      , aeson
