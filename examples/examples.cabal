@@ -303,18 +303,18 @@ executable iris-classification
                      , pipes-safe
                      , vector
 
-executable model-serving-simple
+executable serve-simple-computation
   import:              config
-  hs-source-dirs:      model-serving/01-simple
+  hs-source-dirs:      model-serving/01-simple-computation
   main-is:             Main.hs
   build-depends:       libtorch-ffi
                      , aeson
                      , servant-server
                      , warp
 
-executable model-serving-infer
+executable serve-train-inference
   import:              config
-  hs-source-dirs:      model-serving/02-inference
+  hs-source-dirs:      model-serving/02-train-inference
   other-modules:       Model
   main-is:             Main.hs
   build-depends:       libtorch-ffi

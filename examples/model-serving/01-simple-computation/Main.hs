@@ -19,12 +19,13 @@ data Result = Result {
 instance ToJSON Result
 instance FromJSON Result
 
-type HelloTorchAPI = "inference" :> Capture "value" Float :> Get '[JSON] [Result]
+type HelloTorchAPI = "compute2x" :> Capture "value" Float :> Get '[JSON] [Result]
 
 helloTorchH value = liftIO $ helloTorch value
 
 helloTorch :: Float -> IO [Result]
-helloTorch value = pure $ [Result "f(x) = 2.0 * x is " [result]]
+helloTorch value = pure $ 
+  [Result ("f(x) = 2.0 * x is " ++ show result ++ " for x = " ++ show value) [result]]
   where
     t = asTensor value :: Tensor
     result = asValue (2.0 * t) :: Float
