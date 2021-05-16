@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Main where
 
@@ -11,6 +12,9 @@ import GHC.Generics (Generic)
 import Servant
 import Torch 
 import Model (model, train)
+import Serialise
+
+import Codec.Serialise (serialise, deserialise)
 
 data Result = Result {
   msg :: String, 
@@ -37,6 +41,13 @@ main = do
   putStrLn $ "Training model"
   trained <- train
   putStrLn $ "Test " ++ show (asValue $ model trained (asTensor $ [1.0, 2.0, 3.0 :: Float]) :: Float)
+
+  let bsl = serialise trained
+  print bsl
+  let trained' :: Linear = deserialise bsl
+
+  print trained
+  print trained'
   putStrLn $ "Running server on port " ++ show port
-  run port (serve torchApi (wrapModel trained))
+  -- run port (serve torchApi (wrapModel trained'))
   where port = 8081
