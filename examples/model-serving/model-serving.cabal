@@ -53,3 +53,13 @@ executable serve-serialise
                      , servant-server
                      , serialise
                      , warp
+
+executable serve-python
+  import:              config
+  hs-source-dirs:      04-python-interop
+  main-is:             Main.hs
+  build-depends:       libtorch-ffi
+                     , aeson
+                     , servant-server
+                     , serialise
+                     , warp
