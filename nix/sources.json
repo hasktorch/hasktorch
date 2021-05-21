@@ -53,10 +53,10 @@
         "homepage": "https://pytorch.org/",
         "owner": "hasktorch",
         "repo": "libtorch-nix",
-        "rev": "dc1287a9b17bbc7785eed68cc6b69e35f4f81c8c",
-        "sha256": "1163qsxly7h7zrprkg054rb641c90a65fyf0grzd6dl5rx38rm9g",
+        "rev": "d14b0fd10b96d192b92b8ccc7254ade4b3489331",
+        "sha256": "1k2xax64hfmaw5kzmx3w242z62xckjihraa75vvdz8v27in60zqi",
         "type": "tarball",
-        "url": "https://github.com/hasktorch/libtorch-nix/archive/dc1287a9b17bbc7785eed68cc6b69e35f4f81c8c.tar.gz",
+        "url": "https://github.com/hasktorch/libtorch-nix/archive/d14b0fd10b96d192b92b8ccc7254ade4b3489331.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "niv": {
