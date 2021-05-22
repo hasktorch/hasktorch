@@ -10,18 +10,17 @@ loadFile file = do
   print vals
   pure vals
 
-main = do
-  let modelFile = "test2sd.pt"
-  vals <- loadFile modelFile
-  let v1 = vals !! 0
-  let (IVString s1, IVTensor t1) = v1
-  print vals
-  print v1
-  print s1
-  print t1
-  init <- sample $ LinearSpec { in_features = 2, out_features = 1 }
-  -- loaded <- loadParams init "test2sd.pt"
-  print init
-  -- print loaded
+modelFile = "test2sd.pt"
 
+main = do
+  vals <- loadFile modelFile
+  let (_, IVTensor weight) = vals !! 0
+  let (_, IVTensor bias) = vals !! 1
+  weight' <- makeIndependent weight
+  bias' <- makeIndependent bias
+  -- init <- sample $ LinearSpec { in_features = 2, out_features = 1 }
+  let model = Linear weight' bias'
+  let x = asTensor [1.0 :: Float, 2.0]
+  print model
+  print $ linear model x
   putStrLn "Done"
