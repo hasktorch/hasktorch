@@ -101,10 +101,10 @@
         "homepage": "https://huggingface.co/docs/tokenizers",
         "owner": "hasktorch",
         "repo": "tokenizers",
-        "rev": "2869f45e644eb4509612fbf0c2dc7b39ec210f67",
-        "sha256": "1zym29nv4b7w09wrh7chp11qr5vld842p8992vmgxa0ivlv5zpy8",
+        "rev": "9d25f0ba303193e97f8b22b9c93cbc84725886c3",
+        "sha256": "03nm9kd1j6v5ygxiyc86gbr4sjzj4l9xibmpccyws49vwzf02p2k",
         "type": "tarball",
-        "url": "https://github.com/hasktorch/tokenizers/archive/2869f45e644eb4509612fbf0c2dc7b39ec210f67.tar.gz",
+        "url": "https://github.com/hasktorch/tokenizers/archive/9d25f0ba303193e97f8b22b9c93cbc84725886c3.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }

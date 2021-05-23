@@ -1,3 +1,4 @@
 {
-  "nixEnvSelector.nixFile": "${workspaceRoot}/shell.nix"
+  "nixEnvSelector.nixFile": "${workspaceRoot}/shell.nix",
+  "python.pythonPath": "/Users/tscholak/.local/share/virtualenvs/hasktorch-T-HEkuBL/bin/python"
 }

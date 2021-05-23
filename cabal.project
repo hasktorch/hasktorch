@@ -9,8 +9,8 @@ packages:
 source-repository-package
     type: git
     location: https://github.com/hasktorch/tokenizers
-    tag: d96a1ae97452047faa3e033ea79b7077377857ec
-    --sha256: 1niy5ha1gdzmqn7d4z0hzr3k0hlsmzk7phzsz0bjy832hw9z3xrx
+    tag: 9d25f0ba303193e97f8b22b9c93cbc84725886c3
+    --sha256: 03nm9kd1j6v5ygxiyc86gbr4sjzj4l9xibmpccyws49vwzf02p2k
     subdir: bindings/haskell/tokenizers-haskell
 
 write-ghc-environment-files: always
