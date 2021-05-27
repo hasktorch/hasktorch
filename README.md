@@ -359,9 +359,9 @@ gcc: error: hasktorch/dist-newstyle/build/x86_64-linux/ghc-8.8.3/libtorch-ffi-1.
 
 We welcome new contributors.
 
-Contact Austin Huang or Sam Stites for access to the [hasktorch slack channel][slack].
+Contact us for access to the [hasktorch slack channel][slack].
 You can send an email to [hasktorch@gmail.com][email] or on twitter as [@austinvhuang][austin-twitter],
-[@SamStites][sam-twitter], or [@tscholak][torsten-twitter].
+[@SamStites][sam-twitter], [@tscholak][torsten-twitter], or [@junjihashimoto3][junji-twitter].
 
 [email]:mailto:hasktorch@gmail.com
 [austin-twitter]:https://twitter.com/austinvhuang
