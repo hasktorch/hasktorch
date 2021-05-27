@@ -8,6 +8,7 @@ module Main where
 import Control.Monad (foldM)
 import System.Environment (getArgs)
 import Torch.Script
+import Torch.NN
 import Torch.Vision
 import Torch
 import qualified Codec.Picture as I
@@ -37,7 +38,7 @@ main = do
     Right (img_,_) -> do
       let img' = centerCrop 224 224 img_
           img'' = toType Float $ hwc2chw $ normalize $ divScalar (255.0::Float) $ toType Float $ fromDynImage $ I.ImageRGB8 img'
-      case (Torch.Script.forward model [IVTensor img'']) of
+      case (forward model [IVTensor img'']) of
         IVTensor v'' -> do
           let (scores',idxs') = topK 5 (Dim 1) True True $ softmax (Dim 1) v''
               scores = asValue scores' :: [[Float]]
