@@ -18,12 +18,11 @@ groundTruth t = squeezeAll $ matmul t weight + bias
     
 printParams :: Linear -> IO ()
 printParams trained = do
-    putStrLn $ "Parameters:\n" ++ (show $ toDependent $ weight trained)
+    putStrLn $ "\nParameters:\n" ++ (show $ toDependent $ weight trained)
     putStrLn $ "Bias:\n" ++ (show $ toDependent $ bias trained) 
 
-train :: IO Linear
-train = do
-    init <- sample $ LinearSpec { in_features = numFeatures, out_features = 1 } 
+train :: Linear -> IO Linear
+train init = do
     randGen <- defaultRNG
     printParams init
     (trained, _) <- foldLoop (init, randGen) numIters $ \(state, randGen) i -> do

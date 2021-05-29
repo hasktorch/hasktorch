@@ -43,10 +43,10 @@ executable serve-train-inference
                      , servant-server
                      , warp
 
-executable serve-serialise
+executable serve-serialize
   import:              config
   hs-source-dirs:      03-serialization
-  other-modules:       Model, Serialise
+  other-modules:       Model
   main-is:             Main.hs
   build-depends:       libtorch-ffi
                      , aeson

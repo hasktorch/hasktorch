@@ -11,10 +11,8 @@ import Data.Aeson (FromJSON, ToJSON)
 import GHC.Generics (Generic)
 import Servant
 import Torch 
+import Torch.Serialize
 import Model (model, train)
-import Serialise
-
-import Codec.Serialise (serialise, deserialise)
 
 data Result = Result {
   msg :: String, 
@@ -39,15 +37,19 @@ wrapModel trained x1 x2 x3 = liftIO $
 main :: IO ()
 main = do
   putStrLn $ "Training model"
-  trained <- train
+  init <- sample $ LinearSpec { in_features = 3, out_features = 1 } 
+  trained <- train init
   putStrLn $ "Test " ++ show (asValue $ model trained (asTensor $ [1.0, 2.0, 3.0 :: Float]) :: Float)
 
-  let bsl = serialise trained
-  print bsl
-  let trained' :: Linear = deserialise bsl
+  saveParams trained "trained.pt"
+  trained' <- loadParams init "trained.pt"
 
+  putStrLn "\nSaved  model parameters:"
   print trained
+  putStrLn "\nLoaded model parameters:"
   print trained'
-  putStrLn $ "Running server on port " ++ show port
-  -- run port (serve torchApi (wrapModel trained'))
+  putStrLn $ "\nRunning server on port " ++ show port
+  putStrLn $ "\nTry a model inference:\n\nhttp://localhost:" ++ show port ++ "/inference/1.0/2.0/3.0/"
+
+  run port (serve torchApi (wrapModel trained'))
   where port = 8081
