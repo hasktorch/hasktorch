@@ -1,8 +1,8 @@
 # Model Serving
 
-A series of examples demonstrating integration with servant to serve hasktorch models as API.
+A series of examples demonstrating integration with servant to serve hasktorch models.
 
-## 01 Simple Computation
+## 1 Simple Computation as an API
 
 *Location*: `examples/model-serving/01-simple-computation`
 
@@ -25,7 +25,7 @@ curl http://localhost:8081/compute2x/3.1
 
 which should again display `[{"result":[6.2],"msg":"f(x) = 2.0 * x is 6.2 for x = 3.1"}]`
 
-## 2 Training and Inference
+## 2 Training Followed by Model Inference as an API
 
 *Location*: `examples/model-serving/02-train-inference`
 
@@ -40,7 +40,7 @@ stack run serve-train-inference
 
 Test with a web browser [http://localhost:8081/inference/1.0/2.0/3.0](http://localhost:8081/inference/1.0/2.0/3.0).
 
-## 3 Serialization
+## 3 Serializing (saving) and Loading a Model
 
 *Location*: `examples/model-serving/03-serialization`
 
@@ -53,7 +53,7 @@ Run the example:
 stack run serve-serialize
 ```
 
-## 4 PyTorch -> Hasktorch Part 1: Inference with Torchscript
+## 4 PyTorch Interop Part 1: Inference with Torchscript
 
 *Location*: `examples/model-serving/04-python-torchscript`
 
@@ -79,7 +79,7 @@ Run the example:
 stack run python-torchscript
 ```
 
-## 5 PyTorch -> Hasktorch Part 2: Importing a Model by Parsing
+## 5 PyTorch Interop Part 2: Importing a Model by Parsing
 
 *Location*: `examples/model-serving/05-python-parse-model`
 
