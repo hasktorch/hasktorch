@@ -74,7 +74,7 @@ if __name__ == "__main__":
 
     print(model(example_tensor))
 
-    T.save(example_dict , 'mnist.example.pt')
+    T.save(example_dict , 'mnist.dict.pt')
 
     traced = T.jit.trace(trained, example_inputs = example_tensor.to(device))
     print(type(traced))

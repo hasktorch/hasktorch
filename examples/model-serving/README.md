@@ -35,16 +35,29 @@ Test with a web browser [http://localhost:8081/inference/1.0/2.0/3.0](http://loc
 
 ## 3 Serialization
 
-WIP TODO
 
-## 4 Torchscript
+location: `examples/model-serving/03-serialization`
 
-WIP TODO
+run using: `stack run serve-serialize`
+
+## 4 PyTorch -> Hasktorch Inference with Torchscript
+
+Run this example from the `04-python-interop` directory where the python script is located.
+
+First train the mnist model with pytorch and python 3+:
+
+`python3 mnist.py`
+
+The python `mnist.py` script produces two artifacts:
+
+- `mnist.dict.pt` contains just the state_dict of the model.
+- `mnist.ts.pt` contains the torchscript graph as well as the state_dict of the model.
+
+Run:
+
+`stack run serve-python`
+
 
 ## 5 PyTorch -> Hasktorch
-
-WIP TODO
-
-## 6 A Small Web Application
 
 WIP TODO
