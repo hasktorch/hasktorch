@@ -162,26 +162,12 @@ load WithRequiredGrad file = do
 load' :: FilePath -> IO RawModule
 load' = cast1 LibTorch.load
 
-forwardIO ::
-  -- | module
-  ScriptModule ->
-  -- | inputs
-  [IValue] ->
-  -- | output
-  IO IValue
-forwardIO = cast2 forward'
-  where
-    forward' :: ScriptModule -> [RawIValue] -> IO RawIValue
-    forward' = cast2 LibTorch.forward
-
-forward ::
-  -- | module
-  ScriptModule ->
-  -- | inputs
-  [IValue] ->
-  -- | output
-  IValue
-forward module' = unsafePerformIO . forwardIO module'
+instance HasForward ScriptModule [IValue] IValue where
+  forward module' = unsafePerformIO . forwardStoch module'
+  forwardStoch = cast2 forward'
+    where
+      forward' :: ScriptModule -> [RawIValue] -> IO RawIValue
+      forward' = cast2 LibTorch.forward
 
 registerParameter :: RawModule -> String -> Tensor -> Bool -> IO ()
 registerParameter = cast4 LibTorch.registerParameter

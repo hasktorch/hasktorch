@@ -12,6 +12,7 @@ import Test.Hspec
 import Torch hiding (forward)
 import Torch.Script
 import Torch.Autograd
+import Torch.NN
 import GHC.Generics
 import Control.Exception.Safe (catch,throwIO)
 import Language.C.Inline.Cpp.Exceptions (CppException(..))
