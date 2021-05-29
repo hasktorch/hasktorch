@@ -65,7 +65,7 @@ if __name__ == "__main__":
     mnist_data = load_data(batch_size)
     model = CNN().to(device)
     trained = train(model, mnist_data, device)
-    T.save(dict(trained.state_dict()), "mnist.pt")
+    T.save(dict(trained.state_dict()), "mnist.dict.pt")
 
     example_tensor, example_class = mnist_data.test[0]
     example_tensor = example_tensor.reshape([1, 1, 28, 28])
@@ -74,7 +74,7 @@ if __name__ == "__main__":
 
     print(model(example_tensor))
 
-    T.save(example_dict , 'mnist.dict.pt')
+    T.save(example_dict , 'mnist.example.pt')
 
     traced = T.jit.trace(trained, example_inputs = example_tensor.to(device))
     print(type(traced))

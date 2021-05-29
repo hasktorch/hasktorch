@@ -40,9 +40,9 @@ location: `examples/model-serving/03-serialization`
 
 run using: `stack run serve-serialize`
 
-## 4 PyTorch -> Hasktorch Inference with Torchscript
+## 4 PyTorch -> Hasktorch Part 1: Inference with Torchscript
 
-Run this example from the `04-python-interop` directory where the python script is located.
+Run this example from the `04-python-torchscript` directory where the python script is located.
 
 First train the mnist model with pytorch and python 3+:
 
@@ -55,9 +55,15 @@ The python `mnist.py` script produces two artifacts:
 
 Run:
 
-`stack run serve-python`
+`stack run python-torchscript`
 
 
-## 5 PyTorch -> Hasktorch
+## 5 PyTorch -> Hasktorch Part 2: Importing a Model by Parsing
 
-WIP TODO
+Run this example from the `05-python-parse-model` directory where the python script is located.
+
+`python3 simple_model.py`
+
+The python `simple_model.py` script produces `simple.dict.pt` which contains just the state_dict of a simple linear model. 
+
+`stack run python-parse-model` loads the models into a corresponding hasktorch model by parsing the state_dict object

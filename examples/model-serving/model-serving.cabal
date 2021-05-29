@@ -54,9 +54,19 @@ executable serve-serialize
                      , serialise
                      , warp
 
-executable serve-python
+executable python-torchscript
   import:              config
-  hs-source-dirs:      04-python-interop
+  hs-source-dirs:      04-python-torchscript
+  main-is:             Main.hs
+  build-depends:       libtorch-ffi
+                     , aeson
+                     , servant-server
+                     , serialise
+                     , warp
+
+executable python-parse-model
+  import:              config
+  hs-source-dirs:      05-python-parse-model
   main-is:             Main.hs
   build-depends:       libtorch-ffi
                      , aeson
