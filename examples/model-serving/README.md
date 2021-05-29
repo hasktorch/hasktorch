@@ -1,6 +1,6 @@
 # Model Serving
 
-A series of examples demonstrating integration with servant to serve hasktorch models.
+A series of examples demonstrating integration with servant to serve hasktorch models, serializationto save and load models for deployment, and interop with PyTorch using torchscript and state_dict to save models/load models.
 
 ## 1 Simple Computation as an API
 
