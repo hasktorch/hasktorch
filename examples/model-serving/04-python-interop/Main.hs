@@ -28,7 +28,7 @@ main  = do
   -- load torchscript
   tsModule <- S.load WithoutRequiredGrad "mnist.ts.pt"
   
-  let result = S.forward tsModule [ivt] 
+  let result = forward tsModule [ivt] 
   print result
 
   putStrLn "Done"
