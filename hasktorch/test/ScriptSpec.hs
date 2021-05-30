@@ -9,7 +9,7 @@ import Prelude hiding (abs, exp, floor, log, min, max)
 
 import Test.Hspec
 
-import Torch hiding (forward)
+import Torch hiding (forward, load, save)
 import Torch.Script
 import Torch.Autograd
 import Torch.NN
