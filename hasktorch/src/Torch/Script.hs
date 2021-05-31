@@ -273,8 +273,10 @@ toRawModule scriptModule = do
 cloneRawModule :: RawModule -> IO RawModule
 cloneRawModule = cast1 LibTorch.clone
 
-train :: RawModule -> Bool -> IO ()
-train = cast2 LibTorch.train
+data RuntimeMode = Eval | Train deriving (Show, Eq)
+
+setRuntimeMode :: RawModule -> RuntimeMode -> IO ()
+setRuntimeMode rmod mode = cast2 LibTorch.train rmod (mode == Train)
 
 define :: RawModule -> String -> IO ()
 define = cast2 LibTorch.define
