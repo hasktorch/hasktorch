@@ -16,6 +16,8 @@ In a standard supervised learning model, the neural network is
 initialized using a randomized initialization scheme. An iterative
 optimization is performed such that at each iteration a batch.
 
+Here is a simple end-to-end example in Hasktorch:
+
 ```haskell
 module Main where
 
@@ -41,13 +43,36 @@ main = do
             loss = mseLoss y y'
         when (i `mod` 100 == 0) $ do
             putStrLn $ "Iteration: " ++ show i ++ " | Loss: " ++ show loss
-        (newParam, _) <- runStep state GD loss 5e-3
-        pure (replaceParameters state newParam, randGen')
+        (state', _) <- runStep state GD loss 5e-3
+        pure (state', randGen')
     pure ()
   where
     batchSize = 4
     numFeatures = 3
 ```
+
+Let's break this down in steps:
+
+1. The `init` variable is initialized as a `Linear` type (defined in
+   `Torch.NN`) using `sample` which randomly initializes a `Linear`
+   value. Initialization is discussed in more detail in the following
+   section
+1. `Linear` is a built-in algebraic data type (ADT) implementing the
+   `Parameterized` typeclass and representing a fully connected linear
+   layer, equivalent to linear regression when no hidden layers are
+   present.
+1. `init` is passed into the `Torch.Optim.foldLoop` as the state
+   variable. Note that `foldLoop` is just a convenience function
+   defined using `foldM`:
+
+    ```haskell
+    foldLoop :: a -> Int -> (a -> Int -> IO a) -> IO a
+    foldLoop init count body = foldM body init [1 .. count]
+    ```
+
+1. At each optimization step, `Torch.Optim.runStep` computes an
+   updated model state given the current state, optimizer, loss
+   function, and learning rate.
 
 Note the expression of the architecture in the `Torch.NN.linear`
 function (a single linear layer, or alternatively a neural network
@@ -57,31 +82,12 @@ ops. Because of the autodiff mechanism described in the previous
 section, the graph is constructed automatically as pure functional ops
 are applied, given a context of a set of independent variables.
 
-The `init` variable is initialized as a `Linear` type (defined in
-`Torch.NN`) using `sample` which randomly initializes a `Linear`
-value.
-
-`Linear` is a built-in ADT implementing the `Parameterized` typeclass
-and representing a fully connected linear layer, equivalent to linear
-regression when no hidden layers are present.
-
-`init` is passed into the `Torch.Optim.foldLoop`[^fold-loop] as the state
-variable.
-
-A new list of `Parameter` values is passed back from
-`Torch.Optim.runStep`{.haskell .identifier} (which calls `grad` to
-retrieve gradients, given a loss function, learning rate, and
-optimizer) and the typeclass function `replaceParameters` is used to
-update the model at each iteration.
-
-Initialization is discussed in more detail in the following section
-
 ## Weight Initialization
 
 Random initialization of weights is not a pure function since two
 random initializations return different values. Initialization occurs
-by calling the `Torch.NN.sample`{.haskell .identifier} function for an
-ADT (`spec`) implementing the `Torch.NN.Randomizable` typeclass:
+by calling the `Torch.NN.sample` function for an ADT implementing the
+`Torch.NN.Randomizable` typeclass:
 
 ```haskell
 class Randomizable spec f | spec -> f where
@@ -89,7 +95,7 @@ class Randomizable spec f | spec -> f where
 ```
 
 In a typical (but not required) usage, `f` is an ADT that implements
-the `Parameterized` typeclass, so that there's a pair of types - a
+the `Parameterized` typeclass, so that there's a pair of types—a
 specification type implementing the `spec` input to `sample` and a
 type implementing `Parameterizable` representing the model state.
 
@@ -215,6 +221,3 @@ runStep ::
   LearningRate ->
   IO ([Parameter], o)
 ```
-
-[^2]: `foldLoop` is a convenience function defined in terms of `foldM`
-    as `foldLoop x count block = foldM block x ([1 .. count] :: [a])`
