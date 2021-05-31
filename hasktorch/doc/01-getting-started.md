@@ -23,4 +23,7 @@ preferred editor.
 
 ## Getting help
 
-TODO; mention Slack channel, what else?
+We invite new users to join our Hasktorch Slack space for questions
+and discussions. You can request an invite by sending an email to
+hasktorch@gmail.com or contacting one of the core contributors on
+Twitter: @austinvhuang, @SamStites, @tscholak, or @junjihashimoto3.
