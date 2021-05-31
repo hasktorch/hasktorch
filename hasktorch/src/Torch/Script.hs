@@ -260,7 +260,7 @@ getNamedChildren (UnsafeScriptModule m) = unsafePerformIO $ do
 
 toScriptModule :: RawModule -> IO ScriptModule
 toScriptModule rawModule = do
-  (UnsafeRawModule r) <- clone rawModule
+  (UnsafeRawModule r) <- cloneRawModule rawModule
   return $ UnsafeScriptModule r
 
 toRawModule :: ScriptModule -> IO RawModule
@@ -270,8 +270,8 @@ toRawModule scriptModule = do
   where
     clone' = cast1 LibTorch.clone
 
-clone :: RawModule -> IO RawModule
-clone = cast1 LibTorch.clone
+cloneRawModule :: RawModule -> IO RawModule
+cloneRawModule = cast1 LibTorch.clone
 
 train :: RawModule -> Bool -> IO ()
 train = cast2 LibTorch.train
