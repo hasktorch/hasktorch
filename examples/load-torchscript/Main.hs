@@ -30,7 +30,7 @@ main = do
         a@[model',input'] -> a
         _ -> error $ "Usage: load-torchscript model-file image-file"
   [modelfile,inputfile] <- opt <$> getArgs
-  model <- load WithoutRequiredGrad modelfile
+  model <- loadScript WithoutRequiredGrad modelfile
   
   mimg <- readImageAsRGB8WithScaling inputfile 256 256 True
   case mimg of
