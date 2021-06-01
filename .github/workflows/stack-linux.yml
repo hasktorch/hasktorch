@@ -67,5 +67,5 @@ jobs:
       with:
         deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
         external_repository: hasktorch/hasktorch.github.io
-        publish_branch: master
+        publish_branch: tutorial
         publish_dir: ./public

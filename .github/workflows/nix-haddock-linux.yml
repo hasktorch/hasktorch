@@ -29,6 +29,10 @@ jobs:
         find result/ |head
         mkdir public
         cp -r ./result/share/doc/* public/
+    - name: copy tutorial files
+      run: |
+        git clone -b tutorial --depth=1 https://github.com/hasktorch/hasktorch.github.io.git
+        cp -r hasktorch.github.io/tutorial public/
     - name: Deploy
       if: github.event_name == 'push' && github.ref == 'refs/heads/master'
       uses: peaceiris/actions-gh-pages@v3
