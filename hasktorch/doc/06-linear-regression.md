@@ -198,24 +198,25 @@ The use of an optimizer was illustrated in the linear regression example
 using the function `runStep`
 
 ```haskell
-(newParam, _) <- runStep state GD loss 5e-3
+(state', _) <- runStep state GD loss 5e-3
 ```
 
-In this case the new optimizer state returned is ignored (as `_`) since
-gradient descent does not have any internal state. Under the hood,
-`runStep` does a little bookkeeping making independent variables from a
-model, computing gradients, and passing values to the `step` function.
-Usually a user can ignore the details and just pass model parameters and
-the optimizer to runStep as an abstracted interface which takes
-parameter values, the optimizer value, loss (a tensor), and learning
-rate as input and returns new parameters and an updated optimizer value.
+In this case the new optimizer state returned is ignored (as `_`)
+since gradient descent does not have any internal state. Under the
+hood, `runStep` does a little bookkeeping making independent variables
+from a model, computing gradients, and passing values to the `step`
+function.  Usually a user can ignore the details and just pass model
+parameters and the optimizer to `runStep` as an abstracted interface
+which takes parameter values, the optimizer value, loss (a tensor),
+and learning rate as input and returns updated model and optimizer
+values.
 
 ```haskell
 runStep ::
-  (Parameterized p, Optimizer o) =>
-  p ->
-  o ->
+  (Parameterized model, Optimizer optimizer) =>
+  model ->
+  optimizer ->
   Tensor ->
   LearningRate ->
-  IO ([Parameter], o)
+  IO (model, optimizer)
 ```
