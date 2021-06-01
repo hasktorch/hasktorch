@@ -140,8 +140,8 @@ output a new set of parameters.
 
 In the simple case of stochastic gradient descent, the function to
 output a new set of parameters is to subtract from the current
-parameter (theta), the gradient of the loss $\nabla J$ scaled by the
-learning rate $\eta$:
+parameter (θ), the gradient of the loss ∇ J scaled by the learning
+rate η:
 
 $$\theta_{i+1} = \theta_i - \eta \nabla J(\theta)$$
 
@@ -150,15 +150,13 @@ parameters, loss, and gradient, some optimizers have a notion of
 internal state that is propagated from one step to the step, for
 example, retaining and updating momentum between steps:
 
-$$\begin{gathered}
-    \Delta \theta_i = \alpha \Delta \theta_{i-1} - \eta \nabla J(\theta) \\
-    \theta_{i+1} = \theta_i + \Delta \theta_i
-\end{gathered}$$
+$$\Delta \theta_i = \alpha \Delta \theta_{i-1} - \eta \nabla J(\theta)$$
+$$\theta_{i+1} = \theta_i + \Delta \theta_i$$
 
-In this case, the momentum term $\Delta \theta_i$ is carried forward
-as internal state of the optimizer that is propagated to the next
-step.  (alpha) is an optimizer parameter which determines a weighting
-on the momentum term relative to the gradient.
+In this case, the momentum term Δ θᵢ is carried forward as internal
+state of the optimizer that is propagated to the next step. α is an
+optimizer parameter which determines a weighting on the momentum term
+relative to the gradient.
 
 Implementation of an optimizer consists of defining an ADT describing
 the optimizer state and a `step` function that implements a single
