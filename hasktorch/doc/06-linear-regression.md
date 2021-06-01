@@ -51,7 +51,7 @@ main = do
     numFeatures = 3
 ```
 
-Let's break this down in steps:
+Let's break this down in pieces:
 
 1. The `init` variable is initialized as a `Linear` type (defined in
    `Torch.NN`) using `sample` which randomly initializes a `Linear`
@@ -76,7 +76,7 @@ Let's break this down in steps:
 
 Note the expression of the architecture in the `Torch.NN.linear`
 function (a single linear layer, or alternatively a neural network
-with zero hidden layers), does not require an explicit representation
+with zero hidden layers) does not require an explicit representation
 of the compute graph, but is simply a composition of tensor
 ops. Because of the autodiff mechanism described in the previous
 section, the graph is constructed automatically as pure functional ops
