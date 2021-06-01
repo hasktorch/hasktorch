@@ -62,6 +62,10 @@ cradle:
       component: "spec:examples"
     - path: "./examples/typed-transformer"
       component: "exe:typed-transformer"
+    - path: "./examples/untyped-transformer"
+      component: "untyped-transformer:exe:untyped-tf"
+    - path: "./examples/untyped-transformer/src"
+      component: "untyped-transformer:exe:untyped-tf"
     - path: "./examples/vae"
       component: "exe:vae"
     - path: "./examples/xor-mlp"
@@ -70,7 +74,6 @@ cradle:
       component: "exe:csv-test"
     - path: "./examples/iris-classification"
       component: "exe:iris-classification"
-
     - path: "./experimental/dataloader-cifar10"
       component: "exe:dataloader-cifar10"
     - path: "./experimental/untyped-nlp"

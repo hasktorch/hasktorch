@@ -2756,6 +2756,19 @@ minDim ::
   (Tensor, Tensor)
 minDim (Dim d) k input = unsafePerformIO $ cast3 ATen.min_tlb input d (keepdim k)
 
+stdDim ::
+  -- | dimension
+  Dim ->
+  -- | keepdim
+  KeepDim ->
+  -- | unbiased
+  Bool ->
+  -- | input
+  Tensor ->
+  -- | output
+  Tensor
+stdDim (Dim d) k unbiased input = unsafePerformIO $ (cast4 ATen.std_tlbb) input d unbiased (keepdim k)
+
 -- | Returns the mean value of each row of the input tensor in the given dimension dim. If dim is a list of dimensions, reduce over all of them.
 -- If keepdim is True, the output tensor is of the same size as input except in the dimension(s) dim where it is of size 1.
 -- Otherwise, dim is squeezed (see torch.squeeze()), resulting in the output tensor having 1 (or len(dim)) fewer dimension(s).

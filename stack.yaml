@@ -8,6 +8,7 @@ packages:
 - libtorch-ffi-helper
 - hasktorch
 - examples
+- examples/untyped-transformer
 - experimental
 
 extra-include-dirs:
