@@ -9,7 +9,6 @@ module Torch
     module Torch.Optim,
     module Torch.Random,
     module Torch.Scalar,
-    -- module Torch.Script,
     module Torch.Serialize,
     module Torch.Tensor,
     module Torch.TensorFactories,
@@ -28,7 +27,6 @@ import Torch.NN
 import Torch.Optim
 import Torch.Random
 import Torch.Scalar
--- import Torch.Script
 import Torch.Serialize
 import Torch.Tensor
 import Torch.TensorFactories
