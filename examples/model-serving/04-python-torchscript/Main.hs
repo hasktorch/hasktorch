@@ -8,14 +8,15 @@ main  = do
   -- load parameters
   S.IVGenericDict params <- pickleLoad "mnist.dict.pt"
 
-  -- load example data
+  -- load example image data
   S.IVGenericDict example <- pickleLoad "mnist.example.pt"
   let ivt = snd $ example !! 0
   let S.IVTensor t = ivt
 
-  -- load torchscript
-  tsModule <- S.load WithoutRequiredGrad "mnist.ts.pt"
+  -- load torchscript module
+  tsModule <- S.loadScript WithoutRequiredGrad "mnist.ts.pt"
   
+  -- perform inference computation
   let result = forward tsModule [ivt] 
   print result
 
