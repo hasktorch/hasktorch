@@ -42,11 +42,11 @@ let
     ++ iohKNix.overlays.haskell-nix-extra
     # the iohkNix overlay contains nix utilities and niv
     ++ iohKNix.overlays.iohkNix
-    # libtorch overlays from pytorch-world
+    # libtorch overlays from libtorch-nix
     # TODO: pull in libGL_driver and cudatoolkit as done in https://github.com/NixOS/nixpkgs/blob/master/pkgs/games/katago/default.nix
     ++ [
       (pkgs: _: with pkgs;
-        let libtorchSrc = callPackage "${sources.pytorch-world}/libtorch/release.nix" { }; in
+        let libtorchSrc = callPackage "${sources.libtorch-nix}/libtorch/release.nix" { }; in
         if cudaSupport && cudaMajorVersion == "10" then
           let libtorch = libtorchSrc.libtorch_cudatoolkit_10_2; in
           {

@@ -32,6 +32,17 @@ C.include "<vector>"
 
 
 
+tensor_prelu_backward_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+tensor_prelu_backward_tt _obj _grad_output _weight =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).prelu_backward(
+    *$(at::Tensor* _grad_output)
+  , *$(at::Tensor* _weight)));
+  }|]
+
 tensor_hardshrink_s
   :: Ptr Tensor
   -> Ptr Scalar
@@ -1675,14 +1686,5 @@ tensor___or___s
 tensor___or___s _obj _other =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).__or__(
     *$(at::Scalar* _other)));
-  }|]
-
-tensor___or___t
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-tensor___or___t _obj _other =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).__or__(
-    *$(at::Tensor* _other)));
   }|]
 

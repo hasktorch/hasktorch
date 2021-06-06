@@ -26,6 +26,18 @@ jobs:
     - name: Setup repos
       run: |
         git submodule init && git submodule update
+    - name: Cache .stack
+      id: cache-stack
+      uses: actions/cache@v2
+      with:
+        path: ~/.stack
+        key: "\
+          ${{ runner.os }}-stack\
+          -${{ hashFiles('**/stack.yaml.lock') }}\
+          -${{ hashFiles('**/package.yaml') }}\
+        "
+        restore-keys: |
+          ${{ runner.os }}-stack-
     - name: Build
       run: |
         export PATH=/opt/ghc/bin:$PATH
@@ -41,3 +53,19 @@ jobs:
         stack test hasktorch
         stack exec codegen-exe
         stack exec xor-mlp
+    - name: Build tutorial
+      run: |
+        stack build tintin
+        pushd hasktorch
+        stack exec tintin -- run
+        popd
+        mkdir -p public/tutorial
+        cp -r hasktorch/.stack-work/tintin/rendered/* public/tutorial
+    - name: Deploy tutorial
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+        external_repository: hasktorch/hasktorch.github.io
+        publish_branch: tutorial
+        publish_dir: ./public

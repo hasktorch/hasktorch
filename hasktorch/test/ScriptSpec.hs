@@ -12,6 +12,7 @@ import Test.Hspec
 import Torch hiding (forward)
 import Torch.Script
 import Torch.Autograd
+import Torch.NN
 import GHC.Generics
 import Control.Exception.Safe (catch,throwIO)
 import Language.C.Inline.Cpp.Exceptions (CppException(..))
@@ -87,8 +88,8 @@ spec = describe "torchscript" $ do
     a `shouldBe` 1
     b `shouldBe` 2
     (asValue c :: Float) `shouldBe` 12.0
-    save sm "self.pt"
-    sm2 <- load WithRequiredGrad "self.pt"
+    saveScript sm "self.pt"
+    sm2 <- loadScript WithRequiredGrad "self.pt"
     let IVTuple [IVInt a,IVInt b,IVTensor c] = runMethod1 sm2 "forward" (IVTensor (ones' []))
     let [g] =  grad c (flattenParameters sm2)
     (asValue g :: Float) `shouldBe` 2.0
@@ -99,7 +100,7 @@ spec = describe "torchscript" $ do
         v01 = asTensor (8::Float)
     m <- trace "MyModule" "forward" (\[x,y] -> return [x+y]) [v00,v01]
     sm <- toScriptModule m
-    save sm "self2.pt"
+    saveScript sm "self2.pt"
     let (IVTensor r0) = forward sm (map IVTensor [v00,v01])
     (asValue r0::Float) `shouldBe` 12
     graph <- traceAsGraph (\[x,y] -> return [x+y]) [v00,v01]
@@ -112,7 +113,7 @@ spec = describe "torchscript" $ do
     init' <- sample (MLPSpec 784 64 32 10)
     m <- traceWithParameters "MyModule" (\p [x] -> return [(mlp p x)]) init' [v00]
     sm <- toScriptModule m
-    save sm "mlp.pt"
+    saveScript sm "mlp.pt"
     let (IVTensor r0) = forward sm (map IVTensor [v00])
     (shape r0) `shouldBe` [3,10]
   it "trace monop with parameters" $ do
@@ -120,7 +121,7 @@ spec = describe "torchscript" $ do
     init' <- sample MonoSpec
     m <- traceWithParameters "MyModule" (\p [x] -> return [(monop p x)]) init' [v00]
     sm <- toScriptModule m
-    save sm "monop.pt"
+    saveScript sm "monop.pt"
     let (IVTensor r0) = forward sm (map IVTensor [v00])
     (asValue r0::Float) `shouldBe` 4.0
     (shape r0) `shouldBe` []
@@ -133,7 +134,7 @@ spec = describe "torchscript" $ do
     (asValue r2::Float) `shouldBe` 8.0
     (shape r2) `shouldBe` []
   it "run" $ do
-    m2 <- load WithoutRequiredGrad "self2.pt"
+    m2 <- loadScript WithoutRequiredGrad "self2.pt"
     let v10 = asTensor (40::Float)
         v11 = asTensor (80::Float)
     let (IVTensor r1) = forward m2 (map IVTensor [v10,v11])

@@ -126,6 +126,7 @@ methods:
 - requires_grad_(bool requires_grad=true) -> Tensor
 - retain_grad() -> void
 - _fw_primal(int64_t level) -> Tensor
+- rename(DimnameList names) -> Tensor
 - align_to(DimnameList names) -> Tensor
 - align_to(DimnameList order, int64_t ellipsis_idx) -> Tensor
 - align_as(Tensor  other) -> Tensor

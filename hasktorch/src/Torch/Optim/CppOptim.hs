@@ -210,8 +210,8 @@ instance CppOptimizer SGDOptions where
     where
       initParams' = map toDependent $ flattenParameters initParams
 
-save :: CppOptimizerState option -> FilePath -> IO ()
-save (CppOptimizerState _ optimizer) file = cast2 LibTorch.save optimizer file
+saveState :: CppOptimizerState option -> FilePath -> IO ()
+saveState (CppOptimizerState _ optimizer) file = cast2 LibTorch.save optimizer file
 
-load :: CppOptimizerState option -> FilePath -> IO ()
-load (CppOptimizerState _ optimizer) file = cast2 LibTorch.load optimizer file
+loadState :: CppOptimizerState option -> FilePath -> IO ()
+loadState (CppOptimizerState _ optimizer) file = cast2 LibTorch.load optimizer file

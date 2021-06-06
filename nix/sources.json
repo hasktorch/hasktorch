@@ -59,6 +59,18 @@
         "url": "https://github.com/nmattia/naersk/archive/b3b099d669fc8b18d361c249091c9fe95d57ebbb.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
+    "libtorch-nix": {
+        "branch": "main",
+        "description": "nix scripts for pytorch-related libraries",
+        "homepage": "https://pytorch.org/",
+        "owner": "hasktorch",
+        "repo": "libtorch-nix",
+        "rev": "d14b0fd10b96d192b92b8ccc7254ade4b3489331",
+        "sha256": "1k2xax64hfmaw5kzmx3w242z62xckjihraa75vvdz8v27in60zqi",
+        "type": "tarball",
+        "url": "https://github.com/hasktorch/libtorch-nix/archive/d14b0fd10b96d192b92b8ccc7254ade4b3489331.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "niv": {
         "branch": "master",
         "description": "Easy dependency management for Nix projects",
@@ -69,18 +81,6 @@
         "sha256": "1qjavxabbrsh73yck5dcq8jggvh3r2jkbr6b5nlz5d9yrqm9255n",
         "type": "tarball",
         "url": "https://github.com/nmattia/niv/archive/af958e8057f345ee1aca714c1247ef3ba1c15f5e.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
-    "pytorch-world": {
-        "branch": "unstable",
-        "description": "nix scripts for pytorch-related libraries",
-        "homepage": "https://pytorch.org/",
-        "owner": "stites",
-        "repo": "pytorch-world",
-        "rev": "8942b2f8b16e59e1370134c4b56dcc91d9686a9e",
-        "sha256": "19rvsg2764mpz60y20da4vxwdk9ly5c5x98qdkjdrl7y1nbl5mhn",
-        "type": "tarball",
-        "url": "https://github.com/stites/pytorch-world/archive/8942b2f8b16e59e1370134c4b56dcc91d9686a9e.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "stackage-nix": {

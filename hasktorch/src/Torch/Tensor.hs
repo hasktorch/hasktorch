@@ -154,6 +154,18 @@ instance HasTypes Float Tensor where
 instance HasTypes Bool Tensor where
   types_ _ = pure
 
+instance HasTypes Int Int where
+  types_ = id
+
+instance HasTypes Float Float where
+  types_ = id
+
+instance HasTypes Double Double where
+  types_ = id
+
+instance HasTypes Bool Bool where
+  types_ = id
+
 toType :: forall a. HasTypes a Tensor => DType -> a -> a
 toType dtype t = over (types @Tensor @a) (_toType dtype) t
 
