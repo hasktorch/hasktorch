@@ -1,6 +1,6 @@
 name:                hasktorch
 version:             0.2.0.0
-synopsis:            initial implementation for hasktorch based on libtorch
+synopsis:            Functional differentiable programming in Haskell
 -- description:
 homepage:            https://github.com/hasktorch/hasktorch#readme
 license:             BSD3
@@ -90,6 +90,7 @@ library
                     , Torch.Data.Internal
                     , Torch.Data.Dataset
                     , Torch.Data.CsvDatastream
+                    , Torch.Tutorial
 
  other-modules:       Paths_hasktorch
  hs-source-dirs:      src

@@ -138,11 +138,11 @@ instance Castable Graph (ForeignPtr (ATen.SharedPtr ATen.JitGraph)) where
 newModule :: String -> IO RawModule
 newModule = cast1 LibTorch.newModule
 
-save :: ScriptModule -> FilePath -> IO ()
-save = cast2 LibTorch.save
+saveScript :: ScriptModule -> FilePath -> IO ()
+saveScript = cast2 LibTorch.save
 
-save' :: RawModule -> FilePath -> IO ()
-save' = cast2 LibTorch.save
+saveScript' :: RawModule -> FilePath -> IO ()
+saveScript' = cast2 LibTorch.save
 
 data LoadMode
   = WithoutRequiredGrad
@@ -150,17 +150,17 @@ data LoadMode
   deriving (Show, Eq)
 
 -- | Load a torchscript file
-load :: LoadMode -> FilePath -> IO ScriptModule
-load WithoutRequiredGrad file = cast1 LibTorch.load file
-load WithRequiredGrad file = do
+loadScript :: LoadMode -> FilePath -> IO ScriptModule
+loadScript WithoutRequiredGrad file = cast1 LibTorch.load file
+loadScript WithRequiredGrad file = do
   module'@(UnsafeRawModule rmodule) <- cast1 LibTorch.load file
   params <- getParametersIO module'
   paramsWithRequiredGrad <- forM params makeIndependent
   setParameters module' (map toDependent paramsWithRequiredGrad)
   return (UnsafeScriptModule rmodule)
 
-load' :: FilePath -> IO RawModule
-load' = cast1 LibTorch.load
+loadScript' :: FilePath -> IO RawModule
+loadScript' = cast1 LibTorch.load
 
 instance HasForward ScriptModule [IValue] IValue where
   forward module' = unsafePerformIO . forwardStoch module'
@@ -260,7 +260,7 @@ getNamedChildren (UnsafeScriptModule m) = unsafePerformIO $ do
 
 toScriptModule :: RawModule -> IO ScriptModule
 toScriptModule rawModule = do
-  (UnsafeRawModule r) <- clone rawModule
+  (UnsafeRawModule r) <- cloneRawModule rawModule
   return $ UnsafeScriptModule r
 
 toRawModule :: ScriptModule -> IO RawModule
@@ -270,11 +270,13 @@ toRawModule scriptModule = do
   where
     clone' = cast1 LibTorch.clone
 
-clone :: RawModule -> IO RawModule
-clone = cast1 LibTorch.clone
+cloneRawModule :: RawModule -> IO RawModule
+cloneRawModule = cast1 LibTorch.clone
 
-train :: RawModule -> Bool -> IO ()
-train = cast2 LibTorch.train
+data RuntimeMode = Eval | Train deriving (Show, Eq)
+
+setRuntimeMode :: RawModule -> RuntimeMode -> IO ()
+setRuntimeMode rmod mode = cast2 LibTorch.train rmod (mode == Train)
 
 define :: RawModule -> String -> IO ()
 define = cast2 LibTorch.define

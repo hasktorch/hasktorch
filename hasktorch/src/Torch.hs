@@ -12,6 +12,8 @@ module Torch
     module Torch.Tensor,
     module Torch.TensorFactories,
     module Torch.TensorOptions,
+    module Torch.Serialize,
+    module Torch.Script
   )
 where
 
@@ -27,3 +29,5 @@ import Torch.Scalar
 import Torch.Tensor
 import Torch.TensorFactories
 import Torch.TensorOptions
+import Torch.Serialize
+import Torch.Script
