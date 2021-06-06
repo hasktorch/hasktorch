@@ -3,9 +3,10 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
 
-import Torch 
+import Torch as T
 
 import GHC.Generics
+import System.IO.Unsafe (unsafePerformIO)
 
 --
 -- Encoder / Decoder
@@ -85,7 +86,7 @@ data DecoderLayer = DecoderLayer {
   declSelfAttn :: MHAttention,
   declSrcAttn :: MHAttention,
   declFF :: Linear,
-  declSubLayer :: [SubLayerConnection]
+  declSubLayer :: (SubLayerConnection, SubLayerConnection)
 
   -- dlSelfAttn
   -- dlSrcAttn
@@ -102,6 +103,8 @@ decodeLayer ::
   Tensor
 decodeLayer DecoderLayer{..} memory srcMask tgtMask t =
   undefined
+  -- unsafePerformIO $ sublayer (fst declSubLayer) 
+  
 
 --
 -- Encoder
@@ -161,6 +164,20 @@ data SubLayerConnection  = SubLayerConnection {
   slcDropout :: Dropout
 } deriving (Show, Generic, Parameterized)
 
+sublayer ::
+  SubLayerConnection ->
+  -- | sublayer computation - either MHA, 
+  (Tensor -> Tensor) ->
+  -- | input
+  Tensor ->
+  -- | output
+  IO Tensor
+sublayer SubLayerConnection{..} subForward x = do
+  -- TODO - what's the default dropout prob?
+  fwd <- dropout 0.5 True (subForward $ layerNorm slcNorm x)
+  pure (x + fwd)
+
+
 
 --
 -- Multi-headed Attention
@@ -173,6 +190,28 @@ data MHAttention = MHAttention {
   mhaAttention :: Attention,
   mhaDropout :: Dropout
 } deriving (Show, Generic, Parameterized)
+
+attention :: 
+  -- | query
+  Tensor ->
+  -- | key
+  Tensor ->
+  -- | value
+  Tensor ->
+  -- | mask
+  Tensor -> 
+  -- | dropout
+  Dropout -> 
+  -- | output
+  IO Tensor
+attention query key value mask dropout = do
+  let dk = T.size (-1) query
+      keyTranspose = transpose (Dim (-2)) (Dim (-1)) key
+      -- scores = (matmul query keyTranspose) / (T.sqrt dk)
+      -- pAttn = softmax Dim (-1) scores
+  -- TODO
+  pure undefined
+
 
 --
 -- Attention
