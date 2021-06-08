@@ -96,7 +96,7 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "tokenizers": {
-        "branch": "nix",
+        "branch": "master",
         "description": "💥 Fast State-of-the-Art Tokenizers optimized for Research and Production",
         "homepage": "https://huggingface.co/docs/tokenizers",
         "owner": "hasktorch",

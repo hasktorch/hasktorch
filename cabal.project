@@ -4,7 +4,7 @@ packages:
     libtorch-ffi-helper/*.cabal
     hasktorch/*.cabal
     examples/*.cabal
-    experimental/*.cabal
+    experimental/*/*.cabal
 
 source-repository-package
     type: git
