@@ -71,7 +71,11 @@ cradle:
     - path: "./examples/iris-classification"
       component: "exe:iris-classification"
 
+    - path: "./experimental/bounding-box"
+      component: "exe:bounding-box"
     - path: "./experimental/dataloader-cifar10"
       component: "exe:dataloader-cifar10"
+    - path: "./experimental/gradually-typed"
+      component: "lib:gradually-typed"
     - path: "./experimental/untyped-nlp"
       component: "exe:untyped-nlp"

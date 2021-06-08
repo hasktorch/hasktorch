@@ -11,17 +11,15 @@ import Torch.NN
 import Torch.Tensor
 import Torch.Vision
 import System.Environment (getArgs)
+import qualified System.Exit
 import Data.List.Split
-  
+
 main = do
   args <- getArgs
   when (length args /= 4) $ do
-    putStrLn "Usage: bounding-box label-file annotation-file input-image-file output-image-file"
-  let lfile = args !! 0
-      bbfile = args !! 1
-      ifile = args !! 2
-      ofile = args !! 3
-  
+    System.Exit.die "Usage: bounding-box label-file annotation-file input-image-file output-image-file"
+  let [lfile, bbfile, ifile, ofile] = args
+
   labels <- lines <$> readFile lfile
   I.readImage ifile >>= \case
     Left err -> print err
@@ -32,7 +30,7 @@ main = do
       str <- readFile bbfile
       let dats = map (splitOn " ") (lines str)
       print $ length dats
-      print $ dats
+      print dats
       forM_ dats $ \(classid': x': y': w': h' :_) -> do
         let classid = read classid' :: Int
             x = fromIntegral width * read x' :: Float
@@ -46,4 +44,3 @@ main = do
         drawString (labels !! classid) (round x0+1) (round y0+1) (255,255,255) (0,0,0) input_image
         drawRect (round x0) (round y0) (round x1) (round y1) (255,255,255) input_image
       I.writePng ofile input_image
-      

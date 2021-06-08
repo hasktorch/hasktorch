@@ -23,87 +23,7 @@ Flag disable-doctest
  Manual:      True
 
 library
- exposed-modules:     Torch.GraduallyTyped
-                    , Torch.GraduallyTyped.Prelude
-                    , Torch.GraduallyTyped.Unify
-                    , Torch.GraduallyTyped.Scalar
-                    , Torch.GraduallyTyped.Tensor
-                    , Torch.GraduallyTyped.Tensor.Type
-                    , Torch.GraduallyTyped.Tensor.Creation
-                    , Torch.GraduallyTyped.Tensor.IndexingSlicingJoining
-                    , Torch.GraduallyTyped.Tensor.Other
-                    , Torch.GraduallyTyped.Tensor.MathOperations
-                    , Torch.GraduallyTyped.Tensor.MathOperations.Pointwise
-                    , Torch.GraduallyTyped.Tensor.MathOperations.Reduction
-                    , Torch.GraduallyTyped.Tensor.MathOperations.Comparison
-                    , Torch.GraduallyTyped.Tensor.MathOperations.Spectral
-                    , Torch.GraduallyTyped.Tensor.MathOperations.Other
-                    , Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack
-                    , Torch.GraduallyTyped.RequiresGradient
-                    , Torch.GraduallyTyped.DType
-                    , Torch.GraduallyTyped.Device
-                    , Torch.GraduallyTyped.Shape
-                    , Torch.GraduallyTyped.Shape.Type
-                    , Torch.GraduallyTyped.Shape.Class
-                    , Torch.GraduallyTyped.Layout
-                    , Torch.GraduallyTyped.Autograd
-                    , Torch.GraduallyTyped.Random
-                    , Torch.GraduallyTyped.NN
-                    , Torch.GraduallyTyped.NN.Type
-                    , Torch.GraduallyTyped.NN.Class
-                    , Torch.GraduallyTyped.NN.Initialization
-                    , Torch.GraduallyTyped.NN.Linear
-                    , Torch.GraduallyTyped.NN.Transformer
-                    , Torch.GraduallyTyped.NN.Transformer.Type
-                    , Torch.GraduallyTyped.NN.Transformer.Block
-                    , Torch.GraduallyTyped.NN.Transformer.CrossAttention
-                    , Torch.GraduallyTyped.NN.Transformer.Decoder
-                    , Torch.GraduallyTyped.NN.Transformer.DecoderBlock
-                    , Torch.GraduallyTyped.NN.Transformer.DecoderStack
-                    , Torch.GraduallyTyped.NN.Transformer.Encoder
-                    , Torch.GraduallyTyped.NN.Transformer.EncoderOnly
-                    , Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork
-                    , Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention
-                    , Torch.GraduallyTyped.NN.Transformer.SelfAttention
-                    , Torch.GraduallyTyped.NN.Transformer.SequenceToSequence
-                    , Torch.GraduallyTyped.NN.Transformer.Stack
-                    , Torch.GraduallyTyped.NN.Transformer.LMHead
-                    , Torch.GraduallyTyped.NN.Transformer.Pooler
-                    , Torch.GraduallyTyped.NN.Transformer.T5.Common
-                    , Torch.GraduallyTyped.NN.Transformer.T5.Small
-                    , Torch.GraduallyTyped.NN.Transformer.T5.Base
-                    , Torch.GraduallyTyped.NN.Transformer.T5.Large
-                    , Torch.GraduallyTyped.NN.Transformer.T5.ThreeB
-                    , Torch.GraduallyTyped.NN.Transformer.T5.ElevenB
-                    , Torch.GraduallyTyped.NN.Transformer.T5.Generation
-                    , Torch.GraduallyTyped.NN.Transformer.T5.Vocab
-                    , Torch.GraduallyTyped.NN.Transformer.T5
-                    , Torch.GraduallyTyped.NN.Transformer.BART.Common
-                    , Torch.GraduallyTyped.NN.Transformer.BART.Base
-                    , Torch.GraduallyTyped.NN.Transformer.BART
-                    , Torch.GraduallyTyped.NN.Transformer.BERT.Common
-                    , Torch.GraduallyTyped.NN.Transformer.BERT.BaseUncased
-                    , Torch.GraduallyTyped.NN.Transformer.BERT
-                    , Torch.GraduallyTyped.NN.Transformer.RoBERTa.Common
-                    , Torch.GraduallyTyped.NN.Transformer.RoBERTa.Base
-                    , Torch.GraduallyTyped.NN.Transformer.RoBERTa
-                    , Torch.GraduallyTyped.NN.Transformer.Pegasus.Common
-                    , Torch.GraduallyTyped.NN.Transformer.Pegasus.XSum
-                    , Torch.GraduallyTyped.NN.Transformer.Pegasus
-                    , Torch.GraduallyTyped.NN.Dropout
-                    , Torch.GraduallyTyped.NN.Activation
-                    , Torch.GraduallyTyped.NN.Normalization
-                    , Torch.GraduallyTyped.NN.Sparse
-                    , Torch.GraduallyTyped.NN.Functional
-                    , Torch.GraduallyTyped.NN.Functional.Activation
-                    , Torch.GraduallyTyped.NN.Functional.Linear
-                    , Torch.GraduallyTyped.NN.Functional.NonLinearActivation
-                    , Torch.GraduallyTyped.NN.Functional.Normalization
-                    , Torch.GraduallyTyped.NN.Functional.Sparse
-                    , Torch.GraduallyTyped.Internal.TensorOptions
-                    , Torch.GraduallyTyped.Internal.Void
-                    , Torch.GraduallyTyped.RewriteRules
-                    , Torch
+ exposed-modules:     Torch
                     , Torch.Tensor
                     , Torch.TensorOptions
                     , Torch.DType
@@ -186,7 +106,6 @@ library
                     , ghc-typelits-extra
                     , ghc-typelits-knownnat
                     , ghc-typelits-natnormalise
-                    , typelevel-rewrite-rules
                     , mtl
                     , safe-exceptions
                     , random
@@ -204,7 +123,6 @@ library
                     , pipes-bytestring
                     , pipes-csv
                     , lens-family-core
-                    , generic-lens
                     , cassava
                     , lifted-async
                     , monad-control
@@ -214,18 +132,10 @@ library
                     , data-default-class
                     , containers
                     , inline-c
-                    , generics-sop
-                    , type-errors-pretty
                     , vector-sized
-                    , indexed
-                    , indexed-extras
                     , free
                     , logict
                     , parsers
-                    , singletons < 3
-                    , HUnit
-                    , HUnit-approx
-                    , tokenizers
  default-extensions:  Strict
                     , StrictData
 
@@ -268,8 +178,8 @@ test-suite spec
                     , Torch.Distributions.ConstraintsSpec
                     , Torch.Distributions.BernoulliSpec
                     , Torch.Distributions.CategoricalSpec
-  default-language: Haskell2010
-  ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
+  default-language:   Haskell2010
+  ghc-options:        -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
   build-depends:      base >= 4.7 && < 5
                     , ghc-typelits-extra
                     , ghc-typelits-knownnat
@@ -291,7 +201,7 @@ test-suite spec
                     , lens-family-core
                     , data-default-class
 
-  build-tool-depends:  hspec-discover:hspec-discover
+  build-tool-depends: hspec-discover:hspec-discover
 
 test-suite doctests
   if os(darwin) || flag(disable-doctest)
