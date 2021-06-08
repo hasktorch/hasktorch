@@ -94,6 +94,11 @@ main = do
         m2=[zeros' [1], zeros' [1]],
         iter=0
     }
+    putStrLn "\nAdagrad"
+    optConvQuad numIter Adagrad {
+        gsum=[zeros' [1]],
+        iteration=0
+    }
     checkGlobalMinConvQuad
 
     -- 2D Rosenbrock w/ GD, GD+Momentum, Adam
