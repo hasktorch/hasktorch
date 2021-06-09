@@ -162,10 +162,7 @@ instance Optimizer Adam where
 
 -- | State representation for Adagrad Optimizer
 data Adagrad
-  = Adagrad
-      { gsum :: [Tensor], -- sum of squared gradients
-        iteration :: Int -- iteration
-      }
+  = Adagrad{ gsum :: [Tensor] } -- sum of squared gradients
   deriving (Show)
 
 -- | Adagrad step
@@ -180,7 +177,7 @@ adagrad ::
   Adagrad ->
   -- | returns new parameters + updated adam parameters
   ([Tensor], Adagrad)
-adagrad lr (Gradients gradients) parameters Adagrad {..} = (parameters', Adagrad gsum' (iteration + 1))
+adagrad lr (Gradients gradients) parameters Adagrad {..} = (parameters', Adagrad gsum')
   where
     -- add gradient squared to running total
     f gsum dp = gsum + dp * dp
