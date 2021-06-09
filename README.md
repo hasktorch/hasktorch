@@ -29,6 +29,7 @@ The documentation is divided into several sections:
 
 The following steps will get you started.
 They assume the hasktorch repository has just been cloned.
+After setup is done, read the [online tutorials](https://hasktorch.github.io/tutorial/) and [API documents](https://hasktorch.github.io/).
 
 * [linux+cabal+cpu](#linuxcabalcpu)
 * [linux+cabal+cuda11](#linuxcabalcuda11)
