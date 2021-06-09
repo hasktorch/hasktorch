@@ -31,7 +31,7 @@ optConvQuad numIter optInit lr = do
     trained <- foldLoop (paramInit, optInit) numIter $ \(paramState, optState) i -> do
         let lossValue = (lossConvQuad a b) paramState
         showLog 1000 i numIter lossValue paramState
-        runStep paramState optState lossValue lr --5e-2
+        runStep paramState optState lossValue lr
     pure ()
 
 -- | Optimize Rosenbrock function with specified optimizer
@@ -42,7 +42,7 @@ optRosen numIter optInit lr = do
     trained <- foldLoop (paramInit, optInit) numIter $ \(paramState, optState) i -> do
         let lossValue = lossRosen paramState
         showLog 1000 i numIter lossValue paramState
-        runStep paramState optState lossValue lr -- 5e-4
+        runStep paramState optState lossValue lr
     pure ()
 
 -- | Optimize Ackley function with specified optimizer
@@ -53,7 +53,7 @@ optAckley numIter optInit lr = do
     trained <- foldLoop (paramInit, optInit) numIter $ \(paramState, optState) i -> do
         let lossValue = lossAckley paramState
         showLog 1000 i numIter lossValue paramState
-        runStep paramState optState lossValue lr --5e-4
+        runStep paramState optState lossValue lr
     pure ()
 
 -- | Check global minimum point for Rosenbrock
@@ -112,7 +112,7 @@ main = do
         iter=0
     } 5e-4
     putStrLn "\nAdagrad"
-    optRosen numIter Adagrad { gsum=[zeros' [1]] } 5e-2
+    optRosen numIter Adagrad { gsum=[zeros' [1], zeros' [1]] } 5e-1
     checkGlobalMinRosen
 
     -- Ackley w/ GD, GD+Momentum, Adam, Adagrad
