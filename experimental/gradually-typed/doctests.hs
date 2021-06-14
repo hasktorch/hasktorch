@@ -9,6 +9,9 @@ main = do
     libDir <- lookupEnv "NIX_GHC_LIBDIR"
 
     doctest $ args ++
+      maybe [] (\x -> ["-package-db " ++ x ++ "/package.conf.d"]) libDir
+  where
+    args = flags ++ pkgs ++ module_sources ++
       [ "-XDataKinds"
       , "-XScopedTypeVariables"
       , "-XTypeApplications"
@@ -17,7 +20,4 @@ main = do
       , "-fplugin GHC.TypeLits.KnownNat.Solver"
       , "-fplugin GHC.TypeLits.Extra.Solver"
       , "-fconstraint-solver-iterations=0"
-      ] ++
-      maybe [] (\x -> ["-package-db " ++ x ++ "/package.conf.d"]) libDir
-  where
-    args = flags ++ pkgs ++ module_sources
+      ]

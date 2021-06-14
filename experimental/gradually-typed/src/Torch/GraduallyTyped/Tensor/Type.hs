@@ -972,7 +972,7 @@ checkShape tensor =
 --           '[ 'Dim 'UncheckedName ('Size 32),
 --              'Dim ('Name "feature") 'UncheckedSize])
 -- >>> t' <- checkedShape @('Shape [ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 32)]) t
--- *** Exception: user error (The tensor does not have the shape "Shape [Dim (Name "batch") (Size 32),Dim (Name "feature") (Size 32)]".)
+-- *** Exception: user error (The tensor does not have the shape "Shape [Dim {dimName = Name "batch", dimSize = Size 32},Dim {dimName = Name "feature", dimSize = Size 32}]".)
 checkedShape ::
   forall (shape :: Shape [Dim (Name Symbol) (Size Nat)]) m requiresGradient layout device dataType.
   (KnownShape shape, MonadFail m) =>
