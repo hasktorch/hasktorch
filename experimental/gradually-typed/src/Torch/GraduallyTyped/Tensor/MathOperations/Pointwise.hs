@@ -8,6 +8,7 @@ module Torch.GraduallyTyped.Tensor.MathOperations.Pointwise where
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (Bool))
 import Torch.GraduallyTyped.DType (DataType (DataType))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape (BroadcastShapesF)
@@ -78,12 +79,12 @@ acosh = unsafePerformIO . cast1 ATen.acosh_t
 -- the 'other' input is a scalar.
 --
 -- >>> g <- generator @('Device 'CPU) 0
--- >>> (a, g) = randn @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('NamedSized "feature" 4)]) g
--- >>> (b, _) = randn @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 4), 'Dim ('Sized 1)]) g
+-- >>> (a, g) = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('NamedSized "feature" 4)]) g
+-- >>> (b, _) = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 4), 'Dim ('Sized 1)]) g
 -- >>> :type a `add` b
 -- a `add` b
 --   :: Tensor
---        'Dependent
+--        'WithGradient
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
@@ -259,7 +260,7 @@ bitwiseNot ::
   -- | input
   Tensor requiresGradient layout device dataType shape ->
   -- | output
-  Tensor requiresGradient layout device ( 'DataType 'Bool) shape
+  Tensor requiresGradient layout device ('DataType 'Bool) shape
 bitwiseNot = unsafePerformIO . cast1 ATen.bitwise_not_t
 
 -- | Computes the bitwise AND of the 'input' and the 'other' tensor.
@@ -805,7 +806,7 @@ logicalAnd ::
   -- | the tensor to compute AND with
   Tensor requiresGradient layout device dataType shape ->
   -- | the output tensor
-  Tensor requiresGradient layout device ( 'DataType 'Bool) shape
+  Tensor requiresGradient layout device ('DataType 'Bool) shape
 input `logicalAnd` other = unsafePerformIO $ cast2 ATen.logical_and_tt input other
 
 -- | Computes the element-wise logical NOT of the given input tensor.
@@ -817,7 +818,7 @@ logicalNot ::
   -- | the input tensor
   Tensor requiresGradient layout device dataType shape ->
   -- | the output tensor
-  Tensor 'WithoutGradient layout device ( 'DataType 'Bool) shape
+  Tensor 'WithoutGradient layout device ('DataType 'Bool) shape
 logicalNot = unsafePerformIO . cast1 ATen.logical_not_t
 
 -- | Computes the element-wise logical OR of the given input tensors.
@@ -835,7 +836,7 @@ logicalOr ::
     'WithoutGradient
     (layout <+> layout')
     (device <+> device')
-    ( 'DataType 'Bool)
+    ('DataType 'Bool)
     (BroadcastShapesF shape shape')
 input `logicalOr` other = unsafePerformIO $ cast2 ATen.logical_or_tt input other
 
@@ -850,7 +851,7 @@ logicalXor ::
   -- | the tensor to compute XOR with
   Tensor requiresGradient layout device dataType shape ->
   -- | the output tensor
-  Tensor requiresGradient layout device ( 'DataType 'Bool) shape
+  Tensor requiresGradient layout device ('DataType 'Bool) shape
 input `logicalXor` other = unsafePerformIO $ cast2 ATen.logical_xor_tt input other
 
 -- | Element-wise multiplication of two tensors:

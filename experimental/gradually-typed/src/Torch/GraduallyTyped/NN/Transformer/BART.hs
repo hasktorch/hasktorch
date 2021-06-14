@@ -14,7 +14,7 @@ module Torch.GraduallyTyped.NN.Transformer.BART
 where
 
 import Data.List (maximumBy, sortBy)
-import Data.Ord (comparing, Down (..))
+import Data.Ord (Down (..), comparing)
 import Test.HUnit.Approx (assertApproxEqual)
 import qualified Tokenizers (Tokenizer, decode, encode, getIDs, withTokenizerFromConfigFile)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))

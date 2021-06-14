@@ -9,6 +9,7 @@ module Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack where
 
 import GHC.TypeLits (Nat, Symbol, TypeError)
 import System.IO.Unsafe (unsafePerformIO)
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.Prelude (PrependMaybe, Reverse)
 import Torch.GraduallyTyped.Shape (BroadcastDimsImplF, Dim, Name, Shape (..), Size)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
@@ -44,7 +45,7 @@ type MatmulDimsF dims dims' = MatmulDimsCheckF dims dims' (MatmulDimsImplF (Reve
 type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
   MatmulF 'UncheckedShape _ = 'UncheckedShape
   MatmulF _ 'UncheckedShape = 'UncheckedShape
-  MatmulF ( 'Shape dims) ( 'Shape dims') = 'Shape (MatmulDimsF dims dims')
+  MatmulF ('Shape dims) ('Shape dims') = 'Shape (MatmulDimsF dims dims')
 
 -- | Matrix product of two tensors.
 --
@@ -53,13 +54,13 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --     (1) If both tensors are 1-dimensional, the dot product (scalar) is returned:
 --
 --         >>> g <- generator @('Device 'CPU) 0
---         >>> (tensor1, g') = randn @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 3)]) g
---         >>> (tensor2, g'') = randn @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 3)]) g'
+--         >>> (tensor1, g') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 3)]) g
+--         >>> (tensor2, g'') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 3)]) g'
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
 --           :: Tensor
---            'Dependent
+--            'WithGradient
 --            ('Layout 'Dense)
 --            ('Device 'CPU)
 --            ('DataType 'Float)
@@ -69,13 +70,13 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --     (2) If both arguments are 2-dimensional, the matrix-matrix product is returned:
 --
 --         >>> g <- generator @('Device 'CPU) 0
---         >>> (tensor1, g') = randn @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 3), 'Dim ('Sized 4)]) g
---         >>> (tensor2, g'') = randn @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 4), 'Dim ('Sized 7)]) g'
+--         >>> (tensor1, g') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 3), 'Dim ('Sized 4)]) g
+--         >>> (tensor2, g'') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 4), 'Dim ('Sized 7)]) g'
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
 --           :: Tensor
---                'Dependent
+--                'WithGradient
 --                ('Layout 'Dense)
 --                ('Device 'CPU)
 --                ('DataType 'Float)
@@ -87,13 +88,13 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --     After the matrix multiply, the prepended dimension is removed:
 --
 --         >>> g <- generator @('Device 'CPU) 0
---         >>> (tensor1, g') = randn @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 4)]) g
---         >>> (tensor2, g'') = randn @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 4), 'Dim ('Sized 7)]) g'
+--         >>> (tensor1, g') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 4)]) g
+--         >>> (tensor2, g'') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 4), 'Dim ('Sized 7)]) g'
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
 --           :: Tensor
---                'Dependent
+--                'WithGradient
 --                ('Layout 'Dense)
 --                ('Device 'CPU)
 --                ('DataType 'Float)
@@ -104,13 +105,13 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --     the matrix-vector product is returned:
 --
 --         >>> g <- generator @('Device 'CPU) 0
---         >>> (tensor1, g') = randn @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 3), 'Dim ('Sized 4)]) g
---         >>> (tensor2, g'') = randn @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 4)]) g'
+--         >>> (tensor1, g') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 3), 'Dim ('Sized 4)]) g
+--         >>> (tensor2, g'') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 4)]) g'
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
 --           :: Tensor
---                'Dependent
+--                'WithGradient
 --                ('Layout 'Dense)
 --                ('Device 'CPU)
 --                ('DataType 'Float)
@@ -123,13 +124,13 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --     The following is an example of a batched matrix multiplication:
 --
 --         >>> g <- generator @('Device 'CPU) 0
---         >>> (tensor1, g') = randn @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('NamedSized "batch" 10), 'Dim ('Sized 3), 'Dim ('Sized 4)]) g
---         >>> (tensor2, g'') = randn @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('NamedSized "batch" 10), 'Dim ('Sized 4), 'Dim ('Sized 7)]) g'
+--         >>> (tensor1, g') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('NamedSized "batch" 10), 'Dim ('Sized 3), 'Dim ('Sized 4)]) g
+--         >>> (tensor2, g'') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('NamedSized "batch" 10), 'Dim ('Sized 4), 'Dim ('Sized 7)]) g'
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
 --           :: Tensor
---                'Dependent
+--                'WithGradient
 --                ('Layout 'Dense)
 --                ('Device 'CPU)
 --                ('DataType 'Float)
@@ -140,13 +141,13 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --     a 1 is prepended to its dimension for the purpose of the batched matrix multiply and removed after:
 --
 --         >>> g <- generator @('Device 'CPU) 0
---         >>> (tensor1, g') = randn @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 4)]) g
---         >>> (tensor2, g'') = randn @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('NamedSized "batch" 10), 'Dim ('Sized 4), 'Dim ('Sized 7)]) g'
+--         >>> (tensor1, g') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 4)]) g
+--         >>> (tensor2, g'') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('NamedSized "batch" 10), 'Dim ('Sized 4), 'Dim ('Sized 7)]) g'
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
 --           :: Tensor
---                'Dependent
+--                'WithGradient
 --                ('Layout 'Dense)
 --                ('Device 'CPU)
 --                ('DataType 'Float)
@@ -157,13 +158,13 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --     a 1 is appended to its dimension for the purpose of the batched matrix multiply and removed after:
 --
 --         >>> g <- generator @('Device 'CPU) 0
---         >>> (tensor1, g') = randn @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('NamedSized "batch" 10), 'Dim ('Sized 3), 'Dim ('Sized 4)]) g
---         >>> (tensor2, g'') = randn @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 4)]) g'
+--         >>> (tensor1, g') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('NamedSized "batch" 10), 'Dim ('Sized 3), 'Dim ('Sized 4)]) g
+--         >>> (tensor2, g'') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 4)]) g'
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
 --           :: Tensor
---                'Dependent
+--                'WithGradient
 --                ('Layout 'Dense)
 --                ('Device 'CPU)
 --                ('DataType 'Float)
@@ -175,13 +176,13 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --     'other' is a \(k \times m \times p\) tensor, 'output' will be a \(j \times k \times n \times p\) tensor:
 --
 --         >>> g <- generator @('Device 'CPU) 0
---         >>> (tensor1, g') = randn @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('NamedSized "batch" 10), 'Dim ('Sized 1), 'Dim ('Sized 3), 'Dim ('Sized 4)]) g
---         >>> (tensor2, g'') = randn @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 5), 'Dim ('Sized 4), 'Dim ('Sized 7)]) g'
+--         >>> (tensor1, g') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('NamedSized "batch" 10), 'Dim ('Sized 1), 'Dim ('Sized 3), 'Dim ('Sized 4)]) g
+--         >>> (tensor2, g'') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 5), 'Dim ('Sized 4), 'Dim ('Sized 7)]) g'
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
 --           :: Tensor
---                'Dependent
+--                'WithGradient
 --                ('Layout 'Dense)
 --                ('Device 'CPU)
 --                ('DataType 'Float)

@@ -32,18 +32,19 @@ import Type.Errors.Pretty (type (%), type (<>))
 -- >>> type BiasShape = 'Shape '[OutputDim]
 -- >>> type InputShape = 'Shape '[BatchDim, InputDim]
 -- >>> :kind! LinearWithBiasF WeightShape BiasShape InputShape
--- LinearWithBiasF WeightShape BiasShape InputShape :: Shape [Dim (Name Symbol) (Size Nat)]
+-- LinearWithBiasF WeightShape BiasShape InputShape :: Shape
+--                                                       [Dim (Name Symbol) (Size Nat)]
 -- = 'Shape
 --     '[ 'Dim ('Name "batch") ('Size 20),
 --        'Dim ('Name "output") ('Size 10)]
 type family LinearWithBiasF (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (biasShape :: Shape [Dim (Name Symbol) (Size Nat)]) (inputShape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
-  LinearWithBiasF ( 'Shape '[]) _ _ = TypeError (LinearWeightDimsErrorMessage '[])
-  LinearWithBiasF ( 'Shape '[weightDim]) _ _ = TypeError (LinearWeightDimsErrorMessage '[weightDim])
-  LinearWithBiasF ( 'Shape (weightDim ': weightDim' ': weightDim'' ': weightDims)) _ _ = TypeError (LinearWeightDimsErrorMessage (weightDim ': weightDim' ': weightDim'' ': weightDims))
-  LinearWithBiasF _ ( 'Shape '[]) _ = TypeError (LinearBiasDimsErrorMessage '[])
-  LinearWithBiasF _ ( 'Shape (biasDim ': biasDim' ': biasDims)) _ = TypeError (LinearBiasDimsErrorMessage (biasDim ': biasDim' ': biasDims))
-  LinearWithBiasF _ _ ( 'Shape '[]) = TypeError LinearInputDimsErrorMessage
-  LinearWithBiasF ( 'Shape weightDims) ( 'Shape biasDims) ( 'Shape inputDims) = 'Shape (Reverse (LinearWithBiasDimsF weightDims biasDims (Reverse inputDims)))
+  LinearWithBiasF ('Shape '[]) _ _ = TypeError (LinearWeightDimsErrorMessage '[])
+  LinearWithBiasF ('Shape '[weightDim]) _ _ = TypeError (LinearWeightDimsErrorMessage '[weightDim])
+  LinearWithBiasF ('Shape (weightDim ': weightDim' ': weightDim'' ': weightDims)) _ _ = TypeError (LinearWeightDimsErrorMessage (weightDim ': weightDim' ': weightDim'' ': weightDims))
+  LinearWithBiasF _ ('Shape '[]) _ = TypeError (LinearBiasDimsErrorMessage '[])
+  LinearWithBiasF _ ('Shape (biasDim ': biasDim' ': biasDims)) _ = TypeError (LinearBiasDimsErrorMessage (biasDim ': biasDim' ': biasDims))
+  LinearWithBiasF _ _ ('Shape '[]) = TypeError LinearInputDimsErrorMessage
+  LinearWithBiasF ('Shape weightDims) ('Shape biasDims) ('Shape inputDims) = 'Shape (Reverse (LinearWithBiasDimsF weightDims biasDims (Reverse inputDims)))
   LinearWithBiasF 'UncheckedShape _ _ = 'UncheckedShape
   LinearWithBiasF _ 'UncheckedShape _ = 'UncheckedShape
   LinearWithBiasF _ _ 'UncheckedShape = 'UncheckedShape
@@ -100,12 +101,12 @@ type LinearWeightDimsErrorMessage (weightDims :: [Dim (Name Symbol) (Size Nat)])
 -- >>> g <- generator @('Device 'CPU) 0
 -- >>> (weight, g') = randn @'Independent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @WeightShape g
 -- >>> (bias, g'') = randn @'Independent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @BiasShape g'
--- >>> (input, _) = randn @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @InputShape g''
+-- >>> (input, _) = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @InputShape g''
 -- >>> result = linear weight bias input
 -- >>> :type result
 -- result
 --   :: Tensor
---        'Dependent
+--        'WithGradient
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
@@ -130,11 +131,11 @@ linearWithBias ::
 linearWithBias weight bias input = unsafePerformIO $ cast3 ATen.linear_ttt input weight bias
 
 type family LinearWithoutBiasF (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (inputShape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
-  LinearWithoutBiasF ( 'Shape '[]) _ = TypeError (LinearWeightDimsErrorMessage '[])
-  LinearWithoutBiasF ( 'Shape '[weightDim]) _ = TypeError (LinearWeightDimsErrorMessage '[weightDim])
-  LinearWithoutBiasF ( 'Shape (weightDim ': weightDim' ': weightDim'' ': weightDims)) _ = TypeError (LinearWeightDimsErrorMessage (weightDim ': weightDim' ': weightDim'' ': weightDims))
-  LinearWithoutBiasF _ ( 'Shape '[]) = TypeError LinearInputDimsErrorMessage
-  LinearWithoutBiasF ( 'Shape weightDims) ( 'Shape inputDims) = 'Shape (Reverse (LinearWithoutBiasDimsF weightDims (Reverse inputDims)))
+  LinearWithoutBiasF ('Shape '[]) _ = TypeError (LinearWeightDimsErrorMessage '[])
+  LinearWithoutBiasF ('Shape '[weightDim]) _ = TypeError (LinearWeightDimsErrorMessage '[weightDim])
+  LinearWithoutBiasF ('Shape (weightDim ': weightDim' ': weightDim'' ': weightDims)) _ = TypeError (LinearWeightDimsErrorMessage (weightDim ': weightDim' ': weightDim'' ': weightDims))
+  LinearWithoutBiasF _ ('Shape '[]) = TypeError LinearInputDimsErrorMessage
+  LinearWithoutBiasF ('Shape weightDims) ('Shape inputDims) = 'Shape (Reverse (LinearWithoutBiasDimsF weightDims (Reverse inputDims)))
   LinearWithoutBiasF 'UncheckedShape _ = 'UncheckedShape
   LinearWithoutBiasF _ 'UncheckedShape = 'UncheckedShape
 
@@ -159,11 +160,11 @@ linearWithoutBias weight input = unsafePerformIO $ cast2 ATen.linear_tt input we
 testLinearWithoutBias ::
   Tensor
     'WithGradient
-    ( 'Layout 'Dense)
+    ('Layout 'Dense)
     'UncheckedDevice
-    ( 'DataType 'Float)
-    ( 'Shape '[ 'Dim ( 'Name "output") ( 'Size 2)])
+    ('DataType 'Float)
+    ('Shape '[ 'Dim ('Name "output") ('Size 2)])
 testLinearWithoutBias =
-  let weight = undefined :: Tensor 'WithGradient ( 'Layout 'Dense) ( 'Device 'CPU) ( 'DataType 'Float) ( 'Shape '[ 'Dim ( 'Name "output") ( 'Size 2), 'Dim ( 'Name "input") ( 'Size 1)])
-      input = undefined :: Tensor 'WithoutGradient ( 'Layout 'Dense) 'UncheckedDevice ( 'DataType 'Float) ( 'Shape '[ 'Dim ( 'Name "input") ( 'Size 1)])
+  let weight = undefined :: Tensor 'WithGradient ('Layout 'Dense) ('Device 'CPU) ('DataType 'Float) ('Shape '[ 'Dim ('Name "output") ('Size 2), 'Dim ('Name "input") ('Size 1)])
+      input = undefined :: Tensor 'WithoutGradient ('Layout 'Dense) 'UncheckedDevice ('DataType 'Float) ('Shape '[ 'Dim ('Name "input") ('Size 1)])
    in linearWithoutBias weight input

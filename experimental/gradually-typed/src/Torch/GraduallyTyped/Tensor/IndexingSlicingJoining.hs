@@ -17,10 +17,10 @@ import Data.Kind (Type)
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (Nat, Symbol, TypeError)
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.DType (DType)
+import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType)
-import Torch.GraduallyTyped.Layout (Layout (..), LayoutType)
+import Torch.GraduallyTyped.Device (Device (..), DeviceType(..))
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType(..))
 import Torch.GraduallyTyped.Prelude (FromMaybe, MapMaybe)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (AddDimF, BroadcastShapesF, GetDimF, GetDimImplF, GetIndexByNameF, InsertDimImplF, NumelF, ReplaceDimF, ReplaceDimImplF)
@@ -50,12 +50,12 @@ class HasCat (selectDim :: SelectDim (By Symbol Nat)) k (c :: k -> Type) (a :: k
   -- | Concatenates the given sequence of seq tensors in the given dimension.
   -- All tensors must either have the same shape (except in the concatenating dimension) or be empty.
   --
-  -- >>> t <- ones @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'NamedSized "batch" 32, 'NamedSized "feature" 8])
+  -- >>> t <- ones @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim (Name "batch") ('Size 32), 'Dim (Name "feature") ('Size 8)])
   -- [W TensorImpl.h:840] Warning: Named tensors and all their associated APIs are an experimental feature and subject to change. Please do not use them for anything important until they are released as stable. (function operator())
   -- >>> :type cat @('SelectDim ('ByName "feature")) [t]
   -- cat @('SelectDim ('ByName "feature")) [t]
   -- :: Tensor
-  --      'Dependent
+  --      'WithGradient
   --      ('Layout 'Dense)
   --      ('Device 'CPU)
   --      ('DataType 'Float)
@@ -63,7 +63,7 @@ class HasCat (selectDim :: SelectDim (By Symbol Nat)) k (c :: k -> Type) (a :: k
   -- >>> :type cat @('SelectDim ( 'ByIndex 0)) [t]
   -- cat @('SelectDim ( 'ByIndex 0)) [t]
   --   :: Tensor
-  --        'Dependent
+  --        'WithGradient
   --        ('Layout 'Dense)
   --        ('Device 'CPU)
   --        ('DataType 'Float)
@@ -71,7 +71,7 @@ class HasCat (selectDim :: SelectDim (By Symbol Nat)) k (c :: k -> Type) (a :: k
   -- >>> :type cat @'UncheckedSelectDim (SelectDim (ByIndex 0)) [t]
   -- cat @'UncheckedSelectDim (SelectDim (ByIndex 0)) [t]
   --   :: Tensor
-  --        'Dependent
+  --        'WithGradient
   --        ('Layout 'Dense)
   --        ('Device 'CPU)
   --        ('DataType 'Float)
@@ -208,12 +208,12 @@ type family ReshapeF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: 
 -- but with the specified shape:
 --
 -- >>> g <- generator @('Device 'CPU) 0
--- >>> (input, _) = randn @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 4)]) g
+-- >>> (input, _) = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 4)]) g
 -- >>> output = reshape @('Shape '[ 'Dim ('Sized 2), 'Dim ('Sized 2)]) input
 -- >>> :type output
 -- output
 --   :: Tensor
---        'Dependent
+--        'WithGradient
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
@@ -226,7 +226,7 @@ type family ReshapeF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: 
 -- >>> :type output'
 -- output'
 --   :: Tensor
---        'Dependent
+--        'WithGradient
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
@@ -341,7 +341,7 @@ type family TransposeIndexIndexDimsF (index0 :: Nat) (index1 :: Nat) (dims :: [D
 -- The selected dimensions 'selectDim0' and 'selectDim1' are swapped.
 --
 -- >>> g <- generator @('Device 'CPU) 0
--- >>> (input, _) = randn @'Dependent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('NamedSized "batch" 10), 'Dim ('NamedSized "feature" 5)]) g
+-- >>> (input, _) = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('NamedSized "batch" 10), 'Dim ('NamedSized "feature" 5)]) g
 -- >>> output = transpose @('SelectDim ('ByName "batch")) @('SelectDim ('ByName "feature")) input
 -- >>> :type output
 -- Not in scope: data constructor ‘CPU’
@@ -349,7 +349,7 @@ type family TransposeIndexIndexDimsF (index0 :: Nat) (index1 :: Nat) (dims :: [D
 -- >>> :type output
 -- output
 --   :: Tensor
---        'Dependent
+--        'WithGradient
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
