@@ -18,7 +18,8 @@ custom-setup
     , cabal-doctest >=1.0.6 && <1.1
 
 library
-  exposed-modules:     Torch.GraduallyTyped
+  exposed-modules:     Torch.Data.Parser
+                     , Torch.GraduallyTyped
                      , Torch.GraduallyTyped.Prelude
                      , Torch.GraduallyTyped.Unify
                      , Torch.GraduallyTyped.Scalar
@@ -98,6 +99,8 @@ library
                      , Torch.GraduallyTyped.Internal.TensorOptions
                      , Torch.GraduallyTyped.Internal.Void
                      , Torch.GraduallyTyped.RewriteRules
+                     , Torch.Language
+                     , Torch.Language.SpiderSQL
   hs-source-dirs:      src
   default-language:    Haskell2010
   ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0 -rtsopts
