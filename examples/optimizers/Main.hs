@@ -21,8 +21,8 @@ showLog n i maxIter lossValue state =
             ++ " | Parameters: " ++ show state)
 
 -- | Optimize convex quadratic with specified optimizer
-optConvQuad :: (Optimizer o) => Int -> o -> IO ()
-optConvQuad numIter optInit = do
+optConvQuad :: (Optimizer o) => Int -> o -> LearningRate -> IO ()
+optConvQuad numIter optInit lr = do
     let dim = 2
         a = eye' dim dim
         b = zeros' [dim]
@@ -31,29 +31,29 @@ optConvQuad numIter optInit = do
     trained <- foldLoop (paramInit, optInit) numIter $ \(paramState, optState) i -> do
         let lossValue = (lossConvQuad a b) paramState
         showLog 1000 i numIter lossValue paramState
-        runStep paramState optState lossValue 5e-4
+        runStep paramState optState lossValue lr
     pure ()
 
 -- | Optimize Rosenbrock function with specified optimizer
-optRosen :: (Optimizer o) => Int -> o -> IO ()
-optRosen numIter optInit = do
+optRosen :: (Optimizer o) => Int -> o -> LearningRate -> IO ()
+optRosen numIter optInit lr = do
     paramInit <- sample RosenSpec
     putStrLn ("Initial :" ++ show paramInit)
     trained <- foldLoop (paramInit, optInit) numIter $ \(paramState, optState) i -> do
         let lossValue = lossRosen paramState
         showLog 1000 i numIter lossValue paramState
-        runStep paramState optState lossValue 5e-4
+        runStep paramState optState lossValue lr
     pure ()
 
 -- | Optimize Ackley function with specified optimizer
-optAckley :: (Optimizer o) => Int -> o -> IO ()
-optAckley numIter optInit = do
+optAckley :: (Optimizer o) => Int -> o -> LearningRate -> IO ()
+optAckley numIter optInit lr = do
     paramInit <- sample AckleySpec
     putStrLn ("Initial :" ++ show paramInit)
     trained <- foldLoop (paramInit, optInit) numIter $ \(paramState, optState) i -> do
         let lossValue = lossAckley paramState
         showLog 1000 i numIter lossValue paramState
-        runStep paramState optState lossValue 5e-4
+        runStep paramState optState lossValue lr
     pure ()
 
 -- | Check global minimum point for Rosenbrock
@@ -81,47 +81,53 @@ main :: IO ()
 main = do
     let numIter = 20000
 
-    -- Convex Quadratic w/ GD, GD+Momentum, Adam
+    -- Convex Quadratic w/ GD, GD+Momentum, Adam, Adagrad
     putStrLn "\nConvex Quadratic\n================"
     putStrLn "\nGD"
-    optConvQuad numIter GD
+    optConvQuad numIter GD 5e-4
     putStrLn "\nGD + Momentum"
-    optConvQuad numIter (GDM 0.9 [zeros' [2]])
+    optConvQuad numIter (GDM 0.9 [zeros' [2]]) 5e-4
     putStrLn "\nAdam"
     optConvQuad numIter Adam {
         beta1=0.9, beta2=0.999,
         m1=[zeros' [1], zeros' [1]], 
         m2=[zeros' [1], zeros' [1]],
         iter=0
-    }
+    } 5e-4
+    putStrLn "\nAdagrad"
+    optConvQuad numIter Adagrad { gsum=[zeros' [1]] } 5e-2
     checkGlobalMinConvQuad
 
-    -- 2D Rosenbrock w/ GD, GD+Momentum, Adam
+    -- 2D Rosenbrock w/ GD, GD+Momentum, Adam, Adagrad
     putStrLn "\n2D Rosenbrock\n================"
     putStrLn "\nGD"
-    optRosen numIter GD
+    optRosen numIter GD 5e-4
     putStrLn "\nGD + Momentum"
-    optRosen numIter (GDM 0.9 [zeros' [1], zeros' [1]])
+    optRosen numIter (GDM 0.9 [zeros' [1], zeros' [1]]) 5e-4
     putStrLn "\nAdam"
     optRosen numIter Adam {
         beta1=0.9, beta2=0.999,
         m1=[zeros' [1], zeros' [1]], 
         m2=[zeros' [1], zeros' [1]],
         iter=0
-    }
+    } 5e-4
+    putStrLn "\nAdagrad"
+    optRosen numIter Adagrad { gsum=[zeros' [1], zeros' [1]] } 5e-1
     checkGlobalMinRosen
 
-    -- Ackley w/ GD, GD+Momentum, Adam
+    -- Ackley w/ GD, GD+Momentum, Adam, Adagrad
     putStrLn "\nAckley (Gradient methods fail)\n================"
     putStrLn "\nGD"
-    optAckley numIter GD
+    optAckley numIter GD 5e-4
     putStrLn "\nGD + Momentum"
-    optAckley numIter (GDM 0.9 [zeros' [1], zeros' [1]])
+    optAckley numIter (GDM 0.9 [zeros' [1], zeros' [1]]) 5e-4
     putStrLn "\nAdam"
     optAckley numIter Adam {
         beta1=0.9, beta2=0.999,
         m1=[zeros' [1], zeros' [1]], 
         m2=[zeros' [1], zeros' [1]],
         iter=0
-    }
+    } 5e-4
+    putStrLn "\nAdagrad"
+    optAckley numIter Adagrad { gsum=[zeros' [1]] } 5e-2
     checkGlobalMinAckley

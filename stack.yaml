@@ -8,6 +8,7 @@ packages:
 - libtorch-ffi-helper
 - hasktorch
 - examples
+- examples/model-serving
 - experimental/bounding-box
 - experimental/dataloader-cifar10
 - experimental/gradually-typed

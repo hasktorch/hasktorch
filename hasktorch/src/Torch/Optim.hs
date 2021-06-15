@@ -156,6 +156,41 @@ adam lr (Gradients gradients) parameters Adam {..} = (parameters', Adam beta1 be
 instance Optimizer Adam where
   step = adam
 
+--
+-- Adagrad
+--
+
+-- | State representation for Adagrad Optimizer
+data Adagrad
+  = Adagrad{ gsum :: [Tensor] } -- sum of squared gradients
+  deriving (Show)
+
+-- | Adagrad step
+adagrad ::
+  -- | learning rate
+  LearningRate ->
+  -- | model parameter gradients
+  Gradients ->
+  -- | model parameters
+  [Tensor] ->
+  -- | adagrad parameters - gsum, iteration
+  Adagrad ->
+  -- | returns new parameters + updated adam parameters
+  ([Tensor], Adagrad)
+adagrad lr (Gradients gradients) parameters Adagrad {..} = (parameters', Adagrad gsum')
+  where
+    -- add gradient squared to running total
+    f gsum dp = gsum + dp * dp
+    gsum' = zipWith f gsum gradients
+
+    -- parameter update
+    eps = 1e-37
+    update prevParam a1' a2' = prevParam - lr * a1' / (sqrt (a2' + eps))
+    parameters' = zipWith3 update parameters gradients gsum'
+
+instance Optimizer Adagrad where
+  step = adagrad
+
 -- | syntactic sugar for looping with foldM
 foldLoop :: a -> Int -> (a -> Int -> IO a) -> IO a
 foldLoop x count block = foldM block x [1 .. count]
