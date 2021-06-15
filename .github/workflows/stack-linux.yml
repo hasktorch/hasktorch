@@ -43,7 +43,15 @@ jobs:
         export PATH=/opt/ghc/bin:$PATH
         source setenv
         pushd deps/ ; ./get-deps.sh -a cpu -c; popd
-        stack build
+        stack build \
+          libtorch-ffi \
+          libtorch-ffi-helper \
+          hasktorch \
+          codegen \
+          examples \
+          bounding-box \
+          dataloader-cifar10 \
+          untyped-nlp
     - name: Test
       run: |
         export PATH=/opt/ghc/bin:$PATH

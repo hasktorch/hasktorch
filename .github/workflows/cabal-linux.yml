@@ -35,7 +35,15 @@ jobs:
         ./setup-cabal.sh
         cabal v2-update
         cabal v2-install hspec-discover
-        cabal v2-build all --jobs=2
+        cabal v2-build --jobs=2 \
+          libtorch-ffi \
+          libtorch-ffi-helper \
+          hasktorch \
+          codegen \
+          examples \
+          bounding-box \
+          dataloader-cifar10 \
+          untyped-nlp
     - name: Test
       run: |
         export PATH=/opt/ghc/bin:$PATH
