@@ -60,7 +60,7 @@ let
       # From /experimental
       bounding-box
       dataloader-cifar10
-      gradually-typed
+      hasktorch-gradually-typed
       untyped-nlp
       ;
 

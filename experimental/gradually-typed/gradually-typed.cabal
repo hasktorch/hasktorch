@@ -1,5 +1,5 @@
 cabal-version:       2.2
-name:                gradually-typed
+name:                hasktorch-gradually-typed
 version:             0.2.0.0
 synopsis:            experimental project for hasktorch
 -- description:

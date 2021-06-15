@@ -76,6 +76,6 @@ cradle:
     - path: "./experimental/dataloader-cifar10"
       component: "exe:dataloader-cifar10"
     - path: "./experimental/gradually-typed"
-      component: "lib:gradually-typed"
+      component: "lib:hasktorch-gradually-typed"
     - path: "./experimental/untyped-nlp"
       component: "exe:untyped-nlp"
