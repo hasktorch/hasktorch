@@ -37,7 +37,6 @@ import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (logSoftmax)
 import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5DataType, T5GenerationInput (..), T5Input (..), T5Model (..), T5Output (..), mkT5Input, t5EOSTokenId)
 import Torch.GraduallyTyped.NN.Transformer.T5.Small (T5Small)
-import Torch.GraduallyTyped.NN.Transformer.T5.Vocab (t5Vocab)
 import Torch.GraduallyTyped.Random (Generator, mkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
@@ -243,7 +242,7 @@ testBeamSearch = do
   input <- do
     let tokens = [[13959, 1566, 12, 2968, 10, 6536, 43, 2008, 24, 293, 53, 3, 9, 1782, 19, 207, 21, 25, 1]]
     -- let tokens = [[13959, 1566, 12, 2968, 10, 148, 31, 60, 423, 13, 3, 7, 10536, 55, 1]]
-    print $ ((t5Vocab Map.!) <$>) <$> tokens
+    -- print $ ((t5Vocab Map.!) <$>) <$> tokens
     mkT5Input
       @('Dim ('Name "*") ('Size 1))
       @('Dim ('Name "*") ('Size 19))
@@ -255,8 +254,8 @@ testBeamSearch = do
   g <- mkGenerator @('Device CPU) 0
   Beams finished _ <- last <$> runBeamSearch 50 1 model input g
   print $ finalValue <$> finished
-  let tmp = parseString @[] (transParser t5Vocab t5Text) . finalValue <$> finished
-  print tmp
+  -- let tmp = parseString @[] (transParser t5Vocab t5Text) . finalValue <$> finished
+  -- print tmp
 
 next ::
   forall t b i a.
@@ -280,7 +279,7 @@ next is parser cont = do
   case val of
     Pure a -> pure a
     Free feed -> unsafePerformIO $ do
-      putStrLn $ "feed: " <> show (t5Vocab Map.! i)
+      -- putStrLn $ "feed: " <> show (t5Vocab Map.! i)
       pure $ cont . feed $ i
 
 notNull ::
@@ -387,7 +386,7 @@ getIs n model input = do
   tokens <- do
     ts <- reverse <$> lift get
     let ts' = unsafePerformIO $ do
-          putStrLn $ "tokens: " <> show ((t5Vocab Map.!) <$> ts)
+          -- putStrLn $ "tokens: " <> show ((t5Vocab Map.!) <$> ts)
           pure ts
     pure ts'
   decoderInput :: decoderInput <-
@@ -426,25 +425,25 @@ runParser n model input g =
     . flip evalStateT (Nothing, g)
     . recurse (next (getIs n model input))
 
-testParser = do
-  input <- do
-    let tokens = [[13959, 1566, 12, 2968, 10, 6536, 43, 2008, 24, 293, 53, 3, 9, 1782, 19, 207, 21, 25, 1]]
-    -- let tokens = [[13959, 1566, 12, 2968, 10, 148, 31, 60, 423, 13, 3, 7, 10536, 55, 1]]
-    -- let tokens = [[13959, 1566, 12, 2968, 10, 3, 31, 7, 15, 3437, 3, 17, 4416, 4350, 6, 3476, 599, 1935, 61, 45, 4219, 38, 3, 17, 536, 1715, 14939, 38, 3, 17, 357, 30, 3, 17, 5411, 2427, 12925, 834, 23, 26, 3274, 3, 17, 4416, 2427, 12925, 834, 23, 26, 563, 57, 3, 17, 5411, 2427, 12925, 834, 23, 26, 31, 1]]
-    -- let tokens = [[13959, 1566, 12, 2968, 10, 96, 3, 23143, 14196, 332, 4416, 4350, 6, 2847, 17161, 599, 1935, 61, 21680, 4219, 6157, 332, 536, 3, 15355, 3162, 14939, 6157, 332, 357, 9191, 332, 5411, 2427, 12925, 834, 23, 26, 3274, 332, 4416, 2427, 12925, 834, 23, 26, 350, 4630, 6880, 272, 476, 3, 17, 5411, 2427, 12925, 834, 23, 26, 96, 1]]
-    print $ length <$> tokens
-    print $ ((t5Vocab Map.!) <$>) <$> tokens
-    mkT5Input
-      @('Dim ('Name "*") ('Size 1))
-      @('Dim ('Name "*") ('Size 61))
-      tokens
-  model <-
-    initialize
-      @(T5Small ('Device 'CPU))
-      "/Users/torsten.scholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-small.pt"
-  g <- mkGenerator @('Device CPU) 0
-  let outputs = runParser 5 model input g (transParser t5Vocab t5Test)
-  pure . fst $ observe outputs
+-- testParser = do
+--   input <- do
+--     let tokens = [[13959, 1566, 12, 2968, 10, 6536, 43, 2008, 24, 293, 53, 3, 9, 1782, 19, 207, 21, 25, 1]]
+--     -- let tokens = [[13959, 1566, 12, 2968, 10, 148, 31, 60, 423, 13, 3, 7, 10536, 55, 1]]
+--     -- let tokens = [[13959, 1566, 12, 2968, 10, 3, 31, 7, 15, 3437, 3, 17, 4416, 4350, 6, 3476, 599, 1935, 61, 45, 4219, 38, 3, 17, 536, 1715, 14939, 38, 3, 17, 357, 30, 3, 17, 5411, 2427, 12925, 834, 23, 26, 3274, 3, 17, 4416, 2427, 12925, 834, 23, 26, 563, 57, 3, 17, 5411, 2427, 12925, 834, 23, 26, 31, 1]]
+--     -- let tokens = [[13959, 1566, 12, 2968, 10, 96, 3, 23143, 14196, 332, 4416, 4350, 6, 2847, 17161, 599, 1935, 61, 21680, 4219, 6157, 332, 536, 3, 15355, 3162, 14939, 6157, 332, 357, 9191, 332, 5411, 2427, 12925, 834, 23, 26, 3274, 332, 4416, 2427, 12925, 834, 23, 26, 350, 4630, 6880, 272, 476, 3, 17, 5411, 2427, 12925, 834, 23, 26, 96, 1]]
+--     print $ length <$> tokens
+--     print $ ((t5Vocab Map.!) <$>) <$> tokens
+--     mkT5Input
+--       @('Dim ('Name "*") ('Size 1))
+--       @('Dim ('Name "*") ('Size 61))
+--       tokens
+--   model <-
+--     initialize
+--       @(T5Small ('Device 'CPU))
+--       "/Users/torsten.scholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-small.pt"
+--   g <- mkGenerator @('Device CPU) 0
+--   let outputs = runParser 5 model input g (transParser t5Vocab t5Test)
+--   pure . fst $ observe outputs
 
 -- | @t5Text@ parses a 'Char' sequence delimited by @</s>@ as a 'String'.
 t5Text :: MonadPlus b => Parser b Char String

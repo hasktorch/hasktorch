@@ -72,7 +72,6 @@ library
                      , Torch.GraduallyTyped.NN.Transformer.T5.ThreeB
                      , Torch.GraduallyTyped.NN.Transformer.T5.ElevenB
                      , Torch.GraduallyTyped.NN.Transformer.T5.Generation
-                     , Torch.GraduallyTyped.NN.Transformer.T5.Vocab
                      , Torch.GraduallyTyped.NN.Transformer.T5
                      , Torch.GraduallyTyped.NN.Transformer.BART.Common
                      , Torch.GraduallyTyped.NN.Transformer.BART.Base
