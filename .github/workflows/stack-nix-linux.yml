@@ -42,7 +42,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nix-stack-
       - name: Build
-        run: stack --nix build
+        run: |
+          stack --nix build \
+            libtorch-ffi \
+            libtorch-ffi-helper \
+            hasktorch \
+            codegen \
+            examples \
+            bounding-box \
+            dataloader-cifar10 \
+            untyped-nlp
       - name: Test
         run: |
           stack --nix test codegen

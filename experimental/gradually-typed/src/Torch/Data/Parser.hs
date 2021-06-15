@@ -18,9 +18,9 @@ import Data.Foldable (asum)
 import Data.Functor (($>))
 import Data.Kind (Type)
 import Data.List
-import Text.Parser.Char (CharParsing (..), space, digit)
-import Text.Parser.Combinators (Parsing (..))
-import Text.Parser.Token (TokenParsing)
+import qualified Text.Parser.Char as Text
+import qualified Text.Parser.Combinators as Text
+import qualified Text.Parser.Token as Text
 import Text.Read (readMaybe)
 
 -- | @Parser b i a@ is a parser that consumes a stream of @i@ tokens and as a
@@ -127,19 +127,19 @@ notFollowedBy p = FreeT . StateT $ \s ->
 
 instance
   (Alternative b, Foldable b, MonadPlus b) =>
-  Parsing (FreeT ((->) i) (StateT [i] b))
+  Text.Parsing (FreeT ((->) i) (StateT [i] b))
   where
   try = id
   (<?>) = const
   skipMany p = scan where scan = (p *> scan) <|> pure ()
-  skipSome p = p *> skipMany p
+  skipSome p = p *> Text.skipMany p
   unexpected = const empty
   eof = Torch.Data.Parser.eof
   notFollowedBy = Torch.Data.Parser.notFollowedBy
 
 instance
   (Alternative b, Foldable b, MonadPlus b) =>
-  CharParsing (FreeT ((->) Char) (StateT [Char] b))
+  Text.CharParsing (FreeT ((->) Char) (StateT [Char] b))
   where
   satisfy = Torch.Data.Parser.satisfy
   char = isToken
@@ -149,7 +149,7 @@ instance
 
 instance
   (Alternative b, Foldable b, MonadPlus b) =>
-  TokenParsing (FreeT ((->) Char) (StateT [Char] b))
+  Text.TokenParsing (FreeT ((->) Char) (StateT [Char] b))
 
 -- | @satisfy p@ is a simple parser that consumes a single token @i@ and yields it
 -- if and only if @p i@ evaluates to 'True'. Otherwise, the parser fails.
@@ -173,7 +173,9 @@ isNotToken i = Torch.Data.Parser.satisfy (/= i)
 --   f s a | "ell" `isInfixOf` (s ++ [a]) = Nothing
 --         | otherwise                    = Just (s ++ [a])
 -- :}
+--
 -- >>> head $ parseString @[] (scan f "" token) "hello 123"
+-- ("hel","lo 123")
 scan :: (Alternative m, Monad m) => (s -> a -> Maybe s) -> s -> m a -> m [a]
 scan f s p = many_p s
   where
@@ -184,7 +186,7 @@ scan f s p = many_p s
 -- every parsing result. If parsing of @p@ succeeds less the @n@ times,
 -- @repeatP n p@ succeeds as well.
 --
--- >>> head $ parseString @[] (atMost 2 (is 'a')) "aaaaaab"
+-- >>> head $ parseString @[] (atMost 2 (isToken 'a')) "aaaaaab"
 -- ("aa","aaaab")
 atMost :: (Alternative m, Monad m) => Int -> m a -> m [a]
 atMost n =
@@ -218,12 +220,13 @@ isString = traverse isToken
 --
 -- >>> parseString @[] string "a string"
 -- [("a string",""),("a strin","g"),("a stri","ng"),("a str","ing"),("a st","ring"),("a s","tring"),("a ","string"),("a"," string"),("","a string")]
--- >>> p = string @[] >>= \s -> (guard ("dog" `isInfixOf` s) >> pure s)
--- >>> head $ parseString p "this is a string with a dog"
--- ("this is a string with a dog","")
--- >>> p = string @[] >>= \s -> (guard (not $ "dog" `isInfixOf` s) >> pure s)
--- >>> head $ parseString p "this is also string with a dog"
--- ("this is also string with a do","g")
+--
+-- -- >>> p = string @[] >>= \s -> (guard ("dog" `isInfixOf` s) >> pure s)
+-- -- >>> head $ parseString p "this is a string with a dog"
+-- -- ("this is a string with a dog","")
+-- -- >>> p = string @[] >>= \s -> (guard (not $ "dog" `isInfixOf` s) >> pure s)
+-- -- >>> head $ parseString p "this is also string with a dog"
+-- -- ("this is also string with a do","g")
 string :: MonadPlus b => Parser b i [i]
 string = many token
 
@@ -237,8 +240,8 @@ string = many token
 -- alphaNums1 :: MonadPlus b => Parser b Char String
 -- alphaNums1 = many1 (satisfy isAlphaNum)
 
-intP :: (CharParsing m, Monad m) => m Int
-intP = some digit >>= maybe empty pure . readMaybe
+intP :: (Text.CharParsing m, Monad m) => m Int
+intP = some Text.digit >>= maybe empty pure . readMaybe
 
-doubleP :: (CharParsing m, Monad m) => m Double
-doubleP = some (Text.Parser.Char.satisfy (not . isSpace)) >>= maybe empty pure . readMaybe
+doubleP :: (Text.CharParsing m, Monad m) => m Double
+doubleP = some (Text.satisfy (not . isSpace)) >>= maybe empty pure . readMaybe

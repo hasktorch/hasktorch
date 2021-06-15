@@ -9,10 +9,17 @@ author:              Austin Huang
 maintainer:          hasktorch@gmail.com
 copyright:           2021 Austin Huang
 category:            Machine Learning
-build-type:          Simple
+build-type:          Custom
+
+custom-setup
+  setup-depends:
+      base >= 4.9 && < 5
+    , Cabal
+    , cabal-doctest >=1.0.6 && <1.1
 
 library
-  exposed-modules:     Torch.GraduallyTyped
+  exposed-modules:     Torch.Data.Parser
+                     , Torch.GraduallyTyped
                      , Torch.GraduallyTyped.Prelude
                      , Torch.GraduallyTyped.Unify
                      , Torch.GraduallyTyped.Scalar
@@ -65,7 +72,6 @@ library
                      , Torch.GraduallyTyped.NN.Transformer.T5.ThreeB
                      , Torch.GraduallyTyped.NN.Transformer.T5.ElevenB
                      , Torch.GraduallyTyped.NN.Transformer.T5.Generation
-                     , Torch.GraduallyTyped.NN.Transformer.T5.Vocab
                      , Torch.GraduallyTyped.NN.Transformer.T5
                      , Torch.GraduallyTyped.NN.Transformer.BART.Common
                      , Torch.GraduallyTyped.NN.Transformer.BART.Base
@@ -92,10 +98,39 @@ library
                      , Torch.GraduallyTyped.Internal.TensorOptions
                      , Torch.GraduallyTyped.Internal.Void
                      , Torch.GraduallyTyped.RewriteRules
+                     , Torch.Language
+                     , Torch.Language.SpiderSQL
   hs-source-dirs:      src
   default-language:    Haskell2010
   ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0 -rtsopts
   build-depends:       base >= 4.7 && < 5
+                     , hasktorch
+                     , libtorch-ffi == 1.8.*
+                     , ghc-typelits-extra
+                     , ghc-typelits-knownnat
+                     , ghc-typelits-natnormalise
+                     , typelevel-rewrite-rules
+                     , mtl
+                     , stm
+                     , containers
+                     , generics-sop
+                     , type-errors-pretty
+                     , indexed
+                     , indexed-extras
+                     , free
+                     , logict
+                     , parsers
+                     , singletons < 3
+                     , HUnit-approx
+                     , tokenizers
+
+test-suite doctests
+  type:                exitcode-stdio-1.0
+  main-is:             doctests.hs
+  ghc-options:         -Wall -threaded -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
+  default-language:    Haskell2010
+  build-depends:       base >= 4.7 && < 5
+                     , doctest >=0.16.0.1 && <0.17
                      , hasktorch
                      , libtorch-ffi == 1.8.*
                      , ghc-typelits-extra

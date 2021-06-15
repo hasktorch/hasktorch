@@ -198,9 +198,15 @@ instance
 --           ('DataType 'Half)
 --           'UncheckedShape
 -- >>> :type ones @'WithoutGradient @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)])
--- Couldn't match type ‘'[]’
---                with ‘'[ 'Dim ('Name "feature") ('Size 8)]’
---   arising from a use of ‘ones’
+-- ones @'WithoutGradient @('Layout 'Dense) @('Device ('CUDA 0)) @('DataType 'Half) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)])
+--   :: Tensor
+--        'WithoutGradient
+--        ('Layout 'Dense)
+--        ('Device ('CUDA 0))
+--        ('DataType 'Half)
+--        ('Shape
+--           '[ 'Dim ('Name "batch") ('Size 32),
+--              'Dim ('Name "feature") ('Size 8)])
 ones ::
   forall requiresGradient layout device dataType shape.
   WithCreateC (Tensor requiresGradient layout device dataType shape) requiresGradient layout device dataType shape =>

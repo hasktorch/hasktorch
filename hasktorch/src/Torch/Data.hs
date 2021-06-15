@@ -11,11 +11,9 @@ module Torch.Data
     module Torch.Data.Pipeline,
     module Torch.Data.StreamedPipeline,
     module Torch.Data.Utils,
-    module Torch.Data.Parser,
   )
 where
 
-import Torch.Data.Parser
 import Torch.Data.Pipeline
 import Torch.Data.StreamedPipeline
 import Torch.Data.Utils

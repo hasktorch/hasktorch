@@ -12,7 +12,6 @@ module Torch.GraduallyTyped.NN.Transformer.T5
     module Torch.GraduallyTyped.NN.Transformer.T5.ThreeB,
     module Torch.GraduallyTyped.NN.Transformer.T5.ElevenB,
     module Torch.GraduallyTyped.NN.Transformer.T5.Generation,
-    module Torch.GraduallyTyped.NN.Transformer.T5.Vocab,
     testForwardT5Small,
     -- testForwardT5Base,
     -- testForwardT5Large,
@@ -31,7 +30,6 @@ import Torch.GraduallyTyped.NN.Transformer.T5.Generation
 import Torch.GraduallyTyped.NN.Transformer.T5.Large
 import Torch.GraduallyTyped.NN.Transformer.T5.Small
 import Torch.GraduallyTyped.NN.Transformer.T5.ThreeB
-import Torch.GraduallyTyped.NN.Transformer.T5.Vocab
 import Torch.GraduallyTyped.Random (mkGenerator)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))

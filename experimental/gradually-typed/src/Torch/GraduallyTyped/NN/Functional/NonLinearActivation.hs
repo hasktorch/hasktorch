@@ -13,8 +13,15 @@ module Torch.GraduallyTyped.NN.Functional.NonLinearActivation where
 
 import GHC.TypeLits (Nat, Symbol, TypeError)
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.GraduallyTyped.Shape (By (..), Dim, GetDimImplF, Name, SelectDim (..), Shape (..), Size, WithSelectDimC (..))
+import Torch.DType (DType (..))
+import Torch.GraduallyTyped.DType (DataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
+import Torch.GraduallyTyped.Random (mkGenerator)
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (WithGradient))
+import Torch.GraduallyTyped.Shape (By (..), Dim (..), GetDimImplF, Name (..), SelectDim (..), Shape (..), Size (..), WithSelectDimC (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
+import Torch.GraduallyTyped.Tensor.Creation (randn)
 import Torch.Internal.Cast (cast2)
 import qualified Torch.Internal.Managed.Native as ATen
 import Type.Errors.Pretty (type (%), type (<>))
@@ -31,12 +38,12 @@ type SoftMaxErrorMessage (by :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size
 
 type family SoftmaxCheckF (by :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) (result :: Maybe (Dim (Name Symbol) (Size Nat))) :: [Dim (Name Symbol) (Size Nat)] where
   SoftmaxCheckF by dims 'Nothing = TypeError (SoftMaxErrorMessage by dims)
-  SoftmaxCheckF _ dims ( 'Just _) = dims
+  SoftmaxCheckF _ dims ('Just _) = dims
 
 type family SoftmaxF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
   SoftmaxF 'UncheckedSelectDim _ = 'UncheckedShape
   SoftmaxF _ 'UncheckedShape = 'UncheckedShape
-  SoftmaxF ( 'SelectDim by) ( 'Shape dims) = 'Shape (SoftmaxCheckF by dims (GetDimImplF by dims))
+  SoftmaxF ('SelectDim by) ('Shape dims) = 'Shape (SoftmaxCheckF by dims (GetDimImplF by dims))
 
 -- | Applies the softmax function that is defined as:
 --
@@ -48,30 +55,31 @@ type family SoftmaxF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape [D
 -- and will re-scale them so that the elements lie in the range \([0, 1]\) and sum to \(1\):
 --
 -- >>> g <- mkGenerator @('Device 'CPU) 0
--- >>> (input, _) = randn @'Dependent @('Layout Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)]) g
+-- >>> (input, _) = randn @'WithGradient @('Layout Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)]) g
 -- >>> result = softmax @('SelectDim ('ByName "feature")) input
 -- >>> :type result
 -- result
 --   :: Tensor
---        'Dependent
+--        'WithGradient
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
 --        ('Shape
 --           '[ 'Dim ('Name "batch") ('Size 32),
 --              'Dim ('Name "feature") ('Size 8)])
-softmax, logSoftmax ::
-  forall selectDim requiresGradient layout device dataType shape.
-  WithSelectDimC
-    selectDim
-    ( Tensor requiresGradient layout device dataType shape ->
-      Tensor requiresGradient layout device dataType (SoftmaxF selectDim shape)
-    ) =>
-  WithSelectDimF
-    selectDim
-    ( Tensor requiresGradient layout device dataType shape ->
-      Tensor requiresGradient layout device dataType (SoftmaxF selectDim shape)
-    )
+softmax,
+  logSoftmax ::
+    forall selectDim requiresGradient layout device dataType shape.
+    WithSelectDimC
+      selectDim
+      ( Tensor requiresGradient layout device dataType shape ->
+        Tensor requiresGradient layout device dataType (SoftmaxF selectDim shape)
+      ) =>
+    WithSelectDimF
+      selectDim
+      ( Tensor requiresGradient layout device dataType shape ->
+        Tensor requiresGradient layout device dataType (SoftmaxF selectDim shape)
+      )
 softmax = withSelectDim @selectDim
   @( Tensor requiresGradient layout device dataType shape ->
      Tensor requiresGradient layout device dataType (SoftmaxF selectDim shape)
