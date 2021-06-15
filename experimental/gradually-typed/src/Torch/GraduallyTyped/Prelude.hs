@@ -156,7 +156,7 @@ type family Head (xs :: [a]) :: Maybe a where
 
 type family Tail (xs :: [a]) :: Maybe [a] where
   Tail '[] = 'Nothing
-  Tail (_ ': xs) = 'Just xs 
+  Tail (_ ': xs) = 'Just xs
 
 type family ReverseImplF (xs :: [a]) (acc :: [a]) :: [a] where
   ReverseImplF '[] acc = acc
@@ -236,13 +236,13 @@ type family Contains (f :: k) (a :: k') :: Bool where
 -- | Extract all occurrences of a given type from another:
 --
 -- >>> :kind! Extract (Either Int String) Int
--- Extract (Either Int String) Int :: [Type]
+-- Extract (Either Int String) Int :: [*]
 -- = '[Int]
 -- >>> :kind! Extract (Either Int String) Bool
--- Extract (Either Int String) Bool :: [Type]
+-- Extract (Either Int String) Bool :: [*]
 -- = '[]
 -- >>> :kind! Extract (Either Int String) Either
--- Extract (Either Int String) Either :: [Type -> Type -> Type]
+-- Extract (Either Int String) Either :: [* -> * -> *]
 -- = '[Either]
 type family Extract (f :: k) (a :: k') :: [k'] where
   Extract a a = '[a]
