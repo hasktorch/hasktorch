@@ -21,6 +21,7 @@ import Torch.GraduallyTyped.Random (mkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (WithGradient))
 import Torch.GraduallyTyped.Shape (By (..), Dim (..), GetDimImplF, Name (..), SelectDim (..), Shape (..), Size (..), WithSelectDimC (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
+import Torch.GraduallyTyped.Tensor.Creation (randn)
 import Torch.Internal.Cast (cast2)
 import qualified Torch.Internal.Managed.Native as ATen
 import Type.Errors.Pretty (type (%), type (<>))

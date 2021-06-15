@@ -15,6 +15,8 @@ import Torch.GraduallyTyped.DType (DataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.Prelude (Reverse, Seq)
+import Torch.GraduallyTyped.Random (mkGenerator)
+import Torch.GraduallyTyped.Tensor.Creation (randn)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
@@ -98,11 +100,11 @@ type LinearWeightDimsErrorMessage (weightDims :: [Dim (Name Symbol) (Size Nat)])
 -- >>> type WeightShape = 'Shape '[OutputDim, InputDim]
 -- >>> type BiasShape = 'Shape '[OutputDim]
 -- >>> type InputShape = 'Shape '[BatchDim, InputDim]
--- >>> g <- generator @('Device 'CPU) 0
--- >>> (weight, g') = randn @'Independent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @WeightShape g
--- >>> (bias, g'') = randn @'Independent @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @BiasShape g'
+-- >>> g <- mkGenerator @('Device 'CPU) 0
+-- >>> (weight, g') = randn @'WithoutGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @WeightShape g
+-- >>> (bias, g'') = randn @'WithoutGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @BiasShape g'
 -- >>> (input, _) = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @InputShape g''
--- >>> result = linear weight bias input
+-- >>> result = linearWithBias weight bias input
 -- >>> :type result
 -- result
 --   :: Tensor

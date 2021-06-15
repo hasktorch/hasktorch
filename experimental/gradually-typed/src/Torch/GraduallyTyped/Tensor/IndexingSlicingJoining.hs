@@ -19,14 +19,14 @@ import GHC.TypeLits (Nat, Symbol, TypeError)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType(..))
-import Torch.GraduallyTyped.Layout (Layout (..), LayoutType(..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.Prelude (FromMaybe, MapMaybe)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (AddDimF, BroadcastShapesF, GetDimF, GetDimImplF, GetIndexByNameF, InsertDimImplF, NumelF, ReplaceDimF, ReplaceDimImplF)
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SelectDim (..), Shape (..), Size (..), WithSelectDimC (..), WithShapeC (..), dimSize)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
-import Torch.GraduallyTyped.Unify (type (<|>), type (<+>))
+import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import Torch.HList (HList)
 import Torch.Internal.Cast (cast2, cast3)
 import Torch.Internal.Class (Castable)
@@ -36,11 +36,13 @@ import qualified Torch.Internal.Type as ATen
 import Type.Errors.Pretty (ToErrorMessage, type (%), type (<>))
 
 -- $setup
--- >>> import Torch.GraduallyTyped.Tensor.Creation (ones)
+-- >>> import Torch.GraduallyTyped.Tensor.Type (shape)
+-- >>> import Torch.GraduallyTyped.Tensor.Creation (ones, randn)
 -- >>> import Torch.DType (DType (..))
 -- >>> import Torch.GraduallyTyped.DType (DataType (..))
 -- >>> import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 -- >>> import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
+-- >>> import Torch.GraduallyTyped.Random (mkGenerator)
 -- >>> import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 -- >>> import Torch.GraduallyTyped.Shape (Dim (..), Shape (..))
 
@@ -59,7 +61,7 @@ class HasCat (selectDim :: SelectDim (By Symbol Nat)) k (c :: k -> Type) (a :: k
   --      ('Layout 'Dense)
   --      ('Device 'CPU)
   --      ('DataType 'Float)
-  --      ('Shape '[ 'Dim ( 'NamedSized "batch" 32), 'UncheckedDim])
+  --      ('Shape '[ 'Dim ('Name "batch") ('Size 32), 'UncheckedDim])
   -- >>> :type cat @('SelectDim ( 'ByIndex 0)) [t]
   -- cat @('SelectDim ( 'ByIndex 0)) [t]
   --   :: Tensor
@@ -67,7 +69,7 @@ class HasCat (selectDim :: SelectDim (By Symbol Nat)) k (c :: k -> Type) (a :: k
   --        ('Layout 'Dense)
   --        ('Device 'CPU)
   --        ('DataType 'Float)
-  --        ('Shape '[ 'UncheckedDim, 'Dim ( 'NamedSized "feature" 8)])
+  --        ('Shape '[ 'UncheckedDim, 'Dim ('Name "feature") ('Size 8)])
   -- >>> :type cat @'UncheckedSelectDim (SelectDim (ByIndex 0)) [t]
   -- cat @'UncheckedSelectDim (SelectDim (ByIndex 0)) [t]
   --   :: Tensor
@@ -80,8 +82,8 @@ class HasCat (selectDim :: SelectDim (By Symbol Nat)) k (c :: k -> Type) (a :: k
 
 type family CatListImplF (selectDim :: SelectDim (By Symbol Nat)) (tensor :: Type) :: Maybe Type where
   CatListImplF 'UncheckedSelectDim (Tensor requiresGradient layout device dataType _) = 'Just (Tensor requiresGradient layout device dataType 'UncheckedShape)
-  CatListImplF ( 'SelectDim _) (Tensor requiresGradient layout device dataType 'UncheckedShape) = 'Just (Tensor requiresGradient layout device dataType 'UncheckedShape)
-  CatListImplF ( 'SelectDim by) (Tensor requiresGradient layout device dataType ( 'Shape dims)) = MapMaybe (Tensor requiresGradient layout device dataType) (MapMaybe 'Shape (ReplaceDimImplF by dims ( 'Dim 'UncheckedName 'UncheckedSize)))
+  CatListImplF ('SelectDim _) (Tensor requiresGradient layout device dataType 'UncheckedShape) = 'Just (Tensor requiresGradient layout device dataType 'UncheckedShape)
+  CatListImplF ('SelectDim by) (Tensor requiresGradient layout device dataType ('Shape dims)) = MapMaybe (Tensor requiresGradient layout device dataType) (MapMaybe 'Shape (ReplaceDimImplF by dims ('Dim 'UncheckedName 'UncheckedSize)))
 
 type CheckSpellingMessage = "Check the spelling of named dimensions, and make sure the number of dimensions is correct."
 
@@ -98,7 +100,7 @@ type family CatListCheckF (selectDim :: SelectDim (By Symbol Nat)) (tensor :: Ty
           % ""
           % CheckSpellingMessage
       )
-  CatListCheckF _ _ ( 'Just result) = result
+  CatListCheckF _ _ ('Just result) = result
 
 type CatListF selectDim tensor = CatListCheckF selectDim tensor (CatListImplF selectDim tensor)
 
@@ -123,10 +125,10 @@ type family
     Type
   where
   CatHListImplF _ '[] 'Nothing = TypeError (ToErrorMessage "Cannot concatenate an empty list of tensors.")
-  CatHListImplF _ '[] ( 'Just '(requiresGradient, layout, device, dataType, shape)) = Tensor requiresGradient layout device dataType shape
+  CatHListImplF _ '[] ('Just '(requiresGradient, layout, device, dataType, shape)) = Tensor requiresGradient layout device dataType shape
   CatHListImplF selectDim (Tensor requiresGradient layout device dataType shape ': tensors) 'Nothing =
-    CatHListImplF selectDim tensors ( 'Just '(requiresGradient, layout, device, dataType, shape))
-  CatHListImplF selectDim (Tensor requiresGradient layout device dataType shape ': tensors) ( 'Just '(requiresGradient', layout', device', dataType', shape')) =
+    CatHListImplF selectDim tensors ('Just '(requiresGradient, layout, device, dataType, shape))
+  CatHListImplF selectDim (Tensor requiresGradient layout device dataType shape ': tensors) ('Just '(requiresGradient', layout', device', dataType', shape')) =
     CatHListImplF
       selectDim
       tensors
@@ -176,7 +178,7 @@ uncheckedCat ::
     'UncheckedDevice
     'UncheckedDataType
     'UncheckedShape
-uncheckedCat = cat @ 'UncheckedSelectDim
+uncheckedCat = cat @'UncheckedSelectDim
 
 type ReshapeNumelMismatchMessage (numel :: Nat) (numel' :: Nat) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: Shape [Dim (Name Symbol) (Size Nat)]) =
   "Cannot reshape the tensor. The original shape,"
@@ -194,8 +196,8 @@ type ReshapeNumelMismatchMessage (numel :: Nat) (numel' :: Nat) (shape :: Shape 
     % "respectively."
 
 type family ReshapeImplF (numel :: Maybe Nat) (numel' :: Maybe Nat) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
-  ReshapeImplF ( 'Just numel) ( 'Just numel) _ shape' = shape'
-  ReshapeImplF ( 'Just numel) ( 'Just numel') shape shape' = TypeError (ReshapeNumelMismatchMessage numel numel' shape shape')
+  ReshapeImplF ('Just numel) ('Just numel) _ shape' = shape'
+  ReshapeImplF ('Just numel) ('Just numel') shape shape' = TypeError (ReshapeNumelMismatchMessage numel numel' shape shape')
   ReshapeImplF 'Nothing _ _ _ = 'UncheckedShape
   ReshapeImplF _ 'Nothing _ _ = 'UncheckedShape
   ReshapeImplF _ _ 'UncheckedShape _ = 'UncheckedShape
@@ -207,9 +209,9 @@ type family ReshapeF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: 
 -- | Returns a tensor with the same data and number of elements as the input tensor,
 -- but with the specified shape:
 --
--- >>> g <- generator @('Device 'CPU) 0
--- >>> (input, _) = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Sized 4)]) g
--- >>> output = reshape @('Shape '[ 'Dim ('Sized 2), 'Dim ('Sized 2)]) input
+-- >>> g <- mkGenerator @('Device 'CPU) 0
+-- >>> (input, _) = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim 'UncheckedName ('Size 4)]) g
+-- >>> output = reshape @('Shape '[ 'Dim 'UncheckedName ('Size 2), 'Dim 'UncheckedName ('Size 2)]) input
 -- >>> :type output
 -- output
 --   :: Tensor
@@ -217,7 +219,7 @@ type family ReshapeF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: 
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
---        ('Shape '[ 'Dim ('Sized 2), 'Dim ('Sized 2)])
+--        ('Shape '[ 'Dim 'UncheckedName ('Size 2), 'Dim 'UncheckedName ('Size 2)])
 --
 -- At the value level, a single dimension may be '-1',
 -- in which case it is inferred from the remaining dimensions and the number of elements in the input:
@@ -289,7 +291,7 @@ type family TransposeF (selectDim0 :: SelectDim (By Symbol Nat)) (selectDim1 :: 
   TransposeF _ _ 'UncheckedShape = 'UncheckedShape
   TransposeF _ 'UncheckedSelectDim _ = 'UncheckedShape
   TransposeF 'UncheckedSelectDim _ _ = 'UncheckedShape
-  TransposeF ( 'SelectDim ( 'ByName name0)) ( 'SelectDim ( 'ByName name1)) ( 'Shape dims) =
+  TransposeF ('SelectDim ('ByName name0)) ('SelectDim ('ByName name1)) ('Shape dims) =
     'Shape
       ( TransposeIndexIndexDimsF
           ( FromMaybe
@@ -302,8 +304,8 @@ type family TransposeF (selectDim0 :: SelectDim (By Symbol Nat)) (selectDim1 :: 
           )
           dims
       )
-  TransposeF ( 'SelectDim ( 'ByIndex index0)) ( 'SelectDim ( 'ByIndex index1)) ( 'Shape dims) = 'Shape (TransposeIndexIndexDimsF index0 index1 dims)
-  TransposeF ( 'SelectDim by0) ( 'SelectDim by1) _ =
+  TransposeF ('SelectDim ('ByIndex index0)) ('SelectDim ('ByIndex index1)) ('Shape dims) = 'Shape (TransposeIndexIndexDimsF index0 index1 dims)
+  TransposeF ('SelectDim by0) ('SelectDim by1) _ =
     TypeError
       ( "Cannot transpose the tensor. "
           % ""
@@ -340,11 +342,19 @@ type family TransposeIndexIndexDimsF (index0 :: Nat) (index1 :: Nat) (dims :: [D
 -- | Returns a tensor that is a transposed version of 'input'.
 -- The selected dimensions 'selectDim0' and 'selectDim1' are swapped.
 --
--- >>> g <- generator @('Device 'CPU) 0
--- >>> (input, _) = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('NamedSized "batch" 10), 'Dim ('NamedSized "feature" 5)]) g
+-- >>> g <- mkGenerator @('Device 'CPU) 0
+-- >>> (input, _) = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "feature") ('Size 5)]) g
 -- >>> output = transpose @('SelectDim ('ByName "batch")) @('SelectDim ('ByName "feature")) input
 -- >>> :type output
--- Not in scope: data constructor ‘CPU’
+-- output
+--   :: Tensor
+--        'WithGradient
+--        ('Layout 'Dense)
+--        ('Device 'CPU)
+--        ('DataType 'Float)
+--        ('Shape
+--           '[ 'Dim ('Name "feature") ('Size 5),
+--              'Dim ('Name "batch") ('Size 10)])
 -- >>> output = transpose @'UncheckedSelectDim @('SelectDim ('ByIndex 1)) (ByIndex 0) input
 -- >>> :type output
 -- output
@@ -355,7 +365,8 @@ type family TransposeIndexIndexDimsF (index0 :: Nat) (index1 :: Nat) (dims :: [D
 --        ('DataType 'Float)
 --        'UncheckedShape
 -- >>> shape output
--- [NamedSized "feature" 5,NamedSized "batch" 10]
+-- [W TensorImpl.h:934] Warning: Named tensors and all their associated APIs are an experimental feature and subject to change. Please do not use them for anything important until they are released as stable. (function operator())
+-- [Dim {dimName = "feature", dimSize = 5},Dim {dimName = "batch", dimSize = 10}]
 transpose ::
   forall selectDim0 selectDim1 requiresGradient layout device dataType shape shape'.
   ( WithSelectDimC selectDim0 (WithSelectDimF selectDim1 (Tensor requiresGradient layout device dataType shape -> Tensor requiresGradient layout device dataType shape')),
@@ -393,7 +404,7 @@ type UnsqueezeByMessage (by :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size 
 type family UnsqueezeF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
   UnsqueezeF _ 'UncheckedShape = 'UncheckedShape
   UnsqueezeF 'UncheckedSelectDim _ = 'UncheckedShape
-  UnsqueezeF ( 'SelectDim ( 'ByName name)) ( 'Shape dims) =
+  UnsqueezeF ('SelectDim ('ByName name)) ('Shape dims) =
     'Shape
       ( UnsqueezeIndexDimsF
           ( FromMaybe
@@ -402,7 +413,7 @@ type family UnsqueezeF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape 
           )
           dims
       )
-  UnsqueezeF ( 'SelectDim ( 'ByIndex index)) ( 'Shape dims) = 'Shape (UnsqueezeIndexDimsF index dims)
+  UnsqueezeF ('SelectDim ('ByIndex index)) ('Shape dims) = 'Shape (UnsqueezeIndexDimsF index dims)
 
 type family UnsqueezeIndexDimsF (index :: Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) :: [Dim (Name Symbol) (Size Nat)] where
   UnsqueezeIndexDimsF index dims =
@@ -411,7 +422,7 @@ type family UnsqueezeIndexDimsF (index :: Nat) (dims :: [Dim (Name Symbol) (Size
       ( InsertDimImplF
           (ByIndex index)
           dims
-          ( 'Dim ( 'Name "*") ( 'Size 1))
+          ('Dim ('Name "*") ('Size 1))
       )
 
 unsqueeze ::
