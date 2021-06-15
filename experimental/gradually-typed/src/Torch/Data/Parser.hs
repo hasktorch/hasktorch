@@ -220,12 +220,13 @@ isString = traverse isToken
 --
 -- >>> parseString @[] string "a string"
 -- [("a string",""),("a strin","g"),("a stri","ng"),("a str","ing"),("a st","ring"),("a s","tring"),("a ","string"),("a"," string"),("","a string")]
--- >>> p = string @[] >>= \s -> (guard ("dog" `isInfixOf` s) >> pure s)
--- >>> head $ parseString p "this is a string with a dog"
--- ("this is a string with a dog","")
--- >>> p = string @[] >>= \s -> (guard (not $ "dog" `isInfixOf` s) >> pure s)
--- >>> head $ parseString p "this is also string with a dog"
--- ("this is also string with a do","g")
+--
+-- -- >>> p = string @[] >>= \s -> (guard ("dog" `isInfixOf` s) >> pure s)
+-- -- >>> head $ parseString p "this is a string with a dog"
+-- -- ("this is a string with a dog","")
+-- -- >>> p = string @[] >>= \s -> (guard (not $ "dog" `isInfixOf` s) >> pure s)
+-- -- >>> head $ parseString p "this is also string with a dog"
+-- -- ("this is also string with a do","g")
 string :: MonadPlus b => Parser b i [i]
 string = many token
 

@@ -82,17 +82,17 @@ acosh = unsafePerformIO . cast1 ATen.acosh_t
 -- See 'addScalar' for a version of this function where
 -- the 'other' input is a scalar.
 --
--- >>> g <- mkGenerator @('Device 'CPU) 0
--- >>> (a, g) = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "feature") ('Size 4)]) g
--- >>> (b, _) = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim 'UncheckedName ('Size 4), 'Dim 'UncheckedName ('Size 1)]) g
--- >>> :type a `add` b
--- a `add` b
---   :: Tensor
---        'WithGradient
---        ('Layout 'Dense)
---        ('Device 'CPU)
---        ('DataType 'Float)
---        ('Shape '[ 'Dim 'UncheckedName ('Size 4), 'Dim ('Name "feature") ('Size 4)])
+-- -- >>> g <- mkGenerator @('Device 'CPU) 0
+-- -- >>> (a, g) = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "feature") ('Size 4)]) g
+-- -- >>> (b, _) = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim 'UncheckedName ('Size 4), 'Dim 'UncheckedName ('Size 1)]) g
+-- -- >>> :type a `add` b
+-- -- a `add` b
+-- --   :: Tensor
+-- --        'WithGradient
+-- --        ('Layout 'Dense)
+-- --        ('Device 'CPU)
+-- --        ('DataType 'Float)
+-- --        ('Shape '[ 'Dim 'UncheckedName ('Size 4), 'Dim ('Name "feature") ('Size 4)])
 add ::
   forall requiresGradient layout device dataType shape requiresGradient' layout' device' dataType' shape'.
   -- | input tensor
