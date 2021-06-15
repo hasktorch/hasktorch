@@ -48,6 +48,9 @@ jobs:
       run: |
         export PATH=/opt/ghc/bin:$PATH
         source setenv
-        cabal v2-test all --jobs=2
+        cabal v2-test --jobs=2 \
+          libtorch-ffi \
+          hasktorch \
+          codegen
         cabal v2-exec codegen-exe
         cabal exec xor-mlp
