@@ -251,10 +251,10 @@ toSparse = unsafePerformIO . cast1 ATen.tensor_to_sparse
 
 -- Returns the memory layout of the input tensor.
 --
--- >>> t <- ones @'WithGradient @('Layout 'Sparse) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)])
+-- >>> t = ones @'WithGradient @('Layout 'Sparse) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)])
 -- >>> layout t
 -- Sparse
--- >>> t <- ones @'WithGradient @'UncheckedLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)]) (Layout Sparse)
+-- >>> t = ones @'WithGradient @'UncheckedLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)]) (Layout Sparse)
 -- >>> layout t
 -- Sparse
 layout ::

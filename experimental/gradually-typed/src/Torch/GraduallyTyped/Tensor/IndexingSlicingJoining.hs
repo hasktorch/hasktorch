@@ -52,32 +52,35 @@ class HasCat (selectDim :: SelectDim (By Symbol Nat)) k (c :: k -> Type) (a :: k
   -- | Concatenates the given sequence of seq tensors in the given dimension.
   -- All tensors must either have the same shape (except in the concatenating dimension) or be empty.
   --
-  -- -- >>> t <- ones @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim (Name "batch") ('Size 32), 'Dim (Name "feature") ('Size 8)])
-  -- -- [W TensorImpl.h:840] Warning: Named tensors and all their associated APIs are an experimental feature and subject to change. Please do not use them for anything important until they are released as stable. (function operator())
-  -- -- >>> :type cat @('SelectDim ('ByName "feature")) [t]
-  -- -- cat @('SelectDim ('ByName "feature")) [t]
-  -- -- :: Tensor
-  -- --      'WithGradient
-  -- --      ('Layout 'Dense)
-  -- --      ('Device 'CPU)
-  -- --      ('DataType 'Float)
-  -- --      ('Shape '[ 'Dim ('Name "batch") ('Size 32), 'UncheckedDim])
-  -- -- >>> :type cat @('SelectDim ( 'ByIndex 0)) [t]
-  -- -- cat @('SelectDim ( 'ByIndex 0)) [t]
-  -- --   :: Tensor
-  -- --        'WithGradient
-  -- --        ('Layout 'Dense)
-  -- --        ('Device 'CPU)
-  -- --        ('DataType 'Float)
-  -- --        ('Shape '[ 'UncheckedDim, 'Dim ('Name "feature") ('Size 8)])
-  -- -- >>> :type cat @'UncheckedSelectDim (SelectDim (ByIndex 0)) [t]
-  -- -- cat @'UncheckedSelectDim (SelectDim (ByIndex 0)) [t]
-  -- --   :: Tensor
-  -- --        'WithGradient
-  -- --        ('Layout 'Dense)
-  -- --        ('Device 'CPU)
-  -- --        ('DataType 'Float)
-  -- --        'AnyShape
+  -- >>> t = ones @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)])
+  -- >>> :type cat @('SelectDim ('ByName "feature")) [t]
+  -- cat @('SelectDim ('ByName "feature")) [t]
+  --   :: Tensor
+  --        'WithGradient
+  --        ('Layout 'Dense)
+  --        ('Device 'CPU)
+  --        ('DataType 'Float)
+  --        ('Shape
+  --           '[ 'Dim ('Name "batch") ('Size 32),
+  --              'Dim 'UncheckedName 'UncheckedSize])
+  -- >>> :type cat @('SelectDim ( 'ByIndex 0)) [t]
+  -- cat @('SelectDim ( 'ByIndex 0)) [t]
+  --   :: Tensor
+  --        'WithGradient
+  --        ('Layout 'Dense)
+  --        ('Device 'CPU)
+  --        ('DataType 'Float)
+  --        ('Shape
+  --           '[ 'Dim 'UncheckedName 'UncheckedSize,
+  --              'Dim ('Name "feature") ('Size 8)])
+  -- >>> :type cat @'UncheckedSelectDim (ByIndex 0) [t]
+  -- cat @'UncheckedSelectDim (ByIndex 0) [t]
+  --   :: Tensor
+  --        'WithGradient
+  --        ('Layout 'Dense)
+  --        ('Device 'CPU)
+  --        ('DataType 'Float)
+  --        'UncheckedShape
   cat :: WithSelectDimF selectDim (c a -> CatF selectDim a c)
 
 type family CatListImplF (selectDim :: SelectDim (By Symbol Nat)) (tensor :: Type) :: Maybe Type where
@@ -209,32 +212,32 @@ type family ReshapeF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: 
 -- | Returns a tensor with the same data and number of elements as the input tensor,
 -- but with the specified shape:
 --
--- -- >>> g <- mkGenerator @('Device 'CPU) 0
--- -- >>> (input, _) = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim 'UncheckedName ('Size 4)]) g
--- -- >>> output = reshape @('Shape '[ 'Dim 'UncheckedName ('Size 2), 'Dim 'UncheckedName ('Size 2)]) input
--- -- >>> :type output
--- -- output
--- --   :: Tensor
--- --        'WithGradient
--- --        ('Layout 'Dense)
--- --        ('Device 'CPU)
--- --        ('DataType 'Float)
--- --        ('Shape '[ 'Dim 'UncheckedName ('Size 2), 'Dim 'UncheckedName ('Size 2)])
--- --
--- -- At the value level, a single dimension may be '-1',
--- -- in which case it is inferred from the remaining dimensions and the number of elements in the input:
--- --
--- -- >>> output' = reshape @('Shape '[ 'UncheckedDim]) (Sized (-1)) output
--- -- >>> :type output'
--- -- output'
--- --   :: Tensor
--- --        'WithGradient
--- --        ('Layout 'Dense)
--- --        ('Device 'CPU)
--- --        ('DataType 'Float)
--- --        'UncheckedShape
--- -- >>> shape output'
--- -- [Sized 4]
+-- >>> g <- mkGenerator @('Device 'CPU) 0
+-- >>> (input, _) = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "*") ('Size 4)]) g
+-- >>> output = reshape @('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 2)]) input
+-- >>> :type output
+-- output
+--   :: Tensor
+--        'WithGradient
+--        ('Layout 'Dense)
+--        ('Device 'CPU)
+--        ('DataType 'Float)
+--        ('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 2)])
+--
+-- At the value level, a single dimension may be '-1',
+-- in which case it is inferred from the remaining dimensions and the number of elements in the input:
+--
+-- >>> output' = reshape @('Shape '[ 'Dim 'UncheckedName 'UncheckedSize]) (Dim "*" (-1)) output
+-- >>> :type output'
+-- output'
+--   :: Tensor
+--        'WithGradient
+--        ('Layout 'Dense)
+--        ('Device 'CPU)
+--        ('DataType 'Float)
+--        'UncheckedShape
+-- >>> shape output'
+-- [Dim {dimName = "*", dimSize = 4}]
 reshape ::
   forall shape' requiresGradient layout device dataType shape shape''.
   ( shape'' ~ ReshapeF shape shape',
