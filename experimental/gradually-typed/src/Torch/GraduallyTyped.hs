@@ -1,6 +1,5 @@
 module Torch.GraduallyTyped
   ( module Torch.Data,
-    module Torch.Language,
     module Torch.GraduallyTyped,
     module Torch.GraduallyTyped.Prelude,
     module Torch.GraduallyTyped.Autograd,
@@ -21,7 +20,6 @@ where
 
 import Torch.DType
 import Torch.Data
-import Torch.Language
 import Torch.GraduallyTyped.Autograd
 import Torch.GraduallyTyped.DType
 import Torch.GraduallyTyped.Device

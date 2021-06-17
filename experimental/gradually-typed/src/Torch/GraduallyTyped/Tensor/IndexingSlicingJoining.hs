@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -13,9 +14,9 @@
 
 module Torch.GraduallyTyped.Tensor.IndexingSlicingJoining where
 
-import Data.Kind (Type)
+import Data.Kind (Constraint, Type)
 import Foreign.ForeignPtr (ForeignPtr)
-import GHC.TypeLits (Nat, Symbol, TypeError)
+import GHC.TypeLits (CmpNat, KnownNat, Nat, Symbol, TypeError)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..))
@@ -23,7 +24,7 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.Prelude (FromMaybe, MapMaybe)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
-import Torch.GraduallyTyped.Shape.Class (AddDimF, BroadcastShapesF, GetDimF, GetDimImplF, GetIndexByNameF, InsertDimImplF, NumelF, ReplaceDimF, ReplaceDimImplF)
+import Torch.GraduallyTyped.Shape.Class (AddDimF, BroadcastShapesF, GetDimF, GetDimImplF, GetIndexByNameF, InsertDimImplF, NumelF, RemoveDimF, ReplaceDimF, ReplaceDimImplF)
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SelectDim (..), Shape (..), Size (..), WithSelectDimC (..), WithShapeC (..), dimSize)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
@@ -33,11 +34,12 @@ import Torch.Internal.Class (Castable)
 import qualified Torch.Internal.Managed.Native as ATen
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
 import qualified Torch.Internal.Type as ATen
+import Torch.Typed.Aux (natValI)
 import Type.Errors.Pretty (ToErrorMessage, type (%), type (<>))
 
 -- $setup
 -- >>> import Torch.GraduallyTyped.Tensor.Type (shape)
--- >>> import Torch.GraduallyTyped.Tensor.Creation (ones, randn)
+-- >>> import Torch.GraduallyTyped.Tensor.Creation (ones, randn, arangeNaturals)
 -- >>> import Torch.DType (DType (..))
 -- >>> import Torch.GraduallyTyped.DType (DataType (..))
 -- >>> import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
@@ -449,3 +451,43 @@ expand = withShape @shape' @(input -> output) $
   \shape' input ->
     let sizes' = dimSize <$> shape'
      in unsafePerformIO $ cast3 ATen.tensor_expand_lb input sizes' True
+
+type family IndexOutOfBound (dim :: Dim (Name Symbol) (Size Nat)) (idx :: Nat) where
+  IndexOutOfBound dim idx =
+    TypeError ("Out of bound index " <> idx <> " for dimension " <> dim)
+
+type family InRangeImplF (idx :: Nat) (dim :: Dim (Name Symbol) (Size Nat)) :: Maybe Ordering where
+  InRangeImplF _ ('Dim _ 'UncheckedSize) = 'Nothing
+  InRangeImplF idx ('Dim _ ('Size size)) = 'Just (CmpNat idx size)
+
+type family InRangeCheckF (idx :: Nat) (dim :: Dim (Name Symbol) (Size Nat)) (ordering :: Maybe Ordering) :: Constraint where
+  InRangeCheckF _ _ 'Nothing = ()
+  InRangeCheckF _ _ ('Just 'LT) = ()
+  InRangeCheckF idx dim _ = IndexOutOfBound dim idx
+
+type InRangeF idx dim = InRangeCheckF idx dim (InRangeImplF idx dim)
+
+-- | Slices the self tensor along the selected dimension at the given index. This function returns a view of the original tensor with the given dimension removed.
+--
+-- >>> nats = arangeNaturals @'WithoutGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Int32) @('Dim ('Name "*") ('Size 8))
+-- >>> input = reshape @('Shape '[ 'Dim ('Name "*") ('Size 4), 'Dim ('Name "*") ('Size 2)]) nats
+-- >>> input
+-- Tensor Int32 [4,2] [[ 0,  1],
+--                     [ 2,  3],
+--                     [ 4,  5],
+--                     [ 6,  7]]
+-- >>> select @('SelectDim ('ByIndex 0)) @1 input
+-- Tensor Int32 [2] [ 2,  3]
+select ::
+  forall selectDim idx requiresGradient layout device dataType shape shape'.
+  ( KnownNat idx,
+    idx `InRangeF` GetDimF selectDim shape,
+    WithSelectDimC selectDim (Tensor requiresGradient layout device dataType shape -> Tensor requiresGradient layout device dataType shape'),
+    shape' ~ RemoveDimF selectDim shape
+  ) =>
+  WithSelectDimF selectDim (Tensor requiresGradient layout device dataType shape -> Tensor requiresGradient layout device dataType shape')
+select = withSelectDim @selectDim @(Tensor requiresGradient layout device dataType shape -> Tensor requiresGradient layout device dataType shape') $
+  \selectDim input ->
+    case selectDim of
+      ByName name -> unsafePerformIO $ cast3 ATen.tensor_select_nl input name (natValI @idx)
+      ByIndex dimIndex -> unsafePerformIO $ cast3 ATen.tensor_select_ll input (fromIntegral dimIndex :: Int) (natValI @idx)
