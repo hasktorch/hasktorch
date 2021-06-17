@@ -271,25 +271,23 @@ type TransposeBy1Message (by1 :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Siz
 
 -- | Compute transposed shapes.
 --
--- -- >>> type SelectBatch = 'SelectDim ('ByName "batch")
--- -- >>> type SelectFeature = 'SelectDim ('ByName "feature")
--- -- >>> type Dims = '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "feature") ('Size 8), 'Dim ('Name "anotherFeature") ('Size 12)]
--- -- >>> :kind! TransposeF SelectBatch SelectFeature ('Shape Dims)
--- -- TransposeF SelectBatch SelectFeature ('Shape Dims) :: Shape
--- --                                                         [Dim (Name Symbol) (Size Nat)]
--- -- = 'Shape
--- --     '[ 'Dim ('Name "feature") ('Size 8),
--- --        'Dim ('Name "batch") ('Size 10),
--- --        'Dim ('Name "anotherFeature") ('Size 12)]
--- -- >>> type SelectBatch = 'SelectDim ('ByName "batch")
--- -- >>> type SelectFeature = 'SelectDim ('ByName "anotherFeature")
--- -- >>> type Dims = '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "feature") ('Size 8), 'Dim ('Name "anotherFeature") ('Size 12)]
--- -- >>> :kind! TransposeF SelectFeature SelectBatch ('Shape Dims)
--- -- TransposeF SelectFeature SelectBatch ('Shape Dims) :: Shape
--- --                                                         [Dim (Name Symbol) (Size Nat)]
--- -- = 'Shape
--- --     '[ 'Dim ('Name "anotherFeature") ('Size 12),
--- --        'Dim ('Name "feature") ('Size 8), 'Dim ('Name "batch") ('Size 10)]
+-- >>> type SelectBatch = 'SelectDim ('ByName "batch" :: By Symbol Nat)
+-- >>> type SelectFeature = 'SelectDim ('ByName "feature" :: By Symbol Nat)
+-- >>> type Dims = '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "feature") ('Size 8), 'Dim ('Name "anotherFeature") ('Size 12)]
+-- >>> :kind! TransposeF SelectBatch SelectFeature ('Shape Dims)
+-- TransposeF SelectBatch SelectFeature ('Shape Dims) :: Shape
+--                                                         [Dim (Name Symbol) (Size Nat)]
+-- = 'Shape
+--     '[ 'Dim ('Name "feature") ('Size 8),
+--        'Dim ('Name "batch") ('Size 10),
+--        'Dim ('Name "anotherFeature") ('Size 12)]
+-- >>> :kind! TransposeF SelectFeature SelectBatch ('Shape Dims)
+-- TransposeF SelectFeature SelectBatch ('Shape Dims) :: Shape
+--                                                         [Dim (Name Symbol) (Size Nat)]
+-- = 'Shape
+--     '[ 'Dim ('Name "feature") ('Size 8),
+--        'Dim ('Name "batch") ('Size 10),
+--        'Dim ('Name "anotherFeature") ('Size 12)]
 type family TransposeF (selectDim0 :: SelectDim (By Symbol Nat)) (selectDim1 :: SelectDim (By Symbol Nat)) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
   TransposeF _ _ 'UncheckedShape = 'UncheckedShape
   TransposeF _ 'UncheckedSelectDim _ = 'UncheckedShape
