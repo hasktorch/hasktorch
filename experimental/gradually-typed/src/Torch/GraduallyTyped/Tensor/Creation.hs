@@ -23,6 +23,8 @@ module Torch.GraduallyTyped.Tensor.Creation
     -- checkedRandn,
     uncheckedRandn,
     arangeNaturals,
+    eye,
+    eyeSquare
   )
 where
 
@@ -413,4 +415,64 @@ arangeNaturals =
             t <- cast2 ATen.arange_so size opts
             -- renaming of dimension goes here
             pure t
+       in UnsafeTensor tensor
+
+eye ::
+  forall requiresGradient layout device dataType sizeDim1 sizeDim2 shape createOut.
+  ( shape ~ 'Shape '[sizeDim1, sizeDim2],
+    createOut ~ Tensor requiresGradient layout device dataType shape,
+    KnownRequiresGradient requiresGradient,
+    WithLayoutC layout (WithDeviceF device (WithDataTypeF dataType (WithDimF sizeDim1 (WithDimF sizeDim2 createOut)))),
+    WithDeviceC device (WithDataTypeF dataType (WithDimF sizeDim1 (WithDimF sizeDim2 createOut))),
+    WithDataTypeC dataType (WithDimF sizeDim1 (WithDimF sizeDim2 createOut)),
+    WithDimC sizeDim1 (WithDimF sizeDim2 createOut),
+    WithDimC sizeDim2 createOut
+  ) =>
+  WithLayoutF layout (WithDeviceF device (WithDataTypeF dataType (WithDimF sizeDim1 (WithDimF sizeDim2 createOut))))
+eye =
+  withLayout @layout $
+    \layoutType ->
+      withDevice @device $
+        \deviceType ->
+          withDataType @dataType $
+            \dType ->
+              withDim @sizeDim1 $
+                \sizeDim1 ->
+                  withDim @sizeDim2 @createOut $
+                    \sizeDim2 ->
+                      go (requiresGradientVal @requiresGradient) layoutType deviceType dType sizeDim1 sizeDim2
+  where
+    go requiresGradient layoutType deviceType dType sizeDim1 sizeDim2 =
+      let opts = tensorOptions requiresGradient layoutType deviceType dType
+          Dim _ size1 = sizeDim1
+          Dim _ size2 = sizeDim2
+          tensor = unsafePerformIO $ cast3 ATen.eye_llo (fromInteger size1 :: Int) (fromInteger size2 :: Int) opts
+       in UnsafeTensor tensor
+
+eyeSquare ::
+  forall requiresGradient layout device dataType sizeDim shape createOut.
+  ( shape ~ 'Shape '[sizeDim],
+    createOut ~ Tensor requiresGradient layout device dataType shape,
+    KnownRequiresGradient requiresGradient,
+    WithLayoutC layout (WithDeviceF device (WithDataTypeF dataType (WithDimF sizeDim createOut))),
+    WithDeviceC device (WithDataTypeF dataType (WithDimF sizeDim createOut)),
+    WithDataTypeC dataType (WithDimF sizeDim createOut),
+    WithDimC sizeDim createOut
+  ) =>
+  WithLayoutF layout (WithDeviceF device (WithDataTypeF dataType (WithDimF sizeDim createOut)))
+eyeSquare =
+  withLayout @layout $
+    \layoutType ->
+      withDevice @device $
+        \deviceType ->
+          withDataType @dataType $
+            \dType ->
+              withDim @sizeDim @createOut $
+                \sizeDim ->
+                  go (requiresGradientVal @requiresGradient) layoutType deviceType dType sizeDim
+  where
+    go requiresGradient layoutType deviceType dType sizeDim =
+      let opts = tensorOptions requiresGradient layoutType deviceType dType
+          Dim _ size = sizeDim
+          tensor = unsafePerformIO $ cast2 ATen.eye_lo (fromInteger size :: Int) opts
        in UnsafeTensor tensor
