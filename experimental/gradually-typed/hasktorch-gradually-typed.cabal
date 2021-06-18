@@ -38,6 +38,9 @@ library
                      , Torch.GraduallyTyped.RequiresGradient
                      , Torch.GraduallyTyped.DType
                      , Torch.GraduallyTyped.Device
+                     , Torch.GraduallyTyped.Index
+                     , Torch.GraduallyTyped.Index.Type
+                     , Torch.GraduallyTyped.Index.Class
                      , Torch.GraduallyTyped.Shape
                      , Torch.GraduallyTyped.Shape.Type
                      , Torch.GraduallyTyped.Shape.Class

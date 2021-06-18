@@ -21,12 +21,14 @@ import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
+import Torch.GraduallyTyped.Index.Class (InRangeF)
+import Torch.GraduallyTyped.Index.Type (Index (..), WithIndexC, WithIndexF, withIndex)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.Prelude (FromMaybe, MapMaybe)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (AddDimF, BroadcastShapesF, GetDimF, GetDimImplF, GetIndexByNameF, InsertDimImplF, NumelF, RemoveDimF, ReplaceDimF, ReplaceDimImplF)
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SelectDim (..), Shape (..), Size (..), WithSelectDimC (..), WithShapeC (..), dimSize)
-import Torch.GraduallyTyped.Tensor.Type (Tensor)
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownShape, KnownSize, Name (..), SelectDim (..), Shape (..), Size (..), WithSelectDimC (..), WithShapeC (..), dimSize, getDim)
+import Torch.GraduallyTyped.Tensor.Type (Tensor, shape)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import Torch.HList (HList)
 import Torch.Internal.Cast (cast2, cast3)
@@ -452,21 +454,6 @@ expand = withShape @shape' @(input -> output) $
     let sizes' = dimSize <$> shape'
      in unsafePerformIO $ cast3 ATen.tensor_expand_lb input sizes' True
 
-type family IndexOutOfBound (dim :: Dim (Name Symbol) (Size Nat)) (idx :: Nat) where
-  IndexOutOfBound dim idx =
-    TypeError ("Out of bound index " <> idx <> " for dimension " <> dim)
-
-type family InRangeImplF (idx :: Nat) (dim :: Dim (Name Symbol) (Size Nat)) :: Maybe Ordering where
-  InRangeImplF _ ('Dim _ 'UncheckedSize) = 'Nothing
-  InRangeImplF idx ('Dim _ ('Size size)) = 'Just (CmpNat idx size)
-
-type family InRangeCheckF (idx :: Nat) (dim :: Dim (Name Symbol) (Size Nat)) (ordering :: Maybe Ordering) :: Constraint where
-  InRangeCheckF _ _ 'Nothing = ()
-  InRangeCheckF _ _ ('Just 'LT) = ()
-  InRangeCheckF idx dim _ = IndexOutOfBound dim idx
-
-type InRangeF idx dim = InRangeCheckF idx dim (InRangeImplF idx dim)
-
 -- | Slices the self tensor along the selected dimension at the given index. This function returns a view of the original tensor with the given dimension removed.
 --
 -- >>> nats = arangeNaturals @'WithoutGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Int32) @('Dim ('Name "*") ('Size 8))
@@ -476,18 +463,40 @@ type InRangeF idx dim = InRangeCheckF idx dim (InRangeImplF idx dim)
 --                     [ 2,  3],
 --                     [ 4,  5],
 --                     [ 6,  7]]
--- >>> select @('SelectDim ('ByIndex 0)) @1 input
+--
+-- `index` can be provided at compile-time:
+-- >>> select @('SelectDim ('ByIndex 0)) @('Index 1) input
 -- Tensor Int32 [2] [ 2,  3]
+--
+-- `index` can also be provided at runtime:
+-- >>> select @('SelectDim ('ByIndex 0)) @'UncheckedIndex 1 input
+-- Tensor Int32 [2] [ 2,  3]
+--
+-- It produces a runtime error if the `index` is too large:
+-- >>> select @('SelectDim ('ByIndex 0)) @'UncheckedIndex 10 input
+-- *** Exception: Out of bound index 10 for dimension Dim {dimName = "*", dimSize = 4}
+-- CallStack (from HasCallStack):
+--   error, called at ...
 select ::
-  forall selectDim idx requiresGradient layout device dataType shape shape'.
-  ( KnownNat idx,
-    idx `InRangeF` GetDimF selectDim shape,
-    WithSelectDimC selectDim (Tensor requiresGradient layout device dataType shape -> Tensor requiresGradient layout device dataType shape'),
+  forall selectDim index requiresGradient layout device dataType shape shape' input output.
+  ( index `InRangeF` GetDimF selectDim shape,
+    input ~ Tensor requiresGradient layout device dataType shape,
+    output ~ Tensor requiresGradient layout device dataType shape',
+    WithSelectDimC selectDim (WithIndexF index (input -> output)),
+    WithIndexC index (input -> output),
+    KnownShape shape,
     shape' ~ RemoveDimF selectDim shape
   ) =>
-  WithSelectDimF selectDim (Tensor requiresGradient layout device dataType shape -> Tensor requiresGradient layout device dataType shape')
-select = withSelectDim @selectDim @(Tensor requiresGradient layout device dataType shape -> Tensor requiresGradient layout device dataType shape') $
-  \selectDim input ->
-    case selectDim of
-      ByName name -> unsafePerformIO $ cast3 ATen.tensor_select_nl input name (natValI @idx)
-      ByIndex dimIndex -> unsafePerformIO $ cast3 ATen.tensor_select_ll input (fromIntegral dimIndex :: Int) (natValI @idx)
+  WithSelectDimF selectDim (WithIndexF index (input -> output))
+select = withSelectDim @selectDim $
+  \selectDim ->
+    withIndex @index @(input -> output) $
+      \index input -> do
+        let dim = unsafePerformIO . getDim selectDim $ shape input
+            size = fromInteger $ dimSize dim
+
+        if 0 <= index && index < size
+          then case selectDim of
+            ByName name -> unsafePerformIO $ cast3 ATen.tensor_select_nl input name (fromIntegral index :: Int)
+            ByIndex dimIndex -> unsafePerformIO $ cast3 ATen.tensor_select_ll input (fromIntegral dimIndex :: Int) (fromIntegral index :: Int)
+          else error $ "Out of bound index " <> show index <> " for dimension " <> show dim
