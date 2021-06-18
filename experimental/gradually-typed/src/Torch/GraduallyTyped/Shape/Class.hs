@@ -207,3 +207,39 @@ type family InsertDimF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape 
   InsertDimF 'UncheckedSelectDim _ _ = 'UncheckedShape
   InsertDimF _ 'UncheckedShape _ = 'UncheckedShape
   InsertDimF ( 'SelectDim by) ( 'Shape dims) dim = 'Shape (InsertDimCheckF by dims dim (InsertDimImplF by dims dim))
+
+type family RemoveDimByIndexF (index :: Maybe Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) :: Maybe [Dim (Name Symbol) (Size Nat)] where
+  RemoveDimByIndexF ('Just 0) (dim ': dims) = 'Just dims
+  RemoveDimByIndexF ('Just index) (h ': t) = PrependMaybe ('Just h) (RemoveDimByIndexF ('Just (index - 1)) t)
+  RemoveDimByIndexF _ _ = 'Nothing
+
+type family RemoveDimImplF (by :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) :: Maybe [Dim (Name Symbol) (Size Nat)] where
+  RemoveDimImplF ('ByName name) dims = RemoveDimByIndexF (GetIndexByNameF name dims) dims
+  RemoveDimImplF ('ByIndex index) dims = RemoveDimByIndexF ('Just index) dims
+
+type RemoveDimErrorMessage (by :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) =
+  "Cannot remove the dimension by"
+    % ""
+    % "    '" <> by <> "'"
+    % ""
+    % "in the shape"
+    % ""
+    % "    '" <> dims <> "'."
+    % ""
+
+type family RemoveDimCheckF (by :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) (result :: Maybe [Dim (Name Symbol) (Size Nat)]) :: [Dim (Name Symbol) (Size Nat)] where
+  RemoveDimCheckF by dims 'Nothing = TypeError (RemoveDimErrorMessage by dims)
+  RemoveDimCheckF _ _ ( 'Just dims) = dims
+
+-- >>> type SelectBatch = 'SelectDim ('ByName "batch")
+-- >>> type Dims = '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "feature") ('Size 8)]
+-- >>> :kind! RemoveDimF SelectBatch ('Shape Dims)
+-- RemoveDimF SelectBatch ('Shape Dims) :: Shape
+--                                           [Dim (Name Symbol) (Size Nat)]
+-- = 'Shape
+--     '[ 'Dim ('Name "feature") ('Size 8),
+--        'Dim ('Name "anotherFeature") ('Size 12)]
+type family RemoveDimF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
+  RemoveDimF 'UncheckedSelectDim _ = 'UncheckedShape
+  RemoveDimF _ 'UncheckedShape = 'UncheckedShape
+  RemoveDimF ( 'SelectDim by) ( 'Shape dims) = 'Shape (RemoveDimCheckF by dims (RemoveDimImplF by dims))
