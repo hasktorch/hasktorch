@@ -36,7 +36,6 @@ import Torch.Internal.Class (Castable)
 import qualified Torch.Internal.Managed.Native as ATen
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
 import qualified Torch.Internal.Type as ATen
-import Torch.Typed.Aux (natValI)
 import Type.Errors.Pretty (ToErrorMessage, type (%), type (<>))
 
 -- $setup
