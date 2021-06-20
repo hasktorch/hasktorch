@@ -1,0 +1,75 @@
+cabal-version:       2.2
+name:                model-serving
+version:             0.2.0.0
+synopsis:            examples for the new version of hasktorch
+-- description:
+homepage:            https://github.com/hasktorch/hasktorch#readme
+license:             BSD-3-Clause
+author:              Austin Huang
+maintainer:          hasktorch@gmail.com
+copyright:           2019 Austin Huang
+category:            Machine Learning
+build-type:          Simple
+
+common config
+  default-language:    Haskell2010
+  ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0 -rtsopts
+  build-depends:       base >= 4.7 && < 5
+                     , hasktorch
+                    --  , ghc-typelits-extra >= 0.3.1
+                    --  , ghc-typelits-knownnat >= 0.7
+                    --  , ghc-typelits-natnormalise >= 0.7
+                     , ghc-typelits-extra
+                     , ghc-typelits-knownnat
+                     , ghc-typelits-natnormalise
+                     , mtl
+
+executable serve-simple-computation
+  import:              config
+  hs-source-dirs:      01-simple-computation
+  main-is:             Main.hs
+  build-depends:       libtorch-ffi
+                     , aeson
+                     , servant-server
+                     , warp
+
+executable serve-train-inference
+  import:              config
+  hs-source-dirs:      02-train-inference
+  other-modules:       Model
+  main-is:             Main.hs
+  build-depends:       libtorch-ffi
+                     , aeson
+                     , servant-server
+                     , warp
+
+executable serve-serialize
+  import:              config
+  hs-source-dirs:      03-serialization
+  other-modules:       Model
+  main-is:             Main.hs
+  build-depends:       libtorch-ffi
+                     , aeson
+                     , servant-server
+                     , serialise
+                     , warp
+
+executable python-torchscript
+  import:              config
+  hs-source-dirs:      04-python-torchscript
+  main-is:             Main.hs
+  build-depends:       libtorch-ffi
+                     , aeson
+                     , servant-server
+                     , serialise
+                     , warp
+
+executable python-parse-model
+  import:              config
+  hs-source-dirs:      05-python-parse-model
+  main-is:             Main.hs
+  build-depends:       libtorch-ffi
+                     , aeson
+                     , servant-server
+                     , serialise
+                     , warp

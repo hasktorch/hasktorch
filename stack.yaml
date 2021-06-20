@@ -9,6 +9,7 @@ packages:
 - hasktorch
 - examples
 - examples/untyped-transformer
+- examples/model-serving
 - experimental
 
 extra-include-dirs:

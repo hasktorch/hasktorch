@@ -10,7 +10,7 @@ import System.Environment (getArgs)
 import Torch.Script
 import Torch.NN
 import Torch.Vision
-import Torch
+import Torch hiding (load)
 import qualified Codec.Picture as I
 
 normalize input = (input - mean) / std
