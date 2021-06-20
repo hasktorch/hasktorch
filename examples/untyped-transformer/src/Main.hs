@@ -203,15 +203,24 @@ attention ::
   -- | dropout
   Dropout -> 
   -- | output
-  IO Tensor
+  IO (Tensor, Tensor)
 attention query key value mask dropout = do
-  let dk = T.size (-1) query
+  let dk = asTensor $ T.size (-1) query
       keyTranspose = transpose (Dim (-2)) (Dim (-1)) key
-      -- scores = (matmul query keyTranspose) / (T.sqrt dk)
-      -- pAttn = softmax Dim (-1) scores
-  -- TODO
-  pure undefined
+      scores = (matmul query keyTranspose) / (T.sqrt dk)
+      pAttn = softmax (Dim (-1)) scores
+      -- TODO: dropout
+  pure (matmul pAttn value, pAttn)
 
+mha MHAttention{..} query key value mask = do
+  let mask' = unsqueeze (Dim 1) mask
+  let nbatches = T.size 0 query
+
+  let (query', key', value') = undefined
+
+  (x, attn) <- attention query' key' value' mask mhaDropout
+  -- let x' = view nbatches (mhaHeads * mhaDimK) $ contiguous $ transpose (Dim 1) (Dim 2) x
+  pure ()
 
 --
 -- Attention
