@@ -1,12 +1,17 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 import Torch as T
 
 import GHC.Generics
 import System.IO.Unsafe (unsafePerformIO)
+
+import Experimental
 
 --
 -- Encoder / Decoder
@@ -159,6 +164,10 @@ layerNorm LayerNorm{..} x = a2' * (x - m) / (s + eps') + b2'
 -- SubLayer
 -- 
 
+-- placeholder type
+data Dropout = Dropout {
+} deriving (Show, Generic, Parameterized)
+
 data SubLayerConnection  = SubLayerConnection {
   slcNorm :: LayerNorm,
   slcDropout :: Dropout
@@ -177,8 +186,6 @@ sublayer SubLayerConnection{..} subForward x = do
   fwd <- dropout 0.5 True (subForward $ layerNorm slcNorm x)
   pure (x + fwd)
 
-
-
 --
 -- Multi-headed Attention
 -- 
@@ -187,7 +194,6 @@ data MHAttention = MHAttention {
   mhaDimK :: Int,
   mhaHeads :: Int,
   mhaLinears :: [Linear],
-  mhaAttention :: Attention,
   mhaDropout :: Dropout
 } deriving (Show, Generic, Parameterized)
 
@@ -212,26 +218,65 @@ attention query key value mask dropout = do
       -- TODO: dropout
   pure (matmul pAttn value, pAttn)
 
+mha :: 
+  -- | params
+  MHAttention -> 
+  -- | query
+  Tensor ->
+  -- | key
+  Tensor ->
+  -- | value
+  Tensor ->
+  -- | mask
+  Tensor ->
+  -- | output
+  IO Tensor
 mha MHAttention{..} query key value mask = do
-  let mask' = unsqueeze (Dim 1) mask
-  let nbatches = T.size 0 query
+  let mask' = unsqueeze (Dim 1) mask :: Tensor
+  let nbatches = (T.size 0 query) :: Int
 
   let (query', key', value') = undefined
 
-  (x, attn) <- attention query' key' value' mask mhaDropout
-  -- let x' = view nbatches (mhaHeads * mhaDimK) $ contiguous $ transpose (Dim 1) (Dim 2) x
-  pure ()
+  (x :: Tensor, attn) <- attention query' key' value' mask mhaDropout
+  let x' = view [nbatches, (-1), mhaHeads * mhaDimK] $ contiguous $ transpose (Dim 1) (Dim 2) x
+  pure $ forward (last mhaLinears) x'
 
 --
--- Attention
+-- Position-wise Feed Forward
 -- 
 
-data Attention = Attention {
-
+-- Position-wise Feed Forward 
+data PositionwiseFF = PositionwiseFF {
+  ffW1 :: Linear,
+  ffW2 :: Linear,
+  ffDropout:: Dropout
 } deriving (Show, Generic, Parameterized)
 
-data Dropout = Dropout {
+-- TODO - add dropout
+positionwiseFF ::
+  PositionwiseFF ->
+  Tensor ->
+  Tensor
+positionwiseFF PositionwiseFF{..} x =
+  forward ffW2 $ relu $ forward ffW1 x
+
+data Embeddings = Embeddings {
+  embLut :: Embedding, -- look-up table
+  embDModel :: Int
 } deriving (Show, Generic, Parameterized)
+
+--
+-- Positional Encoding
+-- 
+
+data PositionalEncoding = PositionalEncoding {
+  peDropout :: Dropout
+  -- TODO
+}
+
+peForward = undefined
+
+
 
 main = do
   putStrLn "Done"
