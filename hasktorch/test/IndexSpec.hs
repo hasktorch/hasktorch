@@ -25,6 +25,8 @@ spec = do
       [slice|...|] `shouldBe` Ellipsis
     it "123" $ do
       [slice|123|] `shouldBe` 123
+    it "-123" $ do
+      [slice|-123|] `shouldBe` -123
     it "True" $ do
       [slice|True|] `shouldBe` True
     it "False" $ do

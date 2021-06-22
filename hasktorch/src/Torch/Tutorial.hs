@@ -149,7 +149,7 @@ Some operations transform a tensor:
 >>> Torch.relu (asTensor ([-1.0, -0.5, 0.5, 1] :: [Float]))
 Tensor Float [4] [ 0.0000,  0.0000,  0.5000   ,  1.0000   ]
 
-'Torch.Tensor.select' slices out a selection by specifying a dimension and index:
+'Torch.Tensor.selectDim' slices out a selection by specifying a dimension and index:
 
 >>> let x = asTensor [[[1, 2, 3]], [[4, 5, 6]], [[7, 8, 9]], [[10, 11, 12]]]
 >>> shape x

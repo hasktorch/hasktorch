@@ -272,7 +272,7 @@ indexSelect' ::
 indexSelect' dim indexList t = unsafePerformIO $ (cast3 ATen.index_select_tlt) t dim (asTensor indexList)
 
 -- | Slices the input tensor along the selected dimension at the given range.
-slice ::
+sliceDim ::
   -- | dim
   Int ->
   -- | start
@@ -284,7 +284,7 @@ slice ::
   -- | input
   Tensor ->
   Tensor
-slice _dim _start _end _step _self = unsafePerformIO $ (cast5 ATen.slice_tllll) _self _dim _start _end _step
+sliceDim _dim _start _end _step _self = unsafePerformIO $ (cast5 ATen.slice_tllll) _self _dim _start _end _step
 
 isContiguous ::
   Tensor ->
