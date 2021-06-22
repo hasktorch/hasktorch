@@ -43,13 +43,24 @@ data Size (size :: Type) where
   Size :: forall size. size -> Size size
   deriving (Show)
 
+data SSize (size :: Size Nat) where
+  SUncheckedSize :: Integer -> SSize 'UncheckedSize
+  SSize :: forall size. KnownNat size => SSize ('Size size)
+
+type family SizeF (size :: Size Nat) :: Nat where
+  SizeF ('Size size) = size
+
+sSize :: forall size. SSize size -> Integer
+sSize (SUncheckedSize size) = size
+sSize SSize = natVal $ Proxy @(SizeF size)
+
 class KnownSize (size :: Size Nat) where
   sizeVal :: Size Integer
 
 instance KnownSize 'UncheckedSize where
   sizeVal = UncheckedSize
 
-instance KnownNat size => KnownSize ( 'Size size) where
+instance KnownNat size => KnownSize ('Size size) where
   sizeVal = Size (natVal $ Proxy @size)
 
 data Name (name :: Type) where
@@ -57,13 +68,24 @@ data Name (name :: Type) where
   Name :: forall name. name -> Name name
   deriving (Show)
 
+data SName (name :: Name Symbol) where
+  SUncheckedName :: String -> SName 'UncheckedName
+  SName :: forall name. KnownSymbol name => SName ('Name name)
+
+type family NameF (name :: Name Symbol) :: Symbol where
+  NameF ('Name name) = name
+
+sName :: forall name. SName name -> String
+sName (SUncheckedName name) = name
+sName SName = symbolVal $ Proxy @(NameF name)
+
 class KnownName (name :: Name Symbol) where
   nameVal :: Name String
 
 instance KnownName 'UncheckedName where
   nameVal = UncheckedName
 
-instance KnownSymbol name => KnownName ( 'Name name) where
+instance KnownSymbol name => KnownName ('Name name) where
   nameVal = Name (symbolVal $ Proxy @name)
 
 data Dim (name :: Type) (size :: Type) where
@@ -75,10 +97,16 @@ data Dim (name :: Type) (size :: Type) where
     Dim name size
   deriving (Eq, Ord, Show)
 
+data SDim (name :: Name Symbol) (size :: Size Nat) where
+  SDim :: forall name size. SName name -> SSize size -> SDim name size
+
+sDim :: forall name size. SDim name size -> Dim String Integer
+sDim (SDim name size) = Dim (sName name) (sSize size)
+
 class KnownDim (dim :: Dim (Name Symbol) (Size Nat)) where
   dimVal :: Dim (Name String) (Size Integer)
 
-instance (KnownName name, KnownSize size) => KnownDim ( 'Dim name size) where
+instance (KnownName name, KnownSize size) => KnownDim ('Dim name size) where
   dimVal = Dim (nameVal @name) (sizeVal @size)
 
 class WithDimC (dim :: Dim (Name Symbol) (Size Nat)) (f :: Type) where
@@ -86,23 +114,23 @@ class WithDimC (dim :: Dim (Name Symbol) (Size Nat)) (f :: Type) where
   withDim :: (Dim String Integer -> f) -> WithDimF dim f
   withoutDim :: WithDimF dim f -> (Dim String Integer -> f)
 
-instance WithDimC ( 'Dim 'UncheckedName 'UncheckedSize) f where
-  type WithDimF ( 'Dim 'UncheckedName 'UncheckedSize) f = Dim String Integer -> f
+instance WithDimC ('Dim 'UncheckedName 'UncheckedSize) f where
+  type WithDimF ('Dim 'UncheckedName 'UncheckedSize) f = Dim String Integer -> f
   withDim = id
   withoutDim = id
 
-instance (KnownSymbol name) => WithDimC ( 'Dim ( 'Name name) 'UncheckedSize) f where
-  type WithDimF ( 'Dim ( 'Name name) 'UncheckedSize) f = Integer -> f
+instance (KnownSymbol name) => WithDimC ('Dim ('Name name) 'UncheckedSize) f where
+  type WithDimF ('Dim ('Name name) 'UncheckedSize) f = Integer -> f
   withDim f size = f (Dim (symbolVal (Proxy @name)) size)
   withoutDim f (Dim _ size) = f size
 
-instance (KnownNat size) => WithDimC ( 'Dim 'UncheckedName ( 'Size size)) f where
-  type WithDimF ( 'Dim 'UncheckedName ( 'Size size)) f = String -> f
+instance (KnownNat size) => WithDimC ('Dim 'UncheckedName ('Size size)) f where
+  type WithDimF ('Dim 'UncheckedName ('Size size)) f = String -> f
   withDim f name = f (Dim name (natVal (Proxy @size)))
   withoutDim f (Dim name _) = f name
 
-instance (KnownSymbol name, KnownNat size) => WithDimC ( 'Dim ( 'Name name) ( 'Size size)) f where
-  type WithDimF ( 'Dim ( 'Name name) ( 'Size size)) f = f
+instance (KnownSymbol name, KnownNat size) => WithDimC ('Dim ('Name name) ('Size size)) f where
+  type WithDimF ('Dim ('Name name) ('Size size)) f = f
   withDim f = f (Dim (symbolVal (Proxy @name)) (natVal (Proxy @size)))
   withoutDim = const
 
@@ -163,7 +191,7 @@ class KnownBy (by :: By Symbol Nat) where
 
 instance
   (KnownSymbol name) =>
-  KnownBy ( 'ByName name)
+  KnownBy ('ByName name)
   where
   byVal =
     let name = symbolVal $ Proxy @name
@@ -171,7 +199,7 @@ instance
 
 instance
   (KnownNat index) =>
-  KnownBy ( 'ByIndex index)
+  KnownBy ('ByIndex index)
   where
   byVal =
     let index = natVal $ Proxy @index
@@ -189,7 +217,7 @@ class KnownSelectDim (selectDim :: SelectDim (By Symbol Nat)) where
 instance KnownSelectDim 'UncheckedSelectDim where
   selectDimVal = UncheckedSelectDim
 
-instance (KnownBy by) => KnownSelectDim ( 'SelectDim by) where
+instance (KnownBy by) => KnownSelectDim ('SelectDim by) where
   selectDimVal = let by = byVal @by in SelectDim by
 
 class WithSelectDimC (selectDim :: SelectDim (By Symbol Nat)) (f :: Type) where
@@ -202,8 +230,8 @@ instance WithSelectDimC 'UncheckedSelectDim f where
   withSelectDim = id
   withoutSelectDim = id
 
-instance (KnownBy by) => WithSelectDimC ( 'SelectDim by) f where
-  type WithSelectDimF ( 'SelectDim by) f = f
+instance (KnownBy by) => WithSelectDimC ('SelectDim by) f where
+  type WithSelectDimF ('SelectDim by) f = f
   withSelectDim f = f (byVal @by)
   withoutSelectDim = const
 
@@ -222,16 +250,16 @@ class KnownSelectDims (selectDims :: SelectDims [By Symbol Nat]) where
 instance KnownSelectDims 'UncheckedSelectDims where
   selectDimsVal = UncheckedSelectDims
 
-instance KnownSelectDims ( 'SelectDims '[]) where
+instance KnownSelectDims ('SelectDims '[]) where
   selectDimsVal = SelectDims []
 
 instance
-  (KnownBy by, KnownSelectDims ( 'SelectDims bys)) =>
-  KnownSelectDims ( 'SelectDims (by ': bys))
+  (KnownBy by, KnownSelectDims ('SelectDims bys)) =>
+  KnownSelectDims ('SelectDims (by ': bys))
   where
   selectDimsVal =
     let by = byVal @by
-        SelectDims bys = selectDimsVal @( 'SelectDims bys)
+        SelectDims bys = selectDimsVal @('SelectDims bys)
      in SelectDims (by : bys)
 
 class WithSelectDimsC (selectDims :: SelectDims [By Symbol Nat]) (f :: Type) where
@@ -244,18 +272,18 @@ instance WithSelectDimsC 'UncheckedSelectDims f where
   withSelectDims = id
   withoutSelectDims = id
 
-instance WithSelectDimsC ( 'SelectDims '[]) f where
-  type WithSelectDimsF ( 'SelectDims '[]) f = f
+instance WithSelectDimsC ('SelectDims '[]) f where
+  type WithSelectDimsF ('SelectDims '[]) f = f
   withSelectDims f = f []
   withoutSelectDims = const
 
 instance
-  (WithSelectDimsC ( 'SelectDims selectDims) f, KnownBy by) =>
-  WithSelectDimsC ( 'SelectDims (by ': selectDims)) f
+  (WithSelectDimsC ('SelectDims selectDims) f, KnownBy by) =>
+  WithSelectDimsC ('SelectDims (by ': selectDims)) f
   where
-  type WithSelectDimsF ( 'SelectDims (by ': selectDims)) f = WithSelectDimsF ( 'SelectDims selectDims) f
-  withSelectDims f = withSelectDims @( 'SelectDims selectDims) @f $ \bys -> f (byVal @by : bys)
-  withoutSelectDims f (_ : bys) = withoutSelectDims @( 'SelectDims selectDims) @f f bys
+  type WithSelectDimsF ('SelectDims (by ': selectDims)) f = WithSelectDimsF ('SelectDims selectDims) f
+  withSelectDims f = withSelectDims @('SelectDims selectDims) @f $ \bys -> f (byVal @by : bys)
+  withoutSelectDims f (_ : bys) = withoutSelectDims @('SelectDims selectDims) @f f bys
 
 -- | Data type to represent tensor shapes, that is, lists of dimensions.
 data Shape (dims :: Type) where
@@ -273,50 +301,53 @@ data Shape (dims :: Type) where
     Shape dims
   deriving (Show)
 
+data SShape (shape :: Shape [Dim (Name Symbol) (Size Nat)]) where
+  SUncheckedShape :: [Dim String Integer] -> SShape 'UncheckedShape
+  SShape :: forall dims. SDims dims -> SShape ('Shape dims)
+
+sShape :: forall shape. SShape shape -> [Dim String Integer]
+sShape (SUncheckedShape dims) = dims
+sShape (SShape dims) = sDims dims
+
+data SDims (dims :: [Dim (Name Symbol) (Size Nat)]) where
+  SDimsNil :: SDims '[]
+  SDims :: forall name size dims. SDim name size -> SDims dims -> SDims ('Dim name size : dims)
+
+sDims :: forall dims. SDims dims -> [Dim String Integer]
+sDims SDimsNil = []
+sDims (SDims dim dims) = sDim dim : sDims dims
+
 class KnownShape (shape :: Shape [Dim (Name Symbol) (Size Nat)]) where
   shapeVal :: Shape [Dim (Name String) (Size Integer)]
 
 instance KnownShape 'UncheckedShape where
   shapeVal = UncheckedShape
 
-instance KnownShape ( 'Shape '[]) where
+instance KnownShape ('Shape '[]) where
   shapeVal = Shape []
 
-instance (KnownShape ( 'Shape dims), KnownDim dim) => KnownShape ( 'Shape (dim ': dims)) where
+instance (KnownShape ('Shape dims), KnownDim dim) => KnownShape ('Shape (dim ': dims)) where
   shapeVal =
-    case shapeVal @( 'Shape dims) of
+    case shapeVal @('Shape dims) of
       Shape dims -> Shape $ dimVal @dim : dims
 
-class
-  -- ShapeConstraint shape (GetShapes f) =>
-  WithShapeC (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (f :: Type)
-  where
+class WithShapeC (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (f :: Type) where
   type WithShapeF shape f :: Type
   withShape :: ([Dim String Integer] -> f) -> WithShapeF shape f
   withoutShape :: WithShapeF shape f -> ([Dim String Integer] -> f)
 
-instance
-  -- ShapeConstraint 'UncheckedShape (GetShapes f) =>
-  WithShapeC 'UncheckedShape f
-  where
+instance WithShapeC 'UncheckedShape f where
   type WithShapeF 'UncheckedShape f = [Dim String Integer] -> f
   withShape = id
   withoutShape = id
 
 instance
-  ( -- ShapeConstraint ( 'Shape dims) (GetShapes f),
-    WithDimsC dims f
-  ) =>
-  WithShapeC ( 'Shape dims) f
+  WithDimsC dims f =>
+  WithShapeC ('Shape dims) f
   where
-  type WithShapeF ( 'Shape dims) f = WithDimsF dims f
+  type WithShapeF ('Shape dims) f = WithDimsF dims f
   withShape = withDims @dims
   withoutShape = withoutDims @dims
-
-type family ShapeConstraint (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shapes :: [Shape [Dim (Name Symbol) (Size Nat)]]) :: Constraint where
-  ShapeConstraint _ '[] = ()
-  ShapeConstraint shape '[shape'] = shape ~ shape'
-  ShapeConstraint _ _ = ()
 
 -- >>> :kind! GetShapes ('Shape '[ 'Dim ('Name "*") ('Size 1)])
 -- GetShapes ('Shape '[ 'Dim ('Name "*") ('Size 1)]) :: [Shape
@@ -352,9 +383,9 @@ instance WithDimsC '[] f where
 
 instance
   WithDimsC dims f =>
-  WithDimsC ( 'Dim 'UncheckedName 'UncheckedSize ': dims) f
+  WithDimsC ('Dim 'UncheckedName 'UncheckedSize ': dims) f
   where
-  type WithDimsF ( 'Dim 'UncheckedName 'UncheckedSize ': dims) f = Dim String Integer -> WithDimsF dims f
+  type WithDimsF ('Dim 'UncheckedName 'UncheckedSize ': dims) f = Dim String Integer -> WithDimsF dims f
   withDims f dim = withDims @dims @f $ \dims -> f (dim : dims)
   withoutDims f (dim : dims) = withoutDims @dims @f (f dim) dims
 
@@ -362,9 +393,9 @@ instance
   ( WithDimsC dims f,
     KnownSymbol name
   ) =>
-  WithDimsC ( 'Dim ( 'Name name) 'UncheckedSize ': dims) f
+  WithDimsC ('Dim ('Name name) 'UncheckedSize ': dims) f
   where
-  type WithDimsF ( 'Dim ( 'Name name) 'UncheckedSize ': dims) f = Integer -> WithDimsF dims f
+  type WithDimsF ('Dim ('Name name) 'UncheckedSize ': dims) f = Integer -> WithDimsF dims f
   withDims f size = withDims @dims @f $ \dims -> f (Dim (symbolVal $ Proxy @name) size : dims)
   withoutDims f (Dim _ size : dims) = withoutDims @dims @f (f size) dims
 
@@ -372,9 +403,9 @@ instance
   ( WithDimsC dims f,
     KnownNat size
   ) =>
-  WithDimsC ( 'Dim 'UncheckedName ( 'Size size) ': dims) f
+  WithDimsC ('Dim 'UncheckedName ('Size size) ': dims) f
   where
-  type WithDimsF ( 'Dim 'UncheckedName ( 'Size size) ': dims) f = String -> WithDimsF dims f
+  type WithDimsF ('Dim 'UncheckedName ('Size size) ': dims) f = String -> WithDimsF dims f
   withDims f name = withDims @dims @f $ \dims -> f (Dim name (natVal $ Proxy @size) : dims)
   withoutDims f (Dim name _ : dims) = withoutDims @dims @f (f name) dims
 
@@ -383,9 +414,9 @@ instance
     KnownSymbol name,
     KnownNat size
   ) =>
-  WithDimsC ( 'Dim ( 'Name name) ( 'Size size) ': dims) f
+  WithDimsC ('Dim ('Name name) ('Size size) ': dims) f
   where
-  type WithDimsF ( 'Dim ( 'Name name) ( 'Size size) ': dims) f = WithDimsF dims f
+  type WithDimsF ('Dim ('Name name) ('Size size) ': dims) f = WithDimsF dims f
   withDims f = withDims @dims @f $ \dims -> f (Dim (symbolVal $ Proxy @name) (natVal $ Proxy @size) : dims)
   withoutDims f (_ : dims) = withoutDims @dims @f f dims
 

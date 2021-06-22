@@ -54,45 +54,43 @@ data Layout (layoutType :: Type) where
   Layout :: forall layoutType. layoutType -> Layout layoutType
   deriving (Show)
 
+data SLayout (layout :: Layout LayoutType) where
+  SUncheckedLayout :: LayoutType -> SLayout 'UncheckedLayout
+  SLayout :: forall layoutType. KnownLayoutType layoutType => SLayout ('Layout layoutType)
+
+type family LayoutTypeF (layout :: Layout LayoutType) :: LayoutType where
+  LayoutTypeF ('Layout layoutType) = layoutType
+
+sLayoutType :: forall layout. SLayout layout -> LayoutType
+sLayoutType (SUncheckedLayout layoutType) = layoutType
+sLayoutType SLayout = layoutTypeVal @(LayoutTypeF layout)
+
 class KnownLayout (layout :: Layout LayoutType) where
   layoutVal :: Layout LayoutType
 
 instance KnownLayout 'UncheckedLayout where
   layoutVal = UncheckedLayout
 
-instance (KnownLayoutType layoutType) => KnownLayout ( 'Layout layoutType) where
+instance (KnownLayoutType layoutType) => KnownLayout ('Layout layoutType) where
   layoutVal = Layout (layoutTypeVal @layoutType)
 
-class
-  -- LayoutConstraint layout (GetLayouts f) =>
-  WithLayoutC (layout :: Layout LayoutType) (f :: Type)
-  where
+class WithLayoutC (layout :: Layout LayoutType) (f :: Type) where
   type WithLayoutF layout f :: Type
   withLayout :: (LayoutType -> f) -> WithLayoutF layout f
   withoutLayout :: WithLayoutF layout f -> (LayoutType -> f)
 
-instance
-  -- LayoutConstraint 'UncheckedLayout (GetLayouts f) =>
-  WithLayoutC 'UncheckedLayout f
-  where
+instance WithLayoutC 'UncheckedLayout f where
   type WithLayoutF 'UncheckedLayout f = LayoutType -> f
   withLayout = id
   withoutLayout = id
 
 instance
-  ( -- LayoutConstraint ( 'Layout layoutType) (GetLayouts f),
-    KnownLayoutType layoutType
-  ) =>
-  WithLayoutC ( 'Layout layoutType) f
+  KnownLayoutType layoutType =>
+  WithLayoutC ('Layout layoutType) f
   where
-  type WithLayoutF ( 'Layout layoutType) f = f
+  type WithLayoutF ('Layout layoutType) f = f
   withLayout f = f (layoutTypeVal @layoutType)
   withoutLayout = const
-
-type family LayoutConstraint (layout :: Layout LayoutType) (layouts :: [Layout LayoutType]) :: Constraint where
-  LayoutConstraint _ '[] = ()
-  LayoutConstraint layout '[layout'] = layout ~ layout'
-  LayoutConstraint _ _ = ()
 
 -- >>> :kind! GetLayouts ('Layout 'Dense)
 -- GetLayouts ('Layout 'Dense) :: [Layout LayoutType]
