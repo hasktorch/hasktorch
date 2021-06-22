@@ -60,7 +60,16 @@ parseSlice str =
           pure $ ConE 'False
       )
     number :: Parser Exp 
-    number = lexm decimal >>= \v -> pure $ LitE (IntegerL v)
+    number =
+      ( do
+          v <- lexm decimal
+          pure $ LitE (IntegerL v)
+      ) <|>
+      ( do
+          _ <- lexm $ string "-"
+          v <- lexm decimal
+          pure $ LitE (IntegerL (-v))
+      )
     slice =
       try ( do
           a <- number

@@ -66,3 +66,7 @@ spec = do
       let x = zeros' [6]
           i = [slice|0::2|]
       (dtype &&& shape &&& asValue) (maskedFill x i (arange' 1 4 1)) `shouldBe` (Float, ([6], [1,0,2,0,3,0] :: [Float]))
+    it "negative index" $ do
+      let x = arange' 1 5 1
+          i = [slice|-1|]
+      (dtype &&& shape &&& asValue) (x ! i) `shouldBe` (Float, ([], 4 :: Float))
