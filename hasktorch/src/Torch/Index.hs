@@ -5,7 +5,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Torch.Index
-  ( pySlice
+  ( slice
   ) where
 
 import Torch.Tensor
@@ -28,7 +28,7 @@ lexm = lexeme sc
 
 parseSlice :: String -> Q [Exp]
 parseSlice str =
-  case M.runParser parse' "pySlice" str of
+  case M.runParser parse' "slice" str of
     Left e -> fail $ show e
     Right v -> return v
     
@@ -124,12 +124,12 @@ parseSlice str =
           pure $ AppE (ConE 'Slice) (ConE '())
           )
 
-pySlice :: QuasiQuoter
-pySlice = QuasiQuoter
+slice :: QuasiQuoter
+slice = QuasiQuoter
   { quoteExp = parseSlice >=> qconcat
-  , quotePat = error "quotePat is not implemented for pySlice."
-  , quoteDec = error "quoteDec is not implemented for pySlice."
-  , quoteType = error "quoteType is not implemented for pySlice."
+  , quotePat = error "quotePat is not implemented for slice."
+  , quoteDec = error "quoteDec is not implemented for slice."
+  , quoteType = error "quoteType is not implemented for slice."
   }
   where
     qconcat :: [Exp] -> Q Exp
