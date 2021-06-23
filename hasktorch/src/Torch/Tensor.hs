@@ -11,6 +11,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Torch.Tensor where
 
@@ -384,7 +385,7 @@ data None = None
 data Ellipsis = Ellipsis
   deriving (Show, Eq)
 
-data Slice a = Slice a
+newtype Slice a = Slice a
   deriving (Show, Eq)
 
 instance Castable RawTensorIndex (ForeignPtr ATen.TensorIndex) where
@@ -393,6 +394,9 @@ instance Castable RawTensorIndex (ForeignPtr ATen.TensorIndex) where
 
 class TensorIndex a where
   pushIndex :: [RawTensorIndex] -> a -> [RawTensorIndex]
+  toLens :: a -> Lens' Tensor Tensor
+  default toLens :: a -> Lens' Tensor Tensor
+  toLens idx func s = maskedFill s idx <$> func (s ! idx)
 
 instance {-# OVERLAPS #-} TensorIndex None where
   pushIndex vec _ = unsafePerformIO $ do
