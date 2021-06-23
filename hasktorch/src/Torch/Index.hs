@@ -70,6 +70,11 @@ parseSlice str =
           v <- lexm decimal
           pure $ LitE (IntegerL (-v))
       )
+      <|>
+      ( do
+          v <- lexm $ between (char '{') (char '}') (some alphaNumChar)
+          pure $ VarE (mkName v)
+      ) 
     slice =
       try ( do
           a <- number

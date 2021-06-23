@@ -57,6 +57,9 @@ spec = do
       [slice|1,2,3|] `shouldBe` (1, 2, 3)
     it "1 , 2, 3" $ do
       [slice|1 , 2, 3|] `shouldBe` (1, 2, 3)
+    it "1 , 2, 3" $ do
+      let i = 1
+      [slice|{i} , 2, 3|] `shouldBe` (1, 2, 3)
   describe "indexing" $ do
     it "pick up a value" $ do
       let x = asTensor ([[[0,1,2],[3,4,5]],[[6,7,8],[9,10,11]]] :: [[[Int]]])
