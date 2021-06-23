@@ -100,6 +100,17 @@ data Dim (name :: Type) (size :: Type) where
 data SDim (name :: Name Symbol) (size :: Size Nat) where
   SDim :: forall name size. SName name -> SSize size -> SDim name size
 
+pattern (:&:) ::
+  forall
+    (name :: Name Symbol)
+    (size :: Size Nat).
+  SName name ->
+  SSize size ->
+  SDim name size
+pattern (:&:) name size = SDim name size
+
+infix 9 :&:
+
 sDim :: forall name size. SDim name size -> Dim String Integer
 sDim (SDim name size) = Dim (sName name) (sSize size)
 
@@ -311,7 +322,23 @@ sShape (SShape dims) = sDims dims
 
 data SDims (dims :: [Dim (Name Symbol) (Size Nat)]) where
   SDimsNil :: SDims '[]
-  SDims :: forall name size dims. SDim name size -> SDims dims -> SDims ('Dim name size : dims)
+  SDims ::
+    forall name size dims.
+    SDim name size ->
+    SDims dims ->
+    SDims ('Dim name size : dims)
+
+pattern (:|:) ::
+  forall
+    (name :: Name Symbol)
+    (size :: Size Nat)
+    (dims :: [Dim (Name Symbol) (Size Nat)]).
+  SDim name size ->
+  SDims dims ->
+  SDims ('Dim name size : dims)
+pattern (:|:) dim dims = SDims dim dims
+
+infixr 8 :|:
 
 sDims :: forall dims. SDims dims -> [Dim String Integer]
 sDims SDimsNil = []
