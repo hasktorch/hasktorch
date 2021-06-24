@@ -6,6 +6,8 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -15,8 +17,12 @@
 module Torch.GraduallyTyped.DType where
 
 import Data.Kind (Constraint, Type)
+import Data.Singletons (Sing (..), SingI (..), SingKind (..), SomeSing (..), withSomeSing)
+import Data.Singletons.TH (genSingletons)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.Prelude (Concat)
+import Torch.GraduallyTyped.Prelude (Concat, IsChecked (..))
+
+genSingletons [''DType]
 
 class KnownDType (dType :: DType) where
   dTypeVal :: DType
@@ -58,14 +64,16 @@ data DataType (dType :: Type) where
 
 data SDataType (dType :: DataType DType) where
   SUncheckedDataType :: DType -> SDataType 'UncheckedDataType
-  SDataType :: forall dType. KnownDType dType => SDataType ('DataType dType)
+  SDataType :: forall dType. SDType dType -> SDataType ('DataType dType)
 
-type family DTypeF (dataType :: DataType DType) :: DType where
-  DTypeF ('DataType dType) = dType
+type instance Sing = SDataType
 
-sDType :: forall dataType. SDataType dataType -> DType
-sDType (SUncheckedDataType dataType) = dataType
-sDType SDataType = dTypeVal @(DTypeF dataType)
+instance SingKind (DataType DType) where
+  type Demote (DataType DType) = IsChecked DType
+  fromSing (SUncheckedDataType dType) = Unchecked dType
+  fromSing (SDataType dType) = Checked . fromSing $ dType
+  toSing (Unchecked dType) = SomeSing . SUncheckedDataType $ dType
+  toSing (Checked dType) = withSomeSing dType $ SomeSing . SDataType
 
 class KnownDataType (dataType :: DataType DType) where
   dataTypeVal :: DataType DType
@@ -75,40 +83,27 @@ instance KnownDataType 'UncheckedDataType where
 
 instance
   (KnownDType dType) =>
-  KnownDataType ( 'DataType dType)
+  KnownDataType ('DataType dType)
   where
   dataTypeVal = DataType (dTypeVal @dType)
 
-class
-  -- DataTypeConstraint dataType (GetDataTypes f) =>
-  WithDataTypeC (dataType :: DataType DType) (f :: Type)
-  where
+class WithDataTypeC (dataType :: DataType DType) (f :: Type) where
   type WithDataTypeF dataType f :: Type
   withDataType :: (DType -> f) -> WithDataTypeF dataType f
   withoutDataType :: WithDataTypeF dataType f -> (DType -> f)
 
-instance
-  -- DataTypeConstraint 'UncheckedDataType (GetDataTypes f) =>
-  WithDataTypeC 'UncheckedDataType f
-  where
+instance WithDataTypeC 'UncheckedDataType f where
   type WithDataTypeF 'UncheckedDataType f = DType -> f
   withDataType = id
   withoutDataType = id
 
 instance
-  ( -- DataTypeConstraint ( 'DataType dType) (GetDataTypes f),
-    KnownDType dType
-  ) =>
-  WithDataTypeC ( 'DataType dType) f
+  KnownDType dType =>
+  WithDataTypeC ('DataType dType) f
   where
-  type WithDataTypeF ( 'DataType dType) f = f
+  type WithDataTypeF ('DataType dType) f = f
   withDataType f = f (dTypeVal @dType)
   withoutDataType = const
-
-type family DataTypeConstraint (datatype :: DataType DType) (datatypes :: [DataType DType]) :: Constraint where
-  DataTypeConstraint _ '[] = ()
-  DataTypeConstraint datatype '[datatype'] = datatype ~ datatype'
-  DataTypeConstraint _ _ = ()
 
 -- >>> :kind! GetDataTypes ('DataType 'Float)
 -- GetDataTypes ('DataType 'Float) :: [DataType DType]
@@ -120,7 +115,8 @@ type family DataTypeConstraint (datatype :: DataType DType) (datatypes :: [DataT
 -- >>> :kind! GetDataTypes ('Just ('DataType 'Bool))
 -- GetDataTypes ('Just ('DataType 'Bool)) :: [DataType DType]
 -- = '[ 'DataType 'Bool]
-type family GetDataTypes (f :: k) :: [DataType DType] where
+type GetDataTypes :: k -> [DataType DType]
+type family GetDataTypes f where
   GetDataTypes (a :: DataType DType) = '[a]
   GetDataTypes (f g) = Concat (GetDataTypes f) (GetDataTypes g)
   GetDataTypes _ = '[]

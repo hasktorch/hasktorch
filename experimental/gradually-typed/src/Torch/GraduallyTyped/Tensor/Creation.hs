@@ -17,13 +17,9 @@ module Torch.GraduallyTyped.Tensor.Creation
   ( WithCreateC (..),
     ones,
     sOnes,
-    -- checkedOnes,
-    uncheckedOnes,
     zeros,
     full,
     randn,
-    -- checkedRandn,
-    uncheckedRandn,
     arangeNaturals,
     eye,
     eyeSquare,
@@ -37,16 +33,16 @@ import Data.Singletons (fromSing)
 import GHC.TypeLits (Nat, Symbol)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), KnownDType, SDataType, WithDataTypeC (..), sDType)
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDeviceType, SDevice, WithDeviceC (..), sDeviceType)
+import Torch.GraduallyTyped.DType (DataType (..), KnownDType, SDataType, WithDataTypeC (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDeviceType, SDevice, WithDeviceC (..))
 import Torch.GraduallyTyped.Internal.TensorOptions (tensorOptions)
 import Torch.GraduallyTyped.Internal.Void (Void)
-import Torch.GraduallyTyped.Layout (KnownLayoutType (layoutTypeVal), Layout (..), LayoutType (..), SLayout (..), WithLayoutC (..), sLayoutType)
-import Torch.GraduallyTyped.Prelude (Catch)
+import Torch.GraduallyTyped.Layout (KnownLayoutType (layoutTypeVal), Layout (..), LayoutType (..), SLayout (..), WithLayoutC (..))
+import Torch.GraduallyTyped.Prelude (Catch, forgetIsChecked)
 import Torch.GraduallyTyped.Random (Generator, withGenerator)
 import Torch.GraduallyTyped.RequiresGradient (KnownRequiresGradient, RequiresGradient (..), SRequiresGradient, requiresGradientVal)
 import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SShape, Shape (..), Size (..), WithDimC (..), WithShapeC (..), dimName, dimSize, sShape)
+import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SShape, Shape (..), Size (..), WithDimC (..), WithShapeC (..), dimName, dimSize)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
 import Torch.Internal.Cast (cast2, cast3, cast4)
 import qualified Torch.Internal.Managed.TensorFactories as ATen
@@ -265,48 +261,14 @@ sOnes reqGradient layout device dataType shape =
    in UnsafeTensor tensor
   where
     requiresGradient = fromSing reqGradient
-    layoutType = sLayoutType layout
-    deviceType = sDeviceType device
-    dType = sDType dataType
-    dims = sShape shape
-
--- checkedOnes ::
---   forall requiresGradient layoutType deviceType dType dims.
---   ( KnownRequiresGradient requiresGradient,
---     KnownLayoutType layoutType,
---     KnownDeviceType deviceType,
---     KnownDType dType,
---     WithShapeC ( 'Shape dims) (Tensor requiresGradient ( 'Layout layoutType) ( 'Device deviceType) ( 'DataType dType) ( 'Shape dims))
---   ) =>
---   WithShapeF
---     ( 'Shape dims)
---     ( Tensor
---         requiresGradient
---         ( 'Layout layoutType)
---         ( 'Device deviceType)
---         ( 'DataType dType)
---         ( 'Shape dims)
---     )
--- checkedOnes = ones @requiresGradient @( 'Layout layoutType) @( 'Device deviceType) @( 'DataType dType) @( 'Shape dims)
-
--- | Like 'ones', but specialized to the case in which all arguments are unchecked at compile time.
-uncheckedOnes ::
-  -- | Memory layout of the tensor.
-  LayoutType ->
-  -- | Compute device of the tensor.
-  DeviceType Int16 ->
-  -- | Data type of the tensor.
-  DType ->
-  -- | Shape of the tensor.
-  [Dim String Integer] ->
-  -- | Returned tensor.
-  Tensor
-    'WithoutGradient
-    'UncheckedLayout
-    'UncheckedDevice
-    'UncheckedDataType
-    'UncheckedShape
-uncheckedOnes = ones @'WithoutGradient @'UncheckedLayout @'UncheckedDevice @'UncheckedDataType @'UncheckedShape
+    layoutType = forgetIsChecked . fromSing $ layout
+    deviceType = forgetIsChecked . fromSing $ device
+    dType = forgetIsChecked . fromSing $ dataType
+    dims =
+      fmap (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size))
+        . forgetIsChecked
+        . fromSing
+        $ shape
 
 zeros ::
   forall requiresGradient layout device dataType shape.
@@ -360,10 +322,14 @@ sZeros reqGradient layout device dataType shape =
    in UnsafeTensor tensor
   where
     requiresGradient = fromSing reqGradient
-    layoutType = sLayoutType layout
-    deviceType = sDeviceType device
-    dType = sDType dataType
-    dims = sShape shape
+    layoutType = forgetIsChecked . fromSing $ layout
+    deviceType = forgetIsChecked . fromSing $ device
+    dType = forgetIsChecked . fromSing $ dataType
+    dims =
+      fmap (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size))
+        . forgetIsChecked
+        . fromSing
+        $ shape
 
 full ::
   forall requiresGradient layout device dataType shape input.
@@ -442,56 +408,14 @@ sRandn reqGradient layout device dataType shape =
         )
   where
     requiresGradient = fromSing reqGradient
-    layoutType = sLayoutType layout
-    deviceType = sDeviceType device
-    dType = sDType dataType
-    dims = sShape shape
-
--- checkedRandn ::
---   forall requiresGradient layoutType deviceType dType dims.
---   ( KnownRequiresGradient requiresGradient,
---     KnownLayoutType layoutType,
---     KnownDeviceType deviceType,
---     KnownDType dType,
---     Catch deviceType,
---     WithShapeC ( 'Shape dims) (Generator ( 'Device deviceType) -> (Tensor requiresGradient ( 'Layout layoutType) ( 'Device deviceType) ( 'DataType dType) ( 'Shape dims), Generator ( 'Device deviceType)))
---   ) =>
---   ( WithShapeF
---       ( 'Shape dims)
---       ( Generator ( 'Device deviceType) ->
---         ( Tensor
---             requiresGradient
---             ( 'Layout layoutType)
---             ( 'Device deviceType)
---             ( 'DataType dType)
---             ( 'Shape dims),
---           Generator ( 'Device deviceType)
---         )
---       )
---   )
--- checkedRandn = randn @requiresGradient @( 'Layout layoutType) @( 'Device deviceType) @( 'DataType dType) @( 'Shape dims) @( 'Device deviceType)
-
-uncheckedRandn ::
-  -- | Memory layout of the tensor.
-  LayoutType ->
-  -- | Compute device of the tensor.
-  DeviceType Int16 ->
-  -- | Data type of the tensor.
-  DType ->
-  -- | Shape of the tensor.
-  [Dim String Integer] ->
-  -- | Random number generator.
-  Generator 'UncheckedDevice ->
-  -- | Returned tensor and generator.
-  ( Tensor
-      'WithoutGradient
-      'UncheckedLayout
-      'UncheckedDevice
-      'UncheckedDataType
-      'UncheckedShape,
-    Generator 'UncheckedDevice
-  )
-uncheckedRandn = randn @'WithoutGradient @'UncheckedLayout @'UncheckedDevice @'UncheckedDataType @'UncheckedShape
+    layoutType = forgetIsChecked . fromSing $ layout
+    deviceType = forgetIsChecked . fromSing $ device
+    dType = forgetIsChecked . fromSing $ dataType
+    dims =
+      fmap (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size))
+        . forgetIsChecked
+        . fromSing
+        $ shape
 
 arangeNaturals ::
   forall requiresGradient layout device dataType sizeDim shape createOut.

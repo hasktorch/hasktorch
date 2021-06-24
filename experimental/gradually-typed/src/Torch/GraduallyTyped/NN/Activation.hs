@@ -5,6 +5,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -17,7 +18,7 @@ import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Functional.Activation (gelu, relu)
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, softmax)
-import Torch.GraduallyTyped.Shape (By, SelectDim, WithSelectDimC (..), WithSelectDimF)
+import Torch.GraduallyTyped.Shape (By, SSelectDim, SelectDim, WithSelectDimC (..), WithSelectDimF)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (tanh)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Prelude hiding (tanh)
@@ -25,22 +26,16 @@ import Prelude hiding (tanh)
 data Softmax (selectDim :: SelectDim (By Symbol Nat)) where
   Softmax ::
     forall selectDim.
-    By String Integer ->
+    {softmaxSelectDim :: SSelectDim selectDim} ->
     Softmax selectDim
   deriving (Generic)
 
-instance WithSelectDimC selectDim (Softmax selectDim) => HasInitialize (Softmax selectDim) where
-  type InitializeF (Softmax selectDim) = WithSelectDimF selectDim (Softmax selectDim)
-  initialize = withSelectDim @selectDim $ Softmax @selectDim
+instance HasInitialize (Softmax selectDim) where
+  type InitializeF (Softmax selectDim) = SSelectDim selectDim -> Softmax selectDim
+  initialize = Softmax
 
 instance
-  ( WithSelectDimC
-      selectDim
-      ( Tensor requiresGradient layout device dataType shape ->
-        Tensor requiresGradient layout device dataType (SoftmaxF selectDim shape)
-      ),
-    output ~ Tensor requiresGradient layout device dataType (SoftmaxF selectDim shape)
-  ) =>
+  (output ~ Tensor requiresGradient layout device dataType (SoftmaxF selectDim shape)) =>
   HasForward
     (Softmax selectDim)
     (Tensor requiresGradient layout device dataType shape)
@@ -48,7 +43,7 @@ instance
     output
     generator
   where
-  forward (Softmax by) input g = (withoutSelectDim @selectDim (softmax @selectDim @requiresGradient @layout @device @dataType @shape) by input, g)
+  forward Softmax {..} input g = (softmax softmaxSelectDim input, g)
 
 data Relu where Relu :: Relu
 

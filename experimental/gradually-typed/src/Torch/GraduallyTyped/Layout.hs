@@ -6,6 +6,8 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -16,7 +18,9 @@
 module Torch.GraduallyTyped.Layout where
 
 import Data.Kind (Constraint, Type)
-import Torch.GraduallyTyped.Prelude (Concat)
+import Data.Singletons (Sing (..), SingI (..), SingKind (..), SomeSing (..), withSomeSing)
+import Data.Singletons.TH (genSingletons)
+import Torch.GraduallyTyped.Prelude (Concat, IsChecked (..))
 import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Const as ATen (kSparse, kStrided)
 import qualified Torch.Internal.Type as ATen (Layout)
@@ -28,6 +32,8 @@ data LayoutType
   | -- | The memory layout of the tensor is sparse.
     Sparse
   deriving (Show, Eq)
+
+genSingletons [''LayoutType]
 
 class KnownLayoutType (layoutType :: LayoutType) where
   layoutTypeVal :: LayoutType
@@ -56,14 +62,19 @@ data Layout (layoutType :: Type) where
 
 data SLayout (layout :: Layout LayoutType) where
   SUncheckedLayout :: LayoutType -> SLayout 'UncheckedLayout
-  SLayout :: forall layoutType. KnownLayoutType layoutType => SLayout ('Layout layoutType)
+  SLayout :: forall layoutType. SLayoutType layoutType -> SLayout ('Layout layoutType)
 
-type family LayoutTypeF (layout :: Layout LayoutType) :: LayoutType where
-  LayoutTypeF ('Layout layoutType) = layoutType
+type instance Sing = SLayout
 
-sLayoutType :: forall layout. SLayout layout -> LayoutType
-sLayoutType (SUncheckedLayout layoutType) = layoutType
-sLayoutType SLayout = layoutTypeVal @(LayoutTypeF layout)
+instance SingI (layoutType :: LayoutType) => SingI ('Layout layoutType) where
+  sing = SLayout $ sing @layoutType
+
+instance SingKind (Layout LayoutType) where
+  type Demote (Layout LayoutType) = IsChecked LayoutType
+  fromSing (SUncheckedLayout layoutType) = Unchecked layoutType
+  fromSing (SLayout layoutType) = Checked . fromSing $ layoutType
+  toSing (Unchecked layoutType) = SomeSing (SUncheckedLayout layoutType)
+  toSing (Checked layoutType) = withSomeSing layoutType $ SomeSing . SLayout
 
 class KnownLayout (layout :: Layout LayoutType) where
   layoutVal :: Layout LayoutType
@@ -102,7 +113,8 @@ instance
 -- >>> :kind! GetLayouts ('Just ('Layout 'Dense))
 -- GetLayouts ('Just ('Layout 'Dense)) :: [Layout LayoutType]
 -- = '[ 'Layout 'Dense]
-type family GetLayouts (f :: k) :: [Layout LayoutType] where
+type GetLayouts :: k -> [Layout LayoutType]
+type family GetLayouts f where
   GetLayouts (a :: Layout LayoutType) = '[a]
   GetLayouts (f g) = Concat (GetLayouts f) (GetLayouts g)
   GetLayouts _ = '[]

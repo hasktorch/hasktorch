@@ -13,11 +13,13 @@ module Torch.GraduallyTyped.Random (Generator, noGenerator, mkGenerator, sMkGene
 
 import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVar, writeTVar)
 import Data.Int (Int16)
+import Data.Singletons (SingKind (..))
 import Data.Word (Word64)
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (Nat)
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDeviceType, SDevice, WithDeviceC (..), sDeviceType)
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDeviceType, SDevice, WithDeviceC (..))
+import Torch.GraduallyTyped.Prelude (forgetIsChecked)
 import qualified Torch.Internal.Managed.Type.Generator as ATen
 import qualified Torch.Internal.Type as ATen
 
@@ -60,7 +62,7 @@ sMkGenerator ::
   Word64 ->
   IO (Generator device)
 sMkGenerator device seed =
-  let deviceType = sDeviceType device
+  let deviceType = forgetIsChecked . fromSing $ device
    in case deviceType of
         CPU -> do
           genPtr <- ATen.newCPUGenerator seed

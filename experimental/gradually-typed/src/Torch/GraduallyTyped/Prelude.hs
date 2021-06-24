@@ -17,6 +17,8 @@ module Torch.GraduallyTyped.Prelude
     module Data.Proxy,
     module Data.Type.Bool,
     module GHC.TypeLits,
+    IsChecked (..),
+    forgetIsChecked,
     All,
     KnownElem (..),
     KnownList (..),
@@ -62,6 +64,12 @@ import Data.String (IsString, fromString)
 import Data.Type.Bool (If, type (||))
 import GHC.Exts (Any)
 import GHC.TypeLits (Nat, ErrorMessage (..), TypeError (..), type (*), type (+))
+
+data IsChecked a = Checked a | Unchecked a
+
+forgetIsChecked :: IsChecked a -> a
+forgetIsChecked (Checked a) = a
+forgetIsChecked (Unchecked a) = a
 
 type family All (c :: k -> Constraint) (xs :: [k]) :: Constraint where
   All _ '[] = ()

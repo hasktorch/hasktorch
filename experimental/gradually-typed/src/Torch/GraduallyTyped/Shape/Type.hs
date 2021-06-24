@@ -12,6 +12,8 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
@@ -25,10 +27,13 @@ module Torch.GraduallyTyped.Shape.Type where
 import Control.Monad (foldM)
 import Data.Kind (Constraint, Type)
 import Data.Proxy (Proxy (..))
+import Data.Singletons (Sing (..), SingI (..), SingKind (..), SomeSing (..), withSomeSing)
+import Data.Singletons.Prelude.List (SList (..))
+import Data.Singletons.TH (genSingletons)
 import Foreign.ForeignPtr (ForeignPtr)
-import GHC.TypeLits (KnownNat (..), KnownSymbol (..), Nat, Symbol, natVal, symbolVal)
+import GHC.TypeLits (KnownNat (..), KnownSymbol (..), Nat, SomeNat (..), SomeSymbol (..), Symbol, natVal, someNatVal, someSymbolVal, symbolVal)
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.GraduallyTyped.Prelude (Concat)
+import Torch.GraduallyTyped.Prelude (Concat, IsChecked (..), forgetIsChecked)
 import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Managed.Cast as ATen ()
 import qualified Torch.Internal.Managed.Type.Dimname as ATen (dimname_symbol, fromSymbol_s)
@@ -47,12 +52,18 @@ data SSize (size :: Size Nat) where
   SUncheckedSize :: Integer -> SSize 'UncheckedSize
   SSize :: forall size. KnownNat size => SSize ('Size size)
 
+type instance Sing = SSize
+
 type family SizeF (size :: Size Nat) :: Nat where
   SizeF ('Size size) = size
 
-sSize :: forall size. SSize size -> Integer
-sSize (SUncheckedSize size) = size
-sSize SSize = natVal $ Proxy @(SizeF size)
+instance SingKind (Size Nat) where
+  type Demote (Size Nat) = IsChecked Integer
+  fromSing (SUncheckedSize size) = Unchecked size
+  fromSing (SSize :: Sing size) = Checked . natVal $ Proxy @(SizeF size)
+  toSing (Unchecked size) = SomeSing . SUncheckedSize $ size
+  toSing (Checked size) = case someNatVal size of
+    Just (SomeNat (_ :: Proxy size)) -> SomeSing (SSize @size)
 
 class KnownSize (size :: Size Nat) where
   sizeVal :: Size Integer
@@ -72,8 +83,18 @@ data SName (name :: Name Symbol) where
   SUncheckedName :: String -> SName 'UncheckedName
   SName :: forall name. KnownSymbol name => SName ('Name name)
 
+type instance Sing = SName
+
 type family NameF (name :: Name Symbol) :: Symbol where
   NameF ('Name name) = name
+
+instance SingKind (Name Symbol) where
+  type Demote (Name Symbol) = IsChecked String
+  fromSing (SUncheckedName name) = Unchecked name
+  fromSing (SName :: Sing name) = Checked . symbolVal $ Proxy @(NameF name)
+  toSing (Unchecked name) = SomeSing . SUncheckedName $ name
+  toSing (Checked name) = case someSymbolVal name of
+    SomeSymbol (_ :: Proxy name) -> SomeSing (SName @name)
 
 sName :: forall name. SName name -> String
 sName (SUncheckedName name) = name
@@ -97,8 +118,18 @@ data Dim (name :: Type) (size :: Type) where
     Dim name size
   deriving (Eq, Ord, Show)
 
-data SDim (name :: Name Symbol) (size :: Size Nat) where
-  SDim :: forall name size. SName name -> SSize size -> SDim name size
+data SDim (dim :: Dim (Name Symbol) (Size Nat)) where
+  SDim :: forall name size. SName name -> SSize size -> SDim ('Dim name size)
+
+type instance Sing = SDim
+
+instance SingKind (Dim (Name Symbol) (Size Nat)) where
+  type Demote (Dim (Name Symbol) (Size Nat)) = Dim (IsChecked String) (IsChecked Integer)
+  fromSing (SDim name size) = Dim (fromSing name) (fromSing size)
+  toSing (Dim name size) =
+    withSomeSing name $ \name' ->
+      withSomeSing size $ \size' ->
+        SomeSing $ SDim name' size'
 
 pattern (:&:) ::
   forall
@@ -106,13 +137,10 @@ pattern (:&:) ::
     (size :: Size Nat).
   SName name ->
   SSize size ->
-  SDim name size
+  SDim ('Dim name size)
 pattern (:&:) name size = SDim name size
 
 infix 9 :&:
-
-sDim :: forall name size. SDim name size -> Dim String Integer
-sDim (SDim name size) = Dim (sName name) (sSize size)
 
 class KnownDim (dim :: Dim (Name Symbol) (Size Nat)) where
   dimVal :: Dim (Name String) (Size Integer)
@@ -197,6 +225,33 @@ data By (name :: Type) (index :: Type) where
     By name index
   deriving (Show, Eq, Ord)
 
+data SBy (by :: By Symbol Nat) where
+  SByName :: forall name. KnownSymbol name => SBy ('ByName name)
+  SByIndex :: forall index. KnownNat index => SBy ('ByIndex index)
+
+type instance Sing = SBy
+
+-- instance KnownSymbol name => SingI ('ByName name) where
+--   sing = SByName @name
+
+-- instance KnownNat index => SingI ('ByIndex index) where
+--   sing = SByIndex @index
+
+type family ByNameF (by :: By Symbol Nat) :: Symbol where
+  ByNameF ('ByName name) = name
+
+type family ByIndexF (by :: By Symbol Nat) :: Nat where
+  ByIndexF ('ByIndex index) = index
+
+instance SingKind (By Symbol Nat) where
+  type Demote (By Symbol Nat) = By String Integer
+  fromSing (SByName :: Sing by) = ByName . symbolVal $ Proxy @(ByNameF by)
+  fromSing (SByIndex :: Sing by) = ByIndex . natVal $ Proxy @(ByIndexF by)
+  toSing (ByName name) = case someSymbolVal name of
+    SomeSymbol (_ :: Proxy name) -> SomeSing (SByName @name)
+  toSing (ByIndex index) = case someNatVal index of
+    Just (SomeNat (_ :: Proxy index)) -> SomeSing (SByIndex @index)
+
 class KnownBy (by :: By Symbol Nat) where
   byVal :: By String Integer
 
@@ -221,6 +276,22 @@ data SelectDim (by :: Type) where
   UncheckedSelectDim :: forall by. SelectDim by
   -- | Known method of dimension selection, that is, either by name or by index.
   SelectDim :: forall by. by -> SelectDim by
+
+data SSelectDim (selectDim :: SelectDim (By Symbol Nat)) where
+  SUncheckedSelectDim :: By String Integer -> SSelectDim 'UncheckedSelectDim
+  SSelectDim :: forall by. SBy by -> SSelectDim ('SelectDim by)
+
+type instance Sing = SSelectDim
+
+instance SingI (by :: By Symbol Nat) => SingI ('SelectDim by) where
+  sing = SSelectDim $ sing @by
+
+instance SingKind (SelectDim (By Symbol Nat)) where
+  type Demote (SelectDim (By Symbol Nat)) = IsChecked (By String Integer)
+  fromSing (SUncheckedSelectDim by) = Unchecked by
+  fromSing (SSelectDim by) = Checked . fromSing $ by
+  toSing (Unchecked by) = SomeSing . SUncheckedSelectDim $ by
+  toSing (Checked by) = withSomeSing by $ SomeSing . SSelectDim
 
 class KnownSelectDim (selectDim :: SelectDim (By Symbol Nat)) where
   selectDimVal :: SelectDim (By String Integer)
@@ -314,35 +385,34 @@ data Shape (dims :: Type) where
 
 data SShape (shape :: Shape [Dim (Name Symbol) (Size Nat)]) where
   SUncheckedShape :: [Dim String Integer] -> SShape 'UncheckedShape
-  SShape :: forall dims. SDims dims -> SShape ('Shape dims)
+  SShape :: forall dims. SList dims -> SShape ('Shape dims)
 
-sShape :: forall shape. SShape shape -> [Dim String Integer]
-sShape (SUncheckedShape dims) = dims
-sShape (SShape dims) = sDims dims
+type instance Sing = SShape
 
-data SDims (dims :: [Dim (Name Symbol) (Size Nat)]) where
-  SDimsNil :: SDims '[]
-  SDims ::
-    forall name size dims.
-    SDim name size ->
-    SDims dims ->
-    SDims ('Dim name size : dims)
+instance SingKind (Shape [Dim (Name Symbol) (Size Nat)]) where
+  type Demote (Shape [Dim (Name Symbol) (Size Nat)]) = IsChecked [Dim (IsChecked String) (IsChecked Integer)]
+  fromSing (SUncheckedShape shape) =
+    Unchecked
+      . fmap (\(Dim name size) -> Dim (Unchecked name) (Unchecked size))
+      $ shape
+  fromSing (SShape dims) = Checked . fromSing $ dims
+  toSing (Unchecked shape) =
+    SomeSing . SUncheckedShape
+      . fmap (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size))
+      $ shape
+  toSing (Checked shape) = withSomeSing shape $ SomeSing . SShape
 
 pattern (:|:) ::
   forall
     (name :: Name Symbol)
     (size :: Size Nat)
     (dims :: [Dim (Name Symbol) (Size Nat)]).
-  SDim name size ->
-  SDims dims ->
-  SDims ('Dim name size : dims)
-pattern (:|:) dim dims = SDims dim dims
+  SDim ('Dim name size) ->
+  SList dims ->
+  SList ('Dim name size : dims)
+pattern (:|:) dim dims = SCons dim dims
 
 infixr 8 :|:
-
-sDims :: forall dims. SDims dims -> [Dim String Integer]
-sDims SDimsNil = []
-sDims (SDims dim dims) = sDim dim : sDims dims
 
 class KnownShape (shape :: Shape [Dim (Name Symbol) (Size Nat)]) where
   shapeVal :: Shape [Dim (Name String) (Size Integer)]
@@ -393,7 +463,8 @@ instance
 -- GetShapes ('Just ('Shape '[ 'Dim ('Name "*") ('Size 1)])) :: [Shape
 --                                                                 [Dim (Name Symbol) (Size Nat)]]
 -- = '[ 'Shape '[ 'Dim ('Name "*") ('Size 1)]]
-type family GetShapes (f :: k) :: [Shape [Dim (Name Symbol) (Size Nat)]] where
+type GetShapes :: k -> [Shape [Dim (Name Symbol) (Size Nat)]]
+type family GetShapes f where
   GetShapes (a :: Shape [Dim (Name Symbol) (Size Nat)]) = '[a]
   GetShapes (f g) = Concat (GetShapes f) (GetShapes g)
   GetShapes _ = '[]
