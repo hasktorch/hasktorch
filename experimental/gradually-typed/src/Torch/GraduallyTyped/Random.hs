@@ -1,4 +1,3 @@
-{-# LANGUAGE RoleAnnotations #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -6,6 +5,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RoleAnnotations #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -16,10 +16,10 @@ import Data.Int (Int16)
 import Data.Word (Word64)
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (Nat)
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDeviceType, WithDeviceC (..))
+import System.IO.Unsafe (unsafePerformIO)
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDeviceType, SDevice, WithDeviceC (..))
 import qualified Torch.Internal.Managed.Type.Generator as ATen
 import qualified Torch.Internal.Type as ATen
-import System.IO.Unsafe (unsafePerformIO)
 
 data Generator (device :: Device (DeviceType Nat)) where
   UnsafeGenerator ::
@@ -30,6 +30,7 @@ data Generator (device :: Device (DeviceType Nat)) where
     } ->
     Generator device
   NoGenerator :: forall device. Generator device
+
 type role Generator nominal
 
 noGenerator :: forall device. Generator device
@@ -53,18 +54,22 @@ mkGenerator =
         genenerator <- newTVarIO (Just genPtr)
         return $ UnsafeGenerator @device seed device genenerator
 
-checkedGenerator ::
-  forall deviceType.
-  KnownDeviceType deviceType =>
+sMkGenerator ::
+  forall device.
+  SDevice device ->
   Word64 ->
-  IO (Generator ( 'Device deviceType))
-checkedGenerator = mkGenerator @( 'Device deviceType)
-
-uncheckedGenerator ::
-  DeviceType Int16 ->
-  Word64 ->
-  IO (Generator 'UncheckedDevice)
-uncheckedGenerator = mkGenerator @ 'UncheckedDevice
+  IO (Generator device)
+sMkGenerator device =
+  case sDeviceType device of
+    CPU -> do
+      genPtr <- ATen.newCPUGenerator seed
+      genenerator <- newTVarIO (Just genPtr)
+      return $ UnsafeGenerator @device seed device genenerator
+    CUDA deviceId -> do
+      genPtr <- ATen.newCUDAGenerator (fromIntegral deviceId)
+      ATen.generator_set_current_seed genPtr seed
+      genenerator <- newTVarIO (Just genPtr)
+      return $ UnsafeGenerator @device seed device genenerator
 
 withGenerator ::
   forall a device.
