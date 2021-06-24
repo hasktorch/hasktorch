@@ -11,6 +11,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Torch.Tensor where
 
@@ -272,7 +273,7 @@ indexSelect' ::
 indexSelect' dim indexList t = unsafePerformIO $ (cast3 ATen.index_select_tlt) t dim (asTensor indexList)
 
 -- | Slices the input tensor along the selected dimension at the given range.
-slice ::
+sliceDim ::
   -- | dim
   Int ->
   -- | start
@@ -284,7 +285,7 @@ slice ::
   -- | input
   Tensor ->
   Tensor
-slice _dim _start _end _step _self = unsafePerformIO $ (cast5 ATen.slice_tllll) _self _dim _start _end _step
+sliceDim _dim _start _end _step _self = unsafePerformIO $ (cast5 ATen.slice_tllll) _self _dim _start _end _step
 
 isContiguous ::
   Tensor ->
@@ -384,7 +385,7 @@ data None = None
 data Ellipsis = Ellipsis
   deriving (Show, Eq)
 
-data Slice a = Slice a
+newtype Slice a = Slice a
   deriving (Show, Eq)
 
 instance Castable RawTensorIndex (ForeignPtr ATen.TensorIndex) where
@@ -393,6 +394,9 @@ instance Castable RawTensorIndex (ForeignPtr ATen.TensorIndex) where
 
 class TensorIndex a where
   pushIndex :: [RawTensorIndex] -> a -> [RawTensorIndex]
+  toLens :: a -> Lens' Tensor Tensor
+  default toLens :: a -> Lens' Tensor Tensor
+  toLens idx func s = maskedFill s idx <$> func (s ! idx)
 
 instance {-# OVERLAPS #-} TensorIndex None where
   pushIndex vec _ = unsafePerformIO $ do
