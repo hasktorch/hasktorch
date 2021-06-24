@@ -15,6 +15,7 @@ main = do
             pkgs,
             maybe [] (\x -> ["-package-db " <> x <> "/package.conf.d"]) libDir,
             [ "-XDataKinds",
+              "-XPatternSynonyms",
               "-XScopedTypeVariables",
               "-XTypeApplications",
               "-XTypeFamilies",

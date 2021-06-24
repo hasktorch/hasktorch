@@ -56,6 +56,17 @@ data DataType (dType :: Type) where
   DataType :: forall dType. dType -> DataType dType
   deriving (Show)
 
+data SDataType (dType :: DataType DType) where
+  SUncheckedDataType :: DType -> SDataType 'UncheckedDataType
+  SDataType :: forall dType. KnownDType dType => SDataType ('DataType dType)
+
+type family DTypeF (dataType :: DataType DType) :: DType where
+  DTypeF ('DataType dType) = dType
+
+sDType :: forall dataType. SDataType dataType -> DType
+sDType (SUncheckedDataType dataType) = dataType
+sDType SDataType = dTypeVal @(DTypeF dataType)
+
 class KnownDataType (dataType :: DataType DType) where
   dataTypeVal :: DataType DType
 

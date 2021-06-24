@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -13,6 +14,14 @@ data RequiresGradient
   | -- | Gradient computations for this tensor are disabled.
     WithoutGradient
   deriving (Show, Eq)
+
+data SRequiresGradient (requiresGradient :: RequiresGradient) where
+  SWithGradient :: SRequiresGradient 'WithGradient
+  SWithoutGradient :: SRequiresGradient 'WithoutGradient
+
+sRequiresGradient :: SRequiresGradient requiresGradient -> RequiresGradient
+sRequiresGradient SWithGradient = WithGradient
+sRequiresGradient SWithoutGradient = WithoutGradient
 
 class KnownRequiresGradient (requiresGradient :: RequiresGradient) where
   requiresGradientVal :: RequiresGradient

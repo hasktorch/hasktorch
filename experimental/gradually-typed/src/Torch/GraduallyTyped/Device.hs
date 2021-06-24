@@ -43,7 +43,7 @@ class KnownDeviceType (deviceType :: DeviceType Nat) where
 instance KnownDeviceType 'CPU where
   deviceTypeVal = CPU
 
-instance (KnownNat deviceId) => KnownDeviceType ( 'CUDA deviceId) where
+instance (KnownNat deviceId) => KnownDeviceType ('CUDA deviceId) where
   deviceTypeVal = CUDA (fromIntegral . natVal $ Proxy @deviceId)
 
 -- | Data type to represent whether or not the compute device is checked, that is, known to the compiler.
@@ -54,13 +54,24 @@ data Device (deviceType :: Type) where
   Device :: forall deviceType. deviceType -> Device deviceType
   deriving (Show)
 
+data SDevice (deviceType :: Device (DeviceType Nat)) where
+  SUncheckedDevice :: DeviceType Int16 -> SDevice 'UncheckedDevice
+  SDevice :: forall deviceType. KnownDeviceType deviceType => SDevice ('Device deviceType)
+
+type family DeviceTypeF (device :: Device (DeviceType Nat)) :: DeviceType Nat where
+  DeviceTypeF ('Device deviceType) = deviceType
+
+sDeviceType :: forall device deviceType. SDevice device -> DeviceType Int16
+sDeviceType (SUncheckedDevice deviceType) = deviceType
+sDeviceType SDevice = deviceTypeVal @(DeviceTypeF device)
+
 class KnownDevice (device :: Device (DeviceType Nat)) where
   deviceVal :: Device (DeviceType Int16)
 
 instance KnownDevice 'UncheckedDevice where
   deviceVal = UncheckedDevice
 
-instance (KnownDeviceType deviceType) => KnownDevice ( 'Device deviceType) where
+instance (KnownDeviceType deviceType) => KnownDevice ('Device deviceType) where
   deviceVal = Device (deviceTypeVal @deviceType)
 
 class
@@ -80,12 +91,12 @@ instance
   withoutDevice = id
 
 instance
-  ( DeviceConstraint ( 'Device deviceType) (GetDevices f),
+  ( DeviceConstraint ('Device deviceType) (GetDevices f),
     KnownDeviceType deviceType
   ) =>
-  WithDeviceC ( 'Device deviceType) f
+  WithDeviceC ('Device deviceType) f
   where
-  type WithDeviceF ( 'Device deviceType) f = f
+  type WithDeviceF ('Device deviceType) f = f
   withDevice f = f (deviceTypeVal @deviceType)
   withoutDevice = const
 

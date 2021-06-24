@@ -6,6 +6,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -15,6 +16,7 @@
 module Torch.GraduallyTyped.Tensor.Creation
   ( WithCreateC (..),
     ones,
+    sOnes,
     -- checkedOnes,
     uncheckedOnes,
     zeros,
@@ -34,16 +36,16 @@ import Data.Monoid (All (..))
 import GHC.TypeLits (Nat, Symbol)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), KnownDType, WithDataTypeC (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDeviceType, WithDeviceC (..))
+import Torch.GraduallyTyped.DType (DataType (..), KnownDType, SDataType, WithDataTypeC (..), sDType)
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDeviceType, SDevice, WithDeviceC (..), sDeviceType)
 import Torch.GraduallyTyped.Internal.TensorOptions (tensorOptions)
 import Torch.GraduallyTyped.Internal.Void (Void)
-import Torch.GraduallyTyped.Layout (KnownLayoutType, Layout (..), LayoutType (..), WithLayoutC (..))
+import Torch.GraduallyTyped.Layout (KnownLayoutType (layoutTypeVal), Layout (..), LayoutType (..), SLayout (..), WithLayoutC (..), sLayoutType)
 import Torch.GraduallyTyped.Prelude (Catch)
 import Torch.GraduallyTyped.Random (Generator, withGenerator)
-import Torch.GraduallyTyped.RequiresGradient (KnownRequiresGradient, RequiresGradient (..), requiresGradientVal)
+import Torch.GraduallyTyped.RequiresGradient (KnownRequiresGradient, RequiresGradient (..), requiresGradientVal, SRequiresGradient, sRequiresGradient)
 import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Shape (..), Size (..), WithDimC (..), WithShapeC (..), dimName, dimSize)
+import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SShape, Shape (..), Size (..), WithDimC (..), WithShapeC (..), dimName, dimSize, sShape)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
 import Torch.Internal.Cast (cast2, cast3, cast4)
 import qualified Torch.Internal.Managed.TensorFactories as ATen
@@ -51,10 +53,11 @@ import qualified Torch.Internal.Managed.TensorFactories as ATen
 -- $setup
 -- >>> import Data.Int (Int16)
 -- >>> import Torch.DType (DType (..))
--- >>> import Torch.GraduallyTyped.Device (DeviceType (..))
--- >>> import Torch.GraduallyTyped.Layout (LayoutType (..))
--- >>> import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
--- >>> import Torch.GraduallyTyped.Shape (Dim (..))
+-- >>> import Torch.GraduallyTyped.DType (SDataType (..))
+-- >>> import Torch.GraduallyTyped.Device (DeviceType (..), SDevice (..))
+-- >>> import Torch.GraduallyTyped.Layout (LayoutType (..), SLayout (..))
+-- >>> import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (..))
+-- >>> import Torch.GraduallyTyped.Shape (Dim (..), SDims (..), SName (..), SShape (..), SSize (..), pattern (:&:), pattern (:|:))
 
 class
   WithCreateC
@@ -230,6 +233,41 @@ ones =
               | getAll . foldMap (\name -> All $ name == "*") $ names -> cast2 ATen.ones_lo sizes opts
               | otherwise -> cast3 ATen.ones_lNo sizes names opts
        in UnsafeTensor tensor
+
+-- | Create tensor of ones.
+--
+-- >>> shape = SShape $ SName @"batch" :&: SSize @32 :|: SUncheckedName "feature" :&: SUncheckedSize 8 :|: SDimsNil
+-- >>> :type sOnes SWithoutGradient (SLayout @Dense) (SDevice @CPU) (SDataType @Int64) shape
+-- sOnes SWithoutGradient (SLayout @Dense) (SDevice @CPU) (SDataType @Int64) shape
+--   :: Tensor
+--        'WithoutGradient
+--        ('Layout 'Dense)
+--        ('Device 'CPU)
+--        ('DataType 'Int64)
+--        ('Shape
+--           '[ 'Dim ('Name "batch") ('Size 32),
+--              'Dim 'UncheckedName 'UncheckedSize])
+sOnes ::
+  forall requiresGradient layout device dataType shape.
+  SRequiresGradient requiresGradient ->
+  SLayout layout ->
+  SDevice device ->
+  SDataType dataType ->
+  SShape shape ->
+  Tensor requiresGradient layout device dataType shape
+sOnes reqGradient layout device dataType shape =
+  let opts = tensorOptions requiresGradient layoutType deviceType dType
+      tensor = unsafePerformIO $ case (map dimName dims, map dimSize dims) of
+        (names, sizes)
+          | getAll . foldMap (\name -> All $ name == "*") $ names -> cast2 ATen.ones_lo sizes opts
+          | otherwise -> cast3 ATen.ones_lNo sizes names opts
+   in UnsafeTensor tensor
+  where
+    requiresGradient = sRequiresGradient reqGradient
+    layoutType = sLayoutType layout
+    deviceType = sDeviceType device
+    dType = sDType dataType
+    dims = sShape shape
 
 -- checkedOnes ::
 --   forall requiresGradient layoutType deviceType dType dims.
