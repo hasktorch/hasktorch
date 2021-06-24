@@ -33,6 +33,7 @@ where
 import Data.Int (Int16)
 import Data.Kind (Type)
 import Data.Monoid (All (..))
+import Data.Singletons (fromSing)
 import GHC.TypeLits (Nat, Symbol)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
@@ -43,7 +44,7 @@ import Torch.GraduallyTyped.Internal.Void (Void)
 import Torch.GraduallyTyped.Layout (KnownLayoutType (layoutTypeVal), Layout (..), LayoutType (..), SLayout (..), WithLayoutC (..), sLayoutType)
 import Torch.GraduallyTyped.Prelude (Catch)
 import Torch.GraduallyTyped.Random (Generator, withGenerator)
-import Torch.GraduallyTyped.RequiresGradient (KnownRequiresGradient, RequiresGradient (..), requiresGradientVal, SRequiresGradient, sRequiresGradient)
+import Torch.GraduallyTyped.RequiresGradient (KnownRequiresGradient, RequiresGradient (..), SRequiresGradient, requiresGradientVal)
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SShape, Shape (..), Size (..), WithDimC (..), WithShapeC (..), dimName, dimSize, sShape)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
@@ -259,11 +260,11 @@ sOnes reqGradient layout device dataType shape =
   let opts = tensorOptions requiresGradient layoutType deviceType dType
       tensor = unsafePerformIO $ case (map dimName dims, map dimSize dims) of
         (names, sizes)
-          | getAll . foldMap (\name -> All $ name == "*") $ names -> cast2 ATen.ones_lo sizes opts
+          | getAll . foldMap (All . (== "*")) $ names -> cast2 ATen.ones_lo sizes opts
           | otherwise -> cast3 ATen.ones_lNo sizes names opts
    in UnsafeTensor tensor
   where
-    requiresGradient = sRequiresGradient reqGradient
+    requiresGradient = fromSing reqGradient
     layoutType = sLayoutType layout
     deviceType = sDeviceType device
     dType = sDType dataType
@@ -329,6 +330,41 @@ zeros =
               | otherwise -> cast3 ATen.zeros_lNo sizes names opts
        in UnsafeTensor tensor
 
+-- | Create tensor of zeros.
+--
+-- >>> shape = SShape $ SName @"batch" :&: SSize @32 :|: SUncheckedName "feature" :&: SUncheckedSize 8 :|: SDimsNil
+-- >>> :type sZeros SWithoutGradient (SLayout @Dense) (SDevice @CPU) (SDataType @Int64) shape
+-- sZeros SWithoutGradient (SLayout @Dense) (SDevice @CPU) (SDataType @Int64) shape
+--   :: Tensor
+--        'WithoutGradient
+--        ('Layout 'Dense)
+--        ('Device 'CPU)
+--        ('DataType 'Int64)
+--        ('Shape
+--           '[ 'Dim ('Name "batch") ('Size 32),
+--              'Dim 'UncheckedName 'UncheckedSize])
+sZeros ::
+  forall requiresGradient layout device dataType shape.
+  SRequiresGradient requiresGradient ->
+  SLayout layout ->
+  SDevice device ->
+  SDataType dataType ->
+  SShape shape ->
+  Tensor requiresGradient layout device dataType shape
+sZeros reqGradient layout device dataType shape =
+  let opts = tensorOptions requiresGradient layoutType deviceType dType
+      tensor = unsafePerformIO $ case (map dimName dims, map dimSize dims) of
+        (names, sizes)
+          | getAll . foldMap (All . (== "*")) $ names -> cast2 ATen.zeros_lo sizes opts
+          | otherwise -> cast3 ATen.zeros_lNo sizes names opts
+   in UnsafeTensor tensor
+  where
+    requiresGradient = fromSing reqGradient
+    layoutType = sLayoutType layout
+    deviceType = sDeviceType device
+    dType = sDType dataType
+    dims = sShape shape
+
 full ::
   forall requiresGradient layout device dataType shape input.
   ( Scalar input,
@@ -377,6 +413,39 @@ randn = withCreate @(Generator device' -> (Tensor requiresGradient layout device
                     | otherwise -> cast3 ATen.zeros_lNo sizes names opts
                 pure $ UnsafeTensor tensor
             )
+
+sRandn ::
+  forall requiresGradient layout device dataType shape device'.
+  SRequiresGradient requiresGradient ->
+  SLayout layout ->
+  SDevice device ->
+  SDataType dataType ->
+  SShape shape ->
+  Generator device' ->
+  (Tensor requiresGradient layout device dataType shape, Generator device')
+sRandn reqGradient layout device dataType shape =
+  let opts = tensorOptions requiresGradient layoutType deviceType dType
+   in withGenerator
+        ( \genPtr -> do
+            tensor <- case (map dimName dims, map dimSize dims) of
+              (names, sizes)
+                | getAll . foldMap (\name -> All $ name == "*") $ names -> cast3 ATen.randn_lGo sizes genPtr opts
+                | otherwise -> cast4 ATen.randn_lGNo sizes genPtr names opts
+            pure $ UnsafeTensor tensor
+        )
+        ( unsafePerformIO $ do
+            tensor <- case (map dimName dims, map dimSize dims) of
+              (names, sizes)
+                | getAll . foldMap (\name -> All $ name == "*") $ names -> cast2 ATen.zeros_lo sizes opts
+                | otherwise -> cast3 ATen.zeros_lNo sizes names opts
+            pure $ UnsafeTensor tensor
+        )
+  where
+    requiresGradient = fromSing reqGradient
+    layoutType = sLayoutType layout
+    deviceType = sDeviceType device
+    dType = sDType dataType
+    dims = sShape shape
 
 -- checkedRandn ::
 --   forall requiresGradient layoutType deviceType dType dims.

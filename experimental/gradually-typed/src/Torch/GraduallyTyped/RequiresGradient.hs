@@ -2,10 +2,14 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Torch.GraduallyTyped.RequiresGradient where
+
+import Data.Singletons.TH (genSingletons)
 
 -- | Data type to represent whether or not the tensor requires gradient computation.
 data RequiresGradient
@@ -15,13 +19,7 @@ data RequiresGradient
     WithoutGradient
   deriving (Show, Eq)
 
-data SRequiresGradient (requiresGradient :: RequiresGradient) where
-  SWithGradient :: SRequiresGradient 'WithGradient
-  SWithoutGradient :: SRequiresGradient 'WithoutGradient
-
-sRequiresGradient :: SRequiresGradient requiresGradient -> RequiresGradient
-sRequiresGradient SWithGradient = WithGradient
-sRequiresGradient SWithoutGradient = WithoutGradient
+genSingletons [''RequiresGradient]
 
 class KnownRequiresGradient (requiresGradient :: RequiresGradient) where
   requiresGradientVal :: RequiresGradient
