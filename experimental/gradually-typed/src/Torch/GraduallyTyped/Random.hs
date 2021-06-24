@@ -9,7 +9,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Torch.GraduallyTyped.Random (Generator, noGenerator, mkGenerator, checkedGenerator, uncheckedGenerator, withGenerator) where
+module Torch.GraduallyTyped.Random (Generator, noGenerator, mkGenerator, sMkGenerator, withGenerator) where
 
 import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVar, writeTVar)
 import Data.Int (Int16)
@@ -17,7 +17,7 @@ import Data.Word (Word64)
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (Nat)
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDeviceType, SDevice, WithDeviceC (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDeviceType, SDevice, WithDeviceC (..), sDeviceType)
 import qualified Torch.Internal.Managed.Type.Generator as ATen
 import qualified Torch.Internal.Type as ATen
 
@@ -59,17 +59,18 @@ sMkGenerator ::
   SDevice device ->
   Word64 ->
   IO (Generator device)
-sMkGenerator device =
-  case sDeviceType device of
-    CPU -> do
-      genPtr <- ATen.newCPUGenerator seed
-      genenerator <- newTVarIO (Just genPtr)
-      return $ UnsafeGenerator @device seed device genenerator
-    CUDA deviceId -> do
-      genPtr <- ATen.newCUDAGenerator (fromIntegral deviceId)
-      ATen.generator_set_current_seed genPtr seed
-      genenerator <- newTVarIO (Just genPtr)
-      return $ UnsafeGenerator @device seed device genenerator
+sMkGenerator device seed =
+  let deviceType = sDeviceType device
+   in case deviceType of
+        CPU -> do
+          genPtr <- ATen.newCPUGenerator seed
+          genenerator <- newTVarIO (Just genPtr)
+          return $ UnsafeGenerator @device seed deviceType genenerator
+        CUDA deviceId -> do
+          genPtr <- ATen.newCUDAGenerator (fromIntegral deviceId)
+          ATen.generator_set_current_seed genPtr seed
+          genenerator <- newTVarIO (Just genPtr)
+          return $ UnsafeGenerator @device seed deviceType genenerator
 
 withGenerator ::
   forall a device.
