@@ -17,7 +17,7 @@ module Torch.GraduallyTyped.NN.Initialization where
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape (Dim(..),dimSize)
+import Torch.GraduallyTyped.Shape (Dim (..), dimSize)
 import Torch.GraduallyTyped.Tensor.Creation (WithCreateC (..), randn)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mulScalar, subScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
@@ -42,23 +42,19 @@ calculateGain (ForLeakyRelu param) = sqrt (2 / (1 + param ^^ 2))
 calculateFan ::
   [Dim String Integer] ->
   (Integer, Integer)
-calculateFan shape =
-  if dimT < 2
-    then error $ errorPrefix <> "Fan in and fan out can not be computed for tensor with fewer than 2 dimensions"
-    else
-      if dimT == 2
-        then
-          ( numInputFmaps,
-            numOutputFmaps
-          )
-        else
-          ( numInputFmaps * receptiveFieldSize,
-            numOutputFmaps * receptiveFieldSize
-          )
+calculateFan shape
+  | dimT < 2 = error $ errorPrefix <> "Fan in and fan out can not be computed for tensor with fewer than 2 dimensions"
+  | dimT == 2 =
+    ( numInputFmaps,
+      numOutputFmaps
+    )
+  | otherwise =
+    ( numInputFmaps * receptiveFieldSize,
+      numOutputFmaps * receptiveFieldSize
+    )
   where
     dimT = length shape
-    numInputFmaps = dimSize $ shape !! 1
-    numOutputFmaps = dimSize $ shape !! 0
+    numOutputFmaps : numInputFmaps : _ = dimSize <$> shape
     receptiveFieldSize = product $ dimSize <$> tail shape
 
 -- | Xavier uniform initialization

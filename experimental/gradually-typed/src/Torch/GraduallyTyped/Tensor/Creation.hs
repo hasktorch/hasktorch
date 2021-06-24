@@ -24,7 +24,7 @@ module Torch.GraduallyTyped.Tensor.Creation
     uncheckedRandn,
     arangeNaturals,
     eye,
-    eyeSquare
+    eyeSquare,
   )
 where
 
@@ -418,17 +418,17 @@ arangeNaturals =
        in UnsafeTensor tensor
 
 eye ::
-  forall requiresGradient layout device dataType sizeDim1 sizeDim2 shape createOut.
-  ( shape ~ 'Shape '[sizeDim1, sizeDim2],
+  forall requiresGradient layout device dataType rowsDim colsDim shape createOut.
+  ( shape ~ 'Shape '[rowsDim, colsDim],
     createOut ~ Tensor requiresGradient layout device dataType shape,
     KnownRequiresGradient requiresGradient,
-    WithLayoutC layout (WithDeviceF device (WithDataTypeF dataType (WithDimF sizeDim1 (WithDimF sizeDim2 createOut)))),
-    WithDeviceC device (WithDataTypeF dataType (WithDimF sizeDim1 (WithDimF sizeDim2 createOut))),
-    WithDataTypeC dataType (WithDimF sizeDim1 (WithDimF sizeDim2 createOut)),
-    WithDimC sizeDim1 (WithDimF sizeDim2 createOut),
-    WithDimC sizeDim2 createOut
+    WithLayoutC layout (WithDeviceF device (WithDataTypeF dataType (WithDimF rowsDim (WithDimF colsDim createOut)))),
+    WithDeviceC device (WithDataTypeF dataType (WithDimF rowsDim (WithDimF colsDim createOut))),
+    WithDataTypeC dataType (WithDimF rowsDim (WithDimF colsDim createOut)),
+    WithDimC rowsDim (WithDimF colsDim createOut),
+    WithDimC colsDim createOut
   ) =>
-  WithLayoutF layout (WithDeviceF device (WithDataTypeF dataType (WithDimF sizeDim1 (WithDimF sizeDim2 createOut))))
+  WithLayoutF layout (WithDeviceF device (WithDataTypeF dataType (WithDimF rowsDim (WithDimF colsDim createOut))))
 eye =
   withLayout @layout $
     \layoutType ->
@@ -436,17 +436,17 @@ eye =
         \deviceType ->
           withDataType @dataType $
             \dType ->
-              withDim @sizeDim1 $
-                \sizeDim1 ->
-                  withDim @sizeDim2 @createOut $
-                    \sizeDim2 ->
-                      go (requiresGradientVal @requiresGradient) layoutType deviceType dType sizeDim1 sizeDim2
+              withDim @rowsDim $
+                \rowsDim ->
+                  withDim @colsDim @createOut $
+                    \colsDim ->
+                      go (requiresGradientVal @requiresGradient) layoutType deviceType dType rowsDim colsDim
   where
-    go requiresGradient layoutType deviceType dType sizeDim1 sizeDim2 =
+    go requiresGradient layoutType deviceType dType rowsDim colsDim =
       let opts = tensorOptions requiresGradient layoutType deviceType dType
-          Dim _ size1 = sizeDim1
-          Dim _ size2 = sizeDim2
-          tensor = unsafePerformIO $ cast3 ATen.eye_llo (fromInteger size1 :: Int) (fromInteger size2 :: Int) opts
+          Dim _ rows = rowsDim
+          Dim _ cols = colsDim
+          tensor = unsafePerformIO $ cast3 ATen.eye_llo (fromInteger rows :: Int) (fromInteger cols :: Int) opts
        in UnsafeTensor tensor
 
 eyeSquare ::
