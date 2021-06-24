@@ -4,7 +4,7 @@ synopsis:            Functional differentiable programming in Haskell
 -- description:
 homepage:            https://github.com/hasktorch/hasktorch#readme
 license:             BSD3
-author:              Austin Huang
+author:              Hasktorch Contributor Team
 maintainer:          hasktorch@gmail.com
 copyright:           2019 Austin Huang
 category:            Codegen
