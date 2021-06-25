@@ -9,10 +9,10 @@ module Torch.GraduallyTyped.Index.Class where
 
 import Data.Kind (Constraint)
 import Data.Type.Equality (type (==))
-import GHC.TypeLits (CmpNat, KnownNat, Nat, Symbol, TypeError)
+import GHC.TypeLits (CmpNat, Nat, Symbol, TypeError)
 import Torch.GraduallyTyped.Index.Type (Index (..))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name, Size (..))
-import Type.Errors.Pretty (ToErrorMessage, type (%), type (<>))
+import Type.Errors.Pretty (type (<>))
 
 type family IndexOutOfBound (idx :: Nat) (dim :: Dim (Name Symbol) (Size Nat)) where
   IndexOutOfBound idx dim =

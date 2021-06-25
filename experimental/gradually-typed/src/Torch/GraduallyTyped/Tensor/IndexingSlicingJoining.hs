@@ -14,21 +14,21 @@
 
 module Torch.GraduallyTyped.Tensor.IndexingSlicingJoining where
 
-import Data.Kind (Constraint, Type)
-import Data.Singletons (SingKind (..))
+import Data.Kind (Type)
+import Data.Singletons (SingKind (..), fromSing)
 import Foreign.ForeignPtr (ForeignPtr)
-import GHC.TypeLits (CmpNat, KnownNat, Nat, Symbol, TypeError)
+import GHC.TypeLits (Nat, Symbol, TypeError)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.Index.Class (InRangeF)
-import Torch.GraduallyTyped.Index.Type (Index (..), WithIndexC, WithIndexF, withIndex)
+import Torch.GraduallyTyped.Index.Type (SIndex, WithIndexC, WithIndexF, withIndex)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.Prelude (FromMaybe, MapMaybe, forgetIsChecked)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (AddDimF, BroadcastShapesF, GetDimF, GetDimImplF, GetIndexByNameF, InsertDimImplF, NumelF, RemoveDimF, ReplaceDimF, ReplaceDimImplF)
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownShape, KnownSize, Name (..), SShape, SelectDim (..), Shape (..), Size (..), WithSelectDimC (..), WithShapeC (..), dimSize, getDim)
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownShape, Name (..), SShape, SelectDim (..), Shape (..), Size (..), WithSelectDimC (..), WithShapeC (..), dimSize, getDim, SSelectDim)
 import Torch.GraduallyTyped.Tensor.Type (Tensor, shape)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import Torch.HList (HList)
@@ -40,15 +40,8 @@ import qualified Torch.Internal.Type as ATen
 import Type.Errors.Pretty (ToErrorMessage, type (%), type (<>))
 
 -- $setup
--- >>> import Torch.GraduallyTyped.Tensor.Type (shape)
--- >>> import Torch.GraduallyTyped.Tensor.Creation (ones, randn, arangeNaturals)
--- >>> import Torch.DType (DType (..))
--- >>> import Torch.GraduallyTyped.DType (DataType (..))
--- >>> import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
--- >>> import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
--- >>> import Torch.GraduallyTyped.Random (mkGenerator)
--- >>> import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
--- >>> import Torch.GraduallyTyped.Shape (Dim (..), Shape (..))
+-- >>> import Data.Singletons.Prelude.List (SList (..))
+-- >>> import Torch.GraduallyTyped
 
 class HasCat (selectDim :: SelectDim (By Symbol Nat)) k (c :: k -> Type) (a :: k) where
   type CatF selectDim a c :: Type
@@ -255,8 +248,8 @@ reshape = withShape @shape' @(Tensor requiresGradient layout device dataType sha
 -- but with the specified shape:
 --
 -- >>> g <- sMkGenerator (SDevice SCPU) 0
--- >>> (input, _) = sRandn SWithGradient (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SName @"*" :&: SSzie @4 :|: SNil) g
--- >>> output = sReshape (SShape $ SName @"*" :&: SSize @2 :|: SName @"*" :*: SSize @2 :|: SNil) input
+-- >>> (input, _) = sRandn SWithGradient (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SName @"*" :&: SSize @4 :|: SNil) g
+-- >>> output = sReshape (SShape $ SName @"*" :&: SSize @2 :|: SName @"*" :&: SSize @2 :|: SNil) input
 -- >>> :type output
 -- output
 --   :: Tensor
@@ -343,11 +336,11 @@ type family TransposeF (selectDim0 :: SelectDim (By Symbol Nat)) (selectDim1 :: 
     'Shape
       ( TransposeIndexIndexDimsF
           ( FromMaybe
-              (TypeError (TransposeBy0Message (ByName name0) dims))
+              (TypeError (TransposeBy0Message ('ByName name0) dims))
               (GetIndexByNameF name0 dims)
           )
           ( FromMaybe
-              (TypeError (TransposeBy1Message (ByName name1) dims))
+              (TypeError (TransposeBy1Message ('ByName name1) dims))
               (GetIndexByNameF name1 dims)
           )
           dims
@@ -367,23 +360,23 @@ type family TransposeF (selectDim0 :: SelectDim (By Symbol Nat)) (selectDim1 :: 
 type family TransposeIndexIndexDimsF (index0 :: Nat) (index1 :: Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) :: [Dim (Name Symbol) (Size Nat)] where
   TransposeIndexIndexDimsF index0 index1 dims =
     FromMaybe
-      (TypeError (TransposeBy1Message (ByIndex index1) dims))
+      (TypeError (TransposeBy1Message ('ByIndex index1) dims))
       ( ReplaceDimImplF
-          (ByIndex index1)
+          ('ByIndex index1)
           ( FromMaybe
-              (TypeError (TransposeBy0Message (ByIndex index0) dims))
+              (TypeError (TransposeBy0Message ('ByIndex index0) dims))
               ( ReplaceDimImplF
-                  (ByIndex index0)
+                  ('ByIndex index0)
                   dims
                   ( FromMaybe
-                      (TypeError (TransposeBy1Message (ByIndex index1) dims))
-                      (GetDimImplF (ByIndex index1) dims)
+                      (TypeError (TransposeBy1Message ('ByIndex index1) dims))
+                      (GetDimImplF ('ByIndex index1) dims)
                   )
               )
           )
           ( FromMaybe
-              (TypeError (TransposeBy0Message (ByIndex index0) dims))
-              (GetDimImplF (ByIndex index0) dims)
+              (TypeError (TransposeBy0Message ('ByIndex index0) dims))
+              (GetDimImplF ('ByIndex index0) dims)
           )
       )
 
@@ -456,7 +449,7 @@ type family UnsqueezeF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape 
     'Shape
       ( UnsqueezeIndexDimsF
           ( FromMaybe
-              (TypeError (UnsqueezeByMessage (ByName name) dims))
+              (TypeError (UnsqueezeByMessage ('ByName name) dims))
               (GetIndexByNameF name dims)
           )
           dims
@@ -466,9 +459,9 @@ type family UnsqueezeF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape 
 type family UnsqueezeIndexDimsF (index :: Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) :: [Dim (Name Symbol) (Size Nat)] where
   UnsqueezeIndexDimsF index dims =
     FromMaybe
-      (TypeError (UnsqueezeByMessage (ByIndex index) dims))
+      (TypeError (UnsqueezeByMessage ('ByIndex index) dims))
       ( InsertDimImplF
-          (ByIndex index)
+          ('ByIndex index)
           dims
           ('Dim ('Name "*") ('Size 1))
       )
@@ -538,8 +531,53 @@ select = withSelectDim @selectDim $
         let dim = unsafePerformIO . getDim selectDim $ shape input
             size = fromInteger $ dimSize dim
 
-        if 0 <= index && index < size
+        if index < size
           then case selectDim of
             ByName name -> unsafePerformIO $ cast3 ATen.tensor_select_nl input name (fromIntegral index :: Int)
             ByIndex dimIndex -> unsafePerformIO $ cast3 ATen.tensor_select_ll input (fromIntegral dimIndex :: Int) (fromIntegral index :: Int)
           else error $ "Out of bound index " <> show index <> " for dimension " <> show dim
+
+-- | Slices the self tensor along the selected dimension at the given index. This function returns a view of the original tensor with the given dimension removed.
+--
+-- >>> nats = sArangeNaturals SWithoutGradient (SLayout SDense) (SDevice SCPU) (SDataType SInt32) (SSize @8)
+-- >>> input = sReshape (SShape $ SName @"*" :&: SSize @4 :|: SName @"*" :&: SSize @2 :|: SNil) nats
+-- >>> input
+-- Tensor Int32 [4,2] [[ 0,  1],
+--                     [ 2,  3],
+--                     [ 4,  5],
+--                     [ 6,  7]]
+--
+-- `index` can be provided at compile-time:
+-- >>> sSelect (SSelectDim (SByIndex @0)) (SIndex @1) input
+-- Tensor Int32 [2] [ 2,  3]
+--
+-- `index` can also be provided at runtime:
+-- >>> sSelect (SSelectDim (SByIndex @0)) (SUncheckedIndex 1) input
+-- Tensor Int32 [2] [ 2,  3]
+--
+-- It produces a runtime error if the `index` is too large:
+-- >>> sSelect (SSelectDim (SByIndex @0)) (SUncheckedIndex 10) input
+-- *** Exception: Out of bound index 10 for dimension Dim {dimName = "*", dimSize = 4}
+-- CallStack (from HasCallStack):
+--   error, called at ...
+sSelect ::
+  forall selectDim index requiresGradient layout device dataType shapeIn shapeOut.
+  ( index `InRangeF` GetDimF selectDim shapeIn,
+    shapeOut ~ RemoveDimF selectDim shapeIn,
+    KnownShape shapeIn
+  ) =>
+  SSelectDim selectDim ->
+  SIndex index ->
+  Tensor requiresGradient layout device dataType shapeIn ->
+  Tensor requiresGradient layout device dataType shapeOut
+sSelect sSelectDim sIndex input =
+  let dim = unsafePerformIO . getDim selectDim $ shape input
+      size = fromInteger $ dimSize dim
+   in if index < size
+        then case selectDim of
+          ByName name -> unsafePerformIO $ cast3 ATen.tensor_select_nl input name (fromIntegral index :: Int)
+          ByIndex dimIndex -> unsafePerformIO $ cast3 ATen.tensor_select_ll input (fromIntegral dimIndex :: Int) (fromIntegral index :: Int)
+        else error $ "Out of bound index " <> show index <> " for dimension " <> show dim
+  where
+    selectDim = forgetIsChecked . fromSing $ sSelectDim
+    index = forgetIsChecked . fromSing $ sIndex

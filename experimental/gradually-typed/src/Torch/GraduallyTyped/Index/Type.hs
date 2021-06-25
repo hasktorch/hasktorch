@@ -13,16 +13,35 @@ module Torch.GraduallyTyped.Index.Type where
 
 import Data.Kind (Type)
 import Data.Proxy (Proxy (..))
-import GHC.TypeLits (KnownNat, Nat, Symbol, natVal)
-import Torch.GraduallyTyped.Shape (By, SelectDim (..), Shape, Dim(..), Name (..), Size (..))
+import Data.Singletons (Sing, SingKind (..), SomeSing (..))
+import GHC.TypeNats (KnownNat, Nat, SomeNat (..), natVal, someNatVal)
+import Numeric.Natural (Natural)
+import Torch.GraduallyTyped.Prelude (IsChecked (..))
 
 data Index (index :: Type) where
   UncheckedIndex :: forall index. Index index
   Index :: forall index. index -> Index index
   deriving (Show)
 
+data SIndex (index :: Index Nat) where
+  SUncheckedIndex :: Natural -> SIndex 'UncheckedIndex
+  SIndex :: forall index. KnownNat index => SIndex ('Index index)
+
+type instance Sing = SIndex
+
+type family IndexF (index :: Index Nat) :: Nat where
+  IndexF ('Index index) = index
+
+instance SingKind (Index Nat) where
+  type Demote (Index Nat) = IsChecked Natural
+  fromSing (SUncheckedIndex index) = Unchecked index
+  fromSing (SIndex :: SIndex index) = Checked . natVal $ Proxy @(IndexF index)
+  toSing (Unchecked index) = SomeSing $ SUncheckedIndex index
+  toSing (Checked index) = case someNatVal index of
+    SomeNat (_ :: Proxy index) -> SomeSing (SIndex @index)
+
 class KnownIndex (index :: Index Nat) where
-  indexVal :: Index Integer
+  indexVal :: Index Natural
 
 instance KnownIndex 'UncheckedIndex where
   indexVal = UncheckedIndex
@@ -32,11 +51,11 @@ instance KnownNat index => KnownIndex ('Index index) where
 
 class WithIndexC (index :: Index Nat) (f :: Type) where
   type WithIndexF index f :: Type
-  withIndex :: (Integer -> f) -> WithIndexF index f
-  withoutIndex :: WithIndexF index f -> (Integer -> f)
+  withIndex :: (Natural -> f) -> WithIndexF index f
+  withoutIndex :: WithIndexF index f -> (Natural -> f)
 
 instance WithIndexC 'UncheckedIndex f where
-  type WithIndexF 'UncheckedIndex f = Integer -> f
+  type WithIndexF 'UncheckedIndex f = Natural -> f
   withIndex = id
   withoutIndex = id
 
