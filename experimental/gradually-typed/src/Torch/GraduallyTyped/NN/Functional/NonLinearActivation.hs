@@ -14,19 +14,16 @@ module Torch.GraduallyTyped.NN.Functional.NonLinearActivation where
 import Data.Singletons (SingKind (..))
 import GHC.TypeLits (Nat, Symbol, TypeError)
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
-import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.Prelude (forgetIsChecked)
-import Torch.GraduallyTyped.Random (mkGenerator)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (WithGradient))
-import Torch.GraduallyTyped.Shape (By (..), Dim (..), GetDimImplF, Name (..), SSelectDim (..), SelectDim (..), Shape (..), Size (..), WithSelectDimC (..))
-import Torch.GraduallyTyped.Tensor.Creation (randn)
+import Torch.GraduallyTyped.Shape (By (..), Dim (..), GetDimImplF, Name (..), SSelectDim (..), SelectDim (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.Internal.Cast (cast2)
 import qualified Torch.Internal.Managed.Native as ATen
 import Type.Errors.Pretty (type (%), type (<>))
+
+-- $setup
+-- >>> import Data.Singletons.Prelude.List (SList (..))
+-- >>> import Torch.GraduallyTyped
 
 type SoftMaxErrorMessage (by :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) =
   "Cannot apply softmax on the dimension matching"
@@ -56,9 +53,9 @@ type family SoftmaxF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape [D
 -- Softmax is applied to all slices along 'selectDim',
 -- and will re-scale them so that the elements lie in the range \([0, 1]\) and sum to \(1\):
 --
--- >>> g <- sMkGenerator SDevice @'CPU 0
--- >>> (input, _) = sRandn SWithGradient (SLayout @'Dense) (SDevice @'CPU) (SDataType @'Float) (SShape $ SName @"batch" :&: SSize @32 :|: SName @"feature" :&: SSize @8 :|: SNil) g
--- >>> result = softmax (SSelectDim @('ByName "feature")) input
+-- >>> g <- sMkGenerator (SDevice SCPU) 0
+-- >>> (input, _) = sRandn SWithGradient (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SName @"batch" :&: SSize @32 :|: SName @"feature" :&: SSize @8 :|: SNil) g
+-- >>> result = softmax (SSelectDim (SByName @"feature")) input
 -- >>> :type result
 -- result
 --   :: Tensor

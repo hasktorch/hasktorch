@@ -16,8 +16,8 @@
 
 module Torch.GraduallyTyped.DType where
 
-import Data.Kind (Constraint, Type)
-import Data.Singletons (Sing (..), SingI (..), SingKind (..), SomeSing (..), withSomeSing)
+import Data.Kind (Type)
+import Data.Singletons (Sing, SingKind (..), SomeSing (..), withSomeSing)
 import Data.Singletons.TH (genSingletons)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.Prelude (Concat, IsChecked (..))

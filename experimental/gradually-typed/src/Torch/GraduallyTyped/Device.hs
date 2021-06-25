@@ -27,9 +27,8 @@ module Torch.GraduallyTyped.Device where
 import Data.Int (Int16)
 import Data.Kind (Constraint, Type)
 import Data.Proxy (Proxy (..))
-import Data.Singletons (Sing (..), SingI (..), SingKind (..), SomeSing (..), withSomeSing)
-import Data.Singletons.TH (genSingletons)
-import GHC.TypeLits (KnownNat (..), Nat, SomeNat (..), natVal, someNatVal)
+import Data.Singletons (Sing, SingKind (..), SomeSing (..), withSomeSing)
+import GHC.TypeLits (KnownNat, Nat, SomeNat (..), natVal, someNatVal)
 import Torch.GraduallyTyped.Prelude (Concat, IsChecked (..))
 import qualified Torch.Internal.Managed.Cast as ATen ()
 

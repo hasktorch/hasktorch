@@ -18,8 +18,10 @@ module Torch.GraduallyTyped.Tensor.Creation
     ones,
     sOnes,
     zeros,
+    sZeros,
     full,
     randn,
+    sRandn,
     arangeNaturals,
     eye,
     eyeSquare,
@@ -33,12 +35,12 @@ import Data.Singletons (fromSing)
 import GHC.TypeLits (Nat, Symbol)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), KnownDType, SDataType, WithDataTypeC (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDeviceType, SDevice, WithDeviceC (..))
+import Torch.GraduallyTyped.DType (DataType (..), SDataType, WithDataTypeC (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice, WithDeviceC (..))
 import Torch.GraduallyTyped.Internal.TensorOptions (tensorOptions)
 import Torch.GraduallyTyped.Internal.Void (Void)
-import Torch.GraduallyTyped.Layout (KnownLayoutType (layoutTypeVal), Layout (..), LayoutType (..), SLayout (..), WithLayoutC (..))
-import Torch.GraduallyTyped.Prelude (Catch, forgetIsChecked)
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), WithLayoutC (..))
+import Torch.GraduallyTyped.Prelude (forgetIsChecked)
 import Torch.GraduallyTyped.Random (Generator, withGenerator)
 import Torch.GraduallyTyped.RequiresGradient (KnownRequiresGradient, RequiresGradient (..), SRequiresGradient, requiresGradientVal)
 import Torch.GraduallyTyped.Scalar (Scalar)
@@ -49,12 +51,8 @@ import qualified Torch.Internal.Managed.TensorFactories as ATen
 
 -- $setup
 -- >>> import Data.Int (Int16)
--- >>> import Torch.DType (DType (..))
--- >>> import Torch.GraduallyTyped.DType (SDataType (..))
--- >>> import Torch.GraduallyTyped.Device (DeviceType (..), SDevice (..))
--- >>> import Torch.GraduallyTyped.Layout (LayoutType (..), SLayout (..))
--- >>> import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (..))
--- >>> import Torch.GraduallyTyped.Shape (Dim (..), SDims (..), SName (..), SShape (..), SSize (..), pattern (:&:), pattern (:|:))
+-- >>> import Data.Singletons.Prelude.List (SList (..))
+-- >>> import Torch.GraduallyTyped
 
 class
   WithCreateC
@@ -231,11 +229,11 @@ ones =
               | otherwise -> cast3 ATen.ones_lNo sizes names opts
        in UnsafeTensor tensor
 
--- | Create tensor of ones.
+-- | Create a tensor of ones.
 --
--- >>> shape = SShape $ SName @"batch" :&: SSize @32 :|: SUncheckedName "feature" :&: SUncheckedSize 8 :|: SDimsNil
--- >>> :type sOnes SWithoutGradient (SLayout @Dense) (SDevice @CPU) (SDataType @Int64) shape
--- sOnes SWithoutGradient (SLayout @Dense) (SDevice @CPU) (SDataType @Int64) shape
+-- >>> shape = SShape $ SName @"batch" :&: SSize @32 :|: SUncheckedName "feature" :&: SUncheckedSize 8 :|: SNil
+-- >>> :type sOnes SWithoutGradient (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape
+-- sOnes SWithoutGradient (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape
 --   :: Tensor
 --        'WithoutGradient
 --        ('Layout 'Dense)
@@ -292,11 +290,11 @@ zeros =
               | otherwise -> cast3 ATen.zeros_lNo sizes names opts
        in UnsafeTensor tensor
 
--- | Create tensor of zeros.
+-- | Create a tensor of zeros.
 --
--- >>> shape = SShape $ SName @"batch" :&: SSize @32 :|: SUncheckedName "feature" :&: SUncheckedSize 8 :|: SDimsNil
--- >>> :type sZeros SWithoutGradient (SLayout @Dense) (SDevice @CPU) (SDataType @Int64) shape
--- sZeros SWithoutGradient (SLayout @Dense) (SDevice @CPU) (SDataType @Int64) shape
+-- >>> shape = SShape $ SName @"batch" :&: SSize @32 :|: SUncheckedName "feature" :&: SUncheckedSize 8 :|: SNil
+-- >>> :type sZeros SWithoutGradient (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape
+-- sZeros SWithoutGradient (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape
 --   :: Tensor
 --        'WithoutGradient
 --        ('Layout 'Dense)
