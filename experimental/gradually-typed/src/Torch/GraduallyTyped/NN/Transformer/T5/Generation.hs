@@ -31,16 +31,16 @@ import Text.Parser.Token (TokenParsing (..))
 import Torch.DType (DType (..))
 import Torch.Data.Parser (Parser, combine, isNotToken, isString, isToken, parseString, recurse, satisfy, scan, token)
 import Torch.GraduallyTyped.DType (DataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (logSoftmax)
 import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5DataType, T5GenerationInput (..), T5Input (..), T5Model (..), T5Output (..), mkT5Input, t5EOSTokenId)
 import Torch.GraduallyTyped.NN.Transformer.T5.Small (T5Small)
-import Torch.GraduallyTyped.Random (Generator, mkGenerator)
+import Torch.GraduallyTyped.Random (Generator, sMkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownShape, Name (..), SelectDim (..), Shape (..), Size (..))
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownShape, Name (..), SBy (..), SSelectDim (..), SelectDim (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (expand)
 import Torch.GraduallyTyped.Tensor.MathOperations.Comparison (Order (..), Sorted (..), sort)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..), shape)
@@ -226,7 +226,7 @@ runBeamSearch maxSteps beamSize model input g =
                in case forward model (T5GenerationInput decoderInput encoderOutput' inputPaddingMask) g of
                     (T5Output decoderOutput _ _, g') -> (T5Output decoderOutput encoderOutput inputPaddingMask, g')
       put (Just (encoderOutput, inputPaddingMask), g')
-      case logSoftmax @('SelectDim ('ByIndex 2)) decoderOutput of
+      case logSoftmax (SSelectDim $ SByIndex @2) decoderOutput of
         UnsafeTensor t -> pure . Torch.Tensor.asValue . Torch.Tensor.Unsafe $ t
     mkHypothesis :: Hypothesis 'Unfinished Int [Int] -> Int -> Float -> SomeHypothesis Int [Int]
     mkHypothesis previousHypothesis token logProb
@@ -251,11 +251,12 @@ testBeamSearch = do
     initialize
       @(T5Small ('Device 'CPU))
       "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-small.pt"
-  g <- mkGenerator @('Device CPU) 0
+  g <- sMkGenerator (SDevice SCPU) 0
   Beams finished _ <- last <$> runBeamSearch 50 1 model input g
   print $ finalValue <$> finished
-  -- let tmp = parseString @[] (transParser t5Vocab t5Text) . finalValue <$> finished
-  -- print tmp
+
+-- let tmp = parseString @[] (transParser t5Vocab t5Text) . finalValue <$> finished
+-- print tmp
 
 next ::
   forall t b i a.
@@ -405,7 +406,7 @@ getIs n model input = do
     put (Just (encoderOutput, inputPaddingMask), g')
     pure decoderOutput
   case sort @('SelectDim ('ByIndex 2)) Descending
-    . logSoftmax @('SelectDim ('ByIndex 2))
+    . logSoftmax (SSelectDim $ SByIndex @2)
     $ decoderOutput of
     Sorted _ (UnsafeTensor indices) ->
       let indices' = take n . last . head . Torch.Tensor.asValue @[[[Int]]] . Torch.Tensor.Unsafe $ indices

@@ -1,6 +1,5 @@
 module Torch.GraduallyTyped
   ( module Torch.Data,
-    module Torch.GraduallyTyped,
     module Torch.GraduallyTyped.Prelude,
     module Torch.GraduallyTyped.Autograd,
     module Torch.GraduallyTyped.NN,

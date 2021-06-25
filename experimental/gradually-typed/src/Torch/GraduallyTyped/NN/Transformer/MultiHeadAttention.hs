@@ -61,7 +61,7 @@ import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Random (Generator, mkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape (BroadcastShapesF, By (..), Dim (..), KnownDim (..), KnownShape, Name (..), SelectDim (..), Shape (..), Size (..), WithDimC (..), WithShapeC (..), getDim, unifyDims, type (!))
+import Torch.GraduallyTyped.Shape (BroadcastShapesF, By (..), Dim (..), KnownDim (..), KnownShape, Name (..), SBy (..), SSelectDim (..), SelectDim (..), Shape (..), Size (..), WithDimC (..), WithShapeC (..), getDim, unifyDims, type (!))
 import Torch.GraduallyTyped.Tensor.Creation (ones)
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (ReshapeF, TransposeF, reshape, transpose)
 import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (MatmulF, matmul)
@@ -824,7 +824,7 @@ instance
                   )
                   scaling
               >>>= ireturn . (`add` attentionBias)
-              >>>= IxState . forward mhaDropout . softmax @('SelectDim ('ByIndex 3))
+              >>>= IxState . forward mhaDropout . softmax (SSelectDim $ SByIndex @3)
           v =
             ireturn value
               >>>= IxState . forward mhaVInProj

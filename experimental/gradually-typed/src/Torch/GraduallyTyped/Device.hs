@@ -13,6 +13,8 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -25,8 +27,9 @@ module Torch.GraduallyTyped.Device where
 import Data.Int (Int16)
 import Data.Kind (Constraint, Type)
 import Data.Proxy (Proxy (..))
-import GHC.TypeLits (KnownNat (..), Nat, natVal)
-import Torch.GraduallyTyped.Prelude (Concat)
+import Data.Singletons (Sing, SingKind (..), SomeSing (..), withSomeSing)
+import GHC.TypeLits (KnownNat, Nat, SomeNat (..), natVal, someNatVal)
+import Torch.GraduallyTyped.Prelude (Concat, IsChecked (..))
 import qualified Torch.Internal.Managed.Cast as ATen ()
 
 -- | Data type to represent compute devices.
@@ -36,6 +39,23 @@ data DeviceType (deviceId :: Type) where
   -- | The tensor is stored the memory of the GPU with ID 'deviceId'.
   CUDA :: forall deviceId. deviceId -> DeviceType deviceId
   deriving (Show)
+
+data SDeviceType (deviceType :: DeviceType Nat) where
+  SCPU :: SDeviceType 'CPU
+  SCUDA :: forall deviceId. KnownNat deviceId => SDeviceType ('CUDA deviceId)
+
+type instance Sing = SDeviceType
+
+type family CUDAF (deviceType :: DeviceType Nat) :: Nat where
+  CUDAF ('CUDA deviceId) = deviceId
+
+instance SingKind (DeviceType Nat) where
+  type Demote (DeviceType Nat) = DeviceType Int16
+  fromSing SCPU = CPU
+  fromSing (SCUDA :: Sing deviceId) = CUDA . fromIntegral . natVal $ Proxy @(CUDAF deviceId)
+  toSing CPU = SomeSing SCPU
+  toSing (CUDA deviceId) = case someNatVal (fromIntegral deviceId) of
+    Just (SomeNat (_ :: Proxy deviceId)) -> SomeSing (SCUDA @deviceId)
 
 class KnownDeviceType (deviceType :: DeviceType Nat) where
   deviceTypeVal :: DeviceType Int16
@@ -56,14 +76,16 @@ data Device (deviceType :: Type) where
 
 data SDevice (deviceType :: Device (DeviceType Nat)) where
   SUncheckedDevice :: DeviceType Int16 -> SDevice 'UncheckedDevice
-  SDevice :: forall deviceType. KnownDeviceType deviceType => SDevice ('Device deviceType)
+  SDevice :: forall deviceType. SDeviceType deviceType -> SDevice ('Device deviceType)
 
-type family DeviceTypeF (device :: Device (DeviceType Nat)) :: DeviceType Nat where
-  DeviceTypeF ('Device deviceType) = deviceType
+type instance Sing = SDevice
 
-sDeviceType :: forall device deviceType. SDevice device -> DeviceType Int16
-sDeviceType (SUncheckedDevice deviceType) = deviceType
-sDeviceType SDevice = deviceTypeVal @(DeviceTypeF device)
+instance SingKind (Device (DeviceType Nat)) where
+  type Demote (Device (DeviceType Nat)) = IsChecked (DeviceType Int16)
+  fromSing (SUncheckedDevice deviceType) = Unchecked deviceType
+  fromSing (SDevice deviceType) = Checked . fromSing $ deviceType
+  toSing (Unchecked deviceType) = SomeSing . SUncheckedDevice $ deviceType
+  toSing (Checked deviceType) = withSomeSing deviceType $ SomeSing . SDevice
 
 class KnownDevice (device :: Device (DeviceType Nat)) where
   deviceVal :: Device (DeviceType Int16)
@@ -115,7 +137,8 @@ type family DeviceConstraint (device :: Device (DeviceType Nat)) (devices :: [De
 -- >>> :kind! GetDevices ('Just ('Device ('CUDA 0)))
 -- GetDevices ('Just ('Device ('CUDA 0))) :: [Device (DeviceType Nat)]
 -- = '[ 'Device ('CUDA 0)]
-type family GetDevices (f :: k) :: [Device (DeviceType Nat)] where
+type GetDevices :: k -> [Device (DeviceType Nat)]
+type family GetDevices f where
   GetDevices (a :: Device (DeviceType Nat)) = '[a]
   GetDevices (f g) = Concat (GetDevices f) (GetDevices g)
   GetDevices _ = '[]
