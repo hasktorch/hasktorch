@@ -15,6 +15,7 @@
 module Torch.GraduallyTyped.Tensor.IndexingSlicingJoining where
 
 import Data.Kind (Constraint, Type)
+import Data.Singletons (SingKind (..))
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (CmpNat, KnownNat, Nat, Symbol, TypeError)
 import System.IO.Unsafe (unsafePerformIO)
@@ -24,10 +25,10 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.Index.Class (InRangeF)
 import Torch.GraduallyTyped.Index.Type (Index (..), WithIndexC, WithIndexF, withIndex)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
-import Torch.GraduallyTyped.Prelude (FromMaybe, MapMaybe)
+import Torch.GraduallyTyped.Prelude (FromMaybe, MapMaybe, forgetIsChecked)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (AddDimF, BroadcastShapesF, GetDimF, GetDimImplF, GetIndexByNameF, InsertDimImplF, NumelF, RemoveDimF, ReplaceDimF, ReplaceDimImplF)
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownShape, KnownSize, Name (..), SelectDim (..), Shape (..), Size (..), WithSelectDimC (..), WithShapeC (..), dimSize, getDim)
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownShape, KnownSize, Name (..), SShape, SelectDim (..), Shape (..), Size (..), WithSelectDimC (..), WithShapeC (..), dimSize, getDim)
 import Torch.GraduallyTyped.Tensor.Type (Tensor, shape)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import Torch.HList (HList)
@@ -249,6 +250,49 @@ reshape ::
   WithShapeF shape' (Tensor requiresGradient layout device dataType shape -> Tensor requiresGradient layout device dataType shape'')
 reshape = withShape @shape' @(Tensor requiresGradient layout device dataType shape -> Tensor requiresGradient layout device dataType shape'') $ \dims' input ->
   unsafePerformIO $ cast2 ATen.reshape_tl input (fmap dimSize dims')
+
+-- | Returns a tensor with the same data and number of elements as the input tensor,
+-- but with the specified shape:
+--
+-- >>> g <- sMkGenerator (SDevice SCPU) 0
+-- >>> (input, _) = sRandn SWithGradient (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SName @"*" :&: SSzie @4 :|: SNil) g
+-- >>> output = sReshape (SShape $ SName @"*" :&: SSize @2 :|: SName @"*" :*: SSize @2 :|: SNil) input
+-- >>> :type output
+-- output
+--   :: Tensor
+--        'WithGradient
+--        ('Layout 'Dense)
+--        ('Device 'CPU)
+--        ('DataType 'Float)
+--        ('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 2)])
+--
+-- At the value level, a single dimension may be '-1',
+-- in which case it is inferred from the remaining dimensions and the number of elements in the input:
+--
+-- >>> output' = sReshape (SShape $ SUncheckedName "*" :&: SUncheckedSize (-1) :|: SNil) output
+-- >>> :type output'
+-- output'
+--   :: Tensor
+--        'WithGradient
+--        ('Layout 'Dense)
+--        ('Device 'CPU)
+--        ('DataType 'Float)
+--        'UncheckedShape
+-- >>> shape output'
+-- [Dim {dimName = "*", dimSize = 4}]
+sReshape ::
+  forall shape' requiresGradient layout device dataType shape shape''.
+  (shape'' ~ ReshapeF shape shape') =>
+  SShape shape' ->
+  Tensor requiresGradient layout device dataType shape ->
+  Tensor requiresGradient layout device dataType shape''
+sReshape shape' input =
+  let dimSizes =
+        fmap (\(Dim _ size) -> forgetIsChecked size)
+          . forgetIsChecked
+          . fromSing
+          $ shape'
+   in unsafePerformIO $ cast2 ATen.reshape_tl input dimSizes
 
 type TransposeBy0Message (by0 :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) =
   "Cannot transpose the tensor with the dimensions"
