@@ -1,6 +1,5 @@
 module Torch.GraduallyTyped.NN
-  ( module Torch.GraduallyTyped.NN,
-    module Torch.GraduallyTyped.NN.Class,
+  ( module Torch.GraduallyTyped.NN.Class,
     module Torch.GraduallyTyped.NN.Initialization,
     module Torch.GraduallyTyped.NN.Linear,
     module Torch.GraduallyTyped.NN.Transformer,

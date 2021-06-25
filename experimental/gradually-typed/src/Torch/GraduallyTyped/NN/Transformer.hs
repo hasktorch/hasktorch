@@ -17,8 +17,7 @@
 {-# LANGUAGE NoStarIsType #-}
 
 module Torch.GraduallyTyped.NN.Transformer
-  ( module Torch.GraduallyTyped.NN.Transformer,
-    module Torch.GraduallyTyped.NN.Transformer.BART,
+  ( module Torch.GraduallyTyped.NN.Transformer.BART,
     module Torch.GraduallyTyped.NN.Transformer.BERT,
     module Torch.GraduallyTyped.NN.Transformer.Block,
     module Torch.GraduallyTyped.NN.Transformer.CrossAttention,
