@@ -16,17 +16,24 @@
 
 module Torch.GraduallyTyped.Tensor.Creation
   ( sOnes,
+    ones,
     sZeros,
+    zeros,
     sFull,
+    full,
     sRandn,
+    randn,
     sArangeNaturals,
+    arangeNaturals,
     sEye,
+    eye,
     sEyeSquare,
+    eyeSquare,
   )
 where
 
 import Data.Monoid (All (..))
-import Data.Singletons (fromSing)
+import Data.Singletons (SingI (..), SingKind (fromSing))
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.GraduallyTyped.DType (SDataType)
 import Torch.GraduallyTyped.Device (SDevice)
@@ -85,6 +92,12 @@ sOnes reqGradient layout device dataType shape =
         . fromSing
         $ shape
 
+ones ::
+  forall requiresGradient layout device dataType shape.
+  (SingI requiresGradient, SingI layout, SingI device, SingI dataType, SingI shape) =>
+  Tensor requiresGradient layout device dataType shape
+ones = sOnes (sing @requiresGradient) (sing @layout) (sing @device) (sing @dataType) (sing @shape)
+
 -- | Create a tensor of zeros.
 --
 -- >>> shape = SShape $ SName @"batch" :&: SSize @32 :|: SUncheckedName "feature" :&: SUncheckedSize 8 :|: SNil
@@ -123,6 +136,12 @@ sZeros reqGradient layout device dataType shape =
         . forgetIsChecked
         . fromSing
         $ shape
+
+zeros ::
+  forall requiresGradient layout device dataType shape.
+  (SingI requiresGradient, SingI layout, SingI device, SingI dataType, SingI shape) =>
+  Tensor requiresGradient layout device dataType shape
+zeros = sZeros (sing @requiresGradient) (sing @layout) (sing @device) (sing @dataType) (sing @shape)
 
 -- | Create a tensor filled with a given scalar value.
 --
@@ -165,6 +184,13 @@ sFull sRequiresGradient sLayout sDevice sDataType sShape input = UnsafeTensor te
         . fromSing
         $ sShape
 
+full ::
+  forall requiresGradient layout device dataType shape input.
+  (SingI requiresGradient, SingI layout, SingI device, SingI dataType, SingI shape, Scalar input) =>
+  input ->
+  Tensor requiresGradient layout device dataType shape
+full = sFull (sing @requiresGradient) (sing @layout) (sing @device) (sing @dataType) (sing @shape)
+
 -- | Create a random tensor.
 sRandn ::
   forall requiresGradient layout device dataType shape device'.
@@ -203,9 +229,16 @@ sRandn reqGradient layout device dataType shape =
         . fromSing
         $ shape
 
+randn ::
+  forall requiresGradient layout device dataType shape device'.
+  (SingI requiresGradient, SingI layout, SingI device, SingI dataType, SingI shape) =>
+  Generator device' ->
+  (Tensor requiresGradient layout device dataType shape, Generator device')
+randn = sRandn (sing @requiresGradient) (sing @layout) (sing @device) (sing @dataType) (sing @shape)
+
 -- | Create a one-dimensional tensor of the numbers @0@ to @size -1@.
 sArangeNaturals ::
-  forall requiresGradient layout device dataType shape size.
+  forall requiresGradient layout device dataType size shape.
   shape ~ 'Shape '[ 'Dim ('Name "*") size] =>
   SRequiresGradient requiresGradient ->
   SLayout layout ->
@@ -217,15 +250,26 @@ sArangeNaturals sRequiresGradient sLayout sDevice sDataType sSizeDim = UnsafeTen
   where
     tensor = unsafePerformIO $ cast2 ATen.arange_so size opts
     opts = tensorOptions requiresGradient layoutType deviceType dType
-
     requiresGradient = fromSing sRequiresGradient
     layoutType = forgetIsChecked . fromSing $ sLayout
     deviceType = forgetIsChecked . fromSing $ sDevice
     dType = forgetIsChecked . fromSing $ sDataType
     size = forgetIsChecked . fromSing $ sSizeDim
 
+arangeNaturals ::
+  forall requiresGradient layout device dataType size shape.
+  ( shape ~ 'Shape '[ 'Dim ('Name "*") size],
+    SingI requiresGradient,
+    SingI layout,
+    SingI device,
+    SingI dataType,
+    SingI size
+  ) =>
+  Tensor requiresGradient layout device dataType shape
+arangeNaturals = sArangeNaturals (sing @requiresGradient) (sing @layout) (sing @device) (sing @dataType) (sing @size)
+
 sEye ::
-  forall requiresGradient layout device dataType shape rows cols.
+  forall requiresGradient layout device dataType rows cols shape.
   (shape ~ 'Shape '[ 'Dim ('Name "*") rows, 'Dim ('Name "*") cols]) =>
   SRequiresGradient requiresGradient ->
   SLayout layout ->
@@ -246,8 +290,21 @@ sEye sRequiresGradient sLayout sDevice sDataType sRows sCols = UnsafeTensor tens
     rows = forgetIsChecked . fromSing $ sRows
     cols = forgetIsChecked . fromSing $ sCols
 
+eye ::
+  forall requiresGradient layout device dataType rows cols shape.
+  ( shape ~ 'Shape '[ 'Dim ('Name "*") rows, 'Dim ('Name "*") cols],
+    SingI requiresGradient,
+    SingI layout,
+    SingI device,
+    SingI dataType,
+    SingI rows,
+    SingI cols
+  ) =>
+  Tensor requiresGradient layout device dataType shape
+eye = sEye (sing @requiresGradient) (sing @layout) (sing @device) (sing @dataType) (sing @rows) (sing @cols)
+
 sEyeSquare ::
-  forall requiresGradient layout device dataType shape size.
+  forall requiresGradient layout device dataType size shape.
   shape ~ 'Shape '[ 'Dim ('Name "*") size, 'Dim ('Name "*") size] =>
   SRequiresGradient requiresGradient ->
   SLayout layout ->
@@ -259,9 +316,20 @@ sEyeSquare sRequiresGradient sLayout sDevice sDataType sSize = UnsafeTensor tens
   where
     tensor = unsafePerformIO $ cast2 ATen.eye_lo (fromInteger size :: Int) opts
     opts = tensorOptions requiresGradient layoutType deviceType dType
-
     requiresGradient = fromSing sRequiresGradient
     layoutType = forgetIsChecked . fromSing $ sLayout
     deviceType = forgetIsChecked . fromSing $ sDevice
     dType = forgetIsChecked . fromSing $ sDataType
     size = forgetIsChecked . fromSing $ sSize
+
+eyeSquare ::
+  forall requiresGradient layout device dataType size shape.
+  ( shape ~ 'Shape '[ 'Dim ('Name "*") size, 'Dim ('Name "*") size],
+    SingI requiresGradient,
+    SingI layout,
+    SingI device,
+    SingI dataType,
+    SingI size
+  ) =>
+  Tensor requiresGradient layout device dataType shape
+eyeSquare = sEyeSquare (sing @requiresGradient) (sing @layout) (sing @device) (sing @dataType) (sing @size)
