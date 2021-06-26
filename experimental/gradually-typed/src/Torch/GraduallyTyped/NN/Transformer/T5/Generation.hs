@@ -7,6 +7,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -40,7 +41,7 @@ import Torch.GraduallyTyped.NN.Transformer.T5.Small (T5Small)
 import Torch.GraduallyTyped.Random (Generator, sMkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownShape, Name (..), SBy (..), SSelectDim (..), SelectDim (..), Shape (..), Size (..))
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownShape, Name (..), SBy (..), SName (..), SSelectDim (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (expand)
 import Torch.GraduallyTyped.Tensor.MathOperations.Comparison (Order (..), Sorted (..), sort)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..), shape)
@@ -211,7 +212,7 @@ runBeamSearch maxSteps beamSize model input g =
                   go (UnfinishedHypothesis _ _ previousHypothesis') = 1 + go previousHypothesis'
                in fromIntegral . maximum $ go <$> previousHypotheses'
         -- liftIO . print $ ((t5Vocab Map.!) <$>) <$> tokens
-        mkT5Input @('Dim ('Name "*") 'UncheckedSize) @('Dim ('Name "*") 'UncheckedSize) batchSize seqSize tokens
+        mkT5Input (SName @"*" :&: SUncheckedSize batchSize) (SName @"*" :&: SUncheckedSize seqSize) tokens
       logProbs <- getLogProbs decoderInput
       pure $ zip previousHypotheses' logProbs >>= uncurry (\previousHypothesis -> zipWith (mkHypothesis previousHypothesis) [0, 1 ..] . last)
     getLogProbs :: decoderInput -> StateT (Maybe (encoderOutput, inputPaddingMask), generator) IO [[[Float]]]
@@ -244,8 +245,8 @@ testBeamSearch = do
     -- let tokens = [[13959, 1566, 12, 2968, 10, 148, 31, 60, 423, 13, 3, 7, 10536, 55, 1]]
     -- print $ ((t5Vocab Map.!) <$>) <$> tokens
     mkT5Input
-      @('Dim ('Name "*") ('Size 1))
-      @('Dim ('Name "*") ('Size 19))
+      (SName @"*" :&: SSize @1)
+      (SName @"*" :&: SSize @19)
       tokens
   model <-
     initialize
@@ -392,9 +393,8 @@ getIs n model input = do
     pure ts'
   decoderInput :: decoderInput <-
     mkT5Input
-      @('Dim ('Name "*") ('Size 1))
-      @('Dim ('Name "*") 'UncheckedSize)
-      (fromIntegral $ length tokens)
+      (SName @"*" :&: SSize @1)
+      (SName @"*" :&: SUncheckedSize (fromIntegral $ length tokens))
       [tokens]
   decoderOutput <- do
     (mTensors, g) <- get

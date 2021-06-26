@@ -372,10 +372,10 @@ instance
           rightShiftedDecoderInputDevice
           rightShiftedDecoderInputDataType
           rightShiftedDecoderInputShape,
-    KnownDevice rightShiftedDecoderInputDevice,
+    SGetDevice rightShiftedDecoderInputDevice,
+    SGetShape rightShiftedDecoderInputShape,
     rightShiftedDecoderInputSeqDim ~ (rightShiftedDecoderInputShape ! 1),
-    KnownDim rightShiftedDecoderInputSeqDim,
-    KnownShape rightShiftedDecoderInputShape,
+    rightShiftedDecoderInputSeqDim ~ 'Dim rightShiftedDecoderInputSeqName rightShiftedDecoderInputSeqSize,
     decoderInputPaddingMask
       ~ Tensor
           'WithoutGradient
@@ -390,10 +390,7 @@ instance
           rightShiftedDecoderInputPaddingMaskDevice
           rightShiftedDecoderInputPaddingMaskDataType
           rightShiftedDecoderInputPaddingMaskShape,
-    SGetDevice rightShiftedDecoderInputDevice,
-    SGetShape rightShiftedDecoderInputShape,
     rightShiftedDecoderInputPaddingMaskSeqDim ~ (rightShiftedDecoderInputPaddingMaskShape ! 1),
-    rightShiftedDecoderInputSeqDim ~ 'Dim rightShiftedDecoderInputSeqName rightShiftedDecoderInputSeqSize,
     decoderPos
       ~ Tensor
           'WithoutGradient

@@ -28,28 +28,37 @@ import Data.Singletons (SingI (..))
 import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import GHC.TypeNats (type (<=?))
+import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), KnownDataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice (..), WithDeviceC (..))
-import Torch.GraduallyTyped.Layout (KnownLayout, Layout (..), LayoutType (..))
+import Torch.GraduallyTyped.DType (DataType (..), KnownDataType (..), SDType (..), SDataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice (..))
+import Torch.GraduallyTyped.Layout (KnownLayout, Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Transformer.DecoderStack (HasLookupDecoderStack)
 import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (SequenceToSequenceTransformer, SequenceToSequenceTransformerGenerationInput (..), SequenceToSequenceTransformerInput (..), SequenceToSequenceTransformerOutput (..), SequenceToSequenceTransformerWithLMHead, lookupSequenceToSequenceTransformer, lookupSequenceToSequenceTransformerWithLMHead)
 import Torch.GraduallyTyped.NN.Transformer.Stack (HasLookupStack)
 import Torch.GraduallyTyped.NN.Transformer.Type (MkTransformerAttentionMaskC, MkTransformerCrossAttentionMaskC, MkTransformerDecoderAttentionMaskC, ShiftRight, TensorDict, TransformerStyle (Pegasus), mkTransformerAttentionMask, mkTransformerCrossAttentionMask, mkTransformerDecoderAttentionMask, mkTransformerInput, mkTransformerPaddingMask, tensorDictFromPretrained)
 import Torch.GraduallyTyped.Prelude (Seq)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
-import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, type (!))
-import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), KnownShape (..), Name (..), Shape (..), Size (..), WithDimC (..))
-import Torch.GraduallyTyped.Tensor.Creation (arangeNaturals)
-import Torch.GraduallyTyped.Tensor.Type (Tensor, device, shape)
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (..))
+import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, sGetDim, type (!))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), KnownShape (..), Name (..), SBy (..), SDim, SSelectDim (..), Shape (..), Size (..), sDimSize)
+import Torch.GraduallyTyped.Tensor.Creation (sArangeNaturals)
+import Torch.GraduallyTyped.Tensor.Type (SGetDevice, SGetLayout, SGetShape, Tensor, sDevice, sShape)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
 -- | Pegasus dType.
 type PegasusDType = 'Float
 
+-- | Pegasus dType.
+pegasusDType :: SDType PegasusDType
+pegasusDType = SFloat
+
 -- | Pegasus data type.
 type PegasusDataType = 'DataType PegasusDType
+
+-- | Pegasus data type.
+pegasusDataType :: SDataType PegasusDataType
+pegasusDataType = SDataType pegasusDType
 
 -- | Pegasus dropout probability type.
 type PegasusDropoutP = Float
@@ -239,8 +248,6 @@ instance
 mkPegasusInput ::
   forall batchDim seqDim m output.
   ( MonadFail m,
-    WithDimC batchDim (WithDimF seqDim ([[Int]] -> m output)),
-    WithDimC seqDim ([[Int]] -> m output),
     KnownDim batchDim,
     KnownDim seqDim,
     output
@@ -251,8 +258,11 @@ mkPegasusInput ::
           ('DataType 'Int64)
           ('Shape '[batchDim, seqDim])
   ) =>
-  WithDimF batchDim (WithDimF seqDim ([[Int]] -> m output))
-mkPegasusInput = mkTransformerInput @batchDim @seqDim @m pegasusPadTokenId
+  SDim batchDim ->
+  SDim seqDim ->
+  [[Int]] ->
+  m output
+mkPegasusInput = mkTransformerInput pegasusPadTokenId
 
 mkPegasusPaddingMask ::
   Tensor requiresGradient layout device dataType shape ->
@@ -322,10 +332,11 @@ instance
           inputDevice
           inputDataType
           inputShape,
-    KnownDevice inputDevice,
+    SGetLayout inputLayout,
+    SGetDevice inputDevice,
+    SGetShape inputShape,
     inputSeqDim ~ (inputShape ! 1),
-    KnownDim inputSeqDim,
-    KnownShape inputShape,
+    inputSeqDim ~ 'Dim inputSeqName inputSeqSize,
     inputPaddingMask
       ~ Tensor
           inputPaddingMaskRequiresGradient
@@ -345,9 +356,7 @@ instance
           ('Layout 'Dense)
           inputDevice
           ('DataType 'Int64)
-          ('Shape '[inputSeqDim]),
-    WithDimC inputSeqDim pos,
-    WithDeviceC inputDevice (WithDimF inputSeqDim pos),
+          ('Shape '[ 'Dim ('Name "*") inputSeqSize]),
     decoderInput
       ~ Tensor
           decoderInputRequiresGradient
@@ -380,19 +389,20 @@ instance
           rightShiftedDecoderInputPaddingMaskDevice
           rightShiftedDecoderInputPaddingMaskDataType
           rightShiftedDecoderInputPaddingMaskShape,
+    SGetDevice rightShiftedDecoderInputDevice,
+    SGetShape rightShiftedDecoderInputShape,
     rightShiftedDecoderInputPaddingMaskSeqDim ~ (rightShiftedDecoderInputPaddingMaskShape ! 1),
+    rightShiftedDecoderInputSeqDim ~ 'Dim rightShiftedDecoderInputSeqName rightShiftedDecoderInputSeqSize,
     decoderPos
       ~ Tensor
           'WithoutGradient
           ('Layout 'Dense)
           rightShiftedDecoderInputDevice
           ('DataType 'Int64)
-          ('Shape '[rightShiftedDecoderInputSeqDim]),
-    WithDimC rightShiftedDecoderInputSeqDim decoderPos,
-    WithDeviceC rightShiftedDecoderInputDevice (WithDimF rightShiftedDecoderInputSeqDim decoderPos),
-    MkTransformerAttentionMaskC PegasusDType PegasusDataType inputPaddingMaskRequiresGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim attentionMask,
-    MkTransformerCrossAttentionMaskC PegasusDType PegasusDataType rightShiftedDecoderInputSeqDim inputPaddingMaskRequiresGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim crossAttentionMask,
-    MkTransformerDecoderAttentionMaskC PegasusDType PegasusDataType rightShiftedDecoderInputPaddingMaskRequiresGradient rightShiftedDecoderInputPaddingMaskLayout rightShiftedDecoderInputPaddingMaskDevice rightShiftedDecoderInputPaddingMaskDataType rightShiftedDecoderInputPaddingMaskShape rightShiftedDecoderInputPaddingMaskSeqDim decoderAttentionMask,
+          ('Shape '[ 'Dim ('Name "*") rightShiftedDecoderInputSeqSize]),
+    MkTransformerAttentionMaskC IO PegasusDataType inputPaddingMaskRequiresGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim attentionMask,
+    MkTransformerCrossAttentionMaskC IO PegasusDataType rightShiftedDecoderInputSeqDim inputPaddingMaskRequiresGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim crossAttentionMask,
+    MkTransformerDecoderAttentionMaskC IO PegasusDataType rightShiftedDecoderInputPaddingMaskLayout rightShiftedDecoderInputPaddingMaskDevice rightShiftedDecoderInputPaddingMaskShape rightShiftedDecoderInputPaddingMaskSeqDim decoderAttentionMask,
     HasForward (ShiftRight Int) decoderInput generator rightShiftedDecoderInput generator,
     HasForward (ShiftRight Int) decoderInputPaddingMask generator rightShiftedDecoderInputPaddingMask generator,
     HasForward
@@ -414,80 +424,49 @@ instance
   where
   forward pegasusModel PegasusInput {..} =
     let inputPaddingMask = mkPegasusPaddingMask pegasusInput
-        attentionMask =
-          mkTransformerAttentionMask
-            @PegasusDType
-            @PegasusDataType
-            @inputPaddingMaskRequiresGradient
-            @inputPaddingMaskLayout
-            @inputPaddingMaskDevice
-            @inputPaddingMaskDataType
-            @inputPaddingMaskShape
-            pegasusAttentionMaskBias
-            inputPaddingMask
-        inputDevice = device pegasusInput
-        [_, inputSeqDim] = shape pegasusInput
+        attentionMask = unsafePerformIO $ mkTransformerAttentionMask pegasusDataType pegasusAttentionMaskBias inputPaddingMask
+        inputDevice = unsafePerformIO $ sDevice pegasusInput
+        inputShape = unsafePerformIO $ sShape pegasusInput
+        inputSeqDim = unsafePerformIO $ sGetDim (SSelectDim $ SByIndex @1) inputShape
+        inputSeqSize = sDimSize inputSeqDim
         pos =
-          withoutDim @inputSeqDim @pos
-            ( withoutDevice @inputDevice
-                ( arangeNaturals
-                    @'WithoutGradient
-                    @('Layout 'Dense)
-                    @inputDevice
-                    @('DataType 'Int64)
-                    @inputSeqDim
-                )
-                inputDevice
-            )
-            inputSeqDim
+          sArangeNaturals
+            SWithoutGradient
+            (SLayout SDense)
+            inputDevice
+            (SDataType SInt64)
+            inputSeqSize
      in runIxState $
           ireturn pegasusDecoderInput
             >>>= IxState . forward (initialize @(ShiftRight Int) pegasusBOSTokenId)
             >>>= ( \rightShiftedDecoderInput ->
-                     let rightShiftedDecoderInputDevice = device rightShiftedDecoderInput
-                         [_, rightShiftedDecoderInputSeqDim] = shape rightShiftedDecoderInput
+                     let rightShiftedDecoderInputDevice = unsafePerformIO $ sDevice rightShiftedDecoderInput
+                         rightShiftedDecoderInputShape = unsafePerformIO $ sShape rightShiftedDecoderInput
+                         rightShiftedDecoderInputSeqDim = unsafePerformIO $ sGetDim (SSelectDim $ SByIndex @1) rightShiftedDecoderInputShape
+                         rightShiftedDecoderInputSeqSize = sDimSize rightShiftedDecoderInputSeqDim
                          decoderPos =
-                           withoutDim @rightShiftedDecoderInputSeqDim @decoderPos
-                             ( withoutDevice @rightShiftedDecoderInputDevice
-                                 ( arangeNaturals
-                                     @'WithoutGradient
-                                     @('Layout 'Dense)
-                                     @rightShiftedDecoderInputDevice
-                                     @('DataType 'Int64)
-                                     @rightShiftedDecoderInputSeqDim
-                                 )
-                                 rightShiftedDecoderInputDevice
-                             )
-                             rightShiftedDecoderInputSeqDim
+                           sArangeNaturals
+                             SWithoutGradient
+                             (SLayout SDense)
+                             rightShiftedDecoderInputDevice
+                             (SDataType SInt64)
+                             rightShiftedDecoderInputSeqSize
                          crossAttentionMask =
-                           withoutDim @rightShiftedDecoderInputSeqDim @(inputPaddingMask -> crossAttentionMask)
-                             ( mkTransformerCrossAttentionMask
-                                 @PegasusDType
-                                 @PegasusDataType
-                                 @rightShiftedDecoderInputSeqDim
-                                 @inputPaddingMaskRequiresGradient
-                                 @inputPaddingMaskLayout
-                                 @inputPaddingMaskDevice
-                                 @inputPaddingMaskDataType
-                                 @inputPaddingMaskShape
-                                 pegasusAttentionMaskBias
-                             )
-                             rightShiftedDecoderInputSeqDim
-                             inputPaddingMask
+                           unsafePerformIO $
+                             mkTransformerCrossAttentionMask
+                               pegasusDataType
+                               rightShiftedDecoderInputSeqDim
+                               pegasusAttentionMaskBias
+                               inputPaddingMask
                       in ireturn (mkPegasusPaddingMask pegasusDecoderInput)
                            >>>= IxState . forward (initialize @(ShiftRight Int) 0)
                            >>>= ( \rightShiftedDecoderInputPaddingMask ->
                                     let decoderAttentionMask =
-                                          mkTransformerDecoderAttentionMask
-                                            @PegasusDType
-                                            @PegasusDataType
-                                            @rightShiftedDecoderInputPaddingMaskRequiresGradient
-                                            @rightShiftedDecoderInputPaddingMaskLayout
-                                            @rightShiftedDecoderInputPaddingMaskDevice
-                                            @rightShiftedDecoderInputPaddingMaskDataType
-                                            @rightShiftedDecoderInputPaddingMaskShape
-                                            pegasusAttentionMaskBias
-                                            rightShiftedDecoderInputPaddingMask
+                                          unsafePerformIO $
+                                            mkTransformerDecoderAttentionMask
+                                              pegasusDataType
+                                              pegasusAttentionMaskBias
+                                              rightShiftedDecoderInputPaddingMask
                                      in ireturn (SequenceToSequenceTransformerInput pegasusInput rightShiftedDecoderInput pos decoderPos attentionMask decoderAttentionMask crossAttentionMask)
                                 )
                            >>>= IxState . forward (coerce pegasusModel :: PegasusModelSeqToSeqF pegasusModel numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
@@ -516,19 +495,17 @@ instance
           rightShiftedDecoderInputDevice
           rightShiftedDecoderInputDataType
           rightShiftedDecoderInputShape,
-    KnownDevice rightShiftedDecoderInputDevice,
+    SGetDevice rightShiftedDecoderInputDevice,
+    SGetShape rightShiftedDecoderInputShape,
     rightShiftedDecoderInputSeqDim ~ (rightShiftedDecoderInputShape ! 1),
-    KnownDim rightShiftedDecoderInputSeqDim,
-    KnownShape rightShiftedDecoderInputShape,
+    rightShiftedDecoderInputSeqDim ~ 'Dim rightShiftedDecoderInputSeqName rightShiftedDecoderInputSeqSize,
     decoderPos
       ~ Tensor
           'WithoutGradient
           ('Layout 'Dense)
           rightShiftedDecoderInputDevice
           ('DataType 'Int64)
-          ('Shape '[rightShiftedDecoderInputSeqDim]),
-    WithDimC rightShiftedDecoderInputSeqDim decoderPos,
-    WithDeviceC rightShiftedDecoderInputDevice (WithDimF rightShiftedDecoderInputSeqDim decoderPos),
+          ('Shape '[ 'Dim ('Name "*") rightShiftedDecoderInputSeqSize]),
     inputPaddingMask
       ~ Tensor
           inputPaddingMaskRequiresGradient
@@ -555,8 +532,8 @@ instance
           rightShiftedDecoderInputPaddingMaskDataType
           rightShiftedDecoderInputPaddingMaskShape,
     rightShiftedDecoderInputPaddingMaskSeqDim ~ (rightShiftedDecoderInputPaddingMaskShape ! 1),
-    MkTransformerCrossAttentionMaskC PegasusDType PegasusDataType rightShiftedDecoderInputSeqDim inputPaddingMaskRequiresGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim crossAttentionMask,
-    MkTransformerDecoderAttentionMaskC PegasusDType PegasusDataType rightShiftedDecoderInputPaddingMaskRequiresGradient rightShiftedDecoderInputPaddingMaskLayout rightShiftedDecoderInputPaddingMaskDevice rightShiftedDecoderInputPaddingMaskDataType rightShiftedDecoderInputPaddingMaskShape rightShiftedDecoderInputPaddingMaskSeqDim decoderAttentionMask,
+    MkTransformerCrossAttentionMaskC IO PegasusDataType rightShiftedDecoderInputSeqDim inputPaddingMaskRequiresGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim crossAttentionMask,
+    MkTransformerDecoderAttentionMaskC IO PegasusDataType rightShiftedDecoderInputPaddingMaskLayout rightShiftedDecoderInputPaddingMaskDevice rightShiftedDecoderInputPaddingMaskShape rightShiftedDecoderInputPaddingMaskSeqDim decoderAttentionMask,
     HasForward (ShiftRight Int) decoderInput generator rightShiftedDecoderInput generator,
     HasForward (ShiftRight Int) decoderInputPaddingMask generator rightShiftedDecoderInputPaddingMask generator,
     HasForward
@@ -581,50 +558,33 @@ instance
       ireturn pegasusGenerationDecoderInput
         >>>= IxState . forward (initialize @(ShiftRight Int) pegasusBOSTokenId)
         >>>= ( \rightShiftedDecoderInput ->
-                 let rightShiftedDecoderInputDevice = device rightShiftedDecoderInput
-                     [_, rightShiftedDecoderInputSeqDim] = shape rightShiftedDecoderInput
+                 let rightShiftedDecoderInputDevice = unsafePerformIO $ sDevice rightShiftedDecoderInput
+                     rightShiftedDecoderInputShape = unsafePerformIO $ sShape rightShiftedDecoderInput
+                     rightShiftedDecoderInputSeqDim = unsafePerformIO $ sGetDim (SSelectDim $ SByIndex @1) rightShiftedDecoderInputShape
+                     rightShiftedDecoderInputSeqSize = sDimSize rightShiftedDecoderInputSeqDim
                      decoderPos =
-                       withoutDim @rightShiftedDecoderInputSeqDim @decoderPos
-                         ( withoutDevice @rightShiftedDecoderInputDevice
-                             ( arangeNaturals
-                                 @'WithoutGradient
-                                 @('Layout 'Dense)
-                                 @rightShiftedDecoderInputDevice
-                                 @('DataType 'Int64)
-                                 @rightShiftedDecoderInputSeqDim
-                             )
-                             rightShiftedDecoderInputDevice
-                         )
-                         rightShiftedDecoderInputSeqDim
+                       sArangeNaturals
+                         SWithoutGradient
+                         (SLayout SDense)
+                         rightShiftedDecoderInputDevice
+                         (SDataType SInt64)
+                         rightShiftedDecoderInputSeqSize
                      crossAttentionMask =
-                       withoutDim @rightShiftedDecoderInputSeqDim @(inputPaddingMask -> crossAttentionMask)
-                         ( mkTransformerCrossAttentionMask
-                             @PegasusDType
-                             @PegasusDataType
-                             @rightShiftedDecoderInputSeqDim
-                             @inputPaddingMaskRequiresGradient
-                             @inputPaddingMaskLayout
-                             @inputPaddingMaskDevice
-                             @inputPaddingMaskDataType
-                             @inputPaddingMaskShape
-                             pegasusAttentionMaskBias
-                         )
-                         rightShiftedDecoderInputSeqDim
-                         pegasusGenerationInputPaddingMask
+                       unsafePerformIO $
+                         mkTransformerCrossAttentionMask
+                           pegasusDataType
+                           rightShiftedDecoderInputSeqDim
+                           pegasusAttentionMaskBias
+                           pegasusGenerationInputPaddingMask
                   in ireturn (mkPegasusPaddingMask pegasusGenerationDecoderInput)
                        >>>= IxState . forward (initialize @(ShiftRight Int) 0)
                        >>>= ( \rightShiftedDecoderInputPaddingMask ->
                                 let decoderAttentionMask =
-                                      mkTransformerDecoderAttentionMask
-                                        @PegasusDType
-                                        @PegasusDataType
-                                        @rightShiftedDecoderInputPaddingMaskRequiresGradient
-                                        @rightShiftedDecoderInputPaddingMaskLayout
-                                        @rightShiftedDecoderInputPaddingMaskDevice
-                                        @rightShiftedDecoderInputPaddingMaskDataType
-                                        @rightShiftedDecoderInputPaddingMaskShape
-                                        pegasusAttentionMaskBias
-                                        rightShiftedDecoderInputPaddingMask
+                                      unsafePerformIO $
+                                        mkTransformerDecoderAttentionMask
+                                          pegasusDataType
+                                          pegasusAttentionMaskBias
+                                          rightShiftedDecoderInputPaddingMask
                                  in ireturn (SequenceToSequenceTransformerGenerationInput rightShiftedDecoderInput pegasusGenerationEncoderOutput decoderPos decoderAttentionMask crossAttentionMask)
                             )
                        >>>= IxState . forward (coerce pegasusModel :: PegasusModelSeqToSeqF pegasusModel numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)

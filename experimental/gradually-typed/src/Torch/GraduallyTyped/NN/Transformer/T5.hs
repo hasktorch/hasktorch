@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -v2 -Wall #-}
@@ -31,15 +32,15 @@ import Torch.GraduallyTyped.NN.Transformer.T5.Large
 import Torch.GraduallyTyped.NN.Transformer.T5.Small
 import Torch.GraduallyTyped.NN.Transformer.T5.ThreeB
 import Torch.GraduallyTyped.Random (mkGenerator)
-import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
+import Torch.GraduallyTyped.Shape.Type (SName (..), SSize (..), pattern (:&:))
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
 import qualified Torch.Tensor as Tensor (Tensor (..), asValue)
 
 testT5Input :: IO _
 testT5Input =
   mkT5Input
-    @('Dim ('Name "*") ('Size 2))
-    @('Dim ('Name "*") ('Size 51))
+    (SName @"*" :&: SSize @2)
+    (SName @"*" :&: SSize @51)
     [ [13959, 1566, 12, 2968, 10, 6536, 43, 2008, 24, 293, 53, 3, 9, 1782, 19, 207, 21, 25, 11, 39, 1782, 5, 1],
       [21603, 10, 9900, 1036, 6, 213, 3, 9, 825, 19, 166, 554, 18, 17, 10761, 30, 3, 9, 331, 18, 3723, 2491, 274, 271, 1399, 18, 17, 444, 26, 30, 3, 9, 26804, 2491, 6, 65, 13999, 38, 3, 9, 2021, 3317, 16, 793, 1612, 3026, 41, 567, 6892, 137, 1]
     ]
@@ -47,8 +48,8 @@ testT5Input =
 testT5DecoderInput :: IO _
 testT5DecoderInput =
   mkT5Input
-    @('Dim ('Name "*") ('Size 2))
-    @('Dim ('Name "*") ('Size 42))
+    (SName @"*" :&: SSize @2)
+    (SName @"*" :&: SSize @42)
     [ [16258, 745, 22985, 6, 602, 211, 493, 10252, 35, 266, 7, 14216, 7, 1806, 218, 292, 64, 1197, 29, 14587, 229, 5, 1],
       [2025, 1036, 19, 3, 9, 2021, 3317, 16, 793, 1612, 3026, 5, 3, 9, 825, 19, 166, 554, 18, 17, 10761, 30, 3, 9, 331, 18, 3723, 2491, 274, 271, 1399, 18, 17, 444, 26, 30, 3, 9, 26804, 2491, 5, 1]
     ]

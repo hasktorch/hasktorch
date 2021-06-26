@@ -23,7 +23,7 @@ import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import GHC.TypeNats (type (<=?))
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..))
+import Torch.GraduallyTyped.DType (DataType (..), SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasInitialize (..))
@@ -34,15 +34,23 @@ import Torch.GraduallyTyped.NN.Transformer.Type (TensorDict, TransformerStyle (R
 import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim, Name (..), Shape (..), Size (..), WithDimC (..))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim, Name (..), SDim, Shape (..), Size (..), WithDimC (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
 -- | RoBERTa dType.
 type RoBERTaDType = 'Float
 
+-- | RoBERTa dType.
+robertaDType :: SDType RoBERTaDType
+robertaDType = SFloat
+
 -- | RoBERTa data type.
 type RoBERTaDataType = 'DataType RoBERTaDType
+
+-- | RoBERTa data type.
+robertaDataType :: SDataType RoBERTaDataType
+robertaDataType = SDataType robertaDType
 
 -- | RoBERTa dropout probability type.
 type RoBERTaDropoutP = Float
@@ -239,8 +247,6 @@ instance
 mkRoBERTaInput ::
   forall batchDim seqDim m output.
   ( MonadFail m,
-    WithDimC batchDim (WithDimF seqDim ([[Int]] -> m output)),
-    WithDimC seqDim ([[Int]] -> m output),
     KnownDim batchDim,
     KnownDim seqDim,
     output
@@ -251,8 +257,11 @@ mkRoBERTaInput ::
           ('DataType 'Int64)
           ('Shape '[batchDim, seqDim])
   ) =>
-  WithDimF batchDim (WithDimF seqDim ([[Int]] -> m output))
-mkRoBERTaInput = mkTransformerInput @batchDim @seqDim @m robertaPadTokenId
+  SDim batchDim ->
+  SDim seqDim ->
+  [[Int]] ->
+  m output
+mkRoBERTaInput = mkTransformerInput robertaPadTokenId
 
 mkRoBERTaPaddingMask ::
   Tensor requiresGradient layout device dataType shape ->
