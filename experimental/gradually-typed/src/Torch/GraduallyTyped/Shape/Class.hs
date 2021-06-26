@@ -34,6 +34,7 @@ import Type.Errors.Pretty (type (%), type (<>))
 import Unsafe.Coerce (unsafeCoerce)
 
 -- $setup
+-- >>> import Data.Singletons.Prelude.List (SList (..))
 -- >>> import Torch.GraduallyTyped.Shape.Type (pattern (:&:), pattern (:|:))
 
 type family AddSizeF (size :: Size Nat) (size' :: Size Nat) :: Size Nat where
@@ -136,11 +137,33 @@ type family (!) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (_k :: k) :: Dim
 -- | Get dimension by index or by name
 --
 -- >>> shape = SShape $ SName @"batch" :&: SSize @8 :|: SUncheckedName "feature" :&: SSize @2 :|: SNil
--- >>> sGetDim (SSelectDim $ ByName @"batch") shape
--- >>> sGetDim (SSelectDim $ ByName @"feature") shape
--- >>> sGetDim (SSelectDim $ ByName @"sequence") shape
--- >>> sGetDim (SSelectDim $ ByIndex @0) shape
--- >>> sGetDim (SSelectDim $ ByIndex @2) shape
+-- >>> dim = sGetDim (SSelectDim $ SByName @"batch") shape
+-- >>> :type dim
+-- dim :: MonadFail m => m (SDim ('Dim ('Name "batch") ('Size 8)))
+-- >>> fromSing <$> dim
+-- Dim {dimName = Checked "batch", dimSize = Checked 8}
+--
+-- >>> dim = sGetDim (SSelectDim $ SByName @"feature") shape
+-- >>> :type dim
+-- dim :: MonadFail m => m (SDim ('Dim 'UncheckedName 'UncheckedSize))
+-- >>> fromSing <$> dim
+-- Dim {dimName = Unchecked "feature", dimSize = Checked 2}
+--
+-- >>> dim = sGetDim (SSelectDim $ SByName @"sequence") shape
+-- >>> :type dim
+-- dim :: MonadFail m => m (SDim ('Dim 'UncheckedName 'UncheckedSize))
+-- >>> fromSing <$> dim
+-- *** Exception: user error (Cannot return the first dimension matching ByName "sequence".)
+--
+-- >>> dim = sGetDim (SSelectDim $ SByIndex @0) shape
+-- >>> :type dim
+-- dim :: MonadFail m => m (SDim ('Dim ('Name "batch") ('Size 8)))
+-- >>> fromSing <$> dim
+-- Dim {dimName = Checked "batch", dimSize = Checked 8}
+--
+-- >>> :type sGetDim (SSelectDim $ SByIndex @2) shape
+-- sGetDim (SSelectDim $ SByIndex @2) shape
+--  :: MonadFail m => m (SDim (TypeError ...))
 sGetDim ::
   forall selectDim shape dim m.
   (dim ~ GetDimF selectDim shape, MonadFail m) =>
@@ -163,6 +186,9 @@ sGetDim (SUncheckedSelectDim by) (SShape dims) =
 sGetDim (SSelectDim by@SByName) (SShape SNil) =
   let by' = fromSing by
    in fail $ "Cannot return the first dimension matching " <> show by' <> "."
+sGetDim (SSelectDim by@SByName) (SShape (SCons dim@(SDim (SUncheckedName name) _) dims)) =
+  let ByName name' = fromSing by
+   in if name == name' then pure (unsafeCoerce dim) else unsafeCoerce <$> sGetDim (SSelectDim by) (SShape dims)
 sGetDim (SSelectDim by@SByName) (SShape (SCons dim@(SDim SName _) dims)) =
   let ByName name' = fromSing by
       Dim name size = (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size)) $ fromSing dim

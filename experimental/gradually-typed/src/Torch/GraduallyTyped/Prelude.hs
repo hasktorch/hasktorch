@@ -12,6 +12,8 @@
 {-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DeriveGeneric #-}
 module Torch.GraduallyTyped.Prelude
   ( module Data.Kind,
     module Data.Proxy,
@@ -64,8 +66,10 @@ import Data.String (IsString, fromString)
 import Data.Type.Bool (If, type (||))
 import GHC.Exts (Any)
 import GHC.TypeLits (Nat, ErrorMessage (..), TypeError (..), type (*), type (+))
+import GHC.Generics (Generic)
 
 data IsChecked a = Checked a | Unchecked a
+  deriving stock (Eq, Ord, Show, Generic)
 
 forgetIsChecked :: IsChecked a -> a
 forgetIsChecked (Checked a) = a
