@@ -157,18 +157,6 @@ class KnownDim (dim :: Dim (Name Symbol) (Size Nat)) where
 instance (KnownName name, KnownSize size) => KnownDim ('Dim name size) where
   dimVal = Dim (nameVal @name) (sizeVal @size)
 
-checkDim ::
-  forall dim.
-  KnownDim dim =>
-  Dim String Integer ->
-  Bool
-checkDim (Dim name size) =
-  case dimVal @dim of
-    Dim UncheckedName UncheckedSize -> True
-    Dim (Name name') UncheckedSize -> name == name'
-    Dim UncheckedName (Size size') -> size == size'
-    Dim (Name name') (Size size') -> name == name' && size == size'
-
 -- | Data type to select dimensions by name or by index.
 data By (name :: Type) (index :: Type) where
   -- | Select a dimension by name.
@@ -324,6 +312,9 @@ data SShape (shape :: Shape [Dim (Name Symbol) (Size Nat)]) where
   SShape :: forall dims. SList dims -> SShape ('Shape dims)
 
 type instance Sing = SShape
+
+instance SingI dims => SingI ('Shape (dims :: [Dim (Name Symbol) (Size Nat)])) where
+  sing = SShape $ sing @dims
 
 instance SingKind (Shape [Dim (Name Symbol) (Size Nat)]) where
   type Demote (Shape [Dim (Name Symbol) (Size Nat)]) = IsChecked [Dim (IsChecked String) (IsChecked Integer)]

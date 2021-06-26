@@ -53,7 +53,7 @@ import qualified Torch.Internal.Managed.TensorFactories as ATen
 -- >>> import Data.Singletons.Prelude.List (SList (..))
 -- >>> import Torch.GraduallyTyped
 
--- | Create a tensor of ones.
+-- | Create a gradually typed tensor of ones.
 --
 -- >>> shape = SShape $ SName @"batch" :&: SSize @32 :|: SUncheckedName "feature" :&: SUncheckedSize 8 :|: SNil
 -- >>> :type sOnes SWithoutGradient (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape
@@ -92,13 +92,19 @@ sOnes reqGradient layout device dataType shape =
         . fromSing
         $ shape
 
+-- | Create a typed tensor of ones.
+--
+-- >>> ones :: CPUParameter ('DataType 'Float) ('Shape '[])
+-- Tensor Float []  1.0000
+-- >>> ones :: CPUTensor ('DataType 'Int64) ('Shape '[ 'Dim ('Name "*") ('Size 1)])
+-- Tensor Int64 [1] [ 1]
 ones ::
   forall requiresGradient layout device dataType shape.
   (SingI requiresGradient, SingI layout, SingI device, SingI dataType, SingI shape) =>
   Tensor requiresGradient layout device dataType shape
 ones = sOnes (sing @requiresGradient) (sing @layout) (sing @device) (sing @dataType) (sing @shape)
 
--- | Create a tensor of zeros.
+-- | Create a gradually typed tensor of zeros.
 --
 -- >>> shape = SShape $ SName @"batch" :&: SSize @32 :|: SUncheckedName "feature" :&: SUncheckedSize 8 :|: SNil
 -- >>> :type sZeros SWithoutGradient (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape
@@ -137,16 +143,22 @@ sZeros reqGradient layout device dataType shape =
         . fromSing
         $ shape
 
+-- | Create a typed tensor of zeros.
+--
+-- >>> zeros :: CPUParameter ('DataType 'Float) ('Shape '[])
+-- Tensor Float []  1.0000
+-- >>> zeros :: CPUTensor ('DataType 'Int64) ('Shape '[ 'Dim ('Name "*") ('Size 1)])
+-- Tensor Int64 [1] [ 1]
 zeros ::
   forall requiresGradient layout device dataType shape.
   (SingI requiresGradient, SingI layout, SingI device, SingI dataType, SingI shape) =>
   Tensor requiresGradient layout device dataType shape
 zeros = sZeros (sing @requiresGradient) (sing @layout) (sing @device) (sing @dataType) (sing @shape)
 
--- | Create a tensor filled with a given scalar value.
+-- | Create a gradually typed tensor filled with a given scalar value.
 --
 -- >>> shape = SShape $ SName @"batch" :&: SSize @32 :|: SUncheckedName "feature" :&: SUncheckedSize 8 :|: SNil
--- >>> input = 2
+-- >>> input = -1
 -- >>> :type sFull SWithoutGradient (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape input
 -- sFull SWithoutGradient (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape input
 --   :: Tensor
@@ -184,6 +196,12 @@ sFull sRequiresGradient sLayout sDevice sDataType sShape input = UnsafeTensor te
         . fromSing
         $ sShape
 
+-- | Create a typed tensor filled with a given scalar value.
+--
+-- >>> full (-1) :: CPUParameter ('DataType 'Float) ('Shape '[])
+-- Tensor Float [] -1.0000
+-- >>> full (-1) :: CPUTensor ('DataType 'Int64) ('Shape '[ 'Dim ('Name "*") ('Size 1)])
+-- Tensor Int64 [1] [-1]
 full ::
   forall requiresGradient layout device dataType shape input.
   (SingI requiresGradient, SingI layout, SingI device, SingI dataType, SingI shape, Scalar input) =>
@@ -191,7 +209,7 @@ full ::
   Tensor requiresGradient layout device dataType shape
 full = sFull (sing @requiresGradient) (sing @layout) (sing @device) (sing @dataType) (sing @shape)
 
--- | Create a random tensor.
+-- | Create a gradually typed random tensor.
 sRandn ::
   forall requiresGradient layout device dataType shape device'.
   SRequiresGradient requiresGradient ->
@@ -229,6 +247,7 @@ sRandn reqGradient layout device dataType shape =
         . fromSing
         $ shape
 
+-- | Create typed random tensor.
 randn ::
   forall requiresGradient layout device dataType shape device'.
   (SingI requiresGradient, SingI layout, SingI device, SingI dataType, SingI shape) =>
@@ -236,7 +255,7 @@ randn ::
   (Tensor requiresGradient layout device dataType shape, Generator device')
 randn = sRandn (sing @requiresGradient) (sing @layout) (sing @device) (sing @dataType) (sing @shape)
 
--- | Create a one-dimensional tensor of the numbers @0@ to @size -1@.
+-- | Create a gradually typed one-dimensional tensor of the numbers @0@ to @size -1@.
 sArangeNaturals ::
   forall requiresGradient layout device dataType size shape.
   shape ~ 'Shape '[ 'Dim ('Name "*") size] =>
@@ -256,6 +275,7 @@ sArangeNaturals sRequiresGradient sLayout sDevice sDataType sSizeDim = UnsafeTen
     dType = forgetIsChecked . fromSing $ sDataType
     size = forgetIsChecked . fromSing $ sSizeDim
 
+-- | Create a typed one-dimensional tensor of the numbers @0@ to @size -1@.
 arangeNaturals ::
   forall requiresGradient layout device dataType size shape.
   ( shape ~ 'Shape '[ 'Dim ('Name "*") size],
@@ -268,6 +288,7 @@ arangeNaturals ::
   Tensor requiresGradient layout device dataType shape
 arangeNaturals = sArangeNaturals (sing @requiresGradient) (sing @layout) (sing @device) (sing @dataType) (sing @size)
 
+-- | Create a gradually typed rectangular tensor with ones on the diagonal and zeros elsewhere.
 sEye ::
   forall requiresGradient layout device dataType rows cols shape.
   (shape ~ 'Shape '[ 'Dim ('Name "*") rows, 'Dim ('Name "*") cols]) =>
@@ -290,6 +311,7 @@ sEye sRequiresGradient sLayout sDevice sDataType sRows sCols = UnsafeTensor tens
     rows = forgetIsChecked . fromSing $ sRows
     cols = forgetIsChecked . fromSing $ sCols
 
+-- | Create a typed rectangular tensor with ones on the diagonal and zeros elsewhere.
 eye ::
   forall requiresGradient layout device dataType rows cols shape.
   ( shape ~ 'Shape '[ 'Dim ('Name "*") rows, 'Dim ('Name "*") cols],
@@ -303,6 +325,7 @@ eye ::
   Tensor requiresGradient layout device dataType shape
 eye = sEye (sing @requiresGradient) (sing @layout) (sing @device) (sing @dataType) (sing @rows) (sing @cols)
 
+-- | Create a gradually typed square tensor with ones on the diagonal and zeros elsewhere.
 sEyeSquare ::
   forall requiresGradient layout device dataType size shape.
   shape ~ 'Shape '[ 'Dim ('Name "*") size, 'Dim ('Name "*") size] =>
@@ -322,6 +345,7 @@ sEyeSquare sRequiresGradient sLayout sDevice sDataType sSize = UnsafeTensor tens
     dType = forgetIsChecked . fromSing $ sDataType
     size = forgetIsChecked . fromSing $ sSize
 
+-- | Create a typed square tensor with ones on the diagonal and zeros elsewhere.
 eyeSquare ::
   forall requiresGradient layout device dataType size shape.
   ( shape ~ 'Shape '[ 'Dim ('Name "*") size, 'Dim ('Name "*") size],
