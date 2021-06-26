@@ -363,6 +363,34 @@ sUnifySize size size' =
       <> show (forgetIsChecked (fromSing size'))
       <> "."
 
+-- | Unify two dimensions.
+--
+-- >>> dimA = SName @"*" :&: SSize @0
+-- >>> dimB = SName @"batch" :&: SSize @0
+-- >>> dim = sUnifyDim dimA dimB
+-- >>> :type dim
+-- dim :: MonadFail m => m (SDim ('Dim ('Name "batch") ('Size 0))
+-- >>> fromSing <$> dim
+-- Dim {dimName = Checked "batch", dimSize = Checked 0}
+--
+-- >>> dimC = SName @"feature" :&: SSize @0
+-- >>> :type sUnifyDim dimB dimC
+-- sUnifyDim dimB dimC
+--  :: MonadFail m => m (SDim ('Dim (TypeError ...) ('Size 0)))
+--
+-- >>> dimD = SUncheckedName "batch" :&: SSize @0
+-- >>> dim = sUnifyDim dimA dimD
+-- >>> :type dim
+-- dim :: MonadFail m => m (SDim ('Dim 'UncheckedName ('Size 0)))
+-- >>> fromSing <$> dim
+-- Dim {dimName = Unchecked "batch", dimSize = Checked 0}
+--
+-- >>> dimE = SUncheckedName "feature" :&: SSize @0
+-- >>> dim = sUnifyDim dimB dimE
+-- >>> :type dim
+-- dim :: MonadFail m => m (SDim ('Dim 'UncheckedName ('Size 0)))
+-- >>> fromSing <$> dim
+-- *** Exception: user error (The supplied dimensions must be the same, but dimensions with different names were found: "batch" and "feature".)
 sUnifyDim ::
   forall m dim dim'.
   MonadFail m =>
