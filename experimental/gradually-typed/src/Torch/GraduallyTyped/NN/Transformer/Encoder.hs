@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -22,17 +23,18 @@ import Control.Monad.Reader (MonadIO, MonadReader)
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Kind (Constraint, Type)
 import Data.Singletons (SingI, sing)
+import Data.Singletons.Prelude.List (SList (SNil))
 import GHC.TypeLits (Nat, Symbol, type (<=?))
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), KnownDataType, WithDataTypeC (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, WithDeviceC (..))
-import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
+import Torch.GraduallyTyped.DType (DataType (..), KnownDataType, SDataType)
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, SDevice)
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout)
 import Torch.GraduallyTyped.NN.Functional.Sparse (EmbeddingF)
 import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..))
 import Torch.GraduallyTyped.NN.Sparse (Embedding (..))
-import Torch.GraduallyTyped.NN.Transformer.Stack (HasInitializeTransformerStackC, HasLookupStack, TransformerStack, lookupStack)
+import Torch.GraduallyTyped.NN.Transformer.Stack (HasLookupStack, TransformerStack, lookupStack)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Prelude (Seq)
@@ -40,7 +42,7 @@ import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownDim, Name (..), SelectDim (..), Shape (..), Size (..), WithDimC (..), WithDimsC (..), WithShapeC (..))
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownDim, Name (..), SDim, SShape (..), SelectDim (..), Shape (..), Size (..), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (TransposeF, UnsqueezeF, transpose, unsqueeze)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
@@ -190,357 +192,112 @@ type family
   TEPosEncF 'BART device dataType _ inputEmbedDim posEncDim =
     Embedding ('Layout 'Dense) device dataType posEncDim inputEmbedDim 'Nothing
 
-type HasInitializeTransformerEncoderC
-  (numLayers :: Nat)
-  (style :: TransformerStyle)
-  (device :: Device (DeviceType Nat))
-  (dataType :: DataType DType)
-  (headDim :: Dim (Name Symbol) (Size Nat))
-  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (embedDim :: Dim (Name Symbol) (Size Nat))
-  (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (ffnDim :: Dim (Name Symbol) (Size Nat))
-  (posEncDim :: Dim (Name Symbol) (Size Nat))
-  (dropoutP :: Type) =
-  ( WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF posEncDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP, Generator device))))))))),
-    WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF posEncDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP, Generator device)))))))),
-    WithDimC headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF posEncDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP, Generator device))))))),
-    WithDimC headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF posEncDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP, Generator device)))))),
-    WithDimC embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (WithDimF posEncDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP, Generator device))))),
-    WithDimC inputEmbedDim (WithDimF ffnDim (WithDimF posEncDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP, Generator device)))),
-    WithDimC ffnDim (WithDimF posEncDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP, Generator device))),
-    WithDimC posEncDim (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP, Generator device))
-  )
-
 type family
   HasInitializeTEStackF
     (stack :: Type)
-    (style :: TransformerStyle)
-    (device :: Device (DeviceType Nat))
-    (dataType :: DataType DType)
-    (headDim :: Dim (Name Symbol) (Size Nat))
-    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (embedDim :: Dim (Name Symbol) (Size Nat))
-    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (ffnDim :: Dim (Name Symbol) (Size Nat))
-    (dropoutP :: Type) ::
+    (style :: TransformerStyle) ::
     Constraint
   where
-  HasInitializeTEStackF stack _ device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP =
-    ( HasInitialize stack,
-      InitializeF stack ~ WithDeviceF device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF inputEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (stack, Generator device)))))))),
-      HasInitializeTransformerStackC stack device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP
-    )
+  HasInitializeTEStackF stack _ = HasInitialize stack
 
 type family
   HasInitializeTEEmbedLayerNormF
     (embedLayerNorm :: Type)
-    (style :: TransformerStyle)
-    (device :: Device (DeviceType Nat))
-    (dataType :: DataType DType)
-    (inputEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
+    (style :: TransformerStyle) ::
     Constraint
   where
-  HasInitializeTEEmbedLayerNormF _ 'T5 _ _ _ = ()
-  HasInitializeTEEmbedLayerNormF embedLayerNorm 'BERT device dataType inputEmbedDim =
-    ( HasInitialize embedLayerNorm,
-      InitializeF embedLayerNorm ~ WithDeviceF device (WithDataTypeF dataType (WithDimsF '[inputEmbedDim] (Double -> embedLayerNorm))),
-      WithDeviceC device (WithDataTypeF dataType (WithDimsF '[inputEmbedDim] (Double -> embedLayerNorm))),
-      WithDataTypeC dataType (WithDimsF '[inputEmbedDim] (Double -> embedLayerNorm)),
-      WithDimsC '[inputEmbedDim] (Double -> embedLayerNorm)
-    )
-  HasInitializeTEEmbedLayerNormF embedLayerNorm 'RoBERTa device dataType inputEmbedDim =
-    ( HasInitialize embedLayerNorm,
-      InitializeF embedLayerNorm ~ WithDeviceF device (WithDataTypeF dataType (WithDimsF '[inputEmbedDim] (Double -> embedLayerNorm))),
-      WithDeviceC device (WithDataTypeF dataType (WithDimsF '[inputEmbedDim] (Double -> embedLayerNorm))),
-      WithDataTypeC dataType (WithDimsF '[inputEmbedDim] (Double -> embedLayerNorm)),
-      WithDimsC '[inputEmbedDim] (Double -> embedLayerNorm)
-    )
-  HasInitializeTEEmbedLayerNormF _ 'Pegasus _ _ _ = ()
+  HasInitializeTEEmbedLayerNormF _ 'T5 = ()
+  HasInitializeTEEmbedLayerNormF embedLayerNorm 'BERT = HasInitialize embedLayerNorm
+  HasInitializeTEEmbedLayerNormF embedLayerNorm 'RoBERTa = HasInitialize embedLayerNorm
+  HasInitializeTEEmbedLayerNormF _ 'Pegasus = ()
+  HasInitializeTEEmbedLayerNormF embedLayerNorm 'BART = HasInitialize embedLayerNorm
 
 type family
   HasInitializeTELayerNormF
     (layerNorm :: Type)
-    (style :: TransformerStyle)
-    (device :: Device (DeviceType Nat))
-    (dataType :: DataType DType)
-    (inputEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
+    (style :: TransformerStyle) ::
     Constraint
   where
-  HasInitializeTELayerNormF layerNorm 'T5 device dataType inputEmbedDim =
-    ( HasInitialize layerNorm,
-      InitializeF layerNorm ~ WithDeviceF device (WithDataTypeF dataType (WithDimsF '[inputEmbedDim] (Double -> layerNorm))),
-      WithDeviceC device (WithDataTypeF dataType (WithDimsF '[inputEmbedDim] (Double -> layerNorm))),
-      WithDataTypeC dataType (WithDimsF '[inputEmbedDim] (Double -> layerNorm)),
-      WithDimsC '[inputEmbedDim] (Double -> layerNorm)
-    )
-  HasInitializeTELayerNormF _ 'BERT _ _ _ = ()
-  HasInitializeTELayerNormF _ 'RoBERTa _ _ _ = ()
-  HasInitializeTELayerNormF layerNorm 'Pegasus device dataType inputEmbedDim =
-    ( HasInitialize layerNorm,
-      InitializeF layerNorm ~ WithDeviceF device (WithDataTypeF dataType (WithDimsF '[inputEmbedDim] (Double -> layerNorm))),
-      WithDeviceC device (WithDataTypeF dataType (WithDimsF '[inputEmbedDim] (Double -> layerNorm))),
-      WithDataTypeC dataType (WithDimsF '[inputEmbedDim] (Double -> layerNorm)),
-      WithDimsC '[inputEmbedDim] (Double -> layerNorm)
-    )
+  HasInitializeTELayerNormF layerNorm 'T5 = HasInitialize layerNorm
+  HasInitializeTELayerNormF _ 'BERT = ()
+  HasInitializeTELayerNormF _ 'RoBERTa = ()
+  HasInitializeTELayerNormF layerNorm 'Pegasus = HasInitialize layerNorm
+  HasInitializeTELayerNormF _ 'BART = ()
 
 type family
   HasInitializeTEDropoutF
     (dropout :: Type)
-    (style :: TransformerStyle)
-    (dropoutP :: Type) ::
+    (style :: TransformerStyle) ::
     Constraint
   where
-  HasInitializeTEDropoutF dropout _ dropoutP =
-    ( HasInitialize dropout,
-      InitializeF dropout ~ (dropoutP -> dropout)
-    )
+  HasInitializeTEDropoutF dropout _ = HasInitialize dropout
 
 type family
   HasInitializeTEPosEncF
     (posEnc :: Type)
-    (style :: TransformerStyle)
-    (device :: Device (DeviceType Nat))
-    (dataType :: DataType DType)
-    (headDim :: Dim (Name Symbol) (Size Nat))
-    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (posEncDim :: Dim (Name Symbol) (Size Nat)) ::
+    (style :: TransformerStyle) ::
     Constraint
   where
-  HasInitializeTEPosEncF posEnc 'T5 device dataType headDim _ posEncDim =
-    ( HasInitialize posEnc,
-      InitializeF posEnc ~ WithDeviceF device (WithDataTypeF dataType (WithDimF posEncDim (WithDimF headDim (Generator device -> (posEnc, Generator device))))),
-      WithDeviceC device (WithDataTypeF dataType (WithDimF posEncDim (WithDimF headDim (Generator device -> (posEnc, Generator device))))),
-      WithDataTypeC dataType (WithDimF posEncDim (WithDimF headDim (Generator device -> (posEnc, Generator device)))),
-      WithDimC posEncDim (WithDimF headDim (Generator device -> (posEnc, Generator device))),
-      WithDimC headDim (Generator device -> (posEnc, Generator device))
-    )
-  HasInitializeTEPosEncF posEnc 'BERT device dataType _ inputEmbedDim posEncDim =
-    ( HasInitialize posEnc,
-      InitializeF posEnc ~ WithDeviceF device (WithDataTypeF dataType (WithDimF posEncDim (WithDimF inputEmbedDim (Generator device -> (posEnc, Generator device))))),
-      WithDeviceC device (WithDataTypeF dataType (WithDimF posEncDim (WithDimF inputEmbedDim (Generator device -> (posEnc, Generator device))))),
-      WithDataTypeC dataType (WithDimF posEncDim (WithDimF inputEmbedDim (Generator device -> (posEnc, Generator device)))),
-      WithDimC posEncDim (WithDimF inputEmbedDim (Generator device -> (posEnc, Generator device))),
-      WithDimC inputEmbedDim (Generator device -> (posEnc, Generator device))
-    )
-  HasInitializeTEPosEncF posEnc 'RoBERTa device dataType _ inputEmbedDim posEncDim =
-    ( HasInitialize posEnc,
-      InitializeF posEnc ~ WithDeviceF device (WithDataTypeF dataType (WithDimF posEncDim (WithDimF inputEmbedDim (Generator device -> (posEnc, Generator device))))),
-      WithDeviceC device (WithDataTypeF dataType (WithDimF posEncDim (WithDimF inputEmbedDim (Generator device -> (posEnc, Generator device))))),
-      WithDataTypeC dataType (WithDimF posEncDim (WithDimF inputEmbedDim (Generator device -> (posEnc, Generator device)))),
-      WithDimC posEncDim (WithDimF inputEmbedDim (Generator device -> (posEnc, Generator device))),
-      WithDimC inputEmbedDim (Generator device -> (posEnc, Generator device))
-    )
-  HasInitializeTEPosEncF posEnc 'Pegasus device dataType _ inputEmbedDim posEncDim =
-    ( HasInitialize posEnc,
-      InitializeF posEnc ~ WithDeviceF device (WithDataTypeF dataType (WithDimF posEncDim (WithDimF inputEmbedDim (Generator device -> (posEnc, Generator device))))),
-      WithDeviceC device (WithDataTypeF dataType (WithDimF posEncDim (WithDimF inputEmbedDim (Generator device -> (posEnc, Generator device))))),
-      WithDataTypeC dataType (WithDimF posEncDim (WithDimF inputEmbedDim (Generator device -> (posEnc, Generator device)))),
-      WithDimC posEncDim (WithDimF inputEmbedDim (Generator device -> (posEnc, Generator device))),
-      WithDimC inputEmbedDim (Generator device -> (posEnc, Generator device))
-    )
+  HasInitializeTEPosEncF posEnc 'T5 = HasInitialize posEnc
+  HasInitializeTEPosEncF posEnc 'BERT = HasInitialize posEnc
+  HasInitializeTEPosEncF posEnc 'RoBERTa = HasInitialize posEnc
+  HasInitializeTEPosEncF posEnc 'Pegasus = HasInitialize posEnc
+  HasInitializeTEPosEncF posEnc 'BART = HasInitialize posEnc
 
 instance
   ( SingI style,
-    HasInitializeTransformerEncoderC numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP,
     stack ~ TEStackF numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP,
-    HasInitializeTEStackF stack style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP,
+    HasInitializeTEStackF stack style,
     embedLayerNorm ~ TEEmbedLayerNormF style device dataType inputEmbedDim,
-    HasInitializeTEEmbedLayerNormF embedLayerNorm style device dataType inputEmbedDim,
+    HasInitializeTEEmbedLayerNormF embedLayerNorm style,
     layerNorm ~ TELayerNormF style device dataType inputEmbedDim,
-    HasInitializeTELayerNormF layerNorm style device dataType inputEmbedDim,
+    HasInitializeTELayerNormF layerNorm style,
     dropout ~ TEDropoutF style dropoutP,
-    HasInitializeTEDropoutF dropout style dropoutP,
+    HasInitializeTEDropoutF dropout style,
     posEnc ~ TEPosEncF style device dataType headDim inputEmbedDim posEncDim,
-    HasInitializeTEPosEncF posEnc style device dataType headDim inputEmbedDim posEncDim
+    HasInitializeTEPosEncF posEnc style
   ) =>
   HasInitialize (TransformerEncoder numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP)
   where
   type
     InitializeF (TransformerEncoder numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP) =
-      WithDeviceF
-        device
-        ( WithDataTypeF
-            dataType
-            ( WithDimF
-                headDim
-                ( WithDimF
-                    headEmbedDim
-                    ( WithDimF
-                        embedDim
-                        ( WithDimF
-                            inputEmbedDim
-                            ( WithDimF
-                                ffnDim
-                                ( WithDimF
-                                    posEncDim
-                                    (dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP, Generator device))
-                                )
-                            )
-                        )
-                    )
-                )
-            )
-        )
-  initialize =
-    withDevice @device $
-      \deviceType ->
-        withDataType @dataType $
-          \dType ->
-            withDim @headDim $
-              \headDim ->
-                withDim @headEmbedDim $
-                  \headEmbedDim ->
-                    withDim @embedDim $
-                      \embedDim ->
-                        withDim @inputEmbedDim $
-                          \inputEmbedDim ->
-                            withDim @ffnDim $
-                              \ffnDim ->
-                                withDim @posEncDim @(dropoutP -> Double -> Generator device -> (TransformerEncoder numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP, Generator device)) $
-                                  \posEncDim -> go deviceType dType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim
-    where
-      go deviceType dType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP eps = runState $ do
-        stack <-
-          state $
-            withoutDim @ffnDim @(dropoutP -> Double -> Generator device -> (stack, Generator device))
-              ( withoutDim @inputEmbedDim
-                  ( withoutDim @embedDim
-                      ( withoutDim @headEmbedDim
-                          ( withoutDim @headDim
-                              ( withoutDataType @dataType
-                                  ( withoutDevice @device
-                                      ( initialize @stack
-                                      )
-                                      deviceType
-                                  )
-                                  dType
-                              )
-                              headDim
-                          )
-                          headEmbedDim
-                      )
-                      embedDim
-                  )
-                  inputEmbedDim
-              )
-              ffnDim
-              dropoutP
-              eps
-        let embedLayerNorm = case sing @style of
-              ST5 -> ()
-              SBERT ->
-                withoutShape @('Shape '[inputEmbedDim]) @(Double -> embedLayerNorm)
-                  ( withoutDataType @dataType
-                      ( withoutDevice @device
-                          ( initialize @embedLayerNorm
-                          )
-                          deviceType
-                      )
-                      dType
-                  )
-                  [inputEmbedDim]
-                  eps
-              SRoBERTa ->
-                withoutShape @('Shape '[inputEmbedDim]) @(Double -> embedLayerNorm)
-                  ( withoutDataType @dataType
-                      ( withoutDevice @device
-                          ( initialize @embedLayerNorm
-                          )
-                          deviceType
-                      )
-                      dType
-                  )
-                  [inputEmbedDim]
-                  eps
-              SPegasus -> ()
-        let layerNorm = case sing @style of
-              ST5 ->
-                withoutShape @('Shape '[inputEmbedDim]) @(Double -> layerNorm)
-                  ( withoutDataType @dataType
-                      ( withoutDevice @device
-                          ( initialize @layerNorm
-                          )
-                          deviceType
-                      )
-                      dType
-                  )
-                  [inputEmbedDim]
-                  eps
-              SBERT -> ()
-              SRoBERTa -> ()
-              SPegasus ->
-                withoutShape @('Shape '[inputEmbedDim]) @(Double -> layerNorm)
-                  ( withoutDataType @dataType
-                      ( withoutDevice @device
-                          ( initialize @layerNorm
-                          )
-                          deviceType
-                      )
-                      dType
-                  )
-                  [inputEmbedDim]
-                  eps
-        let dropout = initialize @dropout dropoutP
-        posEnc <-
-          state $ case sing @style of
-            ST5 ->
-              withoutDim @headDim @(Generator device -> (posEnc, Generator device))
-                ( withoutDim @posEncDim
-                    ( withoutDataType @dataType
-                        ( withoutDevice @device
-                            ( initialize @posEnc
-                            )
-                            deviceType
-                        )
-                        dType
-                    )
-                    posEncDim
-                )
-                headDim
-            SBERT ->
-              withoutDim @inputEmbedDim @(Generator device -> (posEnc, Generator device))
-                ( withoutDim @posEncDim
-                    ( withoutDataType @dataType
-                        ( withoutDevice @device
-                            ( initialize @posEnc
-                            )
-                            deviceType
-                        )
-                        dType
-                    )
-                    posEncDim
-                )
-                inputEmbedDim
-            SRoBERTa ->
-              withoutDim @inputEmbedDim @(Generator device -> (posEnc, Generator device))
-                ( withoutDim @posEncDim
-                    ( withoutDataType @dataType
-                        ( withoutDevice @device
-                            ( initialize @posEnc
-                            )
-                            deviceType
-                        )
-                        dType
-                    )
-                    posEncDim
-                )
-                inputEmbedDim
-            SPegasus ->
-              withoutDim @inputEmbedDim @(Generator device -> (posEnc, Generator device))
-                ( withoutDim @posEncDim
-                    ( withoutDataType @dataType
-                        ( withoutDevice @device
-                            ( initialize @posEnc
-                            )
-                            deviceType
-                        )
-                        dType
-                    )
-                    posEncDim
-                )
-                inputEmbedDim
-        pure . TransformerEncoder $ GTransformerEncoder stack embedLayerNorm layerNorm dropout posEnc
+      SDevice device ->
+      SDataType dataType ->
+      SDim headDim ->
+      SDim headEmbedDim ->
+      SDim embedDim ->
+      SDim inputEmbedDim ->
+      SDim ffnDim ->
+      SDim posEncDim ->
+      dropoutP ->
+      Double ->
+      Generator device ->
+      (TransformerEncoder numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP, Generator device)
+  initialize device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP eps = runState $ do
+    stack <-
+      state $
+        initialize @stack device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP eps
+    let embedLayerNorm = case sing @style of
+          ST5 -> ()
+          SBERT -> initialize @embedLayerNorm device dataType (SShape $ inputEmbedDim :|: SNil) eps
+          SRoBERTa -> initialize @embedLayerNorm device dataType (SShape $ inputEmbedDim :|: SNil) eps
+          SPegasus -> ()
+          SBART -> initialize @embedLayerNorm device dataType (SShape $ inputEmbedDim :|: SNil) eps
+    let layerNorm = case sing @style of
+          ST5 -> initialize @layerNorm device dataType (SShape $ inputEmbedDim :|: SNil) eps
+          SBERT -> ()
+          SRoBERTa -> ()
+          SPegasus -> initialize @layerNorm device dataType (SShape $ inputEmbedDim :|: SNil) eps
+          SBART -> ()
+    let dropout = initialize @dropout dropoutP
+    posEnc <-
+      state $ case sing @style of
+        ST5 -> initialize @posEnc (SLayout SDense) device dataType posEncDim headDim
+        SBERT -> initialize @posEnc (SLayout SDense) device dataType posEncDim inputEmbedDim
+        SRoBERTa -> initialize @posEnc (SLayout SDense) device dataType posEncDim inputEmbedDim
+        SPegasus -> initialize @posEnc (SLayout SDense) device dataType posEncDim inputEmbedDim
+        SBART -> initialize @posEnc (SLayout SDense) device dataType posEncDim inputEmbedDim
+    pure . TransformerEncoder $ GTransformerEncoder stack embedLayerNorm layerNorm dropout posEnc
 
 lookupEncoder ::
   forall numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP m.
@@ -551,7 +308,6 @@ lookupEncoder ::
     KnownDevice device,
     KnownDataType dataType,
     KnownDim headDim,
-    KnownDim headEmbedDim,
     KnownDim embedDim,
     KnownDim inputEmbedDim,
     KnownDim ffnDim,
@@ -559,16 +315,19 @@ lookupEncoder ::
     Scalar dropoutP,
     HasLookupStack numLayers (1 <=? numLayers) numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP m
   ) =>
+  SDim headDim ->
+  SDim headEmbedDim ->
+  SDim embedDim ->
   dropoutP ->
   Double ->
   String ->
   m (TransformerEncoder numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP)
-lookupEncoder dropoutP eps prefix =
-  let stack ST5 = lookupStack dropoutP eps (prefix <> "block.")
-      stack SBERT = lookupStack dropoutP eps (prefix <> "encoder.layer.")
-      stack SRoBERTa = lookupStack dropoutP eps (prefix <> "encoder.layer.")
-      stack SBART = lookupStack dropoutP eps (prefix <> "layers.")
-      stack SPegasus = lookupStack dropoutP eps (prefix <> "layers.")
+lookupEncoder headDim headEmbedDim embedDim dropoutP eps prefix =
+  let stack ST5 = lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "block.")
+      stack SBERT = lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "encoder.layer.")
+      stack SRoBERTa = lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "encoder.layer.")
+      stack SBART = lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "layers.")
+      stack SPegasus = lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "layers.")
       embedLayerNorm ST5 = pure ()
       embedLayerNorm SBERT =
         LayerNormWithBias

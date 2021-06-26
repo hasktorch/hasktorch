@@ -24,6 +24,7 @@ import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.Reader (ReaderT (runReaderT))
 import Data.Coerce (Coercible, coerce)
 import Data.Kind (Type)
+import Data.Singletons (SingI (..))
 import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import GHC.TypeNats (type (<=?))
@@ -181,10 +182,13 @@ type family
 
 instance
   ( KnownDim headDim,
-    KnownDim headEmbedDim,
+    SingI headDim,
+    SingI headEmbedDim,
     KnownDim embedDim,
+    SingI embedDim,
     KnownDim ffnDim,
     KnownDim inputEmbedDim,
+    SingI inputEmbedDim,
     KnownDim vocabDim,
     HasLookupStack numLayers (1 <=? numLayers) numLayers 'Pegasus ('Device 'CPU) PegasusDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim PegasusDropoutP (ReaderT TensorDict IO),
     HasLookupDecoderStack numLayers (1 <=? numLayers) numLayers 'Pegasus ('Device 'CPU) PegasusDataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim PegasusDropoutP (ReaderT TensorDict IO)
@@ -196,16 +200,23 @@ instance
       FilePath -> IO (PegasusModel numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
   initialize filePath =
     do
+      let headDim = sing @headDim
+          headEmbedDim = sing @headEmbedDim
+          embedDim = sing @embedDim
+          inputEmbedDim = sing @inputEmbedDim
       tensorDict <- tensorDictFromPretrained filePath
       flip runReaderT tensorDict $
-        PegasusModel <$> lookupSequenceToSequenceTransformer pegasusDropoutP pegasusEps "model."
+        PegasusModel <$> lookupSequenceToSequenceTransformer headDim headEmbedDim embedDim inputEmbedDim pegasusDropoutP pegasusEps "model."
 
 instance
   ( KnownDim headDim,
-    KnownDim headEmbedDim,
+    SingI headDim,
+    SingI headEmbedDim,
     KnownDim embedDim,
+    SingI embedDim,
     KnownDim ffnDim,
     KnownDim inputEmbedDim,
+    SingI inputEmbedDim,
     KnownDim vocabDim,
     HasLookupStack numLayers (1 <=? numLayers) numLayers 'Pegasus ('Device 'CPU) PegasusDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim PegasusDropoutP (ReaderT TensorDict IO),
     HasLookupDecoderStack numLayers (1 <=? numLayers) numLayers 'Pegasus ('Device 'CPU) PegasusDataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim PegasusDropoutP (ReaderT TensorDict IO)
@@ -217,9 +228,13 @@ instance
       FilePath -> IO (PegasusModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
   initialize filePath =
     do
+      let headDim = sing @headDim
+          headEmbedDim = sing @headEmbedDim
+          embedDim = sing @embedDim
+          inputEmbedDim = sing @inputEmbedDim
       tensorDict <- tensorDictFromPretrained filePath
       flip runReaderT tensorDict $
-        PegasusModelWithLMHead <$> lookupSequenceToSequenceTransformerWithLMHead pegasusDropoutP pegasusEps ""
+        PegasusModelWithLMHead <$> lookupSequenceToSequenceTransformerWithLMHead headDim headEmbedDim embedDim inputEmbedDim pegasusDropoutP pegasusEps ""
 
 mkPegasusInput ::
   forall batchDim seqDim m output.

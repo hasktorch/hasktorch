@@ -24,32 +24,42 @@ import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.Reader (ReaderT (runReaderT))
 import Data.Coerce (Coercible, coerce)
 import Data.Kind (Type)
+import Data.Singletons (SingI (..))
 import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import GHC.TypeNats (type (<=?))
+import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), KnownDataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice (..), WithDeviceC (..))
-import Torch.GraduallyTyped.Layout (KnownLayout, Layout (..), LayoutType (..))
+import Torch.GraduallyTyped.DType (DataType (..), KnownDataType (..), SDType (..), SDataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice (..))
+import Torch.GraduallyTyped.Layout (KnownLayout, Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Transformer.DecoderStack (HasLookupDecoderStack)
 import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (SequenceToSequenceTransformer, SequenceToSequenceTransformerGenerationInput (..), SequenceToSequenceTransformerInput (..), SequenceToSequenceTransformerOutput (..), SequenceToSequenceTransformerWithLMHead, lookupSequenceToSequenceTransformer, lookupSequenceToSequenceTransformerWithLMHead)
 import Torch.GraduallyTyped.NN.Transformer.Stack (HasLookupStack)
 import Torch.GraduallyTyped.NN.Transformer.Type (MkTransformerAttentionMaskC, MkTransformerCrossAttentionMaskC, MkTransformerDecoderAttentionMaskC, ShiftRight, TensorDict, TransformerStyle (BART), mkTransformerAttentionMask, mkTransformerCrossAttentionMask, mkTransformerDecoderAttentionMask, mkTransformerInput, mkTransformerPaddingMask, tensorDictFromPretrained)
 import Torch.GraduallyTyped.Prelude (Seq)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
-import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, type (!))
-import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), KnownShape (..), Name (..), Shape (..), Size (..), WithDimC (..))
-import Torch.GraduallyTyped.Tensor.Creation (arangeNaturals)
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (SWithoutGradient))
+import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, sGetDim, type (!))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), KnownShape (..), Name (..), SBy (..), SDim (sDimSize), SSelectDim (..), Shape (..), Size (..))
+import Torch.GraduallyTyped.Tensor.Creation (sArangeNaturals)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (addScalar)
-import Torch.GraduallyTyped.Tensor.Type (Tensor, device, shape)
+import Torch.GraduallyTyped.Tensor.Type (SGetDevice (sDevice), SGetLayout, SGetShape, Tensor, sShape)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
 -- | BART dType.
 type BARTDType = 'Float
 
+-- | BART dType.
+bartDType :: SDType BARTDType
+bartDType = SFloat
+
 -- | BART data type.
 type BARTDataType = 'DataType BARTDType
+
+-- | BART data type.
+bartDataType :: SDataType BARTDataType
+bartDataType = SDataType bartDType
 
 -- | BART dropout probability type.
 type BARTDropoutP = Float
@@ -182,10 +192,13 @@ type family
 
 instance
   ( KnownDim headDim,
-    KnownDim headEmbedDim,
+    SingI headDim,
+    SingI headEmbedDim,
     KnownDim embedDim,
+    SingI embedDim,
     KnownDim ffnDim,
     KnownDim inputEmbedDim,
+    SingI inputEmbedDim,
     KnownDim vocabDim,
     HasLookupStack numLayers (1 <=? numLayers) numLayers 'BART ('Device 'CPU) BARTDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim BARTDropoutP (ReaderT TensorDict IO),
     HasLookupDecoderStack numLayers (1 <=? numLayers) numLayers 'BART ('Device 'CPU) BARTDataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim BARTDropoutP (ReaderT TensorDict IO)
@@ -197,16 +210,23 @@ instance
       FilePath -> IO (BARTModel numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
   initialize filePath =
     do
+      let headDim = sing @headDim
+          headEmbedDim = sing @headEmbedDim
+          embedDim = sing @embedDim
+          inputEmbedDim = sing @inputEmbedDim
       tensorDict <- tensorDictFromPretrained filePath
       flip runReaderT tensorDict $
-        BARTModel <$> lookupSequenceToSequenceTransformer bartDropoutP bartEps "model."
+        BARTModel <$> lookupSequenceToSequenceTransformer headDim headEmbedDim embedDim inputEmbedDim bartDropoutP bartEps "model."
 
 instance
   ( KnownDim headDim,
-    KnownDim headEmbedDim,
+    SingI headDim,
+    SingI headEmbedDim,
     KnownDim embedDim,
+    SingI embedDim,
     KnownDim ffnDim,
     KnownDim inputEmbedDim,
+    SingI inputEmbedDim,
     KnownDim vocabDim,
     HasLookupStack numLayers (1 <=? numLayers) numLayers 'BART ('Device 'CPU) BARTDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim BARTDropoutP (ReaderT TensorDict IO),
     HasLookupDecoderStack numLayers (1 <=? numLayers) numLayers 'BART ('Device 'CPU) BARTDataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim BARTDropoutP (ReaderT TensorDict IO)
@@ -218,15 +238,17 @@ instance
       FilePath -> IO (BARTModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
   initialize filePath =
     do
+      let headDim = sing @headDim
+          headEmbedDim = sing @headEmbedDim
+          embedDim = sing @embedDim
+          inputEmbedDim = sing @inputEmbedDim
       tensorDict <- tensorDictFromPretrained filePath
       flip runReaderT tensorDict $
-        BARTModelWithLMHead <$> lookupSequenceToSequenceTransformerWithLMHead bartDropoutP bartEps ""
+        BARTModelWithLMHead <$> lookupSequenceToSequenceTransformerWithLMHead headDim headEmbedDim embedDim inputEmbedDim bartDropoutP bartEps ""
 
 mkBARTInput ::
   forall batchDim seqDim m output.
   ( MonadFail m,
-    WithDimC batchDim (WithDimF seqDim ([[Int]] -> m output)),
-    WithDimC seqDim ([[Int]] -> m output),
     KnownDim batchDim,
     KnownDim seqDim,
     output
@@ -237,8 +259,11 @@ mkBARTInput ::
           ('DataType 'Int64)
           ('Shape '[batchDim, seqDim])
   ) =>
-  WithDimF batchDim (WithDimF seqDim ([[Int]] -> m output))
-mkBARTInput = mkTransformerInput @batchDim @seqDim @m bartPadTokenId
+  SDim batchDim ->
+  SDim seqDim ->
+  [[Int]] ->
+  m output
+mkBARTInput = mkTransformerInput bartPadTokenId
 
 mkBARTPaddingMask ::
   Tensor requiresGradient layout device dataType shape ->
@@ -308,10 +333,11 @@ instance
           inputDevice
           inputDataType
           inputShape,
-    KnownDevice inputDevice,
+    SGetLayout inputLayout,
+    SGetDevice inputDevice,
+    SGetShape inputShape,
     inputSeqDim ~ (inputShape ! 1),
-    KnownDim inputSeqDim,
-    KnownShape inputShape,
+    inputSeqDim ~ 'Dim inputSeqName inputSeqSize,
     inputPaddingMask
       ~ Tensor
           inputPaddingMaskRequiresGradient
@@ -331,9 +357,7 @@ instance
           ('Layout 'Dense)
           inputDevice
           ('DataType 'Int64)
-          ('Shape '[inputSeqDim]),
-    WithDimC inputSeqDim pos,
-    WithDeviceC inputDevice (WithDimF inputSeqDim pos),
+          ('Shape '[ 'Dim ('Name "*") inputSeqSize]),
     decoderInput
       ~ Tensor
           decoderInputRequiresGradient
@@ -366,19 +390,20 @@ instance
           rightShiftedDecoderInputPaddingMaskDevice
           rightShiftedDecoderInputPaddingMaskDataType
           rightShiftedDecoderInputPaddingMaskShape,
+    SGetDevice rightShiftedDecoderInputDevice,
+    SGetShape rightShiftedDecoderInputShape,
     rightShiftedDecoderInputPaddingMaskSeqDim ~ (rightShiftedDecoderInputPaddingMaskShape ! 1),
+    rightShiftedDecoderInputSeqDim ~ 'Dim rightShiftedDecoderInputSeqName rightShiftedDecoderInputSeqSize,
     decoderPos
       ~ Tensor
           'WithoutGradient
           ('Layout 'Dense)
           rightShiftedDecoderInputDevice
           ('DataType 'Int64)
-          ('Shape '[rightShiftedDecoderInputSeqDim]),
-    WithDimC rightShiftedDecoderInputSeqDim decoderPos,
-    WithDeviceC rightShiftedDecoderInputDevice (WithDimF rightShiftedDecoderInputSeqDim decoderPos),
-    MkTransformerAttentionMaskC BARTDType BARTDataType inputPaddingMaskRequiresGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim attentionMask,
-    MkTransformerCrossAttentionMaskC BARTDType BARTDataType rightShiftedDecoderInputSeqDim inputPaddingMaskRequiresGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim crossAttentionMask,
-    MkTransformerDecoderAttentionMaskC BARTDType BARTDataType rightShiftedDecoderInputPaddingMaskRequiresGradient rightShiftedDecoderInputPaddingMaskLayout rightShiftedDecoderInputPaddingMaskDevice rightShiftedDecoderInputPaddingMaskDataType rightShiftedDecoderInputPaddingMaskShape rightShiftedDecoderInputPaddingMaskSeqDim decoderAttentionMask,
+          ('Shape '[ 'Dim ('Name "*") rightShiftedDecoderInputSeqSize]),
+    MkTransformerAttentionMaskC IO BARTDataType inputPaddingMaskRequiresGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim attentionMask,
+    MkTransformerCrossAttentionMaskC IO BARTDataType rightShiftedDecoderInputSeqDim inputPaddingMaskRequiresGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim crossAttentionMask,
+    MkTransformerDecoderAttentionMaskC IO BARTDataType rightShiftedDecoderInputPaddingMaskLayout rightShiftedDecoderInputPaddingMaskDevice rightShiftedDecoderInputPaddingMaskShape rightShiftedDecoderInputPaddingMaskSeqDim decoderAttentionMask,
     HasForward (ShiftRight Int) decoderInput generator rightShiftedDecoderInput generator,
     HasForward (ShiftRight Int) decoderInputPaddingMask generator rightShiftedDecoderInputPaddingMask generator,
     HasForward
@@ -400,82 +425,51 @@ instance
   where
   forward bartModel BARTInput {..} =
     let inputPaddingMask = mkBARTPaddingMask bartInput
-        attentionMask =
-          mkTransformerAttentionMask
-            @BARTDType
-            @BARTDataType
-            @inputPaddingMaskRequiresGradient
-            @inputPaddingMaskLayout
-            @inputPaddingMaskDevice
-            @inputPaddingMaskDataType
-            @inputPaddingMaskShape
-            bartAttentionMaskBias
-            inputPaddingMask
-        inputDevice = device bartInput
-        [_, inputSeqDim] = shape bartInput
+        attentionMask = unsafePerformIO $ mkTransformerAttentionMask bartDataType bartAttentionMaskBias inputPaddingMask
+        inputDevice = unsafePerformIO $ sDevice bartInput
+        inputShape = unsafePerformIO $ sShape bartInput
+        inputSeqDim = unsafePerformIO $ sGetDim (SSelectDim $ SByIndex @1) inputShape
+        inputSeqSize = sDimSize inputSeqDim
         pos =
           flip addScalar (2 :: Int) $
-            withoutDim @inputSeqDim @pos
-              ( withoutDevice @inputDevice
-                  ( arangeNaturals
-                      @'WithoutGradient
-                      @('Layout 'Dense)
-                      @inputDevice
-                      @('DataType 'Int64)
-                      @inputSeqDim
-                  )
-                  inputDevice
-              )
-              inputSeqDim
+            sArangeNaturals
+              SWithoutGradient
+              (SLayout SDense)
+              inputDevice
+              (SDataType SInt64)
+              inputSeqSize
      in runIxState $
           ireturn bartDecoderInput
             >>>= IxState . forward (initialize @(ShiftRight Int) bartEOSTokenId)
             >>>= ( \rightShiftedDecoderInput ->
-                     let rightShiftedDecoderInputDevice = device rightShiftedDecoderInput
-                         [_, rightShiftedDecoderInputSeqDim] = shape rightShiftedDecoderInput
+                     let rightShiftedDecoderInputDevice = unsafePerformIO $ sDevice rightShiftedDecoderInput
+                         rightShiftedDecoderInputShape = unsafePerformIO $ sShape rightShiftedDecoderInput
+                         rightShiftedDecoderInputSeqDim = unsafePerformIO $ sGetDim (SSelectDim $ SByIndex @1) rightShiftedDecoderInputShape
+                         rightShiftedDecoderInputSeqSize = sDimSize rightShiftedDecoderInputSeqDim
                          decoderPos =
                            flip addScalar (2 :: Int) $
-                             withoutDim @rightShiftedDecoderInputSeqDim @decoderPos
-                               ( withoutDevice @rightShiftedDecoderInputDevice
-                                   ( arangeNaturals
-                                       @'WithoutGradient
-                                       @('Layout 'Dense)
-                                       @rightShiftedDecoderInputDevice
-                                       @('DataType 'Int64)
-                                       @rightShiftedDecoderInputSeqDim
-                                   )
-                                   rightShiftedDecoderInputDevice
-                               )
-                               rightShiftedDecoderInputSeqDim
+                             sArangeNaturals
+                               SWithoutGradient
+                               (SLayout SDense)
+                               rightShiftedDecoderInputDevice
+                               (SDataType SInt64)
+                               rightShiftedDecoderInputSeqSize
                          crossAttentionMask =
-                           withoutDim @rightShiftedDecoderInputSeqDim @(inputPaddingMask -> crossAttentionMask)
-                             ( mkTransformerCrossAttentionMask
-                                 @BARTDType
-                                 @BARTDataType
-                                 @rightShiftedDecoderInputSeqDim
-                                 @inputPaddingMaskRequiresGradient
-                                 @inputPaddingMaskLayout
-                                 @inputPaddingMaskDevice
-                                 @inputPaddingMaskDataType
-                                 @inputPaddingMaskShape
-                                 bartAttentionMaskBias
-                             )
-                             rightShiftedDecoderInputSeqDim
-                             inputPaddingMask
+                           unsafePerformIO $
+                             mkTransformerCrossAttentionMask
+                               bartDataType
+                               rightShiftedDecoderInputSeqDim
+                               bartAttentionMaskBias
+                               inputPaddingMask
                       in ireturn (mkBARTPaddingMask bartDecoderInput)
                            >>>= IxState . forward (initialize @(ShiftRight Int) 0)
                            >>>= ( \rightShiftedDecoderInputPaddingMask ->
                                     let decoderAttentionMask =
-                                          mkTransformerDecoderAttentionMask
-                                            @BARTDType
-                                            @BARTDataType
-                                            @rightShiftedDecoderInputPaddingMaskRequiresGradient
-                                            @rightShiftedDecoderInputPaddingMaskLayout
-                                            @rightShiftedDecoderInputPaddingMaskDevice
-                                            @rightShiftedDecoderInputPaddingMaskDataType
-                                            @rightShiftedDecoderInputPaddingMaskShape
-                                            bartAttentionMaskBias
-                                            rightShiftedDecoderInputPaddingMask
+                                          unsafePerformIO $
+                                            mkTransformerDecoderAttentionMask
+                                              bartDataType
+                                              bartAttentionMaskBias
+                                              rightShiftedDecoderInputPaddingMask
                                      in ireturn (SequenceToSequenceTransformerInput bartInput rightShiftedDecoderInput pos decoderPos attentionMask decoderAttentionMask crossAttentionMask)
                                 )
                            >>>= IxState . forward (coerce bartModel :: BARTModelSeqToSeqF bartModel numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
@@ -504,19 +498,17 @@ instance
           rightShiftedDecoderInputDevice
           rightShiftedDecoderInputDataType
           rightShiftedDecoderInputShape,
-    KnownDevice rightShiftedDecoderInputDevice,
+    SGetDevice rightShiftedDecoderInputDevice,
+    SGetShape rightShiftedDecoderInputShape,
     rightShiftedDecoderInputSeqDim ~ (rightShiftedDecoderInputShape ! 1),
-    KnownDim rightShiftedDecoderInputSeqDim,
-    KnownShape rightShiftedDecoderInputShape,
+    rightShiftedDecoderInputSeqDim ~ 'Dim rightShiftedDecoderInputSeqName rightShiftedDecoderInputSeqSize,
     decoderPos
       ~ Tensor
           'WithoutGradient
           ('Layout 'Dense)
           rightShiftedDecoderInputDevice
           ('DataType 'Int64)
-          ('Shape '[rightShiftedDecoderInputSeqDim]),
-    WithDimC rightShiftedDecoderInputSeqDim decoderPos,
-    WithDeviceC rightShiftedDecoderInputDevice (WithDimF rightShiftedDecoderInputSeqDim decoderPos),
+          ('Shape '[ 'Dim ('Name "*") rightShiftedDecoderInputSeqSize]),
     inputPaddingMask
       ~ Tensor
           inputPaddingMaskRequiresGradient
@@ -543,8 +535,8 @@ instance
           rightShiftedDecoderInputPaddingMaskDataType
           rightShiftedDecoderInputPaddingMaskShape,
     rightShiftedDecoderInputPaddingMaskSeqDim ~ (rightShiftedDecoderInputPaddingMaskShape ! 1),
-    MkTransformerCrossAttentionMaskC BARTDType BARTDataType rightShiftedDecoderInputSeqDim inputPaddingMaskRequiresGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim crossAttentionMask,
-    MkTransformerDecoderAttentionMaskC BARTDType BARTDataType rightShiftedDecoderInputPaddingMaskRequiresGradient rightShiftedDecoderInputPaddingMaskLayout rightShiftedDecoderInputPaddingMaskDevice rightShiftedDecoderInputPaddingMaskDataType rightShiftedDecoderInputPaddingMaskShape rightShiftedDecoderInputPaddingMaskSeqDim decoderAttentionMask,
+    MkTransformerCrossAttentionMaskC IO BARTDataType rightShiftedDecoderInputSeqDim inputPaddingMaskRequiresGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim crossAttentionMask,
+    MkTransformerDecoderAttentionMaskC IO BARTDataType rightShiftedDecoderInputPaddingMaskLayout rightShiftedDecoderInputPaddingMaskDevice rightShiftedDecoderInputPaddingMaskShape rightShiftedDecoderInputPaddingMaskSeqDim decoderAttentionMask,
     HasForward (ShiftRight Int) decoderInput generator rightShiftedDecoderInput generator,
     HasForward (ShiftRight Int) decoderInputPaddingMask generator rightShiftedDecoderInputPaddingMask generator,
     HasForward
@@ -569,51 +561,34 @@ instance
       ireturn bartGenerationDecoderInput
         >>>= IxState . forward (initialize @(ShiftRight Int) bartEOSTokenId)
         >>>= ( \rightShiftedDecoderInput ->
-                 let rightShiftedDecoderInputDevice = device rightShiftedDecoderInput
-                     [_, rightShiftedDecoderInputSeqDim] = shape rightShiftedDecoderInput
+                 let rightShiftedDecoderInputDevice = unsafePerformIO $ sDevice rightShiftedDecoderInput
+                     rightShiftedDecoderInputShape = unsafePerformIO $ sShape rightShiftedDecoderInput
+                     rightShiftedDecoderInputSeqDim = unsafePerformIO $ sGetDim (SSelectDim $ SByIndex @1) rightShiftedDecoderInputShape
+                     rightShiftedDecoderInputSeqSize = sDimSize rightShiftedDecoderInputSeqDim
                      decoderPos =
                        flip addScalar (2 :: Int) $
-                         withoutDim @rightShiftedDecoderInputSeqDim @decoderPos
-                           ( withoutDevice @rightShiftedDecoderInputDevice
-                               ( arangeNaturals
-                                   @'WithoutGradient
-                                   @('Layout 'Dense)
-                                   @rightShiftedDecoderInputDevice
-                                   @('DataType 'Int64)
-                                   @rightShiftedDecoderInputSeqDim
-                               )
-                               rightShiftedDecoderInputDevice
-                           )
-                           rightShiftedDecoderInputSeqDim
+                         sArangeNaturals
+                           SWithoutGradient
+                           (SLayout SDense)
+                           rightShiftedDecoderInputDevice
+                           (SDataType SInt64)
+                           rightShiftedDecoderInputSeqSize
                      crossAttentionMask =
-                       withoutDim @rightShiftedDecoderInputSeqDim @(inputPaddingMask -> crossAttentionMask)
-                         ( mkTransformerCrossAttentionMask
-                             @BARTDType
-                             @BARTDataType
-                             @rightShiftedDecoderInputSeqDim
-                             @inputPaddingMaskRequiresGradient
-                             @inputPaddingMaskLayout
-                             @inputPaddingMaskDevice
-                             @inputPaddingMaskDataType
-                             @inputPaddingMaskShape
-                             bartAttentionMaskBias
-                         )
-                         rightShiftedDecoderInputSeqDim
-                         bartGenerationInputPaddingMask
+                       unsafePerformIO $
+                         mkTransformerCrossAttentionMask
+                           bartDataType
+                           rightShiftedDecoderInputSeqDim
+                           bartAttentionMaskBias
+                           bartGenerationInputPaddingMask
                   in ireturn (mkBARTPaddingMask bartGenerationDecoderInput)
                        >>>= IxState . forward (initialize @(ShiftRight Int) 0)
                        >>>= ( \rightShiftedDecoderInputPaddingMask ->
                                 let decoderAttentionMask =
-                                      mkTransformerDecoderAttentionMask
-                                        @BARTDType
-                                        @BARTDataType
-                                        @rightShiftedDecoderInputPaddingMaskRequiresGradient
-                                        @rightShiftedDecoderInputPaddingMaskLayout
-                                        @rightShiftedDecoderInputPaddingMaskDevice
-                                        @rightShiftedDecoderInputPaddingMaskDataType
-                                        @rightShiftedDecoderInputPaddingMaskShape
-                                        bartAttentionMaskBias
-                                        rightShiftedDecoderInputPaddingMask
+                                      unsafePerformIO $
+                                        mkTransformerDecoderAttentionMask
+                                          bartDataType
+                                          bartAttentionMaskBias
+                                          rightShiftedDecoderInputPaddingMask
                                  in ireturn (SequenceToSequenceTransformerGenerationInput rightShiftedDecoderInput bartGenerationEncoderOutput decoderPos decoderAttentionMask crossAttentionMask)
                             )
                        >>>= IxState . forward (coerce bartModel :: BARTModelSeqToSeqF bartModel numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)

@@ -45,6 +45,7 @@ import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.Reader (ReaderT (runReaderT))
 import Data.Coerce (Coercible, coerce)
 import Data.Kind (Type)
+import Data.Singletons (SingI (..))
 import GHC.Float (double2Int)
 import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol, type (<=?))
@@ -62,7 +63,7 @@ import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.RewriteRules ()
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, type (!))
-import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), KnownShape, Name (..), Shape (..), Size (..), WithDimC (..))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), KnownShape, Name (..), SDim, Shape (..), Size (..), WithDimC (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..), checkedDataType, checkedDevice, checkedLayout, checkedShape, shape)
 import Torch.GraduallyTyped.Unify (type (<+>))
 import qualified Torch.Tensor (Tensor (Unsafe), asTensor)
@@ -204,10 +205,13 @@ type family
 
 instance
   ( KnownDim headDim,
-    KnownDim headEmbedDim,
+    SingI headDim,
+    SingI headEmbedDim,
     KnownDim embedDim,
+    SingI embedDim,
     KnownDim ffnDim,
     KnownDim inputEmbedDim,
+    SingI inputEmbedDim,
     KnownDim vocabDim,
     HasLookupStack numLayers (1 <=? numLayers) numLayers 'T5 ('Device 'CPU) T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim T5DropoutP (ReaderT TensorDict IO),
     HasLookupDecoderStack numLayers (1 <=? numLayers) numLayers 'T5 ('Device 'CPU) T5DataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim T5DropoutP (ReaderT TensorDict IO)
@@ -219,16 +223,23 @@ instance
       FilePath -> IO (T5Model numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
   initialize filePath =
     do
+      let headDim = sing @headDim
+          headEmbedDim = sing @headEmbedDim
+          embedDim = sing @embedDim
+          inputEmbedDim = sing @inputEmbedDim
       tensorDict <- tensorDictFromPretrained filePath
       flip runReaderT tensorDict $
-        T5Model <$> lookupSequenceToSequenceTransformer t5DropoutP t5Eps ""
+        T5Model <$> lookupSequenceToSequenceTransformer headDim headEmbedDim embedDim inputEmbedDim t5DropoutP t5Eps ""
 
 instance
   ( KnownDim headDim,
-    KnownDim headEmbedDim,
+    SingI headDim,
+    SingI headEmbedDim,
     KnownDim embedDim,
+    SingI embedDim,
     KnownDim ffnDim,
     KnownDim inputEmbedDim,
+    SingI inputEmbedDim,
     KnownDim vocabDim,
     HasLookupStack numLayers (1 <=? numLayers) numLayers 'T5 ('Device 'CPU) T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim T5DropoutP (ReaderT TensorDict IO),
     HasLookupDecoderStack numLayers (1 <=? numLayers) numLayers 'T5 ('Device 'CPU) T5DataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim T5DropoutP (ReaderT TensorDict IO)
@@ -240,15 +251,17 @@ instance
       FilePath -> IO (T5ModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
   initialize filePath =
     do
+      let headDim = sing @headDim
+          headEmbedDim = sing @headEmbedDim
+          embedDim = sing @embedDim
+          inputEmbedDim = sing @inputEmbedDim
       tensorDict <- tensorDictFromPretrained filePath
       flip runReaderT tensorDict $
-        T5ModelWithLMHead <$> lookupSequenceToSequenceTransformerWithLMHead t5DropoutP t5Eps ""
+        T5ModelWithLMHead <$> lookupSequenceToSequenceTransformerWithLMHead headDim headEmbedDim embedDim inputEmbedDim t5DropoutP t5Eps ""
 
 mkT5Input ::
   forall batchDim seqDim m output.
   ( MonadFail m,
-    WithDimC batchDim (WithDimF seqDim ([[Int]] -> m output)),
-    WithDimC seqDim ([[Int]] -> m output),
     KnownDim batchDim,
     KnownDim seqDim,
     output
@@ -259,8 +272,11 @@ mkT5Input ::
           ('DataType 'Int64)
           ('Shape '[batchDim, seqDim])
   ) =>
-  WithDimF batchDim (WithDimF seqDim ([[Int]] -> m output))
-mkT5Input = mkTransformerInput @batchDim @seqDim @m t5PadTokenId
+  SDim batchDim ->
+  SDim seqDim ->
+  [[Int]] ->
+  m output
+mkT5Input = mkTransformerInput t5PadTokenId
 
 mkT5PaddingMask ::
   Tensor requiresGradient layout device dataType shape ->

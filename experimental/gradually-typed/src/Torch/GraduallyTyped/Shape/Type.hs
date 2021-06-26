@@ -54,6 +54,9 @@ data SSize (size :: Size Nat) where
 
 type instance Sing = SSize
 
+instance KnownNat size => SingI ('Size size) where
+  sing = SSize
+
 type family SizeF (size :: Size Nat) :: Nat where
   SizeF ('Size size) = size
 
@@ -84,6 +87,9 @@ data SName (name :: Name Symbol) where
   SName :: forall name. KnownSymbol name => SName ('Name name)
 
 type instance Sing = SName
+
+instance KnownSymbol name => SingI ('Name name) where
+  sing = SName
 
 type family NameF (name :: Name Symbol) :: Symbol where
   NameF ('Name name) = name
@@ -119,9 +125,17 @@ data Dim (name :: Type) (size :: Type) where
   deriving (Eq, Ord, Show)
 
 data SDim (dim :: Dim (Name Symbol) (Size Nat)) where
-  SDim :: forall name size. SName name -> SSize size -> SDim ('Dim name size)
+  SDim ::
+    forall name size.
+    { sDimName :: SName name,
+      sDimSize :: SSize size
+    } ->
+    SDim ('Dim name size)
 
 type instance Sing = SDim
+
+instance (KnownSymbol name, KnownNat size) => SingI ('Dim ('Name name) ('Size size)) where
+  sing = SDim (sing @('Name name)) (sing @('Size size))
 
 instance SingKind (Dim (Name Symbol) (Size Nat)) where
   type Demote (Dim (Name Symbol) (Size Nat)) = Dim (IsChecked String) (IsChecked Integer)
@@ -404,12 +418,11 @@ instance SingKind (Shape [Dim (Name Symbol) (Size Nat)]) where
 
 pattern (:|:) ::
   forall
-    (name :: Name Symbol)
-    (size :: Size Nat)
+    (dim :: Dim (Name Symbol) (Size Nat))
     (dims :: [Dim (Name Symbol) (Size Nat)]).
-  SDim ('Dim name size) ->
+  SDim dim ->
   SList dims ->
-  SList ('Dim name size : dims)
+  SList (dim : dims)
 pattern (:|:) dim dims = SCons dim dims
 
 infixr 8 :|:

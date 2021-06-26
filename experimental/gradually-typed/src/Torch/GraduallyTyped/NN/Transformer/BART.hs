@@ -42,8 +42,8 @@ testBARTInput = do
     ids <- Tokenizers.getIDs encoding
     print ids
     mkBARTInput
-      @('Dim ('Name "*") ('Size 1))
-      @('Dim ('Name "*") ('Size 6))
+      (SName @"*" :&: SSize @1)
+      (SName @"*" :&: SSize @6)
       [ids]
 
 testBARTDecoderInput :: IO _
@@ -53,8 +53,8 @@ testBARTDecoderInput = do
     ids <- Tokenizers.getIDs encoding
     print ids
     mkBARTInput
-      @('Dim ('Name "*") ('Size 1))
-      @('Dim ('Name "*") ('Size 5))
+      (SName @"*" :&: SSize @1)
+      (SName @"*" :&: SSize @5)
       [ids]
 
 testForwardBARTBase :: IO ()
