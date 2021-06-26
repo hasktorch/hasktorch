@@ -112,7 +112,7 @@ type LinearWeightDimsErrorMessage (weightDims :: [Dim (Name Symbol) (Size Nat)])
 -- >>> :type result
 -- result
 --   :: Tensor
---        'WithGradient
+--        'WithoutGradient
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)

@@ -23,6 +23,7 @@
 
 module Torch.GraduallyTyped.Tensor.Type where
 
+import Data.Bifunctor (bimap)
 import Data.Coerce (coerce)
 import Data.Foldable (Foldable (fold))
 import Data.Int (Int16)
@@ -53,8 +54,8 @@ import qualified Torch.Internal.Type as ATen (Tensor, TensorList)
 import qualified Torch.Tensor (Tensor (Unsafe))
 
 -- $setup
--- >>> import Torch.GraduallyTyped.Tensor.Creation (ones)
--- >>> import Torch.GraduallyTyped.Shape (By (..), SelectDim(..))
+-- >>> import Data.Singletons.Prelude.List (SList (..))
+-- >>> import Torch.GraduallyTyped
 
 -- | A gradually typed tensor.
 --
@@ -409,11 +410,11 @@ class SGetDevice (device :: Device (DeviceType Nat)) where
   --
   -- >>> ones' device = sOnes SWithGradient (SLayout SDense) device (SDataType SFloat) (SShape $ SName @"batch" :&: SSize @32 :|: SName @"feature" :&: SSize @8 :|: SNil)
   -- >>> t = ones' $ SDevice SCPU
-  -- >>> sDevice t
-  -- SDevice SCPU
+  -- >>> fromSing <$> sDevice t
+  -- Checked CPU
   -- >>> t = ones' $ SUncheckedDevice CPU
-  -- >>> sDevice t
-  -- SUncheckedDevice CPU
+  -- >>> fromSing <$> sDevice t
+  -- Unchecked CPU
   sDevice ::
     forall m requiresGradient layout dataType shape.
     MonadFail m =>
@@ -855,7 +856,7 @@ class SGetShape (shape :: Shape [Dim (Name Symbol) (Size Nat)]) where
     MonadFail m =>
     Tensor requiresGradient layout device dataType shape ->
     m [Dim String Integer]
-  dims tensor = fmap (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size)) . forgetIsChecked . fromSing <$> sShape tensor
+  dims tensor = fmap (bimap forgetIsChecked forgetIsChecked) . forgetIsChecked . fromSing <$> sShape tensor
 
 instance SGetShape 'UncheckedShape where
   sShape tensor = pure . SUncheckedShape . unsafePerformIO $ do

@@ -146,9 +146,9 @@ sZeros reqGradient layout device dataType shape =
 -- | Create a typed tensor of zeros.
 --
 -- >>> zeros :: CPUParameter ('DataType 'Float) ('Shape '[])
--- Tensor Float []  1.0000
+-- Tensor Float []  0.0000
 -- >>> zeros :: CPUTensor ('DataType 'Int64) ('Shape '[ 'Dim ('Name "*") ('Size 1)])
--- Tensor Int64 [1] [ 1]
+-- Tensor Int64 [1] [ 0]
 zeros ::
   forall requiresGradient layout device dataType shape.
   (SingI requiresGradient, SingI layout, SingI device, SingI dataType, SingI shape) =>

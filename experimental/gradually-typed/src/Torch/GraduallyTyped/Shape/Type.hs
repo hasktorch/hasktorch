@@ -27,6 +27,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 module Torch.GraduallyTyped.Shape.Type where
 
+import Data.Bifunctor (Bifunctor (..))
 import Data.Kind (Type)
 import Data.Proxy (Proxy (..))
 import Data.Singletons (Sing, SingI (..), SingKind (..), SomeSing (..), withSomeSing)
@@ -124,6 +125,9 @@ data Dim (name :: Type) (size :: Type) where
     } ->
     Dim name size
   deriving (Eq, Ord, Show)
+
+instance Bifunctor Dim where
+  bimap f g (Dim name size) = Dim (f name) (g size)
 
 data SDim (dim :: Dim (Name Symbol) (Size Nat)) where
   SDim ::

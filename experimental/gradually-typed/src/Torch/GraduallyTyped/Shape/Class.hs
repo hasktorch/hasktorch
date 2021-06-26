@@ -163,7 +163,7 @@ type family (!) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (_k :: k) :: Dim
 --
 -- >>> :type sGetDim (SSelectDim $ SByIndex @2) shape
 -- sGetDim (SSelectDim $ SByIndex @2) shape
---  :: MonadFail m => m (SDim (TypeError ...))
+--   :: MonadFail m => m (SDim (TypeError ...))
 sGetDim ::
   forall selectDim shape dim m.
   (dim ~ GetDimF selectDim shape, MonadFail m) =>
@@ -369,14 +369,14 @@ sUnifySize size size' =
 -- >>> dimB = SName @"batch" :&: SSize @0
 -- >>> dim = sUnifyDim dimA dimB
 -- >>> :type dim
--- dim :: MonadFail m => m (SDim ('Dim ('Name "batch") ('Size 0))
+-- dim :: MonadFail m => m (SDim ('Dim ('Name "batch") ('Size 0)))
 -- >>> fromSing <$> dim
 -- Dim {dimName = Checked "batch", dimSize = Checked 0}
 --
 -- >>> dimC = SName @"feature" :&: SSize @0
 -- >>> :type sUnifyDim dimB dimC
 -- sUnifyDim dimB dimC
---  :: MonadFail m => m (SDim ('Dim (TypeError ...) ('Size 0)))
+--   :: MonadFail m => m (SDim ('Dim (TypeError ...) ('Size 0)))
 --
 -- >>> dimD = SUncheckedName "batch" :&: SSize @0
 -- >>> dim = sUnifyDim dimA dimD

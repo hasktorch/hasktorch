@@ -15,6 +15,7 @@
 
 module Torch.GraduallyTyped.Tensor.IndexingSlicingJoining where
 
+import Data.Bifunctor (bimap)
 import Data.Kind (Type)
 import Data.Singletons (SingI (..), SingKind (..), fromSing)
 import Foreign.ForeignPtr (ForeignPtr)
@@ -71,8 +72,8 @@ class HasCat (selectDim :: SelectDim (By Symbol Nat)) k (c :: k -> Type) (a :: k
   --        ('Shape
   --           '[ 'Dim 'UncheckedName 'UncheckedSize,
   --              'Dim ('Name "feature") ('Size 8)])
-  -- >>> :type cat @'UncheckedSelectDim (ByIndex 0) [t]
-  -- cat @'UncheckedSelectDim (ByIndex 0) [t]
+  -- >>> :type sCat (SUncheckedSelectDim (ByIndex 0)) [t]
+  --sCat (SUncheckedSelectDim (ByIndex 0)) [t]
   --   :: Tensor
   --        'WithGradient
   --        ('Layout 'Dense)
@@ -222,7 +223,8 @@ type family ReshapeF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: 
 --        ('Device 'CPU)
 --        ('DataType 'Float)
 --        'UncheckedShape
--- >>> shape output'
+-- >>> d <- dims output'
+-- >>> d
 -- [Dim {dimName = "*", dimSize = 4}]
 sReshape ::
   forall shape' requiresGradient layout device dataType shape shape''.
@@ -356,7 +358,7 @@ type family TransposeIndexIndexDimsF (index0 :: Nat) (index1 :: Nat) (dims :: [D
 --        ('Shape
 --           '[ 'Dim ('Name "feature") ('Size 5),
 --              'Dim ('Name "batch") ('Size 10)])
--- >>> output = transpose @'UncheckedSelectDim @('SelectDim ('ByIndex 1)) (ByIndex 0) input
+-- >>> output = sTranspose (SUncheckedSelectDim (ByIndex 0)) (SSelectDim (SByIndex @1)) input
 -- >>> :type output
 -- output
 --   :: Tensor
@@ -365,7 +367,8 @@ type family TransposeIndexIndexDimsF (index0 :: Nat) (index1 :: Nat) (dims :: [D
 --        ('Device 'CPU)
 --        ('DataType 'Float)
 --        'UncheckedShape
--- >>> shape output
+-- >>> d <- dims output
+-- >>> d
 -- [W TensorImpl.h:934] Warning: Named tensors and all their associated APIs are an experimental feature and subject to change. Please do not use them for anything important until they are released as stable. (function operator())
 -- [Dim {dimName = "feature", dimSize = 5},Dim {dimName = "batch", dimSize = 10}]
 sTranspose ::
@@ -518,7 +521,7 @@ sSelect sSelectDim sIndex input =
   let sDim = unsafePerformIO $ do
         inputShape <- sShape input
         sGetDim sSelectDim inputShape
-      dim = (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size)) . fromSing $ sDim
+      dim = bimap forgetIsChecked forgetIsChecked . fromSing $ sDim
       index = forgetIsChecked . fromSing $ sIndex
       selectDim = forgetIsChecked . fromSing $ sSelectDim
    in if index < (fromInteger . dimSize $ dim)
