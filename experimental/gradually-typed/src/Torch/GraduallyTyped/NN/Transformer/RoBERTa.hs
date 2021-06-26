@@ -8,7 +8,7 @@
 module Torch.GraduallyTyped.NN.Transformer.RoBERTa
   ( module Torch.GraduallyTyped.NN.Transformer.RoBERTa.Common,
     module Torch.GraduallyTyped.NN.Transformer.RoBERTa.Base,
-    testForwardRoBERTaBase,
+    -- testForwardRoBERTaBase,
     testRoBERTaInput,
   )
 where
@@ -16,19 +16,18 @@ where
 import Data.Singletons.Prelude.List (SList (SNil))
 import Test.HUnit.Approx (assertApproxEqual)
 import Tokenizers (Tokenizer, addSpecialToken, encode, getIDs, getTokens, mkRobertaTokenizer)
-import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), SDType (..), SDataType (..))
+import Torch.GraduallyTyped.DType (SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
-import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
+import Torch.GraduallyTyped.Layout (SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Transformer.EncoderOnly (EncoderOnlyTransformerInput (..), EncoderOnlyTransformerOutput (..))
 import Torch.GraduallyTyped.NN.Transformer.RoBERTa.Base
 import Torch.GraduallyTyped.NN.Transformer.RoBERTa.Common
 import Torch.GraduallyTyped.NN.Transformer.Type (mkTransformerAttentionMask)
-import Torch.GraduallyTyped.Random (mkGenerator)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (SWithoutGradient))
-import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, SName (..), SShape (..), SSize (..), Size (..), pattern (:&:), pattern (:|:))
-import Torch.GraduallyTyped.Tensor.Creation (arangeNaturals, sZeros)
+import Torch.GraduallyTyped.Random (sMkGenerator)
+import Torch.GraduallyTyped.RequiresGradient (SRequiresGradient (..))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim (sDimSize), SName (..), SShape (..), SSize (..), Size (..), pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.Tensor.Creation (sArangeNaturals, sZeros)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (addScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
 import qualified Torch.Tensor as Tensor (Tensor (..), asValue)
@@ -78,16 +77,16 @@ testForwardRoBERTaBase =
     let encoderInputType = testRoBERTaInputType
         pos =
           flip addScalar (2 :: Int) $
-            arangeNaturals
-              @'WithoutGradient
-              @('Layout 'Dense)
-              @('Device 'CPU)
-              @('DataType 'Int64)
-              @TestRoBERTaSeqDim
+            sArangeNaturals
+              SWithoutGradient
+              (SLayout SDense)
+              (SDevice SCPU)
+              (SDataType SInt64)
+              (sDimSize testRobertaSeqDim)
         paddingMask = mkRoBERTaPaddingMask encoderInput
     attentionMask <- mkTransformerAttentionMask robertaDataType robertaAttentionMaskBias paddingMask
     let input = EncoderOnlyTransformerInput encoderInput encoderInputType pos attentionMask
-    g <- mkGenerator @('Device 'CPU) 0
+    g <- sMkGenerator (SDevice SCPU) 0
     let (EncoderOnlyTransformerOutput {..}, _) = forward model input g
     let encoderOutput' = case eoEncoderOutput of
           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]

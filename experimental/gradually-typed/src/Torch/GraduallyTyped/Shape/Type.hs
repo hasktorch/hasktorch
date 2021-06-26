@@ -162,31 +162,6 @@ class KnownDim (dim :: Dim (Name Symbol) (Size Nat)) where
 instance (KnownName name, KnownSize size) => KnownDim ('Dim name size) where
   dimVal = Dim (nameVal @name) (sizeVal @size)
 
-class WithDimC (dim :: Dim (Name Symbol) (Size Nat)) (f :: Type) where
-  type WithDimF dim f :: Type
-  withDim :: (Dim String Integer -> f) -> WithDimF dim f
-  withoutDim :: WithDimF dim f -> (Dim String Integer -> f)
-
-instance WithDimC ('Dim 'UncheckedName 'UncheckedSize) f where
-  type WithDimF ('Dim 'UncheckedName 'UncheckedSize) f = Dim String Integer -> f
-  withDim = id
-  withoutDim = id
-
-instance (KnownSymbol name) => WithDimC ('Dim ('Name name) 'UncheckedSize) f where
-  type WithDimF ('Dim ('Name name) 'UncheckedSize) f = Integer -> f
-  withDim f size = f (Dim (symbolVal (Proxy @name)) size)
-  withoutDim f (Dim _ size) = f size
-
-instance (KnownNat size) => WithDimC ('Dim 'UncheckedName ('Size size)) f where
-  type WithDimF ('Dim 'UncheckedName ('Size size)) f = String -> f
-  withDim f name = f (Dim name (natVal (Proxy @size)))
-  withoutDim f (Dim name _) = f name
-
-instance (KnownSymbol name, KnownNat size) => WithDimC ('Dim ('Name name) ('Size size)) f where
-  type WithDimF ('Dim ('Name name) ('Size size)) f = f
-  withDim f = f (Dim (symbolVal (Proxy @name)) (natVal (Proxy @size)))
-  withoutDim = const
-
 checkDim ::
   forall dim.
   KnownDim dim =>

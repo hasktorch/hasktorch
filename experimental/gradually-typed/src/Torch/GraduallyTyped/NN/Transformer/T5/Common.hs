@@ -52,9 +52,9 @@ import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol, type (<=?))
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), KnownDataType (..), SDType (..), SDataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice)
-import Torch.GraduallyTyped.Layout (KnownLayout, Layout (..), LayoutType (..))
+import Torch.GraduallyTyped.DType (DataType (..), SDType (..), SDataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Transformer.DecoderStack (HasLookupDecoderStack)
 import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (SequenceToSequenceTransformer (..), SequenceToSequenceTransformerGenerationInput (..), SequenceToSequenceTransformerInput (..), SequenceToSequenceTransformerOutput (..), SequenceToSequenceTransformerWithLMHead (..), lookupSequenceToSequenceTransformer, lookupSequenceToSequenceTransformerWithLMHead)
@@ -64,8 +64,8 @@ import Torch.GraduallyTyped.Prelude (Seq, forgetIsChecked)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.RewriteRules ()
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, sGetDim, type (!))
-import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), KnownShape, Name (..), SBy (..), SDim, SName (..), SSelectDim (..), SSize (..), Shape (..), Size (..), WithDimC (..), pattern (:&:))
-import Torch.GraduallyTyped.Tensor.Type (SGetDevice, SGetLayout, SGetShape, Tensor (..), checkedDataType, checkedDevice, checkedLayout, checkedShape, sShape, shape)
+import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), Name (..), SBy (..), SDim, SName (..), SSelectDim (..), SSize (..), Shape (..), Size (..), pattern (:&:))
+import Torch.GraduallyTyped.Tensor.Type (SGetShape, Tensor (..), checkedDataType, checkedDevice, checkedLayout, checkedShape, sShape)
 import Torch.GraduallyTyped.Unify (type (<+>))
 import qualified Torch.Tensor (Tensor (Unsafe), asTensor)
 
@@ -95,6 +95,7 @@ t5DropoutP = 0.1
 -- 'relative_attention_num_buckets = 32'
 type T5RelPosEncBucketDim = 'Dim ('Name "*") ('Size 32)
 
+t5RelPosEncBucketDim :: SDim T5RelPosEncBucketDim
 t5RelPosEncBucketDim = SName @"*" :&: SSize @32
 
 -- | T5 layer-norm epsilon.

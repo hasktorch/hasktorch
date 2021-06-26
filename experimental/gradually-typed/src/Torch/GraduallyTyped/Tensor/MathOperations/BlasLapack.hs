@@ -5,38 +5,36 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack where
 
 import GHC.TypeLits (Nat, Symbol, TypeError)
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
-import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.Prelude (PrependMaybe, Reverse)
-import Torch.GraduallyTyped.Random (mkGenerator)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape (BroadcastDimsImplF, Dim (..), Name (..), Shape (..), Size (..))
-import Torch.GraduallyTyped.Tensor.Creation (randn)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 import Torch.Internal.Cast (cast2)
 import qualified Torch.Internal.Managed.Native as ATen
 import Type.Errors.Pretty (type (%), type (<>))
 
+-- $setup
+-- >>> import Data.Singletons.Prelude.List (SList (..))
+-- >>> import Torch.GraduallyTyped
+
 type family MatmulDimsImplF (reversedDims :: [Dim (Name Symbol) (Size Nat)]) (reversedDims' :: [Dim (Name Symbol) (Size Nat)]) :: Maybe [Dim (Name Symbol) (Size Nat)] where
-  MatmulDimsImplF (k ': '[]) (k ': '[]) = Just '[]
+  MatmulDimsImplF (k ': '[]) (k ': '[]) = 'Just '[]
   MatmulDimsImplF (k ': '[]) (m ': k ': reversedBroadcastDims') =
-    PrependMaybe (Just m) (BroadcastDimsImplF '[] reversedBroadcastDims')
+    PrependMaybe ('Just m) (BroadcastDimsImplF '[] reversedBroadcastDims')
   MatmulDimsImplF (k ': n ': reversedBroadcastDims) (k ': '[]) =
-    PrependMaybe (Just n) (BroadcastDimsImplF '[] reversedBroadcastDims)
+    PrependMaybe ('Just n) (BroadcastDimsImplF '[] reversedBroadcastDims)
   MatmulDimsImplF (k ': n ': reversedBroadcastDims) (m ': k ': reversedBroadcastDims') =
-    PrependMaybe (Just m) (PrependMaybe (Just n) (BroadcastDimsImplF reversedBroadcastDims reversedBroadcastDims'))
+    PrependMaybe ('Just m) (PrependMaybe ('Just n) (BroadcastDimsImplF reversedBroadcastDims reversedBroadcastDims'))
   MatmulDimsImplF _ _ = 'Nothing
 
 type family MatmulDimsCheckF (dims :: [Dim (Name Symbol) (Size Nat)]) (dims' :: [Dim (Name Symbol) (Size Nat)]) (result :: Maybe [Dim (Name Symbol) (Size Nat)]) :: [Dim (Name Symbol) (Size Nat)] where
-  MatmulDimsCheckF dims dims' Nothing =
+  MatmulDimsCheckF dims dims' 'Nothing =
     TypeError
       ( "Cannot multiply the tensors since the dimensions"
           % ""
@@ -45,7 +43,7 @@ type family MatmulDimsCheckF (dims :: [Dim (Name Symbol) (Size Nat)]) (dims' :: 
           % "are not compatible for matrix multiplation."
           % "You may need to reshape the tensor(s) first."
       )
-  MatmulDimsCheckF _ _ (Just result) = (Reverse result)
+  MatmulDimsCheckF _ _ ('Just result) = (Reverse result)
 
 type MatmulDimsF dims dims' = MatmulDimsCheckF dims dims' (MatmulDimsImplF (Reverse dims) (Reverse dims'))
 
@@ -56,13 +54,17 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 
 -- | Matrix product of two tensors.
 --
--- The behavior depends on the dimensionality of the tensors as follows:
+-- The following code serves the examples of @matmul@ below:
+--
+-- >>> g <- sMkGenerator (SDevice SCPU) 0
+-- >>> sRandn' = sRandn SWithGradient (SLayout SDense) (SDevice SCPU) (SDataType SFloat)
+-- 
+-- In order to understand the behavior of @matmul@, consider the following cases:
 --
 --     (1) If both tensors are 1-dimensional, the dot product (scalar) is returned:
 --
---         >>> g <- mkGenerator @('Device 'CPU) 0
---         >>> (tensor1, g') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "*") ('Size 3)]) g
---         >>> (tensor2, g'') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "*") ('Size 3)]) g'
+--         >>> (tensor1, g') = sRandn' (SShape $ SName @"*" :&: SSize @3 :|: SNil) g
+--         >>> (tensor2, g'') = sRandn' (SShape $ SName @"*" :&: SSize @3 :|: SNil) g'
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
@@ -76,9 +78,8 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --
 --     (2) If both arguments are 2-dimensional, the matrix-matrix product is returned:
 --
---         >>> g <- mkGenerator @('Device 'CPU) 0
---         >>> (tensor1, g') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "*") ('Size 3), 'Dim ('Name "*") ('Size 4)]) g
---         >>> (tensor2, g'') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "*") ('Size 4), 'Dim ('Name "*") ('Size 7)]) g'
+--         >>> (tensor1, g') = sRandn' (SShape $ SName @"*" :&: SSize @3 :|: SName @"*" :&: SSize @4 :|: SNil) g
+--         >>> (tensor2, g'') = sRandn' (SShape $ SName @"*" :&: SSize @4 :|: SName @"*" :&: SSize @7 :|: SNil) g'
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
@@ -94,9 +95,8 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --     a 1 is prepended to its dimension for the purpose of the matrix multiply.
 --     After the matrix multiply, the prepended dimension is removed:
 --
---         >>> g <- mkGenerator @('Device 'CPU) 0
---         >>> (tensor1, g') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "*") ('Size 4)]) g
---         >>> (tensor2, g'') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "*") ('Size 4), 'Dim ('Name "*") ('Size 7)]) g'
+--         >>> (tensor1, g') = sRandn' (SShape $ SName @"*" :&: SSize @4 :|: SNil) g
+--         >>> (tensor2, g'') = sRandn' (SShape $ SName @"*" :&: SSize @4 :|: SName @"*" :&: SSize @7 :|: SNil) g'
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
@@ -111,9 +111,8 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --     (4) If the first argument is 2-dimensional and the second argument is 1-dimensional,
 --     the matrix-vector product is returned:
 --
---         >>> g <- mkGenerator @('Device 'CPU) 0
---         >>> (tensor1, g') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "*") ('Size 3), 'Dim ('Name "*") ('Size 4)]) g
---         >>> (tensor2, g'') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "*") ('Size 4)]) g'
+--         >>> (tensor1, g') = sRandn' (SShape $ SName @"*" :&: SSize @3 :|: SName @"*" :&: SSize @4 :|: SNil) g
+--         >>> (tensor2, g'') = sRandn' (SShape $ SName @"*" :&: SSize @4 :|: SNil) g'
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
@@ -130,9 +129,8 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --
 --     The following is an example of a batched matrix multiplication:
 --
---         >>> g <- mkGenerator @('Device 'CPU) 0
---         >>> (tensor1, g') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "*") ('Size 3), 'Dim ('Name "*") ('Size 4)]) g
---         >>> (tensor2, g'') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "*") ('Size 4), 'Dim ('Name "*") ('Size 7)]) g'
+--         >>> (tensor1, g') = sRandn' (SShape $ SName @"batch" :&: SSize @10 :|: SName @"*" :&: SSize @3 :|: SName @"*" :&: SSize @4 :|: SNil) g
+--         >>> (tensor2, g'') = sRandn' (SShape $ SName @"batch" :&: SSize @10 :|: SName @"*" :&: SSize @4 :|: SName @"*" :&: SSize @7 :|: SNil) g'
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
@@ -149,9 +147,8 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --     If the first argument is 1-dimensional,
 --     a 1 is prepended to its dimension for the purpose of the batched matrix multiply and removed after:
 --
---         >>> g <- mkGenerator @('Device 'CPU) 0
---         >>> (tensor1, g') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "*") ('Size 4)]) g
---         >>> (tensor2, g'') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "*") ('Size 4), 'Dim ('Name "*") ('Size 7)]) g'
+--         >>> (tensor1, g') = sRandn' (SShape $ SName @"*" :&: SSize @4 :|: SNil) g
+--         >>> (tensor2, g'') = sRandn' (SShape $ SName @"batch" :&: SSize @10 :|: SName @"*" :&: SSize @4 :|: SName @"*" :&: SSize @7 :|: SNil) g'
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
@@ -167,9 +164,8 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --     If the second argument is 1-dimensional,
 --     a 1 is appended to its dimension for the purpose of the batched matrix multiply and removed after:
 --
---         >>> g <- mkGenerator @('Device 'CPU) 0
---         >>> (tensor1, g') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "*") ('Size 3), 'Dim ('Name "*") ('Size 4)]) g
---         >>> (tensor2, g'') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "*") ('Size 4)]) g'
+--         >>> (tensor1, g') = sRandn' (SShape $ SName @"batch" :&: SSize @10 :|: SName @"*" :&: SSize @3 :|: SName @"*" :&: SSize @4 :|: SNil) g
+--         >>> (tensor2, g'') = sRandn' (SShape $ SName @"*" :&: SSize @4 :|: SNil) g'
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
@@ -186,9 +182,8 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --     For example, if 'input' is a \(j \times 1 \times n \times m\) tensor and
 --     'other' is a \(k \times m \times p\) tensor, 'output' will be a \(j \times k \times n \times p\) tensor:
 --
---         >>> g <- mkGenerator @('Device 'CPU) 0
---         >>> (tensor1, g') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 3), 'Dim ('Name "*") ('Size 4)]) g
---         >>> (tensor2, g'') = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "*") ('Size 5), 'Dim ('Name "*") ('Size 4), 'Dim ('Name "*") ('Size 7)]) g'
+--         >>> (tensor1, g') =  (SShape $ SName @"batch" :&: SSize @10 :|: SName @"*" :&: SSize @1 :|: SName @"*" :&: SSize @3 :|: SName @"*" :&: SSize @4 :|: SNil) g
+--         >>> (tensor2, g'') = sRandn' (SShape $ SName @"*" :&: SSize @5 :|: SName @"*" :&: SSize @4 :|: SName @"*" :&: SSize @7 :|: SNil) g'
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result

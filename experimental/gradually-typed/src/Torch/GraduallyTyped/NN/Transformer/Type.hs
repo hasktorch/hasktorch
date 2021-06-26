@@ -53,12 +53,12 @@ import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGr
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape.Class (AddDimF, BroadcastShapesF, ReplaceDimF, sGetDim, type (!))
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownDim (..), KnownShape (..), Name (..), SBy (..), SDim, SName (..), SSelectDim (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
-import Torch.GraduallyTyped.Tensor.Creation (WithCreateC (..), full, sFull, sOnes, sZeros)
+import Torch.GraduallyTyped.Tensor.Creation (sFull, sOnes, sZeros)
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (UnsqueezeF, cat, unsqueeze)
 import Torch.GraduallyTyped.Tensor.MathOperations.Comparison ((==.))
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (logicalOr)
 import Torch.GraduallyTyped.Tensor.Other (maskedFill, triu)
-import Torch.GraduallyTyped.Tensor.Type (SGetDataType (sDataType), SGetDevice (..), SGetLayout (..), SGetShape (..), Tensor (..), bool, checkedDataType, checkedDevice, checkedLayout, checkedShape, dataType, device, layout, shape)
+import Torch.GraduallyTyped.Tensor.Type (SGetDataType (sDataType), SGetDevice (..), SGetLayout (..), SGetShape (..), Tensor (..), bool, checkedDataType, checkedDevice, checkedLayout, checkedShape)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import Torch.HList
 import qualified Torch.Internal.Type as ATen (Tensor)
@@ -317,7 +317,6 @@ instance
     KnownDataType inputDataType,
     KnownShape inputShape,
     Scalar fillValue,
-    WithCreateC (fillValue -> filler) 'WithoutGradient inputLayout inputDevice inputDataType fillerShape,
     rightShiftedInput
       ~ Tensor
           (inputRequiresGradient <|> 'WithoutGradient)

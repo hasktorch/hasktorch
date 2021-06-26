@@ -11,6 +11,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.NN.Sparse where
 
@@ -19,16 +20,16 @@ import Data.Data (Proxy (..))
 import Data.Singletons.Prelude.List (SList (..))
 import GHC.TypeLits (KnownNat, Nat, Symbol, natVal)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), SDataType (..), WithDataTypeC (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType, SDevice (..), WithDeviceC (..))
-import Torch.GraduallyTyped.Layout (KnownLayout, Layout (..), LayoutType (..), SLayout (..), WithLayoutC (..))
+import Torch.GraduallyTyped.DType (DataType (..), SDataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType, SDevice (..))
+import Torch.GraduallyTyped.Layout (KnownLayout, Layout (..), LayoutType (..), SLayout (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Functional.Sparse (EmbeddingF, embedding)
 import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (..))
-import Torch.GraduallyTyped.Shape (Dim (..), Name, SDim (..), SShape (..), Shape (..), Size, WithDimC (..), pattern (:|:))
-import Torch.GraduallyTyped.Tensor.Creation (WithCreateC (..), randn, sRandn)
+import Torch.GraduallyTyped.Shape (Dim (..), Name, SDim (..), SShape (..), Shape (..), Size, pattern (:|:))
+import Torch.GraduallyTyped.Tensor.Creation (sRandn)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 

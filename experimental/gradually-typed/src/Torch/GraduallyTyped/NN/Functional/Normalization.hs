@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
@@ -9,20 +10,22 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.NN.Functional.Normalization where
 
+import Data.Singletons.Prelude.List (SList (SNil))
 import GHC.TypeLits (Nat, Symbol, TypeError, type (+), type (-))
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (DataType))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
-import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
+import Torch.GraduallyTyped.DType (DataType (..), SDType (..), SDataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.Prelude (Length, Reverse)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (SWithGradient))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownShape, Name (..), SelectDims (..), Shape (..), Size (..), WithSelectDimsC (..), dimSize)
-import Torch.GraduallyTyped.Tensor.Creation (ones)
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownShape, Name (..), SName (..), SShape (..), SSize (..), SelectDims (..), Shape (..), Size (..), WithSelectDimsC (..), dimSize, pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.Tensor.Creation (sOnes)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (addScalar, mul, powScalar, rsqrt)
 import Torch.GraduallyTyped.Tensor.MathOperations.Reduction (MeanF, mean)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..), checkedDataType, checkedDevice, checkedLayout, checkedShape, shape)
@@ -159,14 +162,14 @@ testT5LayerNorm ::
         )
     )
 testT5LayerNorm = do
-  let weight = ones @'WithGradient @('Layout 'Dense) @('Device CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "*") ('Size 10)])
+  let weight = sOnes SWithGradient (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SName @"*" :&: SSize @10 :|: SNil)
       eps = 1e-6 :: Double
   input <-
     case Torch.Tensor.asTensor [[13 :: Float, 27, 14, 19, -512, 1, 2, 3, 4, 0], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]] of
       Torch.Tensor.Unsafe t ->
-        pure (UnsafeTensor @'WithoutGradient t)
+        pure (UnsafeTensor t)
           >>= checkedLayout @('Layout 'Dense)
-          >>= checkedDevice @('Device CPU)
+          >>= checkedDevice @('Device 'CPU)
           >>= checkedDataType @('DataType 'Float)
           >>= checkedShape @('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 10)])
   let output = layerNormWithoutBias weight eps input

@@ -15,24 +15,23 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wall #-}
 {-# OPTIONS_GHC -fplugin TypeLevel.Rewrite
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2 #-}
 
 module Torch.GraduallyTyped.NN.Normalization where
 
-import Control.Monad.State.Strict (MonadState (state), runState)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), SDataType (..), WithDataTypeC (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), WithDeviceC (..))
+import Torch.GraduallyTyped.DType (DataType (..), SDataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..))
 import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithBiasF, LayerNormWithoutBiasF, layerNormWithBias, layerNormWithoutBias)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
-import Torch.GraduallyTyped.Random (mkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (..))
-import Torch.GraduallyTyped.Shape (Dim (..), KnownShape, Name (..), SShape (..), Shape (..), Size (..), WithShapeC (..))
-import Torch.GraduallyTyped.Tensor.Creation (WithCreateC (withoutCreate), ones, randn, sOnes, sZeros, zeros)
+import Torch.GraduallyTyped.Shape (Dim (..), KnownShape, Name (..), SShape (..), Shape (..), Size (..))
+import Torch.GraduallyTyped.Tensor.Creation (sOnes, sZeros)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
