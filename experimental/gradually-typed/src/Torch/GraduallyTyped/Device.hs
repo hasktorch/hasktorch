@@ -27,7 +27,7 @@ module Torch.GraduallyTyped.Device where
 import Data.Int (Int16)
 import Data.Kind (Constraint, Type)
 import Data.Proxy (Proxy (..))
-import Data.Singletons (Sing, SingKind (..), SomeSing (..), withSomeSing)
+import Data.Singletons (Sing, SingKind (..), SomeSing (..), withSomeSing, SingI (..))
 import GHC.TypeLits (KnownNat, Nat, SomeNat (..), natVal, someNatVal)
 import Torch.GraduallyTyped.Prelude (Concat, IsChecked (..))
 import qualified Torch.Internal.Managed.Cast as ATen ()
@@ -45,6 +45,12 @@ data SDeviceType (deviceType :: DeviceType Nat) where
   SCUDA :: forall deviceId. KnownNat deviceId => SDeviceType ('CUDA deviceId)
 
 type instance Sing = SDeviceType
+
+instance SingI ('CPU :: DeviceType Nat) where
+  sing = SCPU
+
+instance KnownNat deviceId => SingI ('CUDA deviceId) where
+  sing = SCUDA @deviceId
 
 type family CUDAF (deviceType :: DeviceType Nat) :: Nat where
   CUDAF ('CUDA deviceId) = deviceId
@@ -80,6 +86,9 @@ data SDevice (deviceType :: Device (DeviceType Nat)) where
 
 type instance Sing = SDevice
 
+instance SingI deviceType => SingI ('Device (deviceType :: DeviceType Nat)) where
+  sing = SDevice $ sing @deviceType
+
 instance SingKind (Device (DeviceType Nat)) where
   type Demote (Device (DeviceType Nat)) = IsChecked (DeviceType Int16)
   fromSing (SUncheckedDevice deviceType) = Unchecked deviceType
@@ -95,37 +104,6 @@ instance KnownDevice 'UncheckedDevice where
 
 instance (KnownDeviceType deviceType) => KnownDevice ('Device deviceType) where
   deviceVal = Device (deviceTypeVal @deviceType)
-
-class
-  DeviceConstraint device (GetDevices f) =>
-  WithDeviceC (device :: Device (DeviceType Nat)) (f :: Type)
-  where
-  type WithDeviceF device f :: Type
-  withDevice :: (DeviceType Int16 -> f) -> WithDeviceF device f
-  withoutDevice :: WithDeviceF device f -> (DeviceType Int16 -> f)
-
-instance
-  DeviceConstraint 'UncheckedDevice (GetDevices f) =>
-  WithDeviceC 'UncheckedDevice f
-  where
-  type WithDeviceF 'UncheckedDevice f = DeviceType Int16 -> f
-  withDevice = id
-  withoutDevice = id
-
-instance
-  ( DeviceConstraint ('Device deviceType) (GetDevices f),
-    KnownDeviceType deviceType
-  ) =>
-  WithDeviceC ('Device deviceType) f
-  where
-  type WithDeviceF ('Device deviceType) f = f
-  withDevice f = f (deviceTypeVal @deviceType)
-  withoutDevice = const
-
-type family DeviceConstraint (device :: Device (DeviceType Nat)) (devices :: [Device (DeviceType Nat)]) :: Constraint where
-  DeviceConstraint _ '[] = ()
-  DeviceConstraint device '[device'] = device ~ device'
-  DeviceConstraint _ _ = ()
 
 -- >>> :kind! GetDevices ('Device ('CUDA 0))
 -- GetDevices ('Device ('CUDA 0)) :: [Device (DeviceType Nat)]

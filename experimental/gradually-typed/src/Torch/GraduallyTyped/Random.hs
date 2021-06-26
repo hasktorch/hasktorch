@@ -13,12 +13,12 @@ module Torch.GraduallyTyped.Random (Generator, noGenerator, mkGenerator, sMkGene
 
 import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVar, writeTVar)
 import Data.Int (Int16)
-import Data.Singletons (SingKind (..))
+import Data.Singletons (SingI (..), SingKind (..))
 import Data.Word (Word64)
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (Nat)
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDeviceType, SDevice, WithDeviceC (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDeviceType, SDevice)
 import Torch.GraduallyTyped.Prelude (forgetIsChecked)
 import qualified Torch.Internal.Managed.Type.Generator as ATen
 import qualified Torch.Internal.Type as ATen
@@ -40,21 +40,10 @@ noGenerator = NoGenerator
 
 mkGenerator ::
   forall device.
-  (WithDeviceC device (Word64 -> IO (Generator device))) =>
-  WithDeviceF device (Word64 -> IO (Generator device))
-mkGenerator =
-  withDevice @device go
-  where
-    go device seed = case device of
-      CPU -> do
-        genPtr <- ATen.newCPUGenerator seed
-        genenerator <- newTVarIO (Just genPtr)
-        return $ UnsafeGenerator @device seed device genenerator
-      CUDA deviceId -> do
-        genPtr <- ATen.newCUDAGenerator (fromIntegral deviceId)
-        ATen.generator_set_current_seed genPtr seed
-        genenerator <- newTVarIO (Just genPtr)
-        return $ UnsafeGenerator @device seed device genenerator
+  SingI device =>
+  Word64 ->
+  IO (Generator device)
+mkGenerator = sMkGenerator (sing @device)
 
 sMkGenerator ::
   forall device.

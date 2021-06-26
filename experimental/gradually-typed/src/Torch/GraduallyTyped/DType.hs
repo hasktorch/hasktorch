@@ -17,7 +17,7 @@
 module Torch.GraduallyTyped.DType where
 
 import Data.Kind (Type)
-import Data.Singletons (Sing, SingKind (..), SomeSing (..), withSomeSing)
+import Data.Singletons (Sing, SingI (..), SingKind (..), SomeSing (..), withSomeSing)
 import Data.Singletons.TH (genSingletons)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.Prelude (Concat, IsChecked (..))
@@ -62,11 +62,14 @@ data DataType (dType :: Type) where
   DataType :: forall dType. dType -> DataType dType
   deriving (Show)
 
-data SDataType (dType :: DataType DType) where
+data SDataType (dataType :: DataType DType) where
   SUncheckedDataType :: DType -> SDataType 'UncheckedDataType
   SDataType :: forall dType. SDType dType -> SDataType ('DataType dType)
 
 type instance Sing = SDataType
+
+instance SingI dType => SingI ('DataType (dType :: DType)) where
+  sing = SDataType $ sing @dType
 
 instance SingKind (DataType DType) where
   type Demote (DataType DType) = IsChecked DType
@@ -86,24 +89,6 @@ instance
   KnownDataType ('DataType dType)
   where
   dataTypeVal = DataType (dTypeVal @dType)
-
-class WithDataTypeC (dataType :: DataType DType) (f :: Type) where
-  type WithDataTypeF dataType f :: Type
-  withDataType :: (DType -> f) -> WithDataTypeF dataType f
-  withoutDataType :: WithDataTypeF dataType f -> (DType -> f)
-
-instance WithDataTypeC 'UncheckedDataType f where
-  type WithDataTypeF 'UncheckedDataType f = DType -> f
-  withDataType = id
-  withoutDataType = id
-
-instance
-  KnownDType dType =>
-  WithDataTypeC ('DataType dType) f
-  where
-  type WithDataTypeF ('DataType dType) f = f
-  withDataType f = f (dTypeVal @dType)
-  withoutDataType = const
 
 -- >>> :kind! GetDataTypes ('DataType 'Float)
 -- GetDataTypes ('DataType 'Float) :: [DataType DType]

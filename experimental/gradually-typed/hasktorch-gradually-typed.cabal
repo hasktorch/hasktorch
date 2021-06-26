@@ -99,7 +99,6 @@ library
                      , Torch.GraduallyTyped.NN.Functional.Sparse
                      , Torch.GraduallyTyped.Internal.TensorOptions
                      , Torch.GraduallyTyped.Internal.Void
-                     , Torch.GraduallyTyped.RewriteRules
                      , Torch.Language
                      , Torch.Language.SpiderSQL
                      , Torch.Data.Parser

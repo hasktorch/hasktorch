@@ -8,7 +8,7 @@
 module Torch.GraduallyTyped.NN.Transformer.RoBERTa
   ( module Torch.GraduallyTyped.NN.Transformer.RoBERTa.Common,
     module Torch.GraduallyTyped.NN.Transformer.RoBERTa.Base,
-    -- testForwardRoBERTaBase,
+    testForwardRoBERTaBase,
     testRoBERTaInput,
   )
 where

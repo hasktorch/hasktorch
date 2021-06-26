@@ -41,8 +41,8 @@ import Torch.GraduallyTyped.NN.Transformer.T5.Small (T5Small)
 import Torch.GraduallyTyped.Random (Generator, sMkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownShape, Name (..), SBy (..), SName (..), SSelectDim (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
-import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (expand)
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownShape, Name (..), SBy (..), SName (..), SSelectDim (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (sExpand)
 import Torch.GraduallyTyped.Tensor.MathOperations.Comparison (Order (..), Sorted (..), sort)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..), shape)
 import Torch.Language.SpiderSQL (SpiderSQL, spiderSQL)
@@ -223,7 +223,7 @@ runBeamSearch maxSteps beamSize model input g =
             Just (encoderOutput, inputPaddingMask) ->
               let decoderInputBatchDim : _ = shape decoderInput
                   _encoderOutputBatchDim : encoderOutputDims = shape encoderOutput
-                  encoderOutput' = expand @'UncheckedShape (decoderInputBatchDim : encoderOutputDims) encoderOutput
+                  encoderOutput' = sExpand (SUncheckedShape (decoderInputBatchDim : encoderOutputDims)) encoderOutput
                in case forward model (T5GenerationInput decoderInput encoderOutput' inputPaddingMask) g of
                     (T5Output decoderOutput _ _, g') -> (T5Output decoderOutput encoderOutput inputPaddingMask, g')
       put (Just (encoderOutput, inputPaddingMask), g')

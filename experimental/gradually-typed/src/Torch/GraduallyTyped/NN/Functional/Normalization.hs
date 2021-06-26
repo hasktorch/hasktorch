@@ -23,11 +23,8 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), 
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.Prelude (Length, Reverse)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (SWithGradient))
-import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownShape, Name (..), SName (..), SShape (..), SSize (..), SelectDims (..), Shape (..), Size (..), WithSelectDimsC (..), dimSize, pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownShape, Name (..), SName (..), SShape (..), SSize (..), SelectDims (..), Shape (..), Size (..), dimSize, pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes)
-import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (addScalar, mul, powScalar, rsqrt)
-import Torch.GraduallyTyped.Tensor.MathOperations.Reduction (MeanF, mean)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..), checkedDataType, checkedDevice, checkedLayout, checkedShape, shape)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import Torch.Internal.Cast (cast5, cast6)
@@ -77,15 +74,6 @@ type family LayerNormWithoutBiasF (weightShape :: Shape [Dim (Name Symbol) (Size
   LayerNormWithoutBiasF 'UncheckedShape _ = 'UncheckedShape
   LayerNormWithoutBiasF _ 'UncheckedShape = 'UncheckedShape
   LayerNormWithoutBiasF ('Shape weightDims) ('Shape inputDims) = 'Shape (Reverse (LayerNormImplF (Reverse weightDims) (Reverse inputDims)))
-
-type family LayerNormWithoutBiasF' (selectDims :: SelectDims [By Symbol Nat]) (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (inputShape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
-  LayerNormWithoutBiasF' selectDims weightShape inputShape =
-    BroadcastShapesF
-      weightShape
-      ( BroadcastShapesF
-          inputShape
-          (MeanF selectDims inputShape)
-      )
 
 type family LayerNormWithoutBiasSelectDimsF (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (inputShape :: Shape [Dim (Name Symbol) (Size Nat)]) :: SelectDims [By Symbol Nat] where
   LayerNormWithoutBiasSelectDimsF 'UncheckedShape _ = 'UncheckedSelectDims
@@ -177,39 +165,3 @@ testT5LayerNorm = do
     UnsafeTensor t ->
       print (Torch.Tensor.Unsafe t)
   pure output
-
-layerNormWithoutBias' ::
-  forall requiresGradient layout device dataType shape requiresGradient' layout' device' dataType' shape' selectDims.
-  ( KnownShape shape,
-    KnownShape shape',
-    selectDims ~ LayerNormWithoutBiasSelectDimsF shape shape',
-    WithSelectDimsC
-      selectDims
-      ( Tensor requiresGradient' layout' device' dataType' shape' ->
-        Tensor requiresGradient' layout' device' dataType' (MeanF selectDims shape')
-      )
-  ) =>
-  -- | weight
-  Tensor requiresGradient layout device dataType shape ->
-  -- | eps
-  Double ->
-  -- | input
-  Tensor requiresGradient' layout' device' dataType' shape' ->
-  -- | output
-  Tensor
-    (requiresGradient <|> requiresGradient')
-    (layout <+> layout')
-    (device <+> device')
-    (dataType <+> dataType')
-    (LayerNormWithoutBiasF' selectDims shape shape')
-layerNormWithoutBias' weight eps input =
-  let weightShape = shape weight
-      inputShape = shape input
-      bys = ByIndex . fromIntegral . (length inputShape -) <$> [1, 2 .. length weightShape]
-      variance =
-        withoutSelectDims @selectDims @(Tensor requiresGradient' layout' device' dataType' shape' -> Tensor requiresGradient' layout' device' dataType' (MeanF selectDims shape'))
-          ( mean @selectDims @requiresGradient' @layout' @device' @dataType' @shape'
-          )
-          bys
-          (powScalar (2 :: Float) input)
-   in weight `mul` (input `mul` rsqrt (variance `addScalar` eps))
