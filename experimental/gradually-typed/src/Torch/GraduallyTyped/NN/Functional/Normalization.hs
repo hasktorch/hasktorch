@@ -23,9 +23,9 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), 
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.Prelude (Length, Reverse)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (SWithGradient))
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownShape, Name (..), SName (..), SShape (..), SSize (..), SelectDims (..), Shape (..), Size (..), dimSize, pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SName (..), SShape (..), SSize (..), SelectDims (..), Shape (..), Size (..), dimSize, pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes)
-import Torch.GraduallyTyped.Tensor.Type (Tensor (..), checkedDataType, checkedDevice, checkedLayout, checkedShape, shape)
+import Torch.GraduallyTyped.Tensor.Type (SGetShape (dims), Tensor (..), checkedDataType, checkedDevice, checkedLayout, checkedShape)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import Torch.Internal.Cast (cast5, cast6)
 import qualified Torch.Internal.Managed.Native as ATen
@@ -49,7 +49,7 @@ type family LayerNormWithBiasF (weightShape :: Shape [Dim (Name Symbol) (Size Na
 
 layerNormWithBias ::
   forall requiresGradient requiresGradient' requiresGradient'' layout layout' layout'' device device' device'' dataType dataType' dataType'' shape shape' shape''.
-  (KnownShape shape) =>
+  SGetShape shape =>
   -- | weight
   Tensor requiresGradient layout device dataType shape ->
   -- | bias
@@ -65,10 +65,9 @@ layerNormWithBias ::
     (device <+> (device' <+> device''))
     (dataType <+> (dataType' <+> dataType''))
     (LayerNormWithBiasF shape shape' shape'')
-layerNormWithBias weight bias eps input =
-  let dims = shape weight
-   in unsafePerformIO $
-        cast5 ATen.layer_norm_tlttd input (dimSize <$> dims) weight bias eps
+layerNormWithBias weight bias eps input = unsafePerformIO $ do
+  weightDims <- dims weight
+  cast5 ATen.layer_norm_tlttd input (dimSize <$> weightDims) weight bias eps
 
 type family LayerNormWithoutBiasF (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (inputShape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
   LayerNormWithoutBiasF 'UncheckedShape _ = 'UncheckedShape
@@ -100,9 +99,7 @@ type family LayerNormWithoutBiasBysF (weightDims :: [Dim (Name Symbol) (Size Nat
 -- | T5-style layer norm
 layerNormWithoutBias ::
   forall requiresGradient layout device dataType shape requiresGradient' layout' device' dataType' shape'.
-  ( KnownShape shape,
-    KnownShape shape'
-  ) =>
+  (SGetShape shape, SGetShape shape') =>
   -- | weight
   Tensor requiresGradient layout device dataType shape ->
   -- | eps
@@ -116,12 +113,11 @@ layerNormWithoutBias ::
     (device <+> device')
     (dataType <+> dataType')
     (LayerNormWithoutBiasF shape shape')
-layerNormWithoutBias weight eps input =
-  let weightShape = shape weight
-      inputShape = shape input
-      indexes :: [Int] = fromIntegral . (length inputShape -) <$> [1, 2 .. length weightShape]
-   in unsafePerformIO $
-        cast6 (go (null indexes)) input weight indexes eps (2 :: Double) True
+layerNormWithoutBias weight eps input = unsafePerformIO $ do
+  weightDims <- dims weight
+  inputDims <- dims input
+  let indexes :: [Int] = fromIntegral . (length inputDims -) <$> [1, 2 .. length weightDims]
+  cast6 (go (null indexes)) input weight indexes eps (2 :: Double) True
   where
     go nullIndexes input weight indexes eps exponent keepDim = do
       squaredInput <- ATen.pow_ts input exponent

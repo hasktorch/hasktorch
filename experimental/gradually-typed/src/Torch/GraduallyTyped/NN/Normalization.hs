@@ -30,9 +30,9 @@ import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithBiasF, LayerNormWithoutBiasF, layerNormWithBias, layerNormWithoutBias)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (..))
-import Torch.GraduallyTyped.Shape (Dim (..), KnownShape, Name (..), SShape (..), Shape (..), Size (..))
+import Torch.GraduallyTyped.Shape (Dim (..), Name (..), SShape (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes, sZeros)
-import Torch.GraduallyTyped.Tensor.Type (Tensor)
+import Torch.GraduallyTyped.Tensor.Type (Tensor, SGetShape)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
 data
@@ -83,7 +83,7 @@ instance HasInitialize (LayerNorm 'WithoutBias device dataType normalizedShape) 
      in LayerNormWithoutBias weight eps
 
 instance
-  ( KnownShape normalizedShape,
+  ( SGetShape normalizedShape,
     output
       ~ Tensor
           'WithGradient
@@ -102,8 +102,8 @@ instance
   forward LayerNormWithBias {..} input g = (layerNormWithBias layerNormWithBiasWeight layerNormBias layerNormWithBiasEps input, g)
 
 instance
-  ( KnownShape normalizedShape,
-    KnownShape shape',
+  ( SGetShape normalizedShape,
+    SGetShape shape',
     output
       ~ Tensor
           'WithGradient

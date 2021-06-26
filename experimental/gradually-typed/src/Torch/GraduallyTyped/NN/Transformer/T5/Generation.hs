@@ -44,7 +44,7 @@ import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownShape, Name (..), SBy (..), SName (..), SSelectDim (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (sExpand)
 import Torch.GraduallyTyped.Tensor.MathOperations.Comparison (Order (..), Sorted (..), sort)
-import Torch.GraduallyTyped.Tensor.Type (Tensor (..), shape)
+import Torch.GraduallyTyped.Tensor.Type (SGetShape (dims), Tensor (..))
 import Torch.Language.SpiderSQL (SpiderSQL, spiderSQL)
 import qualified Torch.Tensor
 import Prelude hiding (Word, words)
@@ -161,7 +161,7 @@ runBeamSearch ::
           T5DataType
           encoderOutputShape,
     'UncheckedShape ~ BroadcastShapesF encoderOutputShape 'UncheckedShape,
-    KnownShape encoderOutputShape,
+    SGetShape encoderOutputShape,
     HasForward
       model
       (T5GenerationInput decoderInput encoderOutput' inputPaddingMask)
@@ -218,14 +218,14 @@ runBeamSearch maxSteps beamSize model input g =
     getLogProbs :: decoderInput -> StateT (Maybe (encoderOutput, inputPaddingMask), generator) IO [[[Float]]]
     getLogProbs decoderInput = do
       (maybeStuff, g) <- get
-      let (T5Output decoderOutput encoderOutput inputPaddingMask, g') = case maybeStuff of
-            Nothing -> forward model (T5Input input decoderInput) g
-            Just (encoderOutput, inputPaddingMask) ->
-              let decoderInputBatchDim : _ = shape decoderInput
-                  _encoderOutputBatchDim : encoderOutputDims = shape encoderOutput
-                  encoderOutput' = sExpand (SUncheckedShape (decoderInputBatchDim : encoderOutputDims)) encoderOutput
-               in case forward model (T5GenerationInput decoderInput encoderOutput' inputPaddingMask) g of
-                    (T5Output decoderOutput _ _, g') -> (T5Output decoderOutput encoderOutput inputPaddingMask, g')
+      (T5Output decoderOutput encoderOutput inputPaddingMask, g') <- case maybeStuff of
+        Nothing -> pure $ forward model (T5Input input decoderInput) g
+        Just (encoderOutput, inputPaddingMask) -> do
+          decoderInputBatchDim : _ <- dims decoderInput
+          _encoderOutputBatchDim : encoderOutputDims <- dims encoderOutput
+          let encoderOutput' = sExpand (SUncheckedShape (decoderInputBatchDim : encoderOutputDims)) encoderOutput
+          case forward model (T5GenerationInput decoderInput encoderOutput' inputPaddingMask) g of
+            (T5Output decoderOutput _ _, g') -> pure (T5Output decoderOutput encoderOutput inputPaddingMask, g')
       put (Just (encoderOutput, inputPaddingMask), g')
       case logSoftmax (SSelectDim $ SByIndex @2) decoderOutput of
         UnsafeTensor t -> pure . Torch.Tensor.asValue . Torch.Tensor.Unsafe $ t

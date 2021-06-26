@@ -62,9 +62,9 @@ import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), KnownShape (..), Name (..), SDim, SShape (..), Shape (..), Size (..), pattern (:|:))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), Name (..), SDim, SShape (..), Shape (..), Size (..), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
-import Torch.GraduallyTyped.Tensor.Type (Tensor)
+import Torch.GraduallyTyped.Tensor.Type (Tensor, SGetDim, SGetShape)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
 -- | Generic self-attention layer.
@@ -276,8 +276,8 @@ lookupSelfAttention headDim headEmbedDim embedDim dropoutP eps prefix =
 --                       └───────┘
 -- @
 instance
-  ( KnownDim queryEmbedDim,
-    KnownShape queryShape,
+  ( SGetDim queryEmbedDim,
+    SGetShape queryShape,
     Scalar dropoutP,
     query ~ Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
     attentionBias ~ Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape,
@@ -350,7 +350,7 @@ instance
 --                        └───────┘
 -- @
 instance
-  ( KnownDim queryEmbedDim,
+  ( SGetDim queryEmbedDim,
     Scalar dropoutP,
     query ~ Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
     attentionBias ~ Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape,
@@ -422,7 +422,7 @@ instance
 --                        └───────┘
 -- @
 instance
-  ( KnownDim queryEmbedDim,
+  ( SGetDim queryEmbedDim,
     Scalar dropoutP,
     query ~ Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
     attentionBias ~ Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape,
@@ -494,7 +494,7 @@ instance
 --                        └───────┘
 -- @
 instance
-  ( KnownDim queryEmbedDim,
+  ( SGetDim queryEmbedDim,
     Scalar dropoutP,
     query ~ Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
     attentionBias ~ Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape,
@@ -566,7 +566,7 @@ instance
 --                       └───────┘
 -- @
 instance
-  ( KnownDim queryEmbedDim,
+  ( SGetDim queryEmbedDim,
     Scalar dropoutP,
     query ~ Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
     attentionBias ~ Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape,

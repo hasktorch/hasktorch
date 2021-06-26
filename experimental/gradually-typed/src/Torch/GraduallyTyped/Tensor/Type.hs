@@ -786,67 +786,8 @@ unsafeCheckedDataType tensor = case checkedDataType @dataType tensor of
   Right tensor' -> tensor'
   Left err -> error err
 
--- | Returns the shape of the input tensor.
---
--- >>> t = ones @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)])
--- >>> shape t
--- [Dim {dimName = "batch", dimSize = 32},Dim {dimName = "feature", dimSize = 8}]
--- >>> t = ones @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @'UncheckedShape [Dim "batch" 32, Dim "feature" 8]
--- >>> shape t
--- [Dim {dimName = "batch", dimSize = 32},Dim {dimName = "feature", dimSize = 8}]
--- >>> t = ones @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim 'UncheckedName 'UncheckedSize, 'Dim 'UncheckedName ('Size 8)]) (Dim "batch" 32) "feature"
--- >>> shape t
--- [Dim {dimName = "batch", dimSize = 32},Dim {dimName = "feature", dimSize = 8}]
--- >>> t = ones @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") 'UncheckedSize, 'Dim ('Name "feature") 'UncheckedSize]) 32 8
--- >>> shape t
--- [Dim {dimName = "batch", dimSize = 32},Dim {dimName = "feature", dimSize = 8}]
-shape ::
-  forall requiresGradient layout device dataType shape.
-  KnownShape shape =>
-  -- | input
-  Tensor requiresGradient layout device dataType shape ->
-  -- | shape of the input tensor
-  [Dim String Integer]
-shape tensor =
-  case shapeVal @shape of
-    UncheckedShape -> unsafePerformIO $ do
-      sizes <- cast1 ATen.tensor_sizes tensor
-      ifM
-        (cast1 ATen.tensor_has_names tensor)
-        ( do
-            names <- cast1 ATen.tensor_names tensor
-            return $ zipWith Dim names sizes
-        )
-        (return $ Dim "*" <$> sizes)
-    Shape dims ->
-      let sizes =
-            unsafePerformIO $
-              ifM
-                ((> (0 :: Int)) <$> cast1 ATen.tensor_dim tensor)
-                (cast1 ATen.tensor_sizes tensor)
-                (pure [])
-          names =
-            unsafePerformIO $
-              ifM
-                (cast1 ATen.tensor_has_names tensor)
-                (cast1 ATen.tensor_names tensor)
-                (pure $ map (const "*") sizes)
-          f (Dim UncheckedName UncheckedSize) name size = Dim name size
-          f (Dim (Name name) UncheckedSize) name' size
-            | name == name' = Dim name size
-            | otherwise = unsafePerformIO $ dimNameError name name'
-          f (Dim UncheckedName (Size size)) name size'
-            | size == size' = Dim name size
-            | otherwise = unsafePerformIO $ dimSizeError size size'
-          f (Dim (Name name) (Size size)) name' size'
-            | name == name' && size == size' = Dim name size
-            | name /= name' && size == size' = unsafePerformIO $ dimNameError name name'
-            | name == name' && size /= size' = unsafePerformIO $ dimSizeError size size'
-            | otherwise = unsafePerformIO $ dimNameSizeError name name' size size'
-       in zipWith3 f dims names sizes
-
 class SGetShape (shape :: Shape [Dim (Name Symbol) (Size Nat)]) where
-  -- | Returns the shape of the input tensor.
+  -- | Returns the gradually typed shape of the input tensor.
   --
   -- >>> sOnes' = sOnes SWithGradient (SLayout SDense) (SDevice SCPU) (SDataType SFloat)
   -- >>> t = sOnes' . SShape $ SName @"batch" :&: SSize @32 :|: SName @"feature" :&: SSize @8 :|: SNil
@@ -867,7 +808,7 @@ class SGetShape (shape :: Shape [Dim (Name Symbol) (Size Nat)]) where
     Tensor requiresGradient layout device dataType shape ->
     m (SShape shape)
 
-  -- | Returns the shape of the input tensor.
+  -- | Returns the untyped shape of the input tensor.
   --
   -- >>> sOnes' = sOnes SWithGradient (SLayout SDense) (SDevice SCPU) (SDataType SFloat)
   -- >>> t = sOnes' . SShape $ SName @"batch" :&: SSize @32 :|: SName @"feature" :&: SSize @8 :|: SNil
@@ -1045,7 +986,7 @@ uncheckedShape = coerce
 -- | Returns 'True' if the tensor has the shape 'shape' and 'False' otherwise.
 -- If 'shape' is 'UncheckedShape', 'True' is returned for consistency.
 --
--- >>> t = ones @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @'UncheckedShape [Dim "batch" 32, Dim "feature" 8]
+-- >>> t = sOnes SWithGradient (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SUncheckedShape [Dim "batch" 32, Dim "feature" 8])
 -- >>> checkShape @('Shape [ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)]) t
 -- True
 -- >>> checkShape @('Shape [ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 32)]) t
