@@ -22,7 +22,7 @@ import GHC.TypeLits (KnownNat, Nat, Symbol, natVal)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType, SDevice (..))
-import Torch.GraduallyTyped.Layout (KnownLayout, Layout (..), LayoutType (..), SLayout (..))
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Functional.Sparse (EmbeddingF, embedding)
 import Torch.GraduallyTyped.Prelude (Seq)
@@ -30,7 +30,7 @@ import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape (Dim (..), Name, SDim (..), SShape (..), Shape (..), Size, pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sRandn)
-import Torch.GraduallyTyped.Tensor.Type (Tensor)
+import Torch.GraduallyTyped.Tensor.Type (Tensor, SGetLayout)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
 data
@@ -82,7 +82,7 @@ instance HasInitialize (Embedding layout device dataType embedNumDim embedDim ('
     pure $ Embedding weight
 
 instance
-  ( KnownLayout layout,
+  ( SGetLayout layout,
     output
       ~ Tensor
           'WithGradient
@@ -101,7 +101,7 @@ instance
   forward (Embedding weight) input g = (embedding Nothing False weight input, g)
 
 instance
-  ( KnownLayout layout,
+  ( SGetLayout layout,
     KnownNat paddingIdx,
     output
       ~ Tensor

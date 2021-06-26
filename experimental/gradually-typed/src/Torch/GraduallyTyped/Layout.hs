@@ -15,6 +15,8 @@
 {-# LANGUAGE UndecidableSuperClasses #-}
 {-# LANGUAGE NoStarIsType #-}
 
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE StandaloneDeriving #-}
 module Torch.GraduallyTyped.Layout where
 
 import Data.Kind (Constraint, Type)
@@ -34,6 +36,8 @@ data LayoutType
   deriving (Show, Eq)
 
 genSingletons [''LayoutType]
+
+deriving stock instance Show (SLayoutType (layoutType :: LayoutType))
 
 class KnownLayoutType (layoutType :: LayoutType) where
   layoutTypeVal :: LayoutType
@@ -63,6 +67,8 @@ data Layout (layoutType :: Type) where
 data SLayout (layout :: Layout LayoutType) where
   SUncheckedLayout :: LayoutType -> SLayout 'UncheckedLayout
   SLayout :: forall layoutType. SLayoutType layoutType -> SLayout ('Layout layoutType)
+
+deriving stock instance Show (SLayout (layout :: Layout LayoutType))
 
 type instance Sing = SLayout
 

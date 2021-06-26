@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -13,6 +14,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
@@ -27,7 +29,7 @@ module Torch.GraduallyTyped.Device where
 import Data.Int (Int16)
 import Data.Kind (Constraint, Type)
 import Data.Proxy (Proxy (..))
-import Data.Singletons (Sing, SingKind (..), SomeSing (..), withSomeSing, SingI (..))
+import Data.Singletons (Sing, SingI (..), SingKind (..), SomeSing (..), withSomeSing)
 import GHC.TypeLits (KnownNat, Nat, SomeNat (..), natVal, someNatVal)
 import Torch.GraduallyTyped.Prelude (Concat, IsChecked (..))
 import qualified Torch.Internal.Managed.Cast as ATen ()
@@ -43,6 +45,8 @@ data DeviceType (deviceId :: Type) where
 data SDeviceType (deviceType :: DeviceType Nat) where
   SCPU :: SDeviceType 'CPU
   SCUDA :: forall deviceId. KnownNat deviceId => SDeviceType ('CUDA deviceId)
+
+deriving stock instance Show (SDeviceType (deviceType :: DeviceType Nat))
 
 type instance Sing = SDeviceType
 
@@ -83,6 +87,8 @@ data Device (deviceType :: Type) where
 data SDevice (deviceType :: Device (DeviceType Nat)) where
   SUncheckedDevice :: DeviceType Int16 -> SDevice 'UncheckedDevice
   SDevice :: forall deviceType. SDeviceType deviceType -> SDevice ('Device deviceType)
+
+deriving stock instance Show (SDevice (device :: Device (DeviceType Nat)))
 
 type instance Sing = SDevice
 

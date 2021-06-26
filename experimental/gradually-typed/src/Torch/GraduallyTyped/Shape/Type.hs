@@ -23,6 +23,8 @@
 {-# LANGUAGE NoStarIsType #-}
 {-# OPTIONS_GHC -Wall #-}
 
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DerivingStrategies #-}
 module Torch.GraduallyTyped.Shape.Type where
 
 import Data.Kind (Type)
@@ -50,6 +52,8 @@ data Size (size :: Type) where
 data SSize (size :: Size Nat) where
   SUncheckedSize :: Integer -> SSize 'UncheckedSize
   SSize :: forall size. KnownNat size => SSize ('Size size)
+
+deriving stock instance Show (SSize (size :: Size Nat))
 
 type instance Sing = SSize
 
@@ -84,6 +88,8 @@ data Name (name :: Type) where
 data SName (name :: Name Symbol) where
   SUncheckedName :: String -> SName 'UncheckedName
   SName :: forall name. KnownSymbol name => SName ('Name name)
+
+deriving stock instance Show (SName (name :: Name Symbol))
 
 type instance Sing = SName
 
@@ -126,6 +132,8 @@ data SDim (dim :: Dim (Name Symbol) (Size Nat)) where
       sDimSize :: SSize size
     } ->
     SDim ('Dim name size)
+
+deriving stock instance Show (SDim (dim :: Dim (Name Symbol) (Size Nat)))
 
 type instance Sing = SDim
 
@@ -174,6 +182,8 @@ data By (name :: Type) (index :: Type) where
 data SBy (by :: By Symbol Nat) where
   SByName :: forall name. KnownSymbol name => SBy ('ByName name)
   SByIndex :: forall index. KnownNat index => SBy ('ByIndex index)
+
+deriving stock instance Show (SBy (by :: By Symbol Nat))
 
 type instance Sing = SBy
 
@@ -227,6 +237,8 @@ data SSelectDim (selectDim :: SelectDim (By Symbol Nat)) where
   SUncheckedSelectDim :: By String Integer -> SSelectDim 'UncheckedSelectDim
   SSelectDim :: forall by. SBy by -> SSelectDim ('SelectDim by)
 
+deriving stock instance Show (SSelectDim (selectDim :: SelectDim (By Symbol Nat)))
+
 type instance Sing = SSelectDim
 
 instance SingI (by :: By Symbol Nat) => SingI ('SelectDim by) where
@@ -260,6 +272,8 @@ data SelectDims (selectDims :: Type) where
 data SSelectDims (selectDims :: SelectDims [By Symbol Nat]) where
   SUncheckedSelectDims :: [By String Integer] -> SSelectDims 'UncheckedSelectDims
   SSelectDims :: forall bys. SList bys -> SSelectDims ('SelectDims bys)
+
+deriving stock instance Show (SSelectDims (selectDims :: SelectDims [By Symbol Nat]))
 
 type instance Sing = SSelectDims
 
@@ -310,6 +324,8 @@ data Shape (dims :: Type) where
 data SShape (shape :: Shape [Dim (Name Symbol) (Size Nat)]) where
   SUncheckedShape :: [Dim String Integer] -> SShape 'UncheckedShape
   SShape :: forall dims. SList dims -> SShape ('Shape dims)
+
+deriving stock instance Show (SShape (shape :: Shape [Dim (Name Symbol) (Size Nat)]))
 
 type instance Sing = SShape
 

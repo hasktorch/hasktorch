@@ -37,7 +37,7 @@ import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), KnownDataType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (KnownLayout (..), Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.Prelude (ifM, (&&^))
+import Torch.GraduallyTyped.Prelude (forgetIsChecked, ifM, (&&^))
 import Torch.GraduallyTyped.RequiresGradient (KnownRequiresGradient, RequiresGradient (..))
 import Torch.GraduallyTyped.Scalar ()
 import Torch.GraduallyTyped.Shape.Class (ReplaceDimF)
@@ -139,33 +139,6 @@ instance
   signum = unsafePerformIO . cast1 ATen.sign_t
   fromInteger _a = undefined
 
--- go
---   (requiresGradientVal @requiresGradient)
---   (layoutVal @layout)
---   (deviceVal @device)
---   (dataTypeVal @dataType)
---   (shapeVal @(Dim (Name Symbol) (Size Nat)) @shape)
--- where
---   prefix = "Unable to convert the integer " <> show a <> " to a tensor. "
---   go _ UncheckedLayout _ _ _ = error $ prefix <> "The memory layout is unknown."
---   go _ _ UncheckedDevice _ _ = error $ prefix <> "The tensor device is unknown."
---   go _ _ _ UncheckedDataType _ = error $ prefix <> "The tensor data type is unknown."
---   go _ _ _ _ UncheckedShape = error $ prefix <> "The tensor shape is unknown."
---   go requiresGradient (Layout layoutType) (Device deviceType) (DataType dType) (Shape shape) =
---     let opts = tensorOptions requiresGradient layoutType deviceType dType
---         shape' =
---           foldr
---             ( \case
---                 UncheckedDim -> \_ -> error $ prefix <> "Not all dimensions are known."
---                 Dim dimType -> \dimTypes -> dimType : dimTypes
---             )
---             []
---             shape
---      in case (namedDims shape', sizedDims shape') of
---           (Just names, Just sizes) -> unsafePerformIO $ cast4 ATen.full_lsNo sizes a names opts
---           (_, Just sizes) -> unsafePerformIO $ cast3 ATen.full_lso sizes a opts
---           _ -> error $ prefix <> "Invalid tensor shape specification " <> show shape <> "."
-
 instance
   Castable
     (Tensor requiresGradient layout device dataType shape)
@@ -253,39 +226,16 @@ toSparse ::
   Tensor requiresGradient ('Layout 'Sparse) device dataType shape
 toSparse = unsafePerformIO . cast1 ATen.tensor_to_sparse
 
--- | Returns the memory layout of the input tensor.
---
--- >>> t = ones @'WithGradient @('Layout 'Sparse) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)])
--- >>> layout t
--- Sparse
--- >>> t = ones @'WithGradient @'UncheckedLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)]) (Layout Sparse)
--- >>> layout t
--- Sparse
-layout ::
-  forall requiresGradient layout device dataType shape.
-  KnownLayout layout =>
-  -- | input
-  Tensor requiresGradient layout device dataType shape ->
-  -- | memory layout
-  LayoutType
-layout tensor =
-  case layoutVal @layout of
-    UncheckedLayout ->
-      if unsafePerformIO . cast1 ATen.tensor_is_sparse $ tensor
-        then Sparse
-        else Dense
-    Layout layoutType -> layoutType
-
 class SGetLayout (layout :: Layout LayoutType) where
   -- | Returns the memory layout of the input tensor.
   --
-  -- >>> ones' layout = ones SWithGradient layout (SDevice SCPU) (SDataType 'Float) (SShape $ SName @"batch" :&: SSize @32 :|: SName @"feature" :&: SSize @8 | SNil)
-  -- >>> t = ones' $ SLayout SSparse
+  -- >>> sOnes' layout = sOnes SWithGradient layout (SDevice SCPU) (SDataType SFloat) (SShape $ SName @"batch" :&: SSize @32 :|: SName @"feature" :&: SSize @8 :|: SNil)
+  -- >>> t = sOnes' $ SLayout SDense
   -- >>> sLayout t
-  -- SLayout SSparse
-  -- >>> t = ones' $ SUncheckedLayout Sparse
-  -- >>> SLayout t
-  -- SUncheckedLayout Sparse
+  -- SLayout SDense
+  -- >>> t = sOnes' $ SUncheckedLayout Dense
+  -- >>> sLayout t
+  -- SUncheckedLayout Dense
   sLayout ::
     forall m requiresGradient device dataType shape.
     MonadFail m =>
@@ -293,6 +243,15 @@ class SGetLayout (layout :: Layout LayoutType) where
     Tensor requiresGradient layout device dataType shape ->
     -- | memory layout
     m (SLayout layout)
+
+  layoutType ::
+    forall m requiresGradient device dataType shape.
+    MonadFail m =>
+    -- | input
+    Tensor requiresGradient layout device dataType shape ->
+    -- | memory layout
+    m LayoutType
+  layoutType tensor = forgetIsChecked . fromSing <$> sLayout tensor
 
 instance SGetLayout 'UncheckedLayout where
   sLayout tensor
@@ -335,7 +294,7 @@ uncheckedLayout = coerce
 -- | Returns 'True' if the tensor has the memory layout 'layout' and 'False' otherwise.
 -- If 'layout' is 'UncheckedLayout', 'True' is returned for consistency.
 --
--- >>> t = ones @'WithGradient @'UncheckedLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)]) Dense
+-- >>> t = sOnes SWithGradient (SUncheckedLayout Dense) (SDevice SCPU) (SDataType SFloat) (SShape $ SName @"batch" :&: SSize @32 :|: SName @"feature" :&: SSize @8 :|: SNil)
 -- >>> checkLayout @('Layout 'Sparse) t
 -- False
 -- >>> checkLayout @('Layout 'Dense) t
@@ -363,7 +322,7 @@ checkLayout tensor =
 -- If it does not have it, then the result will be 'Nothing'.
 --
 -- In the REPL, 'm' will default to 'IO':
--- >>> t = ones @'WithGradient @'UncheckedLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)]) Dense
+-- >>> t = sOnes SWithGradient (SUncheckedLayout Dense) (SDevice SCPU) (SDataType SFloat) (SShape $ SName @"batch" :&: SSize @32 :|: SName @"feature" :&: SSize @8 :|: SNil)
 -- >>> t' <- checkedLayout @('Layout 'Dense) t
 -- >>> :type t'
 -- t'
@@ -391,7 +350,7 @@ checkedLayout tensor
 -- | Unsafe version of 'checkedLayout'.
 -- If the tensor does not have the memory layout 'layout', then the execution is stopped and an error message is displayed.
 --
--- >>> t = ones @'WithGradient @'UncheckedLayout @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)]) Dense
+-- >>> t = sOnes SWithGradient (SUncheckedLayout Dense) (SDevice SCPU) (SDataType SFloat) (SShape $ SName @"batch" :&: SSize @32 :|: SName @"feature" :&: SSize @8 :|: SNil)
 -- >>> t' = unsafeCheckedLayout @('Layout 'Dense) t
 -- >>> :type t'
 -- t'
@@ -436,37 +395,6 @@ cuda ::
   Tensor requiresGradient layout ('Device ('CUDA 0)) dataType shape
 cuda = unsafePerformIO . cast1 ATen.tensor_cuda
 
--- | Returns the compute device of the input tensor.
---
--- >>> t = ones @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)])
--- >>> device t
--- CPU
--- >>> t = ones @'WithGradient @('Layout 'Dense) @'UncheckedDevice @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)]) CPU
--- >>> device t
--- CPU
-device ::
-  forall requiresGradient layout device dataType shape.
-  KnownDevice device =>
-  -- | input
-  Tensor requiresGradient layout device dataType shape ->
-  -- | compute device of the input tensor
-  DeviceType Int16
-device tensor =
-  case deviceVal @device of
-    UncheckedDevice ->
-      unsafePerformIO $ do
-        hasCUDA <- cast0 ATen.hasCUDA
-        if hasCUDA
-          then do
-            isCUDA <- cast1 ATen.tensor_is_cuda tensor
-            if isCUDA
-              then do
-                deviceIndex :: Int <- cast1 ATen.tensor_get_device tensor
-                pure . CUDA . fromIntegral $ deviceIndex
-              else pure CPU
-          else pure CPU
-    Device deviceType -> deviceType
-
 class SGetDevice (device :: Device (DeviceType Nat)) where
   -- | Returns the compute device of the input tensor.
   --
@@ -484,6 +412,15 @@ class SGetDevice (device :: Device (DeviceType Nat)) where
     Tensor requiresGradient layout device dataType shape ->
     -- | compute device of the input tensor
     m (SDevice device)
+
+  deviceType ::
+    forall m requiresGradient layout dataType shape.
+    MonadFail m =>
+    -- | input
+    Tensor requiresGradient layout device dataType shape ->
+    -- | compute device of the input tensor
+    m (DeviceType Int16)
+  deviceType tensor = forgetIsChecked . fromSing <$> sDevice tensor
 
 instance SGetDevice 'UncheckedDevice where
   sDevice tensor
@@ -540,7 +477,7 @@ uncheckedDevice = coerce
 -- | Returns 'True' if the tensor is in the memory of 'device' and 'False' otherwise.
 -- If 'device' is 'UncheckedDevice', 'True' is returned for consistency.
 --
--- >>> t = ones @'WithGradient @('Layout 'Dense) @'UncheckedDevice @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)]) CPU
+-- >>> t = sOnes SWithGradient (SLayout SDense) (SUncheckedDevice CPU) (SDataType SFloat) (SShape $ SName @"batch" :&: SSize @32 :|: SName @"feature" :&: SSize @8 :|: SNil)
 -- >>> checkDevice @('Device 'CPU) t
 -- True
 -- >>> checkDevice @('Device ('CUDA 0)) t
@@ -571,7 +508,7 @@ checkDevice tensor =
 -- If it is not, then the result will be 'Nothing'.
 --
 -- In the REPL, 'm' will default to 'IO':
--- >>> t = ones @'WithGradient @('Layout 'Dense) @'UncheckedDevice @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)]) CPU
+-- >>> t = sOnes SWithGradient (SLayout SDense) (SUncheckedDevice CPU) (SDataType SFloat) (SShape $ SName @"batch" :&: SSize @32 :|: SName @"feature" :&: SSize @8 :|: SNil)
 -- >>> t' <- checkedDevice @('Device 'CPU) t
 -- >>> :type t'
 -- t'
@@ -599,7 +536,7 @@ checkedDevice tensor
 -- | Unsafe version of 'checkedDevice'.
 -- If the tensor is not on 'device', then the execution is stopped and an error message is displayed.
 --
--- >>> t = ones @'WithGradient @('Layout 'Dense) @'UncheckedDevice @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)]) CPU
+-- >>> t = sOnes SWithGradient (SLayout SDense) (SUncheckedDevice CPU) (SDataType SFloat) (SShape $ SName @"batch" :&: SSize @32 :|: SName @"feature" :&: SSize @8 :|: SNil)
 -- >>> t' = unsafeCheckedDevice @('Device 'CPU) t
 -- >>> :type t'
 -- t'
@@ -707,27 +644,16 @@ double ::
   Tensor requiresGradient layout device ('DataType 'Double) shape
 double tensor = unsafePerformIO $ cast2 ATen.tensor_toType_s tensor Double
 
--- | Returns the data type of the input tensor.
---
--- >>> t = ones @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)])
--- >>> dtype t
--- Float
--- >>> t = ones @'WithGradient @('Layout 'Dense) @('Device 'CPU) @'UncheckedDataType @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)]) Float
--- >>> dtype t
--- Float
-dataType ::
-  forall dataType requiresGradient layout device shape.
-  KnownDataType dataType =>
-  -- | input
-  Tensor requiresGradient layout device dataType shape ->
-  -- | data type of the input tensor
-  DType
-dataType tensor =
-  case dataTypeVal @dataType of
-    UncheckedDataType -> unsafePerformIO $ cast1 ATen.tensor_scalar_type tensor
-    DataType dtype -> dtype
-
 class SGetDataType (dataType :: DataType DType) where
+  -- | Returns the data type of the input tensor.
+  --
+  -- >>> sOnes' dataType = sOnes SWithGradient (SLayout SDense) (SDevice SCPU) dataType (SShape $ SName @"batch" :&: SSize @32 :|: SName @"feature" :&: SSize @8 :|: SNil)
+  -- >>> t = sOnes' $ SDataType SFloat
+  -- >>> sDataType t
+  -- SDataType SFloat
+  -- >>> t = sOnes' $ SUncheckedDataType Float
+  -- >>> sDataType t
+  -- SUncheckedDataType Float
   sDataType ::
     forall m requiresGradient layout device shape.
     MonadFail m =>
@@ -736,6 +662,15 @@ class SGetDataType (dataType :: DataType DType) where
     -- | data type of the input tensor
     m (SDataType dataType)
 
+  dType ::
+    forall m requiresGradient layout device shape.
+    MonadFail m =>
+    -- | input
+    Tensor requiresGradient layout device dataType shape ->
+    -- | data type of the input tensor
+    m DType
+  dType tensor = forgetIsChecked . fromSing <$> sDataType tensor
+
 instance SGetDataType 'UncheckedDataType where
   sDataType tensor = pure . SUncheckedDataType . unsafePerformIO $ cast1 ATen.tensor_scalar_type tensor
 
@@ -743,16 +678,6 @@ instance SingI dType => SGetDataType ('DataType dType) where
   sDataType tensor
     | unsafePerformIO (cast1 ATen.tensor_scalar_type tensor) == fromSing (sing @dType) = pure . SDataType $ sing @dType
     | otherwise = fail $ "The tensor should have data type " <> show (fromSing $ sing @dType) <> " but hasn't. Please open a ticket on GitHub."
-
--- | Alias for 'dataType'.
-dtype ::
-  forall dataType requiresGradient layout device shape.
-  KnownDataType dataType =>
-  -- | input
-  Tensor requiresGradient layout device dataType shape ->
-  -- | data type of the input tensor
-  DType
-dtype = dataType @dataType
 
 -- | Returns the input tensor but with 'UncheckedDataType' as data-type type annotation.
 -- Any static information about the tensor's data type is thus erased.
@@ -780,7 +705,7 @@ uncheckedDataType = coerce
 -- | Returns 'True' if the tensor has the data type 'dataType' and 'False' otherwise.
 -- If 'dataType' is 'UncheckedDataType', 'True' is returned for consistency.
 --
--- >>> t = ones @'WithGradient @('Layout 'Dense) @('Device 'CPU) @'UncheckedDataType  @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)]) Float
+-- >>> t = sOnes SWithGradient (SLayout SDense) (SDevice SCPU) (SUncheckedDataType Float) (SShape $ SName @"batch" :&: SSize @32 :|: SName @"feature" :&: SSize @8 :|: SNil)
 -- >>> checkDataType @('DataType 'Float) t
 -- True
 -- >>> checkDataType @('DataType 'Double) t
@@ -806,7 +731,7 @@ checkDataType tensor =
 -- If it does not have it, then the result will be 'Nothing'.
 --
 -- In the REPL, 'm' will default to 'IO':
--- >>> t = ones @'WithGradient @('Layout 'Dense) @('Device 'CPU) @'UncheckedDataType @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)]) Float
+-- >>> t = sOnes SWithGradient (SLayout SDense) (SDevice SCPU) (SUncheckedDataType Float) (SShape $ SName @"batch" :&: SSize @32 :|: SName @"feature" :&: SSize @8 :|: SNil)
 -- >>> t' <- checkedDataType @('DataType 'Float) t
 -- >>> :type t'
 -- t'
@@ -834,7 +759,7 @@ checkedDataType tensor
 -- | Unsafe version of 'checkedDataType'.
 -- If the tensor does not have the data type 'dataType', then the execution is stopped and an error message is displayed.
 --
--- >>> t = ones @'WithGradient @('Layout 'Dense) @('Device 'CPU) @'UncheckedDataType @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)]) Float
+-- >>> t = sOnes SWithGradient (SLayout SDense) (SDevice SCPU) (SUncheckedDataType Float) (SShape $ SName @"batch" :&: SSize @32 :|: SName @"feature" :&: SSize @8 :|: SNil)
 -- >>> t' = unsafeCheckedDataType @('DataType 'Float) t
 -- >>> :type t'
 -- t'
@@ -926,21 +851,43 @@ class SGetShape (shape :: Shape [Dim (Name Symbol) (Size Nat)]) where
   -- >>> sOnes' = sOnes SWithGradient (SLayout SDense) (SDevice SCPU) (SDataType SFloat)
   -- >>> t = sOnes' . SShape $ SName @"batch" :&: SSize @32 :|: SName @"feature" :&: SSize @8 :|: SNil
   -- >>> sShape t
-  -- [Dim {dimName = "batch", dimSize = 32},Dim {dimName = "feature", dimSize = 8}]
+  -- SShape (SCons (SDim {sDimName = SName, sDimSize = SSize}) (SCons (SDim {sDimName = SName, sDimSize = SSize}) SNil))
   -- >>> t = sOnes' . SUncheckedShape $ [Dim "batch" 32, Dim "feature" 8]
   -- >>> sShape t
-  -- [Dim {dimName = "batch", dimSize = 32},Dim {dimName = "feature", dimSize = 8}]
+  -- SUncheckedShape [Dim {dimName = "batch", dimSize = 32},Dim {dimName = "feature", dimSize = 8}]
   -- >>> t = sOnes' . SShape $ SUncheckedName "batch" :&: SUncheckedSize 32 :|: SUncheckedName "feature" :&: SSize @32 :|: SNil
   -- >>> sShape t
-  -- [Dim {dimName = "batch", dimSize = 32},Dim {dimName = "feature", dimSize = 8}]
+  -- SShape (SCons (SDim {sDimName = SUncheckedName "batch", sDimSize = SUncheckedSize 32}) (SCons (SDim {sDimName = SUncheckedName "feature", sDimSize = SSize}) SNil))
   -- >>> t = sOnes' . SShape $ SName @"batch" :&: SUncheckedSize 32 :|: SName @"feature" :&: SUncheckedSize 8 :|: SNil
   -- >>> sShape t
-  -- [Dim {dimName = "batch", dimSize = 32},Dim {dimName = "feature", dimSize = 8}]
+  -- SShape (SCons (SDim {sDimName = SName, sDimSize = SUncheckedSize 32}) (SCons (SDim {sDimName = SName, sDimSize = SUncheckedSize 8}) SNil))
   sShape ::
     forall requiresGradient layout device dataType m.
     MonadFail m =>
     Tensor requiresGradient layout device dataType shape ->
     m (SShape shape)
+
+  -- | Returns the shape of the input tensor.
+  --
+  -- >>> sOnes' = sOnes SWithGradient (SLayout SDense) (SDevice SCPU) (SDataType SFloat)
+  -- >>> t = sOnes' . SShape $ SName @"batch" :&: SSize @32 :|: SName @"feature" :&: SSize @8 :|: SNil
+  -- >>> dims t
+  -- [Dim {dimName = "batch", dimSize = 32},Dim {dimName = "feature", dimSize = 8}]
+  -- >>> t = sOnes' . SUncheckedShape $ [Dim "batch" 32, Dim "feature" 8]
+  -- >>> dims t
+  -- [Dim {dimName = "batch", dimSize = 32},Dim {dimName = "feature", dimSize = 8}]
+  -- >>> t = sOnes' . SShape $ SUncheckedName "batch" :&: SUncheckedSize 32 :|: SUncheckedName "feature" :&: SSize @32 :|: SNil
+  -- >>> dims t
+  -- [Dim {dimName = "batch", dimSize = 32},Dim {dimName = "feature", dimSize = 32}]
+  -- >>> t = sOnes' . SShape $ SName @"batch" :&: SUncheckedSize 32 :|: SName @"feature" :&: SUncheckedSize 8 :|: SNil
+  -- >>> dims t
+  -- [Dim {dimName = "batch", dimSize = 32},Dim {dimName = "feature", dimSize = 8}]
+  dims ::
+    forall requiresGradient layout device dataType m.
+    MonadFail m =>
+    Tensor requiresGradient layout device dataType shape ->
+    m [Dim String Integer]
+  dims tensor = fmap (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size)) . forgetIsChecked . fromSing <$> sShape tensor
 
 instance SGetShape 'UncheckedShape where
   sShape tensor = pure . SUncheckedShape . unsafePerformIO $ do

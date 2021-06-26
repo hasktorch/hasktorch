@@ -1,11 +1,13 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -26,6 +28,8 @@ data Index (index :: Type) where
 data SIndex (index :: Index Nat) where
   SUncheckedIndex :: Natural -> SIndex 'UncheckedIndex
   SIndex :: forall index. KnownNat index => SIndex ('Index index)
+
+deriving stock instance Show (SIndex (index :: Index Nat))
 
 type instance Sing = SIndex
 

@@ -1,11 +1,13 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
@@ -23,6 +25,8 @@ import Torch.DType (DType (..))
 import Torch.GraduallyTyped.Prelude (Concat, IsChecked (..))
 
 genSingletons [''DType]
+
+deriving stock instance Show (SDType (dType :: DType))
 
 class KnownDType (dType :: DType) where
   dTypeVal :: DType
@@ -65,6 +69,8 @@ data DataType (dType :: Type) where
 data SDataType (dataType :: DataType DType) where
   SUncheckedDataType :: DType -> SDataType 'UncheckedDataType
   SDataType :: forall dType. SDType dType -> SDataType ('DataType dType)
+
+deriving stock instance Show (SDataType (dataType :: DataType DType))
 
 type instance Sing = SDataType
 

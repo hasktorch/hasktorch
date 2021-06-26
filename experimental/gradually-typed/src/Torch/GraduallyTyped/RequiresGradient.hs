@@ -1,7 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -20,6 +22,8 @@ data RequiresGradient
   deriving (Show, Eq)
 
 genSingletons [''RequiresGradient]
+
+deriving stock instance Show (SRequiresGradient (requiresGradient :: RequiresGradient))
 
 class KnownRequiresGradient (requiresGradient :: RequiresGradient) where
   requiresGradientVal :: RequiresGradient
