@@ -5,6 +5,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.NN.Functional.Linear where
 
@@ -15,8 +16,6 @@ import Torch.GraduallyTyped.DType (DataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.Prelude (Reverse, Seq)
-import Torch.GraduallyTyped.Random (mkGenerator)
-import Torch.GraduallyTyped.Tensor.Creation (randn)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
@@ -24,6 +23,10 @@ import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import Torch.Internal.Cast (cast2, cast3)
 import qualified Torch.Internal.Managed.Native as ATen
 import Type.Errors.Pretty (type (%), type (<>))
+
+-- $setup
+-- >>> import Data.Singletons.Prelude.List (SList (..))
+-- >>> import Torch.GraduallyTyped
 
 -- | Compute the output shape of a linear transformation.
 --
@@ -94,21 +97,22 @@ type LinearWeightDimsErrorMessage (weightDims :: [Dim (Name Symbol) (Size Nat)])
 --
 -- Examples:
 --
--- >>> type InputDim = 'Dim ('Name "input") ('Size 5)
--- >>> type OutputDim = 'Dim ('Name "output") ('Size 10)
--- >>> type BatchDim = 'Dim ('Name "batch") ('Size 20)
--- >>> type WeightShape = 'Shape '[OutputDim, InputDim]
--- >>> type BiasShape = 'Shape '[OutputDim]
--- >>> type InputShape = 'Shape '[BatchDim, InputDim]
--- >>> g <- mkGenerator @('Device 'CPU) 0
--- >>> (weight, g') = randn @'WithoutGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @WeightShape g
--- >>> (bias, g'') = randn @'WithoutGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @BiasShape g'
--- >>> (input, _) = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @InputShape g''
+-- >>> inputDim = SName @"input" :&: SSize @5
+-- >>> outputDim = SName @"output" :&: SSize @10
+-- >>> batchDim = SName @"batch" :&: SSize @20
+-- >>> weightShape = SShape $ outputDim :|: inputDim :|: SNil
+-- >>> biasShape = SShape $ outputDim :|: SNil
+-- >>> inputShape = SShape $ batchDim :|: inputDim :|: SNil
+-- >>> g <- sMkGenerator (SDevice SCPU) 0
+-- >>> sRandn' = sRandn SWithoutGradient (SLayout SDense) (SDevice SCPU) (SDataType SFloat)
+-- >>> (weight, g') = sRandn' weightShape g
+-- >>> (bias, g'') = sRandn' biasShape g'
+-- >>> (input, _) = sRandn' inputShape g''
 -- >>> result = linearWithBias weight bias input
 -- >>> :type result
 -- result
 --   :: Tensor
---        'WithGradient
+--        'WithoutGradient
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)

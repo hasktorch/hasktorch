@@ -19,30 +19,38 @@ module Torch.GraduallyTyped.NN.Transformer.BERT.Common where
 
 import Control.Monad.Reader (ReaderT (runReaderT))
 import Data.Kind (Type)
+import Data.Singletons (SingI (..))
 import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import GHC.TypeNats (type (<=?))
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..))
+import Torch.GraduallyTyped.DType (DataType (..), SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasInitialize (..))
-import Torch.GraduallyTyped.NN.Transformer.Encoder (TransformerEncoder, lookupEncoder)
 import Torch.GraduallyTyped.NN.Transformer.EncoderOnly (EncoderOnlyTransformer, EncoderOnlyTransformerWithLMHead, lookupEncoderOnlyTransformer, lookupEncoderOnlyTransformerWithLMHead)
 import Torch.GraduallyTyped.NN.Transformer.Stack (HasLookupStack)
 import Torch.GraduallyTyped.NN.Transformer.Type (TensorDict, TransformerStyle (BERT), mkTransformerInput, mkTransformerPaddingMask, tensorDictFromPretrained)
 import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim, Name (..), Shape (..), Size (..), WithDimC (..))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim, Name (..), SDim, Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
 -- | BERT dType.
 type BERTDType = 'Float
 
+-- | BERT dType.
+bertDType :: SDType BERTDType
+bertDType = SFloat
+
 -- | BERT data type.
 type BERTDataType = 'DataType BERTDType
+
+-- | BERT data type.
+bertDataType :: SDataType BERTDataType
+bertDataType = SDataType bertDType
 
 -- | BERT dropout probability type.
 type BERTDropoutP = Float
@@ -170,10 +178,13 @@ type family
 
 instance
   ( KnownDim headDim,
-    KnownDim headEmbedDim,
+    SingI headDim,
+    SingI headEmbedDim,
     KnownDim embedDim,
+    SingI embedDim,
     KnownDim ffnDim,
     KnownDim inputEmbedDim,
+    SingI inputEmbedDim,
     KnownDim vocabDim,
     KnownDim typeVocabDim,
     HasLookupStack numLayers (1 <=? numLayers) numLayers 'BERT ('Device 'CPU) BERTDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim BERTDropoutP (ReaderT TensorDict IO)
@@ -182,19 +193,27 @@ instance
   where
   type
     InitializeF (BERTModel numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim) =
-      FilePath -> IO (BERTModel numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
+      FilePath ->
+      IO (BERTModel numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
   initialize filePath =
     do
+      let headDim = sing @headDim
+          headEmbedDim = sing @headEmbedDim
+          embedDim = sing @embedDim
+          inputEmbedDim = sing @inputEmbedDim
       tensorDict <- tensorDictFromPretrained filePath
       flip runReaderT tensorDict $
-        BERTModel <$> lookupEncoderOnlyTransformer bertDropoutP bertEps "bert."
+        BERTModel <$> lookupEncoderOnlyTransformer headDim headEmbedDim embedDim inputEmbedDim bertDropoutP bertEps "bert."
 
 instance
   ( KnownDim headDim,
-    KnownDim headEmbedDim,
+    SingI headDim,
+    SingI headEmbedDim,
     KnownDim embedDim,
+    SingI embedDim,
     KnownDim ffnDim,
     KnownDim inputEmbedDim,
+    SingI inputEmbedDim,
     KnownDim vocabDim,
     KnownDim typeVocabDim,
     HasLookupStack numLayers (1 <=? numLayers) numLayers 'BERT ('Device 'CPU) BERTDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim BERTDropoutP (ReaderT TensorDict IO)
@@ -203,18 +222,21 @@ instance
   where
   type
     InitializeF (BERTModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim) =
-      FilePath -> IO (BERTModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
+      FilePath ->
+      IO (BERTModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
   initialize filePath =
     do
+      let headDim = sing @headDim
+          headEmbedDim = sing @headEmbedDim
+          embedDim = sing @embedDim
+          inputEmbedDim = sing @inputEmbedDim
       tensorDict <- tensorDictFromPretrained filePath
       flip runReaderT tensorDict $
-        BERTModelWithLMHead <$> lookupEncoderOnlyTransformerWithLMHead bertDropoutP bertEps ""
+        BERTModelWithLMHead <$> lookupEncoderOnlyTransformerWithLMHead headDim headEmbedDim embedDim inputEmbedDim bertDropoutP bertEps ""
 
 mkBERTInput ::
   forall batchDim seqDim m output.
   ( MonadFail m,
-    WithDimC batchDim (WithDimF seqDim ([[Int]] -> m output)),
-    WithDimC seqDim ([[Int]] -> m output),
     KnownDim batchDim,
     KnownDim seqDim,
     output
@@ -225,8 +247,11 @@ mkBERTInput ::
           ('DataType 'Int64)
           ('Shape '[batchDim, seqDim])
   ) =>
-  WithDimF batchDim (WithDimF seqDim ([[Int]] -> m output))
-mkBERTInput = mkTransformerInput @batchDim @seqDim @m bertPadTokenId
+  SDim batchDim ->
+  SDim seqDim ->
+  [[Int]] ->
+  m output
+mkBERTInput = mkTransformerInput bertPadTokenId
 
 mkBERTPaddingMask ::
   Tensor requiresGradient layout device dataType shape ->

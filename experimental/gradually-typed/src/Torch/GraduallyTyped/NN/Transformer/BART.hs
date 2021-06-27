@@ -1,8 +1,10 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -v2 -Wall #-}
 
 module Torch.GraduallyTyped.NN.Transformer.BART
   ( module Torch.GraduallyTyped.NN.Transformer.BART.Common,
@@ -13,16 +15,15 @@ module Torch.GraduallyTyped.NN.Transformer.BART
   )
 where
 
-import Data.List (maximumBy, sortBy)
+import Data.List (sortBy)
 import Data.Ord (Down (..), comparing)
-import Test.HUnit.Approx (assertApproxEqual)
 import qualified Tokenizers (Tokenizer, decode, encode, getIDs, withTokenizerFromConfigFile)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Transformer.BART.Base
 import Torch.GraduallyTyped.NN.Transformer.BART.Common
 import Torch.GraduallyTyped.Random (mkGenerator)
-import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
+import Torch.GraduallyTyped.Shape.Type (SName (..), SSize (..), pattern (:&:))
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
 import qualified Torch.Tensor as Tensor (Tensor (..), asValue)
 
@@ -42,8 +43,8 @@ testBARTInput = do
     ids <- Tokenizers.getIDs encoding
     print ids
     mkBARTInput
-      @('Dim ('Name "*") ('Size 1))
-      @('Dim ('Name "*") ('Size 6))
+      (SName @"*" :&: SSize @1)
+      (SName @"*" :&: SSize @6)
       [ids]
 
 testBARTDecoderInput :: IO _
@@ -53,8 +54,8 @@ testBARTDecoderInput = do
     ids <- Tokenizers.getIDs encoding
     print ids
     mkBARTInput
-      @('Dim ('Name "*") ('Size 1))
-      @('Dim ('Name "*") ('Size 5))
+      (SName @"*" :&: SSize @1)
+      (SName @"*" :&: SSize @5)
       [ids]
 
 testForwardBARTBase :: IO ()

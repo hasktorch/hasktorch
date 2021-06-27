@@ -7,6 +7,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -40,10 +41,10 @@ import Torch.GraduallyTyped.NN.Transformer.T5.Small (T5Small)
 import Torch.GraduallyTyped.Random (Generator, sMkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownShape, Name (..), SBy (..), SSelectDim (..), SelectDim (..), Shape (..), Size (..))
-import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (expand)
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownShape, Name (..), SBy (..), SName (..), SSelectDim (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (sExpand)
 import Torch.GraduallyTyped.Tensor.MathOperations.Comparison (Order (..), Sorted (..), sort)
-import Torch.GraduallyTyped.Tensor.Type (Tensor (..), shape)
+import Torch.GraduallyTyped.Tensor.Type (SGetShape (dims), Tensor (..))
 import Torch.Language.SpiderSQL (SpiderSQL, spiderSQL)
 import qualified Torch.Tensor
 import Prelude hiding (Word, words)
@@ -160,7 +161,7 @@ runBeamSearch ::
           T5DataType
           encoderOutputShape,
     'UncheckedShape ~ BroadcastShapesF encoderOutputShape 'UncheckedShape,
-    KnownShape encoderOutputShape,
+    SGetShape encoderOutputShape,
     HasForward
       model
       (T5GenerationInput decoderInput encoderOutput' inputPaddingMask)
@@ -211,20 +212,20 @@ runBeamSearch maxSteps beamSize model input g =
                   go (UnfinishedHypothesis _ _ previousHypothesis') = 1 + go previousHypothesis'
                in fromIntegral . maximum $ go <$> previousHypotheses'
         -- liftIO . print $ ((t5Vocab Map.!) <$>) <$> tokens
-        mkT5Input @('Dim ('Name "*") 'UncheckedSize) @('Dim ('Name "*") 'UncheckedSize) batchSize seqSize tokens
+        mkT5Input (SName @"*" :&: SUncheckedSize batchSize) (SName @"*" :&: SUncheckedSize seqSize) tokens
       logProbs <- getLogProbs decoderInput
       pure $ zip previousHypotheses' logProbs >>= uncurry (\previousHypothesis -> zipWith (mkHypothesis previousHypothesis) [0, 1 ..] . last)
     getLogProbs :: decoderInput -> StateT (Maybe (encoderOutput, inputPaddingMask), generator) IO [[[Float]]]
     getLogProbs decoderInput = do
       (maybeStuff, g) <- get
-      let (T5Output decoderOutput encoderOutput inputPaddingMask, g') = case maybeStuff of
-            Nothing -> forward model (T5Input input decoderInput) g
-            Just (encoderOutput, inputPaddingMask) ->
-              let decoderInputBatchDim : _ = shape decoderInput
-                  _encoderOutputBatchDim : encoderOutputDims = shape encoderOutput
-                  encoderOutput' = expand @'UncheckedShape (decoderInputBatchDim : encoderOutputDims) encoderOutput
-               in case forward model (T5GenerationInput decoderInput encoderOutput' inputPaddingMask) g of
-                    (T5Output decoderOutput _ _, g') -> (T5Output decoderOutput encoderOutput inputPaddingMask, g')
+      (T5Output decoderOutput encoderOutput inputPaddingMask, g') <- case maybeStuff of
+        Nothing -> pure $ forward model (T5Input input decoderInput) g
+        Just (encoderOutput, inputPaddingMask) -> do
+          decoderInputBatchDim : _ <- dims decoderInput
+          _encoderOutputBatchDim : encoderOutputDims <- dims encoderOutput
+          let encoderOutput' = sExpand (SUncheckedShape (decoderInputBatchDim : encoderOutputDims)) encoderOutput
+          case forward model (T5GenerationInput decoderInput encoderOutput' inputPaddingMask) g of
+            (T5Output decoderOutput _ _, g') -> pure (T5Output decoderOutput encoderOutput inputPaddingMask, g')
       put (Just (encoderOutput, inputPaddingMask), g')
       case logSoftmax (SSelectDim $ SByIndex @2) decoderOutput of
         UnsafeTensor t -> pure . Torch.Tensor.asValue . Torch.Tensor.Unsafe $ t
@@ -244,8 +245,8 @@ testBeamSearch = do
     -- let tokens = [[13959, 1566, 12, 2968, 10, 148, 31, 60, 423, 13, 3, 7, 10536, 55, 1]]
     -- print $ ((t5Vocab Map.!) <$>) <$> tokens
     mkT5Input
-      @('Dim ('Name "*") ('Size 1))
-      @('Dim ('Name "*") ('Size 19))
+      (SName @"*" :&: SSize @1)
+      (SName @"*" :&: SSize @19)
       tokens
   model <-
     initialize
@@ -392,9 +393,8 @@ getIs n model input = do
     pure ts'
   decoderInput :: decoderInput <-
     mkT5Input
-      @('Dim ('Name "*") ('Size 1))
-      @('Dim ('Name "*") 'UncheckedSize)
-      (fromIntegral $ length tokens)
+      (SName @"*" :&: SSize @1)
+      (SName @"*" :&: SUncheckedSize (fromIntegral $ length tokens))
       [tokens]
   decoderOutput <- do
     (mTensors, g) <- get

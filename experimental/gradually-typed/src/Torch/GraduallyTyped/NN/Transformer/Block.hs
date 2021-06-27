@@ -27,15 +27,15 @@ import Data.Kind (Type)
 import Data.Singletons (SingI, sing)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType, KnownDataType, WithDataTypeC (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, WithDeviceC (..))
+import Torch.GraduallyTyped.DType (DataType, KnownDataType, SDataType)
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, SDevice)
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
-import Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork (HasInitializeTransformerFeedForwardNetworkC, TransformerFeedForwardNetwork, lookupTransformerFeedForwardNetwork)
-import Torch.GraduallyTyped.NN.Transformer.SelfAttention (HasInitializeSelfAttentionC, SelfAttention, lookupSelfAttention)
+import Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork (TransformerFeedForwardNetwork, lookupTransformerFeedForwardNetwork)
+import Torch.GraduallyTyped.NN.Transformer.SelfAttention (SelfAttention, lookupSelfAttention)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle)
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim, Name (..), Size (..), WithDimC (..))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim, Name (..), SDim, Size (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 
 -- | Transformer encoder block consisting of self-attention and a feed-forward network.
@@ -65,109 +65,50 @@ data
     } ->
     TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP
 
-type HasInitializeTransformerBlockC style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP =
-  ( WithDeviceC device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device)))))))),
-    WithDataTypeC dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device))))))),
-    WithDimC headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device)))))),
-    WithDimC headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device))))),
-    WithDimC embedDim (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device)))),
-    WithDimC queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device))),
-    WithDimC ffnDim (dropoutP -> Double -> Generator device -> (TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device))
-  )
-
 instance
-  ( HasInitializeTransformerBlockC style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP,
-    HasInitialize (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP),
-    InitializeF (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP) ~ WithDeviceF device (WithDataTypeF dataType (WithDimF headDim (WithDimF headEmbedDim (WithDimF embedDim (WithDimF queryEmbedDim (dropoutP -> Double -> Generator device -> (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device))))))),
-    HasInitializeSelfAttentionC style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP,
-    HasInitializeTransformerFeedForwardNetworkC style device dataType queryEmbedDim ffnDim dropoutP,
-    HasInitialize (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP),
-    InitializeF (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP) ~ WithDeviceF device (WithDataTypeF dataType (WithDimF queryEmbedDim (WithDimF ffnDim (dropoutP -> Double -> Generator device -> (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP, Generator device)))))
+  ( HasInitialize (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP),
+    HasInitialize (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP)
   ) =>
   HasInitialize (TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
   where
   type
     InitializeF (TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP) =
-      WithDeviceF
-        device
-        ( WithDataTypeF
+      SDevice device ->
+      SDataType dataType ->
+      SDim headDim ->
+      SDim headEmbedDim ->
+      SDim embedDim ->
+      SDim queryEmbedDim ->
+      SDim ffnDim ->
+      dropoutP ->
+      Double ->
+      Generator device ->
+      (TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device)
+  initialize device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP eps =
+    runState $ do
+      selfAttention <-
+        state $
+          initialize
+            @(SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
+            device
             dataType
-            ( WithDimF
-                headDim
-                ( WithDimF
-                    headEmbedDim
-                    ( WithDimF
-                        embedDim
-                        ( WithDimF
-                            queryEmbedDim
-                            ( WithDimF
-                                ffnDim
-                                (dropoutP -> Double -> Generator device -> (TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device))
-                            )
-                        )
-                    )
-                )
-            )
-        )
-  initialize =
-    withDevice @device $
-      \deviceType ->
-        withDataType @dataType $
-          \dType ->
-            withDim @headDim $
-              \headDim ->
-                withDim @headEmbedDim $
-                  \headEmbedDim ->
-                    withDim @embedDim $
-                      \embedDim ->
-                        withDim @queryEmbedDim $
-                          \queryEmbedDim ->
-                            withDim @ffnDim @(dropoutP -> Double -> Generator device -> (TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device)) $
-                              \ffnDim ->
-                                go deviceType dType headDim headEmbedDim embedDim queryEmbedDim ffnDim
-    where
-      go deviceType dType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP eps = runState $ do
-        selfAttention <-
-          state $
-            withoutDim @queryEmbedDim
-              ( withoutDim @embedDim
-                  ( withoutDim @headEmbedDim
-                      ( withoutDim @headDim
-                          ( withoutDataType @dataType
-                              ( withoutDevice @device
-                                  ( initialize @(SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
-                                  )
-                                  deviceType
-                              )
-                              dType
-                          )
-                          headDim
-                      )
-                      headEmbedDim
-                  )
-                  embedDim
-              )
-              queryEmbedDim
-              dropoutP
-              eps
-        feedForwardNetwork <-
-          state $
-            withoutDim @ffnDim
-              ( withoutDim @queryEmbedDim
-                  ( withoutDataType @dataType
-                      ( withoutDevice @device
-                          ( initialize @(TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP)
-                          )
-                          deviceType
-                      )
-                      dType
-                  )
-                  queryEmbedDim
-              )
-              ffnDim
-              dropoutP
-              eps
-        pure $ TransformerBlock selfAttention feedForwardNetwork
+            headDim
+            headEmbedDim
+            embedDim
+            queryEmbedDim
+            dropoutP
+            eps
+      feedForwardNetwork <-
+        state $
+          initialize
+            @(TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP)
+            device
+            dataType
+            queryEmbedDim
+            ffnDim
+            dropoutP
+            eps
+      pure $ TransformerBlock selfAttention feedForwardNetwork
 
 lookupBlock ::
   forall style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP m.
@@ -177,23 +118,24 @@ lookupBlock ::
     MonadFail m,
     KnownDevice device,
     KnownDataType dataType,
-    KnownDim headDim,
-    KnownDim headEmbedDim,
     KnownDim embedDim,
     KnownDim queryEmbedDim,
     KnownDim ffnDim,
     Scalar dropoutP
   ) =>
+  SDim headDim ->
+  SDim headEmbedDim ->
+  SDim embedDim ->
   dropoutP ->
   Double ->
   String ->
   m (TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
-lookupBlock dropoutP eps prefix =
-  let selfAttention ST5 = lookupSelfAttention dropoutP eps (prefix <> "layer.0.")
-      selfAttention SBERT = lookupSelfAttention dropoutP eps (prefix <> "attention.")
-      selfAttention SRoBERTa = lookupSelfAttention dropoutP eps (prefix <> "attention.")
-      selfAttention SPegasus = lookupSelfAttention dropoutP eps prefix
-      selfAttention SBART = lookupSelfAttention dropoutP eps prefix
+lookupBlock headDim headEmbedDim embedDim dropoutP eps prefix =
+  let selfAttention ST5 = lookupSelfAttention headDim headEmbedDim embedDim dropoutP eps (prefix <> "layer.0.")
+      selfAttention SBERT = lookupSelfAttention headDim headEmbedDim embedDim dropoutP eps (prefix <> "attention.")
+      selfAttention SRoBERTa = lookupSelfAttention headDim headEmbedDim embedDim dropoutP eps (prefix <> "attention.")
+      selfAttention SPegasus = lookupSelfAttention headDim headEmbedDim embedDim dropoutP eps prefix
+      selfAttention SBART = lookupSelfAttention headDim headEmbedDim embedDim dropoutP eps prefix
       feedForwardNetwork ST5 = lookupTransformerFeedForwardNetwork dropoutP eps (prefix <> "layer.1.")
       feedForwardNetwork SBERT = lookupTransformerFeedForwardNetwork dropoutP eps prefix
       feedForwardNetwork SRoBERTa = lookupTransformerFeedForwardNetwork dropoutP eps prefix

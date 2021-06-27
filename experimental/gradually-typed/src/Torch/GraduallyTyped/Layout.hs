@@ -15,6 +15,8 @@
 {-# LANGUAGE UndecidableSuperClasses #-}
 {-# LANGUAGE NoStarIsType #-}
 
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE StandaloneDeriving #-}
 module Torch.GraduallyTyped.Layout where
 
 import Data.Kind (Constraint, Type)
@@ -34,6 +36,8 @@ data LayoutType
   deriving (Show, Eq)
 
 genSingletons [''LayoutType]
+
+deriving stock instance Show (SLayoutType (layoutType :: LayoutType))
 
 class KnownLayoutType (layoutType :: LayoutType) where
   layoutTypeVal :: LayoutType
@@ -64,9 +68,11 @@ data SLayout (layout :: Layout LayoutType) where
   SUncheckedLayout :: LayoutType -> SLayout 'UncheckedLayout
   SLayout :: forall layoutType. SLayoutType layoutType -> SLayout ('Layout layoutType)
 
+deriving stock instance Show (SLayout (layout :: Layout LayoutType))
+
 type instance Sing = SLayout
 
-instance SingI (layoutType :: LayoutType) => SingI ('Layout layoutType) where
+instance SingI layoutType => SingI ('Layout (layoutType :: LayoutType)) where
   sing = SLayout $ sing @layoutType
 
 instance SingKind (Layout LayoutType) where
@@ -84,24 +90,6 @@ instance KnownLayout 'UncheckedLayout where
 
 instance (KnownLayoutType layoutType) => KnownLayout ('Layout layoutType) where
   layoutVal = Layout (layoutTypeVal @layoutType)
-
-class WithLayoutC (layout :: Layout LayoutType) (f :: Type) where
-  type WithLayoutF layout f :: Type
-  withLayout :: (LayoutType -> f) -> WithLayoutF layout f
-  withoutLayout :: WithLayoutF layout f -> (LayoutType -> f)
-
-instance WithLayoutC 'UncheckedLayout f where
-  type WithLayoutF 'UncheckedLayout f = LayoutType -> f
-  withLayout = id
-  withoutLayout = id
-
-instance
-  KnownLayoutType layoutType =>
-  WithLayoutC ('Layout layoutType) f
-  where
-  type WithLayoutF ('Layout layoutType) f = f
-  withLayout f = f (layoutTypeVal @layoutType)
-  withoutLayout = const
 
 -- >>> :kind! GetLayouts ('Layout 'Dense)
 -- GetLayouts ('Layout 'Dense) :: [Layout LayoutType]

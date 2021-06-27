@@ -5,6 +5,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -19,28 +20,34 @@ module Torch.GraduallyTyped.NN.Transformer.LMHead where
 import Control.Monad.Indexed (IxPointed (..), (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.Reader (MonadIO, MonadReader)
+import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Kind (Type)
-import Data.Singletons (SingI (..))
+import Data.Singletons (SingI (..), SingKind (fromSing))
+import Data.Singletons.Prelude.List (SList (SNil))
 import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType)
-import Torch.GraduallyTyped.DType (DataType, KnownDataType)
-import Torch.GraduallyTyped.Device (Device, DeviceType, KnownDevice)
-import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
+import Torch.GraduallyTyped.DType (DataType, KnownDataType, SDataType)
+import Torch.GraduallyTyped.Device (Device, DeviceType, KnownDevice, SDevice)
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Activation (Gelu (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..))
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Linear (Linear (..))
 import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..))
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
+import Torch.GraduallyTyped.Prelude (forgetIsChecked)
+import Torch.GraduallyTyped.Random (Generator)
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), Name (..), Shape (..), Size (..))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), Name (..), SDim, SName (..), SShape (..), SSize (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.Tensor.Creation (sZeros)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add, divScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
 data
   GLMHead
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
     (dense :: Type)
     (activation :: Type)
     (layerNorm :: Type)
@@ -48,15 +55,15 @@ data
     (bias :: Type)
   where
   GLMHead ::
-    forall dense activation layerNorm decoder bias.
-    { lmHeadDense :: dense,
+    forall inputEmbedDim dense activation layerNorm decoder bias.
+    { lmHeadInputEmbedDim :: SDim inputEmbedDim,
+      lmHeadDense :: dense,
       lmHeadActivation :: activation,
       lmHeadLayerNorm :: layerNorm,
       lmHeadDecoder :: decoder,
-      lmHeadBias :: bias,
-      lmHeadInputEmbedDim :: Dim String Integer
+      lmHeadBias :: bias
     } ->
-    GLMHead dense activation layerNorm decoder bias
+    GLMHead inputEmbedDim dense activation layerNorm decoder bias
 
 -- | Language modelling head for transformer encoders and decoders.
 newtype
@@ -79,6 +86,7 @@ type GLMHeadF
   (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
   (vocabDim :: Dim (Name Symbol) (Size Nat)) =
   GLMHead
+    inputEmbedDim
     (LMHeadDenseF style device dataType inputEmbedDim)
     (LMHeadActivationF style)
     (LMHeadLayerNormF style device dataType inputEmbedDim)
@@ -149,17 +157,61 @@ type family
   where
   LMHeadBiasF 'BERT _ _ _ = ()
   LMHeadBiasF 'RoBERTa _ _ _ = ()
+  LMHeadBiasF 'T5 _ _ _ = ()
   LMHeadBiasF 'BART device dataType vocabDim = Tensor 'WithGradient ('Layout 'Dense) device dataType ('Shape '[ 'Dim ('Name "*") ('Size 1), vocabDim])
   LMHeadBiasF 'Pegasus device dataType vocabDim = Tensor 'WithGradient ('Layout 'Dense) device dataType ('Shape '[ 'Dim ('Name "*") ('Size 1), vocabDim])
-  LMHeadBiasF 'T5 _ _ _ = ()
 
-lookupLMHeadInputEmbedDim ::
-  forall inputEmbedDim m.
-  (KnownDim inputEmbedDim, MonadFail m) =>
-  m (Dim String Integer)
-lookupLMHeadInputEmbedDim = case dimVal @inputEmbedDim of
-  Dim (Name name) (Size size) -> pure $ Dim name size
-  Dim _ _ -> fail "language head input embedding dimension unspecified"
+instance
+  ( SingI style,
+    dense ~ LMHeadDenseF style device dataType inputEmbedDim,
+    layerNorm ~ LMHeadLayerNormF style device dataType inputEmbedDim,
+    decoder ~ LMHeadDecoderF style device dataType inputEmbedDim vocabDim,
+    bias ~ LMHeadBiasF style device dataType vocabDim
+  ) =>
+  HasInitialize (LMHead style device dataType inputEmbedDim vocabDim)
+  where
+  type
+    InitializeF (LMHead style device dataType inputEmbedDim vocabDim) =
+      SDevice device ->
+      SDataType dataType ->
+      SDim inputEmbedDim ->
+      SDim vocabDim ->
+      Double ->
+      Generator device ->
+      (LMHead style device dataType inputEmbedDim vocabDim, Generator device)
+  initialize device dataType inputEmbedDim vocabDim eps =
+    runState $ do
+      dense <- case sing @style of
+        SBERT -> state $ initialize @dense device dataType inputEmbedDim inputEmbedDim
+        SRoBERTa -> state $ initialize @dense device dataType inputEmbedDim inputEmbedDim
+        ST5 -> pure ()
+        SBART -> pure ()
+        SPegasus -> pure ()
+      let activation = case sing @style of
+            SBERT -> Gelu
+            SRoBERTa -> Gelu
+            ST5 -> ()
+            SBART -> ()
+            SPegasus -> ()
+      let layerNorm = case sing @style of
+            SBERT -> initialize @layerNorm device dataType (SShape $ inputEmbedDim :|: SNil) eps
+            SRoBERTa -> initialize @layerNorm device dataType (SShape $ inputEmbedDim :|: SNil) eps
+            ST5 -> ()
+            SBART -> ()
+            SPegasus -> ()
+      decoder <- state $ case sing @style of
+        SBERT -> initialize @decoder device dataType inputEmbedDim vocabDim
+        SRoBERTa -> initialize @decoder device dataType inputEmbedDim vocabDim
+        ST5 -> initialize @decoder device dataType inputEmbedDim vocabDim
+        SBART -> initialize @decoder device dataType inputEmbedDim vocabDim
+        SPegasus -> initialize @decoder device dataType inputEmbedDim vocabDim
+      let bias = case sing @style of
+            SBERT -> ()
+            SRoBERTa -> ()
+            ST5 -> ()
+            SBART -> sZeros SWithGradient (SLayout SDense) device dataType (SShape $ SName @"*" :&: SSize @1 :|: vocabDim :|: SNil)
+            SPegasus -> sZeros SWithGradient (SLayout SDense) device dataType (SShape $ SName @"*" :&: SSize @1 :|: vocabDim :|: SNil)
+      pure . LMHead $ GLMHead inputEmbedDim dense activation layerNorm decoder bias
 
 lookupLMHead ::
   forall style device dataType inputEmbedDim vocabDim m.
@@ -172,10 +224,11 @@ lookupLMHead ::
     KnownDim inputEmbedDim,
     KnownDim vocabDim
   ) =>
+  SDim inputEmbedDim ->
   Double ->
   String ->
   m (LMHead style device dataType inputEmbedDim vocabDim)
-lookupLMHead eps prefix =
+lookupLMHead inputEmbedDim eps prefix =
   let dense SBERT =
         LinearWithBias
           <$> lookupTensor (prefix <> "transform.dense.weight")
@@ -224,25 +277,13 @@ lookupLMHead eps prefix =
       bias SPegasus = lookupTensor (prefix <> "final_logits_bias")
    in LMHead
         <$> ( GLMHead
-                <$> dense (sing @style)
+                <$> pure inputEmbedDim
+                <*> dense (sing @style)
                 <*> pure (activation $ sing @style)
                 <*> layerNorm (sing @style)
                 <*> decoder (sing @style)
                 <*> bias (sing @style)
-                <*> lookupLMHeadInputEmbedDim @inputEmbedDim
             )
-
--- let bias =
---       case sing @style of
---         ST5 -> ()
---         SPegasus ->
---           withoutCreate @_ @'WithGradient @('Layout 'Dense) @device @dataType @('Shape '[ 'Dim ('Name "*") ('Size 1), vocabDim])
---             (zeros @'WithGradient @('Layout 'Dense) @device @dataType @('Shape '[ 'Dim ('Name "*") ('Size 1), vocabDim]))
---             WithGradient
---             Dense
---             deviceType
---             dType
---             [vocabDim]
 
 type family
   LMHeadOutputF
@@ -333,7 +374,7 @@ instance
     generatorOutput
   where
   forward (LMHead GLMHead {..}) input =
-    let s :: Double = sqrt . fromIntegral . dimSize $ lmHeadInputEmbedDim
+    let s :: Double = sqrt . fromIntegral . forgetIsChecked . dimSize . fromSing $ lmHeadInputEmbedDim
         scaling :: STransformerStyle style -> decoderOutput -> decoderOutput
         scaling SBERT = id
         scaling SRoBERTa = id

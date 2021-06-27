@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
@@ -9,23 +10,22 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.NN.Functional.Normalization where
 
+import Data.Singletons.Prelude.List (SList (SNil))
 import GHC.TypeLits (Nat, Symbol, TypeError, type (+), type (-))
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (DataType))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
-import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
+import Torch.GraduallyTyped.DType (DataType (..), SDType (..), SDataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.Prelude (Length, Reverse)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
-import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownShape, Name (..), SelectDims (..), Shape (..), Size (..), WithSelectDimsC (..), dimSize)
-import Torch.GraduallyTyped.Tensor.Creation (ones)
-import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (addScalar, mul, powScalar, rsqrt)
-import Torch.GraduallyTyped.Tensor.MathOperations.Reduction (MeanF, mean)
-import Torch.GraduallyTyped.Tensor.Type (Tensor (..), checkedDataType, checkedDevice, checkedLayout, checkedShape, shape)
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (SWithGradient))
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SName (..), SShape (..), SSize (..), SelectDims (..), Shape (..), Size (..), dimSize, pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.Tensor.Creation (sOnes)
+import Torch.GraduallyTyped.Tensor.Type (SGetShape (dims), Tensor (..), checkedDataType, checkedDevice, checkedLayout, checkedShape)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import Torch.Internal.Cast (cast5, cast6)
 import qualified Torch.Internal.Managed.Native as ATen
@@ -49,7 +49,7 @@ type family LayerNormWithBiasF (weightShape :: Shape [Dim (Name Symbol) (Size Na
 
 layerNormWithBias ::
   forall requiresGradient requiresGradient' requiresGradient'' layout layout' layout'' device device' device'' dataType dataType' dataType'' shape shape' shape''.
-  (KnownShape shape) =>
+  SGetShape shape =>
   -- | weight
   Tensor requiresGradient layout device dataType shape ->
   -- | bias
@@ -65,24 +65,14 @@ layerNormWithBias ::
     (device <+> (device' <+> device''))
     (dataType <+> (dataType' <+> dataType''))
     (LayerNormWithBiasF shape shape' shape'')
-layerNormWithBias weight bias eps input =
-  let dims = shape weight
-   in unsafePerformIO $
-        cast5 ATen.layer_norm_tlttd input (dimSize <$> dims) weight bias eps
+layerNormWithBias weight bias eps input = unsafePerformIO $ do
+  weightDims <- dims weight
+  cast5 ATen.layer_norm_tlttd input (dimSize <$> weightDims) weight bias eps
 
 type family LayerNormWithoutBiasF (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (inputShape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
   LayerNormWithoutBiasF 'UncheckedShape _ = 'UncheckedShape
   LayerNormWithoutBiasF _ 'UncheckedShape = 'UncheckedShape
   LayerNormWithoutBiasF ('Shape weightDims) ('Shape inputDims) = 'Shape (Reverse (LayerNormImplF (Reverse weightDims) (Reverse inputDims)))
-
-type family LayerNormWithoutBiasF' (selectDims :: SelectDims [By Symbol Nat]) (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (inputShape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
-  LayerNormWithoutBiasF' selectDims weightShape inputShape =
-    BroadcastShapesF
-      weightShape
-      ( BroadcastShapesF
-          inputShape
-          (MeanF selectDims inputShape)
-      )
 
 type family LayerNormWithoutBiasSelectDimsF (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (inputShape :: Shape [Dim (Name Symbol) (Size Nat)]) :: SelectDims [By Symbol Nat] where
   LayerNormWithoutBiasSelectDimsF 'UncheckedShape _ = 'UncheckedSelectDims
@@ -109,9 +99,7 @@ type family LayerNormWithoutBiasBysF (weightDims :: [Dim (Name Symbol) (Size Nat
 -- | T5-style layer norm
 layerNormWithoutBias ::
   forall requiresGradient layout device dataType shape requiresGradient' layout' device' dataType' shape'.
-  ( KnownShape shape,
-    KnownShape shape'
-  ) =>
+  (SGetShape shape, SGetShape shape') =>
   -- | weight
   Tensor requiresGradient layout device dataType shape ->
   -- | eps
@@ -125,12 +113,11 @@ layerNormWithoutBias ::
     (device <+> device')
     (dataType <+> dataType')
     (LayerNormWithoutBiasF shape shape')
-layerNormWithoutBias weight eps input =
-  let weightShape = shape weight
-      inputShape = shape input
-      indexes :: [Int] = fromIntegral . (length inputShape -) <$> [1, 2 .. length weightShape]
-   in unsafePerformIO $
-        cast6 (go (null indexes)) input weight indexes eps (2 :: Double) True
+layerNormWithoutBias weight eps input = unsafePerformIO $ do
+  weightDims <- dims weight
+  inputDims <- dims input
+  let indexes :: [Int] = fromIntegral . (length inputDims -) <$> [1, 2 .. length weightDims]
+  cast6 (go (null indexes)) input weight indexes eps (2 :: Double) True
   where
     go nullIndexes input weight indexes eps exponent keepDim = do
       squaredInput <- ATen.pow_ts input exponent
@@ -159,14 +146,14 @@ testT5LayerNorm ::
         )
     )
 testT5LayerNorm = do
-  let weight = ones @'WithGradient @('Layout 'Dense) @('Device CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "*") ('Size 10)])
+  let weight = sOnes SWithGradient (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SName @"*" :&: SSize @10 :|: SNil)
       eps = 1e-6 :: Double
   input <-
     case Torch.Tensor.asTensor [[13 :: Float, 27, 14, 19, -512, 1, 2, 3, 4, 0], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]] of
       Torch.Tensor.Unsafe t ->
-        pure (UnsafeTensor @'WithoutGradient t)
+        pure (UnsafeTensor t)
           >>= checkedLayout @('Layout 'Dense)
-          >>= checkedDevice @('Device CPU)
+          >>= checkedDevice @('Device 'CPU)
           >>= checkedDataType @('DataType 'Float)
           >>= checkedShape @('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 10)])
   let output = layerNormWithoutBias weight eps input
@@ -174,39 +161,3 @@ testT5LayerNorm = do
     UnsafeTensor t ->
       print (Torch.Tensor.Unsafe t)
   pure output
-
-layerNormWithoutBias' ::
-  forall requiresGradient layout device dataType shape requiresGradient' layout' device' dataType' shape' selectDims.
-  ( KnownShape shape,
-    KnownShape shape',
-    selectDims ~ LayerNormWithoutBiasSelectDimsF shape shape',
-    WithSelectDimsC
-      selectDims
-      ( Tensor requiresGradient' layout' device' dataType' shape' ->
-        Tensor requiresGradient' layout' device' dataType' (MeanF selectDims shape')
-      )
-  ) =>
-  -- | weight
-  Tensor requiresGradient layout device dataType shape ->
-  -- | eps
-  Double ->
-  -- | input
-  Tensor requiresGradient' layout' device' dataType' shape' ->
-  -- | output
-  Tensor
-    (requiresGradient <|> requiresGradient')
-    (layout <+> layout')
-    (device <+> device')
-    (dataType <+> dataType')
-    (LayerNormWithoutBiasF' selectDims shape shape')
-layerNormWithoutBias' weight eps input =
-  let weightShape = shape weight
-      inputShape = shape input
-      bys = ByIndex . fromIntegral . (length inputShape -) <$> [1, 2 .. length weightShape]
-      variance =
-        withoutSelectDims @selectDims @(Tensor requiresGradient' layout' device' dataType' shape' -> Tensor requiresGradient' layout' device' dataType' (MeanF selectDims shape'))
-          ( mean @selectDims @requiresGradient' @layout' @device' @dataType' @shape'
-          )
-          bys
-          (powScalar (2 :: Float) input)
-   in weight `mul` (input `mul` rsqrt (variance `addScalar` eps))

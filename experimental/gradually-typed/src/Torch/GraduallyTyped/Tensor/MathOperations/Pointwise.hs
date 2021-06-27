@@ -3,24 +3,25 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.Tensor.MathOperations.Pointwise where
 
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
-import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
-import Torch.GraduallyTyped.Random (mkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape (BroadcastDimsImplF, BroadcastShapesF, Dim (..), Name (..), Shape (..), Size (..))
-import Torch.GraduallyTyped.Tensor.Creation (randn)
+import Torch.GraduallyTyped.Shape (BroadcastShapesF)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import Torch.Internal.Cast (cast1, cast2, cast3, cast4)
 import qualified Torch.Internal.Managed.Native as ATen
 import Prelude hiding (abs)
+
+-- $setup
+-- >>> import Data.Singletons.Prelude.List (SList (..))
+-- >>> import Torch.GraduallyTyped
 
 -- | Computes the element-wise absolute value of the given 'input' tensor:
 -- \[
@@ -82,9 +83,10 @@ acosh = unsafePerformIO . cast1 ATen.acosh_t
 -- See 'addScalar' for a version of this function where
 -- the 'other' input is a scalar.
 --
--- >>> g <- mkGenerator @('Device 'CPU) 0
--- >>> (a, g) = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "feature") ('Size 4)]) g
--- >>> (b, _) = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "*") ('Size 4), 'Dim ('Name "*") ('Size 1)]) g
+-- >>> g <- sMkGenerator (SDevice SCPU) 0
+-- >>> sRandn' = sRandn SWithGradient (SLayout SDense) (SDevice SCPU) (SDataType SFloat)
+-- >>> (a, g') = sRandn' (SShape $ SName @"feature" :&: SSize @4 :|: SNil) g
+-- >>> (b, _) = sRandn' (SShape $ SName @"*" :&: SSize @4 :|: SName @"*" :&: SSize @1 :|: SNil) g'
 -- >>> :type a `add` b
 -- a `add` b
 --   :: Tensor

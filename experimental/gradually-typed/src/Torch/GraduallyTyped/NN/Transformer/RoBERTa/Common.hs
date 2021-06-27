@@ -13,35 +13,44 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.NN.Transformer.RoBERTa.Common where
 
 import Control.Monad.Reader (ReaderT (runReaderT))
 import Data.Kind (Type)
+import Data.Singletons (SingI (..))
 import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import GHC.TypeNats (type (<=?))
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..))
+import Torch.GraduallyTyped.DType (DataType (..), SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasInitialize (..))
-import Torch.GraduallyTyped.NN.Transformer.Encoder (TransformerEncoder, lookupEncoder)
 import Torch.GraduallyTyped.NN.Transformer.EncoderOnly (EncoderOnlyTransformer (..), EncoderOnlyTransformerWithLMHead (..), lookupEncoderOnlyTransformer, lookupEncoderOnlyTransformerWithLMHead)
 import Torch.GraduallyTyped.NN.Transformer.Stack (HasLookupStack)
 import Torch.GraduallyTyped.NN.Transformer.Type (TensorDict, TransformerStyle (RoBERTa), mkTransformerInput, mkTransformerPaddingMask, tensorDictFromPretrained)
 import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim, Name (..), Shape (..), Size (..), WithDimC (..))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim, Name (..), SDim, Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
 -- | RoBERTa dType.
 type RoBERTaDType = 'Float
 
+-- | RoBERTa dType.
+robertaDType :: SDType RoBERTaDType
+robertaDType = SFloat
+
 -- | RoBERTa data type.
 type RoBERTaDataType = 'DataType RoBERTaDType
+
+-- | RoBERTa data type.
+robertaDataType :: SDataType RoBERTaDataType
+robertaDataType = SDataType robertaDType
 
 -- | RoBERTa dropout probability type.
 type RoBERTaDropoutP = Float
@@ -181,10 +190,13 @@ type family
 
 instance
   ( KnownDim headDim,
-    KnownDim headEmbedDim,
+    SingI headDim,
+    SingI headEmbedDim,
     KnownDim embedDim,
+    SingI embedDim,
     KnownDim ffnDim,
     KnownDim inputEmbedDim,
+    SingI inputEmbedDim,
     KnownDim vocabDim,
     KnownDim typeVocabDim,
     HasLookupStack numLayers (1 <=? numLayers) numLayers 'RoBERTa ('Device 'CPU) RoBERTaDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim RoBERTaDropoutP (ReaderT TensorDict IO)
@@ -196,16 +208,23 @@ instance
       FilePath -> IO (RoBERTaModel numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
   initialize filePath =
     do
+      let headDim = sing @headDim
+          headEmbedDim = sing @headEmbedDim
+          embedDim = sing @embedDim
+          inputEmbedDim = sing @inputEmbedDim
       tensorDict <- tensorDictFromPretrained filePath
       flip runReaderT tensorDict $
-        RoBERTaModel <$> lookupEncoderOnlyTransformer robertaDropoutP robertaEps "roberta."
+        RoBERTaModel <$> lookupEncoderOnlyTransformer headDim headEmbedDim embedDim inputEmbedDim robertaDropoutP robertaEps "roberta."
 
 instance
   ( KnownDim headDim,
-    KnownDim headEmbedDim,
+    SingI headDim,
+    SingI headEmbedDim,
     KnownDim embedDim,
+    SingI embedDim,
     KnownDim ffnDim,
     KnownDim inputEmbedDim,
+    SingI inputEmbedDim,
     KnownDim vocabDim,
     KnownDim typeVocabDim,
     HasLookupStack numLayers (1 <=? numLayers) numLayers 'RoBERTa ('Device 'CPU) RoBERTaDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim RoBERTaDropoutP (ReaderT TensorDict IO)
@@ -217,15 +236,17 @@ instance
       FilePath -> IO (RoBERTaModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
   initialize filePath =
     do
+      let headDim = sing @headDim
+          headEmbedDim = sing @headEmbedDim
+          embedDim = sing @embedDim
+          inputEmbedDim = sing @inputEmbedDim
       tensorDict <- tensorDictFromPretrained filePath
       flip runReaderT tensorDict $
-        RoBERTaModelWithLMHead <$> lookupEncoderOnlyTransformerWithLMHead robertaDropoutP robertaEps ""
+        RoBERTaModelWithLMHead <$> lookupEncoderOnlyTransformerWithLMHead headDim headEmbedDim embedDim inputEmbedDim robertaDropoutP robertaEps ""
 
 mkRoBERTaInput ::
   forall batchDim seqDim m output.
   ( MonadFail m,
-    WithDimC batchDim (WithDimF seqDim ([[Int]] -> m output)),
-    WithDimC seqDim ([[Int]] -> m output),
     KnownDim batchDim,
     KnownDim seqDim,
     output
@@ -236,8 +257,11 @@ mkRoBERTaInput ::
           ('DataType 'Int64)
           ('Shape '[batchDim, seqDim])
   ) =>
-  WithDimF batchDim (WithDimF seqDim ([[Int]] -> m output))
-mkRoBERTaInput = mkTransformerInput @batchDim @seqDim @m robertaPadTokenId
+  SDim batchDim ->
+  SDim seqDim ->
+  [[Int]] ->
+  m output
+mkRoBERTaInput = mkTransformerInput robertaPadTokenId
 
 mkRoBERTaPaddingMask ::
   Tensor requiresGradient layout device dataType shape ->

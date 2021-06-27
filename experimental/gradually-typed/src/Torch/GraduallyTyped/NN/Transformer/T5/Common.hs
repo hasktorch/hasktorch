@@ -10,6 +10,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -33,9 +34,7 @@
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL7
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL7C
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8C
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.RewriteRules.LayoutDeviceRule
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.RewriteRules.LayoutDataTypeRule #-}
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8C #-}
 {-# OPTIONS_GHC -v2 -Wall #-}
 
 module Torch.GraduallyTyped.NN.Transformer.T5.Common where
@@ -45,33 +44,41 @@ import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.Reader (ReaderT (runReaderT))
 import Data.Coerce (Coercible, coerce)
 import Data.Kind (Type)
+import Data.Singletons (SingI (..), SingKind (fromSing))
 import GHC.Float (double2Int)
 import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol, type (<=?))
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), KnownDataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice)
-import Torch.GraduallyTyped.Layout (KnownLayout, Layout (..), LayoutType (..))
+import Torch.GraduallyTyped.DType (DataType (..), SDType (..), SDataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Transformer.DecoderStack (HasLookupDecoderStack)
 import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (SequenceToSequenceTransformer (..), SequenceToSequenceTransformerGenerationInput (..), SequenceToSequenceTransformerInput (..), SequenceToSequenceTransformerOutput (..), SequenceToSequenceTransformerWithLMHead (..), lookupSequenceToSequenceTransformer, lookupSequenceToSequenceTransformerWithLMHead)
 import Torch.GraduallyTyped.NN.Transformer.Stack (HasLookupStack)
 import Torch.GraduallyTyped.NN.Transformer.Type (MkTransformerAttentionMaskC, MkTransformerCrossAttentionMaskC, MkTransformerDecoderAttentionMaskC, ShiftRight, TensorDict, TransformerStyle (T5), mkTransformerAttentionMask, mkTransformerCrossAttentionMask, mkTransformerDecoderAttentionMask, mkTransformerInput, mkTransformerPaddingMask, tensorDictFromPretrained)
-import Torch.GraduallyTyped.Prelude (Seq)
+import Torch.GraduallyTyped.Prelude (Seq, forgetIsChecked)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
-import Torch.GraduallyTyped.RewriteRules ()
-import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, type (!))
-import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), KnownShape, Name (..), Shape (..), Size (..), WithDimC (..))
-import Torch.GraduallyTyped.Tensor.Type (Tensor (..), checkedDataType, checkedDevice, checkedLayout, checkedShape, shape)
+import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, sGetDim, type (!))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), Name (..), SBy (..), SDim, SName (..), SSelectDim (..), SSize (..), Shape (..), Size (..), pattern (:&:))
+import Torch.GraduallyTyped.Tensor.Type (SGetShape, Tensor (..), checkedDataType, checkedDevice, checkedLayout, checkedShape, sShape)
 import Torch.GraduallyTyped.Unify (type (<+>))
 import qualified Torch.Tensor (Tensor (Unsafe), asTensor)
 
 -- | T5 dType.
 type T5DType = 'Float
 
+-- | T5 dType.
+t5DType :: SDType T5DType
+t5DType = SFloat
+
 -- | T5 data type.
 type T5DataType = 'DataType T5DType
+
+-- | T5 data type.
+t5DataType :: SDataType T5DataType
+t5DataType = SDataType t5DType
 
 -- | T5 dropout probability type.
 type T5DropoutP = Float
@@ -84,6 +91,9 @@ t5DropoutP = 0.1
 -- | T5 relative positional encoding bucket dimension.
 -- 'relative_attention_num_buckets = 32'
 type T5RelPosEncBucketDim = 'Dim ('Name "*") ('Size 32)
+
+t5RelPosEncBucketDim :: SDim T5RelPosEncBucketDim
+t5RelPosEncBucketDim = SName @"*" :&: SSize @32
 
 -- | T5 layer-norm epsilon.
 -- 'layer_norm_epsilon = 1e-06'
@@ -204,10 +214,13 @@ type family
 
 instance
   ( KnownDim headDim,
-    KnownDim headEmbedDim,
+    SingI headDim,
+    SingI headEmbedDim,
     KnownDim embedDim,
+    SingI embedDim,
     KnownDim ffnDim,
     KnownDim inputEmbedDim,
+    SingI inputEmbedDim,
     KnownDim vocabDim,
     HasLookupStack numLayers (1 <=? numLayers) numLayers 'T5 ('Device 'CPU) T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim T5DropoutP (ReaderT TensorDict IO),
     HasLookupDecoderStack numLayers (1 <=? numLayers) numLayers 'T5 ('Device 'CPU) T5DataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim T5DropoutP (ReaderT TensorDict IO)
@@ -219,16 +232,23 @@ instance
       FilePath -> IO (T5Model numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
   initialize filePath =
     do
+      let headDim = sing @headDim
+          headEmbedDim = sing @headEmbedDim
+          embedDim = sing @embedDim
+          inputEmbedDim = sing @inputEmbedDim
       tensorDict <- tensorDictFromPretrained filePath
       flip runReaderT tensorDict $
-        T5Model <$> lookupSequenceToSequenceTransformer t5DropoutP t5Eps ""
+        T5Model <$> lookupSequenceToSequenceTransformer headDim headEmbedDim embedDim inputEmbedDim t5DropoutP t5Eps ""
 
 instance
   ( KnownDim headDim,
-    KnownDim headEmbedDim,
+    SingI headDim,
+    SingI headEmbedDim,
     KnownDim embedDim,
+    SingI embedDim,
     KnownDim ffnDim,
     KnownDim inputEmbedDim,
+    SingI inputEmbedDim,
     KnownDim vocabDim,
     HasLookupStack numLayers (1 <=? numLayers) numLayers 'T5 ('Device 'CPU) T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim T5DropoutP (ReaderT TensorDict IO),
     HasLookupDecoderStack numLayers (1 <=? numLayers) numLayers 'T5 ('Device 'CPU) T5DataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim T5DropoutP (ReaderT TensorDict IO)
@@ -240,15 +260,17 @@ instance
       FilePath -> IO (T5ModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
   initialize filePath =
     do
+      let headDim = sing @headDim
+          headEmbedDim = sing @headEmbedDim
+          embedDim = sing @embedDim
+          inputEmbedDim = sing @inputEmbedDim
       tensorDict <- tensorDictFromPretrained filePath
       flip runReaderT tensorDict $
-        T5ModelWithLMHead <$> lookupSequenceToSequenceTransformerWithLMHead t5DropoutP t5Eps ""
+        T5ModelWithLMHead <$> lookupSequenceToSequenceTransformerWithLMHead headDim headEmbedDim embedDim inputEmbedDim t5DropoutP t5Eps ""
 
 mkT5Input ::
   forall batchDim seqDim m output.
   ( MonadFail m,
-    WithDimC batchDim (WithDimF seqDim ([[Int]] -> m output)),
-    WithDimC seqDim ([[Int]] -> m output),
     KnownDim batchDim,
     KnownDim seqDim,
     output
@@ -259,8 +281,11 @@ mkT5Input ::
           ('DataType 'Int64)
           ('Shape '[batchDim, seqDim])
   ) =>
-  WithDimF batchDim (WithDimF seqDim ([[Int]] -> m output))
-mkT5Input = mkTransformerInput @batchDim @seqDim @m t5PadTokenId
+  SDim batchDim ->
+  SDim seqDim ->
+  [[Int]] ->
+  m output
+mkT5Input = mkTransformerInput t5PadTokenId
 
 mkT5PaddingMask ::
   Tensor requiresGradient layout device dataType shape ->
@@ -306,33 +331,29 @@ mkT5RelPos' numBuckets maxDistance querySize keySize =
         queryPos
 
 mkT5RelPos ::
-  forall seqDim (relPosEncBucketDim :: Dim (Name Symbol) (Size Nat)) output.
-  ( WithDimC seqDim (WithDimF relPosEncBucketDim (Int -> output)),
-    WithDimC relPosEncBucketDim (Int -> output),
-    KnownDim seqDim,
-    output
-      ~ Tensor
-          'WithoutGradient
-          ('Layout 'Dense)
-          ('Device 'CPU)
-          ('DataType 'Int64)
-          ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])
-  ) =>
-  WithDimF seqDim (WithDimF relPosEncBucketDim (Int -> output))
-mkT5RelPos =
-  withDim @seqDim $
-    \(Dim seqName seqSize) -> withDim @relPosEncBucketDim @(Int -> output) $
-      \(Dim relPosEncBucketName relPosEncBucketSize) maxDistance ->
-        let relPosEncBucketSize' = fromIntegral relPosEncBucketSize
-            seqSize' = fromIntegral seqSize
-         in case Torch.Tensor.asTensor [mkT5RelPos' relPosEncBucketSize' maxDistance seqSize' seqSize'] of
-              Torch.Tensor.Unsafe t ->
-                unsafePerformIO $
-                  pure (UnsafeTensor @'WithoutGradient t)
-                    >>= checkedLayout @('Layout 'Dense)
-                    >>= checkedDevice @('Device 'CPU)
-                    >>= checkedDataType @('DataType 'Int64)
-                    >>= checkedShape @('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])
+  forall seqDim relPosEncBucketDim.
+  KnownDim seqDim =>
+  SDim seqDim ->
+  SDim relPosEncBucketDim ->
+  Int ->
+  Tensor
+    'WithoutGradient
+    ('Layout 'Dense)
+    ('Device 'CPU)
+    ('DataType 'Int64)
+    ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])
+mkT5RelPos seqDim relPosEncBucketDim maxDistance =
+  let getSize = fromIntegral . forgetIsChecked . dimSize . fromSing
+      seqSize = getSize seqDim
+      relPosEncBucketSize = getSize relPosEncBucketDim
+   in case Torch.Tensor.asTensor [mkT5RelPos' relPosEncBucketSize maxDistance seqSize seqSize] of
+        Torch.Tensor.Unsafe t ->
+          unsafePerformIO $
+            pure (UnsafeTensor t)
+              >>= checkedLayout
+              >>= checkedDevice
+              >>= checkedDataType
+              >>= checkedShape
 
 -- >>> mkDecoderRelPos' 32 128 21 17
 -- [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[3,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[4,3,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0],[5,4,3,2,1,0,0,0,0,0,0,0,0,0,0,0,0],[6,5,4,3,2,1,0,0,0,0,0,0,0,0,0,0,0],[7,6,5,4,3,2,1,0,0,0,0,0,0,0,0,0,0],[8,7,6,5,4,3,2,1,0,0,0,0,0,0,0,0,0],[9,8,7,6,5,4,3,2,1,0,0,0,0,0,0,0,0],[10,9,8,7,6,5,4,3,2,1,0,0,0,0,0,0,0],[11,10,9,8,7,6,5,4,3,2,1,0,0,0,0,0,0],[12,11,10,9,8,7,6,5,4,3,2,1,0,0,0,0,0],[13,12,11,10,9,8,7,6,5,4,3,2,1,0,0,0,0],[14,13,12,11,10,9,8,7,6,5,4,3,2,1,0,0,0],[15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0,0],[16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0],[16,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1],[16,16,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2],[17,16,16,16,15,14,13,12,11,10,9,8,7,6,5,4,3],[17,17,16,16,16,15,14,13,12,11,10,9,8,7,6,5,4]]
@@ -366,33 +387,29 @@ mkT5DecoderRelPos' numBuckets maxDistance querySize keySize =
         queryPos
 
 mkT5DecoderRelPos ::
-  forall seqDim (relPosEncBucketDim :: Dim (Name Symbol) (Size Nat)) output.
-  ( WithDimC seqDim (WithDimF relPosEncBucketDim (Int -> output)),
-    WithDimC relPosEncBucketDim (Int -> output),
-    KnownDim seqDim,
-    output
-      ~ Tensor
-          'WithoutGradient
-          ('Layout 'Dense)
-          ('Device 'CPU)
-          ('DataType 'Int64)
-          ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])
-  ) =>
-  WithDimF seqDim (WithDimF relPosEncBucketDim (Int -> output))
-mkT5DecoderRelPos =
-  withDim @seqDim $
-    \(Dim seqName seqSize) -> withDim @relPosEncBucketDim @(Int -> output) $
-      \(Dim relPosEncBucketName relPosEncBucketSize) maxDistance ->
-        let relPosEncBucketSize' = fromIntegral relPosEncBucketSize
-            seqSize' = fromIntegral seqSize
-         in case Torch.Tensor.asTensor [mkT5DecoderRelPos' relPosEncBucketSize' maxDistance seqSize' seqSize'] of
-              Torch.Tensor.Unsafe t ->
-                unsafePerformIO $
-                  pure (UnsafeTensor @'WithoutGradient t)
-                    >>= checkedLayout @('Layout 'Dense)
-                    >>= checkedDevice @('Device 'CPU)
-                    >>= checkedDataType @('DataType 'Int64)
-                    >>= checkedShape @('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])
+  forall seqDim relPosEncBucketDim.
+  KnownDim seqDim =>
+  SDim seqDim ->
+  SDim relPosEncBucketDim ->
+  Int ->
+  Tensor
+    'WithoutGradient
+    ('Layout 'Dense)
+    ('Device 'CPU)
+    ('DataType 'Int64)
+    ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])
+mkT5DecoderRelPos seqDim relPosEncBucketDim maxDistance =
+  let getSize = fromIntegral . forgetIsChecked . dimSize . fromSing
+      seqSize = getSize seqDim
+      relPosEncBucketSize = getSize relPosEncBucketDim
+   in case Torch.Tensor.asTensor [mkT5DecoderRelPos' relPosEncBucketSize maxDistance seqSize seqSize] of
+        Torch.Tensor.Unsafe t ->
+          unsafePerformIO $
+            pure (UnsafeTensor t)
+              >>= checkedLayout
+              >>= checkedDevice
+              >>= checkedDataType
+              >>= checkedShape
 
 data T5Input input decoderInput where
   T5Input ::
@@ -452,9 +469,9 @@ instance
           inputDevice
           inputDataType
           inputShape,
+    SGetShape inputShape,
     inputSeqDim ~ (inputShape ! 1),
     KnownDim inputSeqDim,
-    KnownShape inputShape,
     inputPaddingMask
       ~ Tensor
           inputPaddingMaskRequiresGradient
@@ -475,7 +492,6 @@ instance
           ('Device 'CPU)
           ('DataType 'Int64)
           ('Shape '[ 'Dim ('Name "*") ('Size 1), inputSeqDim, inputSeqDim]),
-    WithDimC inputSeqDim (Int -> relPos),
     decoderInput
       ~ Tensor
           decoderInputRequiresGradient
@@ -490,9 +506,9 @@ instance
           rightShiftedDecoderInputDevice
           rightShiftedDecoderInputDataType
           rightShiftedDecoderInputShape,
+    SGetShape rightShiftedDecoderInputShape,
     rightShiftedDecoderInputSeqDim ~ (rightShiftedDecoderInputShape ! 1),
     KnownDim rightShiftedDecoderInputSeqDim,
-    KnownShape rightShiftedDecoderInputShape,
     decoderInputPaddingMask
       ~ Tensor
           'WithoutGradient
@@ -515,10 +531,9 @@ instance
           ('Device 'CPU)
           ('DataType 'Int64)
           ('Shape '[ 'Dim ('Name "*") ('Size 1), rightShiftedDecoderInputSeqDim, rightShiftedDecoderInputSeqDim]),
-    WithDimC rightShiftedDecoderInputSeqDim (Int -> decoderRelPos),
-    MkTransformerAttentionMaskC T5DType T5DataType inputPaddingMaskRequiresGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim attentionMask,
-    MkTransformerCrossAttentionMaskC T5DType T5DataType rightShiftedDecoderInputSeqDim inputPaddingMaskRequiresGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim crossAttentionMask,
-    MkTransformerDecoderAttentionMaskC T5DType T5DataType rightShiftedDecoderInputPaddingMaskRequiresGradient rightShiftedDecoderInputPaddingMaskLayout rightShiftedDecoderInputPaddingMaskDevice rightShiftedDecoderInputPaddingMaskDataType rightShiftedDecoderInputPaddingMaskShape rightShiftedDecoderInputPaddingMaskSeqDim decoderAttentionMask,
+    MkTransformerAttentionMaskC IO T5DataType inputPaddingMaskRequiresGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim attentionMask,
+    MkTransformerCrossAttentionMaskC IO T5DataType rightShiftedDecoderInputSeqDim inputPaddingMaskRequiresGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim crossAttentionMask,
+    MkTransformerDecoderAttentionMaskC IO T5DataType rightShiftedDecoderInputPaddingMaskLayout rightShiftedDecoderInputPaddingMaskDevice rightShiftedDecoderInputPaddingMaskShape rightShiftedDecoderInputPaddingMaskSeqDim decoderAttentionMask,
     HasForward (ShiftRight Int) decoderInput generator rightShiftedDecoderInput generator,
     HasForward (ShiftRight Int) decoderInputPaddingMask generator rightShiftedDecoderInputPaddingMask generator,
     HasForward
@@ -540,64 +555,33 @@ instance
   where
   forward t5Model T5Input {..} =
     let inputPaddingMask = mkT5PaddingMask t5Input
-        attentionMask =
-          mkTransformerAttentionMask
-            @T5DType
-            @T5DataType
-            @inputPaddingMaskRequiresGradient
-            @inputPaddingMaskLayout
-            @inputPaddingMaskDevice
-            @inputPaddingMaskDataType
-            @inputPaddingMaskShape
-            t5AttentionMaskBias
-            inputPaddingMask
-        [_, inputSeqDim] = shape t5Input
-        relPos =
-          withoutDim @inputSeqDim @(Int -> relPos)
-            ( mkT5RelPos @inputSeqDim @T5RelPosEncBucketDim
-            )
-            inputSeqDim
-            t5MaxDistance
+        attentionMask = unsafePerformIO $ mkTransformerAttentionMask t5DataType t5AttentionMaskBias inputPaddingMask
+        inputShape = unsafePerformIO $ sShape t5Input
+        inputSeqDim = unsafePerformIO $ sGetDim (SSelectDim $ SByIndex @1) inputShape
+        relPos = mkT5RelPos inputSeqDim t5RelPosEncBucketDim t5MaxDistance
      in runIxState $
           ireturn t5DecoderInput
             >>>= IxState . forward (initialize @(ShiftRight Int) t5BOSTokenId)
             >>>= ( \rightShiftedDecoderInput ->
-                     let [_, rightShiftedDecoderInputSeqDim] = shape rightShiftedDecoderInput
-                         decoderRelPos =
-                           withoutDim @rightShiftedDecoderInputSeqDim @(Int -> decoderRelPos)
-                             ( mkT5DecoderRelPos @rightShiftedDecoderInputSeqDim @T5RelPosEncBucketDim
-                             )
-                             rightShiftedDecoderInputSeqDim
-                             t5MaxDistance
+                     let rightShiftedDecoderInputShape = unsafePerformIO $ sShape rightShiftedDecoderInput
+                         rightShiftedDecoderInputSeqDim = unsafePerformIO $ sGetDim (SSelectDim $ SByIndex @1) rightShiftedDecoderInputShape
+                         decoderRelPos = mkT5DecoderRelPos rightShiftedDecoderInputSeqDim t5RelPosEncBucketDim t5MaxDistance
                          crossAttentionMask =
-                           withoutDim @rightShiftedDecoderInputSeqDim @(inputPaddingMask -> crossAttentionMask)
-                             ( mkTransformerCrossAttentionMask
-                                 @T5DType
-                                 @T5DataType
-                                 @rightShiftedDecoderInputSeqDim
-                                 @inputPaddingMaskRequiresGradient
-                                 @inputPaddingMaskLayout
-                                 @inputPaddingMaskDevice
-                                 @inputPaddingMaskDataType
-                                 @inputPaddingMaskShape
-                                 t5AttentionMaskBias
-                             )
-                             rightShiftedDecoderInputSeqDim
-                             inputPaddingMask
+                           unsafePerformIO $
+                             mkTransformerCrossAttentionMask
+                               t5DataType
+                               rightShiftedDecoderInputSeqDim
+                               t5AttentionMaskBias
+                               inputPaddingMask
                       in ireturn (mkT5PaddingMask t5DecoderInput)
                            >>>= IxState . forward (initialize @(ShiftRight Int) 0)
                            >>>= ( \rightShiftedDecoderInputPaddingMask ->
                                     let decoderAttentionMask =
-                                          mkTransformerDecoderAttentionMask
-                                            @T5DType
-                                            @T5DataType
-                                            @rightShiftedDecoderInputPaddingMaskRequiresGradient
-                                            @rightShiftedDecoderInputPaddingMaskLayout
-                                            @rightShiftedDecoderInputPaddingMaskDevice
-                                            @rightShiftedDecoderInputPaddingMaskDataType
-                                            @rightShiftedDecoderInputPaddingMaskShape
-                                            t5AttentionMaskBias
-                                            rightShiftedDecoderInputPaddingMask
+                                          unsafePerformIO $
+                                            mkTransformerDecoderAttentionMask
+                                              t5DataType
+                                              t5AttentionMaskBias
+                                              rightShiftedDecoderInputPaddingMask
                                      in ireturn (SequenceToSequenceTransformerInput t5Input rightShiftedDecoderInput relPos decoderRelPos attentionMask decoderAttentionMask crossAttentionMask)
                                 )
                            >>>= IxState . forward (coerce t5Model :: T5ModelSeqToSeqF t5Model numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
@@ -626,9 +610,9 @@ instance
           rightShiftedDecoderInputDevice
           rightShiftedDecoderInputDataType
           rightShiftedDecoderInputShape,
+    SGetShape rightShiftedDecoderInputShape,
     rightShiftedDecoderInputSeqDim ~ (rightShiftedDecoderInputShape ! 1),
     KnownDim rightShiftedDecoderInputSeqDim,
-    KnownShape rightShiftedDecoderInputShape,
     inputPaddingMask
       ~ Tensor
           inputPaddingMaskRequiresGradient
@@ -636,10 +620,6 @@ instance
           inputPaddingMaskDevice
           inputPaddingMaskDataType
           inputPaddingMaskShape,
-    KnownLayout inputPaddingMaskLayout,
-    KnownDevice inputPaddingMaskDevice,
-    KnownDataType inputPaddingMaskDataType,
-    KnownShape inputPaddingMaskShape,
     decoderInputPaddingMask
       ~ Tensor
           'WithoutGradient
@@ -662,9 +642,8 @@ instance
           ('Device 'CPU)
           ('DataType 'Int64)
           ('Shape '[ 'Dim ('Name "*") ('Size 1), rightShiftedDecoderInputSeqDim, rightShiftedDecoderInputSeqDim]),
-    WithDimC rightShiftedDecoderInputSeqDim (Int -> decoderRelPos),
-    MkTransformerCrossAttentionMaskC T5DType T5DataType rightShiftedDecoderInputSeqDim inputPaddingMaskRequiresGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim crossAttentionMask,
-    MkTransformerDecoderAttentionMaskC T5DType T5DataType rightShiftedDecoderInputPaddingMaskRequiresGradient rightShiftedDecoderInputPaddingMaskLayout rightShiftedDecoderInputPaddingMaskDevice rightShiftedDecoderInputPaddingMaskDataType rightShiftedDecoderInputPaddingMaskShape rightShiftedDecoderInputPaddingMaskSeqDim decoderAttentionMask,
+    MkTransformerCrossAttentionMaskC IO T5DataType rightShiftedDecoderInputSeqDim inputPaddingMaskRequiresGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim crossAttentionMask,
+    MkTransformerDecoderAttentionMaskC IO T5DataType rightShiftedDecoderInputPaddingMaskLayout rightShiftedDecoderInputPaddingMaskDevice rightShiftedDecoderInputPaddingMaskShape rightShiftedDecoderInputPaddingMaskSeqDim decoderAttentionMask,
     HasForward (ShiftRight Int) decoderInput generator rightShiftedDecoderInput generator,
     HasForward (ShiftRight Int) decoderInputPaddingMask generator rightShiftedDecoderInputPaddingMask generator,
     HasForward
@@ -689,42 +668,25 @@ instance
       ireturn t5GenerationDecoderInput
         >>>= IxState . forward (initialize @(ShiftRight Int) t5BOSTokenId)
         >>>= ( \rightShiftedDecoderInput ->
-                 let [_, rightShiftedDecoderInputSeqDim] = shape rightShiftedDecoderInput
-                     decoderRelPos =
-                       withoutDim @rightShiftedDecoderInputSeqDim @(Int -> decoderRelPos)
-                         ( mkT5DecoderRelPos @rightShiftedDecoderInputSeqDim @T5RelPosEncBucketDim
-                         )
-                         rightShiftedDecoderInputSeqDim
-                         t5MaxDistance
+                 let rightShiftedDecoderInputShape = unsafePerformIO $ sShape rightShiftedDecoderInput
+                     rightShiftedDecoderInputSeqDim = unsafePerformIO $ sGetDim (SSelectDim $ SByIndex @1) rightShiftedDecoderInputShape
+                     decoderRelPos = mkT5DecoderRelPos rightShiftedDecoderInputSeqDim t5RelPosEncBucketDim t5MaxDistance
                      crossAttentionMask =
-                       withoutDim @rightShiftedDecoderInputSeqDim @(inputPaddingMask -> crossAttentionMask)
-                         ( mkTransformerCrossAttentionMask
-                             @T5DType
-                             @T5DataType
-                             @rightShiftedDecoderInputSeqDim
-                             @inputPaddingMaskRequiresGradient
-                             @inputPaddingMaskLayout
-                             @inputPaddingMaskDevice
-                             @inputPaddingMaskDataType
-                             @inputPaddingMaskShape
-                             t5AttentionMaskBias
-                         )
-                         rightShiftedDecoderInputSeqDim
-                         t5GenerationInputPaddingMask
+                       unsafePerformIO $
+                         mkTransformerCrossAttentionMask
+                           t5DataType
+                           rightShiftedDecoderInputSeqDim
+                           t5AttentionMaskBias
+                           t5GenerationInputPaddingMask
                   in ireturn (mkT5PaddingMask t5GenerationDecoderInput)
                        >>>= IxState . forward (initialize @(ShiftRight Int) 0)
                        >>>= ( \rightShiftedDecoderInputPaddingMask ->
                                 let decoderAttentionMask =
-                                      mkTransformerDecoderAttentionMask
-                                        @T5DType
-                                        @T5DataType
-                                        @rightShiftedDecoderInputPaddingMaskRequiresGradient
-                                        @rightShiftedDecoderInputPaddingMaskLayout
-                                        @rightShiftedDecoderInputPaddingMaskDevice
-                                        @rightShiftedDecoderInputPaddingMaskDataType
-                                        @rightShiftedDecoderInputPaddingMaskShape
-                                        t5AttentionMaskBias
-                                        rightShiftedDecoderInputPaddingMask
+                                      unsafePerformIO $
+                                        mkTransformerDecoderAttentionMask
+                                          t5DataType
+                                          t5AttentionMaskBias
+                                          rightShiftedDecoderInputPaddingMask
                                  in ireturn (SequenceToSequenceTransformerGenerationInput rightShiftedDecoderInput t5GenerationEncoderOutput decoderRelPos decoderAttentionMask crossAttentionMask)
                             )
                        >>>= IxState . forward (coerce t5Model :: T5ModelSeqToSeqF t5Model numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)

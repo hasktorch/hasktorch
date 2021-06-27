@@ -17,7 +17,7 @@ import Torch.GraduallyTyped.DType (DataType (..))
 import Torch.GraduallyTyped.Layout (KnownLayout, LayoutType (..))
 import Torch.GraduallyTyped.Prelude (Reverse, Seq)
 import Torch.GraduallyTyped.Shape (Dim (..), Name, Shape (..), Size)
-import Torch.GraduallyTyped.Tensor.Type (Tensor, layout)
+import Torch.GraduallyTyped.Tensor.Type (SGetLayout (layoutType), Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import Torch.Internal.Cast (cast5)
 import qualified Torch.Internal.Managed.Native as ATen
@@ -34,12 +34,12 @@ type EmbedDimsErrorMessage (embedDims :: [Dim (Name Symbol) (Size Nat)]) =
 type family EmbeddingF (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (inputShape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
   EmbeddingF 'UncheckedShape _ = 'UncheckedShape
   EmbeddingF _ 'UncheckedShape = 'UncheckedShape
-  EmbeddingF ( 'Shape '[_embedNumDim, embedDim]) ( 'Shape inputDims) = 'Shape (Reverse (embedDim ': Reverse inputDims))
-  EmbeddingF ( 'Shape embedDims) _ = TypeError (EmbedDimsErrorMessage embedDims)
+  EmbeddingF ('Shape '[_embedNumDim, embedDim]) ('Shape inputDims) = 'Shape (Reverse (embedDim ': Reverse inputDims))
+  EmbeddingF ('Shape embedDims) _ = TypeError (EmbedDimsErrorMessage embedDims)
 
 embedding ::
   forall requiresGradient layout device dataType shape requiresGradient' layout' device' dataType' shape'.
-  (KnownLayout layout) =>
+  SGetLayout layout =>
   -- | padding index
   Maybe Natural ->
   -- | whether or not to scale gradients by the inverse of frequency of the words in the mini-batch
@@ -56,6 +56,6 @@ embedding ::
     (Seq (dataType' <+> 'DataType 'Int64) dataType)
     (EmbeddingF shape shape')
 embedding paddingIdx scaleGradByFreq weight input =
-  let isSparse = layout weight == Sparse
+  let isSparse = unsafePerformIO (layoutType weight) == Sparse
       paddingIdx' :: Int = maybe (-1) fromIntegral paddingIdx
    in unsafePerformIO $ cast5 ATen.embedding_ttlbb weight input paddingIdx' scaleGradByFreq isSparse

@@ -38,7 +38,7 @@ import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.Reader (MonadIO, MonadReader)
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
-import Data.Singletons (SingI, sing)
+import Data.Singletons (SingI, SingKind (fromSing), sing)
 import GHC.TypeLits (Nat, Symbol, type (<=?))
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), KnownDataType)
@@ -50,9 +50,10 @@ import Torch.GraduallyTyped.NN.Transformer.Encoder (TransformerEncoder, lookupEn
 import Torch.GraduallyTyped.NN.Transformer.LMHead (LMHead, lookupLMHead)
 import Torch.GraduallyTyped.NN.Transformer.Stack (HasLookupStack)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
+import Torch.GraduallyTyped.Prelude (forgetIsChecked)
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), Name (..), Size (..))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), Name (..), SDim, Size (..))
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
@@ -60,22 +61,23 @@ import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 -- | Generic encoder-only transformer model.
 data
   GEncoderOnlyTransformer
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
     (encoder :: Type)
     (encoderEmbedding :: Type)
     (encoderTypeEmbedding :: Type)
   where
   GEncoderOnlyTransformer ::
-    forall encoder encoderEmbedding encoderTypeEmbedding.
-    { -- | encoder
+    forall inputEmbedDim encoder encoderEmbedding encoderTypeEmbedding.
+    { -- | input embedding dim for scaling
+      eoInputEmbedDim :: SDim inputEmbedDim,
+      -- | encoder
       eoEncoder :: encoder,
       -- | encoder embedding
       eoEmbedding :: encoderEmbedding,
       -- | encoder type embedding
-      eoTypeEmbedding :: encoderTypeEmbedding,
-      -- | input embedding dim for scaling
-      eoInputEmbedDim :: Dim String Integer
+      eoTypeEmbedding :: encoderTypeEmbedding
     } ->
-    GEncoderOnlyTransformer encoder encoderEmbedding encoderTypeEmbedding
+    GEncoderOnlyTransformer inputEmbedDim encoder encoderEmbedding encoderTypeEmbedding
 
 -- | Encoder-only transformer model.
 data
@@ -114,6 +116,7 @@ type GEncoderOnlyTransformerF
   (typeVocabDim :: Dim (Name Symbol) (Size Nat))
   (dropoutP :: Type) =
   GEncoderOnlyTransformer
+    inputEmbedDim
     (EOEncoderF numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP)
     (EOEmbeddingF style device dataType inputEmbedDim vocabDim)
     (EOTypeEmbeddingF style device dataType inputEmbedDim typeVocabDim)
@@ -241,14 +244,6 @@ type family
   where
   EOLMHeadF style device dataType inputEmbedDim vocabDim = LMHead style device dataType inputEmbedDim vocabDim
 
-lookupEncoderInputEmbedDim ::
-  forall inputEmbedDim m.
-  (KnownDim inputEmbedDim, MonadFail m) =>
-  m (Dim String Integer)
-lookupEncoderInputEmbedDim = case dimVal @inputEmbedDim of
-  Dim (Name name) (Size size) -> pure $ Dim name size
-  Dim _ _ -> fail "input embedding dimension unspecified"
-
 lookupEncoderOnlyTransformer ::
   forall numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP m.
   ( SingI style,
@@ -258,7 +253,6 @@ lookupEncoderOnlyTransformer ::
     KnownDevice device,
     KnownDataType dataType,
     KnownDim headDim,
-    KnownDim headEmbedDim,
     KnownDim embedDim,
     KnownDim ffnDim,
     KnownDim posEncDim,
@@ -268,23 +262,27 @@ lookupEncoderOnlyTransformer ::
     Scalar dropoutP,
     HasLookupStack numLayers (1 <=? numLayers) numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP m
   ) =>
+  SDim headDim ->
+  SDim headEmbedDim ->
+  SDim embedDim ->
+  SDim inputEmbedDim ->
   dropoutP ->
   Double ->
   String ->
   m (EncoderOnlyTransformer numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP)
-lookupEncoderOnlyTransformer dropoutP eps prefix =
-  let encoder SBERT = lookupEncoder dropoutP eps prefix
-      encoder SRoBERTa = lookupEncoder dropoutP eps prefix
+lookupEncoderOnlyTransformer headDim headEmbedDim embedDim inputEmbedDim dropoutP eps prefix =
+  let encoder SBERT = lookupEncoder headDim headEmbedDim embedDim dropoutP eps prefix
+      encoder SRoBERTa = lookupEncoder headDim headEmbedDim embedDim dropoutP eps prefix
       embedding SBERT = Embedding <$> lookupTensor (prefix <> "embeddings.word_embeddings.weight")
       embedding SRoBERTa = Embedding <$> lookupTensor (prefix <> "embeddings.word_embeddings.weight")
       typeEmbedding SBERT = Embedding <$> lookupTensor (prefix <> "embeddings.token_type_embeddings.weight")
       typeEmbedding SRoBERTa = Embedding <$> lookupTensor (prefix <> "embeddings.token_type_embeddings.weight")
    in EncoderOnlyTransformer
         <$> ( GEncoderOnlyTransformer
-                <$> encoder (sing @style)
+                <$> pure inputEmbedDim
+                <*> encoder (sing @style)
                 <*> embedding (sing @style)
                 <*> typeEmbedding (sing @style)
-                <*> lookupEncoderInputEmbedDim @inputEmbedDim
             )
 
 lookupEncoderOnlyTransformerWithLMHead ::
@@ -296,7 +294,6 @@ lookupEncoderOnlyTransformerWithLMHead ::
     KnownDevice device,
     KnownDataType dataType,
     KnownDim headDim,
-    KnownDim headEmbedDim,
     KnownDim embedDim,
     KnownDim ffnDim,
     KnownDim posEncDim,
@@ -306,15 +303,19 @@ lookupEncoderOnlyTransformerWithLMHead ::
     Scalar dropoutP,
     HasLookupStack numLayers (1 <=? numLayers) numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP m
   ) =>
+  SDim headDim ->
+  SDim headEmbedDim ->
+  SDim embedDim ->
+  SDim inputEmbedDim ->
   dropoutP ->
   Double ->
   String ->
   m (EncoderOnlyTransformerWithLMHead numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP)
-lookupEncoderOnlyTransformerWithLMHead dropoutP eps prefix =
-  let transformer SBERT = lookupEncoderOnlyTransformer dropoutP eps (prefix <> "bert.")
-      transformer SRoBERTa = lookupEncoderOnlyTransformer dropoutP eps (prefix <> "roberta.")
-      lmHead SBERT = lookupLMHead eps (prefix <> "cls.predictions.")
-      lmHead SRoBERTa = lookupLMHead eps (prefix <> "lm_head.")
+lookupEncoderOnlyTransformerWithLMHead headDim headEmbedDim embedDim inputEmbedDim dropoutP eps prefix =
+  let transformer SBERT = lookupEncoderOnlyTransformer headDim headEmbedDim embedDim inputEmbedDim dropoutP eps (prefix <> "bert.")
+      transformer SRoBERTa = lookupEncoderOnlyTransformer headDim headEmbedDim embedDim inputEmbedDim dropoutP eps (prefix <> "roberta.")
+      lmHead SBERT = lookupLMHead inputEmbedDim eps (prefix <> "cls.predictions.")
+      lmHead SRoBERTa = lookupLMHead inputEmbedDim eps (prefix <> "lm_head.")
    in EncoderOnlyTransformerWithLMHead
         <$> ( GEncoderOnlyTransformerWithLMHead
                 <$> transformer (sing @style)
@@ -411,7 +412,7 @@ instance
     generatorOutput
   where
   forward (EncoderOnlyTransformer GEncoderOnlyTransformer {..}) EncoderOnlyTransformerInput {..} =
-    let s :: Double = sqrt . fromIntegral . dimSize $ eoInputEmbedDim
+    let s :: Double = sqrt . fromIntegral . forgetIsChecked . dimSize . fromSing $ eoInputEmbedDim
         embedScaling ::
           forall requiresGradient layout device dataType shape.
           STransformerStyle style ->

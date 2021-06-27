@@ -10,6 +10,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.NN.Activation where
 
@@ -18,7 +19,7 @@ import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Functional.Activation (gelu, relu)
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, softmax)
-import Torch.GraduallyTyped.Shape (By, SSelectDim, SelectDim, WithSelectDimC (..), WithSelectDimF)
+import Torch.GraduallyTyped.Shape (By, SSelectDim, SelectDim)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (tanh)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Prelude hiding (tanh)

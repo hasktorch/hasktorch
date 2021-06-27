@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -v2 -Wall #-}
@@ -11,41 +12,44 @@ module Torch.GraduallyTyped.NN.Transformer.BERT
   )
 where
 
+import Data.Singletons.Prelude.List (SList (SNil))
 import Test.HUnit.Approx (assertApproxEqual)
-import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
-import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
+import Torch.GraduallyTyped.DType (SDType (..), SDataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
+import Torch.GraduallyTyped.Layout (SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Transformer.BERT.BaseUncased
 import Torch.GraduallyTyped.NN.Transformer.BERT.Common
 import Torch.GraduallyTyped.NN.Transformer.EncoderOnly (EncoderOnlyTransformerInput (..), EncoderOnlyTransformerOutput (..))
 import Torch.GraduallyTyped.NN.Transformer.Type (mkTransformerAttentionMask)
 import Torch.GraduallyTyped.Random (mkGenerator)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
-import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Shape (..), Size (..))
-import Torch.GraduallyTyped.Tensor.Creation (arangeNaturals, zeros)
+import Torch.GraduallyTyped.RequiresGradient (SRequiresGradient (..))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim (..), SName (..), SShape (..), SSize (..), Size (..), pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.Tensor.Creation (sArangeNaturals, sZeros)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
 import qualified Torch.Tensor as Tensor (Tensor (..), asValue)
 
 type TestBERTSeqDim = 'Dim ('Name "*") ('Size 9)
 
+testBERTSeqDim :: SDim TestBERTSeqDim
+testBERTSeqDim = SName @"*" :&: SSize @9
+
 testBERTInput :: IO _
 testBERTInput =
   mkBERTInput
-    @('Dim ('Name "*") ('Size 1))
-    @TestBERTSeqDim
+    (SName @"*" :&: SSize @1)
+    testBERTSeqDim
     [ [101, 1996, 3007, 1997, 2605, 2003, 103, 1012, 102]
     ]
 
 testBERTInputType :: _
 testBERTInputType =
-  zeros
-    @'WithoutGradient
-    @('Layout 'Dense)
-    @('Device 'CPU)
-    @('DataType 'Int64)
-    @('Shape '[ 'Dim ('Name "*") ('Size 1), TestBERTSeqDim])
+  sZeros
+    SWithoutGradient
+    (SLayout SDense)
+    (SDevice SCPU)
+    (SDataType SInt64)
+    (SShape $ SName @"*" :&: SSize @1 :|: testBERTSeqDim :|: SNil)
 
 testForwardBERTBaseUncased :: IO ()
 testForwardBERTBaseUncased =
@@ -57,15 +61,15 @@ testForwardBERTBaseUncased =
     encoderInput <- testBERTInput
     let encoderInputType = testBERTInputType
         pos =
-          arangeNaturals
-            @'WithoutGradient
-            @('Layout 'Dense)
-            @('Device 'CPU)
-            @('DataType 'Int64)
-            @TestBERTSeqDim
+          sArangeNaturals
+            SWithoutGradient
+            (SLayout SDense)
+            (SDevice SCPU)
+            (SDataType SInt64)
+            (sDimSize testBERTSeqDim)
         paddingMask = mkBERTPaddingMask encoderInput
-        attentionMask = mkTransformerAttentionMask @BERTDType @BERTDataType bertAttentionMaskBias paddingMask
-        input = EncoderOnlyTransformerInput encoderInput encoderInputType pos attentionMask
+    attentionMask <- mkTransformerAttentionMask bertDataType bertAttentionMaskBias paddingMask
+    let input = EncoderOnlyTransformerInput encoderInput encoderInputType pos attentionMask
     g <- mkGenerator @('Device 'CPU) 0
     let (EncoderOnlyTransformerOutput {..}, _) = forward model input g
     let encoderOutput' = case eoEncoderOutput of

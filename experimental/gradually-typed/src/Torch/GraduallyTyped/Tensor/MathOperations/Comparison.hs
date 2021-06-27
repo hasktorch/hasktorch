@@ -1,5 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
@@ -8,17 +10,20 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.Tensor.MathOperations.Comparison where
 
+import Data.Singletons (SingI (..), SingKind (..))
+import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..))
-import Torch.GraduallyTyped.Prelude (Seq)
+import Torch.GraduallyTyped.Prelude (Seq, forgetIsChecked)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, GetDimImplF)
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SelectDim (..), Shape (..), Size (..), WithSelectDimC (..))
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SSelectDim, SelectDim (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 import Torch.Internal.Cast (cast2, cast3)
@@ -45,7 +50,7 @@ gt,
       'WithoutGradient
       (layout <+> layout')
       (device <+> device')
-      (Seq (dataType <+> dataType') ( 'DataType 'Bool))
+      (Seq (dataType <+> dataType') ('DataType 'Bool))
       (BroadcastShapesF shape shape')
 a `gt` b = unsafePerformIO $ cast2 ATen.gt_tt a b
 a `lt` b = unsafePerformIO $ cast2 ATen.lt_tt a b
@@ -60,13 +65,13 @@ a `ne` b = unsafePerformIO $ cast2 ATen.ne_tt a b
 (==.) = eq
 (/=.) = ne
 
-data Order = Ascending | Descending deriving (Show, Eq, Ord)
+data Order = Ascending | Descending deriving stock (Show, Eq, Ord, Generic)
 
 data Sorted requiresGradient layout device dataType shape where
   Sorted ::
     forall requiresGradient layout device dataType shape.
     { sorted :: Tensor requiresGradient layout device dataType shape,
-      indices :: Tensor 'WithoutGradient layout device ( 'DataType 'Int64) shape
+      indices :: Tensor 'WithoutGradient layout device ('DataType 'Int64) shape
     } ->
     Sorted requiresGradient layout device dataType shape
 
@@ -82,33 +87,29 @@ type SortErrorMessage (by :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size Na
 
 type family SortCheckF (by :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) (result :: Maybe (Dim (Name Symbol) (Size Nat))) :: [Dim (Name Symbol) (Size Nat)] where
   SortCheckF by dims 'Nothing = TypeError (SortErrorMessage by dims)
-  SortCheckF _ dims ( 'Just _) = dims
+  SortCheckF _ dims ('Just _) = dims
 
 type family SortF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
   SortF 'UncheckedSelectDim _ = 'UncheckedShape
   SortF _ 'UncheckedShape = 'UncheckedShape
-  SortF ( 'SelectDim by) ( 'Shape dims) = 'Shape (SortCheckF by dims (GetDimImplF by dims))
+  SortF ('SelectDim by) ('Shape dims) = 'Shape (SortCheckF by dims (GetDimImplF by dims))
+
+sSort ::
+  forall selectDim requiresGradient layout device dataType shape.
+  SSelectDim selectDim ->
+  Order ->
+  Tensor requiresGradient layout device dataType shape ->
+  Sorted requiresGradient layout device dataType (SortF selectDim shape)
+sSort by order tensor =
+  let by' = forgetIsChecked $ fromSing by
+   in uncurry Sorted $ case by' of
+        ByName name -> unsafePerformIO $ cast3 ATen.sort_tnb tensor name (order == Descending)
+        ByIndex index -> unsafePerformIO $ cast3 ATen.sort_tlb tensor (fromInteger index :: Int) (order == Descending)
 
 sort ::
   forall selectDim requiresGradient layout device dataType shape.
-  WithSelectDimC
-    selectDim
-    ( Order ->
-      Tensor requiresGradient layout device dataType shape ->
-      Sorted requiresGradient layout device dataType (SortF selectDim shape)
-    ) =>
-  WithSelectDimF
-    selectDim
-    ( Order ->
-      Tensor requiresGradient layout device dataType shape ->
-      Sorted requiresGradient layout device dataType (SortF selectDim shape)
-    )
-sort = withSelectDim @selectDim
-  @( Order ->
-     Tensor requiresGradient layout device dataType shape ->
-     Sorted requiresGradient layout device dataType (SortF selectDim shape)
-   )
-  $ \by order tensor ->
-    uncurry Sorted $ case by of
-      ByName name -> unsafePerformIO $ cast3 ATen.sort_tnb tensor name (order == Descending)
-      ByIndex index -> unsafePerformIO $ cast3 ATen.sort_tlb tensor (fromInteger index :: Int) (order == Descending)
+  SingI selectDim =>
+  Order ->
+  Tensor requiresGradient layout device dataType shape ->
+  Sorted requiresGradient layout device dataType (SortF selectDim shape)
+sort = sSort (sing @selectDim)
