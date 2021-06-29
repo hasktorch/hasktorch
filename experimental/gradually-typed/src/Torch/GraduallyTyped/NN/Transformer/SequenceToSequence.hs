@@ -59,9 +59,8 @@ import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), Name (..), SDim, Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mulScalar)
-import Torch.GraduallyTyped.Tensor.Type (Tensor (UnsafeTensor))
+import Torch.GraduallyTyped.Tensor.Type (Tensor ())
 import Torch.GraduallyTyped.Unify (type (<+>))
-import qualified Torch.Tensor as Tensor
 
 data
   GSequenceToSequenceTransformer
@@ -368,14 +367,29 @@ lookupSequenceToSequenceTransformer ::
   m (SequenceToSequenceTransformer numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP)
 lookupSequenceToSequenceTransformer headDim headEmbedDim embedDim inputEmbedDim dropoutP eps prefix =
   let encoder ST5 = lookupEncoder headDim headEmbedDim embedDim dropoutP eps (prefix <> "encoder.")
+      encoder SByT5 = lookupEncoder headDim headEmbedDim embedDim dropoutP eps (prefix <> "encoder.")
       encoder SBART = lookupEncoder headDim headEmbedDim embedDim dropoutP eps (prefix <> "encoder.")
+      encoder SMBART = lookupEncoder headDim headEmbedDim embedDim dropoutP eps (prefix <> "encoder.")
       encoder SPegasus = lookupEncoder headDim headEmbedDim embedDim dropoutP eps (prefix <> "encoder.")
+      encoder SBERT = undefined
+      encoder SRoBERTa = undefined
+      encoder SGPT2 = undefined
       decoder ST5 = lookupDecoder headDim headEmbedDim embedDim dropoutP eps (prefix <> "decoder.")
+      decoder SByT5 = lookupDecoder headDim headEmbedDim embedDim dropoutP eps (prefix <> "decoder.")
       decoder SBART = lookupDecoder headDim headEmbedDim embedDim dropoutP eps (prefix <> "decoder.")
+      decoder SMBART = lookupDecoder headDim headEmbedDim embedDim dropoutP eps (prefix <> "decoder.")
       decoder SPegasus = lookupDecoder headDim headEmbedDim embedDim dropoutP eps (prefix <> "decoder.")
+      decoder SBERT = undefined
+      decoder SRoBERTa = undefined
+      decoder SGPT2 = undefined
       embedding ST5 = Embedding <$> lookupTensor "shared.weight"
+      embedding SByT5 = Embedding <$> lookupTensor "shared.weight"
       embedding SBART = Embedding <$> lookupTensor (prefix <> "shared.weight")
+      embedding SMBART = Embedding <$> lookupTensor (prefix <> "shared.weight")
       embedding SPegasus = Embedding <$> lookupTensor (prefix <> "shared.weight")
+      embedding SBERT = undefined
+      embedding SRoBERTa = undefined
+      embedding SGPT2 = undefined
    in SequenceToSequenceTransformer
         <$> ( GSequenceToSequenceTransformer
                 <$> pure inputEmbedDim
@@ -412,11 +426,21 @@ lookupSequenceToSequenceTransformerWithLMHead ::
   m (SequenceToSequenceTransformerWithLMHead numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP)
 lookupSequenceToSequenceTransformerWithLMHead headDim headEmbedDim embedDim inputEmbedDim dropoutP eps prefix =
   let transformer ST5 = lookupSequenceToSequenceTransformer headDim headEmbedDim embedDim inputEmbedDim dropoutP eps prefix
+      transformer SByT5 = lookupSequenceToSequenceTransformer headDim headEmbedDim embedDim inputEmbedDim dropoutP eps prefix
       transformer SBART = lookupSequenceToSequenceTransformer headDim headEmbedDim embedDim inputEmbedDim dropoutP eps (prefix <> "model.")
+      transformer SMBART = lookupSequenceToSequenceTransformer headDim headEmbedDim embedDim inputEmbedDim dropoutP eps (prefix <> "model.")
       transformer SPegasus = lookupSequenceToSequenceTransformer headDim headEmbedDim embedDim inputEmbedDim dropoutP eps (prefix <> "model.")
+      transformer SBERT = undefined
+      transformer SRoBERTa = undefined
+      transformer SGPT2 = undefined
       lmHead ST5 = lookupLMHead inputEmbedDim eps (prefix <> "lm_head.")
+      lmHead SByT5 = lookupLMHead inputEmbedDim eps (prefix <> "lm_head.")
       lmHead SBART = lookupLMHead inputEmbedDim eps prefix
+      lmHead SMBART = lookupLMHead inputEmbedDim eps prefix
       lmHead SPegasus = lookupLMHead inputEmbedDim eps prefix
+      lmHead SBERT = undefined
+      lmHead SRoBERTa = undefined
+      lmHead SGPT2 = undefined
    in SequenceToSequenceTransformerWithLMHead
         <$> ( GSequenceToSequenceTransformerWithLMHead
                 <$> transformer (sing @style)
@@ -554,24 +578,18 @@ instance
   forward (SequenceToSequenceTransformer GSequenceToSequenceTransformer {..}) SequenceToSequenceTransformerInput {..} =
     let s :: Double = sqrt . fromIntegral . forgetIsChecked . dimSize . fromSing $ seqToSeqInputEmbedDim
         embedScaling ::
-          forall requiresGradient layout device dataType shape.
+          forall requiresGradient layout device''' dataType''' shape.
           STransformerStyle style ->
-          Tensor requiresGradient layout device dataType shape ->
-          Tensor requiresGradient layout device dataType shape
+          Tensor requiresGradient layout device''' dataType''' shape ->
+          Tensor requiresGradient layout device''' dataType''' shape
         embedScaling ST5 = id
-        embedScaling SPegasus = flip mulScalar s
+        embedScaling SByT5 = id
         embedScaling SBART = id
-        f (UnsafeTensor t) =
-          let t' = Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
-           in do
-                firstBatch <- take 1 t'
-                firstPositions <- take 3 firstBatch
-                take 3 firstPositions
-        g (UnsafeTensor t) =
-          let t' = Tensor.asValue (Tensor.Unsafe t) :: [[Int]]
-           in do
-                firstBatch <- take 1 t'
-                take 3 firstBatch
+        embedScaling SMBART = id
+        embedScaling SPegasus = flip mulScalar s
+        embedScaling SBERT = undefined
+        embedScaling SRoBERTa = undefined
+        embedScaling SGPT2 = undefined
      in runIxState $
           ireturn input
             >>>= IxState . forward seqToSeqEmbedding
@@ -638,12 +656,18 @@ instance
   forward (SequenceToSequenceTransformer GSequenceToSequenceTransformer {..}) SequenceToSequenceTransformerGenerationInput {..} =
     let s :: Double = sqrt . fromIntegral . forgetIsChecked . dimSize . fromSing $ seqToSeqInputEmbedDim
         embedScaling ::
-          forall requiresGradient layout device dataType shape.
+          forall requiresGradient layout device''' dataType''' shape.
           STransformerStyle style ->
-          Tensor requiresGradient layout device dataType shape ->
-          Tensor requiresGradient layout device dataType shape
+          Tensor requiresGradient layout device''' dataType''' shape ->
+          Tensor requiresGradient layout device''' dataType''' shape
         embedScaling ST5 = id
+        embedScaling SByT5 = id
+        embedScaling SBART = id
+        embedScaling SMBART = id
         embedScaling SPegasus = flip mulScalar s
+        embedScaling SBERT = undefined
+        embedScaling SRoBERTa = undefined
+        embedScaling SGPT2 = undefined
      in runIxState $
           ireturn generationDecoderInput
             >>>= IxState . forward seqToSeqEmbedding
@@ -729,7 +753,7 @@ testForwardSeqToSeq =
           SequenceToSequenceTransformerWithLMHead
             128
             128
-            'T5
+            'ByT5
             ('Device 'CPU)
             ('DataType 'Float)
             ('Dim ('Name "*") ('Size 8)) -- headDim

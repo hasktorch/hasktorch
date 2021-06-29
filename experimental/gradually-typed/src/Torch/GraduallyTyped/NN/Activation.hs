@@ -17,7 +17,7 @@ module Torch.GraduallyTyped.NN.Activation where
 import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
-import Torch.GraduallyTyped.NN.Functional.Activation (gelu, relu)
+import Torch.GraduallyTyped.NN.Functional.Activation (gelu, geluNew, relu)
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, softmax)
 import Torch.GraduallyTyped.Shape (By, SSelectDim, SelectDim)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (tanh)
@@ -77,6 +77,22 @@ instance
     generator
   where
   forward Gelu input g = (gelu input, g)
+
+data GeluNew where GeluNew :: GeluNew
+
+instance HasInitialize GeluNew where
+  type InitializeF GeluNew = GeluNew
+  initialize = GeluNew
+
+instance
+  HasForward
+    GeluNew
+    (Tensor requiresGradient layout device dataType shape)
+    generator
+    (Tensor requiresGradient layout device dataType shape)
+    generator
+  where
+  forward GeluNew input g = (geluNew input, g)
 
 data Tanh where Tanh :: Tanh
 

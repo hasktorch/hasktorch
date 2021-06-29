@@ -40,9 +40,9 @@ type T5ElevenBVocabDim = 'Dim ('Name "*") ('Size 32128)
 -- | T5-11B model.
 type T5ElevenB
   (device :: Device (DeviceType Nat)) =
-  T5Model T5ElevenBNumLayers device T5ElevenBHeadDim T5ElevenBHeadEmbedDim T5ElevenBEmbedDim T5ElevenBInputEmbedDim T5ElevenBFFNDim T5ElevenBVocabDim
+  T5Model T5ElevenBNumLayers T5ElevenBNumLayers device T5ElevenBHeadDim T5ElevenBHeadEmbedDim T5ElevenBEmbedDim T5ElevenBInputEmbedDim T5ElevenBFFNDim T5ElevenBVocabDim
 
 -- | T5-11B model with language modelling head.
 type T5ElevenBWithLMHead
   (device :: Device (DeviceType Nat)) =
-  T5ModelWithLMHead T5ElevenBNumLayers device T5ElevenBHeadDim T5ElevenBHeadEmbedDim T5ElevenBEmbedDim T5ElevenBInputEmbedDim T5ElevenBFFNDim T5ElevenBVocabDim
+  T5ModelWithLMHead T5ElevenBNumLayers T5ElevenBNumLayers device T5ElevenBHeadDim T5ElevenBHeadEmbedDim T5ElevenBEmbedDim T5ElevenBInputEmbedDim T5ElevenBFFNDim T5ElevenBVocabDim

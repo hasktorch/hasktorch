@@ -132,15 +132,21 @@ lookupBlock ::
   m (TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
 lookupBlock headDim headEmbedDim embedDim dropoutP eps prefix =
   let selfAttention ST5 = lookupSelfAttention headDim headEmbedDim embedDim dropoutP eps (prefix <> "layer.0.")
+      selfAttention SByT5 = lookupSelfAttention headDim headEmbedDim embedDim dropoutP eps (prefix <> "layer.0.")
+      selfAttention SBART = lookupSelfAttention headDim headEmbedDim embedDim dropoutP eps prefix
+      selfAttention SMBART = lookupSelfAttention headDim headEmbedDim embedDim dropoutP eps prefix
+      selfAttention SPegasus = lookupSelfAttention headDim headEmbedDim embedDim dropoutP eps prefix
       selfAttention SBERT = lookupSelfAttention headDim headEmbedDim embedDim dropoutP eps (prefix <> "attention.")
       selfAttention SRoBERTa = lookupSelfAttention headDim headEmbedDim embedDim dropoutP eps (prefix <> "attention.")
-      selfAttention SPegasus = lookupSelfAttention headDim headEmbedDim embedDim dropoutP eps prefix
-      selfAttention SBART = lookupSelfAttention headDim headEmbedDim embedDim dropoutP eps prefix
+      selfAttention SGPT2 = undefined
       feedForwardNetwork ST5 = lookupTransformerFeedForwardNetwork dropoutP eps (prefix <> "layer.1.")
+      feedForwardNetwork SByT5 = lookupTransformerFeedForwardNetwork dropoutP eps (prefix <> "layer.1.")
+      feedForwardNetwork SBART = lookupTransformerFeedForwardNetwork dropoutP eps prefix
+      feedForwardNetwork SMBART = lookupTransformerFeedForwardNetwork dropoutP eps prefix
+      feedForwardNetwork SPegasus = lookupTransformerFeedForwardNetwork dropoutP eps prefix
       feedForwardNetwork SBERT = lookupTransformerFeedForwardNetwork dropoutP eps prefix
       feedForwardNetwork SRoBERTa = lookupTransformerFeedForwardNetwork dropoutP eps prefix
-      feedForwardNetwork SPegasus = lookupTransformerFeedForwardNetwork dropoutP eps prefix
-      feedForwardNetwork SBART = lookupTransformerFeedForwardNetwork dropoutP eps prefix
+      feedForwardNetwork SGPT2 = undefined
    in TransformerBlock
         <$> selfAttention (sing @style)
         <*> feedForwardNetwork (sing @style)

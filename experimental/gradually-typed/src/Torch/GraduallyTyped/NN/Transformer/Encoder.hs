@@ -139,13 +139,12 @@ type family
     Type
   where
   TEEmbedLayerNormF 'T5 _ _ _ = ()
-  TEEmbedLayerNormF 'BERT device dataType inputEmbedDim =
-    LayerNorm 'WithBias device dataType ('Shape '[inputEmbedDim])
-  TEEmbedLayerNormF 'RoBERTa device dataType inputEmbedDim =
-    LayerNorm 'WithBias device dataType ('Shape '[inputEmbedDim])
-  TEEmbedLayerNormF 'BART device dataType inputEmbedDim =
-    LayerNorm 'WithBias device dataType ('Shape '[inputEmbedDim])
+  TEEmbedLayerNormF 'ByT5 device dataType inputEmbedDim = TEEmbedLayerNormF 'T5 device dataType inputEmbedDim
+  TEEmbedLayerNormF 'BART device dataType inputEmbedDim = LayerNorm 'WithBias device dataType ('Shape '[inputEmbedDim])
+  TEEmbedLayerNormF 'MBART device dataType inputEmbedDim = TEEmbedLayerNormF 'BART device dataType inputEmbedDim
   TEEmbedLayerNormF 'Pegasus _ _ _ = ()
+  TEEmbedLayerNormF 'BERT device dataType inputEmbedDim = LayerNorm 'WithBias device dataType ('Shape '[inputEmbedDim])
+  TEEmbedLayerNormF 'RoBERTa device dataType inputEmbedDim = TEEmbedLayerNormF 'BERT device dataType inputEmbedDim
 
 type family
   TELayerNormF
@@ -155,13 +154,13 @@ type family
     (inputEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
     Type
   where
-  TELayerNormF 'T5 device dataType inputEmbedDim =
-    LayerNorm 'WithoutBias device dataType ('Shape '[inputEmbedDim])
-  TELayerNormF 'BERT _ _ _ = ()
-  TELayerNormF 'RoBERTa _ _ _ = ()
+  TELayerNormF 'T5 device dataType inputEmbedDim = LayerNorm 'WithoutBias device dataType ('Shape '[inputEmbedDim])
+  TELayerNormF 'ByT5 device dataType inputEmbedDim = TELayerNormF 'T5 device dataType inputEmbedDim
   TELayerNormF 'BART _ _ _ = ()
-  TELayerNormF 'Pegasus device dataType inputEmbedDim =
-    LayerNorm 'WithBias device dataType ('Shape '[inputEmbedDim])
+  TELayerNormF 'MBART device dataType inputEmbedDim = TELayerNormF 'BART device dataType inputEmbedDim
+  TELayerNormF 'Pegasus device dataType inputEmbedDim = LayerNorm 'WithBias device dataType ('Shape '[inputEmbedDim])
+  TELayerNormF 'BERT _ _ _ = ()
+  TELayerNormF 'RoBERTa device dataType inputEmbedDim = TELayerNormF 'BERT device dataType inputEmbedDim
 
 type family
   TEDropoutF
@@ -181,81 +180,26 @@ type family
     (posEncDim :: Dim (Name Symbol) (Size Nat)) ::
     Type
   where
-  TEPosEncF 'T5 device dataType headDim _ posEncDim =
-    Embedding ('Layout 'Dense) device dataType posEncDim headDim 'Nothing
-  TEPosEncF 'BERT device dataType _ inputEmbedDim posEncDim =
-    Embedding ('Layout 'Dense) device dataType posEncDim inputEmbedDim 'Nothing
-  TEPosEncF 'RoBERTa device dataType _ inputEmbedDim posEncDim =
-    Embedding ('Layout 'Dense) device dataType posEncDim inputEmbedDim 'Nothing
-  TEPosEncF 'Pegasus device dataType _ inputEmbedDim posEncDim =
-    Embedding ('Layout 'Dense) device dataType posEncDim inputEmbedDim 'Nothing
-  TEPosEncF 'BART device dataType _ inputEmbedDim posEncDim =
-    Embedding ('Layout 'Dense) device dataType posEncDim inputEmbedDim 'Nothing
-
-type family
-  HasInitializeTEStackF
-    (stack :: Type)
-    (style :: TransformerStyle) ::
-    Constraint
-  where
-  HasInitializeTEStackF stack _ = HasInitialize stack
-
-type family
-  HasInitializeTEEmbedLayerNormF
-    (embedLayerNorm :: Type)
-    (style :: TransformerStyle) ::
-    Constraint
-  where
-  HasInitializeTEEmbedLayerNormF _ 'T5 = ()
-  HasInitializeTEEmbedLayerNormF embedLayerNorm 'BERT = HasInitialize embedLayerNorm
-  HasInitializeTEEmbedLayerNormF embedLayerNorm 'RoBERTa = HasInitialize embedLayerNorm
-  HasInitializeTEEmbedLayerNormF _ 'Pegasus = ()
-  HasInitializeTEEmbedLayerNormF embedLayerNorm 'BART = HasInitialize embedLayerNorm
-
-type family
-  HasInitializeTELayerNormF
-    (layerNorm :: Type)
-    (style :: TransformerStyle) ::
-    Constraint
-  where
-  HasInitializeTELayerNormF layerNorm 'T5 = HasInitialize layerNorm
-  HasInitializeTELayerNormF _ 'BERT = ()
-  HasInitializeTELayerNormF _ 'RoBERTa = ()
-  HasInitializeTELayerNormF layerNorm 'Pegasus = HasInitialize layerNorm
-  HasInitializeTELayerNormF _ 'BART = ()
-
-type family
-  HasInitializeTEDropoutF
-    (dropout :: Type)
-    (style :: TransformerStyle) ::
-    Constraint
-  where
-  HasInitializeTEDropoutF dropout _ = HasInitialize dropout
-
-type family
-  HasInitializeTEPosEncF
-    (posEnc :: Type)
-    (style :: TransformerStyle) ::
-    Constraint
-  where
-  HasInitializeTEPosEncF posEnc 'T5 = HasInitialize posEnc
-  HasInitializeTEPosEncF posEnc 'BERT = HasInitialize posEnc
-  HasInitializeTEPosEncF posEnc 'RoBERTa = HasInitialize posEnc
-  HasInitializeTEPosEncF posEnc 'Pegasus = HasInitialize posEnc
-  HasInitializeTEPosEncF posEnc 'BART = HasInitialize posEnc
+  TEPosEncF 'T5 device dataType headDim _ posEncDim = Embedding ('Layout 'Dense) device dataType posEncDim headDim 'Nothing
+  TEPosEncF 'ByT5 device dataType headDim inputEmbedDim posEncDim = TEPosEncF 'T5 device dataType headDim inputEmbedDim posEncDim
+  TEPosEncF 'BART device dataType _ inputEmbedDim posEncDim = Embedding ('Layout 'Dense) device dataType posEncDim inputEmbedDim 'Nothing
+  TEPosEncF 'MBART device dataType headDim inputEmbedDim posEncDim = TEPosEncF 'BART device dataType headDim inputEmbedDim posEncDim
+  TEPosEncF 'Pegasus device dataType headDim inputEmbedDim posEncDim = TEPosEncF 'BART device dataType headDim inputEmbedDim posEncDim
+  TEPosEncF 'BERT device dataType _ inputEmbedDim posEncDim = Embedding ('Layout 'Dense) device dataType posEncDim inputEmbedDim 'Nothing
+  TEPosEncF 'RoBERTa device dataType headDim inputEmbedDim posEncDim = TEPosEncF 'BERT device dataType headDim inputEmbedDim posEncDim
 
 instance
   ( SingI style,
     stack ~ TEStackF numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP,
-    HasInitializeTEStackF stack style,
+    HasInitialize stack,
     embedLayerNorm ~ TEEmbedLayerNormF style device dataType inputEmbedDim,
-    HasInitializeTEEmbedLayerNormF embedLayerNorm style,
+    HasInitialize embedLayerNorm,
     layerNorm ~ TELayerNormF style device dataType inputEmbedDim,
-    HasInitializeTELayerNormF layerNorm style,
+    HasInitialize layerNorm,
     dropout ~ TEDropoutF style dropoutP,
-    HasInitializeTEDropoutF dropout style,
+    HasInitialize dropout,
     posEnc ~ TEPosEncF style device dataType headDim inputEmbedDim posEncDim,
-    HasInitializeTEPosEncF posEnc style
+    HasInitialize posEnc
   ) =>
   HasInitialize (TransformerEncoder numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP)
   where
@@ -279,24 +223,33 @@ instance
         initialize @stack device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP eps
     let embedLayerNorm = case sing @style of
           ST5 -> ()
+          SByT5 -> ()
+          SBART -> initialize @embedLayerNorm device dataType (SShape $ inputEmbedDim :|: SNil) eps
+          SMBART -> initialize @embedLayerNorm device dataType (SShape $ inputEmbedDim :|: SNil) eps
+          SPegasus -> ()
           SBERT -> initialize @embedLayerNorm device dataType (SShape $ inputEmbedDim :|: SNil) eps
           SRoBERTa -> initialize @embedLayerNorm device dataType (SShape $ inputEmbedDim :|: SNil) eps
-          SPegasus -> ()
-          SBART -> initialize @embedLayerNorm device dataType (SShape $ inputEmbedDim :|: SNil) eps
+          SGPT2 -> undefined
     let layerNorm = case sing @style of
           ST5 -> initialize @layerNorm device dataType (SShape $ inputEmbedDim :|: SNil) eps
+          SByT5 -> initialize @layerNorm device dataType (SShape $ inputEmbedDim :|: SNil) eps
+          SBART -> ()
+          SMBART -> ()
+          SPegasus -> initialize @layerNorm device dataType (SShape $ inputEmbedDim :|: SNil) eps
           SBERT -> ()
           SRoBERTa -> ()
-          SPegasus -> initialize @layerNorm device dataType (SShape $ inputEmbedDim :|: SNil) eps
-          SBART -> ()
+          SGPT2 -> undefined
     let dropout = initialize @dropout dropoutP
     posEnc <-
       state $ case sing @style of
         ST5 -> initialize @posEnc (SLayout SDense) device dataType posEncDim headDim
+        SByT5 -> initialize @posEnc (SLayout SDense) device dataType posEncDim headDim
+        SBART -> initialize @posEnc (SLayout SDense) device dataType posEncDim inputEmbedDim
+        SMBART -> initialize @posEnc (SLayout SDense) device dataType posEncDim inputEmbedDim
+        SPegasus -> initialize @posEnc (SLayout SDense) device dataType posEncDim inputEmbedDim
         SBERT -> initialize @posEnc (SLayout SDense) device dataType posEncDim inputEmbedDim
         SRoBERTa -> initialize @posEnc (SLayout SDense) device dataType posEncDim inputEmbedDim
-        SPegasus -> initialize @posEnc (SLayout SDense) device dataType posEncDim inputEmbedDim
-        SBART -> initialize @posEnc (SLayout SDense) device dataType posEncDim inputEmbedDim
+        SGPT2 -> undefined
     pure . TransformerEncoder $ GTransformerEncoder stack embedLayerNorm layerNorm dropout posEnc
 
 lookupEncoder ::
@@ -324,11 +277,26 @@ lookupEncoder ::
   m (TransformerEncoder numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP)
 lookupEncoder headDim headEmbedDim embedDim dropoutP eps prefix =
   let stack ST5 = lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "block.")
+      stack SByT5 = lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "block.")
+      stack SBART = lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "layers.")
+      stack SMBART = lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "layers.")
+      stack SPegasus = lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "layers.")
       stack SBERT = lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "encoder.layer.")
       stack SRoBERTa = lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "encoder.layer.")
-      stack SBART = lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "layers.")
-      stack SPegasus = lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "layers.")
+      stack SGPT2 = undefined
       embedLayerNorm ST5 = pure ()
+      embedLayerNorm SByT5 = pure ()
+      embedLayerNorm SBART =
+        LayerNormWithBias
+          <$> lookupTensor (prefix <> "layernorm_embedding.weight")
+          <*> lookupTensor (prefix <> "layernorm_embedding.bias")
+          <*> pure eps
+      embedLayerNorm SMBART =
+        LayerNormWithBias
+          <$> lookupTensor (prefix <> "layernorm_embedding.weight")
+          <*> lookupTensor (prefix <> "layernorm_embedding.bias")
+          <*> pure eps
+      embedLayerNorm SPegasus = pure ()
       embedLayerNorm SBERT =
         LayerNormWithBias
           <$> lookupTensor (prefix <> "embeddings.LayerNorm.weight")
@@ -339,30 +307,34 @@ lookupEncoder headDim headEmbedDim embedDim dropoutP eps prefix =
           <$> lookupTensor (prefix <> "embeddings.LayerNorm.weight")
           <*> lookupTensor (prefix <> "embeddings.LayerNorm.bias")
           <*> pure eps
-      embedLayerNorm SBART =
-        LayerNormWithBias
-          <$> lookupTensor (prefix <> "layernorm_embedding.weight")
-          <*> lookupTensor (prefix <> "layernorm_embedding.bias")
-          <*> pure eps
-      embedLayerNorm SPegasus = pure ()
+      embedLayerNorm SGPT2 = undefined
       layerNorm ST5 =
         LayerNormWithoutBias
           <$> lookupTensor (prefix <> "final_layer_norm.weight")
           <*> pure eps
-      layerNorm SBERT = pure ()
-      layerNorm SRoBERTa = pure ()
+      layerNorm SByT5 =
+        LayerNormWithoutBias
+          <$> lookupTensor (prefix <> "final_layer_norm.weight")
+          <*> pure eps
       layerNorm SBART = pure ()
+      layerNorm SMBART = pure ()
       layerNorm SPegasus =
         LayerNormWithBias
           <$> lookupTensor (prefix <> "layer_norm.weight")
           <*> lookupTensor (prefix <> "layer_norm.bias")
           <*> pure eps
+      layerNorm SBERT = pure ()
+      layerNorm SRoBERTa = pure ()
+      layerNorm SGPT2 = undefined
       dropout _ = pure (initialize @(Dropout dropoutP) dropoutP)
       posEnc ST5 = fmap @m Embedding $ lookupTensor (prefix <> "block.0.layer.0.SelfAttention.relative_attention_bias.weight")
+      posEnc SByT5 = fmap @m Embedding $ lookupTensor (prefix <> "block.0.layer.0.SelfAttention.relative_attention_bias.weight")
+      posEnc SBART = fmap @m Embedding $ lookupTensor (prefix <> "embed_positions.weight")
+      posEnc SMBART = fmap @m Embedding $ lookupTensor (prefix <> "embed_positions.weight")
+      posEnc SPegasus = fmap @m Embedding $ lookupTensor (prefix <> "embed_positions.weight")
       posEnc SBERT = fmap @m Embedding $ lookupTensor (prefix <> "embeddings.position_embeddings.weight")
       posEnc SRoBERTa = fmap @m Embedding $ lookupTensor (prefix <> "embeddings.position_embeddings.weight")
-      posEnc SBART = fmap @m Embedding $ lookupTensor (prefix <> "embed_positions.weight")
-      posEnc SPegasus = fmap @m Embedding $ lookupTensor (prefix <> "embed_positions.weight")
+      posEnc SGPT2 = undefined
    in TransformerEncoder
         <$> ( GTransformerEncoder
                 <$> stack (sing @style)
@@ -451,6 +423,109 @@ instance
   ) =>
   HasForward
     (TransformerEncoder numLayers 'T5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP)
+    ( input,
+      Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
+      Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
+    )
+    generator
+    output
+    generatorOutput
+  where
+  forward (TransformerEncoder GTransformerEncoder {..}) (input, relPos, attentionMask) =
+    let relPosBias =
+          ireturn relPos
+            >>>= IxState . forward tePosEnc
+            >>>= ireturn . transpose @('SelectDim ('ByIndex 2)) @('SelectDim ('ByIndex 3))
+            >>>= ireturn . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
+        attentionBias =
+          relPosBias
+            >>>= ireturn . (`add` unsqueeze @('SelectDim ('ByIndex 1)) attentionMask)
+     in runIxState $
+          ireturn input
+            >>>= IxState . forward teDropout
+            >>>= (\input' -> attentionBias >>>= (\attentionBias' -> IxState $ forward teStack (input', attentionBias')))
+            >>>= IxState . forward teLayerNorm
+            >>>= IxState . forward teDropout
+
+-- | 'HasForward' instance for @TransformerEncoder numLayers 'T5@.
+--
+-- @
+--  ┌───────┐  ┌────────┐  ┌───────────────┐
+--  │ input │  │ relPos │  │ attentionMask │
+--  └───┬───┘  └───┬────┘  └───────┬───────┘
+--      │          │               │
+--      │          ▼               │
+--      │      tePosEnc            │
+--      │          ▼               │
+--      │      transpose           │
+--      │          ▼               ▼
+--      │      transpose       unsqueeze
+--      ▼          │               │
+--  teDropout      └─────►add◄─────┘
+--      ▼                  │
+--   teStack◄──────────────┘
+--      ▼
+-- teLayerNorm
+--      ▼
+--  teDropout
+--      │
+--      ▼
+--  ┌────────┐
+--  │ output │
+--  └────────┘
+-- @
+instance
+  ( HasForward
+      (TEDropoutF 'ByT5 dropoutP)
+      input
+      generator
+      dropoutOutput
+      dropoutGeneratorOutput,
+    HasForward
+      (TEStackF numLayers 'ByT5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP)
+      ( dropoutOutput,
+        Tensor
+          'WithGradient
+          ('Layout 'Dense <+> relPosLayout <+> attentionMaskLayout)
+          (device <+> relPosDevice <+> attentionMaskDevice)
+          (Seq (relPosDataType <+> 'DataType 'Int64) dataType <+> attentionMaskDataType)
+          ( BroadcastShapesF
+              ( TransposeF
+                  ('SelectDim ('ByIndex 1))
+                  ('SelectDim ('ByIndex 2))
+                  ( TransposeF
+                      ('SelectDim ('ByIndex 2))
+                      ('SelectDim ('ByIndex 3))
+                      ( EmbeddingF
+                          ('Shape '[posEncDim, headDim])
+                          relPosShape
+                      )
+                  )
+              )
+              ( UnsqueezeF
+                  ('SelectDim ('ByIndex 1))
+                  attentionMaskShape
+              )
+          )
+      )
+      dropoutGeneratorOutput
+      stackOutput
+      stackGeneratorOutput,
+    HasForward
+      (TELayerNormF 'ByT5 device dataType inputEmbedDim)
+      stackOutput
+      stackGeneratorOutput
+      layerNormOutput
+      layerNormGeneratorOutput,
+    HasForward
+      (TEDropoutF 'ByT5 dropoutP)
+      layerNormOutput
+      layerNormGeneratorOutput
+      output
+      generatorOutput
+  ) =>
+  HasForward
+    (TransformerEncoder numLayers 'ByT5 device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP)
     ( input,
       Tensor relPosRequiresGradient relPosLayout relPosDevice relPosDataType relPosShape,
       Tensor attentionMaskRequiresGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape

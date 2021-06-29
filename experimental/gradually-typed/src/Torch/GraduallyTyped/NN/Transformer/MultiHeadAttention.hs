@@ -1,6 +1,8 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -48,6 +50,7 @@ import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI (..), SingKind (..))
 import Data.Singletons.Prelude.List (SList (..))
+import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
@@ -159,6 +162,7 @@ type family
     Type
   where
   QInProjF 'T5 device dataType queryEmbedDim embedDim = Linear 'WithoutBias device dataType queryEmbedDim embedDim
+  QInProjF 'ByT5 device dataType queryEmbedDim embedDim = QInProjF 'T5 device dataType queryEmbedDim embedDim
   QInProjF _ device dataType queryEmbedDim embedDim = Linear 'WithBias device dataType queryEmbedDim embedDim
 
 type family
@@ -171,6 +175,7 @@ type family
     Type
   where
   KInProjF 'T5 device dataType keyEmbedDim embedDim = Linear 'WithoutBias device dataType keyEmbedDim embedDim
+  KInProjF 'ByT5 device dataType keyEmbedDim embedDim = KInProjF 'T5 device dataType keyEmbedDim embedDim
   KInProjF _ device dataType keyEmbedDim embedDim = Linear 'WithBias device dataType keyEmbedDim embedDim
 
 type family
@@ -183,6 +188,7 @@ type family
     Type
   where
   VInProjF 'T5 device dataType valueEmbedDim embedDim = Linear 'WithoutBias device dataType valueEmbedDim embedDim
+  VInProjF 'ByT5 device dataType valueEmbedDim embedDim = VInProjF 'T5 device dataType valueEmbedDim embedDim
   VInProjF _ device dataType valueEmbedDim embedDim = Linear 'WithBias device dataType valueEmbedDim embedDim
 
 type family
@@ -195,6 +201,7 @@ type family
     Type
   where
   OutProjF 'T5 device dataType embedDim queryEmbedDim = Linear 'WithoutBias device dataType embedDim queryEmbedDim
+  OutProjF 'ByT5 device dataType embedDim queryEmbedDim = OutProjF 'T5 device dataType embedDim queryEmbedDim
   OutProjF _ device dataType embedDim queryEmbedDim = Linear 'WithBias device dataType embedDim queryEmbedDim
 
 type family
@@ -269,6 +276,21 @@ lookupMultiHeadAttention headDim headEmbedDim embedDim dropoutP prefix =
   let qInProj ST5 =
         LinearWithoutBias
           <$> lookupTensor (prefix <> "q.weight")
+      qInProj SByT5 =
+        LinearWithoutBias
+          <$> lookupTensor (prefix <> "q.weight")
+      qInProj SBART =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "q_proj.weight")
+          <*> lookupTensor (prefix <> "q_proj.bias")
+      qInProj SMBART =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "q_proj.weight")
+          <*> lookupTensor (prefix <> "q_proj.bias")
+      qInProj SPegasus =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "q_proj.weight")
+          <*> lookupTensor (prefix <> "q_proj.bias")
       qInProj SBERT =
         LinearWithBias
           <$> lookupTensor (prefix <> "self.query.weight")
@@ -277,17 +299,25 @@ lookupMultiHeadAttention headDim headEmbedDim embedDim dropoutP prefix =
         LinearWithBias
           <$> lookupTensor (prefix <> "self.query.weight")
           <*> lookupTensor (prefix <> "self.query.bias")
-      qInProj SBART =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "q_proj.weight")
-          <*> lookupTensor (prefix <> "q_proj.bias")
-      qInProj SPegasus =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "q_proj.weight")
-          <*> lookupTensor (prefix <> "q_proj.bias")
+      qInProj SGPT2 = undefined
       kInProj ST5 =
         LinearWithoutBias
           <$> lookupTensor (prefix <> "k.weight")
+      kInProj SByT5 =
+        LinearWithoutBias
+          <$> lookupTensor (prefix <> "k.weight")
+      kInProj SBART =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "k_proj.weight")
+          <*> lookupTensor (prefix <> "k_proj.bias")
+      kInProj SMBART =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "k_proj.weight")
+          <*> lookupTensor (prefix <> "k_proj.bias")
+      kInProj SPegasus =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "k_proj.weight")
+          <*> lookupTensor (prefix <> "k_proj.bias")
       kInProj SBERT =
         LinearWithBias
           <$> lookupTensor (prefix <> "self.key.weight")
@@ -296,17 +326,25 @@ lookupMultiHeadAttention headDim headEmbedDim embedDim dropoutP prefix =
         LinearWithBias
           <$> lookupTensor (prefix <> "self.key.weight")
           <*> lookupTensor (prefix <> "self.key.bias")
-      kInProj SBART =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "k_proj.weight")
-          <*> lookupTensor (prefix <> "k_proj.bias")
-      kInProj SPegasus =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "k_proj.weight")
-          <*> lookupTensor (prefix <> "k_proj.bias")
+      kInProj SGPT2 = undefined
       vInProj ST5 =
         LinearWithoutBias
           <$> lookupTensor (prefix <> "v.weight")
+      vInProj SByT5 =
+        LinearWithoutBias
+          <$> lookupTensor (prefix <> "v.weight")
+      vInProj SBART =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "v_proj.weight")
+          <*> lookupTensor (prefix <> "v_proj.bias")
+      vInProj SMBART =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "v_proj.weight")
+          <*> lookupTensor (prefix <> "v_proj.bias")
+      vInProj SPegasus =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "v_proj.weight")
+          <*> lookupTensor (prefix <> "v_proj.bias")
       vInProj SBERT =
         LinearWithBias
           <$> lookupTensor (prefix <> "self.value.weight")
@@ -315,17 +353,25 @@ lookupMultiHeadAttention headDim headEmbedDim embedDim dropoutP prefix =
         LinearWithBias
           <$> lookupTensor (prefix <> "self.value.weight")
           <*> lookupTensor (prefix <> "self.value.bias")
-      vInProj SBART =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "v_proj.weight")
-          <*> lookupTensor (prefix <> "v_proj.bias")
-      vInProj SPegasus =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "v_proj.weight")
-          <*> lookupTensor (prefix <> "v_proj.bias")
+      vInProj SGPT2 = undefined
       outProj ST5 =
         LinearWithoutBias
           <$> lookupTensor (prefix <> "o.weight")
+      outProj SByT5 =
+        LinearWithoutBias
+          <$> lookupTensor (prefix <> "o.weight")
+      outProj SBART =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "out_proj.weight")
+          <*> lookupTensor (prefix <> "out_proj.bias")
+      outProj SMBART =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "out_proj.weight")
+          <*> lookupTensor (prefix <> "out_proj.bias")
+      outProj SPegasus =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "out_proj.weight")
+          <*> lookupTensor (prefix <> "out_proj.bias")
       outProj SBERT =
         LinearWithBias
           <$> lookupTensor (prefix <> "output.dense.weight")
@@ -334,14 +380,7 @@ lookupMultiHeadAttention headDim headEmbedDim embedDim dropoutP prefix =
         LinearWithBias
           <$> lookupTensor (prefix <> "output.dense.weight")
           <*> lookupTensor (prefix <> "output.dense.bias")
-      outProj SBART =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "out_proj.weight")
-          <*> lookupTensor (prefix <> "out_proj.bias")
-      outProj SPegasus =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "out_proj.weight")
-          <*> lookupTensor (prefix <> "out_proj.bias")
+      outProj SGPT2 = undefined
       dropout _ = pure (initialize @(Dropout dropoutP) dropoutP)
    in MultiHeadAttention
         <$> ( GMultiHeadAttention
@@ -363,6 +402,7 @@ data Scaling
     QueryScaling Double
   | -- | Scaling is applied to the attention weights.
     WeightScaling Double
+  deriving stock (Eq, Ord, Show, Generic)
 
 -- | Whether or not out-projection is applied in the multi-headed attention layer.
 data OutProj
@@ -370,6 +410,7 @@ data OutProj
     NoOutProj
   | -- | Out-projection is applied.
     OutProj
+  deriving stock (Eq, Ord, Show, Generic)
 
 -- | 'HasForward' instance for 'MultiHeadAttention'.
 --
@@ -451,6 +492,8 @@ instance
   forward (MultiHeadAttention gmha@GMultiHeadAttention {..}) (query, key, value, attentionBias) g =
     case sing @style of
       ST5 ->
+        forward gmha (NoScaling, query, key, value, attentionBias) g
+      SByT5 ->
         forward gmha (NoScaling, query, key, value, attentionBias) g
       SBART ->
         let scaling = 1 / (sqrt . fromIntegral . forgetIsChecked . dimSize . fromSing $ mhaHeadEmbedDim)
@@ -613,10 +656,6 @@ instance
       vGeneratorOutput
       output
       generatorOutput,
-    KnownDim batchDim,
-    KnownDim querySeqDim,
-    KnownDim keySeqDim,
-    KnownDim embedDim,
     SGetShape queryShape,
     SGetShape keyShape,
     SGetShape valueShape,

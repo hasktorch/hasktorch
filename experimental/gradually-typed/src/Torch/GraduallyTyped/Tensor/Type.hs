@@ -124,12 +124,6 @@ type SparseCUDATensor deviceId = Tensor 'WithoutGradient ('Layout 'Sparse) ('Dev
 type SparseCUDAParameter deviceId = Tensor 'WithGradient ('Layout 'Sparse) ('Device ('CUDA deviceId))
 
 instance
-  ( KnownRequiresGradient requiresGradient,
-    KnownLayout layout,
-    KnownDevice device,
-    KnownDataType dataType,
-    KnownShape shape
-  ) =>
   Num (Tensor requiresGradient layout device dataType shape)
   where
   (+) = (unsafePerformIO .) . cast2 ATen.add_tt

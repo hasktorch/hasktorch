@@ -968,10 +968,10 @@ polygamma n input = unsafePerformIO $ cast2 ATen.polygamma_lt n input
 -- \]
 pow ::
   forall requiresGradient layout device dataType shape requiresGradient' layout' device' dataType' shape'.
-  -- | tensor exponent
-  Tensor requiresGradient layout device dataType shape ->
   -- | tensor input
   Tensor requiresGradient' layout' device' dataType' shape' ->
+  -- | tensor exponent
+  Tensor requiresGradient layout device dataType shape ->
   -- | tensor output
   Tensor
     (requiresGradient <|> requiresGradient')
@@ -979,7 +979,7 @@ pow ::
     (device <+> device')
     (dataType <+> dataType')
     (BroadcastShapesF shape shape')
-pow exponent input = unsafePerformIO $ cast2 ATen.pow_tt input exponent
+input `pow` exponent = unsafePerformIO $ cast2 ATen.pow_tt input exponent
 
 -- | Takes the power of each element in the tensor 'input' with the scalar 'exponent' and
 -- returns a tensor with the result.
@@ -995,13 +995,13 @@ pow exponent input = unsafePerformIO $ cast2 ATen.pow_tt input exponent
 powScalar ::
   forall exponent requiresGradient layout device dataType shape.
   (Scalar exponent) =>
-  -- | scalar exponent
-  exponent ->
   -- | tensor input
   Tensor requiresGradient layout device dataType shape ->
+  -- | scalar exponent
+  exponent ->
   -- | tensor output
   Tensor requiresGradient layout device dataType shape
-powScalar exponent input = unsafePerformIO $ cast2 ATen.pow_ts input exponent
+input `powScalar` exponent = unsafePerformIO $ cast2 ATen.pow_ts input exponent
 
 -- | Takes the power of the scalar 'input' with each element in the tensor 'exponent' and
 -- returns a tensor with the result.
@@ -1017,13 +1017,13 @@ powScalar exponent input = unsafePerformIO $ cast2 ATen.pow_ts input exponent
 powTensor ::
   forall input requiresGradient layout device dataType shape.
   (Scalar input) =>
-  -- | tensor exponent
-  Tensor requiresGradient layout device dataType shape ->
   -- | scalar input
   input ->
+  -- | tensor exponent
+  Tensor requiresGradient layout device dataType shape ->
   -- | tensor output
   Tensor requiresGradient layout device dataType shape
-powTensor exponent input = unsafePerformIO $ cast2 ATen.pow_st input exponent
+input `powTensor` exponent = unsafePerformIO $ cast2 ATen.pow_st input exponent
 
 -- | Returns a new tensor with each of the elements of 'input'
 -- converted from angles in radians to degrees.

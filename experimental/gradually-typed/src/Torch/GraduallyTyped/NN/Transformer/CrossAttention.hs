@@ -50,7 +50,7 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, S
 import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout)
-import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithBiasF, LayerNormWithoutBiasF)
+import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithBiasF)
 import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..))
 import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (MultiHeadAttention, lookupMultiHeadAttention)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
@@ -61,8 +61,8 @@ import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim, Name (..), SDim, SShape (..), Shape (..), Size (..), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
-import Torch.GraduallyTyped.Tensor.Type (Tensor, SGetDim, SGetShape)
-import Torch.GraduallyTyped.Unify (type (<+>))
+import Torch.GraduallyTyped.Tensor.Type (SGetDim, SGetShape, Tensor)
+import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 
 -- | Generic cross-attention layer.
 -- Needs to be specialized to a given transformer type, e.g. 'T5'.
@@ -143,10 +143,11 @@ type family
   where
   CALayerNormF 'T5 device dataType queryEmbedDim =
     LayerNorm 'WithoutBias device dataType ('Shape '[queryEmbedDim])
-  CALayerNormF 'Pegasus device dataType queryEmbedDim =
-    LayerNorm 'WithBias device dataType ('Shape '[queryEmbedDim])
+  CALayerNormF 'ByT5 device dataType queryEmbedDim = CALayerNormF 'T5 device dataType queryEmbedDim
   CALayerNormF 'BART device dataType queryEmbedDim =
     LayerNorm 'WithBias device dataType ('Shape '[queryEmbedDim])
+  CALayerNormF 'MBART device dataType queryEmbedDim = CALayerNormF 'BART device dataType queryEmbedDim
+  CALayerNormF 'Pegasus device dataType queryEmbedDim = CALayerNormF 'BART device dataType queryEmbedDim
 
 type family
   CADropoutF
@@ -212,22 +213,39 @@ lookupCrossAttention ::
   m (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
 lookupCrossAttention headDim headEmbedDim embedDim dropoutP eps prefix =
   let crossAttention ST5 = lookupMultiHeadAttention headDim headEmbedDim embedDim dropoutP (prefix <> "EncDecAttention.")
-      crossAttention SPegasus = lookupMultiHeadAttention headDim headEmbedDim embedDim dropoutP (prefix <> "encoder_attn.")
+      crossAttention SByT5 = lookupMultiHeadAttention headDim headEmbedDim embedDim dropoutP (prefix <> "EncDecAttention.")
       crossAttention SBART = lookupMultiHeadAttention headDim headEmbedDim embedDim dropoutP (prefix <> "encoder_attn.")
+      crossAttention SMBART = lookupMultiHeadAttention headDim headEmbedDim embedDim dropoutP (prefix <> "encoder_attn.")
+      crossAttention SPegasus = lookupMultiHeadAttention headDim headEmbedDim embedDim dropoutP (prefix <> "encoder_attn.")
+      crossAttention SBERT = undefined
+      crossAttention SRoBERTa = undefined
+      crossAttention SGPT2 = undefined
       layerNorm ST5 =
         LayerNormWithoutBias
           <$> lookupTensor (prefix <> "layer_norm.weight")
           <*> pure eps
-      layerNorm SPegasus =
-        LayerNormWithBias
-          <$> lookupTensor (prefix <> "encoder_attn_layer_norm.weight")
-          <*> lookupTensor (prefix <> "encoder_attn_layer_norm.bias")
+      layerNorm SByT5 =
+        LayerNormWithoutBias
+          <$> lookupTensor (prefix <> "layer_norm.weight")
           <*> pure eps
       layerNorm SBART =
         LayerNormWithBias
           <$> lookupTensor (prefix <> "encoder_attn_layer_norm.weight")
           <*> lookupTensor (prefix <> "encoder_attn_layer_norm.bias")
           <*> pure eps
+      layerNorm SMBART =
+        LayerNormWithBias
+          <$> lookupTensor (prefix <> "encoder_attn_layer_norm.weight")
+          <*> lookupTensor (prefix <> "encoder_attn_layer_norm.bias")
+          <*> pure eps
+      layerNorm SPegasus =
+        LayerNormWithBias
+          <$> lookupTensor (prefix <> "encoder_attn_layer_norm.weight")
+          <*> lookupTensor (prefix <> "encoder_attn_layer_norm.bias")
+          <*> pure eps
+      layerNorm SBERT = undefined
+      layerNorm SRoBERTa = undefined
+      layerNorm SGPT2 = undefined
       dropout _ = pure (initialize @(Dropout dropoutP) dropoutP)
    in CrossAttention
         <$> ( GCrossAttention
@@ -265,45 +283,104 @@ lookupCrossAttention headDim headEmbedDim embedDim dropoutP eps prefix =
 -- @
 instance
   ( SGetDim queryEmbedDim,
-    SGetShape queryShape,
     Scalar dropoutP,
-    query ~ Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
-    key ~ Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
-    attentionBias ~ Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape,
-    normedQueryLayout ~ ('Layout 'Dense <+> queryLayout),
-    normedQueryDevice ~ (device <+> queryDevice),
-    normedQueryDataType ~ (dataType <+> queryDataType),
-    normedQueryShape ~ LayerNormWithoutBiasF ('Shape '[queryEmbedDim]) queryShape,
-    normedQuery ~ Tensor 'WithGradient normedQueryLayout normedQueryDevice normedQueryDataType normedQueryShape,
     HasForward
-      (MultiHeadAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP)
-      ( normedQuery,
-        key,
-        key,
-        attentionBias
-      )
-      (Generator generatorDevice)
-      ( Tensor
-          'WithGradient
-          (queryLayout <+> 'Layout 'Dense <+> keyLayout <+> attentionBiasLayout)
-          (queryDevice <+> device <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)
-          (queryDataType <+> dataType <+> keyDataType <+> attentionBiasDataType)
-          mhaOutputShape
-      )
-      (Generator (queryDevice <+> device <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)),
+      (CALayerNormF 'T5 device dataType queryEmbedDim)
+      query
+      generator
+      layerNormOutput
+      generator,
+    HasForward
+      (CAMultiheadAttentionF 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
+      (layerNormOutput, key, key, attentionBias)
+      generator
+      mhaOutput
+      mhaGeneratorOutput,
+    query ~ Tensor requiresGradient0 layout0 device0 dataType0 shape0,
+    mhaOutput ~ Tensor requiresGradient1 layout1 device1 dataType1 shape1,
+    mhaGeneratorOutput ~ Generator device2,
     output
       ~ Tensor
-          'WithGradient
-          (queryLayout <+> 'Layout 'Dense <+> keyLayout <+> attentionBiasLayout)
-          (queryDevice <+> device <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)
-          (queryDataType <+> dataType <+> keyDataType <+> attentionBiasDataType)
-          (BroadcastShapesF queryShape mhaOutputShape),
-    generatorOutput ~ Generator (queryDevice <+> device <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)
+          (requiresGradient0 <|> requiresGradient1)
+          (layout0 <+> layout1)
+          (device0 <+> device1 <+> device2)
+          (dataType0 <+> dataType1)
+          (BroadcastShapesF shape0 shape1),
+    generatorOutput ~ Generator (device1 <+> device2)
   ) =>
   HasForward
     (CrossAttention 'T5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
     (query, key, attentionBias)
-    (Generator generatorDevice)
+    generator
+    output
+    generatorOutput
+  where
+  forward (CrossAttention ca) (query, key, attentionBias) =
+    runIxState $
+      ireturn query
+        >>>= IxState . forward (caLayerNorm ca)
+        >>>= (\query' -> IxState $ forward (caMultiheadAttention ca) (query', key, key, attentionBias))
+        >>>= IxState . forward (caDropout ca)
+        >>>= ireturn . (query `add`)
+
+-- | 'HasForward' instance for @CrossAttention 'ByT5@.
+--
+-- @
+--    ┌───────┐  ┌─────┐  ┌───────────────┐
+--    │ query │  │ key │  │ attentionBias │
+--    └───┬───┘  └──┬──┘  └───────┬───────┘
+--        │         │             │
+-- ┌──────┤         │             │
+-- │      │         │             │
+-- │      ▼         │             │
+-- │ caLayerNorm    │             │
+-- │      │         │             │
+-- │      │      ┌──┴──┐          │
+-- │      │      │     │          │
+-- │      ▼      ▼     ▼          │
+-- │   caMultiheadAttention◄──────┘
+-- │             │
+-- │             ▼
+-- │         caDropout
+-- │             │
+-- └────►add◄────┘
+--        │
+--        ▼
+--    ┌───────┐
+--    │ query │
+--    └───────┘
+-- @
+instance
+  ( SGetDim queryEmbedDim,
+    Scalar dropoutP,
+    HasForward
+      (CALayerNormF 'ByT5 device dataType queryEmbedDim)
+      query
+      generator
+      layerNormOutput
+      generator,
+    HasForward
+      (CAMultiheadAttentionF 'ByT5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
+      (layerNormOutput, key, key, attentionBias)
+      generator
+      mhaOutput
+      mhaGeneratorOutput,
+    query ~ Tensor requiresGradient0 layout0 device0 dataType0 shape0,
+    mhaOutput ~ Tensor requiresGradient1 layout1 device1 dataType1 shape1,
+    mhaGeneratorOutput ~ Generator device2,
+    output
+      ~ Tensor
+          (requiresGradient0 <|> requiresGradient1)
+          (layout0 <+> layout1)
+          (device0 <+> device1 <+> device2)
+          (dataType0 <+> dataType1)
+          (BroadcastShapesF shape0 shape1),
+    generatorOutput ~ Generator (device1 <+> device2)
+  ) =>
+  HasForward
+    (CrossAttention 'ByT5 device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
+    (query, key, attentionBias)
+    generator
     output
     generatorOutput
   where

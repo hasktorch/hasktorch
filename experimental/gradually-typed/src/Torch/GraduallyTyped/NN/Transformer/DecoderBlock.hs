@@ -147,14 +147,29 @@ lookupDecoderBlock ::
   m (TransformerDecoderBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
 lookupDecoderBlock headDim headEmbedDim embedDim dropoutP eps prefix =
   let selfAttention ST5 = lookupSelfAttention headDim headEmbedDim embedDim dropoutP eps (prefix <> "layer.0.")
-      selfAttention SPegasus = lookupSelfAttention headDim headEmbedDim embedDim dropoutP eps prefix
+      selfAttention SByT5 = lookupSelfAttention headDim headEmbedDim embedDim dropoutP eps (prefix <> "layer.0.")
       selfAttention SBART = lookupSelfAttention headDim headEmbedDim embedDim dropoutP eps prefix
+      selfAttention SMBART = lookupSelfAttention headDim headEmbedDim embedDim dropoutP eps prefix
+      selfAttention SPegasus = lookupSelfAttention headDim headEmbedDim embedDim dropoutP eps prefix
+      selfAttention SBERT = undefined
+      selfAttention SRoBERTa = undefined
+      selfAttention SGPT2 = undefined
       crossAttention ST5 = lookupCrossAttention headDim headEmbedDim embedDim dropoutP eps (prefix <> "layer.1.")
-      crossAttention SPegasus = lookupCrossAttention headDim headEmbedDim embedDim dropoutP eps prefix
+      crossAttention SByT5 = lookupCrossAttention headDim headEmbedDim embedDim dropoutP eps (prefix <> "layer.1.")
       crossAttention SBART = lookupCrossAttention headDim headEmbedDim embedDim dropoutP eps prefix
+      crossAttention SMBART = lookupCrossAttention headDim headEmbedDim embedDim dropoutP eps prefix
+      crossAttention SPegasus = lookupCrossAttention headDim headEmbedDim embedDim dropoutP eps prefix
+      crossAttention SBERT = undefined
+      crossAttention SRoBERTa = undefined
+      crossAttention SGPT2 = undefined
       feedForwardNetwork ST5 = lookupTransformerFeedForwardNetwork dropoutP eps (prefix <> "layer.2.")
-      feedForwardNetwork SPegasus = lookupTransformerFeedForwardNetwork dropoutP eps prefix
+      feedForwardNetwork SByT5 = lookupTransformerFeedForwardNetwork dropoutP eps (prefix <> "layer.2.")
       feedForwardNetwork SBART = lookupTransformerFeedForwardNetwork dropoutP eps prefix
+      feedForwardNetwork SMBART = lookupTransformerFeedForwardNetwork dropoutP eps prefix
+      feedForwardNetwork SPegasus = lookupTransformerFeedForwardNetwork dropoutP eps prefix
+      feedForwardNetwork SBERT = undefined
+      feedForwardNetwork SRoBERTa = undefined
+      feedForwardNetwork SGPT2 = undefined
    in TransformerDecoderBlock
         <$> selfAttention (sing @style)
         <*> crossAttention (sing @style)

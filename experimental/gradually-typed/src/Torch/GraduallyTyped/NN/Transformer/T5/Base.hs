@@ -40,9 +40,9 @@ type T5BaseVocabDim = 'Dim ('Name "*") ('Size 32128)
 -- | T5-Base model.
 type T5Base
   (device :: Device (DeviceType Nat)) =
-  T5Model T5BaseNumLayers device T5BaseHeadDim T5BaseHeadEmbedDim T5BaseEmbedDim T5BaseInputEmbedDim T5BaseFFNDim T5BaseVocabDim
+  T5Model T5BaseNumLayers T5BaseNumLayers device T5BaseHeadDim T5BaseHeadEmbedDim T5BaseEmbedDim T5BaseInputEmbedDim T5BaseFFNDim T5BaseVocabDim
 
 -- | T5-Base model with language modelling head.
 type T5BaseWithLMHead
   (device :: Device (DeviceType Nat)) =
-  T5ModelWithLMHead T5BaseNumLayers device T5BaseHeadDim T5BaseHeadEmbedDim T5BaseEmbedDim T5BaseInputEmbedDim T5BaseFFNDim T5BaseVocabDim
+  T5ModelWithLMHead T5BaseNumLayers T5BaseNumLayers device T5BaseHeadDim T5BaseHeadEmbedDim T5BaseEmbedDim T5BaseInputEmbedDim T5BaseFFNDim T5BaseVocabDim

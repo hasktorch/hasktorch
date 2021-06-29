@@ -11,14 +11,18 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.NN.Functional.Activation where
 
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.GraduallyTyped.Tensor (Tensor)
+import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (addScalar, mulScalar, powScalar, tanh)
+import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.Internal.Cast (cast1, cast2, cast3)
 import qualified Torch.Internal.Managed.Native as ATen
 import Torch.Scalar (Scalar)
+import Prelude (Float, ($), (*), (+), (.), (/))
+import qualified Prelude (pi, sqrt)
 
 -- | Thresholds each element of the input Tensor.
 threshold ::
@@ -32,8 +36,8 @@ threshold ::
   Tensor requiresGradient layout device dataType shape ->
   -- | output
   Tensor requiresGradient layout device dataType shape
-threshold threshold value tensor =
-  unsafePerformIO $ cast3 ATen.threshold_tss tensor threshold value
+threshold thresholdValue value tensor =
+  unsafePerformIO $ cast3 ATen.threshold_tss tensor thresholdValue value
 
 -- | Applies the rectified linear unit function element-wise, that is,
 -- \[
@@ -55,6 +59,29 @@ gelu ::
   -- | output
   Tensor requiresGradient layout device dataType shape
 gelu = unsafePerformIO . cast1 ATen.gelu_t
+
+-- | Applies the gaussian error linear unit function element-wise.
+--
+-- This is the implementation of the GELU activation function from
+-- Google's BERT repo (and coincidentally also from OpenAI's GPT).
+-- See also https://arxiv.org/abs/1606.08415.
+--
+-- >>> geluNew $ sFull SWithGradient (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SNil) 0.5
+-- Tensor Float []  0.3457
+geluNew ::
+  forall requiresGradient layout device dataType shape.
+  -- | input
+  Tensor requiresGradient layout device dataType shape ->
+  -- | output
+  Tensor requiresGradient layout device dataType shape
+geluNew x =
+  (x `mulScalar` (0.5 :: Float))
+    * ( tanh
+          ( (x + ((x `powScalar` (3 :: Float)) `mulScalar` (0.044715 :: Float)))
+              `mulScalar` Prelude.sqrt ((2 :: Float) / Prelude.pi)
+          )
+          `addScalar` (1 :: Float)
+      )
 
 -- | Applies the HardTanh function element-wise.
 hardtanh ::

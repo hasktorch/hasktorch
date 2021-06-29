@@ -40,15 +40,16 @@ import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.Reader (MonadIO, MonadReader)
 import Control.Monad.State.Strict (MonadState (state), runState)
-import Data.Kind (Constraint, Type)
-import Data.Singletons (SingI, sing)
-import Data.Singletons.Prelude.List (SList (SNil))
+import Data.Functor.Indexed ((<<$>>), (<<*>>))
+import Data.Kind (Type)
+import Data.Singletons (SingI (sing))
+import Data.Singletons.Prelude.List (SList (..))
 import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType, KnownDataType, SDataType)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, SDevice)
 import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense))
-import Torch.GraduallyTyped.NN.Activation (Gelu (..), Relu (..))
+import Torch.GraduallyTyped.NN.Activation (Gelu (..), GeluNew (..), Relu (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout)
 import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithBiasF, LinearWithoutBiasF)
@@ -62,16 +63,17 @@ import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim, Name (..), SDim, SShape (..), Shape (..), Size (..), pattern (:|:))
-import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
-import Torch.GraduallyTyped.Tensor.Type (Tensor, SGetDim, SGetShape)
-import Torch.GraduallyTyped.Unify (type (<+>))
+import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add, mul)
+import Torch.GraduallyTyped.Tensor.Type (SGetDim, SGetShape, Tensor)
+import Torch.GraduallyTyped.Unify (Unify, type (<+>), type (<|>))
 
 -- | Generic transformer feed-forward network.
 -- Needs to be specialized to a given transformer type, e.g. 'T5'.
 -- See 'TransformerFeedForwardNetwork'.
 data
   GTransformerFeedForwardNetwork
-    (inputWeight :: Type)
+    (inputWeight1 :: Type)
+    (inputWeight2 :: Type)
     (outputWeight :: Type)
     (activation :: Type)
     (activationDropout :: Type)
@@ -79,9 +81,11 @@ data
     (dropout :: Type)
   where
   GTransformerFeedForwardNetwork ::
-    forall inputWeight outputWeight activation activationDropout layerNorm dropout.
-    { -- | input weight
-      ffnInputWeight :: inputWeight,
+    forall inputWeight1 inputWeight2 outputWeight activation activationDropout layerNorm dropout.
+    { -- | first input weight
+      ffnInputWeight1 :: inputWeight1,
+      -- | second input weight
+      ffnInputWeight2 :: inputWeight2,
       -- | output weight
       ffnOutputWeight :: outputWeight,
       -- | activation
@@ -93,7 +97,7 @@ data
       -- | feed-forward dropout
       ffnDropout :: dropout
     } ->
-    GTransformerFeedForwardNetwork inputWeight outputWeight activation activationDropout layerNorm dropout
+    GTransformerFeedForwardNetwork inputWeight1 inputWeight2 outputWeight activation activationDropout layerNorm dropout
 
 -- | Transformer feed-forward network.
 data
@@ -118,7 +122,8 @@ type GTransformerFeedForwardNetworkF
   (ffnDim :: Dim (Name Symbol) (Size Nat))
   (dropoutP :: Type) =
   GTransformerFeedForwardNetwork
-    (FFNInputWeightF style device dataType queryEmbedDim ffnDim)
+    (FFNInputWeight1F style device dataType queryEmbedDim ffnDim)
+    (FFNInputWeight2F style device dataType queryEmbedDim ffnDim)
     (FFNOutputWeightF style device dataType queryEmbedDim ffnDim)
     (FFNActivationF style)
     (FFNActivationDropoutF style dropoutP)
@@ -126,7 +131,7 @@ type GTransformerFeedForwardNetworkF
     (FFNDropoutF style dropoutP)
 
 type family
-  FFNInputWeightF
+  FFNInputWeight1F
     (style :: TransformerStyle)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
@@ -134,8 +139,21 @@ type family
     (ffnDim :: Dim (Name Symbol) (Size Nat)) ::
     Type
   where
-  FFNInputWeightF 'T5 device dataType queryEmbedDim ffnDim = Linear 'WithoutBias device dataType queryEmbedDim ffnDim
-  FFNInputWeightF _ device dataType queryEmbedDim ffnDim = Linear 'WithBias device dataType queryEmbedDim ffnDim
+  FFNInputWeight1F 'T5 device dataType queryEmbedDim ffnDim = Linear 'WithoutBias device dataType queryEmbedDim ffnDim
+  FFNInputWeight1F 'ByT5 device dataType queryEmbedDim ffnDim = FFNInputWeight1F 'T5 device dataType queryEmbedDim ffnDim
+  FFNInputWeight1F _ device dataType queryEmbedDim ffnDim = Linear 'WithBias device dataType queryEmbedDim ffnDim
+
+type family
+  FFNInputWeight2F
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat)) ::
+    Type
+  where
+  FFNInputWeight2F 'ByT5 device dataType queryEmbedDim ffnDim = Linear 'WithoutBias device dataType queryEmbedDim ffnDim
+  FFNInputWeight2F _ device dataType queryEmbedDim ffnDim = ()
 
 type family
   FFNOutputWeightF
@@ -147,6 +165,7 @@ type family
     Type
   where
   FFNOutputWeightF 'T5 device dataType queryEmbedDim ffnDim = Linear 'WithoutBias device dataType ffnDim queryEmbedDim
+  FFNOutputWeightF 'ByT5 device dataType queryEmbedDim ffnDim = FFNOutputWeightF 'T5 device dataType queryEmbedDim ffnDim
   FFNOutputWeightF _ device dataType queryEmbedDim ffnDim = Linear 'WithBias device dataType ffnDim queryEmbedDim
 
 type family
@@ -155,10 +174,13 @@ type family
     Type
   where
   FFNActivationF 'T5 = Relu
+  FFNActivationF 'ByT5 = GeluNew
   FFNActivationF 'BART = Gelu
+  FFNActivationF 'MBART = Gelu
+  FFNActivationF 'Pegasus = Relu
   FFNActivationF 'BERT = Gelu
   FFNActivationF 'RoBERTa = Gelu
-  FFNActivationF 'Pegasus = Relu
+  FFNActivationF 'GPT2 = Gelu
 
 type family
   FFNActivationDropoutF
@@ -167,10 +189,13 @@ type family
     Type
   where
   FFNActivationDropoutF 'T5 dropoutP = Dropout dropoutP
+  FFNActivationDropoutF 'ByT5 dropoutP = FFNActivationDropoutF 'T5 dropoutP
   FFNActivationDropoutF 'BART dropoutP = Dropout dropoutP
-  FFNActivationDropoutF 'Pegasus dropoutP = Dropout dropoutP
+  FFNActivationDropoutF 'MBART dropoutP = FFNActivationDropoutF 'BART dropoutP
+  FFNActivationDropoutF 'Pegasus dropoutP = FFNActivationDropoutF 'BART dropoutP
   FFNActivationDropoutF 'BERT _ = ()
-  FFNActivationDropoutF 'RoBERTa _ = ()
+  FFNActivationDropoutF 'RoBERTa dropoutP = FFNActivationDropoutF 'BERT dropoutP
+  FFNActivationDropoutF 'GPT2 _ = ()
 
 type family
   FFNLayerNormF
@@ -181,6 +206,7 @@ type family
     Type
   where
   FFNLayerNormF 'T5 device dataType queryEmbedDim = LayerNorm 'WithoutBias device dataType ('Shape '[queryEmbedDim])
+  FFNLayerNormF 'ByT5 device dataType queryEmbedDim = FFNLayerNormF 'T5 device dataType queryEmbedDim
   FFNLayerNormF _ device dataType queryEmbedDim = LayerNorm 'WithBias device dataType ('Shape '[queryEmbedDim])
 
 type family
@@ -189,36 +215,15 @@ type family
     (dropoutP :: Type) ::
     Type
   where
-  FFNDropoutF 'T5 dropoutP = Dropout dropoutP
   FFNDropoutF _ dropoutP = Dropout dropoutP
-
-type family
-  HasInitializeFFNActivationDropoutF
-    (activationDropout :: Type)
-    (style :: TransformerStyle)
-    (dropoutP :: Type) ::
-    Constraint
-  where
-  HasInitializeFFNActivationDropoutF activationDropout 'T5 dropoutP =
-    ( HasInitialize activationDropout,
-      InitializeF activationDropout ~ (dropoutP -> activationDropout)
-    )
-  HasInitializeFFNActivationDropoutF activationDropout 'BART dropoutP =
-    ( HasInitialize activationDropout,
-      InitializeF activationDropout ~ (dropoutP -> activationDropout)
-    )
-  HasInitializeFFNActivationDropoutF _ 'BERT _ = ()
-  HasInitializeFFNActivationDropoutF _ 'RoBERTa _ = ()
-  HasInitializeFFNActivationDropoutF activationDropout 'Pegasus dropoutP =
-    ( HasInitialize activationDropout,
-      InitializeF activationDropout ~ (dropoutP -> activationDropout)
-    )
 
 instance
   ( SingI style,
-    inputWeight ~ FFNInputWeightF style device dataType queryEmbedDim ffnDim,
-    HasInitialize inputWeight,
-    InitializeF inputWeight ~ (SDevice device -> SDataType dataType -> SDim queryEmbedDim -> SDim ffnDim -> Generator device -> (inputWeight, Generator device)),
+    inputWeight1 ~ FFNInputWeight1F style device dataType queryEmbedDim ffnDim,
+    HasInitialize inputWeight1,
+    InitializeF inputWeight1 ~ (SDevice device -> SDataType dataType -> SDim queryEmbedDim -> SDim ffnDim -> Generator device -> (inputWeight1, Generator device)),
+    inputWeight2 ~ FFNInputWeight2F style device dataType queryEmbedDim ffnDim,
+    HasInitialize inputWeight2,
     outputWeight ~ FFNOutputWeightF style device dataType queryEmbedDim ffnDim,
     HasInitialize outputWeight,
     InitializeF outputWeight ~ (SDevice device -> SDataType dataType -> SDim ffnDim -> SDim queryEmbedDim -> Generator device -> (outputWeight, Generator device)),
@@ -245,17 +250,30 @@ instance
       Generator device ->
       (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP, Generator device)
   initialize device dataType queryEmbedDim ffnDim dropoutP eps = runState $ do
-    inputWeight <- state $ initialize @inputWeight device dataType queryEmbedDim ffnDim
+    inputWeight1 <- state $ initialize @inputWeight1 device dataType queryEmbedDim ffnDim
+    inputWeight2 <- case sing @style of
+      ST5 -> pure ()
+      SByT5 -> state $ initialize @inputWeight2 device dataType queryEmbedDim ffnDim
+      SBART -> pure ()
+      SMBART -> pure ()
+      SPegasus -> pure ()
+      SBERT -> pure ()
+      SRoBERTa -> pure ()
+      SGPT2 -> pure ()
     outputWeight <- state $ initialize @outputWeight device dataType ffnDim queryEmbedDim
     let activation = initialize @activation
     let activationDropout = case sing @style of
           ST5 -> initialize @activationDropout dropoutP
+          SByT5 -> initialize @activationDropout dropoutP
           SBART -> initialize @activationDropout dropoutP
-          SBERT -> ()
+          SMBART -> initialize @activationDropout dropoutP
           SPegasus -> initialize @activationDropout dropoutP
+          SBERT -> ()
+          SRoBERTa -> ()
+          SGPT2 -> ()
     let layerNorm = initialize @layerNorm device dataType (SShape $ queryEmbedDim :|: SNil) eps
     let dropout = initialize @dropout dropoutP
-    pure . TransformerFeedForwardNetwork $ GTransformerFeedForwardNetwork inputWeight outputWeight activation activationDropout layerNorm dropout
+    pure . TransformerFeedForwardNetwork $ GTransformerFeedForwardNetwork inputWeight1 inputWeight2 outputWeight activation activationDropout layerNorm dropout
 
 lookupTransformerFeedForwardNetwork ::
   forall style device dataType queryEmbedDim ffnDim dropoutP m.
@@ -274,28 +292,55 @@ lookupTransformerFeedForwardNetwork ::
   String ->
   m (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP)
 lookupTransformerFeedForwardNetwork dropoutP eps prefix =
-  let inputWeight ST5 =
+  let inputWeight1 ST5 =
         LinearWithoutBias
           <$> lookupTensor (prefix <> "DenseReluDense.wi.weight")
-      inputWeight SBERT =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "intermediate.dense.weight")
-          <*> lookupTensor (prefix <> "intermediate.dense.bias")
-      inputWeight SRoBERTa =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "intermediate.dense.weight")
-          <*> lookupTensor (prefix <> "intermediate.dense.bias")
-      inputWeight SBART =
+      inputWeight1 SByT5 =
+        LinearWithoutBias
+          <$> lookupTensor (prefix <> "DenseReluDense.wi_0.weight")
+      inputWeight1 SBART =
         LinearWithBias
           <$> lookupTensor (prefix <> "fc1.weight")
           <*> lookupTensor (prefix <> "fc1.bias")
-      inputWeight SPegasus =
+      inputWeight1 SMBART = undefined
+      inputWeight1 SPegasus =
         LinearWithBias
           <$> lookupTensor (prefix <> "fc1.weight")
           <*> lookupTensor (prefix <> "fc1.bias")
+      inputWeight1 SBERT =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "intermediate.dense.weight")
+          <*> lookupTensor (prefix <> "intermediate.dense.bias")
+      inputWeight1 SRoBERTa =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "intermediate.dense.weight")
+          <*> lookupTensor (prefix <> "intermediate.dense.bias")
+      inputWeight1 SGPT2 = undefined
+      inputWeight2 ST5 = pure ()
+      inputWeight2 SByT5 =
+        LinearWithoutBias
+          <$> lookupTensor (prefix <> "DenseReluDense.wi_1.weight")
+      inputWeight2 SBART = pure ()
+      inputWeight2 SMBART = pure ()
+      inputWeight2 SPegasus = pure ()
+      inputWeight2 SBERT = pure ()
+      inputWeight2 SRoBERTa = pure ()
+      inputWeight2 SGPT2 = pure ()
       outputWeight ST5 =
         LinearWithoutBias
           <$> lookupTensor (prefix <> "DenseReluDense.wo.weight")
+      outputWeight SByT5 =
+        LinearWithoutBias
+          <$> lookupTensor (prefix <> "DenseReluDense.wo.weight")
+      outputWeight SBART =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "fc2.weight")
+          <*> lookupTensor (prefix <> "fc2.bias")
+      outputWeight SMBART = undefined
+      outputWeight SPegasus =
+        LinearWithBias
+          <$> lookupTensor (prefix <> "fc2.weight")
+          <*> lookupTensor (prefix <> "fc2.bias")
       outputWeight SBERT =
         LinearWithBias
           <$> lookupTensor (prefix <> "output.dense.weight")
@@ -304,27 +349,41 @@ lookupTransformerFeedForwardNetwork dropoutP eps prefix =
         LinearWithBias
           <$> lookupTensor (prefix <> "output.dense.weight")
           <*> lookupTensor (prefix <> "output.dense.bias")
-      outputWeight SBART =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "fc2.weight")
-          <*> lookupTensor (prefix <> "fc2.bias")
-      outputWeight SPegasus =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "fc2.weight")
-          <*> lookupTensor (prefix <> "fc2.bias")
+      outputWeight SGPT2 = undefined
       activation ST5 = pure @m Relu
+      activation SByT5 = pure @m GeluNew
+      activation SBART = pure @m Gelu
+      activation SMBART = undefined
+      activation SPegasus = pure @m Relu
       activation SBERT = pure @m Gelu
       activation SRoBERTa = pure @m Gelu
-      activation SBART = pure @m Gelu
-      activation SPegasus = pure @m Relu
+      activation SGPT2 = undefined
       activationDropout ST5 = pure (initialize @(Dropout dropoutP) dropoutP)
+      activationDropout SByT5 = pure (initialize @(Dropout dropoutP) dropoutP)
+      activationDropout SBART = pure (initialize @(Dropout dropoutP) dropoutP)
+      activationDropout SMBART = undefined
+      activationDropout SPegasus = pure (initialize @(Dropout dropoutP) dropoutP)
       activationDropout SBERT = pure ()
       activationDropout SRoBERTa = pure ()
-      activationDropout SBART = pure (initialize @(Dropout dropoutP) dropoutP)
-      activationDropout SPegasus = pure (initialize @(Dropout dropoutP) dropoutP)
+      activationDropout SGPT2 = undefined
       layerNorm ST5 =
         LayerNormWithoutBias
           <$> lookupTensor (prefix <> "layer_norm.weight")
+          <*> pure eps
+      layerNorm SByT5 =
+        LayerNormWithoutBias
+          <$> lookupTensor (prefix <> "layer_norm.weight")
+          <*> pure eps
+      layerNorm SBART =
+        LayerNormWithBias
+          <$> lookupTensor (prefix <> "final_layer_norm.weight")
+          <*> lookupTensor (prefix <> "final_layer_norm.bias")
+          <*> pure eps
+      layerNorm SMBART = undefined
+      layerNorm SPegasus =
+        LayerNormWithBias
+          <$> lookupTensor (prefix <> "final_layer_norm.weight")
+          <*> lookupTensor (prefix <> "final_layer_norm.bias")
           <*> pure eps
       layerNorm SBERT =
         LayerNormWithBias
@@ -336,20 +395,12 @@ lookupTransformerFeedForwardNetwork dropoutP eps prefix =
           <$> lookupTensor (prefix <> "output.LayerNorm.weight")
           <*> lookupTensor (prefix <> "output.LayerNorm.bias")
           <*> pure eps
-      layerNorm SBART =
-        LayerNormWithBias
-          <$> lookupTensor (prefix <> "final_layer_norm.weight")
-          <*> lookupTensor (prefix <> "final_layer_norm.bias")
-          <*> pure eps
-      layerNorm SPegasus =
-        LayerNormWithBias
-          <$> lookupTensor (prefix <> "final_layer_norm.weight")
-          <*> lookupTensor (prefix <> "final_layer_norm.bias")
-          <*> pure eps
+      layerNorm SGPT2 = undefined
       dropout _ = pure (initialize @(Dropout dropoutP) dropoutP)
    in TransformerFeedForwardNetwork
         <$> ( GTransformerFeedForwardNetwork
-                <$> inputWeight (sing @style)
+                <$> inputWeight1 (sing @style)
+                <*> inputWeight2 (sing @style)
                 <*> outputWeight (sing @style)
                 <*> activation (sing @style)
                 <*> activationDropout (sing @style)
@@ -378,6 +429,7 @@ type family
               )
           )
       )
+  FeedForwardNetworkOutputShape 'ByT5 queryEmbedDim ffnDim queryShape = FeedForwardNetworkOutputShape 'T5 queryEmbedDim ffnDim queryShape
   FeedForwardNetworkOutputShape 'Pegasus queryEmbedDim ffnDim queryShape =
     BroadcastShapesF
       queryShape
@@ -463,12 +515,76 @@ instance
     runIxState $
       ireturn query
         >>>= IxState . forward ffnLayoutNorm
-        >>>= IxState . forward ffnInputWeight
+        >>>= IxState . forward ffnInputWeight1
         >>>= IxState . forward ffnActivation
         >>>= IxState . forward ffnActivationDropout
         >>>= IxState . forward ffnOutputWeight
         >>>= IxState . forward ffnDropout
         >>>= ireturn . (query `add`)
+
+-- | 'HasForward' instance for @TransformerFeedForwardNetwork 'ByT5@.
+--
+-- @
+--       ┌───────┐
+--       │ query ├───────┐
+--       └───┬───┘       │
+--           │           │
+--           ▼           │
+--      ffnLayerNorm     │
+--           ▼           │
+--     ffnInputWeight    │
+--           ▼           │
+--     ffnActivation     │
+--           ▼           │
+--  ffnActivationDropout │
+--           ▼           │
+--    ffnOutputWeight    │
+--           ▼           │
+--       ffnDropout      │
+--           │           │
+--           ▼           │
+--          add◄─────────┘
+--           │
+--           ▼
+--       ┌───────┐
+--       │ query │
+--       └───────┘
+-- @
+instance
+  ( SGetShape queryShape,
+    SGetDim queryEmbedDim,
+    Scalar dropoutP,
+    output
+      ~ Tensor
+          'WithGradient
+          (queryLayout <+> 'Layout 'Dense)
+          (queryDevice <+> device <+> generatorDevice)
+          (queryDataType <+> dataType)
+          (FeedForwardNetworkOutputShape 'ByT5 queryEmbedDim ffnDim queryShape),
+    generatorOutput ~ Generator (device <+> queryDevice <+> generatorDevice)
+  ) =>
+  HasForward
+    (TransformerFeedForwardNetwork 'ByT5 device dataType queryEmbedDim ffnDim dropoutP)
+    (Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape)
+    (Generator generatorDevice)
+    output
+    generatorOutput
+  where
+  forward (TransformerFeedForwardNetwork GTransformerFeedForwardNetwork {..}) query =
+    let activate query' =
+          ireturn query'
+            >>>= IxState . forward ffnInputWeight1
+            >>>= IxState . forward ffnActivation
+        gate query' = (*) <<$>> activate query' <<*>> (IxState . forward ffnInputWeight2 $ query')
+     in runIxState $
+          ireturn query
+            >>>= IxState . forward ffnLayoutNorm
+            >>>= gate
+            >>>= IxState . forward ffnActivation
+            >>>= IxState . forward ffnActivationDropout
+            >>>= IxState . forward ffnOutputWeight
+            >>>= IxState . forward ffnDropout
+            >>>= ireturn . (query `add`)
 
 -- | 'HasForward' instance for @TransformerFeedForwardNetwork 'BART@.
 --
@@ -523,7 +639,7 @@ instance
   forward (TransformerFeedForwardNetwork GTransformerFeedForwardNetwork {..}) query =
     runIxState $
       ireturn query
-        >>>= IxState . forward ffnInputWeight
+        >>>= IxState . forward ffnInputWeight1
         >>>= IxState . forward ffnActivation
         >>>= IxState . forward ffnActivationDropout
         >>>= IxState . forward ffnOutputWeight
@@ -582,7 +698,7 @@ instance
   forward (TransformerFeedForwardNetwork GTransformerFeedForwardNetwork {..}) query =
     runIxState $
       ireturn query
-        >>>= IxState . forward ffnInputWeight
+        >>>= IxState . forward ffnInputWeight1
         >>>= IxState . forward ffnActivation
         >>>= IxState . forward ffnOutputWeight
         >>>= IxState . forward ffnDropout
@@ -640,7 +756,7 @@ instance
   forward (TransformerFeedForwardNetwork GTransformerFeedForwardNetwork {..}) query =
     runIxState $
       ireturn query
-        >>>= IxState . forward ffnInputWeight
+        >>>= IxState . forward ffnInputWeight1
         >>>= IxState . forward ffnActivation
         >>>= IxState . forward ffnOutputWeight
         >>>= IxState . forward ffnDropout
@@ -699,7 +815,7 @@ instance
     runIxState $
       ireturn query
         >>>= IxState . forward ffnLayoutNorm
-        >>>= IxState . forward ffnInputWeight
+        >>>= IxState . forward ffnInputWeight1
         >>>= IxState . forward ffnActivation
         >>>= IxState . forward ffnActivationDropout
         >>>= IxState . forward ffnOutputWeight

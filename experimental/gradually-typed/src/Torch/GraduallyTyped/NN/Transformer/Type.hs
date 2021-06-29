@@ -66,7 +66,7 @@ import qualified Torch.Script (IValue (..))
 import qualified Torch.Serialize (pickleLoad)
 import qualified Torch.Tensor (Tensor (Unsafe), asTensor)
 
-data TransformerStyle = T5 | BART | MBART | BERT | RoBERTa | Pegasus | GPT2
+data TransformerStyle = T5 | ByT5 | BART | MBART | BERT | RoBERTa | Pegasus | GPT2
   deriving (Show, Eq)
 
 genSingletons [''TransformerStyle]

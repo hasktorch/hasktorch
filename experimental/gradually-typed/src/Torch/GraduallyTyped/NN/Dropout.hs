@@ -35,13 +35,15 @@ instance (Scalar p) => HasInitialize (Dropout p) where
 
 instance
   ( Scalar p,
+    input ~ Tensor requiresGradient layout device dataType shape,
+    generator ~ Generator generatorDevice,
     output ~ Tensor requiresGradient layout (device <+> generatorDevice) dataType shape,
     generatorOutput ~ Generator (device <+> generatorDevice)
   ) =>
   HasForward
     (Dropout p)
-    (Tensor requiresGradient layout device dataType shape)
-    (Generator generatorDevice)
+    input
+    generator
     output
     generatorOutput
   where
