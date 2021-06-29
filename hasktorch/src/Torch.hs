@@ -14,7 +14,8 @@ module Torch
     module Torch.TensorFactories,
     module Torch.TensorOptions,
     module Torch.Serialize,
-    module Torch.Script
+    module Torch.Script,
+    module Torch.Index
   )
 where
 
@@ -33,3 +34,4 @@ import Torch.TensorFactories
 import Torch.TensorOptions
 import Torch.Serialize
 import Torch.Script
+import Torch.Index
