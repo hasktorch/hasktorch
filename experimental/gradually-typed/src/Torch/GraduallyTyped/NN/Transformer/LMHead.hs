@@ -22,7 +22,7 @@ import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.Reader (MonadIO, MonadReader)
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
-import Data.Kind (Type, Constraint)
+import Data.Kind (Constraint, Type)
 import Data.Singletons (SingI (..), SingKind (fromSing))
 import Data.Singletons.Prelude.List (SList (SNil))
 import GHC.TypeLits (Nat, Symbol)
@@ -172,16 +172,84 @@ type family
   LMHeadBiasF 'BERT _ _ _ = ()
   LMHeadBiasF 'RoBERTa device dataType vocabDim = LMHeadBiasF 'BERT device dataType vocabDim
 
+type family
+  HasInitializeLMHeadDenseInputF
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (vocabDim :: Dim (Name Symbol) (Size Nat)) ::
+    Type
+  where
+  HasInitializeLMHeadDenseInputF 'T5 _ _ _ _ = ()
+  HasInitializeLMHeadDenseInputF 'ByT5 device dataType inputEmbedDim vocabDim = HasInitializeLMHeadDenseInputF 'T5 device dataType inputEmbedDim vocabDim
+  HasInitializeLMHeadDenseInputF 'BART _ _ _ _ = ()
+  HasInitializeLMHeadDenseInputF 'MBART device dataType inputEmbedDim vocabDim = HasInitializeLMHeadDenseInputF 'BART device dataType inputEmbedDim vocabDim
+  HasInitializeLMHeadDenseInputF 'Pegasus device dataType inputEmbedDim vocabDim = HasInitializeLMHeadDenseInputF 'BART device dataType inputEmbedDim vocabDim
+  HasInitializeLMHeadDenseInputF 'BERT device dataType inputEmbedDim _ = (SDevice device, SDataType dataType, SDim inputEmbedDim, SDim inputEmbedDim)
+  HasInitializeLMHeadDenseInputF 'RoBERTa device dataType inputEmbedDim vocabDim = HasInitializeLMHeadDenseInputF 'BERT device dataType inputEmbedDim vocabDim
+
+type family
+  HasInitializeLMHeadActivationInputF
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (vocabDim :: Dim (Name Symbol) (Size Nat)) ::
+    Type
+  where
+  HasInitializeLMHeadActivationInputF 'T5 _ _ _ _ = ()
+  HasInitializeLMHeadActivationInputF 'ByT5 device dataType inputEmbedDim vocabDim = HasInitializeLMHeadActivationInputF 'T5 device dataType inputEmbedDim vocabDim
+  HasInitializeLMHeadActivationInputF 'BART _ _ _ _ = ()
+  HasInitializeLMHeadActivationInputF 'MBART device dataType inputEmbedDim vocabDim = HasInitializeLMHeadActivationInputF 'BART device dataType inputEmbedDim vocabDim
+  HasInitializeLMHeadActivationInputF 'Pegasus device dataType inputEmbedDim vocabDim = HasInitializeLMHeadActivationInputF 'BART device dataType inputEmbedDim vocabDim
+  HasInitializeLMHeadActivationInputF 'BERT _ _ _ _ = ()
+  HasInitializeLMHeadActivationInputF 'RoBERTa device dataType inputEmbedDim vocabDim = HasInitializeLMHeadActivationInputF 'BERT device dataType inputEmbedDim vocabDim
+
+type family
+  HasInitializeLMHeadLayerNormInputF
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (vocabDim :: Dim (Name Symbol) (Size Nat)) ::
+    Type
+  where
+  HasInitializeLMHeadLayerNormInputF 'T5 _ _ _ _ = ()
+  HasInitializeLMHeadLayerNormInputF 'ByT5 device dataType inputEmbedDim vocabDim = HasInitializeLMHeadLayerNormInputF 'T5 device dataType inputEmbedDim vocabDim
+  HasInitializeLMHeadLayerNormInputF 'BART _ _ _ _ = ()
+  HasInitializeLMHeadLayerNormInputF 'MBART device dataType inputEmbedDim vocabDim = HasInitializeLMHeadLayerNormInputF 'BART device dataType inputEmbedDim vocabDim
+  HasInitializeLMHeadLayerNormInputF 'Pegasus device dataType inputEmbedDim vocabDim = HasInitializeLMHeadLayerNormInputF 'BART device dataType inputEmbedDim vocabDim
+  HasInitializeLMHeadLayerNormInputF 'BERT device dataType inputEmbedDim _ = (SDevice device, SDataType dataType, SShape ('Shape '[inputEmbedDim]), Double)
+  HasInitializeLMHeadLayerNormInputF 'RoBERTa device dataType inputEmbedDim vocabDim = HasInitializeLMHeadLayerNormInputF 'BERT device dataType inputEmbedDim vocabDim
+
+type family
+  HasInitializeLMHeadDecoderInputF
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (vocabDim :: Dim (Name Symbol) (Size Nat)) ::
+    Type
+  where
+  HasInitializeLMHeadDecoderInputF 'T5 device dataType inputEmbedDim vocabDim = (SDevice device, SDataType dataType, SDim inputEmbedDim, SDim vocabDim)
+  HasInitializeLMHeadDecoderInputF 'ByT5 device dataType inputEmbedDim vocabDim = HasInitializeLMHeadDecoderInputF 'T5 device dataType inputEmbedDim vocabDim
+  HasInitializeLMHeadDecoderInputF 'BART device dataType inputEmbedDim vocabDim = (SDevice device, SDataType dataType, SDim inputEmbedDim, SDim vocabDim)
+  HasInitializeLMHeadDecoderInputF 'MBART device dataType inputEmbedDim vocabDim = HasInitializeLMHeadDecoderInputF 'BART device dataType inputEmbedDim vocabDim
+  HasInitializeLMHeadDecoderInputF 'Pegasus device dataType inputEmbedDim vocabDim = HasInitializeLMHeadDecoderInputF 'BART device dataType inputEmbedDim vocabDim
+  HasInitializeLMHeadDecoderInputF 'BERT device dataType inputEmbedDim vocabDim = (SDevice device, SDataType dataType, SDim inputEmbedDim, SDim vocabDim)
+  HasInitializeLMHeadDecoderInputF 'RoBERTa device dataType inputEmbedDim vocabDim = HasInitializeLMHeadDecoderInputF 'BERT device dataType inputEmbedDim vocabDim
+
 instance
   ( SingI style,
     dense ~ LMHeadDenseF style device dataType inputEmbedDim,
-    HasInitialize dense input generator generator',
+    HasInitialize dense (HasInitializeLMHeadDenseInputF style device dataType inputEmbedDim vocabDim) generator generator',
     activation ~ LMHeadActivationF style,
-    HasInitialize activation input' generator' generator'',
+    HasInitialize activation (HasInitializeLMHeadActivationInputF style device dataType inputEmbedDim vocabDim) generator' generator'',
     layerNorm ~ LMHeadLayerNormF style device dataType inputEmbedDim,
-    HasInitialize layerNorm input'' generator'' generator''',
+    HasInitialize layerNorm (HasInitializeLMHeadLayerNormInputF style device dataType inputEmbedDim vocabDim) generator'' generator''',
     decoder ~ LMHeadDecoderF style device dataType inputEmbedDim vocabDim,
-    HasInitialize decoder input''' generator''' generator'''',
+    HasInitialize decoder (HasInitializeLMHeadDecoderInputF style device dataType inputEmbedDim vocabDim) generator''' generator'''',
     bias ~ LMHeadBiasF style device dataType vocabDim
   ) =>
   HasInitialize
@@ -191,45 +259,45 @@ instance
     generator''''
   where
   initialize (device, dataType, inputEmbedDim, vocabDim, eps) =
-    let dense = IxState @generator $
+    let dense = IxState . initialize $
           case sing @style of
-            ST5 -> initialize ()
-            SByT5 -> initialize ()
-            SBART -> initialize ()
-            SMBART -> initialize ()
-            SPegasus -> initialize ()
-            SBERT -> initialize (device, dataType, inputEmbedDim, inputEmbedDim)
-            SRoBERTa -> initialize (device, dataType, inputEmbedDim, inputEmbedDim)
+            ST5 -> ()
+            SByT5 -> ()
+            SBART -> ()
+            SMBART -> ()
+            SPegasus -> ()
+            SBERT -> (device, dataType, inputEmbedDim, inputEmbedDim)
+            SRoBERTa -> (device, dataType, inputEmbedDim, inputEmbedDim)
             SGPT2 -> undefined
-        activation = IxState @generator' $
+        activation = IxState . initialize $
           case sing @style of
-            ST5 -> initialize ()
-            SByT5 -> initialize ()
-            SBART -> initialize ()
-            SMBART -> initialize ()
-            SPegasus -> initialize ()
-            SBERT -> initialize ()
-            SRoBERTa -> initialize ()
+            ST5 -> ()
+            SByT5 -> ()
+            SBART -> ()
+            SMBART -> ()
+            SPegasus -> ()
+            SBERT -> ()
+            SRoBERTa -> ()
             SGPT2 -> undefined
-        layerNorm = IxState @generator'' $
+        layerNorm = IxState . initialize $
           case sing @style of
-            ST5 -> initialize ()
-            SByT5 -> initialize ()
-            SBART -> initialize ()
-            SMBART -> initialize ()
-            SPegasus -> initialize ()
-            SBERT -> initialize (device, dataType, SShape $ inputEmbedDim :|: SNil, eps)
-            SRoBERTa -> initialize (device, dataType, SShape $ inputEmbedDim :|: SNil, eps)
+            ST5 -> ()
+            SByT5 -> ()
+            SBART -> ()
+            SMBART -> ()
+            SPegasus -> ()
+            SBERT -> (device, dataType, SShape $ inputEmbedDim :|: SNil, eps)
+            SRoBERTa -> (device, dataType, SShape $ inputEmbedDim :|: SNil, eps)
             SGPT2 -> undefined
-        decoder = IxState @generator''' $
+        decoder = IxState . initialize $
           case sing @style of
-            ST5 -> initialize (device, dataType, inputEmbedDim, vocabDim)
-            SByT5 -> initialize (device, dataType, inputEmbedDim, vocabDim)
-            SBART -> initialize (device, dataType, inputEmbedDim, vocabDim)
-            SMBART -> initialize (device, dataType, inputEmbedDim, vocabDim)
-            SPegasus -> initialize (device, dataType, inputEmbedDim, vocabDim)
-            SBERT -> initialize (device, dataType, inputEmbedDim, vocabDim)
-            SRoBERTa -> initialize (device, dataType, inputEmbedDim, vocabDim)
+            ST5 -> (device, dataType, inputEmbedDim, vocabDim)
+            SByT5 -> (device, dataType, inputEmbedDim, vocabDim)
+            SBART -> (device, dataType, inputEmbedDim, vocabDim)
+            SMBART -> (device, dataType, inputEmbedDim, vocabDim)
+            SPegasus -> (device, dataType, inputEmbedDim, vocabDim)
+            SBERT -> (device, dataType, inputEmbedDim, vocabDim)
+            SRoBERTa -> (device, dataType, inputEmbedDim, vocabDim)
             SGPT2 -> undefined
         bias = ireturn $
           case sing @style of

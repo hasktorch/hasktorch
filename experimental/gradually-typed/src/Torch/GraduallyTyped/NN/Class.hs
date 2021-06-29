@@ -60,8 +60,9 @@ class
   where
   initialize :: input -> generator -> (model, generatorOutput)
 
-instance (generator' ~ generator) => HasInitialize () () generator generator' where
+instance HasInitialize () () generator generator where
   initialize _ g = ((), g)
+
 
 instance
   ( HasInitialize a input generator generatorOutput',
