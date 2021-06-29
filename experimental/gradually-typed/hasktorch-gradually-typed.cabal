@@ -125,6 +125,10 @@ library
                      , singletons < 3
                      , HUnit-approx
                      , tokenizers
+                     , vector
+                     , vector-sized
+                     , finite-typelits
+                     , indexed-list-literals
 
 test-suite doctests
   type:                exitcode-stdio-1.0

@@ -39,7 +39,7 @@ import Torch.GraduallyTyped.DType (DataType (..), KnownDataType (..), SDataType 
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (KnownLayout (..), Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.Prelude (forgetIsChecked, ifM, (&&^))
-import Torch.GraduallyTyped.RequiresGradient (KnownRequiresGradient, RequiresGradient (..))
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
 import Torch.GraduallyTyped.Scalar ()
 import Torch.GraduallyTyped.Shape.Class (ReplaceDimF)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownShape (..), Name (..), SDim (..), SName (..), SShape (..), SSize (..), Shape (..), Size (..), pattern (:|:))

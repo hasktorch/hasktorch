@@ -10,6 +10,7 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -20,7 +21,9 @@
 
 module Torch.GraduallyTyped.NN.Linear where
 
-import Control.Monad.State.Strict (MonadState (state), runState)
+import Control.Monad.Indexed (IxPointed (ireturn), (>>>=))
+import Control.Monad.Indexed.State (IxState (..))
+import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Singletons (SingKind (..))
 import Data.Singletons.Prelude.List (SList (..))
 import GHC.TypeLits (Nat, Symbol)
@@ -62,44 +65,49 @@ data
     Linear 'WithoutBias device dataType inputDim outputDim
 
 -- | TODO: Add 'ForNonLinearity' as parameter.
-instance HasInitialize (Linear 'WithBias device dataType inputDim outputDim) where
-  type
-    InitializeF (Linear 'WithBias device dataType inputDim outputDim) =
-      SDevice device ->
-      SDataType dataType ->
-      SDim inputDim ->
-      SDim outputDim ->
-      Generator device ->
-      (Linear 'WithBias device dataType inputDim outputDim, Generator device)
-  initialize device dataType inputDim outputDim =
-    runState $ do
-      let shape = SShape $ outputDim :|: inputDim :|: SNil
-      weight <-
-        state $
-          sKaimingUniform
-            SWithGradient
-            (SLayout SDense)
-            device
-            dataType
-            shape
-            FanIn
-            (ForLeakyRelu . Prelude.sqrt $ 5)
-      bias <-
-        state $
-          sRandn SWithGradient (SLayout SDense) device dataType (SShape $ outputDim :|: SNil)
-      let dims =
-            fmap (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size))
-              . forgetIsChecked
-              . fromSing
-              $ shape
-          bound :: Float =
-            1
-              / ( Prelude.sqrt . fromIntegral
-                    . getter FanIn
-                    . calculateFan
-                    $ dims
-                )
-      pure $ LinearWithBias weight ((bias `mulScalar` (bound * 2)) `subScalar` bound)
+instance
+  ( generator ~ Generator device',
+    generator' ~ Generator (device <+> device')
+  ) =>
+  HasInitialize
+    (Linear 'WithBias device dataType inputDim outputDim)
+    ( SDevice device,
+      SDataType dataType,
+      SDim inputDim,
+      SDim outputDim
+    )
+    generator
+    generator'
+  where
+  initialize (device, dataType, inputDim, outputDim) =
+    let shape = SShape $ outputDim :|: inputDim :|: SNil
+        weight =
+          IxState $
+            sKaimingUniform
+              SWithGradient
+              (SLayout SDense)
+              device
+              dataType
+              shape
+              FanIn
+              (ForLeakyRelu . Prelude.sqrt $ 5)
+        dims =
+          fmap (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size))
+            . forgetIsChecked
+            . fromSing
+            $ shape
+        bound :: Float =
+          1
+            / ( Prelude.sqrt . fromIntegral
+                  . getter FanIn
+                  . calculateFan
+                  $ dims
+              )
+        bias =
+          IxState (sRandn SWithGradient (SLayout SDense) device dataType (SShape $ outputDim :|: SNil))
+            >>>= ireturn . (\bias' -> (bias' `mulScalar` (bound * 2)) `subScalar` bound)
+     in runIxState $
+          LinearWithBias <<$>> weight <<*>> bias
 
 instance
   ( output
@@ -117,30 +125,34 @@ instance
     output
     generator
   where
-  forward LinearWithBias {..} input g = (linearWithBias linearWithBiasWeight linearBias input, g)
+  forward LinearWithBias {..} input = (linearWithBias linearWithBiasWeight linearBias input,)
 
-instance HasInitialize (Linear 'WithoutBias device dataType inputDim outputDim) where
-  type
-    InitializeF (Linear 'WithoutBias device dataType inputDim outputDim) =
-      SDevice device ->
-      SDataType dataType ->
-      SDim inputDim ->
-      SDim outputDim ->
-      Generator device ->
-      (Linear 'WithoutBias device dataType inputDim outputDim, Generator device)
-  initialize device dataType inputDim outputDim =
-    runState $ do
-      weight <-
-        state $
-          sKaimingUniform
-            SWithGradient
-            (SLayout SDense)
-            device
-            dataType
-            (SShape $ outputDim :|: inputDim :|: SNil)
-            FanIn
-            (ForLeakyRelu . Prelude.sqrt $ 5)
-      pure $ LinearWithoutBias weight
+instance
+  ( generator ~ Generator device',
+    generator' ~ Generator (device <+> device')
+  ) =>
+  HasInitialize
+    (Linear 'WithoutBias device dataType inputDim outputDim)
+    ( SDevice device,
+      SDataType dataType,
+      SDim inputDim,
+      SDim outputDim
+    )
+    generator
+    generator'
+  where
+  initialize (device, dataType, inputDim, outputDim) =
+    let weight =
+          IxState $
+            sKaimingUniform
+              SWithGradient
+              (SLayout SDense)
+              device
+              dataType
+              (SShape $ outputDim :|: inputDim :|: SNil)
+              FanIn
+              (ForLeakyRelu . Prelude.sqrt $ 5)
+     in runIxState $ LinearWithoutBias <<$>> weight
 
 instance
   ( output
@@ -158,4 +170,4 @@ instance
     output
     generator
   where
-  forward (LinearWithoutBias linearWeight) input g = (linearWithoutBias linearWeight input, g)
+  forward (LinearWithoutBias linearWeight) input = (linearWithoutBias linearWeight input,)

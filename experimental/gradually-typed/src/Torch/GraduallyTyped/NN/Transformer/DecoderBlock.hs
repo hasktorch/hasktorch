@@ -7,6 +7,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
@@ -25,18 +26,22 @@ import Control.Monad.Reader (MonadIO, MonadReader)
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Kind (Type)
 import Data.Singletons (SingI, sing)
+import Data.Singletons.Prelude.List (SList (..))
 import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType, KnownDataType, SDataType)
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, SDevice)
+import Torch.GraduallyTyped.DType (DataType, KnownDataType, SDType (..), SDataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, SDevice (..), SDeviceType (..))
+import Torch.GraduallyTyped.Layout (SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Transformer.CrossAttention (CrossAttention, lookupCrossAttention)
 import Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork (TransformerFeedForwardNetwork, lookupTransformerFeedForwardNetwork)
 import Torch.GraduallyTyped.NN.Transformer.SelfAttention (SelfAttention, lookupSelfAttention)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..))
-import Torch.GraduallyTyped.Random (Generator)
+import Torch.GraduallyTyped.Random (Generator, sMkGenerator)
+import Torch.GraduallyTyped.RequiresGradient (SRequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape (Dim (..), KnownDim, Name (..), SDim, Size (..))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim, Name (..), SDim, SName (..), SShape (..), SSize (..), Size (..), pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.Tensor.Creation (sOnes)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 
 -- | Transformer decoder block consisting of self-attention,
@@ -238,3 +243,27 @@ instance
         >>>= IxState . forward tdbSelfAttention
         >>>= (\query' -> IxState . forward tdbCrossAttention $ (query', key, crossAttentionBias))
         >>>= IxState . forward tdbFeedForwardNetwork
+
+testDecoderBlock = do
+  let device = SDevice SCPU
+      dataType = SDataType SFloat
+      headDim = SName @"*" :&: SSize @8
+      headEmbedDim = SName @"*" :&: SSize @64
+      embedDim = SName @"*" :&: SSize @512
+      queryEmbedDim = SName @"*" :&: SSize @512
+      keyEmbedDim = queryEmbedDim
+      ffnDim = SName @"*" :&: SSize @2048
+      dropoutP :: Float = 0.0
+      eps = 1e-6
+  g <- sMkGenerator device 0
+  let (decoderBlock, g') = initialize @(TransformerDecoderBlock 'T5 _ _ _ _ _ _ _ _ _) device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP eps g
+      batchDim = SName @"*" :&: SSize @3
+      seqDim = SName @"*" :&: SSize @17
+      decoderSeqDim = SName @"*" :&: SSize @13
+      sOnes' = sOnes SWithoutGradient (SLayout SDense) device
+      query = sOnes' dataType (SShape $ batchDim :|: decoderSeqDim :|: queryEmbedDim :|: SNil)
+      key = sOnes' dataType (SShape $ batchDim :|: seqDim :|: keyEmbedDim :|: SNil)
+      decoderAttentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
+      crossAttentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: decoderSeqDim :|: seqDim :|: SNil)
+  let (output, _) = forward decoderBlock (query, key, decoderAttentionBias, crossAttentionBias) g'
+  pure output

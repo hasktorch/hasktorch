@@ -47,6 +47,7 @@ import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SShape, SSize, Shap
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
 import Torch.Internal.Cast (cast2, cast3, cast4)
 import qualified Torch.Internal.Managed.TensorFactories as ATen
+import Torch.GraduallyTyped.Unify (type (<+>))
 
 -- $setup
 -- >>> import Data.Int (Int16)
@@ -218,7 +219,7 @@ sRandn ::
   SDataType dataType ->
   SShape shape ->
   Generator device' ->
-  (Tensor requiresGradient layout device dataType shape, Generator device')
+  (Tensor requiresGradient layout device dataType shape, Generator (device <+> device'))
 sRandn reqGradient layout device dataType shape =
   let opts = tensorOptions requiresGradient layoutType deviceType dType
    in withGenerator
@@ -252,7 +253,7 @@ randn ::
   forall requiresGradient layout device dataType shape device'.
   (SingI requiresGradient, SingI layout, SingI device, SingI dataType, SingI shape) =>
   Generator device' ->
-  (Tensor requiresGradient layout device dataType shape, Generator device')
+  (Tensor requiresGradient layout device dataType shape, Generator (device <+> device'))
 randn = sRandn (sing @requiresGradient) (sing @layout) (sing @device) (sing @dataType) (sing @shape)
 
 -- | Create a gradually typed one-dimensional tensor of the numbers @0@ to @size -1@.

@@ -21,13 +21,13 @@ import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.Reader (MonadIO, MonadReader)
 import Control.Monad.State.Strict (MonadState (state), runState)
-import Data.Kind (Constraint, Type)
+import Data.Kind (Type)
 import Data.Singletons (SingI, sing)
 import Data.Singletons.Prelude.List (SList (SNil))
 import GHC.TypeLits (Nat, Symbol, type (<=?))
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), KnownDataType, SDataType)
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, SDevice)
+import Torch.GraduallyTyped.DType (DataType (..), KnownDataType, SDType (..), SDataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout)
@@ -38,15 +38,16 @@ import Torch.GraduallyTyped.NN.Transformer.Stack (HasLookupStack, TransformerSta
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Prelude (Seq)
-import Torch.GraduallyTyped.Random (Generator)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
+import Torch.GraduallyTyped.Random (Generator, sMkGenerator)
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownDim, Name (..), SDim, SShape (..), SelectDim (..), Shape (..), Size (..), pattern (:|:))
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownDim, Name (..), SDim, SName (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:|:), pattern (:&:))
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (TransposeF, UnsqueezeF, transpose, unsqueeze)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
+import Torch.GraduallyTyped.Tensor.Creation (sOnes)
 
 -- | Generic transformer encoder.
 -- Needs to be specialized to a given transformer type, e.g. 'T5'.
@@ -447,7 +448,29 @@ instance
             >>>= IxState . forward teLayerNorm
             >>>= IxState . forward teDropout
 
--- | 'HasForward' instance for @TransformerEncoder numLayers 'T5@.
+testEncoder = do
+  let device = SDevice SCPU
+      dataType = SDataType SFloat
+      headDim = SName @"*" :&: SSize @8
+      headEmbedDim = SName @"*" :&: SSize @64
+      embedDim = SName @"*" :&: SSize @512
+      inputEmbedDim = SName @"*" :&: SSize @512
+      ffnDim = SName @"*" :&: SSize @2048
+      posEncDim = SName @"*" :&: SSize @32
+      dropoutP :: Float = 0.0
+      eps = 1e-6
+  g <- sMkGenerator device 0
+  let (encoder, g') = initialize @(TransformerEncoder 10 'T5 _ _ _ _ _ _ _ _ _) device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP eps g
+      batchDim = SName @"*" :&: SSize @3
+      seqDim = SName @"*" :&: SSize @13
+      sOnes' = sOnes SWithoutGradient (SLayout SDense) device
+      input = sOnes' dataType (SShape $ batchDim :|: seqDim :|: inputEmbedDim :|: SNil)
+      relPos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
+      attentionMask = sOnes' dataType (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
+  let (output, _) = forward encoder (input, relPos, attentionMask) g'
+  pure output
+
+-- | 'HasForward' instance for @TransformerEncoder numLayers 'ByT5@.
 --
 -- @
 --  ┌───────┐  ┌────────┐  ┌───────────────┐

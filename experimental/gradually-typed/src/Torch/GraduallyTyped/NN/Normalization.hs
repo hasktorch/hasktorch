@@ -11,6 +11,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -32,7 +33,7 @@ import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape (Dim (..), Name (..), SShape (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes, sZeros)
-import Torch.GraduallyTyped.Tensor.Type (Tensor, SGetShape)
+import Torch.GraduallyTyped.Tensor.Type (SGetShape, Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
 data
@@ -56,31 +57,36 @@ data
     } ->
     LayerNorm 'WithoutBias device dataType normalizedShape
 
-instance HasInitialize (LayerNorm 'WithBias device dataType normalizedShape) where
-  type
-    InitializeF (LayerNorm 'WithBias device dataType normalizedShape) =
-      SDevice device ->
-      SDataType dataType ->
-      SShape normalizedShape ->
-      Double ->
-      LayerNorm 'WithBias device dataType normalizedShape
-  initialize device dataType normalizedShape eps =
+instance
+  HasInitialize
+    (LayerNorm 'WithBias device dataType normalizedShape)
+    ( SDevice device,
+      SDataType dataType,
+      SShape normalizedShape,
+      Double
+    )
+    generator
+    generator
+  where
+  initialize (device, dataType, normalizedShape, eps) =
     let weight = sOnes SWithGradient (SLayout SDense) device dataType normalizedShape
         bias = sZeros SWithGradient (SLayout SDense) device dataType normalizedShape
-     in LayerNormWithBias weight bias eps
+     in (LayerNormWithBias weight bias eps,)
 
-instance HasInitialize (LayerNorm 'WithoutBias device dataType normalizedShape) where
-  type
-    InitializeF (LayerNorm 'WithoutBias device dataType normalizedShape) =
-      SDevice device ->
-      SDataType dataType ->
-      SShape normalizedShape ->
-      Double ->
-      LayerNorm 'WithoutBias device dataType normalizedShape
-  initialize device dataType normalizedShape eps =
-    let weight =
-          sOnes SWithGradient (SLayout SDense) device dataType normalizedShape
-     in LayerNormWithoutBias weight eps
+instance
+  HasInitialize
+    (LayerNorm 'WithoutBias device dataType normalizedShape)
+    ( SDevice device,
+      SDataType dataType,
+      SShape normalizedShape,
+      Double
+    )
+    generator
+    generator
+  where
+  initialize (device, dataType, normalizedShape, eps) =
+    let weight = sOnes SWithGradient (SLayout SDense) device dataType normalizedShape
+     in (LayerNormWithoutBias weight eps,)
 
 instance
   ( SGetShape normalizedShape,
@@ -99,7 +105,7 @@ instance
     output
     generator
   where
-  forward LayerNormWithBias {..} input g = (layerNormWithBias layerNormWithBiasWeight layerNormBias layerNormWithBiasEps input, g)
+  forward LayerNormWithBias {..} input = (layerNormWithBias layerNormWithBiasWeight layerNormBias layerNormWithBiasEps input,)
 
 instance
   ( SGetShape normalizedShape,
@@ -119,4 +125,4 @@ instance
     output
     generator
   where
-  forward LayerNormWithoutBias {..} input g = (layerNormWithoutBias layerNormWithoutBiasWeight layerNormWithoutBiasEps input, g)
+  forward LayerNormWithoutBias {..} input = (layerNormWithoutBias layerNormWithoutBiasWeight layerNormWithoutBiasEps input,)

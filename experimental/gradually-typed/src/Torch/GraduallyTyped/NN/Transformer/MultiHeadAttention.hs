@@ -45,7 +45,6 @@ module Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention where
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.Reader (MonadIO, MonadReader)
-import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI (..), SingKind (..))
@@ -214,43 +213,41 @@ type family
 
 instance
   ( qInProj ~ QInProjF style device dataType queryEmbedDim embedDim,
-    HasInitialize qInProj,
-    InitializeF qInProj ~ (SDevice device -> SDataType dataType -> SDim queryEmbedDim -> SDim embedDim -> Generator device -> (qInProj, Generator device)),
+    HasInitialize qInProj (SDevice device, SDataType dataType, SDim queryEmbedDim, SDim embedDim) generator generator',
     kInProj ~ KInProjF style device dataType keyEmbedDim embedDim,
-    HasInitialize kInProj,
-    InitializeF kInProj ~ (SDevice device -> SDataType dataType -> SDim keyEmbedDim -> SDim embedDim -> Generator device -> (kInProj, Generator device)),
+    HasInitialize kInProj (SDevice device, SDataType dataType, SDim keyEmbedDim, SDim embedDim) generator' generator'',
     vInProj ~ VInProjF style device dataType valueEmbedDim embedDim,
-    HasInitialize vInProj,
-    InitializeF vInProj ~ (SDevice device -> SDataType dataType -> SDim valueEmbedDim -> SDim embedDim -> Generator device -> (vInProj, Generator device)),
+    HasInitialize vInProj (SDevice device, SDataType dataType, SDim valueEmbedDim, SDim embedDim) generator'' generator''',
     outProj ~ OutProjF style device dataType embedDim queryEmbedDim,
-    HasInitialize outProj,
-    InitializeF outProj ~ (SDevice device -> SDataType dataType -> SDim embedDim -> SDim queryEmbedDim -> Generator device -> (outProj, Generator device)),
+    HasInitialize outProj (SDevice device, SDataType dataType, SDim embedDim, SDim queryEmbedDim) generator''' generator'''',
     dropout ~ DropoutF style dropoutP,
-    HasInitialize dropout,
+    HasInitialize dropout dropoutP generator'''' generator'''',
     GMultiHeadAttentionF style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP ~ GMultiHeadAttention headDim headEmbedDim embedDim qInProj kInProj vInProj outProj dropout
   ) =>
-  HasInitialize (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
+  HasInitialize
+    (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
+    (SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim queryEmbedDim, SDim keyEmbedDim, SDim valueEmbedDim, dropoutP)
+    generator
+    generator''''
   where
-  type
-    InitializeF (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP) =
-      SDevice device ->
-      SDataType dataType ->
-      SDim headDim ->
-      SDim headEmbedDim ->
-      SDim embedDim ->
-      SDim queryEmbedDim ->
-      SDim keyEmbedDim ->
-      SDim valueEmbedDim ->
-      dropoutP ->
-      Generator device ->
-      (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)
-  initialize device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP = runState $ do
-    qInProj <- state $ initialize @qInProj device dataType queryEmbedDim embedDim
-    kInProj <- state $ initialize @kInProj device dataType keyEmbedDim embedDim
-    vInProj <- state $ initialize @vInProj device dataType valueEmbedDim embedDim
-    outProj <- state $ initialize @outProj device dataType embedDim queryEmbedDim
-    let dropout = initialize @dropout dropoutP
-    pure . MultiHeadAttention $ GMultiHeadAttention headDim headEmbedDim embedDim qInProj kInProj vInProj outProj dropout
+  initialize (device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, valueEmbedDim, dropoutP) =
+    let qInProj = IxState $ initialize (device, dataType, queryEmbedDim, embedDim)
+        kInProj = IxState $ initialize (device, dataType, keyEmbedDim, embedDim)
+        vInProj = IxState $ initialize (device, dataType, valueEmbedDim, embedDim)
+        outProj = IxState $ initialize (device, dataType, embedDim, queryEmbedDim)
+        dropout = IxState $ initialize dropoutP
+     in runIxState $
+          ( GMultiHeadAttention
+              <<$>> ireturn headDim
+              <<*>> ireturn headEmbedDim
+              <<*>> ireturn embedDim
+              <<*>> qInProj
+              <<*>> kInProj
+              <<*>> vInProj
+              <<*>> outProj
+              <<*>> dropout
+          )
+            >>>= ireturn . MultiHeadAttention
 
 lookupMultiHeadAttention ::
   forall style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP m.
@@ -381,7 +378,7 @@ lookupMultiHeadAttention headDim headEmbedDim embedDim dropoutP prefix =
           <$> lookupTensor (prefix <> "output.dense.weight")
           <*> lookupTensor (prefix <> "output.dense.bias")
       outProj SGPT2 = undefined
-      dropout _ = pure (initialize @(Dropout dropoutP) dropoutP)
+      dropout _ = pure (Dropout dropoutP)
    in MultiHeadAttention
         <$> ( GMultiHeadAttention
                 <$> pure headDim

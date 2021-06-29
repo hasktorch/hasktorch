@@ -13,6 +13,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -286,9 +287,8 @@ mkTransformerCrossAttentionMask transformerDataType seqDim' attentionMaskBias pa
 data ShiftRight fillValue where
   ShiftRight :: forall fillValue. fillValue -> ShiftRight fillValue
 
-instance HasInitialize (ShiftRight fillValue) where
-  type InitializeF (ShiftRight fillValue) = fillValue -> ShiftRight fillValue
-  initialize fillValue = ShiftRight fillValue
+instance HasInitialize (ShiftRight fillValue) fillValue generator generator where
+  initialize fillValue = (ShiftRight fillValue,)
 
 instance
   ( input

@@ -21,13 +21,13 @@ import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.Reader (MonadIO, MonadReader)
 import Control.Monad.State.Strict (MonadState (state), runState)
-import Data.Kind (Constraint, Type)
+import Data.Kind (Type)
 import Data.Singletons (SingI, sing)
 import Data.Singletons.Prelude.List (SList (SNil))
 import GHC.TypeLits (Nat, Symbol, type (<=?))
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), KnownDataType, SDataType)
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, SDevice)
+import Torch.GraduallyTyped.DType (DataType (..), KnownDataType, SDType (..), SDataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout)
@@ -38,12 +38,13 @@ import Torch.GraduallyTyped.NN.Transformer.DecoderStack (HasLookupDecoderStack, 
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Prelude (Seq)
-import Torch.GraduallyTyped.Random (Generator)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
+import Torch.GraduallyTyped.Random (Generator, sMkGenerator)
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape (Dim (..), KnownDim, Name (..), SDim, Shape (..), Size (..))
+import Torch.GraduallyTyped.Shape (Dim (..), KnownDim, Name (..), SDim, SName (..), SShape (..), SSize (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (By (..), SShape (..), SelectDim (..), pattern (:|:))
+import Torch.GraduallyTyped.Shape.Type (By (..), SelectDim (..), pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.Tensor.Creation (sOnes)
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (TransposeF, UnsqueezeF, transpose, unsqueeze)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
@@ -469,7 +470,33 @@ instance
             >>>= IxState . forward tdLayerNorm
             >>>= IxState . forward tdDropout
 
--- | 'HasForward' instance for @TransformerDecoder numLayers 'T5@.
+testDecoder = do
+  let device = SDevice SCPU
+      dataType = SDataType SFloat
+      headDim = SName @"*" :&: SSize @8
+      headEmbedDim = SName @"*" :&: SSize @64
+      embedDim = SName @"*" :&: SSize @512
+      decoderInputEmbedDim = SName @"*" :&: SSize @512
+      encoderOutputEmbedDim = decoderInputEmbedDim
+      ffnDim = SName @"*" :&: SSize @2048
+      posEncDim = SName @"*" :&: SSize @32
+      dropoutP :: Float = 0.0
+      eps = 1e-6
+  g <- sMkGenerator device 0
+  let (encoder, g') = initialize @(TransformerDecoder 1 'T5 _ _ _ _ _ _ _ _ _ _) device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP eps g
+      batchDim = SName @"*" :&: SSize @3
+      seqDim = SName @"*" :&: SSize @13
+      decoderSeqDim = SName @"*" :&: SSize @7
+      sOnes' = sOnes SWithoutGradient (SLayout SDense) device
+      decoderInput = sOnes' dataType (SShape $ batchDim :|: decoderSeqDim :|: decoderInputEmbedDim :|: SNil)
+      encoderOutput = sOnes' dataType (SShape $ batchDim :|: seqDim :|: encoderOutputEmbedDim :|: SNil)
+      decoderRelPos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
+      decoderAttentionMask = sOnes' dataType (SShape $ batchDim :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
+      crossAttentionMask = sOnes' dataType (SShape $ batchDim :|: decoderSeqDim :|: seqDim :|: SNil)
+  let (output, _) = forward encoder (decoderInput, encoderOutput, decoderRelPos, decoderAttentionMask, crossAttentionMask) g'
+  pure output
+
+-- | 'HasForward' instance for @TransformerDecoder numLayers 'ByT5@.
 --
 -- @
 -- ┌──────────────┐  ┌───────────────┐  ┌───────────────┐  ┌──────────────────────┐  ┌────────────────────┐

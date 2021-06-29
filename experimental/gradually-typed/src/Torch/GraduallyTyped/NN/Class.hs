@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE IncoherentInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -22,6 +23,17 @@ module Torch.GraduallyTyped.NN.Class where
 -- import GHC.Base (coerce, Any)
 
 import Data.Kind (Type)
+import qualified Data.Map.Strict as Map
+import Data.Proxy (Proxy (..))
+import Data.Singletons (SingI)
+import Data.Singletons.Prelude.List (SList (..))
+import qualified Data.Vector as V
+import qualified Data.Vector.Generic as VG
+import qualified Data.Vector.Generic.Sized.Internal as VGS
+import qualified Data.Vector.Sized as VS
+import Foreign.ForeignPtr (ForeignPtr)
+import GHC.TypeLits (KnownNat, natVal, type (+))
+import qualified Torch.Internal.Type as ATen (Tensor)
 
 class
   HasForward
@@ -41,9 +53,64 @@ class
 instance HasForward () input generator input generator where
   forward _ = (,)
 
-class HasInitialize model where
-  type InitializeF model :: Type
-  initialize :: InitializeF model
+class
+  HasInitialize model input generator generatorOutput
+    | model -> input,
+      model generator -> generatorOutput
+  where
+  initialize :: input -> generator -> (model, generatorOutput)
+
+instance (generator' ~ generator) => HasInitialize () () generator generator' where
+  initialize _ g = ((), g)
+
+instance
+  ( HasInitialize a input generator generatorOutput',
+    HasInitialize b input generatorOutput' generatorOutput
+  ) =>
+  HasInitialize (a, b) input generator generatorOutput
+  where
+  initialize input g =
+    let (a, g') = initialize @a input g
+        (b, g'') = initialize @b input g'
+     in ((a, b), g'')
+
+instance HasInitialize (VS.Vector 0 a) () generator generator where
+  initialize _ g = (VGS.Vector V.empty, g)
+
+instance
+  HasInitialize a input generator generatorOutput =>
+  HasInitialize (VS.Vector 1 a) input generator generatorOutput
+  where
+  initialize input g = let (a, g') = initialize @a input g in (VGS.Vector (V.singleton a), g')
+
+instance
+  {-# OVERLAPPABLE #-}
+  ( HasInitialize a input generator generatorOutput,
+    HasInitialize a input generatorOutput generatorOutput,
+    KnownNat n
+  ) =>
+  HasInitialize (VS.Vector n a) input generator generatorOutput
+  where
+  initialize input g =
+    let i = fromIntegral (natVal (Proxy :: Proxy n))
+        Just (as, (a', g'')) = V.unsnoc $ V.iterateN i (\(_, g') -> initialize @a input g') (initialize @a input g)
+     in (VGS.Vector (V.snoc (fst <$> as) a'), g'')
+
+testInitializeVector ::
+  forall n generator.
+  KnownNat n =>
+  HasInitialize (VS.Vector n ()) () generator generator =>
+  (generator -> (VS.Vector n (), generator))
+testInitializeVector = initialize @(VS.Vector n ()) ()
+
+type Prefix = String
+
+type StateDict = Map.Map Prefix (ForeignPtr ATen.Tensor)
+
+class HasStateDict model where
+  prefix :: Prefix -> Prefix
+  fromStateDict :: StateDict -> model
+  toStateDict :: StateDict -> model -> StateDict
 
 -- class GHasForward model input where
 --   type GOutput model input

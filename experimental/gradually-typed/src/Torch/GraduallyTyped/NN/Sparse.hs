@@ -15,7 +15,8 @@
 
 module Torch.GraduallyTyped.NN.Sparse where
 
-import Control.Monad.State.Strict (MonadState (state), runState)
+import Control.Monad.Indexed (IxPointed (ireturn), (>>>=))
+import Control.Monad.Indexed.State (IxState (..))
 import Data.Data (Proxy (..))
 import Data.Singletons.Prelude.List (SList (..))
 import GHC.TypeLits (KnownNat, Nat, Symbol, natVal)
@@ -30,7 +31,7 @@ import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape (Dim (..), Name, SDim (..), SShape (..), Shape (..), Size, pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sRandn)
-import Torch.GraduallyTyped.Tensor.Type (Tensor, SGetLayout)
+import Torch.GraduallyTyped.Tensor.Type (SGetLayout, Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
 data
@@ -48,38 +49,42 @@ data
     } ->
     Embedding layout device dataType embedNumDim embedDim paddingIdx
 
-instance HasInitialize (Embedding layout device dataType embedNumDim embedDim 'Nothing) where
-  type
-    InitializeF (Embedding layout device dataType embedNumDim embedDim 'Nothing) =
-      SLayout layout ->
-      SDevice device ->
-      SDataType dataType ->
-      SDim embedNumDim ->
-      SDim embedDim ->
-      Generator device ->
-      (Embedding layout device dataType embedNumDim embedDim 'Nothing, Generator device)
-  initialize layout device dataType embedNumDim embedDim = runState $ do
-    weight <-
-      state $
-        sRandn SWithGradient layout device dataType (SShape $ embedNumDim :|: embedDim :|: SNil)
-    pure $ Embedding weight
+instance
+  (device'' ~ (device <+> device')) =>
+  HasInitialize
+    (Embedding layout device dataType embedNumDim embedDim 'Nothing)
+    ( SLayout layout,
+      SDevice device,
+      SDataType dataType,
+      SDim embedNumDim,
+      SDim embedDim
+    )
+    (Generator device')
+    (Generator device'')
+  where
+  initialize (layout, device, dataType, embedNumDim, embedDim) =
+    runIxState $
+      IxState (sRandn SWithGradient layout device dataType (SShape $ embedNumDim :|: embedDim :|: SNil))
+        >>>= ireturn . Embedding
 
 -- TODO: padding embedding vector may need to be set to zeros
-instance HasInitialize (Embedding layout device dataType embedNumDim embedDim ('Just paddingIdx)) where
-  type
-    InitializeF (Embedding layout device dataType embedNumDim embedDim ('Just paddingIdx)) =
-      SLayout layout ->
-      SDevice device ->
-      SDataType dataType ->
-      SDim embedNumDim ->
-      SDim embedDim ->
-      Generator device ->
-      (Embedding layout device dataType embedNumDim embedDim ('Just paddingIdx), Generator device)
-  initialize layout device dataType embedNumDim embedDim = runState $ do
-    weight <-
-      state $
-        sRandn SWithGradient layout device dataType (SShape $ embedNumDim :|: embedDim :|: SNil)
-    pure $ Embedding weight
+instance
+  (device'' ~ (device <+> device')) =>
+  HasInitialize
+    (Embedding layout device dataType embedNumDim embedDim ('Just paddingIdx))
+    ( SLayout layout,
+      SDevice device,
+      SDataType dataType,
+      SDim embedNumDim,
+      SDim embedDim
+    )
+    (Generator device')
+    (Generator device'')
+  where
+  initialize (layout, device, dataType, embedNumDim, embedDim) =
+    runIxState $
+      IxState (sRandn SWithGradient layout device dataType (SShape $ embedNumDim :|: embedDim :|: SNil))
+        >>>= ireturn . Embedding
 
 instance
   ( SGetLayout layout,

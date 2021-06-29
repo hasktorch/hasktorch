@@ -8,6 +8,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
@@ -26,16 +27,20 @@ import Control.Monad.Reader (MonadIO, MonadReader)
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Kind (Type)
 import Data.Singletons (SingI)
+import Data.Singletons.Prelude.List (SList (..))
 import GHC.TypeLits (Nat, Symbol, type (+), type (-), type (<=?))
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType, KnownDataType, SDataType)
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, SDevice)
+import Torch.GraduallyTyped.DType (DataType, KnownDataType, SDType (..), SDataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, SDevice (..), SDeviceType (..))
+import Torch.GraduallyTyped.Layout (SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Transformer.DecoderBlock (TransformerDecoderBlock, lookupDecoderBlock)
-import Torch.GraduallyTyped.NN.Transformer.Type (TensorDict, TransformerStyle)
-import Torch.GraduallyTyped.Random (Generator)
+import Torch.GraduallyTyped.NN.Transformer.Type (TensorDict, TransformerStyle (..))
+import Torch.GraduallyTyped.Random (Generator, sMkGenerator)
+import Torch.GraduallyTyped.RequiresGradient (SRequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape (Dim (..), KnownDim, Name (..), SDim, Size (..))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim, Name (..), SDim, SName (..), SShape (..), SSize (..), Size (..), pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.Tensor.Creation (sOnes)
 
 -- | Transformer decoder stack.
 data
@@ -525,3 +530,27 @@ instance
     generatorOutput
   where
   forward = forwardTransformerDecoderStack @(1 <=? numLayers) @'False Nothing
+
+testDecoderStack = do
+  let device = SDevice SCPU
+      dataType = SDataType SFloat
+      headDim = SName @"*" :&: SSize @8
+      headEmbedDim = SName @"*" :&: SSize @64
+      embedDim = SName @"*" :&: SSize @512
+      queryEmbedDim = SName @"*" :&: SSize @512
+      keyEmbedDim = queryEmbedDim
+      ffnDim = SName @"*" :&: SSize @2048
+      dropoutP :: Float = 0.0
+      eps = 1e-6
+  g <- sMkGenerator device 0
+  let (decoderStack, g') = initialize @(TransformerDecoderStack 0 'T5 _ _ _ _ _ _ _ _ _) device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP eps g
+      batchDim = SName @"*" :&: SSize @3
+      seqDim = SName @"*" :&: SSize @17
+      decoderSeqDim = SName @"*" :&: SSize @13
+      sOnes' = sOnes SWithoutGradient (SLayout SDense) device
+      query = sOnes' dataType (SShape $ batchDim :|: decoderSeqDim :|: queryEmbedDim :|: SNil)
+      key = sOnes' dataType (SShape $ batchDim :|: seqDim :|: keyEmbedDim :|: SNil)
+      decoderAttentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
+      crossAttentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: decoderSeqDim :|: seqDim :|: SNil)
+  let (output, _) = forward decoderStack (query, key, decoderAttentionBias, crossAttentionBias) g'
+  pure output

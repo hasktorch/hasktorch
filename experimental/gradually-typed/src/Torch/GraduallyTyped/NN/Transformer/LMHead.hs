@@ -21,7 +21,8 @@ import Control.Monad.Indexed (IxPointed (..), (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.Reader (MonadIO, MonadReader)
 import Control.Monad.State.Strict (MonadState (state), runState)
-import Data.Kind (Type)
+import Data.Functor.Indexed ((<<$>>), (<<*>>))
+import Data.Kind (Type, Constraint)
 import Data.Singletons (SingI (..), SingKind (fromSing))
 import Data.Singletons.Prelude.List (SList (SNil))
 import GHC.TypeLits (Nat, Symbol)
@@ -174,60 +175,64 @@ type family
 instance
   ( SingI style,
     dense ~ LMHeadDenseF style device dataType inputEmbedDim,
+    HasInitialize dense input generator generator',
+    activation ~ LMHeadActivationF style,
+    HasInitialize activation input' generator' generator'',
     layerNorm ~ LMHeadLayerNormF style device dataType inputEmbedDim,
+    HasInitialize layerNorm input'' generator'' generator''',
     decoder ~ LMHeadDecoderF style device dataType inputEmbedDim vocabDim,
+    HasInitialize decoder input''' generator''' generator'''',
     bias ~ LMHeadBiasF style device dataType vocabDim
   ) =>
-  HasInitialize (LMHead style device dataType inputEmbedDim vocabDim)
+  HasInitialize
+    (LMHead style device dataType inputEmbedDim vocabDim)
+    (SDevice device, SDataType dataType, SDim inputEmbedDim, SDim vocabDim, Double)
+    generator
+    generator''''
   where
-  type
-    InitializeF (LMHead style device dataType inputEmbedDim vocabDim) =
-      SDevice device ->
-      SDataType dataType ->
-      SDim inputEmbedDim ->
-      SDim vocabDim ->
-      Double ->
-      Generator device ->
-      (LMHead style device dataType inputEmbedDim vocabDim, Generator device)
-  initialize device dataType inputEmbedDim vocabDim eps =
-    runState $ do
-      dense <- case sing @style of
-        ST5 -> pure ()
-        SByT5 -> pure ()
-        SBART -> pure ()
-        SMBART -> pure ()
-        SPegasus -> pure ()
-        SBERT -> state $ initialize @dense device dataType inputEmbedDim inputEmbedDim
-        SRoBERTa -> state $ initialize @dense device dataType inputEmbedDim inputEmbedDim
-        SGPT2 -> undefined
-      let activation = case sing @style of
-            ST5 -> ()
-            SByT5 -> ()
-            SBART -> ()
-            SMBART -> ()
-            SPegasus -> ()
-            SBERT -> Gelu
-            SRoBERTa -> Gelu
+  initialize (device, dataType, inputEmbedDim, vocabDim, eps) =
+    let dense = IxState @generator $
+          case sing @style of
+            ST5 -> initialize ()
+            SByT5 -> initialize ()
+            SBART -> initialize ()
+            SMBART -> initialize ()
+            SPegasus -> initialize ()
+            SBERT -> initialize (device, dataType, inputEmbedDim, inputEmbedDim)
+            SRoBERTa -> initialize (device, dataType, inputEmbedDim, inputEmbedDim)
             SGPT2 -> undefined
-      let layerNorm = case sing @style of
-            ST5 -> ()
-            SByT5 -> ()
-            SBART -> ()
-            SMBART -> ()
-            SPegasus -> ()
-            SBERT -> initialize @layerNorm device dataType (SShape $ inputEmbedDim :|: SNil) eps
-            SRoBERTa -> initialize @layerNorm device dataType (SShape $ inputEmbedDim :|: SNil) eps
+        activation = IxState @generator' $
+          case sing @style of
+            ST5 -> initialize ()
+            SByT5 -> initialize ()
+            SBART -> initialize ()
+            SMBART -> initialize ()
+            SPegasus -> initialize ()
+            SBERT -> initialize ()
+            SRoBERTa -> initialize ()
             SGPT2 -> undefined
-      decoder <- state $ case sing @style of
-        ST5 -> initialize @decoder device dataType inputEmbedDim vocabDim
-        SByT5 -> initialize @decoder device dataType inputEmbedDim vocabDim
-        SBART -> initialize @decoder device dataType inputEmbedDim vocabDim
-        SMBART -> initialize @decoder device dataType inputEmbedDim vocabDim
-        SPegasus -> initialize @decoder device dataType inputEmbedDim vocabDim
-        SBERT -> initialize @decoder device dataType inputEmbedDim vocabDim
-        SRoBERTa -> initialize @decoder device dataType inputEmbedDim vocabDim
-        SGPT2 -> undefined
-      let bias = case sing @style of
+        layerNorm = IxState @generator'' $
+          case sing @style of
+            ST5 -> initialize ()
+            SByT5 -> initialize ()
+            SBART -> initialize ()
+            SMBART -> initialize ()
+            SPegasus -> initialize ()
+            SBERT -> initialize (device, dataType, SShape $ inputEmbedDim :|: SNil, eps)
+            SRoBERTa -> initialize (device, dataType, SShape $ inputEmbedDim :|: SNil, eps)
+            SGPT2 -> undefined
+        decoder = IxState @generator''' $
+          case sing @style of
+            ST5 -> initialize (device, dataType, inputEmbedDim, vocabDim)
+            SByT5 -> initialize (device, dataType, inputEmbedDim, vocabDim)
+            SBART -> initialize (device, dataType, inputEmbedDim, vocabDim)
+            SMBART -> initialize (device, dataType, inputEmbedDim, vocabDim)
+            SPegasus -> initialize (device, dataType, inputEmbedDim, vocabDim)
+            SBERT -> initialize (device, dataType, inputEmbedDim, vocabDim)
+            SRoBERTa -> initialize (device, dataType, inputEmbedDim, vocabDim)
+            SGPT2 -> undefined
+        bias = ireturn $
+          case sing @style of
             ST5 -> ()
             SByT5 -> ()
             SBART -> sZeros SWithGradient (SLayout SDense) device dataType (SShape $ SName @"*" :&: SSize @1 :|: vocabDim :|: SNil)
@@ -236,7 +241,9 @@ instance
             SBERT -> ()
             SRoBERTa -> ()
             SGPT2 -> undefined
-      pure . LMHead $ GLMHead inputEmbedDim dense activation layerNorm decoder bias
+     in runIxState $
+          (GLMHead <<$>> ireturn inputEmbedDim <<*>> dense <<*>> activation <<*>> layerNorm <<*>> decoder <<*>> bias)
+            >>>= ireturn . LMHead
 
 lookupLMHead ::
   forall style device dataType inputEmbedDim vocabDim m.

@@ -42,27 +42,28 @@ module Torch.GraduallyTyped.NN.Transformer.SelfAttention where
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.Reader (MonadIO, MonadReader)
-import Control.Monad.State.Strict (MonadState (state), runState)
+import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI, sing)
 import Data.Singletons.Prelude.List (SList (SNil))
 import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType, KnownDataType, SDataType)
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, SDevice)
-import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense))
+import Torch.GraduallyTyped.DType (DataType (..), KnownDataType, SDType (..), SDataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, SDevice (..), SDeviceType (..))
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
-import Torch.GraduallyTyped.NN.Dropout (Dropout)
+import Torch.GraduallyTyped.NN.Dropout (Dropout (..))
 import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithBiasF)
 import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..))
 import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (MultiHeadAttention, lookupMultiHeadAttention)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
-import Torch.GraduallyTyped.Random (Generator)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
+import Torch.GraduallyTyped.Random (Generator, sMkGenerator)
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), Name (..), SDim, SShape (..), Shape (..), Size (..), pattern (:|:))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), Name (..), SDim, SName (..), SShape (..), SSize (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.Tensor.Creation (sOnes)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (SGetDim, Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
@@ -160,33 +161,25 @@ type family
 instance
   ( Scalar dropoutP,
     multiHeadAttention ~ SAMultiheadAttentionF style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP,
-    HasInitialize multiHeadAttention,
+    HasInitialize multiHeadAttention (SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim queryEmbedDim, SDim queryEmbedDim, SDim queryEmbedDim, dropoutP) generator generator',
     layerNorm ~ SALayerNormF style device dataType queryEmbedDim,
-    HasInitialize layerNorm,
-    InitializeF layerNorm ~ (SDevice device -> SDataType dataType -> SShape ('Shape '[queryEmbedDim]) -> Double -> layerNorm),
+    HasInitialize layerNorm (SDevice device, SDataType dataType, SShape ('Shape '[queryEmbedDim]), Double) generator' generator',
     dropout ~ SADropoutF style dropoutP,
-    HasInitialize dropout
+    HasInitialize dropout dropoutP generator' generator'
   ) =>
-  HasInitialize (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
+  HasInitialize
+    (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
+    (SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim queryEmbedDim, dropoutP, Double)
+    generator
+    generator'
   where
-  type
-    InitializeF (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP) =
-      SDevice device ->
-      SDataType dataType ->
-      SDim headDim ->
-      SDim headEmbedDim ->
-      SDim embedDim ->
-      SDim queryEmbedDim ->
-      dropoutP ->
-      Double ->
-      Generator device ->
-      (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP, Generator device)
-  initialize device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP eps = runState $ do
-    multiHeadAttention <-
-      state $ initialize @multiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP
-    let layerNorm = initialize @layerNorm device dataType (SShape $ queryEmbedDim :|: SNil) eps
-    let dropout = initialize @dropout dropoutP
-    pure . SelfAttention $ GSelfAttention multiHeadAttention layerNorm dropout
+  initialize (device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, dropoutP, eps) =
+    let multiHeadAttention = IxState $ initialize (device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, queryEmbedDim, queryEmbedDim, dropoutP)
+        layerNorm = IxState $ initialize (device, dataType, SShape $ queryEmbedDim :|: SNil, eps)
+        dropout = IxState $ initialize dropoutP
+     in runIxState $
+          (GSelfAttention <<$>> multiHeadAttention <<*>> layerNorm <<*>> dropout)
+            >>>= ireturn . SelfAttention
 
 lookupSelfAttention ::
   forall style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP m.
@@ -250,7 +243,7 @@ lookupSelfAttention headDim headEmbedDim embedDim dropoutP eps prefix =
           <*> lookupTensor (prefix <> "output.LayerNorm.bias")
           <*> pure eps
       layerNorm SGPT2 = undefined
-      dropout _ = pure (initialize @(Dropout dropoutP) dropoutP)
+      dropout _ = pure (Dropout dropoutP)
    in SelfAttention
         <$> ( GSelfAttention
                 <$> selfAttention (sing @style)
@@ -326,6 +319,29 @@ instance
         >>>= (\query' -> IxState $ forward saMultiheadAttention (query', query', query', attentionBias))
         >>>= IxState . forward saDropout
         >>>= ireturn . (query `add`)
+
+testSA = do
+  let device = SDevice SCPU
+      dataType = SDataType SFloat
+      headDim = SName @"*" :&: SSize @8
+      headEmbedDim = SName @"*" :&: SSize @64
+      embedDim = SName @"*" :&: SSize @512
+      queryEmbedDim = SName @"*" :&: SSize @512
+      dropoutP :: Float = 0.0
+      eps :: Double = 1e-6
+  g <- sMkGenerator device 0
+  let (sa, g') =
+        initialize
+          @(SelfAttention 'T5 _ _ _ _ _ _ _)
+          (device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, dropoutP, eps)
+          g
+      batchDim = SName @"*" :&: SSize @1
+      seqDim = SName @"*" :&: SSize @4
+      sOnes' = sOnes SWithoutGradient (SLayout SDense) device
+      query = sOnes' dataType (SShape $ batchDim :|: seqDim :|: queryEmbedDim :|: SNil)
+      attentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
+  let (output, _) = forward sa (query, attentionBias) g'
+  pure output
 
 -- | 'HasForward' instance for @SelfAttention 'ByT5@.
 --

@@ -3,6 +3,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -29,9 +30,8 @@ newtype Dropout (p :: Type) where
     Dropout p
   deriving (Generic)
 
-instance (Scalar p) => HasInitialize (Dropout p) where
-  type InitializeF (Dropout p) = p -> Dropout p
-  initialize p = Dropout p
+instance (Scalar p) => HasInitialize (Dropout p) p generator generator where
+  initialize p g = (Dropout p, g)
 
 instance
   ( Scalar p,

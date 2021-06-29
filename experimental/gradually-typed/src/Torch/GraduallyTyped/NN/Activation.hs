@@ -7,6 +7,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -31,9 +32,8 @@ data Softmax (selectDim :: SelectDim (By Symbol Nat)) where
     Softmax selectDim
   deriving (Generic)
 
-instance HasInitialize (Softmax selectDim) where
-  type InitializeF (Softmax selectDim) = SSelectDim selectDim -> Softmax selectDim
-  initialize = Softmax
+instance HasInitialize (Softmax selectDim) (SSelectDim selectDim) generator generator where
+  initialize selectDim = (Softmax selectDim,)
 
 instance
   (output ~ Tensor requiresGradient layout device dataType (SoftmaxF selectDim shape)) =>
@@ -44,13 +44,12 @@ instance
     output
     generator
   where
-  forward Softmax {..} input g = (softmax softmaxSelectDim input, g)
+  forward Softmax {..} input = (softmax softmaxSelectDim input,)
 
 data Relu where Relu :: Relu
 
-instance HasInitialize Relu where
-  type InitializeF Relu = Relu
-  initialize = Relu
+instance HasInitialize Relu () generator generator where
+  initialize _ = (Relu,)
 
 instance
   HasForward
@@ -60,13 +59,12 @@ instance
     (Tensor requiresGradient layout device dataType shape)
     generator
   where
-  forward Relu input g = (relu input, g)
+  forward Relu input = (relu input,)
 
 data Gelu where Gelu :: Gelu
 
-instance HasInitialize Gelu where
-  type InitializeF Gelu = Gelu
-  initialize = Gelu
+instance HasInitialize Gelu () generator generator where
+  initialize _ = (Gelu,)
 
 instance
   HasForward
@@ -76,13 +74,12 @@ instance
     (Tensor requiresGradient layout device dataType shape)
     generator
   where
-  forward Gelu input g = (gelu input, g)
+  forward Gelu input = (gelu input,)
 
 data GeluNew where GeluNew :: GeluNew
 
-instance HasInitialize GeluNew where
-  type InitializeF GeluNew = GeluNew
-  initialize = GeluNew
+instance HasInitialize GeluNew () generator generator where
+  initialize _ = (GeluNew,)
 
 instance
   HasForward
@@ -92,13 +89,12 @@ instance
     (Tensor requiresGradient layout device dataType shape)
     generator
   where
-  forward GeluNew input g = (geluNew input, g)
+  forward GeluNew input = (geluNew input,)
 
 data Tanh where Tanh :: Tanh
 
-instance HasInitialize Tanh where
-  type InitializeF Tanh = Tanh
-  initialize = Tanh
+instance HasInitialize Tanh () generator generator where
+  initialize _ = (Tanh,)
 
 instance
   HasForward
@@ -108,4 +104,4 @@ instance
     (Tensor requiresGradient layout device dataType shape)
     generator
   where
-  forward Tanh input g = (tanh input, g)
+  forward Tanh input = (tanh input,)

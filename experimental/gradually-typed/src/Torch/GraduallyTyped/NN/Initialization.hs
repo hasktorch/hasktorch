@@ -17,7 +17,8 @@
 
 module Torch.GraduallyTyped.NN.Initialization where
 
-import Control.Monad.State.Strict (MonadState (state), runState)
+import Control.Monad.Indexed (IxPointed (ireturn), (>>>=))
+import Control.Monad.Indexed.State (IxState (..))
 import Data.Singletons (SingKind (fromSing))
 import GHC.Generics (Generic)
 import Torch.GraduallyTyped.DType (SDataType)
@@ -32,6 +33,7 @@ import Torch.GraduallyTyped.Shape.Type (SShape)
 import Torch.GraduallyTyped.Tensor.Creation (sRandn)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mulScalar, subScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
+import Torch.GraduallyTyped.Unify (type (<+>))
 
 -- | Note: Identity = linear w/o activation
 data ForNonLinearity = ForIdentity | ForSigmoid | ForTanh | ForRelu | ForLeakyRelu Float
@@ -84,7 +86,7 @@ sXavierUniform ::
   SShape shape ->
   gain ->
   Generator device' ->
-  (Tensor requiresGradient layout device dataType shape, Generator device')
+  (Tensor requiresGradient layout device dataType shape, Generator (device <+> device'))
 sXavierUniform reqGradient layout device dataType shape gain =
   let dims =
         fmap (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size))
@@ -94,9 +96,9 @@ sXavierUniform reqGradient layout device dataType shape gain =
       (fanIn, fanOut) = calculateFan dims
       std = gain * sqrt (2 / (fromIntegral fanIn + fromIntegral fanOut))
       bound = sqrt 3 * std
-   in runState $ do
-        init <- state $ sRandn reqGradient layout device dataType shape
-        pure $ (init `mulScalar` (bound * 2)) `subScalar` bound
+   in runIxState $
+        IxState (sRandn reqGradient layout device dataType shape)
+          >>>= \init -> ireturn $ (init `mulScalar` (bound * 2)) `subScalar` bound
 
 -- | Xavier normal initialization
 sXavierNormal ::
@@ -112,7 +114,7 @@ sXavierNormal ::
   SShape shape ->
   gain ->
   Generator device' ->
-  (Tensor requiresGradient layout device dataType shape, Generator device')
+  (Tensor requiresGradient layout device dataType shape, Generator (device <+> device'))
 sXavierNormal reqGradient layout device dataType shape gain =
   let dims =
         fmap (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size))
@@ -121,9 +123,9 @@ sXavierNormal reqGradient layout device dataType shape gain =
           $ shape
       (fanIn, fanOut) = calculateFan dims
       std = gain * sqrt (2 / (fromIntegral fanIn + fromIntegral fanOut))
-   in runState $ do
-        init <- state $ sRandn reqGradient layout device dataType shape
-        pure $ init `mulScalar` std
+   in runIxState $
+        IxState (sRandn reqGradient layout device dataType shape)
+          >>>= \init -> ireturn $ init `mulScalar` std
 
 -- | Get fan in or fan out value depending on selected fan mode, used by Kaiming
 getter :: forall a. FanMode -> ((a, a) -> a)
@@ -141,7 +143,7 @@ sKaimingUniform ::
   FanMode ->
   ForNonLinearity ->
   Generator device' ->
-  (Tensor requiresGradient layout device dataType shape, Generator device')
+  (Tensor requiresGradient layout device dataType shape, Generator (device <+> device'))
 sKaimingUniform reqGradient layout device dataType shape fanMode nonLinearity =
   let dims =
         fmap (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size))
@@ -152,9 +154,9 @@ sKaimingUniform reqGradient layout device dataType shape fanMode nonLinearity =
       fanValue = fromIntegral $ getter fanMode (calculateFan dims)
       std = gain / sqrt fanValue
       bound = sqrt 3 * std
-   in runState $ do
-        init <- state $ sRandn reqGradient layout device dataType shape
-        pure $ (init `mulScalar` (bound * 2)) `subScalar` bound
+   in runIxState $
+        IxState (sRandn reqGradient layout device dataType shape)
+          >>>= \init -> ireturn $ (init `mulScalar` (bound * 2)) `subScalar` bound
 
 -- | Kaiming normal initialization
 sKaimingNormal ::
@@ -167,7 +169,7 @@ sKaimingNormal ::
   FanMode ->
   ForNonLinearity ->
   Generator device' ->
-  (Tensor requiresGradient layout device dataType shape, Generator device')
+  (Tensor requiresGradient layout device dataType shape, Generator (device <+> device'))
 sKaimingNormal reqGradient layout device dataType shape fanMode nonLinearity =
   let dims =
         fmap (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size))
@@ -177,6 +179,6 @@ sKaimingNormal reqGradient layout device dataType shape fanMode nonLinearity =
       gain = calculateGain nonLinearity
       fanValue = fromIntegral $ getter fanMode (calculateFan dims)
       std = gain / sqrt fanValue
-   in runState $ do
-        init <- state $ sRandn reqGradient layout device dataType shape
-        pure $ init `mulScalar` std
+   in runIxState $
+        IxState (sRandn reqGradient layout device dataType shape)
+          >>>= \init -> ireturn $ init `mulScalar` std

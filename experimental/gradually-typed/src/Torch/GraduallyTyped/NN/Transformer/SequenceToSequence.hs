@@ -6,6 +6,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -39,10 +40,11 @@ import Control.Monad.Reader (MonadIO, MonadReader)
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Kind (Type)
 import Data.Singletons (SingI, SingKind (fromSing), sing)
+import Data.Singletons.Prelude.List (SList (..))
 import GHC.TypeLits (Nat, Symbol, type (<=?))
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), KnownDataType, SDataType)
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, SDevice)
+import Torch.GraduallyTyped.DType (DataType (..), KnownDataType, SDType (..), SDataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Sparse (Embedding (..))
@@ -53,11 +55,12 @@ import Torch.GraduallyTyped.NN.Transformer.LMHead (LMHead, lookupLMHead)
 import Torch.GraduallyTyped.NN.Transformer.Stack (HasLookupStack)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
 import Torch.GraduallyTyped.Prelude (forgetIsChecked)
-import Torch.GraduallyTyped.Random (Generator)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
+import Torch.GraduallyTyped.Random (Generator, sMkGenerator)
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), Name (..), SDim, Shape (..), Size (..))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), Name (..), SDim, SName (..), SShape (..), SSize (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.Tensor.Creation (sOnes)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mulScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor ())
 import Torch.GraduallyTyped.Unify (type (<+>))
@@ -746,79 +749,30 @@ instance
                    >>>= \lmHeadOutput -> ireturn (SequenceToSequenceTransformerOutput lmHeadOutput encoderOutput)
              )
 
-testForwardSeqToSeq :: _
-testForwardSeqToSeq =
-  let seqToSeq =
-        undefined ::
-          SequenceToSequenceTransformerWithLMHead
-            128
-            128
-            'ByT5
-            ('Device 'CPU)
-            ('DataType 'Float)
-            ('Dim ('Name "*") ('Size 8)) -- headDim
-            ('Dim ('Name "*") ('Size 64)) -- headEmbedDim
-            ('Dim ('Name "*") ('Size 512)) -- embedDim
-            ('Dim ('Name "*") ('Size 512)) -- inputEmbedDim
-            ('Dim ('Name "*") ('Size 2048)) -- ffnDim
-            ('Dim ('Name "*") ('Size 32)) -- posEncDim
-            ('Dim ('Name "*") ('Size 32128)) -- vocabDim
-            Float
-      input =
-        undefined ::
-          Tensor
-            'WithoutGradient
-            ('Layout 'Dense)
-            ('Device 'CPU)
-            ('DataType 'Int64)
-            ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 7)])
-      decoderInput =
-        undefined ::
-          Tensor
-            'WithoutGradient
-            ('Layout 'Dense)
-            ('Device 'CPU)
-            ('DataType 'Int64)
-            ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 5)])
-      pos =
-        undefined ::
-          Tensor
-            'WithoutGradient
-            ('Layout 'Dense)
-            ('Device 'CPU)
-            ('DataType 'Int64)
-            ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 7), 'Dim ('Name "*") ('Size 7)])
-      decoderPos =
-        undefined ::
-          Tensor
-            'WithoutGradient
-            ('Layout 'Dense)
-            ('Device 'CPU)
-            ('DataType 'Int64)
-            ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 5), 'Dim ('Name "*") ('Size 5)])
-      attentionMask =
-        undefined ::
-          Tensor
-            'WithoutGradient
-            ('Layout 'Dense)
-            ('Device 'CPU)
-            ('DataType 'Float)
-            ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 7), 'Dim ('Name "*") ('Size 7)])
-      decoderAttentionMask =
-        undefined ::
-          Tensor
-            'WithoutGradient
-            ('Layout 'Dense)
-            ('Device 'CPU)
-            ('DataType 'Float)
-            ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 5), 'Dim ('Name "*") ('Size 5)])
-      crossAttentionMask =
-        undefined ::
-          Tensor
-            'WithoutGradient
-            ('Layout 'Dense)
-            ('Device 'CPU)
-            ('DataType 'Float)
-            ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 5), 'Dim ('Name "*") ('Size 7)])
-      g = undefined :: Generator ('Device 'CPU)
-   in forward seqToSeq (SequenceToSequenceTransformerInput input decoderInput pos decoderPos attentionMask decoderAttentionMask crossAttentionMask) g
+testSeqToSeq = do
+  let device = SDevice SCPU
+      dataType = SDataType SFloat
+      headDim = SName @"*" :&: SSize @8
+      headEmbedDim = SName @"*" :&: SSize @64
+      embedDim = SName @"*" :&: SSize @512
+      inputEmbedDim = SName @"*" :&: SSize @512
+      ffnDim = SName @"*" :&: SSize @2048
+      posEncDim = SName @"*" :&: SSize @32
+      vocabDim = SName @"*" :&: SSize @32128
+      dropoutP :: Float = 0.0
+      eps = 1e-6
+  g <- sMkGenerator device 0
+  let (seqToSeq, g') = initialize @(SequenceToSequenceTransformerWithLMHead 1 1 'T5 _ _ _ _ _ _ _ _ _ _) device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP eps g
+      batchDim = SName @"*" :&: SSize @3
+      seqDim = SName @"*" :&: SSize @13
+      decoderSeqDim = SName @"*" :&: SSize @7
+      sOnes' = sOnes SWithoutGradient (SLayout SDense) device
+      input = sOnes' (SDataType SInt64) (SShape $ batchDim :|: seqDim :|: SNil)
+      pos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
+      attentionMask = sOnes' dataType (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
+      decoderInput = sOnes' (SDataType SInt64) (SShape $ batchDim :|: decoderSeqDim :|: SNil)
+      decoderPos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
+      decoderAttentionMask = sOnes' dataType (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
+      crossAttentionMask = sOnes' dataType (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: seqDim :|: SNil)
+  let (output, _) = forward seqToSeq SequenceToSequenceTransformerInput {..} g'
+  pure output
