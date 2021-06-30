@@ -53,6 +53,38 @@ class
 instance HasForward () input generator input generator where
   forward _ = (,)
 
+instance
+  ( HasForward a input generator output' generatorOutput',
+    HasForward b output' generatorOutput' output generatorOutput
+  ) =>
+  HasForward (a, b) input generator output generatorOutput
+  where
+  forward (a, b) input g =
+    let (output', g') = forward a input g
+     in forward b output' g'
+
+instance HasForward (VS.Vector 0 a) input generator input generator where
+  forward _ = (,)
+
+instance
+  HasForward a input generator output generatorOutput =>
+  HasForward (VS.Vector 1 a) input generator output generatorOutput
+  where
+  forward (VGS.Vector v) input g =
+    let Just (a, _) = V.uncons v
+     in forward a input g
+
+instance
+  {-# OVERLAPPABLE #-}
+  ( HasForward a input generator output generatorOutput,
+    HasForward a output generatorOutput output generatorOutput
+  ) =>
+  HasForward (VS.Vector n a) input generator output generatorOutput
+  where
+  forward (VGS.Vector v) input g =
+    let Just (a, as) = V.uncons v
+     in V.foldl (\(output', g') a' -> forward a' output' g') (forward a input g) as
+
 class
   HasInitialize model input generator generatorOutput
     | model -> input,
@@ -62,7 +94,6 @@ class
 
 instance HasInitialize () () generator generator where
   initialize _ g = ((), g)
-
 
 instance
   ( HasInitialize a input generator generatorOutput',

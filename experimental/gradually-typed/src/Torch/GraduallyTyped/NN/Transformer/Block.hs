@@ -22,7 +22,7 @@ module Torch.GraduallyTyped.NN.Transformer.Block where
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.Reader (MonadIO, MonadReader)
-import Control.Monad.State.Strict (MonadState (state), runState)
+import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI, sing)
 import GHC.TypeLits (Nat, Symbol)
@@ -66,49 +66,27 @@ data
     TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP
 
 instance
-  ( HasInitialize (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP),
-    HasInitialize (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP)
+  ( HasInitialize
+      (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
+      (SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim queryEmbedDim, dropoutP, Double)
+      generator
+      generator',
+    HasInitialize
+      (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP)
+      (SDevice device, SDataType dataType, SDim queryEmbedDim, SDim ffnDim, dropoutP, Double)
+      generator'
+      generator''
   ) =>
-  HasInitialize (TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
+  HasInitialize
+    (TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
+    (SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim queryEmbedDim, SDim ffnDim, dropoutP, Double)
+    generator
+    generator''
   where
-  type
-    InitializeF (TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP) =
-      SDevice device ->
-      SDataType dataType ->
-      SDim headDim ->
-      SDim headEmbedDim ->
-      SDim embedDim ->
-      SDim queryEmbedDim ->
-      SDim ffnDim ->
-      dropoutP ->
-      Double ->
-      Generator device ->
-      (TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP, Generator device)
-  initialize device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP eps =
-    runState $ do
-      selfAttention <-
-        state $
-          initialize
-            @(SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
-            device
-            dataType
-            headDim
-            headEmbedDim
-            embedDim
-            queryEmbedDim
-            dropoutP
-            eps
-      feedForwardNetwork <-
-        state $
-          initialize
-            @(TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP)
-            device
-            dataType
-            queryEmbedDim
-            ffnDim
-            dropoutP
-            eps
-      pure $ TransformerBlock selfAttention feedForwardNetwork
+  initialize (device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, ffnDim, dropoutP, eps) =
+    let selfAttention = IxState . initialize $ (device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, dropoutP, eps)
+        feedForwardNetwork = IxState . initialize $ (device, dataType, queryEmbedDim, ffnDim, dropoutP, eps)
+     in runIxState $ TransformerBlock <<$>> selfAttention <<*>> feedForwardNetwork
 
 lookupBlock ::
   forall style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP m.

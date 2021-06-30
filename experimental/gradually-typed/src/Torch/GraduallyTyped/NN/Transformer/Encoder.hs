@@ -34,7 +34,7 @@ import Torch.GraduallyTyped.NN.Dropout (Dropout)
 import Torch.GraduallyTyped.NN.Functional.Sparse (EmbeddingF)
 import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..))
 import Torch.GraduallyTyped.NN.Sparse (Embedding (..))
-import Torch.GraduallyTyped.NN.Transformer.Stack (HasLookupStack, TransformerStack, lookupStack)
+import Torch.GraduallyTyped.NN.Transformer.Stack (TransformerStack)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Prelude (Seq)
@@ -266,8 +266,8 @@ lookupEncoder ::
     KnownDim inputEmbedDim,
     KnownDim ffnDim,
     KnownDim posEncDim,
-    Scalar dropoutP,
-    HasLookupStack numLayers (1 <=? numLayers) numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP m
+    Scalar dropoutP
+    -- HasLookupStack numLayers (1 <=? numLayers) numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP m
   ) =>
   SDim headDim ->
   SDim headEmbedDim ->
@@ -277,13 +277,13 @@ lookupEncoder ::
   String ->
   m (TransformerEncoder numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP)
 lookupEncoder headDim headEmbedDim embedDim dropoutP eps prefix =
-  let stack ST5 = lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "block.")
-      stack SByT5 = lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "block.")
-      stack SBART = lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "layers.")
-      stack SMBART = lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "layers.")
-      stack SPegasus = lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "layers.")
-      stack SBERT = lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "encoder.layer.")
-      stack SRoBERTa = lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "encoder.layer.")
+  let stack ST5 = _lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "block.")
+      stack SByT5 = _lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "block.")
+      stack SBART = _lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "layers.")
+      stack SMBART = _lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "layers.")
+      stack SPegasus = _lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "layers.")
+      stack SBERT = _lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "encoder.layer.")
+      stack SRoBERTa = _lookupStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "encoder.layer.")
       stack SGPT2 = undefined
       embedLayerNorm ST5 = pure ()
       embedLayerNorm SByT5 = pure ()
