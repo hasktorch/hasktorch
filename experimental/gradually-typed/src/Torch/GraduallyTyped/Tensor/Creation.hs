@@ -39,7 +39,7 @@ import Torch.GraduallyTyped.DType (SDataType)
 import Torch.GraduallyTyped.Device (SDevice)
 import Torch.GraduallyTyped.Internal.TensorOptions (tensorOptions)
 import Torch.GraduallyTyped.Layout (SLayout (..))
-import Torch.GraduallyTyped.Prelude (forgetIsChecked)
+import Torch.GraduallyTyped.Prelude (forgetIsChecked, pattern IsChecked)
 import Torch.GraduallyTyped.Random (Generator, withGenerator)
 import Torch.GraduallyTyped.RequiresGradient (SRequiresGradient)
 import Torch.GraduallyTyped.Scalar (Scalar)
@@ -83,7 +83,7 @@ sOnes reqGradient layout device dataType shape =
    in UnsafeTensor tensor
   where
     requiresGradient = fromSing reqGradient
-    layoutType = forgetIsChecked . fromSing $ layout
+    IsChecked layoutType = fromSing layout
     deviceType = forgetIsChecked . fromSing $ device
     dType = forgetIsChecked . fromSing $ dataType
     dims =

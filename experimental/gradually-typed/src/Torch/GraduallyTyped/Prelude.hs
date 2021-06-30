@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
@@ -11,15 +12,19 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE UndecidableInstances #-}
-
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE ViewPatterns #-}
+
 module Torch.GraduallyTyped.Prelude
   ( module Data.Kind,
     module Data.Proxy,
     module Data.Type.Bool,
     module GHC.TypeLits,
     IsChecked (..),
+    pattern IsChecked,
+    pattern Demoted,
+    pattern Demoted',
     forgetIsChecked,
     All,
     KnownElem (..),
@@ -65,11 +70,23 @@ import Data.Proxy (Proxy (..))
 import Data.String (IsString, fromString)
 import Data.Type.Bool (If, type (||))
 import GHC.Exts (Any)
-import GHC.TypeLits (Nat, ErrorMessage (..), TypeError (..), type (*), type (+))
+import GHC.TypeLits (Nat, ErrorMessage (..), TypeError, type (*), type (+))
 import GHC.Generics (Generic)
+import Data.Singletons (SingKind, Demote, Sing, fromSing)
 
 data IsChecked a = Checked a | Unchecked a
   deriving stock (Eq, Ord, Show, Generic)
+
+pattern IsChecked :: a -> IsChecked a
+pattern IsChecked forgotten <- (forgetIsChecked -> forgotten)
+
+pattern Demoted :: SingKind k => Demote k -> Sing (a :: k)
+pattern Demoted demoted <- (fromSing -> demoted)
+
+pattern Demoted' :: (SingKind k, Demote k ~ IsChecked t) => t -> Sing (a :: k)
+pattern Demoted' unchecked <- (forgetIsChecked . fromSing -> unchecked)
+
+{-# COMPLETE Demoted, Demoted' #-}
 
 forgetIsChecked :: IsChecked a -> a
 forgetIsChecked (Checked a) = a

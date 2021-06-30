@@ -5,6 +5,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -19,38 +20,48 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.Tensor.Type where
 
+import Control.Monad (forM, (>=>))
 import Data.Bifunctor (bimap)
 import Data.Coerce (coerce)
 import Data.Foldable (Foldable (fold))
+import Data.Functor ((<&>))
 import Data.Int (Int16)
 import Data.Monoid (All (..))
 import Data.Proxy (Proxy (..))
-import Data.Singletons (SingI (sing), SingKind (fromSing))
+import Data.Singletons (SingI (sing), fromSing)
 import Data.Singletons.Prelude.List (SList (..))
+import qualified Data.Vector as V
+import qualified Data.Vector.Sized as SV
+import Foreign (Ptr, Storable, Word8, castPtr, fromBool, peekElemOff, pokeElemOff, withForeignPtr)
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (KnownNat, KnownSymbol, Nat, Symbol, natVal, symbolVal)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), KnownDataType (..), SDataType (..))
+import Torch.GraduallyTyped.DType (DataType (..), KnownDType (dTypeVal), KnownDataType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice (..), SDevice (..), SDeviceType (..))
+import Torch.GraduallyTyped.Internal.TensorOptions (tensorOptions)
 import Torch.GraduallyTyped.Layout (KnownLayout (..), Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.Prelude (forgetIsChecked, ifM, (&&^))
-import Torch.GraduallyTyped.RequiresGradient (KnownRequiresGradient, RequiresGradient (..))
+import Torch.GraduallyTyped.Prelude (forgetIsChecked, ifM, (&&^), pattern Demoted, pattern Demoted')
+import Torch.GraduallyTyped.RequiresGradient (KnownRequiresGradient, RequiresGradient (..), SRequiresGradient)
 import Torch.GraduallyTyped.Scalar ()
-import Torch.GraduallyTyped.Shape.Class (ReplaceDimF)
-import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownShape (..), Name (..), SDim (..), SName (..), SShape (..), SSize (..), Shape (..), Size (..), pattern (:|:))
+import Torch.GraduallyTyped.Shape.Class (InsertDimF, ReplaceDimF)
+import Torch.GraduallyTyped.Shape.Type (By (ByIndex), Dim (..), KnownShape (..), Name (..), SDim (..), SName (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:|:))
+import Torch.GraduallyTyped.Unify (type (<+>))
 import Torch.HList (HList (..), pattern (:.))
 import Torch.Internal.Cast (cast0, cast1, cast2)
 import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Managed.Native as ATen
+import qualified Torch.Internal.Managed.Native as LibTorch
 import qualified Torch.Internal.Managed.Type.Context as ATen
 import qualified Torch.Internal.Managed.Type.Extra as ATen
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
 import qualified Torch.Internal.Type as ATen (Tensor, TensorList)
+import qualified Torch.Internal.Unmanaged.Type.Tensor as Unmanaged (tensor_data_ptr)
 import qualified Torch.Tensor (Tensor (Unsafe))
 
 -- $setup
@@ -123,9 +134,7 @@ type SparseCUDATensor deviceId = Tensor 'WithoutGradient ('Layout 'Sparse) ('Dev
 -- | Alias for a sparse tensor on CUDA memory with gradients.
 type SparseCUDAParameter deviceId = Tensor 'WithGradient ('Layout 'Sparse) ('Device ('CUDA deviceId))
 
-instance
-  Num (Tensor requiresGradient layout device dataType shape)
-  where
+instance Num (Tensor requiresGradient layout device dataType shape) where
   (+) = (unsafePerformIO .) . cast2 ATen.add_tt
   (-) = (unsafePerformIO .) . cast2 ATen.sub_tt
   (*) = (unsafePerformIO .) . cast2 ATen.mul_tt
@@ -1120,3 +1129,147 @@ unsafeCheckedShape ::
 unsafeCheckedShape tensor = case checkedShape @shape tensor of
   Right tensor' -> tensor'
   Left err -> error err
+
+isContiguous ::
+  Tensor requiresGradient layout device dataType shape ->
+  Bool
+isContiguous t = unsafePerformIO $ cast1 ATen.tensor_is_contiguous t
+
+contiguous ::
+  Tensor requiresGradient layout device dataType shape ->
+  Tensor requiresGradient layout device dataType shape
+contiguous t = unsafePerformIO $ cast1 ATen.tensor_contiguous t
+
+withTensor :: Tensor requiresGradient layout device dataType shape -> (Ptr () -> IO a) -> IO a
+withTensor t fn =
+  let contiguousTensor = if isContiguous t then t else contiguous t
+   in cast contiguousTensor $ \ct -> withForeignPtr ct $ Unmanaged.tensor_data_ptr >=> fn
+
+class Storable a => TensorLikeRaw a where
+  tensorDims :: [Int]
+  tensorDims = []
+
+  tensorPeekElemOff :: Ptr () -> Int -> [Int] -> IO a
+  tensorPeekElemOff ptr offset [] = peekElemOff (castPtr ptr) offset
+  tensorPeekElemOff _ _ _ = error "Not implemented"
+
+  tensorPokeElemOff :: Ptr () -> Int -> a -> IO ()
+  tensorPokeElemOff ptr offset x = pokeElemOff (castPtr ptr) offset x
+
+class
+  ( TensorLikeRaw a,
+    KnownDataType dataType,
+    KnownShape shape,
+    SGetShape shape
+  ) =>
+  TensorLike a (dataType :: DataType DType) (shape :: Shape [Dim (Name Symbol) (Size Nat)])
+    | a -> shape,
+      a -> dataType
+  where
+  sToTensor ::
+    forall m requiresGradient layout device.
+    (MonadFail m) =>
+    SRequiresGradient requiresGradient ->
+    SLayout layout ->
+    SDevice device ->
+    a ->
+    m (Tensor requiresGradient layout device dataType shape)
+  sToTensor (Demoted requiresGradient) (Demoted' layout) (Demoted' device) x = do
+    t <- unsafePerformIO $ do
+      t <- UnsafeTensor <$> cast2 LibTorch.empty_lo (tensorDims x) opts
+      withTensor t $ \ptr ->
+        tensorPokeElemOff ptr 0 x
+      pure t
+
+    t
+    where
+      opts = tensorOptions requiresGradient layout device dType'
+      DataType dType' = dataTypeVal @dataType
+
+  sFromTensor ::
+    forall m requiresGradient layout device.
+    (MonadFail m) =>
+    Tensor requiresGradient layout device dataType shape ->
+    m a
+  sFromTensor t = unsafePerformIO $
+    withTensor t $ \ptr -> do
+      ds <- dims t
+      tensorPeekElemOff ptr 0 (fromInteger . dimSize <$> ds)
+
+instance TensorLikeRaw Bool
+
+instance TensorLike Bool ('DataType 'Bool) ('Shape '[])
+
+instance TensorLikeRaw Int
+
+instance TensorLike Int ('DataType 'Int64) ('Shape '[])
+
+instance TensorLikeRaw Float
+
+instance TensorLike Float ('DataType 'Float) ('Shape '[])
+
+instance TensorLikeRaw Double
+
+instance TensorLike Double ('DataType 'Double) ('Shape '[])
+
+instance
+  ( Storable (a, b),
+    TensorLike a dataType shape,
+    TensorLike b dataType' shape'
+  ) =>
+  TensorLikeRaw (a, b)
+  where
+  tensorPeekElemOff ptr offset (2 : dimSizes) =
+    (,)
+      <$> tensorPeekElemOff ptr offset dimSizes
+      <*> tensorPeekElemOff ptr (offset + width) dimSizes
+    where
+      width = product dimSizes
+  tensorPeekElemOff _ _ _ = error "Expected first dimension to be of size 2"
+
+  tensorPokeElemOff ptr offset (x, y) = do
+    let width = product $ _ $ shapeVal @shape
+    tensorPokeElemOff @a ptr (offset + width) x
+    tensorPokeElemOff @a ptr (offset + 0 * width) y
+
+instance
+  ( TensorLike a dataType shape,
+    TensorLike b dataType' shape',
+    dataTypeOut ~ (dataType <+> dataType'),
+    SGetShape shapeOut,
+    shapeOut ~ InsertDimF ('SelectDim ('ByIndex 0)) (shape <+> shape') ('Dim ('Name "*") ('Size 2))
+  ) =>
+  TensorLike (a, b) dataTypeOut shapeOut
+  where
+  sToTensor (Demoted requiresGradient) (Demoted' layout) (Demoted' device) x = unsafePerformIO $ do
+    t <- UnsafeTensor <$> cast2 @[Int] LibTorch.empty_lo [] opts
+    withTensor t $ \ptr ->
+      tensorPokeElemOff ptr 0 x
+    pure t
+    where
+      opts = tensorOptions requiresGradient layout device Bool
+
+  sFromTensor t = unsafePerformIO $ do
+    withTensor t $ \ptr -> do
+      ds <- dims t
+      tensorPeekElemOff ptr 0 (fromInteger . dimSize <$> ds)
+
+instance
+  ( TensorLike a dataType shape,
+    shape' ~ InsertDimF ('SelectDim ('ByIndex 0)) shape ('Dim ('Name "*") ('Size n))
+  ) =>
+  TensorLike (SV.Vector n a) dataType shape'
+  where
+  sToTensor = undefined
+
+  sFromTensor t = undefined
+
+instance
+  ( TensorLike a dataType shape,
+    shape' ~ InsertDimF ('SelectDim ('ByIndex 0)) shape ('Dim ('Name "*") 'UncheckedSize)
+  ) =>
+  TensorLike (V.Vector a) dataType shape'
+  where
+  sToTensor = undefined
+
+  sFromTensor t = undefined
