@@ -51,7 +51,7 @@ main = do
     numFeatures = 3
 ```
 
-Let's break this down in steps:
+Let's break this down in pieces:
 
 1. The `init` variable is initialized as a `Linear` type (defined in
    `Torch.NN`) using `sample` which randomly initializes a `Linear`
@@ -76,7 +76,7 @@ Let's break this down in steps:
 
 Note the expression of the architecture in the `Torch.NN.linear`
 function (a single linear layer, or alternatively a neural network
-with zero hidden layers), does not require an explicit representation
+with zero hidden layers) does not require an explicit representation
 of the compute graph, but is simply a composition of tensor
 ops. Because of the autodiff mechanism described in the previous
 section, the graph is constructed automatically as pure functional ops
@@ -140,8 +140,8 @@ output a new set of parameters.
 
 In the simple case of stochastic gradient descent, the function to
 output a new set of parameters is to subtract from the current
-parameter (theta), the gradient of the loss $\nabla J$ scaled by the
-learning rate $\eta$:
+parameter (θ), the gradient of the loss ∇ J scaled by the learning
+rate η:
 
 $$\theta_{i+1} = \theta_i - \eta \nabla J(\theta)$$
 
@@ -150,15 +150,13 @@ parameters, loss, and gradient, some optimizers have a notion of
 internal state that is propagated from one step to the step, for
 example, retaining and updating momentum between steps:
 
-$$\begin{gathered}
-    \Delta \theta_i = \alpha \Delta \theta_{i-1} - \eta \nabla J(\theta) \\
-    \theta_{i+1} = \theta_i + \Delta \theta_i
-\end{gathered}$$
+$$\Delta \theta_i = \alpha \Delta \theta_{i-1} - \eta \nabla J(\theta)$$
+$$\theta_{i+1} = \theta_i + \Delta \theta_i$$
 
-In this case, the momentum term $\Delta \theta_i$ is carried forward
-as internal state of the optimizer that is propagated to the next
-step.  (alpha) is an optimizer parameter which determines a weighting
-on the momentum term relative to the gradient.
+In this case, the momentum term Δ θᵢ is carried forward as internal
+state of the optimizer that is propagated to the next step. α is an
+optimizer parameter which determines a weighting on the momentum term
+relative to the gradient.
 
 Implementation of an optimizer consists of defining an ADT describing
 the optimizer state and a `step` function that implements a single
@@ -200,24 +198,25 @@ The use of an optimizer was illustrated in the linear regression example
 using the function `runStep`
 
 ```haskell
-(newParam, _) <- runStep state GD loss 5e-3
+(state', _) <- runStep state GD loss 5e-3
 ```
 
-In this case the new optimizer state returned is ignored (as `_`) since
-gradient descent does not have any internal state. Under the hood,
-`runStep` does a little bookkeeping making independent variables from a
-model, computing gradients, and passing values to the `step` function.
-Usually a user can ignore the details and just pass model parameters and
-the optimizer to runStep as an abstracted interface which takes
-parameter values, the optimizer value, loss (a tensor), and learning
-rate as input and returns new parameters and an updated optimizer value.
+In this case the new optimizer state returned is ignored (as `_`)
+since gradient descent does not have any internal state. Under the
+hood, `runStep` does a little bookkeeping making independent variables
+from a model, computing gradients, and passing values to the `step`
+function.  Usually a user can ignore the details and just pass model
+parameters and the optimizer to `runStep` as an abstracted interface
+which takes parameter values, the optimizer value, loss (a tensor),
+and learning rate as input and returns updated model and optimizer
+values.
 
 ```haskell
 runStep ::
-  (Parameterized p, Optimizer o) =>
-  p ->
-  o ->
+  (Parameterized model, Optimizer optimizer) =>
+  model ->
+  optimizer ->
   Tensor ->
   LearningRate ->
-  IO ([Parameter], o)
+  IO (model, optimizer)
 ```
