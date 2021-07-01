@@ -28,14 +28,15 @@ import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Functional.Sparse (EmbeddingF, embedding)
 import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.Random (Generator)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (..))
+import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..))
 import Torch.GraduallyTyped.Shape (Dim (..), Name, SDim (..), SShape (..), Shape (..), Size, pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sRandn)
 import Torch.GraduallyTyped.Tensor.Type (SGetLayout, Tensor)
-import Torch.GraduallyTyped.Unify (type (<+>))
+import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 
 data
   Embedding
+    (gradient :: Gradient RequiresGradient)
     (layout :: Layout LayoutType)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
@@ -44,16 +45,17 @@ data
     (paddingIdx :: Maybe Nat)
   where
   Embedding ::
-    forall layout device dataType embedNumDim embedDim paddingIdx.
-    { embeddingWeight :: Tensor 'WithGradient layout device dataType ('Shape '[embedNumDim, embedDim])
+    forall gradient layout device dataType embedNumDim embedDim paddingIdx.
+    { embeddingWeight :: Tensor gradient layout device dataType ('Shape '[embedNumDim, embedDim])
     } ->
-    Embedding layout device dataType embedNumDim embedDim paddingIdx
+    Embedding gradient layout device dataType embedNumDim embedDim paddingIdx
 
 instance
   (device'' ~ (device <+> device')) =>
   HasInitialize
-    (Embedding layout device dataType embedNumDim embedDim 'Nothing)
-    ( SLayout layout,
+    (Embedding gradient layout device dataType embedNumDim embedDim 'Nothing)
+    ( SGradient gradient,
+      SLayout layout,
       SDevice device,
       SDataType dataType,
       SDim embedNumDim,
@@ -62,17 +64,18 @@ instance
     (Generator device')
     (Generator device'')
   where
-  initialize (layout, device, dataType, embedNumDim, embedDim) =
+  initialize (gradient, layout, device, dataType, embedNumDim, embedDim) =
     runIxState $
-      IxState (sRandn SWithGradient layout device dataType (SShape $ embedNumDim :|: embedDim :|: SNil))
+      IxState (sRandn gradient layout device dataType (SShape $ embedNumDim :|: embedDim :|: SNil))
         >>>= ireturn . Embedding
 
 -- TODO: padding embedding vector may need to be set to zeros
 instance
   (device'' ~ (device <+> device')) =>
   HasInitialize
-    (Embedding layout device dataType embedNumDim embedDim ('Just paddingIdx))
-    ( SLayout layout,
+    (Embedding gradient layout device dataType embedNumDim embedDim ('Just paddingIdx))
+    ( SGradient gradient,
+      SLayout layout,
       SDevice device,
       SDataType dataType,
       SDim embedNumDim,
@@ -81,24 +84,24 @@ instance
     (Generator device')
     (Generator device'')
   where
-  initialize (layout, device, dataType, embedNumDim, embedDim) =
+  initialize (gradient, layout, device, dataType, embedNumDim, embedDim) =
     runIxState $
-      IxState (sRandn SWithGradient layout device dataType (SShape $ embedNumDim :|: embedDim :|: SNil))
+      IxState (sRandn gradient layout device dataType (SShape $ embedNumDim :|: embedDim :|: SNil))
         >>>= ireturn . Embedding
 
 instance
   ( SGetLayout layout,
     output
       ~ Tensor
-          'WithGradient
+          (gradient <|> gradient')
           (layout <+> layout')
           (device <+> device')
           (Seq (dataType' <+> 'DataType 'Int64) dataType)
           (EmbeddingF ('Shape '[embedNumDim, embedDim]) shape')
   ) =>
   HasForward
-    (Embedding layout device dataType embedNumDim embedDim 'Nothing)
-    (Tensor requiresGradient' layout' device' dataType' shape')
+    (Embedding gradient layout device dataType embedNumDim embedDim 'Nothing)
+    (Tensor gradient' layout' device' dataType' shape')
     generator
     output
     generator
@@ -110,15 +113,15 @@ instance
     KnownNat paddingIdx,
     output
       ~ Tensor
-          'WithGradient
+          (gradient <|> gradient')
           (layout <+> layout')
           (device <+> device')
           (Seq (dataType' <+> 'DataType 'Int64) dataType)
           (EmbeddingF ('Shape '[embedNumDim, embedDim]) shape')
   ) =>
   HasForward
-    (Embedding layout device dataType embedNumDim embedDim ('Just paddingIdx))
-    (Tensor requiresGradient' layout' device' dataType' shape')
+    (Embedding gradient layout device dataType embedNumDim embedDim ('Just paddingIdx))
+    (Tensor gradient' layout' device' dataType' shape')
     generator
     output
     generator

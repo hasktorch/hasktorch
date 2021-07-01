@@ -37,32 +37,33 @@ import Torch.GraduallyTyped.NN.Initialization (FanMode (..), ForNonLinearity (..
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Prelude (forgetIsChecked)
 import Torch.GraduallyTyped.Random (Generator)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (..))
+import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim (..), SShape (..), Shape (..), Size (..), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sRandn)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mulScalar, subScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
-import Torch.GraduallyTyped.Unify (type (<+>))
+import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 
 data
   Linear
     (hasBias :: HasBias)
+    (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (inputDim :: Dim (Name Symbol) (Size Nat))
     (outputDim :: Dim (Name Symbol) (Size Nat))
   where
   LinearWithBias ::
-    forall device dataType inputDim outputDim.
-    { linearWithBiasWeight :: Tensor 'WithGradient ('Layout 'Dense) device dataType ('Shape '[outputDim, inputDim]),
-      linearBias :: Tensor 'WithGradient ('Layout 'Dense) device dataType ('Shape '[outputDim])
+    forall gradient device dataType inputDim outputDim.
+    { linearWithBiasWeight :: Tensor gradient ('Layout 'Dense) device dataType ('Shape '[outputDim, inputDim]),
+      linearBias :: Tensor gradient ('Layout 'Dense) device dataType ('Shape '[outputDim])
     } ->
-    Linear 'WithBias device dataType inputDim outputDim
+    Linear 'WithBias gradient device dataType inputDim outputDim
   LinearWithoutBias ::
-    forall device dataType inputDim outputDim.
-    { linearWithoutBiasWeight :: Tensor 'WithGradient ('Layout 'Dense) device dataType ('Shape '[outputDim, inputDim])
+    forall gradient device dataType inputDim outputDim.
+    { linearWithoutBiasWeight :: Tensor gradient ('Layout 'Dense) device dataType ('Shape '[outputDim, inputDim])
     } ->
-    Linear 'WithoutBias device dataType inputDim outputDim
+    Linear 'WithoutBias gradient device dataType inputDim outputDim
 
 -- | TODO: Add 'ForNonLinearity' as parameter.
 instance
@@ -70,8 +71,9 @@ instance
     generator' ~ Generator (device <+> device')
   ) =>
   HasInitialize
-    (Linear 'WithBias device dataType inputDim outputDim)
-    ( SDevice device,
+    (Linear 'WithBias gradient device dataType inputDim outputDim)
+    ( SGradient gradient,
+      SDevice device,
       SDataType dataType,
       SDim inputDim,
       SDim outputDim
@@ -79,12 +81,12 @@ instance
     generator
     generator'
   where
-  initialize (device, dataType, inputDim, outputDim) =
+  initialize (gradient, device, dataType, inputDim, outputDim) =
     let shape = SShape $ outputDim :|: inputDim :|: SNil
         weight =
           IxState $
             sKaimingUniform
-              SWithGradient
+              gradient
               (SLayout SDense)
               device
               dataType
@@ -104,33 +106,33 @@ instance
                   $ dims
               )
         bias =
-          IxState (sRandn SWithGradient (SLayout SDense) device dataType (SShape $ outputDim :|: SNil))
+          IxState (sRandn gradient (SLayout SDense) device dataType (SShape $ outputDim :|: SNil))
             >>>= ireturn . (\bias' -> (bias' `mulScalar` (bound * 2)) `subScalar` bound)
      in runIxState $
           LinearWithBias <<$>> weight <<*>> bias
 
 instance
   HasStateDict
-    (Linear 'WithBias device dataType inputDim outputDim)
-    ( SDevice device,
+    (Linear 'WithBias gradient device dataType inputDim outputDim)
+    ( SGradient gradient,
+      SDevice device,
       SDataType dataType,
       SDim inputDim,
       SDim outputDim
     )
-    
 
 instance
   ( output
       ~ Tensor
-          'WithGradient
+          (gradient <|> gradient')
           ('Layout 'Dense <+> layout')
           (device <+> device')
           (dataType <+> dataType')
           (LinearWithBiasF ('Shape '[outputFeatures, inputFeatures]) ('Shape '[outputFeatures]) shape')
   ) =>
   HasForward
-    (Linear 'WithBias device dataType inputFeatures outputFeatures)
-    (Tensor requiresGradient' layout' device' dataType' shape')
+    (Linear 'WithBias gradient device dataType inputFeatures outputFeatures)
+    (Tensor gradient' layout' device' dataType' shape')
     generator
     output
     generator
@@ -142,8 +144,9 @@ instance
     generator' ~ Generator (device <+> device')
   ) =>
   HasInitialize
-    (Linear 'WithoutBias device dataType inputDim outputDim)
-    ( SDevice device,
+    (Linear 'WithoutBias gradient device dataType inputDim outputDim)
+    ( SGradient gradient,
+      SDevice device,
       SDataType dataType,
       SDim inputDim,
       SDim outputDim
@@ -151,11 +154,11 @@ instance
     generator
     generator'
   where
-  initialize (device, dataType, inputDim, outputDim) =
+  initialize (gradient, device, dataType, inputDim, outputDim) =
     let weight =
           IxState $
             sKaimingUniform
-              SWithGradient
+              gradient
               (SLayout SDense)
               device
               dataType
@@ -167,15 +170,15 @@ instance
 instance
   ( output
       ~ Tensor
-          'WithGradient
+          (gradient <|> gradient')
           ('Layout 'Dense <+> layout')
           (device <+> device')
           (dataType <+> dataType')
           (LinearWithoutBiasF ('Shape '[outputFeatures, inputFeatures]) shape')
   ) =>
   HasForward
-    (Linear 'WithoutBias device dataType inputFeatures outputFeatures)
-    (Tensor requiresGradient' layout' device' dataType' shape')
+    (Linear 'WithoutBias gradient device dataType inputFeatures outputFeatures)
+    (Tensor gradient' layout' device' dataType' shape')
     generator
     output
     generator

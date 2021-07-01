@@ -164,3 +164,9 @@ type family Or k (a :: k) (b :: k) :: k where
   Or (Gradient RequiresGradient) 'UncheckedGradient ('Gradient 'WithoutGradient) = 'UncheckedGradient
   Or (Gradient RequiresGradient) ('Gradient 'WithGradient) _ = 'Gradient 'WithGradient
   Or (Gradient RequiresGradient) ('Gradient 'WithoutGradient) 'UncheckedGradient = 'UncheckedGradient
+
+type OrRightAssociativeL k a b c = Or k (Or k a b) c ~ Or k a (Or k b c)
+
+type OrIdempotenceL2 k a b = Or k a (Or k a b) ~ Or k a b
+
+type OrIdempotenceL2C k a b = Or k a (Or k b a) ~ Or k a b

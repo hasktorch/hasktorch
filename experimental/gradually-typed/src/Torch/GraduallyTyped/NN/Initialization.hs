@@ -26,7 +26,7 @@ import Torch.GraduallyTyped.Device (SDevice)
 import Torch.GraduallyTyped.Layout (SLayout)
 import Torch.GraduallyTyped.Prelude (forgetIsChecked)
 import Torch.GraduallyTyped.Random (Generator)
-import Torch.GraduallyTyped.RequiresGradient (SRequiresGradient)
+import Torch.GraduallyTyped.RequiresGradient (SGradient)
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape (Dim (..), dimSize)
 import Torch.GraduallyTyped.Shape.Type (SShape)
@@ -74,19 +74,19 @@ calculateFan shape
 
 -- | Xavier uniform initialization
 sXavierUniform ::
-  forall requiresGradient layout device dataType shape gain device'.
+  forall gradient layout device dataType shape gain device'.
   ( Num gain,
     Floating gain,
     Scalar gain
   ) =>
-  SRequiresGradient requiresGradient ->
+  SGradient gradient ->
   SLayout layout ->
   SDevice device ->
   SDataType dataType ->
   SShape shape ->
   gain ->
   Generator device' ->
-  (Tensor requiresGradient layout device dataType shape, Generator (device <+> device'))
+  (Tensor gradient layout device dataType shape, Generator (device <+> device'))
 sXavierUniform reqGradient layout device dataType shape gain =
   let dims =
         fmap (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size))
@@ -102,19 +102,19 @@ sXavierUniform reqGradient layout device dataType shape gain =
 
 -- | Xavier normal initialization
 sXavierNormal ::
-  forall requiresGradient layout device dataType shape gain device'.
+  forall gradient layout device dataType shape gain device'.
   ( Num gain,
     Floating gain,
     Scalar gain
   ) =>
-  SRequiresGradient requiresGradient ->
+  SGradient gradient ->
   SLayout layout ->
   SDevice device ->
   SDataType dataType ->
   SShape shape ->
   gain ->
   Generator device' ->
-  (Tensor requiresGradient layout device dataType shape, Generator (device <+> device'))
+  (Tensor gradient layout device dataType shape, Generator (device <+> device'))
 sXavierNormal reqGradient layout device dataType shape gain =
   let dims =
         fmap (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size))
@@ -134,8 +134,8 @@ getter FanOut = snd
 
 -- | Kaiming uniform initialization
 sKaimingUniform ::
-  forall requiresGradient layout device dataType shape device'.
-  SRequiresGradient requiresGradient ->
+  forall gradient layout device dataType shape device'.
+  SGradient gradient ->
   SLayout layout ->
   SDevice device ->
   SDataType dataType ->
@@ -143,7 +143,7 @@ sKaimingUniform ::
   FanMode ->
   ForNonLinearity ->
   Generator device' ->
-  (Tensor requiresGradient layout device dataType shape, Generator (device <+> device'))
+  (Tensor gradient layout device dataType shape, Generator (device <+> device'))
 sKaimingUniform reqGradient layout device dataType shape fanMode nonLinearity =
   let dims =
         fmap (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size))
@@ -160,8 +160,8 @@ sKaimingUniform reqGradient layout device dataType shape fanMode nonLinearity =
 
 -- | Kaiming normal initialization
 sKaimingNormal ::
-  forall requiresGradient layout device dataType shape device'.
-  SRequiresGradient requiresGradient ->
+  forall gradient layout device dataType shape device'.
+  SGradient gradient ->
   SLayout layout ->
   SDevice device ->
   SDataType dataType ->
@@ -169,7 +169,7 @@ sKaimingNormal ::
   FanMode ->
   ForNonLinearity ->
   Generator device' ->
-  (Tensor requiresGradient layout device dataType shape, Generator (device <+> device'))
+  (Tensor gradient layout device dataType shape, Generator (device <+> device'))
 sKaimingNormal reqGradient layout device dataType shape fanMode nonLinearity =
   let dims =
         fmap (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size))

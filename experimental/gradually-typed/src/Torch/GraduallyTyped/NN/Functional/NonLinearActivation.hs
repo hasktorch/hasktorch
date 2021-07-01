@@ -68,10 +68,10 @@ type family SoftmaxF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape [D
 --              'Dim ('Name "feature") ('Size 8)])
 softmax,
   logSoftmax ::
-    forall selectDim requiresGradient layout device dataType shape.
+    forall selectDim gradient layout device dataType shape.
     SSelectDim selectDim ->
-    Tensor requiresGradient layout device dataType shape ->
-    Tensor requiresGradient layout device dataType (SoftmaxF selectDim shape)
+    Tensor gradient layout device dataType shape ->
+    Tensor gradient layout device dataType (SoftmaxF selectDim shape)
 softmax selectDim tensor =
   case forgetIsChecked (fromSing selectDim) of
     ByName name -> unsafePerformIO $ cast2 ATen.softmax_tn tensor name

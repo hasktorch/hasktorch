@@ -39,11 +39,12 @@ import qualified Data.Vector.Generic.Sized.Internal as VGS
 import qualified Data.Vector.Sized as VS
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (ErrorMessage (..), KnownNat, TypeError, natVal, type (+))
-import Torch.GraduallyTyped.DType (KnownDataType)
-import Torch.GraduallyTyped.Device (KnownDevice)
-import Torch.GraduallyTyped.Layout (KnownLayout)
-import Torch.GraduallyTyped.Shape.Type (KnownShape)
-import Torch.GraduallyTyped.Tensor.Type (DataTypeError, DeviceError, LayoutError, ShapeError, Tensor (UnsafeTensor), checkedDataType, checkedDevice, checkedLayout, checkedShape)
+import Torch.GraduallyTyped.DType (DataType (..), KnownDataType, SDataType)
+import Torch.GraduallyTyped.Device (Device (..), KnownDevice, SDevice)
+import Torch.GraduallyTyped.Layout (KnownLayout, Layout (..), SLayout)
+import Torch.GraduallyTyped.RequiresGradient (Gradient (..), SGradient (..))
+import Torch.GraduallyTyped.Shape.Type (KnownShape, SShape, Shape (..))
+import Torch.GraduallyTyped.Tensor.Type (DataTypeError, DeviceError, LayoutError, ShapeError, Tensor (UnsafeTensor), UncheckedTensor, checkedDataType, checkedDevice, checkedLayout, checkedShape, sCheckedDataType, sCheckedDevice, sCheckedGradient, sCheckedLayout, sCheckedShape)
 import qualified Torch.Internal.Type as ATen (Tensor)
 
 -- class Foo a i o | a i -> o where
@@ -213,25 +214,25 @@ instance
     KnownShape shape
   ) =>
   HasStateDict
-    (Tensor requiresGradient layout device dataType shape)
-    ()
+    (Tensor gradient layout device dataType shape)
+    (SGradient gradient, SLayout layout, SDevice device, SDataType dataType, SShape shape)
   where
-  fromStateDict () k = do
+  fromStateDict (gradient, layout, device, dataType, shape) k = do
     stateDict <- get
     maybe
       (throwM . FromStateDictKeyNotFoundError $ k)
-      (pure . UnsafeTensor)
+      (\t -> pure (UnsafeTensor t :: UncheckedTensor))
       (Map.lookup k stateDict)
-      >>= sCheckedRequiresGradient requiresGradient
+      >>= sCheckedGradient gradient
       >>= sCheckedLayout layout
       >>= sCheckedDevice device
       >>= sCheckedDataType dataType
       >>= sCheckedShape shape
-  toStateDict k (UnsafeTensor tensor) = do
+  toStateDict k (UnsafeTensor t) = do
     stateDict <- get
     stateDict' <-
       maybe
-        (pure $ Map.insert k tensor stateDict)
+        (pure $ Map.insert k t stateDict)
         (\_ -> throwM . ToStateDictKeyAlreadyInUseError $ k)
         (Map.lookup k stateDict)
     put stateDict'

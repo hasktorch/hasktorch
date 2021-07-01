@@ -96,10 +96,10 @@ instance Show (Tensor gradient layout device dataType shape) where
   show (UnsafeTensor t) = show (Torch.Tensor.Unsafe t)
 
 -- | Alias for an untyped tensor without gradients.
-type UntypedTensor = Tensor 'UncheckedGradient 'UncheckedLayout 'UncheckedDevice 'UncheckedDataType 'UncheckedShape
+type UncheckedTensor = Tensor 'UncheckedGradient 'UncheckedLayout 'UncheckedDevice 'UncheckedDataType 'UncheckedShape
 
 -- | Alias for an untyped tensor with gradients.
-type UntypedParameter = Tensor ('Gradient 'WithGradient) 'UncheckedLayout 'UncheckedDevice 'UncheckedDataType 'UncheckedShape
+type UncheckedParameter = Tensor ('Gradient 'WithGradient) 'UncheckedLayout 'UncheckedDevice 'UncheckedDataType 'UncheckedShape
 
 -- | Alias for a tensor on CPU memory without gradients.
 type CPUTensor = Tensor ('Gradient 'WithoutGradient) ('Layout 'Dense) ('Device 'CPU)

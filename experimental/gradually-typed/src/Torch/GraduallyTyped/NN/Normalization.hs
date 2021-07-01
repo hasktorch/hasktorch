@@ -18,7 +18,8 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wall #-}
 {-# OPTIONS_GHC -fplugin TypeLevel.Rewrite
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2 #-}
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.OrIdempotenceL2 #-}
 
 module Torch.GraduallyTyped.NN.Normalization where
 
@@ -30,37 +31,39 @@ import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense), SLayout
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
 import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithBiasF, LayerNormWithoutBiasF, layerNormWithBias, layerNormWithoutBias)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (..))
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), Gradient, SGradient)
 import Torch.GraduallyTyped.Shape (Dim (..), Name (..), SShape (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes, sZeros)
 import Torch.GraduallyTyped.Tensor.Type (SGetShape, Tensor)
-import Torch.GraduallyTyped.Unify (type (<+>))
+import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 
 data
   LayerNorm
     (hasBias :: HasBias)
+    (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (normalizedShape :: Shape [Dim (Name Symbol) (Size Nat)])
   where
   LayerNormWithBias ::
-    forall device dataType normalizedShape.
-    { layerNormWithBiasWeight :: Tensor 'WithGradient ('Layout 'Dense) device dataType normalizedShape,
-      layerNormBias :: Tensor 'WithGradient ('Layout 'Dense) device dataType normalizedShape,
+    forall gradient device dataType normalizedShape.
+    { layerNormWithBiasWeight :: Tensor gradient ('Layout 'Dense) device dataType normalizedShape,
+      layerNormBias :: Tensor gradient ('Layout 'Dense) device dataType normalizedShape,
       layerNormWithBiasEps :: Double
     } ->
-    LayerNorm 'WithBias device dataType normalizedShape
+    LayerNorm 'WithBias gradient device dataType normalizedShape
   LayerNormWithoutBias ::
-    forall device dataType normalizedShape.
-    { layerNormWithoutBiasWeight :: Tensor 'WithGradient ('Layout 'Dense) device dataType normalizedShape,
+    forall gradient device dataType normalizedShape.
+    { layerNormWithoutBiasWeight :: Tensor gradient ('Layout 'Dense) device dataType normalizedShape,
       layerNormWithoutBiasEps :: Double
     } ->
-    LayerNorm 'WithoutBias device dataType normalizedShape
+    LayerNorm 'WithoutBias gradient device dataType normalizedShape
 
 instance
   HasInitialize
-    (LayerNorm 'WithBias device dataType normalizedShape)
-    ( SDevice device,
+    (LayerNorm 'WithBias gradient device dataType normalizedShape)
+    ( SGradient gradient,
+      SDevice device,
       SDataType dataType,
       SShape normalizedShape,
       Double
@@ -68,15 +71,16 @@ instance
     generator
     generator
   where
-  initialize (device, dataType, normalizedShape, eps) =
-    let weight = sOnes SWithGradient (SLayout SDense) device dataType normalizedShape
-        bias = sZeros SWithGradient (SLayout SDense) device dataType normalizedShape
+  initialize (gradient, device, dataType, normalizedShape, eps) =
+    let weight = sOnes gradient (SLayout SDense) device dataType normalizedShape
+        bias = sZeros gradient (SLayout SDense) device dataType normalizedShape
      in (LayerNormWithBias weight bias eps,)
 
 instance
   HasInitialize
-    (LayerNorm 'WithoutBias device dataType normalizedShape)
-    ( SDevice device,
+    (LayerNorm 'WithoutBias gradient device dataType normalizedShape)
+    ( SGradient gradient,
+      SDevice device,
       SDataType dataType,
       SShape normalizedShape,
       Double
@@ -84,23 +88,23 @@ instance
     generator
     generator
   where
-  initialize (device, dataType, normalizedShape, eps) =
-    let weight = sOnes SWithGradient (SLayout SDense) device dataType normalizedShape
+  initialize (gradient, device, dataType, normalizedShape, eps) =
+    let weight = sOnes gradient (SLayout SDense) device dataType normalizedShape
      in (LayerNormWithoutBias weight eps,)
 
 instance
   ( SGetShape normalizedShape,
     output
       ~ Tensor
-          'WithGradient
+          (gradient <|> gradient')
           ('Layout 'Dense <+> layout')
           (device <+> device')
           (dataType <+> dataType')
           (LayerNormWithBiasF normalizedShape normalizedShape shape')
   ) =>
   HasForward
-    (LayerNorm 'WithBias device dataType normalizedShape)
-    (Tensor requiresGradient' layout' device' dataType' shape')
+    (LayerNorm 'WithBias gradient device dataType normalizedShape)
+    (Tensor gradient' layout' device' dataType' shape')
     generator
     output
     generator
@@ -112,15 +116,15 @@ instance
     SGetShape shape',
     output
       ~ Tensor
-          'WithGradient
+          (gradient <|> gradient')
           ('Layout 'Dense <+> layout')
           (device <+> device')
           (dataType <+> dataType')
           (LayerNormWithoutBiasF normalizedShape shape')
   ) =>
   HasForward
-    (LayerNorm 'WithoutBias device dataType normalizedShape)
-    (Tensor requiresGradient' layout' device' dataType' shape')
+    (LayerNorm 'WithoutBias gradient device dataType normalizedShape)
+    (Tensor gradient' layout' device' dataType' shape')
     generator
     output
     generator
