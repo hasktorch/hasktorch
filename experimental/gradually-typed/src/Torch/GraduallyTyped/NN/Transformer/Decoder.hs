@@ -17,28 +17,28 @@
 
 module Torch.GraduallyTyped.NN.Transformer.Decoder where
 
-import Control.Monad.Indexed (ireturn, (>>>=))
+import Control.Monad.Indexed (IxPointed (ireturn), (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.Reader (MonadIO, MonadReader)
-import Control.Monad.State.Strict (MonadState (state), runState)
+import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI, sing)
 import Data.Singletons.Prelude.List (SList (SNil))
-import GHC.TypeLits (Nat, Symbol, type (<=?))
+import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), KnownDataType, SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
-import Torch.GraduallyTyped.NN.Dropout (Dropout)
+import Torch.GraduallyTyped.NN.Dropout (Dropout (..))
 import Torch.GraduallyTyped.NN.Functional.Sparse (EmbeddingF)
 import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..))
 import Torch.GraduallyTyped.NN.Sparse (Embedding (..))
-import Torch.GraduallyTyped.NN.Transformer.DecoderStack (HasLookupDecoderStack, TransformerDecoderStack, lookupDecoderStack)
+import Torch.GraduallyTyped.NN.Transformer.DecoderStack (TransformerDecoderStack)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Prelude (Seq)
-import Torch.GraduallyTyped.Random (Generator, sMkGenerator)
+import Torch.GraduallyTyped.Random (sMkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape (Dim (..), KnownDim, Name (..), SDim, SName (..), SShape (..), SSize (..), Shape (..), Size (..))
@@ -187,70 +187,101 @@ type family
   TDPosEncF 'MBART device dataType headDim decoderInputEmbedDim posEncDim = TDPosEncF 'BART device dataType headDim decoderInputEmbedDim posEncDim
   TDPosEncF 'Pegasus device dataType headDim decoderInputEmbedDim posEncDim = TDPosEncF 'BART device dataType headDim decoderInputEmbedDim posEncDim
 
+type family
+  HasInitializeTDEmbedLayerNormInputF
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (decoderInputEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
+    Type
+  where
+  HasInitializeTDEmbedLayerNormInputF 'T5 _ _ _ = ()
+  HasInitializeTDEmbedLayerNormInputF 'ByT5 device dataType decoderInputEmbedDim = HasInitializeTDEmbedLayerNormInputF 'T5 device dataType decoderInputEmbedDim
+  HasInitializeTDEmbedLayerNormInputF 'BART device dataType decoderInputEmbedDim = (SDevice device, SDataType dataType, SShape ('Shape '[decoderInputEmbedDim]), Double)
+  HasInitializeTDEmbedLayerNormInputF 'MBART device dataType decoderInputEmbedDim = HasInitializeTDEmbedLayerNormInputF 'BART device dataType decoderInputEmbedDim
+  HasInitializeTDEmbedLayerNormInputF 'Pegasus _ _ _ = ()
+
+type family
+  HasInitializeTDLayerNormInputF
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (decoderInputEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
+    Type
+  where
+  HasInitializeTDLayerNormInputF 'T5 device dataType decoderInputEmbedDim = (SDevice device, SDataType dataType, SShape ('Shape '[decoderInputEmbedDim]), Double)
+  HasInitializeTDLayerNormInputF 'ByT5 device dataType decoderInputEmbedDim = HasInitializeTDLayerNormInputF 'T5 device dataType decoderInputEmbedDim
+  HasInitializeTDLayerNormInputF 'BART _ _ _ = ()
+  HasInitializeTDLayerNormInputF 'MBART device dataType decoderInputEmbedDim = HasInitializeTDLayerNormInputF 'BART device dataType decoderInputEmbedDim
+  HasInitializeTDLayerNormInputF 'Pegasus device dataType decoderInputEmbedDim = (SDevice device, SDataType dataType, SShape ('Shape '[decoderInputEmbedDim]), Double)
+
+type family
+  HasInitializeTDPosEncInputF
+    (style :: TransformerStyle)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (decoderInputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (posEncDim :: Dim (Name Symbol) (Size Nat)) ::
+    Type
+  where
+  HasInitializeTDPosEncInputF 'T5 device dataType headDim _ posEncDim = (SLayout ('Layout 'Dense), SDevice device, SDataType dataType, SDim posEncDim, SDim headDim)
+  HasInitializeTDPosEncInputF 'ByT5 device dataType headDim decoderInputEmbedDim posEncDim = HasInitializeTDPosEncInputF 'T5 device dataType headDim decoderInputEmbedDim posEncDim
+  HasInitializeTDPosEncInputF 'BART device dataType _ decoderInputEmbedDim posEncDim = (SLayout ('Layout 'Dense), SDevice device, SDataType dataType, SDim posEncDim, SDim decoderInputEmbedDim)
+  HasInitializeTDPosEncInputF 'MBART device dataType headDim decoderInputEmbedDim posEncDim = HasInitializeTDPosEncInputF 'BART device dataType headDim decoderInputEmbedDim posEncDim
+  HasInitializeTDPosEncInputF 'Pegasus device dataType headDim decoderInputEmbedDim posEncDim = HasInitializeTDPosEncInputF 'BART device dataType headDim decoderInputEmbedDim posEncDim
+
 instance
   ( SingI style,
     stack ~ TDStackF numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP,
-    HasInitialize stack,
+    HasInitialize stack (SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim decoderInputEmbedDim, SDim encoderOutputEmbedDim, SDim ffnDim, dropoutP, Double) generator generator',
     embedLayerNorm ~ TDEmbedLayerNormF style device dataType decoderInputEmbedDim,
-    HasInitialize embedLayerNorm,
+    HasInitialize embedLayerNorm (HasInitializeTDEmbedLayerNormInputF style device dataType decoderInputEmbedDim) generator' generator'',
     layerNorm ~ TDLayerNormF style device dataType decoderInputEmbedDim,
-    HasInitialize layerNorm,
+    HasInitialize layerNorm (HasInitializeTDLayerNormInputF style device dataType decoderInputEmbedDim) generator'' generator''',
     dropout ~ TDDropoutF style dropoutP,
-    HasInitialize dropout,
+    HasInitialize dropout dropoutP generator''' generator''',
     posEnc ~ TDPosEncF style device dataType headDim decoderInputEmbedDim posEncDim,
-    HasInitialize posEnc
+    HasInitialize posEnc (HasInitializeTDPosEncInputF style device dataType headDim decoderInputEmbedDim posEncDim) generator''' generator''''
   ) =>
-  HasInitialize (TransformerDecoder numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP)
+  HasInitialize
+    (TransformerDecoder numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP)
+    (SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim decoderInputEmbedDim, SDim encoderOutputEmbedDim, SDim ffnDim, SDim posEncDim, dropoutP, Double)
+    generator
+    generator''''
   where
-  type
-    InitializeF (TransformerDecoder numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP) =
-      SDevice device ->
-      SDataType dataType ->
-      SDim headDim ->
-      SDim headEmbedDim ->
-      SDim embedDim ->
-      SDim decoderInputEmbedDim ->
-      SDim encoderOutputEmbedDim ->
-      SDim ffnDim ->
-      SDim posEncDim ->
-      dropoutP ->
-      Double ->
-      Generator device ->
-      (TransformerDecoder numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP, Generator device)
-  initialize device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP eps =
-    runState $ do
-      stack <-
-        state $ initialize @stack device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP eps
-      let embedLayerNorm = case sing @style of
-            ST5 -> ()
-            SByT5 -> ()
-            SBART -> initialize @embedLayerNorm device dataType (SShape $ decoderInputEmbedDim :|: SNil) eps
-            SMBART -> initialize @embedLayerNorm device dataType (SShape $ decoderInputEmbedDim :|: SNil) eps
-            SPegasus -> ()
-            SBERT -> undefined
-            SRoBERTa -> undefined
-            SGPT2 -> undefined
-      let layerNorm = case sing @style of
-            ST5 -> initialize @layerNorm device dataType (SShape $ decoderInputEmbedDim :|: SNil) eps
-            SByT5 -> initialize @layerNorm device dataType (SShape $ decoderInputEmbedDim :|: SNil) eps
-            SBART -> ()
-            SMBART -> ()
-            SPegasus -> initialize @layerNorm device dataType (SShape $ decoderInputEmbedDim :|: SNil) eps
-            SBERT -> undefined
-            SRoBERTa -> undefined
-            SGPT2 -> undefined
-      let dropout = initialize @dropout dropoutP
-      posEnc <-
-        state $ case sing @style of
-          ST5 -> initialize @posEnc (SLayout SDense) device dataType posEncDim headDim
-          SByT5 -> initialize @posEnc (SLayout SDense) device dataType posEncDim headDim
-          SBART -> initialize @posEnc (SLayout SDense) device dataType posEncDim decoderInputEmbedDim
-          SMBART -> initialize @posEnc (SLayout SDense) device dataType posEncDim decoderInputEmbedDim
-          SPegasus -> initialize @posEnc (SLayout SDense) device dataType posEncDim decoderInputEmbedDim
+  initialize (device, dataType, headDim, headEmbedDim, embedDim, decoderInputEmbedDim, encoderOutputEmbedDim, ffnDim, posEncDim, dropoutP, eps) =
+    let decoderStack = IxState . initialize $ (device, dataType, headDim, headEmbedDim, embedDim, decoderInputEmbedDim, encoderOutputEmbedDim, ffnDim, dropoutP, eps)
+        embedLayerNorm = IxState . initialize $ case sing @style of
+          ST5 -> ()
+          SByT5 -> ()
+          SBART -> (device, dataType, SShape $ decoderInputEmbedDim :|: SNil, eps)
+          SMBART -> (device, dataType, SShape $ decoderInputEmbedDim :|: SNil, eps)
+          SPegasus -> ()
           SBERT -> undefined
           SRoBERTa -> undefined
           SGPT2 -> undefined
-      pure . TransformerDecoder $ GTransformerDecoder stack embedLayerNorm layerNorm dropout posEnc
+        layerNorm = IxState . initialize $ case sing @style of
+          ST5 -> (device, dataType, SShape $ decoderInputEmbedDim :|: SNil, eps)
+          SByT5 -> (device, dataType, SShape $ decoderInputEmbedDim :|: SNil, eps)
+          SBART -> ()
+          SMBART -> ()
+          SPegasus -> (device, dataType, SShape $ decoderInputEmbedDim :|: SNil, eps)
+          SBERT -> undefined
+          SRoBERTa -> undefined
+          SGPT2 -> undefined
+        dropout = IxState . initialize $ dropoutP
+        posEnc = IxState . initialize $ case sing @style of
+          ST5 -> (SLayout SDense, device, dataType, posEncDim, headDim)
+          SByT5 -> (SLayout SDense, device, dataType, posEncDim, headDim)
+          SBART -> (SLayout SDense, device, dataType, posEncDim, decoderInputEmbedDim)
+          SMBART -> (SLayout SDense, device, dataType, posEncDim, decoderInputEmbedDim)
+          SPegasus -> (SLayout SDense, device, dataType, posEncDim, decoderInputEmbedDim)
+          SBERT -> undefined
+          SRoBERTa -> undefined
+          SGPT2 -> undefined
+     in runIxState $
+          (GTransformerDecoder <<$>> decoderStack <<*>> embedLayerNorm <<*>> layerNorm <<*>> dropout <<*>> posEnc) >>>= ireturn . TransformerDecoder
 
 lookupDecoder ::
   forall numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP m.
@@ -266,8 +297,8 @@ lookupDecoder ::
     KnownDim encoderOutputEmbedDim,
     KnownDim ffnDim,
     KnownDim posEncDim,
-    Scalar dropoutP,
-    HasLookupDecoderStack numLayers (1 <=? numLayers) numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP m
+    Scalar dropoutP
+    -- HasLookupDecoderStack numLayers (1 <=? numLayers) numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP m
   ) =>
   SDim headDim ->
   SDim headEmbedDim ->
@@ -277,11 +308,11 @@ lookupDecoder ::
   String ->
   m (TransformerDecoder numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP)
 lookupDecoder headDim headEmbedDim embedDim dropoutP eps prefix =
-  let stack ST5 = lookupDecoderStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "block.")
-      stack SByT5 = lookupDecoderStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "block.")
-      stack SBART = lookupDecoderStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "layers.")
-      stack SMBART = lookupDecoderStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "layers.")
-      stack SPegasus = lookupDecoderStack headDim headEmbedDim embedDim dropoutP eps (prefix <> "layers.")
+  let stack ST5 = undefined headDim headEmbedDim embedDim dropoutP eps (prefix <> "block.")
+      stack SByT5 = undefined headDim headEmbedDim embedDim dropoutP eps (prefix <> "block.")
+      stack SBART = undefined headDim headEmbedDim embedDim dropoutP eps (prefix <> "layers.")
+      stack SMBART = undefined headDim headEmbedDim embedDim dropoutP eps (prefix <> "layers.")
+      stack SPegasus = undefined headDim headEmbedDim embedDim dropoutP eps (prefix <> "layers.")
       stack SBERT = undefined
       stack SRoBERTa = undefined
       stack SGPT2 = undefined
@@ -319,7 +350,7 @@ lookupDecoder headDim headEmbedDim embedDim dropoutP eps prefix =
       layerNorm SBERT = undefined
       layerNorm SRoBERTa = undefined
       layerNorm SGPT2 = undefined
-      dropout _ = pure (initialize @(Dropout dropoutP) dropoutP)
+      dropout _ = pure (Dropout dropoutP)
       posEnc ST5 = Embedding <$> lookupTensor (prefix <> "block.0.layer.0.SelfAttention.relative_attention_bias.weight")
       posEnc SByT5 = Embedding <$> lookupTensor (prefix <> "block.0.layer.0.SelfAttention.relative_attention_bias.weight")
       posEnc SBART = Embedding <$> lookupTensor (prefix <> "embed_positions.weight")
@@ -483,7 +514,7 @@ testDecoder = do
       dropoutP :: Float = 0.0
       eps = 1e-6
   g <- sMkGenerator device 0
-  let (encoder, g') = initialize @(TransformerDecoder 1 'T5 _ _ _ _ _ _ _ _ _ _) device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP eps g
+  let (encoder, g') = initialize @(TransformerDecoder 1 'T5 _ _ _ _ _ _ _ _ _ _) (device, dataType, headDim, headEmbedDim, embedDim, decoderInputEmbedDim, encoderOutputEmbedDim, ffnDim, posEncDim, dropoutP, eps) g
       batchDim = SName @"*" :&: SSize @3
       seqDim = SName @"*" :&: SSize @13
       decoderSeqDim = SName @"*" :&: SSize @7

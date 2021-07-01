@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -23,6 +24,8 @@
 
 module Torch.GraduallyTyped.Tensor.Type where
 
+import Control.Exception (Exception)
+import Control.Monad.Except (MonadError (throwError))
 import Data.Bifunctor (bimap)
 import Data.Coerce (coerce)
 import Data.Foldable (Foldable (fold))
@@ -123,9 +126,7 @@ type SparseCUDATensor deviceId = Tensor 'WithoutGradient ('Layout 'Sparse) ('Dev
 -- | Alias for a sparse tensor on CUDA memory with gradients.
 type SparseCUDAParameter deviceId = Tensor 'WithGradient ('Layout 'Sparse) ('Device ('CUDA deviceId))
 
-instance
-  Num (Tensor requiresGradient layout device dataType shape)
-  where
+instance Num (Tensor requiresGradient layout device dataType shape) where
   (+) = (unsafePerformIO .) . cast2 ATen.add_tt
   (-) = (unsafePerformIO .) . cast2 ATen.sub_tt
   (*) = (unsafePerformIO .) . cast2 ATen.mul_tt
@@ -319,6 +320,10 @@ checkLayout tensor =
       unsafePerformIO $
         (==) layoutType <$> cast1 ATen.tensor_layout tensor
 
+newtype LayoutError = LayoutError String deriving stock (Show)
+
+instance Exception LayoutError
+
 -- | Checks whether or not the input tensor has the memory layout 'layout'
 -- and returns a statically annotated copy of it wrapped in a 'MonadFail' 'm'.
 --
@@ -342,14 +347,14 @@ checkLayout tensor =
 -- *** Exception: user error (The tensor does not have the memory layout "Layout Sparse".)
 checkedLayout ::
   forall (layout :: Layout LayoutType) m requiresGradient device dataType shape.
-  (KnownLayout layout, MonadFail m) =>
+  (KnownLayout layout, MonadError LayoutError m) =>
   -- | input tensor
   Tensor requiresGradient 'UncheckedLayout device dataType shape ->
   -- | annotated output tensor wrapped in 'm'
   m (Tensor requiresGradient layout device dataType shape)
 checkedLayout tensor
   | checkLayout @layout tensor = pure . coerce $ tensor
-  | otherwise = fail $ "The tensor does not have the memory layout \"" <> show (layoutVal @layout) <> "\"."
+  | otherwise = throwError . LayoutError $ "The tensor does not have the memory layout \"" <> show (layoutVal @layout) <> "\"."
 
 -- | Unsafe version of 'checkedLayout'.
 -- If the tensor does not have the memory layout 'layout', then the execution is stopped and an error message is displayed.
@@ -379,7 +384,7 @@ unsafeCheckedLayout ::
   Tensor requiresGradient layout device dataType shape
 unsafeCheckedLayout tensor = case checkedLayout @layout tensor of
   Right tensor' -> tensor'
-  Left err -> error err
+  Left (LayoutError err) -> error err
 
 -- | Returns a copy of the tensor in CPU memory.
 cpu ::
@@ -514,6 +519,10 @@ checkDevice tensor =
           &&^ cast1 ATen.tensor_is_cuda tensor
           &&^ ((deviceIndex ==) . fromIntegral) <$> (cast1 ATen.tensor_get_device tensor :: IO Int)
 
+newtype DeviceError = DeviceError String deriving stock (Show)
+
+instance Exception DeviceError
+
 -- | Checks whether or not the input tensor is in the memory of 'device'
 -- and returns a statically annotated copy of it wrapped in a 'MonadFail' 'm'.
 --
@@ -537,14 +546,14 @@ checkDevice tensor =
 -- *** Exception: user error (The tensor is not in the memory of the device "Device (CUDA 0)".)
 checkedDevice ::
   forall (device :: Device (DeviceType Nat)) m requiresGradient layout dataType shape.
-  (KnownDevice device, MonadFail m) =>
+  (KnownDevice device, MonadError DeviceError m) =>
   -- | input tensor
   Tensor requiresGradient layout 'UncheckedDevice dataType shape ->
   -- | annotated output tensor wrapped in 'm'
   m (Tensor requiresGradient layout device dataType shape)
 checkedDevice tensor
   | checkDevice @device tensor = pure . coerce $ tensor
-  | otherwise = fail $ "The tensor is not in the memory of the device \"" <> show (deviceVal @device) <> "\"."
+  | otherwise = throwError . DeviceError $ "The tensor is not in the memory of the device \"" <> show (deviceVal @device) <> "\"."
 
 -- | Unsafe version of 'checkedDevice'.
 -- If the tensor is not on 'device', then the execution is stopped and an error message is displayed.
@@ -574,7 +583,7 @@ unsafeCheckedDevice ::
   Tensor requiresGradient layout device dataType shape
 unsafeCheckedDevice tensor = case checkedDevice @device tensor of
   Right tensor' -> tensor'
-  Left err -> error err
+  Left (DeviceError err) -> error err
 
 -- | Returns a copy of the tensor converted to 'Bool'.
 bool ::
@@ -746,6 +755,10 @@ checkDataType tensor =
     UncheckedDataType -> True
     DataType dtype -> unsafePerformIO $ (dtype ==) <$> cast1 ATen.tensor_scalar_type tensor
 
+newtype DataTypeError = DataTypeError String deriving stock (Show)
+
+instance Exception DataTypeError
+
 -- | Checks whether or not the input tensor has the data type 'dataType'
 -- and returns a statically annotated copy of it wrapped in a 'MonadFail' 'm'.
 --
@@ -769,14 +782,14 @@ checkDataType tensor =
 -- *** Exception: user error (The tensor does not have the data type "DataType Double".)
 checkedDataType ::
   forall (dataType :: DataType DType) m requiresGradient layout device shape.
-  (KnownDataType dataType, MonadFail m) =>
+  (KnownDataType dataType, MonadError DataTypeError m) =>
   -- | input tensor
   Tensor requiresGradient layout device 'UncheckedDataType shape ->
   -- | annotated output tensor wrapped in 'm'
   m (Tensor requiresGradient layout device dataType shape)
 checkedDataType tensor
   | checkDataType @dataType tensor = pure . coerce $ tensor
-  | otherwise = fail $ "The tensor does not have the data type \"" <> show (dataTypeVal @dataType) <> "\"."
+  | otherwise = throwError . DataTypeError $ "The tensor does not have the data type \"" <> show (dataTypeVal @dataType) <> "\"."
 
 -- | Unsafe version of 'checkedDataType'.
 -- If the tensor does not have the data type 'dataType', then the execution is stopped and an error message is displayed.
@@ -806,7 +819,7 @@ unsafeCheckedDataType ::
   Tensor requiresGradient layout device dataType shape
 unsafeCheckedDataType tensor = case checkedDataType @dataType tensor of
   Right tensor' -> tensor'
-  Left err -> error err
+  Left (DataTypeError err) -> error err
 
 class SGetShape (shape :: Shape [Dim (Name Symbol) (Size Nat)]) where
   -- | Returns the gradually typed shape of the input tensor.
@@ -1027,7 +1040,7 @@ checkShape ::
 checkShape tensor =
   case shapeVal @shape of
     UncheckedShape -> True
-    Shape dims ->
+    Shape dims' ->
       let sizes =
             unsafePerformIO $
               ifM
@@ -1044,9 +1057,13 @@ checkShape tensor =
           f (Dim (Name name) UncheckedSize) name' _ = All $ name == name'
           f (Dim UncheckedName (Size size)) _ size' = All $ size == size'
           f (Dim (Name name) (Size size)) name' size' = All $ name == name' && size == size'
-       in length dims == length names
+       in length dims' == length names
             && length names == length sizes
-            && (getAll . fold) (zipWith3 f dims names sizes)
+            && (getAll . fold) (zipWith3 f dims' names sizes)
+
+newtype ShapeError = ShapeError String deriving stock (Show)
+
+instance Exception ShapeError
 
 -- | Checks whether or not the input tensor has the shape 'shape'
 -- and returns a statically annotated copy of it wrapped in a 'MonadFail' 'm'.
@@ -1082,14 +1099,14 @@ checkShape tensor =
 -- *** Exception: user error (The tensor does not have the shape "Shape [Dim {dimName = Name "batch", dimSize = Size 32},Dim {dimName = Name "feature", dimSize = Size 32}]".)
 checkedShape ::
   forall (shape :: Shape [Dim (Name Symbol) (Size Nat)]) m requiresGradient layout device dataType.
-  (KnownShape shape, MonadFail m) =>
+  (KnownShape shape, MonadError ShapeError m) =>
   -- | input tensor
   Tensor requiresGradient layout device dataType 'UncheckedShape ->
   -- | annotated output tensor wrapped in 'm'
   m (Tensor requiresGradient layout device dataType shape)
 checkedShape tensor
   | checkShape @shape tensor = pure . coerce $ tensor
-  | otherwise = fail $ "The tensor does not have the shape \"" <> show (shapeVal @shape) <> "\"."
+  | otherwise = throwError . ShapeError $ "The tensor does not have the shape \"" <> show (shapeVal @shape) <> "\"."
 
 -- | Unsafe version of 'checkedShape'.
 -- If the tensor does not have the shape 'shape', then the execution is stopped and an error message is displayed.
@@ -1119,4 +1136,4 @@ unsafeCheckedShape ::
   Tensor requiresGradient layout device dataType shape
 unsafeCheckedShape tensor = case checkedShape @shape tensor of
   Right tensor' -> tensor'
-  Left err -> error err
+  Left (ShapeError err) -> error err

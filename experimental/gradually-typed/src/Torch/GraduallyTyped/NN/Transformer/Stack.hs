@@ -7,6 +7,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverlappingInstances #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -25,9 +26,13 @@ import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.Reader (MonadIO, MonadReader)
 import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Kind (Type)
+import Data.Proxy (Proxy (..))
 import Data.Singletons (SingI)
+import qualified Data.Vector as V
+import qualified Data.Vector.Generic as VG
+import qualified Data.Vector.Generic.Sized.Internal as VGS
 import qualified Data.Vector.Sized as VS
-import GHC.TypeLits (KnownNat, Nat, Symbol, type (+), type (-), type (<=?))
+import GHC.TypeLits (KnownNat, Nat, Symbol, natVal, type (+), type (-), type (<=?))
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType, KnownDataType, SDataType)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, SDevice)
@@ -107,27 +112,63 @@ instance
      in (TransformerStack v, g')
 
 instance
+  HasForward
+    (TransformerStack 0 style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
+    (query, attentionBias)
+    generator
+    query
+    generator
+  where
+  forward _ (query, _) g = (query, g)
+
+instance
+  HasForward
+    (TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
+    (query, attentionBias)
+    generator
+    output
+    generatorOutput =>
+  HasForward
+    (TransformerStack 1 style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
+    (query, attentionBias)
+    generator
+    output
+    generatorOutput
+  where
+  forward (TransformerStack (VGS.Vector v)) input g =
+    let Just (block, _) = V.uncons v
+     in forward block input g
+
+instance
+  {-# OVERLAPPABLE #-}
   ( HasForward
       (TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
-      input
+      (query, attentionBias)
       generator
       output
       generatorOutput,
     HasForward
       (TransformerBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
-      output
+      (output, attentionBias)
       generatorOutput
       output
       generatorOutput
   ) =>
   HasForward
-    (TransformerStack numLayers style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
-    input
+    (TransformerStack n style device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
+    (query, attentionBias)
     generator
     output
     generatorOutput
   where
-  forward (TransformerStack v) = forward v
+  forward (TransformerStack (VGS.Vector v)) (query, attentionBias) g =
+    let Just (block, blocks) = V.uncons v
+     in V.foldl
+          ( \(output, g') block' ->
+              forward block' (output, attentionBias) g'
+          )
+          (forward block (query, attentionBias) g)
+          blocks
 
 -- class
 --   HasInitializeTransformerStack

@@ -20,10 +20,10 @@
 
 module Torch.GraduallyTyped.NN.Transformer.DecoderBlock where
 
-import Control.Monad.Indexed (ireturn, (>>>=))
+import Control.Monad.Indexed (IxPointed (ireturn), (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.Reader (MonadIO, MonadReader)
-import Control.Monad.State.Strict (MonadState (state), runState)
+import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI, sing)
 import Data.Singletons.Prelude.List (SList (..))
@@ -71,63 +71,33 @@ data
     TransformerDecoderBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP
 
 instance
-  ( HasInitialize (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP),
-    HasInitialize (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP),
-    HasInitialize (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP)
+  ( HasInitialize
+      (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
+      (SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim queryEmbedDim, dropoutP, Double)
+      generator
+      generator',
+    HasInitialize
+      (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
+      (SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim queryEmbedDim, SDim keyEmbedDim, dropoutP, Double)
+      generator'
+      generator'',
+    HasInitialize
+      (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP)
+      (SDevice device, SDataType dataType, SDim queryEmbedDim, SDim ffnDim, dropoutP, Double)
+      generator''
+      generator'''
   ) =>
-  HasInitialize (TransformerDecoderBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
+  HasInitialize
+    (TransformerDecoderBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
+    (SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim queryEmbedDim, SDim keyEmbedDim, SDim ffnDim, dropoutP, Double)
+    generator
+    generator'''
   where
-  type
-    InitializeF (TransformerDecoderBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP) =
-      SDevice device ->
-      SDataType dataType ->
-      SDim headDim ->
-      SDim headEmbedDim ->
-      SDim embedDim ->
-      SDim queryEmbedDim ->
-      SDim keyEmbedDim ->
-      SDim ffnDim ->
-      dropoutP ->
-      Double ->
-      Generator device ->
-      (TransformerDecoderBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP, Generator device)
-  initialize device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP eps = runState $ do
-    selfAttention <-
-      state $
-        initialize
-          @(SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
-          device
-          dataType
-          headDim
-          headEmbedDim
-          embedDim
-          queryEmbedDim
-          dropoutP
-          eps
-    crossAttention <-
-      state $
-        initialize
-          @(CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
-          device
-          dataType
-          headDim
-          headEmbedDim
-          embedDim
-          queryEmbedDim
-          keyEmbedDim
-          dropoutP
-          eps
-    feedForwardNetwork <-
-      state $
-        initialize
-          @(TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP)
-          device
-          dataType
-          queryEmbedDim
-          ffnDim
-          dropoutP
-          eps
-    pure $ TransformerDecoderBlock selfAttention crossAttention feedForwardNetwork
+  initialize (device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, ffnDim, dropoutP, eps) =
+    let selfAttention = IxState . initialize $ (device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, dropoutP, eps)
+        crossAttention = IxState . initialize $ (device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, dropoutP, eps)
+        feedForwardNetwork = IxState . initialize $ (device, dataType, queryEmbedDim, ffnDim, dropoutP, eps)
+     in runIxState $ TransformerDecoderBlock <<$>> selfAttention <<*>> crossAttention <<*>> feedForwardNetwork
 
 lookupDecoderBlock ::
   forall style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP m.
@@ -256,7 +226,7 @@ testDecoderBlock = do
       dropoutP :: Float = 0.0
       eps = 1e-6
   g <- sMkGenerator device 0
-  let (decoderBlock, g') = initialize @(TransformerDecoderBlock 'T5 _ _ _ _ _ _ _ _ _) device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP eps g
+  let (decoderBlock, g') = initialize @(TransformerDecoderBlock 'T5 _ _ _ _ _ _ _ _ _) (device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, ffnDim, dropoutP, eps) g
       batchDim = SName @"*" :&: SSize @3
       seqDim = SName @"*" :&: SSize @17
       decoderSeqDim = SName @"*" :&: SSize @13

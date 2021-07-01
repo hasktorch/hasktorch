@@ -48,7 +48,7 @@ import Torch.GraduallyTyped.NN.Class (HasForward (..))
 import Torch.GraduallyTyped.NN.Sparse (Embedding (..))
 import Torch.GraduallyTyped.NN.Transformer.Encoder (TransformerEncoder, lookupEncoder)
 import Torch.GraduallyTyped.NN.Transformer.LMHead (LMHead, lookupLMHead)
-import Torch.GraduallyTyped.NN.Transformer.Stack (HasLookupStack)
+import Torch.GraduallyTyped.NN.Transformer.Stack ()
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
 import Torch.GraduallyTyped.Prelude (forgetIsChecked)
 import Torch.GraduallyTyped.Scalar (Scalar)
@@ -259,8 +259,8 @@ lookupEncoderOnlyTransformer ::
     KnownDim inputEmbedDim,
     KnownDim vocabDim,
     KnownDim typeVocabDim,
-    Scalar dropoutP,
-    HasLookupStack numLayers (1 <=? numLayers) numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP m
+    Scalar dropoutP
+    -- HasLookupStack numLayers (1 <=? numLayers) numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP m
   ) =>
   SDim headDim ->
   SDim headEmbedDim ->
@@ -300,8 +300,8 @@ lookupEncoderOnlyTransformerWithLMHead ::
     KnownDim inputEmbedDim,
     KnownDim vocabDim,
     KnownDim typeVocabDim,
-    Scalar dropoutP,
-    HasLookupStack numLayers (1 <=? numLayers) numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP m
+    Scalar dropoutP
+    -- HasLookupStack numLayers (1 <=? numLayers) numLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP m
   ) =>
   SDim headDim ->
   SDim headEmbedDim ->

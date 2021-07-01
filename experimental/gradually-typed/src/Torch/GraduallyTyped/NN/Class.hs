@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -22,6 +23,8 @@ module Torch.GraduallyTyped.NN.Class where
 -- import Generics.SOP (Code, I, SOP(..), Generic, NS(..), NP)
 -- import GHC.Base (coerce, Any)
 
+import Control.Exception (Exception)
+import Control.Monad.Error (MonadError (throwError))
 import Data.Kind (Type)
 import qualified Data.Map.Strict as Map
 import Data.Proxy (Proxy (..))
@@ -32,8 +35,30 @@ import qualified Data.Vector.Generic as VG
 import qualified Data.Vector.Generic.Sized.Internal as VGS
 import qualified Data.Vector.Sized as VS
 import Foreign.ForeignPtr (ForeignPtr)
-import GHC.TypeLits (KnownNat, natVal, type (+))
+import GHC.TypeLits (ErrorMessage (..), KnownNat, TypeError, natVal, type (+))
+import Torch.GraduallyTyped.Tensor.Type (Tensor (UnsafeTensor), checkedDataType, checkedDevice, checkedLayout, checkedShape)
 import qualified Torch.Internal.Type as ATen (Tensor)
+
+-- class Foo a i o | a i -> o where
+--   foo :: a -> i -> o
+
+-- instance
+--   ( Foo a i o,
+--     Foo a o o
+--   ) =>
+--   Foo (a, a) i o
+--   where
+--   foo (a, a') i = foo a' $ foo a i
+
+-- data A = A
+
+-- instance TypeError ('Text "no Bool!") => Foo A Bool () where
+--   foo _ _ = ()
+
+-- instance TypeError ('Text "no ()!") => Foo A () () where
+--   foo _ _ = ()
+
+-- bar = foo (A, A) True
 
 class
   HasForward
@@ -135,14 +160,29 @@ testInitializeVector ::
   (generator -> (VS.Vector n (), generator))
 testInitializeVector = initialize @(VS.Vector n ()) ()
 
-type Prefix = String
+type StateDict = Map.Map String (ForeignPtr ATen.Tensor)
 
-type StateDict = Map.Map Prefix (ForeignPtr ATen.Tensor)
+data FromStateDictError = FromStateDictError String deriving stock (Show)
+
+instance Exception FromStateDictError
 
 class HasStateDict model where
-  prefix :: Prefix -> Prefix
-  fromStateDict :: StateDict -> model
-  toStateDict :: StateDict -> model -> StateDict
+  prefix :: String
+  fromStateDict :: forall e m. MonadError (FromStateDictError :<: e) m => String -> StateDict -> m model
+  toStateDict :: forall m. MonadError FromStateDictError m => String -> StateDict -> model -> m StateDict
+
+instance HasStateDict () where
+  prefix = mempty
+  fromStateDict k stateDict =
+    ( maybe
+        (throwError . FromStateDictError $ "`" <> show k <> "` is not in the model state dictionary.")
+        (pure . UnsafeTensor)
+        (Map.lookup k stateDict)
+    )
+      >>= checkedLayout
+      >>= checkedDevice
+      >>= checkedDataType
+      >>= checkedShape
 
 -- class GHasForward model input where
 --   type GOutput model input

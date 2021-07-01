@@ -36,10 +36,10 @@
 
 module Torch.GraduallyTyped.NN.Transformer.CrossAttention where
 
-import Control.Monad.Indexed (ireturn, (>>>=))
+import Control.Monad.Indexed (IxPointed (ireturn), (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
 import Control.Monad.Reader (MonadIO, MonadReader)
-import Control.Monad.State.Strict (MonadState (state), runState)
+import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI, sing)
 import Data.Singletons.Prelude.List (SList (..))
@@ -49,7 +49,7 @@ import Torch.GraduallyTyped.DType (DataType, KnownDataType, SDType (..), SDataTy
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
-import Torch.GraduallyTyped.NN.Dropout (Dropout)
+import Torch.GraduallyTyped.NN.Dropout (Dropout (..))
 import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithBiasF)
 import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..))
 import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (MultiHeadAttention, lookupMultiHeadAttention)
@@ -162,35 +162,24 @@ type family
 instance
   ( Scalar dropoutP,
     multiHeadAttention ~ CAMultiheadAttentionF style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP,
-    HasInitialize multiHeadAttention,
+    HasInitialize multiHeadAttention (SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim queryEmbedDim, SDim keyEmbedDim, SDim keyEmbedDim, dropoutP) generator generator',
     layerNorm ~ CALayerNormF style device dataType queryEmbedDim,
-    HasInitialize layerNorm,
-    InitializeF layerNorm ~ (SDevice device -> SDataType dataType -> SShape ('Shape '[queryEmbedDim]) -> Double -> layerNorm),
-    dropout ~ CADropoutF style dropoutP,
-    HasInitialize dropout
+    HasInitialize layerNorm (SDevice device, SDataType dataType, SShape ('Shape '[queryEmbedDim]), Double) generator' generator',
+    dropout ~ CADropoutF style dropoutP
   ) =>
-  HasInitialize (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
+  HasInitialize
+    (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
+    (SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim queryEmbedDim, SDim keyEmbedDim, dropoutP, Double)
+    generator
+    generator'
   where
-  type
-    InitializeF (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP) =
-      SDevice device ->
-      SDataType dataType ->
-      SDim headDim ->
-      SDim headEmbedDim ->
-      SDim embedDim ->
-      SDim queryEmbedDim ->
-      SDim keyEmbedDim ->
-      dropoutP ->
-      Double ->
-      Generator device ->
-      (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP, Generator device)
-  initialize device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP eps =
-    runState $ do
-      multiHeadAttention <-
-        state $ initialize @multiHeadAttention device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP
-      let layerNorm = initialize @layerNorm device dataType (SShape $ queryEmbedDim :|: SNil) eps
-      let dropout = initialize @dropout dropoutP
-      pure . CrossAttention $ GCrossAttention multiHeadAttention layerNorm dropout
+  initialize (device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, dropoutP, eps) =
+    let multiHeadAttention = IxState . initialize $ (device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, keyEmbedDim, dropoutP)
+        layerNorm = IxState . initialize $ (device, dataType, SShape $ queryEmbedDim :|: SNil, eps)
+        dropout = IxState . initialize $ dropoutP
+     in runIxState $
+          (GCrossAttention <<$>> multiHeadAttention <<*>> layerNorm <<*>> dropout)
+            >>>= (ireturn . CrossAttention)
 
 lookupCrossAttention ::
   forall style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP m.
@@ -247,7 +236,7 @@ lookupCrossAttention headDim headEmbedDim embedDim dropoutP eps prefix =
       layerNorm SBERT = undefined
       layerNorm SRoBERTa = undefined
       layerNorm SGPT2 = undefined
-      dropout _ = pure (initialize @(Dropout dropoutP) dropoutP)
+      dropout _ = pure (Dropout dropoutP)
    in CrossAttention
         <$> ( GCrossAttention
                 <$> crossAttention (sing @style)
@@ -335,7 +324,7 @@ testCA = do
       dropoutP :: Float = 0.0
       eps = 1e-6
   g <- sMkGenerator device 0
-  let (sa, g') = initialize @(CrossAttention 'T5 _ _ _ _ _ _ _ _) device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP eps g
+  let (sa, g') = initialize @(CrossAttention 'T5 _ _ _ _ _ _ _ _) (device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, dropoutP, eps) g
       batchDim = SName @"*" :&: SSize @3
       seqDim = SName @"*" :&: SSize @4
       sOnes' = sOnes SWithoutGradient (SLayout SDense) device
