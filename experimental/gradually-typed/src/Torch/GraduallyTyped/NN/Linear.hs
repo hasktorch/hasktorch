@@ -31,7 +31,7 @@ import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict)
 import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithBiasF, LinearWithoutBiasF, linearWithBias, linearWithoutBias)
 import Torch.GraduallyTyped.NN.Initialization (FanMode (..), ForNonLinearity (..), calculateFan, getter, sKaimingUniform)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
@@ -108,6 +108,16 @@ instance
             >>>= ireturn . (\bias' -> (bias' `mulScalar` (bound * 2)) `subScalar` bound)
      in runIxState $
           LinearWithBias <<$>> weight <<*>> bias
+
+instance
+  HasStateDict
+    (Linear 'WithBias device dataType inputDim outputDim)
+    ( SDevice device,
+      SDataType dataType,
+      SDim inputDim,
+      SDim outputDim
+    )
+    
 
 instance
   ( output

@@ -16,7 +16,7 @@ import Torch.DType (DType)
 import Torch.GraduallyTyped.DType (DataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
+import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Shape (..), Size (..))
 import Type.Errors.Pretty (type (%), type (<>))
 
@@ -36,7 +36,9 @@ infixr 8 <+>
 type Unify :: forall k -> k -> k -> k
 type family Unify k (a :: k) (b :: k) :: k where
   Unify _ a a = a
-  Unify RequiresGradient requiresGradient requiresGradient' = TypeError (UnifyRequiresGradientMessage requiresGradient requiresGradient')
+  Unify (Gradient RequiresGradient) 'UncheckedGradient _ = 'UncheckedGradient
+  Unify (Gradient RequiresGradient) _ 'UncheckedGradient = 'UncheckedGradient
+  Unify (Gradient RequiresGradient) ('Gradient requiresGradient) ('Gradient requiresGradient') = TypeError (UnifyRequiresGradientMessage requiresGradient requiresGradient')
   Unify (Layout LayoutType) 'UncheckedLayout _ = 'UncheckedLayout
   Unify (Layout LayoutType) _ 'UncheckedLayout = 'UncheckedLayout
   Unify (Layout LayoutType) ('Layout layoutType) ('Layout layoutType') = TypeError (UnifyLayoutErrorMessage layoutType layoutType')
@@ -158,5 +160,7 @@ infixr 8 <|>
 type Or :: forall k -> k -> k -> k
 type family Or k (a :: k) (b :: k) :: k where
   Or _ a a = a
-  Or RequiresGradient _ WithGradient = WithGradient
-  Or RequiresGradient WithGradient _ = WithGradient
+  Or (Gradient RequiresGradient) _ ('Gradient 'WithGradient) = 'Gradient 'WithGradient
+  Or (Gradient RequiresGradient) 'UncheckedGradient ('Gradient 'WithoutGradient) = 'UncheckedGradient
+  Or (Gradient RequiresGradient) ('Gradient 'WithGradient) _ = 'Gradient 'WithGradient
+  Or (Gradient RequiresGradient) ('Gradient 'WithoutGradient) 'UncheckedGradient = 'UncheckedGradient

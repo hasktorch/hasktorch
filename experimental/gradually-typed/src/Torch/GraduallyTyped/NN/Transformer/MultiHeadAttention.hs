@@ -38,13 +38,12 @@
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL7C
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8C #-}
-{-# OPTIONS_GHC -v2 -Wall #-}
+{-# OPTIONS_GHC -v2 -Wall -Werror #-}
 
 module Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
-import Control.Monad.Reader (MonadIO, MonadReader)
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI (..), SingKind (..))
@@ -56,16 +55,15 @@ import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), KnownDataType, SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout (..))
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, softmax)
 import Torch.GraduallyTyped.NN.Linear (Linear (..))
-import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
+import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Prelude (forgetIsChecked)
 import Torch.GraduallyTyped.Random (Generator, sMkGenerator)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (SWithGradient))
-import Torch.GraduallyTyped.Scalar (Scalar)
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (SWithGradient, SWithoutGradient))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, sGetDim, sUnifyDim, type (!))
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownDim (..), Name (..), SBy (..), SDim (..), SName (..), SSelectDim (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes)
@@ -75,6 +73,8 @@ import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add, mulScalar)
 import Torch.GraduallyTyped.Tensor.Type (SGetShape (..), Tensor (..), checkedDataType, checkedDevice, checkedLayout, checkedShape)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import qualified Torch.Tensor
+import Control.Monad.State (StateT(runStateT), evalStateT)
+import qualified Data.Map.Strict as Map
 
 -- | Generic multi-headed attention layer.
 -- Needs to be specialized to a given transformer type, e.g. 'T5'.
@@ -249,147 +249,227 @@ instance
           )
             >>>= ireturn . MultiHeadAttention
 
-lookupMultiHeadAttention ::
-  forall style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP m.
+instance
   ( SingI style,
-    MonadReader TensorDict m,
-    MonadIO m,
-    MonadFail m,
     KnownDevice device,
     KnownDataType dataType,
     KnownDim embedDim,
     KnownDim queryEmbedDim,
     KnownDim keyEmbedDim,
-    KnownDim valueEmbedDim,
-    Scalar dropoutP
+    KnownDim valueEmbedDim
   ) =>
-  SDim headDim ->
-  SDim headEmbedDim ->
-  SDim embedDim ->
-  dropoutP ->
-  String ->
-  m (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
-lookupMultiHeadAttention headDim headEmbedDim embedDim dropoutP prefix =
-  let qInProj ST5 =
-        LinearWithoutBias
-          <$> lookupTensor (prefix <> "q.weight")
-      qInProj SByT5 =
-        LinearWithoutBias
-          <$> lookupTensor (prefix <> "q.weight")
-      qInProj SBART =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "q_proj.weight")
-          <*> lookupTensor (prefix <> "q_proj.bias")
-      qInProj SMBART =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "q_proj.weight")
-          <*> lookupTensor (prefix <> "q_proj.bias")
-      qInProj SPegasus =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "q_proj.weight")
-          <*> lookupTensor (prefix <> "q_proj.bias")
-      qInProj SBERT =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "self.query.weight")
-          <*> lookupTensor (prefix <> "self.query.bias")
-      qInProj SRoBERTa =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "self.query.weight")
-          <*> lookupTensor (prefix <> "self.query.bias")
-      qInProj SGPT2 = undefined
-      kInProj ST5 =
-        LinearWithoutBias
-          <$> lookupTensor (prefix <> "k.weight")
-      kInProj SByT5 =
-        LinearWithoutBias
-          <$> lookupTensor (prefix <> "k.weight")
-      kInProj SBART =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "k_proj.weight")
-          <*> lookupTensor (prefix <> "k_proj.bias")
-      kInProj SMBART =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "k_proj.weight")
-          <*> lookupTensor (prefix <> "k_proj.bias")
-      kInProj SPegasus =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "k_proj.weight")
-          <*> lookupTensor (prefix <> "k_proj.bias")
-      kInProj SBERT =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "self.key.weight")
-          <*> lookupTensor (prefix <> "self.key.bias")
-      kInProj SRoBERTa =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "self.key.weight")
-          <*> lookupTensor (prefix <> "self.key.bias")
-      kInProj SGPT2 = undefined
-      vInProj ST5 =
-        LinearWithoutBias
-          <$> lookupTensor (prefix <> "v.weight")
-      vInProj SByT5 =
-        LinearWithoutBias
-          <$> lookupTensor (prefix <> "v.weight")
-      vInProj SBART =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "v_proj.weight")
-          <*> lookupTensor (prefix <> "v_proj.bias")
-      vInProj SMBART =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "v_proj.weight")
-          <*> lookupTensor (prefix <> "v_proj.bias")
-      vInProj SPegasus =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "v_proj.weight")
-          <*> lookupTensor (prefix <> "v_proj.bias")
-      vInProj SBERT =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "self.value.weight")
-          <*> lookupTensor (prefix <> "self.value.bias")
-      vInProj SRoBERTa =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "self.value.weight")
-          <*> lookupTensor (prefix <> "self.value.bias")
-      vInProj SGPT2 = undefined
-      outProj ST5 =
-        LinearWithoutBias
-          <$> lookupTensor (prefix <> "o.weight")
-      outProj SByT5 =
-        LinearWithoutBias
-          <$> lookupTensor (prefix <> "o.weight")
-      outProj SBART =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "out_proj.weight")
-          <*> lookupTensor (prefix <> "out_proj.bias")
-      outProj SMBART =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "out_proj.weight")
-          <*> lookupTensor (prefix <> "out_proj.bias")
-      outProj SPegasus =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "out_proj.weight")
-          <*> lookupTensor (prefix <> "out_proj.bias")
-      outProj SBERT =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "output.dense.weight")
-          <*> lookupTensor (prefix <> "output.dense.bias")
-      outProj SRoBERTa =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "output.dense.weight")
-          <*> lookupTensor (prefix <> "output.dense.bias")
-      outProj SGPT2 = undefined
-      dropout _ = pure (Dropout dropoutP)
-   in MultiHeadAttention
-        <$> ( GMultiHeadAttention
-                <$> pure headDim
-                <*> pure headEmbedDim
-                <*> pure embedDim
-                <*> qInProj (sing @style)
-                <*> kInProj (sing @style)
-                <*> vInProj (sing @style)
-                <*> outProj (sing @style)
-                <*> dropout (sing @style)
-            )
+  HasStateDict
+    (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
+    (SDim headDim, SDim headEmbedDim, SDim embedDim, dropoutP)
+  where
+  fromStateDict (headDim, headEmbedDim, embedDim, dropoutP) k =
+    let qInProj ST5 =
+          LinearWithoutBias
+            <$> fromStateDict () (k <> "q.weight")
+        qInProj SByT5 =
+          LinearWithoutBias
+            <$> fromStateDict () (k <> "q.weight")
+        qInProj SBART =
+          LinearWithBias
+            <$> fromStateDict () (k <> "q_proj.weight")
+            <*> fromStateDict () (k <> "q_proj.bias")
+        qInProj SMBART =
+          LinearWithBias
+            <$> fromStateDict () (k <> "q_proj.weight")
+            <*> fromStateDict () (k <> "q_proj.bias")
+        qInProj SPegasus =
+          LinearWithBias
+            <$> fromStateDict () (k <> "q_proj.weight")
+            <*> fromStateDict () (k <> "q_proj.bias")
+        qInProj SBERT =
+          LinearWithBias
+            <$> fromStateDict () (k <> "self.query.weight")
+            <*> fromStateDict () (k <> "self.query.bias")
+        qInProj SRoBERTa =
+          LinearWithBias
+            <$> fromStateDict () (k <> "self.query.weight")
+            <*> fromStateDict () (k <> "self.query.bias")
+        qInProj SGPT2 = undefined
+        kInProj ST5 =
+          LinearWithoutBias
+            <$> fromStateDict () (k <> "k.weight")
+        kInProj SByT5 =
+          LinearWithoutBias
+            <$> fromStateDict () (k <> "k.weight")
+        kInProj SBART =
+          LinearWithBias
+            <$> fromStateDict () (k <> "k_proj.weight")
+            <*> fromStateDict () (k <> "k_proj.bias")
+        kInProj SMBART =
+          LinearWithBias
+            <$> fromStateDict () (k <> "k_proj.weight")
+            <*> fromStateDict () (k <> "k_proj.bias")
+        kInProj SPegasus =
+          LinearWithBias
+            <$> fromStateDict () (k <> "k_proj.weight")
+            <*> fromStateDict () (k <> "k_proj.bias")
+        kInProj SBERT =
+          LinearWithBias
+            <$> fromStateDict () (k <> "self.key.weight")
+            <*> fromStateDict () (k <> "self.key.bias")
+        kInProj SRoBERTa =
+          LinearWithBias
+            <$> fromStateDict () (k <> "self.key.weight")
+            <*> fromStateDict () (k <> "self.key.bias")
+        kInProj SGPT2 = undefined
+        vInProj ST5 =
+          LinearWithoutBias
+            <$> fromStateDict () (k <> "v.weight")
+        vInProj SByT5 =
+          LinearWithoutBias
+            <$> fromStateDict () (k <> "v.weight")
+        vInProj SBART =
+          LinearWithBias
+            <$> fromStateDict () (k <> "v_proj.weight")
+            <*> fromStateDict () (k <> "v_proj.bias")
+        vInProj SMBART =
+          LinearWithBias
+            <$> fromStateDict () (k <> "v_proj.weight")
+            <*> fromStateDict () (k <> "v_proj.bias")
+        vInProj SPegasus =
+          LinearWithBias
+            <$> fromStateDict () (k <> "v_proj.weight")
+            <*> fromStateDict () (k <> "v_proj.bias")
+        vInProj SBERT =
+          LinearWithBias
+            <$> fromStateDict () (k <> "self.value.weight")
+            <*> fromStateDict () (k <> "self.value.bias")
+        vInProj SRoBERTa =
+          LinearWithBias
+            <$> fromStateDict () (k <> "self.value.weight")
+            <*> fromStateDict () (k <> "self.value.bias")
+        vInProj SGPT2 = undefined
+        outProj ST5 =
+          LinearWithoutBias
+            <$> fromStateDict () (k <> "o.weight")
+        outProj SByT5 =
+          LinearWithoutBias
+            <$> fromStateDict () (k <> "o.weight")
+        outProj SBART =
+          LinearWithBias
+            <$> fromStateDict () (k <> "out_proj.weight")
+            <*> fromStateDict () (k <> "out_proj.bias")
+        outProj SMBART =
+          LinearWithBias
+            <$> fromStateDict () (k <> "out_proj.weight")
+            <*> fromStateDict () (k <> "out_proj.bias")
+        outProj SPegasus =
+          LinearWithBias
+            <$> fromStateDict () (k <> "out_proj.weight")
+            <*> fromStateDict () (k <> "out_proj.bias")
+        outProj SBERT =
+          LinearWithBias
+            <$> fromStateDict () (k <> "output.dense.weight")
+            <*> fromStateDict () (k <> "output.dense.bias")
+        outProj SRoBERTa =
+          LinearWithBias
+            <$> fromStateDict () (k <> "output.dense.weight")
+            <*> fromStateDict () (k <> "output.dense.bias")
+        outProj SGPT2 = undefined
+        dropout _ = pure (Dropout dropoutP)
+     in MultiHeadAttention
+          <$> ( GMultiHeadAttention
+                  <$> pure headDim
+                  <*> pure headEmbedDim
+                  <*> pure embedDim
+                  <*> qInProj (sing @style)
+                  <*> kInProj (sing @style)
+                  <*> vInProj (sing @style)
+                  <*> outProj (sing @style)
+                  <*> dropout (sing @style)
+              )
+  toStateDict k (MultiHeadAttention GMultiHeadAttention {..}) =
+    let qInProj ST5 LinearWithoutBias {..} =
+          toStateDict (k <> "q.weight") linearWithoutBiasWeight
+        qInProj SByT5 LinearWithoutBias {..} =
+          toStateDict (k <> "q.weight") linearWithoutBiasWeight
+        qInProj SBART LinearWithBias {..} = do
+          toStateDict (k <> "q_proj.weight") linearWithBiasWeight
+          toStateDict (k <> "q_proj.bias") linearBias
+        qInProj SMBART LinearWithBias {..} = do
+          toStateDict (k <> "q_proj.weight") linearWithBiasWeight
+          toStateDict (k <> "q_proj.bias") linearBias
+        qInProj SPegasus LinearWithBias {..} = do
+          toStateDict (k <> "q_proj.weight") linearWithBiasWeight
+          toStateDict (k <> "q_proj.bias") linearBias
+        qInProj SBERT LinearWithBias {..} = do
+          toStateDict (k <> "self.query.weight") linearWithBiasWeight
+          toStateDict (k <> "self.query.bias") linearBias
+        qInProj SRoBERTa LinearWithBias {..} = do
+          toStateDict (k <> "self.query.weight") linearWithBiasWeight
+          toStateDict (k <> "self.query.bias") linearBias
+        qInProj SGPT2 _ = undefined
+        kInProj ST5 LinearWithoutBias {..} =
+          toStateDict (k <> "k.weight") linearWithoutBiasWeight
+        kInProj SByT5 LinearWithoutBias {..} =
+          toStateDict (k <> "k.weight") linearWithoutBiasWeight
+        kInProj SBART LinearWithBias {..} = do
+          toStateDict (k <> "k_proj.weight") linearWithBiasWeight
+          toStateDict (k <> "k_proj.bias") linearBias
+        kInProj SMBART LinearWithBias {..} = do
+          toStateDict (k <> "k_proj.weight") linearWithBiasWeight
+          toStateDict (k <> "k_proj.bias") linearBias
+        kInProj SPegasus LinearWithBias {..} = do
+          toStateDict (k <> "k_proj.weight") linearWithBiasWeight
+          toStateDict (k <> "k_proj.bias") linearBias
+        kInProj SBERT LinearWithBias {..} = do
+          toStateDict (k <> "self.key.weight") linearWithBiasWeight
+          toStateDict (k <> "self.key.bias") linearBias
+        kInProj SRoBERTa LinearWithBias {..} = do
+          toStateDict (k <> "self.key.weight") linearWithBiasWeight
+          toStateDict (k <> "self.key.bias") linearBias
+        kInProj SGPT2 _ = undefined
+        vInProj ST5 LinearWithoutBias {..} =
+          toStateDict (k <> "v.weight") linearWithoutBiasWeight
+        vInProj SByT5 LinearWithoutBias {..} =
+          toStateDict (k <> "v.weight") linearWithoutBiasWeight
+        vInProj SBART LinearWithBias {..} = do
+          toStateDict (k <> "v_proj.weight") linearWithBiasWeight
+          toStateDict (k <> "v_proj.bias") linearBias
+        vInProj SMBART LinearWithBias {..} = do
+          toStateDict (k <> "v_proj.weight") linearWithBiasWeight
+          toStateDict (k <> "v_proj.bias") linearBias
+        vInProj SPegasus LinearWithBias {..} = do
+          toStateDict (k <> "v_proj.weight") linearWithBiasWeight
+          toStateDict (k <> "v_proj.bias") linearBias
+        vInProj SBERT LinearWithBias {..} = do
+          toStateDict (k <> "self.value.weight") linearWithBiasWeight
+          toStateDict (k <> "self.value.bias") linearBias
+        vInProj SRoBERTa LinearWithBias {..} = do
+          toStateDict (k <> "self.value.weight") linearWithBiasWeight
+          toStateDict (k <> "self.value.bias") linearBias
+        vInProj SGPT2 _ = undefined
+        outProj ST5 LinearWithoutBias {..} =
+          toStateDict (k <> "o.weight") linearWithoutBiasWeight
+        outProj SByT5 LinearWithoutBias {..} =
+          toStateDict (k <> "o.weight") linearWithoutBiasWeight
+        outProj SBART LinearWithBias {..} = do
+          toStateDict (k <> "out_proj.weight") linearWithBiasWeight
+          toStateDict (k <> "out_proj.bias") linearBias
+        outProj SMBART LinearWithBias {..} = do
+          toStateDict (k <> "out_proj.weight") linearWithBiasWeight
+          toStateDict (k <> "out_proj.bias") linearBias
+        outProj SPegasus LinearWithBias {..} = do
+          toStateDict (k <> "out_proj.weight") linearWithBiasWeight
+          toStateDict (k <> "out_proj.bias") linearBias
+        outProj SBERT LinearWithBias {..} = do
+          toStateDict (k <> "output.dense.weight") linearWithBiasWeight
+          toStateDict (k <> "output.dense.bias") linearBias
+        outProj SRoBERTa LinearWithBias {..} = do
+          toStateDict (k <> "output.dense.weight") linearWithBiasWeight
+          toStateDict (k <> "output.dense.bias") linearBias
+        outProj SGPT2 _ = undefined
+     in do
+          () <- qInProj (sing @style) mhaQInProj
+          () <- kInProj (sing @style) mhaKInProj
+          () <- vInProj (sing @style) mhaVInProj
+          () <- outProj (sing @style) mhaOutProj
+          pure ()
 
 -- | Whether or not scaling is applied in the multi-headed attention layer.
 data Scaling
@@ -725,86 +805,27 @@ instance
             >>>= ireturn . sReshape (SShape $ batchDim :|: querySeqDim :|: mhaEmbedDim :|: SNil)
             >>>= IxState . forward mhaOutProj
 
-testMHA ::
-  IO
-    ( Tensor
-        'WithGradient
-        ('Layout 'Dense)
-        ('Device 'CPU)
-        ('DataType 'Float)
-        ( 'Shape
-            '[ 'Dim ('Name "*") ('Size 1),
-               'Dim ('Name "*") ('Size 4),
-               'Dim ('Name "*") ('Size 3)
-             ]
-        )
-    )
 testMHA = do
-  let sOnes' dim dim' = sOnes SWithGradient (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ dim' :|: dim :|: SNil)
-      queryEmbedDim = SName @"*" :&: SSize @3
-      embedDim = SName @"*" :&: SSize @2
-      q = LinearWithoutBias (sOnes' queryEmbedDim embedDim)
-      k = LinearWithoutBias (sOnes' queryEmbedDim embedDim)
-      v = LinearWithoutBias (sOnes' queryEmbedDim embedDim)
-      o = LinearWithoutBias (sOnes' embedDim queryEmbedDim)
-      dropout = Dropout 0.1
-      mha =
-        MultiHeadAttention
-          @'T5
-          @('Device 'CPU)
-          @('DataType 'Float)
-          @('Dim ('Name "*") ('Size 1))
-          @('Dim ('Name "*") ('Size 2))
-          @('Dim ('Name "*") ('Size 2))
-          @('Dim ('Name "*") ('Size 3))
-          @('Dim ('Name "*") ('Size 3))
-          @('Dim ('Name "*") ('Size 3))
-          @Float
-          ( GMultiHeadAttention
-              (SName @"*" :&: SSize @1)
-              (SName @"*" :&: SSize @2)
-              embedDim
-              q
-              k
-              v
-              o
-              dropout
-          )
-  query <-
-    case Torch.Tensor.asTensor [[[0 :: Float, 1, 2], [-1, -2, -3], [7, -2, -3], [-1, 5, -3]]] of
-      Torch.Tensor.Unsafe t ->
-        pure (UnsafeTensor @'WithoutGradient t)
-          >>= checkedLayout @('Layout 'Dense)
-          >>= checkedDevice @('Device 'CPU)
-          >>= checkedDataType @('DataType 'Float)
-          >>= checkedShape @('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 4), 'Dim ('Name "*") ('Size 3)])
-  key <-
-    case Torch.Tensor.asTensor [[[0 :: Float, 0.5, 1], [-0.1, -0.2, -0.3], [-1, 0, 1]]] of
-      Torch.Tensor.Unsafe t ->
-        pure (UnsafeTensor @'WithoutGradient t)
-          >>= checkedLayout @('Layout 'Dense)
-          >>= checkedDevice @('Device 'CPU)
-          >>= checkedDataType @('DataType 'Float)
-          >>= checkedShape @('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 3), 'Dim ('Name "*") ('Size 3)])
-  let value = key
-  attentionBias <-
-    case Torch.Tensor.asTensor
-      [ [ [ [0 :: Float, 3, 3],
-            [1, 0, 3],
-            [1, 1, 0],
-            [1, 1, 1]
-          ]
-        ]
-      ] of
-      Torch.Tensor.Unsafe t ->
-        pure (UnsafeTensor @'WithoutGradient t)
-          >>= checkedLayout @('Layout 'Dense)
-          >>= checkedDevice @('Device 'CPU)
-          >>= checkedDataType @('DataType 'Float)
-          >>= checkedShape @('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 4), 'Dim ('Name "*") ('Size 3)])
-  g <- sMkGenerator (SDevice SCPU) 0
-  let (output, _) = forward mha (query, key, value, attentionBias) g
-  case output of
-    UnsafeTensor t ->
-      print (Torch.Tensor.Unsafe t)
+  let device = SDevice SCPU
+      dataType = SDataType SFloat
+      headDim = SName @"*" :&: SSize @8
+      headEmbedDim = SName @"*" :&: SSize @64
+      embedDim = SName @"*" :&: SSize @512
+      queryEmbedDim = SName @"*" :&: SSize @512
+      keyEmbedDim = queryEmbedDim
+      valueEmbedDim = queryEmbedDim
+      dropoutP :: Float = 0.0
+  g <- sMkGenerator device 0
+  let (mha, g') = initialize @(MultiHeadAttention 'T5 _ _ _ _ _ _ _ _ _) (device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, valueEmbedDim, dropoutP) g
+  mha' <- flip evalStateT Map.empty $ do
+    toStateDict "mha" mha
+    fromStateDict @(MultiHeadAttention 'T5 _ _ _ _ _ _ _ _ _) (headDim, headEmbedDim, embedDim, dropoutP) "mha"
+  let batchDim = SName @"*" :&: SSize @3
+      seqDim = SName @"*" :&: SSize @4
+      sOnes' = sOnes SWithoutGradient (SLayout SDense) device
+      query = sOnes' dataType (SShape $ batchDim :|: seqDim :|: queryEmbedDim :|: SNil)
+      key = sOnes' dataType (SShape $ batchDim :|: seqDim :|: keyEmbedDim :|: SNil)
+      value = sOnes' dataType (SShape $ batchDim :|: seqDim :|: valueEmbedDim :|: SNil)
+      attentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
+  let (output, _) = forward mha (query, key, value, attentionBias) g'
   pure output

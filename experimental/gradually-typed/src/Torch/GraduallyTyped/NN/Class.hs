@@ -8,6 +8,7 @@
 {-# LANGUAGE IncoherentInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -23,20 +24,26 @@ module Torch.GraduallyTyped.NN.Class where
 -- import Generics.SOP (Code, I, SOP(..), Generic, NS(..), NP)
 -- import GHC.Base (coerce, Any)
 
-import Control.Exception (Exception)
-import Control.Monad.Error (MonadError (throwError))
+import Control.Exception (Exception (..))
+import Control.Monad.Catch (MonadThrow (..))
+import Control.Monad.State (MonadState (get, put))
 import Data.Kind (Type)
 import qualified Data.Map.Strict as Map
 import Data.Proxy (Proxy (..))
 import Data.Singletons (SingI)
 import Data.Singletons.Prelude.List (SList (..))
+import Data.Typeable (Typeable)
 import qualified Data.Vector as V
 import qualified Data.Vector.Generic as VG
 import qualified Data.Vector.Generic.Sized.Internal as VGS
 import qualified Data.Vector.Sized as VS
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (ErrorMessage (..), KnownNat, TypeError, natVal, type (+))
-import Torch.GraduallyTyped.Tensor.Type (Tensor (UnsafeTensor), checkedDataType, checkedDevice, checkedLayout, checkedShape)
+import Torch.GraduallyTyped.DType (KnownDataType)
+import Torch.GraduallyTyped.Device (KnownDevice)
+import Torch.GraduallyTyped.Layout (KnownLayout)
+import Torch.GraduallyTyped.Shape.Type (KnownShape)
+import Torch.GraduallyTyped.Tensor.Type (DataTypeError, DeviceError, LayoutError, ShapeError, Tensor (UnsafeTensor), checkedDataType, checkedDevice, checkedLayout, checkedShape)
 import qualified Torch.Internal.Type as ATen (Tensor)
 
 -- class Foo a i o | a i -> o where
@@ -160,29 +167,74 @@ testInitializeVector ::
   (generator -> (VS.Vector n (), generator))
 testInitializeVector = initialize @(VS.Vector n ()) ()
 
-type StateDict = Map.Map String (ForeignPtr ATen.Tensor)
+type StateDictKey = String
 
-data FromStateDictError = FromStateDictError String deriving stock (Show)
+type StateDict = Map.Map StateDictKey (ForeignPtr ATen.Tensor)
 
-instance Exception FromStateDictError
+newtype FromStateDictError = FromStateDictKeyNotFoundError {fsdeExpectedKey :: StateDictKey}
+  deriving stock (Show, Typeable)
 
-class HasStateDict model where
-  prefix :: String
-  fromStateDict :: forall e m. MonadError (FromStateDictError :<: e) m => String -> StateDict -> m model
-  toStateDict :: forall m. MonadError FromStateDictError m => String -> StateDict -> model -> m StateDict
+instance Exception FromStateDictError where
+  displayException FromStateDictKeyNotFoundError {..} = "`" <> show fsdeExpectedKey <> "` is not in the model's state dictionary."
 
-instance HasStateDict () where
-  prefix = mempty
-  fromStateDict k stateDict =
-    ( maybe
-        (throwError . FromStateDictError $ "`" <> show k <> "` is not in the model state dictionary.")
-        (pure . UnsafeTensor)
+newtype ToStateDictError = ToStateDictKeyAlreadyInUseError {fsdeTakenKey :: StateDictKey}
+  deriving stock (Show, Typeable)
+
+instance Exception ToStateDictError where
+  displayException ToStateDictKeyAlreadyInUseError {..} = "`" <> show fsdeTakenKey <> "` is already in the model's state dictionary."
+
+class
+  HasStateDict
+    model
+    input
+    | model -> input
+  where
+  fromStateDict ::
+    forall e m.
+    ( MonadThrow m,
+      MonadState StateDict m
+    ) =>
+    input ->
+    StateDictKey ->
+    m model
+  toStateDict ::
+    forall e m.
+    ( MonadThrow m,
+      MonadState StateDict m
+    ) =>
+    StateDictKey ->
+    model ->
+    m ()
+
+instance
+  ( KnownLayout layout,
+    KnownDevice device,
+    KnownDataType dataType,
+    KnownShape shape
+  ) =>
+  HasStateDict
+    (Tensor requiresGradient layout device dataType shape)
+    ()
+  where
+  fromStateDict () k = do
+    stateDict <- get
+    maybe
+      (throwM . FromStateDictKeyNotFoundError $ k)
+      (pure . UnsafeTensor)
+      (Map.lookup k stateDict)
+      >>= sCheckedRequiresGradient requiresGradient
+      >>= sCheckedLayout layout
+      >>= sCheckedDevice device
+      >>= sCheckedDataType dataType
+      >>= sCheckedShape shape
+  toStateDict k (UnsafeTensor tensor) = do
+    stateDict <- get
+    stateDict' <-
+      maybe
+        (pure $ Map.insert k tensor stateDict)
+        (\_ -> throwM . ToStateDictKeyAlreadyInUseError $ k)
         (Map.lookup k stateDict)
-    )
-      >>= checkedLayout
-      >>= checkedDevice
-      >>= checkedDataType
-      >>= checkedShape
+    put stateDict'
 
 -- class GHasForward model input where
 --   type GOutput model input

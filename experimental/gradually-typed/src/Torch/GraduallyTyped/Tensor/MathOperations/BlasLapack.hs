@@ -196,14 +196,14 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --                   '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "*") ('Size 5),
 --                      'Dim ('Name "*") ('Size 3), 'Dim ('Name "*") ('Size 7)])
 matmul ::
-  forall requiresGradient layout layout' device device' dataType dataType' shape shape'.
+  forall gradient layout layout' device device' dataType dataType' shape shape'.
   -- input
-  Tensor requiresGradient layout device dataType shape ->
+  Tensor gradient layout device dataType shape ->
   -- other
-  Tensor requiresGradient layout' device' dataType' shape' ->
+  Tensor gradient layout' device' dataType' shape' ->
   -- output
   Tensor
-    requiresGradient
+    gradient
     (layout <+> layout')
     (device <+> device')
     (dataType <+> dataType')

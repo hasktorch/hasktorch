@@ -54,10 +54,10 @@ type family MeanF (selectDims :: SelectDims [By Symbol Nat]) (shape :: Shape [Di
   MeanF ('SelectDims bys) ('Shape dims) = 'Shape (MeanSelectDimsF bys dims)
 
 sMean ::
-  forall selectDims requiresGradient layout device dataType shape.
+  forall selectDims gradient layout device dataType shape.
   SSelectDims selectDims ->
-  Tensor requiresGradient layout device dataType shape ->
-  Tensor requiresGradient layout device dataType (MeanF selectDims shape)
+  Tensor gradient layout device dataType shape ->
+  Tensor gradient layout device dataType (MeanF selectDims shape)
 sMean bys tensor =
   let bys' = forgetIsChecked $ fromSing bys
       (names, indexes) = flip execState (Set.empty, Set.empty) $ do
@@ -97,8 +97,8 @@ sMean bys tensor =
         True -- keepDim
 
 mean ::
-  forall selectDims requiresGradient layout device dataType shape.
+  forall selectDims gradient layout device dataType shape.
   SingI selectDims =>
-  Tensor requiresGradient layout device dataType shape ->
-  Tensor requiresGradient layout device dataType (MeanF selectDims shape)
+  Tensor gradient layout device dataType shape ->
+  Tensor gradient layout device dataType (MeanF selectDims shape)
 mean = sMean (sing @selectDims)

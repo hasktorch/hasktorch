@@ -14,6 +14,7 @@
 
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
 module Torch.GraduallyTyped.Prelude
   ( module Data.Kind,
     module Data.Proxy,
@@ -99,7 +100,8 @@ data T
 -- see https://kcsongor.github.io/report-stuck-families/.
 -- This family is able to check whether its argument 'a' is stuck and
 -- report an error 'err' in that case.
-type family Assert (err :: Constraint) (a :: k) :: k where
+type Assert :: Constraint -> k -> k
+type family Assert err a where
   Assert _ T = Any
   Assert _ a = a
 
@@ -115,11 +117,12 @@ type family Assert (err :: Constraint) (a :: k) :: k where
 -- and the compiler will report the error message.
 --
 -- Thanks to <https://kcsongor.github.io/kcsongor> for the suggestion.
-type family Catch (a :: k) :: Constraint where
+type Catch :: k -> Constraint
+type family Catch a where
   Catch (f a) = (Catch f, Catch a)
   Catch _  = ()
 
--- type Seq :: forall k k'. k -> k' -> k'
+type Seq :: forall k k'. k -> k' -> k'
 type family Seq (a :: k) (b :: k') :: k' where
   Seq (f a) b = Seq (Seq f a) b
   Seq _ b = b
@@ -220,6 +223,7 @@ type family LiftTimesMaybe (a :: Maybe Nat) (b :: Maybe Nat) :: Maybe Nat where
   LiftTimesMaybe ('Just _) 'Nothing = 'Nothing
   LiftTimesMaybe ('Just a) ('Just b) = 'Just (a * b)
 
+type LiftTypeEqMaybe :: Maybe k -> Maybe k' -> Constraint
 type family LiftTypeEqMaybe (a :: Maybe k) (b :: Maybe k') :: Constraint where
   LiftTypeEqMaybe 'Nothing _ = ()
   LiftTypeEqMaybe ('Just _) 'Nothing = ()
@@ -240,6 +244,7 @@ type family Concat (xs :: [k]) (ys :: [k]) :: [k] where
 -- >>> :kind! Contains (Either Int String) Either
 -- Contains (Either Int String) Either :: Bool
 -- = 'True
+type Contains :: k -> k' -> Bool
 type family Contains (f :: k) (a :: k') :: Bool where
   Contains a a = 'True
   Contains (f g) a = Contains f a || Contains g a
@@ -256,6 +261,7 @@ type family Contains (f :: k) (a :: k') :: Bool where
 -- >>> :kind! Extract (Either Int String) Either
 -- Extract (Either Int String) Either :: [* -> * -> *]
 -- = '[Either]
+type Extract :: k -> k' -> [k']
 type family Extract (f :: k) (a :: k') :: [k'] where
   Extract a a = '[a]
   Extract (f g) a = Concat (Extract f a) (Extract g a)
@@ -281,7 +287,7 @@ guardM f = guard =<< f
 infixr 2 ||^ -- same as (||)
 
 (||^) :: Monad m => m Bool -> m Bool -> m Bool
-(||^) a b = ifM a (return True) b
+(||^) a = ifM a (return True)
 
 infixr 2 <||>
 
@@ -306,7 +312,3 @@ infixr 3 <&&>
 (<&&>) :: Applicative a => a Bool -> a Bool -> a Bool
 (<&&>) = liftA2 (&&)
 {-# INLINE (<&&>) #-}
-
-instance IsString str => MonadFail (Either str) where
-  fail :: String -> Either str a
-  fail = Left . fromString

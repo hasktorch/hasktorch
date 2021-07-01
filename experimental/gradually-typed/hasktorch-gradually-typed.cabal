@@ -129,6 +129,7 @@ library
                      , vector-sized
                      , finite-typelits
                      , indexed-list-literals
+                     , exceptions
 
 test-suite doctests
   type:                exitcode-stdio-1.0

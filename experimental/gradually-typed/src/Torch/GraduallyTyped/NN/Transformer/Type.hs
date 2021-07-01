@@ -38,7 +38,7 @@
 
 module Torch.GraduallyTyped.NN.Transformer.Type where
 
-import Control.Monad.Reader (MonadIO, MonadReader, ask, liftIO)
+import Control.Monad.Catch (MonadThrow)
 import qualified Data.Map as Map
 import Data.Singletons.Prelude.List (SList (SNil))
 import Data.Singletons.TH (SingKind (fromSing), genSingletons)
@@ -89,31 +89,6 @@ tensorDictFromPretrained filePath = do
     go ((Torch.Script.IVString _, _) : _) = fail "iValue is not a tensor."
     go _ = fail "iValue is neither a string nor a tensor."
 
-lookupTensor ::
-  forall requiresGradient layout device dataType shape m.
-  ( MonadReader TensorDict m,
-    MonadIO m,
-    MonadFail m,
-    KnownLayout layout,
-    KnownDevice device,
-    KnownDataType dataType,
-    KnownShape shape
-  ) =>
-  String ->
-  m (Tensor requiresGradient layout device dataType shape)
-lookupTensor s = do
-  tensorDict <- ask
-  liftIO
-    ( maybe
-        (fail $ "`" <> show s <> "` is not in the tensor dictionary.")
-        (pure . UnsafeTensor)
-        (Map.lookup s tensorDict)
-    )
-    >>= checkedLayout
-    >>= checkedDevice
-    >>= checkedDataType
-    >>= checkedShape
-
 padded :: Integral n => n -> a -> [a] -> [a]
 padded n p xs =
   let n' = fromIntegral n
@@ -122,7 +97,7 @@ padded n p xs =
 
 mkTransformerInput ::
   forall batchDim seqDim m output.
-  ( MonadFail m,
+  ( MonadThrow m,
     KnownDim batchDim,
     KnownDim seqDim,
     output
@@ -172,7 +147,7 @@ mkTransformerPaddingMask padTokenId input =
    in input ==. padToken
 
 type MkTransformerAttentionMaskC m transformerDataType requiresGradient layout device dataType shape seqDim output =
-  ( MonadFail m,
+  ( MonadThrow m,
     SGetLayout layout,
     SGetDevice device,
     SGetShape shape,
@@ -197,15 +172,15 @@ mkTransformerAttentionMask ::
   Tensor requiresGradient layout device dataType shape ->
   m output
 mkTransformerAttentionMask transformerDataType attentionMaskBias paddingMask = do
-  pmLayout <- sLayout paddingMask
-  pmDevice <- sDevice paddingMask
-  pmShape <- sShape paddingMask
+  let pmLayout = sLayout paddingMask
+      pmDevice = sDevice paddingMask
+      pmShape = sShape paddingMask
   pmSeqDim <- sGetDim (SSelectDim $ SByIndex @1) pmShape
   let emptyMask = sZeros SWithoutGradient pmLayout pmDevice transformerDataType (SShape $ SName @"*" :&: SSize @1 :|: pmSeqDim :|: pmSeqDim :|: SNil)
   pure $ maskedFill (unsqueeze @('SelectDim ('ByIndex 1)) paddingMask) attentionMaskBias emptyMask
 
 type MkTransformerDecoderAttentionMaskC m transformerDataType layout device shape seqDim output =
-  ( MonadFail m,
+  ( MonadThrow m,
     SGetLayout layout,
     SGetDevice device,
     SGetShape shape,
@@ -233,9 +208,9 @@ mkTransformerDecoderAttentionMask ::
   Tensor requiresGradient layout device dataType shape ->
   m output
 mkTransformerDecoderAttentionMask transformerDataType attentionMaskBias paddingMask = do
-  pmLayout <- sLayout paddingMask
-  pmDevice <- sDevice paddingMask
-  pmShape <- sShape paddingMask
+  let pmLayout = sLayout paddingMask
+      pmDevice = sDevice paddingMask
+      pmShape = sShape paddingMask
   pmSeqDim <- sGetDim (SSelectDim $ SByIndex @1) pmShape
   let causalMask =
         unsqueeze @('SelectDim ('ByIndex 0))
@@ -251,7 +226,7 @@ mkTransformerDecoderAttentionMask transformerDataType attentionMaskBias paddingM
       emptyMask
 
 type MkTransformerCrossAttentionMaskC m transformerDataType seqDim' requiresGradient layout device dataType shape seqDim output =
-  ( MonadFail m,
+  ( MonadThrow m,
     SGetLayout layout,
     SGetDevice device,
     SGetShape shape,
@@ -277,9 +252,9 @@ mkTransformerCrossAttentionMask ::
   Tensor requiresGradient layout device dataType shape ->
   m output
 mkTransformerCrossAttentionMask transformerDataType seqDim' attentionMaskBias paddingMask = do
-  pmLayout <- sLayout paddingMask
-  pmDevice <- sDevice paddingMask
-  pmShape <- sShape paddingMask
+  let pmLayout = sLayout paddingMask
+      pmDevice = sDevice paddingMask
+      pmShape = sShape paddingMask
   pmSeqDim <- sGetDim (SSelectDim $ SByIndex @1) pmShape
   let emptyMask = sZeros SWithoutGradient pmLayout pmDevice transformerDataType (SShape $ SName @"*" :&: SSize @1 :|: seqDim' :|: pmSeqDim :|: SNil)
   pure $ maskedFill (unsqueeze @('SelectDim ('ByIndex 1)) paddingMask) attentionMaskBias emptyMask
@@ -332,10 +307,10 @@ instance
   HasForward (ShiftRight fillValue) input generator rightShiftedInput generator
   where
   forward (ShiftRight fillValue) input g = unsafePerformIO $ do
-    inputLayout <- sLayout input
-    inputDevice <- sDevice input
-    inputDataType <- sDataType input
-    inputShape <- sShape input
+    let inputLayout = sLayout input
+        inputDevice = sDevice input
+        inputDataType = sDataType input
+        inputShape = sShape input
     inputBatchDim <- sGetDim (SSelectDim $ SByIndex @0) inputShape
     let filler = sFull SWithoutGradient inputLayout inputDevice inputDataType (SShape $ inputBatchDim :|: SName @"*" :&: SSize @1 :|: SNil) fillValue
     pure (cat @('SelectDim ('ByIndex 1)) (filler :. input :. HNil), g)
