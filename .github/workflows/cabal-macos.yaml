@@ -1,0 +1,35 @@
+name: cabal-macos
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: macOS-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup repo
+      run: |
+        git submodule init && git submodule update
+    - name: Setup tool-chains
+      run: |
+        /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+        brew install libomp || true
+        pip3 install pyyaml || true
+        brew install ghc@8.10 || true
+        brew install cabal-install || true
+        brew tap hasktorch/libtorch-prebuild https://github.com/hasktorch/homebrew-libtorch-prebuild || true
+        brew install libtorch-prebuild@1.8.1 || true
+        #pushd deps/ ; ./get-deps.sh -a cpu -c ;popd
+    - name: Build
+      run: |
+        #. setenv
+        ./setup-cabal.sh
+        cabal v2-update
+        cabal v2-install hspec-discover
+        cabal v2-build all --jobs=2
+    - name: Test
+      run: |
+        #. setenv
+        cabal v2-test all --jobs=2
+        cabal v2-exec codegen-exe
+        cabal exec xor-mlp
