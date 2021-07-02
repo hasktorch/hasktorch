@@ -2,7 +2,9 @@
 
 set -xe
 
-curl https://www.stackage.org/lts-18.0/cabal.config  > cabal.project.freeze
+curl https://www.stackage.org/lts-18.0/cabal.config | \
+sed -e 's/doctest ==.*,//g' \
+    > cabal.project.freeze
 
 case "$(uname)" in
   "Darwin")
