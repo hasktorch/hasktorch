@@ -15,12 +15,8 @@ jobs:
         /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
         brew install libomp || true
         pip3 install pyyaml || true
-        #wget -qO- https://get.haskellstack.org/ | sed -e 's/^STACK_VERSION=.*/STACK_VERSION="1.9.3"/g' | sh || true
-        wget -qO- https://get.haskellstack.org/ | sh || true
-        clang --version
-        stack --version
-        brew install ghc@8.10.5 || true
-        brew install cabal-install@3.4.0.0 || true
+        brew install ghc@8.10 || true
+        brew install cabal-install || true
         brew tap hasktorch/libtorch-prebuild https://github.com/hasktorch/homebrew-libtorch-prebuild || true
         brew install libtorch-prebuild@1.8.1 || true
         #pushd deps/ ; ./get-deps.sh -a cpu -c ;popd
