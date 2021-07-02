@@ -207,6 +207,10 @@ class
     model ->
     m ()
 
+instance HasStateDict () () where
+  fromStateDict () _ = pure ()
+  toStateDict _ _ = pure ()
+
 instance
   HasStateDict
     (Tensor gradient layout device dataType shape)

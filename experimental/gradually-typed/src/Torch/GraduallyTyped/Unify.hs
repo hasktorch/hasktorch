@@ -170,3 +170,19 @@ type OrRightAssociativeL k a b c = Or k (Or k a b) c ~ Or k a (Or k b c)
 type OrIdempotenceL2 k a b = Or k a (Or k a b) ~ Or k a b
 
 type OrIdempotenceL2C k a b = Or k a (Or k b a) ~ Or k a b
+
+type OrIdempotenceL3 k a b c = Or k a (Or k b (Or k a c)) ~ Or k a (Or k b c)
+
+type OrIdempotenceL3C k a b c = Or k a (Or k b (Or k c a)) ~ Or k a (Or k b c)
+
+type OrIdempotenceL4 k a b c d = Or k a (Or k b (Or k c (Or k a d))) ~ Or k a (Or k b (Or k c d))
+
+type OrIdempotenceL4C k a b c d = Or k a (Or k b (Or k c (Or k d a))) ~ Or k a (Or k b (Or k c d))
+
+type OrIdempotenceL5 k a b c d e = Or k a (Or k b (Or k c (Or k d (Or k a e)))) ~ Or k a (Or k b (Or k c (Or k d e)))
+
+type OrIdempotenceL5C k a b c d e = Or k a (Or k b (Or k c (Or k d (Or k e a)))) ~ Or k a (Or k b (Or k c (Or k d e)))
+
+type OrIdempotenceL6 k a b c d e f = Or k a (Or k b (Or k c (Or k d (Or k e (Or k a f))))) ~ Or k a (Or k b (Or k c (Or k d (Or k e f))))
+
+type OrIdempotenceL6C k a b c d e f = Or k a (Or k b (Or k c (Or k d (Or k e (Or k f a))))) ~ Or k a (Or k b (Or k c (Or k d (Or k e f))))

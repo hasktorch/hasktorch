@@ -301,7 +301,7 @@ instance
         outProj SBERT = fromStateDict (gradient, device, dataType, embedDim, queryEmbedDim) (k <> "output.dense.")
         outProj SRoBERTa = fromStateDict (gradient, device, dataType, embedDim, queryEmbedDim) (k <> "output.dense.")
         outProj SGPT2 = undefined
-        dropout _ = pure (Dropout dropoutP)
+        dropout _ = fromStateDict dropoutP k
      in MultiHeadAttention
           <$> ( GMultiHeadAttention
                   <$> pure headDim

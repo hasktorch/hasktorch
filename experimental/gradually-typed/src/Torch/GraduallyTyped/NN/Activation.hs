@@ -17,7 +17,7 @@ module Torch.GraduallyTyped.NN.Activation where
 
 import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
 import Torch.GraduallyTyped.NN.Functional.Activation (gelu, geluNew, relu)
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, softmax)
 import Torch.GraduallyTyped.Shape (By, SSelectDim, SelectDim)
@@ -35,6 +35,10 @@ data Softmax (selectDim :: SelectDim (By Symbol Nat)) where
 instance HasInitialize (Softmax selectDim) (SSelectDim selectDim) generator generator where
   initialize selectDim = (Softmax selectDim,)
 
+instance HasStateDict (Softmax selectDim) (SSelectDim selectDim) where
+  fromStateDict selectDim _ = pure (Softmax selectDim)
+  toStateDict _ _ = pure ()
+
 instance
   (output ~ Tensor requiresGradient layout device dataType (SoftmaxF selectDim shape)) =>
   HasForward
@@ -51,6 +55,10 @@ data Relu where Relu :: Relu
 instance HasInitialize Relu () generator generator where
   initialize _ = (Relu,)
 
+instance HasStateDict Relu () where
+  fromStateDict _ _ = pure Relu
+  toStateDict _ _ = pure ()
+
 instance
   HasForward
     Relu
@@ -65,6 +73,10 @@ data Gelu where Gelu :: Gelu
 
 instance HasInitialize Gelu () generator generator where
   initialize _ = (Gelu,)
+
+instance HasStateDict Gelu () where
+  fromStateDict _ _ = pure Gelu
+  toStateDict _ _ = pure ()
 
 instance
   HasForward
@@ -81,6 +93,10 @@ data GeluNew where GeluNew :: GeluNew
 instance HasInitialize GeluNew () generator generator where
   initialize _ = (GeluNew,)
 
+instance HasStateDict GeluNew () where
+  fromStateDict _ _ = pure GeluNew
+  toStateDict _ _ = pure ()
+
 instance
   HasForward
     GeluNew
@@ -95,6 +111,10 @@ data Tanh where Tanh :: Tanh
 
 instance HasInitialize Tanh () generator generator where
   initialize _ = (Tanh,)
+
+instance HasStateDict Tanh () where
+  fromStateDict _ _ = pure Tanh
+  toStateDict _ _ = pure ()
 
 instance
   HasForward

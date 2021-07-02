@@ -12,7 +12,7 @@ module Torch.GraduallyTyped.NN.Dropout where
 
 import Data.Kind (Type)
 import GHC.Generics (Generic)
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
@@ -32,6 +32,10 @@ newtype Dropout (p :: Type) where
 
 instance (Scalar p) => HasInitialize (Dropout p) p generator generator where
   initialize p g = (Dropout p, g)
+
+instance HasStateDict (Dropout p) p where
+  fromStateDict p _ = pure $ Dropout p
+  toStateDict _ _ = pure ()
 
 instance
   ( Scalar p,
