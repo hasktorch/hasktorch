@@ -31,7 +31,7 @@ import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict)
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
 import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithBiasF, LinearWithoutBiasF, linearWithBias, linearWithoutBias)
 import Torch.GraduallyTyped.NN.Initialization (FanMode (..), ForNonLinearity (..), calculateFan, getter, sKaimingUniform)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
@@ -120,6 +120,14 @@ instance
       SDim inputDim,
       SDim outputDim
     )
+  where
+  fromStateDict (gradient, device, dataType, inputDim, outputDim) k =
+    LinearWithBias
+      <$> fromStateDict (gradient, SLayout SDense, device, dataType, SShape $ outputDim :|: inputDim :|: SNil) (k <> "weight")
+      <*> fromStateDict (gradient, SLayout SDense, device, dataType, SShape $ outputDim :|: SNil) (k <> "bias")
+  toStateDict k LinearWithBias {..} = do
+    toStateDict (k <> "weight") linearWithBiasWeight
+    toStateDict (k <> "bias") linearBias
 
 instance
   ( output
@@ -166,6 +174,22 @@ instance
               FanIn
               (ForLeakyRelu . Prelude.sqrt $ 5)
      in runIxState $ LinearWithoutBias <<$>> weight
+
+instance
+  HasStateDict
+    (Linear 'WithoutBias gradient device dataType inputDim outputDim)
+    ( SGradient gradient,
+      SDevice device,
+      SDataType dataType,
+      SDim inputDim,
+      SDim outputDim
+    )
+  where
+  fromStateDict (gradient, device, dataType, inputDim, outputDim) k =
+    LinearWithoutBias
+      <$> fromStateDict (gradient, SLayout SDense, device, dataType, SShape $ outputDim :|: inputDim :|: SNil) (k <> "weight")
+  toStateDict k LinearWithoutBias {..} = do
+    toStateDict (k <> "weight") linearWithoutBiasWeight
 
 instance
   ( output

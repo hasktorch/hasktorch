@@ -23,8 +23,8 @@ import Torch.GraduallyTyped.NN.Class (HasForward (..))
 import Torch.GraduallyTyped.NN.Linear (Linear)
 import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
+import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim, Name, Size)
-import Torch.GraduallyTyped.Tensor.Type (Tensor)
 
 data
   GPooler
@@ -41,33 +41,36 @@ data
 newtype
   Pooler
     (style :: TransformerStyle)
+    (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
   where
   Pooler ::
-    forall style device dataType inputEmbedDim.
-    GPoolerF style device dataType inputEmbedDim ->
-    Pooler style device dataType inputEmbedDim
+    forall style gradient device dataType inputEmbedDim.
+    GPoolerF style gradient device dataType inputEmbedDim ->
+    Pooler style gradient device dataType inputEmbedDim
 
 type GPoolerF
   (style :: TransformerStyle)
+  (gradient :: Gradient RequiresGradient)
   (device :: Device (DeviceType Nat))
   (dataType :: DataType DType)
   (inputEmbedDim :: Dim (Name Symbol) (Size Nat)) =
   GPooler
-    (PoolerDenseF style device dataType inputEmbedDim)
+    (PoolerDenseF style gradient device dataType inputEmbedDim)
     (PoolerActivationF style)
 
 type family
   PoolerDenseF
     (style :: TransformerStyle)
+    (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (inputEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
     Type
   where
-  PoolerDenseF 'RoBERTa device dataType inputEmbedDim = Linear 'WithBias device dataType inputEmbedDim inputEmbedDim
+  PoolerDenseF 'RoBERTa gradient device dataType inputEmbedDim = Linear 'WithBias gradient device dataType inputEmbedDim inputEmbedDim
 
 type family
   PoolerActivationF
@@ -77,9 +80,8 @@ type family
   PoolerActivationF 'RoBERTa = Tanh
 
 instance
-  ( input ~ Tensor requiresGradient layout device dataType shape,
-    HasForward
-      (PoolerDenseF style device dataType inputEmbedDim)
+  ( HasForward
+      (PoolerDenseF style gradient device dataType inputEmbedDim)
       input
       generator
       denseOutput
@@ -92,7 +94,7 @@ instance
       generatorOutput
   ) =>
   HasForward
-    (Pooler style device dataType inputEmbedDim)
+    (Pooler style gradient device dataType inputEmbedDim)
     input
     generator
     output

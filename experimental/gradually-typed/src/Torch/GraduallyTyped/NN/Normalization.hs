@@ -28,10 +28,10 @@ import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..))
 import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense), SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
 import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithBiasF, LayerNormWithoutBiasF, layerNormWithBias, layerNormWithoutBias)
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), Gradient, SGradient)
+import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient)
 import Torch.GraduallyTyped.Shape (Dim (..), Name (..), SShape (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes, sZeros)
 import Torch.GraduallyTyped.Tensor.Type (SGetShape, Tensor)
@@ -91,6 +91,42 @@ instance
   initialize (gradient, device, dataType, normalizedShape, eps) =
     let weight = sOnes gradient (SLayout SDense) device dataType normalizedShape
      in (LayerNormWithoutBias weight eps,)
+
+instance
+  HasStateDict
+    (LayerNorm 'WithBias gradient device dataType normalizedShape)
+    ( SGradient gradient,
+      SDevice device,
+      SDataType dataType,
+      SShape normalizedShape,
+      Double
+    )
+  where
+  fromStateDict (gradient, device, dataType, normalizedShape, eps) k =
+    LayerNormWithBias
+      <$> fromStateDict (gradient, SLayout SDense, device, dataType, normalizedShape) (k <> "weight")
+      <*> fromStateDict (gradient, SLayout SDense, device, dataType, normalizedShape) (k <> "bias")
+      <*> pure eps
+  toStateDict k LayerNormWithBias {..} = do
+    toStateDict (k <> "weight") layerNormWithBiasWeight
+    toStateDict (k <> "bias") layerNormBias
+
+instance
+  HasStateDict
+    (LayerNorm 'WithoutBias gradient device dataType normalizedShape)
+    ( SGradient gradient,
+      SDevice device,
+      SDataType dataType,
+      SShape normalizedShape,
+      Double
+    )
+  where
+  fromStateDict (gradient, device, dataType, normalizedShape, eps) k =
+    LayerNormWithoutBias
+      <$> fromStateDict (gradient, SLayout SDense, device, dataType, normalizedShape) (k <> "weight")
+      <*> pure eps
+  toStateDict k LayerNormWithoutBias {..} =
+    toStateDict (k <> "weight") layerNormWithoutBiasWeight
 
 instance
   ( SGetShape normalizedShape,

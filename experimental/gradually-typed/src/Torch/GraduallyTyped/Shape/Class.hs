@@ -351,9 +351,21 @@ type family RemoveDimF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape 
   RemoveDimF _ 'UncheckedShape = 'UncheckedShape
   RemoveDimF ('SelectDim by) ('Shape dims) = 'Shape (RemoveDimCheckF by dims (RemoveDimImplF by dims))
 
+data UnifyNameError = UnifyNameError {uneExpect :: String, uneActual :: String}
+  deriving stock (Show)
+
+instance Exception UnifyNameError where
+  displayException UnifyNameError {..} =
+    "The supplied dimensions must be the same, "
+      <> "but dimensions with different names were found: "
+      <> show uneExpect
+      <> " and "
+      <> show uneActual
+      <> "."
+
 sUnifyName ::
   forall m name name'.
-  MonadFail m =>
+  MonadThrow m =>
   SName name ->
   SName name' ->
   m (SName (name <+> name'))
@@ -365,18 +377,23 @@ sUnifyName (SUncheckedName name) name'@SName = sUnifyName (SUncheckedName name) 
 sUnifyName name@SName name'@SName | forgetIsChecked (fromSing name) == forgetIsChecked (fromSing name') = pure (unsafeCoerce name)
 sUnifyName name@SName name'@SName | forgetIsChecked (fromSing name) == "*" = pure (unsafeCoerce name')
 sUnifyName name@SName name'@SName | forgetIsChecked (fromSing name') == "*" = pure (unsafeCoerce name)
-sUnifyName name name' =
-  fail $
+sUnifyName name name' = throwM $ UnifyNameError (forgetIsChecked (fromSing name)) (forgetIsChecked (fromSing name'))
+
+data UnifySizeError = UnifySizeError {useExpect :: Integer, useActual :: Integer}
+  deriving stock (Show)
+
+instance Exception UnifySizeError where
+  displayException UnifySizeError {..} =
     "The supplied dimensions must be the same, "
-      <> "but dimensions with different names were found: "
-      <> show (forgetIsChecked (fromSing name))
+      <> "but dimensions with different sizes were found: "
+      <> show useExpect
       <> " and "
-      <> show (forgetIsChecked (fromSing name'))
+      <> show useActual
       <> "."
 
 sUnifySize ::
   forall m size size'.
-  MonadFail m =>
+  MonadThrow m =>
   SSize size ->
   SSize size' ->
   m (SSize (size <+> size'))
@@ -384,14 +401,7 @@ sUnifySize (SUncheckedSize size) (SUncheckedSize size') | size == size' = pure (
 sUnifySize size@SSize (SUncheckedSize size') = sUnifySize (SUncheckedSize . forgetIsChecked $ fromSing size) (SUncheckedSize size')
 sUnifySize (SUncheckedSize size) size'@SSize = sUnifySize (SUncheckedSize size) (SUncheckedSize . forgetIsChecked $ fromSing size')
 sUnifySize size@SSize size'@SSize | forgetIsChecked (fromSing size) == forgetIsChecked (fromSing size') = pure (unsafeCoerce size)
-sUnifySize size size' =
-  fail $
-    "The supplied dimensions must be the same, "
-      <> "but dimensions with different sizes were found: "
-      <> show (forgetIsChecked (fromSing size))
-      <> " and "
-      <> show (forgetIsChecked (fromSing size'))
-      <> "."
+sUnifySize size size' = throwM $ UnifySizeError (forgetIsChecked (fromSing size)) (forgetIsChecked (fromSing size'))
 
 -- | Unify two dimensions.
 --
@@ -423,7 +433,7 @@ sUnifySize size size' =
 -- *** Exception: user error (The supplied dimensions must be the same, but dimensions with different names were found: "batch" and "feature".)
 sUnifyDim ::
   forall m dim dim'.
-  MonadFail m =>
+  MonadThrow m =>
   SDim dim ->
   SDim dim' ->
   m (SDim (dim <+> dim'))

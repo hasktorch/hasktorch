@@ -208,11 +208,6 @@ class
     m ()
 
 instance
-  ( KnownLayout layout,
-    KnownDevice device,
-    KnownDataType dataType,
-    KnownShape shape
-  ) =>
   HasStateDict
     (Tensor gradient layout device dataType shape)
     (SGradient gradient, SLayout layout, SDevice device, SDataType dataType, SShape shape)
