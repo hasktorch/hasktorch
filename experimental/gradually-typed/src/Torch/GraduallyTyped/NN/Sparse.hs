@@ -24,7 +24,7 @@ import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType, SDevice (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
 import Torch.GraduallyTyped.NN.Functional.Sparse (EmbeddingF, embedding)
 import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.Random (Generator)
@@ -54,13 +54,7 @@ instance
   (device'' ~ (device <+> device')) =>
   HasInitialize
     (Embedding gradient layout device dataType embedNumDim embedDim 'Nothing)
-    ( SGradient gradient,
-      SLayout layout,
-      SDevice device,
-      SDataType dataType,
-      SDim embedNumDim,
-      SDim embedDim
-    )
+    (SGradient gradient, SLayout layout, SDevice device, SDataType dataType, SDim embedNumDim, SDim embedDim)
     (Generator device')
     (Generator device'')
   where
@@ -74,13 +68,7 @@ instance
   (device'' ~ (device <+> device')) =>
   HasInitialize
     (Embedding gradient layout device dataType embedNumDim embedDim ('Just paddingIdx))
-    ( SGradient gradient,
-      SLayout layout,
-      SDevice device,
-      SDataType dataType,
-      SDim embedNumDim,
-      SDim embedDim
-    )
+    (SGradient gradient, SLayout layout, SDevice device, SDataType dataType, SDim embedNumDim, SDim embedDim)
     (Generator device')
     (Generator device'')
   where
@@ -88,6 +76,16 @@ instance
     runIxState $
       IxState (sRandn gradient layout device dataType (SShape $ embedNumDim :|: embedDim :|: SNil))
         >>>= ireturn . Embedding
+
+instance
+  HasStateDict
+    (Embedding gradient layout device dataType embedNumDim embedDim paddingIdx)
+    (SGradient gradient, SLayout layout, SDevice device, SDataType dataType, SDim embedNumDim, SDim embedDim)
+  where
+  fromStateDict (gradient, layout, device, dataType, embedNumDim, embedDim) k =
+    Embedding <$> fromStateDict (gradient, layout, device, dataType, SShape $ embedNumDim :|: embedDim :|: SNil) (k <> "weight")
+  toStateDict k Embedding {..} =
+    toStateDict (k <> "weight") embeddingWeight
 
 instance
   ( SGetLayout layout,

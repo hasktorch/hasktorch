@@ -22,33 +22,31 @@ module Torch.GraduallyTyped.NN.Transformer.DecoderBlock where
 
 import Control.Monad.Indexed (IxPointed (ireturn), (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
-import Control.Monad.Reader (MonadIO, MonadReader)
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI, sing)
 import Data.Singletons.Prelude.List (SList (..))
 import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType, KnownDataType, SDType (..), SDataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, SDevice (..), SDeviceType (..))
+import Torch.GraduallyTyped.DType (DataType, SDType (..), SDataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
-import Torch.GraduallyTyped.NN.Transformer.CrossAttention (CrossAttention, lookupCrossAttention)
-import Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork (TransformerFeedForwardNetwork, lookupTransformerFeedForwardNetwork)
-import Torch.GraduallyTyped.NN.Transformer.SelfAttention (SelfAttention, lookupSelfAttention)
-import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..))
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
+import Torch.GraduallyTyped.NN.Transformer.CrossAttention (CrossAttention)
+import Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork (TransformerFeedForwardNetwork)
+import Torch.GraduallyTyped.NN.Transformer.SelfAttention (SelfAttention)
+import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
 import Torch.GraduallyTyped.Random (Generator, sMkGenerator)
-import Torch.GraduallyTyped.RequiresGradient (SRequiresGradient (..))
-import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim, Name (..), SDim, SName (..), SShape (..), SSize (..), Size (..), pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient (..), SRequiresGradient (..))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, SName (..), SShape (..), SSize (..), Size (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes)
-import Torch.GraduallyTyped.Tensor.Type (Tensor)
 
 -- | Transformer decoder block consisting of self-attention,
 -- cross-attention, and a feed-forward network.
 data
   TransformerDecoderBlock
     (style :: TransformerStyle)
+    (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (headDim :: Dim (Name Symbol) (Size Nat))
@@ -60,95 +58,110 @@ data
     (dropoutP :: Type)
   where
   TransformerDecoderBlock ::
-    forall style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP.
+    forall style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP.
     { -- | self-attention layer
-      tdbSelfAttention :: SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP,
+      tdbSelfAttention :: SelfAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP,
       -- | cross-attention layer
-      tdbCrossAttention :: CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP,
+      tdbCrossAttention :: CrossAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP,
       -- | feed-forward network
-      tdbFeedForwardNetwork :: TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP
+      tdbFeedForwardNetwork :: TransformerFeedForwardNetwork style gradient device dataType queryEmbedDim ffnDim dropoutP
     } ->
-    TransformerDecoderBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP
+    TransformerDecoderBlock style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP
 
 instance
   ( HasInitialize
-      (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
-      (SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim queryEmbedDim, dropoutP, Double)
+      (SelfAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
+      (SGradient gradient, SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim queryEmbedDim, dropoutP, Double)
       generator
       generator',
     HasInitialize
-      (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
-      (SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim queryEmbedDim, SDim keyEmbedDim, dropoutP, Double)
+      (CrossAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
+      (SGradient gradient, SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim queryEmbedDim, SDim keyEmbedDim, dropoutP, Double)
       generator'
       generator'',
     HasInitialize
-      (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP)
-      (SDevice device, SDataType dataType, SDim queryEmbedDim, SDim ffnDim, dropoutP, Double)
+      (TransformerFeedForwardNetwork style gradient device dataType queryEmbedDim ffnDim dropoutP)
+      (SGradient gradient, SDevice device, SDataType dataType, SDim queryEmbedDim, SDim ffnDim, dropoutP, Double)
       generator''
       generator'''
   ) =>
   HasInitialize
-    (TransformerDecoderBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
-    (SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim queryEmbedDim, SDim keyEmbedDim, SDim ffnDim, dropoutP, Double)
+    (TransformerDecoderBlock style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
+    (SGradient gradient, SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim queryEmbedDim, SDim keyEmbedDim, SDim ffnDim, dropoutP, Double)
     generator
     generator'''
   where
-  initialize (device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, ffnDim, dropoutP, eps) =
-    let selfAttention = IxState . initialize $ (device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, dropoutP, eps)
-        crossAttention = IxState . initialize $ (device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, dropoutP, eps)
-        feedForwardNetwork = IxState . initialize $ (device, dataType, queryEmbedDim, ffnDim, dropoutP, eps)
+  initialize (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, ffnDim, dropoutP, eps) =
+    let selfAttention = IxState . initialize $ (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, dropoutP, eps)
+        crossAttention = IxState . initialize $ (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, dropoutP, eps)
+        feedForwardNetwork = IxState . initialize $ (gradient, device, dataType, queryEmbedDim, ffnDim, dropoutP, eps)
      in runIxState $ TransformerDecoderBlock <<$>> selfAttention <<*>> crossAttention <<*>> feedForwardNetwork
 
-lookupDecoderBlock ::
-  forall style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP m.
-  ( SingI style,
-    MonadReader TensorDict m,
-    MonadIO m,
-    MonadFail m,
-    KnownDevice device,
-    KnownDataType dataType,
-    KnownDim embedDim,
-    KnownDim queryEmbedDim,
-    KnownDim keyEmbedDim,
-    KnownDim ffnDim,
-    Scalar dropoutP
-  ) =>
-  SDim headDim ->
-  SDim headEmbedDim ->
-  SDim embedDim ->
-  dropoutP ->
-  Double ->
-  String ->
-  m (TransformerDecoderBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
-lookupDecoderBlock headDim headEmbedDim embedDim dropoutP eps prefix =
-  let selfAttention ST5 = lookupSelfAttention headDim headEmbedDim embedDim dropoutP eps (prefix <> "layer.0.")
-      selfAttention SByT5 = lookupSelfAttention headDim headEmbedDim embedDim dropoutP eps (prefix <> "layer.0.")
-      selfAttention SBART = lookupSelfAttention headDim headEmbedDim embedDim dropoutP eps prefix
-      selfAttention SMBART = lookupSelfAttention headDim headEmbedDim embedDim dropoutP eps prefix
-      selfAttention SPegasus = lookupSelfAttention headDim headEmbedDim embedDim dropoutP eps prefix
-      selfAttention SBERT = undefined
-      selfAttention SRoBERTa = undefined
-      selfAttention SGPT2 = undefined
-      crossAttention ST5 = lookupCrossAttention headDim headEmbedDim embedDim dropoutP eps (prefix <> "layer.1.")
-      crossAttention SByT5 = lookupCrossAttention headDim headEmbedDim embedDim dropoutP eps (prefix <> "layer.1.")
-      crossAttention SBART = lookupCrossAttention headDim headEmbedDim embedDim dropoutP eps prefix
-      crossAttention SMBART = lookupCrossAttention headDim headEmbedDim embedDim dropoutP eps prefix
-      crossAttention SPegasus = lookupCrossAttention headDim headEmbedDim embedDim dropoutP eps prefix
-      crossAttention SBERT = undefined
-      crossAttention SRoBERTa = undefined
-      crossAttention SGPT2 = undefined
-      feedForwardNetwork ST5 = lookupTransformerFeedForwardNetwork dropoutP eps (prefix <> "layer.2.")
-      feedForwardNetwork SByT5 = lookupTransformerFeedForwardNetwork dropoutP eps (prefix <> "layer.2.")
-      feedForwardNetwork SBART = lookupTransformerFeedForwardNetwork dropoutP eps prefix
-      feedForwardNetwork SMBART = lookupTransformerFeedForwardNetwork dropoutP eps prefix
-      feedForwardNetwork SPegasus = lookupTransformerFeedForwardNetwork dropoutP eps prefix
-      feedForwardNetwork SBERT = undefined
-      feedForwardNetwork SRoBERTa = undefined
-      feedForwardNetwork SGPT2 = undefined
-   in TransformerDecoderBlock
-        <$> selfAttention (sing @style)
-        <*> crossAttention (sing @style)
-        <*> feedForwardNetwork (sing @style)
+instance
+  SingI style =>
+  HasStateDict
+    (TransformerDecoderBlock style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
+    (SGradient gradient, SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim queryEmbedDim, SDim keyEmbedDim, SDim ffnDim, dropoutP, Double)
+  where
+  fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, ffnDim, dropoutP, eps) k =
+    let selfAttention ST5 = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, dropoutP, eps) (k <> "layer.0.")
+        selfAttention SByT5 = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, dropoutP, eps) (k <> "layer.0.")
+        selfAttention SBART = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, dropoutP, eps) k
+        selfAttention SMBART = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, dropoutP, eps) k
+        selfAttention SPegasus = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, dropoutP, eps) k
+        selfAttention SBERT = undefined
+        selfAttention SRoBERTa = undefined
+        selfAttention SGPT2 = undefined
+        crossAttention ST5 = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, dropoutP, eps) (k <> "layer.1.")
+        crossAttention SByT5 = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, dropoutP, eps) (k <> "layer.1.")
+        crossAttention SBART = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, dropoutP, eps) k
+        crossAttention SMBART = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, dropoutP, eps) k
+        crossAttention SPegasus = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, dropoutP, eps) k
+        crossAttention SBERT = undefined
+        crossAttention SRoBERTa = undefined
+        crossAttention SGPT2 = undefined
+        feedForwardNetwork ST5 = fromStateDict (gradient, device, dataType, queryEmbedDim, ffnDim, dropoutP, eps) (k <> "layer.2.")
+        feedForwardNetwork SByT5 = fromStateDict (gradient, device, dataType, queryEmbedDim, ffnDim, dropoutP, eps) (k <> "layer.2.")
+        feedForwardNetwork SBART = fromStateDict (gradient, device, dataType, queryEmbedDim, ffnDim, dropoutP, eps) k
+        feedForwardNetwork SMBART = fromStateDict (gradient, device, dataType, queryEmbedDim, ffnDim, dropoutP, eps) k
+        feedForwardNetwork SPegasus = fromStateDict (gradient, device, dataType, queryEmbedDim, ffnDim, dropoutP, eps) k
+        feedForwardNetwork SBERT = undefined
+        feedForwardNetwork SRoBERTa = undefined
+        feedForwardNetwork SGPT2 = undefined
+     in TransformerDecoderBlock
+          <$> selfAttention (sing @style)
+          <*> crossAttention (sing @style)
+          <*> feedForwardNetwork (sing @style)
+  toStateDict k TransformerDecoderBlock {..} =
+    let selfAttention ST5 = toStateDict (k <> "layer.0.")
+        selfAttention SByT5 = toStateDict (k <> "layer.0.")
+        selfAttention SBART = toStateDict k
+        selfAttention SMBART = toStateDict k
+        selfAttention SPegasus = toStateDict k
+        selfAttention SBERT = undefined
+        selfAttention SRoBERTa = undefined
+        selfAttention SGPT2 = undefined
+        crossAttention ST5 = toStateDict (k <> "layer.1.")
+        crossAttention SByT5 = toStateDict (k <> "layer.1.")
+        crossAttention SBART = toStateDict k
+        crossAttention SMBART = toStateDict k
+        crossAttention SPegasus = toStateDict k
+        crossAttention SBERT = undefined
+        crossAttention SRoBERTa = undefined
+        crossAttention SGPT2 = undefined
+        feedForwardNetwork ST5 = toStateDict (k <> "layer.2.")
+        feedForwardNetwork SByT5 = toStateDict (k <> "layer.2.")
+        feedForwardNetwork SBART = toStateDict k
+        feedForwardNetwork SMBART = toStateDict k
+        feedForwardNetwork SPegasus = toStateDict k
+        feedForwardNetwork SBERT = undefined
+        feedForwardNetwork SRoBERTa = undefined
+        feedForwardNetwork SGPT2 = undefined
+     in do
+          () <- selfAttention (sing @style) tdbSelfAttention
+          () <- crossAttention (sing @style) tdbCrossAttention
+          () <- feedForwardNetwork (sing @style) tdbFeedForwardNetwork
+          pure ()
 
 -- | 'HasForward' instance for 'TransformerDecoderBlock'.
 --
@@ -173,36 +186,27 @@ lookupDecoderBlock headDim headEmbedDim embedDim dropoutP eps prefix =
 -- @
 instance
   ( HasForward
-      (SelfAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
-      ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
-        Tensor decoderAttentionBiasRequiresGradient decoderAttentionBiasLayout decoderAttentionBiasDevice decoderAttentionBiasDataType decoderAttentionBiasShape
-      )
+      (SelfAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
+      (query, decoderAttentionBias)
       (Generator generatorDevice)
       selfAttentionOutput
       selfAttentionGeneratorOutput,
     HasForward
-      (CrossAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
-      ( selfAttentionOutput,
-        Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
-        Tensor crossAttentionBiasRequiresGradient crossAttentionBiasLayout crossAttentionBiasDevice crossAttentionBiasDataType crossAttentionBiasShape
-      )
+      (CrossAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
+      (selfAttentionOutput, key, crossAttentionBias)
       selfAttentionGeneratorOutput
       crossAttentionOutput
       crossAttentionGeneratorOutput,
     HasForward
-      (TransformerFeedForwardNetwork style device dataType queryEmbedDim ffnDim dropoutP)
+      (TransformerFeedForwardNetwork style gradient device dataType queryEmbedDim ffnDim dropoutP)
       crossAttentionOutput
       crossAttentionGeneratorOutput
       output
       generatorOutput
   ) =>
   HasForward
-    (TransformerDecoderBlock style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
-    ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
-      Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
-      Tensor decoderAttentionBiasRequiresGradient decoderAttentionBiasLayout decoderAttentionBiasDevice decoderAttentionBiasDataType decoderAttentionBiasShape,
-      Tensor crossAttentionBiasRequiresGradient crossAttentionBiasLayout crossAttentionBiasDevice crossAttentionBiasDataType crossAttentionBiasShape
-    )
+    (TransformerDecoderBlock style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
+    (query, key, decoderAttentionBias, crossAttentionBias)
     (Generator generatorDevice)
     output
     generatorOutput
@@ -215,7 +219,8 @@ instance
         >>>= IxState . forward tdbFeedForwardNetwork
 
 testDecoderBlock = do
-  let device = SDevice SCPU
+  let gradient = SGradient SWithGradient
+      device = SDevice SCPU
       dataType = SDataType SFloat
       headDim = SName @"*" :&: SSize @8
       headEmbedDim = SName @"*" :&: SSize @64
@@ -226,11 +231,11 @@ testDecoderBlock = do
       dropoutP :: Float = 0.0
       eps = 1e-6
   g <- sMkGenerator device 0
-  let (decoderBlock, g') = initialize @(TransformerDecoderBlock 'T5 _ _ _ _ _ _ _ _ _) (device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, ffnDim, dropoutP, eps) g
+  let (decoderBlock, g') = initialize @(TransformerDecoderBlock 'T5 _ _ _ _ _ _ _ _ _ _) (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, ffnDim, dropoutP, eps) g
       batchDim = SName @"*" :&: SSize @3
       seqDim = SName @"*" :&: SSize @17
       decoderSeqDim = SName @"*" :&: SSize @13
-      sOnes' = sOnes SWithoutGradient (SLayout SDense) device
+      sOnes' = sOnes (SGradient SWithoutGradient) (SLayout SDense) device
       query = sOnes' dataType (SShape $ batchDim :|: decoderSeqDim :|: queryEmbedDim :|: SNil)
       key = sOnes' dataType (SShape $ batchDim :|: seqDim :|: keyEmbedDim :|: SNil)
       decoderAttentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)

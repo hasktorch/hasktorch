@@ -256,14 +256,7 @@ instance
             >>>= ireturn . MultiHeadAttention
 
 instance
-  ( SingI style,
-    KnownDevice device,
-    KnownDataType dataType,
-    KnownDim embedDim,
-    KnownDim queryEmbedDim,
-    KnownDim keyEmbedDim,
-    KnownDim valueEmbedDim
-  ) =>
+  SingI style =>
   HasStateDict
     (MultiHeadAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
     (SGradient gradient, SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim queryEmbedDim, SDim keyEmbedDim, SDim valueEmbedDim, dropoutP)

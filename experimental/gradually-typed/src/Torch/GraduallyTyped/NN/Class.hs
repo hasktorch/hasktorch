@@ -25,6 +25,7 @@ module Torch.GraduallyTyped.NN.Class where
 -- import GHC.Base (coerce, Any)
 
 import Control.Exception (Exception (..))
+import Control.Monad (forM_)
 import Control.Monad.Catch (MonadThrow (..))
 import Control.Monad.State (MonadState (get, put))
 import Data.Kind (Type)
@@ -139,34 +140,22 @@ instance
         (b, g'') = initialize @b input g'
      in ((a, b), g'')
 
-instance HasInitialize (VS.Vector 0 a) () generator generator where
-  initialize _ g = (VGS.Vector V.empty, g)
-
 instance
-  HasInitialize a input generator generatorOutput =>
-  HasInitialize (VS.Vector 1 a) input generator generatorOutput
-  where
-  initialize input g = let (a, g') = initialize @a input g in (VGS.Vector (V.singleton a), g')
-
-instance
-  {-# OVERLAPPABLE #-}
   ( HasInitialize a input generator generatorOutput,
     HasInitialize a input generatorOutput generatorOutput,
-    KnownNat n
+    KnownNat n,
+    n' ~ (n + 1)
   ) =>
-  HasInitialize (VS.Vector n a) input generator generatorOutput
+  HasInitialize (VS.Vector n' a) input generator generatorOutput
   where
   initialize input g =
-    let i = fromIntegral (natVal (Proxy :: Proxy n))
-        Just (as, (a', g'')) = V.unsnoc $ V.iterateN i (\(_, g') -> initialize @a input g') (initialize @a input g)
-     in (VGS.Vector (V.snoc (fst <$> as) a'), g'')
-
-testInitializeVector ::
-  forall n generator.
-  KnownNat n =>
-  HasInitialize (VS.Vector n ()) () generator generator =>
-  (generator -> (VS.Vector n (), generator))
-testInitializeVector = initialize @(VS.Vector n ()) ()
+    case fromIntegral (natVal (Proxy :: Proxy n)) of
+      1 ->
+        let (a, g') = initialize @a input g
+         in (VGS.Vector (V.singleton a), g')
+      i ->
+        let Just (as, (a', g'')) = V.unsnoc $ V.iterateN i (\(_, g') -> initialize @a input g') (initialize @a input g)
+         in (VGS.Vector (V.snoc (fst <$> as) a'), g'')
 
 type StateDictKey = String
 
@@ -235,6 +224,22 @@ instance
         (\_ -> throwM . ToStateDictKeyAlreadyInUseError $ k)
         (Map.lookup k stateDict)
     put stateDict'
+
+instance
+  ( KnownNat n,
+    HasStateDict a input
+  ) =>
+  HasStateDict
+    (VS.Vector n a)
+    input
+  where
+  fromStateDict input k = do
+    let i = fromIntegral (natVal (Proxy :: Proxy n))
+        fromStateDict' i' = fromStateDict input (k <> show i' <> ".")
+    traverse fromStateDict' . VGS.Vector . V.fromList $ [0 .. i - 1]
+  toStateDict k (VGS.Vector v) = do
+    let toStateDict' (i', a) = toStateDict (k <> show i' <> ".") a
+    mapM_ toStateDict' $ V.zip (V.fromList [0 .. V.length v - 1]) v
 
 -- class GHasForward model input where
 --   type GOutput model input
