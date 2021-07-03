@@ -38,7 +38,7 @@ import Control.Monad.Indexed.State (IxState (..))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI, SingKind (fromSing), sing)
-import GHC.TypeLits (KnownNat, Nat, Symbol, type (<=?))
+import GHC.TypeLits (KnownNat, Nat, Symbol)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), SDataType)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
@@ -259,12 +259,30 @@ instance
     (SGradient gradient, SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim inputEmbedDim, SDim ffnDim, SDim posEncDim, SDim vocabDim, SDim typeVocabDim, dropoutP, Double)
   where
   fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, typeVocabDim, dropoutP, eps) k =
-    let encoder SBERT = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, dropoutP, eps) k
+    let encoder ST5 = undefined
+        encoder SByT5 = undefined
+        encoder SBART = undefined
+        encoder SMBART = undefined
+        encoder SPegasus = undefined
+        encoder SBERT = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, dropoutP, eps) k
         encoder SRoBERTa = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, dropoutP, eps) k
+        encoder SGPT2 = undefined
+        embedding ST5 = undefined
+        embedding SByT5 = undefined
+        embedding SBART = undefined
+        embedding SMBART = undefined
+        embedding SPegasus = undefined
         embedding SBERT = fromStateDict (gradient, SLayout SDense, device, dataType, vocabDim, inputEmbedDim) (k <> "embeddings.word_embeddings.")
         embedding SRoBERTa = fromStateDict (gradient, SLayout SDense, device, dataType, vocabDim, inputEmbedDim) (k <> "embeddings.word_embeddings.")
+        embedding SGPT2 = undefined
+        typeEmbedding ST5 = undefined
+        typeEmbedding SByT5 = undefined
+        typeEmbedding SBART = undefined
+        typeEmbedding SMBART = undefined
+        typeEmbedding SPegasus = undefined
         typeEmbedding SBERT = fromStateDict (gradient, SLayout SDense, device, dataType, typeVocabDim, inputEmbedDim) (k <> "embeddings.token_type_embeddings.")
         typeEmbedding SRoBERTa = fromStateDict (gradient, SLayout SDense, device, dataType, typeVocabDim, inputEmbedDim) (k <> "embeddings.token_type_embeddings.")
+        typeEmbedding SGPT2 = undefined
      in EncoderOnlyTransformer
           <$> ( GEncoderOnlyTransformer
                   inputEmbedDim
@@ -272,6 +290,36 @@ instance
                   <*> embedding (sing @style)
                   <*> typeEmbedding (sing @style)
               )
+  toStateDict k (EncoderOnlyTransformer GEncoderOnlyTransformer {..}) =
+    let encoder ST5 = undefined
+        encoder SByT5 = undefined
+        encoder SBART = undefined
+        encoder SMBART = undefined
+        encoder SPegasus = undefined
+        encoder SBERT = toStateDict k
+        encoder SRoBERTa = toStateDict k
+        encoder SGPT2 = undefined
+        embedding ST5 = undefined
+        embedding SByT5 = undefined
+        embedding SBART = undefined
+        embedding SMBART = undefined
+        embedding SPegasus = undefined
+        embedding SBERT = toStateDict (k <> "embeddings.word_embeddings.")
+        embedding SRoBERTa = toStateDict (k <> "embeddings.word_embeddings.")
+        embedding SGPT2 = undefined
+        typeEmbedding ST5 = undefined
+        typeEmbedding SByT5 = undefined
+        typeEmbedding SBART = undefined
+        typeEmbedding SMBART = undefined
+        typeEmbedding SPegasus = undefined
+        typeEmbedding SBERT = toStateDict (k <> "embeddings.token_type_embeddings.")
+        typeEmbedding SRoBERTa = toStateDict (k <> "embeddings.token_type_embeddings.")
+        typeEmbedding SGPT2 = undefined
+     in do
+          () <- encoder (sing @style) eoEncoder
+          () <- embedding (sing @style) eoEmbedding
+          () <- typeEmbedding (sing @style) eoTypeEmbedding
+          pure ()
 
 instance
   (SingI style, KnownNat numLayers) =>
@@ -280,15 +328,48 @@ instance
     (SGradient gradient, SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim inputEmbedDim, SDim ffnDim, SDim posEncDim, SDim vocabDim, SDim typeVocabDim, dropoutP, Double)
   where
   fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, typeVocabDim, dropoutP, eps) k =
-    let transformer SBERT = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, typeVocabDim, dropoutP, eps) (k <> "bert.")
+    let transformer ST5 = undefined
+        transformer SByT5 = undefined
+        transformer SBART = undefined
+        transformer SMBART = undefined
+        transformer SPegasus = undefined
+        transformer SBERT = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, typeVocabDim, dropoutP, eps) (k <> "bert.")
         transformer SRoBERTa = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, typeVocabDim, dropoutP, eps) (k <> "roberta.")
+        transformer SGPT2 = undefined
+        lmHead ST5 = undefined
+        lmHead SByT5 = undefined
+        lmHead SBART = undefined
+        lmHead SMBART = undefined
+        lmHead SPegasus = undefined
         lmHead SBERT = fromStateDict (gradient, device, dataType, inputEmbedDim, vocabDim, eps) (k <> "cls.predictions.")
         lmHead SRoBERTa = fromStateDict (gradient, device, dataType, inputEmbedDim, vocabDim, eps) (k <> "lm_head.")
+        lmHead SGPT2 = undefined
      in EncoderOnlyTransformerWithLMHead
           <$> ( GEncoderOnlyTransformerWithLMHead
                   <$> transformer (sing @style)
                   <*> lmHead (sing @style)
               )
+  toStateDict k (EncoderOnlyTransformerWithLMHead GEncoderOnlyTransformerWithLMHead {..}) =
+    let transformer ST5 = undefined
+        transformer SByT5 = undefined
+        transformer SBART = undefined
+        transformer SMBART = undefined
+        transformer SPegasus = undefined
+        transformer SBERT = toStateDict (k <> "bert.")
+        transformer SRoBERTa = toStateDict (k <> "roberta.")
+        transformer SGPT2 = undefined
+        lmHead ST5 = undefined
+        lmHead SByT5 = undefined
+        lmHead SBART = undefined
+        lmHead SMBART = undefined
+        lmHead SPegasus = undefined
+        lmHead SBERT = toStateDict (k <> "cls.predictions.")
+        lmHead SRoBERTa = toStateDict (k <> "lm_head.")
+        lmHead SGPT2 = undefined
+     in do
+          () <- transformer (sing @style) eoTransformer
+          () <- lmHead (sing @style) eoLMHead
+          pure ()
 
 -- | Input data type for use with an encoder-only transformer.
 data EncoderOnlyTransformerInput input inputType pos attentionMask where
@@ -382,10 +463,10 @@ instance
   forward (EncoderOnlyTransformer GEncoderOnlyTransformer {..}) EncoderOnlyTransformerInput {..} =
     let s :: Double = sqrt . fromIntegral . forgetIsChecked . dimSize . fromSing $ eoInputEmbedDim
         embedScaling ::
-          forall gradient layout device dataType shape.
+          forall gradient''' layout device''' dataType''' shape.
           STransformerStyle style ->
-          Tensor gradient layout device dataType shape ->
-          Tensor gradient layout device dataType shape
+          Tensor gradient''' layout device''' dataType''' shape ->
+          Tensor gradient''' layout device''' dataType''' shape
         embedScaling SBERT = id
         embedScaling SRoBERTa = id
         -- embedScaling _ = flip mulScalar s

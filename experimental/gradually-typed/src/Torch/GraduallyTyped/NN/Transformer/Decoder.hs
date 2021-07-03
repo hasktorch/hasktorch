@@ -12,43 +12,42 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fplugin TypeLevel.Rewrite
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyRightAssociativeL #-}
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyRightAssociativeL
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.OrRightAssociativeL #-}
 {-# OPTIONS_GHC -v2 -Wall #-}
 
 module Torch.GraduallyTyped.NN.Transformer.Decoder where
 
 import Control.Monad.Indexed (IxPointed (ireturn), (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
-import Control.Monad.Reader (MonadIO, MonadReader)
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI, sing)
 import Data.Singletons.Prelude.List (SList (SNil))
-import GHC.TypeLits (Nat, Symbol)
+import GHC.TypeLits (KnownNat, Nat, Symbol)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), KnownDataType, SDType (..), SDataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, SDevice (..), SDeviceType (..))
+import Torch.GraduallyTyped.DType (DataType (..), SDType (..), SDataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout (..))
 import Torch.GraduallyTyped.NN.Functional.Sparse (EmbeddingF)
 import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..))
 import Torch.GraduallyTyped.NN.Sparse (Embedding (..))
 import Torch.GraduallyTyped.NN.Transformer.DecoderStack (TransformerDecoderStack)
-import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
+import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.Random (sMkGenerator)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (..))
-import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape (Dim (..), KnownDim, Name (..), SDim, SName (..), SShape (..), SSize (..), Shape (..), Size (..))
+import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..), SRequiresGradient (..))
+import Torch.GraduallyTyped.Shape (Dim (..), Name (..), SDim, SName (..), SShape (..), SSize (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
 import Torch.GraduallyTyped.Shape.Type (By (..), SelectDim (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes)
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (TransposeF, UnsqueezeF, transpose, unsqueeze)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
-import Torch.GraduallyTyped.Unify (type (<+>))
+import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 
 -- | Generic transformer decoder.
 -- Needs to be specialized to a given transformer type, e.g. 'T5'.
@@ -81,6 +80,7 @@ data
   TransformerDecoder
     (numLayers :: Nat)
     (style :: TransformerStyle)
+    (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (headDim :: Dim (Name Symbol) (Size Nat))
@@ -93,13 +93,14 @@ data
     (dropoutP :: Type)
   where
   TransformerDecoder ::
-    forall numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP.
-    GTransformerDecoderF numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP ->
-    TransformerDecoder numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP
+    forall numLayers style gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP.
+    GTransformerDecoderF numLayers style gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP ->
+    TransformerDecoder numLayers style gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP
 
 type GTransformerDecoderF
   (numLayers :: Nat)
   (style :: TransformerStyle)
+  (gradient :: Gradient RequiresGradient)
   (device :: Device (DeviceType Nat))
   (dataType :: DataType DType)
   (headDim :: Dim (Name Symbol) (Size Nat))
@@ -111,16 +112,17 @@ type GTransformerDecoderF
   (posEncDim :: Dim (Name Symbol) (Size Nat))
   (dropoutP :: Type) =
   GTransformerDecoder
-    (TDStackF numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP)
-    (TDEmbedLayerNormF style device dataType decoderInputEmbedDim)
-    (TDLayerNormF style device dataType decoderInputEmbedDim)
+    (TDStackF numLayers style gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP)
+    (TDEmbedLayerNormF style gradient device dataType decoderInputEmbedDim)
+    (TDLayerNormF style gradient device dataType decoderInputEmbedDim)
     (TDDropoutF style dropoutP)
-    (TDPosEncF style device dataType headDim decoderInputEmbedDim posEncDim)
+    (TDPosEncF style gradient device dataType headDim decoderInputEmbedDim posEncDim)
 
 type family
   TDStackF
     (numLayers :: Nat)
     (style :: TransformerStyle)
+    (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (headDim :: Dim (Name Symbol) (Size Nat))
@@ -132,36 +134,38 @@ type family
     (dropoutP :: Type) ::
     Type
   where
-  TDStackF numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP =
-    TransformerDecoderStack numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP
+  TDStackF numLayers style gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP =
+    TransformerDecoderStack numLayers style gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP
 
 type family
   TDEmbedLayerNormF
     (style :: TransformerStyle)
+    (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (decoderInputEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
     Type
   where
-  TDEmbedLayerNormF 'T5 _ _ _ = ()
-  TDEmbedLayerNormF 'ByT5 device dataType decoderInputEmbedDim = TDEmbedLayerNormF 'T5 device dataType decoderInputEmbedDim
-  TDEmbedLayerNormF 'BART device dataType decoderInputEmbedDim = LayerNorm 'WithBias device dataType ('Shape '[decoderInputEmbedDim])
-  TDEmbedLayerNormF 'MBART device dataType decoderInputEmbedDim = TDEmbedLayerNormF 'BART device dataType decoderInputEmbedDim
-  TDEmbedLayerNormF 'Pegasus _ _ _ = ()
+  TDEmbedLayerNormF 'T5 _ _ _ _ = ()
+  TDEmbedLayerNormF 'ByT5 gradient device dataType decoderInputEmbedDim = TDEmbedLayerNormF 'T5 gradient device dataType decoderInputEmbedDim
+  TDEmbedLayerNormF 'BART gradient device dataType decoderInputEmbedDim = LayerNorm 'WithBias gradient device dataType ('Shape '[decoderInputEmbedDim])
+  TDEmbedLayerNormF 'MBART gradient device dataType decoderInputEmbedDim = TDEmbedLayerNormF 'BART gradient device dataType decoderInputEmbedDim
+  TDEmbedLayerNormF 'Pegasus _ _ _ _ = ()
 
 type family
   TDLayerNormF
     (style :: TransformerStyle)
+    (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (decoderInputEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
     Type
   where
-  TDLayerNormF 'T5 device dataType decoderInputEmbedDim = LayerNorm 'WithoutBias device dataType ('Shape '[decoderInputEmbedDim])
-  TDLayerNormF 'ByT5 device dataType decoderInputEmbedDim = TDLayerNormF 'T5 device dataType decoderInputEmbedDim
-  TDLayerNormF 'BART _ _ _ = ()
-  TDLayerNormF 'MBART device dataType decoderInputEmbedDim = TDLayerNormF 'BART device dataType decoderInputEmbedDim
-  TDLayerNormF 'Pegasus device dataType decoderInputEmbedDim = LayerNorm 'WithBias device dataType ('Shape '[decoderInputEmbedDim])
+  TDLayerNormF 'T5 gradient device dataType decoderInputEmbedDim = LayerNorm 'WithoutBias gradient device dataType ('Shape '[decoderInputEmbedDim])
+  TDLayerNormF 'ByT5 gradient device dataType decoderInputEmbedDim = TDLayerNormF 'T5 gradient device dataType decoderInputEmbedDim
+  TDLayerNormF 'BART _ _ _ _ = ()
+  TDLayerNormF 'MBART gradient device dataType decoderInputEmbedDim = TDLayerNormF 'BART gradient device dataType decoderInputEmbedDim
+  TDLayerNormF 'Pegasus gradient device dataType decoderInputEmbedDim = LayerNorm 'WithBias gradient device dataType ('Shape '[decoderInputEmbedDim])
 
 type family
   TDDropoutF
@@ -174,6 +178,7 @@ type family
 type family
   TDPosEncF
     (style :: TransformerStyle)
+    (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (headDim :: Dim (Name Symbol) (Size Nat))
@@ -181,43 +186,46 @@ type family
     (posEncDim :: Dim (Name Symbol) (Size Nat)) ::
     Type
   where
-  TDPosEncF 'T5 device dataType headDim _ posEncDim = Embedding ('Layout 'Dense) device dataType posEncDim headDim 'Nothing
-  TDPosEncF 'ByT5 device dataType headDim decoderInputEmbedDim posEncDim = TDPosEncF 'T5 device dataType headDim decoderInputEmbedDim posEncDim
-  TDPosEncF 'BART device dataType _ decoderInputEmbedDim posEncDim = Embedding ('Layout 'Dense) device dataType posEncDim decoderInputEmbedDim 'Nothing
-  TDPosEncF 'MBART device dataType headDim decoderInputEmbedDim posEncDim = TDPosEncF 'BART device dataType headDim decoderInputEmbedDim posEncDim
-  TDPosEncF 'Pegasus device dataType headDim decoderInputEmbedDim posEncDim = TDPosEncF 'BART device dataType headDim decoderInputEmbedDim posEncDim
+  TDPosEncF 'T5 gradient device dataType headDim _ posEncDim = Embedding gradient ('Layout 'Dense) device dataType posEncDim headDim 'Nothing
+  TDPosEncF 'ByT5 gradient device dataType headDim decoderInputEmbedDim posEncDim = TDPosEncF 'T5 gradient device dataType headDim decoderInputEmbedDim posEncDim
+  TDPosEncF 'BART gradient device dataType _ decoderInputEmbedDim posEncDim = Embedding gradient ('Layout 'Dense) device dataType posEncDim decoderInputEmbedDim 'Nothing
+  TDPosEncF 'MBART gradient device dataType headDim decoderInputEmbedDim posEncDim = TDPosEncF 'BART gradient device dataType headDim decoderInputEmbedDim posEncDim
+  TDPosEncF 'Pegasus gradient device dataType headDim decoderInputEmbedDim posEncDim = TDPosEncF 'BART gradient device dataType headDim decoderInputEmbedDim posEncDim
 
 type family
   HasInitializeTDEmbedLayerNormInputF
     (style :: TransformerStyle)
+    (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (decoderInputEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
     Type
   where
-  HasInitializeTDEmbedLayerNormInputF 'T5 _ _ _ = ()
-  HasInitializeTDEmbedLayerNormInputF 'ByT5 device dataType decoderInputEmbedDim = HasInitializeTDEmbedLayerNormInputF 'T5 device dataType decoderInputEmbedDim
-  HasInitializeTDEmbedLayerNormInputF 'BART device dataType decoderInputEmbedDim = (SDevice device, SDataType dataType, SShape ('Shape '[decoderInputEmbedDim]), Double)
-  HasInitializeTDEmbedLayerNormInputF 'MBART device dataType decoderInputEmbedDim = HasInitializeTDEmbedLayerNormInputF 'BART device dataType decoderInputEmbedDim
-  HasInitializeTDEmbedLayerNormInputF 'Pegasus _ _ _ = ()
+  HasInitializeTDEmbedLayerNormInputF 'T5 _ _ _ _ = ()
+  HasInitializeTDEmbedLayerNormInputF 'ByT5 gradient device dataType decoderInputEmbedDim = HasInitializeTDEmbedLayerNormInputF 'T5 gradient device dataType decoderInputEmbedDim
+  HasInitializeTDEmbedLayerNormInputF 'BART gradient device dataType decoderInputEmbedDim = (SGradient gradient, SDevice device, SDataType dataType, SShape ('Shape '[decoderInputEmbedDim]), Double)
+  HasInitializeTDEmbedLayerNormInputF 'MBART gradient device dataType decoderInputEmbedDim = HasInitializeTDEmbedLayerNormInputF 'BART gradient device dataType decoderInputEmbedDim
+  HasInitializeTDEmbedLayerNormInputF 'Pegasus _ _ _ _ = ()
 
 type family
   HasInitializeTDLayerNormInputF
     (style :: TransformerStyle)
+    (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (decoderInputEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
     Type
   where
-  HasInitializeTDLayerNormInputF 'T5 device dataType decoderInputEmbedDim = (SDevice device, SDataType dataType, SShape ('Shape '[decoderInputEmbedDim]), Double)
-  HasInitializeTDLayerNormInputF 'ByT5 device dataType decoderInputEmbedDim = HasInitializeTDLayerNormInputF 'T5 device dataType decoderInputEmbedDim
-  HasInitializeTDLayerNormInputF 'BART _ _ _ = ()
-  HasInitializeTDLayerNormInputF 'MBART device dataType decoderInputEmbedDim = HasInitializeTDLayerNormInputF 'BART device dataType decoderInputEmbedDim
-  HasInitializeTDLayerNormInputF 'Pegasus device dataType decoderInputEmbedDim = (SDevice device, SDataType dataType, SShape ('Shape '[decoderInputEmbedDim]), Double)
+  HasInitializeTDLayerNormInputF 'T5 gradient device dataType decoderInputEmbedDim = (SGradient gradient, SDevice device, SDataType dataType, SShape ('Shape '[decoderInputEmbedDim]), Double)
+  HasInitializeTDLayerNormInputF 'ByT5 gradient device dataType decoderInputEmbedDim = HasInitializeTDLayerNormInputF 'T5 gradient device dataType decoderInputEmbedDim
+  HasInitializeTDLayerNormInputF 'BART _ _ _ _ = ()
+  HasInitializeTDLayerNormInputF 'MBART gradient device dataType decoderInputEmbedDim = HasInitializeTDLayerNormInputF 'BART gradient device dataType decoderInputEmbedDim
+  HasInitializeTDLayerNormInputF 'Pegasus gradient device dataType decoderInputEmbedDim = (SGradient gradient, SDevice device, SDataType dataType, SShape ('Shape '[decoderInputEmbedDim]), Double)
 
 type family
   HasInitializeTDPosEncInputF
     (style :: TransformerStyle)
+    (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (headDim :: Dim (Name Symbol) (Size Nat))
@@ -225,148 +233,153 @@ type family
     (posEncDim :: Dim (Name Symbol) (Size Nat)) ::
     Type
   where
-  HasInitializeTDPosEncInputF 'T5 device dataType headDim _ posEncDim = (SLayout ('Layout 'Dense), SDevice device, SDataType dataType, SDim posEncDim, SDim headDim)
-  HasInitializeTDPosEncInputF 'ByT5 device dataType headDim decoderInputEmbedDim posEncDim = HasInitializeTDPosEncInputF 'T5 device dataType headDim decoderInputEmbedDim posEncDim
-  HasInitializeTDPosEncInputF 'BART device dataType _ decoderInputEmbedDim posEncDim = (SLayout ('Layout 'Dense), SDevice device, SDataType dataType, SDim posEncDim, SDim decoderInputEmbedDim)
-  HasInitializeTDPosEncInputF 'MBART device dataType headDim decoderInputEmbedDim posEncDim = HasInitializeTDPosEncInputF 'BART device dataType headDim decoderInputEmbedDim posEncDim
-  HasInitializeTDPosEncInputF 'Pegasus device dataType headDim decoderInputEmbedDim posEncDim = HasInitializeTDPosEncInputF 'BART device dataType headDim decoderInputEmbedDim posEncDim
+  HasInitializeTDPosEncInputF 'T5 gradient device dataType headDim _ posEncDim = (SGradient gradient, SLayout ('Layout 'Dense), SDevice device, SDataType dataType, SDim posEncDim, SDim headDim)
+  HasInitializeTDPosEncInputF 'ByT5 gradient device dataType headDim decoderInputEmbedDim posEncDim = HasInitializeTDPosEncInputF 'T5 gradient device dataType headDim decoderInputEmbedDim posEncDim
+  HasInitializeTDPosEncInputF 'BART gradient device dataType _ decoderInputEmbedDim posEncDim = (SGradient gradient, SLayout ('Layout 'Dense), SDevice device, SDataType dataType, SDim posEncDim, SDim decoderInputEmbedDim)
+  HasInitializeTDPosEncInputF 'MBART gradient device dataType headDim decoderInputEmbedDim posEncDim = HasInitializeTDPosEncInputF 'BART gradient device dataType headDim decoderInputEmbedDim posEncDim
+  HasInitializeTDPosEncInputF 'Pegasus gradient device dataType headDim decoderInputEmbedDim posEncDim = HasInitializeTDPosEncInputF 'BART gradient device dataType headDim decoderInputEmbedDim posEncDim
 
 instance
   ( SingI style,
-    stack ~ TDStackF numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP,
-    HasInitialize stack (SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim decoderInputEmbedDim, SDim encoderOutputEmbedDim, SDim ffnDim, dropoutP, Double) generator generator',
-    embedLayerNorm ~ TDEmbedLayerNormF style device dataType decoderInputEmbedDim,
-    HasInitialize embedLayerNorm (HasInitializeTDEmbedLayerNormInputF style device dataType decoderInputEmbedDim) generator' generator'',
-    layerNorm ~ TDLayerNormF style device dataType decoderInputEmbedDim,
-    HasInitialize layerNorm (HasInitializeTDLayerNormInputF style device dataType decoderInputEmbedDim) generator'' generator''',
+    stack ~ TDStackF numLayers style gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP,
+    HasInitialize stack (SGradient gradient, SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim decoderInputEmbedDim, SDim encoderOutputEmbedDim, SDim ffnDim, dropoutP, Double) generator generator',
+    embedLayerNorm ~ TDEmbedLayerNormF style gradient device dataType decoderInputEmbedDim,
+    HasInitialize embedLayerNorm (HasInitializeTDEmbedLayerNormInputF style gradient device dataType decoderInputEmbedDim) generator' generator'',
+    layerNorm ~ TDLayerNormF style gradient device dataType decoderInputEmbedDim,
+    HasInitialize layerNorm (HasInitializeTDLayerNormInputF style gradient device dataType decoderInputEmbedDim) generator'' generator''',
     dropout ~ TDDropoutF style dropoutP,
     HasInitialize dropout dropoutP generator''' generator''',
-    posEnc ~ TDPosEncF style device dataType headDim decoderInputEmbedDim posEncDim,
-    HasInitialize posEnc (HasInitializeTDPosEncInputF style device dataType headDim decoderInputEmbedDim posEncDim) generator''' generator''''
+    posEnc ~ TDPosEncF style gradient device dataType headDim decoderInputEmbedDim posEncDim,
+    HasInitialize posEnc (HasInitializeTDPosEncInputF style gradient device dataType headDim decoderInputEmbedDim posEncDim) generator''' generator''''
   ) =>
   HasInitialize
-    (TransformerDecoder numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP)
-    (SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim decoderInputEmbedDim, SDim encoderOutputEmbedDim, SDim ffnDim, SDim posEncDim, dropoutP, Double)
+    (TransformerDecoder numLayers style gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP)
+    (SGradient gradient, SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim decoderInputEmbedDim, SDim encoderOutputEmbedDim, SDim ffnDim, SDim posEncDim, dropoutP, Double)
     generator
     generator''''
   where
-  initialize (device, dataType, headDim, headEmbedDim, embedDim, decoderInputEmbedDim, encoderOutputEmbedDim, ffnDim, posEncDim, dropoutP, eps) =
-    let decoderStack = IxState . initialize $ (device, dataType, headDim, headEmbedDim, embedDim, decoderInputEmbedDim, encoderOutputEmbedDim, ffnDim, dropoutP, eps)
+  initialize (gradient, device, dataType, headDim, headEmbedDim, embedDim, decoderInputEmbedDim, encoderOutputEmbedDim, ffnDim, posEncDim, dropoutP, eps) =
+    let decoderStack = IxState . initialize $ (gradient, device, dataType, headDim, headEmbedDim, embedDim, decoderInputEmbedDim, encoderOutputEmbedDim, ffnDim, dropoutP, eps)
         embedLayerNorm = IxState . initialize $ case sing @style of
           ST5 -> ()
           SByT5 -> ()
-          SBART -> (device, dataType, SShape $ decoderInputEmbedDim :|: SNil, eps)
-          SMBART -> (device, dataType, SShape $ decoderInputEmbedDim :|: SNil, eps)
+          SBART -> (gradient, device, dataType, SShape $ decoderInputEmbedDim :|: SNil, eps)
+          SMBART -> (gradient, device, dataType, SShape $ decoderInputEmbedDim :|: SNil, eps)
           SPegasus -> ()
           SBERT -> undefined
           SRoBERTa -> undefined
           SGPT2 -> undefined
         layerNorm = IxState . initialize $ case sing @style of
-          ST5 -> (device, dataType, SShape $ decoderInputEmbedDim :|: SNil, eps)
-          SByT5 -> (device, dataType, SShape $ decoderInputEmbedDim :|: SNil, eps)
+          ST5 -> (gradient, device, dataType, SShape $ decoderInputEmbedDim :|: SNil, eps)
+          SByT5 -> (gradient, device, dataType, SShape $ decoderInputEmbedDim :|: SNil, eps)
           SBART -> ()
           SMBART -> ()
-          SPegasus -> (device, dataType, SShape $ decoderInputEmbedDim :|: SNil, eps)
+          SPegasus -> (gradient, device, dataType, SShape $ decoderInputEmbedDim :|: SNil, eps)
           SBERT -> undefined
           SRoBERTa -> undefined
           SGPT2 -> undefined
         dropout = IxState . initialize $ dropoutP
         posEnc = IxState . initialize $ case sing @style of
-          ST5 -> (SLayout SDense, device, dataType, posEncDim, headDim)
-          SByT5 -> (SLayout SDense, device, dataType, posEncDim, headDim)
-          SBART -> (SLayout SDense, device, dataType, posEncDim, decoderInputEmbedDim)
-          SMBART -> (SLayout SDense, device, dataType, posEncDim, decoderInputEmbedDim)
-          SPegasus -> (SLayout SDense, device, dataType, posEncDim, decoderInputEmbedDim)
+          ST5 -> (gradient, SLayout SDense, device, dataType, posEncDim, headDim)
+          SByT5 -> (gradient, SLayout SDense, device, dataType, posEncDim, headDim)
+          SBART -> (gradient, SLayout SDense, device, dataType, posEncDim, decoderInputEmbedDim)
+          SMBART -> (gradient, SLayout SDense, device, dataType, posEncDim, decoderInputEmbedDim)
+          SPegasus -> (gradient, SLayout SDense, device, dataType, posEncDim, decoderInputEmbedDim)
           SBERT -> undefined
           SRoBERTa -> undefined
           SGPT2 -> undefined
      in runIxState $
           (GTransformerDecoder <<$>> decoderStack <<*>> embedLayerNorm <<*>> layerNorm <<*>> dropout <<*>> posEnc) >>>= ireturn . TransformerDecoder
 
-lookupDecoder ::
-  forall numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP m.
-  ( SingI style,
-    MonadReader TensorDict m,
-    MonadIO m,
-    MonadFail m,
-    KnownDevice device,
-    KnownDataType dataType,
-    KnownDim headDim,
-    KnownDim embedDim,
-    KnownDim decoderInputEmbedDim,
-    KnownDim encoderOutputEmbedDim,
-    KnownDim ffnDim,
-    KnownDim posEncDim,
-    Scalar dropoutP
-    -- HasLookupDecoderStack numLayers (1 <=? numLayers) numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP m
-  ) =>
-  SDim headDim ->
-  SDim headEmbedDim ->
-  SDim embedDim ->
-  dropoutP ->
-  Double ->
-  String ->
-  m (TransformerDecoder numLayers style device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP)
-lookupDecoder headDim headEmbedDim embedDim dropoutP eps prefix =
-  let stack ST5 = undefined headDim headEmbedDim embedDim dropoutP eps (prefix <> "block.")
-      stack SByT5 = undefined headDim headEmbedDim embedDim dropoutP eps (prefix <> "block.")
-      stack SBART = undefined headDim headEmbedDim embedDim dropoutP eps (prefix <> "layers.")
-      stack SMBART = undefined headDim headEmbedDim embedDim dropoutP eps (prefix <> "layers.")
-      stack SPegasus = undefined headDim headEmbedDim embedDim dropoutP eps (prefix <> "layers.")
-      stack SBERT = undefined
-      stack SRoBERTa = undefined
-      stack SGPT2 = undefined
-      embedLayerNorm ST5 = pure ()
-      embedLayerNorm SByT5 = pure ()
-      embedLayerNorm SBART =
-        LayerNormWithBias
-          <$> lookupTensor (prefix <> "layernorm_embedding.weight")
-          <*> lookupTensor (prefix <> "layernorm_embedding.bias")
-          <*> pure eps
-      embedLayerNorm SMBART =
-        LayerNormWithBias
-          <$> lookupTensor (prefix <> "layernorm_embedding.weight")
-          <*> lookupTensor (prefix <> "layernorm_embedding.bias")
-          <*> pure eps
-      embedLayerNorm SPegasus = pure ()
-      embedLayerNorm SBERT = undefined
-      embedLayerNorm SRoBERTa = undefined
-      embedLayerNorm SGPT2 = undefined
-      layerNorm ST5 =
-        LayerNormWithoutBias
-          <$> lookupTensor (prefix <> "final_layer_norm.weight")
-          <*> pure eps
-      layerNorm SByT5 =
-        LayerNormWithoutBias
-          <$> lookupTensor (prefix <> "final_layer_norm.weight")
-          <*> pure eps
-      layerNorm SBART = pure ()
-      layerNorm SMBART = pure ()
-      layerNorm SPegasus =
-        LayerNormWithBias
-          <$> lookupTensor (prefix <> "layer_norm.weight")
-          <*> lookupTensor (prefix <> "layer_norm.bias")
-          <*> pure eps
-      layerNorm SBERT = undefined
-      layerNorm SRoBERTa = undefined
-      layerNorm SGPT2 = undefined
-      dropout _ = pure (Dropout dropoutP)
-      posEnc ST5 = Embedding <$> lookupTensor (prefix <> "block.0.layer.0.SelfAttention.relative_attention_bias.weight")
-      posEnc SByT5 = Embedding <$> lookupTensor (prefix <> "block.0.layer.0.SelfAttention.relative_attention_bias.weight")
-      posEnc SBART = Embedding <$> lookupTensor (prefix <> "embed_positions.weight")
-      posEnc SMBART = Embedding <$> lookupTensor (prefix <> "embed_positions.weight")
-      posEnc SPegasus = Embedding <$> lookupTensor (prefix <> "embed_positions.weight")
-      posEnc SBERT = undefined
-      posEnc SRoBERTa = undefined
-      posEnc SGPT2 = undefined
-   in TransformerDecoder
-        <$> ( GTransformerDecoder
-                <$> stack (sing @style)
-                <*> embedLayerNorm (sing @style)
-                <*> layerNorm (sing @style)
-                <*> dropout (sing @style)
-                <*> posEnc (sing @style)
-            )
+instance
+  (SingI style, KnownNat numLayers) =>
+  HasStateDict
+    (TransformerDecoder numLayers style gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP)
+    (SGradient gradient, SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim decoderInputEmbedDim, SDim encoderOutputEmbedDim, SDim ffnDim, SDim posEncDim, dropoutP, Double)
+  where
+  fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, decoderInputEmbedDim, encoderOutputEmbedDim, ffnDim, posEncDim, dropoutP, eps) k =
+    let stack ST5 = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, decoderInputEmbedDim, encoderOutputEmbedDim, ffnDim, dropoutP, eps) (k <> "block.")
+        stack SByT5 = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, decoderInputEmbedDim, encoderOutputEmbedDim, ffnDim, dropoutP, eps) (k <> "block.")
+        stack SBART = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, decoderInputEmbedDim, encoderOutputEmbedDim, ffnDim, dropoutP, eps) (k <> "layers.")
+        stack SMBART = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, decoderInputEmbedDim, encoderOutputEmbedDim, ffnDim, dropoutP, eps) (k <> "layers.")
+        stack SPegasus = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, decoderInputEmbedDim, encoderOutputEmbedDim, ffnDim, dropoutP, eps) (k <> "layers.")
+        stack SBERT = undefined
+        stack SRoBERTa = undefined
+        stack SGPT2 = undefined
+        embedLayerNorm ST5 = fromStateDict () k
+        embedLayerNorm SByT5 = fromStateDict () k
+        embedLayerNorm SBART = fromStateDict (gradient, device, dataType, SShape $ decoderInputEmbedDim :|: SNil, eps) (k <> "layernorm_embedding.")
+        embedLayerNorm SMBART = fromStateDict (gradient, device, dataType, SShape $ decoderInputEmbedDim :|: SNil, eps) (k <> "layernorm_embedding.")
+        embedLayerNorm SPegasus = fromStateDict () k
+        embedLayerNorm SBERT = undefined
+        embedLayerNorm SRoBERTa = undefined
+        embedLayerNorm SGPT2 = undefined
+        layerNorm ST5 = fromStateDict (gradient, device, dataType, SShape $ decoderInputEmbedDim :|: SNil, eps) (k <> "final_layer_norm.")
+        layerNorm SByT5 = fromStateDict (gradient, device, dataType, SShape $ decoderInputEmbedDim :|: SNil, eps) (k <> "final_layer_norm.")
+        layerNorm SBART = fromStateDict () k
+        layerNorm SMBART = fromStateDict () k
+        layerNorm SPegasus = fromStateDict (gradient, device, dataType, SShape $ decoderInputEmbedDim :|: SNil, eps) (k <> "layer_norm.")
+        layerNorm SBERT = undefined
+        layerNorm SRoBERTa = undefined
+        layerNorm SGPT2 = undefined
+        dropout _ = fromStateDict dropoutP k
+        posEnc ST5 = fromStateDict (gradient, SLayout SDense, device, dataType, posEncDim, headDim) (k <> "block.0.layer.0.SelfAttention.relative_attention_bias.")
+        posEnc SByT5 = fromStateDict (gradient, SLayout SDense, device, dataType, posEncDim, headDim) (k <> "block.0.layer.0.SelfAttention.relative_attention_bias.")
+        posEnc SBART = fromStateDict (gradient, SLayout SDense, device, dataType, posEncDim, decoderInputEmbedDim) (k <> "embed_positions.")
+        posEnc SMBART = fromStateDict (gradient, SLayout SDense, device, dataType, posEncDim, decoderInputEmbedDim) (k <> "embed_positions.")
+        posEnc SPegasus = fromStateDict (gradient, SLayout SDense, device, dataType, posEncDim, decoderInputEmbedDim) (k <> "embed_positions.")
+        posEnc SBERT = undefined
+        posEnc SRoBERTa = undefined
+        posEnc SGPT2 = undefined
+     in TransformerDecoder
+          <$> ( GTransformerDecoder
+                  <$> stack (sing @style)
+                  <*> embedLayerNorm (sing @style)
+                  <*> layerNorm (sing @style)
+                  <*> dropout (sing @style)
+                  <*> posEnc (sing @style)
+              )
+  toStateDict k (TransformerDecoder GTransformerDecoder {..}) =
+    let stack ST5 = toStateDict (k <> "block.")
+        stack SByT5 = toStateDict (k <> "block.")
+        stack SBART = toStateDict (k <> "layers.")
+        stack SMBART = toStateDict (k <> "layers.")
+        stack SPegasus = toStateDict (k <> "layers.")
+        stack SBERT = undefined
+        stack SRoBERTa = undefined
+        stack SGPT2 = undefined
+        embedLayerNorm ST5 = toStateDict k
+        embedLayerNorm SByT5 = toStateDict k
+        embedLayerNorm SBART = toStateDict (k <> "layernorm_embedding.")
+        embedLayerNorm SMBART = toStateDict (k <> "layernorm_embedding.")
+        embedLayerNorm SPegasus = toStateDict k
+        embedLayerNorm SBERT = undefined
+        embedLayerNorm SRoBERTa = undefined
+        embedLayerNorm SGPT2 = undefined
+        layerNorm ST5 = toStateDict (k <> "final_layer_norm.")
+        layerNorm SByT5 = toStateDict (k <> "final_layer_norm.")
+        layerNorm SBART = toStateDict k
+        layerNorm SMBART = toStateDict k
+        layerNorm SPegasus = toStateDict (k <> "layer_norm.")
+        layerNorm SBERT = undefined
+        layerNorm SRoBERTa = undefined
+        layerNorm SGPT2 = undefined
+        dropout _ = toStateDict k
+        posEnc ST5 = toStateDict (k <> "block.0.layer.0.SelfAttention.relative_attention_bias.")
+        posEnc SByT5 = toStateDict (k <> "block.0.layer.0.SelfAttention.relative_attention_bias.")
+        posEnc SBART = toStateDict (k <> "embed_positions.")
+        posEnc SMBART = toStateDict (k <> "embed_positions.")
+        posEnc SPegasus = toStateDict (k <> "embed_positions.")
+        posEnc SBERT = undefined
+        posEnc SRoBERTa = undefined
+        posEnc SGPT2 = undefined
+     in do
+          () <- stack (sing @style) tdStack
+          () <- embedLayerNorm (sing @style) tdEmbedLayerNorm
+          () <- layerNorm (sing @style) tdLayerNorm
+          () <- dropout (sing @style) tdDropout
+          () <- posEnc (sing @style) tdPosEnc
+          pure ()
 
 -- | 'HasForward' instance for @TransformerDecoder numLayers 'T5@.
 --
@@ -403,11 +416,11 @@ instance
       dropoutOutput
       dropoutGeneratorOutput,
     HasForward
-      (TransformerDecoderStack numLayers 'T5 device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP)
+      (TransformerDecoderStack numLayers 'T5 gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP)
       ( dropoutOutput,
         encoderOutput,
         Tensor
-          'WithGradient
+          (gradient <|> decoderRelPosGradient <|> decoderAttentionMaskGradient)
           ('Layout 'Dense <+> decoderRelPosLayout <+> decoderAttentionMaskLayout)
           (device <+> decoderRelPosDevice <+> decoderAttentionMaskDevice)
           (Seq (decoderRelPosDataType <+> 'DataType 'Int64) dataType <+> decoderAttentionMaskDataType)
@@ -430,7 +443,7 @@ instance
               )
           ),
         Tensor
-          crossAttentionMaskRequiresGradient
+          crossAttentionMaskGradient
           crossAttentionMaskLayout
           crossAttentionMaskDevice
           crossAttentionMaskDataType
@@ -445,6 +458,7 @@ instance
     HasForward
       ( LayerNorm
           'WithoutBias
+          gradient
           device
           dataType
           ('Shape '[decoderInputEmbedDim])
@@ -461,12 +475,12 @@ instance
       generatorOutput
   ) =>
   HasForward
-    (TransformerDecoder numLayers 'T5 device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP)
+    (TransformerDecoder numLayers 'T5 gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP)
     ( decoderInput,
       encoderOutput,
-      Tensor decoderRelPosRequiresGradient decoderRelPosLayout decoderRelPosDevice decoderRelPosDataType decoderRelPosShape,
-      Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
-      Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
+      Tensor decoderRelPosGradient decoderRelPosLayout decoderRelPosDevice decoderRelPosDataType decoderRelPosShape,
+      Tensor decoderAttentionMaskGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
+      Tensor crossAttentionMaskGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
     )
     generator
     output
@@ -502,7 +516,8 @@ instance
             >>>= IxState . forward tdDropout
 
 testDecoder = do
-  let device = SDevice SCPU
+  let gradient = SGradient SWithGradient
+      device = SDevice SCPU
       dataType = SDataType SFloat
       headDim = SName @"*" :&: SSize @8
       headEmbedDim = SName @"*" :&: SSize @64
@@ -514,11 +529,11 @@ testDecoder = do
       dropoutP :: Float = 0.0
       eps = 1e-6
   g <- sMkGenerator device 0
-  let (encoder, g') = initialize @(TransformerDecoder 1 'T5 _ _ _ _ _ _ _ _ _ _) (device, dataType, headDim, headEmbedDim, embedDim, decoderInputEmbedDim, encoderOutputEmbedDim, ffnDim, posEncDim, dropoutP, eps) g
+  let (encoder, g') = initialize @(TransformerDecoder 1 'T5 _ _ _ _ _ _ _ _ _ _ _) (gradient, device, dataType, headDim, headEmbedDim, embedDim, decoderInputEmbedDim, encoderOutputEmbedDim, ffnDim, posEncDim, dropoutP, eps) g
       batchDim = SName @"*" :&: SSize @3
       seqDim = SName @"*" :&: SSize @13
       decoderSeqDim = SName @"*" :&: SSize @7
-      sOnes' = sOnes SWithoutGradient (SLayout SDense) device
+      sOnes' = sOnes (SGradient SWithoutGradient) (SLayout SDense) device
       decoderInput = sOnes' dataType (SShape $ batchDim :|: decoderSeqDim :|: decoderInputEmbedDim :|: SNil)
       encoderOutput = sOnes' dataType (SShape $ batchDim :|: seqDim :|: encoderOutputEmbedDim :|: SNil)
       decoderRelPos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
@@ -562,11 +577,11 @@ instance
       dropoutOutput
       dropoutGeneratorOutput,
     HasForward
-      (TransformerDecoderStack numLayers 'ByT5 device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP)
+      (TransformerDecoderStack numLayers 'ByT5 gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP)
       ( dropoutOutput,
         encoderOutput,
         Tensor
-          'WithGradient
+          (gradient <|> decoderRelPosGradient <|> decoderAttentionMaskGradient)
           ('Layout 'Dense <+> decoderRelPosLayout <+> decoderAttentionMaskLayout)
           (device <+> decoderRelPosDevice <+> decoderAttentionMaskDevice)
           (Seq (decoderRelPosDataType <+> 'DataType 'Int64) dataType <+> decoderAttentionMaskDataType)
@@ -589,7 +604,7 @@ instance
               )
           ),
         Tensor
-          crossAttentionMaskRequiresGradient
+          crossAttentionMaskGradient
           crossAttentionMaskLayout
           crossAttentionMaskDevice
           crossAttentionMaskDataType
@@ -604,6 +619,7 @@ instance
     HasForward
       ( LayerNorm
           'WithoutBias
+          gradient
           device
           dataType
           ('Shape '[decoderInputEmbedDim])
@@ -620,12 +636,12 @@ instance
       generatorOutput
   ) =>
   HasForward
-    (TransformerDecoder numLayers 'ByT5 device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP)
+    (TransformerDecoder numLayers 'ByT5 gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP)
     ( decoderInput,
       encoderOutput,
-      Tensor decoderRelPosRequiresGradient decoderRelPosLayout decoderRelPosDevice decoderRelPosDataType decoderRelPosShape,
-      Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
-      Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
+      Tensor decoderRelPosGradient decoderRelPosLayout decoderRelPosDevice decoderRelPosDataType decoderRelPosShape,
+      Tensor decoderAttentionMaskGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
+      Tensor crossAttentionMaskGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
     )
     generator
     output
@@ -686,9 +702,9 @@ instance
 -- @
 instance
   ( HasForward
-      (TDEmbedLayerNormF 'BART device dataType decoderInputEmbedDim)
+      (TDEmbedLayerNormF 'BART gradient device dataType decoderInputEmbedDim)
       ( Tensor
-          'WithGradient
+          (decoderInputGradient <|> gradient <|> decoderPosGradient)
           (decoderInputLayout <+> 'Layout 'Dense <+> decoderPosLayout)
           (decoderInputDevice <+> device <+> decoderPosDevice)
           (decoderInputDataType <+> Seq (decoderPosDataType <+> 'DataType 'Int64) dataType)
@@ -704,17 +720,17 @@ instance
       dropoutOutput
       dropoutGeneratorOutput,
     HasForward
-      (TDStackF numLayers 'BART device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP)
+      (TDStackF numLayers 'BART gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP)
       ( dropoutOutput,
         encoderOutput,
         Tensor
-          decoderAttentionMaskRequiresGradient
+          decoderAttentionMaskGradient
           decoderAttentionMaskLayout
           decoderAttentionMaskDevice
           decoderAttentionMaskDataType
           (UnsqueezeF ('SelectDim ('ByIndex 1)) decoderAttentionMaskShape),
         Tensor
-          crossAttentionMaskRequiresGradient
+          crossAttentionMaskGradient
           crossAttentionMaskLayout
           crossAttentionMaskDevice
           crossAttentionMaskDataType
@@ -725,12 +741,12 @@ instance
       generatorOutput
   ) =>
   HasForward
-    (TransformerDecoder numLayers 'BART device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP)
-    ( Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
+    (TransformerDecoder numLayers 'BART gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP)
+    ( Tensor decoderInputGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
       encoderOutput,
-      Tensor decoderPosRequiresGradient decoderPosLayout decoderPosDevice decoderPosDataType decoderPosShape,
-      Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
-      Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
+      Tensor decoderPosGradient decoderPosLayout decoderPosDevice decoderPosDataType decoderPosShape,
+      Tensor decoderAttentionMaskGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
+      Tensor crossAttentionMaskGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
     )
     generator
     output
@@ -811,7 +827,7 @@ instance
   ( HasForward
       (TDDropoutF 'Pegasus dropoutP)
       ( Tensor
-          'WithGradient
+          (decoderInputGradient <|> gradient <|> decoderPosGradient)
           (decoderInputLayout <+> 'Layout 'Dense <+> decoderPosLayout)
           (decoderInputDevice <+> device <+> decoderPosDevice)
           (decoderInputDataType <+> Seq (decoderPosDataType <+> 'DataType 'Int64) dataType)
@@ -821,17 +837,17 @@ instance
       dropoutOutput
       dropoutGeneratorOutput,
     HasForward
-      (TDStackF numLayers 'Pegasus device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP)
+      (TDStackF numLayers 'Pegasus gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP)
       ( dropoutOutput,
         encoderOutput,
         Tensor
-          decoderAttentionMaskRequiresGradient
+          decoderAttentionMaskGradient
           decoderAttentionMaskLayout
           decoderAttentionMaskDevice
           decoderAttentionMaskDataType
           (UnsqueezeF ('SelectDim ('ByIndex 1)) decoderAttentionMaskShape),
         Tensor
-          crossAttentionMaskRequiresGradient
+          crossAttentionMaskGradient
           crossAttentionMaskLayout
           crossAttentionMaskDevice
           crossAttentionMaskDataType
@@ -841,19 +857,19 @@ instance
       stackOutput
       generatorOutput,
     HasForward
-      (TDLayerNormF 'Pegasus device dataType decoderInputEmbedDim)
+      (TDLayerNormF 'Pegasus gradient device dataType decoderInputEmbedDim)
       stackOutput
       generatorOutput
       output
       generatorOutput
   ) =>
   HasForward
-    (TransformerDecoder numLayers 'Pegasus device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP)
-    ( Tensor decoderInputRequiresGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
+    (TransformerDecoder numLayers 'Pegasus gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP)
+    ( Tensor decoderInputGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
       encoderOutput,
-      Tensor decoderPosRequiresGradient decoderPosLayout decoderPosDevice decoderPosDataType decoderPosShape,
-      Tensor decoderAttentionMaskRequiresGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
-      Tensor crossAttentionMaskRequiresGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
+      Tensor decoderPosGradient decoderPosLayout decoderPosDevice decoderPosDataType decoderPosShape,
+      Tensor decoderAttentionMaskGradient decoderAttentionMaskLayout decoderAttentionMaskDevice decoderAttentionMaskDataType decoderAttentionMaskShape,
+      Tensor crossAttentionMaskGradient crossAttentionMaskLayout crossAttentionMaskDevice crossAttentionMaskDataType crossAttentionMaskShape
     )
     generator
     output
