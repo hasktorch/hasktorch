@@ -14,51 +14,32 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -fplugin TypeLevel.Rewrite
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyRightAssociativeL
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2C
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL3
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL3C
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL4
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL4C
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL5
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL5C
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL6
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL6C
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL7
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL7C
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8C #-}
 {-# OPTIONS_GHC -v2 -Wall #-}
 
 module Torch.GraduallyTyped.NN.Transformer.SequenceToSequence where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
-import Control.Monad.Reader (MonadIO, MonadReader)
-import Control.Monad.State.Strict (MonadState (state), runState)
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI, SingKind (fromSing), sing)
 import Data.Singletons.Prelude.List (SList (..))
-import GHC.TypeLits (Nat, Symbol, type (<=?))
+import GHC.TypeLits (KnownNat, Nat, Symbol)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), KnownDataType, SDType (..), SDataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, SDevice (..), SDeviceType (..))
+import Torch.GraduallyTyped.DType (DataType (..), SDType (..), SDataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
 import Torch.GraduallyTyped.NN.Sparse (Embedding (..))
 import Torch.GraduallyTyped.NN.Transformer.Decoder (TransformerDecoder)
 import Torch.GraduallyTyped.NN.Transformer.Encoder (TransformerEncoder)
 import Torch.GraduallyTyped.NN.Transformer.LMHead (LMHead)
-import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..))
+import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
 import Torch.GraduallyTyped.Prelude (forgetIsChecked)
-import Torch.GraduallyTyped.Random (Generator, sMkGenerator)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (..), Gradient, SGradient (..))
-import Torch.GraduallyTyped.Scalar (Scalar)
+import Torch.GraduallyTyped.Random (sMkGenerator)
+import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), Name (..), SDim, SName (..), SShape (..), SSize (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, SName (..), SShape (..), SSize (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mulScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor ())
@@ -309,92 +290,123 @@ instance
      in runIxState $ (GSequenceToSequenceTransformerWithLMHead <<$>> transformer <<*>> lmHead) >>>= ireturn . SequenceToSequenceTransformerWithLMHead
 
 instance
-  SingI style =>
+  (SingI style, KnownNat numEncoderLayers, KnownNat numDecoderLayers) =>
+  HasStateDict
+    (SequenceToSequenceTransformer numEncoderLayers numDecoderLayers style gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP)
+    (SGradient gradient, SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim inputEmbedDim, SDim ffnDim, SDim posEncDim, SDim vocabDim, dropoutP, Double)
+  where
+  fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, dropoutP, eps) k =
+    let encoder ST5 = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, dropoutP, eps) (k <> "encoder.")
+        encoder SByT5 = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, dropoutP, eps) (k <> "encoder.")
+        encoder SBART = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, dropoutP, eps) (k <> "encoder.")
+        encoder SMBART = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, dropoutP, eps) (k <> "encoder.")
+        encoder SPegasus = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, dropoutP, eps) (k <> "encoder.")
+        encoder SBERT = undefined
+        encoder SRoBERTa = undefined
+        encoder SGPT2 = undefined
+        decoder ST5 = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, inputEmbedDim, ffnDim, posEncDim, dropoutP, eps) (k <> "decoder.")
+        decoder SByT5 = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, inputEmbedDim, ffnDim, posEncDim, dropoutP, eps) (k <> "decoder.")
+        decoder SBART = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, inputEmbedDim, ffnDim, posEncDim, dropoutP, eps) (k <> "decoder.")
+        decoder SMBART = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, inputEmbedDim, ffnDim, posEncDim, dropoutP, eps) (k <> "decoder.")
+        decoder SPegasus = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, inputEmbedDim, ffnDim, posEncDim, dropoutP, eps) (k <> "decoder.")
+        decoder SBERT = undefined
+        decoder SRoBERTa = undefined
+        decoder SGPT2 = undefined
+        embedding ST5 = fromStateDict (gradient, SLayout SDense, device, dataType, vocabDim, inputEmbedDim) (k <> "shared.")
+        embedding SByT5 = fromStateDict (gradient, SLayout SDense, device, dataType, vocabDim, inputEmbedDim) (k <> "shared.")
+        embedding SBART = fromStateDict (gradient, SLayout SDense, device, dataType, vocabDim, inputEmbedDim) (k <> "shared.")
+        embedding SMBART = fromStateDict (gradient, SLayout SDense, device, dataType, vocabDim, inputEmbedDim) (k <> "shared.")
+        embedding SPegasus = fromStateDict (gradient, SLayout SDense, device, dataType, vocabDim, inputEmbedDim) (k <> "shared.")
+        embedding SBERT = undefined
+        embedding SRoBERTa = undefined
+        embedding SGPT2 = undefined
+     in SequenceToSequenceTransformer
+          <$> ( GSequenceToSequenceTransformer
+                  inputEmbedDim
+                  <$> encoder (sing @style)
+                  <*> decoder (sing @style)
+                  <*> embedding (sing @style)
+              )
+  toStateDict k (SequenceToSequenceTransformer GSequenceToSequenceTransformer {..}) =
+    let encoder ST5 = toStateDict (k <> "encoder.")
+        encoder SByT5 = toStateDict (k <> "encoder.")
+        encoder SBART = toStateDict (k <> "encoder.")
+        encoder SMBART = toStateDict (k <> "encoder.")
+        encoder SPegasus = toStateDict (k <> "encoder.")
+        encoder SBERT = undefined
+        encoder SRoBERTa = undefined
+        encoder SGPT2 = undefined
+        decoder ST5 = toStateDict (k <> "decoder.")
+        decoder SByT5 = toStateDict (k <> "decoder.")
+        decoder SBART = toStateDict (k <> "decoder.")
+        decoder SMBART = toStateDict (k <> "decoder.")
+        decoder SPegasus = toStateDict (k <> "decoder.")
+        decoder SBERT = undefined
+        decoder SRoBERTa = undefined
+        decoder SGPT2 = undefined
+        embedding ST5 = toStateDict (k <> "shared.")
+        embedding SByT5 = toStateDict (k <> "shared.")
+        embedding SBART = toStateDict (k <> "shared.")
+        embedding SMBART = toStateDict (k <> "shared.")
+        embedding SPegasus = toStateDict (k <> "shared.")
+        embedding SBERT = undefined
+        embedding SRoBERTa = undefined
+        embedding SGPT2 = undefined
+     in do
+          () <- encoder (sing @style) seqToSeqEncoder
+          () <- decoder (sing @style) seqToSeqDecoder
+          () <- embedding (sing @style) seqToSeqEmbedding
+          pure ()
+
+instance
+  (SingI style, KnownNat numEncoderLayers, KnownNat numDecoderLayers) =>
   HasStateDict
     (SequenceToSequenceTransformerWithLMHead numEncoderLayers numDecoderLayers style gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP)
     (SGradient gradient, SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim inputEmbedDim, SDim ffnDim, SDim posEncDim, SDim vocabDim, dropoutP, Double)
   where
-    fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, dropoutP, eps) k =
-      let encoder ST5 = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, dropoutP, eps) (k <> "encoder.")
-          encoder SByT5 = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, dropoutP, eps) (k <> "encoder.")
-          encoder SBART = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, dropoutP, eps) (k <> "encoder.")
-          encoder SMBART = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, dropoutP, eps) (k <> "encoder.")
-          encoder SPegasus = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, dropoutP, eps) (k <> "encoder.")
-          encoder SBERT = undefined
-          encoder SRoBERTa = undefined
-          encoder SGPT2 = undefined
-          decoder ST5 = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, dropoutP, eps) (k <> "decoder.")
-          decoder SByT5 = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, dropoutP, eps) (k <> "decoder.")
-          decoder SBART = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, dropoutP, eps) (k <> "decoder.")
-          decoder SMBART = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, dropoutP, eps) (k <> "decoder.")
-          decoder SPegasus = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, dropoutP, eps) (k <> "decoder.")
-          decoder SBERT = undefined
-          decoder SRoBERTa = undefined
-          decoder SGPT2 = undefined
-          embedding ST5 = fromStateDict (gradient, device, dataType, inputEmbedDim, vocabDim) (k <> "shared.")
-          embedding SByT5 = fromStateDict (gradient, device, dataType, inputEmbedDim, vocabDim) (k <> "shared.")
-          embedding SBART = fromStateDict (gradient, device, dataType, inputEmbedDim, vocabDim) (k <> "shared.")
-          embedding SMBART = fromStateDict (gradient, device, dataType, inputEmbedDim, vocabDim) (k <> "shared.")
-          embedding SPegasus = fromStateDict (gradient, device, dataType, inputEmbedDim, vocabDim) (k <> "shared.")
-          embedding SBERT = undefined
-          embedding SRoBERTa = undefined
-          embedding SGPT2 = undefined
-      in SequenceToSequenceTransformer
-        <$> ( GSequenceToSequenceTransformer
-                 inputEmbedDim
-                <$> encoder (sing @style)
-                <*> decoder (sing @style)
-                <*> embedding (sing @style)
-            )
-
-lookupSequenceToSequenceTransformerWithLMHead ::
-  forall numEncoderLayers numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP m.
-  ( SingI style,
-    MonadReader TensorDict m,
-    MonadIO m,
-    MonadFail m,
-    KnownDevice device,
-    KnownDataType dataType,
-    KnownDim headDim,
-    KnownDim embedDim,
-    KnownDim ffnDim,
-    KnownDim posEncDim,
-    KnownDim inputEmbedDim,
-    KnownDim vocabDim,
-    Scalar dropoutP
-    -- HasLookupStack numEncoderLayers (1 <=? numEncoderLayers) numEncoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP m,
-    -- HasLookupDecoderStack numDecoderLayers (1 <=? numDecoderLayers) numDecoderLayers style device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim dropoutP m
-  ) =>
-  SDim headDim ->
-  SDim headEmbedDim ->
-  SDim embedDim ->
-  SDim inputEmbedDim ->
-  dropoutP ->
-  Double ->
-  String ->
-  m (SequenceToSequenceTransformerWithLMHead numEncoderLayers numDecoderLayers style gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP)
-lookupSequenceToSequenceTransformerWithLMHead headDim headEmbedDim embedDim inputEmbedDim dropoutP eps prefix =
-  let transformer ST5 = lookupSequenceToSequenceTransformer headDim headEmbedDim embedDim inputEmbedDim dropoutP eps prefix
-      transformer SByT5 = lookupSequenceToSequenceTransformer headDim headEmbedDim embedDim inputEmbedDim dropoutP eps prefix
-      transformer SBART = lookupSequenceToSequenceTransformer headDim headEmbedDim embedDim inputEmbedDim dropoutP eps (prefix <> "model.")
-      transformer SMBART = lookupSequenceToSequenceTransformer headDim headEmbedDim embedDim inputEmbedDim dropoutP eps (prefix <> "model.")
-      transformer SPegasus = lookupSequenceToSequenceTransformer headDim headEmbedDim embedDim inputEmbedDim dropoutP eps (prefix <> "model.")
-      transformer SBERT = undefined
-      transformer SRoBERTa = undefined
-      transformer SGPT2 = undefined
-      lmHead ST5 = lookupLMHead inputEmbedDim eps (prefix <> "lm_head.")
-      lmHead SByT5 = lookupLMHead inputEmbedDim eps (prefix <> "lm_head.")
-      lmHead SBART = lookupLMHead inputEmbedDim eps prefix
-      lmHead SMBART = lookupLMHead inputEmbedDim eps prefix
-      lmHead SPegasus = lookupLMHead inputEmbedDim eps prefix
-      lmHead SBERT = undefined
-      lmHead SRoBERTa = undefined
-      lmHead SGPT2 = undefined
-   in SequenceToSequenceTransformerWithLMHead
-        <$> ( GSequenceToSequenceTransformerWithLMHead
-                <$> transformer (sing @style)
-                <*> lmHead (sing @style)
-            )
+  fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, dropoutP, eps) k =
+    let transformer ST5 = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, dropoutP, eps) k
+        transformer SByT5 = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, dropoutP, eps) k
+        transformer SBART = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, dropoutP, eps) (k <> "model.")
+        transformer SMBART = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, dropoutP, eps) (k <> "model.")
+        transformer SPegasus = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, dropoutP, eps) (k <> "model.")
+        transformer SBERT = undefined
+        transformer SRoBERTa = undefined
+        transformer SGPT2 = undefined
+        lmHead ST5 = fromStateDict (gradient, device, dataType, inputEmbedDim, vocabDim, eps) (k <> "lm_head.")
+        lmHead SByT5 = fromStateDict (gradient, device, dataType, inputEmbedDim, vocabDim, eps) (k <> "lm_head.")
+        lmHead SBART = fromStateDict (gradient, device, dataType, inputEmbedDim, vocabDim, eps) k
+        lmHead SMBART = fromStateDict (gradient, device, dataType, inputEmbedDim, vocabDim, eps) k
+        lmHead SPegasus = fromStateDict (gradient, device, dataType, inputEmbedDim, vocabDim, eps) k
+        lmHead SBERT = undefined
+        lmHead SRoBERTa = undefined
+        lmHead SGPT2 = undefined
+     in SequenceToSequenceTransformerWithLMHead
+          <$> ( GSequenceToSequenceTransformerWithLMHead
+                  <$> transformer (sing @style)
+                  <*> lmHead (sing @style)
+              )
+  toStateDict k (SequenceToSequenceTransformerWithLMHead GSequenceToSequenceTransformerWithLMHead {..}) =
+    let transformer ST5 = toStateDict k
+        transformer SByT5 = toStateDict k
+        transformer SBART = toStateDict (k <> "model.")
+        transformer SMBART = toStateDict (k <> "model.")
+        transformer SPegasus = toStateDict (k <> "model.")
+        transformer SBERT = undefined
+        transformer SRoBERTa = undefined
+        transformer SGPT2 = undefined
+        lmHead ST5 = toStateDict (k <> "lm_head.")
+        lmHead SByT5 = toStateDict (k <> "lm_head.")
+        lmHead SBART = toStateDict k
+        lmHead SMBART = toStateDict k
+        lmHead SPegasus = toStateDict k
+        lmHead SBERT = undefined
+        lmHead SRoBERTa = undefined
+        lmHead SGPT2 = undefined
+     in do
+          () <- transformer (sing @style) seqToSeqTransformer
+          () <- lmHead (sing @style) seqToSeqLMHead
+          pure ()
 
 -- | Input data type for use with a sequence-to-sequence transformer.
 -- Use this for training.
