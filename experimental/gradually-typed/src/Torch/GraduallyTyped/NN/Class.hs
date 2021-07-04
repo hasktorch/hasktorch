@@ -47,6 +47,9 @@ import Torch.GraduallyTyped.RequiresGradient (Gradient (..), SGradient (..))
 import Torch.GraduallyTyped.Shape.Type (KnownShape, SShape, Shape (..))
 import Torch.GraduallyTyped.Tensor.Type (DataTypeError, DeviceError, LayoutError, ShapeError, Tensor (UnsafeTensor), UncheckedTensor, checkedDataType, checkedDevice, checkedLayout, checkedShape, sCheckedDataType, sCheckedDevice, sCheckedGradient, sCheckedLayout, sCheckedShape)
 import qualified Torch.Internal.Type as ATen (Tensor)
+import qualified Torch.Script (IValue (..))
+import qualified Torch.Serialize (pickleLoad)
+import qualified Torch.Tensor (Tensor (Unsafe), asTensor)
 
 -- class Foo a i o | a i -> o where
 --   foo :: a -> i -> o
@@ -240,6 +243,21 @@ instance
   toStateDict k (VGS.Vector v) = do
     let toStateDict' (i', a) = toStateDict (k <> show i' <> ".") a
     mapM_ toStateDict' $ V.zip (V.fromList [0 .. V.length v - 1]) v
+
+stateDictFromPretrained ::
+  FilePath ->
+  IO StateDict
+stateDictFromPretrained filePath = do
+  iValue <- Torch.Serialize.pickleLoad filePath
+  case iValue of
+    Torch.Script.IVGenericDict xs -> Map.fromList <$> go xs
+    _ -> fail "iValue is not a tensor dictionary."
+  where
+    go [] = pure []
+    go ((Torch.Script.IVString s, Torch.Script.IVTensor (Torch.Tensor.Unsafe t)) : xs) = ((s, t) :) <$> go xs
+    go ((_, Torch.Script.IVTensor _) : _) = fail "iValue is not a string."
+    go ((Torch.Script.IVString _, _) : _) = fail "iValue is not a tensor."
+    go _ = fail "iValue is neither a string nor a tensor."
 
 -- class GHasForward model input where
 --   type GOutput model input

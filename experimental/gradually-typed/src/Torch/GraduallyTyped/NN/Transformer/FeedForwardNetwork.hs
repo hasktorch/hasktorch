@@ -119,25 +119,15 @@ data
   where
   TransformerFeedForwardNetwork ::
     forall style gradient device dataType queryEmbedDim ffnDim dropoutP.
-    GTransformerFeedForwardNetworkF style gradient device dataType queryEmbedDim ffnDim dropoutP ->
+    GTransformerFeedForwardNetwork
+      (FFNInputWeight1F style gradient device dataType queryEmbedDim ffnDim)
+      (FFNInputWeight2F style gradient device dataType queryEmbedDim ffnDim)
+      (FFNOutputWeightF style gradient device dataType queryEmbedDim ffnDim)
+      (FFNActivationF style)
+      (FFNActivationDropoutF style dropoutP)
+      (FFNLayerNormF style gradient device dataType queryEmbedDim)
+      (FFNDropoutF style dropoutP) ->
     TransformerFeedForwardNetwork style gradient device dataType queryEmbedDim ffnDim dropoutP
-
-type GTransformerFeedForwardNetworkF
-  (style :: TransformerStyle)
-  (gradient :: Gradient RequiresGradient)
-  (device :: Device (DeviceType Nat))
-  (dataType :: DataType DType)
-  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (ffnDim :: Dim (Name Symbol) (Size Nat))
-  (dropoutP :: Type) =
-  GTransformerFeedForwardNetwork
-    (FFNInputWeight1F style gradient device dataType queryEmbedDim ffnDim)
-    (FFNInputWeight2F style gradient device dataType queryEmbedDim ffnDim)
-    (FFNOutputWeightF style gradient device dataType queryEmbedDim ffnDim)
-    (FFNActivationF style)
-    (FFNActivationDropoutF style dropoutP)
-    (FFNLayerNormF style gradient device dataType queryEmbedDim)
-    (FFNDropoutF style dropoutP)
 
 type family
   FFNInputWeight1F

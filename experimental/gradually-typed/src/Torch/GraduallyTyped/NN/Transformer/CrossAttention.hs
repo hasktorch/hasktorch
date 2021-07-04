@@ -104,24 +104,11 @@ newtype
   where
   CrossAttention ::
     forall style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP.
-    GCrossAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP ->
+    GCrossAttention
+      (CAMultiheadAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
+      (CALayerNormF style gradient device dataType queryEmbedDim)
+      (CADropoutF style dropoutP) ->
     CrossAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP
-
-type GCrossAttentionF
-  (style :: TransformerStyle)
-  (gradient :: Gradient RequiresGradient)
-  (device :: Device (DeviceType Nat))
-  (dataType :: DataType DType)
-  (headDim :: Dim (Name Symbol) (Size Nat))
-  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (embedDim :: Dim (Name Symbol) (Size Nat))
-  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (dropoutP :: Type) =
-  GCrossAttention
-    (CAMultiheadAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
-    (CALayerNormF style gradient device dataType queryEmbedDim)
-    (CADropoutF style dropoutP)
 
 type family
   CAMultiheadAttentionF

@@ -39,8 +39,8 @@ import Torch.GraduallyTyped.Shape (Dim (..), Name (..), Size (..))
 -- | Transformer encoder stack.
 newtype
   TransformerStack
-    (numLayers :: Nat)
     (style :: TransformerStyle)
+    (numLayers :: Nat)
     (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
@@ -52,9 +52,9 @@ newtype
     (dropoutP :: Type)
   where
   TransformerStack ::
-    forall numLayers style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP.
+    forall style numLayers gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP.
     VS.Vector numLayers (TransformerBlock style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP) ->
-    TransformerStack numLayers style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP
+    TransformerStack style numLayers gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP
 
 instance
   ( KnownNat numLayers,
@@ -71,7 +71,7 @@ instance
     numLayers' ~ (numLayers + 1)
   ) =>
   HasInitialize
-    (TransformerStack numLayers' style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
+    (TransformerStack style numLayers' gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
     input
     generator
     generator'
@@ -88,7 +88,7 @@ instance
       input
   ) =>
   HasStateDict
-    (TransformerStack numLayers style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
+    (TransformerStack style numLayers gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
     input
   where
   fromStateDict input k = TransformerStack <$> fromStateDict input k
@@ -96,7 +96,7 @@ instance
 
 instance
   HasForward
-    (TransformerStack 0 style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
+    (TransformerStack style 0 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
     (query, attentionBias)
     generator
     query
@@ -112,7 +112,7 @@ instance
     output
     generatorOutput =>
   HasForward
-    (TransformerStack 1 style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
+    (TransformerStack style 1 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
     (query, attentionBias)
     generator
     output
@@ -159,7 +159,7 @@ instance
       generatorOutput
   ) =>
   HasForward
-    (TransformerStack n style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
+    (TransformerStack style n gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
     (query, attentionBias)
     generator
     output

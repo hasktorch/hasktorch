@@ -6,7 +6,9 @@ module Torch.GraduallyTyped.NN.Transformer.Pegasus.XSum where
 
 import GHC.TypeLits (Nat)
 import Torch.GraduallyTyped.Device (Device, DeviceType)
-import Torch.GraduallyTyped.NN.Transformer.Pegasus.Common (PegasusModel, PegasusModelWithLMHead)
+import Torch.GraduallyTyped.NN.Transformer.Pegasus.Common (PegasusModel)
+import Torch.GraduallyTyped.NN.Transformer.Type (TransformerHead)
+import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 
 -- | Pegasus-XSum number of layers.
@@ -42,10 +44,7 @@ type PegasusXSumVocabDim = 'Dim ('Name "*") ('Size 96103)
 
 -- | Pegasus-XSum model.
 type PegasusXSum
+  (transformerHead :: TransformerHead)
+  (gradient :: Gradient RequiresGradient)
   (device :: Device (DeviceType Nat)) =
-  PegasusModel PegasusXSumNumLayers device PegasusXSumHeadDim PegasusXSumHeadEmbedDim PegasusXSumEmbedDim PegasusXSumInputEmbedDim PegasusXSumFFNDim PegasusXSumVocabDim
-
--- | Pegasus-XSum model with language modelling head.
-type PegasusXSumWithLMHead
-  (device :: Device (DeviceType Nat)) =
-  PegasusModelWithLMHead PegasusXSumNumLayers device PegasusXSumHeadDim PegasusXSumHeadEmbedDim PegasusXSumEmbedDim PegasusXSumInputEmbedDim PegasusXSumFFNDim PegasusXSumVocabDim
+  PegasusModel transformerHead PegasusXSumNumLayers gradient device PegasusXSumHeadDim PegasusXSumHeadEmbedDim PegasusXSumEmbedDim PegasusXSumInputEmbedDim PegasusXSumFFNDim PegasusXSumVocabDim

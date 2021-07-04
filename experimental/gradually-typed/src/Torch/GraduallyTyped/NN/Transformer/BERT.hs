@@ -12,18 +12,19 @@ module Torch.GraduallyTyped.NN.Transformer.BERT
   )
 where
 
+import Control.Monad.State (evalStateT)
 import Data.Singletons.Prelude.List (SList (SNil))
 import Test.HUnit.Approx (assertApproxEqual)
 import Torch.GraduallyTyped.DType (SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (fromStateDict), stateDictFromPretrained)
 import Torch.GraduallyTyped.NN.Transformer.BERT.BaseUncased
 import Torch.GraduallyTyped.NN.Transformer.BERT.Common
 import Torch.GraduallyTyped.NN.Transformer.EncoderOnly (EncoderOnlyTransformerInput (..), EncoderOnlyTransformerOutput (..))
-import Torch.GraduallyTyped.NN.Transformer.Type (mkTransformerAttentionMask)
+import Torch.GraduallyTyped.NN.Transformer.Type (TransformerHead (..), mkTransformerAttentionMask)
 import Torch.GraduallyTyped.Random (mkGenerator)
-import Torch.GraduallyTyped.RequiresGradient (SRequiresGradient (..))
+import Torch.GraduallyTyped.RequiresGradient (SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim (..), SName (..), SShape (..), SSize (..), Size (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sArangeNaturals, sZeros)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
@@ -45,7 +46,7 @@ testBERTInput =
 testBERTInputType :: _
 testBERTInputType =
   sZeros
-    SWithoutGradient
+    (SGradient SWithoutGradient)
     (SLayout SDense)
     (SDevice SCPU)
     (SDataType SInt64)
@@ -54,15 +55,15 @@ testBERTInputType =
 testForwardBERTBaseUncased :: IO ()
 testForwardBERTBaseUncased =
   do
-    BERTModelWithLMHead model <-
-      initialize
-        @(BERTBaseUncasedWithLMHead ('Device 'CPU))
-        "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/bert-base-uncased.pt"
+    stateDict <- stateDictFromPretrained "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/bert-base-uncased.pt"
+    BERTModel GBERTModel {..} <-
+      flip evalStateT stateDict $
+        fromStateDict @(BERTBaseUncased 'WithMLMHead _ _) (SGradient SWithGradient, SDevice SCPU) ""
     encoderInput <- testBERTInput
     let encoderInputType = testBERTInputType
         pos =
           sArangeNaturals
-            SWithoutGradient
+            (SGradient SWithoutGradient)
             (SLayout SDense)
             (SDevice SCPU)
             (SDataType SInt64)
@@ -71,7 +72,7 @@ testForwardBERTBaseUncased =
     attentionMask <- mkTransformerAttentionMask bertDataType bertAttentionMaskBias paddingMask
     let input = EncoderOnlyTransformerInput encoderInput encoderInputType pos attentionMask
     g <- mkGenerator @('Device 'CPU) 0
-    let (EncoderOnlyTransformerOutput {..}, _) = forward model input g
+    let (EncoderOnlyTransformerOutput {..}, _) = forward bertModel input g
     let encoderOutput' = case eoEncoderOutput of
           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
     let firstLMHeadLogits = do

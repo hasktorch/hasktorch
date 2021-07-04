@@ -14,12 +14,15 @@ module Torch.GraduallyTyped.NN.Transformer.Pegasus
   )
 where
 
+import Control.Monad.State (evalStateT)
 import Test.HUnit.Approx (assertApproxEqual)
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
+import Torch.GraduallyTyped.Device (SDevice (..), SDeviceType (..))
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (fromStateDict), stateDictFromPretrained)
 import Torch.GraduallyTyped.NN.Transformer.Pegasus.Common
 import Torch.GraduallyTyped.NN.Transformer.Pegasus.XSum
-import Torch.GraduallyTyped.Random (mkGenerator)
+import Torch.GraduallyTyped.NN.Transformer.Type (TransformerHead (WithLMHead))
+import Torch.GraduallyTyped.Random (sMkGenerator)
+import Torch.GraduallyTyped.RequiresGradient (SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Type (SName (..), SSize (..), pattern (:&:))
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
 import qualified Torch.Tensor as Tensor (Tensor (..), asValue)
@@ -46,11 +49,11 @@ testForwardPegasusXSum :: IO ()
 testForwardPegasusXSum =
   do
     input <- PegasusInput <$> testPegasusInput <*> testPegasusDecoderInput
+    stateDict <- stateDictFromPretrained "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/pegasus-xsum.pt"
     model <-
-      initialize
-        @(PegasusXSumWithLMHead ('Device 'CPU))
-        "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/pegasus-xsum.pt"
-    g <- mkGenerator @('Device 'CPU) 0
+      flip evalStateT stateDict $
+        fromStateDict @(PegasusXSum 'WithLMHead _ _) (SGradient SWithGradient, SDevice SCPU) ""
+    g <- sMkGenerator (SDevice SCPU) 0
     let (PegasusOutput {..}, _) = forward model input g
     let encoderOutput = case pegasusEncoderOutput of
           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
@@ -59,7 +62,7 @@ testForwardPegasusXSum =
           firstPositions <- take 3 firstBatch
           take 3 firstPositions
     print firstEncoderHiddenStates
-    let firstEncoderHiddenStates' = [0.0965, -0.0048, -0.1945, -0.0825,  0.1829, -0.1589, -0.0297, -0.0171, -0.1210, -0.1453, -0.1224, 0.0941, -0.1849, -0.0484, 0.0711, 0.0219, -0.0233, 0.1485]
+    let firstEncoderHiddenStates' = [0.0965, -0.0048, -0.1945, -0.0825, 0.1829, -0.1589, -0.0297, -0.0171, -0.1210, -0.1453, -0.1224, 0.0941, -0.1849, -0.0484, 0.0711, 0.0219, -0.0233, 0.1485]
     mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstEncoderHiddenStates firstEncoderHiddenStates'
     let decoderOutput = case pegasusDecoderOutput of
           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]

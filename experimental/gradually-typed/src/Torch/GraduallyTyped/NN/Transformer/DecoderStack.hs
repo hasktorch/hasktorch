@@ -43,8 +43,8 @@ import Torch.GraduallyTyped.Tensor.Creation (sOnes)
 -- | Transformer decoder stack.
 data
   TransformerDecoderStack
-    (numLayers :: Nat)
     (style :: TransformerStyle)
+    (numLayers :: Nat)
     (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
@@ -57,9 +57,9 @@ data
     (dropoutP :: Type)
   where
   TransformerDecoderStack ::
-    forall numLayers style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP.
+    forall style numLayers gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP.
     VS.Vector numLayers (TransformerDecoderBlock style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP) ->
-    TransformerDecoderStack numLayers style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP
+    TransformerDecoderStack style numLayers gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP
 
 instance
   ( KnownNat numLayers,
@@ -76,7 +76,7 @@ instance
     numLayers' ~ (numLayers + 1)
   ) =>
   HasInitialize
-    (TransformerDecoderStack numLayers' style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
+    (TransformerDecoderStack style numLayers' gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
     input
     generator
     generator'
@@ -93,7 +93,7 @@ instance
       input
   ) =>
   HasStateDict
-    (TransformerDecoderStack numLayers style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
+    (TransformerDecoderStack style numLayers gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
     input
   where
   fromStateDict input k = TransformerDecoderStack <$> fromStateDict input k
@@ -101,7 +101,7 @@ instance
 
 instance
   HasForward
-    (TransformerDecoderStack 0 style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
+    (TransformerDecoderStack style 0 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
     (query, key, decoderAttentionBias, crossAttentionBias)
     generator
     query
@@ -117,7 +117,7 @@ instance
     output
     generatorOutput =>
   HasForward
-    (TransformerDecoderStack 1 style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
+    (TransformerDecoderStack style 1 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
     (query, key, decoderAttentionBias, crossAttentionBias)
     generator
     output
@@ -164,7 +164,7 @@ instance
       generatorOutput
   ) =>
   HasForward
-    (TransformerDecoderStack numLayers style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
+    (TransformerDecoderStack style numLayers gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP)
     (query, key, decoderAttentionBias, crossAttentionBias)
     generator
     output
@@ -192,7 +192,7 @@ testDecoderStack = do
       dropoutP :: Float = 0.0
       eps = 1e-6
   g <- sMkGenerator device 0
-  let (decoderStack, g') = initialize @(TransformerDecoderStack 2 'T5 _ _ _ _ _ _ _ _ _ _) (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, ffnDim, dropoutP, eps) g
+  let (decoderStack, g') = initialize @(TransformerDecoderStack 'T5 2 _ _ _ _ _ _ _ _ _ _) (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, ffnDim, dropoutP, eps) g
       batchDim = SName @"*" :&: SSize @3
       seqDim = SName @"*" :&: SSize @17
       decoderSeqDim = SName @"*" :&: SSize @13

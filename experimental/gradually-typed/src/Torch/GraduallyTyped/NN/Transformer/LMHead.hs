@@ -75,23 +75,14 @@ newtype
   where
   LMHead ::
     forall style gradient device dataType inputEmbedDim vocabDim.
-    GLMHeadF style gradient device dataType inputEmbedDim vocabDim ->
+    GLMHead
+      inputEmbedDim
+      (LMHeadDenseF style gradient device dataType inputEmbedDim)
+      (LMHeadActivationF style)
+      (LMHeadLayerNormF style gradient device dataType inputEmbedDim)
+      (LMHeadDecoderF style gradient device dataType inputEmbedDim vocabDim)
+      (LMHeadBiasF style gradient device dataType vocabDim) ->
     LMHead style gradient device dataType inputEmbedDim vocabDim
-
-type GLMHeadF
-  (style :: TransformerStyle)
-  (gradient :: Gradient RequiresGradient)
-  (device :: Device (DeviceType Nat))
-  (dataType :: DataType DType)
-  (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (vocabDim :: Dim (Name Symbol) (Size Nat)) =
-  GLMHead
-    inputEmbedDim
-    (LMHeadDenseF style gradient device dataType inputEmbedDim)
-    (LMHeadActivationF style)
-    (LMHeadLayerNormF style gradient device dataType inputEmbedDim)
-    (LMHeadDecoderF style gradient device dataType inputEmbedDim vocabDim)
-    (LMHeadBiasF style gradient device dataType vocabDim)
 
 type family
   LMHeadDenseF

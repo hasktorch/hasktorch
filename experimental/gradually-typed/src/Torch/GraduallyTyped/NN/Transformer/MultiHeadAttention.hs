@@ -38,7 +38,7 @@
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL7C
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL8C #-}
-{-# OPTIONS_GHC -v2 -Wall -Werror #-}
+{-# OPTIONS_GHC -v2 -Wall #-}
 
 module Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention where
 
@@ -55,8 +55,8 @@ import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), KnownDataType, SDType (..), SDataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, SDevice (..), SDeviceType (..))
+import Torch.GraduallyTyped.DType (DataType (..), SDType (..), SDataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout (..))
@@ -68,7 +68,7 @@ import Torch.GraduallyTyped.Prelude (forgetIsChecked)
 import Torch.GraduallyTyped.Random (Generator, sMkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, sGetDim, sUnifyDim, type (!))
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownDim (..), Name (..), SBy (..), SDim (..), SName (..), SSelectDim (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SBy (..), SDim (..), SName (..), SSelectDim (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes)
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (ReshapeF, TransposeF, sReshape, transpose)
 import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (MatmulF, matmul)
@@ -128,30 +128,16 @@ newtype
   where
   MultiHeadAttention ::
     forall style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP.
-    GMultiHeadAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP ->
+    GMultiHeadAttention
+      headDim
+      headEmbedDim
+      embedDim
+      (QInProjF style gradient device dataType queryEmbedDim embedDim)
+      (KInProjF style gradient device dataType keyEmbedDim embedDim)
+      (VInProjF style gradient device dataType valueEmbedDim embedDim)
+      (OutProjF style gradient device dataType embedDim queryEmbedDim)
+      (DropoutF style dropoutP) ->
     MultiHeadAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP
-
-type GMultiHeadAttentionF
-  (style :: TransformerStyle)
-  (gradient :: Gradient RequiresGradient)
-  (device :: Device (DeviceType Nat))
-  (dataType :: DataType DType)
-  (headDim :: Dim (Name Symbol) (Size Nat))
-  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (embedDim :: Dim (Name Symbol) (Size Nat))
-  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (dropoutP :: Type) =
-  GMultiHeadAttention
-    headDim
-    headEmbedDim
-    embedDim
-    (QInProjF style gradient device dataType queryEmbedDim embedDim)
-    (KInProjF style gradient device dataType keyEmbedDim embedDim)
-    (VInProjF style gradient device dataType valueEmbedDim embedDim)
-    (OutProjF style gradient device dataType embedDim queryEmbedDim)
-    (DropoutF style dropoutP)
 
 type family
   QInProjF
@@ -227,8 +213,7 @@ instance
     outProj ~ OutProjF style gradient device dataType embedDim queryEmbedDim,
     HasInitialize outProj (SGradient gradient, SDevice device, SDataType dataType, SDim embedDim, SDim queryEmbedDim) generator''' generator'''',
     dropout ~ DropoutF style dropoutP,
-    HasInitialize dropout dropoutP generator'''' generator'''',
-    GMultiHeadAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP ~ GMultiHeadAttention headDim headEmbedDim embedDim qInProj kInProj vInProj outProj dropout
+    HasInitialize dropout dropoutP generator'''' generator''''
   ) =>
   HasInitialize
     (MultiHeadAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
@@ -410,7 +395,16 @@ data OutProj
 instance
   ( SingI style,
     HasForward
-      (GMultiHeadAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
+      ( GMultiHeadAttention
+          headDim
+          headEmbedDim
+          embedDim
+          (QInProjF style gradient device dataType queryEmbedDim embedDim)
+          (KInProjF style gradient device dataType keyEmbedDim embedDim)
+          (VInProjF style gradient device dataType valueEmbedDim embedDim)
+          (OutProjF style gradient device dataType embedDim queryEmbedDim)
+          (DropoutF style dropoutP)
+      )
       ( Scaling,
         Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
         Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,

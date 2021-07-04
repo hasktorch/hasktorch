@@ -6,7 +6,9 @@ module Torch.GraduallyTyped.NN.Transformer.T5.Small where
 
 import GHC.TypeLits (Nat)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
-import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5Model (..), T5ModelWithLMHead (..), ByT5Model, ByT5ModelWithLMHead)
+import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5Model (..))
+import Torch.GraduallyTyped.NN.Transformer.Type (TransformerHead, TransformerStyle (ByT5, T5))
+import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 
 -- | T5-Small number of layers.
@@ -39,13 +41,10 @@ type T5SmallVocabDim = 'Dim ('Name "*") ('Size 32128)
 
 -- | T5-Small model.
 type T5Small
+  (transformerHead :: TransformerHead)
+  (gradient :: Gradient RequiresGradient)
   (device :: Device (DeviceType Nat)) =
-  T5Model T5SmallNumLayers T5SmallNumLayers device T5SmallHeadDim T5SmallHeadEmbedDim T5SmallEmbedDim T5SmallInputEmbedDim T5SmallFFNDim T5SmallVocabDim
-
--- | T5-Small model with language modelling head.
-type T5SmallWithLMHead
-  (device :: Device (DeviceType Nat)) =
-  T5ModelWithLMHead T5SmallNumLayers T5SmallNumLayers device T5SmallHeadDim T5SmallHeadEmbedDim T5SmallEmbedDim T5SmallInputEmbedDim T5SmallFFNDim T5SmallVocabDim
+  T5Model 'T5 transformerHead T5SmallNumLayers T5SmallNumLayers gradient device T5SmallHeadDim T5SmallHeadEmbedDim T5SmallEmbedDim T5SmallInputEmbedDim T5SmallFFNDim T5SmallVocabDim
 
 -- | ByT5-Small number of encoder layers.
 -- 'num_layers = 12'
@@ -81,10 +80,7 @@ type ByT5SmallVocabDim = 'Dim ('Name "*") ('Size 384)
 
 -- | ByT5-Small model.
 type ByT5Small
+  (transformerHead :: TransformerHead)
+  (gradient :: Gradient RequiresGradient)
   (device :: Device (DeviceType Nat)) =
-  ByT5Model ByT5SmallNumEncoderLayers ByT5SmallNumDecoderLayers device ByT5SmallHeadDim ByT5SmallHeadEmbedDim ByT5SmallEmbedDim ByT5SmallInputEmbedDim ByT5SmallFFNDim ByT5SmallVocabDim
-
--- | ByT5-Small model with language modelling head.
-type ByT5SmallWithLMHead
-  (device :: Device (DeviceType Nat)) =
-  ByT5ModelWithLMHead ByT5SmallNumEncoderLayers ByT5SmallNumDecoderLayers device ByT5SmallHeadDim ByT5SmallHeadEmbedDim ByT5SmallEmbedDim ByT5SmallInputEmbedDim ByT5SmallFFNDim ByT5SmallVocabDim
+  T5Model 'ByT5 transformerHead ByT5SmallNumEncoderLayers ByT5SmallNumDecoderLayers gradient device ByT5SmallHeadDim ByT5SmallHeadEmbedDim ByT5SmallEmbedDim ByT5SmallInputEmbedDim ByT5SmallFFNDim ByT5SmallVocabDim

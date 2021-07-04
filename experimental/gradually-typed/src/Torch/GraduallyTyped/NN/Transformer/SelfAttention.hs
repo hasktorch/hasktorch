@@ -107,23 +107,11 @@ newtype
   where
   SelfAttention ::
     forall style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP.
-    GSelfAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP ->
+    GSelfAttention
+      (SAMultiheadAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
+      (SALayerNormF style gradient device dataType queryEmbedDim)
+      (SADropoutF style dropoutP) ->
     SelfAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP
-
-type GSelfAttentionF
-  (style :: TransformerStyle)
-  (gradient :: Gradient RequiresGradient)
-  (device :: Device (DeviceType Nat))
-  (dataType :: DataType DType)
-  (headDim :: Dim (Name Symbol) (Size Nat))
-  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (embedDim :: Dim (Name Symbol) (Size Nat))
-  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (dropoutP :: Type) =
-  GSelfAttention
-    (SAMultiheadAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
-    (SALayerNormF style gradient device dataType queryEmbedDim)
-    (SADropoutF style dropoutP)
 
 type family
   SAMultiheadAttentionF

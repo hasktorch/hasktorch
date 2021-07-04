@@ -48,18 +48,10 @@ newtype
   where
   Pooler ::
     forall style gradient device dataType inputEmbedDim.
-    GPoolerF style gradient device dataType inputEmbedDim ->
+    GPooler
+      (PoolerDenseF style gradient device dataType inputEmbedDim)
+      (PoolerActivationF style) ->
     Pooler style gradient device dataType inputEmbedDim
-
-type GPoolerF
-  (style :: TransformerStyle)
-  (gradient :: Gradient RequiresGradient)
-  (device :: Device (DeviceType Nat))
-  (dataType :: DataType DType)
-  (inputEmbedDim :: Dim (Name Symbol) (Size Nat)) =
-  GPooler
-    (PoolerDenseF style gradient device dataType inputEmbedDim)
-    (PoolerActivationF style)
 
 type family
   PoolerDenseF
