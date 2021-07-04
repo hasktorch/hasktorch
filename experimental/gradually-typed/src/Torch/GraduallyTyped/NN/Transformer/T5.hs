@@ -13,8 +13,8 @@ module Torch.GraduallyTyped.NN.Transformer.T5
     module Torch.GraduallyTyped.NN.Transformer.T5.ThreeB,
     module Torch.GraduallyTyped.NN.Transformer.T5.ElevenB,
     module Torch.GraduallyTyped.NN.Transformer.T5.Generation,
-    testForwardT5Small,
-    testForwardByT5Small,
+    -- testForwardT5Small,
+    -- testForwardByT5Small,
     -- testForwardT5Base,
     -- testForwardT5Large,
     -- testForwardT5ThreeB,
@@ -77,41 +77,42 @@ testForwardT5Small =
       flip evalStateT stateDict $
         fromStateDict @(T5Small 'WithLMHead _ _) (SGradient SWithGradient, SDevice SCPU) ""
     g <- sMkGenerator (SDevice SCPU) 0
-    let (T5Output {..}, _) = forward model input g
-    let decoderOutput = case t5DecoderOutput of
-          UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
-    let firstLogits = do
-          firstBatch <- take 2 decoderOutput
-          firstPositions <- take 3 firstBatch
-          take 3 firstPositions
-    print firstLogits
-    let firstLogits' =
-          [-19.3826, -10.5635, -11.4550, -26.4326, -15.4450, -14.5276, -28.7175, -14.7651, -18.2521, -14.1124, -7.4893, -12.4156, -27.9005, -11.5861, -15.9638, -24.8472, -9.6344, -12.3494]
-    mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLogits firstLogits'
+    -- let (T5Output {..}, _) = forward model input g
+    -- let decoderOutput = case t5DecoderOutput of
+    --       UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
+    -- let firstLogits = do
+    --       firstBatch <- take 2 decoderOutput
+    --       firstPositions <- take 3 firstBatch
+    --       take 3 firstPositions
+    -- print firstLogits
+    -- let firstLogits' =
+    --       [-19.3826, -10.5635, -11.4550, -26.4326, -15.4450, -14.5276, -28.7175, -14.7651, -18.2521, -14.1124, -7.4893, -12.4156, -27.9005, -11.5861, -15.9638, -24.8472, -9.6344, -12.3494]
+    -- mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLogits firstLogits'
+    undefined
 
-testForwardByT5Small :: IO ()
-testForwardByT5Small =
-  do
-    let sOnes' = sOnes (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64)
-        byT5Input = sOnes' (SShape $ testT5BatchDim :|: testT5InputSeqDim :|: SNil)
-        byT5DecoderInput = sOnes' (SShape $ testT5BatchDim :|: testT5DecoderInputSeqDim :|: SNil)
-        input = T5Input byT5Input byT5DecoderInput
-    stateDict <- stateDictFromPretrained "/tmp/byt5-small-state-dict.pt"
-    model <-
-      flip evalStateT stateDict $
-        fromStateDict @(ByT5Small 'WithLMHead _ _) (SGradient SWithGradient, SDevice SCPU) ""
-    g <- sMkGenerator (SDevice SCPU) 0
-    let (T5Output {..}, _) = forward model input g
-    let decoderOutput = case t5DecoderOutput of
-          UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
-    let firstLogits = do
-          firstBatch <- take 2 decoderOutput
-          firstPositions <- take 3 firstBatch
-          take 3 firstPositions
-    print firstLogits
-    let firstLogits' =
-          [-19.3826, -10.5635, -11.4550, -26.4326, -15.4450, -14.5276, -28.7175, -14.7651, -18.2521, -14.1124, -7.4893, -12.4156, -27.9005, -11.5861, -15.9638, -24.8472, -9.6344, -12.3494]
-    mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLogits firstLogits'
+-- testForwardByT5Small :: IO ()
+-- testForwardByT5Small =
+--   do
+--     let sOnes' = sOnes (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64)
+--         byT5Input = sOnes' (SShape $ testT5BatchDim :|: testT5InputSeqDim :|: SNil)
+--         byT5DecoderInput = sOnes' (SShape $ testT5BatchDim :|: testT5DecoderInputSeqDim :|: SNil)
+--         input = T5Input byT5Input byT5DecoderInput
+--     stateDict <- stateDictFromPretrained "/tmp/byt5-small-state-dict.pt"
+--     model <-
+--       flip evalStateT stateDict $
+--         fromStateDict @(ByT5Small 'WithLMHead _ _) (SGradient SWithGradient, SDevice SCPU) ""
+--     g <- sMkGenerator (SDevice SCPU) 0
+--     let (T5Output {..}, _) = forward model input g
+--     let decoderOutput = case t5DecoderOutput of
+--           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
+--     let firstLogits = do
+--           firstBatch <- take 2 decoderOutput
+--           firstPositions <- take 3 firstBatch
+--           take 3 firstPositions
+--     print firstLogits
+--     let firstLogits' =
+--           [-19.3826, -10.5635, -11.4550, -26.4326, -15.4450, -14.5276, -28.7175, -14.7651, -18.2521, -14.1124, -7.4893, -12.4156, -27.9005, -11.5861, -15.9638, -24.8472, -9.6344, -12.3494]
+--     mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLogits firstLogits'
 
 -- testForwardT5Base :: IO ()
 -- testForwardT5Base =

@@ -15,6 +15,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -42,24 +43,26 @@ module Torch.GraduallyTyped.NN.Transformer.T5.Common where
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
-import Data.Kind (Type)
+import Data.Kind (Constraint, Type)
 import Data.Singletons (SingI (..), SingKind (fromSing))
 import Data.Singletons.Prelude.List (SList (..))
 import GHC.Float (double2Int)
 import GHC.Generics (Generic)
-import GHC.TypeLits (KnownNat, Nat, Symbol)
+import GHC.TypeLits (Nat, Symbol)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), SDType (..), SDataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
-import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
 import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (SequenceToSequenceTransformer (..), SequenceToSequenceTransformerGenerationInput (..), SequenceToSequenceTransformerInput (..), SequenceToSequenceTransformerOutput (..))
-import Torch.GraduallyTyped.NN.Transformer.Type (MkTransformerAttentionMaskC, MkTransformerCrossAttentionMaskC, MkTransformerDecoderAttentionMaskC, MkTransformerPaddingMaskC, ShiftRight, TransformerHead, TransformerStyle (ByT5, T5), mkTransformerAttentionMask, mkTransformerCrossAttentionMask, mkTransformerDecoderAttentionMask, mkTransformerInput, mkTransformerPaddingMask)
+import Torch.GraduallyTyped.NN.Transformer.Type (MkTransformerAttentionMaskC, MkTransformerCrossAttentionMaskC, MkTransformerDecoderAttentionMaskC, MkTransformerPaddingMaskC, ShiftRight (..), TransformerHead (..), TransformerStyle (ByT5, T5), mkTransformerAttentionMask, mkTransformerCrossAttentionMask, mkTransformerDecoderAttentionMask, mkTransformerInput, mkTransformerPaddingMask)
 import Torch.GraduallyTyped.Prelude (forgetIsChecked)
-import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..))
+import Torch.GraduallyTyped.Random (sMkGenerator)
+import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (sGetDim, type (!))
-import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), Name (..), SBy (..), SDim (sDimSize), SName (..), SSelectDim (..), SShape (..), SSize (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), Name (..), SBy (..), SDim (..), SName (..), SSelectDim (..), SShape (..), SSize (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.Tensor.Creation (sOnes)
 import Torch.GraduallyTyped.Tensor.Type (SGetDevice (sDevice), SGetShape, Tensor (..), UncheckedTensor, checkedDataType, checkedGradient, checkedLayout, sCheckedDevice, sCheckedShape, sShape)
 import qualified Torch.Tensor (Tensor (Unsafe), asTensor)
 import Type.Errors.Pretty (TypeError, type (<>))
@@ -132,6 +135,31 @@ data
       t5ShiftRightPaddingMask :: ShiftRight Int
     } ->
     GT5Model t5Model
+
+type T5ModelC ::
+  TransformerStyle ->
+  TransformerHead ->
+  Nat ->
+  Nat ->
+  Gradient RequiresGradient ->
+  Device (DeviceType Nat) ->
+  Dim (Name Symbol) (Size Nat) ->
+  Dim (Name Symbol) (Size Nat) ->
+  Dim (Name Symbol) (Size Nat) ->
+  Dim (Name Symbol) (Size Nat) ->
+  Dim (Name Symbol) (Size Nat) ->
+  Dim (Name Symbol) (Size Nat) ->
+  Constraint
+class T5ModelC style transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim where
+  data T5ModelD style transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim :: Type
+
+instance T5ModelC 'T5 transformerHead numLayers numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim where
+  data T5ModelD 'T5 transformerHead numLayers numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim
+    = T5ModelD (SequenceToSequenceTransformer 'T5 transformerHead numLayers numLayers gradient device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim T5RelPosEncBucketDim vocabDim T5DropoutP)
+
+instance T5ModelC 'ByT5 transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim where
+  data T5ModelD 'ByT5 transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim
+    = ByT5ModelD (SequenceToSequenceTransformer 'ByT5 transformerHead numEncoderLayers numDecoderLayers gradient device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim T5RelPosEncBucketDim vocabDim T5DropoutP)
 
 -- | T5 model.
 data
@@ -339,20 +367,6 @@ mkT5DecoderRelPos' numBuckets maxDistance querySize keySize =
         )
         queryPos
 
-type MkT5DecoderRelPosC device shape seqDim seqName seqSize output =
-  ( SGetDevice device,
-    SGetShape shape,
-    seqDim ~ (shape ! 1),
-    seqDim ~ 'Dim seqName seqSize,
-    output
-      ~ Tensor
-          ('Gradient 'WithoutGradient)
-          ('Layout 'Dense)
-          device
-          ('DataType 'Int64)
-          ('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") seqSize, 'Dim ('Name "*") seqSize])
-  )
-
 mkT5DecoderRelPos ::
   forall m gradient layout device dataType shape seqDim seqName seqSize output.
   ( MonadThrow m,
@@ -434,7 +448,7 @@ instance
     inputPaddingMask ~ Tensor inputPaddingMaskGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape,
     decoderInput ~ Tensor decoderInputGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
     rightShiftedDecoderInput ~ Tensor rightShiftedDecoderInputGradient rightShiftedDecoderInputLayout rightShiftedDecoderInputDevice rightShiftedDecoderInputDataType rightShiftedDecoderInputShape,
-    MkT5DecoderRelPosC rightShiftedDecoderInputDevice rightShiftedDecoderInputShape rightShiftedDecoderInputSeqDim rightShiftedDecoderInputSeqName rightShiftedDecoderInputSeqSize decoderPos,
+    MkT5RelPosC rightShiftedDecoderInputDevice rightShiftedDecoderInputShape rightShiftedDecoderInputSeqDim rightShiftedDecoderInputSeqName rightShiftedDecoderInputSeqSize decoderPos,
     MkTransformerPaddingMaskC decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape decoderInputPaddingMask,
     rightShiftedDecoderInputPaddingMask ~ Tensor rightShiftedDecoderInputPaddingMaskGradient rightShiftedDecoderInputPaddingMaskLayout rightShiftedDecoderInputPaddingMaskDevice rightShiftedDecoderInputPaddingMaskDataType rightShiftedDecoderInputPaddingMaskShape,
     MkTransformerAttentionMaskC T5DataType inputPaddingMaskGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim attentionMask,
@@ -488,6 +502,39 @@ instance
                                     ireturn $ T5Output decoderOutput encoderOutput inputPaddingMask
                                 )
                  )
+
+testT5 = do
+  let gradient = SGradient SWithGradient
+      device = SDevice SCPU
+      headDim = SName @"*" :&: SSize @8
+      headEmbedDim = SName @"*" :&: SSize @64
+      embedDim = SName @"*" :&: SSize @512
+      inputEmbedDim = SName @"*" :&: SSize @512
+      ffnDim = SName @"*" :&: SSize @2048
+      vocabDim = SName @"*" :&: SSize @32128
+  g <- sMkGenerator device 0
+  let batchDim = SName @"*" :&: SSize @3
+      seqDim = SName @"*" :&: SSize @13
+      decoderSeqDim = SName @"*" :&: SSize @7
+      sOnes' = sOnes (SGradient SWithoutGradient) (SLayout SDense) device
+      input = sOnes' (SDataType SInt64) (SShape $ batchDim :|: seqDim :|: SNil)
+      attentionMask = sOnes' t5DataType (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
+      decoderInput = sOnes' (SDataType SInt64) (SShape $ batchDim :|: decoderSeqDim :|: SNil)
+      decoderAttentionMask = sOnes' t5DataType (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
+      crossAttentionMask = sOnes' t5DataType (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: seqDim :|: SNil)
+      (t5Model, g') = initialize @(SequenceToSequenceTransformer 'T5 'WithLMHead 4 4 _ _ _ _ _ _ _ _ _ _ _) (gradient, device, t5DataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, t5RelPosEncBucketDim, vocabDim, t5DropoutP, t5Eps) g
+  let (t5Output, g'') =
+        let pos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
+            decoderPos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
+         in forward t5Model SequenceToSequenceTransformerInput {..} g'
+  let (t5Output', g''') =
+        let t5ShiftRightDecoderInput = ShiftRight t5BOSTokenId
+            t5ShiftRightPaddingMask = ShiftRight 0
+            model = T5Model (GT5Model {..})
+            inputs = T5Input input decoderInput
+         in undefined -- forward model inputs g''
+        -- pure ((t5Output, t5Output'), g''')
+  undefined
 
 -- | 'HasForward' instance for T5 models.
 -- Use this instance for sequence generation once the encoder's output is available.

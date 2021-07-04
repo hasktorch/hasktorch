@@ -19,13 +19,13 @@ import Control.Monad.State (evalStateT)
 import Data.List (sortBy)
 import Data.Ord (Down (..), comparing)
 import qualified Tokenizers (Tokenizer, decode, encode, getIDs, withTokenizerFromConfigFile)
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (fromStateDict))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (fromStateDict), stateDictFromPretrained)
 import Torch.GraduallyTyped.NN.Transformer.BART.Base
 import Torch.GraduallyTyped.NN.Transformer.BART.Common
 import Torch.GraduallyTyped.NN.Transformer.Type (TransformerHead (WithLMHead))
 import Torch.GraduallyTyped.Random (mkGenerator)
-import Torch.GraduallyTyped.RequiresGradient (Gradient (Gradient), RequiresGradient (WithGradient))
+import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Type (SName (..), SSize (..), pattern (:&:))
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
 import qualified Torch.Tensor as Tensor (Tensor (..), asValue)
@@ -65,7 +65,7 @@ testForwardBARTBase :: IO ()
 testForwardBARTBase =
   do
     input <- BARTInput <$> testBARTInput <*> testBARTDecoderInput
-    stateDict <- stateDictFromPretrained "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/bart-base.pt"
+    stateDict <- stateDictFromPretrained "/tmp/bart-base-state-dict.pt"
     model <-
       flip evalStateT stateDict $
         fromStateDict @(BARTBase 'WithLMHead _ _) (SGradient SWithGradient, SDevice SCPU) ""

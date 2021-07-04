@@ -252,7 +252,7 @@ testBeamSearch = do
       (SName @"*" :&: SSize @1)
       (SName @"*" :&: SSize @19)
       tokens
-  stateDict <- stateDictFromPretrained "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-small.pt"
+  stateDict <- stateDictFromPretrained "/tmp/t5-small-state-dict.pt"
   model <-
     flip evalStateT stateDict $
       fromStateDict @(T5Small 'WithLMHead _ _) (SGradient SWithGradient, SDevice SCPU) ""

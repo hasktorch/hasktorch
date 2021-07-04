@@ -485,7 +485,7 @@ instance
 --         │                  ▼                │                    │                        │
 --         ├──────────►seqToSeqDecoder◄────────┘◄───────────────────┘◄───────────────────────┘
 --         │                  │
---         │          (seqToSeqLMHead)
+--         │           (seqToSeqLMHead)
 --         │                  │
 --         ▼                  ▼
 -- ┌───────────────┐  ┌───────────────┐
@@ -565,17 +565,23 @@ testSeqToSeq = do
       dropoutP :: Float = 0.0
       eps = 1e-6
   g <- sMkGenerator device 0
-  let (seqToSeq, g') = initialize @(SequenceToSequenceTransformer 'T5 'WithLMHead 1 1 _ _ _ _ _ _ _ _ _ _ _) (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, dropoutP, eps) g
-      batchDim = SName @"*" :&: SSize @3
+  let batchDim = SName @"*" :&: SSize @3
       seqDim = SName @"*" :&: SSize @13
       decoderSeqDim = SName @"*" :&: SSize @7
       sOnes' = sOnes (SGradient SWithoutGradient) (SLayout SDense) device
       input = sOnes' (SDataType SInt64) (SShape $ batchDim :|: seqDim :|: SNil)
-      pos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
       attentionMask = sOnes' dataType (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
       decoderInput = sOnes' (SDataType SInt64) (SShape $ batchDim :|: decoderSeqDim :|: SNil)
-      decoderPos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
       decoderAttentionMask = sOnes' dataType (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
       crossAttentionMask = sOnes' dataType (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: seqDim :|: SNil)
-  let (output, _) = forward seqToSeq SequenceToSequenceTransformerInput {..} g'
-  pure output
+  let (t5Output, g'') =
+        let (t5, g') = initialize @(SequenceToSequenceTransformer 'T5 'WithLMHead 32 32 _ _ _ _ _ _ _ _ _ _ _) (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, dropoutP, eps) g
+            pos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
+            decoderPos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
+        in forward t5 SequenceToSequenceTransformerInput {..} g'
+  let (bartOutput, g'''') =
+        let (bart, g''') = initialize @(SequenceToSequenceTransformer 'BART 'WithLMHead 32 32 _ _ _ _ _ _ _ _ _ _ _) (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, dropoutP, eps) g''
+            pos = sOnes' (SDataType SInt64) (SShape $ seqDim :|: SNil)
+            decoderPos = sOnes' (SDataType SInt64) (SShape $ decoderSeqDim :|: SNil)
+        in forward bart SequenceToSequenceTransformerInput {..} g'''
+  pure ((t5Output, bartOutput), g'''')

@@ -16,14 +16,15 @@ where
 
 import Control.Monad.State (evalStateT)
 import Test.HUnit.Approx (assertApproxEqual)
-import Torch.GraduallyTyped.Device (SDevice (..), SDeviceType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (fromStateDict), stateDictFromPretrained)
 import Torch.GraduallyTyped.NN.Transformer.Pegasus.Common
 import Torch.GraduallyTyped.NN.Transformer.Pegasus.XSum
 import Torch.GraduallyTyped.NN.Transformer.Type (TransformerHead (WithLMHead))
 import Torch.GraduallyTyped.Random (sMkGenerator)
-import Torch.GraduallyTyped.RequiresGradient (SGradient (..), SRequiresGradient (..))
-import Torch.GraduallyTyped.Shape.Type (SName (..), SSize (..), pattern (:&:))
+import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SName (..), SSize (..), Shape (..), Size (..), pattern (:&:))
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
 import qualified Torch.Tensor as Tensor (Tensor (..), asValue)
 
@@ -45,11 +46,19 @@ testPegasusDecoderInput =
       [202, 29519, 17113, 117, 114, 1834, 113, 114, 323, 113, 1928, 120, 137, 129, 20293, 112, 114, 323, 113, 4589, 107, 1]
     ]
 
-testForwardPegasusXSum :: IO ()
+testForwardPegasusXSum ::
+  IO
+    ( Tensor
+        ('Gradient 'WithGradient)
+        ('Layout 'Dense)
+        ('Device 'CPU)
+        PegasusDataType
+        ('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 158), 'Dim ('Name "*") ('Size 1024)])
+    )
 testForwardPegasusXSum =
   do
     input <- PegasusInput <$> testPegasusInput <*> testPegasusDecoderInput
-    stateDict <- stateDictFromPretrained "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/pegasus-xsum.pt"
+    stateDict <- stateDictFromPretrained "/tmp/pegasus-xsum-state-dict.pt"
     model <-
       flip evalStateT stateDict $
         fromStateDict @(PegasusXSum 'WithLMHead _ _) (SGradient SWithGradient, SDevice SCPU) ""
@@ -73,3 +82,4 @@ testForwardPegasusXSum =
     print firstLogits
     let firstLogits' = [0.0000, 4.9619, 0.4453, 0.0000, 3.7238, 0.5208, 0.0000, 4.0774, 0.1976, 0.0000, 5.1009, 0.1397, 0.0000, 3.2329, 0.4058, 0.0000, 4.4593, 0.6729]
     mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLogits firstLogits'
+    pure pegasusEncoderOutput
