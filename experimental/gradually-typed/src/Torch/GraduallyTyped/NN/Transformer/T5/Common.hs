@@ -18,6 +18,7 @@
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fplugin TypeLevel.Rewrite
@@ -43,7 +44,7 @@ module Torch.GraduallyTyped.NN.Transformer.T5.Common where
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
-import Data.Kind (Constraint, Type)
+import Data.Kind (Type)
 import Data.Singletons (SingI (..), SingKind (fromSing))
 import Data.Singletons.Prelude.List (SList (..))
 import GHC.Float (double2Int)
@@ -136,31 +137,6 @@ data
     } ->
     GT5Model t5Model
 
-type T5ModelC ::
-  TransformerStyle ->
-  TransformerHead ->
-  Nat ->
-  Nat ->
-  Gradient RequiresGradient ->
-  Device (DeviceType Nat) ->
-  Dim (Name Symbol) (Size Nat) ->
-  Dim (Name Symbol) (Size Nat) ->
-  Dim (Name Symbol) (Size Nat) ->
-  Dim (Name Symbol) (Size Nat) ->
-  Dim (Name Symbol) (Size Nat) ->
-  Dim (Name Symbol) (Size Nat) ->
-  Constraint
-class T5ModelC style transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim where
-  data T5ModelD style transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim :: Type
-
-instance T5ModelC 'T5 transformerHead numLayers numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim where
-  data T5ModelD 'T5 transformerHead numLayers numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim
-    = T5ModelD (SequenceToSequenceTransformer 'T5 transformerHead numLayers numLayers gradient device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim T5RelPosEncBucketDim vocabDim T5DropoutP)
-
-instance T5ModelC 'ByT5 transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim where
-  data T5ModelD 'ByT5 transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim
-    = ByT5ModelD (SequenceToSequenceTransformer 'ByT5 transformerHead numEncoderLayers numDecoderLayers gradient device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim T5RelPosEncBucketDim vocabDim T5DropoutP)
-
 -- | T5 model.
 data
   T5Model
@@ -184,27 +160,15 @@ data
     T5Model style transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim
   deriving stock (Generic)
 
+type T5ModelF :: TransformerStyle -> TransformerHead -> Nat -> Nat -> Gradient RequiresGradient -> Device (DeviceType Nat) -> Dim (Name Symbol) (Size Nat) -> Dim (Name Symbol) (Size Nat) -> Dim (Name Symbol) (Size Nat) -> Dim (Name Symbol) (Size Nat) -> Dim (Name Symbol) (Size Nat) -> Dim (Name Symbol) (Size Nat) -> Type
 type family
-  T5ModelF
-    (style :: TransformerStyle)
-    (transformerHead :: TransformerHead)
-    (numEncoderLayers :: Nat)
-    (numDecoderLayers :: Nat)
-    (gradient :: Gradient RequiresGradient)
-    (device :: Device (DeviceType Nat))
-    (headDim :: Dim (Name Symbol) (Size Nat))
-    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (embedDim :: Dim (Name Symbol) (Size Nat))
-    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (ffnDim :: Dim (Name Symbol) (Size Nat))
-    (vocabDim :: Dim (Name Symbol) (Size Nat)) ::
-    Type
+  T5ModelF style transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim =
+    r | r -> style transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim
   where
   T5ModelF 'T5 transformerHead numLayers numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim =
     SequenceToSequenceTransformer 'T5 transformerHead numLayers numLayers gradient device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim T5RelPosEncBucketDim vocabDim T5DropoutP
   T5ModelF 'ByT5 transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim =
     SequenceToSequenceTransformer 'ByT5 transformerHead numEncoderLayers numDecoderLayers gradient device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim T5RelPosEncBucketDim vocabDim T5DropoutP
-  T5ModelF style _ _ _ _ _ _ _ _ _ _ _ = TypeError ("The specified transformer style, `" <> style <> "`, is not supported by the `T5Model` data type.")
 
 instance
   ( SingI headDim,
@@ -532,9 +496,8 @@ testT5 = do
             t5ShiftRightPaddingMask = ShiftRight 0
             model = T5Model (GT5Model {..})
             inputs = T5Input input decoderInput
-         in undefined -- forward model inputs g''
-        -- pure ((t5Output, t5Output'), g''')
-  undefined
+         in forward model inputs g''
+  pure ((t5Output, t5Output'), g''')
 
 -- | 'HasForward' instance for T5 models.
 -- Use this instance for sequence generation once the encoder's output is available.

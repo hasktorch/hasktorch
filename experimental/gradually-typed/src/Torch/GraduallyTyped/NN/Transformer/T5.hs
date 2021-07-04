@@ -13,12 +13,8 @@ module Torch.GraduallyTyped.NN.Transformer.T5
     module Torch.GraduallyTyped.NN.Transformer.T5.ThreeB,
     module Torch.GraduallyTyped.NN.Transformer.T5.ElevenB,
     module Torch.GraduallyTyped.NN.Transformer.T5.Generation,
-    -- testForwardT5Small,
-    -- testForwardByT5Small,
-    -- testForwardT5Base,
-    -- testForwardT5Large,
-    -- testForwardT5ThreeB,
-    -- testForwardT5ElevenB,
+    testForwardT5Small,
+    testForwardByT5Small
   )
 where
 
@@ -28,7 +24,7 @@ import Test.HUnit.Approx (assertApproxEqual)
 import Torch.GraduallyTyped.DType (SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (fromStateDict), stateDictFromPretrained)
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (fromStateDict), stateDictFromPretrained)
 import Torch.GraduallyTyped.NN.Transformer.T5.Base
 import Torch.GraduallyTyped.NN.Transformer.T5.Common
 import Torch.GraduallyTyped.NN.Transformer.T5.ElevenB
@@ -38,7 +34,7 @@ import Torch.GraduallyTyped.NN.Transformer.T5.Small
 import Torch.GraduallyTyped.NN.Transformer.T5.ThreeB
 import Torch.GraduallyTyped.NN.Transformer.Type (TransformerHead (WithLMHead))
 import Torch.GraduallyTyped.Random (sMkGenerator)
-import Torch.GraduallyTyped.RequiresGradient (SGradient (..), SRequiresGradient (..))
+import Torch.GraduallyTyped.RequiresGradient (SGradient (..), SRequiresGradient (..), Gradient (..), RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Type (SName (..), SShape (..), SSize (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
@@ -75,89 +71,40 @@ testForwardT5Small =
     stateDict <- stateDictFromPretrained "/tmp/t5-small-state-dict.pt"
     model <-
       flip evalStateT stateDict $
-        fromStateDict @(T5Small 'WithLMHead _ _) (SGradient SWithGradient, SDevice SCPU) ""
+        fromStateDict @(T5Small 'WithLMHead ('Gradient 'WithGradient) ('Device 'CPU)) (SGradient SWithGradient, SDevice SCPU) ""
     g <- sMkGenerator (SDevice SCPU) 0
-    -- let (T5Output {..}, _) = forward model input g
-    -- let decoderOutput = case t5DecoderOutput of
-    --       UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
-    -- let firstLogits = do
-    --       firstBatch <- take 2 decoderOutput
-    --       firstPositions <- take 3 firstBatch
-    --       take 3 firstPositions
-    -- print firstLogits
-    -- let firstLogits' =
-    --       [-19.3826, -10.5635, -11.4550, -26.4326, -15.4450, -14.5276, -28.7175, -14.7651, -18.2521, -14.1124, -7.4893, -12.4156, -27.9005, -11.5861, -15.9638, -24.8472, -9.6344, -12.3494]
-    -- mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLogits firstLogits'
-    undefined
+    let (T5Output {..}, _) = forward model input g
+    let decoderOutput = case t5DecoderOutput of
+          UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
+    let firstLogits = do
+          firstBatch <- take 2 decoderOutput
+          firstPositions <- take 3 firstBatch
+          take 3 firstPositions
+    print firstLogits
+    let firstLogits' =
+          [-19.3826, -10.5635, -11.4550, -26.4326, -15.4450, -14.5276, -28.7175, -14.7651, -18.2521, -14.1124, -7.4893, -12.4156, -27.9005, -11.5861, -15.9638, -24.8472, -9.6344, -12.3494]
+    mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLogits firstLogits'
 
--- testForwardByT5Small :: IO ()
--- testForwardByT5Small =
---   do
---     let sOnes' = sOnes (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64)
---         byT5Input = sOnes' (SShape $ testT5BatchDim :|: testT5InputSeqDim :|: SNil)
---         byT5DecoderInput = sOnes' (SShape $ testT5BatchDim :|: testT5DecoderInputSeqDim :|: SNil)
---         input = T5Input byT5Input byT5DecoderInput
---     stateDict <- stateDictFromPretrained "/tmp/byt5-small-state-dict.pt"
---     model <-
---       flip evalStateT stateDict $
---         fromStateDict @(ByT5Small 'WithLMHead _ _) (SGradient SWithGradient, SDevice SCPU) ""
---     g <- sMkGenerator (SDevice SCPU) 0
---     let (T5Output {..}, _) = forward model input g
---     let decoderOutput = case t5DecoderOutput of
---           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
---     let firstLogits = do
---           firstBatch <- take 2 decoderOutput
---           firstPositions <- take 3 firstBatch
---           take 3 firstPositions
---     print firstLogits
---     let firstLogits' =
---           [-19.3826, -10.5635, -11.4550, -26.4326, -15.4450, -14.5276, -28.7175, -14.7651, -18.2521, -14.1124, -7.4893, -12.4156, -27.9005, -11.5861, -15.9638, -24.8472, -9.6344, -12.3494]
---     mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLogits firstLogits'
-
--- testForwardT5Base :: IO ()
--- testForwardT5Base =
---   do
---     input <- T5Input <$> testT5Input <*> testT5DecoderInput
---     model <-
---       initialize
---         @(T5BaseWithLMHead ('Device 'CPU))
---         "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-base.pt"
---     g <- mkGenerator @('Device CPU) 0
---     let (output, _) = forward model input g
---     print output
-
--- testForwardT5Large :: IO ()
--- testForwardT5Large =
---   do
---     input <- T5Input <$> testT5Input <*> testT5DecoderInput
---     model <-
---       initialize
---         @(T5LargeWithLMHead ('Device 'CPU))
---         "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-large.pt"
---     g <- mkGenerator @('Device CPU) 0
---     let (output, _) = forward model input g
---     print output
-
--- testForwardT5ThreeB :: IO ()
--- testForwardT5ThreeB =
---   do
---     input <- T5Input <$> testT5Input <*> testT5DecoderInput
---     model <-
---       initialize
---         @(T5ThreeBWithLMHead ('Device 'CPU))
---         "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-3b.pt"
---     g <- mkGenerator @('Device CPU) 0
---     let (output, _) = forward model input g
---     print output
-
--- testForwardT5ElevenB :: IO ()
--- testForwardT5ElevenB =
---   do
---     input <- T5Input <$> testT5Input <*> testT5DecoderInput
---     model <-
---       initialize
---         @(T5ElevenBWithLMHead ('Device 'CPU))
---         "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-11b.pt"
---     g <- mkGenerator @('Device CPU) 0
---     let (output, _) = forward model input g
---     print output
+testForwardByT5Small :: IO ()
+testForwardByT5Small =
+  do
+    let sOnes' = sOnes (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64)
+        byT5Input = sOnes' (SShape $ testT5BatchDim :|: testT5InputSeqDim :|: SNil)
+        byT5DecoderInput = sOnes' (SShape $ testT5BatchDim :|: testT5DecoderInputSeqDim :|: SNil)
+        input = T5Input byT5Input byT5DecoderInput
+    stateDict <- stateDictFromPretrained "/tmp/byt5-small-state-dict.pt"
+    model <-
+      flip evalStateT stateDict $
+        fromStateDict @(ByT5Small 'WithLMHead ('Gradient 'WithGradient) ('Device 'CPU)) (SGradient SWithGradient, SDevice SCPU) ""
+    g <- sMkGenerator (SDevice SCPU) 0
+    let (T5Output {..}, _) = forward model input g
+    let decoderOutput = case t5DecoderOutput of
+          UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
+    let firstLogits = do
+          firstBatch <- take 2 decoderOutput
+          firstPositions <- take 3 firstBatch
+          take 3 firstPositions
+    print firstLogits
+    let firstLogits' =
+          [-19.3826, -10.5635, -11.4550, -26.4326, -15.4450, -14.5276, -28.7175, -14.7651, -18.2521, -14.1124, -7.4893, -12.4156, -27.9005, -11.5861, -15.9638, -24.8472, -9.6344, -12.3494]
+    mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLogits firstLogits'

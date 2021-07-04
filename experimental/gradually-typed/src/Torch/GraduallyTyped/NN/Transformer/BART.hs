@@ -6,6 +6,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -v2 -Wall #-}
 
+{-# LANGUAGE ScopedTypeVariables #-}
 module Torch.GraduallyTyped.NN.Transformer.BART
   ( module Torch.GraduallyTyped.NN.Transformer.BART.Common,
     module Torch.GraduallyTyped.NN.Transformer.BART.Base,
@@ -20,7 +21,7 @@ import Data.List (sortBy)
 import Data.Ord (Down (..), comparing)
 import qualified Tokenizers (Tokenizer, decode, encode, getIDs, withTokenizerFromConfigFile)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (fromStateDict), stateDictFromPretrained)
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (fromStateDict), stateDictFromPretrained)
 import Torch.GraduallyTyped.NN.Transformer.BART.Base
 import Torch.GraduallyTyped.NN.Transformer.BART.Common
 import Torch.GraduallyTyped.NN.Transformer.Type (TransformerHead (WithLMHead))
@@ -68,7 +69,7 @@ testForwardBARTBase =
     stateDict <- stateDictFromPretrained "/tmp/bart-base-state-dict.pt"
     model <-
       flip evalStateT stateDict $
-        fromStateDict @(BARTBase 'WithLMHead _ _) (SGradient SWithGradient, SDevice SCPU) ""
+        fromStateDict @(BARTBase 'WithLMHead ('Gradient 'WithGradient) ('Device 'CPU)) (SGradient SWithGradient, SDevice SCPU) ""
     g <- mkGenerator @('Device 'CPU) 0
     let (BARTOutput {..}, _) = forward model input g
     let encoderOutput = case bartEncoderOutput of
