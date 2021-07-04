@@ -6,6 +6,7 @@
 
 module Torch.Index
   ( slice
+  , lslice
   ) where
 
 import Torch.Tensor
@@ -138,6 +139,9 @@ parseSlice str =
           pure $ AppE (ConE 'Slice) (ConE '())
           )
 
+-- | Generate a slice from a [python compatible expression](https://pytorch.org/cppdocs/notes/tensor_indexing.html).
+-- When you take the odd-numbered element of tensor with `tensor[1::2]` in python,
+-- you can write `tensor ! [slice|1::2|]` in hasktorch.
 slice :: QuasiQuoter
 slice = QuasiQuoter
   { quoteExp = parseSlice >=> qconcat
@@ -149,3 +153,20 @@ slice = QuasiQuoter
     qconcat :: [Exp] -> Q Exp
     qconcat [exp] = pure exp
     qconcat exps = pure $ TupE $ map Just exps
+
+-- | Generate a lens from a [python compatible expression](https://pytorch.org/cppdocs/notes/tensor_indexing.html).
+-- When you take the odd-numbered elements of tensor with `tensor[1::2]` in python,
+-- you can write `tensor ^. [lslice|1::2|]` in hasktorch.
+-- When you put 2 in the odd numbered elements of the tensor,
+-- you can write `tensor & [lslice|1::2|] ~. 2`.
+lslice :: QuasiQuoter
+lslice = QuasiQuoter
+  { quoteExp = parseSlice >=> qconcat
+  , quotePat = error "quotePat is not implemented for slice."
+  , quoteDec = error "quoteDec is not implemented for slice."
+  , quoteType = error "quoteType is not implemented for slice."
+  }
+  where
+    qconcat :: [Exp] -> Q Exp
+    qconcat [exp] = pure $ AppE (VarE 'toLens) exp
+    qconcat exps = pure $ AppE (VarE 'toLens) $ TupE $ map Just exps
