@@ -13,6 +13,8 @@ import Torch.Index
 import Control.Arrow                  ( (&&&) )
 import Torch.DType
 import Torch.TensorFactories
+import Lens.Family
+import Torch.Lens
 
 spec :: Spec
 spec = do
@@ -73,3 +75,16 @@ spec = do
       let x = arange' 1 5 1
           i = [slice|-1|]
       (dtype &&& shape &&& asValue) (x ! i) `shouldBe` (Float, ([], 4 :: Float))
+  describe "indexing with lens" $ do
+    it "pick up a value" $ do
+      let x = asTensor ([[[0,1,2],[3,4,5]],[[6,7,8],[9,10,11]]] :: [[[Int]]])
+          r = x ^. [lslice|1,0,2|]
+      (dtype &&& shape &&& asValue) r `shouldBe` (Int64, ([], 8 :: Int))
+    it "intercalate" $ do
+      let x = zeros' [6]
+          i = [lslice|0::2|] :: Lens' Tensor Tensor
+      (dtype &&& shape &&& asValue) (x & i .~ arange' 1 4 1) `shouldBe` (Float, ([6], [1,0,2,0,3,0] :: [Float]))
+    it "negative index" $ do
+      let x = arange' 1 5 1
+          i = [lslice|-1|]
+      (dtype &&& shape &&& asValue) (x ^. i) `shouldBe` (Float, ([], 4 :: Float))
