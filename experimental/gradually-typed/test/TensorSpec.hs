@@ -146,4 +146,4 @@ spec = do
 
     it "lists having different length" $ do
       let mkT = toCPUTensor @[[Double]] [[1], [1, 2]]
-      mkT `shouldThrow` anyException
+      mkT `shouldThrow` (== DimMismatchError [1] [2])

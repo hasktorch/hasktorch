@@ -1160,8 +1160,8 @@ class
   where
   -- | Guesses outer dim.
   --
-  -- >>> guessDim $ pure [[1, 2], [3, 4], [5, 6]]
-  -- 3
+  -- >>> guessDim @[[Int]] $ pure [[1, 2], [3, 4], [5, 6]]
+  -- Just 3
   guessDim ::
     -- | value
     -- 'Nothing' if the data type wrapping 'a' is empty.
@@ -1172,7 +1172,7 @@ class
 
   -- | Guesses inner dims.
   --
-  -- >>> guessInnerDims $ pure [[1, 2], [3, 4], [5, 6]]
+  -- >>> guessInnerDims @[[Int]] $ pure [[1, 2], [3, 4], [5, 6]]
   -- [2]
   guessInnerDims ::
     MonadThrow m =>
@@ -1207,8 +1207,8 @@ class
 
 -- | Guesses dims: concatenates 'guessDim' with 'guessInnerDims'.
 --
--- >>> guessDims [[1, 2], [3, 4], [5, 6]]
--- [3, 2]
+-- >>> guessDims @[[Int]] $ pure [[1, 2], [3, 4], [5, 6]]
+-- [3,2]
 guessDims :: forall a dType dims m. (TensorLike a dType dims, MonadThrow m) => Maybe a -> m [Int]
 guessDims x = (outerDim <>) <$> guessInnerDims x
   where
@@ -1227,13 +1227,13 @@ unexpectedDimsError dims' x = do
 --                     [ 3,  4],
 --                     [ 5,  6]]
 -- >>> :type t
---   Tensor
---     'WithoutGradient
---     ('Layout 'Dense)
---     ('Device 'CPU)
---     ('DataType 'Int64)
---     ('Shape
---        '[ 'Dim ('Name "*") 'UncheckedSize, 'Dim ('Name "*") ('Size 2)])
+-- t :: Tensor
+--        'WithoutGradient
+--        ('Layout 'Dense)
+--        ('Device 'CPU)
+--        ('DataType 'Int64)
+--        ('Shape
+--           '[ 'Dim ('Name "*") 'UncheckedSize, 'Dim ('Name "*") ('Size 2)])
 sToTensor ::
   forall requiresGradient layout device a dType dims m.
   (TensorLike a dType dims, MonadThrow m) =>
@@ -1324,7 +1324,7 @@ instance TensorLike Double 'Double '[] where
   tensorPokeElemOff _ _ dims' x = unexpectedDimsError dims' $ pure x
 
 data DimMismatchError = DimMismatchError {dmeFirst :: [Int], dmeOther :: [Int]}
-  deriving (Show)
+  deriving (Show, Eq)
 
 instance Exception DimMismatchError where
   displayException DimMismatchError {..} =
