@@ -1152,7 +1152,12 @@ withTensor t fn =
   let contiguousTensor = if isContiguous t then t else contiguous t
    in cast contiguousTensor $ \ct -> withForeignPtr ct $ Unmanaged.tensor_data_ptr >=> fn
 
-class TensorLikeRaw a where
+class
+  KnownDType dType =>
+  TensorLike a (dType :: DType) (dims :: [Dim (Name Symbol) (Size Nat)])
+    | a -> dims,
+      a -> dType
+  where
   -- | Guesses outer dim.
   --
   -- >>> guessDim $ pure [[1, 2], [3, 4], [5, 6]]
@@ -1204,68 +1209,51 @@ class TensorLikeRaw a where
 --
 -- >>> guessDims [[1, 2], [3, 4], [5, 6]]
 -- [3, 2]
-guessDims :: (TensorLikeRaw a, MonadThrow m) => Maybe a -> m [Int]
+guessDims :: forall a dType dims m. (TensorLike a dType dims, MonadThrow m) => Maybe a -> m [Int]
 guessDims x = (outerDim <>) <$> guessInnerDims x
   where
     outerDim = maybeToList $ guessDim x
 
-unexpectedDimsError :: forall a m b. (TensorLikeRaw a, MonadThrow m) => [Int] -> Maybe a -> m b
+unexpectedDimsError :: forall a dType dims m b. (TensorLike a dType dims, MonadThrow m) => [Int] -> Maybe a -> m b
 unexpectedDimsError dims' x = do
   expected <- guessDims x
   error $ "Expected shape to be " <> show expected <> " got: " <> show dims'
 
-class
-  (KnownDType dType, TensorLikeRaw a) =>
-  TensorLike a (dType :: DType) (dims :: [Dim (Name Symbol) (Size Nat)])
-    | a -> dims,
-      a -> dType
+-- | Creates a tensor from a 'TensorLike' value.
+--
+-- >>> t <- sToTensor SWithoutGradient (SLayout SDense) (SDevice SCPU) ([(1, 2), (3, 4), (5, 6)] :: [(Int, Int)])
+-- >>> t
+-- Tensor Int64 [3,2] [[ 1,  2],
+--                     [ 3,  4],
+--                     [ 5,  6]]
+-- >>> :type t
+--   Tensor
+--     'WithoutGradient
+--     ('Layout 'Dense)
+--     ('Device 'CPU)
+--     ('DataType 'Int64)
+--     ('Shape
+--        '[ 'Dim ('Name "*") 'UncheckedSize, 'Dim ('Name "*") ('Size 2)])
+sToTensor ::
+  forall requiresGradient layout device a dType dims m.
+  (TensorLike a dType dims, MonadThrow m) =>
+  SRequiresGradient requiresGradient ->
+  SLayout layout ->
+  SDevice device ->
+  a ->
+  m (Tensor requiresGradient layout device ('DataType dType) ('Shape dims))
+sToTensor (Demoted requiresGradient) (Demoted' layout) (Demoted' device) x = do
+  dims' <- guessDims $ pure x
+
+  pure $
+    unsafePerformIO $ do
+      t <- UnsafeTensor <$> cast2 LibTorch.empty_lo dims' opts
+      withTensor t $ \ptr ->
+        tensorPokeElemOff ptr 0 dims' x
+      pure t
   where
-  -- | Creates a tensor from a 'TensorLike' value.
-  --
-  -- >>> t <- sToTensor SWithoutGradient (SLayout SDense) (SDevice SCPU) ([(1, 2), (3, 4), (5, 6)] :: [(Int, Int)])
-  -- >>> t
-  -- Tensor Int64 [3,2] [[ 1,  2],
-  --                     [ 3,  4],
-  --                     [ 5,  6]]
-  -- >>> :type t
-  --   Tensor
-  --     'WithoutGradient
-  --     ('Layout 'Dense)
-  --     ('Device 'CPU)
-  --     ('DataType 'Int64)
-  --     ('Shape
-  --        '[ 'Dim ('Name "*") 'UncheckedSize, 'Dim ('Name "*") ('Size 2)])
-  sToTensor ::
-    forall requiresGradient layout device m.
-    MonadThrow m =>
-    SRequiresGradient requiresGradient ->
-    SLayout layout ->
-    SDevice device ->
-    a ->
-    m (Tensor requiresGradient layout device ('DataType dType) ('Shape dims))
-  sToTensor (Demoted requiresGradient) (Demoted' layout) (Demoted' device) x = do
-    dims' <- guessDims $ pure x
-
-    pure $
-      unsafePerformIO $ do
-        t <- UnsafeTensor <$> cast2 LibTorch.empty_lo dims' opts
-        withTensor t $ \ptr ->
-          tensorPokeElemOff ptr 0 dims' x
-        pure t
-    where
-      opts = tensorOptions requiresGradient layout device dType'
-      dType' = dTypeVal @dType
-
-  -- | Creates a 'TensorLike' from a tensor.
-  fromTensor ::
-    forall requiresGradient layout device.
-    SGetDims dims =>
-    Tensor requiresGradient layout device ('DataType dType) ('Shape dims) ->
-    a
-  fromTensor t = unsafePerformIO $
-    withTensor t $ \ptr -> do
-      dims' <- dims t
-      tensorPeekElemOff ptr 0 (fromInteger . dimSize <$> dims')
+    opts = tensorOptions requiresGradient layout device dType'
+    dType' = dTypeVal @dType
 
 -- | Non-singleton version of 'sToTensor'.
 toTensor ::
@@ -1280,9 +1268,18 @@ toTensor ::
   m (Tensor requiresGradient layout device ('DataType dType) ('Shape dims))
 toTensor = sToTensor (sing @requiresGradient) (sing @layout) (sing @device)
 
-instance TensorLike Bool 'Bool '[]
+-- | Creates a 'TensorLike' from a tensor.
+fromTensor ::
+  forall a requiresGradient layout device dType dims.
+  (TensorLike a dType dims, SGetDims dims) =>
+  Tensor requiresGradient layout device ('DataType dType) ('Shape dims) ->
+  a
+fromTensor t = unsafePerformIO $
+  withTensor t $ \ptr -> do
+    dims' <- dims t
+    tensorPeekElemOff ptr 0 (fromInteger . dimSize <$> dims')
 
-instance TensorLikeRaw Bool where
+instance TensorLike Bool 'Bool '[] where
   guessDim = const empty
 
   guessInnerDims = const $ pure mempty
@@ -1293,9 +1290,7 @@ instance TensorLikeRaw Bool where
   tensorPokeElemOff ptr offset [] x = pokeElemOff @Word8 (castPtr ptr) offset (fromBool x)
   tensorPokeElemOff _ _ dims' x = unexpectedDimsError dims' $ pure x
 
-instance TensorLike Int 'Int64 '[]
-
-instance TensorLikeRaw Int where
+instance TensorLike Int 'Int64 '[] where
   guessDim = const empty
 
   guessInnerDims = const $ pure empty
@@ -1306,9 +1301,7 @@ instance TensorLikeRaw Int where
   tensorPokeElemOff ptr offset [] x = pokeElemOff (castPtr ptr) offset x
   tensorPokeElemOff _ _ dims' x = unexpectedDimsError dims' $ pure x
 
-instance TensorLike Float 'Float '[]
-
-instance TensorLikeRaw Float where
+instance TensorLike Float 'Float '[] where
   guessDim = const empty
 
   guessInnerDims = const $ pure empty
@@ -1319,9 +1312,7 @@ instance TensorLikeRaw Float where
   tensorPokeElemOff ptr offset [] x = pokeElemOff (castPtr ptr) offset x
   tensorPokeElemOff _ _ dims' x = unexpectedDimsError dims' $ pure x
 
-instance TensorLike Double 'Double '[]
-
-instance TensorLikeRaw Double where
+instance TensorLike Double 'Double '[] where
   guessDim = const empty
 
   guessInnerDims = const $ pure empty
@@ -1353,8 +1344,7 @@ instance
     'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape (dims <+> dims')) ('Dim ('Name "*") ('Size 2))
   ) =>
   TensorLike (a, b) dType dimsOut
-
-instance (TensorLikeRaw a, TensorLikeRaw b) => TensorLikeRaw (a, b) where
+  where
   guessDim = const $ pure 2
 
   guessInnerDims (unzip -> (x, y)) = do
@@ -1383,8 +1373,7 @@ instance
     'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape dims) ('Dim ('Name "*") 'UncheckedSize)
   ) =>
   TensorLike [a] dType dimsOut
-
-instance TensorLikeRaw a => TensorLikeRaw [a] where
+  where
   guessDim = pure . maybe 0 length
 
   guessInnerDims =
@@ -1414,10 +1403,6 @@ instance
     'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape dims) ('Dim ('Name "*") 'UncheckedSize)
   ) =>
   TensorLike (V.Vector a) dType dimsOut
-
-instance
-  TensorLikeRaw a =>
-  TensorLikeRaw (V.Vector a)
   where
   guessDim = pure . maybe 0 length
 
@@ -1449,10 +1434,6 @@ instance
     'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape dims) ('Dim ('Name "*") ('Size n))
   ) =>
   TensorLike (SV.Vector n a) dType dimsOut
-
-instance
-  (TensorLikeRaw a, KnownNat n) =>
-  TensorLikeRaw (SV.Vector n a)
   where
   guessDim = pure . maybe 0 length
 
