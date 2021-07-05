@@ -3,6 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE GADTs #-}
 
 module Model where
 
@@ -17,17 +18,18 @@ import Torch
 -- Model-generic utility functions
 --
 
-data (Optimizer o, Parameterized p) => OptimSpec o p = OptimSpec {
+data OptimSpec o p where
+  OptimSpec :: (Optimizer o, Parameterized p) => {
     optimizer :: o,
     batchSize :: Int,
     numIters :: Int,
     learningRate :: Tensor,
     lossFn :: p -> Tensor -> Tensor -> Tensor -- model, input, target
-}
+    } -> OptimSpec o p
 
 -- | Train a model
 train 
-    :: (MockDataset d, Optimizer o, Parameterized p, HasForward p Tensor Tensor) 
+    :: (MockDataset d, HasForward p Tensor Tensor) 
     => OptimSpec o p -> d -> p -> IO p
 train OptimSpec{..} dataset init = do
     trained <- foldLoop init numIters $

@@ -1,6 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 
 module Main where
 
@@ -11,10 +12,11 @@ import Plot
 import Torch
 import Model
 
-data (Parameterized m) => PruneSpec m = PruneSpec {
+data PruneSpec m where
+  PruneSpec :: Parameterized m => {
     selectWeights :: m -> [Tensor],
     pruneWeights :: m -> m
-}
+  } -> PruneSpec m
 
 l1 :: Tensor -> Tensor
 l1 w = l1Loss ReduceMean w (zerosLike w)

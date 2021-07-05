@@ -3,6 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 
 module Distill where
 
@@ -17,17 +18,18 @@ import Model (OptimSpec(..))
 
 newtype ModelView = ModelView { view :: Tensor }
 
-data (Parameterized t, Parameterized s) => DistillSpec t s = DistillSpec {
+data DistillSpec t s where
+  DistillSpec :: (Parameterized s, Parameterized t) => {
     teacher :: t,
     student :: s,
     teacherView :: t -> Tensor -> ModelView,
     studentView :: s -> Tensor -> ModelView,
     distillLoss :: ModelView -> ModelView -> Tensor
-}
+    } -> DistillSpec t s
 
 -- | Distill a teacher to a student
 distill
-    :: (Parameterized t, Parameterized s, Optimizer o, MockDataset d)
+    :: (Optimizer o, MockDataset d)
     => DistillSpec t s
     -> OptimSpec o s
     -> d
