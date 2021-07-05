@@ -1,5 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -29,21 +28,19 @@ module Torch.GraduallyTyped.Tensor.Type where
 import Control.Applicative (empty)
 import Control.Category ((>>>))
 import Control.Exception (Exception (displayException))
-import Control.Monad (forM, forM_, unless, (>=>))
+import Control.Monad (forM, forM_, when, (<=<), (>=>))
 import Control.Monad.Catch (MonadThrow, throwM)
 import Data.Bifunctor (bimap)
 import Data.Coerce (coerce)
-import Data.Foldable (Foldable (fold), find)
+import Data.Foldable (Foldable (fold), traverse_)
 import Data.Functor ((<&>))
 import Data.Int (Int16)
 import Data.List.NonEmpty (NonEmpty ((:|)), nonEmpty, unzip)
-import Data.Maybe (fromJust, isJust, maybeToList)
+import Data.Maybe (maybeToList)
 import Data.Monoid (All (..))
 import Data.Proxy (Proxy (..))
 import Data.Singletons (SingI (sing), fromSing)
 import Data.Singletons.Prelude.List (SList (..))
-import Data.Text (Text)
-import Data.Typeable (Typeable)
 import qualified Data.Vector as V
 import qualified Data.Vector.Generic.Sized.Internal as SVI
 import qualified Data.Vector.Sized as SV
@@ -1191,7 +1188,7 @@ class TensorLikeRaw a where
     -- | value
     IO a
 
-  -- | Writes a value to a tensor
+  -- | Writes a value to a tensor.
   tensorPokeElemOff ::
     -- | pointer to tensor
     Ptr () ->
@@ -1335,17 +1332,20 @@ instance TensorLikeRaw Double where
   tensorPokeElemOff ptr offset [] x = pokeElemOff (castPtr ptr) offset x
   tensorPokeElemOff _ _ dims' x = unexpectedDimsError dims' $ pure x
 
-data DimMismatchError = DimMismatchError { dmeFirst :: [Int], dmeOther :: [Int] }
+data DimMismatchError = DimMismatchError {dmeFirst :: [Int], dmeOther :: [Int]}
   deriving (Show)
 
 instance Exception DimMismatchError where
   displayException DimMismatchError {..} =
-    "When converting to a tensor, dimensions must have the same shape, "
-      <> "but the first dimensions has shape "
+    "When converting to a tensor, all elements on the same dimension must have the same shape, "
+      <> "but the first element has shape "
       <> show dmeFirst
-      <> " while another dimension has shape "
+      <> " while another element has shape "
       <> show dmeOther
       <> "."
+
+checkDims :: MonadThrow m => [Int] -> [Int] -> m ()
+checkDims firstDims otherDims = when (firstDims /= otherDims) $ throwM $ DimMismatchError firstDims otherDims
 
 instance
   ( TensorLike a dType dims,
@@ -1360,7 +1360,7 @@ instance (TensorLikeRaw a, TensorLikeRaw b) => TensorLikeRaw (a, b) where
   guessInnerDims (unzip -> (x, y)) = do
     xDims <- guessDims x
     yDims <- guessDims y
-    unless (xDims == yDims) $ throwM $ DimMismatchError xDims yDims
+    checkDims xDims yDims
     pure xDims
 
   tensorPeekElemOff ptr offset (2 : innerDims) =
@@ -1392,11 +1392,8 @@ instance TensorLikeRaw a => TensorLikeRaw [a] where
       Nothing -> guessDims @a empty
       Just (x :| xs) -> do
         xDims <- guessDims $ pure x
-        xsDims <- traverse (guessDims . pure) xs
-        let dimMismatch = find (xDims /=) xsDims
-        if isJust dimMismatch
-          then throwM $ DimMismatchError xDims $ fromJust dimMismatch
-          else pure xDims
+        traverse_ (checkDims xDims <=< guessDims . pure) xs
+        pure xDims
 
   tensorPeekElemOff ptr offset (d : innerDims) =
     forM [0 .. d - 1] $ \i -> do
@@ -1429,8 +1426,7 @@ instance
       Nothing -> guessDims @a empty
       Just (x, xs) -> do
         xDims <- guessDims $ pure x
-        xsDims <- traverse (guessDims . pure) xs
-        unless (all (xDims ==) xsDims) $ throwM $ DimMismatchError [] []
+        traverse_ (checkDims xDims <=< guessDims . pure) xs
         pure xDims
 
   tensorPeekElemOff ptr offset (d : innerDims) =
