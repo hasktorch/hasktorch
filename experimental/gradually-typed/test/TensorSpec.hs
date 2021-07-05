@@ -18,7 +18,7 @@ toCPUTensor ::
   (TensorLike a dType dims, MonadThrow m) =>
   a ->
   m (Tensor 'WithoutGradient ('Layout 'Dense) ('Device 'CPU) ('DataType dType) ('Shape dims))
-toCPUTensor = toTensor @'WithoutGradient @('Layout 'Dense) @('Device 'CPU)
+toCPUTensor = toTensor
 
 genReal :: (RealFloat a, QC.Arbitrary a, Read a) => Gen a
 genReal =

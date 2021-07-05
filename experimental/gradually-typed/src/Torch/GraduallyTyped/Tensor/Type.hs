@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -27,36 +28,36 @@ module Torch.GraduallyTyped.Tensor.Type where
 
 import Control.Applicative (empty)
 import Control.Category ((>>>))
-import Control.Exception (Exception)
+import Control.Exception (Exception (displayException))
 import Control.Monad (forM, forM_, unless, (>=>))
 import Control.Monad.Catch (MonadThrow, throwM)
 import Data.Bifunctor (bimap)
 import Data.Coerce (coerce)
-import Data.Foldable (Foldable (fold))
+import Data.Foldable (Foldable (fold), find)
 import Data.Functor ((<&>))
 import Data.Int (Int16)
-import Data.Kind (Type)
-import Data.List.NonEmpty (NonEmpty ((:|)), nonEmpty)
-import Data.Maybe (maybeToList)
+import Data.List.NonEmpty (NonEmpty ((:|)), nonEmpty, unzip)
+import Data.Maybe (fromJust, isJust, maybeToList)
 import Data.Monoid (All (..))
 import Data.Proxy (Proxy (..))
 import Data.Singletons (SingI (sing), fromSing)
 import Data.Singletons.Prelude.List (SList (..))
 import Data.Text (Text)
+import Data.Typeable (Typeable)
 import qualified Data.Vector as V
 import qualified Data.Vector.Generic.Sized.Internal as SVI
 import qualified Data.Vector.Sized as SV
 import Foreign (Ptr, Word8, castPtr, fromBool, peekElemOff, pokeElemOff, withForeignPtr)
 import Foreign.ForeignPtr (ForeignPtr)
-import GHC.TypeLits (KnownNat, KnownSymbol, Nat, Symbol, TypeError, natVal, symbolVal)
+import GHC.TypeLits (KnownNat, KnownSymbol, Nat, Symbol, natVal, symbolVal)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), KnownDType, KnownDataType (..), SDataType (..), dTypeVal)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Internal.TensorOptions (tensorOptions)
 import Torch.GraduallyTyped.Layout (KnownLayout (..), Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.Prelude (Constraint, forgetIsChecked, ifM, (&&^), pattern Demoted, pattern Demoted')
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient)
+import Torch.GraduallyTyped.Prelude (forgetIsChecked, ifM, (&&^), pattern Demoted, pattern Demoted')
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (InsertDimF, ReplaceDimF)
 import Torch.GraduallyTyped.Shape.Type (By (ByIndex), Dim (..), KnownShape (..), Name (..), SDim (..), SName (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:|:))
 import Torch.GraduallyTyped.Unify (type (<+>))
@@ -71,7 +72,7 @@ import qualified Torch.Internal.Managed.Type.Tensor as ATen
 import qualified Torch.Internal.Type as ATen (Tensor, TensorList)
 import qualified Torch.Internal.Unmanaged.Type.Tensor as Unmanaged (tensor_data_ptr)
 import qualified Torch.Tensor (Tensor (Unsafe))
-import Type.Errors.Pretty (type (<>))
+import Prelude hiding (unzip)
 
 -- $setup
 -- >>> import Data.Singletons.Prelude.List (SList (..))
@@ -1155,43 +1156,66 @@ withTensor t fn =
    in cast contiguousTensor $ \ct -> withForeignPtr ct $ Unmanaged.tensor_data_ptr >=> fn
 
 class TensorLikeRaw a where
-  guessDim :: Maybe a -> Maybe Int
+  -- | Guesses outer dim.
+  --
+  -- >>> guessDim $ pure [[1, 2], [3, 4], [5, 6]]
+  -- 3
+  guessDim ::
+    -- | value
+    -- 'Nothing' if the data type wrapping 'a' is empty.
+    Maybe a ->
+    -- | dimension
+    -- 'Nothing' if 'a' is a scalar.
+    Maybe Int
 
-  guessInnerDims :: MonadThrow m => Maybe a -> m [Int]
+  -- | Guesses inner dims.
+  --
+  -- >>> guessInnerDims $ pure [[1, 2], [3, 4], [5, 6]]
+  -- [2]
+  guessInnerDims ::
+    MonadThrow m =>
+    -- | value
+    -- 'Nothing' if the data type wrapping 'a' is empty.
+    Maybe a ->
+    -- | inner dimensions
+    m [Int]
 
+  -- | Reads a value from a tensor.
   tensorPeekElemOff ::
     -- | pointer to tensor
     Ptr () ->
     -- | offset
     Int ->
-    -- | dimensions
+    -- | tensor dimensions
     [Int] ->
+    -- | value
     IO a
 
+  -- | Writes a value to a tensor
   tensorPokeElemOff ::
     -- | pointer to tensor
     Ptr () ->
     -- | offset
     Int ->
-    -- | dimensions
+    -- | tensor dimensions
     [Int] ->
+    -- | value
     a ->
     IO ()
 
+-- | Guesses dims: concatenates 'guessDim' with 'guessInnerDims'.
+--
+-- >>> guessDims [[1, 2], [3, 4], [5, 6]]
+-- [3, 2]
 guessDims :: (TensorLikeRaw a, MonadThrow m) => Maybe a -> m [Int]
 guessDims x = (outerDim <>) <$> guessInnerDims x
   where
     outerDim = maybeToList $ guessDim x
 
-newtype ToTensorError = ToTensorError Text
-  deriving (Show)
-
-instance Exception ToTensorError
-
-newtype FromTensorError = FromTensorError Text
-  deriving (Show)
-
-instance Exception FromTensorError
+unexpectedDimsError :: forall a m b. (TensorLikeRaw a, MonadThrow m) => [Int] -> Maybe a -> m b
+unexpectedDimsError dims' x = do
+  expected <- guessDims x
+  error $ "Expected shape to be " <> show expected <> " got: " <> show dims'
 
 class
   (KnownDType dType, TensorLikeRaw a) =>
@@ -1199,6 +1223,21 @@ class
     | a -> dims,
       a -> dType
   where
+  -- | Creates a tensor from a 'TensorLike' value.
+  --
+  -- >>> t <- sToTensor SWithoutGradient (SLayout SDense) (SDevice SCPU) ([(1, 2), (3, 4), (5, 6)] :: [(Int, Int)])
+  -- >>> t
+  -- Tensor Int64 [3,2] [[ 1,  2],
+  --                     [ 3,  4],
+  --                     [ 5,  6]]
+  -- >>> :type t
+  --   Tensor
+  --     'WithoutGradient
+  --     ('Layout 'Dense)
+  --     ('Device 'CPU)
+  --     ('DataType 'Int64)
+  --     ('Shape
+  --        '[ 'Dim ('Name "*") 'UncheckedSize, 'Dim ('Name "*") ('Size 2)])
   sToTensor ::
     forall requiresGradient layout device m.
     MonadThrow m =>
@@ -1220,6 +1259,7 @@ class
       opts = tensorOptions requiresGradient layout device dType'
       dType' = dTypeVal @dType
 
+  -- | Creates a 'TensorLike' from a tensor.
   fromTensor ::
     forall requiresGradient layout device.
     SGetDims dims =>
@@ -1230,6 +1270,7 @@ class
       dims' <- dims t
       tensorPeekElemOff ptr 0 (fromInteger . dimSize <$> dims')
 
+-- | Non-singleton version of 'sToTensor'.
 toTensor ::
   forall requiresGradient layout device a m dType dims.
   ( TensorLike a dType dims,
@@ -1242,13 +1283,6 @@ toTensor ::
   m (Tensor requiresGradient layout device ('DataType dType) ('Shape dims))
 toTensor = sToTensor (sing @requiresGradient) (sing @layout) (sing @device)
 
-type family TensorLikeRawCheck (a :: Type) :: Constraint where
-  TensorLikeRawCheck Bool = ()
-  TensorLikeRawCheck Int = ()
-  TensorLikeRawCheck Float = ()
-  TensorLikeRawCheck Double = ()
-  TensorLikeRawCheck a = TypeError ("Cannot create tensor from value of type " <> a)
-
 instance TensorLike Bool 'Bool '[]
 
 instance TensorLikeRaw Bool where
@@ -1257,10 +1291,10 @@ instance TensorLikeRaw Bool where
   guessInnerDims = const $ pure mempty
 
   tensorPeekElemOff ptr offset [] = peekElemOff @Word8 (castPtr ptr) offset <&> (== 1)
-  tensorPeekElemOff _ _ dims' = error $ "Expected shape to be [], got: " <> show dims'
+  tensorPeekElemOff _ _ dims' = unexpectedDimsError @Bool dims' empty
 
   tensorPokeElemOff ptr offset [] x = pokeElemOff @Word8 (castPtr ptr) offset (fromBool x)
-  tensorPokeElemOff _ _ dims' _ = error $ "Expected shape to be [], got: " <> show dims'
+  tensorPokeElemOff _ _ dims' x = unexpectedDimsError dims' $ pure x
 
 instance TensorLike Int 'Int64 '[]
 
@@ -1270,10 +1304,10 @@ instance TensorLikeRaw Int where
   guessInnerDims = const $ pure empty
 
   tensorPeekElemOff ptr offset [] = peekElemOff (castPtr ptr) offset
-  tensorPeekElemOff _ _ dims' = error $ "Expected shape to be [], got: " <> show dims'
+  tensorPeekElemOff _ _ dims' = unexpectedDimsError @Int dims' empty
 
   tensorPokeElemOff ptr offset [] x = pokeElemOff (castPtr ptr) offset x
-  tensorPokeElemOff _ _ dims' _ = error $ "Expected shape to be [], got: " <> show dims'
+  tensorPokeElemOff _ _ dims' x = unexpectedDimsError dims' $ pure x
 
 instance TensorLike Float 'Float '[]
 
@@ -1283,10 +1317,10 @@ instance TensorLikeRaw Float where
   guessInnerDims = const $ pure empty
 
   tensorPeekElemOff ptr offset [] = peekElemOff (castPtr ptr) offset
-  tensorPeekElemOff _ _ dims' = error $ "Expected shape to be [], got: " <> show dims'
+  tensorPeekElemOff _ _ dims' = unexpectedDimsError @Float dims' empty
 
   tensorPokeElemOff ptr offset [] x = pokeElemOff (castPtr ptr) offset x
-  tensorPokeElemOff _ _ dims' _ = error $ "Expected shape to be [], got: " <> show dims'
+  tensorPokeElemOff _ _ dims' x = unexpectedDimsError dims' $ pure x
 
 instance TensorLike Double 'Double '[]
 
@@ -1296,28 +1330,37 @@ instance TensorLikeRaw Double where
   guessInnerDims = const $ pure empty
 
   tensorPeekElemOff ptr offset [] = peekElemOff (castPtr ptr) offset
-  tensorPeekElemOff _ _ dims' = error $ "Expected shape to be [], got: " <> show dims'
+  tensorPeekElemOff _ _ dims' = unexpectedDimsError @Double dims' empty
 
   tensorPokeElemOff ptr offset [] x = pokeElemOff (castPtr ptr) offset x
-  tensorPokeElemOff _ _ dims' _ = error $ "Expected shape to be [], got: " <> show dims'
+  tensorPokeElemOff _ _ dims' x = unexpectedDimsError dims' $ pure x
 
-data DimMismatchError = DimMismatchError
+data DimMismatchError = DimMismatchError { dmeFirst :: [Int], dmeOther :: [Int] }
   deriving (Show)
 
-instance Exception DimMismatchError
+instance Exception DimMismatchError where
+  displayException DimMismatchError {..} =
+    "When converting to a tensor, dimensions must have the same shape, "
+      <> "but the first dimensions has shape "
+      <> show dmeFirst
+      <> " while another dimension has shape "
+      <> show dmeOther
+      <> "."
+
+instance
+  ( TensorLike a dType dims,
+    TensorLike b dType dims',
+    'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape (dims <+> dims')) ('Dim ('Name "*") ('Size 2))
+  ) =>
+  TensorLike (a, b) dType dimsOut
 
 instance (TensorLikeRaw a, TensorLikeRaw b) => TensorLikeRaw (a, b) where
   guessDim = const $ pure 2
 
-  guessInnerDims Nothing = do
-    xDims <- guessDims @a empty
-    yDims <- guessDims @b empty
-    unless (xDims == yDims) $ throwM DimMismatchError
-    pure xDims
-  guessInnerDims (Just (x, y)) = do
-    xDims <- guessDims $ pure x
-    yDims <- guessDims $ pure y
-    unless (xDims == yDims) $ throwM DimMismatchError
+  guessInnerDims (unzip -> (x, y)) = do
+    xDims <- guessDims x
+    yDims <- guessDims y
+    unless (xDims == yDims) $ throwM $ DimMismatchError xDims yDims
     pure xDims
 
   tensorPeekElemOff ptr offset (2 : innerDims) =
@@ -1326,19 +1369,20 @@ instance (TensorLikeRaw a, TensorLikeRaw b) => TensorLikeRaw (a, b) where
       <*> tensorPeekElemOff ptr (offset + width) innerDims
     where
       width = product innerDims
-  tensorPeekElemOff _ _ _ = error "Expected first dimension to be of size 2"
+  tensorPeekElemOff _ _ dims' = unexpectedDimsError @(a, b) dims' empty
 
   tensorPokeElemOff ptr offset (2 : innerDims) (x, y) = do
     tensorPokeElemOff ptr offset innerDims x
-    tensorPokeElemOff ptr (offset + product innerDims) innerDims y
-  tensorPokeElemOff _ _ _ _ = error "Expected first dimension to be of size 2"
+    tensorPokeElemOff ptr (offset + width) innerDims y
+    where
+      width = product innerDims
+  tensorPokeElemOff _ _ dims' x = unexpectedDimsError dims' $ pure x
 
 instance
   ( TensorLike a dType dims,
-    TensorLike b dType dims',
-    'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape (dims <+> dims')) ('Dim ('Name "*") ('Size 2))
+    'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape dims) ('Dim ('Name "*") 'UncheckedSize)
   ) =>
-  TensorLike (a, b) dType dimsOut
+  TensorLike [a] dType dimsOut
 
 instance TensorLikeRaw a => TensorLikeRaw [a] where
   guessDim = pure . maybe 0 length
@@ -1349,31 +1393,30 @@ instance TensorLikeRaw a => TensorLikeRaw [a] where
       Just (x :| xs) -> do
         xDims <- guessDims $ pure x
         xsDims <- traverse (guessDims . pure) xs
-        unless (all (xDims ==) xsDims) $ throwM DimMismatchError
-        pure xDims
+        let dimMismatch = find (xDims /=) xsDims
+        if isJust dimMismatch
+          then throwM $ DimMismatchError xDims $ fromJust dimMismatch
+          else pure xDims
 
-  tensorPeekElemOff _ _ [] = pure []
   tensorPeekElemOff ptr offset (d : innerDims) =
     forM [0 .. d - 1] $ \i -> do
       tensorPeekElemOff ptr (offset + i * width) innerDims
     where
       width = product innerDims
+  tensorPeekElemOff _ _ dims' = unexpectedDimsError @[a] dims' empty
 
-  tensorPokeElemOff ptr offset (d : innerDims) xs = do
-    forM_ (zip [0 .. d - 1] xs) $ \(i, x) -> do
-      unless (product innerDims == width) $ throwM DimMismatchError
+  tensorPokeElemOff ptr offset (d : innerDims) xs =
+    forM_ (zip [0 .. d - 1] xs) $ \(i, x) ->
       tensorPokeElemOff ptr (offset + i * width) innerDims x
     where
       width = product innerDims
-  tensorPokeElemOff _ _ dims' xs = do
-    expected <- guessDims $ pure xs
-    error $ "Expected shape to " <> show expected <> " , got: " <> show dims'
+  tensorPokeElemOff _ _ dims' x = unexpectedDimsError dims' $ pure x
 
 instance
   ( TensorLike a dType dims,
     'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape dims) ('Dim ('Name "*") 'UncheckedSize)
   ) =>
-  TensorLike [a] dType dimsOut
+  TensorLike (V.Vector a) dType dimsOut
 
 instance
   TensorLikeRaw a =>
@@ -1387,32 +1430,29 @@ instance
       Just (x, xs) -> do
         xDims <- guessDims $ pure x
         xsDims <- traverse (guessDims . pure) xs
-        unless (all (xDims ==) xsDims) $ throwM DimMismatchError
+        unless (all (xDims ==) xsDims) $ throwM $ DimMismatchError [] []
         pure xDims
 
-  tensorPeekElemOff _ _ [] = pure V.empty
   tensorPeekElemOff ptr offset (d : innerDims) =
     forM (V.enumFromTo 0 (d - 1)) $ \i -> do
       tensorPeekElemOff ptr (offset + i * width) innerDims
     where
       width = product innerDims
+  tensorPeekElemOff _ _ dims' = unexpectedDimsError @(V.Vector a) dims' empty
 
   tensorPokeElemOff ptr offset (d : innerDims) xs = do
-    forM_ (V.zip (V.enumFromTo 0 (d - 1)) xs) $ \(i, x) -> do
-      dims' <- guessDims $ pure x
-      unless (product dims' == width) $ throwM DimMismatchError
+    forM_ (V.zip (V.enumFromTo 0 (d - 1)) xs) $ \(i, x) ->
       tensorPokeElemOff ptr (offset + i * width) innerDims x
     where
       width = product innerDims
-  tensorPokeElemOff _ _ dims' xs = do
-    expected <- guessDims $ pure xs
-    error $ "Expected shape to " <> show expected <> " , got: " <> show dims'
+  tensorPokeElemOff _ _ dims' x = unexpectedDimsError dims' $ pure x
 
 instance
-  ( TensorLike a dType dims,
-    'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape dims) ('Dim ('Name "*") 'UncheckedSize)
+  ( KnownNat n,
+    TensorLike a dType dims,
+    'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape dims) ('Dim ('Name "*") ('Size n))
   ) =>
-  TensorLike (V.Vector a) dType dimsOut
+  TensorLike (SV.Vector n a) dType dimsOut
 
 instance
   (TensorLikeRaw a, KnownNat n) =>
@@ -1425,10 +1465,3 @@ instance
   tensorPeekElemOff ptr offset dims' = SVI.Vector <$> tensorPeekElemOff ptr offset dims'
 
   tensorPokeElemOff ptr offset dims' = tensorPokeElemOff ptr offset dims' . SV.SomeSized
-
-instance
-  ( KnownNat n,
-    TensorLike a dType dims,
-    'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape dims) ('Dim ('Name "*") ('Size n))
-  ) =>
-  TensorLike (SV.Vector n a) dType dimsOut
