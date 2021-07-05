@@ -24,6 +24,10 @@ import Torch.Scalar (Scalar)
 import Prelude (Float, ($), (*), (+), (.), (/))
 import qualified Prelude (pi, sqrt)
 
+-- $setup
+-- >>> import Data.Singletons.Prelude.List (SList (..))
+-- >>> import Torch.GraduallyTyped
+
 -- | Thresholds each element of the input Tensor.
 threshold ::
   forall threshold value gradient layout device dataType shape.
@@ -66,7 +70,7 @@ gelu = unsafePerformIO . cast1 ATen.gelu_t
 -- Google's BERT repo (and coincidentally also from OpenAI's GPT).
 -- See also https://arxiv.org/abs/1606.08415.
 --
--- >>> geluNew $ sFull SWithGradient (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SNil) 0.5
+-- >>> geluNew $ sFull (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SNil) 0.5
 -- Tensor Float []  0.3457
 geluNew ::
   forall gradient layout device dataType shape.

@@ -57,11 +57,11 @@ class HasCat (selectDim :: SelectDim (By Symbol Nat)) k (c :: k -> Type) (a :: k
   -- | Concatenates the given sequence of seq tensors in the given dimension.
   -- All tensors must either have the same shape (except in the concatenating dimension) or be empty.
   --
-  -- >>> t = ones @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)])
+  -- >>> t = ones @('Gradient 'WithGradient) @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)])
   -- >>> :type cat @('SelectDim ('ByName "feature")) [t]
   -- cat @('SelectDim ('ByName "feature")) [t]
   --   :: Tensor
-  --        'WithGradient
+  --        ('Gradient 'WithGradient)
   --        ('Layout 'Dense)
   --        ('Device 'CPU)
   --        ('DataType 'Float)
@@ -71,7 +71,7 @@ class HasCat (selectDim :: SelectDim (By Symbol Nat)) k (c :: k -> Type) (a :: k
   -- >>> :type cat @('SelectDim ( 'ByIndex 0)) [t]
   -- cat @('SelectDim ( 'ByIndex 0)) [t]
   --   :: Tensor
-  --        'WithGradient
+  --        ('Gradient 'WithGradient)
   --        ('Layout 'Dense)
   --        ('Device 'CPU)
   --        ('DataType 'Float)
@@ -81,7 +81,7 @@ class HasCat (selectDim :: SelectDim (By Symbol Nat)) k (c :: k -> Type) (a :: k
   -- >>> :type sCat (SUncheckedSelectDim (ByIndex 0)) [t]
   -- sCat (SUncheckedSelectDim (ByIndex 0)) [t]
   --   :: Tensor
-  --        'WithGradient
+  --        ('Gradient 'WithGradient)
   --        ('Layout 'Dense)
   --        ('Device 'CPU)
   --        ('DataType 'Float)
@@ -206,12 +206,12 @@ type family ReshapeF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: 
 -- but with the specified shape:
 --
 -- >>> g <- sMkGenerator (SDevice SCPU) 0
--- >>> (input, _) = sRandn SWithGradient (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SName @"*" :&: SSize @4 :|: SNil) g
+-- >>> (input, _) = sRandn (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SName @"*" :&: SSize @4 :|: SNil) g
 -- >>> output = sReshape (SShape $ SName @"*" :&: SSize @2 :|: SName @"*" :&: SSize @2 :|: SNil) input
 -- >>> :type output
 -- output
 --   :: Tensor
---        'WithGradient
+--        ('Gradient 'WithGradient)
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
@@ -224,13 +224,12 @@ type family ReshapeF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: 
 -- >>> :type output'
 -- output'
 --   :: Tensor
---        'WithGradient
+--        ('Gradient 'WithGradient)
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
 --        'UncheckedShape
--- >>> d <- dims output'
--- >>> d
+-- >>> dims output'
 -- [Dim {dimName = "*", dimSize = 4}]
 sReshape ::
   forall shape' gradient layout device dataType shape shape''.
@@ -352,29 +351,28 @@ type family TransposeIndexIndexDimsF (index0 :: Nat) (index1 :: Nat) (dims :: [D
 -- The selected dimensions 'selectDim0' and 'selectDim1' are swapped.
 --
 -- >>> g <- mkGenerator @('Device 'CPU) 0
--- >>> (input, _) = randn @'WithGradient @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "feature") ('Size 5)]) g
+-- >>> (input, _) = randn @('Gradient 'WithGradient) @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "feature") ('Size 5)]) g
 -- >>> output = transpose @('SelectDim ('ByName "batch")) @('SelectDim ('ByName "feature")) input
 -- >>> :type output
 -- output
 --   :: Tensor
---        'WithGradient
+--        ('Gradient 'WithGradient)
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
 --        ('Shape
 --           '[ 'Dim ('Name "feature") ('Size 5),
 --              'Dim ('Name "batch") ('Size 10)])
--- >>> output = sTranspose (SUncheckedSelectDim (ByIndex 0)) (SSelectDim (SByIndex @1)) input
+-- >>> output <- sTranspose (SUncheckedSelectDim (ByIndex 0)) (SSelectDim (SByIndex @1)) input
 -- >>> :type output
 -- output
 --   :: Tensor
---        'WithGradient
+--        ('Gradient 'WithGradient)
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
 --        'UncheckedShape
--- >>> d <- dims output
--- >>> d
+-- >>> dims output
 -- [W TensorImpl.h:934] Warning: Named tensors and all their associated APIs are an experimental feature and subject to change. Please do not use them for anything important until they are released as stable. (function operator())
 -- [Dim {dimName = "feature", dimSize = 5},Dim {dimName = "batch", dimSize = 10}]
 sTranspose ::
@@ -498,7 +496,7 @@ expand = sExpand (sing @shape')
 
 -- | Slices the self tensor along the selected dimension at the given index. This function returns a view of the original tensor with the given dimension removed.
 --
--- >>> nats = sArangeNaturals SWithoutGradient (SLayout SDense) (SDevice SCPU) (SDataType SInt32) (SSize @8)
+-- >>> nats = sArangeNaturals (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt32) (SSize @8)
 -- >>> input = sReshape (SShape $ SName @"*" :&: SSize @4 :|: SName @"*" :&: SSize @2 :|: SNil) nats
 -- >>> input
 -- Tensor Int32 [4,2] [[ 0,  1],
@@ -516,9 +514,7 @@ expand = sExpand (sing @shape')
 --
 -- It produces a runtime error if the `index` is too large:
 -- >>> sSelect (SSelectDim (SByIndex @0)) (SUncheckedIndex 10) input
--- *** Exception: Out of bound index 10 for dimension Dim {dimName = "*", dimSize = 4}
--- CallStack (from HasCallStack):
---   error, called at ...
+-- *** Exception: IndexOutOfBoundError {ioobeIndex = 10, ioobeDim = Dim {dimName = "*", dimSize = 4}}
 sSelect ::
   forall selectDim index gradient layout device dataType shapeIn shapeOut m.
   ( index `InRangeF` GetDimF selectDim shapeIn,

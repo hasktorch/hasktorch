@@ -108,10 +108,10 @@ ones = sOnes (sing @gradient) (sing @layout) (sing @device) (sing @dataType) (si
 -- | Create a gradually typed tensor of zeros.
 --
 -- >>> shape = SShape $ SName @"batch" :&: SSize @32 :|: SUncheckedName "feature" :&: SUncheckedSize 8 :|: SNil
--- >>> :type sZeros SWithoutGradient (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape
--- sZeros SWithoutGradient (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape
+-- >>> :type sZeros (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape
+-- sZeros (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape
 --   :: Tensor
---        'WithoutGradient
+--        ('Gradient 'WithoutGradient)
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Int64)
@@ -160,10 +160,10 @@ zeros = sZeros (sing @gradient) (sing @layout) (sing @device) (sing @dataType) (
 --
 -- >>> shape = SShape $ SName @"batch" :&: SSize @32 :|: SUncheckedName "feature" :&: SUncheckedSize 8 :|: SNil
 -- >>> input = -1
--- >>> :type sFull SWithoutGradient (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape input
--- sFull SWithoutGradient (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape input
+-- >>> :type sFull (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape input
+-- sFull (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape input
 --   :: Tensor
---        'WithoutGradient
+--        ('Gradient 'WithoutGradient)
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Int64)
@@ -342,7 +342,7 @@ sEyeSquare sGradient sLayout sDevice sDataType sSize = UnsafeTensor tensor
   where
     tensor = unsafePerformIO $ cast2 ATen.eye_lo (fromInteger size :: Int) opts
     opts = tensorOptions requiresGradient layoutType deviceType dType
-    
+
     requiresGradient = forgetIsChecked . fromSing $ sGradient
     layoutType = forgetIsChecked . fromSing $ sLayout
     deviceType = forgetIsChecked . fromSing $ sDevice

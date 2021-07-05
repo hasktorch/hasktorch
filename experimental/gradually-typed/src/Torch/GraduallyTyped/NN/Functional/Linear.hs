@@ -104,7 +104,7 @@ type LinearWeightDimsErrorMessage (weightDims :: [Dim (Name Symbol) (Size Nat)])
 -- >>> biasShape = SShape $ outputDim :|: SNil
 -- >>> inputShape = SShape $ batchDim :|: inputDim :|: SNil
 -- >>> g <- sMkGenerator (SDevice SCPU) 0
--- >>> sRandn' = sRandn SWithoutGradient (SLayout SDense) (SDevice SCPU) (SDataType SFloat)
+-- >>> sRandn' = sRandn (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat)
 -- >>> (weight, g') = sRandn' weightShape g
 -- >>> (bias, g'') = sRandn' biasShape g'
 -- >>> (input, _) = sRandn' inputShape g''
@@ -112,7 +112,7 @@ type LinearWeightDimsErrorMessage (weightDims :: [Dim (Name Symbol) (Size Nat)])
 -- >>> :type result
 -- result
 --   :: Tensor
---        'WithoutGradient
+--        ('Gradient 'WithoutGradient)
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)

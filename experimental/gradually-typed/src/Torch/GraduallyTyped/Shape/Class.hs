@@ -144,31 +144,33 @@ type family (!) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (_k :: k) :: Dim
 -- >>> shape = SShape $ SName @"batch" :&: SSize @8 :|: SUncheckedName "feature" :&: SSize @2 :|: SNil
 -- >>> dim = sGetDim (SSelectDim $ SByName @"batch") shape
 -- >>> :type dim
--- dim :: MonadFail m => m (SDim ('Dim ('Name "batch") ('Size 8)))
+-- dim :: MonadThrow m => m (SDim ('Dim ('Name "batch") ('Size 8)))
 -- >>> fromSing <$> dim
 -- Dim {dimName = Checked "batch", dimSize = Checked 8}
 --
 -- >>> dim = sGetDim (SSelectDim $ SByName @"feature") shape
 -- >>> :type dim
--- dim :: MonadFail m => m (SDim ('Dim 'UncheckedName 'UncheckedSize))
+-- dim
+--   :: MonadThrow m => m (SDim ('Dim 'UncheckedName 'UncheckedSize))
 -- >>> fromSing <$> dim
 -- Dim {dimName = Unchecked "feature", dimSize = Checked 2}
 --
 -- >>> dim = sGetDim (SSelectDim $ SByName @"sequence") shape
 -- >>> :type dim
--- dim :: MonadFail m => m (SDim ('Dim 'UncheckedName 'UncheckedSize))
+-- dim
+--   :: MonadThrow m => m (SDim ('Dim 'UncheckedName 'UncheckedSize))
 -- >>> fromSing <$> dim
--- *** Exception: user error (Cannot return the first dimension matching ByName "sequence".)
+-- *** Exception: GetDimError {gdeBy = ByName "sequence"}
 --
 -- >>> dim = sGetDim (SSelectDim $ SByIndex @0) shape
 -- >>> :type dim
--- dim :: MonadFail m => m (SDim ('Dim ('Name "batch") ('Size 8)))
+-- dim :: MonadThrow m => m (SDim ('Dim ('Name "batch") ('Size 8)))
 -- >>> fromSing <$> dim
 -- Dim {dimName = Checked "batch", dimSize = Checked 8}
 --
 -- >>> :type sGetDim (SSelectDim $ SByIndex @2) shape
 -- sGetDim (SSelectDim $ SByIndex @2) shape
---   :: MonadFail m => m (SDim (TypeError ...))
+--   :: MonadThrow m => m (SDim (TypeError ...))
 sGetDim ::
   forall selectDim shape dim m.
   (dim ~ GetDimF selectDim shape, MonadThrow m) =>
@@ -409,28 +411,28 @@ sUnifySize size size' = throwM $ UnifySizeError (forgetIsChecked (fromSing size)
 -- >>> dimB = SName @"batch" :&: SSize @0
 -- >>> dim = sUnifyDim dimA dimB
 -- >>> :type dim
--- dim :: MonadFail m => m (SDim ('Dim ('Name "batch") ('Size 0)))
+-- dim :: MonadThrow m => m (SDim ('Dim ('Name "batch") ('Size 0)))
 -- >>> fromSing <$> dim
 -- Dim {dimName = Checked "batch", dimSize = Checked 0}
 --
 -- >>> dimC = SName @"feature" :&: SSize @0
 -- >>> :type sUnifyDim dimB dimC
 -- sUnifyDim dimB dimC
---   :: MonadFail m => m (SDim ('Dim (TypeError ...) ('Size 0)))
+--   :: MonadThrow m => m (SDim ('Dim (TypeError ...) ('Size 0)))
 --
 -- >>> dimD = SUncheckedName "batch" :&: SSize @0
 -- >>> dim = sUnifyDim dimA dimD
 -- >>> :type dim
--- dim :: MonadFail m => m (SDim ('Dim 'UncheckedName ('Size 0)))
+-- dim :: MonadThrow m => m (SDim ('Dim 'UncheckedName ('Size 0)))
 -- >>> fromSing <$> dim
 -- Dim {dimName = Unchecked "batch", dimSize = Checked 0}
 --
 -- >>> dimE = SUncheckedName "feature" :&: SSize @0
 -- >>> dim = sUnifyDim dimB dimE
 -- >>> :type dim
--- dim :: MonadFail m => m (SDim ('Dim 'UncheckedName ('Size 0)))
+-- dim :: MonadThrow m => m (SDim ('Dim 'UncheckedName ('Size 0)))
 -- >>> fromSing <$> dim
--- *** Exception: user error (The supplied dimensions must be the same, but dimensions with different names were found: "batch" and "feature".)
+-- *** Exception: UnifyNameError {uneExpect = "batch", uneActual = "feature"}
 sUnifyDim ::
   forall m dim dim'.
   MonadThrow m =>
