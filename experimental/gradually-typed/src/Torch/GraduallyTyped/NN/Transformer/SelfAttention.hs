@@ -194,11 +194,11 @@ instance
         multiHeadAttention SGPT2 = undefined
         layerNorm ST5 = fromStateDict (gradient, device, dataType, SShape $ queryEmbedDim :|: SNil, eps) (k <> "layer_norm.")
         layerNorm SByT5 = fromStateDict (gradient, device, dataType, SShape $ queryEmbedDim :|: SNil, eps) (k <> "layer_norm.")
-        layerNorm SBART = fromStateDict (gradient, device, dataType, SShape $ queryEmbedDim :|: SNil, eps) (k <> "self_attn_layer_norm.weight")
-        layerNorm SMBART = fromStateDict (gradient, device, dataType, SShape $ queryEmbedDim :|: SNil, eps) (k <> "self_attn_layer_norm.weight")
-        layerNorm SPegasus = fromStateDict (gradient, device, dataType, SShape $ queryEmbedDim :|: SNil, eps) (k <> "self_attn_layer_norm.weight")
-        layerNorm SBERT = fromStateDict (gradient, device, dataType, SShape $ queryEmbedDim :|: SNil, eps) (k <> "output.LayerNorm.weight")
-        layerNorm SRoBERTa = fromStateDict (gradient, device, dataType, SShape $ queryEmbedDim :|: SNil, eps) (k <> "output.LayerNorm.weight")
+        layerNorm SBART = fromStateDict (gradient, device, dataType, SShape $ queryEmbedDim :|: SNil, eps) (k <> "self_attn_layer_norm.")
+        layerNorm SMBART = fromStateDict (gradient, device, dataType, SShape $ queryEmbedDim :|: SNil, eps) (k <> "self_attn_layer_norm.")
+        layerNorm SPegasus = fromStateDict (gradient, device, dataType, SShape $ queryEmbedDim :|: SNil, eps) (k <> "self_attn_layer_norm.")
+        layerNorm SBERT = fromStateDict (gradient, device, dataType, SShape $ queryEmbedDim :|: SNil, eps) (k <> "output.LayerNorm.")
+        layerNorm SRoBERTa = fromStateDict (gradient, device, dataType, SShape $ queryEmbedDim :|: SNil, eps) (k <> "output.LayerNorm.")
         layerNorm SGPT2 = undefined
         dropout _ = fromStateDict dropoutP k
      in SelfAttention
@@ -218,11 +218,11 @@ instance
         multiHeadAttention SGPT2 = undefined
         layerNorm ST5 = toStateDict (k <> "layer_norm.")
         layerNorm SByT5 = toStateDict (k <> "layer_norm.")
-        layerNorm SBART = toStateDict (k <> "self_attn_layer_norm.weight")
-        layerNorm SMBART = toStateDict (k <> "self_attn_layer_norm.weight")
-        layerNorm SPegasus = toStateDict (k <> "self_attn_layer_norm.weight")
-        layerNorm SBERT = toStateDict (k <> "output.LayerNorm.weight")
-        layerNorm SRoBERTa = toStateDict (k <> "output.LayerNorm.weight")
+        layerNorm SBART = toStateDict (k <> "self_attn_layer_norm.")
+        layerNorm SMBART = toStateDict (k <> "self_attn_layer_norm.")
+        layerNorm SPegasus = toStateDict (k <> "self_attn_layer_norm.")
+        layerNorm SBERT = toStateDict (k <> "output.LayerNorm.")
+        layerNorm SRoBERTa = toStateDict (k <> "output.LayerNorm.")
         layerNorm SGPT2 = undefined
         dropout _ = toStateDict k
      in do

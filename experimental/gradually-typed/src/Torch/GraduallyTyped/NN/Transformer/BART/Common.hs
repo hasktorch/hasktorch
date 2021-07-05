@@ -159,12 +159,12 @@ instance
         vocabDim = sing @vocabDim
      in BARTModel
           <$> ( GBARTModel
-                  <$> fromStateDict (gradient, device, bartDataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, bartPosEncDim, vocabDim, bartDropoutP, bartEps) (k <> "model.")
+                  <$> fromStateDict (gradient, device, bartDataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, bartPosEncDim, vocabDim, bartDropoutP, bartEps) k
                   <*> fromStateDict bartEOSTokenId k
                   <*> fromStateDict 0 k
               )
   toStateDict k (BARTModel GBARTModel {..}) = do
-    toStateDict (k <> "model.") bartModel
+    toStateDict k bartModel
     toStateDict k bartShiftRightDecoderInput
     toStateDict k bartShiftRightPaddingMask
 

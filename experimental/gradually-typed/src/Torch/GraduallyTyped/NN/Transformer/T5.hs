@@ -14,7 +14,7 @@ module Torch.GraduallyTyped.NN.Transformer.T5
     module Torch.GraduallyTyped.NN.Transformer.T5.ElevenB,
     module Torch.GraduallyTyped.NN.Transformer.T5.Generation,
     testForwardT5Small,
-    testForwardByT5Small
+    testForwardByT5Small,
   )
 where
 
@@ -34,7 +34,7 @@ import Torch.GraduallyTyped.NN.Transformer.T5.Small
 import Torch.GraduallyTyped.NN.Transformer.T5.ThreeB
 import Torch.GraduallyTyped.NN.Transformer.Type (TransformerHead (WithLMHead))
 import Torch.GraduallyTyped.Random (sMkGenerator)
-import Torch.GraduallyTyped.RequiresGradient (SGradient (..), SRequiresGradient (..), Gradient (..), RequiresGradient (..))
+import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Type (SName (..), SShape (..), SSize (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
@@ -71,7 +71,7 @@ testForwardT5Small =
     stateDict <- stateDictFromPretrained "/tmp/t5-small-state-dict.pt"
     model <-
       flip evalStateT stateDict $
-        fromStateDict @(T5Small 'WithLMHead ('Gradient 'WithGradient) ('Device 'CPU)) (SGradient SWithGradient, SDevice SCPU) ""
+        fromStateDict @(T5Small 'WithLMHead ('Gradient 'WithoutGradient) ('Device 'CPU)) (SGradient SWithoutGradient, SDevice SCPU) ""
     g <- sMkGenerator (SDevice SCPU) 0
     let (T5Output {..}, _) = forward model input g
     let decoderOutput = case t5DecoderOutput of
@@ -83,7 +83,7 @@ testForwardT5Small =
     print firstLogits
     let firstLogits' =
           [-19.3826, -10.5635, -11.4550, -26.4326, -15.4450, -14.5276, -28.7175, -14.7651, -18.2521, -14.1124, -7.4893, -12.4156, -27.9005, -11.5861, -15.9638, -24.8472, -9.6344, -12.3494]
-    mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLogits firstLogits'
+    mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLogits' firstLogits
 
 testForwardByT5Small :: IO ()
 testForwardByT5Small =
@@ -95,7 +95,7 @@ testForwardByT5Small =
     stateDict <- stateDictFromPretrained "/tmp/byt5-small-state-dict.pt"
     model <-
       flip evalStateT stateDict $
-        fromStateDict @(ByT5Small 'WithLMHead ('Gradient 'WithGradient) ('Device 'CPU)) (SGradient SWithGradient, SDevice SCPU) ""
+        fromStateDict @(ByT5Small 'WithLMHead ('Gradient 'WithoutGradient) ('Device 'CPU)) (SGradient SWithoutGradient, SDevice SCPU) ""
     g <- sMkGenerator (SDevice SCPU) 0
     let (T5Output {..}, _) = forward model input g
     let decoderOutput = case t5DecoderOutput of
@@ -107,4 +107,4 @@ testForwardByT5Small =
     print firstLogits
     let firstLogits' =
           [-19.3826, -10.5635, -11.4550, -26.4326, -15.4450, -14.5276, -28.7175, -14.7651, -18.2521, -14.1124, -7.4893, -12.4156, -27.9005, -11.5861, -15.9638, -24.8472, -9.6344, -12.3494]
-    mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLogits firstLogits'
+    mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLogits' firstLogits

@@ -30,6 +30,7 @@ import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (.
 import Torch.GraduallyTyped.Shape.Type (SName (..), SSize (..), pattern (:&:))
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
 import qualified Torch.Tensor as Tensor (Tensor (..), asValue)
+import Test.HUnit.Approx (assertApproxEqual)
 
 -- https://github.com/hasktorch/tokenizers/blob/master/bindings/haskell/tokenizers-haskell/src/Tokenizers.hs
 -- https://github.com/hasktorch/tokenizers/blob/master/bindings/haskell/tokenizers-haskell/test/Spec.hs#L127
@@ -38,7 +39,7 @@ import qualified Torch.Tensor as Tensor (Tensor (..), asValue)
 withTokenizer :: (Tokenizers.Tokenizer -> IO a) -> IO a
 withTokenizer =
   Tokenizers.withTokenizerFromConfigFile
-    "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/bart-tokenizer.json"
+    "/tmp/bart-base-tokenizer.json"
 
 testBARTInput :: IO _
 testBARTInput = do
@@ -69,7 +70,7 @@ testForwardBARTBase =
     stateDict <- stateDictFromPretrained "/tmp/bart-base-state-dict.pt"
     model <-
       flip evalStateT stateDict $
-        fromStateDict @(BARTBase 'WithLMHead ('Gradient 'WithGradient) ('Device 'CPU)) (SGradient SWithGradient, SDevice SCPU) ""
+        fromStateDict @(BARTBase 'WithLMHead ('Gradient 'WithoutGradient) ('Device 'CPU)) (SGradient SWithoutGradient, SDevice SCPU) ""
     g <- mkGenerator @('Device 'CPU) 0
     let (BARTOutput {..}, _) = forward model input g
     let encoderOutput = case bartEncoderOutput of
@@ -101,6 +102,5 @@ testForwardBARTBase =
           firstPositions <- take 3 firstBatch
           take 3 firstPositions
     print firstLogits
-
--- let firstLogits' = [33.9049, 6.7412, 17.0702, 7.3159, -2.1131, 17.2696, -5.6340, -5.8494, 6.4185]
--- mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLogits firstLogits'
+    let firstLogits' = [ 33.8621,   6.3225,  18.2816, 6.7655,  -1.4854,  14.1845, 0.5911,  -1.9006,   8.9273]
+    mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLogits' firstLogits
