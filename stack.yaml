@@ -9,7 +9,10 @@ packages:
 - hasktorch
 - examples
 - examples/model-serving
-- experimental
+- experimental/bounding-box
+- experimental/dataloader-cifar10
+- experimental/gradually-typed
+- experimental/untyped-nlp
 
 extra-include-dirs:
 - deps/libtorch/include/torch/csrc/api/include

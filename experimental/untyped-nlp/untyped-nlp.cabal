@@ -1,0 +1,23 @@
+cabal-version:       2.2
+name:                untyped-nlp
+version:             0.2.0.0
+synopsis:            experimental project for hasktorch
+-- description:
+homepage:            https://github.com/hasktorch/hasktorch#readme
+license:             BSD-3-Clause
+author:              Austin Huang
+maintainer:          hasktorch@gmail.com
+copyright:           2019 Austin Huang
+category:            Machine Learning
+build-type:          Simple
+
+executable untyped-nlp
+  main-is:             Main.hs
+  default-language:    Haskell2010
+  ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0 -rtsopts
+  build-depends:       base >= 4.7 && < 5
+                     , hasktorch
+                     , ghc-typelits-extra
+                     , ghc-typelits-knownnat
+                     , ghc-typelits-natnormalise
+                     , mtl

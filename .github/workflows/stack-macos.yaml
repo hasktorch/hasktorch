@@ -37,7 +37,15 @@ jobs:
     - name: Build
       run: |
         #. setenv
-        stack build
+        stack build \
+          libtorch-ffi \
+          libtorch-ffi-helper \
+          hasktorch \
+          codegen \
+          examples \
+          bounding-box \
+          dataloader-cifar10 \
+          untyped-nlp
     - name: Test
       run: |
         #. setenv

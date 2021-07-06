@@ -1,30 +1,30 @@
 module Main where
 
-import Test.DocTest
-
-import Build_doctests (flags, pkgs, module_sources)
+import Build_doctests (flags, module_sources, pkgs)
+import Data.Foldable (traverse_)
+import System.Environment (lookupEnv)
+import Test.DocTest (doctest)
 
 main :: IO ()
 main = do
-  print pkgs
-  print flags
-  print module_sources
-  doctest $
-    [ "-XDataKinds"
-    , "-XScopedTypeVariables"
-    , "-XTypeApplications"
-    , "-XTypeFamilies"
-    , "-fplugin GHC.TypeLits.Normalise"
-    , "-fplugin GHC.TypeLits.KnownNat.Solver"
-    , "-fplugin GHC.TypeLits.Extra.Solver"
-    , "-fconstraint-solver-iterations=0"
-    -- , "-isrc"
-    -- , "src/Torch/Typed/Tensor"
-    -- , "src/Torch/Typed/Factories"
-    -- , "src/Torch/Typed/Functional"
-    -- , "src/Torch/Typed/NN/Recurrent/LSTM"
-    -- , "src/Torch/Typed/NN/Recurrent/GRU"
-    ]
-    <> flags
-    <> pkgs
-    <> module_sources
+  libDir <- lookupEnv "NIX_GHC_LIBDIR"
+
+  let args =
+        concat
+          [ flags,
+            pkgs,
+            maybe [] (\x -> ["-package-db " <> x <> "/package.conf.d"]) libDir,
+            [ "-XDataKinds",
+              "-XScopedTypeVariables",
+              "-XTypeApplications",
+              "-XTypeFamilies",
+              "-fplugin GHC.TypeLits.Normalise",
+              "-fplugin GHC.TypeLits.KnownNat.Solver",
+              "-fplugin GHC.TypeLits.Extra.Solver",
+              "-fconstraint-solver-iterations=0"
+            ],
+            module_sources
+          ]
+
+  -- traverse_ putStrLn args
+  doctest args

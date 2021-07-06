@@ -56,7 +56,12 @@ let
     inherit (exes)
       codegen
       examples
-      experimental
+
+      # From /experimental
+      bounding-box
+      dataloader-cifar10
+      hasktorch-gradually-typed
+      untyped-nlp
       ;
 
     checks = recurseIntoAttrs {

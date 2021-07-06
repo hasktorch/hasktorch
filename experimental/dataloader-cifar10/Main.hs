@@ -26,7 +26,7 @@ data MLPSpec = MLPSpec {
     outputFeatures :: Int
     } deriving (Show, Eq)
 
-data MLP = MLP { 
+data MLP = MLP {
     l0 :: Linear,
     l1 :: Linear,
     l2 :: Linear
@@ -34,20 +34,19 @@ data MLP = MLP {
 
 instance Parameterized MLP
 instance Randomizable MLPSpec MLP where
-    sample MLPSpec {..} = MLP 
+    sample MLPSpec {..} = MLP
         <$> sample (LinearSpec inputFeatures hiddenFeatures0)
         <*> sample (LinearSpec hiddenFeatures0 hiddenFeatures1)
         <*> sample (LinearSpec hiddenFeatures1 outputFeatures)
 
 mlp :: MLP -> Tensor -> Tensor
-mlp MLP{..} input = 
+mlp MLP{..} =
     logSoftmax (Dim 1)
     . linear l2
     . relu
     . linear l1
     . relu
     . linear l0
-    $ input
 
 foldLoop' :: a -> S.Stream (S.Of [b]) IO () -> (a -> [b] -> IO a) -> IO a
 foldLoop' x dat block = S.foldM_ block (pure x) pure dat
@@ -55,7 +54,7 @@ foldLoop' x dat block = S.foldM_ block (pure x) pure dat
 train :: Int -> S.Stream (S.Of [CIFARImage]) IO () -> IO MLP
 train numEpoch trainData = do
     init <- sample spec :: IO MLP
-    trained <- foldLoop init numEpoch $ \state0 iter -> do
+    foldLoop init numEpoch $ \state0 iter -> do
         (trained',trained_loss') <- foldLoop' (state0,0) trainData $ \(state,sumLoss) batch -> do
             images <- fromImages $ map (fst.getXY) batch
             let len = length batch
@@ -64,10 +63,9 @@ train numEpoch trainData = do
                 loss = nllLoss' label $ mlp state input
                 flatParameters = flattenParameters state
             (newParam, _) <- runStep state GD loss 1e-3
-            pure $ (newParam, (toDouble loss)+sumLoss)
+            pure (newParam, toDouble loss + sumLoss)
         putStrLn $ "Epoch: " ++ show iter ++ " | Loss: " ++ show trained_loss'
         pure trained'
-    pure trained
     where
         spec = MLPSpec (1024*3) 64 32 10
 

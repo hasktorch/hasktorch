@@ -19,16 +19,12 @@
 module Torch.HList where
 
 import Control.Applicative (Applicative (liftA2))
-import Control.Arrow
-import Control.Category
 import Data.Kind
-  ( Constraint,
-    Type,
+  ( Type,
   )
-import Data.Proxy
 import GHC.Exts (IsList (..))
-import GHC.TypeLits
-import Prelude hiding ((.), id)
+import GHC.TypeLits (Nat, type (+), type (-), type (<=))
+import Prelude hiding (id, (.))
 
 type family ListLength (xs :: [k]) :: Nat where
   ListLength '[] = 0
@@ -40,6 +36,7 @@ data instance HList '[] = HNil
 
 newtype instance HList (x ': xs) = HCons (x, HList xs)
 
+pattern (:.) :: forall x (xs :: [Type]). x -> HList xs -> HList (x : xs)
 pattern (:.) x xs = HCons (x, xs)
 
 infixr 2 :.
@@ -301,7 +298,7 @@ instance
   hreplicateFD e = e :. hreplicateFD @(n - 1) e
 
 type family HReplicateR (n :: Nat) (e :: a) :: [a] where
-  HReplicateR 0 e = '[]
+  HReplicateR 0 _ = '[]
   HReplicateR n e = e ': HReplicateR (n - 1) e
 
 type HConcat xs = HConcatFD xs (HConcatR xs)
