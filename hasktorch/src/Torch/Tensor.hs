@@ -394,9 +394,9 @@ instance Castable RawTensorIndex (ForeignPtr ATen.TensorIndex) where
 
 class TensorIndex a where
   pushIndex :: [RawTensorIndex] -> a -> [RawTensorIndex]
-  toLens :: a -> Lens' Tensor Tensor
-  default toLens :: a -> Lens' Tensor Tensor
-  toLens idx func s = maskedFill s idx <$> func (s ! idx)
+  toLens :: TensorLike b => a -> Lens' Tensor b
+  default toLens :: TensorLike b => a -> Lens' Tensor b
+  toLens idx func s = maskedFill s idx <$> (asTensor <$> func (asValue (s ! idx)))
 
 instance {-# OVERLAPS #-} TensorIndex None where
   pushIndex vec _ = unsafePerformIO $ do
