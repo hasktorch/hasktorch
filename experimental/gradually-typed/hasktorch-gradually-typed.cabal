@@ -104,7 +104,7 @@ library
                      , Torch.Data.Parser
   hs-source-dirs:      src
   default-language:    Haskell2010
-  ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0 -rtsopts
+  ghc-options:         -Wall -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
   build-depends:       base >= 4.7 && < 5
                      , hasktorch
                      , libtorch-ffi == 1.8.*
@@ -112,9 +112,13 @@ library
                      , ghc-typelits-knownnat
                      , ghc-typelits-natnormalise
                      , typelevel-rewrite-rules
+                     , exceptions
                      , mtl
                      , stm
+                     , text
                      , containers
+                     , vector
+                     , vector-sized
                      , generics-sop
                      , type-errors-pretty
                      , indexed
@@ -130,6 +134,30 @@ library
                      , finite-typelits
                      , indexed-list-literals
                      , exceptions
+
+test-suite spec
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Spec.hs
+  other-modules:       TensorSpec
+  default-language:    Haskell2010
+  ghc-options:         -Wall -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
+  build-depends:       base >= 4.7 && < 5
+                     , hasktorch-gradually-typed
+                     , ghc-typelits-extra
+                     , ghc-typelits-knownnat
+                     , ghc-typelits-natnormalise
+                     , QuickCheck
+                     , exceptions
+                     , hedgehog
+                     , hedgehog-quickcheck
+                     , hspec
+                     , hspec-hedgehog
+                     , singletons < 3
+                     , vector
+                     , vector-sized
+
+  build-tool-depends: hspec-discover:hspec-discover
 
 test-suite doctests
   type:                exitcode-stdio-1.0
