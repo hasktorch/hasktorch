@@ -20,15 +20,24 @@ import Data.Singletons (SingI (..), SingKind (..))
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (Nat, Symbol, TypeError)
 import System.IO.Unsafe (unsafePerformIO)
+import Torch.DType (DType (..))
+import Torch.GraduallyTyped.DType (DataType (..))
 import Torch.GraduallyTyped.Prelude (forgetIsChecked)
 import Torch.GraduallyTyped.Shape.Class (ReplaceDimSizeImplF)
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SSelectDims, SelectDims (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.Internal.Cast (cast1, cast3)
+import qualified Torch.Internal.Cast as ATen
 import Torch.Internal.Class (Castable (cast), uncast)
-import qualified Torch.Internal.Managed.Native as ATen (mean_tNb, mean_tlb)
+import qualified Torch.Internal.Managed.Native as ATen
 import qualified Torch.Internal.Type as ATen (Tensor)
 import Type.Errors.Pretty (type (%), type (<>))
+
+allT ::
+  forall requiresGradient layout device shape.
+  Tensor requiresGradient layout device ('DataType 'Bool) shape ->
+  Tensor requiresGradient layout device ('DataType 'Bool) ('Shape '[])
+allT t = unsafePerformIO $ ATen.cast1 ATen.all_t t
 
 type MeanErrorMessage (by :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) =
   "Cannot apply mean on the dimension matching"
@@ -53,12 +62,12 @@ type family MeanF (selectDims :: SelectDims [By Symbol Nat]) (shape :: Shape [Di
   MeanF _ 'UncheckedShape = 'UncheckedShape
   MeanF ('SelectDims bys) ('Shape dims) = 'Shape (MeanSelectDimsF bys dims)
 
-sMean ::
+sMeanDim ::
   forall selectDims requiresGradient layout device dataType shape.
   SSelectDims selectDims ->
   Tensor requiresGradient layout device dataType shape ->
   Tensor requiresGradient layout device dataType (MeanF selectDims shape)
-sMean bys tensor =
+sMeanDim bys tensor =
   let bys' = forgetIsChecked $ fromSing bys
       (names, indexes) = flip execState (Set.empty, Set.empty) $ do
         for_ bys' $ \by -> do
@@ -96,9 +105,9 @@ sMean bys tensor =
         (Set.toList indexes)
         True -- keepDim
 
-mean ::
+meanDim ::
   forall selectDims requiresGradient layout device dataType shape.
   SingI selectDims =>
   Tensor requiresGradient layout device dataType shape ->
   Tensor requiresGradient layout device dataType (MeanF selectDims shape)
-mean = sMean (sing @selectDims)
+meanDim = sMeanDim (sing @selectDims)

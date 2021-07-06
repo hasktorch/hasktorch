@@ -5,6 +5,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -19,39 +20,55 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.Tensor.Type where
 
+import Control.Applicative (empty)
+import Control.Category ((>>>))
+import Control.Exception (Exception (displayException))
+import Control.Monad (forM, forM_, when, (<=<), (>=>))
+import Control.Monad.Catch (MonadThrow, throwM)
 import Data.Bifunctor (bimap)
 import Data.Coerce (coerce)
-import Data.Foldable (Foldable (fold))
+import Data.Foldable (Foldable (fold), traverse_)
+import Data.Functor ((<&>))
 import Data.Int (Int16)
+import Data.List.NonEmpty (NonEmpty ((:|)), nonEmpty, unzip)
+import Data.Maybe (maybeToList)
 import Data.Monoid (All (..))
 import Data.Proxy (Proxy (..))
-import Data.Singletons (SingI (sing), SingKind (fromSing))
+import Data.Singletons (SingI (sing), fromSing)
 import Data.Singletons.Prelude.List (SList (..))
+import qualified Data.Vector as V
+import qualified Data.Vector.Generic.Sized.Internal as SVI
+import qualified Data.Vector.Sized as SV
+import Foreign (Ptr, Word8, castPtr, fromBool, peekElemOff, pokeElemOff, withForeignPtr)
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (KnownNat, KnownSymbol, Nat, Symbol, natVal, symbolVal)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), KnownDataType (..), SDataType (..))
+import Torch.GraduallyTyped.DType (DataType (..), KnownDType, KnownDataType (..), SDataType (..), dTypeVal)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice (..), SDevice (..), SDeviceType (..))
+import Torch.GraduallyTyped.Internal.TensorOptions (tensorOptions)
 import Torch.GraduallyTyped.Layout (KnownLayout (..), Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.Prelude (forgetIsChecked, ifM, (&&^))
-import Torch.GraduallyTyped.RequiresGradient (KnownRequiresGradient, RequiresGradient (..))
-import Torch.GraduallyTyped.Scalar ()
-import Torch.GraduallyTyped.Shape.Class (ReplaceDimF)
-import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownShape (..), Name (..), SDim (..), SName (..), SShape (..), SSize (..), Shape (..), Size (..), pattern (:|:))
+import Torch.GraduallyTyped.Prelude (forgetIsChecked, ifM, (&&^), pattern Demoted, pattern Demoted')
+import Torch.GraduallyTyped.RequiresGradient (KnownRequiresGradient, RequiresGradient (..), SRequiresGradient (..))
+import Torch.GraduallyTyped.Shape.Class (InsertDimF, ReplaceDimF)
+import Torch.GraduallyTyped.Shape.Type (By (ByIndex), Dim (..), KnownShape (..), Name (..), SDim (..), SName (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:|:))
+import Torch.GraduallyTyped.Unify (type (<+>))
 import Torch.HList (HList (..), pattern (:.))
-import Torch.Internal.Cast (cast0, cast1, cast2)
+import Torch.Internal.Cast (cast0, cast1, cast2, cast4)
 import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Managed.Native as ATen
 import qualified Torch.Internal.Managed.Type.Context as ATen
 import qualified Torch.Internal.Managed.Type.Extra as ATen
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
 import qualified Torch.Internal.Type as ATen (Tensor, TensorList)
+import qualified Torch.Internal.Unmanaged.Type.Tensor as Unmanaged (tensor_data_ptr)
 import qualified Torch.Tensor (Tensor (Unsafe))
+import Prelude hiding (unzip)
 
 -- $setup
 -- >>> import Data.Singletons.Prelude.List (SList (..))
@@ -123,9 +140,7 @@ type SparseCUDATensor deviceId = Tensor 'WithoutGradient ('Layout 'Sparse) ('Dev
 -- | Alias for a sparse tensor on CUDA memory with gradients.
 type SparseCUDAParameter deviceId = Tensor 'WithGradient ('Layout 'Sparse) ('Device ('CUDA deviceId))
 
-instance
-  Num (Tensor requiresGradient layout device dataType shape)
-  where
+instance Num (Tensor requiresGradient layout device dataType shape) where
   (+) = (unsafePerformIO .) . cast2 ATen.add_tt
   (-) = (unsafePerformIO .) . cast2 ATen.sub_tt
   (*) = (unsafePerformIO .) . cast2 ATen.mul_tt
@@ -1120,3 +1135,414 @@ unsafeCheckedShape ::
 unsafeCheckedShape tensor = case checkedShape @shape tensor of
   Right tensor' -> tensor'
   Left err -> error err
+
+isContiguous ::
+  Tensor requiresGradient layout device dataType shape ->
+  Bool
+isContiguous t = unsafePerformIO $ cast1 ATen.tensor_is_contiguous t
+
+contiguous ::
+  Tensor requiresGradient layout device dataType shape ->
+  Tensor requiresGradient layout device dataType shape
+contiguous t = unsafePerformIO $ cast1 ATen.tensor_contiguous t
+
+withTensor :: Tensor requiresGradient layout device dataType shape -> (Ptr () -> IO a) -> IO a
+withTensor t fn =
+  let contiguousTensor = if isContiguous t then t else contiguous t
+   in cast contiguousTensor $ \ct -> withForeignPtr ct $ Unmanaged.tensor_data_ptr >=> fn
+
+class TensorLikeRaw a where
+  -- | Guesses outer dim.
+  --
+  -- >>> guessDim @[[Int]] $ pure [[1, 2], [3, 4], [5, 6]]
+  -- Just 3
+  guessDim ::
+    -- | value
+    -- 'Nothing' if the data type wrapping 'a' is empty.
+    Maybe a ->
+    -- | dimension
+    -- 'Nothing' if 'a' is a scalar.
+    Maybe Int
+
+  -- | Guesses inner dims.
+  --
+  -- >>> guessInnerDims @[[Int]] $ pure [[1, 2], [3, 4], [5, 6]]
+  -- [2]
+  guessInnerDims ::
+    MonadThrow m =>
+    -- | value
+    -- 'Nothing' if the data type wrapping 'a' is empty.
+    Maybe a ->
+    -- | inner dimensions
+    m [Int]
+
+  -- | Reads a value from a tensor.
+  tensorPeekElemOff ::
+    -- | pointer to tensor
+    Ptr () ->
+    -- | offset
+    Int ->
+    -- | tensor dimensions
+    [Int] ->
+    -- | value
+    IO a
+
+  -- | Writes a value to a tensor.
+  tensorPokeElemOff ::
+    -- | pointer to tensor
+    Ptr () ->
+    -- | offset
+    Int ->
+    -- | tensor dimensions
+    [Int] ->
+    -- | value
+    a ->
+    IO ()
+
+-- | Guesses dims: concatenates 'guessDim' with 'guessInnerDims'.
+--
+-- >>> guessDims @[[Int]] $ pure [[1, 2], [3, 4], [5, 6]]
+-- [3,2]
+guessDims :: forall a m. (TensorLikeRaw a, MonadThrow m) => Maybe a -> m [Int]
+guessDims x = (outerDim <>) <$> guessInnerDims x
+  where
+    outerDim = maybeToList $ guessDim x
+
+unexpectedDimsError :: forall a m b. (TensorLikeRaw a, MonadThrow m) => [Int] -> Maybe a -> m b
+unexpectedDimsError dims' x = do
+  expected <- guessDims x
+  error $ "Expected shape to be " <> show expected <> " got: " <> show dims'
+
+class TensorLike a (dType :: DType) (dims :: [Dim (Name Symbol) (Size Nat)]) | a -> dims, a -> dType where
+  -- | Creates a tensor from a 'TensorLike' value.
+  --
+  -- >>> t <- sToTensor SWithoutGradient (SLayout SDense) (SDevice SCPU) ([(1, 2), (3, 4), (5, 6)] :: [(Int, Int)])
+  -- >>> t
+  -- Tensor Int64 [3,2] [[ 1,  2],
+  --                     [ 3,  4],
+  --                     [ 5,  6]]
+  -- >>> :type t
+  -- t :: Tensor
+  --        'WithoutGradient
+  --        ('Layout 'Dense)
+  --        ('Device 'CPU)
+  --        ('DataType 'Int64)
+  --        ('Shape
+  --           '[ 'Dim ('Name "*") 'UncheckedSize, 'Dim ('Name "*") ('Size 2)])
+  sToTensor ::
+    forall requiresGradient layout device m.
+    MonadThrow m =>
+    SRequiresGradient requiresGradient ->
+    SLayout layout ->
+    SDevice device ->
+    a ->
+    m (Tensor requiresGradient layout device ('DataType dType) ('Shape dims))
+
+  -- | Creates a 'TensorLike' from a tensor.
+  fromTensor ::
+    forall requiresGradient layout device.
+    Tensor requiresGradient layout device ('DataType dType) ('Shape dims) ->
+    a
+
+-- | Non-singleton version of 'sToTensor'.
+toTensor ::
+  forall requiresGradient layout device a dType dims m.
+  ( TensorLike a dType dims,
+    SingI requiresGradient,
+    SingI layout,
+    SingI device,
+    MonadThrow m
+  ) =>
+  a ->
+  m (Tensor requiresGradient layout device ('DataType dType) ('Shape dims))
+toTensor = sToTensor (sing @requiresGradient) (sing @layout) (sing @device)
+
+sToTensorRaw ::
+  forall requiresGradient layout device a dType dims m.
+  (TensorLike a dType dims, TensorLikeRaw a, KnownDType dType, MonadThrow m) =>
+  SRequiresGradient requiresGradient ->
+  SLayout layout ->
+  SDevice device ->
+  a ->
+  m (Tensor requiresGradient layout device ('DataType dType) ('Shape dims))
+sToTensorRaw (Demoted requiresGradient) (Demoted' layout) (Demoted' device) x = do
+  dims' <- guessDims $ pure x
+
+  pure $
+    unsafePerformIO $ do
+      t <- UnsafeTensor <$> cast2 ATen.empty_lo dims' opts
+      withTensor t $ \ptr ->
+        tensorPokeElemOff ptr 0 dims' x
+      pure t
+  where
+    opts = tensorOptions requiresGradient layout device dType'
+    dType' = dTypeVal @dType
+
+fromTensorRaw ::
+  forall requiresGradient layout device a dType dims.
+  (TensorLike a dType dims, TensorLikeRaw a, SGetDims dims) =>
+  Tensor requiresGradient layout device ('DataType dType) ('Shape dims) ->
+  a
+fromTensorRaw t = unsafePerformIO $
+  withTensor t $ \ptr -> do
+    dims' <- dims t
+    tensorPeekElemOff ptr 0 (fromInteger . dimSize <$> dims')
+
+instance TensorLike Bool 'Bool '[] where
+  sToTensor = sToTensorRaw
+  fromTensor = fromTensorRaw
+
+instance TensorLikeRaw Bool where
+  guessDim = const empty
+
+  guessInnerDims = const $ pure mempty
+
+  tensorPeekElemOff ptr offset [] = peekElemOff @Word8 (castPtr ptr) offset <&> (== 1)
+  tensorPeekElemOff _ _ dims' = unexpectedDimsError @Bool dims' empty
+
+  tensorPokeElemOff ptr offset [] x = pokeElemOff @Word8 (castPtr ptr) offset (fromBool x)
+  tensorPokeElemOff _ _ dims' x = unexpectedDimsError dims' $ pure x
+
+instance TensorLike Int 'Int64 '[] where
+  sToTensor = sToTensorRaw
+  fromTensor = fromTensorRaw
+
+instance TensorLikeRaw Int where
+  guessDim = const empty
+
+  guessInnerDims = const $ pure empty
+
+  tensorPeekElemOff ptr offset [] = peekElemOff (castPtr ptr) offset
+  tensorPeekElemOff _ _ dims' = unexpectedDimsError @Int dims' empty
+
+  tensorPokeElemOff ptr offset [] x = pokeElemOff (castPtr ptr) offset x
+  tensorPokeElemOff _ _ dims' x = unexpectedDimsError dims' $ pure x
+
+instance TensorLike Float 'Float '[] where
+  sToTensor = sToTensorRaw
+  fromTensor = fromTensorRaw
+
+instance TensorLikeRaw Float where
+  guessDim = const empty
+
+  guessInnerDims = const $ pure empty
+
+  tensorPeekElemOff ptr offset [] = peekElemOff (castPtr ptr) offset
+  tensorPeekElemOff _ _ dims' = unexpectedDimsError @Float dims' empty
+
+  tensorPokeElemOff ptr offset [] x = pokeElemOff (castPtr ptr) offset x
+  tensorPokeElemOff _ _ dims' x = unexpectedDimsError dims' $ pure x
+
+instance TensorLike Double 'Double '[] where
+  sToTensor = sToTensorRaw
+  fromTensor = fromTensorRaw
+
+instance TensorLikeRaw Double where
+  guessDim = const empty
+
+  guessInnerDims = const $ pure empty
+
+  tensorPeekElemOff ptr offset [] = peekElemOff (castPtr ptr) offset
+  tensorPeekElemOff _ _ dims' = unexpectedDimsError @Double dims' empty
+
+  tensorPokeElemOff ptr offset [] x = pokeElemOff (castPtr ptr) offset x
+  tensorPokeElemOff _ _ dims' x = unexpectedDimsError dims' $ pure x
+
+data DimMismatchError = DimMismatchError {dmeFirst :: [Int], dmeOther :: [Int]}
+  deriving (Show, Eq)
+
+instance Exception DimMismatchError where
+  displayException DimMismatchError {..} =
+    "When converting to a tensor, all elements on the same dimension must have the same shape, "
+      <> "but the first element has shape "
+      <> show dmeFirst
+      <> " while another element has shape "
+      <> show dmeOther
+      <> "."
+
+checkDims :: MonadThrow m => [Int] -> [Int] -> m ()
+checkDims firstDims otherDims = when (firstDims /= otherDims) $ throwM $ DimMismatchError firstDims otherDims
+
+instance
+  ( TensorLike a dType dims,
+    TensorLike b dType dims',
+    TensorLikeRaw a,
+    TensorLikeRaw b,
+    KnownDType dType,
+    SGetDims dimsOut,
+    'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape (dims <+> dims')) ('Dim ('Name "*") ('Size 2))
+  ) =>
+  TensorLike (a, b) dType dimsOut
+  where
+  sToTensor = sToTensorRaw
+  fromTensor = fromTensorRaw
+
+instance (TensorLikeRaw a, TensorLikeRaw b) => TensorLikeRaw (a, b) where
+  guessDim = const $ pure 2
+
+  guessInnerDims (unzip -> (x, y)) = do
+    xDims <- guessDims x
+    yDims <- guessDims y
+    checkDims xDims yDims
+    pure xDims
+
+  tensorPeekElemOff ptr offset (2 : innerDims) =
+    (,)
+      <$> tensorPeekElemOff ptr offset innerDims
+      <*> tensorPeekElemOff ptr (offset + width) innerDims
+    where
+      width = product innerDims
+  tensorPeekElemOff _ _ dims' = unexpectedDimsError @(a, b) dims' empty
+
+  tensorPokeElemOff ptr offset (2 : innerDims) (x, y) = do
+    tensorPokeElemOff ptr offset innerDims x
+    tensorPokeElemOff ptr (offset + width) innerDims y
+    where
+      width = product innerDims
+  tensorPokeElemOff _ _ dims' x = unexpectedDimsError dims' $ pure x
+
+instance
+  ( TensorLike a dType dims,
+    TensorLikeRaw a,
+    KnownDType dType,
+    SGetDims dimsOut,
+    'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape dims) ('Dim ('Name "*") 'UncheckedSize)
+  ) =>
+  TensorLike [a] dType dimsOut
+  where
+  sToTensor = sToTensorRaw
+  fromTensor = fromTensorRaw
+
+instance TensorLikeRaw a => TensorLikeRaw [a] where
+  guessDim = pure . maybe 0 length
+
+  guessInnerDims =
+    (>>= nonEmpty) >>> \case
+      Nothing -> guessDims @a empty
+      Just (x :| xs) -> do
+        xDims <- guessDims $ pure x
+        traverse_ (checkDims xDims <=< guessDims . pure) xs
+        pure xDims
+
+  tensorPeekElemOff ptr offset (d : innerDims) =
+    forM [0 .. d - 1] $ \i -> do
+      tensorPeekElemOff ptr (offset + i * width) innerDims
+    where
+      width = product innerDims
+  tensorPeekElemOff _ _ dims' = unexpectedDimsError @[a] dims' empty
+
+  tensorPokeElemOff ptr offset (d : innerDims) xs =
+    forM_ (zip [0 .. d - 1] xs) $ \(i, x) ->
+      tensorPokeElemOff ptr (offset + i * width) innerDims x
+    where
+      width = product innerDims
+  tensorPokeElemOff _ _ dims' x = unexpectedDimsError dims' $ pure x
+
+instance
+  ( TensorLike a dType dims,
+    TensorLikeRaw a,
+    KnownDType dType,
+    SGetDims dimsOut,
+    'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape dims) ('Dim ('Name "*") 'UncheckedSize)
+  ) =>
+  TensorLike (V.Vector a) dType dimsOut
+  where
+  sToTensor = sToTensorRaw
+  fromTensor = fromTensorRaw
+
+instance
+  TensorLikeRaw a =>
+  TensorLikeRaw (V.Vector a)
+  where
+  guessDim = pure . maybe 0 length
+
+  guessInnerDims =
+    (>>= V.uncons) >>> \case
+      Nothing -> guessDims @a empty
+      Just (x, xs) -> do
+        xDims <- guessDims $ pure x
+        traverse_ (checkDims xDims <=< guessDims . pure) xs
+        pure xDims
+
+  tensorPeekElemOff ptr offset (d : innerDims) =
+    forM (V.enumFromTo 0 (d - 1)) $ \i -> do
+      tensorPeekElemOff ptr (offset + i * width) innerDims
+    where
+      width = product innerDims
+  tensorPeekElemOff _ _ dims' = unexpectedDimsError @(V.Vector a) dims' empty
+
+  tensorPokeElemOff ptr offset (d : innerDims) xs = do
+    forM_ (V.zip (V.enumFromTo 0 (d - 1)) xs) $ \(i, x) ->
+      tensorPokeElemOff ptr (offset + i * width) innerDims x
+    where
+      width = product innerDims
+  tensorPokeElemOff _ _ dims' x = unexpectedDimsError dims' $ pure x
+
+instance
+  ( KnownNat n,
+    TensorLike a dType dims,
+    TensorLikeRaw a,
+    KnownDType dType,
+    SGetDims dimsOut,
+    'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape dims) ('Dim ('Name "*") ('Size n))
+  ) =>
+  TensorLike (SV.Vector n a) dType dimsOut
+  where
+  sToTensor = sToTensorRaw
+  fromTensor = fromTensorRaw
+
+instance
+  ( KnownNat n,
+    TensorLikeRaw a
+  ) =>
+  TensorLikeRaw (SV.Vector n a)
+  where
+  guessDim = pure . maybe 0 length
+
+  guessInnerDims = guessInnerDims . fmap SV.SomeSized
+
+  tensorPeekElemOff ptr offset dims' = SVI.Vector <$> tensorPeekElemOff ptr offset dims'
+
+  tensorPokeElemOff ptr offset dims' = tensorPokeElemOff ptr offset dims' . SV.SomeSized
+
+sChangeTensorOptions ::
+  forall requiresGradient layout device dataType requiresGradientFrom layoutFrom deviceFrom dataTypeFrom shape.
+  SRequiresGradient requiresGradient ->
+  SLayout layout ->
+  SDevice device ->
+  SDataType dataType ->
+  Tensor requiresGradientFrom layoutFrom deviceFrom dataTypeFrom shape ->
+  Tensor requiresGradient layout device dataType shape
+sChangeTensorOptions (Demoted requiresGradient) (Demoted' layout) (Demoted' device) (Demoted' dataType) t =
+  UnsafeTensor $ unsafePerformIO $ cast4 ATen.tensor_to_obb t opts nonBlocking copy
+  where
+    opts = tensorOptions requiresGradient layout device dataType
+
+    nonBlocking = False
+    copy = False
+
+changeTensorOptions ::
+  forall requiresGradient layout device dataType requiresGradientFrom layoutFrom deviceFrom dataTypeFrom shape.
+  ( SingI requiresGradient,
+    SingI layout,
+    SingI device,
+    SingI dataType
+  ) =>
+  Tensor requiresGradientFrom layoutFrom deviceFrom dataTypeFrom shape ->
+  Tensor requiresGradient layout device dataType shape
+changeTensorOptions = sChangeTensorOptions (sing @requiresGradient) (sing @layout) (sing @device) (sing @dataType)
+
+instance
+  ( KnownRequiresGradient requiresGradient,
+    SingI requiresGradient,
+    SingI layout,
+    SingI device,
+    SingI dType
+  ) =>
+  TensorLike (Tensor requiresGradient layout device ('DataType dType) ('Shape dims)) dType dims
+  where
+  sToTensor requiresGradient layout device t = pure $ sChangeTensorOptions requiresGradient layout device dataType t
+    where
+      dataType = SDataType $ sing @dType
+
+  fromTensor = changeTensorOptions @requiresGradient @layout @device @('DataType dType)
