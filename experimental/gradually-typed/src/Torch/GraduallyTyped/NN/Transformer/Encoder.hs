@@ -329,8 +329,8 @@ instance
         posEnc SBART = fromStateDict (gradient, SLayout SDense, device, dataType, posEncDim, inputEmbedDim) (k <> "embed_positions.")
         posEnc SMBART = fromStateDict (gradient, SLayout SDense, device, dataType, posEncDim, inputEmbedDim) (k <> "embed_positions.")
         posEnc SPegasus = fromStateDict (gradient, SLayout SDense, device, dataType, posEncDim, inputEmbedDim) (k <> "embed_positions.")
-        posEnc SBERT = fromStateDict (gradient, SLayout SDense, device, dataType, posEncDim, inputEmbedDim) (k <> "pos_embed.")
-        posEnc SRoBERTa = fromStateDict (gradient, SLayout SDense, device, dataType, posEncDim, inputEmbedDim) (k <> "pos_embed.")
+        posEnc SBERT = fromStateDict (gradient, SLayout SDense, device, dataType, posEncDim, inputEmbedDim) (k <> "embeddings.position_embeddings.")
+        posEnc SRoBERTa = fromStateDict (gradient, SLayout SDense, device, dataType, posEncDim, inputEmbedDim) (k <> "embeddings.position_embeddings.")
         posEnc SGPT2 = undefined
      in TransformerEncoder
           <$> ( GTransformerEncoder
@@ -371,8 +371,8 @@ instance
         posEnc SBART = toStateDict (k <> "embed_positions.")
         posEnc SMBART = toStateDict (k <> "embed_positions.")
         posEnc SPegasus = toStateDict (k <> "embed_positions.")
-        posEnc SBERT = toStateDict (k <> "pos_embed.")
-        posEnc SRoBERTa = toStateDict (k <> "pos_embed.")
+        posEnc SBERT = toStateDict (k <> "embeddings.position_embeddings.")
+        posEnc SRoBERTa = toStateDict (k <> "embeddings.position_embeddings.")
         posEnc SGPT2 = undefined
      in do
           () <- stack (sing @style) teStack

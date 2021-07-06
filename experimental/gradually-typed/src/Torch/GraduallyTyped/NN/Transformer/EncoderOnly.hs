@@ -18,7 +18,7 @@
 module Torch.GraduallyTyped.NN.Transformer.EncoderOnly where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
-import Control.Monad.Indexed.State (IxState (..), IxStateT (..))
+import Control.Monad.Indexed.State (IxStateT (..))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI, SingKind (fromSing), sing)

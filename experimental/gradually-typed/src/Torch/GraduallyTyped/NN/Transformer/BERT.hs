@@ -55,10 +55,10 @@ testBERTInputType =
 testForwardBERTBaseUncased :: IO ()
 testForwardBERTBaseUncased =
   do
-    stateDict <- stateDictFromPretrained "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/bert-base-uncased.pt"
+    stateDict <- stateDictFromPretrained "/tmp/bert-base-uncased-state-dict.pt"
     BERTModel GBERTModel {..} <-
       flip evalStateT stateDict $
-        fromStateDict @(BERTBaseUncased 'WithMLMHead _ _) (SGradient SWithGradient, SDevice SCPU) ""
+        fromStateDict @(BERTBaseUncased 'WithMLMHead _ _) (SGradient SWithoutGradient, SDevice SCPU) ""
     encoderInput <- testBERTInput
     let encoderInputType = testBERTInputType
         pos =

@@ -160,8 +160,8 @@ instance
         ffnDim = sing @ffnDim
         vocabDim = sing @vocabDim
         typeVocabDim = sing @typeVocabDim
-     in BERTModel . GBERTModel <$> fromStateDict (gradient, device, bertDataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, bertPosEncDim, vocabDim, typeVocabDim, bertDropoutP, bertEps) (k <> "bert.")
-  toStateDict k (BERTModel GBERTModel {..}) = toStateDict (k <> "bert.") bertModel
+     in BERTModel . GBERTModel <$> fromStateDict (gradient, device, bertDataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, bertPosEncDim, vocabDim, typeVocabDim, bertDropoutP, bertEps) k
+  toStateDict k (BERTModel GBERTModel {..}) = toStateDict k bertModel
 
 mkBERTInput ::
   forall batchDim seqDim m output.
