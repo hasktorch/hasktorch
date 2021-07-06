@@ -12,7 +12,7 @@
 module Torch.GraduallyTyped.NN.Transformer.Pooler where
 
 import Control.Monad.Indexed (IxPointed (..), (>>>=))
-import Control.Monad.Indexed.State (IxState (..))
+import Control.Monad.Indexed.State (IxState (..), IxStateT (..))
 import Data.Kind (Type)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.DType (DType)
@@ -93,7 +93,7 @@ instance
     generatorOutput
   where
   forward (Pooler GPooler {..}) input =
-    runIxState $
+    runIxStateT $
       ireturn input
-        >>>= IxState . forward poolerDense
-        >>>= IxState . forward poolerActivation
+        >>>= IxStateT . forward poolerDense
+        >>>= IxStateT . forward poolerActivation

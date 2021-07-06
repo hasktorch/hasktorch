@@ -63,7 +63,7 @@ testForwardPegasusXSum =
       flip evalStateT stateDict $
         fromStateDict @(PegasusXSum 'WithLMHead ('Gradient 'WithGradient) ('Device 'CPU)) (SGradient SWithGradient, SDevice SCPU) ""
     g <- sMkGenerator (SDevice SCPU) 0
-    let (PegasusOutput {..}, _) = forward model input g
+    (PegasusOutput {..}, _) <- forward model input g
     let encoderOutput = case pegasusEncoderOutput of
           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
     let firstEncoderHiddenStates = do

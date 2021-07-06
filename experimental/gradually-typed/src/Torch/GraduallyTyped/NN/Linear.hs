@@ -145,7 +145,7 @@ instance
     output
     generator
   where
-  forward LinearWithBias {..} input = (linearWithBias linearWithBiasWeight linearBias input,)
+  forward LinearWithBias {..} input = pure . (linearWithBias linearWithBiasWeight linearBias input,)
 
 instance
   ( generator ~ Generator device',
@@ -207,4 +207,4 @@ instance
     output
     generator
   where
-  forward (LinearWithoutBias linearWeight) input = (linearWithoutBias linearWeight input,)
+  forward (LinearWithoutBias linearWeight) input = pure . (linearWithoutBias linearWeight input,)

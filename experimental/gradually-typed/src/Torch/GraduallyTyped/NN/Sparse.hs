@@ -7,6 +7,7 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -104,7 +105,7 @@ instance
     output
     generator
   where
-  forward (Embedding weight) input g = (embedding Nothing False weight input, g)
+  forward (Embedding weight) input = pure . (embedding Nothing False weight input,)
 
 instance
   ( SGetLayout layout,
@@ -124,4 +125,4 @@ instance
     output
     generator
   where
-  forward Embedding {..} input g = (embedding (Just . fromIntegral . natVal $ Proxy @paddingIdx) False embeddingWeight input, g)
+  forward Embedding {..} input = pure . (embedding (Just . fromIntegral . natVal $ Proxy @paddingIdx) False embeddingWeight input,)

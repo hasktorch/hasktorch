@@ -145,7 +145,7 @@ instance
     output
     generator
   where
-  forward LayerNormWithBias {..} input = (layerNormWithBias layerNormWithBiasWeight layerNormBias layerNormWithBiasEps input,)
+  forward LayerNormWithBias {..} input = pure . (layerNormWithBias layerNormWithBiasWeight layerNormBias layerNormWithBiasEps input,)
 
 instance
   ( SGetShape normalizedShape,
@@ -165,4 +165,4 @@ instance
     output
     generator
   where
-  forward LayerNormWithoutBias {..} input = (layerNormWithoutBias layerNormWithoutBiasWeight layerNormWithoutBiasEps input,)
+  forward LayerNormWithoutBias {..} input = pure . (layerNormWithoutBias layerNormWithoutBiasWeight layerNormWithoutBiasEps input,)

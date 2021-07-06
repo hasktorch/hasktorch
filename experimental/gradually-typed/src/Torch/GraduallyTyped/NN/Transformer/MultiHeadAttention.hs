@@ -44,7 +44,7 @@ module Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention where
 
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.Indexed (ireturn, (>>>=))
-import Control.Monad.Indexed.State (IxState (..))
+import Control.Monad.Indexed.State (IxState (..), IxStateT (..))
 import Control.Monad.State (evalStateT)
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
@@ -75,6 +75,7 @@ import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (MatmulF, matmul)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add, mulScalar)
 import Torch.GraduallyTyped.Tensor.Type (SGetShape (..), Tensor (..))
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
+import Control.Monad.Indexed.Trans (IxMonadTrans(ilift))
 
 -- | Generic multi-headed attention layer.
 -- Needs to be specialized to a given transformer type, e.g. 'T5'.
@@ -621,23 +622,23 @@ instance
     output
     generatorOutput
   where
-  forward GMultiHeadAttention {..} (scaling, query, key, value, attentionBias) =
-    runIxState $
-      let batchDim =
-            let queryShape = sShape query
-                keyShape = sShape key
-                valueShape = sShape value
-             in unsafePerformIO $ getBatchDim queryShape keyShape valueShape
-          querySeqDim =
-            let queryShape = sShape query
-             in unsafePerformIO $ getQuerySeqDim queryShape
-          keySeqDim =
-            let keyShape = sShape key
-                valueShape = sShape value
-             in unsafePerformIO $ getKeySeqDim keyShape valueShape
-          q =
+  forward GMultiHeadAttention {..} (scaling, query, key, value, attentionBias) g = do
+    batchDim <-
+      let queryShape = sShape query
+          keyShape = sShape key
+          valueShape = sShape value
+       in getBatchDim queryShape keyShape valueShape
+    querySeqDim <-
+      let queryShape = sShape query
+       in getQuerySeqDim queryShape
+    keySeqDim <-
+      let keyShape = sShape key
+          valueShape = sShape value
+       in getKeySeqDim keyShape valueShape
+    flip runIxStateT g $
+      let q =
             ireturn query
-              >>>= IxState . forward mhaQInProj
+              >>>= IxStateT . forward mhaQInProj
               >>>= ireturn
                 . ( \case
                       NoScaling -> id
@@ -646,13 +647,13 @@ instance
                   )
                   scaling
               >>>= ireturn . sReshape (SShape $ batchDim :|: querySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
-              >>>= ireturn . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
+              >>>= ilift . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
           k =
             ireturn key
-              >>>= IxState . forward mhaKInProj
+              >>>= IxStateT . forward mhaKInProj
               >>>= ireturn . sReshape (SShape $ batchDim :|: keySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
-              >>>= ireturn . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
-          kt = k >>>= ireturn . transpose @('SelectDim ('ByIndex 2)) @('SelectDim ('ByIndex 3))
+              >>>= ilift . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
+          kt = k >>>= ilift . transpose @('SelectDim ('ByIndex 2)) @('SelectDim ('ByIndex 3))
           weights =
             matmul <<$>> q <<*>> kt
               >>>= ireturn
@@ -663,16 +664,16 @@ instance
                   )
                   scaling
               >>>= ireturn . (`add` attentionBias)
-              >>>= IxState . forward mhaDropout . softmax (SSelectDim $ SByIndex @3)
+              >>>= IxStateT . forward mhaDropout . softmax (SSelectDim $ SByIndex @3)
           v =
             ireturn value
-              >>>= IxState . forward mhaVInProj
+              >>>= IxStateT . forward mhaVInProj
               >>>= ireturn . sReshape (SShape $ batchDim :|: keySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
-              >>>= ireturn . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
+              >>>= ilift . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
        in matmul <<$>> weights <<*>> v
-            >>>= ireturn . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
+            >>>= ilift . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
             >>>= ireturn . sReshape (SShape $ batchDim :|: querySeqDim :|: mhaEmbedDim :|: SNil)
-            >>>= IxState . forward mhaOutProj
+            >>>= IxStateT . forward mhaOutProj
 
 testMHA = do
   let gradient = SGradient SWithGradient
@@ -697,5 +698,5 @@ testMHA = do
       key = sOnes' dataType (SShape $ batchDim :|: seqDim :|: keyEmbedDim :|: SNil)
       value = sOnes' dataType (SShape $ batchDim :|: seqDim :|: valueEmbedDim :|: SNil)
       attentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
-  let (output, _) = forward mha' (query, key, value, attentionBias) g'
+  (output, _) <- forward mha' (query, key, value, attentionBias) g'
   pure output

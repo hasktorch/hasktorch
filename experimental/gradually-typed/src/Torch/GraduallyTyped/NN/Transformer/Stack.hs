@@ -12,6 +12,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -102,7 +103,7 @@ instance
     query
     generator
   where
-  forward _ (query, _) g = (query, g)
+  forward _ (query, _) = pure . (query,)
 
 instance
   HasForward
@@ -168,7 +169,8 @@ instance
   forward (TransformerStack (VGS.Vector v)) (query, attentionBias) g =
     let Just (block, blocks) = V.uncons v
      in V.foldl
-          ( \(output, g') block' ->
+          ( \agg block' -> do
+              (output, g') <- agg
               forward block' (output, attentionBias) g'
           )
           (forward block (query, attentionBias) g)

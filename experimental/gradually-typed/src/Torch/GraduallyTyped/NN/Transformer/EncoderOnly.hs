@@ -18,7 +18,7 @@
 module Torch.GraduallyTyped.NN.Transformer.EncoderOnly where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
-import Control.Monad.Indexed.State (IxState (..))
+import Control.Monad.Indexed.State (IxState (..), IxStateT (..))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI, SingKind (fromSing), sing)
@@ -426,15 +426,15 @@ instance
         -- embedScaling _ = flip mulScalar s
         embeddedInput =
           ireturn eoInput
-            >>>= IxState . forward eoEmbedding
+            >>>= IxStateT . forward eoEmbedding
             >>>= ireturn . embedScaling (sing @style)
         embeddedInputType =
           ireturn eoInputType
-            >>>= IxState . forward eoTypeEmbedding
+            >>>= IxStateT . forward eoTypeEmbedding
             >>>= ireturn . embedScaling (sing @style)
-     in runIxState $
+     in runIxStateT $
           add <<$>> embeddedInput <<*>> embeddedInputType
-            >>>= (\input' -> IxState $ forward eoEncoder (input', eoPos, eoAttentionMask))
+            >>>= (\input' -> IxStateT $ forward eoEncoder (input', eoPos, eoAttentionMask))
             >>>= ireturn . EncoderOnlyTransformerOutput
 
 -- | 'HasForward' instance for encoder-only transformers with language modelling head.
@@ -479,11 +479,11 @@ instance
     generatorOutput
   where
   forward (EncoderOnlyTransformerWithLMHead GEncoderOnlyTransformerWithLMHead {..}) input =
-    runIxState $
+    runIxStateT $
       ireturn input
-        >>>= IxState . forward eoTransformer
+        >>>= IxStateT . forward eoTransformer
         >>>= ( \EncoderOnlyTransformerOutput {..} ->
                  ireturn eoEncoderOutput
-                   >>>= IxState . forward eoLMHead
+                   >>>= IxStateT . forward eoLMHead
                    >>>= \lmHeadOutput -> ireturn (EncoderOnlyTransformerOutput lmHeadOutput)
              )

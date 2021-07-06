@@ -48,7 +48,7 @@ instance
     output
     generator
   where
-  forward Softmax {..} input = (softmax softmaxSelectDim input,)
+  forward Softmax {..} input = pure . (softmax softmaxSelectDim input,)
 
 data Relu where Relu :: Relu
 
@@ -67,7 +67,7 @@ instance
     (Tensor requiresGradient layout device dataType shape)
     generator
   where
-  forward Relu input = (relu input,)
+  forward Relu input = pure . (relu input,)
 
 data Gelu where Gelu :: Gelu
 
@@ -86,7 +86,7 @@ instance
     (Tensor requiresGradient layout device dataType shape)
     generator
   where
-  forward Gelu input = (gelu input,)
+  forward Gelu input = pure . (gelu input,)
 
 data GeluNew where GeluNew :: GeluNew
 
@@ -105,7 +105,7 @@ instance
     (Tensor requiresGradient layout device dataType shape)
     generator
   where
-  forward GeluNew input = (geluNew input,)
+  forward GeluNew input = pure . (geluNew input,)
 
 data Tanh where Tanh :: Tanh
 
@@ -124,4 +124,4 @@ instance
     (Tensor requiresGradient layout device dataType shape)
     generator
   where
-  forward Tanh input = (tanh input,)
+  forward Tanh input = pure . (tanh input,)

@@ -43,14 +43,15 @@ module Torch.GraduallyTyped.NN.Transformer.T5.Common where
 
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.Indexed (ireturn, (>>>=))
-import Control.Monad.Indexed.State (IxState (..))
+import Control.Monad.Indexed.State (IxStateT (..))
+import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
+import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI (..), SingKind (fromSing))
 import Data.Singletons.Prelude.List (SList (..))
 import GHC.Float (double2Int)
 import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
-import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
@@ -66,7 +67,6 @@ import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), Name (..), SBy 
 import Torch.GraduallyTyped.Tensor.Creation (sOnes)
 import Torch.GraduallyTyped.Tensor.Type (SGetDevice (sDevice), SGetShape, Tensor (..), UncheckedTensor, checkedDataType, checkedGradient, checkedLayout, sCheckedDevice, sCheckedShape, sShape)
 import qualified Torch.Tensor (Tensor (Unsafe), asTensor)
-import Type.Errors.Pretty (TypeError, type (<>))
 
 -- | T5 dType.
 type T5DType = 'Float
@@ -436,32 +436,40 @@ instance
   where
   forward (T5Model GT5Model {..}) T5Input {..} =
     let inputPaddingMask = mkT5PaddingMask t5Input
-        attentionMask = unsafePerformIO $ mkTransformerAttentionMask t5DataType t5AttentionMaskBias inputPaddingMask
-        relPos = unsafePerformIO $ mkT5RelPos t5Input
-     in runIxState $
+        attentionMask = ilift $ mkTransformerAttentionMask t5DataType t5AttentionMaskBias inputPaddingMask
+        relPos = ilift $ mkT5RelPos t5Input
+     in runIxStateT $
           ireturn t5DecoderInput
-            >>>= IxState . forward t5ShiftRightDecoderInput
+            >>>= IxStateT . forward t5ShiftRightDecoderInput
             >>>= ( \rightShiftedDecoderInput ->
-                     let decoderRelPos = unsafePerformIO $ mkT5DecoderRelPos rightShiftedDecoderInput
+                     let decoderRelPos =
+                           ilift $ mkT5DecoderRelPos rightShiftedDecoderInput
                          crossAttentionMask =
-                           unsafePerformIO $
+                           ilift $
                              mkTransformerCrossAttentionMask
                                t5DataType
                                (sShape rightShiftedDecoderInput)
                                t5AttentionMaskBias
                                inputPaddingMask
                       in ireturn (mkT5PaddingMask t5DecoderInput)
-                           >>>= IxState . forward t5ShiftRightPaddingMask
+                           >>>= IxStateT . forward t5ShiftRightPaddingMask
                            >>>= ( \rightShiftedDecoderInputPaddingMask ->
                                     let decoderAttentionMask =
-                                          unsafePerformIO $
+                                          ilift $
                                             mkTransformerDecoderAttentionMask
                                               t5DataType
                                               t5AttentionMaskBias
                                               rightShiftedDecoderInputPaddingMask
-                                     in ireturn (SequenceToSequenceTransformerInput t5Input rightShiftedDecoderInput relPos decoderRelPos attentionMask decoderAttentionMask crossAttentionMask)
+                                     in SequenceToSequenceTransformerInput
+                                          <<$>> ireturn t5Input
+                                          <<*>> ireturn rightShiftedDecoderInput
+                                          <<*>> relPos
+                                          <<*>> decoderRelPos
+                                          <<*>> attentionMask
+                                          <<*>> decoderAttentionMask
+                                          <<*>> crossAttentionMask
                                 )
-                           >>>= IxState . forward t5Model
+                           >>>= IxStateT . forward t5Model
                            >>>= ( \(SequenceToSequenceTransformerOutput decoderOutput encoderOutput) ->
                                     ireturn $ T5Output decoderOutput encoderOutput inputPaddingMask
                                 )
@@ -487,16 +495,16 @@ testT5 = do
       decoderAttentionMask = sOnes' t5DataType (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
       crossAttentionMask = sOnes' t5DataType (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: seqDim :|: SNil)
       (t5Model, g') = initialize @(SequenceToSequenceTransformer 'T5 'WithLMHead 4 4 _ _ _ _ _ _ _ _ _ _ _) (gradient, device, t5DataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, t5RelPosEncBucketDim, vocabDim, t5DropoutP, t5Eps) g
-  let (t5Output, g'') =
-        let pos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
-            decoderPos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
-         in forward t5Model SequenceToSequenceTransformerInput {..} g'
-  let (t5Output', g''') =
-        let t5ShiftRightDecoderInput = ShiftRight t5BOSTokenId
-            t5ShiftRightPaddingMask = ShiftRight 0
-            model = T5Model (GT5Model {..})
-            inputs = T5Input input decoderInput
-         in forward model inputs g''
+  (t5Output, g'') <-
+    let pos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
+        decoderPos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
+     in forward t5Model SequenceToSequenceTransformerInput {..} g'
+  (t5Output', g''') <-
+    let t5ShiftRightDecoderInput = ShiftRight t5BOSTokenId
+        t5ShiftRightPaddingMask = ShiftRight 0
+        model = T5Model (GT5Model {..})
+        inputs = T5Input input decoderInput
+     in forward model inputs g''
   pure ((t5Output, t5Output'), g''')
 
 -- | 'HasForward' instance for T5 models.
@@ -531,30 +539,36 @@ instance
     generatorOutput
   where
   forward (T5Model GT5Model {..}) T5GenerationInput {..} =
-    runIxState $
+    runIxStateT $
       ireturn t5GenerationDecoderInput
-        >>>= IxState . forward t5ShiftRightDecoderInput
+        >>>= IxStateT . forward t5ShiftRightDecoderInput
         >>>= ( \rightShiftedDecoderInput ->
-                 let decoderRelPos = unsafePerformIO $ mkT5DecoderRelPos rightShiftedDecoderInput
+                 let decoderRelPos =
+                       ilift $ mkT5DecoderRelPos rightShiftedDecoderInput
                      crossAttentionMask =
-                       unsafePerformIO $
+                       ilift $
                          mkTransformerCrossAttentionMask
                            t5DataType
                            (sShape rightShiftedDecoderInput)
                            t5AttentionMaskBias
                            t5GenerationInputPaddingMask
                   in ireturn (mkT5PaddingMask t5GenerationDecoderInput)
-                       >>>= IxState . forward t5ShiftRightPaddingMask
+                       >>>= IxStateT . forward t5ShiftRightPaddingMask
                        >>>= ( \rightShiftedDecoderInputPaddingMask ->
                                 let decoderAttentionMask =
-                                      unsafePerformIO $
+                                      ilift $
                                         mkTransformerDecoderAttentionMask
                                           t5DataType
                                           t5AttentionMaskBias
                                           rightShiftedDecoderInputPaddingMask
-                                 in ireturn (SequenceToSequenceTransformerGenerationInput rightShiftedDecoderInput t5GenerationEncoderOutput decoderRelPos decoderAttentionMask crossAttentionMask)
+                                 in SequenceToSequenceTransformerGenerationInput
+                                      <<$>> ireturn rightShiftedDecoderInput
+                                      <<*>> ireturn t5GenerationEncoderOutput
+                                      <<*>> decoderRelPos
+                                      <<*>> decoderAttentionMask
+                                      <<*>> crossAttentionMask
                             )
-                       >>>= IxState . forward t5Model
+                       >>>= IxStateT . forward t5Model
                        >>>= ( \(SequenceToSequenceTransformerOutput decoderOutput encoderOutput) ->
                                 ireturn $ T5Output decoderOutput encoderOutput t5GenerationInputPaddingMask
                             )

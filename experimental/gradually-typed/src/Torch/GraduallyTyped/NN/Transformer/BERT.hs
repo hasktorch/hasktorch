@@ -72,7 +72,7 @@ testForwardBERTBaseUncased =
     attentionMask <- mkTransformerAttentionMask bertDataType bertAttentionMaskBias paddingMask
     let input = EncoderOnlyTransformerInput encoderInput encoderInputType pos attentionMask
     g <- mkGenerator @('Device 'CPU) 0
-    let (EncoderOnlyTransformerOutput {..}, _) = forward bertModel input g
+    (EncoderOnlyTransformerOutput {..}, _) <- forward bertModel input g
     let encoderOutput' = case eoEncoderOutput of
           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
     let firstLMHeadLogits = do

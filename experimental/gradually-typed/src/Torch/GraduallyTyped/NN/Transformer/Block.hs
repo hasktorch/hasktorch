@@ -20,7 +20,7 @@
 module Torch.GraduallyTyped.NN.Transformer.Block where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
-import Control.Monad.Indexed.State (IxState (..))
+import Control.Monad.Indexed.State (IxState (..), IxStateT (..))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI, sing)
@@ -174,7 +174,7 @@ instance
     generatorOutput
   where
   forward TransformerBlock {..} input =
-    runIxState $
+    runIxStateT $
       ireturn input
-        >>>= IxState . forward tbSelfAttention
-        >>>= IxState . forward tbFeedForwardNetwork
+        >>>= IxStateT . forward tbSelfAttention
+        >>>= IxStateT . forward tbFeedForwardNetwork

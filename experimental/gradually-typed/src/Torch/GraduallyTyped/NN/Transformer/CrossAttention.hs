@@ -41,7 +41,7 @@
 module Torch.GraduallyTyped.NN.Transformer.CrossAttention where
 
 import Control.Monad.Indexed (IxPointed (ireturn), (>>>=))
-import Control.Monad.Indexed.State (IxState (..))
+import Control.Monad.Indexed.State (IxState (..), IxStateT (..))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI, sing)
@@ -289,11 +289,11 @@ instance
     generatorOutput
   where
   forward (CrossAttention ca) (query, key, attentionBias) =
-    runIxState $
+    runIxStateT $
       ireturn query
-        >>>= IxState . forward (caLayerNorm ca)
-        >>>= (\query' -> IxState $ forward (caMultiHeadAttention ca) (query', key, key, attentionBias))
-        >>>= IxState . forward (caDropout ca)
+        >>>= IxStateT . forward (caLayerNorm ca)
+        >>>= (\query' -> IxStateT $ forward (caMultiHeadAttention ca) (query', key, key, attentionBias))
+        >>>= IxStateT . forward (caDropout ca)
         >>>= ireturn . (query `add`)
 
 testCA = do
@@ -315,7 +315,7 @@ testCA = do
       query = sOnes' dataType (SShape $ batchDim :|: seqDim :|: queryEmbedDim :|: SNil)
       key = sOnes' dataType (SShape $ batchDim :|: seqDim :|: keyEmbedDim :|: SNil)
       attentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
-  let (output, _) = forward sa (query, key, attentionBias) g'
+  (output, _) <- forward sa (query, key, attentionBias) g'
   pure output
 
 -- | 'HasForward' instance for @CrossAttention 'ByT5@.
@@ -380,11 +380,11 @@ instance
     generatorOutput
   where
   forward (CrossAttention ca) (query, key, attentionBias) =
-    runIxState $
+    runIxStateT $
       ireturn query
-        >>>= IxState . forward (caLayerNorm ca)
-        >>>= (\query' -> IxState $ forward (caMultiHeadAttention ca) (query', key, key, attentionBias))
-        >>>= IxState . forward (caDropout ca)
+        >>>= IxStateT . forward (caLayerNorm ca)
+        >>>= (\query' -> IxStateT $ forward (caMultiHeadAttention ca) (query', key, key, attentionBias))
+        >>>= IxStateT . forward (caDropout ca)
         >>>= ireturn . (query `add`)
 
 -- | 'HasForward' instance for @CrossAttenton 'BART@.
@@ -451,12 +451,12 @@ instance
     generatorOutput
   where
   forward (CrossAttention ca) (query, key, attentionBias) =
-    runIxState $
+    runIxStateT $
       ireturn query
-        >>>= (\query' -> IxState $ forward (caMultiHeadAttention ca) (query', key, key, attentionBias))
-        >>>= IxState . forward (caDropout ca)
+        >>>= (\query' -> IxStateT $ forward (caMultiHeadAttention ca) (query', key, key, attentionBias))
+        >>>= IxStateT . forward (caDropout ca)
         >>>= ireturn . (query `add`)
-        >>>= IxState . forward (caLayerNorm ca)
+        >>>= IxStateT . forward (caLayerNorm ca)
 
 -- | 'HasForward' instance for @CrossAttention 'Pegasus@.
 --
@@ -530,9 +530,9 @@ instance
     generatorOutput
   where
   forward (CrossAttention ca) (query, key, attentionBias) =
-    runIxState $
+    runIxStateT $
       ireturn query
-        >>>= IxState . forward (caLayerNorm ca)
-        >>>= (\query' -> IxState $ forward (caMultiHeadAttention ca) (query', key, key, attentionBias))
-        >>>= IxState . forward (caDropout ca)
+        >>>= IxStateT . forward (caLayerNorm ca)
+        >>>= (\query' -> IxStateT $ forward (caMultiHeadAttention ca) (query', key, key, attentionBias))
+        >>>= IxStateT . forward (caDropout ca)
         >>>= ireturn . (query `add`)

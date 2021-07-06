@@ -12,6 +12,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -107,7 +108,7 @@ instance
     query
     generator
   where
-  forward _ (query, _, _, _) g = (query, g)
+  forward _ (query, _, _, _) = pure . (query,)
 
 instance
   HasForward
@@ -173,7 +174,8 @@ instance
   forward (TransformerDecoderStack (VGS.Vector v)) (query, key, decoderAttentionBias, crossAttentionBias) g =
     let Just (block, blocks) = V.uncons v
      in V.foldl
-          ( \(output, g') block' ->
+          ( \agg block' -> do
+              (output, g') <- agg
               forward block' (output, key, decoderAttentionBias, crossAttentionBias) g'
           )
           (forward block (query, key, decoderAttentionBias, crossAttentionBias) g)
@@ -202,5 +204,5 @@ testDecoderStack = do
       key = sOnes' dataType (SShape $ batchDim :|: seqDim :|: keyEmbedDim :|: SNil)
       decoderAttentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
       crossAttentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: decoderSeqDim :|: seqDim :|: SNil)
-  let (output, _) = forward decoderStack (query, key, decoderAttentionBias, crossAttentionBias) g'
+  (output, _) <- forward decoderStack (query, key, decoderAttentionBias, crossAttentionBias) g'
   pure output

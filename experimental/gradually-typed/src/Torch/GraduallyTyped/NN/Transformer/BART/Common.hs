@@ -24,13 +24,14 @@ module Torch.GraduallyTyped.NN.Transformer.BART.Common where
 
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.Indexed (ireturn, (>>>=))
-import Control.Monad.Indexed.State (IxState (..))
+import Control.Monad.Indexed.State (IxStateT (..))
+import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
+import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI (..))
 import Data.Singletons.Prelude.List (SList (..))
 import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
-import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
@@ -275,32 +276,39 @@ instance
   where
   forward (BARTModel GBARTModel {..}) BARTInput {..} =
     let inputPaddingMask = mkBARTPaddingMask bartInput
-        attentionMask = unsafePerformIO $ mkTransformerAttentionMask bartDataType bartAttentionMaskBias inputPaddingMask
-        pos = flip addScalar (2 :: Int) $ unsafePerformIO $ mkPos bartInput
-     in runIxState $
+        attentionMask = ilift $ mkTransformerAttentionMask bartDataType bartAttentionMaskBias inputPaddingMask
+        pos = flip addScalar (2 :: Int) <<$>> ilift (mkPos bartInput)
+     in runIxStateT $
           ireturn bartDecoderInput
-            >>>= IxState . forward bartShiftRightDecoderInput
+            >>>= IxStateT . forward bartShiftRightDecoderInput
             >>>= ( \rightShiftedDecoderInput ->
-                     let decoderPos = flip addScalar (2 :: Int) $ unsafePerformIO $ mkPos rightShiftedDecoderInput
+                     let decoderPos = flip addScalar (2 :: Int) <<$>> ilift (mkPos rightShiftedDecoderInput)
                          crossAttentionMask =
-                           unsafePerformIO $
+                           ilift $
                              mkTransformerCrossAttentionMask
                                bartDataType
                                (sShape rightShiftedDecoderInput)
                                bartAttentionMaskBias
                                inputPaddingMask
                       in ireturn (mkBARTPaddingMask bartDecoderInput)
-                           >>>= IxState . forward bartShiftRightPaddingMask
+                           >>>= IxStateT . forward bartShiftRightPaddingMask
                            >>>= ( \rightShiftedDecoderInputPaddingMask ->
                                     let decoderAttentionMask =
-                                          unsafePerformIO $
+                                          ilift $
                                             mkTransformerDecoderAttentionMask
                                               bartDataType
                                               bartAttentionMaskBias
                                               rightShiftedDecoderInputPaddingMask
-                                     in ireturn (SequenceToSequenceTransformerInput bartInput rightShiftedDecoderInput pos decoderPos attentionMask decoderAttentionMask crossAttentionMask)
+                                     in SequenceToSequenceTransformerInput
+                                          <<$>> ireturn bartInput
+                                          <<*>> ireturn rightShiftedDecoderInput
+                                          <<*>> pos
+                                          <<*>> decoderPos
+                                          <<*>> attentionMask
+                                          <<*>> decoderAttentionMask
+                                          <<*>> crossAttentionMask
                                 )
-                           >>>= IxState . forward bartModel
+                           >>>= IxStateT . forward bartModel
                            >>>= ( \(SequenceToSequenceTransformerOutput decoderOutput encoderOutput) ->
                                     ireturn $ BARTOutput decoderOutput encoderOutput inputPaddingMask
                                 )
@@ -326,16 +334,16 @@ testBart = do
       decoderAttentionMask = sOnes' bartDataType (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
       crossAttentionMask = sOnes' bartDataType (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: seqDim :|: SNil)
       (bartModel, g') = initialize @(SequenceToSequenceTransformer 'BART 'WithLMHead 4 4 _ _ _ _ _ _ _ _ _ _ _) (gradient, device, bartDataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, bartPosEncDim, vocabDim, bartDropoutP, bartEps) g
-  let (bartOutput, g'') =
-        let pos = sOnes' (SDataType SInt64) (SShape $ seqDim :|: SNil)
-            decoderPos = sOnes' (SDataType SInt64) (SShape $ decoderSeqDim :|: SNil)
-         in forward bartModel SequenceToSequenceTransformerInput {..} g'
-  let (bartOutput', g''') =
-        let bartShiftRightDecoderInput = ShiftRight bartEOSTokenId
-            bartShiftRightPaddingMask = ShiftRight 0
-            model = BARTModel (GBARTModel {..})
-            inputs = BARTInput input decoderInput
-         in forward model inputs g''
+  (bartOutput, g'') <-
+    let pos = sOnes' (SDataType SInt64) (SShape $ seqDim :|: SNil)
+        decoderPos = sOnes' (SDataType SInt64) (SShape $ decoderSeqDim :|: SNil)
+     in forward bartModel SequenceToSequenceTransformerInput {..} g'
+  (bartOutput', g''') <-
+    let bartShiftRightDecoderInput = ShiftRight bartEOSTokenId
+        bartShiftRightPaddingMask = ShiftRight 0
+        model = BARTModel (GBARTModel {..})
+        inputs = BARTInput input decoderInput
+     in forward model inputs g''
   pure ((bartOutput, bartOutput'), g''')
 
 -- | 'HasForward' instance for BART models.
@@ -370,30 +378,35 @@ instance
     generatorOutput
   where
   forward (BARTModel GBARTModel {..}) BARTGenerationInput {..} =
-    runIxState $
+    runIxStateT $
       ireturn bartGenerationDecoderInput
-        >>>= IxState . forward bartShiftRightDecoderInput
+        >>>= IxStateT . forward bartShiftRightDecoderInput
         >>>= ( \rightShiftedDecoderInput ->
-                 let decoderPos = flip addScalar (2 :: Int) $ unsafePerformIO $ mkPos rightShiftedDecoderInput
+                 let decoderPos = flip addScalar (2 :: Int) <<$>> ilift (mkPos rightShiftedDecoderInput)
                      crossAttentionMask =
-                       unsafePerformIO $
+                       ilift $
                          mkTransformerCrossAttentionMask
                            bartDataType
                            (sShape rightShiftedDecoderInput)
                            bartAttentionMaskBias
                            bartGenerationInputPaddingMask
                   in ireturn (mkBARTPaddingMask bartGenerationDecoderInput)
-                       >>>= IxState . forward bartShiftRightPaddingMask
+                       >>>= IxStateT . forward bartShiftRightPaddingMask
                        >>>= ( \rightShiftedDecoderInputPaddingMask ->
                                 let decoderAttentionMask =
-                                      unsafePerformIO $
+                                      ilift $
                                         mkTransformerDecoderAttentionMask
                                           bartDataType
                                           bartAttentionMaskBias
                                           rightShiftedDecoderInputPaddingMask
-                                 in ireturn (SequenceToSequenceTransformerGenerationInput rightShiftedDecoderInput bartGenerationEncoderOutput decoderPos decoderAttentionMask crossAttentionMask)
+                                 in SequenceToSequenceTransformerGenerationInput
+                                      <<$>> ireturn rightShiftedDecoderInput
+                                      <<*>> ireturn bartGenerationEncoderOutput
+                                      <<*>> decoderPos
+                                      <<*>> decoderAttentionMask
+                                      <<*>> crossAttentionMask
                             )
-                       >>>= IxState . forward bartModel
+                       >>>= IxStateT . forward bartModel
                        >>>= ( \(SequenceToSequenceTransformerOutput decoderOutput encoderOutput) ->
                                 ireturn $ BARTOutput decoderOutput encoderOutput bartGenerationInputPaddingMask
                             )

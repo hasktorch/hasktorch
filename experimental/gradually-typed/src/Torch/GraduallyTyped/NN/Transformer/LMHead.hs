@@ -18,7 +18,7 @@
 module Torch.GraduallyTyped.NN.Transformer.LMHead where
 
 import Control.Monad.Indexed (IxPointed (..), (>>>=))
-import Control.Monad.Indexed.State (IxState (..))
+import Control.Monad.Indexed.State (IxState (..), IxStateT (..))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI (..), SingKind (fromSing))
@@ -512,11 +512,11 @@ instance
         bias SBERT = id
         bias SRoBERTa = id
         bias SGPT2 = undefined
-     in runIxState $
+     in runIxStateT $
           ireturn input
-            >>>= IxState . forward lmHeadDense
-            >>>= IxState . forward lmHeadActivation
-            >>>= IxState . forward lmHeadLayerNorm
-            >>>= IxState . forward lmHeadDecoder
+            >>>= IxStateT . forward lmHeadDense
+            >>>= IxStateT . forward lmHeadActivation
+            >>>= IxStateT . forward lmHeadLayerNorm
+            >>>= IxStateT . forward lmHeadDecoder
             >>>= ireturn . scaling (sing @style)
             >>>= ireturn . bias (sing @style)

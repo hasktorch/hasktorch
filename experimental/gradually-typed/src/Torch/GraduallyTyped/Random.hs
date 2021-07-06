@@ -20,7 +20,7 @@ import Data.Word (Word64)
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (Nat)
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDeviceType, SDevice)
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
 import Torch.GraduallyTyped.Prelude (forgetIsChecked)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
@@ -43,18 +43,18 @@ sMkGenerator ::
   SDevice device ->
   Word64 ->
   IO (Generator device)
-sMkGenerator device seed =
-  let deviceType = forgetIsChecked . fromSing $ device
-   in case deviceType of
+sMkGenerator device generatorSeed =
+  let generatorDeviceType = forgetIsChecked . fromSing $ device
+   in case generatorDeviceType of
         CPU -> do
-          genPtr <- ATen.newCPUGenerator seed
-          genenerator <- newTVarIO (Just genPtr)
-          return $ UnsafeGenerator @device seed deviceType genenerator
+          genPtr <- ATen.newCPUGenerator generatorSeed
+          generatorState <- newTVarIO (Just genPtr)
+          return $ UnsafeGenerator {..}
         CUDA deviceId -> do
           genPtr <- ATen.newCUDAGenerator (fromIntegral deviceId)
-          ATen.generator_set_current_seed genPtr seed
-          genenerator <- newTVarIO (Just genPtr)
-          return $ UnsafeGenerator @device seed deviceType genenerator
+          ATen.generator_set_current_seed genPtr generatorSeed
+          generatorState <- newTVarIO (Just genPtr)
+          return $ UnsafeGenerator {..}
 
 mkGenerator ::
   forall device.

@@ -19,6 +19,7 @@ module Torch.GraduallyTyped.NN.Transformer.T5.Generation where
 
 import Control.Applicative (Alternative (..))
 import Control.Monad (MonadPlus (..), guard)
+import Control.Monad.Catch (MonadThrow)
 import Control.Monad.Logic (observe)
 import Control.Monad.State (MonadState (..), MonadTrans (..), StateT (..), evalStateT, gets, lift, modify)
 import Control.Monad.Trans.Free (FreeF (..), FreeT (..), runFreeT)
@@ -49,7 +50,6 @@ import Torch.GraduallyTyped.Tensor.Type (SGetShape (dims), Tensor (..))
 import Torch.Language.SpiderSQL (SpiderSQL, spiderSQL)
 import qualified Torch.Tensor
 import Prelude hiding (Word, words)
-import Control.Monad.Catch (MonadThrow)
 
 data IsFinished = Finished | Unfinished
 
@@ -221,15 +221,15 @@ runBeamSearch maxSteps beamSize model input g =
     getLogProbs decoderInput = do
       (maybeStuff, g) <- get
       (T5Output decoderOutput encoderOutput inputPaddingMask, g') <- case maybeStuff of
-        Nothing -> pure $ forward model (T5Input input decoderInput) g
+        Nothing -> forward model (T5Input input decoderInput) g
         Just (encoderOutput, inputPaddingMask) -> do
           -- decoderInputBatchDim : _ <- dims decoderInput
           decoderInputBatchDim <- undefined
           -- _encoderOutputBatchDim : encoderOutputDims <- dims encoderOutput
           encoderOutputDims <- undefined
           let encoderOutput' = sExpand (SUncheckedShape (decoderInputBatchDim : encoderOutputDims)) encoderOutput
-          case forward model (T5GenerationInput decoderInput encoderOutput' inputPaddingMask) g of
-            (T5Output decoderOutput _ _, g') -> pure (T5Output decoderOutput encoderOutput inputPaddingMask, g')
+          (T5Output decoderOutput _ _, g') <- forward model (T5GenerationInput decoderInput encoderOutput' inputPaddingMask) g
+          pure (T5Output decoderOutput encoderOutput inputPaddingMask, g')
       put (Just (encoderOutput, inputPaddingMask), g')
       case logSoftmax (SSelectDim $ SByIndex @2) decoderOutput of
         UnsafeTensor t -> pure . Torch.Tensor.asValue . Torch.Tensor.Unsafe $ t
@@ -402,11 +402,11 @@ getIs n model input = do
       [tokens]
   decoderOutput <- do
     (mTensors, g) <- get
-    let (T5Output decoderOutput encoderOutput inputPaddingMask, g') =
-          case mTensors of
-            Nothing -> forward model (T5Input input decoderInput) g
-            Just (encoderOutput, inputPaddingMask) ->
-              forward model (T5GenerationInput decoderInput encoderOutput inputPaddingMask) g
+    (T5Output decoderOutput encoderOutput inputPaddingMask, g') <-
+      case mTensors of
+        Nothing -> forward model (T5Input input decoderInput) g
+        Just (encoderOutput, inputPaddingMask) ->
+          forward model (T5GenerationInput decoderInput encoderOutput inputPaddingMask) g
     put (Just (encoderOutput, inputPaddingMask), g')
     pure decoderOutput
   case sort @('SelectDim ('ByIndex 2)) Descending

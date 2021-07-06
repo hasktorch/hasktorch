@@ -88,7 +88,7 @@ testForwardRoBERTaBase =
     attentionMask <- mkTransformerAttentionMask robertaDataType robertaAttentionMaskBias paddingMask
     let input = EncoderOnlyTransformerInput encoderInput encoderInputType pos attentionMask
     g <- sMkGenerator (SDevice SCPU) 0
-    let (EncoderOnlyTransformerOutput {..}, _) = forward robertaModel input g
+    (EncoderOnlyTransformerOutput {..}, _) <- forward robertaModel input g
     let encoderOutput' = case eoEncoderOutput of
           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
     let firstLMHeadLogits = do
