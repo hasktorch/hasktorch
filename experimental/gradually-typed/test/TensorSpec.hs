@@ -19,7 +19,7 @@ import Torch.GraduallyTyped
 toCPUTensor ::
   (TensorLike a dType dims, MonadThrow m) =>
   a ->
-  m (Tensor 'WithoutGradient ('Layout 'Dense) ('Device 'CPU) ('DataType dType) ('Shape dims))
+  m (Tensor ('Gradient 'WithoutGradient) ('Layout 'Dense) ('Device 'CPU) ('DataType dType) ('Shape dims))
 toCPUTensor = toTensor
 
 genReal :: MonadGen m => (RealFloat a, QC.Arbitrary a, Read a) => m a
@@ -134,17 +134,17 @@ spec = describe "TensorLike" $ do
     it "Tensor" $ do
       let t =
             ones
-              @'WithoutGradient
+              @('Gradient 'WithoutGradient)
               @('Layout 'Dense)
               @('Device 'CPU)
               @('DataType 'Int64)
               @('Shape '[ 'Dim ('Name "*") ('Size 4), 'Dim ('Name "*") ('Size 8)])
-      t' <- toTensor @'WithoutGradient @('Layout 'Dense) @('Device 'CPU) t
+      t' <- toTensor @('Gradient 'WithoutGradient) @('Layout 'Dense) @('Device 'CPU) t
       fromTensor (allT $ t' ==. t) `shouldBe` True
       let t'' =
             fromTensor
               @( Tensor
-                  'WithoutGradient
+                  ('Gradient 'WithoutGradient)
                   ('Layout 'Dense)
                   ('Device 'CPU)
                   ('DataType 'Int64)
@@ -155,18 +155,15 @@ spec = describe "TensorLike" $ do
 
   it "dims ([[]] :: [[[Int]]]) = 1x0x0" $ do
     x <- toCPUTensor @[[[Int]]] [[]]
-    dims' <- dims x
-    dims' `shouldBe` [Dim "*" 1, Dim "*" 0, Dim "*" 0]
+    dims x `shouldBe` [Dim "*" 1, Dim "*" 0, Dim "*" 0]
 
   it "dims ([] :: [(Int, Int)]) = 0x2" $ do
     x <- toCPUTensor @[(Int, Int)] []
-    dims' <- dims x
-    dims' `shouldBe` [Dim "*" 0, Dim "*" 2]
+    dims x `shouldBe` [Dim "*" 0, Dim "*" 2]
 
   it "dims ([] :: [([Int], [Int])] = 0x2x0" $ do
     x <- toCPUTensor @[([Int], [Int])] []
-    dims' <- dims x
-    dims' `shouldBe` [Dim "*" 0, Dim "*" 2, Dim "*" 0]
+    dims x `shouldBe` [Dim "*" 0, Dim "*" 2, Dim "*" 0]
 
   it "lists having different length" $ do
     let mkT = toCPUTensor @[[Double]] [[1], [1, 2]]
