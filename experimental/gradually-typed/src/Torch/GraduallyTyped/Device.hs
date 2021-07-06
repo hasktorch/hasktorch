@@ -40,7 +40,7 @@ data DeviceType (deviceId :: Type) where
   CPU :: forall deviceId. DeviceType deviceId
   -- | The tensor is stored the memory of the GPU with ID 'deviceId'.
   CUDA :: forall deviceId. deviceId -> DeviceType deviceId
-  deriving (Show)
+  deriving (Eq, Ord, Show)
 
 data SDeviceType (deviceType :: DeviceType Nat) where
   SCPU :: SDeviceType 'CPU

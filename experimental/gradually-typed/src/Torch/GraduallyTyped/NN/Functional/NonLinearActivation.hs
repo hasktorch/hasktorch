@@ -54,12 +54,12 @@ type family SoftmaxF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape [D
 -- and will re-scale them so that the elements lie in the range \([0, 1]\) and sum to \(1\):
 --
 -- >>> g <- sMkGenerator (SDevice SCPU) 0
--- >>> (input, _) = sRandn SWithGradient (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SName @"batch" :&: SSize @32 :|: SName @"feature" :&: SSize @8 :|: SNil) g
+-- >>> (input, _) = sRandn (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SName @"batch" :&: SSize @32 :|: SName @"feature" :&: SSize @8 :|: SNil) g
 -- >>> result = softmax (SSelectDim (SByName @"feature")) input
 -- >>> :type result
 -- result
 --   :: Tensor
---        'WithGradient
+--        ('Gradient 'WithGradient)
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
@@ -68,10 +68,10 @@ type family SoftmaxF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape [D
 --              'Dim ('Name "feature") ('Size 8)])
 softmax,
   logSoftmax ::
-    forall selectDim requiresGradient layout device dataType shape.
+    forall selectDim gradient layout device dataType shape.
     SSelectDim selectDim ->
-    Tensor requiresGradient layout device dataType shape ->
-    Tensor requiresGradient layout device dataType (SoftmaxF selectDim shape)
+    Tensor gradient layout device dataType shape ->
+    Tensor gradient layout device dataType (SoftmaxF selectDim shape)
 softmax selectDim tensor =
   case forgetIsChecked (fromSing selectDim) of
     ByName name -> unsafePerformIO $ cast2 ATen.softmax_tn tensor name

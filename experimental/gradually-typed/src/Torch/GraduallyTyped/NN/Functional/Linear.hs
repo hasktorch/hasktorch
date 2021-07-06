@@ -16,7 +16,7 @@ import Torch.GraduallyTyped.DType (DataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.Prelude (Reverse, Seq)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
+import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), Gradient (..))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
@@ -104,7 +104,7 @@ type LinearWeightDimsErrorMessage (weightDims :: [Dim (Name Symbol) (Size Nat)])
 -- >>> biasShape = SShape $ outputDim :|: SNil
 -- >>> inputShape = SShape $ batchDim :|: inputDim :|: SNil
 -- >>> g <- sMkGenerator (SDevice SCPU) 0
--- >>> sRandn' = sRandn SWithoutGradient (SLayout SDense) (SDevice SCPU) (SDataType SFloat)
+-- >>> sRandn' = sRandn (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat)
 -- >>> (weight, g') = sRandn' weightShape g
 -- >>> (bias, g'') = sRandn' biasShape g'
 -- >>> (input, _) = sRandn' inputShape g''
@@ -112,7 +112,7 @@ type LinearWeightDimsErrorMessage (weightDims :: [Dim (Name Symbol) (Size Nat)])
 -- >>> :type result
 -- result
 --   :: Tensor
---        'WithoutGradient
+--        ('Gradient 'WithoutGradient)
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
@@ -120,16 +120,16 @@ type LinearWeightDimsErrorMessage (weightDims :: [Dim (Name Symbol) (Size Nat)])
 --           '[ 'Dim ('Name "batch") ('Size 20),
 --              'Dim ('Name "output") ('Size 10)])
 linearWithBias ::
-  forall requiresGradient layout device dataType shape requiresGradient' layout' device' dataType' shape' requiresGradient'' layout'' device'' dataType'' shape''.
+  forall gradient layout device dataType shape gradient' layout' device' dataType' shape' gradient'' layout'' device'' dataType'' shape''.
   -- | weight
-  Tensor requiresGradient layout device dataType shape ->
+  Tensor gradient layout device dataType shape ->
   -- | bias
-  Tensor requiresGradient' layout' device' dataType' shape' ->
+  Tensor gradient' layout' device' dataType' shape' ->
   -- | input
-  Tensor requiresGradient'' layout'' device'' dataType'' shape'' ->
+  Tensor gradient'' layout'' device'' dataType'' shape'' ->
   -- | output
   Tensor
-    (requiresGradient' <|> requiresGradient'' <|> requiresGradient'')
+    (gradient' <|> gradient'' <|> gradient'')
     (layout <+> (layout' <+> layout''))
     (device <+> (device' <+> device''))
     (dataType <+> (dataType' <+> dataType''))
@@ -149,14 +149,14 @@ type family LinearWithoutBiasDimsF (weightDims :: [Dim (Name Symbol) (Size Nat)]
   LinearWithoutBiasDimsF '[outputDim, inputDim] (inputDim' ': reversedInputDims) = Seq (inputDim <+> inputDim') (outputDim ': reversedInputDims)
 
 linearWithoutBias ::
-  forall requiresGradient layout device dataType shape requiresGradient' layout' device' dataType' shape'.
+  forall gradient layout device dataType shape gradient' layout' device' dataType' shape'.
   -- | weight
-  Tensor requiresGradient layout device dataType shape ->
+  Tensor gradient layout device dataType shape ->
   -- | input
-  Tensor requiresGradient' layout' device' dataType' shape' ->
+  Tensor gradient' layout' device' dataType' shape' ->
   -- | output
   Tensor
-    (requiresGradient <|> requiresGradient')
+    (gradient <|> gradient')
     (layout <+> layout')
     (device <+> device')
     (dataType <+> dataType')
@@ -165,12 +165,12 @@ linearWithoutBias weight input = unsafePerformIO $ cast2 ATen.linear_tt input we
 
 testLinearWithoutBias ::
   Tensor
-    'WithGradient
+    ('Gradient 'WithGradient)
     ('Layout 'Dense)
     'UncheckedDevice
     ('DataType 'Float)
     ('Shape '[ 'Dim ('Name "output") ('Size 2)])
 testLinearWithoutBias =
-  let weight = undefined :: Tensor 'WithGradient ('Layout 'Dense) ('Device 'CPU) ('DataType 'Float) ('Shape '[ 'Dim ('Name "output") ('Size 2), 'Dim ('Name "input") ('Size 1)])
-      input = undefined :: Tensor 'WithoutGradient ('Layout 'Dense) 'UncheckedDevice ('DataType 'Float) ('Shape '[ 'Dim ('Name "input") ('Size 1)])
+  let weight = undefined :: Tensor ('Gradient 'WithGradient) ('Layout 'Dense) ('Device 'CPU) ('DataType 'Float) ('Shape '[ 'Dim ('Name "output") ('Size 2), 'Dim ('Name "input") ('Size 1)])
+      input = undefined :: Tensor ('Gradient 'WithoutGradient) ('Layout 'Dense) 'UncheckedDevice ('DataType 'Float) ('Shape '[ 'Dim ('Name "input") ('Size 1)])
    in linearWithoutBias weight input

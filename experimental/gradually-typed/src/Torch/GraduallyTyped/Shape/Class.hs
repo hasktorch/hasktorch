@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -22,11 +23,15 @@
 
 module Torch.GraduallyTyped.Shape.Class where
 
+import Control.Exception (Exception (..))
+import Control.Monad.Catch (MonadThrow (throwM))
 import Data.Proxy (Proxy (Proxy))
 import Data.Singletons (Sing, SingKind (..))
 import Data.Singletons.Prelude.List (SList (..))
+import Data.Typeable (Typeable)
 import GHC.TypeLits (Symbol, TypeError, symbolVal, type (+), type (-))
 import GHC.TypeNats (Nat)
+import System.IO.Unsafe (unsafePerformIO)
 import Torch.GraduallyTyped.Prelude (All, Fst, LiftTimesMaybe, MapMaybe, PrependMaybe, Reverse, Snd, forgetIsChecked)
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SBy (..), SDim (..), SName (..), SSelectDim (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:|:))
 import Torch.GraduallyTyped.Unify (type (<+>))
@@ -139,40 +144,42 @@ type family (!) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (_k :: k) :: Dim
 -- >>> shape = SShape $ SName @"batch" :&: SSize @8 :|: SUncheckedName "feature" :&: SSize @2 :|: SNil
 -- >>> dim = sGetDim (SSelectDim $ SByName @"batch") shape
 -- >>> :type dim
--- dim :: MonadFail m => m (SDim ('Dim ('Name "batch") ('Size 8)))
+-- dim :: MonadThrow m => m (SDim ('Dim ('Name "batch") ('Size 8)))
 -- >>> fromSing <$> dim
 -- Dim {dimName = Checked "batch", dimSize = Checked 8}
 --
 -- >>> dim = sGetDim (SSelectDim $ SByName @"feature") shape
 -- >>> :type dim
--- dim :: MonadFail m => m (SDim ('Dim 'UncheckedName 'UncheckedSize))
+-- dim
+--   :: MonadThrow m => m (SDim ('Dim 'UncheckedName 'UncheckedSize))
 -- >>> fromSing <$> dim
 -- Dim {dimName = Unchecked "feature", dimSize = Checked 2}
 --
 -- >>> dim = sGetDim (SSelectDim $ SByName @"sequence") shape
 -- >>> :type dim
--- dim :: MonadFail m => m (SDim ('Dim 'UncheckedName 'UncheckedSize))
+-- dim
+--   :: MonadThrow m => m (SDim ('Dim 'UncheckedName 'UncheckedSize))
 -- >>> fromSing <$> dim
--- *** Exception: user error (Cannot return the first dimension matching ByName "sequence".)
+-- *** Exception: GetDimError {gdeBy = ByName "sequence"}
 --
 -- >>> dim = sGetDim (SSelectDim $ SByIndex @0) shape
 -- >>> :type dim
--- dim :: MonadFail m => m (SDim ('Dim ('Name "batch") ('Size 8)))
+-- dim :: MonadThrow m => m (SDim ('Dim ('Name "batch") ('Size 8)))
 -- >>> fromSing <$> dim
 -- Dim {dimName = Checked "batch", dimSize = Checked 8}
 --
 -- >>> :type sGetDim (SSelectDim $ SByIndex @2) shape
 -- sGetDim (SSelectDim $ SByIndex @2) shape
---   :: MonadFail m => m (SDim (TypeError ...))
+--   :: MonadThrow m => m (SDim (TypeError ...))
 sGetDim ::
   forall selectDim shape dim m.
-  (dim ~ GetDimF selectDim shape, MonadFail m) =>
+  (dim ~ GetDimF selectDim shape, MonadThrow m) =>
   SSelectDim selectDim ->
   SShape shape ->
   m (SDim dim)
 sGetDim (SUncheckedSelectDim by) (SUncheckedShape dims) = go 0 dims
   where
-    go _ [] = fail $ "Cannot return the first dimension matching " <> show by <> " in the shape " <> show dims <> "."
+    go _ [] = throwM $ GetDimErrorWithDims by dims
     go index (Dim name size : dims) =
       let dim' = SDim (SUncheckedName name) (SUncheckedSize size)
        in case by of
@@ -185,7 +192,7 @@ sGetDim (SUncheckedSelectDim by) (SShape dims) =
    in sGetDim (SUncheckedSelectDim by) (SUncheckedShape dims')
 sGetDim (SSelectDim by@SByName) (SShape SNil) =
   let by' = fromSing by
-   in fail $ "Cannot return the first dimension matching " <> show by' <> "."
+   in throwM $ GetDimError by'
 sGetDim (SSelectDim by@SByName) (SShape (SCons dim@(SDim (SUncheckedName name) _) dims)) =
   let ByName name' = fromSing by
    in if name == name' then pure (unsafeCoerce dim) else unsafeCoerce <$> sGetDim (SSelectDim by) (SShape dims)
@@ -199,9 +206,34 @@ sGetDim (SSelectDim by@SByIndex) (SShape dims) =
     by'@(ByIndex index') = fromSing by
     dims' = (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size)) <$> fromSing dims
     go :: forall dims. Integer -> SList dims -> m (SDim dim)
-    go _ SNil = fail @m $ "Cannot return the first dimension matching " <> show by' <> " in the shape " <> show dims' <> "."
+    go _ SNil = throwM $ GetDimErrorWithDims by' dims'
     go index (SCons dim dims) =
       if index' == index then pure (unsafeCoerce dim) else go (index + 1) dims
+
+data GetDimError
+  = GetDimError {gdeBy :: By String Integer}
+  | GetDimErrorWithDims {gdewdBy :: By String Integer, gdewdDims :: [Dim String Integer]}
+  deriving stock (Show, Typeable)
+
+instance Exception GetDimError where
+  displayException GetDimError {..} =
+    "Cannot return the first dimension matching `"
+      <> show gdeBy
+      <> "`."
+  displayException GetDimErrorWithDims {..} =
+    "Cannot return the first dimension matching `"
+      <> show gdewdBy
+      <> "` in the shape `"
+      <> show gdewdDims
+      <> "`."
+
+getDim ::
+  forall selectDim shape dim m.
+  (dim ~ GetDimF selectDim shape, MonadThrow m) =>
+  SSelectDim selectDim ->
+  SShape shape ->
+  SDim dim
+getDim = (unsafePerformIO .) . sGetDim
 
 type family ReplaceDimByIndexF (index :: Maybe Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) (dim :: Dim (Name Symbol) (Size Nat)) :: Maybe [Dim (Name Symbol) (Size Nat)] where
   ReplaceDimByIndexF ('Just 0) (_ ': t) dim = 'Just (dim ': t)
@@ -321,9 +353,21 @@ type family RemoveDimF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape 
   RemoveDimF _ 'UncheckedShape = 'UncheckedShape
   RemoveDimF ('SelectDim by) ('Shape dims) = 'Shape (RemoveDimCheckF by dims (RemoveDimImplF by dims))
 
+data UnifyNameError = UnifyNameError {uneExpect :: String, uneActual :: String}
+  deriving stock (Show)
+
+instance Exception UnifyNameError where
+  displayException UnifyNameError {..} =
+    "The supplied dimensions must be the same, "
+      <> "but dimensions with different names were found: "
+      <> show uneExpect
+      <> " and "
+      <> show uneActual
+      <> "."
+
 sUnifyName ::
   forall m name name'.
-  MonadFail m =>
+  MonadThrow m =>
   SName name ->
   SName name' ->
   m (SName (name <+> name'))
@@ -335,18 +379,23 @@ sUnifyName (SUncheckedName name) name'@SName = sUnifyName (SUncheckedName name) 
 sUnifyName name@SName name'@SName | forgetIsChecked (fromSing name) == forgetIsChecked (fromSing name') = pure (unsafeCoerce name)
 sUnifyName name@SName name'@SName | forgetIsChecked (fromSing name) == "*" = pure (unsafeCoerce name')
 sUnifyName name@SName name'@SName | forgetIsChecked (fromSing name') == "*" = pure (unsafeCoerce name)
-sUnifyName name name' =
-  fail $
+sUnifyName name name' = throwM $ UnifyNameError (forgetIsChecked (fromSing name)) (forgetIsChecked (fromSing name'))
+
+data UnifySizeError = UnifySizeError {useExpect :: Integer, useActual :: Integer}
+  deriving stock (Show)
+
+instance Exception UnifySizeError where
+  displayException UnifySizeError {..} =
     "The supplied dimensions must be the same, "
-      <> "but dimensions with different names were found: "
-      <> show (forgetIsChecked (fromSing name))
+      <> "but dimensions with different sizes were found: "
+      <> show useExpect
       <> " and "
-      <> show (forgetIsChecked (fromSing name'))
+      <> show useActual
       <> "."
 
 sUnifySize ::
   forall m size size'.
-  MonadFail m =>
+  MonadThrow m =>
   SSize size ->
   SSize size' ->
   m (SSize (size <+> size'))
@@ -354,14 +403,7 @@ sUnifySize (SUncheckedSize size) (SUncheckedSize size') | size == size' = pure (
 sUnifySize size@SSize (SUncheckedSize size') = sUnifySize (SUncheckedSize . forgetIsChecked $ fromSing size) (SUncheckedSize size')
 sUnifySize (SUncheckedSize size) size'@SSize = sUnifySize (SUncheckedSize size) (SUncheckedSize . forgetIsChecked $ fromSing size')
 sUnifySize size@SSize size'@SSize | forgetIsChecked (fromSing size) == forgetIsChecked (fromSing size') = pure (unsafeCoerce size)
-sUnifySize size size' =
-  fail $
-    "The supplied dimensions must be the same, "
-      <> "but dimensions with different sizes were found: "
-      <> show (forgetIsChecked (fromSing size))
-      <> " and "
-      <> show (forgetIsChecked (fromSing size'))
-      <> "."
+sUnifySize size size' = throwM $ UnifySizeError (forgetIsChecked (fromSing size)) (forgetIsChecked (fromSing size'))
 
 -- | Unify two dimensions.
 --
@@ -369,31 +411,31 @@ sUnifySize size size' =
 -- >>> dimB = SName @"batch" :&: SSize @0
 -- >>> dim = sUnifyDim dimA dimB
 -- >>> :type dim
--- dim :: MonadFail m => m (SDim ('Dim ('Name "batch") ('Size 0)))
+-- dim :: MonadThrow m => m (SDim ('Dim ('Name "batch") ('Size 0)))
 -- >>> fromSing <$> dim
 -- Dim {dimName = Checked "batch", dimSize = Checked 0}
 --
 -- >>> dimC = SName @"feature" :&: SSize @0
 -- >>> :type sUnifyDim dimB dimC
 -- sUnifyDim dimB dimC
---   :: MonadFail m => m (SDim ('Dim (TypeError ...) ('Size 0)))
+--   :: MonadThrow m => m (SDim ('Dim (TypeError ...) ('Size 0)))
 --
 -- >>> dimD = SUncheckedName "batch" :&: SSize @0
 -- >>> dim = sUnifyDim dimA dimD
 -- >>> :type dim
--- dim :: MonadFail m => m (SDim ('Dim 'UncheckedName ('Size 0)))
+-- dim :: MonadThrow m => m (SDim ('Dim 'UncheckedName ('Size 0)))
 -- >>> fromSing <$> dim
 -- Dim {dimName = Unchecked "batch", dimSize = Checked 0}
 --
 -- >>> dimE = SUncheckedName "feature" :&: SSize @0
 -- >>> dim = sUnifyDim dimB dimE
 -- >>> :type dim
--- dim :: MonadFail m => m (SDim ('Dim 'UncheckedName ('Size 0)))
+-- dim :: MonadThrow m => m (SDim ('Dim 'UncheckedName ('Size 0)))
 -- >>> fromSing <$> dim
--- *** Exception: user error (The supplied dimensions must be the same, but dimensions with different names were found: "batch" and "feature".)
+-- *** Exception: UnifyNameError {uneExpect = "batch", uneActual = "feature"}
 sUnifyDim ::
   forall m dim dim'.
-  MonadFail m =>
+  MonadThrow m =>
   SDim dim ->
   SDim dim' ->
   m (SDim (dim <+> dim'))

@@ -42,40 +42,39 @@
 
 module Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention where
 
+import Control.Monad.Catch (MonadThrow)
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..))
-import Control.Monad.Reader (MonadIO, MonadReader)
-import Control.Monad.State.Strict (MonadState (state), runState)
+import Control.Monad.State (evalStateT)
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
+import qualified Data.Map.Strict as Map
 import Data.Singletons (SingI (..), SingKind (..))
 import Data.Singletons.Prelude.List (SList (..))
 import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), KnownDataType, SDType (..), SDataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice, SDevice (..), SDeviceType (..))
+import Torch.GraduallyTyped.DType (DataType (..), SDType (..), SDataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout (..))
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, softmax)
 import Torch.GraduallyTyped.NN.Linear (Linear (..))
-import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TensorDict, TransformerStyle (..), lookupTensor)
+import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.Prelude (forgetIsChecked)
 import Torch.GraduallyTyped.Random (Generator, sMkGenerator)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (SWithGradient))
-import Torch.GraduallyTyped.Scalar (Scalar)
+import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, sGetDim, sUnifyDim, type (!))
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownDim (..), Name (..), SBy (..), SDim (..), SName (..), SSelectDim (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SBy (..), SDim (..), SName (..), SSelectDim (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes)
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (ReshapeF, TransposeF, sReshape, transpose)
 import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (MatmulF, matmul)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add, mulScalar)
-import Torch.GraduallyTyped.Tensor.Type (SGetShape (..), Tensor (..), checkedDataType, checkedDevice, checkedLayout, checkedShape)
+import Torch.GraduallyTyped.Tensor.Type (SGetShape (..), Tensor (..))
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
-import qualified Torch.Tensor
 
 -- | Generic multi-headed attention layer.
 -- Needs to be specialized to a given transformer type, e.g. 'T5'.
@@ -116,6 +115,7 @@ data
 newtype
   MultiHeadAttention
     (style :: TransformerStyle)
+    (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (headDim :: Dim (Name Symbol) (Size Nat))
@@ -127,82 +127,73 @@ newtype
     (dropoutP :: Type)
   where
   MultiHeadAttention ::
-    forall style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP.
-    GMultiHeadAttentionF style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP ->
-    MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP
-
-type GMultiHeadAttentionF
-  (style :: TransformerStyle)
-  (device :: Device (DeviceType Nat))
-  (dataType :: DataType DType)
-  (headDim :: Dim (Name Symbol) (Size Nat))
-  (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (embedDim :: Dim (Name Symbol) (Size Nat))
-  (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
-  (dropoutP :: Type) =
-  GMultiHeadAttention
-    headDim
-    headEmbedDim
-    embedDim
-    (QInProjF style device dataType queryEmbedDim embedDim)
-    (KInProjF style device dataType keyEmbedDim embedDim)
-    (VInProjF style device dataType valueEmbedDim embedDim)
-    (OutProjF style device dataType embedDim queryEmbedDim)
-    (DropoutF style dropoutP)
+    forall style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP.
+    GMultiHeadAttention
+      headDim
+      headEmbedDim
+      embedDim
+      (QInProjF style gradient device dataType queryEmbedDim embedDim)
+      (KInProjF style gradient device dataType keyEmbedDim embedDim)
+      (VInProjF style gradient device dataType valueEmbedDim embedDim)
+      (OutProjF style gradient device dataType embedDim queryEmbedDim)
+      (DropoutF style dropoutP) ->
+    MultiHeadAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP
 
 type family
   QInProjF
     (style :: TransformerStyle)
+    (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
     (embedDim :: Dim (Name Symbol) (Size Nat)) ::
     Type
   where
-  QInProjF 'T5 device dataType queryEmbedDim embedDim = Linear 'WithoutBias device dataType queryEmbedDim embedDim
-  QInProjF 'ByT5 device dataType queryEmbedDim embedDim = QInProjF 'T5 device dataType queryEmbedDim embedDim
-  QInProjF _ device dataType queryEmbedDim embedDim = Linear 'WithBias device dataType queryEmbedDim embedDim
+  QInProjF 'T5 gradient device dataType queryEmbedDim embedDim = Linear 'WithoutBias gradient device dataType queryEmbedDim embedDim
+  QInProjF 'ByT5 gradient device dataType queryEmbedDim embedDim = QInProjF 'T5 gradient device dataType queryEmbedDim embedDim
+  QInProjF _ gradient device dataType queryEmbedDim embedDim = Linear 'WithBias gradient device dataType queryEmbedDim embedDim
 
 type family
   KInProjF
     (style :: TransformerStyle)
+    (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
     (embedDim :: Dim (Name Symbol) (Size Nat)) ::
     Type
   where
-  KInProjF 'T5 device dataType keyEmbedDim embedDim = Linear 'WithoutBias device dataType keyEmbedDim embedDim
-  KInProjF 'ByT5 device dataType keyEmbedDim embedDim = KInProjF 'T5 device dataType keyEmbedDim embedDim
-  KInProjF _ device dataType keyEmbedDim embedDim = Linear 'WithBias device dataType keyEmbedDim embedDim
+  KInProjF 'T5 gradient device dataType keyEmbedDim embedDim = Linear 'WithoutBias gradient device dataType keyEmbedDim embedDim
+  KInProjF 'ByT5 gradient device dataType keyEmbedDim embedDim = KInProjF 'T5 gradient device dataType keyEmbedDim embedDim
+  KInProjF _ gradient device dataType keyEmbedDim embedDim = Linear 'WithBias gradient device dataType keyEmbedDim embedDim
 
 type family
   VInProjF
     (style :: TransformerStyle)
+    (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
     (embedDim :: Dim (Name Symbol) (Size Nat)) ::
     Type
   where
-  VInProjF 'T5 device dataType valueEmbedDim embedDim = Linear 'WithoutBias device dataType valueEmbedDim embedDim
-  VInProjF 'ByT5 device dataType valueEmbedDim embedDim = VInProjF 'T5 device dataType valueEmbedDim embedDim
-  VInProjF _ device dataType valueEmbedDim embedDim = Linear 'WithBias device dataType valueEmbedDim embedDim
+  VInProjF 'T5 gradient device dataType valueEmbedDim embedDim = Linear 'WithoutBias gradient device dataType valueEmbedDim embedDim
+  VInProjF 'ByT5 gradient device dataType valueEmbedDim embedDim = VInProjF 'T5 gradient device dataType valueEmbedDim embedDim
+  VInProjF _ gradient device dataType valueEmbedDim embedDim = Linear 'WithBias gradient device dataType valueEmbedDim embedDim
 
 type family
   OutProjF
     (style :: TransformerStyle)
+    (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
     (dataType :: DataType DType)
     (embedDim :: Dim (Name Symbol) (Size Nat))
     (queryEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
     Type
   where
-  OutProjF 'T5 device dataType embedDim queryEmbedDim = Linear 'WithoutBias device dataType embedDim queryEmbedDim
-  OutProjF 'ByT5 device dataType embedDim queryEmbedDim = OutProjF 'T5 device dataType embedDim queryEmbedDim
-  OutProjF _ device dataType embedDim queryEmbedDim = Linear 'WithBias device dataType embedDim queryEmbedDim
+  OutProjF 'T5 gradient device dataType embedDim queryEmbedDim = Linear 'WithoutBias gradient device dataType embedDim queryEmbedDim
+  OutProjF 'ByT5 gradient device dataType embedDim queryEmbedDim = OutProjF 'T5 gradient device dataType embedDim queryEmbedDim
+  OutProjF _ gradient device dataType embedDim queryEmbedDim = Linear 'WithBias gradient device dataType embedDim queryEmbedDim
 
 type family
   DropoutF
@@ -213,186 +204,132 @@ type family
   DropoutF _ dropoutP = Dropout dropoutP
 
 instance
-  ( qInProj ~ QInProjF style device dataType queryEmbedDim embedDim,
-    HasInitialize qInProj,
-    InitializeF qInProj ~ (SDevice device -> SDataType dataType -> SDim queryEmbedDim -> SDim embedDim -> Generator device -> (qInProj, Generator device)),
-    kInProj ~ KInProjF style device dataType keyEmbedDim embedDim,
-    HasInitialize kInProj,
-    InitializeF kInProj ~ (SDevice device -> SDataType dataType -> SDim keyEmbedDim -> SDim embedDim -> Generator device -> (kInProj, Generator device)),
-    vInProj ~ VInProjF style device dataType valueEmbedDim embedDim,
-    HasInitialize vInProj,
-    InitializeF vInProj ~ (SDevice device -> SDataType dataType -> SDim valueEmbedDim -> SDim embedDim -> Generator device -> (vInProj, Generator device)),
-    outProj ~ OutProjF style device dataType embedDim queryEmbedDim,
-    HasInitialize outProj,
-    InitializeF outProj ~ (SDevice device -> SDataType dataType -> SDim embedDim -> SDim queryEmbedDim -> Generator device -> (outProj, Generator device)),
+  ( qInProj ~ QInProjF style gradient device dataType queryEmbedDim embedDim,
+    HasInitialize qInProj (SGradient gradient, SDevice device, SDataType dataType, SDim queryEmbedDim, SDim embedDim) generator generator',
+    kInProj ~ KInProjF style gradient device dataType keyEmbedDim embedDim,
+    HasInitialize kInProj (SGradient gradient, SDevice device, SDataType dataType, SDim keyEmbedDim, SDim embedDim) generator' generator'',
+    vInProj ~ VInProjF style gradient device dataType valueEmbedDim embedDim,
+    HasInitialize vInProj (SGradient gradient, SDevice device, SDataType dataType, SDim valueEmbedDim, SDim embedDim) generator'' generator''',
+    outProj ~ OutProjF style gradient device dataType embedDim queryEmbedDim,
+    HasInitialize outProj (SGradient gradient, SDevice device, SDataType dataType, SDim embedDim, SDim queryEmbedDim) generator''' generator'''',
     dropout ~ DropoutF style dropoutP,
-    HasInitialize dropout,
-    GMultiHeadAttentionF style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP ~ GMultiHeadAttention headDim headEmbedDim embedDim qInProj kInProj vInProj outProj dropout
+    HasInitialize dropout dropoutP generator'''' generator''''
   ) =>
-  HasInitialize (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
+  HasInitialize
+    (MultiHeadAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
+    (SGradient gradient, SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim queryEmbedDim, SDim keyEmbedDim, SDim valueEmbedDim, dropoutP)
+    generator
+    generator''''
   where
-  type
-    InitializeF (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP) =
-      SDevice device ->
-      SDataType dataType ->
-      SDim headDim ->
-      SDim headEmbedDim ->
-      SDim embedDim ->
-      SDim queryEmbedDim ->
-      SDim keyEmbedDim ->
-      SDim valueEmbedDim ->
-      dropoutP ->
-      Generator device ->
-      (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP, Generator device)
-  initialize device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP = runState $ do
-    qInProj <- state $ initialize @qInProj device dataType queryEmbedDim embedDim
-    kInProj <- state $ initialize @kInProj device dataType keyEmbedDim embedDim
-    vInProj <- state $ initialize @vInProj device dataType valueEmbedDim embedDim
-    outProj <- state $ initialize @outProj device dataType embedDim queryEmbedDim
-    let dropout = initialize @dropout dropoutP
-    pure . MultiHeadAttention $ GMultiHeadAttention headDim headEmbedDim embedDim qInProj kInProj vInProj outProj dropout
+  initialize (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, valueEmbedDim, dropoutP) =
+    let qInProj = IxState $ initialize (gradient, device, dataType, queryEmbedDim, embedDim)
+        kInProj = IxState $ initialize (gradient, device, dataType, keyEmbedDim, embedDim)
+        vInProj = IxState $ initialize (gradient, device, dataType, valueEmbedDim, embedDim)
+        outProj = IxState $ initialize (gradient, device, dataType, embedDim, queryEmbedDim)
+        dropout = IxState $ initialize dropoutP
+     in runIxState $
+          ( GMultiHeadAttention
+              <<$>> ireturn headDim
+              <<*>> ireturn headEmbedDim
+              <<*>> ireturn embedDim
+              <<*>> qInProj
+              <<*>> kInProj
+              <<*>> vInProj
+              <<*>> outProj
+              <<*>> dropout
+          )
+            >>>= ireturn . MultiHeadAttention
 
-lookupMultiHeadAttention ::
-  forall style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP m.
-  ( SingI style,
-    MonadReader TensorDict m,
-    MonadIO m,
-    MonadFail m,
-    KnownDevice device,
-    KnownDataType dataType,
-    KnownDim embedDim,
-    KnownDim queryEmbedDim,
-    KnownDim keyEmbedDim,
-    KnownDim valueEmbedDim,
-    Scalar dropoutP
-  ) =>
-  SDim headDim ->
-  SDim headEmbedDim ->
-  SDim embedDim ->
-  dropoutP ->
-  String ->
-  m (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
-lookupMultiHeadAttention headDim headEmbedDim embedDim dropoutP prefix =
-  let qInProj ST5 =
-        LinearWithoutBias
-          <$> lookupTensor (prefix <> "q.weight")
-      qInProj SByT5 =
-        LinearWithoutBias
-          <$> lookupTensor (prefix <> "q.weight")
-      qInProj SBART =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "q_proj.weight")
-          <*> lookupTensor (prefix <> "q_proj.bias")
-      qInProj SMBART =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "q_proj.weight")
-          <*> lookupTensor (prefix <> "q_proj.bias")
-      qInProj SPegasus =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "q_proj.weight")
-          <*> lookupTensor (prefix <> "q_proj.bias")
-      qInProj SBERT =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "self.query.weight")
-          <*> lookupTensor (prefix <> "self.query.bias")
-      qInProj SRoBERTa =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "self.query.weight")
-          <*> lookupTensor (prefix <> "self.query.bias")
-      qInProj SGPT2 = undefined
-      kInProj ST5 =
-        LinearWithoutBias
-          <$> lookupTensor (prefix <> "k.weight")
-      kInProj SByT5 =
-        LinearWithoutBias
-          <$> lookupTensor (prefix <> "k.weight")
-      kInProj SBART =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "k_proj.weight")
-          <*> lookupTensor (prefix <> "k_proj.bias")
-      kInProj SMBART =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "k_proj.weight")
-          <*> lookupTensor (prefix <> "k_proj.bias")
-      kInProj SPegasus =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "k_proj.weight")
-          <*> lookupTensor (prefix <> "k_proj.bias")
-      kInProj SBERT =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "self.key.weight")
-          <*> lookupTensor (prefix <> "self.key.bias")
-      kInProj SRoBERTa =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "self.key.weight")
-          <*> lookupTensor (prefix <> "self.key.bias")
-      kInProj SGPT2 = undefined
-      vInProj ST5 =
-        LinearWithoutBias
-          <$> lookupTensor (prefix <> "v.weight")
-      vInProj SByT5 =
-        LinearWithoutBias
-          <$> lookupTensor (prefix <> "v.weight")
-      vInProj SBART =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "v_proj.weight")
-          <*> lookupTensor (prefix <> "v_proj.bias")
-      vInProj SMBART =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "v_proj.weight")
-          <*> lookupTensor (prefix <> "v_proj.bias")
-      vInProj SPegasus =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "v_proj.weight")
-          <*> lookupTensor (prefix <> "v_proj.bias")
-      vInProj SBERT =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "self.value.weight")
-          <*> lookupTensor (prefix <> "self.value.bias")
-      vInProj SRoBERTa =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "self.value.weight")
-          <*> lookupTensor (prefix <> "self.value.bias")
-      vInProj SGPT2 = undefined
-      outProj ST5 =
-        LinearWithoutBias
-          <$> lookupTensor (prefix <> "o.weight")
-      outProj SByT5 =
-        LinearWithoutBias
-          <$> lookupTensor (prefix <> "o.weight")
-      outProj SBART =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "out_proj.weight")
-          <*> lookupTensor (prefix <> "out_proj.bias")
-      outProj SMBART =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "out_proj.weight")
-          <*> lookupTensor (prefix <> "out_proj.bias")
-      outProj SPegasus =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "out_proj.weight")
-          <*> lookupTensor (prefix <> "out_proj.bias")
-      outProj SBERT =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "output.dense.weight")
-          <*> lookupTensor (prefix <> "output.dense.bias")
-      outProj SRoBERTa =
-        LinearWithBias
-          <$> lookupTensor (prefix <> "output.dense.weight")
-          <*> lookupTensor (prefix <> "output.dense.bias")
-      outProj SGPT2 = undefined
-      dropout _ = pure (initialize @(Dropout dropoutP) dropoutP)
-   in MultiHeadAttention
-        <$> ( GMultiHeadAttention
-                <$> pure headDim
-                <*> pure headEmbedDim
-                <*> pure embedDim
-                <*> qInProj (sing @style)
-                <*> kInProj (sing @style)
-                <*> vInProj (sing @style)
-                <*> outProj (sing @style)
-                <*> dropout (sing @style)
-            )
+instance
+  SingI style =>
+  HasStateDict
+    (MultiHeadAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
+    (SGradient gradient, SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim queryEmbedDim, SDim keyEmbedDim, SDim valueEmbedDim, dropoutP)
+  where
+  fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, valueEmbedDim, dropoutP) k =
+    let qInProj ST5 = fromStateDict (gradient, device, dataType, queryEmbedDim, embedDim) (k <> "q.")
+        qInProj SByT5 = fromStateDict (gradient, device, dataType, queryEmbedDim, embedDim) (k <> "q.")
+        qInProj SBART = fromStateDict (gradient, device, dataType, queryEmbedDim, embedDim) (k <> "q_proj.")
+        qInProj SMBART = fromStateDict (gradient, device, dataType, queryEmbedDim, embedDim) (k <> "q_proj.")
+        qInProj SPegasus = fromStateDict (gradient, device, dataType, queryEmbedDim, embedDim) (k <> "q_proj.")
+        qInProj SBERT = fromStateDict (gradient, device, dataType, queryEmbedDim, embedDim) (k <> "self.query.")
+        qInProj SRoBERTa = fromStateDict (gradient, device, dataType, queryEmbedDim, embedDim) (k <> "self.query.")
+        qInProj SGPT2 = undefined
+        kInProj ST5 = fromStateDict (gradient, device, dataType, keyEmbedDim, embedDim) (k <> "k.")
+        kInProj SByT5 = fromStateDict (gradient, device, dataType, keyEmbedDim, embedDim) (k <> "k.")
+        kInProj SBART = fromStateDict (gradient, device, dataType, keyEmbedDim, embedDim) (k <> "k_proj.")
+        kInProj SMBART = fromStateDict (gradient, device, dataType, keyEmbedDim, embedDim) (k <> "k_proj.")
+        kInProj SPegasus = fromStateDict (gradient, device, dataType, keyEmbedDim, embedDim) (k <> "k_proj.")
+        kInProj SBERT = fromStateDict (gradient, device, dataType, keyEmbedDim, embedDim) (k <> "self.key.")
+        kInProj SRoBERTa = fromStateDict (gradient, device, dataType, keyEmbedDim, embedDim) (k <> "self.key.")
+        kInProj SGPT2 = undefined
+        vInProj ST5 = fromStateDict (gradient, device, dataType, valueEmbedDim, embedDim) (k <> "v.")
+        vInProj SByT5 = fromStateDict (gradient, device, dataType, valueEmbedDim, embedDim) (k <> "v.")
+        vInProj SBART = fromStateDict (gradient, device, dataType, valueEmbedDim, embedDim) (k <> "v_proj.")
+        vInProj SMBART = fromStateDict (gradient, device, dataType, valueEmbedDim, embedDim) (k <> "v_proj.")
+        vInProj SPegasus = fromStateDict (gradient, device, dataType, valueEmbedDim, embedDim) (k <> "v_proj.")
+        vInProj SBERT = fromStateDict (gradient, device, dataType, valueEmbedDim, embedDim) (k <> "self.value.")
+        vInProj SRoBERTa = fromStateDict (gradient, device, dataType, valueEmbedDim, embedDim) (k <> "self.value.")
+        vInProj SGPT2 = undefined
+        outProj ST5 = fromStateDict (gradient, device, dataType, embedDim, queryEmbedDim) (k <> "o.")
+        outProj SByT5 = fromStateDict (gradient, device, dataType, embedDim, queryEmbedDim) (k <> "o.")
+        outProj SBART = fromStateDict (gradient, device, dataType, embedDim, queryEmbedDim) (k <> "out_proj.")
+        outProj SMBART = fromStateDict (gradient, device, dataType, embedDim, queryEmbedDim) (k <> "out_proj.")
+        outProj SPegasus = fromStateDict (gradient, device, dataType, embedDim, queryEmbedDim) (k <> "out_proj.")
+        outProj SBERT = fromStateDict (gradient, device, dataType, embedDim, queryEmbedDim) (k <> "output.dense.")
+        outProj SRoBERTa = fromStateDict (gradient, device, dataType, embedDim, queryEmbedDim) (k <> "output.dense.")
+        outProj SGPT2 = undefined
+        dropout _ = fromStateDict dropoutP k
+     in MultiHeadAttention
+          <$> ( GMultiHeadAttention
+                  <$> pure headDim
+                  <*> pure headEmbedDim
+                  <*> pure embedDim
+                  <*> qInProj (sing @style)
+                  <*> kInProj (sing @style)
+                  <*> vInProj (sing @style)
+                  <*> outProj (sing @style)
+                  <*> dropout (sing @style)
+              )
+  toStateDict k (MultiHeadAttention GMultiHeadAttention {..}) =
+    let qInProj ST5 = toStateDict (k <> "q.")
+        qInProj SByT5 = toStateDict (k <> "q.")
+        qInProj SBART = toStateDict (k <> "q_proj.")
+        qInProj SMBART = toStateDict (k <> "q_proj.")
+        qInProj SPegasus = toStateDict (k <> "q_proj.")
+        qInProj SBERT = toStateDict (k <> "self.query.")
+        qInProj SRoBERTa = toStateDict (k <> "self.query.")
+        qInProj SGPT2 = undefined
+        kInProj ST5 = toStateDict (k <> "k.")
+        kInProj SByT5 = toStateDict (k <> "k.")
+        kInProj SBART = toStateDict (k <> "k_proj.")
+        kInProj SMBART = toStateDict (k <> "k_proj.")
+        kInProj SPegasus = toStateDict (k <> "k_proj.")
+        kInProj SBERT = toStateDict (k <> "self.key.")
+        kInProj SRoBERTa = toStateDict (k <> "self.key.")
+        kInProj SGPT2 = undefined
+        vInProj ST5 = toStateDict (k <> "v.")
+        vInProj SByT5 = toStateDict (k <> "v.")
+        vInProj SBART = toStateDict (k <> "v_proj.")
+        vInProj SMBART = toStateDict (k <> "v_proj.")
+        vInProj SPegasus = toStateDict (k <> "v_proj.")
+        vInProj SBERT = toStateDict (k <> "self.value.")
+        vInProj SRoBERTa = toStateDict (k <> "self.value.")
+        vInProj SGPT2 = undefined
+        outProj ST5 = toStateDict (k <> "o.")
+        outProj SByT5 = toStateDict (k <> "o.")
+        outProj SBART = toStateDict (k <> "out_proj.")
+        outProj SMBART = toStateDict (k <> "out_proj.")
+        outProj SPegasus = toStateDict (k <> "out_proj.")
+        outProj SBERT = toStateDict (k <> "output.dense.")
+        outProj SRoBERTa = toStateDict (k <> "output.dense.")
+        outProj SGPT2 = undefined
+     in do
+          () <- qInProj (sing @style) mhaQInProj
+          () <- kInProj (sing @style) mhaKInProj
+          () <- vInProj (sing @style) mhaVInProj
+          () <- outProj (sing @style) mhaOutProj
+          pure ()
 
 -- | Whether or not scaling is applied in the multi-headed attention layer.
 data Scaling
@@ -458,7 +395,16 @@ data OutProj
 instance
   ( SingI style,
     HasForward
-      (GMultiHeadAttentionF style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
+      ( GMultiHeadAttention
+          headDim
+          headEmbedDim
+          embedDim
+          (QInProjF style gradient device dataType queryEmbedDim embedDim)
+          (KInProjF style gradient device dataType keyEmbedDim embedDim)
+          (VInProjF style gradient device dataType valueEmbedDim embedDim)
+          (OutProjF style gradient device dataType embedDim queryEmbedDim)
+          (DropoutF style dropoutP)
+      )
       ( Scaling,
         Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
         Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
@@ -470,7 +416,7 @@ instance
       generatorOutput,
     output
       ~ Tensor
-          'WithGradient
+          gradient
           ('Layout 'Dense <+> queryLayout <+> keyLayout <+> attentionBiasLayout <+> valueLayout)
           (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice <+> valueDevice)
           (dataType <+> queryDataType <+> keyDataType <+> attentionBiasDataType <+> valueDataType)
@@ -479,7 +425,7 @@ instance
       ~ Generator (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)
   ) =>
   HasForward
-    (MultiHeadAttention style device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
+    (MultiHeadAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
     ( Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape,
       Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape,
       Tensor valueRequiresGradient valueLayout valueDevice valueDataType valueShape,
@@ -523,7 +469,7 @@ type BatchDim queryShape keyShape valueShape =
 
 getBatchDim ::
   forall m queryShape keyShape valueShape batchDim.
-  (MonadFail m, batchDim ~ BatchDim queryShape keyShape valueShape) =>
+  (MonadThrow m, batchDim ~ BatchDim queryShape keyShape valueShape) =>
   SShape queryShape ->
   SShape keyShape ->
   SShape valueShape ->
@@ -544,7 +490,7 @@ type QuerySeqDim queryShape =
 
 getQuerySeqDim ::
   forall m queryShape querySeqDim.
-  (MonadFail m, querySeqDim ~ QuerySeqDim queryShape) =>
+  (MonadThrow m, querySeqDim ~ QuerySeqDim queryShape) =>
   SShape queryShape ->
   m (SDim querySeqDim)
 getQuerySeqDim = sGetDim (SSelectDim $ SByIndex @1)
@@ -559,7 +505,7 @@ type KeySeqDim keyShape valueShape =
 
 getKeySeqDim ::
   forall m keyShape valueShape keySeqDim.
-  (MonadFail m, keySeqDim ~ KeySeqDim keyShape valueShape) =>
+  (MonadThrow m, keySeqDim ~ KeySeqDim keyShape valueShape) =>
   SShape keyShape ->
   SShape valueShape ->
   m (SDim keySeqDim)
@@ -677,18 +623,18 @@ instance
   where
   forward GMultiHeadAttention {..} (scaling, query, key, value, attentionBias) =
     runIxState $
-      let batchDim = unsafePerformIO $ do
-            queryShape <- sShape query
-            keyShape <- sShape key
-            valueShape <- sShape value
-            getBatchDim queryShape keyShape valueShape
-          querySeqDim = unsafePerformIO $ do
-            queryShape <- sShape query
-            getQuerySeqDim queryShape
-          keySeqDim = unsafePerformIO $ do
-            keyShape <- sShape key
-            valueShape <- sShape value
-            getKeySeqDim keyShape valueShape
+      let batchDim =
+            let queryShape = sShape query
+                keyShape = sShape key
+                valueShape = sShape value
+             in unsafePerformIO $ getBatchDim queryShape keyShape valueShape
+          querySeqDim =
+            let queryShape = sShape query
+             in unsafePerformIO $ getQuerySeqDim queryShape
+          keySeqDim =
+            let keyShape = sShape key
+                valueShape = sShape value
+             in unsafePerformIO $ getKeySeqDim keyShape valueShape
           q =
             ireturn query
               >>>= IxState . forward mhaQInProj
@@ -728,86 +674,28 @@ instance
             >>>= ireturn . sReshape (SShape $ batchDim :|: querySeqDim :|: mhaEmbedDim :|: SNil)
             >>>= IxState . forward mhaOutProj
 
-testMHA ::
-  IO
-    ( Tensor
-        'WithGradient
-        ('Layout 'Dense)
-        ('Device 'CPU)
-        ('DataType 'Float)
-        ( 'Shape
-            '[ 'Dim ('Name "*") ('Size 1),
-               'Dim ('Name "*") ('Size 4),
-               'Dim ('Name "*") ('Size 3)
-             ]
-        )
-    )
 testMHA = do
-  let sOnes' dim dim' = sOnes SWithGradient (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ dim' :|: dim :|: SNil)
-      queryEmbedDim = SName @"*" :&: SSize @3
-      embedDim = SName @"*" :&: SSize @2
-      q = LinearWithoutBias (sOnes' queryEmbedDim embedDim)
-      k = LinearWithoutBias (sOnes' queryEmbedDim embedDim)
-      v = LinearWithoutBias (sOnes' queryEmbedDim embedDim)
-      o = LinearWithoutBias (sOnes' embedDim queryEmbedDim)
-      dropout = Dropout 0.1
-      mha =
-        MultiHeadAttention
-          @'T5
-          @('Device 'CPU)
-          @('DataType 'Float)
-          @('Dim ('Name "*") ('Size 1))
-          @('Dim ('Name "*") ('Size 2))
-          @('Dim ('Name "*") ('Size 2))
-          @('Dim ('Name "*") ('Size 3))
-          @('Dim ('Name "*") ('Size 3))
-          @('Dim ('Name "*") ('Size 3))
-          @Float
-          ( GMultiHeadAttention
-              (SName @"*" :&: SSize @1)
-              (SName @"*" :&: SSize @2)
-              embedDim
-              q
-              k
-              v
-              o
-              dropout
-          )
-  query <-
-    case Torch.Tensor.asTensor [[[0 :: Float, 1, 2], [-1, -2, -3], [7, -2, -3], [-1, 5, -3]]] of
-      Torch.Tensor.Unsafe t ->
-        pure (UnsafeTensor @'WithoutGradient t)
-          >>= checkedLayout @('Layout 'Dense)
-          >>= checkedDevice @('Device 'CPU)
-          >>= checkedDataType @('DataType 'Float)
-          >>= checkedShape @('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 4), 'Dim ('Name "*") ('Size 3)])
-  key <-
-    case Torch.Tensor.asTensor [[[0 :: Float, 0.5, 1], [-0.1, -0.2, -0.3], [-1, 0, 1]]] of
-      Torch.Tensor.Unsafe t ->
-        pure (UnsafeTensor @'WithoutGradient t)
-          >>= checkedLayout @('Layout 'Dense)
-          >>= checkedDevice @('Device 'CPU)
-          >>= checkedDataType @('DataType 'Float)
-          >>= checkedShape @('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 3), 'Dim ('Name "*") ('Size 3)])
-  let value = key
-  attentionBias <-
-    case Torch.Tensor.asTensor
-      [ [ [ [0 :: Float, 3, 3],
-            [1, 0, 3],
-            [1, 1, 0],
-            [1, 1, 1]
-          ]
-        ]
-      ] of
-      Torch.Tensor.Unsafe t ->
-        pure (UnsafeTensor @'WithoutGradient t)
-          >>= checkedLayout @('Layout 'Dense)
-          >>= checkedDevice @('Device 'CPU)
-          >>= checkedDataType @('DataType 'Float)
-          >>= checkedShape @('Shape '[ 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 4), 'Dim ('Name "*") ('Size 3)])
-  g <- sMkGenerator (SDevice SCPU) 0
-  let (output, _) = forward mha (query, key, value, attentionBias) g
-  case output of
-    UnsafeTensor t ->
-      print (Torch.Tensor.Unsafe t)
+  let gradient = SGradient SWithGradient
+      device = SDevice SCPU
+      dataType = SDataType SFloat
+      headDim = SName @"*" :&: SSize @8
+      headEmbedDim = SName @"*" :&: SSize @64
+      embedDim = SName @"*" :&: SSize @512
+      queryEmbedDim = SName @"*" :&: SSize @512
+      keyEmbedDim = queryEmbedDim
+      valueEmbedDim = queryEmbedDim
+      dropoutP :: Float = 0.0
+  g <- sMkGenerator device 0
+  let (mha, g') = initialize @(MultiHeadAttention 'T5 _ _ _ _ _ _ _ _ _ _) (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, valueEmbedDim, dropoutP) g
+  mha' <- flip evalStateT Map.empty $ do
+    toStateDict "mha" mha
+    fromStateDict @(MultiHeadAttention 'T5 _ _ _ _ _ _ _ _ _ _) (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, valueEmbedDim, dropoutP) "mha"
+  let batchDim = SName @"*" :&: SSize @3
+      seqDim = SName @"*" :&: SSize @4
+      sOnes' = sOnes (SGradient SWithoutGradient) (SLayout SDense) device
+      query = sOnes' dataType (SShape $ batchDim :|: seqDim :|: queryEmbedDim :|: SNil)
+      key = sOnes' dataType (SShape $ batchDim :|: seqDim :|: keyEmbedDim :|: SNil)
+      value = sOnes' dataType (SShape $ batchDim :|: seqDim :|: valueEmbedDim :|: SNil)
+      attentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
+  let (output, _) = forward mha' (query, key, value, attentionBias) g'
   pure output

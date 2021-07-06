@@ -6,7 +6,9 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeApplications #-}
@@ -17,40 +19,35 @@
 
 module Torch.GraduallyTyped.NN.Transformer.RoBERTa.Common where
 
-import Control.Monad.Reader (ReaderT (runReaderT))
+import Control.Monad.Catch (MonadThrow)
 import Data.Kind (Type)
 import Data.Singletons (SingI (..))
 import GHC.Generics (Generic)
-import GHC.TypeLits (Nat, Symbol)
-import GHC.TypeNats (type (<=?))
+import GHC.TypeLits (KnownNat, Nat, Symbol)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), SDType (..), SDataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasInitialize (..))
-import Torch.GraduallyTyped.NN.Transformer.EncoderOnly (EncoderOnlyTransformer (..), EncoderOnlyTransformerWithLMHead (..), lookupEncoderOnlyTransformer, lookupEncoderOnlyTransformerWithLMHead)
-import Torch.GraduallyTyped.NN.Transformer.Stack (HasLookupStack)
-import Torch.GraduallyTyped.NN.Transformer.Type (TensorDict, TransformerStyle (RoBERTa), mkTransformerInput, mkTransformerPaddingMask, tensorDictFromPretrained)
-import Torch.GraduallyTyped.Prelude (Seq)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
-import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
+import Torch.GraduallyTyped.NN.Class (HasStateDict (..))
+import Torch.GraduallyTyped.NN.Transformer.EncoderOnly (EncoderOnlyTransformer (..), EncoderOnlyTransformerWithLMHead (..))
+import Torch.GraduallyTyped.NN.Transformer.Type (MkTransformerPaddingMaskC, TransformerHead (..), TransformerStyle (RoBERTa), mkTransformerInput, mkTransformerPaddingMask)
+import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim, Name (..), SDim, Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
-import Torch.GraduallyTyped.Unify (type (<+>))
 
 -- | RoBERTa dType.
 type RoBERTaDType = 'Float
 
--- | RoBERTa dType.
+-- | RoBERTa dType singleton.
 robertaDType :: SDType RoBERTaDType
-robertaDType = SFloat
+robertaDType = sing @RoBERTaDType
 
 -- | RoBERTa data type.
 type RoBERTaDataType = 'DataType RoBERTaDType
 
--- | RoBERTa data type.
+-- | RoBERTa data type singleton.
 robertaDataType :: SDataType RoBERTaDataType
-robertaDataType = SDataType robertaDType
+robertaDataType = sing @RoBERTaDataType
 
 -- | RoBERTa dropout probability type.
 type RoBERTaDropoutP = Float
@@ -64,6 +61,10 @@ robertaDropoutP = 0.1
 --
 -- Note the two extra dimensions.
 type RoBERTaPosEncDim = 'Dim ('Name "*") ('Size 514)
+
+-- | RoBERTa positional encoding dimension singleton.
+robertaPosEncDim :: SDim RoBERTaPosEncDim
+robertaPosEncDim = sing @RoBERTaPosEncDim
 
 -- | RoBERTa layer-norm epsilon.
 -- 'layer_norm_epsilon = 1e-5'
@@ -94,10 +95,22 @@ robertaEOSTokenId = 2
 robertaAttentionMaskBias :: Double
 robertaAttentionMaskBias = -10000
 
+data
+  GRoBERTaModel
+    (robertaModel :: Type)
+  where
+  GRoBERTaModel ::
+    forall robertaModel.
+    { robertaModel :: robertaModel
+    } ->
+    GRoBERTaModel robertaModel
+
 -- | RoBERTa model.
 newtype
   RoBERTaModel
+    (transformerHead :: TransformerHead)
     (numLayers :: Nat)
+    (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
     (headDim :: Dim (Name Symbol) (Size Nat))
     (headEmbedDim :: Dim (Name Symbol) (Size Nat))
@@ -108,45 +121,17 @@ newtype
     (typeVocabDim :: Dim (Name Symbol) (Size Nat))
   where
   RoBERTaModel ::
-    forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim.
-    RoBERTaModelEncoderF RoBERTaModel numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim ->
-    RoBERTaModel numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim
-  deriving stock (Generic)
-
--- | RoBERTa model with language modelling head.
-newtype
-  RoBERTaModelWithLMHead
-    (numLayers :: Nat)
-    (device :: Device (DeviceType Nat))
-    (headDim :: Dim (Name Symbol) (Size Nat))
-    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (embedDim :: Dim (Name Symbol) (Size Nat))
-    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (ffnDim :: Dim (Name Symbol) (Size Nat))
-    (vocabDim :: Dim (Name Symbol) (Size Nat))
-    (typeVocabDim :: Dim (Name Symbol) (Size Nat))
-  where
-  RoBERTaModelWithLMHead ::
-    forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim.
-    RoBERTaModelEncoderF RoBERTaModelWithLMHead numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim ->
-    RoBERTaModelWithLMHead numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim
+    forall transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim.
+    GRoBERTaModel
+      (RoBERTaModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim) ->
+    RoBERTaModel transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim
   deriving stock (Generic)
 
 type family
-  RoBERTaModelEncoderF
-    ( robertaModel ::
-        Nat ->
-        Device (DeviceType Nat) ->
-        Dim (Name Symbol) (Size Nat) ->
-        Dim (Name Symbol) (Size Nat) ->
-        Dim (Name Symbol) (Size Nat) ->
-        Dim (Name Symbol) (Size Nat) ->
-        Dim (Name Symbol) (Size Nat) ->
-        Dim (Name Symbol) (Size Nat) ->
-        Dim (Name Symbol) (Size Nat) ->
-        Type
-    )
+  RoBERTaModelF
+    (transformerHead :: TransformerHead)
     (numLayers :: Nat)
+    (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
     (headDim :: Dim (Name Symbol) (Size Nat))
     (headEmbedDim :: Dim (Name Symbol) (Size Nat))
@@ -157,101 +142,47 @@ type family
     (typeVocabDim :: Dim (Name Symbol) (Size Nat)) ::
     Type
   where
-  RoBERTaModelEncoderF RoBERTaModel numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim =
-    EncoderOnlyTransformer
-      numLayers
-      'RoBERTa
-      device
-      RoBERTaDataType
-      headDim
-      headEmbedDim
-      embedDim
-      inputEmbedDim
-      ffnDim
-      RoBERTaPosEncDim
-      vocabDim
-      typeVocabDim
-      RoBERTaDropoutP
-  RoBERTaModelEncoderF RoBERTaModelWithLMHead numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim =
-    EncoderOnlyTransformerWithLMHead
-      numLayers
-      'RoBERTa
-      device
-      RoBERTaDataType
-      headDim
-      headEmbedDim
-      embedDim
-      inputEmbedDim
-      ffnDim
-      RoBERTaPosEncDim
-      vocabDim
-      typeVocabDim
-      RoBERTaDropoutP
+  RoBERTaModelF 'WithoutHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim =
+    EncoderOnlyTransformer 'RoBERTa numLayers gradient device RoBERTaDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim RoBERTaPosEncDim vocabDim typeVocabDim RoBERTaDropoutP
+  RoBERTaModelF 'WithMLMHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim =
+    EncoderOnlyTransformerWithLMHead 'RoBERTa numLayers gradient device RoBERTaDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim RoBERTaPosEncDim vocabDim typeVocabDim RoBERTaDropoutP
 
 instance
-  ( KnownDim headDim,
-    SingI headDim,
+  ( SingI headDim,
     SingI headEmbedDim,
-    KnownDim embedDim,
     SingI embedDim,
-    KnownDim ffnDim,
-    KnownDim inputEmbedDim,
     SingI inputEmbedDim,
-    KnownDim vocabDim,
-    KnownDim typeVocabDim,
-    HasLookupStack numLayers (1 <=? numLayers) numLayers 'RoBERTa ('Device 'CPU) RoBERTaDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim RoBERTaDropoutP (ReaderT TensorDict IO)
+    SingI ffnDim,
+    SingI vocabDim,
+    SingI typeVocabDim,
+    KnownNat numLayers,
+    HasStateDict
+      (RoBERTaModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
+      (SGradient gradient, SDevice device, SDataType RoBERTaDataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim inputEmbedDim, SDim ffnDim, SDim RoBERTaPosEncDim, SDim vocabDim, SDim typeVocabDim, RoBERTaDropoutP, Double)
   ) =>
-  HasInitialize (RoBERTaModel numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
+  HasStateDict
+    (RoBERTaModel transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
+    (SGradient gradient, SDevice device)
   where
-  type
-    InitializeF (RoBERTaModel numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim) =
-      FilePath -> IO (RoBERTaModel numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
-  initialize filePath =
-    do
-      let headDim = sing @headDim
-          headEmbedDim = sing @headEmbedDim
-          embedDim = sing @embedDim
-          inputEmbedDim = sing @inputEmbedDim
-      tensorDict <- tensorDictFromPretrained filePath
-      flip runReaderT tensorDict $
-        RoBERTaModel <$> lookupEncoderOnlyTransformer headDim headEmbedDim embedDim inputEmbedDim robertaDropoutP robertaEps "roberta."
-
-instance
-  ( KnownDim headDim,
-    SingI headDim,
-    SingI headEmbedDim,
-    KnownDim embedDim,
-    SingI embedDim,
-    KnownDim ffnDim,
-    KnownDim inputEmbedDim,
-    SingI inputEmbedDim,
-    KnownDim vocabDim,
-    KnownDim typeVocabDim,
-    HasLookupStack numLayers (1 <=? numLayers) numLayers 'RoBERTa ('Device 'CPU) RoBERTaDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim RoBERTaDropoutP (ReaderT TensorDict IO)
-  ) =>
-  HasInitialize (RoBERTaModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
-  where
-  type
-    InitializeF (RoBERTaModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim) =
-      FilePath -> IO (RoBERTaModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
-  initialize filePath =
-    do
-      let headDim = sing @headDim
-          headEmbedDim = sing @headEmbedDim
-          embedDim = sing @embedDim
-          inputEmbedDim = sing @inputEmbedDim
-      tensorDict <- tensorDictFromPretrained filePath
-      flip runReaderT tensorDict $
-        RoBERTaModelWithLMHead <$> lookupEncoderOnlyTransformerWithLMHead headDim headEmbedDim embedDim inputEmbedDim robertaDropoutP robertaEps ""
+  fromStateDict (gradient, device) k =
+    let headDim = sing @headDim
+        headEmbedDim = sing @headEmbedDim
+        embedDim = sing @embedDim
+        inputEmbedDim = sing @inputEmbedDim
+        ffnDim = sing @ffnDim
+        vocabDim = sing @vocabDim
+        typeVocabDim = sing @typeVocabDim
+     in RoBERTaModel . GRoBERTaModel <$> fromStateDict (gradient, device, robertaDataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, robertaPosEncDim, vocabDim, typeVocabDim, robertaDropoutP, robertaEps) (k <> "roberta.")
+  toStateDict k (RoBERTaModel GRoBERTaModel {..}) = toStateDict (k <> "roberta.") robertaModel
 
 mkRoBERTaInput ::
   forall batchDim seqDim m output.
-  ( MonadFail m,
+  ( MonadThrow m,
     KnownDim batchDim,
     KnownDim seqDim,
     output
       ~ Tensor
-          'WithoutGradient
+          ('Gradient 'WithoutGradient)
           ('Layout 'Dense)
           ('Device 'CPU)
           ('DataType 'Int64)
@@ -264,13 +195,10 @@ mkRoBERTaInput ::
 mkRoBERTaInput = mkTransformerInput robertaPadTokenId
 
 mkRoBERTaPaddingMask ::
-  Tensor requiresGradient layout device dataType shape ->
-  Tensor
-    'WithoutGradient
-    (layout <+> 'Layout 'Dense)
-    (device <+> 'Device 'CPU)
-    (Seq (dataType <+> 'DataType 'Int64) ('DataType 'Bool))
-    (BroadcastShapesF shape ('Shape '[ 'Dim ('Name "*") ('Size 1)]))
+  forall gradient layout device dataType shape output.
+  MkTransformerPaddingMaskC layout device dataType shape output =>
+  Tensor gradient layout device dataType shape ->
+  output
 mkRoBERTaPaddingMask = mkTransformerPaddingMask robertaPadTokenId
 
 data RoBERTaInput input where

@@ -34,12 +34,13 @@ import Torch.Data.Parser (Parser, combine, isNotToken, isString, isToken, parseS
 import Torch.GraduallyTyped.DType (DataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (fromStateDict), stateDictFromPretrained)
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (logSoftmax)
 import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5DataType, T5GenerationInput (..), T5Input (..), T5Model (..), T5Output (..), mkT5Input, t5EOSTokenId)
 import Torch.GraduallyTyped.NN.Transformer.T5.Small (T5Small)
+import Torch.GraduallyTyped.NN.Transformer.Type (TransformerHead (WithLMHead))
 import Torch.GraduallyTyped.Random (Generator, sMkGenerator)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
+import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownShape, Name (..), SBy (..), SName (..), SSelectDim (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (sExpand)
@@ -48,6 +49,7 @@ import Torch.GraduallyTyped.Tensor.Type (SGetShape (dims), Tensor (..))
 import Torch.Language.SpiderSQL (SpiderSQL, spiderSQL)
 import qualified Torch.Tensor
 import Prelude hiding (Word, words)
+import Control.Monad.Catch (MonadThrow)
 
 data IsFinished = Finished | Unfinished
 
@@ -155,7 +157,7 @@ runBeamSearch ::
       generator,
     encoderOutput
       ~ Tensor
-          'WithGradient
+          ('Gradient 'WithGradient)
           ('Layout 'Dense)
           ('Device 'CPU)
           T5DataType
@@ -170,21 +172,21 @@ runBeamSearch ::
       generator,
     encoderOutput'
       ~ Tensor
-          'WithGradient
+          ('Gradient 'WithGradient)
           ('Layout 'Dense)
           ('Device 'CPU)
           T5DataType
           'UncheckedShape,
     decoderInput
       ~ Tensor
-          'WithoutGradient
+          ('Gradient 'WithoutGradient)
           ('Layout 'Dense)
           ('Device 'CPU)
           ('DataType 'Int64)
           ('Shape '[ 'Dim ('Name "*") 'UncheckedSize, 'Dim ('Name "*") 'UncheckedSize]),
     decoderOutput
       ~ Tensor
-          'WithGradient
+          ('Gradient 'WithGradient)
           ('Layout 'Dense)
           ('Device 'CPU)
           T5DataType
@@ -221,8 +223,10 @@ runBeamSearch maxSteps beamSize model input g =
       (T5Output decoderOutput encoderOutput inputPaddingMask, g') <- case maybeStuff of
         Nothing -> pure $ forward model (T5Input input decoderInput) g
         Just (encoderOutput, inputPaddingMask) -> do
-          decoderInputBatchDim : _ <- dims decoderInput
-          _encoderOutputBatchDim : encoderOutputDims <- dims encoderOutput
+          -- decoderInputBatchDim : _ <- dims decoderInput
+          decoderInputBatchDim <- undefined
+          -- _encoderOutputBatchDim : encoderOutputDims <- dims encoderOutput
+          encoderOutputDims <- undefined
           let encoderOutput' = sExpand (SUncheckedShape (decoderInputBatchDim : encoderOutputDims)) encoderOutput
           case forward model (T5GenerationInput decoderInput encoderOutput' inputPaddingMask) g of
             (T5Output decoderOutput _ _, g') -> pure (T5Output decoderOutput encoderOutput inputPaddingMask, g')
@@ -248,10 +252,10 @@ testBeamSearch = do
       (SName @"*" :&: SSize @1)
       (SName @"*" :&: SSize @19)
       tokens
+  stateDict <- stateDictFromPretrained "/tmp/t5-small-state-dict.pt"
   model <-
-    initialize
-      @(T5Small ('Device 'CPU))
-      "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/t5-small.pt"
+    flip evalStateT stateDict $
+      fromStateDict @(T5Small 'WithLMHead _ _) (SGradient SWithGradient, SDevice SCPU) ""
   g <- sMkGenerator (SDevice SCPU) 0
   Beams finished _ <- last <$> runBeamSearch 50 1 model input g
   print $ finalValue <$> finished
@@ -348,11 +352,11 @@ instance
 getIs ::
   forall model input generator b decoderInput encoderOutput decoderOutput inputPaddingMask s.
   ( Alternative b,
-    MonadFail b,
+    MonadThrow b,
     s ~ (Maybe (encoderOutput, inputPaddingMask), generator),
     decoderInput
       ~ Tensor
-          'WithoutGradient
+          ('Gradient 'WithoutGradient)
           ('Layout 'Dense)
           ('Device 'CPU)
           ('DataType 'Int64)
@@ -361,7 +365,7 @@ getIs ::
           ),
     decoderOutput
       ~ Tensor
-          'WithGradient
+          ('Gradient 'WithGradient)
           ('Layout 'Dense)
           ('Device 'CPU)
           T5DataType

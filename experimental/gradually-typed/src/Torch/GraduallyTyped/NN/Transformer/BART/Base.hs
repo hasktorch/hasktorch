@@ -6,7 +6,9 @@ module Torch.GraduallyTyped.NN.Transformer.BART.Base where
 
 import GHC.TypeLits (Nat)
 import Torch.GraduallyTyped.Device (Device, DeviceType)
-import Torch.GraduallyTyped.NN.Transformer.BART.Common (BARTModel, BARTModelWithLMHead)
+import Torch.GraduallyTyped.NN.Transformer.BART.Common (BARTModel)
+import Torch.GraduallyTyped.NN.Transformer.Type (TransformerHead)
+import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 
 -- | BART-Base number of layers.
@@ -42,10 +44,7 @@ type BARTBaseVocabDim = 'Dim ('Name "*") ('Size 50265)
 
 -- | BART-Base model.
 type BARTBase
+  (transformerHead :: TransformerHead)
+  (gradient :: Gradient RequiresGradient)
   (device :: Device (DeviceType Nat)) =
-  BARTModel BARTBaseNumLayers device BARTBaseHeadDim BARTBaseHeadEmbedDim BARTBaseEmbedDim BARTBaseInputEmbedDim BARTBaseFFNDim BARTBaseVocabDim
-
--- | BART-Base model with language modelling head.
-type BARTBaseWithLMHead
-  (device :: Device (DeviceType Nat)) =
-  BARTModelWithLMHead BARTBaseNumLayers device BARTBaseHeadDim BARTBaseHeadEmbedDim BARTBaseEmbedDim BARTBaseInputEmbedDim BARTBaseFFNDim BARTBaseVocabDim
+  BARTModel transformerHead BARTBaseNumLayers gradient device BARTBaseHeadDim BARTBaseHeadEmbedDim BARTBaseEmbedDim BARTBaseInputEmbedDim BARTBaseFFNDim BARTBaseVocabDim

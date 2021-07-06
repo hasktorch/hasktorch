@@ -6,7 +6,9 @@ module Torch.GraduallyTyped.NN.Transformer.T5.ElevenB where
 
 import GHC.TypeLits (Nat)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
-import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5Model (..), T5ModelWithLMHead (..))
+import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5Model (..))
+import Torch.GraduallyTyped.NN.Transformer.Type (TransformerHead, TransformerStyle (T5))
+import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 
 -- | T5-11B number of layers.
@@ -39,10 +41,7 @@ type T5ElevenBVocabDim = 'Dim ('Name "*") ('Size 32128)
 
 -- | T5-11B model.
 type T5ElevenB
+  (transformerHead :: TransformerHead)
+  (gradient :: Gradient RequiresGradient)
   (device :: Device (DeviceType Nat)) =
-  T5Model T5ElevenBNumLayers T5ElevenBNumLayers device T5ElevenBHeadDim T5ElevenBHeadEmbedDim T5ElevenBEmbedDim T5ElevenBInputEmbedDim T5ElevenBFFNDim T5ElevenBVocabDim
-
--- | T5-11B model with language modelling head.
-type T5ElevenBWithLMHead
-  (device :: Device (DeviceType Nat)) =
-  T5ModelWithLMHead T5ElevenBNumLayers T5ElevenBNumLayers device T5ElevenBHeadDim T5ElevenBHeadEmbedDim T5ElevenBEmbedDim T5ElevenBInputEmbedDim T5ElevenBFFNDim T5ElevenBVocabDim
+  T5Model 'T5 transformerHead T5ElevenBNumLayers T5ElevenBNumLayers gradient device T5ElevenBHeadDim T5ElevenBHeadEmbedDim T5ElevenBEmbedDim T5ElevenBInputEmbedDim T5ElevenBFFNDim T5ElevenBVocabDim

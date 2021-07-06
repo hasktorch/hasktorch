@@ -13,19 +13,20 @@ module Torch.GraduallyTyped.NN.Transformer.RoBERTa
   )
 where
 
+import Control.Monad.State (evalStateT)
 import Data.Singletons.Prelude.List (SList (SNil))
 import Test.HUnit.Approx (assertApproxEqual)
 import Tokenizers (Tokenizer, addSpecialToken, encode, getIDs, getTokens, mkRobertaTokenizer)
 import Torch.GraduallyTyped.DType (SDType (..), SDataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
+import Torch.GraduallyTyped.Device (SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (..), stateDictFromPretrained)
 import Torch.GraduallyTyped.NN.Transformer.EncoderOnly (EncoderOnlyTransformerInput (..), EncoderOnlyTransformerOutput (..))
 import Torch.GraduallyTyped.NN.Transformer.RoBERTa.Base
 import Torch.GraduallyTyped.NN.Transformer.RoBERTa.Common
-import Torch.GraduallyTyped.NN.Transformer.Type (mkTransformerAttentionMask)
+import Torch.GraduallyTyped.NN.Transformer.Type (TransformerHead (..), mkTransformerAttentionMask)
 import Torch.GraduallyTyped.Random (sMkGenerator)
-import Torch.GraduallyTyped.RequiresGradient (SRequiresGradient (..))
+import Torch.GraduallyTyped.RequiresGradient (SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim (sDimSize), SName (..), SShape (..), SSize (..), Size (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sArangeNaturals, sZeros)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (addScalar)
@@ -60,7 +61,7 @@ testRoBERTaInput = do
 testRoBERTaInputType :: _
 testRoBERTaInputType =
   sZeros
-    SWithoutGradient
+    (SGradient SWithoutGradient)
     (SLayout SDense)
     (SDevice SCPU)
     (SDataType SInt64)
@@ -69,16 +70,16 @@ testRoBERTaInputType =
 testForwardRoBERTaBase :: IO ()
 testForwardRoBERTaBase =
   do
-    RoBERTaModelWithLMHead model <-
-      initialize
-        @(RoBERTaBaseWithLMHead ('Device 'CPU))
-        "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/bert-base-uncased.pt"
+    stateDict <- stateDictFromPretrained "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/bert-base-uncased.pt"
+    RoBERTaModel GRoBERTaModel {..} <-
+      flip evalStateT stateDict $
+        fromStateDict @(RoBERTaBase 'WithMLMHead _ _) (SGradient SWithGradient, SDevice SCPU) ""
     encoderInput <- testRoBERTaInput
     let encoderInputType = testRoBERTaInputType
         pos =
           flip addScalar (2 :: Int) $
             sArangeNaturals
-              SWithoutGradient
+              (SGradient SWithoutGradient)
               (SLayout SDense)
               (SDevice SCPU)
               (SDataType SInt64)
@@ -87,7 +88,7 @@ testForwardRoBERTaBase =
     attentionMask <- mkTransformerAttentionMask robertaDataType robertaAttentionMaskBias paddingMask
     let input = EncoderOnlyTransformerInput encoderInput encoderInputType pos attentionMask
     g <- sMkGenerator (SDevice SCPU) 0
-    let (EncoderOnlyTransformerOutput {..}, _) = forward model input g
+    let (EncoderOnlyTransformerOutput {..}, _) = forward robertaModel input g
     let encoderOutput' = case eoEncoderOutput of
           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
     let firstLMHeadLogits = do

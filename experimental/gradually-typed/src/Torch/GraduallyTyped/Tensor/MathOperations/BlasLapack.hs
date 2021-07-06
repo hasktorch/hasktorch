@@ -57,7 +57,7 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 -- The following code serves the examples of @matmul@ below:
 --
 -- >>> g <- sMkGenerator (SDevice SCPU) 0
--- >>> sRandn' = sRandn SWithGradient (SLayout SDense) (SDevice SCPU) (SDataType SFloat)
+-- >>> sRandn' = sRandn (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat)
 --
 -- In order to understand the behavior of @matmul@, consider the following cases:
 --
@@ -69,7 +69,7 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --         >>> :type result
 --         result
 --           :: Tensor
---                'WithGradient
+--                ('Gradient 'WithGradient)
 --                ('Layout 'Dense)
 --                ('Device 'CPU)
 --                ('DataType 'Float)
@@ -84,7 +84,7 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --         >>> :type result
 --         result
 --           :: Tensor
---                'WithGradient
+--                ('Gradient 'WithGradient)
 --                ('Layout 'Dense)
 --                ('Device 'CPU)
 --                ('DataType 'Float)
@@ -101,7 +101,7 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --         >>> :type result
 --         result
 --           :: Tensor
---                'WithGradient
+--                ('Gradient 'WithGradient)
 --                ('Layout 'Dense)
 --                ('Device 'CPU)
 --                ('DataType 'Float)
@@ -117,7 +117,7 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --         >>> :type result
 --         result
 --           :: Tensor
---                'WithGradient
+--                ('Gradient 'WithGradient)
 --                ('Layout 'Dense)
 --                ('Device 'CPU)
 --                ('DataType 'Float)
@@ -135,7 +135,7 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --         >>> :type result
 --         result
 --           :: Tensor
---                'WithGradient
+--                ('Gradient 'WithGradient)
 --                ('Layout 'Dense)
 --                ('Device 'CPU)
 --                ('DataType 'Float)
@@ -153,7 +153,7 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --         >>> :type result
 --         result
 --           :: Tensor
---                'WithGradient
+--                ('Gradient 'WithGradient)
 --                ('Layout 'Dense)
 --                ('Device 'CPU)
 --                ('DataType 'Float)
@@ -170,7 +170,7 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --         >>> :type result
 --         result
 --           :: Tensor
---                'WithGradient
+--                ('Gradient 'WithGradient)
 --                ('Layout 'Dense)
 --                ('Device 'CPU)
 --                ('DataType 'Float)
@@ -188,7 +188,7 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --         >>> :type result
 --         result
 --           :: Tensor
---                'WithGradient
+--                ('Gradient 'WithGradient)
 --                ('Layout 'Dense)
 --                ('Device 'CPU)
 --                ('DataType 'Float)
@@ -196,14 +196,14 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --                   '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "*") ('Size 5),
 --                      'Dim ('Name "*") ('Size 3), 'Dim ('Name "*") ('Size 7)])
 matmul ::
-  forall requiresGradient layout layout' device device' dataType dataType' shape shape'.
+  forall gradient layout layout' device device' dataType dataType' shape shape'.
   -- input
-  Tensor requiresGradient layout device dataType shape ->
+  Tensor gradient layout device dataType shape ->
   -- other
-  Tensor requiresGradient layout' device' dataType' shape' ->
+  Tensor gradient layout' device' dataType' shape' ->
   -- output
   Tensor
-    requiresGradient
+    gradient
     (layout <+> layout')
     (device <+> device')
     (dataType <+> dataType')

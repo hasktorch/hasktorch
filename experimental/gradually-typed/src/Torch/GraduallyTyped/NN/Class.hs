@@ -1,27 +1,45 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE IncoherentInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.NN.Class where
 
--- import Control.Monad.State.Strict (MonadState (state), runState)
--- import Torch.GraduallyTyped.Prelude (Contains, ErrorMessage (Text), Fst, If, Proxy (..), Snd, Type, TypeError)
--- import Torch.GraduallyTyped.Random (Generator)
--- import Torch.GraduallyTyped.Device (Device (UncheckedDevice), DeviceType)
--- import Generics.SOP (Code, I, SOP(..), Generic, NS(..), NP)
--- import GHC.Base (coerce, Any)
-
-import Data.Kind (Type)
+import Control.Exception (Exception (..))
+import Control.Monad.Catch (MonadThrow (..))
+import Control.Monad.State (MonadState (get, put))
+import qualified Data.Map.Strict as Map
+import Data.Proxy (Proxy (..))
+import Data.Typeable (Typeable)
+import qualified Data.Vector as V
+import qualified Data.Vector.Generic.Sized.Internal as VGS
+import qualified Data.Vector.Sized as VS
+import Foreign.ForeignPtr (ForeignPtr)
+import GHC.TypeLits (KnownNat, natVal, type (+))
+import Torch.GraduallyTyped.DType (SDataType)
+import Torch.GraduallyTyped.Device (SDevice)
+import Torch.GraduallyTyped.Layout (SLayout)
+import Torch.GraduallyTyped.RequiresGradient (SGradient (..))
+import Torch.GraduallyTyped.Shape.Type (SShape)
+import Torch.GraduallyTyped.Tensor.Type (Tensor (UnsafeTensor), UncheckedTensor, sCheckedDataType, sCheckedDevice, sCheckedGradient, sCheckedLayout, sCheckedShape)
+import qualified Torch.Internal.Type as ATen (Tensor)
+import qualified Torch.Script (IValue (..))
+import qualified Torch.Serialize (pickleLoad)
+import qualified Torch.Tensor (Tensor (Unsafe))
+import Debug.Trace (traceShow)
 
 class
   HasForward
@@ -41,190 +59,149 @@ class
 instance HasForward () input generator input generator where
   forward _ = (,)
 
-class HasInitialize model where
-  type InitializeF model :: Type
-  initialize :: InitializeF model
+instance
+  ( HasForward a input generator output' generatorOutput',
+    HasForward b output' generatorOutput' output generatorOutput
+  ) =>
+  HasForward (a, b) input generator output generatorOutput
+  where
+  forward (a, b) input g =
+    let (output', g') = forward a input g
+     in forward b output' g'
 
--- class GHasForward model input where
---   type GOutput model input
---   gForward :: (Generic model, Generic input, Code model ~ Code input) => model -> input -> GOutput model input
---   gForward model input = gForwardSS (from model) (from input)
+instance HasForward (VS.Vector 0 a) input generator input generator where
+  forward _ = (,)
 
--- class GHasForwardSS modelss inputss where
---   type GOutputSS modelss inputss
---   gForwardSS :: forall models inputs . (GHasForwardPP models inputs) => SOP I modelss -> SOP I inputss -> GOutputSS modelss inputss
---   gForwardSS (SOP (Z (models :: NP I models))) (SOP (Z (inputs :: NP I inputs))) = gForwardPP @models @inputs models inputs
+instance
+  HasForward a input generator output generatorOutput =>
+  HasForward (VS.Vector 1 a) input generator output generatorOutput
+  where
+  forward (VGS.Vector v) input g =
+    let Just (a, _) = V.uncons v
+     in forward a input g
 
--- class GHasForwardPP models inputs where
---   type GOutputPP models inputs
---   gForwardPP :: () => NP I models -> NP I inputs -> GOutputPP models inputs
+instance
+  {-# OVERLAPPABLE #-}
+  ( HasForward a input generator output generatorOutput,
+    HasForward a output generatorOutput output generatorOutput
+  ) =>
+  HasForward (VS.Vector n a) input generator output generatorOutput
+  where
+  forward (VGS.Vector v) input g =
+    let Just (a, as) = V.uncons v
+     in V.foldl (\(output', g') a' -> forward a' output' g') (forward a input g) as
 
--- data ModelRandomness = Deterministic | Stochastic
+class
+  HasInitialize model input generator generatorOutput
+    | model -> input,
+      model generator -> generatorOutput
+  where
+  initialize :: input -> generator -> (model, generatorOutput)
 
--- type family ModelRandomnessR (output :: Type) :: (ModelRandomness, Type) where
---   ModelRandomnessR (Generator device -> (output, Generator device)) =
---     If
---       (Contains output Generator)
---       (TypeError (Text "The random generator appears in a wrong position in the output type."))
---       '( 'Stochastic, output)
---   ModelRandomnessR output =
---     If
---       (Contains output Generator)
---       (TypeError (Text "The random generator appears in a wrong position in the output type."))
---       '( 'Deterministic, output)
+instance HasInitialize () () generator generator where
+  initialize _ g = ((), g)
 
--- class
---   HasForwardProduct
---     (modelARandomness :: ModelRandomness)
---     outputA
---     (modelBRandomness :: ModelRandomness)
---     outputB
---     modelA
---     inputA
---     modelB
---     inputB
---   where
---   type
---     ForwardOutputProduct modelARandomness outputA modelBRandomness outputB modelA inputA modelB inputB ::
---       Type
---   forwardProduct ::
---     Proxy modelARandomness ->
---     Proxy outputA ->
---     Proxy modelBRandomness ->
---     Proxy outputB ->
---     (modelA, modelB) ->
---     (inputA, inputB) ->
---     ForwardOutputProduct modelARandomness outputA modelBRandomness outputB modelA inputA modelB inputB
+instance
+  ( HasInitialize a input generator generatorOutput',
+    HasInitialize b input generatorOutput' generatorOutput
+  ) =>
+  HasInitialize (a, b) input generator generatorOutput
+  where
+  initialize input g =
+    let (a, g') = initialize @a input g
+        (b, g'') = initialize @b input g'
+     in ((a, b), g'')
 
--- instance
---   ( HasForward modelA inputA,
---     ForwardOutput modelA inputA 'UncheckedDevice ~ (Generator 'UncheckedDevice -> (outputA, Generator 'UncheckedDevice)),
---     HasForward modelB inputB,
---     ForwardOutput modelB inputB ~ (Generator 'UncheckedDevice -> (outputB, Generator 'UncheckedDevice))
---   ) =>
---   HasForwardProduct 'Stochastic outputA 'Stochastic outputB modelA inputA modelB inputB
---   where
---   type
---     ForwardOutputProduct 'Stochastic outputA 'Stochastic outputB modelA inputA modelB inputB =
---       Generator 'UncheckedDevice -> ((outputA, outputB), Generator 'UncheckedDevice)
---   forwardProduct _ _ _ _ (modelA, modelB) (inputA, inputB) =
---     runState $ do
---       outputA <- state (forward modelA inputA)
---       outputB <- state (forward modelB inputB)
---       return (outputA, outputB)
+instance
+  ( HasInitialize a input generator generatorOutput,
+    HasInitialize a input generatorOutput generatorOutput,
+    KnownNat n,
+    n' ~ (n + 1)
+  ) =>
+  HasInitialize (VS.Vector n' a) input generator generatorOutput
+  where
+  initialize input g =
+    case fromIntegral (natVal (Proxy :: Proxy n)) of
+      1 ->
+        let (a, g') = initialize @a input g
+         in (VGS.Vector (V.singleton a), g')
+      i ->
+        let Just (as, (a', g'')) = V.unsnoc $ V.iterateN i (\(_, g') -> initialize @a input g') (initialize @a input g)
+         in (VGS.Vector (V.snoc (fst <$> as) a'), g'')
 
--- instance
---   ( '(modelARandomness, outputA) ~ ModelRandomnessR (ForwardOutput modelA inputA),
---     '(modelBRandomness, outputB) ~ ModelRandomnessR (ForwardOutput modelB inputB),
---     HasForwardProduct modelARandomness outputA modelBRandomness outputB modelA inputA modelB inputB
---   ) =>
---   HasForward (modelA, modelB) (inputA, inputB)
---   where
---   type
---     ForwardOutput (modelA, modelB) (inputA, inputB) =
---       ForwardOutputProduct
---         (Fst (ModelRandomnessR (ForwardOutput modelA inputA)))
---         (Snd (ModelRandomnessR (ForwardOutput modelA inputA)))
---         (Fst (ModelRandomnessR (ForwardOutput modelB inputB)))
---         (Snd (ModelRandomnessR (ForwardOutput modelB inputB)))
---         modelA
---         inputA
---         modelB
---         inputB
---   forward =
---     forwardProduct
---       (Proxy :: Proxy modelARandomness)
---       (Proxy :: Proxy outputA)
---       (Proxy :: Proxy modelBRandomness)
---       (Proxy :: Proxy outputB)
+type StateDictKey = String
 
--- class
---   HasForwardSum
---     (modelARandomness :: ModelRandomness)
---     outputA
---     (modelBRandomness :: ModelRandomness)
---     outputB
---     modelA
---     inputA
---     modelB
---     inputB
---   where
---   type
---     ForwardOutputSum modelARandomness outputA modelBRandomness outputB modelA inputA modelB inputB ::
---       Type
---   forwardSum ::
---     Proxy modelARandomness ->
---     Proxy outputA ->
---     Proxy modelBRandomness ->
---     Proxy outputB ->
---     Either modelA modelB ->
---     Either inputA inputB ->
---     ForwardOutputSum modelARandomness outputA modelBRandomness outputB modelA inputA modelB inputB
+type StateDict = Map.Map StateDictKey (ForeignPtr ATen.Tensor)
 
--- instance
---   ( HasForward modelA inputA,
---     ForwardOutput modelA inputA ~ (Generator 'UncheckedDevice -> (outputA, Generator 'UncheckedDevice)),
---     HasForward modelB inputB,
---     ForwardOutput modelB inputB ~ (Generator 'UncheckedDevice -> (outputB, Generator 'UncheckedDevice))
---   ) =>
---   HasForwardSum 'Stochastic outputA 'Stochastic outputB modelA inputA modelB inputB
---   where
---   type
---     ForwardOutputSum 'Stochastic outputA 'Stochastic outputB modelA inputA modelB inputB =
---       Generator 'UncheckedDevice -> (Maybe (Either outputA outputB), Generator 'UncheckedDevice)
---   forwardSum _ _ _ _ (Left modelA) (Left inputA) =
---     runState $ Just . Left <$> (state $ forward modelA inputA)
---   forwardSum _ _ _ _ (Right modelB) (Right inputB) =
---     runState $ Just . Right <$> (state $ forward modelB inputB)
---   forwardSum _ _ _ _ _ _ = runState . pure $ Nothing
+newtype FromStateDictError = FromStateDictKeyNotFoundError {fsdeExpectedKey :: StateDictKey}
+  deriving stock (Show, Typeable)
 
--- instance
---   ( '(modelARandomness, outputA) ~ ModelRandomnessR (ForwardOutput modelA inputA),
---     '(modelBRandomness, outputB) ~ ModelRandomnessR (ForwardOutput modelB inputB),
---     HasForwardSum modelARandomness outputA modelBRandomness outputB modelA inputA modelB inputB
---   ) =>
---   HasForward (Either modelA modelB) (Either inputA inputB)
---   where
---   type
---     ForwardOutput (Either modelA modelB) (Either inputA inputB) =
---       ForwardOutputSum
---         (Fst (ModelRandomnessR (ForwardOutput modelA inputA)))
---         (Snd (ModelRandomnessR (ForwardOutput modelA inputA)))
---         (Fst (ModelRandomnessR (ForwardOutput modelB inputB)))
---         (Snd (ModelRandomnessR (ForwardOutput modelB inputB)))
---         modelA
---         inputA
---         modelB
---         inputB
---   forward =
---     forwardSum
---       (Proxy :: Proxy modelARandomness)
---       (Proxy :: Proxy outputA)
---       (Proxy :: Proxy modelBRandomness)
---       (Proxy :: Proxy outputB)
+instance Exception FromStateDictError where
+  displayException FromStateDictKeyNotFoundError {..} = "`" <> show fsdeExpectedKey <> "` is not in the model's state dictionary."
 
--- data ModelA = ModelA
+newtype ToStateDictError = ToStateDictKeyAlreadyInUseError {fsdeTakenKey :: StateDictKey}
+  deriving stock (Show, Typeable)
 
--- data InputA = InputA
+instance Exception ToStateDictError where
+  displayException ToStateDictKeyAlreadyInUseError {..} = "`" <> show fsdeTakenKey <> "` is already in the model's state dictionary."
 
--- data OutputA = OutputA
+class HasStateDict model input | model -> input where
+  fromStateDict :: forall m. (MonadThrow m, MonadState StateDict m) => input -> StateDictKey -> m model
+  toStateDict :: forall m. (MonadThrow m, MonadState StateDict m) => StateDictKey -> model -> m ()
 
--- instance HasForward ModelA InputA where
---   type ForwardOutput ModelA InputA = (Generator 'UncheckedDevice -> (OutputA, Generator 'UncheckedDevice))
---   forward _ _ g = (OutputA, g)
+instance HasStateDict () () where
+  fromStateDict () _ = pure ()
+  toStateDict _ _ = pure ()
 
--- data ModelB = ModelB
+instance
+  HasStateDict
+    (Tensor gradient layout device dataType shape)
+    (SGradient gradient, SLayout layout, SDevice device, SDataType dataType, SShape shape)
+  where
+  fromStateDict (gradient, layout, device, dataType, shape) k = do
+    traceShow k $ pure ()
+    stateDict <- get
+    maybe
+      (throwM . FromStateDictKeyNotFoundError $ k)
+      (\t -> pure (UnsafeTensor t :: UncheckedTensor))
+      (Map.lookup k stateDict)
+      >>= sCheckedGradient gradient
+      >>= sCheckedLayout layout
+      >>= sCheckedDevice device
+      >>= sCheckedDataType dataType
+      >>= sCheckedShape shape
+  toStateDict k (UnsafeTensor t) = do
+    stateDict <- get
+    stateDict' <-
+      maybe
+        (pure $ Map.insert k t stateDict)
+        (\_ -> throwM . ToStateDictKeyAlreadyInUseError $ k)
+        (Map.lookup k stateDict)
+    put stateDict'
 
--- data InputB = InputB
+instance
+  (KnownNat n, HasStateDict a input) =>
+  HasStateDict (VS.Vector n a) input
+  where
+  fromStateDict input k = do
+    let i :: Int = fromIntegral (natVal (Proxy :: Proxy n))
+        fromStateDict' i' = fromStateDict input (k <> show i' <> ".")
+    traverse fromStateDict' . VGS.Vector . V.fromList $ [0 .. i - 1]
+  toStateDict k (VGS.Vector v) = do
+    let toStateDict' (i', a) = toStateDict (k <> show i' <> ".") a
+    mapM_ toStateDict' $ V.zip (V.fromList [0 .. V.length v - 1]) v
 
--- data OutputB = OutputB
-
--- instance HasForward ModelB InputB where
---   type ForwardOutput ModelB InputB = (Generator 'UncheckedDevice -> (OutputB, Generator 'UncheckedDevice))
---   forward _ _ g = (OutputB, g)
-
--- test :: Generator 'UncheckedDevice -> ((OutputA, OutputB), Generator 'UncheckedDevice)
--- test = forward (ModelA, ModelB) (InputA, InputB)
-
--- test' :: Generator 'UncheckedDevice -> (Maybe (Either OutputA OutputB), Generator 'UncheckedDevice)
--- test' = forward @(Either ModelA ModelB) @(Either InputA InputB) (Left ModelA) (Right InputB)
+stateDictFromPretrained ::
+  FilePath ->
+  IO StateDict
+stateDictFromPretrained filePath = do
+  iValue <- Torch.Serialize.pickleLoad filePath
+  case iValue of
+    Torch.Script.IVGenericDict xs -> Map.fromList <$> go xs
+    _ -> fail "iValue is not a tensor dictionary."
+  where
+    go [] = pure []
+    go ((Torch.Script.IVString s, Torch.Script.IVTensor (Torch.Tensor.Unsafe t)) : xs) = ((s, t) :) <$> go xs
+    go ((_, Torch.Script.IVTensor _) : _) = fail "iValue is not a string."
+    go ((Torch.Script.IVString _, _) : _) = fail "iValue is not a tensor."
+    go _ = fail "iValue is neither a string nor a tensor."

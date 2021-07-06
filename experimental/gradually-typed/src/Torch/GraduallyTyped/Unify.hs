@@ -16,7 +16,7 @@ import Torch.DType (DType)
 import Torch.GraduallyTyped.DType (DataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
+import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Shape (..), Size (..))
 import Type.Errors.Pretty (type (%), type (<>))
 
@@ -36,30 +36,32 @@ infixr 8 <+>
 type Unify :: forall k -> k -> k -> k
 type family Unify k (a :: k) (b :: k) :: k where
   Unify _ a a = a
-  Unify RequiresGradient requiresGradient requiresGradient' = TypeError (UnifyRequiresGradientMessage requiresGradient requiresGradient')
-  Unify (Layout _) 'UncheckedLayout _ = 'UncheckedLayout
-  Unify (Layout _) _ 'UncheckedLayout = 'UncheckedLayout
-  Unify (Layout _) ('Layout layoutType) ('Layout layoutType') = TypeError (UnifyLayoutErrorMessage layoutType layoutType')
-  Unify (Device _) 'UncheckedDevice _ = 'UncheckedDevice
-  Unify (Device _) _ 'UncheckedDevice = 'UncheckedDevice
-  Unify (Device _) ('Device deviceType) ('Device deviceType') = TypeError (UnifyDeviceErrorMessage deviceType deviceType')
-  Unify (DataType _) 'UncheckedDataType _ = 'UncheckedDataType
-  Unify (DataType _) _ 'UncheckedDataType = 'UncheckedDataType
-  Unify (DataType _) ('DataType dType) ('DataType dType') = TypeError (UnifyDataTypeErrorMessage dType dType')
-  Unify (Shape _) 'UncheckedShape _ = 'UncheckedShape
-  Unify (Shape _) _ 'UncheckedShape = 'UncheckedShape
-  Unify (Shape _) ('Shape dims) ('Shape dims') = 'Shape (Unify [Dim (Name Symbol) (Size Nat)] dims dims')
-  Unify [Dim _ _] (dim ': dims) (dim' ': dims') = Unify (Dim (Name Symbol) (Size Nat)) dim dim' ': Unify [Dim (Name Symbol) (Size Nat)] dims dims'
-  Unify [Dim _ _] dims dims' = TypeError (UnifyDimsErrorMessage dims dims')
-  Unify (Dim _ _) ('Dim name size) ('Dim name' size') = 'Dim (Unify (Name Symbol) name name') (Unify (Size Nat) size size')
-  Unify (Name _) 'UncheckedName _ = 'UncheckedName
-  Unify (Name _) _ 'UncheckedName = 'UncheckedName
-  Unify (Name _) ('Name name) ('Name "*") = 'Name name
-  Unify (Name _) ('Name "*") ('Name name) = 'Name name
-  Unify (Name _) ('Name name) ('Name name') = TypeError (UnifyNameErrorMessage name name')
-  Unify (Size _) 'UncheckedSize _ = 'UncheckedSize
-  Unify (Size _) _ 'UncheckedSize = 'UncheckedSize
-  Unify (Size _) ('Size size) ('Size size') = TypeError (UnifySizeErrorMessage size size')
+  Unify (Gradient RequiresGradient) 'UncheckedGradient _ = 'UncheckedGradient
+  Unify (Gradient RequiresGradient) _ 'UncheckedGradient = 'UncheckedGradient
+  Unify (Gradient RequiresGradient) ('Gradient requiresGradient) ('Gradient requiresGradient') = TypeError (UnifyRequiresGradientMessage requiresGradient requiresGradient')
+  Unify (Layout LayoutType) 'UncheckedLayout _ = 'UncheckedLayout
+  Unify (Layout LayoutType) _ 'UncheckedLayout = 'UncheckedLayout
+  Unify (Layout LayoutType) ('Layout layoutType) ('Layout layoutType') = TypeError (UnifyLayoutErrorMessage layoutType layoutType')
+  Unify (Device (DeviceType Nat)) 'UncheckedDevice _ = 'UncheckedDevice
+  Unify (Device (DeviceType Nat)) _ 'UncheckedDevice = 'UncheckedDevice
+  Unify (Device (DeviceType Nat)) ('Device deviceType) ('Device deviceType') = TypeError (UnifyDeviceErrorMessage deviceType deviceType')
+  Unify (DataType DType) 'UncheckedDataType _ = 'UncheckedDataType
+  Unify (DataType DType) _ 'UncheckedDataType = 'UncheckedDataType
+  Unify (DataType DType) ('DataType dType) ('DataType dType') = TypeError (UnifyDataTypeErrorMessage dType dType')
+  Unify (Shape [Dim (Name Symbol) (Size Nat)]) 'UncheckedShape _ = 'UncheckedShape
+  Unify (Shape [Dim (Name Symbol) (Size Nat)]) _ 'UncheckedShape = 'UncheckedShape
+  Unify (Shape [Dim (Name Symbol) (Size Nat)]) ('Shape dims) ('Shape dims') = 'Shape (Unify [Dim (Name Symbol) (Size Nat)] dims dims')
+  Unify [Dim (Name Symbol) (Size Nat)] (dim ': dims) (dim' ': dims') = Unify (Dim (Name Symbol) (Size Nat)) dim dim' ': Unify [Dim (Name Symbol) (Size Nat)] dims dims'
+  Unify [Dim (Name Symbol) (Size Nat)] dims dims' = TypeError (UnifyDimsErrorMessage dims dims')
+  Unify (Dim (Name Symbol) (Size Nat)) ('Dim name size) ('Dim name' size') = 'Dim (Unify (Name Symbol) name name') (Unify (Size Nat) size size')
+  Unify (Name Symbol) 'UncheckedName _ = 'UncheckedName
+  Unify (Name Symbol) _ 'UncheckedName = 'UncheckedName
+  Unify (Name Symbol) ('Name name) ('Name "*") = 'Name name
+  Unify (Name Symbol) ('Name "*") ('Name name) = 'Name name
+  Unify (Name Symbol) ('Name name) ('Name name') = TypeError (UnifyNameErrorMessage name name')
+  Unify (Size Nat) 'UncheckedSize _ = 'UncheckedSize
+  Unify (Size Nat) _ 'UncheckedSize = 'UncheckedSize
+  Unify (Size Nat) ('Size size) ('Size size') = TypeError (UnifySizeErrorMessage size size')
 
 type UnifyRequiresGradientMessage (requiresGradient :: RequiresGradient) (requiresGradient' :: RequiresGradient) =
   "The supplied tensors must all either require or disable gradient calculation,"
@@ -158,5 +160,29 @@ infixr 8 <|>
 type Or :: forall k -> k -> k -> k
 type family Or k (a :: k) (b :: k) :: k where
   Or _ a a = a
-  Or RequiresGradient _ WithGradient = WithGradient
-  Or RequiresGradient WithGradient _ = WithGradient
+  Or (Gradient RequiresGradient) _ ('Gradient 'WithGradient) = 'Gradient 'WithGradient
+  Or (Gradient RequiresGradient) 'UncheckedGradient ('Gradient 'WithoutGradient) = 'UncheckedGradient
+  Or (Gradient RequiresGradient) ('Gradient 'WithGradient) _ = 'Gradient 'WithGradient
+  Or (Gradient RequiresGradient) ('Gradient 'WithoutGradient) 'UncheckedGradient = 'UncheckedGradient
+
+type OrRightAssociativeL k a b c = Or k (Or k a b) c ~ Or k a (Or k b c)
+
+type OrIdempotenceL2 k a b = Or k a (Or k a b) ~ Or k a b
+
+type OrIdempotenceL2C k a b = Or k a (Or k b a) ~ Or k a b
+
+type OrIdempotenceL3 k a b c = Or k a (Or k b (Or k a c)) ~ Or k a (Or k b c)
+
+type OrIdempotenceL3C k a b c = Or k a (Or k b (Or k c a)) ~ Or k a (Or k b c)
+
+type OrIdempotenceL4 k a b c d = Or k a (Or k b (Or k c (Or k a d))) ~ Or k a (Or k b (Or k c d))
+
+type OrIdempotenceL4C k a b c d = Or k a (Or k b (Or k c (Or k d a))) ~ Or k a (Or k b (Or k c d))
+
+type OrIdempotenceL5 k a b c d e = Or k a (Or k b (Or k c (Or k d (Or k a e)))) ~ Or k a (Or k b (Or k c (Or k d e)))
+
+type OrIdempotenceL5C k a b c d e = Or k a (Or k b (Or k c (Or k d (Or k e a)))) ~ Or k a (Or k b (Or k c (Or k d e)))
+
+type OrIdempotenceL6 k a b c d e f = Or k a (Or k b (Or k c (Or k d (Or k e (Or k a f))))) ~ Or k a (Or k b (Or k c (Or k d (Or k e f))))
+
+type OrIdempotenceL6C k a b c d e f = Or k a (Or k b (Or k c (Or k d (Or k e (Or k f a))))) ~ Or k a (Or k b (Or k c (Or k d (Or k e f))))

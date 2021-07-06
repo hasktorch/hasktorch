@@ -14,13 +14,17 @@ module Torch.GraduallyTyped.NN.Transformer.Pegasus
   )
 where
 
+import Control.Monad.State (evalStateT)
 import Test.HUnit.Approx (assertApproxEqual)
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (fromStateDict), stateDictFromPretrained)
 import Torch.GraduallyTyped.NN.Transformer.Pegasus.Common
 import Torch.GraduallyTyped.NN.Transformer.Pegasus.XSum
-import Torch.GraduallyTyped.Random (mkGenerator)
-import Torch.GraduallyTyped.Shape.Type (SName (..), SSize (..), pattern (:&:))
+import Torch.GraduallyTyped.NN.Transformer.Type (TransformerHead (WithLMHead))
+import Torch.GraduallyTyped.Random (sMkGenerator)
+import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SName (..), SSize (..), Shape (..), Size (..), pattern (:&:))
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
 import qualified Torch.Tensor as Tensor (Tensor (..), asValue)
 
@@ -42,15 +46,23 @@ testPegasusDecoderInput =
       [202, 29519, 17113, 117, 114, 1834, 113, 114, 323, 113, 1928, 120, 137, 129, 20293, 112, 114, 323, 113, 4589, 107, 1]
     ]
 
-testForwardPegasusXSum :: IO ()
+testForwardPegasusXSum ::
+  IO
+    ( Tensor
+        ('Gradient 'WithGradient)
+        ('Layout 'Dense)
+        ('Device 'CPU)
+        PegasusDataType
+        ('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 158), 'Dim ('Name "*") ('Size 1024)])
+    )
 testForwardPegasusXSum =
   do
     input <- PegasusInput <$> testPegasusInput <*> testPegasusDecoderInput
+    stateDict <- stateDictFromPretrained "/tmp/pegasus-xsum-state-dict.pt"
     model <-
-      initialize
-        @(PegasusXSumWithLMHead ('Device 'CPU))
-        "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/pegasus-xsum.pt"
-    g <- mkGenerator @('Device 'CPU) 0
+      flip evalStateT stateDict $
+        fromStateDict @(PegasusXSum 'WithLMHead ('Gradient 'WithGradient) ('Device 'CPU)) (SGradient SWithGradient, SDevice SCPU) ""
+    g <- sMkGenerator (SDevice SCPU) 0
     let (PegasusOutput {..}, _) = forward model input g
     let encoderOutput = case pegasusEncoderOutput of
           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
@@ -59,7 +71,7 @@ testForwardPegasusXSum =
           firstPositions <- take 3 firstBatch
           take 3 firstPositions
     print firstEncoderHiddenStates
-    let firstEncoderHiddenStates' = [0.0965, -0.0048, -0.1945, -0.0825,  0.1829, -0.1589, -0.0297, -0.0171, -0.1210, -0.1453, -0.1224, 0.0941, -0.1849, -0.0484, 0.0711, 0.0219, -0.0233, 0.1485]
+    let firstEncoderHiddenStates' = [0.0965, -0.0048, -0.1945, -0.0825, 0.1829, -0.1589, -0.0297, -0.0171, -0.1210, -0.1453, -0.1224, 0.0941, -0.1849, -0.0484, 0.0711, 0.0219, -0.0233, 0.1485]
     mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstEncoderHiddenStates firstEncoderHiddenStates'
     let decoderOutput = case pegasusDecoderOutput of
           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
@@ -70,3 +82,4 @@ testForwardPegasusXSum =
     print firstLogits
     let firstLogits' = [0.0000, 4.9619, 0.4453, 0.0000, 3.7238, 0.5208, 0.0000, 4.0774, 0.1976, 0.0000, 5.1009, 0.1397, 0.0000, 3.2329, 0.4058, 0.0000, 4.4593, 0.6729]
     mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLogits firstLogits'
+    pure pegasusEncoderOutput

@@ -6,7 +6,9 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeApplications #-}
@@ -17,40 +19,35 @@
 
 module Torch.GraduallyTyped.NN.Transformer.BERT.Common where
 
-import Control.Monad.Reader (ReaderT (runReaderT))
+import Control.Monad.Catch (MonadThrow)
 import Data.Kind (Type)
 import Data.Singletons (SingI (..))
 import GHC.Generics (Generic)
-import GHC.TypeLits (Nat, Symbol)
-import GHC.TypeNats (type (<=?))
+import GHC.TypeLits (KnownNat, Nat, Symbol)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..), SDType (..), SDataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasInitialize (..))
-import Torch.GraduallyTyped.NN.Transformer.EncoderOnly (EncoderOnlyTransformer, EncoderOnlyTransformerWithLMHead, lookupEncoderOnlyTransformer, lookupEncoderOnlyTransformerWithLMHead)
-import Torch.GraduallyTyped.NN.Transformer.Stack (HasLookupStack)
-import Torch.GraduallyTyped.NN.Transformer.Type (TensorDict, TransformerStyle (BERT), mkTransformerInput, mkTransformerPaddingMask, tensorDictFromPretrained)
-import Torch.GraduallyTyped.Prelude (Seq)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
-import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
+import Torch.GraduallyTyped.NN.Class (HasStateDict (..))
+import Torch.GraduallyTyped.NN.Transformer.EncoderOnly (EncoderOnlyTransformer, EncoderOnlyTransformerWithLMHead)
+import Torch.GraduallyTyped.NN.Transformer.Type (TransformerHead (..), TransformerStyle (BERT), mkTransformerInput, mkTransformerPaddingMask, MkTransformerPaddingMaskC)
+import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim, Name (..), SDim, Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
-import Torch.GraduallyTyped.Unify (type (<+>))
 
 -- | BERT dType.
 type BERTDType = 'Float
 
--- | BERT dType.
+-- | BERT dType singleton.
 bertDType :: SDType BERTDType
-bertDType = SFloat
+bertDType = sing @BERTDType
 
 -- | BERT data type.
 type BERTDataType = 'DataType BERTDType
 
--- | BERT data type.
+-- | BERT data type singleton.
 bertDataType :: SDataType BERTDataType
-bertDataType = SDataType bertDType
+bertDataType = sing @BERTDataType
 
 -- | BERT dropout probability type.
 type BERTDropoutP = Float
@@ -62,6 +59,10 @@ bertDropoutP = 0.1
 
 -- | BERT positional encoding dimension.
 type BERTPosEncDim = 'Dim ('Name "*") ('Size 512)
+
+-- | BERT positional encoding dimension singleton.
+bertPosEncDim :: SDim BERTPosEncDim
+bertPosEncDim = sing @BERTPosEncDim
 
 -- | BERT layer-norm epsilon.
 -- 'layer_norm_epsilon = 1e-12'
@@ -82,10 +83,22 @@ bertPadTokenId = 0
 bertAttentionMaskBias :: Double
 bertAttentionMaskBias = -10000
 
+data
+  GBERTModel
+    (bertModel :: Type)
+  where
+  GBERTModel ::
+    forall bertModel.
+    { bertModel :: bertModel
+    } ->
+    GBERTModel bertModel
+
 -- | BERT model.
 newtype
   BERTModel
+    (transformerHead :: TransformerHead)
     (numLayers :: Nat)
+    (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
     (headDim :: Dim (Name Symbol) (Size Nat))
     (headEmbedDim :: Dim (Name Symbol) (Size Nat))
@@ -96,45 +109,17 @@ newtype
     (typeVocabDim :: Dim (Name Symbol) (Size Nat))
   where
   BERTModel ::
-    forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim.
-    BERTModelEncoderF BERTModel numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim ->
-    BERTModel numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim
-  deriving stock (Generic)
-
--- | BERT model with language modelling head.
-newtype
-  BERTModelWithLMHead
-    (numLayers :: Nat)
-    (device :: Device (DeviceType Nat))
-    (headDim :: Dim (Name Symbol) (Size Nat))
-    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (embedDim :: Dim (Name Symbol) (Size Nat))
-    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (ffnDim :: Dim (Name Symbol) (Size Nat))
-    (vocabDim :: Dim (Name Symbol) (Size Nat))
-    (typeVocabDim :: Dim (Name Symbol) (Size Nat))
-  where
-  BERTModelWithLMHead ::
-    forall numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim.
-    BERTModelEncoderF BERTModelWithLMHead numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim ->
-    BERTModelWithLMHead numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim
+    forall transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim.
+    GBERTModel
+      (BERTModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim) ->
+    BERTModel transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim
   deriving stock (Generic)
 
 type family
-  BERTModelEncoderF
-    ( bertModel ::
-        Nat ->
-        Device (DeviceType Nat) ->
-        Dim (Name Symbol) (Size Nat) ->
-        Dim (Name Symbol) (Size Nat) ->
-        Dim (Name Symbol) (Size Nat) ->
-        Dim (Name Symbol) (Size Nat) ->
-        Dim (Name Symbol) (Size Nat) ->
-        Dim (Name Symbol) (Size Nat) ->
-        Dim (Name Symbol) (Size Nat) ->
-        Type
-    )
+  BERTModelF
+    (transformerHead :: TransformerHead)
     (numLayers :: Nat)
+    (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
     (headDim :: Dim (Name Symbol) (Size Nat))
     (headEmbedDim :: Dim (Name Symbol) (Size Nat))
@@ -145,103 +130,47 @@ type family
     (typeVocabDim :: Dim (Name Symbol) (Size Nat)) ::
     Type
   where
-  BERTModelEncoderF BERTModel numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim =
-    EncoderOnlyTransformer
-      numLayers
-      'BERT
-      device
-      BERTDataType
-      headDim
-      headEmbedDim
-      embedDim
-      inputEmbedDim
-      ffnDim
-      BERTPosEncDim
-      vocabDim
-      typeVocabDim
-      BERTDropoutP
-  BERTModelEncoderF BERTModelWithLMHead numLayers device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim =
-    EncoderOnlyTransformerWithLMHead
-      numLayers
-      'BERT
-      device
-      BERTDataType
-      headDim
-      headEmbedDim
-      embedDim
-      inputEmbedDim
-      ffnDim
-      BERTPosEncDim
-      vocabDim
-      typeVocabDim
-      BERTDropoutP
+  BERTModelF 'WithoutHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim =
+    EncoderOnlyTransformer 'BERT numLayers gradient device BERTDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim BERTPosEncDim vocabDim typeVocabDim BERTDropoutP
+  BERTModelF 'WithMLMHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim =
+    EncoderOnlyTransformerWithLMHead 'BERT numLayers gradient device BERTDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim BERTPosEncDim vocabDim typeVocabDim BERTDropoutP
 
 instance
-  ( KnownDim headDim,
-    SingI headDim,
+  ( SingI headDim,
     SingI headEmbedDim,
-    KnownDim embedDim,
     SingI embedDim,
-    KnownDim ffnDim,
-    KnownDim inputEmbedDim,
     SingI inputEmbedDim,
-    KnownDim vocabDim,
-    KnownDim typeVocabDim,
-    HasLookupStack numLayers (1 <=? numLayers) numLayers 'BERT ('Device 'CPU) BERTDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim BERTDropoutP (ReaderT TensorDict IO)
+    SingI ffnDim,
+    SingI vocabDim,
+    SingI typeVocabDim,
+    KnownNat numLayers,
+    HasStateDict
+      (BERTModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
+      (SGradient gradient, SDevice device, SDataType BERTDataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim inputEmbedDim, SDim ffnDim, SDim BERTPosEncDim, SDim vocabDim, SDim typeVocabDim, BERTDropoutP, Double)
   ) =>
-  HasInitialize (BERTModel numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
+  HasStateDict
+    (BERTModel transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
+    (SGradient gradient, SDevice device)
   where
-  type
-    InitializeF (BERTModel numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim) =
-      FilePath ->
-      IO (BERTModel numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
-  initialize filePath =
-    do
-      let headDim = sing @headDim
-          headEmbedDim = sing @headEmbedDim
-          embedDim = sing @embedDim
-          inputEmbedDim = sing @inputEmbedDim
-      tensorDict <- tensorDictFromPretrained filePath
-      flip runReaderT tensorDict $
-        BERTModel <$> lookupEncoderOnlyTransformer headDim headEmbedDim embedDim inputEmbedDim bertDropoutP bertEps "bert."
-
-instance
-  ( KnownDim headDim,
-    SingI headDim,
-    SingI headEmbedDim,
-    KnownDim embedDim,
-    SingI embedDim,
-    KnownDim ffnDim,
-    KnownDim inputEmbedDim,
-    SingI inputEmbedDim,
-    KnownDim vocabDim,
-    KnownDim typeVocabDim,
-    HasLookupStack numLayers (1 <=? numLayers) numLayers 'BERT ('Device 'CPU) BERTDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim BERTDropoutP (ReaderT TensorDict IO)
-  ) =>
-  HasInitialize (BERTModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
-  where
-  type
-    InitializeF (BERTModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim) =
-      FilePath ->
-      IO (BERTModelWithLMHead numLayers ('Device 'CPU) headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
-  initialize filePath =
-    do
-      let headDim = sing @headDim
-          headEmbedDim = sing @headEmbedDim
-          embedDim = sing @embedDim
-          inputEmbedDim = sing @inputEmbedDim
-      tensorDict <- tensorDictFromPretrained filePath
-      flip runReaderT tensorDict $
-        BERTModelWithLMHead <$> lookupEncoderOnlyTransformerWithLMHead headDim headEmbedDim embedDim inputEmbedDim bertDropoutP bertEps ""
+  fromStateDict (gradient, device) k =
+    let headDim = sing @headDim
+        headEmbedDim = sing @headEmbedDim
+        embedDim = sing @embedDim
+        inputEmbedDim = sing @inputEmbedDim
+        ffnDim = sing @ffnDim
+        vocabDim = sing @vocabDim
+        typeVocabDim = sing @typeVocabDim
+     in BERTModel . GBERTModel <$> fromStateDict (gradient, device, bertDataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, bertPosEncDim, vocabDim, typeVocabDim, bertDropoutP, bertEps) (k <> "bert.")
+  toStateDict k (BERTModel GBERTModel {..}) = toStateDict (k <> "bert.") bertModel
 
 mkBERTInput ::
   forall batchDim seqDim m output.
-  ( MonadFail m,
+  ( MonadThrow m,
     KnownDim batchDim,
     KnownDim seqDim,
     output
       ~ Tensor
-          'WithoutGradient
+          ('Gradient 'WithoutGradient)
           ('Layout 'Dense)
           ('Device 'CPU)
           ('DataType 'Int64)
@@ -254,13 +183,10 @@ mkBERTInput ::
 mkBERTInput = mkTransformerInput bertPadTokenId
 
 mkBERTPaddingMask ::
-  Tensor requiresGradient layout device dataType shape ->
-  Tensor
-    'WithoutGradient
-    (layout <+> 'Layout 'Dense)
-    (device <+> 'Device 'CPU)
-    (Seq (dataType <+> 'DataType 'Int64) ('DataType 'Bool))
-    (BroadcastShapesF shape ('Shape '[ 'Dim ('Name "*") ('Size 1)]))
+  forall gradient layout device dataType shape output.
+  MkTransformerPaddingMaskC layout device dataType shape output =>
+  Tensor gradient layout device dataType shape ->
+  output
 mkBERTPaddingMask = mkTransformerPaddingMask bertPadTokenId
 
 data BERTInput input where

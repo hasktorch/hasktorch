@@ -30,16 +30,16 @@ import qualified Prelude (pi, sqrt)
 
 -- | Thresholds each element of the input Tensor.
 threshold ::
-  forall threshold value requiresGradient layout device dataType shape.
+  forall threshold value gradient layout device dataType shape.
   (Scalar threshold, Scalar value) =>
   -- | threshold
   threshold ->
   -- | value
   value ->
   -- | input
-  Tensor requiresGradient layout device dataType shape ->
+  Tensor gradient layout device dataType shape ->
   -- | output
-  Tensor requiresGradient layout device dataType shape
+  Tensor gradient layout device dataType shape
 threshold thresholdValue value tensor =
   unsafePerformIO $ cast3 ATen.threshold_tss tensor thresholdValue value
 
@@ -48,20 +48,20 @@ threshold thresholdValue value tensor =
 -- \text{ReLU}(x) = max(0, x).
 -- \]
 relu ::
-  forall requiresGradient layout device dataType shape.
+  forall gradient layout device dataType shape.
   -- | input
-  Tensor requiresGradient layout device dataType shape ->
+  Tensor gradient layout device dataType shape ->
   -- | output
-  Tensor requiresGradient layout device dataType shape
+  Tensor gradient layout device dataType shape
 relu = unsafePerformIO . cast1 ATen.relu_t
 
 -- | Applies the gaussian error linear unit function element-wise.
 gelu ::
-  forall requiresGradient layout device dataType shape.
+  forall gradient layout device dataType shape.
   -- | input
-  Tensor requiresGradient layout device dataType shape ->
+  Tensor gradient layout device dataType shape ->
   -- | output
-  Tensor requiresGradient layout device dataType shape
+  Tensor gradient layout device dataType shape
 gelu = unsafePerformIO . cast1 ATen.gelu_t
 
 -- | Applies the gaussian error linear unit function element-wise.
@@ -70,14 +70,14 @@ gelu = unsafePerformIO . cast1 ATen.gelu_t
 -- Google's BERT repo (and coincidentally also from OpenAI's GPT).
 -- See also https://arxiv.org/abs/1606.08415.
 --
--- >>> geluNew $ sFull SWithGradient (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SNil) 0.5
+-- >>> geluNew $ sFull (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SNil) 0.5
 -- Tensor Float []  0.3457
 geluNew ::
-  forall requiresGradient layout device dataType shape.
+  forall gradient layout device dataType shape.
   -- | input
-  Tensor requiresGradient layout device dataType shape ->
+  Tensor gradient layout device dataType shape ->
   -- | output
-  Tensor requiresGradient layout device dataType shape
+  Tensor gradient layout device dataType shape
 geluNew x =
   (x `mulScalar` (0.5 :: Float))
     * ( tanh
@@ -89,25 +89,25 @@ geluNew x =
 
 -- | Applies the HardTanh function element-wise.
 hardtanh ::
-  forall minValue maxValue requiresGradient layout device dataType shape.
+  forall minValue maxValue gradient layout device dataType shape.
   (Scalar minValue, Scalar maxValue) =>
   -- | minimum value
   minValue ->
   -- | maximum value
   maxValue ->
   -- | input
-  Tensor requiresGradient layout device dataType shape ->
+  Tensor gradient layout device dataType shape ->
   -- | output
-  Tensor requiresGradient layout device dataType shape
+  Tensor gradient layout device dataType shape
 hardtanh minValue maxValue tensor = unsafePerformIO $ cast3 ATen.hardtanh_tss tensor minValue maxValue
 
 -- | Applies the hardswish function element-wise.
 hardswish ::
-  forall requiresGradient layout device dataType shape.
+  forall gradient layout device dataType shape.
   -- | input
-  Tensor requiresGradient layout device dataType shape ->
+  Tensor gradient layout device dataType shape ->
   -- | output
-  Tensor requiresGradient layout device dataType shape
+  Tensor gradient layout device dataType shape
 hardswish = unsafePerformIO . cast1 ATen.hardswish_t
 
 -- | Applies the exponential linear unit function element-wise, with alpha input,
@@ -115,14 +115,14 @@ hardswish = unsafePerformIO . cast1 ATen.hardswish_t
 -- \text{ELU}(x) = \max(0,x) + \min(0, \alpha * (\exp(x) - 1)).
 -- \]
 elu ::
-  forall alpha requiresGradient layout device dataType shape.
+  forall alpha gradient layout device dataType shape.
   Scalar alpha =>
   -- | alpha value for ELU formulation
   alpha ->
   -- | input
-  Tensor requiresGradient layout device dataType shape ->
+  Tensor gradient layout device dataType shape ->
   -- | output
-  Tensor requiresGradient layout device dataType shape
+  Tensor gradient layout device dataType shape
 elu alpha tensor = unsafePerformIO $ cast2 ATen.elu_ts tensor alpha
 
 -- | Applies the scaled exponential linear unit function element-wise, that is,
@@ -132,11 +132,11 @@ elu alpha tensor = unsafePerformIO $ cast2 ATen.elu_ts tensor alpha
 -- with \(\alpha = 1.6732632423543772848170429916717\)
 -- and \(\text{scale}=1.0507009873554804934193349852946\).
 selu ::
-  forall requiresGradient layout device dataType shape.
+  forall gradient layout device dataType shape.
   -- | input
-  Tensor requiresGradient layout device dataType shape ->
+  Tensor gradient layout device dataType shape ->
   -- | output
-  Tensor requiresGradient layout device dataType shape
+  Tensor gradient layout device dataType shape
 selu = unsafePerformIO . cast1 ATen.selu_t
 
 -- | Applies the continuously differentiable exponential linear unit function element-wise, that is,
@@ -144,14 +144,14 @@ selu = unsafePerformIO . cast1 ATen.selu_t
 -- \text{CELU}(x) = \max(0,x) + \min(0, \alpha * (\exp(x/\alpha) - 1)).
 -- \]
 celu ::
-  forall alpha requiresGradient layout device dataType shape.
+  forall alpha gradient layout device dataType shape.
   (Scalar alpha) =>
   -- | alpha
   alpha ->
   -- | input
-  Tensor requiresGradient layout device dataType shape ->
+  Tensor gradient layout device dataType shape ->
   -- | output
-  Tensor requiresGradient layout device dataType shape
+  Tensor gradient layout device dataType shape
 celu alpha tensor = unsafePerformIO $ cast2 ATen.celu_ts tensor alpha
 
 -- | Applies the element-wise function:
@@ -161,14 +161,14 @@ celu alpha tensor = unsafePerformIO $ cast2 ATen.celu_ts tensor alpha
 -- the the angle of the negative slope can be controlled.
 -- A typical value for it is 0.01.
 leakyRelu ::
-  forall negativeSlope requiresGradient layout device dataType shape.
+  forall negativeSlope gradient layout device dataType shape.
   (Scalar negativeSlope) =>
   -- | negative slope
   negativeSlope ->
   -- | input
-  Tensor requiresGradient layout device dataType shape ->
+  Tensor gradient layout device dataType shape ->
   -- | output
-  Tensor requiresGradient layout device dataType shape
+  Tensor gradient layout device dataType shape
 leakyRelu negativeSlope tensor = unsafePerformIO $ cast2 ATen.leaky_relu_ts tensor negativeSlope
 
 -- | Applies the parameterized rectified linear unit function element-wise, that is,
@@ -177,11 +177,11 @@ leakyRelu negativeSlope tensor = unsafePerformIO $ cast2 ATen.leaky_relu_ts tens
 -- \]
 -- The weight parameter is typically learnable.
 prelu ::
-  forall requiresGradient' requiresGradient layout device dataType shape.
+  forall gradient' gradient layout device dataType shape.
   -- | weight (typically learnable)
-  Tensor requiresGradient' layout device dataType shape ->
+  Tensor gradient' layout device dataType shape ->
   -- | input
-  Tensor requiresGradient layout device dataType shape ->
+  Tensor gradient layout device dataType shape ->
   -- | output
-  Tensor requiresGradient layout device dataType shape
+  Tensor gradient layout device dataType shape
 prelu weight tensor = unsafePerformIO $ cast2 ATen.prelu_tt tensor weight

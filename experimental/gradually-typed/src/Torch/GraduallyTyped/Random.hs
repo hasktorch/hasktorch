@@ -8,8 +8,10 @@
 {-# LANGUAGE RoleAnnotations #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 
-module Torch.GraduallyTyped.Random (Generator, noGenerator, mkGenerator, sMkGenerator, withGenerator) where
+module Torch.GraduallyTyped.Random (Generator, mkGenerator, sMkGenerator, withGenerator) where
 
 import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVar, writeTVar)
 import Data.Int (Int16)
@@ -20,6 +22,8 @@ import GHC.TypeLits (Nat)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDeviceType, SDevice)
 import Torch.GraduallyTyped.Prelude (forgetIsChecked)
+import Torch.GraduallyTyped.Tensor.Type (Tensor)
+import Torch.GraduallyTyped.Unify (type (<+>))
 import qualified Torch.Internal.Managed.Type.Generator as ATen
 import qualified Torch.Internal.Type as ATen
 
@@ -31,19 +35,8 @@ data Generator (device :: Device (DeviceType Nat)) where
       generatorState :: TVar (Maybe (ForeignPtr ATen.Generator))
     } ->
     Generator device
-  NoGenerator :: forall device. Generator device
 
 type role Generator nominal
-
-noGenerator :: forall device. Generator device
-noGenerator = NoGenerator
-
-mkGenerator ::
-  forall device.
-  SingI device =>
-  Word64 ->
-  IO (Generator device)
-mkGenerator = sMkGenerator (sing @device)
 
 sMkGenerator ::
   forall device.
@@ -63,13 +56,19 @@ sMkGenerator device seed =
           genenerator <- newTVarIO (Just genPtr)
           return $ UnsafeGenerator @device seed deviceType genenerator
 
+mkGenerator ::
+  forall device.
+  SingI device =>
+  Word64 ->
+  IO (Generator device)
+mkGenerator = sMkGenerator (sing @device)
+
 withGenerator ::
-  forall a device.
-  (ForeignPtr ATen.Generator -> IO a) ->
-  a ->
-  Generator device ->
-  (a, Generator device)
-withGenerator _ a NoGenerator = (a, NoGenerator)
+  forall requiresGradient layout device dataType shape device'.
+  (ForeignPtr ATen.Generator -> IO (Tensor requiresGradient layout device dataType shape)) ->
+  Tensor requiresGradient layout device dataType shape ->
+  Generator device' ->
+  (Tensor requiresGradient layout device dataType shape, Generator (device <+> device'))
 withGenerator f _ UnsafeGenerator {..} = unsafePerformIO $ do
   mGenPtr <- atomically $ do
     mGenPtr <- readTVar generatorState

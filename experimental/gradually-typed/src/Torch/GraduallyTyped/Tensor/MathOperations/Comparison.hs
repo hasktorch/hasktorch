@@ -21,7 +21,7 @@ import System.IO.Unsafe (unsafePerformIO)
 import Torch.DType (DType (..))
 import Torch.GraduallyTyped.DType (DataType (..))
 import Torch.GraduallyTyped.Prelude (Seq, forgetIsChecked)
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..))
+import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, GetDimImplF)
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SSelectDim, SelectDim (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
@@ -43,11 +43,11 @@ gt,
   (<=.),
   (==.),
   (/=.) ::
-    forall requiresGradient layout device dataType shape requiresGradient' layout' device' dataType' shape'.
-    Tensor requiresGradient layout device dataType shape ->
-    Tensor requiresGradient' layout' device' dataType' shape' ->
+    forall gradient layout device dataType shape gradient' layout' device' dataType' shape'.
+    Tensor gradient layout device dataType shape ->
+    Tensor gradient' layout' device' dataType' shape' ->
     Tensor
-      'WithoutGradient
+      ('Gradient 'WithoutGradient)
       (layout <+> layout')
       (device <+> device')
       (Seq (dataType <+> dataType') ('DataType 'Bool))
@@ -67,13 +67,13 @@ a `ne` b = unsafePerformIO $ cast2 ATen.ne_tt a b
 
 data Order = Ascending | Descending deriving stock (Show, Eq, Ord, Generic)
 
-data Sorted requiresGradient layout device dataType shape where
+data Sorted gradient layout device dataType shape where
   Sorted ::
-    forall requiresGradient layout device dataType shape.
-    { sorted :: Tensor requiresGradient layout device dataType shape,
-      indices :: Tensor 'WithoutGradient layout device ('DataType 'Int64) shape
+    forall gradient layout device dataType shape.
+    { sorted :: Tensor gradient layout device dataType shape,
+      indices :: Tensor ('Gradient 'WithoutGradient) layout device ('DataType 'Int64) shape
     } ->
-    Sorted requiresGradient layout device dataType shape
+    Sorted gradient layout device dataType shape
 
 type SortErrorMessage (by :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) =
   "Cannot apply sort on the dimension matching"
@@ -95,11 +95,11 @@ type family SortF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape [Dim 
   SortF ('SelectDim by) ('Shape dims) = 'Shape (SortCheckF by dims (GetDimImplF by dims))
 
 sSort ::
-  forall selectDim requiresGradient layout device dataType shape.
+  forall selectDim gradient layout device dataType shape.
   SSelectDim selectDim ->
   Order ->
-  Tensor requiresGradient layout device dataType shape ->
-  Sorted requiresGradient layout device dataType (SortF selectDim shape)
+  Tensor gradient layout device dataType shape ->
+  Sorted gradient layout device dataType (SortF selectDim shape)
 sSort by order tensor =
   let by' = forgetIsChecked $ fromSing by
    in uncurry Sorted $ case by' of
@@ -107,9 +107,9 @@ sSort by order tensor =
         ByIndex index -> unsafePerformIO $ cast3 ATen.sort_tlb tensor (fromInteger index :: Int) (order == Descending)
 
 sort ::
-  forall selectDim requiresGradient layout device dataType shape.
+  forall selectDim gradient layout device dataType shape.
   SingI selectDim =>
   Order ->
-  Tensor requiresGradient layout device dataType shape ->
-  Sorted requiresGradient layout device dataType (SortF selectDim shape)
+  Tensor gradient layout device dataType shape ->
+  Sorted gradient layout device dataType (SortF selectDim shape)
 sort = sSort (sing @selectDim)
