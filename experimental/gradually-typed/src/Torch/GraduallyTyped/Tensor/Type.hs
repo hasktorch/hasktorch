@@ -54,15 +54,14 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), KnownDevice (.
 import Torch.GraduallyTyped.Internal.TensorOptions (tensorOptions)
 import Torch.GraduallyTyped.Layout (KnownLayout (..), Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.Prelude (forgetIsChecked, ifM, (&&^), pattern Demoted, pattern Demoted')
-import Torch.GraduallyTyped.RequiresGradient (RequiresGradient (..), SRequiresGradient (..))
+import Torch.GraduallyTyped.RequiresGradient (KnownRequiresGradient, RequiresGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (InsertDimF, ReplaceDimF)
 import Torch.GraduallyTyped.Shape.Type (By (ByIndex), Dim (..), KnownShape (..), Name (..), SDim (..), SName (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:|:))
 import Torch.GraduallyTyped.Unify (type (<+>))
 import Torch.HList (HList (..), pattern (:.))
-import Torch.Internal.Cast (cast0, cast1, cast2)
+import Torch.Internal.Cast (cast0, cast1, cast2, cast4)
 import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Managed.Native as ATen
-import qualified Torch.Internal.Managed.Native as LibTorch
 import qualified Torch.Internal.Managed.Type.Context as ATen
 import qualified Torch.Internal.Managed.Type.Extra as ATen
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
@@ -1214,7 +1213,7 @@ unexpectedDimsError dims' x = do
   expected <- guessDims x
   error $ "Expected shape to be " <> show expected <> " got: " <> show dims'
 
-class KnownDType dType => TensorLike a (dType :: DType) (dims :: [Dim (Name Symbol) (Size Nat)]) | a -> dims, a -> dType where
+class TensorLike a (dType :: DType) (dims :: [Dim (Name Symbol) (Size Nat)]) | a -> dims, a -> dType where
   -- | Creates a tensor from a 'TensorLike' value.
   --
   -- >>> t <- sToTensor SWithoutGradient (SLayout SDense) (SDevice SCPU) ([(1, 2), (3, 4), (5, 6)] :: [(Int, Int)])
@@ -1223,13 +1222,13 @@ class KnownDType dType => TensorLike a (dType :: DType) (dims :: [Dim (Name Symb
   --                     [ 3,  4],
   --                     [ 5,  6]]
   -- >>> :type t
-  --   Tensor
-  --     'WithoutGradient
-  --     ('Layout 'Dense)
-  --     ('Device 'CPU)
-  --     ('DataType 'Int64)
-  --     ('Shape
-  --        '[ 'Dim ('Name "*") 'UncheckedSize, 'Dim ('Name "*") ('Size 2)])
+  -- t :: Tensor
+  --        'WithoutGradient
+  --        ('Layout 'Dense)
+  --        ('Device 'CPU)
+  --        ('DataType 'Int64)
+  --        ('Shape
+  --           '[ 'Dim ('Name "*") 'UncheckedSize, 'Dim ('Name "*") ('Size 2)])
   sToTensor ::
     forall requiresGradient layout device m.
     MonadThrow m =>
@@ -1242,13 +1241,25 @@ class KnownDType dType => TensorLike a (dType :: DType) (dims :: [Dim (Name Symb
   -- | Creates a 'TensorLike' from a tensor.
   fromTensor ::
     forall requiresGradient layout device.
-    SGetDims dims =>
     Tensor requiresGradient layout device ('DataType dType) ('Shape dims) ->
     a
 
+-- | Non-singleton version of 'sToTensor'.
+toTensor ::
+  forall requiresGradient layout device a dType dims m.
+  ( TensorLike a dType dims,
+    SingI requiresGradient,
+    SingI layout,
+    SingI device,
+    MonadThrow m
+  ) =>
+  a ->
+  m (Tensor requiresGradient layout device ('DataType dType) ('Shape dims))
+toTensor = sToTensor (sing @requiresGradient) (sing @layout) (sing @device)
+
 sToTensorRaw ::
   forall requiresGradient layout device a dType dims m.
-  (TensorLike a dType dims, TensorLikeRaw a, MonadThrow m) =>
+  (TensorLike a dType dims, TensorLikeRaw a, KnownDType dType, MonadThrow m) =>
   SRequiresGradient requiresGradient ->
   SLayout layout ->
   SDevice device ->
@@ -1259,7 +1270,7 @@ sToTensorRaw (Demoted requiresGradient) (Demoted' layout) (Demoted' device) x = 
 
   pure $
     unsafePerformIO $ do
-      t <- UnsafeTensor <$> cast2 LibTorch.empty_lo dims' opts
+      t <- UnsafeTensor <$> cast2 ATen.empty_lo dims' opts
       withTensor t $ \ptr ->
         tensorPokeElemOff ptr 0 dims' x
       pure t
@@ -1276,19 +1287,6 @@ fromTensorRaw t = unsafePerformIO $
   withTensor t $ \ptr -> do
     dims' <- dims t
     tensorPeekElemOff ptr 0 (fromInteger . dimSize <$> dims')
-
--- | Non-singleton version of 'sToTensor'.
-toTensor ::
-  forall requiresGradient layout device a m dType dims.
-  ( TensorLike a dType dims,
-    SingI requiresGradient,
-    SingI layout,
-    SingI device,
-    MonadThrow m
-  ) =>
-  a ->
-  m (Tensor requiresGradient layout device ('DataType dType) ('Shape dims))
-toTensor = sToTensor (sing @requiresGradient) (sing @layout) (sing @device)
 
 instance TensorLike Bool 'Bool '[] where
   sToTensor = sToTensorRaw
@@ -1370,9 +1368,12 @@ instance
     TensorLike b dType dims',
     TensorLikeRaw a,
     TensorLikeRaw b,
+    KnownDType dType,
+    SGetDims dimsOut,
     'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape (dims <+> dims')) ('Dim ('Name "*") ('Size 2))
   ) =>
-  TensorLike (a, b) dType dimsOut where
+  TensorLike (a, b) dType dimsOut
+  where
   sToTensor = sToTensorRaw
   fromTensor = fromTensorRaw
 
@@ -1403,9 +1404,12 @@ instance (TensorLikeRaw a, TensorLikeRaw b) => TensorLikeRaw (a, b) where
 instance
   ( TensorLike a dType dims,
     TensorLikeRaw a,
+    KnownDType dType,
+    SGetDims dimsOut,
     'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape dims) ('Dim ('Name "*") 'UncheckedSize)
   ) =>
-  TensorLike [a] dType dimsOut where
+  TensorLike [a] dType dimsOut
+  where
   sToTensor = sToTensorRaw
   fromTensor = fromTensorRaw
 
@@ -1437,9 +1441,12 @@ instance TensorLikeRaw a => TensorLikeRaw [a] where
 instance
   ( TensorLike a dType dims,
     TensorLikeRaw a,
+    KnownDType dType,
+    SGetDims dimsOut,
     'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape dims) ('Dim ('Name "*") 'UncheckedSize)
   ) =>
-  TensorLike (V.Vector a) dType dimsOut where
+  TensorLike (V.Vector a) dType dimsOut
+  where
   sToTensor = sToTensorRaw
   fromTensor = fromTensorRaw
 
@@ -1475,14 +1482,19 @@ instance
   ( KnownNat n,
     TensorLike a dType dims,
     TensorLikeRaw a,
+    KnownDType dType,
+    SGetDims dimsOut,
     'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape dims) ('Dim ('Name "*") ('Size n))
   ) =>
-  TensorLike (SV.Vector n a) dType dimsOut where
+  TensorLike (SV.Vector n a) dType dimsOut
+  where
   sToTensor = sToTensorRaw
   fromTensor = fromTensorRaw
 
 instance
-  (TensorLikeRaw a, KnownNat n) =>
+  ( KnownNat n,
+    TensorLikeRaw a
+  ) =>
   TensorLikeRaw (SV.Vector n a)
   where
   guessDim = pure . maybe 0 length
@@ -1492,3 +1504,45 @@ instance
   tensorPeekElemOff ptr offset dims' = SVI.Vector <$> tensorPeekElemOff ptr offset dims'
 
   tensorPokeElemOff ptr offset dims' = tensorPokeElemOff ptr offset dims' . SV.SomeSized
+
+sChangeTensorOptions ::
+  forall requiresGradient layout device dataType requiresGradientFrom layoutFrom deviceFrom dataTypeFrom shape.
+  SRequiresGradient requiresGradient ->
+  SLayout layout ->
+  SDevice device ->
+  SDataType dataType ->
+  Tensor requiresGradientFrom layoutFrom deviceFrom dataTypeFrom shape ->
+  Tensor requiresGradient layout device dataType shape
+sChangeTensorOptions (Demoted requiresGradient) (Demoted' layout) (Demoted' device) (Demoted' dataType) t =
+  UnsafeTensor $ unsafePerformIO $ cast4 ATen.tensor_to_obb t opts nonBlocking copy
+  where
+    opts = tensorOptions requiresGradient layout device dataType
+
+    nonBlocking = False
+    copy = False
+
+changeTensorOptions ::
+  forall requiresGradient layout device dataType requiresGradientFrom layoutFrom deviceFrom dataTypeFrom shape.
+  ( SingI requiresGradient,
+    SingI layout,
+    SingI device,
+    SingI dataType
+  ) =>
+  Tensor requiresGradientFrom layoutFrom deviceFrom dataTypeFrom shape ->
+  Tensor requiresGradient layout device dataType shape
+changeTensorOptions = sChangeTensorOptions (sing @requiresGradient) (sing @layout) (sing @device) (sing @dataType)
+
+instance
+  ( KnownRequiresGradient requiresGradient,
+    SingI requiresGradient,
+    SingI layout,
+    SingI device,
+    SingI dType
+  ) =>
+  TensorLike (Tensor requiresGradient layout device ('DataType dType) ('Shape dims)) dType dims
+  where
+  sToTensor requiresGradient layout device t = pure $ sChangeTensorOptions requiresGradient layout device dataType t
+    where
+      dataType = SDataType $ sing @dType
+
+  fromTensor = changeTensorOptions @requiresGradient @layout @device @('DataType dType)
