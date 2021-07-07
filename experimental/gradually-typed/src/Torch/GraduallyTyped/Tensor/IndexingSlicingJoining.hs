@@ -27,8 +27,7 @@ import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (Nat, Symbol, TypeError)
 import Numeric.Natural (Natural)
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..))
+import Torch.GraduallyTyped.DType (DType (..), DataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.Index.Class (InRangeF)
 import Torch.GraduallyTyped.Index.Type (SIndex)
@@ -352,7 +351,7 @@ type family TransposeIndexIndexDimsF (index0 :: Nat) (index1 :: Nat) (dims :: [D
 --
 -- >>> g <- mkGenerator @('Device 'CPU) 0
 -- >>> (input, _) = randn @('Gradient 'WithGradient) @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "feature") ('Size 5)]) g
--- >>> output = transpose @('SelectDim ('ByName "batch")) @('SelectDim ('ByName "feature")) input
+-- >>> output <- transpose @('SelectDim ('ByName "batch")) @('SelectDim ('ByName "feature")) input
 -- >>> :type output
 -- output
 --   :: Tensor
@@ -406,14 +405,15 @@ instance Exception TransposeError where
       <> "'."
 
 transpose ::
-  forall selectDim0 selectDim1 gradient layout device dataType shape shape'.
+  forall selectDim0 selectDim1 gradient layout device dataType shape shape' m.
   ( shape' ~ TransposeF selectDim0 selectDim1 shape,
     SingI selectDim0,
-    SingI selectDim1
+    SingI selectDim1,
+    MonadThrow m
   ) =>
   Tensor gradient layout device dataType shape ->
-  Tensor gradient layout device dataType shape'
-transpose = unsafePerformIO . sTranspose (sing @selectDim0) (sing @selectDim1)
+  m (Tensor gradient layout device dataType shape')
+transpose = sTranspose (sing @selectDim0) (sing @selectDim1)
 
 type UnsqueezeByMessage (by :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) =
   "Cannot unsqueeze the tensor with the dimensions"
@@ -549,13 +549,14 @@ instance Exception IndexOutOfBoundError where
       <> "`."
 
 select ::
-  forall selectDim index gradient layout device dataType shapeIn shapeOut.
+  forall selectDim index gradient layout device dataType shapeIn shapeOut m.
   ( SingI selectDim,
     SingI index,
     index `InRangeF` GetDimF selectDim shapeIn,
     shapeOut ~ RemoveDimF selectDim shapeIn,
-    SGetShape shapeIn
+    SGetShape shapeIn,
+    MonadThrow m
   ) =>
   Tensor gradient layout device dataType shapeIn ->
-  Tensor gradient layout device dataType shapeOut
-select = unsafePerformIO . sSelect (sing @selectDim) (sing @index)
+  m (Tensor gradient layout device dataType shapeOut)
+select = sSelect (sing @selectDim) (sing @index)

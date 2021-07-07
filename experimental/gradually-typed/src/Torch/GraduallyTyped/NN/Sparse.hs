@@ -7,6 +7,7 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -20,8 +21,7 @@ import Control.Monad.Indexed.State (IxState (..))
 import Data.Data (Proxy (..))
 import Data.Singletons.Prelude.List (SList (..))
 import GHC.TypeLits (KnownNat, Nat, Symbol, natVal)
-import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), SDataType (..))
+import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType, SDevice (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
@@ -104,7 +104,7 @@ instance
     output
     generator
   where
-  forward (Embedding weight) input g = (embedding Nothing False weight input, g)
+  forward (Embedding weight) input = pure . (embedding Nothing False weight input,)
 
 instance
   ( SGetLayout layout,
@@ -124,4 +124,4 @@ instance
     output
     generator
   where
-  forward Embedding {..} input g = (embedding (Just . fromIntegral . natVal $ Proxy @paddingIdx) False embeddingWeight input, g)
+  forward Embedding {..} input = pure . (embedding (Just . fromIntegral . natVal $ Proxy @paddingIdx) False embeddingWeight input,)

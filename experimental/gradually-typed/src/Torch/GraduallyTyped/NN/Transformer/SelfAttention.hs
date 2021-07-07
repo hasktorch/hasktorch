@@ -45,14 +45,15 @@
 module Torch.GraduallyTyped.NN.Transformer.SelfAttention where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
-import Control.Monad.Indexed.State (IxState (..))
+import Control.Monad.Indexed.State (IxState (..), IxStateT (..))
+import Control.Monad.State (evalStateT)
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
+import qualified Data.Map as Map
 import Data.Singletons (SingI, sing)
 import Data.Singletons.Prelude.List (SList (SNil))
 import GHC.TypeLits (Nat, Symbol)
-import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), SDType (..), SDataType (..))
+import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
@@ -293,11 +294,11 @@ instance
     generatorOutput
   where
   forward (SelfAttention GSelfAttention {..}) (query, attentionBias) =
-    runIxState $
+    runIxStateT $
       ireturn query
-        >>>= IxState . forward saLayerNorm
-        >>>= (\query' -> IxState $ forward saMultiHeadAttention (query', query', query', attentionBias))
-        >>>= IxState . forward saDropout
+        >>>= IxStateT . forward saLayerNorm
+        >>>= (\query' -> IxStateT $ forward saMultiHeadAttention (query', query', query', attentionBias))
+        >>>= IxStateT . forward saDropout
         >>>= ireturn . (query `add`)
 
 testSA = do
@@ -316,12 +317,18 @@ testSA = do
           @(SelfAttention 'T5 _ _ _ _ _ _ _ _)
           (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, dropoutP, eps)
           g
-      batchDim = SName @"*" :&: SSize @1
+  sa' <- flip evalStateT Map.empty $ do
+    toStateDict "sa." sa
+    fromStateDict
+      @(SelfAttention 'T5 _ _ _ _ _ _ _ _)
+      (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, dropoutP, eps)
+      "sa."
+  let batchDim = SName @"*" :&: SSize @1
       seqDim = SName @"*" :&: SSize @4
       sOnes' = sOnes (SGradient SWithoutGradient) (SLayout SDense) device
       query = sOnes' dataType (SShape $ batchDim :|: seqDim :|: queryEmbedDim :|: SNil)
       attentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
-  let (output, _) = forward sa (query, attentionBias) g'
+  (output, _) <- forward sa' (query, attentionBias) g'
   pure output
 
 -- | 'HasForward' instance for @SelfAttention 'ByT5@.
@@ -386,11 +393,11 @@ instance
     generatorOutput
   where
   forward (SelfAttention GSelfAttention {..}) (query, attentionBias) =
-    runIxState $
+    runIxStateT $
       ireturn query
-        >>>= IxState . forward saLayerNorm
-        >>>= (\query' -> IxState $ forward saMultiHeadAttention (query', query', query', attentionBias))
-        >>>= IxState . forward saDropout
+        >>>= IxStateT . forward saLayerNorm
+        >>>= (\query' -> IxStateT $ forward saMultiHeadAttention (query', query', query', attentionBias))
+        >>>= IxStateT . forward saDropout
         >>>= ireturn . (query `add`)
 
 -- | 'HasForward' instance for @SelfAttention 'BART@.
@@ -458,12 +465,12 @@ instance
     generatorOutput
   where
   forward (SelfAttention GSelfAttention {..}) (query, attentionBias) =
-    runIxState $
+    runIxStateT $
       ireturn query
-        >>>= (\query' -> IxState $ forward saMultiHeadAttention (query', query', query', attentionBias))
-        >>>= IxState . forward saDropout
+        >>>= (\query' -> IxStateT $ forward saMultiHeadAttention (query', query', query', attentionBias))
+        >>>= IxStateT . forward saDropout
         >>>= ireturn . (query `add`)
-        >>>= IxState . forward saLayerNorm
+        >>>= IxStateT . forward saLayerNorm
 
 -- | 'HasForward' instance for @SelfAttention 'BERT@.
 --
@@ -530,12 +537,12 @@ instance
     generatorOutput
   where
   forward (SelfAttention GSelfAttention {..}) (query, attentionBias) =
-    runIxState $
+    runIxStateT $
       ireturn query
-        >>>= (\query' -> IxState $ forward saMultiHeadAttention (query', query', query', attentionBias))
-        >>>= IxState . forward saDropout
+        >>>= (\query' -> IxStateT $ forward saMultiHeadAttention (query', query', query', attentionBias))
+        >>>= IxStateT . forward saDropout
         >>>= ireturn . (query `add`)
-        >>>= IxState . forward saLayerNorm
+        >>>= IxStateT . forward saLayerNorm
 
 -- | 'HasForward' instance for @SelfAttention 'RoBERTa@.
 --
@@ -602,12 +609,12 @@ instance
     generatorOutput
   where
   forward (SelfAttention GSelfAttention {..}) (query, attentionBias) =
-    runIxState $
+    runIxStateT $
       ireturn query
-        >>>= (\query' -> IxState $ forward saMultiHeadAttention (query', query', query', attentionBias))
-        >>>= IxState . forward saDropout
+        >>>= (\query' -> IxStateT $ forward saMultiHeadAttention (query', query', query', attentionBias))
+        >>>= IxStateT . forward saDropout
         >>>= ireturn . (query `add`)
-        >>>= IxState . forward saLayerNorm
+        >>>= IxStateT . forward saLayerNorm
 
 -- | 'HasForward' instance for @SelfAttention 'Pegasus@.
 --
@@ -676,9 +683,9 @@ instance
     generatorOutput
   where
   forward (SelfAttention GSelfAttention {..}) (query, attentionBias) =
-    runIxState $
+    runIxStateT $
       ireturn query
-        >>>= IxState . forward saLayerNorm
-        >>>= (\query' -> IxState $ forward saMultiHeadAttention (query', query', query', attentionBias))
-        >>>= IxState . forward saDropout
+        >>>= IxStateT . forward saLayerNorm
+        >>>= (\query' -> IxStateT $ forward saMultiHeadAttention (query', query', query', attentionBias))
+        >>>= IxStateT . forward saDropout
         >>>= ireturn . (query `add`)

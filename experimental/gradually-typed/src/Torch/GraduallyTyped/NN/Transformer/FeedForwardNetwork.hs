@@ -46,14 +46,13 @@
 module Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
-import Control.Monad.Indexed.State (IxState (..))
+import Control.Monad.Indexed.State (IxState (..), IxStateT (..))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI (sing))
 import Data.Singletons.Prelude.List (SList (..))
 import GHC.TypeLits (Nat, Symbol)
-import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType, SDataType)
+import Torch.GraduallyTyped.DType (DType (..), DataType, SDataType)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
 import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense))
 import Torch.GraduallyTyped.NN.Activation (Gelu (..), GeluNew (..), Relu (..))
@@ -530,14 +529,14 @@ instance
     generatorOutput
   where
   forward (TransformerFeedForwardNetwork GTransformerFeedForwardNetwork {..}) query =
-    runIxState $
+    runIxStateT $
       ireturn query
-        >>>= IxState . forward ffnLayerNorm
-        >>>= IxState . forward ffnInputWeight1
-        >>>= IxState . forward ffnActivation
-        >>>= IxState . forward ffnActivationDropout
-        >>>= IxState . forward ffnOutputWeight
-        >>>= IxState . forward ffnDropout
+        >>>= IxStateT . forward ffnLayerNorm
+        >>>= IxStateT . forward ffnInputWeight1
+        >>>= IxStateT . forward ffnActivation
+        >>>= IxStateT . forward ffnActivationDropout
+        >>>= IxStateT . forward ffnOutputWeight
+        >>>= IxStateT . forward ffnDropout
         >>>= ireturn . (query `add`)
 
 -- | 'HasForward' instance for @TransformerFeedForwardNetwork 'ByT5@.
@@ -591,17 +590,17 @@ instance
   forward (TransformerFeedForwardNetwork GTransformerFeedForwardNetwork {..}) query =
     let activate query' =
           ireturn query'
-            >>>= IxState . forward ffnInputWeight1
-            >>>= IxState . forward ffnActivation
-        gate query' = (*) <<$>> activate query' <<*>> (IxState . forward ffnInputWeight2 $ query')
-     in runIxState $
+            >>>= IxStateT . forward ffnInputWeight1
+            >>>= IxStateT . forward ffnActivation
+        gate query' = (*) <<$>> activate query' <<*>> (IxStateT . forward ffnInputWeight2 $ query')
+     in runIxStateT $
           ireturn query
-            >>>= IxState . forward ffnLayerNorm
+            >>>= IxStateT . forward ffnLayerNorm
             >>>= gate
-            >>>= IxState . forward ffnActivation
-            >>>= IxState . forward ffnActivationDropout
-            >>>= IxState . forward ffnOutputWeight
-            >>>= IxState . forward ffnDropout
+            >>>= IxStateT . forward ffnActivation
+            >>>= IxStateT . forward ffnActivationDropout
+            >>>= IxStateT . forward ffnOutputWeight
+            >>>= IxStateT . forward ffnDropout
             >>>= ireturn . (query `add`)
 
 -- | 'HasForward' instance for @TransformerFeedForwardNetwork 'BART@.
@@ -655,15 +654,15 @@ instance
     generatorOutput
   where
   forward (TransformerFeedForwardNetwork GTransformerFeedForwardNetwork {..}) query =
-    runIxState $
+    runIxStateT $
       ireturn query
-        >>>= IxState . forward ffnInputWeight1
-        >>>= IxState . forward ffnActivation
-        >>>= IxState . forward ffnActivationDropout
-        >>>= IxState . forward ffnOutputWeight
-        >>>= IxState . forward ffnDropout
+        >>>= IxStateT . forward ffnInputWeight1
+        >>>= IxStateT . forward ffnActivation
+        >>>= IxStateT . forward ffnActivationDropout
+        >>>= IxStateT . forward ffnOutputWeight
+        >>>= IxStateT . forward ffnDropout
         >>>= ireturn . (query `add`)
-        >>>= IxState . forward ffnLayerNorm
+        >>>= IxStateT . forward ffnLayerNorm
 
 -- | 'HasForward' instance for @TransformerFeedForwardNetwork 'BERT@.
 --
@@ -714,14 +713,14 @@ instance
     generatorOutput
   where
   forward (TransformerFeedForwardNetwork GTransformerFeedForwardNetwork {..}) query =
-    runIxState $
+    runIxStateT $
       ireturn query
-        >>>= IxState . forward ffnInputWeight1
-        >>>= IxState . forward ffnActivation
-        >>>= IxState . forward ffnOutputWeight
-        >>>= IxState . forward ffnDropout
+        >>>= IxStateT . forward ffnInputWeight1
+        >>>= IxStateT . forward ffnActivation
+        >>>= IxStateT . forward ffnOutputWeight
+        >>>= IxStateT . forward ffnDropout
         >>>= ireturn . (query `add`)
-        >>>= IxState . forward ffnLayerNorm
+        >>>= IxStateT . forward ffnLayerNorm
 
 -- | 'HasForward' instance for @TransformerFeedForwardNetwork 'RoBERTa@.
 --
@@ -772,14 +771,14 @@ instance
     generatorOutput
   where
   forward (TransformerFeedForwardNetwork GTransformerFeedForwardNetwork {..}) query =
-    runIxState $
+    runIxStateT $
       ireturn query
-        >>>= IxState . forward ffnInputWeight1
-        >>>= IxState . forward ffnActivation
-        >>>= IxState . forward ffnOutputWeight
-        >>>= IxState . forward ffnDropout
+        >>>= IxStateT . forward ffnInputWeight1
+        >>>= IxStateT . forward ffnActivation
+        >>>= IxStateT . forward ffnOutputWeight
+        >>>= IxStateT . forward ffnDropout
         >>>= ireturn . (query `add`)
-        >>>= IxState . forward ffnLayerNorm
+        >>>= IxStateT . forward ffnLayerNorm
 
 -- | 'HasForward' instance for @TransformerFeedForwardNetwork 'Pegasus@.
 --
@@ -830,12 +829,12 @@ instance
     generatorOutput
   where
   forward (TransformerFeedForwardNetwork GTransformerFeedForwardNetwork {..}) query =
-    runIxState $
+    runIxStateT $
       ireturn query
-        >>>= IxState . forward ffnLayerNorm
-        >>>= IxState . forward ffnInputWeight1
-        >>>= IxState . forward ffnActivation
-        >>>= IxState . forward ffnActivationDropout
-        >>>= IxState . forward ffnOutputWeight
-        >>>= IxState . forward ffnDropout
+        >>>= IxStateT . forward ffnLayerNorm
+        >>>= IxStateT . forward ffnInputWeight1
+        >>>= IxStateT . forward ffnActivation
+        >>>= IxStateT . forward ffnActivationDropout
+        >>>= IxStateT . forward ffnOutputWeight
+        >>>= IxStateT . forward ffnDropout
         >>>= ireturn . (query `add`)

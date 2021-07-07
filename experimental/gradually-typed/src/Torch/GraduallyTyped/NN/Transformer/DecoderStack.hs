@@ -12,6 +12,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -28,8 +29,7 @@ import qualified Data.Vector as V
 import qualified Data.Vector.Generic.Sized.Internal as VGS
 import qualified Data.Vector.Sized as VS
 import GHC.TypeLits (KnownNat, Nat, Symbol, type (+))
-import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType, SDType (..), SDataType (..))
+import Torch.GraduallyTyped.DType (DType (..), DataType, SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
@@ -107,7 +107,7 @@ instance
     query
     generator
   where
-  forward _ (query, _, _, _) g = (query, g)
+  forward _ (query, _, _, _) = pure . (query,)
 
 instance
   HasForward
@@ -173,7 +173,8 @@ instance
   forward (TransformerDecoderStack (VGS.Vector v)) (query, key, decoderAttentionBias, crossAttentionBias) g =
     let Just (block, blocks) = V.uncons v
      in V.foldl
-          ( \(output, g') block' ->
+          ( \agg block' -> do
+              (output, g') <- agg
               forward block' (output, key, decoderAttentionBias, crossAttentionBias) g'
           )
           (forward block (query, key, decoderAttentionBias, crossAttentionBias) g)
@@ -202,5 +203,5 @@ testDecoderStack = do
       key = sOnes' dataType (SShape $ batchDim :|: seqDim :|: keyEmbedDim :|: SNil)
       decoderAttentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
       crossAttentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: decoderSeqDim :|: seqDim :|: SNil)
-  let (output, _) = forward decoderStack (query, key, decoderAttentionBias, crossAttentionBias) g'
+  (output, _) <- forward decoderStack (query, key, decoderAttentionBias, crossAttentionBias) g'
   pure output

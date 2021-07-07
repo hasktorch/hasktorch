@@ -18,14 +18,13 @@
 module Torch.GraduallyTyped.NN.Transformer.LMHead where
 
 import Control.Monad.Indexed (IxPointed (..), (>>>=))
-import Control.Monad.Indexed.State (IxState (..))
+import Control.Monad.Indexed.State (IxState (..), IxStateT (..))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI (..), SingKind (fromSing))
 import Data.Singletons.Prelude.List (SList (SNil))
 import GHC.TypeLits (Nat, Symbol)
-import Torch.DType (DType)
-import Torch.GraduallyTyped.DType (DataType, SDataType)
+import Torch.GraduallyTyped.DType (DType, DataType, SDataType)
 import Torch.GraduallyTyped.Device (Device, DeviceType, SDevice)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Activation (Gelu (..))
@@ -512,11 +511,11 @@ instance
         bias SBERT = id
         bias SRoBERTa = id
         bias SGPT2 = undefined
-     in runIxState $
+     in runIxStateT $
           ireturn input
-            >>>= IxState . forward lmHeadDense
-            >>>= IxState . forward lmHeadActivation
-            >>>= IxState . forward lmHeadLayerNorm
-            >>>= IxState . forward lmHeadDecoder
+            >>>= IxStateT . forward lmHeadDense
+            >>>= IxStateT . forward lmHeadActivation
+            >>>= IxStateT . forward lmHeadLayerNorm
+            >>>= IxStateT . forward lmHeadDecoder
             >>>= ireturn . scaling (sing @style)
             >>>= ireturn . bias (sing @style)

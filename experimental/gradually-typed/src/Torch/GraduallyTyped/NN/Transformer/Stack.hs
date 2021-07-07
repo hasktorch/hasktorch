@@ -9,9 +9,11 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverlappingInstances #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -23,18 +25,21 @@ module Torch.GraduallyTyped.NN.Transformer.Stack where
 
 import Data.Kind (Type)
 import Data.Singletons (SingI)
+import Data.Singletons.Prelude.List (SList (SNil))
 import qualified Data.Vector as V
 import qualified Data.Vector.Generic.Sized.Internal as VGS
 import qualified Data.Vector.Sized as VS
 import GHC.TypeLits (KnownNat, Nat, Symbol, type (+))
-import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType)
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
+import Torch.GraduallyTyped.DType (DType (..), DataType, SDType (..), SDataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
+import Torch.GraduallyTyped.Layout (SLayout (SLayout), SLayoutType (SDense))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
 import Torch.GraduallyTyped.NN.Transformer.Block (TransformerBlock)
-import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle)
-import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient)
-import Torch.GraduallyTyped.Shape (Dim (..), Name (..), Size (..))
+import Torch.GraduallyTyped.NN.Transformer.Type (TransformerStyle (T5))
+import Torch.GraduallyTyped.Random (sMkGenerator)
+import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient (..), SRequiresGradient (..))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SName (..), SShape (SShape), SSize (..), Size (..), pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.Tensor.Creation (sOnes)
 
 -- | Transformer encoder stack.
 newtype
@@ -102,7 +107,7 @@ instance
     query
     generator
   where
-  forward _ (query, _) g = (query, g)
+  forward _ (query, _) = pure . (query,)
 
 instance
   HasForward
@@ -168,8 +173,30 @@ instance
   forward (TransformerStack (VGS.Vector v)) (query, attentionBias) g =
     let Just (block, blocks) = V.uncons v
      in V.foldl
-          ( \(output, g') block' ->
+          ( \agg block' -> do
+              (output, g') <- agg
               forward block' (output, attentionBias) g'
           )
           (forward block (query, attentionBias) g)
           blocks
+
+testStack = do
+  let gradient = SGradient SWithGradient
+      device = SDevice SCPU
+      dataType = SDataType SFloat
+      headDim = SName @"*" :&: SSize @8
+      headEmbedDim = SName @"*" :&: SSize @64
+      embedDim = SName @"*" :&: SSize @512
+      queryEmbedDim = SName @"*" :&: SSize @512
+      ffnDim = SName @"*" :&: SSize @2048
+      dropoutP :: Float = 0.0
+      eps = 1e-6
+  g <- sMkGenerator device 0
+  let (stack, g') = initialize @(TransformerStack 'T5 2 _ _ _ _ _ _ _ _ _) (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, ffnDim, dropoutP, eps) g
+      batchDim = SName @"*" :&: SSize @3
+      seqDim = SName @"*" :&: SSize @17
+      sOnes' = sOnes (SGradient SWithoutGradient) (SLayout SDense) device
+      query = sOnes' dataType (SShape $ batchDim :|: seqDim :|: queryEmbedDim :|: SNil)
+      attentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
+  (output, _) <- forward stack (query, attentionBias) g'
+  pure output

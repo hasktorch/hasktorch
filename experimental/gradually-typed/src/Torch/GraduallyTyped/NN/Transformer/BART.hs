@@ -73,7 +73,7 @@ testForwardBARTBase =
         fromStateDict @(BARTBase 'WithLMHead ('Gradient 'WithoutGradient) ('Device 'CPU)) (SGradient SWithoutGradient, SDevice SCPU) ""
         -- fromStateDict @(BARTBase 'WithLMHead _ _) (SGradient SWithoutGradient, SDevice SCPU) ""
     g <- mkGenerator @('Device 'CPU) 0
-    let (BARTOutput {..}, _) = forward model input g
+    (BARTOutput {..}, _) <- forward model input g
     let encoderOutput = case bartEncoderOutput of
           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
     let firstEncoderHiddenStates = do

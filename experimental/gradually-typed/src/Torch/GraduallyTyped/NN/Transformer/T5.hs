@@ -73,7 +73,7 @@ testForwardT5Small =
       flip evalStateT stateDict $
         fromStateDict @(T5Small 'WithLMHead ('Gradient 'WithoutGradient) ('Device 'CPU)) (SGradient SWithoutGradient, SDevice SCPU) ""
     g <- sMkGenerator (SDevice SCPU) 0
-    let (T5Output {..}, _) = forward model input g
+    (T5Output {..}, _) <- forward model input g
     let decoderOutput = case t5DecoderOutput of
           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
     let firstLogits = do
@@ -97,7 +97,7 @@ testForwardByT5Small =
       flip evalStateT stateDict $
         fromStateDict @(ByT5Small 'WithLMHead ('Gradient 'WithoutGradient) ('Device 'CPU)) (SGradient SWithoutGradient, SDevice SCPU) ""
     g <- sMkGenerator (SDevice SCPU) 0
-    let (T5Output {..}, _) = forward model input g
+    (T5Output {..}, _) <- forward model input g
     let decoderOutput = case t5DecoderOutput of
           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
     let firstLogits = do

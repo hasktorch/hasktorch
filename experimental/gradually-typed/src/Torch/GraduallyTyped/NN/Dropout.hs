@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -28,7 +29,7 @@ newtype Dropout (p :: Type) where
     -- | probability of an element to be zeroed
     p ->
     Dropout p
-  deriving (Generic)
+  deriving stock (Show, Generic)
 
 instance (Scalar p) => HasInitialize (Dropout p) p generator generator where
   initialize p g = (Dropout p, g)
@@ -51,4 +52,4 @@ instance
     output
     generatorOutput
   where
-  forward (Dropout _p) input g = unsafeCoerce (input, g)
+  forward (Dropout _p) input g = pure $ (unsafeCoerce :: (input, g) -> (output, generatorOutput)) (input, g)

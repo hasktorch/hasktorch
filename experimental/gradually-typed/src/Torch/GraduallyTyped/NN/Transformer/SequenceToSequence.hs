@@ -19,14 +19,13 @@
 module Torch.GraduallyTyped.NN.Transformer.SequenceToSequence where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
-import Control.Monad.Indexed.State (IxState (..))
+import Control.Monad.Indexed.State (IxState (..), IxStateT (..))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI, SingKind (fromSing), sing)
 import Data.Singletons.Prelude.List (SList (..))
 import GHC.TypeLits (KnownNat, Nat, Symbol)
-import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), SDType (..), SDataType (..))
+import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
@@ -455,17 +454,17 @@ instance
         embedScaling SBERT = undefined
         embedScaling SRoBERTa = undefined
         embedScaling SGPT2 = undefined
-     in runIxState $
+     in runIxStateT $
           ireturn input
-            >>>= IxState . forward seqToSeqEmbedding
+            >>>= IxStateT . forward seqToSeqEmbedding
             >>>= ireturn . embedScaling (sing @style)
-            >>>= (\input' -> IxState $ forward seqToSeqEncoder (input', pos, attentionMask))
+            >>>= (\input' -> IxStateT $ forward seqToSeqEncoder (input', pos, attentionMask))
             >>>= ( \encoderOutput ->
                      ireturn decoderInput
-                       >>>= IxState . forward seqToSeqEmbedding
+                       >>>= IxStateT . forward seqToSeqEmbedding
                        >>>= ireturn . embedScaling (sing @style)
                        >>>= ( \decoderInput' ->
-                                IxState $ forward seqToSeqDecoder (decoderInput', encoderOutput, decoderPos, decoderAttentionMask, crossAttentionMask)
+                                IxStateT $ forward seqToSeqDecoder (decoderInput', encoderOutput, decoderPos, decoderAttentionMask, crossAttentionMask)
                             )
                        >>>= \decoderOutput -> ireturn (SequenceToSequenceTransformerOutput decoderOutput encoderOutput)
                  )
@@ -541,14 +540,14 @@ instance
         embedScaling SBERT = undefined
         embedScaling SRoBERTa = undefined
         embedScaling SGPT2 = undefined
-     in runIxState $
+     in runIxStateT $
           ireturn generationDecoderInput
-            >>>= IxState . forward seqToSeqEmbedding
+            >>>= IxStateT . forward seqToSeqEmbedding
             >>>= ireturn . embedScaling (sing @style)
             >>>= ( \decoderInput' ->
-                     IxState $ forward seqToSeqDecoder (decoderInput', generationEncoderOutput, generationDecoderPos, generationDecoderAttentionMask, generationCrossAttentionMask)
+                     IxStateT $ forward seqToSeqDecoder (decoderInput', generationEncoderOutput, generationDecoderPos, generationDecoderAttentionMask, generationCrossAttentionMask)
                  )
-            >>>= IxState . forward seqToSeqHead
+            >>>= IxStateT . forward seqToSeqHead
             >>>= \decoderOutput -> ireturn (SequenceToSequenceTransformerOutput decoderOutput generationEncoderOutput)
 
 testSeqToSeq = do
@@ -574,14 +573,14 @@ testSeqToSeq = do
       decoderInput = sOnes' (SDataType SInt64) (SShape $ batchDim :|: decoderSeqDim :|: SNil)
       decoderAttentionMask = sOnes' dataType (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
       crossAttentionMask = sOnes' dataType (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: seqDim :|: SNil)
-  let (t5Output, g'') =
-        let (t5, g') = initialize @(SequenceToSequenceTransformer 'T5 'WithLMHead 32 32 _ _ _ _ _ _ _ _ _ _ _) (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, dropoutP, eps) g
-            pos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
-            decoderPos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
-        in forward t5 SequenceToSequenceTransformerInput {..} g'
-  let (bartOutput, g'''') =
-        let (bart, g''') = initialize @(SequenceToSequenceTransformer 'BART 'WithLMHead 32 32 _ _ _ _ _ _ _ _ _ _ _) (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, dropoutP, eps) g''
-            pos = sOnes' (SDataType SInt64) (SShape $ seqDim :|: SNil)
-            decoderPos = sOnes' (SDataType SInt64) (SShape $ decoderSeqDim :|: SNil)
-        in forward bart SequenceToSequenceTransformerInput {..} g'''
+  (t5Output, g'') <-
+    let (t5, g') = initialize @(SequenceToSequenceTransformer 'T5 'WithLMHead 32 32 _ _ _ _ _ _ _ _ _ _ _) (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, dropoutP, eps) g
+        pos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
+        decoderPos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
+     in forward t5 SequenceToSequenceTransformerInput {..} g'
+  (bartOutput, g'''') <-
+    let (bart, g''') = initialize @(SequenceToSequenceTransformer 'BART 'WithLMHead 32 32 _ _ _ _ _ _ _ _ _ _ _) (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, dropoutP, eps) g''
+        pos = sOnes' (SDataType SInt64) (SShape $ seqDim :|: SNil)
+        decoderPos = sOnes' (SDataType SInt64) (SShape $ decoderSeqDim :|: SNil)
+     in forward bart SequenceToSequenceTransformerInput {..} g'''
   pure ((t5Output, bartOutput), g'''')

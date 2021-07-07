@@ -19,14 +19,14 @@
 module Torch.GraduallyTyped.NN.Transformer.Decoder where
 
 import Control.Monad.Indexed (IxPointed (ireturn), (>>>=))
-import Control.Monad.Indexed.State (IxState (..))
+import Control.Monad.Indexed.State (IxState (..), IxStateT (..))
+import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI, sing)
 import Data.Singletons.Prelude.List (SList (SNil))
 import GHC.TypeLits (KnownNat, Nat, Symbol)
-import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), SDType (..), SDataType (..))
+import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
@@ -473,20 +473,20 @@ instance
   forward (TransformerDecoder GTransformerDecoder {..}) (decoderInput, encoderOutput, decoderRelPos, decoderAttentionMask, crossAttentionMask) =
     let decoderRelPosBias =
           ireturn decoderRelPos
-            >>>= IxState . forward tdPosEnc
-            >>>= ireturn . transpose @('SelectDim ('ByIndex 2)) @('SelectDim ('ByIndex 3))
-            >>>= ireturn . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
+            >>>= IxStateT . forward tdPosEnc
+            >>>= ilift . transpose @('SelectDim ('ByIndex 2)) @('SelectDim ('ByIndex 3))
+            >>>= ilift . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
         decoderAttentionBias =
           decoderRelPosBias
             >>>= ireturn . (`add` unsqueeze @('SelectDim ('ByIndex 1)) decoderAttentionMask)
         crossAttentionBias = unsqueeze @('SelectDim ('ByIndex 1)) crossAttentionMask
-     in runIxState $
+     in runIxStateT $
           ireturn decoderInput
-            >>>= IxState . forward tdDropout
+            >>>= IxStateT . forward tdDropout
             >>>= ( \decoderInput' ->
                      decoderAttentionBias
                        >>>= ( \decoderAttentionBias' ->
-                                IxState $
+                                IxStateT $
                                   forward
                                     tdStack
                                     ( decoderInput',
@@ -496,8 +496,8 @@ instance
                                     )
                             )
                  )
-            >>>= IxState . forward tdLayerNorm
-            >>>= IxState . forward tdDropout
+            >>>= IxStateT . forward tdLayerNorm
+            >>>= IxStateT . forward tdDropout
 
 testDecoder = do
   let gradient = SGradient SWithGradient
@@ -523,7 +523,7 @@ testDecoder = do
       decoderRelPos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
       decoderAttentionMask = sOnes' dataType (SShape $ batchDim :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
       crossAttentionMask = sOnes' dataType (SShape $ batchDim :|: decoderSeqDim :|: seqDim :|: SNil)
-  let (output, _) = forward encoder (decoderInput, encoderOutput, decoderRelPos, decoderAttentionMask, crossAttentionMask) g'
+  (output, _) <- forward encoder (decoderInput, encoderOutput, decoderRelPos, decoderAttentionMask, crossAttentionMask) g'
   pure output
 
 -- | 'HasForward' instance for @TransformerDecoder numLayers 'ByT5@.
@@ -634,20 +634,20 @@ instance
   forward (TransformerDecoder GTransformerDecoder {..}) (decoderInput, encoderOutput, decoderRelPos, decoderAttentionMask, crossAttentionMask) =
     let decoderRelPosBias =
           ireturn decoderRelPos
-            >>>= IxState . forward tdPosEnc
-            >>>= ireturn . transpose @('SelectDim ('ByIndex 2)) @('SelectDim ('ByIndex 3))
-            >>>= ireturn . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
+            >>>= IxStateT . forward tdPosEnc
+            >>>= ilift . transpose @('SelectDim ('ByIndex 2)) @('SelectDim ('ByIndex 3))
+            >>>= ilift . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
         decoderAttentionBias =
           decoderRelPosBias
             >>>= ireturn . (`add` unsqueeze @('SelectDim ('ByIndex 1)) decoderAttentionMask)
         crossAttentionBias = unsqueeze @('SelectDim ('ByIndex 1)) crossAttentionMask
-     in runIxState $
+     in runIxStateT $
           ireturn decoderInput
-            >>>= IxState . forward tdDropout
+            >>>= IxStateT . forward tdDropout
             >>>= ( \decoderInput' ->
                      decoderAttentionBias
                        >>>= ( \decoderAttentionBias' ->
-                                IxState $
+                                IxStateT $
                                   forward
                                     tdStack
                                     ( decoderInput',
@@ -657,8 +657,8 @@ instance
                                     )
                             )
                  )
-            >>>= IxState . forward tdLayerNorm
-            >>>= IxState . forward tdDropout
+            >>>= IxStateT . forward tdLayerNorm
+            >>>= IxStateT . forward tdDropout
 
 -- | 'HasForward' instance for @TransformerDecoder numLayers 'BART@.
 --
@@ -739,14 +739,14 @@ instance
   forward (TransformerDecoder GTransformerDecoder {..}) (decoderInput, encoderOutput, decoderPos, decoderAttentionMask, crossAttentionMask) =
     let decoderAttentionBias = unsqueeze @('SelectDim ('ByIndex 1)) decoderAttentionMask
         crossAttentionBias = unsqueeze @('SelectDim ('ByIndex 1)) crossAttentionMask
-     in runIxState $
+     in runIxStateT $
           ireturn decoderPos
-            >>>= IxState . forward tdPosEnc
+            >>>= IxStateT . forward tdPosEnc
             >>>= ireturn . (decoderInput `add`)
-            >>>= IxState . forward tdEmbedLayerNorm
-            >>>= IxState . forward tdDropout
+            >>>= IxStateT . forward tdEmbedLayerNorm
+            >>>= IxStateT . forward tdDropout
             >>>= ( \decoderInput' ->
-                     IxState $
+                     IxStateT $
                        forward
                          tdStack
                          ( decoderInput',
@@ -862,13 +862,13 @@ instance
   forward (TransformerDecoder GTransformerDecoder {..}) (decoderInput, encoderOutput, decoderPos, decoderAttentionMask, crossAttentionMask) =
     let decoderAttentionBias = unsqueeze @('SelectDim ('ByIndex 1)) decoderAttentionMask
         crossAttentionBias = unsqueeze @('SelectDim ('ByIndex 1)) crossAttentionMask
-     in runIxState $
+     in runIxStateT $
           ireturn decoderPos
-            >>>= IxState . forward tdPosEnc
+            >>>= IxStateT . forward tdPosEnc
             >>>= ireturn . (decoderInput `add`)
-            >>>= IxState . forward tdDropout
+            >>>= IxStateT . forward tdDropout
             >>>= ( \decoderInput' ->
-                     IxState $
+                     IxStateT $
                        forward
                          tdStack
                          ( decoderInput',
@@ -877,4 +877,4 @@ instance
                            crossAttentionBias
                          )
                  )
-            >>>= IxState . forward tdLayerNorm
+            >>>= IxStateT . forward tdLayerNorm

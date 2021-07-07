@@ -21,14 +21,13 @@
 module Torch.GraduallyTyped.NN.Transformer.DecoderBlock where
 
 import Control.Monad.Indexed (IxPointed (ireturn), (>>>=))
-import Control.Monad.Indexed.State (IxState (..))
+import Control.Monad.Indexed.State (IxState (..), IxStateT (..))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI, sing)
 import Data.Singletons.Prelude.List (SList (..))
 import GHC.TypeLits (Nat, Symbol)
-import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType, SDType (..), SDataType (..))
+import Torch.GraduallyTyped.DType (DType (..), DataType, SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
@@ -212,11 +211,11 @@ instance
     generatorOutput
   where
   forward TransformerDecoderBlock {..} (query, key, decoderAttentionBias, crossAttentionBias) =
-    runIxState $
+    runIxStateT $
       ireturn (query, decoderAttentionBias)
-        >>>= IxState . forward tdbSelfAttention
-        >>>= (\query' -> IxState . forward tdbCrossAttention $ (query', key, crossAttentionBias))
-        >>>= IxState . forward tdbFeedForwardNetwork
+        >>>= IxStateT . forward tdbSelfAttention
+        >>>= (\query' -> IxStateT . forward tdbCrossAttention $ (query', key, crossAttentionBias))
+        >>>= IxStateT . forward tdbFeedForwardNetwork
 
 testDecoderBlock = do
   let gradient = SGradient SWithGradient
@@ -240,5 +239,5 @@ testDecoderBlock = do
       key = sOnes' dataType (SShape $ batchDim :|: seqDim :|: keyEmbedDim :|: SNil)
       decoderAttentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
       crossAttentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: decoderSeqDim :|: seqDim :|: SNil)
-  let (output, _) = forward decoderBlock (query, key, decoderAttentionBias, crossAttentionBias) g'
+  (output, _) <- forward decoderBlock (query, key, decoderAttentionBias, crossAttentionBias) g'
   pure output

@@ -21,14 +21,14 @@ module Torch.GraduallyTyped.NN.Transformer.Pegasus.Common where
 
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.Indexed (ireturn, (>>>=))
-import Control.Monad.Indexed.State (IxState (..))
+import Control.Monad.Indexed.State (IxStateT (..))
+import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
+import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI (..))
 import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
-import System.IO.Unsafe (unsafePerformIO)
-import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), SDType (..), SDataType (..))
+import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (..))
@@ -279,32 +279,40 @@ instance
   where
   forward (PegasusModel GPegasusModel {..}) PegasusInput {..} =
     let inputPaddingMask = mkPegasusPaddingMask pegasusInput
-        attentionMask = unsafePerformIO $ mkTransformerAttentionMask pegasusDataType pegasusAttentionMaskBias inputPaddingMask
-        pos = unsafePerformIO $ mkPos pegasusInput
-     in runIxState $
+        attentionMask = ilift $ mkTransformerAttentionMask pegasusDataType pegasusAttentionMaskBias inputPaddingMask
+        pos = ilift $ mkPos pegasusInput
+     in runIxStateT $
           ireturn pegasusDecoderInput
-            >>>= IxState . forward pegasusShiftRightDecoderInput
+            >>>= IxStateT . forward pegasusShiftRightDecoderInput
             >>>= ( \rightShiftedDecoderInput ->
-                     let decoderPos = unsafePerformIO $ mkPos rightShiftedDecoderInput
+                     let decoderPos =
+                           ilift $ mkPos rightShiftedDecoderInput
                          crossAttentionMask =
-                           unsafePerformIO $
+                           ilift $
                              mkTransformerCrossAttentionMask
                                pegasusDataType
                                (sShape rightShiftedDecoderInput)
                                pegasusAttentionMaskBias
                                inputPaddingMask
                       in ireturn (mkPegasusPaddingMask pegasusDecoderInput)
-                           >>>= IxState . forward pegasusShiftRightPaddingMask
+                           >>>= IxStateT . forward pegasusShiftRightPaddingMask
                            >>>= ( \rightShiftedDecoderInputPaddingMask ->
                                     let decoderAttentionMask =
-                                          unsafePerformIO $
+                                          ilift $
                                             mkTransformerDecoderAttentionMask
                                               pegasusDataType
                                               pegasusAttentionMaskBias
                                               rightShiftedDecoderInputPaddingMask
-                                     in ireturn (SequenceToSequenceTransformerInput pegasusInput rightShiftedDecoderInput pos decoderPos attentionMask decoderAttentionMask crossAttentionMask)
+                                     in SequenceToSequenceTransformerInput
+                                          <<$>> ireturn pegasusInput
+                                          <<*>> ireturn rightShiftedDecoderInput
+                                          <<*>> pos
+                                          <<*>> decoderPos
+                                          <<*>> attentionMask
+                                          <<*>> decoderAttentionMask
+                                          <<*>> crossAttentionMask
                                 )
-                           >>>= IxState . forward pegasusModel
+                           >>>= IxStateT . forward pegasusModel
                            >>>= ( \(SequenceToSequenceTransformerOutput decoderOutput encoderOutput) ->
                                     ireturn $ PegasusOutput decoderOutput encoderOutput inputPaddingMask
                                 )
@@ -342,30 +350,36 @@ instance
     generatorOutput
   where
   forward (PegasusModel GPegasusModel {..}) PegasusGenerationInput {..} =
-    runIxState $
+    runIxStateT $
       ireturn pegasusGenerationDecoderInput
-        >>>= IxState . forward pegasusShiftRightDecoderInput
+        >>>= IxStateT . forward pegasusShiftRightDecoderInput
         >>>= ( \rightShiftedDecoderInput ->
-                 let decoderPos = unsafePerformIO $ mkPos rightShiftedDecoderInput
+                 let decoderPos =
+                       ilift $ mkPos rightShiftedDecoderInput
                      crossAttentionMask =
-                       unsafePerformIO $
+                       ilift $
                          mkTransformerCrossAttentionMask
                            pegasusDataType
                            (sShape rightShiftedDecoderInput)
                            pegasusAttentionMaskBias
                            pegasusGenerationInputPaddingMask
                   in ireturn (mkPegasusPaddingMask pegasusGenerationDecoderInput)
-                       >>>= IxState . forward pegasusShiftRightPaddingMask
+                       >>>= IxStateT . forward pegasusShiftRightPaddingMask
                        >>>= ( \rightShiftedDecoderInputPaddingMask ->
                                 let decoderAttentionMask =
-                                      unsafePerformIO $
+                                      ilift $
                                         mkTransformerDecoderAttentionMask
                                           pegasusDataType
                                           pegasusAttentionMaskBias
                                           rightShiftedDecoderInputPaddingMask
-                                 in ireturn (SequenceToSequenceTransformerGenerationInput rightShiftedDecoderInput pegasusGenerationEncoderOutput decoderPos decoderAttentionMask crossAttentionMask)
+                                 in SequenceToSequenceTransformerGenerationInput
+                                      <<$>> ireturn rightShiftedDecoderInput
+                                      <<*>> ireturn pegasusGenerationEncoderOutput
+                                      <<*>> decoderPos
+                                      <<*>> decoderAttentionMask
+                                      <<*>> crossAttentionMask
                             )
-                       >>>= IxState . forward pegasusModel
+                       >>>= IxStateT . forward pegasusModel
                        >>>= ( \(SequenceToSequenceTransformerOutput decoderOutput encoderOutput) ->
                                 ireturn $ PegasusOutput decoderOutput encoderOutput pegasusGenerationInputPaddingMask
                             )

@@ -19,14 +19,14 @@
 module Torch.GraduallyTyped.NN.Transformer.Encoder where
 
 import Control.Monad.Indexed ((>>>=))
-import Control.Monad.Indexed.State (IxState (..))
+import Control.Monad.Indexed.State (IxState (..), IxStateT (..))
+import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
 import Data.Functor.Indexed (IxPointed (ireturn), (<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI, sing)
 import Data.Singletons.Prelude.List (SList (SNil))
 import GHC.TypeLits (KnownNat, Nat, Symbol)
-import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), SDType (..), SDataType (..))
+import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
@@ -328,8 +328,8 @@ instance
         posEnc SBART = fromStateDict (gradient, SLayout SDense, device, dataType, posEncDim, inputEmbedDim) (k <> "embed_positions.")
         posEnc SMBART = fromStateDict (gradient, SLayout SDense, device, dataType, posEncDim, inputEmbedDim) (k <> "embed_positions.")
         posEnc SPegasus = fromStateDict (gradient, SLayout SDense, device, dataType, posEncDim, inputEmbedDim) (k <> "embed_positions.")
-        posEnc SBERT = fromStateDict (gradient, SLayout SDense, device, dataType, posEncDim, inputEmbedDim) (k <> "pos_embed.")
-        posEnc SRoBERTa = fromStateDict (gradient, SLayout SDense, device, dataType, posEncDim, inputEmbedDim) (k <> "pos_embed.")
+        posEnc SBERT = fromStateDict (gradient, SLayout SDense, device, dataType, posEncDim, inputEmbedDim) (k <> "embeddings.position_embeddings.")
+        posEnc SRoBERTa = fromStateDict (gradient, SLayout SDense, device, dataType, posEncDim, inputEmbedDim) (k <> "embeddings.position_embeddings.")
         posEnc SGPT2 = undefined
      in TransformerEncoder
           <$> ( GTransformerEncoder
@@ -370,8 +370,8 @@ instance
         posEnc SBART = toStateDict (k <> "embed_positions.")
         posEnc SMBART = toStateDict (k <> "embed_positions.")
         posEnc SPegasus = toStateDict (k <> "embed_positions.")
-        posEnc SBERT = toStateDict (k <> "pos_embed.")
-        posEnc SRoBERTa = toStateDict (k <> "pos_embed.")
+        posEnc SBERT = toStateDict (k <> "embeddings.position_embeddings.")
+        posEnc SRoBERTa = toStateDict (k <> "embeddings.position_embeddings.")
         posEnc SGPT2 = undefined
      in do
           () <- stack (sing @style) teStack
@@ -471,18 +471,18 @@ instance
   forward (TransformerEncoder GTransformerEncoder {..}) (input, relPos, attentionMask) =
     let relPosBias =
           ireturn relPos
-            >>>= IxState . forward tePosEnc
-            >>>= ireturn . transpose @('SelectDim ('ByIndex 2)) @('SelectDim ('ByIndex 3))
-            >>>= ireturn . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
+            >>>= IxStateT . forward tePosEnc
+            >>>= ilift . transpose @('SelectDim ('ByIndex 2)) @('SelectDim ('ByIndex 3))
+            >>>= ilift . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
         attentionBias =
           relPosBias
             >>>= ireturn . (`add` unsqueeze @('SelectDim ('ByIndex 1)) attentionMask)
-     in runIxState $
+     in runIxStateT $
           ireturn input
-            >>>= IxState . forward teDropout
-            >>>= (\input' -> attentionBias >>>= (\attentionBias' -> IxState $ forward teStack (input', attentionBias')))
-            >>>= IxState . forward teLayerNorm
-            >>>= IxState . forward teDropout
+            >>>= IxStateT . forward teDropout
+            >>>= (\input' -> attentionBias >>>= (\attentionBias' -> IxStateT $ forward teStack (input', attentionBias')))
+            >>>= IxStateT . forward teLayerNorm
+            >>>= IxStateT . forward teDropout
 
 testEncoder = do
   let gradient = SGradient SWithGradient
@@ -504,7 +504,7 @@ testEncoder = do
       input = sOnes' dataType (SShape $ batchDim :|: seqDim :|: inputEmbedDim :|: SNil)
       relPos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
       attentionMask = sOnes' dataType (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
-  let (output, _) = forward encoder (input, relPos, attentionMask) g'
+  (output, _) <- forward encoder (input, relPos, attentionMask) g'
   pure output
 
 -- | 'HasForward' instance for @TransformerEncoder numLayers 'ByT5@.
@@ -597,18 +597,18 @@ instance
   forward (TransformerEncoder GTransformerEncoder {..}) (input, relPos, attentionMask) =
     let relPosBias =
           ireturn relPos
-            >>>= IxState . forward tePosEnc
-            >>>= ireturn . transpose @('SelectDim ('ByIndex 2)) @('SelectDim ('ByIndex 3))
-            >>>= ireturn . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
+            >>>= IxStateT . forward tePosEnc
+            >>>= ilift . transpose @('SelectDim ('ByIndex 2)) @('SelectDim ('ByIndex 3))
+            >>>= ilift . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
         attentionBias =
           relPosBias
             >>>= ireturn . (`add` unsqueeze @('SelectDim ('ByIndex 1)) attentionMask)
-     in runIxState $
+     in runIxStateT $
           ireturn input
-            >>>= IxState . forward teDropout
-            >>>= (\input' -> attentionBias >>>= (\attentionBias' -> IxState $ forward teStack (input', attentionBias')))
-            >>>= IxState . forward teLayerNorm
-            >>>= IxState . forward teDropout
+            >>>= IxStateT . forward teDropout
+            >>>= (\input' -> attentionBias >>>= (\attentionBias' -> IxStateT $ forward teStack (input', attentionBias')))
+            >>>= IxStateT . forward teLayerNorm
+            >>>= IxStateT . forward teDropout
 
 -- | 'HasForward' instance for @TransformerEncoder numLayers 'BART@.
 --
@@ -679,13 +679,13 @@ instance
   where
   forward (TransformerEncoder GTransformerEncoder {..}) (input, pos, attentionMask) =
     let attentionBias = unsqueeze @('SelectDim ('ByIndex 1)) attentionMask
-     in runIxState $
+     in runIxStateT $
           ireturn pos
-            >>>= IxState . forward tePosEnc
+            >>>= IxStateT . forward tePosEnc
             >>>= ireturn . (input `add`)
-            >>>= IxState . forward teEmbedLayerNorm
-            >>>= IxState . forward teDropout
-            >>>= (\input' -> IxState $ forward teStack (input', attentionBias))
+            >>>= IxStateT . forward teEmbedLayerNorm
+            >>>= IxStateT . forward teDropout
+            >>>= (\input' -> IxStateT $ forward teStack (input', attentionBias))
 
 -- | 'HasForward' instance for @TransformerEncoder numLayers 'MBART@.
 --
@@ -783,13 +783,13 @@ instance
   where
   forward (TransformerEncoder GTransformerEncoder {..}) (input, pos, attentionMask) =
     let attentionBias = unsqueeze @('SelectDim ('ByIndex 1)) attentionMask
-     in runIxState $
+     in runIxStateT $
           ireturn pos
-            >>>= IxState . forward tePosEnc
+            >>>= IxStateT . forward tePosEnc
             >>>= ireturn . (input `add`)
-            >>>= IxState . forward teEmbedLayerNorm
-            >>>= IxState . forward teDropout
-            >>>= (\input' -> IxState $ forward teStack (input', attentionBias))
+            >>>= IxStateT . forward teEmbedLayerNorm
+            >>>= IxStateT . forward teDropout
+            >>>= (\input' -> IxStateT $ forward teStack (input', attentionBias))
 
 -- | 'HasForward' instance for @TransformerEncoder numLayers 'RoBERTa@.
 --
@@ -860,13 +860,13 @@ instance
   where
   forward (TransformerEncoder GTransformerEncoder {..}) (input, pos, attentionMask) =
     let attentionBias = unsqueeze @('SelectDim ('ByIndex 1)) attentionMask
-     in runIxState $
+     in runIxStateT $
           ireturn pos
-            >>>= IxState . forward tePosEnc
+            >>>= IxStateT . forward tePosEnc
             >>>= ireturn . (input `add`)
-            >>>= IxState . forward teEmbedLayerNorm
-            >>>= IxState . forward teDropout
-            >>>= (\input' -> IxState $ forward teStack (input', attentionBias))
+            >>>= IxStateT . forward teEmbedLayerNorm
+            >>>= IxStateT . forward teDropout
+            >>>= (\input' -> IxStateT $ forward teStack (input', attentionBias))
 
 -- | 'HasForward' instance for @TransformerEncoder numLayers 'Pegasus@.
 --
@@ -938,10 +938,10 @@ instance
   where
   forward (TransformerEncoder GTransformerEncoder {..}) (input, pos, attentionMask) =
     let attentionBias = unsqueeze @('SelectDim ('ByIndex 1)) attentionMask
-     in runIxState $
+     in runIxStateT $
           ireturn pos
-            >>>= IxState . forward tePosEnc
+            >>>= IxStateT . forward tePosEnc
             >>>= ireturn . (input `add`)
-            >>>= IxState . forward teDropout
-            >>>= (\input' -> IxState $ forward teStack (input', attentionBias))
-            >>>= IxState . forward teLayerNorm
+            >>>= IxStateT . forward teDropout
+            >>>= (\input' -> IxStateT $ forward teStack (input', attentionBias))
+            >>>= IxStateT . forward teLayerNorm
