@@ -81,6 +81,15 @@ mkTransformerInput ::
   ( MonadThrow m,
     SGetDim batchDim,
     SGetDim seqDim,
+    'Shape '[batchDim, seqDim]
+      ~ Seq
+          ( 'Shape
+              '[ 'Dim ('Name "*") 'UncheckedSize,
+                 'Dim ('Name "*") 'UncheckedSize
+               ]
+              <+> 'Shape '[batchDim, seqDim]
+          )
+          ('Shape '[batchDim, seqDim]),
     output
       ~ Tensor
           ('Gradient 'WithoutGradient)
@@ -99,13 +108,14 @@ mkTransformerInput ::
   [[Int]] ->
   -- | input tensor
   m output
-mkTransformerInput padTokenId batchDim seqDim xs = do
-  let batchSize = (\(Dim _ size) -> forgetIsChecked size) $ fromSing batchDim
-      seqSize = (\(Dim _ size) -> forgetIsChecked size) $ fromSing seqDim
-      emptySeq = replicate (fromIntegral seqSize) padTokenId
-      paddedXs = padded batchSize emptySeq (padded seqSize padTokenId <$> xs)
-  toTensor @('Gradient 'WithoutGradient) @('Layout 'Dense) @('Device 'CPU) paddedXs
+mkTransformerInput padTokenId batchDim seqDim xs =
+  toTensor paddedXs
     >>= sCheckedShape (SShape $ batchDim :|: seqDim :|: SNil)
+  where
+    batchSize = forgetIsChecked . dimSize $ fromSing batchDim
+    seqSize = forgetIsChecked . dimSize $ fromSing seqDim
+    emptySeq = replicate (fromIntegral seqSize) padTokenId
+    paddedXs = padded batchSize emptySeq (padded seqSize padTokenId <$> xs)
 
 type MkPosC device shape seqDim seqName seqSize output =
   ( SGetDevice device,

@@ -228,8 +228,8 @@ instance Exception GetDimError where
       <> "`."
 
 getDim ::
-  forall selectDim shape dim m.
-  (dim ~ GetDimF selectDim shape, MonadThrow m) =>
+  forall selectDim shape dim.
+  (dim ~ GetDimF selectDim shape) =>
   SSelectDim selectDim ->
   SShape shape ->
   SDim dim

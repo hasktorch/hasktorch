@@ -38,12 +38,14 @@ import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), 
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (initialize), HasStateDict (..))
 import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (SequenceToSequenceTransformer, SequenceToSequenceTransformerGenerationInput (..), SequenceToSequenceTransformerInput (..), SequenceToSequenceTransformerOutput (..))
 import Torch.GraduallyTyped.NN.Transformer.Type (MkPosC, MkTransformerAttentionMaskC, MkTransformerCrossAttentionMaskC, MkTransformerDecoderAttentionMaskC, MkTransformerPaddingMaskC, ShiftRight (..), TransformerHead (..), TransformerStyle (BART), mkPos, mkTransformerAttentionMask, mkTransformerCrossAttentionMask, mkTransformerDecoderAttentionMask, mkTransformerInput, mkTransformerPaddingMask)
+import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.Random (sMkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
-import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), Name (..), SDim (..), SName (..), SShape (..), SSize (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim (..), SName (..), SShape (..), SSize (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (addScalar)
-import Torch.GraduallyTyped.Tensor.Type (Tensor, sShape)
+import Torch.GraduallyTyped.Tensor.Type (SGetDim, Tensor, sShape)
+import Torch.GraduallyTyped.Unify (type (<+>))
 
 -- | BART dType.
 type BARTDType = 'Float
@@ -171,8 +173,17 @@ instance
 mkBARTInput ::
   forall batchDim seqDim m output.
   ( MonadThrow m,
-    KnownDim batchDim,
-    KnownDim seqDim,
+    SGetDim batchDim,
+    SGetDim seqDim,
+    'Shape '[batchDim, seqDim]
+      ~ Seq
+          ( 'Shape
+              '[ 'Dim ('Name "*") 'UncheckedSize,
+                 'Dim ('Name "*") 'UncheckedSize
+               ]
+              <+> 'Shape '[batchDim, seqDim]
+          )
+          ('Shape '[batchDim, seqDim]),
     output
       ~ Tensor
           ('Gradient 'WithoutGradient)
