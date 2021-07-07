@@ -12,8 +12,7 @@ module Torch.GraduallyTyped.Unify where
 
 import GHC.TypeLits (Symbol, TypeError)
 import GHC.TypeNats (Nat)
-import Torch.DType (DType)
-import Torch.GraduallyTyped.DType (DataType (..))
+import Torch.GraduallyTyped.DType (DType, DataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..))

@@ -20,13 +20,13 @@ module Torch.GraduallyTyped.NN.Transformer.Decoder where
 
 import Control.Monad.Indexed (IxPointed (ireturn), (>>>=))
 import Control.Monad.Indexed.State (IxState (..), IxStateT (..))
+import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI, sing)
 import Data.Singletons.Prelude.List (SList (SNil))
 import GHC.TypeLits (KnownNat, Nat, Symbol)
-import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), SDType (..), SDataType (..))
+import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
@@ -48,7 +48,6 @@ import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (TransposeF, Unsqueeze
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
-import Control.Monad.Indexed.Trans (IxMonadTrans(ilift))
 
 -- | Generic transformer decoder.
 -- Needs to be specialized to a given transformer type, e.g. 'T5'.

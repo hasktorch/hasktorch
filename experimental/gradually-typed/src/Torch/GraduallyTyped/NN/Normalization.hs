@@ -24,8 +24,7 @@
 module Torch.GraduallyTyped.NN.Normalization where
 
 import GHC.TypeLits (Nat, Symbol)
-import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), SDataType (..))
+import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..))
 import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))

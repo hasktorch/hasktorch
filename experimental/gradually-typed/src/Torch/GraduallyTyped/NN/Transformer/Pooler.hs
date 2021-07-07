@@ -12,11 +12,10 @@
 module Torch.GraduallyTyped.NN.Transformer.Pooler where
 
 import Control.Monad.Indexed (IxPointed (..), (>>>=))
-import Control.Monad.Indexed.State (IxState (..), IxStateT (..))
+import Control.Monad.Indexed.State (IxStateT (..))
 import Data.Kind (Type)
 import GHC.TypeLits (Nat, Symbol)
-import Torch.DType (DType)
-import Torch.GraduallyTyped.DType (DataType)
+import Torch.GraduallyTyped.DType (DType, DataType)
 import Torch.GraduallyTyped.Device (Device, DeviceType)
 import Torch.GraduallyTyped.NN.Activation (Tanh)
 import Torch.GraduallyTyped.NN.Class (HasForward (..))

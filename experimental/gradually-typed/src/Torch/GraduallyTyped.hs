@@ -14,13 +14,11 @@ module Torch.GraduallyTyped
     module Torch.GraduallyTyped.Scalar,
     module Torch.GraduallyTyped.Unify,
     -- module Torch.HList,
-    module Torch.DType,
   )
 where
 
-import Torch.DType
 import Torch.Data
-import Torch.GraduallyTyped.Autograd
+import Torch.GraduallyTyped.Autograd (HasGrad (..))
 import Torch.GraduallyTyped.DType
 import Torch.GraduallyTyped.Device
 -- import Torch.HList

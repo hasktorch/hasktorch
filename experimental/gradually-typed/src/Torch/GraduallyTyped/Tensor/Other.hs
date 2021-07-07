@@ -8,8 +8,7 @@
 module Torch.GraduallyTyped.Tensor.Other where
 
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..))
+import Torch.GraduallyTyped.DType (DType (..), DataType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..))

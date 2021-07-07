@@ -29,8 +29,7 @@ import qualified Data.Vector as V
 import qualified Data.Vector.Generic.Sized.Internal as VGS
 import qualified Data.Vector.Sized as VS
 import GHC.TypeLits (KnownNat, Nat, Symbol, type (+))
-import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType, SDType (..), SDataType (..))
+import Torch.GraduallyTyped.DType (DType (..), DataType, SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))

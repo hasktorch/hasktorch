@@ -1,5 +1,5 @@
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -54,11 +54,10 @@ import Data.Kind (Type)
 import qualified Data.Map.Strict as Map
 import Data.Singletons (SingI (..), SingKind (..))
 import Data.Singletons.Prelude.List (SList (..))
+import Debug.Trace (traceShow, traceShowId)
 import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
-import System.IO.Unsafe (unsafePerformIO)
-import Torch.DType (DType (..))
-import Torch.GraduallyTyped.DType (DataType (..), SDType (..), SDataType (..))
+import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
@@ -78,7 +77,6 @@ import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (MatmulF, matmul)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add, mulScalar)
 import Torch.GraduallyTyped.Tensor.Type (SGetShape (..), Tensor (..))
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
-import Debug.Trace (traceShowId, traceShow)
 
 -- | Generic multi-headed attention layer.
 -- Needs to be specialized to a given transformer type, e.g. 'T5'.
@@ -651,21 +649,23 @@ instance
     flip runIxStateT g $
       let !q =
             ireturn (traceShowId (traceShow "oh" query))
-              >>>= \a -> (traceShowId <<$>> IxStateT (forward mhaQInProj a))
-              >>>= ireturn
-                . ( \case
-                      NoScaling -> id
-                      QueryScaling s -> flip mulScalar s
-                      WeightScaling _ -> id
-                  )
-                  scaling
-              >>>= ireturn . traceShowId . sReshape (SShape $ batchDim :|: querySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
-              >>>= ilift . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
+              >>>= \a ->
+                (traceShowId <<$>> IxStateT (forward mhaQInProj a))
+                  >>>= ireturn
+                    . ( \case
+                          NoScaling -> id
+                          QueryScaling s -> flip mulScalar s
+                          WeightScaling _ -> id
+                      )
+                      scaling
+                  >>>= ireturn . traceShowId . sReshape (SShape $ batchDim :|: querySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
+                  >>>= ilift . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
           !k =
             ireturn (traceShowId (traceShow "yeah" key))
-              >>>= \a -> (traceShowId <<$>> IxStateT (forward mhaKInProj a))
-              >>>= ireturn . traceShowId . sReshape (SShape $ batchDim :|: keySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
-              >>>= ilift . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
+              >>>= \a ->
+                (traceShowId <<$>> IxStateT (forward mhaKInProj a))
+                  >>>= ireturn . traceShowId . sReshape (SShape $ batchDim :|: keySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
+                  >>>= ilift . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
           !kt = k >>>= ilift . transpose @('SelectDim ('ByIndex 2)) @('SelectDim ('ByIndex 3))
           !weights =
             ((traceShowId .) . matmul) <<$>> q <<*>> kt
@@ -680,10 +680,11 @@ instance
               >>>= IxStateT . forward mhaDropout . softmax (SSelectDim $ SByIndex @3)
           !v =
             ireturn (traceShowId value)
-              >>>= \a -> (traceShowId <<$>> IxStateT (forward mhaVInProj a))
-              >>>= ireturn . traceShowId . sReshape (SShape $ batchDim :|: keySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
-              >>>= ilift . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
-              >>>= \a -> ireturn (traceShowId a)
+              >>>= \a ->
+                (traceShowId <<$>> IxStateT (forward mhaVInProj a))
+                  >>>= ireturn . traceShowId . sReshape (SShape $ batchDim :|: keySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
+                  >>>= ilift . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
+                  >>>= \a -> ireturn (traceShowId a)
        in ((traceShowId .) . matmul) <<$>> weights <<*>> v
             >>>= ilift . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
             >>>= ireturn . traceShowId . sReshape (SShape $ batchDim :|: querySeqDim :|: mhaEmbedDim :|: SNil)
