@@ -6,7 +6,6 @@
 module TensorSpec (spec) where
 
 import Control.Monad.Catch (MonadThrow)
-import Data.Singletons.Prelude.List
 import qualified Data.Vector as V
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Gen.QuickCheck as Gen
@@ -21,6 +20,9 @@ toCPUTensor ::
   a ->
   m (Tensor ('Gradient 'WithoutGradient) ('Layout 'Dense) ('Device 'CPU) ('DataType dType) ('Shape dims))
 toCPUTensor = toTensor
+
+(~~) :: RealFloat a => a -> a -> Bool
+x ~~ y = x == y || isNaN x && isNaN y
 
 genReal :: MonadGen m => (RealFloat a, QC.Arbitrary a, Read a) => m a
 genReal =
@@ -56,15 +58,13 @@ spec = describe "TensorLike" $ do
       hedgehog $ do
         x :: Float <- forAll genReal
         t <- toCPUTensor x
-        let x' = fromTensor t
-        assert $ x' == x || isNaN x' && isNaN x
+        assert $ fromTensor t ~~ x
 
     it "Double" $
       hedgehog $ do
         x :: Double <- forAll genReal
         t <- toCPUTensor x
-        let x' = fromTensor t
-        assert $ x' == x || isNaN x' && isNaN x
+        assert $ fromTensor t ~~ x
 
     it "(Bool, Bool)" $
       hedgehog $ do
@@ -83,20 +83,14 @@ spec = describe "TensorLike" $ do
         (x, y) :: (Float, Float) <- forAll $ (,) <$> genReal <*> genReal
         t <- toCPUTensor (x, y)
         let (x', y') = fromTensor t
-        assert $
-          (x', y') == (x, y)
-            || isNaN x' && isNaN x && y' == y
-            || isNaN y' && isNaN y && x' == x
+        assert $ x' ~~ x && y' ~~ y
 
     it "(Double, Double)" $
       hedgehog $ do
         (x, y) :: (Double, Double) <- forAll $ (,) <$> genReal <*> genReal
         t <- toCPUTensor (x, y)
         let (x', y') = fromTensor t
-        assert $
-          (x', y') == (x, y)
-            || isNaN x' && isNaN x && y' == y
-            || isNaN y' && isNaN y && x' == x
+        assert $ x' ~~ x && y' ~~ y
 
     it "[Bool]" $
       hedgehog $ do
@@ -115,21 +109,21 @@ spec = describe "TensorLike" $ do
         xs :: [Float] <- forAll $ Gen.list (Range.linear 0 1000) genReal
         t <- toCPUTensor xs
         let xs' = fromTensor t
-        assert $ all (\(x, y) -> x == y || isNaN x && isNaN y) $ zip xs' xs
+        assert $ all (uncurry (~~)) $ zip xs' xs
 
     it "[Double]" $
       hedgehog $ do
         xs :: [Double] <- forAll $ Gen.list (Range.linear 0 1000) genReal
         t <- toCPUTensor xs
         let xs' = fromTensor t
-        assert $ all (\(x, y) -> x == y || isNaN x && isNaN y) $ zip xs' xs
+        assert $ all (uncurry (~~)) $ zip xs' xs
 
     it "(Vector Float)" $
       hedgehog $ do
         xs :: V.Vector Double <- (V.fromList <$>) <$> forAll $ Gen.list (Range.linear 0 1000) genReal
         t <- toCPUTensor xs
         let xs' = fromTensor t
-        assert $ all (\(x, y) -> x == y || isNaN x && isNaN y) $ V.zip xs' xs
+        assert $ all (uncurry (~~)) $ V.zip xs' xs
 
     it "Tensor" $ do
       let t =
@@ -144,12 +138,12 @@ spec = describe "TensorLike" $ do
       let t'' =
             fromTensor
               @( Tensor
-                  ('Gradient 'WithoutGradient)
-                  ('Layout 'Dense)
-                  ('Device 'CPU)
-                  ('DataType 'Int64)
-                  ('Shape '[ 'Dim ('Name "*") ('Size 4), 'Dim ('Name "*") ('Size 8)])
-              )
+                   ('Gradient 'WithoutGradient)
+                   ('Layout 'Dense)
+                   ('Device 'CPU)
+                   ('DataType 'Int64)
+                   ('Shape '[ 'Dim ('Name "*") ('Size 4), 'Dim ('Name "*") ('Size 8)])
+               )
               t'
       fromTensor (allT $ t'' ==. t) `shouldBe` True
 

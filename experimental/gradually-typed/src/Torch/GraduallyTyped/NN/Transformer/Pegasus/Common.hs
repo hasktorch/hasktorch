@@ -34,9 +34,11 @@ import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (..))
 import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (SequenceToSequenceTransformer, SequenceToSequenceTransformerGenerationInput (..), SequenceToSequenceTransformerInput (..), SequenceToSequenceTransformerOutput (..))
 import Torch.GraduallyTyped.NN.Transformer.Type (MkPosC, MkTransformerAttentionMaskC, MkTransformerCrossAttentionMaskC, MkTransformerDecoderAttentionMaskC, MkTransformerPaddingMaskC, ShiftRight, TransformerHead (..), TransformerStyle (Pegasus), mkPos, mkTransformerAttentionMask, mkTransformerCrossAttentionMask, mkTransformerDecoderAttentionMask, mkTransformerInput, mkTransformerPaddingMask)
+import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..))
-import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), Name (..), SDim, Shape (..), Size (..))
-import Torch.GraduallyTyped.Tensor.Type (Tensor, sShape)
+import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, Shape (..), Size (..))
+import Torch.GraduallyTyped.Tensor.Type (SGetDim, Tensor, sShape)
+import Torch.GraduallyTyped.Unify (type (<+>))
 
 -- | Pegasus dType.
 type PegasusDType = 'Float
@@ -164,8 +166,17 @@ instance
 mkPegasusInput ::
   forall batchDim seqDim m output.
   ( MonadThrow m,
-    KnownDim batchDim,
-    KnownDim seqDim,
+    SGetDim batchDim,
+    SGetDim seqDim,
+    'Shape '[batchDim, seqDim]
+      ~ Seq
+          ( 'Shape
+              '[ 'Dim ('Name "*") 'UncheckedSize,
+                 'Dim ('Name "*") 'UncheckedSize
+               ]
+              <+> 'Shape '[batchDim, seqDim]
+          )
+          ('Shape '[batchDim, seqDim]),
     output
       ~ Tensor
           ('Gradient 'WithoutGradient)

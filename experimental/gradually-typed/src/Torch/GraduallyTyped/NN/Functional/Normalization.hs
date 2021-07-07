@@ -132,31 +132,3 @@ layerNormWithoutBias weight eps input = unsafePerformIO $ do
         >>= ATen.rsqrt_t
         >>= ATen.mul_tt input
         >>= ATen.mul_tt weight
-
-testT5LayerNorm ::
-  IO
-    ( Tensor
-        ('Gradient 'WithGradient)
-        ('Layout 'Dense)
-        ('Device 'CPU)
-        ('DataType 'Float)
-        ( 'Shape
-            '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 10)]
-        )
-    )
-testT5LayerNorm = do
-  let weight = sOnes (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SName @"*" :&: SSize @10 :|: SNil)
-      eps = 1e-6 :: Double
-  input <- undefined :: IO (Tensor ('Gradient 'WithoutGradient) ('Layout 'Dense) ('Device 'CPU) ('DataType 'Float) ('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 10)]))
-  -- case Torch.Tensor.asTensor [[13 :: Float, 27, 14, 19, -512, 1, 2, 3, 4, 0], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]] of
-  --   Torch.Tensor.Unsafe t ->
-  --     pure (UnsafeTensor t)
-  --       >>= checkedLayout @('Layout 'Dense)
-  --       >>= checkedDevice @('Device 'CPU)
-  --       >>= checkedDataType @('DataType 'Float)
-  --       >>= checkedShape @('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 10)])
-  let output = layerNormWithoutBias weight eps input
-  case output of
-    UnsafeTensor t ->
-      print (Torch.Tensor.Unsafe t)
-  pure output
