@@ -21,7 +21,8 @@
 	"extensions": [
         "ms-python.vscode-pylance",
         "ms-python.python",
-        "arrterian.nix-env-selector"
+        "arrterian.nix-env-selector",
+		"haskell.haskell"
 	],
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
