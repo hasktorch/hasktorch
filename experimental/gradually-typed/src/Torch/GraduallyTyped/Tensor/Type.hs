@@ -1233,14 +1233,14 @@ unexpectedDimsError dims' x = do
 class TensorLike a (dType :: DType) (dims :: [Dim (Name Symbol) (Size Nat)]) | a -> dims, a -> dType where
   -- | Creates a tensor from a 'TensorLike' value.
   --
-  -- >>> t <- sToTensor SWithoutGradient (SLayout SDense) (SDevice SCPU) ([(1, 2), (3, 4), (5, 6)] :: [(Int, Int)])
+  -- >>> t <- sToTensor (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) ([(1, 2), (3, 4), (5, 6)] :: [(Int, Int)])
   -- >>> t
   -- Tensor Int64 [3,2] [[ 1,  2],
   --                     [ 3,  4],
   --                     [ 5,  6]]
   -- >>> :type t
   -- t :: Tensor
-  --        'WithoutGradient
+  --        ('Gradient 'WithoutGradient)
   --        ('Layout 'Dense)
   --        ('Device 'CPU)
   --        ('DataType 'Int64)

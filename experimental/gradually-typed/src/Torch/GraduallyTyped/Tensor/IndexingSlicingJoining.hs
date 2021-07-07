@@ -352,7 +352,7 @@ type family TransposeIndexIndexDimsF (index0 :: Nat) (index1 :: Nat) (dims :: [D
 --
 -- >>> g <- mkGenerator @('Device 'CPU) 0
 -- >>> (input, _) = randn @('Gradient 'WithGradient) @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "feature") ('Size 5)]) g
--- >>> output = transpose @('SelectDim ('ByName "batch")) @('SelectDim ('ByName "feature")) input
+-- >>> output <- transpose @('SelectDim ('ByName "batch")) @('SelectDim ('ByName "feature")) input
 -- >>> :type output
 -- output
 --   :: Tensor
