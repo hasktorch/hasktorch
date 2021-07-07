@@ -129,7 +129,7 @@ instance
   HasInitialize (VS.Vector n' a) input generator generatorOutput
   where
   initialize input g =
-    case fromIntegral (natVal (Proxy :: Proxy n)) of
+    case fromIntegral (natVal (Proxy :: Proxy n) + 1) of
       1 ->
         let (a, g') = initialize @a input g
          in (VGS.Vector (V.singleton a), g')

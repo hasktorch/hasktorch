@@ -42,8 +42,10 @@ module Torch.GraduallyTyped.NN.Transformer.CrossAttention where
 
 import Control.Monad.Indexed (IxPointed (ireturn), (>>>=))
 import Control.Monad.Indexed.State (IxState (..), IxStateT (..))
+import Control.Monad.State (evalStateT)
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
+import qualified Data.Map as Map
 import Data.Singletons (SingI, sing)
 import Data.Singletons.Prelude.List (SList (..))
 import GHC.TypeLits (Nat, Symbol)
@@ -307,14 +309,24 @@ testCA = do
       dropoutP :: Float = 0.0
       eps = 1e-6
   g <- sMkGenerator device 0
-  let (sa, g') = initialize @(CrossAttention 'T5 _ _ _ _ _ _ _ _ _) (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, dropoutP, eps) g
-      batchDim = SName @"*" :&: SSize @3
+  let (ca, g') =
+        initialize
+          @(CrossAttention 'T5 _ _ _ _ _ _ _ _ _)
+          (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, dropoutP, eps)
+          g
+  ca' <- flip evalStateT Map.empty $ do
+    toStateDict "ca." ca
+    fromStateDict
+      @(CrossAttention 'T5 _ _ _ _ _ _ _ _ _)
+      (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, dropoutP, eps)
+      "ca."
+  let batchDim = SName @"*" :&: SSize @3
       seqDim = SName @"*" :&: SSize @4
       sOnes' = sOnes (SGradient SWithoutGradient) (SLayout SDense) device
       query = sOnes' dataType (SShape $ batchDim :|: seqDim :|: queryEmbedDim :|: SNil)
       key = sOnes' dataType (SShape $ batchDim :|: seqDim :|: keyEmbedDim :|: SNil)
       attentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
-  (output, _) <- forward sa (query, key, attentionBias) g'
+  (output, _) <- forward ca' (query, key, attentionBias) g'
   pure output
 
 -- | 'HasForward' instance for @CrossAttention 'ByT5@.

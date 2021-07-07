@@ -46,8 +46,10 @@ module Torch.GraduallyTyped.NN.Transformer.SelfAttention where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..), IxStateT (..))
+import Control.Monad.State (evalStateT)
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
+import qualified Data.Map as Map
 import Data.Singletons (SingI, sing)
 import Data.Singletons.Prelude.List (SList (SNil))
 import GHC.TypeLits (Nat, Symbol)
@@ -315,12 +317,18 @@ testSA = do
           @(SelfAttention 'T5 _ _ _ _ _ _ _ _)
           (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, dropoutP, eps)
           g
-      batchDim = SName @"*" :&: SSize @1
+  sa' <- flip evalStateT Map.empty $ do
+    toStateDict "sa." sa
+    fromStateDict
+      @(SelfAttention 'T5 _ _ _ _ _ _ _ _)
+      (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, dropoutP, eps)
+      "sa."
+  let batchDim = SName @"*" :&: SSize @1
       seqDim = SName @"*" :&: SSize @4
       sOnes' = sOnes (SGradient SWithoutGradient) (SLayout SDense) device
       query = sOnes' dataType (SShape $ batchDim :|: seqDim :|: queryEmbedDim :|: SNil)
       attentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
-  (output, _) <- forward sa (query, attentionBias) g'
+  (output, _) <- forward sa' (query, attentionBias) g'
   pure output
 
 -- | 'HasForward' instance for @SelfAttention 'ByT5@.

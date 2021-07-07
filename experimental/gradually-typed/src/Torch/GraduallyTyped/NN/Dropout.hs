@@ -52,4 +52,4 @@ instance
     output
     generatorOutput
   where
-  forward (Dropout _p) input g = unsafeCoerce (input, g)
+  forward (Dropout _p) input g = pure $ (unsafeCoerce :: (input, g) -> (output, generatorOutput)) (input, g)
