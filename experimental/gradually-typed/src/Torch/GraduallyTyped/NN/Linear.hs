@@ -19,6 +19,8 @@
 {-# OPTIONS_GHC -fplugin TypeLevel.Rewrite
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2 #-}
 
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE StandaloneDeriving #-}
 module Torch.GraduallyTyped.NN.Linear where
 
 import Control.Monad.Indexed (IxPointed (ireturn), (>>>=))
@@ -64,6 +66,8 @@ data
     { linearWithoutBiasWeight :: Tensor gradient ('Layout 'Dense) device dataType ('Shape '[outputDim, inputDim])
     } ->
     Linear 'WithoutBias gradient device dataType inputDim outputDim
+
+deriving stock instance Show (Linear hasBias gradient device dataType inputDim outputDim)
 
 -- | TODO: Add 'ForNonLinearity' as parameter.
 instance

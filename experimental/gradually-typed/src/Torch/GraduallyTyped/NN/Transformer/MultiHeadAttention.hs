@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
@@ -15,6 +16,7 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
@@ -45,6 +47,7 @@ module Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention where
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxState (..), IxStateT (..))
+import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
 import Control.Monad.State (evalStateT)
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
@@ -75,7 +78,7 @@ import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (MatmulF, matmul)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add, mulScalar)
 import Torch.GraduallyTyped.Tensor.Type (SGetShape (..), Tensor (..))
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
-import Control.Monad.Indexed.Trans (IxMonadTrans(ilift))
+import Debug.Trace (traceShowId, traceShow)
 
 -- | Generic multi-headed attention layer.
 -- Needs to be specialized to a given transformer type, e.g. 'T5'.
@@ -111,6 +114,7 @@ data
       mhaDropout :: dropout
     } ->
     GMultiHeadAttention headDim headEmbedDim embedDim qInProj kInProj vInProj outProj dropout
+  deriving stock (Show)
 
 -- | Multi-headed attention layer.
 newtype
@@ -139,6 +143,15 @@ newtype
       (OutProjF style gradient device dataType embedDim queryEmbedDim)
       (DropoutF style dropoutP) ->
     MultiHeadAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP
+
+deriving stock instance
+  ( Show (QInProjF style gradient device dataType queryEmbedDim embedDim),
+    Show (KInProjF style gradient device dataType keyEmbedDim embedDim),
+    Show (VInProjF style gradient device dataType valueEmbedDim embedDim),
+    Show (OutProjF style gradient device dataType embedDim queryEmbedDim),
+    Show (DropoutF style dropoutP)
+  ) =>
+  Show (MultiHeadAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
 
 type family
   QInProjF
@@ -623,22 +636,22 @@ instance
     generatorOutput
   where
   forward GMultiHeadAttention {..} (scaling, query, key, value, attentionBias) g = do
-    batchDim <-
+    !batchDim <-
       let queryShape = sShape query
           keyShape = sShape key
           valueShape = sShape value
-       in getBatchDim queryShape keyShape valueShape
-    querySeqDim <-
+       in traceShowId <$> getBatchDim queryShape keyShape valueShape
+    !querySeqDim <-
       let queryShape = sShape query
-       in getQuerySeqDim queryShape
-    keySeqDim <-
+       in traceShowId <$> getQuerySeqDim queryShape
+    !keySeqDim <-
       let keyShape = sShape key
           valueShape = sShape value
-       in getKeySeqDim keyShape valueShape
+       in traceShowId <$> getKeySeqDim keyShape valueShape
     flip runIxStateT g $
-      let q =
-            ireturn query
-              >>>= IxStateT . forward mhaQInProj
+      let !q =
+            ireturn (traceShowId (traceShow "oh" query))
+              >>>= \a -> (traceShowId <<$>> IxStateT (forward mhaQInProj a))
               >>>= ireturn
                 . ( \case
                       NoScaling -> id
@@ -646,16 +659,16 @@ instance
                       WeightScaling _ -> id
                   )
                   scaling
-              >>>= ireturn . sReshape (SShape $ batchDim :|: querySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
+              >>>= ireturn . traceShowId . sReshape (SShape $ batchDim :|: querySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
               >>>= ilift . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
-          k =
-            ireturn key
-              >>>= IxStateT . forward mhaKInProj
-              >>>= ireturn . sReshape (SShape $ batchDim :|: keySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
+          !k =
+            ireturn (traceShowId (traceShow "yeah" key))
+              >>>= \a -> (traceShowId <<$>> IxStateT (forward mhaKInProj a))
+              >>>= ireturn . traceShowId . sReshape (SShape $ batchDim :|: keySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
               >>>= ilift . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
-          kt = k >>>= ilift . transpose @('SelectDim ('ByIndex 2)) @('SelectDim ('ByIndex 3))
-          weights =
-            matmul <<$>> q <<*>> kt
+          !kt = k >>>= ilift . transpose @('SelectDim ('ByIndex 2)) @('SelectDim ('ByIndex 3))
+          !weights =
+            ((traceShowId .) . matmul) <<$>> q <<*>> kt
               >>>= ireturn
                 . ( \case
                       NoScaling -> id
@@ -665,38 +678,39 @@ instance
                   scaling
               >>>= ireturn . (`add` attentionBias)
               >>>= IxStateT . forward mhaDropout . softmax (SSelectDim $ SByIndex @3)
-          v =
-            ireturn value
-              >>>= IxStateT . forward mhaVInProj
-              >>>= ireturn . sReshape (SShape $ batchDim :|: keySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
+          !v =
+            ireturn (traceShowId value)
+              >>>= \a -> (traceShowId <<$>> IxStateT (forward mhaVInProj a))
+              >>>= ireturn . traceShowId . sReshape (SShape $ batchDim :|: keySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
               >>>= ilift . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
-       in matmul <<$>> weights <<*>> v
+              >>>= \a -> ireturn (traceShowId a)
+       in ((traceShowId .) . matmul) <<$>> weights <<*>> v
             >>>= ilift . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
-            >>>= ireturn . sReshape (SShape $ batchDim :|: querySeqDim :|: mhaEmbedDim :|: SNil)
+            >>>= ireturn . traceShowId . sReshape (SShape $ batchDim :|: querySeqDim :|: mhaEmbedDim :|: SNil)
             >>>= IxStateT . forward mhaOutProj
 
 testMHA = do
   let gradient = SGradient SWithGradient
       device = SDevice SCPU
       dataType = SDataType SFloat
-      headDim = SName @"*" :&: SSize @8
-      headEmbedDim = SName @"*" :&: SSize @64
-      embedDim = SName @"*" :&: SSize @512
-      queryEmbedDim = SName @"*" :&: SSize @512
-      keyEmbedDim = queryEmbedDim
-      valueEmbedDim = queryEmbedDim
+      headDim = SName @"*" :&: SSize @2
+      headEmbedDim = SName @"*" :&: SSize @2
+      embedDim = SName @"*" :&: SSize @4
+      queryEmbedDim = SName @"*" :&: SSize @3
+      keyEmbedDim = SName @"*" :&: SSize @5
+      valueEmbedDim = SName @"*" :&: SSize @7
       dropoutP :: Float = 0.0
   g <- sMkGenerator device 0
   let (mha, g') = initialize @(MultiHeadAttention 'T5 _ _ _ _ _ _ _ _ _ _) (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, valueEmbedDim, dropoutP) g
   mha' <- flip evalStateT Map.empty $ do
     toStateDict "mha" mha
     fromStateDict @(MultiHeadAttention 'T5 _ _ _ _ _ _ _ _ _ _) (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, valueEmbedDim, dropoutP) "mha"
-  let batchDim = SName @"*" :&: SSize @3
-      seqDim = SName @"*" :&: SSize @4
+  let batchDim = SName @"*" :&: SSize @2
+      seqDim = SName @"*" :&: SSize @1
       sOnes' = sOnes (SGradient SWithoutGradient) (SLayout SDense) device
-      query = sOnes' dataType (SShape $ batchDim :|: seqDim :|: queryEmbedDim :|: SNil)
-      key = sOnes' dataType (SShape $ batchDim :|: seqDim :|: keyEmbedDim :|: SNil)
-      value = sOnes' dataType (SShape $ batchDim :|: seqDim :|: valueEmbedDim :|: SNil)
-      attentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
+      !query = sOnes' dataType (SShape $ batchDim :|: seqDim :|: queryEmbedDim :|: SNil)
+      !key = sOnes' dataType (SShape $ batchDim :|: seqDim :|: keyEmbedDim :|: SNil)
+      !value = sOnes' dataType (SShape $ batchDim :|: seqDim :|: valueEmbedDim :|: SNil)
+      !attentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
   (output, _) <- forward mha' (query, key, value, attentionBias) g'
   pure output
