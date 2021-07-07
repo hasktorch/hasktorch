@@ -51,16 +51,15 @@ import Torch.GraduallyTyped.Prelude (Seq, forgetIsChecked)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape.Class (AddDimF, BroadcastShapesF, ReplaceDimF, sGetDim, type (!))
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownDim (..), Name (..), SBy (..), SDim (sDimSize), SName (..), SSelectDim (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SBy (..), SDim (sDimSize), SName (..), SSelectDim (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sArangeNaturals, sFull, sOnes, sZeros)
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (UnsqueezeF, cat, unsqueeze)
 import Torch.GraduallyTyped.Tensor.MathOperations.Comparison ((==.))
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (logicalOr)
 import Torch.GraduallyTyped.Tensor.Other (maskedFill, triu)
-import Torch.GraduallyTyped.Tensor.Type (SGetDataType (sDataType), SGetDevice (..), SGetLayout (..), SGetShape (..), Tensor (..), UncheckedTensor, bool, sCheckedDataType, sCheckedDevice, sCheckedGradient, sCheckedLayout, sCheckedShape)
+import Torch.GraduallyTyped.Tensor.Type (SGetDataType (sDataType), SGetDevice (..), SGetDim, SGetLayout (..), SGetShape (..), Tensor (..), bool, sCheckedShape, toTensor)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import Torch.HList
-import qualified Torch.Tensor (Tensor (Unsafe), asTensor)
 
 data TransformerStyle = T5 | ByT5 | BART | MBART | Pegasus | BERT | RoBERTa | GPT2
   deriving (Show, Eq)
@@ -80,6 +79,17 @@ padded n p xs =
 mkTransformerInput ::
   forall batchDim seqDim m output.
   ( MonadThrow m,
+    SGetDim batchDim,
+    SGetDim seqDim,
+    'Shape '[batchDim, seqDim]
+      ~ Seq
+          ( 'Shape
+              '[ 'Dim ('Name "*") 'UncheckedSize,
+                 'Dim ('Name "*") 'UncheckedSize
+               ]
+              <+> 'Shape '[batchDim, seqDim]
+          )
+          ('Shape '[batchDim, seqDim]),
     output
       ~ Tensor
           ('Gradient 'WithoutGradient)
@@ -98,19 +108,14 @@ mkTransformerInput ::
   [[Int]] ->
   -- | input tensor
   m output
-mkTransformerInput padTokenId batchDim seqDim xs = do
-  let batchSize = (\(Dim _ size) -> forgetIsChecked size) $ fromSing batchDim
-      seqSize = (\(Dim _ size) -> forgetIsChecked size) $ fromSing seqDim
-      emptySeq = replicate (fromIntegral seqSize) padTokenId
-      paddedXs = padded batchSize emptySeq (padded seqSize padTokenId <$> xs)
-  case Torch.Tensor.asTensor paddedXs of
-    Torch.Tensor.Unsafe t ->
-      pure (UnsafeTensor t :: UncheckedTensor)
-        >>= sCheckedGradient (SGradient SWithoutGradient)
-        >>= sCheckedLayout (SLayout SDense)
-        >>= sCheckedDevice (SDevice SCPU)
-        >>= sCheckedDataType (SDataType SInt64)
-        >>= sCheckedShape (SShape $ batchDim :|: seqDim :|: SNil)
+mkTransformerInput padTokenId batchDim seqDim xs =
+  toTensor paddedXs
+    >>= sCheckedShape (SShape $ batchDim :|: seqDim :|: SNil)
+  where
+    batchSize = forgetIsChecked . dimSize $ fromSing batchDim
+    seqSize = forgetIsChecked . dimSize $ fromSing seqDim
+    emptySeq = replicate (fromIntegral seqSize) padTokenId
+    paddedXs = padded batchSize emptySeq (padded seqSize padTokenId <$> xs)
 
 type MkPosC device shape seqDim seqName seqSize output =
   ( SGetDevice device,

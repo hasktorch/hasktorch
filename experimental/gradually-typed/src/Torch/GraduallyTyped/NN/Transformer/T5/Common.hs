@@ -58,15 +58,14 @@ import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), 
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
 import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (SequenceToSequenceTransformer (..), SequenceToSequenceTransformerGenerationInput (..), SequenceToSequenceTransformerInput (..), SequenceToSequenceTransformerOutput (..))
 import Torch.GraduallyTyped.NN.Transformer.Type (MkTransformerAttentionMaskC, MkTransformerCrossAttentionMaskC, MkTransformerDecoderAttentionMaskC, MkTransformerPaddingMaskC, ShiftRight (..), TransformerHead (..), TransformerStyle (ByT5, T5), mkTransformerAttentionMask, mkTransformerCrossAttentionMask, mkTransformerDecoderAttentionMask, mkTransformerInput, mkTransformerPaddingMask)
-import Torch.GraduallyTyped.Prelude (forgetIsChecked)
+import Torch.GraduallyTyped.Prelude (Seq, forgetIsChecked)
 import Torch.GraduallyTyped.Random (sMkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
-import Torch.GraduallyTyped.Shape.Class (sGetDim, type (!))
-import Torch.GraduallyTyped.Shape.Type (Dim (..), KnownDim (..), Name (..), SBy (..), SDim (..), SName (..), SSelectDim (..), SShape (..), SSize (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.Shape.Class (getDim, type (!))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SBy (..), SDim (..), SName (..), SSelectDim (..), SShape (..), SSize (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes)
-import Torch.GraduallyTyped.Tensor.Type (SGetDevice (sDevice), SGetShape, Tensor (..), UncheckedTensor, checkedDataType, checkedGradient, checkedLayout, sCheckedDevice, sCheckedShape, sShape)
-import qualified Torch.Tensor (Tensor (Unsafe), asTensor)
-import Type.Errors.Pretty (TypeError, type (<>))
+import Torch.GraduallyTyped.Tensor.Type (SGetDevice, SGetDim, SGetShape, Tensor (..), sCheckedShape, sShape, toTensor)
+import Torch.GraduallyTyped.Unify (type (<+>))
 
 -- | T5 dType.
 type T5DType = 'Float
@@ -206,8 +205,17 @@ instance
 mkT5Input ::
   forall batchDim seqDim m output.
   ( MonadThrow m,
-    KnownDim batchDim,
-    KnownDim seqDim,
+    SGetDim batchDim,
+    SGetDim seqDim,
+    'Shape '[batchDim, seqDim]
+      ~ Seq
+          ( 'Shape
+              '[ 'Dim ('Name "*") 'UncheckedSize,
+                 'Dim ('Name "*") 'UncheckedSize
+               ]
+              <+> 'Shape '[batchDim, seqDim]
+          )
+          ('Shape '[batchDim, seqDim]),
     output
       ~ Tensor
           ('Gradient 'WithoutGradient)
@@ -267,6 +275,23 @@ type MkT5RelPosC device shape seqDim seqName seqSize output =
     SGetShape shape,
     seqDim ~ (shape ! 1),
     seqDim ~ 'Dim seqName seqSize,
+    'Shape
+      '[ 'Dim ('Name "*") ('Size 1),
+         'Dim ('Name "*") seqSize,
+         'Dim ('Name "*") seqSize
+       ]
+      ~ Seq
+          ( '[ 'Dim ('Name "*") 'UncheckedSize,
+               'Dim ('Name "*") 'UncheckedSize
+             ]
+              <+> '[ 'Dim ('Name "*") seqSize, 'Dim ('Name "*") seqSize]
+          )
+          ( 'Shape
+              '[ 'Dim ('Name "*") ('Size 1),
+                 'Dim ('Name "*") seqSize,
+                 'Dim ('Name "*") seqSize
+               ]
+          ),
     output
       ~ Tensor
           ('Gradient 'WithoutGradient)
@@ -279,26 +304,20 @@ type MkT5RelPosC device shape seqDim seqName seqSize output =
 mkT5RelPos ::
   forall m gradient layout device dataType shape seqDim seqName seqSize output.
   ( MonadThrow m,
+    SingI device,
     MkT5RelPosC device shape seqDim seqName seqSize output
   ) =>
   -- | input tensor
   Tensor gradient layout device dataType shape ->
   -- | relative positions of the input tokens
   m output
-mkT5RelPos input = do
-  let device = sDevice input
-      shape = sShape input
-  seqDim <- sGetDim (SSelectDim $ SByIndex @1) shape
-  let seqSize = fromInteger . forgetIsChecked . fromSing $ sDimSize seqDim
-      relPosEncBucketSize = fromInteger . forgetIsChecked . fromSing $ sDimSize t5RelPosEncBucketDim
-  case Torch.Tensor.asTensor [mkT5RelPos' relPosEncBucketSize t5MaxDistance seqSize seqSize] of
-    Torch.Tensor.Unsafe t ->
-      pure (UnsafeTensor t :: UncheckedTensor)
-        >>= checkedGradient
-        >>= checkedLayout
-        >>= sCheckedDevice device
-        >>= checkedDataType
-        >>= sCheckedShape (SShape $ SName @"*" :&: SSize @1 :|: SName @"*" :&: sDimSize seqDim :|: SName @"*" :&: sDimSize seqDim :|: SNil)
+mkT5RelPos input =
+  toTensor [mkT5RelPos' relPosEncBucketSize t5MaxDistance seqSize seqSize]
+    >>= sCheckedShape (SShape $ SName @"*" :&: SSize @1 :|: SName @"*" :&: sDimSize seqDim :|: SName @"*" :&: sDimSize seqDim :|: SNil)
+  where
+    seqDim = getDim (SSelectDim $ SByIndex @1) $ sShape input
+    seqSize = fromInteger . forgetIsChecked . fromSing $ sDimSize seqDim
+    relPosEncBucketSize = fromInteger . forgetIsChecked . fromSing $ sDimSize t5RelPosEncBucketDim
 
 -- >>> mkDecoderRelPos' 32 128 21 17
 -- [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[3,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[4,3,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0],[5,4,3,2,1,0,0,0,0,0,0,0,0,0,0,0,0],[6,5,4,3,2,1,0,0,0,0,0,0,0,0,0,0,0],[7,6,5,4,3,2,1,0,0,0,0,0,0,0,0,0,0],[8,7,6,5,4,3,2,1,0,0,0,0,0,0,0,0,0],[9,8,7,6,5,4,3,2,1,0,0,0,0,0,0,0,0],[10,9,8,7,6,5,4,3,2,1,0,0,0,0,0,0,0],[11,10,9,8,7,6,5,4,3,2,1,0,0,0,0,0,0],[12,11,10,9,8,7,6,5,4,3,2,1,0,0,0,0,0],[13,12,11,10,9,8,7,6,5,4,3,2,1,0,0,0,0],[14,13,12,11,10,9,8,7,6,5,4,3,2,1,0,0,0],[15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0,0],[16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0],[16,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1],[16,16,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2],[17,16,16,16,15,14,13,12,11,10,9,8,7,6,5,4,3],[17,17,16,16,16,15,14,13,12,11,10,9,8,7,6,5,4]]
@@ -334,26 +353,20 @@ mkT5DecoderRelPos' numBuckets maxDistance querySize keySize =
 mkT5DecoderRelPos ::
   forall m gradient layout device dataType shape seqDim seqName seqSize output.
   ( MonadThrow m,
+    SingI device,
     MkT5RelPosC device shape seqDim seqName seqSize output
   ) =>
   -- | decoder input tensor
   Tensor gradient layout device dataType shape ->
   -- | relative positions of the input tokens
   m output
-mkT5DecoderRelPos input = do
-  let device = sDevice input
-      shape = sShape input
-  seqDim <- sGetDim (SSelectDim $ SByIndex @1) shape
-  let seqSize = fromInteger . forgetIsChecked . fromSing $ sDimSize seqDim
-      relPosEncBucketSize = fromInteger . forgetIsChecked . fromSing $ sDimSize t5RelPosEncBucketDim
-  case Torch.Tensor.asTensor [mkT5DecoderRelPos' relPosEncBucketSize t5MaxDistance seqSize seqSize] of
-    Torch.Tensor.Unsafe t ->
-      pure (UnsafeTensor t :: UncheckedTensor)
-        >>= checkedGradient
-        >>= checkedLayout
-        >>= sCheckedDevice device
-        >>= checkedDataType
-        >>= sCheckedShape (SShape $ SName @"*" :&: SSize @1 :|: SName @"*" :&: sDimSize seqDim :|: SName @"*" :&: sDimSize seqDim :|: SNil)
+mkT5DecoderRelPos input =
+  toTensor [mkT5DecoderRelPos' relPosEncBucketSize t5MaxDistance seqSize seqSize]
+    >>= sCheckedShape (SShape $ SName @"*" :&: SSize @1 :|: SName @"*" :&: sDimSize seqDim :|: SName @"*" :&: sDimSize seqDim :|: SNil)
+  where
+    seqDim = getDim (SSelectDim $ SByIndex @1) $ sShape input
+    seqSize = fromInteger . forgetIsChecked . fromSing $ sDimSize seqDim
+    relPosEncBucketSize = fromInteger . forgetIsChecked . fromSing $ sDimSize t5RelPosEncBucketDim
 
 data T5Input input decoderInput where
   T5Input ::
@@ -407,6 +420,8 @@ deriving instance
 -- by adding a BOS token at the beginning.
 instance
   ( input ~ Tensor inputGradient inputLayout inputDevice inputDataType inputShape,
+    SingI inputDevice,
+    SingI rightShiftedDecoderInputDevice,
     MkT5RelPosC inputDevice inputShape inputSeqDim inputSeqName inputSeqSize pos,
     MkTransformerPaddingMaskC inputLayout inputDevice inputDataType inputShape inputPaddingMask,
     inputPaddingMask ~ Tensor inputPaddingMaskGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape,
@@ -508,6 +523,7 @@ instance
   ( inputPaddingMask ~ Tensor inputPaddingMaskGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape,
     decoderInput ~ Tensor decoderInputGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
     rightShiftedDecoderInput ~ Tensor rightShiftedDecoderInputGradient rightShiftedDecoderInputLayout rightShiftedDecoderInputDevice rightShiftedDecoderInputDataType rightShiftedDecoderInputShape,
+    SingI rightShiftedDecoderInputDevice,
     MkT5RelPosC rightShiftedDecoderInputDevice rightShiftedDecoderInputShape rightShiftedDecoderInputSeqDim rightShiftedDecoderInputSeqName rightShiftedDecoderInputSeqSize decoderPos,
     MkTransformerPaddingMaskC decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape decoderInputPaddingMask,
     rightShiftedDecoderInputPaddingMask ~ Tensor rightShiftedDecoderInputPaddingMaskGradient rightShiftedDecoderInputPaddingMaskLayout rightShiftedDecoderInputPaddingMaskDevice rightShiftedDecoderInputPaddingMaskDataType rightShiftedDecoderInputPaddingMaskShape,
