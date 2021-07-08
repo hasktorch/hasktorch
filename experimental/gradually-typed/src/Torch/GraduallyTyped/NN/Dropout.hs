@@ -40,9 +40,9 @@ instance HasStateDict (Dropout p) p where
 
 instance
   ( Scalar p,
-    input ~ Tensor requiresGradient layout device dataType shape,
+    input ~ Tensor gradient layout device dataType shape,
     generator ~ Generator generatorDevice,
-    output ~ Tensor requiresGradient layout (device <+> generatorDevice) dataType shape,
+    output ~ Tensor gradient layout (device <+> generatorDevice) dataType shape,
     generatorOutput ~ Generator (device <+> generatorDevice)
   ) =>
   HasForward

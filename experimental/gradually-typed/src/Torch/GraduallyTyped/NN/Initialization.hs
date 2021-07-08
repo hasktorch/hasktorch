@@ -86,7 +86,7 @@ sXavierUniform ::
   SShape shape ->
   gain ->
   Generator device' ->
-  (Tensor gradient layout device dataType shape, Generator (device <+> device'))
+  (Tensor gradient layout (device <+> device') dataType shape, Generator (device <+> device'))
 sXavierUniform reqGradient layout device dataType shape gain =
   let dims =
         fmap (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size))
@@ -114,7 +114,7 @@ sXavierNormal ::
   SShape shape ->
   gain ->
   Generator device' ->
-  (Tensor gradient layout device dataType shape, Generator (device <+> device'))
+  (Tensor gradient layout (device <+> device') dataType shape, Generator (device <+> device'))
 sXavierNormal reqGradient layout device dataType shape gain =
   let dims =
         fmap (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size))
@@ -143,7 +143,7 @@ sKaimingUniform ::
   FanMode ->
   ForNonLinearity ->
   Generator device' ->
-  (Tensor gradient layout device dataType shape, Generator (device <+> device'))
+  (Tensor gradient layout (device <+> device') dataType shape, Generator (device <+> device'))
 sKaimingUniform reqGradient layout device dataType shape fanMode nonLinearity =
   let dims =
         fmap (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size))
@@ -169,7 +169,7 @@ sKaimingNormal ::
   FanMode ->
   ForNonLinearity ->
   Generator device' ->
-  (Tensor gradient layout device dataType shape, Generator (device <+> device'))
+  (Tensor gradient layout (device <+> device') dataType shape, Generator (device <+> device'))
 sKaimingNormal reqGradient layout device dataType shape fanMode nonLinearity =
   let dims =
         fmap (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size))

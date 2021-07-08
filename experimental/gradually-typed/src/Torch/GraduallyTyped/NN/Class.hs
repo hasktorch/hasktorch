@@ -15,12 +15,18 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wall #-}
+{-# OPTIONS_GHC -fplugin TypeLevel.Rewrite
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyRightAssociativeL
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2
+                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2C #-}
 
 module Torch.GraduallyTyped.NN.Class where
 
 import Control.Exception (Exception (..))
 import Control.Monad.Catch (MonadThrow (..))
 import Control.Monad.State (MonadState (get, put))
+import Data.Functor.Const (Const (..))
+import Data.Kind (Type)
 import qualified Data.Map.Strict as Map
 import Data.Proxy (Proxy (..))
 import Data.Typeable (Typeable)
@@ -29,54 +35,57 @@ import qualified Data.Vector.Generic.Sized.Internal as VGS
 import qualified Data.Vector.Sized as VS
 import Debug.Trace (traceShow)
 import Foreign.ForeignPtr (ForeignPtr)
-import GHC.TypeLits (KnownNat, natVal, type (+))
+import GHC.TypeLits (KnownNat, Nat, natVal, type (+))
 import Torch.GraduallyTyped.DType (SDataType)
-import Torch.GraduallyTyped.Device (SDevice)
+import Torch.GraduallyTyped.Device (Device, DeviceType, SDevice)
 import Torch.GraduallyTyped.Layout (SLayout)
+import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (SGradient (..))
 import Torch.GraduallyTyped.Shape.Type (SShape)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (UnsafeTensor), UncheckedTensor, sCheckedDataType, sCheckedDevice, sCheckedGradient, sCheckedLayout, sCheckedShape)
+import Torch.GraduallyTyped.Unify (type (<+>))
 import qualified Torch.Internal.Type as ATen (Tensor)
 import qualified Torch.Script (IValue (..))
 import qualified Torch.Serialize (pickleLoad)
 import qualified Torch.Tensor (Tensor (Unsafe))
+import Unsafe.Coerce (unsafeCoerce)
 
 class
   HasForward
     model
     input
-    generator
+    generatorDevice
     output
-    generatorOutput
-    | model input generator -> output,
-      model input generator -> generatorOutput
+    generatorOutputDevice
+    | model input generatorDevice -> output,
+      model input generatorDevice -> generatorOutputDevice
   where
   -- | @forward m i g@ for a model @m@, an input @i@, and a generator @g@
   -- returns the tuple @(o, g')@ where @o@ is the output of the model applied to the input
   -- and @g'@ is the updated generator.
   -- @forward m i g@ may throw an exception if the input @i@ or the generator @g@
   -- are not compatible with the model @m@.
-  forward :: forall m. MonadThrow m => model -> input -> generator -> m (output, generatorOutput)
+  forward :: forall m. MonadThrow m => model -> input -> Generator generatorDevice -> m (output, Generator generatorOutputDevice)
 
-instance HasForward () input generator input generator where
+instance HasForward (Const () device) input generatorDevice input generatorDevice where
   forward _ = (pure .) . (,)
 
 instance
-  ( HasForward a input generator output' generatorOutput',
-    HasForward b output' generatorOutput' output generatorOutput
+  ( HasForward a input generatorDevice output' generatorOutputDevice',
+    HasForward b output' generatorOutputDevice' output generatorOutputDevice
   ) =>
-  HasForward (a, b) input generator output generatorOutput
+  HasForward (a, b) input generatorDevice output generatorOutputDevice
   where
   forward (a, b) input g = do
     (output', g') <- forward a input g
     forward b output' g'
 
-instance HasForward (VS.Vector 0 a) input generator input generator where
+instance HasForward (VS.Vector 0 a) input generatorDevice input generatorDevice where
   forward _ = (pure .) . (,)
 
 instance
-  HasForward a input generator output generatorOutput =>
-  HasForward (VS.Vector 1 a) input generator output generatorOutput
+  HasForward a input generatorDevice output generatorOutputDevice =>
+  HasForward (VS.Vector 1 a) input generatorDevice output generatorOutputDevice
   where
   forward (VGS.Vector v) input g =
     let Just (a, _) = V.uncons v
@@ -84,10 +93,10 @@ instance
 
 instance
   {-# OVERLAPPABLE #-}
-  ( HasForward a input generator output generatorOutput,
-    HasForward a output generatorOutput output generatorOutput
+  ( HasForward a input generatorDevice output generatorOutputDevice,
+    HasForward a output generatorOutputDevice output generatorOutputDevice
   ) =>
-  HasForward (VS.Vector n a) input generator output generatorOutput
+  HasForward (VS.Vector n a) input generatorDevice output generatorOutputDevice
   where
   forward (VGS.Vector v) input g =
     let Just (a, as) = V.uncons v
@@ -100,42 +109,53 @@ instance
           as
 
 class
-  HasInitialize model input generator generatorOutput
-    | model -> input,
-      model generator -> generatorOutput
+  HasInitialize
+    (model :: Device (DeviceType Nat) -> Type)
+    (spec :: Type)
+    (device :: Device (DeviceType Nat))
+    (generatorDevice :: Device (DeviceType Nat))
+    | model -> spec
   where
-  initialize :: input -> generator -> (model, generatorOutput)
+  initialize ::
+    SDevice device ->
+    spec ->
+    Generator generatorDevice ->
+    (model (device <+> generatorDevice), Generator (device <+> generatorDevice))
 
-instance HasInitialize () () generator generator where
-  initialize _ g = ((), g)
+instance HasInitialize (Const ()) () device generatorDevice where
+  initialize _ _ g = (Const (), unsafeCoerce g)
+
+data TDelegate a b c = TDelegate (a c) (b c)
 
 instance
-  ( HasInitialize a input generator generatorOutput',
-    HasInitialize b input generatorOutput' generatorOutput
+  ( HasInitialize a spec device generatorDevice,
+    HasInitialize b spec device (device <+> generatorDevice)
   ) =>
-  HasInitialize (a, b) input generator generatorOutput
+  HasInitialize (TDelegate a b) spec device generatorDevice
   where
-  initialize input g =
-    let (a, g') = initialize @a input g
-        (b, g'') = initialize @b input g'
-     in ((a, b), g'')
+  initialize device spec g =
+    let (a, g') = initialize device spec g
+        (b, g'') = initialize device spec g'
+     in (TDelegate a b, g'')
+
+newtype VDelegate n a b = VDelegate (VS.Vector n (a b))
 
 instance
-  ( HasInitialize a input generator generatorOutput,
-    HasInitialize a input generatorOutput generatorOutput,
+  ( HasInitialize a spec device generatorDevice,
+    HasInitialize a spec device (device <+> generatorDevice),
     KnownNat n,
     n' ~ (n + 1)
   ) =>
-  HasInitialize (VS.Vector n' a) input generator generatorOutput
+  HasInitialize (VDelegate n' a) spec device generatorDevice
   where
-  initialize input g =
+  initialize device spec g =
     case fromIntegral (natVal (Proxy :: Proxy n) + 1) of
       1 ->
-        let (a, g') = initialize @a input g
-         in (VGS.Vector (V.singleton a), g')
+        let (a, g') = initialize device spec g
+         in (VDelegate (VGS.Vector (V.singleton a)), g')
       i ->
-        let Just (as, (a', g'')) = V.unsnoc $ V.iterateN i (\(_, g') -> initialize @a input g') (initialize @a input g)
-         in (VGS.Vector (V.snoc (fst <$> as) a'), g'')
+        let Just (as, (a', g'')) = V.unsnoc $ V.iterateN i (\(_, g') -> initialize device spec g') (initialize device spec g)
+         in (VDelegate (VGS.Vector (V.snoc (fst <$> as) a')), g'')
 
 type StateDictKey = String
 

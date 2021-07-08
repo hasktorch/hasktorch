@@ -220,23 +220,15 @@ sRandn ::
   SDataType dataType ->
   SShape shape ->
   Generator device' ->
-  (Tensor gradient layout device dataType shape, Generator (device <+> device'))
+  (Tensor gradient layout (device <+> device') dataType shape, Generator (device <+> device'))
 sRandn gradient layout device dataType shape =
   let opts = tensorOptions requiresGradient layoutType deviceType dType
-   in withGenerator
+   in withGenerator @device
         ( \genPtr -> do
-            tensor <- case (map dimName dims, map dimSize dims) of
+            case (map dimName dims, map dimSize dims) of
               (names, sizes)
                 | getAll . foldMap (\name -> All $ name == "*") $ names -> cast3 ATen.randn_lGo sizes genPtr opts
                 | otherwise -> cast4 ATen.randn_lGNo sizes genPtr names opts
-            pure $ UnsafeTensor tensor
-        )
-        ( unsafePerformIO $ do
-            tensor <- case (map dimName dims, map dimSize dims) of
-              (names, sizes)
-                | getAll . foldMap (\name -> All $ name == "*") $ names -> cast2 ATen.zeros_lo sizes opts
-                | otherwise -> cast3 ATen.zeros_lNo sizes names opts
-            pure $ UnsafeTensor tensor
         )
   where
     requiresGradient = forgetIsChecked . fromSing $ gradient
@@ -254,7 +246,7 @@ randn ::
   forall gradient layout device dataType shape device'.
   (SingI gradient, SingI layout, SingI device, SingI dataType, SingI shape) =>
   Generator device' ->
-  (Tensor gradient layout device dataType shape, Generator (device <+> device'))
+  (Tensor gradient layout (device <+> device') dataType shape, Generator (device <+> device'))
 randn = sRandn (sing @gradient) (sing @layout) (sing @device) (sing @dataType) (sing @shape)
 
 -- | Create a gradually typed one-dimensional tensor of the numbers @0@ to @size -1@.

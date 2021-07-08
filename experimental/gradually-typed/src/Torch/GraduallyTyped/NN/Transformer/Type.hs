@@ -58,6 +58,7 @@ import Torch.GraduallyTyped.Tensor.Other (maskedFill, triu)
 import Torch.GraduallyTyped.Tensor.Type (SGetDataType (sDataType), SGetDevice (..), SGetDim, SGetLayout (..), SGetShape (..), Tensor (..), bool, sCheckedShape, toTensor)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import Torch.HList
+import Data.Singletons.TypeLits (Nat)
 
 data TransformerStyle = T5 | ByT5 | BART | MBART | Pegasus | BERT | RoBERTa | GPT2
   deriving (Show, Eq)
@@ -311,13 +312,13 @@ mkTransformerCrossAttentionMask transformerDataType decoderInputShape attentionM
   let emptyMask = sZeros (SGradient SWithoutGradient) pmLayout pmDevice transformerDataType (SShape $ SName @"*" :&: SSize @1 :|: decoderInputSeqDim :|: pmSeqDim :|: SNil)
   pure $ maskedFill (unsqueeze @('SelectDim ('ByIndex 1)) paddingMask) attentionMaskBias emptyMask
 
-data ShiftRight fillValue where
-  ShiftRight :: forall fillValue. fillValue -> ShiftRight fillValue
+data ShiftRight fillValue (device :: Device (DeviceType Nat)) where
+  ShiftRight :: forall fillValue device. fillValue -> ShiftRight fillValue device
 
 instance HasInitialize (ShiftRight fillValue) fillValue generator generator where
-  initialize fillValue = (ShiftRight fillValue,)
+  initialize _ fillValue = (ShiftRight fillValue,)
 
-instance HasStateDict (ShiftRight fillValue) fillValue where
+instance HasStateDict (ShiftRight fillValue device) fillValue where
   fromStateDict fillValue _ = pure $ ShiftRight fillValue
   toStateDict _ _ = pure ()
 
@@ -348,7 +349,7 @@ instance
               (AddDimF inputSeqDim ('Dim ('Name "*") ('Size 1)))
           )
   ) =>
-  HasForward (ShiftRight fillValue) input generator rightShiftedInput generator
+  HasForward (ShiftRight fillValue device) input generator rightShiftedInput generator
   where
   forward (ShiftRight fillValue) input g = do
     let inputLayout = sLayout input

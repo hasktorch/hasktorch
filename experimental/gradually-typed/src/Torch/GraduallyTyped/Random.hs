@@ -22,7 +22,7 @@ import GHC.TypeLits (Nat)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
 import Torch.GraduallyTyped.Prelude (forgetIsChecked)
-import Torch.GraduallyTyped.Tensor.Type (Tensor)
+import Torch.GraduallyTyped.Tensor.Type (Tensor (UnsafeTensor))
 import Torch.GraduallyTyped.Unify (type (<+>))
 import qualified Torch.Internal.Managed.Type.Generator as ATen
 import qualified Torch.Internal.Type as ATen
@@ -40,8 +40,11 @@ type role Generator nominal
 
 sMkGenerator ::
   forall device.
+  -- | generator device singleton
   SDevice device ->
+  -- | initial seed
   Word64 ->
+  -- | returned generator
   IO (Generator device)
 sMkGenerator device generatorSeed =
   let generatorDeviceType = forgetIsChecked . fromSing $ device
@@ -59,17 +62,18 @@ sMkGenerator device generatorSeed =
 mkGenerator ::
   forall device.
   SingI device =>
+  -- | initial seed
   Word64 ->
+  -- | returned generator
   IO (Generator device)
 mkGenerator = sMkGenerator (sing @device)
 
 withGenerator ::
-  forall requiresGradient layout device dataType shape device'.
-  (ForeignPtr ATen.Generator -> IO (Tensor requiresGradient layout device dataType shape)) ->
-  Tensor requiresGradient layout device dataType shape ->
-  Generator device' ->
-  (Tensor requiresGradient layout device dataType shape, Generator (device <+> device'))
-withGenerator f _ UnsafeGenerator {..} = unsafePerformIO $ do
+  forall device generatorDevice requiresGradient layout dataType shape.
+  (ForeignPtr ATen.Generator -> IO (ForeignPtr ATen.Tensor)) ->
+  Generator generatorDevice ->
+  (Tensor requiresGradient layout (device <+> generatorDevice) dataType shape, Generator (device <+> generatorDevice))
+withGenerator f UnsafeGenerator {..} = unsafePerformIO $ do
   mGenPtr <- atomically $ do
     mGenPtr <- readTVar generatorState
     case mGenPtr of
@@ -88,4 +92,4 @@ withGenerator f _ UnsafeGenerator {..} = unsafePerformIO $ do
   a <- f genPtr
   nextSeed <- ATen.generator_current_seed genPtr
   nextGen <- newTVarIO (Just genPtr)
-  return (a, UnsafeGenerator nextSeed generatorDeviceType nextGen)
+  return (UnsafeTensor a, UnsafeGenerator nextSeed generatorDeviceType nextGen)

@@ -17,6 +17,7 @@ module Torch.GraduallyTyped.NN.Activation where
 
 import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
+import Torch.GraduallyTyped.Device (Device, DeviceType)
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
 import Torch.GraduallyTyped.NN.Functional.Activation (gelu, geluNew, relu)
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, softmax)
@@ -25,24 +26,24 @@ import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (tanh)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Prelude hiding (tanh)
 
-data Softmax (selectDim :: SelectDim (By Symbol Nat)) where
+data Softmax (selectDim :: SelectDim (By Symbol Nat)) (device :: Device (DeviceType Nat)) where
   Softmax ::
-    forall selectDim.
+    forall selectDim device.
     {softmaxSelectDim :: SSelectDim selectDim} ->
-    Softmax selectDim
+    Softmax selectDim device
   deriving (Generic)
 
 instance HasInitialize (Softmax selectDim) (SSelectDim selectDim) generator generator where
   initialize selectDim = (Softmax selectDim,)
 
-instance HasStateDict (Softmax selectDim) (SSelectDim selectDim) where
+instance HasStateDict (Softmax selectDim device) (SSelectDim selectDim) where
   fromStateDict selectDim _ = pure (Softmax selectDim)
   toStateDict _ _ = pure ()
 
 instance
   (output ~ Tensor requiresGradient layout device dataType (SoftmaxF selectDim shape)) =>
   HasForward
-    (Softmax selectDim)
+    (Softmax selectDim device)
     (Tensor requiresGradient layout device dataType shape)
     generator
     output
