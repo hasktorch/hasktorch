@@ -136,7 +136,8 @@ spec = describe "TensorLike" $ do
               @('DataType 'Int64)
               @('Shape '[ 'Dim ('Name "*") ('Size 4), 'Dim ('Name "*") ('Size 8)])
       t' <- toTensor @('Gradient 'WithoutGradient) @('Layout 'Dense) @('Device 'CPU) t
-      fromTensor (all $ t' ==. t) `shouldBe` True
+      all' <- all $ t' ==. t
+      fromTensor all' `shouldBe` True
       let t'' =
             fromTensor
               @( Tensor
@@ -147,7 +148,8 @@ spec = describe "TensorLike" $ do
                    ('Shape '[ 'Dim ('Name "*") ('Size 4), 'Dim ('Name "*") ('Size 8)])
                )
               t'
-      fromTensor (all $ t'' ==. t) `shouldBe` True
+      all'' <- all $ t'' ==. t
+      fromTensor all'' `shouldBe` True
 
   it "dims ([[]] :: [[[Int]]]) = 1x0x0" $ do
     x <- toCPUTensor @[[[Int]]] [[]]

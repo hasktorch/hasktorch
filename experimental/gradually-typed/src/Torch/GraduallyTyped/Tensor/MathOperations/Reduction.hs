@@ -21,7 +21,6 @@ import qualified Data.Set as Set
 import Data.Singletons (SingI (..), SingKind (..))
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (Nat, Symbol, TypeError)
-import System.IO.Unsafe (unsafePerformIO)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..))
 import Torch.GraduallyTyped.Prelude (forgetIsChecked)
 import Torch.GraduallyTyped.Shape.Class (ReplaceDimSizeImplF)
@@ -64,8 +63,9 @@ type family BoolReductionF (reduction :: Symbol) (selectDim :: SelectDim (By Sym
 -- >>> g <- sMkGenerator (SDevice SCPU) 0
 -- >>> shape = SShape $ SName @"*" :&: SSize @2 :|: SName @"*" :&: SSize @4 :|: SNil
 -- >>> (t, _) = sRandn (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) shape g
--- >>> :type all $ bool t
--- all $ bool t
+-- >>> t' <- all $ bool t
+-- >>> :type t'
+-- t'
 --   :: Tensor
 --        ('Gradient 'WithoutGradient)
 --        ('Layout 'Dense)
@@ -73,10 +73,11 @@ type family BoolReductionF (reduction :: Symbol) (selectDim :: SelectDim (By Sym
 --        ('DataType 'Bool)
 --        ('Shape '[])
 all ::
-  forall requiresGradient layout device dataType shape.
+  forall requiresGradient layout device dataType shape m.
+  MonadThrow m =>
   Tensor requiresGradient layout device dataType shape ->
-  Tensor requiresGradient layout device ('DataType 'Bool) ('Shape '[])
-all = unsafePerformIO . cast1 ATen.all_t
+  m (Tensor requiresGradient layout device ('DataType 'Bool) ('Shape '[]))
+all = unsafeThrowableIO . cast1 ATen.all_t
 
 -- | Reduces each row of the input tensor in the selected dimension to True if all elements in the row evaluate to True and False otherwise.
 -- For a version that accepts non-singleton parameters see 'allDim'.
@@ -95,7 +96,6 @@ all = unsafePerformIO . cast1 ATen.all_t
 --        ('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 1)])
 --
 -- >>> sAllDim (SUncheckedSelectDim (ByIndex 3)) t
--- ...
 -- *** Exception: HasktorchException "Exception: Dimension out of range (expected to be in range of [-2, 1], but got 3)...
 sAllDim ::
   forall selectDim gradient layout device dataType shape m.
@@ -123,8 +123,9 @@ sAllDim by tensor = unsafeThrowableIO $ case forgetIsChecked $ fromSing by of
 -- >>> g <- sMkGenerator (SDevice SCPU) 0
 -- >>> type Shape' = 'Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 4) ]
 -- >>> (t, _) = randn @('Gradient 'WithoutGradient) @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @Shape' g
--- >>> :type allDim @('SelectDim ('ByIndex 1)) $ bool t
--- allDim @('SelectDim ('ByIndex 1)) $ bool t
+-- >>> t' <- allDim @('SelectDim ('ByIndex 1)) $ bool t
+-- >>> :type t'
+-- t'
 --   :: Tensor
 --        ('Gradient 'WithoutGradient)
 --        ('Layout 'Dense)
@@ -132,19 +133,20 @@ sAllDim by tensor = unsafeThrowableIO $ case forgetIsChecked $ fromSing by of
 --        ('DataType 'Bool)
 --        ('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 1)])
 allDim ::
-  forall selectDim gradient layout device dataType shape.
-  SingI selectDim =>
+  forall selectDim gradient layout device dataType shape m.
+  (SingI selectDim, MonadThrow m) =>
   Tensor gradient layout device dataType shape ->
-  Tensor gradient layout device ('DataType 'Bool) (BoolReductionF "all" selectDim shape)
-allDim = unsafePerformIO . sAllDim (sing @selectDim)
+  m (Tensor gradient layout device ('DataType 'Bool) (BoolReductionF "all" selectDim shape))
+allDim = sAllDim (sing @selectDim)
 
 -- | Tests if any element in input evaluates to True.
 --
 -- >>> g <- sMkGenerator (SDevice SCPU) 0
 -- >>> shape = SShape $ SName @"*" :&: SSize @2 :|: SName @"*" :&: SSize @4 :|: SNil
 -- >>> (t, _) = sRandn (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) shape g
--- >>> :type any $ bool t
--- any $ bool t
+-- >>> t' <- any $ bool t
+-- >>> :type t'
+-- t'
 --   :: Tensor
 --        ('Gradient 'WithoutGradient)
 --        ('Layout 'Dense)
@@ -152,10 +154,11 @@ allDim = unsafePerformIO . sAllDim (sing @selectDim)
 --        ('DataType 'Bool)
 --        ('Shape '[])
 any ::
-  forall requiresGradient layout device dataType shape.
+  forall requiresGradient layout device dataType shape m.
+  MonadThrow m =>
   Tensor requiresGradient layout device dataType shape ->
-  Tensor requiresGradient layout device ('DataType 'Bool) ('Shape '[])
-any = unsafePerformIO . cast1 ATen.any_t
+  m (Tensor requiresGradient layout device ('DataType 'Bool) ('Shape '[]))
+any = unsafeThrowableIO . cast1 ATen.any_t
 
 -- | Reduces each row of the input tensor in the selected dimension to True if any element in the row evaluates to True and False otherwise.
 -- For a version that accepts non-singleton parameters see 'anyDim'.
@@ -174,7 +177,6 @@ any = unsafePerformIO . cast1 ATen.any_t
 --        ('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 1)])
 --
 -- >>> sAnyDim (SUncheckedSelectDim (ByIndex 3)) t
--- ...
 -- *** Exception: HasktorchException "Exception: Dimension out of range (expected to be in range of [-2, 1], but got 3)...
 sAnyDim ::
   forall selectDim gradient layout device shape dataType m.
@@ -203,8 +205,9 @@ sAnyDim by tensor = unsafeThrowableIO $
 -- >>> g <- sMkGenerator (SDevice SCPU) 0
 -- >>> type Shape' = 'Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 4) ]
 -- >>> (t, _) = randn @('Gradient 'WithoutGradient) @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @Shape' g
--- >>> :type anyDim @('SelectDim ('ByIndex 1)) $ bool t
--- anyDim @('SelectDim ('ByIndex 1)) $ bool t
+-- >>> t' <- anyDim @('SelectDim ('ByIndex 1)) $ bool t
+-- >>> :type t'
+-- t'
 --   :: Tensor
 --        ('Gradient 'WithoutGradient)
 --        ('Layout 'Dense)
@@ -212,11 +215,11 @@ sAnyDim by tensor = unsafeThrowableIO $
 --        ('DataType 'Bool)
 --        ('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 1)])
 anyDim ::
-  forall selectDim gradient layout device dataType shape.
-  SingI selectDim =>
+  forall selectDim gradient layout device dataType shape m.
+  (SingI selectDim, MonadThrow m) =>
   Tensor gradient layout device dataType shape ->
-  Tensor gradient layout device ('DataType 'Bool) (BoolReductionF "any" selectDim shape)
-anyDim = unsafePerformIO . sAnyDim (sing @selectDim)
+  m (Tensor gradient layout device ('DataType 'Bool) (BoolReductionF "any" selectDim shape))
+anyDim = sAnyDim (sing @selectDim)
 
 type family MeanSelectDimsF (bys :: [By Symbol Nat]) (dims :: [Dim (Name Symbol) (Size Nat)]) :: [Dim (Name Symbol) (Size Nat)] where
   MeanSelectDimsF '[] dims = dims
@@ -246,7 +249,6 @@ type family MeanF (selectDims :: SelectDims [By Symbol Nat]) (shape :: Shape [Di
 --              'Dim ('Name "height") ('Size 1)])
 --
 -- >>> sMeanDims (SUncheckedSelectDims [ByName "feature"]) t
--- ...
 -- *** Exception: HasktorchException "Exception: Name 'feature' not found in Tensor['batch', 'width', 'height']...
 sMeanDims ::
   forall selectDims gradient layout device dataType shape m.
@@ -298,8 +300,9 @@ sMeanDims bys tensor =
 -- >>> g <- sMkGenerator (SDevice SCPU) 0
 -- >>> type Shape' = 'Shape '[ 'Dim ('Name "batch") ('Size 8), 'Dim ('Name "feature") ('Size 4) ]
 -- >>> (t, _) = randn @('Gradient 'WithoutGradient) @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @Shape' g
--- >>> :type meanDims @('SelectDims '[ 'ByName "feature" ]) t
--- meanDims @('SelectDims '[ 'ByName "feature" ]) t
+-- >>> t' <- meanDims @('SelectDims '[ 'ByName "feature" ]) t
+-- >>> :type t'
+-- t'
 --   :: Tensor
 --        ('Gradient 'WithoutGradient)
 --        ('Layout 'Dense)
@@ -309,8 +312,8 @@ sMeanDims bys tensor =
 --           '[ 'Dim ('Name "batch") ('Size 8),
 --              'Dim ('Name "feature") ('Size 1)])
 meanDims ::
-  forall selectDims gradient layout device dataType shape.
-  SingI selectDims =>
+  forall selectDims gradient layout device dataType shape m.
+  (SingI selectDims, MonadThrow m) =>
   Tensor gradient layout device dataType shape ->
-  Tensor gradient layout device dataType (MeanF selectDims shape)
-meanDims = unsafePerformIO . sMeanDims (sing @selectDims)
+  m (Tensor gradient layout device dataType (MeanF selectDims shape))
+meanDims = sMeanDims (sing @selectDims)
