@@ -22,6 +22,7 @@ import Data.Singletons (SingI (..), SingKind (..))
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (Nat, Symbol, TypeError)
 import System.IO.Unsafe (unsafePerformIO)
+import Torch.GraduallyTyped.DType (DType (..), DataType (..))
 import Torch.GraduallyTyped.Prelude (forgetIsChecked)
 import Torch.GraduallyTyped.Shape.Class (ReplaceDimSizeImplF)
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SSelectDim, SSelectDims, SelectDim (..), SelectDims (..), Shape (..), Size (..))
@@ -74,7 +75,7 @@ type family BoolReductionF (reduction :: Symbol) (selectDim :: SelectDim (By Sym
 all ::
   forall requiresGradient layout device dataType shape.
   Tensor requiresGradient layout device dataType shape ->
-  Tensor requiresGradient layout device dataType ('Shape '[])
+  Tensor requiresGradient layout device ('DataType 'Bool) ('Shape '[])
 all = unsafePerformIO . cast1 ATen.all_t
 
 -- | Reduces each row of the input tensor in the selected dimension to True if all elements in the row evaluate to True and False otherwise.
@@ -101,7 +102,7 @@ sAllDim ::
   MonadThrow m =>
   SSelectDim selectDim ->
   Tensor gradient layout device dataType shape ->
-  m (Tensor gradient layout device dataType (BoolReductionF "all" selectDim shape))
+  m (Tensor gradient layout device ('DataType 'Bool) (BoolReductionF "all" selectDim shape))
 sAllDim by tensor = unsafeThrowableIO $ case forgetIsChecked $ fromSing by of
   ByName name ->
     cast3
@@ -134,7 +135,7 @@ allDim ::
   forall selectDim gradient layout device dataType shape.
   SingI selectDim =>
   Tensor gradient layout device dataType shape ->
-  Tensor gradient layout device dataType (BoolReductionF "all" selectDim shape)
+  Tensor gradient layout device ('DataType 'Bool) (BoolReductionF "all" selectDim shape)
 allDim = unsafePerformIO . sAllDim (sing @selectDim)
 
 -- | Tests if any element in input evaluates to True.
@@ -153,7 +154,7 @@ allDim = unsafePerformIO . sAllDim (sing @selectDim)
 any ::
   forall requiresGradient layout device dataType shape.
   Tensor requiresGradient layout device dataType shape ->
-  Tensor requiresGradient layout device dataType ('Shape '[])
+  Tensor requiresGradient layout device ('DataType 'Bool) ('Shape '[])
 any = unsafePerformIO . cast1 ATen.any_t
 
 -- | Reduces each row of the input tensor in the selected dimension to True if any element in the row evaluates to True and False otherwise.
@@ -180,7 +181,7 @@ sAnyDim ::
   MonadThrow m =>
   SSelectDim selectDim ->
   Tensor gradient layout device dataType shape ->
-  m (Tensor gradient layout device dataType (BoolReductionF "any" selectDim shape))
+  m (Tensor gradient layout device ('DataType 'Bool) (BoolReductionF "any" selectDim shape))
 sAnyDim by tensor = unsafeThrowableIO $
   case forgetIsChecked $ fromSing by of
     ByName name ->
@@ -214,7 +215,7 @@ anyDim ::
   forall selectDim gradient layout device dataType shape.
   SingI selectDim =>
   Tensor gradient layout device dataType shape ->
-  Tensor gradient layout device dataType (BoolReductionF "any" selectDim shape)
+  Tensor gradient layout device ('DataType 'Bool) (BoolReductionF "any" selectDim shape)
 anyDim = unsafePerformIO . sAnyDim (sing @selectDim)
 
 type family MeanSelectDimsF (bys :: [By Symbol Nat]) (dims :: [Dim (Name Symbol) (Size Nat)]) :: [Dim (Name Symbol) (Size Nat)] where
