@@ -40,7 +40,7 @@ import Data.List.NonEmpty (NonEmpty ((:|)), nonEmpty, unzip)
 import Data.Maybe (maybeToList)
 import Data.Proxy (Proxy (..))
 import Data.Singletons (SingI (sing), fromSing)
-import Data.Singletons.Prelude.List (SList (..))
+import Data.Singletons.Prelude.List (Intercalate, SList (..))
 import Data.Typeable (Typeable)
 import qualified Data.Vector as V
 import qualified Data.Vector.Generic.Sized.Internal as SVI
@@ -107,8 +107,26 @@ newtype
 
 type role Tensor nominal nominal nominal nominal nominal
 
-instance Show (Tensor gradient layout device dataType shape) where
-  show (UnsafeTensor t) = show (Torch.Tensor.Unsafe t)
+-- instance
+--   ( SGetGradient gradient,
+--     SGetLayout layout,
+--     SGetDevice device,
+--     SGetDataType dataType,
+--     SGetShape shape
+--   ) =>
+--   Show (Tensor gradient layout device dataType shape)
+--   where
+--   show t = "Tensor " <> details
+--     where
+--       details =
+--         unwords $
+--           [ show . gradient,
+--             show . layoutType,
+--             show . deviceType,
+--             show . dType,
+--             show . dims
+--           ]
+--             <*> pure t
 
 -- | Alias for an untyped tensor without gradients.
 type UncheckedTensor = Tensor 'UncheckedGradient 'UncheckedLayout 'UncheckedDevice 'UncheckedDataType 'UncheckedShape

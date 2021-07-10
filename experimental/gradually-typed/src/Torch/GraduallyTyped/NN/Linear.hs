@@ -42,7 +42,7 @@ import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), S
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim (..), SShape (..), Shape (..), Size (..), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sRandn)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mulScalar, subScalar)
-import Torch.GraduallyTyped.Tensor.Type (Tensor)
+import Torch.GraduallyTyped.Tensor.Type (Tensor, SGetGradient, SGetDevice, SGetDataType, SGetDim)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 
 data
@@ -66,7 +66,13 @@ data
     } ->
     Linear 'WithoutBias gradient device dataType inputDim outputDim
 
-deriving stock instance Show (Linear hasBias gradient device dataType inputDim outputDim)
+-- deriving stock instance
+--   ( SGetGradient gradient,
+--     SGetDevice device,
+--     SGetDataType dataType,
+--     SGetDim inputDim,
+--     SGetDim outputDim
+--   ) => Show (Linear hasBias gradient device dataType inputDim outputDim)
 
 -- | TODO: Add 'ForNonLinearity' as parameter.
 instance
