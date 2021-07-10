@@ -27,7 +27,7 @@
 module Torch.GraduallyTyped.Device where
 
 import Data.Int (Int16)
-import Data.Kind (Constraint, Type)
+import Data.Kind (Type)
 import Data.Proxy (Proxy (..))
 import Data.Singletons (Sing, SingI (..), SingKind (..), SomeSing (..), withSomeSing)
 import GHC.TypeLits (KnownNat, Nat, SomeNat (..), natVal, someNatVal)

@@ -17,8 +17,7 @@ module Torch.GraduallyTyped.NN.Activation where
 
 import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
-import Torch.GraduallyTyped.Device (Device, DeviceType)
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec)
 import Torch.GraduallyTyped.NN.Functional.Activation (gelu, geluNew, relu)
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, softmax)
 import Torch.GraduallyTyped.Shape (By, SSelectDim, SelectDim)
@@ -26,24 +25,32 @@ import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (tanh)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Prelude hiding (tanh)
 
-data Softmax (selectDim :: SelectDim (By Symbol Nat)) (device :: Device (DeviceType Nat)) where
+data Softmax (selectDim :: SelectDim (By Symbol Nat)) where
   Softmax ::
-    forall selectDim device.
+    forall selectDim.
     {softmaxSelectDim :: SSelectDim selectDim} ->
-    Softmax selectDim device
+    Softmax selectDim
   deriving (Generic)
 
-instance HasInitialize (Softmax selectDim) (SSelectDim selectDim) generator generator where
-  initialize selectDim = (Softmax selectDim,)
+type instance ModelSpec (Softmax selectDim) = Softmax selectDim
 
-instance HasStateDict (Softmax selectDim device) (SSelectDim selectDim) where
-  fromStateDict selectDim _ = pure (Softmax selectDim)
+instance
+  HasInitialize
+    (Softmax selectDim)
+    generatorDevice
+    (Softmax selectDim)
+    generatorDevice
+  where
+  initialize spec = pure . (spec,)
+
+instance HasStateDict (Softmax selectDim) where
+  fromStateDict spec _ = pure spec
   toStateDict _ _ = pure ()
 
 instance
   (output ~ Tensor requiresGradient layout device dataType (SoftmaxF selectDim shape)) =>
   HasForward
-    (Softmax selectDim device)
+    (Softmax selectDim)
     (Tensor requiresGradient layout device dataType shape)
     generator
     output
@@ -53,11 +60,19 @@ instance
 
 data Relu where Relu :: Relu
 
-instance HasInitialize Relu () generator generator where
-  initialize _ = (Relu,)
+type instance ModelSpec Relu = Relu
 
-instance HasStateDict Relu () where
-  fromStateDict _ _ = pure Relu
+instance
+  HasInitialize
+    Relu
+    generatorDevice
+    Relu
+    generatorDevice
+  where
+  initialize spec = pure . (spec,)
+
+instance HasStateDict Relu where
+  fromStateDict spec _ = pure spec
   toStateDict _ _ = pure ()
 
 instance
@@ -72,11 +87,19 @@ instance
 
 data Gelu where Gelu :: Gelu
 
-instance HasInitialize Gelu () generator generator where
-  initialize _ = (Gelu,)
+type instance ModelSpec Gelu = Gelu
 
-instance HasStateDict Gelu () where
-  fromStateDict _ _ = pure Gelu
+instance
+  HasInitialize
+    Gelu
+    generatorDevice
+    Gelu
+    generatorDevice
+  where
+  initialize spec = pure . (spec,)
+
+instance HasStateDict Gelu where
+  fromStateDict spec _ = pure spec
   toStateDict _ _ = pure ()
 
 instance
@@ -91,11 +114,19 @@ instance
 
 data GeluNew where GeluNew :: GeluNew
 
-instance HasInitialize GeluNew () generator generator where
-  initialize _ = (GeluNew,)
+type instance ModelSpec GeluNew = GeluNew
 
-instance HasStateDict GeluNew () where
-  fromStateDict _ _ = pure GeluNew
+instance
+  HasInitialize
+    GeluNew
+    generator
+    GeluNew
+    generator
+  where
+  initialize spec = pure . (spec,)
+
+instance HasStateDict GeluNew where
+  fromStateDict spec _ = pure spec
   toStateDict _ _ = pure ()
 
 instance
@@ -110,11 +141,19 @@ instance
 
 data Tanh where Tanh :: Tanh
 
-instance HasInitialize Tanh () generator generator where
-  initialize _ = (Tanh,)
+type instance ModelSpec Tanh = Tanh
 
-instance HasStateDict Tanh () where
-  fromStateDict _ _ = pure Tanh
+instance
+  HasInitialize
+    Tanh
+    generator
+    Tanh
+    generator
+  where
+  initialize spec = pure . (spec,)
+
+instance HasStateDict Tanh where
+  fromStateDict spec _ = pure spec
   toStateDict _ _ = pure ()
 
 instance

@@ -16,6 +16,8 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE RoleAnnotations #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -49,11 +51,11 @@ import Foreign (Ptr, Word8, castPtr, fromBool, peekElemOff, pokeElemOff, withFor
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (KnownNat, KnownSymbol, Nat, Symbol, natVal, symbolVal)
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.GraduallyTyped.DType (DType (..), DataType (..), KnownDType, SDataType (..), dTypeVal)
+import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Internal.TensorOptions (tensorOptions)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.Prelude (Seq, forgetIsChecked, ifM, pattern Demoted')
+import Torch.GraduallyTyped.Prelude (Seq, forgetIsChecked, ifM)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (InsertDimF, ReplaceDimF)
 import Torch.GraduallyTyped.Shape.Type (By (ByIndex), Dim (..), Name (..), SDim (..), SName (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:|:))
@@ -109,6 +111,24 @@ type role Tensor nominal nominal nominal nominal nominal
 
 instance Show (Tensor gradient layout device dataType shape) where
   show (UnsafeTensor t) = show (Torch.Tensor.Unsafe t)
+
+data
+  TensorSpec
+    (gradient :: Gradient RequiresGradient)
+    (layout :: Layout LayoutType)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (shape :: Shape [Dim (Name Symbol) (Size Nat)])
+  where
+  TensorSpec ::
+    forall gradient layout device dataType shape.
+    { tsGradient :: SGradient gradient,
+      tsLayout :: SLayout layout,
+      tsDevice :: SDevice device,
+      tsDataType :: SDataType dataType,
+      tsShape :: SShape shape
+    } ->
+    TensorSpec gradient layout device dataType shape
 
 -- | Alias for an untyped tensor without gradients.
 type UncheckedTensor = Tensor 'UncheckedGradient 'UncheckedLayout 'UncheckedDevice 'UncheckedDataType 'UncheckedShape
@@ -1275,13 +1295,13 @@ toTensor = sToTensor (sing @gradient) (sing @layout) (sing @device)
 
 sToTensorRaw ::
   forall gradient layout device a dType dims m.
-  (TensorLike a dType dims, TensorLikeRaw a, KnownDType dType, MonadThrow m) =>
+  (TensorLike a dType dims, TensorLikeRaw a, SingI dType, MonadThrow m) =>
   SGradient gradient ->
   SLayout layout ->
   SDevice device ->
   a ->
   m (Tensor gradient layout device ('DataType dType) ('Shape dims))
-sToTensorRaw (Demoted' gradient') (Demoted' layout) (Demoted' device) x = do
+sToTensorRaw gradient' layout device x = do
   dims' <- guessDims $ pure x
 
   pure $
@@ -1291,8 +1311,7 @@ sToTensorRaw (Demoted' gradient') (Demoted' layout) (Demoted' device) x = do
         tensorPokeElemOff ptr 0 dims' x
       pure t
   where
-    opts = tensorOptions gradient' layout device dType'
-    dType' = dTypeVal @dType
+    opts = tensorOptions gradient' layout device (sing @('DataType dType))
 
 fromTensorRaw ::
   forall gradient layout device a dType dims.
@@ -1382,7 +1401,7 @@ instance
     TensorLike b dType dims',
     TensorLikeRaw a,
     TensorLikeRaw b,
-    KnownDType dType,
+    SingI dType,
     SGetDims dimsOut,
     'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape (dims <+> dims')) ('Dim ('Name "*") ('Size 2))
   ) =>
@@ -1418,7 +1437,7 @@ instance (TensorLikeRaw a, TensorLikeRaw b) => TensorLikeRaw (a, b) where
 instance
   ( TensorLike a dType dims,
     TensorLikeRaw a,
-    KnownDType dType,
+    SingI dType,
     SGetDims dimsOut,
     'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape dims) ('Dim ('Name "*") 'UncheckedSize)
   ) =>
@@ -1455,7 +1474,7 @@ instance TensorLikeRaw a => TensorLikeRaw [a] where
 instance
   ( TensorLike a dType dims,
     TensorLikeRaw a,
-    KnownDType dType,
+    SingI dType,
     SGetDims dimsOut,
     'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape dims) ('Dim ('Name "*") 'UncheckedSize)
   ) =>
@@ -1496,7 +1515,7 @@ instance
   ( KnownNat n,
     TensorLike a dType dims,
     TensorLikeRaw a,
-    KnownDType dType,
+    SingI dType,
     SGetDims dimsOut,
     'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape dims) ('Dim ('Name "*") ('Size n))
   ) =>
@@ -1527,7 +1546,7 @@ sChangeTensorOptions ::
   SDataType dataType ->
   Tensor gradientFrom layoutFrom deviceFrom dataTypeFrom shape ->
   Tensor gradient layout device dataType shape
-sChangeTensorOptions (Demoted' gradient') (Demoted' layout) (Demoted' device) (Demoted' dataType) t =
+sChangeTensorOptions gradient' layout device dataType t =
   UnsafeTensor $ unsafePerformIO $ cast4 ATen.tensor_to_obb t opts nonBlocking copy
   where
     opts = tensorOptions gradient' layout device dataType

@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE RoleAnnotations #-}
@@ -11,7 +12,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Torch.GraduallyTyped.Random (Generator, mkGenerator, sMkGenerator, withGenerator) where
+module Torch.GraduallyTyped.Random where
 
 import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVar, writeTVar)
 import Data.Int (Int16)
@@ -21,9 +22,7 @@ import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (Nat)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
-import Torch.GraduallyTyped.Prelude (forgetIsChecked)
-import Torch.GraduallyTyped.Tensor.Type (Tensor (UnsafeTensor))
-import Torch.GraduallyTyped.Unify (type (<+>))
+import Torch.GraduallyTyped.Prelude (forgetIsChecked, pattern Demoted')
 import qualified Torch.Internal.Managed.Type.Generator as ATen
 import qualified Torch.Internal.Type as ATen
 
@@ -45,19 +44,20 @@ sMkGenerator ::
   -- | initial seed
   Word64 ->
   -- | returned generator
-  IO (Generator device)
-sMkGenerator device generatorSeed =
-  let generatorDeviceType = forgetIsChecked . fromSing $ device
-   in case generatorDeviceType of
-        CPU -> do
-          genPtr <- ATen.newCPUGenerator generatorSeed
-          generatorState <- newTVarIO (Just genPtr)
-          return $ UnsafeGenerator {..}
-        CUDA deviceId -> do
-          genPtr <- ATen.newCUDAGenerator (fromIntegral deviceId)
-          ATen.generator_set_current_seed genPtr generatorSeed
-          generatorState <- newTVarIO (Just genPtr)
-          return $ UnsafeGenerator {..}
+  Generator device
+sMkGenerator generatorDevice generatorSeed =
+  unsafePerformIO $
+    let generatorDeviceType = forgetIsChecked . fromSing $ generatorDevice
+     in case generatorDeviceType of
+          CPU -> do
+            genPtr <- ATen.newCPUGenerator generatorSeed
+            generatorState <- newTVarIO (Just genPtr)
+            return $ UnsafeGenerator {..}
+          CUDA deviceId -> do
+            genPtr <- ATen.newCUDAGenerator (fromIntegral deviceId)
+            ATen.generator_set_current_seed genPtr generatorSeed
+            generatorState <- newTVarIO (Just genPtr)
+            return $ UnsafeGenerator {..}
 
 mkGenerator ::
   forall device.
@@ -65,31 +65,51 @@ mkGenerator ::
   -- | initial seed
   Word64 ->
   -- | returned generator
-  IO (Generator device)
+  Generator device
 mkGenerator = sMkGenerator (sing @device)
 
-withGenerator ::
-  forall device generatorDevice requiresGradient layout dataType shape.
-  (ForeignPtr ATen.Generator -> IO (ForeignPtr ATen.Tensor)) ->
+sGeneratorToDevice ::
+  forall generatorDevice' generatorDevice.
+  SDevice generatorDevice' ->
   Generator generatorDevice ->
-  (Tensor requiresGradient layout (device <+> generatorDevice) dataType shape, Generator (device <+> generatorDevice))
-withGenerator f UnsafeGenerator {..} = unsafePerformIO $ do
+  Generator generatorDevice'
+sGeneratorToDevice (Demoted' generatorDeviceType') UnsafeGenerator {..}
+  | generatorDeviceType' == generatorDeviceType =
+    UnsafeGenerator generatorSeed generatorDeviceType' generatorState
+sGeneratorToDevice device' UnsafeGenerator {..} =
+  sMkGenerator device' generatorSeed
+
+generatorToDevice ::
+  forall generatorDevice' generatorDevice.
+  SingI generatorDevice' =>
+  Generator generatorDevice ->
+  Generator generatorDevice'
+generatorToDevice = sGeneratorToDevice (sing @generatorDevice')
+
+withGenerator ::
+  (ForeignPtr ATen.Generator -> IO (ForeignPtr ATen.Tensor)) ->
+  Word64 ->
+  DeviceType Int16 ->
+  TVar (Maybe (ForeignPtr ATen.Generator)) ->
+  IO (ForeignPtr ATen.Tensor, Word64, TVar (Maybe (ForeignPtr ATen.Generator)))
+withGenerator f seed deviceType state = do
   mGenPtr <- atomically $ do
-    mGenPtr <- readTVar generatorState
+    mGenPtr <- readTVar state
     case mGenPtr of
       Just genPtr -> do
-        writeTVar generatorState Nothing
+        writeTVar state Nothing
         return $ Just genPtr
       Nothing -> return Nothing
   genPtr <- case mGenPtr of
     Just genPtr -> return genPtr
-    Nothing -> case generatorDeviceType of
-      CPU -> ATen.newCPUGenerator generatorSeed
-      CUDA deviceId -> do
-        genPtr <- ATen.newCUDAGenerator (fromIntegral deviceId)
-        ATen.generator_set_current_seed genPtr generatorSeed
-        return genPtr
-  a <- f genPtr
+    Nothing ->
+      case deviceType of
+        CPU -> ATen.newCPUGenerator seed
+        CUDA deviceId -> do
+          genPtr <- ATen.newCUDAGenerator (fromIntegral deviceId)
+          ATen.generator_set_current_seed genPtr seed
+          return genPtr
+  t <- f genPtr
   nextSeed <- ATen.generator_current_seed genPtr
   nextGen <- newTVarIO (Just genPtr)
-  return (UnsafeTensor a, UnsafeGenerator nextSeed generatorDeviceType nextGen)
+  return (t, nextSeed, nextGen)

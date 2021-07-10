@@ -4,14 +4,17 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE IncoherentInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wall #-}
@@ -22,32 +25,40 @@
 
 module Torch.GraduallyTyped.NN.Class where
 
-import Control.Exception (Exception (..))
+import Control.Exception (Exception (..), SomeException (..), catch)
+import Control.Monad (void)
 import Control.Monad.Catch (MonadThrow (..))
 import Control.Monad.State (MonadState (get, put))
 import Data.Functor.Const (Const (..))
-import Data.Kind (Type)
+import Data.Kind (Constraint, Type)
 import qualified Data.Map.Strict as Map
 import Data.Proxy (Proxy (..))
+import Data.Singletons (Sing, SingI (sing))
+import Data.Singletons.TH (genSingletons)
+import Data.Singletons.TH.Options (Options (genQuotedDecs, genSingKindInsts), defaultOptions, withOptions)
+import Data.Singletons.TypeLits (SNat (..))
 import Data.Typeable (Typeable)
 import qualified Data.Vector as V
 import qualified Data.Vector.Generic.Sized.Internal as VGS
 import qualified Data.Vector.Sized as VS
 import Debug.Trace (traceShow)
 import Foreign.ForeignPtr (ForeignPtr)
-import GHC.TypeLits (KnownNat, Nat, natVal, type (+))
-import Torch.GraduallyTyped.DType (SDataType)
-import Torch.GraduallyTyped.Device (Device, DeviceType, SDevice)
-import Torch.GraduallyTyped.Layout (SLayout)
+import GHC.TypeLits (KnownNat, Nat, Symbol, natVal, type (+))
+import System.IO.Unsafe (unsafePerformIO)
+import Torch.GraduallyTyped.DType (DType, DataType, SDataType)
+import Torch.GraduallyTyped.Device (Device, DeviceType, GetDevices, SDevice)
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
+import Torch.GraduallyTyped.Prelude (Head)
 import Torch.GraduallyTyped.Random (Generator)
-import Torch.GraduallyTyped.RequiresGradient (SGradient (..))
-import Torch.GraduallyTyped.Shape.Type (SShape)
-import Torch.GraduallyTyped.Tensor.Type (Tensor (UnsafeTensor), UncheckedTensor, sCheckedDataType, sCheckedDevice, sCheckedGradient, sCheckedLayout, sCheckedShape)
+import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
+import Torch.GraduallyTyped.Shape.Type (Dim, Name, SShape, Shape (..), Size)
+import Torch.GraduallyTyped.Tensor.Type (Tensor (..), TensorSpec (..), UncheckedTensor, sCheckedDataType, sCheckedDevice, sCheckedGradient, sCheckedLayout, sCheckedShape)
 import Torch.GraduallyTyped.Unify (type (<+>))
 import qualified Torch.Internal.Type as ATen (Tensor)
 import qualified Torch.Script (IValue (..))
 import qualified Torch.Serialize (pickleLoad)
 import qualified Torch.Tensor (Tensor (Unsafe))
+import Type.Errors.Pretty (TypeError, type (<>))
 import Unsafe.Coerce (unsafeCoerce)
 
 class
@@ -70,6 +81,9 @@ class
 instance HasForward (Const () device) input generatorDevice input generatorDevice where
   forward _ = (pure .) . (,)
 
+-- foo :: forall a m. MonadThrow m => IO a -> m a
+-- foo a = unsafePerformIO $ (pure @m <$> a) `catch` (\e@(SomeException _) -> pure . throwM $ e)
+
 instance
   ( HasForward a input generatorDevice output' generatorOutputDevice',
     HasForward b output' generatorOutputDevice' output generatorOutputDevice
@@ -91,8 +105,8 @@ instance
     let Just (a, _) = V.uncons v
      in forward a input g
 
-instance
-  {-# OVERLAPPABLE #-}
+instance-- {-# OVERLAPPABLE #-}
+
   ( HasForward a input generatorDevice output generatorOutputDevice,
     HasForward a output generatorOutputDevice output generatorOutputDevice
   ) =>
@@ -108,54 +122,125 @@ instance
           (forward a input g)
           as
 
+-- Model singletons???
+
+-- data SomeModel (gradient :: Gradient RequiresGradient) (layout :: Layout LayoutType) where
+--   SomeModel :: forall rg lt. SomeModel rg lt
+
+-- data SomeModelSpecs where
+--   SomeModelSpecs :: Gradient RequiresGradient -> Layout LayoutType -> SomeModelSpecs
+
+-- $(withOptions defaultOptions {genQuotedDecs = True, genSingKindInsts = False} $ genSingletons [''SomeModelSpecs])
+
+-- foo = SSomeModelSpecs (SGradient SWithGradient) (SLayout SSparse)
+
+-- type HasInitialize :: Type -> Constraint
+-- class HasInitialize k where
+--   type ModelSpecs k = (modelSpecs :: Type) | modelSpecs -> k
+--   initialize :: ModelSpecs k -> k
+
+-- instance
+--   HasInitialize (SomeModel gradient layout)
+--   where
+--     type ModelSpecs (SomeModel gradient layout) = SSomeModelSpecs ('SomeModelSpecs gradient layout)
+--     initialize (SSomeModelSpecs _ _) = SomeModel
+
+-- data
+--   SomeModel
+--     (gradient :: Gradient RequiresGradient)
+--     (layout :: Layout LayoutType)
+--     (dataType :: DataType DType)
+--     (someDim :: Dim (Name Symbol) (Size Nat))
+--     (device :: Device (DeviceType Nat))
+--   where
+--   SomeModel ::
+--     forall gradient layout dataType someDim device.
+--     { someModelWeight :: Tensor gradient layout device dataType ('Shape '[someDim]),
+--       someModelParameter :: Double
+--     } ->
+--     SomeModel gradient layout dataType someDim device
+
+-- data Foo (a :: Type) = Foo a
+
+-- genSingletons [''Foo]
+
+-- foo = SFoo (SNat @5)
+
+type family ModelSpec model = (spec :: Type) | spec -> model
+
 class
   HasInitialize
-    (model :: Device (DeviceType Nat) -> Type)
-    (spec :: Type)
-    (device :: Device (DeviceType Nat))
+    (model :: Type)
     (generatorDevice :: Device (DeviceType Nat))
-    | model -> spec
+    (output :: Type)
+    (generatorOutputDevice :: Device (DeviceType Nat))
+    | model generatorDevice -> output,
+      model generatorDevice -> generatorOutputDevice
   where
   initialize ::
-    SDevice device ->
-    spec ->
+    forall m.
+    MonadThrow m =>
+    ModelSpec model ->
     Generator generatorDevice ->
-    (model (device <+> generatorDevice), Generator (device <+> generatorDevice))
+    m (output, Generator generatorOutputDevice)
 
-instance HasInitialize (Const ()) () device generatorDevice where
-  initialize _ _ g = (Const (), unsafeCoerce g)
+-- class
+--   HasInitialize
+--     (model :: Type)
+--     (spec :: Type)
+--     (generatorDevice :: Device (DeviceType Nat))
+--     (output :: Type)
+--     (generatorOutputDevice :: Device (DeviceType Nat))
+--     | model -> spec,
+--       model generatorDevice -> output,
+--       model generatorDevice -> generatorOutputDevice
+--   where
+--   initialize ::
+--     spec ->
+--     Generator generatorDevice ->
+--     (output, Generator generatorOutputDevice)
 
-data TDelegate a b c = TDelegate (a c) (b c)
+type instance ModelSpec () = ()
+
+instance HasInitialize () generatorDevice () generatorDevice where
+  initialize () g = pure ((), g)
+
+type instance ModelSpec (a, b) = (ModelSpec a, ModelSpec b)
 
 instance
-  ( HasInitialize a spec device generatorDevice,
-    HasInitialize b spec device (device <+> generatorDevice)
+  ( HasInitialize a generatorDevice aOutput aGeneratorOutputDevice,
+    HasInitialize b aGeneratorOutputDevice bOutput generatorOutputDevice
   ) =>
-  HasInitialize (TDelegate a b) spec device generatorDevice
+  HasInitialize (a, b) generatorDevice (aOutput, bOutput) generatorOutputDevice
   where
-  initialize device spec g =
-    let (a, g') = initialize device spec g
-        (b, g'') = initialize device spec g'
-     in (TDelegate a b, g'')
+  initialize (aSpec, bSpec) g = do
+    (a, g') <- initialize aSpec g
+    (b, g'') <- initialize bSpec g'
+    pure ((a, b), g'')
 
-newtype VDelegate n a b = VDelegate (VS.Vector n (a b))
+type instance ModelSpec (VS.Vector n a) = VS.Vector n (ModelSpec a)
 
 instance
-  ( HasInitialize a spec device generatorDevice,
-    HasInitialize a spec device (device <+> generatorDevice),
+  ( HasInitialize a generatorDevice output generatorOutputDevice,
+    HasInitialize a generatorOutputDevice output generatorOutputDevice,
     KnownNat n,
     n' ~ (n + 1)
   ) =>
-  HasInitialize (VDelegate n' a) spec device generatorDevice
+  HasInitialize (VS.Vector n' a) generatorDevice (VS.Vector n' output) generatorOutputDevice
   where
-  initialize device spec g =
-    case fromIntegral (natVal (Proxy :: Proxy n) + 1) of
-      1 ->
-        let (a, g') = initialize device spec g
-         in (VDelegate (VGS.Vector (V.singleton a)), g')
-      i ->
-        let Just (as, (a', g'')) = V.unsnoc $ V.iterateN i (\(_, g') -> initialize device spec g') (initialize device spec g)
-         in (VDelegate (VGS.Vector (V.snoc (fst <$> as) a')), g'')
+  initialize (VGS.Vector specs) g = do
+    let Just (spec, specs') = V.uncons specs
+    (a, g') <- initialize spec g
+    (as, g'''') <-
+      V.foldl
+        ( \agg spec' -> do
+            (acc, g'') <- agg
+            (a', g''') <- initialize spec' g''
+            pure (V.snoc acc a', g''')
+        )
+        (pure (V.singleton a, g'))
+        specs'
+    pure (VGS.Vector as, g'''')
 
 type StateDictKey = String
 
@@ -173,20 +258,40 @@ newtype ToStateDictError = ToStateDictKeyAlreadyInUseError {fsdeTakenKey :: Stat
 instance Exception ToStateDictError where
   displayException ToStateDictKeyAlreadyInUseError {..} = "`" <> show fsdeTakenKey <> "` is already in the model's state dictionary."
 
-class HasStateDict model input | model -> input where
-  fromStateDict :: forall m. (MonadThrow m, MonadState StateDict m) => input -> StateDictKey -> m model
-  toStateDict :: forall m. (MonadThrow m, MonadState StateDict m) => StateDictKey -> model -> m ()
+class HasStateDict model where
+  fromStateDict ::
+    forall m.
+    (MonadThrow m, MonadState StateDict m) =>
+    ModelSpec model ->
+    StateDictKey ->
+    m model
+  toStateDict ::
+    forall m.
+    (MonadThrow m, MonadState StateDict m) =>
+    StateDictKey ->
+    model ->
+    m ()
 
-instance HasStateDict () () where
+instance HasStateDict () where
   fromStateDict () _ = pure ()
-  toStateDict _ _ = pure ()
+  toStateDict _ () = pure ()
+
+instance (HasStateDict a, HasStateDict b) => HasStateDict (a, b) where
+  fromStateDict (aSpec, bSpec) k =
+    (,)
+      <$> fromStateDict aSpec (k <> "0.")
+      <*> fromStateDict bSpec (k <> "1.")
+  toStateDict k (a, b) = do
+    void $ toStateDict (k <> "0.") a
+    void $ toStateDict (k <> "1.") b
+
+type instance ModelSpec (Tensor gradient layout device dataType shape) = TensorSpec gradient layout device dataType shape
 
 instance
   HasStateDict
     (Tensor gradient layout device dataType shape)
-    (SGradient gradient, SLayout layout, SDevice device, SDataType dataType, SShape shape)
   where
-  fromStateDict (gradient, layout, device, dataType, shape) k = do
+  fromStateDict (TensorSpec gradient layout device dataType shape) k = do
     traceShow k $ pure ()
     stateDict <- get
     maybe
@@ -208,13 +313,13 @@ instance
     put stateDict'
 
 instance
-  (KnownNat n, HasStateDict a input) =>
-  HasStateDict (VS.Vector n a) input
+  (KnownNat n, HasStateDict a) =>
+  HasStateDict (VS.Vector n a)
   where
-  fromStateDict input k = do
+  fromStateDict specs k = do
     let i :: Int = fromIntegral (natVal (Proxy :: Proxy n))
-        fromStateDict' i' = fromStateDict input (k <> show i' <> ".")
-    traverse fromStateDict' . VGS.Vector . V.fromList $ [0 .. i - 1]
+        fromStateDict' (spec, i') = fromStateDict spec (k <> show i' <> ".")
+    traverse fromStateDict' $ VS.zip specs (VGS.Vector $ V.fromList [0 .. i - 1])
   toStateDict k (VGS.Vector v) = do
     let toStateDict' (i', a) = toStateDict (k <> show i' <> ".") a
     mapM_ toStateDict' $ V.zip (V.fromList [0 .. V.length v - 1]) v

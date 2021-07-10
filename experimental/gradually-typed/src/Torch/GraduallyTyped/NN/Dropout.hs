@@ -11,45 +11,47 @@
 
 module Torch.GraduallyTyped.NN.Dropout where
 
-import Data.Kind (Type)
 import GHC.Generics (Generic)
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
-import Torch.GraduallyTyped.Random (Generator)
-import Torch.GraduallyTyped.Scalar (Scalar)
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec)
+import Torch.GraduallyTyped.NN.Functional.Dropout (dropout)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
-import Unsafe.Coerce (unsafeCoerce)
 
 -- | Given a random generator, randomly zeroes some of the elements of
 -- the input tensor with probability 'p' using samples from a Bernoulli distribution.
 -- Each channel will be zeroed out independently on every 'forward' call.
-newtype Dropout (p :: Type) where
+newtype Dropout where
   Dropout ::
-    forall p.
     -- | probability of an element to be zeroed
-    p ->
-    Dropout p
+    Double ->
+    Dropout
   deriving stock (Show, Generic)
 
-instance (Scalar p) => HasInitialize (Dropout p) p generator generator where
-  initialize p g = (Dropout p, g)
+type instance ModelSpec Dropout = Dropout
 
-instance HasStateDict (Dropout p) p where
-  fromStateDict p _ = pure $ Dropout p
+instance
+  HasInitialize
+    Dropout
+    generatorDevice
+    Dropout
+    generatorDevice
+  where
+  initialize spec = pure . (spec,)
+
+instance HasStateDict Dropout where
+  fromStateDict spec _ = pure spec
   toStateDict _ _ = pure ()
 
 instance
-  ( Scalar p,
-    input ~ Tensor gradient layout device dataType shape,
-    generator ~ Generator generatorDevice,
+  ( input ~ Tensor gradient layout device dataType shape,
     output ~ Tensor gradient layout (device <+> generatorDevice) dataType shape,
-    generatorOutput ~ Generator (device <+> generatorDevice)
+    generatorOutputDevice ~ (device <+> generatorDevice)
   ) =>
   HasForward
-    (Dropout p)
+    Dropout
     input
-    generator
+    generatorDevice
     output
-    generatorOutput
+    generatorOutputDevice
   where
-  forward (Dropout _p) input g = pure $ (unsafeCoerce :: (input, g) -> (output, generatorOutput)) (input, g)
+  forward (Dropout p) input g = dropout p input g

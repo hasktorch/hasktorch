@@ -7,6 +7,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -32,19 +33,20 @@ module Torch.GraduallyTyped.Tensor.Creation
   )
 where
 
+import Control.Monad.Catch (MonadThrow)
 import Data.Monoid (All (..))
 import Data.Singletons (SingI (..), SingKind (fromSing))
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.GraduallyTyped.DType (SDataType)
 import Torch.GraduallyTyped.Device (SDevice)
-import Torch.GraduallyTyped.Internal.TensorOptions (tensorOptions)
+import Torch.GraduallyTyped.Internal.TensorOptions (tensorDims, tensorOptions)
 import Torch.GraduallyTyped.Layout (SLayout (..))
 import Torch.GraduallyTyped.Prelude (forgetIsChecked)
-import Torch.GraduallyTyped.Random (Generator, withGenerator)
+import Torch.GraduallyTyped.Random (Generator (..), withGenerator)
 import Torch.GraduallyTyped.RequiresGradient (SGradient)
 import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SShape, SSize, Shape (..), dimName, dimSize)
-import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SSize, Shape (..), dimName, dimSize)
+import Torch.GraduallyTyped.Tensor.Type (Tensor (..), TensorSpec (..))
 import Torch.GraduallyTyped.Unify (type (<+>))
 import Torch.Internal.Cast (cast2, cast3, cast4)
 import qualified Torch.Internal.Managed.TensorFactories as ATen
@@ -69,29 +71,16 @@ import qualified Torch.Internal.Managed.TensorFactories as ATen
 --              'Dim 'UncheckedName 'UncheckedSize])
 sOnes ::
   forall gradient layout device dataType shape.
-  SGradient gradient ->
-  SLayout layout ->
-  SDevice device ->
-  SDataType dataType ->
-  SShape shape ->
+  TensorSpec gradient layout device dataType shape ->
   Tensor gradient layout device dataType shape
-sOnes gradient layout device dataType shape =
-  let opts = tensorOptions requiresGradient layoutType deviceType dType
+sOnes TensorSpec {..} =
+  let opts = tensorOptions tsGradient tsLayout tsDevice tsDataType
+      dims = tensorDims tsShape
       tensor = unsafePerformIO $ case (map dimName dims, map dimSize dims) of
         (names, sizes)
           | getAll . foldMap (All . (== "*")) $ names -> cast2 ATen.ones_lo sizes opts
           | otherwise -> cast3 ATen.ones_lNo sizes names opts
    in UnsafeTensor tensor
-  where
-    requiresGradient = forgetIsChecked . fromSing $ gradient
-    layoutType = forgetIsChecked . fromSing $ layout
-    deviceType = forgetIsChecked . fromSing $ device
-    dType = forgetIsChecked . fromSing $ dataType
-    dims =
-      fmap (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size))
-        . forgetIsChecked
-        . fromSing
-        $ shape
 
 -- | Create a typed tensor of ones.
 --
@@ -103,7 +92,7 @@ ones ::
   forall gradient layout device dataType shape.
   (SingI gradient, SingI layout, SingI device, SingI dataType, SingI shape) =>
   Tensor gradient layout device dataType shape
-ones = sOnes (sing @gradient) (sing @layout) (sing @device) (sing @dataType) (sing @shape)
+ones = sOnes $ TensorSpec (sing @gradient) (sing @layout) (sing @device) (sing @dataType) (sing @shape)
 
 -- | Create a gradually typed tensor of zeros.
 --
@@ -120,29 +109,16 @@ ones = sOnes (sing @gradient) (sing @layout) (sing @device) (sing @dataType) (si
 --              'Dim 'UncheckedName 'UncheckedSize])
 sZeros ::
   forall gradient layout device dataType shape.
-  SGradient gradient ->
-  SLayout layout ->
-  SDevice device ->
-  SDataType dataType ->
-  SShape shape ->
+  TensorSpec gradient layout device dataType shape ->
   Tensor gradient layout device dataType shape
-sZeros gradient layout device dataType shape =
-  let opts = tensorOptions requiresGradient layoutType deviceType dType
+sZeros TensorSpec {..} =
+  let opts = tensorOptions tsGradient tsLayout tsDevice tsDataType
+      dims = tensorDims tsShape
       tensor = unsafePerformIO $ case (map dimName dims, map dimSize dims) of
         (names, sizes)
           | getAll . foldMap (All . (== "*")) $ names -> cast2 ATen.zeros_lo sizes opts
           | otherwise -> cast3 ATen.zeros_lNo sizes names opts
    in UnsafeTensor tensor
-  where
-    requiresGradient = forgetIsChecked . fromSing $ gradient
-    layoutType = forgetIsChecked . fromSing $ layout
-    deviceType = forgetIsChecked . fromSing $ device
-    dType = forgetIsChecked . fromSing $ dataType
-    dims =
-      fmap (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size))
-        . forgetIsChecked
-        . fromSing
-        $ shape
 
 -- | Create a typed tensor of zeros.
 --
@@ -154,7 +130,7 @@ zeros ::
   forall gradient layout device dataType shape.
   (SingI gradient, SingI layout, SingI device, SingI dataType, SingI shape) =>
   Tensor gradient layout device dataType shape
-zeros = sZeros (sing @gradient) (sing @layout) (sing @device) (sing @dataType) (sing @shape)
+zeros = sZeros $ TensorSpec (sing @gradient) (sing @layout) (sing @device) (sing @dataType) (sing @shape)
 
 -- | Create a gradually typed tensor filled with a given scalar value.
 --
@@ -173,30 +149,17 @@ zeros = sZeros (sing @gradient) (sing @layout) (sing @device) (sing @dataType) (
 sFull ::
   forall gradient layout device dataType shape input.
   Scalar input =>
-  SGradient gradient ->
-  SLayout layout ->
-  SDevice device ->
-  SDataType dataType ->
-  SShape shape ->
+  TensorSpec gradient layout device dataType shape ->
   input ->
   Tensor gradient layout device dataType shape
-sFull gradient layout device dataType shape input = UnsafeTensor tensor
-  where
-    tensor = unsafePerformIO $ case (dimName <$> dims, dimSize <$> dims) of
-      (names, sizes)
-        | getAll . foldMap (\name -> All $ name == "*") $ names -> cast3 ATen.full_lso sizes input opts
-        | otherwise -> cast4 ATen.full_lsNo sizes input names opts
-    opts = tensorOptions requiresGradient layoutType deviceType dType
-
-    requiresGradient = forgetIsChecked . fromSing $ gradient
-    layoutType = forgetIsChecked . fromSing $ layout
-    deviceType = forgetIsChecked . fromSing $ device
-    dType = forgetIsChecked . fromSing $ dataType
-    dims =
-      fmap (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size))
-        . forgetIsChecked
-        . fromSing
-        $ shape
+sFull TensorSpec {..} input =
+  let opts = tensorOptions tsGradient tsLayout tsDevice tsDataType
+      dims = tensorDims tsShape
+      tensor = unsafePerformIO $ case (dimName <$> dims, dimSize <$> dims) of
+        (names, sizes)
+          | getAll . foldMap (\name -> All $ name == "*") $ names -> cast3 ATen.full_lso sizes input opts
+          | otherwise -> cast4 ATen.full_lsNo sizes input names opts
+   in UnsafeTensor tensor
 
 -- | Create a typed tensor filled with a given scalar value.
 --
@@ -209,45 +172,39 @@ full ::
   (SingI gradient, SingI layout, SingI device, SingI dataType, SingI shape, Scalar input) =>
   input ->
   Tensor gradient layout device dataType shape
-full = sFull (sing @gradient) (sing @layout) (sing @device) (sing @dataType) (sing @shape)
+full = sFull $ TensorSpec (sing @gradient) (sing @layout) (sing @device) (sing @dataType) (sing @shape)
 
 -- | Create a gradually typed random tensor.
 sRandn ::
-  forall gradient layout device dataType shape device'.
-  SGradient gradient ->
-  SLayout layout ->
-  SDevice device ->
-  SDataType dataType ->
-  SShape shape ->
-  Generator device' ->
-  (Tensor gradient layout (device <+> device') dataType shape, Generator (device <+> device'))
-sRandn gradient layout device dataType shape =
-  let opts = tensorOptions requiresGradient layoutType deviceType dType
-   in withGenerator @device
-        ( \genPtr -> do
-            case (map dimName dims, map dimSize dims) of
-              (names, sizes)
-                | getAll . foldMap (\name -> All $ name == "*") $ names -> cast3 ATen.randn_lGo sizes genPtr opts
-                | otherwise -> cast4 ATen.randn_lGNo sizes genPtr names opts
-        )
-  where
-    requiresGradient = forgetIsChecked . fromSing $ gradient
-    layoutType = forgetIsChecked . fromSing $ layout
-    deviceType = forgetIsChecked . fromSing $ device
-    dType = forgetIsChecked . fromSing $ dataType
-    dims =
-      fmap (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size))
-        . forgetIsChecked
-        . fromSing
-        $ shape
+  forall gradient layout device dataType shape generatorDevice m.
+  MonadThrow m =>
+  TensorSpec gradient layout device dataType shape ->
+  Generator generatorDevice ->
+  m (Tensor gradient layout (device <+> generatorDevice) dataType shape, Generator (device <+> generatorDevice))
+sRandn TensorSpec {..} UnsafeGenerator {..} = pure . unsafePerformIO $ do
+  let opts = tensorOptions tsGradient tsLayout tsDevice tsDataType
+      dims = tensorDims tsShape
+  (t, nextGeneratorSeed, nextGeneratorState) <-
+    withGenerator
+      ( \genPtr -> do
+          case (map dimName dims, map dimSize dims) of
+            (names, sizes)
+              | getAll . foldMap (\name -> All $ name == "*") $ names -> cast3 ATen.randn_lGo sizes genPtr opts
+              | otherwise -> cast4 ATen.randn_lGNo sizes genPtr names opts
+      )
+      generatorSeed
+      generatorDeviceType
+      generatorState
+  pure (UnsafeTensor t, UnsafeGenerator nextGeneratorSeed generatorDeviceType nextGeneratorState)
 
 -- | Create typed random tensor.
 randn ::
-  forall gradient layout device dataType shape device'.
+  forall gradient layout device dataType shape generatorDevice m.
+  MonadThrow m =>
   (SingI gradient, SingI layout, SingI device, SingI dataType, SingI shape) =>
-  Generator device' ->
-  (Tensor gradient layout (device <+> device') dataType shape, Generator (device <+> device'))
-randn = sRandn (sing @gradient) (sing @layout) (sing @device) (sing @dataType) (sing @shape)
+  Generator generatorDevice ->
+  m (Tensor gradient layout (device <+> generatorDevice) dataType shape, Generator (device <+> generatorDevice))
+randn = sRandn $ TensorSpec (sing @gradient) (sing @layout) (sing @device) (sing @dataType) (sing @shape)
 
 -- | Create a gradually typed one-dimensional tensor of the numbers @0@ to @size -1@.
 sArangeNaturals ::
@@ -259,16 +216,11 @@ sArangeNaturals ::
   SDataType dataType ->
   SSize size ->
   Tensor gradient layout device dataType shape
-sArangeNaturals sGradient sLayout sDevice sDataType sSizeDim = UnsafeTensor tensor
-  where
-    tensor = unsafePerformIO $ cast2 ATen.arange_so size opts
-    opts = tensorOptions requiresGradient layoutType deviceType dType
-
-    requiresGradient = forgetIsChecked . fromSing $ sGradient
-    layoutType = forgetIsChecked . fromSing $ sLayout
-    deviceType = forgetIsChecked . fromSing $ sDevice
-    dType = forgetIsChecked . fromSing $ sDataType
-    size = forgetIsChecked . fromSing $ sSizeDim
+sArangeNaturals gradient layout device dataType size =
+  let opts = tensorOptions gradient layout device dataType
+      size' = forgetIsChecked . fromSing $ size
+      tensor = unsafePerformIO $ cast2 ATen.arange_so size' opts
+   in UnsafeTensor tensor
 
 -- | Create a typed one-dimensional tensor of the numbers @0@ to @size -1@.
 arangeNaturals ::
@@ -294,17 +246,12 @@ sEye ::
   SSize rows ->
   SSize cols ->
   Tensor gradient layout device dataType shape
-sEye sGradient sLayout sDevice sDataType sRows sCols = UnsafeTensor tensor
-  where
-    tensor = unsafePerformIO $ cast3 ATen.eye_llo (fromInteger rows :: Int) (fromInteger cols :: Int) opts
-    opts = tensorOptions requiresGradient layoutType deviceType dType
-
-    requiresGradient = forgetIsChecked . fromSing $ sGradient
-    layoutType = forgetIsChecked . fromSing $ sLayout
-    deviceType = forgetIsChecked . fromSing $ sDevice
-    dType = forgetIsChecked . fromSing $ sDataType
-    rows = forgetIsChecked . fromSing $ sRows
-    cols = forgetIsChecked . fromSing $ sCols
+sEye gradient layout device dataType rows cols =
+  let opts = tensorOptions gradient layout device dataType
+      rows' :: Int = fromInteger . forgetIsChecked . fromSing $ rows
+      cols' :: Int = fromInteger . forgetIsChecked . fromSing $ cols
+      tensor = unsafePerformIO $ cast3 ATen.eye_llo rows' cols' opts
+   in UnsafeTensor tensor
 
 -- | Create a typed rectangular tensor with ones on the diagonal and zeros elsewhere.
 eye ::
@@ -330,16 +277,11 @@ sEyeSquare ::
   SDataType dataType ->
   SSize size ->
   Tensor gradient layout device dataType shape
-sEyeSquare sGradient sLayout sDevice sDataType sSize = UnsafeTensor tensor
-  where
-    tensor = unsafePerformIO $ cast2 ATen.eye_lo (fromInteger size :: Int) opts
-    opts = tensorOptions requiresGradient layoutType deviceType dType
-
-    requiresGradient = forgetIsChecked . fromSing $ sGradient
-    layoutType = forgetIsChecked . fromSing $ sLayout
-    deviceType = forgetIsChecked . fromSing $ sDevice
-    dType = forgetIsChecked . fromSing $ sDataType
-    size = forgetIsChecked . fromSing $ sSize
+sEyeSquare gradient layout device dataType size =
+  let opts = tensorOptions gradient layout device dataType
+      size' :: Int = fromInteger . forgetIsChecked . fromSing $ size
+      tensor = unsafePerformIO $ cast2 ATen.eye_lo size' opts
+   in UnsafeTensor tensor
 
 -- | Create a typed square tensor with ones on the diagonal and zeros elsewhere.
 eyeSquare ::

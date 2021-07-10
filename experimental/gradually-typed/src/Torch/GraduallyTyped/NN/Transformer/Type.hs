@@ -41,10 +41,11 @@ module Torch.GraduallyTyped.NN.Transformer.Type where
 import Control.Monad.Catch (MonadThrow)
 import Data.Singletons.Prelude.List (SList (SNil))
 import Data.Singletons.TH (SingKind (fromSing), genSingletons)
+import Data.Singletons.TypeLits (Nat)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec)
 import Torch.GraduallyTyped.Prelude (Seq, forgetIsChecked)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
@@ -55,10 +56,9 @@ import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (UnsqueezeF, cat, unsq
 import Torch.GraduallyTyped.Tensor.MathOperations.Comparison ((==.))
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (logicalOr)
 import Torch.GraduallyTyped.Tensor.Other (maskedFill, triu)
-import Torch.GraduallyTyped.Tensor.Type (SGetDataType (sDataType), SGetDevice (..), SGetDim, SGetLayout (..), SGetShape (..), Tensor (..), bool, sCheckedShape, toTensor)
+import Torch.GraduallyTyped.Tensor.Type (SGetDataType (sDataType), SGetDevice (..), SGetDim, SGetLayout (..), SGetShape (..), Tensor (..), TensorSpec (..), bool, sCheckedShape, toTensor)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import Torch.HList
-import Data.Singletons.TypeLits (Nat)
 
 data TransformerStyle = T5 | ByT5 | BART | MBART | Pegasus | BERT | RoBERTa | GPT2
   deriving (Show, Eq)
@@ -175,11 +175,7 @@ mkTransformerPaddingMask ::
 mkTransformerPaddingMask padTokenId input =
   let padToken =
         sFull
-          (SGradient SWithoutGradient)
-          (SLayout SDense)
-          (SDevice SCPU)
-          (SDataType SInt64)
-          (SShape $ SName @"*" :&: SSize @1 :|: SNil)
+          (TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: SNil))
           padTokenId
    in input ==. padToken
 
@@ -217,7 +213,9 @@ mkTransformerAttentionMask transformerDataType attentionMaskBias paddingMask = d
       pmDevice = sDevice paddingMask
       pmShape = sShape paddingMask
   pmSeqDim <- sGetDim (SSelectDim $ SByIndex @1) pmShape
-  let emptyMask = sZeros (SGradient SWithoutGradient) pmLayout pmDevice transformerDataType (SShape $ SName @"*" :&: SSize @1 :|: pmSeqDim :|: pmSeqDim :|: SNil)
+  let emptyMask =
+        sZeros $
+          TensorSpec (SGradient SWithoutGradient) pmLayout pmDevice transformerDataType (SShape $ SName @"*" :&: SSize @1 :|: pmSeqDim :|: pmSeqDim :|: SNil)
   pure $ maskedFill (unsqueeze @('SelectDim ('ByIndex 1)) paddingMask) attentionMaskBias emptyMask
 
 type MkTransformerDecoderAttentionMaskC transformerDataType layout device shape seqDim output =
@@ -312,14 +310,26 @@ mkTransformerCrossAttentionMask transformerDataType decoderInputShape attentionM
   let emptyMask = sZeros (SGradient SWithoutGradient) pmLayout pmDevice transformerDataType (SShape $ SName @"*" :&: SSize @1 :|: decoderInputSeqDim :|: pmSeqDim :|: SNil)
   pure $ maskedFill (unsqueeze @('SelectDim ('ByIndex 1)) paddingMask) attentionMaskBias emptyMask
 
-data ShiftRight fillValue (device :: Device (DeviceType Nat)) where
-  ShiftRight :: forall fillValue device. fillValue -> ShiftRight fillValue device
+data ShiftRight fillValue where
+  ShiftRight ::
+    forall fillValue.
+    -- | fill value for shift right
+    fillValue ->
+    ShiftRight fillValue
 
-instance HasInitialize (ShiftRight fillValue) fillValue generator generator where
-  initialize _ fillValue = (ShiftRight fillValue,)
+type instance ModelSpec (ShiftRight fillValue) = ShiftRight fillValue
 
-instance HasStateDict (ShiftRight fillValue device) fillValue where
-  fromStateDict fillValue _ = pure $ ShiftRight fillValue
+instance
+  HasInitialize
+    (ShiftRight fillValue)
+    generatorDevice
+    (ShiftRight fillValue)
+    generatorDevice
+  where
+  initialize spec = (spec,)
+
+instance HasStateDict (ShiftRight fillValue) where
+  fromStateDict spec _ = pure spec
   toStateDict _ _ = pure ()
 
 instance
@@ -349,7 +359,7 @@ instance
               (AddDimF inputSeqDim ('Dim ('Name "*") ('Size 1)))
           )
   ) =>
-  HasForward (ShiftRight fillValue device) input generator rightShiftedInput generator
+  HasForward (ShiftRight fillValue) input generator rightShiftedInput generator
   where
   forward (ShiftRight fillValue) input g = do
     let inputLayout = sLayout input
