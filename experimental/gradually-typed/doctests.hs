@@ -2,12 +2,13 @@ module Main where
 
 import Build_doctests (flags, module_sources, pkgs)
 import Data.Foldable (traverse_)
-import System.Environment (lookupEnv)
+import System.Environment (lookupEnv, setEnv)
 import Test.DocTest (doctest)
 
 main :: IO ()
 main = do
   libDir <- lookupEnv "NIX_GHC_LIBDIR"
+  setEnv "HASKTORCH_DEBUG" "0"
 
   let args =
         concat

@@ -25,15 +25,14 @@ module Torch.GraduallyTyped.Shape.Class where
 
 import Control.Exception (Exception (..))
 import Control.Monad.Catch (MonadThrow (throwM))
-import Data.Proxy (Proxy (Proxy))
 import Data.Singletons (Sing, SingKind (..))
 import Data.Singletons.Prelude.List (SList (..))
 import Data.Typeable (Typeable)
-import GHC.TypeLits (Symbol, TypeError, symbolVal, type (+), type (-))
+import GHC.TypeLits (Symbol, TypeError, type (+), type (-))
 import GHC.TypeNats (Nat)
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.GraduallyTyped.Prelude (All, Fst, LiftTimesMaybe, MapMaybe, PrependMaybe, Reverse, Snd, forgetIsChecked)
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SBy (..), SDim (..), SName (..), SSelectDim (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:|:))
+import Torch.GraduallyTyped.Prelude (Fst, LiftTimesMaybe, MapMaybe, PrependMaybe, Reverse, Snd, forgetIsChecked)
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SBy (..), SDim (..), SName (..), SSelectDim (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Unify (type (<+>))
 import Type.Errors.Pretty (type (%), type (<>))
 import Unsafe.Coerce (unsafeCoerce)
@@ -195,11 +194,11 @@ sGetDim (SSelectDim by@SByName) (SShape SNil) =
    in throwM $ GetDimError by'
 sGetDim (SSelectDim by@SByName) (SShape (SCons dim@(SDim (SUncheckedName name) _) dims)) =
   let ByName name' = fromSing by
-   in if name == name' then pure (unsafeCoerce dim) else unsafeCoerce <$> sGetDim (SSelectDim by) (SShape dims)
+   in if name == name' then pure (unsafeCoerce @(SDim _) @(SDim dim) dim) else unsafeCoerce @(SDim _) @(SDim dim) <$> sGetDim (SSelectDim by) (SShape dims)
 sGetDim (SSelectDim by@SByName) (SShape (SCons dim@(SDim SName _) dims)) =
   let ByName name' = fromSing by
       Dim name size = (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size)) $ fromSing dim
-   in if name == name' then pure (unsafeCoerce dim) else unsafeCoerce <$> sGetDim (SSelectDim by) (SShape dims)
+   in if name == name' then pure (unsafeCoerce @(SDim _) @(SDim dim) dim) else unsafeCoerce @(SDim _) @(SDim dim) <$> sGetDim (SSelectDim by) (SShape dims)
 sGetDim (SSelectDim by@SByIndex) (SShape dims) =
   go 0 dims
   where
@@ -208,7 +207,7 @@ sGetDim (SSelectDim by@SByIndex) (SShape dims) =
     go :: forall dims. Integer -> SList dims -> m (SDim dim)
     go _ SNil = throwM $ GetDimErrorWithDims by' dims'
     go index (SCons dim dims) =
-      if index' == index then pure (unsafeCoerce dim) else go (index + 1) dims
+      if index' == index then pure (unsafeCoerce @(Sing _) @(SDim dim) dim) else go (index + 1) dims
 
 data GetDimError
   = GetDimError {gdeBy :: By String Integer}
@@ -376,9 +375,9 @@ sUnifyName (SUncheckedName "*") (SUncheckedName name') = pure (SUncheckedName na
 sUnifyName (SUncheckedName name) (SUncheckedName "*") = pure (SUncheckedName name)
 sUnifyName name@SName (SUncheckedName name') = sUnifyName (SUncheckedName . forgetIsChecked $ fromSing name) (SUncheckedName name')
 sUnifyName (SUncheckedName name) name'@SName = sUnifyName (SUncheckedName name) (SUncheckedName . forgetIsChecked $ fromSing name')
-sUnifyName name@SName name'@SName | forgetIsChecked (fromSing name) == forgetIsChecked (fromSing name') = pure (unsafeCoerce name)
-sUnifyName name@SName name'@SName | forgetIsChecked (fromSing name) == "*" = pure (unsafeCoerce name')
-sUnifyName name@SName name'@SName | forgetIsChecked (fromSing name') == "*" = pure (unsafeCoerce name)
+sUnifyName name@SName name'@SName | forgetIsChecked (fromSing name) == forgetIsChecked (fromSing name') = pure (unsafeCoerce @(SName name) @(SName (name <+> name')) name)
+sUnifyName name@SName name'@SName | forgetIsChecked (fromSing name) == "*" = pure (unsafeCoerce @(SName name') @(SName (name <+> name')) name')
+sUnifyName name@SName name'@SName | forgetIsChecked (fromSing name') == "*" = pure (unsafeCoerce @(SName name) @(SName (name <+> name')) name)
 sUnifyName name name' = throwM $ UnifyNameError (forgetIsChecked (fromSing name)) (forgetIsChecked (fromSing name'))
 
 data UnifySizeError = UnifySizeError {useExpect :: Integer, useActual :: Integer}
@@ -402,7 +401,7 @@ sUnifySize ::
 sUnifySize (SUncheckedSize size) (SUncheckedSize size') | size == size' = pure (SUncheckedSize size)
 sUnifySize size@SSize (SUncheckedSize size') = sUnifySize (SUncheckedSize . forgetIsChecked $ fromSing size) (SUncheckedSize size')
 sUnifySize (SUncheckedSize size) size'@SSize = sUnifySize (SUncheckedSize size) (SUncheckedSize . forgetIsChecked $ fromSing size')
-sUnifySize size@SSize size'@SSize | forgetIsChecked (fromSing size) == forgetIsChecked (fromSing size') = pure (unsafeCoerce size)
+sUnifySize size@SSize size'@SSize | forgetIsChecked (fromSing size) == forgetIsChecked (fromSing size') = pure (unsafeCoerce @(SSize size) @(SSize (size <+> size')) size)
 sUnifySize size size' = throwM $ UnifySizeError (forgetIsChecked (fromSing size)) (forgetIsChecked (fromSing size'))
 
 -- | Unify two dimensions.
@@ -439,4 +438,6 @@ sUnifyDim ::
   SDim dim ->
   SDim dim' ->
   m (SDim (dim <+> dim'))
-sUnifyDim (SDim name size) (SDim name' size') = unsafeCoerce . SDim <$> sUnifyName name name' <*> sUnifySize size size'
+sUnifyDim (SDim name size) (SDim name' size') = do
+  dim <- SDim <$> sUnifyName name name' <*> sUnifySize size size'
+  pure $ unsafeCoerce @(SDim _) @(SDim (dim <+> dim')) dim

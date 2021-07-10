@@ -14,6 +14,8 @@ import Test.Hspec
 import Test.Hspec.Hedgehog (MonadGen, assert, forAll, hedgehog, (===))
 import qualified Test.QuickCheck as QC
 import Torch.GraduallyTyped
+import Prelude hiding (all)
+import qualified Prelude as P
 
 toCPUTensor ::
   (TensorLike a dType dims, MonadThrow m) =>
@@ -109,21 +111,21 @@ spec = describe "TensorLike" $ do
         xs :: [Float] <- forAll $ Gen.list (Range.linear 0 1000) genReal
         t <- toCPUTensor xs
         let xs' = fromTensor t
-        assert $ all (uncurry (~~)) $ zip xs' xs
+        assert $ P.all (uncurry (~~)) $ zip xs' xs
 
     it "[Double]" $
       hedgehog $ do
         xs :: [Double] <- forAll $ Gen.list (Range.linear 0 1000) genReal
         t <- toCPUTensor xs
         let xs' = fromTensor t
-        assert $ all (uncurry (~~)) $ zip xs' xs
+        assert $ P.all (uncurry (~~)) $ zip xs' xs
 
     it "(Vector Float)" $
       hedgehog $ do
         xs :: V.Vector Double <- (V.fromList <$>) <$> forAll $ Gen.list (Range.linear 0 1000) genReal
         t <- toCPUTensor xs
         let xs' = fromTensor t
-        assert $ all (uncurry (~~)) $ V.zip xs' xs
+        assert $ P.all (uncurry (~~)) $ V.zip xs' xs
 
     it "Tensor" $ do
       let t =
@@ -134,7 +136,8 @@ spec = describe "TensorLike" $ do
               @('DataType 'Int64)
               @('Shape '[ 'Dim ('Name "*") ('Size 4), 'Dim ('Name "*") ('Size 8)])
       t' <- toTensor @('Gradient 'WithoutGradient) @('Layout 'Dense) @('Device 'CPU) t
-      fromTensor (allT $ t' ==. t) `shouldBe` True
+      all' <- all $ t' ==. t
+      fromTensor all' `shouldBe` True
       let t'' =
             fromTensor
               @( Tensor
@@ -145,7 +148,8 @@ spec = describe "TensorLike" $ do
                    ('Shape '[ 'Dim ('Name "*") ('Size 4), 'Dim ('Name "*") ('Size 8)])
                )
               t'
-      fromTensor (allT $ t'' ==. t) `shouldBe` True
+      all'' <- all $ t'' ==. t
+      fromTensor all'' `shouldBe` True
 
   it "dims ([[]] :: [[[Int]]]) = 1x0x0" $ do
     x <- toCPUTensor @[[[Int]]] [[]]
