@@ -13,8 +13,8 @@ module Torch.GraduallyTyped.NN.Transformer.T5
     module Torch.GraduallyTyped.NN.Transformer.T5.ThreeB,
     module Torch.GraduallyTyped.NN.Transformer.T5.ElevenB,
     module Torch.GraduallyTyped.NN.Transformer.T5.Generation,
-    -- testForwardT5Small,
-    -- testForwardByT5Small,
+    testForwardT5Small,
+    testForwardByT5Small,
   )
 where
 
@@ -22,7 +22,7 @@ import Control.Monad.State (evalStateT)
 import Data.Singletons.Prelude.List (SList (..))
 import Test.HUnit.Approx (assertApproxEqual)
 import Torch.GraduallyTyped.DType (SDType (..), SDataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
+import Torch.GraduallyTyped.Device (SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (fromStateDict), stateDictFromPretrained)
 import Torch.GraduallyTyped.NN.Transformer.T5.Base
@@ -32,9 +32,9 @@ import Torch.GraduallyTyped.NN.Transformer.T5.Generation
 import Torch.GraduallyTyped.NN.Transformer.T5.Large
 import Torch.GraduallyTyped.NN.Transformer.T5.Small
 import Torch.GraduallyTyped.NN.Transformer.T5.ThreeB
-import Torch.GraduallyTyped.NN.Transformer.Type (TransformerHead (WithLMHead), STransformerHead (SWithLMHead))
+import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead (SWithLMHead))
 import Torch.GraduallyTyped.Random (sMkGenerator)
-import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
+import Torch.GraduallyTyped.RequiresGradient (SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Type (SName (..), SShape (..), SSize (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..), TensorSpec (..))

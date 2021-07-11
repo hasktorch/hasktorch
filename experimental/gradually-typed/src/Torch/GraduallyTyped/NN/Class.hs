@@ -81,9 +81,6 @@ class
 instance HasForward () input generatorDevice input generatorDevice where
   forward _ = (pure .) . (,)
 
--- foo :: forall a m. MonadThrow m => IO a -> m a
--- foo a = unsafePerformIO $ (pure @m <$> a) `catch` (\e@(SomeException _) -> pure . throwM $ e)
-
 instance
   ( HasForward a input generatorDevice output' generatorOutputDevice',
     HasForward b output' generatorOutputDevice' output generatorOutputDevice

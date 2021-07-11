@@ -45,6 +45,7 @@ import qualified Torch.Internal.Managed.Native as ATen
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
 import qualified Torch.Internal.Type as ATen
 import Type.Errors.Pretty (ToErrorMessage, type (%), type (<>))
+import Torch.Internal.GC (unsafeThrowableIO)
 
 -- $setup
 -- >>> import Data.Singletons.Prelude.List (SList (..))
@@ -387,8 +388,8 @@ sTranspose selectDim0 selectDim1 input = do
   let by0 = forgetIsChecked . fromSing $ selectDim0
       by1 = forgetIsChecked . fromSing $ selectDim1
   case (by0, by1) of
-    (ByName name0, ByName name1) -> pure . unsafePerformIO $ cast3 ATen.transpose_tnn input name0 name1
-    (ByIndex index0, ByIndex index1) -> pure . unsafePerformIO $ cast3 ATen.transpose_tll input (fromIntegral index0 :: Int) (fromIntegral index1 :: Int)
+    (ByName name0, ByName name1) -> unsafeThrowableIO $ cast3 ATen.transpose_tnn input name0 name1
+    (ByIndex index0, ByIndex index1) -> unsafeThrowableIO $ cast3 ATen.transpose_tll input (fromIntegral index0 :: Int) (fromIntegral index1 :: Int)
     _ -> throwM $ TransposeMixedSelectorsError by0 by1
 
 data TransposeError = TransposeMixedSelectorsError {teBy0 :: By String Integer, teBy1 :: By String Integer}
@@ -533,8 +534,8 @@ sSelect sSelectDim sIndex input = do
       selectDim = forgetIsChecked . fromSing $ sSelectDim
   if index < (fromInteger . dimSize $ dim)
     then case selectDim of
-      ByName name -> pure . unsafePerformIO $ cast3 ATen.tensor_select_nl input name (fromIntegral index :: Int)
-      ByIndex dimIndex -> pure . unsafePerformIO $ cast3 ATen.tensor_select_ll input (fromIntegral dimIndex :: Int) (fromIntegral index :: Int)
+      ByName name -> unsafeThrowableIO $ cast3 ATen.tensor_select_nl input name (fromIntegral index :: Int)
+      ByIndex dimIndex -> unsafeThrowableIO $ cast3 ATen.tensor_select_ll input (fromIntegral dimIndex :: Int) (fromIntegral index :: Int)
     else throwM $ IndexOutOfBoundError index dim
 
 data IndexOutOfBoundError = IndexOutOfBoundError {ioobeIndex :: Natural, ioobeDim :: Dim String Integer}

@@ -49,6 +49,7 @@ import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SSize, Shape (..), 
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..), TensorSpec (..))
 import Torch.GraduallyTyped.Unify (type (<+>))
 import Torch.Internal.Cast (cast2, cast3, cast4)
+import Torch.Internal.GC (unsafeThrowableIO)
 import qualified Torch.Internal.Managed.TensorFactories as ATen
 
 -- $setup
@@ -181,7 +182,7 @@ sRandn ::
   TensorSpec gradient layout device dataType shape ->
   Generator generatorDevice ->
   m (Tensor gradient layout (device <+> generatorDevice) dataType shape, Generator (device <+> generatorDevice))
-sRandn TensorSpec {..} UnsafeGenerator {..} = pure . unsafePerformIO $ do
+sRandn TensorSpec {..} UnsafeGenerator {..} = unsafeThrowableIO $ do
   let opts = tensorOptions tsGradient tsLayout tsDevice tsDataType
       dims = tensorDims tsShape
   (t, nextGeneratorSeed, nextGeneratorState) <-

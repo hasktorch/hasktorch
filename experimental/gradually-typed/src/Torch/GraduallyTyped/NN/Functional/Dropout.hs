@@ -19,11 +19,11 @@ module Torch.GraduallyTyped.NN.Functional.Dropout where
 
 import Control.Monad.Catch (MonadThrow)
 import Foreign.ForeignPtr (ForeignPtr)
-import System.IO.Unsafe (unsafePerformIO)
 import Torch.GraduallyTyped.Random (Generator (..), withGenerator)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
 import Torch.GraduallyTyped.Unify (type (<+>))
 import Torch.Internal.Cast (cast3)
+import Torch.Internal.GC (unsafeThrowableIO)
 import qualified Torch.Internal.Managed.Native as ATen (_fused_dropout_tdG)
 import qualified Torch.Internal.Managed.Type.Tuple as ATen ()
 import qualified Torch.Internal.Type as ATen (Tensor)
@@ -45,7 +45,7 @@ dropout ::
   Generator generatorDevice ->
   -- | output
   m (Tensor gradient layout (device <+> generatorDevice) dataType shape, Generator (device <+> generatorDevice))
-dropout p tensor UnsafeGenerator {..} = pure . unsafePerformIO $ do
+dropout p tensor UnsafeGenerator {..} = unsafeThrowableIO $ do
   (t, nextGeneratorSeed, nextGeneratorState) <-
     withGenerator
       ( \gptr -> do
