@@ -1,10 +1,9 @@
-
-
 {-# LANGUAGE OverloadedStrings #-}
+
 import Torch
 import Torch.Script as S
 
-main  = do
+main = do
   -- load parameters
   S.IVGenericDict params <- pickleLoad "mnist.dict.pt"
 
@@ -15,9 +14,9 @@ main  = do
 
   -- load torchscript module
   tsModule <- S.loadScript WithoutRequiredGrad "mnist.ts.pt"
-  
+
   -- perform inference computation
-  let result = forward tsModule [ivt] 
+  let result = forward tsModule [ivt]
   print result
 
   putStrLn "Done"

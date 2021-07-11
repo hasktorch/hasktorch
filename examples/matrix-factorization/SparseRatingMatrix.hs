@@ -16,7 +16,7 @@ import Torch.NN
     sample,
   )
 import Torch.Optim (sgd)
-import Torch.Tensor ((!), Tensor, asTensor, indexSelect, reshape, toDouble, toInt)
+import Torch.Tensor (Tensor, asTensor, indexSelect, reshape, toDouble, toInt, (!))
 import Torch.TensorFactories (randintIO')
 
 data RatingBatch = RatingBatch Items Users RatingValues deriving (Show)
@@ -27,8 +27,7 @@ type Users = [Int]
 
 type RatingValues = [Double]
 
-data RatingsSpec
-  = RatingsSpec {usersNumber :: Int, itemsNumber :: Int, ratingsNumber :: Int}
+data RatingsSpec = RatingsSpec {usersNumber :: Int, itemsNumber :: Int, ratingsNumber :: Int}
 
 instance Randomizable RatingsSpec RatingBatch where
   sample (RatingsSpec n m l) = do

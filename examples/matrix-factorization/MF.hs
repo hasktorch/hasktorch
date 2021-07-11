@@ -19,12 +19,11 @@ import Torch.NN
 import Torch.Tensor (Tensor)
 import Torch.TensorFactories (randnIO')
 
-data MatrixFactSpec
-  = MatrixFactSpec
-      { dim1 :: Int, -- that is n when R has n x m shape
-        dim2 :: Int, -- that is m when R has n x m shape
-        common_dim :: Int -- that is k when U has n x k shape
-      }
+data MatrixFactSpec = MatrixFactSpec
+  { dim1 :: Int, -- that is n when R has n x m shape
+    dim2 :: Int, -- that is m when R has n x m shape
+    common_dim :: Int -- that is k when U has n x k shape
+  }
   deriving (Show, Eq)
 
 data MatrixFact = MatrixFact {u :: Parameter, v :: Parameter}

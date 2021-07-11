@@ -19,9 +19,9 @@ import Pipes
 import qualified Pipes.Prelude as P
 import System.Environment
 import Torch
-import Torch.Tensor
 import Torch.Lens
 import Torch.Serialize
+import Torch.Tensor
 import Torch.Typed.Vision (initMnist)
 import qualified Torch.Vision as V
 import Prelude hiding (exp)

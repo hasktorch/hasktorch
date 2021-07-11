@@ -20,7 +20,7 @@ import Torch (ATenTensor)
 import Torch.Data.Pipeline
 import Torch.Internal.Class (Castable)
 import Torch.Typed
-import Torch.Typed.Vision (mnistData, MNIST(..))
+import Torch.Typed.Vision (MNIST (..), mnistData)
 import Prelude hiding (length)
 
 foldLoop ::
