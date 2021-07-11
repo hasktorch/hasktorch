@@ -218,17 +218,23 @@ instance
     (b, g'') <- initialize bSpec g'
     pure ((a, b), g'')
 
-type instance ModelSpec (VS.Vector n a) = VS.Vector n (ModelSpec a)
+data VectorSpec (n :: Nat) (a :: Type) where
+  VectorSpec ::
+    forall n a.
+    SNat n ->
+    VS.Vector n (ModelSpec a) ->
+    VectorSpec n a
+
+type instance ModelSpec (VS.Vector n a) = VectorSpec n a
 
 instance
   ( HasInitialize a generatorDevice output generatorOutputDevice,
     HasInitialize a generatorOutputDevice output generatorOutputDevice,
-    KnownNat n,
     n' ~ (n + 1)
   ) =>
   HasInitialize (VS.Vector n' a) generatorDevice (VS.Vector n' output) generatorOutputDevice
   where
-  initialize (VGS.Vector specs) g = do
+  initialize (VectorSpec SNat (VGS.Vector specs)) g = do
     let Just (spec, specs') = V.uncons specs
     (a, g') <- initialize spec g
     (as, g'''') <-
@@ -313,10 +319,10 @@ instance
     put stateDict'
 
 instance
-  (KnownNat n, HasStateDict a) =>
+  HasStateDict a =>
   HasStateDict (VS.Vector n a)
   where
-  fromStateDict specs k = do
+  fromStateDict (VectorSpec SNat specs) k = do
     let i :: Int = fromIntegral (natVal (Proxy :: Proxy n))
         fromStateDict' (spec, i') = fromStateDict spec (k <> show i' <> ".")
     traverse fromStateDict' $ VS.zip specs (VGS.Vector $ V.fromList [0 .. i - 1])

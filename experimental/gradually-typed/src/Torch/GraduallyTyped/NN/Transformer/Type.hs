@@ -41,7 +41,6 @@ module Torch.GraduallyTyped.NN.Transformer.Type where
 import Control.Monad.Catch (MonadThrow)
 import Data.Singletons.Prelude.List (SList (SNil))
 import Data.Singletons.TH (SingKind (fromSing), genSingletons)
-import Data.Singletons.TypeLits (Nat)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
@@ -259,8 +258,9 @@ mkTransformerDecoderAttentionMask transformerDataType attentionMaskBias paddingM
         unsqueeze @('SelectDim ('ByIndex 0))
           . bool
           . triu 1
-          $ sOnes (SGradient SWithoutGradient) pmLayout pmDevice transformerDataType (SShape $ pmSeqDim :|: pmSeqDim :|: SNil)
-      emptyMask = sZeros (SGradient SWithoutGradient) pmLayout pmDevice transformerDataType (SShape $ SName @"*" :&: SSize @1 :|: pmSeqDim :|: pmSeqDim :|: SNil)
+          . sOnes
+          $ TensorSpec (SGradient SWithoutGradient) pmLayout pmDevice transformerDataType (SShape $ pmSeqDim :|: pmSeqDim :|: SNil)
+      emptyMask = sZeros $ TensorSpec (SGradient SWithoutGradient) pmLayout pmDevice transformerDataType (SShape $ SName @"*" :&: SSize @1 :|: pmSeqDim :|: pmSeqDim :|: SNil)
       booleanMask = causalMask `logicalOr` unsqueeze @('SelectDim ('ByIndex 1)) paddingMask
   pure $
     maskedFill
@@ -307,7 +307,7 @@ mkTransformerCrossAttentionMask transformerDataType decoderInputShape attentionM
       pmDevice = sDevice paddingMask
       pmShape = sShape paddingMask
   pmSeqDim <- sGetDim (SSelectDim $ SByIndex @1) pmShape
-  let emptyMask = sZeros (SGradient SWithoutGradient) pmLayout pmDevice transformerDataType (SShape $ SName @"*" :&: SSize @1 :|: decoderInputSeqDim :|: pmSeqDim :|: SNil)
+  let emptyMask = sZeros $ TensorSpec (SGradient SWithoutGradient) pmLayout pmDevice transformerDataType (SShape $ SName @"*" :&: SSize @1 :|: decoderInputSeqDim :|: pmSeqDim :|: SNil)
   pure $ maskedFill (unsqueeze @('SelectDim ('ByIndex 1)) paddingMask) attentionMaskBias emptyMask
 
 data ShiftRight fillValue where
@@ -326,7 +326,7 @@ instance
     (ShiftRight fillValue)
     generatorDevice
   where
-  initialize spec = (spec,)
+  initialize spec = pure . (spec,)
 
 instance HasStateDict (ShiftRight fillValue) where
   fromStateDict spec _ = pure spec
@@ -367,5 +367,5 @@ instance
         inputDataType = sDataType input
         inputShape = sShape input
     inputBatchDim <- sGetDim (SSelectDim $ SByIndex @0) inputShape
-    let filler = sFull (SGradient SWithoutGradient) inputLayout inputDevice inputDataType (SShape $ inputBatchDim :|: SName @"*" :&: SSize @1 :|: SNil) fillValue
+    let filler = sFull (TensorSpec (SGradient SWithoutGradient) inputLayout inputDevice inputDataType (SShape $ inputBatchDim :|: SName @"*" :&: SSize @1 :|: SNil)) fillValue
     pure (cat @('SelectDim ('ByIndex 1)) (filler :. input :. HNil), g)
