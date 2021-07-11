@@ -262,46 +262,54 @@ instance
   where
   initialize (MultiHeadAttentionSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP) generator =
     let generator' = sGeneratorToDevice device generator
+        qInProjWithoutBiasSpec = LinearSpec SWithoutBias gradient device dataType queryEmbedDim embedDim
+        qInProjWithBiasSpec = LinearSpec SWithBias gradient device dataType queryEmbedDim embedDim
         qInProj = IxStateT . initialize @qInProj $ case style of
-          ST5 -> LinearSpec SWithoutBias gradient device dataType queryEmbedDim embedDim
-          SByT5 -> LinearSpec SWithoutBias gradient device dataType queryEmbedDim embedDim
-          SBART -> LinearSpec SWithBias gradient device dataType queryEmbedDim embedDim
-          SMBART -> LinearSpec SWithBias gradient device dataType queryEmbedDim embedDim
-          SPegasus -> LinearSpec SWithBias gradient device dataType queryEmbedDim embedDim
-          SBERT -> LinearSpec SWithBias gradient device dataType queryEmbedDim embedDim
-          SRoBERTa -> LinearSpec SWithBias gradient device dataType queryEmbedDim embedDim
-          SGPT2 -> LinearSpec SWithBias gradient device dataType queryEmbedDim embedDim
+          ST5 -> qInProjWithoutBiasSpec
+          SByT5 -> qInProjWithoutBiasSpec
+          SBART -> qInProjWithBiasSpec
+          SMBART -> qInProjWithBiasSpec
+          SPegasus -> qInProjWithBiasSpec
+          SBERT -> qInProjWithBiasSpec
+          SRoBERTa -> qInProjWithBiasSpec
+          SGPT2 -> undefined
+        kInProjWithoutBiasSpec = LinearSpec SWithoutBias gradient device dataType keyEmbedDim embedDim
+        kInProjWithBiasSpec = LinearSpec SWithBias gradient device dataType keyEmbedDim embedDim
         kInProj = IxStateT $
           initialize @kInProj $ case style of
-            ST5 -> LinearSpec SWithoutBias gradient device dataType keyEmbedDim embedDim
-            SByT5 -> LinearSpec SWithoutBias gradient device dataType keyEmbedDim embedDim
-            SBART -> LinearSpec SWithBias gradient device dataType keyEmbedDim embedDim
-            SMBART -> LinearSpec SWithBias gradient device dataType keyEmbedDim embedDim
-            SPegasus -> LinearSpec SWithBias gradient device dataType keyEmbedDim embedDim
-            SBERT -> LinearSpec SWithBias gradient device dataType keyEmbedDim embedDim
-            SRoBERTa -> LinearSpec SWithBias gradient device dataType keyEmbedDim embedDim
-            SGPT2 -> LinearSpec SWithBias gradient device dataType keyEmbedDim embedDim
+            ST5 -> kInProjWithoutBiasSpec
+            SByT5 -> kInProjWithoutBiasSpec
+            SBART -> kInProjWithBiasSpec
+            SMBART -> kInProjWithBiasSpec
+            SPegasus -> kInProjWithBiasSpec
+            SBERT -> kInProjWithBiasSpec
+            SRoBERTa -> kInProjWithBiasSpec
+            SGPT2 -> undefined
+        vInProjWithoutBiasSpec = LinearSpec SWithoutBias gradient device dataType valueEmbedDim embedDim
+        vInProjWithBiasSpec = LinearSpec SWithBias gradient device dataType valueEmbedDim embedDim
         vInProj = IxStateT $
           initialize @vInProj $ case style of
-            ST5 -> LinearSpec SWithoutBias gradient device dataType valueEmbedDim embedDim
-            SByT5 -> LinearSpec SWithoutBias gradient device dataType valueEmbedDim embedDim
-            SBART -> LinearSpec SWithBias gradient device dataType valueEmbedDim embedDim
-            SMBART -> LinearSpec SWithBias gradient device dataType valueEmbedDim embedDim
-            SPegasus -> LinearSpec SWithBias gradient device dataType valueEmbedDim embedDim
-            SBERT -> LinearSpec SWithBias gradient device dataType valueEmbedDim embedDim
-            SRoBERTa -> LinearSpec SWithBias gradient device dataType valueEmbedDim embedDim
-            SGPT2 -> LinearSpec SWithBias gradient device dataType valueEmbedDim embedDim
+            ST5 -> vInProjWithoutBiasSpec
+            SByT5 -> vInProjWithoutBiasSpec
+            SBART -> vInProjWithBiasSpec
+            SMBART -> vInProjWithBiasSpec
+            SPegasus -> vInProjWithBiasSpec
+            SBERT -> vInProjWithBiasSpec
+            SRoBERTa -> vInProjWithBiasSpec
+            SGPT2 -> undefined
+        outProjWithoutBiasSpec = LinearSpec SWithoutBias gradient device dataType embedDim queryEmbedDim
+        outProjWithBiasSpec = LinearSpec SWithBias gradient device dataType embedDim queryEmbedDim
         outProj = IxStateT $
           initialize @outProj $ case style of
-            ST5 -> LinearSpec SWithoutBias gradient device dataType embedDim queryEmbedDim
-            SByT5 -> LinearSpec SWithoutBias gradient device dataType embedDim queryEmbedDim
-            SBART -> LinearSpec SWithBias gradient device dataType embedDim queryEmbedDim
-            SMBART -> LinearSpec SWithBias gradient device dataType embedDim queryEmbedDim
-            SPegasus -> LinearSpec SWithBias gradient device dataType embedDim queryEmbedDim
-            SBERT -> LinearSpec SWithBias gradient device dataType embedDim queryEmbedDim
-            SRoBERTa -> LinearSpec SWithBias gradient device dataType embedDim queryEmbedDim
-            SGPT2 -> LinearSpec SWithBias gradient device dataType embedDim queryEmbedDim
-        dropout = IxStateT $ initialize (Dropout dropoutP)
+            ST5 -> outProjWithoutBiasSpec
+            SByT5 -> outProjWithoutBiasSpec
+            SBART -> outProjWithBiasSpec
+            SMBART -> outProjWithBiasSpec
+            SPegasus -> outProjWithBiasSpec
+            SBERT -> outProjWithBiasSpec
+            SRoBERTa -> outProjWithBiasSpec
+            SGPT2 -> outProjWithBiasSpec
+        dropout = IxStateT . initialize $ Dropout dropoutP
         gmha =
           GMultiHeadAttention
             <<$>> ireturn headDim
@@ -762,9 +770,9 @@ testMHA = do
       dropoutP :: Double = 0.0
   let g = sMkGenerator generatorDevice 0
   (mha, g') <-
-        initialize
-          (MultiHeadAttentionSpec ST5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
-          g
+    initialize
+      (MultiHeadAttentionSpec ST5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP)
+      g
   mha' <- flip evalStateT Map.empty $ do
     toStateDict "mha." mha
     fromStateDict

@@ -45,7 +45,7 @@
 module Torch.GraduallyTyped.NN.Transformer.SelfAttention where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
-import Control.Monad.Indexed.State (IxState (..), IxStateT (..))
+import Control.Monad.Indexed.State (IxStateT (..))
 import Control.Monad.State (evalStateT)
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
@@ -63,13 +63,13 @@ import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..), LayerNormSpec (..)
 import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (MultiHeadAttention, MultiHeadAttentionSpec (MultiHeadAttentionSpec))
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..), SHasBias (..))
-import Torch.GraduallyTyped.Random (sMkGenerator)
+import Torch.GraduallyTyped.Random (sGeneratorToDevice, sMkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, SName (..), SShape (..), SSize (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
-import Torch.GraduallyTyped.Tensor.Type (SGetDim, Tensor)
+import Torch.GraduallyTyped.Tensor.Type (SGetDim, Tensor, TensorSpec (..))
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 
 -- | Generic self-attention layer.
@@ -180,37 +180,38 @@ type family
 
 instance
   ( multiHeadAttention ~ SAMultiheadAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim,
-    multiHeadAttention' ~ SAMultiheadAttentionF style gradient (device <+> generatorDevice) dataType headDim headEmbedDim embedDim queryEmbedDim,
-    HasInitialize multiHeadAttention generatorDevice multiHeadAttention' generatorOutputDevice,
-    layerNorm ~ SALayerNormF style gradient (device <+> generatorDevice) dataType queryEmbedDim,
-    layerNorm' ~ SALayerNormF style gradient (device <+> generatorDevice) dataType queryEmbedDim,
-    HasInitialize layerNorm generatorOutputDevice layerNorm' generatorOutputDevice,
+    HasInitialize multiHeadAttention device multiHeadAttention device,
+    layerNorm ~ SALayerNormF style gradient device dataType queryEmbedDim,
+    HasInitialize layerNorm device layerNorm device,
     dropout ~ SADropoutF style,
-    HasInitialize dropout generatorOutputDevice dropout generatorOutputDevice,
-    output ~ SelfAttention style gradient (device <+> generatorDevice) dataType headDim headEmbedDim embedDim queryEmbedDim,
-    generatorOutputDevice ~ (device <+> generatorDevice)
+    HasInitialize dropout device dropout device
   ) =>
   HasInitialize
     (SelfAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim)
     generatorDevice
-    output
-    generatorOutputDevice
+    (SelfAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim)
+    device
   where
-  initialize (SelfAttentionSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP eps) =
-    let multiHeadAttention = IxState . initialize @multiHeadAttention $ MultiHeadAttentionSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP
-        layerNorm = IxState . initialize @layerNorm @generatorOutputDevice @layerNorm' @generatorOutputDevice $ case style of
-          ST5 -> LayerNormSpec SWithoutBias gradient device dataType (SShape $ queryEmbedDim :|: SNil) eps
-          SByT5 -> LayerNormSpec SWithoutBias gradient device dataType (SShape $ queryEmbedDim :|: SNil) eps
-          SBART -> LayerNormSpec SWithBias gradient device dataType (SShape $ queryEmbedDim :|: SNil) eps
-          SMBART -> LayerNormSpec SWithBias gradient device dataType (SShape $ queryEmbedDim :|: SNil) eps
-          SPegasus -> LayerNormSpec SWithBias gradient device dataType (SShape $ queryEmbedDim :|: SNil) eps
-          SBERT -> LayerNormSpec SWithBias gradient device dataType (SShape $ queryEmbedDim :|: SNil) eps
-          SRoBERTa -> LayerNormSpec SWithBias gradient device dataType (SShape $ queryEmbedDim :|: SNil) eps
+  initialize (SelfAttentionSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP eps) generator =
+    let generator' = sGeneratorToDevice device generator
+        multiHeadAttention = IxStateT . initialize @multiHeadAttention $ MultiHeadAttentionSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP
+        layerNormWithoutBiasSpec = LayerNormSpec SWithoutBias gradient device dataType (SShape $ queryEmbedDim :|: SNil) eps
+        layerNormWithBiasSpec = LayerNormSpec SWithBias gradient device dataType (SShape $ queryEmbedDim :|: SNil) eps
+        layerNorm = IxStateT . initialize @layerNorm $ case style of
+          ST5 -> layerNormWithoutBiasSpec
+          SByT5 -> layerNormWithoutBiasSpec
+          SBART -> layerNormWithBiasSpec
+          SMBART -> layerNormWithBiasSpec
+          SPegasus -> layerNormWithBiasSpec
+          SBERT -> layerNormWithBiasSpec
+          SRoBERTa -> layerNormWithBiasSpec
           SGPT2 -> undefined
-        dropout = IxState . initialize @dropout $ Dropout dropoutP
-     in runIxState $
-          (GSelfAttention <<$>> multiHeadAttention <<*>> layerNorm <<*>> dropout)
-            >>>= ireturn . SelfAttention
+        dropout = IxStateT . initialize @dropout $ Dropout dropoutP
+     in runIxStateT
+          ( (GSelfAttention <<$>> multiHeadAttention <<*>> layerNorm <<*>> dropout)
+              >>>= ireturn . SelfAttention
+          )
+          generator'
 
 instance
   SingI style =>
@@ -332,6 +333,7 @@ instance
         >>>= IxStateT . forward saDropout
         >>>= ireturn . (query `add`)
 
+testSA :: IO _
 testSA = do
   let gradient = SGradient SWithGradient
       device = SDevice SCPU
@@ -343,11 +345,11 @@ testSA = do
       queryEmbedDim = SName @"*" :&: SSize @512
       dropoutP :: Double = 0.0
       eps :: Double = 1e-6
-  g <- sMkGenerator generatorDevice 0
-  let (sa, g') =
-        initialize
-          (SelfAttentionSpec ST5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP eps)
-          g
+  let g = sMkGenerator generatorDevice 0
+  (sa, g') <-
+    initialize
+      (SelfAttentionSpec ST5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP eps)
+      g
   sa' <- flip evalStateT Map.empty $ do
     toStateDict "sa." sa
     fromStateDict
@@ -355,7 +357,7 @@ testSA = do
       "sa."
   let batchDim = SName @"*" :&: SSize @1
       seqDim = SName @"*" :&: SSize @4
-      sOnes' = sOnes (SGradient SWithoutGradient) (SLayout SDense) device
+      sOnes' = (sOnes .) . TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device
       query = sOnes' dataType (SShape $ batchDim :|: seqDim :|: queryEmbedDim :|: SNil)
       attentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
   (output, _) <- forward sa' (query, attentionBias) g'

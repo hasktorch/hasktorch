@@ -18,7 +18,7 @@
 module Torch.GraduallyTyped.NN.Transformer.LMHead where
 
 import Control.Monad.Indexed (IxPointed (..), (>>>=))
-import Control.Monad.Indexed.State (IxState (..), IxStateT (..))
+import Control.Monad.Indexed.State (IxStateT (..))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI (..), SingKind (fromSing))
@@ -28,18 +28,19 @@ import Torch.GraduallyTyped.DType (DType, DataType, SDataType)
 import Torch.GraduallyTyped.Device (Device, DeviceType, SDevice)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Activation (Gelu (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
-import Torch.GraduallyTyped.NN.Linear (Linear (..))
-import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..))
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec)
+import Torch.GraduallyTyped.NN.Linear (Linear (..), LinearSpec (..))
+import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..), LayerNormSpec (..))
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
-import Torch.GraduallyTyped.NN.Type (HasBias (..))
+import Torch.GraduallyTyped.NN.Type (HasBias (..), SHasBias (..))
 import Torch.GraduallyTyped.Prelude (forgetIsChecked)
+import Torch.GraduallyTyped.Random (sGeneratorToDevice)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient)
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, SName (..), SShape (..), SSize (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sZeros)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add, divScalar)
-import Torch.GraduallyTyped.Tensor.Type (Tensor)
+import Torch.GraduallyTyped.Tensor.Type (Tensor, TensorSpec (..))
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 
 data
@@ -82,6 +83,28 @@ newtype
       (LMHeadDecoderF style gradient device dataType inputEmbedDim vocabDim)
       (LMHeadBiasF style gradient device dataType vocabDim) ->
     LMHead style gradient device dataType inputEmbedDim vocabDim
+
+data
+  LMHeadSpec
+    (style :: TransformerStyle)
+    (gradient :: Gradient RequiresGradient)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (vocabDim :: Dim (Name Symbol) (Size Nat))
+  where
+  LMHeadSpec ::
+    forall style gradient device dataType inputEmbedDim vocabDim.
+    STransformerStyle style ->
+    SGradient gradient ->
+    SDevice device ->
+    SDataType dataType ->
+    SDim inputEmbedDim ->
+    SDim vocabDim ->
+    Double ->
+    LMHeadSpec style gradient device dataType inputEmbedDim vocabDim
+
+type instance ModelSpec (LMHead style gradient device dataType inputEmbedDim vocabDim) = LMHeadSpec style gradient device dataType inputEmbedDim vocabDim
 
 type family
   LMHeadDenseF
@@ -165,165 +188,100 @@ type family
   LMHeadBiasF 'BERT _ _ _ _ = ()
   LMHeadBiasF 'RoBERTa gradient device dataType vocabDim = LMHeadBiasF 'BERT gradient device dataType vocabDim
 
-type family
-  HasInitializeLMHeadDenseInputF
-    (style :: TransformerStyle)
-    (gradient :: Gradient RequiresGradient)
-    (device :: Device (DeviceType Nat))
-    (dataType :: DataType DType)
-    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (vocabDim :: Dim (Name Symbol) (Size Nat)) ::
-    Type
-  where
-  HasInitializeLMHeadDenseInputF 'T5 _ _ _ _ _ = ()
-  HasInitializeLMHeadDenseInputF 'ByT5 gradient device dataType inputEmbedDim vocabDim = HasInitializeLMHeadDenseInputF 'T5 gradient device dataType inputEmbedDim vocabDim
-  HasInitializeLMHeadDenseInputF 'BART _ _ _ _ _ = ()
-  HasInitializeLMHeadDenseInputF 'MBART gradient device dataType inputEmbedDim vocabDim = HasInitializeLMHeadDenseInputF 'BART gradient device dataType inputEmbedDim vocabDim
-  HasInitializeLMHeadDenseInputF 'Pegasus gradient device dataType inputEmbedDim vocabDim = HasInitializeLMHeadDenseInputF 'BART gradient device dataType inputEmbedDim vocabDim
-  HasInitializeLMHeadDenseInputF 'BERT gradient device dataType inputEmbedDim _ = (SGradient gradient, SDevice device, SDataType dataType, SDim inputEmbedDim, SDim inputEmbedDim)
-  HasInitializeLMHeadDenseInputF 'RoBERTa gradient device dataType inputEmbedDim vocabDim = HasInitializeLMHeadDenseInputF 'BERT gradient device dataType inputEmbedDim vocabDim
-
-type family
-  HasInitializeLMHeadActivationInputF
-    (style :: TransformerStyle)
-    (gradient :: Gradient RequiresGradient)
-    (device :: Device (DeviceType Nat))
-    (dataType :: DataType DType)
-    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (vocabDim :: Dim (Name Symbol) (Size Nat)) ::
-    Type
-  where
-  HasInitializeLMHeadActivationInputF 'T5 _ _ _ _ _ = ()
-  HasInitializeLMHeadActivationInputF 'ByT5 gradient device dataType inputEmbedDim vocabDim = HasInitializeLMHeadActivationInputF 'T5 gradient device dataType inputEmbedDim vocabDim
-  HasInitializeLMHeadActivationInputF 'BART _ _ _ _ _ = ()
-  HasInitializeLMHeadActivationInputF 'MBART gradient device dataType inputEmbedDim vocabDim = HasInitializeLMHeadActivationInputF 'BART gradient device dataType inputEmbedDim vocabDim
-  HasInitializeLMHeadActivationInputF 'Pegasus gradient device dataType inputEmbedDim vocabDim = HasInitializeLMHeadActivationInputF 'BART gradient device dataType inputEmbedDim vocabDim
-  HasInitializeLMHeadActivationInputF 'BERT _ _ _ _ _ = ()
-  HasInitializeLMHeadActivationInputF 'RoBERTa gradient device dataType inputEmbedDim vocabDim = HasInitializeLMHeadActivationInputF 'BERT gradient device dataType inputEmbedDim vocabDim
-
-type family
-  HasInitializeLMHeadLayerNormInputF
-    (style :: TransformerStyle)
-    (gradient :: Gradient RequiresGradient)
-    (device :: Device (DeviceType Nat))
-    (dataType :: DataType DType)
-    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (vocabDim :: Dim (Name Symbol) (Size Nat)) ::
-    Type
-  where
-  HasInitializeLMHeadLayerNormInputF 'T5 _ _ _ _ _ = ()
-  HasInitializeLMHeadLayerNormInputF 'ByT5 gradient device dataType inputEmbedDim vocabDim = HasInitializeLMHeadLayerNormInputF 'T5 gradient device dataType inputEmbedDim vocabDim
-  HasInitializeLMHeadLayerNormInputF 'BART _ _ _ _ _ = ()
-  HasInitializeLMHeadLayerNormInputF 'MBART gradient device dataType inputEmbedDim vocabDim = HasInitializeLMHeadLayerNormInputF 'BART gradient device dataType inputEmbedDim vocabDim
-  HasInitializeLMHeadLayerNormInputF 'Pegasus gradient device dataType inputEmbedDim vocabDim = HasInitializeLMHeadLayerNormInputF 'BART gradient device dataType inputEmbedDim vocabDim
-  HasInitializeLMHeadLayerNormInputF 'BERT gradient device dataType inputEmbedDim _ = (SGradient gradient, SDevice device, SDataType dataType, SShape ('Shape '[inputEmbedDim]), Double)
-  HasInitializeLMHeadLayerNormInputF 'RoBERTa gradient device dataType inputEmbedDim vocabDim = HasInitializeLMHeadLayerNormInputF 'BERT gradient device dataType inputEmbedDim vocabDim
-
-type family
-  HasInitializeLMHeadDecoderInputF
-    (style :: TransformerStyle)
-    (gradient :: Gradient RequiresGradient)
-    (device :: Device (DeviceType Nat))
-    (dataType :: DataType DType)
-    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (vocabDim :: Dim (Name Symbol) (Size Nat)) ::
-    Type
-  where
-  HasInitializeLMHeadDecoderInputF 'T5 gradient device dataType inputEmbedDim vocabDim = (SGradient gradient, SDevice device, SDataType dataType, SDim inputEmbedDim, SDim vocabDim)
-  HasInitializeLMHeadDecoderInputF 'ByT5 gradient device dataType inputEmbedDim vocabDim = HasInitializeLMHeadDecoderInputF 'T5 gradient device dataType inputEmbedDim vocabDim
-  HasInitializeLMHeadDecoderInputF 'BART gradient device dataType inputEmbedDim vocabDim = (SGradient gradient, SDevice device, SDataType dataType, SDim inputEmbedDim, SDim vocabDim)
-  HasInitializeLMHeadDecoderInputF 'MBART gradient device dataType inputEmbedDim vocabDim = HasInitializeLMHeadDecoderInputF 'BART gradient device dataType inputEmbedDim vocabDim
-  HasInitializeLMHeadDecoderInputF 'Pegasus gradient device dataType inputEmbedDim vocabDim = HasInitializeLMHeadDecoderInputF 'BART gradient device dataType inputEmbedDim vocabDim
-  HasInitializeLMHeadDecoderInputF 'BERT gradient device dataType inputEmbedDim vocabDim = (SGradient gradient, SDevice device, SDataType dataType, SDim inputEmbedDim, SDim vocabDim)
-  HasInitializeLMHeadDecoderInputF 'RoBERTa gradient device dataType inputEmbedDim vocabDim = HasInitializeLMHeadDecoderInputF 'BERT gradient device dataType inputEmbedDim vocabDim
-
 instance
-  ( SingI style,
-    dense ~ LMHeadDenseF style gradient device dataType inputEmbedDim,
-    HasInitialize dense (HasInitializeLMHeadDenseInputF style gradient device dataType inputEmbedDim vocabDim) generator generator',
+  ( dense ~ LMHeadDenseF style gradient device dataType inputEmbedDim,
+    HasInitialize dense device dense device,
     activation ~ LMHeadActivationF style,
-    HasInitialize activation (HasInitializeLMHeadActivationInputF style gradient device dataType inputEmbedDim vocabDim) generator' generator'',
+    HasInitialize activation device activation device,
     layerNorm ~ LMHeadLayerNormF style gradient device dataType inputEmbedDim,
-    HasInitialize layerNorm (HasInitializeLMHeadLayerNormInputF style gradient device dataType inputEmbedDim vocabDim) generator'' generator''',
+    HasInitialize layerNorm device layerNorm device,
     decoder ~ LMHeadDecoderF style gradient device dataType inputEmbedDim vocabDim,
-    HasInitialize decoder (HasInitializeLMHeadDecoderInputF style gradient device dataType inputEmbedDim vocabDim) generator''' generator'''',
+    HasInitialize decoder device decoder device,
     bias ~ LMHeadBiasF style gradient device dataType vocabDim
   ) =>
   HasInitialize
     (LMHead style gradient device dataType inputEmbedDim vocabDim)
-    (SGradient gradient, SDevice device, SDataType dataType, SDim inputEmbedDim, SDim vocabDim, Double)
-    generator
-    generator''''
+    generatorDevice
+    (LMHead style gradient device dataType inputEmbedDim vocabDim)
+    device
   where
-  initialize (gradient, device, dataType, inputEmbedDim, vocabDim, eps) =
-    let dense = IxState . initialize $
-          case sing @style of
+  initialize (LMHeadSpec style gradient device dataType inputEmbedDim vocabDim eps) generator =
+    let generator' = sGeneratorToDevice device generator
+        denseSpec = LinearSpec SWithBias gradient device dataType inputEmbedDim inputEmbedDim
+        dense = IxStateT . initialize @dense $
+          case style of
             ST5 -> ()
             SByT5 -> ()
             SBART -> ()
             SMBART -> ()
             SPegasus -> ()
-            SBERT -> (gradient, device, dataType, inputEmbedDim, inputEmbedDim)
-            SRoBERTa -> (gradient, device, dataType, inputEmbedDim, inputEmbedDim)
+            SBERT -> denseSpec
+            SRoBERTa -> denseSpec
             SGPT2 -> undefined
-        activation = IxState . initialize $
-          case sing @style of
+        activation = IxStateT . initialize @activation $
+          case style of
             ST5 -> ()
             SByT5 -> ()
             SBART -> ()
             SMBART -> ()
             SPegasus -> ()
-            SBERT -> ()
-            SRoBERTa -> ()
+            SBERT -> Gelu
+            SRoBERTa -> Gelu
             SGPT2 -> undefined
-        layerNorm = IxState . initialize $
-          case sing @style of
+        layerNormWithBiasSpec = LayerNormSpec SWithBias gradient device dataType (SShape $ inputEmbedDim :|: SNil) eps
+        layerNorm = IxStateT . initialize @layerNorm $
+          case style of
             ST5 -> ()
             SByT5 -> ()
             SBART -> ()
             SMBART -> ()
             SPegasus -> ()
-            SBERT -> (gradient, device, dataType, SShape $ inputEmbedDim :|: SNil, eps)
-            SRoBERTa -> (gradient, device, dataType, SShape $ inputEmbedDim :|: SNil, eps)
+            SBERT -> layerNormWithBiasSpec
+            SRoBERTa -> layerNormWithBiasSpec
             SGPT2 -> undefined
-        decoder = IxState . initialize $
-          case sing @style of
-            ST5 -> (gradient, device, dataType, inputEmbedDim, vocabDim)
-            SByT5 -> (gradient, device, dataType, inputEmbedDim, vocabDim)
-            SBART -> (gradient, device, dataType, inputEmbedDim, vocabDim)
-            SMBART -> (gradient, device, dataType, inputEmbedDim, vocabDim)
-            SPegasus -> (gradient, device, dataType, inputEmbedDim, vocabDim)
-            SBERT -> (gradient, device, dataType, inputEmbedDim, vocabDim)
-            SRoBERTa -> (gradient, device, dataType, inputEmbedDim, vocabDim)
+        decoderWithoutBiasSpec = LinearSpec SWithoutBias gradient device dataType inputEmbedDim vocabDim
+        decoderWithBiasSpec = LinearSpec SWithBias gradient device dataType inputEmbedDim vocabDim
+        decoder = IxStateT . initialize @decoder $
+          case style of
+            ST5 -> decoderWithoutBiasSpec
+            SByT5 -> decoderWithoutBiasSpec
+            SBART -> decoderWithoutBiasSpec
+            SMBART -> decoderWithoutBiasSpec
+            SPegasus -> decoderWithoutBiasSpec
+            SBERT -> decoderWithBiasSpec
+            SRoBERTa -> decoderWithBiasSpec
             SGPT2 -> undefined
+        biasSpec = TensorSpec gradient (SLayout SDense) device dataType (SShape $ SName @"*" :&: SSize @1 :|: vocabDim :|: SNil)
         bias = ireturn $
-          case sing @style of
+          case style of
             ST5 -> ()
             SByT5 -> ()
-            SBART -> sZeros gradient (SLayout SDense) device dataType (SShape $ SName @"*" :&: SSize @1 :|: vocabDim :|: SNil)
-            SMBART -> sZeros gradient (SLayout SDense) device dataType (SShape $ SName @"*" :&: SSize @1 :|: vocabDim :|: SNil)
-            SPegasus -> sZeros gradient (SLayout SDense) device dataType (SShape $ SName @"*" :&: SSize @1 :|: vocabDim :|: SNil)
+            SBART -> sZeros biasSpec
+            SMBART -> sZeros biasSpec
+            SPegasus -> sZeros biasSpec
             SBERT -> ()
             SRoBERTa -> ()
             SGPT2 -> undefined
-     in runIxState $
-          (GLMHead <<$>> ireturn inputEmbedDim <<*>> dense <<*>> activation <<*>> layerNorm <<*>> decoder <<*>> bias)
-            >>>= ireturn . LMHead
+     in runIxStateT
+          ( (GLMHead <<$>> ireturn inputEmbedDim <<*>> dense <<*>> activation <<*>> layerNorm <<*>> decoder <<*>> bias)
+              >>>= ireturn . LMHead
+          )
+          generator'
 
 instance
   SingI style =>
   HasStateDict
     (LMHead style gradient device dataType inputEmbedDim vocabDim)
-    (SGradient gradient, SDevice device, SDataType dataType, SDim inputEmbedDim, SDim vocabDim, Double)
   where
-  fromStateDict (gradient, device, dataType, inputEmbedDim, vocabDim, eps) k =
-    let dense ST5 = pure ()
+  fromStateDict (LMHeadSpec style gradient device dataType inputEmbedDim vocabDim eps) k =
+    let denseSpec = LinearSpec SWithBias gradient device dataType inputEmbedDim inputEmbedDim
+        dense ST5 = pure ()
         dense SByT5 = pure ()
         dense SBART = pure ()
         dense SMBART = pure ()
         dense SPegasus = pure ()
-        dense SBERT = fromStateDict (gradient, device, dataType, inputEmbedDim, inputEmbedDim) (k <> "transform.dense.")
-        dense SRoBERTa = fromStateDict (gradient, device, dataType, inputEmbedDim, inputEmbedDim) (k <> "dense.")
+        dense SBERT = fromStateDict denseSpec (k <> "transform.dense.")
+        dense SRoBERTa = fromStateDict denseSpec (k <> "dense.")
         dense SGPT2 = undefined
         activation :: STransformerStyle style -> LMHeadActivationF style
         activation ST5 = ()
@@ -334,37 +292,41 @@ instance
         activation SBERT = Gelu
         activation SRoBERTa = Gelu
         activation SGPT2 = undefined
+        layerNormWithBiasSpec = LayerNormSpec SWithBias gradient device dataType (SShape $ inputEmbedDim :|: SNil) eps
         layerNorm ST5 = pure ()
         layerNorm SByT5 = pure ()
         layerNorm SBART = pure ()
         layerNorm SMBART = pure ()
         layerNorm SPegasus = pure ()
-        layerNorm SBERT = fromStateDict (gradient, device, dataType, SShape $ inputEmbedDim :|: SNil, eps) (k <> "transform.LayerNorm.")
-        layerNorm SRoBERTa = fromStateDict (gradient, device, dataType, SShape $ inputEmbedDim :|: SNil, eps) (k <> "layer_norm.")
+        layerNorm SBERT = fromStateDict layerNormWithBiasSpec (k <> "transform.LayerNorm.")
+        layerNorm SRoBERTa = fromStateDict layerNormWithBiasSpec (k <> "layer_norm.")
         layerNorm SGPT2 = undefined
-        decoder ST5 = fromStateDict (gradient, device, dataType, inputEmbedDim, vocabDim) k
-        decoder SByT5 = fromStateDict (gradient, device, dataType, inputEmbedDim, vocabDim) k
-        decoder SBART = fromStateDict (gradient, device, dataType, inputEmbedDim, vocabDim) (k <> "lm_head.")
-        decoder SMBART = fromStateDict (gradient, device, dataType, inputEmbedDim, vocabDim) (k <> "lm_head.")
-        decoder SPegasus = fromStateDict (gradient, device, dataType, inputEmbedDim, vocabDim) (k <> "lm_head.")
-        decoder SBERT = fromStateDict (gradient, device, dataType, inputEmbedDim, vocabDim) (k <> "decoder.")
-        decoder SRoBERTa = fromStateDict (gradient, device, dataType, inputEmbedDim, vocabDim) (k <> "decoder.")
+        decoderWithoutBiasSpec = LinearSpec SWithoutBias gradient device dataType inputEmbedDim vocabDim
+        decoderWithBiasSpec = LinearSpec SWithBias gradient device dataType inputEmbedDim vocabDim
+        decoder ST5 = fromStateDict decoderWithoutBiasSpec k
+        decoder SByT5 = fromStateDict decoderWithoutBiasSpec k
+        decoder SBART = fromStateDict decoderWithoutBiasSpec (k <> "lm_head.")
+        decoder SMBART = fromStateDict decoderWithoutBiasSpec (k <> "lm_head.")
+        decoder SPegasus = fromStateDict decoderWithoutBiasSpec (k <> "lm_head.")
+        decoder SBERT = fromStateDict decoderWithBiasSpec (k <> "decoder.")
+        decoder SRoBERTa = fromStateDict decoderWithBiasSpec (k <> "decoder.")
         decoder SGPT2 = undefined
+        biasSpec = TensorSpec gradient (SLayout SDense) device dataType (SShape $ SName @"*" :&: SSize @1 :|: vocabDim :|: SNil)
         bias ST5 = pure ()
         bias SByT5 = pure ()
-        bias SBART = fromStateDict (gradient, SLayout SDense, device, dataType, SShape $ SName @"*" :&: SSize @1 :|: vocabDim :|: SNil) (k <> "final_logits_bias")
-        bias SMBART = fromStateDict (gradient, SLayout SDense, device, dataType, SShape $ SName @"*" :&: SSize @1 :|: vocabDim :|: SNil) (k <> "final_logits_bias")
-        bias SPegasus = fromStateDict (gradient, SLayout SDense, device, dataType, SShape $ SName @"*" :&: SSize @1 :|: vocabDim :|: SNil) (k <> "final_logits_bias")
+        bias SBART = fromStateDict biasSpec (k <> "final_logits_bias")
+        bias SMBART = fromStateDict biasSpec (k <> "final_logits_bias")
+        bias SPegasus = fromStateDict biasSpec (k <> "final_logits_bias")
         bias SBERT = pure ()
         bias SRoBERTa = pure ()
         bias SGPT2 = undefined
      in LMHead
           <$> ( GLMHead inputEmbedDim
-                  <$> dense (sing @style)
-                  <*> pure (activation $ sing @style)
-                  <*> layerNorm (sing @style)
-                  <*> decoder (sing @style)
-                  <*> bias (sing @style)
+                  <$> dense style
+                  <*> pure (activation style)
+                  <*> layerNorm style
+                  <*> decoder style
+                  <*> bias style
               )
   toStateDict k (LMHead GLMHead {..}) =
     let dense ST5 = const $ pure ()
