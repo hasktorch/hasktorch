@@ -422,36 +422,36 @@ instance
     HasForward
       (LMHeadDenseF style gradient device dataType inputEmbedDim)
       input
-      generator
+      generatorDevice
       denseOutput
-      denseGeneratorOutput,
+      denseGeneratorOutputDevice,
     HasForward
       (LMHeadActivationF style)
       denseOutput
-      denseGeneratorOutput
+      denseGeneratorOutputDevice
       activationOutput
-      activationGeneratorOutput,
+      activationGeneratorOutputDevice,
     HasForward
       (LMHeadLayerNormF style gradient device dataType inputEmbedDim)
       activationOutput
-      activationGeneratorOutput
+      activationGeneratorOutputDevice
       layerNormOutput
-      layerNormGeneratorOutput,
+      layerNormGeneratorOutputDevice,
     HasForward
       (LMHeadDecoderF style gradient device dataType inputEmbedDim vocabDim)
       layerNormOutput
-      layerNormGeneratorOutput
+      layerNormGeneratorOutputDevice
       decoderOutput
-      generatorOutput,
+      generatorOutputDevice,
     decoderOutput ~ Tensor gradient' layout' device' dataType' shape',
     output ~ LMHeadOutputF style decoderOutput gradient device dataType vocabDim
   ) =>
   HasForward
     (LMHead style gradient device dataType inputEmbedDim vocabDim)
     input
-    generator
+    generatorDevice
     output
-    generatorOutput
+    generatorOutputDevice
   where
   forward (LMHead GLMHead {..}) input =
     let s :: Double = sqrt . fromIntegral . forgetIsChecked . dimSize . fromSing $ lmHeadInputEmbedDim

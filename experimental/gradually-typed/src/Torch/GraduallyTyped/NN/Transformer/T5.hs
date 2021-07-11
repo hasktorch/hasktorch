@@ -13,8 +13,8 @@ module Torch.GraduallyTyped.NN.Transformer.T5
     module Torch.GraduallyTyped.NN.Transformer.T5.ThreeB,
     module Torch.GraduallyTyped.NN.Transformer.T5.ElevenB,
     module Torch.GraduallyTyped.NN.Transformer.T5.Generation,
-    testForwardT5Small,
-    testForwardByT5Small,
+    -- testForwardT5Small,
+    -- testForwardByT5Small,
   )
 where
 
@@ -32,12 +32,12 @@ import Torch.GraduallyTyped.NN.Transformer.T5.Generation
 import Torch.GraduallyTyped.NN.Transformer.T5.Large
 import Torch.GraduallyTyped.NN.Transformer.T5.Small
 import Torch.GraduallyTyped.NN.Transformer.T5.ThreeB
-import Torch.GraduallyTyped.NN.Transformer.Type (TransformerHead (WithLMHead))
+import Torch.GraduallyTyped.NN.Transformer.Type (TransformerHead (WithLMHead), STransformerHead (SWithLMHead))
 import Torch.GraduallyTyped.Random (sMkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Type (SName (..), SShape (..), SSize (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes)
-import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
+import Torch.GraduallyTyped.Tensor.Type (Tensor (..), TensorSpec (..))
 import qualified Torch.Tensor as Tensor (Tensor (..), asValue)
 
 testT5BatchDim = SName @"*" :&: SSize @2
@@ -71,8 +71,8 @@ testForwardT5Small =
     stateDict <- stateDictFromPretrained "/tmp/t5-small-state-dict.pt"
     model <-
       flip evalStateT stateDict $
-        fromStateDict @(T5Small 'WithLMHead ('Gradient 'WithoutGradient) ('Device 'CPU)) (SGradient SWithoutGradient, SDevice SCPU) ""
-    g <- sMkGenerator (SDevice SCPU) 0
+        fromStateDict (t5SmallSpec SWithLMHead (SGradient SWithoutGradient) (SDevice SCPU)) ""
+    let g = sMkGenerator (SDevice SCPU) 0
     (T5Output {..}, _) <- forward model input g
     let decoderOutput = case t5DecoderOutput of
           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
@@ -88,15 +88,15 @@ testForwardT5Small =
 testForwardByT5Small :: IO ()
 testForwardByT5Small =
   do
-    let sOnes' = sOnes (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64)
+    let sOnes' = sOnes . TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64)
         byT5Input = sOnes' (SShape $ testT5BatchDim :|: testT5InputSeqDim :|: SNil)
         byT5DecoderInput = sOnes' (SShape $ testT5BatchDim :|: testT5DecoderInputSeqDim :|: SNil)
         input = T5Input byT5Input byT5DecoderInput
     stateDict <- stateDictFromPretrained "/tmp/byt5-small-state-dict.pt"
     model <-
       flip evalStateT stateDict $
-        fromStateDict @(ByT5Small 'WithLMHead ('Gradient 'WithoutGradient) ('Device 'CPU)) (SGradient SWithoutGradient, SDevice SCPU) ""
-    g <- sMkGenerator (SDevice SCPU) 0
+        fromStateDict (byT5SmallSpec SWithLMHead (SGradient SWithoutGradient) (SDevice SCPU)) ""
+    let g = sMkGenerator (SDevice SCPU) 0
     (T5Output {..}, _) <- forward model input g
     let decoderOutput = case t5DecoderOutput of
           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]

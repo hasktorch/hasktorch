@@ -8,7 +8,7 @@
 module Torch.GraduallyTyped.NN.Transformer.RoBERTa
   ( module Torch.GraduallyTyped.NN.Transformer.RoBERTa.Common,
     module Torch.GraduallyTyped.NN.Transformer.RoBERTa.Base,
-    testForwardRoBERTaBase,
+    -- testForwardRoBERTaBase,
     testRoBERTaInput,
   )
 where
@@ -30,7 +30,7 @@ import Torch.GraduallyTyped.RequiresGradient (SGradient (..), SRequiresGradient 
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim (sDimSize), SName (..), SShape (..), SSize (..), Size (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sArangeNaturals, sZeros)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (addScalar)
-import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
+import Torch.GraduallyTyped.Tensor.Type (Tensor (..), TensorSpec (..))
 import qualified Torch.Tensor as Tensor (Tensor (..), asValue)
 
 type TestRoBERTaSeqDim = 'Dim ('Name "*") ('Size 11)
@@ -60,41 +60,42 @@ testRoBERTaInput = do
 
 testRoBERTaInputType :: _
 testRoBERTaInputType =
-  sZeros
-    (SGradient SWithoutGradient)
-    (SLayout SDense)
-    (SDevice SCPU)
-    (SDataType SInt64)
-    (SShape $ SName @"*" :&: SSize @1 :|: testRobertaSeqDim :|: SNil)
+  sZeros $
+    TensorSpec
+      (SGradient SWithoutGradient)
+      (SLayout SDense)
+      (SDevice SCPU)
+      (SDataType SInt64)
+      (SShape $ SName @"*" :&: SSize @1 :|: testRobertaSeqDim :|: SNil)
 
-testForwardRoBERTaBase :: IO ()
-testForwardRoBERTaBase =
-  do
-    stateDict <- stateDictFromPretrained "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/bert-base-uncased.pt"
-    RoBERTaModel GRoBERTaModel {..} <-
-      flip evalStateT stateDict $
-        fromStateDict @(RoBERTaBase 'WithMLMHead _ _) (SGradient SWithGradient, SDevice SCPU) ""
-    encoderInput <- testRoBERTaInput
-    let encoderInputType = testRoBERTaInputType
-        pos =
-          flip addScalar (2 :: Int) $
-            sArangeNaturals
-              (SGradient SWithoutGradient)
-              (SLayout SDense)
-              (SDevice SCPU)
-              (SDataType SInt64)
-              (sDimSize testRobertaSeqDim)
-        paddingMask = mkRoBERTaPaddingMask encoderInput
-    attentionMask <- mkTransformerAttentionMask robertaDataType robertaAttentionMaskBias paddingMask
-    let input = EncoderOnlyTransformerInput encoderInput encoderInputType pos attentionMask
-    g <- sMkGenerator (SDevice SCPU) 0
-    (EncoderOnlyTransformerOutput {..}, _) <- forward robertaModel input g
-    let encoderOutput' = case eoEncoderOutput of
-          UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
-    let firstLMHeadLogits = do
-          firstBatch <- take 1 encoderOutput'
-          firstPositions <- take 3 firstBatch
-          take 3 firstPositions
-    print firstLMHeadLogits
-    let firstLMHeadLogits' = [32.5267, -4.5318, 21.4297, 7.9570, -2.7508, 21.1128, -2.8331, -4.1595, 10.6294]
-    mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLMHeadLogits firstLMHeadLogits'
+-- testForwardRoBERTaBase :: IO ()
+-- testForwardRoBERTaBase =
+--   do
+--     stateDict <- stateDictFromPretrained "/Users/tscholak/Projects/thirdParty/hasktorch/hasktorch/src/Torch/GraduallyTyped/NN/Transformer/bert-base-uncased.pt"
+--     RoBERTaModel GRoBERTaModel {..} <-
+--       flip evalStateT stateDict $
+--         fromStateDict @(RoBERTaBase 'WithMLMHead _ _) (SGradient SWithGradient, SDevice SCPU) ""
+--     encoderInput <- testRoBERTaInput
+--     let encoderInputType = testRoBERTaInputType
+--         pos =
+--           flip addScalar (2 :: Int) $
+--             sArangeNaturals
+--               (SGradient SWithoutGradient)
+--               (SLayout SDense)
+--               (SDevice SCPU)
+--               (SDataType SInt64)
+--               (sDimSize testRobertaSeqDim)
+--         paddingMask = mkRoBERTaPaddingMask encoderInput
+--     attentionMask <- mkTransformerAttentionMask robertaDataType robertaAttentionMaskBias paddingMask
+--     let input = EncoderOnlyTransformerInput encoderInput encoderInputType pos attentionMask
+--     g <- sMkGenerator (SDevice SCPU) 0
+--     (EncoderOnlyTransformerOutput {..}, _) <- forward robertaModel input g
+--     let encoderOutput' = case eoEncoderOutput of
+--           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
+--     let firstLMHeadLogits = do
+--           firstBatch <- take 1 encoderOutput'
+--           firstPositions <- take 3 firstBatch
+--           take 3 firstPositions
+--     print firstLMHeadLogits
+--     let firstLMHeadLogits' = [32.5267, -4.5318, 21.4297, 7.9570, -2.7508, 21.1128, -2.8331, -4.1595, 10.6294]
+--     mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLMHeadLogits firstLMHeadLogits'

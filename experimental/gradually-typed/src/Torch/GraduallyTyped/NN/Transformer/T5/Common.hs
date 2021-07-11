@@ -49,23 +49,23 @@ import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI (..), SingKind (fromSing))
 import Data.Singletons.Prelude.List (SList (..))
+import Data.Singletons.TypeLits (SNat (..))
 import GHC.Float (double2Int)
 import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
-import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (SequenceToSequenceTransformer (..), SequenceToSequenceTransformerGenerationInput (..), SequenceToSequenceTransformerInput (..), SequenceToSequenceTransformerOutput (..))
-import Torch.GraduallyTyped.NN.Transformer.Type (MkTransformerAttentionMaskC, MkTransformerCrossAttentionMaskC, MkTransformerDecoderAttentionMaskC, MkTransformerPaddingMaskC, ShiftRight (..), TransformerHead (..), TransformerStyle (ByT5, T5), mkTransformerAttentionMask, mkTransformerCrossAttentionMask, mkTransformerDecoderAttentionMask, mkTransformerInput, mkTransformerPaddingMask)
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec)
+import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (SequenceToSequenceTransformer (..), SequenceToSequenceTransformerGenerationInput (..), SequenceToSequenceTransformerInput (..), SequenceToSequenceTransformerOutput (..), SequenceToSequenceTransformerSpec (..))
+import Torch.GraduallyTyped.NN.Transformer.Type (MkTransformerAttentionMaskC, MkTransformerCrossAttentionMaskC, MkTransformerDecoderAttentionMaskC, MkTransformerPaddingMaskC, STransformerHead (SWithLMHead), STransformerStyle (SByT5, ST5), ShiftRight (..), TransformerHead (..), TransformerStyle (ByT5, T5), mkTransformerAttentionMask, mkTransformerCrossAttentionMask, mkTransformerDecoderAttentionMask, mkTransformerInput, mkTransformerPaddingMask)
 import Torch.GraduallyTyped.Prelude (Seq, forgetIsChecked)
 import Torch.GraduallyTyped.Random (sMkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (getDim, type (!))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SBy (..), SDim (..), SName (..), SSelectDim (..), SShape (..), SSize (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes)
-import Torch.GraduallyTyped.Tensor.Type (SGetDevice (..), SGetShape, Tensor (..), UncheckedTensor, checkedDataType, checkedGradient, checkedLayout, sCheckedDevice, sCheckedShape, sShape)
-import Torch.GraduallyTyped.Tensor.Type (SGetDevice, SGetDim, SGetShape, Tensor (..), sCheckedShape, sShape, toTensor)
+import Torch.GraduallyTyped.Tensor.Type (SGetDevice (..), SGetDim, SGetShape, Tensor (..), TensorSpec (..), sCheckedShape, sShape, toTensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
 -- | T5 dType.
@@ -82,12 +82,9 @@ type T5DataType = 'DataType T5DType
 t5DataType :: SDataType T5DataType
 t5DataType = sing @T5DataType
 
--- | T5 dropout probability type.
-type T5DropoutP = Float
-
 -- | T5 dropout rate.
 -- 'dropout_rate = 0.1'
-t5DropoutP :: T5DropoutP
+t5DropoutP :: Double
 t5DropoutP = 0.1
 
 -- | T5 relative positional encoding bucket dimension.
@@ -165,10 +162,37 @@ type family
   T5ModelF style transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim =
     r | r -> style transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim
   where
-  T5ModelF 'T5 transformerHead numLayers numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim =
-    SequenceToSequenceTransformer 'T5 transformerHead numLayers numLayers gradient device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim T5RelPosEncBucketDim vocabDim T5DropoutP
+  T5ModelF 'T5 transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim =
+    SequenceToSequenceTransformer 'T5 transformerHead numEncoderLayers numDecoderLayers gradient device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim T5RelPosEncBucketDim vocabDim
   T5ModelF 'ByT5 transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim =
-    SequenceToSequenceTransformer 'ByT5 transformerHead numEncoderLayers numDecoderLayers gradient device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim T5RelPosEncBucketDim vocabDim T5DropoutP
+    SequenceToSequenceTransformer 'ByT5 transformerHead numEncoderLayers numDecoderLayers gradient device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim T5RelPosEncBucketDim vocabDim
+
+data
+  T5ModelSpec
+    (style :: TransformerStyle)
+    (transformerHead :: TransformerHead)
+    (numEncoderLayers :: Nat)
+    (numDecoderLayers :: Nat)
+    (gradient :: Gradient RequiresGradient)
+    (device :: Device (DeviceType Nat))
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (vocabDim :: Dim (Name Symbol) (Size Nat))
+  where
+  T5ModelSpec ::
+    forall style transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim.
+    STransformerStyle style ->
+    STransformerHead transformerHead ->
+    SNat numEncoderLayers ->
+    SNat numDecoderLayers ->
+    SGradient gradient ->
+    SDevice device ->
+    T5ModelSpec style transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim
+
+type instance ModelSpec (T5Model style transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim) = T5ModelSpec style transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim
 
 instance
   ( SingI headDim,
@@ -179,24 +203,26 @@ instance
     SingI vocabDim,
     HasStateDict
       (T5ModelF style transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
-      (SGradient gradient, SDevice device, SDataType T5DataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim inputEmbedDim, SDim ffnDim, SDim T5RelPosEncBucketDim, SDim vocabDim, T5DropoutP, Double)
   ) =>
   HasStateDict
     (T5Model style transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
-    (SGradient gradient, SDevice device)
   where
-  fromStateDict (gradient, device) k =
+  fromStateDict (T5ModelSpec style transformerHead numEncoderLayers numDecoderLayers gradient device) k =
     let headDim = sing @headDim
         headEmbedDim = sing @headEmbedDim
         embedDim = sing @embedDim
         inputEmbedDim = sing @inputEmbedDim
         ffnDim = sing @ffnDim
         vocabDim = sing @vocabDim
+        seqToSeqSpec = SequenceToSequenceTransformerSpec style transformerHead numEncoderLayers numDecoderLayers gradient device t5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim t5RelPosEncBucketDim vocabDim t5DropoutP t5Eps
+        seqToSeq ST5 = fromStateDict seqToSeqSpec k
+        seqToSeq SByT5 = fromStateDict seqToSeqSpec k
+        seqToSeq _ = undefined
      in T5Model
           <$> ( GT5Model
-                  <$> fromStateDict (gradient, device, t5DataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, t5RelPosEncBucketDim, vocabDim, t5DropoutP, t5Eps) k
-                  <*> fromStateDict t5BOSTokenId k
-                  <*> fromStateDict 0 k
+                  <$> seqToSeq style
+                  <*> fromStateDict (ShiftRight t5BOSTokenId) k
+                  <*> fromStateDict (ShiftRight 0) k
               )
   toStateDict k (T5Model GT5Model {..}) = do
     toStateDict k t5Model
@@ -434,21 +460,21 @@ instance
     MkTransformerAttentionMaskC T5DataType inputPaddingMaskGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim attentionMask,
     MkTransformerCrossAttentionMaskC T5DataType rightShiftedDecoderInputShape rightShiftedDecoderInputSeqDim inputPaddingMaskGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim crossAttentionMask,
     MkTransformerDecoderAttentionMaskC T5DataType rightShiftedDecoderInputPaddingMaskLayout rightShiftedDecoderInputPaddingMaskDevice rightShiftedDecoderInputPaddingMaskShape rightShiftedDecoderInputPaddingMaskSeqDim decoderAttentionMask,
-    HasForward (ShiftRight Int) decoderInput generator rightShiftedDecoderInput generator,
-    HasForward (ShiftRight Int) decoderInputPaddingMask generator rightShiftedDecoderInputPaddingMask generator,
+    HasForward (ShiftRight Int) decoderInput generatorDevice rightShiftedDecoderInput generatorDevice,
+    HasForward (ShiftRight Int) decoderInputPaddingMask generatorDevice rightShiftedDecoderInputPaddingMask generatorDevice,
     HasForward
       (T5ModelF style transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
       (SequenceToSequenceTransformerInput input rightShiftedDecoderInput pos decoderPos attentionMask decoderAttentionMask crossAttentionMask)
-      generator
+      generatorDevice
       (SequenceToSequenceTransformerOutput decoderOutput encoderOutput)
-      generatorOutput
+      generatorOutputDevice
   ) =>
   HasForward
     (T5Model style transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
     (T5Input input decoderInput)
-    generator
+    generatorDevice
     (T5Output decoderOutput encoderOutput inputPaddingMask)
-    generatorOutput
+    generatorOutputDevice
   where
   forward (T5Model GT5Model {..}) T5Input {..} =
     let inputPaddingMask = mkT5PaddingMask t5Input
@@ -491,6 +517,7 @@ instance
                                 )
                  )
 
+testT5 :: IO _
 testT5 = do
   let gradient = SGradient SWithGradient
       device = SDevice SCPU
@@ -500,17 +527,17 @@ testT5 = do
       inputEmbedDim = SName @"*" :&: SSize @512
       ffnDim = SName @"*" :&: SSize @2048
       vocabDim = SName @"*" :&: SSize @32128
-  g <- sMkGenerator device 0
+  let g = sMkGenerator device 0
   let batchDim = SName @"*" :&: SSize @3
       seqDim = SName @"*" :&: SSize @13
       decoderSeqDim = SName @"*" :&: SSize @7
-      sOnes' = sOnes (SGradient SWithoutGradient) (SLayout SDense) device
+      sOnes' = (sOnes .) . TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device
       input = sOnes' (SDataType SInt64) (SShape $ batchDim :|: seqDim :|: SNil)
       attentionMask = sOnes' t5DataType (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
       decoderInput = sOnes' (SDataType SInt64) (SShape $ batchDim :|: decoderSeqDim :|: SNil)
       decoderAttentionMask = sOnes' t5DataType (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
       crossAttentionMask = sOnes' t5DataType (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: seqDim :|: SNil)
-      (t5Model, g') = initialize @(SequenceToSequenceTransformer 'T5 'WithLMHead 4 4 _ _ _ _ _ _ _ _ _ _ _) (gradient, device, t5DataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, t5RelPosEncBucketDim, vocabDim, t5DropoutP, t5Eps) g
+  (t5Model, g') <- initialize (SequenceToSequenceTransformerSpec ST5 SWithLMHead (SNat @4) (SNat @4) gradient device t5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim t5RelPosEncBucketDim vocabDim t5DropoutP t5Eps) g
   (t5Output, g'') <-
     let pos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
         decoderPos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
@@ -539,21 +566,21 @@ instance
     MkTransformerAttentionMaskC T5DataType inputPaddingMaskGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim attentionMask,
     MkTransformerCrossAttentionMaskC T5DataType rightShiftedDecoderInputShape rightShiftedDecoderInputSeqDim inputPaddingMaskGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim crossAttentionMask,
     MkTransformerDecoderAttentionMaskC T5DataType rightShiftedDecoderInputPaddingMaskLayout rightShiftedDecoderInputPaddingMaskDevice rightShiftedDecoderInputPaddingMaskShape rightShiftedDecoderInputPaddingMaskSeqDim decoderAttentionMask,
-    HasForward (ShiftRight Int) decoderInput generator rightShiftedDecoderInput generator,
-    HasForward (ShiftRight Int) decoderInputPaddingMask generator rightShiftedDecoderInputPaddingMask generator,
+    HasForward (ShiftRight Int) decoderInput generatorDevice rightShiftedDecoderInput generatorDevice,
+    HasForward (ShiftRight Int) decoderInputPaddingMask generatorDevice rightShiftedDecoderInputPaddingMask generatorDevice,
     HasForward
       (T5ModelF style transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
       (SequenceToSequenceTransformerGenerationInput rightShiftedDecoderInput encoderOutput decoderPos decoderAttentionMask crossAttentionMask)
-      generator
+      generatorDevice
       (SequenceToSequenceTransformerOutput decoderOutput encoderOutput)
-      generatorOutput
+      generatorOutputDevice
   ) =>
   HasForward
     (T5Model style transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
     (T5GenerationInput decoderInput encoderOutput inputPaddingMask)
-    generator
+    generatorDevice
     (T5Output decoderOutput encoderOutput inputPaddingMask)
-    generatorOutput
+    generatorOutputDevice
   where
   forward (T5Model GT5Model {..}) T5GenerationInput {..} =
     runIxStateT $

@@ -144,37 +144,35 @@ type family
     Type
   where
   RoBERTaModelF 'WithoutHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim =
-    EncoderOnlyTransformer 'RoBERTa numLayers gradient device RoBERTaDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim RoBERTaPosEncDim vocabDim typeVocabDim RoBERTaDropoutP
+    EncoderOnlyTransformer 'RoBERTa numLayers gradient device RoBERTaDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim RoBERTaPosEncDim vocabDim typeVocabDim
   RoBERTaModelF 'WithMLMHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim =
-    EncoderOnlyTransformerWithLMHead 'RoBERTa numLayers gradient device RoBERTaDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim RoBERTaPosEncDim vocabDim typeVocabDim RoBERTaDropoutP
+    EncoderOnlyTransformerWithLMHead 'RoBERTa numLayers gradient device RoBERTaDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim RoBERTaPosEncDim vocabDim typeVocabDim
 
-instance
-  ( SingI headDim,
-    SingI headEmbedDim,
-    SingI embedDim,
-    SingI inputEmbedDim,
-    SingI ffnDim,
-    SingI vocabDim,
-    SingI typeVocabDim,
-    KnownNat numLayers,
-    HasStateDict
-      (RoBERTaModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
-      (SGradient gradient, SDevice device, SDataType RoBERTaDataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim inputEmbedDim, SDim ffnDim, SDim RoBERTaPosEncDim, SDim vocabDim, SDim typeVocabDim, RoBERTaDropoutP, Double)
-  ) =>
-  HasStateDict
-    (RoBERTaModel transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
-    (SGradient gradient, SDevice device)
-  where
-  fromStateDict (gradient, device) k =
-    let headDim = sing @headDim
-        headEmbedDim = sing @headEmbedDim
-        embedDim = sing @embedDim
-        inputEmbedDim = sing @inputEmbedDim
-        ffnDim = sing @ffnDim
-        vocabDim = sing @vocabDim
-        typeVocabDim = sing @typeVocabDim
-     in RoBERTaModel . GRoBERTaModel <$> fromStateDict (gradient, device, robertaDataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, robertaPosEncDim, vocabDim, typeVocabDim, robertaDropoutP, robertaEps) (k <> "roberta.")
-  toStateDict k (RoBERTaModel GRoBERTaModel {..}) = toStateDict (k <> "roberta.") robertaModel
+-- instance
+--   ( SingI headDim,
+--     SingI headEmbedDim,
+--     SingI embedDim,
+--     SingI inputEmbedDim,
+--     SingI ffnDim,
+--     SingI vocabDim,
+--     SingI typeVocabDim,
+--     KnownNat numLayers,
+--     HasStateDict
+--       (RoBERTaModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
+--   ) =>
+--   HasStateDict
+--     (RoBERTaModel transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
+--   where
+--   fromStateDict (gradient, device) k =
+--     let headDim = sing @headDim
+--         headEmbedDim = sing @headEmbedDim
+--         embedDim = sing @embedDim
+--         inputEmbedDim = sing @inputEmbedDim
+--         ffnDim = sing @ffnDim
+--         vocabDim = sing @vocabDim
+--         typeVocabDim = sing @typeVocabDim
+--      in RoBERTaModel . GRoBERTaModel <$> fromStateDict (gradient, device, robertaDataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, robertaPosEncDim, vocabDim, typeVocabDim, robertaDropoutP, robertaEps) (k <> "roberta.")
+--   toStateDict k (RoBERTaModel GRoBERTaModel {..}) = toStateDict (k <> "roberta.") robertaModel
 
 mkRoBERTaInput ::
   forall batchDim seqDim m output.

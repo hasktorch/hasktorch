@@ -402,9 +402,9 @@ instance
   ( HasForward
       (TEDropoutF 'T5)
       input
-      generator
+      generatorDevice
       dropoutOutput
-      dropoutGeneratorOutput,
+      dropoutGeneratorOutputDevice,
     HasForward
       (TEStackF 'T5 numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim)
       ( dropoutOutput,
@@ -432,21 +432,21 @@ instance
               )
           )
       )
-      dropoutGeneratorOutput
+      dropoutGeneratorOutputDevice
       stackOutput
-      stackGeneratorOutput,
+      stackGeneratorOutputDevice,
     HasForward
       (TELayerNormF 'T5 gradient device dataType inputEmbedDim)
       stackOutput
-      stackGeneratorOutput
+      stackGeneratorOutputDevice
       layerNormOutput
-      layerNormGeneratorOutput,
+      layerNormGeneratorOutputDevice,
     HasForward
       (TEDropoutF 'T5)
       layerNormOutput
-      layerNormGeneratorOutput
+      layerNormGeneratorOutputDevice
       output
-      generatorOutput
+      generatorOutputDevice
   ) =>
   HasForward
     (TransformerEncoder 'T5 numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim)
@@ -454,9 +454,9 @@ instance
       Tensor relPosGradient relPosLayout relPosDevice relPosDataType relPosShape,
       Tensor attentionMaskGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
     )
-    generator
+    generatorDevice
     output
-    generatorOutput
+    generatorOutputDevice
   where
   forward (TransformerEncoder GTransformerEncoder {..}) (input, relPos, attentionMask) =
     let relPosBias =
@@ -529,9 +529,9 @@ instance
   ( HasForward
       (TEDropoutF 'ByT5)
       input
-      generator
+      generatorDevice
       dropoutOutput
-      dropoutGeneratorOutput,
+      dropoutGeneratorOutputDevice,
     HasForward
       (TEStackF 'ByT5 numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim)
       ( dropoutOutput,
@@ -559,21 +559,21 @@ instance
               )
           )
       )
-      dropoutGeneratorOutput
+      dropoutGeneratorOutputDevice
       stackOutput
-      stackGeneratorOutput,
+      stackGeneratorOutputDevice,
     HasForward
       (TELayerNormF 'ByT5 gradient device dataType inputEmbedDim)
       stackOutput
-      stackGeneratorOutput
+      stackGeneratorOutputDevice
       layerNormOutput
-      layerNormGeneratorOutput,
+      layerNormGeneratorOutputDevice,
     HasForward
       (TEDropoutF 'ByT5)
       layerNormOutput
-      layerNormGeneratorOutput
+      layerNormGeneratorOutputDevice
       output
-      generatorOutput
+      generatorOutputDevice
   ) =>
   HasForward
     (TransformerEncoder 'ByT5 numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim)
@@ -581,9 +581,9 @@ instance
       Tensor relPosGradient relPosLayout relPosDevice relPosDataType relPosShape,
       Tensor attentionMaskGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
     )
-    generator
+    generatorDevice
     output
-    generatorOutput
+    generatorOutputDevice
   where
   forward (TransformerEncoder GTransformerEncoder {..}) (input, relPos, attentionMask) =
     let relPosBias =
@@ -635,15 +635,15 @@ instance
           (inputDataType <+> Seq (posDataType <+> 'DataType 'Int64) dataType)
           (BroadcastShapesF inputShape (EmbeddingF ('Shape '[posEncDim, inputEmbedDim]) posShape))
       )
-      generator
+      generatorDevice
       layerNormOutput
-      generator,
+      generatorDevice,
     HasForward
       (TEDropoutF 'BART)
       layerNormOutput
-      generator
+      generatorDevice
       dropoutOutput
-      dropoutGeneratorOutput,
+      dropoutGeneratorOutputDevice,
     HasForward
       (TEStackF 'BART numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim)
       ( dropoutOutput,
@@ -654,9 +654,9 @@ instance
           attentionMaskDataType
           (UnsqueezeF ('SelectDim ('ByIndex 1)) attentionMaskShape)
       )
-      dropoutGeneratorOutput
+      dropoutGeneratorOutputDevice
       output
-      generatorOutput
+      generatorOutputDevice
   ) =>
   HasForward
     (TransformerEncoder 'BART numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim)
@@ -664,9 +664,9 @@ instance
       Tensor posGradient posLayout posDevice posDataType posShape,
       Tensor attentionMaskGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
     )
-    generator
+    generatorDevice
     output
-    generatorOutput
+    generatorOutputDevice
   where
   forward (TransformerEncoder GTransformerEncoder {..}) (input, pos, attentionMask) =
     let attentionBias = unsqueeze @('SelectDim ('ByIndex 1)) attentionMask
@@ -739,15 +739,15 @@ instance
           (inputDataType <+> Seq (posDataType <+> 'DataType 'Int64) dataType)
           (BroadcastShapesF inputShape (EmbeddingF ('Shape '[posEncDim, inputEmbedDim]) posShape))
       )
-      generator
+      generatorDevice
       layerNormOutput
-      generator,
+      generatorDevice,
     HasForward
       (TEDropoutF 'BERT)
       layerNormOutput
-      generator
+      generatorDevice
       dropoutOutput
-      dropoutGeneratorOutput,
+      dropoutGeneratorOutputDevice,
     HasForward
       (TEStackF 'BERT numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim)
       ( dropoutOutput,
@@ -758,9 +758,9 @@ instance
           attentionMaskDataType
           (UnsqueezeF ('SelectDim ('ByIndex 1)) attentionMaskShape)
       )
-      dropoutGeneratorOutput
+      dropoutGeneratorOutputDevice
       output
-      generatorOutput
+      generatorOutputDevice
   ) =>
   HasForward
     (TransformerEncoder 'BERT numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim)
@@ -768,9 +768,9 @@ instance
       Tensor posGradient posLayout posDevice posDataType posShape,
       Tensor attentionMaskGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
     )
-    generator
+    generatorDevice
     output
-    generatorOutput
+    generatorOutputDevice
   where
   forward (TransformerEncoder GTransformerEncoder {..}) (input, pos, attentionMask) =
     let attentionBias = unsqueeze @('SelectDim ('ByIndex 1)) attentionMask
@@ -816,15 +816,15 @@ instance
           (inputDataType <+> Seq (posDataType <+> 'DataType 'Int64) dataType)
           (BroadcastShapesF inputShape (EmbeddingF ('Shape '[posEncDim, inputEmbedDim]) posShape))
       )
-      generator
+      generatorDevice
       layerNormOutput
-      generator,
+      generatorDevice,
     HasForward
       (TEDropoutF 'RoBERTa)
       layerNormOutput
-      generator
+      generatorDevice
       dropoutOutput
-      dropoutGeneratorOutput,
+      dropoutGeneratorOutputDevice,
     HasForward
       (TEStackF 'RoBERTa numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim)
       ( dropoutOutput,
@@ -835,9 +835,9 @@ instance
           attentionMaskDataType
           (UnsqueezeF ('SelectDim ('ByIndex 1)) attentionMaskShape)
       )
-      dropoutGeneratorOutput
+      dropoutGeneratorOutputDevice
       output
-      generatorOutput
+      generatorOutputDevice
   ) =>
   HasForward
     (TransformerEncoder 'RoBERTa numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim)
@@ -845,9 +845,9 @@ instance
       Tensor posGradient posLayout posDevice posDataType posShape,
       Tensor attentionMaskGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
     )
-    generator
+    generatorDevice
     output
-    generatorOutput
+    generatorOutputDevice
   where
   forward (TransformerEncoder GTransformerEncoder {..}) (input, pos, attentionMask) =
     let attentionBias = unsqueeze @('SelectDim ('ByIndex 1)) attentionMask
@@ -893,9 +893,9 @@ instance
           (inputDataType <+> Seq (posDataType <+> 'DataType 'Int64) dataType)
           (BroadcastShapesF inputShape (EmbeddingF ('Shape '[posEncDim, inputEmbedDim]) posShape))
       )
-      generator
+      generatorDevice
       dropoutOutput
-      dropoutGeneratorOutput,
+      dropoutGeneratorOutputDevice,
     HasForward
       (TEStackF 'Pegasus numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim)
       ( dropoutOutput,
@@ -906,15 +906,15 @@ instance
           attentionMaskDataType
           (UnsqueezeF ('SelectDim ('ByIndex 1)) attentionMaskShape)
       )
-      dropoutGeneratorOutput
+      dropoutGeneratorOutputDevice
       stackOutput
-      generatorOutput,
+      generatorOutputDevice,
     HasForward
       (TELayerNormF 'Pegasus gradient device dataType inputEmbedDim)
       stackOutput
-      generatorOutput
+      generatorOutputDevice
       output
-      generatorOutput,
+      generatorOutputDevice,
     Show output
   ) =>
   HasForward
@@ -923,9 +923,9 @@ instance
       Tensor posGradient posLayout posDevice posDataType posShape,
       Tensor attentionMaskGradient attentionMaskLayout attentionMaskDevice attentionMaskDataType attentionMaskShape
     )
-    generator
+    generatorDevice
     output
-    generatorOutput
+    generatorOutputDevice
   where
   forward (TransformerEncoder GTransformerEncoder {..}) (input, pos, attentionMask) =
     let attentionBias = unsqueeze @('SelectDim ('ByIndex 1)) attentionMask

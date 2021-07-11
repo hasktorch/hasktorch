@@ -3,10 +3,10 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -v2 -Wall #-}
 
-{-# LANGUAGE ScopedTypeVariables #-}
 module Torch.GraduallyTyped.NN.Transformer.BART
   ( module Torch.GraduallyTyped.NN.Transformer.BART.Common,
     module Torch.GraduallyTyped.NN.Transformer.BART.Base,
@@ -19,18 +19,18 @@ where
 import Control.Monad.State (evalStateT)
 import Data.List (sortBy)
 import Data.Ord (Down (..), comparing)
+import Test.HUnit.Approx (assertApproxEqual)
 import qualified Tokenizers (Tokenizer, decode, encode, getIDs, withTokenizerFromConfigFile)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (fromStateDict), stateDictFromPretrained)
 import Torch.GraduallyTyped.NN.Transformer.BART.Base
 import Torch.GraduallyTyped.NN.Transformer.BART.Common
-import Torch.GraduallyTyped.NN.Transformer.Type (TransformerHead (WithLMHead))
+import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead (SWithLMHead))
 import Torch.GraduallyTyped.Random (mkGenerator)
-import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
+import Torch.GraduallyTyped.RequiresGradient (SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Type (SName (..), SSize (..), pattern (:&:))
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
 import qualified Torch.Tensor as Tensor (Tensor (..), asValue)
-import Test.HUnit.Approx (assertApproxEqual)
 
 -- https://github.com/hasktorch/tokenizers/blob/master/bindings/haskell/tokenizers-haskell/src/Tokenizers.hs
 -- https://github.com/hasktorch/tokenizers/blob/master/bindings/haskell/tokenizers-haskell/test/Spec.hs#L127
@@ -70,9 +70,8 @@ testForwardBARTBase =
     stateDict <- stateDictFromPretrained "/tmp/bart-base-state-dict.pt"
     model <-
       flip evalStateT stateDict $
-        fromStateDict @(BARTBase 'WithLMHead ('Gradient 'WithoutGradient) ('Device 'CPU)) (SGradient SWithoutGradient, SDevice SCPU) ""
-        -- fromStateDict @(BARTBase 'WithLMHead _ _) (SGradient SWithoutGradient, SDevice SCPU) ""
-    g <- mkGenerator @('Device 'CPU) 0
+        fromStateDict (bartBaseSpec SWithLMHead (SGradient SWithoutGradient) (SDevice SCPU)) ""
+    let g = mkGenerator @('Device 'CPU) 0
     (BARTOutput {..}, _) <- forward model input g
     let encoderOutput = case bartEncoderOutput of
           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
@@ -103,5 +102,5 @@ testForwardBARTBase =
           firstPositions <- take 3 firstBatch
           take 3 firstPositions
     print firstLogits
-    let firstLogits' = [ 33.8621,   6.3225,  18.2816, 6.7655,  -1.4854,  14.1845, 0.5911,  -1.9006,   8.9273]
+    let firstLogits' = [33.8621, 6.3225, 18.2816, 6.7655, -1.4854, 14.1845, 0.5911, -1.9006, 8.9273]
     mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLogits' firstLogits

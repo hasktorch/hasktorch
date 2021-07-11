@@ -21,7 +21,7 @@ import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (fromStateDict), stateDictFromPretrained)
 import Torch.GraduallyTyped.NN.Transformer.Pegasus.Common
 import Torch.GraduallyTyped.NN.Transformer.Pegasus.XSum
-import Torch.GraduallyTyped.NN.Transformer.Type (TransformerHead (WithLMHead))
+import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead (SWithLMHead), TransformerHead (WithLMHead))
 import Torch.GraduallyTyped.Random (sMkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SName (..), SSize (..), Shape (..), Size (..), pattern (:&:))
@@ -61,8 +61,8 @@ testForwardPegasusXSum =
     stateDict <- stateDictFromPretrained "/tmp/pegasus-xsum-state-dict.pt"
     model <-
       flip evalStateT stateDict $
-        fromStateDict @(PegasusXSum 'WithLMHead ('Gradient 'WithGradient) ('Device 'CPU)) (SGradient SWithGradient, SDevice SCPU) ""
-    g <- sMkGenerator (SDevice SCPU) 0
+        fromStateDict (pegasusXSumSpec SWithLMHead (SGradient SWithGradient) (SDevice SCPU)) ""
+    let g = sMkGenerator (SDevice SCPU) 0
     (PegasusOutput {..}, _) <- forward model input g
     let encoderOutput = case pegasusEncoderOutput of
           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]

@@ -78,7 +78,7 @@ class
   -- are not compatible with the model @m@.
   forward :: forall m. MonadThrow m => model -> input -> Generator generatorDevice -> m (output, Generator generatorOutputDevice)
 
-instance HasForward (Const () device) input generatorDevice input generatorDevice where
+instance HasForward () input generatorDevice input generatorDevice where
   forward _ = (pure .) . (,)
 
 -- foo :: forall a m. MonadThrow m => IO a -> m a

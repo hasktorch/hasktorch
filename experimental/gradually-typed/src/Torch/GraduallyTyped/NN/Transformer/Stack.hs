@@ -137,15 +137,15 @@ instance
   HasForward
     (TransformerBlock style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim)
     (query, attentionBias)
-    generator
+    generatorDevice
     output
-    generatorOutput =>
+    generatorOutputDevice =>
   HasForward
     (TransformerStack style 1 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim)
     (query, attentionBias)
-    generator
+    generatorDevice
     output
-    generatorOutput
+    generatorOutputDevice
   where
   forward (TransformerStack (VGS.Vector v)) input g =
     let Just (block, _) = V.uncons v
@@ -177,22 +177,22 @@ instance
   ( HasForward
       (TransformerBlock style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim)
       (query, attentionBias)
-      generator
+      generatorDevice
       output
-      generatorOutput,
+      generatorOutputDevice,
     HasForward
       (TransformerBlock style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim)
       (output, attentionBias)
-      generatorOutput
+      generatorOutputDevice
       output
-      generatorOutput
+      generatorOutputDevice
   ) =>
   HasForward
     (TransformerStack style n gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim)
     (query, attentionBias)
-    generator
+    generatorDevice
     output
-    generatorOutput
+    generatorOutputDevice
   where
   forward (TransformerStack (VGS.Vector v)) (query, attentionBias) g =
     let Just (block, blocks) = V.uncons v

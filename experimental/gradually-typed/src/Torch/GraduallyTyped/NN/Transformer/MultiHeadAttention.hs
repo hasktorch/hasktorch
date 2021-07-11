@@ -600,9 +600,9 @@ instance
   ( HasForward
       qInProj
       (Tensor queryRequiresGradient queryLayout queryDevice queryDataType queryShape)
-      generator
+      generatorDevice
       (Tensor qRequiresGradient qLayout qDevice qDataType qShape0)
-      qGeneratorOutput,
+      qGeneratorOutputDevice,
     qShape
       ~ TransposeF
           ('SelectDim ('ByIndex 1))
@@ -614,9 +614,9 @@ instance
     HasForward
       kInProj
       (Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape)
-      qGeneratorOutput
+      qGeneratorOutputDevice
       (Tensor qRequiresGradient kLayout kDevice kDataType kShape0)
-      kGeneratorOutput,
+      kGeneratorOutputDevice,
     weightsShape0
       ~ SoftmaxF
           ('SelectDim ('ByIndex 3))
@@ -647,15 +647,15 @@ instance
           (qDataType <+> kDataType <+> attentionBiasDataType)
           weightsShape0
       )
-      kGeneratorOutput
+      kGeneratorOutputDevice
       (Tensor weightsRequiresGradient weightsLayout weightsDevice weightsDataType weightsShape)
-      weightsGeneratorOutput,
+      weightsGeneratorOutputDevice,
     HasForward
       vInProj
       (Tensor valueRequiresGradient valueLayout valueDevice valueDataType valueShape)
-      weightsGeneratorOutput
+      weightsGeneratorOutputDevice
       (Tensor weightsRequiresGradient vLayout vDevice vDataType vShape0)
-      vGeneratorOutput,
+      vGeneratorOutputDevice,
     outputQueryShape0
       ~ TransposeF
           ('SelectDim ('ByIndex 1))
@@ -680,9 +680,9 @@ instance
           (weightsDataType <+> vDataType)
           (ReshapeF outputQueryShape0 ('Shape '[batchDim, querySeqDim, embedDim]))
       )
-      vGeneratorOutput
+      vGeneratorOutputDevice
       output
-      generatorOutput,
+      generatorOutputDevice,
     SGetShape queryShape,
     SGetShape keyShape,
     SGetShape valueShape,
@@ -698,9 +698,9 @@ instance
       Tensor valueRequiresGradient valueLayout valueDevice valueDataType valueShape,
       Tensor attentionBiasRequiresGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
     )
-    generator
+    generatorDevice
     output
-    generatorOutput
+    generatorOutputDevice
   where
   forward GMultiHeadAttention {..} (scaling, query, key, value, attentionBias) g = do
     batchDim <-

@@ -22,14 +22,16 @@ import Control.Monad.Indexed.State (IxStateT (..))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI, SingKind (fromSing), sing)
-import GHC.TypeLits (KnownNat, Nat, Symbol)
+import Data.Singletons.Prelude.Maybe (SMaybe (SNothing))
+import Data.Singletons.TypeLits (SNat)
+import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDataType)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (..))
-import Torch.GraduallyTyped.NN.Sparse (Embedding (..))
-import Torch.GraduallyTyped.NN.Transformer.Encoder (TransformerEncoder)
-import Torch.GraduallyTyped.NN.Transformer.LMHead (LMHead)
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (..), ModelSpec)
+import Torch.GraduallyTyped.NN.Sparse (Embedding (..), EmbeddingSpec (..))
+import Torch.GraduallyTyped.NN.Transformer.Encoder (TransformerEncoder, TransformerEncoderSpec (..))
+import Torch.GraduallyTyped.NN.Transformer.LMHead (LMHead, LMHeadSpec (..))
 import Torch.GraduallyTyped.NN.Transformer.Stack ()
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
 import Torch.GraduallyTyped.Prelude (forgetIsChecked)
@@ -77,16 +79,52 @@ data
     (posEncDim :: Dim (Name Symbol) (Size Nat))
     (vocabDim :: Dim (Name Symbol) (Size Nat))
     (typeVocabDim :: Dim (Name Symbol) (Size Nat))
-    (dropoutP :: Type)
   where
   EncoderOnlyTransformer ::
-    forall style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP.
+    forall style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim.
     GEncoderOnlyTransformer
       inputEmbedDim
-      (EOEncoderF style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP)
+      (EOEncoderF style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim)
       (EOEmbeddingF style gradient device dataType inputEmbedDim vocabDim)
       (EOTypeEmbeddingF style gradient device dataType inputEmbedDim typeVocabDim) ->
-    EncoderOnlyTransformer style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP
+    EncoderOnlyTransformer style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim
+
+data
+  EncoderOnlyTransformerSpec
+    (style :: TransformerStyle)
+    (numLayers :: Nat)
+    (gradient :: Gradient RequiresGradient)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (posEncDim :: Dim (Name Symbol) (Size Nat))
+    (vocabDim :: Dim (Name Symbol) (Size Nat))
+    (typeVocabDim :: Dim (Name Symbol) (Size Nat))
+  where
+  EncoderOnlyTransformerSpec ::
+    forall style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim.
+    STransformerStyle style ->
+    SNat numLayers ->
+    SGradient gradient ->
+    SDevice device ->
+    SDataType dataType ->
+    SDim headDim ->
+    SDim headEmbedDim ->
+    SDim embedDim ->
+    SDim inputEmbedDim ->
+    SDim ffnDim ->
+    SDim posEncDim ->
+    SDim vocabDim ->
+    SDim typeVocabDim ->
+    Double ->
+    Double ->
+    EncoderOnlyTransformerSpec style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim
+
+type instance ModelSpec (EncoderOnlyTransformer style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim) = EncoderOnlyTransformerSpec style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim
 
 type family
   EOEncoderF
@@ -100,12 +138,11 @@ type family
     (embedDim :: Dim (Name Symbol) (Size Nat))
     (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
     (ffnDim :: Dim (Name Symbol) (Size Nat))
-    (posEncDim :: Dim (Name Symbol) (Size Nat))
-    (dropoutP :: Type) ::
+    (posEncDim :: Dim (Name Symbol) (Size Nat)) ::
     Type
   where
-  EOEncoderF style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP =
-    TransformerEncoder style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP
+  EOEncoderF style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim =
+    TransformerEncoder style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim
 
 type family
   EOEmbeddingF
@@ -163,14 +200,50 @@ data
     (posEncDim :: Dim (Name Symbol) (Size Nat))
     (vocabDim :: Dim (Name Symbol) (Size Nat))
     (typeVocabDim :: Dim (Name Symbol) (Size Nat))
-    (dropoutP :: Type)
   where
   EncoderOnlyTransformerWithLMHead ::
-    forall style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP.
+    forall style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim.
     GEncoderOnlyTransformerWithLMHead
-      (EOTransformerF style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP)
+      (EOTransformerF style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim)
       (EOLMHeadF style gradient device dataType inputEmbedDim vocabDim) ->
-    EncoderOnlyTransformerWithLMHead style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP
+    EncoderOnlyTransformerWithLMHead style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim
+
+data
+  EncoderOnlyTransformerWithLMHeadSpec
+    (style :: TransformerStyle)
+    (numLayers :: Nat)
+    (gradient :: Gradient RequiresGradient)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (posEncDim :: Dim (Name Symbol) (Size Nat))
+    (vocabDim :: Dim (Name Symbol) (Size Nat))
+    (typeVocabDim :: Dim (Name Symbol) (Size Nat))
+  where
+  EncoderOnlyTransformerWithLMHeadSpec ::
+    forall style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim.
+    STransformerStyle style ->
+    SNat numLayers ->
+    SGradient gradient ->
+    SDevice device ->
+    SDataType dataType ->
+    SDim headDim ->
+    SDim headEmbedDim ->
+    SDim embedDim ->
+    SDim inputEmbedDim ->
+    SDim ffnDim ->
+    SDim posEncDim ->
+    SDim vocabDim ->
+    SDim typeVocabDim ->
+    Double ->
+    Double ->
+    EncoderOnlyTransformerWithLMHeadSpec style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim
+
+type instance ModelSpec (EncoderOnlyTransformerWithLMHead style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim) = EncoderOnlyTransformerWithLMHeadSpec style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim
 
 type family
   EOTransformerF
@@ -186,12 +259,11 @@ type family
     (ffnDim :: Dim (Name Symbol) (Size Nat))
     (posEncDim :: Dim (Name Symbol) (Size Nat))
     (vocabDim :: Dim (Name Symbol) (Size Nat))
-    (typeVocabDim :: Dim (Name Symbol) (Size Nat))
-    (dropoutP :: Type) ::
+    (typeVocabDim :: Dim (Name Symbol) (Size Nat)) ::
     Type
   where
-  EOTransformerF style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP =
-    EncoderOnlyTransformer style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP
+  EOTransformerF style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim =
+    EncoderOnlyTransformer style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim
 
 type family
   EOLMHeadF
@@ -206,35 +278,37 @@ type family
   EOLMHeadF style gradient device dataType inputEmbedDim vocabDim = LMHead style gradient device dataType inputEmbedDim vocabDim
 
 instance
-  (SingI style, KnownNat numLayers) =>
+  SingI style =>
   HasStateDict
-    (EncoderOnlyTransformer style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP)
-    (SGradient gradient, SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim inputEmbedDim, SDim ffnDim, SDim posEncDim, SDim vocabDim, SDim typeVocabDim, dropoutP, Double)
+    (EncoderOnlyTransformer style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim)
   where
-  fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, typeVocabDim, dropoutP, eps) k =
-    let encoder ST5 = undefined
+  fromStateDict (EncoderOnlyTransformerSpec style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP eps) k =
+    let encoderSpec = TransformerEncoderSpec style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP eps
+        encoder ST5 = undefined
         encoder SByT5 = undefined
         encoder SBART = undefined
         encoder SMBART = undefined
         encoder SPegasus = undefined
-        encoder SBERT = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, dropoutP, eps) k
-        encoder SRoBERTa = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, dropoutP, eps) k
+        encoder SBERT = fromStateDict encoderSpec k
+        encoder SRoBERTa = fromStateDict encoderSpec k
         encoder SGPT2 = undefined
+        embeddingSpec = EmbeddingSpec gradient (SLayout SDense) device dataType vocabDim inputEmbedDim SNothing
         embedding ST5 = undefined
         embedding SByT5 = undefined
         embedding SBART = undefined
         embedding SMBART = undefined
         embedding SPegasus = undefined
-        embedding SBERT = fromStateDict (gradient, SLayout SDense, device, dataType, vocabDim, inputEmbedDim) (k <> "embeddings.word_embeddings.")
-        embedding SRoBERTa = fromStateDict (gradient, SLayout SDense, device, dataType, vocabDim, inputEmbedDim) (k <> "embeddings.word_embeddings.")
+        embedding SBERT = fromStateDict embeddingSpec (k <> "embeddings.word_embeddings.")
+        embedding SRoBERTa = fromStateDict embeddingSpec (k <> "embeddings.word_embeddings.")
         embedding SGPT2 = undefined
+        typeEmbeddingSpec = EmbeddingSpec gradient (SLayout SDense) device dataType typeVocabDim inputEmbedDim SNothing
         typeEmbedding ST5 = undefined
         typeEmbedding SByT5 = undefined
         typeEmbedding SBART = undefined
         typeEmbedding SMBART = undefined
         typeEmbedding SPegasus = undefined
-        typeEmbedding SBERT = fromStateDict (gradient, SLayout SDense, device, dataType, typeVocabDim, inputEmbedDim) (k <> "embeddings.token_type_embeddings.")
-        typeEmbedding SRoBERTa = fromStateDict (gradient, SLayout SDense, device, dataType, typeVocabDim, inputEmbedDim) (k <> "embeddings.token_type_embeddings.")
+        typeEmbedding SBERT = fromStateDict typeEmbeddingSpec (k <> "embeddings.token_type_embeddings.")
+        typeEmbedding SRoBERTa = fromStateDict typeEmbeddingSpec (k <> "embeddings.token_type_embeddings.")
         typeEmbedding SGPT2 = undefined
      in EncoderOnlyTransformer
           <$> ( GEncoderOnlyTransformer
@@ -275,27 +349,28 @@ instance
           pure ()
 
 instance
-  (SingI style, KnownNat numLayers) =>
+  SingI style =>
   HasStateDict
-    (EncoderOnlyTransformerWithLMHead style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP)
-    (SGradient gradient, SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim inputEmbedDim, SDim ffnDim, SDim posEncDim, SDim vocabDim, SDim typeVocabDim, dropoutP, Double)
+    (EncoderOnlyTransformerWithLMHead style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim)
   where
-  fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, typeVocabDim, dropoutP, eps) k =
-    let transformer ST5 = undefined
+  fromStateDict (EncoderOnlyTransformerWithLMHeadSpec style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP eps) k =
+    let transformerSpec = EncoderOnlyTransformerSpec style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP eps
+        transformer ST5 = undefined
         transformer SByT5 = undefined
         transformer SBART = undefined
         transformer SMBART = undefined
         transformer SPegasus = undefined
-        transformer SBERT = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, typeVocabDim, dropoutP, eps) (k <> "bert.")
-        transformer SRoBERTa = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, posEncDim, vocabDim, typeVocabDim, dropoutP, eps) (k <> "roberta.")
+        transformer SBERT = fromStateDict transformerSpec (k <> "bert.")
+        transformer SRoBERTa = fromStateDict transformerSpec (k <> "roberta.")
         transformer SGPT2 = undefined
+        lmHeadSpec = LMHeadSpec style gradient device dataType inputEmbedDim vocabDim eps
         lmHead ST5 = undefined
         lmHead SByT5 = undefined
         lmHead SBART = undefined
         lmHead SMBART = undefined
         lmHead SPegasus = undefined
-        lmHead SBERT = fromStateDict (gradient, device, dataType, inputEmbedDim, vocabDim, eps) (k <> "cls.predictions.")
-        lmHead SRoBERTa = fromStateDict (gradient, device, dataType, inputEmbedDim, vocabDim, eps) (k <> "lm_head.")
+        lmHead SBERT = fromStateDict lmHeadSpec (k <> "cls.predictions.")
+        lmHead SRoBERTa = fromStateDict lmHeadSpec (k <> "lm_head.")
         lmHead SGPT2 = undefined
      in EncoderOnlyTransformerWithLMHead
           <$> ( GEncoderOnlyTransformerWithLMHead
@@ -380,19 +455,19 @@ instance
     HasForward
       (EOEmbeddingF style gradient device dataType inputEmbedDim vocabDim)
       input
-      generator
+      generatorDevice
       embeddingOutput
-      embeddingGeneratorOutput,
+      embeddingGeneratorOutputDevice,
     embeddingOutput ~ Tensor gradient' layout' device' dataType' shape',
     HasForward
       (EOTypeEmbeddingF style gradient device dataType inputEmbedDim typeVocabDim)
       inputType
-      embeddingGeneratorOutput
+      embeddingGeneratorOutputDevice
       typeEmbeddingOutput
-      typeEmbeddingGeneratorOutput,
+      typeEmbeddingGeneratorOutputDevice,
     typeEmbeddingOutput ~ Tensor gradient'' layout'' device'' dataType'' shape'',
     HasForward
-      (EOEncoderF style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP)
+      (EOEncoderF style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim)
       ( Tensor
           (gradient' <|> gradient'')
           (layout' <+> layout'')
@@ -402,16 +477,16 @@ instance
         pos,
         attentionMask
       )
-      typeEmbeddingGeneratorOutput
+      typeEmbeddingGeneratorOutputDevice
       encoderOutput
-      generatorOutput
+      generatorOutputDevice
   ) =>
   HasForward
-    (EncoderOnlyTransformer style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP)
+    (EncoderOnlyTransformer style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim)
     (EncoderOnlyTransformerInput input inputType pos attentionMask)
-    generator
+    generatorDevice
     (EncoderOnlyTransformerOutput encoderOutput)
-    generatorOutput
+    generatorOutputDevice
   where
   forward (EncoderOnlyTransformer GEncoderOnlyTransformer {..}) EncoderOnlyTransformerInput {..} =
     let s :: Double = sqrt . fromIntegral . forgetIsChecked . dimSize . fromSing $ eoInputEmbedDim
@@ -456,26 +531,26 @@ instance
 instance
   ( SingI style,
     HasForward
-      (EOTransformerF style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP)
+      (EOTransformerF style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim)
       input
-      generator
+      generatorDevice
       eoOutput
-      eoGeneratorOutput,
+      eoGeneratorOutputDevice,
     eoOutput ~ EncoderOnlyTransformerOutput encoderOutput,
     HasForward
       (EOLMHeadF style gradient device dataType inputEmbedDim vocabDim)
       encoderOutput
-      eoGeneratorOutput
+      eoGeneratorOutputDevice
       lmHeadOutput
-      generatorOutput,
+      generatorOutputDevice,
     output ~ EncoderOnlyTransformerOutput lmHeadOutput
   ) =>
   HasForward
-    (EncoderOnlyTransformerWithLMHead style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP)
+    (EncoderOnlyTransformerWithLMHead style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim)
     input
-    generator
+    generatorDevice
     output
-    generatorOutput
+    generatorOutputDevice
   where
   forward (EncoderOnlyTransformerWithLMHead GEncoderOnlyTransformerWithLMHead {..}) input =
     runIxStateT $

@@ -74,22 +74,22 @@ instance
   ( HasForward
       (PoolerDenseF style gradient device dataType inputEmbedDim)
       input
-      generator
+      generatorDevice
       denseOutput
-      denseGeneratorOutput,
+      denseGeneratorOutputDevice,
     HasForward
       (PoolerActivationF style)
       denseOutput
-      denseGeneratorOutput
+      denseGeneratorOutputDevice
       output
-      generatorOutput
+      generatorOutputDevice
   ) =>
   HasForward
     (Pooler style gradient device dataType inputEmbedDim)
     input
-    generator
+    generatorDevice
     output
-    generatorOutput
+    generatorOutputDevice
   where
   forward (Pooler GPooler {..}) input =
     runIxStateT $
