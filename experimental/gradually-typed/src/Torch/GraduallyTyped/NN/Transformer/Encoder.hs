@@ -50,6 +50,7 @@ import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (TransposeF, Unsqueeze
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor, TensorSpec (..))
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
+import Debug.Trace (traceShowId)
 
 -- | Generic transformer encoder.
 -- Needs to be specialized to a given transformer type, e.g. 'T5'.
@@ -644,6 +645,7 @@ instance
       generatorDevice
       dropoutOutput
       dropoutGeneratorOutputDevice,
+    Show dropoutOutput,
     HasForward
       (TEStackF 'BART numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim)
       ( dropoutOutput,

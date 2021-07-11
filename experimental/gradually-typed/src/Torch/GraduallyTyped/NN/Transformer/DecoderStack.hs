@@ -30,6 +30,7 @@ import Data.Singletons.TypeLits (SNat (SNat))
 import qualified Data.Vector as V
 import qualified Data.Vector.Generic.Sized.Internal as VGS
 import qualified Data.Vector.Sized as VS
+import Debug.Trace (traceShow)
 import GHC.TypeLits (KnownNat, Nat, Symbol, type (+))
 import Torch.GraduallyTyped.DType (DType (..), DataType, SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
@@ -202,9 +203,13 @@ instance
      in V.foldl
           ( \agg block' -> do
               (output, g') <- agg
-              forward block' (output, key, decoderAttentionBias, crossAttentionBias) g'
+              (output', g'') <- forward block' (output, key, decoderAttentionBias, crossAttentionBias) g'
+              pure (output', g'')
           )
-          (forward block (query, key, decoderAttentionBias, crossAttentionBias) g)
+          ( do
+              (output, g') <- forward block (query, key, decoderAttentionBias, crossAttentionBias) g
+              pure (output, g')
+          )
           blocks
 
 testDecoderStack :: IO _

@@ -43,6 +43,7 @@ import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, SName (..), S
 import Torch.GraduallyTyped.Tensor.Creation (sOnes)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mulScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (), TensorSpec (..))
+import Debug.Trace (traceShowId)
 
 data
   GSequenceToSequenceTransformer
@@ -444,13 +445,19 @@ instance
       )
       embeddingGeneratorOutputDevice'
       decoderOutput
+      decoderGeneratorOutputDevice,
+    HasForward
+      (SequenceToSequenceHeadF style transformerHead gradient device dataType inputEmbedDim vocabDim)
+      decoderOutput
+      decoderGeneratorOutputDevice
+      headOutput
       generatorOutputDevice
   ) =>
   HasForward
     (SequenceToSequenceTransformer style transformerHead numEncoderLayers numDecoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim)
     (SequenceToSequenceTransformerInput input decoderInput pos decoderPos attentionMask decoderAttentionMask crossAttentionMask)
     generatorDevice
-    (SequenceToSequenceTransformerOutput decoderOutput encoderOutput)
+    (SequenceToSequenceTransformerOutput headOutput encoderOutput)
     generatorOutputDevice
   where
   forward (SequenceToSequenceTransformer GSequenceToSequenceTransformer {..}) SequenceToSequenceTransformerInput {..} =
@@ -480,6 +487,7 @@ instance
                        >>>= ( \decoderInput' ->
                                 IxStateT $ forward seqToSeqDecoder (decoderInput', encoderOutput, decoderPos, decoderAttentionMask, crossAttentionMask)
                             )
+                       >>>= IxStateT . forward seqToSeqHead
                        >>>= \decoderOutput -> ireturn (SequenceToSequenceTransformerOutput decoderOutput encoderOutput)
                  )
 

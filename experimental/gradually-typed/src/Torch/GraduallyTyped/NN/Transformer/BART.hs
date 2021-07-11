@@ -44,23 +44,27 @@ withTokenizer =
 testBARTInput :: IO _
 testBARTInput = do
   withTokenizer $ \tokenizer -> do
-    encoding <- Tokenizers.encode tokenizer "<s>Haskell: I<mask></s>"
+    -- encoding <- Tokenizers.encode tokenizer "<s>Haskell: I<mask></s>"
+    encoding <- Tokenizers.encode tokenizer "<s>hello, this is a test</s>"
     ids <- Tokenizers.getIDs encoding
     print ids
     mkBARTInput
       (SName @"*" :&: SSize @1)
-      (SName @"*" :&: SSize @6)
+      -- (SName @"*" :&: SSize @6)
+      (SName @"*" :&: SSize @8)
       [ids]
 
 testBARTDecoderInput :: IO _
 testBARTDecoderInput = do
   withTokenizer $ \tokenizer -> do
-    encoding <- Tokenizers.encode tokenizer "<s>Haskell: I"
+    -- encoding <- Tokenizers.encode tokenizer "<s>Haskell: I"
+    encoding <- Tokenizers.encode tokenizer "<s>hello, this is a test</s>"
     ids <- Tokenizers.getIDs encoding
     print ids
     mkBARTInput
       (SName @"*" :&: SSize @1)
-      (SName @"*" :&: SSize @5)
+      -- (SName @"*" :&: SSize @5)
+      (SName @"*" :&: SSize @8)
       [ids]
 
 testForwardBARTBase :: IO ()
@@ -80,8 +84,8 @@ testForwardBARTBase =
           firstPositions <- take 3 firstBatch
           take 3 firstPositions
     print firstEncoderHiddenStates
-    -- let firstEncoderHiddenStates' = [-0.0324, 0.0121, -0.0036, 0.0885, 0.1154, -0.2264, 0.3947, 0.1037, 0.0503]
-    -- mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstEncoderHiddenStates firstEncoderHiddenStates'
+    let firstEncoderHiddenStates' = [-0.0323,  0.0127, -0.0035, 0.0310,  0.0557,  0.1267, -0.2276, -0.0942,  0.0046]
+    mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstEncoderHiddenStates firstEncoderHiddenStates'
     let decoderOutput = case bartDecoderOutput of
           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
     let lastLogits = do
@@ -102,5 +106,5 @@ testForwardBARTBase =
           firstPositions <- take 3 firstBatch
           take 3 firstPositions
     print firstLogits
-    let firstLogits' = [33.8621, 6.3225, 18.2816, 6.7655, -1.4854, 14.1845, 0.5911, -1.9006, 8.9273]
+    let firstLogits' = [33.5031,  6.3094, 16.0348, 3.0584, -2.2831, 10.3209, -4.2086, -4.3536,  0.9580]
     mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLogits' firstLogits
