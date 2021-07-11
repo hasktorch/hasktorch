@@ -27,6 +27,7 @@ import Torch.Internal.GC (unsafeThrowableIO)
 import qualified Torch.Internal.Managed.Native as ATen (_fused_dropout_tdG)
 import qualified Torch.Internal.Managed.Type.Tuple as ATen ()
 import qualified Torch.Internal.Type as ATen (Tensor)
+import Unsafe.Coerce (unsafeCoerce)
 
 -- $setup
 -- >>> import Data.Singletons.Prelude.List (SList (..))
@@ -45,6 +46,17 @@ dropout ::
   Generator generatorDevice ->
   -- | output
   m (Tensor gradient layout (device <+> generatorDevice) dataType shape, Generator (device <+> generatorDevice))
+dropout p tensor g =
+  pure
+    ( unsafeCoerce
+        @(Tensor gradient layout device dataType shape)
+        @(Tensor gradient layout (device <+> generatorDevice) dataType shape)
+        tensor,
+      unsafeCoerce
+        @(Generator generatorDevice)
+        @(Generator (device <+> generatorDevice))
+        g
+    )
 dropout p tensor UnsafeGenerator {..} = unsafeThrowableIO $ do
   (t, nextGeneratorSeed, nextGeneratorState) <-
     withGenerator
