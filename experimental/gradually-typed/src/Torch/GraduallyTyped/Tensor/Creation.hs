@@ -60,8 +60,8 @@ import qualified Torch.Internal.Managed.TensorFactories as ATen
 -- | Create a gradually typed tensor of ones.
 --
 -- >>> shape = SShape $ SName @"batch" :&: SSize @32 :|: SUncheckedName "feature" :&: SUncheckedSize 8 :|: SNil
--- >>> :type sOnes (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape
--- sOnes (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape
+-- >>> :type sOnes $ TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape
+-- sOnes $ TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape
 --   :: Tensor
 --        ('Gradient 'WithoutGradient)
 --        ('Layout 'Dense)
@@ -98,8 +98,8 @@ ones = sOnes $ TensorSpec (sing @gradient) (sing @layout) (sing @device) (sing @
 -- | Create a gradually typed tensor of zeros.
 --
 -- >>> shape = SShape $ SName @"batch" :&: SSize @32 :|: SUncheckedName "feature" :&: SUncheckedSize 8 :|: SNil
--- >>> :type sZeros (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape
--- sZeros (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape
+-- >>> :type sZeros $ TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape
+-- sZeros $ TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape
 --   :: Tensor
 --        ('Gradient 'WithoutGradient)
 --        ('Layout 'Dense)
@@ -137,8 +137,8 @@ zeros = sZeros $ TensorSpec (sing @gradient) (sing @layout) (sing @device) (sing
 --
 -- >>> shape = SShape $ SName @"batch" :&: SSize @32 :|: SUncheckedName "feature" :&: SUncheckedSize 8 :|: SNil
 -- >>> input = -1
--- >>> :type sFull (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape input
--- sFull (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape input
+-- >>> :type sFull (TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape) input
+-- sFull (TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape) input
 --   :: Tensor
 --        ('Gradient 'WithoutGradient)
 --        ('Layout 'Dense)

@@ -205,8 +205,8 @@ type family ReshapeF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: 
 -- | Returns a tensor with the same data and number of elements as the input tensor,
 -- but with the specified shape:
 --
--- >>> g <- sMkGenerator (SDevice SCPU) 0
--- >>> (input, _) = sRandn (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SName @"*" :&: SSize @4 :|: SNil) g
+-- >>> g = sMkGenerator (SDevice SCPU) 0
+-- >>> (input, _) <- sRandn (TensorSpec (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SName @"*" :&: SSize @4 :|: SNil)) g
 -- >>> output = sReshape (SShape $ SName @"*" :&: SSize @2 :|: SName @"*" :&: SSize @2 :|: SNil) input
 -- >>> :type output
 -- output
@@ -350,8 +350,8 @@ type family TransposeIndexIndexDimsF (index0 :: Nat) (index1 :: Nat) (dims :: [D
 -- | Returns a tensor that is a transposed version of 'input'.
 -- The selected dimensions 'selectDim0' and 'selectDim1' are swapped.
 --
--- >>> g <- mkGenerator @('Device 'CPU) 0
--- >>> (input, _) = randn @('Gradient 'WithGradient) @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "feature") ('Size 5)]) g
+-- >>> g = mkGenerator @('Device 'CPU) 0
+-- >>> (input, _) <- randn @('Gradient 'WithGradient) @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "feature") ('Size 5)]) g
 -- >>> output <- transpose @('SelectDim ('ByName "batch")) @('SelectDim ('ByName "feature")) input
 -- >>> :type output
 -- output
@@ -373,7 +373,6 @@ type family TransposeIndexIndexDimsF (index0 :: Nat) (index1 :: Nat) (dims :: [D
 --        ('DataType 'Float)
 --        'UncheckedShape
 -- >>> dims output
--- [W TensorImpl.h:934] Warning: Named tensors and all their associated APIs are an experimental feature and subject to change. Please do not use them for anything important until they are released as stable. (function operator())
 -- [Dim {dimName = "feature", dimSize = 5},Dim {dimName = "batch", dimSize = 10}]
 sTranspose ::
   forall selectDim0 selectDim1 gradient layout device dataType shape shape' m.
