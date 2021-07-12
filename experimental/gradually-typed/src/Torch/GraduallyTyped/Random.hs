@@ -11,6 +11,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Torch.GraduallyTyped.Random where
 
@@ -22,7 +23,7 @@ import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (Nat)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
-import Torch.GraduallyTyped.Prelude (forgetIsChecked, pattern Demoted')
+import Torch.GraduallyTyped.Prelude (forgetIsChecked)
 import qualified Torch.Internal.Managed.Type.Generator as ATen
 import qualified Torch.Internal.Type as ATen
 
@@ -73,7 +74,7 @@ sGeneratorToDevice ::
   SDevice generatorDevice' ->
   Generator generatorDevice ->
   Generator generatorDevice'
-sGeneratorToDevice (Demoted' generatorDeviceType') UnsafeGenerator {..}
+sGeneratorToDevice (forgetIsChecked . fromSing -> generatorDeviceType') UnsafeGenerator {..}
   | generatorDeviceType' == generatorDeviceType =
     UnsafeGenerator generatorSeed generatorDeviceType' generatorState
 sGeneratorToDevice device' UnsafeGenerator {..} =

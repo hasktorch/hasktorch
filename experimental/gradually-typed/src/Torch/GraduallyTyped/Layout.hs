@@ -77,10 +77,10 @@ instance SingI layoutType => SingI ('Layout (layoutType :: LayoutType)) where
 
 instance SingKind (Layout LayoutType) where
   type Demote (Layout LayoutType) = IsChecked LayoutType
-  fromSing (SUncheckedLayout layoutType) = Unchecked layoutType
-  fromSing (SLayout layoutType) = Checked . fromSing $ layoutType
-  toSing (Unchecked layoutType) = SomeSing (SUncheckedLayout layoutType)
-  toSing (Checked layoutType) = withSomeSing layoutType $ SomeSing . SLayout
+  fromSing (SUncheckedLayout layoutType) = IsUnchecked layoutType
+  fromSing (SLayout layoutType) = IsChecked . fromSing $ layoutType
+  toSing (IsUnchecked layoutType) = SomeSing (SUncheckedLayout layoutType)
+  toSing (IsChecked layoutType) = withSomeSing layoutType $ SomeSing . SLayout
 
 class KnownLayout (layout :: Layout LayoutType) where
   layoutVal :: Layout LayoutType

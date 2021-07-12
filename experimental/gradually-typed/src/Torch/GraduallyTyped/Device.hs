@@ -97,10 +97,10 @@ instance SingI deviceType => SingI ('Device (deviceType :: DeviceType Nat)) wher
 
 instance SingKind (Device (DeviceType Nat)) where
   type Demote (Device (DeviceType Nat)) = IsChecked (DeviceType Int16)
-  fromSing (SUncheckedDevice deviceType) = Unchecked deviceType
-  fromSing (SDevice deviceType) = Checked . fromSing $ deviceType
-  toSing (Unchecked deviceType) = SomeSing . SUncheckedDevice $ deviceType
-  toSing (Checked deviceType) = withSomeSing deviceType $ SomeSing . SDevice
+  fromSing (SUncheckedDevice deviceType) = IsUnchecked deviceType
+  fromSing (SDevice deviceType) = IsChecked . fromSing $ deviceType
+  toSing (IsUnchecked deviceType) = SomeSing . SUncheckedDevice $ deviceType
+  toSing (IsChecked deviceType) = withSomeSing deviceType $ SomeSing . SDevice
 
 class KnownDevice (device :: Device (DeviceType Nat)) where
   deviceVal :: Device (DeviceType Int16)

@@ -152,10 +152,10 @@ instance SingI dType => SingI ('DataType (dType :: DType)) where
 
 instance SingKind (DataType DType) where
   type Demote (DataType DType) = IsChecked DType
-  fromSing (SUncheckedDataType dType) = Unchecked dType
-  fromSing (SDataType dType) = Checked . fromSing $ dType
-  toSing (Unchecked dType) = SomeSing . SUncheckedDataType $ dType
-  toSing (Checked dType) = withSomeSing dType $ SomeSing . SDataType
+  fromSing (SUncheckedDataType dType) = IsUnchecked dType
+  fromSing (SDataType dType) = IsChecked . fromSing $ dType
+  toSing (IsUnchecked dType) = SomeSing . SUncheckedDataType $ dType
+  toSing (IsChecked dType) = withSomeSing dType $ SomeSing . SDataType
 
 class KnownDataType (dataType :: DataType DType) where
   dataTypeVal :: DataType DType

@@ -66,10 +66,10 @@ type family SizeF (size :: Size Nat) :: Nat where
 
 instance SingKind (Size Nat) where
   type Demote (Size Nat) = IsChecked Integer
-  fromSing (SUncheckedSize size) = Unchecked size
-  fromSing (SSize :: Sing size) = Checked . natVal $ Proxy @(SizeF size)
-  toSing (Unchecked size) = SomeSing . SUncheckedSize $ size
-  toSing (Checked size) = case someNatVal size of
+  fromSing (SUncheckedSize size) = IsUnchecked size
+  fromSing (SSize :: Sing size) = IsChecked . natVal $ Proxy @(SizeF size)
+  toSing (IsUnchecked size) = SomeSing . SUncheckedSize $ size
+  toSing (IsChecked size) = case someNatVal size of
     Just (SomeNat (_ :: Proxy size)) -> SomeSing (SSize @size)
 
 class KnownSize (size :: Size Nat) where
@@ -102,10 +102,10 @@ type family NameF (name :: Name Symbol) :: Symbol where
 
 instance SingKind (Name Symbol) where
   type Demote (Name Symbol) = IsChecked String
-  fromSing (SUncheckedName name) = Unchecked name
-  fromSing (SName :: Sing name) = Checked . symbolVal $ Proxy @(NameF name)
-  toSing (Unchecked name) = SomeSing . SUncheckedName $ name
-  toSing (Checked name) = case someSymbolVal name of
+  fromSing (SUncheckedName name) = IsUnchecked name
+  fromSing (SName :: Sing name) = IsChecked . symbolVal $ Proxy @(NameF name)
+  toSing (IsUnchecked name) = SomeSing . SUncheckedName $ name
+  toSing (IsChecked name) = case someSymbolVal name of
     SomeSymbol (_ :: Proxy name) -> SomeSing (SName @name)
 
 class KnownName (name :: Name Symbol) where
@@ -250,10 +250,10 @@ instance SingI (by :: By Symbol Nat) => SingI ('SelectDim by) where
 
 instance SingKind (SelectDim (By Symbol Nat)) where
   type Demote (SelectDim (By Symbol Nat)) = IsChecked (By String Integer)
-  fromSing (SUncheckedSelectDim by) = Unchecked by
-  fromSing (SSelectDim by) = Checked . fromSing $ by
-  toSing (Unchecked by) = SomeSing . SUncheckedSelectDim $ by
-  toSing (Checked by) = withSomeSing by $ SomeSing . SSelectDim
+  fromSing (SUncheckedSelectDim by) = IsUnchecked by
+  fromSing (SSelectDim by) = IsChecked . fromSing $ by
+  toSing (IsUnchecked by) = SomeSing . SUncheckedSelectDim $ by
+  toSing (IsChecked by) = withSomeSing by $ SomeSing . SSelectDim
 
 class KnownSelectDim (selectDim :: SelectDim (By Symbol Nat)) where
   selectDimVal :: SelectDim (By String Integer)
@@ -286,10 +286,10 @@ instance SingI bys => SingI ('SelectDims (bys :: [By Symbol Nat])) where
 
 instance SingKind (SelectDims [By Symbol Nat]) where
   type Demote (SelectDims [By Symbol Nat]) = IsChecked [By String Integer]
-  fromSing (SUncheckedSelectDims bys) = Unchecked bys
-  fromSing (SSelectDims bys) = Checked . fromSing $ bys
-  toSing (Unchecked bys) = SomeSing . SUncheckedSelectDims $ bys
-  toSing (Checked bys) = withSomeSing bys $ SomeSing . SSelectDims
+  fromSing (SUncheckedSelectDims bys) = IsUnchecked bys
+  fromSing (SSelectDims bys) = IsChecked . fromSing $ bys
+  toSing (IsUnchecked bys) = SomeSing . SUncheckedSelectDims $ bys
+  toSing (IsChecked bys) = withSomeSing bys $ SomeSing . SSelectDims
 
 class KnownSelectDims (selectDims :: SelectDims [By Symbol Nat]) where
   selectDimsVal :: SelectDims [By String Integer]
@@ -339,15 +339,15 @@ instance SingI dims => SingI ('Shape (dims :: [Dim (Name Symbol) (Size Nat)])) w
 instance SingKind (Shape [Dim (Name Symbol) (Size Nat)]) where
   type Demote (Shape [Dim (Name Symbol) (Size Nat)]) = IsChecked [Dim (IsChecked String) (IsChecked Integer)]
   fromSing (SUncheckedShape shape) =
-    Unchecked
-      . fmap (\(Dim name size) -> Dim (Unchecked name) (Unchecked size))
+    IsUnchecked
+      . fmap (\(Dim name size) -> Dim (IsUnchecked name) (IsUnchecked size))
       $ shape
-  fromSing (SShape dims) = Checked . fromSing $ dims
-  toSing (Unchecked shape) =
+  fromSing (SShape dims) = IsChecked . fromSing $ dims
+  toSing (IsUnchecked shape) =
     SomeSing . SUncheckedShape
       . fmap (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size))
       $ shape
-  toSing (Checked shape) = withSomeSing shape $ SomeSing . SShape
+  toSing (IsChecked shape) = withSomeSing shape $ SomeSing . SShape
 
 pattern (:|:) ::
   forall

@@ -22,10 +22,9 @@ module Torch.GraduallyTyped.Prelude
     module Data.Proxy,
     module Data.Type.Bool,
     module GHC.TypeLits,
+    Checked (..),
+    SChecked (..),
     IsChecked (..),
-    pattern IsChecked,
-    pattern Demoted,
-    pattern Demoted',
     forgetIsChecked,
     All,
     KnownElem (..),
@@ -81,17 +80,16 @@ data IsChecked a = Checked a | Unchecked a
 pattern IsChecked :: a -> IsChecked a
 pattern IsChecked forgotten <- (forgetIsChecked -> forgotten)
 
-pattern Demoted :: SingKind k => Demote k -> Sing (a :: k)
-pattern Demoted demoted <- (fromSing -> demoted)
 
 pattern Demoted' :: (SingKind k, Demote k ~ IsChecked t) => t -> Sing (a :: k)
 pattern Demoted' unchecked <- (forgetIsChecked . fromSing -> unchecked)
 
-{-# COMPLETE Demoted, Demoted' #-}
+data IsChecked a = IsChecked a | IsUnchecked a
+  deriving stock (Eq, Ord, Show, Generic)
 
 forgetIsChecked :: IsChecked a -> a
-forgetIsChecked (Checked a) = a
-forgetIsChecked (Unchecked a) = a
+forgetIsChecked (IsChecked a) = a
+forgetIsChecked (IsUnchecked a) = a
 
 type family All (c :: k -> Constraint) (xs :: [k]) :: Constraint where
   All _ '[] = ()

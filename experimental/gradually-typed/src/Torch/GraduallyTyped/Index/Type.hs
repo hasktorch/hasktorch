@@ -41,10 +41,10 @@ type family IndexF (index :: Index Nat) :: Nat where
 
 instance SingKind (Index Nat) where
   type Demote (Index Nat) = IsChecked Natural
-  fromSing (SUncheckedIndex index) = Unchecked index
-  fromSing (SIndex :: SIndex index) = Checked . natVal $ Proxy @(IndexF index)
-  toSing (Unchecked index) = SomeSing $ SUncheckedIndex index
-  toSing (Checked index) = case someNatVal index of
+  fromSing (SUncheckedIndex index) = IsUnchecked index
+  fromSing (SIndex :: SIndex index) = IsChecked . natVal $ Proxy @(IndexF index)
+  toSing (IsUnchecked index) = SomeSing $ SUncheckedIndex index
+  toSing (IsChecked index) = case someNatVal index of
     SomeNat (_ :: Proxy index) -> SomeSing (SIndex @index)
 
 class KnownIndex (index :: Index Nat) where

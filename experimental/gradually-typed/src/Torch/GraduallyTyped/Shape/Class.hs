@@ -145,14 +145,14 @@ type family (!) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (_k :: k) :: Dim
 -- >>> :type dim
 -- dim :: MonadThrow m => m (SDim ('Dim ('Name "batch") ('Size 8)))
 -- >>> fromSing <$> dim
--- Dim {dimName = Checked "batch", dimSize = Checked 8}
+-- Dim {dimName = IsChecked "batch", dimSize = IsChecked 8}
 --
 -- >>> dim = sGetDim (SSelectDim $ SByName @"feature") shape
 -- >>> :type dim
 -- dim
 --   :: MonadThrow m => m (SDim ('Dim 'UncheckedName 'UncheckedSize))
 -- >>> fromSing <$> dim
--- Dim {dimName = Unchecked "feature", dimSize = Checked 2}
+-- Dim {dimName = IsUnchecked "feature", dimSize = IsChecked 2}
 --
 -- >>> dim = sGetDim (SSelectDim $ SByName @"sequence") shape
 -- >>> :type dim
@@ -165,7 +165,7 @@ type family (!) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (_k :: k) :: Dim
 -- >>> :type dim
 -- dim :: MonadThrow m => m (SDim ('Dim ('Name "batch") ('Size 8)))
 -- >>> fromSing <$> dim
--- Dim {dimName = Checked "batch", dimSize = Checked 8}
+-- Dim {dimName = IsChecked "batch", dimSize = IsChecked 8}
 --
 -- >>> :type sGetDim (SSelectDim $ SByIndex @2) shape
 -- sGetDim (SSelectDim $ SByIndex @2) shape
@@ -412,7 +412,7 @@ sUnifySize size size' = throwM $ UnifySizeError (forgetIsChecked (fromSing size)
 -- >>> :type dim
 -- dim :: MonadThrow m => m (SDim ('Dim ('Name "batch") ('Size 0)))
 -- >>> fromSing <$> dim
--- Dim {dimName = Checked "batch", dimSize = Checked 0}
+-- Dim {dimName = IsChecked "batch", dimSize = IsChecked 0}
 --
 -- >>> dimC = SName @"feature" :&: SSize @0
 -- >>> :type sUnifyDim dimB dimC
@@ -424,7 +424,7 @@ sUnifySize size size' = throwM $ UnifySizeError (forgetIsChecked (fromSing size)
 -- >>> :type dim
 -- dim :: MonadThrow m => m (SDim ('Dim 'UncheckedName ('Size 0)))
 -- >>> fromSing <$> dim
--- Dim {dimName = Unchecked "batch", dimSize = Checked 0}
+-- Dim {dimName = IsUnchecked "batch", dimSize = IsChecked 0}
 --
 -- >>> dimE = SUncheckedName "feature" :&: SSize @0
 -- >>> dim = sUnifyDim dimB dimE
