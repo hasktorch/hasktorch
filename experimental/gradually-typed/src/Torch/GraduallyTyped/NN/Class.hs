@@ -295,7 +295,7 @@ instance
     (Tensor gradient layout device dataType shape)
   where
   fromStateDict (TensorSpec gradient layout device dataType shape) k = do
-    traceShow k $ pure ()
+    -- traceShow k $ pure ()
     stateDict <- get
     maybe
       (throwM . FromStateDictKeyNotFoundError $ k)

@@ -16,13 +16,16 @@ module Torch.GraduallyTyped.Tensor.MathOperations.Reduction where
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.State (execState, modify)
 import Data.Bifunctor (Bifunctor (first), second)
+import Data.Coerce (coerce)
 import Data.Foldable (for_)
+import Data.Kind (Constraint, Type)
+import Data.Proxy (Proxy (Proxy))
 import qualified Data.Set as Set
 import Data.Singletons (SingI (..), SingKind (..))
 import Foreign.ForeignPtr (ForeignPtr)
-import GHC.TypeLits (Nat, Symbol, TypeError)
+import GHC.TypeLits (ErrorMessage (Text), Nat, Symbol, TypeError)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..))
-import Torch.GraduallyTyped.Prelude (forgetIsChecked)
+import Torch.GraduallyTyped.Prelude (Catch, forgetIsChecked)
 import Torch.GraduallyTyped.Shape.Class (ReplaceDimSizeImplF)
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SSelectDim, SSelectDims, SelectDim (..), SelectDims (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
@@ -98,11 +101,11 @@ all = unsafeThrowableIO . cast1 ATen.all_t
 -- >>> sAllDim (SUncheckedSelectDim (ByIndex 3)) t
 -- *** Exception: HasktorchException "Exception: Dimension out of range (expected to be in range of [-2, 1], but got 3)...
 sAllDim ::
-  forall selectDim gradient layout device dataType shape m.
-  MonadThrow m =>
+  forall selectDim gradient layout device dataType shape shape' m.
+  (MonadThrow m, shape' ~ BoolReductionF "all" selectDim shape, Catch shape') =>
   SSelectDim selectDim ->
   Tensor gradient layout device dataType shape ->
-  m (Tensor gradient layout device ('DataType 'Bool) (BoolReductionF "all" selectDim shape))
+  m (Tensor gradient layout device ('DataType 'Bool) shape')
 sAllDim by tensor = unsafeThrowableIO $ case forgetIsChecked $ fromSing by of
   ByName name ->
     cast3
@@ -133,10 +136,10 @@ sAllDim by tensor = unsafeThrowableIO $ case forgetIsChecked $ fromSing by of
 --        ('DataType 'Bool)
 --        ('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 1)])
 allDim ::
-  forall selectDim gradient layout device dataType shape m.
-  (SingI selectDim, MonadThrow m) =>
+  forall selectDim gradient layout device dataType shape shape' m.
+  (SingI selectDim, MonadThrow m, shape' ~ BoolReductionF "all" selectDim shape, Catch shape') =>
   Tensor gradient layout device dataType shape ->
-  m (Tensor gradient layout device ('DataType 'Bool) (BoolReductionF "all" selectDim shape))
+  m (Tensor gradient layout device ('DataType 'Bool) shape')
 allDim = sAllDim (sing @selectDim)
 
 -- | Tests if any element in input evaluates to True.
