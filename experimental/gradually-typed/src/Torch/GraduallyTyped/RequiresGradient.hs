@@ -22,7 +22,7 @@ module Torch.GraduallyTyped.RequiresGradient where
 import Data.Kind (Type)
 import Data.Singletons (Sing, SingI (..), SingKind (..), SomeSing (..), withSomeSing)
 import Data.Singletons.TH (genSingletons)
-import Torch.GraduallyTyped.Prelude (Concat, IsChecked (..))
+import Torch.GraduallyTyped.Prelude (Checked (..), Concat, IsChecked (..), SChecked (..))
 
 -- | Data type to represent whether or not the tensor requires gradient computations.
 data RequiresGradient
@@ -46,39 +46,45 @@ instance KnownRequiresGradient 'WithoutGradient where
   requiresGradientVal = WithoutGradient
 
 -- | Data type to represent whether or not it is known by the compiler if the tensor requires gradient computations.
-data Gradient (requiresGradient :: Type) where
-  -- | Whether or not the tensor requires gradient computations is unknown to the compiler.
-  UncheckedGradient :: forall requiresGradient. Gradient requiresGradient
-  -- | Whether or not the tensor requires gradient computations is known to the compiler.
-  Gradient :: forall requiresGradient. requiresGradient -> Gradient requiresGradient
-  deriving (Show)
+-- data Gradient (requiresGradient :: Type) where
+--   -- | Whether or not the tensor requires gradient computations is unknown to the compiler.
+--   UncheckedGradient :: forall requiresGradient. Gradient requiresGradient
+--   -- | Whether or not the tensor requires gradient computations is known to the compiler.
+--   Gradient :: forall requiresGradient. requiresGradient -> Gradient requiresGradient
+--   deriving (Show)
 
-data SGradient (gradient :: Gradient RequiresGradient) where
-  SUncheckedGradient :: RequiresGradient -> SGradient 'UncheckedGradient
-  SGradient :: forall requiresGradient. SRequiresGradient requiresGradient -> SGradient ('Gradient requiresGradient)
+-- data SGradient (gradient :: Gradient RequiresGradient) where
+--   SUncheckedGradient :: RequiresGradient -> SGradient 'UncheckedGradient
+--   SGradient :: forall requiresGradient. SRequiresGradient requiresGradient -> SGradient ('Gradient requiresGradient)
 
-deriving stock instance Show (SGradient (requiresGradient :: Gradient RequiresGradient))
+type SGradient :: Checked RequiresGradient -> Type
+type SGradient gradient = SChecked gradient
 
-type instance Sing = SGradient
+-- pattern SGradient' :: SIsChecked (Checked' RequiresGradient) -> SGradient' RequiresGradient
+-- pattern SGradient' sing
 
-instance SingI requiresGradient => SingI ('Gradient (requiresGradient :: RequiresGradient)) where
-  sing = SGradient $ sing @requiresGradient
+-- deriving stock instance Show (SGradient (requiresGradient :: Gradient RequiresGradient))
 
-instance SingKind (Gradient RequiresGradient) where
-  type Demote (Gradient RequiresGradient) = IsChecked RequiresGradient
-  fromSing (SUncheckedGradient requiresGradient) = Unchecked requiresGradient
-  fromSing (SGradient requiresGradient) = Checked . fromSing $ requiresGradient
-  toSing (Unchecked requiresGradient) = SomeSing (SUncheckedGradient requiresGradient)
-  toSing (Checked requiresGradient) = withSomeSing requiresGradient $ SomeSing . SGradient
+-- type instance Sing = SGradient
 
-class KnownGradient (gradient :: Gradient RequiresGradient) where
-  gradientVal :: Gradient RequiresGradient
+-- instance SingI requiresGradient => SingI ('Checked (requiresGradient :: RequiresGradient)) where
+--   sing = SGradient $ sing @requiresGradient
 
-instance KnownGradient 'UncheckedGradient where
-  gradientVal = UncheckedGradient
+-- instance SingKind (Gradient RequiresGradient) where
+--   type Demote (Gradient RequiresGradient) = IsChecked RequiresGradient
+--   fromSing (SUncheckedGradient requiresGradient) = Unchecked requiresGradient
+--   fromSing (SGradient requiresGradient) = Checked . fromSing $ requiresGradient
+--   toSing (Unchecked requiresGradient) = SomeSing (SUncheckedGradient requiresGradient)
+--   toSing (Checked requiresGradient) = withSomeSing requiresGradient $ SomeSing . SGradient
 
-instance (KnownRequiresGradient requiresGradient) => KnownGradient ('Gradient requiresGradient) where
-  gradientVal = Gradient (requiresGradientVal @requiresGradient)
+class KnownGradient (gradient :: Checked RequiresGradient) where
+  gradientVal :: Checked RequiresGradient
+
+instance KnownGradient 'Unchecked where
+  gradientVal = Unchecked
+
+instance (KnownRequiresGradient requiresGradient) => KnownGradient ('Checked requiresGradient) where
+  gradientVal = Checked (requiresGradientVal @requiresGradient)
 
 -- >>> :kind! GetGradients ('Gradient 'WithGradient)
 -- GetGradients ('Gradient 'WithGradient) :: [Gradient RequiresGradient]
@@ -90,8 +96,8 @@ instance (KnownRequiresGradient requiresGradient) => KnownGradient ('Gradient re
 -- >>> :kind! GetGradients ('Just ('Gradient 'WithGradient))
 -- GetGradients ('Just ('Gradient 'WithGradient)) :: [Gradient RequiresGradient]
 -- = '[ 'Gradient 'WithGradient]
-type GetGradients :: k -> [Gradient RequiresGradient]
+type GetGradients :: k -> [Checked RequiresGradient]
 type family GetGradients f where
-  GetGradients (a :: Gradient RequiresGradient) = '[a]
+  GetGradients (a :: Checked RequiresGradient) = '[a]
   GetGradients (f g) = Concat (GetGradients f) (GetGradients g)
   GetGradients _ = '[]

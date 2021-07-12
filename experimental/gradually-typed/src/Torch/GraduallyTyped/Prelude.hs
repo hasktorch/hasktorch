@@ -1,20 +1,21 @@
-{-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NoStarIsType #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Torch.GraduallyTyped.Prelude
@@ -67,22 +68,35 @@ import Control.Applicative (Applicative (liftA2))
 import Control.Monad (MonadPlus, guard, unless, when)
 import Data.Kind (Constraint, Type)
 import Data.Proxy (Proxy (..))
-import Data.String (IsString, fromString)
 import Data.Type.Bool (If, type (||))
 import GHC.Exts (Any)
 import GHC.TypeLits (Nat, ErrorMessage (..), TypeError, type (*), type (+))
 import GHC.Generics (Generic)
-import Data.Singletons (SingKind, Demote, Sing, fromSing)
+import Data.Singletons (Sing, SingI, sing, SingKind, Demote, fromSing)
 
-data IsChecked a = Checked a | Unchecked a
-  deriving stock (Eq, Ord, Show, Generic)
+-- type Checked :: Type -> Type
+data Checked a = Checked a | Unchecked
 
-pattern IsChecked :: a -> IsChecked a
-pattern IsChecked forgotten <- (forgetIsChecked -> forgotten)
+data SChecked (checked :: Checked k) where
+  SUnchecked :: forall a. a -> SChecked 'Unchecked
+  SChecked :: forall k (k'::k). Sing k' -> SChecked ('Checked k')
+
+type instance Sing = SChecked
+
+instance SingKind a => SingKind (Checked a) where
+  type Demote (Checked a) = IsChecked (Demote a)
+  -- fromSing :: SChecked k -> IsChecked (Demote a)
+  fromSing (SUnchecked a) = IsUnchecked a
+    -- where x = fromSing a
+  -- fromSing (SChecked a) = IsChecked . fromSing $ a
+  -- toSing (IsUnchecked a)
+  --   = SomeSing (SUnchecked a)
+  -- toSing (IsChecked a)
+  --   = withSomeSing a $ SomeSing . SChecked
 
 
-pattern Demoted' :: (SingKind k, Demote k ~ IsChecked t) => t -> Sing (a :: k)
-pattern Demoted' unchecked <- (forgetIsChecked . fromSing -> unchecked)
+instance SingI a => SingI ('Checked a) where
+  sing = SChecked $ sing @a
 
 data IsChecked a = IsChecked a | IsUnchecked a
   deriving stock (Eq, Ord, Show, Generic)
