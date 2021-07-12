@@ -27,13 +27,13 @@ import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..))
 import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense), SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec)
 import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithBiasF, LayerNormWithoutBiasF, layerNormWithBias, layerNormWithoutBias)
-import Torch.GraduallyTyped.NN.Type (HasBias (..))
+import Torch.GraduallyTyped.NN.Type (HasBias (..), SHasBias (..))
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient)
 import Torch.GraduallyTyped.Shape (Dim (..), Name (..), SShape (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes, sZeros)
-import Torch.GraduallyTyped.Tensor.Type (SGetShape, Tensor)
+import Torch.GraduallyTyped.Tensor.Type (SGetShape, Tensor, TensorSpec (..))
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 
 data
@@ -58,72 +58,59 @@ data
     } ->
     LayerNorm 'WithoutBias gradient device dataType normalizedShape
 
-instance
-  HasInitialize
-    (LayerNorm 'WithBias gradient device dataType normalizedShape)
-    ( SGradient gradient,
-      SDevice device,
-      SDataType dataType,
-      SShape normalizedShape,
-      Double
-    )
-    generator
-    generator
+data
+  LayerNormSpec
+    (hasBias :: HasBias)
+    (gradient :: Gradient RequiresGradient)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (normalizedShape :: Shape [Dim (Name Symbol) (Size Nat)])
   where
-  initialize (gradient, device, dataType, normalizedShape, eps) =
-    let weight = sOnes gradient (SLayout SDense) device dataType normalizedShape
-        bias = sZeros gradient (SLayout SDense) device dataType normalizedShape
-     in (LayerNormWithBias weight bias eps,)
+  LayerNormSpec ::
+    forall hasBias gradient device dataType normalizedShape.
+    SHasBias hasBias ->
+    SGradient gradient ->
+    SDevice device ->
+    SDataType dataType ->
+    SShape normalizedShape ->
+    Double ->
+    LayerNormSpec hasBias gradient device dataType normalizedShape
+
+type instance ModelSpec (LayerNorm hasBias gradient device dataType normalizedShape) = LayerNormSpec hasBias gradient device dataType normalizedShape
 
 instance
   HasInitialize
-    (LayerNorm 'WithoutBias gradient device dataType normalizedShape)
-    ( SGradient gradient,
-      SDevice device,
-      SDataType dataType,
-      SShape normalizedShape,
-      Double
-    )
-    generator
-    generator
+    (LayerNorm hasBias gradient device dataType normalizedShape)
+    generatorDevice
+    (LayerNorm hasBias gradient device dataType normalizedShape)
+    generatorDevice
   where
-  initialize (gradient, device, dataType, normalizedShape, eps) =
-    let weight = sOnes gradient (SLayout SDense) device dataType normalizedShape
-     in (LayerNormWithoutBias weight eps,)
+  initialize (LayerNormSpec SWithBias gradient device dataType normalizedShape eps) =
+    let tensorSpec = TensorSpec gradient (SLayout SDense) device dataType normalizedShape
+        weight = sOnes tensorSpec
+        bias = sZeros tensorSpec
+     in pure . (LayerNormWithBias weight bias eps,)
+  initialize (LayerNormSpec SWithoutBias gradient device dataType normalizedShape eps) =
+    let tensorSpec = TensorSpec gradient (SLayout SDense) device dataType normalizedShape
+        weight = sOnes tensorSpec
+     in pure . (LayerNormWithoutBias weight eps,)
 
 instance
   HasStateDict
-    (LayerNorm 'WithBias gradient device dataType normalizedShape)
-    ( SGradient gradient,
-      SDevice device,
-      SDataType dataType,
-      SShape normalizedShape,
-      Double
-    )
+    (LayerNorm hasBias gradient device dataType normalizedShape)
   where
-  fromStateDict (gradient, device, dataType, normalizedShape, eps) k =
+  fromStateDict (LayerNormSpec SWithBias gradient device dataType normalizedShape eps) k =
     LayerNormWithBias
-      <$> fromStateDict (gradient, SLayout SDense, device, dataType, normalizedShape) (k <> "weight")
-      <*> fromStateDict (gradient, SLayout SDense, device, dataType, normalizedShape) (k <> "bias")
+      <$> fromStateDict (TensorSpec gradient (SLayout SDense) device dataType normalizedShape) (k <> "weight")
+      <*> fromStateDict (TensorSpec gradient (SLayout SDense) device dataType normalizedShape) (k <> "bias")
+      <*> pure eps
+  fromStateDict (LayerNormSpec SWithoutBias gradient device dataType normalizedShape eps) k =
+    LayerNormWithoutBias
+      <$> fromStateDict (TensorSpec gradient (SLayout SDense) device dataType normalizedShape) (k <> "weight")
       <*> pure eps
   toStateDict k LayerNormWithBias {..} = do
     toStateDict (k <> "weight") layerNormWithBiasWeight
     toStateDict (k <> "bias") layerNormBias
-
-instance
-  HasStateDict
-    (LayerNorm 'WithoutBias gradient device dataType normalizedShape)
-    ( SGradient gradient,
-      SDevice device,
-      SDataType dataType,
-      SShape normalizedShape,
-      Double
-    )
-  where
-  fromStateDict (gradient, device, dataType, normalizedShape, eps) k =
-    LayerNormWithoutBias
-      <$> fromStateDict (gradient, SLayout SDense, device, dataType, normalizedShape) (k <> "weight")
-      <*> pure eps
   toStateDict k LayerNormWithoutBias {..} =
     toStateDict (k <> "weight") layerNormWithoutBiasWeight
 
@@ -140,9 +127,9 @@ instance
   HasForward
     (LayerNorm 'WithBias gradient device dataType normalizedShape)
     (Tensor gradient' layout' device' dataType' shape')
-    generator
+    generatorDevice
     output
-    generator
+    generatorDevice
   where
   forward LayerNormWithBias {..} input = pure . (layerNormWithBias layerNormWithBiasWeight layerNormBias layerNormWithBiasEps input,)
 
@@ -160,8 +147,8 @@ instance
   HasForward
     (LayerNorm 'WithoutBias gradient device dataType normalizedShape)
     (Tensor gradient' layout' device' dataType' shape')
-    generator
+    generatorDevice
     output
-    generator
+    generatorDevice
   where
   forward LayerNormWithoutBias {..} input = pure . (layerNormWithoutBias layerNormWithoutBiasWeight layerNormWithoutBiasEps input,)

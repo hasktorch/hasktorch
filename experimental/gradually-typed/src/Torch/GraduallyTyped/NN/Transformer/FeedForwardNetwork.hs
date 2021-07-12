@@ -56,15 +56,15 @@ import Torch.GraduallyTyped.DType (DType (..), DataType, SDataType)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
 import Torch.GraduallyTyped.Layout (Layout (Layout), LayoutType (Dense))
 import Torch.GraduallyTyped.NN.Activation (Gelu (..), GeluNew (..), Relu (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec)
 import Torch.GraduallyTyped.NN.Dropout (Dropout (..))
 import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithBiasF, LinearWithoutBiasF)
 import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithBiasF, LayerNormWithoutBiasF)
-import Torch.GraduallyTyped.NN.Linear (Linear (..))
-import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..))
+import Torch.GraduallyTyped.NN.Linear (Linear (..), LinearSpec (..))
+import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..), LayerNormSpec (..))
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
-import Torch.GraduallyTyped.NN.Type (HasBias (..))
-import Torch.GraduallyTyped.Random (Generator)
+import Torch.GraduallyTyped.NN.Type (HasBias (..), SHasBias (..))
+import Torch.GraduallyTyped.Random (Generator, sGeneratorToDevice)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient)
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
@@ -114,19 +114,41 @@ data
     (dataType :: DataType DType)
     (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
     (ffnDim :: Dim (Name Symbol) (Size Nat))
-    (dropoutP :: Type)
   where
   TransformerFeedForwardNetwork ::
-    forall style gradient device dataType queryEmbedDim ffnDim dropoutP.
+    forall style gradient device dataType queryEmbedDim ffnDim.
     GTransformerFeedForwardNetwork
       (FFNInputWeight1F style gradient device dataType queryEmbedDim ffnDim)
       (FFNInputWeight2F style gradient device dataType queryEmbedDim ffnDim)
       (FFNOutputWeightF style gradient device dataType queryEmbedDim ffnDim)
       (FFNActivationF style)
-      (FFNActivationDropoutF style dropoutP)
+      (FFNActivationDropoutF style)
       (FFNLayerNormF style gradient device dataType queryEmbedDim)
-      (FFNDropoutF style dropoutP) ->
-    TransformerFeedForwardNetwork style gradient device dataType queryEmbedDim ffnDim dropoutP
+      (FFNDropoutF style) ->
+    TransformerFeedForwardNetwork style gradient device dataType queryEmbedDim ffnDim
+
+data
+  TransformerFeedForwardNetworkSpec
+    (style :: TransformerStyle)
+    (gradient :: Gradient RequiresGradient)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+  where
+  TransformerFeedForwardNetworkSpec ::
+    forall style gradient device dataType queryEmbedDim ffnDim.
+    STransformerStyle style ->
+    SGradient gradient ->
+    SDevice device ->
+    SDataType dataType ->
+    SDim queryEmbedDim ->
+    SDim ffnDim ->
+    Double ->
+    Double ->
+    TransformerFeedForwardNetworkSpec style gradient device dataType queryEmbedDim ffnDim
+
+type instance ModelSpec (TransformerFeedForwardNetwork style gradient device dataType queryEmbedDim ffnDim) = TransformerFeedForwardNetworkSpec style gradient device dataType queryEmbedDim ffnDim
 
 type family
   FFNInputWeight1F
@@ -185,18 +207,17 @@ type family
 
 type family
   FFNActivationDropoutF
-    (style :: TransformerStyle)
-    (dropoutP :: Type) ::
+    (style :: TransformerStyle) ::
     Type
   where
-  FFNActivationDropoutF 'T5 dropoutP = Dropout dropoutP
-  FFNActivationDropoutF 'ByT5 dropoutP = FFNActivationDropoutF 'T5 dropoutP
-  FFNActivationDropoutF 'BART dropoutP = Dropout dropoutP
-  FFNActivationDropoutF 'MBART dropoutP = FFNActivationDropoutF 'BART dropoutP
-  FFNActivationDropoutF 'Pegasus dropoutP = FFNActivationDropoutF 'BART dropoutP
-  FFNActivationDropoutF 'BERT _ = ()
-  FFNActivationDropoutF 'RoBERTa dropoutP = FFNActivationDropoutF 'BERT dropoutP
-  FFNActivationDropoutF 'GPT2 _ = ()
+  FFNActivationDropoutF 'T5 = Dropout
+  FFNActivationDropoutF 'ByT5 = FFNActivationDropoutF 'T5
+  FFNActivationDropoutF 'BART = Dropout
+  FFNActivationDropoutF 'MBART = FFNActivationDropoutF 'BART
+  FFNActivationDropoutF 'Pegasus = FFNActivationDropoutF 'BART
+  FFNActivationDropoutF 'BERT = ()
+  FFNActivationDropoutF 'RoBERTa = FFNActivationDropoutF 'BERT
+  FFNActivationDropoutF 'GPT2 = ()
 
 type family
   FFNLayerNormF
@@ -213,177 +234,183 @@ type family
 
 type family
   FFNDropoutF
-    (style :: TransformerStyle)
-    (dropoutP :: Type) ::
+    (style :: TransformerStyle) ::
     Type
   where
-  FFNDropoutF _ dropoutP = Dropout dropoutP
-
-type family
-  HasInitializeFFNInputWeight2InputF
-    (style :: TransformerStyle)
-    (gradient :: Gradient RequiresGradient)
-    (device :: Device (DeviceType Nat))
-    (dataType :: DataType DType)
-    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (ffnDim :: Dim (Name Symbol) (Size Nat)) ::
-    Type
-  where
-  HasInitializeFFNInputWeight2InputF 'T5 _ _ _ _ _ = ()
-  HasInitializeFFNInputWeight2InputF 'ByT5 gradient device dataType queryEmbedDim ffnDim = (SGradient gradient, SDevice device, SDataType dataType, SDim queryEmbedDim, SDim ffnDim)
-  HasInitializeFFNInputWeight2InputF 'BART _ _ _ _ _ = ()
-  HasInitializeFFNInputWeight2InputF 'MBART gradient device dataType queryEmbedDim ffnDim = HasInitializeFFNInputWeight2InputF 'BART gradient device dataType queryEmbedDim ffnDim
-  HasInitializeFFNInputWeight2InputF 'Pegasus gradient device dataType queryEmbedDim ffnDim = HasInitializeFFNInputWeight2InputF 'BART gradient device dataType queryEmbedDim ffnDim
-  HasInitializeFFNInputWeight2InputF 'BERT _ _ _ _ _ = ()
-  HasInitializeFFNInputWeight2InputF 'RoBERTa gradient device dataType queryEmbedDim ffnDim = HasInitializeFFNInputWeight2InputF 'BERT gradient device dataType queryEmbedDim ffnDim
-
-type family
-  HasInitializeFFNActivationDropoutInputF
-    (style :: TransformerStyle)
-    (dropoutP :: Type) ::
-    Type
-  where
-  HasInitializeFFNActivationDropoutInputF 'T5 dropoutP = dropoutP
-  HasInitializeFFNActivationDropoutInputF 'ByT5 dropoutP = HasInitializeFFNActivationDropoutInputF 'T5 dropoutP
-  HasInitializeFFNActivationDropoutInputF 'BART dropoutP = dropoutP
-  HasInitializeFFNActivationDropoutInputF 'MBART dropoutP = HasInitializeFFNActivationDropoutInputF 'BART dropoutP
-  HasInitializeFFNActivationDropoutInputF 'Pegasus dropoutP = HasInitializeFFNActivationDropoutInputF 'BART dropoutP
-  HasInitializeFFNActivationDropoutInputF 'BERT _ = ()
-  HasInitializeFFNActivationDropoutInputF 'RoBERTa dropoutP = HasInitializeFFNActivationDropoutInputF 'BERT dropoutP
+  FFNDropoutF _ = Dropout
 
 instance
-  ( SingI style,
-    inputWeight1 ~ FFNInputWeight1F style gradient device dataType queryEmbedDim ffnDim,
-    HasInitialize inputWeight1 (SGradient gradient, SDevice device, SDataType dataType, SDim queryEmbedDim, SDim ffnDim) generator generator',
+  ( inputWeight1 ~ FFNInputWeight1F style gradient device dataType queryEmbedDim ffnDim,
+    HasInitialize inputWeight1 device inputWeight1 device,
     inputWeight2 ~ FFNInputWeight2F style gradient device dataType queryEmbedDim ffnDim,
-    HasInitialize inputWeight2 (HasInitializeFFNInputWeight2InputF style gradient device dataType queryEmbedDim ffnDim) generator' generator'',
+    HasInitialize inputWeight2 device inputWeight2 device,
     outputWeight ~ FFNOutputWeightF style gradient device dataType queryEmbedDim ffnDim,
-    HasInitialize outputWeight (SGradient gradient, SDevice device, SDataType dataType, SDim ffnDim, SDim queryEmbedDim) generator'' generator''',
+    HasInitialize outputWeight device outputWeight device,
     activation ~ FFNActivationF style,
-    HasInitialize activation () generator''' generator''',
-    activationDropout ~ FFNActivationDropoutF style dropoutP,
-    HasInitialize activationDropout (HasInitializeFFNActivationDropoutInputF style dropoutP) generator''' generator''',
+    HasInitialize activation device activation device,
+    activationDropout ~ FFNActivationDropoutF style,
+    HasInitialize activationDropout device activationDropout device,
     layerNorm ~ FFNLayerNormF style gradient device dataType queryEmbedDim,
-    HasInitialize layerNorm (SGradient gradient, SDevice device, SDataType dataType, SShape ('Shape '[queryEmbedDim]), Double) generator''' generator''',
-    dropout ~ FFNDropoutF style dropoutP,
-    HasInitialize dropout dropoutP generator''' generator'''
+    HasInitialize layerNorm device layerNorm device,
+    dropout ~ FFNDropoutF style,
+    HasInitialize dropout device dropout device
   ) =>
   HasInitialize
-    (TransformerFeedForwardNetwork style gradient device dataType queryEmbedDim ffnDim dropoutP)
-    ( SGradient gradient,
-      SDevice device,
-      SDataType dataType,
-      SDim queryEmbedDim,
-      SDim ffnDim,
-      dropoutP,
-      Double
-    )
-    generator
-    generator'''
+    (TransformerFeedForwardNetwork style gradient device dataType queryEmbedDim ffnDim)
+    generatorDevice
+    (TransformerFeedForwardNetwork style gradient device dataType queryEmbedDim ffnDim)
+    device
   where
-  initialize (gradient, device, dataType, queryEmbedDim, ffnDim, dropoutP, eps) =
-    let inputWeight1 = IxState . initialize $ (gradient, device, dataType, queryEmbedDim, ffnDim)
-        inputWeight2 = IxState . initialize $
-          case sing @style of
+  initialize (TransformerFeedForwardNetworkSpec style gradient device dataType queryEmbedDim ffnDim dropoutP eps) generator =
+    let generator' = sGeneratorToDevice device generator
+        inputWeight1WithoutBiasSpec = LinearSpec SWithoutBias gradient device dataType queryEmbedDim ffnDim
+        inputWeight1WithBiasSpec = LinearSpec SWithBias gradient device dataType queryEmbedDim ffnDim
+        inputWeight1 = IxStateT . initialize @inputWeight1 $
+          case style of
+            ST5 -> inputWeight1WithoutBiasSpec
+            SByT5 -> inputWeight1WithoutBiasSpec
+            SBART -> inputWeight1WithBiasSpec
+            SMBART -> inputWeight1WithBiasSpec
+            SPegasus -> inputWeight1WithBiasSpec
+            SBERT -> inputWeight1WithBiasSpec
+            SRoBERTa -> inputWeight1WithBiasSpec
+            SGPT2 -> undefined
+        inputWeight2 = IxStateT . initialize @inputWeight2 $
+          case style of
             ST5 -> ()
-            SByT5 -> (gradient, device, dataType, queryEmbedDim, ffnDim)
+            SByT5 -> LinearSpec SWithoutBias gradient device dataType queryEmbedDim ffnDim
             SBART -> ()
             SMBART -> ()
             SPegasus -> ()
             SBERT -> ()
             SRoBERTa -> ()
             SGPT2 -> undefined
-        outputWeight = IxState . initialize $ (gradient, device, dataType, ffnDim, queryEmbedDim)
-        activation = IxState . initialize $ ()
-        activationDropout = IxState . initialize $
-          case sing @style of
-            ST5 -> dropoutP
-            SByT5 -> dropoutP
-            SBART -> dropoutP
-            SMBART -> dropoutP
-            SPegasus -> dropoutP
+        outputWeightWithoutBiasSpec = LinearSpec SWithoutBias gradient device dataType ffnDim queryEmbedDim
+        outputWeightWithBiasSpec = LinearSpec SWithBias gradient device dataType ffnDim queryEmbedDim
+        outputWeight = IxStateT . initialize @outputWeight $
+          case style of
+            ST5 -> outputWeightWithoutBiasSpec
+            SByT5 -> outputWeightWithoutBiasSpec
+            SBART -> outputWeightWithBiasSpec
+            SMBART -> outputWeightWithBiasSpec
+            SPegasus -> outputWeightWithBiasSpec
+            SBERT -> outputWeightWithBiasSpec
+            SRoBERTa -> outputWeightWithBiasSpec
+            SGPT2 -> undefined
+        activation = IxStateT . initialize @activation $
+          case style of
+            ST5 -> Relu
+            SByT5 -> GeluNew
+            SBART -> Gelu
+            SMBART -> Gelu
+            SPegasus -> Relu
+            SBERT -> Gelu
+            SRoBERTa -> Gelu
+            SGPT2 -> undefined
+        activationDropout = IxStateT . initialize @activationDropout $
+          case style of
+            ST5 -> Dropout dropoutP
+            SByT5 -> Dropout dropoutP
+            SBART -> Dropout dropoutP
+            SMBART -> Dropout dropoutP
+            SPegasus -> Dropout dropoutP
             SBERT -> ()
             SRoBERTa -> ()
             SGPT2 -> undefined
-        layerNorm = IxState . initialize $ (gradient, device, dataType, SShape $ queryEmbedDim :|: SNil, eps)
-        dropout = IxState . initialize $ dropoutP
-     in runIxState $
-          ( GTransformerFeedForwardNetwork
-              <<$>> inputWeight1
-              <<*>> inputWeight2
-              <<*>> outputWeight
-              <<*>> activation
-              <<*>> activationDropout
-              <<*>> layerNorm
-              <<*>> dropout
-          )
-            >>>= ireturn . TransformerFeedForwardNetwork
+        layerNormWithoutBiasSpec = LayerNormSpec SWithoutBias gradient device dataType (SShape $ queryEmbedDim :|: SNil) eps
+        layerNormWithBiasSpec = LayerNormSpec SWithBias gradient device dataType (SShape $ queryEmbedDim :|: SNil) eps
+        layerNorm = IxStateT . initialize @layerNorm $
+          case style of
+            ST5 -> layerNormWithoutBiasSpec
+            SByT5 -> layerNormWithoutBiasSpec
+            SBART -> layerNormWithBiasSpec
+            SMBART -> layerNormWithBiasSpec
+            SPegasus -> layerNormWithBiasSpec
+            SBERT -> layerNormWithBiasSpec
+            SRoBERTa -> layerNormWithBiasSpec
+            SGPT2 -> undefined
+        dropout = IxStateT . initialize @dropout $ Dropout dropoutP
+        gffn =
+          GTransformerFeedForwardNetwork
+            <<$>> inputWeight1
+            <<*>> inputWeight2
+            <<*>> outputWeight
+            <<*>> activation
+            <<*>> activationDropout
+            <<*>> layerNorm
+            <<*>> dropout
+     in runIxStateT (gffn >>>= ireturn . TransformerFeedForwardNetwork) generator'
 
 instance
   SingI style =>
   HasStateDict
-    (TransformerFeedForwardNetwork style gradient device dataType queryEmbedDim ffnDim dropoutP)
-    (SGradient gradient, SDevice device, SDataType dataType, SDim queryEmbedDim, SDim ffnDim, dropoutP, Double)
+    (TransformerFeedForwardNetwork style gradient device dataType queryEmbedDim ffnDim)
   where
-  fromStateDict (gradient, device, dataType, queryEmbedDim, ffnDim, dropoutP, eps) k =
-    let inputWeight1 ST5 = fromStateDict (gradient, device, dataType, queryEmbedDim, ffnDim) (k <> "DenseReluDense.wi.")
-        inputWeight1 SByT5 = fromStateDict (gradient, device, dataType, queryEmbedDim, ffnDim) (k <> "DenseReluDense.wi_0.")
-        inputWeight1 SBART = fromStateDict (gradient, device, dataType, queryEmbedDim, ffnDim) (k <> "fc1.")
-        inputWeight1 SMBART = fromStateDict (gradient, device, dataType, queryEmbedDim, ffnDim) (k <> "fc1.")
-        inputWeight1 SPegasus = fromStateDict (gradient, device, dataType, queryEmbedDim, ffnDim) (k <> "fc1.")
-        inputWeight1 SBERT = fromStateDict (gradient, device, dataType, queryEmbedDim, ffnDim) (k <> "intermediate.dense.")
-        inputWeight1 SRoBERTa = fromStateDict (gradient, device, dataType, queryEmbedDim, ffnDim) (k <> "intermediate.dense.")
+  fromStateDict (TransformerFeedForwardNetworkSpec style gradient device dataType queryEmbedDim ffnDim dropoutP eps) k =
+    let inputWeight1WithoutBiasSpec = LinearSpec SWithoutBias gradient device dataType queryEmbedDim ffnDim
+        inputWeight1WithBiasSpec = LinearSpec SWithBias gradient device dataType queryEmbedDim ffnDim
+        inputWeight1 ST5 = fromStateDict inputWeight1WithoutBiasSpec (k <> "DenseReluDense.wi.")
+        inputWeight1 SByT5 = fromStateDict inputWeight1WithoutBiasSpec (k <> "DenseReluDense.wi_0.")
+        inputWeight1 SBART = fromStateDict inputWeight1WithBiasSpec (k <> "fc1.")
+        inputWeight1 SMBART = fromStateDict inputWeight1WithBiasSpec (k <> "fc1.")
+        inputWeight1 SPegasus = fromStateDict inputWeight1WithBiasSpec (k <> "fc1.")
+        inputWeight1 SBERT = fromStateDict inputWeight1WithBiasSpec (k <> "intermediate.dense.")
+        inputWeight1 SRoBERTa = fromStateDict inputWeight1WithBiasSpec (k <> "intermediate.dense.")
         inputWeight1 SGPT2 = undefined
         inputWeight2 ST5 = fromStateDict () k
-        inputWeight2 SByT5 = fromStateDict (gradient, device, dataType, queryEmbedDim, ffnDim) (k <> "DenseReluDense.wi_1.")
+        inputWeight2 SByT5 = fromStateDict (LinearSpec SWithoutBias gradient device dataType queryEmbedDim ffnDim) (k <> "DenseReluDense.wi_1.")
         inputWeight2 SBART = fromStateDict () k
         inputWeight2 SMBART = fromStateDict () k
         inputWeight2 SPegasus = fromStateDict () k
         inputWeight2 SBERT = fromStateDict () k
         inputWeight2 SRoBERTa = fromStateDict () k
         inputWeight2 SGPT2 = fromStateDict () k
-        outputWeight ST5 = fromStateDict (gradient, device, dataType, ffnDim, queryEmbedDim) (k <> "DenseReluDense.wo.")
-        outputWeight SByT5 = fromStateDict (gradient, device, dataType, ffnDim, queryEmbedDim) (k <> "DenseReluDense.wo.")
-        outputWeight SBART = fromStateDict (gradient, device, dataType, ffnDim, queryEmbedDim) (k <> "fc2.")
-        outputWeight SMBART = fromStateDict (gradient, device, dataType, ffnDim, queryEmbedDim) (k <> "fc2.")
-        outputWeight SPegasus = fromStateDict (gradient, device, dataType, ffnDim, queryEmbedDim) (k <> "fc2.")
-        outputWeight SBERT = fromStateDict (gradient, device, dataType, ffnDim, queryEmbedDim) (k <> "output.dense.")
-        outputWeight SRoBERTa = fromStateDict (gradient, device, dataType, ffnDim, queryEmbedDim) (k <> "output.dense.")
+        outputWeightWithoutBiasSpec = LinearSpec SWithoutBias gradient device dataType ffnDim queryEmbedDim
+        outputWeightWithBiasSpec = LinearSpec SWithBias gradient device dataType ffnDim queryEmbedDim
+        outputWeight ST5 = fromStateDict outputWeightWithoutBiasSpec (k <> "DenseReluDense.wo.")
+        outputWeight SByT5 = fromStateDict outputWeightWithoutBiasSpec (k <> "DenseReluDense.wo.")
+        outputWeight SBART = fromStateDict outputWeightWithBiasSpec (k <> "fc2.")
+        outputWeight SMBART = fromStateDict outputWeightWithBiasSpec (k <> "fc2.")
+        outputWeight SPegasus = fromStateDict outputWeightWithBiasSpec (k <> "fc2.")
+        outputWeight SBERT = fromStateDict outputWeightWithBiasSpec (k <> "output.dense.")
+        outputWeight SRoBERTa = fromStateDict outputWeightWithBiasSpec (k <> "output.dense.")
         outputWeight SGPT2 = undefined
-        activation ST5 = fromStateDict () k
-        activation SByT5 = fromStateDict () k
-        activation SBART = fromStateDict () k
-        activation SMBART = fromStateDict () k
-        activation SPegasus = fromStateDict () k
-        activation SBERT = fromStateDict () k
-        activation SRoBERTa = fromStateDict () k
+        activation ST5 = fromStateDict Relu k
+        activation SByT5 = fromStateDict GeluNew k
+        activation SBART = fromStateDict Gelu k
+        activation SMBART = fromStateDict Gelu k
+        activation SPegasus = fromStateDict Relu k
+        activation SBERT = fromStateDict Gelu k
+        activation SRoBERTa = fromStateDict Gelu k
         activation SGPT2 = undefined
-        activationDropout ST5 = fromStateDict dropoutP k
-        activationDropout SByT5 = fromStateDict dropoutP k
-        activationDropout SBART = fromStateDict dropoutP k
-        activationDropout SMBART = fromStateDict dropoutP k
-        activationDropout SPegasus = fromStateDict dropoutP k
+        activationDropout ST5 = fromStateDict (Dropout dropoutP) k
+        activationDropout SByT5 = fromStateDict (Dropout dropoutP) k
+        activationDropout SBART = fromStateDict (Dropout dropoutP) k
+        activationDropout SMBART = fromStateDict (Dropout dropoutP) k
+        activationDropout SPegasus = fromStateDict (Dropout dropoutP) k
         activationDropout SBERT = fromStateDict () k
         activationDropout SRoBERTa = fromStateDict () k
         activationDropout SGPT2 = undefined
-        layerNorm ST5 = fromStateDict (gradient, device, dataType, SShape $ queryEmbedDim :|: SNil, eps) (k <> "layer_norm.")
-        layerNorm SByT5 = fromStateDict (gradient, device, dataType, SShape $ queryEmbedDim :|: SNil, eps) (k <> "layer_norm.")
-        layerNorm SBART = fromStateDict (gradient, device, dataType, SShape $ queryEmbedDim :|: SNil, eps) (k <> "final_layer_norm.")
-        layerNorm SMBART = fromStateDict (gradient, device, dataType, SShape $ queryEmbedDim :|: SNil, eps) (k <> "final_layer_norm.")
-        layerNorm SPegasus = fromStateDict (gradient, device, dataType, SShape $ queryEmbedDim :|: SNil, eps) (k <> "final_layer_norm.")
-        layerNorm SBERT = fromStateDict (gradient, device, dataType, SShape $ queryEmbedDim :|: SNil, eps) (k <> "output.LayerNorm.")
-        layerNorm SRoBERTa = fromStateDict (gradient, device, dataType, SShape $ queryEmbedDim :|: SNil, eps) (k <> "output.LayerNorm.")
+        layerNormWithoutBiasSpec = LayerNormSpec SWithoutBias gradient device dataType (SShape $ queryEmbedDim :|: SNil) eps
+        layerNormWithBiasSpec = LayerNormSpec SWithBias gradient device dataType (SShape $ queryEmbedDim :|: SNil) eps
+        layerNorm ST5 = fromStateDict layerNormWithoutBiasSpec (k <> "layer_norm.")
+        layerNorm SByT5 = fromStateDict layerNormWithoutBiasSpec (k <> "layer_norm.")
+        layerNorm SBART = fromStateDict layerNormWithBiasSpec (k <> "final_layer_norm.")
+        layerNorm SMBART = fromStateDict layerNormWithBiasSpec (k <> "final_layer_norm.")
+        layerNorm SPegasus = fromStateDict layerNormWithBiasSpec (k <> "final_layer_norm.")
+        layerNorm SBERT = fromStateDict layerNormWithBiasSpec (k <> "output.LayerNorm.")
+        layerNorm SRoBERTa = fromStateDict layerNormWithBiasSpec (k <> "output.LayerNorm.")
         layerNorm SGPT2 = undefined
-        dropout _ = fromStateDict dropoutP k
+        dropout _ = fromStateDict (Dropout dropoutP) k
      in TransformerFeedForwardNetwork
           <$> ( GTransformerFeedForwardNetwork
-                  <$> inputWeight1 (sing @style)
-                  <*> inputWeight2 (sing @style)
-                  <*> outputWeight (sing @style)
-                  <*> activation (sing @style)
-                  <*> activationDropout (sing @style)
-                  <*> layerNorm (sing @style)
-                  <*> dropout (sing @style)
+                  <$> inputWeight1 style
+                  <*> inputWeight2 style
+                  <*> outputWeight style
+                  <*> activation style
+                  <*> activationDropout style
+                  <*> layerNorm style
+                  <*> dropout style
               )
   toStateDict k (TransformerFeedForwardNetwork GTransformerFeedForwardNetwork {..}) =
     let inputWeight1 ST5 = toStateDict (k <> "DenseReluDense.wi.")
@@ -511,7 +538,6 @@ type family
 instance
   ( SGetShape queryShape,
     SGetDim queryEmbedDim,
-    Scalar dropoutP,
     output
       ~ Tensor
           (queryGradient <|> gradient)
@@ -519,14 +545,14 @@ instance
           (queryDevice <+> device <+> generatorDevice)
           (queryDataType <+> dataType)
           (FeedForwardNetworkOutputShape 'T5 queryEmbedDim ffnDim queryShape),
-    generatorOutput ~ Generator (device <+> queryDevice <+> generatorDevice)
+    generatorOutputDevice ~ (device <+> queryDevice <+> generatorDevice)
   ) =>
   HasForward
-    (TransformerFeedForwardNetwork 'T5 gradient device dataType queryEmbedDim ffnDim dropoutP)
+    (TransformerFeedForwardNetwork 'T5 gradient device dataType queryEmbedDim ffnDim)
     (Tensor queryGradient queryLayout queryDevice queryDataType queryShape)
-    (Generator generatorDevice)
+    generatorDevice
     output
-    generatorOutput
+    generatorOutputDevice
   where
   forward (TransformerFeedForwardNetwork GTransformerFeedForwardNetwork {..}) query =
     runIxStateT $
@@ -570,7 +596,6 @@ instance
 instance
   ( SGetShape queryShape,
     SGetDim queryEmbedDim,
-    Scalar dropoutP,
     output
       ~ Tensor
           (queryGradient <|> gradient)
@@ -578,14 +603,14 @@ instance
           (queryDevice <+> device <+> generatorDevice)
           (queryDataType <+> dataType)
           (FeedForwardNetworkOutputShape 'ByT5 queryEmbedDim ffnDim queryShape),
-    generatorOutput ~ Generator (device <+> queryDevice <+> generatorDevice)
+    generatorOutputDevice ~ (device <+> queryDevice <+> generatorDevice)
   ) =>
   HasForward
-    (TransformerFeedForwardNetwork 'ByT5 gradient device dataType queryEmbedDim ffnDim dropoutP)
+    (TransformerFeedForwardNetwork 'ByT5 gradient device dataType queryEmbedDim ffnDim)
     (Tensor queryGradient queryLayout queryDevice queryDataType queryShape)
-    (Generator generatorDevice)
+    generatorDevice
     output
-    generatorOutput
+    generatorOutputDevice
   where
   forward (TransformerFeedForwardNetwork GTransformerFeedForwardNetwork {..}) query =
     let activate query' =
@@ -635,7 +660,6 @@ instance
 instance
   ( SGetShape queryShape,
     SGetDim queryEmbedDim,
-    Scalar dropoutP,
     output
       ~ Tensor
           (gradient <|> queryGradient)
@@ -643,15 +667,15 @@ instance
           (device <+> queryDevice <+> generatorDevice)
           (dataType <+> queryDataType)
           (FeedForwardNetworkOutputShape 'BART queryEmbedDim ffnDim queryShape),
-    generatorOutput
-      ~ Generator ((device <+> ((device <+> queryDevice) <+> generatorDevice)) <+> ((device <+> queryDevice) <+> generatorDevice))
+    generatorOutputDevice
+      ~ ((device <+> ((device <+> queryDevice) <+> generatorDevice)) <+> ((device <+> queryDevice) <+> generatorDevice))
   ) =>
   HasForward
-    (TransformerFeedForwardNetwork 'BART gradient device dataType queryEmbedDim ffnDim dropoutP)
+    (TransformerFeedForwardNetwork 'BART gradient device dataType queryEmbedDim ffnDim)
     (Tensor queryGradient queryLayout queryDevice queryDataType queryShape)
-    (Generator generatorDevice)
+    generatorDevice
     output
-    generatorOutput
+    generatorOutputDevice
   where
   forward (TransformerFeedForwardNetwork GTransformerFeedForwardNetwork {..}) query =
     runIxStateT $
@@ -702,15 +726,15 @@ instance
           (device <+> queryDevice <+> generatorDevice)
           (dataType <+> queryDataType)
           (FeedForwardNetworkOutputShape 'BERT queryEmbedDim ffnDim queryShape),
-    generatorOutput
-      ~ Generator ((device <+> (device <+> queryDevice)) <+> generatorDevice)
+    generatorOutputDevice
+      ~ ((device <+> (device <+> queryDevice)) <+> generatorDevice)
   ) =>
   HasForward
-    (TransformerFeedForwardNetwork 'BERT gradient device dataType queryEmbedDim ffnDim dropoutP)
+    (TransformerFeedForwardNetwork 'BERT gradient device dataType queryEmbedDim ffnDim)
     (Tensor queryGradient queryLayout queryDevice queryDataType queryShape)
-    (Generator generatorDevice)
+    generatorDevice
     output
-    generatorOutput
+    generatorOutputDevice
   where
   forward (TransformerFeedForwardNetwork GTransformerFeedForwardNetwork {..}) query =
     runIxStateT $
@@ -752,7 +776,6 @@ instance
 instance
   ( SGetShape queryShape,
     SGetDim queryEmbedDim,
-    Scalar dropoutP,
     output
       ~ Tensor
           (gradient <|> queryGradient)
@@ -760,15 +783,15 @@ instance
           (device <+> queryDevice <+> generatorDevice)
           (dataType <+> queryDataType)
           (FeedForwardNetworkOutputShape 'RoBERTa queryEmbedDim ffnDim queryShape),
-    generatorOutput
-      ~ Generator ((device <+> (device <+> queryDevice)) <+> generatorDevice)
+    generatorOutputDevice
+      ~ ((device <+> (device <+> queryDevice)) <+> generatorDevice)
   ) =>
   HasForward
-    (TransformerFeedForwardNetwork 'RoBERTa gradient device dataType queryEmbedDim ffnDim dropoutP)
+    (TransformerFeedForwardNetwork 'RoBERTa gradient device dataType queryEmbedDim ffnDim)
     (Tensor queryGradient queryLayout queryDevice queryDataType queryShape)
-    (Generator generatorDevice)
+    generatorDevice
     output
-    generatorOutput
+    generatorOutputDevice
   where
   forward (TransformerFeedForwardNetwork GTransformerFeedForwardNetwork {..}) query =
     runIxStateT $
@@ -811,7 +834,6 @@ instance
 instance
   ( SGetShape queryShape,
     SGetDim queryEmbedDim,
-    Scalar dropoutP,
     output
       ~ Tensor
           (queryGradient <|> gradient)
@@ -819,14 +841,14 @@ instance
           (queryDevice <+> device <+> generatorDevice)
           (queryDataType <+> dataType)
           (FeedForwardNetworkOutputShape 'Pegasus queryEmbedDim ffnDim queryShape),
-    generatorOutput ~ Generator (device <+> queryDevice <+> generatorDevice)
+    generatorOutputDevice ~ (device <+> queryDevice <+> generatorDevice)
   ) =>
   HasForward
-    (TransformerFeedForwardNetwork 'Pegasus gradient device dataType queryEmbedDim ffnDim dropoutP)
+    (TransformerFeedForwardNetwork 'Pegasus gradient device dataType queryEmbedDim ffnDim)
     (Tensor queryGradient queryLayout queryDevice queryDataType queryShape)
-    (Generator generatorDevice)
+    generatorDevice
     output
-    generatorOutput
+    generatorOutputDevice
   where
   forward (TransformerFeedForwardNetwork GTransformerFeedForwardNetwork {..}) query =
     runIxStateT $

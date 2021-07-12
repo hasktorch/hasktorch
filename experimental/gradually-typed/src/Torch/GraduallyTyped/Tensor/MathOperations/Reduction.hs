@@ -16,13 +16,16 @@ module Torch.GraduallyTyped.Tensor.MathOperations.Reduction where
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.State (execState, modify)
 import Data.Bifunctor (Bifunctor (first), second)
+import Data.Coerce (coerce)
 import Data.Foldable (for_)
+import Data.Kind (Constraint, Type)
+import Data.Proxy (Proxy (Proxy))
 import qualified Data.Set as Set
 import Data.Singletons (SingI (..), SingKind (..))
 import Foreign.ForeignPtr (ForeignPtr)
-import GHC.TypeLits (Nat, Symbol, TypeError)
+import GHC.TypeLits (ErrorMessage (Text), Nat, Symbol, TypeError)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..))
-import Torch.GraduallyTyped.Prelude (forgetIsChecked)
+import Torch.GraduallyTyped.Prelude (Catch, forgetIsChecked)
 import Torch.GraduallyTyped.Shape.Class (ReplaceDimSizeImplF)
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SSelectDim, SSelectDims, SelectDim (..), SelectDims (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
@@ -60,9 +63,9 @@ type family BoolReductionF (reduction :: Symbol) (selectDim :: SelectDim (By Sym
 
 -- | Tests if all element in input evaluates to True.
 --
--- >>> g <- sMkGenerator (SDevice SCPU) 0
+-- >>> g = sMkGenerator (SDevice SCPU) 0
 -- >>> shape = SShape $ SName @"*" :&: SSize @2 :|: SName @"*" :&: SSize @4 :|: SNil
--- >>> (t, _) = sRandn (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) shape g
+-- >>> (t, _) <- sRandn (TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) shape) g
 -- >>> t' <- all $ bool t
 -- >>> :type t'
 -- t'
@@ -82,9 +85,9 @@ all = unsafeThrowableIO . cast1 ATen.all_t
 -- | Reduces each row of the input tensor in the selected dimension to True if all elements in the row evaluate to True and False otherwise.
 -- For a version that accepts non-singleton parameters see 'allDim'.
 --
--- >>> g <- sMkGenerator (SDevice SCPU) 0
+-- >>> g = sMkGenerator (SDevice SCPU) 0
 -- >>> shape = SShape $ SName @"*" :&: SSize @2 :|: SName @"*" :&: SSize @4 :|: SNil
--- >>> (t, _) = sRandn (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) shape g
+-- >>> (t, _) <- sRandn (TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) shape) g
 -- >>> t' <- sAllDim (SSelectDim (SByIndex @1)) $ bool t
 -- >>> :type t'
 -- t'
@@ -98,11 +101,11 @@ all = unsafeThrowableIO . cast1 ATen.all_t
 -- >>> sAllDim (SUncheckedSelectDim (ByIndex 3)) t
 -- *** Exception: HasktorchException "Exception: Dimension out of range (expected to be in range of [-2, 1], but got 3)...
 sAllDim ::
-  forall selectDim gradient layout device dataType shape m.
-  MonadThrow m =>
+  forall selectDim gradient layout device dataType shape shape' m.
+  (MonadThrow m, shape' ~ BoolReductionF "all" selectDim shape, Catch shape') =>
   SSelectDim selectDim ->
   Tensor gradient layout device dataType shape ->
-  m (Tensor gradient layout device ('DataType 'Bool) (BoolReductionF "all" selectDim shape))
+  m (Tensor gradient layout device ('DataType 'Bool) shape')
 sAllDim by tensor = unsafeThrowableIO $ case forgetIsChecked $ fromSing by of
   ByName name ->
     cast3
@@ -120,9 +123,9 @@ sAllDim by tensor = unsafeThrowableIO $ case forgetIsChecked $ fromSing by of
 -- | Reduces each row of the input tensor in the selected dimension to True if all elements in the row evaluate to True and False otherwise.
 -- For a version that accepts singleton parameters see 'sAllDim'.
 --
--- >>> g <- sMkGenerator (SDevice SCPU) 0
+-- >>> g = sMkGenerator (SDevice SCPU) 0
 -- >>> type Shape' = 'Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 4) ]
--- >>> (t, _) = randn @('Gradient 'WithoutGradient) @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @Shape' g
+-- >>> (t, _) <- randn @('Gradient 'WithoutGradient) @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @Shape' g
 -- >>> t' <- allDim @('SelectDim ('ByIndex 1)) $ bool t
 -- >>> :type t'
 -- t'
@@ -133,17 +136,17 @@ sAllDim by tensor = unsafeThrowableIO $ case forgetIsChecked $ fromSing by of
 --        ('DataType 'Bool)
 --        ('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 1)])
 allDim ::
-  forall selectDim gradient layout device dataType shape m.
-  (SingI selectDim, MonadThrow m) =>
+  forall selectDim gradient layout device dataType shape shape' m.
+  (SingI selectDim, MonadThrow m, shape' ~ BoolReductionF "all" selectDim shape, Catch shape') =>
   Tensor gradient layout device dataType shape ->
-  m (Tensor gradient layout device ('DataType 'Bool) (BoolReductionF "all" selectDim shape))
+  m (Tensor gradient layout device ('DataType 'Bool) shape')
 allDim = sAllDim (sing @selectDim)
 
 -- | Tests if any element in input evaluates to True.
 --
--- >>> g <- sMkGenerator (SDevice SCPU) 0
+-- >>> g = sMkGenerator (SDevice SCPU) 0
 -- >>> shape = SShape $ SName @"*" :&: SSize @2 :|: SName @"*" :&: SSize @4 :|: SNil
--- >>> (t, _) = sRandn (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) shape g
+-- >>> (t, _) <- sRandn (TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) shape) g
 -- >>> t' <- any $ bool t
 -- >>> :type t'
 -- t'
@@ -163,9 +166,9 @@ any = unsafeThrowableIO . cast1 ATen.any_t
 -- | Reduces each row of the input tensor in the selected dimension to True if any element in the row evaluates to True and False otherwise.
 -- For a version that accepts non-singleton parameters see 'anyDim'.
 --
--- >>> g <- sMkGenerator (SDevice SCPU) 0
+-- >>> g = sMkGenerator (SDevice SCPU) 0
 -- >>> shape = SShape $ SName @"*" :&: SSize @2 :|: SName @"*" :&: SSize @4 :|: SNil
--- >>> (t, _) = sRandn (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) shape g
+-- >>> (t, _) <- sRandn (TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) shape) g
 -- >>> t' <- sAnyDim (SSelectDim (SByIndex @1)) $ bool t
 -- >>> :type t'
 -- t'
@@ -202,9 +205,9 @@ sAnyDim by tensor = unsafeThrowableIO $
 -- | Reduces each row of the input tensor in the selected dimension to True if any element in the row evaluates to True and False otherwise.
 -- For a version that accepts singleton parameters see 'sAnyDim'.
 --
--- >>> g <- sMkGenerator (SDevice SCPU) 0
+-- >>> g = sMkGenerator (SDevice SCPU) 0
 -- >>> type Shape' = 'Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 4) ]
--- >>> (t, _) = randn @('Gradient 'WithoutGradient) @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @Shape' g
+-- >>> (t, _) <- randn @('Gradient 'WithoutGradient) @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @Shape' g
 -- >>> t' <- anyDim @('SelectDim ('ByIndex 1)) $ bool t
 -- >>> :type t'
 -- t'
@@ -233,9 +236,9 @@ type family MeanF (selectDims :: SelectDims [By Symbol Nat]) (shape :: Shape [Di
 -- | Reduces the mean value over each row of the input tensor in the dimensions selected by 'selectDims'.
 -- For a version that accepts non-singleton parameters see 'meanDim'.
 --
--- >>> g <- sMkGenerator (SDevice SCPU) 0
+-- >>> g = sMkGenerator (SDevice SCPU) 0
 -- >>> shape = SShape $ SName @"batch" :&: SSize @8 :|: SName @"width" :&: SSize @224 :|: SName @"height" :&: SSize @224 :|: SNil
--- >>> (t, _) = sRandn (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) shape g
+-- >>> (t, _) <- sRandn (TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) shape) g
 -- >>> t' <- sMeanDims (SSelectDims $ SCons (SByName @"width") $ SCons (SByName @"height") SNil) t
 -- >>> :type t'
 -- t'
@@ -297,9 +300,9 @@ sMeanDims bys tensor =
 -- | Reduce the mean value over each row of the input tensor in the dimensions selected by 'selectDims'.
 -- For a version that accepts singleton parameters see 'sMeanDim'.
 --
--- >>> g <- sMkGenerator (SDevice SCPU) 0
+-- >>> g = sMkGenerator (SDevice SCPU) 0
 -- >>> type Shape' = 'Shape '[ 'Dim ('Name "batch") ('Size 8), 'Dim ('Name "feature") ('Size 4) ]
--- >>> (t, _) = randn @('Gradient 'WithoutGradient) @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @Shape' g
+-- >>> (t, _) <- randn @('Gradient 'WithoutGradient) @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @Shape' g
 -- >>> t' <- meanDims @('SelectDims '[ 'ByName "feature" ]) t
 -- >>> :type t'
 -- t'

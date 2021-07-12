@@ -37,8 +37,8 @@ import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (fromStateDict), stateDictFromPretrained)
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (logSoftmax)
 import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5DataType, T5GenerationInput (..), T5Input (..), T5Model (..), T5Output (..), mkT5Input, t5EOSTokenId)
-import Torch.GraduallyTyped.NN.Transformer.T5.Small (T5Small)
-import Torch.GraduallyTyped.NN.Transformer.Type (TransformerHead (WithLMHead))
+import Torch.GraduallyTyped.NN.Transformer.T5.Small (T5Small, t5SmallSpec)
+import Torch.GraduallyTyped.NN.Transformer.Type (TransformerHead (WithLMHead), STransformerHead (SWithLMHead))
 import Torch.GraduallyTyped.Random (Generator, sMkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
@@ -147,13 +147,13 @@ beamSearchStep cont beam =
         <$> someHypotheses
 
 runBeamSearch ::
-  forall model input decoderInput encoderOutput encoderOutputShape encoderOutput' inputPaddingMask decoderOutput generator.
+  forall model input decoderInput encoderOutput encoderOutputShape encoderOutput' inputPaddingMask decoderOutput generatorDevice.
   ( HasForward
       model
       (T5Input input decoderInput)
-      generator
+      generatorDevice
       (T5Output decoderOutput encoderOutput inputPaddingMask)
-      generator,
+      generatorDevice,
     encoderOutput
       ~ Tensor
           ('Gradient 'WithGradient)
@@ -166,9 +166,9 @@ runBeamSearch ::
     HasForward
       model
       (T5GenerationInput decoderInput encoderOutput' inputPaddingMask)
-      generator
+      generatorDevice
       (T5Output decoderOutput encoderOutput' inputPaddingMask)
-      generator,
+      generatorDevice,
     encoderOutput'
       ~ Tensor
           ('Gradient 'WithGradient)
@@ -190,18 +190,18 @@ runBeamSearch ::
           ('Device 'CPU)
           T5DataType
           'UncheckedShape,
-    generator ~ Generator ('Device 'CPU)
+    generatorDevice ~ 'Device 'CPU
   ) =>
   Int ->
   Int ->
   model ->
   input ->
-  generator ->
+  Generator generatorDevice ->
   IO [Beams Int [Int]]
 runBeamSearch maxSteps beamSize model input g =
   evalStateT (beamSearch maxSteps beamSize cont) (Nothing, g)
   where
-    cont :: [Hypothesis 'Unfinished Int [Int]] -> StateT (Maybe (encoderOutput, inputPaddingMask), generator) IO [SomeHypothesis Int [Int]]
+    cont :: [Hypothesis 'Unfinished Int [Int]] -> StateT (Maybe (encoderOutput, inputPaddingMask), Generator generatorDevice) IO [SomeHypothesis Int [Int]]
     cont previousHypotheses = do
       let previousHypotheses' = nub previousHypotheses
       decoderInput :: decoderInput <- do
@@ -216,7 +216,7 @@ runBeamSearch maxSteps beamSize model input g =
         mkT5Input (SName @"*" :&: SUncheckedSize batchSize) (SName @"*" :&: SUncheckedSize seqSize) tokens
       logProbs <- getLogProbs decoderInput
       pure $ zip previousHypotheses' logProbs >>= uncurry (\previousHypothesis -> zipWith (mkHypothesis previousHypothesis) [0, 1 ..] . last)
-    getLogProbs :: decoderInput -> StateT (Maybe (encoderOutput, inputPaddingMask), generator) IO [[[Float]]]
+    getLogProbs :: decoderInput -> StateT (Maybe (encoderOutput, inputPaddingMask), Generator generatorDevice) IO [[[Float]]]
     getLogProbs decoderInput = do
       (maybeStuff, g) <- get
       (T5Output decoderOutput encoderOutput inputPaddingMask, g') <- case maybeStuff of
@@ -254,8 +254,8 @@ testBeamSearch = do
   stateDict <- stateDictFromPretrained "/tmp/t5-small-state-dict.pt"
   model <-
     flip evalStateT stateDict $
-      fromStateDict @(T5Small 'WithLMHead _ _) (SGradient SWithGradient, SDevice SCPU) ""
-  g <- sMkGenerator (SDevice SCPU) 0
+      fromStateDict (t5SmallSpec SWithLMHead (SGradient SWithGradient) (SDevice SCPU)) ""
+  let g = sMkGenerator (SDevice SCPU) 0
   Beams finished _ <- last <$> runBeamSearch 50 1 model input g
   print $ finalValue <$> finished
 
@@ -349,10 +349,10 @@ instance
 
 -- | Get continuations from model
 getIs ::
-  forall model input generator b decoderInput encoderOutput decoderOutput inputPaddingMask s.
+  forall model input generatorDevice b decoderInput encoderOutput decoderOutput inputPaddingMask s.
   ( Alternative b,
     MonadThrow b,
-    s ~ (Maybe (encoderOutput, inputPaddingMask), generator),
+    s ~ (Maybe (encoderOutput, inputPaddingMask), Generator generatorDevice),
     decoderInput
       ~ Tensor
           ('Gradient 'WithoutGradient)
@@ -372,15 +372,15 @@ getIs ::
     HasForward
       model
       (T5Input input decoderInput)
-      generator
+      generatorDevice
       (T5Output decoderOutput encoderOutput inputPaddingMask)
-      generator,
+      generatorDevice,
     HasForward
       model
       (T5GenerationInput decoderInput encoderOutput inputPaddingMask)
-      generator
+      generatorDevice
       (T5Output decoderOutput encoderOutput inputPaddingMask)
-      generator
+      generatorDevice
   ) =>
   Int ->
   model ->
@@ -416,12 +416,12 @@ getIs n model input = do
        in lift . lift . asum $ pure <$> indices'
 
 runParser ::
-  forall model input generator b a.
+  forall model input generatorDevice b a.
   _ =>
   Int ->
   model ->
   input ->
-  generator ->
+  Generator generatorDevice ->
   Parser (StateT [Int] b) Int a ->
   b (a, [Int])
 runParser n model input g =

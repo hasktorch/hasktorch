@@ -41,7 +41,7 @@
 module Torch.GraduallyTyped.NN.Transformer.CrossAttention where
 
 import Control.Monad.Indexed (IxPointed (ireturn), (>>>=))
-import Control.Monad.Indexed.State (IxState (..), IxStateT (..))
+import Control.Monad.Indexed.State (IxStateT (..))
 import Control.Monad.State (evalStateT)
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
@@ -52,21 +52,20 @@ import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.DType (DType (..), DataType, SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec)
 import Torch.GraduallyTyped.NN.Dropout (Dropout (..))
 import Torch.GraduallyTyped.NN.Functional.Normalization (LayerNormWithBiasF)
-import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..))
-import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (MultiHeadAttention)
+import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..), LayerNormSpec (..))
+import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (MultiHeadAttention, MultiHeadAttentionSpec (..))
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
-import Torch.GraduallyTyped.NN.Type (HasBias (..))
-import Torch.GraduallyTyped.Random (Generator, sMkGenerator)
+import Torch.GraduallyTyped.NN.Type (HasBias (..), SHasBias (..))
+import Torch.GraduallyTyped.Random (sGeneratorToDevice, sMkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..), SRequiresGradient (..))
-import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, SName (..), SShape (..), SSize (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
-import Torch.GraduallyTyped.Tensor.Type (SGetDim, Tensor)
+import Torch.GraduallyTyped.Tensor.Type (SGetDim, Tensor, TensorSpec (..))
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 
 -- | Generic cross-attention layer.
@@ -101,15 +100,43 @@ newtype
     (embedDim :: Dim (Name Symbol) (Size Nat))
     (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
     (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (dropoutP :: Type)
   where
   CrossAttention ::
-    forall style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP.
+    forall style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim.
     GCrossAttention
-      (CAMultiheadAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
+      (CAMultiheadAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim)
       (CALayerNormF style gradient device dataType queryEmbedDim)
-      (CADropoutF style dropoutP) ->
-    CrossAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP
+      (CADropoutF style) ->
+    CrossAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim
+
+data
+  CrossAttentionSpec
+    (style :: TransformerStyle)
+    (gradient :: Gradient RequiresGradient)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
+  where
+  CrossAttentionSpec ::
+    forall style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim.
+    STransformerStyle style ->
+    SGradient gradient ->
+    SDevice device ->
+    SDataType dataType ->
+    SDim headDim ->
+    SDim headEmbedDim ->
+    SDim embedDim ->
+    SDim queryEmbedDim ->
+    SDim keyEmbedDim ->
+    Double ->
+    Double ->
+    CrossAttentionSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim
+
+type instance ModelSpec (CrossAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim) = CrossAttentionSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim
 
 type family
   CAMultiheadAttentionF
@@ -121,12 +148,11 @@ type family
     (headEmbedDim :: Dim (Name Symbol) (Size Nat))
     (embedDim :: Dim (Name Symbol) (Size Nat))
     (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (dropoutP :: Type) ::
+    (keyEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
     Type
   where
-  CAMultiheadAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP =
-    MultiHeadAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP
+  CAMultiheadAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim =
+    MultiHeadAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim
 
 type family
   CALayerNormF
@@ -145,59 +171,71 @@ type family
 
 type family
   CADropoutF
-    (style :: TransformerStyle)
-    (dropoutP :: Type) ::
+    (style :: TransformerStyle) ::
     Type
   where
-  CADropoutF _ dropoutP =
-    Dropout dropoutP
+  CADropoutF _ = Dropout
 
 instance
-  ( Scalar dropoutP,
-    multiHeadAttention ~ CAMultiheadAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP,
-    HasInitialize multiHeadAttention (SGradient gradient, SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim queryEmbedDim, SDim keyEmbedDim, SDim keyEmbedDim, dropoutP) generator generator',
+  ( multiHeadAttention ~ CAMultiheadAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim,
+    HasInitialize multiHeadAttention device multiHeadAttention device,
     layerNorm ~ CALayerNormF style gradient device dataType queryEmbedDim,
-    HasInitialize layerNorm (SGradient gradient, SDevice device, SDataType dataType, SShape ('Shape '[queryEmbedDim]), Double) generator' generator',
-    dropout ~ CADropoutF style dropoutP
+    HasInitialize layerNorm device layerNorm device,
+    dropout ~ CADropoutF style
   ) =>
   HasInitialize
-    (CrossAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
-    (SGradient gradient, SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim queryEmbedDim, SDim keyEmbedDim, dropoutP, Double)
-    generator
-    generator'
+    (CrossAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim)
+    generatorDevice
+    (CrossAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim)
+    device
   where
-  initialize (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, dropoutP, eps) =
-    let multiHeadAttention = IxState . initialize $ (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, keyEmbedDim, dropoutP)
-        layerNorm = IxState . initialize $ (gradient, device, dataType, SShape $ queryEmbedDim :|: SNil, eps)
-        dropout = IxState . initialize $ dropoutP
-     in runIxState $
-          (GCrossAttention <<$>> multiHeadAttention <<*>> layerNorm <<*>> dropout)
-            >>>= (ireturn . CrossAttention)
+  initialize (CrossAttentionSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP eps) generator =
+    let generator' = sGeneratorToDevice device generator
+        multiHeadAttention = IxStateT . initialize @multiHeadAttention $ MultiHeadAttentionSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP
+        layerNormWithoutBiasSpec = LayerNormSpec SWithoutBias gradient device dataType (SShape $ queryEmbedDim :|: SNil) eps
+        layerNormWithBiasSpec = LayerNormSpec SWithBias gradient device dataType (SShape $ queryEmbedDim :|: SNil) eps
+        layerNorm = IxStateT . initialize @layerNorm $ case style of
+          ST5 -> layerNormWithoutBiasSpec
+          SByT5 -> layerNormWithoutBiasSpec
+          SBART -> layerNormWithBiasSpec
+          SMBART -> layerNormWithBiasSpec
+          SPegasus -> layerNormWithBiasSpec
+          SBERT -> undefined
+          SRoBERTa -> undefined
+          SGPT2 -> undefined
+        dropout = IxStateT . initialize $ Dropout dropoutP
+     in runIxStateT
+          ( (GCrossAttention <<$>> multiHeadAttention <<*>> layerNorm <<*>> dropout)
+              >>>= (ireturn . CrossAttention)
+          )
+          generator'
 
 instance
   SingI style =>
   HasStateDict
-    (CrossAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
-    (SGradient gradient, SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim queryEmbedDim, SDim keyEmbedDim, dropoutP, Double)
+    (CrossAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim)
   where
-  fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, dropoutP, eps) k =
-    let multiHeadAttention ST5 = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, keyEmbedDim, dropoutP) (k <> "EncDecAttention.")
-        multiHeadAttention SByT5 = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, keyEmbedDim, dropoutP) (k <> "EncDecAttention.")
-        multiHeadAttention SBART = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, keyEmbedDim, dropoutP) (k <> "encoder_attn.")
-        multiHeadAttention SMBART = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, keyEmbedDim, dropoutP) (k <> "encoder_attn.")
-        multiHeadAttention SPegasus = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, keyEmbedDim, dropoutP) (k <> "encoder_attn.")
+  fromStateDict (CrossAttentionSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP eps) k =
+    let multiHeadAttentionSpec = MultiHeadAttentionSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP
+        multiHeadAttention ST5 = fromStateDict multiHeadAttentionSpec (k <> "EncDecAttention.")
+        multiHeadAttention SByT5 = fromStateDict multiHeadAttentionSpec (k <> "EncDecAttention.")
+        multiHeadAttention SBART = fromStateDict multiHeadAttentionSpec (k <> "encoder_attn.")
+        multiHeadAttention SMBART = fromStateDict multiHeadAttentionSpec (k <> "encoder_attn.")
+        multiHeadAttention SPegasus = fromStateDict multiHeadAttentionSpec (k <> "encoder_attn.")
         multiHeadAttention SBERT = undefined
         multiHeadAttention SRoBERTa = undefined
         multiHeadAttention SGPT2 = undefined
-        layerNorm ST5 = fromStateDict (gradient, device, dataType, SShape $ queryEmbedDim :|: SNil, eps) (k <> "layer_norm.")
-        layerNorm SByT5 = fromStateDict (gradient, device, dataType, SShape $ queryEmbedDim :|: SNil, eps) (k <> "layer_norm.")
-        layerNorm SBART = fromStateDict (gradient, device, dataType, SShape $ queryEmbedDim :|: SNil, eps) (k <> "encoder_attn_layer_norm.")
-        layerNorm SMBART = fromStateDict (gradient, device, dataType, SShape $ queryEmbedDim :|: SNil, eps) (k <> "encoder_attn_layer_norm.")
-        layerNorm SPegasus = fromStateDict (gradient, device, dataType, SShape $ queryEmbedDim :|: SNil, eps) (k <> "encoder_attn_layer_norm.")
+        layerNormWithoutBiasSpec = LayerNormSpec SWithoutBias gradient device dataType (SShape $ queryEmbedDim :|: SNil) eps
+        layerNormWithBiasSpec = LayerNormSpec SWithBias gradient device dataType (SShape $ queryEmbedDim :|: SNil) eps
+        layerNorm ST5 = fromStateDict layerNormWithoutBiasSpec (k <> "layer_norm.")
+        layerNorm SByT5 = fromStateDict layerNormWithoutBiasSpec (k <> "layer_norm.")
+        layerNorm SBART = fromStateDict layerNormWithBiasSpec (k <> "encoder_attn_layer_norm.")
+        layerNorm SMBART = fromStateDict layerNormWithBiasSpec (k <> "encoder_attn_layer_norm.")
+        layerNorm SPegasus = fromStateDict layerNormWithBiasSpec (k <> "encoder_attn_layer_norm.")
         layerNorm SBERT = undefined
         layerNorm SRoBERTa = undefined
         layerNorm SGPT2 = undefined
-        dropout _ = fromStateDict dropoutP k
+        dropout _ = fromStateDict (Dropout dropoutP) k
      in CrossAttention
           <$> ( GCrossAttention
                   <$> multiHeadAttention (sing @style)
@@ -257,22 +295,20 @@ instance
 -- @
 instance
   ( SGetDim queryEmbedDim,
-    Scalar dropoutP,
     HasForward
       (CALayerNormF 'T5 gradient device dataType queryEmbedDim)
       query
-      generator
+      generatorDevice
       layerNormOutput
-      generator,
+      generatorDevice,
     HasForward
-      (CAMultiheadAttentionF 'T5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
+      (CAMultiheadAttentionF 'T5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim)
       (layerNormOutput, key, key, attentionBias)
-      generator
+      generatorDevice
       mhaOutput
-      mhaGeneratorOutput,
+      device2,
     query ~ Tensor gradient0 layout0 device0 dataType0 shape0,
     mhaOutput ~ Tensor gradient1 layout1 device1 dataType1 shape1,
-    mhaGeneratorOutput ~ Generator device2,
     output
       ~ Tensor
           (gradient0 <|> gradient1)
@@ -280,14 +316,14 @@ instance
           (device0 <+> device1 <+> device2)
           (dataType0 <+> dataType1)
           (BroadcastShapesF shape0 shape1),
-    generatorOutput ~ Generator (device1 <+> device2)
+    generatorOutputDevice ~ (device1 <+> device2)
   ) =>
   HasForward
-    (CrossAttention 'T5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
+    (CrossAttention 'T5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim)
     (query, key, attentionBias)
-    generator
+    generatorDevice
     output
-    generatorOutput
+    generatorOutputDevice
   where
   forward (CrossAttention ca) (query, key, attentionBias) =
     runIxStateT $
@@ -297,6 +333,7 @@ instance
         >>>= IxStateT . forward (caDropout ca)
         >>>= ireturn . (query `add`)
 
+testCA :: IO _
 testCA = do
   let gradient = SGradient SWithGradient
       device = SDevice SCPU
@@ -306,23 +343,21 @@ testCA = do
       embedDim = SName @"*" :&: SSize @512
       queryEmbedDim = SName @"*" :&: SSize @512
       keyEmbedDim = queryEmbedDim
-      dropoutP :: Float = 0.0
+      dropoutP = 0.0
       eps = 1e-6
-  g <- sMkGenerator device 0
-  let (ca, g') =
-        initialize
-          @(CrossAttention 'T5 _ _ _ _ _ _ _ _ _)
-          (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, dropoutP, eps)
-          g
+  let g = sMkGenerator device 0
+  (ca, g') <-
+    initialize
+      (CrossAttentionSpec ST5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP eps)
+      g
   ca' <- flip evalStateT Map.empty $ do
     toStateDict "ca." ca
     fromStateDict
-      @(CrossAttention 'T5 _ _ _ _ _ _ _ _ _)
-      (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, keyEmbedDim, dropoutP, eps)
+      (CrossAttentionSpec ST5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP eps)
       "ca."
   let batchDim = SName @"*" :&: SSize @3
       seqDim = SName @"*" :&: SSize @4
-      sOnes' = sOnes (SGradient SWithoutGradient) (SLayout SDense) device
+      sOnes' = (sOnes .) . TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device
       query = sOnes' dataType (SShape $ batchDim :|: seqDim :|: queryEmbedDim :|: SNil)
       key = sOnes' dataType (SShape $ batchDim :|: seqDim :|: keyEmbedDim :|: SNil)
       attentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
@@ -358,22 +393,20 @@ testCA = do
 -- @
 instance
   ( SGetDim queryEmbedDim,
-    Scalar dropoutP,
     HasForward
       (CALayerNormF 'ByT5 gradient device dataType queryEmbedDim)
       query
-      generator
+      generatorDevice
       layerNormOutput
-      generator,
+      generatorDevice,
     HasForward
-      (CAMultiheadAttentionF 'ByT5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
+      (CAMultiheadAttentionF 'ByT5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim)
       (layerNormOutput, key, key, attentionBias)
-      generator
+      generatorDevice
       mhaOutput
-      mhaGeneratorOutput,
+      device2,
     query ~ Tensor gradient0 layout0 device0 dataType0 shape0,
     mhaOutput ~ Tensor gradient1 layout1 device1 dataType1 shape1,
-    mhaGeneratorOutput ~ Generator device2,
     output
       ~ Tensor
           (gradient0 <|> gradient1)
@@ -381,14 +414,14 @@ instance
           (device0 <+> device1 <+> device2)
           (dataType0 <+> dataType1)
           (BroadcastShapesF shape0 shape1),
-    generatorOutput ~ Generator (device1 <+> device2)
+    generatorOutputDevice ~ (device1 <+> device2)
   ) =>
   HasForward
-    (CrossAttention 'ByT5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
+    (CrossAttention 'ByT5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim)
     (query, key, attentionBias)
-    generator
+    generatorDevice
     output
-    generatorOutput
+    generatorOutputDevice
   where
   forward (CrossAttention ca) (query, key, attentionBias) =
     runIxStateT $
@@ -425,14 +458,13 @@ instance
 -- @
 instance
   ( SGetDim queryEmbedDim,
-    Scalar dropoutP,
     query ~ Tensor queryGradient queryLayout queryDevice queryDataType queryShape,
     key ~ Tensor keyGradient keyLayout keyDevice keyDataType keyShape,
     attentionBias ~ Tensor attentionBiasGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape,
     HasForward
-      (MultiHeadAttention 'BART gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP)
+      (MultiHeadAttention 'BART gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim)
       (query, key, key, attentionBias)
-      (Generator generatorDevice)
+      generatorDevice
       ( Tensor
           (gradient <|> queryGradient <|> keyGradient <|> attentionBiasGradient)
           ('Layout 'Dense <+> queryLayout <+> keyLayout <+> attentionBiasLayout)
@@ -440,7 +472,7 @@ instance
           (dataType <+> queryDataType <+> keyDataType <+> attentionBiasDataType)
           mhaOutputShape
       )
-      (Generator (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)),
+      (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice),
     output
       ~ Tensor
           (gradient <|> queryGradient <|> keyGradient <|> attentionBiasGradient)
@@ -452,14 +484,14 @@ instance
               ('Shape '[queryEmbedDim])
               (BroadcastShapesF queryShape mhaOutputShape)
           ),
-    generatorOutput ~ Generator (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)
+    generatorOutputDevice ~ (device <+> queryDevice <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)
   ) =>
   HasForward
-    (CrossAttention 'BART gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
+    (CrossAttention 'BART gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim)
     (query, key, attentionBias)
-    (Generator generatorDevice)
+    generatorDevice
     output
-    generatorOutput
+    generatorOutputDevice
   where
   forward (CrossAttention ca) (query, key, attentionBias) =
     runIxStateT $
@@ -498,7 +530,6 @@ instance
 -- @
 instance
   ( SGetDim queryEmbedDim,
-    Scalar dropoutP,
     query ~ Tensor queryGradient queryLayout queryDevice queryDataType queryShape,
     key ~ Tensor keyGradient keyLayout keyDevice keyDataType keyShape,
     attentionBias ~ Tensor attentionBiasGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape,
@@ -509,13 +540,13 @@ instance
     normedQueryShape ~ LayerNormWithBiasF ('Shape '[queryEmbedDim]) ('Shape '[queryEmbedDim]) queryShape,
     normedQuery ~ Tensor normedQueryGradient normedQueryLayout normedQueryDevice normedQueryDataType normedQueryShape,
     HasForward
-      (MultiHeadAttention 'Pegasus gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP)
+      (MultiHeadAttention 'Pegasus gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim)
       ( normedQuery,
         key,
         key,
         attentionBias
       )
-      (Generator generatorDevice)
+      generatorDevice
       ( Tensor
           (queryGradient <|> gradient <|> keyGradient <|> attentionBiasGradient)
           (queryLayout <+> 'Layout 'Dense <+> keyLayout <+> attentionBiasLayout)
@@ -523,7 +554,7 @@ instance
           (queryDataType <+> dataType <+> keyDataType <+> attentionBiasDataType)
           mhaOutputShape
       )
-      (Generator (queryDevice <+> device <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)),
+      (queryDevice <+> device <+> keyDevice <+> attentionBiasDevice <+> generatorDevice),
     output
       ~ Tensor
           (queryGradient <|> gradient <|> keyGradient <|> attentionBiasGradient)
@@ -531,14 +562,14 @@ instance
           (queryDevice <+> device <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)
           (queryDataType <+> dataType <+> keyDataType <+> attentionBiasDataType)
           (BroadcastShapesF queryShape mhaOutputShape),
-    generatorOutput ~ Generator (queryDevice <+> device <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)
+    generatorOutputDevice ~ (queryDevice <+> device <+> keyDevice <+> attentionBiasDevice <+> generatorDevice)
   ) =>
   HasForward
-    (CrossAttention 'Pegasus gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP)
+    (CrossAttention 'Pegasus gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim)
     (query, key, attentionBias)
-    (Generator generatorDevice)
+    generatorDevice
     output
-    generatorOutput
+    generatorOutputDevice
   where
   forward (CrossAttention ca) (query, key, attentionBias) =
     runIxStateT $

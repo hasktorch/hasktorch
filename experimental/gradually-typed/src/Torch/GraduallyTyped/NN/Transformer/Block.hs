@@ -21,23 +21,23 @@
 module Torch.GraduallyTyped.NN.Transformer.Block where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
-import Control.Monad.Indexed.State (IxState (..), IxStateT (..))
+import Control.Monad.Indexed.State (IxStateT (..))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
-import Data.Kind (Type)
 import Data.Singletons (SingI, sing)
 import Data.Singletons.Prelude.List (SList (SNil))
 import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.DType (DType (..), DataType, SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..))
-import Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork (TransformerFeedForwardNetwork)
-import Torch.GraduallyTyped.NN.Transformer.SelfAttention (SelfAttention)
-import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (T5))
-import Torch.GraduallyTyped.Random (Generator, sMkGenerator)
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec)
+import Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork (TransformerFeedForwardNetwork, TransformerFeedForwardNetworkSpec (..))
+import Torch.GraduallyTyped.NN.Transformer.SelfAttention (SelfAttention, SelfAttentionSpec (..))
+import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle)
+import Torch.GraduallyTyped.Random (sGeneratorToDevice, sMkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, SName (..), SShape (..), SSize (..), Size (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes)
+import Torch.GraduallyTyped.Tensor.Type (TensorSpec (TensorSpec))
 
 -- | Transformer encoder block consisting of self-attention and a feed-forward network.
 --
@@ -56,66 +56,90 @@ data
     (embedDim :: Dim (Name Symbol) (Size Nat))
     (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
     (ffnDim :: Dim (Name Symbol) (Size Nat))
-    (dropoutP :: Type)
   where
   TransformerBlock ::
-    forall style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP.
+    forall style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim.
     { -- | self-attention layer
-      tbSelfAttention :: SelfAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP,
+      tbSelfAttention :: SelfAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim,
       -- | feed-forward network
-      tbFeedForwardNetwork :: TransformerFeedForwardNetwork style gradient device dataType queryEmbedDim ffnDim dropoutP
+      tbFeedForwardNetwork :: TransformerFeedForwardNetwork style gradient device dataType queryEmbedDim ffnDim
     } ->
-    TransformerBlock style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP
+    TransformerBlock style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim
+
+data
+  TransformerBlockSpec
+    (style :: TransformerStyle)
+    (gradient :: Gradient RequiresGradient)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+  where
+  TransformerBlockSpec ::
+    forall style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim.
+    STransformerStyle style ->
+    SGradient gradient ->
+    SDevice device ->
+    SDataType dataType ->
+    SDim headDim ->
+    SDim headEmbedDim ->
+    SDim embedDim ->
+    SDim queryEmbedDim ->
+    SDim ffnDim ->
+    Double ->
+    Double ->
+    TransformerBlockSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim
+
+type instance ModelSpec (TransformerBlock style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim) = TransformerBlockSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim
 
 instance
-  ( HasInitialize
-      (SelfAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
-      (SGradient gradient, SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim queryEmbedDim, dropoutP, Double)
-      generator
-      generator',
-    HasInitialize
-      (TransformerFeedForwardNetwork style gradient device dataType queryEmbedDim ffnDim dropoutP)
-      (SGradient gradient, SDevice device, SDataType dataType, SDim queryEmbedDim, SDim ffnDim, dropoutP, Double)
-      generator'
-      generator''
+  ( selfAttention ~ SelfAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim,
+    HasInitialize selfAttention device selfAttention device,
+    feedForwardNetwork ~ TransformerFeedForwardNetwork style gradient device dataType queryEmbedDim ffnDim,
+    HasInitialize feedForwardNetwork device feedForwardNetwork device
   ) =>
   HasInitialize
-    (TransformerBlock style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
-    (SGradient gradient, SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim queryEmbedDim, SDim ffnDim, dropoutP, Double)
-    generator
-    generator''
+    (TransformerBlock style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim)
+    generatorDevice
+    (TransformerBlock style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim)
+    device
   where
-  initialize (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, ffnDim, dropoutP, eps) =
-    let selfAttention = IxState . initialize $ (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, dropoutP, eps)
-        feedForwardNetwork = IxState . initialize $ (gradient, device, dataType, queryEmbedDim, ffnDim, dropoutP, eps)
-     in runIxState $ TransformerBlock <<$>> selfAttention <<*>> feedForwardNetwork
+  initialize (TransformerBlockSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP eps) generator =
+    let generator' = sGeneratorToDevice device generator
+        selfAttention = IxStateT . initialize @selfAttention $ SelfAttentionSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP eps
+        feedForwardNetwork = IxStateT . initialize @feedForwardNetwork $ TransformerFeedForwardNetworkSpec style gradient device dataType queryEmbedDim ffnDim dropoutP eps
+     in runIxStateT (TransformerBlock <<$>> selfAttention <<*>> feedForwardNetwork) generator'
 
 instance
   SingI style =>
   HasStateDict
-    (TransformerBlock style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
-    (SGradient gradient, SDevice device, SDataType dataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim queryEmbedDim, SDim ffnDim, dropoutP, Double)
+    (TransformerBlock style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim)
   where
-  fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, ffnDim, dropoutP, eps) k =
-    let selfAttention ST5 = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, dropoutP, eps) (k <> "layer.0.")
-        selfAttention SByT5 = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, dropoutP, eps) (k <> "layer.0.")
-        selfAttention SBART = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, dropoutP, eps) k
-        selfAttention SMBART = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, dropoutP, eps) k
-        selfAttention SPegasus = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, dropoutP, eps) k
-        selfAttention SBERT = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, dropoutP, eps) (k <> "attention.")
-        selfAttention SRoBERTa = fromStateDict (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, dropoutP, eps) (k <> "attention.")
+  fromStateDict (TransformerBlockSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP eps) k =
+    let selfAttentionSpec = SelfAttentionSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP eps
+        selfAttention ST5 = fromStateDict selfAttentionSpec (k <> "layer.0.")
+        selfAttention SByT5 = fromStateDict selfAttentionSpec (k <> "layer.0.")
+        selfAttention SBART = fromStateDict selfAttentionSpec k
+        selfAttention SMBART = fromStateDict selfAttentionSpec k
+        selfAttention SPegasus = fromStateDict selfAttentionSpec k
+        selfAttention SBERT = fromStateDict selfAttentionSpec (k <> "attention.")
+        selfAttention SRoBERTa = fromStateDict selfAttentionSpec (k <> "attention.")
         selfAttention SGPT2 = undefined
-        feedForwardNetwork ST5 = fromStateDict (gradient, device, dataType, queryEmbedDim, ffnDim, dropoutP, eps) (k <> "layer.1.")
-        feedForwardNetwork SByT5 = fromStateDict (gradient, device, dataType, queryEmbedDim, ffnDim, dropoutP, eps) (k <> "layer.1.")
-        feedForwardNetwork SBART = fromStateDict (gradient, device, dataType, queryEmbedDim, ffnDim, dropoutP, eps) k
-        feedForwardNetwork SMBART = fromStateDict (gradient, device, dataType, queryEmbedDim, ffnDim, dropoutP, eps) k
-        feedForwardNetwork SPegasus = fromStateDict (gradient, device, dataType, queryEmbedDim, ffnDim, dropoutP, eps) k
-        feedForwardNetwork SBERT = fromStateDict (gradient, device, dataType, queryEmbedDim, ffnDim, dropoutP, eps) k
-        feedForwardNetwork SRoBERTa = fromStateDict (gradient, device, dataType, queryEmbedDim, ffnDim, dropoutP, eps) k
+        feedForwardNetworkSpec = TransformerFeedForwardNetworkSpec style gradient device dataType queryEmbedDim ffnDim dropoutP eps
+        feedForwardNetwork ST5 = fromStateDict feedForwardNetworkSpec (k <> "layer.1.")
+        feedForwardNetwork SByT5 = fromStateDict feedForwardNetworkSpec (k <> "layer.1.")
+        feedForwardNetwork SBART = fromStateDict feedForwardNetworkSpec k
+        feedForwardNetwork SMBART = fromStateDict feedForwardNetworkSpec k
+        feedForwardNetwork SPegasus = fromStateDict feedForwardNetworkSpec k
+        feedForwardNetwork SBERT = fromStateDict feedForwardNetworkSpec k
+        feedForwardNetwork SRoBERTa = fromStateDict feedForwardNetworkSpec k
         feedForwardNetwork SGPT2 = undefined
      in TransformerBlock
-          <$> selfAttention (sing @style)
-          <*> feedForwardNetwork (sing @style)
+          <$> selfAttention style
+          <*> feedForwardNetwork style
   toStateDict k TransformerBlock {..} =
     let selfAttention ST5 = toStateDict (k <> "layer.0.")
         selfAttention SByT5 = toStateDict (k <> "layer.0.")
@@ -157,24 +181,24 @@ instance
 -- @
 instance
   ( HasForward
-      (SelfAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP)
+      (SelfAttention style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim)
       input
-      (Generator generatorDevice)
+      generatorDevice
       selfAttentionOutput
-      selfAttentionGeneratorOutput,
+      selfAttentionGeneratorOutputDevice,
     HasForward
-      (TransformerFeedForwardNetwork style gradient device dataType queryEmbedDim ffnDim dropoutP)
+      (TransformerFeedForwardNetwork style gradient device dataType queryEmbedDim ffnDim)
       selfAttentionOutput
-      selfAttentionGeneratorOutput
+      selfAttentionGeneratorOutputDevice
       output
-      generatorOutput
+      generatorOutputDevice
   ) =>
   HasForward
-    (TransformerBlock style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP)
+    (TransformerBlock style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim)
     input
-    (Generator generatorDevice)
+    generatorDevice
     output
-    generatorOutput
+    generatorOutputDevice
   where
   forward TransformerBlock {..} input =
     runIxStateT $
@@ -182,6 +206,7 @@ instance
         >>>= IxStateT . forward tbSelfAttention
         >>>= IxStateT . forward tbFeedForwardNetwork
 
+testBlock :: IO _
 testBlock = do
   let gradient = SGradient SWithGradient
       device = SDevice SCPU
@@ -191,13 +216,13 @@ testBlock = do
       embedDim = SName @"*" :&: SSize @512
       queryEmbedDim = SName @"*" :&: SSize @512
       ffnDim = SName @"*" :&: SSize @2048
-      dropoutP :: Float = 0.0
+      dropoutP = 0.0
       eps = 1e-6
-  g <- sMkGenerator device 0
-  let (decoderBlock, g') = initialize @(TransformerBlock 'T5 _ _ _ _ _ _ _ _ _) (gradient, device, dataType, headDim, headEmbedDim, embedDim, queryEmbedDim, ffnDim, dropoutP, eps) g
-      batchDim = SName @"*" :&: SSize @3
+  let g = sMkGenerator device 0
+  (decoderBlock, g') <- initialize (TransformerBlockSpec ST5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP eps) g
+  let batchDim = SName @"*" :&: SSize @3
       seqDim = SName @"*" :&: SSize @17
-      sOnes' = sOnes (SGradient SWithoutGradient) (SLayout SDense) device
+      sOnes' = (sOnes .) . TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device
       query = sOnes' dataType (SShape $ batchDim :|: seqDim :|: queryEmbedDim :|: SNil)
       attentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
   (output, _) <- forward decoderBlock (query, attentionBias) g'

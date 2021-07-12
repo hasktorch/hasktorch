@@ -92,6 +92,7 @@ library
                      , Torch.GraduallyTyped.NN.Normalization
                      , Torch.GraduallyTyped.NN.Sparse
                      , Torch.GraduallyTyped.NN.Functional
+                     , Torch.GraduallyTyped.NN.Functional.Dropout
                      , Torch.GraduallyTyped.NN.Functional.Activation
                      , Torch.GraduallyTyped.NN.Functional.Linear
                      , Torch.GraduallyTyped.NN.Functional.NonLinearActivation
@@ -141,6 +142,7 @@ test-suite spec
   main-is:             Spec.hs
   other-modules:       TensorSpec
                      , TransformerSpec
+                     , BARTSpec
   default-language:    Haskell2010
   ghc-options:         -Wall -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
   build-depends:       base >= 4.7 && < 5

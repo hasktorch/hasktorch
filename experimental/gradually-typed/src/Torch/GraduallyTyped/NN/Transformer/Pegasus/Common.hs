@@ -26,14 +26,15 @@ import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI (..))
+import Data.Singletons.TypeLits (SNat)
 import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (..))
-import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (SequenceToSequenceTransformer, SequenceToSequenceTransformerGenerationInput (..), SequenceToSequenceTransformerInput (..), SequenceToSequenceTransformerOutput (..))
-import Torch.GraduallyTyped.NN.Transformer.Type (MkPosC, MkTransformerAttentionMaskC, MkTransformerCrossAttentionMaskC, MkTransformerDecoderAttentionMaskC, MkTransformerPaddingMaskC, ShiftRight, TransformerHead (..), TransformerStyle (Pegasus), mkPos, mkTransformerAttentionMask, mkTransformerCrossAttentionMask, mkTransformerDecoderAttentionMask, mkTransformerInput, mkTransformerPaddingMask)
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (..), ModelSpec)
+import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (SequenceToSequenceTransformer, SequenceToSequenceTransformerGenerationInput (..), SequenceToSequenceTransformerInput (..), SequenceToSequenceTransformerOutput (..), SequenceToSequenceTransformerSpec (..))
+import Torch.GraduallyTyped.NN.Transformer.Type (MkPosC, MkTransformerAttentionMaskC, MkTransformerCrossAttentionMaskC, MkTransformerDecoderAttentionMaskC, MkTransformerPaddingMaskC, STransformerHead, STransformerStyle (SPegasus), ShiftRight (..), TransformerHead (..), TransformerStyle (Pegasus), mkPos, mkTransformerAttentionMask, mkTransformerCrossAttentionMask, mkTransformerDecoderAttentionMask, mkTransformerInput, mkTransformerPaddingMask)
 import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, Shape (..), Size (..))
@@ -54,12 +55,9 @@ type PegasusDataType = 'DataType PegasusDType
 pegasusDataType :: SDataType PegasusDataType
 pegasusDataType = sing @PegasusDataType
 
--- | Pegasus dropout probability type.
-type PegasusDropoutP = Float
-
 -- | Pegasus dropout rate.
 -- 'dropout_rate = 0.1'
-pegasusDropoutP :: PegasusDropoutP
+pegasusDropoutP :: Double
 pegasusDropoutP = 0.1
 
 -- | Pegasus positional encoding dimension.
@@ -126,9 +124,32 @@ data
   PegasusModel ::
     forall transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim.
     GPegasusModel
-      (SequenceToSequenceTransformer 'Pegasus transformerHead numLayers numLayers gradient device PegasusDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim PegasusPosEncDim vocabDim PegasusDropoutP) ->
+      (SequenceToSequenceTransformer 'Pegasus transformerHead numLayers numLayers gradient device PegasusDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim PegasusPosEncDim vocabDim) ->
     PegasusModel transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim
   deriving stock (Generic)
+
+data
+  PegasusModelSpec
+    (transformerHead :: TransformerHead)
+    (numLayers :: Nat)
+    (gradient :: Gradient RequiresGradient)
+    (device :: Device (DeviceType Nat))
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (vocabDim :: Dim (Name Symbol) (Size Nat))
+  where
+  PegasusModelSpec ::
+    forall transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim.
+    STransformerHead transformerHead ->
+    SNat numLayers ->
+    SGradient gradient ->
+    SDevice device ->
+    PegasusModelSpec transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim
+
+type instance ModelSpec (PegasusModel transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim) = PegasusModelSpec transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim
 
 instance
   ( SingI headDim,
@@ -138,14 +159,12 @@ instance
     SingI ffnDim,
     SingI vocabDim,
     HasStateDict
-      (SequenceToSequenceTransformer 'Pegasus transformerHead numLayers numLayers gradient device PegasusDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim PegasusPosEncDim vocabDim PegasusDropoutP)
-      (SGradient gradient, SDevice device, SDataType PegasusDataType, SDim headDim, SDim headEmbedDim, SDim embedDim, SDim inputEmbedDim, SDim ffnDim, SDim PegasusPosEncDim, SDim vocabDim, PegasusDropoutP, Double)
+      (SequenceToSequenceTransformer 'Pegasus transformerHead numLayers numLayers gradient device PegasusDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim PegasusPosEncDim vocabDim)
   ) =>
   HasStateDict
     (PegasusModel transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
-    (SGradient gradient, SDevice device)
   where
-  fromStateDict (gradient, device) k =
+  fromStateDict (PegasusModelSpec transformerHead numLayers gradient device) k =
     let headDim = sing @headDim
         headEmbedDim = sing @headEmbedDim
         embedDim = sing @embedDim
@@ -154,9 +173,9 @@ instance
         vocabDim = sing @vocabDim
      in PegasusModel
           <$> ( GPegasusModel
-                  <$> fromStateDict (gradient, device, pegasusDataType, headDim, headEmbedDim, embedDim, inputEmbedDim, ffnDim, pegasusPosEncDim, vocabDim, pegasusDropoutP, pegasusEps) (k <> "model.")
-                  <*> fromStateDict pegasusBOSTokenId k
-                  <*> fromStateDict 0 k
+                  <$> fromStateDict (SequenceToSequenceTransformerSpec SPegasus transformerHead numLayers numLayers gradient device pegasusDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim pegasusPosEncDim vocabDim pegasusDropoutP pegasusEps) (k <> "model.")
+                  <*> fromStateDict (ShiftRight pegasusBOSTokenId) k
+                  <*> fromStateDict (ShiftRight 0) k
               )
   toStateDict k (PegasusModel GPegasusModel {..}) = do
     toStateDict (k <> "model.") pegasusModel
@@ -261,21 +280,21 @@ instance
     MkTransformerAttentionMaskC PegasusDataType inputPaddingMaskGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim attentionMask,
     MkTransformerCrossAttentionMaskC PegasusDataType rightShiftedDecoderInputShape rightShiftedDecoderInputSeqDim inputPaddingMaskGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim crossAttentionMask,
     MkTransformerDecoderAttentionMaskC PegasusDataType rightShiftedDecoderInputPaddingMaskLayout rightShiftedDecoderInputPaddingMaskDevice rightShiftedDecoderInputPaddingMaskShape rightShiftedDecoderInputPaddingMaskSeqDim decoderAttentionMask,
-    HasForward (ShiftRight Int) decoderInput generator rightShiftedDecoderInput generator,
-    HasForward (ShiftRight Int) decoderInputPaddingMask generator rightShiftedDecoderInputPaddingMask generator,
+    HasForward (ShiftRight Int) decoderInput generatorDevice rightShiftedDecoderInput generatorDevice,
+    HasForward (ShiftRight Int) decoderInputPaddingMask generatorDevice rightShiftedDecoderInputPaddingMask generatorDevice,
     HasForward
-      (SequenceToSequenceTransformer 'Pegasus transformerHead numLayers numLayers gradient device PegasusDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim PegasusPosEncDim vocabDim PegasusDropoutP)
+      (SequenceToSequenceTransformer 'Pegasus transformerHead numLayers numLayers gradient device PegasusDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim PegasusPosEncDim vocabDim)
       (SequenceToSequenceTransformerInput input rightShiftedDecoderInput pos decoderPos attentionMask decoderAttentionMask crossAttentionMask)
-      generator
+      generatorDevice
       (SequenceToSequenceTransformerOutput decoderOutput encoderOutput)
-      generatorOutput
+      generatorOutputDevice
   ) =>
   HasForward
     (PegasusModel transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
     (PegasusInput input decoderInput)
-    generator
+    generatorDevice
     (PegasusOutput decoderOutput encoderOutput inputPaddingMask)
-    generatorOutput
+    generatorOutputDevice
   where
   forward (PegasusModel GPegasusModel {..}) PegasusInput {..} =
     let inputPaddingMask = mkPegasusPaddingMask pegasusInput
@@ -333,21 +352,21 @@ instance
     MkTransformerAttentionMaskC PegasusDataType inputPaddingMaskGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim attentionMask,
     MkTransformerCrossAttentionMaskC PegasusDataType rightShiftedDecoderInputShape rightShiftedDecoderInputSeqDim inputPaddingMaskGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim crossAttentionMask,
     MkTransformerDecoderAttentionMaskC PegasusDataType rightShiftedDecoderInputPaddingMaskLayout rightShiftedDecoderInputPaddingMaskDevice rightShiftedDecoderInputPaddingMaskShape rightShiftedDecoderInputPaddingMaskSeqDim decoderAttentionMask,
-    HasForward (ShiftRight Int) decoderInput generator rightShiftedDecoderInput generator,
-    HasForward (ShiftRight Int) decoderInputPaddingMask generator rightShiftedDecoderInputPaddingMask generator,
+    HasForward (ShiftRight Int) decoderInput generatorDevice rightShiftedDecoderInput generatorDevice,
+    HasForward (ShiftRight Int) decoderInputPaddingMask generatorDevice rightShiftedDecoderInputPaddingMask generatorDevice,
     HasForward
-      (SequenceToSequenceTransformer 'Pegasus transformerHead numLayers numLayers gradient device PegasusDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim PegasusPosEncDim vocabDim PegasusDropoutP)
+      (SequenceToSequenceTransformer 'Pegasus transformerHead numLayers numLayers gradient device PegasusDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim PegasusPosEncDim vocabDim)
       (SequenceToSequenceTransformerGenerationInput rightShiftedDecoderInput encoderOutput decoderPos decoderAttentionMask crossAttentionMask)
-      generator
+      generatorDevice
       (SequenceToSequenceTransformerOutput decoderOutput encoderOutput)
-      generatorOutput
+      generatorOutputDevice
   ) =>
   HasForward
     (PegasusModel transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
     (PegasusGenerationInput decoderInput encoderOutput inputPaddingMask)
-    generator
+    generatorDevice
     (PegasusOutput decoderOutput encoderOutput inputPaddingMask)
-    generatorOutput
+    generatorOutputDevice
   where
   forward (PegasusModel GPegasusModel {..}) PegasusGenerationInput {..} =
     runIxStateT $

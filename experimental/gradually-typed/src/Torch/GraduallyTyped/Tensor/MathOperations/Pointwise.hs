@@ -82,10 +82,10 @@ acosh = unsafePerformIO . cast1 ATen.acosh_t
 -- See 'addScalar' for a version of this function where
 -- the 'other' input is a scalar.
 --
--- >>> g <- sMkGenerator (SDevice SCPU) 0
--- >>> sRandn' = sRandn (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat)
--- >>> (a, g') = sRandn' (SShape $ SName @"feature" :&: SSize @4 :|: SNil) g
--- >>> (b, _) = sRandn' (SShape $ SName @"*" :&: SSize @4 :|: SName @"*" :&: SSize @1 :|: SNil) g'
+-- >>> g = sMkGenerator (SDevice SCPU) 0
+-- >>> sRandn' = sRandn . TensorSpec (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat)
+-- >>> (a, g') <- sRandn' (SShape $ SName @"feature" :&: SSize @4 :|: SNil) g
+-- >>> (b, _) <- sRandn' (SShape $ SName @"*" :&: SSize @4 :|: SName @"*" :&: SSize @1 :|: SNil) g'
 -- >>> :type a `add` b
 -- a `add` b
 --   :: Tensor
