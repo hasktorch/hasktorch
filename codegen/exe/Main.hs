@@ -50,7 +50,8 @@ main :: IO ()
 main = do
   opts <- O.execParser optsParser
 --  RT.tensorBuilder
-  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/tensor.yaml" 4
+  RC.decodeAndCodeGenForTensor (outputDir opts) "spec/cppclass/tensor.yaml" (specFileDL opts) 4
+--  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/tensor.yaml" 4
   RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/intarray.yaml" 1
   RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/tensoroptions.yaml" 1
   RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/generator.yaml" 1

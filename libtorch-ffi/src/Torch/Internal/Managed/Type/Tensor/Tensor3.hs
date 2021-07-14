@@ -24,18 +24,6 @@ import qualified Torch.Internal.Unmanaged.Type.Tensor.Tensor3 as Unmanaged
 
 
 
-tensor___or___t
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-tensor___or___t = cast2 Unmanaged.tensor___or___t
-
-tensor___ior___s
-  :: ForeignPtr Tensor
-  -> ForeignPtr Scalar
-  -> IO (ForeignPtr Tensor)
-tensor___ior___s = cast2 Unmanaged.tensor___ior___s
-
 tensor___ior___t
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -239,11 +227,77 @@ tensor_addcdiv__tts
   -> IO (ForeignPtr Tensor)
 tensor_addcdiv__tts = cast4 Unmanaged.tensor_addcdiv__tts
 
+tensor_random__llG
+  :: ForeignPtr Tensor
+  -> Int64
+  -> Int64
+  -> ForeignPtr Generator
+  -> IO (ForeignPtr Tensor)
+tensor_random__llG = cast4 Unmanaged.tensor_random__llG
+
+tensor_random__lG
+  :: ForeignPtr Tensor
+  -> Int64
+  -> ForeignPtr Generator
+  -> IO (ForeignPtr Tensor)
+tensor_random__lG = cast3 Unmanaged.tensor_random__lG
+
+tensor_random__G
+  :: ForeignPtr Tensor
+  -> ForeignPtr Generator
+  -> IO (ForeignPtr Tensor)
+tensor_random__G = cast2 Unmanaged.tensor_random__G
+
+tensor_uniform__ddG
+  :: ForeignPtr Tensor
+  -> CDouble
+  -> CDouble
+  -> ForeignPtr Generator
+  -> IO (ForeignPtr Tensor)
+tensor_uniform__ddG = cast4 Unmanaged.tensor_uniform__ddG
+
+tensor_cauchy__ddG
+  :: ForeignPtr Tensor
+  -> CDouble
+  -> CDouble
+  -> ForeignPtr Generator
+  -> IO (ForeignPtr Tensor)
+tensor_cauchy__ddG = cast4 Unmanaged.tensor_cauchy__ddG
+
+tensor_log_normal__ddG
+  :: ForeignPtr Tensor
+  -> CDouble
+  -> CDouble
+  -> ForeignPtr Generator
+  -> IO (ForeignPtr Tensor)
+tensor_log_normal__ddG = cast4 Unmanaged.tensor_log_normal__ddG
+
+tensor_exponential__dG
+  :: ForeignPtr Tensor
+  -> CDouble
+  -> ForeignPtr Generator
+  -> IO (ForeignPtr Tensor)
+tensor_exponential__dG = cast3 Unmanaged.tensor_exponential__dG
+
+tensor_geometric__dG
+  :: ForeignPtr Tensor
+  -> CDouble
+  -> ForeignPtr Generator
+  -> IO (ForeignPtr Tensor)
+tensor_geometric__dG = cast3 Unmanaged.tensor_geometric__dG
+
 tensor_diag_l
   :: ForeignPtr Tensor
   -> Int64
   -> IO (ForeignPtr Tensor)
 tensor_diag_l = cast2 Unmanaged.tensor_diag_l
+
+tensor_cross_tl
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+tensor_cross_tl = cast3 Unmanaged.tensor_cross_tl
 
 tensor_triu_l
   :: ForeignPtr Tensor
@@ -711,6 +765,14 @@ tensor_lu_solve_tt
   -> IO (ForeignPtr Tensor)
 tensor_lu_solve_tt = cast3 Unmanaged.tensor_lu_solve_tt
 
+tensor_multinomial_lbG
+  :: ForeignPtr Tensor
+  -> Int64
+  -> CBool
+  -> ForeignPtr Generator
+  -> IO (ForeignPtr Tensor)
+tensor_multinomial_lbG = cast4 Unmanaged.tensor_multinomial_lbG
+
 tensor_lgamma_
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
@@ -726,11 +788,11 @@ tensor_digamma
   -> IO (ForeignPtr Tensor)
 tensor_digamma = cast1 Unmanaged.tensor_digamma
 
-tensor_polygamma_l
-  :: ForeignPtr Tensor
-  -> Int64
-  -> IO (ForeignPtr Tensor)
-tensor_polygamma_l = cast2 Unmanaged.tensor_polygamma_l
+-- tensor_polygamma_t
+--   :: ForeignPtr Tensor
+--   -> ForeignPtr Tensor
+--   -> IO (ForeignPtr Tensor)
+-- tensor_polygamma_t = cast2 Unmanaged.tensor_polygamma_t
 
 tensor_erfinv
   :: ForeignPtr Tensor
@@ -920,6 +982,38 @@ tensor_min_t
   -> IO (ForeignPtr Tensor)
 tensor_min_t = cast2 Unmanaged.tensor_min_t
 
+tensor_quantile_dlb
+  :: ForeignPtr Tensor
+  -> CDouble
+  -> Int64
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+tensor_quantile_dlb = cast4 Unmanaged.tensor_quantile_dlb
+
+tensor_quantile_tlb
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> Int64
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+tensor_quantile_tlb = cast4 Unmanaged.tensor_quantile_tlb
+
+tensor_nanquantile_dlb
+  :: ForeignPtr Tensor
+  -> CDouble
+  -> Int64
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+tensor_nanquantile_dlb = cast4 Unmanaged.tensor_nanquantile_dlb
+
+tensor_nanquantile_tlb
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> Int64
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+tensor_nanquantile_tlb = cast4 Unmanaged.tensor_nanquantile_tlb
+
 tensor_sort_lb
   :: ForeignPtr Tensor
   -> Int64
@@ -1042,8 +1136,65 @@ tensor_float_power__t
   -> IO (ForeignPtr Tensor)
 tensor_float_power__t = cast2 Unmanaged.tensor_float_power__t
 
+tensor_normal__ddG
+  :: ForeignPtr Tensor
+  -> CDouble
+  -> CDouble
+  -> ForeignPtr Generator
+  -> IO (ForeignPtr Tensor)
+tensor_normal__ddG = cast4 Unmanaged.tensor_normal__ddG
+
 tensor_alias
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 tensor_alias = cast1 Unmanaged.tensor_alias
+
+tensor_isfinite
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_isfinite = cast1 Unmanaged.tensor_isfinite
+
+tensor_isinf
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_isinf = cast1 Unmanaged.tensor_isinf
+
+tensor_record_stream_s
+  :: ForeignPtr Tensor
+  -> ForeignPtr Stream
+  -> IO (())
+tensor_record_stream_s = cast2 Unmanaged.tensor_record_stream_s
+
+tensor_isposinf
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_isposinf = cast1 Unmanaged.tensor_isposinf
+
+tensor_isneginf
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_isneginf = cast1 Unmanaged.tensor_isneginf
+
+tensor_det
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_det = cast1 Unmanaged.tensor_det
+
+tensor_inner_t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_inner_t = cast2 Unmanaged.tensor_inner_t
+
+tensor_outer_t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_outer_t = cast2 Unmanaged.tensor_outer_t
+
+tensor_ger_t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_ger_t = cast2 Unmanaged.tensor_ger_t
 

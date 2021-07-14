@@ -15,8 +15,11 @@ import Data.String (fromString)
 import qualified Data.Text.IO as T
 import System.Directory (createDirectoryIfMissing)
 
+import qualified ParseDeclarations as D
 import qualified ParseClass as PC
+import qualified ParseFunctionSig as P
 import RenderCommon
+import qualified RenderDeclarations as RD
 
 renderImport :: Bool -> PC.CppClassSpec -> Text -> Text
 renderImport is_managed _ unmanagedModuleName =  if is_managed then  [st|
@@ -57,6 +60,23 @@ renderMethods is_managed typ_ = map (methodToCpp typ_ False is_managed True "" "
 
 renderFunctions :: Bool -> PC.CppClassSpec -> [Text]
 renderFunctions is_managed typ_ = map (functionToCpp is_managed True "at::" "") (PC.functions typ_)
+
+
+toMethod :: D.Declaration -> P.Function
+toMethod dl = P.Function
+  { P.name = D.name dl
+  , P.parameters = map (\a -> P.Parameter (D.type2type a) (D.name' a) Nothing) $ tail (D.arguments dl)
+  , P.retType = case D.returns dl of
+      [a] -> D.type2type a
+      [] -> P.CType P.CVoid
+      ax -> P.Tuple $ map D.type2type ax
+  , P.variant = P.VFunction
+  }
+
+renderMethodsForTensor :: Bool -> PC.CppClassSpec -> [D.Declaration] -> [Text]
+renderMethodsForTensor is_managed classTyp typ_ = map (methodToCpp classTyp False is_managed True "" "" . toMethod) tensorMethods
+  where
+    tensorMethods = filter (\a -> D.mode a == D.Native && "Tensor" `elem` (D.method_of a)) typ_
 
 decodeAndCodeGen :: String -> String -> Int -> IO ()
 decodeAndCodeGen basedir fileName 1 = do
@@ -116,7 +136,40 @@ decodeAndCodeGen basedir fileName num = do
             spec
             fns'
 
-
+decodeAndCodeGenForTensor :: String -> String -> String -> Int -> IO ()
+decodeAndCodeGenForTensor basedir fileName fileNameOfDeclarations num = do
+  funcs <- Y.decodeFileEither fileName :: IO (Either ParseException PC.CppClassSpec)
+  funcsOfDeclarations <- Y.decodeFileEither fileNameOfDeclarations :: IO (Either ParseException [D.Declaration])
+  case (funcs,funcsOfDeclarations) of
+    (Left err',_) -> print err'
+    (_ ,Left err') -> print err'
+    (Right spec,Right specOfDeclarations) -> do
+      let moduleName = PC.hsnameWithoutSpace spec
+          fns is_managed =
+            renderConstructors is_managed spec ++
+            renderMethods is_managed spec ++
+            renderMethodsForTensor is_managed spec specOfDeclarations
+          unmanagedFuncs = split' num (fns False)
+          managedFuncs = split' num (fns True)
+      createDirectoryIfMissing True (unpack [st|#{basedir}/Torch/Internal/Unmanaged/Type/#{moduleName}|])
+      forM_ (zip [0..] unmanagedFuncs) $ \(i::Int,fns') -> do
+        T.writeFile (unpack [st|#{basedir}/Torch/Internal/Unmanaged/Type/#{moduleName}/#{moduleName}#{i}.hs|]) $
+          template
+            False
+            [st|Torch.Internal.Unmanaged.Type.#{moduleName}.#{moduleName}#{i}|]
+            ""
+            spec
+            fns'
+        createDirectoryIfMissing True (unpack [st|#{basedir}/Torch/Internal/Managed/Type/#{moduleName}|])
+      forM_ (zip [0..] managedFuncs) $ \(i::Int,fns') -> do
+        T.writeFile (unpack [st|#{basedir}/Torch/Internal/Managed/Type/#{moduleName}/#{moduleName}#{i}.hs|]) $
+          template
+            True
+            [st|Torch.Internal.Managed.Type.#{moduleName}.#{moduleName}#{i}|]
+            [st|Torch.Internal.Unmanaged.Type.#{moduleName}.#{moduleName}#{i}|]
+            spec
+            fns'
+            
 template :: Bool -> Text -> Text -> PC.CppClassSpec -> [Text] -> Text
 template is_managed module_name unamagedModuleName types funcs = [st|
 {-# LANGUAGE DataKinds #-}
