@@ -61,6 +61,9 @@ decodeAndCodeGen basedir fileName = do
   case funcs of
     Left err' -> print err'
     Right fns' -> do
+      generateNativeFunctions fns'
+  where
+    generateNativeFunctions fns' = do
       let fns = concat $ map addFunctionWithDefaultArguments fns' 
       createDirectoryIfMissing True (basedir <> "/Torch")
       createDirectoryIfMissing True (basedir <> "/Torch/Internal")
@@ -85,8 +88,6 @@ decodeAndCodeGen basedir fileName = do
       T.writeFile (basedir <> "/Torch/Internal/Unmanaged/TensorFactories.hs") $
         template True False "Torch.Internal.Unmanaged.TensorFactories" $
         renderFunctions False True "torch::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a) && D.is_factory_method a == Just True) fns)
-
-
 
 
 renderImport :: Bool -> Bool -> Text -> Text
