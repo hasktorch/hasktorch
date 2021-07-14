@@ -32,6 +32,17 @@ C.include "<vector>"
 
 
 
+tensor_hardshrink_backward_ts
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+tensor_hardshrink_backward_ts _obj _self _lambd =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).hardshrink_backward(
+    *$(at::Tensor* _self)
+  , *$(at::Scalar* _lambd)));
+  }|]
+
 tensor_rsqrt
   :: Ptr Tensor
   -> IO (Ptr Tensor)
@@ -1963,14 +1974,5 @@ tensor___ior___s
 tensor___ior___s _obj _other =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).__ior__(
     *$(at::Scalar* _other)));
-  }|]
-
-tensor___ior___t
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-tensor___ior___t _obj _other =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).__ior__(
-    *$(at::Tensor* _other)));
   }|]
 

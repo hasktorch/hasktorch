@@ -24,6 +24,13 @@ import qualified Torch.Internal.Unmanaged.Type.Tensor.Tensor2 as Unmanaged
 
 
 
+tensor_hardshrink_backward_ts
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+tensor_hardshrink_backward_ts = cast3 Unmanaged.tensor_hardshrink_backward_ts
+
 tensor_rsqrt
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
@@ -1243,10 +1250,4 @@ tensor___ior___s
   -> ForeignPtr Scalar
   -> IO (ForeignPtr Tensor)
 tensor___ior___s = cast2 Unmanaged.tensor___ior___s
-
-tensor___ior___t
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-tensor___ior___t = cast2 Unmanaged.tensor___ior___t
 

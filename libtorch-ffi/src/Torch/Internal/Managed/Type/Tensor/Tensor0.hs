@@ -87,6 +87,11 @@ tensor_fw_grad_L
   -> IO (ForeignPtr Tensor)
 tensor_fw_grad_L = cast2 Unmanaged.tensor_fw_grad_L
 
+tensor_get_device
+  :: ForeignPtr Tensor
+  -> IO (Int64)
+tensor_get_device = cast1 Unmanaged.tensor_get_device
+
 tensor_has_names
   :: ForeignPtr Tensor
   -> IO (CBool)
@@ -1114,10 +1119,4 @@ tensor_cummax_l
   -> Int64
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
 tensor_cummax_l = cast2 Unmanaged.tensor_cummax_l
-
-tensor_cummax_n
-  :: ForeignPtr Tensor
-  -> ForeignPtr Dimname
-  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-tensor_cummax_n = cast2 Unmanaged.tensor_cummax_n
 

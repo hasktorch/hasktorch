@@ -32,6 +32,15 @@ C.include "<vector>"
 
 
 
+tensor_cummax_n
+  :: Ptr Tensor
+  -> Ptr Dimname
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+tensor_cummax_n _obj _dim =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).cummax(
+    *$(at::Dimname* _dim)));
+  }|]
+
 tensor_cummin_l
   :: Ptr Tensor
   -> Int64
@@ -1863,16 +1872,5 @@ tensor_hardshrink_s
 tensor_hardshrink_s _obj _lambd =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).hardshrink(
     *$(at::Scalar* _lambd)));
-  }|]
-
-tensor_hardshrink_backward_ts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
-tensor_hardshrink_backward_ts _obj _self _lambd =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).hardshrink_backward(
-    *$(at::Tensor* _self)
-  , *$(at::Scalar* _lambd)));
   }|]
 

@@ -133,6 +133,14 @@ tensor_fw_grad_L _obj _level =
     $(uint64_t _level)));
   }|]
 
+tensor_get_device
+  :: Ptr Tensor
+  -> IO (Int64)
+tensor_get_device _obj =
+  [C.throwBlock| int64_t { return (*$(at::Tensor* _obj)).get_device(
+    );
+  }|]
+
 tensor_has_names
   :: Ptr Tensor
   -> IO (CBool)
@@ -1748,14 +1756,5 @@ tensor_cummax_l
 tensor_cummax_l _obj _dim =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).cummax(
     $(int64_t _dim)));
-  }|]
-
-tensor_cummax_n
-  :: Ptr Tensor
-  -> Ptr Dimname
-  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-tensor_cummax_n _obj _dim =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).cummax(
-    *$(at::Dimname* _dim)));
   }|]
 

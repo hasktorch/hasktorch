@@ -24,6 +24,12 @@ import qualified Torch.Internal.Unmanaged.Type.Tensor.Tensor1 as Unmanaged
 
 
 
+tensor_cummax_n
+  :: ForeignPtr Tensor
+  -> ForeignPtr Dimname
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
+tensor_cummax_n = cast2 Unmanaged.tensor_cummax_n
+
 tensor_cummin_l
   :: ForeignPtr Tensor
   -> Int64
@@ -1194,11 +1200,4 @@ tensor_hardshrink_s
   -> ForeignPtr Scalar
   -> IO (ForeignPtr Tensor)
 tensor_hardshrink_s = cast2 Unmanaged.tensor_hardshrink_s
-
-tensor_hardshrink_backward_ts
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Scalar
-  -> IO (ForeignPtr Tensor)
-tensor_hardshrink_backward_ts = cast3 Unmanaged.tensor_hardshrink_backward_ts
 

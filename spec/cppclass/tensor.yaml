@@ -21,6 +21,7 @@ methods:
 - dim() -> int64_t
 - element_size() -> int64_t
 - fw_grad(uint64_t level) -> Tensor
+- get_device() -> int64_t
 - has_names() -> bool
 - has_storage() -> bool
 - hip() -> Tensor

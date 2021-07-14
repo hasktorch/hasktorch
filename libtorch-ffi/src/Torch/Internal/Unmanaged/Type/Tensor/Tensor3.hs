@@ -32,6 +32,15 @@ C.include "<vector>"
 
 
 
+tensor___ior___t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor___ior___t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).__ior__(
+    *$(at::Tensor* _other)));
+  }|]
+
 tensor_bitwise_xor_s
   :: Ptr Tensor
   -> Ptr Scalar
