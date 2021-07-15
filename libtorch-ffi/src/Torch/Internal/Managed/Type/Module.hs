@@ -140,6 +140,5 @@ dumpToStr
   -> CBool
   -> CBool
   -> CBool
-  -> CInt
   -> IO (ForeignPtr StdString)
-dumpToStr = cast5 Unmanaged.dumpToStr
+dumpToStr = cast4 Unmanaged.dumpToStr

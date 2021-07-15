@@ -472,14 +472,12 @@ dumpToStr ::
   CBool ->
   CBool ->
   CBool ->
-  CInt ->
   IO (Ptr StdString)
-dumpToStr obj print_method_bodies print_attr_values print_param_values level =
+dumpToStr obj print_method_bodies print_attr_values print_param_values =
   [C.throwBlock| std::string* {
     return new std::string($(torch::jit::script::Module* obj)->dump_to_str(
       $(bool print_method_bodies)
     , $(bool print_attr_values)
     , $(bool print_param_values)
-    , $(int level)
     ));
   }|]

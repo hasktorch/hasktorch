@@ -47,6 +47,18 @@
         "url": "https://github.com/tweag/jupyterWith/archive/35eb565c6d00f3c61ef5e74e7e41870cfa3926f7.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
+    "libtorch-nix": {
+        "branch": "main",
+        "description": "nix scripts for pytorch-related libraries",
+        "homepage": "https://pytorch.org/",
+        "owner": "hasktorch",
+        "repo": "libtorch-nix",
+        "rev": "dfbd8c9fc8ffa283d0b96fe7007190fb1a704c0f",
+        "sha256": "1sy7qy32fh3gqzd6y1x8hh19pydz53zp6xnz4jx8j7ac7g5x2zgs",
+        "type": "tarball",
+        "url": "https://github.com/hasktorch/libtorch-nix/archive/dfbd8c9fc8ffa283d0b96fe7007190fb1a704c0f.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "naersk": {
         "branch": "master",
         "description": "Build rust crates in Nix. No configuration, no code generation, no IFD. Sandbox friendly.",
@@ -57,18 +69,6 @@
         "sha256": "156fbnr5s2n1xxbbk2z9xa7c5g2z5fdpqmjjs6n9ipbr038n0z3s",
         "type": "tarball",
         "url": "https://github.com/nmattia/naersk/archive/b3b099d669fc8b18d361c249091c9fe95d57ebbb.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
-    "libtorch-nix": {
-        "branch": "main",
-        "description": "nix scripts for pytorch-related libraries",
-        "homepage": "https://pytorch.org/",
-        "owner": "hasktorch",
-        "repo": "libtorch-nix",
-        "rev": "d14b0fd10b96d192b92b8ccc7254ade4b3489331",
-        "sha256": "1k2xax64hfmaw5kzmx3w242z62xckjihraa75vvdz8v27in60zqi",
-        "type": "tarball",
-        "url": "https://github.com/hasktorch/libtorch-nix/archive/d14b0fd10b96d192b92b8ccc7254ade4b3489331.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "niv": {

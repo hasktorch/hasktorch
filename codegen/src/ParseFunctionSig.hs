@@ -72,6 +72,7 @@ data Parsable
     | CType CType
     | STLType STLType
     | ArrayRef CType
+    | ArrayRefScalar
     | CppString
     | Tuple [Parsable]
     | CppClass SignatureStr CppTypeStr HsTypeStr
@@ -317,6 +318,7 @@ typ =
   try stlbool <|>
   ctype <|>
   stl <|>
+  try arrayrefScalar <|>
   arrayref <|>
   cppstring <|>
   cppclass <|>
@@ -329,23 +331,23 @@ typ =
     pure $ Tuple val'
   other =
     ((lexm $ string "Backend") >> (pure $ Backend)) <|>
-    ((lexm $ string "Layout") >> (pure $ Layout)) <|>
-    ((lexm $ string "MemoryFormat") >> (pure $ MemoryFormat)) <|>
-    ((lexm $ string "QScheme") >> (pure $ QScheme)) <|>
-    ((lexm $ string "DimnameList") >> (pure $ DimnameList)) <|>
-    try ((lexm $ string "Dimname") >> (pure $ Dimname)) <|>
+    ((lexm $ try (string "at::Layout") <|> string "Layout") >> (pure $ Layout)) <|>
+    ((lexm $ try (string "at::MemoryFormat") <|> string "MemoryFormat") >> (pure $ MemoryFormat)) <|>
+    ((lexm $ try (string "at::QScheme") <|> string "QScheme") >> (pure $ QScheme)) <|>
+    ((lexm $ try (string "at::DimnameList") <|> string "DimnameList") >> (pure $ DimnameList)) <|>
+    try ((lexm $ try (string "at::Dimname") <|> string "Dimname") >> (pure $ Dimname)) <|>
     ((lexm $ string "Symbol") >> (pure $ Symbol)) <|>
-    ((lexm $ string "Device") >> (pure $ DeviceType)) <|>
-    ((lexm $ string "Generator") >> (pure $ GeneratorType)) <|>
-    ((lexm $ string "Storage") >> (pure $ StorageType)) <|>
+    ((lexm $ try (string "at::Device") <|> string "Device") >> (pure $ DeviceType)) <|>
+    ((lexm $ try (string "at::Generator") <|> string "Generator") >> (pure $ GeneratorType)) <|>
+    ((lexm $ try (string "at::Storage") <|> string "Storage") >> (pure $ StorageType)) <|>
     ((lexm $ string "ConstQuantizerPtr") >> (pure $ ConstQuantizerPtr)) <|>
     ((lexm $ string "IValue") >> (pure $ IValue)) <|>
-    ((lexm $ string "Stream") >> (pure $ Stream))
+    ((lexm $ try (string "at::Stream") <|> string "Stream") >> (pure $ Stream))
   cppclass = foldl (<|>) (fail "Can not parse cpptype.") $ map (\(sig,cpptype,hstype) -> ((lexm $ string sig) >> (pure $ CppClass sig cpptype hstype))) cppClassList
   scalar =
     ((lexm $ string "Scalar?") >> (pure $ TenType ScalarQ)) <|>
-    ((lexm $ string "ScalarType") >> (pure $ TenType ScalarType)) <|>
-    ((lexm $ string "Scalar") >> (pure $ TenType Scalar)) <|>
+    ((lexm $ try (string "at::ScalarType") <|> string "ScalarType") >> (pure $ TenType ScalarType)) <|>
+    ((lexm $ try (string "const at::Scalar &") <|> string "Scalar") >> (pure $ TenType Scalar)) <|>
     ((lexm $ string "real") >> (pure $ TenType Scalar)) <|>
     ((lexm $ string "accreal") >> (pure $ TenType Scalar))
   idxtensor = do
@@ -362,11 +364,11 @@ typ =
     pure $ TenType ByteTensor
   tensor =
     ((lexm $ string "IntegerTensor") >> (pure $ TenType IntegerTensor)) <|>
-    ((lexm $ string "TensorOptions") >> (pure $ TenType TensorOptions)) <|>
-    ((lexm $ string "TensorList") >> (pure $ TenType TensorList)) <|>
+    ((lexm $ try (string "at::TensorOptions") <|> string "TensorOptions") >> (pure $ TenType TensorOptions)) <|>
+    ((lexm $ try (string "at::TensorList") <|> string "TensorList") >> (pure $ TenType TensorList)) <|>
     try ((lexm $ string "Tensor[]") >> (pure $ TenType TensorList)) <|>
     try ((lexm $ string "Tensor?[]") >> (pure $ TenType TensorList)) <|>
-    try ((lexm $ string "const c10::List<c10::optional<Tensor>> &") >> (pure $ TenType C10ListTensor)) <|>
+    try ((lexm $ try (string "const c10::List<c10::optional<at::Tensor>> &") <|> string "const c10::List<c10::optional<Tensor>> &") >> (pure $ TenType C10ListTensor)) <|>
     try ((lexm $ string "Tensor(a)[]") >> (pure $ TenType TensorAVector)) <|>
     try ((lexm $ string "Tensor(a)") >> (pure $ TenType TensorA)) <|>
     try ((lexm $ string "Tensor(a!)") >> (pure $ TenType TensorA')) <|>
@@ -385,7 +387,7 @@ typ =
     try ((lexm $ string "Tensor?(d)") >> (pure $ TenType TensorAQ)) <|>
     try ((lexm $ string "Tensor?(d!)") >> (pure $ TenType TensorAQ')) <|>
     ((lexm $ string "Tensor?") >> (pure $ TenType TensorQ)) <|>
-    ((lexm $ string "Tensor") >> (pure $ TenType Tensor)) <|>
+    ((lexm $ try (string "at::Tensor") <|> string "Tensor") >> (pure $ TenType Tensor)) <|>
     ((lexm $ string "LongTensor") >> (pure $ TenType LongTensor))
   intlistDim = do
     _ <- lexm $ string "IntList["
@@ -404,15 +406,15 @@ typ =
     _ <- lexm $ string "int[]"
     pure $ TenType $ IntList Nothing
   intpDim' = do
-    _ <- lexm $ string "IntArrayRef["
+    _ <- lexm $ try (string "at::IntArrayRef[") <|> string "IntArrayRef["
     val' <- (sepBy pinteger (lexm (string ",")))
     _ <- lexm $ string "]"
     pure $ TenType $ IntList (Just (map fromIntegral val'))
   intpNoDim' = do
-    _ <- lexm $ string "IntArrayRef[]"
+    _ <- lexm $ try (string "at::IntArrayRef[]") <|> string "IntArrayRef[]"
     pure $ TenType $ IntList Nothing
   intpNoDim'' = do
-    _ <- lexm $ string "IntArrayRef"
+    _ <- lexm $ try (string "at::IntArrayRef") <|> string "IntArrayRef"
     pure $ TenType $ IntList Nothing
   ctype =
     ((lexm $ string "bool") >> (pure $ CType CBool)) <|>
@@ -448,12 +450,13 @@ typ =
     _ <- lexm $ string "]"
     pure $ STLType $ Array CBool (fromIntegral num)
   arrayref = do
-    _ <- lexm $ string "ArrayRef<"
+    _ <- lexm $ try (string "at::ArrayRef<") <|> string "ArrayRef<"
     val' <- ctype
     _ <- lexm $ string ">"
     case val' of
       CType v -> pure $ ArrayRef v
       _ -> fail "Can not parse ctype."
+  arrayrefScalar = lexm $ string "at::ArrayRef<at::Scalar>" >> pure ArrayRefScalar
   cppstring =
     ((lexm $ string "std::string") >> (pure $ CppString)) <|>
     ((lexm $ string "str") >> (pure $ CppString))

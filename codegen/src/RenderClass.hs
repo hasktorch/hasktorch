@@ -19,7 +19,6 @@ import qualified ParseDeclarations as D
 import qualified ParseClass as PC
 import qualified ParseFunctionSig as P
 import RenderCommon
-import qualified RenderDeclarations as RD
 
 renderImport :: Bool -> PC.CppClassSpec -> Text -> Text
 renderImport is_managed _ unmanagedModuleName =  if is_managed then  [st|

@@ -23,7 +23,11 @@ import Torch.Internal.Type
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
+C.include "<ATen/Scalar.h>"
 C.include "<vector>"
+
+newStdVectorScalar :: IO (Ptr (StdVector Scalar))
+newStdVectorScalar = [C.throwBlock| std::vector<at::Scalar>* { return new std::vector<at::Scalar>(); }|]
 
 newStdVectorDouble :: IO (Ptr (StdVector CDouble))
 newStdVectorDouble = [C.throwBlock| std::vector<double>* { return new std::vector<double>(); }|]
@@ -34,8 +38,8 @@ newStdVectorInt = [C.throwBlock| std::vector<int64_t>* { return new std::vector<
 newStdVectorBool :: IO (Ptr (StdVector CBool))
 newStdVectorBool = [C.throwBlock| std::vector<bool>* { return new std::vector<bool>(); }|]
 
-
-
+stdVectorScalar_empty :: Ptr (StdVector Scalar) -> IO (CBool)
+stdVectorScalar_empty _obj = [C.throwBlock| bool { return (*$(std::vector<at::Scalar>* _obj)).empty(); }|]
 
 stdVectorDouble_empty :: Ptr (StdVector CDouble) -> IO (CBool)
 stdVectorDouble_empty _obj = [C.throwBlock| bool { return (*$(std::vector<double>* _obj)).empty(); }|]
@@ -55,6 +59,9 @@ stdVectorInt_size _obj = [C.throwBlock| size_t { return (*$(std::vector<int64_t>
 stdVectorBool_size :: Ptr (StdVector CBool) -> IO (CSize)
 stdVectorBool_size _obj = [C.throwBlock| size_t { return (*$(std::vector<bool>* _obj)).size(); }|]
 
+stdVectorScalar_at :: Ptr (StdVector Scalar) -> CSize -> IO (Ptr Scalar)
+stdVectorScalar_at _obj _s = [C.throwBlock| at::Scalar* { return new at::Scalar((*$(std::vector<at::Scalar>* _obj))[$(size_t _s)]); }|]
+
 stdVectorDouble_at :: Ptr (StdVector CDouble) -> CSize -> IO CDouble
 stdVectorDouble_at _obj _s = [C.throwBlock| double { return (double)((*$(std::vector<double>* _obj))[$(size_t _s)]); }|]
 
@@ -63,6 +70,9 @@ stdVectorInt_at _obj _s = [C.throwBlock| int64_t { return (int64_t)((*$(std::vec
 
 stdVectorBool_at :: Ptr (StdVector CBool) -> CSize -> IO CBool
 stdVectorBool_at _obj _s = [C.throwBlock| bool { return ((*$(std::vector<bool>* _obj))[$(size_t _s)]); }|]
+
+stdVectorScalar_push_back :: Ptr (StdVector Scalar) -> Ptr Scalar -> IO ()
+stdVectorScalar_push_back _obj _v = [C.throwBlock| void {  (*$(std::vector<at::Scalar>* _obj)).push_back(*$(at::Scalar* _v)); }|]
 
 stdVectorDouble_push_back :: Ptr (StdVector CDouble) -> CDouble -> IO ()
 stdVectorDouble_push_back _obj _v = [C.throwBlock| void {  (*$(std::vector<double>* _obj)).push_back($(double _v)); }|]

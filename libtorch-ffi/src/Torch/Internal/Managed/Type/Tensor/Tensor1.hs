@@ -1026,34 +1026,6 @@ tensor_permute_l
   -> IO (ForeignPtr Tensor)
 tensor_permute_l = cast2 Unmanaged.tensor_permute_l
 
-tensor_movedim_ll
-  :: ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> ForeignPtr IntArray
-  -> IO (ForeignPtr Tensor)
-tensor_movedim_ll = cast3 Unmanaged.tensor_movedim_ll
-
--- tensor_movedim_ll
---   :: ForeignPtr Tensor
---   -> Int64
---   -> Int64
---   -> IO (ForeignPtr Tensor)
--- tensor_movedim_ll = cast3 Unmanaged.tensor_movedim_ll
-
-tensor_moveaxis_ll
-  :: ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> ForeignPtr IntArray
-  -> IO (ForeignPtr Tensor)
-tensor_moveaxis_ll = cast3 Unmanaged.tensor_moveaxis_ll
-
--- tensor_moveaxis_ll
---   :: ForeignPtr Tensor
---   -> Int64
---   -> Int64
---   -> IO (ForeignPtr Tensor)
--- tensor_moveaxis_ll = cast3 Unmanaged.tensor_moveaxis_ll
-
 tensor_numpy_T
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
@@ -1200,4 +1172,51 @@ tensor_hardshrink_s
   -> ForeignPtr Scalar
   -> IO (ForeignPtr Tensor)
 tensor_hardshrink_s = cast2 Unmanaged.tensor_hardshrink_s
+
+tensor_hardshrink_backward_ts
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+tensor_hardshrink_backward_ts = cast3 Unmanaged.tensor_hardshrink_backward_ts
+
+tensor_rsqrt
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_rsqrt = cast1 Unmanaged.tensor_rsqrt
+
+tensor_rsqrt_
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_rsqrt_ = cast1 Unmanaged.tensor_rsqrt_
+
+tensor_select_nl
+  :: ForeignPtr Tensor
+  -> ForeignPtr Dimname
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+tensor_select_nl = cast3 Unmanaged.tensor_select_nl
+
+tensor_select_ll
+  :: ForeignPtr Tensor
+  -> Int64
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+tensor_select_ll = cast3 Unmanaged.tensor_select_ll
+
+tensor_sigmoid
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_sigmoid = cast1 Unmanaged.tensor_sigmoid
+
+tensor_sigmoid_
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_sigmoid_ = cast1 Unmanaged.tensor_sigmoid_
+
+tensor_logit_d
+  :: ForeignPtr Tensor
+  -> CDouble
+  -> IO (ForeignPtr Tensor)
+tensor_logit_d = cast2 Unmanaged.tensor_logit_d
 

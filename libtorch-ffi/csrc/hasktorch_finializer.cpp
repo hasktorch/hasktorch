@@ -181,6 +181,14 @@ void delete_stream(c10::Stream* object){
   delete object;
 }
 
+void delete_arrayrefscalar(at::ArrayRef<at::Scalar>* object){
+  delete object;
+}
+
+void delete_vectorscalar(std::vector<at::Scalar>* object){
+  delete object;
+}
+
 std::map<void*,int> objectAge;
 std::map<void*,int> prevObjectAge;
 
@@ -296,6 +304,10 @@ showObject(int flag, void* ptr, void* fptr){
     std::cout << age << ":" << "optimizer" << ":" << std::hex << (ptr) << std::dec << std::endl;
   }else if(fptr == (void*)delete_stream){
     std::cout << age << ":" << "stream" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_arrayrefscalar){
+    std::cout << age << ":" << "at::ArrayRef<at::Scalar>" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_vectorscalar){
+    std::cout << age << ":" << "std::vector<at::Scalar>" << ":" << std::hex << (ptr) << std::dec << std::endl;
   }
 }
 

@@ -103,5 +103,9 @@ extern "C" {
   void delete_optimizer(torch::optim::Optimizer* ptr);
 
   void delete_stream(c10::Stream* ptr);
+
+  void delete_arrayrefscalar(at::ArrayRef<at::Scalar>* ptr);
+
+  void delete_vectorscalar(std::vector<at::Scalar>* ptr);
 #include "hasktorch_dump.h"
 };

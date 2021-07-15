@@ -14,7 +14,6 @@ import qualified ParseFunctionSig as S
 {- Declarations.yaml -}
 {- --A example--
 - name: _th_set_
-  matches_jit_signature: false
   schema_string: ''
   method_prefix_derived: ''
   arguments:
@@ -69,7 +68,6 @@ data Mode
 
 data Declaration = Declaration
   { name :: String
-  , matches_jit_signature :: Bool
   , schema_string :: String
 --  , method_prefix_derived :: String
   , arguments :: [Type]

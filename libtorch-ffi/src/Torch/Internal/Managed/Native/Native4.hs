@@ -621,6 +621,13 @@ matrix_power_tl
   -> IO (ForeignPtr Tensor)
 matrix_power_tl = cast2 Unmanaged.matrix_power_tl
 
+matrix_power_out_ttl
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+matrix_power_out_ttl = cast3 Unmanaged.matrix_power_out_ttl
+
 matrix_exp_t
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
@@ -931,6 +938,56 @@ mkldnn_max_pool2d_tl
   -> IO (ForeignPtr Tensor)
 mkldnn_max_pool2d_tl = cast2 Unmanaged.mkldnn_max_pool2d_tl
 
+mkldnn_max_pool2d_backward_tttllllb
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+mkldnn_max_pool2d_backward_tttllllb = cast8 Unmanaged.mkldnn_max_pool2d_backward_tttllllb
+
+mkldnn_max_pool2d_backward_tttllll
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+mkldnn_max_pool2d_backward_tttllll = cast7 Unmanaged.mkldnn_max_pool2d_backward_tttllll
+
+mkldnn_max_pool2d_backward_tttlll
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+mkldnn_max_pool2d_backward_tttlll = cast6 Unmanaged.mkldnn_max_pool2d_backward_tttlll
+
+mkldnn_max_pool2d_backward_tttll
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+mkldnn_max_pool2d_backward_tttll = cast5 Unmanaged.mkldnn_max_pool2d_backward_tttll
+
+mkldnn_max_pool2d_backward_tttl
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+mkldnn_max_pool2d_backward_tttl = cast4 Unmanaged.mkldnn_max_pool2d_backward_tttl
+
 mkldnn_max_pool3d_tllllb
   :: ForeignPtr Tensor
   -> ForeignPtr IntArray
@@ -970,6 +1027,56 @@ mkldnn_max_pool3d_tl
   -> ForeignPtr IntArray
   -> IO (ForeignPtr Tensor)
 mkldnn_max_pool3d_tl = cast2 Unmanaged.mkldnn_max_pool3d_tl
+
+mkldnn_max_pool3d_backward_tttllllb
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+mkldnn_max_pool3d_backward_tttllllb = cast8 Unmanaged.mkldnn_max_pool3d_backward_tttllllb
+
+mkldnn_max_pool3d_backward_tttllll
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+mkldnn_max_pool3d_backward_tttllll = cast7 Unmanaged.mkldnn_max_pool3d_backward_tttllll
+
+mkldnn_max_pool3d_backward_tttlll
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+mkldnn_max_pool3d_backward_tttlll = cast6 Unmanaged.mkldnn_max_pool3d_backward_tttlll
+
+mkldnn_max_pool3d_backward_tttll
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+mkldnn_max_pool3d_backward_tttll = cast5 Unmanaged.mkldnn_max_pool3d_backward_tttll
+
+mkldnn_max_pool3d_backward_tttl
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+mkldnn_max_pool3d_backward_tttl = cast4 Unmanaged.mkldnn_max_pool3d_backward_tttl
 
 quantized_max_pool1d_tllllb
   :: ForeignPtr Tensor
@@ -1239,4 +1346,48 @@ median_tn
   -> ForeignPtr Dimname
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
 median_tn = cast2 Unmanaged.median_tn
+
+median_out_tttnb
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Dimname
+  -> CBool
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
+median_out_tttnb = cast5 Unmanaged.median_out_tttnb
+
+median_out_tttn
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Dimname
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
+median_out_tttn = cast4 Unmanaged.median_out_tttn
+
+nanmedian_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+nanmedian_t = cast1 Unmanaged.nanmedian_t
+
+nanmedian_tlb
+  :: ForeignPtr Tensor
+  -> Int64
+  -> CBool
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
+nanmedian_tlb = cast3 Unmanaged.nanmedian_tlb
+
+nanmedian_tl
+  :: ForeignPtr Tensor
+  -> Int64
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
+nanmedian_tl = cast2 Unmanaged.nanmedian_tl
+
+nanmedian_out_tttlb
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> Int64
+  -> CBool
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
+nanmedian_out_tttlb = cast5 Unmanaged.nanmedian_out_tttlb
 
