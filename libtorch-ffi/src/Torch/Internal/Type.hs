@@ -132,5 +132,6 @@ typeTable = Map.fromList [
       , (C.TypeName "at::indexing::TensorIndex", [t|TensorIndex|])
       , (C.TypeName "torch::optim::Optimizer", [t|Optimizer|])
       , (C.TypeName "ArrayRef", [t|ArrayRef|])
+      , (C.TypeName "at::ArrayRef", [t|ArrayRef|])
     ]
 

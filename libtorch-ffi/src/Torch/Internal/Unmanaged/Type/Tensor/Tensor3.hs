@@ -32,6 +32,15 @@ C.include "<vector>"
 
 
 
+tensor___ior___s
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+tensor___ior___s _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).__ior__(
+    *$(at::Scalar* _other)));
+  }|]
+
 tensor___ior___t
   :: Ptr Tensor
   -> Ptr Tensor
@@ -185,15 +194,6 @@ tensor___irshift___t _obj _other =
     *$(at::Tensor* _other)));
   }|]
 
-tensor_atan2__t
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-tensor_atan2__t _obj _other =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).atan2_(
-    *$(at::Tensor* _other)));
-  }|]
-
 tensor_tril__l
   :: Ptr Tensor
   -> Int64
@@ -218,15 +218,6 @@ tensor_digamma_
 tensor_digamma_ _obj =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).digamma_(
     ));
-  }|]
-
-tensor_polygamma__l
-  :: Ptr Tensor
-  -> Int64
-  -> IO (Ptr Tensor)
-tensor_polygamma__l _obj _n =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).polygamma_(
-    $(int64_t _n)));
   }|]
 
 tensor_renorm__sls
@@ -870,6 +861,17 @@ tensor_take_t _obj _index =
     *$(at::Tensor* _index)));
   }|]
 
+tensor_take_along_dim_tl
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> IO (Ptr Tensor)
+tensor_take_along_dim_tl _obj _indices _dim =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).take_along_dim(
+    *$(at::Tensor* _indices)
+  , $(int64_t _dim)));
+  }|]
+
 tensor_index_select_lt
   :: Ptr Tensor
   -> Int64
@@ -1208,14 +1210,14 @@ tensor_digamma _obj =
     ));
   }|]
 
--- tensor_polygamma_t
---   :: Ptr Tensor
---   -> Ptr Tensor
---   -> IO (Ptr Tensor)
--- tensor_polygamma_t _obj _self =
---   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).polygamma(
---     *$(at::Tensor* _self)));
---   }|]
+tensor_polygamma__l
+  :: Ptr Tensor
+  -> Int64
+  -> IO (Ptr Tensor)
+tensor_polygamma__l _obj _n =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).polygamma_(
+    $(int64_t _n)));
+  }|]
 
 tensor_erfinv
   :: Ptr Tensor
@@ -1282,6 +1284,15 @@ tensor_dist_ts _obj _other _p =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).dist(
     *$(at::Tensor* _other)
   , *$(at::Scalar* _p)));
+  }|]
+
+tensor_atan2__t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_atan2__t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).atan2_(
+    *$(at::Tensor* _other)));
   }|]
 
 tensor_atan2_t
@@ -1558,6 +1569,66 @@ tensor_nanquantile_tlb _obj _q _dim _keepdim =
   , $(bool _keepdim)));
   }|]
 
+tensor_quantile_dlbs
+  :: Ptr Tensor
+  -> CDouble
+  -> Int64
+  -> CBool
+  -> Ptr StdString
+  -> IO (Ptr Tensor)
+tensor_quantile_dlbs _obj _q _dim _keepdim _interpolation =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).quantile(
+    $(double _q)
+  , $(int64_t _dim)
+  , $(bool _keepdim)
+  , *$(std::string* _interpolation)));
+  }|]
+
+tensor_quantile_tlbs
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> CBool
+  -> Ptr StdString
+  -> IO (Ptr Tensor)
+tensor_quantile_tlbs _obj _q _dim _keepdim _interpolation =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).quantile(
+    *$(at::Tensor* _q)
+  , $(int64_t _dim)
+  , $(bool _keepdim)
+  , *$(std::string* _interpolation)));
+  }|]
+
+tensor_nanquantile_dlbs
+  :: Ptr Tensor
+  -> CDouble
+  -> Int64
+  -> CBool
+  -> Ptr StdString
+  -> IO (Ptr Tensor)
+tensor_nanquantile_dlbs _obj _q _dim _keepdim _interpolation =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).nanquantile(
+    $(double _q)
+  , $(int64_t _dim)
+  , $(bool _keepdim)
+  , *$(std::string* _interpolation)));
+  }|]
+
+tensor_nanquantile_tlbs
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> CBool
+  -> Ptr StdString
+  -> IO (Ptr Tensor)
+tensor_nanquantile_tlbs _obj _q _dim _keepdim _interpolation =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).nanquantile(
+    *$(at::Tensor* _q)
+  , $(int64_t _dim)
+  , $(bool _keepdim)
+  , *$(std::string* _interpolation)));
+  }|]
+
 tensor_sort_lb
   :: Ptr Tensor
   -> Int64
@@ -1569,6 +1640,19 @@ tensor_sort_lb _obj _dim _descending =
   , $(bool _descending)));
   }|]
 
+tensor_sort_blb
+  :: Ptr Tensor
+  -> CBool
+  -> Int64
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+tensor_sort_blb _obj _stable _dim _descending =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).sort(
+    $(bool _stable)
+  , $(int64_t _dim)
+  , $(bool _descending)));
+  }|]
+
 tensor_sort_nb
   :: Ptr Tensor
   -> Ptr Dimname
@@ -1577,6 +1661,19 @@ tensor_sort_nb
 tensor_sort_nb _obj _dim _descending =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).sort(
     *$(at::Dimname* _dim)
+  , $(bool _descending)));
+  }|]
+
+tensor_sort_bnb
+  :: Ptr Tensor
+  -> CBool
+  -> Ptr Dimname
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+tensor_sort_bnb _obj _stable _dim _descending =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).sort(
+    $(bool _stable)
+  , *$(at::Dimname* _dim)
   , $(bool _descending)));
   }|]
 

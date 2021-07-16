@@ -980,9 +980,21 @@ type family SymeigDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType
   SymeigDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 -- | symeig
---
+-- Warning:
+-- torch.symeig is deprecated in favor of torch.linalg.eigh and will be removed in a future PyTorch release.
+-- The default behavior has changed from using the upper triangular portion of the matrix by default to using the lower triangular portion.
+-- L, _ = torch.symeig(A, upper=upper)
+-- should be replaced with
+-- L = torch.linalg.eigvalsh(A, UPLO='U' if upper else 'L')
+-- and
+-- L, V = torch.symeig(A, eigenvectors=True)
+-- should be replaced with
+-- L, V = torch.linalg.eigh(A, UPLO='U' if upper else 'L') (function operator())
+-- 
 -- >>> t <- rand :: IO (CPUTensor 'D.Float '[3,2,2])
 -- >>> (eigenVals,eigenVecs) = symeig Upper t
+-- >>> dtype &&& shape $ eigenVals -- Skip warning
+-- ...
 -- >>> dtype &&& shape $ eigenVals
 -- (Float,[3,2])
 -- >>> :t eigenVals
@@ -1067,8 +1079,21 @@ type family EigDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :
   EigDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 -- | eig
+-- Warning:
+-- torch.eig is deprecated in favor of torch.linalg.eig and will be removed in a future PyTorch release.
+-- torch.linalg.eig returns complex tensors of dtype cfloat or cdouble rather than real tensors mimicking complex tensors.
+-- L, _ = torch.eig(A)
+-- should be replaced with
+-- L_complex = torch.linalg.eigvals(A)
+-- and
+-- L, V = torch.eig(A, eigenvectors=True)
+-- should be replaced with
+-- L_complex, V_complex = torch.linalg.eig(A) (function operator())
+--
 -- >>> t <- rand :: IO (CPUTensor 'D.Float '[3,3])
 -- >>> (eigenVals,eigenVecs) = eig @EnableEigenVectors t
+-- >>> dtype &&& shape $ eigenVals -- Skip warning
+-- ...
 -- >>> dtype &&& shape $ eigenVals
 -- (Float,[3,2])
 -- >>> :t eigenVals
@@ -1200,9 +1225,20 @@ type family CholeskyDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DTy
 -- TODO: cholesky can throw if the input is not positive-definite.
 -- Computes the Cholesky decomposition of a symmetric positive-definite matrix.
 -- The operation supports batching.
+-- 
+-- Warning:
+-- torch.cholesky is deprecated in favor of torch.linalg.cholesky and will be removed in a future PyTorch release.
+-- L = torch.cholesky(A)
+-- should be replaced with
+-- L = torch.linalg.cholesky(A)
+-- and
+-- U = torch.cholesky(A, upper=True)
+-- should be replaced with
+-- U = torch.linalg.cholesky(A.transpose(-2, -1).conj()).transpose(-2, -1).conj() (function operator())
 --
 -- >>> t <- rand :: IO (CPUTensor 'D.Float '[2,2])
--- >>> u = cholesky Upper (t `matmul` transpose2D t)
+-- >>> u = cholesky Upper (t `matmul` transpose2D t) -- Skip warning
+-- ...
 -- >>> dtype &&& shape $ u
 -- (Float,[2,2])
 -- >>> :t u
@@ -1300,10 +1336,20 @@ type family SolveDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType)
 -- `a` has to be a positive semidefinite matrix.
 -- The operation supports batching.
 --
+-- Warning:
+-- torch.solve is deprecated in favor of torch.linalg.solveand will be removed in a future PyTorch release.
+-- torch.linalg.solve has its arguments reversed and does not return the LU factorization.
+-- To get the LU factorization see torch.lu, which can be used with torch.lu_solve or torch.lu_unpack.
+-- X = torch.solve(B, A).solution
+-- should be replaced with
+-- X = torch.linalg.solve(A, B) (function operator())
+--
 -- >>> t <- rand :: IO (CPUTensor 'D.Float '[10,10])
 -- >>> a = t `matmul` transpose2D t
 -- >>> b <- rand :: IO (CPUTensor 'D.Float '[10,3])
 -- >>> (c,lu) = solve b a
+-- >>> dtype &&& shape $ c -- Skip warning
+-- ...
 -- >>> dtype &&& shape $ c
 -- (Float,[10,3])
 -- >>> dtype &&& shape $ lu
@@ -3470,7 +3516,8 @@ maxPool1d input =
 -- | maxPool2d
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 --
--- >>> t = maxPool2d @'(1,1) @'(1,1) @'(0,0) (ones :: CPUTensor 'D.Float '[1,3,4,5])
+-- >>> t = maxPool2d @'(1,1) @'(1,1) @'(0,0) (ones :: CPUTensor 'D.Float '[1,3,4,5]) -- Skip warning
+-- ...
 -- >>> shape t
 -- [1,3,4,5]
 -- >>> :t t

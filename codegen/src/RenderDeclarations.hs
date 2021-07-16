@@ -28,7 +28,10 @@ addFunctionWithDefaultArguments dl = map (\args -> dl{D.arguments = args}) genAr
     genArgsWithDefault [] = []
     genArgsWithDefault (x:xs) | D.default' x /= Nothing = (x:xs) : genArgsWithDefault xs
                               | otherwise = [(x:xs)]
-    genArgsWithDefault' = map reverse $ genArgsWithDefault (reverse $ D.arguments dl)
+    genArgsWithDefault' =
+      case D.arguments dl of
+        [] -> [[]]
+        xs -> map reverse $ genArgsWithDefault (reverse xs)
 
 
 toFunction :: D.Declaration -> P.Function
@@ -70,6 +73,7 @@ decodeAndCodeGen basedir fileName = do
 
       let nativeFunctions = filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a)) fns
           nativeFunctions' = split' 16 nativeFunctions
+      
       forM_ (zip [0..] nativeFunctions') $ \(i::Int,funcs') -> do
         createDirectoryIfMissing True (basedir <> "/Torch/Internal/Unmanaged/Native")
         createDirectoryIfMissing True (basedir <> "/Torch/Internal/Managed/Native")

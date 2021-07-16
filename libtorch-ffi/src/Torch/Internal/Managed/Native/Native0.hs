@@ -127,6 +127,11 @@ align_tensors_l
   -> IO (ForeignPtr TensorList)
 align_tensors_l = cast1 Unmanaged.align_tensors_l
 
+_assert_async_t
+  :: ForeignPtr Tensor
+  -> IO (())
+_assert_async_t = cast1 Unmanaged._assert_async_t
+
 _use_cudnn_ctc_loss_ttlll
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -146,6 +151,10 @@ _cudnn_ctc_loss_ttlllbb
   -> CBool
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
 _cudnn_ctc_loss_ttlllbb = cast7 Unmanaged._cudnn_ctc_loss_ttlllbb
+
+_use_cudnn_rnn_flatten_weight
+  :: IO (CBool)
+_use_cudnn_rnn_flatten_weight = cast0 Unmanaged._use_cudnn_rnn_flatten_weight
 
 _cudnn_rnn_flatten_weight_lllllllbb
   :: ForeignPtr TensorList
@@ -664,33 +673,6 @@ addmv_out_tttt
   -> IO (ForeignPtr Tensor)
 addmv_out_tttt = cast4 Unmanaged.addmv_out_tttt
 
-_addmv_impl__ttttss
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Scalar
-  -> ForeignPtr Scalar
-  -> IO (ForeignPtr Tensor)
-_addmv_impl__ttttss = cast6 Unmanaged._addmv_impl__ttttss
-
-_addmv_impl__tttts
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Scalar
-  -> IO (ForeignPtr Tensor)
-_addmv_impl__tttts = cast5 Unmanaged._addmv_impl__tttts
-
-_addmv_impl__tttt
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-_addmv_impl__tttt = cast4 Unmanaged._addmv_impl__tttt
-
 addr_tttss
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -1193,4 +1175,113 @@ arcsin__t
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 arcsin__t = cast1 Unmanaged.arcsin__t
+
+arcsin_out_tt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+arcsin_out_tt = cast2 Unmanaged.arcsin_out_tt
+
+atan_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+atan_t = cast1 Unmanaged.atan_t
+
+atan__t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+atan__t = cast1 Unmanaged.atan__t
+
+atan_out_tt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+atan_out_tt = cast2 Unmanaged.atan_out_tt
+
+arctan_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+arctan_t = cast1 Unmanaged.arctan_t
+
+arctan__t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+arctan__t = cast1 Unmanaged.arctan__t
+
+arctan_out_tt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+arctan_out_tt = cast2 Unmanaged.arctan_out_tt
+
+atleast_1d_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+atleast_1d_t = cast1 Unmanaged.atleast_1d_t
+
+atleast_1d_l
+  :: ForeignPtr TensorList
+  -> IO (ForeignPtr TensorList)
+atleast_1d_l = cast1 Unmanaged.atleast_1d_l
+
+atleast_2d_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+atleast_2d_t = cast1 Unmanaged.atleast_2d_t
+
+atleast_2d_l
+  :: ForeignPtr TensorList
+  -> IO (ForeignPtr TensorList)
+atleast_2d_l = cast1 Unmanaged.atleast_2d_l
+
+atleast_3d_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+atleast_3d_t = cast1 Unmanaged.atleast_3d_t
+
+atleast_3d_l
+  :: ForeignPtr TensorList
+  -> IO (ForeignPtr TensorList)
+atleast_3d_l = cast1 Unmanaged.atleast_3d_l
+
+baddbmm_tttss
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+baddbmm_tttss = cast5 Unmanaged.baddbmm_tttss
+
+baddbmm_ttts
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+baddbmm_ttts = cast4 Unmanaged.baddbmm_ttts
+
+baddbmm_ttt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+baddbmm_ttt = cast3 Unmanaged.baddbmm_ttt
+
+_baddbmm_mkl__tttss
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+_baddbmm_mkl__tttss = cast5 Unmanaged._baddbmm_mkl__tttss
+
+_baddbmm_mkl__ttts
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+_baddbmm_mkl__ttts = cast4 Unmanaged._baddbmm_mkl__ttts
 

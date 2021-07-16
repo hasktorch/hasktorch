@@ -190,36 +190,6 @@ blackman_window_lb _window_length _periodic =
   , $(bool _periodic)));
   }|]
 
-empty_meta_loM
-  :: Ptr IntArray
-  -> Ptr TensorOptions
-  -> MemoryFormat
-  -> IO (Ptr Tensor)
-empty_meta_loM _size _options _memory_format =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::empty_meta(
-    *$(std::vector<int64_t>* _size)
-  , *$(at::TensorOptions* _options)
-  , $(at::MemoryFormat _memory_format)));
-  }|]
-
-empty_meta_lo
-  :: Ptr IntArray
-  -> Ptr TensorOptions
-  -> IO (Ptr Tensor)
-empty_meta_lo _size _options =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::empty_meta(
-    *$(std::vector<int64_t>* _size)
-  , *$(at::TensorOptions* _options)));
-  }|]
-
-empty_meta_l
-  :: Ptr IntArray
-  -> IO (Ptr Tensor)
-empty_meta_l _size =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::empty_meta(
-    *$(std::vector<int64_t>* _size)));
-  }|]
-
 empty_lNoM
   :: Ptr IntArray
   -> Ptr DimnameList
@@ -1544,6 +1514,36 @@ zeros_like_t
 zeros_like_t _self =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::zeros_like(
     *$(at::Tensor* _self)));
+  }|]
+
+_sparse_csr_tensor_tttlo
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+_sparse_csr_tensor_tttlo _crow_indices _col_indices _values _size _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_sparse_csr_tensor(
+    *$(at::Tensor* _crow_indices)
+  , *$(at::Tensor* _col_indices)
+  , *$(at::Tensor* _values)
+  , *$(std::vector<int64_t>* _size)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+_sparse_csr_tensor_ttto
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+_sparse_csr_tensor_ttto _crow_indices _col_indices _values _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_sparse_csr_tensor(
+    *$(at::Tensor* _crow_indices)
+  , *$(at::Tensor* _col_indices)
+  , *$(at::Tensor* _values)
+  , *$(at::TensorOptions* _options)));
   }|]
 
 sparse_coo_tensor_lo

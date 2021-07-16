@@ -290,14 +290,12 @@ dumpToStr ::
   Bool ->
   -- | print_param_values
   Bool ->
-  -- | level
-  Int ->
   -- | ouput
   IO String
-dumpToStr = cast5 LibTorch.dumpToStr
+dumpToStr = cast4 LibTorch.dumpToStr
 
 dumpToStr' :: ScriptModule -> IO String
-dumpToStr' obj = dumpToStr obj True True True 0
+dumpToStr' obj = dumpToStr obj True True True
 
 runMethod ::
   -- | module

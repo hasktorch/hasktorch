@@ -116,24 +116,6 @@ blackman_window_lb
   -> IO (ForeignPtr Tensor)
 blackman_window_lb = cast2 Unmanaged.blackman_window_lb
 
-empty_meta_loM
-  :: ForeignPtr IntArray
-  -> ForeignPtr TensorOptions
-  -> MemoryFormat
-  -> IO (ForeignPtr Tensor)
-empty_meta_loM = cast3 Unmanaged.empty_meta_loM
-
-empty_meta_lo
-  :: ForeignPtr IntArray
-  -> ForeignPtr TensorOptions
-  -> IO (ForeignPtr Tensor)
-empty_meta_lo = cast2 Unmanaged.empty_meta_lo
-
-empty_meta_l
-  :: ForeignPtr IntArray
-  -> IO (ForeignPtr Tensor)
-empty_meta_l = cast1 Unmanaged.empty_meta_l
-
 empty_lNoM
   :: ForeignPtr IntArray
   -> ForeignPtr DimnameList
@@ -913,6 +895,23 @@ zeros_like_t
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 zeros_like_t = cast1 Unmanaged.zeros_like_t
+
+_sparse_csr_tensor_tttlo
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+_sparse_csr_tensor_tttlo = cast5 Unmanaged._sparse_csr_tensor_tttlo
+
+_sparse_csr_tensor_ttto
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+_sparse_csr_tensor_ttto = cast4 Unmanaged._sparse_csr_tensor_ttto
 
 sparse_coo_tensor_lo
   :: ForeignPtr IntArray

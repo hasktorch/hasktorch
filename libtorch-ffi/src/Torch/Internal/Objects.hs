@@ -290,3 +290,15 @@ foreign import ccall unsafe "hasktorch_finalizer.h &delete_stream"
 
 instance CppObject Stream where
   fromPtr ptr = newForeignPtr c_delete_stream ptr
+
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_arrayrefscalar"
+  c_delete_arrayrefscalar :: FunPtr ( Ptr (ArrayRef Scalar) -> IO ())
+
+instance CppObject (ArrayRef Scalar) where
+  fromPtr ptr = newForeignPtr c_delete_arrayrefscalar ptr
+
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_vectorscalar"
+  c_delete_vectorscalar :: FunPtr ( Ptr (StdVector Scalar) -> IO ())
+
+instance CppObject (StdVector Scalar) where
+  fromPtr ptr = newForeignPtr c_delete_vectorscalar ptr

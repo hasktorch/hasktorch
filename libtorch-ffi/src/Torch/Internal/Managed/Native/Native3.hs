@@ -21,6 +21,175 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native3 as Unmanaged
 
 
+_embedding_bag_ttt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor)))
+_embedding_bag_ttt = cast3 Unmanaged._embedding_bag_ttt
+
+_embedding_bag_backward_ttttttlblbtl
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> Int64
+  -> CBool
+  -> Int64
+  -> CBool
+  -> ForeignPtr Tensor
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+_embedding_bag_backward_ttttttlblbtl = cast12 Unmanaged._embedding_bag_backward_ttttttlblbtl
+
+_embedding_bag_backward_ttttttlblbt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> Int64
+  -> CBool
+  -> Int64
+  -> CBool
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+_embedding_bag_backward_ttttttlblbt = cast11 Unmanaged._embedding_bag_backward_ttttttlblbt
+
+_embedding_bag_sparse_backward_tttttlbltl
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> Int64
+  -> CBool
+  -> Int64
+  -> ForeignPtr Tensor
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+_embedding_bag_sparse_backward_tttttlbltl = cast10 Unmanaged._embedding_bag_sparse_backward_tttttlbltl
+
+_embedding_bag_sparse_backward_tttttlblt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> Int64
+  -> CBool
+  -> Int64
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+_embedding_bag_sparse_backward_tttttlblt = cast9 Unmanaged._embedding_bag_sparse_backward_tttttlblt
+
+_embedding_bag_dense_backward_tttttlbltl
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> Int64
+  -> CBool
+  -> Int64
+  -> ForeignPtr Tensor
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+_embedding_bag_dense_backward_tttttlbltl = cast10 Unmanaged._embedding_bag_dense_backward_tttttlbltl
+
+_embedding_bag_dense_backward_tttttlblt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> Int64
+  -> CBool
+  -> Int64
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+_embedding_bag_dense_backward_tttttlblt = cast9 Unmanaged._embedding_bag_dense_backward_tttttlblt
+
+_embedding_bag_per_sample_weights_backward_tttttll
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> Int64
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+_embedding_bag_per_sample_weights_backward_tttttll = cast7 Unmanaged._embedding_bag_per_sample_weights_backward_tttttll
+
+_embedding_bag_per_sample_weights_backward_tttttl
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+_embedding_bag_per_sample_weights_backward_tttttl = cast6 Unmanaged._embedding_bag_per_sample_weights_backward_tttttl
+
+empty_lNoM
+  :: ForeignPtr IntArray
+  -> ForeignPtr DimnameList
+  -> ForeignPtr TensorOptions
+  -> MemoryFormat
+  -> IO (ForeignPtr Tensor)
+empty_lNoM = cast4 Unmanaged.empty_lNoM
+
+empty_lNo
+  :: ForeignPtr IntArray
+  -> ForeignPtr DimnameList
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+empty_lNo = cast3 Unmanaged.empty_lNo
+
+empty_lN
+  :: ForeignPtr IntArray
+  -> ForeignPtr DimnameList
+  -> IO (ForeignPtr Tensor)
+empty_lN = cast2 Unmanaged.empty_lN
+
+empty_loM
+  :: ForeignPtr IntArray
+  -> ForeignPtr TensorOptions
+  -> MemoryFormat
+  -> IO (ForeignPtr Tensor)
+empty_loM = cast3 Unmanaged.empty_loM
+
+empty_lo
+  :: ForeignPtr IntArray
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+empty_lo = cast2 Unmanaged.empty_lo
+
+empty_l
+  :: ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+empty_l = cast1 Unmanaged.empty_l
+
+_empty_affine_quantized_lodlM
+  :: ForeignPtr IntArray
+  -> ForeignPtr TensorOptions
+  -> CDouble
+  -> Int64
+  -> MemoryFormat
+  -> IO (ForeignPtr Tensor)
+_empty_affine_quantized_lodlM = cast5 Unmanaged._empty_affine_quantized_lodlM
+
+_empty_affine_quantized_lodl
+  :: ForeignPtr IntArray
+  -> ForeignPtr TensorOptions
+  -> CDouble
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+_empty_affine_quantized_lodl = cast4 Unmanaged._empty_affine_quantized_lodl
+
 _empty_affine_quantized_lod
   :: ForeignPtr IntArray
   -> ForeignPtr TensorOptions

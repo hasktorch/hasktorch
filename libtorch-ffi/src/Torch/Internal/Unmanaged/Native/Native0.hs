@@ -202,6 +202,14 @@ align_tensors_l _tensors =
     *$(std::vector<at::Tensor>* _tensors)));
   }|]
 
+_assert_async_t
+  :: Ptr Tensor
+  -> IO (())
+_assert_async_t _self =
+  [C.throwBlock| void {  (at::_assert_async(
+    *$(at::Tensor* _self)));
+  }|]
+
 _use_cudnn_ctc_loss_ttlll
   :: Ptr Tensor
   -> Ptr Tensor
@@ -236,6 +244,13 @@ _cudnn_ctc_loss_ttlllbb _log_probs _targets _input_lengths _target_lengths _blan
   , $(int64_t _blank)
   , $(bool _deterministic)
   , $(bool _zero_infinity)));
+  }|]
+
+_use_cudnn_rnn_flatten_weight
+  :: IO (CBool)
+_use_cudnn_rnn_flatten_weight  =
+  [C.throwBlock| bool { return (at::_use_cudnn_rnn_flatten_weight(
+    ));
   }|]
 
 _cudnn_rnn_flatten_weight_lllllllbb
@@ -1128,54 +1143,6 @@ addmv_out_tttt _out _self _mat _vec =
   , *$(at::Tensor* _vec)));
   }|]
 
-_addmv_impl__ttttss
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
-_addmv_impl__ttttss _self _self2 _mat _vec _beta _alpha =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_addmv_impl_(
-    *$(at::Tensor* _self)
-  , *$(at::Tensor* _self2)
-  , *$(at::Tensor* _mat)
-  , *$(at::Tensor* _vec)
-  , *$(at::Scalar* _beta)
-  , *$(at::Scalar* _alpha)));
-  }|]
-
-_addmv_impl__tttts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
-_addmv_impl__tttts _self _self2 _mat _vec _beta =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_addmv_impl_(
-    *$(at::Tensor* _self)
-  , *$(at::Tensor* _self2)
-  , *$(at::Tensor* _mat)
-  , *$(at::Tensor* _vec)
-  , *$(at::Scalar* _beta)));
-  }|]
-
-_addmv_impl__tttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-_addmv_impl__tttt _self _self2 _mat _vec =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_addmv_impl_(
-    *$(at::Tensor* _self)
-  , *$(at::Tensor* _self2)
-  , *$(at::Tensor* _mat)
-  , *$(at::Tensor* _vec)));
-  }|]
-
 addr_tttss
   :: Ptr Tensor
   -> Ptr Tensor
@@ -2026,5 +1993,187 @@ arcsin__t
 arcsin__t _self =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::arcsin_(
     *$(at::Tensor* _self)));
+  }|]
+
+arcsin_out_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+arcsin_out_tt _out _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::arcsin_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)));
+  }|]
+
+atan_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+atan_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::atan(
+    *$(at::Tensor* _self)));
+  }|]
+
+atan__t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+atan__t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::atan_(
+    *$(at::Tensor* _self)));
+  }|]
+
+atan_out_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+atan_out_tt _out _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::atan_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)));
+  }|]
+
+arctan_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+arctan_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::arctan(
+    *$(at::Tensor* _self)));
+  }|]
+
+arctan__t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+arctan__t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::arctan_(
+    *$(at::Tensor* _self)));
+  }|]
+
+arctan_out_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+arctan_out_tt _out _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::arctan_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)));
+  }|]
+
+atleast_1d_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+atleast_1d_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::atleast_1d(
+    *$(at::Tensor* _self)));
+  }|]
+
+atleast_1d_l
+  :: Ptr TensorList
+  -> IO (Ptr TensorList)
+atleast_1d_l _tensors =
+  [C.throwBlock| std::vector<at::Tensor>* { return new std::vector<at::Tensor>(at::atleast_1d(
+    *$(std::vector<at::Tensor>* _tensors)));
+  }|]
+
+atleast_2d_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+atleast_2d_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::atleast_2d(
+    *$(at::Tensor* _self)));
+  }|]
+
+atleast_2d_l
+  :: Ptr TensorList
+  -> IO (Ptr TensorList)
+atleast_2d_l _tensors =
+  [C.throwBlock| std::vector<at::Tensor>* { return new std::vector<at::Tensor>(at::atleast_2d(
+    *$(std::vector<at::Tensor>* _tensors)));
+  }|]
+
+atleast_3d_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+atleast_3d_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::atleast_3d(
+    *$(at::Tensor* _self)));
+  }|]
+
+atleast_3d_l
+  :: Ptr TensorList
+  -> IO (Ptr TensorList)
+atleast_3d_l _tensors =
+  [C.throwBlock| std::vector<at::Tensor>* { return new std::vector<at::Tensor>(at::atleast_3d(
+    *$(std::vector<at::Tensor>* _tensors)));
+  }|]
+
+baddbmm_tttss
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Scalar
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+baddbmm_tttss _self _batch1 _batch2 _beta _alpha =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::baddbmm(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _batch1)
+  , *$(at::Tensor* _batch2)
+  , *$(at::Scalar* _beta)
+  , *$(at::Scalar* _alpha)));
+  }|]
+
+baddbmm_ttts
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+baddbmm_ttts _self _batch1 _batch2 _beta =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::baddbmm(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _batch1)
+  , *$(at::Tensor* _batch2)
+  , *$(at::Scalar* _beta)));
+  }|]
+
+baddbmm_ttt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+baddbmm_ttt _self _batch1 _batch2 =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::baddbmm(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _batch1)
+  , *$(at::Tensor* _batch2)));
+  }|]
+
+_baddbmm_mkl__tttss
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Scalar
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+_baddbmm_mkl__tttss _self _batch1 _batch2 _beta _alpha =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_baddbmm_mkl_(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _batch1)
+  , *$(at::Tensor* _batch2)
+  , *$(at::Scalar* _beta)
+  , *$(at::Scalar* _alpha)));
+  }|]
+
+_baddbmm_mkl__ttts
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+_baddbmm_mkl__ttts _self _batch1 _batch2 _beta =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_baddbmm_mkl_(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _batch1)
+  , *$(at::Tensor* _batch2)
+  , *$(at::Scalar* _beta)));
   }|]
 

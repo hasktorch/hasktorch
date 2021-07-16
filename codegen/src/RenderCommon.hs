@@ -95,6 +95,7 @@ parsableToCppType parsable =
     CType ct -> ctypeToCppType ct
     STLType t -> stltypeToCppType t
     ArrayRef ct -> arrayrefToCppType ct
+    ArrayRefScalar -> "std::vector<at::Scalar>"
     CppString -> "std::string"
     Tuple parsables -> [st|std::tuple<#{T.intercalate "," (map parsableToCppType parsables)}>|]
     P.CppClass _ cpptype _ -> fromString cpptype
@@ -238,6 +239,7 @@ parsableToHsType parsable =
     CType ct -> ctypeToHsType ct
     STLType t -> stltypeToHsType t
     ArrayRef ct -> arrayrefToHsType ct
+    ArrayRefScalar -> "(StdVector Scalar)"
     CppString -> "StdString"
     Tuple parsables -> [st|StdTuple '(#{T.intercalate "," (map parsableToHsType parsables)})|]
     P.CppClass _ _ hstype -> fromString hstype
@@ -263,6 +265,7 @@ parsableToHigherHsType parsable =
     CType ct -> ctypeToHigherHsType ct
     STLType t -> stltypeToHigherHsType t
     ArrayRef ct -> arrayrefToHigherHsType ct
+    ArrayRefScalar -> "[Scalar]"
     CppString -> "String"
     Tuple parsables -> [st|(#{T.intercalate "," (map parsableToHigherHsType parsables)})|]
     P.CppClass _ _ hstype -> fromString hstype
@@ -342,6 +345,7 @@ parsableToInitial parsable =
     CType ct -> ctypeToInitial ct
     STLType t -> stltypeToInitial t
     ArrayRef t -> arrayrefToInitial t
+    ArrayRefScalar -> "A"
     CppString -> "s"
     Tuple _ -> "t"
     P.CppClass _ _ _ -> "c"
@@ -393,6 +397,7 @@ retToCppType parsable =
     CType ct -> ctypeToCppType ct
     STLType t -> stltypeToCppType t
     ArrayRef t -> arrayrefToCppType t
+    ArrayRefScalar -> "std::vector<at::Scalar>"
     CppString -> "std::string"
     Tuple parsables -> [st|tuple<#{T.intercalate "," (map parsableToCppType parsables)}>|]
     P.CppClass _ cpptype _ -> fromString cpptype
@@ -456,6 +461,33 @@ functionToCpp is_managed add_type_initials prefix suffix fn =
   where
     blacklist = [ "range_ss"
                 , "range_sso"
+                , "sort_out_tttbl"
+                , "upsample_linear1d_tlbd"
+                , "upsample_linear1d_backward_tllbd"
+                , "upsample_bilinear2d_tlbd"
+                , "upsample_bilinear2d_backward_tllbd"
+                , "upsample_bicubic2d_tlbd"
+                , "upsample_bicubic2d_backward_tllbd"
+                , "upsample_trilinear3d_tlbd"
+                , "upsample_trilinear3d_backward_tllbd"
+                , "upsample_nearest1d_tld"
+                , "upsample_nearest1d_backward_tlld"
+                , "upsample_nearest2d_tld"
+                , "upsample_nearest2d_backward_tlld"
+                , "upsample_nearest3d_tld"
+                , "upsample_nearest3d_backward_tlld"
+                , "gradient_ts"
+                , "gradient_tAll"
+                , "gradient_tAl"
+                , "gradient_tlll"
+                , "tensor_polygamma_t"
+                , "tensor_tensor_split_ll"
+                , "tensor_count_nonzero_l"
+                , "tensor_movedim_ll"
+                , "tensor_moveaxis_ll"
+                , "tensor_hsplit_l"
+                , "tensor_vsplit_l"
+                , "tensor_dsplit_l"
                 ]
     hsfuncname = toHsFuncName False (P.name fn)
     parameters' = filter isNotStar $ parameters fn
@@ -510,20 +542,23 @@ functionToCpp is_managed add_type_initials prefix suffix fn =
 
 methodToCpp :: PC.CppClassSpec -> Bool -> Bool -> Bool -> String -> String -> Function -> Text
 methodToCpp class' is_constructor is_managed add_type_initials prefix suffix fn =
-  case (is_managed,is_constructor) of
-    (True,_) -> [st|
+  if elem [st|#{function_name}|] blacklist
+  then ""
+  else
+    case (is_managed,is_constructor) of
+      (True,_) -> [st|
 #{function_name}
   :: #{types}
 #{function_name} = cast#{num_args} Unmanaged.#{function_name}
 |]
-    (False,True) -> [st|
+      (False,True) -> [st|
 #{function_name}
   :: #{types}
 #{function_name} #{args} =
   #{bra}C.throwBlock| #{ret_type} { #{call_return} #{ret_wrapper cargs'}
   }|#{cket}
 |]
-    (False,False) -> [st|
+      (False,False) -> [st|
 #{function_name}
   :: #{types}
 #{function_name} #{args} =
@@ -531,6 +566,17 @@ methodToCpp class' is_constructor is_managed add_type_initials prefix suffix fn 
   }|#{cket}
 |]
   where
+    blacklist = [ "tensor_polygamma_t"
+                , "tensor_tensor_split_ll"
+                , "tensor_count_nonzero_l"
+                , "tensor_movedim_ll"
+                , "tensor_moveaxis_ll"
+                , "tensor_hsplit_l"
+                , "tensor_vsplit_l"
+                , "tensor_dsplit_l"
+                , "tensor_fw_grad_L"
+                , "tensor_set_fw_grad_tLb"
+                ]
     function_name :: Text
     function_name =
       if is_constructor

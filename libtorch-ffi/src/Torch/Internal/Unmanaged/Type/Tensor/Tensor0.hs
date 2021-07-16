@@ -124,15 +124,6 @@ tensor_element_size _obj =
     );
   }|]
 
-tensor_fw_grad_L
-  :: Ptr Tensor
-  -> Word64
-  -> IO (Ptr Tensor)
-tensor_fw_grad_L _obj _level =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).fw_grad(
-    $(uint64_t _level)));
-  }|]
-
 tensor_get_device
   :: Ptr Tensor
   -> IO (Int64)
@@ -506,19 +497,6 @@ tensor_scalar_type
 tensor_scalar_type _obj =
   [C.throwBlock| at::ScalarType { return (*$(at::Tensor* _obj)).scalar_type(
     );
-  }|]
-
-tensor_set_fw_grad_tLb
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Word64
-  -> CBool
-  -> IO (())
-tensor_set_fw_grad_tLb _obj _new_grad _level _is_inplace_op =
-  [C.throwBlock| void {  (*$(at::Tensor* _obj)).set_fw_grad(
-    *$(at::Tensor* _new_grad)
-  , $(uint64_t _level)
-  , $(bool _is_inplace_op));
   }|]
 
 tensor_set_requires_grad_b
@@ -1566,28 +1544,6 @@ tensor_chunk_ll _obj _chunks _dim =
   , $(int64_t _dim)));
   }|]
 
--- tensor_tensor_split_ll
---   :: Ptr Tensor
---   -> Int64
---   -> Int64
---   -> IO (Ptr TensorList)
--- tensor_tensor_split_ll _obj _sections _dim =
---   [C.throwBlock| std::vector<at::Tensor>* { return new std::vector<at::Tensor>((*$(at::Tensor* _obj)).tensor_split(
---     $(int64_t _sections)
---   , $(int64_t _dim)));
---   }|]
-
-tensor_tensor_split_ll
-  :: Ptr Tensor
-  -> Ptr IntArray
-  -> Int64
-  -> IO (Ptr TensorList)
-tensor_tensor_split_ll _obj _indices _dim =
-  [C.throwBlock| std::vector<at::Tensor>* { return new std::vector<at::Tensor>((*$(at::Tensor* _obj)).tensor_split(
-    *$(std::vector<int64_t>* _indices)
-  , $(int64_t _dim)));
-  }|]
-
 tensor_tensor_split_tl
   :: Ptr Tensor
   -> Ptr Tensor
@@ -1610,6 +1566,17 @@ tensor_clamp_ss _obj _min _max =
   , *$(at::Scalar* _max)));
   }|]
 
+tensor_clamp_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_clamp_tt _obj _min _max =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).clamp(
+    *$(at::Tensor* _min)
+  , *$(at::Tensor* _max)));
+  }|]
+
 tensor_clamp__ss
   :: Ptr Tensor
   -> Ptr Scalar
@@ -1621,6 +1588,17 @@ tensor_clamp__ss _obj _min _max =
   , *$(at::Scalar* _max)));
   }|]
 
+tensor_clamp__tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_clamp__tt _obj _min _max =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).clamp_(
+    *$(at::Tensor* _min)
+  , *$(at::Tensor* _max)));
+  }|]
+
 tensor_clamp_max_s
   :: Ptr Tensor
   -> Ptr Scalar
@@ -1628,6 +1606,15 @@ tensor_clamp_max_s
 tensor_clamp_max_s _obj _max =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).clamp_max(
     *$(at::Scalar* _max)));
+  }|]
+
+tensor_clamp_max_t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_clamp_max_t _obj _max =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).clamp_max(
+    *$(at::Tensor* _max)));
   }|]
 
 tensor_clamp_max__s
@@ -1639,6 +1626,15 @@ tensor_clamp_max__s _obj _max =
     *$(at::Scalar* _max)));
   }|]
 
+tensor_clamp_max__t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_clamp_max__t _obj _max =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).clamp_max_(
+    *$(at::Tensor* _max)));
+  }|]
+
 tensor_clamp_min_s
   :: Ptr Tensor
   -> Ptr Scalar
@@ -1648,6 +1644,15 @@ tensor_clamp_min_s _obj _min =
     *$(at::Scalar* _min)));
   }|]
 
+tensor_clamp_min_t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_clamp_min_t _obj _min =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).clamp_min(
+    *$(at::Tensor* _min)));
+  }|]
+
 tensor_clamp_min__s
   :: Ptr Tensor
   -> Ptr Scalar
@@ -1655,6 +1660,15 @@ tensor_clamp_min__s
 tensor_clamp_min__s _obj _min =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).clamp_min_(
     *$(at::Scalar* _min)));
+  }|]
+
+tensor_clamp_min__t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_clamp_min__t _obj _min =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).clamp_min_(
+    *$(at::Tensor* _min)));
   }|]
 
 tensor_clip_ss
@@ -1668,6 +1682,17 @@ tensor_clip_ss _obj _min _max =
   , *$(at::Scalar* _max)));
   }|]
 
+tensor_clip_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_clip_tt _obj _min _max =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).clip(
+    *$(at::Tensor* _min)
+  , *$(at::Tensor* _max)));
+  }|]
+
 tensor_clip__ss
   :: Ptr Tensor
   -> Ptr Scalar
@@ -1677,6 +1702,17 @@ tensor_clip__ss _obj _min _max =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).clip_(
     *$(at::Scalar* _min)
   , *$(at::Scalar* _max)));
+  }|]
+
+tensor_clip__tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_clip__tt _obj _min _max =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).clip_(
+    *$(at::Tensor* _min)
+  , *$(at::Tensor* _max)));
   }|]
 
 tensor_contiguous_M
@@ -1730,24 +1766,6 @@ tensor_cosh_ _obj =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).cosh_(
     ));
   }|]
-
-tensor_count_nonzero_l
-  :: Ptr Tensor
-  -> Ptr IntArray
-  -> IO (Ptr Tensor)
-tensor_count_nonzero_l _obj _dim =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).count_nonzero(
-    *$(std::vector<int64_t>* _dim)));
-  }|]
-
--- tensor_count_nonzero_l
---   :: Ptr Tensor
---   -> Int64
---   -> IO (Ptr Tensor)
--- tensor_count_nonzero_l _obj _dim =
---   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).count_nonzero(
---     $(int64_t _dim)));
---   }|]
 
 tensor_cummax_l
   :: Ptr Tensor

@@ -28,408 +28,6 @@ C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
 
 
-lstm_cell_tlttt
-  :: Ptr Tensor
-  -> Ptr TensorList
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-lstm_cell_tlttt _input _hx _w_ih _w_hh _b_ih =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::lstm_cell(
-    *$(at::Tensor* _input)
-  , *$(std::vector<at::Tensor>* _hx)
-  , *$(at::Tensor* _w_ih)
-  , *$(at::Tensor* _w_hh)
-  , *$(at::Tensor* _b_ih)));
-  }|]
-
-lstm_cell_tltt
-  :: Ptr Tensor
-  -> Ptr TensorList
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-lstm_cell_tltt _input _hx _w_ih _w_hh =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::lstm_cell(
-    *$(at::Tensor* _input)
-  , *$(std::vector<at::Tensor>* _hx)
-  , *$(at::Tensor* _w_ih)
-  , *$(at::Tensor* _w_hh)));
-  }|]
-
-gru_cell_tttttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-gru_cell_tttttt _input _hx _w_ih _w_hh _b_ih _b_hh =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::gru_cell(
-    *$(at::Tensor* _input)
-  , *$(at::Tensor* _hx)
-  , *$(at::Tensor* _w_ih)
-  , *$(at::Tensor* _w_hh)
-  , *$(at::Tensor* _b_ih)
-  , *$(at::Tensor* _b_hh)));
-  }|]
-
-gru_cell_ttttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-gru_cell_ttttt _input _hx _w_ih _w_hh _b_ih =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::gru_cell(
-    *$(at::Tensor* _input)
-  , *$(at::Tensor* _hx)
-  , *$(at::Tensor* _w_ih)
-  , *$(at::Tensor* _w_hh)
-  , *$(at::Tensor* _b_ih)));
-  }|]
-
-gru_cell_tttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-gru_cell_tttt _input _hx _w_ih _w_hh =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::gru_cell(
-    *$(at::Tensor* _input)
-  , *$(at::Tensor* _hx)
-  , *$(at::Tensor* _w_ih)
-  , *$(at::Tensor* _w_hh)));
-  }|]
-
-rnn_tanh_cell_tttttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-rnn_tanh_cell_tttttt _input _hx _w_ih _w_hh _b_ih _b_hh =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::rnn_tanh_cell(
-    *$(at::Tensor* _input)
-  , *$(at::Tensor* _hx)
-  , *$(at::Tensor* _w_ih)
-  , *$(at::Tensor* _w_hh)
-  , *$(at::Tensor* _b_ih)
-  , *$(at::Tensor* _b_hh)));
-  }|]
-
-rnn_tanh_cell_ttttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-rnn_tanh_cell_ttttt _input _hx _w_ih _w_hh _b_ih =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::rnn_tanh_cell(
-    *$(at::Tensor* _input)
-  , *$(at::Tensor* _hx)
-  , *$(at::Tensor* _w_ih)
-  , *$(at::Tensor* _w_hh)
-  , *$(at::Tensor* _b_ih)));
-  }|]
-
-rnn_tanh_cell_tttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-rnn_tanh_cell_tttt _input _hx _w_ih _w_hh =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::rnn_tanh_cell(
-    *$(at::Tensor* _input)
-  , *$(at::Tensor* _hx)
-  , *$(at::Tensor* _w_ih)
-  , *$(at::Tensor* _w_hh)));
-  }|]
-
-rnn_relu_cell_tttttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-rnn_relu_cell_tttttt _input _hx _w_ih _w_hh _b_ih _b_hh =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::rnn_relu_cell(
-    *$(at::Tensor* _input)
-  , *$(at::Tensor* _hx)
-  , *$(at::Tensor* _w_ih)
-  , *$(at::Tensor* _w_hh)
-  , *$(at::Tensor* _b_ih)
-  , *$(at::Tensor* _b_hh)));
-  }|]
-
-rnn_relu_cell_ttttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-rnn_relu_cell_ttttt _input _hx _w_ih _w_hh _b_ih =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::rnn_relu_cell(
-    *$(at::Tensor* _input)
-  , *$(at::Tensor* _hx)
-  , *$(at::Tensor* _w_ih)
-  , *$(at::Tensor* _w_hh)
-  , *$(at::Tensor* _b_ih)));
-  }|]
-
-rnn_relu_cell_tttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-rnn_relu_cell_tttt _input _hx _w_ih _w_hh =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::rnn_relu_cell(
-    *$(at::Tensor* _input)
-  , *$(at::Tensor* _hx)
-  , *$(at::Tensor* _w_ih)
-  , *$(at::Tensor* _w_hh)));
-  }|]
-
-quantized_lstm_cell_tlttttttttssss
-  :: Ptr Tensor
-  -> Ptr TensorList
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-quantized_lstm_cell_tlttttttttssss _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::quantized_lstm_cell(
-    *$(at::Tensor* _input)
-  , *$(std::vector<at::Tensor>* _hx)
-  , *$(at::Tensor* _w_ih)
-  , *$(at::Tensor* _w_hh)
-  , *$(at::Tensor* _b_ih)
-  , *$(at::Tensor* _b_hh)
-  , *$(at::Tensor* _packed_ih)
-  , *$(at::Tensor* _packed_hh)
-  , *$(at::Tensor* _col_offsets_ih)
-  , *$(at::Tensor* _col_offsets_hh)
-  , *$(at::Scalar* _scale_ih)
-  , *$(at::Scalar* _scale_hh)
-  , *$(at::Scalar* _zero_point_ih)
-  , *$(at::Scalar* _zero_point_hh)));
-  }|]
-
-quantized_gru_cell_ttttttttttssss
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
-quantized_gru_cell_ttttttttttssss _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::quantized_gru_cell(
-    *$(at::Tensor* _input)
-  , *$(at::Tensor* _hx)
-  , *$(at::Tensor* _w_ih)
-  , *$(at::Tensor* _w_hh)
-  , *$(at::Tensor* _b_ih)
-  , *$(at::Tensor* _b_hh)
-  , *$(at::Tensor* _packed_ih)
-  , *$(at::Tensor* _packed_hh)
-  , *$(at::Tensor* _col_offsets_ih)
-  , *$(at::Tensor* _col_offsets_hh)
-  , *$(at::Scalar* _scale_ih)
-  , *$(at::Scalar* _scale_hh)
-  , *$(at::Scalar* _zero_point_ih)
-  , *$(at::Scalar* _zero_point_hh)));
-  }|]
-
-quantized_rnn_relu_cell_ttttttttttssss
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
-quantized_rnn_relu_cell_ttttttttttssss _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::quantized_rnn_relu_cell(
-    *$(at::Tensor* _input)
-  , *$(at::Tensor* _hx)
-  , *$(at::Tensor* _w_ih)
-  , *$(at::Tensor* _w_hh)
-  , *$(at::Tensor* _b_ih)
-  , *$(at::Tensor* _b_hh)
-  , *$(at::Tensor* _packed_ih)
-  , *$(at::Tensor* _packed_hh)
-  , *$(at::Tensor* _col_offsets_ih)
-  , *$(at::Tensor* _col_offsets_hh)
-  , *$(at::Scalar* _scale_ih)
-  , *$(at::Scalar* _scale_hh)
-  , *$(at::Scalar* _zero_point_ih)
-  , *$(at::Scalar* _zero_point_hh)));
-  }|]
-
-quantized_rnn_tanh_cell_ttttttttttssss
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
-quantized_rnn_tanh_cell_ttttttttttssss _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::quantized_rnn_tanh_cell(
-    *$(at::Tensor* _input)
-  , *$(at::Tensor* _hx)
-  , *$(at::Tensor* _w_ih)
-  , *$(at::Tensor* _w_hh)
-  , *$(at::Tensor* _b_ih)
-  , *$(at::Tensor* _b_hh)
-  , *$(at::Tensor* _packed_ih)
-  , *$(at::Tensor* _packed_hh)
-  , *$(at::Tensor* _col_offsets_ih)
-  , *$(at::Tensor* _col_offsets_hh)
-  , *$(at::Scalar* _scale_ih)
-  , *$(at::Scalar* _scale_hh)
-  , *$(at::Scalar* _zero_point_ih)
-  , *$(at::Scalar* _zero_point_hh)));
-  }|]
-
-_pack_padded_sequence_ttb
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> CBool
-  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-_pack_padded_sequence_ttb _input _lengths _batch_first =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_pack_padded_sequence(
-    *$(at::Tensor* _input)
-  , *$(at::Tensor* _lengths)
-  , $(bool _batch_first)));
-  }|]
-
-_pack_padded_sequence_backward_tltb
-  :: Ptr Tensor
-  -> Ptr IntArray
-  -> Ptr Tensor
-  -> CBool
-  -> IO (Ptr Tensor)
-_pack_padded_sequence_backward_tltb _grad _input_size _batch_sizes _batch_first =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_pack_padded_sequence_backward(
-    *$(at::Tensor* _grad)
-  , *$(std::vector<int64_t>* _input_size)
-  , *$(at::Tensor* _batch_sizes)
-  , $(bool _batch_first)));
-  }|]
-
-_pad_packed_sequence_ttbsl
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> CBool
-  -> Ptr Scalar
-  -> Int64
-  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-_pad_packed_sequence_ttbsl _data _batch_sizes _batch_first _padding_value _total_length =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_pad_packed_sequence(
-    *$(at::Tensor* _data)
-  , *$(at::Tensor* _batch_sizes)
-  , $(bool _batch_first)
-  , *$(at::Scalar* _padding_value)
-  , $(int64_t _total_length)));
-  }|]
-
-masked_fill_tts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
-masked_fill_tts _self _mask _value =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::masked_fill(
-    *$(at::Tensor* _self)
-  , *$(at::Tensor* _mask)
-  , *$(at::Scalar* _value)));
-  }|]
-
-masked_fill_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-masked_fill_ttt _self _mask _value =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::masked_fill(
-    *$(at::Tensor* _self)
-  , *$(at::Tensor* _mask)
-  , *$(at::Tensor* _value)));
-  }|]
-
-masked_scatter_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-masked_scatter_ttt _self _mask _source =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::masked_scatter(
-    *$(at::Tensor* _self)
-  , *$(at::Tensor* _mask)
-  , *$(at::Tensor* _source)));
-  }|]
-
-index_add_tltt
-  :: Ptr Tensor
-  -> Int64
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-index_add_tltt _self _dim _index _source =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::index_add(
-    *$(at::Tensor* _self)
-  , $(int64_t _dim)
-  , *$(at::Tensor* _index)
-  , *$(at::Tensor* _source)));
-  }|]
-
 index_add_tntt
   :: Ptr Tensor
   -> Ptr Dimname
@@ -1682,16 +1280,52 @@ take_tt _self _index =
   , *$(at::Tensor* _index)));
   }|]
 
-take_backward_ttt
+take_along_dim_out_tttl
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> IO (Ptr Tensor)
+take_along_dim_out_tttl _out _self _indices _dim =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::take_along_dim_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , *$(at::Tensor* _indices)
+  , $(int64_t _dim)));
+  }|]
+
+take_along_dim_out_ttt
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-take_backward_ttt _grad _input _index =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::take_backward(
-    *$(at::Tensor* _grad)
-  , *$(at::Tensor* _input)
-  , *$(at::Tensor* _index)));
+take_along_dim_out_ttt _out _self _indices =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::take_along_dim_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , *$(at::Tensor* _indices)));
+  }|]
+
+take_along_dim_ttl
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> IO (Ptr Tensor)
+take_along_dim_ttl _self _indices _dim =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::take_along_dim(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _indices)
+  , $(int64_t _dim)));
+  }|]
+
+take_along_dim_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+take_along_dim_tt _self _indices =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::take_along_dim(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _indices)));
   }|]
 
 index_select_out_ttlt
@@ -2074,6 +1708,58 @@ addcdiv_ttt _self _tensor1 _tensor2 =
   , *$(at::Tensor* _tensor2)));
   }|]
 
+cross_entropy_loss_tttll
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> Int64
+  -> IO (Ptr Tensor)
+cross_entropy_loss_tttll _self _target _weight _reduction _ignore_index =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::cross_entropy_loss(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _target)
+  , *$(at::Tensor* _weight)
+  , $(int64_t _reduction)
+  , $(int64_t _ignore_index)));
+  }|]
+
+cross_entropy_loss_tttl
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> IO (Ptr Tensor)
+cross_entropy_loss_tttl _self _target _weight _reduction =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::cross_entropy_loss(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _target)
+  , *$(at::Tensor* _weight)
+  , $(int64_t _reduction)));
+  }|]
+
+cross_entropy_loss_ttt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+cross_entropy_loss_ttt _self _target _weight =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::cross_entropy_loss(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _target)
+  , *$(at::Tensor* _weight)));
+  }|]
+
+cross_entropy_loss_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+cross_entropy_loss_tt _self _target =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::cross_entropy_loss(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _target)));
+  }|]
+
 lstsq_out_tttt
   :: Ptr Tensor
   -> Ptr Tensor
@@ -2218,19 +1904,389 @@ triangular_solve_tt _self _A =
   , *$(at::Tensor* _A)));
   }|]
 
-_triangular_solve_helper_ttbbb
+symeig_out_tttbb
   :: Ptr Tensor
+  -> Ptr Tensor
   -> Ptr Tensor
   -> CBool
   -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+symeig_out_tttbb _e _V _self _eigenvectors _upper =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::symeig_out(
+    *$(at::Tensor* _e)
+  , *$(at::Tensor* _V)
+  , *$(at::Tensor* _self)
+  , $(bool _eigenvectors)
+  , $(bool _upper)));
+  }|]
+
+symeig_out_tttb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
   -> CBool
   -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-_triangular_solve_helper_ttbbb _self _A _upper _transpose _unitriangular =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_triangular_solve_helper(
+symeig_out_tttb _e _V _self _eigenvectors =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::symeig_out(
+    *$(at::Tensor* _e)
+  , *$(at::Tensor* _V)
+  , *$(at::Tensor* _self)
+  , $(bool _eigenvectors)));
+  }|]
+
+symeig_out_ttt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+symeig_out_ttt _e _V _self =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::symeig_out(
+    *$(at::Tensor* _e)
+  , *$(at::Tensor* _V)
+  , *$(at::Tensor* _self)));
+  }|]
+
+symeig_tbb
+  :: Ptr Tensor
+  -> CBool
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+symeig_tbb _self _eigenvectors _upper =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::symeig(
+    *$(at::Tensor* _self)
+  , $(bool _eigenvectors)
+  , $(bool _upper)));
+  }|]
+
+symeig_tb
+  :: Ptr Tensor
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+symeig_tb _self _eigenvectors =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::symeig(
+    *$(at::Tensor* _self)
+  , $(bool _eigenvectors)));
+  }|]
+
+symeig_t
+  :: Ptr Tensor
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+symeig_t _self =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::symeig(
+    *$(at::Tensor* _self)));
+  }|]
+
+_symeig_helper_tbb
+  :: Ptr Tensor
+  -> CBool
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+_symeig_helper_tbb _self _eigenvectors _upper =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_symeig_helper(
+    *$(at::Tensor* _self)
+  , $(bool _eigenvectors)
+  , $(bool _upper)));
+  }|]
+
+eig_out_tttb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+eig_out_tttb _e _v _self _eigenvectors =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::eig_out(
+    *$(at::Tensor* _e)
+  , *$(at::Tensor* _v)
+  , *$(at::Tensor* _self)
+  , $(bool _eigenvectors)));
+  }|]
+
+eig_out_ttt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+eig_out_ttt _e _v _self =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::eig_out(
+    *$(at::Tensor* _e)
+  , *$(at::Tensor* _v)
+  , *$(at::Tensor* _self)));
+  }|]
+
+eig_tb
+  :: Ptr Tensor
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+eig_tb _self _eigenvectors =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::eig(
+    *$(at::Tensor* _self)
+  , $(bool _eigenvectors)));
+  }|]
+
+eig_t
+  :: Ptr Tensor
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+eig_t _self =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::eig(
+    *$(at::Tensor* _self)));
+  }|]
+
+svd_out_ttttbb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> CBool
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor)))
+svd_out_ttttbb _U _S _V _self _some _compute_uv =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::svd_out(
+    *$(at::Tensor* _U)
+  , *$(at::Tensor* _S)
+  , *$(at::Tensor* _V)
+  , *$(at::Tensor* _self)
+  , $(bool _some)
+  , $(bool _compute_uv)));
+  }|]
+
+svd_out_ttttb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor)))
+svd_out_ttttb _U _S _V _self _some =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::svd_out(
+    *$(at::Tensor* _U)
+  , *$(at::Tensor* _S)
+  , *$(at::Tensor* _V)
+  , *$(at::Tensor* _self)
+  , $(bool _some)));
+  }|]
+
+svd_out_tttt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor)))
+svd_out_tttt _U _S _V _self =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::svd_out(
+    *$(at::Tensor* _U)
+  , *$(at::Tensor* _S)
+  , *$(at::Tensor* _V)
+  , *$(at::Tensor* _self)));
+  }|]
+
+svd_tbb
+  :: Ptr Tensor
+  -> CBool
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor)))
+svd_tbb _self _some _compute_uv =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::svd(
+    *$(at::Tensor* _self)
+  , $(bool _some)
+  , $(bool _compute_uv)));
+  }|]
+
+svd_tb
+  :: Ptr Tensor
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor)))
+svd_tb _self _some =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::svd(
+    *$(at::Tensor* _self)
+  , $(bool _some)));
+  }|]
+
+svd_t
+  :: Ptr Tensor
+  -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor)))
+svd_t _self =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::svd(
+    *$(at::Tensor* _self)));
+  }|]
+
+_svd_helper_tbb
+  :: Ptr Tensor
+  -> CBool
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor)))
+_svd_helper_tbb _self _some _compute_uv =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::_svd_helper(
+    *$(at::Tensor* _self)
+  , $(bool _some)
+  , $(bool _compute_uv)));
+  }|]
+
+swapaxes_tll
+  :: Ptr Tensor
+  -> Int64
+  -> Int64
+  -> IO (Ptr Tensor)
+swapaxes_tll _self _axis0 _axis1 =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::swapaxes(
+    *$(at::Tensor* _self)
+  , $(int64_t _axis0)
+  , $(int64_t _axis1)));
+  }|]
+
+swapdims_tll
+  :: Ptr Tensor
+  -> Int64
+  -> Int64
+  -> IO (Ptr Tensor)
+swapdims_tll _self _dim0 _dim1 =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::swapdims(
+    *$(at::Tensor* _self)
+  , $(int64_t _dim0)
+  , $(int64_t _dim1)));
+  }|]
+
+cholesky_out_ttb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> CBool
+  -> IO (Ptr Tensor)
+cholesky_out_ttb _out _self _upper =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::cholesky_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , $(bool _upper)));
+  }|]
+
+cholesky_out_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+cholesky_out_tt _out _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::cholesky_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)));
+  }|]
+
+cholesky_tb
+  :: Ptr Tensor
+  -> CBool
+  -> IO (Ptr Tensor)
+cholesky_tb _self _upper =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::cholesky(
+    *$(at::Tensor* _self)
+  , $(bool _upper)));
+  }|]
+
+cholesky_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+cholesky_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::cholesky(
+    *$(at::Tensor* _self)));
+  }|]
+
+cholesky_solve_out_tttb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> CBool
+  -> IO (Ptr Tensor)
+cholesky_solve_out_tttb _out _self _input2 _upper =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::cholesky_solve_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , *$(at::Tensor* _input2)
+  , $(bool _upper)));
+  }|]
+
+cholesky_solve_out_ttt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+cholesky_solve_out_ttt _out _self _input2 =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::cholesky_solve_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , *$(at::Tensor* _input2)));
+  }|]
+
+cholesky_solve_ttb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> CBool
+  -> IO (Ptr Tensor)
+cholesky_solve_ttb _self _input2 _upper =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::cholesky_solve(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _input2)
+  , $(bool _upper)));
+  }|]
+
+cholesky_solve_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+cholesky_solve_tt _self _input2 =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::cholesky_solve(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _input2)));
+  }|]
+
+_cholesky_solve_helper_ttb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> CBool
+  -> IO (Ptr Tensor)
+_cholesky_solve_helper_ttb _self _A _upper =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_cholesky_solve_helper(
     *$(at::Tensor* _self)
   , *$(at::Tensor* _A)
-  , $(bool _upper)
-  , $(bool _transpose)
-  , $(bool _unitriangular)));
+  , $(bool _upper)));
+  }|]
+
+solve_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+solve_tt _self _A =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::solve(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _A)));
+  }|]
+
+solve_out_tttt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+solve_out_tttt _solution _lu _self _A =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::solve_out(
+    *$(at::Tensor* _solution)
+  , *$(at::Tensor* _lu)
+  , *$(at::Tensor* _self)
+  , *$(at::Tensor* _A)));
+  }|]
+
+_solve_helper_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+_solve_helper_tt _self _A =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_solve_helper(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _A)));
+  }|]
+
+cholesky_inverse_tb
+  :: Ptr Tensor
+  -> CBool
+  -> IO (Ptr Tensor)
+cholesky_inverse_tb _self _upper =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::cholesky_inverse(
+    *$(at::Tensor* _self)
+  , $(bool _upper)));
   }|]
 
