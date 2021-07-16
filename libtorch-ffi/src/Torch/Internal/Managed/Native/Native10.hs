@@ -982,12 +982,12 @@ sort_tblb
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
 sort_tblb = cast4 Unmanaged.sort_tblb
 
-sort_tbl
-  :: ForeignPtr Tensor
-  -> CBool
-  -> Int64
-  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-sort_tbl = cast3 Unmanaged.sort_tbl
+-- sort_tbl
+--   :: ForeignPtr Tensor
+--   -> CBool
+--   -> Int64
+--   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
+-- sort_tbl = cast3 Unmanaged.sort_tbl
 
 sort_tb
   :: ForeignPtr Tensor
