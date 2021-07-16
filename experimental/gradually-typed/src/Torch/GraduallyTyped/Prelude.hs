@@ -26,6 +26,7 @@ module Torch.GraduallyTyped.Prelude
     Checked (..),
     SChecked (..),
     IsChecked (..),
+    SIsChecked (..),
     forgetIsChecked,
     All,
     KnownElem (..),
@@ -70,36 +71,75 @@ import Data.Kind (Constraint, Type)
 import Data.Proxy (Proxy (..))
 import Data.Type.Bool (If, type (||))
 import GHC.Exts (Any)
-import GHC.TypeLits (Nat, ErrorMessage (..), TypeError, type (*), type (+))
+import GHC.TypeLits (Nat, ErrorMessage (..), TypeError, type (*), type (+), Symbol)
 import GHC.Generics (Generic)
-import Data.Singletons (Sing, SingI, sing, SingKind, Demote, fromSing)
+import Data.Singletons (Sing, SingI (..), SingKind (..), SomeSing(..), withSomeSing, KindOf)
+import Data.Singletons.TypeLits (SNat(SNat))
 
--- type Checked :: Type -> Type
-data Checked a = Checked a | Unchecked
 
-data SChecked (checked :: Checked k) where
-  SUnchecked :: forall a. a -> SChecked 'Unchecked
-  SChecked :: forall k (k'::k). Sing k' -> SChecked ('Checked k')
+-- type SChecked :: forall a. Checked a -> Type
+-- data SChecked checked where
+--   SUnchecked :: forall. SChecked 'Unchecked
+--   SChecked :: forall a. Sing a -> SChecked ('Checked a)
+
+-- type instance Sing = SChecked
+
+-- instance SingKind a => SingKind (Checked a) where
+--   type Demote (Checked a) = Checked (Demote a)
+--   fromSing SUnchecked = Unchecked
+--   fromSing (SChecked k) = Checked (fromSing k)
+--   toSing Unchecked = SomeSing SUnchecked
+--   toSing (Checked a) = withSomeSing a $ SomeSing . SChecked
+
+type Checked :: Type -> Type -> Type
+data Checked a b = Checked a | Unchecked b
+
+type SChecked :: Checked a Type -> Type
+data SChecked checked where
+  SUnchecked :: forall b. b -> SChecked @b ('Unchecked b)
+  SChecked :: forall k a. Sing a -> SChecked @k ('Checked a)
+
+foo :: SChecked ('Checked 4)
+foo = SChecked (SNat @4)
+
+bar :: SChecked @Bool ('Unchecked Bool)
+bar = SUnchecked True
 
 type instance Sing = SChecked
 
-instance SingKind a => SingKind (Checked a) where
-  type Demote (Checked a) = IsChecked (Demote a)
-  -- fromSing :: SChecked k -> IsChecked (Demote a)
-  fromSing (SUnchecked a) = IsUnchecked a
-    -- where x = fromSing a
-  -- fromSing (SChecked a) = IsChecked . fromSing $ a
-  -- toSing (IsUnchecked a)
-  --   = SomeSing (SUnchecked a)
-  -- toSing (IsChecked a)
-  --   = withSomeSing a $ SomeSing . SChecked
+instance (SingKind a, Demote a ~ a) => SingKind (Checked a Type) where
+  type Demote (Checked a Type) = Checked a a
+  fromSing (SUnchecked a) = Unchecked a
+  fromSing (SChecked a) = Checked (fromSing a)
+  toSing (Unchecked a) = SomeSing (SUnchecked a)
+  toSing (Checked a) = withSomeSing a $ SomeSing . SChecked
 
+-- instance SingKind a => SingKind (Checked a) where
+--   type Demote (Checked a) = Checked (Demote a)
+--   fromSing SUnchecked = Unchecked
+--   fromSing (SChecked k) = Checked (fromSing k)
+--   toSing Unchecked = SomeSing SUnchecked
+--   toSing (Checked a) = withSomeSing a $ SomeSing . SChecked
 
-instance SingI a => SingI ('Checked a) where
-  sing = SChecked $ sing @a
+-- instance SingI a => SingI ('Checked a) where
+--   sing = SChecked $ sing @a
 
 data IsChecked a = IsChecked a | IsUnchecked a
   deriving stock (Eq, Ord, Show, Generic)
+
+type SIsChecked :: forall a. IsChecked a -> Type
+data SIsChecked checked where
+  SIsUnchecked' :: forall a. a -> SIsChecked ('IsUnchecked a) -- nice try, but this doesn't work
+  SIsChecked' :: forall a. Sing a -> SIsChecked ('IsChecked a)
+
+type instance Sing = SIsChecked
+
+-- instance SingKind a => SingKind (IsChecked a) where
+--   type Demote (IsChecked a) = IsChecked (Demote a)
+--   fromSing (SIsUnchecked a) = IsUnchecked a
+--   fromSing (SIsChecked a) = IsChecked (fromSing a)
+--   toSing (IsUnchecked a) = SomeSing (SIsUnchecked a)
+--   toSing (IsChecked a) = withSomeSing a $ SomeSing . SIsChecked
 
 forgetIsChecked :: IsChecked a -> a
 forgetIsChecked (IsChecked a) = a
