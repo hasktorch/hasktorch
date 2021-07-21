@@ -272,3 +272,247 @@ instance
   where
   sample Conv3dSpec =
     Conv3d <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
+
+
+data
+  ConvTranspose1dSpec
+    (inputChannelSize :: Nat)
+    (outputChannelSize :: Nat)
+    (kernelSize :: Nat)
+    (dtype :: D.DType)
+    (device :: (D.DeviceType, Nat))
+  = ConvTranspose1dSpec
+  deriving (Show, Eq)
+
+data
+  ConvTranspose1d
+    (inputChannelSize :: Nat)
+    (outputChannelSize :: Nat)
+    (kernelSize :: Nat)
+    (dtype :: D.DType)
+    (device :: (D.DeviceType, Nat)) where
+  ConvTranspose1d ::
+    forall inputChannelSize outputChannelSize kernelSize dtype device.
+    { convTranspose1dWeight :: Parameter device dtype '[inputChannelSize, outputChannelSize, kernelSize],
+      convTranspose1dBias :: Parameter device dtype '[outputChannelSize]
+    } ->
+    ConvTranspose1d inputChannelSize outputChannelSize kernelSize dtype
+      device
+  deriving (Show, Generic, Parameterized)
+
+-- | convTranspose1d
+-- The constraints on this one are _very_ involved, so the partial signatures
+-- make the code significantly cleaner.
+convTranspose1dForward ::
+  forall stride padding.
+  _ =>
+  ConvTranspose1d _ _ _ _ _ ->
+  Tensor _ _ _ ->
+  Tensor _ _ _
+convTranspose1dForward ConvTranspose1d {..} input =
+  convTranspose1d @stride @padding
+    (toDependent convTranspose1dWeight)
+    (toDependent convTranspose1dBias)
+    input
+
+instance
+  ( All KnownNat
+      '[ stride,
+         padding,
+         inputChannelSize,
+         outputChannelSize,
+         kernelSize,
+         inputSize,
+         batchSize,
+         outputSize
+       ],
+    ConvSideCheck inputSize kernelSize stride padding outputSize
+  ) =>
+  HasForward (ConvTranspose1d inputChannelSize outputChannelSize kernelSize dtype device) (Tensor device dtype '[batchSize, inputChannelSize, inputSize], Proxy stride, Proxy padding) (Tensor device dtype '[batchSize, outputChannelSize, outputSize])
+  where
+  forward model (input, Proxy, Proxy) = convTranspose1dForward @stride @padding model input
+  forwardStoch = (pure .) . forward
+
+instance
+  ( KnownNat inputChannelSize,
+    KnownNat outputChannelSize,
+    KnownNat kernelSize,
+    KnownDType dtype,
+    KnownDevice device,
+    RandDTypeIsValid device dtype
+  ) =>
+  Randomizable (ConvTranspose1dSpec inputChannelSize outputChannelSize kernelSize dtype device)
+    (ConvTranspose1d inputChannelSize outputChannelSize kernelSize dtype device)
+  where
+  sample ConvTranspose1dSpec =
+    ConvTranspose1d <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
+
+data
+  ConvTranspose2dSpec
+    (inputChannelSize :: Nat)
+    (outputChannelSize :: Nat)
+    (kernelSize0 :: Nat)
+    (kernelSize1 :: Nat)
+    (dtype :: D.DType)
+    (device :: (D.DeviceType, Nat))
+  = ConvTranspose2dSpec
+  deriving (Show, Eq)
+
+data
+  ConvTranspose2d
+    (inputChannelSize :: Nat)
+    (outputChannelSize :: Nat)
+    (kernelSize0 :: Nat)
+    (kernelSize1 :: Nat)
+    (dtype :: D.DType)
+    (device :: (D.DeviceType, Nat)) where
+  ConvTranspose2d ::
+    forall inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device.
+    { convTranspose2dWeight :: Parameter device dtype '[inputChannelSize, outputChannelSize, kernelSize0, kernelSize1],
+      convTranspose2dBias :: Parameter device dtype '[outputChannelSize]
+    } ->
+    ConvTranspose2d inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype
+      device
+  deriving (Show, Generic, Parameterized)
+
+-- | convTranspose2d
+-- The constraints on this one are _very_ involved, so the partial signatures
+-- make the code significantly cleaner.
+convTranspose2dForward ::
+  forall stride padding.
+  _ =>
+  ConvTranspose2d _ _ _ _ _ _ ->
+  Tensor _ _ _ ->
+  Tensor _ _ _
+convTranspose2dForward ConvTranspose2d {..} input =
+  convTranspose2d @stride @padding
+    (toDependent convTranspose2dWeight)
+    (toDependent convTranspose2dBias)
+    input
+
+instance
+  ( All KnownNat
+      '[ Torch.Typed.Aux.Fst stride,
+         Torch.Typed.Aux.Snd stride,
+         Torch.Typed.Aux.Fst padding,
+         Torch.Typed.Aux.Snd padding,
+         inputChannelSize,
+         outputChannelSize,
+         kernelSize0,
+         kernelSize1,
+         inputSize0,
+         inputSize1,
+         batchSize,
+         outputSize0,
+         outputSize1
+       ],
+    ConvSideCheck inputSize0 kernelSize0 (Torch.Typed.Aux.Fst stride) (Torch.Typed.Aux.Fst padding) outputSize0,
+    ConvSideCheck inputSize1 kernelSize1 (Torch.Typed.Aux.Snd stride) (Torch.Typed.Aux.Snd padding) outputSize1
+  ) =>
+  HasForward (ConvTranspose2d inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device) (Tensor device dtype '[batchSize, inputChannelSize, inputSize0, inputSize1], Proxy stride, Proxy padding) (Tensor device dtype '[batchSize, outputChannelSize, outputSize0, outputSize1])
+  where
+  forward model (input, Proxy, Proxy) = convTranspose2dForward @stride @padding model input
+  forwardStoch = (pure .) . forward
+
+instance
+  ( KnownNat inputChannelSize,
+    KnownNat outputChannelSize,
+    KnownNat kernelSize0,
+    KnownNat kernelSize1,
+    KnownDType dtype,
+    KnownDevice device,
+    RandDTypeIsValid device dtype
+  ) =>
+  Randomizable (ConvTranspose2dSpec inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
+    (ConvTranspose2d inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
+  where
+  sample ConvTranspose2dSpec =
+    ConvTranspose2d <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
+
+data
+  ConvTranspose3dSpec
+    (inputChannelSize :: Nat)
+    (outputChannelSize :: Nat)
+    (kernelSize0 :: Nat)
+    (kernelSize1 :: Nat)
+    (kernelSize2 :: Nat)
+    (dtype :: D.DType)
+    (device :: (D.DeviceType, Nat))
+  = ConvTranspose3dSpec
+  deriving (Show, Eq)
+
+data
+  ConvTranspose3d
+    (inputChannelSize :: Nat)
+    (outputChannelSize :: Nat)
+    (kernelSize0 :: Nat)
+    (kernelSize1 :: Nat)
+    (kernelSize2 :: Nat)
+    (dtype :: D.DType)
+    (device :: (D.DeviceType, Nat)) where
+  ConvTranspose3d ::
+    forall inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device.
+    { convTranspose3dWeight :: Parameter device dtype '[inputChannelSize, outputChannelSize, kernelSize0, kernelSize1, kernelSize2],
+      convTranspose3dBias :: Parameter device dtype '[outputChannelSize]
+    } ->
+    ConvTranspose3d inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype
+      device
+  deriving (Show, Generic, Parameterized)
+
+-- | convTranspose3d
+-- The constraints on this one are _very_ involved, so the partial signatures
+-- make the code significantly cleaner.
+convTranspose3dForward ::
+  forall stride padding.
+  _ =>
+  ConvTranspose3d _ _ _ _ _ _ _ ->
+  Tensor _ _ _ ->
+  Tensor _ _ _
+convTranspose3dForward ConvTranspose3d {..} input =
+  convTranspose3d @stride @padding
+    (toDependent convTranspose3dWeight)
+    (toDependent convTranspose3dBias)
+    input
+
+instance
+  ( All KnownNat
+      '[ Fst3 stride,
+         Snd3 stride,
+         Trd3 stride,
+         Fst3 padding,
+         Snd3 padding,
+         Trd3 padding,
+         inputChannelSize,
+         outputChannelSize,
+         kernelSize0,
+         kernelSize1,
+         kernelSize2,
+         inputSize0,
+         inputSize1,
+         inputSize2,
+         batchSize
+       ],
+    ConvSideCheck inputSize0 kernelSize0 (Fst3 stride) (Fst3 padding) outputSize0,
+    ConvSideCheck inputSize1 kernelSize1 (Snd3 stride) (Snd3 padding) outputSize1,
+    ConvSideCheck inputSize2 kernelSize2 (Trd3 stride) (Trd3 padding) outputSize2
+  ) =>
+  HasForward (ConvTranspose3d inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device) (Tensor device dtype '[batchSize, inputChannelSize, inputSize0, inputSize1, inputSize2], Proxy stride, Proxy padding) (Tensor device dtype '[batchSize, outputChannelSize, outputSize0, outputSize1, outputSize2])
+  where
+  forward model (input, Proxy, Proxy) = convTranspose3dForward @stride @padding model input
+  forwardStoch = (pure .) . forward
+
+instance
+  ( KnownNat inputChannelSize,
+    KnownNat outputChannelSize,
+    KnownNat kernelSize0,
+    KnownNat kernelSize1,
+    KnownNat kernelSize2,
+    KnownDType dtype,
+    KnownDevice device,
+    RandDTypeIsValid device dtype
+  ) =>
+  Randomizable (ConvTranspose3dSpec inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
+    (ConvTranspose3d inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
+  where
+  sample ConvTranspose3dSpec =
+    ConvTranspose3d <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
