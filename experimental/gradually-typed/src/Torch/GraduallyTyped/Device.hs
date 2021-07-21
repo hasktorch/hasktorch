@@ -30,7 +30,7 @@ import Data.Int (Int16)
 import Data.Kind (Type)
 import Data.Proxy (Proxy (..))
 import Data.Singletons (Sing, SingI (..), SingKind (..), SomeSing (..))
-import Data.Singletons.Prelude.Check (Check, SCheck (..), type SChecked, type SUnchecked)
+import Data.Singletons.Prelude.Check (Check (Unchecked), SCheck (..), type SChecked, type SUnchecked)
 import GHC.TypeLits (KnownNat, Nat, SomeNat (..), natVal, someNatVal)
 import Torch.GraduallyTyped.Prelude (Concat)
 import qualified Torch.Internal.Managed.Cast as ATen ()
@@ -94,7 +94,8 @@ foo = SCheckedDevice (SCUDA @1)
 
 bar = SUncheckedDevice (CUDA 0)
 
-baz = fromSing foo
+baz = case fromSing bar of
+  Unchecked b -> b
 
 -- >>> :kind! GetDevices ('Device ('CUDA 0))
 -- GetDevices ('Device ('CUDA 0)) :: [Device (DeviceType Nat)]
