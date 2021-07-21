@@ -5,6 +5,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -19,9 +20,10 @@
 module Torch.GraduallyTyped.DType where
 
 import Data.Kind (Type)
-import Data.Singletons (Sing, SingI (..), SingKind (..), SomeSing (..), withSomeSing)
+import Data.Singletons (Sing)
+import Data.Singletons.Prelude.Check (Check, SCheck (..), type SChecked, type SUnchecked)
 import Data.Singletons.TH (genSingletons)
-import Torch.GraduallyTyped.Prelude (Concat, IsChecked (..))
+import Torch.GraduallyTyped.Prelude (Concat)
 import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Const as ATen
 import qualified Torch.Internal.Type as ATen
@@ -101,73 +103,19 @@ instance Castable DType ATen.ScalarType where
     | x == ATen.kQInt32 = f QInt32
     | x == ATen.kBFloat16 = f BFloat16
 
-class KnownDType (dType :: DType) where
-  dTypeVal :: DType
+type SDataType :: DType -> Type
 
-instance KnownDType 'Bool where
-  dTypeVal = Bool
+type SDataType dType = SChecked dType
 
-instance KnownDType 'UInt8 where
-  dTypeVal = UInt8
+pattern SDataType :: forall (a :: DType). Sing a -> SDataType a
+pattern SDataType dType = SChecked dType
 
-instance KnownDType 'Int8 where
-  dTypeVal = Int8
+type SUncheckedDataType :: Type
 
-instance KnownDType 'Int16 where
-  dTypeVal = Int16
+type SUncheckedDataType = SUnchecked DType
 
-instance KnownDType 'Int32 where
-  dTypeVal = Int32
-
-instance KnownDType 'Int64 where
-  dTypeVal = Int64
-
-instance KnownDType 'Half where
-  dTypeVal = Half
-
-instance KnownDType 'Float where
-  dTypeVal = Float
-
-instance KnownDType 'Double where
-  dTypeVal = Double
-
--- | Data type to represent whether or not the tensor data type is checked, that is, known to the compiler.
-data DataType (dType :: Type) where
-  -- | The tensor data type is unknown to the compiler.
-  UncheckedDataType :: forall dType. DataType dType
-  -- | The tensor data type is known to the compiler.
-  DataType :: forall dType. dType -> DataType dType
-  deriving (Show)
-
-data SDataType (dataType :: DataType DType) where
-  SUncheckedDataType :: DType -> SDataType 'UncheckedDataType
-  SDataType :: forall dType. SDType dType -> SDataType ('DataType dType)
-
-deriving stock instance Show (SDataType (dataType :: DataType DType))
-
-type instance Sing = SDataType
-
-instance SingI dType => SingI ('DataType (dType :: DType)) where
-  sing = SDataType $ sing @dType
-
-instance SingKind (DataType DType) where
-  type Demote (DataType DType) = IsChecked DType
-  fromSing (SUncheckedDataType dType) = Unchecked dType
-  fromSing (SDataType dType) = Checked . fromSing $ dType
-  toSing (Unchecked dType) = SomeSing . SUncheckedDataType $ dType
-  toSing (Checked dType) = withSomeSing dType $ SomeSing . SDataType
-
-class KnownDataType (dataType :: DataType DType) where
-  dataTypeVal :: DataType DType
-
-instance KnownDataType 'UncheckedDataType where
-  dataTypeVal = UncheckedDataType
-
-instance
-  (KnownDType dType) =>
-  KnownDataType ('DataType dType)
-  where
-  dataTypeVal = DataType (dTypeVal @dType)
+pattern SUncheckedDataType :: DType -> SUncheckedDataType
+pattern SUncheckedDataType dType = SUnchecked dType
 
 -- >>> :kind! GetDataTypes ('DataType 'Float)
 -- GetDataTypes ('DataType 'Float) :: [DataType DType]
@@ -179,8 +127,8 @@ instance
 -- >>> :kind! GetDataTypes ('Just ('DataType 'Bool))
 -- GetDataTypes ('Just ('DataType 'Bool)) :: [DataType DType]
 -- = '[ 'DataType 'Bool]
-type GetDataTypes :: k -> [DataType DType]
+type GetDataTypes :: k -> [Check DType Type]
 type family GetDataTypes f where
-  GetDataTypes (a :: DataType DType) = '[a]
+  GetDataTypes (a :: Check DType Type) = '[a]
   GetDataTypes (f g) = Concat (GetDataTypes f) (GetDataTypes g)
   GetDataTypes _ = '[]

@@ -16,17 +16,15 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE TemplateHaskell #-}
 
+{-# LANGUAGE GADTs #-}
 module Torch.GraduallyTyped.Prelude
   ( module Data.Kind,
     module Data.Proxy,
     module Data.Type.Bool,
     module GHC.TypeLits,
-    IsChecked (..),
-    pattern IsChecked,
-    pattern Demoted,
-    pattern Demoted',
-    forgetIsChecked,
+    module Data.Singletons.Prelude.Check,
     All,
     KnownElem (..),
     KnownList (..),
@@ -68,30 +66,10 @@ import Control.Applicative (Applicative (liftA2))
 import Control.Monad (MonadPlus, guard, unless, when)
 import Data.Kind (Constraint, Type)
 import Data.Proxy (Proxy (..))
-import Data.String (IsString, fromString)
 import Data.Type.Bool (If, type (||))
 import GHC.Exts (Any)
 import GHC.TypeLits (Nat, ErrorMessage (..), TypeError, type (*), type (+))
-import GHC.Generics (Generic)
-import Data.Singletons (SingKind, Demote, Sing, fromSing)
-
-data IsChecked a = Checked a | Unchecked a
-  deriving stock (Eq, Ord, Show, Generic)
-
-pattern IsChecked :: a -> IsChecked a
-pattern IsChecked forgotten <- (forgetIsChecked -> forgotten)
-
-pattern Demoted :: SingKind k => Demote k -> Sing (a :: k)
-pattern Demoted demoted <- (fromSing -> demoted)
-
-pattern Demoted' :: (SingKind k, Demote k ~ IsChecked t) => t -> Sing (a :: k)
-pattern Demoted' unchecked <- (forgetIsChecked . fromSing -> unchecked)
-
-{-# COMPLETE Demoted, Demoted' #-}
-
-forgetIsChecked :: IsChecked a -> a
-forgetIsChecked (Checked a) = a
-forgetIsChecked (Unchecked a) = a
+import Data.Singletons.Prelude.Check
 
 type family All (c :: k -> Constraint) (xs :: [k]) :: Constraint where
   All _ '[] = ()

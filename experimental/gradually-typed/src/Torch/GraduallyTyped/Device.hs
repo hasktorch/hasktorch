@@ -29,9 +29,10 @@ module Torch.GraduallyTyped.Device where
 import Data.Int (Int16)
 import Data.Kind (Type)
 import Data.Proxy (Proxy (..))
-import Data.Singletons (Sing, SingI (..), SingKind (..), SomeSing (..), withSomeSing)
+import Data.Singletons (Sing, SingI (..), SingKind (..), SomeSing (..))
+import Data.Singletons.Prelude.Check (Check, SCheck (..), type SChecked, type SUnchecked)
 import GHC.TypeLits (KnownNat, Nat, SomeNat (..), natVal, someNatVal)
-import Torch.GraduallyTyped.Prelude (Concat, IsChecked (..))
+import Torch.GraduallyTyped.Prelude (Concat)
 import qualified Torch.Internal.Managed.Cast as ATen ()
 
 -- | Data type to represent compute devices.
@@ -67,49 +68,33 @@ instance SingKind (DeviceType Nat) where
   toSing (CUDA deviceId) = case someNatVal (fromIntegral deviceId) of
     Just (SomeNat (_ :: Proxy deviceId)) -> SomeSing (SCUDA @deviceId)
 
-class KnownDeviceType (deviceType :: DeviceType Nat) where
-  deviceTypeVal :: DeviceType Int16
+type Device :: Type
 
-instance KnownDeviceType 'CPU where
-  deviceTypeVal = CPU
+type Device = Check (DeviceType Nat) Type
 
-instance (KnownNat deviceId) => KnownDeviceType ('CUDA deviceId) where
-  deviceTypeVal = CUDA (fromIntegral . natVal $ Proxy @deviceId)
+type SDevice :: Device -> Type
 
--- | Data type to represent whether or not the compute device is checked, that is, known to the compiler.
-data Device (deviceType :: Type) where
-  -- | The compute device is unknown to the compiler.
-  UncheckedDevice :: forall deviceType. Device deviceType
-  -- | The compute device is known to the compiler.
-  Device :: forall deviceType. deviceType -> Device deviceType
-  deriving (Show)
+type SDevice device = SCheck device
 
-data SDevice (deviceType :: Device (DeviceType Nat)) where
-  SUncheckedDevice :: DeviceType Int16 -> SDevice 'UncheckedDevice
-  SDevice :: forall deviceType. SDeviceType deviceType -> SDevice ('Device deviceType)
+type SCheckedDevice :: DeviceType Nat -> Type
 
-deriving stock instance Show (SDevice (device :: Device (DeviceType Nat)))
+type SCheckedDevice deviceType = SChecked deviceType
 
-type instance Sing = SDevice
+pattern SCheckedDevice :: forall (a :: DeviceType Nat). Sing a -> SCheckedDevice a
+pattern SCheckedDevice deviceType = SChecked deviceType
 
-instance SingI deviceType => SingI ('Device (deviceType :: DeviceType Nat)) where
-  sing = SDevice $ sing @deviceType
+type SUncheckedDevice :: Type
 
-instance SingKind (Device (DeviceType Nat)) where
-  type Demote (Device (DeviceType Nat)) = IsChecked (DeviceType Int16)
-  fromSing (SUncheckedDevice deviceType) = Unchecked deviceType
-  fromSing (SDevice deviceType) = Checked . fromSing $ deviceType
-  toSing (Unchecked deviceType) = SomeSing . SUncheckedDevice $ deviceType
-  toSing (Checked deviceType) = withSomeSing deviceType $ SomeSing . SDevice
+type SUncheckedDevice = SUnchecked (DeviceType Int16)
 
-class KnownDevice (device :: Device (DeviceType Nat)) where
-  deviceVal :: Device (DeviceType Int16)
+pattern SUncheckedDevice :: DeviceType Int16 -> SUncheckedDevice
+pattern SUncheckedDevice deviceType = SUnchecked deviceType
 
-instance KnownDevice 'UncheckedDevice where
-  deviceVal = UncheckedDevice
+foo = SCheckedDevice (SCUDA @1)
 
-instance (KnownDeviceType deviceType) => KnownDevice ('Device deviceType) where
-  deviceVal = Device (deviceTypeVal @deviceType)
+bar = SUncheckedDevice (CUDA 0)
+
+baz = fromSing foo
 
 -- >>> :kind! GetDevices ('Device ('CUDA 0))
 -- GetDevices ('Device ('CUDA 0)) :: [Device (DeviceType Nat)]
@@ -121,8 +106,8 @@ instance (KnownDeviceType deviceType) => KnownDevice ('Device deviceType) where
 -- >>> :kind! GetDevices ('Just ('Device ('CUDA 0)))
 -- GetDevices ('Just ('Device ('CUDA 0))) :: [Device (DeviceType Nat)]
 -- = '[ 'Device ('CUDA 0)]
-type GetDevices :: k -> [Device (DeviceType Nat)]
+type GetDevices :: k -> [Device]
 type family GetDevices f where
-  GetDevices (a :: Device (DeviceType Nat)) = '[a]
+  GetDevices (a :: Device) = '[a]
   GetDevices (f g) = Concat (GetDevices f) (GetDevices g)
   GetDevices _ = '[]

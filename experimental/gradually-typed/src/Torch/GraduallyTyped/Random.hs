@@ -17,16 +17,15 @@ module Torch.GraduallyTyped.Random where
 import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVar, writeTVar)
 import Data.Int (Int16)
 import Data.Singletons (SingI (..), SingKind (..))
+import Data.Singletons.Prelude.Check (pattern Demoted)
 import Data.Word (Word64)
 import Foreign.ForeignPtr (ForeignPtr)
-import GHC.TypeLits (Nat)
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
-import Torch.GraduallyTyped.Prelude (forgetIsChecked, pattern Demoted')
+import Torch.GraduallyTyped.Device (Device, DeviceType (..), SDevice)
 import qualified Torch.Internal.Managed.Type.Generator as ATen
 import qualified Torch.Internal.Type as ATen
 
-data Generator (device :: Device (DeviceType Nat)) where
+data Generator (device :: Device) where
   UnsafeGenerator ::
     forall device.
     { generatorSeed :: Word64,
@@ -47,7 +46,7 @@ sMkGenerator ::
   Generator device
 sMkGenerator generatorDevice generatorSeed =
   unsafePerformIO $
-    let generatorDeviceType = forgetIsChecked . fromSing $ generatorDevice
+    let generatorDeviceType = undefined . fromSing $ generatorDevice
      in case generatorDeviceType of
           CPU -> do
             genPtr <- ATen.newCPUGenerator generatorSeed
@@ -73,7 +72,7 @@ sGeneratorToDevice ::
   SDevice generatorDevice' ->
   Generator generatorDevice ->
   Generator generatorDevice'
-sGeneratorToDevice (Demoted' generatorDeviceType') UnsafeGenerator {..}
+sGeneratorToDevice (Demoted generatorDeviceType') UnsafeGenerator {..}
   | generatorDeviceType' == generatorDeviceType =
     UnsafeGenerator generatorSeed generatorDeviceType' generatorState
 sGeneratorToDevice device' UnsafeGenerator {..} =
