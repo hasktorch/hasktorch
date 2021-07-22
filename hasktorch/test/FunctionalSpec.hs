@@ -183,11 +183,11 @@ spec = do
         input0 = 5
         input1 = 6
         input2 = 7
-        x = conv2d'
+        x = conv3d'
               (ones' [out_channel, in_channel, kernel0, kernel1, kernel2])
               (ones' [out_channel])
-              (1,1)
-              (0,0)
+              (1,1,1)
+              (0,0,0)
               (ones' [batch, in_channel, input0, input1, input2])
     shape x `shouldBe` [batch, out_channel, input0, input1, input2]
   it "convTranspose1d" $ do
