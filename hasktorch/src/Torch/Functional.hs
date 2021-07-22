@@ -1919,7 +1919,7 @@ conv2d' weight bias stride padding =
     (1, 1) -- dilation
     (1 :: Int) -- groups
 
--- | Applies a 2D convolution over an input signal composed of several input planes.
+-- | Applies a 3D convolution over an input signal composed of several input planes.
 conv3d ::
   -- | weight
   Tensor ->
@@ -1971,6 +1971,7 @@ conv3d' weight bias stride padding =
     (1, 1, 1) -- dilation
     (1 :: Int) -- groups
 
+-- | Applies a 1D transposed convolution over an input signal composed of several input planes
 convTranspose1d ::
   -- | weight
   Tensor ->
@@ -2023,6 +2024,7 @@ convTranspose1d' weight bias stride padding =
         0
         (1 :: Int)
 
+-- | Applies a 2D transposed convolution over an input signal composed of several input planes
 convTranspose2d ::
   -- | weight
   Tensor ->
@@ -2075,6 +2077,7 @@ convTranspose2d' weight bias stride padding =
         (0, 0)
         (1 :: Int)
 
+-- | Applies a 3D transposed convolution over an input signal composed of several input planes
 convTranspose3d ::
   -- | weight
   Tensor ->
