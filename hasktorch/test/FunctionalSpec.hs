@@ -145,6 +145,19 @@ spec = do
   it "inverse of an identity matrix is an identity matrix" $ do
     let soln = eq (inverse $ eye' 3 3) (eye' 3 3)
     all soln `shouldBe` True
+  it "conv1d" $ do
+    let batch = 10
+        in_channel = 3
+        out_channel = 10
+        kernel = 1
+        input = 5
+        x = conv1d' 
+              (ones' [out_channel, in_channel, kernel])
+              (ones' [out_channel])
+              1
+              0
+              (ones' [batch, in_channel, input])
+    shape x `shouldBe` [batch, out_channel, input]
   it "conv2d" $ do
     let batch = 10
         in_channel = 3
@@ -160,6 +173,68 @@ spec = do
               (0,0)
               (ones' [batch, in_channel, input0, input1])
     shape x `shouldBe` [batch, out_channel, input0, input1]
+  it "conv3d" $ do
+    let batch = 10
+        in_channel = 3
+        out_channel = 10
+        kernel0 = 1
+        kernel1 = 1
+        kernel2 = 1
+        input0 = 5
+        input1 = 6
+        input2 = 7
+        x = conv3d'
+              (ones' [out_channel, in_channel, kernel0, kernel1, kernel2])
+              (ones' [out_channel])
+              (1,1,1)
+              (0,0,0)
+              (ones' [batch, in_channel, input0, input1, input2])
+    shape x `shouldBe` [batch, out_channel, input0, input1, input2]
+  it "convTranspose1d" $ do
+    let batch = 10
+        in_channel = 3
+        out_channel = 10
+        kernel = 1
+        input = 5
+        x = convTranspose1d' 
+              (ones' [in_channel, out_channel, kernel])
+              (ones' [out_channel])
+              1
+              0
+              (ones' [batch, in_channel, input])
+    shape x `shouldBe` [batch, out_channel, input]
+  it "convTranspose2d" $ do
+    let batch = 10
+        in_channel = 3
+        out_channel = 10
+        kernel0 = 1
+        kernel1 = 1
+        input0 = 5
+        input1 = 6
+        x = convTranspose2d'
+              (ones' [in_channel, out_channel, kernel0, kernel1])
+              (ones' [out_channel])
+              (1,1)
+              (0,0)
+              (ones' [batch, in_channel, input0, input1])
+    shape x `shouldBe` [batch, out_channel, input0, input1]
+  it "convTranspose3d" $ do
+    let batch = 10
+        in_channel = 3
+        out_channel = 10
+        kernel0 = 1
+        kernel1 = 1
+        kernel2 = 1
+        input0 = 5
+        input1 = 6
+        input2 = 7
+        x = convTranspose3d'
+              (ones' [in_channel, out_channel, kernel0, kernel1, kernel2])
+              (ones' [out_channel])
+              (1,1,1)
+              (0,0,0)
+              (ones' [batch, in_channel, input0, input1, input2])
+    shape x `shouldBe` [batch, out_channel, input0, input1, input2]
   it "elu (pos)" $ do
     let x = elu (0.5::Float) $ 5 * ones' [4]
     (toDouble $ select 0 0 x) `shouldBe` 5.0

@@ -258,16 +258,80 @@ instance Randomizable LinearSpec Linear where
           ( subScalar bound $ mulScalar (bound * 2.0) init
           )
     return $ Linear w b
+--
+-- Conv1d
+--
+data Conv1dSpec = Conv1dSpec
+  {  inputChannelSize1d :: Int,
+     outputChannelSize1d :: Int,
+     kernelSize :: Int
+  }
+  deriving (Show, Eq)
+
+data Conv1d = Conv1d
+  { conv1dWeight :: Parameter,
+    conv1dBias :: Parameter
+  }
+  deriving (Show, Generic, Parameterized)
+
+conv1dForward :: 
+  -- | layer
+  Conv1d ->
+  -- | stride
+  Int ->
+  -- | padding
+  Int ->
+  -- | input
+  Tensor ->
+  -- | output
+  Tensor
+
+conv1dForward layer = Torch.Functional.conv1d' w b
+  where
+    w = toDependent (conv1dWeight layer)
+    b = toDependent (conv1dBias layer)
+
+instance Randomizable Conv1dSpec Conv1d where
+  sample Conv1dSpec {..} = do
+    w <-
+      makeIndependent
+        =<< kaimingUniform
+          FanIn
+          (LeakyRelu $ Prelude.sqrt (5.0 :: Float))
+          [ outputChannelSize1d,
+            inputChannelSize1d,
+            kernelSize
+          ]
+    init <- randIO' [outputChannelSize1d]
+    let bound =
+          (1 :: Float)
+            / Prelude.sqrt
+              ( fromIntegral
+                  ( getter FanIn $
+                      calculateFan
+                        [ outputChannelSize1d,
+                          inputChannelSize1d,
+                          kernelSize
+                        ]
+                  ) ::
+                  Float
+              )
+    b <-
+      makeIndependent
+        =<< pure
+          ( subScalar bound $ mulScalar (bound * 2.0) init
+          )
+    return $ Conv1d w b
 
 --
 -- Conv2d
 --
 
 data Conv2dSpec = Conv2dSpec
-  { inputChannelSize :: Int,
-    outputChannelSize :: Int,
-    kernelHeight :: Int,
-    kernelWidth :: Int
+  { inputChannelSize2d :: Int,
+    outputChannelSize2d :: Int,
+    kernelHeight2d :: Int,
+    kernelWidth2d :: Int
   }
   deriving (Show, Eq)
 
@@ -300,22 +364,22 @@ instance Randomizable Conv2dSpec Conv2d where
         =<< kaimingUniform
           FanIn
           (LeakyRelu $ Prelude.sqrt (5.0 :: Float))
-          [ outputChannelSize,
-            inputChannelSize,
-            kernelHeight,
-            kernelWidth
+          [ outputChannelSize2d,
+            inputChannelSize2d,
+            kernelHeight2d,
+            kernelWidth2d
           ]
-    init <- randIO' [outputChannelSize]
+    init <- randIO' [outputChannelSize2d]
     let bound =
           (1 :: Float)
             / Prelude.sqrt
               ( fromIntegral
                   ( getter FanIn $
                       calculateFan
-                        [ outputChannelSize,
-                          inputChannelSize,
-                          kernelHeight,
-                          kernelWidth
+                        [ outputChannelSize2d,
+                          inputChannelSize2d,
+                          kernelHeight2d,
+                          kernelWidth2d
                         ]
                   ) ::
                   Float
@@ -326,6 +390,284 @@ instance Randomizable Conv2dSpec Conv2d where
           ( subScalar bound $ mulScalar (bound * 2.0) init
           )
     return $ Conv2d w b
+
+--
+-- Conv3d
+--
+
+data Conv3dSpec = Conv3dSpec
+  { inputChannelSize3d :: Int,
+    outputChannelSize3d :: Int,
+    kernelHeight3d :: Int,
+    kernelWidth3d :: Int,
+    kernelDepth3d :: Int
+  }
+  deriving (Show, Eq)
+
+data Conv3d = Conv3d
+  { conv3dWeight :: Parameter,
+    conv3dBias :: Parameter
+  }
+  deriving (Show, Generic, Parameterized)
+
+conv3dForward ::
+  -- | layer
+  Conv3d ->
+  -- | stride
+  (Int, Int, Int) ->
+  -- | padding
+  (Int, Int, Int) ->
+  -- | input
+  Tensor ->
+  -- | output
+  Tensor
+conv3dForward layer = Torch.Functional.conv3d' w b
+  where
+    w = toDependent (conv3dWeight layer)
+    b = toDependent (conv3dBias layer)
+
+instance Randomizable Conv3dSpec Conv3d where
+  sample Conv3dSpec {..} = do
+    w <-
+      makeIndependent
+        =<< kaimingUniform
+          FanIn
+          (LeakyRelu $ Prelude.sqrt (5.0 :: Float))
+          [ outputChannelSize3d,
+            inputChannelSize3d,
+            kernelHeight3d,
+            kernelWidth3d,
+            kernelDepth3d
+          ]
+    init <- randIO' [outputChannelSize3d]
+    let bound =
+          (1 :: Float)
+            / Prelude.sqrt
+              ( fromIntegral
+                  ( getter FanIn $
+                      calculateFan
+                        [ outputChannelSize3d,
+                          inputChannelSize3d,
+                          kernelHeight3d,
+                          kernelWidth3d,
+                          kernelDepth3d
+                        ]
+                  ) ::
+                  Float
+              )
+    b <-
+      makeIndependent
+        =<< pure
+          ( subScalar bound $ mulScalar (bound * 2.0) init
+          )
+    return $ Conv3d w b
+
+-- 
+-- ConvTranspose1d
+--
+
+data ConvTranspose1dSpec = ConvTranspose1dSpec
+  { trInputChannelSize1d :: Int,
+    trOutputChannelSize1d :: Int,
+    trKernelSize :: Int
+  }
+  deriving (Show, Eq)
+
+data ConvTranspose1d = ConvTranspose1d
+  { convTranspose1dWeight :: Parameter,
+    convTranspose1dBias :: Parameter
+  }
+  deriving (Show, Generic, Parameterized)
+
+convTranspose1dForward ::
+  -- | layer
+  ConvTranspose1d -> 
+  -- | stride
+  Int -> 
+  -- | padding
+  Int -> 
+  -- | input
+  Tensor -> 
+  -- | output
+  Tensor 
+
+convTranspose1dForward layer = convTranspose1d' w b
+  where
+    w = toDependent (convTranspose1dWeight layer)
+    b = toDependent (convTranspose1dBias layer)
+
+instance Randomizable ConvTranspose1dSpec ConvTranspose1d where
+  sample ConvTranspose1dSpec {..} = do
+    w <-
+      makeIndependent
+        =<< kaimingUniform
+          FanIn
+          (LeakyRelu $ Prelude.sqrt (5.0 :: Float))
+          [ trInputChannelSize1d, 
+            trOutputChannelSize1d,
+            trKernelSize
+          ]
+    init <- randIO' [trOutputChannelSize1d]
+    let bound =
+          (1 :: Float)
+            / Prelude.sqrt
+              ( fromIntegral
+                  ( getter FanIn $
+                      calculateFan
+                        [ trInputChannelSize1d,
+                          trOutputChannelSize1d,
+                          trKernelSize
+                        ]
+                  ) ::
+                  Float
+              )
+    b <-
+      makeIndependent
+        =<< pure
+          ( subScalar bound $ mulScalar (bound * 2.0) init
+          )
+    return $ ConvTranspose1d w b
+
+-- 
+-- ConvTranspose2d
+--
+
+data ConvTranspose2dSpec = ConvTranspose2dSpec
+  { trInputChannelSize2d :: Int,
+    trOutputChannelSize2d :: Int,
+    trKernelHeight2d :: Int,
+    trKernelWidth2d :: Int
+  }
+  deriving (Show, Eq)
+
+data ConvTranspose2d = ConvTranspose2d
+  { convTranspose2dWeight :: Parameter,
+    convTranspose2dBias :: Parameter
+  }
+  deriving (Show, Generic, Parameterized)
+
+convTranspose2dForward ::
+  -- | layer
+  ConvTranspose2d -> 
+  -- | stride
+  (Int, Int) -> 
+  -- | padding
+  (Int, Int) -> 
+  -- | input
+  Tensor -> 
+  -- | output
+  Tensor 
+
+convTranspose2dForward layer = convTranspose2d' w b
+  where
+    w = toDependent (convTranspose2dWeight layer)
+    b = toDependent (convTranspose2dBias layer)
+
+instance Randomizable ConvTranspose2dSpec ConvTranspose2d where
+  sample ConvTranspose2dSpec {..} = do
+    w <-
+      makeIndependent
+        =<< kaimingUniform
+          FanIn
+          (LeakyRelu $ Prelude.sqrt (5.0 :: Float))
+          [ trInputChannelSize2d, 
+            trOutputChannelSize2d,
+            trKernelHeight2d,
+            trKernelWidth2d
+          ]
+    init <- randIO' [trOutputChannelSize2d]
+    let bound =
+          (1 :: Float)
+            / Prelude.sqrt
+              ( fromIntegral
+                  ( getter FanIn $
+                      calculateFan
+                        [ trInputChannelSize2d,
+                          trOutputChannelSize2d,
+                          trKernelHeight2d,
+                          trKernelWidth2d
+                        ]
+                  ) ::
+                  Float
+              )
+    b <-
+      makeIndependent
+        =<< pure
+          ( subScalar bound $ mulScalar (bound * 2.0) init
+          )
+    return $ ConvTranspose2d w b
+
+-- 
+-- ConvTranspose2d
+--
+
+data ConvTranspose3dSpec = ConvTranspose3dSpec
+  { trInputChannelSize3d :: Int,
+    trOutputChannelSize3d :: Int,
+    trKernelHeight3d :: Int,
+    trKernelWidth3d :: Int,
+    trKernelDepth3d :: Int
+  }
+  deriving (Show, Eq)
+
+data ConvTranspose3d = ConvTranspose3d
+  { convTranspose3dWeight :: Parameter,
+    convTranspose3dBias :: Parameter
+  }
+  deriving (Show, Generic, Parameterized)
+
+convTranspose3dForward ::
+  -- | layer
+  ConvTranspose3d -> 
+  -- | stride
+  (Int, Int, Int) -> 
+  -- | padding
+  (Int, Int, Int) -> 
+  -- | input
+  Tensor -> 
+  -- | output
+  Tensor 
+
+convTranspose3dForward layer = convTranspose3d' w b
+  where
+    w = toDependent (convTranspose3dWeight layer)
+    b = toDependent (convTranspose3dBias layer)
+
+instance Randomizable ConvTranspose3dSpec ConvTranspose3d where
+  sample ConvTranspose3dSpec {..} = do
+    w <-
+      makeIndependent
+        =<< kaimingUniform
+          FanIn
+          (LeakyRelu $ Prelude.sqrt (5.0 :: Float))
+          [ trInputChannelSize3d, 
+            trOutputChannelSize3d,
+            trKernelHeight3d,
+            trKernelWidth3d,
+            trKernelDepth3d
+          ]
+    init <- randIO' [trOutputChannelSize3d]
+    let bound =
+          (1 :: Float)
+            / Prelude.sqrt
+              ( fromIntegral
+                  ( getter FanIn $
+                      calculateFan
+                        [ trInputChannelSize3d,
+                          trOutputChannelSize3d,
+                          trKernelHeight3d,
+                          trKernelWidth3d,
+                          trKernelDepth3d
+                        ]
+                  ) ::
+                  Float
+              )
+    b <-
+      makeIndependent
+        =<< pure
+          ( subScalar bound $ mulScalar (bound * 2.0) init
+          )
+    return $ ConvTranspose3d w b
 
 data BatchNormSpec = BatchNormSpec
   { numFeatures :: Int
@@ -359,6 +701,39 @@ instance Randomizable BatchNormSpec BatchNorm where
     mean <- toDependent <$> makeIndependentWithRequiresGrad (zeros' [numFeatures]) False
     var <- toDependent <$> makeIndependentWithRequiresGrad (ones' [numFeatures]) False
     return $ BatchNorm w b mean var
+
+data InstanceNormSpec = InstanceNormSpec
+  { iNumFeatures :: Int
+  }
+  deriving (Show, Eq)
+
+data InstanceNorm = InstanceNorm
+  { instanceNormWeight :: Parameter,
+    instanceNormBias :: Parameter,
+    iRunningMean :: Tensor,
+    iRunningVar :: Tensor
+  }
+  deriving (Show, Generic)
+
+instanceNormForward :: InstanceNorm -> Bool -> Double -> Double -> Tensor -> Tensor
+instanceNormForward InstanceNorm {..} train momentum eps input =
+  Torch.Functional.instanceNorm
+    (toDependent instanceNormWeight)
+    (toDependent instanceNormBias)
+    iRunningMean
+    iRunningVar
+    train
+    momentum
+    eps
+    input
+
+instance Randomizable InstanceNormSpec InstanceNorm where
+  sample InstanceNormSpec {..} = do
+    w <- makeIndependent (ones' [iNumFeatures])
+    b <- makeIndependent (zeros' [iNumFeatures])
+    mean <- toDependent <$> makeIndependentWithRequiresGrad (zeros' [iNumFeatures]) False
+    var <- toDependent <$> makeIndependentWithRequiresGrad (ones' [iNumFeatures]) False
+    return $ InstanceNorm w b mean var
 
 data UpSampleSpec = UpSampleSpec
   { upsampleInputFilters :: Int,

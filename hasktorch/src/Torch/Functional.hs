@@ -1852,6 +1852,19 @@ conv1d weight bias stride padding dilation groups input =
       dilation
       groups
 
+conv1d' :: 
+  -- | weight
+  Tensor ->
+  -- | bias
+  Tensor ->
+  -- | strides
+  Int ->
+  -- | padding
+  Int ->
+  -- | input
+  Tensor ->
+  -- | output
+  Tensor
 conv1d' weight bias stride padding = conv1d weight bias stride padding 1 1
 
 -- | Applies a 2D convolution over an input signal composed of several input planes.
@@ -1905,6 +1918,219 @@ conv2d' weight bias stride padding =
     padding
     (1, 1) -- dilation
     (1 :: Int) -- groups
+
+-- | Applies a 3D convolution over an input signal composed of several input planes.
+conv3d ::
+  -- | weight
+  Tensor ->
+  -- | bias
+  Tensor ->
+  -- | strides
+  (Int, Int, Int) ->
+  -- | padding
+  (Int, Int, Int) ->
+  -- | dilation
+  (Int, Int, Int) ->
+  -- | groups
+  Int ->
+  -- | input
+  Tensor ->
+  -- | output
+  Tensor
+conv3d weight bias (stride0, stride1, stride2) (padding0, padding1, padding2) (dilation0, dilation1, dilation2) groups input =
+  unsafePerformIO $
+    cast7
+      ATen.conv3d_tttllll
+      input
+      weight
+      bias
+      ([stride0, stride1, stride2] :: [Int])
+      ([padding0, padding1, padding2] :: [Int])
+      ([dilation0, dilation1, dilation2] :: [Int])
+      groups
+
+conv3d' ::
+  -- | weight
+  Tensor ->
+  -- | bias
+  Tensor ->
+  -- | strides
+  (Int, Int, Int) ->
+  -- | padding
+  (Int, Int, Int) ->
+  -- | input
+  Tensor ->
+  -- | output
+  Tensor
+conv3d' weight bias stride padding =
+  conv3d
+    weight
+    bias
+    stride
+    padding
+    (1, 1, 1) -- dilation
+    (1 :: Int) -- groups
+
+-- | Applies a 1D transposed convolution over an input signal composed of several input planes
+convTranspose1d ::
+  -- | weight
+  Tensor ->
+  -- | bias
+  Tensor ->
+  -- | strides
+  Int ->
+  -- | padding
+  Int ->
+  -- | output padding
+  Int -> 
+  -- | groups
+  Int ->
+  -- | input
+  Tensor ->
+  -- | output
+  Tensor
+
+convTranspose1d weight bias stride padding outPadding groups input =
+    unsafePerformIO $
+        cast7
+            ATen.conv_transpose1d_tttllll
+            input
+            weight
+            bias
+            (stride :: Int)
+            (padding :: Int)
+            (outPadding :: Int)
+            groups
+
+convTranspose1d' ::
+  -- | weight
+  Tensor ->
+  -- | bias
+  Tensor ->
+  -- | strides
+  Int ->
+  -- | padding
+  Int ->
+  -- | input
+  Tensor ->
+  -- | output
+  Tensor
+convTranspose1d' weight bias stride padding = 
+    convTranspose1d
+        weight
+        bias
+        stride
+        padding
+        0
+        (1 :: Int)
+
+-- | Applies a 2D transposed convolution over an input signal composed of several input planes
+convTranspose2d ::
+  -- | weight
+  Tensor ->
+  -- | bias
+  Tensor ->
+  -- | strides
+  (Int, Int) ->
+  -- | padding
+  (Int, Int) ->
+  -- | output padding
+  (Int, Int) -> 
+  -- | groups
+  Int ->
+  -- | input
+  Tensor ->
+  -- | output
+  Tensor
+
+convTranspose2d weight bias (stride0, stride1) (padding0, padding1) (outPadding0, outPadding1) groups input =
+    unsafePerformIO $
+        cast7
+            ATen.conv_transpose2d_tttllll
+            input
+            weight
+            bias
+            ([stride0, stride1] :: [Int])
+            ([padding0, padding1] :: [Int])
+            ([outPadding0, outPadding1] :: [Int])
+            groups
+
+convTranspose2d' ::
+  -- | weight
+  Tensor ->
+  -- | bias
+  Tensor ->
+  -- | strides
+  (Int, Int) ->
+  -- | padding
+  (Int, Int) ->
+  -- | input
+  Tensor ->
+  -- | output
+  Tensor
+convTranspose2d' weight bias stride padding = 
+    convTranspose2d
+        weight
+        bias
+        stride
+        padding
+        (0, 0)
+        (1 :: Int)
+
+-- | Applies a 3D transposed convolution over an input signal composed of several input planes
+convTranspose3d ::
+  -- | weight
+  Tensor ->
+  -- | bias
+  Tensor ->
+  -- | strides
+  (Int, Int, Int) ->
+  -- | padding
+  (Int, Int, Int) ->
+  -- | output padding
+  (Int, Int, Int) -> 
+  -- | groups
+  Int ->
+  -- | input
+  Tensor ->
+  -- | output
+  Tensor
+
+convTranspose3d weight bias (stride0, stride1, stride2) (padding0, padding1, padding2) (outPadding0, outPadding1, outPadding2) groups input =
+    unsafePerformIO $
+        cast7
+            ATen.conv_transpose3d_tttllll
+            input
+            weight
+            bias
+            ([stride0, stride1, stride2] :: [Int])
+            ([padding0, padding1, padding2] :: [Int])
+            ([outPadding0, outPadding1, outPadding2] :: [Int])
+            groups
+
+convTranspose3d' ::
+  -- | weight
+  Tensor ->
+  -- | bias
+  Tensor ->
+  -- | strides
+  (Int, Int, Int) ->
+  -- | padding
+  (Int, Int, Int) ->
+  -- | input
+  Tensor ->
+  -- | output
+  Tensor
+convTranspose3d' weight bias stride padding = 
+    convTranspose3d
+        weight
+        bias
+        stride
+        padding
+        (0, 0, 0)
+        (1 :: Int)
+
+
 
 -- | Returns a new tensor with the signs of the elements of @input@
 sign ::
@@ -2908,6 +3134,39 @@ batchNorm weight bias running_mean running_var training momentum eps input =
   unsafePerformIO $
     cast9
       ATen.batch_norm_tttttbddb
+      input
+      weight
+      bias
+      running_mean
+      running_var
+      training
+      momentum
+      eps
+      True
+
+instanceNorm ::
+  -- | weight
+  Tensor ->
+  -- | bias
+  Tensor ->
+  -- | running_mean
+  Tensor ->
+  -- | running_var
+  Tensor ->
+  -- | training
+  Bool ->
+  -- | momentum
+  Double ->
+  -- | eps
+  Double ->
+  -- | input
+  Tensor ->
+  -- | output
+  Tensor
+instanceNorm weight bias running_mean running_var training momentum eps input =
+  unsafePerformIO $
+    cast9
+      ATen.instance_norm_tttttbddb
       input
       weight
       bias
