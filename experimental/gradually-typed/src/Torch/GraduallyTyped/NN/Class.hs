@@ -25,41 +25,27 @@
 
 module Torch.GraduallyTyped.NN.Class where
 
-import Control.Exception (Exception (..), SomeException (..), catch)
+import Control.Exception (Exception (..))
 import Control.Monad (void)
 import Control.Monad.Catch (MonadThrow (..))
 import Control.Monad.State (MonadState (get, put))
-import Data.Functor.Const (Const (..))
-import Data.Kind (Constraint, Type)
+import Data.Kind (Type)
 import qualified Data.Map.Strict as Map
 import Data.Proxy (Proxy (..))
-import Data.Singletons (Sing, SingI (sing))
-import Data.Singletons.TH (genSingletons)
-import Data.Singletons.TH.Options (Options (genQuotedDecs, genSingKindInsts), defaultOptions, withOptions)
 import Data.Singletons.TypeLits (SNat (..))
 import Data.Typeable (Typeable)
 import qualified Data.Vector as V
 import qualified Data.Vector.Generic.Sized.Internal as VGS
 import qualified Data.Vector.Sized as VS
-import Debug.Trace (traceShow)
 import Foreign.ForeignPtr (ForeignPtr)
-import GHC.TypeLits (KnownNat, Nat, Symbol, natVal, type (+))
-import System.IO.Unsafe (unsafePerformIO)
-import Torch.GraduallyTyped.DType (DType, DataType, SDataType)
-import Torch.GraduallyTyped.Device (Device, DeviceType, GetDevices, SDevice)
-import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.Prelude (Head)
+import GHC.TypeLits (Nat, natVal, type (+))
+import Torch.GraduallyTyped.Device (Device, DeviceType)
 import Torch.GraduallyTyped.Random (Generator)
-import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
-import Torch.GraduallyTyped.Shape.Type (Dim, Name, SShape, Shape (..), Size)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..), TensorSpec (..), UncheckedTensor, sCheckedDataType, sCheckedDevice, sCheckedGradient, sCheckedLayout, sCheckedShape)
-import Torch.GraduallyTyped.Unify (type (<+>))
 import qualified Torch.Internal.Type as ATen (Tensor)
 import qualified Torch.Script (IValue (..))
 import qualified Torch.Serialize (pickleLoad)
 import qualified Torch.Tensor (Tensor (Unsafe))
-import Type.Errors.Pretty (TypeError, type (<>))
-import Unsafe.Coerce (unsafeCoerce)
 
 class
   HasForward
@@ -119,50 +105,6 @@ instance-- {-# OVERLAPPABLE #-}
           (forward a input g)
           as
 
--- Model singletons???
-
--- data SomeModel (gradient :: Gradient RequiresGradient) (layout :: Layout LayoutType) where
---   SomeModel :: forall rg lt. SomeModel rg lt
-
--- data SomeModelSpecs where
---   SomeModelSpecs :: Gradient RequiresGradient -> Layout LayoutType -> SomeModelSpecs
-
--- $(withOptions defaultOptions {genQuotedDecs = True, genSingKindInsts = False} $ genSingletons [''SomeModelSpecs])
-
--- foo = SSomeModelSpecs (SGradient SWithGradient) (SLayout SSparse)
-
--- type HasInitialize :: Type -> Constraint
--- class HasInitialize k where
---   type ModelSpecs k = (modelSpecs :: Type) | modelSpecs -> k
---   initialize :: ModelSpecs k -> k
-
--- instance
---   HasInitialize (SomeModel gradient layout)
---   where
---     type ModelSpecs (SomeModel gradient layout) = SSomeModelSpecs ('SomeModelSpecs gradient layout)
---     initialize (SSomeModelSpecs _ _) = SomeModel
-
--- data
---   SomeModel
---     (gradient :: Gradient RequiresGradient)
---     (layout :: Layout LayoutType)
---     (dataType :: DataType DType)
---     (someDim :: Dim (Name Symbol) (Size Nat))
---     (device :: Device (DeviceType Nat))
---   where
---   SomeModel ::
---     forall gradient layout dataType someDim device.
---     { someModelWeight :: Tensor gradient layout device dataType ('Shape '[someDim]),
---       someModelParameter :: Double
---     } ->
---     SomeModel gradient layout dataType someDim device
-
--- data Foo (a :: Type) = Foo a
-
--- genSingletons [''Foo]
-
--- foo = SFoo (SNat @5)
-
 type family ModelSpec model = (spec :: Type) | spec -> model
 
 class
@@ -180,22 +122,6 @@ class
     ModelSpec model ->
     Generator generatorDevice ->
     m (output, Generator generatorOutputDevice)
-
--- class
---   HasInitialize
---     (model :: Type)
---     (spec :: Type)
---     (generatorDevice :: Device (DeviceType Nat))
---     (output :: Type)
---     (generatorOutputDevice :: Device (DeviceType Nat))
---     | model -> spec,
---       model generatorDevice -> output,
---       model generatorDevice -> generatorOutputDevice
---   where
---   initialize ::
---     spec ->
---     Generator generatorDevice ->
---     (output, Generator generatorOutputDevice)
 
 type instance ModelSpec () = ()
 
@@ -295,7 +221,6 @@ instance
     (Tensor gradient layout device dataType shape)
   where
   fromStateDict (TensorSpec gradient layout device dataType shape) k = do
-    -- traceShow k $ pure ()
     stateDict <- get
     maybe
       (throwM . FromStateDictKeyNotFoundError $ k)

@@ -173,12 +173,12 @@ instance
         vocabDim = sing @vocabDim
      in PegasusModel
           <$> ( GPegasusModel
-                  <$> fromStateDict (SequenceToSequenceTransformerSpec SPegasus transformerHead numLayers numLayers gradient device pegasusDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim pegasusPosEncDim vocabDim pegasusDropoutP pegasusEps) (k <> "model.")
+                  <$> fromStateDict (SequenceToSequenceTransformerSpec SPegasus transformerHead numLayers numLayers gradient device pegasusDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim pegasusPosEncDim vocabDim pegasusDropoutP pegasusEps) k
                   <*> fromStateDict (ShiftRight pegasusBOSTokenId) k
                   <*> fromStateDict (ShiftRight 0) k
               )
   toStateDict k (PegasusModel GPegasusModel {..}) = do
-    toStateDict (k <> "model.") pegasusModel
+    toStateDict k pegasusModel
     toStateDict k pegasusShiftRightDecoderInput
     toStateDict k pegasusShiftRightPaddingMask
 

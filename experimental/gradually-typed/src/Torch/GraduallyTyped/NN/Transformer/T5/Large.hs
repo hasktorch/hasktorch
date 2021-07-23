@@ -4,16 +4,22 @@
 
 module Torch.GraduallyTyped.NN.Transformer.T5.Large where
 
+import Data.Singletons (SingI (sing))
+import Data.Singletons.TypeLits (SNat)
 import GHC.TypeLits (Nat)
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
-import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5Model (..))
-import Torch.GraduallyTyped.NN.Transformer.Type (TransformerHead, TransformerStyle (T5))
-import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient)
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
+import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5Model (..), T5ModelSpec (..))
+import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead, STransformerStyle (ST5), TransformerHead, TransformerStyle (T5))
+import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 
 -- | T5-Large number of layers.
 -- 'num_layers = 24'
 type T5LargeNumLayers = 24
+
+-- | T5-Large number of layers singleton.
+t5LargeNumLayers :: SNat T5LargeNumLayers
+t5LargeNumLayers = sing
 
 -- | T5-Large number of attention heads.
 -- 'n_heads = 16'
@@ -45,3 +51,11 @@ type T5Large
   (gradient :: Gradient RequiresGradient)
   (device :: Device (DeviceType Nat)) =
   T5Model 'T5 transformerHead T5LargeNumLayers T5LargeNumLayers gradient device T5LargeHeadDim T5LargeHeadEmbedDim T5LargeEmbedDim T5LargeInputEmbedDim T5LargeFFNDim T5LargeVocabDim
+
+-- | T5-Large model specification.
+t5LargeSpec ::
+  STransformerHead transformerHead ->
+  SGradient gradient ->
+  SDevice device ->
+  T5ModelSpec 'T5 transformerHead T5LargeNumLayers T5LargeNumLayers gradient device T5LargeHeadDim T5LargeHeadEmbedDim T5LargeEmbedDim T5LargeInputEmbedDim T5LargeFFNDim T5LargeVocabDim
+t5LargeSpec transformerHead = T5ModelSpec ST5 transformerHead t5LargeNumLayers t5LargeNumLayers
