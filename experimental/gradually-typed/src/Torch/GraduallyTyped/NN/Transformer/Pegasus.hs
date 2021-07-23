@@ -9,77 +9,71 @@ module Torch.GraduallyTyped.NN.Transformer.Pegasus
   ( module Torch.GraduallyTyped.NN.Transformer.Pegasus.Common,
     module Torch.GraduallyTyped.NN.Transformer.Pegasus.XSum,
     testForwardPegasusXSum,
-    testPegasusInput,
-    testPegasusDecoderInput,
   )
 where
 
 import Control.Monad.State (evalStateT)
 import Test.HUnit.Approx (assertApproxEqual)
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
-import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
+import qualified Tokenizers
+import Torch.GraduallyTyped.Device (SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (fromStateDict), stateDictFromPretrained)
 import Torch.GraduallyTyped.NN.Transformer.Pegasus.Common
 import Torch.GraduallyTyped.NN.Transformer.Pegasus.XSum
-import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead (SWithLMHead), TransformerHead (WithLMHead))
+import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead (SWithLMHead))
 import Torch.GraduallyTyped.Random (sMkGenerator)
-import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
-import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SName (..), SSize (..), Shape (..), Size (..), pattern (:&:))
+import Torch.GraduallyTyped.RequiresGradient (SGradient (..), SRequiresGradient (..))
+import Torch.GraduallyTyped.Shape.Type (SName (..), SSize (..), pattern (:&:))
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
 import qualified Torch.Tensor as Tensor (Tensor (..), asValue)
 
-testPegasusInput :: IO _
-testPegasusInput =
-  mkPegasusInput
-    (SName @"*" :&: SSize @2)
-    (SName @"*" :&: SSize @158)
-    [ [139, 5998, 117, 56966, 7641, 4653, 108, 63292, 4954, 158, 3930, 108, 160, 109, 310, 3098, 130, 142, 13042, 121, 23761, 563, 108, 111, 109, 22246, 1557, 115, 3165, 107, 3096, 1217, 117, 2151, 108, 6542, 10557, 7641, 143, 27789, 4954, 158, 124, 276, 477, 107, 2348, 203, 1187, 108, 109, 37695, 6817, 23861, 109, 1741, 20551, 112, 460, 109, 22246, 729, 121, 4109, 1557, 115, 109, 278, 108, 114, 1560, 126, 886, 118, 6820, 231, 430, 109, 15528, 3671, 115, 351, 859, 672, 140, 1554, 115, 9844, 107, 168, 140, 109, 211, 1557, 112, 1111, 114, 3098, 113, 3251, 7641, 107, 5223, 112, 109, 663, 113, 114, 16071, 11676, 134, 109, 349, 113, 109, 5998, 115, 20636, 108, 126, 117, 239, 17916, 197, 109, 15528, 3671, 141, 27815, 7641, 23121, 4954, 250, 110, 64898, 48453, 108, 109, 37695, 6817, 117, 109, 453, 22246, 294, 121, 11570, 1557, 115, 2481, 244, 109, 4315, 4380, 15258, 22947, 107, 1],
-      [202, 1834, 135, 15083, 1431, 4589, 112, 1928, 107, 202, 1834, 967, 2512, 13384, 4589, 206, 276, 662, 137, 1834, 112, 134, 205, 156, 564, 107, 202, 29519, 17113, 493, 220, 8353, 130, 112, 109, 385, 113, 203, 1811, 107, 1]
-    ]
+withTokenizer :: (Tokenizers.Tokenizer -> IO a) -> IO a
+withTokenizer =
+  Tokenizers.withTokenizerFromConfigFile
+    "/tmp/pegasus-xsum-tokenizer.json"
 
-testPegasusDecoderInput :: IO _
-testPegasusDecoderInput =
-  mkPegasusInput
-    (SName @"*" :&: SSize @2)
-    (SName @"*" :&: SSize @22)
-    [ [139, 37695, 6817, 108, 836, 115, 39290, 108, 117, 156, 113, 109, 205, 1808, 17501, 115, 3165, 107, 1],
-      [202, 29519, 17113, 117, 114, 1834, 113, 114, 323, 113, 1928, 120, 137, 129, 20293, 112, 114, 323, 113, 4589, 107, 1]
-    ]
-
-testForwardPegasusXSum ::
-  IO
-    ( Tensor
-        ('Gradient 'WithGradient)
-        ('Layout 'Dense)
-        ('Device 'CPU)
-        PegasusDataType
-        ('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 158), 'Dim ('Name "*") ('Size 1024)])
-    )
+testForwardPegasusXSum :: IO ()
 testForwardPegasusXSum =
   do
-    input <- PegasusInput <$> testPegasusInput <*> testPegasusDecoderInput
     stateDict <- stateDictFromPretrained "/tmp/pegasus-xsum-state-dict.pt"
     model <-
       flip evalStateT stateDict $
-        fromStateDict (pegasusXSumSpec SWithLMHead (SGradient SWithGradient) (SDevice SCPU)) ""
+        fromStateDict (pegasusXSumSpec SWithLMHead (SGradient SWithoutGradient) (SDevice SCPU)) ""
     let g = sMkGenerator (SDevice SCPU) 0
+
+    (encoderIds, decoderIds) <- withTokenizer $ \tokenizer -> do
+      encoderEncoding <- Tokenizers.encode tokenizer "The tower is 324 metres (1,063 ft) tall, about the same height as an 81-storey building, and the tallest structure in Paris. Its base is square, measuring 125 metres (410 ft) on each side. During its construction, the Eiffel Tower surpassed the Washington Monument to become the tallest man-made structure in the world, a title it held for 41 years until the Chrysler Building in New York City was finished in 1930. It was the first structure to reach a height of 300 metres. Due to the addition of a broadcasting aerial at the top of the tower in 1957, it is now taller than the Chrysler Building by 5.2 metres (17 ft). Excluding transmitters, the Eiffel Tower is the second tallest free-standing structure in France after the Millau Viaduct.</s>"
+      decoderEncoding <- Tokenizers.encode tokenizer "The Eiffel Tower, built in 1889, is one of the most famous landmarks in Paris.</s>"
+      (,) <$> Tokenizers.getIDs encoderEncoding <*> Tokenizers.getIDs decoderEncoding
+    let encoderSeqSize = SUncheckedSize . fromIntegral $ length encoderIds
+        decoderSeqSize = SUncheckedSize . fromIntegral $ length decoderIds
+
+    input <-
+      PegasusInput
+        <$> mkPegasusInput
+          (SName @"*" :&: SSize @1)
+          (SName @"*" :&: encoderSeqSize)
+          [encoderIds]
+        <*> mkPegasusInput
+          (SName @"*" :&: SSize @1)
+          (SName @"*" :&: decoderSeqSize)
+          [decoderIds]
+
     (PegasusOutput {..}, _) <- forward model input g
+
     let encoderOutput = case pegasusEncoderOutput of
           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
     let firstEncoderHiddenStates = do
-          firstBatch <- take 2 encoderOutput
+          firstBatch <- take 1 encoderOutput
           firstPositions <- take 3 firstBatch
           take 3 firstPositions
-    print firstEncoderHiddenStates
-    let firstEncoderHiddenStates' = [0.0965, -0.0048, -0.1945, -0.0825, 0.1829, -0.1589, -0.0297, -0.0171, -0.1210, -0.1453, -0.1224, 0.0941, -0.1849, -0.0484, 0.0711, 0.0219, -0.0233, 0.1485]
+    let firstEncoderHiddenStates' = [0.0965, -0.0048, -0.1945, -0.0825, 0.1829, -0.1589, -0.0297, -0.0171, -0.1210]
     mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstEncoderHiddenStates firstEncoderHiddenStates'
+
     let decoderOutput = case pegasusDecoderOutput of
           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
     let firstLogits = do
-          firstBatch <- take 2 decoderOutput
+          firstBatch <- take 1 decoderOutput
           firstPositions <- take 3 firstBatch
           take 3 firstPositions
-    print firstLogits
-    let firstLogits' = [0.0000, 4.9619, 0.4453, 0.0000, 3.7238, 0.5208, 0.0000, 4.0774, 0.1976, 0.0000, 5.1009, 0.1397, 0.0000, 3.2329, 0.4058, 0.0000, 4.4593, 0.6729]
+    let firstLogits' = [0.0000, 4.9619, 0.4453, 0.0000, 3.7238, 0.5208, 0.0000, 4.0774, 0.1976]
     mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLogits firstLogits'
-    pure pegasusEncoderOutput

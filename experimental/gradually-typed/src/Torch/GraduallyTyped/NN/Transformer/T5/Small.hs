@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.NN.Transformer.T5.Small where
@@ -20,7 +19,7 @@ type T5SmallNumLayers = 6
 
 -- | T5-Small number of layers singleton.
 t5SmallNumLayers :: SNat T5SmallNumLayers
-t5SmallNumLayers = sing @T5SmallNumLayers
+t5SmallNumLayers = sing
 
 -- | T5-Small number of attention heads.
 -- 'n_heads = 8'
@@ -67,7 +66,7 @@ type ByT5SmallNumEncoderLayers = 12
 
 -- | ByT5-Small number of encoder layers singleton.
 byT5SmallNumEncoderLayers :: SNat ByT5SmallNumEncoderLayers
-byT5SmallNumEncoderLayers = sing @ByT5SmallNumEncoderLayers
+byT5SmallNumEncoderLayers = sing
 
 -- | ByT5-Small number of decoder layers.
 -- 'num_decoder_layers = 4'
@@ -75,7 +74,7 @@ type ByT5SmallNumDecoderLayers = 4
 
 -- | ByT5-Small number of encoder layers singleton.
 byT5SmallNumDecoderLayers :: SNat ByT5SmallNumDecoderLayers
-byT5SmallNumDecoderLayers = sing @ByT5SmallNumDecoderLayers
+byT5SmallNumDecoderLayers = sing
 
 -- | ByT5-Small number of attention heads.
 -- 'n_heads = 6'

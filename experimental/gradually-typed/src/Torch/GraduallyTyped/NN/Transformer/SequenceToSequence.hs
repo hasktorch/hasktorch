@@ -35,7 +35,7 @@ import Torch.GraduallyTyped.NN.Sparse (Embedding (..), EmbeddingSpec (..))
 import Torch.GraduallyTyped.NN.Transformer.Decoder (TransformerDecoder, TransformerDecoderSpec (..))
 import Torch.GraduallyTyped.NN.Transformer.Encoder (TransformerEncoder, TransformerEncoderSpec (..))
 import Torch.GraduallyTyped.NN.Transformer.LMHead (LMHead, LMHeadSpec (..))
-import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead (SWithLMHead, SWithMLMHead, SWithoutHead), STransformerStyle (..), TransformerHead (WithLMHead, WithoutHead), TransformerStyle (..))
+import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead (..), STransformerStyle (..), TransformerHead (WithLMHead, WithoutHead), TransformerStyle (..))
 import Torch.GraduallyTyped.Prelude (forgetIsChecked)
 import Torch.GraduallyTyped.Random (sGeneratorToDevice, sMkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..), SRequiresGradient (..))
@@ -43,7 +43,7 @@ import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, SName (..), S
 import Torch.GraduallyTyped.Tensor.Creation (sOnes)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mulScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (), TensorSpec (..))
-import Debug.Trace (traceShowId)
+import Prelude hiding (head)
 
 data
   GSequenceToSequenceTransformer
@@ -204,8 +204,8 @@ instance
     HasInitialize decoder device decoder device,
     embedding ~ Embedding gradient ('Layout 'Dense) device dataType vocabDim inputEmbedDim 'Nothing,
     HasInitialize embedding device embedding device,
-    lmHead ~ SequenceToSequenceHeadF style transformerHead gradient device dataType inputEmbedDim vocabDim,
-    HasInitialize lmHead device lmHead device
+    head ~ SequenceToSequenceHeadF style transformerHead gradient device dataType inputEmbedDim vocabDim,
+    HasInitialize head device head device
   ) =>
   HasInitialize
     (SequenceToSequenceTransformer style transformerHead numEncoderLayers numDecoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim)
@@ -218,16 +218,15 @@ instance
         encoder = IxStateT . initialize @encoder $ TransformerEncoderSpec style numEncoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP eps
         decoder = IxStateT . initialize @decoder $ TransformerDecoderSpec style numDecoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim posEncDim dropoutP eps
         embedding = IxStateT . initialize @embedding $ EmbeddingSpec gradient (SLayout SDense) device dataType vocabDim inputEmbedDim SNothing
-        lmHead = IxStateT . initialize @lmHead $ case transformerHead of
+        head = IxStateT . initialize @head $ case transformerHead of
           SWithoutHead -> ()
           SWithLMHead -> LMHeadSpec style gradient device dataType inputEmbedDim vocabDim eps
-          SWithMLMHead -> undefined
         gSeqToSeq =
           GSequenceToSequenceTransformer
             <<$>> ireturn inputEmbedDim <<*>> encoder
               <<*>> decoder
               <<*>> embedding
-              <<*>> lmHead
+              <<*>> head
      in runIxStateT (gSeqToSeq >>>= ireturn . SequenceToSequenceTransformer) generator'
 
 instance
@@ -264,23 +263,22 @@ instance
         embedding SRoBERTa = undefined
         embedding SGPT2 = undefined
         lmHeadSpec = LMHeadSpec style gradient device dataType inputEmbedDim vocabDim eps
-        lmHead _ SWithoutHead = fromStateDict () k
-        lmHead ST5 SWithLMHead = fromStateDict lmHeadSpec (k <> "lm_head.")
-        lmHead SByT5 SWithLMHead = fromStateDict lmHeadSpec (k <> "lm_head.")
-        lmHead SBART SWithLMHead = fromStateDict lmHeadSpec k
-        lmHead SMBART SWithLMHead = fromStateDict lmHeadSpec k
-        lmHead SPegasus SWithLMHead = fromStateDict lmHeadSpec k
-        lmHead SBERT SWithLMHead = undefined
-        lmHead SRoBERTa SWithLMHead = undefined
-        lmHead SGPT2 SWithLMHead = undefined
-        lmHead _ SWithMLMHead = undefined
+        head _ SWithoutHead = fromStateDict () k
+        head ST5 SWithLMHead = fromStateDict lmHeadSpec (k <> "lm_head.")
+        head SByT5 SWithLMHead = fromStateDict lmHeadSpec (k <> "lm_head.")
+        head SBART SWithLMHead = fromStateDict lmHeadSpec k
+        head SMBART SWithLMHead = fromStateDict lmHeadSpec k
+        head SPegasus SWithLMHead = fromStateDict lmHeadSpec k
+        head SBERT SWithLMHead = undefined
+        head SRoBERTa SWithLMHead = undefined
+        head SGPT2 SWithLMHead = undefined
      in SequenceToSequenceTransformer
           <$> ( GSequenceToSequenceTransformer
                   inputEmbedDim
                   <$> encoder style
                   <*> decoder style
                   <*> embedding style
-                  <*> lmHead style transformerHead
+                  <*> head style transformerHead
               )
   toStateDict k (SequenceToSequenceTransformer GSequenceToSequenceTransformer {..}) =
     let encoder ST5 = toStateDict (k <> "encoder.")
@@ -307,21 +305,20 @@ instance
         embedding SBERT = undefined
         embedding SRoBERTa = undefined
         embedding SGPT2 = undefined
-        lmHead _ SWithoutHead = toStateDict k
-        lmHead ST5 SWithLMHead = toStateDict (k <> "lm_head.")
-        lmHead SByT5 SWithLMHead = toStateDict (k <> "lm_head.")
-        lmHead SBART SWithLMHead = toStateDict k
-        lmHead SMBART SWithLMHead = toStateDict k
-        lmHead SPegasus SWithLMHead = toStateDict k
-        lmHead SBERT SWithLMHead = undefined
-        lmHead SRoBERTa SWithLMHead = undefined
-        lmHead SGPT2 SWithLMHead = undefined
-        lmHead _ SWithMLMHead = undefined
+        head _ SWithoutHead = toStateDict k
+        head ST5 SWithLMHead = toStateDict (k <> "lm_head.")
+        head SByT5 SWithLMHead = toStateDict (k <> "lm_head.")
+        head SBART SWithLMHead = toStateDict k
+        head SMBART SWithLMHead = toStateDict k
+        head SPegasus SWithLMHead = toStateDict k
+        head SBERT SWithLMHead = undefined
+        head SRoBERTa SWithLMHead = undefined
+        head SGPT2 SWithLMHead = undefined
      in do
           () <- encoder (sing @style) seqToSeqEncoder
           () <- decoder (sing @style) seqToSeqDecoder
           () <- embedding (sing @style) seqToSeqEmbedding
-          () <- lmHead (sing @style) (sing @transformerHead) seqToSeqHead
+          () <- head (sing @style) (sing @transformerHead) seqToSeqHead
           pure ()
 
 -- | Input data type for use with a sequence-to-sequence transformer.
@@ -387,7 +384,7 @@ deriving instance
   ) =>
   Show (SequenceToSequenceTransformerGenerationInput decoderInput encoderOutput decoderPos decoderAttentionMask crossAttentionMask)
 
--- | 'HasForward' instance for sequence-to-sequence transformers without additional head(s).
+-- | 'HasForward' instance for sequence-to-sequence transformers with optional head.
 --
 -- @
 --     ┌───────┐  ┌─────┐  ┌───────────────┐  ┌──────────────┐  ┌────────────┐  ┌──────────────────────┐  ┌────────────────────┐
@@ -406,7 +403,7 @@ deriving instance
 --         │                                         ▼                │                    │                        │
 --         ├─────────────────────────────────►seqToSeqDecoder◄────────┘◄───────────────────┘◄───────────────────────┘
 --         │                                         │
---         │                                  (seqToSeqLMHead)
+--         │                                   (seqToSeqHead)
 --         │                                         │
 --         ▼                                         ▼
 -- ┌───────────────┐                         ┌───────────────┐
@@ -491,7 +488,7 @@ instance
                        >>>= \decoderOutput -> ireturn (SequenceToSequenceTransformerOutput decoderOutput encoderOutput)
                  )
 
--- | 'HasForward' instance for sequence-to-sequence transformers without language modelling head.
+-- | 'HasForward' instance for sequence-to-sequence transformers with optional head.
 -- Use this instance for sequence generation once the encoder's output is available.
 --
 -- @
@@ -506,7 +503,7 @@ instance
 --         │                  ▼                │                    │                        │
 --         ├──────────►seqToSeqDecoder◄────────┘◄───────────────────┘◄───────────────────────┘
 --         │                  │
---         │           (seqToSeqLMHead)
+--         │            (seqToSeqHead)
 --         │                  │
 --         ▼                  ▼
 -- ┌───────────────┐  ┌───────────────┐

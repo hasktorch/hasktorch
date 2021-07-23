@@ -718,7 +718,6 @@ instance
 instance
   ( SGetShape queryShape,
     SGetDim queryEmbedDim,
-    Scalar dropoutP,
     output
       ~ Tensor
           (gradient <|> queryGradient)

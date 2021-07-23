@@ -3,16 +3,22 @@
 
 module Torch.GraduallyTyped.NN.Transformer.RoBERTa.Base where
 
+import Data.Singletons (SingI (sing))
+import Data.Singletons.TypeLits (SNat)
 import GHC.TypeLits (Nat)
-import Torch.GraduallyTyped.Device (Device, DeviceType)
-import Torch.GraduallyTyped.NN.Transformer.RoBERTa.Common (RoBERTaModel)
-import Torch.GraduallyTyped.NN.Transformer.Type (TransformerHead)
-import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient)
+import Torch.GraduallyTyped.Device (Device, DeviceType, SDevice)
+import Torch.GraduallyTyped.NN.Transformer.RoBERTa.Common (RoBERTaModel, RoBERTaModelSpec (..))
+import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead, TransformerHead)
+import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 
 -- | RoBERTa-Base number of layers.
 -- 'num_hidden_layers = 12'
 type RoBERTaBaseNumLayers = 12
+
+-- | RoBERTa-Base number of layers singleton.
+robertaBaseNumLayers :: SNat RoBERTaBaseNumLayers
+robertaBaseNumLayers = sing
 
 -- | RoBERTa-Base number of attention heads.
 -- 'num_attention_heads = 12'
@@ -48,3 +54,10 @@ type RoBERTaBase
   (gradient :: Gradient RequiresGradient)
   (device :: Device (DeviceType Nat)) =
   RoBERTaModel transformerHead RoBERTaBaseNumLayers gradient device RoBERTaBaseHeadDim RoBERTaBaseHeadEmbedDim RoBERTaBaseEmbedDim RoBERTaBaseInputEmbedDim RoBERTaBaseFFNDim RoBERTaBaseVocabDim RoBERTaBaseTypeVocabDim
+
+robertaBaseSpec ::
+  STransformerHead transformerHead ->
+  SGradient gradient ->
+  SDevice device ->
+  RoBERTaModelSpec transformerHead RoBERTaBaseNumLayers gradient device RoBERTaBaseHeadDim RoBERTaBaseHeadEmbedDim RoBERTaBaseEmbedDim RoBERTaBaseInputEmbedDim RoBERTaBaseFFNDim RoBERTaBaseVocabDim RoBERTaBaseTypeVocabDim
+robertaBaseSpec transformerHead = RoBERTaModelSpec transformerHead robertaBaseNumLayers

@@ -64,7 +64,7 @@ data TransformerStyle = T5 | ByT5 | BART | MBART | Pegasus | BERT | RoBERTa | GP
 
 genSingletons [''TransformerStyle]
 
-data TransformerHead = WithoutHead | WithLMHead | WithMLMHead
+data TransformerHead = WithoutHead | WithLMHead
 
 genSingletons [''TransformerHead]
 
