@@ -7,6 +7,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -33,6 +34,8 @@ import Data.Kind (Type)
 import qualified Data.Map.Strict as Map
 import Data.Proxy (Proxy (..))
 import Data.Singletons.TypeLits (SNat (..))
+import Data.Text (Text)
+import qualified Data.Text as Text
 import Data.Typeable (Typeable)
 import qualified Data.Vector as V
 import qualified Data.Vector.Generic.Sized.Internal as VGS
@@ -46,6 +49,8 @@ import qualified Torch.Internal.Type as ATen (Tensor)
 import qualified Torch.Script (IValue (..))
 import qualified Torch.Serialize (pickleLoad)
 import qualified Torch.Tensor (Tensor (Unsafe))
+
+data NamedModel model = NamedModel Text model
 
 class
   HasForward
@@ -66,6 +71,12 @@ class
 
 instance HasForward () input generatorDevice input generatorDevice where
   forward _ = (pure .) . (,)
+
+instance
+  HasForward model input generatorDevice output generatorOutputDevice =>
+  HasForward (NamedModel model) input generatorDevice output generatorOutputDevice
+  where
+  forward (NamedModel _ model) = forward model
 
 instance
   ( HasForward a input generatorDevice output' generatorOutputDevice',
@@ -128,6 +139,16 @@ type instance ModelSpec () = ()
 instance HasInitialize () generatorDevice () generatorDevice where
   initialize () g = pure ((), g)
 
+type instance ModelSpec (NamedModel model) = NamedModel (ModelSpec model)
+
+instance
+  HasInitialize model generatorDevice output generatorOutputDevice =>
+  HasInitialize (NamedModel model) generatorDevice (NamedModel output) generatorOutputDevice
+  where
+  initialize (NamedModel modelName modelSpec) g = do
+    (model, g') <- initialize modelSpec g
+    pure (NamedModel modelName model, g')
+
 type instance ModelSpec (a, b) = (ModelSpec a, ModelSpec b)
 
 instance
@@ -171,7 +192,7 @@ instance
         specs'
     pure (VGS.Vector as, g'''')
 
-type StateDictKey = String
+type StateDictKey = Text
 
 type StateDict = Map.Map StateDictKey (ForeignPtr ATen.Tensor)
 
@@ -204,6 +225,12 @@ class HasStateDict model where
 instance HasStateDict () where
   fromStateDict () _ = pure ()
   toStateDict _ () = pure ()
+
+instance HasStateDict model => HasStateDict (NamedModel model) where
+  fromStateDict (NamedModel modelName modelSpec) key =
+    NamedModel modelName <$> fromStateDict modelSpec (key <> modelName)
+  toStateDict key (NamedModel modelName model) =
+    toStateDict (key <> modelName) model
 
 instance (HasStateDict a, HasStateDict b) => HasStateDict (a, b) where
   fromStateDict (aSpec, bSpec) k =
@@ -246,10 +273,10 @@ instance
   where
   fromStateDict (VectorSpec SNat specs) k = do
     let i :: Int = fromIntegral (natVal (Proxy :: Proxy n))
-        fromStateDict' (spec, i') = fromStateDict spec (k <> show i' <> ".")
+        fromStateDict' (spec, i') = fromStateDict spec (k <> Text.pack (show i') <> ".")
     traverse fromStateDict' $ VS.zip specs (VGS.Vector $ V.fromList [0 .. i - 1])
   toStateDict k (VGS.Vector v) = do
-    let toStateDict' (i', a) = toStateDict (k <> show i' <> ".") a
+    let toStateDict' (i', a) = toStateDict (k <> Text.pack (show i') <> ".") a
     mapM_ toStateDict' $ V.zip (V.fromList [0 .. V.length v - 1]) v
 
 stateDictFromPretrained ::
@@ -262,7 +289,7 @@ stateDictFromPretrained filePath = do
     _ -> fail "iValue is not a tensor dictionary."
   where
     go [] = pure []
-    go ((Torch.Script.IVString s, Torch.Script.IVTensor (Torch.Tensor.Unsafe t)) : xs) = ((s, t) :) <$> go xs
+    go ((Torch.Script.IVString s, Torch.Script.IVTensor (Torch.Tensor.Unsafe t)) : xs) = ((Text.pack s, t) :) <$> go xs
     go ((_, Torch.Script.IVTensor _) : _) = fail "iValue is not a string."
     go ((Torch.Script.IVString _, _) : _) = fail "iValue is not a tensor."
     go _ = fail "iValue is neither a string nor a tensor."
