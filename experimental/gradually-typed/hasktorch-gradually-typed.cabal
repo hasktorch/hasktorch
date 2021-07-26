@@ -56,8 +56,6 @@ library
                      , Torch.GraduallyTyped.NN.Transformer.Block
                      , Torch.GraduallyTyped.NN.Transformer.CrossAttention
                      , Torch.GraduallyTyped.NN.Transformer.Decoder
-                     , Torch.GraduallyTyped.NN.Transformer.DecoderBlock
-                     , Torch.GraduallyTyped.NN.Transformer.DecoderStack
                      , Torch.GraduallyTyped.NN.Transformer.Encoder
                      , Torch.GraduallyTyped.NN.Transformer.EncoderOnly
                      , Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork
