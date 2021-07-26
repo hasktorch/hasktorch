@@ -7,6 +7,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -18,141 +19,206 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoStarIsType #-}
-{-# OPTIONS_GHC -v2 -Wall #-}
+{-# OPTIONS_GHC -v2 #-}
 
 module Torch.GraduallyTyped.NN.Transformer.Stack where
 
-import Control.Monad.Indexed (IxPointed (..), (>>>=))
 import Control.Monad.Indexed.State (IxStateT (..))
-import Data.Singletons (SingI)
+import Control.Monad.State (evalStateT)
+import Data.Functor.Indexed ((<<$>>))
+import Data.Kind (Type)
+import qualified Data.Map as Map
 import Data.Singletons.Prelude.List (SList (SNil))
 import Data.Singletons.TypeLits (SNat (..))
 import qualified Data.Vector as V
 import qualified Data.Vector.Generic.Sized.Internal as VGS
 import qualified Data.Vector.Sized as VS
-import Debug.Trace (traceShow)
-import GHC.TypeLits (Nat, Symbol, type (+))
-import Torch.GraduallyTyped.DType (DType (..), DataType, SDType (..), SDataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
+import GHC.TypeLits (type (+))
+import Torch.GraduallyTyped.DType (SDType (..), SDataType (..))
+import Torch.GraduallyTyped.Device (SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (SLayout (SLayout), SLayoutType (SDense))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec, VectorSpec (..))
-import Torch.GraduallyTyped.NN.Transformer.Block (TransformerBlock, TransformerBlockSpec (..))
-import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (ST5), TransformerStyle)
-import Torch.GraduallyTyped.Random (sGeneratorToDevice, sMkGenerator)
-import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient (..), SRequiresGradient (..))
-import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, SName (..), SShape (SShape), SSize (..), Size (..), pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec, NamedModel (..), VectorSpec (..))
+import Torch.GraduallyTyped.NN.Transformer.Block (DecoderBlockCrossAttentionF, DecoderBlockFeedForwardNetworkF, DecoderBlockSelfAttentionF, EncoderBlockCrossAttentionF, EncoderBlockFeedForwardNetworkF, EncoderBlockSelfAttentionF, GTransformerBlock, decoderBlockSpec)
+import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (ST5))
+import Torch.GraduallyTyped.Random (sMkGenerator)
+import Torch.GraduallyTyped.RequiresGradient (SGradient (..), SRequiresGradient (..))
+import Torch.GraduallyTyped.Shape.Type (SDim, SName (..), SShape (SShape), SSize (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes)
 import Torch.GraduallyTyped.Tensor.Type (TensorSpec (TensorSpec))
 
--- | Transformer encoder stack.
-newtype
-  TransformerStack
-    (style :: TransformerStyle)
-    (numLayers :: Nat)
-    (gradient :: Gradient RequiresGradient)
-    (device :: Device (DeviceType Nat))
-    (dataType :: DataType DType)
-    (headDim :: Dim (Name Symbol) (Size Nat))
-    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (embedDim :: Dim (Name Symbol) (Size Nat))
-    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (ffnDim :: Dim (Name Symbol) (Size Nat))
-  where
-  TransformerStack ::
-    forall style numLayers gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim.
-    VS.Vector numLayers (TransformerBlock style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim) ->
-    TransformerStack style numLayers gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim
+-- | Generic transformer stack.
+--
+-- - @stack@ is a stack of tranformer blocks.
+newtype GTransformerStack (stack :: Type) where
+  GTransformerStack :: forall stack. stack -> GTransformerStack stack
 
-data
-  TransformerStackSpec
-    (style :: TransformerStyle)
-    (numLayers :: Nat)
-    (gradient :: Gradient RequiresGradient)
-    (device :: Device (DeviceType Nat))
-    (dataType :: DataType DType)
-    (headDim :: Dim (Name Symbol) (Size Nat))
-    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (embedDim :: Dim (Name Symbol) (Size Nat))
-    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (ffnDim :: Dim (Name Symbol) (Size Nat))
-  where
-  TransformerStackSpec ::
-    forall style numLayers gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim.
-    STransformerStyle style ->
-    SNat numLayers ->
-    SGradient gradient ->
-    SDevice device ->
-    SDataType dataType ->
-    SDim headDim ->
-    SDim headEmbedDim ->
-    SDim embedDim ->
-    SDim queryEmbedDim ->
-    SDim ffnDim ->
-    Double ->
-    Double ->
-    TransformerStackSpec style numLayers gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim
+type instance
+  ModelSpec (GTransformerStack stack) =
+    GTransformerStack (ModelSpec stack)
 
-type instance ModelSpec (TransformerStack style numLayers gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim) = TransformerStackSpec style numLayers gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim
+-- | Specifies the parameters of a transformer stack in an encoder configuration.
+--
+-- - @style@: the style of the transformer stack, e.g. 'ST5', 'SByT5', etc.
+-- - @gradient@: whether to compute the gradient of the stack's parameters.
+-- - @device@: the computational device on which the stack is allocated.
+-- - @dataType@: the data type of the stack's parameters.
+-- - @headDim@: the dimension of all transformer heads in the stack.
+-- - @headEmbedDim@: the dimension of the transformer head embeddings.
+-- - @embedDim@: the dimension of the transformer embeddings.
+-- - @queryEmbedDim@: the dimension of the transformer query embeddings.
+-- - @ffnDim@: the dimension of the feed-forward network.
+-- - @dropoutP@: the dropout rate.
+-- - @eps@: the epsilon value for numerical stability of the layer normalization.
+encoderStackSpec ::
+  forall style numLayers gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim.
+  STransformerStyle style ->
+  SNat numLayers ->
+  SGradient gradient ->
+  SDevice device ->
+  SDataType dataType ->
+  SDim headDim ->
+  SDim headEmbedDim ->
+  SDim embedDim ->
+  SDim queryEmbedDim ->
+  SDim ffnDim ->
+  Double ->
+  Double ->
+  ModelSpec
+    ( GTransformerStack
+        ( VS.Vector
+            numLayers
+            ( GTransformerBlock
+                (EncoderBlockSelfAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim)
+                EncoderBlockCrossAttentionF
+                (EncoderBlockFeedForwardNetworkF style gradient device dataType queryEmbedDim ffnDim)
+            )
+        )
+    )
+encoderStackSpec = undefined
+
+-- | Specifies the parameters of a transformer stack in a decoder configuration.
+--
+-- - @style@: the style of the transformer stack, e.g. 'ST5', 'SByT5', etc.
+-- - @gradient@: whether to compute the gradient of the stack's parameters.
+-- - @device@: the computational device on which the stack is allocated.
+-- - @dataType@: the data type of the stack's parameters.
+-- - @headDim@: the dimension of all transformer heads in the stack.
+-- - @headEmbedDim@: the dimension of the transformer head embeddings.
+-- - @embedDim@: the dimension of the transformer embeddings.
+-- - @queryEmbedDim@: the dimension of the transformer query embeddings.
+-- - @keyEmbedDim@: the dimension of the transformer key embeddings.
+-- - @ffnDim@: the dimension of the feed-forward network.
+-- - @dropoutP@: the dropout rate.
+-- - @eps@: the epsilon value for numerical stability of the layer normalization.
+decoderStackSpec ::
+  forall style numLayers gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim.
+  STransformerStyle style ->
+  SNat numLayers ->
+  SGradient gradient ->
+  SDevice device ->
+  SDataType dataType ->
+  SDim headDim ->
+  SDim headEmbedDim ->
+  SDim embedDim ->
+  SDim queryEmbedDim ->
+  SDim keyEmbedDim ->
+  SDim ffnDim ->
+  Double ->
+  Double ->
+  ModelSpec
+    ( GTransformerStack
+        ( VS.Vector
+            numLayers
+            ( GTransformerBlock
+                (DecoderBlockSelfAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim)
+                (DecoderBlockCrossAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim)
+                (DecoderBlockFeedForwardNetworkF style gradient device dataType queryEmbedDim ffnDim)
+            )
+        )
+    )
+decoderStackSpec style numLayers@SNat gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP eps =
+  let blockSpec = decoderBlockSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP eps
+   in GTransformerStack $ VectorSpec numLayers (VS.replicate' numLayers blockSpec)
 
 instance
-  ( block ~ TransformerBlock style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim,
-    HasInitialize block device block device,
+  ( HasInitialize block generatorDevice block generatorDevice,
     numLayers' ~ (numLayers + 1)
   ) =>
   HasInitialize
-    (TransformerStack style numLayers' gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim)
+    (GTransformerStack (VS.Vector numLayers' block))
     generatorDevice
-    (TransformerStack style numLayers' gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim)
-    device
+    (GTransformerStack (VS.Vector numLayers' block))
+    generatorDevice
   where
-  initialize (TransformerStackSpec style numLayers'@SNat gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP eps) generator =
-    let generator' = sGeneratorToDevice device generator
-        blockSpec = TransformerBlockSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP eps
-        v = IxStateT . initialize @(VS.Vector numLayers' block) $ VectorSpec numLayers' (VS.replicate' numLayers' blockSpec)
-     in runIxStateT (v >>>= ireturn . TransformerStack) generator'
+  initialize (GTransformerStack vSpec) =
+    let v = IxStateT . initialize $ vSpec
+     in runIxStateT (GTransformerStack <<$>> v)
 
 instance
-  ( SingI style,
-    HasStateDict
-      (TransformerBlock style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim)
-  ) =>
-  HasStateDict
-    (TransformerStack style numLayers gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim)
+  HasStateDict block =>
+  HasStateDict (GTransformerStack (VS.Vector numLayers block))
   where
-  fromStateDict (TransformerStackSpec style numLayers'@SNat gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP eps) k =
-    let blockSpec = TransformerBlockSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP eps
-     in TransformerStack <$> fromStateDict (VectorSpec numLayers' $ VS.replicate' numLayers' blockSpec) k
-  toStateDict k (TransformerStack v) = toStateDict k v
+  fromStateDict (GTransformerStack vSpec) k =
+    GTransformerStack <$> fromStateDict vSpec k
+  toStateDict k (GTransformerStack v) = toStateDict k v
 
 instance
   HasForward
-    (TransformerStack style 0 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim)
+    (GTransformerStack (VS.Vector 0 block))
     (query, attentionBias)
-    generator
+    generatorDevice
     query
-    generator
+    generatorDevice
   where
   forward _ (query, _) = pure . (query,)
 
 instance
   HasForward
-    (TransformerBlock style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim)
+    block
     (query, attentionBias)
     generatorDevice
     output
     generatorOutputDevice =>
   HasForward
-    (TransformerStack style 1 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim)
+    (GTransformerStack (VS.Vector 1 block))
     (query, attentionBias)
     generatorDevice
     output
     generatorOutputDevice
   where
-  forward (TransformerStack (VGS.Vector v)) input g =
+  forward (GTransformerStack (VGS.Vector v)) input g =
     let Just (block, _) = V.uncons v
      in forward block input g
 
--- | 'HasForward' instance for 'TransformerStack'.
+instance
+  HasForward
+    (GTransformerStack (VS.Vector 0 block))
+    (query, key, attentionBias, crossAttentionBias)
+    generator
+    query
+    generator
+  where
+  forward _ (query, _, _, _) = pure . (query,)
+
+instance
+  HasForward
+    block
+    (query, key, attentionBias, crossAttentionBias)
+    generatorDevice
+    output
+    generatorOutputDevice =>
+  HasForward
+    (GTransformerStack (VS.Vector 1 block))
+    (query, key, attentionBias, crossAttentionBias)
+    generatorDevice
+    output
+    generatorOutputDevice
+  where
+  forward (GTransformerStack (VGS.Vector v)) input g =
+    let Just (block, _) = V.uncons v
+     in forward block input g
+
+-- | 'HasForward' instance for 'GTransformerStack' in an encoder configuration.
 --
 -- @
 -- ┌───────┐  ┌───────────────┐
@@ -160,13 +226,13 @@ instance
 -- └───┬───┘  └───────┬───────┘
 --     │              │
 --     ▼              │
---  tsBlock◄──────────┤
+--   block◄───────────┤
 --     ▼              │
---  tsBlock◄──────────┤
+--   block◄───────────┤
 --     ▼              │
 --    ...            ...
 --     ▼              │
---  tsBlock◄──────────┘
+--   block◄───────────┘
 --     │
 --     ▼
 -- ┌───────┐
@@ -176,26 +242,26 @@ instance
 instance
   {-# OVERLAPPABLE #-}
   ( HasForward
-      (TransformerBlock style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim)
+      block
       (query, attentionBias)
       generatorDevice
       output
       generatorOutputDevice,
     HasForward
-      (TransformerBlock style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim)
+      block
       (output, attentionBias)
       generatorOutputDevice
       output
       generatorOutputDevice
   ) =>
   HasForward
-    (TransformerStack style n gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim)
+    (GTransformerStack (VS.Vector n block))
     (query, attentionBias)
     generatorDevice
     output
     generatorOutputDevice
   where
-  forward (TransformerStack (VGS.Vector v)) (query, attentionBias) g =
+  forward (GTransformerStack (VGS.Vector v)) (query, attentionBias) g =
     let Just (block, blocks) = V.uncons v
      in V.foldl
           ( \agg block' -> do
@@ -209,8 +275,65 @@ instance
           )
           blocks
 
-testStack :: IO _
-testStack = do
+-- | 'HasForward' instance for 'GTransformerStack' in a decoder configuration.
+--
+-- @
+-- ┌───────┐  ┌─────┐  ┌───────────────┐  ┌────────────────────┐
+-- │ query │  │ key │  │ attentionBias │  │ crossAttentionBias │
+-- └───┬───┘  └──┬──┘  └───────┬───────┘  └─────────┬──────────┘
+--     │         │             │                    │
+--     ▼         │             │                    │
+--   block◄──────┤◄────────────┤◄───────────────────┤
+--     ▼         │             │                    │
+--   block◄──────┤◄────────────┤◄───────────────────┤
+--     ▼         │             │                    │
+--    ...       ...           ...                  ...
+--     ▼         │             │                    │
+--   block◄──────┘◄────────────┘◄───────────────────┘
+--     │
+--     ▼
+-- ┌───────┐
+-- │ query │
+-- └───────┘
+-- @
+instance
+  {-# OVERLAPPABLE #-}
+  ( HasForward
+      block
+      (query, key, attentionBias, crossAttentionBias)
+      generatorDevice
+      output
+      generatorOutputDevice,
+    HasForward
+      block
+      (output, key, attentionBias, crossAttentionBias)
+      generatorOutputDevice
+      output
+      generatorOutputDevice
+  ) =>
+  HasForward
+    (GTransformerStack (VS.Vector n block))
+    (query, key, attentionBias, crossAttentionBias)
+    generatorDevice
+    output
+    generatorOutputDevice
+  where
+  forward (GTransformerStack (VGS.Vector v)) (query, key, attentionBias, crossAttentionBias) g =
+    let Just (block, blocks) = V.uncons v
+     in V.foldl
+          ( \agg block' -> do
+              (output, g') <- agg
+              (output', g'') <- forward block' (output, key, attentionBias, crossAttentionBias) g'
+              pure (output', g'')
+          )
+          ( do
+              (output, g') <- forward block (query, key, attentionBias, crossAttentionBias) g
+              pure (output, g')
+          )
+          blocks
+
+testEncoderStack :: IO _
+testEncoderStack = do
   let gradient = SGradient SWithGradient
       device = SDevice SCPU
       dataType = SDataType SFloat
@@ -219,14 +342,48 @@ testStack = do
       embedDim = SName @"*" :&: SSize @512
       queryEmbedDim = SName @"*" :&: SSize @512
       ffnDim = SName @"*" :&: SSize @2048
-      dropoutP = 0.0
+      dropoutP = 0
       eps = 1e-6
   let g = sMkGenerator device 0
-  (stack, g') <- initialize (TransformerStackSpec ST5 (SNat @2) gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP eps) g
+      spec = NamedModel "stack." $ encoderStackSpec ST5 (SNat @2) gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP eps
+  (encoderStack, g') <- initialize spec g
+  encoderStack' <- flip evalStateT Map.empty $ do
+    toStateDict mempty encoderStack
+    fromStateDict spec mempty
   let batchDim = SName @"*" :&: SSize @3
       seqDim = SName @"*" :&: SSize @17
       sOnes' = (sOnes .) . TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device
       query = sOnes' dataType (SShape $ batchDim :|: seqDim :|: queryEmbedDim :|: SNil)
       attentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
-  (output, _) <- forward stack (query, attentionBias) g'
+  (output, _) <- forward encoderStack' (query, attentionBias) g'
+  pure output
+
+testDecoderStack :: IO _
+testDecoderStack = do
+  let gradient = SGradient SWithGradient
+      device = SDevice SCPU
+      dataType = SDataType SFloat
+      headDim = SName @"*" :&: SSize @8
+      headEmbedDim = SName @"*" :&: SSize @64
+      embedDim = SName @"*" :&: SSize @512
+      queryEmbedDim = SName @"*" :&: SSize @512
+      keyEmbedDim = queryEmbedDim
+      ffnDim = SName @"*" :&: SSize @2048
+      dropoutP = 0
+      eps = 1e-6
+  let g = sMkGenerator device 0
+      spec = NamedModel "stack." $ decoderStackSpec ST5 (SNat @2) gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP eps
+  (decoderStack, g') <- initialize spec g
+  decoderStack' <- flip evalStateT Map.empty $ do
+    toStateDict mempty decoderStack
+    fromStateDict spec mempty
+  let batchDim = SName @"*" :&: SSize @3
+      seqDim = SName @"*" :&: SSize @17
+      decoderSeqDim = SName @"*" :&: SSize @13
+      sOnes' = (sOnes .) . TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device
+      query = sOnes' dataType (SShape $ batchDim :|: decoderSeqDim :|: queryEmbedDim :|: SNil)
+      key = sOnes' dataType (SShape $ batchDim :|: seqDim :|: keyEmbedDim :|: SNil)
+      attentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
+      crossAttentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: decoderSeqDim :|: seqDim :|: SNil)
+  (output, _) <- forward decoderStack' (query, key, attentionBias, crossAttentionBias) g'
   pure output
