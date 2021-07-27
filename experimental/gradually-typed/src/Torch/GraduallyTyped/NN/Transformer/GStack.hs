@@ -21,7 +21,7 @@
 {-# LANGUAGE NoStarIsType #-}
 {-# OPTIONS_GHC -v2 #-}
 
-module Torch.GraduallyTyped.NN.Transformer.Stack where
+module Torch.GraduallyTyped.NN.Transformer.GStack where
 
 import Control.Monad.Indexed.State (IxStateT (..))
 import Control.Monad.State (evalStateT)
@@ -38,7 +38,7 @@ import Torch.GraduallyTyped.DType (SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (SLayout (SLayout), SLayoutType (SDense))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec, NamedModel (..), VectorSpec (..))
-import Torch.GraduallyTyped.NN.Transformer.Block (DecoderBlockCrossAttentionF, DecoderBlockFeedForwardNetworkF, DecoderBlockSelfAttentionF, EncoderBlockCrossAttentionF, EncoderBlockFeedForwardNetworkF, EncoderBlockSelfAttentionF, GTransformerBlock, decoderBlockSpec)
+import Torch.GraduallyTyped.NN.Transformer.GBlock (DecoderBlockCrossAttentionF, DecoderBlockFeedForwardNetworkF, DecoderBlockSelfAttentionF, EncoderBlockCrossAttentionF, EncoderBlockFeedForwardNetworkF, EncoderBlockSelfAttentionF, GTransformerBlock, decoderBlockSpec, encoderBlockSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (ST5))
 import Torch.GraduallyTyped.Random (sMkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (SGradient (..), SRequiresGradient (..))
@@ -94,7 +94,9 @@ encoderStackSpec ::
             )
         )
     )
-encoderStackSpec = undefined
+encoderStackSpec style numLayers@SNat gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP eps =
+  let blockSpec = encoderBlockSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP eps
+   in GTransformerStack $ VectorSpec numLayers (VS.replicate' numLayers blockSpec)
 
 -- | Specifies the parameters of a transformer stack in a decoder configuration.
 --

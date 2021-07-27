@@ -28,7 +28,7 @@
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyRightAssociativeL #-}
 {-# OPTIONS_GHC -v2 #-}
 
-module Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention where
+module Torch.GraduallyTyped.NN.Transformer.GMultiHeadAttention where
 
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.Indexed (ireturn, (>>>=))

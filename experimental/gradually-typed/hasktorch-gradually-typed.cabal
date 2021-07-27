@@ -53,18 +53,17 @@ library
                      , Torch.GraduallyTyped.NN.Linear
                      , Torch.GraduallyTyped.NN.Transformer
                      , Torch.GraduallyTyped.NN.Transformer.Type
-                     , Torch.GraduallyTyped.NN.Transformer.Block
-                     , Torch.GraduallyTyped.NN.Transformer.CrossAttention
-                     , Torch.GraduallyTyped.NN.Transformer.Decoder
-                     , Torch.GraduallyTyped.NN.Transformer.Encoder
-                     , Torch.GraduallyTyped.NN.Transformer.EncoderOnly
-                     , Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork
-                     , Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention
-                     , Torch.GraduallyTyped.NN.Transformer.SelfAttention
-                     , Torch.GraduallyTyped.NN.Transformer.SequenceToSequence
-                     , Torch.GraduallyTyped.NN.Transformer.Stack
-                     , Torch.GraduallyTyped.NN.Transformer.LMHead
-                     , Torch.GraduallyTyped.NN.Transformer.Pooler
+                     , Torch.GraduallyTyped.NN.Transformer.GMultiHeadAttention
+                     , Torch.GraduallyTyped.NN.Transformer.GFeedForwardNetwork
+                     , Torch.GraduallyTyped.NN.Transformer.GSelfAttention
+                     , Torch.GraduallyTyped.NN.Transformer.GCrossAttention
+                     , Torch.GraduallyTyped.NN.Transformer.GBlock
+                     , Torch.GraduallyTyped.NN.Transformer.GStack
+                     , Torch.GraduallyTyped.NN.Transformer.GTransformer
+                     , Torch.GraduallyTyped.NN.Transformer.GLMHead
+                     , Torch.GraduallyTyped.NN.Transformer.GEncoderOnly
+                     , Torch.GraduallyTyped.NN.Transformer.GEncoderDecoder
+                     , Torch.GraduallyTyped.NN.Transformer.GPooler
                      , Torch.GraduallyTyped.NN.Transformer.T5.Common
                      , Torch.GraduallyTyped.NN.Transformer.T5.Small
                      , Torch.GraduallyTyped.NN.Transformer.T5.Base

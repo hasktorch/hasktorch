@@ -9,7 +9,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -v2 -Wall #-}
 
-module Torch.GraduallyTyped.NN.Transformer.Pooler where
+module Torch.GraduallyTyped.NN.Transformer.GPooler where
 
 import Control.Monad.Indexed (IxPointed (..), (>>>=))
 import Control.Monad.Indexed.State (IxStateT (..))

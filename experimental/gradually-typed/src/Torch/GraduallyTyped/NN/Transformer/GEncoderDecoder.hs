@@ -16,7 +16,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -v2 -Wall #-}
 
-module Torch.GraduallyTyped.NN.Transformer.SequenceToSequence where
+module Torch.GraduallyTyped.NN.Transformer.GEncoderDecoder where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxStateT (..))
@@ -32,9 +32,6 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), 
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec)
 import Torch.GraduallyTyped.NN.Sparse (Embedding (..), EmbeddingSpec (..))
-import Torch.GraduallyTyped.NN.Transformer.Decoder (TransformerDecoder, TransformerDecoderSpec (..))
-import Torch.GraduallyTyped.NN.Transformer.Encoder (TransformerEncoder, TransformerEncoderSpec (..))
-import Torch.GraduallyTyped.NN.Transformer.LMHead (LMHead, LMHeadSpec (..))
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead (..), STransformerStyle (..), TransformerHead (WithLMHead, WithoutHead), TransformerStyle (..))
 import Torch.GraduallyTyped.Prelude (forgetIsChecked)
 import Torch.GraduallyTyped.Random (sGeneratorToDevice, sMkGenerator)
@@ -46,14 +43,14 @@ import Torch.GraduallyTyped.Tensor.Type (Tensor (), TensorSpec (..))
 import Prelude hiding (head)
 
 data
-  GSequenceToSequenceTransformer
+  GEncoderDecoderTransformer
     (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
     (encoder :: Type)
     (decoder :: Type)
     (embedding :: Type)
     (head :: Type)
   where
-  GSequenceToSequenceTransformer ::
+  GEncoderDecoderTransformer ::
     forall inputEmbedDim encoder decoder embedding head.
     { -- | input embedding dim for scaling
       seqToSeqInputEmbedDim :: SDim inputEmbedDim,
@@ -66,7 +63,7 @@ data
       -- | transformer head
       seqToSeqHead :: head
     } ->
-    GSequenceToSequenceTransformer inputEmbedDim encoder decoder embedding head
+    GEncoderDecoderTransformer inputEmbedDim encoder decoder embedding head
 
 -- | Sequence-to-sequence transformer model.
 newtype
@@ -88,7 +85,7 @@ newtype
   where
   SequenceToSequenceTransformer ::
     forall style transformerHead numEncoderLayers numDecoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim.
-    GSequenceToSequenceTransformer
+    GEncoderDecoderTransformer
       inputEmbedDim
       (SequenceToSequenceEncoderF style numEncoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim)
       (SequenceToSequenceDecoderF style numDecoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim)
@@ -222,7 +219,7 @@ instance
           SWithoutHead -> ()
           SWithLMHead -> LMHeadSpec style gradient device dataType inputEmbedDim vocabDim eps
         gSeqToSeq =
-          GSequenceToSequenceTransformer
+          GEncoderDecoderTransformer
             <<$>> ireturn inputEmbedDim <<*>> encoder
               <<*>> decoder
               <<*>> embedding
@@ -273,14 +270,14 @@ instance
         head SRoBERTa SWithLMHead = undefined
         head SGPT2 SWithLMHead = undefined
      in SequenceToSequenceTransformer
-          <$> ( GSequenceToSequenceTransformer
+          <$> ( GEncoderDecoderTransformer
                   inputEmbedDim
                   <$> encoder style
                   <*> decoder style
                   <*> embedding style
                   <*> head style transformerHead
               )
-  toStateDict k (SequenceToSequenceTransformer GSequenceToSequenceTransformer {..}) =
+  toStateDict k (SequenceToSequenceTransformer GEncoderDecoderTransformer {..}) =
     let encoder ST5 = toStateDict (k <> "encoder.")
         encoder SByT5 = toStateDict (k <> "encoder.")
         encoder SBART = toStateDict (k <> "encoder.")
@@ -457,7 +454,7 @@ instance
     (SequenceToSequenceTransformerOutput headOutput encoderOutput)
     generatorOutputDevice
   where
-  forward (SequenceToSequenceTransformer GSequenceToSequenceTransformer {..}) SequenceToSequenceTransformerInput {..} =
+  forward (SequenceToSequenceTransformer GEncoderDecoderTransformer {..}) SequenceToSequenceTransformerInput {..} =
     let s :: Double = sqrt . fromIntegral . forgetIsChecked . dimSize . fromSing $ seqToSeqInputEmbedDim
         embedScaling ::
           forall requiresGradient layout device''' dataType''' shape.
@@ -544,7 +541,7 @@ instance
     (SequenceToSequenceTransformerOutput headOutput encoderOutput)
     generatorOutputDevice
   where
-  forward (SequenceToSequenceTransformer GSequenceToSequenceTransformer {..}) SequenceToSequenceTransformerGenerationInput {..} =
+  forward (SequenceToSequenceTransformer GEncoderDecoderTransformer {..}) SequenceToSequenceTransformerGenerationInput {..} =
     let s :: Double = sqrt . fromIntegral . forgetIsChecked . dimSize . fromSing $ seqToSeqInputEmbedDim
         embedScaling ::
           forall requiresGradient layout device''' dataType''' shape.

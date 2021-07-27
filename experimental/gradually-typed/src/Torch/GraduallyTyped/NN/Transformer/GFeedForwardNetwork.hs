@@ -19,7 +19,7 @@
 {-# LANGUAGE NoStarIsType #-}
 {-# OPTIONS_GHC -v2 #-}
 
-module Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork where
+module Torch.GraduallyTyped.NN.Transformer.GFeedForwardNetwork where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxStateT (..))
@@ -48,6 +48,11 @@ import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor, TensorSpec (..))
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 
+-- | Generic two-layer gate with activation function.
+--
+-- - @layer0@ is the first layer.
+-- - @activation@ is the activation function.
+-- - @layer1@ is the second layer.
 data
   GGate
     (layer0 :: Type)

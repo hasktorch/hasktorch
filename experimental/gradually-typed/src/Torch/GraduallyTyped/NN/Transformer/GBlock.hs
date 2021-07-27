@@ -19,7 +19,7 @@
 {-# LANGUAGE NoStarIsType #-}
 {-# OPTIONS_GHC -v2 #-}
 
-module Torch.GraduallyTyped.NN.Transformer.Block where
+module Torch.GraduallyTyped.NN.Transformer.GBlock where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxStateT (..))
@@ -33,9 +33,9 @@ import Torch.GraduallyTyped.DType (DType (..), DataType, SDType (..), SDataType 
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec, NamedModel (..))
-import Torch.GraduallyTyped.NN.Transformer.CrossAttention (CADropoutF, CAFinalLayerNormF, CAInitialLayerNormF, CAMultiheadAttentionF, GCrossAttention, crossAttentionSpec)
-import Torch.GraduallyTyped.NN.Transformer.FeedForwardNetwork (FFNActivationDropoutF, FFNActivationF, FFNInputLayerNormF, FFNInputTransformationF, FFNOutputDropoutF, FFNOutputLayerNormF, FFNOutputProjectionF, GTransformerFeedForwardNetwork, transformerFeedForwardNetworkSpec)
-import Torch.GraduallyTyped.NN.Transformer.SelfAttention (GSelfAttention, SADropoutF, SAFinalLayerNormF, SAInitialLayerNormF, SAMultiheadAttentionF, selfAttentionSpec)
+import Torch.GraduallyTyped.NN.Transformer.GCrossAttention (CADropoutF, CAFinalLayerNormF, CAInitialLayerNormF, CAMultiheadAttentionF, GCrossAttention, crossAttentionSpec)
+import Torch.GraduallyTyped.NN.Transformer.GFeedForwardNetwork (FFNActivationDropoutF, FFNActivationF, FFNInputLayerNormF, FFNInputTransformationF, FFNOutputDropoutF, FFNOutputLayerNormF, FFNOutputProjectionF, GTransformerFeedForwardNetwork, transformerFeedForwardNetworkSpec)
+import Torch.GraduallyTyped.NN.Transformer.GSelfAttention (GSelfAttention, SADropoutF, SAFinalLayerNormF, SAInitialLayerNormF, SAMultiheadAttentionF, selfAttentionSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle)
 import Torch.GraduallyTyped.Random (sMkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient (..), SRequiresGradient (..))

@@ -12,6 +12,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -19,23 +20,23 @@
 {-# LANGUAGE NoStarIsType #-}
 {-# OPTIONS_GHC -v2 #-}
 
-module Torch.GraduallyTyped.NN.Transformer.CrossAttention where
+module Torch.GraduallyTyped.NN.Transformer.GSelfAttention where
 
-import Control.Monad.Indexed (IxPointed (ireturn), (>>>=))
+import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxStateT (..))
 import Control.Monad.State (evalStateT)
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import qualified Data.Map as Map
-import Data.Singletons.Prelude.List (SList (..))
+import Data.Singletons.Prelude.List (SList (SNil))
 import GHC.TypeLits (Nat, Symbol)
-import Torch.GraduallyTyped.DType (DType (..), DataType, SDType (..), SDataType (..))
+import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec, NamedModel (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout (..))
 import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..), LayerNormSpec (..))
-import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (DropoutF, GMultiHeadAttention, KInProjF, OutProjF, QInProjF, VInProjF, multiHeadAttentionSpec)
+import Torch.GraduallyTyped.NN.Transformer.GMultiHeadAttention (DropoutF, GMultiHeadAttention, KInProjF, OutProjF, QInProjF, VInProjF, multiHeadAttentionSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..), SHasBias (..))
 import Torch.GraduallyTyped.Random (sMkGenerator)
@@ -47,38 +48,38 @@ import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor, TensorSpec (..))
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 
--- | Generic cross-attention layer data type.
+-- | Generic self-attention layer data type.
 --
 -- - @initialLayerNorm@: the initial layer normalization
 -- - @mha@: the multi-headed attention layer
 -- - @dropout@: the dropout layer
 -- - @finalLayerNorm@: the final layer normalization
 data
-  GCrossAttention
+  GSelfAttention
     (initialLayerNorm :: Type)
     (mha :: Type)
     (dropout :: Type)
     (finalLayerNorm :: Type)
   where
-  GCrossAttention ::
+  GSelfAttention ::
     forall initialLayerNorm mha dropout finalLayerNorm.
-    { -- | initial layer normalization of the cross-attention layer.
-      caInitialLayerNorm :: initialLayerNorm,
-      -- | multi-headed attention layer specialized for cross-attention.
-      caMultiHeadAttention :: mha,
+    { -- | initial layer normalization of the self-attention layer.
+      saInitialLayerNorm :: initialLayerNorm,
+      -- | multi-headed attention layer specialized for self-attention.
+      saMultiHeadAttention :: mha,
       -- | dropout
-      caDropout :: dropout,
-      -- | final layer normalization of the cross-attention layer.
-      caFinalLayerNorm :: finalLayerNorm
+      saDropout :: dropout,
+      -- | final layer normalization of the self-attention layer.
+      saFinalLayerNorm :: finalLayerNorm
     } ->
-    GCrossAttention initialLayerNorm mha dropout finalLayerNorm
+    GSelfAttention initialLayerNorm mha dropout finalLayerNorm
 
 type instance
-  ModelSpec (GCrossAttention initialLayerNorm mha dropout finalLayerNorm) =
-    GCrossAttention (ModelSpec initialLayerNorm) (ModelSpec mha) (ModelSpec dropout) (ModelSpec finalLayerNorm)
+  ModelSpec (GSelfAttention initialLayerNorm mha dropout finalLayerNorm) =
+    GSelfAttention (ModelSpec initialLayerNorm) (ModelSpec mha) (ModelSpec dropout) (ModelSpec finalLayerNorm)
 
 type family
-  CAInitialLayerNormF
+  SAInitialLayerNormF
     (style :: TransformerStyle)
     (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
@@ -86,19 +87,23 @@ type family
     (queryEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
     Type
   where
-  CAInitialLayerNormF 'T5 gradient device dataType queryEmbedDim =
+  SAInitialLayerNormF 'T5 gradient device dataType queryEmbedDim =
     NamedModel (LayerNorm 'WithoutBias gradient device dataType ('Shape '[queryEmbedDim]))
-  CAInitialLayerNormF 'ByT5 gradient device dataType queryEmbedDim =
-    CAInitialLayerNormF 'T5 gradient device dataType queryEmbedDim
-  CAInitialLayerNormF 'BART _ _ _ _ =
+  SAInitialLayerNormF 'ByT5 gradient device dataType queryEmbedDim =
+    SAInitialLayerNormF 'T5 gradient device dataType queryEmbedDim
+  SAInitialLayerNormF 'BART _ _ _ _ =
     ()
-  CAInitialLayerNormF 'MBART gradient device dataType queryEmbedDim =
-    CAInitialLayerNormF 'BART gradient device dataType queryEmbedDim
-  CAInitialLayerNormF 'Pegasus gradient device dataType queryEmbedDim =
-    CAInitialLayerNormF 'BART gradient device dataType queryEmbedDim
+  SAInitialLayerNormF 'MBART gradient device dataType queryEmbedDim =
+    SAInitialLayerNormF 'BART gradient device dataType queryEmbedDim
+  SAInitialLayerNormF 'Pegasus gradient device dataType queryEmbedDim =
+    SAInitialLayerNormF 'BART gradient device dataType queryEmbedDim
+  SAInitialLayerNormF 'BERT _ _ _ _ =
+    ()
+  SAInitialLayerNormF 'RoBERTa gradient device dataType queryEmbedDim =
+    SAInitialLayerNormF 'BERT gradient device dataType queryEmbedDim
 
 type family
-  CAMultiheadAttentionF
+  SAMultiheadAttentionF
     (style :: TransformerStyle)
     (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
@@ -106,32 +111,31 @@ type family
     (headDim :: Dim (Name Symbol) (Size Nat))
     (headEmbedDim :: Dim (Name Symbol) (Size Nat))
     (embedDim :: Dim (Name Symbol) (Size Nat))
-    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (keyEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
     Type
   where
-  CAMultiheadAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim =
+  SAMultiheadAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim =
     NamedModel
       ( GMultiHeadAttention
           headDim
           headEmbedDim
           embedDim
           (QInProjF style gradient device dataType queryEmbedDim embedDim)
-          (KInProjF style gradient device dataType keyEmbedDim embedDim)
-          (VInProjF style gradient device dataType keyEmbedDim embedDim)
+          (KInProjF style gradient device dataType queryEmbedDim embedDim)
+          (VInProjF style gradient device dataType queryEmbedDim embedDim)
           (OutProjF style gradient device dataType embedDim queryEmbedDim)
           (DropoutF style)
       )
 
 type family
-  CADropoutF
+  SADropoutF
     (style :: TransformerStyle) ::
     Type
   where
-  CADropoutF _ = Dropout
+  SADropoutF _ = Dropout
 
 type family
-  CAFinalLayerNormF
+  SAFinalLayerNormF
     (style :: TransformerStyle)
     (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
@@ -139,19 +143,23 @@ type family
     (queryEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
     Type
   where
-  CAFinalLayerNormF 'T5 _ _ _ _ =
+  SAFinalLayerNormF 'T5 _ _ _ _ =
     ()
-  CAFinalLayerNormF 'ByT5 gradient device dataType queryEmbedDim =
-    CAFinalLayerNormF 'T5 gradient device dataType queryEmbedDim
-  CAFinalLayerNormF 'BART gradient device dataType queryEmbedDim =
+  SAFinalLayerNormF 'ByT5 gradient device dataType queryEmbedDim =
+    SAFinalLayerNormF 'T5 gradient device dataType queryEmbedDim
+  SAFinalLayerNormF 'BART gradient device dataType queryEmbedDim =
     NamedModel (LayerNorm 'WithBias gradient device dataType ('Shape '[queryEmbedDim]))
-  CAFinalLayerNormF 'MBART gradient device dataType queryEmbedDim =
-    CAFinalLayerNormF 'BART gradient device dataType queryEmbedDim
-  CAFinalLayerNormF 'Pegasus gradient device dataType queryEmbedDim =
-    CAFinalLayerNormF 'BART gradient device dataType queryEmbedDim
+  SAFinalLayerNormF 'MBART gradient device dataType queryEmbedDim =
+    SAFinalLayerNormF 'BART gradient device dataType queryEmbedDim
+  SAFinalLayerNormF 'Pegasus gradient device dataType queryEmbedDim =
+    SAFinalLayerNormF 'BART gradient device dataType queryEmbedDim
+  SAFinalLayerNormF 'BERT gradient device dataType queryEmbedDim =
+    NamedModel (LayerNorm 'WithBias gradient device dataType ('Shape '[queryEmbedDim]))
+  SAFinalLayerNormF 'RoBERTa gradient device dataType queryEmbedDim =
+    SAFinalLayerNormF 'BERT gradient device dataType queryEmbedDim
 
-crossAttentionSpec ::
-  forall style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim.
+selfAttentionSpec ::
+  forall style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim.
   STransformerStyle style ->
   SGradient gradient ->
   SDevice device ->
@@ -160,43 +168,42 @@ crossAttentionSpec ::
   SDim headEmbedDim ->
   SDim embedDim ->
   SDim queryEmbedDim ->
-  SDim keyEmbedDim ->
   Double ->
   Double ->
   ModelSpec
-    ( GCrossAttention
-        (CAInitialLayerNormF style gradient device dataType queryEmbedDim)
-        (CAMultiheadAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim)
-        (CADropoutF style)
-        (CAFinalLayerNormF style gradient device dataType queryEmbedDim)
+    ( GSelfAttention
+        (SAInitialLayerNormF style gradient device dataType queryEmbedDim)
+        (SAMultiheadAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim)
+        (SADropoutF style)
+        (SAFinalLayerNormF style gradient device dataType queryEmbedDim)
     )
-crossAttentionSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP eps =
+selfAttentionSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP eps =
   let initialLayerNormSpec ST5 = NamedModel "layer_norm." layerNormWithoutBiasSpec
       initialLayerNormSpec SByT5 = NamedModel "layer_norm." layerNormWithoutBiasSpec
       initialLayerNormSpec SBART = ()
       initialLayerNormSpec SMBART = ()
       initialLayerNormSpec SPegasus = ()
-      initialLayerNormSpec SBERT = undefined
-      initialLayerNormSpec SRoBERTa = undefined
+      initialLayerNormSpec SBERT = ()
+      initialLayerNormSpec SRoBERTa = ()
       initialLayerNormSpec SGPT2 = undefined
-      mhaSpec ST5 = NamedModel "EncDecAttention." $ mhaSpec' ST5
-      mhaSpec SByT5 = NamedModel "EncDecAttention." $ mhaSpec' SByT5
-      mhaSpec SBART = NamedModel "encoder_attn." $ mhaSpec' SBART
-      mhaSpec SMBART = NamedModel "encoder_attn." $ mhaSpec' SMBART
-      mhaSpec SPegasus = NamedModel "encoder_attn." $ mhaSpec' SPegasus
-      mhaSpec SBERT = undefined
-      mhaSpec SRoBERTa = undefined
+      mhaSpec ST5 = NamedModel "SelfAttention." $ mhaSpec' ST5
+      mhaSpec SByT5 = NamedModel "SelfAttention." $ mhaSpec' SByT5
+      mhaSpec SBART = NamedModel "self_attn." $ mhaSpec' SBART
+      mhaSpec SMBART = NamedModel "self_attn." $ mhaSpec' SMBART
+      mhaSpec SPegasus = NamedModel "self_attn." $ mhaSpec' SPegasus
+      mhaSpec SBERT = NamedModel mempty $ mhaSpec' SBERT
+      mhaSpec SRoBERTa = NamedModel mempty $ mhaSpec' SRoBERTa
       mhaSpec SGPT2 = undefined
       dropoutSpec _ = Dropout dropoutP
       finalLayerNormSpec ST5 = ()
       finalLayerNormSpec SByT5 = ()
-      finalLayerNormSpec SBART = NamedModel "encoder_attn_layer_norm." layerNormWithBiasSpec
-      finalLayerNormSpec SMBART = NamedModel "encoder_attn_layer_norm." layerNormWithBiasSpec
-      finalLayerNormSpec SPegasus = NamedModel "encoder_attn_layer_norm." layerNormWithBiasSpec
-      finalLayerNormSpec SBERT = undefined
-      finalLayerNormSpec SRoBERTa = undefined
+      finalLayerNormSpec SBART = NamedModel "self_attn_layer_norm." layerNormWithBiasSpec
+      finalLayerNormSpec SMBART = NamedModel "self_attn_layer_norm." layerNormWithBiasSpec
+      finalLayerNormSpec SPegasus = NamedModel "self_attn_layer_norm." layerNormWithBiasSpec
+      finalLayerNormSpec SBERT = NamedModel "output.LayerNorm." layerNormWithBiasSpec
+      finalLayerNormSpec SRoBERTa = NamedModel "output.LayerNorm." layerNormWithBiasSpec
       finalLayerNormSpec SGPT2 = undefined
-   in GCrossAttention (initialLayerNormSpec style) (mhaSpec style) (dropoutSpec style) (finalLayerNormSpec style)
+   in GSelfAttention (initialLayerNormSpec style) (mhaSpec style) (dropoutSpec style) (finalLayerNormSpec style)
   where
     mhaSpec' ::
       STransformerStyle style ->
@@ -206,12 +213,12 @@ crossAttentionSpec style gradient device dataType headDim headEmbedDim embedDim 
             headEmbedDim
             embedDim
             (QInProjF style gradient device dataType queryEmbedDim embedDim)
-            (KInProjF style gradient device dataType keyEmbedDim embedDim)
-            (VInProjF style gradient device dataType keyEmbedDim embedDim)
+            (KInProjF style gradient device dataType queryEmbedDim embedDim)
+            (VInProjF style gradient device dataType queryEmbedDim embedDim)
             (OutProjF style gradient device dataType embedDim queryEmbedDim)
             (DropoutF style)
         )
-    mhaSpec' style' = multiHeadAttentionSpec style' gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim keyEmbedDim dropoutP
+    mhaSpec' style' = multiHeadAttentionSpec style' gradient device dataType headDim headEmbedDim embedDim queryEmbedDim queryEmbedDim queryEmbedDim dropoutP
     layerNormWithoutBiasSpec = LayerNormSpec SWithoutBias gradient device dataType (SShape $ queryEmbedDim :|: SNil) eps
     layerNormWithBiasSpec = LayerNormSpec SWithBias gradient device dataType (SShape $ queryEmbedDim :|: SNil) eps
 
@@ -222,17 +229,17 @@ instance
     HasInitialize finalLayerNorm generatorDevice finalLayerNorm generatorDevice
   ) =>
   HasInitialize
-    (GCrossAttention initialLayerNorm multiHeadAttention dropout finalLayerNorm)
+    (GSelfAttention initialLayerNorm multiHeadAttention dropout finalLayerNorm)
     generatorDevice
-    (GCrossAttention initialLayerNorm multiHeadAttention dropout finalLayerNorm)
+    (GSelfAttention initialLayerNorm multiHeadAttention dropout finalLayerNorm)
     generatorDevice
   where
-  initialize (GCrossAttention initialLayerNormSpec mhaSpec dropoutSpec finalLayerNormSpec) =
+  initialize (GSelfAttention initialLayerNormSpec mhaSpec dropoutSpec finalLayerNormSpec) =
     let initialLayerNorm = IxStateT . initialize $ initialLayerNormSpec
         multiHeadAttention = IxStateT . initialize $ mhaSpec
         dropout = IxStateT . initialize $ dropoutSpec
         finalLayerNorm = IxStateT . initialize $ finalLayerNormSpec
-     in runIxStateT (GCrossAttention <<$>> initialLayerNorm <<*>> multiHeadAttention <<*>> dropout <<*>> finalLayerNorm)
+     in runIxStateT (GSelfAttention <<$>> initialLayerNorm <<*>> multiHeadAttention <<*>> dropout <<*>> finalLayerNorm)
 
 instance
   ( HasStateDict initialLayerNorm,
@@ -240,50 +247,50 @@ instance
     HasStateDict dropout,
     HasStateDict finalLayerNorm
   ) =>
-  HasStateDict (GCrossAttention initialLayerNorm multiHeadAttention dropout finalLayerNorm)
+  HasStateDict (GSelfAttention initialLayerNorm multiHeadAttention dropout finalLayerNorm)
   where
-  fromStateDict (GCrossAttention initialLayerNormSpec mhaSpec dropoutSpec finalLayerNormSpec) k =
-    GCrossAttention
+  fromStateDict (GSelfAttention initialLayerNormSpec mhaSpec dropoutSpec finalLayerNormSpec) k =
+    GSelfAttention
       <$> fromStateDict initialLayerNormSpec k
       <*> fromStateDict mhaSpec k
       <*> fromStateDict dropoutSpec k
       <*> fromStateDict finalLayerNormSpec k
-  toStateDict k GCrossAttention {..} = do
-    () <- toStateDict k caInitialLayerNorm
-    () <- toStateDict k caMultiHeadAttention
-    () <- toStateDict k caDropout
-    () <- toStateDict k caFinalLayerNorm
+  toStateDict k GSelfAttention {..} = do
+    () <- toStateDict k saInitialLayerNorm
+    () <- toStateDict k saMultiHeadAttention
+    () <- toStateDict k saDropout
+    () <- toStateDict k saFinalLayerNorm
     pure ()
 
--- | 'HasForward' instance for 'GCrossAttention'.
+-- | 'HasForward' instance for 'GSelfAttention'.
 --
 -- @
---        ┌───────┐    ┌─────┐    ┌───────────────┐
---        │ query │    │ key │    │ attentionBias │
---        └───┬───┘    └──┬──┘    └───────┬───────┘
---            │           │               │
--- ┌──────────┤           │               │
--- │          │           │               │
--- │          ▼           │               │
--- │ (caInitialLayerNorm) │               │
--- │          │           │               │
--- │          │       ┌───┴───┐           │
--- │          │       │       │           │
--- │          ▼       ▼       ▼           │
--- │        caMultiheadAttention◄─────────┘
--- │                  │
--- │                  ▼
--- │              caDropout
--- │                  │
--- └──────►add◄───────┘
---          │
---          ▼
---  (caFinalLayerNorm)
---          │
---          ▼
---      ┌───────┐
---      │ query │
---      └───────┘
+-- ┌───────────────┐     ┌───────┐
+-- │ attentionBias │     │ query │
+-- └───────┬───────┘     └───┬───┘
+--         │                 │
+--         │           ┌─────┴─────┐
+--         │           │           │
+--         │           ▼           │
+--         │  (saInitialLayerNorm) │
+--         │           │           │
+--         │      ┌────┼────┐      │
+--         │      │    │    │      │
+--         │      ▼    ▼    ▼      │
+--         └─►saMultiHeadAttention │
+--                     │           │
+--                     ▼           │
+--                 saDropout       │
+--                     │           │
+--                     └───►add◄───┘
+--                           │
+--                           ▼
+--                   (saFinalLayerNorm)
+--                           │
+--                           ▼
+--                       ┌───────┐
+--                       │ query │
+--                       └───────┘
 -- @
 instance
   ( HasForward
@@ -295,8 +302,8 @@ instance
     HasForward
       multiHeadAttention
       ( tensor0,
-        Tensor keyGradient keyLayout keyDevice keyDataType keyShape,
-        Tensor keyGradient keyLayout keyDevice keyDataType keyShape,
+        tensor0,
+        tensor0,
         Tensor attentionBiasGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
       )
       generatorDevice0
@@ -316,26 +323,25 @@ instance
       generatorOutputDevice
   ) =>
   HasForward
-    (GCrossAttention initialLayerNorm multiHeadAttention dropout finalLayerNorm)
+    (GSelfAttention initialLayerNorm multiHeadAttention dropout finalLayerNorm)
     ( Tensor queryGradient queryLayout queryDevice queryDataType queryShape,
-      Tensor keyGradient keyLayout keyDevice keyDataType keyShape,
       Tensor attentionBiasGradient attentionBiasLayout attentionBiasDevice attentionBiasDataType attentionBiasShape
     )
     generatorDevice
     output
     generatorOutputDevice
   where
-  forward GCrossAttention {..} (query, key, attentionBias) =
+  forward GSelfAttention {..} (query, attentionBias) =
     runIxStateT $
       ireturn query
-        >>>= IxStateT . forward caInitialLayerNorm
-        >>>= (\query' -> IxStateT $ forward caMultiHeadAttention (query', key, key, attentionBias))
-        >>>= IxStateT . forward caDropout
+        >>>= IxStateT . forward saInitialLayerNorm
+        >>>= (\query' -> IxStateT $ forward saMultiHeadAttention (query', query', query', attentionBias))
+        >>>= IxStateT . forward saDropout
         >>>= ireturn . (query `add`)
-        >>>= IxStateT . forward caFinalLayerNorm
+        >>>= IxStateT . forward saFinalLayerNorm
 
-testCA :: IO _
-testCA = do
+testSA :: IO _
+testSA = do
   let gradient = SGradient SWithGradient
       device = SDevice SCPU
       dataType = SDataType SFloat
@@ -343,20 +349,18 @@ testCA = do
       headEmbedDim = SName @"*" :&: SSize @64
       embedDim = SName @"*" :&: SSize @512
       queryEmbedDim = SName @"*" :&: SSize @512
-      keyEmbedDim = queryEmbedDim
       dropoutP = 0
       eps = 1e-6
   let g = sMkGenerator device 0
-      spec = NamedModel "ca." $ crossAttentionSpec SPegasus gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP eps
-  (ca, g') <- initialize spec g
-  ca' <- flip evalStateT Map.empty $ do
-    toStateDict mempty ca
+      spec = NamedModel "sa." $ selfAttentionSpec SByT5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP eps
+  (sa, g') <- initialize spec g
+  sa' <- flip evalStateT Map.empty $ do
+    toStateDict mempty sa
     fromStateDict spec mempty
-  let batchDim = SName @"*" :&: SSize @3
+  let batchDim = SName @"*" :&: SSize @1
       seqDim = SName @"*" :&: SSize @4
       sOnes' = (sOnes .) . TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device
       query = sOnes' dataType (SShape $ batchDim :|: seqDim :|: queryEmbedDim :|: SNil)
-      key = sOnes' dataType (SShape $ batchDim :|: seqDim :|: keyEmbedDim :|: SNil)
       attentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
-  (output, _) <- forward ca' (query, key, attentionBias) g'
+  (output, _) <- forward sa' (query, attentionBias) g'
   pure output
