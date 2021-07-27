@@ -202,8 +202,16 @@ type family
     NamedModel (LayerNorm 'WithoutBias gradient device dataType ('Shape '[queryEmbedDim]))
   FFNInputLayerNormF 'ByT5 gradient device dataType queryEmbedDim =
     FFNInputLayerNormF 'T5 gradient device dataType queryEmbedDim
-  FFNInputLayerNormF _ gradient device dataType queryEmbedDim =
+  FFNInputLayerNormF 'BART _ _ _ _ =
     ()
+  FFNInputLayerNormF 'MBART gradient device dataType queryEmbedDim =
+    FFNInputLayerNormF 'BART gradient device dataType queryEmbedDim
+  FFNInputLayerNormF 'Pegasus gradient device dataType queryEmbedDim =
+    NamedModel (LayerNorm 'WithBias gradient device dataType ('Shape '[queryEmbedDim]))
+  FFNInputLayerNormF 'BERT _ _ _ _ =
+    ()
+  FFNInputLayerNormF 'RoBERTa gradient device dataType queryEmbedDim =
+    FFNInputLayerNormF 'BERT gradient device dataType queryEmbedDim
 
 -- | Specifies the first input projection.
 type family
@@ -291,12 +299,24 @@ type family
       )
   FFNOutputProjectionF 'ByT5 gradient device dataType queryEmbedDim ffnDim =
     FFNOutputProjectionF 'T5 gradient device dataType queryEmbedDim ffnDim
-  FFNOutputProjectionF _ gradient device dataType queryEmbedDim ffnDim =
+  FFNOutputProjectionF 'BART gradient device dataType queryEmbedDim ffnDim =
     NamedModel
       ( GLinear
           (NamedModel (LinearWeightF gradient device dataType ffnDim queryEmbedDim))
           (NamedModel (LinearBiasF 'WithBias gradient device dataType queryEmbedDim))
       )
+  FFNOutputProjectionF 'MBART gradient device dataType queryEmbedDim ffnDim =
+    FFNOutputProjectionF 'BART gradient device dataType queryEmbedDim ffnDim
+  FFNOutputProjectionF 'Pegasus gradient device dataType queryEmbedDim ffnDim =
+    FFNOutputProjectionF 'BART gradient device dataType queryEmbedDim ffnDim
+  FFNOutputProjectionF 'BERT gradient device dataType queryEmbedDim ffnDim =
+    NamedModel
+      ( GLinear
+          (NamedModel (LinearWeightF gradient device dataType ffnDim queryEmbedDim))
+          (NamedModel (LinearBiasF 'WithBias gradient device dataType queryEmbedDim))
+      )
+  FFNOutputProjectionF 'RoBERTa gradient device dataType queryEmbedDim ffnDim =
+    FFNOutputProjectionF 'BERT gradient device dataType queryEmbedDim ffnDim
 
 -- | Specifies the dropout for the output.
 type family
@@ -320,8 +340,16 @@ type family
     ()
   FFNOutputLayerNormF 'ByT5 gradient device dataType queryEmbedDim =
     FFNOutputLayerNormF 'T5 gradient device dataType queryEmbedDim
-  FFNOutputLayerNormF _ gradient device dataType queryEmbedDim =
+  FFNOutputLayerNormF 'BART gradient device dataType queryEmbedDim =
     NamedModel (LayerNorm 'WithBias gradient device dataType ('Shape '[queryEmbedDim]))
+  FFNOutputLayerNormF 'MBART gradient device dataType queryEmbedDim =
+    FFNOutputLayerNormF 'BART gradient device dataType queryEmbedDim
+  FFNOutputLayerNormF 'Pegasus _ _ _ _ =
+    ()
+  FFNOutputLayerNormF 'BERT gradient device dataType queryEmbedDim =
+    NamedModel (LayerNorm 'WithBias gradient device dataType ('Shape '[queryEmbedDim]))
+  FFNOutputLayerNormF 'RoBERTa gradient device dataType queryEmbedDim =
+    FFNOutputLayerNormF 'BERT gradient device dataType queryEmbedDim
 
 -- | Specifies the parameters of the transformer feed forward network.
 --
@@ -358,7 +386,7 @@ transformerFeedForwardNetworkSpec style gradient device dataType queryEmbedDim f
       inputLayerNormSpec SByT5 = NamedModel "layer_norm." layerNormWithoutBiasSpec
       inputLayerNormSpec SBART = ()
       inputLayerNormSpec SMBART = ()
-      inputLayerNormSpec SPegasus = ()
+      inputLayerNormSpec SPegasus = NamedModel "final_layer_norm." layerNormWithBiasSpec
       inputLayerNormSpec SBERT = ()
       inputLayerNormSpec SRoBERTa = ()
       inputLayerNormSpec SGPT2 = undefined
@@ -404,7 +432,7 @@ transformerFeedForwardNetworkSpec style gradient device dataType queryEmbedDim f
       outputLayerNormSpec SByT5 = ()
       outputLayerNormSpec SBART = NamedModel "final_layer_norm." layerNormWithBiasSpec
       outputLayerNormSpec SMBART = NamedModel "final_layer_norm." layerNormWithBiasSpec
-      outputLayerNormSpec SPegasus = NamedModel "final_layer_norm." layerNormWithBiasSpec
+      outputLayerNormSpec SPegasus = ()
       outputLayerNormSpec SBERT = NamedModel "output.LayerNorm." layerNormWithBiasSpec
       outputLayerNormSpec SRoBERTa = NamedModel "output.LayerNorm." layerNormWithBiasSpec
       outputLayerNormSpec SGPT2 = undefined
@@ -502,62 +530,6 @@ instance
     () <- toStateDict k ffnOutputDropout
     () <- toStateDict k ffnOutputLayerNorm
     pure ()
-
--- | The shape of the output tensor of the transformer feed forward network.
--- type family
---   FeedForwardNetworkOutputShape
---     (style :: TransformerStyle)
---     (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
---     (ffnDim :: Dim (Name Symbol) (Size Nat))
---     (queryShape :: Shape [Dim (Name Symbol) (Size Nat)]) ::
---     Shape [Dim (Name Symbol) (Size Nat)]
---   where
---   FeedForwardNetworkOutputShape 'T5 queryEmbedDim ffnDim queryShape =
---     BroadcastShapesF
---       queryShape
---       ( LinearWithoutBiasF
---           ('Shape '[queryEmbedDim, ffnDim])
---           ( LinearWithoutBiasF
---               ('Shape '[ffnDim, queryEmbedDim])
---               ( LayerNormWithoutBiasF
---                   ('Shape '[queryEmbedDim])
---                   queryShape
---               )
---           )
---       )
---   FeedForwardNetworkOutputShape 'ByT5 queryEmbedDim ffnDim queryShape = FeedForwardNetworkOutputShape 'T5 queryEmbedDim ffnDim queryShape
---   FeedForwardNetworkOutputShape 'Pegasus queryEmbedDim ffnDim queryShape =
---     BroadcastShapesF
---       queryShape
---       ( LinearWithBiasF
---           ('Shape '[queryEmbedDim, ffnDim])
---           ('Shape '[queryEmbedDim])
---           ( LinearWithBiasF
---               ('Shape '[ffnDim, queryEmbedDim])
---               ('Shape '[ffnDim])
---               ( LayerNormWithBiasF
---                   ('Shape '[queryEmbedDim])
---                   ('Shape '[queryEmbedDim])
---                   queryShape
---               )
---           )
---       )
---   FeedForwardNetworkOutputShape _ queryEmbedDim ffnDim queryShape =
---     LayerNormWithBiasF
---       ('Shape '[queryEmbedDim])
---       ('Shape '[queryEmbedDim])
---       ( BroadcastShapesF
---           queryShape
---           ( LinearWithBiasF
---               ('Shape '[queryEmbedDim, ffnDim])
---               ('Shape '[queryEmbedDim])
---               ( LinearWithBiasF
---                   ('Shape '[ffnDim, queryEmbedDim])
---                   ('Shape '[ffnDim])
---                   queryShape
---               )
---           )
---       )
 
 -- | 'HasForward' instance for 'GTransformerFeedForwardNetwork'.
 --

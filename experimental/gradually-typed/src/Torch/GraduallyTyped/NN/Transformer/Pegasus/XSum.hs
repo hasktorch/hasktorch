@@ -1,7 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TypeApplications #-}
-{-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.NN.Transformer.Pegasus.XSum where
 
@@ -9,7 +8,8 @@ import Data.Singletons (SingI (..))
 import Data.Singletons.TypeLits (SNat)
 import GHC.TypeLits (Nat)
 import Torch.GraduallyTyped.Device (Device, DeviceType, SDevice)
-import Torch.GraduallyTyped.NN.Transformer.Pegasus.Common (PegasusModel, PegasusModelSpec (..))
+import Torch.GraduallyTyped.NN.Class (ModelSpec)
+import Torch.GraduallyTyped.NN.Transformer.Pegasus.Common (PegasusModelF, pegasusModelSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead, TransformerHead)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
@@ -53,11 +53,11 @@ type PegasusXSum
   (transformerHead :: TransformerHead)
   (gradient :: Gradient RequiresGradient)
   (device :: Device (DeviceType Nat)) =
-  PegasusModel transformerHead PegasusXSumNumLayers gradient device PegasusXSumHeadDim PegasusXSumHeadEmbedDim PegasusXSumEmbedDim PegasusXSumInputEmbedDim PegasusXSumFFNDim PegasusXSumVocabDim
+  PegasusModelF transformerHead PegasusXSumNumLayers gradient device PegasusXSumHeadDim PegasusXSumHeadEmbedDim PegasusXSumEmbedDim PegasusXSumInputEmbedDim PegasusXSumFFNDim PegasusXSumVocabDim
 
 pegasusXSumSpec ::
   STransformerHead transformerHead ->
   SGradient gradient ->
   SDevice device ->
-  PegasusModelSpec transformerHead PegasusXSumNumLayers gradient device PegasusXSumHeadDim PegasusXSumHeadEmbedDim PegasusXSumEmbedDim PegasusXSumInputEmbedDim PegasusXSumFFNDim PegasusXSumVocabDim
-pegasusXSumSpec transformerHead = PegasusModelSpec transformerHead pegasusXSumNumLayers
+  ModelSpec (PegasusModelF transformerHead PegasusXSumNumLayers gradient device PegasusXSumHeadDim PegasusXSumHeadEmbedDim PegasusXSumEmbedDim PegasusXSumInputEmbedDim PegasusXSumFFNDim PegasusXSumVocabDim)
+pegasusXSumSpec transformerHead = pegasusModelSpec transformerHead pegasusXSumNumLayers

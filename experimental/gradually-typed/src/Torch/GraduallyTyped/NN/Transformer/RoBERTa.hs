@@ -3,7 +3,7 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
-{-# OPTIONS_GHC -v2 -Wall #-}
+{-# OPTIONS_GHC -v2 #-}
 
 module Torch.GraduallyTyped.NN.Transformer.RoBERTa
   ( module Torch.GraduallyTyped.NN.Transformer.RoBERTa.Common,
@@ -20,7 +20,7 @@ import Torch.GraduallyTyped.DType (SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (..), stateDictFromPretrained)
-import Torch.GraduallyTyped.NN.Transformer.EncoderOnly (EncoderOnlyTransformerInput (..), EncoderOnlyTransformerOutput (..))
+import Torch.GraduallyTyped.NN.Transformer.GEncoderOnly (EncoderOnlyTransformerInput (..), EncoderOnlyTransformerOutput (..))
 import Torch.GraduallyTyped.NN.Transformer.RoBERTa.Base
 import Torch.GraduallyTyped.NN.Transformer.RoBERTa.Common
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead (SWithLMHead), mkTransformerAttentionMask)
@@ -41,9 +41,10 @@ testForwardRoBERTaBase :: IO ()
 testForwardRoBERTaBase =
   do
     stateDict <- stateDictFromPretrained "/tmp/roberta-base-state-dict.pt"
-    RoBERTaModel GRoBERTaModel {..} <-
-      flip evalStateT stateDict $
-        fromStateDict (robertaBaseSpec SWithLMHead (SGradient SWithoutGradient) (SDevice SCPU)) ""
+
+    let spec = robertaBaseSpec SWithLMHead (SGradient SWithoutGradient) (SDevice SCPU)
+    GRoBERTaModel {..} <- flip evalStateT stateDict $ fromStateDict spec mempty
+
     let g = sMkGenerator (SDevice SCPU) 0
 
     ids <- withTokenizer $ \tokenizer -> do
@@ -85,4 +86,4 @@ testForwardRoBERTaBase =
           firstPositions <- take 3 firstBatch
           take 3 firstPositions
     let firstLMHeadLogits' = [32.5267, -4.5318, 21.4297, 7.9570, -2.7508, 21.1128, -2.8331, -4.1595, 10.6294]
-    mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLMHeadLogits firstLMHeadLogits'
+    mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLMHeadLogits' firstLMHeadLogits

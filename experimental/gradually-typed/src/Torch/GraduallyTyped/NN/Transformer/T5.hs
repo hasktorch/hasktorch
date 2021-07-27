@@ -3,7 +3,7 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
-{-# OPTIONS_GHC -v2 -Wall #-}
+{-# OPTIONS_GHC -v2 #-}
 
 module Torch.GraduallyTyped.NN.Transformer.T5
   ( module Torch.GraduallyTyped.NN.Transformer.T5.Common,
@@ -45,9 +45,10 @@ testForwardT5Small :: IO ()
 testForwardT5Small =
   do
     stateDict <- stateDictFromPretrained "/tmp/t5-small-state-dict.pt"
-    model <-
-      flip evalStateT stateDict $
-        fromStateDict (t5SmallSpec SWithLMHead (SGradient SWithoutGradient) (SDevice SCPU)) ""
+
+    let spec = t5SmallSpec SWithLMHead (SGradient SWithoutGradient) (SDevice SCPU)
+    model <- flip evalStateT stateDict $ fromStateDict spec mempty
+
     let g = sMkGenerator (SDevice SCPU) 0
 
     (encoderIds, decoderIds) <- withTokenizer $ \tokenizer -> do
@@ -84,9 +85,10 @@ testForwardT5Small =
 -- testForwardByT5Small =
 --   do
 --     stateDict <- stateDictFromPretrained "/tmp/byt5-small-state-dict.pt"
---     model <-
---       flip evalStateT stateDict $
---         fromStateDict (byT5SmallSpec SWithLMHead (SGradient SWithoutGradient) (SDevice SCPU)) ""
+
+--     let spec = byT5SmallSpec SWithLMHead (SGradient SWithoutGradient) (SDevice SCPU)
+--     model <- flip evalStateT stateDict $ fromStateDict spec mempty
+
 --     let g = sMkGenerator (SDevice SCPU) 0
 
 --     input <-

@@ -45,7 +45,7 @@ import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mulScalar, subScala
 import Torch.GraduallyTyped.Tensor.Type (Tensor, TensorSpec (..))
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 
--- | Linear model with weight and optional bias.
+-- | Generic linear model with weight and optional bias.
 data
   GLinear
     (weight :: Type)

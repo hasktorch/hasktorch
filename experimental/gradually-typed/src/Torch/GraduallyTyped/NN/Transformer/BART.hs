@@ -39,9 +39,10 @@ withTokenizer =
 testBARTAutoencoder :: String -> IO String
 testBARTAutoencoder prompt = do
   stateDict <- stateDictFromPretrained "/tmp/bart-base-state-dict.pt"
-  model <-
-    flip evalStateT stateDict $
-      fromStateDict (bartBaseSpec SWithLMHead (SGradient SWithoutGradient) (SDevice SCPU)) ""
+
+  let spec = bartBaseSpec SWithLMHead (SGradient SWithoutGradient) (SDevice SCPU)
+  model <- flip evalStateT stateDict $ fromStateDict spec mempty
+
   let g = mkGenerator @('Device 'CPU) 0
 
   withTokenizer $ \tokenizer -> do

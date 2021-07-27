@@ -63,14 +63,14 @@ import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add, mulScalar)
 import Torch.GraduallyTyped.Tensor.Type (SGetShape (..), Tensor (..), TensorSpec (..))
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 
--- | Whether or not scaling is applied in the multi-headed attention layer.
-data Scaling
+-- | Data type for representing whether or not (and, if so, where) scaling is applied in the multi-headed attention layer.
+data MultiHeadAttentionHasScaling
   = -- | Scaling is not done.
-    NoScaling
+    MultiHeadAttentionWithoutScaling
   | -- | Scaling is applied to the query after in the in-projection.
-    QueryScaling
+    MultiHeadAttentionWithQueryScaling
   | -- | Scaling is applied to the attention weights.
-    WeightScaling
+    MultiHeadAttentionWithWeightScaling
   deriving stock (Eq, Ord, Show, Generic)
 
 -- | Generic multi-headed attention layer.
@@ -113,7 +113,7 @@ data
       -- | dropout
       mhaDropout :: dropout,
       -- | scaling
-      mhaScaling :: Scaling
+      mhaScaling :: MultiHeadAttentionHasScaling
     } ->
     GMultiHeadAttention headDim headEmbedDim embedDim qInProj kInProj vInProj outProj dropout
   deriving stock (Show)
@@ -296,8 +296,8 @@ multiHeadAttentionSpec style gradient device dataType headDim headEmbedDim embed
       vInProjSpec SBERT = NamedModel "self.value." (projSpecWithBias valueEmbedDim embedDim)
       vInProjSpec SRoBERTa = NamedModel "self.value." (projSpecWithBias valueEmbedDim embedDim)
       vInProjSpec SGPT2 = undefined
-      outProjSpec ST5 = NamedModel "out." (projSpecWithoutBias embedDim queryEmbedDim)
-      outProjSpec SByT5 = NamedModel "out." (projSpecWithoutBias embedDim queryEmbedDim)
+      outProjSpec ST5 = NamedModel "o." (projSpecWithoutBias embedDim queryEmbedDim)
+      outProjSpec SByT5 = NamedModel "o." (projSpecWithoutBias embedDim queryEmbedDim)
       outProjSpec SBART = NamedModel "out_proj." (projSpecWithBias embedDim queryEmbedDim)
       outProjSpec SMBART = NamedModel "out_proj." (projSpecWithBias embedDim queryEmbedDim)
       outProjSpec SPegasus = NamedModel "out_proj." (projSpecWithBias embedDim queryEmbedDim)
@@ -305,14 +305,14 @@ multiHeadAttentionSpec style gradient device dataType headDim headEmbedDim embed
       outProjSpec SRoBERTa = NamedModel "output.dense." (projSpecWithBias embedDim queryEmbedDim)
       outProjSpec SGPT2 = undefined
       dropoutSpec _ = Dropout dropoutP
-      scaling :: STransformerStyle style -> Scaling
-      scaling ST5 = NoScaling
-      scaling SByT5 = NoScaling
-      scaling SBART = QueryScaling
-      scaling SMBART = QueryScaling
-      scaling SBERT = WeightScaling
-      scaling SRoBERTa = WeightScaling
-      scaling SPegasus = QueryScaling
+      scaling :: STransformerStyle style -> MultiHeadAttentionHasScaling
+      scaling ST5 = MultiHeadAttentionWithoutScaling
+      scaling SByT5 = MultiHeadAttentionWithoutScaling
+      scaling SBART = MultiHeadAttentionWithQueryScaling
+      scaling SMBART = MultiHeadAttentionWithQueryScaling
+      scaling SPegasus = MultiHeadAttentionWithQueryScaling
+      scaling SBERT = MultiHeadAttentionWithWeightScaling
+      scaling SRoBERTa = MultiHeadAttentionWithWeightScaling
       scaling SGPT2 = undefined
    in GMultiHeadAttention
         headDim
@@ -626,9 +626,9 @@ instance
               >>>= IxStateT . forward mhaQInProj
               >>>= ireturn
                 . ( \case
-                      NoScaling -> id
-                      QueryScaling -> flip mulScalar scaling
-                      WeightScaling -> id
+                      MultiHeadAttentionWithoutScaling -> id
+                      MultiHeadAttentionWithQueryScaling -> flip mulScalar scaling
+                      MultiHeadAttentionWithWeightScaling -> id
                   )
                   mhaScaling
               >>>= ireturn . sReshape (SShape $ batchDim :|: querySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
@@ -643,9 +643,9 @@ instance
             matmul <<$>> q <<*>> kt
               >>>= ireturn
                 . ( \case
-                      NoScaling -> id
-                      QueryScaling -> id
-                      WeightScaling -> flip mulScalar scaling
+                      MultiHeadAttentionWithoutScaling -> id
+                      MultiHeadAttentionWithQueryScaling -> id
+                      MultiHeadAttentionWithWeightScaling -> flip mulScalar scaling
                   )
                   mhaScaling
               >>>= ireturn . (`add` attentionBias)

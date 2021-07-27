@@ -23,8 +23,10 @@ module Torch.GraduallyTyped.NN.Transformer.GTransformer where
 import Control.Monad.Indexed ((>>>=))
 import Control.Monad.Indexed.State (IxStateT (..))
 import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
+import Control.Monad.State (evalStateT)
 import Data.Functor.Indexed (IxPointed (ireturn), (<<$>>), (<<*>>))
 import Data.Kind (Type)
+import qualified Data.Map as Map
 import Data.Singletons.Prelude.List (SList (SNil))
 import Data.Singletons.Prelude.Maybe (SMaybe (SNothing))
 import Data.Singletons.TypeLits (SNat (..))
@@ -94,6 +96,7 @@ type instance
   ModelSpec (GTransformer posEnc relPosEnc initialLayerNorm initialDropout stack finalLayerNorm finalDropout) =
     GTransformer (ModelSpec posEnc) (ModelSpec relPosEnc) (ModelSpec initialLayerNorm) (ModelSpec initialDropout) (ModelSpec stack) (ModelSpec finalLayerNorm) (ModelSpec finalDropout)
 
+-- | Specifies the absolute positional encoding layer of a transformer encoder.
 type family
   TEPosEncF
     (style :: TransformerStyle)
@@ -112,6 +115,7 @@ type family
   TEPosEncF 'BERT gradient device dataType inputEmbedDim posEncDim = NamedModel (Embedding gradient ('Layout 'Dense) device dataType posEncDim inputEmbedDim 'Nothing)
   TEPosEncF 'RoBERTa gradient device dataType inputEmbedDim posEncDim = TEPosEncF 'BERT gradient device dataType inputEmbedDim posEncDim
 
+-- | Specifies the relative positional encoding layer of a transformer encoder.
 type family
   TERelPosEncF
     (style :: TransformerStyle)
@@ -130,6 +134,7 @@ type family
   TERelPosEncF 'BERT _ _ _ _ _ = ()
   TERelPosEncF 'RoBERTa gradient device dataType headDim posEncDim = TERelPosEncF 'BERT gradient device dataType headDim posEncDim
 
+-- | Specifies the initial layer normalization layer of a transformer encoder.
 type family
   TEInitialLayerNormF
     (style :: TransformerStyle)
@@ -147,6 +152,7 @@ type family
   TEInitialLayerNormF 'BERT gradient device dataType inputEmbedDim = NamedModel (LayerNorm 'WithBias gradient device dataType ('Shape '[inputEmbedDim]))
   TEInitialLayerNormF 'RoBERTa gradient device dataType inputEmbedDim = TEInitialLayerNormF 'BERT gradient device dataType inputEmbedDim
 
+-- | Specifies the initial dropout layer of a transformer encoder.
 type family
   TEInitialDropoutF
     (style :: TransformerStyle) ::
@@ -160,6 +166,7 @@ type family
   TEInitialDropoutF 'BERT = Dropout
   TEInitialDropoutF 'RoBERTa = Dropout
 
+-- | Specifies the transformer block stack of a transformer encoder.
 type family
   TEStackF
     (style :: TransformerStyle)
@@ -187,6 +194,7 @@ type family
           )
       )
 
+-- | Specifies the final layer normalization layer of a transformer encoder.
 type family
   TEFinalLayerNormF
     (style :: TransformerStyle)
@@ -204,6 +212,7 @@ type family
   TEFinalLayerNormF 'BERT _ _ _ _ = ()
   TEFinalLayerNormF 'RoBERTa gradient device dataType inputEmbedDim = TEFinalLayerNormF 'BERT gradient device dataType inputEmbedDim
 
+-- | Specifies the final dropout layer of a transformer encoder.
 type family
   TEFinalDropoutF
     (style :: TransformerStyle) ::
@@ -322,7 +331,7 @@ transformerEncoderSpec style numLayers gradient device dataType headDim headEmbe
     relPosEncSpec' = EmbeddingSpec gradient (SLayout SDense) device dataType posEncDim headDim SNothing
     posEncSpec' = EmbeddingSpec gradient (SLayout SDense) device dataType posEncDim inputEmbedDim SNothing
 
--- | Specifies the parameters 
+-- | Specifies the absolute positional encoding layer of a transformer decoder.
 type family
   TDPosEncF
     (style :: TransformerStyle)
@@ -339,6 +348,7 @@ type family
   TDPosEncF 'MBART gradient device dataType inputEmbedDim posEncDim = TDPosEncF 'BART gradient device dataType inputEmbedDim posEncDim
   TDPosEncF 'Pegasus gradient device dataType inputEmbedDim posEncDim = TDPosEncF 'BART gradient device dataType inputEmbedDim posEncDim
 
+-- | Specifies the relative positional encoding layer of a transformer decoder.
 type family
   TDRelPosEncF
     (style :: TransformerStyle)
@@ -355,6 +365,7 @@ type family
   TDRelPosEncF 'MBART gradient device dataType headDim posEncDim = TDRelPosEncF 'BART gradient device dataType headDim posEncDim
   TDRelPosEncF 'Pegasus gradient device dataType headDim posEncDim = TDRelPosEncF 'BART gradient device dataType headDim posEncDim
 
+-- | Specifies the initial layer normalization layer of a transformer decoder.
 type family
   TDInitialLayerNormF
     (style :: TransformerStyle)
@@ -370,6 +381,7 @@ type family
   TDInitialLayerNormF 'MBART gradient device dataType inputEmbedDim = TDInitialLayerNormF 'BART gradient device dataType inputEmbedDim
   TDInitialLayerNormF 'Pegasus _ _ _ _ = ()
 
+-- | Specifies the initial dropout layer of a transformer decoder.
 type family
   TDInitialDropoutF
     (style :: TransformerStyle) ::
@@ -381,6 +393,7 @@ type family
   TDInitialDropoutF 'MBART = Dropout
   TDInitialDropoutF 'Pegasus = Dropout
 
+-- | Specifies the transformer block stack of a transformer decoder.
 type family
   TDStackF
     (style :: TransformerStyle)
@@ -409,6 +422,7 @@ type family
           )
       )
 
+-- | Specifies the final layer normalization layer of a transformer decoder.
 type family
   TDFinalLayerNormF
     (style :: TransformerStyle)
@@ -424,6 +438,7 @@ type family
   TDFinalLayerNormF 'MBART gradient device dataType inputEmbedDim = TDFinalLayerNormF 'BART gradient device dataType inputEmbedDim
   TDFinalLayerNormF 'Pegasus gradient device dataType inputEmbedDim = NamedModel (LayerNorm 'WithBias gradient device dataType ('Shape '[inputEmbedDim]))
 
+-- | Specifies the final dropout layer of a transformer decoder.
 type family
   TDFinalDropoutF
     (style :: TransformerStyle) ::
@@ -1092,13 +1107,16 @@ testEncoder = do
   let g = sMkGenerator device 0
       spec = NamedModel "encoder." $ transformerEncoderSpec ST5 (SNat @10) gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP eps
   (encoder, g') <- initialize spec g
+  encoder' <- flip evalStateT Map.empty $ do
+    toStateDict mempty encoder
+    fromStateDict spec mempty
   let batchDim = SName @"*" :&: SSize @3
       seqDim = SName @"*" :&: SSize @13
       sOnes' = (sOnes .) . TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device
       input = sOnes' dataType (SShape $ batchDim :|: seqDim :|: inputEmbedDim :|: SNil)
       relPos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
       attentionMask = sOnes' dataType (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
-  (output, _) <- forward encoder (input, relPos, attentionMask) g'
+  (output, _) <- forward encoder' (input, relPos, attentionMask) g'
   pure output
 
 testDecoder :: IO _
@@ -1118,6 +1136,9 @@ testDecoder = do
   let g = sMkGenerator device 0
       spec = NamedModel "decoder." $ transformerDecoderSpec SBART (SNat @10) gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP eps
   (decoder, g') <- initialize spec g
+  decoder' <- flip evalStateT Map.empty $ do
+    toStateDict mempty decoder
+    fromStateDict spec mempty
   let batchDim = SName @"*" :&: SSize @3
       seqDim = SName @"*" :&: SSize @13
       decoderSeqDim = SName @"*" :&: SSize @7
@@ -1127,5 +1148,5 @@ testDecoder = do
       decoderPos = sOnes' (SDataType SInt64) (SShape $ decoderSeqDim :|: SNil)
       decoderAttentionMask = sOnes' dataType (SShape $ batchDim :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
       crossAttentionMask = sOnes' dataType (SShape $ batchDim :|: decoderSeqDim :|: seqDim :|: SNil)
-  (output, _) <- forward decoder (decoderInput, encoderOutput, decoderPos, decoderAttentionMask, crossAttentionMask) g'
+  (output, _) <- forward decoder' (decoderInput, encoderOutput, decoderPos, decoderAttentionMask, crossAttentionMask) g'
   pure output

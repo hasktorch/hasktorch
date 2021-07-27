@@ -3,7 +3,7 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
-{-# OPTIONS_GHC -v2 -Wall #-}
+{-# OPTIONS_GHC -v2 #-}
 
 module Torch.GraduallyTyped.NN.Transformer.Pegasus
   ( module Torch.GraduallyTyped.NN.Transformer.Pegasus.Common,
@@ -35,9 +35,10 @@ testForwardPegasusXSum :: IO ()
 testForwardPegasusXSum =
   do
     stateDict <- stateDictFromPretrained "/tmp/pegasus-xsum-state-dict.pt"
-    model <-
-      flip evalStateT stateDict $
-        fromStateDict (pegasusXSumSpec SWithLMHead (SGradient SWithoutGradient) (SDevice SCPU)) ""
+
+    let spec = pegasusXSumSpec SWithLMHead (SGradient SWithoutGradient) (SDevice SCPU)
+    model <- flip evalStateT stateDict $ fromStateDict spec mempty
+
     let g = sMkGenerator (SDevice SCPU) 0
 
     (encoderIds, decoderIds) <- withTokenizer $ \tokenizer -> do
@@ -67,7 +68,7 @@ testForwardPegasusXSum =
           firstPositions <- take 3 firstBatch
           take 3 firstPositions
     let firstEncoderHiddenStates' = [0.0965, -0.0048, -0.1945, -0.0825, 0.1829, -0.1589, -0.0297, -0.0171, -0.1210]
-    mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstEncoderHiddenStates firstEncoderHiddenStates'
+    mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstEncoderHiddenStates' firstEncoderHiddenStates
 
     let decoderOutput = case pegasusDecoderOutput of
           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
@@ -76,4 +77,4 @@ testForwardPegasusXSum =
           firstPositions <- take 3 firstBatch
           take 3 firstPositions
     let firstLogits' = [0.0000, 4.9619, 0.4453, 0.0000, 3.7238, 0.5208, 0.0000, 4.0774, 0.1976]
-    mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLogits firstLogits'
+    mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLogits' firstLogits

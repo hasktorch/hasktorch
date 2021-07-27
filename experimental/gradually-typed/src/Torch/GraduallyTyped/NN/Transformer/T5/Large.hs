@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
-{-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.NN.Transformer.T5.Large where
 
@@ -8,7 +7,8 @@ import Data.Singletons (SingI (sing))
 import Data.Singletons.TypeLits (SNat)
 import GHC.TypeLits (Nat)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
-import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5Model (..), T5ModelSpec (..))
+import Torch.GraduallyTyped.NN.Class (ModelSpec)
+import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5ModelF, t5ModelSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead, STransformerStyle (ST5), TransformerHead, TransformerStyle (T5))
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
@@ -50,12 +50,12 @@ type T5Large
   (transformerHead :: TransformerHead)
   (gradient :: Gradient RequiresGradient)
   (device :: Device (DeviceType Nat)) =
-  T5Model 'T5 transformerHead T5LargeNumLayers T5LargeNumLayers gradient device T5LargeHeadDim T5LargeHeadEmbedDim T5LargeEmbedDim T5LargeInputEmbedDim T5LargeFFNDim T5LargeVocabDim
+  T5ModelF 'T5 transformerHead T5LargeNumLayers T5LargeNumLayers gradient device T5LargeHeadDim T5LargeHeadEmbedDim T5LargeEmbedDim T5LargeInputEmbedDim T5LargeFFNDim T5LargeVocabDim
 
 -- | T5-Large model specification.
 t5LargeSpec ::
   STransformerHead transformerHead ->
   SGradient gradient ->
   SDevice device ->
-  T5ModelSpec 'T5 transformerHead T5LargeNumLayers T5LargeNumLayers gradient device T5LargeHeadDim T5LargeHeadEmbedDim T5LargeEmbedDim T5LargeInputEmbedDim T5LargeFFNDim T5LargeVocabDim
-t5LargeSpec transformerHead = T5ModelSpec ST5 transformerHead t5LargeNumLayers t5LargeNumLayers
+  ModelSpec (T5ModelF 'T5 transformerHead T5LargeNumLayers T5LargeNumLayers gradient device T5LargeHeadDim T5LargeHeadEmbedDim T5LargeEmbedDim T5LargeInputEmbedDim T5LargeFFNDim T5LargeVocabDim)
+t5LargeSpec transformerHead = t5ModelSpec ST5 transformerHead t5LargeNumLayers t5LargeNumLayers

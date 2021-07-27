@@ -78,6 +78,7 @@ type instance
   ModelSpec (GSelfAttention initialLayerNorm mha dropout finalLayerNorm) =
     GSelfAttention (ModelSpec initialLayerNorm) (ModelSpec mha) (ModelSpec dropout) (ModelSpec finalLayerNorm)
 
+-- | Specifies the initial layer normalization of the self-attention layer.
 type family
   SAInitialLayerNormF
     (style :: TransformerStyle)
@@ -96,12 +97,13 @@ type family
   SAInitialLayerNormF 'MBART gradient device dataType queryEmbedDim =
     SAInitialLayerNormF 'BART gradient device dataType queryEmbedDim
   SAInitialLayerNormF 'Pegasus gradient device dataType queryEmbedDim =
-    SAInitialLayerNormF 'BART gradient device dataType queryEmbedDim
+    NamedModel (LayerNorm 'WithBias gradient device dataType ('Shape '[queryEmbedDim]))
   SAInitialLayerNormF 'BERT _ _ _ _ =
     ()
   SAInitialLayerNormF 'RoBERTa gradient device dataType queryEmbedDim =
     SAInitialLayerNormF 'BERT gradient device dataType queryEmbedDim
 
+-- | Specifies the multi-headed attention layer of the self-attention layer.
 type family
   SAMultiheadAttentionF
     (style :: TransformerStyle)
@@ -127,6 +129,7 @@ type family
           (DropoutF style)
       )
 
+-- | Specifies the dropout layer of the self-attention layer.
 type family
   SADropoutF
     (style :: TransformerStyle) ::
@@ -134,6 +137,7 @@ type family
   where
   SADropoutF _ = Dropout
 
+-- | Specifies the final layer normalization of the self-attention layer.
 type family
   SAFinalLayerNormF
     (style :: TransformerStyle)
@@ -152,12 +156,24 @@ type family
   SAFinalLayerNormF 'MBART gradient device dataType queryEmbedDim =
     SAFinalLayerNormF 'BART gradient device dataType queryEmbedDim
   SAFinalLayerNormF 'Pegasus gradient device dataType queryEmbedDim =
-    SAFinalLayerNormF 'BART gradient device dataType queryEmbedDim
+    ()
   SAFinalLayerNormF 'BERT gradient device dataType queryEmbedDim =
     NamedModel (LayerNorm 'WithBias gradient device dataType ('Shape '[queryEmbedDim]))
   SAFinalLayerNormF 'RoBERTa gradient device dataType queryEmbedDim =
     SAFinalLayerNormF 'BERT gradient device dataType queryEmbedDim
 
+-- | Specifies the parameters of a self-attention layer.
+--
+-- - @style@: the style of the transformer stack, e.g. 'ST5', 'SByT5', etc.
+-- - @gradient@: whether to compute the gradient of the stack's parameters.
+-- - @device@: the computational device on which the stack is allocated.
+-- - @dataType@: the data type of the stack's parameters.
+-- - @headDim@: the dimension of all transformer heads in the stack.
+-- - @headEmbedDim@: the dimension of the transformer head embeddings.
+-- - @embedDim@: the dimension of the transformer embeddings.
+-- - @queryEmbedDim@: the dimension of the transformer query embeddings.
+-- - @dropoutP@: the dropout rate.
+-- - @eps@: the epsilon value for numerical stability of the layer normalization.
 selfAttentionSpec ::
   forall style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim.
   STransformerStyle style ->
@@ -182,7 +198,7 @@ selfAttentionSpec style gradient device dataType headDim headEmbedDim embedDim q
       initialLayerNormSpec SByT5 = NamedModel "layer_norm." layerNormWithoutBiasSpec
       initialLayerNormSpec SBART = ()
       initialLayerNormSpec SMBART = ()
-      initialLayerNormSpec SPegasus = ()
+      initialLayerNormSpec SPegasus = NamedModel "self_attn_layer_norm." layerNormWithBiasSpec
       initialLayerNormSpec SBERT = ()
       initialLayerNormSpec SRoBERTa = ()
       initialLayerNormSpec SGPT2 = undefined
@@ -199,7 +215,7 @@ selfAttentionSpec style gradient device dataType headDim headEmbedDim embedDim q
       finalLayerNormSpec SByT5 = ()
       finalLayerNormSpec SBART = NamedModel "self_attn_layer_norm." layerNormWithBiasSpec
       finalLayerNormSpec SMBART = NamedModel "self_attn_layer_norm." layerNormWithBiasSpec
-      finalLayerNormSpec SPegasus = NamedModel "self_attn_layer_norm." layerNormWithBiasSpec
+      finalLayerNormSpec SPegasus = ()
       finalLayerNormSpec SBERT = NamedModel "output.LayerNorm." layerNormWithBiasSpec
       finalLayerNormSpec SRoBERTa = NamedModel "output.LayerNorm." layerNormWithBiasSpec
       finalLayerNormSpec SGPT2 = undefined

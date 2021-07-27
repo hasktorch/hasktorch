@@ -36,7 +36,7 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), 
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (fromStateDict), stateDictFromPretrained)
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (logSoftmax)
-import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5DataType, T5GenerationInput (..), T5Input (..), T5Model (..), T5Output (..), mkT5Input, t5EOSTokenId)
+import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5DataType, T5GenerationInput (..), T5Input (..), GT5Model (..), T5Output (..), mkT5Input, t5EOSTokenId)
 import Torch.GraduallyTyped.NN.Transformer.T5.Small (T5Small, t5SmallSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (TransformerHead (WithLMHead), STransformerHead (SWithLMHead))
 import Torch.GraduallyTyped.Random (Generator, sMkGenerator)
@@ -252,9 +252,8 @@ testBeamSearch = do
       (SName @"*" :&: SSize @19)
       tokens
   stateDict <- stateDictFromPretrained "/tmp/t5-small-state-dict.pt"
-  model <-
-    flip evalStateT stateDict $
-      fromStateDict (t5SmallSpec SWithLMHead (SGradient SWithGradient) (SDevice SCPU)) ""
+  let spec = t5SmallSpec SWithLMHead (SGradient SWithGradient) (SDevice SCPU)
+  model <- flip evalStateT stateDict $ fromStateDict spec mempty
   let g = sMkGenerator (SDevice SCPU) 0
   Beams finished _ <- last <$> runBeamSearch 50 1 model input g
   print $ finalValue <$> finished

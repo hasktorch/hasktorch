@@ -7,7 +7,8 @@ import Data.Singletons (SingI (sing))
 import Data.Singletons.TypeLits (SNat)
 import GHC.TypeLits (Nat)
 import Torch.GraduallyTyped.Device (Device, DeviceType, SDevice)
-import Torch.GraduallyTyped.NN.Transformer.RoBERTa.Common (RoBERTaModel, RoBERTaModelSpec (..))
+import Torch.GraduallyTyped.NN.Class (ModelSpec)
+import Torch.GraduallyTyped.NN.Transformer.RoBERTa.Common (RoBERTaModelF, robertaModelSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead, TransformerHead)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
@@ -53,11 +54,11 @@ type RoBERTaBase
   (transformerHead :: TransformerHead)
   (gradient :: Gradient RequiresGradient)
   (device :: Device (DeviceType Nat)) =
-  RoBERTaModel transformerHead RoBERTaBaseNumLayers gradient device RoBERTaBaseHeadDim RoBERTaBaseHeadEmbedDim RoBERTaBaseEmbedDim RoBERTaBaseInputEmbedDim RoBERTaBaseFFNDim RoBERTaBaseVocabDim RoBERTaBaseTypeVocabDim
+  RoBERTaModelF transformerHead RoBERTaBaseNumLayers gradient device RoBERTaBaseHeadDim RoBERTaBaseHeadEmbedDim RoBERTaBaseEmbedDim RoBERTaBaseInputEmbedDim RoBERTaBaseFFNDim RoBERTaBaseVocabDim RoBERTaBaseTypeVocabDim
 
 robertaBaseSpec ::
   STransformerHead transformerHead ->
   SGradient gradient ->
   SDevice device ->
-  RoBERTaModelSpec transformerHead RoBERTaBaseNumLayers gradient device RoBERTaBaseHeadDim RoBERTaBaseHeadEmbedDim RoBERTaBaseEmbedDim RoBERTaBaseInputEmbedDim RoBERTaBaseFFNDim RoBERTaBaseVocabDim RoBERTaBaseTypeVocabDim
-robertaBaseSpec transformerHead = RoBERTaModelSpec transformerHead robertaBaseNumLayers
+  ModelSpec (RoBERTaModelF transformerHead RoBERTaBaseNumLayers gradient device RoBERTaBaseHeadDim RoBERTaBaseHeadEmbedDim RoBERTaBaseEmbedDim RoBERTaBaseInputEmbedDim RoBERTaBaseFFNDim RoBERTaBaseVocabDim RoBERTaBaseTypeVocabDim)
+robertaBaseSpec transformerHead = robertaModelSpec transformerHead robertaBaseNumLayers
