@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -12,6 +13,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
@@ -23,8 +25,6 @@
 {-# LANGUAGE NoStarIsType #-}
 {-# OPTIONS_GHC -Wall #-}
 
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE DerivingStrategies #-}
 module Torch.GraduallyTyped.Shape.Type where
 
 import Data.Bifunctor (Bifunctor (..))
@@ -350,13 +350,11 @@ instance SingKind (Shape [Dim (Name Symbol) (Size Nat)]) where
   toSing (Checked shape) = withSomeSing shape $ SomeSing . SShape
 
 pattern (:|:) ::
-  forall
-    (dim :: Dim (Name Symbol) (Size Nat))
-    (dims :: [Dim (Name Symbol) (Size Nat)]).
-  SDim dim ->
-  SList dims ->
-  SList (dim : dims)
-pattern (:|:) dim dims = SCons dim dims
+  forall a as.
+  Sing a ->
+  SList as ->
+  SList (a : as)
+pattern (:|:) x xs = SCons x xs
 
 infixr 8 :|:
 

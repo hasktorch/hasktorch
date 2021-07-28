@@ -72,7 +72,7 @@ import qualified Torch.Internal.Managed.Type.TensorOptions as ATen
 import qualified Torch.Internal.Type as ATen (Tensor, TensorList, TensorOptions)
 import qualified Torch.Internal.Unmanaged.Type.Tensor as Unmanaged (tensor_data_ptr)
 import qualified Torch.Tensor (Tensor (Unsafe))
-import Prelude hiding (unzip)
+import Prelude hiding (unzip, unzip3)
 
 -- $setup
 -- >>> import Data.Singletons.Prelude.List (SList (..))
@@ -1525,6 +1525,56 @@ instance (TensorLikeRaw a, TensorLikeRaw b) => TensorLikeRaw (a, b) where
   tensorPokeElemOff ptr offset (2 : innerDims) (x, y) = do
     tensorPokeElemOff ptr offset innerDims x
     tensorPokeElemOff ptr (offset + width) innerDims y
+    where
+      width = product innerDims
+  tensorPokeElemOff _ _ dims' x = unexpectedDimsError dims' $ pure x
+
+instance
+  ( TensorLike a dType dims,
+    TensorLike b dType dims',
+    TensorLike c dType dims',
+    TensorLikeRaw a,
+    TensorLikeRaw b,
+    TensorLikeRaw c,
+    SingI dType,
+    SGetDims dimsOut,
+    'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape (dims <+> dims')) ('Dim ('Name "*") ('Size 3))
+  ) =>
+  TensorLike (a, b, c) dType dimsOut
+  where
+  sToTensor = sToTensorRaw
+  fromTensor = fromTensorRaw
+
+unzip3 :: Functor f => f (a, b, c) -> (f a, f b, f c)
+unzip3 xyz =
+  ( (\(x, _, _) -> x) <$> xyz,
+    (\(_, y, _) -> y) <$> xyz,
+    (\(_, _, z) -> z) <$> xyz
+  )
+
+instance (TensorLikeRaw a, TensorLikeRaw b, TensorLikeRaw c) => TensorLikeRaw (a, b, c) where
+  guessDim = const $ pure 2
+
+  guessInnerDims (unzip3 -> (x, y, z)) = do
+    xDims <- guessDims x
+    yDims <- guessDims y
+    zDims <- guessDims z
+    traverse_ (checkDims xDims) [yDims, zDims]
+    pure xDims
+
+  tensorPeekElemOff ptr offset (3 : innerDims) =
+    (,,)
+      <$> tensorPeekElemOff ptr offset innerDims
+      <*> tensorPeekElemOff ptr (offset + width) innerDims
+      <*> tensorPeekElemOff ptr (offset + 2 * width) innerDims
+    where
+      width = product innerDims
+  tensorPeekElemOff _ _ dims' = unexpectedDimsError @(a, b) dims' empty
+
+  tensorPokeElemOff ptr offset (3 : innerDims) (x, y, z) = do
+    tensorPokeElemOff ptr offset innerDims x
+    tensorPokeElemOff ptr (offset + width) innerDims y
+    tensorPokeElemOff ptr (offset + 2 * width) innerDims z
     where
       width = product innerDims
   tensorPokeElemOff _ _ dims' x = unexpectedDimsError dims' $ pure x
