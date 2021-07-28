@@ -25,6 +25,7 @@ library
                      , Torch.GraduallyTyped.Tensor
                      , Torch.GraduallyTyped.Tensor.Type
                      , Torch.GraduallyTyped.Tensor.Creation
+                     , Torch.GraduallyTyped.Tensor.Indexing
                      , Torch.GraduallyTyped.Tensor.IndexingSlicingJoining
                      , Torch.GraduallyTyped.Tensor.Other
                      , Torch.GraduallyTyped.Tensor.MathOperations
@@ -138,6 +139,7 @@ test-suite spec
   hs-source-dirs:      test
   main-is:             Spec.hs
   other-modules:       TensorSpec
+                     , IndexingSpec
                      , TransformerSpec
                      , BARTSpec
   default-language:    Haskell2010

@@ -308,6 +308,9 @@ type family InsertDimF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape 
   InsertDimF _ 'UncheckedShape _ = 'UncheckedShape
   InsertDimF ('SelectDim by) ('Shape dims) dim = 'Shape (InsertDimCheckF by dims dim (InsertDimImplF by dims dim))
 
+type family PrependDimF (dim :: Dim (Name Symbol) (Size Nat)) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
+  PrependDimF dim shape = InsertDimF ('SelectDim ('ByIndex 0)) shape dim
+
 type family RemoveDimByIndexF (index :: Maybe Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) :: Maybe [Dim (Name Symbol) (Size Nat)] where
   RemoveDimByIndexF ('Just 0) (dim ': dims) = 'Just dims
   RemoveDimByIndexF ('Just index) (h ': t) = PrependMaybe ('Just h) (RemoveDimByIndexF ('Just (index - 1)) t)
