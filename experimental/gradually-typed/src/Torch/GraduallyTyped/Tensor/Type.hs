@@ -242,26 +242,16 @@ withGradient ::
   IO (Tensor ('Gradient 'WithGradient) layout device dataType shape)
 withGradient tensor = cast2 ATen.tensor_set_requires_grad_b tensor True
 
-class SSetGradient (gradient :: Gradient RequiresGradient) where
-  sSetGradient ::
-    forall gradient' layout device dataType shape.
-    SGradient gradient ->
-    Tensor gradient' layout device dataType shape ->
-    IO (Tensor gradient layout device dataType shape)
-
-instance SSetGradient 'UncheckedGradient where
-  sSetGradient (SUncheckedGradient WithoutGradient) tensor =
-    cast2 ATen.tensor_set_requires_grad_b tensor False
-  sSetGradient (SUncheckedGradient WithGradient) tensor =
-    cast2 ATen.tensor_set_requires_grad_b tensor True
-
-instance SSetGradient ('Gradient 'WithGradient) where
-  sSetGradient (SGradient SWithGradient) tensor =
-    cast2 ATen.tensor_set_requires_grad_b tensor True
-
-instance SSetGradient ('Gradient 'WithoutGradient) where
-  sSetGradient (SGradient SWithoutGradient) tensor =
-    cast2 ATen.tensor_set_requires_grad_b tensor False
+-- | Turn gradient computations off or on for a tensor.
+sSetGradient ::
+  forall gradient gradient' layout device dataType shape.
+  SGradient gradient ->
+  Tensor gradient' layout device dataType shape ->
+  IO (Tensor gradient layout device dataType shape)
+sSetGradient gradient tensor =
+  case forgetIsChecked (fromSing gradient) of
+    WithoutGradient -> cast2 ATen.tensor_set_requires_grad_b tensor False
+    WithGradient -> cast2 ATen.tensor_set_requires_grad_b tensor True
 
 class SGetGradient (gradient :: Gradient RequiresGradient) where
   -- | Returns the gradually typed information for whether or not gradient computations for the tensor are turned on.
@@ -418,27 +408,17 @@ toSparse ::
   m (Tensor gradient ('Layout 'Sparse) device dataType shape)
 toSparse = unsafeThrowableIO . cast1 ATen.tensor_to_sparse
 
-class SSetLayout (layout :: Layout LayoutType) where
-  sSetLayout ::
-    forall m gradient layout' device dataType shape.
-    MonadThrow m =>
-    SLayout layout ->
-    Tensor gradient layout' device dataType shape ->
-    m (Tensor gradient layout device dataType shape)
-
-instance SSetLayout 'UncheckedLayout where
-  sSetLayout (SUncheckedLayout Dense) =
-    unsafeThrowableIO . cast1 ATen.tensor_to_dense
-  sSetLayout (SUncheckedLayout Sparse) =
-    unsafeThrowableIO . cast1 ATen.tensor_to_sparse
-
-instance SSetLayout ('Layout 'Dense) where
-  sSetLayout (SLayout SDense) =
-    unsafeThrowableIO . cast1 ATen.tensor_to_dense
-
-instance SSetLayout ('Layout 'Sparse) where
-  sSetLayout (SLayout SSparse) =
-    unsafeThrowableIO . cast1 ATen.tensor_to_sparse
+-- | Set the memory layout of a tensor to a given layout.
+sSetLayout ::
+  forall m gradient layout layout' device dataType shape.
+  MonadThrow m =>
+  SLayout layout ->
+  Tensor gradient layout' device dataType shape ->
+  m (Tensor gradient layout device dataType shape)
+sSetLayout layout input =
+  case forgetIsChecked (fromSing layout) of
+    Dense -> unsafeThrowableIO . cast1 ATen.tensor_to_dense $ input
+    Sparse -> unsafeThrowableIO . cast1 ATen.tensor_to_sparse $ input
 
 class SGetLayout (layout :: Layout LayoutType) where
   -- | Returns the gradually typed memory layout of the input tensor.
@@ -595,42 +575,27 @@ cuda ::
   m (Tensor gradient layout ('Device ('CUDA 0)) dataType shape)
 cuda = unsafeThrowableIO . cast1 ATen.tensor_cuda
 
-class SSetDevice (device :: Device (DeviceType Nat)) where
-  sSetDevice ::
-    forall m gradient layout device' dataType shape.
-    MonadThrow m =>
-    SDevice device ->
-    Tensor gradient layout device' dataType shape ->
-    m (Tensor gradient layout device dataType shape)
-
-instance SSetDevice 'UncheckedDevice where
-  sSetDevice (SUncheckedDevice CPU) input =
-    unsafeThrowableIO . cast1 ATen.tensor_cpu $ input
-  sSetDevice (SUncheckedDevice (CUDA 0)) input =
-    unsafeThrowableIO . cast1 ATen.tensor_cuda $ input
-  sSetDevice (SUncheckedDevice (CUDA idx)) input =
-    unsafeThrowableIO $ do
-      opts :: ForeignPtr ATen.TensorOptions <- cast1 ATen.tensor_options input
-      opts' :: ForeignPtr ATen.TensorOptions <- cast2 ATen.tensorOptions_device_index_s opts idx
-      cast4 ATen.tensor_to_obb input opts' nonBlocking copy
-    where
-      nonBlocking = False
-      copy = False
-
-instance SSetDevice ('Device 'CPU) where
-  sSetDevice (SDevice SCPU) =
-    unsafeThrowableIO . cast1 ATen.tensor_cpu
-
-instance SSetDevice ('Device ('CUDA idx)) where
-  sSetDevice (SDevice SCUDA) input =
-    unsafeThrowableIO $ do
-      opts :: ForeignPtr ATen.TensorOptions <- cast1 ATen.tensor_options input
-      opts' :: ForeignPtr ATen.TensorOptions <- cast2 ATen.tensorOptions_device_index_s opts idx
-      cast4 ATen.tensor_to_obb input opts' nonBlocking copy
-    where
-      idx :: Int16 = fromIntegral . natVal $ Proxy @idx
-      nonBlocking = False
-      copy = False
+-- | Reallocates a tensor on the specified device.
+sSetDevice ::
+  forall m gradient layout device device' dataType shape.
+  MonadThrow m =>
+  SDevice device ->
+  Tensor gradient layout device' dataType shape ->
+  m (Tensor gradient layout device dataType shape)
+sSetDevice device input =
+  case forgetIsChecked (fromSing device) of
+    CPU ->
+      unsafeThrowableIO . cast1 ATen.tensor_cpu $ input
+    CUDA 0 ->
+      unsafeThrowableIO . cast1 ATen.tensor_cuda $ input
+    CUDA idx ->
+      unsafeThrowableIO $ do
+        opts :: ForeignPtr ATen.TensorOptions <- cast1 ATen.tensor_options input
+        opts' :: ForeignPtr ATen.TensorOptions <- cast2 ATen.tensorOptions_device_index_s opts idx
+        cast4 ATen.tensor_to_obb input opts' nonBlocking copy
+      where
+        nonBlocking = False
+        copy = False
 
 class SGetDevice (device :: Device (DeviceType Nat)) where
   -- | Returns the gradually typed compute device of the input tensor.
@@ -869,6 +834,23 @@ double ::
   -- | 'Double' copy
   m (Tensor gradient layout device ('DataType 'Double) shape)
 double tensor = unsafeThrowableIO $ cast2 ATen.tensor_toType_s tensor Double
+
+-- | Set the data type of a tensor to the specified data type.
+sSetDataType ::
+  forall m gradient layout device dataType dataType' shape.
+  MonadThrow m =>
+  SDataType dataType ->
+  Tensor gradient layout device dataType' shape ->
+  m (Tensor gradient layout device dataType shape)
+sSetDataType dataType input =
+  case forgetIsChecked (fromSing dataType) of
+    dType -> unsafeThrowableIO $ do
+      opts :: ForeignPtr ATen.TensorOptions <- cast1 ATen.tensor_options input
+      opts' :: ForeignPtr ATen.TensorOptions <- cast2 ATen.tensorOptions_dtype_s opts dType
+      cast4 ATen.tensor_to_obb input opts' nonBlocking copy
+      where
+        nonBlocking = False
+        copy = False
 
 class SGetDataType (dataType :: DataType DType) where
   -- | Returns the gradually typed compute data type of the input tensor.
@@ -1633,23 +1615,23 @@ instance
 
   tensorPokeElemOff ptr offset dims' = tensorPokeElemOff ptr offset dims' . SV.SomeSized
 
-sChangeTensorOptions ::
+sSetTensorOptions ::
   forall gradient layout device dataType gradientFrom layoutFrom deviceFrom dataTypeFrom shape.
   SGradient gradient ->
   SLayout layout ->
   SDevice device ->
   SDataType dataType ->
   Tensor gradientFrom layoutFrom deviceFrom dataTypeFrom shape ->
-  Tensor gradient layout device dataType shape
-sChangeTensorOptions gradient' layout device dataType t =
-  UnsafeTensor $ unsafePerformIO $ cast4 ATen.tensor_to_obb t opts nonBlocking copy
+  IO (Tensor gradient layout device dataType shape)
+sSetTensorOptions gradient' layout device dataType t =
+  UnsafeTensor <$> cast4 ATen.tensor_to_obb t opts nonBlocking copy
   where
     opts = tensorOptions gradient' layout device dataType
 
     nonBlocking = False
     copy = False
 
-changeTensorOptions ::
+setTensorOptions ::
   forall gradient layout device dataType gradientFrom layoutFrom deviceFrom dataTypeFrom shape.
   ( SingI gradient,
     SingI layout,
@@ -1657,19 +1639,19 @@ changeTensorOptions ::
     SingI dataType
   ) =>
   Tensor gradientFrom layoutFrom deviceFrom dataTypeFrom shape ->
-  Tensor gradient layout device dataType shape
-changeTensorOptions = sChangeTensorOptions (sing @gradient) (sing @layout) (sing @device) (sing @dataType)
+  IO (Tensor gradient layout device dataType shape)
+setTensorOptions = sSetTensorOptions (sing @gradient) (sing @layout) (sing @device) (sing @dataType)
 
-instance
-  ( SingI gradient,
-    SingI layout,
-    SingI device,
-    SingI dType
-  ) =>
-  TensorLike (Tensor gradient layout device ('DataType dType) ('Shape dims)) dType dims
-  where
-  sToTensor gradient' layout device t = pure $ sChangeTensorOptions gradient' layout device dataType t
-    where
-      dataType = SDataType $ sing @dType
+-- instance
+--   ( SingI gradient,
+--     SingI layout,
+--     SingI device,
+--     SingI dType
+--   ) =>
+--   TensorLike (Tensor gradient layout device ('DataType dType) ('Shape dims)) dType dims
+--   where
+--   sToTensor gradient' layout device t = pure $ sSetTensorOptions gradient' layout device dataType t
+--     where
+--       dataType = SDataType $ sing @dType
 
-  fromTensor = changeTensorOptions @gradient @layout @device @('DataType dType)
+--   fromTensor = setTensorOptions @gradient @layout @device @('DataType dType)

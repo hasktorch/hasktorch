@@ -46,7 +46,7 @@ import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (Nat, natVal, type (+))
 import Torch.GraduallyTyped.Device (Device, DeviceType)
 import Torch.GraduallyTyped.Random (Generator)
-import Torch.GraduallyTyped.Tensor.Type (SSetDevice (sSetDevice), SSetGradient (..), Tensor (..), TensorSpec (..), UncheckedTensor, sCheckedDataType, sCheckedLayout, sCheckedShape)
+import Torch.GraduallyTyped.Tensor.Type (sSetDevice, sSetGradient, Tensor (..), TensorSpec (..), UncheckedTensor, sCheckedDataType, sCheckedLayout, sCheckedShape)
 import qualified Torch.Internal.Type as ATen (Tensor)
 import qualified Torch.Script (IValue (..))
 import qualified Torch.Serialize (pickleLoad, pickleSave)
@@ -246,7 +246,6 @@ instance (HasStateDict a, HasStateDict b) => HasStateDict (a, b) where
 type instance ModelSpec (Tensor gradient layout device dataType shape) = TensorSpec gradient layout device dataType shape
 
 instance
-  (SSetGradient gradient, SSetDevice device) =>
   HasStateDict
     (Tensor gradient layout device dataType shape)
   where
