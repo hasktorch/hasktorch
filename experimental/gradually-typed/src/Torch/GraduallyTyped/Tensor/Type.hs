@@ -1386,9 +1386,9 @@ sToTensorRaw gradient' layout device x = do
       t <- UnsafeTensor <$> cast2 ATen.empty_lo dims' opts
       withTensor t $ \ptr ->
         tensorPokeElemOff ptr 0 dims' x
-      pure t
+      sSetDevice device t
   where
-    opts = tensorOptions gradient' layout device (sing @('DataType dType))
+    opts = tensorOptions gradient' layout (SDevice SCPU) (sing @('DataType dType))
 
 fromTensorRaw ::
   forall gradient layout device a dType dims.
