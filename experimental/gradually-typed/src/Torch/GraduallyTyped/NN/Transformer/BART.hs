@@ -6,7 +6,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
-{-# OPTIONS_GHC -v2 -Wall #-}
+{-# OPTIONS_GHC -v2 #-}
 
 module Torch.GraduallyTyped.NN.Transformer.BART
   ( module Torch.GraduallyTyped.NN.Transformer.BART.Common,
@@ -24,6 +24,7 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), 
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (fromStateDict), stateDictFromPretrained)
 import Torch.GraduallyTyped.NN.Transformer.BART.Base
 import Torch.GraduallyTyped.NN.Transformer.BART.Common
+import Torch.GraduallyTyped.NN.Transformer.GEncoderDecoder (SimplifiedEncoderDecoderTransformerInput (..), SimplifiedEncoderDecoderTransformerOutput (..))
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead (SWithLMHead))
 import Torch.GraduallyTyped.Random (mkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (SGradient (..), SRequiresGradient (..))
@@ -67,9 +68,9 @@ testBARTAutoencoder prompt = do
           (SName @"*" :&: SUncheckedSize (fromIntegral $ length decoderIds))
           [decoderIds]
 
-      let input = BARTInput encoderTensor decoderTensor
-      (BARTOutput {..}, g'') <- forward model input g'
-      let decoderOutput = case bartDecoderOutput of
+      let input = SimplifiedEncoderDecoderTransformerInput encoderTensor decoderTensor
+      (SimplifiedEncoderDecoderTransformerOutput {..}, g'') <- forward model input g'
+      let decoderOutput = case sedtDecoderOutput of
             UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
       let (lastId, _lastLogit) = head $ do
             firstBatch <- take 1 decoderOutput

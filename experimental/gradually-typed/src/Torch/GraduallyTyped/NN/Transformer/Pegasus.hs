@@ -17,6 +17,7 @@ import Test.HUnit.Approx (assertApproxEqual)
 import qualified Tokenizers
 import Torch.GraduallyTyped.Device (SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (fromStateDict), stateDictFromPretrained)
+import Torch.GraduallyTyped.NN.Transformer.GEncoderDecoder (SimplifiedEncoderDecoderTransformerInput (..), SimplifiedEncoderDecoderTransformerOutput (..))
 import Torch.GraduallyTyped.NN.Transformer.Pegasus.Common
 import Torch.GraduallyTyped.NN.Transformer.Pegasus.XSum
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead (SWithLMHead))
@@ -49,7 +50,7 @@ testForwardPegasusXSum =
         decoderSeqSize = SUncheckedSize . fromIntegral $ length decoderIds
 
     input <-
-      PegasusInput
+      SimplifiedEncoderDecoderTransformerInput
         <$> mkPegasusInput
           (SName @"*" :&: SSize @1)
           (SName @"*" :&: encoderSeqSize)
@@ -59,9 +60,9 @@ testForwardPegasusXSum =
           (SName @"*" :&: decoderSeqSize)
           [decoderIds]
 
-    (PegasusOutput {..}, _) <- forward model input g
+    (SimplifiedEncoderDecoderTransformerOutput {..}, _) <- forward model input g
 
-    let encoderOutput = case pegasusEncoderOutput of
+    let encoderOutput = case sedtEncoderOutput of
           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
     let firstEncoderHiddenStates = do
           firstBatch <- take 1 encoderOutput
@@ -70,7 +71,7 @@ testForwardPegasusXSum =
     let firstEncoderHiddenStates' = [0.0965, -0.0048, -0.1945, -0.0825, 0.1829, -0.1589, -0.0297, -0.0171, -0.1210]
     mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstEncoderHiddenStates' firstEncoderHiddenStates
 
-    let decoderOutput = case pegasusDecoderOutput of
+    let decoderOutput = case sedtDecoderOutput of
           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
     let firstLogits = do
           firstBatch <- take 1 decoderOutput

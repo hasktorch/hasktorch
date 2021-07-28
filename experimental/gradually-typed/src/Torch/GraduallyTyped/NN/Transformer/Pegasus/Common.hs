@@ -20,10 +20,6 @@
 module Torch.GraduallyTyped.NN.Transformer.Pegasus.Common where
 
 import Control.Monad.Catch (MonadThrow)
-import Control.Monad.Indexed (ireturn, (>>>=))
-import Control.Monad.Indexed.State (IxStateT (..))
-import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
-import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingI (..))
 import Data.Singletons.TypeLits (SNat)
@@ -31,13 +27,13 @@ import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (..), ModelSpec)
-import Torch.GraduallyTyped.NN.Transformer.GEncoderDecoder (EDTDecoderF, EDTEncoderF, EDTHeadF, EDTSharedEmbeddingF, EncoderDecoderTransformerGenerationInput (..), EncoderDecoderTransformerInput (..), EncoderDecoderTransformerOutput (..), GEncoderDecoderTransformer, encoderDecoderTransformerSpec)
-import Torch.GraduallyTyped.NN.Transformer.Type (MkPosC, MkTransformerAttentionMaskC, MkTransformerCrossAttentionMaskC, MkTransformerDecoderAttentionMaskC, MkTransformerPaddingMaskC, STransformerHead, STransformerStyle (SPegasus), ShiftRight (..), TransformerHead (..), TransformerStyle (Pegasus), mkPos, mkTransformerAttentionMask, mkTransformerCrossAttentionMask, mkTransformerDecoderAttentionMask, mkTransformerInput, mkTransformerPaddingMask)
+import Torch.GraduallyTyped.NN.Class (ModelSpec)
+import Torch.GraduallyTyped.NN.Transformer.GEncoderDecoder (EDTDecoderF, EDTEncoderF, EDTHeadF, EDTSharedEmbeddingF, GEncoderDecoderTransformer, GSimplifiedEncoderDecoderTransformer (..), encoderDecoderTransformerSpec)
+import Torch.GraduallyTyped.NN.Transformer.Type (MkAbsPos (..), MkTransformerAttentionMask (..), MkTransformerCrossAttentionMask (..), MkTransformerDecoderAttentionMask (..), MkTransformerPaddingMask (..), STransformerHead, STransformerStyle (SPegasus), ShiftRight (..), TransformerHead (..), TransformerStyle (Pegasus), mkTransformerInput)
 import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, Shape (..), Size (..))
-import Torch.GraduallyTyped.Tensor.Type (SGetDim, Tensor, sShape)
+import Torch.GraduallyTyped.Tensor.Type (SGetDim, Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
 -- | Pegasus dType.
@@ -94,22 +90,6 @@ pegasusEOSTokenId = 1
 pegasusAttentionMaskBias :: Double
 pegasusAttentionMaskBias = -10000
 
-data
-  GPegasusModel
-    (pegasusModel :: Type)
-  where
-  GPegasusModel ::
-    forall pegasusModel.
-    { pegasusModel :: pegasusModel,
-      pegasusShiftRightDecoderInput :: ShiftRight Int,
-      pegasusShiftRightPaddingMask :: ShiftRight Int
-    } ->
-    GPegasusModel pegasusModel
-
-type instance
-  ModelSpec (GPegasusModel pegasusModel) =
-    GPegasusModel (ModelSpec pegasusModel)
-
 -- | Specifies the Pegasus model.
 type family
   PegasusModelF
@@ -126,7 +106,7 @@ type family
     Type
   where
   PegasusModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim =
-    GPegasusModel
+    GSimplifiedEncoderDecoderTransformer
       ( GEncoderDecoderTransformer
           inputEmbedDim
           (EDTEncoderF 'Pegasus numLayers gradient device PegasusDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim PegasusPosEncDim)
@@ -134,6 +114,12 @@ type family
           (EDTSharedEmbeddingF 'Pegasus gradient device PegasusDataType inputEmbedDim vocabDim)
           (EDTHeadF 'Pegasus transformerHead gradient device PegasusDataType inputEmbedDim vocabDim)
       )
+      MkAbsPos
+      MkAbsPos
+      MkTransformerPaddingMask
+      (MkTransformerAttentionMask PegasusDataType)
+      (MkTransformerCrossAttentionMask PegasusDataType)
+      (MkTransformerDecoderAttentionMask PegasusDataType)
 
 -- | Specifies the parameters of a Pegasus model.
 --
@@ -156,7 +142,7 @@ pegasusModelSpec ::
   SDevice device ->
   ModelSpec (PegasusModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
 pegasusModelSpec transformerHead numLayers gradient device =
-  GPegasusModel
+  GSimplifiedEncoderDecoderTransformer
     ( encoderDecoderTransformerSpec
         SPegasus
         transformerHead
@@ -177,14 +163,12 @@ pegasusModelSpec transformerHead numLayers gradient device =
     )
     (ShiftRight pegasusBOSTokenId)
     (ShiftRight 0)
-
-instance HasStateDict modelSpec => HasStateDict (GPegasusModel modelSpec) where
-  fromStateDict (GPegasusModel modelSpec decoderInputShiftSpec paddingMaskShiftSpec) k =
-    GPegasusModel
-      <$> fromStateDict modelSpec k
-      <*> fromStateDict decoderInputShiftSpec k
-      <*> fromStateDict paddingMaskShiftSpec k
-  toStateDict k GPegasusModel {..} = toStateDict k pegasusModel
+    MkAbsPos
+    MkAbsPos
+    (MkTransformerPaddingMask pegasusPadTokenId)
+    (MkTransformerAttentionMask pegasusDataType pegasusAttentionMaskBias)
+    (MkTransformerCrossAttentionMask pegasusDataType pegasusAttentionMaskBias)
+    (MkTransformerDecoderAttentionMask pegasusDataType pegasusAttentionMaskBias)
 
 mkPegasusInput ::
   forall batchDim seqDim m output.
@@ -213,199 +197,3 @@ mkPegasusInput ::
   [[Int]] ->
   m output
 mkPegasusInput = mkTransformerInput pegasusPadTokenId
-
-mkPegasusPaddingMask ::
-  forall gradient layout device dataType shape output.
-  MkTransformerPaddingMaskC layout device dataType shape output =>
-  Tensor gradient layout device dataType shape ->
-  output
-mkPegasusPaddingMask = mkTransformerPaddingMask pegasusPadTokenId
-
-data PegasusInput input decoderInput where
-  PegasusInput ::
-    forall input decoderInput.
-    { pegasusInput :: input,
-      pegasusDecoderInput :: decoderInput
-    } ->
-    PegasusInput input decoderInput
-
-deriving instance
-  ( Show input,
-    Show decoderInput
-  ) =>
-  Show (PegasusInput input decoderInput)
-
-data PegasusOutput decoderOutput encoderOutput inputPaddingMask where
-  PegasusOutput ::
-    forall decoderOutput encoderOutput inputPaddingMask.
-    { pegasusDecoderOutput :: decoderOutput,
-      pegasusEncoderOutput :: encoderOutput,
-      pegasusInputPaddingMask :: inputPaddingMask
-    } ->
-    PegasusOutput decoderOutput encoderOutput inputPaddingMask
-
-deriving instance
-  ( Show decoderOutput,
-    Show encoderOutput,
-    Show inputPaddingMask
-  ) =>
-  Show (PegasusOutput decoderOutput encoderOutput inputPaddingMask)
-
-data PegasusGenerationInput decoderInput encoderOutput inputPaddingMask where
-  PegasusGenerationInput ::
-    forall decoderInput encoderOutput inputPaddingMask.
-    { pegasusGenerationDecoderInput :: decoderInput,
-      pegasusGenerationEncoderOutput :: encoderOutput,
-      pegasusGenerationInputPaddingMask :: inputPaddingMask
-    } ->
-    PegasusGenerationInput decoderInput encoderOutput inputPaddingMask
-
-deriving instance
-  ( Show decoderInput,
-    Show encoderOutput,
-    Show inputPaddingMask
-  ) =>
-  Show (PegasusGenerationInput decoderInput encoderOutput inputPaddingMask)
-
--- | 'HasForward' instance for Pegasus models.
-
--- Note that this instance always shifts decoder inputs to the right
--- by adding a BOS token at the beginning.
--- The padding and attention masks are shifted to the right as well.
-instance
-  ( input ~ Tensor inputGradient inputLayout inputDevice inputDataType inputShape,
-    MkPosC inputDevice inputShape inputSeqDim inputSeqName inputSeqSize pos,
-    MkTransformerPaddingMaskC inputLayout inputDevice inputDataType inputShape inputPaddingMask,
-    inputPaddingMask ~ Tensor inputPaddingMaskGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape,
-    decoderInput ~ Tensor decoderInputGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
-    rightShiftedDecoderInput ~ Tensor rightShiftedDecoderInputGradient rightShiftedDecoderInputLayout rightShiftedDecoderInputDevice rightShiftedDecoderInputDataType rightShiftedDecoderInputShape,
-    MkPosC rightShiftedDecoderInputDevice rightShiftedDecoderInputShape rightShiftedDecoderInputSeqDim rightShiftedDecoderInputSeqName rightShiftedDecoderInputSeqSize decoderPos,
-    MkTransformerPaddingMaskC decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape decoderInputPaddingMask,
-    rightShiftedDecoderInputPaddingMask ~ Tensor rightShiftedDecoderInputPaddingMaskGradient rightShiftedDecoderInputPaddingMaskLayout rightShiftedDecoderInputPaddingMaskDevice rightShiftedDecoderInputPaddingMaskDataType rightShiftedDecoderInputPaddingMaskShape,
-    MkTransformerAttentionMaskC PegasusDataType inputPaddingMaskGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim attentionMask,
-    MkTransformerCrossAttentionMaskC PegasusDataType rightShiftedDecoderInputShape rightShiftedDecoderInputSeqDim inputPaddingMaskGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim crossAttentionMask,
-    MkTransformerDecoderAttentionMaskC PegasusDataType rightShiftedDecoderInputPaddingMaskLayout rightShiftedDecoderInputPaddingMaskDevice rightShiftedDecoderInputPaddingMaskShape rightShiftedDecoderInputPaddingMaskSeqDim decoderAttentionMask,
-    HasForward (ShiftRight Int) decoderInput generatorDevice rightShiftedDecoderInput generatorDevice,
-    HasForward (ShiftRight Int) decoderInputPaddingMask generatorDevice rightShiftedDecoderInputPaddingMask generatorDevice,
-    HasForward
-      pegasusModel
-      (EncoderDecoderTransformerInput input rightShiftedDecoderInput pos decoderPos attentionMask decoderAttentionMask crossAttentionMask)
-      generatorDevice
-      (EncoderDecoderTransformerOutput decoderOutput encoderOutput)
-      generatorOutputDevice
-  ) =>
-  HasForward
-    (GPegasusModel pegasusModel)
-    (PegasusInput input decoderInput)
-    generatorDevice
-    (PegasusOutput decoderOutput encoderOutput inputPaddingMask)
-    generatorOutputDevice
-  where
-  forward GPegasusModel {..} PegasusInput {..} =
-    let inputPaddingMask = mkPegasusPaddingMask pegasusInput
-        attentionMask = ilift $ mkTransformerAttentionMask pegasusDataType pegasusAttentionMaskBias inputPaddingMask
-        pos = ilift $ mkPos pegasusInput
-     in runIxStateT $
-          ireturn pegasusDecoderInput
-            >>>= IxStateT . forward pegasusShiftRightDecoderInput
-            >>>= ( \rightShiftedDecoderInput ->
-                     let decoderPos =
-                           ilift $ mkPos rightShiftedDecoderInput
-                         crossAttentionMask =
-                           ilift $
-                             mkTransformerCrossAttentionMask
-                               pegasusDataType
-                               (sShape rightShiftedDecoderInput)
-                               pegasusAttentionMaskBias
-                               inputPaddingMask
-                      in ireturn (mkPegasusPaddingMask pegasusDecoderInput)
-                           >>>= IxStateT . forward pegasusShiftRightPaddingMask
-                           >>>= ( \rightShiftedDecoderInputPaddingMask ->
-                                    let decoderAttentionMask =
-                                          ilift $
-                                            mkTransformerDecoderAttentionMask
-                                              pegasusDataType
-                                              pegasusAttentionMaskBias
-                                              rightShiftedDecoderInputPaddingMask
-                                     in EncoderDecoderTransformerInput
-                                          <<$>> ireturn pegasusInput
-                                          <<*>> ireturn rightShiftedDecoderInput
-                                          <<*>> pos
-                                          <<*>> decoderPos
-                                          <<*>> attentionMask
-                                          <<*>> decoderAttentionMask
-                                          <<*>> crossAttentionMask
-                                )
-                           >>>= IxStateT . forward pegasusModel
-                           >>>= ( \(EncoderDecoderTransformerOutput decoderOutput encoderOutput) ->
-                                    ireturn $ PegasusOutput decoderOutput encoderOutput inputPaddingMask
-                                )
-                 )
-
--- | 'HasForward' instance for Pegasus models.
--- Use this instance for sequence generation once the encoder's output is available.
---
--- Note that this instance always shifts decoder inputs to the right
--- by adding a BOS token at the beginning.
--- The padding and attention masks are shifted to the right as well.
-instance
-  ( inputPaddingMask ~ Tensor inputPaddingMaskGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape,
-    decoderInput ~ Tensor decoderInputGradient decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape,
-    rightShiftedDecoderInput ~ Tensor rightShiftedDecoderInputGradient rightShiftedDecoderInputLayout rightShiftedDecoderInputDevice rightShiftedDecoderInputDataType rightShiftedDecoderInputShape,
-    MkPosC rightShiftedDecoderInputDevice rightShiftedDecoderInputShape rightShiftedDecoderInputSeqDim rightShiftedDecoderInputSeqName rightShiftedDecoderInputSeqSize decoderPos,
-    MkTransformerPaddingMaskC decoderInputLayout decoderInputDevice decoderInputDataType decoderInputShape decoderInputPaddingMask,
-    rightShiftedDecoderInputPaddingMask ~ Tensor rightShiftedDecoderInputPaddingMaskGradient rightShiftedDecoderInputPaddingMaskLayout rightShiftedDecoderInputPaddingMaskDevice rightShiftedDecoderInputPaddingMaskDataType rightShiftedDecoderInputPaddingMaskShape,
-    MkTransformerAttentionMaskC PegasusDataType inputPaddingMaskGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim attentionMask,
-    MkTransformerCrossAttentionMaskC PegasusDataType rightShiftedDecoderInputShape rightShiftedDecoderInputSeqDim inputPaddingMaskGradient inputPaddingMaskLayout inputPaddingMaskDevice inputPaddingMaskDataType inputPaddingMaskShape inputPaddingMaskSeqDim crossAttentionMask,
-    MkTransformerDecoderAttentionMaskC PegasusDataType rightShiftedDecoderInputPaddingMaskLayout rightShiftedDecoderInputPaddingMaskDevice rightShiftedDecoderInputPaddingMaskShape rightShiftedDecoderInputPaddingMaskSeqDim decoderAttentionMask,
-    HasForward (ShiftRight Int) decoderInput generatorDevice rightShiftedDecoderInput generatorDevice,
-    HasForward (ShiftRight Int) decoderInputPaddingMask generatorDevice rightShiftedDecoderInputPaddingMask generatorDevice,
-    HasForward
-      pegasusModel
-      (EncoderDecoderTransformerGenerationInput rightShiftedDecoderInput encoderOutput decoderPos decoderAttentionMask crossAttentionMask)
-      generatorDevice
-      (EncoderDecoderTransformerOutput decoderOutput encoderOutput)
-      generatorOutputDevice
-  ) =>
-  HasForward
-    (GPegasusModel pegasusModel)
-    (PegasusGenerationInput decoderInput encoderOutput inputPaddingMask)
-    generatorDevice
-    (PegasusOutput decoderOutput encoderOutput inputPaddingMask)
-    generatorOutputDevice
-  where
-  forward GPegasusModel {..} PegasusGenerationInput {..} =
-    runIxStateT $
-      ireturn pegasusGenerationDecoderInput
-        >>>= IxStateT . forward pegasusShiftRightDecoderInput
-        >>>= ( \rightShiftedDecoderInput ->
-                 let decoderPos =
-                       ilift $ mkPos rightShiftedDecoderInput
-                     crossAttentionMask =
-                       ilift $
-                         mkTransformerCrossAttentionMask
-                           pegasusDataType
-                           (sShape rightShiftedDecoderInput)
-                           pegasusAttentionMaskBias
-                           pegasusGenerationInputPaddingMask
-                  in ireturn (mkPegasusPaddingMask pegasusGenerationDecoderInput)
-                       >>>= IxStateT . forward pegasusShiftRightPaddingMask
-                       >>>= ( \rightShiftedDecoderInputPaddingMask ->
-                                let decoderAttentionMask =
-                                      ilift $
-                                        mkTransformerDecoderAttentionMask
-                                          pegasusDataType
-                                          pegasusAttentionMaskBias
-                                          rightShiftedDecoderInputPaddingMask
-                                 in EncoderDecoderTransformerGenerationInput
-                                      <<$>> ireturn rightShiftedDecoderInput
-                                      <<*>> ireturn pegasusGenerationEncoderOutput
-                                      <<*>> decoderPos
-                                      <<*>> decoderAttentionMask
-                                      <<*>> crossAttentionMask
-                            )
-                       >>>= IxStateT . forward pegasusModel
-                       >>>= ( \(EncoderDecoderTransformerOutput decoderOutput encoderOutput) ->
-                                ireturn $ PegasusOutput decoderOutput encoderOutput pegasusGenerationInputPaddingMask
-                            )
-             )

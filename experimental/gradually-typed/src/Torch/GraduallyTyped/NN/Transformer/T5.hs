@@ -22,6 +22,7 @@ import Test.HUnit.Approx (assertApproxEqual)
 import qualified Tokenizers
 import Torch.GraduallyTyped.Device (SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (fromStateDict), stateDictFromPretrained)
+import Torch.GraduallyTyped.NN.Transformer.GEncoderDecoder (SimplifiedEncoderDecoderTransformerInput (..), SimplifiedEncoderDecoderTransformerOutput (..))
 import Torch.GraduallyTyped.NN.Transformer.T5.Base
 import Torch.GraduallyTyped.NN.Transformer.T5.Common
 import Torch.GraduallyTyped.NN.Transformer.T5.ElevenB
@@ -59,7 +60,7 @@ testForwardT5Small =
         decoderSeqSize = SUncheckedSize . fromIntegral $ length decoderIds
 
     input <-
-      T5Input
+      SimplifiedEncoderDecoderTransformerInput
         <$> mkT5Input
           (SName @"*" :&: SSize @1)
           (SName @"*" :&: encoderSeqSize)
@@ -69,9 +70,9 @@ testForwardT5Small =
           (SName @"*" :&: decoderSeqSize)
           [decoderIds]
 
-    (T5Output {..}, _) <- forward model input g
+    (SimplifiedEncoderDecoderTransformerOutput {..}, _) <- forward model input g
 
-    let decoderOutput = case t5DecoderOutput of
+    let decoderOutput = case sedtDecoderOutput of
           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
     let firstLogits = do
           firstBatch <- take 1 decoderOutput
@@ -92,13 +93,13 @@ testForwardT5Small =
 --     let g = sMkGenerator (SDevice SCPU) 0
 
 --     input <-
---       T5Input
+--       SimplifiedEncoderDecoderTransformerInput
 --         <$> undefined
 --         <*> undefined
 
---     (T5Output {..}, _) <- forward model input g
+--     (SimplifiedEncoderDecoderTransformerOutput {..}, _) <- forward model input g
 
---     let decoderOutput = case t5DecoderOutput of
+--     let decoderOutput = case sedtDecoderOutput of
 --           UnsafeTensor t -> Tensor.asValue (Tensor.Unsafe t) :: [[[Float]]]
 --     let firstLogits = do
 --           firstBatch <- take 1 decoderOutput

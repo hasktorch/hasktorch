@@ -13,7 +13,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeApplications #-}
-{-# OPTIONS_GHC -v2 -Wall -Wno-partial-type-signatures #-}
+{-# OPTIONS_GHC -v2 -Wno-partial-type-signatures #-}
 
 module Torch.GraduallyTyped.NN.Transformer.T5.Generation where
 
@@ -36,7 +36,7 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), 
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (fromStateDict), stateDictFromPretrained)
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (logSoftmax)
-import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5DataType, T5GenerationInput (..), T5Input (..), GT5Model (..), T5Output (..), mkT5Input, t5EOSTokenId)
+import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5DataType, mkT5Input, t5EOSTokenId)
 import Torch.GraduallyTyped.NN.Transformer.T5.Small (T5Small, t5SmallSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (TransformerHead (WithLMHead), STransformerHead (SWithLMHead))
 import Torch.GraduallyTyped.Random (Generator, sMkGenerator)
@@ -49,6 +49,7 @@ import Torch.GraduallyTyped.Tensor.Type (SGetShape (dims), Tensor (..))
 import Torch.Language.SpiderSQL (SpiderSQL, spiderSQL)
 import qualified Torch.Tensor
 import Prelude hiding (Word, words)
+import Torch.GraduallyTyped.NN.Transformer.GEncoderDecoder (SimplifiedEncoderDecoderTransformerInput(..), SimplifiedEncoderDecoderTransformerOutput (..), SimplifiedEncoderDecoderTransformerGenerationInput (..))
 
 data IsFinished = Finished | Unfinished
 
@@ -150,9 +151,9 @@ runBeamSearch ::
   forall model input decoderInput encoderOutput encoderOutputShape encoderOutput' inputPaddingMask decoderOutput generatorDevice.
   ( HasForward
       model
-      (T5Input input decoderInput)
+      (SimplifiedEncoderDecoderTransformerInput input decoderInput)
       generatorDevice
-      (T5Output decoderOutput encoderOutput inputPaddingMask)
+      (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput inputPaddingMask)
       generatorDevice,
     encoderOutput
       ~ Tensor
@@ -165,9 +166,9 @@ runBeamSearch ::
     SGetShape encoderOutputShape,
     HasForward
       model
-      (T5GenerationInput decoderInput encoderOutput' inputPaddingMask)
+      (SimplifiedEncoderDecoderTransformerGenerationInput decoderInput encoderOutput' inputPaddingMask)
       generatorDevice
-      (T5Output decoderOutput encoderOutput' inputPaddingMask)
+      (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput' inputPaddingMask)
       generatorDevice,
     encoderOutput'
       ~ Tensor
@@ -219,16 +220,16 @@ runBeamSearch maxSteps beamSize model input g =
     getLogProbs :: decoderInput -> StateT (Maybe (encoderOutput, inputPaddingMask), Generator generatorDevice) IO [[[Float]]]
     getLogProbs decoderInput = do
       (maybeStuff, g) <- get
-      (T5Output decoderOutput encoderOutput inputPaddingMask, g') <- case maybeStuff of
-        Nothing -> forward model (T5Input input decoderInput) g
+      (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput inputPaddingMask, g') <- case maybeStuff of
+        Nothing -> forward model (SimplifiedEncoderDecoderTransformerInput input decoderInput) g
         Just (encoderOutput, inputPaddingMask) -> do
           -- decoderInputBatchDim : _ <- dims decoderInput
           decoderInputBatchDim <- undefined
           -- _encoderOutputBatchDim : encoderOutputDims <- dims encoderOutput
           encoderOutputDims <- undefined
           let encoderOutput' = sExpand (SUncheckedShape (decoderInputBatchDim : encoderOutputDims)) encoderOutput
-          (T5Output decoderOutput _ _, g') <- forward model (T5GenerationInput decoderInput encoderOutput' inputPaddingMask) g
-          pure (T5Output decoderOutput encoderOutput inputPaddingMask, g')
+          (SimplifiedEncoderDecoderTransformerOutput decoderOutput _ _, g') <- forward model (SimplifiedEncoderDecoderTransformerGenerationInput decoderInput encoderOutput' inputPaddingMask) g
+          pure (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput inputPaddingMask, g')
       put (Just (encoderOutput, inputPaddingMask), g')
       case logSoftmax (SSelectDim $ SByIndex @2) decoderOutput of
         UnsafeTensor t -> pure . Torch.Tensor.asValue . Torch.Tensor.Unsafe $ t
@@ -370,15 +371,15 @@ getIs ::
           'UncheckedShape,
     HasForward
       model
-      (T5Input input decoderInput)
+      (SimplifiedEncoderDecoderTransformerInput input decoderInput)
       generatorDevice
-      (T5Output decoderOutput encoderOutput inputPaddingMask)
+      (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput inputPaddingMask)
       generatorDevice,
     HasForward
       model
-      (T5GenerationInput decoderInput encoderOutput inputPaddingMask)
+      (SimplifiedEncoderDecoderTransformerGenerationInput decoderInput encoderOutput inputPaddingMask)
       generatorDevice
-      (T5Output decoderOutput encoderOutput inputPaddingMask)
+      (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput inputPaddingMask)
       generatorDevice
   ) =>
   Int ->
@@ -400,11 +401,11 @@ getIs n model input = do
       [tokens]
   decoderOutput <- do
     (mTensors, g) <- get
-    (T5Output decoderOutput encoderOutput inputPaddingMask, g') <-
+    (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput inputPaddingMask, g') <-
       case mTensors of
-        Nothing -> forward model (T5Input input decoderInput) g
+        Nothing -> forward model (SimplifiedEncoderDecoderTransformerInput input decoderInput) g
         Just (encoderOutput, inputPaddingMask) ->
-          forward model (T5GenerationInput decoderInput encoderOutput inputPaddingMask) g
+          forward model (SimplifiedEncoderDecoderTransformerGenerationInput decoderInput encoderOutput inputPaddingMask) g
     put (Just (encoderOutput, inputPaddingMask), g')
     pure decoderOutput
   case sort @('SelectDim ('ByIndex 2)) Descending
