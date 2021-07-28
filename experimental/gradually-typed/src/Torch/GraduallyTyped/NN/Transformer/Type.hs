@@ -51,14 +51,14 @@ import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasSt
 import Torch.GraduallyTyped.Prelude (Seq, forgetIsChecked)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
-import Torch.GraduallyTyped.Shape.Class (AddDimF, BroadcastShapesF, ReplaceDimF, getDim, sGetDim, type (!))
+import Torch.GraduallyTyped.Shape.Class (AddDimF, BroadcastShapesF, ReplaceDimF, sGetDimFromShape, type (!))
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SBy (..), SDim (sDimSize), SName (..), SSelectDim (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sArangeNaturals, sFull, sOnes, sZeros)
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (UnsqueezeF, cat, unsqueeze)
 import Torch.GraduallyTyped.Tensor.MathOperations.Comparison ((==.))
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (addScalar, logicalOr)
 import Torch.GraduallyTyped.Tensor.Other (maskedFill, triu)
-import Torch.GraduallyTyped.Tensor.Type (SGetDataType (sDataType), SGetDevice (..), SGetDim, SGetLayout (..), SGetShape (..), Tensor (..), TensorLike (sToTensor), TensorSpec (..), bool, sCheckedShape, toTensor)
+import Torch.GraduallyTyped.Tensor.Type (SGetDataType (sGetDataType), SGetDevice (..), SGetDim, SGetLayout (..), SGetShape (..), Tensor (..), TensorLike (sToTensor), TensorSpec (..), bool, sCheckedShape, toTensor)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import Torch.HList
 
@@ -78,7 +78,7 @@ padded n p xs =
    in take n' xs ++ replicate diff p
 
 mkTransformerInput ::
-  forall batchDim seqDim m output.
+  forall batchDim seqDim device m output.
   ( MonadThrow m,
     SGetDim batchDim,
     SGetDim seqDim,
@@ -95,7 +95,7 @@ mkTransformerInput ::
       ~ Tensor
           ('Gradient 'WithoutGradient)
           ('Layout 'Dense)
-          ('Device 'CPU)
+          device
           ('DataType 'Int64)
           ('Shape '[batchDim, seqDim])
   ) =>
@@ -105,14 +105,18 @@ mkTransformerInput ::
   SDim batchDim ->
   -- | sequence dimension singleton
   SDim seqDim ->
+  -- | device for the tensor
+  SDevice device ->
   -- | batch of input ids
   [[Int]] ->
   -- | input tensor
   m output
-mkTransformerInput padTokenId batchDim seqDim xs =
-  toTensor paddedXs
+mkTransformerInput padTokenId batchDim seqDim device xs =
+  sToTensor gradient layout device paddedXs
     >>= sCheckedShape (SShape $ batchDim :|: seqDim :|: SNil)
   where
+    gradient = SGradient SWithoutGradient
+    layout = SLayout SDense
     batchSize = forgetIsChecked . dimSize $ fromSing batchDim
     seqSize = forgetIsChecked . dimSize $ fromSing seqDim
     emptySeq = replicate (fromIntegral seqSize) padTokenId
@@ -145,9 +149,9 @@ mkPos ::
   -- | positions of the input tokens
   m output
 mkPos input = do
-  let device = sDevice input
-      shape = sShape input
-  seqDim <- sGetDim (SSelectDim $ SByIndex @1) shape
+  let device = sGetDevice input
+      shape = sGetShape input
+  seqDim <- sGetDimFromShape (SSelectDim $ SByIndex @1) shape
   let seqSize = sDimSize seqDim
       pos =
         sArangeNaturals
@@ -268,15 +272,15 @@ mkRelPos ::
   Tensor gradient layout device dataType shape ->
   -- | relative positions of the input tokens
   m output
-mkRelPos relPosEncBucketDim maxDistance input =
+mkRelPos relPosEncBucketDim maxDistance input = do
+  seqDim <- sGetDimFromShape (SSelectDim $ SByIndex @1) $ sGetShape input
+  let seqSize = fromInteger . forgetIsChecked . fromSing $ sDimSize seqDim
   sToTensor gradient' layout' device [mkRelPos' relPosEncBucketSize maxDistance seqSize seqSize]
     >>= sCheckedShape (SShape $ SName @"*" :&: SSize @1 :|: SName @"*" :&: sDimSize seqDim :|: SName @"*" :&: sDimSize seqDim :|: SNil)
   where
     gradient' = SGradient SWithoutGradient
     layout' = SLayout SDense
-    device = sDevice input
-    seqDim = getDim (SSelectDim $ SByIndex @1) $ sShape input
-    seqSize = fromInteger . forgetIsChecked . fromSing $ sDimSize seqDim
+    device = sGetDevice input
     relPosEncBucketSize = fromInteger . forgetIsChecked . dimSize . fromSing $ relPosEncBucketDim
 
 -- | Computes relative positions of the input tokens to the decoder.
@@ -328,15 +332,15 @@ mkDecoderRelPos ::
   Tensor gradient layout device dataType shape ->
   -- | relative positions of the input tokens
   m output
-mkDecoderRelPos relPosEncBucketDim maxDistance input =
+mkDecoderRelPos relPosEncBucketDim maxDistance input = do
+  seqDim <- sGetDimFromShape (SSelectDim $ SByIndex @1) $ sGetShape input
+  let seqSize = fromInteger . forgetIsChecked . fromSing $ sDimSize seqDim
   sToTensor gradient' layout' device [mkDecoderRelPos' relPosEncBucketSize maxDistance seqSize seqSize]
     >>= sCheckedShape (SShape $ SName @"*" :&: SSize @1 :|: SName @"*" :&: sDimSize seqDim :|: SName @"*" :&: sDimSize seqDim :|: SNil)
   where
     gradient' = SGradient SWithoutGradient
     layout' = SLayout SDense
-    device = sDevice input
-    seqDim = getDim (SSelectDim $ SByIndex @1) $ sShape input
-    seqSize = fromInteger . forgetIsChecked . fromSing $ sDimSize seqDim
+    device = sGetDevice input
     relPosEncBucketSize = fromInteger . forgetIsChecked . dimSize . fromSing $ relPosEncBucketDim
 
 data MkRelPos (relPosEncBucketDim :: Dim (Name Symbol) (Size Nat)) where
@@ -385,11 +389,12 @@ instance
     pure (decoderRelPos, g)
 
 type MkTransformerPaddingMaskC layout device dataType shape output =
-  ( output
+  ( SGetDevice device,
+    output
       ~ Tensor
           ('Gradient 'WithoutGradient)
           (layout <+> 'Layout 'Dense)
-          (device <+> 'Device 'CPU)
+          device
           (Seq (dataType <+> 'DataType 'Int64) ('DataType 'Bool))
           (BroadcastShapesF shape ('Shape '[ 'Dim ('Name "*") ('Size 1)]))
   )
@@ -407,9 +412,10 @@ mkTransformerPaddingMask ::
   -- | padding mask
   output
 mkTransformerPaddingMask padTokenId input =
-  let padToken =
+  let device = sGetDevice input
+      padToken =
         sFull
-          (TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: SNil))
+          (TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: SNil))
           padTokenId
    in input ==. padToken
 
@@ -474,10 +480,10 @@ mkTransformerAttentionMask ::
   Tensor gradient layout device dataType shape ->
   m output
 mkTransformerAttentionMask transformerDataType attentionMaskBias paddingMask = do
-  let pmLayout = sLayout paddingMask
-      pmDevice = sDevice paddingMask
-      pmShape = sShape paddingMask
-  pmSeqDim <- sGetDim (SSelectDim $ SByIndex @1) pmShape
+  let pmLayout = sGetLayout paddingMask
+      pmDevice = sGetDevice paddingMask
+      pmShape = sGetShape paddingMask
+  pmSeqDim <- sGetDimFromShape (SSelectDim $ SByIndex @1) pmShape
   let emptyMask =
         sZeros $
           TensorSpec (SGradient SWithoutGradient) pmLayout pmDevice transformerDataType (SShape $ SName @"*" :&: SSize @1 :|: pmSeqDim :|: pmSeqDim :|: SNil)
@@ -554,17 +560,18 @@ mkTransformerDecoderAttentionMask ::
   Tensor gradient layout device dataType shape ->
   m output
 mkTransformerDecoderAttentionMask transformerDataType attentionMaskBias paddingMask = do
-  let pmLayout = sLayout paddingMask
-      pmDevice = sDevice paddingMask
-      pmShape = sShape paddingMask
-  pmSeqDim <- sGetDim (SSelectDim $ SByIndex @1) pmShape
-  let causalMask =
-        unsqueeze @('SelectDim ('ByIndex 0))
-          . bool
-          . triu 1
-          . sOnes
-          $ TensorSpec (SGradient SWithoutGradient) pmLayout pmDevice transformerDataType (SShape $ pmSeqDim :|: pmSeqDim :|: SNil)
-      emptyMask = sZeros $ TensorSpec (SGradient SWithoutGradient) pmLayout pmDevice transformerDataType (SShape $ SName @"*" :&: SSize @1 :|: pmSeqDim :|: pmSeqDim :|: SNil)
+  let pmLayout = sGetLayout paddingMask
+      pmDevice = sGetDevice paddingMask
+      pmShape = sGetShape paddingMask
+  pmSeqDim <- sGetDimFromShape (SSelectDim $ SByIndex @1) pmShape
+  causalMask <-
+    unsqueeze @('SelectDim ('ByIndex 0))
+      <$> ( bool
+              . triu 1
+              . sOnes
+              $ TensorSpec (SGradient SWithoutGradient) pmLayout pmDevice transformerDataType (SShape $ pmSeqDim :|: pmSeqDim :|: SNil)
+          )
+  let emptyMask = sZeros $ TensorSpec (SGradient SWithoutGradient) pmLayout pmDevice transformerDataType (SShape $ SName @"*" :&: SSize @1 :|: pmSeqDim :|: pmSeqDim :|: SNil)
       booleanMask = causalMask `logicalOr` unsqueeze @('SelectDim ('ByIndex 1)) paddingMask
   pure $
     maskedFill
@@ -644,11 +651,11 @@ mkTransformerCrossAttentionMask ::
   Tensor gradient layout device dataType shape ->
   m output
 mkTransformerCrossAttentionMask transformerDataType decoderInputShape attentionMaskBias paddingMask = do
-  decoderInputSeqDim <- sGetDim (SSelectDim $ SByIndex @1) decoderInputShape
-  let pmLayout = sLayout paddingMask
-      pmDevice = sDevice paddingMask
-      pmShape = sShape paddingMask
-  pmSeqDim <- sGetDim (SSelectDim $ SByIndex @1) pmShape
+  decoderInputSeqDim <- sGetDimFromShape (SSelectDim $ SByIndex @1) decoderInputShape
+  let pmLayout = sGetLayout paddingMask
+      pmDevice = sGetDevice paddingMask
+      pmShape = sGetShape paddingMask
+  pmSeqDim <- sGetDimFromShape (SSelectDim $ SByIndex @1) pmShape
   let emptyMask = sZeros $ TensorSpec (SGradient SWithoutGradient) pmLayout pmDevice transformerDataType (SShape $ SName @"*" :&: SSize @1 :|: decoderInputSeqDim :|: pmSeqDim :|: SNil)
   pure $ maskedFill (unsqueeze @('SelectDim ('ByIndex 1)) paddingMask) attentionMaskBias emptyMask
 
@@ -689,7 +696,7 @@ instance
     generatorDevice
   where
   forward MkTransformerCrossAttentionMask {..} (decoderInput, inputPaddingMask) g = do
-    let decoderInputShape = sShape decoderInput
+    let decoderInputShape = sGetShape decoderInput
     crossAttentionMask <- mkTransformerCrossAttentionMask crossAttentionMaskDataType decoderInputShape crossAttentionMaskBias inputPaddingMask
     pure (crossAttentionMask, g)
 
@@ -745,10 +752,10 @@ instance
   HasForward (ShiftRight fillValue) input generator rightShiftedInput generator
   where
   forward (ShiftRight fillValue) input g = do
-    let inputLayout = sLayout input
-        inputDevice = sDevice input
-        inputDataType = sDataType input
-        inputShape = sShape input
-    inputBatchDim <- sGetDim (SSelectDim $ SByIndex @0) inputShape
+    let inputLayout = sGetLayout input
+        inputDevice = sGetDevice input
+        inputDataType = sGetDataType input
+        inputShape = sGetShape input
+    inputBatchDim <- sGetDimFromShape (SSelectDim $ SByIndex @0) inputShape
     let filler = sFull (TensorSpec (SGradient SWithoutGradient) inputLayout inputDevice inputDataType (SShape $ inputBatchDim :|: SName @"*" :&: SSize @1 :|: SNil)) fillValue
     pure (cat @('SelectDim ('ByIndex 1)) (filler :. input :. HNil), g)

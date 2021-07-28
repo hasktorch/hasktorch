@@ -57,5 +57,5 @@ t5LargeSpec ::
   STransformerHead transformerHead ->
   SGradient gradient ->
   SDevice device ->
-  ModelSpec (T5ModelF 'T5 transformerHead T5LargeNumLayers T5LargeNumLayers gradient device T5LargeHeadDim T5LargeHeadEmbedDim T5LargeEmbedDim T5LargeInputEmbedDim T5LargeFFNDim T5LargeVocabDim)
+  ModelSpec (T5Large transformerHead gradient device)
 t5LargeSpec transformerHead = t5ModelSpec ST5 transformerHead t5LargeNumLayers t5LargeNumLayers

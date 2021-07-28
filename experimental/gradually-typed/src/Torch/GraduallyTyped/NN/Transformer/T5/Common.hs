@@ -217,7 +217,7 @@ t5ModelSpec style transformerHead numEncoderLayers numDecoderLayers gradient dev
         t5Eps
 
 mkT5Input ::
-  forall batchDim seqDim m output.
+  forall batchDim seqDim device m output.
   ( MonadThrow m,
     SGetDim batchDim,
     SGetDim seqDim,
@@ -234,12 +234,13 @@ mkT5Input ::
       ~ Tensor
           ('Gradient 'WithoutGradient)
           ('Layout 'Dense)
-          ('Device 'CPU)
+          device
           ('DataType 'Int64)
           ('Shape '[batchDim, seqDim])
   ) =>
   SDim batchDim ->
   SDim seqDim ->
+  SDevice device ->
   [[Int]] ->
   m output
 mkT5Input = mkTransformerInput t5PadTokenId

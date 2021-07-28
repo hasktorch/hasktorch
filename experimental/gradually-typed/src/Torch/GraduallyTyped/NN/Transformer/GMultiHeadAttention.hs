@@ -54,7 +54,7 @@ import Torch.GraduallyTyped.NN.Type (HasBias (..), SHasBias (SWithBias, SWithout
 import Torch.GraduallyTyped.Prelude (forgetIsChecked)
 import Torch.GraduallyTyped.Random (sMkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..), SRequiresGradient (..))
-import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, sGetDim, sUnifyDim, type (!))
+import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, sGetDimFromShape, sUnifyDim, type (!))
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SBy (..), SDim (..), SName (..), SSelectDim (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes)
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (ReshapeF, TransposeF, sReshape, sTranspose)
@@ -420,9 +420,9 @@ getBatchDim ::
   SShape valueShape ->
   m (SDim batchDim)
 getBatchDim queryShape keyShape valueShape = do
-  queryBatchDim <- sGetDim (SSelectDim $ SByIndex @0) queryShape
-  keyBatchDim <- sGetDim (SSelectDim $ SByIndex @0) keyShape
-  valueBatchDim <- sGetDim (SSelectDim $ SByIndex @0) valueShape
+  queryBatchDim <- sGetDimFromShape (SSelectDim $ SByIndex @0) queryShape
+  keyBatchDim <- sGetDimFromShape (SSelectDim $ SByIndex @0) keyShape
+  valueBatchDim <- sGetDimFromShape (SSelectDim $ SByIndex @0) valueShape
   keyValueBatchDim <- sUnifyDim keyBatchDim valueBatchDim
   sUnifyDim queryBatchDim keyValueBatchDim
 
@@ -438,7 +438,7 @@ getQuerySeqDim ::
   (MonadThrow m, querySeqDim ~ QuerySeqDim queryShape) =>
   SShape queryShape ->
   m (SDim querySeqDim)
-getQuerySeqDim = sGetDim (SSelectDim $ SByIndex @1)
+getQuerySeqDim = sGetDimFromShape (SSelectDim $ SByIndex @1)
 
 type KeySeqDim ::
   Shape [Dim (Name Symbol) (Size Nat)] ->
@@ -456,8 +456,8 @@ getKeySeqDim ::
   m (SDim keySeqDim)
 getKeySeqDim keyShape valueShape =
   do
-    keySeqDim <- sGetDim (SSelectDim $ SByIndex @1) keyShape
-    valueSeqDim <- sGetDim (SSelectDim $ SByIndex @1) valueShape
+    keySeqDim <- sGetDimFromShape (SSelectDim $ SByIndex @1) keyShape
+    valueSeqDim <- sGetDimFromShape (SSelectDim $ SByIndex @1) valueShape
     sUnifyDim keySeqDim valueSeqDim
 
 -- | 'HasForward' instance for 'GMultiHeadAttention'.
@@ -608,16 +608,16 @@ instance
   where
   forward GMultiHeadAttention {..} (query, key, value, attentionBias) g = do
     batchDim <-
-      let queryShape = sShape query
-          keyShape = sShape key
-          valueShape = sShape value
+      let queryShape = sGetShape query
+          keyShape = sGetShape key
+          valueShape = sGetShape value
        in getBatchDim queryShape keyShape valueShape
     querySeqDim <-
-      let queryShape = sShape query
+      let queryShape = sGetShape query
        in getQuerySeqDim queryShape
     keySeqDim <-
-      let keyShape = sShape key
-          valueShape = sShape value
+      let keyShape = sGetShape key
+          valueShape = sGetShape value
        in getKeySeqDim keyShape valueShape
     let scaling = (1 :: Double) / (sqrt . fromIntegral . forgetIsChecked . dimSize . fromSing $ mhaHeadEmbedDim)
     flip runIxStateT g $

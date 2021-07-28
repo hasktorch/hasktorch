@@ -56,9 +56,10 @@ type RoBERTaBase
   (device :: Device (DeviceType Nat)) =
   RoBERTaModelF transformerHead RoBERTaBaseNumLayers gradient device RoBERTaBaseHeadDim RoBERTaBaseHeadEmbedDim RoBERTaBaseEmbedDim RoBERTaBaseInputEmbedDim RoBERTaBaseFFNDim RoBERTaBaseVocabDim RoBERTaBaseTypeVocabDim
 
+-- | RoBERTa-Base model specification.
 robertaBaseSpec ::
   STransformerHead transformerHead ->
   SGradient gradient ->
   SDevice device ->
-  ModelSpec (RoBERTaModelF transformerHead RoBERTaBaseNumLayers gradient device RoBERTaBaseHeadDim RoBERTaBaseHeadEmbedDim RoBERTaBaseEmbedDim RoBERTaBaseInputEmbedDim RoBERTaBaseFFNDim RoBERTaBaseVocabDim RoBERTaBaseTypeVocabDim)
+  ModelSpec (RoBERTaBase transformerHead gradient device)
 robertaBaseSpec transformerHead = robertaModelSpec transformerHead robertaBaseNumLayers

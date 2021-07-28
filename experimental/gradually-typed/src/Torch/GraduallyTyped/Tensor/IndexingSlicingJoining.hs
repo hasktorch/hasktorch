@@ -34,18 +34,18 @@ import Torch.GraduallyTyped.Index.Type (SIndex)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.Prelude (FromMaybe, MapMaybe, forgetIsChecked)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..))
-import Torch.GraduallyTyped.Shape.Class (AddDimF, BroadcastShapesF, GetDimF, GetDimImplF, GetIndexByNameF, InsertDimImplF, NumelF, RemoveDimF, ReplaceDimF, ReplaceDimImplF, sGetDim)
+import Torch.GraduallyTyped.Shape.Class (AddDimF, BroadcastShapesF, GetDimF, GetDimImplF, GetIndexByNameF, InsertDimImplF, NumelF, RemoveDimF, ReplaceDimF, ReplaceDimImplF, sGetDimFromShape)
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SSelectDim, SShape, SelectDim (..), Shape (..), Size (..), dimSize)
-import Torch.GraduallyTyped.Tensor.Type (SGetShape (sShape), Tensor)
+import Torch.GraduallyTyped.Tensor.Type (SGetShape (sGetShape), Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import Torch.HList (HList)
 import Torch.Internal.Cast (cast2, cast3)
 import Torch.Internal.Class (Castable)
+import Torch.Internal.GC (unsafeThrowableIO)
 import qualified Torch.Internal.Managed.Native as ATen
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
 import qualified Torch.Internal.Type as ATen
 import Type.Errors.Pretty (ToErrorMessage, type (%), type (<>))
-import Torch.Internal.GC (unsafeThrowableIO)
 
 -- $setup
 -- >>> import Data.Singletons.Prelude.List (SList (..))
@@ -527,7 +527,7 @@ sSelect ::
   Tensor gradient layout device dataType shapeIn ->
   m (Tensor gradient layout device dataType shapeOut)
 sSelect sSelectDim sIndex input = do
-  sDim <- let inputShape = sShape input in sGetDim sSelectDim inputShape
+  sDim <- let inputShape = sGetShape input in sGetDimFromShape sSelectDim inputShape
   let dim = bimap forgetIsChecked forgetIsChecked . fromSing $ sDim
       index = forgetIsChecked . fromSing $ sIndex
       selectDim = forgetIsChecked . fromSing $ sSelectDim

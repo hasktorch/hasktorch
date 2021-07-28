@@ -177,7 +177,7 @@ bartModelSpec transformerHead numLayers gradient device =
     (MkTransformerDecoderAttentionMask bartDataType bartAttentionMaskBias)
 
 mkBARTInput ::
-  forall batchDim seqDim m output.
+  forall batchDim seqDim device m output.
   ( MonadThrow m,
     SGetDim batchDim,
     SGetDim seqDim,
@@ -194,12 +194,13 @@ mkBARTInput ::
       ~ Tensor
           ('Gradient 'WithoutGradient)
           ('Layout 'Dense)
-          ('Device 'CPU)
+          device
           ('DataType 'Int64)
           ('Shape '[batchDim, seqDim])
   ) =>
   SDim batchDim ->
   SDim seqDim ->
+  SDevice device ->
   [[Int]] ->
   m output
 mkBARTInput = mkTransformerInput bartPadTokenId

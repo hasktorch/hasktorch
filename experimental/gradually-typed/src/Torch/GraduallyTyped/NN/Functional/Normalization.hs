@@ -24,7 +24,7 @@ import Torch.GraduallyTyped.Prelude (Length, Reverse)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SName (..), SShape (..), SSize (..), SelectDims (..), Shape (..), Size (..), dimSize, pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes)
-import Torch.GraduallyTyped.Tensor.Type (SGetShape (dims), Tensor (..))
+import Torch.GraduallyTyped.Tensor.Type (SGetShape (getDims), Tensor (..))
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import Torch.Internal.Cast (cast5, cast6)
 import qualified Torch.Internal.Managed.Native as ATen
@@ -65,7 +65,7 @@ layerNormWithBias ::
     (dataType <+> dataType' <+> dataType'')
     (LayerNormWithBiasF shape shape' shape'')
 layerNormWithBias weight bias eps input = unsafePerformIO $ do
-  let weightDims = dims weight
+  let weightDims = getDims weight
   cast5 ATen.layer_norm_tlttd input (dimSize <$> weightDims) weight bias eps
 
 type family LayerNormWithoutBiasF (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (inputShape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
@@ -113,8 +113,8 @@ layerNormWithoutBias ::
     (dataType <+> dataType')
     (LayerNormWithoutBiasF shape shape')
 layerNormWithoutBias weight eps input = unsafePerformIO $ do
-  let weightDims = dims weight
-      inputDims = dims input
+  let weightDims = getDims weight
+      inputDims = getDims input
   let indexes :: [Int] = fromIntegral . (length inputDims -) <$> [1, 2 .. length weightDims]
   cast6 (go (null indexes)) input weight indexes eps (2 :: Double) True
   where

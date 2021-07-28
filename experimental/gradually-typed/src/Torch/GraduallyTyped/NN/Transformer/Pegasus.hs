@@ -16,7 +16,7 @@ import Control.Monad.State (evalStateT)
 import Test.HUnit.Approx (assertApproxEqual)
 import qualified Tokenizers
 import Torch.GraduallyTyped.Device (SDevice (..), SDeviceType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (fromStateDict), stateDictFromPretrained)
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (..), stateDictFromFile)
 import Torch.GraduallyTyped.NN.Transformer.GEncoderDecoder (SimplifiedEncoderDecoderTransformerInput (..), SimplifiedEncoderDecoderTransformerOutput (..))
 import Torch.GraduallyTyped.NN.Transformer.Pegasus.Common
 import Torch.GraduallyTyped.NN.Transformer.Pegasus.XSum
@@ -35,9 +35,11 @@ withTokenizer =
 testForwardPegasusXSum :: IO ()
 testForwardPegasusXSum =
   do
-    stateDict <- stateDictFromPretrained "/tmp/pegasus-xsum-state-dict.pt"
+    stateDict <- stateDictFromFile "/tmp/pegasus-xsum-state-dict.pt"
 
-    let spec = pegasusXSumSpec SWithLMHead (SGradient SWithoutGradient) (SDevice SCPU)
+    let device = SDevice SCPU
+
+    let spec = pegasusXSumSpec SWithLMHead (SGradient SWithoutGradient) device
     model <- flip evalStateT stateDict $ fromStateDict spec mempty
 
     let g = sMkGenerator (SDevice SCPU) 0
@@ -54,10 +56,12 @@ testForwardPegasusXSum =
         <$> mkPegasusInput
           (SName @"*" :&: SSize @1)
           (SName @"*" :&: encoderSeqSize)
+          device
           [encoderIds]
         <*> mkPegasusInput
           (SName @"*" :&: SSize @1)
           (SName @"*" :&: decoderSeqSize)
+          device
           [decoderIds]
 
     (SimplifiedEncoderDecoderTransformerOutput {..}, _) <- forward model input g

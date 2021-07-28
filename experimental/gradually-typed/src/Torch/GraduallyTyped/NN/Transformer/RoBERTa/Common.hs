@@ -176,7 +176,7 @@ instance HasStateDict spec => HasStateDict (GRoBERTaModel spec) where
   toStateDict k GRoBERTaModel {..} = toStateDict k robertaModel
 
 mkRoBERTaInput ::
-  forall batchDim seqDim m output.
+  forall batchDim seqDim device m output.
   ( MonadThrow m,
     SGetDim batchDim,
     SGetDim seqDim,
@@ -193,12 +193,13 @@ mkRoBERTaInput ::
       ~ Tensor
           ('Gradient 'WithoutGradient)
           ('Layout 'Dense)
-          ('Device 'CPU)
+          device
           ('DataType 'Int64)
           ('Shape '[batchDim, seqDim])
   ) =>
   SDim batchDim ->
   SDim seqDim ->
+  SDevice device ->
   [[Int]] ->
   m output
 mkRoBERTaInput = mkTransformerInput robertaPadTokenId

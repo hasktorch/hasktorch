@@ -84,9 +84,10 @@ type BERTBaseUncased
   (device :: Device (DeviceType Nat)) =
   BERTModelF transformerHead BERTBaseUncasedNumLayers gradient device BERTBaseUncasedHeadDim BERTBaseUncasedHeadEmbedDim BERTBaseUncasedEmbedDim BERTBaseUncasedInputEmbedDim BERTBaseUncasedFFNDim BERTBaseUncasedVocabDim BERTBaseUncasedTypeVocabDim
 
+-- | BERT-Base-Uncased model specification.
 bertBaseUnchasedSpec ::
   STransformerHead transformerHead ->
   SGradient gradient ->
   SDevice device ->
-  ModelSpec (BERTModelF transformerHead BERTBaseUncasedNumLayers gradient device BERTBaseUncasedHeadDim BERTBaseUncasedHeadEmbedDim BERTBaseUncasedEmbedDim BERTBaseUncasedInputEmbedDim BERTBaseUncasedFFNDim BERTBaseUncasedVocabDim BERTBaseUncasedTypeVocabDim)
+  ModelSpec (BERTBaseUncased transformerHead gradient device)
 bertBaseUnchasedSpec transformerHead = bertModelSpec transformerHead bertBaseUncasedNumLayers

@@ -55,9 +55,10 @@ type PegasusXSum
   (device :: Device (DeviceType Nat)) =
   PegasusModelF transformerHead PegasusXSumNumLayers gradient device PegasusXSumHeadDim PegasusXSumHeadEmbedDim PegasusXSumEmbedDim PegasusXSumInputEmbedDim PegasusXSumFFNDim PegasusXSumVocabDim
 
+-- | Pegasus-XSum model specification.
 pegasusXSumSpec ::
   STransformerHead transformerHead ->
   SGradient gradient ->
   SDevice device ->
-  ModelSpec (PegasusModelF transformerHead PegasusXSumNumLayers gradient device PegasusXSumHeadDim PegasusXSumHeadEmbedDim PegasusXSumEmbedDim PegasusXSumInputEmbedDim PegasusXSumFFNDim PegasusXSumVocabDim)
+  ModelSpec (PegasusXSum transformerHead gradient device)
 pegasusXSumSpec transformerHead = pegasusModelSpec transformerHead pegasusXSumNumLayers

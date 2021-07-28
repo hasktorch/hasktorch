@@ -21,7 +21,7 @@ import Control.Monad.State (evalStateT)
 import Test.HUnit.Approx (assertApproxEqual)
 import qualified Tokenizers
 import Torch.GraduallyTyped.Device (SDevice (..), SDeviceType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (fromStateDict), stateDictFromPretrained)
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (fromStateDict), stateDictFromFile)
 import Torch.GraduallyTyped.NN.Transformer.GEncoderDecoder (SimplifiedEncoderDecoderTransformerInput (..), SimplifiedEncoderDecoderTransformerOutput (..))
 import Torch.GraduallyTyped.NN.Transformer.T5.Base
 import Torch.GraduallyTyped.NN.Transformer.T5.Common
@@ -45,12 +45,14 @@ withTokenizer =
 testForwardT5Small :: IO ()
 testForwardT5Small =
   do
-    stateDict <- stateDictFromPretrained "/tmp/t5-small-state-dict.pt"
+    stateDict <- stateDictFromFile "/tmp/t5-small-state-dict.pt"
 
-    let spec = t5SmallSpec SWithLMHead (SGradient SWithoutGradient) (SDevice SCPU)
+    let device = SDevice SCPU
+
+    let spec = t5SmallSpec SWithLMHead (SGradient SWithoutGradient) device
     model <- flip evalStateT stateDict $ fromStateDict spec mempty
 
-    let g = sMkGenerator (SDevice SCPU) 0
+    let g = sMkGenerator device 0
 
     (encoderIds, decoderIds) <- withTokenizer $ \tokenizer -> do
       encoderEncoding <- Tokenizers.encode tokenizer "translate English to German: Studies have shown that owning a dog is good for you and your dog.</s>"
@@ -64,10 +66,12 @@ testForwardT5Small =
         <$> mkT5Input
           (SName @"*" :&: SSize @1)
           (SName @"*" :&: encoderSeqSize)
+          device
           [encoderIds]
         <*> mkT5Input
           (SName @"*" :&: SSize @1)
           (SName @"*" :&: decoderSeqSize)
+          device
           [decoderIds]
 
     (SimplifiedEncoderDecoderTransformerOutput {..}, _) <- forward model input g

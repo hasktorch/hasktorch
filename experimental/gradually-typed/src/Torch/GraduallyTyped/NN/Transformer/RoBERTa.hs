@@ -19,7 +19,7 @@ import qualified Tokenizers
 import Torch.GraduallyTyped.DType (SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (..), stateDictFromPretrained)
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (..), stateDictFromFile)
 import Torch.GraduallyTyped.NN.Transformer.GEncoderOnly (EncoderOnlyTransformerInput (..), EncoderOnlyTransformerOutput (..))
 import Torch.GraduallyTyped.NN.Transformer.RoBERTa.Base
 import Torch.GraduallyTyped.NN.Transformer.RoBERTa.Common
@@ -40,12 +40,14 @@ withTokenizer =
 testForwardRoBERTaBase :: IO ()
 testForwardRoBERTaBase =
   do
-    stateDict <- stateDictFromPretrained "/tmp/roberta-base-state-dict.pt"
+    stateDict <- stateDictFromFile "/tmp/roberta-base-state-dict.pt"
 
-    let spec = robertaBaseSpec SWithLMHead (SGradient SWithoutGradient) (SDevice SCPU)
+    let device = SDevice SCPU
+
+    let spec = robertaBaseSpec SWithLMHead (SGradient SWithoutGradient) device
     GRoBERTaModel {..} <- flip evalStateT stateDict $ fromStateDict spec mempty
 
-    let g = sMkGenerator (SDevice SCPU) 0
+    let g = sMkGenerator device 0
 
     ids <- withTokenizer $ \tokenizer -> do
       encoding <- Tokenizers.encode tokenizer "<s>The capital of France is [MASK].</s>"
@@ -56,13 +58,14 @@ testForwardRoBERTaBase =
       mkRoBERTaInput
         (SName @"*" :&: SSize @1)
         (SName @"*" :&: seqSize)
+        device
         [ids]
     let inputType =
           sZeros $
             TensorSpec
               (SGradient SWithoutGradient)
               (SLayout SDense)
-              (SDevice SCPU)
+              device
               (SDataType SInt64)
               (SShape $ SName @"*" :&: SSize @1 :|: SName @"*" :&: seqSize :|: SNil)
         pos =
@@ -70,7 +73,7 @@ testForwardRoBERTaBase =
             sArangeNaturals
               (SGradient SWithoutGradient)
               (SLayout SDense)
-              (SDevice SCPU)
+              device
               (SDataType SInt64)
               seqSize
         paddingMask = mkRoBERTaPaddingMask input

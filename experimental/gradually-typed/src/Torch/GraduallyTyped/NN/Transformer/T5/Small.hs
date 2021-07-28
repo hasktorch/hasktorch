@@ -57,7 +57,7 @@ t5SmallSpec ::
   STransformerHead transformerHead ->
   SGradient gradient ->
   SDevice device ->
-  ModelSpec (T5ModelF 'T5 transformerHead T5SmallNumLayers T5SmallNumLayers gradient device T5SmallHeadDim T5SmallHeadEmbedDim T5SmallEmbedDim T5SmallInputEmbedDim T5SmallFFNDim T5SmallVocabDim)
+  ModelSpec (T5Small transformerHead gradient device)
 t5SmallSpec transformerHead = t5ModelSpec ST5 transformerHead t5SmallNumLayers t5SmallNumLayers
 
 -- | ByT5-Small number of encoder layers.
@@ -112,5 +112,5 @@ byT5SmallSpec ::
   STransformerHead transformerHead ->
   SGradient gradient ->
   SDevice device ->
-  ModelSpec (T5ModelF 'ByT5 transformerHead ByT5SmallNumEncoderLayers ByT5SmallNumDecoderLayers gradient device ByT5SmallHeadDim ByT5SmallHeadEmbedDim ByT5SmallEmbedDim ByT5SmallInputEmbedDim ByT5SmallFFNDim ByT5SmallVocabDim)
+  ModelSpec (ByT5Small transformerHead gradient device)
 byT5SmallSpec transformerHead = t5ModelSpec SByT5 transformerHead byT5SmallNumEncoderLayers byT5SmallNumDecoderLayers

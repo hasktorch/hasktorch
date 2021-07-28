@@ -34,7 +34,7 @@ import Torch.Data.Parser (Parser, combine, isNotToken, isString, isToken, parseS
 import Torch.GraduallyTyped.DType (DType (..), DataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (fromStateDict), stateDictFromPretrained)
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (fromStateDict), stateDictFromFile)
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (logSoftmax)
 import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5DataType, mkT5Input, t5EOSTokenId)
 import Torch.GraduallyTyped.NN.Transformer.T5.Small (T5Small, t5SmallSpec)
@@ -45,7 +45,7 @@ import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), KnownShape, Name (..), SBy (..), SName (..), SSelectDim (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (sExpand)
 import Torch.GraduallyTyped.Tensor.MathOperations.Comparison (Order (..), Sorted (..), sort)
-import Torch.GraduallyTyped.Tensor.Type (SGetShape (dims), Tensor (..))
+import Torch.GraduallyTyped.Tensor.Type (SGetShape (getDims), Tensor (..))
 import Torch.Language.SpiderSQL (SpiderSQL, spiderSQL)
 import qualified Torch.Tensor
 import Prelude hiding (Word, words)
@@ -214,7 +214,7 @@ runBeamSearch maxSteps beamSize model input g =
                   go (UnfinishedHypothesis _ _ previousHypothesis') = 1 + go previousHypothesis'
                in fromIntegral . maximum $ go <$> previousHypotheses'
         -- liftIO . print $ ((t5Vocab Map.!) <$>) <$> tokens
-        mkT5Input (SName @"*" :&: SUncheckedSize batchSize) (SName @"*" :&: SUncheckedSize seqSize) tokens
+        mkT5Input (SName @"*" :&: SUncheckedSize batchSize) (SName @"*" :&: SUncheckedSize seqSize) (SDevice SCPU) tokens
       logProbs <- getLogProbs decoderInput
       pure $ zip previousHypotheses' logProbs >>= uncurry (\previousHypothesis -> zipWith (mkHypothesis previousHypothesis) [0, 1 ..] . last)
     getLogProbs :: decoderInput -> StateT (Maybe (encoderOutput, inputPaddingMask), Generator generatorDevice) IO [[[Float]]]
@@ -251,8 +251,9 @@ testBeamSearch = do
     mkT5Input
       (SName @"*" :&: SSize @1)
       (SName @"*" :&: SSize @19)
+      (SDevice SCPU)
       tokens
-  stateDict <- stateDictFromPretrained "/tmp/t5-small-state-dict.pt"
+  stateDict <- stateDictFromFile "/tmp/t5-small-state-dict.pt"
   let spec = t5SmallSpec SWithLMHead (SGradient SWithGradient) (SDevice SCPU)
   model <- flip evalStateT stateDict $ fromStateDict spec mempty
   let g = sMkGenerator (SDevice SCPU) 0
@@ -398,6 +399,7 @@ getIs n model input = do
     mkT5Input
       (SName @"*" :&: SSize @1)
       (SName @"*" :&: SUncheckedSize (fromIntegral $ length tokens))
+      (SDevice SCPU)
       [tokens]
   decoderOutput <- do
     (mTensors, g) <- get

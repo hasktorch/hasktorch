@@ -171,7 +171,7 @@ pegasusModelSpec transformerHead numLayers gradient device =
     (MkTransformerDecoderAttentionMask pegasusDataType pegasusAttentionMaskBias)
 
 mkPegasusInput ::
-  forall batchDim seqDim m output.
+  forall batchDim seqDim device m output.
   ( MonadThrow m,
     SGetDim batchDim,
     SGetDim seqDim,
@@ -188,12 +188,13 @@ mkPegasusInput ::
       ~ Tensor
           ('Gradient 'WithoutGradient)
           ('Layout 'Dense)
-          ('Device 'CPU)
+          device
           ('DataType 'Int64)
           ('Shape '[batchDim, seqDim])
   ) =>
   SDim batchDim ->
   SDim seqDim ->
+  SDevice device ->
   [[Int]] ->
   m output
 mkPegasusInput = mkTransformerInput pegasusPadTokenId

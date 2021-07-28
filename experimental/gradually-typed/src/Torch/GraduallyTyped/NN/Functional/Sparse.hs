@@ -55,6 +55,6 @@ embedding ::
     (Seq (dataType' <+> 'DataType 'Int64) dataType)
     (EmbeddingF shape shape')
 embedding paddingIdx scaleGradByFreq weight input =
-  let isSparse = layoutType weight == Sparse
+  let isSparse = getLayoutType weight == Sparse
       paddingIdx' :: Int = maybe (-1) fromIntegral paddingIdx
    in unsafePerformIO $ cast5 ATen.embedding_ttlbb weight input paddingIdx' scaleGradByFreq isSparse

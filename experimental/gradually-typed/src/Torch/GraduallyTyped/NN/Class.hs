@@ -29,7 +29,9 @@ module Torch.GraduallyTyped.NN.Class where
 import Control.Exception (Exception (..))
 import Control.Monad (void)
 import Control.Monad.Catch (MonadThrow (..))
+import Control.Monad.IO.Class (MonadIO (..))
 import Control.Monad.State (MonadState (get, put))
+import Data.Bifunctor (Bifunctor (bimap))
 import Data.Kind (Type)
 import qualified Data.Map.Strict as Map
 import Data.Proxy (Proxy (..))
@@ -44,10 +46,10 @@ import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (Nat, natVal, type (+))
 import Torch.GraduallyTyped.Device (Device, DeviceType)
 import Torch.GraduallyTyped.Random (Generator)
-import Torch.GraduallyTyped.Tensor.Type (Tensor (..), TensorSpec (..), UncheckedTensor, sCheckedDataType, sCheckedDevice, sCheckedGradient, sCheckedLayout, sCheckedShape)
+import Torch.GraduallyTyped.Tensor.Type (SSetDevice (sSetDevice), SSetGradient (..), Tensor (..), TensorSpec (..), UncheckedTensor, sCheckedDataType, sCheckedLayout, sCheckedShape)
 import qualified Torch.Internal.Type as ATen (Tensor)
 import qualified Torch.Script (IValue (..))
-import qualified Torch.Serialize (pickleLoad)
+import qualified Torch.Serialize (pickleLoad, pickleSave)
 import qualified Torch.Tensor (Tensor (Unsafe))
 
 data NamedModel model = NamedModel Text model
@@ -211,7 +213,7 @@ instance Exception ToStateDictError where
 class HasStateDict model where
   fromStateDict ::
     forall m.
-    (MonadThrow m, MonadState StateDict m) =>
+    (MonadIO m, MonadThrow m, MonadState StateDict m) =>
     ModelSpec model ->
     StateDictKey ->
     m model
@@ -244,6 +246,7 @@ instance (HasStateDict a, HasStateDict b) => HasStateDict (a, b) where
 type instance ModelSpec (Tensor gradient layout device dataType shape) = TensorSpec gradient layout device dataType shape
 
 instance
+  (SSetGradient gradient, SSetDevice device) =>
   HasStateDict
     (Tensor gradient layout device dataType shape)
   where
@@ -253,9 +256,9 @@ instance
       (throwM . FromStateDictKeyNotFoundError $ k)
       (\t -> pure (UnsafeTensor t :: UncheckedTensor))
       (Map.lookup k stateDict)
-      >>= sCheckedGradient gradient
+      >>= liftIO . sSetGradient gradient
       >>= sCheckedLayout layout
-      >>= sCheckedDevice device
+      >>= sSetDevice device
       >>= sCheckedDataType dataType
       >>= sCheckedShape shape
   toStateDict k (UnsafeTensor t) = do
@@ -279,10 +282,11 @@ instance
     let toStateDict' (i', a) = toStateDict (k <> Text.pack (show i') <> ".") a
     mapM_ toStateDict' $ V.zip (V.fromList [0 .. V.length v - 1]) v
 
-stateDictFromPretrained ::
+-- | Load a state dictionary from a TorchScript file.
+stateDictFromFile ::
   FilePath ->
   IO StateDict
-stateDictFromPretrained filePath = do
+stateDictFromFile filePath = do
   iValue <- Torch.Serialize.pickleLoad filePath
   case iValue of
     Torch.Script.IVGenericDict xs -> Map.fromList <$> go xs
@@ -293,3 +297,17 @@ stateDictFromPretrained filePath = do
     go ((_, Torch.Script.IVTensor _) : _) = fail "iValue is not a string."
     go ((Torch.Script.IVString _, _) : _) = fail "iValue is not a tensor."
     go _ = fail "iValue is neither a string nor a tensor."
+
+-- | Save a state dictionary to a TorchScript file.
+stateDictToFile ::
+  StateDict ->
+  FilePath ->
+  IO ()
+stateDictToFile stateDict filePath = do
+  let iValue =
+        Torch.Script.IVGenericDict $
+          bimap
+            (Torch.Script.IVString . Text.unpack)
+            (Torch.Script.IVTensor . Torch.Tensor.Unsafe)
+            <$> Map.toList stateDict
+  Torch.Serialize.pickleSave iValue filePath

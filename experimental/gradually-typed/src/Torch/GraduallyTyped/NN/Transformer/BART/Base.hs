@@ -79,9 +79,10 @@ type BARTBase
   (device :: Device (DeviceType Nat)) =
   BARTModelF transformerHead BARTBaseNumLayers gradient device BARTBaseHeadDim BARTBaseHeadEmbedDim BARTBaseEmbedDim BARTBaseInputEmbedDim BARTBaseFFNDim BARTBaseVocabDim
 
+-- | BART-Base model specification.
 bartBaseSpec ::
   STransformerHead transformerHead ->
   SGradient gradient ->
   SDevice device ->
-  ModelSpec (BARTModelF transformerHead BARTBaseNumLayers gradient device BARTBaseHeadDim BARTBaseHeadEmbedDim BARTBaseEmbedDim BARTBaseInputEmbedDim BARTBaseFFNDim BARTBaseVocabDim)
+  ModelSpec (BARTBase transformerHead gradient device)
 bartBaseSpec transformerHead = bartModelSpec transformerHead bartBaseNumLayers

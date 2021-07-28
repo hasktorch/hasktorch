@@ -167,7 +167,7 @@ instance HasStateDict spec => HasStateDict (GBERTModel spec) where
   toStateDict k GBERTModel {..} = toStateDict k bertModel
 
 mkBERTInput ::
-  forall batchDim seqDim m output.
+  forall batchDim seqDim device m output.
   ( MonadThrow m,
     SGetDim batchDim,
     SGetDim seqDim,
@@ -184,12 +184,13 @@ mkBERTInput ::
       ~ Tensor
           ('Gradient 'WithoutGradient)
           ('Layout 'Dense)
-          ('Device 'CPU)
+          device
           ('DataType 'Int64)
           ('Shape '[batchDim, seqDim])
   ) =>
   SDim batchDim ->
   SDim seqDim ->
+  SDevice device ->
   [[Int]] ->
   m output
 mkBERTInput = mkTransformerInput bertPadTokenId
