@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -12,7 +13,6 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.NN.Sparse where
 
@@ -31,7 +31,7 @@ import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..))
 import Torch.GraduallyTyped.Shape (Dim (..), Name, SDim (..), SShape (..), Shape (..), Size, pattern (:|:))
 import Torch.GraduallyTyped.Tensor.Creation (sRandn)
-import Torch.GraduallyTyped.Tensor.Type (SGetLayout, Tensor, TensorSpec (..))
+import Torch.GraduallyTyped.Tensor.Type (SGetLayout, SSetDevice, SSetGradient, Tensor, TensorSpec (..))
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 
 data
@@ -94,6 +94,7 @@ instance
         >>>= ireturn . Embedding
 
 instance
+  (SSetGradient gradient, SSetDevice device) =>
   HasStateDict
     (Embedding gradient layout device dataType embedNumDim embedDim paddingIdx)
   where

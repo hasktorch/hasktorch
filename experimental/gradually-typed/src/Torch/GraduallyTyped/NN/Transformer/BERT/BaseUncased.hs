@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
-{-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.NN.Transformer.BERT.BaseUncased where
 
@@ -8,7 +7,8 @@ import Data.Singletons (SingI (sing))
 import Data.Singletons.TypeLits (SNat)
 import GHC.TypeLits (Nat)
 import Torch.GraduallyTyped.Device (Device, DeviceType, SDevice)
-import Torch.GraduallyTyped.NN.Transformer.BERT.Common (BERTModel, BERTModelSpec (..))
+import Torch.GraduallyTyped.NN.Class (ModelSpec)
+import Torch.GraduallyTyped.NN.Transformer.BERT.Common (BERTModelF, bertModelSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead, TransformerHead)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, Size (..))
@@ -82,11 +82,12 @@ type BERTBaseUncased
   (transformerHead :: TransformerHead)
   (gradient :: Gradient RequiresGradient)
   (device :: Device (DeviceType Nat)) =
-  BERTModel transformerHead BERTBaseUncasedNumLayers gradient device BERTBaseUncasedHeadDim BERTBaseUncasedHeadEmbedDim BERTBaseUncasedEmbedDim BERTBaseUncasedInputEmbedDim BERTBaseUncasedFFNDim BERTBaseUncasedVocabDim BERTBaseUncasedTypeVocabDim
+  BERTModelF transformerHead BERTBaseUncasedNumLayers gradient device BERTBaseUncasedHeadDim BERTBaseUncasedHeadEmbedDim BERTBaseUncasedEmbedDim BERTBaseUncasedInputEmbedDim BERTBaseUncasedFFNDim BERTBaseUncasedVocabDim BERTBaseUncasedTypeVocabDim
 
+-- | BERT-Base-Uncased model specification.
 bertBaseUnchasedSpec ::
   STransformerHead transformerHead ->
   SGradient gradient ->
   SDevice device ->
-  BERTModelSpec transformerHead BERTBaseUncasedNumLayers gradient device BERTBaseUncasedHeadDim BERTBaseUncasedHeadEmbedDim BERTBaseUncasedEmbedDim BERTBaseUncasedInputEmbedDim BERTBaseUncasedFFNDim BERTBaseUncasedVocabDim BERTBaseUncasedTypeVocabDim
-bertBaseUnchasedSpec transformerHead = BERTModelSpec transformerHead bertBaseUncasedNumLayers
+  ModelSpec (BERTBaseUncased transformerHead gradient device)
+bertBaseUnchasedSpec transformerHead = bertModelSpec transformerHead bertBaseUncasedNumLayers

@@ -3,7 +3,7 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
-{-# OPTIONS_GHC -v2 -Wall #-}
+{-# OPTIONS_GHC -v2 #-}
 
 module Torch.GraduallyTyped.NN.Transformer.BERT
   ( module Torch.GraduallyTyped.NN.Transformer.BERT.Common,
@@ -19,10 +19,10 @@ import qualified Tokenizers
 import Torch.GraduallyTyped.DType (SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Layout (SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (fromStateDict), stateDictFromPretrained)
+import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (fromStateDict), stateDictFromFile)
 import Torch.GraduallyTyped.NN.Transformer.BERT.BaseUncased
 import Torch.GraduallyTyped.NN.Transformer.BERT.Common
-import Torch.GraduallyTyped.NN.Transformer.EncoderOnly (EncoderOnlyTransformerInput (..), EncoderOnlyTransformerOutput (..))
+import Torch.GraduallyTyped.NN.Transformer.GEncoderOnly (EncoderOnlyTransformerInput (..), EncoderOnlyTransformerOutput (..))
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead (SWithLMHead), mkTransformerAttentionMask)
 import Torch.GraduallyTyped.Random (sMkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (SGradient (..), SRequiresGradient (..))
@@ -39,11 +39,14 @@ withTokenizer =
 testForwardBERTBaseUncased :: IO ()
 testForwardBERTBaseUncased =
   do
-    stateDict <- stateDictFromPretrained "/tmp/bert-base-uncased-state-dict.pt"
-    BERTModel GBERTModel {..} <-
-      flip evalStateT stateDict $
-        fromStateDict (bertBaseUnchasedSpec SWithLMHead (SGradient SWithoutGradient) (SDevice SCPU)) ""
-    let g = sMkGenerator (SDevice SCPU) 0
+    stateDict <- stateDictFromFile "/tmp/bert-base-uncased-state-dict.pt"
+
+    let device = SDevice (SCUDA @0)
+
+    let spec = bertBaseUnchasedSpec SWithLMHead (SGradient SWithGradient) device
+    GBERTModel {..} <- flip evalStateT stateDict $ fromStateDict spec mempty
+
+    let g = sMkGenerator device 0
 
     ids <- withTokenizer $ \tokenizer -> do
       encoding <- Tokenizers.encode tokenizer "[CLS] the capital of france is [MASK]. [SEP]"
@@ -54,20 +57,21 @@ testForwardBERTBaseUncased =
       mkBERTInput
         (SName @"*" :&: SSize @1)
         (SName @"*" :&: seqSize)
+        device
         [ids]
     let inputType =
           sZeros $
             TensorSpec
               (SGradient SWithoutGradient)
               (SLayout SDense)
-              (SDevice SCPU)
+              device
               (SDataType SInt64)
               (SShape $ SName @"*" :&: SSize @1 :|: SName @"*" :&: seqSize :|: SNil)
         pos =
           sArangeNaturals
             (SGradient SWithoutGradient)
             (SLayout SDense)
-            (SDevice SCPU)
+            device
             (SDataType SInt64)
             seqSize
         paddingMask = mkBERTPaddingMask input
@@ -83,4 +87,4 @@ testForwardBERTBaseUncased =
           firstPositions <- take 3 firstBatch
           take 3 firstPositions
     let firstLMHeadLogits' = [-6.4346, -6.4063, -6.4097, -14.0119, -14.7240, -14.2120, -9.6561, -10.3125, -9.7459]
-    mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLMHeadLogits firstLMHeadLogits'
+    mapM_ (uncurry (assertApproxEqual "failed approximate equality check" 0.001)) $ zip firstLMHeadLogits' firstLMHeadLogits

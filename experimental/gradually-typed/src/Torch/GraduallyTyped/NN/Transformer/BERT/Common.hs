@@ -29,8 +29,8 @@ import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SData
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasStateDict (..), ModelSpec)
-import Torch.GraduallyTyped.NN.Transformer.EncoderOnly (EncoderOnlyTransformer, EncoderOnlyTransformerSpec (..))
-import Torch.GraduallyTyped.NN.Transformer.Type (MkTransformerPaddingMaskC, STransformerHead, TransformerHead (..), TransformerStyle (BERT), mkTransformerInput, mkTransformerPaddingMask, STransformerStyle (SBERT))
+import Torch.GraduallyTyped.NN.Transformer.GEncoderOnly (EOTEmbeddingF, EOTEncoderF, EOTHeadF, EOTTypeEmbeddingF, GEncoderOnlyTransformer, encoderOnlyTransformerSpec)
+import Torch.GraduallyTyped.NN.Transformer.Type (MkTransformerPaddingMaskC, STransformerHead, STransformerStyle (SBERT), TransformerHead (..), TransformerStyle (BERT), mkTransformerInput, mkTransformerPaddingMask)
 import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, Shape (..), Size (..))
@@ -82,6 +82,7 @@ bertPadTokenId = 0
 bertAttentionMaskBias :: Double
 bertAttentionMaskBias = -10000
 
+-- | Generic BERT model data type.
 data
   GBERTModel
     (bertModel :: Type)
@@ -92,9 +93,11 @@ data
     } ->
     GBERTModel bertModel
 
--- | BERT model.
-newtype
-  BERTModel
+type instance ModelSpec (GBERTModel bertModel) = GBERTModel (ModelSpec bertModel)
+
+-- | Specifies the BERT model.
+type family
+  BERTModelF
     (transformerHead :: TransformerHead)
     (numLayers :: Nat)
     (gradient :: Gradient RequiresGradient)
@@ -105,67 +108,66 @@ newtype
     (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
     (ffnDim :: Dim (Name Symbol) (Size Nat))
     (vocabDim :: Dim (Name Symbol) (Size Nat))
-    (typeVocabDim :: Dim (Name Symbol) (Size Nat))
+    (typeVocabDim :: Dim (Name Symbol) (Size Nat)) ::
+    Type
   where
-  BERTModel ::
-    forall transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim.
+  BERTModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim =
     GBERTModel
-      (EncoderOnlyTransformer 'BERT transformerHead numLayers gradient device BERTDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim BERTPosEncDim vocabDim typeVocabDim) ->
-    BERTModel transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim
-  deriving stock (Generic)
+      ( GEncoderOnlyTransformer
+          inputEmbedDim
+          (EOTEncoderF 'BERT numLayers gradient device BERTDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim BERTPosEncDim)
+          (EOTEmbeddingF 'BERT gradient device BERTDataType inputEmbedDim vocabDim)
+          (EOTTypeEmbeddingF 'BERT gradient device BERTDataType inputEmbedDim typeVocabDim)
+          (EOTHeadF 'BERT transformerHead gradient device BERTDataType inputEmbedDim vocabDim)
+      )
 
-data
-  BERTModelSpec
-    (transformerHead :: TransformerHead)
-    (numLayers :: Nat)
-    (gradient :: Gradient RequiresGradient)
-    (device :: Device (DeviceType Nat))
-    (headDim :: Dim (Name Symbol) (Size Nat))
-    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (embedDim :: Dim (Name Symbol) (Size Nat))
-    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (ffnDim :: Dim (Name Symbol) (Size Nat))
-    (vocabDim :: Dim (Name Symbol) (Size Nat))
-    (typeVocabDim :: Dim (Name Symbol) (Size Nat))
-  where
-  BERTModelSpec ::
-    forall transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim.
-    STransformerHead transformerHead ->
-    SNat numLayers ->
-    SGradient gradient ->
-    SDevice device ->
-    BERTModelSpec transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim
-
-type instance ModelSpec (BERTModel transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim) = BERTModelSpec transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim
-
-instance
+-- | Specifies the parameters of a BERT model.
+--
+-- - @transformerHead@: the head of the BERT model.
+-- - @numLayers@: the number of layers in the BERT model.
+-- - @gradient@: whether to compute the gradient of the BERT model.
+-- - @device@: the computational device on which the BERT model parameters are to be allocated.
+bertModelSpec ::
+  forall transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim.
   ( SingI headDim,
     SingI headEmbedDim,
     SingI embedDim,
     SingI inputEmbedDim,
     SingI ffnDim,
     SingI vocabDim,
-    SingI typeVocabDim,
-    KnownNat numLayers,
-    HasStateDict
-      (EncoderOnlyTransformer 'BERT transformerHead numLayers gradient device BERTDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim BERTPosEncDim vocabDim typeVocabDim)
+    SingI typeVocabDim
   ) =>
-  HasStateDict
-    (BERTModel transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
-  where
-  fromStateDict (BERTModelSpec transformerHead numLayers gradient device) k =
-    let headDim = sing @headDim
-        headEmbedDim = sing @headEmbedDim
-        embedDim = sing @embedDim
-        inputEmbedDim = sing @inputEmbedDim
-        ffnDim = sing @ffnDim
-        vocabDim = sing @vocabDim
-        typeVocabDim = sing @typeVocabDim
-     in BERTModel . GBERTModel <$> fromStateDict (EncoderOnlyTransformerSpec SBERT transformerHead numLayers gradient device bertDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim bertPosEncDim vocabDim typeVocabDim bertDropoutP bertEps) k
-  toStateDict k (BERTModel GBERTModel {..}) = toStateDict k bertModel
+  STransformerHead transformerHead ->
+  SNat numLayers ->
+  SGradient gradient ->
+  SDevice device ->
+  ModelSpec (BERTModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
+bertModelSpec transformerHead numLayers gradient device =
+  GBERTModel $
+    encoderOnlyTransformerSpec
+      SBERT
+      transformerHead
+      numLayers
+      gradient
+      device
+      bertDataType
+      (sing @headDim)
+      (sing @headEmbedDim)
+      (sing @embedDim)
+      (sing @inputEmbedDim)
+      (sing @ffnDim)
+      bertPosEncDim
+      (sing @vocabDim)
+      (sing @typeVocabDim)
+      bertDropoutP
+      bertEps
+
+instance HasStateDict spec => HasStateDict (GBERTModel spec) where
+  fromStateDict (GBERTModel spec) k = GBERTModel <$> fromStateDict spec k
+  toStateDict k GBERTModel {..} = toStateDict k bertModel
 
 mkBERTInput ::
-  forall batchDim seqDim m output.
+  forall batchDim seqDim device m output.
   ( MonadThrow m,
     SGetDim batchDim,
     SGetDim seqDim,
@@ -182,12 +184,13 @@ mkBERTInput ::
       ~ Tensor
           ('Gradient 'WithoutGradient)
           ('Layout 'Dense)
-          ('Device 'CPU)
+          device
           ('DataType 'Int64)
           ('Shape '[batchDim, seqDim])
   ) =>
   SDim batchDim ->
   SDim seqDim ->
+  SDevice device ->
   [[Int]] ->
   m output
 mkBERTInput = mkTransformerInput bertPadTokenId

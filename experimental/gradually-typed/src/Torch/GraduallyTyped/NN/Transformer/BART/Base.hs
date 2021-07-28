@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
-{-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.NN.Transformer.BART.Base where
 
@@ -8,7 +7,8 @@ import Data.Singletons (SingI (..))
 import Data.Singletons.TypeLits (SNat)
 import GHC.TypeLits (Nat)
 import Torch.GraduallyTyped.Device (Device, DeviceType, SDevice)
-import Torch.GraduallyTyped.NN.Transformer.BART.Common (BARTModel, BARTModelSpec (..))
+import Torch.GraduallyTyped.NN.Class (ModelSpec)
+import Torch.GraduallyTyped.NN.Transformer.BART.Common (BARTModelF, bartModelSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead, TransformerHead)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, Size (..))
@@ -77,11 +77,12 @@ type BARTBase
   (transformerHead :: TransformerHead)
   (gradient :: Gradient RequiresGradient)
   (device :: Device (DeviceType Nat)) =
-  BARTModel transformerHead BARTBaseNumLayers gradient device BARTBaseHeadDim BARTBaseHeadEmbedDim BARTBaseEmbedDim BARTBaseInputEmbedDim BARTBaseFFNDim BARTBaseVocabDim
+  BARTModelF transformerHead BARTBaseNumLayers gradient device BARTBaseHeadDim BARTBaseHeadEmbedDim BARTBaseEmbedDim BARTBaseInputEmbedDim BARTBaseFFNDim BARTBaseVocabDim
 
+-- | BART-Base model specification.
 bartBaseSpec ::
   STransformerHead transformerHead ->
   SGradient gradient ->
   SDevice device ->
-  BARTModelSpec transformerHead BARTBaseNumLayers gradient device BARTBaseHeadDim BARTBaseHeadEmbedDim BARTBaseEmbedDim BARTBaseInputEmbedDim BARTBaseFFNDim BARTBaseVocabDim
-bartBaseSpec transformerHead = BARTModelSpec transformerHead bartBaseNumLayers
+  ModelSpec (BARTBase transformerHead gradient device)
+bartBaseSpec transformerHead = bartModelSpec transformerHead bartBaseNumLayers

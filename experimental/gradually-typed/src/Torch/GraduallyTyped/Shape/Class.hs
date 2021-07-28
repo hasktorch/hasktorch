@@ -138,45 +138,45 @@ type family (!) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (_k :: k) :: Dim
   (!) shape (index :: Nat) = GetDimF ('SelectDim ('ByIndex index)) shape
   (!) shape (name :: Symbol) = GetDimF ('SelectDim ('ByName name)) shape
 
--- | Get dimension by index or by name
+-- | Get dimension by index or by name from a shape.
 --
 -- >>> shape = SShape $ SName @"batch" :&: SSize @8 :|: SUncheckedName "feature" :&: SSize @2 :|: SNil
--- >>> dim = sGetDim (SSelectDim $ SByName @"batch") shape
+-- >>> dim = sGetDimFromShape (SSelectDim $ SByName @"batch") shape
 -- >>> :type dim
 -- dim :: MonadThrow m => m (SDim ('Dim ('Name "batch") ('Size 8)))
 -- >>> fromSing <$> dim
 -- Dim {dimName = Checked "batch", dimSize = Checked 8}
 --
--- >>> dim = sGetDim (SSelectDim $ SByName @"feature") shape
+-- >>> dim = sGetDimFromShape (SSelectDim $ SByName @"feature") shape
 -- >>> :type dim
 -- dim
 --   :: MonadThrow m => m (SDim ('Dim 'UncheckedName 'UncheckedSize))
 -- >>> fromSing <$> dim
 -- Dim {dimName = Unchecked "feature", dimSize = Checked 2}
 --
--- >>> dim = sGetDim (SSelectDim $ SByName @"sequence") shape
+-- >>> dim = sGetDimFromShape (SSelectDim $ SByName @"sequence") shape
 -- >>> :type dim
 -- dim
 --   :: MonadThrow m => m (SDim ('Dim 'UncheckedName 'UncheckedSize))
 -- >>> fromSing <$> dim
 -- *** Exception: GetDimError {gdeBy = ByName "sequence"}
 --
--- >>> dim = sGetDim (SSelectDim $ SByIndex @0) shape
+-- >>> dim = sGetDimFromShape (SSelectDim $ SByIndex @0) shape
 -- >>> :type dim
 -- dim :: MonadThrow m => m (SDim ('Dim ('Name "batch") ('Size 8)))
 -- >>> fromSing <$> dim
 -- Dim {dimName = Checked "batch", dimSize = Checked 8}
 --
--- >>> :type sGetDim (SSelectDim $ SByIndex @2) shape
+-- >>> :type sGetDimFromShape (SSelectDim $ SByIndex @2) shape
 -- sGetDim (SSelectDim $ SByIndex @2) shape
 --   :: MonadThrow m => m (SDim (TypeError ...))
-sGetDim ::
+sGetDimFromShape ::
   forall selectDim shape dim m.
   (dim ~ GetDimF selectDim shape, MonadThrow m) =>
   SSelectDim selectDim ->
   SShape shape ->
   m (SDim dim)
-sGetDim (SUncheckedSelectDim by) (SUncheckedShape dims) = go 0 dims
+sGetDimFromShape (SUncheckedSelectDim by) (SUncheckedShape dims) = go 0 dims
   where
     go _ [] = throwM $ GetDimErrorWithDims by dims
     go index (Dim name size : dims) =
@@ -185,21 +185,21 @@ sGetDim (SUncheckedSelectDim by) (SUncheckedShape dims) = go 0 dims
             ByName name' | name == name' -> pure dim'
             ByIndex index' | index == index' -> pure dim'
             _ -> go (index + 1) dims
-sGetDim (SSelectDim by) (SUncheckedShape dims) = sGetDim (SUncheckedSelectDim $ fromSing by) (SUncheckedShape dims)
-sGetDim (SUncheckedSelectDim by) (SShape dims) =
+sGetDimFromShape (SSelectDim by) (SUncheckedShape dims) = sGetDimFromShape (SUncheckedSelectDim $ fromSing by) (SUncheckedShape dims)
+sGetDimFromShape (SUncheckedSelectDim by) (SShape dims) =
   let dims' = (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size)) <$> fromSing dims
-   in sGetDim (SUncheckedSelectDim by) (SUncheckedShape dims')
-sGetDim (SSelectDim by@SByName) (SShape SNil) =
+   in sGetDimFromShape (SUncheckedSelectDim by) (SUncheckedShape dims')
+sGetDimFromShape (SSelectDim by@SByName) (SShape SNil) =
   let by' = fromSing by
    in throwM $ GetDimError by'
-sGetDim (SSelectDim by@SByName) (SShape (SCons dim@(SDim (SUncheckedName name) _) dims)) =
+sGetDimFromShape (SSelectDim by@SByName) (SShape (SCons dim@(SDim (SUncheckedName name) _) dims)) =
   let ByName name' = fromSing by
-   in if name == name' then pure (unsafeCoerce @(SDim _) @(SDim dim) dim) else unsafeCoerce @(SDim _) @(SDim dim) <$> sGetDim (SSelectDim by) (SShape dims)
-sGetDim (SSelectDim by@SByName) (SShape (SCons dim@(SDim SName _) dims)) =
+   in if name == name' then pure (unsafeCoerce @(SDim _) @(SDim dim) dim) else unsafeCoerce @(SDim _) @(SDim dim) <$> sGetDimFromShape (SSelectDim by) (SShape dims)
+sGetDimFromShape (SSelectDim by@SByName) (SShape (SCons dim@(SDim SName _) dims)) =
   let ByName name' = fromSing by
       Dim name size = (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size)) $ fromSing dim
-   in if name == name' then pure (unsafeCoerce @(SDim _) @(SDim dim) dim) else unsafeCoerce @(SDim _) @(SDim dim) <$> sGetDim (SSelectDim by) (SShape dims)
-sGetDim (SSelectDim by@SByIndex) (SShape dims) =
+   in if name == name' then pure (unsafeCoerce @(SDim _) @(SDim dim) dim) else unsafeCoerce @(SDim _) @(SDim dim) <$> sGetDimFromShape (SSelectDim by) (SShape dims)
+sGetDimFromShape (SSelectDim by@SByIndex) (SShape dims) =
   go 0 dims
   where
     by'@(ByIndex index') = fromSing by
@@ -225,14 +225,6 @@ instance Exception GetDimError where
       <> "` in the shape `"
       <> show gdewdDims
       <> "`."
-
-getDim ::
-  forall selectDim shape dim.
-  (dim ~ GetDimF selectDim shape) =>
-  SSelectDim selectDim ->
-  SShape shape ->
-  SDim dim
-getDim = (unsafePerformIO .) . sGetDim
 
 type family ReplaceDimByIndexF (index :: Maybe Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) (dim :: Dim (Name Symbol) (Size Nat)) :: Maybe [Dim (Name Symbol) (Size Nat)] where
   ReplaceDimByIndexF ('Just 0) (_ ': t) dim = 'Just (dim ': t)
