@@ -20,6 +20,7 @@ import Control.Monad
   ( MonadPlus,
     forM_,
     when,
+    (>=>)
   )
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Internal as BSI
@@ -31,6 +32,7 @@ import qualified Foreign.Ptr as F
 import GHC.Exts (IsList (fromList))
 import qualified Language.C.Inline as C
 import Pipes
+import System.Directory (listDirectory)
 import System.IO.Unsafe
 import System.Random (mkStdGen, randoms)
 import qualified Torch.DType as D
@@ -42,9 +44,10 @@ import Torch.Internal.Cast
 import qualified Torch.Internal.Managed.TensorFactories as LibTorch
 import Torch.NN
 import Torch.Tensor
+import Torch.TensorFactories (onesLike)
 import qualified Torch.Tensor as D
 import qualified Torch.TensorOptions as D
-import qualified Torch.Typed.Vision as I
+import qualified Torch.Typed.Vision as I (MnistData (..), length, getLabel)
 import Prelude hiding (max, min)
 import qualified Prelude as P
 
@@ -101,6 +104,102 @@ getImages' n dataDim mnist imageIdxs = unsafePerformIO $ do
           (F.plusPtr ptr2 (off + 16 + dataDim * idx))
           dataDim
   return $ D.toType D.Float t
+
+
+data ImageFolder (m :: * -> *) = ImageFolder { folderData :: FolderData, batchSizeIF :: Int,  imgSize :: (Int, Int, Int) }
+
+instance Monad m => Datastream m Int (ImageFolder m) (Tensor, Tensor) where
+  streamSamples ImageFolder {..} seed = Select $
+    for (each [1 .. numIters]) $
+      \iter -> do
+        let (_, h, w) = imgSize
+            from = (iter - 1) * batchSizeIF
+            to = (iter * batchSizeIF) - 1
+            indexes = [from .. to]
+            input = squeezeDim 0 . unsafePerformIO $ getFolderImages folderData indexes [h, w]
+            labels = _toType D.Int64 . onesLike $ input
+        yield (input, labels)
+    where
+      numIters = length (imageNames folderData) `Prelude.div` batchSizeIF
+
+instance Applicative m => Dataset m (ImageFolder m) Int (Tensor, Tensor) where
+  getItem ImageFolder{..} ix =  
+    let
+      (_, h, w) = imgSize
+      indexes = [ix * batchSizeIF .. (ix+1) * batchSizeIF - 1]
+      imgs = squeezeDim 0 . unsafePerformIO $ getFolderImages folderData indexes [h, w]
+      labels = _toType D.Int64 . onesLike $ imgs
+    in pure (imgs, labels)
+
+  keys ImageFolder{..} = fromList [ 0 .. length (imageNames folderData) `Prelude.div` batchSizeIF - 1]
+
+data FolderData = FolderData {foldPath :: FilePath, imageNames :: [FilePath]}
+
+getFolderImage :: FolderData -> Int -> IO Tensor
+getFolderImage imgFold imgIdx = (readImageAsRGB8 . (++) (foldPath imgFold ++ "/") . (!!) (imageNames imgFold)) imgIdx >>=
+                                  \case
+                                      Left error -> throwIO $ userError "Path contains non-image files"
+                                      Right tensor -> return . _toType D.Float . hwc2chw $ tensor 
+
+getFolderImages ::
+  FolderData ->
+  [Int] ->
+  [Int] ->
+  IO Tensor
+getFolderImages imgFold imgIdxs size = mapM (getFolderImage imgFold >=> (\x -> resize x size "bilinear" True)) imgIdxs >>= return . stack (Dim 1)
+
+getImageFolder :: String -> IO FolderData
+getImageFolder path = listDirectory path >>= return . (FolderData path) 
+
+-- END ImageFolder Dataset --
+
+
+_castSqueezeIn :: Tensor -> IO (Tensor, Bool, Bool, D.DType)
+_castSqueezeIn tensor' = do
+  let needSqueeze = False
+  let needCast = False
+  adjust needSqueeze needCast (dtype tensor') tensor'
+  where 
+    adjust :: Bool -> Bool -> D.DType -> Tensor -> IO (Tensor, Bool, Bool, D.DType)
+    adjust needSqueeze needCast dtype' tensor
+          | dtype tensor /= D.Float = adjust needSqueeze True dtype' $ _toType D.Float tensor
+          | dim tensor < 4 = adjust True needCast dtype' $ unsqueeze (Dim 0) tensor
+          | otherwise = return (tensor, needSqueeze, needCast, dtype')
+
+_castSqueezeOut :: Tensor -> Bool -> Bool -> D.DType -> IO Tensor
+_castSqueezeOut tensor needSqueeze needCast dtype'= do
+  case (needSqueeze, needCast) of
+    (_, True) -> _castSqueezeOut (_toType dtype' tensor) needSqueeze False dtype'
+    (True, _) -> _castSqueezeOut (squeezeDim 0 tensor) False needCast dtype'
+    (False, False) -> return tensor
+
+-- Partial Haskell implementation of the pytorch/Torch interpolate
+-- TODO: Use typeclasses and instances to clean up ugly type conversion
+interpolate :: Tensor -> (Int, Int) -> String -> Bool -> IO Tensor
+interpolate tensor (sizeH, sizeW) mode alignCorners = do
+    case mode of
+      -- upsampleNearest2d is only designed to take size /or/ scale factor, but haskorch has it implemented with both down to the C in Internal/Unmanaged/Native, hence the seperate cases
+      "nearest" -> if alignCorners 
+                          then do throwIO $ userError "alignCorners is only valid for bilinear interpolation" 
+                          --Ugly/Black magic type conversion to to get Scale Factor in Doubles
+                          else return $ upsampleNearest2d' (sizeH, sizeW) tensor
+                       -- Less black magic type conversion. Round is still neccessary even though the provided values should be integers
+      "bilinear"    -> return $ upsampleBilinear2d (sizeH, sizeW) alignCorners tensor
+ 
+
+resize :: Tensor -> [Int] -> String -> Bool -> IO Tensor
+resize tensor' size'' mode alignCorners = do
+    when (mode `notElem` ["nearest", "bilinear"]) $ throwIO (userError $ "The mode provided (" ++ show mode ++ ") is not implemented. Try \"nearest\" or \"bilinear\"")  
+    when (dim tensor' > 4) $ throwIO $ userError $ "Only spatial interpolation is currently supported! " ++ show (dim tensor') ++ " has too many dimensions!"
+    let size' = case size'' of
+                [batch, imgChannels, h, w] -> (h, w) 
+                [h, w, imgChannels] -> (h, w)
+                [h, w] -> (h, w)
+                [wh] -> (wh, wh)
+                _ -> error "Invalid output size"
+    (tensor, needSqueeze, needCast, dtype') <- _castSqueezeIn tensor'
+    ftensor <- interpolate tensor size' mode alignCorners
+    _castSqueezeOut ftensor needSqueeze needCast dtype'
 
 -- http://paulbourke.net/dataformats/asciiart/
 grayScale10 = " .:-=+*#%@"

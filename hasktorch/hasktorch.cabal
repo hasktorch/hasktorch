@@ -110,6 +110,7 @@ library
                     , reflection
                     , stm
                     , JuicyPixels
+                    , directory
                     , vector
                     , bytestring
                     , safe-exceptions

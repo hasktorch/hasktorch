@@ -33,11 +33,13 @@ import Data.Proxy
 import Data.Reflection
 import Data.Vector.Sized (Vector)
 import qualified Data.Vector.Sized as V
+import Foreign.C.Types (CBool (..))
 import Foreign.ForeignPtr
 import Foreign.Storable
 import GHC.Exts
 import GHC.Generics
 import GHC.TypeLits
+import System.IO.Unsafe (unsafePerformIO)
 import qualified Torch.DType as D
 import qualified Torch.Device as D
 import qualified Torch.Functional as D hiding (select)
@@ -50,6 +52,7 @@ import Torch.Internal.Class
     CppTuple4 (..),
   )
 import qualified Torch.Internal.Type as ATen
+import qualified Torch.Internal.Unmanaged.Type.Tensor as ATen (tensor_is_contiguous, tensor_contiguous, tensor_data_ptr)
 import qualified Torch.Tensor as D
 import qualified Torch.TensorFactories as D
 import Torch.Typed.Aux
@@ -304,6 +307,23 @@ withTensor untypedTensor f = case someShape (D.shape untypedTensor) of
   (SomeShape (Proxy :: Proxy shape)) -> case someDType (D.dtype untypedTensor) of
     (SomeDType (Proxy :: Proxy dtype)) -> case someDevice (D.device untypedTensor) of
       (SomeDevice (Proxy :: Proxy device)) -> f $ UnsafeMkTensor @device @dtype @shape untypedTensor
+
+isContiguous ::
+  forall shape dtype device.
+  Tensor device dtype shape ->
+  Bool
+isContiguous t = unsafePerformIO $ cast1 (\x -> cast (x :: D.ATenTensor) ATen.tensor_is_contiguous) t
+
+contiguous ::
+  forall shape dtype device.
+  Tensor device dtype shape ->
+  Tensor device dtype shape
+contiguous t = unsafePerformIO $ uncast (unsafePerformIO $ cast1 (\x -> cast (x :: D.ATenTensor) ATen.tensor_contiguous) t :: D.ATenTensor) return
+
+withTensorPtr :: forall shape dtype device a. Tensor shape dtype device -> (Ptr () -> IO a) -> IO a
+withTensorPtr t fn =
+  let tensor = if isContiguous t then t else contiguous t
+   in cast tensor $ \t' -> withForeignPtr t' $ \tensor_ptr -> ATen.tensor_data_ptr tensor_ptr >>= fn
 
 --------------------------------------------------------------------------------
 -- Broadcast type-level function

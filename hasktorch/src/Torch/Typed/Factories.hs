@@ -32,6 +32,7 @@ import qualified Torch.Scalar as D
 import qualified Torch.Tensor as D
 import qualified Torch.TensorFactories as D
 import qualified Torch.TensorOptions as D
+import qualified Torch.Internal.Managed.TensorFactories as LibTorch
 import Torch.Typed.Aux
 import Torch.Typed.Tensor
 import Prelude hiding (sin)
@@ -55,6 +56,21 @@ zeros =
           . D.withDType (optionsRuntimeDType @shape @dtype @device)
           $ D.defaultOpts
       )
+empty :: 
+  forall shape dtype device.
+  (TensorOptions shape dtype device) =>
+  IO (Tensor device dtype shape )
+
+empty = 
+  cast2 
+    LibTorch.empty_lo 
+    (optionsRuntimeShape @shape @dtype @device)
+    ( D.withDevice (optionsRuntimeDevice @shape @dtype @device)
+      . D.withDType (optionsRuntimeDType @shape @dtype @device)
+      $ D.defaultOpts
+    )
+  
+
 
 full ::
   forall shape dtype device a.
