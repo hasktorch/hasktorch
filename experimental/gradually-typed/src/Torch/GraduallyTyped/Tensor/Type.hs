@@ -1395,8 +1395,10 @@ fromTensorRaw ::
   (TensorLike a dType dims, TensorLikeRaw a, SGetDims dims) =>
   Tensor gradient layout device ('DataType dType) ('Shape dims) ->
   a
-fromTensorRaw t = unsafePerformIO $
-  withTensor t $ \ptr -> tensorPeekElemOff ptr 0 (fromInteger . dimSize <$> getDims t)
+fromTensorRaw t =
+  unsafePerformIO $
+    sSetDevice (SDevice SCPU) t
+      >>= flip withTensor (\ptr -> tensorPeekElemOff ptr 0 $ fromInteger . dimSize <$> getDims t)
 
 instance TensorLike Bool 'Bool '[] where
   sToTensor = sToTensorRaw
