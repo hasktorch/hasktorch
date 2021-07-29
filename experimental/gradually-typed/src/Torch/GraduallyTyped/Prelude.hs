@@ -53,6 +53,7 @@ module Torch.GraduallyTyped.Prelude
     LiftTypeEqMaybe,
     Concat,
     Reverse,
+    When,
     whenM,
     unlessM,
     ifM,
@@ -283,6 +284,10 @@ type family Extract (f :: k) (a :: k') :: [k'] where
   Extract a a = '[a]
   Extract (f g) a = Concat (Extract f a) (Extract g a)
   Extract _ _ = '[]
+
+type family When (cond :: Bool) (constraint :: Constraint) :: Constraint where
+  When 'True constraint = constraint
+  When 'False _ = ()
 
 whenM :: Monad m => m Bool -> m () -> m ()
 whenM p m =

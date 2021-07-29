@@ -26,9 +26,7 @@ tensor ::
            'Dim ('Name "*") ('Size 3)
          ]
     )
-tensor = sReshape (SShape $ SName @"*" :&: SSize @2 :|: SName @"*" :&: SSize @2 :|: SName @"*" :&: SSize @3 :|: SNil) nats
-  where
-    nats = arangeNaturals @_ @_ @_ @_ @('Size 12)
+tensor = reshape $ arangeNaturals @('Size 12)
 
 spec :: Spec
 spec = describe "Indexing" $ do
@@ -66,7 +64,7 @@ spec = describe "Indexing" $ do
     x <- tensor ! SIndices (SSliceAll :|: SSliceFrom (SIndex @1) :|: SNil)
 
     dimSize <$> getDims x `shouldBe` [2, 1, 3]
-    fromTensor @(SV.Vector 2 (SV.Vector 1 (SV.Vector 3 Int))) x
+    fromTensor @(SV.Vector _ (SV.Vector _ (SV.Vector _ Int))) x
       `shouldBe` SV.fromTuple
         ( SV.singleton $ SV.fromTuple (3, 4, 5),
           SV.singleton $ SV.fromTuple (9, 10, 11)
@@ -76,7 +74,7 @@ spec = describe "Indexing" $ do
     x <- tensor ! SIndices (SSliceAll :|: SSliceFrom (SIndex @1) :|: SSliceFromUpTo (SIndex @0) (SIndex @1) :|: SNil)
 
     dimSize <$> getDims x `shouldBe` [2, 1, 1]
-    fromTensor @(SV.Vector 2 (SV.Vector 1 (SV.Vector 1 Int))) x
+    fromTensor @(SV.Vector _ (SV.Vector _ (SV.Vector _ Int))) x
       `shouldBe` SV.fromTuple
         ( SV.singleton $ SV.singleton 3,
           SV.singleton $ SV.singleton 9
@@ -86,7 +84,7 @@ spec = describe "Indexing" $ do
     x <- tensor ! SIndices (SSliceAll :|: SSliceFrom (SIndex @1) :|: SSliceFromUpToWithStride (SIndex @0) (SIndex @1) (SIndex @2) :|: SNil)
 
     dimSize <$> getDims x `shouldBe` [2, 1, 1]
-    fromTensor @(SV.Vector 2 (SV.Vector 1 (SV.Vector 1 Int))) x
+    fromTensor @(SV.Vector _ (SV.Vector _ (SV.Vector _ Int))) x
       `shouldBe` SV.fromTuple
         ( SV.singleton $ SV.singleton 3,
           SV.singleton $ SV.singleton 9

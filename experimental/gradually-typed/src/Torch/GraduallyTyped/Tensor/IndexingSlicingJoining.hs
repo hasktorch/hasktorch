@@ -20,19 +20,19 @@ module Torch.GraduallyTyped.Tensor.IndexingSlicingJoining where
 import Control.Exception (Exception (..))
 import Control.Monad.Catch (MonadThrow (throwM))
 import Data.Bifunctor (bimap)
+import Data.Coerce (coerce)
 import Data.Kind (Type)
 import Data.Singletons (SingI (..), SingKind (..), fromSing)
 import Data.Typeable (Typeable)
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (Nat, Symbol, TypeError)
-import Numeric.Natural (Natural)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.Index.Class (InRangeF)
-import Torch.GraduallyTyped.Index.Type (SIndex)
+import Torch.GraduallyTyped.Index.Type (DemotedIndex (..), SIndex)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
-import Torch.GraduallyTyped.Prelude (FromMaybe, MapMaybe, forgetIsChecked)
+import Torch.GraduallyTyped.Prelude (FromMaybe, MapMaybe, When, forgetIsChecked)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (AddDimF, BroadcastShapesF, GetDimF, GetDimImplF, GetIndexByNameF, InsertDimImplF, NumelF, RemoveDimF, ReplaceDimF, ReplaceDimImplF, sGetDimFromShape)
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SSelectDim, SShape, SelectDim (..), Shape (..), Size (..), dimSize)
@@ -245,9 +245,15 @@ sReshape shape' input =
           $ shape'
    in unsafePerformIO $ cast2 ATen.reshape_tl input dimSizes
 
+type family AllDimSizesChecked (shape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Bool where
+  AllDimSizesChecked 'UncheckedShape = 'False
+  AllDimSizesChecked ('Shape '[]) = 'True
+  AllDimSizesChecked ('Shape ('Dim name ('Size size) ': xs)) = AllDimSizesChecked ('Shape xs)
+
 reshape ::
   forall shape' gradient layout device dataType shape shape''.
   ( shape'' ~ ReshapeF shape shape',
+    When (AllDimSizesChecked shape) (shape' ~ shape''),
     SingI shape'
   ) =>
   Tensor gradient layout device dataType shape ->
