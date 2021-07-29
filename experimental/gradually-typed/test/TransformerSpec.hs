@@ -1,16 +1,14 @@
 module TransformerSpec where
 
 import Test.Hspec
-import Torch.GraduallyTyped.NN.Transformer.Block (testBlock)
-import Torch.GraduallyTyped.NN.Transformer.CrossAttention (testCA)
-import Torch.GraduallyTyped.NN.Transformer.Decoder (testDecoder)
-import Torch.GraduallyTyped.NN.Transformer.DecoderBlock (testDecoderBlock)
-import Torch.GraduallyTyped.NN.Transformer.DecoderStack (testDecoderStack)
-import Torch.GraduallyTyped.NN.Transformer.Encoder (testEncoder)
-import Torch.GraduallyTyped.NN.Transformer.MultiHeadAttention (testMHA)
-import Torch.GraduallyTyped.NN.Transformer.SelfAttention (testSA)
-import Torch.GraduallyTyped.NN.Transformer.SequenceToSequence (testSeqToSeq)
-import Torch.GraduallyTyped.NN.Transformer.Stack (testStack)
+import Torch.GraduallyTyped.NN.Transformer.GBlock (testEncoderBlock, testDecoderBlock)
+import Torch.GraduallyTyped.NN.Transformer.GCrossAttention (testCA)
+import Torch.GraduallyTyped.NN.Transformer.GTransformer (testEncoder, testDecoder)
+import Torch.GraduallyTyped.NN.Transformer.GMultiHeadAttention (testMHA)
+import Torch.GraduallyTyped.NN.Transformer.GSelfAttention (testSA)
+import Torch.GraduallyTyped.NN.Transformer.GEncoderDecoder (testEncoderDecoderTransformer)
+import Torch.GraduallyTyped.NN.Transformer.GStack (testEncoderStack, testDecoderStack)
+import Torch.GraduallyTyped.NN.Transformer.GLMHead (testLMHead)
 
 spec :: Spec
 spec = describe "Transformer" $ do
@@ -26,31 +24,35 @@ spec = describe "Transformer" $ do
     it "minimal" $ do
       _ <- testCA
       pure ()
-  context "block" $ do
+  context "encoder block" $ do
     it "minimal" $ do
-      _ <- testBlock
+      _ <- testEncoderBlock
       pure ()
   context "decoder block" $ do
     it "minimal" $ do
       _ <- testDecoderBlock
       pure ()
-  context "stack" $ do
+  context "encoder stack" $ do
     it "minimal" $ do
-      _ <- testStack
-      pure ()
-  context "encoder" $ do
-    it "minimal" $ do
-      _ <- testEncoder
+      _ <- testEncoderStack
       pure ()
   context "decoder stack" $ do
     it "minimal" $ do
       _ <- testDecoderStack
       pure ()
+  context "encoder" $ do
+    it "minimal" $ do
+      _ <- testEncoder
+      pure ()
   context "decoder" $ do
     it "minimal" $ do
       _ <- testDecoder
       pure ()
-  context "sequence-to-sequence" $ do
+  context "encoder-decoder" $ do
     it "minimal" $ do
-      _ <- testSeqToSeq
+      _ <- testEncoderDecoderTransformer
+      pure ()
+  context "lm-head" $ do
+    it "minimal" $ do
+      _ <- testLMHead
       pure ()
