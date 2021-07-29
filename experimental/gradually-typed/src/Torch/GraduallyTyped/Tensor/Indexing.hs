@@ -26,9 +26,8 @@ import Data.Singletons (Demote, SingI, SingKind, SomeSing (..), fromSing, sing, 
 import Data.Singletons.Prelude.List (Reverse, SList, Sing)
 import Data.Singletons.TH (genSingletons)
 import Foreign (fromBool)
-import GHC.Natural (Natural)
 import GHC.TypeLits (Div, Nat, Symbol, type (-))
-import Torch.GraduallyTyped.Index (Index (..))
+import Torch.GraduallyTyped.Index (Index (..), DemotedIndex (..))
 import Torch.GraduallyTyped.Prelude (IsChecked (..), forgetIsChecked)
 import Torch.GraduallyTyped.Shape.Class (PrependDimF)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Shape (..), Size (..))
@@ -36,6 +35,7 @@ import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
 import Torch.Internal.GC (unsafeThrowableIO)
 import qualified Torch.Internal.Managed.Type.TensorIndex as ATen
 import GHC.TypeLits.Extra (Max)
+import Data.Coerce (coerce)
 
 data IndexType a
   = None
@@ -108,7 +108,7 @@ data Indices (dimIndices :: Type) where
   Indices :: forall dimIndices. dimIndices -> Indices dimIndices
 
 data SIndices (indices :: Indices [IndexType (Index Nat)]) where
-  SUncheckedIndices :: [IndexType Natural] -> SIndices 'UncheckedIndices
+  SUncheckedIndices :: [IndexType Integer] -> SIndices 'UncheckedIndices
   SIndices :: forall dimIndices. SList dimIndices -> SIndices ('Indices dimIndices)
 
 type instance Sing = SIndices
@@ -117,11 +117,11 @@ instance SingI dimIndices => SingI ('Indices (dimIndices :: [IndexType (Index Na
   sing = SIndices $ sing @dimIndices
 
 instance SingKind (Indices [IndexType (Index Nat)]) where
-  type Demote (Indices [IndexType (Index Nat)]) = IsChecked [IndexType (IsChecked Natural)]
+  type Demote (Indices [IndexType (Index Nat)]) = IsChecked [IndexType (IsChecked Integer)]
   fromSing (SUncheckedIndices indexTypes) = Unchecked $ fmap Unchecked <$> indexTypes
-  fromSing (SIndices indexTypes) = Checked . fromSing $ indexTypes
+  fromSing (SIndices indexTypes) = Checked . coerce . fromSing $ indexTypes
   toSing (Unchecked indexTypes) = SomeSing . SUncheckedIndices $ fmap forgetIsChecked <$> indexTypes
-  toSing (Checked indexTypes) = withSomeSing indexTypes $ SomeSing . SIndices
+  toSing (Checked indexTypes) = withSomeSing ((fmap . fmap . fmap) DemotedIndex indexTypes) $ SomeSing . SIndices
 
 (!) ::
   forall indices requiresGradient layout device dataType shape m.

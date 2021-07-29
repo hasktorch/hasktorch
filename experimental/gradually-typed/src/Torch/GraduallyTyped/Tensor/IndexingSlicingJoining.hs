@@ -535,15 +535,15 @@ sSelect ::
 sSelect sSelectDim sIndex input = do
   sDim <- let inputShape = sGetShape input in sGetDimFromShape sSelectDim inputShape
   let dim = bimap forgetIsChecked forgetIsChecked . fromSing $ sDim
-      index = forgetIsChecked . fromSing $ sIndex
+      index = coerce . forgetIsChecked . fromSing $ sIndex
       selectDim = forgetIsChecked . fromSing $ sSelectDim
-  if index < (fromInteger . dimSize $ dim)
+  if index < dimSize dim
     then case selectDim of
       ByName name -> unsafeThrowableIO $ cast3 ATen.tensor_select_nl input name (fromIntegral index :: Int)
       ByIndex dimIndex -> unsafeThrowableIO $ cast3 ATen.tensor_select_ll input (fromIntegral dimIndex :: Int) (fromIntegral index :: Int)
     else throwM $ IndexOutOfBoundError index dim
 
-data IndexOutOfBoundError = IndexOutOfBoundError {ioobeIndex :: Natural, ioobeDim :: Dim String Integer}
+data IndexOutOfBoundError = IndexOutOfBoundError {ioobeIndex :: Integer, ioobeDim :: Dim String Integer}
   deriving stock (Show, Typeable)
 
 instance Exception IndexOutOfBoundError where
