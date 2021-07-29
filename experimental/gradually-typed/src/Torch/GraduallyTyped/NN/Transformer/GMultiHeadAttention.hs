@@ -631,12 +631,12 @@ instance
                       MultiHeadAttentionWithWeightScaling -> id
                   )
                   mhaScaling
-              >>>= ireturn . sReshape (SShape $ batchDim :|: querySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
+              >>>= ilift . sReshape (SShape $ batchDim :|: querySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
               >>>= ilift . sTranspose (SSelectDim (SByIndex @1)) (SSelectDim (SByIndex @2))
           k =
             ireturn key
               >>>= IxStateT . forward mhaKInProj
-              >>>= ireturn . sReshape (SShape $ batchDim :|: keySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
+              >>>= ilift . sReshape (SShape $ batchDim :|: keySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
               >>>= ilift . sTranspose (SSelectDim (SByIndex @1)) (SSelectDim (SByIndex @2))
           kt = k >>>= ilift . sTranspose (SSelectDim (SByIndex @2)) (SSelectDim (SByIndex @3))
           weights =
@@ -653,11 +653,11 @@ instance
           v =
             ireturn value
               >>>= IxStateT . forward mhaVInProj
-              >>>= ireturn . sReshape (SShape $ batchDim :|: keySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
+              >>>= ilift . sReshape (SShape $ batchDim :|: keySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
               >>>= ilift . sTranspose (SSelectDim (SByIndex @1)) (SSelectDim (SByIndex @2))
        in matmul <<$>> weights <<*>> v
             >>>= ilift . sTranspose (SSelectDim (SByIndex @1)) (SSelectDim (SByIndex @2))
-            >>>= ireturn . sReshape (SShape $ batchDim :|: querySeqDim :|: mhaEmbedDim :|: SNil)
+            >>>= ilift . sReshape (SShape $ batchDim :|: querySeqDim :|: mhaEmbedDim :|: SNil)
             >>>= IxStateT . forward mhaOutProj
 
 testMHA :: IO _
