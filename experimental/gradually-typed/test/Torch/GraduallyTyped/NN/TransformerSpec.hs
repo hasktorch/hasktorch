@@ -4,6 +4,7 @@ import Test.Hspec (Spec, context, describe, it)
 import Torch.GraduallyTyped.NN.Transformer.GBlockSpec (testDecoderBlock, testEncoderBlock)
 import Torch.GraduallyTyped.NN.Transformer.GCrossAttentionSpec (testCA)
 import Torch.GraduallyTyped.NN.Transformer.GEncoderDecoderSpec (testEncoderDecoderTransformer)
+import Torch.GraduallyTyped.NN.Transformer.GEncoderOnlySpec (testEncoderOnlyTransformer)
 import Torch.GraduallyTyped.NN.Transformer.GLMHeadSpec (testLMHead)
 import Torch.GraduallyTyped.NN.Transformer.GMultiHeadAttentionSpec (testMHA)
 import Torch.GraduallyTyped.NN.Transformer.GSelfAttentionSpec (testSA)
@@ -47,6 +48,10 @@ spec = describe "Transformer" $ do
   context "decoder" $ do
     it "minimal" $ do
       _ <- testDecoder
+      pure ()
+  context "encoder-only" $ do
+    it "minimal" $ do
+      _ <- testEncoderOnlyTransformer
       pure ()
   context "encoder-decoder" $ do
     it "minimal" $ do

@@ -311,6 +311,88 @@ instance
     () <- toStateDict k eotHead
     pure ()
 
+data
+  GSimplifiedEncoderOnlyTransformer
+    (model :: Type)
+    (mkPos :: Type)
+    (mkPaddingMask :: Type)
+    (mkAttentionMask :: Type)
+  where
+  GSimplifiedEncoderOnlyTransformer ::
+    forall model mkPos mkPaddingMask mkAttentionMask.
+    { -- | encoder-only model
+      seotModel :: model,
+      -- | make input positions
+      seotMkPos :: mkPos,
+      -- | make padding mask
+      seotMkPaddingMask :: mkPaddingMask,
+      -- | make attention mask
+      seotMkAttentionMask :: mkAttentionMask
+    } ->
+    GSimplifiedEncoderOnlyTransformer model mkPos mkPaddingMask mkAttentionMask
+
+type instance
+  ModelSpec (GSimplifiedEncoderOnlyTransformer model mkPos mkPaddingMask mkAttentionMask) =
+    GSimplifiedEncoderOnlyTransformer (ModelSpec model) (ModelSpec mkPos) (ModelSpec mkPaddingMask) (ModelSpec mkAttentionMask)
+
+instance
+  ( HasInitialize
+      model
+      generatorDevice
+      model
+      generatorDevice,
+    HasInitialize
+      mkPos
+      generatorDevice
+      mkPos
+      generatorDevice,
+    HasInitialize
+      mkPaddingMask
+      generatorDevice
+      mkPaddingMask
+      generatorDevice,
+    HasInitialize
+      mkAttentionMask
+      generatorDevice
+      mkAttentionMask
+      generatorDevice
+  ) =>
+  HasInitialize
+    (GSimplifiedEncoderOnlyTransformer model mkPos mkPaddingMask mkAttentionMask)
+    generatorDevice
+    (GSimplifiedEncoderOnlyTransformer model mkPos mkPaddingMask mkAttentionMask)
+    generatorDevice
+  where
+  initialize (GSimplifiedEncoderOnlyTransformer modelSpec mkPosSpec mkPaddingMaskSpec mkAttentionMaskSpec) =
+    runIxStateT
+      ( GSimplifiedEncoderOnlyTransformer
+          <<$>> (IxStateT . initialize $ modelSpec)
+          <<*>> (IxStateT . initialize $ mkPosSpec)
+          <<*>> (IxStateT . initialize $ mkPaddingMaskSpec)
+          <<*>> (IxStateT . initialize $ mkAttentionMaskSpec)
+      )
+
+instance
+  ( HasStateDict model,
+    HasStateDict mkPos,
+    HasStateDict mkPaddingMask,
+    HasStateDict mkAttentionMask
+  ) =>
+  HasStateDict (GSimplifiedEncoderOnlyTransformer model mkPos mkPaddingMask mkAttentionMask)
+  where
+  fromStateDict (GSimplifiedEncoderOnlyTransformer modelSpec mkPosSpec mkPaddingMaskSpec mkAttentionMaskSpec) k =
+    GSimplifiedEncoderOnlyTransformer
+      <$> fromStateDict modelSpec k
+      <*> fromStateDict mkPosSpec k
+      <*> fromStateDict mkPaddingMaskSpec k
+      <*> fromStateDict mkAttentionMaskSpec k
+  toStateDict k GSimplifiedEncoderOnlyTransformer {..} = do
+    () <- toStateDict k seotModel
+    () <- toStateDict k seotMkPos
+    () <- toStateDict k seotMkPaddingMask
+    () <- toStateDict k seotMkAttentionMask
+    pure ()
+
 -- | Input data type for use with an encoder-only transformer.
 data EncoderOnlyTransformerInput input inputType pos attentionMask where
   EncoderOnlyTransformerInput ::
@@ -330,42 +412,58 @@ deriving instance
   ) =>
   Show (EncoderOnlyTransformerInput input inputType pos attentionMask)
 
--- | Output data type for use with an encoder-only transformer.
-data EncoderOnlyTransformerOutput encoderOutput where
-  EncoderOnlyTransformerOutput ::
-    forall encoderOutput.
-    { eoEncoderOutput :: encoderOutput
+data SimplifiedEncoderOnlyTransformerInput input inputType where
+  SimplifiedEncoderOnlyTransformerInput ::
+    forall input inputType.
+    { seotInput :: input,
+      seotInputType :: inputType
     } ->
-    EncoderOnlyTransformerOutput encoderOutput
+    SimplifiedEncoderOnlyTransformerInput input inputType
+
+-- | Output data type for use with an encoder-only transformer.
+data EncoderOnlyTransformerOutput output where
+  EncoderOnlyTransformerOutput ::
+    forall output.
+    { eotOutput :: output
+    } ->
+    EncoderOnlyTransformerOutput output
 
 deriving instance
-  ( Show encoderOutput
+  ( Show output
   ) =>
-  Show (EncoderOnlyTransformerOutput encoderOutput)
+  Show (EncoderOnlyTransformerOutput output)
+
+data SimplifiedEncoderOnlyTransformerOutput output paddingMask where
+  SimplifiedEncoderOnlyTransformerOutput ::
+    forall output paddingMask.
+    { seotOutput :: output,
+      sedtPaddingMask :: paddingMask
+    } ->
+    SimplifiedEncoderOnlyTransformerOutput output paddingMask
 
 -- | 'HasForward' instance for encoder-only transformers with optional scaling and head.
 --
 -- @
---     ┌───────┐    ┌───────────┐  ┌─────┐  ┌───────────────┐
---     │ input │    │ inputType │  │ pos │  │ attentionMask │
---     └───┬───┘    └─────┬─────┘  └──┬──┘  └──────┬────────┘
---         │              │           │            │
---         ▼              ▼           │            │
---   eotEmbedding  eotTypeEmbedding   │            │
---         ▼              ▼           │            │
---  (embedScaling)  (embedScaling)    │            │
---         │              │           │            │
---         └────►add◄─────┘           │            │
---                │                   │            │
---                ▼                   │            │
---           eotEncoder◄──────────────┘◄───────────┘
---                ▼
---            (eotHead)
---                │
---                ▼
---        ┌───────────────┐
---        │ encoderOutput │
---        └───────────────┘
+--    ┌───────┐    ┌───────────┐  ┌─────┐  ┌───────────────┐
+--    │ input │    │ inputType │  │ pos │  │ attentionMask │
+--    └───┬───┘    └─────┬─────┘  └──┬──┘  └──────┬────────┘
+--        │              │           │            │
+--        ▼              ▼           │            │
+--  eotEmbedding  eotTypeEmbedding   │            │
+--        ▼              ▼           │            │
+-- (embedScaling)  (embedScaling)    │            │
+--        │              │           │            │
+--        └────►add◄─────┘           │            │
+--               │                   │            │
+--               ▼                   │            │
+--          eotEncoder◄──────────────┘◄───────────┘
+--               ▼
+--           (eotHead)
+--               │
+--               ▼
+--          ┌────────┐
+--          │ output │
+--          └────────┘
 -- @
 instance
   ( HasForward
@@ -395,11 +493,11 @@ instance
       )
       typeEmbeddingGeneratorOutputDevice
       encoderOutput
-      eoGeneratorOutputDevice,
+      encoderGeneratorOutputDevice,
     HasForward
       head
       encoderOutput
-      eoGeneratorOutputDevice
+      encoderGeneratorOutputDevice
       headOutput
       generatorOutputDevice
   ) =>
@@ -435,3 +533,56 @@ instance
             >>>= (\input' -> IxStateT $ forward eotEncoder (input', eotPos, eotAttentionMask))
             >>>= IxStateT . forward eotHead
             >>>= ireturn . EncoderOnlyTransformerOutput
+
+instance
+  ( HasForward
+      mkPaddingMask
+      input
+      generatorDevice
+      paddingMask
+      generatorDevice,
+    HasForward
+      mkAttentionMask
+      paddingMask
+      generatorDevice
+      attentionMask
+      generatorDevice,
+    HasForward
+      mkPos
+      input
+      generatorDevice
+      pos
+      generatorDevice,
+    HasForward
+      model
+      (EncoderOnlyTransformerInput input inputType pos attentionMask)
+      generatorDevice
+      (EncoderOnlyTransformerOutput output)
+      generatorOutputDevice
+  ) =>
+  HasForward
+    (GSimplifiedEncoderOnlyTransformer model mkPos mkPaddingMask mkAttentionMask)
+    (SimplifiedEncoderOnlyTransformerInput input inputType)
+    generatorDevice
+    (SimplifiedEncoderOnlyTransformerOutput output paddingMask)
+    generatorOutputDevice
+  where
+  forward GSimplifiedEncoderOnlyTransformer {..} SimplifiedEncoderOnlyTransformerInput {..} =
+    runIxStateT $
+      ( let paddingMask = IxStateT . forward seotMkPaddingMask $ seotInput
+            pos = IxStateT . forward seotMkPos $ seotInput
+         in (,) <<$>> paddingMask <<*>> pos
+      )
+        >>>= ( \(paddingMask, pos) ->
+                 let attentionMask = IxStateT . forward seotMkAttentionMask $ paddingMask
+                  in ( EncoderOnlyTransformerInput
+                         seotInput
+                         seotInputType
+                         pos
+                         <<$>> attentionMask
+                     )
+                       >>>= IxStateT . forward seotModel
+                       >>>= ( \(EncoderOnlyTransformerOutput output) ->
+                                ireturn $ SimplifiedEncoderOnlyTransformerOutput output paddingMask
+                            )
+             )

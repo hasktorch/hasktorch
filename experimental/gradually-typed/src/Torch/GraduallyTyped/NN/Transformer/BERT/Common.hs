@@ -19,9 +19,9 @@ import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasStateDict (..), ModelSpec)
-import Torch.GraduallyTyped.NN.Transformer.GEncoderOnly (EOTEmbeddingF, EOTEncoderF, EOTHeadF, EOTTypeEmbeddingF, GEncoderOnlyTransformer, encoderOnlyTransformerSpec)
-import Torch.GraduallyTyped.NN.Transformer.Type (MkTransformerPaddingMaskC, STransformerHead, STransformerStyle (SBERT), TransformerHead (..), TransformerStyle (BERT), mkTransformerInput, mkTransformerPaddingMask)
+import Torch.GraduallyTyped.NN.Class (ModelSpec)
+import Torch.GraduallyTyped.NN.Transformer.GEncoderOnly (EOTEmbeddingF, EOTEncoderF, EOTHeadF, EOTTypeEmbeddingF, GEncoderOnlyTransformer, GSimplifiedEncoderOnlyTransformer (..), encoderOnlyTransformerSpec)
+import Torch.GraduallyTyped.NN.Transformer.Type (MkAbsPos (..), MkTransformerAttentionMask (..), MkTransformerPaddingMask (..), STransformerHead, STransformerStyle (SBERT), TransformerHead (..), TransformerStyle (BERT), mkTransformerInput)
 import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, Shape (..), Size (..))
@@ -73,19 +73,6 @@ bertPadTokenId = 0
 bertAttentionMaskBias :: Double
 bertAttentionMaskBias = -10000
 
--- | Generic BERT model data type.
-data
-  GBERTModel
-    (bertModel :: Type)
-  where
-  GBERTModel ::
-    forall bertModel.
-    { bertModel :: bertModel
-    } ->
-    GBERTModel bertModel
-
-type instance ModelSpec (GBERTModel bertModel) = GBERTModel (ModelSpec bertModel)
-
 -- | Specifies the BERT model.
 type family
   BERTModelF
@@ -103,7 +90,7 @@ type family
     Type
   where
   BERTModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim =
-    GBERTModel
+    GSimplifiedEncoderOnlyTransformer
       ( GEncoderOnlyTransformer
           inputEmbedDim
           (EOTEncoderF 'BERT numLayers gradient device BERTDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim BERTPosEncDim)
@@ -111,6 +98,9 @@ type family
           (EOTTypeEmbeddingF 'BERT gradient device BERTDataType inputEmbedDim typeVocabDim)
           (EOTHeadF 'BERT transformerHead gradient device BERTDataType inputEmbedDim vocabDim)
       )
+      MkAbsPos
+      MkTransformerPaddingMask
+      (MkTransformerAttentionMask BERTDataType)
 
 -- | Specifies the parameters of a BERT model.
 --
@@ -134,28 +124,28 @@ bertModelSpec ::
   SDevice device ->
   ModelSpec (BERTModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
 bertModelSpec transformerHead numLayers gradient device =
-  GBERTModel $
-    encoderOnlyTransformerSpec
-      SBERT
-      transformerHead
-      numLayers
-      gradient
-      device
-      bertDataType
-      (sing @headDim)
-      (sing @headEmbedDim)
-      (sing @embedDim)
-      (sing @inputEmbedDim)
-      (sing @ffnDim)
-      bertPosEncDim
-      (sing @vocabDim)
-      (sing @typeVocabDim)
-      bertDropoutP
-      bertEps
-
-instance HasStateDict spec => HasStateDict (GBERTModel spec) where
-  fromStateDict (GBERTModel spec) k = GBERTModel <$> fromStateDict spec k
-  toStateDict k GBERTModel {..} = toStateDict k bertModel
+  GSimplifiedEncoderOnlyTransformer
+    ( encoderOnlyTransformerSpec
+        SBERT
+        transformerHead
+        numLayers
+        gradient
+        device
+        bertDataType
+        (sing @headDim)
+        (sing @headEmbedDim)
+        (sing @embedDim)
+        (sing @inputEmbedDim)
+        (sing @ffnDim)
+        bertPosEncDim
+        (sing @vocabDim)
+        (sing @typeVocabDim)
+        bertDropoutP
+        bertEps
+    )
+    MkAbsPos
+    (MkTransformerPaddingMask bertPadTokenId)
+    (MkTransformerAttentionMask bertDataType bertAttentionMaskBias)
 
 mkBERTInput ::
   forall batchDim seqDim device m output.
@@ -185,22 +175,3 @@ mkBERTInput ::
   [[Int]] ->
   m output
 mkBERTInput = mkTransformerInput bertPadTokenId
-
-mkBERTPaddingMask ::
-  forall gradient layout device dataType shape output.
-  MkTransformerPaddingMaskC layout device dataType shape output =>
-  Tensor gradient layout device dataType shape ->
-  output
-mkBERTPaddingMask = mkTransformerPaddingMask bertPadTokenId
-
-data BERTInput input where
-  BERTInput ::
-    forall input.
-    { bertInput :: input
-    } ->
-    BERTInput input
-
-deriving stock instance
-  ( Show input
-  ) =>
-  Show (BERTInput input)
