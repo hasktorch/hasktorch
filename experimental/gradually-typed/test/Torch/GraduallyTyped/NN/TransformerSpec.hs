@@ -1,14 +1,14 @@
-module TransformerSpec where
+module Torch.GraduallyTyped.NN.TransformerSpec where
 
-import Test.Hspec
-import Torch.GraduallyTyped.NN.Transformer.GBlock (testEncoderBlock, testDecoderBlock)
-import Torch.GraduallyTyped.NN.Transformer.GCrossAttention (testCA)
-import Torch.GraduallyTyped.NN.Transformer.GTransformer (testEncoder, testDecoder)
-import Torch.GraduallyTyped.NN.Transformer.GMultiHeadAttention (testMHA)
-import Torch.GraduallyTyped.NN.Transformer.GSelfAttention (testSA)
-import Torch.GraduallyTyped.NN.Transformer.GEncoderDecoder (testEncoderDecoderTransformer)
-import Torch.GraduallyTyped.NN.Transformer.GStack (testEncoderStack, testDecoderStack)
-import Torch.GraduallyTyped.NN.Transformer.GLMHead (testLMHead)
+import Test.Hspec (Spec, context, describe, it)
+import Torch.GraduallyTyped.NN.Transformer.GBlockSpec (testDecoderBlock, testEncoderBlock)
+import Torch.GraduallyTyped.NN.Transformer.GCrossAttentionSpec (testCA)
+import Torch.GraduallyTyped.NN.Transformer.GEncoderDecoderSpec (testEncoderDecoderTransformer)
+import Torch.GraduallyTyped.NN.Transformer.GLMHeadSpec (testLMHead)
+import Torch.GraduallyTyped.NN.Transformer.GMultiHeadAttentionSpec (testMHA)
+import Torch.GraduallyTyped.NN.Transformer.GSelfAttentionSpec (testSA)
+import Torch.GraduallyTyped.NN.Transformer.GStackSpec (testDecoderStack, testEncoderStack)
+import Torch.GraduallyTyped.NN.Transformer.GTransformerSpec (testDecoder, testEncoder)
 
 spec :: Spec
 spec = describe "Transformer" $ do

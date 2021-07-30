@@ -1,6 +1,4 @@
-{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -97,7 +95,7 @@ instance
   HasStateDict
     (Embedding gradient layout device dataType embedNumDim embedDim paddingIdx)
   where
-  fromStateDict (EmbeddingSpec gradient layout device dataType embedNumDim embedDim paddingIdx) k =
+  fromStateDict (EmbeddingSpec gradient layout device dataType embedNumDim embedDim _paddingIdx) k =
     Embedding <$> fromStateDict (TensorSpec gradient layout device dataType (SShape $ embedNumDim :|: embedDim :|: SNil)) (k <> "weight")
   toStateDict k Embedding {..} =
     toStateDict (k <> "weight") embeddingWeight

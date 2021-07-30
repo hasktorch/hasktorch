@@ -1,36 +1,28 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -v2 #-}
 
 module Torch.GraduallyTyped.NN.Transformer.GLMHead where
 
 import Control.Monad.Indexed (IxPointed (..), (>>>=))
 import Control.Monad.Indexed.State (IxStateT (..))
-import Control.Monad.State (evalStateT)
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
-import qualified Data.Map as Map
 import Data.Singletons (SingKind (fromSing))
 import Data.Singletons.Prelude.List (SList (SNil))
 import GHC.TypeLits (Nat, Symbol)
-import Torch.GraduallyTyped.DType (DType, DataType, SDType (..), SDataType (..))
-import Torch.GraduallyTyped.Device (Device, DeviceType, SDevice (..), SDeviceType (..))
+import Torch.GraduallyTyped.DType (DType, DataType, SDataType (..))
+import Torch.GraduallyTyped.Device (Device, DeviceType, SDevice (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Activation (Gelu (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec, NamedModel (..))
@@ -39,11 +31,10 @@ import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..), LayerNormSpec (..)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..), SHasBias (..))
 import Torch.GraduallyTyped.Prelude (forgetIsChecked)
-import Torch.GraduallyTyped.Random (sMkGenerator)
-import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..), SRequiresGradient (..))
+import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, SName (..), SShape (..), SSize (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
-import Torch.GraduallyTyped.Tensor.Creation (sOnes, sZeros)
+import Torch.GraduallyTyped.Tensor.Creation (sZeros)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add, mulScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor, TensorSpec (..))
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
@@ -228,7 +219,7 @@ type family
   LMHeadBiasF 'RoBERTa gradient device dataType vocabDim =
     LMHeadBiasF 'BERT gradient device dataType vocabDim
 
--- | 
+-- |
 lmHeadSpec ::
   forall style gradient device dataType inputEmbedDim vocabDim.
   STransformerStyle style ->
@@ -536,24 +527,3 @@ instance
     generatorDevice
   where
   forward (GBias (NamedModel _ bias)) input g = pure (input `add` bias, g)
-
-testLMHead :: IO _
-testLMHead = do
-  let gradient = SGradient SWithGradient
-      device = SDevice SCPU
-      dataType = SDataType SFloat
-      inputEmbedDim = SName @"*" :&: SSize @512
-      vocabDim = SName @"*" :&: SSize @30522
-      eps = 1e-6
-  let g = sMkGenerator device 0
-      spec = NamedModel "lmHead." $ lmHeadSpec SBART gradient device dataType inputEmbedDim vocabDim eps
-  (lmHead, g') <- initialize spec g
-  lmHead' <- flip evalStateT Map.empty $ do
-    toStateDict mempty lmHead
-    fromStateDict spec mempty
-  let batchDim = SName @"*" :&: SSize @3
-      seqDim = SName @"*" :&: SSize @13
-      sOnes' = (sOnes .) . TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device
-      input = sOnes' dataType (SShape $ batchDim :|: seqDim :|: inputEmbedDim :|: SNil)
-  (output, _) <- forward lmHead' input g'
-  pure output

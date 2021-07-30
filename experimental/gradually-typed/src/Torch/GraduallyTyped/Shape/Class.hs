@@ -1,25 +1,12 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE UndecidableSuperClasses #-}
-{-# LANGUAGE NoStarIsType #-}
 
 module Torch.GraduallyTyped.Shape.Class where
 
@@ -30,7 +17,6 @@ import Data.Singletons.Prelude.List (SList (..))
 import Data.Typeable (Typeable)
 import GHC.TypeLits (Symbol, TypeError, type (+), type (-))
 import GHC.TypeNats (Nat)
-import System.IO.Unsafe (unsafePerformIO)
 import Torch.GraduallyTyped.Prelude (Fst, LiftTimesMaybe, MapMaybe, PrependMaybe, Reverse, Snd, forgetIsChecked)
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SBy (..), SDim (..), SName (..), SSelectDim (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Unify (type (<+>))
@@ -179,12 +165,12 @@ sGetDimFromShape ::
 sGetDimFromShape (SUncheckedSelectDim by) (SUncheckedShape dims) = go 0 dims
   where
     go _ [] = throwM $ GetDimErrorWithDims by dims
-    go index (Dim name size : dims) =
+    go index (Dim name size : dims') =
       let dim' = SDim (SUncheckedName name) (SUncheckedSize size)
        in case by of
             ByName name' | name == name' -> pure dim'
             ByIndex index' | index == index' -> pure dim'
-            _ -> go (index + 1) dims
+            _ -> go (index + 1) dims'
 sGetDimFromShape (SSelectDim by) (SUncheckedShape dims) = sGetDimFromShape (SUncheckedSelectDim $ fromSing by) (SUncheckedShape dims)
 sGetDimFromShape (SUncheckedSelectDim by) (SShape dims) =
   let dims' = (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size)) <$> fromSing dims
@@ -197,7 +183,7 @@ sGetDimFromShape (SSelectDim by@SByName) (SShape (SCons dim@(SDim (SUncheckedNam
    in if name == name' then pure (unsafeCoerce @(SDim _) @(SDim dim) dim) else unsafeCoerce @(SDim _) @(SDim dim) <$> sGetDimFromShape (SSelectDim by) (SShape dims)
 sGetDimFromShape (SSelectDim by@SByName) (SShape (SCons dim@(SDim SName _) dims)) =
   let ByName name' = fromSing by
-      Dim name size = (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size)) $ fromSing dim
+      Dim name _size = (\(Dim name'' size) -> Dim (forgetIsChecked name'') (forgetIsChecked size)) $ fromSing dim
    in if name == name' then pure (unsafeCoerce @(SDim _) @(SDim dim) dim) else unsafeCoerce @(SDim _) @(SDim dim) <$> sGetDimFromShape (SSelectDim by) (SShape dims)
 sGetDimFromShape (SSelectDim by@SByIndex) (SShape dims) =
   go 0 dims
@@ -206,8 +192,8 @@ sGetDimFromShape (SSelectDim by@SByIndex) (SShape dims) =
     dims' = (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size)) <$> fromSing dims
     go :: forall dims. Integer -> SList dims -> m (SDim dim)
     go _ SNil = throwM $ GetDimErrorWithDims by' dims'
-    go index (SCons dim dims) =
-      if index' == index then pure (unsafeCoerce @(Sing _) @(SDim dim) dim) else go (index + 1) dims
+    go index (SCons dim dims'') =
+      if index' == index then pure (unsafeCoerce @(Sing _) @(SDim dim) dim) else go (index + 1) dims''
 
 data GetDimError
   = GetDimError {gdeBy :: By String Integer}

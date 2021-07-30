@@ -1,45 +1,27 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -v2 #-}
 
 module Torch.GraduallyTyped.NN.Transformer.BART.Common where
 
 import Control.Monad.Catch (MonadThrow)
 import Data.Kind (Type)
 import Data.Singletons (SingI (..))
-import Data.Singletons.Prelude.List (SList (..))
-import Data.Singletons.TypeLits (SNat (SNat))
+import Data.Singletons.TypeLits (SNat)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
-import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (initialize), ModelSpec)
-import Torch.GraduallyTyped.NN.Transformer.GEncoderDecoder (EDTDecoderF, EDTEncoderF, EDTHeadF, EDTSharedEmbeddingF, EncoderDecoderTransformerInput (..), GEncoderDecoderTransformer, encoderDecoderTransformerSpec, GSimplifiedEncoderDecoderTransformer (..), SimplifiedEncoderDecoderTransformerInput (..))
-import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead (SWithLMHead), STransformerStyle (SBART), ShiftRight (..), TransformerHead (..), TransformerStyle (BART), mkTransformerInput, MkAbsPos (..), MkTransformerPaddingMask (..), MkTransformerAttentionMask (..), MkTransformerCrossAttentionMask (..), MkTransformerDecoderAttentionMask (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..))
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
+import Torch.GraduallyTyped.NN.Class (ModelSpec)
+import Torch.GraduallyTyped.NN.Transformer.GEncoderDecoder (EDTDecoderF, EDTEncoderF, EDTHeadF, EDTSharedEmbeddingF, GEncoderDecoderTransformer, GSimplifiedEncoderDecoderTransformer (..), encoderDecoderTransformerSpec)
+import Torch.GraduallyTyped.NN.Transformer.Type (MkAbsPos (..), MkTransformerAttentionMask (..), MkTransformerCrossAttentionMask (..), MkTransformerDecoderAttentionMask (..), MkTransformerPaddingMask (..), STransformerHead, STransformerStyle (SBART), ShiftRight (..), TransformerHead (..), TransformerStyle (BART), mkTransformerInput)
 import Torch.GraduallyTyped.Prelude (Seq)
-import Torch.GraduallyTyped.Random (sMkGenerator)
-import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
-import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim (..), SName (..), SShape (..), SSize (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
-import Torch.GraduallyTyped.Tensor.Creation (sOnes)
-import Torch.GraduallyTyped.Tensor.Type (SGetDim, Tensor, TensorSpec (..))
+import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim (..), Shape (..), Size (..))
+import Torch.GraduallyTyped.Tensor.Type (SGetDim, Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
 -- | BART dType.
@@ -204,43 +186,3 @@ mkBARTInput ::
   [[Int]] ->
   m output
 mkBARTInput = mkTransformerInput bartPadTokenId
-
-testBart :: IO _
-testBart = do
-  let gradient = SGradient SWithGradient
-      device = SDevice SCPU
-      headDim = SName @"*" :&: SSize @8
-      headEmbedDim = SName @"*" :&: SSize @64
-      embedDim = SName @"*" :&: SSize @512
-      inputEmbedDim = SName @"*" :&: SSize @512
-      ffnDim = SName @"*" :&: SSize @2048
-      vocabDim = SName @"*" :&: SSize @32128
-  let g = sMkGenerator device 0
-  let batchDim = SName @"*" :&: SSize @3
-      seqDim = SName @"*" :&: SSize @13
-      decoderSeqDim = SName @"*" :&: SSize @7
-      sOnes' = (sOnes .) . TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device
-      edtInput = sOnes' (SDataType SInt64) (SShape $ batchDim :|: seqDim :|: SNil)
-      edtAttentionMask = sOnes' bartDataType (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
-      edtDecoderInput = sOnes' (SDataType SInt64) (SShape $ batchDim :|: decoderSeqDim :|: SNil)
-      edtDecoderAttentionMask = sOnes' bartDataType (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
-      edtCrossAttentionMask = sOnes' bartDataType (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: seqDim :|: SNil)
-  let spec = encoderDecoderTransformerSpec SBART SWithLMHead (SNat @4) (SNat @4) gradient device bartDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim bartPosEncDim vocabDim bartDropoutP bartEps
-  (sedtModel, g') <- initialize spec g
-  (bartOutput, g'') <-
-    let edtPos = sOnes' (SDataType SInt64) (SShape $ seqDim :|: SNil)
-        edtDecoderPos = sOnes' (SDataType SInt64) (SShape $ decoderSeqDim :|: SNil)
-     in forward sedtModel EncoderDecoderTransformerInput {..} g'
-  (bartOutput', g''') <-
-    let sedtDecoderInputShift = ShiftRight bartEOSTokenId
-        sedtPaddingMaskShift = ShiftRight 0
-        sedtMkPos = MkAbsPosWithOffset 2
-        sedtMkDecoderPos = MkAbsPosWithOffset 2
-        sedtMkPaddingMask = MkTransformerPaddingMask bartPadTokenId
-        sedtMkAttentionMask = MkTransformerAttentionMask bartDataType bartAttentionMaskBias
-        sedtMkCrossAttentionMask = MkTransformerCrossAttentionMask bartDataType bartAttentionMaskBias
-        sedtMkDecoderAttentionMask = MkTransformerDecoderAttentionMask bartDataType bartAttentionMaskBias
-        model = GSimplifiedEncoderDecoderTransformer {..}
-        inputs = SimplifiedEncoderDecoderTransformerInput edtInput edtDecoderInput
-     in forward model inputs g''
-  pure ((bartOutput, bartOutput'), g''')

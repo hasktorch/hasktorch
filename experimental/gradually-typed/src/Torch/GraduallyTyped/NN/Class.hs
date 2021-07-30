@@ -1,28 +1,15 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneKindSignatures #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -Wall #-}
-{-# OPTIONS_GHC -fplugin TypeLevel.Rewrite
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyRightAssociativeL
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2C #-}
 
 module Torch.GraduallyTyped.NN.Class where
 
@@ -46,7 +33,7 @@ import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (Nat, natVal, type (+))
 import Torch.GraduallyTyped.Device (Device, DeviceType)
 import Torch.GraduallyTyped.Random (Generator)
-import Torch.GraduallyTyped.Tensor.Type (sSetDevice, sSetGradient, Tensor (..), TensorSpec (..), UncheckedTensor, sCheckedDataType, sCheckedLayout, sCheckedShape)
+import Torch.GraduallyTyped.Tensor.Type (Tensor (..), TensorSpec (..), UncheckedTensor, sCheckedDataType, sCheckedLayout, sCheckedShape, sSetDevice, sSetGradient)
 import qualified Torch.Internal.Type as ATen (Tensor)
 import qualified Torch.Script (IValue (..))
 import qualified Torch.Serialize (pickleLoad, pickleSave)
