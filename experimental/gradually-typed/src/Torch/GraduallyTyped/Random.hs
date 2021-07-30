@@ -15,14 +15,15 @@
 module Torch.GraduallyTyped.Random where
 
 import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVar, writeTVar)
+import Control.Monad.Catch (MonadThrow)
 import Data.Int (Int16)
 import Data.Singletons (SingI (..), SingKind (..))
 import Data.Word (Word64)
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (Nat)
-import System.IO.Unsafe (unsafePerformIO)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
 import Torch.GraduallyTyped.Prelude (forgetIsChecked, pattern Demoted')
+import Torch.Internal.GC (unsafeThrowableIO)
 import qualified Torch.Internal.Managed.Type.Generator as ATen
 import qualified Torch.Internal.Type as ATen
 
@@ -38,15 +39,16 @@ data Generator (device :: Device (DeviceType Nat)) where
 type role Generator nominal
 
 sMkGenerator ::
-  forall device.
+  forall m device.
+  MonadThrow m =>
   -- | generator device singleton
   SDevice device ->
   -- | initial seed
   Word64 ->
   -- | returned generator
-  Generator device
+  m (Generator device)
 sMkGenerator generatorDevice generatorSeed =
-  unsafePerformIO $
+  unsafeThrowableIO $
     let generatorDeviceType = forgetIsChecked . fromSing $ generatorDevice
      in case generatorDeviceType of
           CPU -> do
@@ -60,30 +62,31 @@ sMkGenerator generatorDevice generatorSeed =
             return $ UnsafeGenerator {..}
 
 mkGenerator ::
-  forall device.
-  SingI device =>
+  forall m device.
+  (SingI device, MonadThrow m) =>
   -- | initial seed
   Word64 ->
   -- | returned generator
-  Generator device
+  m (Generator device)
 mkGenerator = sMkGenerator (sing @device)
 
 sGeneratorToDevice ::
-  forall generatorDevice' generatorDevice.
+  forall m generatorDevice' generatorDevice.
+  MonadThrow m =>
   SDevice generatorDevice' ->
   Generator generatorDevice ->
-  Generator generatorDevice'
+  m (Generator generatorDevice')
 sGeneratorToDevice (Demoted' generatorDeviceType') UnsafeGenerator {..}
   | generatorDeviceType' == generatorDeviceType =
-    UnsafeGenerator generatorSeed generatorDeviceType' generatorState
+    pure $ UnsafeGenerator generatorSeed generatorDeviceType' generatorState
 sGeneratorToDevice device' UnsafeGenerator {..} =
   sMkGenerator device' generatorSeed
 
 generatorToDevice ::
-  forall generatorDevice' generatorDevice.
-  SingI generatorDevice' =>
+  forall m generatorDevice' generatorDevice.
+  (SingI generatorDevice', MonadThrow m) =>
   Generator generatorDevice ->
-  Generator generatorDevice'
+  m (Generator generatorDevice')
 generatorToDevice = sGeneratorToDevice (sing @generatorDevice')
 
 withGenerator ::

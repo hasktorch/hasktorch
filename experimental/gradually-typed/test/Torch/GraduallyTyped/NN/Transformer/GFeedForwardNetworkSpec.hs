@@ -19,8 +19,8 @@ testFFN = do
       queryEmbedDim = SName @"*" :&: SSize @3
       dropoutP = 0
       eps = 1e-6
-  let g = sMkGenerator device 0
-      spec = NamedModel "ffn." $ transformerFeedForwardNetworkSpec SByT5 gradient device dataType queryEmbedDim ffnDim dropoutP eps
+  g <- sMkGenerator device 0
+  let spec = NamedModel "ffn." $ transformerFeedForwardNetworkSpec SByT5 gradient device dataType queryEmbedDim ffnDim dropoutP eps
   (ffn, g') <- initialize spec g
   ffn' <- flip evalStateT Map.empty $ do
     toStateDict mempty ffn

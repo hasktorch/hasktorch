@@ -21,8 +21,8 @@ testSA = do
       queryEmbedDim = SName @"*" :&: SSize @512
       dropoutP = 0
       eps = 1e-6
-  let g = sMkGenerator device 0
-      spec = NamedModel "sa." $ selfAttentionSpec SByT5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP eps
+  g <- sMkGenerator device 0
+  let spec = NamedModel "sa." $ selfAttentionSpec SByT5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP eps
   (sa, g') <- initialize spec g
   sa' <- flip evalStateT Map.empty $ do
     toStateDict mempty sa

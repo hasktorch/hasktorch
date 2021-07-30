@@ -29,7 +29,7 @@ testForwardBERTBaseUncased =
     let spec = bertBaseUnchasedSpec SWithLMHead (SGradient SWithoutGradient) device
     model <- flip evalStateT stateDict $ fromStateDict spec mempty
 
-    let g = sMkGenerator device 0
+    g <- sMkGenerator device 0
 
     ids <- withTokenizer $ \tokenizer -> do
       encoding <- Tokenizers.encode tokenizer "[CLS] the capital of france is [MASK]. [SEP]"

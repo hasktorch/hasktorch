@@ -18,8 +18,8 @@ testLMHead = do
       inputEmbedDim = SName @"*" :&: SSize @512
       vocabDim = SName @"*" :&: SSize @30522
       eps = 1e-6
-  let g = sMkGenerator device 0
-      spec = NamedModel "lmHead." $ lmHeadSpec SBART gradient device dataType inputEmbedDim vocabDim eps
+  g <- sMkGenerator device 0
+  let spec = NamedModel "lmHead." $ lmHeadSpec SBART gradient device dataType inputEmbedDim vocabDim eps
   (lmHead, g') <- initialize spec g
   lmHead' <- flip evalStateT Map.empty $ do
     toStateDict mempty lmHead

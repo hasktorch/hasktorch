@@ -26,7 +26,7 @@ testT5 = do
       inputEmbedDim = SName @"*" :&: SSize @512
       ffnDim = SName @"*" :&: SSize @2048
       vocabDim = SName @"*" :&: SSize @32128
-  let g = sMkGenerator device 0
+  g <- sMkGenerator device 0
   let batchDim = SName @"*" :&: SSize @3
       seqDim = SName @"*" :&: SSize @13
       decoderSeqDim = SName @"*" :&: SSize @7
@@ -71,7 +71,7 @@ testForwardT5Small =
     let spec = t5SmallSpec SWithLMHead (SGradient SWithoutGradient) device
     model <- flip evalStateT stateDict $ fromStateDict spec mempty
 
-    let g = sMkGenerator device 0
+    g <- sMkGenerator device 0
 
     (encoderIds, decoderIds) <- withTokenizer $ \tokenizer -> do
       encoderEncoding <- Tokenizers.encode tokenizer "translate English to German: Studies have shown that owning a dog is good for you and your dog.</s>"
@@ -116,7 +116,7 @@ testForwardT5Small =
 --     let spec = byT5SmallSpec SWithLMHead (SGradient SWithoutGradient) (SDevice SCPU)
 --     model <- flip evalStateT stateDict $ fromStateDict spec mempty
 
---     let g = sMkGenerator (SDevice SCPU) 0
+--     let g <- sMkGenerator (SDevice SCPU) 0
 
 --     input <-
 --       SimplifiedEncoderDecoderTransformerInput

@@ -36,7 +36,7 @@ testEncoderOnlyTransformer = do
       typeVocabDim = SName @"*" :&: SSize @2
       dropoutP = 0
       eps = 1e-6
-  let g = sMkGenerator device 0
+  g <- sMkGenerator device 0
   let batchDim = SName @"*" :&: SSize @3
       seqDim = SName @"*" :&: SSize @13
       sOnes' = (sOnes .) . TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device

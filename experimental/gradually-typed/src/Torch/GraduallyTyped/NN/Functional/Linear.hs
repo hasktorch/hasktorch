@@ -99,7 +99,7 @@ type LinearWeightDimsErrorMessage (weightDims :: [Dim (Name Symbol) (Size Nat)])
 -- >>> weightShape = SShape $ outputDim :|: inputDim :|: SNil
 -- >>> biasShape = SShape $ outputDim :|: SNil
 -- >>> inputShape = SShape $ batchDim :|: inputDim :|: SNil
--- >>> g = sMkGenerator (SDevice SCPU) 0
+-- >>> g <- sMkGenerator (SDevice SCPU) 0
 -- >>> sRandn' = sRandn . TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat)
 -- >>> (weight, g') <- sRandn' weightShape g
 -- [W TensorImpl.h:934] Warning: Named tensors and all their associated APIs are an experimental feature and subject to change. Please do not use them for anything important until they are released as stable. (function operator())

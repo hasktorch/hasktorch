@@ -204,7 +204,7 @@ type family ReshapeF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: 
 -- | Returns a tensor with the same data and number of elements as the input tensor,
 -- but with the specified shape:
 --
--- >>> g = sMkGenerator (SDevice SCPU) 0
+-- >>> g <- sMkGenerator (SDevice SCPU) 0
 -- >>> (input, _) <- sRandn (TensorSpec (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SName @"*" :&: SSize @4 :|: SNil)) g
 -- >>> output <- sReshape (SShape $ SName @"*" :&: SSize @2 :|: SName @"*" :&: SSize @2 :|: SNil) input
 -- >>> :type output
@@ -349,9 +349,9 @@ type family TransposeIndexIndexDimsF (index0 :: Nat) (index1 :: Nat) (dims :: [D
 -- | Returns a tensor that is a transposed version of @input@.
 -- The selected dimensions @selectDim0@ and @selectDim1@ are swapped.
 --
--- >>> g = mkGenerator @('Device 'CPU) 0
--- >>> (input, _) <- randn @('Gradient 'WithGradient) @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "feature") ('Size 5)]) g
--- >>> output <- transpose @('SelectDim ('ByName "batch")) @('SelectDim ('ByName "feature")) input
+-- >>> g <- sMkGenerator (SDevice SCPU) 0
+-- >>> (input, _) <- sRandn (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SName @"batch" :&: SSize @10 :|: SName @"feature" :&: SSize @5 :|: SNil) g
+-- >>> output <- sTranspose (SSelectDim (SByName @"batch")) @(SSelectDim (SByName @"feature")) input
 -- >>> :type output
 -- output
 --   :: Tensor

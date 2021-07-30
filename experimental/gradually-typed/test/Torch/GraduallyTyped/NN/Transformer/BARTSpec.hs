@@ -29,7 +29,7 @@ testBart = do
       inputEmbedDim = SName @"*" :&: SSize @512
       ffnDim = SName @"*" :&: SSize @2048
       vocabDim = SName @"*" :&: SSize @32128
-  let g = sMkGenerator device 0
+  g <- sMkGenerator device 0
   let batchDim = SName @"*" :&: SSize @3
       seqDim = SName @"*" :&: SSize @13
       decoderSeqDim = SName @"*" :&: SSize @7
@@ -73,7 +73,7 @@ testBARTAutoencoder prompt = do
   let spec = bartBaseSpec SWithLMHead (SGradient SWithoutGradient) device
   model <- flip evalStateT stateDict $ fromStateDict spec mempty
 
-  let g = sMkGenerator device 0
+  g <- sMkGenerator device 0
 
   withTokenizer $ \tokenizer -> do
     specialTokens <- Tokenizers.encode tokenizer "<mask></s>"

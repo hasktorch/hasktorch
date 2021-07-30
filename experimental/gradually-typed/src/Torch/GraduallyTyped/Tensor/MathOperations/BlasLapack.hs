@@ -53,7 +53,7 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --
 -- The following code serves the examples of @matmul@ below:
 --
--- >>> g = sMkGenerator (SDevice SCPU) 0
+-- >>> g <- sMkGenerator (SDevice SCPU) 0
 -- >>> sRandn' = sRandn . TensorSpec (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat)
 --
 -- In order to understand the behavior of @matmul@, consider the following cases:

@@ -29,7 +29,7 @@ testForwardRoBERTaBase =
     let spec = robertaBaseSpec SWithLMHead (SGradient SWithoutGradient) device
     model <- flip evalStateT stateDict $ fromStateDict spec mempty
 
-    let g = sMkGenerator device 0
+    g <- sMkGenerator device 0
 
     ids <- withTokenizer $ \tokenizer -> do
       encoding <- Tokenizers.encode tokenizer "<s>The capital of France is [MASK].</s>"

@@ -23,8 +23,8 @@ testEncoder = do
       posEncDim = SName @"*" :&: SSize @32
       dropoutP = 0
       eps = 1e-6
-  let g = sMkGenerator device 0
-      spec = NamedModel "encoder." $ transformerEncoderSpec ST5 (SNat @10) gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP eps
+  g <- sMkGenerator device 0
+  let spec = NamedModel "encoder." $ transformerEncoderSpec ST5 (SNat @10) gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP eps
   (encoder, g') <- initialize spec g
   encoder' <- flip evalStateT Map.empty $ do
     toStateDict mempty encoder
@@ -52,8 +52,8 @@ testDecoder = do
       posEncDim = SName @"*" :&: SSize @32
       dropoutP = 0
       eps = 1e-6
-  let g = sMkGenerator device 0
-      spec = NamedModel "decoder." $ transformerDecoderSpec SBART (SNat @10) gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP eps
+  g <- sMkGenerator device 0
+  let spec = NamedModel "decoder." $ transformerDecoderSpec SBART (SNat @10) gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP eps
   (decoder, g') <- initialize spec g
   decoder' <- flip evalStateT Map.empty $ do
     toStateDict mempty decoder
