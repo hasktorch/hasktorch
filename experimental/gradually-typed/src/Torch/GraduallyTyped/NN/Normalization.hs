@@ -33,7 +33,7 @@ import Torch.GraduallyTyped.NN.Type (HasBias (..), SHasBias (..))
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient)
 import Torch.GraduallyTyped.Shape (Dim (..), Name (..), SShape (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes, sZeros)
-import Torch.GraduallyTyped.Tensor.Type (SGetShape, SSetGradient, Tensor, TensorSpec (..), SSetDevice)
+import Torch.GraduallyTyped.Tensor.Type (SGetShape, Tensor, TensorSpec (..))
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 
 data
@@ -96,7 +96,6 @@ instance
      in pure . (LayerNormWithoutBias weight eps,)
 
 instance
-  (SSetGradient gradient, SSetDevice device) =>
   HasStateDict
     (LayerNorm hasBias gradient device dataType normalizedShape)
   where

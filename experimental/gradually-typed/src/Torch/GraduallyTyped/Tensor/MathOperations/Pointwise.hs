@@ -1,9 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
-{-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.Tensor.MathOperations.Pointwise where
 
@@ -396,7 +393,7 @@ clamp ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-clamp min max input = unsafePerformIO $ cast3 ATen.clamp__tss input min max
+clamp min' max' input = unsafePerformIO $ cast3 ATen.clamp__tss input min' max'
 
 cos ::
   forall gradient layout device dataType shape.
@@ -978,7 +975,7 @@ pow ::
     (device <+> device')
     (dataType <+> dataType')
     (BroadcastShapesF shape shape')
-input `pow` exponent = unsafePerformIO $ cast2 ATen.pow_tt input exponent
+input `pow` exponent' = unsafePerformIO $ cast2 ATen.pow_tt input exponent'
 
 -- | Takes the power of each element in the tensor 'input' with the scalar 'exponent' and
 -- returns a tensor with the result.
@@ -1000,7 +997,7 @@ powScalar ::
   exponent ->
   -- | tensor output
   Tensor gradient layout device dataType shape
-input `powScalar` exponent = unsafePerformIO $ cast2 ATen.pow_ts input exponent
+input `powScalar` exponent' = unsafePerformIO $ cast2 ATen.pow_ts input exponent'
 
 -- | Takes the power of the scalar 'input' with each element in the tensor 'exponent' and
 -- returns a tensor with the result.
@@ -1022,7 +1019,7 @@ powTensor ::
   Tensor gradient layout device dataType shape ->
   -- | tensor output
   Tensor gradient layout device dataType shape
-input `powTensor` exponent = unsafePerformIO $ cast2 ATen.pow_st input exponent
+input `powTensor` exponent' = unsafePerformIO $ cast2 ATen.pow_st input exponent'
 
 -- | Returns a new tensor with each of the elements of 'input'
 -- converted from angles in radians to degrees.

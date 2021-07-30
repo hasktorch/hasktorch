@@ -13,7 +13,6 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.Tensor.IndexingSlicingJoining where
 
@@ -207,7 +206,7 @@ type family ReshapeF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: 
 --
 -- >>> g = sMkGenerator (SDevice SCPU) 0
 -- >>> (input, _) <- sRandn (TensorSpec (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SName @"*" :&: SSize @4 :|: SNil)) g
--- >>> output = sReshape (SShape $ SName @"*" :&: SSize @2 :|: SName @"*" :&: SSize @2 :|: SNil) input
+-- >>> output <- sReshape (SShape $ SName @"*" :&: SSize @2 :|: SName @"*" :&: SSize @2 :|: SNil) input
 -- >>> :type output
 -- output
 --   :: Tensor
@@ -220,7 +219,7 @@ type family ReshapeF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: 
 -- At the value level, a single dimension may be '-1',
 -- in which case it is inferred from the remaining dimensions and the number of elements in the input:
 --
--- >>> output' = sReshape (SShape $ SUncheckedName "*" :&: SUncheckedSize (-1) :|: SNil) output
+-- >>> output' <- sReshape (SShape $ SUncheckedName "*" :&: SUncheckedSize (-1) :|: SNil) output
 -- >>> :type output'
 -- output'
 --   :: Tensor
@@ -229,21 +228,20 @@ type family ReshapeF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: 
 --        ('Device 'CPU)
 --        ('DataType 'Float)
 --        'UncheckedShape
--- >>> dims output'
+-- >>> getDims output'
 -- [Dim {dimName = "*", dimSize = 4}]
-sReshape ::
-  forall shape' gradient layout device dataType shape shape''.
+sReshape, sSetShape ::
+  forall m shape' gradient layout device dataType shape shape''.
+  MonadThrow m =>
   (shape'' ~ ReshapeF shape shape') =>
   SShape shape' ->
   Tensor gradient layout device dataType shape ->
-  Tensor gradient layout device dataType shape''
-sReshape shape' input =
-  let dimSizes =
-        fmap (\(Dim _ size) -> forgetIsChecked size)
-          . forgetIsChecked
-          . fromSing
-          $ shape'
-   in unsafePerformIO $ cast2 ATen.reshape_tl input dimSizes
+  m (Tensor gradient layout device dataType shape'')
+sReshape shape' input = unsafeThrowableIO $ do
+  let dims = forgetIsChecked . fromSing $ shape'
+  t :: ForeignPtr ATen.Tensor <- cast2 ATen.reshape_tl input (forgetIsChecked . dimSize <$> dims)
+  cast2 ATen.tensor_refine_names_N t (forgetIsChecked . dimName <$> dims)
+sSetShape = sReshape
 
 type family AllDimSizesChecked (shape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Bool where
   AllDimSizesChecked 'UncheckedShape = 'False
@@ -251,13 +249,14 @@ type family AllDimSizesChecked (shape :: Shape [Dim (Name Symbol) (Size Nat)]) :
   AllDimSizesChecked ('Shape ('Dim name ('Size size) ': xs)) = AllDimSizesChecked ('Shape xs)
 
 reshape ::
-  forall shape' gradient layout device dataType shape shape''.
+  forall m shape' gradient layout device dataType shape shape''.
   ( shape'' ~ ReshapeF shape shape',
     When (AllDimSizesChecked shape) (shape' ~ shape''),
-    SingI shape'
+    SingI shape',
+    MonadThrow m
   ) =>
   Tensor gradient layout device dataType shape ->
-  Tensor gradient layout device dataType shape''
+  m (Tensor gradient layout device dataType shape'')
 reshape = sReshape (sing @shape')
 
 type TransposeBy0Message (by0 :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) =
@@ -353,8 +352,8 @@ type family TransposeIndexIndexDimsF (index0 :: Nat) (index1 :: Nat) (dims :: [D
           )
       )
 
--- | Returns a tensor that is a transposed version of 'input'.
--- The selected dimensions 'selectDim0' and 'selectDim1' are swapped.
+-- | Returns a tensor that is a transposed version of @input@.
+-- The selected dimensions @selectDim0@ and @selectDim1@ are swapped.
 --
 -- >>> g = mkGenerator @('Device 'CPU) 0
 -- >>> (input, _) <- randn @('Gradient 'WithGradient) @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "feature") ('Size 5)]) g
@@ -378,7 +377,7 @@ type family TransposeIndexIndexDimsF (index0 :: Nat) (index1 :: Nat) (dims :: [D
 --        ('Device 'CPU)
 --        ('DataType 'Float)
 --        'UncheckedShape
--- >>> dims output
+-- >>> getDims output
 -- [Dim {dimName = "feature", dimSize = 5},Dim {dimName = "batch", dimSize = 10}]
 sTranspose ::
   forall selectDim0 selectDim1 gradient layout device dataType shape shape' m.
@@ -456,6 +455,7 @@ type family UnsqueezeIndexDimsF (index :: Nat) (dims :: [Dim (Name Symbol) (Size
           ('Dim ('Name "*") ('Size 1))
       )
 
+-- | Unsqueezes a tensor with the specified dimension.
 sUnsqueeze ::
   forall selectDim gradient layout device dataType shape shape'.
   ( shape' ~ UnsqueezeF selectDim shape
@@ -469,6 +469,7 @@ sUnsqueeze selectDim input =
         ByName _name -> undefined
         ByIndex index -> unsafePerformIO $ cast2 ATen.unsqueeze_tl input (fromIntegral index :: Int)
 
+-- | Unsqueezes a tensor with the specified dimension.
 unsqueeze ::
   forall selectDim gradient layout device dataType shape shape'.
   ( shape' ~ UnsqueezeF selectDim shape,
@@ -478,6 +479,7 @@ unsqueeze ::
   Tensor gradient layout device dataType shape'
 unsqueeze = sUnsqueeze (sing @selectDim)
 
+-- | Expands a tensor to the specified shape.
 sExpand ::
   forall shape' gradient layout device dataType shape input output.
   ( input ~ Tensor gradient layout device dataType shape,
@@ -490,6 +492,7 @@ sExpand shape' input =
   let sizes' = fmap (\(Dim _ size) -> forgetIsChecked size) . forgetIsChecked $ fromSing shape'
    in unsafePerformIO $ cast3 ATen.tensor_expand_lb input sizes' True
 
+-- | Expands a tensor to the specified shape.
 expand ::
   forall shape' gradient layout device dataType shape input output.
   ( SingI shape',
@@ -503,7 +506,7 @@ expand = sExpand (sing @shape')
 -- | Slices the self tensor along the selected dimension at the given index. This function returns a view of the original tensor with the given dimension removed.
 --
 -- >>> nats = sArangeNaturals (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt32) (SSize @8)
--- >>> input = sReshape (SShape $ SName @"*" :&: SSize @4 :|: SName @"*" :&: SSize @2 :|: SNil) nats
+-- >>> input <- sReshape (SShape $ SName @"*" :&: SSize @4 :|: SName @"*" :&: SSize @2 :|: SNil) nats
 -- >>> input
 -- Tensor Int32 [4,2] [[ 0,  1],
 --                     [ 2,  3],

@@ -11,7 +11,7 @@ import Torch.GraduallyTyped.NN.Class (ModelSpec)
 import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5ModelF, t5ModelSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead, STransformerStyle (SByT5, ST5), TransformerHead, TransformerStyle (ByT5, T5))
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient)
-import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, Size (..))
 
 -- | T5-Small number of layers.
 -- 'num_layers = 6'
@@ -44,6 +44,9 @@ type T5SmallFFNDim = 'Dim ('Name "*") ('Size 2048)
 -- | T5-Small vocabulary dimension.
 -- 'vocab_size = 32128'
 type T5SmallVocabDim = 'Dim ('Name "*") ('Size 32128)
+
+t5SmallVocabDim :: SDim T5SmallVocabDim
+t5SmallVocabDim = sing
 
 -- | T5-Small model.
 type T5Small

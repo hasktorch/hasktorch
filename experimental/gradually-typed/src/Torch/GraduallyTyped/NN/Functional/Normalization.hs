@@ -1,16 +1,8 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneKindSignatures #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.NN.Functional.Normalization where
 
@@ -112,8 +104,8 @@ layerNormWithoutBias weight eps input = unsafePerformIO $ do
   let indexes :: [Int] = fromIntegral . (length inputDims -) <$> [1, 2 .. length weightDims]
   cast6 (go (null indexes)) input weight indexes eps (2 :: Double) True
   where
-    go nullIndexes input weight indexes eps exponent keepDim = do
-      squaredInput <- ATen.pow_ts input exponent
+    go nullIndexes input' weight' indexes eps' exponent' keepDim = do
+      squaredInput <- ATen.pow_ts input' exponent'
       variance <-
         if nullIndexes
           then pure squaredInput
@@ -122,7 +114,7 @@ layerNormWithoutBias weight eps input = unsafePerformIO $ do
               squaredInput
               indexes
               keepDim
-      ATen.add_ts variance eps
+      ATen.add_ts variance eps'
         >>= ATen.rsqrt_t
-        >>= ATen.mul_tt input
-        >>= ATen.mul_tt weight
+        >>= ATen.mul_tt input'
+        >>= ATen.mul_tt weight'

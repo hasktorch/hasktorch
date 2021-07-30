@@ -1,8 +1,9 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeApplications #-}
 
-module IndexingSpec where
+module Torch.GraduallyTyped.IndexingSpec where
 
+import Data.Maybe (fromJust)
 import Data.Singletons.Prelude.List
 import qualified Data.Vector.Sized as SV
 import Test.Hspec
@@ -26,7 +27,7 @@ tensor ::
            'Dim ('Name "*") ('Size 3)
          ]
     )
-tensor = reshape $ arangeNaturals @('Size 12)
+tensor = fromJust $ reshape $ arangeNaturals @('Size 12)
 
 spec :: Spec
 spec = describe "Indexing" $ do

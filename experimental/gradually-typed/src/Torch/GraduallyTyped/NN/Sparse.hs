@@ -1,6 +1,4 @@
-{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -31,7 +29,7 @@ import Torch.GraduallyTyped.Prelude (Seq, pattern (:|:))
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..))
 import Torch.GraduallyTyped.Shape (Dim (..), Name, SDim (..), SShape (..), Shape (..), Size)
 import Torch.GraduallyTyped.Tensor.Creation (sRandn)
-import Torch.GraduallyTyped.Tensor.Type (SGetLayout, SSetDevice, SSetGradient, Tensor, TensorSpec (..))
+import Torch.GraduallyTyped.Tensor.Type (SGetLayout, Tensor, TensorSpec (..))
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 
 data
@@ -94,11 +92,10 @@ instance
         >>>= ireturn . Embedding
 
 instance
-  (SSetGradient gradient, SSetDevice device) =>
   HasStateDict
     (Embedding gradient layout device dataType embedNumDim embedDim paddingIdx)
   where
-  fromStateDict (EmbeddingSpec gradient layout device dataType embedNumDim embedDim paddingIdx) k =
+  fromStateDict (EmbeddingSpec gradient layout device dataType embedNumDim embedDim _paddingIdx) k =
     Embedding <$> fromStateDict (TensorSpec gradient layout device dataType (SShape $ embedNumDim :|: embedDim :|: SNil)) (k <> "weight")
   toStateDict k Embedding {..} =
     toStateDict (k <> "weight") embeddingWeight

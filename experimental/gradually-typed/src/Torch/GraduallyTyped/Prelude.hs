@@ -23,6 +23,8 @@ module Torch.GraduallyTyped.Prelude
     module Data.Proxy,
     module Data.Type.Bool,
     module GHC.TypeLits,
+    module Data.Singletons.Prelude.List,
+    module Data.Singletons.TypeLits,
     IsChecked (..),
     pattern IsChecked,
     pattern Demoted,
@@ -72,13 +74,15 @@ import Control.Applicative (Applicative (liftA2))
 import Control.Monad (MonadPlus, guard, unless, when)
 import Data.Kind (Constraint, Type)
 import Data.Proxy (Proxy (..))
-import Data.Singletons (Demote, Sing, SingKind, fromSing)
+import Data.Singletons (Demote, SingKind, fromSing)
+import Data.Singletons.Prelude (SList (..))
+import Data.Singletons.Prelude.List (SList (..))
+import Data.Singletons.TypeLits
 import Data.Type.Bool (If, type (||))
+import Data.Type.Equality (type (==))
 import GHC.Exts (Any)
 import GHC.Generics (Generic)
-import GHC.TypeLits (ErrorMessage (..), Nat, TypeError, type (*), type (+), CmpNat)
-import Data.Type.Equality (type (==))
-import Data.Singletons.Prelude (SList (..))
+import GHC.TypeLits (CmpNat, ErrorMessage (..), Nat, TypeError, type (*), type (+))
 
 data IsChecked a = Checked a | Unchecked a
   deriving stock (Eq, Ord, Show, Generic, Functor)
