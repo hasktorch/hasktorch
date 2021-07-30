@@ -54,12 +54,6 @@ spec = describe "Indexing" $ do
     dimSize <$> getDims x `shouldBe` [2, 2]
     fromTensor @((Int, Int), (Int, Int)) x `shouldBe` ((1, 4), (7, 10))
 
-  it "slices with multiple ellipses" $ do
-    x <- tensor ! SIndices (SEllipsis :|: SSliceAt (SIndex @2) :|: SEllipsis :|: SNil)
-
-    dimSize <$> getDims x `shouldBe` [2, 2]
-    fromTensor @((Int, Int), (Int, Int)) x `shouldBe` ((2, 5), (8, 11))
-
   it "slices with SSliceFrom" $ do
     x <- tensor ! SIndices (SSliceAll :|: SSliceFrom (SIndex @1) :|: SNil)
 
