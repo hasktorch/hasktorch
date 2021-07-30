@@ -1,6 +1,4 @@
-{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -13,27 +11,22 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -fplugin TypeLevel.Rewrite
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyRightAssociativeL
-                -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.OrRightAssociativeL #-}
-{-# OPTIONS_GHC -v2 #-}
+{-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 
 module Torch.GraduallyTyped.NN.Transformer.GTransformer where
 
 import Control.Monad.Indexed ((>>>=))
 import Control.Monad.Indexed.State (IxStateT (..))
 import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
-import Control.Monad.State (evalStateT)
 import Data.Functor.Indexed (IxPointed (ireturn), (<<$>>), (<<*>>))
 import Data.Kind (Type)
-import qualified Data.Map as Map
 import Data.Singletons.Prelude.List (SList (SNil))
 import Data.Singletons.Prelude.Maybe (SMaybe (SNothing))
 import Data.Singletons.TypeLits (SNat (..))
 import qualified Data.Vector.Sized as VS
 import GHC.TypeLits (Nat, Symbol)
-import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
+import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec, NamedModel (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout (..))
@@ -43,14 +36,13 @@ import Torch.GraduallyTyped.NN.Transformer.GBlock (DecoderBlockCrossAttentionF, 
 import Torch.GraduallyTyped.NN.Transformer.GStack (GTransformerStack, decoderStackSpec, encoderStackSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..), SHasBias (SWithBias, SWithoutBias))
-import Torch.GraduallyTyped.Random (sMkGenerator)
-import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..), SRequiresGradient (..))
+import Torch.GraduallyTyped.Prelude (pattern (:|:))
+import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SDim, SName (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
-import Torch.GraduallyTyped.Tensor.Creation (sOnes)
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SDim, SShape (..), SelectDim (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (TransposeF, UnsqueezeF, transpose, unsqueeze)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
-import Torch.GraduallyTyped.Tensor.Type (Tensor, TensorSpec (..))
+import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 
 -- | Generic transformer.
@@ -1090,63 +1082,3 @@ instance
                  )
             >>>= IxStateT . forward tFinalLayerNorm
             >>>= IxStateT . forward tFinalDropout
-
-testEncoder :: IO _
-testEncoder = do
-  let gradient = SGradient SWithGradient
-      device = SDevice SCPU
-      dataType = SDataType SFloat
-      headDim = SName @"*" :&: SSize @8
-      headEmbedDim = SName @"*" :&: SSize @64
-      embedDim = SName @"*" :&: SSize @512
-      inputEmbedDim = SName @"*" :&: SSize @512
-      ffnDim = SName @"*" :&: SSize @2048
-      posEncDim = SName @"*" :&: SSize @32
-      dropoutP = 0
-      eps = 1e-6
-  let g = sMkGenerator device 0
-      spec = NamedModel "encoder." $ transformerEncoderSpec ST5 (SNat @10) gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP eps
-  (encoder, g') <- initialize spec g
-  encoder' <- flip evalStateT Map.empty $ do
-    toStateDict mempty encoder
-    fromStateDict spec mempty
-  let batchDim = SName @"*" :&: SSize @3
-      seqDim = SName @"*" :&: SSize @13
-      sOnes' = (sOnes .) . TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device
-      input = sOnes' dataType (SShape $ batchDim :|: seqDim :|: inputEmbedDim :|: SNil)
-      relPos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
-      attentionMask = sOnes' dataType (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
-  (output, _) <- forward encoder' (input, relPos, attentionMask) g'
-  pure output
-
-testDecoder :: IO _
-testDecoder = do
-  let gradient = SGradient SWithGradient
-      device = SDevice SCPU
-      dataType = SDataType SFloat
-      headDim = SName @"*" :&: SSize @8
-      headEmbedDim = SName @"*" :&: SSize @64
-      embedDim = SName @"*" :&: SSize @512
-      decoderInputEmbedDim = SName @"*" :&: SSize @512
-      encoderOutputEmbedDim = decoderInputEmbedDim
-      ffnDim = SName @"*" :&: SSize @2048
-      posEncDim = SName @"*" :&: SSize @32
-      dropoutP = 0
-      eps = 1e-6
-  let g = sMkGenerator device 0
-      spec = NamedModel "decoder." $ transformerDecoderSpec SBART (SNat @10) gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP eps
-  (decoder, g') <- initialize spec g
-  decoder' <- flip evalStateT Map.empty $ do
-    toStateDict mempty decoder
-    fromStateDict spec mempty
-  let batchDim = SName @"*" :&: SSize @3
-      seqDim = SName @"*" :&: SSize @13
-      decoderSeqDim = SName @"*" :&: SSize @7
-      sOnes' = (sOnes .) . TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device
-      decoderInput = sOnes' dataType (SShape $ batchDim :|: decoderSeqDim :|: decoderInputEmbedDim :|: SNil)
-      encoderOutput = sOnes' dataType (SShape $ batchDim :|: seqDim :|: encoderOutputEmbedDim :|: SNil)
-      decoderPos = sOnes' (SDataType SInt64) (SShape $ decoderSeqDim :|: SNil)
-      decoderAttentionMask = sOnes' dataType (SShape $ batchDim :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
-      crossAttentionMask = sOnes' dataType (SShape $ batchDim :|: decoderSeqDim :|: seqDim :|: SNil)
-  (output, _) <- forward decoder' (decoderInput, encoderOutput, decoderPos, decoderAttentionMask, crossAttentionMask) g'
-  pure output

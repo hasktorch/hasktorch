@@ -11,7 +11,7 @@ import Torch.GraduallyTyped.NN.Class (ModelSpec)
 import Torch.GraduallyTyped.NN.Transformer.RoBERTa.Common (RoBERTaModelF, robertaModelSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead, TransformerHead)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient)
-import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, Size (..))
 
 -- | RoBERTa-Base number of layers.
 -- 'num_hidden_layers = 12'
@@ -44,6 +44,10 @@ type RoBERTaBaseFFNDim = 'Dim ('Name "*") ('Size 3072)
 -- | RoBERTa-Base vocabulary dimension.
 -- 'vocab_size = 50265'
 type RoBERTaBaseVocabDim = 'Dim ('Name "*") ('Size 50265)
+
+-- | RoBERTa-Base vocabulary dimension singleton.
+robertaBaseVocabDim :: SDim RoBERTaBaseVocabDim
+robertaBaseVocabDim = sing
 
 -- | RoBERTa-Base type vocabulary dimension.
 -- 'type_vocab_size = 1'

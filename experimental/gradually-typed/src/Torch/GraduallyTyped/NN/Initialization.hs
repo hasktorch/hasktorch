@@ -1,20 +1,8 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
-{-# OPTIONS_GHC -Wall #-}
-{-# OPTIONS_GHC -Wno-typed-holes #-}
-{-# OPTIONS_GHC -fdefer-typed-holes #-}
 
 module Torch.GraduallyTyped.NN.Initialization where
 
@@ -47,7 +35,7 @@ calculateGain ForIdentity = 1
 calculateGain ForSigmoid = 1
 calculateGain ForTanh = 5 / 3
 calculateGain ForRelu = sqrt 2
-calculateGain (ForLeakyRelu param) = sqrt (2 / (1 + param ^^ 2))
+calculateGain (ForLeakyRelu param) = sqrt (2 / (1 + param ^^ (2 :: Integer)))
 
 -- | Fan-in / Fan-out scaling calculation
 calculateFan ::

@@ -1,30 +1,19 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE UndecidableSuperClasses #-}
-{-# LANGUAGE NoStarIsType #-}
-{-# OPTIONS_GHC -Wall #-}
 
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE DerivingStrategies #-}
 module Torch.GraduallyTyped.Shape.Type where
 
 import Data.Bifunctor (Bifunctor (..))
@@ -348,17 +337,6 @@ instance SingKind (Shape [Dim (Name Symbol) (Size Nat)]) where
       . fmap (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size))
       $ shape
   toSing (Checked shape) = withSomeSing shape $ SomeSing . SShape
-
-pattern (:|:) ::
-  forall
-    (dim :: Dim (Name Symbol) (Size Nat))
-    (dims :: [Dim (Name Symbol) (Size Nat)]).
-  SDim dim ->
-  SList dims ->
-  SList (dim : dims)
-pattern (:|:) dim dims = SCons dim dims
-
-infixr 8 :|:
 
 class KnownShape (shape :: Shape [Dim (Name Symbol) (Size Nat)]) where
   shapeVal :: Shape [Dim (Name String) (Size Integer)]

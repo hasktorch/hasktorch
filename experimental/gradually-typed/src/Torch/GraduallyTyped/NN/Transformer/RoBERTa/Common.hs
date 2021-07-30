@@ -1,13 +1,6 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -26,9 +19,9 @@ import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
-import Torch.GraduallyTyped.NN.Class (HasStateDict (..), ModelSpec)
-import Torch.GraduallyTyped.NN.Transformer.GEncoderOnly (EOTEmbeddingF, EOTEncoderF, EOTHeadF, EOTTypeEmbeddingF, GEncoderOnlyTransformer, encoderOnlyTransformerSpec)
-import Torch.GraduallyTyped.NN.Transformer.Type (MkTransformerPaddingMaskC, STransformerHead, STransformerStyle (SRoBERTa), TransformerHead (..), TransformerStyle (RoBERTa), mkTransformerInput, mkTransformerPaddingMask)
+import Torch.GraduallyTyped.NN.Class (ModelSpec)
+import Torch.GraduallyTyped.NN.Transformer.GEncoderOnly (EOTEmbeddingF, EOTEncoderF, EOTHeadF, EOTTypeEmbeddingF, GEncoderOnlyTransformer, GSimplifiedEncoderOnlyTransformer (..), encoderOnlyTransformerSpec)
+import Torch.GraduallyTyped.NN.Transformer.Type (MkAbsPos (..), MkTransformerAttentionMask (..), MkTransformerPaddingMask (..), STransformerHead, STransformerStyle (SRoBERTa), TransformerHead (..), TransformerStyle (RoBERTa), mkTransformerInput)
 import Torch.GraduallyTyped.Prelude (Seq)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, Shape (..), Size (..))
@@ -92,19 +85,7 @@ robertaEOSTokenId = 2
 robertaAttentionMaskBias :: Double
 robertaAttentionMaskBias = -10000
 
--- | Generic RoBERTa model data type.
-data
-  GRoBERTaModel
-    (robertaModel :: Type)
-  where
-  GRoBERTaModel ::
-    forall robertaModel.
-    { robertaModel :: robertaModel
-    } ->
-    GRoBERTaModel robertaModel
-
-type instance ModelSpec (GRoBERTaModel robertaModel) = GRoBERTaModel (ModelSpec robertaModel)
-
+-- | Specifies the RoBERTa model.
 type family
   RoBERTaModelF
     (transformerHead :: TransformerHead)
@@ -117,11 +98,11 @@ type family
     (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
     (ffnDim :: Dim (Name Symbol) (Size Nat))
     (vocabDim :: Dim (Name Symbol) (Size Nat))
-    (typeVocabDim :: Dim (Name Symbol) (Size Nat))
-    :: Type
+    (typeVocabDim :: Dim (Name Symbol) (Size Nat)) ::
+    Type
   where
   RoBERTaModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim =
-    GRoBERTaModel
+    GSimplifiedEncoderOnlyTransformer
       ( GEncoderOnlyTransformer
           inputEmbedDim
           (EOTEncoderF 'RoBERTa numLayers gradient device RoBERTaDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim RoBERTaPosEncDim)
@@ -129,6 +110,9 @@ type family
           (EOTTypeEmbeddingF 'RoBERTa gradient device RoBERTaDataType inputEmbedDim typeVocabDim)
           (EOTHeadF 'RoBERTa transformerHead gradient device RoBERTaDataType inputEmbedDim vocabDim)
       )
+      MkAbsPos
+      MkTransformerPaddingMask
+      (MkTransformerAttentionMask RoBERTaDataType)
 
 -- | Specifies the parameters of a RoBERTa model.
 --
@@ -152,28 +136,28 @@ robertaModelSpec ::
   SDevice device ->
   ModelSpec (RoBERTaModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
 robertaModelSpec transformerHead numLayers gradient device =
-  GRoBERTaModel $
-    encoderOnlyTransformerSpec
-      SRoBERTa
-      transformerHead
-      numLayers
-      gradient
-      device
-      robertaDataType
-      (sing @headDim)
-      (sing @headEmbedDim)
-      (sing @embedDim)
-      (sing @inputEmbedDim)
-      (sing @ffnDim)
-      robertaPosEncDim
-      (sing @vocabDim)
-      (sing @typeVocabDim)
-      robertaDropoutP
-      robertaEps
-
-instance HasStateDict spec => HasStateDict (GRoBERTaModel spec) where
-  fromStateDict (GRoBERTaModel spec) k = GRoBERTaModel <$> fromStateDict spec k
-  toStateDict k GRoBERTaModel {..} = toStateDict k robertaModel
+  GSimplifiedEncoderOnlyTransformer
+    ( encoderOnlyTransformerSpec
+        SRoBERTa
+        transformerHead
+        numLayers
+        gradient
+        device
+        robertaDataType
+        (sing @headDim)
+        (sing @headEmbedDim)
+        (sing @embedDim)
+        (sing @inputEmbedDim)
+        (sing @ffnDim)
+        robertaPosEncDim
+        (sing @vocabDim)
+        (sing @typeVocabDim)
+        robertaDropoutP
+        robertaEps
+    )
+    (MkAbsPosWithOffset 2)
+    (MkTransformerPaddingMask robertaPadTokenId)
+    (MkTransformerAttentionMask robertaDataType robertaAttentionMaskBias)
 
 mkRoBERTaInput ::
   forall batchDim seqDim device m output.
@@ -203,22 +187,3 @@ mkRoBERTaInput ::
   [[Int]] ->
   m output
 mkRoBERTaInput = mkTransformerInput robertaPadTokenId
-
-mkRoBERTaPaddingMask ::
-  forall gradient layout device dataType shape output.
-  MkTransformerPaddingMaskC layout device dataType shape output =>
-  Tensor gradient layout device dataType shape ->
-  output
-mkRoBERTaPaddingMask = mkTransformerPaddingMask robertaPadTokenId
-
-data RoBERTaInput input where
-  RoBERTaInput ::
-    forall input.
-    { robertaInput :: input
-    } ->
-    RoBERTaInput input
-
-deriving stock instance
-  ( Show input
-  ) =>
-  Show (RoBERTaInput input)

@@ -16,14 +16,11 @@ module Torch.GraduallyTyped.Tensor.MathOperations.Reduction where
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.State (execState, modify)
 import Data.Bifunctor (Bifunctor (first), second)
-import Data.Coerce (coerce)
 import Data.Foldable (for_)
-import Data.Kind (Constraint, Type)
-import Data.Proxy (Proxy (Proxy))
 import qualified Data.Set as Set
 import Data.Singletons (SingI (..), SingKind (..))
 import Foreign.ForeignPtr (ForeignPtr)
-import GHC.TypeLits (ErrorMessage (Text), Nat, Symbol, TypeError)
+import GHC.TypeLits (Nat, Symbol, TypeError)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..))
 import Torch.GraduallyTyped.Prelude (Catch, forgetIsChecked)
 import Torch.GraduallyTyped.Shape.Class (ReplaceDimSizeImplF)
@@ -66,7 +63,7 @@ type family BoolReductionF (reduction :: Symbol) (selectDim :: SelectDim (By Sym
 -- >>> g = sMkGenerator (SDevice SCPU) 0
 -- >>> shape = SShape $ SName @"*" :&: SSize @2 :|: SName @"*" :&: SSize @4 :|: SNil
 -- >>> (t, _) <- sRandn (TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) shape) g
--- >>> t' <- all $ bool t
+-- >>> t' <- all =<< bool t
 -- >>> :type t'
 -- t'
 --   :: Tensor
@@ -88,7 +85,7 @@ all = unsafeThrowableIO . cast1 ATen.all_t
 -- >>> g = sMkGenerator (SDevice SCPU) 0
 -- >>> shape = SShape $ SName @"*" :&: SSize @2 :|: SName @"*" :&: SSize @4 :|: SNil
 -- >>> (t, _) <- sRandn (TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) shape) g
--- >>> t' <- sAllDim (SSelectDim (SByIndex @1)) $ bool t
+-- >>> t' <- sAllDim (SSelectDim (SByIndex @1)) =<< bool t
 -- >>> :type t'
 -- t'
 --   :: Tensor
@@ -126,7 +123,7 @@ sAllDim by tensor = unsafeThrowableIO $ case forgetIsChecked $ fromSing by of
 -- >>> g = sMkGenerator (SDevice SCPU) 0
 -- >>> type Shape' = 'Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 4) ]
 -- >>> (t, _) <- randn @('Gradient 'WithoutGradient) @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @Shape' g
--- >>> t' <- allDim @('SelectDim ('ByIndex 1)) $ bool t
+-- >>> t' <- allDim @('SelectDim ('ByIndex 1)) =<< bool t
 -- >>> :type t'
 -- t'
 --   :: Tensor
@@ -147,7 +144,7 @@ allDim = sAllDim (sing @selectDim)
 -- >>> g = sMkGenerator (SDevice SCPU) 0
 -- >>> shape = SShape $ SName @"*" :&: SSize @2 :|: SName @"*" :&: SSize @4 :|: SNil
 -- >>> (t, _) <- sRandn (TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) shape) g
--- >>> t' <- any $ bool t
+-- >>> t' <- any =<< bool t
 -- >>> :type t'
 -- t'
 --   :: Tensor
@@ -169,7 +166,7 @@ any = unsafeThrowableIO . cast1 ATen.any_t
 -- >>> g = sMkGenerator (SDevice SCPU) 0
 -- >>> shape = SShape $ SName @"*" :&: SSize @2 :|: SName @"*" :&: SSize @4 :|: SNil
 -- >>> (t, _) <- sRandn (TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) shape) g
--- >>> t' <- sAnyDim (SSelectDim (SByIndex @1)) $ bool t
+-- >>> t' <- sAnyDim (SSelectDim (SByIndex @1)) =<< bool t
 -- >>> :type t'
 -- t'
 --   :: Tensor
@@ -208,7 +205,7 @@ sAnyDim by tensor = unsafeThrowableIO $
 -- >>> g = sMkGenerator (SDevice SCPU) 0
 -- >>> type Shape' = 'Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 4) ]
 -- >>> (t, _) <- randn @('Gradient 'WithoutGradient) @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @Shape' g
--- >>> t' <- anyDim @('SelectDim ('ByIndex 1)) $ bool t
+-- >>> t' <- anyDim @('SelectDim ('ByIndex 1)) =<< bool t
 -- >>> :type t'
 -- t'
 --   :: Tensor
@@ -239,7 +236,7 @@ type family MeanF (selectDims :: SelectDims [By Symbol Nat]) (shape :: Shape [Di
 -- >>> g = sMkGenerator (SDevice SCPU) 0
 -- >>> shape = SShape $ SName @"batch" :&: SSize @8 :|: SName @"width" :&: SSize @224 :|: SName @"height" :&: SSize @224 :|: SNil
 -- >>> (t, _) <- sRandn (TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) shape) g
--- >>> t' <- sMeanDims (SSelectDims $ SCons (SByName @"width") $ SCons (SByName @"height") SNil) t
+-- >>> t' <- sMeanDims (SSelectDims $ SByName @"width" :|: SByName @"height" :|: SNil) t
 -- >>> :type t'
 -- t'
 --   :: Tensor

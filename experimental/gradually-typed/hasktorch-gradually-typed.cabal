@@ -25,6 +25,7 @@ library
                      , Torch.GraduallyTyped.Tensor
                      , Torch.GraduallyTyped.Tensor.Type
                      , Torch.GraduallyTyped.Tensor.Creation
+                     , Torch.GraduallyTyped.Tensor.Indexing
                      , Torch.GraduallyTyped.Tensor.IndexingSlicingJoining
                      , Torch.GraduallyTyped.Tensor.Other
                      , Torch.GraduallyTyped.Tensor.MathOperations
@@ -125,7 +126,6 @@ library
                      , logict
                      , parsers
                      , singletons < 3
-                     , HUnit-approx
                      , tokenizers
                      , vector
                      , vector-sized
@@ -137,9 +137,24 @@ test-suite spec
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
-  other-modules:       TensorSpec
-                     , TransformerSpec
-                     , BARTSpec
+  other-modules:       Torch.GraduallyTyped.TensorSpec
+                     , Torch.GraduallyTyped.IndexingSpec
+                     , Torch.GraduallyTyped.NN.Transformer.GMultiHeadAttentionSpec
+                     , Torch.GraduallyTyped.NN.Transformer.GFeedForwardNetworkSpec
+                     , Torch.GraduallyTyped.NN.Transformer.GSelfAttentionSpec
+                     , Torch.GraduallyTyped.NN.Transformer.GCrossAttentionSpec
+                     , Torch.GraduallyTyped.NN.Transformer.GBlockSpec
+                     , Torch.GraduallyTyped.NN.Transformer.GStackSpec
+                     , Torch.GraduallyTyped.NN.Transformer.GTransformerSpec
+                     , Torch.GraduallyTyped.NN.Transformer.GLMHeadSpec
+                     , Torch.GraduallyTyped.NN.Transformer.GEncoderOnlySpec
+                     , Torch.GraduallyTyped.NN.Transformer.GEncoderDecoderSpec
+                     , Torch.GraduallyTyped.NN.Transformer.T5Spec
+                     , Torch.GraduallyTyped.NN.Transformer.BARTSpec
+                     , Torch.GraduallyTyped.NN.Transformer.PegasusSpec
+                     , Torch.GraduallyTyped.NN.Transformer.BERTSpec
+                     , Torch.GraduallyTyped.NN.Transformer.RoBERTaSpec
+                     , Torch.GraduallyTyped.NN.TransformerSpec
   default-language:    Haskell2010
   ghc-options:         -Wall -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
   build-depends:       base >= 4.7 && < 5
@@ -148,12 +163,16 @@ test-suite spec
                      , ghc-typelits-knownnat
                      , ghc-typelits-natnormalise
                      , QuickCheck
+                     , containers
                      , exceptions
                      , hedgehog
                      , hedgehog-quickcheck
                      , hspec
                      , hspec-hedgehog
+                     , HUnit-approx
+                     , mtl
                      , singletons < 3
+                     , tokenizers
                      , vector
                      , vector-sized
 

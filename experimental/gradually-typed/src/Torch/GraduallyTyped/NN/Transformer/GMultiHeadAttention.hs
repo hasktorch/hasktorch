@@ -1,32 +1,21 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE NoStarIsType #-}
 {-# OPTIONS_GHC -fplugin TypeLevel.Rewrite
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyRightAssociativeL #-}
-{-# OPTIONS_GHC -v2 #-}
 
 module Torch.GraduallyTyped.NN.Transformer.GMultiHeadAttention where
 
@@ -34,33 +23,29 @@ import Control.Monad.Catch (MonadThrow)
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxStateT (..))
 import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
-import Control.Monad.State (evalStateT)
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
-import qualified Data.Map.Strict as Map
 import Data.Singletons (SingKind (..))
 import Data.Singletons.Prelude.List (SList (..))
 import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
-import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
-import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
+import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDataType (..))
+import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..))
+import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec, NamedModel (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout (..))
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, softmax)
 import Torch.GraduallyTyped.NN.Linear (GLinear (..), LinearBiasF, LinearWeightF, linearSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..), SHasBias (SWithBias, SWithoutBias))
-import Torch.GraduallyTyped.Prelude (forgetIsChecked)
-import Torch.GraduallyTyped.Random (sMkGenerator)
-import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..), SRequiresGradient (..))
+import Torch.GraduallyTyped.Prelude (forgetIsChecked, pattern (:|:))
+import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, sGetDimFromShape, sUnifyDim, type (!))
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SBy (..), SDim (..), SName (..), SSelectDim (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
-import Torch.GraduallyTyped.Tensor.Creation (sOnes)
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SBy (..), SDim (..), SSelectDim (..), SShape (..), SelectDim (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (ReshapeF, TransposeF, sReshape, sTranspose)
 import Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack (MatmulF, matmul)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add, mulScalar)
-import Torch.GraduallyTyped.Tensor.Type (SGetShape (..), Tensor (..), TensorSpec (..))
+import Torch.GraduallyTyped.Tensor.Type (SGetShape (..), Tensor (..))
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 
 -- | Data type for representing whether or not (and, if so, where) scaling is applied in the multi-headed attention layer.
@@ -631,12 +616,12 @@ instance
                       MultiHeadAttentionWithWeightScaling -> id
                   )
                   mhaScaling
-              >>>= ireturn . sReshape (SShape $ batchDim :|: querySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
+              >>>= ilift . sReshape (SShape $ batchDim :|: querySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
               >>>= ilift . sTranspose (SSelectDim (SByIndex @1)) (SSelectDim (SByIndex @2))
           k =
             ireturn key
               >>>= IxStateT . forward mhaKInProj
-              >>>= ireturn . sReshape (SShape $ batchDim :|: keySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
+              >>>= ilift . sReshape (SShape $ batchDim :|: keySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
               >>>= ilift . sTranspose (SSelectDim (SByIndex @1)) (SSelectDim (SByIndex @2))
           kt = k >>>= ilift . sTranspose (SSelectDim (SByIndex @2)) (SSelectDim (SByIndex @3))
           weights =
@@ -653,37 +638,9 @@ instance
           v =
             ireturn value
               >>>= IxStateT . forward mhaVInProj
-              >>>= ireturn . sReshape (SShape $ batchDim :|: keySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
+              >>>= ilift . sReshape (SShape $ batchDim :|: keySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
               >>>= ilift . sTranspose (SSelectDim (SByIndex @1)) (SSelectDim (SByIndex @2))
        in matmul <<$>> weights <<*>> v
             >>>= ilift . sTranspose (SSelectDim (SByIndex @1)) (SSelectDim (SByIndex @2))
-            >>>= ireturn . sReshape (SShape $ batchDim :|: querySeqDim :|: mhaEmbedDim :|: SNil)
+            >>>= ilift . sReshape (SShape $ batchDim :|: querySeqDim :|: mhaEmbedDim :|: SNil)
             >>>= IxStateT . forward mhaOutProj
-
-testMHA :: IO _
-testMHA = do
-  let gradient = SGradient SWithGradient
-      device = SDevice SCPU
-      dataType = SDataType SFloat
-      headDim = SName @"*" :&: SSize @2
-      headEmbedDim = SName @"*" :&: SSize @2
-      embedDim = SName @"*" :&: SSize @4
-      queryEmbedDim = SName @"*" :&: SSize @3
-      keyEmbedDim = SName @"*" :&: SSize @5
-      valueEmbedDim = SName @"*" :&: SSize @7
-      dropoutP = 0
-  let g = sMkGenerator device 0
-      spec = NamedModel "mha." $ multiHeadAttentionSpec SByT5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP
-  (mha, g') <- initialize spec g
-  mha' <- flip evalStateT Map.empty $ do
-    toStateDict mempty mha
-    fromStateDict spec mempty
-  let batchDim = SName @"*" :&: SSize @2
-      seqDim = SName @"*" :&: SSize @1
-      sOnes' = (sOnes .) . TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device
-      query = sOnes' dataType (SShape $ batchDim :|: seqDim :|: queryEmbedDim :|: SNil)
-      key = sOnes' dataType (SShape $ batchDim :|: seqDim :|: keyEmbedDim :|: SNil)
-      value = sOnes' dataType (SShape $ batchDim :|: seqDim :|: valueEmbedDim :|: SNil)
-      attentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
-  (output, _) <- forward mha' (query, key, value, attentionBias) g'
-  pure output
