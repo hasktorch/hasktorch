@@ -102,7 +102,7 @@ type LinearWeightDimsErrorMessage (weightDims :: [Dim (Name Symbol) (Size Nat)])
 -- >>> g = sMkGenerator (SDevice SCPU) 0
 -- >>> sRandn' = sRandn . TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat)
 -- >>> (weight, g') <- sRandn' weightShape g
--- [W TensorImpl.h:934] Warning: Named tensors and all their associated APIs are an experimental feature and subject to change. Please do not use them for anything important until they are released as stable. (function operator())
+-- [W TensorImpl.h:1156] Warning: Named tensors and all their associated APIs are an experimental feature and subject to change. Please do not use them for anything important until they are released as stable. (function operator())
 -- >>> (bias, g'') <- sRandn' biasShape g'
 -- >>> (input, _) <- sRandn' inputShape g''
 -- >>> result = linearWithBias weight bias input

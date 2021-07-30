@@ -25,7 +25,7 @@ import Unsafe.Coerce (unsafeCoerce)
 
 -- $setup
 -- >>> import Data.Singletons.Prelude.List (SList (..))
--- >>> import Torch.GraduallyTyped.Shape.Type (pattern (:&:), pattern (:|:))
+-- >>> import Torch.GraduallyTyped
 
 type family AddSizeF (size :: Size Nat) (size' :: Size Nat) :: Size Nat where
   AddSizeF ('Size size) ('Size size') = 'Size (size + size')
@@ -154,7 +154,7 @@ type family (!) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (_k :: k) :: Dim
 -- Dim {dimName = Checked "batch", dimSize = Checked 8}
 --
 -- >>> :type sGetDimFromShape (SSelectDim $ SByIndex @2) shape
--- sGetDim (SSelectDim $ SByIndex @2) shape
+-- sGetDimFromShape (SSelectDim $ SByIndex @2) shape
 --   :: MonadThrow m => m (SDim (TypeError ...))
 sGetDimFromShape ::
   forall selectDim shape dim m.
@@ -293,6 +293,9 @@ type family InsertDimF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape 
   InsertDimF 'UncheckedSelectDim _ _ = 'UncheckedShape
   InsertDimF _ 'UncheckedShape _ = 'UncheckedShape
   InsertDimF ('SelectDim by) ('Shape dims) dim = 'Shape (InsertDimCheckF by dims dim (InsertDimImplF by dims dim))
+
+type family PrependDimF (dim :: Dim (Name Symbol) (Size Nat)) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
+  PrependDimF dim shape = InsertDimF ('SelectDim ('ByIndex 0)) shape dim
 
 type family RemoveDimByIndexF (index :: Maybe Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) :: Maybe [Dim (Name Symbol) (Size Nat)] where
   RemoveDimByIndexF ('Just 0) (dim ': dims) = 'Just dims

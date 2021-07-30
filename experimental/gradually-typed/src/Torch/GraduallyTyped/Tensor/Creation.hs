@@ -216,7 +216,7 @@ sArangeNaturals gradient layout device dataType size =
 
 -- | Create a typed one-dimensional tensor of the numbers @0@ to @size -1@.
 arangeNaturals ::
-  forall gradient layout device dataType size shape.
+  forall size gradient layout device dataType shape.
   ( shape ~ 'Shape '[ 'Dim ('Name "*") size],
     SingI gradient,
     SingI layout,
@@ -247,7 +247,7 @@ sEye gradient layout device dataType rows cols =
 
 -- | Create a typed rectangular tensor with ones on the diagonal and zeros elsewhere.
 eye ::
-  forall gradient layout device dataType rows cols shape.
+  forall rows cols gradient layout device dataType shape.
   ( shape ~ 'Shape '[ 'Dim ('Name "*") rows, 'Dim ('Name "*") cols],
     SingI gradient,
     SingI layout,
@@ -277,7 +277,7 @@ sEyeSquare gradient layout device dataType size =
 
 -- | Create a typed square tensor with ones on the diagonal and zeros elsewhere.
 eyeSquare ::
-  forall gradient layout device dataType size shape.
+  forall size gradient layout device dataType shape.
   ( shape ~ 'Shape '[ 'Dim ('Name "*") size, 'Dim ('Name "*") size],
     SingI gradient,
     SingI layout,

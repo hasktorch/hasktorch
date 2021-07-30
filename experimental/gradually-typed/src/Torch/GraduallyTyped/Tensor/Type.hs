@@ -55,10 +55,10 @@ import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Internal.TensorOptions (tensorOptions)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.Prelude (Catch, Seq, forgetIsChecked, ifM)
+import Torch.GraduallyTyped.Prelude (Seq, forgetIsChecked, ifM, pattern (:|:))
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (InsertDimF, ReplaceDimF)
-import Torch.GraduallyTyped.Shape.Type (By (ByIndex), Dim (..), Name (..), SDim (..), SName (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..), pattern (:|:))
+import Torch.GraduallyTyped.Shape.Type (By (ByIndex), Dim (..), Name (..), SDim (..), SName (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Unify (type (<+>))
 import Torch.HList (HList (..), pattern (:.))
 import Torch.Internal.Cast (cast0, cast1, cast2, cast4)
@@ -72,7 +72,7 @@ import qualified Torch.Internal.Managed.Type.TensorOptions as ATen
 import qualified Torch.Internal.Type as ATen (Tensor, TensorList, TensorOptions)
 import qualified Torch.Internal.Unmanaged.Type.Tensor as Unmanaged (tensor_data_ptr)
 import qualified Torch.Tensor (Tensor (Unsafe))
-import Prelude hiding (unzip)
+import Prelude hiding (unzip, unzip3)
 
 -- $setup
 -- >>> import Data.Singletons.Prelude.List (SList (..))
@@ -201,7 +201,7 @@ instance
   ) =>
   Castable (HList (Tensor gradient layout device dataType shape ': tensors)) [ForeignPtr ATen.Tensor]
   where
-  cast (tensor :. tensors) f = do
+  cast (HCons (tensor, tensors)) f = do
     ptr <- cast tensor pure
     ptrList <- cast tensors pure
     f (ptr : ptrList)
@@ -873,10 +873,10 @@ class SGetDataType (dataType :: DataType DType) where
   --
   -- >>> sOnes' dataType = sOnes $ TensorSpec (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) dataType (SShape $ SName @"batch" :&: SSize @32 :|: SName @"feature" :&: SSize @8 :|: SNil)
   -- >>> t = sOnes' $ SDataType SFloat
-  -- >>> dType t
+  -- >>> getDType t
   -- Float
   -- >>> t = sOnes' $ SUncheckedDataType Float
-  -- >>> dType t
+  -- >>> getDType t
   -- Float
   getDType ::
     forall gradient layout device shape.
@@ -1509,6 +1509,56 @@ instance (TensorLikeRaw a, TensorLikeRaw b) => TensorLikeRaw (a, b) where
   tensorPokeElemOff ptr offset (2 : innerDims) (x, y) = do
     tensorPokeElemOff ptr offset innerDims x
     tensorPokeElemOff ptr (offset + width) innerDims y
+    where
+      width = product innerDims
+  tensorPokeElemOff _ _ dims' x = unexpectedDimsError dims' $ pure x
+
+instance
+  ( TensorLike a dType dims,
+    TensorLike b dType dims',
+    TensorLike c dType dims',
+    TensorLikeRaw a,
+    TensorLikeRaw b,
+    TensorLikeRaw c,
+    SingI dType,
+    SGetDims dimsOut,
+    'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape (dims <+> dims')) ('Dim ('Name "*") ('Size 3))
+  ) =>
+  TensorLike (a, b, c) dType dimsOut
+  where
+  sToTensor = sToTensorRaw
+  fromTensor = fromTensorRaw
+
+unzip3 :: Functor f => f (a, b, c) -> (f a, f b, f c)
+unzip3 xyz =
+  ( (\(x, _, _) -> x) <$> xyz,
+    (\(_, y, _) -> y) <$> xyz,
+    (\(_, _, z) -> z) <$> xyz
+  )
+
+instance (TensorLikeRaw a, TensorLikeRaw b, TensorLikeRaw c) => TensorLikeRaw (a, b, c) where
+  guessDim = const $ pure 2
+
+  guessInnerDims (unzip3 -> (x, y, z)) = do
+    xDims <- guessDims x
+    yDims <- guessDims y
+    zDims <- guessDims z
+    traverse_ (checkDims xDims) [yDims, zDims]
+    pure xDims
+
+  tensorPeekElemOff ptr offset (3 : innerDims) =
+    (,,)
+      <$> tensorPeekElemOff ptr offset innerDims
+      <*> tensorPeekElemOff ptr (offset + width) innerDims
+      <*> tensorPeekElemOff ptr (offset + 2 * width) innerDims
+    where
+      width = product innerDims
+  tensorPeekElemOff _ _ dims' = unexpectedDimsError @(a, b) dims' empty
+
+  tensorPokeElemOff ptr offset (3 : innerDims) (x, y, z) = do
+    tensorPokeElemOff ptr offset innerDims x
+    tensorPokeElemOff ptr (offset + width) innerDims y
+    tensorPokeElemOff ptr (offset + 2 * width) innerDims z
     where
       width = product innerDims
   tensorPokeElemOff _ _ dims' x = unexpectedDimsError dims' $ pure x
