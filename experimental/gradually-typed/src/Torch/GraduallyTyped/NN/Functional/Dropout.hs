@@ -1,32 +1,21 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeOperators #-}
-{-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.NN.Functional.Dropout where
 
 import Control.Monad.Catch (MonadThrow)
-import Foreign.ForeignPtr (ForeignPtr)
-import Torch.GraduallyTyped.Random (Generator (..), withGenerator)
+-- import Foreign.ForeignPtr (ForeignPtr)
+import Torch.GraduallyTyped.Random (Generator)
+-- import Torch.GraduallyTyped.Random (Generator (..), withGenerator)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
 import Torch.GraduallyTyped.Unify (type (<+>))
-import Torch.Internal.Cast (cast3)
-import Torch.Internal.GC (unsafeThrowableIO)
-import qualified Torch.Internal.Managed.Native as ATen (_fused_dropout_tdG)
+-- import Torch.Internal.Cast (cast3)
+-- import Torch.Internal.GC (unsafeThrowableIO)
+-- import qualified Torch.Internal.Managed.Native as ATen (_fused_dropout_tdG)
 import qualified Torch.Internal.Managed.Type.Tuple as ATen ()
-import qualified Torch.Internal.Type as ATen (Tensor)
+-- import qualified Torch.Internal.Type as ATen (Tensor)
 import Unsafe.Coerce (unsafeCoerce)
 
 -- $setup
@@ -46,7 +35,7 @@ dropout ::
   Generator generatorDevice ->
   -- | output
   m (Tensor gradient layout (device <+> generatorDevice) dataType shape, Generator (device <+> generatorDevice))
-dropout p tensor g =
+dropout _p tensor g =
   pure
     ( unsafeCoerce
         @(Tensor gradient layout device dataType shape)
@@ -57,14 +46,14 @@ dropout p tensor g =
         @(Generator (device <+> generatorDevice))
         g
     )
-dropout p tensor UnsafeGenerator {..} = unsafeThrowableIO $ do
-  (t, nextGeneratorSeed, nextGeneratorState) <-
-    withGenerator
-      ( \gptr -> do
-          (t :: ForeignPtr ATen.Tensor, _ :: ForeignPtr ATen.Tensor) <- cast3 ATen._fused_dropout_tdG tensor (1 - p) gptr
-          pure t
-      )
-      generatorSeed
-      generatorDeviceType
-      generatorState
-  pure (UnsafeTensor t, UnsafeGenerator nextGeneratorSeed generatorDeviceType nextGeneratorState)
+-- dropout p tensor UnsafeGenerator {..} = unsafeThrowableIO $ do
+--   (t, nextGeneratorSeed, nextGeneratorState) <-
+--     withGenerator
+--       ( \gptr -> do
+--           (t :: ForeignPtr ATen.Tensor, _ :: ForeignPtr ATen.Tensor) <- cast3 ATen._fused_dropout_tdG tensor (1 - p) gptr
+--           pure t
+--       )
+--       generatorSeed
+--       generatorDeviceType
+--       generatorState
+--   pure (UnsafeTensor t, UnsafeGenerator nextGeneratorSeed generatorDeviceType nextGeneratorState)

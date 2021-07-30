@@ -3,7 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
-module TensorSpec (spec) where
+module Torch.GraduallyTyped.TensorSpec (spec) where
 
 import Control.Monad.Catch (MonadThrow)
 import qualified Data.Vector as V

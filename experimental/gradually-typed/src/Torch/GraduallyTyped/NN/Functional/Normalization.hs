@@ -1,34 +1,20 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneKindSignatures #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.NN.Functional.Normalization where
 
-import Data.Singletons.Prelude.List (SList (SNil))
 import GHC.TypeLits (Nat, Symbol, TypeError, type (+), type (-))
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
-import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.Prelude (Length, Reverse)
-import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SName (..), SShape (..), SSize (..), SelectDims (..), Shape (..), Size (..), dimSize, pattern (:&:), pattern (:|:))
-import Torch.GraduallyTyped.Tensor.Creation (sOnes)
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SelectDims (..), Shape (..), Size (..), dimSize)
+import Torch.GraduallyTyped.Tensor.Creation ()
 import Torch.GraduallyTyped.Tensor.Type (SGetShape (getDims), Tensor (..))
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import Torch.Internal.Cast (cast5, cast6)
 import qualified Torch.Internal.Managed.Native as ATen
-import qualified Torch.Tensor
 import Type.Errors.Pretty (type (%), type (<>))
 
 type family LayerNormImplF (reverseNormalizedDims :: [Dim (Name Symbol) (Size Nat)]) (reverseInputDims :: [Dim (Name Symbol) (Size Nat)]) :: [Dim (Name Symbol) (Size Nat)] where
@@ -118,8 +104,8 @@ layerNormWithoutBias weight eps input = unsafePerformIO $ do
   let indexes :: [Int] = fromIntegral . (length inputDims -) <$> [1, 2 .. length weightDims]
   cast6 (go (null indexes)) input weight indexes eps (2 :: Double) True
   where
-    go nullIndexes input weight indexes eps exponent keepDim = do
-      squaredInput <- ATen.pow_ts input exponent
+    go nullIndexes input' weight' indexes eps' exponent' keepDim = do
+      squaredInput <- ATen.pow_ts input' exponent'
       variance <-
         if nullIndexes
           then pure squaredInput
@@ -128,7 +114,7 @@ layerNormWithoutBias weight eps input = unsafePerformIO $ do
               squaredInput
               indexes
               keepDim
-      ATen.add_ts variance eps
+      ATen.add_ts variance eps'
         >>= ATen.rsqrt_t
-        >>= ATen.mul_tt input
-        >>= ATen.mul_tt weight
+        >>= ATen.mul_tt input'
+        >>= ATen.mul_tt weight'
