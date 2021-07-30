@@ -27,53 +27,42 @@ testForwardRoBERTaBase =
     let device = SDevice SCPU
 
     let spec = robertaBaseSpec SWithLMHead (SGradient SWithoutGradient) device
-    GRoBERTaModel {..} <- flip evalStateT stateDict $ fromStateDict spec mempty
+    model <- flip evalStateT stateDict $ fromStateDict spec mempty
 
     let g = sMkGenerator device 0
 
     ids <- withTokenizer $ \tokenizer -> do
       encoding <- Tokenizers.encode tokenizer "<s>The capital of France is [MASK].</s>"
       Tokenizers.getIDs encoding
-    let seqSize = SUncheckedSize . fromIntegral $ length ids
+    let batchDim = SName @"*" :&: SSize @1
+        seqSize = SUncheckedSize . fromIntegral $ length ids
+        seqDim = SName @"*" :&: seqSize
 
     input <-
-      mkRoBERTaInput
-        (SName @"*" :&: SSize @1)
-        (SName @"*" :&: seqSize)
-        device
-        [ids]
-    let inputType =
-          sZeros $
-            TensorSpec
-              (SGradient SWithoutGradient)
-              (SLayout SDense)
-              device
-              (SDataType SInt64)
-              (SShape $ SName @"*" :&: SSize @1 :|: SName @"*" :&: seqSize :|: SNil)
-        pos =
-          flip addScalar (2 :: Int) $
-            sArangeNaturals
-              (SGradient SWithoutGradient)
-              (SLayout SDense)
-              device
-              (SDataType SInt64)
-              seqSize
-        paddingMask = mkRoBERTaPaddingMask input
-    attentionMask <- mkTransformerAttentionMask robertaDataType robertaAttentionMaskBias paddingMask
+      let inputType =
+            sZeros $
+              TensorSpec
+                (SGradient SWithoutGradient)
+                (SLayout SDense)
+                device
+                (SDataType SInt64)
+                (SShape $ batchDim :|: seqDim :|: SNil)
+       in SimplifiedEncoderOnlyTransformerInput
+            <$> mkRoBERTaInput batchDim seqDim device [ids]
+            <*> pure inputType
 
-    let eotInput = EncoderOnlyTransformerInput input inputType pos attentionMask
-    (EncoderOnlyTransformerOutput {..}, _) <- forward robertaModel eotInput g
+    (SimplifiedEncoderOnlyTransformerOutput {..}, _) <- forward model input g
 
     encoderOutput :: [[[Float]]] <-
       fromTensor
         <$> sCheckedShape
           ( SShape $
-              SName @"*" :&: SUncheckedSize 1
-                :|: SName @"*" :&: seqSize
+              SName @"*" :&: SUncheckedSize (forgetIsChecked . dimSize . fromSing $ batchDim)
+                :|: seqDim
                 :|: SName @"*" :&: SUncheckedSize (forgetIsChecked . dimSize . fromSing $ robertaBaseVocabDim)
                 :|: SNil
           )
-          eoEncoderOutput
+          seotOutput
     let firstLMHeadLogits = do
           firstBatch <- take 1 encoderOutput
           firstPositions <- take 3 firstBatch

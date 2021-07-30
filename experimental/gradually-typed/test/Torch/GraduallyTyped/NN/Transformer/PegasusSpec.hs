@@ -37,21 +37,16 @@ testForwardPegasusXSum =
       encoderEncoding <- Tokenizers.encode tokenizer "The tower is 324 metres (1,063 ft) tall, about the same height as an 81-storey building, and the tallest structure in Paris. Its base is square, measuring 125 metres (410 ft) on each side. During its construction, the Eiffel Tower surpassed the Washington Monument to become the tallest man-made structure in the world, a title it held for 41 years until the Chrysler Building in New York City was finished in 1930. It was the first structure to reach a height of 300 metres. Due to the addition of a broadcasting aerial at the top of the tower in 1957, it is now taller than the Chrysler Building by 5.2 metres (17 ft). Excluding transmitters, the Eiffel Tower is the second tallest free-standing structure in France after the Millau Viaduct.</s>"
       decoderEncoding <- Tokenizers.encode tokenizer "The Eiffel Tower, built in 1889, is one of the most famous landmarks in Paris.</s>"
       (,) <$> Tokenizers.getIDs encoderEncoding <*> Tokenizers.getIDs decoderEncoding
-    let encoderSeqSize = SUncheckedSize . fromIntegral $ length encoderIds
+    let batchDim = SName @"*" :&: SSize @1
+        encoderSeqSize = SUncheckedSize . fromIntegral $ length encoderIds
+        encoderSeqDim = SName @"*" :&: encoderSeqSize
         decoderSeqSize = SUncheckedSize . fromIntegral $ length decoderIds
+        decoderSeqDim = SName @"*" :&: decoderSeqSize
 
     input <-
       SimplifiedEncoderDecoderTransformerInput
-        <$> mkPegasusInput
-          (SName @"*" :&: SSize @1)
-          (SName @"*" :&: encoderSeqSize)
-          device
-          [encoderIds]
-        <*> mkPegasusInput
-          (SName @"*" :&: SSize @1)
-          (SName @"*" :&: decoderSeqSize)
-          device
-          [decoderIds]
+        <$> mkPegasusInput batchDim encoderSeqDim device [encoderIds]
+        <*> mkPegasusInput batchDim decoderSeqDim device [decoderIds]
 
     (SimplifiedEncoderDecoderTransformerOutput {..}, _) <- forward model input g
 
@@ -59,8 +54,8 @@ testForwardPegasusXSum =
       fromTensor
         <$> sCheckedShape
           ( SShape $
-              SName @"*" :&: SUncheckedSize 1
-                :|: SName @"*" :&: encoderSeqSize
+              SName @"*" :&: SUncheckedSize (forgetIsChecked . dimSize . fromSing $ batchDim)
+                :|: encoderSeqDim
                 :|: SName @"*" :&: SUncheckedSize (forgetIsChecked . dimSize . fromSing $ pegasusXSumInputEmbedDim)
                 :|: SNil
           )
@@ -76,7 +71,7 @@ testForwardPegasusXSum =
       fromTensor
         <$> sCheckedShape
           ( SShape $
-              SName @"*" :&: SUncheckedSize 1
+              SName @"*" :&: SUncheckedSize (forgetIsChecked . dimSize . fromSing $ batchDim)
                 :|: SName @"*" :&: (\case SUncheckedSize size -> SUncheckedSize $ size + 1) decoderSeqSize
                 :|: SName @"*" :&: SUncheckedSize (forgetIsChecked . dimSize . fromSing $ pegasusXSumVocabDim)
                 :|: SNil

@@ -24,55 +24,45 @@ testForwardBERTBaseUncased =
   do
     stateDict <- stateDictFromFile "/tmp/bert-base-uncased-state-dict.pt"
 
-    let device = SDevice (SCUDA @0)
+    let device = SDevice SCPU
 
-    let spec = bertBaseUnchasedSpec SWithLMHead (SGradient SWithGradient) device
-    GBERTModel {..} <- flip evalStateT stateDict $ fromStateDict spec mempty
+    let spec = bertBaseUnchasedSpec SWithLMHead (SGradient SWithoutGradient) device
+    model <- flip evalStateT stateDict $ fromStateDict spec mempty
 
     let g = sMkGenerator device 0
 
     ids <- withTokenizer $ \tokenizer -> do
       encoding <- Tokenizers.encode tokenizer "[CLS] the capital of france is [MASK]. [SEP]"
       Tokenizers.getIDs encoding
-    let seqSize = SUncheckedSize . fromIntegral $ length ids
+    let batchDim = SName @"*" :&: SSize @1
+        seqSize = SUncheckedSize . fromIntegral $ length ids
+        seqDim = SName @"*" :&: seqSize
 
     input <-
-      mkBERTInput
-        (SName @"*" :&: SSize @1)
-        (SName @"*" :&: seqSize)
-        device
-        [ids]
-    let inputType =
-          sZeros $
-            TensorSpec
-              (SGradient SWithoutGradient)
-              (SLayout SDense)
-              device
-              (SDataType SInt64)
-              (SShape $ SName @"*" :&: SSize @1 :|: SName @"*" :&: seqSize :|: SNil)
-        pos =
-          sArangeNaturals
-            (SGradient SWithoutGradient)
-            (SLayout SDense)
-            device
-            (SDataType SInt64)
-            seqSize
-        paddingMask = mkBERTPaddingMask input
-    attentionMask <- mkTransformerAttentionMask bertDataType bertAttentionMaskBias paddingMask
+      let inputType =
+            sZeros $
+              TensorSpec
+                (SGradient SWithoutGradient)
+                (SLayout SDense)
+                device
+                (SDataType SInt64)
+                (SShape $ batchDim :|: seqDim :|: SNil)
+       in SimplifiedEncoderOnlyTransformerInput
+            <$> mkBERTInput batchDim seqDim device [ids]
+            <*> pure inputType
 
-    let eotInput = EncoderOnlyTransformerInput input inputType pos attentionMask
-    (EncoderOnlyTransformerOutput {..}, _) <- forward bertModel eotInput g
+    (SimplifiedEncoderOnlyTransformerOutput {..}, _) <- forward model input g
 
     encoderOutput :: [[[Float]]] <-
       fromTensor
         <$> sCheckedShape
           ( SShape $
-              SName @"*" :&: SUncheckedSize 1
+              SName @"*" :&: SUncheckedSize (forgetIsChecked . dimSize . fromSing $ batchDim)
                 :|: SName @"*" :&: seqSize
                 :|: SName @"*" :&: SUncheckedSize (forgetIsChecked . dimSize . fromSing $ bertBaseUncasedVocabDim)
                 :|: SNil
           )
-          eoEncoderOutput
+          seotOutput
     let firstLMHeadLogits = do
           firstBatch <- take 1 encoderOutput
           firstPositions <- take 3 firstBatch

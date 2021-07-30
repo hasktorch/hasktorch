@@ -17,7 +17,6 @@
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyRightAssociativeL
                 -fplugin-opt=TypeLevel.Rewrite:Torch.GraduallyTyped.Unify.UnifyIdempotenceL2 #-}
 
-
 module Torch.GraduallyTyped.NN.Transformer.Type where
 
 import Control.Monad.Catch (MonadThrow)
@@ -43,11 +42,30 @@ import Torch.GraduallyTyped.Tensor.Type (SGetDataType (sGetDataType), SGetDevice
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import Torch.HList
 
-data TransformerStyle = T5 | ByT5 | BART | MBART | Pegasus | BERT | RoBERTa | GPT2
+-- | A data type representing the style of a transformer.
+-- Every supported transformer has a constructor of this type.
+data TransformerStyle
+  -- | @T5@ transformer style, see https://ai.googleblog.com/2020/02/exploring-transfer-learning-with-t5.html
+  = T5
+  -- | @ByT5@ transformer style, see https://arxiv.org/abs/2105.13626
+  | ByT5
+  -- | @BART@ transformer style, see https://arxiv.org/abs/1910.13461
+  | BART
+  -- | @MBART@ transformer style, see https://arxiv.org/abs/2001.08210
+  | MBART
+  -- | @Pegasus@ transformer style, see https://ai.googleblog.com/2020/06/pegasus-state-of-art-model-for.html
+  | Pegasus
+  -- | @BERT@ transformer style, see https://arxiv.org/abs/1810.04805
+  | BERT
+  -- | @RoBERTa@ transformer style, see https://arxiv.org/abs/1907.11692
+  | RoBERTa
+  -- | @GPT2@ transformer style, see https://openai.com/blog/better-language-models/
+  | GPT2
   deriving (Show, Eq)
 
 genSingletons [''TransformerStyle]
 
+-- | A data type representing the type of head used in a transformer.
 data TransformerHead = WithoutHead | WithLMHead
 
 genSingletons [''TransformerHead]
@@ -58,6 +76,12 @@ padded n p xs =
       diff = n' - length xs
    in take n' xs ++ replicate diff p
 
+-- | Converts a doubly-nested list of input ids to a batched input tensor.
+-- The outer list is over batches, the inner list over sequences.
+-- The batch size is inferred from the length of the outer list.
+-- The sequence length is inferred from the length of the inner list.
+-- The input ids are padded to the maximum sequence length.
+-- The output tensor is truncated to the maximum sequence length.
 mkTransformerInput ::
   forall batchDim seqDim device m output.
   ( MonadThrow m,
@@ -448,6 +472,9 @@ type MkTransformerAttentionMaskC transformerDataType gradient layout device data
           )
   )
 
+-- | Creates a bidirectional attention mask for a transformer.
+-- Given a padding mask of shape @[batchDim, seqDim]@,
+-- returns a tensor of shape @[batchDim, seqDim, seqDim]@.
 mkTransformerAttentionMask ::
   forall m transformerDataType gradient layout device dataType shape seqDim output.
   ( MonadThrow m,
@@ -528,6 +555,9 @@ type MkTransformerDecoderAttentionMaskC transformerDataType layout device shape 
           )
   )
 
+-- | Creates a causal attention mask for a transformer decoder.
+-- Given a padding mask of shape @[batchDim, seqDim]@,
+-- returns a tensor of shape @[batchDim, seqDim, seqDim]@.
 mkTransformerDecoderAttentionMask ::
   forall m transformerDataType gradient layout device dataType shape seqDim output.
   ( MonadThrow m,
@@ -617,6 +647,10 @@ type MkTransformerCrossAttentionMaskC transformerDataType decoderInputShape deco
           )
   )
 
+-- | Creates a cross-attention mask for an encoder-decoder transformer.
+-- Given an encoder padding mask of shape @[batchDim, seqDim]@,
+-- and the shape @[batchDim, decoderSeqDim]@ of the decoder's input,
+-- returns a tensor of shape @[batchDim, decoderSeqDim, seqDim]@.
 mkTransformerCrossAttentionMask ::
   forall m transformerDataType decoderInputShape decoderInputSeqDim gradient layout device dataType shape seqDim output.
   ( MonadThrow m,

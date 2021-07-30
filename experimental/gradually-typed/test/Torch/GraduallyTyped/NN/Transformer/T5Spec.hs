@@ -77,21 +77,16 @@ testForwardT5Small =
       encoderEncoding <- Tokenizers.encode tokenizer "translate English to German: Studies have shown that owning a dog is good for you and your dog.</s>"
       decoderEncoding <- Tokenizers.encode tokenizer "Studien haben gezeigt, dass das Besitzen eines Hundes gut für Sie und Ihren Hund ist.</s>"
       (,) <$> Tokenizers.getIDs encoderEncoding <*> Tokenizers.getIDs decoderEncoding
-    let encoderSeqSize = SUncheckedSize . fromIntegral $ length encoderIds
+    let batchDim = SName @"*" :&: SSize @1
+        encoderSeqSize = SUncheckedSize . fromIntegral $ length encoderIds
+        encoderSeqDim = SName @"*" :&: encoderSeqSize
         decoderSeqSize = SUncheckedSize . fromIntegral $ length decoderIds
+        decoderSeqDim = SName @"*" :&: decoderSeqSize
 
     input <-
       SimplifiedEncoderDecoderTransformerInput
-        <$> mkT5Input
-          (SName @"*" :&: SSize @1)
-          (SName @"*" :&: encoderSeqSize)
-          device
-          [encoderIds]
-        <*> mkT5Input
-          (SName @"*" :&: SSize @1)
-          (SName @"*" :&: decoderSeqSize)
-          device
-          [decoderIds]
+        <$> mkT5Input batchDim encoderSeqDim device [encoderIds]
+        <*> mkT5Input batchDim decoderSeqDim device [decoderIds]
 
     (SimplifiedEncoderDecoderTransformerOutput {..}, _) <- forward model input g
 
@@ -99,7 +94,7 @@ testForwardT5Small =
       fromTensor
         <$> sCheckedShape
           ( SShape $
-              SName @"*" :&: SUncheckedSize 1
+              SName @"*" :&: SUncheckedSize (forgetIsChecked . dimSize . fromSing $ batchDim)
                 :|: SName @"*" :&: (\case SUncheckedSize size -> SUncheckedSize $ size + 1) decoderSeqSize
                 :|: SName @"*" :&: SUncheckedSize (forgetIsChecked . dimSize . fromSing $ t5SmallVocabDim)
                 :|: SNil
