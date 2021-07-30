@@ -37,9 +37,10 @@ import Torch.GraduallyTyped.NN.Transformer.GCrossAttention (CADropoutF, CAFinalL
 import Torch.GraduallyTyped.NN.Transformer.GFeedForwardNetwork (FFNActivationDropoutF, FFNActivationF, FFNInputLayerNormF, FFNInputTransformationF, FFNOutputDropoutF, FFNOutputLayerNormF, FFNOutputProjectionF, GTransformerFeedForwardNetwork, transformerFeedForwardNetworkSpec)
 import Torch.GraduallyTyped.NN.Transformer.GSelfAttention (GSelfAttention, SADropoutF, SAFinalLayerNormF, SAInitialLayerNormF, SAMultiheadAttentionF, selfAttentionSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle)
+import Torch.GraduallyTyped.Prelude (pattern (:|:))
 import Torch.GraduallyTyped.Random (sMkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient (..), SRequiresGradient (..))
-import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, SName (..), SShape (..), SSize (..), Size (..), pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, SName (..), SShape (..), SSize (..), Size (..), pattern (:&:))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes)
 import Torch.GraduallyTyped.Tensor.Type (TensorSpec (TensorSpec))
 

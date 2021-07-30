@@ -30,7 +30,6 @@ import Data.Singletons.Prelude.List (SList (..))
 import Data.Typeable (Typeable)
 import GHC.TypeLits (Symbol, TypeError, type (+), type (-))
 import GHC.TypeNats (Nat)
-import System.IO.Unsafe (unsafePerformIO)
 import Torch.GraduallyTyped.Prelude (Fst, LiftTimesMaybe, MapMaybe, PrependMaybe, Reverse, Snd, forgetIsChecked)
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SBy (..), SDim (..), SName (..), SSelectDim (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Unify (type (<+>))
@@ -39,7 +38,7 @@ import Unsafe.Coerce (unsafeCoerce)
 
 -- $setup
 -- >>> import Data.Singletons.Prelude.List (SList (..))
--- >>> import Torch.GraduallyTyped.Shape.Type (pattern (:&:), pattern (:|:))
+-- >>> import Torch.GraduallyTyped
 
 type family AddSizeF (size :: Size Nat) (size' :: Size Nat) :: Size Nat where
   AddSizeF ('Size size) ('Size size') = 'Size (size + size')

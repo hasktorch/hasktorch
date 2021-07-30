@@ -14,21 +14,15 @@
 
 module Torch.GraduallyTyped.NN.Functional.Normalization where
 
-import Data.Singletons.Prelude.List (SList (SNil))
 import GHC.TypeLits (Nat, Symbol, TypeError, type (+), type (-))
 import System.IO.Unsafe (unsafePerformIO)
-import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
-import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
-import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.Prelude (Length, Reverse)
-import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SName (..), SShape (..), SSize (..), SelectDims (..), Shape (..), Size (..), dimSize, pattern (:&:), pattern (:|:))
-import Torch.GraduallyTyped.Tensor.Creation (sOnes)
+import Torch.GraduallyTyped.Scalar ()
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SelectDims (..), Shape (..), Size (..), dimSize)
 import Torch.GraduallyTyped.Tensor.Type (SGetShape (getDims), Tensor (..))
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import Torch.Internal.Cast (cast5, cast6)
 import qualified Torch.Internal.Managed.Native as ATen
-import qualified Torch.Tensor
 import Type.Errors.Pretty (type (%), type (<>))
 
 type family LayerNormImplF (reverseNormalizedDims :: [Dim (Name Symbol) (Size Nat)]) (reverseInputDims :: [Dim (Name Symbol) (Size Nat)]) :: [Dim (Name Symbol) (Size Nat)] where

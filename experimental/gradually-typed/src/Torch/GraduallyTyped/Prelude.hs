@@ -28,6 +28,7 @@ module Torch.GraduallyTyped.Prelude
     pattern Demoted,
     pattern Demoted',
     forgetIsChecked,
+    pattern (:|:),
     All,
     KnownElem (..),
     KnownList (..),
@@ -77,6 +78,7 @@ import GHC.Exts (Any)
 import GHC.Generics (Generic)
 import GHC.TypeLits (ErrorMessage (..), Nat, TypeError, type (*), type (+), CmpNat)
 import Data.Type.Equality (type (==))
+import Data.Singletons.Prelude (SList (..))
 
 data IsChecked a = Checked a | Unchecked a
   deriving stock (Eq, Ord, Show, Generic, Functor)
@@ -95,6 +97,15 @@ pattern Demoted' unchecked <- (forgetIsChecked . fromSing -> unchecked)
 forgetIsChecked :: IsChecked a -> a
 forgetIsChecked (Checked a) = a
 forgetIsChecked (Unchecked a) = a
+
+pattern (:|:) ::
+  forall a as.
+  Sing a ->
+  SList as ->
+  SList (a : as)
+pattern (:|:) x xs = SCons x xs
+
+infixr 8 :|:
 
 type family All (c :: k -> Constraint) (xs :: [k]) :: Constraint where
   All _ '[] = ()

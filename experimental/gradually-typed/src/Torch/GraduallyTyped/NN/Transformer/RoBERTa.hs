@@ -24,9 +24,10 @@ import Torch.GraduallyTyped.NN.Transformer.GEncoderOnly (EncoderOnlyTransformerI
 import Torch.GraduallyTyped.NN.Transformer.RoBERTa.Base
 import Torch.GraduallyTyped.NN.Transformer.RoBERTa.Common
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead (SWithLMHead), mkTransformerAttentionMask)
+import Torch.GraduallyTyped.Prelude (pattern (:|:))
 import Torch.GraduallyTyped.Random (sMkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (SGradient (..), SRequiresGradient (..))
-import Torch.GraduallyTyped.Shape.Type (SName (..), SShape (..), SSize (..), pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.Shape.Type (SName (..), SShape (..), SSize (..), pattern (:&:))
 import Torch.GraduallyTyped.Tensor.Creation (sArangeNaturals, sZeros)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (addScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..), TensorSpec (..))

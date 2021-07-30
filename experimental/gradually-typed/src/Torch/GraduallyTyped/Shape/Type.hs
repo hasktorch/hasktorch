@@ -349,15 +349,6 @@ instance SingKind (Shape [Dim (Name Symbol) (Size Nat)]) where
       $ shape
   toSing (Checked shape) = withSomeSing shape $ SomeSing . SShape
 
-pattern (:|:) ::
-  forall a as.
-  Sing a ->
-  SList as ->
-  SList (a : as)
-pattern (:|:) x xs = SCons x xs
-
-infixr 8 :|:
-
 class KnownShape (shape :: Shape [Dim (Name Symbol) (Size Nat)]) where
   shapeVal :: Shape [Dim (Name String) (Size Integer)]
 

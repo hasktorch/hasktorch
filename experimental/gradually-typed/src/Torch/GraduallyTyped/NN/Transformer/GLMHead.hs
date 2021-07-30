@@ -38,11 +38,11 @@ import Torch.GraduallyTyped.NN.Linear (GLinear, LinearBiasF, LinearWeightF, line
 import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..), LayerNormSpec (..))
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..), SHasBias (..))
-import Torch.GraduallyTyped.Prelude (forgetIsChecked)
+import Torch.GraduallyTyped.Prelude (forgetIsChecked, pattern (:|:))
 import Torch.GraduallyTyped.Random (sMkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, SName (..), SShape (..), SSize (..), Shape (..), Size (..), pattern (:&:), pattern (:|:))
+import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, SName (..), SShape (..), SSize (..), Shape (..), Size (..), pattern (:&:))
 import Torch.GraduallyTyped.Tensor.Creation (sOnes, sZeros)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add, mulScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor, TensorSpec (..))
@@ -228,7 +228,7 @@ type family
   LMHeadBiasF 'RoBERTa gradient device dataType vocabDim =
     LMHeadBiasF 'BERT gradient device dataType vocabDim
 
--- | 
+-- |
 lmHeadSpec ::
   forall style gradient device dataType inputEmbedDim vocabDim.
   STransformerStyle style ->
