@@ -154,7 +154,7 @@ type family (!) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (_k :: k) :: Dim
 -- Dim {dimName = Checked "batch", dimSize = Checked 8}
 --
 -- >>> :type sGetDimFromShape (SSelectDim $ SByIndex @2) shape
--- sGetDim (SSelectDim $ SByIndex @2) shape
+-- sGetDimFromShape (SSelectDim $ SByIndex @2) shape
 --   :: MonadThrow m => m (SDim (TypeError ...))
 sGetDimFromShape ::
   forall selectDim shape dim m.

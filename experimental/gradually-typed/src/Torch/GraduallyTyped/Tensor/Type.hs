@@ -201,7 +201,7 @@ instance
   ) =>
   Castable (HList (Tensor gradient layout device dataType shape ': tensors)) [ForeignPtr ATen.Tensor]
   where
-  cast (tensor :. tensors) f = do
+  cast (HCons (tensor, tensors)) f = do
     ptr <- cast tensor pure
     ptrList <- cast tensors pure
     f (ptr : ptrList)
@@ -873,10 +873,10 @@ class SGetDataType (dataType :: DataType DType) where
   --
   -- >>> sOnes' dataType = sOnes $ TensorSpec (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) dataType (SShape $ SName @"batch" :&: SSize @32 :|: SName @"feature" :&: SSize @8 :|: SNil)
   -- >>> t = sOnes' $ SDataType SFloat
-  -- >>> dType t
+  -- >>> getDType t
   -- Float
   -- >>> t = sOnes' $ SUncheckedDataType Float
-  -- >>> dType t
+  -- >>> getDType t
   -- Float
   getDType ::
     forall gradient layout device shape.
