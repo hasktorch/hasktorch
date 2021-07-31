@@ -23,6 +23,7 @@ import Torch.Internal.Unmanaged.Helper
 C.context $ C.cppCtx <> mempty {C.ctxTypesTable = typeTable}
 
 C.include "<vector>"
+C.include "<tuple>"
 
 C.include "<torch/types.h>"
 
@@ -285,6 +286,31 @@ step optimizer lossFunc =
   where
     lossFunc' :: Ptr () -> IO (Ptr ())
     lossFunc' params = castPtr <$> lossFunc (castPtr params)
+
+stepWithGenerator :: Ptr Optimizer -> Ptr Generator -> (Ptr TensorList -> Ptr Generator -> IO (Ptr (StdTuple '(Tensor,Generator)))) -> IO (Ptr (StdTuple '(Tensor,Generator)))
+stepWithGenerator optimizer generator lossFunc =
+  bracket
+    (callbackHelper2 lossFunc')
+    freeHaskellFunPtr
+    $ \funcPtr ->
+      [C.throwBlock| std::tuple<at::Tensor,at::Generator>* {
+        auto tfunc = $(void* (*funcPtr)(void*,void*));
+        auto optimizer = $(torch::optim::Optimizer* optimizer);
+        typedef std::tuple<at::Tensor,at::Generator>* (*Func)(std::vector<at::Tensor>*,at::Generator*);
+        auto generator = $(at::Generator* generator)->clone();
+        auto func = (Func)tfunc;
+        auto v = optimizer->step([&]{
+          optimizer->zero_grad();
+          auto lossWithGenerator = func(&(optimizer->param_groups().at(0).params()),&generator);
+          auto loss = std::get<0>(*lossWithGenerator);
+          loss.backward();
+          return loss;
+        });
+        return new std::tuple<at::Tensor,at::Generator>(std::make_tuple(v,generator));
+      }|]
+  where
+    lossFunc' :: Ptr () -> Ptr () -> IO (Ptr ())
+    lossFunc' params generator = castPtr <$> lossFunc (castPtr params) (castPtr generator)
 
 -- After this function is called, params(TensorList) of input is updated.
 -- TensorList of output is the same as input's params(TensorList).

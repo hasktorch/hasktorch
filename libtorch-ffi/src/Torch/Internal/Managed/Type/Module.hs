@@ -25,6 +25,7 @@ import Torch.Internal.Class
 import Torch.Internal.Cast
 import Torch.Internal.Objects
 import Control.Monad(forM)
+import Control.Concurrent.MVar (MVar(..), newEmptyMVar, putMVar, takeMVar)
 
 import qualified Torch.Internal.Unmanaged.Type.Module as Unmanaged
 
@@ -110,23 +111,37 @@ clone = cast1 Unmanaged.clone
 define :: ForeignPtr Module -> ForeignPtr StdString -> IO ()
 define = cast2 Unmanaged.define
 
--- TODO: Not using unsafeForeignPtrToPtr
+
+-- Note: Not to release "ForeignPtr TensorList" before calling trace, put the pointer to MVar, and touch the reference.
 trace :: String -> String -> (ForeignPtr TensorList -> IO (ForeignPtr TensorList)) -> ForeignPtr TensorList -> IO (ForeignPtr Module)
-trace moduleName functionName func inputs = cast3 (\m f inps -> Unmanaged.trace m f (trans func) inps) moduleName functionName inputs
+trace moduleName functionName func inputs = do
+  ref <- newEmptyMVar
+  ret <- cast3 (\m f inps -> Unmanaged.trace m f (trans ref func) inps) moduleName functionName inputs
+  v <- takeMVar ref
+  touchForeignPtr v
+  return ret
   where
-    trans :: (ForeignPtr TensorList -> IO (ForeignPtr TensorList)) -> Ptr TensorList -> IO (Ptr TensorList)
-    trans func inputs = do
+    trans :: MVar (ForeignPtr TensorList) -> (ForeignPtr TensorList -> IO (ForeignPtr TensorList)) -> Ptr TensorList -> IO (Ptr TensorList)
+    trans ref func inputs = do
       inputs' <- fromPtr inputs
       ret <- func inputs'
+      putMVar ref ret
       return $ unsafeForeignPtrToPtr ret
 
+-- Note: Not to release "ForeignPtr TensorList" after calling trace, put the pointer to MVar, and touch the reference.
 traceAsGraph :: (ForeignPtr TensorList -> IO (ForeignPtr TensorList)) -> ForeignPtr TensorList -> IO (ForeignPtr (SharedPtr JitGraph))
-traceAsGraph func inputs = cast1 (\inps -> Unmanaged.traceAsGraph (trans func) inps) inputs
+traceAsGraph func inputs = do
+  ref <- newEmptyMVar
+  ret <- cast1 (\inps -> Unmanaged.traceAsGraph (trans ref func) inps) inputs
+  v <- takeMVar ref
+  touchForeignPtr v
+  return ret
   where
-    trans :: (ForeignPtr TensorList -> IO (ForeignPtr TensorList)) -> Ptr TensorList -> IO (Ptr TensorList)
-    trans func inputs = do
+    trans :: MVar (ForeignPtr TensorList) -> (ForeignPtr TensorList -> IO (ForeignPtr TensorList)) -> Ptr TensorList -> IO (Ptr TensorList)
+    trans ref func inputs = do
       inputs' <- fromPtr inputs
       ret <- func inputs'
+      putMVar ref ret
       return $ unsafeForeignPtrToPtr ret
 
 printGraph :: ForeignPtr (SharedPtr JitGraph) -> IO (ForeignPtr StdString)
