@@ -255,6 +255,12 @@ foreign import ccall unsafe "hasktorch_finalizer.h &delete_cdoublecdouble"
 instance CppObject (StdTuple '(CDouble,CDouble)) where
   fromPtr ptr = newForeignPtr c_delete_cdoublecdouble ptr
 
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_tensorgenerator"
+  c_delete_tensorgenerator :: FunPtr ( Ptr (StdTuple '(Tensor,Generator)) -> IO ())
+
+instance CppObject (StdTuple '(Tensor,Generator)) where
+  fromPtr ptr = newForeignPtr c_delete_tensorgenerator ptr
+
 foreign import ccall unsafe "hasktorch_finalizer.h &delete_tensortensorcdoubleint64"
   c_delete_tensortensorcdoubleint64 :: FunPtr ( Ptr (StdTuple '(Tensor,Tensor,CDouble,Int64)) -> IO ())
 

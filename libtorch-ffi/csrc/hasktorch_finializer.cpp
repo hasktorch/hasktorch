@@ -173,6 +173,10 @@ void delete_cdoublecdouble(std::tuple<double,double>* object){
   delete object;
 }
 
+void delete_tensorgenerator(std::tuple<at::Tensor,at::Generator>* object){
+  delete object;
+}
+
 void delete_optimizer(torch::optim::Optimizer* object){
   delete object;
 }
@@ -300,6 +304,8 @@ showObject(int flag, void* ptr, void* fptr){
     std::cout << age << ":" << "(double,int)" << ":" << std::hex << (ptr) << std::dec << std::endl;
   }else if(fptr == (void*)delete_cdoublecdouble){
     std::cout << age << ":" << "(double,double)" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_tensorgenerator){
+    std::cout << age << ":" << "(tensor,generator)" << ":" << std::hex << (ptr) << std::dec << std::endl;
   }else if(fptr == (void*)delete_optimizer){
     std::cout << age << ":" << "optimizer" << ":" << std::hex << (ptr) << std::dec << std::endl;
   }else if(fptr == (void*)delete_stream){

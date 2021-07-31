@@ -100,6 +100,8 @@ extern "C" {
 
   void delete_cdoublecdouble(std::tuple<double,double>* ptr);
 
+  void delete_tensorgenerator(std::tuple<at::Tensor,at::Generator>* ptr);
+
   void delete_optimizer(torch::optim::Optimizer* ptr);
 
   void delete_stream(c10::Stream* ptr);

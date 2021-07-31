@@ -165,3 +165,10 @@ instance CppTuple2 (Ptr (StdTuple '(CDouble,CDouble))) where
   get0 v = [C.throwBlock| double { return (std::get<0>(*$(std::tuple<double,double>* v)));}|]
   get1 v = [C.throwBlock| double { return (std::get<1>(*$(std::tuple<double,double>* v)));}|]
 
+-----------------StdTuple '(Tensor,Generator)---------------------
+
+instance CppTuple2 (Ptr (StdTuple '(Tensor,Generator))) where
+  type A (Ptr (StdTuple '(Tensor,Generator))) = Ptr Tensor
+  type B (Ptr (StdTuple '(Tensor,Generator))) = Ptr Generator
+  get0 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<0>(*$(std::tuple<at::Tensor,at::Generator>* v)));}|]
+  get1 v = [C.throwBlock| at::Generator* { return new at::Generator(std::get<1>(*$(std::tuple<at::Tensor,at::Generator>* v)));}|]
