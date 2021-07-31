@@ -25,6 +25,7 @@ library
                      , Torch.GraduallyTyped.Tensor
                      , Torch.GraduallyTyped.Tensor.Type
                      , Torch.GraduallyTyped.Tensor.Creation
+                     , Torch.GraduallyTyped.Tensor.Indexing
                      , Torch.GraduallyTyped.Tensor.IndexingSlicingJoining
                      , Torch.GraduallyTyped.Tensor.Other
                      , Torch.GraduallyTyped.Tensor.MathOperations
@@ -145,6 +146,7 @@ test-suite spec
   hs-source-dirs:      test
   main-is:             Spec.hs
   other-modules:       Torch.GraduallyTyped.TensorSpec
+                     , Torch.GraduallyTyped.IndexingSpec
                      , Torch.GraduallyTyped.NN.Transformer.GMultiHeadAttentionSpec
                      , Torch.GraduallyTyped.NN.Transformer.GFeedForwardNetworkSpec
                      , Torch.GraduallyTyped.NN.Transformer.GSelfAttentionSpec

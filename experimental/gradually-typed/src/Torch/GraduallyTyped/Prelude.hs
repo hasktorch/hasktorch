@@ -1,21 +1,22 @@
-{-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE NoStarIsType #-}
 
 module Torch.GraduallyTyped.Prelude
   ( module Data.Kind,
@@ -29,6 +30,7 @@ module Torch.GraduallyTyped.Prelude
     pattern Demoted,
     pattern Demoted',
     forgetIsChecked,
+    pattern (:|:),
     All,
     KnownElem (..),
     KnownList (..),
@@ -55,6 +57,8 @@ module Torch.GraduallyTyped.Prelude
     LiftTypeEqMaybe,
     Concat,
     Reverse,
+    type (<?),
+    When,
     whenM,
     unlessM,
     ifM,
@@ -62,7 +66,7 @@ module Torch.GraduallyTyped.Prelude
     (&&^),
     (||^),
     (<&&>),
-    (<||>)
+    (<||>),
   )
 where
 
@@ -70,16 +74,18 @@ import Control.Applicative (Applicative (liftA2))
 import Control.Monad (MonadPlus, guard, unless, when)
 import Data.Kind (Constraint, Type)
 import Data.Proxy (Proxy (..))
-import Data.Type.Bool (If, type (||))
-import GHC.Exts (Any)
-import GHC.TypeLits (Nat, ErrorMessage (..), TypeError, type (*), type (+))
-import GHC.Generics (Generic)
-import Data.Singletons (SingKind, Demote, fromSing)
+import Data.Singletons (Demote, SingKind, fromSing)
+import Data.Singletons.Prelude (SList (..))
 import Data.Singletons.Prelude.List (SList (..))
 import Data.Singletons.TypeLits
+import Data.Type.Bool (If, type (||))
+import Data.Type.Equality (type (==))
+import GHC.Exts (Any)
+import GHC.Generics (Generic)
+import GHC.TypeLits (CmpNat, ErrorMessage (..), Nat, TypeError, type (*), type (+))
 
 data IsChecked a = Checked a | Unchecked a
-  deriving stock (Eq, Ord, Show, Generic)
+  deriving stock (Eq, Ord, Show, Generic, Functor)
 
 pattern IsChecked :: a -> IsChecked a
 pattern IsChecked forgotten <- (forgetIsChecked -> forgotten)
@@ -95,6 +101,15 @@ pattern Demoted' unchecked <- (forgetIsChecked . fromSing -> unchecked)
 forgetIsChecked :: IsChecked a -> a
 forgetIsChecked (Checked a) = a
 forgetIsChecked (Unchecked a) = a
+
+pattern (:|:) ::
+  forall a as.
+  Sing a ->
+  SList as ->
+  SList (a : as)
+pattern (:|:) x xs = SCons x xs
+
+infixr 8 :|:
 
 type family All (c :: k -> Constraint) (xs :: [k]) :: Constraint where
   All _ '[] = ()
@@ -140,7 +155,7 @@ type family Assert err a where
 type Catch :: k -> Constraint
 type family Catch a where
   Catch (f a) = (Catch f, Catch a)
-  Catch _  = ()
+  Catch _ = ()
 
 type Seq :: forall k k'. k -> k' -> k'
 type family Seq (a :: k) (b :: k') :: k' where
@@ -218,20 +233,20 @@ type family SndMaybe (t :: Maybe (k, k')) :: Maybe k' where
 type family PrependMaybe (h :: Maybe a) (t :: Maybe [a]) :: Maybe [a] where
   PrependMaybe 'Nothing _ = 'Nothing
   PrependMaybe _ 'Nothing = 'Nothing
-  PrependMaybe ( 'Just h) ( 'Just t) = 'Just (h : t)
+  PrependMaybe ('Just h) ('Just t) = 'Just (h : t)
 
 type family MapMaybe (f :: k -> k') (a :: Maybe k) :: Maybe k' where
   MapMaybe _ 'Nothing = 'Nothing
-  MapMaybe f ( 'Just k) = 'Just (f k)
+  MapMaybe f ('Just k) = 'Just (f k)
 
 type family BindMaybe (f :: k -> Maybe k') (a :: Maybe k) :: Maybe k' where
   BindMaybe _ 'Nothing = 'Nothing
-  BindMaybe f ( 'Just k) = f k
+  BindMaybe f ('Just k) = f k
 
 type family JoinMaybe (a :: Maybe (Maybe k)) :: Maybe k where
   JoinMaybe 'Nothing = 'Nothing
-  JoinMaybe ( 'Just 'Nothing) = 'Nothing
-  JoinMaybe ( 'Just ( 'Just k)) = 'Just k
+  JoinMaybe ('Just 'Nothing) = 'Nothing
+  JoinMaybe ('Just ('Just k)) = 'Just k
 
 type family LiftM2Maybe (f :: k -> k' -> k'') (a :: Maybe k) (b :: Maybe k') :: Maybe k'' where
   LiftM2Maybe _ 'Nothing _ = 'Nothing
@@ -286,6 +301,13 @@ type family Extract (f :: k) (a :: k') :: [k'] where
   Extract a a = '[a]
   Extract (f g) a = Concat (Extract f a) (Extract g a)
   Extract _ _ = '[]
+
+type family (<?) (a :: Nat) (b :: Nat) where
+  x <? y = x `CmpNat` y == 'LT
+
+type family When (cond :: Bool) (constraint :: Constraint) :: Constraint where
+  When 'True constraint = constraint
+  When 'False _ = ()
 
 whenM :: Monad m => m Bool -> m () -> m ()
 whenM p m =
