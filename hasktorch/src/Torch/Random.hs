@@ -94,7 +94,7 @@ generatorFactory func size options (UnsafeGenerator generator) =
     generatorDevice gen = unsafePerformIO $ cast1 ATen.generator_get_device gen
     
     generatorSeed :: ForeignPtr ATen.Generator -> Word64
-    generatorSeed gen = fromIntegral (unsafePerformIO $ cast1 ATen.generator_get_device gen :: Int64)
+    generatorSeed gen = unsafePerformIO $ cast1 ATen.generator_current_seed gen
     
 
 randn ::
