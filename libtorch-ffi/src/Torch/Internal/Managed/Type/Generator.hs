@@ -57,3 +57,23 @@ generator_clone
   :: ForeignPtr Generator
   -> IO (ForeignPtr Generator)
 generator_clone _obj = cast1 Unmanaged.generator_clone _obj
+
+generator_get_device
+  :: ForeignPtr Generator
+  -> IO Int64
+generator_get_device _obj = cast1 Unmanaged.generator_get_device _obj
+
+generator_is_cpu
+  :: ForeignPtr Generator
+  -> IO CBool
+generator_is_cpu _obj = cast1 Unmanaged.generator_is_cpu _obj
+
+generator_is_cuda
+  :: ForeignPtr Generator
+  -> IO CBool
+generator_is_cuda _obj = cast1 Unmanaged.generator_is_cuda _obj
+
+generator_is_hip
+  :: ForeignPtr Generator
+  -> IO CBool
+generator_is_hip _obj = cast1 Unmanaged.generator_is_hip _obj
