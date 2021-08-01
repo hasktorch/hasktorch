@@ -69,7 +69,8 @@ generatorFactory func size options (UnsafeGenerator generator) =
                   Device {deviceType = CUDA, deviceIndex = fromIntegral $ generatorDevice v'}
                 else
                   Device {deviceType = CPU, deviceIndex = 0}
-          writeTVar generator $ Left (generatorSeed v', device)
+              seed = generatorSeed v'
+          writeTVar generator $ seed `seq` deviceType device `seq` deviceIndex device `seq` Left (seed, device)
           return $ Right v'
         Left v -> return (Left v)
     genPtr <- case mGenerator of
