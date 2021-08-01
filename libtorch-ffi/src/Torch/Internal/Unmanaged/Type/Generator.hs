@@ -76,7 +76,33 @@ generator_clone _obj =
     ));
   }|]
 
+generator_get_device
+  :: Ptr Generator
+  -> IO Int64
+generator_get_device _obj =
+  [C.throwBlock| int64_t { return ((*$(at::Generator* _obj)).device().index());
+  }|]
 
+generator_is_cpu
+  :: Ptr Generator
+  -> IO CBool
+generator_is_cpu _obj =
+  [C.throwBlock| bool { return ((*$(at::Generator* _obj)).device().is_cpu());
+  }|]
+
+generator_is_cuda
+  :: Ptr Generator
+  -> IO CBool
+generator_is_cuda _obj =
+  [C.throwBlock| bool { return ((*$(at::Generator* _obj)).device().is_cuda());
+  }|]
+
+generator_is_hip
+  :: Ptr Generator
+  -> IO CBool
+generator_is_hip _obj =
+  [C.throwBlock| bool { return ((*$(at::Generator* _obj)).device().is_hip());
+  }|]
 
 getDefaultCUDAGenerator
   :: Word16
