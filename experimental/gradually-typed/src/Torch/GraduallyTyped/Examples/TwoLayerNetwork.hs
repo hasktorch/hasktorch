@@ -15,10 +15,12 @@
 
 module Torch.GraduallyTyped.Examples.TwoLayerNetwork where
 
+import Control.Concurrent.STM.TVar (newTVarIO)
 import Control.Lens (element, (^?))
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.Cont (runContT)
+import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.Indexed ((>>>=))
 import Control.Monad.Indexed.State (IxStateT (..))
 import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
@@ -38,10 +40,12 @@ import qualified Pipes.Prelude as P
 import System.Random (Random, RandomGen, getStdGen)
 import Torch.GraduallyTyped
 import qualified Torch.Internal.Cast as ATen
+import Torch.Internal.Class (Castable (cast))
 import qualified Torch.Internal.Class as ATen
 import Torch.Internal.GC (unsafeThrowableIO)
 import qualified Torch.Internal.Managed.Native as ATen
 import qualified Torch.Internal.Managed.Optim as ATen
+import qualified Torch.Internal.Managed.Type.Generator as ATen
 import qualified Torch.Internal.Type as ATen
 
 -- | Compute the sine cardinal (sinc) function,
@@ -72,15 +76,24 @@ instance Dataset IO SincData Int (Float, Float) where
   keys (SincData _ d) = Set.fromList [0 .. Prelude.length d -1]
 
 -- | Data type to represent a simple two-layer neural network.
+-- It is a product type of two layer types, @fstLayer@ and @sndLayer@.
 data TwoLayerNetwork fstLayer sndLayer = TwoLayerNetwork
   { fstLayer :: fstLayer,
     sndLayer :: sndLayer
   }
 
+-- | The specification of a two-layer network is the product of the
+-- specifications of its two layers.
 type instance
   ModelSpec (TwoLayerNetwork fstLayer sndLayer) =
     TwoLayerNetwork (ModelSpec fstLayer) (ModelSpec sndLayer)
 
+-- | To initialize a two-layer network,
+-- we need its specification and a random generator.
+-- The random generator is used to initialize the weights of the network.
+-- The specification is used to determine the properties of the two layers.
+-- The two layers are initialized separately and then combined into a single
+-- two-layer network.
 instance
   ( HasInitialize fstLayer generatorDevice fstLayer generatorDevice,
     HasInitialize sndLayer generatorDevice sndLayer generatorDevice
@@ -97,6 +110,15 @@ instance
         <<$>> (IxStateT . initialize $ fstLayerSpec)
         <<*>> (IxStateT . initialize $ sndLayerSpec)
 
+-- | @HasStateDict@ instance for a two-layer network.
+-- It allows for conversion of a two-layer network into a state dictionary and back.
+--
+-- To create a two-layer network from a state dictionary,
+-- we need to first create its two layers from the state dictionary
+-- and then combine them into a single two-layer network.
+--
+-- The state dictionary of the two-layer network is the union of the
+-- state dictionaries its layers.
 instance
   (HasStateDict fstLayer, HasStateDict sndLayer) =>
   HasStateDict (TwoLayerNetwork fstLayer sndLayer)
@@ -108,6 +130,7 @@ instance
     () <- toStateDict k sndLayer
     pure ()
 
+-- | Specifies the type of the two-layer network.
 type TwoLayerNetworkF gradient device dataType inputDim outputDim hiddenDim =
   NamedModel
     ( TwoLayerNetwork
@@ -115,7 +138,7 @@ type TwoLayerNetworkF gradient device dataType inputDim outputDim hiddenDim =
         (SndLayerF gradient device dataType outputDim hiddenDim)
     )
 
--- | Specifies the first layer of the neural network.
+-- | Specifies the type of the first layer of the neural network.
 type FstLayerF gradient device dataType inputDim hiddenDim =
   NamedModel
     ( GLinear
@@ -123,7 +146,7 @@ type FstLayerF gradient device dataType inputDim hiddenDim =
         (NamedModel (LinearBiasF 'WithBias gradient device dataType hiddenDim))
     )
 
--- | Specifies the second layer of the neural network.
+-- | Specifies the type of the second layer of the neural network.
 type SndLayerF gradient device dataType outputDim hiddenDim =
   NamedModel
     ( GLinear
@@ -131,7 +154,7 @@ type SndLayerF gradient device dataType outputDim hiddenDim =
         (NamedModel (LinearBiasF 'WithBias gradient device dataType outputDim))
     )
 
--- | Specify the parameters of the two-layer neural network
+-- | Creates a value that specifies the parameters of a two-layer neural network.
 twoLayerNetworkSpec ::
   forall gradient device dataType inputDim outputDim hiddenDim.
   -- | whether or not to compute gradients for the parametrs
@@ -154,7 +177,12 @@ twoLayerNetworkSpec gradient device dataType inputDim outputDim hiddenDim =
       (NamedModel "fstLayer" $ linearSpec SWithBias gradient device dataType inputDim hiddenDim)
       (NamedModel "sndLayer" $ linearSpec SWithBias gradient device dataType hiddenDim outputDim)
 
--- | 'HasForward' instance used to define the forward pass of the model
+-- | 'HasForward' instance used to define the forward pass of the model.
+-- The forward pass is defined as the composition of the forward passes of the two layers.
+-- A forward pass is a function that takes a two-layer network, an input tensor, and a random generator,
+-- and returns the output tensor and the updated generator.
+-- A nonlinearity, @tanh@, is applied to the output of the first layer.
+-- The input to the second layer is the output of the nonlinearity.
 instance
   ( HasForward
       fstLayer
@@ -182,6 +210,34 @@ instance
         >>>= IxStateT . forward fstLayer
         >>>= ireturn . Torch.GraduallyTyped.tanh
         >>>= IxStateT . forward sndLayer
+
+instance
+  ( HasForward
+      (TwoLayerNetwork fstLayer sndLayer)
+      input
+      generatorDevice
+      (Tensor gradient layout device dataType shape)
+      generatorOutputDevice,
+    Catch (shape <+> shape'),
+    output
+      ~ Tensor
+          (gradient <|> gradient')
+          (layout <+> layout')
+          (device <+> device')
+          (dataType <+> dataType')
+          ('Shape '[])
+  ) =>
+  HasForward
+    (TwoLayerNetwork fstLayer sndLayer)
+    (input, Tensor gradient' layout' device' dataType' shape')
+    generatorDevice
+    output
+    generatorOutputDevice
+  where
+  forward model (input, expectedOutput) g = do
+    (output, g') <- forward model input g
+    loss <- output `mseLoss` expectedOutput
+    pure (loss, g')
 
 -- | Options for the Adam optimizer.
 data AdamOptions = AdamOptions
@@ -222,9 +278,10 @@ mkAdam ::
 mkAdam AdamOptions {..} =
   ATen.cast7 ATen.adam learningRate beta1 beta2 epsilon weightDecay amsgrad
 
+-- | Compute the mean squared error between two tensors.
 mseLoss ::
   forall m gradient layout device dataType shape gradient' layout' device' dataType' shape'.
-  MonadThrow m =>
+  (MonadThrow m, Catch (shape <+> shape')) =>
   -- | prediction tensor
   Tensor gradient layout device dataType shape ->
   -- | target tensor
@@ -236,9 +293,9 @@ mseLoss ::
         (layout <+> layout')
         (device <+> device')
         (dataType <+> dataType')
-        (Seq (shape <+> shape') ('Shape '[]))
+        ('Shape '[])
     )
-mseLoss prediction target =
+prediction `mseLoss` target =
   unsafeThrowableIO $
     ATen.cast3
       ATen.mse_loss_ttl
@@ -246,67 +303,112 @@ mseLoss prediction target =
       target
       (1 :: Int) -- reduce mean
 
+-- | Compute the loss of the model.
 computeLoss ::
   _ =>
-  -- | device
-  SDevice device ->
   -- | model specification
   ModelSpec model ->
   -- | model state dict
   StateDict ->
   -- | input
-  [[Float]] ->
+  input ->
   -- | expected output
-  [[Float]] ->
+  Tensor eoGradient eoLayout eoDevice eoDataType eoShape ->
   -- | random generator
   Generator generatorDevice ->
   -- | loss
   m (_, Generator generatorOutputDevice)
-computeLoss device modelSpec stateDict input expectedOutput =
+computeLoss modelSpec stateDict input expectedOutput =
   runIxStateT $
-    ilift
-      ( let inputTensor = sToTensor (SGradient SWithoutGradient) (SLayout SDense) device input
-            expectedOutputTensor = sToTensor (SGradient SWithoutGradient) (SLayout SDense) device expectedOutput
-            model = flip evalStateT stateDict $ fromStateDict modelSpec mempty
-         in (,,) <$> inputTensor <*> expectedOutputTensor <*> model
-      )
-      >>>= ( \(inputTensor, expectedOutputTensor, model) ->
-               ireturn inputTensor
+    ilift (flip evalStateT stateDict $ fromStateDict modelSpec mempty)
+      >>>= ( \model ->
+               ireturn input
                  >>>= IxStateT . forward model
-                 >>>= ilift . (`mseLoss` expectedOutputTensor)
+                 >>>= ilift . (`mseLoss` expectedOutput)
            )
 
+stepWithGenerator ::
+  ( SGetGeneratorDevice generatorDevice,
+    SGetGeneratorDevice generatorOutputDevice
+  ) =>
+  ForeignPtr ATen.Optimizer ->
+  (ForeignPtr ATen.TensorList -> Generator generatorDevice -> IO (ForeignPtr ATen.Tensor, Generator generatorOutputDevice)) ->
+  Generator generatorDevice ->
+  IO (ForeignPtr ATen.Tensor, Generator generatorOutputDevice)
+stepWithGenerator optim lossFn (UnsafeGenerator tvar) =
+  do
+    genPtr <- getGenPtr tvar
+    let rawLossFn :: ForeignPtr ATen.TensorList -> ForeignPtr ATen.Generator -> IO (ForeignPtr (ATen.StdTuple '(ATen.Tensor, ATen.Generator)))
+        rawLossFn tlPtr genPtr' = do
+          g' <- UnsafeGenerator <$> newTVarIO (Right genPtr')
+          (lossPtr, UnsafeGenerator tvar'') <- lossFn tlPtr g'
+          genPtr'' <- getGenPtr tvar''
+          ATen.cast (lossPtr, genPtr'') pure
+    (lossPtr, genPtr' :: ForeignPtr ATen.Generator) <- ATen.cast3 ATen.stepWithGenerator optim genPtr rawLossFn
+    g <- newTVarIO (Right genPtr')
+    pure (lossPtr, UnsafeGenerator g)
+
+-- | Train the model for one epoch.
 train ::
-  _ =>
-  -- | random seed for the training
-  Word64 ->
-  -- | device
-  SDevice device ->
+  forall m model input generatorDevice lossGradient lossLayout lossDataType lossDevice lossShape generatorOutputDevice.
+  ( MonadIO m,
+    HasStateDict model,
+    HasForward
+      model
+      input
+      generatorDevice
+      (Tensor lossGradient lossLayout lossDataType lossDevice lossShape)
+      generatorOutputDevice,
+    HasForward
+      model
+      input
+      generatorOutputDevice
+      (Tensor lossGradient lossLayout lossDataType lossDevice lossShape)
+      generatorOutputDevice,
+    SGetGeneratorDevice generatorDevice,
+    SGetGeneratorDevice generatorOutputDevice,
+    Catch (lossShape <+> 'Shape '[])
+  ) =>
+  -- | optimizer
+  ForeignPtr ATen.Optimizer ->
   -- | model specification
   ModelSpec model ->
-  -- | model state dict
-  StateDict ->
-  -- | learning rate
-  Double ->
+  -- | list of model state dictionary keys
+  [StateDictKey] ->
   -- | stream of training examples
-  P.ListT IO ([[Float]], [[Float]], int) ->
-  IO StateDict
-train seed device modelSpec stateDict learningRate examples = do
-  g <- sMkGenerator device seed
-  optim <- mkAdam defaultAdamOptions {learningRate} (Map.elems stateDict)
-  let step g' (x, y, _iter) = do
-        let f :: ForeignPtr ATen.TensorList -> IO (ForeignPtr ATen.Tensor)
-            f tensorList = do
-              stateDict' :: StateDict <- ATen.uncast tensorList (pure . Map.fromList . zip (Map.keys stateDict))
-              UnsafeTensor t <- fst <$> computeLoss device modelSpec stateDict' x y g'
-              pure t
-        _loss :: ForeignPtr ATen.Tensor <- ATen.cast2 ATen.step optim f
-        print $ UnsafeTensor _loss
-        pure g'
-      init' = pure g
-      done = pure
-  _ <- P.foldM step init' done . P.enumerate $ examples
-  pure stateDict
+  P.ListT m input ->
+  -- | random generator
+  Generator generatorDevice ->
+  -- | returned is either the original generator or the loss and a new generator
+  m
+    ( Either
+        (Generator generatorDevice)
+        (Tensor lossGradient lossLayout lossDataType lossDevice lossShape, Generator generatorOutputDevice)
+    )
+train optim modelSpec stateDictKeys examples g = do
+  let producer = P.enumerate examples
+  x <- P.next producer
+  case x of
+    Left _ -> pure . Left $ g
+    Right (input, producer') -> do
+      let step (_, g') input' = liftIO $ do
+            let lossFn tlPtr g'' = do
+                  stateDict' :: StateDict <- ATen.uncast tlPtr (pure . Map.fromList . zip stateDictKeys)
+                  model <- flip evalStateT stateDict' $ fromStateDict modelSpec mempty
+                  (UnsafeTensor tPtr, g''') <- forward model input' g''
+                  pure (tPtr, g''')
+            (loss, g'') <- stepWithGenerator optim lossFn g'
+            pure (UnsafeTensor loss, g'')
+          init' = liftIO $ do
+            let lossFn tlPtr g'' = do
+                  stateDict' :: StateDict <- ATen.uncast tlPtr (pure . Map.fromList . zip stateDictKeys)
+                  model <- flip evalStateT stateDict' $ fromStateDict modelSpec mempty
+                  (UnsafeTensor tPtr, g''') <- forward model input g''
+                  pure (tPtr, g''')
+            (loss, g'') <- stepWithGenerator optim lossFn g
+            pure (UnsafeTensor loss, g'')
+          done = pure . Right
+      P.foldM step init' done producer'
 
 -- | Single-cycle learning rate schedule.
 -- See, for instance, https://arxiv.org/abs/1803.09820.
@@ -323,6 +425,7 @@ singleCycleLearningRateSchedule maxLearningRate finalLearningRate numEpochs numW
      in a * maxLearningRate + (1 - a) * finalLearningRate
   | otherwise = finalLearningRate
 
+-- | Run the two-layer network training loop on a toy dataset.
 runTwoLayerNetworkExample :: IO ()
 runTwoLayerNetworkExample = do
   let -- seed for random number generator
@@ -337,7 +440,8 @@ runTwoLayerNetworkExample = do
       outputDim = SName @"*" :&: SSize @1
       -- hidden dimension of the network
       hiddenDim = SName @"*" :&: SSize @100
-  let modelSpec =
+  let -- create the model specification
+      modelSpec =
         twoLayerNetworkSpec
           (SGradient SWithGradient)
           device
@@ -345,8 +449,12 @@ runTwoLayerNetworkExample = do
           inputDim
           outputDim
           hiddenDim
-  g <- sMkGenerator device seed
-  (model, _) <- initialize modelSpec g
+
+  -- create the generator from a seed
+  g0 <- sMkGenerator device seed
+
+  -- initialize the model from the model specification using the generator
+  (model, g1) <- initialize modelSpec g0
 
   let -- batch size
       batchSize = 100
@@ -377,31 +485,37 @@ runTwoLayerNetworkExample = do
               <*> gets (\stdGen -> (datasetOpts 1) {shuffle = Shuffle stdGen})
         )
 
-  let stepEpoch (stateDict, streamingState') epoch = do
-        let learningRate = learningRateSchedule epoch
-        (examples, shuffle) <- streamFromMap streamingState' trainingData
-        let collateFn exs =
-              let (xys, iters) = unzip exs
-                  (xs, ys) = unzip xys
-               in (,,) (pure <$> xs) (pure <$> ys) <$> listToMaybe iters
-        stateDict' <-
-          lift
-            . train seed device modelSpec stateDict learningRate
-            =<< bufferedCollate
-              (P.bounded 1)
-              batchSize
-              collateFn
-              ( P.Select $
-                  P.zip
-                    (P.enumerate examples)
-                    (P.each [0 :: Int ..])
-              )
-        pure (stateDict', streamingState' {shuffle})
-      initEpoch = do
-        stateDict <- flip execStateT Map.empty $ toStateDict mempty model
-        pure (stateDict, streamingState)
-      doneEpoch (stateDict, _) = pure stateDict
+  stateDict <- flip execStateT Map.empty $ toStateDict mempty model
+  optim <- liftIO $ mkAdam defaultAdamOptions {learningRate = 1e-4} (Map.elems stateDict)
 
-  finalStateDict <- flip runContT pure . P.foldM stepEpoch initEpoch doneEpoch . P.each $ [1 .. numEpochs]
+  let step (streamingState', g) epoch = do
+        -- let learningRate = learningRateSchedule epoch
+
+        (examples :: P.ListT IO (Float, Float), shuffle) <- streamFromMap streamingState' trainingData
+
+        let collateFn :: ([(Float, Float)] -> Maybe _)
+            collateFn exs =
+              let (xs, ys) = unzip exs
+                  xs' = (: []) <$> xs
+                  ys' = (: []) <$> ys
+                  sToTensor' = sToTensor (SGradient SWithoutGradient) (SLayout SDense) device
+               in (,) <$> sToTensor' xs' <*> sToTensor' ys'
+
+        stream <-
+          bufferedCollate (P.bounded 1) batchSize collateFn
+            . P.Select
+            $ P.enumerate examples
+
+        x <- lift $ train optim modelSpec (Map.keys stateDict) stream g
+        g' <- case x of
+          Left g' -> pure g'
+          Right (loss, g') -> do
+            lift $ print loss
+            pure g'
+        pure (streamingState' {shuffle}, g')
+  let init' = pure (streamingState, g1)
+  let done = pure
+
+  (streamingState', g2) <- flip runContT pure . P.foldM step init' done . P.each $ [1 .. numEpochs]
 
   pure ()

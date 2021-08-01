@@ -38,6 +38,7 @@ import Torch.GraduallyTyped.NN.Functional.Linear (LinearWithBiasF, LinearWithout
 import Torch.GraduallyTyped.NN.Initialization (FanMode (..), ForNonLinearity (..), calculateFan, getter, sKaimingUniform)
 import Torch.GraduallyTyped.NN.Type (HasBias (..), SHasBias (..))
 import Torch.GraduallyTyped.Prelude (pattern (:|:))
+import Torch.GraduallyTyped.Random (SGetGeneratorDevice)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim (..), SShape (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Creation (sRandn)
@@ -110,7 +111,8 @@ instance
       ~ GLinear
           (Tensor gradient ('Layout 'Dense) (device <+> generatorDevice) dataType ('Shape '[outputDim, inputDim]))
           (),
-    generatorOutputDevice ~ (device <+> generatorDevice)
+    generatorOutputDevice ~ (device <+> generatorDevice),
+    SGetGeneratorDevice generatorDevice
   ) =>
   HasInitialize
     (GLinear (Tensor gradient ('Layout 'Dense) device dataType ('Shape '[outputDim, inputDim])) ())
@@ -133,7 +135,9 @@ instance
       ~ GLinear
           (Tensor gradient ('Layout 'Dense) (device <+> generatorDevice) dataType ('Shape '[outputDim, inputDim]))
           (Tensor gradient ('Layout 'Dense) (device <+> generatorDevice) dataType ('Shape '[outputDim])),
-    generatorOutputDevice ~ (device <+> generatorDevice)
+    generatorOutputDevice ~ (device <+> generatorDevice),
+    SGetGeneratorDevice generatorDevice,
+    SGetGeneratorDevice generatorOutputDevice
   ) =>
   HasInitialize
     (GLinear (Tensor gradient ('Layout 'Dense) device dataType ('Shape '[outputDim, inputDim])) (Tensor gradient ('Layout 'Dense) device dataType ('Shape '[outputDim])))

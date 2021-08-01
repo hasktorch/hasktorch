@@ -11,7 +11,7 @@ import Control.Monad.Indexed (IxPointed (ireturn), (>>>=))
 import Control.Monad.Indexed.State (IxStateT (..))
 import GHC.Generics (Generic)
 import Torch.GraduallyTyped.Internal.TensorOptions (tensorDims)
-import Torch.GraduallyTyped.Random (Generator)
+import Torch.GraduallyTyped.Random (Generator, SGetGeneratorDevice)
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape (Dim (..), dimSize)
 import Torch.GraduallyTyped.Tensor.Creation (sRandn)
@@ -62,7 +62,8 @@ sXavierUniform ::
   ( Num gain,
     Floating gain,
     Scalar gain,
-    MonadThrow m
+    MonadThrow m,
+    SGetGeneratorDevice generatorDevice
   ) =>
   TensorSpec gradient layout device dataType shape ->
   gain ->
@@ -83,7 +84,8 @@ sXavierNormal ::
   ( Num gain,
     Floating gain,
     Scalar gain,
-    MonadThrow m
+    MonadThrow m,
+    SGetGeneratorDevice generatorDevice
   ) =>
   TensorSpec gradient layout device dataType shape ->
   gain ->
@@ -105,7 +107,9 @@ getter FanOut = snd
 -- | Kaiming uniform initialization
 sKaimingUniform ::
   forall gradient layout device dataType shape generatorDevice m.
-  MonadThrow m =>
+  ( MonadThrow m,
+    SGetGeneratorDevice generatorDevice
+  ) =>
   TensorSpec gradient layout device dataType shape ->
   FanMode ->
   ForNonLinearity ->
@@ -124,7 +128,9 @@ sKaimingUniform tensorSpec@TensorSpec {..} fanMode nonLinearity =
 -- | Kaiming normal initialization
 sKaimingNormal ::
   forall gradient layout device dataType shape generatorDevice m.
-  MonadThrow m =>
+  ( MonadThrow m,
+    SGetGeneratorDevice generatorDevice
+  ) =>
   TensorSpec gradient layout device dataType shape ->
   FanMode ->
   ForNonLinearity ->

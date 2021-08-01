@@ -16,7 +16,8 @@ module Torch.GraduallyTyped.NN.Dropout where
 import GHC.Generics (Generic)
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec)
 import Torch.GraduallyTyped.NN.Functional.Dropout (dropout)
-import Torch.GraduallyTyped.Tensor.Type (Tensor)
+import Torch.GraduallyTyped.Random (SGetGeneratorDevice)
+import Torch.GraduallyTyped.Tensor.Type (SGetDevice, Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 
 -- | Given a random generator, randomly zeroes some of the elements of
@@ -47,7 +48,9 @@ instance HasStateDict Dropout where
 instance
   ( input ~ Tensor gradient layout device dataType shape,
     output ~ Tensor gradient layout (device <+> generatorDevice) dataType shape,
-    generatorOutputDevice ~ (device <+> generatorDevice)
+    generatorOutputDevice ~ (device <+> generatorDevice),
+    SGetDevice device,
+    SGetGeneratorDevice generatorDevice
   ) =>
   HasForward
     Dropout
