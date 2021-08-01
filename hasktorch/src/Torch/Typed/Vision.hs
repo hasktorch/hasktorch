@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
@@ -51,6 +52,8 @@ import GHC.Exts (IsList(fromList, fromListN, toList))
 import Data.Kind
 
 C.include "<stdint.h>"
+
+-- MNIST dataset
 
 data MNIST (m :: Type -> Type) (device :: (D.DeviceType, Nat) ) (batchSize :: Nat) = MNIST { mnistData :: MnistData }
 
@@ -159,6 +162,9 @@ initMnist path = do
   testLabelsBS <- decompressFile path "t10k-labels-idx1-ubyte.gz"
   return (MnistData imagesBS labelsBS, MnistData testImagesBS testLabelsBS)
 
+
+-- ImageFolder dataset 
+
 newtype ImageFolder (m :: Type -> Type) (device :: (D.DeviceType, Nat) ) (finalShape :: [Nat]) = ImageFolder { folderData :: FolderData }
 
 
@@ -170,7 +176,7 @@ instance (KnownShape shape, All KnownNat shape, [n, 3, h, w] ~ shape, 1 <= n, Kn
       indexes = [ix * n .. (ix+1) * n - 1]
       imgs = case someShape indexes of
               SomeShape (Proxy :: Proxy idxs) -> 
-                getFolderImages @'D.Float @device @shape @idxs folderData 
+                getFolderImages @idxs @shape folderData 
       labels = ones @'[n] @'D.Int64 @device
     in pure (imgs, labels)
 
@@ -180,8 +186,7 @@ data FolderData = FolderData {foldPath :: FilePath, imageNames :: [FilePath]}
 
 getFolderImage :: 
   forall shape dtype device w h.
-  (All KnownNat shape, KnownShape shape, 
-   KnownDType dtype, KnownDevice device,
+  (All KnownNat shape, KnownDevice device, KnownDType dtype,
   '[1, 3, w, h] ~ shape) =>
   FolderData -> 
   Int ->
@@ -189,21 +194,22 @@ getFolderImage ::
 getFolderImage imgFold imgIdx = case  readImageAsRGB8 @shape @dtype @device 
                                       . (++) (foldPath imgFold ++ "/") 
                                       . (!!) (imageNames imgFold)
-                                      $ Prelude.length (imageNames imgFold) `Prelude.mod` imgIdx 
+                                      $ imgIdx `Prelude.mod` Prelude.length (imageNames imgFold)  
                                         of
                                           Left err -> error "Path contains non-image files"
                                           Right tensor -> tensor
 
 getFolderImages ::
-  forall dtype device shape idxs n w h a as.
-  (All KnownNat shape, KnownShape shape, 
-   KnownShape idxs, KnownDType dtype, KnownDevice device,
+  forall idxs shape dtype device n w h a as.
+  (All KnownNat shape, KnownDType dtype, KnownDevice device,
+   KnownShape idxs,
    1 <= n,
   '[n, 3, w, h] ~ shape) =>
   FolderData ->
   Tensor device dtype shape
-getFolderImages imgFold = stack' @1 @'[1, 3, w, h] @n @shape @dtype @device 
-                            . map (getFolderImage @'[1, 3, w, h] @dtype @device imgFold)
+getFolderImages imgFold = squeezeDim @0
+                            . stack' @1 @'[1, 3, w, h] @(1 ': shape)
+                            . map (getFolderImage @'[1, 3, w, h] imgFold)
                             $ shapeVal @idxs
   
 
@@ -213,23 +219,26 @@ getFolderImages imgFold = stack' @1 @'[1, 3, w, h] @n @shape @dtype @device
 getImageFolder :: String -> IO FolderData
 getImageFolder path = listDirectory path >>= return . (FolderData path) 
 
--- -- END ImageFolder Dataset --
-data SomeShape' where
-  SomeShape' :: 
+-- Special implementation of SomeShape for working with elements of 2D tensors
+
+data SomeShape2d where
+  SomeShape2d :: 
     forall (shape :: [Nat]) (n :: Nat) (c :: Nat) (h :: Nat) (w :: Nat). 
     (  KnownShape shape
      , All KnownNat shape
      , (n ': h ': c ': w ': '[]) ~ shape) => 
     Proxy shape -> 
-    SomeShape'
+    SomeShape2d
 
-someShape' :: [Int] -> SomeShape'
-someShape' [] = error "Invalid"
-someShape' [n, h, c, w] = case map (someNatVal . fromIntegral) [n, h, c, w] of
+someShape2d :: [Int] -> SomeShape2d
+someShape2d [] = error "Invalid"
+someShape2d [n, h, c, w] = case map (someNatVal . fromIntegral) [n, h, c, w] of
   [Just (SomeNat (Proxy :: Proxy n')),
    Just (SomeNat (Proxy :: Proxy h')),
    Just (SomeNat (Proxy :: Proxy c')),
-   Just (SomeNat (Proxy :: Proxy w'))] -> SomeShape' $ Proxy @'[n', h', c', w']
+   Just (SomeNat (Proxy :: Proxy w'))] -> SomeShape2d $ Proxy @'[n', h', c', w']
+
+-- Typed image/image tensor processing
 
 fromDynImage :: 
   forall outShape dtype device c h w. 
@@ -240,73 +249,73 @@ fromDynImage ::
   I.DynamicImage -> 
   Tensor device dtype outShape
 fromDynImage image = unsafePerformIO $ case image of
-  I.ImageY8 (I.Image width height vec) -> case someShape' [1, width, height, 1] of
-                                            SomeShape' (_ :: Proxy '[n', w', h', c']) -> 
+  I.ImageY8 (I.Image width height vec) -> case someShape2d [1, height, width, 1] of
+                                            SomeShape2d (_ :: Proxy '[n', h', w', c']) -> 
                                               case sameNat (Proxy :: Proxy c) (Proxy :: Proxy 1) of
-                                                Just Refl -> createTensor @'[1, h', w', 1] @[1, 1, h, w] @dtype @'D.UInt8 @device @1 vec
+                                                Just Refl -> createTensor @'[1, h', w', 1] @outShape @dtype @'D.UInt8 @device @1 vec
                                                 Nothing -> error "Incorrect Channel Number in output shape."
-  I.ImageYF (I.Image width height vec) -> case someShape' [1, width, height, 1] of
-                                            SomeShape' (_ :: Proxy '[n', w', h', c']) -> 
+  I.ImageYF (I.Image width height vec) -> case someShape2d [1, height, width, 1] of
+                                            SomeShape2d (_ :: Proxy '[n', h', w', c']) -> 
                                               case sameNat (Proxy :: Proxy c) (Proxy :: Proxy 1) of
                                                 Just Refl -> createTensor @'[1, h', w', 1] @outShape @dtype @'D.Float @device @4 vec
                                                 Nothing -> error "Incorrect Channel Number in output shape."
-  I.ImageYA8 (I.Image width height vec) -> case someShape' [1, width, height, 2] of
-                                            SomeShape' (_ :: Proxy '[n', w', h', c']) -> 
+  I.ImageYA8 (I.Image width height vec) -> case someShape2d [1, height, width, 2] of
+                                            SomeShape2d (_ :: Proxy '[n', h', w', c']) -> 
                                               case sameNat (Proxy :: Proxy c) (Proxy :: Proxy 2) of
                                                 Just Refl -> createTensor @'[1, h', w', 2] @outShape @dtype @'D.UInt8 @device @1 vec
                                                 Nothing -> error "Incorrect Channel Number in output shape."
-  I.ImageRGB8 (I.Image width height vec) -> case someShape' [1, width, height, 3] of
-                                            SomeShape' (_ :: Proxy '[n', w', h', c']) -> 
+  I.ImageRGB8 (I.Image width height vec) -> case someShape2d [1, height, width, 3] of
+                                            SomeShape2d (_ :: Proxy '[n', h', w', c']) -> 
                                               case sameNat (Proxy :: Proxy c) (Proxy :: Proxy 3) of
                                                 Just Refl -> createTensor @'[1, h', w', 3] @outShape @dtype @'D.UInt8 @device @1 vec
                                                 Nothing -> error "Incorrect Channel Number in output shape."
-  I.ImageRGBF (I.Image width height vec) -> case someShape' [1, width, height, 3] of
-                                            SomeShape' (_ :: Proxy '[n', w', h', c']) -> 
+  I.ImageRGBF (I.Image width height vec) -> case someShape2d [1, height, width, 3] of
+                                            SomeShape2d (_ :: Proxy '[n', h', w', c']) -> 
                                               case sameNat (Proxy :: Proxy c) (Proxy :: Proxy 3) of
                                                 Just Refl -> createTensor @'[1, h', w', 3] @outShape @dtype @'D.Float @device @4 vec
                                                 Nothing -> error "Incorrect Channel Number in output shape."
-  I.ImageRGBA8 (I.Image width height vec) -> case someShape' [1, width, height, 4] of
-                                            SomeShape' (_ :: Proxy '[n', w', h', c']) -> 
+  I.ImageRGBA8 (I.Image width height vec) -> case someShape2d [1, height, width, 4] of
+                                            SomeShape2d (_ :: Proxy '[n', h', w', c']) -> 
                                               case sameNat (Proxy :: Proxy c) (Proxy :: Proxy 4) of
                                                 Just Refl -> createTensor @'[1, h', w', 4] @outShape @dtype @'D.UInt8 @device @1 vec
                                                 Nothing -> error "Incorrect Channel Number in output shape."
-  I.ImageYCbCr8 (I.Image width height vec) -> case someShape' [1, width, height, 3] of
-                                            SomeShape' (_ :: Proxy '[n', w', h', c']) -> 
+  I.ImageYCbCr8 (I.Image width height vec) -> case someShape2d [1, height, width, 3] of
+                                            SomeShape2d (_ :: Proxy '[n', h', w', c']) -> 
                                               case sameNat (Proxy :: Proxy c) (Proxy :: Proxy 3) of
                                                 Just Refl -> createTensor @'[1, h', w', 3] @outShape @dtype @'D.UInt8 @device @1 vec
                                                 Nothing -> error "Incorrect Channel Number in output shape."
-  I.ImageCMYK8 (I.Image width height vec) -> case someShape' [1, width, height, 4] of
-                                            SomeShape' (_ :: Proxy '[n', w', h', c']) -> 
+  I.ImageCMYK8 (I.Image width height vec) -> case someShape2d [1, height, width, 4] of
+                                            SomeShape2d (_ :: Proxy '[n', h', w', c']) -> 
                                               case sameNat (Proxy :: Proxy c) (Proxy :: Proxy 4) of
                                                 Just Refl -> createTensor @'[1, h', w', 4] @outShape @dtype @'D.UInt8 @device @1 vec
                                                 Nothing -> error "Incorrect Channel Number in output shape."
-  I.ImageCMYK16 (I.Image width height vec) -> case someShape' [1, width, height, 4] of
-                                            SomeShape' (_ :: Proxy '[n', w', h', c']) -> 
+  I.ImageCMYK16 (I.Image width height vec) -> case someShape2d [1, height, width, 4] of
+                                            SomeShape2d (_ :: Proxy '[n', h', w', c']) -> 
                                               case sameNat (Proxy :: Proxy c) (Proxy :: Proxy 4) of
                                                 Just Refl -> createTensorU16to32 @'[1, h', w', 4] @outShape @dtype @'D.Int32 @device vec
                                                 Nothing -> error "Incorrect Channel Number in output shape."
-  I.ImageRGBA16 (I.Image width height vec) -> case someShape' [1, width, height, 4] of
-                                            SomeShape' (_ :: Proxy '[n', w', h', c']) -> 
+  I.ImageRGBA16 (I.Image width height vec) -> case someShape2d [1, height, width, 4] of
+                                            SomeShape2d (_ :: Proxy '[n', h', w', c']) -> 
                                               case sameNat (Proxy :: Proxy c) (Proxy :: Proxy 4) of
                                                 Just Refl -> createTensorU16to32 @'[1, h', w', 4] @outShape @dtype @'D.Int32 @device vec
                                                 Nothing -> error "Incorrect Channel Number in output shape."
-  I.ImageRGB16 (I.Image width height vec) -> case someShape' [1, width, height, 3] of
-                                            SomeShape' (_ :: Proxy '[n', w', h', c']) -> 
+  I.ImageRGB16 (I.Image width height vec) -> case someShape2d [1, height, width, 3] of
+                                            SomeShape2d (_ :: Proxy '[n', h', w', c']) -> 
                                               case sameNat (Proxy :: Proxy c) (Proxy :: Proxy 3) of
                                                 Just Refl -> createTensorU16to32 @'[1, h', w', 3] @outShape @dtype @'D.Int32 @device vec
                                                 Nothing -> error "Incorrect Channel Number in output shape."
-  I.ImageY16 (I.Image width height vec) -> case someShape' [1, width, height, 1] of
-                                            SomeShape' (_ :: Proxy '[n', w', h', c']) -> 
+  I.ImageY16 (I.Image width height vec) -> case someShape2d [1, height, width, 1] of
+                                            SomeShape2d (_ :: Proxy '[n', h', w', c']) -> 
                                               case sameNat (Proxy :: Proxy c) (Proxy :: Proxy 1) of
                                                 Just Refl -> createTensorU16to32 @'[1, h', w', 1] @outShape @dtype @'D.Int32 @device vec
                                                 Nothing -> error "Incorrect Channel Number in output shape."
-  I.ImageYA16 (I.Image width height vec) -> case someShape' [1, width, height, 2] of
-                                            SomeShape' (_ :: Proxy '[n', w', h', c']) -> 
+  I.ImageYA16 (I.Image width height vec) -> case someShape2d [1, height, width, 2] of
+                                            SomeShape2d (_ :: Proxy '[n', h', w', c']) -> 
                                               case sameNat (Proxy :: Proxy c) (Proxy :: Proxy 2) of
                                                 Just Refl -> createTensorU16to32 @'[1, h', w', 2] @outShape @dtype @'D.Int32 @device vec
                                                 Nothing -> error "Incorrect Channel Number in output shape."
-  I.ImageY32 (I.Image width height vec) -> case someShape' [1, width, height, 1] of
-                                            SomeShape' (_ :: Proxy '[n', w', h', c']) -> 
+  I.ImageY32 (I.Image width height vec) -> case someShape2d [1, height, width, 1] of
+                                            SomeShape2d (_ :: Proxy '[n', h', w', c']) -> 
                                               case sameNat (Proxy :: Proxy c) (Proxy :: Proxy 1) of
                                                 Just Refl -> createTensorU32to64 @'[1, h', w', 1] @outShape @dtype @'D.Int64 @device vec
                                                 Nothing -> error "Incorrect Channel Number in output shape."
@@ -318,14 +327,14 @@ fromDynImage image = unsafePerformIO $ case image of
        KnownShape outShape, All KnownNat outShape,
        KnownDType outDtype, KnownDType dtype', KnownDevice device, KnownNat dtype_size, V.Storable vec,
        (n' ': c' ': h' ': w' ': '[]) ~ outShape,
-       (n0 ': w0 ': h0 ': c0 ': '[]) ~ shape,
+       (n0 ': h0 ': w0 ': c0 ': '[]) ~ shape,
        n' ~ n0,
        c' ~ c0
       ) => 
       V.Vector vec -> 
       IO (Tensor device outDtype outShape)  
     createTensor vec = do
-      let [_, w, h, c] = shapeVal @shape
+      let [_, h, w, c] = shapeVal @shape
           dtype_size = natValI @dtype_size
       t <- empty @shape @dtype' @'(D.CPU, 0)
       withTensorPtr t $ \ptr1 -> do
@@ -334,9 +343,9 @@ fromDynImage image = unsafePerformIO $ case image of
         F.withForeignPtr fptr $ \ptr2 -> do
           BSI.memcpy (F.castPtr ptr1) (F.castPtr ptr2) whc
           print t
-          return $ toDevice @device @'(D.CPU, 0) @outDtype @outShape 
+          return $ toDevice @device @'(D.CPU, 0)
                     . toDType @outDtype @dtype'
-                    . resize @(PermuteDims shape '[0, 3, 1, 2] 0) @dtype' @'(D.CPU, 0) @outShape @"bilinear" True 
+                    . resize2d @outShape @"bilinear" True 
                     . hwc2chw @'(D.CPU, 0) @dtype' @shape
                     $ t 
     createTensorU16to32 :: 
@@ -352,7 +361,7 @@ fromDynImage image = unsafePerformIO $ case image of
         V.Vector vec -> 
         IO (Tensor device outDtype outShape)
     createTensorU16to32 vec = do
-      let [_, w, h, c] = shapeVal @shape
+      let [_, h, w, c] = shapeVal @shape
       t <- empty @shape @dtype' @'(D.CPU, 0)
       withTensorPtr t $ \ptr1 -> do
         let (fptr, len) = V.unsafeToForeignPtr0 vec
@@ -367,9 +376,9 @@ fromDynImage image = unsafePerformIO $ case image of
                  dst[i] = src[i];
               }
           } |]
-          return $ toDevice @device @'(D.CPU, 0) @outDtype @outShape 
-                    . toDType @outDtype @dtype' @'(D.CPU, 0) @outShape 
-                    . resize @(PermuteDims shape '[0, 3, 1, 2] 0) @dtype' @'(D.CPU, 0) @outShape @"bilinear" True 
+          return $ toDevice @device @'(D.CPU, 0)
+                    . toDType @outDtype @dtype'
+                    . resize2d @outShape @"bilinear" True 
                     . hwc2chw @'(D.CPU, 0) @dtype' @shape
                     $ t 
     createTensorU32to64 :: 
@@ -385,7 +394,7 @@ fromDynImage image = unsafePerformIO $ case image of
         V.Vector vec -> 
         IO (Tensor device outDtype outShape)
     createTensorU32to64 vec = do
-      let [_, w, h, c] = shapeVal @shape
+      let [_, h, w, c] = shapeVal @shape
       t <- empty @shape @dtype' @'(D.CPU, 0)
       withTensorPtr t $ \ptr1 -> do
         let (fptr, len) = V.unsafeToForeignPtr0 vec
@@ -400,10 +409,10 @@ fromDynImage image = unsafePerformIO $ case image of
                  dst[i] = src[i];
               }
           } |]
-          return $ toDevice @device @'(D.CPU, 0) @outDtype @outShape 
-                    . toDType @outDtype @dtype' @'(D.CPU, 0) @outShape 
-                    . resize @(PermuteDims shape '[0, 3, 2, 1] 0) @dtype' @'(D.CPU, 0) @outShape @"bilinear" True 
-                    . whc2chw @'(D.CPU, 0) @dtype' @shape
+          return $ toDevice @device @'(D.CPU, 0)
+                    . toDType @outDtype @dtype'
+                    . resize2d @outShape @"bilinear" True 
+                    . hwc2chw @'(D.CPU, 0) @dtype' @shape
                     $ t 
 
 readImageAsRGB8 :: 
@@ -418,6 +427,44 @@ readImageAsRGB8 file = unsafePerformIO $
     Left err -> return $ Left err
     Right img' -> return . Right . fromDynImage @shape @dtype @device . I.ImageRGB8 . I.convertRGB8 $ img'
 
+writeImage :: 
+  forall shape' p shape dtype device. 
+  (I.Pixel p,
+   KnownShape shape'
+  ) => 
+  p -> Tensor device dtype shape -> IO (I.Image p)
+writeImage pixel tensor = do
+  let [n, h, w, c] = shapeVal @shape'
+      img@(I.Image w' h' vec) = I.generateImage (\_ _ -> pixel) w h :: I.Image p
+  withTensorPtr tensor $ \ptr1 -> do
+    let (fptr, len) = V.unsafeToForeignPtr0 vec
+        whc = w * h * c
+    if (len /= whc)
+      then throwIO $ userError $ "vector's length(" ++ show len ++ ") is not the same as tensor' one."
+      else do
+        F.withForeignPtr fptr $ \ptr2 -> do
+          BSI.memcpy (F.castPtr ptr2) (F.castPtr ptr1) len
+          return img
+
+
+writePng :: 
+ forall shape dtype device. 
+  (KnownShape shape,
+   KnownShape (shape ++ '[1]),
+   KnownDType dtype,
+   'D.UInt8 ~ dtype
+  ) => 
+  FilePath -> Tensor device dtype shape -> IO ()
+writePng file tensor = do
+  case shapeVal @shape of
+    [1, height, width, 1] -> writeImage @shape (0 :: I.Pixel8) tensor >>= I.writePng file
+    [1, height, width] -> writeImage @(shape ++ '[1]) (0 :: I.Pixel8) tensor >>= I.writePng file
+    [1, height, width, 3] -> writeImage @shape (I.PixelRGB8 0 0 0) tensor >>= I.writePng file
+    [height, width, 1] -> writeImage @(1 ': shape) (0 :: I.Pixel8) tensor >>= I.writePng file
+    [height, width] -> writeImage @(1 ': (shape ++ '[1])) (0 :: I.Pixel8) tensor >>= I.writePng file
+    [height, width, 3] -> writeImage @(1 ': shape) (I.PixelRGB8 0 0 0) tensor >>= I.writePng file
+    format -> throwIO $ userError $ "Can not write a image. " ++ show format ++ " is unsupported format."
+
 -- [batch, height, width, channel] -> [batch, channel, height, width]
 hwc2chw ::   
   forall device dtype shape shape'.
@@ -428,14 +475,6 @@ hwc2chw ::
   Tensor device dtype shape' -- output
 hwc2chw t = unsafePerformIO $ cast2 LibTorch.tensor_permute_l t ([0, 3, 1, 2] :: [Int])
 
-whc2chw ::   
-  forall device dtype shape shape'.
-  ( 4 ~ ListLength shape,
-    shape' ~ PermuteDims shape '[0, 3, 2, 1] 0
-  ) =>
-  Tensor device dtype shape ->
-  Tensor device dtype shape' -- output
-whc2chw t = unsafePerformIO $ cast2 LibTorch.tensor_permute_l t ([0, 3, 2, 1] :: [Int])
 -- [batch, channel, height, width] -> [batch, height, width, channel]
 chw2hwc ::   
   forall device dtype shape shape'.
@@ -445,9 +484,5 @@ chw2hwc ::
   Tensor device dtype shape ->
   Tensor device dtype shape' -- output
 chw2hwc t = unsafePerformIO $ cast2 LibTorch.tensor_permute_l t ([0, 2, 3, 1] :: [Int])
-
-
--- -- -- Partial Haskell implementation of the pytorch/Torch interpolate
--- -- -- TODO: Use typeclasses and instances to clean up ugly type conversion
 
 

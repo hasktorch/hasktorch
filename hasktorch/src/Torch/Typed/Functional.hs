@@ -4355,29 +4355,50 @@ stack ::
 stack tensors = unsafePerformIO $ ATen.cast2 ATen.Managed.stack_ll tensors (natValI @dim :: Int)
 
 
--- Untyped-esque stack that accepts a list of tensors
+-- | Stack'
 
-type Stack' (dim :: Nat) (preShape :: [Nat]) (count :: Nat) (shape :: [Nat]) (n0 :: Nat) (n1 :: Nat) = (
- KnownShape preShape,
+type Stack' (dim :: Nat) (preShape :: [Nat]) (shape :: [Nat]) (n :: Nat) = (
  KnownNat dim,
- KnownNat count,
- If (1 <=? dim)
-    (
-     (n0 ~ Index preShape (dim - 1)),
-     (n1 ~ Index shape (dim - 1))
-    )
-    (
-     (n0 ~ 1),
-     (n1 ~ Index shape 0)
-    ),
- n1 ~ (n0 * count)
-
+ KnownNat n,
+ All KnownNat preShape,
+ All KnownNat shape,
+ ListLength shape ~ (ListLength preShape + 1),
+ n ~ Index shape dim
  )
 
+-- | stack' - Untyped-esque stack that accepts a list of tensors 
+-- >>> t = ones :: CPUTensor 'D.Float '[]
+-- >>> t' = stack' @0 @'[] @'[1] [t]
+-- >>> :type t'
+-- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[1]
+-- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [Float]) $ t'
+-- (Float,([1],[1.0]))
+-- >>> t = ones :: CPUTensor 'D.Float '[2,2]
+-- >>> t' = stack' @0 @'[2, 2] @'[1, 2, 2] [t]
+-- >>> :type t'
+-- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 2, 2]
+-- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[[Float]]]) $ t'
+-- (Float,([1,2,2],[[[1.0,1.0],[1.0,1.0]]]))
+-- >>> t' = stack' @1 @'[2, 2] @'[2, 1, 2] [t]
+-- >>> :type t'
+-- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 1, 2]
+-- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[[Float]]]) $ t'
+-- (Float,([2,1,2],[[[1.0,1.0]],[[1.0,1.0]]]))
+-- >>> t' = stack' @2 @'[2, 2] @'[2, 2, 1] [t]
+-- >>> :type t'
+-- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 2, 1]
+-- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[[Float]]]) $ t'
+-- (Float,([2,2,1],[[[1.0],[1.0]],[[1.0],[1.0]]]))
+-- >>> t' = stack' @2 @'[2, 2] @'[2, 2, 3] [t, t, t]
+-- >>> :type t'
+-- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 2, 3]
+-- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[[Float]]]) $ t'
+-- (Float,([2,2,3],[[[1.0,1.0,1.0],[1.0,1.0,1.0]],[[1.0,1.0,1.0],[1.0,1.0,1.0]]]))
+
 stack' ::
-  forall dim preShape count shape dtype device n0 n1.
+  forall dim preShape shape dtype device n.
   ( KnownNat dim,
-    Stack' dim preShape count shape n0 n1
+    Stack' dim preShape shape n
   ) =>
   -- | input list of tensors
   [Tensor device dtype preShape] ->
@@ -4385,9 +4406,9 @@ stack' ::
   Tensor device dtype shape
 stack' tensors = case someNatVal (fromIntegral $ length tensors) of
                     Just (SomeNat len) -> 
-                      case sameNat len (Proxy :: Proxy count) of
+                      case sameNat len (Proxy :: Proxy n) of
                         Just Refl ->  unsafePerformIO $ ATen.cast2 ATen.Managed.stack_ll tensors (natValI @dim :: Int)
-                        Nothing -> error "Count did not match length of tensor list"
+                        Nothing -> error "Shape did not match length of tensor list"
 
 vecStack ::
   forall dim n shape dtype device.
@@ -6134,7 +6155,7 @@ upsample_bicubic2d _align_corners _input = unsafePerformIO $ (ATen.cast3 ATen.Ma
 -- upsample_nearest1d :: Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- upsample_nearest1d _input _output_size = unsafePerformIO $ (ATen.cast2 ATen.Managed.upsample_nearest1d_tl) _input _output_size
 
--- | Applies a 2D bicubic upsampling to an input signal composed of several input channels.
+-- | Applies a 2D nearest neighbor upsampling to an input signal composed of several input channels.
 --
 -- >>> (dtype &&& shape) $ upsample_nearest2d @3 @5 (ones :: CPUTensor 'D.Float '[2,3,2,2])
 -- (Float,[2,3,3,5])
@@ -6151,13 +6172,13 @@ upsample_nearest2d _input = unsafePerformIO $ (ATen.cast2 ATen.Managed.upsample_
 
 
 -- Freeform Resizing
-interpolate :: 
-  forall shape newShape dtype device w h mode. 
+interpolate2d :: 
+  forall newShape mode w h shape dtype device. 
   (KnownShape shape, KnownNat w, KnownNat h, KnownSymbol mode) => 
   Bool -> 
   Tensor device 'D.Float shape -> 
   Tensor device 'D.Float newShape
-interpolate alignCorners tensor    
+interpolate2d alignCorners tensor    
   | symbolVal (Proxy @mode) == "nearest" = unsafePerformIO $ (ATen.cast2 ATen.Managed.upsample_nearest2d_tl) tensor ([h, w] :: [Int])
   | symbolVal (Proxy @mode) == "bilinear" = unsafePerformIO $ (ATen.cast3 ATen.Managed.upsample_bilinear2d_tlb) tensor ([h, w] :: [Int]) alignCorners
   | otherwise = error "Invalid mode for interpolation"
@@ -6179,13 +6200,13 @@ type Resize2D (shape :: [Nat]) (newShape :: [Nat]) (n :: Nat) (c :: Nat) (h :: N
   )
 
 
-resize :: 
-  forall shape dtype device newShape mode n c h w n0 c0 h0 w0. 
+resize2d :: 
+  forall newShape mode shape dtype device n c h w n0 c0 h0 w0. 
   (Resize2D shape newShape n c h w n0 c0 h0 w0, KnownSymbol mode, KnownDType dtype) => 
   Bool -> 
   Tensor device dtype shape -> 
   Tensor device dtype newShape
-resize alignCorners = toDType @dtype @'D.Float . interpolate @shape @newShape @dtype @device @w @h @mode alignCorners . toDType @'D.Float @dtype
+resize2d alignCorners = toDType @dtype @'D.Float . interpolate2d @newShape @mode @w @h alignCorners . toDType @'D.Float @dtype
 
 
 -- upsample_nearest3d :: Tensor device dtype shape -> (Int,Int,Int) -> Tensor device dtype shape
