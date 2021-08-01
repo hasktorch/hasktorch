@@ -130,3 +130,9 @@ instance CppTuple2 (ForeignPtr (StdTuple '(CDouble,CDouble))) where
   get0 v = cast1 (get0 :: Ptr (StdTuple '(CDouble,CDouble)) -> IO (CDouble)) v
   get1 v = cast1 (get1 :: Ptr (StdTuple '(CDouble,CDouble)) -> IO (CDouble)) v
 
+instance CppTuple2 (ForeignPtr (StdTuple '(Tensor,Generator))) where
+  type A (ForeignPtr (StdTuple '(Tensor,Generator))) = ForeignPtr Tensor
+  type B (ForeignPtr (StdTuple '(Tensor,Generator))) = ForeignPtr Generator
+  get0 v = cast1 (get0 :: Ptr (StdTuple '(Tensor,Generator)) -> IO (Ptr Tensor)) v
+  get1 v = cast1 (get1 :: Ptr (StdTuple '(Tensor,Generator)) -> IO (Ptr Generator)) v
+
