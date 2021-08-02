@@ -24,7 +24,6 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 {-# LANGUAGE ViewPatterns #-}
-{-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.Tensor.Type where
 

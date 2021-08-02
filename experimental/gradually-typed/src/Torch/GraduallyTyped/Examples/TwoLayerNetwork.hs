@@ -2,12 +2,14 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RoleAnnotations #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -24,16 +26,14 @@ import Control.Monad.Cont (runContT)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.Indexed ((>>>=))
 import Control.Monad.Indexed.State (IxStateT (..))
-import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
 import Control.Monad.State (MonadState (..), StateT, evalStateT, execStateT, gets)
 import Control.Monad.Trans (MonadTrans (..))
 import Data.Functor.Indexed (IxPointed (ireturn), (<<$>>), (<<*>>))
 import qualified Data.Map as Map
-import Data.Maybe (listToMaybe)
 import Data.Random.Normal (normal)
 import qualified Data.Set as Set
 import Data.Text (Text)
-import Data.Word (Word64)
+import qualified Data.Vector.Sized as VS
 import Foreign.ForeignPtr (ForeignPtr)
 import qualified Pipes as P
 import qualified Pipes.Concurrent as P
@@ -41,12 +41,10 @@ import qualified Pipes.Prelude as P
 import System.Random (Random, RandomGen, getStdGen)
 import Torch.GraduallyTyped
 import qualified Torch.Internal.Cast as ATen
-import Torch.Internal.Class (Castable (cast))
 import qualified Torch.Internal.Class as ATen
 import Torch.Internal.GC (unsafeThrowableIO)
 import qualified Torch.Internal.Managed.Native as ATen
 import qualified Torch.Internal.Managed.Optim as ATen
-import qualified Torch.Internal.Managed.Type.Generator as ATen
 import qualified Torch.Internal.Type as ATen
 
 -- | Compute the sine cardinal (sinc) function,
@@ -268,16 +266,44 @@ defaultAdamOptions =
       amsgrad = False
     }
 
+data Optimizer model where
+  UnsafeOptimizer ::
+    forall model.
+    { optimizerStateDictKeys :: [StateDictKey],
+      optimizerPtr :: ForeignPtr ATen.Optimizer
+    } ->
+    Optimizer model
+
+type role Optimizer nominal
+
+getStateDict ::
+  forall model. Optimizer model -> IO StateDict
+getStateDict UnsafeOptimizer {..} =
+  do
+    tPtrs :: [ForeignPtr ATen.Tensor] <- ATen.cast1 ATen.getParams optimizerPtr
+    pure . Map.fromList $ zip optimizerStateDictKeys tPtrs
+
+getModel ::
+  forall model. HasStateDict model => ModelSpec model -> Optimizer model -> IO model
+getModel modelSpec optimizer = do
+  stateDict <- getStateDict optimizer
+  flip evalStateT stateDict $ fromStateDict modelSpec mempty
+
 -- | Create a new Adam optimizer.
 mkAdam ::
+  forall model.
+  HasStateDict model =>
   -- | Adam options
   AdamOptions ->
-  -- | initial model parameters
-  [ForeignPtr ATen.Tensor] ->
+  -- | initial model
+  model ->
   -- | Adam optimizer
-  IO (ForeignPtr ATen.Optimizer)
-mkAdam AdamOptions {..} =
-  ATen.cast7 ATen.adam learningRate beta1 beta2 epsilon weightDecay amsgrad
+  IO (Optimizer model)
+mkAdam AdamOptions {..} model = do
+  stateDict <- flip execStateT Map.empty $ toStateDict mempty model
+  let (stateDictKeys, tPtrs) = unzip $ Map.toList stateDict
+  UnsafeOptimizer stateDictKeys
+    <$> ATen.cast7 ATen.adam learningRate beta1 beta2 epsilon weightDecay amsgrad tPtrs
 
 -- | Compute the mean squared error between two tensors.
 mseLoss ::
@@ -344,14 +370,13 @@ train ::
       generatorOutputDevice,
     SGetGeneratorDevice generatorDevice,
     SGetGeneratorDevice generatorOutputDevice,
-    Catch (lossShape <+> 'Shape '[])
+    Catch (lossShape <+> 'Shape '[]),
+    Catch (lossGradient <+> 'Gradient 'WithGradient)
   ) =>
   -- | optimizer
-  ForeignPtr ATen.Optimizer ->
+  Optimizer model ->
   -- | model specification
   ModelSpec model ->
-  -- | list of model state dictionary keys
-  [StateDictKey] ->
   -- | stream of training examples
   P.ListT m input ->
   -- | random generator
@@ -362,7 +387,7 @@ train ::
         (Generator generatorDevice)
         (Tensor lossGradient lossLayout lossDataType lossDevice lossShape, Generator generatorOutputDevice)
     )
-train optim modelSpec stateDictKeys examples g = do
+train optim@UnsafeOptimizer {..} modelSpec examples g = do
   let producer = P.enumerate examples
   x <- P.next producer
   case x of
@@ -370,19 +395,21 @@ train optim modelSpec stateDictKeys examples g = do
     Right (input, producer') -> do
       let step (_, g') input' = liftIO $ do
             let lossFn tlPtr g'' = do
-                  stateDict' :: StateDict <- ATen.uncast tlPtr (pure . Map.fromList . zip stateDictKeys)
+                  stateDict' :: StateDict <- ATen.uncast tlPtr (pure . Map.fromList . zip optimizerStateDictKeys)
                   model <- flip evalStateT stateDict' $ fromStateDict modelSpec mempty
+                  -- model <- getModel modelSpec optim
                   (UnsafeTensor tPtr, g''') <- forward model input' g''
                   pure (tPtr, g''')
-            (loss, g'') <- stepWithGenerator optim lossFn g'
+            (loss, g'') <- stepWithGenerator optimizerPtr lossFn g'
             pure (UnsafeTensor loss, g'')
           init' = liftIO $ do
             let lossFn tlPtr g'' = do
-                  stateDict' :: StateDict <- ATen.uncast tlPtr (pure . Map.fromList . zip stateDictKeys)
+                  stateDict' :: StateDict <- ATen.uncast tlPtr (pure . Map.fromList . zip optimizerStateDictKeys)
                   model <- flip evalStateT stateDict' $ fromStateDict modelSpec mempty
+                  -- model <- getModel modelSpec optim
                   (UnsafeTensor tPtr, g''') <- forward model input g''
                   pure (tPtr, g''')
-            (loss, g'') <- stepWithGenerator optim lossFn g
+            (loss, g'') <- stepWithGenerator optimizerPtr lossFn g
             pure (UnsafeTensor loss, g'')
           done = pure . Right
       P.foldM step init' done producer'
@@ -393,9 +420,8 @@ eval ::
     HasForward model input generatorDevice (Tensor lossGradient lossLayout lossDataType lossDevice lossShape) generatorOutputDevice,
     HasForward model input generatorOutputDevice (Tensor lossGradient lossLayout lossDataType lossDevice lossShape) generatorOutputDevice
   ) =>
-  ForeignPtr ATen.Optimizer ->
+  Optimizer model ->
   ModelSpec model ->
-  [StateDictKey] ->
   P.ListT m input ->
   Generator generatorDevice ->
   m
@@ -403,22 +429,18 @@ eval ::
         (Generator generatorDevice)
         (Tensor lossGradient lossLayout lossDataType lossDevice lossShape, Generator generatorOutputDevice)
     )
-eval optim modelSpec stateDictKeys examples g = do
+eval optim modelSpec examples g = do
   let producer = P.zip (P.enumerate examples) (P.each [0 :: Int ..])
   x <- P.next producer
   case x of
     Left _ -> pure . Left $ g
     Right ((input, iter), producer') -> do
       let step ((loss, _), g') (input', iter') = liftIO $ do
-            tlPtr <- ATen.getParams optim
-            stateDict <- ATen.uncast tlPtr (pure . Map.fromList . zip stateDictKeys)
-            model <- flip evalStateT stateDict $ fromStateDict modelSpec mempty
+            model <- getModel modelSpec optim
             (loss', g'') <- forward model input' g'
             pure ((loss + loss', iter'), g'')
           init' = liftIO $ do
-            tlPtr <- ATen.getParams optim
-            stateDict <- ATen.uncast tlPtr (pure . Map.fromList . zip stateDictKeys)
-            model <- flip evalStateT stateDict $ fromStateDict modelSpec mempty
+            model <- getModel modelSpec optim
             (loss, g') <- forward model input g
             pure ((loss, iter), g')
           done ((loss, iter'), g'') = pure . Right $ (loss `divScalar` iter', g'')
@@ -452,8 +474,8 @@ collate ::
 collate device batchSize =
   let collateFn chunk =
         let (xs, ys) = unzip chunk
-            xs' = (: []) <$> xs
-            ys' = (: []) <$> ys
+            xs' = VS.singleton <$> xs
+            ys' = VS.singleton <$> ys
             sToTensor' = sToTensor (SGradient SWithoutGradient) (SLayout SDense) device
          in (,) <$> sToTensor' xs' <*> sToTensor' ys'
    in P.lift . bufferedCollate (P.bounded 1) batchSize collateFn
@@ -518,21 +540,18 @@ runTwoLayerNetworkExample = do
               <*> gets (\stdGen -> (datasetOpts 1) {shuffle = Shuffle stdGen})
         )
 
-  stateDict <- flip execStateT Map.empty $ toStateDict mempty model
-  let (stateDictKeys, tPtrs) = unzip $ Map.toList stateDict
-
-  optim <- liftIO $ mkAdam defaultAdamOptions {learningRate = 1e-4} tPtrs
+  optim <- liftIO $ mkAdam defaultAdamOptions {learningRate = 1e-4} model
 
   let step (streamingState', g) epoch = do
         -- let learningRate = learningRateSchedule epoch
         -- ATen.setLearningRate optim learningRate
 
-        let collate = Torch.GraduallyTyped.Examples.TwoLayerNetwork.collate device batchSize
+        let collate' = Torch.GraduallyTyped.Examples.TwoLayerNetwork.collate device batchSize
 
         (trainingStream, shuffle) <- P.lift $ streamFromMap streamingState' trainingData
         trainingLoss <- do
-          batchedStream <- collate trainingStream
-          P.lift . lift $ train optim modelSpec stateDictKeys batchedStream g
+          batchedStream <- collate' trainingStream
+          P.lift . lift $ train optim modelSpec batchedStream g
         g' <- case trainingLoss of
           Left g' -> pure g'
           Right (loss, g') -> do
@@ -541,8 +560,8 @@ runTwoLayerNetworkExample = do
 
         (evalStream, shuffle') <- P.lift $ streamFromMap streamingState' {shuffle} evaluationData
         evalLoss <- do
-          batchedStream <- collate evalStream
-          P.lift . lift $ eval optim modelSpec stateDictKeys batchedStream g'
+          batchedStream <- collate' evalStream
+          P.lift . lift $ eval optim modelSpec batchedStream g'
         g'' <- case evalLoss of
           Left g'' -> pure g''
           Right (loss, g'') -> do
@@ -560,8 +579,5 @@ runTwoLayerNetworkExample = do
       P.foldM step init' done (P.each [1 .. numEpochs])
         P.>-> P.print
 
-  stateDict' <- do
-    tPtrs' :: [ForeignPtr ATen.Tensor] <- ATen.cast1 ATen.getParams optim
-    pure . Map.fromList $ zip stateDictKeys tPtrs'
-
-  pure ()
+  stateDict' <- getStateDict optim
+  stateDictToFile stateDict' "twoLayerNetwork.pt"
