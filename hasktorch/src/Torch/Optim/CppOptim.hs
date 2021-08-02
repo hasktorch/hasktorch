@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -43,6 +44,21 @@ data CppOptimizerState option = CppOptimizerState option CppOptimizerRef
 --           cast ret return
 --   getParams (OptimizerState _ optimizer initParams) = fmap (replaceParameters initParams . map (IndependentTensor . Unsafe)) $ cast0 (LibTorch.getParams optimizer)
 
+stepWithGenerator
+  :: CppOptimizerState option
+  -> ForeignPtr ATen.Generator
+  -> ([Tensor] -> ForeignPtr ATen.Generator -> IO (Tensor,ForeignPtr ATen.Generator))
+  -> IO (Tensor, ForeignPtr ATen.Generator)
+stepWithGenerator o@(CppOptimizerState _ ref) generator loss = do
+  (v, nextGenerator) <- cast3 LibTorch.stepWithGenerator ref generator loss'
+  return (v, nextGenerator)
+  where
+    loss' :: ForeignPtr ATen.TensorList -> ForeignPtr ATen.Generator -> IO (ForeignPtr (ATen.StdTuple '(ATen.Tensor,ATen.Generator)))
+    loss' params gen = do
+      (v :: Tensor,gen') <- uncast params $ \params' -> loss params' gen
+      v' <- cast v pure :: IO (ForeignPtr ATen.Tensor)
+      cast (v',gen') pure
+      
 class CppOptimizer option where
   initOptimizer :: Parameterized model => option -> model -> IO (CppOptimizerState option)
   unsafeStep :: Parameterized model => model -> CppOptimizerState option -> Tensor -> IO (model, CppOptimizerState option)
