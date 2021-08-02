@@ -57,7 +57,7 @@ gelu = unsafePerformIO . cast1 ATen.gelu_t
 -- Google's BERT repo (and coincidentally also from OpenAI's GPT).
 -- See also https://arxiv.org/abs/1606.08415.
 --
--- >>> geluNew $ sFull (TensorSpec (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SNil)) 0.5
+-- >>> geluNew <$> sFull (TensorSpec (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SNil)) 0.5
 -- Tensor Float []  0.3457
 geluNew ::
   forall gradient layout device dataType shape.

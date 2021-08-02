@@ -52,14 +52,15 @@ import qualified Torch.Internal.Managed.TensorFactories as ATen
 -- >>> shape = SShape $ SName @"batch" :&: SSize @32 :|: SUncheckedName "feature" :&: SUncheckedSize 8 :|: SNil
 -- >>> :type sOnes $ TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape
 -- sOnes $ TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape
---   :: Tensor
---        ('Gradient 'WithoutGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
---        ('DataType 'Int64)
---        ('Shape
---           '[ 'Dim ('Name "batch") ('Size 32),
---              'Dim 'UncheckedName 'UncheckedSize])
+--   :: MonadThrow m =>
+--      m (Tensor
+--           ('Gradient 'WithoutGradient)
+--           ('Layout 'Dense)
+--           ('Device 'CPU)
+--           ('DataType 'Int64)
+--           ('Shape
+--              '[ 'Dim ('Name "batch") ('Size 32),
+--                 'Dim 'UncheckedName 'UncheckedSize]))
 sOnes ::
   forall gradient layout device dataType shape m.
   MonadThrow m =>
@@ -76,9 +77,9 @@ sOnes TensorSpec {..} = unsafeThrowableIO $ do
 
 -- | Create a typed tensor of ones.
 --
--- >>> ones :: CPUParameter ('DataType 'Float) ('Shape '[])
+-- >>> ones :: IO (CPUParameter ('DataType 'Float) ('Shape '[]))
 -- Tensor Float []  1.0000
--- >>> ones :: CPUTensor ('DataType 'Int64) ('Shape '[ 'Dim ('Name "*") ('Size 1)])
+-- >>> ones :: IO (CPUTensor ('DataType 'Int64) ('Shape '[ 'Dim ('Name "*") ('Size 1)]))
 -- Tensor Int64 [1] [ 1]
 ones ::
   forall gradient layout device dataType shape m.
@@ -92,14 +93,15 @@ ones = sOnes $ TensorSpec (sing @gradient) (sing @layout) (sing @device) (sing @
 -- >>> shape = SShape $ SName @"batch" :&: SSize @32 :|: SUncheckedName "feature" :&: SUncheckedSize 8 :|: SNil
 -- >>> :type sZeros $ TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape
 -- sZeros $ TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape
---   :: Tensor
---        ('Gradient 'WithoutGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
---        ('DataType 'Int64)
---        ('Shape
---           '[ 'Dim ('Name "batch") ('Size 32),
---              'Dim 'UncheckedName 'UncheckedSize])
+--   :: MonadThrow m =>
+--      m (Tensor
+--           ('Gradient 'WithoutGradient)
+--           ('Layout 'Dense)
+--           ('Device 'CPU)
+--           ('DataType 'Int64)
+--           ('Shape
+--              '[ 'Dim ('Name "batch") ('Size 32),
+--                 'Dim 'UncheckedName 'UncheckedSize]))
 sZeros ::
   forall gradient layout device dataType shape m.
   MonadThrow m =>
@@ -116,9 +118,9 @@ sZeros TensorSpec {..} = unsafeThrowableIO $ do
 
 -- | Create a typed tensor of zeros.
 --
--- >>> zeros :: CPUParameter ('DataType 'Float) ('Shape '[])
+-- >>> zeros :: IO (CPUParameter ('DataType 'Float) ('Shape '[]))
 -- Tensor Float []  0.0000
--- >>> zeros :: CPUTensor ('DataType 'Int64) ('Shape '[ 'Dim ('Name "*") ('Size 1)])
+-- >>> zeros :: IO (CPUTensor ('DataType 'Int64) ('Shape '[ 'Dim ('Name "*") ('Size 1)]))
 -- Tensor Int64 [1] [ 0]
 zeros ::
   forall gradient layout device dataType shape m.
@@ -133,14 +135,15 @@ zeros = sZeros $ TensorSpec (sing @gradient) (sing @layout) (sing @device) (sing
 -- >>> input = -1
 -- >>> :type sFull (TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape) input
 -- sFull (TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape) input
---   :: Tensor
---        ('Gradient 'WithoutGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
---        ('DataType 'Int64)
---        ('Shape
---           '[ 'Dim ('Name "batch") ('Size 32),
---              'Dim 'UncheckedName 'UncheckedSize])
+--   :: MonadThrow m =>
+--      m (Tensor
+--           ('Gradient 'WithoutGradient)
+--           ('Layout 'Dense)
+--           ('Device 'CPU)
+--           ('DataType 'Int64)
+--           ('Shape
+--              '[ 'Dim ('Name "batch") ('Size 32),
+--                 'Dim 'UncheckedName 'UncheckedSize]))
 sFull ::
   forall gradient layout device dataType shape input m.
   (MonadThrow m, Scalar input) =>
@@ -158,9 +161,9 @@ sFull TensorSpec {..} input = unsafeThrowableIO $ do
 
 -- | Create a typed tensor filled with a given scalar value.
 --
--- >>> full (-1) :: CPUParameter ('DataType 'Float) ('Shape '[])
+-- >>> full (-1) :: IO (CPUParameter ('DataType 'Float) ('Shape '[]))
 -- Tensor Float [] -1.0000
--- >>> full (-1) :: CPUTensor ('DataType 'Int64) ('Shape '[ 'Dim ('Name "*") ('Size 1)])
+-- >>> full (-1) :: IO (CPUTensor ('DataType 'Int64) ('Shape '[ 'Dim ('Name "*") ('Size 1)]))
 -- Tensor Int64 [1] [-1]
 full ::
   forall gradient layout device dataType shape input m.

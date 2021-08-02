@@ -56,7 +56,7 @@ class HasCat (selectDim :: SelectDim (By Symbol Nat)) k (c :: k -> Type) (a :: k
   -- | Concatenates the given sequence of seq tensors in the given dimension.
   -- All tensors must either have the same shape (except in the concatenating dimension) or be empty.
   --
-  -- >>> t = ones @('Gradient 'WithGradient) @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)])
+  -- >>> t <- ones @('Gradient 'WithGradient) @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)])
   -- >>> :type cat @('SelectDim ('ByName "feature")) [t]
   -- cat @('SelectDim ('ByName "feature")) [t]
   --   :: Tensor
@@ -356,7 +356,7 @@ type family TransposeIndexIndexDimsF (index0 :: Nat) (index1 :: Nat) (dims :: [D
 -- The selected dimensions @selectDim0@ and @selectDim1@ are swapped.
 --
 -- >>> g <- sMkGenerator (SDevice SCPU) 0
--- >>> (input, _) <- sRandn (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SName @"batch" :&: SSize @10 :|: SName @"feature" :&: SSize @5 :|: SNil) g
+-- >>> (input, _) <- sRandn (TensorSpec (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SName @"batch" :&: SSize @10 :|: SName @"feature" :&: SSize @5 :|: SNil)) g
 -- >>> output <- sTranspose (SSelectDim (SByName @"batch")) @(SSelectDim (SByName @"feature")) input
 -- >>> :type output
 -- output
@@ -505,7 +505,7 @@ expand = sExpand (sing @shape')
 
 -- | Slices the self tensor along the selected dimension at the given index. This function returns a view of the original tensor with the given dimension removed.
 --
--- >>> nats = sArangeNaturals (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt32) (SSize @8)
+-- >>> nats <- sArangeNaturals (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt32) (SSize @8)
 -- >>> input <- sReshape (SShape $ SName @"*" :&: SSize @4 :|: SName @"*" :&: SSize @2 :|: SNil) nats
 -- >>> input
 -- Tensor Int32 [4,2] [[ 0,  1],
@@ -513,15 +513,18 @@ expand = sExpand (sing @shape')
 --                     [ 4,  5],
 --                     [ 6,  7]]
 --
--- `index` can be provided at compile-time:
+-- 'index' can be provided at compile-time:
+--
 -- >>> sSelect (SSelectDim (SByIndex @0)) (SIndex @1) input
 -- Tensor Int32 [2] [ 2,  3]
 --
--- `index` can also be provided at runtime:
+-- 'index' can also be provided at runtime:
+--
 -- >>> sSelect (SSelectDim (SByIndex @0)) (SUncheckedIndex 1) input
 -- Tensor Int32 [2] [ 2,  3]
 --
--- It produces a runtime error if the `index` is too large:
+-- It produces a runtime error if the 'index' is too large:
+--
 -- >>> sSelect (SSelectDim (SByIndex @0)) (SUncheckedIndex 10) input
 -- *** Exception: IndexOutOfBoundError {ioobeIndex = 10, ioobeDim = Dim {dimName = "*", dimSize = 4}}
 sSelect ::
