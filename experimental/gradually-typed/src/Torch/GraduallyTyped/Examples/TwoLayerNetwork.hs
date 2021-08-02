@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -441,6 +442,21 @@ singleCycleLearningRateSchedule maxLearningRate finalLearningRate numEpochs numW
 data Monitor
   = TrainingMonitor {mtLoss :: Float, mtEpoch :: Int}
   | EvalMonitor {meLoss :: Float, meEpoch :: Int}
+  deriving stock (Show)
+
+collate ::
+  SDevice device ->
+  Int ->
+  P.ListT IO (Float, Float) ->
+  _
+collate device batchSize =
+  let collateFn chunk =
+        let (xs, ys) = unzip chunk
+            xs' = (: []) <$> xs
+            ys' = (: []) <$> ys
+            sToTensor' = sToTensor (SGradient SWithoutGradient) (SLayout SDense) device
+         in (,) <$> sToTensor' xs' <*> sToTensor' ys'
+   in P.lift . bufferedCollate (P.bounded 1) batchSize collateFn
 
 -- | Run the two-layer network training loop on a toy dataset.
 runTwoLayerNetworkExample :: IO ()
@@ -511,13 +527,7 @@ runTwoLayerNetworkExample = do
         -- let learningRate = learningRateSchedule epoch
         -- ATen.setLearningRate optim learningRate
 
-        let collateFn chunk =
-              let (xs, ys) = unzip chunk
-                  xs' = (: []) <$> xs
-                  ys' = (: []) <$> ys
-                  sToTensor' = sToTensor (SGradient SWithoutGradient) (SLayout SDense) device
-               in (,) <$> sToTensor' xs' <*> sToTensor' ys'
-            collate = P.lift . bufferedCollate (P.bounded 1) batchSize collateFn . P.Select . P.enumerate
+        let collate = Torch.GraduallyTyped.Examples.TwoLayerNetwork.collate device batchSize
 
         (trainingStream, shuffle) <- P.lift $ streamFromMap streamingState' trainingData
         trainingLoss <- do
@@ -545,7 +555,10 @@ runTwoLayerNetworkExample = do
 
   let done = pure
 
-  (streamingState', g2) <- flip runContT pure . P.runEffect $ P.drain $ P.foldM step init' done . P.each $ [1 .. numEpochs]
+  (streamingState', g2) <-
+    flip runContT pure . P.runEffect $
+      P.foldM step init' done (P.each [1 .. numEpochs])
+        P.>-> P.print
 
   stateDict' <- do
     tPtrs' :: [ForeignPtr ATen.Tensor] <- ATen.cast1 ATen.getParams optim
