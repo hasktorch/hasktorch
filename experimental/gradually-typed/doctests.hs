@@ -20,6 +20,7 @@ main = do
               "-XScopedTypeVariables",
               "-XTypeApplications",
               "-XTypeFamilies",
+              "-XFlexibleContexts",
               "-fplugin GHC.TypeLits.Normalise",
               "-fplugin GHC.TypeLits.KnownNat.Solver",
               "-fplugin GHC.TypeLits.Extra.Solver",
