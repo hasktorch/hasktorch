@@ -357,7 +357,7 @@ type family TransposeIndexIndexDimsF (index0 :: Nat) (index1 :: Nat) (dims :: [D
 --
 -- >>> g <- sMkGenerator (SDevice SCPU) 0
 -- >>> (input, _) <- sRandn (TensorSpec (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SName @"batch" :&: SSize @10 :|: SName @"feature" :&: SSize @5 :|: SNil)) g
--- >>> output <- sTranspose (SSelectDim (SByName @"batch")) @(SSelectDim (SByName @"feature")) input
+-- >>> output <- sTranspose (SSelectDim (SByName @"batch")) (SSelectDim (SByName @"feature")) input
 -- >>> :type output
 -- output
 --   :: Tensor
