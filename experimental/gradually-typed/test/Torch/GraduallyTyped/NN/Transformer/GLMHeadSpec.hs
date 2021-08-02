@@ -27,6 +27,6 @@ testLMHead = do
   let batchDim = SName @"*" :&: SSize @3
       seqDim = SName @"*" :&: SSize @13
       sOnes' = (sOnes .) . TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device
-      input = sOnes' dataType (SShape $ batchDim :|: seqDim :|: inputEmbedDim :|: SNil)
+  input <- sOnes' dataType (SShape $ batchDim :|: seqDim :|: inputEmbedDim :|: SNil)
   (output, _) <- forward lmHead' input g'
   pure output

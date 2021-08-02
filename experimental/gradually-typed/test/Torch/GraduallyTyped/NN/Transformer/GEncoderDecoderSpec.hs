@@ -28,21 +28,21 @@ testEncoderDecoderTransformer = do
       seqDim = SName @"*" :&: SSize @13
       decoderSeqDim = SName @"*" :&: SSize @7
       sOnes' = (sOnes .) . TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device
-      edtInput = sOnes' (SDataType SInt64) (SShape $ batchDim :|: seqDim :|: SNil)
-      edtAttentionMask = sOnes' dataType (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
-      edtDecoderInput = sOnes' (SDataType SInt64) (SShape $ batchDim :|: decoderSeqDim :|: SNil)
-      edtDecoderAttentionMask = sOnes' dataType (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
-      edtCrossAttentionMask = sOnes' dataType (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: seqDim :|: SNil)
+  edtInput <- sOnes' (SDataType SInt64) (SShape $ batchDim :|: seqDim :|: SNil)
+  edtAttentionMask <- sOnes' dataType (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
+  edtDecoderInput <- sOnes' (SDataType SInt64) (SShape $ batchDim :|: decoderSeqDim :|: SNil)
+  edtDecoderAttentionMask <- sOnes' dataType (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
+  edtCrossAttentionMask <- sOnes' dataType (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: seqDim :|: SNil)
   (t5Output, g'') <- do
     let spec = NamedModel "t5." $ encoderDecoderTransformerSpec ST5 SWithLMHead (SNat @11) (SNat @7) gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP eps
     (t5, g') <- initialize spec g
-    let edtPos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
-        edtDecoderPos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
+    edtPos <- sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
+    edtDecoderPos <- sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
     forward t5 EncoderDecoderTransformerInput {..} g'
   (bartOutput, g'''') <- do
     let spec = NamedModel "bart." $ encoderDecoderTransformerSpec SBART SWithLMHead (SNat @17) (SNat @13) gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP eps
     (bart, g''') <- initialize spec g''
-    let edtPos = sOnes' (SDataType SInt64) (SShape $ seqDim :|: SNil)
-        edtDecoderPos = sOnes' (SDataType SInt64) (SShape $ decoderSeqDim :|: SNil)
+    edtPos <- sOnes' (SDataType SInt64) (SShape $ seqDim :|: SNil)
+    edtDecoderPos <- sOnes' (SDataType SInt64) (SShape $ decoderSeqDim :|: SNil)
     forward bart EncoderDecoderTransformerInput {..} g'''
   pure ((t5Output, bartOutput), g'''')

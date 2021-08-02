@@ -28,7 +28,7 @@ import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SData
 import Torch.GraduallyTyped.Device (SDevice (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec)
-import Torch.GraduallyTyped.Prelude (Seq, forgetIsChecked, pattern (:|:))
+import Torch.GraduallyTyped.Prelude (Catch, forgetIsChecked, pattern (:|:))
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape.Class (AddDimF, BroadcastShapesF, ReplaceDimF, sGetDimFromShape, type (!))
@@ -87,15 +87,13 @@ mkTransformerInput ::
   ( MonadThrow m,
     SGetDim batchDim,
     SGetDim seqDim,
-    'Shape '[batchDim, seqDim]
-      ~ Seq
-          ( 'Shape
-              '[ 'Dim ('Name "*") 'UncheckedSize,
-                 'Dim ('Name "*") 'UncheckedSize
-               ]
-              <+> 'Shape '[batchDim, seqDim]
-          )
-          ('Shape '[batchDim, seqDim]),
+    Catch
+      ( 'Shape
+          '[ 'Dim ('Name "*") 'UncheckedSize,
+             'Dim ('Name "*") 'UncheckedSize
+           ]
+          <+> 'Shape '[batchDim, seqDim]
+      ),
     output
       ~ Tensor
           ('Gradient 'WithoutGradient)
@@ -233,23 +231,12 @@ type MkRelPosC device shape seqDim seqName seqSize output =
     SGetShape shape,
     seqDim ~ (shape ! 1),
     seqDim ~ 'Dim seqName seqSize,
-    'Shape
-      '[ 'Dim ('Name "*") ('Size 1),
-         'Dim ('Name "*") seqSize,
-         'Dim ('Name "*") seqSize
-       ]
-      ~ Seq
-          ( '[ 'Dim ('Name "*") 'UncheckedSize,
-               'Dim ('Name "*") 'UncheckedSize
-             ]
-              <+> '[ 'Dim ('Name "*") seqSize, 'Dim ('Name "*") seqSize]
-          )
-          ( 'Shape
-              '[ 'Dim ('Name "*") ('Size 1),
-                 'Dim ('Name "*") seqSize,
-                 'Dim ('Name "*") seqSize
-               ]
-          ),
+    Catch
+      ( '[ 'Dim ('Name "*") 'UncheckedSize,
+           'Dim ('Name "*") 'UncheckedSize
+         ]
+          <+> '[ 'Dim ('Name "*") seqSize, 'Dim ('Name "*") seqSize]
+      ),
     output
       ~ Tensor
           ('Gradient 'WithoutGradient)
@@ -393,12 +380,13 @@ instance
 
 type MkTransformerPaddingMaskC layout device dataType shape output =
   ( SGetDevice device,
+    Catch (dataType <+> 'DataType 'Int64),
     output
       ~ Tensor
           ('Gradient 'WithoutGradient)
           (layout <+> 'Layout 'Dense)
           device
-          (Seq (dataType <+> 'DataType 'Int64) ('DataType 'Bool))
+          ('DataType 'Bool)
           (BroadcastShapesF shape ('Shape '[ 'Dim ('Name "*") ('Size 1)]))
   )
 
@@ -467,12 +455,14 @@ type MkTransformerAttentionMaskC transformerDataType gradient layout device data
     SGetDevice device,
     SGetShape shape,
     seqDim ~ (shape ! 1),
+    Catch (gradient <+> 'Gradient 'WithoutGradient),
+    Catch (dataType <+> 'DataType 'Bool),
     output
       ~ Tensor
-          (Seq (gradient <+> 'Gradient 'WithoutGradient) ('Gradient 'WithoutGradient))
+          ('Gradient 'WithoutGradient)
           (layout <+> 'Layout 'Dense)
           device
-          (Seq (dataType <+> 'DataType 'Bool) transformerDataType)
+          transformerDataType
           ( BroadcastShapesF
               (UnsqueezeF ('SelectDim ('ByIndex 1)) shape)
               ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])
@@ -655,12 +645,14 @@ type MkTransformerCrossAttentionMaskC transformerDataType decoderInputShape deco
     seqDim ~ (shape ! 1),
     SGetShape decoderInputShape,
     decoderInputSeqDim ~ (decoderInputShape ! 1),
+    Catch (gradient <+> 'Gradient 'WithoutGradient),
+    Catch (dataType <+> 'DataType 'Bool),
     output
       ~ Tensor
-          (Seq (gradient <+> 'Gradient 'WithoutGradient) ('Gradient 'WithoutGradient))
+          ('Gradient 'WithoutGradient)
           (layout <+> 'Layout 'Dense)
           device
-          (Seq (dataType <+> 'DataType 'Bool) transformerDataType)
+          transformerDataType
           ( BroadcastShapesF
               (UnsqueezeF ('SelectDim ('ByIndex 1)) shape)
               ('Shape '[ 'Dim ('Name "*") ('Size 1), decoderInputSeqDim, seqDim])

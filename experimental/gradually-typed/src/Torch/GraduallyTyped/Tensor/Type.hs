@@ -54,7 +54,7 @@ import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Internal.TensorOptions (tensorOptions)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.Prelude (Seq, forgetIsChecked, ifM, pattern (:|:))
+import Torch.GraduallyTyped.Prelude (Catch, forgetIsChecked, ifM, pattern (:|:))
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (InsertDimF, ReplaceDimF)
 import Torch.GraduallyTyped.Shape.Type (By (ByIndex), Dim (..), Name (..), SDim (..), SName (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..))
@@ -341,13 +341,13 @@ instance Exception GradientError where
 -- *** Exception: LayoutError {leExpected = Sparse, leActual = Dense}
 sCheckedGradient ::
   forall gradient' m gradient layout device dataType shape.
-  (SGetGradient gradient, MonadThrow m) =>
+  (SGetGradient gradient, MonadThrow m, Catch (gradient <+> gradient')) =>
   -- | layout
   SGradient gradient' ->
   -- | input tensor
   Tensor gradient layout device dataType shape ->
   -- | annotated output tensor wrapped in 'm'
-  m (Tensor (Seq (gradient <+> gradient') gradient') layout device dataType shape)
+  m (Tensor gradient' layout device dataType shape)
 sCheckedGradient gradient' tensor =
   let actualGradient = forgetIsChecked . fromSing $ sGetGradient tensor
       expectedGradient = forgetIsChecked . fromSing $ gradient'
@@ -357,11 +357,11 @@ sCheckedGradient gradient' tensor =
 
 checkedGradient ::
   forall gradient' m gradient layout device dataType shape.
-  (SingI gradient', SGetGradient gradient, MonadThrow m) =>
+  (SingI gradient', SGetGradient gradient, MonadThrow m, Catch (gradient <+> gradient')) =>
   -- | input tensor
   Tensor gradient layout device dataType shape ->
   -- | annotated output tensor wrapped in 'm'
-  m (Tensor (Seq (gradient <+> gradient') gradient') layout device dataType shape)
+  m (Tensor gradient' layout device dataType shape)
 checkedGradient = sCheckedGradient (sing @gradient')
 
 -- | Returns the input tensor but with 'UncheckedLayout' as memory layout type annotation.
@@ -508,13 +508,13 @@ instance Exception LayoutError where
 -- *** Exception: LayoutError {leExpected = Sparse, leActual = Dense}
 sCheckedLayout ::
   forall layout' m gradient layout device dataType shape.
-  (SGetLayout layout, MonadThrow m) =>
+  (SGetLayout layout, MonadThrow m, Catch (layout <+> layout')) =>
   -- | layout
   SLayout layout' ->
   -- | input tensor
   Tensor gradient layout device dataType shape ->
   -- | annotated output tensor wrapped in 'm'
-  m (Tensor gradient (Seq (layout <+> layout') layout') device dataType shape)
+  m (Tensor gradient layout' device dataType shape)
 sCheckedLayout layout' tensor =
   let actualLayout = forgetIsChecked . fromSing $ sGetLayout tensor
       expectedLayout = forgetIsChecked . fromSing $ layout'
@@ -524,11 +524,11 @@ sCheckedLayout layout' tensor =
 
 checkedLayout ::
   forall layout' m gradient layout device dataType shape.
-  (SingI layout', SGetLayout layout, MonadThrow m) =>
+  (SingI layout', SGetLayout layout, MonadThrow m, Catch (layout <+> layout')) =>
   -- | input tensor
   Tensor gradient layout device dataType shape ->
   -- | annotated output tensor wrapped in 'm'
-  m (Tensor gradient (Seq (layout <+> layout') layout') device dataType shape)
+  m (Tensor gradient layout' device dataType shape)
 checkedLayout = sCheckedLayout (sing @layout')
 
 -- | Returns the input tensor but with 'UncheckedLayout' as memory layout type annotation.
@@ -698,13 +698,13 @@ instance Exception DeviceError where
 -- *** Exception: DeviceError {deExpected = CUDA 0, deActual = CPU}
 sCheckedDevice ::
   forall device' m gradient layout device dataType shape.
-  (SGetDevice device, MonadThrow m) =>
+  (SGetDevice device, MonadThrow m, Catch (device <+> device')) =>
   -- | device
   SDevice device' ->
   -- | input tensor
   Tensor gradient layout device dataType shape ->
   -- | annotated output tensor wrapped in 'm'
-  m (Tensor gradient layout (Seq (device <+> device') device') dataType shape)
+  m (Tensor gradient layout device' dataType shape)
 sCheckedDevice device' tensor =
   let actualDevice = forgetIsChecked . fromSing $ sGetDevice tensor
       expectedDevice = forgetIsChecked . fromSing $ device'
@@ -714,11 +714,11 @@ sCheckedDevice device' tensor =
 
 checkedDevice ::
   forall device' m gradient layout device dataType shape.
-  (SingI device', SGetDevice device, MonadThrow m) =>
+  (SingI device', SGetDevice device, MonadThrow m, Catch (device <+> device')) =>
   -- | input tensor
   Tensor gradient layout device dataType shape ->
   -- | annotated output tensor wrapped in 'm'
-  m (Tensor gradient layout (Seq (device <+> device') device') dataType shape)
+  m (Tensor gradient layout device' dataType shape)
 checkedDevice = sCheckedDevice (sing @device')
 
 -- | Returns the input tensor but with 'UncheckedDevice' as device type annotation.
@@ -932,13 +932,13 @@ instance Exception DataTypeError where
 -- *** Exception: DataTypeError {dtExpected = Double, dtActual = Float}
 sCheckedDataType ::
   forall dataType' m gradient layout device dataType shape.
-  (SGetDataType dataType, MonadThrow m) =>
+  (SGetDataType dataType, MonadThrow m, Catch (dataType <+> dataType')) =>
   -- | data type
   SDataType dataType' ->
   -- | input tensor
   Tensor gradient layout device dataType shape ->
   -- | annotated output tensor wrapped in 'm'
-  m (Tensor gradient layout device (Seq (dataType <+> dataType') dataType') shape)
+  m (Tensor gradient layout device dataType' shape)
 sCheckedDataType dataType' tensor =
   let actualDataType = forgetIsChecked . fromSing $ sGetDataType tensor
       expectedDataType = forgetIsChecked . fromSing $ dataType'
@@ -948,11 +948,11 @@ sCheckedDataType dataType' tensor =
 
 checkedDataType ::
   forall dataType' m gradient layout device dataType shape.
-  (SingI dataType', SGetDataType dataType, MonadThrow m) =>
+  (SingI dataType', SGetDataType dataType, MonadThrow m, Catch (dataType <+> dataType')) =>
   -- | input tensor
   Tensor gradient layout device dataType shape ->
   -- | annotated output tensor wrapped in 'm'
-  m (Tensor gradient layout device (Seq (dataType <+> dataType') dataType') shape)
+  m (Tensor gradient layout device dataType' shape)
 checkedDataType = sCheckedDataType (sing @dataType')
 
 -- | Returns the input tensor but with 'UncheckedDataType' as data-type type annotation.
@@ -1166,13 +1166,13 @@ instance Exception ShapeError where
 -- *** Exception: ShapeError {seExpected = [Dim {dimName = "batch", dimSize = 32},Dim {dimName = "feature", dimSize = 32}], seActual = [Dim {dimName = "batch", dimSize = 32},Dim {dimName = "feature", dimSize = 8}]}
 sCheckedShape ::
   forall shape' m gradient layout device dataType shape.
-  (SGetShape shape, MonadThrow m) =>
+  (SGetShape shape, MonadThrow m, Catch (shape <+> shape')) =>
   -- | shape
   SShape shape' ->
   -- | input tensor
   Tensor gradient layout device dataType shape ->
   -- | annotated output tensor wrapped in 'm'
-  m (Tensor gradient layout device dataType (Seq (shape <+> shape') shape'))
+  m (Tensor gradient layout device dataType shape')
 sCheckedShape shape' tensor =
   let f = fmap (\(Dim name size) -> Dim (forgetIsChecked name) (forgetIsChecked size)) . forgetIsChecked . fromSing
       actualShape = f $ sGetShape tensor
@@ -1183,11 +1183,11 @@ sCheckedShape shape' tensor =
 
 checkedShape ::
   forall shape' m gradient layout device dataType shape.
-  (SingI shape', SGetShape shape, MonadThrow m) =>
+  (SingI shape', SGetShape shape, MonadThrow m, Catch (shape <+> shape')) =>
   -- | input tensor
   Tensor gradient layout device dataType shape ->
   -- | annotated output tensor wrapped in 'm'
-  m (Tensor gradient layout device dataType (Seq (shape <+> shape') shape'))
+  m (Tensor gradient layout device dataType shape')
 checkedShape = sCheckedShape (sing @shape')
 
 -- | Returns the input tensor but with the selected dimension replaces with 'UncheckedDim' as dimension type annotation.

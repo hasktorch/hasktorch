@@ -16,7 +16,7 @@ import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..))
-import Torch.GraduallyTyped.Prelude (Seq, forgetIsChecked)
+import Torch.GraduallyTyped.Prelude (Catch, forgetIsChecked)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, GetDimImplF)
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SSelectDim, SelectDim (..), Shape (..), Size (..))
@@ -40,13 +40,14 @@ gt,
   (==.),
   (/=.) ::
     forall gradient layout device dataType shape gradient' layout' device' dataType' shape'.
+    Catch (dataType <+> dataType') =>
     Tensor gradient layout device dataType shape ->
     Tensor gradient' layout' device' dataType' shape' ->
     Tensor
       ('Gradient 'WithoutGradient)
       (layout <+> layout')
       (device <+> device')
-      (Seq (dataType <+> dataType') ('DataType 'Bool))
+      ('DataType 'Bool)
       (BroadcastShapesF shape shape')
 a `gt` b = unsafePerformIO $ cast2 ATen.gt_tt a b
 a `lt` b = unsafePerformIO $ cast2 ATen.lt_tt a b

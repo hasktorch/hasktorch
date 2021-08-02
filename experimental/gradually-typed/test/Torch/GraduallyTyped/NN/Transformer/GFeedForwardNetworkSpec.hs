@@ -28,6 +28,6 @@ testFFN = do
   let batchDim = SName @"*" :&: SSize @2
       seqDim = SName @"*" :&: SSize @1
       sOnes' = (sOnes .) . TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device
-      query = sOnes' dataType (SShape $ batchDim :|: seqDim :|: queryEmbedDim :|: SNil)
+  query <- sOnes' dataType (SShape $ batchDim :|: seqDim :|: queryEmbedDim :|: SNil)
   (output, _) <- forward ffn' query g'
   pure output

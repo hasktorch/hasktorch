@@ -61,7 +61,7 @@ import qualified Torch.Internal.Managed.TensorFactories as ATen
 --           '[ 'Dim ('Name "batch") ('Size 32),
 --              'Dim 'UncheckedName 'UncheckedSize])
 sOnes ::
-  forall m gradient layout device dataType shape.
+  forall gradient layout device dataType shape m.
   MonadThrow m =>
   TensorSpec gradient layout device dataType shape ->
   m (Tensor gradient layout device dataType shape)
@@ -81,7 +81,7 @@ sOnes TensorSpec {..} = unsafeThrowableIO $ do
 -- >>> ones :: CPUTensor ('DataType 'Int64) ('Shape '[ 'Dim ('Name "*") ('Size 1)])
 -- Tensor Int64 [1] [ 1]
 ones ::
-  forall m gradient layout device dataType shape.
+  forall gradient layout device dataType shape m.
   MonadThrow m =>
   (SingI gradient, SingI layout, SingI device, SingI dataType, SingI shape) =>
   m (Tensor gradient layout device dataType shape)
@@ -101,7 +101,7 @@ ones = sOnes $ TensorSpec (sing @gradient) (sing @layout) (sing @device) (sing @
 --           '[ 'Dim ('Name "batch") ('Size 32),
 --              'Dim 'UncheckedName 'UncheckedSize])
 sZeros ::
-  forall m gradient layout device dataType shape.
+  forall gradient layout device dataType shape m.
   MonadThrow m =>
   TensorSpec gradient layout device dataType shape ->
   m (Tensor gradient layout device dataType shape)
@@ -121,7 +121,7 @@ sZeros TensorSpec {..} = unsafeThrowableIO $ do
 -- >>> zeros :: CPUTensor ('DataType 'Int64) ('Shape '[ 'Dim ('Name "*") ('Size 1)])
 -- Tensor Int64 [1] [ 0]
 zeros ::
-  forall m gradient layout device dataType shape.
+  forall gradient layout device dataType shape m.
   MonadThrow m =>
   (SingI gradient, SingI layout, SingI device, SingI dataType, SingI shape) =>
   m (Tensor gradient layout device dataType shape)
@@ -142,7 +142,7 @@ zeros = sZeros $ TensorSpec (sing @gradient) (sing @layout) (sing @device) (sing
 --           '[ 'Dim ('Name "batch") ('Size 32),
 --              'Dim 'UncheckedName 'UncheckedSize])
 sFull ::
-  forall m gradient layout device dataType shape input.
+  forall gradient layout device dataType shape input m.
   (MonadThrow m, Scalar input) =>
   TensorSpec gradient layout device dataType shape ->
   input ->
@@ -163,7 +163,7 @@ sFull TensorSpec {..} input = unsafeThrowableIO $ do
 -- >>> full (-1) :: CPUTensor ('DataType 'Int64) ('Shape '[ 'Dim ('Name "*") ('Size 1)])
 -- Tensor Int64 [1] [-1]
 full ::
-  forall m gradient layout device dataType shape input.
+  forall gradient layout device dataType shape input m.
   (MonadThrow m, SingI gradient, SingI layout, SingI device, SingI dataType, SingI shape, Scalar input) =>
   input ->
   m (Tensor gradient layout device dataType shape)
@@ -211,7 +211,7 @@ sArangeNaturals gradient layout device dataType size = unsafeThrowableIO $ do
 
 -- | Create a typed one-dimensional tensor of the numbers @0@ to @size -1@.
 arangeNaturals ::
-  forall m size gradient layout device dataType shape.
+  forall size gradient layout device dataType shape m.
   ( MonadThrow m,
     shape ~ 'Shape '[ 'Dim ('Name "*") size],
     SingI gradient,
@@ -225,7 +225,7 @@ arangeNaturals = sArangeNaturals (sing @gradient) (sing @layout) (sing @device) 
 
 -- | Create a gradually typed rectangular tensor with ones on the diagonal and zeros elsewhere.
 sEye ::
-  forall m gradient layout device dataType rows cols shape.
+  forall gradient layout device dataType rows cols shape m.
   (MonadThrow m, shape ~ 'Shape '[ 'Dim ('Name "*") rows, 'Dim ('Name "*") cols]) =>
   SGradient gradient ->
   SLayout layout ->
@@ -243,7 +243,7 @@ sEye gradient layout device dataType rows cols = unsafeThrowableIO $ do
 
 -- | Create a typed rectangular tensor with ones on the diagonal and zeros elsewhere.
 eye ::
-  forall m rows cols gradient layout device dataType shape.
+  forall rows cols gradient layout device dataType shape m.
   ( MonadThrow m,
     shape ~ 'Shape '[ 'Dim ('Name "*") rows, 'Dim ('Name "*") cols],
     SingI gradient,
@@ -258,7 +258,7 @@ eye = sEye (sing @gradient) (sing @layout) (sing @device) (sing @dataType) (sing
 
 -- | Create a gradually typed square tensor with ones on the diagonal and zeros elsewhere.
 sEyeSquare ::
-  forall m gradient layout device dataType size shape.
+  forall gradient layout device dataType size shape m.
   (MonadThrow m, shape ~ 'Shape '[ 'Dim ('Name "*") size, 'Dim ('Name "*") size]) =>
   SGradient gradient ->
   SLayout layout ->
@@ -274,7 +274,7 @@ sEyeSquare gradient layout device dataType size = unsafeThrowableIO $ do
 
 -- | Create a typed square tensor with ones on the diagonal and zeros elsewhere.
 eyeSquare ::
-  forall m size gradient layout device dataType shape.
+  forall size gradient layout device dataType shape m.
   ( MonadThrow m,
     shape ~ 'Shape '[ 'Dim ('Name "*") size, 'Dim ('Name "*") size],
     SingI gradient,

@@ -27,7 +27,7 @@ tensor ::
            'Dim ('Name "*") ('Size 3)
          ]
     )
-tensor = fromJust $ reshape $ arangeNaturals @('Size 12)
+tensor = fromJust $ reshape =<< arangeNaturals @('Size 12)
 
 spec :: Spec
 spec = describe "Indexing" $ do

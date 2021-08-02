@@ -75,57 +75,66 @@ instance Dataset IO SincData Int (Float, Float) where
   keys (SincData _ d) = Set.fromList [0 .. Prelude.length d -1]
 
 -- | Data type to represent a simple two-layer neural network.
--- It is a product type of two layer types, @fstLayer@ and @sndLayer@.
-data TwoLayerNetwork fstLayer sndLayer = TwoLayerNetwork
+-- It is a product type of two layer types, @fstLayer@ and @sndLayer@,
+-- and an activation function, @activation@.
+data TwoLayerNetwork fstLayer activation sndLayer = TwoLayerNetwork
   { fstLayer :: fstLayer,
+    activation :: activation,
     sndLayer :: sndLayer
   }
 
 -- | The specification of a two-layer network is the product of the
--- specifications of its two layers.
+-- specifications of its two layers and the activation function.
 type instance
-  ModelSpec (TwoLayerNetwork fstLayer sndLayer) =
-    TwoLayerNetwork (ModelSpec fstLayer) (ModelSpec sndLayer)
+  ModelSpec (TwoLayerNetwork fstLayer activation sndLayer) =
+    TwoLayerNetwork (ModelSpec fstLayer) (ModelSpec activation) (ModelSpec sndLayer)
 
 -- | To initialize a two-layer network,
 -- we need its specification and a random generator.
 -- The random generator is used to initialize the weights of the network.
--- The specification is used to determine the properties of the two layers.
--- The two layers are initialized separately and then combined into a single
--- two-layer network.
+-- The specification is used to determine the properties of the two layers
+-- and the activation function.
+-- The three components initialized separately and then combined into a single
+-- network.
 instance
   ( HasInitialize fstLayer generatorDevice fstLayer generatorDevice,
+    HasInitialize activation generatorDevice activation generatorDevice,
     HasInitialize sndLayer generatorDevice sndLayer generatorDevice
   ) =>
   HasInitialize
-    (TwoLayerNetwork fstLayer sndLayer)
+    (TwoLayerNetwork fstLayer activation sndLayer)
     generatorDevice
-    (TwoLayerNetwork fstLayer sndLayer)
+    (TwoLayerNetwork fstLayer activation sndLayer)
     generatorDevice
   where
-  initialize (TwoLayerNetwork fstLayerSpec sndLayerSpec) =
+  initialize (TwoLayerNetwork fstLayerSpec activationSpec sndLayerSpec) =
     runIxStateT $
       TwoLayerNetwork
         <<$>> (IxStateT . initialize $ fstLayerSpec)
+        <<*>> (IxStateT . initialize $ activationSpec)
         <<*>> (IxStateT . initialize $ sndLayerSpec)
 
 -- | @HasStateDict@ instance for a two-layer network.
 -- It allows for conversion of a two-layer network into a state dictionary and back.
 --
 -- To create a two-layer network from a state dictionary,
--- we need to first create its two layers from the state dictionary
--- and then combine them into a single two-layer network.
+-- we need to first create its two layers and the activation function from the state dictionary.
+-- Afterwards, we combine the three components into a single network.
 --
 -- The state dictionary of the two-layer network is the union of the
 -- state dictionaries its layers.
 instance
-  (HasStateDict fstLayer, HasStateDict sndLayer) =>
-  HasStateDict (TwoLayerNetwork fstLayer sndLayer)
+  (HasStateDict fstLayer, HasStateDict activation, HasStateDict sndLayer) =>
+  HasStateDict (TwoLayerNetwork fstLayer activation sndLayer)
   where
-  fromStateDict (TwoLayerNetwork fstLayerSpec sndLayerSpec) k =
-    TwoLayerNetwork <$> fromStateDict fstLayerSpec k <*> fromStateDict sndLayerSpec k
+  fromStateDict (TwoLayerNetwork fstLayerSpec activationSpec sndLayerSpec) k =
+    TwoLayerNetwork
+      <$> fromStateDict fstLayerSpec k
+      <*> fromStateDict activationSpec k
+      <*> fromStateDict sndLayerSpec k
   toStateDict k TwoLayerNetwork {..} = do
     () <- toStateDict k fstLayer
+    () <- toStateDict k activation
     () <- toStateDict k sndLayer
     pure ()
 
@@ -134,6 +143,7 @@ type TwoLayerNetworkF gradient device dataType inputDim outputDim hiddenDim =
   NamedModel
     ( TwoLayerNetwork
         (FstLayerF gradient device dataType inputDim hiddenDim)
+        ActivationF
         (SndLayerF gradient device dataType outputDim hiddenDim)
     )
 
@@ -144,6 +154,9 @@ type FstLayerF gradient device dataType inputDim hiddenDim =
         (NamedModel (LinearWeightF gradient device dataType inputDim hiddenDim))
         (NamedModel (LinearBiasF 'WithBias gradient device dataType hiddenDim))
     )
+
+-- | Specifies the type of the activation function
+type ActivationF = Tanh
 
 -- | Specifies the type of the second layer of the neural network.
 type SndLayerF gradient device dataType outputDim hiddenDim =
@@ -174,6 +187,7 @@ twoLayerNetworkSpec gradient device dataType inputDim outputDim hiddenDim =
   NamedModel "twoLayerNetwork" $
     TwoLayerNetwork
       (NamedModel "fstLayer" $ linearSpec SWithBias gradient device dataType inputDim hiddenDim)
+      Tanh
       (NamedModel "sndLayer" $ linearSpec SWithBias gradient device dataType hiddenDim outputDim)
 
 -- | 'HasForward' instance used to define the forward pass of the model.
@@ -187,17 +201,23 @@ instance
       fstLayer
       (Tensor gradient layout dataType device shape)
       generatorDevice
-      (Tensor gradient0 layout0 dataType0 device0 shape0)
+      output0
       generatorDevice0,
     HasForward
-      sndLayer
-      (Tensor gradient0 layout0 dataType0 device0 shape0)
+      activation
+      output0
       generatorDevice0
+      output1
+      generatorDevice1,
+    HasForward
+      sndLayer
+      output1
+      generatorDevice1
       output
       generatorOutputDevice
   ) =>
   HasForward
-    (TwoLayerNetwork fstLayer sndLayer)
+    (TwoLayerNetwork fstLayer activation sndLayer)
     (Tensor gradient layout dataType device shape)
     generatorDevice
     output
@@ -207,12 +227,12 @@ instance
     runIxStateT $
       ireturn input
         >>>= IxStateT . forward fstLayer
-        >>>= ireturn . Torch.GraduallyTyped.tanh
+        >>>= IxStateT . forward activation
         >>>= IxStateT . forward sndLayer
 
 instance
   ( HasForward
-      (TwoLayerNetwork fstLayer sndLayer)
+      (TwoLayerNetwork fstLayer activation sndLayer)
       input
       generatorDevice
       (Tensor gradient layout device dataType shape)
@@ -227,7 +247,7 @@ instance
           ('Shape '[])
   ) =>
   HasForward
-    (TwoLayerNetwork fstLayer sndLayer)
+    (TwoLayerNetwork fstLayer activation sndLayer)
     (input, Tensor gradient' layout' device' dataType' shape')
     generatorDevice
     output
@@ -483,7 +503,7 @@ collate device batchSize =
 -- | Run the two-layer network training loop on a toy dataset.
 runTwoLayerNetworkExample :: IO ()
 runTwoLayerNetworkExample = do
-  let -- seed for random number generator
+  let -- seed for the random number generator
       seed = 0
 
   let -- compute device
@@ -505,14 +525,17 @@ runTwoLayerNetworkExample = do
           outputDim
           hiddenDim
 
-  -- create the generator from a seed
+  -- create a Torch random generator from the seed
   g0 <- sMkGenerator device seed
 
   -- initialize the model from the model specification using the generator
   (model, g1) <- initialize modelSpec g0
 
-  let -- batch size
-      batchSize = 100
+  -- define collation function
+  let collate' =
+        let -- batch size
+            batchSize = 100
+         in Torch.GraduallyTyped.Examples.TwoLayerNetwork.collate device batchSize
 
   let -- total number of epochs
       numEpochs = 100
@@ -528,6 +551,7 @@ runTwoLayerNetworkExample = do
             numCooldownEpochs = 10
          in singleCycleLearningRateSchedule maxLearningRate finalLearningRate numEpochs numWarmupEpochs numCooldownEpochs
 
+  -- create the dataset(s) using a Haskell random generator
   (trainingData, evaluationData, streamingState) <-
     getStdGen
       >>= evalStateT
@@ -546,27 +570,29 @@ runTwoLayerNetworkExample = do
         -- let learningRate = learningRateSchedule epoch
         -- ATen.setLearningRate optim learningRate
 
-        let collate' = Torch.GraduallyTyped.Examples.TwoLayerNetwork.collate device batchSize
+        -- train for one epoch on the training set
+        (g', shuffle) <- do
+          (trainingStream, shuffle) <- P.lift $ streamFromMap streamingState' trainingData
+          trainingLoss <- do
+            batchedStream <- collate' trainingStream
+            P.lift . lift $ train optim modelSpec batchedStream g
+          case trainingLoss of
+            Left g' -> pure (g', shuffle)
+            Right (loss, g') -> do
+              P.yield (TrainingMonitor (fromTensor loss) epoch)
+              pure (g', shuffle)
 
-        (trainingStream, shuffle) <- P.lift $ streamFromMap streamingState' trainingData
-        trainingLoss <- do
-          batchedStream <- collate' trainingStream
-          P.lift . lift $ train optim modelSpec batchedStream g
-        g' <- case trainingLoss of
-          Left g' -> pure g'
-          Right (loss, g') -> do
-            P.yield (TrainingMonitor (fromTensor loss) epoch)
-            pure g'
-
-        (evalStream, shuffle') <- P.lift $ streamFromMap streamingState' {shuffle} evaluationData
-        evalLoss <- do
-          batchedStream <- collate' evalStream
-          P.lift . lift $ eval optim modelSpec batchedStream g'
-        g'' <- case evalLoss of
-          Left g'' -> pure g''
-          Right (loss, g'') -> do
-            P.yield (EvalMonitor (fromTensor loss) epoch)
-            pure g''
+        -- evaluate on the evaluation set
+        (g'', shuffle') <- do
+          (evalStream, shuffle') <- P.lift $ streamFromMap streamingState' {shuffle} evaluationData
+          evalLoss <- do
+            batchedStream <- collate' evalStream
+            P.lift . lift $ eval optim modelSpec batchedStream g'
+          case evalLoss of
+            Left g'' -> pure (g'', shuffle')
+            Right (loss, g'') -> do
+              P.yield (EvalMonitor (fromTensor loss) epoch)
+              pure (g'', shuffle')
 
         pure (streamingState' {shuffle = shuffle'}, g'')
 

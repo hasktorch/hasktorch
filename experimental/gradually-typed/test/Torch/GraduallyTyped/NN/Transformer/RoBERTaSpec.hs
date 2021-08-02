@@ -38,18 +38,18 @@ testForwardRoBERTaBase =
         seqSize = SUncheckedSize . fromIntegral $ length ids
         seqDim = SName @"*" :&: seqSize
 
-    input <-
-      let inputType =
-            sZeros $
-              TensorSpec
-                (SGradient SWithoutGradient)
-                (SLayout SDense)
-                device
-                (SDataType SInt64)
-                (SShape $ batchDim :|: seqDim :|: SNil)
-       in SimplifiedEncoderOnlyTransformerInput
-            <$> mkRoBERTaInput batchDim seqDim device [ids]
-            <*> pure inputType
+    input <- do
+      inputType <-
+        sZeros $
+          TensorSpec
+            (SGradient SWithoutGradient)
+            (SLayout SDense)
+            device
+            (SDataType SInt64)
+            (SShape $ batchDim :|: seqDim :|: SNil)
+      SimplifiedEncoderOnlyTransformerInput
+        <$> mkRoBERTaInput batchDim seqDim device [ids]
+        <*> pure inputType
 
     (SimplifiedEncoderOnlyTransformerOutput {..}, _) <- forward model input g
 

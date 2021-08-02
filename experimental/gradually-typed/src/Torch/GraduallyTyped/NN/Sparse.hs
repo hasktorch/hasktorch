@@ -25,7 +25,7 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType, SDevice (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec)
 import Torch.GraduallyTyped.NN.Functional.Sparse (EmbeddingF, embedding)
-import Torch.GraduallyTyped.Prelude (Seq, pattern (:|:))
+import Torch.GraduallyTyped.Prelude (Catch, pattern (:|:))
 import Torch.GraduallyTyped.Random (SGetGeneratorDevice)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..))
 import Torch.GraduallyTyped.Shape (Dim (..), Name, SDim (..), SShape (..), Shape (..), Size)
@@ -104,12 +104,13 @@ instance
 
 instance
   ( SGetLayout layout,
+    Catch (dataType' <+> 'DataType 'Int64),
     output
       ~ Tensor
           (gradient <|> gradient')
           (layout <+> layout')
           (device <+> device')
-          (Seq (dataType' <+> 'DataType 'Int64) dataType)
+          dataType
           (EmbeddingF ('Shape '[embedNumDim, embedDim]) shape')
   ) =>
   HasForward
@@ -124,12 +125,13 @@ instance
 instance
   ( SGetLayout layout,
     KnownNat paddingIdx,
+    Catch (dataType' <+> 'DataType 'Int64),
     output
       ~ Tensor
           (gradient <|> gradient')
           (layout <+> layout')
           (device <+> device')
-          (Seq (dataType' <+> 'DataType 'Int64) dataType)
+          dataType
           (EmbeddingF ('Shape '[embedNumDim, embedDim]) shape')
   ) =>
   HasForward

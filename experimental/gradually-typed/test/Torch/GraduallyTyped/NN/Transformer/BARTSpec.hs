@@ -34,17 +34,17 @@ testBart = do
       seqDim = SName @"*" :&: SSize @13
       decoderSeqDim = SName @"*" :&: SSize @7
       sOnes' = (sOnes .) . TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device
-      edtInput = sOnes' (SDataType SInt64) (SShape $ batchDim :|: seqDim :|: SNil)
-      edtAttentionMask = sOnes' bartDataType (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
-      edtDecoderInput = sOnes' (SDataType SInt64) (SShape $ batchDim :|: decoderSeqDim :|: SNil)
-      edtDecoderAttentionMask = sOnes' bartDataType (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
-      edtCrossAttentionMask = sOnes' bartDataType (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: seqDim :|: SNil)
+  edtInput <- sOnes' (SDataType SInt64) (SShape $ batchDim :|: seqDim :|: SNil)
+  edtAttentionMask <- sOnes' bartDataType (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
+  edtDecoderInput <- sOnes' (SDataType SInt64) (SShape $ batchDim :|: decoderSeqDim :|: SNil)
+  edtDecoderAttentionMask <- sOnes' bartDataType (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
+  edtCrossAttentionMask <- sOnes' bartDataType (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: seqDim :|: SNil)
   let spec = encoderDecoderTransformerSpec SBART SWithLMHead (SNat @4) (SNat @4) gradient device bartDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim bartPosEncDim vocabDim bartDropoutP bartEps
   (sedtModel, g') <- initialize spec g
-  (bartOutput, g'') <-
-    let edtPos = sOnes' (SDataType SInt64) (SShape $ seqDim :|: SNil)
-        edtDecoderPos = sOnes' (SDataType SInt64) (SShape $ decoderSeqDim :|: SNil)
-     in forward sedtModel EncoderDecoderTransformerInput {..} g'
+  (bartOutput, g'') <- do
+    edtPos <- sOnes' (SDataType SInt64) (SShape $ seqDim :|: SNil)
+    edtDecoderPos <- sOnes' (SDataType SInt64) (SShape $ decoderSeqDim :|: SNil)
+    forward sedtModel EncoderDecoderTransformerInput {..} g'
   (bartOutput', g''') <-
     let sedtDecoderInputShift = ShiftRight bartEOSTokenId
         sedtPaddingMaskShift = ShiftRight 0

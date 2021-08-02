@@ -40,17 +40,17 @@ testEncoderOnlyTransformer = do
   let batchDim = SName @"*" :&: SSize @3
       seqDim = SName @"*" :&: SSize @13
       sOnes' = (sOnes .) . TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device
-      eotInput = sOnes' (SDataType SInt64) (SShape $ batchDim :|: seqDim :|: SNil)
-      eotInputType = eotInput
-      eotAttentionMask = sOnes' dataType (SShape $ batchDim :|: seqDim :|: seqDim :|: SNil)
+  eotInput <- sOnes' (SDataType SInt64) (SShape $ batchDim :|: seqDim :|: SNil)
+  let eotInputType = eotInput
+  eotAttentionMask <- sOnes' dataType (SShape $ batchDim :|: seqDim :|: seqDim :|: SNil)
   (bertOutput, g'') <- do
     let spec = NamedModel "bert." $ encoderOnlyTransformerSpec SBERT SWithLMHead (SNat @17) gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP eps
     (bert, g') <- initialize spec g
-    let eotPos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: SNil)
+    eotPos <- sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: SNil)
     forward bert EncoderOnlyTransformerInput {..} g'
   (robertaOutput, g'''') <- do
     let spec = NamedModel "roberta." $ encoderOnlyTransformerSpec SRoBERTa SWithLMHead (SNat @19) gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP eps
     (roberta, g''') <- initialize spec g''
-    let eotPos = sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: SNil)
+    eotPos <- sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: SNil)
     forward roberta EncoderOnlyTransformerInput {..} g'''
   pure ((bertOutput, robertaOutput), g'''')
