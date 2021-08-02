@@ -20,19 +20,20 @@ module Torch.Typed.Vision where
 import qualified Codec.Compression.GZip as GZip
 import qualified Codec.Picture as I
 import Control.Exception.Safe ( SomeException (..), throwIO, throw)
-import Control.Monad (forM_, (>=>))
+import Control.Monad (forM_, (>=>), foldM)
 import Data.Proxy (Proxy (..))
 import Data.Type.Equality ((:~:)(..))
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Internal as BSI
 import qualified Data.ByteString.Lazy as BS.Lazy
+import qualified Data.List as List (transpose, unfoldr)
 import qualified Data.Vector.Storable as V
 import qualified Foreign.ForeignPtr as F
 import qualified Foreign.Ptr as F
 import GHC.Exts (IsList (fromList), Item)
 import GHC.TypeLits
 import qualified Language.C.Inline as C
-import System.Directory (listDirectory)
+import System.Directory (listDirectory, doesFileExist, doesDirectoryExist)
 import System.IO.Unsafe ( unsafePerformIO )
 import qualified Torch.DType as D
 import Torch.Data.Pipeline
@@ -44,7 +45,7 @@ import qualified Torch.Internal.Managed.TensorFactories as LibTorch
 import qualified Torch.Tensor as D
 import qualified Torch.TensorOptions as D
 import Torch.Typed.Aux
-import Torch.Typed.Factories (ones, empty)
+import Torch.Typed.Factories (ones, zeros, empty)
 import Torch.HList
 import Torch.Typed.Functional
 import Torch.Typed.Tensor
@@ -174,50 +175,90 @@ instance (KnownShape shape, All KnownNat shape, [n, 3, h, w] ~ shape, 1 <= n, Kn
     let
       [n, c, h, w] = shapeVal @shape
       indexes = [ix * n .. (ix+1) * n - 1]
-      imgs = case someShape indexes of
+      (imgs, labels) = case someShape indexes of
               SomeShape (Proxy :: Proxy idxs) -> 
-                getFolderImages @idxs @shape folderData 
-      labels = ones @'[n] @'D.Int64 @device
+                (getFolderImages @idxs folderData, 
+                 getFolderLabels @idxs folderData)
     in pure (imgs, labels)
 
-  keys ImageFolder{..} = fromList [ 0 .. Prelude.length (imageNames folderData) `Prelude.div` (natValI @n) - 1]
-
-data FolderData = FolderData {foldPath :: FilePath, imageNames :: [FilePath]}
+  keys ImageFolder{..} = fromList [ 0 .. (sum . map Prelude.length . imageNames $ folderData) `Prelude.div` (natValI @n) - 1]
 
 getFolderImage :: 
   forall shape dtype device w h.
   (All KnownNat shape, KnownDevice device, KnownDType dtype,
   '[1, 3, w, h] ~ shape) =>
-  FolderData -> 
+  FilePath ->
+  [FilePath] -> 
   Int ->
-  Tensor device dtype shape
-getFolderImage imgFold imgIdx = case  readImageAsRGB8 @shape @dtype @device 
-                                      . (++) (foldPath imgFold ++ "/") 
-                                      . (!!) (imageNames imgFold)
-                                      $ imgIdx `Prelude.mod` Prelude.length (imageNames imgFold)  
-                                        of
-                                          Left err -> error "Path contains non-image files"
-                                          Right tensor -> tensor
+  IO (Tensor device dtype shape)
+getFolderImage path filePaths imgIdx = (readImageAsRGB8 @shape @dtype @device 
+                                      . (++) path
+                                      . (!!) filePaths
+                                      $ (imgIdx `Prelude.mod` Prelude.length filePaths)) >>= \case  
+                                          Left err -> throwIO . userError $ "Path contains non-image files"
+                                          Right tensor -> return tensor
+
 
 getFolderImages ::
-  forall idxs shape dtype device n w h a as.
+  forall idxs shape dtype device n w h.
   (All KnownNat shape, KnownDType dtype, KnownDevice device,
    KnownShape idxs,
    1 <= n,
   '[n, 3, w, h] ~ shape) =>
   FolderData ->
   Tensor device dtype shape
-getFolderImages imgFold = squeezeDim @0
+getFolderImages folder = squeezeDim @0
                             . stack' @1 @'[1, 3, w, h] @(1 ': shape)
-                            . map (getFolderImage @'[1, 3, w, h] imgFold)
-                            $ shapeVal @idxs
+                            . concat
+                            $ zipWith3 (\path names idxs -> map (unsafePerformIO . getFolderImage @'[1, 3, w, h] path names) idxs) 
+                                       (sourcePaths folder)
+                                       (imageNames folder)
+                                       (List.transpose
+                                          . takeWhile (not . null) . List.unfoldr (Just . splitAt (Prelude.length $ sourcePaths folder)) 
+                                          $ shapeVal @idxs)
+
+getFolderLabels ::
+  forall idxs shape dtype device n.
+  (KnownShape idxs, KnownShape shape, KnownDevice device, KnownDType dtype, All KnownNat shape,
+   '[n] ~ shape
+  ) =>
+  FolderData ->
+  Tensor device dtype shape 
+getFolderLabels folder = stack' @0 @'[] @'[n]
+                         . concat
+                         $ zipWith (\a b -> map (\_ -> addScalar a (zeros :: Tensor device dtype '[])) b)
+                                   (sourceLabels folder)
+                                   (List.transpose
+                                        . takeWhile (not . null) . List.unfoldr (Just . splitAt (Prelude.length $ sourcePaths folder)) 
+                                        $ shapeVal @idxs)
   
 
  
-
+data FolderData = FolderData {sourceLabels :: [Int], sourcePaths :: [FilePath], imageNames :: [[FilePath]]}
 
 getImageFolder :: String -> IO FolderData
-getImageFolder path = listDirectory path >>= return . (FolderData path) 
+getImageFolder path' = do
+     zippedPaths <- expandTree path'
+     let (paths, contents) = unzip zippedPaths
+     return $ FolderData (reverse [0..(Prelude.length paths - 1)]) paths contents
+     where
+        expandTree' :: FilePath -> [(FilePath, [FilePath])] -> FilePath -> IO [(FilePath, [FilePath])]
+        expandTree' currentPath currentList path = expandTree (currentPath ++ path) >>= return . (++ currentList)
+
+        expandTree :: FilePath -> IO [(FilePath, [FilePath])]
+        expandTree currentPath = do
+              let path = if last currentPath == '/' then currentPath else currentPath ++ "/" 
+              a <- listDirectory path :: IO [FilePath]
+              b <- doesFileExist . (++) path . head $ a
+              c <- doesDirectoryExist . (++) path . head $ a
+              let expand' | b = return [(path, a)] :: IO [(FilePath, [FilePath])]
+                          | c && not b = foldM (expandTree' path) [] a
+                          | otherwise  = error "Invalid file type in folder tree"
+              expand'
+            
+            
+            
+              
 
 -- Special implementation of SomeShape for working with elements of 2D tensors
 
@@ -421,8 +462,8 @@ readImageAsRGB8 ::
    KnownDType dtype, KnownDevice device,
    [1, 3, h, w] ~ shape) => 
   FilePath -> 
-  Either String (Tensor device dtype shape)
-readImageAsRGB8 file = unsafePerformIO $ 
+  IO (Either String (Tensor device dtype shape))
+readImageAsRGB8 file =
   I.readImage file >>= \case
     Left err -> return $ Left err
     Right img' -> return . Right . fromDynImage @shape @dtype @device . I.ImageRGB8 . I.convertRGB8 $ img'
@@ -449,8 +490,10 @@ writeImage pixel tensor = do
 
 writePng :: 
  forall shape dtype device. 
-  (KnownShape shape,
+  (KnownShape shape, All KnownNat shape,
    KnownShape (shape ++ '[1]),
+   2 <= ListLength shape,
+   ListLength shape <= 4,
    KnownDType dtype,
    'D.UInt8 ~ dtype
   ) => 
@@ -465,11 +508,13 @@ writePng file tensor = do
     [height, width, 3] -> writeImage @(1 ': shape) (I.PixelRGB8 0 0 0) tensor >>= I.writePng file
     format -> throwIO $ userError $ "Can not write a image. " ++ show format ++ " is unsupported format."
 
+-- Other permute checks can be bypassed with known dimensions
+
 -- [batch, height, width, channel] -> [batch, channel, height, width]
 hwc2chw ::   
   forall device dtype shape shape'.
   ( 4 ~ ListLength shape,
-    shape' ~ PermuteDims shape '[0, 3, 1, 2] 0
+    shape' ~ PermuteDims shape shape '[0, 3, 1, 2] 0
   ) =>
   Tensor device dtype shape ->
   Tensor device dtype shape' -- output
@@ -479,7 +524,7 @@ hwc2chw t = unsafePerformIO $ cast2 LibTorch.tensor_permute_l t ([0, 3, 1, 2] ::
 chw2hwc ::   
   forall device dtype shape shape'.
   ( 4 ~ ListLength shape,
-    shape' ~ PermuteDims shape '[0, 2, 3, 1] 0
+    shape' ~ PermuteDims shape shape '[0, 2, 3, 1] 0
   ) =>
   Tensor device dtype shape ->
   Tensor device dtype shape' -- output

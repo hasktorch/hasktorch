@@ -1694,33 +1694,51 @@ anyDim ::
   Tensor device 'D.Bool shape'
 anyDim input = unsafePerformIO $ ATen.cast3 ATen.Managed.any_tlb input (natValI @dim) (keepOrDropDimVal @keepOrDropDim)
 
--- PermuteDims' [1, 2, 3, 4] [3, 0, 2, 1] 
--- [4, 1, 3, 2]
-
 type family ListMax (list :: [Nat]) :: Nat where
   ListMax '[] = 0
   ListMax (x:xs) = Max x (ListMax xs)
+
+type family Sum (list :: [Nat]) :: Nat where
+  Sum '[] = 0
+  Sum (x:xs) = x + (Sum xs)
 
 
 type CheckPermuteDims (shape :: [Nat]) (permuteDims :: [Nat]) (outputShape :: [Nat]) = (
     KnownShape permuteDims,
     KnownShape outputShape,
-    ListLength shape >= ListLength permuteDims, 
-    ListLength permuteDims >= ListLength shape,
-    (ListLength shape + 1) >= ListMax permuteDims,
+    ListLength shape ~ ListLength permuteDims, 
+    ListLength shape ~ (ListMax permuteDims + 1),
+    ((ListLength shape - 1) * ListLength shape) ~ (Sum permuteDims * 2),
 
-    outputShape ~ PermuteDims shape permuteDims 0
+    outputShape ~ PermuteDims shape shape permuteDims 0
     )
 
-type family PermuteDims (shape :: [Nat]) (permuteDims :: [Nat]) (idx :: Nat) :: [Nat] where
-  PermuteDims shape '[] idx = shape
-  PermuteDims shape (x ': xs) idx = PermuteDims (ReplaceDim' idx shape (Index shape x)) xs (idx + 1) 
+type family PermuteDims (shape :: [Nat]) (shape' :: [Nat]) (permuteDims :: [Nat]) (idx :: Nat) :: [Nat] where
+  PermuteDims shape shape' '[] idx = shape'
+  PermuteDims shape shape' (x ': xs) idx = PermuteDims shape (ReplaceDim' idx shape' (Index shape x)) xs (idx + 1) 
 
 
 
--- | Permute the dimensions of this tensor.
+-- | permute
+--
+-- >>> t = ones :: CPUTensor 'D.Float '[1, 2, 3, 4]
+-- >>> t' = permute @'[1, 3, 2, 0] t
+-- >>> dtype &&& shape $ t'
+-- (Float,[2,4,3,1])
+--
+-- >>> t = ones :: CPUTensor 'D.Float '[1, 2]
+-- >>> t' = permute @'[1, 0] t
+-- >>> dtype &&& shape $ t'
+-- (Float,[2,1])
+--
+-- >>> t = ones :: CPUTensor 'D.Float '[6, 1, 5, 2, 4, 3]
+-- >>> t' = permute @'[1, 3, 5, 4, 2, 0] t
+-- >>> dtype &&& shape $ t'
+-- (Float,[1,2,3,4,5,6])
+
+
 permute ::
-  forall device dtype shape permuteDims shape'.
+  forall permuteDims shape device dtype shape'.
   ( CheckPermuteDims shape permuteDims shape'
   ) =>
   Tensor device dtype shape ->

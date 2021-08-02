@@ -20,19 +20,20 @@ import Control.Monad
   ( MonadPlus,
     forM_,
     when,
-    (>=>)
+    (<=<)
   )
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Internal as BSI
 import Data.Int
 import qualified Data.Vector.Storable as V
 import Data.Word
+import qualified Data.List as List (transpose, unfoldr)
 import qualified Foreign.ForeignPtr as F
 import qualified Foreign.Ptr as F
 import GHC.Exts (IsList (fromList))
 import qualified Language.C.Inline as C
 import Pipes
-import System.Directory (listDirectory)
+import System.Directory (listDirectory, doesFileExist)
 import System.IO.Unsafe
 import System.Random (mkStdGen, randoms)
 import qualified Torch.DType as D
@@ -44,7 +45,7 @@ import Torch.Internal.Cast
 import qualified Torch.Internal.Managed.TensorFactories as LibTorch
 import Torch.NN
 import Torch.Tensor
-import Torch.TensorFactories (onesLike)
+import Torch.TensorFactories (onesLike, zeros')
 import qualified Torch.Tensor as D
 import qualified Torch.TensorOptions as D
 import Torch.Typed.Vision as I (MnistData (..), length, getLabel, FolderData (..), getImageFolder)
@@ -128,7 +129,7 @@ instance Applicative m => Dataset m (ImageFolder m) Int (Tensor, Tensor) where
     let
       (n, _, h, w) = finalShape
       indexes = [ix * n .. (ix+1) * n - 1]
-      imgs = squeezeDim 0 . unsafePerformIO $ getFolderImages folderData indexes [h, w]
+      imgs = unsafePerformIO $ getFolderImages folderData indexes [h, w]
       labels = _toType D.Int64 . onesLike $ imgs
     in pure (imgs, labels)
 
@@ -136,8 +137,8 @@ instance Applicative m => Dataset m (ImageFolder m) Int (Tensor, Tensor) where
     where 
      (batchSize, _, _, _) = finalShape
 
-getFolderImage :: FolderData -> Int -> IO Tensor
-getFolderImage imgFold imgIdx = (readImageAsRGB8 . (++) (foldPath imgFold ++ "/") . (!!) (imageNames imgFold)) imgIdx >>=
+getFolderImage :: FilePath -> [FilePath] -> Int -> IO Tensor
+getFolderImage path names imgIdx = (readImageAsRGB8 . (++) path . (!!) names) (imgIdx `P.mod` P.length names) >>=
                                   \case
                                       Left error -> throwIO $ userError "Path contains non-image files"
                                       Right tensor -> return . _toType D.Float . hwc2chw $ tensor 
@@ -147,8 +148,25 @@ getFolderImages ::
   [Int] ->
   [Int] ->
   IO Tensor
-getFolderImages imgFold imgIdxs size = mapM (getFolderImage imgFold >=> (\x -> return $ resize x size "bilinear" True)) imgIdxs >>= return . stack (Dim 1)
+getFolderImages folder imgIdxs size = (>>= return . squeezeDim 0 . stack (Dim 1) . concat) 
+                                        $ mapM mappingFunc . zip3 (sourcePaths folder :: [FilePath]) (imageNames folder :: [[FilePath]]) $ (formattedIdxs :: [[Int]])
+                                            where 
+                                              formattedIdxs = List.transpose . takeWhile (not . null) . List.unfoldr (Just . splitAt (P.length $ sourcePaths folder)) $ imgIdxs :: [[Int]]
+                                              mappingFunc :: (FilePath, [FilePath], [Int]) -> IO [Tensor]
+                                              mappingFunc (path, names, idxs) =  mapM ((\x -> return $ resize x size "bilinear" True) <=< getFolderImage path names :: Int -> IO Tensor) idxs
 
+getFolderLabels ::
+  FolderData ->
+  [Int] ->
+  Tensor 
+getFolderLabels folder imgIdxs = stack (Dim 0) . concat
+                         $ zipWith mappingFunc 
+                            (sourceLabels folder)
+                            formattedIdxs
+                            where 
+                              formattedIdxs = List.transpose . takeWhile (not . null) . List.unfoldr (Just . splitAt (P.length $ sourcePaths folder)) $ imgIdxs :: [[Int]]
+                              mappingFunc :: Int -> [Int] -> [Tensor]
+                              mappingFunc label section = map (\_ -> addScalar label (zeros' [])) section
 
 -- END ImageFolder Dataset --
 

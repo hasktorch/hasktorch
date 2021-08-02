@@ -31,7 +31,7 @@ checkImageFolder = do
     imageFolder <- getImageFolder "test/data/images"
     let mnist = MnistData imagesBS labelsBS
     (asValue (toDynamic (reshape @'[1, 1, 28, 28] $ getImages @1 mnist [0 ..])) :: [[[[Float]]]])
-      `shouldBe` asValue (toDynamic $ narrow @1 @0 @1 . getFolderImage @'[1, 3, 28, 28] @'D.Float  @'(CPU, 0) imageFolder $ 0)
+      `shouldBe` asValue (toDynamic $ narrow @1 @0 @1 . getFolderImages @'[0] @'[1, 3, 28, 28] @'D.Float  @'(CPU, 0) $ imageFolder)
 
 spec :: Spec
 spec = describe "Load images" $ do
