@@ -303,30 +303,6 @@ prediction `mseLoss` target =
       target
       (1 :: Int) -- reduce mean
 
--- | Compute the loss of the model.
-computeLoss ::
-  _ =>
-  -- | model specification
-  ModelSpec model ->
-  -- | model state dict
-  StateDict ->
-  -- | input
-  input ->
-  -- | expected output
-  Tensor eoGradient eoLayout eoDevice eoDataType eoShape ->
-  -- | random generator
-  Generator generatorDevice ->
-  -- | loss
-  m (_, Generator generatorOutputDevice)
-computeLoss modelSpec stateDict input expectedOutput =
-  runIxStateT $
-    ilift (flip evalStateT stateDict $ fromStateDict modelSpec mempty)
-      >>>= ( \model ->
-               ireturn input
-                 >>>= IxStateT . forward model
-                 >>>= ilift . (`mseLoss` expectedOutput)
-           )
-
 stepWithGenerator ::
   ( SGetGeneratorDevice generatorDevice,
     SGetGeneratorDevice generatorOutputDevice
@@ -410,6 +386,43 @@ train optim modelSpec stateDictKeys examples g = do
           done = pure . Right
       P.foldM step init' done producer'
 
+eval ::
+  ( MonadIO m,
+    HasStateDict model,
+    HasForward model input generatorDevice (Tensor lossGradient lossLayout lossDataType lossDevice lossShape) generatorOutputDevice,
+    HasForward model input generatorOutputDevice (Tensor lossGradient lossLayout lossDataType lossDevice lossShape) generatorOutputDevice
+  ) =>
+  ForeignPtr ATen.Optimizer ->
+  ModelSpec model ->
+  [StateDictKey] ->
+  P.ListT m input ->
+  Generator generatorDevice ->
+  m
+    ( Either
+        (Generator generatorDevice)
+        (Tensor lossGradient lossLayout lossDataType lossDevice lossShape, Generator generatorOutputDevice)
+    )
+eval optim modelSpec stateDictKeys examples g = do
+  let producer = P.zip (P.enumerate examples) (P.each [0 :: Int ..])
+  x <- P.next producer
+  case x of
+    Left _ -> pure . Left $ g
+    Right ((input, iter), producer') -> do
+      let step ((loss, _), g') (input', iter') = liftIO $ do
+            tlPtr <- ATen.getParams optim
+            stateDict <- ATen.uncast tlPtr (pure . Map.fromList . zip stateDictKeys)
+            model <- flip evalStateT stateDict $ fromStateDict modelSpec mempty
+            (loss', g'') <- forward model input' g'
+            pure ((loss + loss', iter'), g'')
+          init' = liftIO $ do
+            tlPtr <- ATen.getParams optim
+            stateDict <- ATen.uncast tlPtr (pure . Map.fromList . zip stateDictKeys)
+            model <- flip evalStateT stateDict $ fromStateDict modelSpec mempty
+            (loss, g') <- forward model input g
+            pure ((loss, iter), g')
+          done ((loss, iter'), g'') = pure . Right $ (loss `divScalar` iter', g'')
+      P.foldM step init' done producer'
+
 -- | Single-cycle learning rate schedule.
 -- See, for instance, https://arxiv.org/abs/1803.09820.
 singleCycleLearningRateSchedule :: Double -> Double -> Int -> Int -> Int -> Int -> Double
@@ -424,6 +437,10 @@ singleCycleLearningRateSchedule maxLearningRate finalLearningRate numEpochs numW
             / fromIntegral (numEpochs - numCooldownEpochs - numWarmupEpochs)
      in a * maxLearningRate + (1 - a) * finalLearningRate
   | otherwise = finalLearningRate
+
+data Monitor
+  = TrainingMonitor {mtLoss :: Float, mtEpoch :: Int}
+  | EvalMonitor {meLoss :: Float, meEpoch :: Int}
 
 -- | Run the two-layer network training loop on a toy dataset.
 runTwoLayerNetworkExample :: IO ()
@@ -486,36 +503,52 @@ runTwoLayerNetworkExample = do
         )
 
   stateDict <- flip execStateT Map.empty $ toStateDict mempty model
-  optim <- liftIO $ mkAdam defaultAdamOptions {learningRate = 1e-4} (Map.elems stateDict)
+  let (stateDictKeys, tPtrs) = unzip $ Map.toList stateDict
+
+  optim <- liftIO $ mkAdam defaultAdamOptions {learningRate = 1e-4} tPtrs
 
   let step (streamingState', g) epoch = do
         -- let learningRate = learningRateSchedule epoch
+        -- ATen.setLearningRate optim learningRate
 
-        (examples :: P.ListT IO (Float, Float), shuffle) <- streamFromMap streamingState' trainingData
-
-        let collateFn :: ([(Float, Float)] -> Maybe _)
-            collateFn exs =
-              let (xs, ys) = unzip exs
+        let collateFn chunk =
+              let (xs, ys) = unzip chunk
                   xs' = (: []) <$> xs
                   ys' = (: []) <$> ys
                   sToTensor' = sToTensor (SGradient SWithoutGradient) (SLayout SDense) device
                in (,) <$> sToTensor' xs' <*> sToTensor' ys'
+            collate = P.lift . bufferedCollate (P.bounded 1) batchSize collateFn . P.Select . P.enumerate
 
-        stream <-
-          bufferedCollate (P.bounded 1) batchSize collateFn
-            . P.Select
-            $ P.enumerate examples
-
-        x <- lift $ train optim modelSpec (Map.keys stateDict) stream g
-        g' <- case x of
+        (trainingStream, shuffle) <- P.lift $ streamFromMap streamingState' trainingData
+        trainingLoss <- do
+          batchedStream <- collate trainingStream
+          P.lift . lift $ train optim modelSpec stateDictKeys batchedStream g
+        g' <- case trainingLoss of
           Left g' -> pure g'
           Right (loss, g') -> do
-            lift $ print loss
+            P.yield (TrainingMonitor (fromTensor loss) epoch)
             pure g'
-        pure (streamingState' {shuffle}, g')
+
+        (evalStream, shuffle') <- P.lift $ streamFromMap streamingState' {shuffle} evaluationData
+        evalLoss <- do
+          batchedStream <- collate evalStream
+          P.lift . lift $ eval optim modelSpec stateDictKeys batchedStream g'
+        g'' <- case evalLoss of
+          Left g'' -> pure g''
+          Right (loss, g'') -> do
+            P.yield (EvalMonitor (fromTensor loss) epoch)
+            pure g''
+
+        pure (streamingState' {shuffle = shuffle'}, g'')
+
   let init' = pure (streamingState, g1)
+
   let done = pure
 
-  (streamingState', g2) <- flip runContT pure . P.foldM step init' done . P.each $ [1 .. numEpochs]
+  (streamingState', g2) <- flip runContT pure . P.runEffect $ P.drain $ P.foldM step init' done . P.each $ [1 .. numEpochs]
+
+  stateDict' <- do
+    tPtrs' :: [ForeignPtr ATen.Tensor] <- ATen.cast1 ATen.getParams optim
+    pure . Map.fromList $ zip stateDictKeys tPtrs'
 
   pure ()
