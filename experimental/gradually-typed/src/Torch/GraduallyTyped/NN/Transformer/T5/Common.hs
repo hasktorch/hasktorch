@@ -22,7 +22,7 @@ import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (ModelSpec)
 import Torch.GraduallyTyped.NN.Transformer.GEncoderDecoder (EDTDecoderF, EDTEncoderF, EDTHeadF, EDTSharedEmbeddingF, GEncoderDecoderTransformer (..), GSimplifiedEncoderDecoderTransformer (..), encoderDecoderTransformerSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (MkRelPos (..), MkTransformerAttentionMask (..), MkTransformerCrossAttentionMask (..), MkTransformerDecoderAttentionMask (..), MkTransformerPaddingMask (..), STransformerHead (), STransformerStyle (SByT5, ST5), ShiftRight (..), TransformerHead (..), TransformerStyle (ByT5, T5), mkTransformerInput)
-import Torch.GraduallyTyped.Prelude (Seq)
+import Torch.GraduallyTyped.Prelude (Catch)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Type (SGetDim, Tensor (..))
@@ -204,15 +204,13 @@ mkT5Input ::
   ( MonadThrow m,
     SGetDim batchDim,
     SGetDim seqDim,
-    'Shape '[batchDim, seqDim]
-      ~ Seq
-          ( 'Shape
-              '[ 'Dim ('Name "*") 'UncheckedSize,
-                 'Dim ('Name "*") 'UncheckedSize
-               ]
-              <+> 'Shape '[batchDim, seqDim]
-          )
-          ('Shape '[batchDim, seqDim]),
+    Catch
+      ( 'Shape
+          '[ 'Dim ('Name "*") 'UncheckedSize,
+             'Dim ('Name "*") 'UncheckedSize
+           ]
+          <+> 'Shape '[batchDim, seqDim]
+      ),
     output
       ~ Tensor
           ('Gradient 'WithoutGradient)

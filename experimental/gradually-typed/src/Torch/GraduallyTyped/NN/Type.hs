@@ -15,3 +15,8 @@ data HasBias = WithBias | WithoutBias
   deriving stock (Eq, Ord, Show, Generic)
 
 genSingletons [''HasBias]
+
+data HasDropout = WithDropout | WithoutDropout
+  deriving stock (Eq, Ord, Show, Generic)
+
+genSingletons [''HasDropout]

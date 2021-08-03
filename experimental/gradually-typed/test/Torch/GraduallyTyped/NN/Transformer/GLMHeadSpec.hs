@@ -18,8 +18,8 @@ testLMHead = do
       inputEmbedDim = SName @"*" :&: SSize @512
       vocabDim = SName @"*" :&: SSize @30522
       eps = 1e-6
-  let g = sMkGenerator device 0
-      spec = NamedModel "lmHead." $ lmHeadSpec SBART gradient device dataType inputEmbedDim vocabDim eps
+  g <- sMkGenerator device 0
+  let spec = NamedModel "lmHead." $ lmHeadSpec SBART gradient device dataType inputEmbedDim vocabDim eps
   (lmHead, g') <- initialize spec g
   lmHead' <- flip evalStateT Map.empty $ do
     toStateDict mempty lmHead
@@ -27,6 +27,6 @@ testLMHead = do
   let batchDim = SName @"*" :&: SSize @3
       seqDim = SName @"*" :&: SSize @13
       sOnes' = (sOnes .) . TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device
-      input = sOnes' dataType (SShape $ batchDim :|: seqDim :|: inputEmbedDim :|: SNil)
+  input <- sOnes' dataType (SShape $ batchDim :|: seqDim :|: inputEmbedDim :|: SNil)
   (output, _) <- forward lmHead' input g'
   pure output

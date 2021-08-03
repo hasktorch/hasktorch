@@ -14,6 +14,7 @@ import           GHC.Generics (Generic)
 import qualified Pipes.Prelude as P
 import           Pipes
 import           Pipes.Safe (runSafeT)
+import           Pipes.Concurrent (unbounded)
 import           Torch
 import           Torch.Data.CsvDatastream
 
@@ -94,7 +95,7 @@ main = runSafeT $ do
                                                                             , bufferedShuffle = Just 150 
                                                                             }
   foldM (\model epoch -> 
-            runContT  (streamFrom' datastreamOpts irisTrain [()] >>= pmap  irisToTensor) $
+            runContT  (streamFrom' datastreamOpts irisTrain [()] >>= pmap unbounded irisToTensor) $
               trainLoop model optimizer
         ) init [1..10]
 

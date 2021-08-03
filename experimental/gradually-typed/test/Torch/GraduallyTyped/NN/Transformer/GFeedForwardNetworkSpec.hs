@@ -19,8 +19,8 @@ testFFN = do
       queryEmbedDim = SName @"*" :&: SSize @3
       dropoutP = 0
       eps = 1e-6
-  let g = sMkGenerator device 0
-      spec = NamedModel "ffn." $ transformerFeedForwardNetworkSpec SByT5 gradient device dataType queryEmbedDim ffnDim dropoutP eps
+  g <- sMkGenerator device 0
+  let spec = NamedModel "ffn." $ transformerFeedForwardNetworkSpec SByT5 gradient device dataType queryEmbedDim ffnDim dropoutP eps
   (ffn, g') <- initialize spec g
   ffn' <- flip evalStateT Map.empty $ do
     toStateDict mempty ffn
@@ -28,6 +28,6 @@ testFFN = do
   let batchDim = SName @"*" :&: SSize @2
       seqDim = SName @"*" :&: SSize @1
       sOnes' = (sOnes .) . TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device
-      query = sOnes' dataType (SShape $ batchDim :|: seqDim :|: queryEmbedDim :|: SNil)
+  query <- sOnes' dataType (SShape $ batchDim :|: seqDim :|: queryEmbedDim :|: SNil)
   (output, _) <- forward ffn' query g'
   pure output

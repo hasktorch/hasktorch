@@ -301,4 +301,5 @@ executable iris-classification
                      , cassava
                      , pipes
                      , pipes-safe
+                     , pipes-concurrency
                      , vector

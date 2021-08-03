@@ -16,6 +16,7 @@ module Torch.GraduallyTyped.NN.Transformer.GLMHead where
 
 import Control.Monad.Indexed (IxPointed (..), (>>>=))
 import Control.Monad.Indexed.State (IxStateT (..))
+import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingKind (fromSing))
@@ -337,7 +338,7 @@ instance
     generatorDevice
   where
   initialize (GBias biasSpec) =
-    runIxStateT (GBias <<$>> (ireturn . sZeros $ biasSpec))
+    runIxStateT (GBias <<$>> (ilift . sZeros $ biasSpec))
 
 instance
   HasInitialize
@@ -347,7 +348,7 @@ instance
     generatorDevice
   where
   initialize (GBias (NamedModel biasName biasSpec)) =
-    runIxStateT (GBias <<$>> (ireturn . NamedModel biasName . sZeros $ biasSpec))
+    runIxStateT (GBias <<$>> ilift (NamedModel biasName <$> sZeros biasSpec))
 
 instance
   ( HasStateDict dense,
