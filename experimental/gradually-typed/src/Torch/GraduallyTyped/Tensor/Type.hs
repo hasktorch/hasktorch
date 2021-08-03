@@ -318,15 +318,17 @@ instance Exception GradientError where
       <> show geExpected
       <> "`."
 
--- | Checks whether or not the input tensor has the memory layout 'layout'
+-- | Checks whether or not gradient computations are required for a tensor
 -- and returns a statically annotated copy of it wrapped in a 'MonadThrow' 'm'.
 --
--- For instance, if 'm' is 'Maybe', then the result will be wrapped in 'Just' if and only if the tensor has indeed the memory layout 'layout'.
--- If it does not have it, then the result will be 'Nothing'.
+-- For instance, if 'm' is 'Maybe', then the result will be wrapped in 'Just'
+-- if and only if gradients are computed for the tensor according to the argument @gradient@.
+-- If gradients are expected but none are computed, then the result will be 'Nothing'.
+-- If gradients are not expected but are computed, then the result will be 'Nothing' as well.
 --
 -- In the REPL, 'm' will default to 'IO':
--- >>> t <- sOnes $ TensorSpec (SGradient SWithGradient) (SUncheckedLayout Dense) (SDevice SCPU) (SDataType SFloat) (SShape $ SName @"batch" :&: SSize @32 :|: SName @"feature" :&: SSize @8 :|: SNil)
--- >>> t' <- sCheckedLayout (SLayout SDense) t
+-- >>> t <- sOnes $ TensorSpec (SUncheckedGradient WithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SName @"batch" :&: SSize @32 :|: SName @"feature" :&: SSize @8 :|: SNil)
+-- >>> t' <- sCheckedGradient (SGradient SWithGradient) t
 -- >>> :type t'
 -- t'
 --   :: Tensor
@@ -337,8 +339,8 @@ instance Exception GradientError where
 --        ('Shape
 --           '[ 'Dim ('Name "batch") ('Size 32),
 --              'Dim ('Name "feature") ('Size 8)])
--- >>> t' <- sCheckedLayout (SLayout SSparse) t
--- *** Exception: LayoutError {leExpected = Sparse, leActual = Dense}
+-- >>> t' <- sCheckedGradient (SGradient SWithoutGradient) t
+-- *** Exception: GradientError {geExpected = WithoutGradient, geActual = WithGradient}
 sCheckedGradient ::
   forall gradient' m gradient layout device dataType shape.
   (SGetGradient gradient, MonadThrow m, Catch (gradient <+> gradient')) =>
@@ -364,16 +366,16 @@ checkedGradient ::
   m (Tensor gradient' layout device dataType shape)
 checkedGradient = sCheckedGradient (sing @gradient')
 
--- | Returns the input tensor but with 'UncheckedLayout' as memory layout type annotation.
--- Any static information about the tensor's memory layout is thus erased.
+-- | Returns the input tensor but with 'UncheckedGradeint' as gradient type annotation.
+-- Any static information about whether or not the gradient computation is required for the tensor is lost.
 -- However, the tensor's underlying data structure is not changed.
 --
 -- >>> t <- ones @('Gradient 'WithGradient) @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)])
--- >>> :type uncheckedLayout t
--- uncheckedLayout t
+-- >>> :type uncheckedGradient t
+-- uncheckedGradient t
 --   :: Tensor
---        ('Gradient 'WithGradient)
---        'UncheckedLayout
+--        'UncheckedGradient
+--        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
 --        ('Shape
