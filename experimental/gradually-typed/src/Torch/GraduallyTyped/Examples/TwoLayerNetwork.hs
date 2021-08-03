@@ -77,17 +77,18 @@ instance Dataset IO SincData Int (Float, Float) where
 -- | Data type to represent a simple two-layer neural network.
 -- It is a product type of two layer types, @fstLayer@ and @sndLayer@,
 -- and an activation function, @activation@.
-data TwoLayerNetwork fstLayer activation sndLayer = TwoLayerNetwork
-  { fstLayer :: fstLayer,
-    activation :: activation,
-    sndLayer :: sndLayer
+data TwoLayerNetwork fstLayer activation dropout sndLayer = TwoLayerNetwork
+  { tlnFstLayer :: fstLayer,
+    tlnActivation :: activation,
+    tlnDropout :: dropout,
+    tlnSndLayer :: sndLayer
   }
 
 -- | The specification of a two-layer network is the product of the
 -- specifications of its two layers and the activation function.
 type instance
-  ModelSpec (TwoLayerNetwork fstLayer activation sndLayer) =
-    TwoLayerNetwork (ModelSpec fstLayer) (ModelSpec activation) (ModelSpec sndLayer)
+  ModelSpec (TwoLayerNetwork fstLayer activation dropout sndLayer) =
+    TwoLayerNetwork (ModelSpec fstLayer) (ModelSpec activation) (ModelSpec dropout) (ModelSpec sndLayer)
 
 -- | To initialize a two-layer network,
 -- we need its specification and a random generator.
@@ -99,19 +100,21 @@ type instance
 instance
   ( HasInitialize fstLayer generatorDevice fstLayer generatorDevice,
     HasInitialize activation generatorDevice activation generatorDevice,
+    HasInitialize dropout generatorDevice dropout generatorDevice,
     HasInitialize sndLayer generatorDevice sndLayer generatorDevice
   ) =>
   HasInitialize
-    (TwoLayerNetwork fstLayer activation sndLayer)
+    (TwoLayerNetwork fstLayer activation dropout sndLayer)
     generatorDevice
-    (TwoLayerNetwork fstLayer activation sndLayer)
+    (TwoLayerNetwork fstLayer activation dropout sndLayer)
     generatorDevice
   where
-  initialize (TwoLayerNetwork fstLayerSpec activationSpec sndLayerSpec) =
+  initialize (TwoLayerNetwork fstLayerSpec activationSpec dropoutSpec sndLayerSpec) =
     runIxStateT $
       TwoLayerNetwork
         <<$>> (IxStateT . initialize $ fstLayerSpec)
         <<*>> (IxStateT . initialize $ activationSpec)
+        <<*>> (IxStateT . initialize $ dropoutSpec)
         <<*>> (IxStateT . initialize $ sndLayerSpec)
 
 -- | @HasStateDict@ instance for a two-layer network.
@@ -124,31 +127,34 @@ instance
 -- The state dictionary of the two-layer network is the union of the
 -- state dictionaries its layers.
 instance
-  (HasStateDict fstLayer, HasStateDict activation, HasStateDict sndLayer) =>
-  HasStateDict (TwoLayerNetwork fstLayer activation sndLayer)
+  (HasStateDict fstLayer, HasStateDict activation, HasStateDict dropout, HasStateDict sndLayer) =>
+  HasStateDict (TwoLayerNetwork fstLayer activation dropout sndLayer)
   where
-  fromStateDict (TwoLayerNetwork fstLayerSpec activationSpec sndLayerSpec) k =
+  fromStateDict (TwoLayerNetwork fstLayerSpec activationSpec dropoutSpec sndLayerSpec) k =
     TwoLayerNetwork
       <$> fromStateDict fstLayerSpec k
       <*> fromStateDict activationSpec k
+      <*> fromStateDict dropoutSpec k
       <*> fromStateDict sndLayerSpec k
   toStateDict k TwoLayerNetwork {..} = do
-    () <- toStateDict k fstLayer
-    () <- toStateDict k activation
-    () <- toStateDict k sndLayer
+    () <- toStateDict k tlnFstLayer
+    () <- toStateDict k tlnActivation
+    () <- toStateDict k tlnDropout
+    () <- toStateDict k tlnSndLayer
     pure ()
 
 -- | Specifies the type of the two-layer network.
-type TwoLayerNetworkF gradient device dataType inputDim outputDim hiddenDim =
+type TwoLayerNetworkF gradient hasDropout device dataType inputDim outputDim hiddenDim =
   NamedModel
     ( TwoLayerNetwork
-        (FstLayerF gradient device dataType inputDim hiddenDim)
-        ActivationF
-        (SndLayerF gradient device dataType outputDim hiddenDim)
+        (TLNFstLayerF gradient device dataType inputDim hiddenDim)
+        TLNActivationF
+        (TLNDropoutF hasDropout)
+        (TLNSndLayerF gradient device dataType outputDim hiddenDim)
     )
 
 -- | Specifies the type of the first layer of the neural network.
-type FstLayerF gradient device dataType inputDim hiddenDim =
+type TLNFstLayerF gradient device dataType inputDim hiddenDim =
   NamedModel
     ( GLinear
         (NamedModel (LinearWeightF gradient device dataType inputDim hiddenDim))
@@ -156,10 +162,15 @@ type FstLayerF gradient device dataType inputDim hiddenDim =
     )
 
 -- | Specifies the type of the activation function
-type ActivationF = Tanh
+type TLNActivationF = Tanh
+
+-- | Specifies the type of the dropout layer
+type family TLNDropoutF hasDropout where
+  TLNDropoutF 'WithDropout = Dropout
+  TLNDropoutF 'WithoutDropout = ()
 
 -- | Specifies the type of the second layer of the neural network.
-type SndLayerF gradient device dataType outputDim hiddenDim =
+type TLNSndLayerF gradient device dataType outputDim hiddenDim =
   NamedModel
     ( GLinear
         (NamedModel (LinearWeightF gradient device dataType hiddenDim outputDim))
@@ -168,9 +179,11 @@ type SndLayerF gradient device dataType outputDim hiddenDim =
 
 -- | Creates a value that specifies the parameters of a two-layer neural network.
 twoLayerNetworkSpec ::
-  forall gradient device dataType inputDim outputDim hiddenDim.
+  forall gradient hasDropout device dataType inputDim outputDim hiddenDim.
   -- | whether or not to compute gradients for the parametrs
   SGradient gradient ->
+  -- | whether or not to use dropout
+  SHasDropout hasDropout ->
   -- | which device to use
   SDevice device ->
   -- | which data type to use
@@ -181,13 +194,19 @@ twoLayerNetworkSpec ::
   SDim outputDim ->
   -- | hidden dimension
   SDim hiddenDim ->
+  -- | dropout rate
+  Double ->
   -- | specification for the network
-  ModelSpec (TwoLayerNetworkF gradient device dataType inputDim outputDim hiddenDim)
-twoLayerNetworkSpec gradient device dataType inputDim outputDim hiddenDim =
+  ModelSpec (TwoLayerNetworkF gradient hasDropout device dataType inputDim outputDim hiddenDim)
+twoLayerNetworkSpec gradient hasDropout device dataType inputDim outputDim hiddenDim dropoutP =
   NamedModel "twoLayerNetwork" $
     TwoLayerNetwork
       (NamedModel "fstLayer" $ linearSpec SWithBias gradient device dataType inputDim hiddenDim)
       Tanh
+      ( case hasDropout of
+          SWithDropout -> Dropout dropoutP
+          SWithoutDropout -> ()
+      )
       (NamedModel "sndLayer" $ linearSpec SWithBias gradient device dataType hiddenDim outputDim)
 
 -- | 'HasForward' instance used to define the forward pass of the model.
@@ -210,14 +229,20 @@ instance
       output1
       generatorDevice1,
     HasForward
-      sndLayer
+      dropout
       output1
       generatorDevice1
+      output2
+      generatorDevice2,
+    HasForward
+      sndLayer
+      output2
+      generatorDevice2
       output
       generatorOutputDevice
   ) =>
   HasForward
-    (TwoLayerNetwork fstLayer activation sndLayer)
+    (TwoLayerNetwork fstLayer activation dropout sndLayer)
     (Tensor gradient layout dataType device shape)
     generatorDevice
     output
@@ -226,13 +251,14 @@ instance
   forward TwoLayerNetwork {..} input =
     runIxStateT $
       ireturn input
-        >>>= IxStateT . forward fstLayer
-        >>>= IxStateT . forward activation
-        >>>= IxStateT . forward sndLayer
+        >>>= IxStateT . forward tlnFstLayer
+        >>>= IxStateT . forward tlnActivation
+        >>>= IxStateT . forward tlnDropout
+        >>>= IxStateT . forward tlnSndLayer
 
 instance
   ( HasForward
-      (TwoLayerNetwork fstLayer activation sndLayer)
+      (TwoLayerNetwork fstLayer activation dropout sndLayer)
       input
       generatorDevice
       (Tensor gradient layout device dataType shape)
@@ -247,7 +273,7 @@ instance
           ('Shape '[])
   ) =>
   HasForward
-    (TwoLayerNetwork fstLayer activation sndLayer)
+    (TwoLayerNetwork fstLayer activation dropout sndLayer)
     (input, Tensor gradient' layout' device' dataType' shape')
     generatorDevice
     output
@@ -431,8 +457,7 @@ eval ::
     HasForward model input generatorDevice (Tensor lossGradient lossLayout lossDataType lossDevice lossShape) generatorOutputDevice,
     HasForward model input generatorOutputDevice (Tensor lossGradient lossLayout lossDataType lossDevice lossShape) generatorOutputDevice
   ) =>
-  Optimizer model ->
-  ModelSpec model ->
+  model ->
   P.ListT m input ->
   Generator generatorDevice ->
   m
@@ -440,18 +465,16 @@ eval ::
         (Generator generatorDevice)
         (Tensor lossGradient lossLayout lossDataType lossDevice lossShape, Generator generatorOutputDevice)
     )
-eval optim modelSpec examples g = do
+eval model examples g = do
   let producer = P.zip (P.enumerate examples) (P.each [0 :: Int ..])
   x <- P.next producer
   case x of
     Left _ -> pure . Left $ g
     Right ((input, iter), producer') -> do
       let step ((loss, _), g') (input', iter') = liftIO $ do
-            model <- getModel modelSpec optim
             (loss', g'') <- forward model input' g'
             pure ((loss + loss', iter'), g'')
           init' = liftIO $ do
-            model <- getModel modelSpec optim
             (loss, g') <- forward model input g
             pure ((loss, iter), g')
           done ((loss, iter'), g'') = pure . Right $ (loss `divScalar` iter', g'')
@@ -506,21 +529,27 @@ runTwoLayerNetworkExample = do
       outputDim = SName @"*" :&: SSize @1
       -- hidden dimension of the network
       hiddenDim = SName @"*" :&: SSize @100
-  let -- create the model specification
-      modelSpec =
+  let -- create the model specifications
+      mkModelSpec hasGradient hasDropout =
         twoLayerNetworkSpec
-          (SGradient SWithGradient)
+          (SGradient hasGradient)
+          hasDropout
           device
           (SDataType SFloat)
           inputDim
           outputDim
           hiddenDim
+          0.1
+      -- during training, we need to turn dropout on and keep track of the gradient
+      trainingModelSpec = mkModelSpec SWithGradient SWithDropout
+      -- during evaluation, we don't need to turn dropout on, nor do we need to keep track of the gradient
+      evaluationModelSpec = mkModelSpec SWithoutGradient SWithoutDropout
 
   -- create a Torch random generator from the seed
   g0 <- sMkGenerator device seed
 
   -- initialize the model from the model specification using the generator
-  (model, g1) <- initialize modelSpec g0
+  (model, g1) <- initialize trainingModelSpec g0
 
   -- define collation function
   let collate' =
@@ -566,7 +595,7 @@ runTwoLayerNetworkExample = do
           (trainingStream, shuffle) <- P.lift $ streamFromMap streamingState' trainingData
           trainingLoss <- do
             batchedStream <- collate' trainingStream
-            P.lift . lift $ train optim modelSpec batchedStream g
+            P.lift . lift $ train optim trainingModelSpec batchedStream g
           case trainingLoss of
             Left g' -> pure (g', shuffle)
             Right (loss, g') -> do
@@ -578,7 +607,10 @@ runTwoLayerNetworkExample = do
           (evalStream, shuffle') <- P.lift $ streamFromMap streamingState' {shuffle} evaluationData
           evalLoss <- do
             batchedStream <- collate' evalStream
-            P.lift . lift $ eval optim modelSpec batchedStream g'
+            P.lift . lift $ do
+              stateDict <- getStateDict optim
+              evaluationModel <- flip evalStateT stateDict $ fromStateDict evaluationModelSpec mempty
+              eval evaluationModel batchedStream g'
           case evalLoss of
             Left g'' -> pure (g'', shuffle')
             Right (loss, g'') -> do
