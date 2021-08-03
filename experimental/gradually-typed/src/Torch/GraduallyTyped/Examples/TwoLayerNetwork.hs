@@ -48,20 +48,29 @@ import qualified Torch.Internal.Managed.Optim as ATen
 import qualified Torch.Internal.Type as ATen
 
 -- | Compute the sine cardinal (sinc) function,
--- see https://mathworld.wolfram.com/SincFunction.html
+-- see https://mathworld.wolfram.com/SincFunction.html.
 sinc :: Floating a => a -> a
 sinc a = Prelude.sin a / a
 
 -- | Compute the sine cardinal (sinc) function and add normally distributed noise
--- of strength epsilon
+-- of strength epsilon. We use the 'normal' function from 'Data.Random.Normal'
+-- which requires a random number generator with 'RandomGen' instance.
 noisySinc :: (Floating a, Random a, RandomGen g) => a -> a -> g -> (a, g)
 noisySinc eps a g = let (noise, g') = normal g in (sinc a + eps * noise, g')
 
--- | Datatype to represent a dataset of sine cardinal (sinc) inputs and outputs
+-- | Datatype to represent a dataset of sine cardinal (sinc) inputs and outputs.
+-- The 'name' field is used to identify the split of the dataset.
 data SincData = SincData {name :: Text, unSincData :: [(Float, Float)]} deriving (Eq, Ord)
 
--- | Create a dataset of noisy sine cardinal (sinc) values of a desired size
-mkSincData :: (RandomGen g, Monad m) => Text -> Int -> StateT g m SincData
+-- | Create a dataset of noisy sine cardinal (sinc) values of a desired size.
+mkSincData ::
+  (RandomGen g, Monad m) =>
+  -- | name of the dataset
+  Text ->
+  -- | number of samples
+  Int ->
+  -- | dataset in the state monad over the random generator
+  StateT g m SincData
 mkSincData name' size =
   let next' = do
         x <- (* 20) <$> state normal
@@ -69,14 +78,14 @@ mkSincData name' size =
         pure (x, y)
    in SincData name' <$> replicateM size next'
 
--- | 'Dataset' instance used for streaming sine cardinal (sinc) examples
+-- | 'Dataset' instance used for streaming sine cardinal (sinc) examples.
 instance Dataset IO SincData Int (Float, Float) where
   getItem (SincData _ d) k = maybe (fail "invalid key") pure $ d ^? element k
   keys (SincData _ d) = Set.fromList [0 .. Prelude.length d -1]
 
 -- | Data type to represent a simple two-layer neural network.
 -- It is a product type of two layer types, @fstLayer@ and @sndLayer@,
--- and an activation function, @activation@.
+-- an activation function, @activation@, and a dropout layer, @dropout@.
 data TwoLayerNetwork fstLayer activation dropout sndLayer = TwoLayerNetwork
   { tlnFstLayer :: fstLayer,
     tlnActivation :: activation,
@@ -93,9 +102,9 @@ type instance
 -- | To initialize a two-layer network,
 -- we need its specification and a random generator.
 -- The random generator is used to initialize the weights of the network.
--- The specification is used to determine the properties of the two layers
--- and the activation function.
--- The three components initialized separately and then combined into a single
+-- The specification is used to determine the properties of the two neural layers,
+-- the activation function, and the dropout layer.
+-- The four components are initialized separately and then combined into a single
 -- network.
 instance
   ( HasInitialize fstLayer generatorDevice fstLayer generatorDevice,
@@ -121,8 +130,8 @@ instance
 -- It allows for conversion of a two-layer network into a state dictionary and back.
 --
 -- To create a two-layer network from a state dictionary,
--- we need to first create its two layers and the activation function from the state dictionary.
--- Afterwards, we combine the three components into a single network.
+-- we need to first create its two neural layers, the activation function, and the dropout layer from the state dictionary.
+-- Afterwards, we combine the four components into a single network.
 --
 -- The state dictionary of the two-layer network is the union of the
 -- state dictionaries its layers.
@@ -312,6 +321,7 @@ defaultAdamOptions =
       amsgrad = False
     }
 
+-- | Optimizer data type.
 data Optimizer model where
   UnsafeOptimizer ::
     forall model.
@@ -322,6 +332,7 @@ data Optimizer model where
 
 type role Optimizer nominal
 
+-- | Get the model state dictionary from an optimizer.
 getStateDict ::
   forall model. Optimizer model -> IO StateDict
 getStateDict UnsafeOptimizer {..} =
@@ -329,13 +340,14 @@ getStateDict UnsafeOptimizer {..} =
     tPtrs :: [ForeignPtr ATen.Tensor] <- ATen.cast1 ATen.getParams optimizerPtr
     pure . Map.fromList $ zip optimizerStateDictKeys tPtrs
 
+-- | Extract a model from an optimizer.
 getModel ::
   forall model. HasStateDict model => ModelSpec model -> Optimizer model -> IO model
 getModel modelSpec optimizer = do
   stateDict <- getStateDict optimizer
   flip evalStateT stateDict $ fromStateDict modelSpec mempty
 
--- | Create a new Adam optimizer.
+-- | Create a new Adam optimizer from a model.
 mkAdam ::
   forall model.
   HasStateDict model =>
@@ -376,6 +388,7 @@ prediction `mseLoss` target =
       target
       (1 :: Int) -- reduce mean
 
+-- | Perform one step of optimization.
 stepWithGenerator ::
   ( HasStateDict model,
     SGetGeneratorDevice generatorDevice,
@@ -383,10 +396,15 @@ stepWithGenerator ::
     Catch (lossShape <+> 'Shape '[]),
     Catch (lossGradient <+> 'Gradient 'WithGradient)
   ) =>
+  -- | optimizer for the model
   Optimizer model ->
+  -- | model specification
   ModelSpec model ->
+  -- | loss function to minimize
   (model -> Generator generatorDevice -> IO (Tensor lossGradient lossLayout lossDataType lossDevice lossShape, Generator generatorOutputDevice)) ->
+  -- | random generator
   Generator generatorDevice ->
+  -- | loss and updated generator
   IO (Tensor lossGradient lossLayout lossDataType lossDevice lossShape, Generator generatorOutputDevice)
 stepWithGenerator UnsafeOptimizer {..} modelSpec lossFn (UnsafeGenerator tvar) =
   do
@@ -409,24 +427,16 @@ train ::
   forall m model input generatorDevice lossGradient lossLayout lossDataType lossDevice lossShape generatorOutputDevice.
   ( MonadIO m,
     HasStateDict model,
-    HasForward
-      model
-      input
-      generatorDevice
-      (Tensor lossGradient lossLayout lossDataType lossDevice lossShape)
-      generatorOutputDevice,
-    HasForward
-      model
-      input
-      generatorOutputDevice
-      (Tensor lossGradient lossLayout lossDataType lossDevice lossShape)
-      generatorOutputDevice,
+    HasForward model input generatorDevice (Tensor lossGradient lossLayout lossDataType lossDevice lossShape) generatorOutputDevice,
+    HasForward model input generatorOutputDevice (Tensor lossGradient lossLayout lossDataType lossDevice lossShape) generatorOutputDevice,
     SGetGeneratorDevice generatorDevice,
     SGetGeneratorDevice generatorOutputDevice,
+    SGetGradient lossGradient,
+    SGetShape lossShape,
     Catch (lossShape <+> 'Shape '[]),
     Catch (lossGradient <+> 'Gradient 'WithGradient)
   ) =>
-  -- | optimizer
+  -- | optimizer for the model
   Optimizer model ->
   -- | model specification
   ModelSpec model ->
@@ -434,36 +444,59 @@ train ::
   P.ListT m input ->
   -- | random generator
   Generator generatorDevice ->
-  -- | returned is either the original generator or the loss and a new generator
+  -- | returned is either the original generator or the average training loss and a new generator
   m
     ( Either
         (Generator generatorDevice)
-        (Tensor lossGradient lossLayout lossDataType lossDevice lossShape, Generator generatorOutputDevice)
+        (Tensor ('Gradient 'WithoutGradient) lossLayout lossDataType lossDevice ('Shape '[]), Generator generatorOutputDevice)
     )
 train optim modelSpec examples g = do
-  let producer = P.enumerate examples
+  let producer = P.zip (P.enumerate examples) (P.each [0 :: Int ..])
   x <- P.next producer
   case x of
     Left _ -> pure . Left $ g
-    Right (input, producer') -> do
-      let step (_, g') input' = liftIO $ stepWithGenerator optim modelSpec (`forward` input') g'
-          init' = liftIO $ stepWithGenerator optim modelSpec (`forward` input) g
-          done = pure . Right
+    Right ((input, iter), producer') -> do
+      let step ((loss, _), g') (input', iter') = liftIO $ do
+            let forward' model g'' = do
+                  (loss', g''') <- forward model input' g''
+                  loss'' <- sCheckedShape (SShape SNil) =<< sCheckedGradient (SGradient SWithGradient) loss'
+                  pure (loss'', g''')
+            (loss', g'') <- stepWithGenerator optim modelSpec forward' g'
+            loss'' <- withoutGradient loss'
+            pure ((loss + loss'', iter'), g'')
+          init' = liftIO $ do
+            let forward' model g' = do
+                  (loss, g'') <- forward model input g'
+                  loss' <- sCheckedShape (SShape SNil) =<< sCheckedGradient (SGradient SWithGradient) loss
+                  pure (loss', g'')
+            (loss, g') <- stepWithGenerator optim modelSpec forward' g
+            loss' <- withoutGradient loss
+            pure ((loss', iter), g')
+          done ((loss, iter'), g'') = pure . Right $ (loss `divScalar` iter', g'')
       P.foldM step init' done producer'
 
+-- | Evaluate the model on the given examples.
 eval ::
   ( MonadIO m,
     HasStateDict model,
     HasForward model input generatorDevice (Tensor lossGradient lossLayout lossDataType lossDevice lossShape) generatorOutputDevice,
-    HasForward model input generatorOutputDevice (Tensor lossGradient lossLayout lossDataType lossDevice lossShape) generatorOutputDevice
+    HasForward model input generatorOutputDevice (Tensor lossGradient lossLayout lossDataType lossDevice lossShape) generatorOutputDevice,
+    SGetGradient lossGradient,
+    SGetShape lossShape,
+    Catch (lossShape <+> 'Shape '[]),
+    Catch (lossGradient <+> 'Gradient 'WithoutGradient)
   ) =>
+  -- | model
   model ->
+  -- | stream of examples
   P.ListT m input ->
+  -- | random generator
   Generator generatorDevice ->
+  -- | returned is either the original generator or the average evaluation loss and a new generator
   m
     ( Either
         (Generator generatorDevice)
-        (Tensor lossGradient lossLayout lossDataType lossDevice lossShape, Generator generatorOutputDevice)
+        (Tensor ('Gradient 'WithoutGradient) lossLayout lossDataType lossDevice ('Shape '[]), Generator generatorOutputDevice)
     )
 eval model examples g = do
   let producer = P.zip (P.enumerate examples) (P.each [0 :: Int ..])
@@ -473,16 +506,36 @@ eval model examples g = do
     Right ((input, iter), producer') -> do
       let step ((loss, _), g') (input', iter') = liftIO $ do
             (loss', g'') <- forward model input' g'
-            pure ((loss + loss', iter'), g'')
+            loss'' <- sCheckedShape (SShape SNil) =<< sCheckedGradient (SGradient SWithoutGradient) loss'
+            pure ((loss + loss'', iter'), g'')
           init' = liftIO $ do
             (loss, g') <- forward model input g
-            pure ((loss, iter), g')
+            loss' <- sCheckedShape (SShape SNil) =<< sCheckedGradient (SGradient SWithoutGradient) loss
+            pure ((loss', iter), g')
           done ((loss, iter'), g'') = pure . Right $ (loss `divScalar` iter', g'')
       P.foldM step init' done producer'
 
 -- | Single-cycle learning rate schedule.
 -- See, for instance, https://arxiv.org/abs/1803.09820.
-singleCycleLearningRateSchedule :: Double -> Double -> Int -> Int -> Int -> Int -> Double
+--
+-- This is a simple schedule that is a stepwise linear interpolation
+-- between the initial, maximum, and final learning rates.
+-- The initial learning rate is zero.
+singleCycleLearningRateSchedule ::
+  -- | peak learning rate after warmup
+  Double ->
+  -- | learning rate at the end of the schedule
+  Double ->
+  -- | total number of epochs
+  Int ->
+  -- | number of warm-up epochs
+  Int ->
+  -- | number of cool-down epochs
+  Int ->
+  -- | current epoch
+  Int ->
+  -- | current learning rate
+  Double
 singleCycleLearningRateSchedule maxLearningRate finalLearningRate numEpochs numWarmupEpochs numCooldownEpochs epoch
   | epoch <= 0 = 0.0
   | 0 < epoch && epoch <= numWarmupEpochs =
@@ -495,11 +548,26 @@ singleCycleLearningRateSchedule maxLearningRate finalLearningRate numEpochs numW
      in a * maxLearningRate + (1 - a) * finalLearningRate
   | otherwise = finalLearningRate
 
+-- | Data type for monitoring the training and evaluation losses.
 data Monitor
-  = TrainingMonitor {mtLoss :: Float, mtEpoch :: Int}
-  | EvalMonitor {meLoss :: Float, meEpoch :: Int}
+  = -- | monitor for training loss
+    TrainingMonitor {mtLoss :: Float, mtEpoch :: Int}
+  | -- | monitor for evaluation loss
+    EvaluationMonitor {meLoss :: Float, meEpoch :: Int}
   deriving stock (Show)
 
+-- | A simple monitor that prints the training and evaluation losses to stdout.
+monitor :: MonadIO m => P.Consumer Monitor m r
+monitor = P.map show P.>-> P.stdoutLn'
+
+-- | Collate a stream of examples into batches.
+-- The returned batches are of the form @(input, target)@,
+-- where @(input, target)@ is a pair of tensors.
+-- @input@ and @target@ are both of shape:
+--
+-- > Dim (SName @"*") (UncheckedSize batchSize) :|: Dim (SName @"*") (SSize @1) :|: SNil
+--
+-- where @batchSize@ is the number of examples in the batch.
 collate ::
   SDevice device ->
   Int ->
@@ -529,6 +597,7 @@ runTwoLayerNetworkExample = do
       outputDim = SName @"*" :&: SSize @1
       -- hidden dimension of the network
       hiddenDim = SName @"*" :&: SSize @100
+
   let -- create the model specifications
       mkModelSpec hasGradient hasDropout =
         twoLayerNetworkSpec
@@ -584,9 +653,13 @@ runTwoLayerNetworkExample = do
               <*> gets (\stdGen -> (datasetOpts 1) {shuffle = Shuffle stdGen})
         )
 
+  -- create an Adam optimizer with learning rate 1e-4 using the model.
+  -- the optimizer is responsible for computing the gradient of the loss
+  -- with respect to the model parameters and updating the model parameters.
   optim <- liftIO $ mkAdam defaultAdamOptions {learningRate = 1e-4} model
 
-  let step (streamingState', g) epoch = do
+  let -- one epoch of training and evaluation
+      step (streamingState', g) epoch = do
         -- let learningRate = learningRateSchedule epoch
         -- ATen.setLearningRate optim learningRate
 
@@ -596,6 +669,8 @@ runTwoLayerNetworkExample = do
           trainingLoss <- do
             batchedStream <- collate' trainingStream
             P.lift . lift $ train optim trainingModelSpec batchedStream g
+          -- returned is either the original generator or
+          -- a pair of a generator and the average training loss
           case trainingLoss of
             Left g' -> pure (g', shuffle)
             Right (loss, g') -> do
@@ -611,22 +686,27 @@ runTwoLayerNetworkExample = do
               stateDict <- getStateDict optim
               evaluationModel <- flip evalStateT stateDict $ fromStateDict evaluationModelSpec mempty
               eval evaluationModel batchedStream g'
+          -- returned is either the original generator or
+          -- a pair of a generator and the average evaluation loss
           case evalLoss of
             Left g'' -> pure (g'', shuffle')
             Right (loss, g'') -> do
-              P.yield (EvalMonitor (fromTensor loss) epoch)
+              P.yield (EvaluationMonitor (fromTensor loss) epoch)
               pure (g'', shuffle')
 
         pure (streamingState' {shuffle = shuffle'}, g'')
 
-  let init' = pure (streamingState, g1)
+  let -- initialize the training loop
+      init' = pure (streamingState, g1)
 
-  let done = pure
+  let -- finalize the training loop
+      done (_streamingState', _g2) = pure ()
 
-  (streamingState', g2) <-
-    flip runContT pure . P.runEffect $
-      P.foldM step init' done (P.each [1 .. numEpochs])
-        P.>-> P.print
+  -- run the training loop
+  flip runContT pure . P.runEffect $
+    P.foldM step init' done (P.each [1 .. numEpochs])
+      P.>-> monitor
 
+  -- save the model's state dictionary to a file
   stateDict' <- getStateDict optim
   stateDictToFile stateDict' "twoLayerNetwork.pt"
