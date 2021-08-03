@@ -58,7 +58,7 @@ gelu = unsafePerformIO . cast1 ATen.gelu_t
 -- See also https://arxiv.org/abs/1606.08415.
 --
 -- >>> t <- sFull (TensorSpec (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SNil)) 0.5
--- >>> fromTensor $ geluNew t
+-- >>> fromTensor @Float $ geluNew t
 -- 0.3457
 geluNew ::
   forall gradient layout device dataType shape.
