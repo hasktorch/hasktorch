@@ -255,7 +255,7 @@ testBeamSearch = do
   stateDict <- stateDictFromFile "/tmp/t5-small-state-dict.pt"
   let spec = t5SmallSpec SWithLMHead (SGradient SWithGradient) (SDevice SCPU)
   model <- flip evalStateT stateDict $ fromStateDict spec mempty
-  let g = sMkGenerator (SDevice SCPU) 0
+  g <- sMkGenerator (SDevice SCPU) 0
   Beams finished _ <- last <$> runBeamSearch 50 1 model input g
   print $ finalValue <$> finished
 

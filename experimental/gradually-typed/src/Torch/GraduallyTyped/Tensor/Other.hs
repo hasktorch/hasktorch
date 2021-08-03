@@ -3,14 +3,13 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
-{-# OPTIONS_GHC -Wall #-}
 
 module Torch.GraduallyTyped.Tensor.Other where
 
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
-import Torch.GraduallyTyped.Prelude (Seq)
+import Torch.GraduallyTyped.Prelude (Catch)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
@@ -44,7 +43,7 @@ tril diagonal input = unsafePerformIO $ cast2 ATen.tril_tl input diagonal
 -- | masked fill
 maskedFill ::
   forall gradient layout device dataType shape value gradient' layout' device' dataType' shape'.
-  (Scalar value) =>
+  (Scalar value, Catch (gradient <+> 'Gradient 'WithoutGradient), Catch (dataType <+> 'DataType 'Bool)) =>
   -- | mask
   Tensor gradient layout device dataType shape ->
   -- | value
@@ -53,9 +52,9 @@ maskedFill ::
   Tensor gradient' layout' device' dataType' shape' ->
   -- | output
   Tensor
-    (Seq (gradient <+> 'Gradient 'WithoutGradient) gradient')
+    gradient'
     (layout <+> layout' <+> 'Layout 'Dense)
     (device <+> device')
-    (Seq (dataType <+> 'DataType 'Bool) dataType')
+    dataType'
     (BroadcastShapesF shape shape')
 maskedFill mask value input = unsafePerformIO $ cast3 ATen.masked_fill_tts input mask value

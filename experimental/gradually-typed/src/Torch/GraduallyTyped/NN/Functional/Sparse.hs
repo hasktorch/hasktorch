@@ -14,7 +14,7 @@ import GHC.TypeLits (Nat, Symbol, TypeError)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..))
 import Torch.GraduallyTyped.Layout (LayoutType (..))
-import Torch.GraduallyTyped.Prelude (Reverse, Seq)
+import Torch.GraduallyTyped.Prelude (Reverse, Catch)
 import Torch.GraduallyTyped.Shape (Dim (..), Name, Shape (..), Size)
 import Torch.GraduallyTyped.Tensor.Type (SGetLayout (..), Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
@@ -38,7 +38,7 @@ type family EmbeddingF (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (in
 
 embedding ::
   forall gradient layout device dataType shape gradient' layout' device' dataType' shape'.
-  SGetLayout layout =>
+  (SGetLayout layout, Catch (dataType' <+> 'DataType 'Int64)) =>
   -- | padding index
   Maybe Natural ->
   -- | whether or not to scale gradients by the inverse of frequency of the words in the mini-batch
@@ -52,7 +52,7 @@ embedding ::
     (gradient <|> gradient')
     (layout <+> layout')
     (device <+> device')
-    (Seq (dataType' <+> 'DataType 'Int64) dataType)
+    dataType
     (EmbeddingF shape shape')
 embedding paddingIdx scaleGradByFreq weight input =
   let isSparse = getLayoutType weight == Sparse

@@ -29,7 +29,7 @@ testForwardBERTBaseUncased =
     let spec = bertBaseUnchasedSpec SWithLMHead (SGradient SWithoutGradient) device
     model <- flip evalStateT stateDict $ fromStateDict spec mempty
 
-    let g = sMkGenerator device 0
+    g <- sMkGenerator device 0
 
     ids <- withTokenizer $ \tokenizer -> do
       encoding <- Tokenizers.encode tokenizer "[CLS] the capital of france is [MASK]. [SEP]"
@@ -38,18 +38,18 @@ testForwardBERTBaseUncased =
         seqSize = SUncheckedSize . fromIntegral $ length ids
         seqDim = SName @"*" :&: seqSize
 
-    input <-
-      let inputType =
-            sZeros $
-              TensorSpec
-                (SGradient SWithoutGradient)
-                (SLayout SDense)
-                device
-                (SDataType SInt64)
-                (SShape $ batchDim :|: seqDim :|: SNil)
-       in SimplifiedEncoderOnlyTransformerInput
-            <$> mkBERTInput batchDim seqDim device [ids]
-            <*> pure inputType
+    input <- do
+      inputType <-
+        sZeros $
+          TensorSpec
+            (SGradient SWithoutGradient)
+            (SLayout SDense)
+            device
+            (SDataType SInt64)
+            (SShape $ batchDim :|: seqDim :|: SNil)
+      SimplifiedEncoderOnlyTransformerInput
+        <$> mkBERTInput batchDim seqDim device [ids]
+        <*> pure inputType
 
     (SimplifiedEncoderOnlyTransformerOutput {..}, _) <- forward model input g
 

@@ -56,7 +56,17 @@ class
   -- and @g'@ is the updated generator.
   -- @forward m i g@ may throw an exception if the input @i@ or the generator @g@
   -- are not compatible with the model @m@.
-  forward :: forall m. MonadThrow m => model -> input -> Generator generatorDevice -> m (output, Generator generatorOutputDevice)
+  forward ::
+    forall m.
+    MonadThrow m =>
+    -- | model
+    model ->
+    -- | model input, typically a tensor or a tuple of tensors
+    input ->
+    -- | random generator
+    Generator generatorDevice ->
+    -- | output of the model with an updated generator
+    m (output, Generator generatorOutputDevice)
 
 instance HasForward () input generatorDevice input generatorDevice where
   forward _ = (pure .) . (,)

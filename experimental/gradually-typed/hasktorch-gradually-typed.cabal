@@ -98,6 +98,7 @@ library
                      , Torch.GraduallyTyped.NN.Functional.Sparse
                      , Torch.GraduallyTyped.Internal.TensorOptions
                      , Torch.GraduallyTyped.Internal.Void
+                     , Torch.GraduallyTyped.Examples.TwoLayerNetwork
                      , Torch.Language
                      , Torch.Language.SpiderSQL
                      , Torch.Data.Parser
@@ -123,8 +124,15 @@ library
                      , indexed
                      , indexed-extras
                      , free
+                     , lens
+                     , generic-lens
                      , logict
+                     , normaldistribution
                      , parsers
+                     , pipes
+                     , pipes-group
+                     , pipes-concurrency
+                     , random
                      , singletons < 3
                      , tokenizers
                      , vector

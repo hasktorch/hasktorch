@@ -85,15 +85,15 @@ instance
     (LayerNorm hasBias gradient device dataType normalizedShape)
     generatorDevice
   where
-  initialize (LayerNormSpec SWithBias gradient device dataType normalizedShape eps) =
+  initialize (LayerNormSpec SWithBias gradient device dataType normalizedShape eps) g = do
     let tensorSpec = TensorSpec gradient (SLayout SDense) device dataType normalizedShape
-        weight = sOnes tensorSpec
-        bias = sZeros tensorSpec
-     in pure . (LayerNormWithBias weight bias eps,)
-  initialize (LayerNormSpec SWithoutBias gradient device dataType normalizedShape eps) =
+    weight <- sOnes tensorSpec
+    bias <- sZeros tensorSpec
+    pure (LayerNormWithBias weight bias eps, g)
+  initialize (LayerNormSpec SWithoutBias gradient device dataType normalizedShape eps) g = do
     let tensorSpec = TensorSpec gradient (SLayout SDense) device dataType normalizedShape
-        weight = sOnes tensorSpec
-     in pure . (LayerNormWithoutBias weight eps,)
+    weight <- sOnes tensorSpec
+    pure (LayerNormWithoutBias weight eps, g)
 
 instance
   HasStateDict
