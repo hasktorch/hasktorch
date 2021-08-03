@@ -351,25 +351,32 @@ prediction `mseLoss` target =
       (1 :: Int) -- reduce mean
 
 stepWithGenerator ::
-  ( SGetGeneratorDevice generatorDevice,
-    SGetGeneratorDevice generatorOutputDevice
+  ( HasStateDict model,
+    SGetGeneratorDevice generatorDevice,
+    SGetGeneratorDevice generatorOutputDevice,
+    Catch (lossShape <+> 'Shape '[]),
+    Catch (lossGradient <+> 'Gradient 'WithGradient)
   ) =>
-  ForeignPtr ATen.Optimizer ->
-  (ForeignPtr ATen.TensorList -> Generator generatorDevice -> IO (ForeignPtr ATen.Tensor, Generator generatorOutputDevice)) ->
+  Optimizer model ->
+  ModelSpec model ->
+  (model -> Generator generatorDevice -> IO (Tensor lossGradient lossLayout lossDataType lossDevice lossShape, Generator generatorOutputDevice)) ->
   Generator generatorDevice ->
-  IO (ForeignPtr ATen.Tensor, Generator generatorOutputDevice)
-stepWithGenerator optim lossFn (UnsafeGenerator tvar) =
+  IO (Tensor lossGradient lossLayout lossDataType lossDevice lossShape, Generator generatorOutputDevice)
+stepWithGenerator UnsafeOptimizer {..} modelSpec lossFn (UnsafeGenerator tvar) =
   do
     genPtr <- getGenPtr tvar
     let rawLossFn :: ForeignPtr ATen.TensorList -> ForeignPtr ATen.Generator -> IO (ForeignPtr (ATen.StdTuple '(ATen.Tensor, ATen.Generator)))
-        rawLossFn tlPtr genPtr' = do
-          g' <- UnsafeGenerator <$> newTVarIO (Right genPtr')
-          (lossPtr, UnsafeGenerator tvar'') <- lossFn tlPtr g'
-          genPtr'' <- getGenPtr tvar''
-          ATen.cast (lossPtr, genPtr'') pure
-    (lossPtr, genPtr' :: ForeignPtr ATen.Generator) <- ATen.cast3 ATen.stepWithGenerator optim genPtr rawLossFn
-    g <- newTVarIO (Right genPtr')
-    pure (lossPtr, UnsafeGenerator g)
+        rawLossFn tlPtr genPtr'' = do
+          g'' <- UnsafeGenerator <$> newTVarIO (Right genPtr'')
+          stateDict' :: StateDict <- ATen.uncast tlPtr (pure . Map.fromList . zip optimizerStateDictKeys)
+          model <- flip evalStateT stateDict' $ fromStateDict modelSpec mempty
+          -- model <- getModel modelSpec optim
+          (UnsafeTensor tPtr, UnsafeGenerator tvar''') <- lossFn model g''
+          genPtr''' <- getGenPtr tvar'''
+          ATen.cast (tPtr, genPtr''') pure
+    (lossPtr, genPtr' :: ForeignPtr ATen.Generator) <- ATen.cast3 ATen.stepWithGenerator optimizerPtr genPtr rawLossFn
+    g' <- newTVarIO (Right genPtr')
+    pure (UnsafeTensor lossPtr, UnsafeGenerator g')
 
 -- | Train the model for one epoch.
 train ::
@@ -407,30 +414,14 @@ train ::
         (Generator generatorDevice)
         (Tensor lossGradient lossLayout lossDataType lossDevice lossShape, Generator generatorOutputDevice)
     )
-train optim@UnsafeOptimizer {..} modelSpec examples g = do
+train optim modelSpec examples g = do
   let producer = P.enumerate examples
   x <- P.next producer
   case x of
     Left _ -> pure . Left $ g
     Right (input, producer') -> do
-      let step (_, g') input' = liftIO $ do
-            let lossFn tlPtr g'' = do
-                  stateDict' :: StateDict <- ATen.uncast tlPtr (pure . Map.fromList . zip optimizerStateDictKeys)
-                  model <- flip evalStateT stateDict' $ fromStateDict modelSpec mempty
-                  -- model <- getModel modelSpec optim
-                  (UnsafeTensor tPtr, g''') <- forward model input' g''
-                  pure (tPtr, g''')
-            (loss, g'') <- stepWithGenerator optimizerPtr lossFn g'
-            pure (UnsafeTensor loss, g'')
-          init' = liftIO $ do
-            let lossFn tlPtr g'' = do
-                  stateDict' :: StateDict <- ATen.uncast tlPtr (pure . Map.fromList . zip optimizerStateDictKeys)
-                  model <- flip evalStateT stateDict' $ fromStateDict modelSpec mempty
-                  -- model <- getModel modelSpec optim
-                  (UnsafeTensor tPtr, g''') <- forward model input g''
-                  pure (tPtr, g''')
-            (loss, g'') <- stepWithGenerator optimizerPtr lossFn g
-            pure (UnsafeTensor loss, g'')
+      let step (_, g') input' = liftIO $ stepWithGenerator optim modelSpec (`forward` input') g'
+          init' = liftIO $ stepWithGenerator optim modelSpec (`forward` input) g
           done = pure . Right
       P.foldM step init' done producer'
 
