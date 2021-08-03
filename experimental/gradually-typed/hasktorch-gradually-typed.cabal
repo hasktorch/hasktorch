@@ -132,6 +132,8 @@ library
                      , finite-typelits
                      , indexed-list-literals
                      , exceptions
+                     , template-haskell
+                     , megaparsec
 
 test-suite spec
   type:                exitcode-stdio-1.0
