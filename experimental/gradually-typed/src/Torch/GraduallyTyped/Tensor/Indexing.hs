@@ -7,6 +7,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -19,8 +20,9 @@
 module Torch.GraduallyTyped.Tensor.Indexing where
 
 import Control.Arrow ((>>>))
-import Control.Monad (forM_, void, (>=>))
+import Control.Monad (forM_, void)
 import Control.Monad.Catch (MonadThrow)
+import Control.Monad.Trans (lift)
 import Data.Coerce (coerce)
 import Data.Foldable (asum)
 import Data.Kind (Type)
@@ -256,7 +258,7 @@ instance SingKind (Indices [IndexType (Index Nat)]) where
         SliceUpToWithStride upTo stride -> ATen.newTensorIndexWithSlice 0 upTo stride
         SliceFromUpToWithStride from upTo stride -> ATen.newTensorIndexWithSlice from upTo stride
 
-type Parser = Parsec Void String
+type Parser = ParsecT Void String TH.Q
 
 sc :: Parser ()
 sc = L.space space1 empty empty
@@ -264,93 +266,96 @@ sc = L.space space1 empty empty
 lexeme :: Parser a -> Parser a
 lexeme = L.lexeme sc
 
-parseSlice :: String -> TH.Q [TH.Exp]
+parseSlice :: String -> TH.Q TH.Exp
 parseSlice str =
-  case M.runParser parse' "slice" str of
-    Left e -> fail $ show e
-    Right v -> return v
+  either (error . errorBundlePretty) id <$> M.runParserT indicesP "slice" str
   where
-    parse' :: Parser [TH.Exp]
-    parse' = (sc >> (try sliceP <|> try bool <|> other)) `sepBy` char ','
-    other :: Parser TH.Exp
-    other =
+    colonP :: Parser Char
+    colonP = lexeme $ char ':'
+    indicesP :: Parser TH.Exp
+    indicesP = do
+      indexExps <- (sc *> (try sliceP <|> try boolP <|> otherP)) `sepBy` char ',' <* eof
+      let indicesExp = pure $ foldr (TH.AppE . TH.AppE (TH.ConE 'SCons)) (TH.ConE 'SNil) indexExps
+      lift [|SIndices $indicesExp|]
+    otherP :: Parser TH.Exp
+    otherP =
       asum
-        [ TH.ConE 'SNewAxis <$ lexeme (string "+" <|> string "NewAxis"),
-          TH.ConE 'SEllipsis <$ lexeme (string "..." <|> string "Ellipsis"),
-          TH.AppE (TH.ConE 'SSliceAt) <$> number
+        [ lift [|SNewAxis|] <* lexeme (string "+" <|> string "NewAxis"),
+          lift [|SEllipsis|] <* lexeme (string "..." <|> string "Ellipsis"),
+          do
+            index <- pure <$> numberP
+            lift [|SSliceAt $index|]
         ]
-    bool :: Parser TH.Exp
-    bool =
-      TH.AppE (TH.ConE 'SSliceBool)
-        <$> asum
-          [ TH.ConE 'STrue <$ lexeme (string "True"),
-            TH.ConE 'SFalse <$ lexeme (string "False")
+    boolP :: Parser TH.Exp
+    boolP = do
+      sBool <-
+        asum
+          [ [|STrue|] <$ lexeme (string "True"),
+            [|SFalse|] <$ lexeme (string "False")
           ]
-    number :: Parser TH.Exp
-    number =
+      lift [|SSliceBool $sBool|]
+    numberP :: Parser TH.Exp
+    numberP =
       asum
         [ do
-            (isJust -> neg) <- optional $ lexeme $ char '-'
-            decimal <- lexeme L.decimal
-            let index = if neg then 'SNegativeIndex else 'SIndex
-                nat = TH.LitT . TH.NumTyLit $ decimal
-            pure $ TH.ConE index `TH.AppTypeE` nat,
+            integer <- L.signed sc $ lexeme L.decimal
+            let con = if integer < 0 then [|SNegativeIndex|] else [|SIndex|]
+                nat = pure $ TH.LitT $ TH.NumTyLit $ abs integer
+            lift [|$con @($nat)|],
           TH.VarE . TH.mkName <$> lexeme (between (char '{') (char '}') (some alphaNumChar))
         ]
     sliceP :: Parser TH.Exp
     sliceP =
-      asum
-        [ try $ do
-            from <- number
-            void $ lexeme $ char ':'
-            upTo <- number
-            void $ lexeme $ char ':'
-            stride <- number
-            pure $ TH.ConE 'SSliceFromUpToWithStride `TH.AppE` from `TH.AppE` upTo `TH.AppE` stride,
-          try $ do
-            void $ lexeme $ char ':'
-            upTo <- number
-            void $ lexeme $ char ':'
-            stride <- number
-            pure $ TH.ConE 'SSliceUpToWithStride `TH.AppE` upTo `TH.AppE` stride,
-          try $ do
-            from <- number
-            void $ lexeme $ string "::"
-            stride <- number
-            pure $ TH.ConE 'SSliceFromWithStride `TH.AppE` from `TH.AppE` stride,
-          try $ do
-            from <- number
-            void $ lexeme $ char ':'
-            upTo <- number
-            pure $ TH.ConE 'SSliceFromUpTo `TH.AppE` from `TH.AppE` upTo,
-          try $ do
-            void $ lexeme $ string "::"
-            stride <- number
-            pure $ TH.ConE 'SSliceWithStride `TH.AppE` stride,
-          try $ do
-            void $ lexeme $ char ':'
-            upTo <- number
-            void $ optional $ lexeme $ char ':'
-            pure $ TH.ConE 'SSliceUpTo `TH.AppE` upTo,
-          try $ do
-            from <- number
-            void $ lexeme $ char ':'
-            void $ optional $ lexeme $ char ':'
-            pure $ TH.ConE 'SSliceFrom `TH.AppE` from,
-          TH.ConE 'SSliceAll <$ lexeme (char ':' >> optional (char ':'))
-        ]
+      asum $
+        map
+          try
+          [ do
+              from <- numberP
+              void colonP
+              upTo <- numberP
+              void colonP
+              stride <- numberP
+              lift [|SSliceFromUpToWithStride $(pure from) $(pure upTo) $(pure stride)|],
+            do
+              void colonP
+              upTo <- numberP
+              void colonP
+              stride <- numberP
+              lift [|SSliceUpToWithStride $(pure upTo) $(pure stride)|],
+            do
+              from <- numberP
+              void $ colonP <* colonP
+              stride <- numberP
+              lift [|SSliceFromWithStride $(pure from) $(pure stride)|],
+            do
+              from <- numberP
+              void colonP
+              upTo <- numberP
+              lift [|SSliceFromUpTo $(pure from) $(pure upTo)|],
+            do
+              void $ colonP <* colonP
+              stride <- numberP
+              lift [|SSliceWithStride $(pure stride)|],
+            do
+              void colonP
+              upTo <- numberP
+              void $ optional colonP
+              lift [|SSliceUpTo $(pure upTo)|],
+            do
+              from <- numberP
+              void $ colonP <* optional colonP
+              lift [|SSliceFrom $(pure from)|],
+            lift [|SSliceAll|] <* colonP <* optional colonP
+          ]
 
 -- | Generate a slice from a [python compatible expression](https://pytorch.org/cppdocs/notes/tensor_indexing.html).
--- When you take the odd-numbered element of tensor with `tensor[1::2]` in python,
+-- When you take the odd-numberPed element of tensor with `tensor[1::2]` in python,
 -- you can write `tensor ! [slice|1::2|]` in hasktorch.
 slice :: QuasiQuoter
 slice =
   QuasiQuoter
-    { quoteExp = parseSlice >=> pure . qconcat,
+    { quoteExp = parseSlice,
       quotePat = error "quotePat is not implemented for slice.",
       quoteDec = error "quoteDec is not implemented for slice.",
       quoteType = error "quoteType is not implemented for slice."
     }
-  where
-    qconcat :: [TH.Exp] -> TH.Exp
-    qconcat = (TH.ConE 'SIndices `TH.AppE`) . foldr (TH.AppE . TH.AppE (TH.ConE 'SCons)) (TH.ConE 'SNil)
