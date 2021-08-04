@@ -75,8 +75,8 @@ spec = describe "Indexing" $ do
           SV.singleton $ SV.singleton 9
         )
 
-  it "slices with SliceFromUpToWithStride" $ do
-    x <- tensor ! SIndices (SSliceAll :|: SSliceFrom (SIndex @1) :|: SSliceFromUpToWithStride (SIndex @0) (SIndex @1) (SIndex @2) :|: SNil)
+  it "slices with SliceFromUpToWithStep" $ do
+    x <- tensor ! SIndices (SSliceAll :|: SSliceFrom (SIndex @1) :|: SSliceFromUpToWithStep (SIndex @0) (SIndex @1) (SIndex @2) :|: SNil)
 
     dimSize <$> getDims x `shouldBe` [2, 1, 1]
     fromTensor @(SV.Vector _ (SV.Vector _ (SV.Vector _ Int))) x
