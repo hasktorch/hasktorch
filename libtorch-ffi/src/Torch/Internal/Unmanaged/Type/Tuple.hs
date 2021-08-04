@@ -172,3 +172,4 @@ instance CppTuple2 (Ptr (StdTuple '(Tensor,Generator))) where
   type B (Ptr (StdTuple '(Tensor,Generator))) = Ptr Generator
   get0 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<0>(*$(std::tuple<at::Tensor,at::Generator>* v)));}|]
   get1 v = [C.throwBlock| at::Generator* { return new at::Generator(std::get<1>(*$(std::tuple<at::Tensor,at::Generator>* v)));}|]
+  makeTuple2 (a,b) = [C.throwBlock| std::tuple<at::Tensor,at::Generator>* { return new std::tuple<at::Tensor,at::Generator>(std::make_tuple(*$(at::Tensor* a),*$(at::Generator* b)));}|]
