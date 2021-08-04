@@ -83,7 +83,7 @@ type family ErrorOnEllipsis indices where
   ErrorOnEllipsis ('Ellipsis ': ixs) = TypeError ('Text "Indices can only contain a single ellipsis ('...').")
   ErrorOnEllipsis (ix ': ixs) = ix ': ErrorOnEllipsis ixs
 
-type StrideZeroErrorMessage = 'Text "Slice step cannot be zero"
+type StepZeroErrorMessage = 'Text "Slice step cannot be zero"
 
 -- | Calculate the size of the dimension with step.
 --
@@ -98,7 +98,7 @@ type StrideZeroErrorMessage = 'Text "Slice step cannot be zero"
 -- = 2
 type Stepped :: Nat -> Nat -> Nat
 type family Stepped length step where
-  Stepped _ 0 = TypeError StrideZeroErrorMessage
+  Stepped _ 0 = TypeError StepZeroErrorMessage
   Stepped 0 _ = 0
   Stepped length step = (length - 1) `Div` step + 1
 
@@ -169,7 +169,7 @@ type family CheckSliceAt (at :: Nat) (size :: Nat) ok where
       )
 
 type family CheckStep (step :: Index Nat) ok where
-  CheckStep ('Index 0) _ = TypeError StrideZeroErrorMessage
+  CheckStep ('Index 0) _ = TypeError StepZeroErrorMessage
   CheckStep _ ok = ok
 
 type IndexDimsImpl :: [IndexType (Index Nat)] -> [Dim (Name Symbol) (Size Nat)] -> Shape [Dim (Name Symbol) (Size Nat)]
