@@ -17,16 +17,23 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Torch.GraduallyTyped.Tensor.Indexing where
+module Torch.GraduallyTyped.Tensor.Indexing
+  ( IndexType (..),
+    SIndexType (..),
+    Indices (..),
+    SIndices (..),
+    (!),
+    slice,
+  )
+where
 
 import Control.Arrow ((>>>))
-import Control.Monad (forM_, void)
+import Control.Monad (forM_, void, (<=<))
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.Trans (lift)
 import Data.Coerce (coerce)
 import Data.Foldable (asum)
 import Data.Kind (Type)
-import Data.Maybe (isJust)
 import Data.Singletons (Demote, SingI, SingKind, SomeSing (..), fromSing, sing, toSing, withSomeSing)
 import Data.Singletons.Prelude (Reverse, SBool (..), SList (..), Sing)
 import Data.Singletons.TH (genSingletons)
@@ -35,9 +42,9 @@ import Data.Void (Void)
 import Foreign (fromBool)
 import GHC.TypeLits (Div, ErrorMessage (..), Nat, Symbol, type (+), type (-), type (<=?))
 import Language.Haskell.TH.Quote (QuasiQuoter (..))
-import qualified Language.Haskell.TH.Syntax as TH
+import qualified Language.Haskell.TH as TH
 import Text.Megaparsec as M
-import Text.Megaparsec.Char
+import qualified Text.Megaparsec.Char as M
 import qualified Text.Megaparsec.Char.Lexer as L
 import Torch.GraduallyTyped.Index.Type (DemotedIndex (..), Index (..), SIndex (..))
 import Torch.GraduallyTyped.Prelude (If, IsChecked (..), forgetIsChecked, type (<?))
@@ -56,11 +63,11 @@ data IndexType a
   | SliceBool Bool
   | SliceFrom a
   | SliceUpTo a
-  | SliceWithStride a
+  | SliceWithStep a
   | SliceFromUpTo a a
-  | SliceFromWithStride a a
-  | SliceUpToWithStride a a
-  | SliceFromUpToWithStride a a a
+  | SliceFromWithStep a a
+  | SliceUpToWithStep a a
+  | SliceFromUpToWithStep a a a
   deriving (Show, Eq, Functor)
 
 genSingletons [''IndexType]
@@ -76,24 +83,24 @@ type family ErrorOnEllipsis indices where
   ErrorOnEllipsis ('Ellipsis ': ixs) = TypeError ('Text "Indices can only contain a single ellipsis ('...').")
   ErrorOnEllipsis (ix ': ixs) = ix ': ErrorOnEllipsis ixs
 
-type StrideZeroErrorMessage = 'Text "Slice stride cannot be zero"
+type StrideZeroErrorMessage = 'Text "Slice step cannot be zero"
 
--- | Calculate the size of the dimension from stride.
+-- | Calculate the size of the dimension with step.
 --
--- >>> :kind! Strided 8 1
--- Strided 8 1 :: Nat
+-- >>> :kind! Stepped 8 1
+-- Stepped 8 1 :: Nat
 -- = 8
--- >>> :kind! Strided 5 2
--- Strided 5 2 :: Nat
+-- >>> :kind! Stepped 5 2
+-- Stepped 5 2 :: Nat
 -- = 3
--- >>> :kind! Strided 6 3
--- Strided 6 3 :: Nat
+-- >>> :kind! Stepped 6 3
+-- Stepped 6 3 :: Nat
 -- = 2
-type Strided :: Nat -> Nat -> Nat
-type family Strided length stride where
-  Strided _ 0 = TypeError StrideZeroErrorMessage
-  Strided 0 _ = 0
-  Strided length stride = ((length - 1) `Div` stride + 1)
+type Stepped :: Nat -> Nat -> Nat
+type family Stepped length step where
+  Stepped _ 0 = TypeError StrideZeroErrorMessage
+  Stepped 0 _ = 0
+  Stepped length step = (length - 1) `Div` step + 1
 
 type family CheckUpTo (upTo :: Nat) ok where
   CheckUpTo upTo ok =
@@ -161,9 +168,9 @@ type family CheckSliceAt (at :: Nat) (size :: Nat) ok where
           )
       )
 
-type family CheckStride (stride :: Index Nat) ok where
-  CheckStride ('Index 0) _ = TypeError StrideZeroErrorMessage
-  CheckStride _ ok = ok
+type family CheckStep (step :: Index Nat) ok where
+  CheckStep ('Index 0) _ = TypeError StrideZeroErrorMessage
+  CheckStep _ ok = ok
 
 type IndexDimsImpl :: [IndexType (Index Nat)] -> [Dim (Name Symbol) (Size Nat)] -> Shape [Dim (Name Symbol) (Size Nat)]
 type family IndexDimsImpl indices dims where
@@ -184,26 +191,26 @@ type family IndexDimsImpl indices dims where
     CheckUpToSize upTo size ('Dim name ('Size upTo) `PrependDimF` IndexDimsImpl ixs dims)
   IndexDimsImpl ('SliceUpTo _ ': ixs) ('Dim name _ ': dims) =
     'Dim name 'UncheckedSize `PrependDimF` IndexDimsImpl ixs dims
-  IndexDimsImpl ('SliceWithStride ('Index stride) ': ixs) ('Dim name ('Size size) ': dims) =
-    'Dim name ('Size (Strided size stride)) `PrependDimF` IndexDimsImpl ixs dims
-  IndexDimsImpl ('SliceWithStride stride ': ixs) ('Dim name _ ': dims) =
-    CheckStride stride ('Dim name 'UncheckedSize `PrependDimF` IndexDimsImpl ixs dims)
+  IndexDimsImpl ('SliceWithStep ('Index step) ': ixs) ('Dim name ('Size size) ': dims) =
+    'Dim name ('Size (Stepped size step)) `PrependDimF` IndexDimsImpl ixs dims
+  IndexDimsImpl ('SliceWithStep step ': ixs) ('Dim name _ ': dims) =
+    CheckStep step ('Dim name 'UncheckedSize `PrependDimF` IndexDimsImpl ixs dims)
   IndexDimsImpl ('SliceFromUpTo ('Index from) ('Index upTo) ': ixs) ('Dim name size ': dims) =
     CheckFromUpToSize from upTo size ('Dim name ('Size (upTo - from)) `PrependDimF` IndexDimsImpl ixs dims)
   IndexDimsImpl ('SliceFromUpTo _ _ ': ixs) ('Dim name _ ': dims) =
     'Dim name 'UncheckedSize `PrependDimF` IndexDimsImpl ixs dims
-  IndexDimsImpl ('SliceFromWithStride ('Index from) ('Index stride) ': ixs) ('Dim name ('Size size) ': dims) =
-    CheckFromSize from size ('Dim name ('Size (Strided (size - from) stride)) `PrependDimF` IndexDimsImpl ixs dims)
-  IndexDimsImpl ('SliceFromWithStride _ stride ': ixs) ('Dim name _ ': dims) =
-    CheckStride stride ('Dim name 'UncheckedSize `PrependDimF` IndexDimsImpl ixs dims)
-  IndexDimsImpl ('SliceUpToWithStride ('Index upTo) ('Index stride) ': ixs) ('Dim name size ': dims) =
-    CheckUpToSize upTo size ('Dim name ('Size (Strided upTo stride)) `PrependDimF` IndexDimsImpl ixs dims)
-  IndexDimsImpl ('SliceUpToWithStride _ stride ': ixs) ('Dim name _ ': dims) =
-    CheckStride stride ('Dim name 'UncheckedSize `PrependDimF` IndexDimsImpl ixs dims)
-  IndexDimsImpl ('SliceFromUpToWithStride ('Index from) ('Index upTo) ('Index stride) ': ixs) ('Dim name size ': dims) =
-    CheckFromUpToSize from upTo size ('Dim name ('Size (Strided (upTo - from) stride)) `PrependDimF` IndexDimsImpl ixs dims)
-  IndexDimsImpl ('SliceFromUpToWithStride _ _ stride ': ixs) ('Dim name _ ': dims) =
-    CheckStride stride ('Dim name 'UncheckedSize `PrependDimF` IndexDimsImpl ixs dims)
+  IndexDimsImpl ('SliceFromWithStep ('Index from) ('Index step) ': ixs) ('Dim name ('Size size) ': dims) =
+    CheckFromSize from size ('Dim name ('Size (Stepped (size - from) step)) `PrependDimF` IndexDimsImpl ixs dims)
+  IndexDimsImpl ('SliceFromWithStep _ step ': ixs) ('Dim name _ ': dims) =
+    CheckStep step ('Dim name 'UncheckedSize `PrependDimF` IndexDimsImpl ixs dims)
+  IndexDimsImpl ('SliceUpToWithStep ('Index upTo) ('Index step) ': ixs) ('Dim name size ': dims) =
+    CheckUpToSize upTo size ('Dim name ('Size (Stepped upTo step)) `PrependDimF` IndexDimsImpl ixs dims)
+  IndexDimsImpl ('SliceUpToWithStep _ step ': ixs) ('Dim name _ ': dims) =
+    CheckStep step ('Dim name 'UncheckedSize `PrependDimF` IndexDimsImpl ixs dims)
+  IndexDimsImpl ('SliceFromUpToWithStep ('Index from) ('Index upTo) ('Index step) ': ixs) ('Dim name size ': dims) =
+    CheckFromUpToSize from upTo size ('Dim name ('Size (Stepped (upTo - from) step)) `PrependDimF` IndexDimsImpl ixs dims)
+  IndexDimsImpl ('SliceFromUpToWithStep _ _ step ': ixs) ('Dim name _ ': dims) =
+    CheckStep step ('Dim name 'UncheckedSize `PrependDimF` IndexDimsImpl ixs dims)
 
 type family IndexDims indices shape where
   IndexDims 'UncheckedIndices _ = 'UncheckedShape
@@ -252,101 +259,102 @@ instance SingKind (Indices [IndexType (Index Nat)]) where
         SliceAll -> ATen.newTensorIndexWithSlice 0 maxBound 1
         SliceFrom from -> ATen.newTensorIndexWithSlice from maxBound 1
         SliceUpTo upTo -> ATen.newTensorIndexWithSlice 0 upTo 1
-        SliceWithStride stride -> ATen.newTensorIndexWithSlice 0 maxBound stride
+        SliceWithStep step -> ATen.newTensorIndexWithSlice 0 maxBound step
         SliceFromUpTo from upTo -> ATen.newTensorIndexWithSlice from upTo 1
-        SliceFromWithStride from stride -> ATen.newTensorIndexWithSlice from maxBound stride
-        SliceUpToWithStride upTo stride -> ATen.newTensorIndexWithSlice 0 upTo stride
-        SliceFromUpToWithStride from upTo stride -> ATen.newTensorIndexWithSlice from upTo stride
+        SliceFromWithStep from step -> ATen.newTensorIndexWithSlice from maxBound step
+        SliceUpToWithStep upTo step -> ATen.newTensorIndexWithSlice 0 upTo step
+        SliceFromUpToWithStep from upTo step -> ATen.newTensorIndexWithSlice from upTo step
 
 type Parser = ParsecT Void String TH.Q
 
 sc :: Parser ()
-sc = L.space space1 empty empty
+sc = L.space M.space1 empty empty
 
 lexeme :: Parser a -> Parser a
 lexeme = L.lexeme sc
 
+char :: Char -> Parser Char
+char = lexeme . M.char
+
+string :: String -> Parser String
+string = lexeme . M.string
+
 parseSlice :: String -> TH.Q TH.Exp
-parseSlice str =
-  either (error . errorBundlePretty) id <$> M.runParserT indicesP "slice" str
+parseSlice = either (fail . errorBundlePretty) pure <=< M.runParserT indicesP ""
   where
-    colonP :: Parser Char
-    colonP = lexeme $ char ':'
     indicesP :: Parser TH.Exp
     indicesP = do
-      indexExps <- (sc *> (try sliceP <|> try boolP <|> otherP)) `sepBy` char ',' <* eof
-      let indicesExp = pure $ foldr (TH.AppE . TH.AppE (TH.ConE 'SCons)) (TH.ConE 'SNil) indexExps
-      lift [|SIndices $indicesExp|]
+      indexExps <- sc *> (try sliceP <|> try boolP <|> otherP) `sepBy` char ',' <* eof
+      let indicesExp = foldr (TH.AppE . TH.AppE (TH.ConE 'SCons)) (TH.ConE 'SNil) indexExps
+      lift [|SIndices $(pure indicesExp)|]
     otherP :: Parser TH.Exp
     otherP =
       asum
-        [ lift [|SNewAxis|] <* lexeme (string "+" <|> string "NewAxis"),
-          lift [|SEllipsis|] <* lexeme (string "..." <|> string "Ellipsis"),
-          do
-            index <- pure <$> numberP
-            lift [|SSliceAt $index|]
+        [ lift [|SNewAxis|] <* (string "+" <|> string "NewAxis"),
+          lift [|SEllipsis|] <* (string "..." <|> string "Ellipsis")
         ]
     boolP :: Parser TH.Exp
     boolP = do
       sBool <-
         asum
-          [ [|STrue|] <$ lexeme (string "True"),
-            [|SFalse|] <$ lexeme (string "False")
+          [ [|STrue|] <$ string "True",
+            [|SFalse|] <$ string "False"
           ]
       lift [|SSliceBool $sBool|]
-    numberP :: Parser TH.Exp
-    numberP =
+    indexP :: Parser TH.Exp
+    indexP =
       asum
         [ do
-            integer <- L.signed sc $ lexeme L.decimal
-            let con = if integer < 0 then [|SNegativeIndex|] else [|SIndex|]
-                nat = pure $ TH.LitT $ TH.NumTyLit $ abs integer
+            index <- L.signed sc $ lexeme L.decimal
+            let con = if index < 0 then [|SNegativeIndex|] else [|SIndex|]
+                nat = TH.litT $ TH.numTyLit $ abs index
             lift [|$con @($nat)|],
-          TH.VarE . TH.mkName <$> lexeme (between (char '{') (char '}') (some alphaNumChar))
+          TH.VarE . TH.mkName <$> lexeme (between (char '{') (char '}') (some M.alphaNumChar))
         ]
     sliceP :: Parser TH.Exp
     sliceP =
-      asum $
-        map
-          try
-          [ do
-              from <- numberP
-              void colonP
-              upTo <- numberP
-              void colonP
-              stride <- numberP
-              lift [|SSliceFromUpToWithStride $(pure from) $(pure upTo) $(pure stride)|],
-            do
-              void colonP
-              upTo <- numberP
-              void colonP
-              stride <- numberP
-              lift [|SSliceUpToWithStride $(pure upTo) $(pure stride)|],
-            do
-              from <- numberP
-              void $ colonP <* colonP
-              stride <- numberP
-              lift [|SSliceFromWithStride $(pure from) $(pure stride)|],
-            do
-              from <- numberP
-              void colonP
-              upTo <- numberP
-              lift [|SSliceFromUpTo $(pure from) $(pure upTo)|],
-            do
-              void $ colonP <* colonP
-              stride <- numberP
-              lift [|SSliceWithStride $(pure stride)|],
-            do
-              void colonP
-              upTo <- numberP
-              void $ optional colonP
-              lift [|SSliceUpTo $(pure upTo)|],
-            do
-              from <- numberP
-              void $ colonP <* optional colonP
-              lift [|SSliceFrom $(pure from)|],
-            lift [|SSliceAll|] <* colonP <* optional colonP
-          ]
+      asum . map try $
+        [ do
+            from <- indexP
+            void $ char ':'
+            upTo <- indexP
+            void $ char ':'
+            step <- indexP
+            lift [|SSliceFromUpToWithStep $(pure from) $(pure upTo) $(pure step)|],
+          do
+            void $ char ':'
+            upTo <- indexP
+            void $ char ':'
+            step <- indexP
+            lift [|SSliceUpToWithStep $(pure upTo) $(pure step)|],
+          do
+            from <- indexP
+            void $ char ':' <* char ':'
+            step <- indexP
+            lift [|SSliceFromWithStep $(pure from) $(pure step)|],
+          do
+            from <- indexP
+            void $ char ':'
+            upTo <- indexP
+            lift [|SSliceFromUpTo $(pure from) $(pure upTo)|],
+          do
+            void $ char ':' <* char ':'
+            step <- indexP
+            lift [|SSliceWithStep $(pure step)|],
+          do
+            void $ char ':'
+            upTo <- indexP
+            void $ optional $ char ':'
+            lift [|SSliceUpTo $(pure upTo)|],
+          do
+            from <- indexP
+            void $ char ':' <* optional (char ':')
+            lift [|SSliceFrom $(pure from)|],
+          do
+            at <- indexP
+            lift [|SSliceAt $(pure at)|],
+          lift [|SSliceAll|] <* char ':' <* optional (char ':')
+        ]
 
 -- | Generate a slice from a [python compatible expression](https://pytorch.org/cppdocs/notes/tensor_indexing.html).
 -- When you take the odd-numberPed element of tensor with `tensor[1::2]` in python,
@@ -355,7 +363,9 @@ slice :: QuasiQuoter
 slice =
   QuasiQuoter
     { quoteExp = parseSlice,
-      quotePat = error "quotePat is not implemented for slice.",
-      quoteDec = error "quoteDec is not implemented for slice.",
-      quoteType = error "quoteType is not implemented for slice."
+      quotePat = notHandled,
+      quoteType = notHandled,
+      quoteDec = notHandled
     }
+  where
+    notHandled = const . fail $ "'slice' quasiquoter can only be used as an expression."
