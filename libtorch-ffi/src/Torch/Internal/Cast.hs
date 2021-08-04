@@ -189,7 +189,10 @@ instance (Castable a a', Castable b b', Castable c c',
 --------------------------------------------------------------------------------
 
 instance (CppTuple2 c, Castable a (A c), Castable b (B c)) => Castable (a,b) c where
-  cast _ _ = error "Attempted to cast a 2-tuple from Haskell to C++, this is not supported."
+  cast (t0',t1') f = do
+    cast t0' $ \t0 -> 
+      cast t1' $ \t1 -> 
+        makeTuple2 (t0,t1) >>= f
   uncast t f = do
     t0 <- get0 t
     t1 <- get1 t
