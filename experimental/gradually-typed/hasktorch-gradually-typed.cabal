@@ -47,6 +47,8 @@ library
                      , Torch.GraduallyTyped.Layout
                      , Torch.GraduallyTyped.Autograd
                      , Torch.GraduallyTyped.Random
+                     , Torch.GraduallyTyped.Optim
+                     , Torch.GraduallyTyped.LearningRateSchedules
                      , Torch.GraduallyTyped.NN
                      , Torch.GraduallyTyped.NN.Type
                      , Torch.GraduallyTyped.NN.Class
@@ -89,6 +91,8 @@ library
                      , Torch.GraduallyTyped.NN.Activation
                      , Torch.GraduallyTyped.NN.Normalization
                      , Torch.GraduallyTyped.NN.Sparse
+                     , Torch.GraduallyTyped.NN.Loss
+                     , Torch.GraduallyTyped.NN.Training
                      , Torch.GraduallyTyped.NN.Functional
                      , Torch.GraduallyTyped.NN.Functional.Dropout
                      , Torch.GraduallyTyped.NN.Functional.Activation
@@ -96,8 +100,10 @@ library
                      , Torch.GraduallyTyped.NN.Functional.NonLinearActivation
                      , Torch.GraduallyTyped.NN.Functional.Normalization
                      , Torch.GraduallyTyped.NN.Functional.Sparse
+                     , Torch.GraduallyTyped.NN.Functional.Loss
                      , Torch.GraduallyTyped.Internal.TensorOptions
                      , Torch.GraduallyTyped.Internal.Void
+                     , Torch.GraduallyTyped.Examples.LinearRegression
                      , Torch.GraduallyTyped.Examples.TwoLayerNetwork
                      , Torch.Language
                      , Torch.Language.SpiderSQL

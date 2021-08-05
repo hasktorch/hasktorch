@@ -28,6 +28,7 @@ import Control.Monad.Indexed.State (IxStateT (..))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons.Prelude.List (SList (..))
+import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..))
@@ -60,8 +61,24 @@ data
       linearBias :: bias
     } ->
     GLinear weight bias
+  deriving stock (Eq, Ord, Show, Generic)
 
 type instance ModelSpec (GLinear weight bias) = GLinear (ModelSpec weight) (ModelSpec bias)
+
+type family
+  GLinearF
+    (hasBias :: HasBias)
+    (gradient :: Gradient RequiresGradient)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (inputDim :: Dim (Name Symbol) (Size Nat))
+    (outputDim :: Dim (Name Symbol) (Size Nat)) ::
+    Type
+  where
+  GLinearF hasBias gradient device dataType inputDim outputDim =
+    GLinear
+      (NamedModel (LinearWeightF gradient device dataType inputDim outputDim))
+      (NamedModel (LinearBiasF hasBias gradient device dataType outputDim))
 
 type family
   LinearWeightF
@@ -94,11 +111,7 @@ linearSpec ::
   SDataType dataType ->
   SDim inputDim ->
   SDim outputDim ->
-  ModelSpec
-    ( GLinear
-        (NamedModel (LinearWeightF gradient device dataType inputDim outputDim))
-        (NamedModel (LinearBiasF hasBias gradient device dataType outputDim))
-    )
+  ModelSpec (GLinearF hasBias gradient device dataType inputDim outputDim)
 linearSpec hasBias gradient device dataType inputDim outputDim =
   let weightSpec = TensorSpec gradient (SLayout SDense) device dataType (SShape $ outputDim :|: inputDim :|: SNil)
       biasSpec SWithBias = TensorSpec gradient (SLayout SDense) device dataType (SShape $ outputDim :|: SNil)

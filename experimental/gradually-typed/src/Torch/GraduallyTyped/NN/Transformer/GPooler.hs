@@ -17,7 +17,7 @@ import Torch.GraduallyTyped.DType (DType, DataType, SDataType)
 import Torch.GraduallyTyped.Device (Device, DeviceType, SDevice)
 import Torch.GraduallyTyped.NN.Activation (Tanh)
 import Torch.GraduallyTyped.NN.Class (HasForward (..), ModelSpec, NamedModel)
-import Torch.GraduallyTyped.NN.Linear (GLinear, LinearBiasF, LinearWeightF)
+import Torch.GraduallyTyped.NN.Linear (GLinearF)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle, TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..))
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient)
@@ -62,11 +62,7 @@ type family
     Type
   where
   PoolerDenseF 'RoBERTa gradient device dataType inputEmbedDim =
-    NamedModel
-      ( GLinear
-          (NamedModel (LinearWeightF gradient device dataType inputEmbedDim inputEmbedDim))
-          (NamedModel (LinearBiasF 'WithBias gradient device dataType inputEmbedDim))
-      )
+    NamedModel (GLinearF 'WithBias gradient device dataType inputEmbedDim inputEmbedDim)
 
 type family
   PoolerActivationF
