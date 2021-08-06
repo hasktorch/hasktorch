@@ -28,7 +28,7 @@ newtype Dropout where
     -- | probability of an element to be zeroed
     Double ->
     Dropout
-  deriving stock (Show, Generic)
+  deriving stock (Eq, Ord, Show, Generic)
 
 type instance ModelSpec Dropout = Dropout
 

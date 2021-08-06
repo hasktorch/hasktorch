@@ -801,4 +801,5 @@ instance
             (SShape $ inputBatchDim :|: SName @"*" :&: SSize @1 :|: SNil)
         )
         fillValue
-    pure (cat @('SelectDim ('ByIndex 1)) (filler :. input :. HNil), g)
+    shifted <- cat @('SelectDim ('ByIndex 1)) (filler :. input :. HNil)
+    pure (shifted, g)

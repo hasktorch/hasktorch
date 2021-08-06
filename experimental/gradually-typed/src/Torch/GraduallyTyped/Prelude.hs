@@ -46,6 +46,7 @@ module Torch.GraduallyTyped.Prelude
     Contains,
     Extract,
     FromMaybe,
+    MaybeF,
     FstMaybe,
     SndMaybe,
     PrependMaybe,
@@ -221,6 +222,10 @@ type family Length (xs :: [a]) :: Nat where
 type family FromMaybe (d :: k) (x :: Maybe k) :: k where
   FromMaybe d 'Nothing = d
   FromMaybe _ ('Just v) = v
+
+type family MaybeF (d :: k') (f :: k -> k') (x :: Maybe k) :: k' where
+  MaybeF d _ 'Nothing = d
+  MaybeF _ f ('Just v) = f v
 
 type family FstMaybe (t :: Maybe (k, k')) :: Maybe k where
   FstMaybe 'Nothing = 'Nothing

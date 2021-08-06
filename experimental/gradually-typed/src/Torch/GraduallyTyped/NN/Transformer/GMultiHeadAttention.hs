@@ -35,7 +35,7 @@ import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec, NamedModel (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout (..))
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, softmax)
-import Torch.GraduallyTyped.NN.Linear (GLinear (..), LinearBiasF, LinearWeightF, linearSpec)
+import Torch.GraduallyTyped.NN.Linear (GLinear (..), GLinearF, linearSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..), SHasBias (SWithBias, SWithoutBias))
 import Torch.GraduallyTyped.Prelude (forgetIsChecked, pattern (:|:))
@@ -119,19 +119,11 @@ type family
     Type
   where
   QInProjF 'T5 gradient device dataType queryEmbedDim embedDim =
-    NamedModel
-      ( GLinear
-          (NamedModel (LinearWeightF gradient device dataType queryEmbedDim embedDim))
-          (NamedModel (LinearBiasF 'WithoutBias gradient device dataType embedDim))
-      )
+    NamedModel (GLinearF 'WithoutBias gradient device dataType queryEmbedDim embedDim)
   QInProjF 'ByT5 gradient device dataType queryEmbedDim embedDim =
     QInProjF 'T5 gradient device dataType queryEmbedDim embedDim
   QInProjF _ gradient device dataType queryEmbedDim embedDim =
-    NamedModel
-      ( GLinear
-          (NamedModel (LinearWeightF gradient device dataType queryEmbedDim embedDim))
-          (NamedModel (LinearBiasF 'WithBias gradient device dataType embedDim))
-      )
+    NamedModel (GLinearF 'WithBias gradient device dataType queryEmbedDim embedDim)
 
 -- | Specifies the linear transformation of the key.
 type family
@@ -145,19 +137,11 @@ type family
     Type
   where
   KInProjF 'T5 gradient device dataType keyEmbedDim embedDim =
-    NamedModel
-      ( GLinear
-          (NamedModel (LinearWeightF gradient device dataType keyEmbedDim embedDim))
-          (NamedModel (LinearBiasF 'WithoutBias gradient device dataType embedDim))
-      )
+    NamedModel (GLinearF 'WithoutBias gradient device dataType keyEmbedDim embedDim)
   KInProjF 'ByT5 gradient device dataType keyEmbedDim embedDim =
     KInProjF 'T5 gradient device dataType keyEmbedDim embedDim
   KInProjF _ gradient device dataType keyEmbedDim embedDim =
-    NamedModel
-      ( GLinear
-          (NamedModel (LinearWeightF gradient device dataType keyEmbedDim embedDim))
-          (NamedModel (LinearBiasF 'WithBias gradient device dataType embedDim))
-      )
+    NamedModel (GLinearF 'WithBias gradient device dataType keyEmbedDim embedDim)
 
 -- | Specifies the linear transformation of the value.
 type family
@@ -171,19 +155,11 @@ type family
     Type
   where
   VInProjF 'T5 gradient device dataType valueEmbedDim embedDim =
-    NamedModel
-      ( GLinear
-          (NamedModel (LinearWeightF gradient device dataType valueEmbedDim embedDim))
-          (NamedModel (LinearBiasF 'WithoutBias gradient device dataType embedDim))
-      )
+    NamedModel (GLinearF 'WithoutBias gradient device dataType valueEmbedDim embedDim)
   VInProjF 'ByT5 gradient device dataType valueEmbedDim embedDim =
     VInProjF 'T5 gradient device dataType valueEmbedDim embedDim
   VInProjF _ gradient device dataType valueEmbedDim embedDim =
-    NamedModel
-      ( GLinear
-          (NamedModel (LinearWeightF gradient device dataType valueEmbedDim embedDim))
-          (NamedModel (LinearBiasF 'WithBias gradient device dataType embedDim))
-      )
+    NamedModel (GLinearF 'WithBias gradient device dataType valueEmbedDim embedDim)
 
 -- | Specifies the type of the out-projection layer.
 type family
@@ -197,19 +173,11 @@ type family
     Type
   where
   OutProjF 'T5 gradient device dataType embedDim queryEmbedDim =
-    NamedModel
-      ( GLinear
-          (NamedModel (LinearWeightF gradient device dataType embedDim queryEmbedDim))
-          (NamedModel (LinearBiasF 'WithoutBias gradient device dataType queryEmbedDim))
-      )
+    NamedModel (GLinearF 'WithoutBias gradient device dataType embedDim queryEmbedDim)
   OutProjF 'ByT5 gradient device dataType embedDim queryEmbedDim =
     OutProjF 'T5 gradient device dataType embedDim queryEmbedDim
   OutProjF _ gradient device dataType embedDim queryEmbedDim =
-    NamedModel
-      ( GLinear
-          (NamedModel (LinearWeightF gradient device dataType embedDim queryEmbedDim))
-          (NamedModel (LinearBiasF 'WithBias gradient device dataType queryEmbedDim))
-      )
+    NamedModel (GLinearF 'WithBias gradient device dataType embedDim queryEmbedDim)
 
 -- | Specifies the type of the dropout layer.
 type family
@@ -625,7 +593,8 @@ instance
               >>>= ilift . sTranspose (SSelectDim (SByIndex @1)) (SSelectDim (SByIndex @2))
           kt = k >>>= ilift . sTranspose (SSelectDim (SByIndex @2)) (SSelectDim (SByIndex @3))
           weights =
-            matmul <<$>> q <<*>> kt
+            (,) <<$>> q <<*>> kt
+              >>>= ilift . uncurry matmul
               >>>= ireturn
                 . ( \case
                       MultiHeadAttentionWithoutScaling -> id
@@ -640,7 +609,8 @@ instance
               >>>= IxStateT . forward mhaVInProj
               >>>= ilift . sReshape (SShape $ batchDim :|: keySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
               >>>= ilift . sTranspose (SSelectDim (SByIndex @1)) (SSelectDim (SByIndex @2))
-       in matmul <<$>> weights <<*>> v
+       in (,) <<$>> weights <<*>> v
+            >>>= ilift . uncurry matmul
             >>>= ilift . sTranspose (SSelectDim (SByIndex @1)) (SSelectDim (SByIndex @2))
             >>>= ilift . sReshape (SShape $ batchDim :|: querySeqDim :|: mhaEmbedDim :|: SNil)
             >>>= IxStateT . forward mhaOutProj
