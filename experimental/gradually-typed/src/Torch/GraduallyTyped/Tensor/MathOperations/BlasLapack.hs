@@ -88,7 +88,8 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --                   ('Layout 'Dense)
 --                   ('Device 'CPU)
 --                   ('DataType 'Float)
---                   ('Shape '[ 'Dim ('Name "*") ('Size 3), 'Dim ('Name "*") ('Size 7)]))
+--                   ('Shape
+--                      '[ 'Dim ('Name "*") ('Size 3), 'Dim ('Name "*") ('Size 7)]))
 --
 --
 --     (3) If the first argument is 1-dimensional and the second argument is 2-dimensional,
