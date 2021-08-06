@@ -185,6 +185,8 @@ test-suite spec
                      , tokenizers
                      , vector
                      , vector-sized
+                     , template-haskell
+                     , mmorph
 
   build-tool-depends: hspec-discover:hspec-discover
 

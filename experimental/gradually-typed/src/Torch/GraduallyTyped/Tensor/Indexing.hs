@@ -17,6 +17,8 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns #-}
 
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DerivingStrategies #-}
 module Torch.GraduallyTyped.Tensor.Indexing
   ( IndexType (..),
     SIndexType (..),
@@ -24,6 +26,7 @@ module Torch.GraduallyTyped.Tensor.Indexing
     SIndices (..),
     (!),
     slice,
+    parseSlice,
   )
 where
 
@@ -68,9 +71,11 @@ data IndexType a
   | SliceFromWithStep a a
   | SliceUpToWithStep a a
   | SliceFromUpToWithStep a a a
-  deriving (Show, Eq, Functor)
+  deriving stock (Show, Eq, Functor)
 
 genSingletons [''IndexType]
+
+deriving stock instance Show (SIndexType (indexType :: IndexType (Index Nat)))
 
 type ReverseShape :: Shape [Dim (Name Symbol) (Size Nat)] -> Shape [Dim (Name Symbol) (Size Nat)]
 type family ReverseShape shape where
@@ -220,10 +225,13 @@ type family IndexDims indices shape where
 data Indices (indexTypes :: Type) where
   UncheckedIndices :: forall indexTypes. Indices indexTypes
   Indices :: forall indexTypes. indexTypes -> Indices indexTypes
+  deriving (Show)
 
 data SIndices (indices :: Indices [IndexType (Index Nat)]) where
   SUncheckedIndices :: [IndexType Integer] -> SIndices 'UncheckedIndices
   SIndices :: forall indexTypes. SList indexTypes -> SIndices ('Indices indexTypes)
+
+deriving stock instance Show (SIndices (indices :: Indices [IndexType (Index Nat)]))
 
 type instance Sing = SIndices
 
@@ -237,6 +245,10 @@ instance SingKind (Indices [IndexType (Index Nat)]) where
   toSing (Unchecked indexTypes) = SomeSing . SUncheckedIndices $ fmap forgetIsChecked <$> indexTypes
   toSing (Checked indexTypes) = withSomeSing ((fmap . fmap . fmap) DemotedIndex indexTypes) $ SomeSing . SIndices
 
+-- | Indexes/slices a tensor.
+-- >>> g <- sMkGenerator (SDevice SCPU) 0
+-- >>> sRandn' = sRandn . TensorSpec (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat)
+-- >>>
 (!) ::
   forall indices requiresGradient layout device dataType shape m.
   MonadThrow m =>
@@ -368,4 +380,4 @@ slice =
       quoteDec = notHandled
     }
   where
-    notHandled = const . fail $ "'slice' quasiquoter can only be used as an expression."
+    notHandled = const $ fail "'slice' quasiquoter can only be used as an expression."
