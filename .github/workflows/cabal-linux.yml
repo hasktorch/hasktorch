@@ -25,7 +25,9 @@ jobs:
     - name: Cache .cabal
       uses: actions/cache@v2
       with:
-        path: ~/.cabal/store
+        path: |
+          ~/.cabal/store
+          dist-newstyle
         key: ${{ runner.os }}-cabal-${{ hashFiles('**/fallible.cabal') }}
         restore-keys: |
           ${{ runner.os }}-cabal-
