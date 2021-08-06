@@ -13,10 +13,12 @@ jobs:
         sudo apt update -qq
         sudo apt -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install locales software-properties-common apt-transport-https
         sudo add-apt-repository -y ppa:hvr/ghc
+        sudo echo deb [trusted=yes] https://github.com/hasktorch/libtorch-binary-for-ci/releases/download/apt ./ > /etc/apt/sources.list.d/libtorch.list
         sudo rm -f /etc/apt/sources.list.d/sbt.list
         sudo apt update -qq
         sudo apt -y purge ghc* cabal-install* php* || true
         sudo apt -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install build-essential zlib1g-dev liblapack-dev libblas-dev ghc-8.10.2 cabal-install-3.4 devscripts debhelper python3-pip cmake curl wget unzip git libtinfo-dev python3 python3-yaml
+        sudo apt -y install libtorch=1.9.0+cpu-1 libtokenizers=0.1
     - name: Setup repos
       run: |
         git submodule init && git submodule update
@@ -31,26 +33,16 @@ jobs:
       run: |
         export PATH=/opt/ghc/bin:$PATH
         source setenv
-        pushd deps/ ; ./get-deps.sh -a cpu -c; popd
+        #APT installs libtorch and libtokenizers.
+        #pushd deps/ ; ./get-deps.sh -a cpu -c; popd
         ./setup-cabal.sh
         cabal v2-update
         cabal v2-install hspec-discover
-        cabal v2-build --jobs=2 \
-          libtorch-ffi \
-          libtorch-ffi-helper \
-          hasktorch \
-          codegen \
-          examples \
-          bounding-box \
-          dataloader-cifar10 \
-          untyped-nlp
+        cabal v2-build --jobs=2 all
     - name: Test
       run: |
         export PATH=/opt/ghc/bin:$PATH
         source setenv
-        cabal v2-test --jobs=2 \
-          libtorch-ffi \
-          hasktorch \
-          codegen
+        cabal v2-test --jobs=2 all
         cabal v2-exec codegen-exe
         cabal exec xor-mlp
