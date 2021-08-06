@@ -14,7 +14,8 @@ import Control.Monad.Indexed.State (IxStateT (..))
 import Data.Functor.Indexed ((<<$>>))
 import Data.Kind (Type)
 import Data.Singletons.TypeLits (SNat (..))
-import qualified Data.Vector as V
+import qualified Data.Vector as V hiding (uncons)
+import qualified Torch.GraduallyTyped.Internal.Vector as V
 import qualified Data.Vector.Generic.Sized.Internal as VGS
 import qualified Data.Vector.Sized as VS
 import GHC.TypeLits (type (+))

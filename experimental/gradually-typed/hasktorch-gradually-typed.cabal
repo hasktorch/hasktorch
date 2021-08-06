@@ -103,6 +103,7 @@ library
                      , Torch.GraduallyTyped.NN.Functional.Loss
                      , Torch.GraduallyTyped.Internal.TensorOptions
                      , Torch.GraduallyTyped.Internal.Void
+                     , Torch.GraduallyTyped.Internal.Vector
                      , Torch.GraduallyTyped.Examples.LinearRegression
                      , Torch.GraduallyTyped.Examples.TwoLayerNetwork
                      , Torch.Language
