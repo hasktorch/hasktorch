@@ -13,7 +13,7 @@ jobs:
         sudo apt update -qq
         sudo apt -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install locales software-properties-common apt-transport-https
         sudo add-apt-repository -y ppa:hvr/ghc
-        sudo echo deb [trusted=yes] https://github.com/hasktorch/libtorch-binary-for-ci/releases/download/apt ./ > /etc/apt/sources.list.d/libtorch.list
+        sudo bash -c "echo deb [trusted=yes] https://github.com/hasktorch/libtorch-binary-for-ci/releases/download/apt ./ > /etc/apt/sources.list.d/libtorch.list"
         sudo rm -f /etc/apt/sources.list.d/sbt.list
         sudo apt update -qq
         sudo apt -y purge ghc* cabal-install* php* || true
