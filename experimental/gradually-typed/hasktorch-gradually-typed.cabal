@@ -17,6 +17,11 @@ custom-setup
     , Cabal
     , cabal-doctest >=1.0.6 && <1.1
 
+Flag disable-doctest
+ Description: Disable doctest.
+ Default:     False
+ Manual:      True
+
 library
   exposed-modules:     Torch.GraduallyTyped
                      , Torch.GraduallyTyped.Prelude
@@ -103,6 +108,7 @@ library
                      , Torch.GraduallyTyped.NN.Functional.Loss
                      , Torch.GraduallyTyped.Internal.TensorOptions
                      , Torch.GraduallyTyped.Internal.Void
+                     , Torch.GraduallyTyped.Internal.Vector
                      , Torch.GraduallyTyped.Examples.LinearRegression
                      , Torch.GraduallyTyped.Examples.TwoLayerNetwork
                      , Torch.Language
@@ -195,6 +201,10 @@ test-suite spec
   build-tool-depends: hspec-discover:hspec-discover
 
 test-suite doctests
+  if os(darwin) || flag(disable-doctest)
+    Buildable: False
+  else
+    Buildable: True
   type:                exitcode-stdio-1.0
   main-is:             doctests.hs
   ghc-options:         -Wall -threaded -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0

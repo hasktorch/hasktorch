@@ -43,7 +43,8 @@ import Data.Proxy (Proxy (..))
 import Data.Singletons (SingI (sing), fromSing)
 import Data.Singletons.Prelude.List (SList (..))
 import Data.Typeable (Typeable)
-import qualified Data.Vector as V
+import qualified Data.Vector as V hiding (uncons)
+import qualified Torch.GraduallyTyped.Internal.Vector as V
 import qualified Data.Vector.Generic.Sized.Internal as SVI
 import qualified Data.Vector.Sized as SV
 import Foreign (Ptr, Word8, castPtr, fromBool, peekElemOff, pokeElemOff, withForeignPtr)

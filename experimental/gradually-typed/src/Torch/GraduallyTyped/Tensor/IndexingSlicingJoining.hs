@@ -59,32 +59,35 @@ class HasCat (selectDim :: SelectDim (By Symbol Nat)) k (c :: k -> Type) (a :: k
   -- >>> t <- ones @('Gradient 'WithGradient) @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)])
   -- >>> :type cat @('SelectDim ('ByName "feature")) [t]
   -- cat @('SelectDim ('ByName "feature")) [t]
-  --   :: Tensor
-  --        ('Gradient 'WithGradient)
-  --        ('Layout 'Dense)
-  --        ('Device 'CPU)
-  --        ('DataType 'Float)
-  --        ('Shape
-  --           '[ 'Dim ('Name "batch") ('Size 32),
-  --              'Dim 'UncheckedName 'UncheckedSize])
+  --   :: MonadThrow m =>
+  --      m (Tensor
+  --           ('Gradient 'WithGradient)
+  --           ('Layout 'Dense)
+  --           ('Device 'CPU)
+  --           ('DataType 'Float)
+  --           ('Shape
+  --              '[ 'Dim ('Name "batch") ('Size 32),
+  --                 'Dim 'UncheckedName 'UncheckedSize]))
   -- >>> :type cat @('SelectDim ( 'ByIndex 0)) [t]
   -- cat @('SelectDim ( 'ByIndex 0)) [t]
-  --   :: Tensor
-  --        ('Gradient 'WithGradient)
-  --        ('Layout 'Dense)
-  --        ('Device 'CPU)
-  --        ('DataType 'Float)
-  --        ('Shape
-  --           '[ 'Dim 'UncheckedName 'UncheckedSize,
-  --              'Dim ('Name "feature") ('Size 8)])
+  --   :: MonadThrow m =>
+  --      m (Tensor
+  --           ('Gradient 'WithGradient)
+  --           ('Layout 'Dense)
+  --           ('Device 'CPU)
+  --           ('DataType 'Float)
+  --           ('Shape
+  --              '[ 'Dim 'UncheckedName 'UncheckedSize,
+  --                 'Dim ('Name "feature") ('Size 8)]))
   -- >>> :type sCat (SUncheckedSelectDim (ByIndex 0)) [t]
   -- sCat (SUncheckedSelectDim (ByIndex 0)) [t]
-  --   :: Tensor
-  --        ('Gradient 'WithGradient)
-  --        ('Layout 'Dense)
-  --        ('Device 'CPU)
-  --        ('DataType 'Float)
-  --        'UncheckedShape
+  --   :: MonadThrow m =>
+  --      m (Tensor
+  --           ('Gradient 'WithGradient)
+  --           ('Layout 'Dense)
+  --           ('Device 'CPU)
+  --           ('DataType 'Float)
+  --           'UncheckedShape)
   sCat :: forall m. MonadThrow m => SSelectDim selectDim -> c a -> m (CatF selectDim a c)
 
   cat :: forall m. (SingI selectDim, MonadThrow m) => c a -> m (CatF selectDim a c)
