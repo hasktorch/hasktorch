@@ -30,7 +30,9 @@ jobs:
       id: cache-stack
       uses: actions/cache@v2
       with:
-        path: ~/.stack
+        path: |
+          ~/.stack
+          .stack-work
         key: "\
           ${{ runner.os }}-stack\
           -${{ hashFiles('**/stack.yaml.lock') }}\

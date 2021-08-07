@@ -13,7 +13,7 @@ COPY . /hasktorch
 
 ENV PATH="/opt/ghc/bin:${PATH}"
 RUN cd deps/ && ./get-deps.sh -a cu101
-ENV LD_LIBRARY_PATH="/hasktorch/deps/libtorch/lib/:/hasktorch/deps/mklml/lib/:${LD_LIBRARY_PATH}"
+ENV LD_LIBRARY_PATH="/hasktorch/deps/libtorch/lib/:/hasktorch/deps/mklml/lib/:/hasktorch/deps/libtokenizers/lib/:${LD_LIBRARY_PATH}"
 RUN ./setup-cabal.sh
 RUN cabal v2-update
 RUN cabal v2-install hspec-discover

@@ -35,7 +35,8 @@ import Data.Singletons.TypeLits (SNat (..))
 import Data.Text (Text)
 import qualified Data.Text as Text
 import Data.Typeable (Typeable)
-import qualified Data.Vector as V
+import qualified Data.Vector as V hiding (uncons)
+import qualified Torch.GraduallyTyped.Internal.Vector as V
 import qualified Data.Vector.Generic.Sized.Internal as VGS
 import qualified Data.Vector.Sized as VS
 import Foreign.ForeignPtr (ForeignPtr)

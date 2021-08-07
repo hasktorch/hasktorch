@@ -74,12 +74,13 @@ type family MatmulF shape shape' where
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
---           :: Tensor
---                ('Gradient 'WithGradient)
---                ('Layout 'Dense)
---                ('Device 'CPU)
---                ('DataType 'Float)
---                ('Shape '[])
+--           :: MonadThrow m =>
+--              m (Tensor
+--                   ('Gradient 'WithGradient)
+--                   ('Layout 'Dense)
+--                   ('Device 'CPU)
+--                   ('DataType 'Float)
+--                   ('Shape '[]))
 --
 --
 --     (2) If both arguments are 2-dimensional, the matrix-matrix product is returned:
@@ -89,12 +90,14 @@ type family MatmulF shape shape' where
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
---           :: Tensor
---                ('Gradient 'WithGradient)
---                ('Layout 'Dense)
---                ('Device 'CPU)
---                ('DataType 'Float)
---                ('Shape '[ 'Dim ('Name "*") ('Size 3), 'Dim ('Name "*") ('Size 7)])
+--           :: MonadThrow m =>
+--              m (Tensor
+--                   ('Gradient 'WithGradient)
+--                   ('Layout 'Dense)
+--                   ('Device 'CPU)
+--                   ('DataType 'Float)
+--                   ('Shape
+--                      '[ 'Dim ('Name "*") ('Size 3), 'Dim ('Name "*") ('Size 7)]))
 --
 --
 --     (3) If the first argument is 1-dimensional and the second argument is 2-dimensional,
@@ -106,12 +109,13 @@ type family MatmulF shape shape' where
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
---           :: Tensor
---                ('Gradient 'WithGradient)
---                ('Layout 'Dense)
---                ('Device 'CPU)
---                ('DataType 'Float)
---                ('Shape '[ 'Dim ('Name "*") ('Size 7)])
+--           :: MonadThrow m =>
+--              m (Tensor
+--                   ('Gradient 'WithGradient)
+--                   ('Layout 'Dense)
+--                   ('Device 'CPU)
+--                   ('DataType 'Float)
+--                   ('Shape '[ 'Dim ('Name "*") ('Size 7)]))
 --
 --
 --     (4) If the first argument is 2-dimensional and the second argument is 1-dimensional,
@@ -122,12 +126,13 @@ type family MatmulF shape shape' where
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
---           :: Tensor
---                ('Gradient 'WithGradient)
---                ('Layout 'Dense)
---                ('Device 'CPU)
---                ('DataType 'Float)
---                ('Shape '[ 'Dim ('Name "*") ('Size 3)])
+--           :: MonadThrow m =>
+--              m (Tensor
+--                   ('Gradient 'WithGradient)
+--                   ('Layout 'Dense)
+--                   ('Device 'CPU)
+--                   ('DataType 'Float)
+--                   ('Shape '[ 'Dim ('Name "*") ('Size 3)]))
 --
 --
 --     (5) If both arguments are at least 1-dimensional and at least one argument is \(n\)-dimensional (where \(n > 2\)),
@@ -140,14 +145,15 @@ type family MatmulF shape shape' where
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
---           :: Tensor
---                ('Gradient 'WithGradient)
---                ('Layout 'Dense)
---                ('Device 'CPU)
---                ('DataType 'Float)
---                ('Shape
---                   '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "*") ('Size 3),
---                      'Dim ('Name "*") ('Size 7)])
+--           :: MonadThrow m =>
+--              m (Tensor
+--                   ('Gradient 'WithGradient)
+--                   ('Layout 'Dense)
+--                   ('Device 'CPU)
+--                   ('DataType 'Float)
+--                   ('Shape
+--                      '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "*") ('Size 3),
+--                         'Dim ('Name "*") ('Size 7)]))
 --
 --
 --     If the first argument is 1-dimensional,
@@ -158,13 +164,14 @@ type family MatmulF shape shape' where
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
---           :: Tensor
---                ('Gradient 'WithGradient)
---                ('Layout 'Dense)
---                ('Device 'CPU)
---                ('DataType 'Float)
---                ('Shape
---                   '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "*") ('Size 7)])
+--           :: MonadThrow m =>
+--              m (Tensor
+--                   ('Gradient 'WithGradient)
+--                   ('Layout 'Dense)
+--                   ('Device 'CPU)
+--                   ('DataType 'Float)
+--                   ('Shape
+--                      '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "*") ('Size 7)]))
 --
 --
 --     If the second argument is 1-dimensional,
@@ -175,13 +182,14 @@ type family MatmulF shape shape' where
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
---           :: Tensor
---                ('Gradient 'WithGradient)
---                ('Layout 'Dense)
---                ('Device 'CPU)
---                ('DataType 'Float)
---                ('Shape
---                   '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "*") ('Size 3)])
+--           :: MonadThrow m =>
+--              m (Tensor
+--                   ('Gradient 'WithGradient)
+--                   ('Layout 'Dense)
+--                   ('Device 'CPU)
+--                   ('DataType 'Float)
+--                   ('Shape
+--                      '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "*") ('Size 3)]))
 --
 --
 --     The non-matrix (i.e. batch) dimensions are broadcasted (and thus must be broadcastable).
@@ -193,14 +201,15 @@ type family MatmulF shape shape' where
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
---           :: Tensor
---                ('Gradient 'WithGradient)
---                ('Layout 'Dense)
---                ('Device 'CPU)
---                ('DataType 'Float)
---                ('Shape
---                   '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "*") ('Size 5),
---                      'Dim ('Name "*") ('Size 3), 'Dim ('Name "*") ('Size 7)])
+--           :: MonadThrow m =>
+--              m (Tensor
+--                   ('Gradient 'WithGradient)
+--                   ('Layout 'Dense)
+--                   ('Device 'CPU)
+--                   ('DataType 'Float)
+--                   ('Shape
+--                      '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "*") ('Size 5),
+--                         'Dim ('Name "*") ('Size 3), 'Dim ('Name "*") ('Size 7)]))
 matmul ::
   forall m gradient gradient' layout layout' device device' dataType dataType' shape shape'.
   MonadThrow m =>
