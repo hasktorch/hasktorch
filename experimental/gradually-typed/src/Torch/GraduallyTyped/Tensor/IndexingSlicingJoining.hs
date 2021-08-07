@@ -31,15 +31,15 @@ import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.Index.Class (InRangeF)
 import Torch.GraduallyTyped.Index.Type (DemotedIndex (..), SIndex)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
-import Torch.GraduallyTyped.Prelude (FromMaybe, MapMaybe, When, forgetIsChecked)
+import Torch.GraduallyTyped.Prelude (FromMaybe, MapMaybe, MaybeF, PrependMaybe, When, forgetIsChecked)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (AddDimF, BroadcastShapesF, GetDimF, GetDimImplF, GetIndexByNameF, InsertDimImplF, NumelF, RemoveDimF, ReplaceDimF, ReplaceDimImplF, sGetDimFromShape)
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SSelectDim, SShape, SelectDim (..), Shape (..), Size (..), dimSize)
 import Torch.GraduallyTyped.Tensor.Type (SGetShape (sGetShape), Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import Torch.HList (HList)
-import Torch.Internal.Cast (cast2, cast3)
-import Torch.Internal.Class (Castable)
+import qualified Torch.Internal.Cast as ATen (cast1, cast2, cast3)
+import qualified Torch.Internal.Class as ATen (Castable)
 import Torch.Internal.GC (unsafeThrowableIO)
 import qualified Torch.Internal.Managed.Native as ATen
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
@@ -59,35 +59,38 @@ class HasCat (selectDim :: SelectDim (By Symbol Nat)) k (c :: k -> Type) (a :: k
   -- >>> t <- ones @('Gradient 'WithGradient) @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)])
   -- >>> :type cat @('SelectDim ('ByName "feature")) [t]
   -- cat @('SelectDim ('ByName "feature")) [t]
-  --   :: Tensor
-  --        ('Gradient 'WithGradient)
-  --        ('Layout 'Dense)
-  --        ('Device 'CPU)
-  --        ('DataType 'Float)
-  --        ('Shape
-  --           '[ 'Dim ('Name "batch") ('Size 32),
-  --              'Dim 'UncheckedName 'UncheckedSize])
+  --   :: MonadThrow m =>
+  --      m (Tensor
+  --           ('Gradient 'WithGradient)
+  --           ('Layout 'Dense)
+  --           ('Device 'CPU)
+  --           ('DataType 'Float)
+  --           ('Shape
+  --              '[ 'Dim ('Name "batch") ('Size 32),
+  --                 'Dim 'UncheckedName 'UncheckedSize]))
   -- >>> :type cat @('SelectDim ( 'ByIndex 0)) [t]
   -- cat @('SelectDim ( 'ByIndex 0)) [t]
-  --   :: Tensor
-  --        ('Gradient 'WithGradient)
-  --        ('Layout 'Dense)
-  --        ('Device 'CPU)
-  --        ('DataType 'Float)
-  --        ('Shape
-  --           '[ 'Dim 'UncheckedName 'UncheckedSize,
-  --              'Dim ('Name "feature") ('Size 8)])
+  --   :: MonadThrow m =>
+  --      m (Tensor
+  --           ('Gradient 'WithGradient)
+  --           ('Layout 'Dense)
+  --           ('Device 'CPU)
+  --           ('DataType 'Float)
+  --           ('Shape
+  --              '[ 'Dim 'UncheckedName 'UncheckedSize,
+  --                 'Dim ('Name "feature") ('Size 8)]))
   -- >>> :type sCat (SUncheckedSelectDim (ByIndex 0)) [t]
   -- sCat (SUncheckedSelectDim (ByIndex 0)) [t]
-  --   :: Tensor
-  --        ('Gradient 'WithGradient)
-  --        ('Layout 'Dense)
-  --        ('Device 'CPU)
-  --        ('DataType 'Float)
-  --        'UncheckedShape
-  sCat :: SSelectDim selectDim -> c a -> CatF selectDim a c
+  --   :: MonadThrow m =>
+  --      m (Tensor
+  --           ('Gradient 'WithGradient)
+  --           ('Layout 'Dense)
+  --           ('Device 'CPU)
+  --           ('DataType 'Float)
+  --           'UncheckedShape)
+  sCat :: forall m. MonadThrow m => SSelectDim selectDim -> c a -> m (CatF selectDim a c)
 
-  cat :: SingI selectDim => c a -> CatF selectDim a c
+  cat :: forall m. (SingI selectDim, MonadThrow m) => c a -> m (CatF selectDim a c)
   cat = sCat (sing @selectDim)
 
 type family CatListImplF (selectDim :: SelectDim (By Symbol Nat)) (tensor :: Type) :: Maybe Type where
@@ -115,15 +118,15 @@ type family CatListCheckF (selectDim :: SelectDim (By Symbol Nat)) (tensor :: Ty
 type CatListF selectDim tensor = CatListCheckF selectDim tensor (CatListImplF selectDim tensor)
 
 instance
-  Castable (CatListF selectDim (Tensor gradient layout device dataType shape)) (ForeignPtr ATen.Tensor) =>
+  ATen.Castable (CatListF selectDim (Tensor gradient layout device dataType shape)) (ForeignPtr ATen.Tensor) =>
   HasCat selectDim Type [] (Tensor gradient layout device dataType shape)
   where
   type CatF selectDim (Tensor gradient layout device dataType shape) [] = CatListF selectDim (Tensor gradient layout device dataType shape)
-  sCat selectDim tensors =
+  sCat selectDim tensors = do
     let by = forgetIsChecked . fromSing $ selectDim
-     in case by of
-          ByName name -> unsafePerformIO $ cast2 ATen.cat_ln tensors name
-          ByIndex index -> unsafePerformIO $ cast2 ATen.cat_ll tensors (fromInteger index :: Int)
+    unsafeThrowableIO $ case by of
+      ByName name -> ATen.cast2 ATen.cat_ln tensors name
+      ByIndex index -> ATen.cast2 ATen.cat_ll tensors (fromInteger index :: Int)
 
 type family
   CatHListImplF
@@ -163,17 +166,17 @@ type family
 type CatHListF selectDim tensors = CatHListImplF selectDim tensors 'Nothing
 
 instance
-  ( Castable (CatHListF selectDim tensors) (ForeignPtr ATen.Tensor),
-    Castable (HList tensors) (ForeignPtr ATen.TensorList)
+  ( ATen.Castable (CatHListF selectDim tensors) (ForeignPtr ATen.Tensor),
+    ATen.Castable (HList tensors) (ForeignPtr ATen.TensorList)
   ) =>
   HasCat selectDim [Type] HList tensors
   where
   type CatF selectDim tensors HList = CatHListF selectDim tensors
-  sCat selectDim tensors =
+  sCat selectDim tensors = do
     let by = forgetIsChecked . fromSing $ selectDim
-     in case by of
-          ByName name -> unsafePerformIO $ cast2 ATen.cat_ln tensors name
-          ByIndex index -> unsafePerformIO $ cast2 ATen.cat_ll tensors (fromInteger index :: Int)
+    unsafeThrowableIO $ case by of
+      ByName name -> ATen.cast2 ATen.cat_ln tensors name
+      ByIndex index -> ATen.cast2 ATen.cat_ll tensors (fromInteger index :: Int)
 
 type ReshapeNumelMismatchMessage (numel :: Nat) (numel' :: Nat) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: Shape [Dim (Name Symbol) (Size Nat)]) =
   "Cannot reshape the tensor. The original shape,"
@@ -230,17 +233,18 @@ type family ReshapeF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: 
 --        'UncheckedShape
 -- >>> getDims output'
 -- [Dim {dimName = "*", dimSize = 4}]
-sReshape, sSetShape ::
-  forall m shape' gradient layout device dataType shape shape''.
-  MonadThrow m =>
-  (shape'' ~ ReshapeF shape shape') =>
-  SShape shape' ->
-  Tensor gradient layout device dataType shape ->
-  m (Tensor gradient layout device dataType shape'')
+sReshape,
+  sSetShape ::
+    forall m shape' gradient layout device dataType shape shape''.
+    MonadThrow m =>
+    (shape'' ~ ReshapeF shape shape') =>
+    SShape shape' ->
+    Tensor gradient layout device dataType shape ->
+    m (Tensor gradient layout device dataType shape'')
 sReshape shape' input = unsafeThrowableIO $ do
   let dims = forgetIsChecked . fromSing $ shape'
-  t :: ForeignPtr ATen.Tensor <- cast2 ATen.reshape_tl input (forgetIsChecked . dimSize <$> dims)
-  cast2 ATen.tensor_refine_names_N t (forgetIsChecked . dimName <$> dims)
+  t :: ForeignPtr ATen.Tensor <- ATen.cast2 ATen.reshape_tl input (forgetIsChecked . dimSize <$> dims)
+  ATen.cast2 ATen.tensor_refine_names_N t (forgetIsChecked . dimName <$> dims)
 sSetShape = sReshape
 
 type family AllDimSizesChecked (shape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Bool where
@@ -391,9 +395,9 @@ sTranspose ::
 sTranspose selectDim0 selectDim1 input = do
   let by0 = forgetIsChecked . fromSing $ selectDim0
       by1 = forgetIsChecked . fromSing $ selectDim1
-  case (by0, by1) of
-    (ByName name0, ByName name1) -> unsafeThrowableIO $ cast3 ATen.transpose_tnn input name0 name1
-    (ByIndex index0, ByIndex index1) -> unsafeThrowableIO $ cast3 ATen.transpose_tll input (fromIntegral index0 :: Int) (fromIntegral index1 :: Int)
+  unsafeThrowableIO $ case (by0, by1) of
+    (ByName name0, ByName name1) -> ATen.cast3 ATen.transpose_tnn input name0 name1
+    (ByIndex index0, ByIndex index1) -> ATen.cast3 ATen.transpose_tll input (fromIntegral index0 :: Int) (fromIntegral index1 :: Int)
     _ -> throwM $ TransposeMixedSelectorsError by0 by1
 
 data TransposeError = TransposeMixedSelectorsError {teBy0 :: By String Integer, teBy1 :: By String Integer}
@@ -467,7 +471,7 @@ sUnsqueeze selectDim input =
   let by = forgetIsChecked . fromSing $ selectDim
    in case by of
         ByName _name -> undefined
-        ByIndex index -> unsafePerformIO $ cast2 ATen.unsqueeze_tl input (fromIntegral index :: Int)
+        ByIndex index -> unsafePerformIO $ ATen.cast2 ATen.unsqueeze_tl input (fromIntegral index :: Int)
 
 -- | Unsqueezes a tensor with the specified dimension.
 unsqueeze ::
@@ -478,6 +482,29 @@ unsqueeze ::
   Tensor gradient layout device dataType shape ->
   Tensor gradient layout device dataType shape'
 unsqueeze = sUnsqueeze (sing @selectDim)
+
+-- type family SqueezeAllShapeF (shape :: [Nat]) :: [Nat] where
+--   SqueezeAllShapeF '[] = '[]
+--   SqueezeAllShapeF (1 ': xs) = SqueezeAll xs
+--   SqueezeAllShapeF (x ': xs) = x ': SqueezeAll xs
+
+type family SqueezeAllShapeF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
+  SqueezeAllShapeF 'UncheckedShape = 'UncheckedShape
+  SqueezeAllShapeF ('Shape dims) = MaybeF 'UncheckedShape 'Shape (SqueezeAllDimsF dims)
+
+type family SqueezeAllDimsF (dims :: [Dim (Name Symbol) (Size Nat)]) :: Maybe [Dim (Name Symbol) (Size Nat)] where
+  SqueezeAllDimsF '[] = 'Just '[]
+  SqueezeAllDimsF ('Dim _ 'UncheckedSize ': dims) = 'Nothing
+  SqueezeAllDimsF ('Dim _ ('Size 1) ': dims) = SqueezeAllDimsF dims
+  SqueezeAllDimsF (dim ': dims) = PrependMaybe ('Just dim) (SqueezeAllDimsF dims)
+
+squeezeAll ::
+  forall gradient layout device dataType shape.
+  -- | input
+  Tensor gradient layout device dataType shape ->
+  -- | output
+  Tensor gradient layout device dataType (SqueezeAllShapeF shape)
+squeezeAll input = unsafePerformIO $ ATen.cast1 ATen.squeeze_t input
 
 -- | Expands a tensor to the specified shape.
 sExpand ::
@@ -490,7 +517,7 @@ sExpand ::
   output
 sExpand shape' input =
   let sizes' = fmap (\(Dim _ size) -> forgetIsChecked size) . forgetIsChecked $ fromSing shape'
-   in unsafePerformIO $ cast3 ATen.tensor_expand_lb input sizes' True
+   in unsafePerformIO $ ATen.cast3 ATen.tensor_expand_lb input sizes' True
 
 -- | Expands a tensor to the specified shape.
 expand ::
@@ -544,9 +571,9 @@ sSelect sSelectDim sIndex input = do
       index = coerce . forgetIsChecked . fromSing $ sIndex
       selectDim = forgetIsChecked . fromSing $ sSelectDim
   if index < dimSize dim
-    then case selectDim of
-      ByName name -> unsafeThrowableIO $ cast3 ATen.tensor_select_nl input name (fromIntegral index :: Int)
-      ByIndex dimIndex -> unsafeThrowableIO $ cast3 ATen.tensor_select_ll input (fromIntegral dimIndex :: Int) (fromIntegral index :: Int)
+    then unsafeThrowableIO $ case selectDim of
+      ByName name -> ATen.cast3 ATen.tensor_select_nl input name (fromIntegral index :: Int)
+      ByIndex dimIndex -> ATen.cast3 ATen.tensor_select_ll input (fromIntegral dimIndex :: Int) (fromIntegral index :: Int)
     else throwM $ IndexOutOfBoundError index dim
 
 data IndexOutOfBoundError = IndexOutOfBoundError {ioobeIndex :: Integer, ioobeDim :: Dim String Integer}

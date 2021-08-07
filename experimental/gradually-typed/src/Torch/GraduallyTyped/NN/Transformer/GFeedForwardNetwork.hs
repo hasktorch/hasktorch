@@ -24,7 +24,7 @@ import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Activation (Gelu (..), GeluNew (..), Relu (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec, NamedModel (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout (..))
-import Torch.GraduallyTyped.NN.Linear (GLinear (..), LinearBiasF, LinearWeightF, linearSpec)
+import Torch.GraduallyTyped.NN.Linear (GLinear (..), GLinearF, linearSpec)
 import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..), LayerNormSpec (..))
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..), SHasBias (..))
@@ -213,32 +213,14 @@ type family
     Type
   where
   FFNInputTransformationF 'T5 gradient device dataType queryEmbedDim ffnDim =
-    NamedModel
-      ( GLinear
-          (NamedModel (LinearWeightF gradient device dataType queryEmbedDim ffnDim))
-          (NamedModel (LinearBiasF 'WithoutBias gradient device dataType ffnDim))
-      )
+    NamedModel (GLinearF 'WithoutBias gradient device dataType queryEmbedDim ffnDim)
   FFNInputTransformationF 'ByT5 gradient device dataType queryEmbedDim ffnDim =
     GGate
-      ( NamedModel
-          ( GLinear
-              (NamedModel (LinearWeightF gradient device dataType queryEmbedDim ffnDim))
-              (NamedModel (LinearBiasF 'WithoutBias gradient device dataType ffnDim))
-          )
-      )
+      (NamedModel (GLinearF 'WithoutBias gradient device dataType queryEmbedDim ffnDim))
       GeluNew
-      ( NamedModel
-          ( GLinear
-              (NamedModel (LinearWeightF gradient device dataType queryEmbedDim ffnDim))
-              (NamedModel (LinearBiasF 'WithoutBias gradient device dataType ffnDim))
-          )
-      )
+      (NamedModel (GLinearF 'WithoutBias gradient device dataType queryEmbedDim ffnDim))
   FFNInputTransformationF _ gradient device dataType queryEmbedDim ffnDim =
-    NamedModel
-      ( GLinear
-          (NamedModel (LinearWeightF gradient device dataType queryEmbedDim ffnDim))
-          (NamedModel (LinearBiasF 'WithBias gradient device dataType ffnDim))
-      )
+    NamedModel (GLinearF 'WithBias gradient device dataType queryEmbedDim ffnDim)
 
 -- | Specifies the activation.
 type family
@@ -280,29 +262,17 @@ type family
     Type
   where
   FFNOutputProjectionF 'T5 gradient device dataType queryEmbedDim ffnDim =
-    NamedModel
-      ( GLinear
-          (NamedModel (LinearWeightF gradient device dataType ffnDim queryEmbedDim))
-          (NamedModel (LinearBiasF 'WithoutBias gradient device dataType queryEmbedDim))
-      )
+    NamedModel (GLinearF 'WithoutBias gradient device dataType ffnDim queryEmbedDim)
   FFNOutputProjectionF 'ByT5 gradient device dataType queryEmbedDim ffnDim =
     FFNOutputProjectionF 'T5 gradient device dataType queryEmbedDim ffnDim
   FFNOutputProjectionF 'BART gradient device dataType queryEmbedDim ffnDim =
-    NamedModel
-      ( GLinear
-          (NamedModel (LinearWeightF gradient device dataType ffnDim queryEmbedDim))
-          (NamedModel (LinearBiasF 'WithBias gradient device dataType queryEmbedDim))
-      )
+    NamedModel (GLinearF 'WithBias gradient device dataType ffnDim queryEmbedDim)
   FFNOutputProjectionF 'MBART gradient device dataType queryEmbedDim ffnDim =
     FFNOutputProjectionF 'BART gradient device dataType queryEmbedDim ffnDim
   FFNOutputProjectionF 'Pegasus gradient device dataType queryEmbedDim ffnDim =
     FFNOutputProjectionF 'BART gradient device dataType queryEmbedDim ffnDim
   FFNOutputProjectionF 'BERT gradient device dataType queryEmbedDim ffnDim =
-    NamedModel
-      ( GLinear
-          (NamedModel (LinearWeightF gradient device dataType ffnDim queryEmbedDim))
-          (NamedModel (LinearBiasF 'WithBias gradient device dataType queryEmbedDim))
-      )
+    NamedModel (GLinearF 'WithBias gradient device dataType ffnDim queryEmbedDim)
   FFNOutputProjectionF 'RoBERTa gradient device dataType queryEmbedDim ffnDim =
     FFNOutputProjectionF 'BERT gradient device dataType queryEmbedDim ffnDim
 

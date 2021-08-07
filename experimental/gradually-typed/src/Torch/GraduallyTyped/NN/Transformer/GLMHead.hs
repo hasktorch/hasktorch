@@ -27,7 +27,7 @@ import Torch.GraduallyTyped.Device (Device, DeviceType, SDevice (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Activation (Gelu (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec, NamedModel (..))
-import Torch.GraduallyTyped.NN.Linear (GLinear, LinearBiasF, LinearWeightF, linearSpec)
+import Torch.GraduallyTyped.NN.Linear (GLinearF, linearSpec)
 import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..), LayerNormSpec (..))
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..), SHasBias (..))
@@ -112,11 +112,7 @@ type family
   LMHeadDenseF 'Pegasus gradient device dataType inputEmbedDim =
     LMHeadDenseF 'BART gradient device dataType inputEmbedDim
   LMHeadDenseF 'BERT gradient device dataType inputEmbedDim =
-    NamedModel
-      ( GLinear
-          (NamedModel (LinearWeightF gradient device dataType inputEmbedDim inputEmbedDim))
-          (NamedModel (LinearBiasF 'WithBias gradient device dataType inputEmbedDim))
-      )
+    NamedModel (GLinearF 'WithBias gradient device dataType inputEmbedDim inputEmbedDim)
   LMHeadDenseF 'RoBERTa gradient device dataType inputEmbedDim =
     LMHeadDenseF 'BERT gradient device dataType inputEmbedDim
 
@@ -169,29 +165,17 @@ type family
     Type
   where
   LMHeadDecoderF 'T5 gradient device dataType inputEmbedDim vocabDim =
-    NamedModel
-      ( GLinear
-          (NamedModel (LinearWeightF gradient device dataType inputEmbedDim vocabDim))
-          (NamedModel (LinearBiasF 'WithoutBias gradient device dataType vocabDim))
-      )
+    NamedModel (GLinearF 'WithoutBias gradient device dataType inputEmbedDim vocabDim)
   LMHeadDecoderF 'ByT5 gradient device dataType inputEmbedDim vocabDim =
     LMHeadDecoderF 'T5 gradient device dataType inputEmbedDim vocabDim
   LMHeadDecoderF 'BART gradient device dataType inputEmbedDim vocabDim =
-    NamedModel
-      ( GLinear
-          (NamedModel (LinearWeightF gradient device dataType inputEmbedDim vocabDim))
-          (NamedModel (LinearBiasF 'WithoutBias gradient device dataType vocabDim))
-      )
+    NamedModel (GLinearF 'WithoutBias gradient device dataType inputEmbedDim vocabDim)
   LMHeadDecoderF 'MBART gradient device dataType inputEmbedDim vocabDim =
     LMHeadDecoderF 'BART gradient device dataType inputEmbedDim vocabDim
   LMHeadDecoderF 'Pegasus gradient device dataType inputEmbedDim vocabDim =
     LMHeadDecoderF 'BART gradient device dataType inputEmbedDim vocabDim
   LMHeadDecoderF 'BERT gradient device dataType inputEmbedDim vocabDim =
-    NamedModel
-      ( GLinear
-          (NamedModel (LinearWeightF gradient device dataType inputEmbedDim vocabDim))
-          (NamedModel (LinearBiasF 'WithBias gradient device dataType vocabDim))
-      )
+    NamedModel (GLinearF 'WithBias gradient device dataType inputEmbedDim vocabDim)
   LMHeadDecoderF 'RoBERTa gradient device dataType inputEmbedDim vocabDim =
     LMHeadDecoderF 'BERT gradient device dataType inputEmbedDim vocabDim
 

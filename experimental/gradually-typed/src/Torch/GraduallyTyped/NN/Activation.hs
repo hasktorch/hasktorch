@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
@@ -30,7 +31,7 @@ data Softmax (selectDim :: SelectDim (By Symbol Nat)) where
     forall selectDim.
     {softmaxSelectDim :: SSelectDim selectDim} ->
     Softmax selectDim
-  deriving (Generic)
+  deriving stock (Generic)
 
 type instance ModelSpec (Softmax selectDim) = Softmax selectDim
 
@@ -58,7 +59,9 @@ instance
   where
   forward Softmax {..} input = pure . (softmax softmaxSelectDim input,)
 
-data Relu where Relu :: Relu
+data Relu where
+  Relu :: Relu
+  deriving stock (Eq, Ord, Show, Generic)
 
 type instance ModelSpec Relu = Relu
 
@@ -85,7 +88,9 @@ instance
   where
   forward Relu input = pure . (relu input,)
 
-data Gelu where Gelu :: Gelu
+data Gelu where
+  Gelu :: Gelu
+  deriving stock (Eq, Ord, Show, Generic)
 
 type instance ModelSpec Gelu = Gelu
 
@@ -112,7 +117,9 @@ instance
   where
   forward Gelu input = pure . (gelu input,)
 
-data GeluNew where GeluNew :: GeluNew
+data GeluNew where
+  GeluNew :: GeluNew
+  deriving stock (Eq, Ord, Show, Generic)
 
 type instance ModelSpec GeluNew = GeluNew
 
@@ -139,7 +146,9 @@ instance
   where
   forward GeluNew input = pure . (geluNew input,)
 
-data Tanh where Tanh :: Tanh
+data Tanh where
+  Tanh :: Tanh
+  deriving stock (Eq, Ord, Show, Generic)
 
 type instance ModelSpec Tanh = Tanh
 

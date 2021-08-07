@@ -1,18 +1,23 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack where
 
+import Control.Monad.Catch (MonadThrow)
+import Data.Type.Bool (If)
 import GHC.TypeLits (Nat, Symbol, TypeError)
-import System.IO.Unsafe (unsafePerformIO)
 import Torch.GraduallyTyped.Prelude (PrependMaybe, Reverse)
 import Torch.GraduallyTyped.Shape (BroadcastDimsImplF, Dim (..), Name (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
-import Torch.GraduallyTyped.Unify (type (<+>))
-import Torch.Internal.Cast (cast2)
+import Torch.GraduallyTyped.Unify (UnifyCheck, type (<+>), type (<|>))
+import qualified Torch.Internal.Cast as ATen (cast2)
+import Torch.Internal.GC (unsafeThrowableIO)
 import qualified Torch.Internal.Managed.Native as ATen
 import Type.Errors.Pretty (type (%), type (<>))
 
@@ -20,17 +25,20 @@ import Type.Errors.Pretty (type (%), type (<>))
 -- >>> import Data.Singletons.Prelude.List (SList (..))
 -- >>> import Torch.GraduallyTyped
 
-type family MatmulDimsImplF (reversedDims :: [Dim (Name Symbol) (Size Nat)]) (reversedDims' :: [Dim (Name Symbol) (Size Nat)]) :: Maybe [Dim (Name Symbol) (Size Nat)] where
-  MatmulDimsImplF (k ': '[]) (k ': '[]) = 'Just '[]
-  MatmulDimsImplF (k ': '[]) (m ': k ': reversedBroadcastDims') =
-    PrependMaybe ('Just m) (BroadcastDimsImplF '[] reversedBroadcastDims')
-  MatmulDimsImplF (k ': n ': reversedBroadcastDims) (k ': '[]) =
-    PrependMaybe ('Just n) (BroadcastDimsImplF '[] reversedBroadcastDims)
-  MatmulDimsImplF (k ': n ': reversedBroadcastDims) (m ': k ': reversedBroadcastDims') =
-    PrependMaybe ('Just m) (PrependMaybe ('Just n) (BroadcastDimsImplF reversedBroadcastDims reversedBroadcastDims'))
+type MatmulDimsImplF :: [Dim (Name Symbol) (Size Nat)] -> [Dim (Name Symbol) (Size Nat)] -> Maybe [Dim (Name Symbol) (Size Nat)]
+type family MatmulDimsImplF reversedDims reversedDims' where
+  MatmulDimsImplF (k ': '[]) (k' ': '[]) =
+    If (UnifyCheck (Dim (Name Symbol) (Size Nat)) k k') ('Just '[]) 'Nothing
+  MatmulDimsImplF (k ': '[]) (m ': k' ': reversedBroadcastDims') =
+    If (UnifyCheck (Dim (Name Symbol) (Size Nat)) k k') (PrependMaybe ('Just m) (BroadcastDimsImplF '[] reversedBroadcastDims')) 'Nothing
+  MatmulDimsImplF (k ': n ': reversedBroadcastDims) (k' ': '[]) =
+    If (UnifyCheck (Dim (Name Symbol) (Size Nat)) k k') (PrependMaybe ('Just n) (BroadcastDimsImplF '[] reversedBroadcastDims)) 'Nothing
+  MatmulDimsImplF (k ': n ': reversedBroadcastDims) (m ': k' ': reversedBroadcastDims') =
+    If (UnifyCheck (Dim (Name Symbol) (Size Nat)) k k') (PrependMaybe ('Just m) (PrependMaybe ('Just n) (BroadcastDimsImplF reversedBroadcastDims reversedBroadcastDims'))) 'Nothing
   MatmulDimsImplF _ _ = 'Nothing
 
-type family MatmulDimsCheckF (dims :: [Dim (Name Symbol) (Size Nat)]) (dims' :: [Dim (Name Symbol) (Size Nat)]) (result :: Maybe [Dim (Name Symbol) (Size Nat)]) :: [Dim (Name Symbol) (Size Nat)] where
+type MatmulDimsCheckF :: [Dim (Name Symbol) (Size Nat)] -> [Dim (Name Symbol) (Size Nat)] -> Maybe [Dim (Name Symbol) (Size Nat)] -> [Dim (Name Symbol) (Size Nat)]
+type family MatmulDimsCheckF dims dims' result where
   MatmulDimsCheckF dims dims' 'Nothing =
     TypeError
       ( "Cannot multiply the tensors since the dimensions"
@@ -42,9 +50,12 @@ type family MatmulDimsCheckF (dims :: [Dim (Name Symbol) (Size Nat)]) (dims' :: 
       )
   MatmulDimsCheckF _ _ ('Just result) = (Reverse result)
 
+type MatmulDimsF :: [Dim (Name Symbol) (Size Nat)] -> [Dim (Name Symbol) (Size Nat)] -> [Dim (Name Symbol) (Size Nat)]
+
 type MatmulDimsF dims dims' = MatmulDimsCheckF dims dims' (MatmulDimsImplF (Reverse dims) (Reverse dims'))
 
-type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
+type MatmulF :: Shape [Dim (Name Symbol) (Size Nat)] -> Shape [Dim (Name Symbol) (Size Nat)] -> Shape [Dim (Name Symbol) (Size Nat)]
+type family MatmulF shape shape' where
   MatmulF 'UncheckedShape _ = 'UncheckedShape
   MatmulF _ 'UncheckedShape = 'UncheckedShape
   MatmulF ('Shape dims) ('Shape dims') = 'Shape (MatmulDimsF dims dims')
@@ -65,12 +76,13 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
---           :: Tensor
---                ('Gradient 'WithGradient)
---                ('Layout 'Dense)
---                ('Device 'CPU)
---                ('DataType 'Float)
---                ('Shape '[])
+--           :: MonadThrow m =>
+--              m (Tensor
+--                   ('Gradient 'WithGradient)
+--                   ('Layout 'Dense)
+--                   ('Device 'CPU)
+--                   ('DataType 'Float)
+--                   ('Shape '[]))
 --
 --
 --     (2) If both arguments are 2-dimensional, the matrix-matrix product is returned:
@@ -80,12 +92,14 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
---           :: Tensor
---                ('Gradient 'WithGradient)
---                ('Layout 'Dense)
---                ('Device 'CPU)
---                ('DataType 'Float)
---                ('Shape '[ 'Dim ('Name "*") ('Size 3), 'Dim ('Name "*") ('Size 7)])
+--           :: MonadThrow m =>
+--              m (Tensor
+--                   ('Gradient 'WithGradient)
+--                   ('Layout 'Dense)
+--                   ('Device 'CPU)
+--                   ('DataType 'Float)
+--                   ('Shape
+--                      '[ 'Dim ('Name "*") ('Size 3), 'Dim ('Name "*") ('Size 7)]))
 --
 --
 --     (3) If the first argument is 1-dimensional and the second argument is 2-dimensional,
@@ -97,12 +111,13 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
---           :: Tensor
---                ('Gradient 'WithGradient)
---                ('Layout 'Dense)
---                ('Device 'CPU)
---                ('DataType 'Float)
---                ('Shape '[ 'Dim ('Name "*") ('Size 7)])
+--           :: MonadThrow m =>
+--              m (Tensor
+--                   ('Gradient 'WithGradient)
+--                   ('Layout 'Dense)
+--                   ('Device 'CPU)
+--                   ('DataType 'Float)
+--                   ('Shape '[ 'Dim ('Name "*") ('Size 7)]))
 --
 --
 --     (4) If the first argument is 2-dimensional and the second argument is 1-dimensional,
@@ -113,12 +128,13 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
---           :: Tensor
---                ('Gradient 'WithGradient)
---                ('Layout 'Dense)
---                ('Device 'CPU)
---                ('DataType 'Float)
---                ('Shape '[ 'Dim ('Name "*") ('Size 3)])
+--           :: MonadThrow m =>
+--              m (Tensor
+--                   ('Gradient 'WithGradient)
+--                   ('Layout 'Dense)
+--                   ('Device 'CPU)
+--                   ('DataType 'Float)
+--                   ('Shape '[ 'Dim ('Name "*") ('Size 3)]))
 --
 --
 --     (5) If both arguments are at least 1-dimensional and at least one argument is \(n\)-dimensional (where \(n > 2\)),
@@ -131,14 +147,15 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
---           :: Tensor
---                ('Gradient 'WithGradient)
---                ('Layout 'Dense)
---                ('Device 'CPU)
---                ('DataType 'Float)
---                ('Shape
---                   '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "*") ('Size 3),
---                      'Dim ('Name "*") ('Size 7)])
+--           :: MonadThrow m =>
+--              m (Tensor
+--                   ('Gradient 'WithGradient)
+--                   ('Layout 'Dense)
+--                   ('Device 'CPU)
+--                   ('DataType 'Float)
+--                   ('Shape
+--                      '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "*") ('Size 3),
+--                         'Dim ('Name "*") ('Size 7)]))
 --
 --
 --     If the first argument is 1-dimensional,
@@ -149,13 +166,14 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
---           :: Tensor
---                ('Gradient 'WithGradient)
---                ('Layout 'Dense)
---                ('Device 'CPU)
---                ('DataType 'Float)
---                ('Shape
---                   '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "*") ('Size 7)])
+--           :: MonadThrow m =>
+--              m (Tensor
+--                   ('Gradient 'WithGradient)
+--                   ('Layout 'Dense)
+--                   ('Device 'CPU)
+--                   ('DataType 'Float)
+--                   ('Shape
+--                      '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "*") ('Size 7)]))
 --
 --
 --     If the second argument is 1-dimensional,
@@ -166,13 +184,14 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
---           :: Tensor
---                ('Gradient 'WithGradient)
---                ('Layout 'Dense)
---                ('Device 'CPU)
---                ('DataType 'Float)
---                ('Shape
---                   '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "*") ('Size 3)])
+--           :: MonadThrow m =>
+--              m (Tensor
+--                   ('Gradient 'WithGradient)
+--                   ('Layout 'Dense)
+--                   ('Device 'CPU)
+--                   ('DataType 'Float)
+--                   ('Shape
+--                      '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "*") ('Size 3)]))
 --
 --
 --     The non-matrix (i.e. batch) dimensions are broadcasted (and thus must be broadcastable).
@@ -184,25 +203,29 @@ type family MatmulF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: S
 --         >>> result = tensor1 `matmul` tensor2
 --         >>> :type result
 --         result
---           :: Tensor
---                ('Gradient 'WithGradient)
---                ('Layout 'Dense)
---                ('Device 'CPU)
---                ('DataType 'Float)
---                ('Shape
---                   '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "*") ('Size 5),
---                      'Dim ('Name "*") ('Size 3), 'Dim ('Name "*") ('Size 7)])
+--           :: MonadThrow m =>
+--              m (Tensor
+--                   ('Gradient 'WithGradient)
+--                   ('Layout 'Dense)
+--                   ('Device 'CPU)
+--                   ('DataType 'Float)
+--                   ('Shape
+--                      '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "*") ('Size 5),
+--                         'Dim ('Name "*") ('Size 3), 'Dim ('Name "*") ('Size 7)]))
 matmul ::
-  forall gradient layout layout' device device' dataType dataType' shape shape'.
+  forall m gradient gradient' layout layout' device device' dataType dataType' shape shape'.
+  MonadThrow m =>
   -- input
   Tensor gradient layout device dataType shape ->
   -- other
-  Tensor gradient layout' device' dataType' shape' ->
+  Tensor gradient' layout' device' dataType' shape' ->
   -- output
-  Tensor
-    gradient
-    (layout <+> layout')
-    (device <+> device')
-    (dataType <+> dataType')
-    (MatmulF shape shape')
-input `matmul` other = unsafePerformIO $ cast2 ATen.matmul_tt input other
+  m
+    ( Tensor
+        (gradient <|> gradient')
+        (layout <+> layout')
+        (device <+> device')
+        (dataType <+> dataType')
+        (MatmulF shape shape')
+    )
+input `matmul` other = unsafeThrowableIO $ ATen.cast2 ATen.matmul_tt input other

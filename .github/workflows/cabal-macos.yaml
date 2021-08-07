@@ -19,28 +19,28 @@ jobs:
         brew install cabal-install || true
         brew tap hasktorch/libtorch-prebuild https://github.com/hasktorch/homebrew-libtorch-prebuild || true
         brew install libtorch-prebuild@1.9 || true
+        brew tap hasktorch/tokenizers https://github.com/hasktorch/tokenizers || true
+        brew install libtokenizers || true
         #pushd deps/ ; ./get-deps.sh -a cpu -c ;popd
+    - name: Cache .cabal
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cabal/store
+          dist-newstyle
+        key: ${{ runner.os }}-cabal-${{ hashFiles('**/fallible.cabal') }}
+        restore-keys: |
+          ${{ runner.os }}-cabal-
     - name: Build
       run: |
         #. setenv
         ./setup-cabal.sh
         cabal v2-update
         cabal v2-install hspec-discover
-        cabal v2-build --jobs=2 \
-          libtorch-ffi \
-          libtorch-ffi-helper \
-          hasktorch \
-          codegen \
-          examples \
-          bounding-box \
-          dataloader-cifar10 \
-          untyped-nlp
+        cabal v2-build --jobs=2 all
     - name: Test
       run: |
         #. setenv
-        cabal v2-test --jobs=2 \
-          libtorch-ffi \
-          hasktorch \
-          codegen
+        cabal v2-test --jobs=2 all
         cabal v2-exec codegen-exe
         cabal exec xor-mlp

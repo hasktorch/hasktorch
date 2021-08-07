@@ -113,6 +113,9 @@ if [ "$SKIP_DOWNLOAD" = 0 ] ; then
       rm -f mklml_mac_2019.0.1.20181227.tgz.1
       rm -rf mklml
       mv mklml_mac_2019.0.1.20181227 mklml
+
+      wget https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-macos.zip
+      unzip libtokenizers-macos.zip
       ;;
     "Linux")
       if [ "$USE_NIGHTLY" = 1 ] ; then
@@ -143,6 +146,9 @@ if [ "$SKIP_DOWNLOAD" = 0 ] ; then
       rm -rf mklml
       mv mklml_lnx_2019.0.1.20181227 mklml
       ln -s libmklml_intel.so mklml/lib/libmklml.so
+
+      wget https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-linux.zip
+      unzip libtokenizers-linux.zip
       ;;
   esac
 fi

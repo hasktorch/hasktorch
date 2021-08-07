@@ -13,6 +13,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE PatternSynonyms #-}
 
 module Torch.GraduallyTyped.Shape.Type where
 
@@ -80,6 +81,9 @@ data SName (name :: Name Symbol) where
   SName :: forall name. KnownSymbol name => SName ('Name name)
 
 deriving stock instance Show (SName (name :: Name Symbol))
+
+pattern SNoName :: SName ('Name "*")
+pattern SNoName = SName
 
 type instance Sing = SName
 
