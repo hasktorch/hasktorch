@@ -7,21 +7,17 @@
 
 module Torch.GraduallyTyped.Examples.LinearRegression where
 
-import Control.Monad (foldM, when)
+import Control.Monad (foldM_, when)
 import Control.Monad.Indexed ((>>>=))
 import Control.Monad.Indexed.State (IxStateT (..))
 import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
 import Data.Functor.Indexed ((<<$>>))
 import Torch.GraduallyTyped
 
-model state input =
-  runIxStateT $
-    squeezeAll <<$>> IxStateT (forward state input)
+model state input = runIxStateT $ squeezeAll <<$>> IxStateT (forward state input)
 
 groundTruth t = do
-  weight <-
-    sToTensor gradient layout device [42.0 :: Float, 64.0, 96.0]
-      >>= sCheckedShape (SShape $ SNoName :&: SSize @3 :|: SNil)
+  weight <- sToTensor gradient layout device [42.0 :: Float, 64.0, 96.0] -- >>= sCheckedShape (SShape $ SNoName :&: SSize @3 :|: SNil) -- <<< uncomment to check shape
   let dataType = sGetDataType weight
   bias <- sFull (spec dataType) (3.14 :: Float)
   prod <- sCheckedDataType dataType t >>= (`matmul` weight)
@@ -39,46 +35,37 @@ printParams GLinear {..} = do
 main :: IO ()
 main = do
   g0 <- defaultRNG
-
-  let spec = linearSpec hasBias gradient device dataType inputDim outputDim
-  (initial, g1) <- initialize spec g0
-
+  let modelSpec = linearSpec SWithBias (SGradient SWithGradient) device dataType inputDim outputDim
+  (initial, g1) <- initialize modelSpec g0
   printParams initial
+  optim <- mkOptim initial
 
-  optim <- optimizer initial
+  foldM_
+    ( \g i -> do
+        (input, g') <- sRandn randSpec g
+        target <- groundTruth input
+        (loss, g'') <-
+          stepWithGenerator
+            optim
+            modelSpec
+            (\state -> runIxStateT $ IxStateT (model state input) >>>= ilift . (target `mseLoss`))
+            g'
+        when (i `mod` 100 == 0) $
+          putStrLn $ "Iteration: " ++ show i ++ " | Loss: " ++ show loss
+        pure g''
+    )
+    g1
+    [1 :: Int .. numIters]
 
-  _ <- foldLoop g1 numIters $ \g i -> do
-    (input, g') <- sRandn tensorSpec g
-    y <- groundTruth input
-    (loss, g'') <-
-      stepWithGenerator
-        optim
-        spec
-        ( \state ->
-            runIxStateT $
-              IxStateT (model state input)
-                >>>= ilift . (\y' -> y `mseLoss` y')
-        )
-        g'
-    when (i `mod` 100 == 0) $ do
-      putStrLn $ "Iteration: " ++ show i ++ " | Loss: " ++ show loss
-    pure g''
-
-  trained <- getModel spec optim
-
+  trained <- getModel modelSpec optim
   printParams trained
   where
-    optimizer = mkAdam defaultAdamOptions {learningRate = 1e0}
+    mkOptim = mkAdam defaultAdamOptions {learningRate = 1e0}
     defaultRNG = sMkGenerator device 31415
     numIters = 2000
     batchDim = SNoName :&: SSize @4
     inputDim = SNoName :&: SSize @3
     outputDim = SNoName :&: SSize @1
-
-    foldLoop x count block = foldM block x [1 :: Int .. count]
-
-    hasBias = SWithBias
-    gradient = SGradient SWithGradient
     device = SDevice SCPU
     dataType = SDataType SFloat
-    tensorSpec = TensorSpec gradient (SLayout SDense) device dataType (SShape $ batchDim :|: inputDim :|: SNil)
+    randSpec = TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device dataType (SShape $ batchDim :|: inputDim :|: SNil)
