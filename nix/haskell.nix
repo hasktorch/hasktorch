@@ -1,33 +1,27 @@
-{ lib
+############################################################################
+# Builds Haskell packages with Haskell.nix
+############################################################################
+{ pkgs
+, lib
 , stdenv
-, pkgs
 , haskell-nix
 , buildPackages
-, config ? {}
-# GHC attribute name
-, compiler ? config.haskellNix.compiler or "ghc8104"
-# Enable profiling
-, profiling ? config.haskellNix.profiling or false
-# Version info, to be passed when not building from a git work tree
+, compiler-nix-name
+, profiling ? false
 , gitrev ? null
-# Enable CUDA support
 , cudaSupport ? false
-# Add packages on top of the package set derived from cabal resolution
 , extras ? (_: {})
+, src ? (haskell-nix.haskellLib.cleanGit {
+      name = "hasktorch";
+      src = ../.;
+  })
+, projectPackages ? lib.attrNames (haskell-nix.haskellLib.selectProjectPackages
+    (haskell-nix.cabalProject' {
+      inherit src compiler-nix-name;
+    }).hsPkgs)
 }:
 
 let
-
-  src = haskell-nix.haskellLib.cleanGit {
-      name = "hasktorch";
-      src = ../.;
-  };
-
-  projectPackages = lib.attrNames (haskell-nix.haskellLib.selectProjectPackages
-    (haskell-nix.cabalProject {
-      inherit src;
-      compiler-nix-name = compiler;
-    }));
 
   setupNumCores = libname: ''
       case "$(uname)" in
@@ -56,10 +50,8 @@ let
 
   # This creates the Haskell package set.
   # https://input-output-hk.github.io/haskell.nix/user-guide/projects/
-  pkgSet = haskell-nix.cabalProject {
-    inherit src;
-
-    compiler-nix-name = compiler;
+  pkgSet = haskell-nix.cabalProject' {
+    inherit src compiler-nix-name;
 
     # these extras will provide additional packages
     # on top of the package set derived from cabal resolution.
@@ -74,14 +66,6 @@ let
     ];
 
     modules = [
-      { compiler.nix-name = compiler; }
-
-      # TODO: Compile all local packages with -Werror:
-      # {
-      #   packages = lib.genAttrs projectPackages
-      #     (name: { configureFlags = [ "--ghc-option=-Werror" ]; });
-      # }
-
       # Enable profiling
       (lib.optionalAttrs profiling {
         enableLibraryProfiling = true;
@@ -117,7 +101,7 @@ let
       # Misc. build fixes for dependencies  
       {
         # Some packages are missing identifier.name
-        packages.cryptonite-openssl.package.identifier.name = "cryptonite-openssl";
+        # packages.cryptonite-openssl.package.identifier.name = "cryptonite-openssl";
 
         # Some tests don't work on every platform
         # packages.hasktorch.components.all.platforms =
@@ -138,11 +122,7 @@ let
       {
         # Stamp executables with the git revision
         packages = lib.genAttrs projectPackages (name: {
-            postInstall = ''
-              if [ -d $out/bin ]; then
-                ${setGitRev}
-              fi
-            '';
+            postInstall = ''${setGitRev}'';
           });
       }
     ];
@@ -151,13 +131,8 @@ let
   # setGitRev is a postInstall script to stamp executables with
   # version info. It uses the "gitrev" argument, if set. Otherwise,
   # the revision is sourced from the local git work tree.
-  setGitRev = ''
-    ${haskellBuildUtils}/bin/set-git-rev "${gitrev'}" $out/bin/* || true
-  '';
-  gitrev' = if (gitrev == null)
-    then buildPackages.commonLib.commitIdFromGitRepoOrZero ../.git
-    else gitrev;
-  haskellBuildUtils = buildPackages.haskellBuildUtils.package;
-
+  setGitRev = ''${buildPackages.haskellBuildUtils}/bin/set-git-rev "${gitrev'}" $out/bin/*'';
 in
-  pkgSet
+  pkgSet // {
+    inherit projectPackages;
+  }

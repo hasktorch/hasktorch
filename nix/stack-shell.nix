@@ -1,4 +1,3 @@
-
 # This shell file is specifically to be used with Stack.
 #
 # This file allows using Stack's built-in Nix integration. This means that you

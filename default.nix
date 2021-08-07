@@ -1,8 +1,5 @@
 ############################################################################
 # Hasktorch Nix build
-#
-# TODO: document top-level attributes and how to build them
-#
 ############################################################################
 
 { system ? builtins.currentSystem
@@ -17,12 +14,11 @@
 # nix-build --arg cudaSupport true --argstr cudaMajorVersion 10
 , cudaMajorVersion ? null
 # pinned version of nixpkgs augmented with various overlays.
-, pkgs ? import ./nix/default.nix { inherit system crossSystem config sourcesOverride cudaSupport cudaMajorVersion; }
+, pkgs ? import ./nix/default.nix { inherit system crossSystem config sourcesOverride gitrev cudaSupport cudaMajorVersion; }
 # git sha1 hash, to be passed when not building from a git work tree.
 , gitrev ? null
 }:
 
-# commonLib includes util.nix and nixpkgs lib.
 with pkgs; with commonLib;
 
 let
