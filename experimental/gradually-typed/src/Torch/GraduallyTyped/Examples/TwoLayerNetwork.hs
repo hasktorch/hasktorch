@@ -26,7 +26,7 @@ import GHC.Generics (Generic)
 import qualified Pipes as P
 import qualified Pipes.Concurrent as P
 import qualified Pipes.Prelude as P
-import System.Random (Random, RandomGen, getStdGen)
+import System.Random (Random, RandomGen, mkStdGen)
 import Torch.GraduallyTyped
 
 -- | Compute the sine cardinal (sinc) function,
@@ -66,30 +66,31 @@ instance Dataset IO SincData Int (Float, Float) where
   keys (SincData _ d) = Set.fromList [0 .. Prelude.length d -1]
 
 -- | Data type to represent a simple two-layer neural network.
--- It is a product type of two layer types, @fstLayer@ and @sndLayer@,
+-- It is a product type of two fully connected layers, @fstLayer@ and @sndLayer@,
 -- an activation function, @activation@, and a dropout layer, @dropout@.
 newtype TwoLayerNetwork fstLayer activation dropout sndLayer
   = TwoLayerNetwork (ModelStack '[fstLayer, activation, dropout, sndLayer])
   deriving stock (Generic)
 
--- | The specification of a two-layer network is the product of the
--- specifications of its two layers and the activation function.
+-- | The specification of a two-layer network is the product of the specifications of its layers.
 type instance
   ModelSpec (TwoLayerNetwork fstLayer activation dropout sndLayer) =
     TwoLayerNetwork (ModelSpec fstLayer) (ModelSpec activation) (ModelSpec dropout) (ModelSpec sndLayer)
 
 -- | To initialize a two-layer network, we need a 'HasInitialize' instance.
+-- The instance is auto-generated from the instance for the 'ModelStack' data type.
 instance
   HasInitialize (ModelStack '[fstLayer, activation, dropout, sndLayer]) generatorDevice (ModelStack '[fstLayer', activation', dropout', sndLayer']) generatorOutputDevice =>
   HasInitialize (TwoLayerNetwork fstLayer activation dropout sndLayer) generatorDevice (TwoLayerNetwork fstLayer' activation' dropout' sndLayer') generatorOutputDevice
 
 -- | For conversion of a two-layer network into a state dictionary and back,
--- we need a @HasStateDict@ instance.
+-- we need a 'HasStateDict' instance.
+-- The instance is auto-generated from the 'HasStateDict' instances of the individual layer data types.
 instance
   (HasStateDict fstLayer, HasStateDict activation, HasStateDict dropout, HasStateDict sndLayer) =>
   HasStateDict (TwoLayerNetwork fstLayer activation dropout sndLayer)
 
--- | The @HasForward@ instance is used to define the forward pass of the two-layer network and the loss.
+-- | The 'HasForward' instance defines the 'forward' pass of the two-layer network and the loss.
 instance
   ( HasForward
       (ModelStack '[fstLayer, activation, dropout, sndLayer])
@@ -125,20 +126,20 @@ monitor = P.map show P.>-> P.stdoutLn'
 
 runTwoLayerNetworkExample :: IO ()
 runTwoLayerNetworkExample = do
-  let seed = 0
+  let seed = 31415
       device = SDevice SCPU
       inputDim = SNoName :&: SSize @1
       outputDim = SNoName :&: SSize @1
       hiddenDim = SNoName :&: SSize @100
 
   let mkModelSpec hasGradient dropout' =
-        "myTwoLayerNetwork"
+        "myFirstTwoLayerNetwork"
           ::> TwoLayerNetwork
             ( ModelStack
-                ( "theFstLayer" ::> linearSpec SWithBias (SGradient hasGradient) device (SDataType SFloat) inputDim hiddenDim,
+                ( "fstFullyConnectedLayer" ::> linearSpec SWithBias (SGradient hasGradient) device (SDataType SFloat) inputDim hiddenDim,
                   Tanh,
                   dropout',
-                  "theSndLayer" ::> linearSpec SWithBias (SGradient hasGradient) device (SDataType SFloat) hiddenDim outputDim
+                  "sndFullyConnectedLayer" ::> linearSpec SWithBias (SGradient hasGradient) device (SDataType SFloat) hiddenDim outputDim
                 )
             )
       -- during training, we need to turn dropout on and keep track of the gradient
@@ -152,7 +153,7 @@ runTwoLayerNetworkExample = do
   -- initialize the model from the model specification
   (model, g1) <- initialize trainingModelSpec g0
 
-  -- collation function that converts a stream of examples into one of batches
+  -- buffered collation function that converts a stream of examples into one of batches
   let collate' =
         let batchSize = 100
             collateFn chunk =
@@ -161,7 +162,7 @@ runTwoLayerNetworkExample = do
                   ys' = VS.singleton <$> ys
                   sToTensor' = sToTensor (SGradient SWithoutGradient) (SLayout SDense) device
                in (,) <$> sToTensor' xs' <*> sToTensor' ys'
-         in bufferedCollate (P.bounded 1) batchSize collateFn
+         in bufferedCollate (P.bounded 10) batchSize collateFn
 
   let numEpochs = 100
       learningRateSchedule =
@@ -172,16 +173,12 @@ runTwoLayerNetworkExample = do
          in singleCycleLearningRateSchedule maxLearningRate finalLearningRate numEpochs numWarmupEpochs numCooldownEpochs
 
   (trainingData, evaluationData, streamingState) <-
-    getStdGen
-      >>= evalStateT
-        ( (,,)
-            -- create a dataset of 10000 unique training examples
-            <$> mkSincData "training" 10000
-              -- create a dataset of 500 unique evaluation examples
-              <*> mkSincData "evaluation" 500
-              -- configure the data loader for random shuffling
-              <*> gets (\stdGen -> (datasetOpts 1) {shuffle = Shuffle stdGen})
-        )
+    evalStateT
+      ( (,,) <$> mkSincData "training" 10000 <*> mkSincData "evaluation" 500
+          -- configure the data loader with 1 worker thread and for random shuffling
+          <*> gets (\stdGen -> (datasetOpts 1) {shuffle = Shuffle stdGen})
+      )
+      (mkStdGen 13)
 
   -- create an Adam optimizer from the model
   optim <- liftIO $ mkAdam defaultAdamOptions {learningRate = 1e-4} model
@@ -189,7 +186,7 @@ runTwoLayerNetworkExample = do
   let -- one epoch of training and evaluation
       step (streamingState', g) epoch = do
         -- let learningRate = learningRateSchedule epoch
-        -- ATen.setLearningRate optim learningRate
+        -- setLearningRate optim learningRate
 
         -- helper function for streaming
         let go streamingState'' data' monitor' closure' = do
@@ -223,8 +220,7 @@ runTwoLayerNetworkExample = do
 
   -- run the training loop
   flip runContT pure . P.runEffect $
-    P.foldM step init' done (P.each [1 .. numEpochs])
-      P.>-> monitor
+    P.foldM step init' done (P.each [1 .. numEpochs]) P.>-> monitor
 
   -- save the model's state dictionary to a file
   stateDict' <- getStateDict optim
