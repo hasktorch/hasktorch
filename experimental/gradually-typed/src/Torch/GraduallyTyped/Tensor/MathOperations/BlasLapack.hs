@@ -50,6 +50,8 @@ type family MatmulDimsCheckF dims dims' result where
       )
   MatmulDimsCheckF _ _ ('Just result) = (Reverse result)
 
+type MatmulDimsF :: [Dim (Name Symbol) (Size Nat)] -> [Dim (Name Symbol) (Size Nat)] -> [Dim (Name Symbol) (Size Nat)]
+
 type MatmulDimsF dims dims' = MatmulDimsCheckF dims dims' (MatmulDimsImplF (Reverse dims) (Reverse dims'))
 
 type MatmulF :: Shape [Dim (Name Symbol) (Size Nat)] -> Shape [Dim (Name Symbol) (Size Nat)] -> Shape [Dim (Name Symbol) (Size Nat)]
