@@ -1,6 +1,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
@@ -9,6 +11,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
@@ -17,8 +20,6 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns #-}
 
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE DerivingStrategies #-}
 module Torch.GraduallyTyped.Tensor.Indexing
   ( IndexType (..),
     SIndexType (..),
@@ -45,8 +46,8 @@ import Data.Void (Void)
 import Foreign (fromBool)
 import GHC.TypeLits (Div, ErrorMessage (..), Nat, Symbol, type (+), type (-), type (<=?))
 import Language.Haskell.TH.Quote (QuasiQuoter (..))
-import qualified Language.Haskell.TH as TH
-import Text.Megaparsec as M
+import qualified Language.Haskell.TH.Syntax as TH
+import Text.Megaparsec (ParsecT, between, empty, eof, errorBundlePretty, optional, runParserT, sepBy, some, try, (<|>))
 import qualified Text.Megaparsec.Char as M
 import qualified Text.Megaparsec.Char.Lexer as L
 import Torch.GraduallyTyped.Index.Type (DemotedIndex (..), Index (..), SIndex (..))
@@ -71,7 +72,7 @@ data IndexType a
   | SliceFromWithStep a a
   | SliceUpToWithStep a a
   | SliceFromUpToWithStep a a a
-  deriving stock (Show, Eq, Functor)
+  deriving stock (Show, Eq, Functor, TH.Lift)
 
 genSingletons [''IndexType]
 
@@ -292,7 +293,7 @@ string :: String -> Parser String
 string = lexeme . M.string
 
 parseSlice :: String -> TH.Q TH.Exp
-parseSlice = either (fail . errorBundlePretty) pure <=< M.runParserT indicesP ""
+parseSlice = either (fail . errorBundlePretty) pure <=< runParserT indicesP ""
   where
     indicesP :: Parser TH.Exp
     indicesP = do
@@ -319,7 +320,7 @@ parseSlice = either (fail . errorBundlePretty) pure <=< M.runParserT indicesP ""
         [ do
             index <- L.signed sc $ lexeme L.decimal
             let con = if index < 0 then [|SNegativeIndex|] else [|SIndex|]
-                nat = TH.litT $ TH.numTyLit $ abs index
+                nat = pure $ TH.LitT $ TH.NumTyLit $ abs index
             lift [|$con @($nat)|],
           TH.VarE . TH.mkName <$> lexeme (between (char '{') (char '}') (some M.alphaNumChar))
         ]
