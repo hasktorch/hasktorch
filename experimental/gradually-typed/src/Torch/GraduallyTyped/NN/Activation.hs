@@ -20,7 +20,7 @@ import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec)
 import Torch.GraduallyTyped.NN.Functional.Activation (gelu, geluNew, relu)
-import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, softmax)
+import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, logSoftmax, softmax)
 import Torch.GraduallyTyped.Shape (By, SSelectDim, SelectDim)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (tanh)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
@@ -58,6 +58,39 @@ instance
     generator
   where
   forward Softmax {..} input = pure . (softmax softmaxSelectDim input,)
+
+data LogSoftmax (selectDim :: SelectDim (By Symbol Nat)) where
+  LogSoftmax ::
+    forall selectDim.
+    {logSoftmaxSelectDim :: SSelectDim selectDim} ->
+    LogSoftmax selectDim
+  deriving stock (Generic)
+
+type instance ModelSpec (LogSoftmax selectDim) = LogSoftmax selectDim
+
+instance
+  HasInitialize
+    (LogSoftmax selectDim)
+    generatorDevice
+    (LogSoftmax selectDim)
+    generatorDevice
+  where
+  initialize spec = pure . (spec,)
+
+instance HasStateDict (LogSoftmax selectDim) where
+  fromStateDict spec _ = pure spec
+  toStateDict _ _ = pure ()
+
+instance
+  (output ~ Tensor requiresGradient layout device dataType (SoftmaxF selectDim shape)) =>
+  HasForward
+    (LogSoftmax selectDim)
+    (Tensor requiresGradient layout device dataType shape)
+    generator
+    output
+    generator
+  where
+  forward LogSoftmax {..} input = pure . (logSoftmax logSoftmaxSelectDim input,)
 
 data Relu where
   Relu :: Relu

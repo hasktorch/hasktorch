@@ -111,9 +111,13 @@ library
                      , Torch.GraduallyTyped.Internal.Vector
                      , Torch.GraduallyTyped.Examples.LinearRegression
                      , Torch.GraduallyTyped.Examples.TwoLayerNetwork
+                     , Torch.GraduallyTyped.Examples.NeuralInterpreter.STLC
+                     , Torch.GraduallyTyped.Examples.NeuralInterpreter.Gen
+                     , Torch.GraduallyTyped.Examples.NeuralInterpreter.Dataset
                      , Torch.Language
                      , Torch.Language.SpiderSQL
                      , Torch.Data.Parser
+                     , Control.Monad.Fresh
   hs-source-dirs:      src
   default-language:    Haskell2010
   ghc-options:         -Wall -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
@@ -154,6 +158,11 @@ library
                      , exceptions
                      , template-haskell
                      , megaparsec
+                     , bound
+                     , mmorph
+                     , hedgehog
+                     , transformers
+                     , deriving-compat
 
 test-suite spec
   type:                exitcode-stdio-1.0
