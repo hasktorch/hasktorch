@@ -1,4 +1,6 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
@@ -12,6 +14,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 
@@ -26,6 +29,7 @@ import Data.Singletons (SingKind (fromSing))
 import Data.Singletons.Prelude.List (SList (SNil))
 import Data.Singletons.Prelude.Maybe (SMaybe (SNothing))
 import Data.Singletons.TypeLits (SNat)
+import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..))
@@ -34,21 +38,35 @@ import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), 
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec, NamedModel (..))
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, logSoftmax)
 import Torch.GraduallyTyped.NN.Sparse (Embedding (..), EmbeddingSpec (..))
-import Torch.GraduallyTyped.NN.Transformer.GLMHead (GLMHead, LMHeadActivationF, LMHeadBiasF, LMHeadDecoderF, LMHeadDenseF, LMHeadLayerNormF, lmHeadSpec)
-import Torch.GraduallyTyped.NN.Transformer.GTransformer (GTransformer, TDFinalDropoutF, TDFinalLayerNormF, TDInitialDropoutF, TDInitialLayerNormF, TDPosEncF, TDRelPosEncF, TDStackF, TEFinalDropoutF, TEFinalLayerNormF, TEInitialDropoutF, TEInitialLayerNormF, TEPosEncF, TERelPosEncF, TEStackF, transformerDecoderSpec, transformerEncoderSpec)
+import Torch.GraduallyTyped.NN.Transformer.GLMHead (GLMHeadF, lmHeadSpec)
+import Torch.GraduallyTyped.NN.Transformer.GTransformer (TransformerDecoderF, TransformerEncoderF, transformerDecoderSpec, transformerEncoderSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead (..), STransformerStyle (..), ShiftRight, TransformerHead (WithLMHead, WithoutHead), TransformerStyle (..))
+import Torch.GraduallyTyped.NN.Type (HasDropout, SHasDropout)
 import Torch.GraduallyTyped.Prelude (Catch, forgetIsChecked, pattern (:|:))
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..))
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SBy (..), SDim, SSelectDim (..), SelectDim (..), Size (..))
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SBy (..), SDim, SSelectDim (..), SelectDim (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Indexing (IndexDims, IndexType (..), Indices (..), SIndexType (..), SIndices (..), (!))
+import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (GatherDimF, SqueezeDimF, UnsqueezeF, sGatherDim, sSqueezeDim, sUnsqueeze)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mulScalar)
+import Torch.GraduallyTyped.Tensor.MathOperations.Reduction (MeanAllCheckF, meanAll)
 import Torch.GraduallyTyped.Tensor.Type (Tensor ())
+import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import Prelude hiding (head)
 
 -- | Data type that is used to represent whether the encoder-decoder transformer model has a scaled embedding.
 data EncoderDecoderTransformerHasEmbedScaling
   = EncoderDecoderTransformerWithEmbedScaling
   | EncoderDecoderTransformerWithoutEmbedScaling
+  deriving stock (Eq, Ord, Show, Generic)
+
+type instance ModelSpec EncoderDecoderTransformerHasEmbedScaling = EncoderDecoderTransformerHasEmbedScaling
+
+instance HasInitialize EncoderDecoderTransformerHasEmbedScaling generatorDevice EncoderDecoderTransformerHasEmbedScaling generatorDevice where
+  initialize hasEmbedScaling g = pure (hasEmbedScaling, g)
+
+instance HasStateDict EncoderDecoderTransformerHasEmbedScaling where
+  fromStateDict hasEmbedScaling _ = pure hasEmbedScaling
+  toStateDict _ _ = pure ()
 
 -- | Generic encoder-decoder transformer model.
 -- This is a model that can be used to encode and decode sequences of variable length.
@@ -82,10 +100,38 @@ data
       edtEmbedScaling :: EncoderDecoderTransformerHasEmbedScaling
     } ->
     GEncoderDecoderTransformer inputEmbedDim encoder decoder sharedEmbedding head
+  deriving stock (Show, Generic)
 
 type instance
   ModelSpec (GEncoderDecoderTransformer inputEmbedDim encoder decoder sharedEmbedding head) =
     GEncoderDecoderTransformer inputEmbedDim (ModelSpec encoder) (ModelSpec decoder) (ModelSpec sharedEmbedding) (ModelSpec head)
+
+type family
+  GEncoderDecoderTransformerF
+    (style :: TransformerStyle)
+    (transformerHead :: TransformerHead)
+    (numEncoderLayers :: Nat)
+    (numDecoderLayers :: Nat)
+    (gradient :: Gradient RequiresGradient)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (posEncDim :: Dim (Name Symbol) (Size Nat))
+    (vocabDim :: Dim (Name Symbol) (Size Nat))
+    (hasDropout :: HasDropout) ::
+    Type
+  where
+  GEncoderDecoderTransformerF style transformerHead numEncoderLayers numDecoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim hasDropout =
+    GEncoderDecoderTransformer
+      inputEmbedDim
+      (EDTEncoderF style numEncoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim hasDropout)
+      (EDTDecoderF style numDecoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim hasDropout)
+      (EDTSharedEmbeddingF style gradient device dataType inputEmbedDim vocabDim)
+      (EDTHeadF style transformerHead gradient device dataType inputEmbedDim vocabDim)
 
 -- | Specifies the encoder of the encoder-decoder transformer model.
 type family
@@ -101,18 +147,11 @@ type family
     (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
     (ffnDim :: Dim (Name Symbol) (Size Nat))
     (posEncDim :: Dim (Name Symbol) (Size Nat))
+    (hasDropout :: HasDropout) ::
+    Type
   where
-  EDTEncoderF style numEncoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim =
-    NamedModel
-      ( GTransformer
-          (TEPosEncF style gradient device dataType inputEmbedDim posEncDim)
-          (TERelPosEncF style gradient device dataType headDim posEncDim)
-          (TEInitialLayerNormF style gradient device dataType inputEmbedDim)
-          (TEInitialDropoutF style)
-          (TEStackF style numEncoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim)
-          (TEFinalLayerNormF style gradient device dataType inputEmbedDim)
-          (TEFinalDropoutF style)
-      )
+  EDTEncoderF style numEncoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim hasDropout =
+    NamedModel (TransformerEncoderF style numEncoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim hasDropout)
 
 -- | Specifies the decoder of the encoder-decoder transformer model.
 type family
@@ -128,18 +167,11 @@ type family
     (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
     (ffnDim :: Dim (Name Symbol) (Size Nat))
     (posEncDim :: Dim (Name Symbol) (Size Nat))
+    (hasDropout :: HasDropout) ::
+    Type
   where
-  EDTDecoderF style numDecoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim =
-    NamedModel
-      ( GTransformer
-          (TDPosEncF style gradient device dataType inputEmbedDim posEncDim)
-          (TDRelPosEncF style gradient device dataType headDim posEncDim)
-          (TDInitialLayerNormF style gradient device dataType inputEmbedDim)
-          (TDInitialDropoutF style)
-          (TDStackF style numDecoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim)
-          (TDFinalLayerNormF style gradient device dataType inputEmbedDim)
-          (TDFinalDropoutF style)
-      )
+  EDTDecoderF style numDecoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim hasDropout =
+    NamedModel (TransformerDecoderF style numDecoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim posEncDim hasDropout)
 
 -- | Specifies the shared embedding layer of the encoder-decoder transformer model.
 type family
@@ -169,62 +201,48 @@ type family
   EDTHeadF style 'WithoutHead gradient device dataType inputEmbedDim vocabDim =
     ()
   EDTHeadF style 'WithLMHead gradient device dataType inputEmbedDim vocabDim =
-    NamedModel
-      ( GLMHead
-          inputEmbedDim
-          (LMHeadDenseF style gradient device dataType inputEmbedDim)
-          (LMHeadActivationF style)
-          (LMHeadLayerNormF style gradient device dataType inputEmbedDim)
-          (LMHeadDecoderF style gradient device dataType inputEmbedDim vocabDim)
-          (LMHeadBiasF style gradient device dataType vocabDim)
-      )
+    NamedModel (GLMHeadF style gradient device dataType inputEmbedDim vocabDim)
 
 -- | Specifies the parameters of an encoder-decoder transformer model.
---
--- - @style@: the style of the encoder-decoder transformer model, e.g. 'ST5', 'SBART', etc.
--- - @transformerHead@: the head of the encoder-decoder transformer model.
--- - @numEncoderLayers@: the number of encoder layers of the encoder-decoder transformer model.
--- - @numDecoderLayers@: the number of decoder layers of the encoder-decoder transformer model.
--- - @gradient@: whether to compute the gradient of the model parameters
--- - @device@: the computational device on which the model is allocated.
--- - @dataType@: the data type of the model parameters.
--- - @headDim@: the dimension of all transformer heads in the encoder-decoder transformer model.
--- - @headEmbedDim@: the dimension of the transformer head embeddings.
--- - @embedDim@: the dimension of the transformer embeddings.
--- - @inputEmbedDim@: the dimension of the input embeddings for both the encoder and the decoder.
--- - @ffnDim@: the dimension of the feed-forward network.
--- - @posEncDim@: the dimension of the positional embeddings.
--- - @vocabDim@: the dimension of the vocabulary.
--- - @typeVocabDim@: the dimension of the type vocabulary.
--- - @dropoutP@: the dropout rate.
--- - @eps@: the epsilon value for numerical stability of the layer normalization.
 encoderDecoderTransformerSpec ::
-  forall style transformerHead numEncoderLayers numDecoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim.
+  forall style transformerHead numEncoderLayers numDecoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim hasDropout.
+  -- | the style of the encoder-decoder transformer model, e.g. 'ST5', 'SBART', etc.
   STransformerStyle style ->
+  -- | the head of the encoder-decoder transformer model.
   STransformerHead transformerHead ->
+  -- | the number of encoder layers of the encoder-decoder transformer model.
   SNat numEncoderLayers ->
+  -- | the number of decoder layers of the encoder-decoder transformer model.
   SNat numDecoderLayers ->
+  -- | whether or not to compute the gradient of the model parameters
   SGradient gradient ->
+  -- | the computational device on which the model is allocated.
   SDevice device ->
+  -- | the data type of the model parameters.
   SDataType dataType ->
+  -- | the dimension of all transformer heads in the encoder-decoder transformer model.
   SDim headDim ->
+  -- | the dimension of the transformer head embeddings.
   SDim headEmbedDim ->
+  -- | the dimension of the transformer embeddings.
   SDim embedDim ->
+  -- | the dimension of the input embeddings for both the encoder and the decoder.
   SDim inputEmbedDim ->
+  -- | the dimension of the feed-forward network.
   SDim ffnDim ->
+  -- | the dimension of the positional embeddings.
   SDim posEncDim ->
+  -- | the dimension of the vocabulary.
   SDim vocabDim ->
+  -- | whether or not to use dropout.
+  SHasDropout hasDropout ->
+  -- | the dropout rate.
   Double ->
+  -- | the epsilon value for numerical stability of the layer normalization.
   Double ->
-  ModelSpec
-    ( GEncoderDecoderTransformer
-        inputEmbedDim
-        (EDTEncoderF style numEncoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim)
-        (EDTDecoderF style numDecoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim)
-        (EDTSharedEmbeddingF style gradient device dataType inputEmbedDim vocabDim)
-        (EDTHeadF style transformerHead gradient device dataType inputEmbedDim vocabDim)
-    )
-encoderDecoderTransformerSpec style transformerHead numEncoderLayers numDecoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim dropoutP eps =
+  -- | the parameter specification of an encoder-decoder transformer model.
+  ModelSpec (GEncoderDecoderTransformerF style transformerHead numEncoderLayers numDecoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim hasDropout)
+encoderDecoderTransformerSpec style transformerHead numEncoderLayers numDecoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim hasDropout dropoutP eps =
   let encoderSpec ST5 = NamedModel "encoder." $ encoderSpec' ST5
       encoderSpec SByT5 = NamedModel "encoder." $ encoderSpec' SByT5
       encoderSpec SBART = NamedModel "model.encoder." $ encoderSpec' SBART
@@ -274,38 +292,24 @@ encoderDecoderTransformerSpec style transformerHead numEncoderLayers numDecoderL
    in GEncoderDecoderTransformer inputEmbedDim (encoderSpec style) (decoderSpec style) (sharedEmbeddingSpec style) (headSpec style transformerHead) (embedScalingSpec style)
   where
     encoderSpec' :: _
-    encoderSpec' style' = transformerEncoderSpec style' numEncoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP eps
+    encoderSpec' style' = transformerEncoderSpec style' numEncoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim hasDropout dropoutP eps
     decoderSpec' :: _
-    decoderSpec' style' = transformerDecoderSpec style' numDecoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim posEncDim dropoutP eps
+    decoderSpec' style' = transformerDecoderSpec style' numDecoderLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim inputEmbedDim ffnDim posEncDim hasDropout dropoutP eps
     sharedEmbeddingSpec' = EmbeddingSpec gradient (SLayout SDense) device dataType vocabDim inputEmbedDim SNothing
     headSpec' :: _
     headSpec' style' = lmHeadSpec style' gradient device dataType inputEmbedDim vocabDim eps
 
 instance
-  ( HasInitialize encoder generatorDevice encoder generatorDevice,
-    HasInitialize decoder generatorDevice decoder generatorDevice,
-    HasInitialize sharedEmbedding generatorDevice sharedEmbedding generatorDevice,
-    HasInitialize head generatorDevice head generatorDevice
+  ( HasInitialize encoder generatorDevice encoder' generatorDevice0,
+    HasInitialize decoder generatorDevice0 decoder' generatorDevice1,
+    HasInitialize sharedEmbedding generatorDevice1 sharedEmbedding' generatorDevice2,
+    HasInitialize head generatorDevice2 head' generatorOutputDevice
   ) =>
   HasInitialize
     (GEncoderDecoderTransformer inputEmbedDim encoder decoder sharedEmbedding head)
     generatorDevice
-    (GEncoderDecoderTransformer inputEmbedDim encoder decoder sharedEmbedding head)
-    generatorDevice
-  where
-  initialize (GEncoderDecoderTransformer inputEmbedDim encoderSpec decoderSpec sharedEmbeddingSpec headSpec embedScalingSpec) =
-    let encoder = IxStateT . initialize $ encoderSpec
-        decoder = IxStateT . initialize $ decoderSpec
-        sharedEmbedding = IxStateT . initialize $ sharedEmbeddingSpec
-        head = IxStateT . initialize $ headSpec
-     in runIxStateT
-          ( GEncoderDecoderTransformer inputEmbedDim
-              <<$>> encoder
-              <<*>> decoder
-              <<*>> sharedEmbedding
-              <<*>> head
-              <<*>> ireturn embedScalingSpec
-          )
+    (GEncoderDecoderTransformer inputEmbedDim encoder' decoder' sharedEmbedding' head')
+    generatorOutputDevice
 
 instance
   ( HasStateDict encoder,
@@ -314,21 +318,6 @@ instance
     HasStateDict head
   ) =>
   HasStateDict (GEncoderDecoderTransformer inputEmbedDim encoder decoder sharedEmbedding head)
-  where
-  fromStateDict (GEncoderDecoderTransformer inputEmbedDim encoderSpec decoderSpec sharedEmbeddingSpec headSpec embedScalingSpec) k =
-    GEncoderDecoderTransformer
-      inputEmbedDim
-      <$> fromStateDict encoderSpec k
-      <*> fromStateDict decoderSpec k
-      <*> fromStateDict sharedEmbeddingSpec k
-      <*> fromStateDict headSpec k
-      <*> pure embedScalingSpec
-  toStateDict k GEncoderDecoderTransformer {..} = do
-    () <- toStateDict k edtEncoder
-    () <- toStateDict k edtDecoder
-    () <- toStateDict k edtSharedEmbedding
-    () <- toStateDict k edtHead
-    pure ()
 
 data
   GSimplifiedEncoderDecoderTransformer
@@ -362,67 +351,26 @@ data
       sedtMkDecoderAttentionMask :: mkDecoderAttentionMask
     } ->
     GSimplifiedEncoderDecoderTransformer model mkPos mkDecoderPos mkPaddingMask mkAttentionMask mkCrossAttentionMask mkDecoderAttentionMask
+  deriving stock (Eq, Ord, Show, Generic)
 
 type instance
   ModelSpec (GSimplifiedEncoderDecoderTransformer model mkPos mkDecoderPos mkPaddingMask mkAttentionMask mkCrossAttentionMask mkDecoderAttentionMask) =
     GSimplifiedEncoderDecoderTransformer (ModelSpec model) (ModelSpec mkPos) (ModelSpec mkDecoderPos) (ModelSpec mkPaddingMask) (ModelSpec mkAttentionMask) (ModelSpec mkCrossAttentionMask) (ModelSpec mkDecoderAttentionMask)
 
 instance
-  ( HasInitialize
-      model
-      generatorDevice
-      model
-      generatorDevice,
-    HasInitialize
-      mkPos
-      generatorDevice
-      mkPos
-      generatorDevice,
-    HasInitialize
-      mkDecoderPos
-      generatorDevice
-      mkDecoderPos
-      generatorDevice,
-    HasInitialize
-      mkPaddingMask
-      generatorDevice
-      mkPaddingMask
-      generatorDevice,
-    HasInitialize
-      mkAttentionMask
-      generatorDevice
-      mkAttentionMask
-      generatorDevice,
-    HasInitialize
-      mkCrossAttentionMask
-      generatorDevice
-      mkCrossAttentionMask
-      generatorDevice,
-    HasInitialize
-      mkDecoderAttentionMask
-      generatorDevice
-      mkDecoderAttentionMask
-      generatorDevice
+  ( HasInitialize model generatorDevice model' generatorDevice0,
+    HasInitialize mkPos generatorDevice0 mkPos' generatorDevice1,
+    HasInitialize mkDecoderPos generatorDevice1 mkDecoderPos' generatorDevice2,
+    HasInitialize mkPaddingMask generatorDevice2 mkPaddingMask' generatorDevice3,
+    HasInitialize mkAttentionMask generatorDevice3 mkAttentionMask' generatorDevice4,
+    HasInitialize mkCrossAttentionMask generatorDevice4 mkCrossAttentionMask' generatorDevice5,
+    HasInitialize mkDecoderAttentionMask generatorDevice5 mkDecoderAttentionMask' generatorOutputDevice
   ) =>
   HasInitialize
     (GSimplifiedEncoderDecoderTransformer model mkPos mkDecoderPos mkPaddingMask mkAttentionMask mkCrossAttentionMask mkDecoderAttentionMask)
     generatorDevice
-    (GSimplifiedEncoderDecoderTransformer model mkPos mkDecoderPos mkPaddingMask mkAttentionMask mkCrossAttentionMask mkDecoderAttentionMask)
-    generatorDevice
-  where
-  initialize (GSimplifiedEncoderDecoderTransformer modelSpec decoderInputShiftSpec paddingMaskShiftSpec mkPosSpec mkDecoderPosSpec mkPaddingMaskSpec mkAttentionMaskSpec mkCrossAttentionMaskSpec mkDecoderAttentionMaskSpec) =
-    runIxStateT
-      ( GSimplifiedEncoderDecoderTransformer
-          <<$>> (IxStateT . initialize $ modelSpec)
-          <<*>> (IxStateT . initialize $ decoderInputShiftSpec)
-          <<*>> (IxStateT . initialize $ paddingMaskShiftSpec)
-          <<*>> (IxStateT . initialize $ mkPosSpec)
-          <<*>> (IxStateT . initialize $ mkDecoderPosSpec)
-          <<*>> (IxStateT . initialize $ mkPaddingMaskSpec)
-          <<*>> (IxStateT . initialize $ mkAttentionMaskSpec)
-          <<*>> (IxStateT . initialize $ mkCrossAttentionMaskSpec)
-          <<*>> (IxStateT . initialize $ mkDecoderAttentionMaskSpec)
-      )
+    (GSimplifiedEncoderDecoderTransformer model' mkPos' mkDecoderPos' mkPaddingMask' mkAttentionMask' mkCrossAttentionMask' mkDecoderAttentionMask')
+    generatorOutputDevice
 
 instance
   ( HasStateDict model,
@@ -434,29 +382,6 @@ instance
     HasStateDict mkDecoderAttentionMask
   ) =>
   HasStateDict (GSimplifiedEncoderDecoderTransformer model mkPos mkDecoderPos mkPaddingMask mkAttentionMask mkCrossAttentionMask mkDecoderAttentionMask)
-  where
-  fromStateDict (GSimplifiedEncoderDecoderTransformer modelSpec decoderInputShiftSpec paddingMaskShiftSpec mkPosSpec mkDecoderPosSpec mkPaddingMaskSpec mkAttentionMaskSpec mkCrossAttentionMaskSpec mkDecoderAttentionMaskSpec) k =
-    GSimplifiedEncoderDecoderTransformer
-      <$> fromStateDict modelSpec k
-      <*> fromStateDict decoderInputShiftSpec k
-      <*> fromStateDict paddingMaskShiftSpec k
-      <*> fromStateDict mkPosSpec k
-      <*> fromStateDict mkDecoderPosSpec k
-      <*> fromStateDict mkPaddingMaskSpec k
-      <*> fromStateDict mkAttentionMaskSpec k
-      <*> fromStateDict mkCrossAttentionMaskSpec k
-      <*> fromStateDict mkDecoderAttentionMaskSpec k
-  toStateDict k GSimplifiedEncoderDecoderTransformer {..} = do
-    () <- toStateDict k sedtModel
-    () <- toStateDict k sedtDecoderInputShift
-    () <- toStateDict k sedtPaddingMaskShift
-    () <- toStateDict k sedtMkPos
-    () <- toStateDict k sedtMkDecoderPos
-    () <- toStateDict k sedtMkPaddingMask
-    () <- toStateDict k sedtMkAttentionMask
-    () <- toStateDict k sedtMkCrossAttentionMask
-    () <- toStateDict k sedtMkDecoderAttentionMask
-    pure ()
 
 -- | Input data type for use with an encoder-decoder transformer.
 -- Use this for training.
@@ -472,17 +397,7 @@ data EncoderDecoderTransformerInput input decoderInput pos decoderPos attentionM
       edtCrossAttentionMask :: crossAttentionMask
     } ->
     EncoderDecoderTransformerInput input decoderInput pos decoderPos attentionMask decoderAttentionMask crossAttentionMask
-
-deriving instance
-  ( Show input,
-    Show decoderInput,
-    Show pos,
-    Show decoderPos,
-    Show attentionMask,
-    Show decoderAttentionMask,
-    Show crossAttentionMask
-  ) =>
-  Show (EncoderDecoderTransformerInput input decoderInput pos decoderPos attentionMask decoderAttentionMask crossAttentionMask)
+  deriving stock (Eq, Ord, Show, Generic)
 
 data SimplifiedEncoderDecoderTransformerInput input decoderInput where
   SimplifiedEncoderDecoderTransformerInput ::
@@ -491,6 +406,7 @@ data SimplifiedEncoderDecoderTransformerInput input decoderInput where
       sedtDecoderInput :: decoderInput
     } ->
     SimplifiedEncoderDecoderTransformerInput input decoderInput
+  deriving stock (Eq, Ord, Show, Generic)
 
 data SimplifiedEncoderDecoderTransformerTrainingInput input target where
   SimplifiedEncoderDecoderTransformerTrainingInput ::
@@ -499,6 +415,7 @@ data SimplifiedEncoderDecoderTransformerTrainingInput input target where
       sedtTarget :: target
     } ->
     SimplifiedEncoderDecoderTransformerTrainingInput input target
+  deriving stock (Eq, Ord, Show, Generic)
 
 -- | Output data type for use with an encoder-decoder transformer.
 data EncoderDecoderTransformerOutput decoderOutput encoderOutput where
@@ -508,12 +425,7 @@ data EncoderDecoderTransformerOutput decoderOutput encoderOutput where
       edtEncoderOutput :: encoderOutput
     } ->
     EncoderDecoderTransformerOutput decoderOutput encoderOutput
-
-deriving instance
-  ( Show decoderOutput,
-    Show encoderOutput
-  ) =>
-  Show (EncoderDecoderTransformerOutput decoderOutput encoderOutput)
+  deriving stock (Eq, Ord, Show, Generic)
 
 data SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput inputPaddingMask where
   SimplifiedEncoderDecoderTransformerOutput ::
@@ -523,6 +435,7 @@ data SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput input
       sedtInputPaddingMask :: inputPaddingMask
     } ->
     SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput inputPaddingMask
+  deriving stock (Eq, Ord, Show, Generic)
 
 data SimplifiedEncoderDecoderTransformerTrainingOutput loss where
   SimplifiedEncoderDecoderTransformerTrainingOutput ::
@@ -530,6 +443,7 @@ data SimplifiedEncoderDecoderTransformerTrainingOutput loss where
     { sedtLoss :: loss
     } ->
     SimplifiedEncoderDecoderTransformerTrainingOutput loss
+  deriving stock (Eq, Ord, Show, Generic)
 
 -- | Input data type for use with an encoder-decoder transformer.
 -- Use this for inference.
@@ -543,15 +457,7 @@ data EncoderDecoderTransformerGenerationInput decoderInput encoderOutput decoder
       edtGenerationCrossAttentionMask :: crossAttentionMask
     } ->
     EncoderDecoderTransformerGenerationInput decoderInput encoderOutput decoderPos decoderAttentionMask crossAttentionMask
-
-deriving instance
-  ( Show decoderInput,
-    Show encoderOutput,
-    Show decoderPos,
-    Show decoderAttentionMask,
-    Show crossAttentionMask
-  ) =>
-  Show (EncoderDecoderTransformerGenerationInput decoderInput encoderOutput decoderPos decoderAttentionMask crossAttentionMask)
+  deriving stock (Eq, Ord, Show, Generic)
 
 data SimplifiedEncoderDecoderTransformerGenerationInput decoderInput encoderOutput inputPaddingMask where
   SimplifiedEncoderDecoderTransformerGenerationInput ::
@@ -561,6 +467,7 @@ data SimplifiedEncoderDecoderTransformerGenerationInput decoderInput encoderOutp
       sedtGenerationInputPaddingMask :: inputPaddingMask
     } ->
     SimplifiedEncoderDecoderTransformerGenerationInput decoderInput encoderOutput inputPaddingMask
+  deriving stock (Eq, Ord, Show, Generic)
 
 -- | 'HasForward' instance for encoder-decoder transformers with optional head.
 --
@@ -947,8 +854,23 @@ instance
           doDevice
           doDataType
           doShape,
-    Catch (SoftmaxF ('SelectDim ('ByIndex 2)) doShape),
-    loss ~ (),
+    logProbsShape ~ SoftmaxF ('SelectDim ('ByIndex 2)) doShape,
+    Catch logProbsShape,
+    unsqueezedTargetShape ~ UnsqueezeF ('SelectDim ('ByIndex 2)) targetShape,
+    Catch unsqueezedTargetShape,
+    gatheredLogProbsShape ~ GatherDimF ('SelectDim ('ByIndex 2)) unsqueezedTargetShape logProbsShape,
+    Catch gatheredLogProbsShape,
+    Catch (targetDataType <+> 'DataType 'Int64),
+    logLikelihoodShape ~ SqueezeDimF ('SelectDim ('ByIndex 2)) gatheredLogProbsShape,
+    Catch logLikelihoodShape,
+    MeanAllCheckF logLikelihoodShape,
+    loss
+      ~ Tensor
+          (targetGradient <|> doGradient)
+          (targetLayout <+> doLayout)
+          (targetDevice <+> doDevice)
+          doDataType
+          ('Shape '[]),
     generatorOutputDevice ~ generatorDevice
   ) =>
   HasForward
@@ -967,5 +889,12 @@ instance
         >>>= ilift . (! SIndices (SSliceAll :|: SSliceUpTo (SNegativeIndex @1) :|: SNil))
         >>>= (\sedtDecoderInput -> IxStateT . forward eot $ SimplifiedEncoderDecoderTransformerInput {sedtInput = sedtTrainingInput, sedtDecoderInput})
         >>>= ireturn . sedtDecoderOutput
-        >>>= ilift . logSoftmax (SSelectDim (SByIndex @2))
-        >>>= undefined
+        >>>= ilift
+          . ( \logits -> do
+                logProbs <- logSoftmax (SSelectDim $ SByIndex @2) logits
+                target' <- sUnsqueeze (SSelectDim $ SByIndex @2) sedtTarget
+                gatheredLogProbs <- sGatherDim (SSelectDim $ SByIndex @2) target' logProbs
+                logLikelihood <- sSqueezeDim (SSelectDim $ SByIndex @2) gatheredLogProbs
+                pure . negate $ meanAll logLikelihood
+            )
+        >>>= ireturn . SimplifiedEncoderDecoderTransformerTrainingOutput

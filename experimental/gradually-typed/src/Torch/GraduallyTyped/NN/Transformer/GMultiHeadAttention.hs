@@ -37,7 +37,7 @@ import Torch.GraduallyTyped.NN.Dropout (Dropout (..))
 import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, softmax)
 import Torch.GraduallyTyped.NN.Linear (GLinear (..), GLinearF, linearSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
-import Torch.GraduallyTyped.NN.Type (HasBias (..), SHasBias (SWithBias, SWithoutBias))
+import Torch.GraduallyTyped.NN.Type (HasBias (..), HasDropout (..), SHasBias (..), SHasDropout (..))
 import Torch.GraduallyTyped.Prelude (Catch, forgetIsChecked, pattern (:|:))
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, sGetDimFromShape, sUnifyDim, type (!))
@@ -57,6 +57,15 @@ data MultiHeadAttentionHasScaling
   | -- | Scaling is applied to the attention weights.
     MultiHeadAttentionWithWeightScaling
   deriving stock (Eq, Ord, Show, Generic)
+
+type instance ModelSpec MultiHeadAttentionHasScaling = MultiHeadAttentionHasScaling
+
+instance HasInitialize MultiHeadAttentionHasScaling generatorDevice MultiHeadAttentionHasScaling generatorDevice where
+  initialize hasScaling g = pure (hasScaling, g)
+
+instance HasStateDict MultiHeadAttentionHasScaling where
+  fromStateDict hasScaling _ = pure hasScaling
+  toStateDict _ _ = pure ()
 
 -- | Generic multi-headed attention layer.
 --
@@ -101,11 +110,37 @@ data
       mhaScaling :: MultiHeadAttentionHasScaling
     } ->
     GMultiHeadAttention headDim headEmbedDim embedDim qInProj kInProj vInProj outProj dropout
-  deriving stock (Show)
+  deriving stock (Show, Generic)
 
 type instance
   ModelSpec (GMultiHeadAttention headDim headEmbedDim embedDim qInProj kInProj vInProj outProj dropout) =
     GMultiHeadAttention headDim headEmbedDim embedDim (ModelSpec qInProj) (ModelSpec kInProj) (ModelSpec vInProj) (ModelSpec outProj) (ModelSpec dropout)
+
+type family
+  GMultiHeadAttentionF
+    (style :: TransformerStyle)
+    (gradient :: Gradient RequiresGradient)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (valueEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (hasDropout :: HasDropout) ::
+    Type
+  where
+  GMultiHeadAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim hasDropout =
+    GMultiHeadAttention
+      headDim
+      headEmbedDim
+      embedDim
+      (QInProjF style gradient device dataType queryEmbedDim embedDim)
+      (KInProjF style gradient device dataType keyEmbedDim embedDim)
+      (VInProjF style gradient device dataType valueEmbedDim embedDim)
+      (OutProjF style gradient device dataType embedDim queryEmbedDim)
+      (DropoutF style hasDropout)
 
 -- | Specifies the linear transformation of the query.
 type family
@@ -182,10 +217,12 @@ type family
 -- | Specifies the type of the dropout layer.
 type family
   DropoutF
-    (style :: TransformerStyle) ::
+    (style :: TransformerStyle)
+    (hasDropout :: HasDropout) ::
     Type
   where
-  DropoutF _ = Dropout
+  DropoutF _ 'WithDropout = Dropout
+  DropoutF _ 'WithoutDropout = ()
 
 -- | Specifies the parameters of a multi-headed attention layer.
 --
@@ -201,7 +238,7 @@ type family
 -- - @valueEmbedDim@: the dimension of the value embeddings.
 -- - @dropoutP@: the dropout rate.
 multiHeadAttentionSpec ::
-  forall style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim.
+  forall style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim hasDropout.
   STransformerStyle style ->
   SGradient gradient ->
   SDevice device ->
@@ -212,19 +249,10 @@ multiHeadAttentionSpec ::
   SDim queryEmbedDim ->
   SDim keyEmbedDim ->
   SDim valueEmbedDim ->
+  SHasDropout hasDropout ->
   Double ->
-  ModelSpec
-    ( GMultiHeadAttention
-        headDim
-        headEmbedDim
-        embedDim
-        (QInProjF style gradient device dataType queryEmbedDim embedDim)
-        (KInProjF style gradient device dataType keyEmbedDim embedDim)
-        (VInProjF style gradient device dataType valueEmbedDim embedDim)
-        (OutProjF style gradient device dataType embedDim queryEmbedDim)
-        (DropoutF style)
-    )
-multiHeadAttentionSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP =
+  ModelSpec (GMultiHeadAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim hasDropout)
+multiHeadAttentionSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim hasDropout dropoutP =
   let qInProjSpec ST5 = NamedModel "q." (projSpecWithoutBias queryEmbedDim embedDim)
       qInProjSpec SByT5 = NamedModel "q." (projSpecWithoutBias queryEmbedDim embedDim)
       qInProjSpec SBART = NamedModel "q_proj." (projSpecWithBias queryEmbedDim embedDim)
@@ -257,7 +285,8 @@ multiHeadAttentionSpec style gradient device dataType headDim headEmbedDim embed
       outProjSpec SBERT = NamedModel "output.dense." (projSpecWithBias embedDim queryEmbedDim)
       outProjSpec SRoBERTa = NamedModel "output.dense." (projSpecWithBias embedDim queryEmbedDim)
       outProjSpec SGPT2 = undefined
-      dropoutSpec _ = Dropout dropoutP
+      dropoutSpec _ SWithDropout = Dropout dropoutP
+      dropoutSpec _ SWithoutDropout = ()
       scaling :: STransformerStyle style -> MultiHeadAttentionHasScaling
       scaling ST5 = MultiHeadAttentionWithoutScaling
       scaling SByT5 = MultiHeadAttentionWithoutScaling
@@ -275,7 +304,7 @@ multiHeadAttentionSpec style gradient device dataType headDim headEmbedDim embed
         (kInProjSpec style)
         (vInProjSpec style)
         (outProjSpec style)
-        (dropoutSpec style)
+        (dropoutSpec style hasDropout)
         (scaling style)
   where
     projSpecWithoutBias ::
@@ -300,35 +329,17 @@ multiHeadAttentionSpec style gradient device dataType headDim headEmbedDim embed
     projSpecWithBias = linearSpec SWithBias gradient device dataType
 
 instance
-  ( HasInitialize qInProj generatorDevice qInProj generatorDevice,
-    HasInitialize kInProj generatorDevice kInProj generatorDevice,
-    HasInitialize vInProj generatorDevice vInProj generatorDevice,
-    HasInitialize outProj generatorDevice outProj generatorDevice,
-    HasInitialize dropout generatorDevice dropout generatorDevice
+  ( HasInitialize qInProj generatorDevice qInProj' generatorDevice0,
+    HasInitialize kInProj generatorDevice0 kInProj' generatorDevice1,
+    HasInitialize vInProj generatorDevice1 vInProj' generatorDevice2,
+    HasInitialize outProj generatorDevice2 outProj' generatorDevice3,
+    HasInitialize dropout generatorDevice3 dropout' generatorOutputDevice
   ) =>
   HasInitialize
     (GMultiHeadAttention headDim headEmbedDim embedDim qInProj kInProj vInProj outProj dropout)
     generatorDevice
-    (GMultiHeadAttention headDim headEmbedDim embedDim qInProj kInProj vInProj outProj dropout)
-    generatorDevice
-  where
-  initialize (GMultiHeadAttention headDim headEmbedDim embedDim qInProjSpec kInProjSpec vInProjSpec outProjSpec dropoutSpec scaling) =
-    let qInProj = IxStateT . initialize $ qInProjSpec
-        kInProj = IxStateT . initialize $ kInProjSpec
-        vInProj = IxStateT . initialize $ vInProjSpec
-        outProj = IxStateT . initialize $ outProjSpec
-        dropout = IxStateT . initialize $ dropoutSpec
-     in runIxStateT $
-          GMultiHeadAttention
-            <<$>> ireturn headDim
-            <<*>> ireturn headEmbedDim
-            <<*>> ireturn embedDim
-            <<*>> qInProj
-            <<*>> kInProj
-            <<*>> vInProj
-            <<*>> outProj
-            <<*>> dropout
-            <<*>> ireturn scaling
+    (GMultiHeadAttention headDim headEmbedDim embedDim qInProj' kInProj' vInProj' outProj' dropout')
+    generatorOutputDevice
 
 instance
   ( HasStateDict qInProj,
@@ -337,24 +348,7 @@ instance
     HasStateDict outProj,
     HasStateDict dropout
   ) =>
-  HasStateDict
-    (GMultiHeadAttention headDim headEmbedDim embedDim qInProj kInProj vInProj outProj dropout)
-  where
-  fromStateDict (GMultiHeadAttention headDim headEmbedDim embedDim qInProjSpec kInProjSpec vInProjSpec outProjSpec dropoutSpec scaling) k =
-    GMultiHeadAttention headDim headEmbedDim embedDim
-      <$> fromStateDict qInProjSpec k
-      <*> fromStateDict kInProjSpec k
-      <*> fromStateDict vInProjSpec k
-      <*> fromStateDict outProjSpec k
-      <*> fromStateDict dropoutSpec k
-      <*> pure scaling
-  toStateDict k GMultiHeadAttention {..} = do
-    () <- toStateDict k mhaQInProj
-    () <- toStateDict k mhaKInProj
-    () <- toStateDict k mhaVInProj
-    () <- toStateDict k mhaOutProj
-    () <- toStateDict k mhaDropout
-    pure ()
+  HasStateDict (GMultiHeadAttention headDim headEmbedDim embedDim qInProj kInProj vInProj outProj dropout)
 
 type BatchDim ::
   Shape [Dim (Name Symbol) (Size Nat)] ->

@@ -12,6 +12,7 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
@@ -36,14 +37,15 @@ import Data.Text (Text)
 import qualified Data.Text as Text
 import Data.Typeable (Typeable)
 import qualified Data.Vector as V hiding (uncons)
-import qualified Torch.GraduallyTyped.Internal.Vector as V
 import qualified Data.Vector.Generic.Sized.Internal as VGS
 import qualified Data.Vector.Sized as VS
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.Generics (Generic (..), K1 (..), M1 (..), U1 (..), (:*:) (..))
 import GHC.TypeLits (Nat, natVal, type (+))
 import Torch.GraduallyTyped.Device (Device, DeviceType)
+import qualified Torch.GraduallyTyped.Internal.Vector as V
 import Torch.GraduallyTyped.Random (Generator)
+import Torch.GraduallyTyped.Shape.Type (SDim)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..), TensorSpec (..), UncheckedTensor, sCheckedDataType, sCheckedLayout, sCheckedShape, sSetDevice, sSetGradient)
 import qualified Torch.Internal.Type as ATen (Tensor)
 import qualified Torch.Script (IValue (..))
@@ -422,6 +424,11 @@ instance
 instance GHasInitialize U1 generatorDevice U1 generatorDevice where
   gInitialize U1 g = pure (U1, g)
 
+type instance ModelSpec (SDim dim) = SDim dim
+
+instance HasInitialize (SDim dim) generatorDevice (SDim dim) generatorDevice where
+  initialize dim g = pure (dim, g)
+
 type instance ModelSpec () = ()
 
 instance HasInitialize () generatorDevice () generatorDevice where
@@ -536,6 +543,8 @@ data VectorSpec (n :: Nat) (a :: Type) where
     SNat n ->
     VS.Vector n (ModelSpec a) ->
     VectorSpec n a
+
+deriving stock instance Show (ModelSpec a) => Show (VectorSpec n a)
 
 type instance ModelSpec (VS.Vector n a) = VectorSpec n a
 
@@ -665,6 +674,10 @@ instance
 instance GHasStateDict U1 U1 where
   gFromStateDict U1 _ = pure U1
   gToStateDict _ U1 = pure ()
+
+instance HasStateDict (SDim dim) where
+  fromStateDict dim _ = pure dim
+  toStateDict _ _ = pure ()
 
 instance HasStateDict () where
   fromStateDict () _ = pure ()

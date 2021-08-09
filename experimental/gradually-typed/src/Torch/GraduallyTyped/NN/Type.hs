@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -16,7 +17,11 @@ data HasBias = WithBias | WithoutBias
 
 genSingletons [''HasBias]
 
+deriving instance Show (SHasBias hasBias)
+
 data HasDropout = WithDropout | WithoutDropout
   deriving stock (Eq, Ord, Show, Generic)
 
 genSingletons [''HasDropout]
+
+deriving instance Show (SHasDropout hasDropout)

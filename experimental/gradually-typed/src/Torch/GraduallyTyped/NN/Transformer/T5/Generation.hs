@@ -49,6 +49,7 @@ import Torch.GraduallyTyped.Tensor.Type (SGetShape, Tensor (..))
 import Torch.Language.SpiderSQL (SpiderSQL, spiderSQL)
 import qualified Torch.Tensor
 import Prelude hiding (Word, words)
+import Torch.GraduallyTyped.NN.Type (SHasDropout(SWithDropout))
 
 data IsFinished = Finished | Unfinished
 
@@ -254,7 +255,7 @@ testBeamSearch = do
       (SDevice SCPU)
       tokens
   stateDict <- stateDictFromFile "/tmp/t5-small-state-dict.pt"
-  let spec = t5SmallSpec SWithLMHead (SGradient SWithGradient) (SDevice SCPU)
+  let spec = t5SmallSpec SWithLMHead (SGradient SWithGradient) (SDevice SCPU) SWithDropout
   model <- flip evalStateT stateDict $ fromStateDict spec mempty
   g <- sMkGenerator (SDevice SCPU) 0
   Beams finished _ <- last <$> runBeamSearch 50 1 model input g

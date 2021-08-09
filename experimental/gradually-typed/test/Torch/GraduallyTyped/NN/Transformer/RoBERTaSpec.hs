@@ -26,7 +26,7 @@ testForwardRoBERTaBase =
 
     let device = SDevice SCPU
 
-    let spec = robertaBaseSpec SWithLMHead (SGradient SWithoutGradient) device
+    let spec = robertaBaseSpec SWithLMHead (SGradient SWithoutGradient) device SWithoutDropout
     model <- flip evalStateT stateDict $ fromStateDict spec mempty
 
     g <- sMkGenerator device 0

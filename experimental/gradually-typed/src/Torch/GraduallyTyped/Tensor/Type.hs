@@ -25,6 +25,7 @@
 {-# LANGUAGE UndecidableSuperClasses #-}
 {-# LANGUAGE ViewPatterns #-}
 
+{-# LANGUAGE DeriveGeneric #-}
 module Torch.GraduallyTyped.Tensor.Type where
 
 import Control.Applicative (empty)
@@ -73,6 +74,7 @@ import qualified Torch.Internal.Type as ATen (Tensor, TensorList, TensorOptions)
 import qualified Torch.Internal.Unmanaged.Type.Tensor as Unmanaged (tensor_data_ptr)
 import qualified Torch.Tensor (Tensor (Unsafe))
 import Prelude hiding (unzip, unzip3)
+import GHC.Generics (Generic)
 
 -- $setup
 -- >>> import Data.Singletons.Prelude.List (SList (..))
@@ -131,6 +133,7 @@ data
       tsShape :: SShape shape
     } ->
     TensorSpec gradient layout device dataType shape
+  deriving stock (Show, Generic)
 
 -- | Alias for an untyped tensor without gradients.
 type UncheckedTensor = Tensor 'UncheckedGradient 'UncheckedLayout 'UncheckedDevice 'UncheckedDataType 'UncheckedShape

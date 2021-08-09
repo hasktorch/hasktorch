@@ -1,5 +1,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -23,6 +25,7 @@ import Control.Monad.Catch (MonadThrow)
 import Data.Singletons.Prelude.List (SList (SNil))
 import Data.Singletons.TH (SingKind (fromSing), genSingletons)
 import GHC.Float (double2Int)
+import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (SDevice (..))
@@ -164,6 +167,7 @@ mkPos input = do
     seqSize
 
 data MkAbsPos = MkAbsPos | MkAbsPosWithOffset {absPosOffset :: Int}
+  deriving stock (Eq, Ord, Show, Generic)
 
 type instance ModelSpec MkAbsPos = MkAbsPos
 
@@ -346,6 +350,7 @@ data MkRelPos (relPosEncBucketDim :: Dim (Name Symbol) (Size Nat)) where
       decoderRelPosMaxDistance :: Int
     } ->
     MkRelPos relPosEncBucketDim
+  deriving stock (Show, Generic)
 
 type instance ModelSpec (MkRelPos relPosEncBucketDim) = MkRelPos relPosEncBucketDim
 
@@ -419,6 +424,7 @@ mkTransformerPaddingMask padTokenId input = do
   pure $ input ==. padToken
 
 newtype MkTransformerPaddingMask = MkTransformerPaddingMask {padTokenId :: Int}
+  deriving stock (Show, Generic)
 
 type instance
   ModelSpec MkTransformerPaddingMask =
@@ -503,6 +509,7 @@ data MkTransformerAttentionMask (dataType :: DataType DType) where
       attentionMaskBias :: Double
     } ->
     MkTransformerAttentionMask dataType
+  deriving stock (Show, Generic)
 
 type instance
   ModelSpec (MkTransformerAttentionMask dataType) =
@@ -610,6 +617,7 @@ data MkTransformerDecoderAttentionMask (dataType :: DataType DType) where
       decoderAttentionMaskBias :: Double
     } ->
     MkTransformerDecoderAttentionMask dataType
+  deriving stock (Show, Generic)
 
 type instance
   ModelSpec (MkTransformerDecoderAttentionMask dataType) =
@@ -705,6 +713,7 @@ data MkTransformerCrossAttentionMask (dataType :: DataType DType) where
       crossAttentionMaskBias :: Double
     } ->
     MkTransformerCrossAttentionMask dataType
+  deriving stock (Show, Generic)
 
 type instance
   ModelSpec (MkTransformerCrossAttentionMask dataType) =
@@ -745,6 +754,7 @@ data ShiftRight fillValue where
     -- | fill value for shift right
     fillValue ->
     ShiftRight fillValue
+  deriving stock (Eq, Ord, Show, Generic)
 
 type instance ModelSpec (ShiftRight fillValue) = ShiftRight fillValue
 

@@ -16,8 +16,9 @@ import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SData
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (ModelSpec)
-import Torch.GraduallyTyped.NN.Transformer.GEncoderDecoder (EDTDecoderF, EDTEncoderF, EDTHeadF, EDTSharedEmbeddingF, GEncoderDecoderTransformer, GSimplifiedEncoderDecoderTransformer (..), encoderDecoderTransformerSpec)
+import Torch.GraduallyTyped.NN.Transformer.GEncoderDecoder (GEncoderDecoderTransformerF, GSimplifiedEncoderDecoderTransformer (..), encoderDecoderTransformerSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (MkAbsPos (..), MkTransformerAttentionMask (..), MkTransformerCrossAttentionMask (..), MkTransformerDecoderAttentionMask (..), MkTransformerPaddingMask (..), STransformerHead, STransformerStyle (SPegasus), ShiftRight (..), TransformerHead (..), TransformerStyle (Pegasus), mkTransformerInput)
+import Torch.GraduallyTyped.NN.Type (HasDropout, SHasDropout)
 import Torch.GraduallyTyped.Prelude (Catch)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, Shape (..), Size (..))
@@ -90,18 +91,13 @@ type family
     (embedDim :: Dim (Name Symbol) (Size Nat))
     (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
     (ffnDim :: Dim (Name Symbol) (Size Nat))
-    (vocabDim :: Dim (Name Symbol) (Size Nat)) ::
+    (vocabDim :: Dim (Name Symbol) (Size Nat))
+    (hasDropout :: HasDropout) ::
     Type
   where
-  PegasusModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim =
+  PegasusModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim hasDropout =
     GSimplifiedEncoderDecoderTransformer
-      ( GEncoderDecoderTransformer
-          inputEmbedDim
-          (EDTEncoderF 'Pegasus numLayers gradient device PegasusDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim PegasusPosEncDim)
-          (EDTDecoderF 'Pegasus numLayers gradient device PegasusDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim PegasusPosEncDim)
-          (EDTSharedEmbeddingF 'Pegasus gradient device PegasusDataType inputEmbedDim vocabDim)
-          (EDTHeadF 'Pegasus transformerHead gradient device PegasusDataType inputEmbedDim vocabDim)
-      )
+      (GEncoderDecoderTransformerF 'Pegasus transformerHead numLayers numLayers gradient device PegasusDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim PegasusPosEncDim vocabDim hasDropout)
       MkAbsPos
       MkAbsPos
       MkTransformerPaddingMask
@@ -116,7 +112,7 @@ type family
 -- - @gradient@: whether to compute the gradient of the Pegasus model.
 -- - @device@: the computational device on which the Pegasus model parameters are to be allocated.
 pegasusModelSpec ::
-  forall transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim.
+  forall transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim hasDropout.
   ( SingI headDim,
     SingI headEmbedDim,
     SingI embedDim,
@@ -128,8 +124,9 @@ pegasusModelSpec ::
   SNat numLayers ->
   SGradient gradient ->
   SDevice device ->
-  ModelSpec (PegasusModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
-pegasusModelSpec transformerHead numLayers gradient device =
+  SHasDropout hasDropout ->
+  ModelSpec (PegasusModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim hasDropout)
+pegasusModelSpec transformerHead numLayers gradient device hasDropout =
   GSimplifiedEncoderDecoderTransformer
     ( encoderDecoderTransformerSpec
         SPegasus
@@ -146,6 +143,7 @@ pegasusModelSpec transformerHead numLayers gradient device =
         (sing @ffnDim)
         pegasusPosEncDim
         (sing @vocabDim)
+        hasDropout
         pegasusDropoutP
         pegasusEps
     )

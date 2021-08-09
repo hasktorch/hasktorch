@@ -22,7 +22,7 @@ testSA = do
       dropoutP = 0
       eps = 1e-6
   g <- sMkGenerator device 0
-  let spec = NamedModel "sa." $ selfAttentionSpec SByT5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP eps
+  let spec = NamedModel "sa." $ selfAttentionSpec SByT5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim SWithDropout dropoutP eps
   (sa, g') <- initialize spec g
   sa' <- flip evalStateT Map.empty $ do
     toStateDict mempty sa
