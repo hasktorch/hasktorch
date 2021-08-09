@@ -14,6 +14,7 @@ module Torch.GraduallyTyped.NN.Transformer.GSelfAttention where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxStateT (..))
+import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons.Prelude.List (SList (SNil))
@@ -26,7 +27,7 @@ import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..), LayerNormSpec (..)
 import Torch.GraduallyTyped.NN.Transformer.GMultiHeadAttention (DropoutF, GMultiHeadAttention, KInProjF, OutProjF, QInProjF, VInProjF, multiHeadAttentionSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..), SHasBias (..))
-import Torch.GraduallyTyped.Prelude (pattern (:|:))
+import Torch.GraduallyTyped.Prelude (Catch, pattern (:|:))
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, SShape (..), Shape (..), Size (..))
@@ -322,7 +323,8 @@ instance
       (Tensor (queryGradient <|> gradient2) (queryLayout <+> layout2) (queryDevice <+> device2) (queryDataType <+> dataType2) (BroadcastShapesF queryShape shape2))
       generatorDevice2
       output
-      generatorOutputDevice
+      generatorOutputDevice,
+    Catch (BroadcastShapesF queryShape shape2)
   ) =>
   HasForward
     (GSelfAttention initialLayerNorm multiHeadAttention dropout finalLayerNorm)
@@ -339,5 +341,5 @@ instance
         >>>= IxStateT . forward saInitialLayerNorm
         >>>= (\query' -> IxStateT $ forward saMultiHeadAttention (query', query', query', attentionBias))
         >>>= IxStateT . forward saDropout
-        >>>= ireturn . (query `add`)
+        >>>= ilift . (query `add`)
         >>>= IxStateT . forward saFinalLayerNorm

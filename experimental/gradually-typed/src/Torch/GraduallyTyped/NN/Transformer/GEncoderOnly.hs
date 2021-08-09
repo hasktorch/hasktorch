@@ -17,6 +17,7 @@ module Torch.GraduallyTyped.NN.Transformer.GEncoderOnly where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxStateT (..))
+import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingKind (fromSing))
@@ -31,7 +32,7 @@ import Torch.GraduallyTyped.NN.Sparse (Embedding (..), EmbeddingSpec (..))
 import Torch.GraduallyTyped.NN.Transformer.GLMHead (GLMHead, LMHeadActivationF, LMHeadBiasF, LMHeadDecoderF, LMHeadDenseF, LMHeadLayerNormF, lmHeadSpec)
 import Torch.GraduallyTyped.NN.Transformer.GTransformer (GTransformer, TEFinalDropoutF, TEFinalLayerNormF, TEInitialDropoutF, TEInitialLayerNormF, TEPosEncF, TERelPosEncF, TEStackF, transformerEncoderSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead (..), STransformerStyle (..), TransformerHead (..), TransformerStyle (..))
-import Torch.GraduallyTyped.Prelude (forgetIsChecked)
+import Torch.GraduallyTyped.Prelude (Catch, forgetIsChecked)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient)
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, Size (..))
@@ -494,6 +495,7 @@ instance
       typeEmbeddingGeneratorOutputDevice
       encoderOutput
       encoderGeneratorOutputDevice,
+    Catch (BroadcastShapesF shape' shape''),
     HasForward
       head
       encoderOutput
@@ -529,7 +531,8 @@ instance
                 )
                 eotEmbedScaling
      in runIxStateT $
-          add <<$>> embeddedInput <<*>> embeddedInputType
+          (,) <<$>> embeddedInput <<*>> embeddedInputType
+            >>>= ilift . uncurry add
             >>>= (\input' -> IxStateT $ forward eotEncoder (input', eotPos, eotAttentionMask))
             >>>= IxStateT . forward eotHead
             >>>= ireturn . EncoderOnlyTransformerOutput

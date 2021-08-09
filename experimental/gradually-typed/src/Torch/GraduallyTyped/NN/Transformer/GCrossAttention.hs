@@ -14,6 +14,7 @@ module Torch.GraduallyTyped.NN.Transformer.GCrossAttention where
 
 import Control.Monad.Indexed (IxPointed (ireturn), (>>>=))
 import Control.Monad.Indexed.State (IxStateT (..))
+import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons.Prelude.List (SList (..))
@@ -26,10 +27,10 @@ import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..), LayerNormSpec (..)
 import Torch.GraduallyTyped.NN.Transformer.GMultiHeadAttention (DropoutF, GMultiHeadAttention, KInProjF, OutProjF, QInProjF, VInProjF, multiHeadAttentionSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..), SHasBias (..))
+import Torch.GraduallyTyped.Prelude (Catch, pattern (:|:))
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, SShape (..), Shape (..), Size (..))
-import Torch.GraduallyTyped.Prelude (pattern (:|:))
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
@@ -317,7 +318,8 @@ instance
       (Tensor (queryGradient <|> gradient2) (queryLayout <+> layout2) (queryDevice <+> device2) (queryDataType <+> dataType2) (BroadcastShapesF queryShape shape2))
       generatorDevice2
       output
-      generatorOutputDevice
+      generatorOutputDevice,
+    Catch (BroadcastShapesF queryShape shape2)
   ) =>
   HasForward
     (GCrossAttention initialLayerNorm multiHeadAttention dropout finalLayerNorm)
@@ -335,5 +337,5 @@ instance
         >>>= IxStateT . forward caInitialLayerNorm
         >>>= (\query' -> IxStateT $ forward caMultiHeadAttention (query', key, key, attentionBias))
         >>>= IxStateT . forward caDropout
-        >>>= ireturn . (query `add`)
+        >>>= ilift . (query `add`)
         >>>= IxStateT . forward caFinalLayerNorm

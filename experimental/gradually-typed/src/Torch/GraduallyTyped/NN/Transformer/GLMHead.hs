@@ -31,7 +31,7 @@ import Torch.GraduallyTyped.NN.Linear (GLinearF, linearSpec)
 import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..), LayerNormSpec (..))
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..), SHasBias (..))
-import Torch.GraduallyTyped.Prelude (forgetIsChecked, pattern (:|:))
+import Torch.GraduallyTyped.Prelude (Catch, forgetIsChecked, pattern (:|:))
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, SName (..), SShape (..), SSize (..), Shape (..), Size (..), pattern (:&:))
@@ -478,13 +478,15 @@ instance
   forward (GBias bias) = forward bias
 
 instance
-  ( output
+  ( shape' ~ BroadcastShapesF shape biasShape,
+    Catch shape',
+    output
       ~ Tensor
           (gradient <|> biasGradient)
           (layout <+> biasLayout)
           (device <+> biasDevice)
           (dataType <+> biasDataType)
-          (BroadcastShapesF shape biasShape)
+          shape'
   ) =>
   HasForward
     (GBias (Tensor biasGradient biasLayout biasDevice biasDataType biasShape))
@@ -493,16 +495,20 @@ instance
     output
     generatorDevice
   where
-  forward (GBias bias) input g = pure (input `add` bias, g)
+  forward (GBias bias) input g = do
+    r <- input `add` bias
+    pure (r, g)
 
 instance
-  ( output
+  ( shape' ~ BroadcastShapesF shape biasShape,
+    Catch shape',
+    output
       ~ Tensor
           (gradient <|> biasGradient)
           (layout <+> biasLayout)
           (device <+> biasDevice)
           (dataType <+> biasDataType)
-          (BroadcastShapesF shape biasShape)
+          shape'
   ) =>
   HasForward
     (GBias (NamedModel (Tensor biasGradient biasLayout biasDevice biasDataType biasShape)))
@@ -511,4 +517,6 @@ instance
     output
     generatorDevice
   where
-  forward (GBias (NamedModel _ bias)) input g = pure (input `add` bias, g)
+  forward (GBias (NamedModel _ bias)) input g = do
+    r <- input `add` bias
+    pure (r, g)

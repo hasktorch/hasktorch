@@ -1,17 +1,21 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Torch.GraduallyTyped.Tensor.MathOperations.Pointwise where
 
+import Control.Monad.Catch (MonadThrow)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..))
+import Torch.GraduallyTyped.Prelude (Catch)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape (BroadcastShapesF)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import Torch.Internal.Cast (cast1, cast2, cast3, cast4)
+import Torch.Internal.GC (unsafeThrowableIO)
 import qualified Torch.Internal.Managed.Native as ATen
 import Prelude hiding (abs)
 
@@ -93,19 +97,22 @@ acosh = unsafePerformIO . cast1 ATen.acosh_t
 --        ('Shape
 --           '[ 'Dim ('Name "*") ('Size 4), 'Dim ('Name "feature") ('Size 4)])
 add ::
-  forall gradient layout device dataType shape gradient' layout' device' dataType' shape'.
+  forall gradient layout device dataType shape gradient' layout' device' dataType' shape' shape'' m.
+  (MonadThrow m, shape'' ~ BroadcastShapesF shape shape', Catch shape'') =>
   -- | input tensor
   Tensor gradient layout device dataType shape ->
   -- | other tensor
   Tensor gradient' layout' device' dataType' shape' ->
   -- | output tensor
-  Tensor
-    (gradient <|> gradient')
-    (layout <+> layout')
-    (device <+> device')
-    (dataType <+> dataType')
-    (BroadcastShapesF shape shape')
-input `add` other = unsafePerformIO $ cast2 ATen.add_tt input other
+  m
+    ( Tensor
+        (gradient <|> gradient')
+        (layout <+> layout')
+        (device <+> device')
+        (dataType <+> dataType')
+        shape''
+    )
+input `add` other = unsafeThrowableIO $ cast2 ATen.add_tt input other
 
 -- | Adds a scalar 'other' to a tensor 'input':
 -- \[

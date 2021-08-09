@@ -9,6 +9,7 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -22,23 +23,24 @@ import Data.Bifunctor (bimap)
 import Data.Coerce (coerce)
 import Data.Kind (Type)
 import Data.Singletons (SingI (..), SingKind (..), fromSing)
+import Data.Type.Bool (If, type (&&))
 import Data.Typeable (Typeable)
 import Foreign.ForeignPtr (ForeignPtr)
-import GHC.TypeLits (Nat, Symbol, TypeError)
+import GHC.TypeLits (ErrorMessage, Nat, Symbol, TypeError, type (-))
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.Index.Class (InRangeF)
 import Torch.GraduallyTyped.Index.Type (DemotedIndex (..), SIndex)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
-import Torch.GraduallyTyped.Prelude (FromMaybe, MapMaybe, MaybeF, PrependMaybe, When, forgetIsChecked)
+import Torch.GraduallyTyped.Prelude (Catch, FromMaybe, MapMaybe, MaybeF, PrependMaybe, When, forgetIsChecked)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (AddDimF, BroadcastShapesF, GetDimF, GetDimImplF, GetIndexByNameF, InsertDimImplF, NumelF, RemoveDimF, ReplaceDimF, ReplaceDimImplF, sGetDimFromShape)
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SSelectDim, SShape, SelectDim (..), Shape (..), Size (..), dimSize)
 import Torch.GraduallyTyped.Tensor.Type (SGetShape (sGetShape), Tensor)
-import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
+import Torch.GraduallyTyped.Unify (UnifyCheck, type (<+>), type (<|>))
 import Torch.HList (HList)
-import qualified Torch.Internal.Cast as ATen (cast1, cast2, cast3)
+import qualified Torch.Internal.Cast as ATen (cast1, cast2, cast3, cast4)
 import qualified Torch.Internal.Class as ATen (Castable)
 import Torch.Internal.GC (unsafeThrowableIO)
 import qualified Torch.Internal.Managed.Native as ATen
@@ -128,13 +130,12 @@ instance
       ByName name -> ATen.cast2 ATen.cat_ln tensors name
       ByIndex index -> ATen.cast2 ATen.cat_ll tensors (fromInteger index :: Int)
 
-type family
-  CatHListImplF
-    (selectDim :: SelectDim (By Symbol Nat))
-    (tensors :: [Type])
-    (acc :: Maybe (Gradient RequiresGradient, Layout LayoutType, Device (DeviceType Nat), DataType DType, Shape [Dim (Name Symbol) (Size Nat)])) ::
-    Type
-  where
+type CatHListImplF ::
+  SelectDim (By Symbol Nat) ->
+  [Type] ->
+  Maybe (Gradient RequiresGradient, Layout LayoutType, Device (DeviceType Nat), DataType DType, Shape [Dim (Name Symbol) (Size Nat)]) ->
+  Type
+type family CatHListImplF selectDim tensors acc where
   CatHListImplF _ '[] 'Nothing = TypeError (ToErrorMessage "Cannot concatenate an empty list of tensors.")
   CatHListImplF _ '[] ('Just '(gradient, layout, device, dataType, shape)) = Tensor gradient layout device dataType shape
   CatHListImplF selectDim (Tensor gradient layout device dataType shape ': tensors) 'Nothing =
@@ -178,7 +179,14 @@ instance
       ByName name -> ATen.cast2 ATen.cat_ln tensors name
       ByIndex index -> ATen.cast2 ATen.cat_ll tensors (fromInteger index :: Int)
 
-type ReshapeNumelMismatchMessage (numel :: Nat) (numel' :: Nat) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: Shape [Dim (Name Symbol) (Size Nat)]) =
+type ReshapeNumelMismatchMessage ::
+  Nat ->
+  Nat ->
+  Shape [Dim (Name Symbol) (Size Nat)] ->
+  Shape [Dim (Name Symbol) (Size Nat)] ->
+  ErrorMessage
+
+type ReshapeNumelMismatchMessage numel numel' shape shape' =
   "Cannot reshape the tensor. The original shape,"
     % ""
     % "    '" <> shape <> "',"
@@ -193,7 +201,13 @@ type ReshapeNumelMismatchMessage (numel :: Nat) (numel' :: Nat) (shape :: Shape 
     % ""
     % "respectively."
 
-type family ReshapeImplF (numel :: Maybe Nat) (numel' :: Maybe Nat) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
+type ReshapeImplF ::
+  Maybe Nat ->
+  Maybe Nat ->
+  Shape [Dim (Name Symbol) (Size Nat)] ->
+  Shape [Dim (Name Symbol) (Size Nat)] ->
+  Shape [Dim (Name Symbol) (Size Nat)]
+type family ReshapeImplF numel numel' shape shape' where
   ReshapeImplF ('Just numel) ('Just numel) _ shape' = shape'
   ReshapeImplF ('Just numel) ('Just numel') shape shape' = TypeError (ReshapeNumelMismatchMessage numel numel' shape shape')
   ReshapeImplF 'Nothing _ _ _ = 'UncheckedShape
@@ -201,7 +215,8 @@ type family ReshapeImplF (numel :: Maybe Nat) (numel' :: Maybe Nat) (shape :: Sh
   ReshapeImplF _ _ 'UncheckedShape _ = 'UncheckedShape
   ReshapeImplF _ _ _ 'UncheckedShape = 'UncheckedShape
 
-type family ReshapeF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) (shape' :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
+type ReshapeF :: Shape [Dim (Name Symbol) (Size Nat)] -> Shape [Dim (Name Symbol) (Size Nat)] -> Shape [Dim (Name Symbol) (Size Nat)]
+type family ReshapeF shape shape' where
   ReshapeF shape shape' = ReshapeImplF (NumelF shape) (NumelF shape') shape shape'
 
 -- | Returns a tensor with the same data and number of elements as the input tensor,
@@ -237,7 +252,7 @@ sReshape,
   sSetShape ::
     forall m shape' gradient layout device dataType shape shape''.
     MonadThrow m =>
-    (shape'' ~ ReshapeF shape shape') =>
+    (shape'' ~ ReshapeF shape shape', Catch shape'') =>
     SShape shape' ->
     Tensor gradient layout device dataType shape ->
     m (Tensor gradient layout device dataType shape'')
@@ -247,7 +262,8 @@ sReshape shape' input = unsafeThrowableIO $ do
   ATen.cast2 ATen.tensor_refine_names_N t (forgetIsChecked . dimName <$> dims)
 sSetShape = sReshape
 
-type family AllDimSizesChecked (shape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Bool where
+type AllDimSizesChecked :: Shape [Dim (Name Symbol) (Size Nat)] -> Bool
+type family AllDimSizesChecked shape where
   AllDimSizesChecked 'UncheckedShape = 'False
   AllDimSizesChecked ('Shape '[]) = 'True
   AllDimSizesChecked ('Shape ('Dim name ('Size size) ': xs)) = AllDimSizesChecked ('Shape xs)
@@ -255,6 +271,7 @@ type family AllDimSizesChecked (shape :: Shape [Dim (Name Symbol) (Size Nat)]) :
 reshape ::
   forall m shape' gradient layout device dataType shape shape''.
   ( shape'' ~ ReshapeF shape shape',
+    Catch shape'',
     When (AllDimSizesChecked shape) (shape' ~ shape''),
     SingI shape',
     MonadThrow m
@@ -263,7 +280,9 @@ reshape ::
   m (Tensor gradient layout device dataType shape'')
 reshape = sReshape (sing @shape')
 
-type TransposeBy0Message (by0 :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) =
+type TransposeBy0Message :: By Symbol Nat -> [Dim (Name Symbol) (Size Nat)] -> ErrorMessage
+
+type TransposeBy0Message by0 dims =
   "Cannot transpose the tensor with the dimensions"
     % ""
     % "    '" <> dims <> "'"
@@ -274,7 +293,9 @@ type TransposeBy0Message (by0 :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Siz
     % ""
     % "could not be found."
 
-type TransposeBy1Message (by1 :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) =
+type TransposeBy1Message :: By Symbol Nat -> [Dim (Name Symbol) (Size Nat)] -> ErrorMessage
+
+type TransposeBy1Message by1 dims =
   "Cannot transpose the tensor with the dimensions"
     % ""
     % "    '" <> dims <> "'"
@@ -304,7 +325,12 @@ type TransposeBy1Message (by1 :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Siz
 --     '[ 'Dim ('Name "feature") ('Size 8),
 --        'Dim ('Name "batch") ('Size 10),
 --        'Dim ('Name "anotherFeature") ('Size 12)]
-type family TransposeF (selectDim0 :: SelectDim (By Symbol Nat)) (selectDim1 :: SelectDim (By Symbol Nat)) (shape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
+type TransposeF ::
+  SelectDim (By Symbol Nat) ->
+  SelectDim (By Symbol Nat) ->
+  Shape [Dim (Name Symbol) (Size Nat)] ->
+  Shape [Dim (Name Symbol) (Size Nat)]
+type family TransposeF selectDim0 selectDim1 shape where
   TransposeF _ _ 'UncheckedShape = 'UncheckedShape
   TransposeF _ 'UncheckedSelectDim _ = 'UncheckedShape
   TransposeF 'UncheckedSelectDim _ _ = 'UncheckedShape
@@ -333,7 +359,8 @@ type family TransposeF (selectDim0 :: SelectDim (By Symbol Nat)) (selectDim1 :: 
           % ""
       )
 
-type family TransposeIndexIndexDimsF (index0 :: Nat) (index1 :: Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) :: [Dim (Name Symbol) (Size Nat)] where
+type TransposeIndexIndexDimsF :: Nat -> Nat -> [Dim (Name Symbol) (Size Nat)] -> [Dim (Name Symbol) (Size Nat)]
+type family TransposeIndexIndexDimsF index0 index1 dims where
   TransposeIndexIndexDimsF index0 index1 dims =
     FromMaybe
       (TypeError (TransposeBy1Message ('ByIndex index1) dims))
@@ -386,6 +413,7 @@ type family TransposeIndexIndexDimsF (index0 :: Nat) (index1 :: Nat) (dims :: [D
 sTranspose ::
   forall selectDim0 selectDim1 gradient layout device dataType shape shape' m.
   ( shape' ~ TransposeF selectDim0 selectDim1 shape,
+    Catch shape',
     MonadThrow m
   ) =>
   SSelectDim selectDim0 ->
@@ -400,7 +428,10 @@ sTranspose selectDim0 selectDim1 input = do
     (ByIndex index0, ByIndex index1) -> ATen.cast3 ATen.transpose_tll input (fromIntegral index0 :: Int) (fromIntegral index1 :: Int)
     _ -> throwM $ TransposeMixedSelectorsError by0 by1
 
-data TransposeError = TransposeMixedSelectorsError {teBy0 :: By String Integer, teBy1 :: By String Integer}
+data TransposeError = TransposeMixedSelectorsError
+  { teBy0 :: By String Integer,
+    teBy1 :: By String Integer
+  }
   deriving stock (Show, Typeable)
 
 instance Exception TransposeError where
@@ -416,6 +447,7 @@ instance Exception TransposeError where
 transpose ::
   forall selectDim0 selectDim1 gradient layout device dataType shape shape' m.
   ( shape' ~ TransposeF selectDim0 selectDim1 shape,
+    Catch shape',
     SingI selectDim0,
     SingI selectDim1,
     MonadThrow m
@@ -461,38 +493,39 @@ type family UnsqueezeIndexDimsF (index :: Nat) (dims :: [Dim (Name Symbol) (Size
 
 -- | Unsqueezes a tensor with the specified dimension.
 sUnsqueeze ::
-  forall selectDim gradient layout device dataType shape shape'.
-  ( shape' ~ UnsqueezeF selectDim shape
+  forall selectDim gradient layout device dataType shape shape' m.
+  ( shape' ~ UnsqueezeF selectDim shape,
+    Catch shape',
+    MonadThrow m
   ) =>
   SSelectDim selectDim ->
   Tensor gradient layout device dataType shape ->
-  Tensor gradient layout device dataType shape'
+  m (Tensor gradient layout device dataType shape')
 sUnsqueeze selectDim input =
   let by = forgetIsChecked . fromSing $ selectDim
    in case by of
         ByName _name -> undefined
-        ByIndex index -> unsafePerformIO $ ATen.cast2 ATen.unsqueeze_tl input (fromIntegral index :: Int)
+        ByIndex index -> unsafeThrowableIO $ ATen.cast2 ATen.unsqueeze_tl input (fromIntegral index :: Int)
 
 -- | Unsqueezes a tensor with the specified dimension.
 unsqueeze ::
-  forall selectDim gradient layout device dataType shape shape'.
+  forall selectDim gradient layout device dataType shape shape' m.
   ( shape' ~ UnsqueezeF selectDim shape,
-    SingI selectDim
+    Catch shape',
+    SingI selectDim,
+    MonadThrow m
   ) =>
   Tensor gradient layout device dataType shape ->
-  Tensor gradient layout device dataType shape'
+  m (Tensor gradient layout device dataType shape')
 unsqueeze = sUnsqueeze (sing @selectDim)
 
--- type family SqueezeAllShapeF (shape :: [Nat]) :: [Nat] where
---   SqueezeAllShapeF '[] = '[]
---   SqueezeAllShapeF (1 ': xs) = SqueezeAll xs
---   SqueezeAllShapeF (x ': xs) = x ': SqueezeAll xs
-
-type family SqueezeAllShapeF (shape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
+type SqueezeAllShapeF :: Shape [Dim (Name Symbol) (Size Nat)] -> Shape [Dim (Name Symbol) (Size Nat)]
+type family SqueezeAllShapeF shape where
   SqueezeAllShapeF 'UncheckedShape = 'UncheckedShape
   SqueezeAllShapeF ('Shape dims) = MaybeF 'UncheckedShape 'Shape (SqueezeAllDimsF dims)
 
-type family SqueezeAllDimsF (dims :: [Dim (Name Symbol) (Size Nat)]) :: Maybe [Dim (Name Symbol) (Size Nat)] where
+type SqueezeAllDimsF :: [Dim (Name Symbol) (Size Nat)] -> Maybe [Dim (Name Symbol) (Size Nat)]
+type family SqueezeAllDimsF dims where
   SqueezeAllDimsF '[] = 'Just '[]
   SqueezeAllDimsF ('Dim _ 'UncheckedSize ': dims) = 'Nothing
   SqueezeAllDimsF ('Dim _ ('Size 1) ': dims) = SqueezeAllDimsF dims
@@ -506,28 +539,107 @@ squeezeAll ::
   Tensor gradient layout device dataType (SqueezeAllShapeF shape)
 squeezeAll input = unsafePerformIO $ ATen.cast1 ATen.squeeze_t input
 
+type SqueezeDimByIndexF :: Nat -> [Dim (Name Symbol) (Size Nat)] -> Maybe [Dim (Name Symbol) (Size Nat)]
+type family SqueezeDimByIndexF dimIndex dims where
+  SqueezeDimByIndexF 0 (x ': xs) =
+    If
+      (UnifyCheck (Dim (Name Symbol) (Size Nat)) x ('Dim ('Name "*") ('Size 1)))
+      ('Just xs)
+      'Nothing
+  SqueezeDimByIndexF dimIndex (x ': xs) = PrependMaybe ('Just x) (SqueezeDimByIndexF (dimIndex - 1) xs)
+  SqueezeDimByIndexF _ _ = 'Nothing
+
+type SqueezeDimImplF :: By Symbol Nat -> [Dim (Name Symbol) (Size Nat)] -> Maybe [Dim (Name Symbol) (Size Nat)]
+type family SqueezeDimImplF by dims where
+  SqueezeDimImplF ('ByName dimName) dims = SqueezeDimByNameF (GetIndexByNameF dimName dims) dims
+  SqueezeDimImplF ('ByIndex dimIndex) dims = SqueezeDimByIndexF dimIndex dims
+
+type SqueezeDimByNameF :: Maybe Nat -> [Dim (Name Symbol) (Size Nat)] -> Maybe [Dim (Name Symbol) (Size Nat)]
+type family SqueezeDimByNameF dimIndex dims where
+  SqueezeDimByNameF 'Nothing dims = 'Nothing
+  SqueezeDimByNameF ('Just dimIndex) dims = SqueezeDimByIndexF dimIndex dims
+
+type SqueezeDimMessage :: By Symbol Nat -> [Dim (Name Symbol) (Size Nat)] -> ErrorMessage
+
+type SqueezeDimMessage by dims =
+  "Cannot squeeze the tensor with the dimensions"
+    % ""
+    % "    '" <> dims <> "'"
+    % ""
+    % "at the dimension"
+    % ""
+    % "    '" <> by <> "'."
+    % ""
+
+type SqueezeDimCheckF :: By Symbol Nat -> [Dim (Name Symbol) (Size Nat)] -> Maybe [Dim (Name Symbol) (Size Nat)] -> [Dim (Name Symbol) (Size Nat)]
+type family SqueezeDimCheckF by dims result where
+  SqueezeDimCheckF by dims 'Nothing = TypeError (SqueezeDimMessage by dims)
+  SqueezeDimCheckF _ _ ('Just dims) = dims
+
+-- | Calculate the output shape of a squeeze along a given dimension
+--
+-- >>> :kind! SqueezeDimF ('SelectDim ('ByIndex 1)) ('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 2)])
+-- ...
+-- = 'Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 2)]
+type SqueezeDimF :: SelectDim (By Symbol Nat) -> Shape [Dim (Name Symbol) (Size Nat)] -> Shape [Dim (Name Symbol) (Size Nat)]
+type family SqueezeDimF selectDim shape where
+  SqueezeDimF 'UncheckedSelectDim _ = 'UncheckedShape
+  SqueezeDimF _ 'UncheckedShape = 'UncheckedShape
+  SqueezeDimF ('SelectDim by) ('Shape dims) = 'Shape (SqueezeDimCheckF by dims (SqueezeDimImplF by dims))
+
+-- | Squeeze a particular dimension.
+--
+-- >>> t <- sOnes $ TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SNoName :&: SSize @2 :|: SNoName :&: SSize @1 :|: SNoName :&: SSize @2 :|: SNoName :&: SSize @1 :|: SNoName :&: SSize @2 :|: SNil)
+-- >>> :t sSqueezeDim (SSelectDim $ SByIndex @1) t
+-- sSqueezeDim (SSelectDim $ SByIndex @1) t
+--   :: Control.Monad.Catch.MonadThrow m =>
+--      m (Tensor
+--           ('Gradient 'WithoutGradient)
+--           ('Layout 'Dense)
+--           ('Device 'CPU)
+--           ('DataType 'Float)
+--           ('Shape
+--              '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 2),
+--                 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 2)]))
+-- >>> sSqueezeDim (SSelectDim $ SByIndex @1) t
+-- Tensor Float [2,2,1,2] [[[[ 1.0000   ,  1.0000   ]],
+--                          [[ 1.0000   ,  1.0000   ]]],
+--                         [[[ 1.0000   ,  1.0000   ]],
+--                          [[ 1.0000   ,  1.0000   ]]]]
+-- >>> dtype &&& shape $ squeezeDim @3 (ones :: CPUTensor 'D.Float '[2,1,2,1,2])
+-- (Float,[2,1,2,2])
+sSqueezeDim ::
+  forall selectDim gradient layout device dataType shape shape' m.
+  (MonadThrow m, shape' ~ SqueezeDimF selectDim shape, Catch shape') =>
+  SSelectDim selectDim ->
+  Tensor gradient layout device dataType shape ->
+  m (Tensor gradient layout device dataType shape')
+sSqueezeDim selectDim input =
+  let by = forgetIsChecked . fromSing $ selectDim
+   in case by of
+        ByName dimName -> unsafeThrowableIO $ ATen.cast2 ATen.squeeze_tn input dimName
+        ByIndex dimIndex -> unsafeThrowableIO $ ATen.cast2 ATen.squeeze_tl input (fromIntegral dimIndex :: Int)
+
 -- | Expands a tensor to the specified shape.
 sExpand ::
-  forall shape' gradient layout device dataType shape input output.
-  ( input ~ Tensor gradient layout device dataType shape,
-    output ~ Tensor gradient layout device dataType (BroadcastShapesF shape shape')
-  ) =>
+  forall shape' shape'' gradient layout device dataType shape.
+  (shape'' ~ BroadcastShapesF shape shape', Catch shape'') =>
+  -- | new shape
   SShape shape' ->
-  input ->
-  output
+  -- | input tensor
+  Tensor gradient layout device dataType shape ->
+  -- | output tensor
+  Tensor gradient layout device dataType shape''
 sExpand shape' input =
   let sizes' = fmap (\(Dim _ size) -> forgetIsChecked size) . forgetIsChecked $ fromSing shape'
    in unsafePerformIO $ ATen.cast3 ATen.tensor_expand_lb input sizes' True
 
 -- | Expands a tensor to the specified shape.
 expand ::
-  forall shape' gradient layout device dataType shape input output.
-  ( SingI shape',
-    input ~ Tensor gradient layout device dataType shape,
-    output ~ Tensor gradient layout device dataType (BroadcastShapesF shape shape')
-  ) =>
-  input ->
-  output
+  forall shape' shape'' gradient layout device dataType shape.
+  (SingI shape', shape'' ~ BroadcastShapesF shape shape', Catch shape'') =>
+  Tensor gradient layout device dataType shape ->
+  Tensor gradient layout device dataType shape''
 expand = sExpand (sing @shape')
 
 -- | Slices the self tensor along the selected dimension at the given index. This function returns a view of the original tensor with the given dimension removed.
@@ -558,6 +670,7 @@ sSelect ::
   forall selectDim index gradient layout device dataType shapeIn shapeOut m.
   ( index `InRangeF` GetDimF selectDim shapeIn,
     shapeOut ~ RemoveDimF selectDim shapeIn,
+    Catch shapeOut,
     SGetShape shapeIn,
     MonadThrow m
   ) =>
@@ -572,7 +685,7 @@ sSelect sSelectDim sIndex input = do
       selectDim = forgetIsChecked . fromSing $ sSelectDim
   if index < dimSize dim
     then unsafeThrowableIO $ case selectDim of
-      ByName name -> ATen.cast3 ATen.tensor_select_nl input name (fromIntegral index :: Int)
+      ByName dimName -> ATen.cast3 ATen.tensor_select_nl input dimName (fromIntegral index :: Int)
       ByIndex dimIndex -> ATen.cast3 ATen.tensor_select_ll input (fromIntegral dimIndex :: Int) (fromIntegral index :: Int)
     else throwM $ IndexOutOfBoundError index dim
 
@@ -593,9 +706,173 @@ select ::
     SingI index,
     index `InRangeF` GetDimF selectDim shapeIn,
     shapeOut ~ RemoveDimF selectDim shapeIn,
+    Catch shapeOut,
     SGetShape shapeIn,
     MonadThrow m
   ) =>
   Tensor gradient layout device dataType shapeIn ->
   m (Tensor gradient layout device dataType shapeOut)
 select = sSelect (sing @selectDim) (sing @index)
+
+-- | 'GatherDimImplF' is a type-level helper function for 'sGatherDim'.
+--
+-- >>> :kind! GatherDimImplF ('ByIndex 1) '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 4), 'Dim ('Name "feature") ('Size 1)] '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 1), 'Dim ('Name "feature") ('Size 1)]
+-- ...
+-- = 'Just
+--     '[ 'Dim ('Name "batch") ('Size 2),
+--        'Dim ('Name "sequence") ('Size 4),
+--        'Dim ('Name "feature") ('Size 1)]
+-- >>> :kind! GatherDimImplF ('ByIndex 1) '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 4), 'Dim ('Name "feature") ('Size 1)] '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "sequence") ('Size 1), 'Dim ('Name "*") ('Size 1)]
+-- ...
+-- = 'Just
+--     '[ 'Dim ('Name "batch") ('Size 2),
+--        'Dim ('Name "sequence") ('Size 4),
+--        'Dim ('Name "feature") ('Size 1)]
+-- >>> :kind! GatherDimImplF ('ByIndex 1) '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 4), 'Dim ('Name "feature") ('Size 2)] '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 1), 'Dim ('Name "feature") ('Size 1)]
+-- ...
+-- = 'Nothing
+-- >>> :kind! GatherDimImplF ('ByIndex 1) '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 4), 'Dim ('Name "feature") ('Size 1)] '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "boo") ('Size 1), 'Dim ('Name "feature") ('Size 1)]
+-- ...
+-- = 'Nothing
+-- >>> :kind! GatherDimImplF ('ByIndex 1) '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 0), 'Dim ('Name "feature") ('Size 1)] '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 2), 'Dim ('Name "feature") ('Size 1)]
+-- ...
+-- = 'Nothing
+-- >>> :kind! GatherDimImplF ('ByIndex 1) '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 1)] '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 1), 'Dim ('Name "feature") ('Size 1)]
+-- ...
+-- = 'Nothing
+-- >>> :kind! GatherDimImplF ('ByIndex 2) '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 1), 'Dim ('Name "feature") ('Size 3)] '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 1), 'Dim ('Name "feature") ('Size 1)]
+-- ...
+-- = 'Just
+--     '[ 'Dim ('Name "batch") ('Size 2),
+--        'Dim ('Name "sequence") ('Size 1),
+--        'Dim ('Name "feature") ('Size 3)]
+-- >>> :kind! GatherDimImplF ('ByName "feature") '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 1), 'Dim ('Name "feature") ('Size 3)] '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 1), 'Dim ('Name "*") ('Size 1)]
+-- ...
+-- = 'Just
+--     '[ 'Dim ('Name "batch") ('Size 2),
+--        'Dim ('Name "sequence") ('Size 1),
+--        'Dim ('Name "feature") ('Size 3)]
+type GatherDimImplF :: By Symbol Nat -> [Dim (Name Symbol) (Size Nat)] -> [Dim (Name Symbol) (Size Nat)] -> Maybe [Dim (Name Symbol) (Size Nat)]
+type family GatherDimImplF by indexDims inputDims where
+  GatherDimImplF ('ByName dimName) indexDims inputDims = GatherDimByNameF (GetIndexByNameF dimName indexDims) (GetIndexByNameF dimName inputDims) indexDims inputDims
+  GatherDimImplF ('ByIndex dimIndex) indexDims inputDims = GatherDimByIndexF dimIndex indexDims inputDims
+
+type GatherDimByIndexF :: Nat -> [Dim (Name Symbol) (Size Nat)] -> [Dim (Name Symbol) (Size Nat)] -> Maybe [Dim (Name Symbol) (Size Nat)]
+type family GatherDimByIndexF dimIndex indexDims inputDims where
+  GatherDimByIndexF 0 ('Dim _ ('Size 0) ': _) _ = 'Nothing
+  GatherDimByIndexF 0 ('Dim indexDimName indexDimSize ': indexDims) ('Dim inputDimName _ ': inputDims) =
+    If
+      (UnifyCheck (Name Symbol) indexDimName inputDimName && UnifyCheck [Dim (Name Symbol) (Size Nat)] indexDims inputDims)
+      ('Just ('Dim (indexDimName <+> inputDimName) indexDimSize ': (indexDims <+> inputDims)))
+      'Nothing
+  GatherDimByIndexF dimIndex (indexDim ': indexDims) (inputDim ': inputDims) =
+    If
+      (UnifyCheck (Dim (Name Symbol) (Size Nat)) indexDim inputDim)
+      (PrependMaybe ('Just (indexDim <+> inputDim)) (GatherDimByIndexF (dimIndex - 1) indexDims inputDims))
+      'Nothing
+  GatherDimByIndexF _ _ _ = 'Nothing
+
+type GatherDimByNameF :: Maybe Nat -> Maybe Nat -> [Dim (Name Symbol) (Size Nat)] -> [Dim (Name Symbol) (Size Nat)] -> Maybe [Dim (Name Symbol) (Size Nat)]
+type family GatherDimByNameF dimIndex dimIndex' indexDims inputDims where
+  GatherDimByNameF 'Nothing ('Just dimIndex') indexDims inputDims = GatherDimByIndexF dimIndex' indexDims inputDims
+  GatherDimByNameF ('Just dimIndex) 'Nothing indexDims inputDims = GatherDimByIndexF dimIndex indexDims inputDims
+  GatherDimByNameF ('Just dimIndex) ('Just dimIndex) indexDims inputDims = GatherDimByIndexF dimIndex indexDims inputDims
+  GatherDimByNameF _ _ _ _ = 'Nothing
+
+type GatherDimMessage :: By Symbol Nat -> [Dim (Name Symbol) (Size Nat)] -> [Dim (Name Symbol) (Size Nat)] -> ErrorMessage
+
+type GatherDimMessage by indexDims inputDims =
+  "Cannot gather the tensor with the dimensions"
+    % ""
+    % "    '" <> inputDims <> "'"
+    % ""
+    % "at the dimension"
+    % ""
+    % "    '" <> by <> "'"
+    % ""
+    % "using an index of shape"
+    % ""
+    % "    '" <> indexDims <> "'."
+    % ""
+
+type GatherDimCheckF ::
+  By Symbol Nat ->
+  [Dim (Name Symbol) (Size Nat)] ->
+  [Dim (Name Symbol) (Size Nat)] ->
+  Maybe [Dim (Name Symbol) (Size Nat)] ->
+  [Dim (Name Symbol) (Size Nat)]
+type family GatherDimCheckF by indexDims inputDims result where
+  GatherDimCheckF by indexDims inputDims 'Nothing = TypeError (GatherDimMessage by indexDims inputDims)
+  GatherDimCheckF _ _ _ ('Just dims) = dims
+
+-- | Calculate the output shape of a gather operation for a given index shape along a given axis.
+--
+-- >>> :kind! GatherDimF ('SelectDim ('ByIndex 2)) ('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 3)]) ('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 1)])
+-- ...
+-- = 'Shape
+--     '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 1),
+--        'Dim ('Name "*") ('Size 3)]
+type GatherDimF :: SelectDim (By Symbol Nat) -> Shape [Dim (Name Symbol) (Size Nat)] -> Shape [Dim (Name Symbol) (Size Nat)] -> Shape [Dim (Name Symbol) (Size Nat)]
+type family GatherDimF selectDim indexShape inputShape where
+  GatherDimF 'UncheckedSelectDim _ _ = 'UncheckedShape
+  GatherDimF _ 'UncheckedShape _ = 'UncheckedShape
+  GatherDimF _ _ 'UncheckedShape = 'UncheckedShape
+  GatherDimF ('SelectDim by) ('Shape indexDims) ('Shape inputDims) = 'Shape (GatherDimCheckF by indexDims inputDims (GatherDimImplF by indexDims inputDims))
+
+-- | Gather values along an axis for a specified dimension.
+--
+-- >>> sToTensor' = sToTensor (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU)
+-- >>> t <- sToTensor' [[1 :: Float, 2], [3, 4]]
+-- >>> idx <- sToTensor' [[0 :: Int, 0], [1, 0]]
+-- >>> :t sGatherDim (SSelectDim $ SByIndex @1) idx t
+-- sGatherDim (SSelectDim $ SByIndex @1) idx t
+--   :: Control.Monad.Catch.MonadThrow m =>
+--      m (Tensor
+--           ('Gradient 'WithoutGradient)
+--           ('Layout 'Dense)
+--           ('Device 'CPU)
+--           ('DataType 'Float)
+--           ('Shape
+--              '[ 'Dim ('Name "*") 'UncheckedSize,
+--                 'Dim ('Name "*") 'UncheckedSize]))
+-- >>> sGatherDim (SSelectDim $ SByIndex @1) idx t
+-- Tensor Float [2,2] [[ 1.0000   ,  1.0000   ],
+--                     [ 4.0000   ,  3.0000   ]]
+-- >>> shape = SShape $ SNoName :&: SSize @2 :|: SNoName :&: SSize @2 :|: SNil
+-- >>> t' <- sCheckedShape shape t
+-- >>> idx' <- sCheckedShape shape idx
+-- >>> :t sGatherDim (SSelectDim $ SByIndex @1) idx' t'
+-- sGatherDim (SSelectDim $ SByIndex @1) idx' t'
+--   :: Control.Monad.Catch.MonadThrow m =>
+--      m (Tensor
+--           ('Gradient 'WithoutGradient)
+--           ('Layout 'Dense)
+--           ('Device 'CPU)
+--           ('DataType 'Float)
+--           ('Shape
+--              '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 2)]))
+-- >>> sGatherDim (SSelectDim $ SByIndex @1) idx t
+-- Tensor Float [2,2] [[ 1.0000   ,  1.0000   ],
+--                     [ 4.0000   ,  3.0000   ]]
+sGatherDim ::
+  forall selectDim indexGradient inputGradient indexLayout inputLayout indexDevice inputDevice indexDataType inputDataType indexShape inputShape outputShape m.
+  (MonadThrow m, outputShape ~ GatherDimF selectDim indexShape inputShape, Catch outputShape, Catch (indexDataType <+> 'DataType 'Int64)) =>
+  SSelectDim selectDim ->
+  -- | the indices of elements to gather
+  Tensor indexGradient indexLayout indexDevice indexDataType indexShape ->
+  -- | input
+  Tensor inputGradient inputLayout inputDevice inputDataType inputShape ->
+  -- | output
+  m
+    ( Tensor
+        (indexGradient <|> inputGradient)
+        (indexLayout <+> inputLayout)
+        (indexDevice <+> inputDevice)
+        inputDataType
+        outputShape
+    )
+sGatherDim selectDim index input =
+  let by = forgetIsChecked . fromSing $ selectDim
+   in case by of
+        ByName dimName -> unsafeThrowableIO $ ATen.cast4 ATen.gather_tntb input dimName index False
+        ByIndex dimIndex -> unsafeThrowableIO $ ATen.cast4 ATen.gather_tltb input (fromIntegral dimIndex :: Int) index False

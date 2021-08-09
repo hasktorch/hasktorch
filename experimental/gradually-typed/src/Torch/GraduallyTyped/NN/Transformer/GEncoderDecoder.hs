@@ -3,11 +3,14 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
@@ -16,23 +19,28 @@ module Torch.GraduallyTyped.NN.Transformer.GEncoderDecoder where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxStateT (..))
+import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingKind (fromSing))
+import Data.Singletons.Prelude.List (SList (SNil))
 import Data.Singletons.Prelude.Maybe (SMaybe (SNothing))
 import Data.Singletons.TypeLits (SNat)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..))
+import Torch.GraduallyTyped.Index.Type (Index (NegativeIndex), SIndex (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec, NamedModel (..))
+import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, logSoftmax)
 import Torch.GraduallyTyped.NN.Sparse (Embedding (..), EmbeddingSpec (..))
 import Torch.GraduallyTyped.NN.Transformer.GLMHead (GLMHead, LMHeadActivationF, LMHeadBiasF, LMHeadDecoderF, LMHeadDenseF, LMHeadLayerNormF, lmHeadSpec)
 import Torch.GraduallyTyped.NN.Transformer.GTransformer (GTransformer, TDFinalDropoutF, TDFinalLayerNormF, TDInitialDropoutF, TDInitialLayerNormF, TDPosEncF, TDRelPosEncF, TDStackF, TEFinalDropoutF, TEFinalLayerNormF, TEInitialDropoutF, TEInitialLayerNormF, TEPosEncF, TERelPosEncF, TEStackF, transformerDecoderSpec, transformerEncoderSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead (..), STransformerStyle (..), ShiftRight, TransformerHead (WithLMHead, WithoutHead), TransformerStyle (..))
-import Torch.GraduallyTyped.Prelude (forgetIsChecked)
+import Torch.GraduallyTyped.Prelude (Catch, forgetIsChecked, pattern (:|:))
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..))
-import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, Size (..))
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SBy (..), SDim, SSelectDim (..), SelectDim (..), Size (..))
+import Torch.GraduallyTyped.Tensor.Indexing (IndexDims, IndexType (..), Indices (..), SIndexType (..), SIndices (..), (!))
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mulScalar)
 import Torch.GraduallyTyped.Tensor.Type (Tensor ())
 import Prelude hiding (head)
@@ -484,6 +492,14 @@ data SimplifiedEncoderDecoderTransformerInput input decoderInput where
     } ->
     SimplifiedEncoderDecoderTransformerInput input decoderInput
 
+data SimplifiedEncoderDecoderTransformerTrainingInput input target where
+  SimplifiedEncoderDecoderTransformerTrainingInput ::
+    forall input target.
+    { sedtTrainingInput :: input,
+      sedtTarget :: target
+    } ->
+    SimplifiedEncoderDecoderTransformerTrainingInput input target
+
 -- | Output data type for use with an encoder-decoder transformer.
 data EncoderDecoderTransformerOutput decoderOutput encoderOutput where
   EncoderDecoderTransformerOutput ::
@@ -507,6 +523,13 @@ data SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput input
       sedtInputPaddingMask :: inputPaddingMask
     } ->
     SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput inputPaddingMask
+
+data SimplifiedEncoderDecoderTransformerTrainingOutput loss where
+  SimplifiedEncoderDecoderTransformerTrainingOutput ::
+    forall loss.
+    { sedtLoss :: loss
+    } ->
+    SimplifiedEncoderDecoderTransformerTrainingOutput loss
 
 -- | Input data type for use with an encoder-decoder transformer.
 -- Use this for inference.
@@ -902,3 +925,47 @@ instance
                                 ireturn $ SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput sedtGenerationInputPaddingMask
                             )
              )
+
+instance
+  ( HasForward
+      (GSimplifiedEncoderDecoderTransformer model mkPos mkDecoderPos mkPaddingMask mkAttentionMask mkCrossAttentionMask mkDecoderAttentionMask)
+      (SimplifiedEncoderDecoderTransformerInput input decoderInput)
+      generatorDevice
+      (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput inputPaddingMask)
+      generatorOutputDevice,
+    decoderInput
+      ~ Tensor
+          targetGradient
+          targetLayout
+          targetDevice
+          targetDataType
+          (IndexDims ('Indices '[ 'SliceAll, 'SliceUpTo ('NegativeIndex 1)]) targetShape),
+    decoderOutput
+      ~ Tensor
+          doGradient
+          doLayout
+          doDevice
+          doDataType
+          doShape,
+    Catch (SoftmaxF ('SelectDim ('ByIndex 2)) doShape),
+    loss ~ (),
+    generatorOutputDevice ~ generatorDevice
+  ) =>
+  HasForward
+    (GSimplifiedEncoderDecoderTransformer model mkPos mkDecoderPos mkPaddingMask mkAttentionMask mkCrossAttentionMask mkDecoderAttentionMask)
+    ( SimplifiedEncoderDecoderTransformerTrainingInput
+        input
+        (Tensor targetGradient targetLayout targetDevice targetDataType targetShape)
+    )
+    generatorDevice
+    (SimplifiedEncoderDecoderTransformerTrainingOutput loss)
+    generatorOutputDevice
+  where
+  forward eot SimplifiedEncoderDecoderTransformerTrainingInput {..} =
+    runIxStateT $
+      ireturn sedtTarget
+        >>>= ilift . (! SIndices (SSliceAll :|: SSliceUpTo (SNegativeIndex @1) :|: SNil))
+        >>>= (\sedtDecoderInput -> IxStateT . forward eot $ SimplifiedEncoderDecoderTransformerInput {sedtInput = sedtTrainingInput, sedtDecoderInput})
+        >>>= ireturn . sedtDecoderOutput
+        >>>= ilift . logSoftmax (SSelectDim (SByIndex @2))
+        >>>= undefined

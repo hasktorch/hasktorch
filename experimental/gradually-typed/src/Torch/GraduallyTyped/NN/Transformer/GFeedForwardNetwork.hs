@@ -14,6 +14,7 @@ module Torch.GraduallyTyped.NN.Transformer.GFeedForwardNetwork where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxStateT (..))
+import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons.Prelude.List (SList (..))
@@ -28,7 +29,7 @@ import Torch.GraduallyTyped.NN.Linear (GLinear (..), GLinearF, linearSpec)
 import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..), LayerNormSpec (..))
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..), SHasBias (..))
-import Torch.GraduallyTyped.Prelude (pattern (:|:))
+import Torch.GraduallyTyped.Prelude (Catch, pattern (:|:))
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, SShape (..), Shape (..), Size (..))
@@ -562,7 +563,8 @@ instance
       (Tensor (queryGradient <|> queryGradient5) (queryLayout <+> queryLayout5) (queryDevice <+> queryDevice5) (queryDataType <+> queryDataType5) (BroadcastShapesF queryShape queryShape5))
       generatorDevice5
       output
-      generatorOutputDevice
+      generatorOutputDevice,
+    Catch (BroadcastShapesF queryShape queryShape5)
   ) =>
   HasForward
     (GTransformerFeedForwardNetwork inputLayerNorm inputTransformation activation activationDropout outputProjection outputDropout outputLayerNorm)
@@ -580,5 +582,5 @@ instance
         >>>= IxStateT . forward ffnActivationDropout
         >>>= IxStateT . forward ffnOutputProjection
         >>>= IxStateT . forward ffnOutputDropout
-        >>>= ireturn . (query `add`)
+        >>>= ilift . (query `add`)
         >>>= IxStateT . forward ffnOutputLayerNorm

@@ -36,11 +36,11 @@ import Torch.GraduallyTyped.NN.Transformer.GBlock (DecoderBlockCrossAttentionF, 
 import Torch.GraduallyTyped.NN.Transformer.GStack (GTransformerStack, decoderStackSpec, encoderStackSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..), SHasBias (SWithBias, SWithoutBias))
-import Torch.GraduallyTyped.Prelude (pattern (:|:))
+import Torch.GraduallyTyped.Prelude (Catch, pattern (:|:))
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SDim, SShape (..), SelectDim (..), Shape (..), Size (..))
-import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (TransposeF, UnsqueezeF, transpose, unsqueeze)
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SBy (..), SDim, SSelectDim (..), SShape (..), SelectDim (..), Shape (..), Size (..))
+import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (TransposeF, UnsqueezeF, sTranspose, sUnsqueeze, transpose, unsqueeze)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
@@ -660,6 +660,7 @@ instance
       generatorDevice0
       tensor1
       generatorDevice1,
+    Catch (BroadcastShapesF inputShape posEncShape),
     HasForward
       initialDropout
       tensor1
@@ -679,6 +680,7 @@ instance
       generatorDevice2
       tensor3
       generatorDevice3,
+    Catch (UnsqueezeF ('SelectDim ('ByIndex 1)) attentionMaskShape),
     HasForward
       finalLayerNorm
       tensor3
@@ -703,14 +705,19 @@ instance
     generatorOutputDevice
   where
   forward GTransformer {..} (input, pos, attentionMask) =
-    let attentionBias = unsqueeze @('SelectDim ('ByIndex 1)) attentionMask
+    let attentionBias = ilift $ unsqueeze @('SelectDim ('ByIndex 1)) attentionMask
      in runIxStateT $
           ireturn pos
             >>>= IxStateT . forward tPosEnc
-            >>>= ireturn . (input `add`)
+            >>>= ilift . (input `add`)
             >>>= IxStateT . forward tInitialLayerNorm
             >>>= IxStateT . forward tInitialDropout
-            >>>= (\input' -> IxStateT $ forward tStack (input', attentionBias))
+            >>>= ( \input' ->
+                     attentionBias
+                       >>>= ( \attentionBias' ->
+                                IxStateT $ forward tStack (input', attentionBias')
+                            )
+                 )
             >>>= IxStateT . forward tFinalLayerNorm
             >>>= IxStateT . forward tFinalDropout
 
@@ -771,22 +778,18 @@ instance
           (relPosEncLayout <+> attentionMaskLayout)
           (relPosEncDevice <+> attentionMaskDevice)
           (relPosEncDataType <+> attentionMaskDataType)
-          ( BroadcastShapesF
-              ( TransposeF
-                  ('SelectDim ('ByIndex 1))
-                  ('SelectDim ('ByIndex 2))
-                  ( TransposeF
-                      ('SelectDim ('ByIndex 2))
-                      ('SelectDim ('ByIndex 3))
-                      relPosEncShape
-                  )
-              )
-              (UnsqueezeF ('SelectDim ('ByIndex 1)) attentionMaskShape)
-          )
+          (BroadcastShapesF doubleTransposedRelPosEncShape unsqueezedAttentionMaskShape)
       )
       generatorDevice2
       tensor3
       generatorDevice3,
+    transposedRelPosEncShape ~ TransposeF ('SelectDim ('ByIndex 2)) ('SelectDim ('ByIndex 3)) relPosEncShape,
+    Catch transposedRelPosEncShape,
+    doubleTransposedRelPosEncShape ~ TransposeF ('SelectDim ('ByIndex 1)) ('SelectDim ('ByIndex 2)) transposedRelPosEncShape,
+    Catch doubleTransposedRelPosEncShape,
+    unsqueezedAttentionMaskShape ~ UnsqueezeF ('SelectDim ('ByIndex 1)) attentionMaskShape,
+    Catch unsqueezedAttentionMaskShape,
+    Catch (BroadcastShapesF doubleTransposedRelPosEncShape unsqueezedAttentionMaskShape),
     HasForward
       finalLayerNorm
       tensor3
@@ -814,11 +817,11 @@ instance
     let relPosBias =
           ireturn relPos
             >>>= IxStateT . forward tRelPosEnc
-            >>>= ilift . transpose @('SelectDim ('ByIndex 2)) @('SelectDim ('ByIndex 3))
-            >>>= ilift . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
+            >>>= ilift . sTranspose (SSelectDim $ SByIndex @2) (SSelectDim $ SByIndex @3)
+            >>>= ilift . sTranspose (SSelectDim $ SByIndex @1) (SSelectDim $ SByIndex @2)
         attentionBias =
           relPosBias
-            >>>= ireturn . (`add` unsqueeze @('SelectDim ('ByIndex 1)) attentionMask)
+            >>>= ilift . (sUnsqueeze (SSelectDim $ SByIndex @1) attentionMask >>=) . add
      in runIxStateT $
           ireturn input
             >>>= IxStateT . forward tInitialLayerNorm
@@ -901,6 +904,9 @@ instance
       generatorDevice2
       tensor3
       generatorDevice3,
+    Catch (UnsqueezeF ('SelectDim ('ByIndex 1)) decoderAttentionMaskShape),
+    Catch (UnsqueezeF ('SelectDim ('ByIndex 1)) crossAttentionMaskShape),
+    Catch (BroadcastShapesF decoderInputShape decoderPosEncShape),
     HasForward
       finalLayerNorm
       tensor3
@@ -927,23 +933,29 @@ instance
     generatorOutputDevice
   where
   forward GTransformer {..} (decoderInput, encoderOutput, decoderPos, decoderAttentionMask, crossAttentionMask) =
-    let decoderAttentionBias = unsqueeze @('SelectDim ('ByIndex 1)) decoderAttentionMask
-        crossAttentionBias = unsqueeze @('SelectDim ('ByIndex 1)) crossAttentionMask
+    let decoderAttentionBias = ilift $ unsqueeze @('SelectDim ('ByIndex 1)) decoderAttentionMask
+        crossAttentionBias = ilift $ unsqueeze @('SelectDim ('ByIndex 1)) crossAttentionMask
      in runIxStateT $
           ireturn decoderPos
             >>>= IxStateT . forward tPosEnc
-            >>>= ireturn . (decoderInput `add`)
+            >>>= ilift . (decoderInput `add`)
             >>>= IxStateT . forward tInitialLayerNorm
             >>>= IxStateT . forward tInitialDropout
             >>>= ( \decoderInput' ->
-                     IxStateT $
-                       forward
-                         tStack
-                         ( decoderInput',
-                           encoderOutput,
-                           decoderAttentionBias,
-                           crossAttentionBias
-                         )
+                     decoderAttentionBias
+                       >>>= ( \decoderAttentionBias' ->
+                                crossAttentionBias
+                                  >>>= ( \crossAttentionBias' ->
+                                           IxStateT $
+                                             forward
+                                               tStack
+                                               ( decoderInput',
+                                                 encoderOutput,
+                                                 decoderAttentionBias',
+                                                 crossAttentionBias'
+                                               )
+                                       )
+                            )
                  )
             >>>= IxStateT . forward tFinalLayerNorm
             >>>= IxStateT . forward tFinalDropout
@@ -1006,28 +1018,26 @@ instance
           (decoderRelPosEncLayout <+> decoderAttentionMaskLayout)
           (decoderRelPosEncDevice <+> decoderAttentionMaskDevice)
           (decoderRelPosEncDataType <+> decoderAttentionMaskDataType)
-          ( BroadcastShapesF
-              ( TransposeF
-                  ('SelectDim ('ByIndex 1))
-                  ('SelectDim ('ByIndex 2))
-                  ( TransposeF
-                      ('SelectDim ('ByIndex 2))
-                      ('SelectDim ('ByIndex 3))
-                      decoderRelPosEncShape
-                  )
-              )
-              (UnsqueezeF ('SelectDim ('ByIndex 1)) decoderAttentionMaskShape)
-          ),
+          (BroadcastShapesF doubleTransposedDecoderRelPosEncShape unsqueezedDecoderAttentionMaskShape),
         Tensor
           crossAttentionMaskGradient
           crossAttentionMaskLayout
           crossAttentionMaskDevice
           crossAttentionMaskDataType
-          (UnsqueezeF ('SelectDim ('ByIndex 1)) crossAttentionMaskShape)
+          unsqueezedCrossAttentionMaskShape
       )
       generatorDevice2
       tensor3
       generatorDevice3,
+    transposedDecoderRelPosEncShape ~ TransposeF ('SelectDim ('ByIndex 2)) ('SelectDim ('ByIndex 3)) decoderRelPosEncShape,
+    Catch transposedDecoderRelPosEncShape,
+    doubleTransposedDecoderRelPosEncShape ~ TransposeF ('SelectDim ('ByIndex 1)) ('SelectDim ('ByIndex 2)) transposedDecoderRelPosEncShape,
+    Catch doubleTransposedDecoderRelPosEncShape,
+    unsqueezedDecoderAttentionMaskShape ~ UnsqueezeF ('SelectDim ('ByIndex 1)) decoderAttentionMaskShape,
+    Catch unsqueezedDecoderAttentionMaskShape,
+    unsqueezedCrossAttentionMaskShape ~ UnsqueezeF ('SelectDim ('ByIndex 1)) crossAttentionMaskShape,
+    Catch unsqueezedCrossAttentionMaskShape,
+    Catch (BroadcastShapesF doubleTransposedDecoderRelPosEncShape unsqueezedDecoderAttentionMaskShape),
     HasForward
       finalLayerNorm
       tensor3
@@ -1061,8 +1071,8 @@ instance
             >>>= ilift . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
         decoderAttentionBias =
           decoderRelPosBias
-            >>>= ireturn . (`add` unsqueeze @('SelectDim ('ByIndex 1)) decoderAttentionMask)
-        crossAttentionBias = unsqueeze @('SelectDim ('ByIndex 1)) crossAttentionMask
+            >>>= ilift . (sUnsqueeze (SSelectDim $ SByIndex @1) decoderAttentionMask >>=) . add
+        crossAttentionBias = ilift $ unsqueeze @('SelectDim ('ByIndex 1)) crossAttentionMask
      in runIxStateT $
           ireturn decoderInput
             >>>= IxStateT . forward tInitialLayerNorm
@@ -1070,14 +1080,17 @@ instance
             >>>= ( \decoderInput' ->
                      decoderAttentionBias
                        >>>= ( \decoderAttentionBias' ->
-                                IxStateT $
-                                  forward
-                                    tStack
-                                    ( decoderInput',
-                                      encoderOutput,
-                                      decoderAttentionBias',
-                                      crossAttentionBias
-                                    )
+                                crossAttentionBias
+                                  >>>= ( \crossAttentionBias' ->
+                                           IxStateT $
+                                             forward
+                                               tStack
+                                               ( decoderInput',
+                                                 encoderOutput,
+                                                 decoderAttentionBias',
+                                                 crossAttentionBias'
+                                               )
+                                       )
                             )
                  )
             >>>= IxStateT . forward tFinalLayerNorm

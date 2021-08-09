@@ -38,7 +38,7 @@ import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, softmax
 import Torch.GraduallyTyped.NN.Linear (GLinear (..), GLinearF, linearSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..), SHasBias (SWithBias, SWithoutBias))
-import Torch.GraduallyTyped.Prelude (forgetIsChecked, pattern (:|:))
+import Torch.GraduallyTyped.Prelude (Catch, forgetIsChecked, pattern (:|:))
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, sGetDimFromShape, sUnifyDim, type (!))
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SBy (..), SDim (..), SSelectDim (..), SShape (..), SelectDim (..), Shape (..), Size (..))
@@ -461,41 +461,30 @@ instance
       generatorDevice
       (Tensor qRequiresGradient qLayout qDevice qDataType qShape0)
       qGeneratorOutputDevice,
-    qShape
-      ~ TransposeF
-          ('SelectDim ('ByIndex 1))
-          ('SelectDim ('ByIndex 2))
-          ( ReshapeF
-              qShape0
-              ('Shape '[batchDim, querySeqDim, headDim, headEmbedDim])
-          ),
+    reshapedQShape0 ~ ReshapeF qShape0 ('Shape '[batchDim, querySeqDim, headDim, headEmbedDim]),
+    Catch reshapedQShape0,
+    qShape ~ TransposeF ('SelectDim ('ByIndex 1)) ('SelectDim ('ByIndex 2)) reshapedQShape0,
+    Catch qShape,
     HasForward
       kInProj
       (Tensor keyRequiresGradient keyLayout keyDevice keyDataType keyShape)
       qGeneratorOutputDevice
       (Tensor qRequiresGradient kLayout kDevice kDataType kShape0)
       kGeneratorOutputDevice,
+    reshapedKShape0 ~ ReshapeF kShape0 ('Shape '[batchDim, keySeqDim, headDim, headEmbedDim]),
+    Catch reshapedKShape0,
+    transposedReshapedKShape0 ~ TransposeF ('SelectDim ('ByIndex 1)) ('SelectDim ('ByIndex 2)) reshapedKShape0,
+    Catch transposedReshapedKShape0,
+    doubleTransposedReshapedKShape0 ~ TransposeF ('SelectDim ('ByIndex 2)) ('SelectDim ('ByIndex 3)) transposedReshapedKShape0,
+    Catch doubleTransposedReshapedKShape0,
+    multipliedQDoubleTransposedReshapedKShape0 ~ MatmulF qShape doubleTransposedReshapedKShape0,
+    Catch multipliedQDoubleTransposedReshapedKShape0,
     weightsShape0
       ~ SoftmaxF
           ('SelectDim ('ByIndex 3))
-          ( BroadcastShapesF
-              ( MatmulF
-                  qShape
-                  ( TransposeF
-                      ('SelectDim ('ByIndex 2))
-                      ('SelectDim ('ByIndex 3))
-                      ( TransposeF
-                          ('SelectDim ('ByIndex 1))
-                          ('SelectDim ('ByIndex 2))
-                          ( ReshapeF
-                              kShape0
-                              ('Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
-                          )
-                      )
-                  )
-              )
-              attentionBiasShape
-          ),
+          (BroadcastShapesF multipliedQDoubleTransposedReshapedKShape0 attentionBiasShape),
+    Catch (BroadcastShapesF multipliedQDoubleTransposedReshapedKShape0 attentionBiasShape),
+    Catch weightsShape0,
     HasForward
       dropout
       ( Tensor
@@ -514,21 +503,14 @@ instance
       weightsGeneratorOutputDevice
       (Tensor weightsRequiresGradient vLayout vDevice vDataType vShape0)
       vGeneratorOutputDevice,
-    outputQueryShape0
-      ~ TransposeF
-          ('SelectDim ('ByIndex 1))
-          ('SelectDim ('ByIndex 2))
-          ( MatmulF
-              weightsShape
-              ( TransposeF
-                  ('SelectDim ('ByIndex 1))
-                  ('SelectDim ('ByIndex 2))
-                  ( ReshapeF
-                      vShape0
-                      ('Shape '[batchDim, keySeqDim, headDim, headEmbedDim])
-                  )
-              )
-          ),
+    reshapedVShape0 ~ ReshapeF vShape0 ('Shape '[batchDim, keySeqDim, headDim, headEmbedDim]),
+    Catch reshapedVShape0,
+    transposedReshapedVShape ~ TransposeF ('SelectDim ('ByIndex 1)) ('SelectDim ('ByIndex 2)) reshapedVShape0,
+    Catch transposedReshapedVShape,
+    multipliedWeightsTransposedReshapedVShape ~ MatmulF weightsShape transposedReshapedVShape,
+    Catch multipliedWeightsTransposedReshapedVShape,
+    outputQueryShape0 ~ TransposeF ('SelectDim ('ByIndex 1)) ('SelectDim ('ByIndex 2)) multipliedWeightsTransposedReshapedVShape,
+    Catch outputQueryShape0,
     HasForward
       outProj
       ( Tensor
@@ -536,11 +518,13 @@ instance
           (weightsLayout <+> vLayout)
           (weightsDevice <+> vDevice)
           (weightsDataType <+> vDataType)
-          (ReshapeF outputQueryShape0 ('Shape '[batchDim, querySeqDim, embedDim]))
+          reshapedOutputQueryShape0
       )
       vGeneratorOutputDevice
       output
       generatorOutputDevice,
+    reshapedOutputQueryShape0 ~ ReshapeF outputQueryShape0 ('Shape '[batchDim, querySeqDim, embedDim]),
+    Catch reshapedOutputQueryShape0,
     SGetShape queryShape,
     SGetShape keyShape,
     SGetShape valueShape,
@@ -602,8 +586,9 @@ instance
                       MultiHeadAttentionWithWeightScaling -> flip mulScalar scaling
                   )
                   mhaScaling
-              >>>= ireturn . (`add` attentionBias)
-              >>>= IxStateT . forward mhaDropout . softmax (SSelectDim (SByIndex @3))
+              >>>= ilift . (`add` attentionBias)
+              >>>= ilift . softmax (SSelectDim (SByIndex @3))
+              >>>= IxStateT . forward mhaDropout
           v =
             ireturn value
               >>>= IxStateT . forward mhaVInProj

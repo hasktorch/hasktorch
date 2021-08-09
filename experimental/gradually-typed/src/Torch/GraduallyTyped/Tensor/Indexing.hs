@@ -22,6 +22,7 @@ module Torch.GraduallyTyped.Tensor.Indexing
     SIndexType (..),
     Indices (..),
     SIndices (..),
+    IndexDims,
     (!),
     slice,
   )

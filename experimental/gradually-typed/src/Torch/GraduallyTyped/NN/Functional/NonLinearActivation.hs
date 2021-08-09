@@ -6,13 +6,14 @@
 
 module Torch.GraduallyTyped.NN.Functional.NonLinearActivation where
 
+import Control.Monad.Catch (MonadThrow)
 import Data.Singletons (SingKind (..))
 import GHC.TypeLits (Nat, Symbol, TypeError)
-import System.IO.Unsafe (unsafePerformIO)
-import Torch.GraduallyTyped.Prelude (forgetIsChecked)
+import Torch.GraduallyTyped.Prelude (Catch, forgetIsChecked)
 import Torch.GraduallyTyped.Shape (By (..), Dim (..), GetDimImplF, Name (..), SSelectDim (..), SelectDim (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.Internal.Cast (cast2)
+import Torch.Internal.GC (unsafeThrowableIO)
 import qualified Torch.Internal.Managed.Native as ATen
 import Type.Errors.Pretty (type (%), type (<>))
 
@@ -63,15 +64,16 @@ type family SoftmaxF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape [D
 --              'Dim ('Name "feature") ('Size 8)])
 softmax,
   logSoftmax ::
-    forall selectDim gradient layout device dataType shape.
+    forall selectDim gradient layout device dataType shape shape' m.
+    (MonadThrow m, shape' ~ SoftmaxF selectDim shape, Catch shape') =>
     SSelectDim selectDim ->
     Tensor gradient layout device dataType shape ->
-    Tensor gradient layout device dataType (SoftmaxF selectDim shape)
+    m (Tensor gradient layout device dataType shape')
 softmax selectDim tensor =
   case forgetIsChecked (fromSing selectDim) of
-    ByName name -> unsafePerformIO $ cast2 ATen.softmax_tn tensor name
-    ByIndex index -> unsafePerformIO $ cast2 ATen.softmax_tl tensor (fromInteger index :: Int)
+    ByName name -> unsafeThrowableIO $ cast2 ATen.softmax_tn tensor name
+    ByIndex index -> unsafeThrowableIO $ cast2 ATen.softmax_tl tensor (fromInteger index :: Int)
 logSoftmax selectDim tensor =
   case forgetIsChecked (fromSing selectDim) of
-    ByName name -> unsafePerformIO $ cast2 ATen.log_softmax_tn tensor name
-    ByIndex index -> unsafePerformIO $ cast2 ATen.log_softmax_tl tensor (fromInteger index :: Int)
+    ByName name -> unsafeThrowableIO $ cast2 ATen.log_softmax_tn tensor name
+    ByIndex index -> unsafeThrowableIO $ cast2 ATen.log_softmax_tl tensor (fromInteger index :: Int)
