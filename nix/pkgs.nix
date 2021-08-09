@@ -1,28 +1,28 @@
+{ compiler-nix-name ? "ghc8105"
+, gitrev
+, lib
+#, stdenv
+#, pkgs
+, haskell-nix
+#, buildPackages
+#, config
+#, cudaSupport
+#, extras
+}:
 # Hasktorch packages overlay
-final: prev: with final;
-  let
-    compiler-nix-name = config.haskellNix.compiler or "ghc8105";
-  in {
-    f
-  }
-
-
-
-
-
-
 pkgs: _: with pkgs; {
-  hasktorchHaskellPackages = import ./haskell.nix {
+
+  hasktorchProject = import ./haskell.nix {
     inherit
       lib
-      stdenv
       pkgs
       haskell-nix
-      buildPackages
-      config
+      #buildPackages
+      #config
+      #cudaSupport
+      #extras
+      compiler-nix-name
       gitrev
-      cudaSupport
-      extras
       ;
   };
 }

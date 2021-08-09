@@ -2,7 +2,7 @@
   description = "Hasktorch";
 
   inputs = {
-    nixpkgs.follows = "haskellNix/nixpkgs-unstable";
+    nixpkgs.follows = "haskell-nix/nixpkgs-unstable";
     haskell-nix = {
       url = "github:input-output-hk/haskell.nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -30,34 +30,46 @@
     };
   };
 
-  outputs = { self, nixpkgs, haskell-nix, utils, ... }:
+  outputs = { self, nixpkgs, haskell-nix, utils, iohkNix, ... }: with utils.lib;
     let
-      inherit (nxpkgs) lib;
+      inherit (nixpkgs) lib;
       inherit (lib);
       inherit (iohkNix.lib) collectExes;
 
-      supportedSystems = import ./supported-systems.nix;
-      defaultSystem = head supportedSystems;
+      #supportedSystems = import ./supported-systems.nix;
+      supportedSystems = ["x86_64-linux"];
+      defaultSystem = builtins.head supportedSystems;
+      gitrev = self.rev or "dirty";
 
       overlays = [
+        haskell-nix.overlay
         iohkNix.overlays.haskell-nix-extra
         (final: prev: {
-          gitref = self.rev or "dirty";
+          inherit gitrev;
           commonLib = lib
             // iohkNix.lib;
         })
-        (import ./nix/pkgs.nix)
-
+        (final: prev: {
+          # This overlay adds our project to pkgs
+          hasktorchProject = import ./nix/haskell.nix (rec {
+            pkgs = prev;
+            compiler-nix-name = "ghc8105";
+            inherit (prev) lib;
+            inherit gitrev;
+          });
+        })
       ];
-    
+
     in eachSystem supportedSystems (system:
       let
-        pkgs = haskellNix.legacyPackages.${system}.appendOverlays overlays;
+        pkgs = import nixpkgs { inherit system overlays; };
+
+        legacyPkgs = haskell-nix.legacyPackages.${system}.appendOverlays overlays;
 
         inherit (pkgs.commonLib) eachEnv environments;
 
         devShell =  import ./shell.nix {
-          inherit pkgs cudaSupport cudaMajorVersion;
+          inherit pkgs;
           withHoogle = true;
         };
 
@@ -67,10 +79,8 @@
 
         exes = collectExes flake.packages;
 
-      in recursiveUpdate flake {
-        inherit environments packages checks;
-
-        legacyPackages = pkgs;
+      in lib.recursiveUpdate flake {
+        inherit environments checks legacyPkgs;
 
         defaultPackage = flake.packages."hasktorch:lib:hasktorch";
 

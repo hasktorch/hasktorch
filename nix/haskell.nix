@@ -3,25 +3,23 @@
 ############################################################################
 { pkgs
 , lib
-, stdenv
-, haskell-nix
-, buildPackages
+#, buildPackages
 , compiler-nix-name
 , profiling ? false
 , gitrev ? null
 , cudaSupport ? false
 , extras ? (_: {})
-, src ? (haskell-nix.haskellLib.cleanGit {
+, src ? (pkgs.haskell-nix.haskellLib.cleanGit {
       name = "hasktorch";
       src = ../.;
   })
-, projectPackages ? lib.attrNames (haskell-nix.haskellLib.selectProjectPackages
-    (haskell-nix.cabalProject' {
+, projectPackages ? lib.attrNames (pkgs.haskell-nix.haskellLib.selectProjectPackages
+    (pkgs.haskell-nix.cabalProject' {
       inherit src compiler-nix-name;
     }).hsPkgs)
 }:
-
 let
+  inherit (pkgs) stdenv;
 
   setupNumCores = libname: ''
       case "$(uname)" in
@@ -50,7 +48,7 @@ let
 
   # This creates the Haskell package set.
   # https://input-output-hk.github.io/haskell.nix/user-guide/projects/
-  pkgSet = haskell-nix.cabalProject' {
+  pkgSet = pkgs.haskell-nix.cabalProject' {
     inherit src compiler-nix-name;
 
     # these extras will provide additional packages
@@ -131,7 +129,7 @@ let
   # setGitRev is a postInstall script to stamp executables with
   # version info. It uses the "gitrev" argument, if set. Otherwise,
   # the revision is sourced from the local git work tree.
-  setGitRev = ''${buildPackages.haskellBuildUtils}/bin/set-git-rev "${gitrev'}" $out/bin/*'';
+  setGitRev = ''${pkgs.buildPackages.haskellBuildUtils}/bin/set-git-rev "${gitrev}" $out/bin/*'';
 in
   pkgSet // {
     inherit projectPackages;
