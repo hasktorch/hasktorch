@@ -111,9 +111,11 @@ library
                      , Torch.GraduallyTyped.Internal.Vector
                      , Torch.GraduallyTyped.Examples.LinearRegression
                      , Torch.GraduallyTyped.Examples.TwoLayerNetwork
+                     , Torch.GraduallyTyped.Examples.NeuralInterpreter
                      , Torch.GraduallyTyped.Examples.NeuralInterpreter.STLC
                      , Torch.GraduallyTyped.Examples.NeuralInterpreter.Gen
                      , Torch.GraduallyTyped.Examples.NeuralInterpreter.Dataset
+                     , Torch.GraduallyTyped.Examples.NeuralInterpreter.Model
                      , Torch.Language
                      , Torch.Language.SpiderSQL
                      , Torch.Data.Parser

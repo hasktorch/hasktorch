@@ -153,7 +153,7 @@ runTwoLayerNetworkExample = do
   -- initialize the model from the model specification
   (model, g1) <- initialize trainingModelSpec g0
 
-  -- buffered collation function that converts a stream of examples into one of batches
+  -- buffered collation function that converts a stream of examples into one of batched tensors
   let collate' =
         let batchSize = 100
             collateFn chunk =

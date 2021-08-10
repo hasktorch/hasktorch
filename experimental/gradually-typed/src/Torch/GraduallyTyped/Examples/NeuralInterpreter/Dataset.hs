@@ -34,9 +34,11 @@ data STLCExample a = STLCExample
     exInputExp :: !(STLC.Exp a),
     exInputPPrint :: !String,
     exInputIds :: ![Int],
+    exDecodedInputIds :: !String,
     exTargetExp :: !(STLC.Exp a),
     exTargetPPrint :: !String,
-    exTargetIds :: ![Int]
+    exTargetIds :: ![Int],
+    exDecodedTargetIds :: !String
   }
   deriving stock (Show, Eq, Ord, Generic)
 
@@ -53,6 +55,11 @@ mkExample tokenizer maxInputLength maxTargetLength seed = flip evalStateT seed .
   exTargetEnc <- liftIO $ Tokenizers.encode tokenizer (exInputPPrint <> "</s>")
   exTargetIds <- liftIO $ Tokenizers.getIDs exTargetEnc
   guard (List.length exTargetIds <= maxTargetLength)
+  exDecodedInputIds <- liftIO $ Tokenizers.decode tokenizer exInputIds
+  exDecodedTargetIds <- liftIO $ Tokenizers.decode tokenizer exTargetIds
+  -- liftIO $ do
+  --   putStrLn $ exInputPPrint <> " -> " <> exTargetPPrint
+  --   putStrLn $ exDecodedInputIds <> " -> " <> exDecodedTargetIds
   pure STLCExample {..}
 
 instance Dataset IO STLCData Seed (STLCExample Int) where
