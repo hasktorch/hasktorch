@@ -464,6 +464,11 @@ type MkTransformerAttentionMaskC transformerDataType gradient layout device data
     Catch (gradient <+> 'Gradient 'WithoutGradient),
     Catch (dataType <+> 'DataType 'Bool),
     Catch (UnsqueezeF ('SelectDim ('ByIndex 1)) shape),
+    Catch
+      ( BroadcastShapesF
+          (UnsqueezeF ('SelectDim ('ByIndex 1)) shape)
+          ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])
+      ),
     output
       ~ Tensor
           ('Gradient 'WithoutGradient)
@@ -498,9 +503,14 @@ mkTransformerAttentionMask transformerDataType attentionMaskBias paddingMask = d
   pmSeqDim <- sGetDimFromShape (SSelectDim $ SByIndex @1) pmShape
   emptyMask <-
     sZeros $
-      TensorSpec (SGradient SWithoutGradient) pmLayout pmDevice transformerDataType (SShape $ SName @"*" :&: SSize @1 :|: pmSeqDim :|: pmSeqDim :|: SNil)
+      TensorSpec
+        (SGradient SWithoutGradient)
+        pmLayout
+        pmDevice
+        transformerDataType
+        (SShape $ SName @"*" :&: SSize @1 :|: pmSeqDim :|: pmSeqDim :|: SNil)
   paddingMask' <- unsqueeze @('SelectDim ('ByIndex 1)) paddingMask
-  pure $ maskedFill paddingMask' attentionMaskBias emptyMask
+  maskedFill paddingMask' attentionMaskBias emptyMask
 
 data MkTransformerAttentionMask (dataType :: DataType DType) where
   MkTransformerAttentionMask ::
@@ -548,6 +558,19 @@ type MkTransformerDecoderAttentionMaskC transformerDataType layout device shape 
     seqDim ~ (shape ! 1),
     Catch seqDim,
     Catch (UnsqueezeF ('SelectDim ('ByIndex 1)) shape),
+    Catch
+      ( BroadcastShapesF
+          ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])
+          (UnsqueezeF ('SelectDim ('ByIndex 1)) shape)
+      ),
+    Catch
+      ( BroadcastShapesF
+          ( BroadcastShapesF
+              ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])
+              (UnsqueezeF ('SelectDim ('ByIndex 1)) shape)
+          )
+          ('Shape '[ 'Dim ('Name "*") ('Size 1), seqDim, seqDim])
+      ),
     output
       ~ Tensor
           ('Gradient 'WithoutGradient)
@@ -603,12 +626,11 @@ mkTransformerDecoderAttentionMask transformerDataType attentionMaskBias paddingM
         transformerDataType
         (SShape $ SName @"*" :&: SSize @1 :|: pmSeqDim :|: pmSeqDim :|: SNil)
   paddingMask' <- unsqueeze @('SelectDim ('ByIndex 1)) paddingMask
-  let booleanMask = causalMask' `logicalOr` paddingMask'
-  pure $
-    maskedFill
-      booleanMask
-      attentionMaskBias
-      emptyMask
+  booleanMask <- causalMask' `logicalOr` paddingMask'
+  maskedFill
+    booleanMask
+    attentionMaskBias
+    emptyMask
 
 data MkTransformerDecoderAttentionMask (dataType :: DataType DType) where
   MkTransformerDecoderAttentionMask ::
@@ -659,6 +681,13 @@ type MkTransformerCrossAttentionMaskC transformerDataType decoderInputShape deco
     Catch (gradient <+> 'Gradient 'WithoutGradient),
     Catch (dataType <+> 'DataType 'Bool),
     Catch (UnsqueezeF ('SelectDim ('ByIndex 1)) shape),
+    Catch
+      ( BroadcastShapesF
+          (UnsqueezeF ('SelectDim ('ByIndex 1)) shape)
+          ( 'Shape
+              '[ 'Dim ('Name "*") ('Size 1), decoderInputSeqDim, seqDim]
+          )
+      ),
     output
       ~ Tensor
           ('Gradient 'WithoutGradient)
@@ -704,7 +733,7 @@ mkTransformerCrossAttentionMask transformerDataType decoderInputShape attentionM
         transformerDataType
         (SShape $ SName @"*" :&: SSize @1 :|: decoderInputSeqDim :|: pmSeqDim :|: SNil)
   paddingMask' <- unsqueeze @('SelectDim ('ByIndex 1)) paddingMask
-  pure $ maskedFill paddingMask' attentionMaskBias emptyMask
+  maskedFill paddingMask' attentionMaskBias emptyMask
 
 data MkTransformerCrossAttentionMask (dataType :: DataType DType) where
   MkTransformerCrossAttentionMask ::

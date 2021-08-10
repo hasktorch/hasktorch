@@ -14,7 +14,7 @@ import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape (BroadcastShapesF)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
-import Torch.Internal.Cast (cast1, cast2, cast3, cast4)
+import qualified Torch.Internal.Cast as ATen (cast1, cast2, cast3, cast4)
 import Torch.Internal.GC (unsafeThrowableIO)
 import qualified Torch.Internal.Managed.Native as ATen
 import Prelude hiding (abs)
@@ -34,7 +34,7 @@ abs ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-abs = unsafePerformIO . cast1 ATen.abs_t
+abs = unsafePerformIO . ATen.cast1 ATen.abs_t
 
 -- | Alias for 'abs'.
 absolute ::
@@ -55,7 +55,7 @@ acos ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-acos = unsafePerformIO . cast1 ATen.acos_t
+acos = unsafePerformIO . ATen.cast1 ATen.acos_t
 
 -- | Returns a new tensor with the arccosine of the elements of 'input':
 -- \[
@@ -71,7 +71,7 @@ acosh ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-acosh = unsafePerformIO . cast1 ATen.acosh_t
+acosh = unsafePerformIO . ATen.cast1 ATen.acosh_t
 
 -- | Element-wise addition of one tensor and another:
 -- \[
@@ -87,8 +87,9 @@ acosh = unsafePerformIO . cast1 ATen.acosh_t
 -- >>> sRandn' = sRandn . TensorSpec (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat)
 -- >>> (a, g') <- sRandn' (SShape $ SName @"feature" :&: SSize @4 :|: SNil) g
 -- >>> (b, _) <- sRandn' (SShape $ SName @"*" :&: SSize @4 :|: SName @"*" :&: SSize @1 :|: SNil) g'
--- >>> :type a `add` b
--- a `add` b
+-- >>> result <- a `add` b
+-- >>> :type result
+-- result
 --   :: Tensor
 --        ('Gradient 'WithGradient)
 --        ('Layout 'Dense)
@@ -112,7 +113,7 @@ add ::
         (dataType <+> dataType')
         shape''
     )
-input `add` other = unsafeThrowableIO $ cast2 ATen.add_tt input other
+input `add` other = unsafeThrowableIO $ ATen.cast2 ATen.add_tt input other
 
 -- | Adds a scalar 'other' to a tensor 'input':
 -- \[
@@ -132,7 +133,7 @@ addScalar ::
   other ->
   -- | output
   Tensor gradient layout device dataType shape
-input `addScalar` other = unsafePerformIO $ cast2 ATen.add_ts input other
+input `addScalar` other = unsafePerformIO $ ATen.cast2 ATen.add_ts input other
 
 -- | Performs the element-wise division of 'tensor1' by 'tensor2',
 -- multiply the result by a scalar 'value' and add it to 'input':
@@ -146,19 +147,26 @@ input `addScalar` other = unsafePerformIO $ cast2 ATen.add_ts input other
 -- Note further that for inputs of type 'Float' or 'Double',
 -- 'value' must be a real number, otherwise it must be an integer.
 addcdiv ::
-  forall value gradient layout device dataType shape.
-  (Scalar value) =>
+  forall value gradient layout device dataType shape gradient' layout' device' dataType' shape' gradient'' layout'' device'' dataType'' shape'' m.
+  (Scalar value, MonadThrow m) =>
   -- | input scalar
   value ->
   -- | first other tensor
   Tensor gradient layout device dataType shape ->
   -- | second other tensor
-  Tensor gradient layout device dataType shape ->
+  Tensor gradient' layout' device' dataType' shape' ->
   -- | input tensor
-  Tensor gradient layout device dataType shape ->
+  Tensor gradient'' layout'' device'' dataType'' shape'' ->
   -- | output tensor
-  Tensor gradient layout device dataType shape
-addcdiv value tensor1 tensor2 input = unsafePerformIO $ cast4 ATen.addcdiv_ttts input tensor1 tensor2 value
+  m
+    ( Tensor
+        (gradient <|> gradient' <|> gradient'')
+        (layout <+> layout' <+> layout'')
+        (device <+> device' <+> device'')
+        (dataType <+> dataType' <+> dataType'')
+        (shape <+> shape' <+> shape'')
+    )
+addcdiv value tensor1 tensor2 input = unsafeThrowableIO $ ATen.cast4 ATen.addcdiv_ttts input tensor1 tensor2 value
 
 -- | Performs the element-wise multiplication of 'tensor1' by 'tensor2',
 -- multiply the result by the scalar 'value' and add it to 'input':
@@ -172,19 +180,26 @@ addcdiv value tensor1 tensor2 input = unsafePerformIO $ cast4 ATen.addcdiv_ttts 
 -- Note further that for inputs of type 'Float' or 'Double',
 -- 'value' must be a real number, otherwise it must be an integer.
 addcmul ::
-  forall scalar gradient layout device dataType shape.
-  (Scalar scalar) =>
+  forall scalar gradient layout device dataType shape gradient' layout' device' dataType' shape' gradient'' layout'' device'' dataType'' shape'' m.
+  (Scalar scalar, MonadThrow m) =>
   -- | input scalar
   scalar ->
   -- | first other tensor
   Tensor gradient layout device dataType shape ->
   -- | second other tensor
-  Tensor gradient layout device dataType shape ->
+  Tensor gradient' layout' device' dataType' shape' ->
   -- | input tensor
-  Tensor gradient layout device dataType shape ->
+  Tensor gradient'' layout'' device'' dataType'' shape'' ->
   -- | output
-  Tensor gradient layout device dataType shape
-addcmul scalar tensor1 tensor2 input = unsafePerformIO $ cast4 ATen.addcmul_ttts input tensor1 tensor2 scalar
+  m
+    ( Tensor
+        (gradient <|> gradient' <|> gradient'')
+        (layout <+> layout' <+> layout'')
+        (device <+> device' <+> device'')
+        (dataType <+> dataType' <+> dataType'')
+        (shape <+> shape' <+> shape'')
+    )
+addcmul scalar tensor1 tensor2 input = unsafeThrowableIO $ ATen.cast4 ATen.addcmul_ttts input tensor1 tensor2 scalar
 
 -- | Returns a new tensor with the arcsine of the elements of 'input':
 -- \[
@@ -196,7 +211,7 @@ asin ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-asin = unsafePerformIO . cast1 ATen.asin_t
+asin = unsafePerformIO . ATen.cast1 ATen.asin_t
 
 -- | Returns a new tensor with the inverse hyperbolic sine of the elements of 'input':
 -- \[
@@ -208,7 +223,7 @@ asinh ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-asinh = unsafePerformIO . cast1 ATen.asinh_t
+asinh = unsafePerformIO . ATen.cast1 ATen.asinh_t
 
 -- | Returns a new tensor with the arctangent of the elements of 'input':
 -- \[
@@ -220,7 +235,7 @@ atan ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-atan = unsafePerformIO . cast1 ATen.atan_t
+atan = unsafePerformIO . ATen.cast1 ATen.atan_t
 
 -- | Returns a new tensor with the inverse hyperbolic tangent of the elements of 'input':
 -- \[
@@ -237,7 +252,7 @@ atanh ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-atanh = unsafePerformIO . cast1 ATen.atanh_t
+atanh = unsafePerformIO . ATen.cast1 ATen.atanh_t
 
 -- | Element-wise arctangent of 'input' and 'other' with consideration of the quadrant.
 -- Returns a new tensor where each element is the signed angle in radians between
@@ -248,19 +263,22 @@ atanh = unsafePerformIO . cast1 ATen.atanh_t
 --
 -- Note that the shapes of 'input' and 'other' must be broadcastable.
 atan2 ::
-  forall gradient layout device dataType shape gradient' layout' device' dataType' shape'.
+  forall gradient layout device dataType shape gradient' layout' device' dataType' shape' shape'' m.
+  (MonadThrow m, shape'' ~ BroadcastShapesF shape shape', Catch shape'') =>
   -- | input tensor
   Tensor gradient layout device dataType shape ->
   -- | other input tensor
   Tensor gradient' layout' device' dataType' shape' ->
   -- | output tensor
-  Tensor
-    (gradient <|> gradient')
-    (layout <+> layout')
-    (device <+> device')
-    (dataType <+> dataType')
-    (BroadcastShapesF shape shape')
-atan2 input other = unsafePerformIO $ cast2 ATen.atan2_tt input other
+  m
+    ( Tensor
+        (gradient <|> gradient')
+        (layout <+> layout')
+        (device <+> device')
+        (dataType <+> dataType')
+        shape''
+    )
+atan2 input other = unsafeThrowableIO $ ATen.cast2 ATen.atan2_tt input other
 
 -- | Computes the bitwise NOT of the given 'input' tensor.
 -- The data type of the 'input' tensor must be 'Bool' or an integral data type.
@@ -271,7 +289,7 @@ bitwiseNot ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device ('DataType 'Bool) shape
-bitwiseNot = unsafePerformIO . cast1 ATen.bitwise_not_t
+bitwiseNot = unsafePerformIO . ATen.cast1 ATen.bitwise_not_t
 
 -- | Computes the bitwise AND of the 'input' and the 'other' tensor.
 -- The data type of the tensors must be 'Bool' or an integral data type.
@@ -280,14 +298,22 @@ bitwiseNot = unsafePerformIO . cast1 ATen.bitwise_not_t
 -- See 'bitwiseAndScalar' for a version of this function where 'other'
 -- is a scalar.
 bitwiseAnd ::
-  forall gradient layout device dataType shape.
+  forall gradient layout device dataType shape gradient' layout' device' dataType' shape' m.
+  MonadThrow m =>
   -- | input tensor
   Tensor gradient layout device dataType shape ->
   -- | other tensor
-  Tensor gradient layout device dataType shape ->
+  Tensor gradient' layout' device' dataType' shape' ->
   -- | output tensor
-  Tensor gradient layout device dataType shape
-input `bitwiseAnd` other = unsafePerformIO $ cast2 ATen.bitwise_and_tt input other
+  m
+    ( Tensor
+        (gradient <|> gradient')
+        (layout <+> layout')
+        (device <+> device')
+        (dataType <+> dataType')
+        (shape <+> shape')
+    )
+input `bitwiseAnd` other = unsafeThrowableIO $ ATen.cast2 ATen.bitwise_and_tt input other
 
 -- | Computes the bitwise AND of the tensor 'input' and the scalar 'other'.
 -- The data type of the inputs must be 'Bool' or an integral data type.
@@ -304,7 +330,7 @@ bitwiseAndScalar ::
   other ->
   -- | output
   Tensor gradient layout device dataType shape
-input `bitwiseAndScalar` other = unsafePerformIO $ cast2 ATen.bitwise_and_ts input other
+input `bitwiseAndScalar` other = unsafePerformIO $ ATen.cast2 ATen.bitwise_and_ts input other
 
 -- | Computes the bitwise OR of the 'input' and the 'other' tensor.
 -- The data type of the tensors must be 'Bool' or an integral data type.
@@ -313,14 +339,22 @@ input `bitwiseAndScalar` other = unsafePerformIO $ cast2 ATen.bitwise_and_ts inp
 -- See 'bitwiseOrScalar' for a version of this function where 'other'
 -- is a scalar.
 bitwiseOr ::
-  forall gradient layout device dataType shape.
+  forall gradient layout device dataType shape gradient' layout' device' dataType' shape' m.
+  MonadThrow m =>
   -- | input tensor
   Tensor gradient layout device dataType shape ->
   -- | other tensor
-  Tensor gradient layout device dataType shape ->
+  Tensor gradient' layout' device' dataType' shape' ->
   -- | output tensor
-  Tensor gradient layout device dataType shape
-input `bitwiseOr` other = unsafePerformIO $ cast2 ATen.bitwise_or_tt input other
+  m
+    ( Tensor
+        (gradient <|> gradient')
+        (layout <+> layout')
+        (device <+> device')
+        (dataType <+> dataType')
+        (shape <+> shape')
+    )
+input `bitwiseOr` other = unsafeThrowableIO $ ATen.cast2 ATen.bitwise_or_tt input other
 
 -- | Computes the bitwise OR of the tensor 'input' and the scalar 'other'.
 -- The data type of the inputs must be 'Bool' or an integral data type.
@@ -337,7 +371,7 @@ bitwiseOrScalar ::
   other ->
   -- | output tensor
   Tensor gradient layout device dataType shape
-input `bitwiseOrScalar` other = unsafePerformIO $ cast2 ATen.bitwise_or_ts input other
+input `bitwiseOrScalar` other = unsafePerformIO $ ATen.cast2 ATen.bitwise_or_ts input other
 
 -- | Computes the bitwise XOR of the 'input' and the 'other' tensor.
 -- The data type of the tensors must be 'Bool' or an integral data type.
@@ -346,14 +380,22 @@ input `bitwiseOrScalar` other = unsafePerformIO $ cast2 ATen.bitwise_or_ts input
 -- See 'bitwiseXorScalar' for a version of this function where 'other'
 -- is a scalar.
 bitwiseXor ::
-  forall gradient layout device dataType shape.
+  forall gradient layout device dataType shape gradient' layout' device' dataType' shape' m.
+  MonadThrow m =>
   -- | input tensor
   Tensor gradient layout device dataType shape ->
   -- | other tensor
-  Tensor gradient layout device dataType shape ->
+  Tensor gradient' layout' device' dataType' shape' ->
   -- | output tensor
-  Tensor gradient layout device dataType shape
-input `bitwiseXor` other = unsafePerformIO $ cast2 ATen.bitwise_xor_tt input other
+  m
+    ( Tensor
+        (gradient <|> gradient')
+        (layout <+> layout')
+        (device <+> device')
+        (dataType <+> dataType')
+        (shape <+> shape')
+    )
+input `bitwiseXor` other = unsafeThrowableIO $ ATen.cast2 ATen.bitwise_xor_tt input other
 
 -- | Computes the bitwise XOR of the tensor 'input' and the scalar 'other'.
 -- The data type of the inputs must be 'Bool' or an integral data type.
@@ -370,7 +412,7 @@ bitwiseXorScalar ::
   other ->
   -- | output tensor
   Tensor gradient layout device dataType shape
-input `bitwiseXorScalar` other = unsafePerformIO $ cast2 ATen.bitwise_xor_ts input other
+input `bitwiseXorScalar` other = unsafePerformIO $ ATen.cast2 ATen.bitwise_xor_ts input other
 
 -- | Returns a new tensor with the ceil of the elements of 'input',
 -- that is, the smallest integer greater than or equal to each element:
@@ -385,7 +427,7 @@ ceil ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-ceil = unsafePerformIO . cast1 ATen.ceil_t
+ceil = unsafePerformIO . ATen.cast1 ATen.ceil_t
 
 -- | Clamp all elements in input into the range [ min, max ]
 -- and return the result as a new tensor.
@@ -400,7 +442,7 @@ clamp ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-clamp min' max' input = unsafePerformIO $ cast3 ATen.clamp__tss input min' max'
+clamp min' max' input = unsafePerformIO $ ATen.cast3 ATen.clamp__tss input min' max'
 
 cos ::
   forall gradient layout device dataType shape.
@@ -408,7 +450,7 @@ cos ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-cos = unsafePerformIO . cast1 ATen.cos_t
+cos = unsafePerformIO . ATen.cast1 ATen.cos_t
 
 cosh ::
   forall gradient layout device dataType shape.
@@ -416,7 +458,7 @@ cosh ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-cosh = unsafePerformIO . cast1 ATen.cosh_t
+cosh = unsafePerformIO . ATen.cast1 ATen.cosh_t
 
 deg2rad ::
   forall gradient layout device dataType shape.
@@ -424,7 +466,7 @@ deg2rad ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-deg2rad = unsafePerformIO . cast1 ATen.deg2rad_t
+deg2rad = unsafePerformIO . ATen.cast1 ATen.deg2rad_t
 
 -- | Element-wise division of the first input tensor, the 'dividend',
 -- by the second input tensor, the 'divisor'.
@@ -440,19 +482,22 @@ deg2rad = unsafePerformIO . cast1 ATen.deg2rad_t
 -- 'trueDivide' or 'trueDivideScalar' which can come in handy
 -- when both the 'dividend' and the 'divisor' have 'Bool' or integer data types.
 div ::
-  forall gradient layout device dataType shape gradient' layout' device' dataType' shape'.
+  forall gradient layout device dataType shape gradient' layout' device' dataType' shape' shape'' m.
+  (MonadThrow m, shape'' ~ BroadcastShapesF shape shape', Catch shape'') =>
   -- | tensor dividend
   Tensor gradient layout device dataType shape ->
   -- | tensor divisor
   Tensor gradient' layout' device' dataType' shape' ->
   -- | tensor output
-  Tensor
-    (gradient <|> gradient')
-    (layout <+> layout')
-    (device <+> device')
-    (dataType <+> dataType')
-    (BroadcastShapesF shape shape')
-dividend `div` divisor = unsafePerformIO $ cast2 ATen.div_tt dividend divisor
+  m
+    ( Tensor
+        (gradient <|> gradient')
+        (layout <+> layout')
+        (device <+> device')
+        (dataType <+> dataType')
+        shape''
+    )
+dividend `div` divisor = unsafeThrowableIO $ ATen.cast2 ATen.div_tt dividend divisor
 
 -- | Element-wise division of the first input, the 'dividend' tensor,
 -- by the second input, the 'divisor' scalar.
@@ -476,7 +521,7 @@ divScalar ::
   divisor ->
   -- | tensor output
   Tensor gradient layout device dataType shape
-dividend `divScalar` divisor = unsafePerformIO $ cast2 ATen.div_ts dividend divisor
+dividend `divScalar` divisor = unsafePerformIO $ ATen.cast2 ATen.div_ts dividend divisor
 
 -- | Computes the logarithmic derivative of the gamma function on 'input':
 -- \[
@@ -488,7 +533,7 @@ digamma ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-digamma = unsafePerformIO . cast1 ATen.digamma_t
+digamma = unsafePerformIO . ATen.cast1 ATen.digamma_t
 
 -- | Computes and returns the error function of each element of 'input':
 -- \[
@@ -504,7 +549,7 @@ erf ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-erf = unsafePerformIO . cast1 ATen.erf_t
+erf = unsafePerformIO . ATen.cast1 ATen.erf_t
 
 -- | Computes the complementary error function of each element of 'input':
 -- \[
@@ -519,7 +564,7 @@ erfc ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-erfc = unsafePerformIO . cast1 ATen.erfc_t
+erfc = unsafePerformIO . ATen.cast1 ATen.erfc_t
 
 -- | Computes the inverse error function of each element of 'input':
 -- \[
@@ -536,7 +581,7 @@ erfinv ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-erfinv = unsafePerformIO . cast1 ATen.erfinv_t
+erfinv = unsafePerformIO . ATen.cast1 ATen.erfinv_t
 
 -- | Returns a new tensor with the exponential of the elements of the input tensor 'input':
 -- \[
@@ -551,7 +596,7 @@ exp ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-exp = unsafePerformIO . cast1 ATen.exp_t
+exp = unsafePerformIO . ATen.cast1 ATen.exp_t
 
 -- | Returns a new tensor with the exponential of the elements minus 1 of 'input':
 -- \[
@@ -565,7 +610,7 @@ expm1 ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-expm1 = unsafePerformIO . cast1 ATen.expm1_t
+expm1 = unsafePerformIO . ATen.cast1 ATen.expm1_t
 
 -- | Returns a new tensor with the floor of the elements of 'input',
 -- that is, the largest integer less than or equal to each element.:
@@ -580,7 +625,7 @@ floor ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-floor = unsafePerformIO . cast1 ATen.floor_t
+floor = unsafePerformIO . ATen.cast1 ATen.floor_t
 
 -- | Return the element-wise division of the tensor 'dividend' by the tensor 'divisor'
 -- rounded down to the nearest integer:
@@ -591,14 +636,22 @@ floor = unsafePerformIO . cast1 ATen.floor_t
 -- See 'floorDivideScalar' for a version of this function where
 -- 'divisor' is a scalar.
 floorDivide ::
-  forall gradient layout device dataType shape.
+  forall gradient layout device dataType shape gradient' layout' device' dataType' shape' shape'' m.
+  (MonadThrow m, shape'' ~ BroadcastShapesF shape shape', Catch shape'') =>
   -- | dividend tensor
   Tensor gradient layout device dataType shape ->
   -- | divisor tensor
-  Tensor gradient layout device dataType shape ->
+  Tensor gradient' layout' device' dataType' shape' ->
   -- | output tensor
-  Tensor gradient layout device dataType shape
-dividend `floorDivide` divisor = unsafePerformIO $ cast2 ATen.floor_divide_tt dividend divisor
+  m
+    ( Tensor
+        (gradient <|> gradient')
+        (layout <+> layout')
+        (device <+> device')
+        (dataType <+> dataType')
+        shape''
+    )
+dividend `floorDivide` divisor = unsafeThrowableIO $ ATen.cast2 ATen.floor_divide_tt dividend divisor
 
 -- | Return the division of the tensor 'dividend' by the scalar 'divisor'
 -- rounded down to the nearest integer:
@@ -617,7 +670,7 @@ floorDivideScalar ::
   divisor ->
   -- | output tensor
   Tensor gradient layout device dataType shape
-dividend `floorDivideScalar` divisor = unsafePerformIO $ cast2 ATen.floor_divide_ts dividend divisor
+dividend `floorDivideScalar` divisor = unsafePerformIO $ ATen.cast2 ATen.floor_divide_ts dividend divisor
 
 -- | Computes the element-wise remainder of the division of
 -- the tensor 'dividend' by the tensor 'divisor'.
@@ -627,14 +680,22 @@ dividend `floorDivideScalar` divisor = unsafePerformIO $ cast2 ATen.floor_divide
 -- See 'fmodScalar' for a version of this function where
 -- 'divisor' is a scalar.
 fmod ::
-  forall gradient layout device dataType shape.
+  forall gradient layout device dataType shape gradient' layout' device' dataType' shape' shape'' m.
+  (MonadThrow m, shape'' ~ BroadcastShapesF shape shape', Catch shape'') =>
   -- | dividend tensor
   Tensor gradient layout device dataType shape ->
   -- | divisor scalar
-  Tensor gradient layout device dataType shape ->
+  Tensor gradient' layout' device' dataType' shape' ->
   -- | output tensor
-  Tensor gradient layout device dataType shape
-dividend `fmod` divisor = unsafePerformIO $ cast2 ATen.fmod_tt dividend divisor
+  m
+    ( Tensor
+        (gradient <|> gradient')
+        (layout <+> layout')
+        (device <+> device')
+        (dataType <+> dataType')
+        shape''
+    )
+dividend `fmod` divisor = unsafeThrowableIO $ ATen.cast2 ATen.fmod_tt dividend divisor
 
 -- | Computes the element-wise remainder of the division of
 -- the tensor 'dividend' by the scalar 'divisor'.
@@ -652,7 +713,7 @@ fmodScalar ::
   Tensor gradient layout device dataType shape ->
   -- | output tensor
   Tensor gradient layout device dataType shape
-fmodScalar scalar tensor = unsafePerformIO $ cast2 ATen.fmod_ts tensor scalar
+fmodScalar scalar tensor = unsafePerformIO $ ATen.cast2 ATen.fmod_ts tensor scalar
 
 -- | Computes the fractional portion of each element in 'input':
 -- \[
@@ -664,7 +725,7 @@ frac ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-frac = unsafePerformIO . cast1 ATen.frac_t
+frac = unsafePerformIO . ATen.cast1 ATen.frac_t
 
 -- | Linear interpolation of two tensors, 'start' and 'end', based on a tensor 'weight'.
 -- For linear interpolations based on a scalar see 'lerpScalar'.
@@ -676,16 +737,24 @@ frac = unsafePerformIO . cast1 ATen.frac_t
 --
 -- Note that the shapes of 'start', 'end', and also 'weight' must be broadcastable.
 lerp ::
-  forall gradient layout device dataType shape.
+  forall gradient layout device dataType shape gradient' layout' device' dataType' shape' gradient'' layout'' device'' dataType'' shape'' shape''' m.
+  (MonadThrow m, shape''' ~ BroadcastShapesF shape (BroadcastShapesF shape' shape''), Catch shape''') =>
   -- | weight
   Tensor gradient layout device dataType shape ->
   -- | start
-  Tensor gradient layout device dataType shape ->
+  Tensor gradient' layout' device' dataType' shape' ->
   -- | end
-  Tensor gradient layout device dataType shape ->
+  Tensor gradient'' layout'' device'' dataType'' shape'' ->
   -- | output
-  Tensor gradient layout device dataType shape
-lerp weight start end = unsafePerformIO $ cast3 ATen.lerp_ttt start end weight
+  m
+    ( Tensor
+        (gradient <|> gradient' <|> gradient'')
+        (layout <+> layout' <+> layout'')
+        (device <+> device' <+> device'')
+        (dataType <+> dataType' <+> dataType'')
+        shape'''
+    )
+lerp weight start end = unsafeThrowableIO $ ATen.cast3 ATen.lerp_ttt start end weight
 
 -- | Linear interpolation of two tensors, 'start' and 'end', based on a scalar 'weight'.
 -- For linear interpolations based on a tensor see 'lerp'.
@@ -697,17 +766,24 @@ lerp weight start end = unsafePerformIO $ cast3 ATen.lerp_ttt start end weight
 --
 -- Note that the shapes of 'start' and 'end' must be broadcastable.
 lerpScalar ::
-  forall weight gradient layout device dataType shape.
-  (Scalar weight) =>
+  forall weight gradient layout device dataType shape gradient' layout' device' dataType' shape' shape'' m.
+  (Scalar weight, MonadThrow m, shape'' ~ BroadcastShapesF shape shape', Catch shape'') =>
   -- | weight
   weight ->
   -- | start
   Tensor gradient layout device dataType shape ->
   -- | end
-  Tensor gradient layout device dataType shape ->
+  Tensor gradient' layout' device' dataType' shape' ->
   -- | output
-  Tensor gradient layout device dataType shape
-lerpScalar weight start end = unsafePerformIO $ cast3 ATen.lerp_tts start end weight
+  m
+    ( Tensor
+        (gradient <|> gradient')
+        (layout <+> layout')
+        (device <+> device')
+        (dataType <+> dataType')
+        shape''
+    )
+lerpScalar weight start end = unsafeThrowableIO $ ATen.cast3 ATen.lerp_tts start end weight
 
 -- | Computes the logarithm of the gamma function on 'input':
 -- \[
@@ -719,7 +795,7 @@ lgamma ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-lgamma = unsafePerformIO . cast1 ATen.lgamma_t
+lgamma = unsafePerformIO . ATen.cast1 ATen.lgamma_t
 
 -- | Returns a new tensor with the natural logarithm of the elements of 'input':
 -- \[
@@ -731,7 +807,7 @@ log ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-log = unsafePerformIO . cast1 ATen.log_t
+log = unsafePerformIO . ATen.cast1 ATen.log_t
 
 -- | Returns a new tensor with the decimal logarithm of the elements of 'input':
 -- \[
@@ -743,7 +819,7 @@ log10 ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-log10 = unsafePerformIO . cast1 ATen.log10_t
+log10 = unsafePerformIO . ATen.cast1 ATen.log10_t
 
 -- | Returns a new tensor with the natural logarithm of \(1 + \mathrm{input}\):
 -- \[
@@ -758,7 +834,7 @@ log1p ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-log1p = unsafePerformIO . cast1 ATen.log1p_t
+log1p = unsafePerformIO . ATen.cast1 ATen.log1p_t
 
 -- | Returns a new tensor with the logarithm to the base 2 of the elements of 'input':
 -- \[
@@ -770,7 +846,7 @@ log2 ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-log2 = unsafePerformIO . cast1 ATen.log2_t
+log2 = unsafePerformIO . ATen.cast1 ATen.log2_t
 
 -- | Logarithm of the sum of exponentiations of the inputs.
 -- Calculates pointwise the function \(\log \left(\exp x + \exp y\right)\).
@@ -782,42 +858,66 @@ log2 = unsafePerformIO . cast1 ATen.log2_t
 --
 -- 'logaddexp' must not be confused with 'logsumexp' which performs a reduction on a single tensor.
 logaddexp ::
-  forall gradient layout device dataType shape.
+  forall gradient layout device dataType shape gradient' layout' device' dataType' shape' shape'' m.
+  (MonadThrow m, shape'' ~ BroadcastShapesF shape shape', Catch shape'') =>
   -- | other
   Tensor gradient layout device dataType shape ->
   -- | input
-  Tensor gradient layout device dataType shape ->
+  Tensor gradient' layout' device' dataType' shape' ->
   -- | output
-  Tensor gradient layout device dataType shape
-logaddexp other input = unsafePerformIO $ cast2 ATen.logaddexp_tt input other
+  m
+    ( Tensor
+        (gradient <|> gradient')
+        (layout <+> layout')
+        (device <+> device')
+        (dataType <+> dataType')
+        shape''
+    )
+logaddexp other input = unsafeThrowableIO $ ATen.cast2 ATen.logaddexp_tt input other
 
 -- | Logarithm of the sum of exponentiations of the inputs in base-2.
 -- Calculates pointwise the function \(\log_2 \left(2^x + 2^y\right)\).
 --
 -- See 'logaddexp' for further details.
 logaddexp2 ::
-  forall gradient layout device dataType shape.
+  forall gradient layout device dataType shape gradient' layout' device' dataType' shape' shape'' m.
+  (MonadThrow m, shape'' ~ BroadcastShapesF shape shape', Catch shape'') =>
   -- | other
   Tensor gradient layout device dataType shape ->
   -- | input
-  Tensor gradient layout device dataType shape ->
+  Tensor gradient' layout' device' dataType' shape' ->
   -- | output
-  Tensor gradient layout device dataType shape
-logaddexp2 other input = unsafePerformIO $ cast2 ATen.logaddexp2_tt input other
+  m
+    ( Tensor
+        (gradient <|> gradient')
+        (layout <+> layout')
+        (device <+> device')
+        (dataType <+> dataType')
+        shape''
+    )
+logaddexp2 other input = unsafeThrowableIO $ ATen.cast2 ATen.logaddexp2_tt input other
 
 -- | Computes the element-wise logical AND of the given input tensors.
 -- The output tensor will have the 'Bool' data type.
 -- If the input tensors are not a bool tensors,
 -- then zeros are treated as 'False' and nonzeros are treated as 'True'.
 logicalAnd ::
-  forall gradient layout device dataType shape.
+  forall gradient layout device dataType shape gradient' layout' device' dataType' shape' shape'' m.
+  (MonadThrow m, shape'' ~ BroadcastShapesF shape shape', Catch shape'') =>
   -- | the input tensor
   Tensor gradient layout device dataType shape ->
   -- | the tensor to compute AND with
-  Tensor gradient layout device dataType shape ->
+  Tensor gradient' layout' device' dataType' shape' ->
   -- | the output tensor
-  Tensor gradient layout device ('DataType 'Bool) shape
-input `logicalAnd` other = unsafePerformIO $ cast2 ATen.logical_and_tt input other
+  m
+    ( Tensor
+        ('Gradient 'WithoutGradient)
+        (layout <+> layout')
+        (device <+> device')
+        ('DataType 'Bool)
+        shape''
+    )
+input `logicalAnd` other = unsafeThrowableIO $ ATen.cast2 ATen.logical_and_tt input other
 
 -- | Computes the element-wise logical NOT of the given input tensor.
 -- The output tensor will have the 'Bool' data type.
@@ -829,40 +929,51 @@ logicalNot ::
   Tensor gradient layout device dataType shape ->
   -- | the output tensor
   Tensor ('Gradient 'WithoutGradient) layout device ('DataType 'Bool) shape
-logicalNot = unsafePerformIO . cast1 ATen.logical_not_t
+logicalNot = unsafePerformIO . ATen.cast1 ATen.logical_not_t
 
 -- | Computes the element-wise logical OR of the given input tensors.
 -- The output tensor will have the 'Bool' data type.
 -- If the input tensors are not a bool tensors,
 -- then zeros are treated as 'False' and nonzeros are treated as 'True'.
 logicalOr ::
-  forall gradient layout device dataType shape gradient' layout' device' dataType' shape'.
+  forall gradient layout device dataType shape gradient' layout' device' dataType' shape' shape'' m.
+  (MonadThrow m, shape'' ~ BroadcastShapesF shape shape', Catch shape'') =>
   -- | the input tensor
   Tensor gradient layout device dataType shape ->
   -- | the tensor to compute OR with
   Tensor gradient' layout' device' dataType' shape' ->
   -- | the output tensor
-  Tensor
-    ('Gradient 'WithoutGradient)
-    (layout <+> layout')
-    (device <+> device')
-    ('DataType 'Bool)
-    (BroadcastShapesF shape shape')
-input `logicalOr` other = unsafePerformIO $ cast2 ATen.logical_or_tt input other
+  m
+    ( Tensor
+        ('Gradient 'WithoutGradient)
+        (layout <+> layout')
+        (device <+> device')
+        ('DataType 'Bool)
+        shape''
+    )
+input `logicalOr` other = unsafeThrowableIO $ ATen.cast2 ATen.logical_or_tt input other
 
 -- | Computes the element-wise logical XOR of the given input tensors.
 -- The output tensor will have the 'Bool' data type.
 -- If the input tensors are not a bool tensors,
 -- then zeros are treated as 'False' and nonzeros are treated as 'True'.
 logicalXor ::
-  forall gradient layout device dataType shape.
+  forall gradient layout device dataType shape gradient' layout' device' dataType' shape' shape'' m.
+  (MonadThrow m, shape'' ~ BroadcastShapesF shape shape', Catch shape'') =>
   -- | the input tensor
   Tensor gradient layout device dataType shape ->
   -- | the tensor to compute XOR with
-  Tensor gradient layout device dataType shape ->
+  Tensor gradient' layout' device' dataType' shape' ->
   -- | the output tensor
-  Tensor gradient layout device ('DataType 'Bool) shape
-input `logicalXor` other = unsafePerformIO $ cast2 ATen.logical_xor_tt input other
+  m
+    ( Tensor
+        ('Gradient 'WithoutGradient)
+        (layout <+> layout')
+        (device <+> device')
+        ('DataType 'Bool)
+        shape''
+    )
+input `logicalXor` other = unsafeThrowableIO $ ATen.cast2 ATen.logical_xor_tt input other
 
 -- | Element-wise multiplication of two tensors:
 -- \[
@@ -874,19 +985,22 @@ input `logicalXor` other = unsafePerformIO $ cast2 ATen.logical_xor_tt input oth
 -- See 'mulScalar' for a version of this function where
 -- the 'other' input is a scalar.
 mul ::
-  forall gradient layout device dataType shape gradient' layout' device' dataType' shape'.
+  forall gradient layout device dataType shape gradient' layout' device' dataType' shape' shape'' m.
+  (MonadThrow m, shape'' ~ BroadcastShapesF shape shape', Catch shape'') =>
   -- | input tensor
   Tensor gradient layout device dataType shape ->
   -- | other tensor
   Tensor gradient' layout' device' dataType' shape' ->
   -- | output tensor
-  Tensor
-    (gradient <|> gradient')
-    (layout <+> layout')
-    (device <+> device')
-    (dataType <+> dataType')
-    (BroadcastShapesF shape shape')
-input `mul` other = unsafePerformIO $ cast2 ATen.mul_tt input other
+  m
+    ( Tensor
+        (gradient <|> gradient')
+        (layout <+> layout')
+        (device <+> device')
+        (dataType <+> dataType')
+        shape''
+    )
+input `mul` other = unsafeThrowableIO $ ATen.cast2 ATen.mul_tt input other
 
 -- Multiplies each element of the input 'input' with the scalar 'other' and returns a new resulting tensor:
 -- \[
@@ -906,7 +1020,7 @@ mulScalar ::
   other ->
   -- | tensor output
   Tensor gradient layout device dataType shape
-input `mulScalar` other = unsafePerformIO $ cast2 ATen.mul_ts input other
+input `mulScalar` other = unsafePerformIO $ ATen.cast2 ATen.mul_ts input other
 
 -- | Computes the multivariate log-gamma function with dimension 'p' element-wise, given by
 -- \[
@@ -924,7 +1038,7 @@ mvlgamma ::
   Tensor gradient layout device dataType shape ->
   -- | the output tensor
   Tensor gradient layout device dataType shape
-mvlgamma p input = unsafePerformIO $ cast2 ATen.mvlgamma_tl input p
+mvlgamma p input = unsafePerformIO $ ATen.cast2 ATen.mvlgamma_tl input p
 
 -- | Returns a new tensor with the negative of the elements of 'input':
 -- \[
@@ -936,7 +1050,7 @@ neg ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-neg = unsafePerformIO . cast1 ATen.neg_t
+neg = unsafePerformIO . ATen.cast1 ATen.neg_t
 
 -- | Computes the \(n\)-th derivative of the digamma function \(\psi\) on the 'input',
 -- where \(n \ge 0\).
@@ -954,7 +1068,7 @@ polygamma ::
   Tensor gradient layout device dataType shape ->
   -- | the output tensor
   Tensor gradient layout device dataType shape
-polygamma n input = unsafePerformIO $ cast2 ATen.polygamma_lt n input
+polygamma n input = unsafePerformIO $ ATen.cast2 ATen.polygamma_lt n input
 
 -- | Takes the power of each element in the tensor 'input'
 -- with the corresponding element in the tensor 'exponent' and
@@ -970,19 +1084,22 @@ polygamma n input = unsafePerformIO $ cast2 ATen.polygamma_lt n input
 -- \mathrm{output}_i = \mathrm{input}_i^{\mathrm{exponent}_i}.
 -- \]
 pow ::
-  forall gradient layout device dataType shape gradient' layout' device' dataType' shape'.
+  forall gradient layout device dataType shape gradient' layout' device' dataType' shape' shape'' m.
+  (MonadThrow m, shape'' ~ BroadcastShapesF shape shape', Catch shape'') =>
   -- | tensor input
   Tensor gradient' layout' device' dataType' shape' ->
   -- | tensor exponent
   Tensor gradient layout device dataType shape ->
   -- | tensor output
-  Tensor
-    (gradient <|> gradient')
-    (layout <+> layout')
-    (device <+> device')
-    (dataType <+> dataType')
-    (BroadcastShapesF shape shape')
-input `pow` exponent' = unsafePerformIO $ cast2 ATen.pow_tt input exponent'
+  m
+    ( Tensor
+        (gradient <|> gradient')
+        (layout <+> layout')
+        (device <+> device')
+        (dataType <+> dataType')
+        shape''
+    )
+input `pow` exponent' = unsafeThrowableIO $ ATen.cast2 ATen.pow_tt input exponent'
 
 -- | Takes the power of each element in the tensor 'input' with the scalar 'exponent' and
 -- returns a tensor with the result.
@@ -1004,7 +1121,7 @@ powScalar ::
   exponent ->
   -- | tensor output
   Tensor gradient layout device dataType shape
-input `powScalar` exponent' = unsafePerformIO $ cast2 ATen.pow_ts input exponent'
+input `powScalar` exponent' = unsafePerformIO $ ATen.cast2 ATen.pow_ts input exponent'
 
 -- | Takes the power of the scalar 'input' with each element in the tensor 'exponent' and
 -- returns a tensor with the result.
@@ -1026,7 +1143,7 @@ powTensor ::
   Tensor gradient layout device dataType shape ->
   -- | tensor output
   Tensor gradient layout device dataType shape
-input `powTensor` exponent' = unsafePerformIO $ cast2 ATen.pow_st input exponent'
+input `powTensor` exponent' = unsafePerformIO $ ATen.cast2 ATen.pow_st input exponent'
 
 -- | Returns a new tensor with each of the elements of 'input'
 -- converted from angles in radians to degrees.
@@ -1036,7 +1153,7 @@ rad2deg ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-rad2deg = unsafePerformIO . cast1 ATen.rad2deg_t
+rad2deg = unsafePerformIO . ATen.cast1 ATen.rad2deg_t
 
 -- | Returns a new tensor with the reciprocal of the elements of 'input':
 -- \[
@@ -1048,7 +1165,7 @@ reciprocal ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-reciprocal = unsafePerformIO . cast1 ATen.reciprocal_t
+reciprocal = unsafePerformIO . ATen.cast1 ATen.reciprocal_t
 
 -- | Computes the element-wise remainder of division.
 --
@@ -1057,13 +1174,22 @@ reciprocal = unsafePerformIO . cast1 ATen.reciprocal_t
 --
 -- When other is a tensor, the shapes of input and other must be broadcastable.
 remainder ::
-  forall gradient layout device dataType shape.
+  forall gradient layout device dataType shape gradient' layout' device' dataType' shape' shape'' m.
+  (MonadThrow m, shape'' ~ BroadcastShapesF shape shape', Catch shape'') =>
   -- | dividend
   Tensor gradient layout device dataType shape ->
   -- | divisor
-  Tensor gradient layout device dataType shape ->
-  Tensor gradient layout device dataType shape
-dividend `remainder` divisor = unsafePerformIO $ cast2 ATen.remainder_tt dividend divisor
+  Tensor gradient' layout' device' dataType' shape' ->
+  -- | output
+  m
+    ( Tensor
+        (gradient <|> gradient')
+        (layout <+> layout')
+        (device <+> device')
+        (dataType <+> dataType')
+        shape''
+    )
+dividend `remainder` divisor = unsafeThrowableIO $ ATen.cast2 ATen.remainder_tt dividend divisor
 
 -- | Returns a new tensor with each of the elements of 'input' rounded to the closest integer.
 -- Note that the data type is unchanged.
@@ -1073,7 +1199,7 @@ round ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-round = unsafePerformIO . cast1 ATen.round_t
+round = unsafePerformIO . ATen.cast1 ATen.round_t
 
 -- | Returns a new tensor with the reciprocal of the square-root of
 -- each of the elements of 'input':
@@ -1086,7 +1212,7 @@ rsqrt ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-rsqrt = unsafePerformIO . cast1 ATen.rsqrt_t
+rsqrt = unsafePerformIO . ATen.cast1 ATen.rsqrt_t
 
 -- | Returns a new tensor with the sigmoid of the elements of 'input':
 -- \[
@@ -1098,7 +1224,7 @@ sigmoid ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-sigmoid = unsafePerformIO . cast1 ATen.sigmoid_t
+sigmoid = unsafePerformIO . ATen.cast1 ATen.sigmoid_t
 
 -- | Returns a new tensor with the signs of the elements of 'input':
 -- \[
@@ -1114,7 +1240,7 @@ sign ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-sign = unsafePerformIO . cast1 ATen.sign_t
+sign = unsafePerformIO . ATen.cast1 ATen.sign_t
 
 -- | Returns a new tensor with the sine of the elements of 'input':
 -- \[
@@ -1126,7 +1252,7 @@ sin ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-sin = unsafePerformIO . cast1 ATen.sin_t
+sin = unsafePerformIO . ATen.cast1 ATen.sin_t
 
 -- | Returns a new tensor with the hyperbolic sine of the elements of 'input':
 -- \[
@@ -1138,7 +1264,7 @@ sinh ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-sinh = unsafePerformIO . cast1 ATen.sinh_t
+sinh = unsafePerformIO . ATen.cast1 ATen.sinh_t
 
 -- | Element-wise subtraction of one tensor from another:
 -- \[
@@ -1150,19 +1276,22 @@ sinh = unsafePerformIO . cast1 ATen.sinh_t
 -- See 'subScalar' for a version of this function where
 -- the 'other' input is a scalar.
 sub ::
-  forall gradient layout device dataType shape gradient' layout' device' dataType' shape'.
+  forall gradient layout device dataType shape gradient' layout' device' dataType' shape' shape'' m.
+  (MonadThrow m, shape'' ~ BroadcastShapesF shape shape', Catch shape'') =>
   -- | input tensor
   Tensor gradient layout device dataType shape ->
   -- | other tensor
   Tensor gradient' layout' device' dataType' shape' ->
   -- | output tensor
-  Tensor
-    (gradient <|> gradient)
-    (layout <+> layout')
-    (device <+> device')
-    (dataType <+> dataType')
-    (BroadcastShapesF shape shape')
-input `sub` other = unsafePerformIO $ cast2 ATen.sub_tt input other
+  m
+    ( Tensor
+        (gradient <|> gradient)
+        (layout <+> layout')
+        (device <+> device')
+        (dataType <+> dataType')
+        shape''
+    )
+input `sub` other = unsafeThrowableIO $ ATen.cast2 ATen.sub_tt input other
 
 -- | Subtracts a scalar 'other' from a tensor 'input':
 -- \[
@@ -1180,7 +1309,7 @@ subScalar ::
   other ->
   -- | output tensor
   Tensor gradient layout device dataType shape
-input `subScalar` other = unsafePerformIO $ cast2 ATen.sub_ts input other
+input `subScalar` other = unsafePerformIO $ ATen.cast2 ATen.sub_ts input other
 
 -- | Returns a new tensor with the square-root of the elements of 'input':
 -- \[
@@ -1192,7 +1321,7 @@ sqrt ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-sqrt = unsafePerformIO . cast1 ATen.sqrt_t
+sqrt = unsafePerformIO . ATen.cast1 ATen.sqrt_t
 
 -- | Returns a new tensor with the square of the elements of 'input':
 -- \[
@@ -1206,7 +1335,7 @@ square ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-square = unsafePerformIO . cast1 ATen.square_t
+square = unsafePerformIO . ATen.cast1 ATen.square_t
 
 -- | Returns a new tensor with the tangent of the elements of 'input':
 -- \[
@@ -1218,7 +1347,7 @@ tan ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-tan = unsafePerformIO . cast1 ATen.tan_t
+tan = unsafePerformIO . ATen.cast1 ATen.tan_t
 
 -- | Returns a new tensor with the hyperbolic tangent of the elements of 'input':
 -- \[
@@ -1230,7 +1359,7 @@ tanh ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-tanh = unsafePerformIO . cast1 ATen.tanh_t
+tanh = unsafePerformIO . ATen.cast1 ATen.tanh_t
 
 -- | Performs “true division”
 -- that always computes the division in floating point:
@@ -1246,19 +1375,22 @@ tanh = unsafePerformIO . cast1 ATen.tanh_t
 -- See 'trueDivideScalar' for a version of this function
 -- where the divisor is a scalar.
 trueDivide ::
-  forall gradient layout device dataType shape gradient' layout' device' dataType' shape'.
+  forall gradient layout device dataType shape gradient' layout' device' dataType' shape' shape'' m.
+  (MonadThrow m, shape'' ~ BroadcastShapesF shape shape', Catch shape'') =>
   -- | tensor dividend
   Tensor gradient layout device dataType shape ->
   -- | tensor divisor
   Tensor gradient' layout' device' dataType' shape' ->
   -- | tensor output
-  Tensor
-    (gradient <|> gradient')
-    (layout <+> layout')
-    (device <+> device')
-    (dataType <+> dataType')
-    (shape <+> shape')
-dividend `trueDivide` divisor = unsafePerformIO $ cast2 ATen.true_divide_tt dividend divisor
+  m
+    ( Tensor
+        (gradient <|> gradient')
+        (layout <+> layout')
+        (device <+> device')
+        (dataType <+> dataType')
+        shape''
+    )
+dividend `trueDivide` divisor = unsafeThrowableIO $ ATen.cast2 ATen.true_divide_tt dividend divisor
 
 -- | Performs “true division”
 -- that always computes the division in floating point:
@@ -1282,7 +1414,7 @@ trueDivideScalar ::
   other ->
   -- | tensor output
   Tensor gradient layout device dataType shape
-dividend `trueDivideScalar` divisor = unsafePerformIO $ cast2 ATen.true_divide_ts dividend divisor
+dividend `trueDivideScalar` divisor = unsafePerformIO $ ATen.cast2 ATen.true_divide_ts dividend divisor
 
 -- Returns a new tensor with the truncated integer values of the elements of 'input'.
 --
@@ -1293,4 +1425,4 @@ trunc ::
   Tensor gradient layout device dataType shape ->
   -- | output
   Tensor gradient layout device dataType shape
-trunc = unsafePerformIO . cast1 ATen.trunc_t
+trunc = unsafePerformIO . ATen.cast1 ATen.trunc_t

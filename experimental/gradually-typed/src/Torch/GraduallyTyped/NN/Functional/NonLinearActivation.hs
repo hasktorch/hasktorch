@@ -51,7 +51,7 @@ type family SoftmaxF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape [D
 --
 -- >>> g <- sMkGenerator (SDevice SCPU) 0
 -- >>> (input, _) <- sRandn (TensorSpec (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SName @"batch" :&: SSize @32 :|: SName @"feature" :&: SSize @8 :|: SNil)) g
--- >>> result = softmax (SSelectDim (SByName @"feature")) input
+-- >>> result <- softmax (SSelectDim (SByName @"feature")) input
 -- >>> :type result
 -- result
 --   :: Tensor

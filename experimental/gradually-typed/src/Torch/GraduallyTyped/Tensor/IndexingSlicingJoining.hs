@@ -590,8 +590,9 @@ type family SqueezeDimF selectDim shape where
 -- | Squeeze a particular dimension.
 --
 -- >>> t <- sOnes $ TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SNoName :&: SSize @2 :|: SNoName :&: SSize @1 :|: SNoName :&: SSize @2 :|: SNoName :&: SSize @1 :|: SNoName :&: SSize @2 :|: SNil)
--- >>> :t sSqueezeDim (SSelectDim $ SByIndex @1) t
--- sSqueezeDim (SSelectDim $ SByIndex @1) t
+-- >>> result <- sSqueezeDim (SSelectDim $ SByIndex @1) t
+-- >>> :t result
+-- result
 --   :: Control.Monad.Catch.MonadThrow m =>
 --      m (Tensor
 --           ('Gradient 'WithoutGradient)
@@ -601,13 +602,11 @@ type family SqueezeDimF selectDim shape where
 --           ('Shape
 --              '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 2),
 --                 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 2)]))
--- >>> sSqueezeDim (SSelectDim $ SByIndex @1) t
+-- >>> result
 -- Tensor Float [2,2,1,2] [[[[ 1.0000   ,  1.0000   ]],
 --                          [[ 1.0000   ,  1.0000   ]]],
 --                         [[[ 1.0000   ,  1.0000   ]],
 --                          [[ 1.0000   ,  1.0000   ]]]]
--- >>> dtype &&& shape $ squeezeDim @3 (ones :: CPUTensor 'D.Float '[2,1,2,1,2])
--- (Float,[2,1,2,2])
 sSqueezeDim ::
   forall selectDim gradient layout device dataType shape shape' m.
   (MonadThrow m, shape' ~ SqueezeDimF selectDim shape, Catch shape') =>
@@ -824,34 +823,34 @@ type family GatherDimF selectDim indexShape inputShape where
 -- >>> sToTensor' = sToTensor (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU)
 -- >>> t <- sToTensor' [[1 :: Float, 2], [3, 4]]
 -- >>> idx <- sToTensor' [[0 :: Int, 0], [1, 0]]
--- >>> :t sGatherDim (SSelectDim $ SByIndex @1) idx t
--- sGatherDim (SSelectDim $ SByIndex @1) idx t
---   :: Control.Monad.Catch.MonadThrow m =>
---      m (Tensor
---           ('Gradient 'WithoutGradient)
---           ('Layout 'Dense)
---           ('Device 'CPU)
---           ('DataType 'Float)
---           ('Shape
---              '[ 'Dim ('Name "*") 'UncheckedSize,
---                 'Dim ('Name "*") 'UncheckedSize]))
--- >>> sGatherDim (SSelectDim $ SByIndex @1) idx t
+-- >>> result <- sGatherDim (SSelectDim $ SByIndex @1) idx t
+-- >>> :t result
+-- result
+--   :: Tensor
+--        ('Gradient 'WithoutGradient)
+--        ('Layout 'Dense)
+--        ('Device 'CPU)
+--        ('DataType 'Float)
+--        ('Shape
+--           '[ 'Dim ('Name "*") 'UncheckedSize,
+--              'Dim ('Name "*") 'UncheckedSize]))
+-- >>> result
 -- Tensor Float [2,2] [[ 1.0000   ,  1.0000   ],
 --                     [ 4.0000   ,  3.0000   ]]
 -- >>> shape = SShape $ SNoName :&: SSize @2 :|: SNoName :&: SSize @2 :|: SNil
 -- >>> t' <- sCheckedShape shape t
 -- >>> idx' <- sCheckedShape shape idx
--- >>> :t sGatherDim (SSelectDim $ SByIndex @1) idx' t'
--- sGatherDim (SSelectDim $ SByIndex @1) idx' t'
---   :: Control.Monad.Catch.MonadThrow m =>
---      m (Tensor
---           ('Gradient 'WithoutGradient)
---           ('Layout 'Dense)
---           ('Device 'CPU)
---           ('DataType 'Float)
---           ('Shape
---              '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 2)]))
--- >>> sGatherDim (SSelectDim $ SByIndex @1) idx t
+-- >>> result <- sGatherDim (SSelectDim $ SByIndex @1) idx' t'
+-- >>> :t result
+-- result
+--   :: Tensor
+--        ('Gradient 'WithoutGradient)
+--        ('Layout 'Dense)
+--        ('Device 'CPU)
+--        ('DataType 'Float)
+--        ('Shape
+--           '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 2)]))
+-- >>> result
 -- Tensor Float [2,2] [[ 1.0000   ,  1.0000   ],
 --                     [ 4.0000   ,  3.0000   ]]
 sGatherDim ::
