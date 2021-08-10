@@ -69,7 +69,7 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
                in (,)
                     <$> mkT5Input batchDim encoderSeqDim device inputIds
                     <*> mkT5Input batchDim decoderSeqDim device targetIds
-         in bufferedCollate (P.bounded 10) maxBatchSize collateFn
+         in bufferedCollate (P.bounded 32) maxBatchSize collateFn
 
   let numEpochs = 100
       learningRateSchedule =
@@ -80,7 +80,7 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
          in singleCycleLearningRateSchedule maxLearningRate finalLearningRate numEpochs numWarmupEpochs numCooldownEpochs
 
   let -- create a dataset of unique training examples
-      trainingLen = 10
+      trainingLen = 64
       trainingData =
         Dataset.STLCData
           { name = "training",
@@ -94,7 +94,7 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
           }
 
       -- create a dataset of unique evaluation examples
-      evaluationLen = 10
+      evaluationLen = 16
       evaluationData =
         Dataset.STLCData
           { name = "evaluation",
@@ -108,7 +108,7 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
           }
 
       -- configure the data loader with 1 worker thread and for random shuffling
-      streamingState = (datasetOpts 1) {shuffle = Shuffle (mkStdGen 13)}
+      streamingState = (datasetOpts 2) {shuffle = Shuffle (mkStdGen 13)}
 
   -- create an Adam optimizer from the model
   optim <- liftIO $ mkAdam defaultAdamOptions {learningRate = 1e-4} model

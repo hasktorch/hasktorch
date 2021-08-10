@@ -20,6 +20,7 @@ import qualified Hedgehog.Internal.Seed as Seed
 import qualified STLC
 import qualified Tokenizers
 import Torch.GraduallyTyped
+import Data.Word (Word64)
 
 data STLCData = STLCData
   { name :: Text,
@@ -52,7 +53,7 @@ mkExample tokenizer maxInputLength maxTargetLength seed = flip evalStateT seed .
   exInputEnc <- liftIO $ Tokenizers.encode tokenizer (exInputPPrint <> "</s>")
   exInputIds <- liftIO $ Tokenizers.getIDs exInputEnc
   guard (List.length exInputIds <= maxInputLength)
-  exTargetEnc <- liftIO $ Tokenizers.encode tokenizer (exInputPPrint <> "</s>")
+  exTargetEnc <- liftIO $ Tokenizers.encode tokenizer (exTargetPPrint <> "</s>")
   exTargetIds <- liftIO $ Tokenizers.getIDs exTargetEnc
   guard (List.length exTargetIds <= maxTargetLength)
   exDecodedInputIds <- liftIO $ Tokenizers.decode tokenizer exInputIds
@@ -73,10 +74,10 @@ withTokenizer =
   Tokenizers.withTokenizerFromConfigFile
     "/tmp/t5-small-tokenizer.json"
 
-testExample :: IO (STLCExample Int)
-testExample = do
+testExample :: Word64 -> IO (STLCExample Int)
+testExample s = do
   withTokenizer $ \tokenizer -> do
     let maxInputLength = 512
         maxTargetLength = 512
-        seed = Seed.from 45
+        seed = Seed.from s
     mkExample tokenizer maxInputLength maxTargetLength seed
