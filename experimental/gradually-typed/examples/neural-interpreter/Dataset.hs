@@ -58,9 +58,7 @@ mkExample tokenizer maxInputLength maxTargetLength seed = flip evalStateT seed .
   guard (List.length exTargetIds <= maxTargetLength)
   exDecodedInputIds <- liftIO $ Tokenizers.decode tokenizer exInputIds
   exDecodedTargetIds <- liftIO $ Tokenizers.decode tokenizer exTargetIds
-  -- liftIO $ do
-  --   putStrLn $ exInputPPrint <> " -> " <> exTargetPPrint
-  --   putStrLn $ exDecodedInputIds <> " -> " <> exDecodedTargetIds
+  -- liftIO . putStrLn $ exInputPPrint <> " >>> " <> exTargetPPrint
   pure STLCExample {..}
 
 instance Dataset IO STLCData Seed (STLCExample Int) where

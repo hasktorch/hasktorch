@@ -16,16 +16,16 @@ import Control.Monad.Trans (MonadTrans (..))
 import qualified Data.List as List
 import qualified Data.Set as Set
 import Data.Word (Word64)
+import qualified Dataset (STLCData (..), STLCExample (..))
 import GHC.Generics (Generic)
 import qualified Hedgehog.Internal.Seed as Seed
+import qualified Model (NeuralInterpreter (..))
 import qualified Pipes as P
 import qualified Pipes.Concurrent as P
 import qualified Pipes.Prelude as P
 import System.Random (mkStdGen)
 import qualified Tokenizers
 import Torch.GraduallyTyped
-import qualified Dataset (STLCData (..), STLCExample (..))
-import qualified Model (NeuralInterpreter (..))
 
 -- | Data type for monitoring the training and evaluation losses.
 data Monitor
@@ -53,8 +53,8 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
   stateDict <- stateDictFromFile "/tmp/t5-small-state-dict.pt"
   model <- flip evalStateT stateDict $ fromStateDict trainingModelSpec mempty
 
-  let maxInputLength = 512
-      maxTargetLength = 256
+  let maxInputLength = 256
+      maxTargetLength = 128
 
   -- buffered collation function that converts a stream of examples into one of batches
   let collate' =
@@ -81,7 +81,7 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
          in singleCycleLearningRateSchedule maxLearningRate finalLearningRate numEpochs numWarmupEpochs numCooldownEpochs
 
   let -- create a dataset of unique training examples
-      trainingLen = 64
+      trainingLen = 256
       trainingData =
         Dataset.STLCData
           { name = "training",
@@ -95,7 +95,7 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
           }
 
       -- create a dataset of unique evaluation examples
-      evaluationLen = 16
+      evaluationLen = 32
       evaluationData =
         Dataset.STLCData
           { name = "evaluation",
