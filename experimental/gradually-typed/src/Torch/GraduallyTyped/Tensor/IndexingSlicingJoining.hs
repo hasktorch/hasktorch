@@ -593,15 +593,14 @@ type family SqueezeDimF selectDim shape where
 -- >>> result <- sSqueezeDim (SSelectDim $ SByIndex @1) t
 -- >>> :t result
 -- result
---   :: Control.Monad.Catch.MonadThrow m =>
---      m (Tensor
---           ('Gradient 'WithoutGradient)
---           ('Layout 'Dense)
---           ('Device 'CPU)
---           ('DataType 'Float)
---           ('Shape
---              '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 2),
---                 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 2)]))
+--   :: Tensor
+--        ('Gradient 'WithoutGradient)
+--        ('Layout 'Dense)
+--        ('Device 'CPU)
+--        ('DataType 'Float)
+--        ('Shape
+--           '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 2),
+--              'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 2)])
 -- >>> result
 -- Tensor Float [2,2,1,2] [[[[ 1.0000   ,  1.0000   ]],
 --                          [[ 1.0000   ,  1.0000   ]]],
@@ -833,7 +832,7 @@ type family GatherDimF selectDim indexShape inputShape where
 --        ('DataType 'Float)
 --        ('Shape
 --           '[ 'Dim ('Name "*") 'UncheckedSize,
---              'Dim ('Name "*") 'UncheckedSize]))
+--              'Dim ('Name "*") 'UncheckedSize])
 -- >>> result
 -- Tensor Float [2,2] [[ 1.0000   ,  1.0000   ],
 --                     [ 4.0000   ,  3.0000   ]]
@@ -849,7 +848,7 @@ type family GatherDimF selectDim indexShape inputShape where
 --        ('Device 'CPU)
 --        ('DataType 'Float)
 --        ('Shape
---           '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 2)]))
+--           '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 2)])
 -- >>> result
 -- Tensor Float [2,2] [[ 1.0000   ,  1.0000   ],
 --                     [ 4.0000   ,  3.0000   ]]
