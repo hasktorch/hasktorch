@@ -13,7 +13,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Torch.GraduallyTyped.Examples.NeuralInterpreter.STLC where
+module STLC where
 
 import Bound (Scope, abstract1, fromScope, instantiate1, toScope, (>>>=))
 import Control.Monad (MonadPlus (mzero), ap, guard)

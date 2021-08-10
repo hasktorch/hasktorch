@@ -4,7 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Torch.GraduallyTyped.Examples.NeuralInterpreter.Dataset where
+module Dataset where
 
 import Control.Monad (guard)
 import Control.Monad.State (MonadIO (liftIO), evalStateT)
@@ -13,13 +13,13 @@ import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Text (Text)
 import GHC.Generics (Generic)
+import qualified Gen
 import qualified Hedgehog.Internal.Gen as Gen
 import Hedgehog.Internal.Seed (Seed)
 import qualified Hedgehog.Internal.Seed as Seed
+import qualified STLC
 import qualified Tokenizers
 import Torch.GraduallyTyped
-import Torch.GraduallyTyped.Examples.NeuralInterpreter.Gen (genTy, genWellTypedExp, sample')
-import qualified Torch.GraduallyTyped.Examples.NeuralInterpreter.STLC as STLC
 
 data STLCData = STLCData
   { name :: Text,
@@ -43,9 +43,9 @@ data STLCExample a = STLCExample
   deriving stock (Show, Eq, Ord, Generic)
 
 mkExample :: Tokenizers.Tokenizer -> Int -> Int -> Seed.Seed -> IO (STLCExample Int)
-mkExample tokenizer maxInputLength maxTargetLength seed = flip evalStateT seed . sample' $ do
-  exTy <- genTy
-  exInputExp <- Gen.generalize $ genWellTypedExp exTy
+mkExample tokenizer maxInputLength maxTargetLength seed = flip evalStateT seed . Gen.sample' $ do
+  exTy <- Gen.genTy
+  exInputExp <- Gen.generalize $ Gen.genWellTypedExp exTy
   let exInputPPrint = STLC.pprint exInputExp
       exTargetExp = STLC.nf exInputExp
       exTargetPPrint = STLC.pprint exTargetExp

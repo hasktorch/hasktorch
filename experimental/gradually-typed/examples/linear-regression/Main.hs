@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
 
-module Torch.GraduallyTyped.Examples.LinearRegression where
+module Main where
 
 import Control.Monad (foldM_, when)
 import Control.Monad.Indexed ((>>>=))

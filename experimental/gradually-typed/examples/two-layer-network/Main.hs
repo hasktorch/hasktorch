@@ -10,7 +10,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Torch.GraduallyTyped.Examples.TwoLayerNetwork where
+module Main where
 
 import Control.Lens (element, (^?))
 import Control.Monad (replicateM)
@@ -124,8 +124,8 @@ data Monitor
 monitor :: MonadIO m => P.Consumer Monitor m r
 monitor = P.map show P.>-> P.stdoutLn'
 
-runTwoLayerNetworkExample :: IO ()
-runTwoLayerNetworkExample = do
+main :: IO ()
+main = do
   let seed = 31415
       device = SDevice SCPU
       inputDim = SNoName :&: SSize @1

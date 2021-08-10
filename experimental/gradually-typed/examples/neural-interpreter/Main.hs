@@ -6,7 +6,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Torch.GraduallyTyped.Examples.NeuralInterpreter where
+module Main where
 
 import Control.Monad.Cont (runContT)
 import Control.Monad.IO.Class (MonadIO (liftIO))
@@ -23,8 +23,8 @@ import qualified Pipes.Prelude as P
 import System.Random (mkStdGen)
 import qualified Tokenizers
 import Torch.GraduallyTyped
-import Torch.GraduallyTyped.Examples.NeuralInterpreter.Dataset (STLCData (..), STLCExample (..))
-import Torch.GraduallyTyped.Examples.NeuralInterpreter.Model (NeuralInterpreter (..))
+import qualified Dataset (STLCData (..), STLCExample (..))
+import qualified Model (NeuralInterpreter (..))
 
 -- | Data type for monitoring the training and evaluation losses.
 data Monitor
@@ -38,15 +38,15 @@ data Monitor
 monitor :: MonadIO m => P.Consumer Monitor m r
 monitor = P.map show P.>-> P.stdoutLn'
 
-runNeuralInterpreterExample :: IO ()
-runNeuralInterpreterExample = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \tokenizer -> do
+main :: IO ()
+main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \tokenizer -> do
   let seed = 31415
       device = SDevice SCPU
 
   let -- during training, we need to turn dropout on and keep track of the gradient
-      trainingModelSpec = NeuralInterpreter $ t5SmallSpec SWithLMHead (SGradient SWithGradient) device SWithDropout
+      trainingModelSpec = Model.NeuralInterpreter $ t5SmallSpec SWithLMHead (SGradient SWithGradient) device SWithDropout
       -- during evaluation, we don't need to turn dropout on, nor do we need to keep track of the gradient
-      evaluationModelSpec = NeuralInterpreter $ t5SmallSpec SWithLMHead (SGradient SWithoutGradient) device SWithoutDropout
+      evaluationModelSpec = Model.NeuralInterpreter $ t5SmallSpec SWithLMHead (SGradient SWithoutGradient) device SWithoutDropout
 
   -- initialize the model from the model specification
   stateDict <- stateDictFromFile "/tmp/t5-small-state-dict.pt"
@@ -60,7 +60,7 @@ runNeuralInterpreterExample = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-sm
         let maxBatchSize = 8
             collateFn chunk =
               let batchDim = SNoName :&: SUncheckedSize (fromIntegral $ length chunk)
-                  chunk' = (\STLCExample {..} -> (exInputIds, exTargetIds)) <$> chunk
+                  chunk' = (\Dataset.STLCExample {..} -> (exInputIds, exTargetIds)) <$> chunk
                   (inputIds, targetIds) = unzip chunk'
                   maxInputLength' = min maxInputLength (foldr (max . length) 0 inputIds)
                   encoderSeqDim = SNoName :&: SUncheckedSize (fromIntegral maxInputLength')
@@ -82,7 +82,7 @@ runNeuralInterpreterExample = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-sm
   let -- create a dataset of unique training examples
       trainingLen = 10
       trainingData =
-        STLCData
+        Dataset.STLCData
           { name = "training",
             seeds =
               Set.fromList
@@ -96,7 +96,7 @@ runNeuralInterpreterExample = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-sm
       -- create a dataset of unique evaluation examples
       evaluationLen = 10
       evaluationData =
-        STLCData
+        Dataset.STLCData
           { name = "evaluation",
             seeds =
               Set.fromList
