@@ -847,8 +847,7 @@ type family GatherDimF selectDim indexShape inputShape where
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Float)
---        ('Shape
---           '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 2)])
+--        ('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 2)])
 -- >>> result
 -- Tensor Float [2,2] [[ 1.0000   ,  1.0000   ],
 --                     [ 4.0000   ,  3.0000   ]]
