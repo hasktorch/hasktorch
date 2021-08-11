@@ -134,30 +134,7 @@ let
         # Disable cabal-doctest tests by turning off custom setups
         packages.hasktorch.package.buildType = lib.mkForce "Simple";
       }
-
-      {
-        # Stamp executables with the git revision
-        packages = lib.genAttrs projectPackages (name: {
-            postInstall = ''
-              if [ -d $out/bin ]; then
-                ${setGitRev}
-              fi
-            '';
-          });
-      }
     ];
   };
-
-  # setGitRev is a postInstall script to stamp executables with
-  # version info. It uses the "gitrev" argument, if set. Otherwise,
-  # the revision is sourced from the local git work tree.
-  setGitRev = ''
-    ${haskellBuildUtils}/bin/set-git-rev "${gitrev'}" $out/bin/* || true
-  '';
-  gitrev' = if (gitrev == null)
-    then buildPackages.commonLib.commitIdFromGitRepoOrZero ../.git
-    else gitrev;
-  haskellBuildUtils = buildPackages.haskellBuildUtils.package;
-
 in
   pkgSet
