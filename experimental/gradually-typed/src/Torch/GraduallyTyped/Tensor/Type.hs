@@ -26,6 +26,7 @@
 {-# LANGUAGE ViewPatterns #-}
 
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE TypeFamilyDependencies #-}
 module Torch.GraduallyTyped.Tensor.Type where
 
 import Control.Applicative (empty)
@@ -1331,7 +1332,7 @@ unexpectedDimsError dims' x = do
   expected <- guessDims x
   error $ "Expected shape to be " <> show expected <> ", but got: " <> show dims'
 
-class TensorLike a (dType :: DType) (dims :: [Dim (Name Symbol) (Size Nat)]) | a -> dims, a -> dType where
+class TensorLike a (dType :: DType) (dims :: [Dim (Name Symbol) (Size Nat)]) | a -> dims, a -> dType, dims dType -> a where
   -- | Creates a tensor from a 'TensorLike' value.
   --
   -- >>> t <- sToTensor (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) ([(1, 2), (3, 4), (5, 6)] :: [(Int, Int)])
@@ -1480,19 +1481,19 @@ instance Exception DimMismatchError where
 checkDims :: MonadThrow m => [Int] -> [Int] -> m ()
 checkDims firstDims otherDims = when (firstDims /= otherDims) $ throwM $ DimMismatchError firstDims otherDims
 
-instance
-  ( TensorLike a dType dims,
-    TensorLike b dType dims',
-    TensorLikeRaw a,
-    TensorLikeRaw b,
-    SingI dType,
-    SGetDims dimsOut,
-    'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape (dims <+> dims')) ('Dim ('Name "*") ('Size 2))
-  ) =>
-  TensorLike (a, b) dType dimsOut
-  where
-  sToTensor = sToTensorRaw
-  fromTensor = fromTensorRaw
+-- instance
+--   ( TensorLike a dType dims,
+--     TensorLike b dType dims',
+--     TensorLikeRaw a,
+--     TensorLikeRaw b,
+--     SingI dType,
+--     SGetDims dimsOut,
+--     'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape (dims <+> dims')) ('Dim ('Name "*") ('Size 2))
+--   ) =>
+--   TensorLike (a, b) dType dimsOut
+--   where
+--   sToTensor = sToTensorRaw
+--   fromTensor = fromTensorRaw
 
 instance (TensorLikeRaw a, TensorLikeRaw b) => TensorLikeRaw (a, b) where
   guessDim = const $ pure 2
@@ -1518,21 +1519,21 @@ instance (TensorLikeRaw a, TensorLikeRaw b) => TensorLikeRaw (a, b) where
       width = product innerDims
   tensorPokeElemOff _ _ dims' x = unexpectedDimsError dims' $ pure x
 
-instance
-  ( TensorLike a dType dims,
-    TensorLike b dType dims',
-    TensorLike c dType dims',
-    TensorLikeRaw a,
-    TensorLikeRaw b,
-    TensorLikeRaw c,
-    SingI dType,
-    SGetDims dimsOut,
-    'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape (dims <+> dims')) ('Dim ('Name "*") ('Size 3))
-  ) =>
-  TensorLike (a, b, c) dType dimsOut
-  where
-  sToTensor = sToTensorRaw
-  fromTensor = fromTensorRaw
+-- instance
+--   ( TensorLike a dType dims,
+--     TensorLike b dType dims',
+--     TensorLike c dType dims',
+--     TensorLikeRaw a,
+--     TensorLikeRaw b,
+--     TensorLikeRaw c,
+--     SingI dType,
+--     SGetDims dimsOut,
+--     'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape (dims <+> dims')) ('Dim ('Name "*") ('Size 3))
+--   ) =>
+--   TensorLike (a, b, c) dType dimsOut
+--   where
+--   sToTensor = sToTensorRaw
+--   fromTensor = fromTensorRaw
 
 unzip3 :: Functor f => f (a, b, c) -> (f a, f b, f c)
 unzip3 xyz =
@@ -1572,10 +1573,9 @@ instance
   ( TensorLike a dType dims,
     TensorLikeRaw a,
     SingI dType,
-    SGetDims dimsOut,
-    'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape dims) ('Dim ('Name "*") 'UncheckedSize)
+    SGetDims ('Dim ('Name "*") 'UncheckedSize ': dims)
   ) =>
-  TensorLike [a] dType dimsOut
+  TensorLike [a] dType ('Dim ('Name "*") 'UncheckedSize ': dims)
   where
   sToTensor = sToTensorRaw
   fromTensor = fromTensorRaw
@@ -1605,17 +1605,17 @@ instance TensorLikeRaw a => TensorLikeRaw [a] where
       width = product innerDims
   tensorPokeElemOff _ _ dims' x = unexpectedDimsError dims' $ pure x
 
-instance
-  ( TensorLike a dType dims,
-    TensorLikeRaw a,
-    SingI dType,
-    SGetDims dimsOut,
-    'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape dims) ('Dim ('Name "*") 'UncheckedSize)
-  ) =>
-  TensorLike (V.Vector a) dType dimsOut
-  where
-  sToTensor = sToTensorRaw
-  fromTensor = fromTensorRaw
+-- instance
+--   ( TensorLike a dType dims,
+--     TensorLikeRaw a,
+--     SingI dType,
+--     SGetDims dimsOut,
+--     'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape dims) ('Dim ('Name "*") 'UncheckedSize)
+--   ) =>
+--   TensorLike (V.Vector a) dType dimsOut
+--   where
+--   sToTensor = sToTensorRaw
+--   fromTensor = fromTensorRaw
 
 instance
   TensorLikeRaw a =>
@@ -1650,10 +1650,9 @@ instance
     TensorLike a dType dims,
     TensorLikeRaw a,
     SingI dType,
-    SGetDims dimsOut,
-    'Shape dimsOut ~ InsertDimF ('SelectDim ('ByIndex 0)) ('Shape dims) ('Dim ('Name "*") ('Size n))
+    SGetDims ('Dim ('Name "*") ('Size n) ': dims)
   ) =>
-  TensorLike (SV.Vector n a) dType dimsOut
+  TensorLike (SV.Vector n a) dType ('Dim ('Name "*") ('Size n) ': dims)
   where
   sToTensor = sToTensorRaw
   fromTensor = fromTensorRaw
