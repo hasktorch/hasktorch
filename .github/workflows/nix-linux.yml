@@ -46,7 +46,7 @@ jobs:
           name: hasktorch
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - run: |
-          ./setup-iohk-cache.sh
+          .github/workflows/setup-iohk-cache.sh
       - run: |
           ps -aux
           free

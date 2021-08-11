@@ -235,7 +235,7 @@ $ stack run static-mnist-cnn     # Run the MNIST CNN example.
 
 ```sh
 $ nix-env -iA cachix -f https://cachix.org/api/v1/install  # (Optional) Install Cachix.
-$ ./setup-iohk-cache.sh                                    # (Optional) Use IOHK's cache.
+# (Optional) Use IOHK's cache. See https://input-output-hk.github.io/haskell.nix/tutorials/getting-started/#setting-up-the-binary-cache
 $ cachix use hasktorch                                     # (Optional) Use hasktorch's cache.
 ```
 
@@ -277,7 +277,7 @@ $ cabal run static-mnist-cnn    # Run the MNIST CNN example.
 
 ```sh
 $ nix-env -iA cachix -f https://cachix.org/api/v1/install  # (Optional) Install Cachix.
-$ ./setup-iohk-cache.sh                                    # (Optional) Use IOHK's cache.
+# (Optional) Use IOHK's cache. See https://input-output-hk.github.io/haskell.nix/tutorials/getting-started/#setting-up-the-binary-cache
 $ cachix use hasktorch                                     # (Optional) Use hasktorch's cache.
 ```
 

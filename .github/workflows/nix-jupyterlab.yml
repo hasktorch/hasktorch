@@ -22,6 +22,6 @@ jobs:
         name: hasktorch
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
     - run: |
-        ./setup-iohk-cache.sh
+        .github/workflows/setup-iohk-cache.sh
         export NIX_BUILD_CORES=1
         nix-shell nix/jupyter-shell.nix -j 1 --option sandbox false --command echo

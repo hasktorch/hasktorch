@@ -29,7 +29,7 @@ jobs:
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - run: nix-env -iA cachix -f https://cachix.org/api/v1/install
       - run: |
-          ./setup-iohk-cache.sh
+          .github/workflows/setup-iohk-cache.sh
       - name: Cache .stack
         id: cache-stack
         uses: actions/cache@v2

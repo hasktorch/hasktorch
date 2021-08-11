@@ -22,7 +22,7 @@ jobs:
     - uses: cachix/install-nix-action@v12
     - run: nix-env -iA cachix -f https://cachix.org/api/v1/install
     - run: |
-        ./setup-iohk-cache.sh
+        .github/workflows/setup-iohk-cache.sh
     - run: cachix use hasktorch
     - run: |
         nix-build -A combined-haddock
