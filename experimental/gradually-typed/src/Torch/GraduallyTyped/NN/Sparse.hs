@@ -1,4 +1,6 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -19,6 +21,7 @@ import Control.Monad.Indexed.State (IxStateT (..))
 import Data.Data (Proxy (..))
 import Data.Singletons.Prelude.List (SList (..))
 import Data.Singletons.Prelude.Maybe (SMaybe (..))
+import GHC.Generics (Generic)
 import GHC.TypeLits (KnownNat, Nat, Symbol, natVal)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType, SDevice (..))
@@ -48,6 +51,7 @@ data
     { embeddingWeight :: Tensor gradient layout device dataType ('Shape '[embedNumDim, embedDim])
     } ->
     Embedding gradient layout device dataType embedNumDim embedDim paddingIdx
+  deriving stock (Show, Generic)
 
 data
   EmbeddingSpec
@@ -69,6 +73,7 @@ data
     SDim embedDim ->
     SMaybe paddingIdx ->
     EmbeddingSpec gradient layout device dataType embedNumDim embedDim paddingIdx
+  deriving stock (Show, Generic)
 
 type instance ModelSpec (Embedding gradient layout device dataType embedNumDim embedDim paddingIdx) = EmbeddingSpec gradient layout device dataType embedNumDim embedDim paddingIdx
 

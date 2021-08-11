@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
 
-module Torch.GraduallyTyped.Examples.LinearRegression where
+module Main where
 
 import Control.Monad (foldM_, when)
 import Control.Monad.Indexed ((>>>=))
@@ -21,7 +21,7 @@ groundTruth t = do
   let dataType = sGetDataType weight
   bias <- sFull (spec dataType) (3.14 :: Float)
   prod <- sCheckedDataType dataType t >>= (`matmul` weight)
-  pure . squeezeAll $ prod `add` bias
+  squeezeAll <$> prod `add` bias
   where
     gradient = SGradient SWithoutGradient
     layout = sGetLayout t

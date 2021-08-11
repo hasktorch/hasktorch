@@ -1,4 +1,6 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
@@ -17,10 +19,11 @@ module Torch.GraduallyTyped.NN.Transformer.GLMHead where
 import Control.Monad.Indexed (IxPointed (..), (>>>=))
 import Control.Monad.Indexed.State (IxStateT (..))
 import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
-import Data.Functor.Indexed ((<<$>>), (<<*>>))
+import Data.Functor.Indexed ((<<$>>))
 import Data.Kind (Type)
 import Data.Singletons (SingKind (fromSing))
 import Data.Singletons.Prelude.List (SList (SNil))
+import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.DType (DType, DataType, SDataType (..))
 import Torch.GraduallyTyped.Device (Device, DeviceType, SDevice (..))
@@ -31,7 +34,7 @@ import Torch.GraduallyTyped.NN.Linear (GLinearF, linearSpec)
 import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..), LayerNormSpec (..))
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasBias (..), SHasBias (..))
-import Torch.GraduallyTyped.Prelude (forgetIsChecked, pattern (:|:))
+import Torch.GraduallyTyped.Prelude (Catch, forgetIsChecked, pattern (:|:))
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, SName (..), SShape (..), SSize (..), Shape (..), Size (..), pattern (:&:))
@@ -45,6 +48,16 @@ import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 data LMHeadHasScaling
   = LMHeadWithScaling
   | LMHeadWithoutScaling
+  deriving stock (Eq, Ord, Show, Generic)
+
+type instance ModelSpec LMHeadHasScaling = LMHeadHasScaling
+
+instance HasInitialize LMHeadHasScaling generatorDevice LMHeadHasScaling generatorDevice where
+  initialize hasScaling g = pure (hasScaling, g)
+
+instance HasStateDict LMHeadHasScaling where
+  fromStateDict hasScaling _ = pure hasScaling
+  toStateDict _ _ = pure ()
 
 -- | Generic language modelling head for transformer encoders and decoders.
 --
@@ -81,15 +94,37 @@ data
       lmHeadHasScaling :: LMHeadHasScaling
     } ->
     GLMHead inputEmbedDim dense activation layerNorm decoder bias
+  deriving stock (Show, Generic)
 
 type instance
   ModelSpec (GLMHead inputEmbedDim dense activation layerNorm decoder bias) =
     GLMHead inputEmbedDim (ModelSpec dense) (ModelSpec activation) (ModelSpec layerNorm) (ModelSpec decoder) (ModelSpec bias)
 
 -- | Generic data type for biasing the language model head.
-data GBias (bias :: Type) where GBias :: forall bias. bias -> GBias bias
+data GBias (bias :: Type) where
+  GBias :: forall bias. bias -> GBias bias
+  deriving stock (Eq, Ord, Show, Generic)
 
 type instance ModelSpec (GBias bias) = GBias (ModelSpec bias)
+
+type family
+  GLMHeadF
+    (style :: TransformerStyle)
+    (gradient :: Gradient RequiresGradient)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (vocabDim :: Dim (Name Symbol) (Size Nat)) ::
+    Type
+  where
+  GLMHeadF style gradient device dataType inputEmbedDim vocabDim =
+    GLMHead
+      inputEmbedDim
+      (LMHeadDenseF style gradient device dataType inputEmbedDim)
+      (LMHeadActivationF style)
+      (LMHeadLayerNormF style gradient device dataType inputEmbedDim)
+      (LMHeadDecoderF style gradient device dataType inputEmbedDim vocabDim)
+      (LMHeadBiasF style gradient device dataType vocabDim)
 
 -- | Specifies the dense layer of the language model head.
 type family
@@ -204,7 +239,7 @@ type family
   LMHeadBiasF 'RoBERTa gradient device dataType vocabDim =
     LMHeadBiasF 'BERT gradient device dataType vocabDim
 
--- |
+-- | Specifies the parameters of the language model head.
 lmHeadSpec ::
   forall style gradient device dataType inputEmbedDim vocabDim.
   STransformerStyle style ->
@@ -214,15 +249,7 @@ lmHeadSpec ::
   SDim inputEmbedDim ->
   SDim vocabDim ->
   Double ->
-  ModelSpec
-    ( GLMHead
-        inputEmbedDim
-        (LMHeadDenseF style gradient device dataType inputEmbedDim)
-        (LMHeadActivationF style)
-        (LMHeadLayerNormF style gradient device dataType inputEmbedDim)
-        (LMHeadDecoderF style gradient device dataType inputEmbedDim vocabDim)
-        (LMHeadBiasF style gradient device dataType vocabDim)
-    )
+  ModelSpec (GLMHeadF style gradient device dataType inputEmbedDim vocabDim)
 lmHeadSpec style gradient device dataType inputEmbedDim vocabDim eps =
   let denseSpec ST5 = ()
       denseSpec SByT5 = ()
@@ -283,33 +310,17 @@ lmHeadSpec style gradient device dataType inputEmbedDim vocabDim eps =
     linearWithBiasSpec' = linearSpec SWithBias gradient device dataType inputEmbedDim vocabDim
 
 instance
-  ( HasInitialize dense generatorDevice dense generatorDevice,
-    HasInitialize activation generatorDevice activation generatorDevice,
-    HasInitialize layerNorm generatorDevice layerNorm generatorDevice,
-    HasInitialize decoder generatorDevice decoder generatorDevice,
-    HasInitialize bias generatorDevice bias generatorDevice
+  ( HasInitialize dense generatorDevice dense' generatorDevice0,
+    HasInitialize activation generatorDevice0 activation' generatorDevice1,
+    HasInitialize layerNorm generatorDevice1 layerNorm' generatorDevice2,
+    HasInitialize decoder generatorDevice2 decoder' generatorDevice3,
+    HasInitialize bias generatorDevice3 bias' generatorOutputDevice
   ) =>
   HasInitialize
     (GLMHead inputEmbedDim dense activation layerNorm decoder bias)
     generatorDevice
-    (GLMHead inputEmbedDim dense activation layerNorm decoder bias)
-    generatorDevice
-  where
-  initialize (GLMHead inputEmbedDim denseSpec activationSpec layerNormSpec decoderSpec biasSpec hasScaling) =
-    let dense = IxStateT . initialize $ denseSpec
-        activation = IxStateT . initialize $ activationSpec
-        layerNorm = IxStateT . initialize $ layerNormSpec
-        decoder = IxStateT . initialize $ decoderSpec
-        bias = IxStateT . initialize $ biasSpec
-     in runIxStateT
-          ( GLMHead inputEmbedDim
-              <<$>> dense
-              <<*>> activation
-              <<*>> layerNorm
-              <<*>> decoder
-              <<*>> bias
-              <<*>> ireturn hasScaling
-          )
+    (GLMHead inputEmbedDim dense' activation' layerNorm' decoder' bias')
+    generatorOutputDevice
 
 instance HasInitialize (GBias ()) generatorDevice (GBias ()) generatorDevice where
   initialize (GBias ()) g = pure (GBias (), g)
@@ -342,26 +353,8 @@ instance
     HasStateDict bias
   ) =>
   HasStateDict (GLMHead inputEmbedDim dense activation layerNorm decoder bias)
-  where
-  fromStateDict (GLMHead inputEmbedDim denseSpec activationSpec layerNormSpec decoderSpec biasSpec hasScaling) k =
-    GLMHead inputEmbedDim
-      <$> fromStateDict denseSpec k
-      <*> fromStateDict activationSpec k
-      <*> fromStateDict layerNormSpec k
-      <*> fromStateDict decoderSpec k
-      <*> fromStateDict biasSpec k
-      <*> pure hasScaling
-  toStateDict k GLMHead {..} = do
-    () <- toStateDict k lmHeadDense
-    () <- toStateDict k lmHeadActivation
-    () <- toStateDict k lmHeadLayerNorm
-    () <- toStateDict k lmHeadDecoder
-    () <- toStateDict k lmHeadBias
-    pure ()
 
-instance HasStateDict model => HasStateDict (GBias model) where
-  fromStateDict (GBias biasSpec) k = GBias <$> fromStateDict biasSpec k
-  toStateDict k (GBias bias) = toStateDict k bias
+instance HasStateDict bias => HasStateDict (GBias bias)
 
 type family
   LMHeadOutputF
@@ -478,13 +471,15 @@ instance
   forward (GBias bias) = forward bias
 
 instance
-  ( output
+  ( shape' ~ BroadcastShapesF shape biasShape,
+    Catch shape',
+    output
       ~ Tensor
           (gradient <|> biasGradient)
           (layout <+> biasLayout)
           (device <+> biasDevice)
           (dataType <+> biasDataType)
-          (BroadcastShapesF shape biasShape)
+          shape'
   ) =>
   HasForward
     (GBias (Tensor biasGradient biasLayout biasDevice biasDataType biasShape))
@@ -493,16 +488,20 @@ instance
     output
     generatorDevice
   where
-  forward (GBias bias) input g = pure (input `add` bias, g)
+  forward (GBias bias) input g = do
+    r <- input `add` bias
+    pure (r, g)
 
 instance
-  ( output
+  ( shape' ~ BroadcastShapesF shape biasShape,
+    Catch shape',
+    output
       ~ Tensor
           (gradient <|> biasGradient)
           (layout <+> biasLayout)
           (device <+> biasDevice)
           (dataType <+> biasDataType)
-          (BroadcastShapesF shape biasShape)
+          shape'
   ) =>
   HasForward
     (GBias (NamedModel (Tensor biasGradient biasLayout biasDevice biasDataType biasShape)))
@@ -511,4 +510,6 @@ instance
     output
     generatorDevice
   where
-  forward (GBias (NamedModel _ bias)) input g = pure (input `add` bias, g)
+  forward (GBias (NamedModel _ bias)) input g = do
+    r <- input `add` bias
+    pure (r, g)

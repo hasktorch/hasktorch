@@ -26,7 +26,7 @@ testForwardBERTBaseUncased =
 
     let device = SDevice SCPU
 
-    let spec = bertBaseUnchasedSpec SWithLMHead (SGradient SWithoutGradient) device
+    let spec = bertBaseUnchasedSpec SWithLMHead (SGradient SWithoutGradient) device SWithoutDropout
     model <- flip evalStateT stateDict $ fromStateDict spec mempty
 
     g <- sMkGenerator device 0
