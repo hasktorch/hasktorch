@@ -1329,7 +1329,7 @@ guessDims x = (outerDim <>) <$> guessInnerDims x
 unexpectedDimsError :: forall a m b. (TensorLikeRaw a, MonadThrow m) => [Int] -> Maybe a -> m b
 unexpectedDimsError dims' x = do
   expected <- guessDims x
-  error $ "Expected shape to be " <> show expected <> " got: " <> show dims'
+  error $ "Expected shape to be " <> show expected <> ", but got: " <> show dims'
 
 class TensorLike a (dType :: DType) (dims :: [Dim (Name Symbol) (Size Nat)]) | a -> dims, a -> dType where
   -- | Creates a tensor from a 'TensorLike' value.
@@ -1542,7 +1542,7 @@ unzip3 xyz =
   )
 
 instance (TensorLikeRaw a, TensorLikeRaw b, TensorLikeRaw c) => TensorLikeRaw (a, b, c) where
-  guessDim = const $ pure 2
+  guessDim = const $ pure 3
 
   guessInnerDims (unzip3 -> (x, y, z)) = do
     xDims <- guessDims x
@@ -1558,7 +1558,7 @@ instance (TensorLikeRaw a, TensorLikeRaw b, TensorLikeRaw c) => TensorLikeRaw (a
       <*> tensorPeekElemOff ptr (offset + 2 * width) innerDims
     where
       width = product innerDims
-  tensorPeekElemOff _ _ dims' = unexpectedDimsError @(a, b) dims' empty
+  tensorPeekElemOff _ _ dims' = unexpectedDimsError @(a, b, c) dims' empty
 
   tensorPokeElemOff ptr offset (3 : innerDims) (x, y, z) = do
     tensorPokeElemOff ptr offset innerDims x

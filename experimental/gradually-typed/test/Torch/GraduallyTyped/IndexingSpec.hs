@@ -1,7 +1,10 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 
 module Torch.GraduallyTyped.IndexingSpec where
@@ -11,7 +14,7 @@ import Control.Monad ((<=<))
 import Control.Monad.Trans (lift)
 import Data.Foldable (asum)
 import Data.List
-import Data.Singletons.Prelude (SList (..), fromSing)
+import Data.Singletons.Prelude (Demote, SList (..), SingKind, SomeSing (..), fromSing, toSing)
 import qualified Data.Vector.Sized as SV
 import GHC.TypeLits (Nat)
 import qualified Hedgehog.Gen as Gen
@@ -24,10 +27,11 @@ import Torch.GraduallyTyped.DType (DType (..), DataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..))
 import Torch.GraduallyTyped.Index (Index (..), SIndex (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
-import Torch.GraduallyTyped.Prelude (forgetIsChecked, pattern (:|:))
+import Torch.GraduallyTyped.Prelude (IsChecked (..), forgetIsChecked, pattern (:|:))
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..))
 import Torch.GraduallyTyped.Shape (Dim (..), Name (..), Shape (..), Size (..))
-import Torch.GraduallyTyped.Tensor (IndexType (..), Indices (..), SIndexType (..), SIndices (..), Tensor, arangeNaturals, fromTensor, getDims, parseSlice, reshape, (!))
+import Torch.GraduallyTyped.Tensor (IndexType (..), Indices (..), SIndexType (..), SIndices (..), Tensor, arangeNaturals, fromTensor, getDims, parseSlice, reshape, (!), slice)
+import Control.Applicative ((<|>))
 
 -- | 2x2x3 tensor for testing.
 -- >>> tensor
@@ -84,19 +88,19 @@ scatterWhitespace range = mconcat . wrap ws . intersperse ws . fmap pure
 
 genShownIndex :: Integral a => Range a -> IndexType Integer -> Gen String
 genShownIndex range =
-  scatterWhitespace range <=< asum . map pure <<< \case
-    NewAxis -> [pure "+", pure "NewAxis"]
-    Ellipsis -> [pure "...", pure "Ellipsis"]
-    SliceAll -> [pure ":", [":", ":"]]
-    SliceAt at -> [i at]
-    SliceBool b -> [pure $ show b]
-    SliceFrom from -> [i from <> [":"], i from <> [":", ":"]]
-    SliceUpTo to -> [[":"] <> i to, [":"] <> i to <> [":"]]
-    SliceWithStep step -> [[":", ":"] <> i step]
-    SliceFromUpTo from upTo -> [i from <> [":"] <> i upTo, i from <> [":"] <> i upTo <> [":"]]
-    SliceFromWithStep from step -> [i from <> [":", ":"] <> i step]
-    SliceUpToWithStep upTo step -> [[":"] <> i upTo <> [":"] <> i step]
-    SliceFromUpToWithStep from upTo step -> [i from <> [":"] <> i upTo <> [":"] <> i step]
+  scatterWhitespace range <=< \case
+    NewAxis -> pure ["+"] <|> pure ["NewAxis"]
+    Ellipsis -> pure ["..."] <|> pure ["Ellipsis"]
+    SliceAll -> pure [":"] <|> pure [":", ":"]
+    SliceAt at -> pure $ i at
+    SliceBool b -> pure [show b]
+    SliceFrom from -> pure (i from <> [":"]) <|> pure (i from <> [":", ":"])
+    SliceUpTo to -> pure ([":"] <> i to) <|> pure ([":"] <> i to <> [":"])
+    SliceWithStep step -> pure $ [":", ":"] <> i step
+    SliceFromUpTo from upTo -> pure (i from <> [":"] <> i upTo) <|> pure (i from <> [":"] <> i upTo <> [":"])
+    SliceFromWithStep from step -> pure $ i from <> [":", ":"] <> i step
+    SliceUpToWithStep upTo step -> pure $ [":"] <> i upTo <> [":"] <> i step
+    SliceFromUpToWithStep from upTo step -> pure $ i from <> [":"] <> i upTo <> [":"] <> i step
   where
     i :: Integer -> [String]
     i x
@@ -167,58 +171,57 @@ spec = describe "Indexing" $ do
         let parse = lift . TH.runQ . parseSlice
             toTH = lift . TH.runQ . TH.lift
         parsed <- parse str
-        -- FIXME: convert index to singleton
         indexTH <- toTH index
         parsed === indexTH
 
--- it "+" $ do
---   toIndexTypes [slice|+|] `shouldBe` [NewAxis]
--- it "NewAxis" $ do
---   toIndexTypes [slice|NewAxis|] `shouldBe` [NewAxis]
--- it "Ellipsis" $ do
---   toIndexTypes [slice|Ellipsis|] `shouldBe` [Ellipsis]
--- it "..." $ do
---   toIndexTypes [slice|...|] `shouldBe` [Ellipsis]
--- it "123" $ do
---   toIndexTypes [slice|123|] `shouldBe` [SliceAt 123]
--- it "-123" $ do
---   toIndexTypes [slice|-123|] `shouldBe` [SliceAt (-123)]
--- it "True" $ do
---   toIndexTypes [slice|True|] `shouldBe` [SliceBool True]
--- it "False" $ do
---   toIndexTypes [slice|False|] `shouldBe` [SliceBool False]
--- it ":" $ do
---   toIndexTypes [slice|:|] `shouldBe` [SliceAll]
--- it "::" $ do
---   toIndexTypes [slice|::|] `shouldBe` [SliceAll]
--- it "1:" $ do
---   toIndexTypes [slice|1:|] `shouldBe` [SliceFrom 1]
--- it "1::" $ do
---   toIndexTypes [slice|1::|] `shouldBe` [SliceFrom 1]
--- it ":3" $ do
---   toIndexTypes [slice|:3|] `shouldBe` [SliceUpTo 3]
--- it ":3:" $ do
---   toIndexTypes [slice|:3:|] `shouldBe` [SliceUpTo 3]
--- it "::2" $ do
---   toIndexTypes [slice|::2|] `shouldBe` [SliceWithStep 2]
--- it "1:3" $ do
---   toIndexTypes [slice|1:3|] `shouldBe` [SliceFromUpTo 1 3]
--- it "1::2" $ do
---   toIndexTypes [slice|1::2|] `shouldBe` [SliceFromWithStep 1 2]
--- it ":3:2" $ do
---   toIndexTypes [slice|:3:2|] `shouldBe` [SliceUpToWithStep 3 2]
--- it "1:3:2" $ do
---   toIndexTypes [slice|1:3:2|] `shouldBe` [SliceFromUpToWithStep 1 3 2]
--- it "1,2,3" $ do
---   toIndexTypes [slice|1,2,3|] `shouldBe` [SliceAt 1, SliceAt 2, SliceAt 3]
--- it "1 , 2, 3" $ do
---   toIndexTypes [slice|1 , 2, 3|] `shouldBe` [SliceAt 1, SliceAt 2, SliceAt 3]
--- it "{SIndex @1}" $ do
---   let i = SIndex @1
---   toIndexTypes [slice|{i}|] `shouldBe` [SliceAt 1]
--- it "{SNegativeIndex @1}" $ do
---   let i = SNegativeIndex @1
---   toIndexTypes [slice|{i}|] `shouldBe` [SliceAt (-1)]
--- it "{SUncheckedIndex 1}" $ do
---   let i = SUncheckedIndex 1
---   toIndexTypes [slice|{i}|] `shouldBe` [SliceAt 1]
+    -- it "+" $ do
+    --   toIndexTypes [slice|+|] `shouldBe` [NewAxis]
+    -- it "NewAxis" $ do
+    --   toIndexTypes [slice|NewAxis|] `shouldBe` [NewAxis]
+    -- it "Ellipsis" $ do
+    --   toIndexTypes [slice|Ellipsis|] `shouldBe` [Ellipsis]
+    -- it "..." $ do
+    --   toIndexTypes [slice|...|] `shouldBe` [Ellipsis]
+    -- it "123" $ do
+    --   toIndexTypes [slice|123|] `shouldBe` [SliceAt 123]
+    -- it "-123" $ do
+    --   toIndexTypes [slice|-123|] `shouldBe` [SliceAt (-123)]
+    -- it "True" $ do
+    --   toIndexTypes [slice|True|] `shouldBe` [SliceBool True]
+    -- it "False" $ do
+    --   toIndexTypes [slice|False|] `shouldBe` [SliceBool False]
+    -- it ":" $ do
+    --   toIndexTypes [slice|:|] `shouldBe` [SliceAll]
+    -- it "::" $ do
+    --   toIndexTypes [slice|::|] `shouldBe` [SliceAll]
+    -- it "1:" $ do
+    --   toIndexTypes [slice|1:|] `shouldBe` [SliceFrom 1]
+    -- it "1::" $ do
+    --   toIndexTypes [slice|1::|] `shouldBe` [SliceFrom 1]
+    -- it ":3" $ do
+    --   toIndexTypes [slice|:3|] `shouldBe` [SliceUpTo 3]
+    -- it ":3:" $ do
+    --   toIndexTypes [slice|:3:|] `shouldBe` [SliceUpTo 3]
+    -- it "::2" $ do
+    --   toIndexTypes [slice|::2|] `shouldBe` [SliceWithStep 2]
+    -- it "1:3" $ do
+    --   toIndexTypes [slice|1:3|] `shouldBe` [SliceFromUpTo 1 3]
+    -- it "1::2" $ do
+    --   toIndexTypes [slice|1::2|] `shouldBe` [SliceFromWithStep 1 2]
+    -- it ":3:2" $ do
+    --   toIndexTypes [slice|:3:2|] `shouldBe` [SliceUpToWithStep 3 2]
+    -- it "1:3:2" $ do
+    --   toIndexTypes [slice|1:3:2|] `shouldBe` [SliceFromUpToWithStep 1 3 2]
+    -- it "1,2,3" $ do
+    --   toIndexTypes [slice|1,2,3|] `shouldBe` [SliceAt 1, SliceAt 2, SliceAt 3]
+    -- it "1 , 2, 3" $ do
+    --   toIndexTypes [slice|1 , 2, 3|] `shouldBe` [SliceAt 1, SliceAt 2, SliceAt 3]
+    -- it "{SIndex @1}" $ do
+    --   let i = SIndex @1
+    --   toIndexTypes [slice|{i}|] `shouldBe` [SliceAt 1]
+    -- it "{SNegativeIndex @1}" $ do
+    --   let i = SNegativeIndex @1
+    --   toIndexTypes [slice|{i}|] `shouldBe` [SliceAt (-1)]
+    -- it "{SUncheckedIndex 1}" $ do
+    --   let i = SUncheckedIndex 1
+    --   toIndexTypes [slice|{i}|] `shouldBe` [SliceAt 1]

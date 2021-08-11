@@ -253,7 +253,6 @@ test-suite spec
                      , vector
                      , vector-sized
                      , template-haskell
-                     , mmorph
 
   build-tool-depends: hspec-discover:hspec-discover
 

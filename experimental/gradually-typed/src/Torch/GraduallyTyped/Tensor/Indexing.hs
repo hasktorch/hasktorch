@@ -29,6 +29,8 @@ module Torch.GraduallyTyped.Tensor.Indexing
     (!),
     slice,
     parseSlice,
+    setAt,
+    -- toLens,
   )
 where
 
@@ -38,27 +40,34 @@ import Control.Monad.Catch (MonadThrow)
 import Control.Monad.Trans (lift)
 import Data.Coerce (coerce)
 import Data.Foldable (asum)
-import Data.Kind (Type)
+import Data.Kind (Constraint, Type)
 import Data.Singletons (Demote, SingI, SingKind, SomeSing (..), fromSing, sing, toSing, withSomeSing)
 import Data.Singletons.Prelude (Reverse, SBool (..), SList (..), Sing)
 import Data.Singletons.TH (genSingletons)
+import Data.Type.Bool (Not, type (&&))
 import Data.Type.Equality (type (==))
 import Data.Void (Void)
-import Foreign (fromBool)
+import Foreign (ForeignPtr, fromBool)
 import GHC.TypeLits (Div, ErrorMessage (..), Nat, Symbol, type (+), type (-), type (<=?))
 import Language.Haskell.TH.Quote (QuasiQuoter (..))
 import qualified Language.Haskell.TH.Syntax as TH
 import Text.Megaparsec (ParsecT, between, empty, eof, errorBundlePretty, optional, runParserT, sepBy, some, try, (<|>))
 import qualified Text.Megaparsec.Char as M
 import qualified Text.Megaparsec.Char.Lexer as L
+import Torch.GraduallyTyped.DType (DataType (..))
 import Torch.GraduallyTyped.Index.Type (DemotedIndex (..), Index (..), SIndex (..))
-import Torch.GraduallyTyped.Prelude (If, IsChecked (..), forgetIsChecked, type (<?))
-import Torch.GraduallyTyped.Shape.Class (PrependDimF)
+import Torch.GraduallyTyped.Prelude (Catch, If, IsChecked (..), When, forgetIsChecked, type (<?), Seq)
+import Torch.GraduallyTyped.Shape.Class (PrependDimF, BroadcastShapesF)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Shape (..), Size (..))
-import Torch.GraduallyTyped.Tensor.Type (Tensor (..))
+import Torch.GraduallyTyped.Tensor.Type (Tensor (..), TensorLike, fromTensor, toTensor)
+import Torch.GraduallyTyped.Unify (type (<+>))
 import Torch.Internal.GC (unsafeThrowableIO)
+import qualified Torch.Internal.Managed.Native as ATen
+import qualified Torch.Internal.Managed.Type.Tensor as ATen
 import qualified Torch.Internal.Managed.Type.TensorIndex as ATen
+import qualified Torch.Internal.Type as ATen
 import Type.Errors.Pretty (TypeError, type (%), type (<>))
+import Control.Lens (Lens', Lens)
 
 data IndexType a
   = NewAxis
@@ -219,10 +228,10 @@ type family IndexDimsImpl indices dims where
   IndexDimsImpl ('SliceFromUpToWithStep _ _ step ': ixs) ('Dim name _ ': dims) =
     CheckStep step ('Dim name 'UncheckedSize `PrependDimF` IndexDimsImpl ixs dims)
 
-type family IndexDims indices shape where
-  IndexDims 'UncheckedIndices _ = 'UncheckedShape
-  IndexDims _ 'UncheckedShape = 'UncheckedShape
-  IndexDims ('Indices indices) ('Shape dims) = IndexDimsImpl indices dims
+type family IndexShape indices shape where
+  IndexShape 'UncheckedIndices _ = 'UncheckedShape
+  IndexShape _ 'UncheckedShape = 'UncheckedShape
+  IndexShape ('Indices indices) ('Shape dims) = IndexDimsImpl indices dims
 
 data Indices (indexTypes :: Type) where
   UncheckedIndices :: forall indexTypes. Indices indexTypes
@@ -247,23 +256,13 @@ instance SingKind (Indices [IndexType (Index Nat)]) where
   toSing (Unchecked indexTypes) = SomeSing . SUncheckedIndices $ fmap forgetIsChecked <$> indexTypes
   toSing (Checked indexTypes) = withSomeSing ((fmap . fmap . fmap) DemotedIndex indexTypes) $ SomeSing . SIndices
 
--- | Indexes/slices a tensor.
--- >>> g <- sMkGenerator (SDevice SCPU) 0
--- >>> sRandn' = sRandn . TensorSpec (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat)
--- >>>
-(!) ::
-  forall indices requiresGradient layout device dataType shape m.
-  MonadThrow m =>
-  Tensor requiresGradient layout device dataType shape ->
-  SIndices indices ->
-  m (Tensor requiresGradient layout device dataType (IndexDims indices shape))
-(UnsafeTensor t) ! sIndices = unsafeThrowableIO $ do
+toTensorIndexList :: [IndexType Integer] -> IO (ForeignPtr (ATen.StdVector ATen.TensorIndex))
+toTensorIndexList indices = do
   indexList <- ATen.newTensorIndexList
   tensorIndices <- traverse toTensorIndex indices
   forM_ tensorIndices $ ATen.tensorIndexList_push_back indexList
-  UnsafeTensor <$> ATen.index t indexList
+  pure indexList
   where
-    indices = fmap forgetIsChecked <$> forgetIsChecked (fromSing sIndices)
     toTensorIndex =
       fmap fromIntegral >>> \case
         NewAxis -> ATen.newTensorIndexWithNone
@@ -278,6 +277,70 @@ instance SingKind (Indices [IndexType (Index Nat)]) where
         SliceFromWithStep from step -> ATen.newTensorIndexWithSlice from maxBound step
         SliceUpToWithStep upTo step -> ATen.newTensorIndexWithSlice 0 upTo step
         SliceFromUpToWithStep from upTo step -> ATen.newTensorIndexWithSlice from upTo step
+
+-- | Indexes/slices a tensor.
+-- >>> g <- sMkGenerator (SDevice SCPU) 0
+-- >>> sRandn' = sRandn . TensorSpec (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat)
+-- >>> t = sRandn' (SShape $ SName @"*" :&: SSize @3 :|: SName @"*" :&: SSize @5 :|: SNil) g
+-- >>> result <- t ! [slice|:2, 3|]
+(!) ::
+  forall indices gradient layout device dataType shape m.
+  MonadThrow m =>
+  Tensor gradient layout device dataType shape ->
+  SIndices indices ->
+  m (Tensor gradient layout device dataType (IndexShape indices shape))
+(UnsafeTensor t) ! sIndices = unsafeThrowableIO $ do
+  indexList <- toTensorIndexList indices
+  UnsafeTensor <$> ATen.index t indexList
+  where
+    indices = fmap forgetIsChecked <$> forgetIsChecked (fromSing sIndices)
+
+setAt ::
+  forall gradient layout device dataType shape shape' indices m.
+  ( -- TensorLike a dType dims,
+    -- Catch ('DataType dType <+> dataType),
+    -- Catch ('Shape dims <+> shape'),
+    shape' ~ IndexShape indices shape,
+    Catch (shape' <+> BroadcastShapesF shape shape'),
+    SingI gradient,
+    SingI layout,
+    SingI device,
+    MonadThrow m
+  ) =>
+  Tensor gradient layout device dataType shape ->
+  SIndices indices ->
+  Tensor gradient layout device dataType shape' ->
+  m (Tensor gradient layout device dataType shape)
+setAt (UnsafeTensor t') sIndices (UnsafeTensor x) = unsafeThrowableIO $ do
+  t <- ATen.clone_t t'
+  indexList <- toTensorIndexList indices
+  -- UnsafeTensor x <- toTensor @gradient @layout @device x'
+  UnsafeTensor <$> ATen.index_put_ t indexList x
+  where
+    indices = fmap forgetIsChecked <$> forgetIsChecked (fromSing sIndices)
+
+-- instance Ixed (Tensor gradient layout device dataType shape)
+
+toLens ::
+  forall s a gradient layout device dataType shape indices m.
+  ( -- TensorLike a dType dims,
+    -- 'DataType dType ~ dataType,
+    -- 'Shape dims ~ IndexShape indices shape,
+    s ~ Tensor gradient layout device dataType shape,
+    a ~ Tensor gradient layout device dataType (IndexShape indices shape),
+    SingI gradient,
+    SingI layout,
+    SingI device,
+    MonadThrow m
+  ) =>
+  SIndices indices ->
+  Lens s (m s) a a
+toLens sIndices (f :: a -> f a) s =
+  -- let b = f . fromTensor =<< s ! sIndices in
+  -- setAt s sIndices <$> (fromTensor (s ! sIndices))
+  let ma :: m a = fromTensor <$> (s ! sIndices :: m (Tensor gradient layout device dataType (IndexShape indices shape)))
+      set (fma :: f (m a)) = undefined -- (setAt s sIndices) <$> fma
+  in set (f ma)
 
 type Parser = ParsecT Void String TH.Q
 
