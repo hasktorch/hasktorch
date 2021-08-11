@@ -344,22 +344,22 @@ toLens ::
     Traversable m
   ) =>
   SIndices indices ->
-  Traversal s (m s) a' a'
-toLens sIndices (f :: a' -> f a') s =
+  Traversal s (m s) a' (m a')
+toLens sIndices (f :: a' -> f (m a')) s =
   let ma' :: m a' = fromTensor @a' <$> (s ! sIndices :: m a)
-      mfa' :: m (f a') = f <$> ma'
+      mfma' :: m (f (m a')) = f <$> ma'
       set' :: a' -> m s
       set' a' = do
         s' <- toTensor a'
         setAt s sIndices s'
-      set :: m (f a') -> f (m s)
+      set :: m (f (m a')) -> f (m s)
       set x = 
         let y :: m (f (m s)) = do
               x' <- x
-              pure $ set' <$> x'
+              pure $ (>>= set') <$> x'
             y'' :: f (m (m s)) = sequenceA y
         in join <$> y''
-   in set mfa'
+   in set mfma'
 
 type Parser = ParsecT Void String TH.Q
 
