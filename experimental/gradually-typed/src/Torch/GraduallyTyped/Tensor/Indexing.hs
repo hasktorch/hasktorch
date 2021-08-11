@@ -20,12 +20,13 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns #-}
 
+{-# LANGUAGE PartialTypeSignatures #-}
 module Torch.GraduallyTyped.Tensor.Indexing
   ( IndexType (..),
     SIndexType (..),
     Indices (..),
     SIndices (..),
-    IndexDims,
+    -- IndexDims,
     (!),
     slice,
     parseSlice,
@@ -35,7 +36,8 @@ module Torch.GraduallyTyped.Tensor.Indexing
 where
 
 import Control.Arrow ((>>>))
-import Control.Monad (forM_, void, (<=<))
+import Control.Lens (Lens, Lens', Traversal)
+import Control.Monad (forM_, void, (<=<), join)
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.Trans (lift)
 import Data.Coerce (coerce)
@@ -56,10 +58,10 @@ import qualified Text.Megaparsec.Char as M
 import qualified Text.Megaparsec.Char.Lexer as L
 import Torch.GraduallyTyped.DType (DataType (..))
 import Torch.GraduallyTyped.Index.Type (DemotedIndex (..), Index (..), SIndex (..))
-import Torch.GraduallyTyped.Prelude (Catch, If, IsChecked (..), When, forgetIsChecked, type (<?), Seq)
-import Torch.GraduallyTyped.Shape.Class (PrependDimF, BroadcastShapesF)
+import Torch.GraduallyTyped.Prelude (Catch, If, IsChecked (..), Seq, When, forgetIsChecked, type (<?))
+import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, PrependDimF)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Shape (..), Size (..))
-import Torch.GraduallyTyped.Tensor.Type (Tensor (..), TensorLike, fromTensor, toTensor)
+import Torch.GraduallyTyped.Tensor.Type (Tensor (..), TensorLike (sToTensor), fromTensor, toTensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 import Torch.Internal.GC (unsafeThrowableIO)
 import qualified Torch.Internal.Managed.Native as ATen
@@ -67,7 +69,6 @@ import qualified Torch.Internal.Managed.Type.Tensor as ATen
 import qualified Torch.Internal.Managed.Type.TensorIndex as ATen
 import qualified Torch.Internal.Type as ATen
 import Type.Errors.Pretty (TypeError, type (%), type (<>))
-import Control.Lens (Lens', Lens)
 
 data IndexType a
   = NewAxis
@@ -188,7 +189,10 @@ type family CheckStep (step :: Index Nat) ok where
   CheckStep ('Index 0) _ = TypeError StepZeroErrorMessage
   CheckStep _ ok = ok
 
-type IndexDimsImpl :: [IndexType (Index Nat)] -> [Dim (Name Symbol) (Size Nat)] -> Shape [Dim (Name Symbol) (Size Nat)]
+type IndexDimsImpl ::
+  [IndexType (Index Nat)] ->
+  [Dim (Name Symbol) (Size Nat)] ->
+  Shape [Dim (Name Symbol) (Size Nat)]
 type family IndexDimsImpl indices dims where
   IndexDimsImpl '[] dims = 'Shape dims
   IndexDimsImpl ('NewAxis ': ixs) dims = 'Dim ('Name "*") ('Size 1) `PrependDimF` IndexDimsImpl ixs dims
@@ -228,6 +232,10 @@ type family IndexDimsImpl indices dims where
   IndexDimsImpl ('SliceFromUpToWithStep _ _ step ': ixs) ('Dim name _ ': dims) =
     CheckStep step ('Dim name 'UncheckedSize `PrependDimF` IndexDimsImpl ixs dims)
 
+type IndexShape ::
+  Indices [IndexType (Index Nat)] ->
+  Shape [Dim (Name Symbol) (Size Nat)] ->
+  Shape [Dim (Name Symbol) (Size Nat)]
 type family IndexShape indices shape where
   IndexShape 'UncheckedIndices _ = 'UncheckedShape
   IndexShape _ 'UncheckedShape = 'UncheckedShape
@@ -322,25 +330,36 @@ setAt (UnsafeTensor t') sIndices (UnsafeTensor x) = unsafeThrowableIO $ do
 -- instance Ixed (Tensor gradient layout device dataType shape)
 
 toLens ::
-  forall s a gradient layout device dataType shape indices m.
-  ( -- TensorLike a dType dims,
-    -- 'DataType dType ~ dataType,
-    -- 'Shape dims ~ IndexShape indices shape,
+  forall s a a' gradient layout device dataType shape indices dims dType m.
+  ( TensorLike a' dType dims,
+    'DataType dType ~ dataType,
+    'Shape dims ~ IndexShape indices shape,
     s ~ Tensor gradient layout device dataType shape,
     a ~ Tensor gradient layout device dataType (IndexShape indices shape),
+    Catch ('Shape dims <+> BroadcastShapesF shape ('Shape dims)),
     SingI gradient,
     SingI layout,
     SingI device,
-    MonadThrow m
+    MonadThrow m,
+    Traversable m
   ) =>
   SIndices indices ->
-  Lens s (m s) a a
-toLens sIndices (f :: a -> f a) s =
-  -- let b = f . fromTensor =<< s ! sIndices in
-  -- setAt s sIndices <$> (fromTensor (s ! sIndices))
-  let ma :: m a = fromTensor <$> (s ! sIndices :: m (Tensor gradient layout device dataType (IndexShape indices shape)))
-      set (fma :: f (m a)) = undefined -- (setAt s sIndices) <$> fma
-  in set (f ma)
+  Traversal s (m s) a' a'
+toLens sIndices (f :: a' -> f a') s =
+  let ma' :: m a' = fromTensor @a' <$> (s ! sIndices :: m a)
+      mfa' :: m (f a') = f <$> ma'
+      set' :: a' -> m s
+      set' a' = do
+        s' <- toTensor a'
+        setAt s sIndices s'
+      set :: m (f a') -> f (m s)
+      set x = 
+        let y :: m (f (m s)) = do
+              x' <- x
+              pure $ set' <$> x'
+            y'' :: f (m (m s)) = sequenceA y
+        in join <$> y''
+   in set mfa'
 
 type Parser = ParsecT Void String TH.Q
 
