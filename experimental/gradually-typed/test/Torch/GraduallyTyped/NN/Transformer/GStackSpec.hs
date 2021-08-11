@@ -23,7 +23,7 @@ testEncoderStack = do
       dropoutP = 0
       eps = 1e-6
   g <- sMkGenerator device 0
-  let spec = NamedModel "stack." $ encoderStackSpec ST5 (SNat @2) gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP eps
+  let spec = NamedModel "stack." $ encoderStackSpec ST5 (SNat @2) gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim SWithDropout dropoutP eps
   (encoderStack, g') <- initialize spec g
   encoderStack' <- flip evalStateT Map.empty $ do
     toStateDict mempty encoderStack
@@ -50,7 +50,7 @@ testDecoderStack = do
       dropoutP = 0
       eps = 1e-6
   g <- sMkGenerator device 0
-  let spec = NamedModel "stack." $ decoderStackSpec ST5 (SNat @2) gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP eps
+  let spec = NamedModel "stack." $ decoderStackSpec ST5 (SNat @2) gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim SWithDropout dropoutP eps
   (decoderStack, g') <- initialize spec g
   decoderStack' <- flip evalStateT Map.empty $ do
     toStateDict mempty decoderStack

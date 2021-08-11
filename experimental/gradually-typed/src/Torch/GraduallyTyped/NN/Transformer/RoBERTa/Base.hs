@@ -10,6 +10,7 @@ import Torch.GraduallyTyped.Device (Device, DeviceType, SDevice)
 import Torch.GraduallyTyped.NN.Class (ModelSpec)
 import Torch.GraduallyTyped.NN.Transformer.RoBERTa.Common (RoBERTaModelF, robertaModelSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead, TransformerHead)
+import Torch.GraduallyTyped.NN.Type (HasDropout, SHasDropout)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, Size (..))
 
@@ -57,13 +58,15 @@ type RoBERTaBaseTypeVocabDim = 'Dim ('Name "*") ('Size 1)
 type RoBERTaBase
   (transformerHead :: TransformerHead)
   (gradient :: Gradient RequiresGradient)
-  (device :: Device (DeviceType Nat)) =
-  RoBERTaModelF transformerHead RoBERTaBaseNumLayers gradient device RoBERTaBaseHeadDim RoBERTaBaseHeadEmbedDim RoBERTaBaseEmbedDim RoBERTaBaseInputEmbedDim RoBERTaBaseFFNDim RoBERTaBaseVocabDim RoBERTaBaseTypeVocabDim
+  (device :: Device (DeviceType Nat))
+  (hasDropout :: HasDropout) =
+  RoBERTaModelF transformerHead RoBERTaBaseNumLayers gradient device RoBERTaBaseHeadDim RoBERTaBaseHeadEmbedDim RoBERTaBaseEmbedDim RoBERTaBaseInputEmbedDim RoBERTaBaseFFNDim RoBERTaBaseVocabDim RoBERTaBaseTypeVocabDim hasDropout
 
 -- | RoBERTa-Base model specification.
 robertaBaseSpec ::
   STransformerHead transformerHead ->
   SGradient gradient ->
   SDevice device ->
-  ModelSpec (RoBERTaBase transformerHead gradient device)
+  SHasDropout hasDropout ->
+  ModelSpec (RoBERTaBase transformerHead gradient device hasDropout)
 robertaBaseSpec transformerHead = robertaModelSpec transformerHead robertaBaseNumLayers

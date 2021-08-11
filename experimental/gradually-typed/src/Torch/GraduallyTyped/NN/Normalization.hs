@@ -1,5 +1,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -23,6 +25,7 @@
 
 module Torch.GraduallyTyped.NN.Normalization where
 
+import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..))
@@ -75,6 +78,7 @@ data
     SShape normalizedShape ->
     Double ->
     LayerNormSpec hasBias gradient device dataType normalizedShape
+  deriving stock (Show, Generic)
 
 type instance ModelSpec (LayerNorm hasBias gradient device dataType normalizedShape) = LayerNormSpec hasBias gradient device dataType normalizedShape
 

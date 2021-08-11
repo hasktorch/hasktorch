@@ -23,7 +23,7 @@ testCA = do
       dropoutP = 0
       eps = 1e-6
   g <- sMkGenerator device 0
-  let spec = NamedModel "ca." $ crossAttentionSpec SPegasus gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP eps
+  let spec = NamedModel "ca." $ crossAttentionSpec SPegasus gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim SWithDropout dropoutP eps
   (ca, g') <- initialize spec g
   ca' <- flip evalStateT Map.empty $ do
     toStateDict mempty ca

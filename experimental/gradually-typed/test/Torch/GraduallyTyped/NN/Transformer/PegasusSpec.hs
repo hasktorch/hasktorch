@@ -28,7 +28,7 @@ testForwardPegasusXSum =
 
     let device = SDevice SCPU
 
-    let spec = pegasusXSumSpec SWithLMHead (SGradient SWithoutGradient) device
+    let spec = pegasusXSumSpec SWithLMHead (SGradient SWithoutGradient) device SWithoutDropout
     model <- flip evalStateT stateDict $ fromStateDict spec mempty
 
     g <- sMkGenerator (SDevice SCPU) 0

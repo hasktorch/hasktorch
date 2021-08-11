@@ -1,4 +1,6 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
@@ -17,21 +19,24 @@ module Torch.GraduallyTyped.NN.Transformer.GEncoderOnly where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxStateT (..))
+import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingKind (fromSing))
 import Data.Singletons.Prelude.Maybe (SMaybe (SNothing))
 import Data.Singletons.TypeLits (SNat)
+import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDataType)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec, NamedModel (..))
 import Torch.GraduallyTyped.NN.Sparse (Embedding (..), EmbeddingSpec (..))
-import Torch.GraduallyTyped.NN.Transformer.GLMHead (GLMHead, LMHeadActivationF, LMHeadBiasF, LMHeadDecoderF, LMHeadDenseF, LMHeadLayerNormF, lmHeadSpec)
-import Torch.GraduallyTyped.NN.Transformer.GTransformer (GTransformer, TEFinalDropoutF, TEFinalLayerNormF, TEInitialDropoutF, TEInitialLayerNormF, TEPosEncF, TERelPosEncF, TEStackF, transformerEncoderSpec)
+import Torch.GraduallyTyped.NN.Transformer.GLMHead (GLMHeadF, lmHeadSpec)
+import Torch.GraduallyTyped.NN.Transformer.GTransformer (TransformerEncoderF, transformerEncoderSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead (..), STransformerStyle (..), TransformerHead (..), TransformerStyle (..))
-import Torch.GraduallyTyped.Prelude (forgetIsChecked)
+import Torch.GraduallyTyped.NN.Type (HasDropout, SHasDropout)
+import Torch.GraduallyTyped.Prelude (Catch, forgetIsChecked)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient)
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, Size (..))
@@ -44,6 +49,16 @@ import Prelude hiding (head)
 data EncoderOnlyTransformerHasEmbedScaling
   = EncoderOnlyTransformerWithEmbedScaling
   | EncoderOnlyTransformerWithoutEmbedScaling
+  deriving (Eq, Ord, Show, Generic)
+
+type instance ModelSpec EncoderOnlyTransformerHasEmbedScaling = EncoderOnlyTransformerHasEmbedScaling
+
+instance HasInitialize EncoderOnlyTransformerHasEmbedScaling generatorDevice EncoderOnlyTransformerHasEmbedScaling generatorDevice where
+  initialize hasEmbedScaling g = pure (hasEmbedScaling, g)
+
+instance HasStateDict EncoderOnlyTransformerHasEmbedScaling where
+  fromStateDict hasEmbedScaling _ = pure hasEmbedScaling
+  toStateDict _ _ = pure ()
 
 -- | Generic encoder-only transformer model.
 -- This is a transformer model that only encodes the input, e.g. BERT.
@@ -77,15 +92,16 @@ data
       eotEmbedScaling :: EncoderOnlyTransformerHasEmbedScaling
     } ->
     GEncoderOnlyTransformer inputEmbedDim encoder encoderEmbedding encoderTypeEmbedding head
+  deriving stock (Show, Generic)
 
 type instance
   ModelSpec (GEncoderOnlyTransformer inputEmbedDim encoder encoderEmbedding encoderTypeEmbedding head) =
     GEncoderOnlyTransformer inputEmbedDim (ModelSpec encoder) (ModelSpec encoderEmbedding) (ModelSpec encoderTypeEmbedding) (ModelSpec head)
 
--- | Specifies the encoder of the encoder-only transformer model.
 type family
-  EOTEncoderF
+  GEncoderOnlyTransformerF
     (style :: TransformerStyle)
+    (transformerHead :: TransformerHead)
     (numLayers :: Nat)
     (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
@@ -95,20 +111,19 @@ type family
     (embedDim :: Dim (Name Symbol) (Size Nat))
     (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
     (ffnDim :: Dim (Name Symbol) (Size Nat))
-    (posEncDim :: Dim (Name Symbol) (Size Nat)) ::
+    (posEncDim :: Dim (Name Symbol) (Size Nat))
+    (vocabDim :: Dim (Name Symbol) (Size Nat))
+    (typeVocabDim :: Dim (Name Symbol) (Size Nat))
+    (hasDropout :: HasDropout) ::
     Type
   where
-  EOTEncoderF style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim =
-    NamedModel
-      ( GTransformer
-          (TEPosEncF style gradient device dataType inputEmbedDim posEncDim)
-          (TERelPosEncF style gradient device dataType headDim posEncDim)
-          (TEInitialLayerNormF style gradient device dataType inputEmbedDim)
-          (TEInitialDropoutF style)
-          (TEStackF style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim)
-          (TEFinalLayerNormF style gradient device dataType inputEmbedDim)
-          (TEFinalDropoutF style)
-      )
+  GEncoderOnlyTransformerF style transformerHead numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim hasDropout =
+    GEncoderOnlyTransformer
+      inputEmbedDim
+      (NamedModel (TransformerEncoderF style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim hasDropout))
+      (EOTEmbeddingF style gradient device dataType inputEmbedDim vocabDim)
+      (EOTTypeEmbeddingF style gradient device dataType inputEmbedDim typeVocabDim)
+      (EOTHeadF style transformerHead gradient device dataType inputEmbedDim vocabDim)
 
 -- | Specifies the embedding layer of the encoder-only transformer model.
 type family
@@ -155,15 +170,7 @@ type family
   EOTHeadF _ 'WithoutHead _ _ _ _ _ =
     ()
   EOTHeadF style 'WithLMHead gradient device dataType inputEmbedDim vocabDim =
-    NamedModel
-      ( GLMHead
-          inputEmbedDim
-          (LMHeadDenseF style gradient device dataType inputEmbedDim)
-          (LMHeadActivationF style)
-          (LMHeadLayerNormF style gradient device dataType inputEmbedDim)
-          (LMHeadDecoderF style gradient device dataType inputEmbedDim vocabDim)
-          (LMHeadBiasF style gradient device dataType vocabDim)
-      )
+    NamedModel (GLMHeadF style gradient device dataType inputEmbedDim vocabDim)
 
 -- | Specifies the parameters of an encoder-only transformer model.
 --
@@ -184,7 +191,7 @@ type family
 -- - @dropoutP@: the dropout rate.
 -- - @eps@: the epsilon value for numerical stability of the layer normalization.
 encoderOnlyTransformerSpec ::
-  forall style transformerHead numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim.
+  forall style transformerHead numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim hasDropout.
   STransformerStyle style ->
   STransformerHead transformerHead ->
   SNat numLayers ->
@@ -199,17 +206,11 @@ encoderOnlyTransformerSpec ::
   SDim posEncDim ->
   SDim vocabDim ->
   SDim typeVocabDim ->
+  SHasDropout hasDropout ->
   Double ->
   Double ->
-  ModelSpec
-    ( GEncoderOnlyTransformer
-        inputEmbedDim
-        (EOTEncoderF style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim)
-        (EOTEmbeddingF style gradient device dataType inputEmbedDim vocabDim)
-        (EOTTypeEmbeddingF style gradient device dataType inputEmbedDim typeVocabDim)
-        (EOTHeadF style transformerHead gradient device dataType inputEmbedDim vocabDim)
-    )
-encoderOnlyTransformerSpec style transformerHead numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP eps =
+  ModelSpec (GEncoderOnlyTransformerF style transformerHead numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim hasDropout)
+encoderOnlyTransformerSpec style transformerHead numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim hasDropout dropoutP eps =
   let encoderSpec ST5 = undefined
       encoderSpec SByT5 = undefined
       encoderSpec SBART = undefined
@@ -253,63 +254,36 @@ encoderOnlyTransformerSpec style transformerHead numLayers gradient device dataT
       embedScalingSpec SBERT = EncoderOnlyTransformerWithoutEmbedScaling
       embedScalingSpec SRoBERTa = EncoderOnlyTransformerWithoutEmbedScaling
       embedScalingSpec SGPT2 = undefined
-   in GEncoderOnlyTransformer inputEmbedDim (encoderSpec style) (embeddingSpec style) (typeEmbeddingSpec style) (headSpec style transformerHead) (embedScalingSpec style)
+   in GEncoderOnlyTransformer
+        inputEmbedDim
+        (encoderSpec style)
+        (embeddingSpec style)
+        (typeEmbeddingSpec style)
+        (headSpec style transformerHead)
+        (embedScalingSpec style)
   where
     encoderSpec' :: _
-    encoderSpec' style' = transformerEncoderSpec style' numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP eps
+    encoderSpec' style' = transformerEncoderSpec style' numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim hasDropout dropoutP eps
     embeddingSpec' = EmbeddingSpec gradient (SLayout SDense) device dataType vocabDim inputEmbedDim SNothing
     typeEmbeddingSpec' = EmbeddingSpec gradient (SLayout SDense) device dataType typeVocabDim inputEmbedDim SNothing
     headSpec' :: _
     headSpec' style' = lmHeadSpec style' gradient device dataType inputEmbedDim vocabDim eps
 
 instance
-  ( HasInitialize encoder generatorDevice encoder generatorDevice,
-    HasInitialize encoderEmbedding generatorDevice encoderEmbedding generatorDevice,
-    HasInitialize encoderTypeEmbedding generatorDevice encoderTypeEmbedding generatorDevice,
-    HasInitialize head generatorDevice head generatorDevice
+  ( HasInitialize encoder generatorDevice encoder' generatorDevice0,
+    HasInitialize encoderEmbedding generatorDevice0 encoderEmbedding' generatorDevice1,
+    HasInitialize encoderTypeEmbedding generatorDevice1 encoderTypeEmbedding' generatorDevice2,
+    HasInitialize head generatorDevice2 head' generatorOutputDevice
   ) =>
   HasInitialize
     (GEncoderOnlyTransformer inputEmbedDim encoder encoderEmbedding encoderTypeEmbedding head)
     generatorDevice
-    (GEncoderOnlyTransformer inputEmbedDim encoder encoderEmbedding encoderTypeEmbedding head)
-    generatorDevice
-  where
-  initialize (GEncoderOnlyTransformer inputEmbedDim encoderSpec encoderEmbeddingSpec encoderTypeEmbeddingSpec headSpec embedScalingSpec) =
-    let encoder = IxStateT . initialize $ encoderSpec
-        embedding = IxStateT . initialize $ encoderEmbeddingSpec
-        typeEmbedding = IxStateT . initialize $ encoderTypeEmbeddingSpec
-        head = IxStateT . initialize $ headSpec
-     in runIxStateT
-          ( GEncoderOnlyTransformer inputEmbedDim
-              <<$>> encoder
-              <<*>> embedding
-              <<*>> typeEmbedding
-              <<*>> head
-              <<*>> ireturn embedScalingSpec
-          )
+    (GEncoderOnlyTransformer inputEmbedDim encoder' encoderEmbedding' encoderTypeEmbedding' head')
+    generatorOutputDevice
 
 instance
-  ( HasStateDict encoder,
-    HasStateDict encoderEmbedding,
-    HasStateDict encoderTypeEmbedding,
-    HasStateDict head
-  ) =>
+  (HasStateDict encoder, HasStateDict encoderEmbedding, HasStateDict encoderTypeEmbedding, HasStateDict head) =>
   HasStateDict (GEncoderOnlyTransformer inputEmbedDim encoder encoderEmbedding encoderTypeEmbedding head)
-  where
-  fromStateDict (GEncoderOnlyTransformer inputEmbedDim encoderSpec encoderEmbeddingSpec encoderTypeEmbeddingSpec headSpec embedScalingSpec) k =
-    GEncoderOnlyTransformer
-      inputEmbedDim
-      <$> fromStateDict encoderSpec k
-      <*> fromStateDict encoderEmbeddingSpec k
-      <*> fromStateDict encoderTypeEmbeddingSpec k
-      <*> fromStateDict headSpec k
-      <*> pure embedScalingSpec
-  toStateDict k GEncoderOnlyTransformer {..} = do
-    () <- toStateDict k eotEncoder
-    () <- toStateDict k eotEmbedding
-    () <- toStateDict k eotTypeEmbedding
-    () <- toStateDict k eotHead
-    pure ()
 
 data
   GSimplifiedEncoderOnlyTransformer
@@ -330,68 +304,27 @@ data
       seotMkAttentionMask :: mkAttentionMask
     } ->
     GSimplifiedEncoderOnlyTransformer model mkPos mkPaddingMask mkAttentionMask
+  deriving stock (Eq, Ord, Show, Generic)
 
 type instance
   ModelSpec (GSimplifiedEncoderOnlyTransformer model mkPos mkPaddingMask mkAttentionMask) =
     GSimplifiedEncoderOnlyTransformer (ModelSpec model) (ModelSpec mkPos) (ModelSpec mkPaddingMask) (ModelSpec mkAttentionMask)
 
 instance
-  ( HasInitialize
-      model
-      generatorDevice
-      model
-      generatorDevice,
-    HasInitialize
-      mkPos
-      generatorDevice
-      mkPos
-      generatorDevice,
-    HasInitialize
-      mkPaddingMask
-      generatorDevice
-      mkPaddingMask
-      generatorDevice,
-    HasInitialize
-      mkAttentionMask
-      generatorDevice
-      mkAttentionMask
-      generatorDevice
+  ( HasInitialize model generatorDevice model' generatorDevice0,
+    HasInitialize mkPos generatorDevice0 mkPos' generatorDevice1,
+    HasInitialize mkPaddingMask generatorDevice1 mkPaddingMask' generatorDevice2,
+    HasInitialize mkAttentionMask generatorDevice2 mkAttentionMask' generatorOutputDevice
   ) =>
   HasInitialize
     (GSimplifiedEncoderOnlyTransformer model mkPos mkPaddingMask mkAttentionMask)
     generatorDevice
-    (GSimplifiedEncoderOnlyTransformer model mkPos mkPaddingMask mkAttentionMask)
-    generatorDevice
-  where
-  initialize (GSimplifiedEncoderOnlyTransformer modelSpec mkPosSpec mkPaddingMaskSpec mkAttentionMaskSpec) =
-    runIxStateT
-      ( GSimplifiedEncoderOnlyTransformer
-          <<$>> (IxStateT . initialize $ modelSpec)
-          <<*>> (IxStateT . initialize $ mkPosSpec)
-          <<*>> (IxStateT . initialize $ mkPaddingMaskSpec)
-          <<*>> (IxStateT . initialize $ mkAttentionMaskSpec)
-      )
+    (GSimplifiedEncoderOnlyTransformer model' mkPos' mkPaddingMask' mkAttentionMask')
+    generatorOutputDevice
 
 instance
-  ( HasStateDict model,
-    HasStateDict mkPos,
-    HasStateDict mkPaddingMask,
-    HasStateDict mkAttentionMask
-  ) =>
+  (HasStateDict model, HasStateDict mkPos, HasStateDict mkPaddingMask, HasStateDict mkAttentionMask) =>
   HasStateDict (GSimplifiedEncoderOnlyTransformer model mkPos mkPaddingMask mkAttentionMask)
-  where
-  fromStateDict (GSimplifiedEncoderOnlyTransformer modelSpec mkPosSpec mkPaddingMaskSpec mkAttentionMaskSpec) k =
-    GSimplifiedEncoderOnlyTransformer
-      <$> fromStateDict modelSpec k
-      <*> fromStateDict mkPosSpec k
-      <*> fromStateDict mkPaddingMaskSpec k
-      <*> fromStateDict mkAttentionMaskSpec k
-  toStateDict k GSimplifiedEncoderOnlyTransformer {..} = do
-    () <- toStateDict k seotModel
-    () <- toStateDict k seotMkPos
-    () <- toStateDict k seotMkPaddingMask
-    () <- toStateDict k seotMkAttentionMask
-    pure ()
 
 -- | Input data type for use with an encoder-only transformer.
 data EncoderOnlyTransformerInput input inputType pos attentionMask where
@@ -403,14 +336,7 @@ data EncoderOnlyTransformerInput input inputType pos attentionMask where
       eotAttentionMask :: attentionMask
     } ->
     EncoderOnlyTransformerInput input inputType pos attentionMask
-
-deriving instance
-  ( Show input,
-    Show inputType,
-    Show pos,
-    Show attentionMask
-  ) =>
-  Show (EncoderOnlyTransformerInput input inputType pos attentionMask)
+  deriving stock (Eq, Ord, Show, Generic)
 
 data SimplifiedEncoderOnlyTransformerInput input inputType where
   SimplifiedEncoderOnlyTransformerInput ::
@@ -419,6 +345,7 @@ data SimplifiedEncoderOnlyTransformerInput input inputType where
       seotInputType :: inputType
     } ->
     SimplifiedEncoderOnlyTransformerInput input inputType
+  deriving stock (Eq, Ord, Show, Generic)
 
 -- | Output data type for use with an encoder-only transformer.
 data EncoderOnlyTransformerOutput output where
@@ -427,11 +354,7 @@ data EncoderOnlyTransformerOutput output where
     { eotOutput :: output
     } ->
     EncoderOnlyTransformerOutput output
-
-deriving instance
-  ( Show output
-  ) =>
-  Show (EncoderOnlyTransformerOutput output)
+  deriving stock (Eq, Ord, Show, Generic)
 
 data SimplifiedEncoderOnlyTransformerOutput output paddingMask where
   SimplifiedEncoderOnlyTransformerOutput ::
@@ -440,6 +363,7 @@ data SimplifiedEncoderOnlyTransformerOutput output paddingMask where
       sedtPaddingMask :: paddingMask
     } ->
     SimplifiedEncoderOnlyTransformerOutput output paddingMask
+  deriving stock (Eq, Ord, Show, Generic)
 
 -- | 'HasForward' instance for encoder-only transformers with optional scaling and head.
 --
@@ -494,6 +418,7 @@ instance
       typeEmbeddingGeneratorOutputDevice
       encoderOutput
       encoderGeneratorOutputDevice,
+    Catch (BroadcastShapesF shape' shape''),
     HasForward
       head
       encoderOutput
@@ -529,7 +454,8 @@ instance
                 )
                 eotEmbedScaling
      in runIxStateT $
-          add <<$>> embeddedInput <<*>> embeddedInputType
+          (,) <<$>> embeddedInput <<*>> embeddedInputType
+            >>>= ilift . uncurry add
             >>>= (\input' -> IxStateT $ forward eotEncoder (input', eotPos, eotAttentionMask))
             >>>= IxStateT . forward eotHead
             >>>= ireturn . EncoderOnlyTransformerOutput

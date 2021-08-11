@@ -44,12 +44,12 @@ testEncoderOnlyTransformer = do
   let eotInputType = eotInput
   eotAttentionMask <- sOnes' dataType (SShape $ batchDim :|: seqDim :|: seqDim :|: SNil)
   (bertOutput, g'') <- do
-    let spec = NamedModel "bert." $ encoderOnlyTransformerSpec SBERT SWithLMHead (SNat @17) gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP eps
+    let spec = NamedModel "bert." $ encoderOnlyTransformerSpec SBERT SWithLMHead (SNat @17) gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim SWithDropout dropoutP eps
     (bert, g') <- initialize spec g
     eotPos <- sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: SNil)
     forward bert EncoderOnlyTransformerInput {..} g'
   (robertaOutput, g'''') <- do
-    let spec = NamedModel "roberta." $ encoderOnlyTransformerSpec SRoBERTa SWithLMHead (SNat @19) gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim dropoutP eps
+    let spec = NamedModel "roberta." $ encoderOnlyTransformerSpec SRoBERTa SWithLMHead (SNat @19) gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim vocabDim typeVocabDim SWithDropout dropoutP eps
     (roberta, g''') <- initialize spec g''
     eotPos <- sOnes' (SDataType SInt64) (SShape $ SName @"*" :&: SSize @1 :|: seqDim :|: SNil)
     forward roberta EncoderOnlyTransformerInput {..} g'''

@@ -24,7 +24,7 @@ testEncoder = do
       dropoutP = 0
       eps = 1e-6
   g <- sMkGenerator device 0
-  let spec = NamedModel "encoder." $ transformerEncoderSpec ST5 (SNat @10) gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP eps
+  let spec = NamedModel "encoder." $ transformerEncoderSpec ST5 (SNat @10) gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim SWithDropout dropoutP eps
   (encoder, g') <- initialize spec g
   encoder' <- flip evalStateT Map.empty $ do
     toStateDict mempty encoder
@@ -53,7 +53,7 @@ testDecoder = do
       dropoutP = 0
       eps = 1e-6
   g <- sMkGenerator device 0
-  let spec = NamedModel "decoder." $ transformerDecoderSpec SBART (SNat @10) gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP eps
+  let spec = NamedModel "decoder." $ transformerDecoderSpec SBART (SNat @10) gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim SWithDropout dropoutP eps
   (decoder, g') <- initialize spec g
   decoder' <- flip evalStateT Map.empty $ do
     toStateDict mempty decoder

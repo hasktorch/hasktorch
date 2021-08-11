@@ -20,7 +20,7 @@ testFFN = do
       dropoutP = 0
       eps = 1e-6
   g <- sMkGenerator device 0
-  let spec = NamedModel "ffn." $ transformerFeedForwardNetworkSpec SByT5 gradient device dataType queryEmbedDim ffnDim dropoutP eps
+  let spec = NamedModel "ffn." $ transformerFeedForwardNetworkSpec SByT5 gradient device dataType queryEmbedDim ffnDim SWithDropout dropoutP eps
   (ffn, g') <- initialize spec g
   ffn' <- flip evalStateT Map.empty $ do
     toStateDict mempty ffn
