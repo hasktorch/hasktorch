@@ -32,7 +32,7 @@ import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Constraint, Type)
 import qualified Data.Map.Strict as Map
 import Data.Proxy (Proxy (..))
-import Data.Singletons.TypeLits (SNat (..))
+import Torch.GraduallyTyped.Prelude.TypeLits (SNat (..))
 import Data.Text (Text)
 import qualified Data.Text as Text
 import Data.Typeable (Typeable)

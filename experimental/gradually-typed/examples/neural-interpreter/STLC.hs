@@ -56,10 +56,6 @@ data Exp a
     Sign {exp :: Exp a}
   deriving stock (Functor, Foldable, Traversable, Generic, Generic1)
 
-deriveEq1 ''Exp
-deriveShow1 ''Exp
-deriveOrd1 ''Exp
-
 instance Applicative Exp where
   pure = Var
   (<*>) = ap
@@ -77,11 +73,16 @@ instance Monad Exp where
   (Abs e) >>= f = Abs (e >>= f)
   (Sign e) >>= f = Sign (e >>= f)
 
+deriveEq1 ''Exp
+deriveShow1 ''Exp
+deriveOrd1 ''Exp
+
 instance Eq a => Eq (Exp a) where (==) = eq1
 
 instance Ord a => Ord (Exp a) where compare = compare1
 
 instance Show a => Show (Exp a) where showsPrec = showsPrec1
+
 
 -- | Smart constructor for lambda terms
 lam :: forall a. Eq a => Ty -> a -> Exp a -> Exp a

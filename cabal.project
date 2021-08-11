@@ -13,6 +13,16 @@ source-repository-package
     --sha256: 03nm9kd1j6v5ygxiyc86gbr4sjzj4l9xibmpccyws49vwzf02p2k
     subdir: bindings/haskell/tokenizers-haskell
 
+source-repository-package
+    type: git
+    location: https://github.com/hasktorch/typelevel-rewrite-rules
+    tag: f3f810f2be9a8cc31c4e4aeb6578bbd8a7d203b2
+
+source-repository-package
+    type: git
+    location: https://github.com/hasktorch/pipes-text
+    tag: d4805e84327e266daa730d23982db3172f226cac
+
 write-ghc-environment-files: always
 tests: true
 documentation: false

@@ -33,7 +33,7 @@ declarationsSpec = do
         return "test/Declarations.yaml"
       True -> return declarationsPath
     xs <- vanillaParse yamlFile
-    fs <- parseWith yamlFile (Proxy @ Declaration)
+    fs <- parseWith yamlFile (Proxy @Declaration)
     (length fs) `shouldBe` (length xs)
 
  where
