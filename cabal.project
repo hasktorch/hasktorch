@@ -16,11 +16,13 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/hasktorch/typelevel-rewrite-rules
+    --sha256: 0481wbfkqrf37jwd57zg96wy4gw3kwnxqvq4lnsb6l6rx03gjiyl
     tag: f3f810f2be9a8cc31c4e4aeb6578bbd8a7d203b2
 
 source-repository-package
     type: git
     location: https://github.com/hasktorch/pipes-text
+    --sha256: 0yp3zr4hlswqzl8axkgnfapclx764q402dv5qmcvpm6aphzkavyx
     tag: d4805e84327e266daa730d23982db3172f226cac
 
 write-ghc-environment-files: always
