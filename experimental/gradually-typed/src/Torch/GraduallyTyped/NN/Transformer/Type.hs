@@ -22,7 +22,7 @@
 module Torch.GraduallyTyped.NN.Transformer.Type where
 
 import Control.Monad.Catch (MonadThrow)
-import Data.Singletons.Prelude.List (SList (SNil))
+import Torch.GraduallyTyped.Prelude.List (SList (SNil))
 import Data.Singletons.TH (SingKind (fromSing), genSingletons)
 import GHC.Float (double2Int)
 import GHC.Generics (Generic)

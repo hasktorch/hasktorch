@@ -18,7 +18,7 @@ import qualified Torch.Internal.Managed.Native as ATen
 import Type.Errors.Pretty (type (%), type (<>))
 
 -- $setup
--- >>> import Data.Singletons.Prelude.List (SList (..))
+-- >>> import Torch.GraduallyTyped.Prelude.List (SList (..))
 -- >>> import Torch.GraduallyTyped
 
 type SoftMaxErrorMessage (by :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) =

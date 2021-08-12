@@ -19,7 +19,7 @@ import qualified Torch.Internal.Type as ATen (Tensor)
 import Unsafe.Coerce (unsafeCoerce)
 
 -- $setup
--- >>> import Data.Singletons.Prelude.List (SList (..))
+-- >>> import Torch.GraduallyTyped.Prelude.List (SList (..))
 -- >>> import Torch.GraduallyTyped
 
 -- | Dropout randomly zeroes some of the elements of

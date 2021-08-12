@@ -39,7 +39,7 @@ import Type.Errors.Pretty (type (%), type (<>))
 import Prelude hiding (all, any)
 
 -- $setup
--- >>> import Data.Singletons.Prelude.List (SList (..))
+-- >>> import Torch.GraduallyTyped.Prelude.List (SList (..))
 -- >>> import Torch.GraduallyTyped
 -- >>> import Prelude hiding (all, any)
 

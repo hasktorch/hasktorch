@@ -4,7 +4,7 @@
 module Torch.GraduallyTyped.IndexingSpec where
 
 import Data.Maybe (fromJust)
-import Data.Singletons.Prelude.List
+import Torch.GraduallyTyped.Prelude.List
 import qualified Data.Vector.Sized as SV
 import Test.Hspec
 import Torch.GraduallyTyped

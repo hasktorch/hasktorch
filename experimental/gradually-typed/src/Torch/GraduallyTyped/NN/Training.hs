@@ -7,7 +7,7 @@
 module Torch.GraduallyTyped.NN.Training where
 
 import Control.Monad.IO.Class (MonadIO (..))
-import Data.Singletons.Prelude.List (SList (..))
+import Torch.GraduallyTyped.Prelude.List (SList (..))
 import qualified Pipes as P
 import qualified Pipes.Prelude as P
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (..), ModelSpec)

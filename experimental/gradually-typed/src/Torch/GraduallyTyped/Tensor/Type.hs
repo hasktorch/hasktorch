@@ -42,7 +42,7 @@ import Data.List.NonEmpty (NonEmpty ((:|)), nonEmpty, unzip)
 import Data.Maybe (maybeToList)
 import Data.Proxy (Proxy (..))
 import Data.Singletons (SingI (sing), fromSing)
-import Data.Singletons.Prelude.List (SList (..))
+import Torch.GraduallyTyped.Prelude.List (SList (..))
 import Data.Typeable (Typeable)
 import qualified Data.Vector as V hiding (uncons)
 import qualified Torch.GraduallyTyped.Internal.Vector as V
@@ -77,7 +77,7 @@ import Prelude hiding (unzip, unzip3)
 import GHC.Generics (Generic)
 
 -- $setup
--- >>> import Data.Singletons.Prelude.List (SList (..))
+-- >>> import Torch.GraduallyTyped.Prelude.List (SList (..))
 -- >>> import Torch.GraduallyTyped
 
 -- | A gradually typed tensor.
