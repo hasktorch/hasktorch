@@ -19,7 +19,7 @@ let
 
   # This provides a development environment that can be used with nix-shell or
   # lorri. See https://input-output-hk.github.io/haskell.nix/user-guide/development/
-  shell = hasktorchHaskellPackages.shellFor {
+  shell = pkgs.hasktorchProject.shellFor {
     name = "hasktorch-dev-shell";
 
     # If shellFor local packages selection is wrong,
@@ -54,7 +54,7 @@ let
             ;;
           esac
         '';
-        libraryPath = stdenv.lib.optionalString cudaSupport ''
+        libraryPath = lib.optionalString cudaSupport ''
           export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/run/opengl-driver/lib"
         '';
         tokenizersLibraryPath = ''

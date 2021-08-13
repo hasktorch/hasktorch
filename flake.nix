@@ -7,48 +7,65 @@
       url = "github:input-output-hk/haskell.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    utils.url = "github:numtide/flake-utils";
+    utils.follows = "haskell-nix/flake-utils";
     iohkNix = {
       url = "github:input-output-hk/iohk-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     libtorch-nix = {
-      url = "github:hasktorch/libtorch-nix";
-      flake = false;
+      url = "github:stites/libtorch-nix/flakeify";
+      inputs.utils.follows = "haskell-nix/flake-utils";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     jupyterWith = {
       url = "github:tweag/jupyterWith/35eb565c6d00f3c61ef5e74e7e41870cfa3926f7";
       flake = false;
     };
-    naersk = {
-      url = "github:nmattia/naersk";
-      flake = false;
+
+    naersk = { # should be moved into a tokenizers flake
+      url = "github:nix-community/naersk";
+      #flake = false;
     };
+
     tokenizers = {
       url = "github:hasktorch/tokenizers";
       flake = false;
     };
   };
 
-  outputs = { self, nixpkgs, haskell-nix, utils, iohkNix, ... }: with utils.lib;
+  outputs = { self, nixpkgs, haskell-nix, libtorch-nix, utils, iohkNix, naersk, tokenizers, ... }: with utils.lib;
     let
       inherit (nixpkgs) lib;
       inherit (lib);
       inherit (iohkNix.lib) collectExes;
 
-      #supportedSystems = import ./supported-systems.nix;
-      supportedSystems = ["x86_64-linux"];
-      defaultSystem = builtins.head supportedSystems;
+      supportedSystems = ["x86_64-darwin" "x86_64-linux"];
       gitrev = self.rev or "dirty";
+      cudaSupport = false;
+      cudaMajorVersion = "10";
 
       overlays = [
         haskell-nix.overlay
         iohkNix.overlays.haskell-nix-extra
+
+        (if !cudaSupport then libtorch-nix.overlays.cpu
+         else if (cudaMajorVersion == "10") then libtorch-nix.overlays.cudatoolkit_10_2
+         else libtorch-nix.overlays.cudatoolkit_11_1)
+
         (final: prev: {
           inherit gitrev;
           commonLib = lib
             // iohkNix.lib;
         })
+
+        (final: prev: {
+          naersk = naersk.lib."${prev.system}";
+        })
+        (import "${tokenizers}/nix/pkgs.nix")
+        (final: prev: {
+          tokenizers_haskell = prev.tokenizersPackages.tokenizers-haskell;
+        })
+
         (final: prev: {
           # This overlay adds our project to pkgs
           hasktorchProject = import ./nix/haskell.nix (rec {

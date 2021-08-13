@@ -32,7 +32,7 @@ let
             NUM_CPU=$(nproc --all)
           ;;
       esac
-      
+
       USED_MEM_GB=`echo $TOTAL_MEM_GB | awk '{print int(($1 + 1) / 2)}'`
       USED_NUM_CPU=`echo $NUM_CPU | awk '{print int(($1 + 1) / 2)}'`
       USED_NUM_CPU=`echo $USED_MEM_GB $USED_NUM_CPU | awk '{if($1<x$2) {print $1} else {print $2}}'`
@@ -96,7 +96,7 @@ let
         };
       }
 
-      # Misc. build fixes for dependencies  
+      # Misc. build fixes for dependencies
       {
         # Some packages are missing identifier.name
         # packages.cryptonite-openssl.package.identifier.name = "cryptonite-openssl";
@@ -118,18 +118,18 @@ let
       }
 
       {
-        # Stamp executables with the git revision
+        # setGitRev is a postInstall script to stamp executables with
+        # version info. It uses the "gitrev" argument, if set. Otherwise,
+        # the revision is sourced from the local git work tree.
         packages = lib.genAttrs projectPackages (name: {
-            postInstall = ''${setGitRev}'';
-          });
+          #postInstall = ''
+          #  echo ${pkgs.buildPackages.haskellBuildUtils}/bin/set-git-rev "${gitrev}" $out/bin/*
+          #  ${pkgs.buildPackages.haskellBuildUtils}/bin/set-git-rev "${gitrev}" $out/bin/*
+          #'';
+        });
       }
     ];
   };
-
-  # setGitRev is a postInstall script to stamp executables with
-  # version info. It uses the "gitrev" argument, if set. Otherwise,
-  # the revision is sourced from the local git work tree.
-  setGitRev = ''${pkgs.buildPackages.haskellBuildUtils}/bin/set-git-rev "${gitrev}" $out/bin/*'';
 in
   pkgSet // {
     inherit projectPackages;
